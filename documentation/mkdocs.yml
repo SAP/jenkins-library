@@ -1,0 +1,38 @@
+site_name: Jenkins 2.0 Pipelines
+pages:
+    - Home: index.md
+    - 'Library steps':
+        - commonPipelineEnvironment: steps/commonPipelineEnvironment.md
+        - handlePipelineStepErrors: steps/handlePipelineStepErrors.md
+        - toolValidate: steps/toolValidate.md
+        - mtaBuild: steps/mtaBuild.md
+        - neoDeploy: steps/neoDeploy.md
+        - setupCommonPipelineEnvironment: steps/setupCommonPipelineEnvironment.md
+    - 'Library scripts':
+        - FileUtils: scripts/fileUtils.md
+        - Utils: scripts/utils.md 
+        - Version: scripts/version.md
+    - 'Required Plugins': jenkins/requiredPlugins.md
+
+theme: 'material'
+extra:
+    logo: 'images/piper_head_white.png'
+    site_favicon: 'images/favicon.ico'
+    palette:
+      primary: 'teal'
+      accent: 'purple'
+    font:
+      text: 'Slabo 13px'
+      code: 'Ubuntu Mono'
+markdown_extensions:
+    - admonition
+    - codehilite(guess_lang=false)
+    - toc(permalink=true)
+    - footnotes
+    - pymdownx.superfences
+extra_css: 
+    - 'css/extra.css'
+edit_uri: edit/master/documentation/docs
+docs_dir: docs
+site_dir: docs-gen
+repo_url: https://github.com/SAP/jenkins-library
