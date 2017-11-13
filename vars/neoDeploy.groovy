@@ -48,7 +48,7 @@ def call(parameters = [:]) {
                     ${neoExecutable} deploy-mta \
                       --user ${username} \
                       --host ${deployHost} \
-                      --source ${archivePath.getAbsolutePath()} \
+                      --source "${archivePath.getAbsolutePath()}" \
                       --account ${deployAccount} \
                       --password ${password} \
                       --synchronous
