@@ -88,7 +88,7 @@ class NeoDeploymentTest extends BasePipelineTest {
 
         script.execute(archivePath, 'myCredentialsId')
 
-        assert shellCalls[0] =~ /#!\/bin\/bash \/opt\/neo\/tools\/neo\.sh deploy-mta --user anonymous --host test\.deploy\.host\.com --source .* --account trialuser123 --password \*\*\*\*\*\*\*\* --synchronous/
+        assert shellCalls[0] =~ /#!\/bin\/bash \/opt\/neo\/tools\/neo\.sh deploy-mta --user anonymous --host test\.deploy\.host\.com --source ".*" --account trialuser123 --password \*\*\*\*\*\*\*\* --synchronous/
 
         assert echoes[1] == "[neoDeploy] Neo executable \"/opt/neo/tools/neo.sh\" retrieved from environment."
 
@@ -126,7 +126,7 @@ class NeoDeploymentTest extends BasePipelineTest {
 
         script.execute(archivePath)
 
-        assert shellCalls[0] =~ /#!\/bin\/bash \/opt\/neo\/tools\/neo\.sh deploy-mta --user defaultUser --host test\.deploy\.host\.com --source .* --account trialuser123 --password \*\*\*\*\*\*\*\* --synchronous/
+        assert shellCalls[0] =~ /#!\/bin\/bash \/opt\/neo\/tools\/neo\.sh deploy-mta --user defaultUser --host test\.deploy\.host\.com --source ".*" --account trialuser123 --password \*\*\*\*\*\*\*\* --synchronous/
 
         assert echoes[1] == "[neoDeploy] Neo executable \"/opt/neo/tools/neo.sh\" retrieved from environment."
     }
@@ -143,7 +143,7 @@ class NeoDeploymentTest extends BasePipelineTest {
 
         script.execute(archivePath)
 
-        assert shellCalls[0] =~ /#!\/bin\/bash neo deploy-mta --user defaultUser --host test\.deploy\.host\.com --source .* --account trialuser123 --password \*\*\*\*\*\*\*\* --synchronous/
+        assert shellCalls[0] =~ /#!\/bin\/bash neo deploy-mta --user defaultUser --host test\.deploy\.host\.com --source ".*" --account trialuser123 --password \*\*\*\*\*\*\*\* --synchronous/
 
         assert echoes[1] == "Using Neo executable from PATH."
     }
@@ -160,7 +160,7 @@ class NeoDeploymentTest extends BasePipelineTest {
 
         script.execute(archivePath, 'myCredentialsId')
 
-        assert shellCalls[0] =~ /#!\/bin\/bash \/etc\/neo\/tools\/neo\.sh deploy-mta --user anonymous --host test\.deploy\.host\.com --source .* --account trialuser123 --password \*\*\*\*\*\*\*\* --synchronous/
+        assert shellCalls[0] =~ /#!\/bin\/bash \/etc\/neo\/tools\/neo\.sh deploy-mta --user anonymous --host test\.deploy\.host\.com --source ".*" --account trialuser123 --password \*\*\*\*\*\*\*\* --synchronous/
 
         assert echoes[1] == "[neoDeploy] Neo executable \"/etc/neo/tools/neo.sh\" retrieved from parameters."
 
