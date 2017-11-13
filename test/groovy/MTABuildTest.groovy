@@ -5,15 +5,10 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 
-import com.lesfurets.jenkins.unit.BasePipelineTest
 import org.junit.rules.ExpectedException
 import org.junit.rules.TemporaryFolder
 
-import static com.lesfurets.jenkins.unit.global.lib.LibraryConfiguration.library
-
-import static ProjectSource.projectSource
-
-public class MTABuildTest extends BasePipelineTest {
+public class MTABuildTest extends PiperTestBase {
 
     @Rule
     public ExpectedException thrown = new ExpectedException()
@@ -31,21 +26,10 @@ public class MTABuildTest extends BasePipelineTest {
 
     @Before
     public void setup(){
-        super.setUp()
-
+        super._setUp()
         currentDir = tmp.newFolder().toURI().getPath()[0..-2] //omit final '/'
         otherDir = tmp.newFolder().toURI().getPath()[0..-2] //omit final '/'
         pipeline = "${tmp.newFolder("pipeline").toURI().getPath()}pipeline"
-
-        def piperLib = library()
-                .name('piper-library-os')
-                .retriever(projectSource())
-                .targetPath('clonePath/is/not/necessary')
-                .defaultVersion('<irrelevant>')
-                .allowOverride(true)
-                .implicit(false)
-                .build()
-        helper.registerSharedLibrary(piperLib)
 
         helper.registerAllowedMethod('sh', [String], {s -> shellCalls.add(s)} )
         helper.registerAllowedMethod('echo', [String], {s -> echoes.add(s)} )

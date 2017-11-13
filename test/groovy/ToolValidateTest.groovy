@@ -1,6 +1,3 @@
-import static com.lesfurets.jenkins.unit.global.lib.LibraryConfiguration.library
-import static ProjectSource.projectSource
-
 import org.apache.commons.exec.*
 import hudson.AbortException
 import org.junit.Before
@@ -8,10 +5,8 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.ExpectedException
 import org.junit.rules.TemporaryFolder
-import com.lesfurets.jenkins.unit.BasePipelineTest
 
-
-class ToolValidateTest extends BasePipelineTest {
+class ToolValidateTest extends PiperTestBase {
 
 
     @Rule
@@ -28,18 +23,7 @@ class ToolValidateTest extends BasePipelineTest {
     @Before
     void setup() {
 
-        super.setUp()
-
-        def piperLib = library()
-                .name('piper-library-os')
-                .retriever(projectSource())
-                .targetPath('clonePath/is/not/necessary')
-                .defaultVersion('irrelevant')
-                .allowOverride(true)
-                .implicit(false)
-                .build()
-
-        helper.registerSharedLibrary(piperLib)
+        super._setUp()
 
         helper.registerAllowedMethod('echo', [String], {s -> messages.add(s)})
 
