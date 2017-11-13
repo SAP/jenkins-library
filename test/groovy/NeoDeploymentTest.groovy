@@ -10,10 +10,7 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.ExpectedException
 
-import com.lesfurets.jenkins.unit.BasePipelineTest
-
-
-class NeoDeploymentTest extends BasePipelineTest {
+class NeoDeploymentTest extends PiperTestBase {
 
     @Rule
     public ExpectedException thrown = new ExpectedException().none()
@@ -32,20 +29,10 @@ class NeoDeploymentTest extends BasePipelineTest {
     @Before
     void setup() {
 
-        super.setUp()
+        super._setUp()
 
         archivePath = "${tmp.newFolder("workspace").toURI().getPath()}archiveName.mtar"
         pipeline = "${tmp.newFolder("pipeline").toURI().getPath()}pipeline"
-
-        def piperLib = library()
-                .name('piper-library-os')
-                .retriever(projectSource())
-                .targetPath('clonePath/is/not/necessary')
-                .defaultVersion('irrelevant')
-                .allowOverride(true)
-                .implicit(false)
-                .build()
-        helper.registerSharedLibrary(piperLib)
 
         helper.registerAllowedMethod('sh', [String], { GString s ->
             shellCalls.add(s.replaceAll(/\s+/, " ").trim())
