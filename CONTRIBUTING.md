@@ -1,9 +1,5 @@
 # Guidance on how to contribute
 
-All contributions to this project will be released SAP internally AS IS WITHOUT WARRANTY OF ANY KIND.
-
-By submitting a pull request or filing a bug, issue, or feature request, you are agreeing to comply with the waiver.
-
 There are two primary ways to help:
 * Using the issue tracker, and
 * Changing the code-base.
