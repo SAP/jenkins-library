@@ -85,7 +85,7 @@ public class MTABuildTest extends BasePipelineTest {
         def mtarFilePath = script.execute()
 
         assert shellCalls[0].startsWith('sed -ie \"s/\\\${timestamp}/`date +%Y%m%d%H%M%S`/g\" ')
-        assert shellCalls[0].endsWith('/mta.yaml')
+        assert shellCalls[0].endsWith('/mta.yaml"')
 
         assert shellCalls[1].contains("PATH=./node_modules/.bin:/usr/bin")
 
@@ -109,7 +109,7 @@ public class MTABuildTest extends BasePipelineTest {
         def mtarFilePath = script.execute()
 
         assert shellCalls[0].startsWith('sed -ie \"s/\\\${timestamp}/`date +%Y%m%d%H%M%S`/g\" ')
-        assert shellCalls[0].endsWith('/mta.yaml')
+        assert shellCalls[0].endsWith('/mta.yaml"')
 
         assert shellCalls[1].contains("PATH=./node_modules/.bin:/usr/bin")
 
@@ -135,7 +135,7 @@ public class MTABuildTest extends BasePipelineTest {
         def mtarFilePath = script.execute(newDirName)
 
         assert shellCalls[0].startsWith('sed -ie \"s/\\\${timestamp}/`date +%Y%m%d%H%M%S`/g\" ')
-        assert shellCalls[0].endsWith('/mta.yaml')
+        assert shellCalls[0].endsWith('/mta.yaml"')
 
         assert shellCalls[1].contains("PATH=./node_modules/.bin:/usr/bin")
 
@@ -156,7 +156,7 @@ public class MTABuildTest extends BasePipelineTest {
         def mtarFilePath = script.execute()
 
         assert shellCalls[0].startsWith('sed -ie \"s/\\\${timestamp}/`date +%Y%m%d%H%M%S`/g\" ')
-        assert shellCalls[0].endsWith('/mta.yaml')
+        assert shellCalls[0].endsWith('/mta.yaml"')
 
         assert shellCalls[1].contains("PATH=./node_modules/.bin:/usr/bin")
 
@@ -178,7 +178,7 @@ public class MTABuildTest extends BasePipelineTest {
         def mtarFilePath = script.execute()
 
         assert shellCalls[0].startsWith('sed -ie \"s/\\\${timestamp}/`date +%Y%m%d%H%M%S`/g\" ')
-        assert shellCalls[0].endsWith('/mta.yaml')
+        assert shellCalls[0].endsWith('/mta.yaml"')
 
         assert shellCalls[1].contains("PATH=./node_modules/.bin:/usr/bin")
 

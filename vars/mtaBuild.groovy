@@ -20,7 +20,7 @@ def call(Map parameters = [:]) {
         def mtaYaml = readYaml file: "${pwd()}/mta.yaml"
 
         //[Q]: Why not yaml.dump()? [A]: This reformats the whole file.
-        sh "sed -ie \"s/\\\${timestamp}/`date +%Y%m%d%H%M%S`/g\" ${pwd()}/mta.yaml"
+        sh "sed -ie \"s/\\\${timestamp}/`date +%Y%m%d%H%M%S`/g\" \"${pwd()}/mta.yaml\""
 
         def id = mtaYaml.ID
         if (!id) {
