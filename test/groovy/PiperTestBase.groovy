@@ -5,17 +5,22 @@ import static com.lesfurets.jenkins.unit.global.lib.LibraryConfiguration.library
 
 public class PiperTestBase extends BasePipelineTest {
 
-    protected messages = []
+    protected messages = [], shellCalls = []
 
     protected final void _setUp() {
 
         super.setUp()
 
         messages.clear()
+        shellCalls.clear()
 
         preparePiperLib()
 
         helper.registerAllowedMethod('echo', [String], {s -> messages.add(s)} )
+        helper.registerAllowedMethod('sh', [String], {  s ->
+            shellCalls.add(s.replaceAll(/\s+/, " ").trim())
+        })
+
     }
 
     private preparePiperLib() {

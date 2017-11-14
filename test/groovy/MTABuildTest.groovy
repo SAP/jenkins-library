@@ -16,7 +16,6 @@ public class MTABuildTest extends PiperTestBase {
     @Rule
     public TemporaryFolder tmp = new TemporaryFolder()
 
-    def shellCalls = []
     def currentDir
     def otherDir
     def pipeline
@@ -30,7 +29,6 @@ public class MTABuildTest extends PiperTestBase {
         otherDir = tmp.newFolder().toURI().getPath()[0..-2] //omit final '/'
         pipeline = "${tmp.newFolder("pipeline").toURI().getPath()}pipeline"
 
-        helper.registerAllowedMethod('sh', [String], {s -> shellCalls.add(s)} )
         helper.registerAllowedMethod('readYaml', [Map], {
             m ->
                 return new Yaml().load((m.file as File).text)

@@ -20,8 +20,6 @@ class NeoDeploymentTest extends PiperTestBase {
 
     def script
 
-    def shellCalls = []
-
     def pipeline
     def archivePath
 
@@ -33,9 +31,6 @@ class NeoDeploymentTest extends PiperTestBase {
         archivePath = "${tmp.newFolder("workspace").toURI().getPath()}archiveName.mtar"
         pipeline = "${tmp.newFolder("pipeline").toURI().getPath()}pipeline"
 
-        helper.registerAllowedMethod('sh', [String], { GString s ->
-            shellCalls.add(s.replaceAll(/\s+/, " ").trim())
-        })
         helper.registerAllowedMethod('error', [String], { s -> throw new AbortException(s) })
         helper.registerAllowedMethod('usernamePassword', [Map], { m -> return m })
         helper.registerAllowedMethod('withCredentials', [List, Closure], { l, c ->
