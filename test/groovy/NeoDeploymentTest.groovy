@@ -18,9 +18,6 @@ class NeoDeploymentTest extends PiperTestBase {
     @Rule
     public TemporaryFolder tmp = new TemporaryFolder()
 
-    def script
-
-    def pipeline
     def archivePath
 
     @Before
@@ -29,7 +26,6 @@ class NeoDeploymentTest extends PiperTestBase {
         super._setUp()
 
         archivePath = "${tmp.newFolder("workspace").toURI().getPath()}archiveName.mtar"
-        pipeline = "${tmp.newFolder("pipeline").toURI().getPath()}pipeline"
 
         helper.registerAllowedMethod('error', [String], { s -> throw new AbortException(s) })
         helper.registerAllowedMethod('usernamePassword', [Map], { m -> return m })
@@ -58,15 +54,11 @@ class NeoDeploymentTest extends PiperTestBase {
     @Test
     void straightForwardTest() {
 
-        defaultPipeline()
-
         binding.getVariable('env')['NEO_HOME'] = '/opt/neo'
 
         new File(archivePath) << "dummy archive"
 
-        script = loadScript(pipeline)
-
-        script.execute(archivePath, 'myCredentialsId')
+        withPipeline(defaultPipeline()).execute(archivePath, 'myCredentialsId')
 
         assert shellCalls[0] =~ /#!\/bin\/bash \/opt\/neo\/tools\/neo\.sh deploy-mta --user anonymous --host test\.deploy\.host\.com --source ".*" --account trialuser123 --password \*\*\*\*\*\*\*\* --synchronous/
 
@@ -78,17 +70,13 @@ class NeoDeploymentTest extends PiperTestBase {
     @Test
     void badCredentialsIdTest() {
 
-        defaultPipeline()
-
         binding.getVariable('env')['NEO_HOME'] = '/opt/neo'
 
         new File(archivePath) << "dummy archive"
 
         thrown.expect(MissingPropertyException)
 
-        script = loadScript(pipeline)
-
-        script.execute(archivePath, 'badCredentialsId')
+        withPipeline(defaultPipeline()).execute(archivePath, 'badCredentialsId')
 
     }
 
@@ -96,15 +84,11 @@ class NeoDeploymentTest extends PiperTestBase {
     @Test
     void credentialsIdNotProvidedTest() {
 
-        noCredentialsIdPipeline()
-
         binding.getVariable('env')['NEO_HOME'] = '/opt/neo'
 
         new File(archivePath) << "dummy archive"
 
-        script = loadScript(pipeline)
-
-        script.execute(archivePath)
+        withPipeline(noCredentialsIdPipeline()).execute(archivePath)
 
         assert shellCalls[0] =~ /#!\/bin\/bash \/opt\/neo\/tools\/neo\.sh deploy-mta --user defaultUser --host test\.deploy\.host\.com --source ".*" --account trialuser123 --password \*\*\*\*\*\*\*\* --synchronous/
 
@@ -115,13 +99,9 @@ class NeoDeploymentTest extends PiperTestBase {
     @Test
     void neoHomeNotSetTest() {
 
-        noCredentialsIdPipeline()
-
         new File(archivePath) << "dummy archive"
 
-        script = loadScript(pipeline)
-
-        script.execute(archivePath)
+        withPipeline(noCredentialsIdPipeline()).execute(archivePath)
 
         assert shellCalls[0] =~ /#!\/bin\/bash neo deploy-mta --user defaultUser --host test\.deploy\.host\.com --source ".*" --account trialuser123 --password \*\*\*\*\*\*\*\* --synchronous/
 
@@ -132,13 +112,9 @@ class NeoDeploymentTest extends PiperTestBase {
     @Test
     void neoHomeAsParameterTest() {
 
-        neoHomeParameterPipeline()
-
         new File(archivePath) << "dummy archive"
 
-        script = loadScript(pipeline)
-
-        script.execute(archivePath, 'myCredentialsId')
+        withPipeline(neoHomeParameterPipeline()).execute(archivePath, 'myCredentialsId')
 
         assert shellCalls[0] =~ /#!\/bin\/bash \/etc\/neo\/tools\/neo\.sh deploy-mta --user anonymous --host test\.deploy\.host\.com --source ".*" --account trialuser123 --password \*\*\*\*\*\*\*\* --synchronous/
 
@@ -150,14 +126,10 @@ class NeoDeploymentTest extends PiperTestBase {
     @Test
     void archiveNotProvidedTest() {
 
-        noArchivePathPipeline()
-
         thrown.expect(Exception)
         thrown.expectMessage('ERROR - NO VALUE AVAILABLE FOR archivePath')
 
-        script = loadScript(pipeline)
-
-        script.execute()
+        withPipeline(noArchivePathPipeline()).execute()
 
     }
 
@@ -165,14 +137,10 @@ class NeoDeploymentTest extends PiperTestBase {
     @Test
     void wrongArchivePathProvidedTest() {
 
-        defaultPipeline()
-
         thrown.expect(AbortException)
         thrown.expectMessage("Archive cannot be found with parameter archivePath: '")
 
-        script = loadScript(pipeline)
-
-        script.execute(archivePath, 'myCredentialsId')
+        withPipeline(defaultPipeline()).execute(archivePath, 'myCredentialsId')
 
     }
 
@@ -180,22 +148,18 @@ class NeoDeploymentTest extends PiperTestBase {
     @Test
     void scriptNotProvidedTest() {
 
-        noScriptPipeline()
-
         new File(archivePath) << "dummy archive"
 
         thrown.expect(Exception)
         thrown.expectMessage('ERROR - NO VALUE AVAILABLE FOR deployHost')
 
-        script = loadScript(pipeline)
-
-        script.execute(archivePath)
+        withPipeline(noScriptPipeline()).execute(archivePath)
 
     }
 
 
     private defaultPipeline(){
-        new File(pipeline) <<   """
+    { ->   """
                                 @Library('piper-library-os')
 
                                 execute(archivePath, neoCredentialsId) {
@@ -210,11 +174,11 @@ class NeoDeploymentTest extends PiperTestBase {
                                 }
                                 
                                 return this
-                                """
+                                """}
     }
 
     private noCredentialsIdPipeline(){
-        new File(pipeline) <<   """
+        { ->"""
                                 @Library('piper-library-os')
                                 
                                 execute(archivePath) {
@@ -229,11 +193,11 @@ class NeoDeploymentTest extends PiperTestBase {
                                 }
                                 
                                 return this
-                                """
+                                """ }
     }
 
     private neoHomeParameterPipeline(){
-        new File(pipeline) <<   """
+        { ->"""
                                 @Library('piper-library-os')
                                 
                                 execute(archivePath, neoCredentialsId) {
@@ -248,11 +212,11 @@ class NeoDeploymentTest extends PiperTestBase {
                                 }
                                 
                                 return this
-                                """
+                                """ }
     }
 
     private noArchivePathPipeline(){
-        new File(pipeline) <<   """
+        { -> """
                                 @Library('piper-library-os')
                                 
                                 execute() {
@@ -267,11 +231,11 @@ class NeoDeploymentTest extends PiperTestBase {
                                 }
                                 
                                 return this
-                                """
+                                """ }
     }
 
     private noScriptPipeline(){
-        new File(pipeline) <<   """
+    { ->    """
                                 @Library('piper-library-os')
                                 
                                 execute(archivePath) {
@@ -283,7 +247,7 @@ class NeoDeploymentTest extends PiperTestBase {
                                 }
                                 
                                 return this
-                                """
+                                """ }
     }
 
 }

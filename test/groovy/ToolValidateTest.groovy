@@ -24,9 +24,7 @@ class ToolValidateTest extends PiperTestBase {
 
         super._setUp()
 
-        def pipelinePath = "${tmp.newFolder("pipeline").toURI().getPath()}pipeline"
-        createPipeline(pipelinePath)
-        script = loadScript(pipelinePath)
+        script = withPipeline(createPipeline())
 
         notEmptyDir = tmp.newFolder('notEmptyDir')
         def path = "${notEmptyDir.getAbsolutePath()}${File.separator}test.txt"
@@ -250,8 +248,8 @@ class ToolValidateTest extends PiperTestBase {
     }
 
 
-    private createPipeline(pipelinePath){
-        new File(pipelinePath) <<   """
+    private createPipeline(){
+        {   -> """
                                 @Library('piper-library-os')
 
                                 execute() {
@@ -263,7 +261,7 @@ class ToolValidateTest extends PiperTestBase {
                                 }
 
                                 return this
-                                """
+                                """}
     }
 
     private getNoVersion(Map m) { 
