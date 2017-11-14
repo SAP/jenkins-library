@@ -35,3 +35,11 @@ def retrieveGitCoordinates(script){
     return [url: gitUrl, branch: gitBranch]
 }
 
+/**
+ * Returns the credentialsId from the first configured <code>userRemoteConfig</code>
+ * in the job, or <code>null</code> if there is no credentialId defined there.
+ */
+def retrieveCredentialsId() {
+    scm.userRemoteConfigs[0].credentialsId
+}
+
