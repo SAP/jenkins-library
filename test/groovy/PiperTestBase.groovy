@@ -3,7 +3,15 @@ import com.lesfurets.jenkins.unit.BasePipelineTest
 import static ProjectSource.projectSource
 import static com.lesfurets.jenkins.unit.global.lib.LibraryConfiguration.library
 
+import org.junit.Rule
+import org.junit.rules.TemporaryFolder
+
 public class PiperTestBase extends BasePipelineTest {
+
+    @Rule
+    public TemporaryFolder pipelineFolder = new TemporaryFolder()
+
+    private File pipeline
 
     protected messages = [], shellCalls = []
 
@@ -21,6 +29,12 @@ public class PiperTestBase extends BasePipelineTest {
             shellCalls.add(s.replaceAll(/\s+/, " ").trim())
         })
 
+        pipeline = pipelineFolder.newFile()
+    }
+
+    protected withPipeline(p) {
+        pipeline << p()
+        loadScript(pipeline.getAbsolutePath())
     }
 
     private preparePiperLib() {
