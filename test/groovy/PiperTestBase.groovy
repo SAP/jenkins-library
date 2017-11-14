@@ -5,9 +5,17 @@ import static com.lesfurets.jenkins.unit.global.lib.LibraryConfiguration.library
 
 public class PiperTestBase extends BasePipelineTest {
 
+    protected messages = []
+
     protected final void _setUp() {
+
         super.setUp()
+
+        messages.clear()
+
         preparePiperLib()
+
+        helper.registerAllowedMethod('echo', [String], {s -> messages.add(s)} )
     }
 
     private preparePiperLib() {

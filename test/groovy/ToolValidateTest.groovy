@@ -16,7 +16,6 @@ class ToolValidateTest extends PiperTestBase {
     public TemporaryFolder tmp = new TemporaryFolder()
 
     private notEmptyDir
-    private messages = []
     private script
 
 
@@ -24,8 +23,6 @@ class ToolValidateTest extends PiperTestBase {
     void setup() {
 
         super._setUp()
-
-        helper.registerAllowedMethod('echo', [String], {s -> messages.add(s)})
 
         def pipelinePath = "${tmp.newFolder("pipeline").toURI().getPath()}pipeline"
         createPipeline(pipelinePath)

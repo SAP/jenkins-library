@@ -23,7 +23,6 @@ class NeoDeploymentTest extends PiperTestBase {
     def shellCalls = []
 
     def pipeline
-    def echoes = []
     def archivePath
 
     @Before
@@ -38,7 +37,6 @@ class NeoDeploymentTest extends PiperTestBase {
             shellCalls.add(s.replaceAll(/\s+/, " ").trim())
         })
         helper.registerAllowedMethod('error', [String], { s -> throw new AbortException(s) })
-        helper.registerAllowedMethod('echo', [String], { s -> echoes.add(s) })
         helper.registerAllowedMethod('usernamePassword', [Map], { m -> return m })
         helper.registerAllowedMethod('withCredentials', [List, Closure], { l, c ->
             if(l[0].credentialsId == 'myCredentialsId') {
@@ -77,7 +75,7 @@ class NeoDeploymentTest extends PiperTestBase {
 
         assert shellCalls[0] =~ /#!\/bin\/bash \/opt\/neo\/tools\/neo\.sh deploy-mta --user anonymous --host test\.deploy\.host\.com --source ".*" --account trialuser123 --password \*\*\*\*\*\*\*\* --synchronous/
 
-        assert echoes[1] == "[neoDeploy] Neo executable \"/opt/neo/tools/neo.sh\" retrieved from environment."
+        assert messages[1] == "[neoDeploy] Neo executable \"/opt/neo/tools/neo.sh\" retrieved from environment."
 
     }
 
@@ -115,7 +113,7 @@ class NeoDeploymentTest extends PiperTestBase {
 
         assert shellCalls[0] =~ /#!\/bin\/bash \/opt\/neo\/tools\/neo\.sh deploy-mta --user defaultUser --host test\.deploy\.host\.com --source ".*" --account trialuser123 --password \*\*\*\*\*\*\*\* --synchronous/
 
-        assert echoes[1] == "[neoDeploy] Neo executable \"/opt/neo/tools/neo.sh\" retrieved from environment."
+        assert messages[1] == "[neoDeploy] Neo executable \"/opt/neo/tools/neo.sh\" retrieved from environment."
     }
 
 
@@ -132,7 +130,7 @@ class NeoDeploymentTest extends PiperTestBase {
 
         assert shellCalls[0] =~ /#!\/bin\/bash neo deploy-mta --user defaultUser --host test\.deploy\.host\.com --source ".*" --account trialuser123 --password \*\*\*\*\*\*\*\* --synchronous/
 
-        assert echoes[1] == "Using Neo executable from PATH."
+        assert messages[1] == "Using Neo executable from PATH."
     }
 
 
@@ -149,7 +147,7 @@ class NeoDeploymentTest extends PiperTestBase {
 
         assert shellCalls[0] =~ /#!\/bin\/bash \/etc\/neo\/tools\/neo\.sh deploy-mta --user anonymous --host test\.deploy\.host\.com --source ".*" --account trialuser123 --password \*\*\*\*\*\*\*\* --synchronous/
 
-        assert echoes[1] == "[neoDeploy] Neo executable \"/etc/neo/tools/neo.sh\" retrieved from parameters."
+        assert messages[1] == "[neoDeploy] Neo executable \"/etc/neo/tools/neo.sh\" retrieved from parameters."
 
     }
 

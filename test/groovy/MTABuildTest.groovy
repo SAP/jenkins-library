@@ -17,7 +17,6 @@ public class MTABuildTest extends PiperTestBase {
     public TemporaryFolder tmp = new TemporaryFolder()
 
     def shellCalls = []
-    def echoes = []
     def currentDir
     def otherDir
     def pipeline
@@ -32,7 +31,6 @@ public class MTABuildTest extends PiperTestBase {
         pipeline = "${tmp.newFolder("pipeline").toURI().getPath()}pipeline"
 
         helper.registerAllowedMethod('sh', [String], {s -> shellCalls.add(s)} )
-        helper.registerAllowedMethod('echo', [String], {s -> echoes.add(s)} )
         helper.registerAllowedMethod('readYaml', [Map], {
             m ->
                 return new Yaml().load((m.file as File).text)
@@ -76,7 +74,7 @@ public class MTABuildTest extends PiperTestBase {
 
         assert mtarFilePath == "${currentDir}/com.mycompany.northwind.mtar"
 
-        assert echoes[1] == "[mtaBuild] MTA JAR \"/opt/mta/mta.jar\" retrieved from environment."
+        assert messages[1] == "[mtaBuild] MTA JAR \"/opt/mta/mta.jar\" retrieved from environment."
     }
 
 
@@ -99,7 +97,7 @@ public class MTABuildTest extends PiperTestBase {
 
         assert mtarFilePath == "${currentDir}/com.mycompany.northwind.mtar"
 
-        assert echoes[1] == "[mtaBuild] MTA JAR \"/opt/mta/mta.jar\" retrieved from environment."
+        assert messages[1] == "[mtaBuild] MTA JAR \"/opt/mta/mta.jar\" retrieved from environment."
     }
 
 
@@ -124,7 +122,7 @@ public class MTABuildTest extends PiperTestBase {
 
         assert mtarFilePath == "${currentDir}/com.mycompany.northwind.mtar"
 
-        assert echoes[1] == "[mtaBuild] MTA JAR \"/opt/mta/mta.jar\" retrieved from environment."
+        assert messages[1] == "[mtaBuild] MTA JAR \"/opt/mta/mta.jar\" retrieved from environment."
     }
 
     @Test
@@ -144,7 +142,7 @@ public class MTABuildTest extends PiperTestBase {
 
         assert mtarFilePath == "${currentDir}/com.mycompany.northwind.mtar"
 
-        assert echoes[1] == "[mtaBuild] Using MTA JAR from current working directory."
+        assert messages[1] == "[mtaBuild] Using MTA JAR from current working directory."
     }
 
 
@@ -165,7 +163,7 @@ public class MTABuildTest extends PiperTestBase {
 
         assert mtarFilePath == "${currentDir}/com.mycompany.northwind.mtar"
 
-        assert echoes[1] == "[mtaBuild] MTA JAR \"/etc/mta/mta.jar\" retrieved from parameters."
+        assert messages[1] == "[mtaBuild] MTA JAR \"/etc/mta/mta.jar\" retrieved from parameters."
     }
 
 
