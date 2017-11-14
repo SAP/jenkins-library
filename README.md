@@ -10,6 +10,8 @@ Project "Piper" consists of two parts:
 
 # Please follow [this link to our documentation][piper-library-pages]
 
+# [Contribution Guidelines][piper-library-contribution]
+
 # [License][piper-library-license]
 
 Copyright (c) 2017 SAP SE or an SAP affiliate company. All rights reserved.
@@ -19,3 +21,4 @@ This file is licensed under the Apache Software License, v. 2 except as noted ot
 [piper-pipelines]: https://github.com/SAP/jenkins-pipelines
 [piper-library-pages]: https://sap.github.io/jenkins-library
 [piper-library-license]: ./LICENSE
+[piper-library-contribution]: ./CONTRIBUTING.md
