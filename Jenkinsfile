@@ -13,8 +13,7 @@ node {
     } catch (Throwable err) {
         echo "Error occured: ${err}"
         currentBuild.result = 'FAILURE'
+        mail subject: '[Build failed] SAP/jenkins-library', body: 'Fix the build.', to: 'k.arnold@sap.com,marcus.holl@sap.com,oliver.nocon@sap.com'
         throw err
-    } finally {
-            mail subject: '[Build failed] SAP/jenkins-library', body: '', to: 'k.arnold@sap.com,marcus.holl@sap.com,oliver.nocon@sap.com'
-    }
+    } 
 }
