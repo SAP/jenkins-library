@@ -10,6 +10,7 @@ pages:
         - setupCommonPipelineEnvironment: steps/setupCommonPipelineEnvironment.md
     - 'Library scripts':
         - FileUtils: scripts/fileUtils.md
+        - GitUtils: scripts/gitUtils.md
         - Utils: scripts/utils.md 
         - Version: scripts/version.md
     - 'Required Plugins': jenkins/requiredPlugins.md
