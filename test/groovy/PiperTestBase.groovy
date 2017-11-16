@@ -34,7 +34,7 @@ public class PiperTestBase extends BasePipelineTest {
 
     protected withPipeline(p) {
         pipeline << p()
-        loadScript(pipeline.getAbsolutePath())
+        loadScript(pipeline.toURI().getPath())
     }
 
     private preparePiperLib() {
