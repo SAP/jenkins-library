@@ -195,67 +195,67 @@ public class MTABuildTest extends PiperTestBase {
 
 
     private defaultPipeline(){
-        { ->  '''
-                                @Library('piper-library-os')
+        { -> '''
+             @Library('piper-library-os')
 
-                                execute(){
-                                    mtaBuild buildTarget: 'NEO'
-                                }
-                                
-                                return this
-                                ''' }
+             execute(){
+               mtaBuild buildTarget: 'NEO'
+             }
+
+             return this
+             ''' }
     }
 
     private returnMtarFilePathFromCommonPipelineEnvironmentPipeline(){
-        { ->'''
-                                @Library('piper-library-os')
+        { -> '''
+             @Library('piper-library-os')
 
-                                execute(){
-                                    mtaBuild buildTarget: 'NEO'
-                                    return commonPipelineEnvironment.getMtarFilePath()
-                                }
-                                
-                                return this
-                                '''}
+             execute(){
+               mtaBuild buildTarget: 'NEO'
+               return commonPipelineEnvironment.getMtarFilePath()
+             }
+
+             return this
+             '''}
     }
 
     private mtaJarLocationAsParameterPipeline(){
         { -> '''
-                                @Library('piper-library-os')
+             @Library('piper-library-os')
 
-                                execute(){
-                                    mtaBuild mtaJarLocation: '/etc/mta', buildTarget: 'NEO'
-                                }
-                                
-                                return this
-                                '''}
+             execute(){
+               mtaBuild mtaJarLocation: '/etc/mta', buildTarget: 'NEO'
+             }
+
+             return this
+             '''}
     }
 
     private withSurroundingDirPipeline(){
-        { ->'''
-                                @Library('piper-library-os')
+        { -> '''
+             @Library('piper-library-os')
 
-                                execute(dirPath){
-                                    dir("${dirPath}"){
-                                        mtaBuild buildTarget: 'NEO'
-                                    }
-                                }
-                                
-                                return this
-                                '''}
+             execute(dirPath){
+               dir("${dirPath}"){
+                 mtaBuild buildTarget: 'NEO'
+               }
+             }
+
+             return this
+             '''}
     }
 
 
     private noBuildTargetPipeline(){
-        { ->   '''
-                                @Library('piper-library-os')
+        { -> '''
+             @Library('piper-library-os')
 
-                                execute(){
-                                    mtaBuild()
-                                }
-                                
-                                return this
-                                '''}
+             execute(){
+               mtaBuild()
+             }
+
+             return this
+            '''}
     }
 
 

@@ -159,95 +159,95 @@ class NeoDeploymentTest extends PiperTestBase {
 
 
     private defaultPipeline(){
-    { ->   """
-                                @Library('piper-library-os')
+    { -> """
+         @Library('piper-library-os')
 
-                                execute(archivePath, neoCredentialsId) {
-                                
-                                  commonPipelineEnvironment.setConfigProperty('DEPLOY_HOST', 'test.deploy.host.com')
-                                  commonPipelineEnvironment.setConfigProperty('CI_DEPLOY_ACCOUNT', 'trialuser123')
-                                
-                                  node() {
-                                    neoDeploy script: this, archivePath: archivePath, neoCredentialsId: neoCredentialsId
-                                  }
-                                
-                                }
-                                
-                                return this
-                                """}
+         execute(archivePath, neoCredentialsId) {
+
+           commonPipelineEnvironment.setConfigProperty('DEPLOY_HOST', 'test.deploy.host.com')
+           commonPipelineEnvironment.setConfigProperty('CI_DEPLOY_ACCOUNT', 'trialuser123')
+
+           node() {
+             neoDeploy script: this, archivePath: archivePath, neoCredentialsId: neoCredentialsId
+           }
+
+         }
+
+         return this
+         """}
     }
 
     private noCredentialsIdPipeline(){
-        { ->"""
-                                @Library('piper-library-os')
-                                
-                                execute(archivePath) {
-                                
-                                  commonPipelineEnvironment.setConfigProperty('DEPLOY_HOST', 'test.deploy.host.com')
-                                  commonPipelineEnvironment.setConfigProperty('CI_DEPLOY_ACCOUNT', 'trialuser123')
-                                
-                                  node() {
-                                    neoDeploy script: this, archivePath: archivePath
-                                  }
-                                
-                                }
-                                
-                                return this
-                                """ }
+        { -> """
+             @Library('piper-library-os')
+
+             execute(archivePath) {
+
+               commonPipelineEnvironment.setConfigProperty('DEPLOY_HOST', 'test.deploy.host.com')
+               commonPipelineEnvironment.setConfigProperty('CI_DEPLOY_ACCOUNT', 'trialuser123')
+
+               node() {
+                 neoDeploy script: this, archivePath: archivePath
+               }
+
+             }
+
+            return this
+            """ }
     }
 
     private neoHomeParameterPipeline(){
-        { ->"""
-                                @Library('piper-library-os')
-                                
-                                execute(archivePath, neoCredentialsId) {
-                                
-                                  commonPipelineEnvironment.setConfigProperty('DEPLOY_HOST', 'test.deploy.host.com')
-                                  commonPipelineEnvironment.setConfigProperty('CI_DEPLOY_ACCOUNT', 'trialuser123')
-                                
-                                  node() {
-                                    neoDeploy script: this, archivePath: archivePath, neoCredentialsId: neoCredentialsId, neoHome: '/etc/neo'
-                                  }
-                                
-                                }
-                                
-                                return this
-                                """ }
+        { -> """
+             @Library('piper-library-os')
+
+             execute(archivePath, neoCredentialsId) {
+
+               commonPipelineEnvironment.setConfigProperty('DEPLOY_HOST', 'test.deploy.host.com')
+               commonPipelineEnvironment.setConfigProperty('CI_DEPLOY_ACCOUNT', 'trialuser123')
+
+               node() {
+                 neoDeploy script: this, archivePath: archivePath, neoCredentialsId: neoCredentialsId, neoHome: '/etc/neo'
+               }
+
+             }
+
+             return this
+             """ }
     }
 
     private noArchivePathPipeline(){
         { -> """
-                                @Library('piper-library-os')
-                                
-                                execute() {
-                                
-                                  commonPipelineEnvironment.setConfigProperty('DEPLOY_HOST', 'test.deploy.host.com')
-                                  commonPipelineEnvironment.setConfigProperty('CI_DEPLOY_ACCOUNT', 'trialuser123')
-                                
-                                  node() {
-                                    neoDeploy script: this
-                                  }
-                                
-                                }
-                                
-                                return this
-                                """ }
+             @Library('piper-library-os')
+
+             execute() {
+
+               commonPipelineEnvironment.setConfigProperty('DEPLOY_HOST', 'test.deploy.host.com')
+               commonPipelineEnvironment.setConfigProperty('CI_DEPLOY_ACCOUNT', 'trialuser123')
+
+               node() {
+                 neoDeploy script: this
+               }
+
+            }
+
+            return this
+            """ }
     }
 
     private noScriptPipeline(){
-    { ->    """
-                                @Library('piper-library-os')
-                                
-                                execute(archivePath) {
-                                
-                                  node() {
-                                    neoDeploy archivePath: archivePath
-                                  }
-                                
-                                }
-                                
-                                return this
-                                """ }
+    { -> """
+         @Library('piper-library-os')
+
+         execute(archivePath) {
+
+           node() {
+             neoDeploy archivePath: archivePath
+           }
+
+         }
+
+         return this
+         """ }
     }
 
 }
