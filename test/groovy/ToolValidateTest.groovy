@@ -24,7 +24,7 @@ class ToolValidateTest extends PiperTestBase {
 
         super._setUp()
 
-        script = withPipeline(createPipeline())
+        script = withPipeline(defaultPipeline())
 
         notEmptyDir = tmp.newFolder('notEmptyDir')
         def path = "${notEmptyDir.getAbsolutePath()}${File.separator}test.txt"
@@ -248,7 +248,7 @@ class ToolValidateTest extends PiperTestBase {
     }
 
 
-    private createPipeline(){
+    private defaultPipeline(){
         {   -> """
                                 @Library('piper-library-os')
 
