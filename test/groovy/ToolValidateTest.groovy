@@ -250,18 +250,18 @@ class ToolValidateTest extends PiperTestBase {
 
     private defaultPipeline(){
         {   -> """
-                                @Library('piper-library-os')
+               @Library('piper-library-os')
 
-                                execute() {
+               execute() {
 
-                                  node() {
+                 node() {
 
-                                    toolValidate tool: tool, home: home
-                                  }
-                                }
+                   toolValidate tool: tool, home: home
+                 }
+               }
 
-                                return this
-                                """}
+               return this
+               """}
     }
 
     private getNoVersion(Map m) { 
