@@ -14,13 +14,14 @@ pages:
         - Version: scripts/version.md
     - 'Required Plugins': jenkins/requiredPlugins.md
 
-theme: 'material'
-extra:
-    logo: 'images/piper_head_white.png'
-    site_favicon: 'images/favicon.ico'
+theme: 
+    name: 'material'
     palette:
       primary: 'teal'
       accent: 'purple'
+    logo: 'images/piper_head_white.png'
+    favicon: 'images/favicon.ico'
+extra:
     font:
       text: 'Slabo 13px'
       code: 'Ubuntu Mono'
