@@ -37,7 +37,7 @@ class UtilsTest {
     }
 
     @Test
-    void valueGetmandatoryParameterTest() {
+    void valueGetMandatoryParameterTest() {
 
         parameters.put('test', 'value')
 
