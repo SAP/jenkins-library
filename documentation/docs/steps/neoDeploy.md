@@ -47,7 +47,7 @@ none
 
 * `Exception`
     * If `archivePath` is not provided.
-* `AbortException
+* `AbortException`
     * If neo-java-web-sdk is not installed, or `neoHome`is wrong.
     * If `deployHost` is wrong.
     * If `deployAccount` is wrong.
