@@ -20,9 +20,9 @@ class ToolValidateTest extends PiperTestBase {
 
 
     @Before
-    void setup() {
+    void setUp() {
 
-        super._setUp()
+        super.setUp()
 
         script = withPipeline(defaultPipeline())
 

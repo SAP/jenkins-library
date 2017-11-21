@@ -21,9 +21,9 @@ class NeoDeploymentTest extends PiperTestBase {
     def archivePath
 
     @Before
-    void setup() {
+    void setUp() {
 
-        super._setUp()
+        super.setUp()
 
         archivePath = "${tmp.newFolder("workspace").toURI().getPath()}archiveName.mtar"
 
