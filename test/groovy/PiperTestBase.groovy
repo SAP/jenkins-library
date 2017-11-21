@@ -33,7 +33,7 @@ public class PiperTestBase extends BasePipelineTest {
     }
 
     protected withPipeline(p) {
-        pipeline << p()
+        pipeline << p
         loadScript(pipeline.toURI().getPath())
     }
 
