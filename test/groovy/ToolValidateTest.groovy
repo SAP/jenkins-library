@@ -249,7 +249,7 @@ class ToolValidateTest extends PiperTestBase {
 
 
     private defaultPipeline(){
-        {   -> """
+        return """
                @Library('piper-library-os')
 
                execute() {
@@ -261,7 +261,7 @@ class ToolValidateTest extends PiperTestBase {
                }
 
                return this
-               """}
+               """
     }
 
     private getNoVersion(Map m) { 
