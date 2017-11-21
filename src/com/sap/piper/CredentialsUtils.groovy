@@ -90,6 +90,9 @@ def getCredentialsIdFromJobParameters(filterPattern = ~'.*', ignorePattern = nul
     return credentialsId
 }
 
+/*
+ * Do not remove/inline this method. The tests relies on it.
+ */
 def retrieveScm() {
     return scm
 }
