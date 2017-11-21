@@ -15,7 +15,7 @@ public class PiperTestBase extends BasePipelineTest {
 
     protected messages = [], shellCalls = []
 
-    protected final void _setUp() {
+    void setUp() {
 
         super.setUp()
 

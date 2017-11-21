@@ -22,8 +22,9 @@ public class MTABuildTest extends PiperTestBase {
 
 
     @Before
-    public void setup(){
-        super._setUp()
+    void setUp() {
+
+        super.setUp()
         currentDir = tmp.newFolder().toURI().getPath()[0..-2] //omit final '/'
         otherDir = tmp.newFolder().toURI().getPath()[0..-2] //omit final '/'
 
