@@ -5,15 +5,10 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 
-import com.lesfurets.jenkins.unit.BasePipelineTest
 import org.junit.rules.ExpectedException
 import org.junit.rules.TemporaryFolder
 
-import static com.lesfurets.jenkins.unit.global.lib.LibraryConfiguration.library
-
-import static ProjectSource.projectSource
-
-public class MTABuildTest extends BasePipelineTest {
+public class MTABuildTest extends PiperTestBase {
 
     @Rule
     public ExpectedException thrown = new ExpectedException()
@@ -21,34 +16,18 @@ public class MTABuildTest extends BasePipelineTest {
     @Rule
     public TemporaryFolder tmp = new TemporaryFolder()
 
-    def shellCalls = []
-    def echoes = []
     def currentDir
     def otherDir
-    def pipeline
     def mtaBuildShEnv
 
 
     @Before
-    public void setup(){
-        super.setUp()
+    void setUp() {
 
+        super.setUp()
         currentDir = tmp.newFolder().toURI().getPath()[0..-2] //omit final '/'
         otherDir = tmp.newFolder().toURI().getPath()[0..-2] //omit final '/'
-        pipeline = "${tmp.newFolder("pipeline").toURI().getPath()}pipeline"
 
-        def piperLib = library()
-                .name('piper-library-os')
-                .retriever(projectSource())
-                .targetPath('clonePath/is/not/necessary')
-                .defaultVersion('<irrelevant>')
-                .allowOverride(true)
-                .implicit(false)
-                .build()
-        helper.registerSharedLibrary(piperLib)
-
-        helper.registerAllowedMethod('sh', [String], {s -> shellCalls.add(s)} )
-        helper.registerAllowedMethod('echo', [String], {s -> echoes.add(s)} )
         helper.registerAllowedMethod('readYaml', [Map], {
             m ->
                 return new Yaml().load((m.file as File).text)
@@ -80,9 +59,7 @@ public class MTABuildTest extends BasePipelineTest {
 
         new File("${currentDir}/mta.yaml") << defaultMtaYaml()
 
-        defaultPipeline()
-        def script = loadScript(pipeline)
-        def mtarFilePath = script.execute()
+        def mtarFilePath = withPipeline(defaultPipeline()).execute()
 
         assert shellCalls[0] =~ /sed -ie "s\/\\\$\{timestamp\}\/`date \+%Y%m%d%H%M%S`\/g" ".*\/mta.yaml"$/
 
@@ -92,7 +69,7 @@ public class MTABuildTest extends BasePipelineTest {
 
         assert mtarFilePath == "${currentDir}/com.mycompany.northwind.mtar"
 
-        assert echoes[1] == "[mtaBuild] MTA JAR \"/opt/mta/mta.jar\" retrieved from environment."
+        assert messages[1] == "[mtaBuild] MTA JAR \"/opt/mta/mta.jar\" retrieved from environment."
     }
 
 
@@ -103,9 +80,7 @@ public class MTABuildTest extends BasePipelineTest {
 
         new File("${currentDir}/mta.yaml") << defaultMtaYaml()
 
-        returnMtarFilePathFromCommonPipelineEnvironmentPipeline()
-        def script = loadScript(pipeline)
-        def mtarFilePath = script.execute()
+        def mtarFilePath = withPipeline(returnMtarFilePathFromCommonPipelineEnvironmentPipeline()).execute()
 
         assert shellCalls[0] =~ /sed -ie "s\/\\\$\{timestamp\}\/`date \+%Y%m%d%H%M%S`\/g" ".*\/mta.yaml"$/
 
@@ -115,7 +90,7 @@ public class MTABuildTest extends BasePipelineTest {
 
         assert mtarFilePath == "${currentDir}/com.mycompany.northwind.mtar"
 
-        assert echoes[1] == "[mtaBuild] MTA JAR \"/opt/mta/mta.jar\" retrieved from environment."
+        assert messages[1] == "[mtaBuild] MTA JAR \"/opt/mta/mta.jar\" retrieved from environment."
     }
 
 
@@ -128,9 +103,7 @@ public class MTABuildTest extends BasePipelineTest {
         new File("${currentDir}/${newDirName}").mkdirs()
         new File("${currentDir}/${newDirName}/mta.yaml") << defaultMtaYaml()
 
-        withSurroundingDirPipeline()
-        def script = loadScript(pipeline)
-        def mtarFilePath = script.execute(newDirName)
+        def mtarFilePath = withPipeline(withSurroundingDirPipeline()).execute(newDirName)
 
         assert shellCalls[0] =~ /sed -ie "s\/\\\$\{timestamp\}\/`date \+%Y%m%d%H%M%S`\/g" ".*\/newDir\/mta.yaml"$/
 
@@ -140,7 +113,7 @@ public class MTABuildTest extends BasePipelineTest {
 
         assert mtarFilePath == "${currentDir}/com.mycompany.northwind.mtar"
 
-        assert echoes[1] == "[mtaBuild] MTA JAR \"/opt/mta/mta.jar\" retrieved from environment."
+        assert messages[1] == "[mtaBuild] MTA JAR \"/opt/mta/mta.jar\" retrieved from environment."
     }
 
     @Test
@@ -148,9 +121,7 @@ public class MTABuildTest extends BasePipelineTest {
 
         new File("${currentDir}/mta.yaml") << defaultMtaYaml()
 
-        defaultPipeline()
-        def script = loadScript(pipeline)
-        def mtarFilePath = script.execute()
+        def mtarFilePath = withPipeline(defaultPipeline()).execute()
 
         assert shellCalls[0] =~ /sed -ie "s\/\\\$\{timestamp\}\/`date \+%Y%m%d%H%M%S`\/g" ".*\/mta.yaml"$/
 
@@ -160,7 +131,7 @@ public class MTABuildTest extends BasePipelineTest {
 
         assert mtarFilePath == "${currentDir}/com.mycompany.northwind.mtar"
 
-        assert echoes[1] == "[mtaBuild] Using MTA JAR from current working directory."
+        assert messages[1] == "[mtaBuild] Using MTA JAR from current working directory."
     }
 
 
@@ -169,9 +140,7 @@ public class MTABuildTest extends BasePipelineTest {
 
         new File("${currentDir}/mta.yaml") << defaultMtaYaml()
 
-        mtaJarLocationAsParameterPipeline()
-        def script = loadScript(pipeline)
-        def mtarFilePath = script.execute()
+        def mtarFilePath = withPipeline(mtaJarLocationAsParameterPipeline()).execute()
 
         assert shellCalls[0] =~ /sed -ie "s\/\\\$\{timestamp\}\/`date \+%Y%m%d%H%M%S`\/g" ".*\/mta.yaml"$/
 
@@ -181,7 +150,7 @@ public class MTABuildTest extends BasePipelineTest {
 
         assert mtarFilePath == "${currentDir}/com.mycompany.northwind.mtar"
 
-        assert echoes[1] == "[mtaBuild] MTA JAR \"/etc/mta/mta.jar\" retrieved from parameters."
+        assert messages[1] == "[mtaBuild] MTA JAR \"/etc/mta/mta.jar\" retrieved from parameters."
     }
 
 
@@ -189,9 +158,7 @@ public class MTABuildTest extends BasePipelineTest {
     public void noMtaPresentTest(){
         thrown.expect(FileNotFoundException)
 
-        defaultPipeline()
-        def script = loadScript(pipeline)
-        script.execute()
+        withPipeline(defaultPipeline()).execute()
     }
 
 
@@ -202,9 +169,7 @@ public class MTABuildTest extends BasePipelineTest {
 
         new File("${currentDir}/mta.yaml") << badMtaYaml()
 
-        defaultPipeline()
-        def script = loadScript(pipeline)
-        script.execute()
+        withPipeline(defaultPipeline()).execute()
     }
 
 
@@ -215,9 +180,7 @@ public class MTABuildTest extends BasePipelineTest {
 
         new File("${currentDir}/mta.yaml") << noIdMtaYaml()
 
-        defaultPipeline()
-        def script = loadScript(pipeline)
-        script.execute()
+        withPipeline(defaultPipeline()).execute()
     }
 
 
@@ -228,74 +191,71 @@ public class MTABuildTest extends BasePipelineTest {
 
         new File("${currentDir}/mta.yaml") << defaultMtaYaml()
 
-        noBuildTargetPipeline()
-        def script = loadScript(pipeline)
-        script.execute()
+        withPipeline(noBuildTargetPipeline()).execute()
     }
 
 
     private defaultPipeline(){
-        new File(pipeline) <<   '''
-                                @Library('piper-library-os')
+        return '''
+               @Library('piper-library-os')
 
-                                execute(){
-                                    mtaBuild buildTarget: 'NEO'
-                                }
-                                
-                                return this
-                                '''
+               execute(){
+                 mtaBuild buildTarget: 'NEO'
+               }
+
+               return this
+               '''
     }
 
     private returnMtarFilePathFromCommonPipelineEnvironmentPipeline(){
-        new File(pipeline) <<   '''
-                                @Library('piper-library-os')
+        return '''
+               @Library('piper-library-os')
 
-                                execute(){
-                                    mtaBuild buildTarget: 'NEO'
-                                    return commonPipelineEnvironment.getMtarFilePath()
-                                }
-                                
-                                return this
-                                '''
+               execute(){
+                 mtaBuild buildTarget: 'NEO'
+                 return commonPipelineEnvironment.getMtarFilePath()
+               }
+
+               return this
+               '''
     }
 
     private mtaJarLocationAsParameterPipeline(){
-        new File(pipeline) <<   '''
-                                @Library('piper-library-os')
+        return '''
+               @Library('piper-library-os')
 
-                                execute(){
-                                    mtaBuild mtaJarLocation: '/etc/mta', buildTarget: 'NEO'
-                                }
-                                
-                                return this
-                                '''
+               execute(){
+                 mtaBuild mtaJarLocation: '/etc/mta', buildTarget: 'NEO'
+               }
+
+               return this
+               '''
     }
 
     private withSurroundingDirPipeline(){
-        new File(pipeline) <<   '''
-                                @Library('piper-library-os')
+        return '''
+               @Library('piper-library-os')
 
-                                execute(dirPath){
-                                    dir("${dirPath}"){
-                                        mtaBuild buildTarget: 'NEO'
-                                    }
-                                }
-                                
-                                return this
-                                '''
+               execute(dirPath){
+                 dir("${dirPath}"){
+                   mtaBuild buildTarget: 'NEO'
+                 }
+               }
+
+               return this
+               '''
     }
 
-
     private noBuildTargetPipeline(){
-        new File(pipeline) <<   '''
-                                @Library('piper-library-os')
+        return '''
+               @Library('piper-library-os')
 
-                                execute(){
-                                    mtaBuild()
-                                }
-                                
-                                return this
-                                '''
+               execute(){
+                 mtaBuild()
+               }
+
+               return this
+               '''
     }
 
 
