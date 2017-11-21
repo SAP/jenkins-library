@@ -1,6 +1,3 @@
-import static com.lesfurets.jenkins.unit.global.lib.LibraryConfiguration.library
-import static ProjectSource.projectSource
-
 import org.apache.commons.exec.*
 import hudson.AbortException
 import org.junit.Before
@@ -8,10 +5,8 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.ExpectedException
 import org.junit.rules.TemporaryFolder
-import com.lesfurets.jenkins.unit.BasePipelineTest
 
-
-class ToolValidateTest extends BasePipelineTest {
+class ToolValidateTest extends PiperTestBase {
 
 
     @Rule
@@ -21,31 +16,15 @@ class ToolValidateTest extends BasePipelineTest {
     public TemporaryFolder tmp = new TemporaryFolder()
 
     private notEmptyDir
-    private messages = []
     private script
 
 
     @Before
-    void setup() {
+    void setUp() {
 
         super.setUp()
 
-        def piperLib = library()
-                .name('piper-library-os')
-                .retriever(projectSource())
-                .targetPath('clonePath/is/not/necessary')
-                .defaultVersion('irrelevant')
-                .allowOverride(true)
-                .implicit(false)
-                .build()
-
-        helper.registerSharedLibrary(piperLib)
-
-        helper.registerAllowedMethod('echo', [String], {s -> messages.add(s)})
-
-        def pipelinePath = "${tmp.newFolder("pipeline").toURI().getPath()}pipeline"
-        createPipeline(pipelinePath)
-        script = loadScript(pipelinePath)
+        script = withPipeline(defaultPipeline())
 
         notEmptyDir = tmp.newFolder('notEmptyDir')
         def path = "${notEmptyDir.getAbsolutePath()}${File.separator}test.txt"
@@ -269,20 +248,20 @@ class ToolValidateTest extends BasePipelineTest {
     }
 
 
-    private createPipeline(pipelinePath){
-        new File(pipelinePath) <<   """
-                                @Library('piper-library-os')
+    private defaultPipeline(){
+        return """
+               @Library('piper-library-os')
 
-                                execute() {
+               execute() {
 
-                                  node() {
+                 node() {
 
-                                    toolValidate tool: tool, home: home
-                                  }
-                                }
+                   toolValidate tool: tool, home: home
+                 }
+               }
 
-                                return this
-                                """
+               return this
+               """
     }
 
     private getNoVersion(Map m) { 

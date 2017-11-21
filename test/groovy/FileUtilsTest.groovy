@@ -23,7 +23,7 @@ class FileUtilsTest {
 
 
     @Before
-    void setup() {
+    void setUp() {
 
         emptyDir = tmp.newFolder('emptyDir')
         notEmptyDir = tmp.newFolder('notEmptyDir')
