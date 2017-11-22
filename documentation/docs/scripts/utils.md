@@ -47,29 +47,3 @@ def parameters = [DEPLOY_ACCOUNT: 'deploy-account']
 assert utils.getMandatoryParameter(parameters, 'DEPLOY_ACCOUNT', null) == 'deploy-account'
 assert utils.getMandatoryParameter(parameters, 'DEPLOY_USER', 'john_doe') == 'john_doe'
 ```
-
-### retrieveGitCoordinates(script)
-
-#### Description
-Retrieves the git-remote-url and git-branch. The parameters 'GIT_URL' and 'GIT_BRANCH' are retrieved from Jenkins job configuration. If these are not set, the git-url and git-branch are retrieved from the same repository where the Jenkinsfile resides.
-
-
-#### Parameters
-
-* `script` The script calling the method. Basically the `Jenkinsfile`. It is assumed that the script provides access to the parameters defined when launching the build, especially `GIT_URL`and `GIT_BRANCH`.
-
-#### Return value
-
-A map containing git-url and git-branch: `[url: gitUrl, branch: gitBranch]`
-
-## Exceptions
-
-* `AbortException`: if only one of `GIT_URL`,  `GIT_BRANCH` is set in the Jenkins job configuration.
-
-#### Example
-
-```groovy
-def gitCoordinates = new Utils().retrieveGitCoordinates(this)
-def gitUrl = gitCoordinates.url
-def gitBranch = gitCoordinates.branch
-```
