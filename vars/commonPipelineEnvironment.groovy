@@ -2,6 +2,7 @@ class commonPipelineEnvironment implements Serializable {
     private Map configProperties = [:]
 
     private String mtarFilePath
+    private Map gitCoordinates
 
     def setConfigProperties(map) {
         configProperties = map
@@ -23,5 +24,11 @@ class commonPipelineEnvironment implements Serializable {
     }
     void setMtarFilePath(mtarFilePath) {
         this.mtarFilePath = mtarFilePath
+    }
+    def getGitCoordinates() {
+        return gitCoordinates
+    }
+    void setGitCoordinates(gitCoordinates) {
+        this.gitCoordinates = gitCoordinates
     }
 }
