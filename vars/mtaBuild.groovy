@@ -1,11 +1,6 @@
 import com.sap.piper.Utils
 
-/**
- * mtaBuild
- * Builds Fiori app with Multitarget Archiver
- * Prerequisite: InitializeNpm needs to be called beforehand
- *
- */
+
 def call(Map parameters = [:]) {
 
     handlePipelineStepErrors (stepName: 'mtaBuild', stepParameters: parameters) {

@@ -6,6 +6,7 @@ Provides project specific settings.
 ## Prerequisites
 none
 
+
 ## Method details
 
 ### getConfigProperties()
@@ -27,18 +28,18 @@ none
 none
 
 #### Example
-
 ```groovy
 commonPipelineEnvironment.getConfigProperties()
 ```
 
+
 ### setConfigProperties(configuration)
 
 #### Description
-Sets the map of configuration properties. An existing map is overwritten.
+Sets the map of configuration properties. Any existing map is overwritten.
 
 #### Parameters
-* configuration - A map containing the new configuration
+* `configuration` - A map containing the new configuration
 
 #### Return value
 none
@@ -54,16 +55,17 @@ none
 commonPipelineEnvironment.setConfigProperties([DEPLOY_HOST: 'deploy-host.com', DEPLOY_ACCOUNT: 'deploy-account'])
 ```
 
-### getConfigProperty(key)
+
+### getConfigProperty(property)
 
 #### Description
 Gets a specific value from the configuration property.
 
 #### Parameters
-* key - The key of the property.
+* `property` - The key of the property.
 
 #### Return value
-* The value associated with key `key`. `null` is returned in case the property does not exist.
+* The value associated with key `property`. `null` is returned in case the property does not exist.
 
 #### Side effects
 none
@@ -76,14 +78,15 @@ none
 commonPipelineEnvironment.getConfigProperty('DEPLOY_HOST')
 ```
 
-### setConfigProperty(key, value)
+
+### setConfigProperty(property, value)
 
 #### Description
-Sets property `key` with value `value`. Any existing property with key `key`is overwritten.
+Sets property `property` with value `value`. Any existing property with key `property` is overwritten.
 
 #### Parameters
-* `key` The key
-* `value` The value
+* `property` - The key of the property.
+* `value` - The value of the property.
 
 #### Return value
 none
@@ -95,18 +98,21 @@ none
 none
 
 #### Example
-
 ```groovy
 commonPipelineEnvironment.setConfigProperty('DEPLOY_HOST', 'my-deploy-host.com')
 ```
 
+
 ### getMtarFileName()
 
 #### Description
-Returns the name of the mtar file.
+Returns the path of the mtar archive file.
 
 #### Parameters
 none
+
+#### Return value
+The path of the mtar archive file.
 
 #### Side effects
 none
@@ -115,7 +121,6 @@ none
 none
 
 #### Example
-
 ```groovy
 commonPipelineEnvironment.getMtarFileName()
 ```
@@ -123,10 +128,10 @@ commonPipelineEnvironment.getMtarFileName()
 ### setMtarFileName(name)
 
 #### Description
-Sets the name of the mtar file. Any old value is discarded.
+Sets the path of the mtar archive file. Any old value is discarded.
 
 #### Parameters
-The name of the mtar file name.
+* `mtarFilePath` - The path of the mtar archive file name.
 
 #### Side effects
 none
@@ -135,7 +140,6 @@ none
 none
 
 #### Example
-
 ```groovy
-commonPipelineEnvironment.setMtarFileName('foo')
+commonPipelineEnvironment.setMtarFileName('path/to/foo.mtar')
 ```
