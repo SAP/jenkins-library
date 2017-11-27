@@ -1,6 +1,9 @@
 class commonPipelineEnvironment implements Serializable {
     private Map configProperties = [:]
 
+    Map defaultConfiguration = [:]
+    Map configuration = [:]
+
     private String mtarFilePath
 
     def setConfigProperties(map) {
