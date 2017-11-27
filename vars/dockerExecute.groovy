@@ -44,7 +44,7 @@ private getDockerOptions(Map dockerEnvVars, Map dockerVolumeBind, def dockerOpti
     }
 
     for (String envVar : specialEnvironments) {
-        if (dockerEnvVars == null || !dockerEnvVars.containsKey('envVar')) {
+        if (dockerEnvVars == null || !dockerEnvVars.containsKey(envVar)) {
             options += " --env ${envVar}"
         }
     }
