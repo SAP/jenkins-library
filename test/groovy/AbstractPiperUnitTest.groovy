@@ -1,4 +1,5 @@
 import com.lesfurets.jenkins.unit.BasePipelineTest
+import com.sap.piper.DefaultValueCache
 import org.junit.Before
 import org.yaml.snakeyaml.Yaml
 
@@ -9,6 +10,8 @@ class AbstractPiperUnitTest extends BasePipelineTest {
     @Before
     void setUp() {
         super.setUp()
+
+        DefaultValueCache.reset()
 
         def library = library()
             .name('piper-library-os')

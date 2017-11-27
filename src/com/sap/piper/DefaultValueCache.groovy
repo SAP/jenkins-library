@@ -13,11 +13,15 @@ class DefaultValueCache implements Serializable {
         return instance
     }
 
-    static createInstace(Map defaultValues){
+    static createInstance(Map defaultValues){
         instance = new DefaultValueCache(defaultValues)
     }
 
     Map getDefaultValues(){
         return defaultValues
+    }
+
+    static reset(){
+        instance = null
     }
 }

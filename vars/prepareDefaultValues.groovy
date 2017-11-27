@@ -4,7 +4,7 @@ def call(Map parameters = [:]) {
     handlePipelineStepErrors (stepName: 'prepareDefaultValues', stepParameters: parameters) {
         if(!DefaultValueCache.getInstance()) {
             Map defaultValues  = readYaml text: libraryResource('default_pipeline_environment.yml')
-            DefaultValueCache.createInstace(defaultValues)
+            DefaultValueCache.createInstance(defaultValues)
         }
     }
 }
