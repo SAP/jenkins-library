@@ -24,7 +24,7 @@ class MavenExecuteTest extends AbstractPiperUnitTest {
 
     @Test
     void testExecuteBasicMavenCommand() throws Exception {
-        def script = loadScript("test/resources/pipelines/mavenExecuteTest/executeBasicMavenCommand.groovy",)
+        def script = loadScript("test/resources/pipelines/mavenExecuteTest/executeBasicMavenCommand.groovy")
             script.execute()
             TestCase.assertEquals('maven:3.5-jdk-7', dockerParameters.dockerImage)
             TestCase.assertTrue(shellCalls.contains('mvn clean install'))
@@ -32,7 +32,7 @@ class MavenExecuteTest extends AbstractPiperUnitTest {
 
     @Test
     void testExecuteMavenCommandWithParameter() throws Exception {
-        def script = loadScript("test/resources/pipelines/mavenExecuteTest/executeMavenCommandWithParameters.groovy",)
+        def script = loadScript("test/resources/pipelines/mavenExecuteTest/executeMavenCommandWithParameters.groovy")
         script.execute()
         TestCase.assertEquals('maven:3.5-jdk-8-alpine', dockerParameters.dockerImage)
         String mvnCommand = 'mvn --global-settings globalSettingsFile.xml -Dmaven.repo.local=m2Path --settings projectSettingsFile.xml --file pom.xml -o clean install -Dmaven.tests.skip=true'

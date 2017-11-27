@@ -20,17 +20,17 @@ class DockerExecuteTest extends AbstractPiperUnitTest {
 
     @Test
     void testExecuteInsideDocker() throws Exception {
-        def script = loadScript("test/resources/pipelines/dockerExecuteTest/executeInsideDocker.groovy",)
-            script.execute()
-            TestCase.assertEquals('maven:3.5-jdk-8-alpine', docker.getImageName())
-            TestCase.assertTrue(docker.isImagePulled())
-            TestCase.assertEquals(' --env http_proxy --env https_proxy --env no_proxy --env HTTP_PROXY --env HTTPS_PROXY --env NO_PROXY', docker.getParameters())
-            TestCase.assertTrue(echos.contains('Inside Docker'))
+        def script = loadScript("test/resources/pipelines/dockerExecuteTest/executeInsideDocker.groovy")
+        script.execute()
+        TestCase.assertEquals('maven:3.5-jdk-8-alpine', docker.getImageName())
+        TestCase.assertTrue(docker.isImagePulled())
+        TestCase.assertEquals(' --env http_proxy --env https_proxy --env no_proxy --env HTTP_PROXY --env HTTPS_PROXY --env NO_PROXY', docker.getParameters())
+        TestCase.assertTrue(echos.contains('Inside Docker'))
     }
 
     @Test
     void testExecuteInsideDockerWithParameters() throws Exception {
-        def script = loadScript("test/resources/pipelines/dockerExecuteTest/executeInsideDockerWithParameters.groovy",)
+        def script = loadScript("test/resources/pipelines/dockerExecuteTest/executeInsideDockerWithParameters.groovy")
 
         script.execute()
         TestCase.assertTrue(docker.getParameters().contains(' --env https_proxy '))
