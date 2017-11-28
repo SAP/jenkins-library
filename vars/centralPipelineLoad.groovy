@@ -22,11 +22,8 @@ def call(Map parameters = [:]) {
         // credentials needs to be configured in Jenkins accordingly.
         def credentialsId = utils.getMandatoryParameter(parameters, 'credentialsId', '')
 
-        // temporary folder used for storing the central jenkins file locally.
-        def temporaryPipelineFolder = "pipeline-${UUID.randomUUID().toString()}"
-
-        deleteDir()
-        dir(temporaryPipelineFolder) {
+        node() {
+            deleteDir()
 
             checkout([$class: 'GitSCM', branches: [[name: branch]],
                       doGenerateSubmoduleConfigurations: false,
@@ -38,8 +35,8 @@ def call(Map parameters = [:]) {
                                            url: repo
                                           ]]
             ])
-        }
 
-        load "${temporaryPipelineFolder}/${path}"
+            load path
+        }
     }
 }

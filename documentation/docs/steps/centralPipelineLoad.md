@@ -27,7 +27,7 @@ none
 
 ## Side effects
 
-The Jenkinsfile is checked out to a temporary folder in the Jenkins workspace. This folder starts with 'pipeline-' followed by a random UUID.
+none
 
 ## Exceptions
 
