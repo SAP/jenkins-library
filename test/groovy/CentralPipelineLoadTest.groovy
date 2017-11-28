@@ -24,11 +24,6 @@ class CentralPipelineLoadTest extends PiperTestBase {
         load = null
 
         helper.registerAllowedMethod('deleteDir', [], null)
-        helper.registerAllowedMethod("dir", [String, Closure], {
-            dirName, c ->
-                pipelinePath = dirName
-                c()
-        })
         helper.registerAllowedMethod('checkout', [Map], { m ->
             checkoutParameters.branch = m.branches[0].name
             checkoutParameters.repoUrl = m.userRemoteConfigs[0].url
@@ -44,7 +39,7 @@ class CentralPipelineLoadTest extends PiperTestBase {
     void straightForwardTest() {
 
         withPipeline(defaultPipeline()).execute()
-        assert load == "${pipelinePath}/Jenkinsfile"
+        assert load == "Jenkinsfile"
         assert checkoutParameters.branch == 'master'
         assert checkoutParameters.repoUrl == "https://test.com/myRepo.git"
         assert checkoutParameters.credentialsId == ''
@@ -56,7 +51,7 @@ class CentralPipelineLoadTest extends PiperTestBase {
     void parameterizeTest() {
 
         withPipeline(parameterizePipeline()).execute()
-        assert load == "${pipelinePath}/path/to/Jenkinsfile"
+        assert load == "path/to/Jenkinsfile"
         assert checkoutParameters.branch == 'feature'
         assert checkoutParameters.repoUrl == "https://test.com/anotherRepo.git"
         assert checkoutParameters.credentialsId == 'abcd1234'
