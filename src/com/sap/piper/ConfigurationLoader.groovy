@@ -41,7 +41,7 @@ class ConfigurationLoader implements Serializable {
             case ConfigurationType.DEFAULT_CONFIGURATION:
                 return DefaultValueCache.getInstance()?.getDefaultValues()?.get(type)?.get(entryName) ?: [:]
             default:
-                throw new RuntimeException("Unknown configuration type: ${configType}")
+                throw new IllegalArgumentException("Unknown configuration type: ${configType}")
         }
     }
 }
