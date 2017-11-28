@@ -8,24 +8,24 @@ class ConfigurationHelper implements Serializable {
         this.config = config
     }
 
-    def getConfigProperty(property) {
-        if (config[property] != null && config[property].class == String) {
-            return config[property].trim()
+    def getConfigProperty(key) {
+        if (config[key] != null && config[key].class == String) {
+            return config[key].trim()
         }
-        return config[property]
+        return config[key]
     }
 
-    def getConfigProperty(property, defaultValue) {
-        def value = getConfigProperty(property)
+    def getConfigProperty(key, defaultValue) {
+        def value = getConfigProperty(key)
         if (value == null) {
             return defaultValue
         }
         return value
     }
 
-    def isPropertyDefined(property){
+    def isPropertyDefined(key){
 
-        def value = getConfigProperty(property)
+        def value = getConfigProperty(key)
 
         if(value == null){
             return false
