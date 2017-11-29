@@ -13,12 +13,12 @@ none
 | -------------------|-----------|-----------------|-----------------|
 | `repoUrl`          | yes       |                 |                 |
 | `branch`           | no        | 'master'        |                 |
-| `jenkinsfilePath`  | no        | 'Jenkinsfile'   |                 |
+| `path`             | no        | 'Jenkinsfile'   |                 |
 | `credentialsId`    | no        | An empty String |                 |
 
 * `repoUrl` The url to the git repository of the pipeline to be loaded.
 * `branch` The branch of the git repository from which the pipeline should be checked out.
-* `jenkinsfilePath` The path to the Jenkinsfile, inside the repository, to be loaded.
+* `path` The path to the Jenkinsfile, inside the repository, to be loaded.
 * `credentialsId` The Jenkins credentials containing user and password needed to access a private git repository.
 
 ## Return value
@@ -37,5 +37,5 @@ none
 ## Example
 
 ```groovy
-centralPipelineLoad repoUrl: "https://github.com/MyOrg/MyPipelineRepo.git", branch: 'feature1', jenkinsfilePath: 'path/to/Jenkinsfile', credentialsId: 'MY_REPO_CREDENTIALS'
+centralPipelineLoad repoUrl: "https://github.com/MyOrg/MyPipelineRepo.git", branch: 'feature1', path: 'path/to/Jenkinsfile', credentialsId: 'MY_REPO_CREDENTIALS'
 ```

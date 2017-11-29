@@ -93,7 +93,7 @@ class CentralPipelineLoadTest extends PiperTestBase {
                execute() {
 
                  node() {
-                   centralPipelineLoad repoUrl: "https://test.com/anotherRepo.git", branch: 'feature', jenkinsfilePath: 'path/to/Jenkinsfile', credentialsId: 'abcd1234'
+                   centralPipelineLoad repoUrl: "https://test.com/anotherRepo.git", branch: 'feature', path: 'path/to/Jenkinsfile', credentialsId: 'abcd1234'
                  }
 
                }
