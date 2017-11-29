@@ -1,3 +1,4 @@
+import com.sap.piper.BashUtils
 import com.sap.piper.ConfigurationLoader
 import com.sap.piper.ConfigurationMerger
 
@@ -39,12 +40,12 @@ def call(Map parameters = [:]) {
                 downloadSettingsFromUrl(globalSettingsFile)
                 globalSettingsFile = "settings.xml"
             }
-            command += " --global-settings ${globalSettingsFile}"
+            command += " --global-settings ${BashUtils.escape(globalSettingsFile)}"
         }
 
         def m2Path = configuration.m2Path
         if(m2Path?.trim()) {
-            command += " -Dmaven.repo.local=${m2Path}"
+            command += " -Dmaven.repo.local=${BashUtils.escape(m2Path)}"
         }
 
         def projectSettingsFile = configuration.projectSettingsFile
@@ -53,12 +54,12 @@ def call(Map parameters = [:]) {
                 downloadSettingsFromUrl(projectSettingsFile)
                 projectSettingsFile = "settings.xml"
             }
-            command += " --settings ${projectSettingsFile}"
+            command += " --settings ${BashUtils.escape(projectSettingsFile)}"
         }
 
         def pomPath = configuration.pomPath
         if(pomPath?.trim()){
-            command += " --file ${pomPath}"
+            command += " --file ${BashUtils.escape(pomPath)}"
         }
 
         def mavenFlags = configuration.flags
