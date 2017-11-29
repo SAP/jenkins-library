@@ -1,22 +1,22 @@
 import com.sap.piper.Utils
 
 /**
- * centralPipelineLoad
- * Load a central pipeline.
+ * externalPipelineExecute
+ * Load and executes a pipeline from another git repository.
  *
  */
 def call(Map parameters = [:]) {
 
-    handlePipelineStepErrors (stepName: 'centralPipelineLoad', stepParameters: parameters) {
+    handlePipelineStepErrors (stepName: 'externalPipelineExecute', stepParameters: parameters) {
 
         def utils = new Utils()
 
-        // The coordinates of the central pipeline script
+        // The coordinates of the pipeline script
         def repo = utils.getMandatoryParameter(parameters, 'repoUrl', null)
         def branch = utils.getMandatoryParameter(parameters, 'branch', 'master')
         def path = utils.getMandatoryParameter(parameters, 'path', 'Jenkinsfile')
 
-        // In case access to the repository containing the central pipeline
+        // In case access to the repository containing the pipeline
         // script is restricted the credentialsId of the credentials used for
         // accessing the repository needs to be provided below. The corresponding
         // credentials needs to be configured in Jenkins accordingly.
