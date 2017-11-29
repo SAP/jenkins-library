@@ -2,7 +2,7 @@ import junit.framework.TestCase
 import org.junit.Before
 import org.junit.Test
 
-class MavenExecuteTest extends AbstractPiperUnitTest {
+class MavenExecuteTest extends PiperTestBase {
 
     Map dockerParameters
     List shellCalls

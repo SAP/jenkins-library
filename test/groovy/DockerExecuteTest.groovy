@@ -2,7 +2,7 @@ import junit.framework.TestCase
 import org.junit.Before
 import org.junit.Test
 
-class DockerExecuteTest extends AbstractPiperUnitTest {
+class DockerExecuteTest extends PiperTestBase {
     private DockerMock docker
 
     String echos
