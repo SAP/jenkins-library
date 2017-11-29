@@ -14,7 +14,7 @@ def call(Map parameters = [:]) {
         // The coordinates of the central pipeline script
         def repo = utils.getMandatoryParameter(parameters, 'repoUrl', null)
         def branch = utils.getMandatoryParameter(parameters, 'branch', 'master')
-        def path = utils.getMandatoryParameter(parameters, 'jenkinsfilePath', 'Jenkinsfile')
+        def path = utils.getMandatoryParameter(parameters, 'path', 'Jenkinsfile')
 
         // In case access to the repository containing the central pipeline
         // script is restricted the credentialsId of the credentials used for
