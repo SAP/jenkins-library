@@ -8,13 +8,18 @@ pages:
         - mtaBuild: steps/mtaBuild.md
         - neoDeploy: steps/neoDeploy.md
         - setupCommonPipelineEnvironment: steps/setupCommonPipelineEnvironment.md
+        - mavenExecute: steps/mavenExecute.md
+        - dockerExecute: steps/dockerExecute.md
+        - prepareDefaultValues: steps/prepareDefaultValues.md
     - 'Library scripts':
         - FileUtils: scripts/fileUtils.md
-        - Utils: scripts/utils.md 
+        - Utils: scripts/utils.md
         - Version: scripts/version.md
+        - ConfigurationLoader: scripts/configurationLoader.md
+        - ConfigurationMerger: scripts/configurationMerger.md
     - 'Required Plugins': jenkins/requiredPlugins.md
 
-theme: 
+theme:
     name: 'material'
     palette:
       primary: 'teal'
@@ -31,7 +36,7 @@ markdown_extensions:
     - toc(permalink=true)
     - footnotes
     - pymdownx.superfences
-extra_css: 
+extra_css:
     - 'css/extra.css'
 edit_uri: edit/master/documentation/docs
 docs_dir: docs
