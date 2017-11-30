@@ -1,6 +1,9 @@
-import junit.framework.TestCase
+
 import org.junit.Before
 import org.junit.Test
+
+import static org.junit.Assert.assertEquals
+import static org.junit.Assert.assertTrue
 
 class DockerExecuteTest extends PiperTestBase {
     private DockerMock docker
@@ -22,10 +25,10 @@ class DockerExecuteTest extends PiperTestBase {
     void testExecuteInsideDocker() throws Exception {
         def script = loadScript("test/resources/pipelines/dockerExecuteTest/executeInsideDocker.groovy")
         script.execute()
-        TestCase.assertEquals('maven:3.5-jdk-8-alpine', docker.getImageName())
-        TestCase.assertTrue(docker.isImagePulled())
-        TestCase.assertEquals(' --env http_proxy --env https_proxy --env no_proxy --env HTTP_PROXY --env HTTPS_PROXY --env NO_PROXY', docker.getParameters())
-        TestCase.assertTrue(echos.contains('Inside Docker'))
+        assertEquals('maven:3.5-jdk-8-alpine', docker.getImageName())
+        assertTrue(docker.isImagePulled())
+        assertEquals(' --env http_proxy --env https_proxy --env no_proxy --env HTTP_PROXY --env HTTPS_PROXY --env NO_PROXY', docker.getParameters())
+        assertTrue(echos.contains('Inside Docker'))
     }
 
     @Test
@@ -33,10 +36,10 @@ class DockerExecuteTest extends PiperTestBase {
         def script = loadScript("test/resources/pipelines/dockerExecuteTest/executeInsideDockerWithParameters.groovy")
 
         script.execute()
-        TestCase.assertTrue(docker.getParameters().contains(' --env https_proxy '))
-        TestCase.assertTrue(docker.getParameters().contains(' --env http_proxy=http://proxy:8000'))
-        TestCase.assertTrue(docker.getParameters().contains(' -it'))
-        TestCase.assertTrue(docker.getParameters().contains(' --volume my_vol:/my_vol'))
+        assertTrue(docker.getParameters().contains(' --env https_proxy '))
+        assertTrue(docker.getParameters().contains(' --env http_proxy=http://proxy:8000'))
+        assertTrue(docker.getParameters().contains(' -it'))
+        assertTrue(docker.getParameters().contains(' --volume my_vol:/my_vol'))
     }
 
 

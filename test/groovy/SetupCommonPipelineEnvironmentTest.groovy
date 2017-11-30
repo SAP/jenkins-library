@@ -1,7 +1,9 @@
-import junit.framework.TestCase
 import org.junit.Before
 import org.junit.Test
 import org.yaml.snakeyaml.Yaml
+
+import static org.junit.Assert.assertEquals
+import static org.junit.Assert.assertNotNull
 
 class SetupCommonPipelineEnvironmentTest extends PiperTestBase {
 
@@ -31,11 +33,11 @@ class SetupCommonPipelineEnvironmentTest extends PiperTestBase {
     @Test
     void testIsConfigurationAvailable() throws Exception {
         def script = loadScript("test/resources/pipelines/setupCommonPipelineEnvironmentTest/loadConfiguration.groovy")
-            script.execute()
+        script.execute()
 
-            TestCase.assertEquals('pipeline_config.yml', usedConfigFile)
-            TestCase.assertNotNull(script.commonPipelineEnvironment.configuration)
-            TestCase.assertEquals('develop', script.commonPipelineEnvironment.configuration.general.productiveBranch)
-            TestCase.assertEquals('my-maven-docker', script.commonPipelineEnvironment.configuration.steps.mavenExecute.dockerImage)
+        assertEquals('pipeline_config.yml', usedConfigFile)
+        assertNotNull(script.commonPipelineEnvironment.configuration)
+        assertEquals('develop', script.commonPipelineEnvironment.configuration.general.productiveBranch)
+        assertEquals('my-maven-docker', script.commonPipelineEnvironment.configuration.steps.mavenExecute.dockerImage)
     }
 }
