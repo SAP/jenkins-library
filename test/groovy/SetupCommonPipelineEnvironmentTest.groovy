@@ -26,7 +26,7 @@ class SetupCommonPipelineEnvironmentTest extends PiperTestBase {
         })
 
         helper.registerAllowedMethod("fileExists", [String], { String path ->
-            return path.endsWith('pipeline_config.yml')
+            return path.endsWith('.pipeline/pipeline_config.yml')
         })
     }
 
@@ -35,7 +35,7 @@ class SetupCommonPipelineEnvironmentTest extends PiperTestBase {
         def script = loadScript("test/resources/pipelines/setupCommonPipelineEnvironmentTest/loadConfiguration.groovy")
         script.execute()
 
-        assertEquals('pipeline_config.yml', usedConfigFile)
+        assertEquals('.pipeline/pipeline_config.yml', usedConfigFile)
         assertNotNull(script.commonPipelineEnvironment.configuration)
         assertEquals('develop', script.commonPipelineEnvironment.configuration.general.productiveBranch)
         assertEquals('my-maven-docker', script.commonPipelineEnvironment.configuration.steps.mavenExecute.dockerImage)
