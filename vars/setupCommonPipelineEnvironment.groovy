@@ -2,11 +2,13 @@ def call(Map parameters = [:]) {
 
     handlePipelineStepErrors (stepName: 'setupCommonPipelineEnvironment', stepParameters: parameters) {
 
+        def script = parameters.script
+
         prepareDefaultValues script: script
 
         String configFile = parameters.get('configFile')
 
-        loadConfigurationFromFile(configFile)
+        loadConfigurationFromFile(script, configFile)
     }
 }
 
@@ -20,14 +22,14 @@ private boolean isProperties(String fileName) {
 
 private loadConfigurationFromFile(script, String configFile) {
 
-    String defaultPropertiesYmlConfigFile = '.pipeline/config.properties'
+    String defaultPropertiesConfigFile = '.pipeline/config.properties'
     String defaultYmlConfigFile = 'pipeline_config.yml'
 
     if (configFile?.trim()?.length() > 0 && isProperties(configFile)) {
         Map configMap = readProperties(file: configFile)
         script.commonPipelineEnvironment.setConfigProperties(configMap)
-    } else if (fileExists(defaultPropertiesYmlConfigFile)) {
-        Map configMap = readProperties(file: defaultPropertiesYmlConfigFile)
+    } else if (fileExists(defaultPropertiesConfigFile)) {
+        Map configMap = readProperties(file: defaultPropertiesConfigFile)
         script.commonPipelineEnvironment.setConfigProperties(configMap)
     }
 
