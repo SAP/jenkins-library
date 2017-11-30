@@ -35,7 +35,7 @@ class MavenExecuteTest extends PiperTestBase {
         def script = loadScript("test/resources/pipelines/mavenExecuteTest/executeMavenCommandWithParameters.groovy")
         script.execute()
         TestCase.assertEquals('maven:3.5-jdk-8-alpine', dockerParameters.dockerImage)
-        String mvnCommand = 'mvn --global-settings "globalSettingsFile.xml" -Dmaven.repo.local="m2Path" --settings "projectSettingsFile.xml" --file "pom.xml" -o clean install -Dmaven.tests.skip=true'
+        String mvnCommand = "mvn --global-settings 'globalSettingsFile.xml' -Dmaven.repo.local='m2Path' --settings 'projectSettingsFile.xml' --file 'pom.xml' -o clean install -Dmaven.tests.skip=true"
         TestCase.assertTrue(shellCalls.contains(mvnCommand))
     }
 }
