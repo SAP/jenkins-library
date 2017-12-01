@@ -3,6 +3,10 @@
 ## Description
 Loads a pipeline from a git repository. The idea is to set up a pipeline job in Jenkins that loads a minimal pipeline, which in turn loads the shared library and then uses this step to load the actual pipeline.
 
+A centrally maintained pipeline script (Jenkinsfile) can be re-used by
+several projects using `pipelineExecute` as outlined in the example
+below.
+
 ## Prerequisites
 
 none
