@@ -7,22 +7,26 @@ import com.sap.piper.Utils
  */
 def call(Map parameters = [:]) {
 
-    handlePipelineStepErrors (stepName: 'pipelineExecute', stepParameters: parameters) {
+    node() {
 
-        def utils = new Utils()
+        def path
 
-        // The coordinates of the pipeline script
-        def repo = utils.getMandatoryParameter(parameters, 'repoUrl', null)
-        def branch = utils.getMandatoryParameter(parameters, 'branch', 'master')
-        def path = utils.getMandatoryParameter(parameters, 'path', 'Jenkinsfile')
+        handlePipelineStepErrors (stepName: 'pipelineExecute', stepParameters: parameters) {
 
-        // In case access to the repository containing the pipeline
-        // script is restricted the credentialsId of the credentials used for
-        // accessing the repository needs to be provided below. The corresponding
-        // credentials needs to be configured in Jenkins accordingly.
-        def credentialsId = utils.getMandatoryParameter(parameters, 'credentialsId', '')
+            def utils = new Utils()
 
-        node() {
+            // The coordinates of the pipeline script
+            def repo = utils.getMandatoryParameter(parameters, 'repoUrl', null)
+            def branch = utils.getMandatoryParameter(parameters, 'branch', 'master')
+
+            path = utils.getMandatoryParameter(parameters, 'path', 'Jenkinsfile')
+
+            // In case access to the repository containing the pipeline
+            // script is restricted the credentialsId of the credentials used for
+            // accessing the repository needs to be provided below. The corresponding
+            // credentials needs to be configured in Jenkins accordingly.
+            def credentialsId = utils.getMandatoryParameter(parameters, 'credentialsId', '')
+
             deleteDir()
 
             checkout([$class: 'GitSCM', branches: [[name: branch]],
@@ -36,7 +40,7 @@ def call(Map parameters = [:]) {
                                           ]]
             ])
 
-            load path
         }
+        load path
     }
 }
