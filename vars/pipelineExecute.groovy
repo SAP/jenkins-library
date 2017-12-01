@@ -1,13 +1,13 @@
 import com.sap.piper.Utils
 
 /**
- * externalPipelineExecute
+ * pipelineExecute
  * Load and executes a pipeline from another git repository.
  *
  */
 def call(Map parameters = [:]) {
 
-    handlePipelineStepErrors (stepName: 'externalPipelineExecute', stepParameters: parameters) {
+    handlePipelineStepErrors (stepName: 'pipelineExecute', stepParameters: parameters) {
 
         def utils = new Utils()
 

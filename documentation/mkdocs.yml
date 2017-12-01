@@ -4,7 +4,7 @@ pages:
     - 'Library steps':
         - commonPipelineEnvironment: steps/commonPipelineEnvironment.md
         - handlePipelineStepErrors: steps/handlePipelineStepErrors.md
-        - externalPipelineExecute: steps/externalPipelineExecute.md
+        - pipelineExecute: steps/pipelineExecute.md
         - toolValidate: steps/toolValidate.md
         - mtaBuild: steps/mtaBuild.md
         - neoDeploy: steps/neoDeploy.md

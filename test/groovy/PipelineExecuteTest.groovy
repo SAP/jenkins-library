@@ -5,7 +5,7 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.ExpectedException
 
-class ExternalPipelineExecuteTest extends PiperTestBase {
+class PipelineExecuteTest extends PiperTestBase {
 
     @Rule
     public ExpectedException thrown = new ExpectedException().none()
@@ -77,7 +77,7 @@ class ExternalPipelineExecuteTest extends PiperTestBase {
                execute() {
 
                  node() {
-                   externalPipelineExecute repoUrl: "https://test.com/myRepo.git"
+                   pipelineExecute repoUrl: "https://test.com/myRepo.git"
                  }
 
                }
@@ -93,7 +93,7 @@ class ExternalPipelineExecuteTest extends PiperTestBase {
                execute() {
 
                  node() {
-                   externalPipelineExecute repoUrl: "https://test.com/anotherRepo.git", branch: 'feature', path: 'path/to/Jenkinsfile', credentialsId: 'abcd1234'
+                   pipelineExecute repoUrl: "https://test.com/anotherRepo.git", branch: 'feature', path: 'path/to/Jenkinsfile', credentialsId: 'abcd1234'
                  }
 
                }
@@ -109,7 +109,7 @@ class ExternalPipelineExecuteTest extends PiperTestBase {
                execute() {
 
                  node() {
-                   externalPipelineExecute()
+                   pipelineExecute()
                  }
 
                }
