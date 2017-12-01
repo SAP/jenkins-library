@@ -23,7 +23,7 @@ private boolean isProperties(String fileName) {
 private loadConfigurationFromFile(script, String configFile) {
 
     String defaultPropertiesConfigFile = '.pipeline/config.properties'
-    String defaultYmlConfigFile = '.pipeline/pipeline_config.yml'
+    String defaultYmlConfigFile = '.pipeline/config.yml'
 
     if (configFile?.trim()?.length() > 0 && isProperties(configFile)) {
         Map configMap = readProperties(file: configFile)
