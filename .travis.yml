@@ -1,0 +1,2 @@
+language: groovy
+sudo: false
