@@ -7,8 +7,9 @@ import hudson.tasks.junit.TestResult
 import org.yaml.snakeyaml.Yaml
 
 /**
- * This is a Helper class to load test data for mocks.
+ * This is a Helper class for mocking.
  *
+ * It can be used to load test data or to mock Jenkins or Maven specific objects. 
  **/
 
 class MockHelper {
@@ -115,7 +116,7 @@ class MockHelper {
     }
 
     /**
-     * Inner class to mock currentBuild return object in Utils.groovy
+     * Inner class to mock Jenkins' currentBuild return object in scripts
      */
     class MockBuild {
         TestResult testResult
