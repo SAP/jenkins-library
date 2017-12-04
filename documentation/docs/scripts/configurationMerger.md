@@ -2,10 +2,6 @@
 
 ## Description
 A helper script that can merge the configurations from multiple sources. 
-A step is usually configured by default values, configuration values from the configuration file and the parameters.
-The helper can merge these maps. 
-Default values are overwritten by configuration file values. 
-These are overwritten by parameters. 
 
 ## Static Method Details
 
@@ -13,7 +9,10 @@ These are overwritten by parameters.
 
 #### Description
 
-Returns the configuration for a specific step as map.
+A step is usually configured by default values, configuration values from the configuration file and the parameters.
+The methods can merge these sources. 
+Default values are overwritten by configuration file values. 
+These are overwritten by parameters.
 
 #### Parameters
 
@@ -28,7 +27,7 @@ Returns the configuration for a specific step as map.
 * `parameters` Parameters map given to the step
 * `parameterKeys` List of parameter names (keys) that should be considered while merging. 
 * `configurationMap` Configuration map loaded from the configuration file.
-* `configurationKeys` List of configuration (keys) that should be considered while merging. 
+* `configurationKeys` List of configuration keys that should be considered while merging. 
 * `defaults` Map of default values, e.g. loaded from the default value configuration file.
 
 #### Side effects

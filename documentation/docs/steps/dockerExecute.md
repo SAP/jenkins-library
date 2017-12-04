@@ -15,9 +15,9 @@ Proxy environment variables defined on the Jenkins machine are also available in
 | `dockerOptions`    | no        | ''                                |                            |
 | `dockerVolumeBind` | no        | [:]                               |                            |
 
-* `dockerImage` Name of the docker image that should be used. If empty Docker is not used.
+* `dockerImage` Name of the docker image that should be used. If empty, Docker is not used.
 * `dockerEnvVars` Environment variables to set in the container, e.g. [http_proxy:'proxy:8080']
-* `dockerOptions` Docker options to set when starting the container.
+* `dockerOptions` Docker options to be set when starting the container.
 * `dockerVolumeBind` Volumes that should be mounted into the container.
 
 ## Exceptions

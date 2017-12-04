@@ -55,8 +55,6 @@ none
 
 #### Example
 
-In your pipeline_configuration.yml you define the following:
-
 To get the map of the default values defined in the file `resources/default_pipeline_environment.yml` you have to execute the following:
 
 ```groovy
@@ -119,9 +117,9 @@ Map configuration = ConfigurationLoader.defaultGeneralConfiguration(script)
 #### Description
 
 Returns the configuration for a specific stage as map.
-This is useful if you decide to have a central pipeline and want to give all your projects to possibility to configure the stages in the central pipeline.
-This, the central pipeline can define how to deploy to production and read the configuration.
-All the project can configure the location where to deploy in the configuration file. 
+This is useful if you decide to have a central pipeline and want to give all your projects the possibility to configure the stages in the central pipeline.
+Thus, the central pipeline can define how to deploy and read the configuration.
+In the their configuration files, all the projects can configure the location where to deploy. 
 
 #### Parameters
 
