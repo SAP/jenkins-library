@@ -45,12 +45,12 @@ def call(parameters = [:]) {
                 usernameVariable: 'username'
         )]) {
             sh """#!/bin/bash
-                    ${neoExecutable} deploy-mta \
-                      --user ${username} \
-                      --host ${deployHost} \
+                    "${neoExecutable}" deploy-mta \
+                      --user '${username}' \
+                      --host '${deployHost}' \
                       --source "${archivePath.getAbsolutePath()}" \
-                      --account ${deployAccount} \
-                      --password ${password} \
+                      --account '${deployAccount}' \
+                      --password '${password}' \
                       --synchronous
                """
         }
