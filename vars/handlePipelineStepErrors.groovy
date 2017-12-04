@@ -31,9 +31,10 @@ ${err}
 ***
 
 FURTHER INFORMATION:
-* Documentation of step ${stepName}: .../${stepName}/
-* Pipeline documentation: https://...
-* GitHub repository for pipeline steps: https://...
+* Documentation of library step ${stepName}: https://sap.github.io/jenkins-library/steps/${stepName}/
+* Source code of library step ${stepName}: https://github.com/SAP/jenkins-library/blob/master/vars/${stepName}.groovy
+* Library documentation: https://sap.github.io/jenkins-library/
+* Library repository: https://github.com/SAP/jenkins-library
  
 ----------------------------------------------------------"""
         throw err
