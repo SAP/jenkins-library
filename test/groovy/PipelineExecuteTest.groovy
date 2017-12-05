@@ -76,9 +76,7 @@ class PipelineExecuteTest extends PiperTestBase {
 
                execute() {
 
-                 node() {
                    pipelineExecute repoUrl: "https://test.com/myRepo.git"
-                 }
 
                }
 
@@ -92,9 +90,7 @@ class PipelineExecuteTest extends PiperTestBase {
 
                execute() {
 
-                 node() {
                    pipelineExecute repoUrl: "https://test.com/anotherRepo.git", branch: 'feature', path: 'path/to/Jenkinsfile', credentialsId: 'abcd1234'
-                 }
 
                }
 
@@ -108,9 +104,7 @@ class PipelineExecuteTest extends PiperTestBase {
 
                execute() {
 
-                 node() {
                    pipelineExecute()
-                 }
 
                }
 
