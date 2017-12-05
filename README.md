@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/SAP/jenkins-library.svg?branch=master)](https://travis-ci.org/SAP/jenkins-library)
+
 # Description
 
 An efficient software development process is vital for success in building
