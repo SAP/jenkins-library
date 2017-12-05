@@ -45,10 +45,10 @@ class JenkinsPropertiesRule implements TestRule {
     }
 
     static Properties loadProperties(String path) {
-        File configFile = new File(path)
+        def inputStream = new File(path).newInputStream()
         def properties = new Properties()
-        FileInputStream inputStream = new FileInputStream(configFile)
         properties.load(inputStream)
+        inputStream.close()
         return properties
     }
 
