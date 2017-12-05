@@ -8,14 +8,14 @@ There are two primary ways to help:
 
 Use the issue tracker to suggest feature requests, report bugs, and ask questions. This is also a great way to connect with the developers of the project as well as others who are interested in this solution.
 
-Use the issue tracker to find ways to contribute. Find a bug or a feature, mention in the issue that you will take on that effort, then follow the Changing the code-base guidance below.
+Use the issue tracker to find ways to contribute. Find a bug or a feature, mention in the issue that you will take on that effort, then follow the "Changing the code-base" guidance below.
 
 ## Changing the code-base
 
-Generally speaking, you should fork this repository, make changes in your own fork, and then submit a pull-request. All new code should have thoroughly tested to validate implemented features and the presence or lack of defects and it should come with an adequate documentation. 
+Generally speaking, you should fork this repository, make changes in your own fork, and then submit a pull-request. All new code should have been thoroughly tested end-to-end in order to validate implemented features and the presence or lack of defects.
 
 ### Tests
-All pipeline library coding MUST come with an automated test. as well as adequate documentation.
+All pipeline library coding _must_ come with automated unit tests.
 
 ### Documentation
 The contract of functionality exposed by a library functionality needs to be documented, so it can be properly used.
