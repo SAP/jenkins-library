@@ -20,14 +20,8 @@ class UtilsTest extends BasePipelineTest {
     @Rule
     public ExpectedException exception = ExpectedException.none()
 
-    public JenkinsSetupRule setUpRule = new JenkinsSetupRule(this, SharedLibraryCreator.lazyLoadedLibrary)
-
-    public JenkinsLoggingRule loggingRule = new JenkinsLoggingRule(this)
-
     @Rule
-    public RuleChain ruleChain =
-        RuleChain.outerRule(setUpRule)
-            .around(loggingRule)
+    public JenkinsSetupRule setUpRule = new JenkinsSetupRule(this, SharedLibraryCreator.lazyLoadedLibrary)
 
     Utils utils
 
@@ -51,7 +45,6 @@ class UtilsTest extends BasePipelineTest {
         def defaultFallbackMap = [myDefault1: 'default1']
 
         assertEquals('value1', utils.getMandatoryParameter(sourceMap, 'test1', null))
-        assertEquals('value1', utils.getMandatoryParameter(sourceMap, 'test1', defaultFallbackMap.test))
 
         assertEquals('value1', utils.getMandatoryParameter(sourceMap, 'test1', ''))
 
