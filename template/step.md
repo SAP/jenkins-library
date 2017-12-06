@@ -1,31 +1,27 @@
 # <step name>
 
 ## Description
-
+Brief description.
 
 ## Prerequisites
-
 * **<prerequisite>** - further description.
 
 ## Parameters
-
 | parameter      | mandatory | default                           | possible values    |
 | ---------------|-----------|-----------------------------------|--------------------|
 |   |   |   |   |
 
-* detailed description of each parameter.
+* `<parameter>` - Detailed description of each parameter.
 
 ## Return value
-
 none
 
 ## Side effects
-
 none
 
 ## Exceptions
-
-none
+* `ExceptionType`
+    * List of cases when exception is thrown.
 
 ## Example
 ```groovy

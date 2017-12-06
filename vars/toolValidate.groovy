@@ -2,14 +2,7 @@ import com.sap.piper.FileUtils
 import com.sap.piper.Version
 import hudson.AbortException
 
-/**
- * toolValidate: validates if a tool is installed with the expected version.
- *
- * @param tool
- *           the tool to validate: java, mta, neo or cm.
- * @param home
- *           the directory containing the tool.
- */
+
 def call(Map parameters = [:]) {
 
     handlePipelineStepErrors (stepName: 'toolValidate', stepParameters: parameters) {
