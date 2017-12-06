@@ -23,7 +23,7 @@ none
 
 #### Example
 
-In your pipeline_configuration.yml you define the following:
+In your `config.yml` you define the following:
 
 ```
 #Steps Specific Configuration
@@ -76,7 +76,7 @@ none
 
 #### Example
 
-In your pipeline_configuration.yml you define the following:
+In your `config.yml` you define the following:
 
 ```
 #Project Setup
@@ -132,7 +132,7 @@ none
 
 #### Example
 
-In your pipeline_configuration.yml you define the following:
+In your `config.yml` you define the following:
 
 ```
 #Project Setup
