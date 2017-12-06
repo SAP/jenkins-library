@@ -1,0 +1,8 @@
+#Project Setup
+general:
+  productiveBranch: 'develop'
+
+#Steps Specific Configuration
+steps:
+  mavenExecute:
+    dockerImage: 'my-maven-docker'
