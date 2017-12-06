@@ -8,7 +8,6 @@ Initializes the [`commonPipelineEnvironment`](commonPipelineEnvironment.md), whi
     Then subsequent pipeline steps consume the information from `commonPipelineEnvironment`; it does not need to be passed to pipeline steps explicitly.
 
 ## Prerequisites
-
 * A **configuration file** with properties (default location: `.pipeline/config.properties`). The property values are used as default values in many pipeline steps.
 
 ## Parameters
@@ -22,19 +21,15 @@ Initializes the [`commonPipelineEnvironment`](commonPipelineEnvironment.md), whi
 * `configFile` - Property file defining project specific settings.
 
 ## Return value
-
 none
 
 ## Side effects
-
 none
 
 ## Exceptions
-
 none 
 
 ## Example
-
 ```groovy
 setupCommonPipelineEnvironment script: this
 ```

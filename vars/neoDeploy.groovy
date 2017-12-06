@@ -1,12 +1,5 @@
-/**
- * neoDeployment
- * Deploys file to Neo
- * Prerequisite: Location of file to be deployed as 'archivePath' parameter
- * Needs to be surrounded by withCredentials closure to provide username and password
- *
- * @param archivePath Path of the archive to be deployed.
- */
 import com.sap.piper.Utils
+
 
 def call(parameters = [:]) {
 
