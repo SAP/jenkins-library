@@ -8,4 +8,8 @@ steps:
     dockerImage: 'maven:3.5-jdk-7'
   influxWriteData:
     influxServer: 'jenkins'
-
+  neoDeploy:
+    deployMode: 'mta'
+    warAction: 'deploy'
+    vmSize: 'lite'
+    neoCredentialsId: 'CI_CREDENTIALS_ID'
