@@ -1,4 +1,5 @@
 import hudson.AbortException
+
 import org.junit.rules.TemporaryFolder
 
 import com.lesfurets.jenkins.unit.BasePipelineTest
@@ -76,7 +77,7 @@ class NeoDeploymentTest extends BasePipelineTest {
 
 
     @Test
-    void straightForwardTest() {
+    void straightForwardTestConfigViaConfigProperties() {
 
         binding.getVariable('env')['NEO_HOME'] = '/opt/neo'
 
@@ -96,6 +97,53 @@ class NeoDeploymentTest extends BasePipelineTest {
 
     }
 
+    @Test
+    void straightForwardTestConfigViaConfiguration() {
+
+        binding.getVariable('env')['NEO_HOME'] = '/opt/neo'
+
+        new File(workspacePath, archiveName) << "dummy archive"
+
+        cpe.configuration.put('steps', [neoDeploy: [host: 'test.deploy.host.com',
+                                                    account: 'trialuser123']])
+
+        neoDeployScript.call(script: [commonPipelineEnvironment: cpe],
+            archivePath: archiveName,
+            neoCredentialsId: 'myCredentialsId'
+)
+
+        assert jscr.shell[0] =~ /#!\/bin\/bash "\/opt\/neo\/tools\/neo\.sh" deploy-mta --user 'anonymous' --password '\*\*\*\*\*\*\*\*' --source ".*" --host 'test\.deploy\.host\.com' --account 'trialuser123' --synchronous/
+
+        assert jlr.log.contains("[neoDeploy] Neo executable \"/opt/neo/tools/neo.sh\" retrieved from environment.")
+
+    }
+
+    @Test
+    void straightForwardTestConfigViaConfigurationAndViaConfigProperties() {
+
+        //configuration via configurationFramekwork superseds.
+        binding.getVariable('env')['NEO_HOME'] = '/opt/neo'
+
+        new File(workspacePath, archiveName) << "dummy archive"
+
+
+        cpe.setConfigProperty('DEPLOY_HOST', 'configProperties.deploy.host.com')
+        cpe.setConfigProperty('CI_DEPLOY_ACCOUNT', 'configPropsUser123')
+
+        cpe.configuration.put('steps', [neoDeploy: [host: 'configuration-frwk.deploy.host.com',
+                                                    account: 'configurationFrwkUser123']])
+
+        neoDeployScript.call(script: [commonPipelineEnvironment: cpe],
+            archivePath: archiveName,
+            neoCredentialsId: 'myCredentialsId'
+        )
+
+        assert jscr.shell[0] =~ /#!\/bin\/bash "\/opt\/neo\/tools\/neo\.sh" deploy-mta --user 'anonymous' --password '\*\*\*\*\*\*\*\*' --source ".*" --host 'configuration-frwk\.deploy\.host\.com' --account 'configurationFrwkUser123' --synchronous/
+
+        assert jlr.log.contains("[neoDeploy] Neo executable \"/opt/neo/tools/neo.sh\" retrieved from environment.")
+
+    }
+
 
     @Test
     void badCredentialsIdTest() {
@@ -105,6 +153,7 @@ class NeoDeploymentTest extends BasePipelineTest {
         new File(workspacePath, archiveName) << "dummy archive"
 
         thrown.expect(MissingPropertyException)
+        thrown.expectMessage('No such property: username')
 
         cpe.setConfigProperty('DEPLOY_HOST', 'test.deploy.host.com')
         cpe.setConfigProperty('CI_DEPLOY_ACCOUNT', 'trialuser123')
@@ -169,9 +218,6 @@ class NeoDeploymentTest extends BasePipelineTest {
         )
 
         assert jscr.shell[0] =~ /#!\/bin\/bash "\/etc\/neo\/tools\/neo\.sh" deploy-mta --user 'anonymous' --password '\*\*\*\*\*\*\*\*' --source ".*" --host 'test\.deploy\.host\.com' --account 'trialuser123' --synchronous.*/
-
-        assert jlr.log.contains("[neoDeploy] Neo executable \"/etc/neo/tools/neo.sh\" retrieved from parameters.")
-
     }
 
 
@@ -179,7 +225,7 @@ class NeoDeploymentTest extends BasePipelineTest {
     void archiveNotProvidedTest() {
 
         thrown.expect(Exception)
-        thrown.expectMessage('ERROR - NO VALUE AVAILABLE FOR archivePath')
+        thrown.expectMessage('Archive path not configured (parameter "archivePath").')
 
         cpe.setConfigProperty('DEPLOY_HOST', 'test.deploy.host.com')
         cpe.setConfigProperty('CI_DEPLOY_ACCOUNT', 'trialuser123')
@@ -192,7 +238,7 @@ class NeoDeploymentTest extends BasePipelineTest {
     void wrongArchivePathProvidedTest() {
 
         thrown.expect(AbortException)
-        thrown.expectMessage("Archive cannot be found with parameter archivePath: '")
+        thrown.expectMessage("Archive cannot be found")
 
         cpe.setConfigProperty('DEPLOY_HOST', 'test.deploy.host.com')
         cpe.setConfigProperty('CI_DEPLOY_ACCOUNT', 'trialuser123')
@@ -208,7 +254,7 @@ class NeoDeploymentTest extends BasePipelineTest {
         new File(workspacePath, archiveName) << "dummy archive"
 
         thrown.expect(Exception)
-        thrown.expectMessage('ERROR - NO VALUE AVAILABLE FOR deployHost')
+        thrown.expectMessage('ERROR - NO VALUE AVAILABLE FOR host')
 
         neoDeployScript.call(archivePath: archiveName)
     }
