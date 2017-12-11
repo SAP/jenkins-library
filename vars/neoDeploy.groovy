@@ -6,10 +6,8 @@ def call(parameters = [:]) {
     handlePipelineStepErrors (stepName: 'neoDeploy', stepParameters: parameters) {
 
         def utils = new Utils()
-        def script = parameters.script
-        if (script == null){
-            script = [commonPipelineEnvironment: commonPipelineEnvironment]
-        }
+
+        def script = parameters?.script ?: [commonPipelineEnvironment: commonPipelineEnvironment]
 
         def archivePath = utils.getMandatoryParameter(parameters, 'archivePath', null)
         if (!fileExists(archivePath)){
