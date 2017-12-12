@@ -20,6 +20,7 @@ class DefaultValueCache implements Serializable {
         instance = new DefaultValueCache(defaultValues)
     }
 
+    @NonCPS
     Map getDefaultValues(){
         return defaultValues
     }
