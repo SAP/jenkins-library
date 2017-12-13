@@ -133,6 +133,36 @@ def call(parameters = [:]) {
 
         def neoExecutable = getNeoExecutable(configuration)
 
+        def neoDeployScript
+
+        if (deployMode == 'mta') {
+            neoDeployScript =
+                """#!/bin/bash
+                    "${neoExecutable}" deploy-mta \
+                    --host '${deployHost}' \
+                    --account '${deployAccount}' \
+                    --synchronous"""
+        }
+
+        if (deployMode == 'warParams') {
+            neoDeployScript =
+                """#!/bin/bash
+                    "${neoExecutable}" ${warAction} \
+                    --host '${deployHost}' \
+                    --account '${deployAccount}' \
+                    --application '${applicationName}' \
+                    --runtime '${runtime}' \
+                    --runtime-version '${runtimeVersion}' \
+                    --size '${vmSize}'"""
+        }
+
+        if (deployMode == 'warPropertiesFile') {
+            neoDeployScript =
+                """#!/bin/bash
+                    "${neoExecutable}" ${warAction} \
+                    ${propertiesFile}"""
+        }
+
         withCredentials([usernamePassword(
             credentialsId: credentialsId,
             passwordVariable: 'password',
@@ -143,35 +173,12 @@ def call(parameters = [:]) {
                    --password '${password}' \
                    --source "${archivePath}" \
                 """
+            dockerExecute(dockerImage: configuration.get('dockerImage'),
+                          dockerEnvVars: configuration.get('dockerEnvVars'),
+                          dockerOptions: configuration.get('dockerOptions')) {
 
-            if (deployMode == 'mta') {
-                sh """#!/bin/bash
-                      "${neoExecutable}" deploy-mta \
-                      ${commonDeployParams} \
-                      --host '${deployHost}' \
-                      --account '${deployAccount}' \
-                      --synchronous
-                   """
-            }
-
-            if (deployMode == 'warParams') {
-                sh """#!/bin/bash
-                      "${neoExecutable}" ${warAction} \
-                      ${commonDeployParams} \
-                      --host '${deployHost}' \
-                      --account '${deployAccount}' \
-                      --application '${applicationName}' \
-                      --runtime '${runtime}' \
-                      --runtime-version '${runtimeVersion}' \
-                      --size '${vmSize}'
-                   """
-            }
-
-            if (deployMode == 'warPropertiesFile') {
-                sh """#!/bin/bash
-                      "${neoExecutable}" ${warAction} \
-                      ${commonDeployParams} \
-                      ${propertiesFile}
+                sh """${neoDeployScript} \
+                      ${commonDeployParams}
                    """
             }
         }
