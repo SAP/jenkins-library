@@ -16,9 +16,11 @@ class DockerExecuteTest extends PiperTestBase {
 
         docker = new DockerMock()
         binding.setVariable('docker', docker)
+        binding.setVariable('Jenkins', [instance: [pluginManager: [plugins: [new PluginMock()]]]])
 
         echos = ''
         helper.registerAllowedMethod("echo", [String.class], { String s -> echos += " $s" })
+        helper.registerAllowedMethod('sh', [Map.class], {return 0})
     }
 
     @Test
@@ -74,4 +76,14 @@ class DockerExecuteTest extends PiperTestBase {
             return parameters
         }
     }
+
+    private class PluginMock {
+        def getShortName() {
+            return 'docker-workflow'
+        }
+        boolean isActive() {
+            return true
+        }
+    }
+
 }
