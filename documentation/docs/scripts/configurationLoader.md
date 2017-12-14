@@ -14,7 +14,7 @@ Returns the configuration for a specific step as map.
 
 #### Parameters
 
-* `script` - The common script environment of the Jenkinsfile running. Typically the reference to the script calling the pipeline step is provided with the `this` parameter, as in `script: this`. This allows the function to access the [`commonPipelineEnvironment`](commonPipelineEnvironment.md) for retrieving, for example, configuration parameters.
+* `script` - The common script environment of the Jenkinsfile running. Typically the reference to the script calling the pipeline step is provided with the `this` parameter, as in `script: this`. This allows the function to access the [`commonPipelineEnvironment`][commonPipelineEnvironment] for retrieving, for example, configuration parameters.
 * `stepName` - The name of the step
 
 #### Side effects
@@ -46,7 +46,7 @@ Returns the default configuration for a specific step as map.
 
 #### Parameters
 
-* `script` - The common script environment of the Jenkinsfile running. Typically the reference to the script calling the pipeline step is provided with the `this` parameter, as in `script: this`. This allows the function to access the [`commonPipelineEnvironment`](commonPipelineEnvironment.md) for retrieving, for example, configuration parameters.
+* `script` - The common script environment of the Jenkinsfile running. Typically the reference to the script calling the pipeline step is provided with the `this` parameter, as in `script: this`. This allows the function to access the [`commonPipelineEnvironment`][commonPipelineEnvironment] for retrieving, for example, configuration parameters.
 * `stepName` - The name of the step
 
 #### Side effects
@@ -68,7 +68,7 @@ Returns the configuration in the section general of the configuration file.
 
 #### Parameters
 
-* `script` - The common script environment of the Jenkinsfile running. Typically the reference to the script calling the pipeline step is provided with the `this` parameter, as in `script: this`. This allows the function to access the [`commonPipelineEnvironment`](commonPipelineEnvironment.md) for retrieving, for example, configuration parameters.
+* `script` - The common script environment of the Jenkinsfile running. Typically the reference to the script calling the pipeline step is provided with the `this` parameter, as in `script: this`. This allows the function to access the [`commonPipelineEnvironment`][commonPipelineEnvironment] for retrieving, for example, configuration parameters.
 
 #### Side effects
 
@@ -98,7 +98,7 @@ Returns the default configuration in the section general of the default configur
 
 #### Parameters
 
-* `script` - The common script environment of the Jenkinsfile running. Typically the reference to the script calling the pipeline step is provided with the `this` parameter, as in `script: this`. This allows the function to access the [`commonPipelineEnvironment`](commonPipelineEnvironment.md) for retrieving, for example, configuration parameters.
+* `script` - The common script environment of the Jenkinsfile running. Typically the reference to the script calling the pipeline step is provided with the `this` parameter, as in `script: this`. This allows the function to access the [`commonPipelineEnvironment`][commonPipelineEnvironment] for retrieving, for example, configuration parameters.
 
 #### Side effects
 
@@ -123,7 +123,7 @@ In the their configuration files, all the projects can configure the location wh
 
 #### Parameters
 
-* `script` - The common script environment of the Jenkinsfile running. Typically the reference to the script calling the pipeline step is provided with the `this` parameter, as in `script: this`. This allows the function to access the [`commonPipelineEnvironment`](commonPipelineEnvironment.md) for retrieving, for example, configuration parameters.
+* `script` - The common script environment of the Jenkinsfile running. Typically the reference to the script calling the pipeline step is provided with the `this` parameter, as in `script: this`. This allows the function to access the [`commonPipelineEnvironment`][commonPipelineEnvironment] for retrieving, for example, configuration parameters.
 * `script` - Name of the stage as defined in the configuration file.
 
 #### Side effects
@@ -151,3 +151,5 @@ To get the map containing the key `targets` and the list of the deployment locat
 ```groovy
 Map configuration = ConfigurationLoader.stageConfiguration(script, 'productionDeployment')
 ```
+
+[commonPipelineEnvironment]: /steps/commonPipelineEnvironment.md
