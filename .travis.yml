@@ -4,4 +4,4 @@ install:
 - pip install --user mkdocs mkdocs-material
 script:
 - mvn test -B
-- mkdocs --version
+- cd documentation && mkdocs build --clean --verbose --strict
