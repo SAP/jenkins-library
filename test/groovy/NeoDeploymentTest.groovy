@@ -198,7 +198,7 @@ class NeoDeploymentTest extends BasePipelineTest {
                        archivePath: archiveName
         )
 
-        assert jscr.shell[0] =~ /#!\/bin\/bash "neo" deploy-mta --host 'test\.deploy\.host\.com' --account 'trialuser123' --synchronous --user 'defaultUser' --password '\*\*\*\*\*\*\*\*' --source ".*"/
+        assert jscr.shell[0] =~ /#!\/bin\/bash "neo.sh" deploy-mta --host 'test\.deploy\.host\.com' --account 'trialuser123' --synchronous --user 'defaultUser' --password '\*\*\*\*\*\*\*\*' --source ".*"/
 
         assert jlr.log.contains("Using Neo executable from PATH.")
     }

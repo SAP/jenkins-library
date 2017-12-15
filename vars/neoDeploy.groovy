@@ -187,7 +187,7 @@ def call(parameters = [:]) {
 
 private getNeoExecutable(configuration) {
 
-    def neoExecutable = 'neo' // default, if nothing below applies maybe it is the path.
+    def neoExecutable = 'neo.sh' // default, if nothing below applies maybe it is the path.
 
     if (configuration.neoHome) {
         neoExecutable = "${configuration.neoHome}/tools/neo.sh"
