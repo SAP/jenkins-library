@@ -5,3 +5,7 @@ install:
 script:
 - mvn test -B
 - if [[ "${TRAVIS_PULL_REQUEST}" != "false" ]]; then cd documentation && mkdocs build --clean --verbose --strict; fi;
+cache:
+  directories:
+  - $HOME/.m2
+  - $HOME/.cache/pip
