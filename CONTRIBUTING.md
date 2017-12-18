@@ -15,8 +15,8 @@ Use the issue tracker to find ways to contribute. Find a bug or a feature, menti
 Generally speaking, you should fork this repository, make changes in your own fork, and then submit a pull-request. All new code should have been thoroughly tested end-to-end in order to validate implemented features and the presence or lack of defects.
 
 ### Working with forks
-[Configure this repository as a remote for your own fork](https://help.github.com/articles/configuring-a-remote-for-a-fork/)
-[And sync your fork with this repository](https://help.github.com/articles/syncing-a-fork/) before beginning to work on a new pull-request.
+* [Configure this repository as a remote for your own fork](https://help.github.com/articles/configuring-a-remote-for-a-fork/), and
+* [Sync your fork with this repository](https://help.github.com/articles/syncing-a-fork/) before beginning to work on a new pull-request.
 
 ### Tests
 All pipeline library coding _must_ come with automated unit tests.
