@@ -4,4 +4,4 @@ install:
 - pip install --user mkdocs mkdocs-material
 script:
 - mvn test -B
-- cd documentation && mkdocs build --clean --verbose --strict
+- if [[ "${TRAVIS_PULL_REQUEST}" != "false" ]]; then cd documentation && mkdocs build --clean --verbose --strict; fi;
