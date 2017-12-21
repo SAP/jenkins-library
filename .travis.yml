@@ -4,7 +4,18 @@ install:
 - pip install --user mkdocs mkdocs-material
 script:
 - mvn test -B
-- if [[ "${TRAVIS_PULL_REQUEST}" != "false" ]]; then cd documentation && mkdocs build --clean --verbose --strict && cd ..; fi;
+- |
+  if [[ "${TRAVIS_PULL_REQUEST}" != "false" ]]
+  then
+    cd documentation && mkdocs build --clean --verbose --strict && cd ..
+  else
+    # Only in case we are in master branch of the leading SAP repo we would like to deploy,
+    # not from the forks.
+    if [[ "${TRAVIS_BRANCH}" == "master" && "${TRAVIS_REPO_SLUG}" == "SAP/jenkins-library" ]]
+    then
+      ./gh-pages-deploy.sh
+    fi
+  fi
 cache:
   directories:
   - $HOME/.m2
@@ -14,3 +25,6 @@ after_success:
 notifications:
   slack:
     secure: UYzfd4QYLtAX39r8LzV1dYp7cKMhYRRjI/xswMEkR+RgdMWxVPPH3kcsNLwkdNGSPn1b8Aidz8YLss9JolrepWjwI283dK8EUthZAOw03+PmL5X/3nOJ7aGv0sxwYqF5ypltBrerTf6jtPUTcQdtao+0O8bgnzShc6nWWE4MLXonjOm1pZLRUo81un+0bzm8C2ABIeHC6xuZCRycXP5u1mW1nDLK3900uY1rxIDTSZKEzA0IzLQhE9uROvI1r48fW8cKJQQjMMO5PPorq+0eDl2YTE8rQr9ldvuRE7A/ubsOQR0N5F8iAv1JTZXuXGt62fw6eKDQ1h94suEk7X+baV0EwlfhsHXcI1MxRFwxNSr9k1WaVFfA4TrM8XYBAcW3JGRA51ZK3q4EcjpuxpupaA7kZDtH53W7ePzH2TIp6yknln1q+yfcsP7cGv38sSKpKwOyMgAPRElkZzcoo31kw/PLzKPXYJEovRqx/0lWzczbFSscsroNaGCavC02++bUnyUXW2W+PG4gDSBFVZjtrvTPKnZ6DpHXV97x6xC/CzyhFj/Nf+ao/J9IIfocnc4vXJojwS550KIvM7xCDJwa/+29dajj2l6dQqrcOe3UT3O5UGU9I0KkGEDMfkLOD71eRy58qiYz3y953e52DvvzWQJbvfuk8ubMO+Fmn4GyRz8=
+before_install:
+- openssl aes-256-cbc -K $encrypted_12c8071d2874_key -iv $encrypted_12c8071d2874_iv
+  -in cfg/id_rsa.enc -out cfg/id_rsa -d
