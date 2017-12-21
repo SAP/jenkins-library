@@ -1,11 +1,13 @@
 language: groovy
 sudo: false
+branches:
+  only:
+  - master
 install:
 - pip install --user mkdocs mkdocs-material
 script:
-- mvn test -B
-- if [[ "${TRAVIS_PULL_REQUEST}" != "false" ]]; then cd documentation && mkdocs build --clean --verbose --strict; fi;
+- if [[ "${TRAVIS_PULL_REQUEST}" != "false" ]]; then chmod +x pull-request.sh && ./pull-request.sh; else chmod +x gh-pages-deploy.sh && ./gh-pages-deploy.sh; fi;
 cache:
   directories:
-  - $HOME/.m2
-  - $HOME/.cache/pip
+  - "$HOME/.cache/pip"
+  - "$HOME/.m2"
