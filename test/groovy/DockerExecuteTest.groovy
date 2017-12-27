@@ -4,11 +4,14 @@ import org.junit.Test
 
 import static org.junit.Assert.assertEquals
 import static org.junit.Assert.assertTrue
+import static org.junit.Assert.assertFalse
 
 class DockerExecuteTest extends PiperTestBase {
     private DockerMock docker
 
     String echos
+
+    int whichDockerReturnValue = 0
 
     @Before
     void setUp() {
@@ -16,9 +19,11 @@ class DockerExecuteTest extends PiperTestBase {
 
         docker = new DockerMock()
         binding.setVariable('docker', docker)
+        binding.setVariable('Jenkins', [instance: [pluginManager: [plugins: [new PluginMock()]]]])
 
         echos = ''
         helper.registerAllowedMethod("echo", [String.class], { String s -> echos += " $s" })
+        helper.registerAllowedMethod('sh', [Map.class], {return whichDockerReturnValue})
     }
 
     @Test
@@ -42,6 +47,17 @@ class DockerExecuteTest extends PiperTestBase {
         assertTrue(docker.getParameters().contains(' --volume my_vol:/my_vol'))
     }
 
+	@Test
+	void testDockerNotInstalledResultsInLocalExecution() throws Exception {
+
+        whichDockerReturnValue = 1
+        def script = loadScript("test/resources/pipelines/dockerExecuteTest/executeInsideDockerWithParameters.groovy")
+
+        script.execute()
+        assertTrue(echos.contains('No docker environment found'))
+        assertTrue(echos.contains('Running on local environment'))
+        assertFalse(docker.isImagePulled())
+    }
 
     private class DockerMock {
         private String imageName
@@ -74,4 +90,14 @@ class DockerExecuteTest extends PiperTestBase {
             return parameters
         }
     }
+
+    private class PluginMock {
+        def getShortName() {
+            return 'docker-workflow'
+        }
+        boolean isActive() {
+            return true
+        }
+    }
+
 }
