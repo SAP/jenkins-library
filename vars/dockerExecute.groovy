@@ -1,14 +1,32 @@
 import com.cloudbees.groovy.cps.NonCPS
 
 def call(Map parameters = [:], body) {
-    handlePipelineStepErrors(stepName: 'dockerExecute', stepParameters: parameters){
+
+    def STEP_NAME = 'dockerExecute'
+    def PLUGIN_ID_DOCKER_WORKFLOW = 'docker-workflow'
+
+    handlePipelineStepErrors(stepName: STEP_NAME, stepParameters: parameters){
         def dockerImage = parameters.get('dockerImage', '')
         Map dockerEnvVars = parameters.get('dockerEnvVars', [:])
         def dockerOptions = parameters.get('dockerOptions', '')
         Map dockerVolumeBind = parameters.get('dockerVolumeBind', [:])
 
-        if(dockerImage?.isEmpty()){
-            echo '[dockerExecute] No Docker image provided - running on local environment.'
+        if(dockerImage) {
+
+            if (! Jenkins.instance.pluginManager.plugins.find { p -> p.isActive() && p.getShortName() == PLUGIN_ID_DOCKER_WORKFLOW } ) {
+                echo "[WARNING][${STEP_NAME}] Docker not supported. Plugin '${PLUGIN_ID_DOCKER_WORKFLOW}' is not installed or not active. Configured docker image '${dockerImage}' will not be used."
+                dockerImage = null
+            }
+
+            def returnCode = sh script: 'which docker > /dev/null', returnStatus: true
+            if(returnCode != 0) {
+                echo "[WARNING][${STEP_NAME}] No docker environment found (command 'which docker' did not return with '0'). Configured docker image '${dockerImage}' will not be used."
+                dockerImage = null
+            }
+        }
+
+        if(!dockerImage){
+            echo "[INFO][${STEP_NAME}] Running on local environment."
             body()
         }else{
             def image = docker.image(dockerImage)
