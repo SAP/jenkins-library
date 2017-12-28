@@ -2,21 +2,21 @@
 
 ## Description
 Deploys an Application to SAP Cloud Platform (SAP CP) using the SAP Cloud Platform Console Client (Neo Java Web SDK).
-    
+
 ## Prerequisites
 * **SAP CP account** - the account to where the application is deployed.
 * **SAP CP user for deployment** - a user with deployment permissions in the given account.
 * **Jenkins credentials for deployment** - must be configured in Jenkins credentials with a dedicated Id.
 
 ![Jenkins credentials configuration](../images/neo_credentials.png)
-    
+
 * **Neo Java Web SDK** - can be downloaded from [Maven Central](http://central.maven.org/maven2/com/sap/cloud/neo-java-web-sdk/). The Neo Java Web SDK
 needs to be extracted into the folder provided by `neoHome`. In case this parameters is not provided and there is no NEO_HOME parameter in the environment
 `<neoRoot>/tools` needs to be in the `PATH`.
 
 * **Java 8 or higher** - needed by the *Neo-Java-Web-SDK*
 
-## Parameters when using MTA deployment method
+## Parameters when using MTA deployment method (default - MTA)
 | parameter          | mandatory | default                                                                                      | possible values                                 |
 | -------------------|-----------|----------------------------------------------------------------------------------------------|-------------------------------------------------|
 | `deployMode`       | yes       | `'MTA'`                                                                                      | `'MTA'`, `'WAR_PARAMS'`, `'WAR_PROPERTIESFILE'` |
@@ -27,10 +27,10 @@ needs to be extracted into the folder provided by `neoHome`. In case this parame
 | `neoCredentialsId` | no        | `'CI_CREDENTIALS_ID'`                                                                        |                                                 |
 | `neoHome`          | no        | Environment is checked for `NEO_HOME`, <br>otherwise the neo toolset is expected in the path |                                                 |
 
-## Parameters when using WAR file deployment method with .properties file
+## Parameters when using WAR file deployment method with .properties file (WAR_PROPERTIESFILE)
 | parameter          | mandatory | default                                                                                      | possible values                                 |
 | -------------------|-----------|----------------------------------------------------------------------------------------------|-------------------------------------------------|
-| `deployMode`       | yes       | `'WAR_PROPERTIESFILE'`                                                                       | `'MTA'`, `'WAR_PARAMS'`, `'WAR_PROPERTIESFILE'` |
+| `deployMode`       | yes       | `'MTA'`                                                                                      | `'MTA'`, `'WAR_PARAMS'`, `'WAR_PROPERTIESFILE'` |
 | `warAction`        | yes       | `'deploy'`                                                                                   | `'deploy'`, `'rolling-update'`                  |
 | `script`           | yes       |                                                                                              |                                                 |
 | `archivePath`      | yes       |                                                                                              |                                                 |
@@ -38,10 +38,10 @@ needs to be extracted into the folder provided by `neoHome`. In case this parame
 | `neoHome`          | no        | Environment is checked for `NEO_HOME`, <br>otherwise the neo toolset is expected in the path |                                                 |
 | `propertiesFile`   | yes       |                                                                                              |                                                 |
 
-## Parameters when using WAR file deployment method witout .properties file - with parameters
+## Parameters when using WAR file deployment method witout .properties file - with parameters (WAR_PARAMS)
 | parameter          | mandatory | default                                                                                      | possible values                                 |
 | -------------------|-----------|----------------------------------------------------------------------------------------------|-------------------------------------------------|
-| `deployMode`       | yes       | `'WAR_PARAMS'`                                                                               | `'MTA'`, `'WAR_PARAMS'`, `'WAR_PROPERTIESFILE'` |
+| `deployMode`       | yes       | `'MTA'`                                                                                      | `'MTA'`, `'WAR_PARAMS'`, `'WAR_PROPERTIESFILE'` |
 | `warAction`        | yes       | `'deploy'`                                                                                   | `'deploy'`, `'rolling-update'`                  |
 | `script`           | yes       |                                                                                              |                                                 |
 | `archivePath`      | yes       |                                                                                              |                                                 |
