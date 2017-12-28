@@ -3,11 +3,11 @@ import com.sap.piper.Utils
 
 def call(parameters = [:]) {
 
-    handlePipelineStepErrors (stepName: 'neoDeploy', stepParameters: parameters) {
+    handlePipelineStepErrors(stepName: 'neoDeploy', stepParameters: parameters) {
 
         def utils = new Utils()
         def script = parameters.script
-        if (script == null){
+        if (script == null) {
             script = [commonPipelineEnvironment: commonPipelineEnvironment]
         }
 
@@ -15,8 +15,32 @@ def call(parameters = [:]) {
         if (!archivePath.isAbsolute()) {
             archivePath = new File(pwd(), archivePath.getPath())
         }
-        if (!archivePath.exists()){
+        if (!archivePath.exists()) {
             error "Archive cannot be found with parameter archivePath: '${archivePath}'."
+        }
+
+        def deployMode = utils.getMandatoryParameter(parameters, 'deployMode', 'MTA')
+
+        def propertiesFile
+        def warAction
+        if (deployMode == 'WAR_PROPERTIESFILE') {
+            propertiesFile = new File(utils.getMandatoryParameter(parameters, 'propertiesFile', null))
+            if (!propertiesFile.isAbsolute()) {
+                propertiesFile = new File(pwd(), propertiesFile.getPath())
+            }
+            warAction = utils.getMandatoryParameter(parameters, 'warAction', 'deploy')
+        }
+
+        def applicationName
+        def runtime
+        def runtimeVersion
+        def vmSize
+        if (deployMode == 'WAR_PARAMS') {
+            applicationName = utils.getMandatoryParameter(parameters, 'applicationName', null)
+            runtime = utils.getMandatoryParameter(parameters, 'runtime', null)
+            runtimeVersion = utils.getMandatoryParameter(parameters, 'runtimeVersion', null)
+            vmSize = utils.getMandatoryParameter(parameters, 'vmSize', 'lite')
+            warAction = utils.getMandatoryParameter(parameters, 'warAction', 'deploy')
         }
 
         def defaultDeployHost = script.commonPipelineEnvironment.getConfigProperty('DEPLOY_HOST')
@@ -26,26 +50,67 @@ def call(parameters = [:]) {
             defaultCredentialsId = 'CI_CREDENTIALS_ID'
         }
 
-        def deployHost = utils.getMandatoryParameter(parameters, 'deployHost', defaultDeployHost)
-        def deployAccount = utils.getMandatoryParameter(parameters, 'deployAccount', defaultDeployAccount)
+        def deployHost
+        def deployAccount
+        if (deployMode.equals('MTA') || deployMode.equals('WAR_PARAMS')) {
+            deployHost = utils.getMandatoryParameter(parameters, 'deployHost', defaultDeployHost)
+            deployAccount = utils.getMandatoryParameter(parameters, 'deployAccount', defaultDeployAccount)
+        }
+
         def credentialsId = parameters.get('neoCredentialsId', defaultCredentialsId)
 
         def neoExecutable = getNeoExecutable(parameters)
 
-        withCredentials([usernamePassword(
+        if (deployMode == 'MTA') {
+            withCredentials([usernamePassword(
                 credentialsId: credentialsId,
                 passwordVariable: 'password',
-                usernameVariable: 'username'
-        )]) {
-            sh """#!/bin/bash
-                    "${neoExecutable}" deploy-mta \
+                usernameVariable: 'username')]) {
+                sh """#!/bin/bash
+                      "${neoExecutable}" deploy-mta \
                       --user '${username}' \
                       --host '${deployHost}' \
                       --source "${archivePath.getAbsolutePath()}" \
                       --account '${deployAccount}' \
                       --password '${password}' \
                       --synchronous
-               """
+                   """
+            }
+        }
+
+        if (deployMode == 'WAR_PARAMS') {
+            withCredentials([usernamePassword(
+                credentialsId: credentialsId,
+                passwordVariable: 'password',
+                usernameVariable: 'username')]) {
+                sh """#!/bin/bash
+                      "${neoExecutable}" "${warAction}" \
+                      --user '${username}' \
+                      --password '${password}' \
+                      --host '${deployHost}' \
+                      --account ${deployAccount} \
+                      --application '${applicationName}' \
+                      --runtime '${runtime}' \
+                      --runtime-version '${runtimeVersion}' \
+                      --size '${vmSize}' \
+                      --source '${archivePath.getAbsolutePath()}'
+                   """
+            }
+        }
+
+        if (deployMode == 'WAR_PROPERTIESFILE') {
+            withCredentials([usernamePassword(
+                credentialsId: credentialsId,
+                passwordVariable: 'password',
+                usernameVariable: 'username')]) {
+                sh """#!/bin/bash
+                      "${neoExecutable}" "${warAction}" \
+                      '${propertiesFile.getAbsolutePath()}' \
+                      --user '${username}' \
+                      --password '${password}' \
+                      --source '${archivePath.getAbsolutePath()}'
+                   """
+            }
         }
     }
 }
