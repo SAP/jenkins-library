@@ -225,18 +225,6 @@
                 <version>1.12</version>
                 <executions>
                     <execution>
-                        <id>add-source</id>
-                        <phase>generate-sources</phase>
-                        <goals>
-                            <goal>add-source</goal>
-                        </goals>
-                        <configuration>
-                            <sources>
-                                <source>src/</source>
-                            </sources>
-                        </configuration>
-                    </execution>
-                    <execution>
                         <id>add-test-source</id>
                         <phase>generate-sources</phase>
                         <goals>
