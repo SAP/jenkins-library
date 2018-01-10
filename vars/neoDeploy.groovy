@@ -3,11 +3,11 @@ import com.sap.piper.Utils
 
 def call(parameters = [:]) {
 
-    handlePipelineStepErrors(stepName: 'neoDeploy', stepParameters: parameters) {
+    handlePipelineStepErrors (stepName: 'neoDeploy', stepParameters: parameters) {
 
         def utils = new Utils()
         def script = parameters.script
-        if (script == null) {
+        if (script == null){
             script = [commonPipelineEnvironment: commonPipelineEnvironment]
         }
 
@@ -15,7 +15,7 @@ def call(parameters = [:]) {
         if (!archivePath.isAbsolute()) {
             archivePath = new File(pwd(), archivePath.getPath())
         }
-        if (!archivePath.exists()) {
+        if (!archivePath.exists()){
             error "Archive cannot be found with parameter archivePath: '${archivePath}'."
         }
 
@@ -52,6 +52,11 @@ def call(parameters = [:]) {
 
         def deployHost
         def deployAccount
+
+        if (!deployMode.equals('MTA') && !deployMode.equals('WAR_PARAMS') && !deployMode.equals('WAR_PROPERTIESFILE')) {
+            echo "[neoDeploy] Invalid deployment mode \"${deployMode}\". Deployment will be skipped."
+        }
+
         if (deployMode.equals('MTA') || deployMode.equals('WAR_PARAMS')) {
             deployHost = utils.getMandatoryParameter(parameters, 'deployHost', defaultDeployHost)
             deployAccount = utils.getMandatoryParameter(parameters, 'deployAccount', defaultDeployAccount)
@@ -61,54 +66,45 @@ def call(parameters = [:]) {
 
         def neoExecutable = getNeoExecutable(parameters)
 
-        if (deployMode == 'MTA') {
-            withCredentials([usernamePassword(
-                credentialsId: credentialsId,
-                passwordVariable: 'password',
-                usernameVariable: 'username')]) {
+        withCredentials([usernamePassword(
+            credentialsId: credentialsId,
+            passwordVariable: 'password',
+            usernameVariable: 'username')]) {
+
+            def commonDeployParams =
+                """--user '${username}' \
+                   --password '${password}' \
+                   --source '${archivePath.getAbsolutePath()}' \
+                """
+
+            if (deployMode == 'MTA') {
                 sh """#!/bin/bash
                       "${neoExecutable}" deploy-mta \
-                      --user '${username}' \
+                      '${commonDeployParams}' \
                       --host '${deployHost}' \
-                      --source "${archivePath.getAbsolutePath()}" \
                       --account '${deployAccount}' \
-                      --password '${password}' \
                       --synchronous
                    """
             }
-        }
 
-        if (deployMode == 'WAR_PARAMS') {
-            withCredentials([usernamePassword(
-                credentialsId: credentialsId,
-                passwordVariable: 'password',
-                usernameVariable: 'username')]) {
+            if (deployMode == 'WAR_PARAMS') {
                 sh """#!/bin/bash
-                      "${neoExecutable}" "${warAction}" \
-                      --user '${username}' \
-                      --password '${password}' \
+                      "${neoExecutable}" '${warAction}' \
+                      '${commonDeployParams}' \
                       --host '${deployHost}' \
-                      --account ${deployAccount} \
+                      --account '${deployAccount}' \
                       --application '${applicationName}' \
                       --runtime '${runtime}' \
                       --runtime-version '${runtimeVersion}' \
-                      --size '${vmSize}' \
-                      --source '${archivePath.getAbsolutePath()}'
+                      --size '${vmSize}'
                    """
             }
-        }
 
-        if (deployMode == 'WAR_PROPERTIESFILE') {
-            withCredentials([usernamePassword(
-                credentialsId: credentialsId,
-                passwordVariable: 'password',
-                usernameVariable: 'username')]) {
+            if (deployMode == 'WAR_PROPERTIESFILE') {
                 sh """#!/bin/bash
-                      "${neoExecutable}" "${warAction}" \
-                      '${propertiesFile.getAbsolutePath()}' \
-                      --user '${username}' \
-                      --password '${password}' \
-                      --source '${archivePath.getAbsolutePath()}'
+                      "${neoExecutable}" '${warAction}' \
+                      '${commonDeployParams}' \
+                      '${propertiesFile.getAbsolutePath()}'
                    """
             }
         }
