@@ -1,4 +1,6 @@
 import com.lesfurets.jenkins.unit.BasePipelineTest
+import com.sap.piper.DefaultValueCache
+import org.yaml.snakeyaml.Yaml
 
 import static ProjectSource.projectSource
 import static com.lesfurets.jenkins.unit.global.lib.LibraryConfiguration.library
@@ -29,7 +31,14 @@ public class PiperTestBase extends BasePipelineTest {
             shellCalls.add(s.replaceAll(/\s+/, " ").trim())
         })
 
+        helper.registerAllowedMethod("readYaml", [Map], { Map parameters ->
+            Yaml yamlParser = new Yaml()
+            return yamlParser.load(parameters.text)
+        })
+
         pipeline = pipelineFolder.newFile()
+
+        DefaultValueCache.reset()
     }
 
     protected withPipeline(p) {
