@@ -74,13 +74,13 @@ def call(parameters = [:]) {
             def commonDeployParams =
                 """--user '${username}' \
                    --password '${password}' \
-                   --source '${archivePath.getAbsolutePath()}' \
+                   --source "${archivePath.getAbsolutePath()}" \
                 """
 
             if (deployMode == 'MTA') {
                 sh """#!/bin/bash
                       "${neoExecutable}" deploy-mta \
-                      '${commonDeployParams}' \
+                      ${commonDeployParams} \
                       --host '${deployHost}' \
                       --account '${deployAccount}' \
                       --synchronous
@@ -90,7 +90,7 @@ def call(parameters = [:]) {
             if (deployMode == 'WAR_PARAMS') {
                 sh """#!/bin/bash
                       "${neoExecutable}" '${warAction}' \
-                      '${commonDeployParams}' \
+                      ${commonDeployParams} \
                       --host '${deployHost}' \
                       --account '${deployAccount}' \
                       --application '${applicationName}' \
@@ -103,7 +103,7 @@ def call(parameters = [:]) {
             if (deployMode == 'WAR_PROPERTIESFILE') {
                 sh """#!/bin/bash
                       "${neoExecutable}" '${warAction}' \
-                      '${commonDeployParams}' \
+                      ${commonDeployParams} \
                       '${propertiesFile.getAbsolutePath()}'
                    """
             }
