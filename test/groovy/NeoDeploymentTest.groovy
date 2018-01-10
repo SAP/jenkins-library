@@ -60,7 +60,7 @@ class NeoDeploymentTest extends PiperTestBase {
 
         withPipeline(defaultPipeline()).execute(archivePath, 'myCredentialsId')
 
-        assert shellCalls[0] =~ /#!\/bin\/bash "\/opt\/neo\/tools\/neo\.sh" deploy-mta --user 'anonymous' --host 'test\.deploy\.host\.com' --source ".*" --account 'trialuser123' --password '\*\*\*\*\*\*\*\*' --synchronous/
+        assert shellCalls[0] =~ /#!\/bin\/bash "\/opt\/neo\/tools\/neo\.sh" deploy-mta --user 'anonymous' --password '\*\*\*\*\*\*\*\*' --source ".*" --host 'test\.deploy\.host\.com' --account 'trialuser123' --synchronous/
 
         assert messages[1] == "[neoDeploy] Neo executable \"/opt/neo/tools/neo.sh\" retrieved from environment."
 
@@ -90,7 +90,7 @@ class NeoDeploymentTest extends PiperTestBase {
 
         withPipeline(noCredentialsIdPipeline()).execute(archivePath)
 
-        assert shellCalls[0] =~ /#!\/bin\/bash "\/opt\/neo\/tools\/neo\.sh" deploy-mta --user 'defaultUser' --host 'test\.deploy\.host\.com' --source ".*" --account 'trialuser123' --password '\*\*\*\*\*\*\*\*' --synchronous/
+        assert shellCalls[0] =~ /#!\/bin\/bash "\/opt\/neo\/tools\/neo\.sh" deploy-mta --user 'defaultUser' --password '\*\*\*\*\*\*\*\*' --source ".*" --host 'test\.deploy\.host\.com' --account 'trialuser123' --synchronous/
 
         assert messages[1] == "[neoDeploy] Neo executable \"/opt/neo/tools/neo.sh\" retrieved from environment."
     }
@@ -103,7 +103,7 @@ class NeoDeploymentTest extends PiperTestBase {
 
         withPipeline(noCredentialsIdPipeline()).execute(archivePath)
 
-        assert shellCalls[0] =~ /#!\/bin\/bash "neo" deploy-mta --user 'defaultUser' --host 'test\.deploy\.host\.com' --source ".*" --account 'trialuser123' --password '\*\*\*\*\*\*\*\*' --synchronous/
+        assert shellCalls[0] =~ /#!\/bin\/bash "neo" deploy-mta --user 'defaultUser' --password '\*\*\*\*\*\*\*\*' --source ".*" --host 'test\.deploy\.host\.com' --account 'trialuser123' --synchronous/
 
         assert messages[1] == "Using Neo executable from PATH."
     }
@@ -116,7 +116,7 @@ class NeoDeploymentTest extends PiperTestBase {
 
         withPipeline(neoHomeParameterPipeline()).execute(archivePath, 'myCredentialsId')
 
-        assert shellCalls[0] =~ /#!\/bin\/bash "\/etc\/neo\/tools\/neo\.sh" deploy-mta --user 'anonymous' --host 'test\.deploy\.host\.com' --source ".*" --account 'trialuser123' --password '\*\*\*\*\*\*\*\*' --synchronous.*/
+        assert shellCalls[0] =~ /#!\/bin\/bash "\/etc\/neo\/tools\/neo\.sh" deploy-mta --user 'anonymous' --password '\*\*\*\*\*\*\*\*' --source ".*" --host 'test\.deploy\.host\.com' --account 'trialuser123' --synchronous.*/
 
         assert messages[1] == "[neoDeploy] Neo executable \"/etc/neo/tools/neo.sh\" retrieved from parameters."
 
