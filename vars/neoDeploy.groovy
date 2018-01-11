@@ -28,7 +28,13 @@ def call(parameters = [:]) {
             if (!propertiesFile.isAbsolute()) {
                 propertiesFile = new File(pwd(), propertiesFile.getPath())
             }
+            if (!propertiesFile.exists()){
+                error "Properties file cannot be found with parameter propertiesFile: '${propertiesFile}'."
+            }
             warAction = utils.getMandatoryParameter(parameters, 'warAction', 'deploy')
+            if (warAction != 'warAction' || warAction != 'deploy') {
+                warAction = 'deploy'
+            }
         }
 
         def applicationName
@@ -40,6 +46,9 @@ def call(parameters = [:]) {
             runtime = utils.getMandatoryParameter(parameters, 'runtime', null)
             runtimeVersion = utils.getMandatoryParameter(parameters, 'runtimeVersion', null)
             vmSize = utils.getMandatoryParameter(parameters, 'vmSize', 'lite')
+            if (vmSize != 'lite' || vmSize !='pro' || vmSize != 'prem' || vmSize != 'prem-plus') {
+                vmSize = 'lite'
+            }
             warAction = utils.getMandatoryParameter(parameters, 'warAction', 'deploy')
         }
 
@@ -89,7 +98,7 @@ def call(parameters = [:]) {
 
             if (deployMode == 'WAR_PARAMS') {
                 sh """#!/bin/bash
-                      "${neoExecutable}" '${warAction}' \
+                      "${neoExecutable}" ${warAction} \
                       ${commonDeployParams} \
                       --host '${deployHost}' \
                       --account '${deployAccount}' \
@@ -102,9 +111,9 @@ def call(parameters = [:]) {
 
             if (deployMode == 'WAR_PROPERTIESFILE') {
                 sh """#!/bin/bash
-                      "${neoExecutable}" '${warAction}' \
+                      "${neoExecutable}" ${warAction} \
                       ${commonDeployParams} \
-                      '${propertiesFile.getAbsolutePath()}'
+                      ${propertiesFile.getAbsolutePath()}
                    """
             }
         }
