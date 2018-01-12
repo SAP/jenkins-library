@@ -43,6 +43,10 @@ class NeoDeploymentTest extends BasePipelineTest {
         propertiesFilePath = "${tmp.getRoot().toURI().getPath()}workspace/config.properties"
 
         helper.registerAllowedMethod('error', [String], { s -> throw new AbortException(s) })
+        helper.registerAllowedMethod('fileExists', [String], { s ->
+            f = new File(s)
+            return f.exists()
+        })
         helper.registerAllowedMethod('usernamePassword', [Map], { m -> return m })
         helper.registerAllowedMethod('withCredentials', [List, Closure], { l, c ->
             if(l[0].credentialsId == 'myCredentialsId') {
