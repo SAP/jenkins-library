@@ -5,7 +5,7 @@ import static com.lesfurets.jenkins.unit.global.lib.LibraryConfiguration.library
 class SharedLibraryCreator {
 
     static def lazyLoadedLibrary = library()
-        .name('piper-library')
+        .name('piper-library-os')
         .retriever(new ProjectSource())
         .targetPath('is/not/necessary')
         .defaultVersion("master")
@@ -14,7 +14,7 @@ class SharedLibraryCreator {
         .build()
 
     static def implicitLoadedLibrary = library()
-        .name('piper-library')
+        .name('piper-library-os')
         .retriever(new ProjectSource())
         .targetPath('is/not/necessary')
         .defaultVersion("master")
