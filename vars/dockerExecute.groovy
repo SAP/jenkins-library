@@ -23,6 +23,11 @@ def call(Map parameters = [:], body) {
                 echo "[WARNING][${STEP_NAME}] No docker environment found (command 'which docker' did not return with '0'). Configured docker image '${dockerImage}' will not be used."
                 dockerImage = null
             }
+
+            returnCode = sh script: 'docker ps -q > /dev/null', returnStatus: true
+            if(returnCode != 0) {
+                echo "[WARNING][$STEP_NAME] Cannot connect to docker daemon (command 'docker ps' did not return with '0'). Configured docker image '${dockerImage}' will not be used."
+            }
         }
 
         if(!dockerImage){
