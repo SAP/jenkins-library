@@ -15,18 +15,14 @@ public class PiperTestBase extends BasePipelineTest {
 
     private File pipeline
 
-    protected messages = [], shellCalls = []
+    protected shellCalls = []
 
     void setUp() {
 
         super.setUp()
 
-        messages.clear()
         shellCalls.clear()
 
-        preparePiperLib()
-
-        helper.registerAllowedMethod('echo', [String], {s -> messages.add(s)} )
         helper.registerAllowedMethod('sh', [String], {  s ->
             shellCalls.add(s.replaceAll(/\s+/, " ").trim())
         })
@@ -44,17 +40,5 @@ public class PiperTestBase extends BasePipelineTest {
     protected withPipeline(p) {
         pipeline << p
         loadScript(pipeline.toURI().getPath())
-    }
-
-    private preparePiperLib() {
-        def piperLib = library()
-            .name('piper-library-os')
-            .retriever(projectSource())
-            .targetPath('clonePath/is/not/necessary')
-            .defaultVersion('<irrelevant>')
-            .allowOverride(true)
-            .implicit(false)
-            .build()
-        helper.registerSharedLibrary(piperLib)
     }
 }

@@ -4,9 +4,12 @@ import org.jenkinsci.plugins.pipeline.utility.steps.shaded.org.yaml.snakeyaml.pa
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
-
 import org.junit.rules.ExpectedException
+import org.junit.rules.RuleChain
 import org.junit.rules.TemporaryFolder
+
+import util.JenkinsLoggingRule
+import util.JenkinsSetupRule
 
 public class MTABuildTest extends PiperTestBase {
 
@@ -16,15 +19,23 @@ public class MTABuildTest extends PiperTestBase {
     @Rule
     public TemporaryFolder tmp = new TemporaryFolder()
 
+    public JenkinsSetupRule jsr = new JenkinsSetupRule(this)
+
+    public JenkinsLoggingRule jlr = new JenkinsLoggingRule(this)
+
+    @Rule
+    public RuleChain ruleChain =
+        RuleChain.outerRule(jsr)
+            .around(jlr)
+
     def currentDir
     def otherDir
     def mtaBuildShEnv
 
 
     @Before
-    void setUp() {
+    void init() {
 
-        super.setUp()
         currentDir = tmp.newFolder().toURI().getPath()[0..-2] //omit final '/'
         otherDir = tmp.newFolder().toURI().getPath()[0..-2] //omit final '/'
 
@@ -69,7 +80,7 @@ public class MTABuildTest extends PiperTestBase {
 
         assert mtarFilePath == "${currentDir}/com.mycompany.northwind.mtar"
 
-        assert messages[1] == "[mtaBuild] MTA JAR \"/opt/mta/mta.jar\" retrieved from environment."
+        assert jlr.log.contains( "[mtaBuild] MTA JAR \"/opt/mta/mta.jar\" retrieved from environment.")
     }
 
 
@@ -90,7 +101,7 @@ public class MTABuildTest extends PiperTestBase {
 
         assert mtarFilePath == "${currentDir}/com.mycompany.northwind.mtar"
 
-        assert messages[1] == "[mtaBuild] MTA JAR \"/opt/mta/mta.jar\" retrieved from environment."
+        assert jlr.log.contains("[mtaBuild] MTA JAR \"/opt/mta/mta.jar\" retrieved from environment.")
     }
 
 
@@ -113,7 +124,7 @@ public class MTABuildTest extends PiperTestBase {
 
         assert mtarFilePath == "${currentDir}/com.mycompany.northwind.mtar"
 
-        assert messages[1] == "[mtaBuild] MTA JAR \"/opt/mta/mta.jar\" retrieved from environment."
+        assert jlr.log.contains("[mtaBuild] MTA JAR \"/opt/mta/mta.jar\" retrieved from environment.")
     }
 
     @Test
@@ -131,7 +142,7 @@ public class MTABuildTest extends PiperTestBase {
 
         assert mtarFilePath == "${currentDir}/com.mycompany.northwind.mtar"
 
-        assert messages[1] == "[mtaBuild] Using MTA JAR from current working directory."
+        assert jlr.log.contains( "[mtaBuild] Using MTA JAR from current working directory." )
     }
 
 
@@ -150,7 +161,7 @@ public class MTABuildTest extends PiperTestBase {
 
         assert mtarFilePath == "${currentDir}/com.mycompany.northwind.mtar"
 
-        assert messages[1] == "[mtaBuild] MTA JAR \"/etc/mta/mta.jar\" retrieved from parameters."
+        assert jlr.log.contains("[mtaBuild] MTA JAR \"/etc/mta/mta.jar\" retrieved from parameters.".toString())
     }
 
 

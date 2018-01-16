@@ -1,6 +1,9 @@
 import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
 import org.yaml.snakeyaml.Yaml
+
+import util.JenkinsSetupRule
 
 import static org.junit.Assert.assertEquals
 import static org.junit.Assert.assertNotNull
@@ -9,9 +12,11 @@ class SetupCommonPipelineEnvironmentTest extends PiperTestBase {
 
     def usedConfigFile
 
+    @Rule
+    public JenkinsSetupRule jsr = new JenkinsSetupRule(this)
+
     @Before
-    void setUp() {
-        super.setUp()
+    void init() {
 
         def examplePipelineConfig = new File('test/resources/test_pipeline_config.yml').text
 
