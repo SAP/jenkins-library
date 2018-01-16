@@ -3,14 +3,20 @@ import org.junit.Rule
 import org.junit.Test
 import org.yaml.snakeyaml.Yaml
 
+import com.lesfurets.jenkins.unit.BasePipelineTest
+
 import util.JenkinsSetupRule
 
 import static org.junit.Assert.assertEquals
 import static org.junit.Assert.assertNotNull
 
-class SetupCommonPipelineEnvironmentTest extends PiperTestBase {
+class SetupCommonPipelineEnvironmentTest extends BasePipelineTest {
 
     def usedConfigFile
+
+    def setupCommonPipelineEnvironmentScript
+
+    def commonPipelineEnvironment
 
     @Rule
     public JenkinsSetupRule jsr = new JenkinsSetupRule(this)
@@ -33,16 +39,18 @@ class SetupCommonPipelineEnvironmentTest extends PiperTestBase {
         helper.registerAllowedMethod("fileExists", [String], { String path ->
             return path.endsWith('.pipeline/config.yml')
         })
+
+        setupCommonPipelineEnvironmentScript = loadScript("setupCommonPipelineEnvironment.groovy").setupCommonPipelineEnvironment
+        commonPipelineEnvironment = loadScript('commonPipelineEnvironment.groovy').commonPipelineEnvironment
     }
 
     @Test
     void testIsConfigurationAvailable() throws Exception {
-        def script = loadScript("test/resources/pipelines/setupCommonPipelineEnvironmentTest/loadConfiguration.groovy")
-        script.execute()
+        setupCommonPipelineEnvironmentScript.call(script: [commonPipelineEnvironment: commonPipelineEnvironment])
 
         assertEquals('.pipeline/config.yml', usedConfigFile)
-        assertNotNull(script.commonPipelineEnvironment.configuration)
-        assertEquals('develop', script.commonPipelineEnvironment.configuration.general.productiveBranch)
-        assertEquals('my-maven-docker', script.commonPipelineEnvironment.configuration.steps.mavenExecute.dockerImage)
+        assertNotNull(commonPipelineEnvironment.configuration)
+        assertEquals('develop', commonPipelineEnvironment.configuration.general.productiveBranch)
+        assertEquals('my-maven-docker', commonPipelineEnvironment.configuration.steps.mavenExecute.dockerImage)
     }
 }

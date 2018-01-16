@@ -7,12 +7,15 @@ import org.junit.Test
 import org.junit.rules.ExpectedException
 import org.junit.rules.RuleChain
 import org.junit.rules.TemporaryFolder
+
+import com.lesfurets.jenkins.unit.BasePipelineTest
+
 import util.JenkinsConfigRule
 import util.JenkinsLoggingRule
 import util.JenkinsSetupRule
 import util.JenkinsShellCallRule
 
-public class MTABuildTest extends PiperTestBase {
+public class MTABuildTest extends BasePipelineTest {
 
     private ExpectedException thrown = new ExpectedException()
     private TemporaryFolder tmp = new TemporaryFolder()
@@ -32,6 +35,8 @@ public class MTABuildTest extends PiperTestBase {
     def otherDir
     def mtaBuildShEnv
 
+    def mtaBuildScript
+    def cpe
 
     @Before
     void init() {
@@ -60,6 +65,8 @@ public class MTABuildTest extends PiperTestBase {
         binding.setVariable('JAVA_HOME', '/opt/java')
         binding.setVariable('env', [:])
 
+        mtaBuildScript = loadScript("mtaBuild.groovy").mtaBuild
+        cpe = loadScript('commonPipelineEnvironment.groovy').commonPipelineEnvironment
     }
 
 
@@ -70,7 +77,8 @@ public class MTABuildTest extends PiperTestBase {
 
         new File("${currentDir}/mta.yaml") << defaultMtaYaml()
 
-        def mtarFilePath = withPipeline(defaultPipeline()).execute()
+        def mtarFilePath = mtaBuildScript.call(script: [commonPipelineEnvironment: cpe],
+                                         buildTarget: 'NEO')
 
         assert jscr.shell[0] =~ /sed -ie "s\/\\\$\{timestamp\}\/`date \+%Y%m%d%H%M%S`\/g" ".*\/mta.yaml"$/
 
@@ -91,7 +99,10 @@ public class MTABuildTest extends PiperTestBase {
 
         new File("${currentDir}/mta.yaml") << defaultMtaYaml()
 
-        def mtarFilePath = withPipeline(returnMtarFilePathFromCommonPipelineEnvironmentPipeline()).execute()
+        mtaBuildScript.call(script: [commonPipelineEnvironment: cpe],
+                      buildTarget: 'NEO')
+
+        def mtarFilePath = cpe.getMtarFilePath()
 
         assert jscr.shell[0] =~ /sed -ie "s\/\\\$\{timestamp\}\/`date \+%Y%m%d%H%M%S`\/g" ".*\/mta.yaml"$/
 
@@ -111,10 +122,14 @@ public class MTABuildTest extends PiperTestBase {
         binding.getVariable('env')['MTA_JAR_LOCATION'] = '/opt/mta'
 
         def newDirName = 'newDir'
-        new File("${currentDir}/${newDirName}").mkdirs()
-        new File("${currentDir}/${newDirName}/mta.yaml") << defaultMtaYaml()
+        def newDir = new File("${currentDir}/${newDirName}")
 
-        def mtarFilePath = withPipeline(withSurroundingDirPipeline()).execute(newDirName)
+        newDir.mkdirs()
+        new File(newDir, 'mta.yaml') << defaultMtaYaml()
+
+        helper.registerAllowedMethod('pwd', [], { newDir } )
+
+        def mtarFilePath = mtaBuildScript.call(script: [commonPipelineEnvironment: cpe], buildTarget: 'NEO')
 
         assert jscr.shell[0] =~ /sed -ie "s\/\\\$\{timestamp\}\/`date \+%Y%m%d%H%M%S`\/g" ".*\/newDir\/mta.yaml"$/
 
@@ -122,7 +137,7 @@ public class MTABuildTest extends PiperTestBase {
 
         assert jscr.shell[1].contains(' -jar /opt/mta/mta.jar --mtar ')
 
-        assert mtarFilePath == "${currentDir}/com.mycompany.northwind.mtar"
+        assert mtarFilePath == "${currentDir}/${newDirName}/com.mycompany.northwind.mtar"
 
         assert jlr.log.contains("[mtaBuild] MTA JAR \"/opt/mta/mta.jar\" retrieved from environment.")
     }
@@ -132,7 +147,7 @@ public class MTABuildTest extends PiperTestBase {
 
         new File("${currentDir}/mta.yaml") << defaultMtaYaml()
 
-        def mtarFilePath = withPipeline(defaultPipeline()).execute()
+        def mtarFilePath = mtaBuildScript.call(script: [commonPipelineEnvironment: cpe], buildTarget: 'NEO')
 
         assert jscr.shell[0] =~ /sed -ie "s\/\\\$\{timestamp\}\/`date \+%Y%m%d%H%M%S`\/g" ".*\/mta.yaml"$/
 
@@ -151,17 +166,17 @@ public class MTABuildTest extends PiperTestBase {
 
         new File("${currentDir}/mta.yaml") << defaultMtaYaml()
 
-        def mtarFilePath = withPipeline(mtaJarLocationAsParameterPipeline()).execute()
+        def mtarFilePath = mtaBuildScript.call(mtaJarLocation: '/mylocation/mta', buildTarget: 'NEO')
 
         assert jscr.shell[0] =~ /sed -ie "s\/\\\$\{timestamp\}\/`date \+%Y%m%d%H%M%S`\/g" ".*\/mta.yaml"$/
 
         assert jscr.shell[1].contains("PATH=./node_modules/.bin:/usr/bin")
 
-        assert jscr.shell[1].contains(' -jar /etc/mta/mta.jar --mtar ')
+        assert jscr.shell[1].contains(' -jar /mylocation/mta/mta.jar --mtar ')
 
         assert mtarFilePath == "${currentDir}/com.mycompany.northwind.mtar"
 
-        assert jlr.log.contains("[mtaBuild] MTA JAR \"/etc/mta/mta.jar\" retrieved from parameters.".toString())
+        assert jlr.log.contains("[mtaBuild] MTA JAR \"/mylocation/mta/mta.jar\" retrieved from parameters.".toString())
     }
 
 
@@ -169,7 +184,8 @@ public class MTABuildTest extends PiperTestBase {
     public void noMtaPresentTest(){
         thrown.expect(FileNotFoundException)
 
-        withPipeline(defaultPipeline()).execute()
+        mtaBuildScript.call(script: [commonPipelineEnvironment: cpe],
+                      buildTarget: 'NEO')
     }
 
 
@@ -180,7 +196,8 @@ public class MTABuildTest extends PiperTestBase {
 
         new File("${currentDir}/mta.yaml") << badMtaYaml()
 
-        withPipeline(defaultPipeline()).execute()
+        mtaBuildScript.call(script: [commonPipelineEnvironment: cpe],
+                      buildTarget: 'NEO')
     }
 
 
@@ -191,7 +208,8 @@ public class MTABuildTest extends PiperTestBase {
 
         new File("${currentDir}/mta.yaml") << noIdMtaYaml()
 
-        withPipeline(defaultPipeline()).execute()
+        mtaBuildScript.call(script: [commonPipelineEnvironment: cpe],
+                      buildTarget: 'NEO')
     }
 
 
@@ -202,73 +220,8 @@ public class MTABuildTest extends PiperTestBase {
 
         new File("${currentDir}/mta.yaml") << defaultMtaYaml()
 
-        withPipeline(noBuildTargetPipeline()).execute()
+        mtaBuildScript.call(script: [commonPipelineEnvironment: cpe])
     }
-
-
-    private defaultPipeline(){
-        return '''
-               @Library('piper-library-os')
-
-               execute(){
-                 mtaBuild buildTarget: 'NEO'
-               }
-
-               return this
-               '''
-    }
-
-    private returnMtarFilePathFromCommonPipelineEnvironmentPipeline(){
-        return '''
-               @Library('piper-library-os')
-
-               execute(){
-                 mtaBuild buildTarget: 'NEO'
-                 return commonPipelineEnvironment.getMtarFilePath()
-               }
-
-               return this
-               '''
-    }
-
-    private mtaJarLocationAsParameterPipeline(){
-        return '''
-               @Library('piper-library-os')
-
-               execute(){
-                 mtaBuild mtaJarLocation: '/etc/mta', buildTarget: 'NEO'
-               }
-
-               return this
-               '''
-    }
-
-    private withSurroundingDirPipeline(){
-        return '''
-               @Library('piper-library-os')
-
-               execute(dirPath){
-                 dir("${dirPath}"){
-                   mtaBuild buildTarget: 'NEO'
-                 }
-               }
-
-               return this
-               '''
-    }
-
-    private noBuildTargetPipeline(){
-        return '''
-               @Library('piper-library-os')
-
-               execute(){
-                 mtaBuild()
-               }
-
-               return this
-               '''
-    }
-
 
     private defaultMtaYaml(){
         return  '''

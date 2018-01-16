@@ -7,11 +7,13 @@ import org.junit.rules.ExpectedException
 import org.junit.rules.RuleChain
 import org.junit.rules.TemporaryFolder
 
+import com.lesfurets.jenkins.unit.BasePipelineTest
+
 import util.JenkinsConfigRule
 import util.JenkinsLoggingRule
 import util.JenkinsSetupRule
 
-class ToolValidateTest extends PiperTestBase {
+class ToolValidateTest extends BasePipelineTest {
 
     private ExpectedException thrown = new ExpectedException().none()
     private TemporaryFolder tmp = new TemporaryFolder()
@@ -27,12 +29,11 @@ class ToolValidateTest extends PiperTestBase {
             .around(jcr)
 
     private notEmptyDir
-    private script
+
+    def toolValidateScript
 
     @Before
     void init() {
-
-        script = withPipeline(defaultPipeline())
 
         notEmptyDir = tmp.newFolder('notEmptyDir')
         def path = "${notEmptyDir.getAbsolutePath()}${File.separator}test.txt"
@@ -41,8 +42,7 @@ class ToolValidateTest extends PiperTestBase {
 
         binding.setVariable('JAVA_HOME', notEmptyDir.getAbsolutePath())
 
-        binding.setVariable('home', notEmptyDir.getAbsolutePath())
-
+        toolValidateScript =  loadScript("toolValidate.groovy").toolValidate
     }
 
 
@@ -52,10 +52,7 @@ class ToolValidateTest extends PiperTestBase {
         thrown.expect(IllegalArgumentException)
         thrown.expectMessage("The parameter 'home' can not be null or empty.")
 
-        binding.setVariable('tool', 'java')
-        binding.setVariable('home', null)
-
-        script.execute()
+        toolValidateScript.call(tool: 'java', home: null)
     }
 
     @Test
@@ -64,10 +61,7 @@ class ToolValidateTest extends PiperTestBase {
         thrown.expect(IllegalArgumentException)
         thrown.expectMessage("The parameter 'home' can not be null or empty.")
 
-        binding.setVariable('tool', 'java')
-        binding.setVariable('home', '')
-
-        script.execute()
+        toolValidateScript.call(tool: 'java', home: '')
     }
 
     @Test
@@ -76,9 +70,7 @@ class ToolValidateTest extends PiperTestBase {
         thrown.expect(IllegalArgumentException)
         thrown.expectMessage("The parameter 'tool' can not be null or empty.")
 
-        binding.setVariable('tool', null)
-
-        script.execute()
+        toolValidateScript.call(tool: null)
     }
 
     @Test
@@ -87,9 +79,7 @@ class ToolValidateTest extends PiperTestBase {
         thrown.expect(IllegalArgumentException)
         thrown.expectMessage("The parameter 'tool' can not be null or empty.")
 
-        binding.setVariable('tool', '')
-
-        script.execute()
+        toolValidateScript.call(tool: '')
     }
 
     @Test
@@ -98,9 +88,7 @@ class ToolValidateTest extends PiperTestBase {
         thrown.expect(AbortException)
         thrown.expectMessage("The tool 'test' is not supported.")
 
-        binding.setVariable('tool', 'test')
-
-        script.execute()
+        toolValidateScript.call(tool: 'test', home: notEmptyDir.getAbsolutePath())
     }
 
     @Test
@@ -110,9 +98,8 @@ class ToolValidateTest extends PiperTestBase {
         thrown.expectMessage('The validation of Java failed.')
 
         helper.registerAllowedMethod('sh', [Map], { Map m -> getNoVersion(m) })
-        binding.setVariable('tool', 'java')
 
-        script.execute()
+        toolValidateScript.call(tool: 'java', home: notEmptyDir.getAbsolutePath())
     }
 
     @Test
@@ -122,9 +109,8 @@ class ToolValidateTest extends PiperTestBase {
         thrown.expectMessage('The validation of SAP Multitarget Application Archive Builder failed.')
 
         helper.registerAllowedMethod('sh', [Map], { Map m -> getNoVersion(m) })
-        binding.setVariable('tool', 'mta')
 
-        script.execute()
+        toolValidateScript.call(tool: 'mta', home: notEmptyDir.getAbsolutePath())
     }
 
     @Test
@@ -134,9 +120,8 @@ class ToolValidateTest extends PiperTestBase {
         thrown.expectMessage('The validation of SAP Cloud Platform Console Client failed.')
 
         helper.registerAllowedMethod('sh', [Map], { Map m -> getNoVersion(m) })
-        binding.setVariable('tool', 'neo')
 
-        script.execute()
+        toolValidateScript.call(tool: 'neo', home: notEmptyDir.getAbsolutePath())
     }
 
     @Test
@@ -146,7 +131,8 @@ class ToolValidateTest extends PiperTestBase {
         thrown.expectMessage('The validation of Change Management Command Line Interface failed.')
 
         helper.registerAllowedMethod('sh', [Map], { Map m -> getNoVersion(m) })
-        binding.setVariable('tool', 'cm')
+
+        toolValidateScript.call(tool: 'cm', home: notEmptyDir.getAbsolutePath())
 
         script.execute()
     }
@@ -158,9 +144,8 @@ class ToolValidateTest extends PiperTestBase {
         thrown.expectMessage('The installed version of Java is 1.7.0.')
 
         helper.registerAllowedMethod('sh', [Map], { Map m -> getIncompatibleVersion(m) })
-        binding.setVariable('tool', 'java')
 
-        script.execute()
+        toolValidateScript.call(tool: 'java', home: notEmptyDir.getAbsolutePath())
     }
 
     @Test
@@ -170,9 +155,8 @@ class ToolValidateTest extends PiperTestBase {
         thrown.expectMessage('The installed version of SAP Multitarget Application Archive Builder is 1.0.5.')
 
         helper.registerAllowedMethod('sh', [Map], { Map m -> getIncompatibleVersion(m) })
-        binding.setVariable('tool', 'mta')
 
-        script.execute()
+        toolValidateScript.call(tool: 'mta', home: notEmptyDir.getAbsolutePath())
     }
 
     @Test
@@ -182,9 +166,8 @@ class ToolValidateTest extends PiperTestBase {
         thrown.expectMessage('The installed version of SAP Cloud Platform Console Client is 1.126.51.')
 
         helper.registerAllowedMethod('sh', [Map], { Map m -> getIncompatibleVersion(m) })
-        binding.setVariable('tool', 'neo')
 
-        script.execute()
+        toolValidateScript.call(tool: 'neo', home: notEmptyDir.getAbsolutePath())
     }
 
     @Test
@@ -196,16 +179,15 @@ class ToolValidateTest extends PiperTestBase {
         helper.registerAllowedMethod('sh', [Map], { Map m -> getIncompatibleVersion(m) })
         binding.setVariable('tool', 'cm')
 
-        script.execute()
+        toolValidateScript.call(tool: 'cm', home: notEmptyDir.getAbsolutePath())
     }
 
     @Test
     void validateJavaTest() {
 
         helper.registerAllowedMethod('sh', [Map], { Map m -> getVersion(m) })
-        binding.setVariable('tool', 'java')
 
-        script.execute()
+        toolValidateScript.call(tool: 'java', home: notEmptyDir.getAbsolutePath())
 
         assert jlr.log.contains('--- BEGIN LIBRARY STEP: toolValidate.groovy ---')
         assert jlr.log.contains('[INFO] Validating Java version 1.8.0 or compatible version.')
@@ -217,9 +199,8 @@ class ToolValidateTest extends PiperTestBase {
     void validateMtaTest() {
 
         helper.registerAllowedMethod('sh', [Map], { Map m -> getVersion(m) })
-        binding.setVariable('tool', 'mta')
 
-        script.execute()
+        toolValidateScript.call(tool: 'mta', home: notEmptyDir.getAbsolutePath())
 
         assert jlr.log.contains('--- BEGIN LIBRARY STEP: toolValidate.groovy ---')
         assert jlr.log.contains('[INFO] Validating SAP Multitarget Application Archive Builder version 1.0.6 or compatible version.')
@@ -231,9 +212,8 @@ class ToolValidateTest extends PiperTestBase {
     void validateNeoTest() {
 
         helper.registerAllowedMethod('sh', [Map], { Map m -> getVersion(m) })
-        binding.setVariable('tool', 'neo')
 
-        script.execute()
+        toolValidateScript.call(tool: 'neo', home: notEmptyDir.getAbsolutePath())
 
         assert jlr.log.contains('--- BEGIN LIBRARY STEP: toolValidate.groovy ---')
         assert jlr.log.contains('[INFO] Validating SAP Cloud Platform Console Client version 3.39.10 or compatible version.')
@@ -245,31 +225,13 @@ class ToolValidateTest extends PiperTestBase {
     void validateCmTest() {
 
         helper.registerAllowedMethod('sh', [Map], { Map m -> getVersion(m) })
-        binding.setVariable('tool', 'cm')
 
-        script.execute()
+        toolValidateScript.call(tool: 'cm', home: notEmptyDir.getAbsolutePath())
 
         assert jlr.log.contains('--- BEGIN LIBRARY STEP: toolValidate.groovy ---')
         assert jlr.log.contains('[INFO] Validating Change Management Command Line Interface version 0.0.1 or compatible version.')
         assert jlr.log.contains('[INFO] Change Management Command Line Interface version 0.0.1 is installed.')
         assert jlr.log.contains('--- END LIBRARY STEP: toolValidate.groovy ---')
-    }
-
-
-    private defaultPipeline(){
-        return """
-               @Library('piper-library-os')
-
-               execute() {
-
-                 node() {
-
-                   toolValidate tool: tool, home: home
-                 }
-               }
-
-               return this
-               """
     }
 
     private getNoVersion(Map m) { 
