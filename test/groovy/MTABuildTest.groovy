@@ -7,7 +7,7 @@ import org.junit.Test
 import org.junit.rules.ExpectedException
 import org.junit.rules.RuleChain
 import org.junit.rules.TemporaryFolder
-
+import util.JenkinsConfigRule
 import util.JenkinsLoggingRule
 import util.JenkinsSetupRule
 import util.JenkinsShellCallRule
@@ -25,12 +25,15 @@ public class MTABuildTest extends PiperTestBase {
     public JenkinsLoggingRule jlr = new JenkinsLoggingRule(this)
 
     public JenkinsShellCallRule jscr = new JenkinsShellCallRule(this)
+	
+	public JenkinsConfigRule jcr = new JenkinsConfigRule(this)
 
     @Rule
     public RuleChain ruleChain =
         RuleChain.outerRule(jsr)
             .around(jlr)
             .around(jscr)
+			.around(jcr)
 
     def currentDir
     def otherDir

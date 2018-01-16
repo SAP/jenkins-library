@@ -6,6 +6,7 @@ import org.junit.Test
 import static org.junit.Assert.assertEquals
 import static org.junit.Assert.assertTrue
 
+import util.JenkinsConfigRule
 import util.JenkinsSetupRule
 import util.JenkinsShellCallRule
 
@@ -19,6 +20,9 @@ class MavenExecuteTest extends PiperTestBase {
 
     @Rule
     public JenkinsShellCallRule jscr = new JenkinsShellCallRule(this)
+	
+	@Rule
+	public JenkinsConfigRule jcr = new JenkinsConfigRule(this)
 
     @Before
     void init() {
