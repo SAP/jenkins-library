@@ -7,6 +7,7 @@ import org.junit.rules.ExpectedException
 import org.junit.rules.RuleChain
 import org.junit.rules.TemporaryFolder
 
+import util.JenkinsConfigRule
 import util.JenkinsLoggingRule
 import util.JenkinsSetupRule
 
@@ -15,6 +16,7 @@ class ToolValidateTest extends PiperTestBase {
     private ExpectedException thrown = new ExpectedException().none()
     private TemporaryFolder tmp = new TemporaryFolder()
     private JenkinsLoggingRule jlr = new JenkinsLoggingRule(this)
+    private JenkinsConfigRule jcr = new JenkinsConfigRule(this)
 
     @Rule
     public RuleChain ruleChain =
@@ -22,6 +24,7 @@ class ToolValidateTest extends PiperTestBase {
             .around(thrown)
             .around(new JenkinsSetupRule(this))
             .around(jlr)
+            .around(jcr)
 
     private notEmptyDir
     private script

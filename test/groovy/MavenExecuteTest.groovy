@@ -7,6 +7,7 @@ import org.junit.rules.RuleChain
 import static org.junit.Assert.assertEquals
 import static org.junit.Assert.assertTrue
 
+import util.JenkinsConfigRule
 import util.JenkinsSetupRule
 import util.JenkinsShellCallRule
 
@@ -19,6 +20,7 @@ class MavenExecuteTest extends PiperTestBase {
     @Rule
     public RuleChain ruleChain = RuleChain.outerRule(new JenkinsSetupRule(this))
                                               .around(jscr)
+                                              .around(new JenkinsConfigRule(this))
 
     @Before
     void init() {
