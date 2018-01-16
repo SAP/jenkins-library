@@ -2,7 +2,7 @@
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
-
+import util.JenkinsConfigRule
 import util.JenkinsLoggingRule
 import util.JenkinsSetupRule
 
@@ -18,6 +18,9 @@ class DockerExecuteTest extends PiperTestBase {
 
     @Rule
     public JenkinsLoggingRule jlr = new JenkinsLoggingRule(this)
+
+    @Rule
+    public JenkinsConfigRule jcr = new JenkinsConfigRule(this)
 
     int whichDockerReturnValue = 0
 
@@ -52,8 +55,8 @@ class DockerExecuteTest extends PiperTestBase {
         assertTrue(docker.getParameters().contains(' --volume my_vol:/my_vol'))
     }
 
-	@Test
-	void testDockerNotInstalledResultsInLocalExecution() throws Exception {
+    @Test
+    void testDockerNotInstalledResultsInLocalExecution() throws Exception {
 
         whichDockerReturnValue = 1
         def script = loadScript("test/resources/pipelines/dockerExecuteTest/executeInsideDockerWithParameters.groovy")

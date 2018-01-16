@@ -1,4 +1,5 @@
 import hudson.AbortException
+import util.JenkinsConfigRule
 import util.JenkinsSetupRule
 
 import org.junit.rules.TemporaryFolder
@@ -14,6 +15,9 @@ class PipelineExecuteTest extends PiperTestBase {
 
     @Rule
     public JenkinsSetupRule jsr = new JenkinsSetupRule(this)
+
+    @Rule
+    public JenkinsConfigRule jcr = new JenkinsConfigRule(this)
 
     def pipelinePath
     def checkoutParameters = [:]
