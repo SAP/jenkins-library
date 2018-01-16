@@ -7,6 +7,7 @@ import org.junit.rules.ExpectedException
 
 import util.JenkinsLoggingRule
 import util.JenkinsSetupRule
+import util.JenkinsShellCallRule
 
 class NeoDeploymentTest extends PiperTestBase {
 
@@ -21,6 +22,9 @@ class NeoDeploymentTest extends PiperTestBase {
 
     @Rule
     public JenkinsLoggingRule jlr = new JenkinsLoggingRule(this)
+
+    @Rule
+    public JenkinsShellCallRule jscr = new JenkinsShellCallRule(this)
 
     def archivePath
 
@@ -62,7 +66,7 @@ class NeoDeploymentTest extends PiperTestBase {
 
         withPipeline(defaultPipeline()).execute(archivePath, 'myCredentialsId')
 
-        assert shellCalls[0] =~ /#!\/bin\/bash "\/opt\/neo\/tools\/neo\.sh" deploy-mta --user 'anonymous' --host 'test\.deploy\.host\.com' --source ".*" --account 'trialuser123' --password '\*\*\*\*\*\*\*\*' --synchronous/
+        assert jscr.shell[0] =~ /#!\/bin\/bash "\/opt\/neo\/tools\/neo\.sh" deploy-mta --user 'anonymous' --host 'test\.deploy\.host\.com' --source ".*" --account 'trialuser123' --password '\*\*\*\*\*\*\*\*' --synchronous/
 
         assert jlr.log.contains("[neoDeploy] Neo executable \"/opt/neo/tools/neo.sh\" retrieved from environment.")
 
@@ -92,7 +96,7 @@ class NeoDeploymentTest extends PiperTestBase {
 
         withPipeline(noCredentialsIdPipeline()).execute(archivePath)
 
-        assert shellCalls[0] =~ /#!\/bin\/bash "\/opt\/neo\/tools\/neo\.sh" deploy-mta --user 'defaultUser' --host 'test\.deploy\.host\.com' --source ".*" --account 'trialuser123' --password '\*\*\*\*\*\*\*\*' --synchronous/
+        assert jscr.shell[0] =~ /#!\/bin\/bash "\/opt\/neo\/tools\/neo\.sh" deploy-mta --user 'defaultUser' --host 'test\.deploy\.host\.com' --source ".*" --account 'trialuser123' --password '\*\*\*\*\*\*\*\*' --synchronous/
 
         assert jlr.log.contains("[neoDeploy] Neo executable \"/opt/neo/tools/neo.sh\" retrieved from environment.")
     }
@@ -105,7 +109,7 @@ class NeoDeploymentTest extends PiperTestBase {
 
         withPipeline(noCredentialsIdPipeline()).execute(archivePath)
 
-        assert shellCalls[0] =~ /#!\/bin\/bash "neo" deploy-mta --user 'defaultUser' --host 'test\.deploy\.host\.com' --source ".*" --account 'trialuser123' --password '\*\*\*\*\*\*\*\*' --synchronous/
+        assert jscr.shell[0] =~ /#!\/bin\/bash "neo" deploy-mta --user 'defaultUser' --host 'test\.deploy\.host\.com' --source ".*" --account 'trialuser123' --password '\*\*\*\*\*\*\*\*' --synchronous/
 
         assert jlr.log.contains("Using Neo executable from PATH.")
     }
@@ -118,7 +122,7 @@ class NeoDeploymentTest extends PiperTestBase {
 
         withPipeline(neoHomeParameterPipeline()).execute(archivePath, 'myCredentialsId')
 
-        assert shellCalls[0] =~ /#!\/bin\/bash "\/etc\/neo\/tools\/neo\.sh" deploy-mta --user 'anonymous' --host 'test\.deploy\.host\.com' --source ".*" --account 'trialuser123' --password '\*\*\*\*\*\*\*\*' --synchronous.*/
+        assert jscr.shell[0] =~ /#!\/bin\/bash "\/etc\/neo\/tools\/neo\.sh" deploy-mta --user 'anonymous' --host 'test\.deploy\.host\.com' --source ".*" --account 'trialuser123' --password '\*\*\*\*\*\*\*\*' --synchronous.*/
 
         assert jlr.log.contains("[neoDeploy] Neo executable \"/etc/neo/tools/neo.sh\" retrieved from parameters.")
 
