@@ -6,6 +6,7 @@ import org.junit.Test
 import org.junit.rules.ExpectedException
 import org.junit.rules.RuleChain
 
+import util.JenkinsConfigRule
 import util.JenkinsLoggingRule
 import util.JenkinsSetupRule
 import util.JenkinsShellCallRule
@@ -23,6 +24,7 @@ class NeoDeploymentTest extends PiperTestBase {
                                               .around(new JenkinsSetupRule(this))
                                               .around(jlr)
                                               .around(jscr)
+                                              .around(new JenkinsConfigRule(this))
     def archivePath
     def warArchivePath
     def propertiesFilePath
