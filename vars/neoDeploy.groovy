@@ -21,8 +21,18 @@ def call(parameters = [:]) {
 
         def deployMode = utils.getMandatoryParameter(parameters, 'deployMode', 'MTA')
 
+        if (deployMode != 'MTA' && deployMode != 'WAR_PARAMS' && deployMode != 'WAR_PROPERTIESFILE') {
+            throw new IllegalArgumentException("[neoDeploy] Invalid deployMode = '${deployMode}'. Valid 'deployMode' values are: 'MTA', 'WAR_PARAMS' and 'WAR_PROPERTIESFILE'")
+        }
+
         def propertiesFile
         def warAction
+        if (deployMode == 'WAR_PROPERTIESFILE' || deployMode == 'WAR_PARAMS') {
+            warAction = utils.getMandatoryParameter(parameters, 'warAction', 'deploy')
+            if (warAction != 'warAction' && warAction != 'deploy') {
+                throw new IllegalArgumentException("[neoDeploy] Invalid warAction = '${warAction}'. Valid 'warAction' values are: 'deploy' and 'rolling-update'.")
+            }
+        }
         if (deployMode == 'WAR_PROPERTIESFILE') {
             propertiesFile = new File(utils.getMandatoryParameter(parameters, 'propertiesFile', null))
             if (!propertiesFile.isAbsolute()) {
@@ -30,10 +40,6 @@ def call(parameters = [:]) {
             }
             if (!propertiesFile.exists()){
                 error "Properties file cannot be found with parameter propertiesFile: '${propertiesFile}'."
-            }
-            warAction = utils.getMandatoryParameter(parameters, 'warAction', 'deploy')
-            if (warAction != 'warAction' || warAction != 'deploy') {
-                warAction = 'deploy'
             }
         }
 
@@ -46,10 +52,9 @@ def call(parameters = [:]) {
             runtime = utils.getMandatoryParameter(parameters, 'runtime', null)
             runtimeVersion = utils.getMandatoryParameter(parameters, 'runtimeVersion', null)
             vmSize = utils.getMandatoryParameter(parameters, 'vmSize', 'lite')
-            if (vmSize != 'lite' || vmSize !='pro' || vmSize != 'prem' || vmSize != 'prem-plus') {
-                vmSize = 'lite'
+            if (vmSize != 'lite' && vmSize !='pro' && vmSize != 'prem' && vmSize != 'prem-plus') {
+                throw new IllegalArgumentException("[neoDeploy] Invalid vmSize = '${vmSize}'. Valid 'vmSize' values are: 'lite', 'pro', 'prem' and 'prem-plus'.")
             }
-            warAction = utils.getMandatoryParameter(parameters, 'warAction', 'deploy')
         }
 
         def defaultDeployHost = script.commonPipelineEnvironment.getConfigProperty('DEPLOY_HOST')
@@ -61,10 +66,6 @@ def call(parameters = [:]) {
 
         def deployHost
         def deployAccount
-
-        if (!deployMode.equals('MTA') && !deployMode.equals('WAR_PARAMS') && !deployMode.equals('WAR_PROPERTIESFILE')) {
-            echo "[neoDeploy] Invalid deployment mode \"${deployMode}\". Deployment will be skipped."
-        }
 
         if (deployMode.equals('MTA') || deployMode.equals('WAR_PARAMS')) {
             deployHost = utils.getMandatoryParameter(parameters, 'deployHost', defaultDeployHost)
