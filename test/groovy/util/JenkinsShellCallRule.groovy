@@ -9,7 +9,7 @@ class JenkinsShellCallRule implements TestRule {
 
     final BasePipelineTest testInstance
 
-    String shell = ""
+    List shell = []
 
     JenkinsShellCallRule(BasePipelineTest testInstance) {
         this.testInstance = testInstance
@@ -27,8 +27,7 @@ class JenkinsShellCallRule implements TestRule {
 
                 testInstance.helper.registerAllowedMethod("sh", [String.class], {
                     command -> 
-					command = command.replaceAll(/\s+/," ").trim()
-					     shell += "$command \n"
+                        shell.add(command.replaceAll(/\s+/," ").trim())
                 })
 
                 base.evaluate()
