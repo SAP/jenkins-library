@@ -15,17 +15,9 @@ public class PiperTestBase extends BasePipelineTest {
 
     private File pipeline
 
-    protected shellCalls = []
-
     void setUp() {
 
         super.setUp()
-
-        shellCalls.clear()
-
-        helper.registerAllowedMethod('sh', [String], {  s ->
-            shellCalls.add(s.replaceAll(/\s+/, " ").trim())
-        })
 
         helper.registerAllowedMethod("readYaml", [Map], { Map parameters ->
             Yaml yamlParser = new Yaml()

@@ -7,19 +7,21 @@ import static org.junit.Assert.assertEquals
 import static org.junit.Assert.assertTrue
 
 import util.JenkinsSetupRule
+import util.JenkinsShellCallRule
 
 class MavenExecuteTest extends PiperTestBase {
 
     Map dockerParameters
-    List shellCalls
 
     @Rule
     public JenkinsSetupRule jsr = new JenkinsSetupRule(this)
 
+    @Rule
+    public JenkinsShellCallRule jscr = new JenkinsShellCallRule(this)
+
     @Before
     void init() {
 
-        shellCalls = []
         dockerParameters = [:]
 
         helper.registerAllowedMethod("dockerExecute", [Map.class, Closure.class],
@@ -27,7 +29,6 @@ class MavenExecuteTest extends PiperTestBase {
                 dockerParameters = parameters
                 closure()
             })
-        helper.registerAllowedMethod('sh', [String], { s -> shellCalls.add(s) })
     }
 
     @Test
@@ -35,7 +36,8 @@ class MavenExecuteTest extends PiperTestBase {
         def script = loadScript("test/resources/pipelines/mavenExecuteTest/executeBasicMavenCommand.groovy")
         script.execute()
         assertEquals('maven:3.5-jdk-7', dockerParameters.dockerImage)
-        assertTrue(shellCalls.contains('mvn clean install'))
+
+        assert jscr.shell[0] == 'mvn clean install'
     }
 
     @Test
@@ -44,6 +46,6 @@ class MavenExecuteTest extends PiperTestBase {
         script.execute()
         assertEquals('maven:3.5-jdk-8-alpine', dockerParameters.dockerImage)
         String mvnCommand = "mvn --global-settings 'globalSettingsFile.xml' -Dmaven.repo.local='m2Path' --settings 'projectSettingsFile.xml' --file 'pom.xml' -o clean install -Dmaven.tests.skip=true"
-        assertTrue(shellCalls.contains(mvnCommand))
+        assertTrue(jscr.shell.contains(mvnCommand))
     }
 }
