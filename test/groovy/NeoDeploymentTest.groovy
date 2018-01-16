@@ -1,31 +1,31 @@
 import hudson.AbortException
 import org.junit.rules.TemporaryFolder
-
-import static com.lesfurets.jenkins.unit.global.lib.LibraryConfiguration.library
-
-import static ProjectSource.projectSource
-
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.ExpectedException
+import org.junit.rules.RuleChain
+
+import util.JenkinsLoggingRule
+import util.JenkinsSetupRule
 
 class NeoDeploymentTest extends PiperTestBase {
 
-    @Rule
-    public ExpectedException thrown = new ExpectedException().none()
+    private ExpectedException thrown = new ExpectedException().none()
+    private TemporaryFolder tmp = new TemporaryFolder()
+    private JenkinsLoggingRule jlr = new JenkinsLoggingRule(this)
 
     @Rule
-    public TemporaryFolder tmp = new TemporaryFolder()
-
+    public RuleChain ruleChain = RuleChain.outerRule(thrown)
+                                              .around(tmp)
+                                              .around(new JenkinsSetupRule(this))
+                                              .around(jlr)
     def archivePath
     def warArchivePath
     def propertiesFilePath
 
     @Before
-    void setUp() {
-
-        super.setUp()
+    void init() {
 
         archivePath = "${tmp.newFolder("workspace").toURI().getPath()}archiveName.mtar"
         warArchivePath = "${tmp.getRoot().toURI().getPath()}workspace/warArchive.war"
@@ -66,7 +66,7 @@ class NeoDeploymentTest extends PiperTestBase {
 
         assert shellCalls[0] =~ /#!\/bin\/bash "\/opt\/neo\/tools\/neo\.sh" deploy-mta --user 'anonymous' --password '\*\*\*\*\*\*\*\*' --source ".*" --host 'test\.deploy\.host\.com' --account 'trialuser123' --synchronous/
 
-        assert messages[1] == "[neoDeploy] Neo executable \"/opt/neo/tools/neo.sh\" retrieved from environment."
+        assert jlr.log.contains("[neoDeploy] Neo executable \"/opt/neo/tools/neo.sh\" retrieved from environment.")
 
     }
 
@@ -96,7 +96,7 @@ class NeoDeploymentTest extends PiperTestBase {
 
         assert shellCalls[0] =~ /#!\/bin\/bash "\/opt\/neo\/tools\/neo\.sh" deploy-mta --user 'defaultUser' --password '\*\*\*\*\*\*\*\*' --source ".*" --host 'test\.deploy\.host\.com' --account 'trialuser123' --synchronous/
 
-        assert messages[1] == "[neoDeploy] Neo executable \"/opt/neo/tools/neo.sh\" retrieved from environment."
+        assert jlr.log.contains("[neoDeploy] Neo executable \"/opt/neo/tools/neo.sh\" retrieved from environment.")
     }
 
 
@@ -109,7 +109,7 @@ class NeoDeploymentTest extends PiperTestBase {
 
         assert shellCalls[0] =~ /#!\/bin\/bash "neo" deploy-mta --user 'defaultUser' --password '\*\*\*\*\*\*\*\*' --source ".*" --host 'test\.deploy\.host\.com' --account 'trialuser123' --synchronous/
 
-        assert messages[1] == "Using Neo executable from PATH."
+        assert jlr.log.contains("Using Neo executable from PATH.")
     }
 
 
@@ -122,7 +122,7 @@ class NeoDeploymentTest extends PiperTestBase {
 
         assert shellCalls[0] =~ /#!\/bin\/bash "\/etc\/neo\/tools\/neo\.sh" deploy-mta --user 'anonymous' --password '\*\*\*\*\*\*\*\*' --source ".*" --host 'test\.deploy\.host\.com' --account 'trialuser123' --synchronous.*/
 
-        assert messages[1] == "[neoDeploy] Neo executable \"/etc/neo/tools/neo.sh\" retrieved from parameters."
+        assert jlr.log.contains("[neoDeploy] Neo executable \"/etc/neo/tools/neo.sh\" retrieved from parameters.")
 
     }
 

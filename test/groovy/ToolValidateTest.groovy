@@ -4,25 +4,30 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.ExpectedException
+import org.junit.rules.RuleChain
 import org.junit.rules.TemporaryFolder
+
+import util.JenkinsLoggingRule
+import util.JenkinsSetupRule
 
 class ToolValidateTest extends PiperTestBase {
 
+    private ExpectedException thrown = new ExpectedException().none()
+    private TemporaryFolder tmp = new TemporaryFolder()
+    private JenkinsLoggingRule jlr = new JenkinsLoggingRule(this)
 
     @Rule
-    public ExpectedException thrown = new ExpectedException().none()
-
-    @Rule
-    public TemporaryFolder tmp = new TemporaryFolder()
+    public RuleChain ruleChain =
+        RuleChain.outerRule(tmp)
+            .around(thrown)
+            .around(new JenkinsSetupRule(this))
+            .around(jlr)
 
     private notEmptyDir
     private script
 
-
     @Before
-    void setUp() {
-
-        super.setUp()
+    void init() {
 
         script = withPipeline(defaultPipeline())
 
@@ -199,10 +204,10 @@ class ToolValidateTest extends PiperTestBase {
 
         script.execute()
 
-        assert messages[0].contains('--- BEGIN LIBRARY STEP: toolValidate.groovy ---')
-        assert messages[1].contains('[INFO] Validating Java version 1.8.0 or compatible version.')
-        assert messages[2].contains('[INFO] Java version 1.8.0 is installed.')
-        assert messages[3].contains('--- END LIBRARY STEP: toolValidate.groovy ---')
+        assert jlr.log.contains('--- BEGIN LIBRARY STEP: toolValidate.groovy ---')
+        assert jlr.log.contains('[INFO] Validating Java version 1.8.0 or compatible version.')
+        assert jlr.log.contains('[INFO] Java version 1.8.0 is installed.')
+        assert jlr.log.contains('--- END LIBRARY STEP: toolValidate.groovy ---')
     }
 
     @Test
@@ -213,10 +218,10 @@ class ToolValidateTest extends PiperTestBase {
 
         script.execute()
 
-        assert messages[0].contains('--- BEGIN LIBRARY STEP: toolValidate.groovy ---')
-        assert messages[1].contains('[INFO] Validating SAP Multitarget Application Archive Builder version 1.0.6 or compatible version.')
-        assert messages[2].contains('[INFO] SAP Multitarget Application Archive Builder version 1.0.6 is installed.')
-        assert messages[3].contains('--- END LIBRARY STEP: toolValidate.groovy ---')
+        assert jlr.log.contains('--- BEGIN LIBRARY STEP: toolValidate.groovy ---')
+        assert jlr.log.contains('[INFO] Validating SAP Multitarget Application Archive Builder version 1.0.6 or compatible version.')
+        assert jlr.log.contains('[INFO] SAP Multitarget Application Archive Builder version 1.0.6 is installed.')
+        assert jlr.log.contains('--- END LIBRARY STEP: toolValidate.groovy ---')
     }
 
     @Test
@@ -227,10 +232,10 @@ class ToolValidateTest extends PiperTestBase {
 
         script.execute()
 
-        assert messages[0].contains('--- BEGIN LIBRARY STEP: toolValidate.groovy ---')
-        assert messages[1].contains('[INFO] Validating SAP Cloud Platform Console Client version 3.39.10 or compatible version.')
-        assert messages[2].contains('[INFO] SAP Cloud Platform Console Client version 3.39.10 is installed.')
-        assert messages[3].contains('--- END LIBRARY STEP: toolValidate.groovy ---')
+        assert jlr.log.contains('--- BEGIN LIBRARY STEP: toolValidate.groovy ---')
+        assert jlr.log.contains('[INFO] Validating SAP Cloud Platform Console Client version 3.39.10 or compatible version.')
+        assert jlr.log.contains('[INFO] SAP Cloud Platform Console Client version 3.39.10 is installed.')
+        assert jlr.log.contains('--- END LIBRARY STEP: toolValidate.groovy ---')
     }
 
     @Test
@@ -241,10 +246,10 @@ class ToolValidateTest extends PiperTestBase {
 
         script.execute()
 
-        assert messages[0].contains('--- BEGIN LIBRARY STEP: toolValidate.groovy ---')
-        assert messages[1].contains('[INFO] Validating Change Management Command Line Interface version 0.0.1 or compatible version.')
-        assert messages[2].contains('[INFO] Change Management Command Line Interface version 0.0.1 is installed.')
-        assert messages[3].contains('--- END LIBRARY STEP: toolValidate.groovy ---')
+        assert jlr.log.contains('--- BEGIN LIBRARY STEP: toolValidate.groovy ---')
+        assert jlr.log.contains('[INFO] Validating Change Management Command Line Interface version 0.0.1 or compatible version.')
+        assert jlr.log.contains('[INFO] Change Management Command Line Interface version 0.0.1 is installed.')
+        assert jlr.log.contains('--- END LIBRARY STEP: toolValidate.groovy ---')
     }
 
 

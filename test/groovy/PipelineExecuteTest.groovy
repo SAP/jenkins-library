@@ -1,23 +1,27 @@
 import hudson.AbortException
+import util.JenkinsSetupRule
+
 import org.junit.rules.TemporaryFolder
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.ExpectedException
+import org.junit.rules.RuleChain
 
 class PipelineExecuteTest extends PiperTestBase {
 
+    private ExpectedException thrown = new ExpectedException().none()
+
     @Rule
-    public ExpectedException thrown = new ExpectedException().none()
+    public RuleChain ruleChain = RuleChain.outerRule(thrown)
+                                              .around(new JenkinsSetupRule(this))
 
     def pipelinePath
     def checkoutParameters = [:]
     def load
 
     @Before
-    void setUp() {
-
-        super.setUp()
+    void init() {
 
         pipelinePath = null
         checkoutParameters.clear()
