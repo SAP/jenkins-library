@@ -4,9 +4,13 @@ import org.jenkinsci.plugins.pipeline.utility.steps.shaded.org.yaml.snakeyaml.pa
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
-
 import org.junit.rules.ExpectedException
+import org.junit.rules.RuleChain
 import org.junit.rules.TemporaryFolder
+import util.JenkinsConfigRule
+import util.JenkinsLoggingRule
+import util.JenkinsSetupRule
+import util.JenkinsShellCallRule
 
 public class MTABuildTest extends PiperTestBase {
 
@@ -16,15 +20,29 @@ public class MTABuildTest extends PiperTestBase {
     @Rule
     public TemporaryFolder tmp = new TemporaryFolder()
 
+    public JenkinsSetupRule jsr = new JenkinsSetupRule(this)
+
+    public JenkinsLoggingRule jlr = new JenkinsLoggingRule(this)
+
+    public JenkinsShellCallRule jscr = new JenkinsShellCallRule(this)
+	
+	public JenkinsConfigRule jcr = new JenkinsConfigRule(this)
+
+    @Rule
+    public RuleChain ruleChain =
+        RuleChain.outerRule(jsr)
+            .around(jlr)
+            .around(jscr)
+			.around(jcr)
+
     def currentDir
     def otherDir
     def mtaBuildShEnv
 
 
     @Before
-    void setUp() {
+    void init() {
 
-        super.setUp()
         currentDir = tmp.newFolder().toURI().getPath()[0..-2] //omit final '/'
         otherDir = tmp.newFolder().toURI().getPath()[0..-2] //omit final '/'
 
@@ -61,15 +79,15 @@ public class MTABuildTest extends PiperTestBase {
 
         def mtarFilePath = withPipeline(defaultPipeline()).execute()
 
-        assert shellCalls[0] =~ /sed -ie "s\/\\\$\{timestamp\}\/`date \+%Y%m%d%H%M%S`\/g" ".*\/mta.yaml"$/
+        assert jscr.shell[0] =~ /sed -ie "s\/\\\$\{timestamp\}\/`date \+%Y%m%d%H%M%S`\/g" ".*\/mta.yaml"$/
 
-        assert shellCalls[1].contains("PATH=./node_modules/.bin:/usr/bin")
+        assert jscr.shell[1].contains("PATH=./node_modules/.bin:/usr/bin")
 
-        assert shellCalls[1].contains(' -jar /opt/mta/mta.jar --mtar ')
+        assert jscr.shell[1].contains(' -jar /opt/mta/mta.jar --mtar ')
 
         assert mtarFilePath == "${currentDir}/com.mycompany.northwind.mtar"
 
-        assert messages[1] == "[mtaBuild] MTA JAR \"/opt/mta/mta.jar\" retrieved from environment."
+        assert jlr.log.contains( "[mtaBuild] MTA JAR \"/opt/mta/mta.jar\" retrieved from environment.")
     }
 
 
@@ -82,15 +100,15 @@ public class MTABuildTest extends PiperTestBase {
 
         def mtarFilePath = withPipeline(returnMtarFilePathFromCommonPipelineEnvironmentPipeline()).execute()
 
-        assert shellCalls[0] =~ /sed -ie "s\/\\\$\{timestamp\}\/`date \+%Y%m%d%H%M%S`\/g" ".*\/mta.yaml"$/
+        assert jscr.shell[0] =~ /sed -ie "s\/\\\$\{timestamp\}\/`date \+%Y%m%d%H%M%S`\/g" ".*\/mta.yaml"$/
 
-        assert shellCalls[1].contains("PATH=./node_modules/.bin:/usr/bin")
+        assert jscr.shell[1].contains("PATH=./node_modules/.bin:/usr/bin")
 
-        assert shellCalls[1].contains(' -jar /opt/mta/mta.jar --mtar ')
+        assert jscr.shell[1].contains(' -jar /opt/mta/mta.jar --mtar ')
 
         assert mtarFilePath == "${currentDir}/com.mycompany.northwind.mtar"
 
-        assert messages[1] == "[mtaBuild] MTA JAR \"/opt/mta/mta.jar\" retrieved from environment."
+        assert jlr.log.contains("[mtaBuild] MTA JAR \"/opt/mta/mta.jar\" retrieved from environment.")
     }
 
 
@@ -105,15 +123,15 @@ public class MTABuildTest extends PiperTestBase {
 
         def mtarFilePath = withPipeline(withSurroundingDirPipeline()).execute(newDirName)
 
-        assert shellCalls[0] =~ /sed -ie "s\/\\\$\{timestamp\}\/`date \+%Y%m%d%H%M%S`\/g" ".*\/newDir\/mta.yaml"$/
+        assert jscr.shell[0] =~ /sed -ie "s\/\\\$\{timestamp\}\/`date \+%Y%m%d%H%M%S`\/g" ".*\/newDir\/mta.yaml"$/
 
-        assert shellCalls[1].contains("PATH=./node_modules/.bin:/usr/bin")
+        assert jscr.shell[1].contains("PATH=./node_modules/.bin:/usr/bin")
 
-        assert shellCalls[1].contains(' -jar /opt/mta/mta.jar --mtar ')
+        assert jscr.shell[1].contains(' -jar /opt/mta/mta.jar --mtar ')
 
         assert mtarFilePath == "${currentDir}/com.mycompany.northwind.mtar"
 
-        assert messages[1] == "[mtaBuild] MTA JAR \"/opt/mta/mta.jar\" retrieved from environment."
+        assert jlr.log.contains("[mtaBuild] MTA JAR \"/opt/mta/mta.jar\" retrieved from environment.")
     }
 
     @Test
@@ -123,15 +141,15 @@ public class MTABuildTest extends PiperTestBase {
 
         def mtarFilePath = withPipeline(defaultPipeline()).execute()
 
-        assert shellCalls[0] =~ /sed -ie "s\/\\\$\{timestamp\}\/`date \+%Y%m%d%H%M%S`\/g" ".*\/mta.yaml"$/
+        assert jscr.shell[0] =~ /sed -ie "s\/\\\$\{timestamp\}\/`date \+%Y%m%d%H%M%S`\/g" ".*\/mta.yaml"$/
 
-        assert shellCalls[1].contains("PATH=./node_modules/.bin:/usr/bin")
+        assert jscr.shell[1].contains("PATH=./node_modules/.bin:/usr/bin")
 
-        assert shellCalls[1].contains(' -jar mta.jar --mtar ')
+        assert jscr.shell[1].contains(' -jar mta.jar --mtar ')
 
         assert mtarFilePath == "${currentDir}/com.mycompany.northwind.mtar"
 
-        assert messages[1] == "[mtaBuild] Using MTA JAR from current working directory."
+        assert jlr.log.contains( "[mtaBuild] Using MTA JAR from current working directory." )
     }
 
 
@@ -142,15 +160,15 @@ public class MTABuildTest extends PiperTestBase {
 
         def mtarFilePath = withPipeline(mtaJarLocationAsParameterPipeline()).execute()
 
-        assert shellCalls[0] =~ /sed -ie "s\/\\\$\{timestamp\}\/`date \+%Y%m%d%H%M%S`\/g" ".*\/mta.yaml"$/
+        assert jscr.shell[0] =~ /sed -ie "s\/\\\$\{timestamp\}\/`date \+%Y%m%d%H%M%S`\/g" ".*\/mta.yaml"$/
 
-        assert shellCalls[1].contains("PATH=./node_modules/.bin:/usr/bin")
+        assert jscr.shell[1].contains("PATH=./node_modules/.bin:/usr/bin")
 
-        assert shellCalls[1].contains(' -jar /etc/mta/mta.jar --mtar ')
+        assert jscr.shell[1].contains(' -jar /etc/mta/mta.jar --mtar ')
 
         assert mtarFilePath == "${currentDir}/com.mycompany.northwind.mtar"
 
-        assert messages[1] == "[mtaBuild] MTA JAR \"/etc/mta/mta.jar\" retrieved from parameters."
+        assert jlr.log.contains("[mtaBuild] MTA JAR \"/etc/mta/mta.jar\" retrieved from parameters.".toString())
     }
 
 
