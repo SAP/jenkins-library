@@ -44,7 +44,6 @@ class JenkinsSetupRule implements TestRule {
 
                 base.evaluate()
 
-                testInstance.printCallStack()
             }
         }
     }
