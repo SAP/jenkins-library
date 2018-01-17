@@ -19,21 +19,21 @@ def call(parameters = [:]) {
             error "Archive cannot be found with parameter archivePath: '${archivePath}'."
         }
 
-        def deployMode = utils.getMandatoryParameter(parameters, 'deployMode', 'MTA')
+        def deployMode = utils.getMandatoryParameter(parameters, 'deployMode', 'mta')
 
-        if (deployMode != 'MTA' && deployMode != 'WAR_PARAMS' && deployMode != 'WAR_PROPERTIESFILE') {
-            throw new IllegalArgumentException("[neoDeploy] Invalid deployMode = '${deployMode}'. Valid 'deployMode' values are: 'MTA', 'WAR_PARAMS' and 'WAR_PROPERTIESFILE'")
+        if (deployMode != 'mta' && deployMode != 'warParams' && deployMode != 'warPropertiesFile') {
+            throw new IllegalArgumentException("[neoDeploy] Invalid deployMode = '${deployMode}'. Valid 'deployMode' values are: 'mta', 'warParams' and 'warPropertiesFile'")
         }
 
         def propertiesFile
         def warAction
-        if (deployMode == 'WAR_PROPERTIESFILE' || deployMode == 'WAR_PARAMS') {
+        if (deployMode == 'warPropertiesFile' || deployMode == 'warParams') {
             warAction = utils.getMandatoryParameter(parameters, 'warAction', 'deploy')
             if (warAction != 'warAction' && warAction != 'deploy') {
                 throw new IllegalArgumentException("[neoDeploy] Invalid warAction = '${warAction}'. Valid 'warAction' values are: 'deploy' and 'rolling-update'.")
             }
         }
-        if (deployMode == 'WAR_PROPERTIESFILE') {
+        if (deployMode == 'warPropertiesFile') {
             propertiesFile = new File(utils.getMandatoryParameter(parameters, 'propertiesFile', null))
             if (!propertiesFile.isAbsolute()) {
                 propertiesFile = new File(pwd(), propertiesFile.getPath())
@@ -47,7 +47,7 @@ def call(parameters = [:]) {
         def runtime
         def runtimeVersion
         def vmSize
-        if (deployMode == 'WAR_PARAMS') {
+        if (deployMode == 'warParams') {
             applicationName = utils.getMandatoryParameter(parameters, 'applicationName', null)
             runtime = utils.getMandatoryParameter(parameters, 'runtime', null)
             runtimeVersion = utils.getMandatoryParameter(parameters, 'runtimeVersion', null)
@@ -67,7 +67,7 @@ def call(parameters = [:]) {
         def deployHost
         def deployAccount
 
-        if (deployMode.equals('MTA') || deployMode.equals('WAR_PARAMS')) {
+            if (deployMode.equals('mta') || deployMode.equals('warParams')) {
             deployHost = utils.getMandatoryParameter(parameters, 'deployHost', defaultDeployHost)
             deployAccount = utils.getMandatoryParameter(parameters, 'deployAccount', defaultDeployAccount)
         }
@@ -87,7 +87,7 @@ def call(parameters = [:]) {
                    --source "${archivePath.getAbsolutePath()}" \
                 """
 
-            if (deployMode == 'MTA') {
+            if (deployMode == 'mta') {
                 sh """#!/bin/bash
                       "${neoExecutable}" deploy-mta \
                       ${commonDeployParams} \
@@ -97,7 +97,7 @@ def call(parameters = [:]) {
                    """
             }
 
-            if (deployMode == 'WAR_PARAMS') {
+            if (deployMode == 'warParams') {
                 sh """#!/bin/bash
                       "${neoExecutable}" ${warAction} \
                       ${commonDeployParams} \
@@ -110,7 +110,7 @@ def call(parameters = [:]) {
                    """
             }
 
-            if (deployMode == 'WAR_PROPERTIESFILE') {
+            if (deployMode == 'warPropertiesFile') {
                 sh """#!/bin/bash
                       "${neoExecutable}" ${warAction} \
                       ${commonDeployParams} \
