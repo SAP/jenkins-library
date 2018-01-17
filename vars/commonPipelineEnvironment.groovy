@@ -1,10 +1,26 @@
 class commonPipelineEnvironment implements Serializable {
     private Map configProperties = [:]
 
-    Map defaultConfiguration = [:]
+    //stores version of the artifact which is build during pipeline run
+    def artifactVersion
+
     Map configuration = [:]
+    Map defaultConfiguration = [:]
+
+    //each Map in influxCustomDataMap represents a measurement in Influx. Additional measurements can be added as a new Map entry of influxCustomDataMap
+    private Map influxCustomDataMap = [pipeline_data: [:]]
+    //influxCustomData represents measurement jenkins_custom_data in Influx. Metrics can be written into this map
+    private Map influxCustomData = [:]
 
     private String mtarFilePath
+
+    def setArtifactVersion(version) {
+        artifactVersion = version
+    }
+
+    def getArtifactVersion() {
+        return artifactVersion
+    }
 
     def setConfigProperties(map) {
         configProperties = map
@@ -25,11 +41,35 @@ class commonPipelineEnvironment implements Serializable {
             return configProperties[property]
     }
 
+    def setInfluxCustomData(Map myData = [:]) {
+        influxCustomData = myData
+    }
+
+    def getInfluxCustomData() {
+        return influxCustomData
+    }
+
+    def setInfluxCustomDataMap(Map myData = [:]) {
+        influxCustomDataMap = myData
+    }
+
+    def getInfluxCustomDataMap() {
+        return influxCustomDataMap
+    }
+
     def getMtarFilePath() {
         return mtarFilePath
     }
 
     void setMtarFilePath(mtarFilePath) {
         this.mtarFilePath = mtarFilePath
+    }
+
+    def setPipelineMeasurement (measurementName, value) {
+        influxCustomDataMap.pipeline_data[measurementName] = value
+    }
+
+    def getPipelineMeasurement (measurementName) {
+        return influxCustomDataMap.pipeline_data[measurementName]
     }
 }
