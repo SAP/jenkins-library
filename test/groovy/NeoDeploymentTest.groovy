@@ -184,14 +184,37 @@ class NeoDeploymentTest extends PiperTestBase {
     }
 
     @Test
+    void warFileParamsDeployModeRollingUpdateTest() {
+        binding.getVariable('env')['NEO_HOME'] = '/opt/neo'
+        new File(warArchivePath) << "dummy war archive"
+
+        withPipeline(warParamsDeployModePipeline()).execute(warArchivePath, 'warParams', 'lite', 'rolling-update')
+
+        assert shellCalls[0] =~ /#!\/bin\/bash "\/opt\/neo\/tools\/neo\.sh" rolling-update --user 'defaultUser' --password '\*\*\*\*\*\*\*\*' --source ".*\.war" --host 'test\.deploy\.host\.com' --account 'trialuser123' --application 'testApp' --runtime 'neo-javaee6-wp' --runtime-version '2\.125' --size 'lite'/
+        assert messages[1] == "[neoDeploy] Neo executable \"/opt/neo/tools/neo.sh\" retrieved from environment."
+    }
+
+    @Test
     void warPropertiesFileDeployModeTest() {
         binding.getVariable('env')['NEO_HOME'] = '/opt/neo'
         new File(warArchivePath) << "dummy war archive"
         new File(propertiesFilePath) << "dummy properties file"
 
-        withPipeline(warPropertiesFileDeployModePipeline()).execute(warArchivePath, propertiesFilePath, 'warPropertiesFile')
+        withPipeline(warPropertiesFileDeployModePipeline()).execute(warArchivePath, propertiesFilePath, 'warPropertiesFile', 'deploy')
 
         assert shellCalls[0] =~ /#!\/bin\/bash "\/opt\/neo\/tools\/neo\.sh" deploy --user 'defaultUser' --password '\*\*\*\*\*\*\*\*' --source ".*\.war" .*\.properties/
+        assert messages[1] == "[neoDeploy] Neo executable \"/opt/neo/tools/neo.sh\" retrieved from environment."
+    }
+
+    @Test
+    void warPropertiesFileDeployModeRollingUpdateTest() {
+        binding.getVariable('env')['NEO_HOME'] = '/opt/neo'
+        new File(warArchivePath) << "dummy war archive"
+        new File(propertiesFilePath) << "dummy properties file"
+
+        withPipeline(warPropertiesFileDeployModePipeline()).execute(warArchivePath, propertiesFilePath, 'warPropertiesFile', 'rolling-update')
+
+        assert shellCalls[0] =~ /#!\/bin\/bash "\/opt\/neo\/tools\/neo\.sh" rolling-update --user 'defaultUser' --password '\*\*\*\*\*\*\*\*' --source ".*\.war" .*\.properties/
         assert messages[1] == "[neoDeploy] Neo executable \"/opt/neo/tools/neo.sh\" retrieved from environment."
     }
 
@@ -416,10 +439,10 @@ class NeoDeploymentTest extends PiperTestBase {
         return """
                @Library('piper-library-os')
 
-               execute(warArchivePath, propertiesFilePath, deployMode) {
+               execute(warArchivePath, propertiesFilePath, deployMode, warAction) {
                
                  node() {
-                   neoDeploy script: this, deployMode: deployMode, archivePath: warArchivePath, propertiesFile: propertiesFilePath
+                   neoDeploy script: this, deployMode: deployMode, archivePath: warArchivePath, propertiesFile: propertiesFilePath, warAction: warAction
                  }
 
                }
