@@ -22,7 +22,7 @@ def call(parameters = [:]) {
         def deployMode = utils.getMandatoryParameter(parameters, 'deployMode', 'mta')
 
         if (deployMode != 'mta' && deployMode != 'warParams' && deployMode != 'warPropertiesFile') {
-            throw new IllegalArgumentException("[neoDeploy] Invalid deployMode = '${deployMode}'. Valid 'deployMode' values are: 'mta', 'warParams' and 'warPropertiesFile'")
+            throw new Exception("[neoDeploy] Invalid deployMode = '${deployMode}'. Valid 'deployMode' values are: 'mta', 'warParams' and 'warPropertiesFile'")
         }
 
         def propertiesFile
@@ -30,7 +30,7 @@ def call(parameters = [:]) {
         if (deployMode == 'warPropertiesFile' || deployMode == 'warParams') {
             warAction = utils.getMandatoryParameter(parameters, 'warAction', 'deploy')
             if (warAction != 'warAction' && warAction != 'deploy') {
-                throw new IllegalArgumentException("[neoDeploy] Invalid warAction = '${warAction}'. Valid 'warAction' values are: 'deploy' and 'rolling-update'.")
+                throw new Exception("[neoDeploy] Invalid warAction = '${warAction}'. Valid 'warAction' values are: 'deploy' and 'rolling-update'.")
             }
         }
         if (deployMode == 'warPropertiesFile') {
@@ -53,7 +53,7 @@ def call(parameters = [:]) {
             runtimeVersion = utils.getMandatoryParameter(parameters, 'runtimeVersion', null)
             vmSize = utils.getMandatoryParameter(parameters, 'vmSize', 'lite')
             if (vmSize != 'lite' && vmSize !='pro' && vmSize != 'prem' && vmSize != 'prem-plus') {
-                throw new IllegalArgumentException("[neoDeploy] Invalid vmSize = '${vmSize}'. Valid 'vmSize' values are: 'lite', 'pro', 'prem' and 'prem-plus'.")
+                throw new Exception("[neoDeploy] Invalid vmSize = '${vmSize}'. Valid 'vmSize' values are: 'lite', 'pro', 'prem' and 'prem-plus'.")
             }
         }
 

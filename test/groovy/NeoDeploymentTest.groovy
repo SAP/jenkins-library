@@ -229,7 +229,7 @@ class NeoDeploymentTest extends PiperTestBase {
     void illegalDeployModeTest() {
         new File(warArchivePath) << "dummy war archive"
 
-        thrown.expect(IllegalArgumentException)
+        thrown.expect(Exception)
         thrown.expectMessage("[neoDeploy] Invalid deployMode = 'illegalMode'. Valid 'deployMode' values are: 'mta', 'warParams' and 'warPropertiesFile'")
 
         withPipeline(warParamsDeployModePipeline()).execute(warArchivePath, 'illegalMode', 'lite', 'deploy')
@@ -239,7 +239,7 @@ class NeoDeploymentTest extends PiperTestBase {
     void illegalVMSizeTest() {
         new File(warArchivePath) << "dummy war archive"
 
-        thrown.expect(IllegalArgumentException)
+        thrown.expect(Exception)
         thrown.expectMessage("[neoDeploy] Invalid vmSize = 'illegalVM'. Valid 'vmSize' values are: 'lite', 'pro', 'prem' and 'prem-plus'.")
 
         withPipeline(warParamsDeployModePipeline()).execute(warArchivePath, 'warParams', 'illegalVM', 'deploy')
@@ -249,7 +249,7 @@ class NeoDeploymentTest extends PiperTestBase {
     void illegalWARActionTest() {
         new File(warArchivePath) << "dummy war archive"
 
-        thrown.expect(IllegalArgumentException)
+        thrown.expect(Exception)
         thrown.expectMessage("[neoDeploy] Invalid warAction = 'illegalWARAction'. Valid 'warAction' values are: 'deploy' and 'rolling-update'.")
 
         withPipeline(warParamsDeployModePipeline()).execute(warArchivePath, 'warParams', 'lite', 'illegalWARAction')
