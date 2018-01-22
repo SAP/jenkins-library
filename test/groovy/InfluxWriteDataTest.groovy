@@ -3,24 +3,38 @@ import com.lesfurets.jenkins.unit.BasePipelineTest
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
+import org.junit.rules.RuleChain
+import util.JenkinsLoggingRule
 import util.JenkinsSetupRule
 
-import static com.lesfurets.jenkins.unit.MethodSignature.method
 import static org.junit.Assert.assertTrue
 import static org.junit.Assert.assertEquals
 
 class InfluxWriteDataTest extends BasePipelineTest {
 
+    Script influxWriteDataScript
+
     Map fileMap = [:]
     Map stepMap = [:]
     String echoLog = ''
 
-    @Rule
+    def cpe
+
     public JenkinsSetupRule setupRule = new JenkinsSetupRule(this)
+    public JenkinsLoggingRule loggingRule = new JenkinsLoggingRule(this)
+
+    @Rule
+    public RuleChain ruleChain =
+        RuleChain.outerRule(setupRule)
+            .around(loggingRule)
 
     @Before
-    void setUp() throws Exception {
-        super.setUp()
+    void init() throws Exception {
+
+        //reset stepMap
+        stepMap = [:]
+        //reset fileMap
+        fileMap = [:]
 
         helper.registerAllowedMethod('readYaml', [Map.class], { map ->
             return [
@@ -31,19 +45,19 @@ class InfluxWriteDataTest extends BasePipelineTest {
 
         helper.registerAllowedMethod('writeFile', [Map.class],{m -> fileMap[m.file] = m.text})
         helper.registerAllowedMethod('step', [Map.class],{m -> stepMap = m})
-        helper.registerAllowedMethod("echo", [String.class], {s -> echoLog += s})
+
+        cpe = loadScript('commonPipelineEnvironment.groovy').commonPipelineEnvironment
+        influxWriteDataScript = loadScript("influxWriteData.groovy")
     }
 
 
     @Test
     void testInfluxWriteDataWithDefault() throws Exception {
 
-        def cpe = loadScript('commonPipelineEnvironment.groovy').commonPipelineEnvironment
         cpe.setArtifactVersion('1.2.3')
-        def script = loadScript("influxWriteData.groovy")
-        script.call(script: [commonPipelineEnvironment: cpe])
+        influxWriteDataScript.call(script: [commonPipelineEnvironment: cpe])
 
-        assertTrue(echoLog.contains('Artifact version: 1.2.3'))
+        assertTrue(loggingRule.log.contains('Artifact version: 1.2.3'))
 
         assertEquals('testInflux', stepMap.selectedTarget)
         assertEquals(null, stepMap.customPrefix)
@@ -59,13 +73,8 @@ class InfluxWriteDataTest extends BasePipelineTest {
     @Test
     void testInfluxWriteDataNoInflux() throws Exception {
 
-        //reset stepMap
-        stepMap = [:]
-
-        def cpe = loadScript('commonPipelineEnvironment.groovy').commonPipelineEnvironment
         cpe.setArtifactVersion('1.2.3')
-        def script = loadScript("influxWriteData.groovy")
-        script.call(script: [commonPipelineEnvironment: cpe], influxServer: '')
+        influxWriteDataScript.call(script: [commonPipelineEnvironment: cpe], influxServer: '')
 
         assertEquals(0, stepMap.size())
 
@@ -78,19 +87,12 @@ class InfluxWriteDataTest extends BasePipelineTest {
     @Test
     void testInfluxWriteDataNoArtifactVersion() throws Exception {
 
-        //reset stepMap
-        stepMap = [:]
-        //reset fileMap
-        fileMap = [:]
-
-        def cpe = loadScript('commonPipelineEnvironment.groovy').commonPipelineEnvironment
-        def script = loadScript("influxWriteData.groovy")
-        script.call(script: [commonPipelineEnvironment: cpe])
+        influxWriteDataScript.call(script: [commonPipelineEnvironment: cpe])
 
         assertEquals(0, stepMap.size())
         assertEquals(0, fileMap.size())
 
-        assertTrue(echoLog.contains('no artifact version available -> exiting writeInflux without writing data'))
+        assertTrue(loggingRule.log.contains('no artifact version available -> exiting writeInflux without writing data'))
 
         assertJobStatusSuccess()
     }

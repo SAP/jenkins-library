@@ -16,7 +16,6 @@ def call(Map parameters = [:]) {
 
         final Map stepDefaults = ConfigurationLoader.defaultStepConfiguration(script, stepName)
         final Map stepConfiguration = ConfigurationLoader.stepConfiguration(script, stepName)
-        final Map generalConfiguration = ConfigurationLoader.generalConfiguration(script)
 
         List parameterKeys = [
             'artifactVersion',
@@ -34,7 +33,7 @@ def call(Map parameters = [:]) {
         Map configuration = ConfigurationMerger.mergeWithPipelineData(parameters, parameterKeys, pipelineDataMap, stepConfiguration, stepConfigurationKeys, stepDefaults)
 
         def artifactVersion = configuration.artifactVersion
-        if (artifactVersion == null)  {
+        if (!artifactVersion)  {
             //this takes care that terminated builds due to milestone-locking do not cause an error
             echo "[${stepName}] no artifact version available -> exiting writeInflux without writing data"
             return
@@ -54,7 +53,6 @@ InfluxDB data map: ${script.commonPipelineEnvironment.getInfluxCustomDataMap()}
         if (influxServer)
             step([$class: 'InfluxDbPublisher', selectedTarget: influxServer, customPrefix: influxPrefix, customData: script.commonPipelineEnvironment.getInfluxCustomData(), customDataMap: script.commonPipelineEnvironment.getInfluxCustomDataMap()])
 
-        //write results into json file for archiving - also benefitial when no InfluxDB is available yet
         //write results into json file for archiving - also benefitial when no InfluxDB is available yet
         def jsonUtils = new JsonUtils()
         writeFile file: 'jenkins_data.json', text: jsonUtils.getPrettyJsonString(script.commonPipelineEnvironment.getInfluxCustomData())

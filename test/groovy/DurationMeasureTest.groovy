@@ -12,7 +12,6 @@ class DurationMeasureTest extends BasePipelineTest {
 
     @Test
     void testDurationMeasurement() throws Exception {
-        //def cpe = new CPEMock()
         def cpe = loadScript("commonPipelineEnvironment.groovy").commonPipelineEnvironment
         def script = loadScript("durationMeasure.groovy")
         def bodyExecuted = false

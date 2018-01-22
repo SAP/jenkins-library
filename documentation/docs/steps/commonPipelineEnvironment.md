@@ -167,29 +167,6 @@ none
 def myInfluxData = commonPipelineEnvironment.getInfluxCustomData()
 ```
 
-### setInfluxCustomData(data)
-
-#### Description
-**This is an internal function!**
-Stores Influx custom data collected during pipeline run.
-
-#### Parameters
-A `Map` containing the data collected.
-
-#### Return value
-none
-
-#### Side effects
-none
-
-#### Exceptions
-none
-
-#### Example
-```groovy
-commonPipelineEnvironment.setInfluxCustomData([datapoint1: 20, datapoint2: 30, datadescription: 'myDescription'])
-```
-
 ### getInfluxCustomDataMap()
 
 #### Description
@@ -214,29 +191,6 @@ none
 #### Example
 ```groovy
 def myInfluxDataMap = commonPipelineEnvironment.getInfluxCustomDataMap()
-```
-
-### setInfluxCustomDataMap(data)
-
-#### Description
-**This is an internal function!**
-Stores Influx custom data collected during pipeline run.
-
-#### Parameters
-A `Map` containing a `Map`s with data collected.
-
-#### Return value
-none
-
-#### Side effects
-none
-
-#### Exceptions
-none
-
-#### Example
-```groovy
-commonPipelineEnvironment.setInfluxCustomDataMap([measurement1: [datapoint1: 20, datapoint2: 30, datadescription: 'myDescription'], measurement2: [datapoint1:40]])
 ```
 
 ### getMtarFileName()

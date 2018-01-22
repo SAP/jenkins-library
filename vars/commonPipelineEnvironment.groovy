@@ -41,16 +41,8 @@ class commonPipelineEnvironment implements Serializable {
             return configProperties[property]
     }
 
-    def setInfluxCustomData(Map myData = [:]) {
-        influxCustomData = myData
-    }
-
     def getInfluxCustomData() {
         return influxCustomData
-    }
-
-    def setInfluxCustomDataMap(Map myData = [:]) {
-        influxCustomDataMap = myData
     }
 
     def getInfluxCustomDataMap() {
