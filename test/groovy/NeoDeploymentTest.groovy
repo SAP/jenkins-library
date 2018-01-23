@@ -19,6 +19,8 @@ class NeoDeploymentTest extends PiperTestBase {
     public TemporaryFolder tmp = new TemporaryFolder()
 
     def archivePath
+    def warArchivePath
+    def propertiesFilePath
 
     @Before
     void setUp() {
@@ -26,6 +28,8 @@ class NeoDeploymentTest extends PiperTestBase {
         super.setUp()
 
         archivePath = "${tmp.newFolder("workspace").toURI().getPath()}archiveName.mtar"
+        warArchivePath = "${tmp.getRoot().toURI().getPath()}workspace/warArchive.war"
+        propertiesFilePath = "${tmp.getRoot().toURI().getPath()}workspace/config.properties"
 
         helper.registerAllowedMethod('error', [String], { s -> throw new AbortException(s) })
         helper.registerAllowedMethod('usernamePassword', [Map], { m -> return m })
@@ -60,7 +64,7 @@ class NeoDeploymentTest extends PiperTestBase {
 
         withPipeline(defaultPipeline()).execute(archivePath, 'myCredentialsId')
 
-        assert shellCalls[0] =~ /#!\/bin\/bash "\/opt\/neo\/tools\/neo\.sh" deploy-mta --user 'anonymous' --host 'test\.deploy\.host\.com' --source ".*" --account 'trialuser123' --password '\*\*\*\*\*\*\*\*' --synchronous/
+        assert shellCalls[0] =~ /#!\/bin\/bash "\/opt\/neo\/tools\/neo\.sh" deploy-mta --user 'anonymous' --password '\*\*\*\*\*\*\*\*' --source ".*" --host 'test\.deploy\.host\.com' --account 'trialuser123' --synchronous/
 
         assert messages[1] == "[neoDeploy] Neo executable \"/opt/neo/tools/neo.sh\" retrieved from environment."
 
@@ -90,7 +94,7 @@ class NeoDeploymentTest extends PiperTestBase {
 
         withPipeline(noCredentialsIdPipeline()).execute(archivePath)
 
-        assert shellCalls[0] =~ /#!\/bin\/bash "\/opt\/neo\/tools\/neo\.sh" deploy-mta --user 'defaultUser' --host 'test\.deploy\.host\.com' --source ".*" --account 'trialuser123' --password '\*\*\*\*\*\*\*\*' --synchronous/
+        assert shellCalls[0] =~ /#!\/bin\/bash "\/opt\/neo\/tools\/neo\.sh" deploy-mta --user 'defaultUser' --password '\*\*\*\*\*\*\*\*' --source ".*" --host 'test\.deploy\.host\.com' --account 'trialuser123' --synchronous/
 
         assert messages[1] == "[neoDeploy] Neo executable \"/opt/neo/tools/neo.sh\" retrieved from environment."
     }
@@ -103,7 +107,7 @@ class NeoDeploymentTest extends PiperTestBase {
 
         withPipeline(noCredentialsIdPipeline()).execute(archivePath)
 
-        assert shellCalls[0] =~ /#!\/bin\/bash "neo" deploy-mta --user 'defaultUser' --host 'test\.deploy\.host\.com' --source ".*" --account 'trialuser123' --password '\*\*\*\*\*\*\*\*' --synchronous/
+        assert shellCalls[0] =~ /#!\/bin\/bash "neo" deploy-mta --user 'defaultUser' --password '\*\*\*\*\*\*\*\*' --source ".*" --host 'test\.deploy\.host\.com' --account 'trialuser123' --synchronous/
 
         assert messages[1] == "Using Neo executable from PATH."
     }
@@ -116,7 +120,7 @@ class NeoDeploymentTest extends PiperTestBase {
 
         withPipeline(neoHomeParameterPipeline()).execute(archivePath, 'myCredentialsId')
 
-        assert shellCalls[0] =~ /#!\/bin\/bash "\/etc\/neo\/tools\/neo\.sh" deploy-mta --user 'anonymous' --host 'test\.deploy\.host\.com' --source ".*" --account 'trialuser123' --password '\*\*\*\*\*\*\*\*' --synchronous.*/
+        assert shellCalls[0] =~ /#!\/bin\/bash "\/etc\/neo\/tools\/neo\.sh" deploy-mta --user 'anonymous' --password '\*\*\*\*\*\*\*\*' --source ".*" --host 'test\.deploy\.host\.com' --account 'trialuser123' --synchronous.*/
 
         assert messages[1] == "[neoDeploy] Neo executable \"/etc/neo/tools/neo.sh\" retrieved from parameters."
 
@@ -157,6 +161,122 @@ class NeoDeploymentTest extends PiperTestBase {
 
     }
 
+    @Test
+    void mtaDeployModeTest() {
+        binding.getVariable('env')['NEO_HOME'] = '/opt/neo'
+        new File(archivePath) << "dummy archive"
+
+        withPipeline(mtaDeployModePipeline()).execute(archivePath, 'mta')
+
+        assert shellCalls[0] =~ /#!\/bin\/bash "\/opt\/neo\/tools\/neo\.sh" deploy-mta --user 'defaultUser' --password '\*\*\*\*\*\*\*\*' --source ".*" --host 'test\.deploy\.host\.com' --account 'trialuser123' --synchronous.*/
+        assert messages[1] == "[neoDeploy] Neo executable \"/opt/neo/tools/neo.sh\" retrieved from environment."
+    }
+
+    @Test
+    void warFileParamsDeployModeTest() {
+        binding.getVariable('env')['NEO_HOME'] = '/opt/neo'
+        new File(warArchivePath) << "dummy war archive"
+
+        withPipeline(warParamsDeployModePipeline()).execute(warArchivePath, 'warParams', 'lite', 'deploy')
+
+        assert shellCalls[0] =~ /#!\/bin\/bash "\/opt\/neo\/tools\/neo\.sh" deploy --user 'defaultUser' --password '\*\*\*\*\*\*\*\*' --source ".*\.war" --host 'test\.deploy\.host\.com' --account 'trialuser123' --application 'testApp' --runtime 'neo-javaee6-wp' --runtime-version '2\.125' --size 'lite'/
+        assert messages[1] == "[neoDeploy] Neo executable \"/opt/neo/tools/neo.sh\" retrieved from environment."
+    }
+
+    @Test
+    void warFileParamsDeployModeRollingUpdateTest() {
+        binding.getVariable('env')['NEO_HOME'] = '/opt/neo'
+        new File(warArchivePath) << "dummy war archive"
+
+        withPipeline(warParamsDeployModePipeline()).execute(warArchivePath, 'warParams', 'lite', 'rolling-update')
+
+        assert shellCalls[0] =~ /#!\/bin\/bash "\/opt\/neo\/tools\/neo\.sh" rolling-update --user 'defaultUser' --password '\*\*\*\*\*\*\*\*' --source ".*\.war" --host 'test\.deploy\.host\.com' --account 'trialuser123' --application 'testApp' --runtime 'neo-javaee6-wp' --runtime-version '2\.125' --size 'lite'/
+        assert messages[1] == "[neoDeploy] Neo executable \"/opt/neo/tools/neo.sh\" retrieved from environment."
+    }
+
+    @Test
+    void warPropertiesFileDeployModeTest() {
+        binding.getVariable('env')['NEO_HOME'] = '/opt/neo'
+        new File(warArchivePath) << "dummy war archive"
+        new File(propertiesFilePath) << "dummy properties file"
+
+        withPipeline(warPropertiesFileDeployModePipeline()).execute(warArchivePath, propertiesFilePath, 'warPropertiesFile', 'deploy')
+
+        assert shellCalls[0] =~ /#!\/bin\/bash "\/opt\/neo\/tools\/neo\.sh" deploy --user 'defaultUser' --password '\*\*\*\*\*\*\*\*' --source ".*\.war" .*\.properties/
+        assert messages[1] == "[neoDeploy] Neo executable \"/opt/neo/tools/neo.sh\" retrieved from environment."
+    }
+
+    @Test
+    void warPropertiesFileDeployModeRollingUpdateTest() {
+        binding.getVariable('env')['NEO_HOME'] = '/opt/neo'
+        new File(warArchivePath) << "dummy war archive"
+        new File(propertiesFilePath) << "dummy properties file"
+
+        withPipeline(warPropertiesFileDeployModePipeline()).execute(warArchivePath, propertiesFilePath, 'warPropertiesFile', 'rolling-update')
+
+        assert shellCalls[0] =~ /#!\/bin\/bash "\/opt\/neo\/tools\/neo\.sh" rolling-update --user 'defaultUser' --password '\*\*\*\*\*\*\*\*' --source ".*\.war" .*\.properties/
+        assert messages[1] == "[neoDeploy] Neo executable \"/opt/neo/tools/neo.sh\" retrieved from environment."
+    }
+
+    @Test
+    void applicationNameNotProvidedTest() {
+        new File(warArchivePath) << "dummy war archive"
+
+        thrown.expect(Exception)
+        thrown.expectMessage('ERROR - NO VALUE AVAILABLE FOR applicationName')
+
+        withPipeline(noApplicationNamePipeline()).execute(warArchivePath, 'warParams')
+    }
+
+    @Test
+    void runtimeNotProvidedTest() {
+        new File(warArchivePath) << "dummy war archive"
+
+        thrown.expect(Exception)
+        thrown.expectMessage('ERROR - NO VALUE AVAILABLE FOR runtime')
+
+        withPipeline(noRuntimePipeline()).execute(warArchivePath, 'warParams')
+    }
+
+    @Test
+    void runtimeVersionNotProvidedTest() {
+        new File(warArchivePath) << "dummy war archive"
+
+        thrown.expect(Exception)
+        thrown.expectMessage('ERROR - NO VALUE AVAILABLE FOR runtimeVersion')
+
+        withPipeline(noRuntimeVersionPipeline()).execute(warArchivePath, 'warParams')
+    }
+
+    @Test
+    void illegalDeployModeTest() {
+        new File(warArchivePath) << "dummy war archive"
+
+        thrown.expect(Exception)
+        thrown.expectMessage("[neoDeploy] Invalid deployMode = 'illegalMode'. Valid 'deployMode' values are: 'mta', 'warParams' and 'warPropertiesFile'")
+
+        withPipeline(warParamsDeployModePipeline()).execute(warArchivePath, 'illegalMode', 'lite', 'deploy')
+    }
+
+    @Test
+    void illegalVMSizeTest() {
+        new File(warArchivePath) << "dummy war archive"
+
+        thrown.expect(Exception)
+        thrown.expectMessage("[neoDeploy] Invalid vmSize = 'illegalVM'. Valid 'vmSize' values are: 'lite', 'pro', 'prem' and 'prem-plus'.")
+
+        withPipeline(warParamsDeployModePipeline()).execute(warArchivePath, 'warParams', 'illegalVM', 'deploy')
+    }
+
+    @Test
+    void illegalWARActionTest() {
+        new File(warArchivePath) << "dummy war archive"
+
+        thrown.expect(Exception)
+        thrown.expectMessage("[neoDeploy] Invalid warAction = 'illegalWARAction'. Valid 'warAction' values are: 'deploy' and 'rolling-update'.")
+
+        withPipeline(warParamsDeployModePipeline()).execute(warArchivePath, 'warParams', 'lite', 'illegalWARAction')
+    }
 
     private defaultPipeline(){
         return """
@@ -242,6 +362,128 @@ class NeoDeploymentTest extends PiperTestBase {
 
                  node() {
                    neoDeploy archivePath: archivePath
+                 }
+
+               }
+
+               return this
+               """
+    }
+
+    private noApplicationNamePipeline() {
+        return """
+               @Library('piper-library-os')
+
+               execute(warArchivePath, deployMode) {
+               
+                 commonPipelineEnvironment.setConfigProperty('DEPLOY_HOST', 'test.deploy.host.com')
+                 commonPipelineEnvironment.setConfigProperty('CI_DEPLOY_ACCOUNT', 'trialuser123')
+                 def runtime = 'neo-javaee6-wp'
+                 def runtimeVersion = '2.125'
+
+                 node() {
+                   neoDeploy script: this, archivePath: warArchivePath, deployMode: deployMode, runtime: runtime, runtimeVersion: runtimeVersion
+                 }
+
+               }
+
+               return this
+               """
+    }
+
+    private noRuntimePipeline() {
+        return """
+               @Library('piper-library-os')
+
+               execute(warArchivePath, deployMode) {
+               
+                 commonPipelineEnvironment.setConfigProperty('DEPLOY_HOST', 'test.deploy.host.com')
+                 commonPipelineEnvironment.setConfigProperty('CI_DEPLOY_ACCOUNT', 'trialuser123')
+                 def appName = 'testApp'
+                 def runtime = 'neo-javaee6-wp'
+                 def runtimeVersion = '2.125'
+
+                 node() {
+                   neoDeploy script: this, archivePath: warArchivePath, deployMode: deployMode, applicationName: appName, runtimeVersion: runtimeVersion
+                 }
+
+               }
+
+               return this
+               """
+    }
+
+    private noRuntimeVersionPipeline() {
+        return """
+               @Library('piper-library-os')
+
+               execute(warArchivePath, deployMode) {
+               
+                 commonPipelineEnvironment.setConfigProperty('DEPLOY_HOST', 'test.deploy.host.com')
+                 commonPipelineEnvironment.setConfigProperty('CI_DEPLOY_ACCOUNT', 'trialuser123')
+                 def appName = 'testApp'
+                 def runtime = 'neo-javaee6-wp'
+                 def runtimeVersion = '2.125'
+
+                 node() {
+                   neoDeploy script: this, archivePath: warArchivePath, deployMode: deployMode, applicationName: appName, runtime: runtime
+                 }
+
+               }
+
+               return this
+               """
+    }
+
+    private warPropertiesFileDeployModePipeline() {
+        return """
+               @Library('piper-library-os')
+
+               execute(warArchivePath, propertiesFilePath, deployMode, warAction) {
+               
+                 node() {
+                   neoDeploy script: this, deployMode: deployMode, archivePath: warArchivePath, propertiesFile: propertiesFilePath, warAction: warAction
+                 }
+
+               }
+
+               return this
+               """
+    }
+
+    private warParamsDeployModePipeline() {
+        return """
+               @Library('piper-library-os')
+
+               execute(warArchivePath, deployMode, vmSize, warAction) {
+               
+                 commonPipelineEnvironment.setConfigProperty('DEPLOY_HOST', 'test.deploy.host.com')
+                 commonPipelineEnvironment.setConfigProperty('CI_DEPLOY_ACCOUNT', 'trialuser123')
+                 def appName = 'testApp'
+                 def runtime = 'neo-javaee6-wp'
+                 def runtimeVersion = '2.125'
+
+                 node() {
+                   neoDeploy script: this, archivePath: warArchivePath, deployMode: deployMode, applicationName: appName, runtime: runtime, runtimeVersion: runtimeVersion, warAction: warAction, vmSize: vmSize
+                 }
+
+               }
+
+               return this
+               """
+    }
+
+    private mtaDeployModePipeline() {
+        return """
+               @Library('piper-library-os')
+
+               execute(archivePath, deployMode) {
+               
+                 commonPipelineEnvironment.setConfigProperty('DEPLOY_HOST', 'test.deploy.host.com')
+                 commonPipelineEnvironment.setConfigProperty('CI_DEPLOY_ACCOUNT', 'trialuser123')
+               
+                 node() {
+                   neoDeploy script: this, archivePath: archivePath, deployMode: deployMode
                  }
 
                }
