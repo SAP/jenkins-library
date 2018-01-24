@@ -3,7 +3,7 @@ package com.sap.piper
 import com.cloudbees.groovy.cps.NonCPS
 
 @NonCPS
-def getMandatoryParameter(Map map, paramName, defaultValue) {
+def getMandatoryParameter(Map map, paramName, defaultValue = null) {
 
     def paramValue = map[paramName]
 

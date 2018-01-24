@@ -26,4 +26,17 @@ class ConfigurationMergerTest {
         Map merged = ConfigurationMerger.merge(parameters, parameterKeys, defaults)
         Assert.assertEquals([], merged.nonErpDestinations)
     }
+
+    @Test
+    void testMergeCustomPipelineValues(){
+        Map defaults = [dockerImage: 'mvn']
+        Map parameters = [goals: 'install', flags: '']
+        List parameterKeys = ['flags']
+        Map configuration = [flags: '-B']
+        List configurationKeys = ['flags']
+        Map pipelineDataMap = [artifactVersion: '1.2.3', flags: 'test']
+        Map merged = ConfigurationMerger.mergeWithPipelineData(parameters, parameterKeys, pipelineDataMap, configuration, configurationKeys, defaults)
+        Assert.assertEquals('', merged.flags)
+        Assert.assertEquals('1.2.3', merged.artifactVersion)
+    }
 }

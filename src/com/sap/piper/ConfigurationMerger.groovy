@@ -21,6 +21,21 @@ class ConfigurationMerger {
     }
 
     @NonCPS
+    def static mergeWithPipelineData(Map parameters, List parameterKeys,
+                            Map pipelineDataMap,
+                            Map configurationMap, List configurationKeys,
+                            Map stepDefaults=[:]
+    ){
+        Map merged = [:]
+        merged.putAll(stepDefaults)
+        merged.putAll(filterByKeyAndNull(configurationMap, configurationKeys))
+        merged.putAll(pipelineDataMap)
+        merged.putAll(filterByKeyAndNull(parameters, parameterKeys))
+
+        return merged
+    }
+
+    @NonCPS
     private static filterByKeyAndNull(Map map, List keys) {
         Map filteredMap = map.findAll {
             if(it.value == null){

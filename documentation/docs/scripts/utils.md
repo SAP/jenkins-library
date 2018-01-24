@@ -24,7 +24,7 @@ Retrieves the parameter value for parameter `paramName` from parameter map `map`
 #### Parameters
 * `map` - A map containing configuration parameters.
 * `paramName` - The key of the parameter which should be looked up.
-* `defaultValue` - The value which is returned in case there is no parameter with key `paramName` contained in `map`.
+* optional: `defaultValue` - The value which is returned in case there is no parameter with key `paramName` contained in `map`. If it is not provided the default is `null`.
 
 #### Return value
 The value to the parameter to be retrieved, or the default value if the former is `null`, either since there is no such key or the key is associated with value `null`. In case the parameter is not defined or the value for that parameter is `null`and there is no default value an exception is thrown.
