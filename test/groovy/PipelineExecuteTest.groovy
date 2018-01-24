@@ -1,23 +1,34 @@
 import hudson.AbortException
+import util.JenkinsConfigRule
+import util.JenkinsSetupRule
+
 import org.junit.rules.TemporaryFolder
+
+import com.lesfurets.jenkins.unit.BasePipelineTest
+
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.ExpectedException
+import org.junit.rules.RuleChain
 
-class PipelineExecuteTest extends PiperTestBase {
+class PipelineExecuteTest extends BasePipelineTest {
+
+    private ExpectedException thrown = new ExpectedException().none()
 
     @Rule
-    public ExpectedException thrown = new ExpectedException().none()
+    public RuleChain ruleChain = RuleChain.outerRule(thrown)
+                                              .around(new JenkinsSetupRule(this))
+                                              .around(new JenkinsConfigRule(this))
 
     def pipelinePath
     def checkoutParameters = [:]
     def load
 
-    @Before
-    void setUp() {
+    def pipelineExecuteScript
 
-        super.setUp()
+    @Before
+    void init() {
 
         pipelinePath = null
         checkoutParameters.clear()
@@ -32,13 +43,14 @@ class PipelineExecuteTest extends PiperTestBase {
         })
         helper.registerAllowedMethod('load', [String], { s -> load = s })
 
+        pipelineExecuteScript = loadScript("pipelineExecute.groovy").pipelineExecute
     }
 
 
     @Test
     void straightForwardTest() {
 
-        withPipeline(defaultPipeline()).execute()
+        pipelineExecuteScript.call(repoUrl: "https://test.com/myRepo.git")
         assert load == "Jenkinsfile"
         assert checkoutParameters.branch == 'master'
         assert checkoutParameters.repoUrl == "https://test.com/myRepo.git"
@@ -50,7 +62,11 @@ class PipelineExecuteTest extends PiperTestBase {
     @Test
     void parameterizeTest() {
 
-        withPipeline(parameterizePipeline()).execute()
+        pipelineExecuteScript.call(repoUrl: "https://test.com/anotherRepo.git",
+                             branch: 'feature',
+                             path: 'path/to/Jenkinsfile',
+                             credentialsId: 'abcd1234')
+
         assert load == "path/to/Jenkinsfile"
         assert checkoutParameters.branch == 'feature'
         assert checkoutParameters.repoUrl == "https://test.com/anotherRepo.git"
@@ -65,50 +81,6 @@ class PipelineExecuteTest extends PiperTestBase {
         thrown.expect(Exception)
         thrown.expectMessage("ERROR - NO VALUE AVAILABLE FOR repoUrl")
 
-        withPipeline(noRepoUrlPipeline()).execute()
-
-    }
-
-
-    private defaultPipeline() {
-        return """
-               @Library('piper-library-os')
-
-               execute() {
-
-                   pipelineExecute repoUrl: "https://test.com/myRepo.git"
-
-               }
-
-               return this
-               """
-    }
-
-    private parameterizePipeline() {
-        return """
-               @Library('piper-library-os')
-
-               execute() {
-
-                   pipelineExecute repoUrl: "https://test.com/anotherRepo.git", branch: 'feature', path: 'path/to/Jenkinsfile', credentialsId: 'abcd1234'
-
-               }
-
-               return this
-               """
-    }
-
-    private noRepoUrlPipeline() {
-        return """
-               @Library('piper-library-os')
-
-               execute() {
-
-                   pipelineExecute()
-
-               }
-
-               return this
-               """
+        pipelineExecuteScript.call()
     }
 }
