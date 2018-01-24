@@ -7,20 +7,18 @@ Used by other steps to make error analysis easier. Lists parameters and other da
 none
 
 ## Parameters
-| parameter           | mandatory | default | possible values |
-| --------------------|-----------|---------|-----------------|
-| `stepParameters`    | yes       |         |                 |
-| `stepName`          | yes       |         |                 |
-| `echoDetails`       | yes       | true    | true, false     |
-| `echoParameters`    | no        | true    | true, false     |
-| `allowBuildFailure` | no        | false   | true, false     |
+| parameter        | mandatory | default | possible values |
+| -----------------|-----------|---------|-----------------|
+| `stepParameters` | yes       |         |                 |
+| `stepName`       | yes       |         |                 |
+| `echoDetails`    | yes       | true    | true, false     |
 
 * `stepParameters` - The parameters from the step to be executed. The list of parameters is then shown in the console output.
 * `stepName` - The name of the step executed to be shown in the console output.
 * `echoDetails` - If set to true the following will be output to the console:
     1. Step beginning: `--- BEGIN LIBRARY STEP: ${stepName}.groovy ---`
     2. Step end: `--- END LIBRARY STEP: ${stepName}.groovy ---`
-    3. Step errors:
+    3. Step errors: 
     ```
     ----------------------------------------------------------
     --- ERROR OCCURED IN LIBRARY STEP: ${stepName}
@@ -39,8 +37,6 @@ none
     * GitHub repository for pipeline steps: https://...
     ----------------------------------------------------------
     ```
-* `echoParameters` - If set to false the parameters are not printed. This assists when some parameters contain sensitive information.
-* `allowBuildFailure` - By default an exception is thrown in case the build status is already set to `FAILURE` when the step is entered. This allows for easier troubleshooting. It this behavior is not wanted you can set `allowBuildFailure: true`.
 
 ## Return value
 none

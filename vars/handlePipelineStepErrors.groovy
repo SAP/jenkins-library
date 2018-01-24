@@ -4,12 +4,6 @@ def call(Map parameters = [:], body) {
     def stepParameters = parameters.stepParameters //mandatory
     def stepName = parameters.stepName //mandatory
     def echoDetails = parameters.get('echoDetails', true)
-    def echoParameters = parameters.get('echoParameters', true)
-
-    def allowBuildFailure = parameters.get('allowBuildFailure', stepParameters.get('allowBuildFailure', false))
-
-    if (currentBuild.result == 'FAILURE' && !allowBuildFailure)
-        error "\n${line}\n--- Previous step has set the build status to FAILURE\n${line}"
 
     try {
 
@@ -22,18 +16,14 @@ def call(Map parameters = [:], body) {
         body()
 
     } catch (Throwable err) {
-        def paramString = '*** *** *** *** *** ***'
-        if (echoDetails && echoParameters)
-            paramString = "${stepParameters}"
         if (echoDetails)
-            //ToDo: add library information to output
             echo """----------------------------------------------------------
 --- ERROR OCCURED IN LIBRARY STEP: ${stepName}
 ----------------------------------------------------------
 
 FOLLOWING PARAMETERS WERE AVAILABLE TO THIS STEP:
 ***
-${paramString}
+${stepParameters}
 ***
 
 ERROR WAS:
