@@ -1,20 +1,35 @@
-import junit.framework.TestCase
+
 import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
+import org.junit.rules.RuleChain
+
+import com.lesfurets.jenkins.unit.BasePipelineTest
 
 import static org.junit.Assert.assertEquals
 import static org.junit.Assert.assertTrue
 
-class MavenExecuteTest extends PiperTestBase {
+import util.JenkinsConfigRule
+import util.JenkinsSetupRule
+import util.JenkinsShellCallRule
+
+class MavenExecuteTest extends BasePipelineTest {
 
     Map dockerParameters
-    List shellCalls
+
+    private JenkinsShellCallRule jscr = new JenkinsShellCallRule(this)
+
+    @Rule
+    public RuleChain ruleChain = RuleChain.outerRule(new JenkinsSetupRule(this))
+                                              .around(jscr)
+                                              .around(new JenkinsConfigRule(this))
+
+    def mavenExecuteScript
+    def cpe
 
     @Before
-    void setUp() {
-        super.setUp()
+    void init() {
 
-        shellCalls = []
         dockerParameters = [:]
 
         helper.registerAllowedMethod("dockerExecute", [Map.class, Closure.class],
@@ -22,23 +37,35 @@ class MavenExecuteTest extends PiperTestBase {
                 dockerParameters = parameters
                 closure()
             })
-        helper.registerAllowedMethod('sh', [String], { s -> shellCalls.add(s) })
+
+        mavenExecuteScript = loadScript("mavenExecute.groovy").mavenExecute
+        cpe = loadScript('commonPipelineEnvironment.groovy').commonPipelineEnvironment
     }
 
     @Test
     void testExecuteBasicMavenCommand() throws Exception {
-        def script = loadScript("test/resources/pipelines/mavenExecuteTest/executeBasicMavenCommand.groovy")
-        script.execute()
+
+        mavenExecuteScript.call(script: [commonPipelineEnvironment: cpe], goals: 'clean install')
         assertEquals('maven:3.5-jdk-7', dockerParameters.dockerImage)
-        assertTrue(shellCalls.contains('mvn clean install'))
+
+        assert jscr.shell[0] == 'mvn clean install'
     }
 
     @Test
     void testExecuteMavenCommandWithParameter() throws Exception {
-        def script = loadScript("test/resources/pipelines/mavenExecuteTest/executeMavenCommandWithParameters.groovy")
-        script.execute()
+
+        mavenExecuteScript.call(
+            script: [commonPipelineEnvironment: cpe],
+            dockerImage: 'maven:3.5-jdk-8-alpine',
+            goals: 'clean install',
+            globalSettingsFile: 'globalSettingsFile.xml',
+            projectSettingsFile: 'projectSettingsFile.xml',
+            pomPath: 'pom.xml',
+            flags: '-o',
+            m2Path: 'm2Path',
+            defines: '-Dmaven.tests.skip=true')
         assertEquals('maven:3.5-jdk-8-alpine', dockerParameters.dockerImage)
         String mvnCommand = "mvn --global-settings 'globalSettingsFile.xml' -Dmaven.repo.local='m2Path' --settings 'projectSettingsFile.xml' --file 'pom.xml' -o clean install -Dmaven.tests.skip=true"
-        assertTrue(shellCalls.contains(mvnCommand))
+        assertTrue(jscr.shell.contains(mvnCommand))
     }
 }
