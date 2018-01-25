@@ -236,10 +236,6 @@ class NeoDeploymentTest extends BasePipelineTest {
         cpe.setConfigProperty('DEPLOY_HOST', 'test.deploy.host.com')
         cpe.setConfigProperty('CI_DEPLOY_ACCOUNT', 'trialuser123')
 
-        def appName = 'testApp'
-        def runtime = 'neo-javaee6-wp'
-        def runtimeVersion = '2.125'
-
         neoDeployScript.call(script: [commonPipelineEnvironment: cpe],
                              applicationName: 'testApp',
                              runtime: 'neo-javaee6-wp',
