@@ -11,11 +11,8 @@ def call(parameters = [:]) {
             script = [commonPipelineEnvironment: commonPipelineEnvironment]
         }
 
-        def archivePath = new File(utils.getMandatoryParameter(parameters, 'archivePath', null))
-        if (!archivePath.isAbsolute()) {
-            archivePath = new File(pwd(), archivePath.getPath())
-        }
-        if (!archivePath.exists()){
+        def archivePath = utils.getMandatoryParameter(parameters, 'archivePath', null)
+        if (!fileExists(archivePath)){
             error "Archive cannot be found with parameter archivePath: '${archivePath}'."
         }
 
@@ -34,11 +31,8 @@ def call(parameters = [:]) {
             }
         }
         if (deployMode == 'warPropertiesFile') {
-            propertiesFile = new File(utils.getMandatoryParameter(parameters, 'propertiesFile', null))
-            if (!propertiesFile.isAbsolute()) {
-                propertiesFile = new File(pwd(), propertiesFile.getPath())
-            }
-            if (!propertiesFile.exists()){
+            propertiesFile = utils.getMandatoryParameter(parameters, 'propertiesFile', null)
+            if (!fileExists(propertiesFile)){
                 error "Properties file cannot be found with parameter propertiesFile: '${propertiesFile}'."
             }
         }
@@ -84,7 +78,7 @@ def call(parameters = [:]) {
             def commonDeployParams =
                 """--user '${username}' \
                    --password '${password}' \
-                   --source "${archivePath.getAbsolutePath()}" \
+                   --source "${archivePath}" \
                 """
 
             if (deployMode == 'mta') {
@@ -114,7 +108,7 @@ def call(parameters = [:]) {
                 sh """#!/bin/bash
                       "${neoExecutable}" ${warAction} \
                       ${commonDeployParams} \
-                      ${propertiesFile.getAbsolutePath()}
+                      ${propertiesFile}
                    """
             }
         }
