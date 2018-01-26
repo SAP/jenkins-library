@@ -12,9 +12,8 @@ import org.junit.rules.RuleChain
 
 
 import util.JenkinsLoggingRule
-import util.JenkinsReadYamlRule
-import util.JenkinsSetupRule
 import util.JenkinsShellCallRule
+import util.Rules
 
 class NeoDeploymentTest extends BasePipelineTest {
 
@@ -24,13 +23,11 @@ class NeoDeploymentTest extends BasePipelineTest {
     private JenkinsShellCallRule jscr = new JenkinsShellCallRule(this)
 
     @Rule
-    public RuleChain ruleChain = RuleChain.outerRule(thrown)
-                                              .around(tmp)
-                                              .around(new JenkinsSetupRule(this))
-                                              .around(jlr)
-                                              .around(jscr)
-                                              .around(new JenkinsReadYamlRule(this))
-
+    public RuleChain ruleChain = Rules.getCommonRules(this)
+                                      .around(thrown)
+                                      .around(tmp)
+                                      .around(jlr)
+                                      .around(jscr)
 
     def workspacePath
     def warArchiveName

@@ -1,4 +1,4 @@
-import util.JenkinsSetupRule
+import util.Rules
 
 import com.lesfurets.jenkins.unit.BasePipelineTest
 
@@ -15,9 +15,8 @@ class PipelineExecuteTest extends BasePipelineTest {
     private ExpectedException thrown = new ExpectedException().none()
 
     @Rule
-    public RuleChain ruleChain = RuleChain.outerRule(thrown)
-                                              .around(new JenkinsSetupRule(this))
-                                              .around(new JenkinsReadYamlRule(this))
+    public RuleChain ruleChain = Rules.getCommonRules(this)
+                                      .around(thrown)
 
     def pipelinePath
     def checkoutParameters = [:]

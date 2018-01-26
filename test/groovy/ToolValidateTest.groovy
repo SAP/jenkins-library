@@ -10,8 +10,7 @@ import org.junit.rules.TemporaryFolder
 import com.lesfurets.jenkins.unit.BasePipelineTest
 
 import util.JenkinsLoggingRule
-import util.JenkinsReadYamlRule
-import util.JenkinsSetupRule
+import util.Rules
 
 class ToolValidateTest extends BasePipelineTest {
 
@@ -20,12 +19,10 @@ class ToolValidateTest extends BasePipelineTest {
     private JenkinsLoggingRule jlr = new JenkinsLoggingRule(this)
 
     @Rule
-    public RuleChain ruleChain =
-        RuleChain.outerRule(tmp)
-            .around(thrown)
-            .around(new JenkinsSetupRule(this))
-            .around(jlr)
-            .around(new JenkinsReadYamlRule(this))
+    public RuleChain ruleChain = Rules.getCommonRules(this)
+                                      .around(tmp)
+                                      .around(thrown)
+                                      .around(jlr)
 
 
     private notEmptyDir
