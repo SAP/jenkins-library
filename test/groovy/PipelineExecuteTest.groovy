@@ -1,8 +1,4 @@
-import hudson.AbortException
-import util.JenkinsConfigRule
 import util.JenkinsSetupRule
-
-import org.junit.rules.TemporaryFolder
 
 import com.lesfurets.jenkins.unit.BasePipelineTest
 
@@ -12,6 +8,8 @@ import org.junit.Test
 import org.junit.rules.ExpectedException
 import org.junit.rules.RuleChain
 
+import util.JenkinsReadYamlRule
+
 class PipelineExecuteTest extends BasePipelineTest {
 
     private ExpectedException thrown = new ExpectedException().none()
@@ -19,7 +17,7 @@ class PipelineExecuteTest extends BasePipelineTest {
     @Rule
     public RuleChain ruleChain = RuleChain.outerRule(thrown)
                                               .around(new JenkinsSetupRule(this))
-                                              .around(new JenkinsConfigRule(this))
+                                              .around(new JenkinsReadYamlRule(this))
 
     def pipelinePath
     def checkoutParameters = [:]

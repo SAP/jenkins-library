@@ -9,8 +9,8 @@ import org.junit.rules.TemporaryFolder
 
 import com.lesfurets.jenkins.unit.BasePipelineTest
 
-import util.JenkinsConfigRule
 import util.JenkinsLoggingRule
+import util.JenkinsReadYamlRule
 import util.JenkinsSetupRule
 
 class ToolValidateTest extends BasePipelineTest {
@@ -18,7 +18,6 @@ class ToolValidateTest extends BasePipelineTest {
     private ExpectedException thrown = new ExpectedException().none()
     private TemporaryFolder tmp = new TemporaryFolder()
     private JenkinsLoggingRule jlr = new JenkinsLoggingRule(this)
-    private JenkinsConfigRule jcr = new JenkinsConfigRule(this)
 
     @Rule
     public RuleChain ruleChain =
@@ -26,7 +25,8 @@ class ToolValidateTest extends BasePipelineTest {
             .around(thrown)
             .around(new JenkinsSetupRule(this))
             .around(jlr)
-            .around(jcr)
+            .around(new JenkinsReadYamlRule(this))
+
 
     private notEmptyDir
 
