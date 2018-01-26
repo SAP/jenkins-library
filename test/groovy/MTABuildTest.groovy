@@ -10,8 +10,8 @@ import org.junit.rules.TemporaryFolder
 
 import com.lesfurets.jenkins.unit.BasePipelineTest
 
-import util.JenkinsConfigRule
 import util.JenkinsLoggingRule
+import util.JenkinsReadYamlRule
 import util.JenkinsSetupRule
 import util.JenkinsShellCallRule
 
@@ -29,7 +29,8 @@ public class MTABuildTest extends BasePipelineTest {
             .around(new JenkinsSetupRule(this))
             .around(jlr)
             .around(jscr)
-            .around(new JenkinsConfigRule(this))
+            .around(new JenkinsReadYamlRule(this))
+
 
     def currentDir
     def otherDir

@@ -9,7 +9,8 @@ import com.lesfurets.jenkins.unit.BasePipelineTest
 import static org.junit.Assert.assertEquals
 import static org.junit.Assert.assertTrue
 
-import util.JenkinsConfigRule
+import util.JenkinsReadYamlRule
+import util.JenkinsResetDefaultCacheRule
 import util.JenkinsSetupRule
 import util.JenkinsShellCallRule
 
@@ -22,7 +23,8 @@ class MavenExecuteTest extends BasePipelineTest {
     @Rule
     public RuleChain ruleChain = RuleChain.outerRule(new JenkinsSetupRule(this))
                                               .around(jscr)
-                                              .around(new JenkinsConfigRule(this))
+                                              .around(new JenkinsReadYamlRule(this))
+                                              .around(new JenkinsResetDefaultCacheRule())
 
     def mavenExecuteScript
     def cpe
