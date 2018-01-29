@@ -468,4 +468,31 @@ class NeoDeploymentTest extends BasePipelineTest {
             warAction: 'illegalWARAction',
             vmSize: 'lite')
     }
+
+    @Test
+    void deployHostProvidedAsDeprecatedParameterTest() {
+        new File(workspacePath, archiveName) << "dummy archive"
+        cpe.setConfigProperty('CI_DEPLOY_ACCOUNT', 'configPropsUser123')
+
+        neoDeployScript.call(script: [commonPipelineEnvironment: cpe],
+                             archivePath: archiveName,
+                             deployHost: "my.deploy.host.com"
+        )
+
+        assert jlr.log.contains("[WARNING][neoDeploy] Deprecated parameter 'deployHost' is used. This will not work anymore in future versions. Use parameter 'host' instead.")
+    }
+
+    @Test
+    void deployAccountProvidedAsDeprecatedParameterTest() {
+        new File(workspacePath, archiveName) << "dummy archive"
+        cpe.setConfigProperty('CI_DEPLOY_ACCOUNT', 'configPropsUser123')
+
+        neoDeployScript.call(script: [commonPipelineEnvironment: cpe],
+                             archivePath: archiveName,
+                             host: "my.deploy.host.com",
+                             deployAccount: "myAccount"
+        )
+
+        assert jlr.log.contains("Deprecated parameter 'deployAccount' is used. This will not work anymore in future versions. Use parameter 'account' instead.")
+    }
 }
