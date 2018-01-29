@@ -1,5 +1,13 @@
-def call(Map parameters = [:]) {
-    handlePipelineStepErrors (stepName: 'publishCheckResults', stepParameters: parameters) {
+import com.cloudbees.groovy.cps.NonCPS
+import com.sap.piper.Utils
+
+/**
+ * checkResultsPublish
+ *
+ * @param others document all parameters
+ */
+def call(Map parameters = [:], body) {
+    handlePipelineStepErrors (stepName: 'checkResultsPublish', stepParameters: parameters) {
         // GENERAL
         def tasks = parameters.get('tasks', false)
         def aggregation = parameters.get('aggregation', [:])
