@@ -12,21 +12,20 @@ Deploys an Application to SAP Cloud Platform (SAP CP) using the SAP Cloud Platfo
 
 * **Neo Java Web SDK** - can be downloaded from [Maven Central](http://central.maven.org/maven2/com/sap/cloud/neo-java-web-sdk/). The Neo Java Web SDK
 needs to be extracted into the folder provided by `neoHome`. In case this parameters is not provided and there is no NEO_HOME parameter in the environment
-`<neoRoot>/tools` needs to be in the `PATH`.
+`<neoRoot>/tools` needs to be in the `PATH`. This step is also capable of triggering the neo deploy tool provided inside a docker image.
 
 * **Java 8 or higher** - needed by the *Neo-Java-Web-SDK*
 
 ## Parameters when using MTA deployment method (default - MTA)
-| parameter          | mandatory | default                                                                                      | possible values                                 |
-| -------------------|-----------|----------------------------------------------------------------------------------------------|-------------------------------------------------|
+| parameter          | mandatory | default                                                                                                                          | possible values |
+| -------------------|-----------|----------------------------------------------------------------------------------------------------------------------------------|-----------------|
 | `deployMode`       | yes       | `'MTA'`                                                                                      | `'MTA'`, `'WAR_PARAMS'`, `'WAR_PROPERTIESFILE'` |
-| `script`           | yes       |                                                                                              |                                                 |
-| `archivePath`      | yes       |                                                                                              |                                                 |
-| `deployHost`       | no        | `'DEPLOY_HOST'` from `commonPipelineEnvironment`                                             |                                                 |
-| `deployAccount`    | no        | `'CI_DEPLOY_ACCOUNT'` from `commonPipelineEnvironment`                                       |                                                 |
-| `neoCredentialsId` | no        | `'CI_CREDENTIALS_ID'`                                                                        |                                                 |
-| `neoHome`          | no        | Environment is checked for `NEO_HOME`, <br>otherwise the neo toolset is expected in the path |                                                 |
-
+| `script`           | yes       |                                                                                                                                  |                 |
+| `archivePath`      | yes       |                                                                                                                                  |                 |
+| `deployHost`       | no        | `'account'` from step configuration `'neoDeploy'`, or propertey `'DEPLOY_HOST'` from `commonPipelineEnvironment` (deprecated)    |                 |
+| `deployAccount`    | no        | `'host'` from step configuration `'neoDeploy'`, or property `'CI_DEPLOY_ACCOUNT'` from `commonPipelineEnvironment` (deprecated)  |                 |
+| `neoCredentialsId` | no        | `'neoCredentialsId'` from step configuration `'neoDeploy'` or hard coded value `'CI_CREDENTIALS_ID'`                             |                 |
+| `neoHome`          | no        | Environment is checked for `NEO_HOME`, <br>otherwise the neo toolset is expected in the path                                     |                 |
 ## Parameters when using WAR file deployment method with .properties file (WAR_PROPERTIESFILE)
 | parameter          | mandatory | default                                                                                      | possible values                                 |
 | -------------------|-----------|----------------------------------------------------------------------------------------------|-------------------------------------------------|
@@ -92,4 +91,15 @@ none
 ## Example
 ```groovy
 neoDeploy script: this, archivePath: 'path/to/archiveFile.mtar', credentialsId: 'my-credentials-id'
+```
+
+Example configuration:
+
+```
+steps:
+  <...>
+  neoDeploy:
+
+        account: <myDeployAccount>
+        host: hana.example.org
 ```

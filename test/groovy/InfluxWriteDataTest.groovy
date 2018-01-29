@@ -1,5 +1,6 @@
 #!groovy
 import com.lesfurets.jenkins.unit.BasePipelineTest
+import com.sap.piper.DefaultValueCache
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -30,6 +31,13 @@ class InfluxWriteDataTest extends BasePipelineTest {
 
     @Before
     void init() throws Exception {
+
+        //
+        // Currently we have dependencies between the tests since
+        // DefaultValueCache is a singleton which keeps its status
+        // for all the tests. Depending on the test order we fail.
+        // As long as this status remains we need:
+        DefaultValueCache.reset()
 
         //reset stepMap
         stepMap = [:]
