@@ -33,7 +33,7 @@ def call(Map parameters = [:], body) {
         // report Checkstyle
         report('CheckStylePublisher', checkstyle, '**/target/checkstyle-result.xml', doArchive, testMode)
         // report ESLint
-        reportWarnings('JSLint', eslint, '**/target/eslint.checkstyle.xml', doArchive, testMode)
+        reportWarnings('JSLint', eslint, '**/target/eslint.xml', doArchive, testMode)
         // report PyLint
         reportWarnings('PyLint', pylint, '**/pylint.log', doArchive, testMode)
 
