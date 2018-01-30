@@ -96,6 +96,7 @@ def reportTasks(settings, defaultPattern){
     }
 }
 
+@NonCPS
 def ensureMap(parameters, name){
     def value = parameters.get(name, [:])
     if(!isMap(value))
@@ -103,12 +104,14 @@ def ensureMap(parameters, name){
     return value
 }
 
+@NonCPS
 def asMap(parameter){
     if(Boolean.TRUE.equals(parameter))
         return [:]
     return parameter
 }
 
+@NonCPS
 def isMap(object){
     return object in Map
 }
@@ -120,8 +123,9 @@ def archiveResults(archive, pattern, allowEmpty){
     }
 }
 
+@NonCPS
 def createCommonOptionsMap(publisherName, settings){
-    def result = [:]
+    Map result = [:]
     def thresholds = ensureMap(settings, 'thresholds')
     def fail = ensureMap(thresholds, 'fail')
     def unstable = ensureMap(thresholds, 'unstable')
