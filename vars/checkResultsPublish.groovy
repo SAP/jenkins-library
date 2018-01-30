@@ -23,19 +23,19 @@ def call(Map parameters = [:], body) {
         def pylint = parameters.get('pylint', false)
 
         // report TODOs
-        reportTasks(tasks, '**/*.java', testMode)
+        reportTasks(tasks, '**/*.java')
         // report PMD
-        report('PmdPublisher', pmd, '**/target/pmd.xml', doArchive, testMode)
+        report('PmdPublisher', pmd, '**/target/pmd.xml', doArchive)
         // report CPD
-        report('DryPublisher', cpd, '**/target/cpd.xml', doArchive, testMode)
+        report('DryPublisher', cpd, '**/target/cpd.xml', doArchive)
         // report Findbugs
-        report('FindBugsPublisher', findbugs, '**/target/findbugsXml.xml, **/target/findbugs.xml', doArchive, testMode)
+        report('FindBugsPublisher', findbugs, '**/target/findbugsXml.xml, **/target/findbugs.xml', doArchive)
         // report Checkstyle
-        report('CheckStylePublisher', checkstyle, '**/target/checkstyle-result.xml', doArchive, testMode)
+        report('CheckStylePublisher', checkstyle, '**/target/checkstyle-result.xml', doArchive)
         // report ESLint
-        reportWarnings('JSLint', eslint, '**/target/eslint.xml', doArchive, testMode)
+        reportWarnings('JSLint', eslint, '**/target/eslint.xml', doArchive)
         // report PyLint
-        reportWarnings('PyLint', pylint, '**/pylint.log', doArchive, testMode)
+        reportWarnings('PyLint', pylint, '**/pylint.log', doArchive)
 
         // aggregate results
         aggregate(aggregation)
@@ -51,7 +51,7 @@ def aggregate(settings){
     }
 }
 
-def report(stepName, settings, defaultPattern, doArchive, testMode){
+def report(stepName, settings, defaultPattern, doArchive){
     // exit if set to FALSE
     if(!Boolean.FALSE.equals(settings)){
         settings = asMap(settings)
@@ -65,7 +65,7 @@ def report(stepName, settings, defaultPattern, doArchive, testMode){
     }
 }
 
-def reportWarnings(parserName, settings, defaultPattern, doArchive, testMode){
+def reportWarnings(parserName, settings, defaultPattern, doArchive){
     // exit if set to FALSE
     if(!Boolean.FALSE.equals(settings)){
         settings = asMap(settings)
@@ -82,7 +82,7 @@ def reportWarnings(parserName, settings, defaultPattern, doArchive, testMode){
     }
 }
 
-def reportTasks(settings, defaultPattern, testMode){
+def reportTasks(settings, defaultPattern){
     // exit if set to FALSE
     if(!Boolean.FALSE.equals(settings)){
         settings = asMap(settings)
