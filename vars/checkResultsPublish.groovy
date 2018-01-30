@@ -55,8 +55,9 @@ def report(stepName, settings, defaultPattern, doArchive, testMode){
     // exit if set to FALSE
     if(!Boolean.FALSE.equals(settings)){
         settings = asMap(settings)
+        def pattern = settings.get('pattern', defaultPattern)
         def options = createCommonOptionsMap(stepName, settings)
-        options.put('pattern', settings.get('pattern', defaultPattern))
+        options.put('pattern', pattern)
         // publish
         step(options)
         // archive check results
@@ -68,10 +69,11 @@ def reportWarnings(parserName, settings, defaultPattern, doArchive, testMode){
     // exit if set to FALSE
     if(!Boolean.FALSE.equals(settings)){
         settings = asMap(settings)
+        def pattern = settings.get('pattern', defaultPattern)
         def options = createCommonOptionsMap('WarningsPublisher', settings)
         options.put('parserConfigurations', [[
             parserName: parserName,
-            pattern: settings.get('pattern', defaultPattern)
+            pattern: pattern
         ]])
         // publish
         step(options)
