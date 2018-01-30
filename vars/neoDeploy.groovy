@@ -72,6 +72,13 @@ def call(parameters = [:]) {
             parameters.put('account', parameters.deployAccount)
         }
 
+        def credId = script.commonPipelineEnvironment.getConfigProperty('neoCredentialsId')
+
+        if(credId && !parameters.neoCredentialsId) {
+            echo "[WARNING][${stepName}] Deprecated parameter 'neoCredentialsId' from old configuration framework is used. This will not work anymore in future versions."
+            parameters.put('neoCredentialsId', credId)
+        }
+
         // Backward compatibility end
 
         stepConfiguration.putAll(ConfigurationLoader.stepConfiguration(script, stepName))
