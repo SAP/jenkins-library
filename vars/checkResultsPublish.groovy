@@ -6,7 +6,7 @@ import com.sap.piper.Utils
  *
  * @param others document all parameters
  */
-def call(Map parameters = [:], body) {
+def call(Map parameters = [:]) {
     handlePipelineStepErrors (stepName: 'checkResultsPublish', stepParameters: parameters) {
         // GENERAL
         def tasks = parameters.get('tasks', false)
