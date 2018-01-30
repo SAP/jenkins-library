@@ -118,13 +118,13 @@ def archiveResults(archive, pattern, allowEmpty){
     }
 }
 
-def createCommonOptionsMap(class, settings){
+def createCommonOptionsMap(publisherName, settings){
     def result = [:]
     def thresholds = ensureMap(settings, 'thresholds')
     def fail = ensureMap(thresholds, 'fail')
     def unstable = ensureMap(thresholds, 'unstable')
 
-    result.put('$class', class)
+    result.put('$class', publisherName)
     result.put('healthy', settings.get('healthy', ''))
     result.put('unHealthy', settings.get('unHealthy', ''))
     result.put('canRunOnFailed', true)
