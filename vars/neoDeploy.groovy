@@ -11,6 +11,8 @@ def call(parameters = [:]) {
         'applicationName',
         'archivePath',
         'account',
+        'deployAccount', //deprecated, replaced by parameter 'account'
+        'deployHost', //deprecated, replaced by parameter 'host'
         'deployMode',
         'dockerEnvVars',
         'dockerImage',
@@ -60,14 +62,21 @@ def call(parameters = [:]) {
             stepConfiguration.put('account', defaultDeployAccount)
         }
 
-        if(parameters.DEPLOY_HOST && !parameters.host) {
-            echo "[WARNING][${stepName}] Deprecated parameter 'DEPLOY_HOST' is used. This will not work anymore in future versions. Use parameter 'host' instead."
-            parameters.put('host', parameters.DEPLOY_HOST)
+        if(parameters.deployHost && !parameters.host) {
+            echo "[WARNING][${stepName}] Deprecated parameter 'deployHost' is used. This will not work anymore in future versions. Use parameter 'host' instead."
+            parameters.put('host', parameters.deployHost)
         }
 
-        if(parameters.CI_DEPLOY_ACCOUNT && !parameters.account) {
-            echo "[WARNING][${stepName}] Deprecated parameter 'CI_DEPLOY_ACCOUNT' is used. This will not work anymore in future versions. Use parameter 'account' instead."
-            parameters.put('account', parameters.CI_DEPLOY_ACCOUNT)
+        if(parameters.deployAccount && !parameters.account) {
+            echo "[WARNING][${stepName}] Deprecated parameter 'deployAccount' is used. This will not work anymore in future versions. Use parameter 'account' instead."
+            parameters.put('account', parameters.deployAccount)
+        }
+
+        def credId = script.commonPipelineEnvironment.getConfigProperty('neoCredentialsId')
+
+        if(credId && !parameters.neoCredentialsId) {
+            echo "[WARNING][${stepName}] Deprecated parameter 'neoCredentialsId' from old configuration framework is used. This will not work anymore in future versions."
+            parameters.put('neoCredentialsId', credId)
         }
 
         // Backward compatibility end
