@@ -1,3 +1,5 @@
+import static java.util.Arrays.asList
+
 import com.cloudbees.groovy.cps.NonCPS
 
 /**
@@ -15,18 +17,21 @@ def call(Map parameters = [:]) {
         // CODE COVERAGE
         def jacoco = parameters.get('jacoco', false)
         def cobertura = parameters.get('cobertura', false)
+        // PERFORMANCE
+        def jmeter = parameters.get('jmeter', false)
 
         // jUnit
-        publishJUnit(junit)
-        publishJacoco(jacoco)
-        publishCobertura(cobertura)
+        publishJUnitReport(junit)
+        publishJacocoReport(jacoco)
+        publishCoberturaReport(cobertura)
+        publishJMeterReport(jmeter)
 
         if (!allowUnstableBuilds)
             failUnstableBuild(currentBuild)
     }
 }
 
-def publishJUnit(Map settings = [:]) {
+def publishJUnitReport(Map settings = [:]) {
     if(!Boolean.FALSE.equals(settings)){
         settings = asMap(settings)
         def pattern = settings.get('pattern', '**/target/surefire-reports/*.xml')
@@ -46,7 +51,7 @@ def publishJUnit(Map settings = [:]) {
     }
 }
 
-def publishJacoco(Map settings = [:]) {
+def publishJacocoReport(Map settings = [:]) {
     if(!Boolean.FALSE.equals(settings)){
         settings = asMap(settings)
         def pattern = settings.get('pattern', '**/target/*.exec')
@@ -66,7 +71,7 @@ def publishJacoco(Map settings = [:]) {
     }
 }
 
-def publishCobertura(Map settings = [:]) {
+def publishCoberturaReport(Map settings = [:]) {
     if(!Boolean.FALSE.equals(settings)){
         settings = asMap(settings)
         def pattern = settings.get('pattern', '**/target/coverage/cobertura-coverage.xml')
@@ -90,12 +95,43 @@ def publishCobertura(Map settings = [:]) {
     }
 }
 
+// publish Performance Report using "Jenkins Performance Plugin" https://wiki.jenkins.io/display/JENKINS/Performance+Plugin
+def publishJMeterReport(Map settings = [:]){
+    if(!Boolean.FALSE.equals(settings)){
+        settings = asMap(settings)
+        def pattern = settings.get('pattern', '**/*.jtl')
+        def archive = settings.get('archive', false)
+        def allowEmpty = settings.get('allowEmptyResults', true)
+
+        step([
+            $class: 'PerformancePublisher',
+            errorFailedThreshold: settings.get('errorFailedThreshold', 20),
+            errorUnstableThreshold: settings.get('errorUnstableThreshold', 10),
+            errorUnstableResponseTimeThreshold: settings.get('errorUnstableResponseTimeThreshold', ""),
+            relativeFailedThresholdPositive: settings.get('relativeFailedThresholdPositive', 0),
+            relativeFailedThresholdNegative: settings.get('relativeFailedThresholdNegative', 0),
+            relativeUnstableThresholdPositive: settings.get('relativeUnstableThresholdPositive', 0),
+            relativeUnstableThresholdNegative: settings.get('relativeUnstableThresholdNegative', 0),
+            modePerformancePerTestCase: false,
+            modeOfThreshold: settings.get('modeOfThreshold', false),
+            modeThroughput: settings.get('modeThroughput', false),
+            nthBuildNumber: settings.get('nthBuildNumber', 0),
+            configType: settings.get('configType', "PRT"),
+            failBuildIfNoResultFile: settings.get('failBuildIfNoResultFile', false),
+            compareBuildPrevious: settings.get('compareBuildPrevious', true),
+            parsers: asList(getJMeterParser().newInstance(pattern))
+        ])
+
+        // archive results
+        archiveResults(archive, pattern, allowEmpty)
+    }
+}
+
 def touchFiles(){
     echo 'update test results'
-    //def patternArray = pattern.split(',')
-    //for(def i = 0; i < patternArray.length; i++){
-    for (String p : pattern.split(',')) {
-        sh "find . -wholename '${p.trim()}' -exec touch {} \\;"
+    def patternArray = pattern.split(',')
+    for(def i = 0; i < patternArray.length; i++){
+        sh "find . -wholename '${patternArray[i].trim()}' -exec touch {} \\;"
     }
 }
 
@@ -104,6 +140,15 @@ def failUnstableBuild(currentBuild) {
         echo "Current Build Status: ${currentBuild.result}"
         currentBuild.result = 'FAILURE'
         error 'Some tests failed!'
+    }
+}
+
+def getJMeterParser(){
+    // handle package renaming of JMeterParser class
+    try {
+        return this.class.classLoader.loadClass("hudson.plugins.performance.parsers.JMeterParser")
+    } catch (Exception e) {
+        return this.class.classLoader.loadClass("hudson.plugins.performance.JMeterParser")
     }
 }
 
