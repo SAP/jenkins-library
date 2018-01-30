@@ -33,7 +33,7 @@ def call(Map parameters = [:]) {
         // report Checkstyle
         report('CheckStylePublisher', checkstyle, '**/target/checkstyle-result.xml', doArchive)
         // report ESLint
-        reportWarnings('JSLint', eslint, '**/target/eslint.xml', doArchive)
+        reportWarnings('JSLint', eslint, '**/eslint.xml', doArchive)
         // report PyLint
         reportWarnings('PyLint', pylint, '**/pylint.log', doArchive)
 
@@ -134,14 +134,14 @@ def createCommonOptionsMap(publisherName, settings){
     result.put('healthy', settings.get('healthy', ''))
     result.put('unHealthy', settings.get('unHealthy', ''))
     result.put('canRunOnFailed', true)
-    result.put('failedTotalAll', "${fail.get('all', '')}")
-    result.put('failedTotalHigh', "${fail.get('high', '')}")
-    result.put('failedTotalNormal', "${fail.get('normal', '')}")
-    result.put('failedTotalLow', "${fail.get('low', '')}")
-    result.put('unstableTotalAll', "${unstable.get('all', '')}")
-    result.put('unstableTotalHigh', "${unstable.get('high', '')}")
-    result.put('unstableTotalNormal', "${unstable.get('normal', '')}")
-    result.put('unstableTotalLow', "${unstable.get('low', '')}")
+    result.put('failedTotalAll', '' + fail.get('all', ''))
+    result.put('failedTotalHigh', '' + fail.get('high', ''))
+    result.put('failedTotalNormal', '' + fail.get('normal', ''))
+    result.put('failedTotalLow', '' + fail.get('low', ''))
+    result.put('unstableTotalAll', '' + unstable.get('all', ''))
+    result.put('unstableTotalHigh', '' + unstable.get('high', ''))
+    result.put('unstableTotalNormal', '' + unstable.get('normal', ''))
+    result.put('unstableTotalLow', '' + unstable.get('low', ''))
 
     return result
 }
