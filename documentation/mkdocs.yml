@@ -3,17 +3,20 @@ pages:
     - Home: index.md
     - 'Library steps':
         - commonPipelineEnvironment: steps/commonPipelineEnvironment.md
+        - dockerExecute: steps/dockerExecute.md
+        - durationMeasure: steps/durationMeasure.md
         - handlePipelineStepErrors: steps/handlePipelineStepErrors.md
-        - pipelineExecute: steps/pipelineExecute.md
-        - toolValidate: steps/toolValidate.md
+        - influxWriteData: steps/influxWriteData.md
+        - mavenExecute: steps/mavenExecute.md
         - mtaBuild: steps/mtaBuild.md
         - neoDeploy: steps/neoDeploy.md
-        - setupCommonPipelineEnvironment: steps/setupCommonPipelineEnvironment.md
-        - mavenExecute: steps/mavenExecute.md
-        - dockerExecute: steps/dockerExecute.md
+        - pipelineExecute: steps/pipelineExecute.md
         - prepareDefaultValues: steps/prepareDefaultValues.md
+        - setupCommonPipelineEnvironment: steps/setupCommonPipelineEnvironment.md
+        - toolValidate: steps/toolValidate.md
     - 'Library scripts':
         - FileUtils: scripts/fileUtils.md
+        - JsonUtils: scripts/jsonUtils.md
         - Utils: scripts/utils.md
         - Version: scripts/version.md
         - ConfigurationLoader: scripts/configurationLoader.md
