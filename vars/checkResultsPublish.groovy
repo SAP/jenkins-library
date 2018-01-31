@@ -1,13 +1,15 @@
 import com.cloudbees.groovy.cps.NonCPS
 import com.sap.piper.Utils
 
+def getStepName(){return 'checkResultsPublish'}
+
 /**
  * checkResultsPublish
  *
  * @param others document all parameters
  */
 def call(Map parameters = [:]) {
-    handlePipelineStepErrors (stepName: 'checkResultsPublish', stepParameters: parameters) {
+    handlePipelineStepErrors (stepName: getStepName(), stepParameters: parameters) {
         // GENERAL
         def tasks = parameters.get('tasks', false)
         def aggregation = parameters.get('aggregation', [:])
@@ -118,7 +120,7 @@ def isMap(object){
 
 def archiveResults(archive, pattern, allowEmpty){
     if(archive){
-        echo "archive ${pattern}"
+        echo "[${getStepName()}] archive ${pattern}"
         archiveArtifacts artifacts: pattern, allowEmptyArchive: allowEmpty
     }
 }
