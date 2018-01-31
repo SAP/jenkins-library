@@ -6,9 +6,8 @@ import org.junit.rules.RuleChain
 
 import com.lesfurets.jenkins.unit.BasePipelineTest
 
-import util.JenkinsConfigRule
 import util.JenkinsLoggingRule
-import util.JenkinsSetupRule
+import util.Rules
 
 import static org.junit.Assert.assertEquals
 import static org.junit.Assert.assertTrue
@@ -20,9 +19,8 @@ class DockerExecuteTest extends BasePipelineTest {
     private JenkinsLoggingRule jlr = new JenkinsLoggingRule(this)
 
     @Rule
-    public RuleChain ruleChain = RuleChain.outerRule(new JenkinsSetupRule(this))
-                                            .around(jlr)
-                                            .around(new JenkinsConfigRule(this))
+    public RuleChain ruleChain = RuleChain.outerRule(Rules.getCommonRules(this))
+                                          .around(jlr)
 
     int whichDockerReturnValue = 0
 
