@@ -1,14 +1,17 @@
 #!groovy
 import com.lesfurets.jenkins.unit.BasePipelineTest
+
 import org.junit.Rule
 import org.junit.Test
-import util.JenkinsSetupRule
 import static org.junit.Assert.assertTrue
+import org.junit.rules.RuleChain
+
+import util.Rules
 
 class DurationMeasureTest extends BasePipelineTest {
 
     @Rule
-    public JenkinsSetupRule setupRule = new JenkinsSetupRule(this)
+    public RuleChain rules = Rules.getCommonRules(this)
 
     @Test
     void testDurationMeasurement() throws Exception {

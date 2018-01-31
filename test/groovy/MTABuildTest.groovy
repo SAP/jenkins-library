@@ -10,10 +10,9 @@ import org.junit.rules.TemporaryFolder
 
 import com.lesfurets.jenkins.unit.BasePipelineTest
 
-import util.JenkinsConfigRule
 import util.JenkinsLoggingRule
-import util.JenkinsSetupRule
 import util.JenkinsShellCallRule
+import util.Rules
 
 public class MTABuildTest extends BasePipelineTest {
 
@@ -23,13 +22,12 @@ public class MTABuildTest extends BasePipelineTest {
     private JenkinsShellCallRule jscr = new JenkinsShellCallRule(this)
 
     @Rule
-    public RuleChain ruleChain =
-        RuleChain.outerRule(thrown)
+    public RuleChain ruleChain = Rules.getCommonRules(this)
+            .around(thrown)
             .around(tmp)
-            .around(new JenkinsSetupRule(this))
             .around(jlr)
             .around(jscr)
-            .around(new JenkinsConfigRule(this))
+
 
     def currentDir
     def otherDir

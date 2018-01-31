@@ -9,24 +9,21 @@ import org.junit.rules.TemporaryFolder
 
 import com.lesfurets.jenkins.unit.BasePipelineTest
 
-import util.JenkinsConfigRule
 import util.JenkinsLoggingRule
-import util.JenkinsSetupRule
+import util.Rules
 
 class ToolValidateTest extends BasePipelineTest {
 
     private ExpectedException thrown = new ExpectedException().none()
     private TemporaryFolder tmp = new TemporaryFolder()
     private JenkinsLoggingRule jlr = new JenkinsLoggingRule(this)
-    private JenkinsConfigRule jcr = new JenkinsConfigRule(this)
 
     @Rule
-    public RuleChain ruleChain =
-        RuleChain.outerRule(tmp)
-            .around(thrown)
-            .around(new JenkinsSetupRule(this))
-            .around(jlr)
-            .around(jcr)
+    public RuleChain ruleChain = Rules.getCommonRules(this)
+                                      .around(tmp)
+                                      .around(thrown)
+                                      .around(jlr)
+
 
     private notEmptyDir
 

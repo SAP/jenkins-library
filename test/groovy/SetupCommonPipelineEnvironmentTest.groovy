@@ -1,11 +1,12 @@
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
+import org.junit.rules.RuleChain
 import org.yaml.snakeyaml.Yaml
 
 import com.lesfurets.jenkins.unit.BasePipelineTest
 
-import util.JenkinsSetupRule
+import util.Rules
 
 import static org.junit.Assert.assertEquals
 import static org.junit.Assert.assertNotNull
@@ -19,7 +20,7 @@ class SetupCommonPipelineEnvironmentTest extends BasePipelineTest {
     def commonPipelineEnvironment
 
     @Rule
-    public JenkinsSetupRule jsr = new JenkinsSetupRule(this)
+    public RuleChain rules = Rules.getCommonRules(this)
 
     @Before
     void init() {
