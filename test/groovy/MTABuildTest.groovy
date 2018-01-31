@@ -120,12 +120,13 @@ public class MTABuildTest extends BasePipelineTest {
         binding.getVariable('env')['MTA_JAR_LOCATION'] = '/opt/mta'
 
         def newDirName = 'newDir'
-        def newDir = new File("${currentDir}/${newDirName}")
+        def newDirPath = "${currentDir}/${newDirName}"
+        def newDir = new File(newDirPath)
 
         newDir.mkdirs()
         new File(newDir, 'mta.yaml') << defaultMtaYaml()
 
-        helper.registerAllowedMethod('pwd', [], { newDir } )
+        helper.registerAllowedMethod('pwd', [], { newDirPath } )
 
         def mtarFilePath = mtaBuildScript.call(script: [commonPipelineEnvironment: cpe], buildTarget: 'NEO')
 
