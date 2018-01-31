@@ -180,6 +180,7 @@
                     <!-- Ensures that the code coverage report for unit tests is created after unit tests have been run. -->
                     <execution>
                         <id>post-unit-test</id>
+                        <phase>package</phase>
                         <goals><goal>report</goal></goals>
                     </execution>
                     <!-- INTEGRATION TESTS -->
@@ -212,6 +213,7 @@
                 <executions>
                     <execution>
                         <id>post-unit-test</id>
+                        <phase>package</phase>
                         <goals><goal>report</goal></goals>
                     </execution>
                     <execution>
