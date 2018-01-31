@@ -30,8 +30,6 @@ public class MTABuildTest extends BasePipelineTest {
 
 
     def currentDir
-    def otherDir
-    def mtaBuildShEnv
 
     def mtaBuildScript
     def cpe
@@ -40,26 +38,14 @@ public class MTABuildTest extends BasePipelineTest {
     void init() {
 
         currentDir = tmp.newFolder().toURI().getPath()[0..-2] //omit final '/'
-        otherDir = tmp.newFolder().toURI().getPath()[0..-2] //omit final '/'
 
         helper.registerAllowedMethod('readYaml', [Map], {
             m ->
                 return new Yaml().load((m.file as File).text)
         })
-        helper.registerAllowedMethod("dir", [String, Closure], {
-            s, c ->
-                currentDir = "${currentDir}/${s}"
-                c()
-        })
         helper.registerAllowedMethod('pwd', [], { currentDir } )
-        helper.registerAllowedMethod("withEnv", [List.class, Closure.class],
-                { l, c ->
-                    mtaBuildShEnv = l
-                    c()
-                })
 
         binding.setVariable('PATH', '/usr/bin')
-        binding.setVariable('JAVA_HOME', '/opt/java')
         binding.setVariable('env', [:])
 
         mtaBuildScript = loadScript("mtaBuild.groovy").mtaBuild
