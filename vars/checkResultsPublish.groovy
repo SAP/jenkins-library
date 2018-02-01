@@ -2,8 +2,6 @@ import com.cloudbees.groovy.cps.NonCPS
 
 import com.sap.piper.ConfigurationLoader
 import com.sap.piper.ConfigurationMerger
-import com.sap.piper.JsonUtils
-import com.sap.piper.Utils
 
 import groovy.transform.Field
 
