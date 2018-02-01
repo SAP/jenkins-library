@@ -8,15 +8,14 @@ import com.lesfurets.jenkins.unit.BasePipelineTest
 import static org.junit.Assert.assertEquals
 import static org.junit.Assert.assertTrue
 
-import util.JenkinsConfigRule
-import util.JenkinsSetupRule
+import util.Rules
 
 class CheckResultsPublishTest extends BasePipelineTest {
     Map publisherStepOptions
     List archiveStepPatterns
 
     @Rule
-    public RuleChain ruleChain = RuleChain.outerRule(new JenkinsSetupRule(this)).around(new JenkinsConfigRule(this))
+    public RuleChain ruleChain = RuleChain.outerRule(Rules.getCommonRules(this))
 
     def stepUnderTest
 
