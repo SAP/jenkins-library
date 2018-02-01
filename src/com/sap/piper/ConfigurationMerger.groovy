@@ -13,10 +13,35 @@ class ConfigurationMerger {
     }
 
     @NonCPS
+    def static merge(Map configs, Map configKeys, Map defaults = [:]) {
+        Map merged = [:]
+        merged.putAll(defaults)
+        if(configs != null)
+            for(String key : configKeys.keySet()){
+                if(isMap(configKeys[key])){
+                    merged[key] = merge(configs[key], configKeys[key], defaults[key])
+                }else{
+                    if(configs[key] != null)
+                        merged[key] = configs[key]
+                }
+            }
+        return merged
+    }
+
+    @NonCPS
     def static merge(Map parameters, List parameterKeys, Map configurationMap, List configurationKeys, Map defaults=[:]){
         Map merged = merge(configurationMap, configurationKeys, defaults)
         merged.putAll(filterByKeyAndNull(parameters, parameterKeys))
 
+        return merged
+    }
+
+    @NonCPS
+    def static mergeDeepStructure(Map parameters, Map parameterKeys, Map configuration, Map configurationKeys, Map defaults=[:]){
+        Map merged = [:]
+        merged.putAll(defaults)
+        merged = merge(configuration, configurationKeys, merged)
+        merged = merge(parameters, parameterKeys, merged)
         return merged
     }
 
@@ -49,5 +74,10 @@ class ConfigurationMerger {
         }
 
         return filteredMap.subMap(keys)
+    }
+
+    @NonCPS
+    def static isMap(object){
+        return object in Map
     }
 }
