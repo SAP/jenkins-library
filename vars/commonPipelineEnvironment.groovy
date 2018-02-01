@@ -4,6 +4,12 @@ class commonPipelineEnvironment implements Serializable {
     //stores version of the artifact which is build during pipeline run
     def artifactVersion
 
+    //stores the gitCommitId for the build during pipeline run
+    def gitCommitId
+
+    //stores properties for a pipeline which build an artifact and then bundles it into a container
+    private Map appContainerProperties = [:]
+
     Map configuration = [:]
     Map defaultConfiguration = [:]
 
@@ -13,6 +19,14 @@ class commonPipelineEnvironment implements Serializable {
     private Map influxCustomData = [:]
 
     private String mtarFilePath
+
+    def setAppContainerProperty(property, value) {
+        appContainerProperties[property] = value
+    }
+
+    def getAppContainerProperty(property) {
+        return appContainerProperties[property]
+    }
 
     def setArtifactVersion(version) {
         artifactVersion = version
@@ -39,6 +53,14 @@ class commonPipelineEnvironment implements Serializable {
             return configProperties[property].trim()
         else
             return configProperties[property]
+    }
+
+    def setGitCommitId(commitId) {
+        gitCommitId = commitId
+    }
+
+    def getGitCommitId() {
+        return gitCommitId
     }
 
     def getInfluxCustomData() {
