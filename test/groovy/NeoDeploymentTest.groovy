@@ -47,7 +47,6 @@ class NeoDeploymentTest extends BasePipelineTest {
         archiveName = "archive.mtar"
 
         helper.registerAllowedMethod('dockerExecute', [Map, Closure], null)
-        helper.registerAllowedMethod('error', [String], { s -> throw new AbortException(s) })
         helper.registerAllowedMethod('fileExists', [String], { s -> return new File(workspacePath, s).exists() })
         helper.registerAllowedMethod('usernamePassword', [Map], { m -> return m })
         helper.registerAllowedMethod('withCredentials', [List, Closure], { l, c ->
