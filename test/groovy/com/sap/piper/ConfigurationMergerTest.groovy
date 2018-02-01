@@ -39,4 +39,17 @@ class ConfigurationMergerTest {
         Assert.assertEquals('', merged.flags)
         Assert.assertEquals('1.2.3', merged.artifactVersion)
     }
+
+    @Test
+    void testMergeDeepStructure(){
+        Map defaults = [fruits: [apples: 1, oranges: 10, bananaaas: 0]]
+        Map configuration = [fruits: [bananaaas: 50, cucumbers: 1000]]
+        Map configurationKeys = [fruits: [apples: null, oranges: null, bananaaas: null]]
+        Map parameters = [fruits: [apples: 18]]
+        Map parameterKeys = [fruits: [apples: null, oranges: null, bananaaas: null]]
+        Map merged = ConfigurationMerger.mergeDeepStructure(parameters, parameterKeys, configuration, configurationKeys, defaults)
+        Assert.assertEquals(50, merged.fruits.bananaaas)
+        Assert.assertEquals(18, merged.fruits.apples)
+        Assert.assertEquals(null, merged.fruits.cucumbers)
+    }
 }
