@@ -30,14 +30,14 @@ steps:
           normal: ''
           high: ''
     tasks:
-      active: false
-      archive: true
-      healthy: ''
-      unHealthy: ''
       pattern: '**/*.java'
       low: ''
       normal: 'TODO,REVISE,XXX'
       high: 'FIXME'
+      archive: true
+      active: false
+      healthy: ''
+      unHealthy: ''
       thresholds:
         fail:
           all: ''
@@ -50,11 +50,11 @@ steps:
           normal: ''
           high: ''
     pmd:
-      active: false
+      pattern: '**/target/pmd.xml'
       archive: true
+      active: false
       healthy: ''
       unHealthy: ''
-      pattern: '**/target/pmd.xml'
       thresholds:
         fail:
           all: ''
@@ -67,11 +67,11 @@ steps:
           normal: ''
           high: ''
     cpd:
-      active: false
+      pattern: '**/target/cpd.xml'
       archive: true
+      active: false
       healthy: ''
       unHealthy: ''
-      pattern: '**/target/cpd.xml'
       thresholds:
         fail:
           all: ''
@@ -84,11 +84,11 @@ steps:
           normal: ''
           high: ''
     findbugs:
-      active: false
+      pattern: '**/target/findbugsXml.xml, **/target/findbugs.xml'
       archive: true
+      active: false
       healthy: ''
       unHealthy: ''
-      pattern: '**/target/findbugsXml.xml, **/target/findbugs.xml'
       thresholds:
         fail:
           all: ''
@@ -101,11 +101,11 @@ steps:
           normal: ''
           high: ''
     checkstyle:
-      active: false
+      pattern: '**/target/checkstyle-result.xml'
       archive: true
+      active: false
       healthy: ''
       unHealthy: ''
-      pattern: '**/target/checkstyle-result.xml'
       thresholds:
         fail:
           all: ''
@@ -118,11 +118,11 @@ steps:
           normal: ''
           high: ''
     eslint:
-      active: false
+      pattern: '**/eslint.xml'
       archive: true
+      active: false
       healthy: ''
       unHealthy: ''
-      pattern: '**/eslint.xml'
       thresholds:
         fail:
           all: ''
@@ -135,11 +135,11 @@ steps:
           normal: ''
           high: ''
     pylint:
-      active: false
+      pattern: '**/pylint.log'
       archive: true
+      active: false
       healthy: ''
       unHealthy: ''
-      pattern: '**/pylint.log'
       thresholds:
         fail:
           all: ''
