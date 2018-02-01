@@ -53,12 +53,12 @@ def aggregate(settings){
     }
 }
 
-def report(stepName, settings, defaultPattern, doArchive){
+def report(publisherName, settings, defaultPattern, doArchive){
     // exit if set to FALSE
     if(!Boolean.FALSE.equals(settings)){
         settings = asMap(settings)
         def pattern = settings.get('pattern', defaultPattern)
-        def options = createCommonOptionsMap(stepName, settings)
+        def options = createCommonOptionsMap(publisherName, settings)
         options.put('pattern', pattern)
         // publish
         step(options)
