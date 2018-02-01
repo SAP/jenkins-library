@@ -13,3 +13,142 @@ steps:
     warAction: 'deploy'
     vmSize: 'lite'
     neoCredentialsId: 'CI_CREDENTIALS_ID'
+  checkResultsPublish:
+    aggregation:
+      active: true
+      healthy: ''
+      unHealthy: ''
+      thresholds:
+        fail:
+          all: ''
+          low: ''
+          normal: ''
+          high: ''
+        unstable:
+          all: ''
+          low: ''
+          normal: ''
+          high: ''
+    tasks:
+      active: false
+      archive: true
+      healthy: ''
+      unHealthy: ''
+      pattern: '**/*.java'
+      low: ''
+      normal: 'TODO,REVISE,XXX'
+      high: 'FIXME'
+      thresholds:
+        fail:
+          all: ''
+          low: ''
+          normal: ''
+          high: ''
+        unstable:
+          all: ''
+          low: ''
+          normal: ''
+          high: ''
+    pmd:
+      active: false
+      archive: true
+      healthy: ''
+      unHealthy: ''
+      pattern: '**/target/pmd.xml'
+      thresholds:
+        fail:
+          all: ''
+          low: ''
+          normal: ''
+          high: ''
+        unstable:
+          all: ''
+          low: ''
+          normal: ''
+          high: ''
+    cpd:
+      active: false
+      archive: true
+      healthy: ''
+      unHealthy: ''
+      pattern: '**/target/cpd.xml'
+      thresholds:
+        fail:
+          all: ''
+          low: ''
+          normal: ''
+          high: ''
+        unstable:
+          all: ''
+          low: ''
+          normal: ''
+          high: ''
+    findbugs:
+      active: false
+      archive: true
+      healthy: ''
+      unHealthy: ''
+      pattern: '**/target/findbugsXml.xml, **/target/findbugs.xml'
+      thresholds:
+        fail:
+          all: ''
+          low: ''
+          normal: ''
+          high: ''
+        unstable:
+          all: ''
+          low: ''
+          normal: ''
+          high: ''
+    checkstyle:
+      active: false
+      archive: true
+      healthy: ''
+      unHealthy: ''
+      pattern: '**/target/checkstyle-result.xml'
+      thresholds:
+        fail:
+          all: ''
+          low: ''
+          normal: ''
+          high: ''
+        unstable:
+          all: ''
+          low: ''
+          normal: ''
+          high: ''
+    eslint:
+      active: false
+      archive: true
+      healthy: ''
+      unHealthy: ''
+      pattern: '**/eslint.xml'
+      thresholds:
+        fail:
+          all: ''
+          low: ''
+          normal: ''
+          high: ''
+        unstable:
+          all: ''
+          low: ''
+          normal: ''
+          high: ''
+    pylint:
+      active: false
+      archive: true
+      healthy: ''
+      unHealthy: ''
+      pattern: '**/pylint.log'
+      thresholds:
+        fail:
+          all: ''
+          low: ''
+          normal: ''
+          high: ''
+        unstable:
+          all: ''
+          low: ''
+          normal: ''
+          high: ''
+    archive: false
