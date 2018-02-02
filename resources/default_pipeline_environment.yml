@@ -13,3 +13,37 @@ steps:
     warAction: 'deploy'
     vmSize: 'lite'
     neoCredentialsId: 'CI_CREDENTIALS_ID'
+  testsPublishResults:
+    junit:
+      patter: '**/target/surefire-reports/*.xml'
+      updateResults: false
+      allowEmptyResults: true
+      archive: false
+    jacoco:
+      pattern: '**/target/*.exec'
+      include: ''
+      exclude: ''
+      allowEmptyResults: true
+      archive: false
+    cobertura:
+      pattern: '**/target/coverage/cobertura-coverage.xml'
+      onlyStableBuilds: true
+      allowEmptyResults: true
+      archive: false
+    jmeter:
+      pattern: '**/*.jtl'
+      errorFailedThreshold: 20
+      errorUnstableThreshold: 10
+      errorUnstableResponseTimeThreshold: ''
+      relativeFailedThresholdPositive: 0
+      relativeFailedThresholdNegative: 0
+      relativeUnstableThresholdPositive: 0
+      relativeUnstableThresholdNegative: 0
+      modeOfThreshold: false
+      modeThroughput: false
+      nthBuildNumber: 0
+      configType: 'PRT'
+      failBuildIfNoResultFile: false
+      compareBuildPrevious: true
+      allowEmptyResults: true
+      archive: false

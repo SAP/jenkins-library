@@ -2,6 +2,9 @@ import static java.util.Arrays.asList
 
 import com.cloudbees.groovy.cps.NonCPS
 
+import groovy.transform.Field
+
+@Field def STEP_NAME = 'testsPublishResults'
 /**
  * testResultsPublish
  *
@@ -9,37 +12,73 @@ import com.cloudbees.groovy.cps.NonCPS
  * @param others document all parameters
  */
 def call(Map parameters = [:]) {
-    handlePipelineStepErrors (stepName: 'testResultsPublish', stepParameters: parameters) {
-        // GENERAL
-        def allowUnstableBuilds = parameters.get('allowUnstableBuilds', false)
+    handlePipelineStepErrors (stepName: STEP_NAME, stepParameters: parameters) {
+        def script = parameters.script
+        if (script == null)
+            script = [commonPipelineEnvironment: commonPipelineEnvironment]
+        prepareDefaultValues script: script
+        Map configurationKeys = [
+            'junit': [
+                'patter': null,
+                'updateResults': null,
+                'allowEmptyResults': null
+                'archive': null
+            ],
+            'jacoco': [
+                'pattern': null,
+                'include': null,
+                'exclude': null,
+                'allowEmptyResults': null,
+                'archive': null
+            ],
+            'cobertura': [
+                'pattern': null,
+                'onlyStableBuilds': null,
+                'allowEmptyResults': null,
+                'archive': null
+            ],
+            'jmeter': [
+                'pattern': null,
+                'errorFailedThreshold': null,
+                'errorUnstableThreshold': null,
+                'errorUnstableResponseTimeThreshold': null,
+                'relativeFailedThresholdPositive': null,
+                'relativeFailedThresholdNegative': null,
+                'relativeUnstableThresholdPositive': null,
+                'relativeUnstableThresholdNegative': null,
+                'modeOfThreshold': null,
+                'modeThroughput': null,
+                'nthBuildNumber': null,
+                'configType': null,
+                'failBuildIfNoResultFile': null,
+                'compareBuildPrevious': null,
+                'allowEmptyResults': null,
+                'archive': null
+            ]
+        ]
+        final Map stepDefaults = ConfigurationLoader.defaultStepConfiguration(script, STEP_NAME)
+        final Map stepConfiguration = ConfigurationLoader.stepConfiguration(script, STEP_NAME)
+        prepare(parameters)
+        Map configuration = ConfigurationMerger.mergeDeepStructure(
+            parameters, configurationKeys,
+            stepConfiguration, configurationKeys, stepDefaults)
+
         // UNIT TESTS
-        def junit = parameters.get('junit', false)
+        publishJUnitReport(configuration.get('junit'))
         // CODE COVERAGE
-        def jacoco = parameters.get('jacoco', false)
-        def cobertura = parameters.get('cobertura', false)
+        publishJacocoReport(configuration.get('jacoco'))
+        publishCoberturaReport(configuration.get('cobertura'))
         // PERFORMANCE
-        def jmeter = parameters.get('jmeter', false)
-
-        // jUnit
-        publishJUnitReport(junit)
-        publishJacocoReport(jacoco)
-        publishCoberturaReport(cobertura)
-        publishJMeterReport(jmeter)
-
-        if (!allowUnstableBuilds)
-            failUnstableBuild(currentBuild)
+        publishJMeterReport(configuration.get('jmeter'))
     }
 }
 
 def publishJUnitReport(Map settings = [:]) {
-    if(!Boolean.FALSE.equals(settings)){
-        settings = asMap(settings)
-        def pattern = settings.get('pattern', '**/target/surefire-reports/*.xml')
-        def archive = settings.get('archive', false)
-        def allowEmpty = settings.get('allowEmptyResults', true)
-        def updateResults = settings.get('updateResults', false)
+    if(settings.active){
+        def pattern = settings.get('pattern')
+        def allowEmpty = settings.get('allowEmptyResults')
 
-        if (updateResults)
+        if (settings.get('updateResults')
             touchFiles(pattern)
         junit(
             testResults: pattern,
@@ -47,42 +86,35 @@ def publishJUnitReport(Map settings = [:]) {
             healthScaleFactor: 100.0,
         )
         // archive results
-        archiveResults(archive, pattern, allowEmpty)
+        archiveResults(settings.get('archive'), pattern, allowEmpty)
     }
 }
 
 def publishJacocoReport(Map settings = [:]) {
-    if(!Boolean.FALSE.equals(settings)){
-        settings = asMap(settings)
-        def pattern = settings.get('pattern', '**/target/*.exec')
-        def archive = settings.get('archive', false)
-        def allowEmpty = settings.get('allowEmptyResults', true)
-        def include = settings.get('include', '')
-        def exclude = settings.get('exclude', '')
+    if(settings.active){
+        def pattern = settings.get('pattern')
+        def allowEmpty = settings.get('allowEmptyResults')
 
         jacoco(
             execPattern: pattern,
-            inclusionPattern: include,
-            exclusionPattern: exclude
+            inclusionPattern: settings.get('include'),
+            exclusionPattern: settings.get('exclude')
         )
 
         // archive results
-        archiveResults(archive, pattern, allowEmpty)
+        archiveResults(settings.get('archive'), pattern, allowEmpty)
     }
 }
 
 def publishCoberturaReport(Map settings = [:]) {
-    if(!Boolean.FALSE.equals(settings)){
-        settings = asMap(settings)
-        def pattern = settings.get('pattern', '**/target/coverage/cobertura-coverage.xml')
-        def archive = settings.get('archive', false)
-        def allowEmpty = settings.get('allowEmptyResults', true)
-        def onlyStable = settings.get('onlyStableBuilds', true)
+    if(settings.active){
+        def pattern = settings.get('pattern')
+        def allowEmpty = settings.get('allowEmptyResults')
 
         cobertura(
             coberturaReportFile: pattern,
-            onlyStable: (onlyStable?true:false),
-            failNoReports: (allowEmpty?false:true),
+            onlyStable: settings.get('onlyStableBuilds'),
+            failNoReports: !allowEmpty,
             failUnstable: false,
             failUnhealthy: false,
             autoUpdateHealth: false,
@@ -91,58 +123,47 @@ def publishCoberturaReport(Map settings = [:]) {
         )
 
         // archive results
-        archiveResults(archive, pattern, allowEmpty)
+        archiveResults(settings.get('archive'), pattern, allowEmpty)
     }
 }
 
 // publish Performance Report using "Jenkins Performance Plugin" https://wiki.jenkins.io/display/JENKINS/Performance+Plugin
 def publishJMeterReport(Map settings = [:]){
-    if(!Boolean.FALSE.equals(settings)){
-        settings = asMap(settings)
-        def pattern = settings.get('pattern', '**/*.jtl')
-        def archive = settings.get('archive', false)
-        def allowEmpty = settings.get('allowEmptyResults', true)
+    if(settings.active){
+        def pattern = settings.get('pattern')
 
         step([
             $class: 'PerformancePublisher',
-            errorFailedThreshold: settings.get('errorFailedThreshold', 20),
-            errorUnstableThreshold: settings.get('errorUnstableThreshold', 10),
-            errorUnstableResponseTimeThreshold: settings.get('errorUnstableResponseTimeThreshold', ""),
-            relativeFailedThresholdPositive: settings.get('relativeFailedThresholdPositive', 0),
-            relativeFailedThresholdNegative: settings.get('relativeFailedThresholdNegative', 0),
-            relativeUnstableThresholdPositive: settings.get('relativeUnstableThresholdPositive', 0),
-            relativeUnstableThresholdNegative: settings.get('relativeUnstableThresholdNegative', 0),
+            errorFailedThreshold: settings.get('errorFailedThreshold'),
+            errorUnstableThreshold: settings.get('errorUnstableThreshold'),
+            errorUnstableResponseTimeThreshold: settings.get('errorUnstableResponseTimeThreshold'),
+            relativeFailedThresholdPositive: settings.get('relativeFailedThresholdPositive'),
+            relativeFailedThresholdNegative: settings.get('relativeFailedThresholdNegative'),
+            relativeUnstableThresholdPositive: settings.get('relativeUnstableThresholdPositive'),
+            relativeUnstableThresholdNegative: settings.get('relativeUnstableThresholdNegative'),
             modePerformancePerTestCase: false,
-            modeOfThreshold: settings.get('modeOfThreshold', false),
-            modeThroughput: settings.get('modeThroughput', false),
-            nthBuildNumber: settings.get('nthBuildNumber', 0),
-            configType: settings.get('configType', "PRT"),
-            failBuildIfNoResultFile: settings.get('failBuildIfNoResultFile', false),
-            compareBuildPrevious: settings.get('compareBuildPrevious', true),
+            modeOfThreshold: settings.get('modeOfThreshold'),
+            modeThroughput: settings.get('modeThroughput'),
+            nthBuildNumber: settings.get('nthBuildNumber'),
+            configType: settings.get('configType'),
+            failBuildIfNoResultFile: settings.get('failBuildIfNoResultFile'),
+            compareBuildPrevious: settings.get('compareBuildPrevious'),
             parsers: asList(getJMeterParser().newInstance(pattern))
         ])
-
         // archive results
-        archiveResults(archive, pattern, allowEmpty)
+        archiveResults(settings.get('archive'), pattern, settings.get('allowEmptyResults')
     }
 }
 
 def touchFiles(){
-    echo 'update test results'
+    echo "[${STEP_NAME}] update test results"
     def patternArray = pattern.split(',')
     for(def i = 0; i < patternArray.length; i++){
         sh "find . -wholename '${patternArray[i].trim()}' -exec touch {} \\;"
     }
 }
 
-def failUnstableBuild(currentBuild) {
-    if (currentBuild.result == 'UNSTABLE') {
-        echo "Current Build Status: ${currentBuild.result}"
-        currentBuild.result = 'FAILURE'
-        error 'Some tests failed!'
-    }
-}
-
+@NonCPS
 def getJMeterParser(){
     // handle package renaming of JMeterParser class
     try {
@@ -152,16 +173,30 @@ def getJMeterParser(){
     }
 }
 
-@NonCPS
-def asMap(parameter) {
-    return Boolean.TRUE.equals(parameter)
-        ?[:]
-        :parameter
-}
-
 def archiveResults(archive, pattern, allowEmpty) {
     if(archive){
-        echo "archive ${pattern}"
+        echo "[${STAP_NAME}] archive ${pattern}"
         archiveArtifacts artifacts: pattern, allowEmptyArchive: allowEmpty
     }
+}
+
+@NonCPS
+def prepare(parameters){
+    // ensure tool maps are initialized
+    parameters.junit = toMap(parameters.junit)
+    parameters.jacoco = toMap(parameters.jacoco)
+    parameters.cobertura = toMap(parameters.cobertura)
+    parameters.jmeter = toMap(parameters.jmeter)
+    return parameters
+}
+
+@NonCPS
+def toMap(settings){
+    if(isMap(settings))
+        settings.put('active', true)
+    else if(Boolean.TRUE.equals(parameter))
+        settings = [active: true]
+    else
+        settings = [active: false]
+    return settings
 }
