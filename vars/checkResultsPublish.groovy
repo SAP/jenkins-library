@@ -180,14 +180,6 @@ def reportWarnings(parserName, settings, doArchive){
 }
 
 @NonCPS
-def ensureMap(parameters, name){
-    def value = parameters.get(name, [:])
-    if(!isMap(value))
-        error "[${STEP_NAME}] Expected parameter ${name} to be a map."
-    return value
-}
-
-@NonCPS
 def isMap(object){
     return object in Map
 }
