@@ -65,13 +65,10 @@ def call(Map parameters = [:]) {
         ]
         final Map stepDefaults = ConfigurationLoader.defaultStepConfiguration(script, STEP_NAME)
         final Map stepConfiguration = ConfigurationLoader.stepConfiguration(script, STEP_NAME)
-        println("ORIGINAL PARAMETERS: " + parameters)
         prepare(parameters)
-        println("PREPARED PARAMETERS: " + parameters)
         Map configuration = ConfigurationMerger.mergeDeepStructure(
             parameters, configurationKeys,
             stepConfiguration, configurationKeys, stepDefaults)
-        println("CONFIG MERGED: " + configuration)
         // UNIT TESTS
         publishJUnitReport(configuration.get('junit'))
         // CODE COVERAGE
