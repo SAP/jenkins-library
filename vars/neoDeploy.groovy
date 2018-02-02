@@ -7,7 +7,7 @@ def call(parameters = [:]) {
 
     def stepName = 'neoDeploy'
 
-    List parameterKeys = [
+    Set parameterKeys = [
         'applicationName',
         'archivePath',
         'account',
@@ -27,7 +27,7 @@ def call(parameters = [:]) {
         'warAction'
         ]
 
-    List stepConfigurationKeys = [
+    Set stepConfigurationKeys = [
         'account',
         'dockerEnvVars',
         'dockerImage',
