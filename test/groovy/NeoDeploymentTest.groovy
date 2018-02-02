@@ -10,10 +10,10 @@ import org.junit.Test
 import org.junit.rules.ExpectedException
 import org.junit.rules.RuleChain
 
-import util.JenkinsConfigRule
+
 import util.JenkinsLoggingRule
-import util.JenkinsSetupRule
 import util.JenkinsShellCallRule
+import util.Rules
 
 class NeoDeploymentTest extends BasePipelineTest {
 
@@ -23,12 +23,11 @@ class NeoDeploymentTest extends BasePipelineTest {
     private JenkinsShellCallRule jscr = new JenkinsShellCallRule(this)
 
     @Rule
-    public RuleChain ruleChain = RuleChain.outerRule(thrown)
-                                              .around(tmp)
-                                              .around(new JenkinsSetupRule(this))
-                                              .around(jlr)
-                                              .around(jscr)
-                                              .around(new JenkinsConfigRule(this))
+    public RuleChain ruleChain = Rules.getCommonRules(this)
+                                      .around(thrown)
+                                      .around(tmp)
+                                      .around(jlr)
+                                      .around(jscr)
 
     def workspacePath
     def warArchiveName
@@ -467,5 +466,32 @@ class NeoDeploymentTest extends BasePipelineTest {
             runtimeVersion: '2.125',
             warAction: 'illegalWARAction',
             vmSize: 'lite')
+    }
+
+    @Test
+    void deployHostProvidedAsDeprecatedParameterTest() {
+        new File(workspacePath, archiveName) << "dummy archive"
+        cpe.setConfigProperty('CI_DEPLOY_ACCOUNT', 'configPropsUser123')
+
+        neoDeployScript.call(script: [commonPipelineEnvironment: cpe],
+                             archivePath: archiveName,
+                             deployHost: "my.deploy.host.com"
+        )
+
+        assert jlr.log.contains("[WARNING][neoDeploy] Deprecated parameter 'deployHost' is used. This will not work anymore in future versions. Use parameter 'host' instead.")
+    }
+
+    @Test
+    void deployAccountProvidedAsDeprecatedParameterTest() {
+        new File(workspacePath, archiveName) << "dummy archive"
+        cpe.setConfigProperty('CI_DEPLOY_ACCOUNT', 'configPropsUser123')
+
+        neoDeployScript.call(script: [commonPipelineEnvironment: cpe],
+                             archivePath: archiveName,
+                             host: "my.deploy.host.com",
+                             deployAccount: "myAccount"
+        )
+
+        assert jlr.log.contains("Deprecated parameter 'deployAccount' is used. This will not work anymore in future versions. Use parameter 'account' instead.")
     }
 }

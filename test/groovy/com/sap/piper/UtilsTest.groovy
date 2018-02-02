@@ -6,8 +6,7 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.ExpectedException
 import org.junit.rules.RuleChain
-import util.JenkinsLoggingRule
-import util.JenkinsSetupRule
+import util.Rules
 import util.SharedLibraryCreator
 
 import static org.hamcrest.Matchers.containsString
@@ -21,7 +20,7 @@ class UtilsTest extends BasePipelineTest {
     public ExpectedException exception = ExpectedException.none()
 
     @Rule
-    public JenkinsSetupRule setUpRule = new JenkinsSetupRule(this, SharedLibraryCreator.lazyLoadedLibrary)
+    public RuleChain rules = Rules.getCommonRules(this, SharedLibraryCreator.lazyLoadedLibrary)
 
     Utils utils
 

@@ -13,12 +13,13 @@ class JenkinsSetupRule implements TestRule {
     final BasePipelineTest testInstance
 
     JenkinsSetupRule(BasePipelineTest testInstance) {
-        this.testInstance = testInstance
+        this(testInstance, null)
     }
 
     JenkinsSetupRule(BasePipelineTest testInstance, LibraryConfiguration configuration) {
         this.testInstance = testInstance
-        this.library = configuration
+        if(configuration)
+            this.library = configuration
     }
 
     @Override
