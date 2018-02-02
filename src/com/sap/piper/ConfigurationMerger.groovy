@@ -2,6 +2,8 @@ package com.sap.piper
 
 import com.cloudbees.groovy.cps.NonCPS
 
+import com.sap.piper.MapUtils
+
 class ConfigurationMerger {
     @NonCPS
     def static merge(Map configs, List configKeys, Map defaults=[:]) {
@@ -18,7 +20,7 @@ class ConfigurationMerger {
         merged.putAll(defaults)
         if(configs != null)
             for(String key : configKeys.keySet()){
-                if(isMap(configKeys[key])){
+                if(MapUtils.isMap(configKeys[key])){
                     merged[key] = merge(configs[key], configKeys[key], defaults[key])
                 }else{
                     if(configs[key] != null)
@@ -74,10 +76,5 @@ class ConfigurationMerger {
         }
 
         return filteredMap.subMap(keys)
-    }
-
-    @NonCPS
-    def static isMap(object){
-        return object in Map
     }
 }
