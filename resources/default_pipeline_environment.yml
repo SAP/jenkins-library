@@ -13,7 +13,7 @@ steps:
     warAction: 'deploy'
     vmSize: 'lite'
     neoCredentialsId: 'CI_CREDENTIALS_ID'
-  checkResultsPublish:
+  checksPublishResults:
     aggregation:
       active: true
       healthy: ''
