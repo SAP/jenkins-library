@@ -10,10 +10,9 @@ import org.junit.rules.TemporaryFolder
 
 import com.lesfurets.jenkins.unit.BasePipelineTest
 
-import util.JenkinsConfigRule
 import util.JenkinsLoggingRule
-import util.JenkinsSetupRule
 import util.JenkinsShellCallRule
+import util.Rules
 
 public class MTABuildTest extends BasePipelineTest {
 
@@ -23,13 +22,12 @@ public class MTABuildTest extends BasePipelineTest {
     private JenkinsShellCallRule jscr = new JenkinsShellCallRule(this)
 
     @Rule
-    public RuleChain ruleChain =
-        RuleChain.outerRule(thrown)
+    public RuleChain ruleChain = Rules.getCommonRules(this)
+            .around(thrown)
             .around(tmp)
-            .around(new JenkinsSetupRule(this))
             .around(jlr)
             .around(jscr)
-            .around(new JenkinsConfigRule(this))
+
 
     def currentDir
     def otherDir
@@ -122,12 +120,13 @@ public class MTABuildTest extends BasePipelineTest {
         binding.getVariable('env')['MTA_JAR_LOCATION'] = '/opt/mta'
 
         def newDirName = 'newDir'
-        def newDir = new File("${currentDir}/${newDirName}")
+        def newDirPath = "${currentDir}/${newDirName}"
+        def newDir = new File(newDirPath)
 
         newDir.mkdirs()
         new File(newDir, 'mta.yaml') << defaultMtaYaml()
 
-        helper.registerAllowedMethod('pwd', [], { newDir } )
+        helper.registerAllowedMethod('pwd', [], { newDirPath } )
 
         def mtarFilePath = mtaBuildScript.call(script: [commonPipelineEnvironment: cpe], buildTarget: 'NEO')
 
