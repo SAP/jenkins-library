@@ -6,6 +6,7 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.ExpectedException
 import org.junit.rules.RuleChain
+import util.JenkinsLoggingRule
 import util.JenkinsReadFileRule
 import util.JenkinsReadMavenPomRule
 import util.JenkinsShellCallRule
@@ -13,6 +14,7 @@ import util.JenkinsWriteFileRule
 import util.Rules
 
 import static org.junit.Assert.assertEquals
+import static org.junit.Assert.assertTrue
 
 class DockerArtifactVersioningTest extends BasePipelineTest{
 
@@ -22,6 +24,7 @@ class DockerArtifactVersioningTest extends BasePipelineTest{
 
     JenkinsReadFileRule jrfr = new JenkinsReadFileRule(this, 'test/resources/DockerArtifactVersioning')
     JenkinsWriteFileRule jwfr = new JenkinsWriteFileRule(this)
+    JenkinsLoggingRule jlr = new JenkinsLoggingRule(this)
     ExpectedException thrown = ExpectedException.none()
 
     @Rule
@@ -29,6 +32,7 @@ class DockerArtifactVersioningTest extends BasePipelineTest{
         .getCommonRules(this)
         .around(jrfr)
         .around(jwfr)
+        .around(jlr)
         .around(thrown)
 
     @Before
@@ -48,12 +52,14 @@ class DockerArtifactVersioningTest extends BasePipelineTest{
         assertEquals('1.2.3', av.getVersion())
         av.setVersion('1.2.3-20180101')
         assertEquals('1.2.3-20180101', jwfr.files['VERSION'])
+        assertTrue(jlr.log.contains('[DockerArtifactVersioning] Version from Docker base image tag: 1.2.3'))
     }
 
     @Test
     void testVersioningEnv() {
         av = new DockerArtifactVersioning(this, [filePath: 'Dockerfile', dockerVersionSource: 'TEST'])
         assertEquals('2.3.4', av.getVersion())
+        assertTrue(jlr.log.contains('[DockerArtifactVersioning] Version from Docker environment variable TEST: 2.3.4'))
     }
 
 

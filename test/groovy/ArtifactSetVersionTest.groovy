@@ -8,14 +8,12 @@ import org.junit.Test
 import org.junit.rules.ExpectedException
 import org.junit.rules.RuleChain
 import util.JenkinsLoggingRule
-import util.JenkinsReadFileRule
 import util.JenkinsReadMavenPomRule
 import util.JenkinsShellCallRule
 import util.JenkinsWriteFileRule
 import util.Rules
 
 import static org.junit.Assert.assertEquals
-import static org.junit.Assert.assertTrue
 
 class ArtifactSetVersionTest extends BasePipelineTest {
 
@@ -42,13 +40,6 @@ class ArtifactSetVersionTest extends BasePipelineTest {
     @Before
     void init() throws Throwable {
 
-        //
-        // Currently we have dependencies between the tests since
-        // DefaultValueCache is a singleton which keeps its status
-        // for all the tests. Depending on the test order we fail.
-        // As long as this status remains we need:
-        DefaultValueCache.reset()
-
         helper.registerAllowedMethod("sshagent", [List.class, Closure.class], { list, closure ->
             sshAgentList = list
             return closure()
@@ -71,7 +62,7 @@ class ArtifactSetVersionTest extends BasePipelineTest {
         assertEquals('1.2.3-20180101010203_testCommitId', cpe.getArtifactVersion())
         assertEquals('testCommitId', cpe.getGitCommitId())
 
-        assertEquals('mvn versions:set -DnewVersion=1.2.3-20180101010203_testCommitId', jscr.shell[2])
+        assertEquals('mvn versions:set -DnewVersion=1.2.3-20180101010203_testCommitId --file pom.xml', jscr.shell[2])
         assertEquals('git add .', jscr.shell[3])
         assertEquals ("git commit -m 'update version 1.2.3-20180101010203_testCommitId'", jscr.shell[4])
         assertEquals ("git remote set-url origin myGitSshUrl", jscr.shell[5])

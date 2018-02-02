@@ -13,7 +13,6 @@ class MavenArtifactVersioning extends ArtifactVersioning {
 
     @Override
     def setVersion(version) {
-        def mvnParameter = configuration.filePath == 'pom.xml' ? '' : "--file ${configuration.filePath}"
-        script.sh "mvn versions:set -DnewVersion=${version} ${mvnParameter}"
+        script.sh "mvn versions:set -DnewVersion=${version} --file ${configuration.filePath}"
     }
 }

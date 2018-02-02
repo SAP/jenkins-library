@@ -31,7 +31,7 @@ class DockerArtifactVersioning extends ArtifactVersioning {
                 break
             }
         }
-        script.echo "[DockerArtifactVersioning] Version from Docker environment variable ${name}: ${version}"
+        echo("Version from Docker environment variable ${name}: ${version}")
         return version.trim()
     }
 
@@ -44,7 +44,7 @@ class DockerArtifactVersioning extends ArtifactVersioning {
                 break
             }
         }
-        script.echo "[DockerArtifactVersioning] Version from Docker base image tag: ${version}"
+        echo("Version from Docker base image tag: ${version}")
         return version.trim()
     }
 }

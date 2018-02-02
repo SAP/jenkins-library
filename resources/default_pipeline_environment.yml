@@ -11,8 +11,8 @@ steps:
       filePath: 'pom.xml'
       versioningTemplate: '${version}-${timestamp}${commitId?"_"+commitId:""}'
     docker:
-          filePath: 'Dockerfile'
-          versioningTemplate: '${version}-${timestamp}${commitId?"_"+commitId:""}'
+      filePath: 'Dockerfile'
+      versioningTemplate: '${version}-${timestamp}${commitId?"_"+commitId:""}'
   mavenExecute:
     dockerImage: 'maven:3.5-jdk-7'
   influxWriteData:

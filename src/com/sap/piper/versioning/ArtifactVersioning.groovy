@@ -23,4 +23,8 @@ abstract class ArtifactVersioning implements Serializable {
 
     abstract setVersion(version)
     abstract getVersion()
+
+    protected echo(msg){
+        script.echo("[${this.getClass().getSimpleName()}] ${msg}")
+    }
 }

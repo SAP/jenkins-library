@@ -33,7 +33,7 @@ class MavenArtifactVersioningTest extends BasePipelineTest{
         av = new MavenArtifactVersioning(this, [filePath: 'pom.xml'])
         assertEquals('1.2.3', av.getVersion())
         av.setVersion('1.2.3-20180101')
-        assertEquals('mvn versions:set -DnewVersion=1.2.3-20180101', jscr.shell[0])
+        assertEquals('mvn versions:set -DnewVersion=1.2.3-20180101 --file pom.xml', jscr.shell[0])
     }
 
 
