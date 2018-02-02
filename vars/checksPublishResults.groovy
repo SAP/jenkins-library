@@ -5,10 +5,10 @@ import com.sap.piper.ConfigurationMerger
 
 import groovy.transform.Field
 
-@Field def STEP_NAME = 'checkResultsPublish'
+@Field def STEP_NAME = 'checksPublishResults'
 
 /**
- * checkResultsPublish
+ * checksPublishResults
  *
  * @param others document all parameters
  */

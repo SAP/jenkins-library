@@ -10,7 +10,7 @@ import static org.junit.Assert.assertTrue
 
 import util.Rules
 
-class CheckResultsPublishTest extends BasePipelineTest {
+class ChecksPublishResultsTest extends BasePipelineTest {
     Map publisherStepOptions
     List archiveStepPatterns
 
@@ -24,7 +24,7 @@ class CheckResultsPublishTest extends BasePipelineTest {
         publisherStepOptions = [:]
         archiveStepPatterns = []
         // prepare checkResultsPublish step
-        stepUnderTest = loadScript("checkResultsPublish.groovy").checkResultsPublish
+        stepUnderTest = loadScript("checksPublishResults.groovy").checksPublishResults
         // add handler for generic step call
         helper.registerAllowedMethod("step", [Map.class], {
             parameters -> publisherStepOptions[parameters.$class] = parameters
