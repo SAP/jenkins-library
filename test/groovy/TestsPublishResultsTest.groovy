@@ -1,4 +1,5 @@
 import org.junit.Before
+import org.junit.Ignore
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.RuleChain
@@ -44,35 +45,68 @@ class TestsPublishResultsTest extends BasePipelineTest {
     }
 
     @Test
-    void testPublishWithDefaultSettings() throws Exception {
+    void testPublishNothingWithDefaultSettings() throws Exception {
         stepUnderTest.call()
 
         // ensure nothing is published
-        assertTrue('WarningsPublisher options not empty', publisherStepOptions['junit'] != null && !publisherStepOptions['junit'].active)
-        assertTrue('PmdPublisher options not empty', publisherStepOptions['jacoco'] != null && !publisherStepOptions['jacoco'].active)
-        assertTrue('DryPublisher options not empty', publisherStepOptions['cobertura'] != null && !publisherStepOptions['cobertura'].active)
-        assertTrue('FindBugsPublisher options not empty', publisherStepOptions['PerformancePublisher'] != null && !publisherStepOptions['PerformancePublisher'].active)
+        assertTrue('WarningsPublisher options not empty', publisherStepOptions.junit == null)
+        assertTrue('PmdPublisher options not empty', publisherStepOptions.jacoco == null)
+        assertTrue('DryPublisher options not empty', publisherStepOptions.cobertura == null)
+        assertTrue('FindBugsPublisher options not empty', publisherStepOptions.PerformancePublisher == null)
+    }
+
+    @Test
+    void testPublishNothingWithAllDisabled() throws Exception {
+        stepUnderTest.call(junit: false, jacoco: false, cobertura: false, jmeter: false)
+
+        // ensure nothing is published
+        assertTrue('WarningsPublisher options not empty', publisherStepOptions.junit == null)
+        assertTrue('PmdPublisher options not empty', publisherStepOptions.jacoco == null)
+        assertTrue('DryPublisher options not empty', publisherStepOptions.cobertura == null)
+        assertTrue('FindBugsPublisher options not empty', publisherStepOptions.PerformancePublisher == null)
     }
 
     @Test
     void testPublishAllWithDefaultSettings() throws Exception {
-        stepUnderTest.call(junit: true, jacoco: true, cobertura: true, jmeter: false)
+        stepUnderTest.call(junit: true)
 
         assertTrue('JUnit options are empty', publisherStepOptions.junit != null)
-        assertTrue('JaCoCo options are empty', publisherStepOptions.jacoco != null)
-        assertTrue('Cobertura options are empty', publisherStepOptions.cobertura != null)
-        //assertTrue('FindBugsPublisher options not empty', publisherStepOptions['PerformancePublisher']?.active)
-
         // ensure default patterns are set
         assertEquals('JUnit default pattern not set correct',
-            '**/target/surefire-reports/*.xml',
-            publisherStepOptions.junit.testResults)
+            '**/target/surefire-reports/*.xml', publisherStepOptions.junit.testResults)
+        // ensure nothing else is published
+        assertTrue('JaCoCo options are not empty', publisherStepOptions.jacoco == null)
+        assertTrue('Cobertura options are not empty', publisherStepOptions.cobertura == null)
+        assertTrue('JMeter options are not empty', publisherStepOptions.PerformancePublisher == null)
+    }
+
+    @Test
+    void testPublishCoverageWithDefaultSettings() throws Exception {
+        stepUnderTest.call(jacoco: true, cobertura: true)
+
+        assertTrue('JaCoCo options are empty', publisherStepOptions.jacoco != null)
+        assertTrue('Cobertura options are empty', publisherStepOptions.cobertura != null)
         assertEquals('JaCoCo default pattern not set correct',
-            '**/target/*.exec',
-            publisherStepOptions.jacoco.execPattern)
+            '**/target/*.exec', publisherStepOptions.jacoco.execPattern)
         assertEquals('Cobertura default pattern not set correct',
-            '**/target/coverage/cobertura-coverage.xml',
-            publisherStepOptions.cobertura.coberturaReportFile)
-        //assertEquals('CheckStylePublisher default pattern not set', '**/*.jtl', publisherStepOptions['PerformancePublisher']['pattern'])
+            '**/target/coverage/cobertura-coverage.xml', publisherStepOptions.cobertura.coberturaReportFile)
+        // ensure nothing else is published
+        assertTrue('JUnit options are not empty', publisherStepOptions.junit == null)
+        assertTrue('JMeter options are not empty', publisherStepOptions.PerformancePublisher == null)
+    }
+
+    @Ignore("failes due do class not found exception of JMeter parser")
+    @Test
+    void testPublishJMeterWithDefaultSettings() throws Exception {
+        stepUnderTest.call(jmeter: true)
+
+        assertTrue('JMeter options are empty', publisherStepOptions.PerformancePublisher != null)
+        //assertEquals('JMeter default pattern not set', '**/*.jtl',
+        //    publisherStepOptions.PerformancePublisher.pattern])
+
+        // ensure nothing else is published
+        assertTrue('JUnit options are not empty', publisherStepOptions.junit == null)
+        assertTrue('JaCoCo options are not empty', publisherStepOptions.jacoco == null)
+        assertTrue('Cobertura options are not empty', publisherStepOptions.cobertura == null)
     }
 }
