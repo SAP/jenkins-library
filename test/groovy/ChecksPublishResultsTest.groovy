@@ -161,10 +161,6 @@ class ChecksPublishResultsTest extends BasePipelineTest {
     void testPublishWithThresholds() throws Exception {
         stepUnderTest.call(aggregation: [thresholds: [fail: [high: 0]]], pmd: true)
 
-// failedTotalAll: '4', failedTotalHigh: '3', failedTotalLow: '1', failedTotalNormal: '2'
-
-
-println(publisherStepOptions)
         assertTrue("AnalysisPublisher options not set", publisherStepOptions['AnalysisPublisher'] != null)
         assertTrue("PmdPublisher options not set", publisherStepOptions['PmdPublisher'] != null)
         assertEquals("AnalysisPublisher thresholds configuration for failedTotalHigh not correct", '0', publisherStepOptions['AnalysisPublisher']['failedTotalHigh'])
