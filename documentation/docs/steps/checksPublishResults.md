@@ -1,4 +1,4 @@
-# checkResultsPublish
+# checksPublishResults
 
 ## Description
 This step can publish static check results from various sources.
@@ -108,7 +108,7 @@ This way, the jenkins will fail the build on 1 high issue, 10 normal issues, 100
 The `thresholds` parameter can be set for `aggregation`, `tasks`, `pmd`, `cpd`, `findbugs`, `checkstyle`, `eslint` and `pylint`.
 
 ```groovy
-publishCheckResults(
+checksPublishResults(
     tasks: true,
     pmd: [pattern: '**/target/pmd-results.xml', thresholds: [fail: [low: 100]]],
     cpd: [archive: false],
@@ -117,7 +117,7 @@ publishCheckResults(
 )
 ```
 
-![StaticChecks Thresholds](../images/StaticChecks_Threshold.png)   
+![StaticChecks Thresholds](../images/StaticChecks_Threshold.png)
 
 ## Return value
 none
@@ -131,20 +131,20 @@ none
 ## Example
 ```groovy
 // publish java results from pmd, cpd, checkstyle & findbugs
-checkResultsPublish archive: true, pmd: true, cpd: true, findbugs: true, checkstyle: true, aggregation: [thresholds: [fail: [high: 0]]]
+checksPublishResults archive: true, pmd: true, cpd: true, findbugs: true, checkstyle: true, aggregation: [thresholds: [fail: [high: 0]]]
 ```
 
 ```groovy
 // publish javascript results from ESLint
-checkResultsPublish archive: true, eslint: [pattern: '**/result-file-with-fancy-name.xml'], aggregation: [thresholds: [fail: [high: 0, normal: 10]]]
+checksPublishResults archive: true, eslint: [pattern: '**/result-file-with-fancy-name.xml'], aggregation: [thresholds: [fail: [high: 0, normal: 10]]]
 ```
 
 ```groovy
 // publish scala results from scalastyle
-checkResultsPublish archive: true, checkstyle: [pattern: '**/target/scalastyle-result.xml']
+checksPublishResults archive: true, checkstyle: [pattern: '**/target/scalastyle-result.xml']
 ```
 
 ```groovy
 // publish python results from pylint
-checkResultsPublish archive: true, pylint: [pattern: '**/target/pylint.log']
+checksPublishResults archive: true, pylint: [pattern: '**/target/pylint.log']
 ```
