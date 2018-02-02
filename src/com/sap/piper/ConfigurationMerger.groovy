@@ -4,7 +4,7 @@ import com.cloudbees.groovy.cps.NonCPS
 
 class ConfigurationMerger {
     @NonCPS
-    def static merge(Map configs, List configKeys, Map defaults=[:]) {
+    def static merge(Map configs, Set configKeys, Map defaults=[:]) {
         Map merged = [:]
         merged.putAll(defaults)
         merged.putAll(filterByKeyAndNull(configs, configKeys))
@@ -13,7 +13,7 @@ class ConfigurationMerger {
     }
 
     @NonCPS
-    def static merge(Map parameters, List parameterKeys, Map configurationMap, List configurationKeys, Map defaults=[:]){
+    def static merge(Map parameters, Set parameterKeys, Map configurationMap, Set configurationKeys, Map defaults=[:]){
         Map merged = merge(configurationMap, configurationKeys, defaults)
         merged.putAll(filterByKeyAndNull(parameters, parameterKeys))
 
@@ -21,9 +21,9 @@ class ConfigurationMerger {
     }
 
     @NonCPS
-    def static mergeWithPipelineData(Map parameters, List parameterKeys,
+    def static mergeWithPipelineData(Map parameters, Set parameterKeys,
                             Map pipelineDataMap,
-                            Map configurationMap, List configurationKeys,
+                            Map configurationMap, Set configurationKeys,
                             Map stepDefaults=[:]
     ){
         Map merged = [:]
@@ -36,7 +36,7 @@ class ConfigurationMerger {
     }
 
     @NonCPS
-    private static filterByKeyAndNull(Map map, List keys) {
+    private static filterByKeyAndNull(Map map, Set keys) {
         Map filteredMap = map.findAll {
             if(it.value == null){
                 return false
