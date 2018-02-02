@@ -15,21 +15,24 @@ steps:
     neoCredentialsId: 'CI_CREDENTIALS_ID'
   testsPublishResults:
     junit:
-      patter: '**/target/surefire-reports/*.xml'
+      pattern: '**/target/surefire-reports/*.xml'
       updateResults: false
       allowEmptyResults: true
       archive: false
+      active: false
     jacoco:
       pattern: '**/target/*.exec'
       include: ''
       exclude: ''
       allowEmptyResults: true
       archive: false
+      active: false
     cobertura:
       pattern: '**/target/coverage/cobertura-coverage.xml'
       onlyStableBuilds: true
       allowEmptyResults: true
       archive: false
+      active: false
     jmeter:
       pattern: '**/*.jtl'
       errorFailedThreshold: 20
@@ -47,3 +50,4 @@ steps:
       compareBuildPrevious: true
       allowEmptyResults: true
       archive: false
+      active: false
