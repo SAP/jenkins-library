@@ -9,3 +9,5 @@ cache:
   directories:
   - $HOME/.m2
   - $HOME/.cache/pip
+after_success:
+  - mvn clean test -DrepoToken=$COVERALL_REPO_TOKEN jacoco:report coveralls:report
