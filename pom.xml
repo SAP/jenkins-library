@@ -207,20 +207,6 @@
                 <groupId>org.eluder.coveralls</groupId>
                 <artifactId>coveralls-maven-plugin</artifactId>
                 <version>4.3.0</version>
-                <configuration>
-                    <repoToken>$COVERALLS_REPO_TOKEN</repoToken>
-                </configuration>
-                <executions>
-                    <execution>
-                        <id>post-unit-test</id>
-                        <phase>package</phase>
-                        <goals><goal>report</goal></goals>
-                    </execution>
-                    <execution>
-                        <id>post-integration-test</id>
-                        <goals><goal>report</goal></goals>
-                    </execution>
-                </executions>
             </plugin>
         </plugins>
     </build>
