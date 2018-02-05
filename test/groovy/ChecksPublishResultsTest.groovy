@@ -2,6 +2,7 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.RuleChain
+import org.junit.Ignore
 
 import com.lesfurets.jenkins.unit.BasePipelineTest
 
@@ -131,8 +132,9 @@ class ChecksPublishResultsTest extends BasePipelineTest {
     @Test
     void testPublishWithChangedStepDefaultSettings() throws Exception {
         // pmd has been set to active: true in step configuration
-        stepUnderTest.call()
-        //TODO: add rule to load different pipeline config
+        stepUnderTest.call(script: [commonPipelineEnvironment: [
+            configuration: [steps: [checksPublishResults: [pmd: [active: true]]]]
+        ]])
 
         assertTrue("AnalysisPublisher options not set", publisherStepOptions['AnalysisPublisher'] != null)
         assertTrue("PmdPublisher options not set", publisherStepOptions['PmdPublisher'] != null)
