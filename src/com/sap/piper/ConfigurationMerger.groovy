@@ -18,12 +18,13 @@ class ConfigurationMerger {
     def static merge(Map configs, Map configKeys, Map defaults = [:]) {
         Map merged = [:]
         merged.putAll(defaults)
-        if(configs != null)
+        if(configs != null && configKeys)
             for(String key : defaults.keySet())
-                if(MapUtils.isMap(defaults[key]))
-                    merged[key] = merge(configs[key], configKeys[key], defaults[key])
-                else
-                    merged[key] = configs[key]
+                if(configKeys.keySet().contains(key))
+                    if(MapUtils.isMap(defaults[key]))
+                        merged[key] = merge(configs[key], configKeys[key], defaults[key])
+                    else if(configs[key] != null)
+                        merged[key] = configs[key]
         return merged
     }
 
