@@ -19,14 +19,11 @@ class ConfigurationMerger {
         Map merged = [:]
         merged.putAll(defaults)
         if(configs != null)
-            for(String key : configKeys.keySet()){
-                if(MapUtils.isMap(configKeys[key])){
+            for(String key : defaults.keySet())
+                if(MapUtils.isMap(defaults[key]))
                     merged[key] = merge(configs[key], configKeys[key], defaults[key])
-                }else{
-                    if(configs[key] != null)
-                        merged[key] = configs[key]
-                }
-            }
+                else
+                    merged[key] = configs[key]
         return merged
     }
 
