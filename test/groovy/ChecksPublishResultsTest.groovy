@@ -66,6 +66,22 @@ class ChecksPublishResultsTest extends BasePipelineTest {
     }
 
     @Test
+    void testPublishForJavaWithChangedDefaultSettings() throws Exception {
+        // pmd has been set to active: true in step configuration
+        stepUnderTest.call()
+        //TODO: add rule to load different pipeline config
+        //TODO: adapt isMap to not override the step config
+
+        assertTrue("AnalysisPublisher options not set", publisherStepOptions['AnalysisPublisher'] != null)
+        assertTrue("PmdPublisher options not set", publisherStepOptions['PmdPublisher'] != null)
+        // ensure nothing else is published
+        assertTrue("DryPublisher options not empty", publisherStepOptions['DryPublisher'] == null)
+        assertTrue("FindBugsPublisher options not empty", publisherStepOptions['FindBugsPublisher'] == null)
+        assertTrue("CheckStylePublisher options not empty", publisherStepOptions['CheckStylePublisher'] == null)
+        assertTrue("WarningsPublisher options not empty", publisherStepOptions['WarningsPublisher'] == null)
+    }
+
+    @Test
     void testPublishForJavaScriptWithDefaultSettings() throws Exception {
         stepUnderTest.call(eslint: true)
 
