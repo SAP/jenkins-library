@@ -56,7 +56,7 @@ public class MTABuildTest extends BasePipelineTest {
 
 
     @Test
-    public void environmentPathTest(){
+    public void environmentPathTest() {
 
         mtaBuildScript.call(buildTarget: 'NEO')
 
@@ -65,7 +65,7 @@ public class MTABuildTest extends BasePipelineTest {
 
 
     @Test
-    public void sedTest(){
+    public void sedTest() {
 
         mtaBuildScript.call(buildTarget: 'NEO')
 
@@ -74,7 +74,7 @@ public class MTABuildTest extends BasePipelineTest {
 
 
     @Test
-    public void mtarFilePathFromCommonPipelineEnviromentTest(){
+    public void mtarFilePathFromCommonPipelineEnviromentTest() {
 
         mtaBuildScript.call(script: [commonPipelineEnvironment: cpe],
                       buildTarget: 'NEO')
@@ -86,7 +86,7 @@ public class MTABuildTest extends BasePipelineTest {
 
 
     @Test
-    public void mtaBuildWithSurroundingDirTest(){
+    public void mtaBuildWithSurroundingDirTest() {
 
         def newDirName = 'newDir'
         def newDirPath = "${currentDir}/${newDirName}"
@@ -128,7 +128,7 @@ public class MTABuildTest extends BasePipelineTest {
 
 
     @Test
-    public void noMtaPresentTest(){
+    public void noMtaPresentTest() {
 
         mtaYaml.delete()
         thrown.expect(FileNotFoundException)
@@ -138,7 +138,7 @@ public class MTABuildTest extends BasePipelineTest {
 
 
     @Test
-    public void badMtaTest(){
+    public void badMtaTest() {
 
         thrown.expect(ParserException)
         thrown.expectMessage('while parsing a block mapping')
@@ -150,7 +150,7 @@ public class MTABuildTest extends BasePipelineTest {
 
 
     @Test
-    public void noIdInMtaTest(){
+    public void noIdInMtaTest() {
 
         thrown.expect(AbortException)
         thrown.expectMessage("Property 'ID' not found in mta.yaml file at: '")
@@ -162,7 +162,7 @@ public class MTABuildTest extends BasePipelineTest {
 
 
     @Test
-    public void noBuildTargetTest(){
+    public void noBuildTargetTest() {
 
         thrown.expect(Exception)
         thrown.expectMessage('ERROR - NO VALUE AVAILABLE FOR buildTarget')
@@ -172,7 +172,7 @@ public class MTABuildTest extends BasePipelineTest {
 
 
     @Test
-    void mtaJarLocationFromEnvironmentTest(){
+    void mtaJarLocationFromEnvironmentTest() {
 
         binding.setVariable('env', [:])
         binding.getVariable('env')['MTA_JAR_LOCATION'] = '/env/mta'
@@ -184,7 +184,7 @@ public class MTABuildTest extends BasePipelineTest {
     }
 
 
-    private defaultMtaYaml(){
+    private defaultMtaYaml() {
         return  '''
                 _schema-version: "2.0.0"
                 ID: "com.mycompany.northwind"
@@ -205,7 +205,7 @@ public class MTABuildTest extends BasePipelineTest {
                 '''
     }
 
-    private badMtaYaml(){
+    private badMtaYaml() {
         return  '''
                 _schema-version: "2.0.0
                 ID: "com.mycompany.northwind"
@@ -226,7 +226,7 @@ public class MTABuildTest extends BasePipelineTest {
                 '''
     }
 
-    private noIdMtaYaml(){
+    private noIdMtaYaml() {
         return  '''
                 _schema-version: "2.0.0"
                 version: 1.0.0
