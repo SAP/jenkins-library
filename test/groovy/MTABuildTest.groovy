@@ -110,7 +110,7 @@ public class MTABuildTest extends BasePipelineTest {
     }
 
     @Test
-    void mtaHomeNotSetTest() {
+    void mtaJarLocationNotSetTest() {
 
         new File("${currentDir}/mta.yaml") << defaultMtaYaml()
 
@@ -125,7 +125,7 @@ public class MTABuildTest extends BasePipelineTest {
 
 
     @Test
-    void mtaHomeAsParameterTest() {
+    void mtaJarLocationAsParameterTest() {
 
         new File("${currentDir}/mta.yaml") << defaultMtaYaml()
 
