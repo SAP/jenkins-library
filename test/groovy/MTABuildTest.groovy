@@ -200,10 +200,10 @@ public class MTABuildTest extends BasePipelineTest {
                 _schema-version: "2.0.0"
                 ID: "com.mycompany.northwind"
                 version: 1.0.0
-                
+
                 parameters:
                   hcp-deployer-version: "1.0.0"
-                
+
                 modules:
                   - name: "fiorinorthwind"
                     type: html5
@@ -221,10 +221,10 @@ public class MTABuildTest extends BasePipelineTest {
                 _schema-version: "2.0.0
                 ID: "com.mycompany.northwind"
                 version: 1.0.0
-                
+
                 parameters:
                   hcp-deployer-version: "1.0.0"
-                
+
                 modules:
                   - name: "fiorinorthwind"
                     type: html5
@@ -241,10 +241,10 @@ public class MTABuildTest extends BasePipelineTest {
         return  '''
                 _schema-version: "2.0.0"
                 version: 1.0.0
-                
+
                 parameters:
                   hcp-deployer-version: "1.0.0"
-                
+
                 modules:
                   - name: "fiorinorthwind"
                     type: html5
