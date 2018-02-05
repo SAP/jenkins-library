@@ -47,7 +47,7 @@ class ConfigurationMergerTest {
         Map configurationKeys = [fruits: [apples: null, oranges: null, bananaaas: null]]
         Map parameters = [fruits: [apples: 18]]
         Map parameterKeys = [fruits: [apples: null, oranges: null, bananaaas: null]]
-        Map merged = ConfigurationMerger.mergeDeepStructure(parameters, parameterKeys, configuration, configurationKeys, defaults)
+        Map merged = ConfigurationMerger.merge(parameters, parameterKeys, configuration, configurationKeys, defaults)
         Assert.assertEquals(50, merged.fruits.bananaaas)
         Assert.assertEquals(18, merged.fruits.apples)
         Assert.assertEquals(10, merged.fruits.oranges)

@@ -39,10 +39,13 @@ class ConfigurationMerger {
     }
 
     @NonCPS
-    def static mergeDeepStructure(Map parameters, Map parameterKeys, Map configuration, Map configurationKeys, Map defaults=[:]){
-        Map merged = [:]
-        merged.putAll(defaults)
-        merged = merge(configuration, configurationKeys, merged)
+    def static merge(
+        Map parameters, Map parameterKeys,
+        Map configuration, Map configurationKeys,
+        Map defaults=[:]
+    ){
+        Map merged
+        merged = merge(configuration, configurationKeys, defaults)
         merged = merge(parameters, parameterKeys, merged)
         return merged
     }
