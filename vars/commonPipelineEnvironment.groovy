@@ -4,8 +4,9 @@ class commonPipelineEnvironment implements Serializable {
     //stores version of the artifact which is build during pipeline run
     def artifactVersion
 
-    //stores the gitCommitId for the build during pipeline run
-    def gitCommitId
+    //stores the gitCommitId as well as additional git information for the build during pipeline run
+    private String gitCommitId
+    private String gitSshUrl
 
     //stores properties for a pipeline which build an artifact and then bundles it into a container
     private Map appContainerProperties = [:]
@@ -61,6 +62,14 @@ class commonPipelineEnvironment implements Serializable {
 
     def getGitCommitId() {
         return gitCommitId
+    }
+
+    def setGitSshUrl(url) {
+        gitSshUrl = url
+    }
+
+    def getGitSshUrl() {
+        return gitSshUrl
     }
 
     def getInfluxCustomData() {
