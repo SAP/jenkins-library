@@ -10,4 +10,4 @@ cache:
   - $HOME/.m2
   - $HOME/.cache/pip
 after_success:
-  - mvn -DrepoToken=$COVERALL_REPO_TOKEN jacoco:report coveralls:report
+  - mvn -DrepoToken=$COVERALLS_REPO_TOKEN jacoco:report coveralls:report
