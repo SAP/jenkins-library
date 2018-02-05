@@ -46,7 +46,6 @@ public class MTABuildTest extends BasePipelineTest {
         helper.registerAllowedMethod('pwd', [], { currentDir } )
 
         binding.setVariable('PATH', '/usr/bin')
-        binding.setVariable('env', [:])
 
         mtaBuildScript = loadScript("mtaBuild.groovy").mtaBuild
         cpe = loadScript('commonPipelineEnvironment.groovy').commonPipelineEnvironment
@@ -67,24 +66,16 @@ public class MTABuildTest extends BasePipelineTest {
     @Test
     public void straightForwardTest(){
 
-        binding.getVariable('env')['MTA_JAR_LOCATION'] = '/opt/mta'
-
         new File("${currentDir}/mta.yaml") << defaultMtaYaml()
 
         mtaBuildScript.call(buildTarget: 'NEO')
 
         assert jscr.shell[0] =~ /sed -ie "s\/\\\$\{timestamp\}\/`date \+%Y%m%d%H%M%S`\/g" ".*\/mta.yaml"$/
-
-        assert jscr.shell[1].contains(' -jar /opt/mta/mta.jar --mtar ')
-
-        assert jlr.log.contains( "[mtaBuild] MTA JAR \"/opt/mta/mta.jar\" retrieved from environment.")
     }
 
 
     @Test
     public void mtarFilePathFromCommonPipelineEnviromentTest(){
-
-        binding.getVariable('env')['MTA_JAR_LOCATION'] = '/opt/mta'
 
         new File("${currentDir}/mta.yaml") << defaultMtaYaml()
 
@@ -95,18 +86,12 @@ public class MTABuildTest extends BasePipelineTest {
 
         assert jscr.shell[0] =~ /sed -ie "s\/\\\$\{timestamp\}\/`date \+%Y%m%d%H%M%S`\/g" ".*\/mta.yaml"$/
 
-        assert jscr.shell[1].contains(' -jar /opt/mta/mta.jar --mtar ')
-
         assert mtarFilePath == "${currentDir}/com.mycompany.northwind.mtar"
-
-        assert jlr.log.contains("[mtaBuild] MTA JAR \"/opt/mta/mta.jar\" retrieved from environment.")
     }
 
 
     @Test
     public void mtaBuildWithSurroundingDirTest(){
-
-        binding.getVariable('env')['MTA_JAR_LOCATION'] = '/opt/mta'
 
         def newDirName = 'newDir'
         def newDirPath = "${currentDir}/${newDirName}"
@@ -121,11 +106,7 @@ public class MTABuildTest extends BasePipelineTest {
 
         assert jscr.shell[0] =~ /sed -ie "s\/\\\$\{timestamp\}\/`date \+%Y%m%d%H%M%S`\/g" ".*\/newDir\/mta.yaml"$/
 
-        assert jscr.shell[1].contains(' -jar /opt/mta/mta.jar --mtar ')
-
         assert mtarFilePath == "${currentDir}/${newDirName}/com.mycompany.northwind.mtar"
-
-        assert jlr.log.contains("[mtaBuild] MTA JAR \"/opt/mta/mta.jar\" retrieved from environment.")
     }
 
     @Test
@@ -197,6 +178,22 @@ public class MTABuildTest extends BasePipelineTest {
 
         mtaBuildScript.call()
     }
+
+
+    @Test
+    void mtaJarLocationFromEnvironmentTest(){
+
+        binding.setVariable('env', [:])
+        binding.getVariable('env')['MTA_JAR_LOCATION'] = '/env/mta'
+
+        new File("${currentDir}/mta.yaml") << defaultMtaYaml()
+
+        mtaBuildScript.call(buildTarget: 'NEO')
+
+        assert jscr.shell[1].contains('-jar /env/mta/mta.jar --mtar')
+        assert jlr.log.contains('[mtaBuild] MTA JAR "/env/mta/mta.jar" retrieved from environment.')
+    }
+
 
     private defaultMtaYaml(){
         return  '''
