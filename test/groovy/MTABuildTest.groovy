@@ -104,6 +104,7 @@ public class MTABuildTest extends BasePipelineTest {
         assert mtarFilePath == "${currentDir}/${newDirName}/com.mycompany.northwind.mtar"
     }
 
+
     @Test
     void mtaJarLocationNotSetTest() {
 
@@ -138,6 +139,7 @@ public class MTABuildTest extends BasePipelineTest {
 
     @Test
     public void badMtaTest(){
+
         thrown.expect(ParserException)
         thrown.expectMessage('while parsing a block mapping')
 
@@ -149,6 +151,7 @@ public class MTABuildTest extends BasePipelineTest {
 
     @Test
     public void noIdInMtaTest(){
+
         thrown.expect(AbortException)
         thrown.expectMessage("Property 'ID' not found in mta.yaml file at: '")
 
@@ -160,6 +163,7 @@ public class MTABuildTest extends BasePipelineTest {
 
     @Test
     public void noBuildTargetTest(){
+
         thrown.expect(Exception)
         thrown.expectMessage('ERROR - NO VALUE AVAILABLE FOR buildTarget')
 
