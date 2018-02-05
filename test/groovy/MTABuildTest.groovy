@@ -30,6 +30,7 @@ public class MTABuildTest extends BasePipelineTest {
 
 
     def currentDir
+    def mtaYaml
 
     def mtaBuildScript
     def cpe
@@ -38,6 +39,8 @@ public class MTABuildTest extends BasePipelineTest {
     void init() {
 
         currentDir = tmp.newFolder().toURI().getPath()[0..-2] //omit final '/'
+        mtaYaml = new File("${currentDir}/mta.yaml")
+        mtaYaml << defaultMtaYaml()
 
         helper.registerAllowedMethod('readYaml', [Map], {
             m ->
@@ -55,8 +58,6 @@ public class MTABuildTest extends BasePipelineTest {
     @Test
     public void environmentPathTest(){
 
-        new File("${currentDir}/mta.yaml") << defaultMtaYaml()
-
         mtaBuildScript.call(buildTarget: 'NEO')
 
         assert jscr.shell[1].contains('PATH=./node_modules/.bin:/usr/bin')
@@ -64,9 +65,7 @@ public class MTABuildTest extends BasePipelineTest {
 
 
     @Test
-    public void straightForwardTest(){
-
-        new File("${currentDir}/mta.yaml") << defaultMtaYaml()
+    public void sedTest(){
 
         mtaBuildScript.call(buildTarget: 'NEO')
 
@@ -77,14 +76,10 @@ public class MTABuildTest extends BasePipelineTest {
     @Test
     public void mtarFilePathFromCommonPipelineEnviromentTest(){
 
-        new File("${currentDir}/mta.yaml") << defaultMtaYaml()
-
         mtaBuildScript.call(script: [commonPipelineEnvironment: cpe],
                       buildTarget: 'NEO')
 
         def mtarFilePath = cpe.getMtarFilePath()
-
-        assert jscr.shell[0] =~ /sed -ie "s\/\\\$\{timestamp\}\/`date \+%Y%m%d%H%M%S`\/g" ".*\/mta.yaml"$/
 
         assert mtarFilePath == "${currentDir}/com.mycompany.northwind.mtar"
     }
@@ -112,11 +107,7 @@ public class MTABuildTest extends BasePipelineTest {
     @Test
     void mtaJarLocationNotSetTest() {
 
-        new File("${currentDir}/mta.yaml") << defaultMtaYaml()
-
         mtaBuildScript.call(buildTarget: 'NEO')
-
-        assert jscr.shell[0] =~ /sed -ie "s\/\\\$\{timestamp\}\/`date \+%Y%m%d%H%M%S`\/g" ".*\/mta.yaml"$/
 
         assert jscr.shell[1].contains(' -jar mta.jar --mtar ')
 
@@ -127,11 +118,7 @@ public class MTABuildTest extends BasePipelineTest {
     @Test
     void mtaJarLocationAsParameterTest() {
 
-        new File("${currentDir}/mta.yaml") << defaultMtaYaml()
-
         mtaBuildScript.call(mtaJarLocation: '/mylocation/mta', buildTarget: 'NEO')
-
-        assert jscr.shell[0] =~ /sed -ie "s\/\\\$\{timestamp\}\/`date \+%Y%m%d%H%M%S`\/g" ".*\/mta.yaml"$/
 
         assert jscr.shell[1].contains(' -jar /mylocation/mta/mta.jar --mtar ')
 
@@ -141,6 +128,8 @@ public class MTABuildTest extends BasePipelineTest {
 
     @Test
     public void noMtaPresentTest(){
+
+        mtaYaml.delete()
         thrown.expect(FileNotFoundException)
 
         mtaBuildScript.call(buildTarget: 'NEO')
@@ -152,7 +141,7 @@ public class MTABuildTest extends BasePipelineTest {
         thrown.expect(ParserException)
         thrown.expectMessage('while parsing a block mapping')
 
-        new File("${currentDir}/mta.yaml") << badMtaYaml()
+        mtaYaml.text = badMtaYaml()
 
         mtaBuildScript.call(buildTarget: 'NEO')
     }
@@ -163,7 +152,7 @@ public class MTABuildTest extends BasePipelineTest {
         thrown.expect(AbortException)
         thrown.expectMessage("Property 'ID' not found in mta.yaml file at: '")
 
-        new File("${currentDir}/mta.yaml") << noIdMtaYaml()
+        mtaYaml.text = noIdMtaYaml()
 
         mtaBuildScript.call(buildTarget: 'NEO')
     }
@@ -174,8 +163,6 @@ public class MTABuildTest extends BasePipelineTest {
         thrown.expect(Exception)
         thrown.expectMessage('ERROR - NO VALUE AVAILABLE FOR buildTarget')
 
-        new File("${currentDir}/mta.yaml") << defaultMtaYaml()
-
         mtaBuildScript.call()
     }
 
@@ -185,8 +172,6 @@ public class MTABuildTest extends BasePipelineTest {
 
         binding.setVariable('env', [:])
         binding.getVariable('env')['MTA_JAR_LOCATION'] = '/env/mta'
-
-        new File("${currentDir}/mta.yaml") << defaultMtaYaml()
 
         mtaBuildScript.call(buildTarget: 'NEO')
 
