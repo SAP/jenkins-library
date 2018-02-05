@@ -54,6 +54,17 @@ public class MTABuildTest extends BasePipelineTest {
 
 
     @Test
+    public void environmentPathTest(){
+
+        new File("${currentDir}/mta.yaml") << defaultMtaYaml()
+
+        mtaBuildScript.call(buildTarget: 'NEO')
+
+        assert jscr.shell[1].contains("PATH=./node_modules/.bin:/usr/bin")
+    }
+
+
+    @Test
     public void straightForwardTest(){
 
         binding.getVariable('env')['MTA_JAR_LOCATION'] = '/opt/mta'
@@ -63,8 +74,6 @@ public class MTABuildTest extends BasePipelineTest {
         mtaBuildScript.call(buildTarget: 'NEO')
 
         assert jscr.shell[0] =~ /sed -ie "s\/\\\$\{timestamp\}\/`date \+%Y%m%d%H%M%S`\/g" ".*\/mta.yaml"$/
-
-        assert jscr.shell[1].contains("PATH=./node_modules/.bin:/usr/bin")
 
         assert jscr.shell[1].contains(' -jar /opt/mta/mta.jar --mtar ')
 
@@ -85,8 +94,6 @@ public class MTABuildTest extends BasePipelineTest {
         def mtarFilePath = cpe.getMtarFilePath()
 
         assert jscr.shell[0] =~ /sed -ie "s\/\\\$\{timestamp\}\/`date \+%Y%m%d%H%M%S`\/g" ".*\/mta.yaml"$/
-
-        assert jscr.shell[1].contains("PATH=./node_modules/.bin:/usr/bin")
 
         assert jscr.shell[1].contains(' -jar /opt/mta/mta.jar --mtar ')
 
@@ -114,8 +121,6 @@ public class MTABuildTest extends BasePipelineTest {
 
         assert jscr.shell[0] =~ /sed -ie "s\/\\\$\{timestamp\}\/`date \+%Y%m%d%H%M%S`\/g" ".*\/newDir\/mta.yaml"$/
 
-        assert jscr.shell[1].contains("PATH=./node_modules/.bin:/usr/bin")
-
         assert jscr.shell[1].contains(' -jar /opt/mta/mta.jar --mtar ')
 
         assert mtarFilePath == "${currentDir}/${newDirName}/com.mycompany.northwind.mtar"
@@ -132,8 +137,6 @@ public class MTABuildTest extends BasePipelineTest {
 
         assert jscr.shell[0] =~ /sed -ie "s\/\\\$\{timestamp\}\/`date \+%Y%m%d%H%M%S`\/g" ".*\/mta.yaml"$/
 
-        assert jscr.shell[1].contains("PATH=./node_modules/.bin:/usr/bin")
-
         assert jscr.shell[1].contains(' -jar mta.jar --mtar ')
 
         assert jlr.log.contains( "[mtaBuild] Using MTA JAR from current working directory." )
@@ -148,8 +151,6 @@ public class MTABuildTest extends BasePipelineTest {
         mtaBuildScript.call(mtaJarLocation: '/mylocation/mta', buildTarget: 'NEO')
 
         assert jscr.shell[0] =~ /sed -ie "s\/\\\$\{timestamp\}\/`date \+%Y%m%d%H%M%S`\/g" ".*\/mta.yaml"$/
-
-        assert jscr.shell[1].contains("PATH=./node_modules/.bin:/usr/bin")
 
         assert jscr.shell[1].contains(' -jar /mylocation/mta/mta.jar --mtar ')
 
