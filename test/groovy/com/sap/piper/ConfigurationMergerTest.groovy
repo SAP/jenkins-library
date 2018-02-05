@@ -50,6 +50,7 @@ class ConfigurationMergerTest {
         Map merged = ConfigurationMerger.mergeDeepStructure(parameters, parameterKeys, configuration, configurationKeys, defaults)
         Assert.assertEquals(50, merged.fruits.bananaaas)
         Assert.assertEquals(18, merged.fruits.apples)
+        Assert.assertEquals(10, merged.fruits.oranges)
         Assert.assertEquals(null, merged.fruits.cucumbers)
     }
 }
