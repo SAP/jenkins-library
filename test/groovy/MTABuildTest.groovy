@@ -60,8 +60,7 @@ public class MTABuildTest extends BasePipelineTest {
 
         new File("${currentDir}/mta.yaml") << defaultMtaYaml()
 
-        def mtarFilePath = mtaBuildScript.call(script: [commonPipelineEnvironment: cpe],
-                                         buildTarget: 'NEO')
+        def mtarFilePath = mtaBuildScript.call(buildTarget: 'NEO')
 
         assert jscr.shell[0] =~ /sed -ie "s\/\\\$\{timestamp\}\/`date \+%Y%m%d%H%M%S`\/g" ".*\/mta.yaml"$/
 
@@ -113,7 +112,7 @@ public class MTABuildTest extends BasePipelineTest {
 
         helper.registerAllowedMethod('pwd', [], { newDirPath } )
 
-        def mtarFilePath = mtaBuildScript.call(script: [commonPipelineEnvironment: cpe], buildTarget: 'NEO')
+        def mtarFilePath = mtaBuildScript.call(buildTarget: 'NEO')
 
         assert jscr.shell[0] =~ /sed -ie "s\/\\\$\{timestamp\}\/`date \+%Y%m%d%H%M%S`\/g" ".*\/newDir\/mta.yaml"$/
 
@@ -131,7 +130,7 @@ public class MTABuildTest extends BasePipelineTest {
 
         new File("${currentDir}/mta.yaml") << defaultMtaYaml()
 
-        def mtarFilePath = mtaBuildScript.call(script: [commonPipelineEnvironment: cpe], buildTarget: 'NEO')
+        def mtarFilePath = mtaBuildScript.call(buildTarget: 'NEO')
 
         assert jscr.shell[0] =~ /sed -ie "s\/\\\$\{timestamp\}\/`date \+%Y%m%d%H%M%S`\/g" ".*\/mta.yaml"$/
 
@@ -168,8 +167,7 @@ public class MTABuildTest extends BasePipelineTest {
     public void noMtaPresentTest(){
         thrown.expect(FileNotFoundException)
 
-        mtaBuildScript.call(script: [commonPipelineEnvironment: cpe],
-                      buildTarget: 'NEO')
+        mtaBuildScript.call(buildTarget: 'NEO')
     }
 
 
@@ -180,8 +178,7 @@ public class MTABuildTest extends BasePipelineTest {
 
         new File("${currentDir}/mta.yaml") << badMtaYaml()
 
-        mtaBuildScript.call(script: [commonPipelineEnvironment: cpe],
-                      buildTarget: 'NEO')
+        mtaBuildScript.call(buildTarget: 'NEO')
     }
 
 
@@ -192,8 +189,7 @@ public class MTABuildTest extends BasePipelineTest {
 
         new File("${currentDir}/mta.yaml") << noIdMtaYaml()
 
-        mtaBuildScript.call(script: [commonPipelineEnvironment: cpe],
-                      buildTarget: 'NEO')
+        mtaBuildScript.call(buildTarget: 'NEO')
     }
 
 
@@ -204,7 +200,7 @@ public class MTABuildTest extends BasePipelineTest {
 
         new File("${currentDir}/mta.yaml") << defaultMtaYaml()
 
-        mtaBuildScript.call(script: [commonPipelineEnvironment: cpe])
+        mtaBuildScript.call()
     }
 
     private defaultMtaYaml(){
