@@ -185,13 +185,15 @@ def isMap(object){
 }
 
 @NonCPS
-def toMap(parameter, activeByDefault = false){
+def toMap(parameter){
     if(isMap(parameter))
         parameter.put('active', true)
-    else if(activeByDefault && !Boolean.FALSE.equals(parameter) || Boolean.TRUE.equals(parameter))
+    else if(Boolean.TRUE.equals(parameter))
         parameter = [active: true]
-    else
+    else if(Boolean.FALSE.equals(parameter))
         parameter = [active: false]
+    else
+        parameter = [:]
     return parameter
 }
 
@@ -228,7 +230,7 @@ def createCommonOptionsMap(publisherName, settings){
 @NonCPS
 def prepare(parameters){
     // ensure tool maps are initialized
-    parameters.aggregation = toMap(parameters.aggregation, true)
+    parameters.aggregation = toMap(parameters.aggregation)
     parameters.tasks = toMap(parameters.tasks)
     parameters.pmd = toMap(parameters.pmd)
     parameters.cpd = toMap(parameters.cpd)
