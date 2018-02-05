@@ -39,7 +39,7 @@ public class MTABuildTest extends BasePipelineTest {
     void init() {
 
         currentDir = tmp.newFolder().toURI().getPath()[0..-2] //omit final '/'
-        mtaYaml = new File("${currentDir}/mta.yaml")
+        mtaYaml = new File("$currentDir/mta.yaml")
         mtaYaml << defaultMtaYaml()
 
         helper.registerAllowedMethod('readYaml', [Map], {
@@ -81,7 +81,7 @@ public class MTABuildTest extends BasePipelineTest {
 
         def mtarFilePath = cpe.getMtarFilePath()
 
-        assert mtarFilePath == "${currentDir}/com.mycompany.northwind.mtar"
+        assert mtarFilePath == "$currentDir/com.mycompany.northwind.mtar"
     }
 
 
@@ -89,7 +89,7 @@ public class MTABuildTest extends BasePipelineTest {
     public void mtaBuildWithSurroundingDirTest() {
 
         def newDirName = 'newDir'
-        def newDirPath = "${currentDir}/${newDirName}"
+        def newDirPath = "$currentDir/$newDirName"
         def newDir = new File(newDirPath)
 
         newDir.mkdirs()
@@ -101,7 +101,7 @@ public class MTABuildTest extends BasePipelineTest {
 
         assert jscr.shell[0] =~ /sed -ie "s\/\\\$\{timestamp\}\/`date \+%Y%m%d%H%M%S`\/g" ".*\/newDir\/mta.yaml"$/
 
-        assert mtarFilePath == "${currentDir}/${newDirName}/com.mycompany.northwind.mtar"
+        assert mtarFilePath == "$currentDir/$newDirName/com.mycompany.northwind.mtar"
     }
 
 
