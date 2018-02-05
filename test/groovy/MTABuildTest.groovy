@@ -47,7 +47,7 @@ public class MTABuildTest extends BasePipelineTest {
 
         binding.setVariable('PATH', '/usr/bin')
 
-        mtaBuildScript = loadScript("mtaBuild.groovy").mtaBuild
+        mtaBuildScript = loadScript('mtaBuild.groovy').mtaBuild
         cpe = loadScript('commonPipelineEnvironment.groovy').commonPipelineEnvironment
     }
 
@@ -59,7 +59,7 @@ public class MTABuildTest extends BasePipelineTest {
 
         mtaBuildScript.call(buildTarget: 'NEO')
 
-        assert jscr.shell[1].contains("PATH=./node_modules/.bin:/usr/bin")
+        assert jscr.shell[1].contains('PATH=./node_modules/.bin:/usr/bin')
     }
 
 
@@ -120,7 +120,7 @@ public class MTABuildTest extends BasePipelineTest {
 
         assert jscr.shell[1].contains(' -jar mta.jar --mtar ')
 
-        assert jlr.log.contains( "[mtaBuild] Using MTA JAR from current working directory." )
+        assert jlr.log.contains('[mtaBuild] Using MTA JAR from current working directory.')
     }
 
 
@@ -135,7 +135,7 @@ public class MTABuildTest extends BasePipelineTest {
 
         assert jscr.shell[1].contains(' -jar /mylocation/mta/mta.jar --mtar ')
 
-        assert jlr.log.contains("[mtaBuild] MTA JAR \"/mylocation/mta/mta.jar\" retrieved from parameters.".toString())
+        assert jlr.log.contains('[mtaBuild] MTA JAR "/mylocation/mta/mta.jar" retrieved from parameters.')
     }
 
 
@@ -172,7 +172,7 @@ public class MTABuildTest extends BasePipelineTest {
     @Test
     public void noBuildTargetTest(){
         thrown.expect(Exception)
-        thrown.expectMessage("ERROR - NO VALUE AVAILABLE FOR buildTarget")
+        thrown.expectMessage('ERROR - NO VALUE AVAILABLE FOR buildTarget')
 
         new File("${currentDir}/mta.yaml") << defaultMtaYaml()
 
