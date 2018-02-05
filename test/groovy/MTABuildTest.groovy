@@ -60,15 +60,13 @@ public class MTABuildTest extends BasePipelineTest {
 
         new File("${currentDir}/mta.yaml") << defaultMtaYaml()
 
-        def mtarFilePath = mtaBuildScript.call(buildTarget: 'NEO')
+        mtaBuildScript.call(buildTarget: 'NEO')
 
         assert jscr.shell[0] =~ /sed -ie "s\/\\\$\{timestamp\}\/`date \+%Y%m%d%H%M%S`\/g" ".*\/mta.yaml"$/
 
         assert jscr.shell[1].contains("PATH=./node_modules/.bin:/usr/bin")
 
         assert jscr.shell[1].contains(' -jar /opt/mta/mta.jar --mtar ')
-
-        assert mtarFilePath == "${currentDir}/com.mycompany.northwind.mtar"
 
         assert jlr.log.contains( "[mtaBuild] MTA JAR \"/opt/mta/mta.jar\" retrieved from environment.")
     }
@@ -130,15 +128,13 @@ public class MTABuildTest extends BasePipelineTest {
 
         new File("${currentDir}/mta.yaml") << defaultMtaYaml()
 
-        def mtarFilePath = mtaBuildScript.call(buildTarget: 'NEO')
+        mtaBuildScript.call(buildTarget: 'NEO')
 
         assert jscr.shell[0] =~ /sed -ie "s\/\\\$\{timestamp\}\/`date \+%Y%m%d%H%M%S`\/g" ".*\/mta.yaml"$/
 
         assert jscr.shell[1].contains("PATH=./node_modules/.bin:/usr/bin")
 
         assert jscr.shell[1].contains(' -jar mta.jar --mtar ')
-
-        assert mtarFilePath == "${currentDir}/com.mycompany.northwind.mtar"
 
         assert jlr.log.contains( "[mtaBuild] Using MTA JAR from current working directory." )
     }
@@ -149,15 +145,13 @@ public class MTABuildTest extends BasePipelineTest {
 
         new File("${currentDir}/mta.yaml") << defaultMtaYaml()
 
-        def mtarFilePath = mtaBuildScript.call(mtaJarLocation: '/mylocation/mta', buildTarget: 'NEO')
+        mtaBuildScript.call(mtaJarLocation: '/mylocation/mta', buildTarget: 'NEO')
 
         assert jscr.shell[0] =~ /sed -ie "s\/\\\$\{timestamp\}\/`date \+%Y%m%d%H%M%S`\/g" ".*\/mta.yaml"$/
 
         assert jscr.shell[1].contains("PATH=./node_modules/.bin:/usr/bin")
 
         assert jscr.shell[1].contains(' -jar /mylocation/mta/mta.jar --mtar ')
-
-        assert mtarFilePath == "${currentDir}/com.mycompany.northwind.mtar"
 
         assert jlr.log.contains("[mtaBuild] MTA JAR \"/mylocation/mta/mta.jar\" retrieved from parameters.".toString())
     }
