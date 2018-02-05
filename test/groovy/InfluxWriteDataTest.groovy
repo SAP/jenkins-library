@@ -6,7 +6,7 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.RuleChain
 import util.JenkinsLoggingRule
-import util.JenkinsSetupRule
+import util.Rules
 
 import static org.junit.Assert.assertTrue
 import static org.junit.Assert.assertEquals
@@ -21,13 +21,11 @@ class InfluxWriteDataTest extends BasePipelineTest {
 
     def cpe
 
-    public JenkinsSetupRule setupRule = new JenkinsSetupRule(this)
     public JenkinsLoggingRule loggingRule = new JenkinsLoggingRule(this)
 
     @Rule
-    public RuleChain ruleChain =
-        RuleChain.outerRule(setupRule)
-            .around(loggingRule)
+    public RuleChain ruleChain = Rules.getCommonRules(this)
+                                      .around(loggingRule)
 
     @Before
     void init() throws Exception {
