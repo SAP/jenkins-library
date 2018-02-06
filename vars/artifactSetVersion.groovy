@@ -100,9 +100,9 @@ def call(Map parameters = [:]) {
 
         sshagent([configuration.gitCredentialsId]) {
             def gitUserMailConfig = ''
-            if (configuration.gitUserName  && configuration.gitUserEMail) {
+            if (configuration.gitUserName  && configuration.gitUserEMail)
                 gitUserMailConfig = "-c user.email=\"${configuration.gitUserEMail}\" -c user.name \"${configuration.gitUserName}\""
-            }
+
             try {
                 sh "git ${gitUserMailConfig} commit -m 'update version ${newVersion}'"
             } catch (e) {
