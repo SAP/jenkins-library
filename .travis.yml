@@ -4,7 +4,7 @@ install:
 - pip install --user mkdocs mkdocs-material
 script:
 - mvn test -B
-- if [[ "${TRAVIS_PULL_REQUEST}" != "false" ]]; then cd documentation && mkdocs build --clean --verbose --strict; fi;
+- if [[ "${TRAVIS_PULL_REQUEST}" != "false" ]]; then cd documentation && mkdocs build --clean --verbose --strict && cd ..; fi;
 cache:
   directories:
   - $HOME/.m2
