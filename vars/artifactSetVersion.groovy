@@ -17,7 +17,8 @@ def call(Map parameters = [:]) {
             gitUtils = new GitUtils()
         }
 
-        //ToDo: exit if pending git changes are in the current repo? TBD!
+        if (sh(returnStatus: true, script: 'git diff --quiet --cached') != 0)
+            error "[${stepName}] Files in the workspace have been changed previously - aborting ${stepName}"
 
         def script = parameters.script
         if (script == null)

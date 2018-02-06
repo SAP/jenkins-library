@@ -47,6 +47,7 @@ class ArtifactSetVersionTest extends BasePipelineTest {
 
         jscr.setReturnValue('git rev-parse HEAD', 'testCommitId')
         jscr.setReturnValue("date +'%Y%m%d%H%M%S'", '20180101010203')
+        jscr.setReturnValue('git diff --quiet --cached', value: 0)
 
         cpe = loadScript('commonPipelineEnvironment.groovy').commonPipelineEnvironment
         artifactSetVersionScript = loadScript("artifactSetVersion.groovy")
@@ -62,19 +63,19 @@ class ArtifactSetVersionTest extends BasePipelineTest {
         assertEquals('1.2.3-20180101010203_testCommitId', cpe.getArtifactVersion())
         assertEquals('testCommitId', cpe.getGitCommitId())
 
-        assertEquals('mvn versions:set -DnewVersion=1.2.3-20180101010203_testCommitId --file pom.xml', jscr.shell[2])
-        assertEquals('git add .', jscr.shell[3])
-        assertEquals ("git commit -m 'update version 1.2.3-20180101010203_testCommitId'", jscr.shell[4])
-        assertEquals ("git remote set-url origin myGitSshUrl", jscr.shell[5])
-        assertEquals ("git tag build_1.2.3-20180101010203_testCommitId", jscr.shell[6])
-        assertEquals ("git push origin build_1.2.3-20180101010203_testCommitId", jscr.shell[7])
+        assertEquals('mvn versions:set -DnewVersion=1.2.3-20180101010203_testCommitId --file pom.xml', jscr.shell[3])
+        assertEquals('git add .', jscr.shell[4])
+        assertEquals ("git commit -m 'update version 1.2.3-20180101010203_testCommitId'", jscr.shell[5])
+        assertEquals ("git remote set-url origin myGitSshUrl", jscr.shell[6])
+        assertEquals ("git tag build_1.2.3-20180101010203_testCommitId", jscr.shell[7])
+        assertEquals ("git push origin build_1.2.3-20180101010203_testCommitId", jscr.shell[8])
     }
 
     @Test
     void testVersioningCustomGitUserAndEMail() {
         artifactSetVersionScript.call(script: [commonPipelineEnvironment: cpe], juStabGitUtils: gitUtils, buildTool: 'maven', gitSshUrl: 'myGitSshUrl', gitUserEMail: 'test@test.com', gitUserName: 'test')
 
-        assertEquals ('git -c user.email="test@test.com" -c user.name "test" commit -m \'update version 1.2.3-20180101010203_testCommitId\'', jscr.shell[4])
+        assertEquals ('git -c user.email="test@test.com" -c user.name "test" commit -m \'update version 1.2.3-20180101010203_testCommitId\'', jscr.shell[5])
     }
 
     @Test
