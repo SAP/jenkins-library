@@ -56,7 +56,7 @@ public class MTABuildTest extends BasePipelineTest {
 
 
     @Test
-    public void environmentPathTest() {
+    void environmentPathTest() {
 
         mtaBuildScript.call(buildTarget: 'NEO')
 
@@ -65,7 +65,7 @@ public class MTABuildTest extends BasePipelineTest {
 
 
     @Test
-    public void sedTest() {
+    void sedTest() {
 
         mtaBuildScript.call(buildTarget: 'NEO')
 
@@ -74,7 +74,7 @@ public class MTABuildTest extends BasePipelineTest {
 
 
     @Test
-    public void mtarFilePathFromCommonPipelineEnviromentTest() {
+    void mtarFilePathFromCommonPipelineEnviromentTest() {
 
         mtaBuildScript.call(script: [commonPipelineEnvironment: cpe],
                       buildTarget: 'NEO')
@@ -86,7 +86,7 @@ public class MTABuildTest extends BasePipelineTest {
 
 
     @Test
-    public void mtaBuildWithSurroundingDirTest() {
+    void mtaBuildWithSurroundingDirTest() {
 
         def newDirName = 'newDir'
         def newDirPath = "$currentDir/$newDirName"
@@ -128,7 +128,7 @@ public class MTABuildTest extends BasePipelineTest {
 
 
     @Test
-    public void noMtaPresentTest() {
+    void noMtaPresentTest() {
 
         mtaYaml.delete()
         thrown.expect(FileNotFoundException)
@@ -138,7 +138,7 @@ public class MTABuildTest extends BasePipelineTest {
 
 
     @Test
-    public void badMtaTest() {
+    void badMtaTest() {
 
         thrown.expect(ParserException)
         thrown.expectMessage('while parsing a block mapping')
@@ -150,7 +150,7 @@ public class MTABuildTest extends BasePipelineTest {
 
 
     @Test
-    public void noIdInMtaTest() {
+    void noIdInMtaTest() {
 
         thrown.expect(AbortException)
         thrown.expectMessage("Property 'ID' not found in mta.yaml file at: '")
@@ -162,7 +162,7 @@ public class MTABuildTest extends BasePipelineTest {
 
 
     @Test
-    public void noBuildTargetTest() {
+    void noBuildTargetTest() {
 
         thrown.expect(Exception)
         thrown.expectMessage('ERROR - NO VALUE AVAILABLE FOR buildTarget')
