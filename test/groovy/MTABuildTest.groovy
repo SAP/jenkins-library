@@ -57,7 +57,6 @@ public class MTABuildTest extends BasePipelineTest {
                     mtaBuildShEnv = l
                     c()
                 })
-        helper.registerAllowedMethod('error', [String], { s -> throw new hudson.AbortException(s) })
 
         binding.setVariable('PATH', '/usr/bin')
         binding.setVariable('JAVA_HOME', '/opt/java')
