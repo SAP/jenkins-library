@@ -5,6 +5,13 @@ This step can publish static check results from various sources.
 
 ## Prerequisites
 * **static check result files** - To use this step, there must be static check result files available.
+* installed plugins:
+  * [pmd](https://plugins.jenkins.io/pmd)
+  * [dry](https://plugins.jenkins.io/dry)
+  * [findbugs](https://plugins.jenkins.io/findbugs)
+  * [checkstyle](https://plugins.jenkins.io/checkstyle)
+  * [warnings](https://plugins.jenkins.io/warnings)
+  * [core](https://plugins.jenkins.io/core)
 
 ## Parameters
 | parameter      | mandatory | default                           | possible values    |
