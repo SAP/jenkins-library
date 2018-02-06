@@ -16,7 +16,7 @@ class ChecksPublishResultsTest extends BasePipelineTest {
     List archiveStepPatterns
 
     @Rule
-    public RuleChain ruleChain = RuleChain.outerRule(Rules.getCommonRules(this))
+    public RuleChain ruleChain = Rules.getCommonRules(this)
 
     def stepUnderTest
 
