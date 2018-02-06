@@ -7,11 +7,7 @@ import com.sap.piper.MapUtils
 class ConfigurationMerger {
     @NonCPS
     def static merge(Map configs, List configKeys, Map defaults=[:]) {
-        Map merged = [:]
-        merged.putAll(defaults)
-        merged.putAll(filterByKeyAndNull(configs, configKeys))
-
-        return merged
+        return merge(configs, MapUtils.fromList(configKeys), defaults)
     }
 
     @NonCPS
@@ -31,11 +27,15 @@ class ConfigurationMerger {
     }
 
     @NonCPS
-    def static merge(Map parameters, List parameterKeys, Map configurationMap, List configurationKeys, Map defaults=[:]){
-        Map merged = merge(configurationMap, configurationKeys, defaults)
-        merged.putAll(filterByKeyAndNull(parameters, parameterKeys))
-
-        return merged
+    def static merge(
+        Map parameters, List parameterKeys,
+        Map configuration, List configurationKeys,
+        Map defaults=[:]
+    ){
+        return merge(
+            parameters, MapUtils.fromList(parameterKeys),
+            configuration, MapUtils.fromList(configurationKeys),
+            defaults)
     }
 
     @NonCPS
