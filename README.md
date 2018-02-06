@@ -1,4 +1,5 @@
 [![Build Status](https://travis-ci.org/SAP/jenkins-library.svg?branch=master)](https://travis-ci.org/SAP/jenkins-library)
+[![Coverage Status](https://coveralls.io/repos/github/SAP/jenkins-library/badge.svg?branch=jacocoCodeCoverage)](https://coveralls.io/github/SAP/jenkins-library?branch=jacocoCodeCoverage)
 
 # Description
 
@@ -47,7 +48,7 @@ provided pipeline library.
 
 # Requirements
 
- * Java Runtime Environment 8 
+ * Java Runtime Environment 8
  * Installation of Jenkins v 2.60.3 or higher running on Linux. We tested with
    debian-stretch.
  * Jenkins Plugins installed as described in the [Required
