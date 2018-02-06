@@ -105,7 +105,7 @@ def call(Map parameters = [:]) {
             try {
                 sh "git ${gitUserMailConfig} commit -m 'update version ${newVersion}'"
             } catch (e) {
-                Error "[${stepName}]git commit failed: ${e}"
+                error "[${stepName}]git commit failed: ${e}"
             }
             sh "git remote set-url origin ${configuration.gitSshUrl}"
             sh "git tag ${configuration.tagPrefix}${newVersion}"
