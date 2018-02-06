@@ -39,7 +39,7 @@ class JenkinsShellCallRule implements TestRule {
                 testInstance.helper.registerAllowedMethod("sh", [Map.class], {
                     m ->
                         shell.add(m.script.replaceAll(/\s+/," ").trim())
-                        if (m.returnStdout)
+                        if (m.returnStdout || m.returnStatus)
                             return returnValues[m.script]
                 })
 
