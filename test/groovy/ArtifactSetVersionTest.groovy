@@ -47,7 +47,7 @@ class ArtifactSetVersionTest extends BasePipelineTest {
 
         jscr.setReturnValue('git rev-parse HEAD', 'testCommitId')
         jscr.setReturnValue("date +'%Y%m%d%H%M%S'", '20180101010203')
-        jscr.setReturnValue('git diff --quiet --cached', value: 0)
+        jscr.setReturnValue('git diff --quiet HEAD', value: 0)
 
         cpe = loadScript('commonPipelineEnvironment.groovy').commonPipelineEnvironment
         artifactSetVersionScript = loadScript("artifactSetVersion.groovy")

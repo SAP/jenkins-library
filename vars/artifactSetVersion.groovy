@@ -17,7 +17,7 @@ def call(Map parameters = [:]) {
             gitUtils = new GitUtils()
         }
 
-        if (sh(returnStatus: true, script: 'git diff --quiet --cached') != 0)
+        if (sh(returnStatus: true, script: 'git diff --quiet HEAD') != 0)
             error "[${stepName}] Files in the workspace have been changed previously - aborting ${stepName}"
 
         def script = parameters.script
