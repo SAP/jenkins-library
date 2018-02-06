@@ -17,8 +17,8 @@ class ConfigurationMerger {
 
         if(configs != null && configKeys){
             configs = configs.subMap(configKeys.keySet())
-            for(String key : defaults.keySet())
-                if(MapUtils.isMap(defaults[key]))
+            for(String key : configKeys.keySet())
+                if(MapUtils.isMap(configKeys[key]))
                     merged[key] = merge(configs[key], configKeys[key], defaults[key])
                 else if(configs[key] != null)
                     merged[key] = configs[key]
