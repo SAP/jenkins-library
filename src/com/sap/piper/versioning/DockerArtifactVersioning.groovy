@@ -22,11 +22,11 @@ class DockerArtifactVersioning extends ArtifactVersioning {
         }
     }
 
-    def getVersionFromDockerEnvVariable(filePath, name) {
+    def getVersionFromDockerEnvVariable(filePath, envVarName) {
         def lines = script.readFile(filePath).split('\n')
         def version = ''
         for (def i = 0; i < lines.size(); i++) {
-            if (lines[i].startsWith('ENV') && lines[i].split(' ')[1] == name) {
+            if (lines[i].startsWith('ENV') && lines[i].split(' ')[1] == envVarName) {
                 version = lines[i].split(' ')[2]
                 break
             }

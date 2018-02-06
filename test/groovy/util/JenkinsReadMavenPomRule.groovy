@@ -10,8 +10,6 @@ class JenkinsReadMavenPomRule implements TestRule {
     final BasePipelineTest testInstance
     final String testRoot
 
-    List shell = []
-
     JenkinsReadMavenPomRule(BasePipelineTest testInstance, String testRoot) {
         this.testInstance = testInstance
         this.testRoot = testRoot
@@ -39,10 +37,9 @@ class JenkinsReadMavenPomRule implements TestRule {
     }
 
     class MockPom {
-        def f
         def pom
         MockPom(String path){
-            this.f = new File( path )
+            def f = new File( path )
             if ( f.exists() ){
                 this.pom = new XmlSlurper().parse(f)
             }

@@ -63,7 +63,6 @@ def call(Map parameters = [:]) {
 
         Map configuration = ConfigurationMerger.mergeWithPipelineData(parameters, parameterKeys, pipelineDataMap, stepConfiguration, stepConfigurationKeys, stepDefaults)
 
-        //buildTool is mandatory parameter
         def utils = new Utils()
         def buildTool = utils.getMandatoryParameter(configuration, 'buildTool')
 
@@ -99,14 +98,14 @@ def call(Map parameters = [:]) {
         def gitCommitId
 
         sshagent([configuration.gitCredentialsId]) {
+            def gitUserMailConfig = ''
             if (configuration.gitUserName  && configuration.gitUserEMail) {
-                sh "git config user.name \"${configuration.gitUserName}\""
-                sh "git config user.email \"${configuration.gitUserEMail}\""
+                gitUserMailConfig = "-c user.email=\"${configuration.gitUserEMail}\" -c user.name \"${configuration.gitUserName}\""
             }
             try {
-                sh "git commit -m 'update version ${newVersion}'"
+                sh "git ${gitUserMailConfig} commit -m 'update version ${newVersion}'"
             } catch (e) {
-                echo "[${stepName}]git commit failed: ${e}"
+                Error "[${stepName}]git commit failed: ${e}"
             }
             sh "git remote set-url origin ${configuration.gitSshUrl}"
             sh "git tag ${configuration.tagPrefix}${newVersion}"
