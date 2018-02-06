@@ -31,7 +31,7 @@ class DockerArtifactVersioning extends ArtifactVersioning {
                 break
             }
         }
-        echo("Version from Docker environment variable ${name}: ${version}")
+        echo("Version from Docker environment variable ${envVarName}: ${version}")
         return version.trim()
     }
 
