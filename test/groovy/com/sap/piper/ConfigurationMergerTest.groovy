@@ -52,7 +52,6 @@ class ConfigurationMergerTest {
         Assert.assertEquals(18, merged.fruits.apples)
         Assert.assertEquals(10, merged.fruits.oranges)
         Assert.assertEquals(1000, merged.fruits.cucumbers)
-        //Assert.assertEquals(null, merged.fruits.cucumbers)
         Assert.assertEquals(null, merged.veggie)
     }
 }
