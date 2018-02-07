@@ -4,6 +4,15 @@ general:
 
 #Steps Specific Configuration
 steps:
+  artifactSetVersion:
+    timestampTemplate: '%Y%m%d%H%M%S'
+    tagPrefix: 'build_'
+    maven:
+      filePath: 'pom.xml'
+      versioningTemplate: '${version}-${timestamp}${commitId?"_"+commitId:""}'
+    docker:
+      filePath: 'Dockerfile'
+      versioningTemplate: '${version}-${timestamp}${commitId?"_"+commitId:""}'
   mavenExecute:
     dockerImage: 'maven:3.5-jdk-7'
   influxWriteData:
