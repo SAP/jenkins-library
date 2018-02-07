@@ -6,23 +6,18 @@ import com.sap.piper.MapUtils
 
 class ConfigurationMerger {
     @NonCPS
-    def static merge(Map configs, List configKeys, Map defaults=[:]) {
-        return merge(configs, MapUtils.fromList(configKeys), defaults)
-    }
-
-    @NonCPS
-    def static merge(Map configs, Map configKeys, Map defaults = [:]) {
+    def static merge(Map configs, List configKeys, Map defaults) {
+        Map filteredConfig = configKeys?configs.subMap(configKeys):configs
         Map merged = [:]
+
         merged.putAll(defaults)
 
-        if(configs != null && configKeys){
-            configs = configs.subMap(configKeys.keySet())
-            for(String key : configKeys.keySet())
-                if(MapUtils.isMap(configKeys[key]))
-                    merged[key] = merge(configs[key], configKeys[key], defaults[key])
-                else if(configs[key] != null)
-                    merged[key] = configs[key]
-        }
+        for(String key : filteredConfig.keySet())
+            if(MapUtils.isMap(filteredConfig[key]))
+                merged[key] = merge(filteredConfig[key], null, defaults[key])
+            else if(filteredConfig[key] != null)
+                merged[key] = filteredConfig[key]
+            // else: keep defaults value and omit null values from config
         return merged
     }
 
@@ -30,18 +25,6 @@ class ConfigurationMerger {
     def static merge(
         Map parameters, List parameterKeys,
         Map configuration, List configurationKeys,
-        Map defaults=[:]
-    ){
-        return merge(
-            parameters, MapUtils.fromList(parameterKeys),
-            configuration, MapUtils.fromList(configurationKeys),
-            defaults)
-    }
-
-    @NonCPS
-    def static merge(
-        Map parameters, Map parameterKeys,
-        Map configuration, Map configurationKeys,
         Map defaults=[:]
     ){
         Map merged
@@ -56,28 +39,11 @@ class ConfigurationMerger {
                             Map configurationMap, List configurationKeys,
                             Map stepDefaults=[:]
     ){
-        Map merged = [:]
-        merged.putAll(stepDefaults)
-        merged.putAll(filterByKeyAndNull(configurationMap, configurationKeys))
-        merged.putAll(pipelineDataMap)
-        merged.putAll(filterByKeyAndNull(parameters, parameterKeys))
+        Map merged
+        merged = merge(configurationMap, configurationKeys, stepDefaults)
+        merged = merge(pipelineDataMap, null, merged)
+        merged = merge(parameters, parameterKeys, merged)
 
         return merged
-    }
-
-    @NonCPS
-    private static filterByKeyAndNull(Map map, List keys) {
-        Map filteredMap = map.findAll {
-            if(it.value == null){
-                return false
-            }
-            return true
-        }
-
-        if(keys == null) {
-            return filteredMap
-        }
-
-        return filteredMap.subMap(keys)
     }
 }
