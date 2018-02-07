@@ -32,7 +32,7 @@ steps:
           all: ''
           low: ''
           normal: ''
-          high: ''
+          high: '0'
         unstable:
           all: ''
           low: ''
@@ -52,7 +52,7 @@ steps:
           all: ''
           low: ''
           normal: ''
-          high: ''
+          high: '0'
         unstable:
           all: ''
           low: ''
@@ -69,7 +69,7 @@ steps:
           all: ''
           low: ''
           normal: ''
-          high: ''
+          high: '0'
         unstable:
           all: ''
           low: ''
@@ -86,7 +86,7 @@ steps:
           all: ''
           low: ''
           normal: ''
-          high: ''
+          high: '0'
         unstable:
           all: ''
           low: ''
@@ -103,7 +103,7 @@ steps:
           all: ''
           low: ''
           normal: ''
-          high: ''
+          high: '0'
         unstable:
           all: ''
           low: ''
@@ -120,7 +120,7 @@ steps:
           all: ''
           low: ''
           normal: ''
-          high: ''
+          high: '0'
         unstable:
           all: ''
           low: ''
@@ -137,7 +137,7 @@ steps:
           all: ''
           low: ''
           normal: ''
-          high: ''
+          high: '0'
         unstable:
           all: ''
           low: ''
@@ -154,7 +154,7 @@ steps:
           all: ''
           low: ''
           normal: ''
-          high: ''
+          high: '0'
         unstable:
           all: ''
           low: ''
