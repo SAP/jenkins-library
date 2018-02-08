@@ -43,11 +43,11 @@ def call(Map parameters = [:]) {
         reportWarnings('PyLint', configuration.get('pylint'), doArchive)
         // GENERAL
         reportTasks(configuration.get('tasks'))
-        aggregate(configuration.get('aggregation'))
+        aggregateReports(configuration.get('aggregation'))
     }
 }
 
-def aggregate(settings){
+def aggregateReports(settings){
     if (settings.active) {
         def options = createCommonOptionsMap('AnalysisPublisher', settings)
         // publish
