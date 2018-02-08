@@ -133,7 +133,10 @@ def createCommonOptionsMap(publisherName, settings){
     result.put('unstableTotalHigh', unstable.get('high'))
     result.put('unstableTotalNormal', unstable.get('normal'))
     result.put('unstableTotalLow', unstable.get('low'))
-
+    // filter empty values
+    result = result.findAll {
+        return it.value != null && it.value != ''
+    }
     return result
 }
 
