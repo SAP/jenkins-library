@@ -31,8 +31,6 @@ steps:
       active: false
     jacoco:
       pattern: '**/target/*.exec'
-      include: ''
-      exclude: ''
       allowEmptyResults: true
       archive: false
       active: false
