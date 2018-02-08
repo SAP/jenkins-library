@@ -184,8 +184,8 @@ class ToolValidateTest extends BasePipelineTest {
 
         toolValidateScript.call(tool: 'java', home: home)
 
-        assert jlr.log.contains('[INFO] Validating Java version 1.8.0 or compatible version.')
-        assert jlr.log.contains('[INFO] Java version 1.8.0 is installed.')
+        assert jlr.log.contains('[toolValidate] Validating Java version 1.8.0 or compatible version.')
+        assert jlr.log.contains('[toolValidate] Java version 1.8.0 is installed.')
     }
 
     @Test
@@ -195,8 +195,8 @@ class ToolValidateTest extends BasePipelineTest {
 
         toolValidateScript.call(tool: 'mta', home: home)
 
-        assert jlr.log.contains('[INFO] Validating SAP Multitarget Application Archive Builder version 1.0.6 or compatible version.')
-        assert jlr.log.contains('[INFO] SAP Multitarget Application Archive Builder version 1.0.6 is installed.')
+        assert jlr.log.contains('[toolValidate] Validating SAP Multitarget Application Archive Builder version 1.0.6 or compatible version.')
+        assert jlr.log.contains('[toolValidate] SAP Multitarget Application Archive Builder version 1.0.6 is installed.')
     }
 
     @Test
@@ -206,8 +206,8 @@ class ToolValidateTest extends BasePipelineTest {
 
         toolValidateScript.call(tool: 'neo', home: home)
 
-        assert jlr.log.contains('[INFO] Validating SAP Cloud Platform Console Client version 3.39.10 or compatible version.')
-        assert jlr.log.contains('[INFO] SAP Cloud Platform Console Client version 3.39.10 is installed.')
+        assert jlr.log.contains('[toolValidate] Validating SAP Cloud Platform Console Client version 3.39.10 or compatible version.')
+        assert jlr.log.contains('[toolValidate] SAP Cloud Platform Console Client version 3.39.10 is installed.')
     }
 
     @Test
@@ -217,8 +217,8 @@ class ToolValidateTest extends BasePipelineTest {
 
         toolValidateScript.call(tool: 'cm', home: home)
 
-        assert jlr.log.contains('[INFO] Validating Change Management Command Line Interface version 0.0.1 or compatible version.')
-        assert jlr.log.contains('[INFO] Change Management Command Line Interface version 0.0.1 is installed.')
+        assert jlr.log.contains('[toolValidate] Validating Change Management Command Line Interface version 0.0.1 or compatible version.')
+        assert jlr.log.contains('[toolValidate] Change Management Command Line Interface version 0.0.1 is installed.')
     }
 
     private getNoVersion(Map m) { 
