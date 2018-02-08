@@ -4,6 +4,7 @@ import com.cloudbees.groovy.cps.NonCPS
 
 import com.sap.piper.ConfigurationLoader
 import com.sap.piper.ConfigurationMerger
+import com.sap.piper.MapUtils
 
 import groovy.transform.Field
 
@@ -20,55 +21,16 @@ def call(Map parameters = [:]) {
         if (script == null)
             script = [commonPipelineEnvironment: commonPipelineEnvironment]
         prepareDefaultValues script: script
-        Map configurationKeys = [
-            'junit': [
-                'patter': null,
-                'updateResults': null,
-                'allowEmptyResults': null,
-                'archive': null,
-                'active': null
-            ],
-            'jacoco': [
-                'pattern': null,
-                'include': null,
-                'exclude': null,
-                'allowEmptyResults': null,
-                'archive': null,
-                'active': null
-            ],
-            'cobertura': [
-                'pattern': null,
-                'onlyStableBuilds': null,
-                'allowEmptyResults': null,
-                'archive': null,
-                'active': null
-            ],
-            'jmeter': [
-                'pattern': null,
-                'errorFailedThreshold': null,
-                'errorUnstableThreshold': null,
-                'errorUnstableResponseTimeThreshold': null,
-                'relativeFailedThresholdPositive': null,
-                'relativeFailedThresholdNegative': null,
-                'relativeUnstableThresholdPositive': null,
-                'relativeUnstableThresholdNegative': null,
-                'modeOfThreshold': null,
-                'modeThroughput': null,
-                'nthBuildNumber': null,
-                'configType': null,
-                'failBuildIfNoResultFile': null,
-                'compareBuildPrevious': null,
-                'allowEmptyResults': null,
-                'archive': null,
-                'active': null
-            ]
-        ]
+        prepare(parameters)
+
+        List configurationKeys = ['junit','jacoco','cobertura','jmeter']
         final Map stepDefaults = ConfigurationLoader.defaultStepConfiguration(script, STEP_NAME)
         final Map stepConfiguration = ConfigurationLoader.stepConfiguration(script, STEP_NAME)
-        prepare(parameters)
-        Map configuration = ConfigurationMerger.mergeDeepStructure(
+        Map configuration = ConfigurationMerger.merge(
             parameters, configurationKeys,
-            stepConfiguration, configurationKeys, stepDefaults)
+            stepConfiguration, configurationKeys,
+            stepDefaults)
+
         // UNIT TESTS
         publishJUnitReport(configuration.get('junit'))
         // CODE COVERAGE
@@ -87,13 +49,10 @@ def publishJUnitReport(Map settings = [:]) {
         if (settings.get('updateResults'))
             touchFiles(pattern)
         junit(
-        //step([
-        //    $class: 'JUnitResultArchiver',
             testResults: pattern,
             allowEmptyResults: allowEmpty,
             healthScaleFactor: 100.0,
         )
-        // archive results
         archiveResults(settings.get('archive'), pattern, allowEmpty)
     }
 }
@@ -104,13 +63,10 @@ def publishJacocoReport(Map settings = [:]) {
         def allowEmpty = settings.get('allowEmptyResults')
 
         jacoco(
-        //step([
-        //    $class: 'JacocoPublisher',
             execPattern: pattern,
-            inclusionPattern: settings.get('include'),
-            exclusionPattern: settings.get('exclude')
+            inclusionPattern: settings.get('include', ''),
+            exclusionPattern: settings.get('exclude', '')
         )
-        // archive results
         archiveResults(settings.get('archive'), pattern, allowEmpty)
     }
 }
@@ -121,8 +77,6 @@ def publishCoberturaReport(Map settings = [:]) {
         def allowEmpty = settings.get('allowEmptyResults')
 
         cobertura(
-        //step([
-        //    $class: 'CoberturaPublisher',
             coberturaReportFile: pattern,
             onlyStable: settings.get('onlyStableBuilds'),
             failNoReports: !allowEmpty,
@@ -132,7 +86,6 @@ def publishCoberturaReport(Map settings = [:]) {
             autoUpdateStability: false,
             maxNumberOfBuilds: 0
         )
-        // archive results
         archiveResults(settings.get('archive'), pattern, allowEmpty)
     }
 }
@@ -160,7 +113,6 @@ def publishJMeterReport(Map settings = [:]){
             compareBuildPrevious: settings.get('compareBuildPrevious'),
             parsers: asList(getJMeterParser().newInstance(pattern))
         ])
-        // archive results
         archiveResults(settings.get('archive'), pattern, settings.get('allowEmptyResults'))
     }
 }
@@ -192,26 +144,21 @@ def archiveResults(archive, pattern, allowEmpty) {
 
 @NonCPS
 def prepare(parameters){
-    // ensure tool maps are initialized
-    parameters.junit = toMap(parameters.junit)
-    parameters.jacoco = toMap(parameters.jacoco)
-    parameters.cobertura = toMap(parameters.cobertura)
-    parameters.jmeter = toMap(parameters.jmeter)
+    // ensure tool maps are initialized correctly
+    for(String tool : ['junit','jacoco','cobertura','jmeter']){
+        parameters[tool] = toMap(parameters[tool])
+    }
     return parameters
 }
 
 @NonCPS
-def toMap(settings){
-    if(isMap(settings))
-        settings.put('active', true)
-    else if(Boolean.TRUE.equals(settings))
-        settings = [active: true]
+def toMap(parameters){
+    if(MapUtils.isMap(parameters))
+        parameters.put('active', parameters.active == null?true:parameters.active)
+    else if(Boolean.TRUE.equals(parameters))
+        parameters = [active: true]
+    else if(Boolean.FALSE.equals(parameters))
+        parameters = [active: false]
     else
-        settings = [active: false]
-    return settings
-}
-
-@NonCPS
-def isMap(object){
-    return object in Map
+        parameters = [:]
 }
