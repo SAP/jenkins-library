@@ -25,19 +25,17 @@ class ToolValidateTest extends BasePipelineTest {
                                       .around(jlr)
 
 
-    private notEmptyDir
+    private home
 
     def toolValidateScript
 
     @Before
     void init() {
 
-        notEmptyDir = tmp.newFolder('notEmptyDir')
-        def path = "${notEmptyDir.getAbsolutePath()}${File.separator}test.txt"
-        File file = new File(path)
-        file.createNewFile()
+        home = "${tmp.getRoot()}"
+        tmp.newFile('mta.jar')
 
-        binding.setVariable('JAVA_HOME', notEmptyDir.getAbsolutePath())
+        binding.setVariable('JAVA_HOME', home)
 
         toolValidateScript =  loadScript("toolValidate.groovy").toolValidate
     }
@@ -85,7 +83,7 @@ class ToolValidateTest extends BasePipelineTest {
         thrown.expect(AbortException)
         thrown.expectMessage("The tool 'test' is not supported.")
 
-        toolValidateScript.call(tool: 'test', home: notEmptyDir.getAbsolutePath())
+        toolValidateScript.call(tool: 'test', home: home)
     }
 
     @Test
@@ -96,7 +94,7 @@ class ToolValidateTest extends BasePipelineTest {
 
         helper.registerAllowedMethod('sh', [Map], { Map m -> getNoVersion(m) })
 
-        toolValidateScript.call(tool: 'java', home: notEmptyDir.getAbsolutePath())
+        toolValidateScript.call(tool: 'java', home: home)
     }
 
     @Test
@@ -107,7 +105,7 @@ class ToolValidateTest extends BasePipelineTest {
 
         helper.registerAllowedMethod('sh', [Map], { Map m -> getNoVersion(m) })
 
-        toolValidateScript.call(tool: 'mta', home: notEmptyDir.getAbsolutePath())
+        toolValidateScript.call(tool: 'mta', home: home)
     }
 
     @Test
@@ -118,7 +116,7 @@ class ToolValidateTest extends BasePipelineTest {
 
         helper.registerAllowedMethod('sh', [Map], { Map m -> getNoVersion(m) })
 
-        toolValidateScript.call(tool: 'neo', home: notEmptyDir.getAbsolutePath())
+        toolValidateScript.call(tool: 'neo', home: home)
     }
 
     @Test
@@ -129,7 +127,7 @@ class ToolValidateTest extends BasePipelineTest {
 
         helper.registerAllowedMethod('sh', [Map], { Map m -> getNoVersion(m) })
 
-        toolValidateScript.call(tool: 'cm', home: notEmptyDir.getAbsolutePath())
+        toolValidateScript.call(tool: 'cm', home: home)
 
         script.execute()
     }
@@ -142,7 +140,7 @@ class ToolValidateTest extends BasePipelineTest {
 
         helper.registerAllowedMethod('sh', [Map], { Map m -> getIncompatibleVersion(m) })
 
-        toolValidateScript.call(tool: 'java', home: notEmptyDir.getAbsolutePath())
+        toolValidateScript.call(tool: 'java', home: home)
     }
 
     @Test
@@ -153,7 +151,7 @@ class ToolValidateTest extends BasePipelineTest {
 
         helper.registerAllowedMethod('sh', [Map], { Map m -> getIncompatibleVersion(m) })
 
-        toolValidateScript.call(tool: 'mta', home: notEmptyDir.getAbsolutePath())
+        toolValidateScript.call(tool: 'mta', home: home)
     }
 
     @Test
@@ -164,7 +162,7 @@ class ToolValidateTest extends BasePipelineTest {
 
         helper.registerAllowedMethod('sh', [Map], { Map m -> getIncompatibleVersion(m) })
 
-        toolValidateScript.call(tool: 'neo', home: notEmptyDir.getAbsolutePath())
+        toolValidateScript.call(tool: 'neo', home: home)
     }
 
     @Test
@@ -176,7 +174,7 @@ class ToolValidateTest extends BasePipelineTest {
         helper.registerAllowedMethod('sh', [Map], { Map m -> getIncompatibleVersion(m) })
         binding.setVariable('tool', 'cm')
 
-        toolValidateScript.call(tool: 'cm', home: notEmptyDir.getAbsolutePath())
+        toolValidateScript.call(tool: 'cm', home: home)
     }
 
     @Test
@@ -184,7 +182,7 @@ class ToolValidateTest extends BasePipelineTest {
 
         helper.registerAllowedMethod('sh', [Map], { Map m -> getVersion(m) })
 
-        toolValidateScript.call(tool: 'java', home: notEmptyDir.getAbsolutePath())
+        toolValidateScript.call(tool: 'java', home: home)
 
         assert jlr.log.contains('[INFO] Validating Java version 1.8.0 or compatible version.')
         assert jlr.log.contains('[INFO] Java version 1.8.0 is installed.')
@@ -195,7 +193,7 @@ class ToolValidateTest extends BasePipelineTest {
 
         helper.registerAllowedMethod('sh', [Map], { Map m -> getVersion(m) })
 
-        toolValidateScript.call(tool: 'mta', home: notEmptyDir.getAbsolutePath())
+        toolValidateScript.call(tool: 'mta', home: home)
 
         assert jlr.log.contains('[INFO] Validating SAP Multitarget Application Archive Builder version 1.0.6 or compatible version.')
         assert jlr.log.contains('[INFO] SAP Multitarget Application Archive Builder version 1.0.6 is installed.')
@@ -206,7 +204,7 @@ class ToolValidateTest extends BasePipelineTest {
 
         helper.registerAllowedMethod('sh', [Map], { Map m -> getVersion(m) })
 
-        toolValidateScript.call(tool: 'neo', home: notEmptyDir.getAbsolutePath())
+        toolValidateScript.call(tool: 'neo', home: home)
 
         assert jlr.log.contains('[INFO] Validating SAP Cloud Platform Console Client version 3.39.10 or compatible version.')
         assert jlr.log.contains('[INFO] SAP Cloud Platform Console Client version 3.39.10 is installed.')
@@ -217,7 +215,7 @@ class ToolValidateTest extends BasePipelineTest {
 
         helper.registerAllowedMethod('sh', [Map], { Map m -> getVersion(m) })
 
-        toolValidateScript.call(tool: 'cm', home: notEmptyDir.getAbsolutePath())
+        toolValidateScript.call(tool: 'cm', home: home)
 
         assert jlr.log.contains('[INFO] Validating Change Management Command Line Interface version 0.0.1 or compatible version.')
         assert jlr.log.contains('[INFO] Change Management Command Line Interface version 0.0.1 is installed.')
