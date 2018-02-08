@@ -47,7 +47,7 @@ def validateCm(home) {
 }
 
 private validateTool(name, home, command, expectedVersion) {
-    echo "[INFO] Validating $name version ${expectedVersion.toString()} or compatible version."
+    echo "[toolValidate] Validating $name version ${expectedVersion.toString()} or compatible version."
     def output
     try {
       output = sh returnStdout: true, script: command
@@ -58,6 +58,6 @@ private validateTool(name, home, command, expectedVersion) {
     if (!version.isCompatibleVersion(expectedVersion)) {
       throw new AbortException("The installed version of $name is ${version.toString()}. Please install version ${expectedVersion.toString()} or a compatible version.")
     }
-    echo "[INFO] $name version ${version.toString()} is installed."
+    echo "[toolValidate] $name version ${version.toString()} is installed."
 }
 
