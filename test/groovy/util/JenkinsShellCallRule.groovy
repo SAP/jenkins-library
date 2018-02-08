@@ -11,8 +11,14 @@ class JenkinsShellCallRule implements TestRule {
 
     List shell = []
 
+    def returnValues = [:]
+
     JenkinsShellCallRule(BasePipelineTest testInstance) {
         this.testInstance = testInstance
+    }
+
+    def setReturnValue(script, value) {
+        returnValues[script] = value
     }
 
     @Override
@@ -26,8 +32,15 @@ class JenkinsShellCallRule implements TestRule {
             void evaluate() throws Throwable {
 
                 testInstance.helper.registerAllowedMethod("sh", [String.class], {
-                    command -> 
+                    command ->
                         shell.add(command.replaceAll(/\s+/," ").trim())
+                })
+
+                testInstance.helper.registerAllowedMethod("sh", [Map.class], {
+                    m ->
+                        shell.add(m.script.replaceAll(/\s+/," ").trim())
+                        if (m.returnStdout || m.returnStatus)
+                            return returnValues[m.script]
                 })
 
                 base.evaluate()
