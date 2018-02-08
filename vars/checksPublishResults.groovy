@@ -94,19 +94,6 @@ def reportWarnings(parserName, settings, doArchive){
     }
 }
 
-@NonCPS
-def toMap(parameter){
-    if(MapUtils.isMap(parameter))
-        parameter.put('active', true)
-    else if(Boolean.TRUE.equals(parameter))
-        parameter = [active: true]
-    else if(Boolean.FALSE.equals(parameter))
-        parameter = [active: false]
-    else
-        parameter = [:]
-    return parameter
-}
-
 def archiveResults(archive, pattern, allowEmpty){
     if(archive){
         echo "[${STEP_NAME}] archive ${pattern}"
@@ -152,4 +139,17 @@ def prepare(parameters){
     parameters.eslint = toMap(parameters.eslint)
     parameters.pylint = toMap(parameters.pylint)
     return parameters
+}
+
+@NonCPS
+def toMap(parameter){
+    if(MapUtils.isMap(parameter))
+        parameter.put('active', parameter.active == null?true:parameter.active)
+    else if(Boolean.TRUE.equals(parameter))
+        parameter = [active: true]
+    else if(Boolean.FALSE.equals(parameter))
+        parameter = [active: false]
+    else
+        parameter = [:]
+    return parameter
 }
