@@ -46,11 +46,7 @@ def validateCm(home) {
     validateTool('Change Management Command Line Interface', home, "$home/bin/cmclient -v", new Version(0, 0, 1))
 }
 
-def validateTool(name, home, command, expectedVersion) {
-    if (!name) throw new IllegalArgumentException("The parameter 'name' can not be null or empty.")
-    if (!home ) throw new IllegalArgumentException("The parameter 'home' can not be null or empty.")
-    if (!command ) throw new IllegalArgumentException("The parameter 'command' can not be null or empty.")
-    if (!expectedVersion) throw new IllegalArgumentException("The parameter 'expectedVersion' can not be null or empty.")
+private validateTool(name, home, command, expectedVersion) {
     echo "[INFO] Validating $name version ${expectedVersion.toString()} or compatible version."
     def output
     try {
