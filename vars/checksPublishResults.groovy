@@ -121,22 +121,22 @@ def archiveResults(archive, pattern, allowEmpty){
 @NonCPS
 def createCommonOptionsMap(publisherName, settings){
     Map result = [:]
-    def thresholds = settings.get('thresholds')
-    def fail = thresholds.get('fail')
-    def unstable = thresholds.get('unstable')
+    def thresholds = settings.get('thresholds', [:])
+    def fail = thresholds.get('fail', [:])
+    def unstable = thresholds.get('unstable', [:])
 
     result.put('$class', publisherName)
     result.put('healthy', settings.get('healthy'))
     result.put('unHealthy', settings.get('unHealthy'))
     result.put('canRunOnFailed', true)
-    result.put('failedTotalAll', '' + fail.get('all'))
-    result.put('failedTotalHigh', '' + fail.get('high'))
-    result.put('failedTotalNormal', '' + fail.get('normal'))
-    result.put('failedTotalLow', '' + fail.get('low'))
-    result.put('unstableTotalAll', '' + unstable.get('all'))
-    result.put('unstableTotalHigh', '' + unstable.get('high'))
-    result.put('unstableTotalNormal', '' + unstable.get('normal'))
-    result.put('unstableTotalLow', '' + unstable.get('low'))
+    result.put('failedTotalAll', fail.get('all'))
+    result.put('failedTotalHigh', fail.get('high'))
+    result.put('failedTotalNormal', fail.get('normal'))
+    result.put('failedTotalLow', fail.get('low'))
+    result.put('unstableTotalAll', unstable.get('all'))
+    result.put('unstableTotalHigh', unstable.get('high'))
+    result.put('unstableTotalNormal', unstable.get('normal'))
+    result.put('unstableTotalLow', unstable.get('low'))
 
     return result
 }
