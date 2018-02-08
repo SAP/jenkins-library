@@ -186,10 +186,8 @@ class ToolValidateTest extends BasePipelineTest {
 
         toolValidateScript.call(tool: 'java', home: notEmptyDir.getAbsolutePath())
 
-        assert jlr.log.contains('--- BEGIN LIBRARY STEP: toolValidate.groovy ---')
         assert jlr.log.contains('[INFO] Validating Java version 1.8.0 or compatible version.')
         assert jlr.log.contains('[INFO] Java version 1.8.0 is installed.')
-        assert jlr.log.contains('--- END LIBRARY STEP: toolValidate.groovy ---')
     }
 
     @Test
@@ -199,10 +197,8 @@ class ToolValidateTest extends BasePipelineTest {
 
         toolValidateScript.call(tool: 'mta', home: notEmptyDir.getAbsolutePath())
 
-        assert jlr.log.contains('--- BEGIN LIBRARY STEP: toolValidate.groovy ---')
         assert jlr.log.contains('[INFO] Validating SAP Multitarget Application Archive Builder version 1.0.6 or compatible version.')
         assert jlr.log.contains('[INFO] SAP Multitarget Application Archive Builder version 1.0.6 is installed.')
-        assert jlr.log.contains('--- END LIBRARY STEP: toolValidate.groovy ---')
     }
 
     @Test
@@ -212,10 +208,8 @@ class ToolValidateTest extends BasePipelineTest {
 
         toolValidateScript.call(tool: 'neo', home: notEmptyDir.getAbsolutePath())
 
-        assert jlr.log.contains('--- BEGIN LIBRARY STEP: toolValidate.groovy ---')
         assert jlr.log.contains('[INFO] Validating SAP Cloud Platform Console Client version 3.39.10 or compatible version.')
         assert jlr.log.contains('[INFO] SAP Cloud Platform Console Client version 3.39.10 is installed.')
-        assert jlr.log.contains('--- END LIBRARY STEP: toolValidate.groovy ---')
     }
 
     @Test
@@ -225,10 +219,8 @@ class ToolValidateTest extends BasePipelineTest {
 
         toolValidateScript.call(tool: 'cm', home: notEmptyDir.getAbsolutePath())
 
-        assert jlr.log.contains('--- BEGIN LIBRARY STEP: toolValidate.groovy ---')
         assert jlr.log.contains('[INFO] Validating Change Management Command Line Interface version 0.0.1 or compatible version.')
         assert jlr.log.contains('[INFO] Change Management Command Line Interface version 0.0.1 is installed.')
-        assert jlr.log.contains('--- END LIBRARY STEP: toolValidate.groovy ---')
     }
 
     private getNoVersion(Map m) { 
