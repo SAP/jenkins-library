@@ -19,102 +19,16 @@ def call(Map parameters = [:]) {
             script = [commonPipelineEnvironment: commonPipelineEnvironment]
         prepareDefaultValues script: script
 
-        Map configurationKeys = [
-            'aggregation': [
-                'active': null,
-                'healthy': null,
-                'unHealthy': null,
-                'thresholds': [
-                    'fail': ['all': null,'low': null,'normal': null,'high': null],
-                    'unstable': ['all': null,'low': null,'normal': null,'high': null]
-                ]
-            ],
-            'tasks': [
-                'pattern': null,
-                'low': null,
-                'normal': null,
-                'high': null,
-                'archive': null,
-                'active': null,
-                'healthy': null,
-                'unHealthy': null,
-                'thresholds': [
-                    'fail': ['all': null,'low': null,'normal': null,'high': null],
-                    'unstable': ['all': null,'low': null,'normal': null,'high': null]
-                ]
-            ],
-            'pmd': [
-                'pattern': null,
-                'archive': null,
-                'active': null,
-                'healthy': null,
-                'unHealthy': null,
-                'thresholds': [
-                    'fail': ['all': null,'low': null,'normal': null,'high': null],
-                    'unstable': ['all': null,'low': null,'normal': null,'high': null]
-                ]
-            ],
-            'cpd': [
-                'pattern': null,
-                'archive': null,
-                'active': null,
-                'healthy': null,
-                'unHealthy': null,
-                'thresholds': [
-                    'fail': ['all': null,'low': null,'normal': null,'high': null],
-                    'unstable': ['all': null,'low': null,'normal': null,'high': null]
-                ]
-            ],
-            'findbugs': [
-                'pattern': null,
-                'archive': null,
-                'active': null,
-                'healthy': null,
-                'unHealthy': null,
-                'thresholds': [
-                    'fail': ['all': null,'low': null,'normal': null,'high': null],
-                    'unstable': ['all': null,'low': null,'normal': null,'high': null]
-                ]
-            ],
-            'checkstyle': [
-                'pattern': null,
-                'archive': null,
-                'active': null,
-                'healthy': null,
-                'unHealthy': null,
-                'thresholds': [
-                    'fail': ['all': null,'low': null,'normal': null,'high': null],
-                    'unstable': ['all': null,'low': null,'normal': null,'high': null]
-                ]
-            ],
-            'eslint': [
-                'pattern': null,
-                'archive': null,
-                'active': null,
-                'healthy': null,
-                'unHealthy': null,
-                'thresholds': [
-                    'fail': ['all': null,'low': null,'normal': null,'high': null],
-                    'unstable': ['all': null,'low': null,'normal': null,'high': null]
-                ]
-            ],
-            'pylint': [
-                'pattern': null,
-                'archive': null,
-                'active': null,
-                'healthy': null,
-                'unHealthy': null,
-                'thresholds': [
-                    'fail': ['all': null,'low': null,'normal': null,'high': null],
-                    'unstable': ['all': null,'low': null,'normal': null,'high': null]
-                ]
-            ],
-            'archive': null
+        List configurationKeys = [
+            'aggregation', 'tasks', 'pmd', 'cpd', 'findbugs', 'checkstyle', 'eslint', 'pylint', 'archive'
         ]
         final Map stepDefaults = ConfigurationLoader.defaultStepConfiguration(script, STEP_NAME)
         final Map stepConfiguration = ConfigurationLoader.stepConfiguration(script, STEP_NAME)
         prepare(parameters)
-        Map configuration = ConfigurationMerger.mergeDeepStructure(parameters, configurationKeys, stepConfiguration, configurationKeys, stepDefaults)
+        Map configuration = ConfigurationMerger.merge(
+            parameters, configurationKeys,
+            stepConfiguration, configurationKeys,
+            stepDefaults)
 
         def doArchive = configuration.get('archive')
         // JAVA
