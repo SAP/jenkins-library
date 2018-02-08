@@ -2,6 +2,7 @@ site_name: Jenkins 2.0 Pipelines
 pages:
     - Home: index.md
     - 'Library steps':
+        - artifactSetVersion: steps/artifactSetVersion.md
         - commonPipelineEnvironment: steps/commonPipelineEnvironment.md
         - dockerExecute: steps/dockerExecute.md
         - durationMeasure: steps/durationMeasure.md

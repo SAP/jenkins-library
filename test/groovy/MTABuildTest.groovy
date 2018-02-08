@@ -30,8 +30,7 @@ public class MTABuildTest extends BasePipelineTest {
 
 
     def currentDir
-    def otherDir
-    def mtaBuildShEnv
+    def mtaYaml
 
     def mtaBuildScript
     def cpe
@@ -40,87 +39,57 @@ public class MTABuildTest extends BasePipelineTest {
     void init() {
 
         currentDir = tmp.newFolder().toURI().getPath()[0..-2] //omit final '/'
-        otherDir = tmp.newFolder().toURI().getPath()[0..-2] //omit final '/'
+        mtaYaml = new File("$currentDir/mta.yaml")
+        mtaYaml << defaultMtaYaml()
 
         helper.registerAllowedMethod('readYaml', [Map], {
             m ->
                 return new Yaml().load((m.file as File).text)
         })
-        helper.registerAllowedMethod("dir", [String, Closure], {
-            s, c ->
-                currentDir = "${currentDir}/${s}"
-                c()
-        })
         helper.registerAllowedMethod('pwd', [], { currentDir } )
-        helper.registerAllowedMethod("withEnv", [List.class, Closure.class],
-                { l, c ->
-                    mtaBuildShEnv = l
-                    c()
-                })
-        helper.registerAllowedMethod('error', [String], { s -> throw new hudson.AbortException(s) })
 
         binding.setVariable('PATH', '/usr/bin')
-        binding.setVariable('JAVA_HOME', '/opt/java')
-        binding.setVariable('env', [:])
 
-        mtaBuildScript = loadScript("mtaBuild.groovy").mtaBuild
+        mtaBuildScript = loadScript('mtaBuild.groovy').mtaBuild
         cpe = loadScript('commonPipelineEnvironment.groovy').commonPipelineEnvironment
     }
 
 
     @Test
-    public void straightForwardTest(){
+    void environmentPathTest() {
 
-        binding.getVariable('env')['MTA_JAR_LOCATION'] = '/opt/mta'
+        mtaBuildScript.call(buildTarget: 'NEO')
 
-        new File("${currentDir}/mta.yaml") << defaultMtaYaml()
-
-        def mtarFilePath = mtaBuildScript.call(script: [commonPipelineEnvironment: cpe],
-                                         buildTarget: 'NEO')
-
-        assert jscr.shell[0] =~ /sed -ie "s\/\\\$\{timestamp\}\/`date \+%Y%m%d%H%M%S`\/g" ".*\/mta.yaml"$/
-
-        assert jscr.shell[1].contains("PATH=./node_modules/.bin:/usr/bin")
-
-        assert jscr.shell[1].contains(' -jar /opt/mta/mta.jar --mtar ')
-
-        assert mtarFilePath == "${currentDir}/com.mycompany.northwind.mtar"
-
-        assert jlr.log.contains( "[mtaBuild] MTA JAR \"/opt/mta/mta.jar\" retrieved from environment.")
+        assert jscr.shell[1].contains('PATH=./node_modules/.bin:/usr/bin')
     }
 
 
     @Test
-    public void mtarFilePathFromCommonPipelineEnviromentTest(){
+    void sedTest() {
 
-        binding.getVariable('env')['MTA_JAR_LOCATION'] = '/opt/mta'
+        mtaBuildScript.call(buildTarget: 'NEO')
 
-        new File("${currentDir}/mta.yaml") << defaultMtaYaml()
+        assert jscr.shell[0] =~ /sed -ie "s\/\\\$\{timestamp\}\/`date \+%Y%m%d%H%M%S`\/g" ".*\/mta.yaml"$/
+    }
+
+
+    @Test
+    void mtarFilePathFromCommonPipelineEnviromentTest() {
 
         mtaBuildScript.call(script: [commonPipelineEnvironment: cpe],
                       buildTarget: 'NEO')
 
         def mtarFilePath = cpe.getMtarFilePath()
 
-        assert jscr.shell[0] =~ /sed -ie "s\/\\\$\{timestamp\}\/`date \+%Y%m%d%H%M%S`\/g" ".*\/mta.yaml"$/
-
-        assert jscr.shell[1].contains("PATH=./node_modules/.bin:/usr/bin")
-
-        assert jscr.shell[1].contains(' -jar /opt/mta/mta.jar --mtar ')
-
-        assert mtarFilePath == "${currentDir}/com.mycompany.northwind.mtar"
-
-        assert jlr.log.contains("[mtaBuild] MTA JAR \"/opt/mta/mta.jar\" retrieved from environment.")
+        assert mtarFilePath == "$currentDir/com.mycompany.northwind.mtar"
     }
 
 
     @Test
-    public void mtaBuildWithSurroundingDirTest(){
-
-        binding.getVariable('env')['MTA_JAR_LOCATION'] = '/opt/mta'
+    void mtaBuildWithSurroundingDirTest() {
 
         def newDirName = 'newDir'
-        def newDirPath = "${currentDir}/${newDirName}"
+        def newDirPath = "$currentDir/$newDirName"
         def newDir = new File(newDirPath)
 
         newDir.mkdirs()
@@ -128,109 +97,102 @@ public class MTABuildTest extends BasePipelineTest {
 
         helper.registerAllowedMethod('pwd', [], { newDirPath } )
 
-        def mtarFilePath = mtaBuildScript.call(script: [commonPipelineEnvironment: cpe], buildTarget: 'NEO')
+        def mtarFilePath = mtaBuildScript.call(buildTarget: 'NEO')
 
         assert jscr.shell[0] =~ /sed -ie "s\/\\\$\{timestamp\}\/`date \+%Y%m%d%H%M%S`\/g" ".*\/newDir\/mta.yaml"$/
 
-        assert jscr.shell[1].contains("PATH=./node_modules/.bin:/usr/bin")
-
-        assert jscr.shell[1].contains(' -jar /opt/mta/mta.jar --mtar ')
-
-        assert mtarFilePath == "${currentDir}/${newDirName}/com.mycompany.northwind.mtar"
-
-        assert jlr.log.contains("[mtaBuild] MTA JAR \"/opt/mta/mta.jar\" retrieved from environment.")
+        assert mtarFilePath == "$currentDir/$newDirName/com.mycompany.northwind.mtar"
     }
 
+
     @Test
-    void mtaHomeNotSetTest() {
+    void mtaJarLocationNotSetTest() {
 
-        new File("${currentDir}/mta.yaml") << defaultMtaYaml()
-
-        def mtarFilePath = mtaBuildScript.call(script: [commonPipelineEnvironment: cpe], buildTarget: 'NEO')
-
-        assert jscr.shell[0] =~ /sed -ie "s\/\\\$\{timestamp\}\/`date \+%Y%m%d%H%M%S`\/g" ".*\/mta.yaml"$/
-
-        assert jscr.shell[1].contains("PATH=./node_modules/.bin:/usr/bin")
+        mtaBuildScript.call(buildTarget: 'NEO')
 
         assert jscr.shell[1].contains(' -jar mta.jar --mtar ')
 
-        assert mtarFilePath == "${currentDir}/com.mycompany.northwind.mtar"
-
-        assert jlr.log.contains( "[mtaBuild] Using MTA JAR from current working directory." )
+        assert jlr.log.contains('[mtaBuild] Using MTA JAR from current working directory.')
     }
 
 
     @Test
-    void mtaHomeAsParameterTest() {
+    void mtaJarLocationAsParameterTest() {
 
-        new File("${currentDir}/mta.yaml") << defaultMtaYaml()
-
-        def mtarFilePath = mtaBuildScript.call(mtaJarLocation: '/mylocation/mta', buildTarget: 'NEO')
-
-        assert jscr.shell[0] =~ /sed -ie "s\/\\\$\{timestamp\}\/`date \+%Y%m%d%H%M%S`\/g" ".*\/mta.yaml"$/
-
-        assert jscr.shell[1].contains("PATH=./node_modules/.bin:/usr/bin")
+        mtaBuildScript.call(mtaJarLocation: '/mylocation/mta', buildTarget: 'NEO')
 
         assert jscr.shell[1].contains(' -jar /mylocation/mta/mta.jar --mtar ')
 
-        assert mtarFilePath == "${currentDir}/com.mycompany.northwind.mtar"
-
-        assert jlr.log.contains("[mtaBuild] MTA JAR \"/mylocation/mta/mta.jar\" retrieved from parameters.".toString())
+        assert jlr.log.contains('[mtaBuild] MTA JAR "/mylocation/mta/mta.jar" retrieved from parameters.')
     }
 
 
     @Test
-    public void noMtaPresentTest(){
+    void noMtaPresentTest() {
+
+        mtaYaml.delete()
         thrown.expect(FileNotFoundException)
 
-        mtaBuildScript.call(script: [commonPipelineEnvironment: cpe],
-                      buildTarget: 'NEO')
+        mtaBuildScript.call(buildTarget: 'NEO')
     }
 
 
     @Test
-    public void badMtaTest(){
+    void badMtaTest() {
+
         thrown.expect(ParserException)
         thrown.expectMessage('while parsing a block mapping')
 
-        new File("${currentDir}/mta.yaml") << badMtaYaml()
+        mtaYaml.text = badMtaYaml()
 
-        mtaBuildScript.call(script: [commonPipelineEnvironment: cpe],
-                      buildTarget: 'NEO')
+        mtaBuildScript.call(buildTarget: 'NEO')
     }
 
 
     @Test
-    public void noIdInMtaTest(){
+    void noIdInMtaTest() {
+
         thrown.expect(AbortException)
         thrown.expectMessage("Property 'ID' not found in mta.yaml file at: '")
 
-        new File("${currentDir}/mta.yaml") << noIdMtaYaml()
+        mtaYaml.text = noIdMtaYaml()
 
-        mtaBuildScript.call(script: [commonPipelineEnvironment: cpe],
-                      buildTarget: 'NEO')
+        mtaBuildScript.call(buildTarget: 'NEO')
     }
 
 
     @Test
-    public void noBuildTargetTest(){
+    void noBuildTargetTest() {
+
         thrown.expect(Exception)
-        thrown.expectMessage("ERROR - NO VALUE AVAILABLE FOR buildTarget")
+        thrown.expectMessage('ERROR - NO VALUE AVAILABLE FOR buildTarget')
 
-        new File("${currentDir}/mta.yaml") << defaultMtaYaml()
-
-        mtaBuildScript.call(script: [commonPipelineEnvironment: cpe])
+        mtaBuildScript.call()
     }
 
-    private defaultMtaYaml(){
+
+    @Test
+    void mtaJarLocationFromEnvironmentTest() {
+
+        binding.setVariable('env', [:])
+        binding.getVariable('env')['MTA_JAR_LOCATION'] = '/env/mta'
+
+        mtaBuildScript.call(buildTarget: 'NEO')
+
+        assert jscr.shell[1].contains('-jar /env/mta/mta.jar --mtar')
+        assert jlr.log.contains('[mtaBuild] MTA JAR "/env/mta/mta.jar" retrieved from environment.')
+    }
+
+
+    private defaultMtaYaml() {
         return  '''
                 _schema-version: "2.0.0"
                 ID: "com.mycompany.northwind"
                 version: 1.0.0
-                
+
                 parameters:
                   hcp-deployer-version: "1.0.0"
-                
+
                 modules:
                   - name: "fiorinorthwind"
                     type: html5
@@ -243,15 +205,15 @@ public class MTABuildTest extends BasePipelineTest {
                 '''
     }
 
-    private badMtaYaml(){
+    private badMtaYaml() {
         return  '''
                 _schema-version: "2.0.0
                 ID: "com.mycompany.northwind"
                 version: 1.0.0
-                
+
                 parameters:
                   hcp-deployer-version: "1.0.0"
-                
+
                 modules:
                   - name: "fiorinorthwind"
                     type: html5
@@ -264,14 +226,14 @@ public class MTABuildTest extends BasePipelineTest {
                 '''
     }
 
-    private noIdMtaYaml(){
+    private noIdMtaYaml() {
         return  '''
                 _schema-version: "2.0.0"
                 version: 1.0.0
-                
+
                 parameters:
                   hcp-deployer-version: "1.0.0"
-                
+
                 modules:
                   - name: "fiorinorthwind"
                     type: html5
