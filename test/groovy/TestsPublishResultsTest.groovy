@@ -18,14 +18,14 @@ class TestsPublishResultsTest extends BasePipelineTest {
     @Rule
     public RuleChain ruleChain = RuleChain.outerRule(Rules.getCommonRules(this))
 
-    def stepUnderTest
+    def testsPublishResultsScript
 
     @Before
     void init() {
         publisherStepOptions = [:]
         archiveStepPatterns = []
         // prepare checkResultsPublish step
-        stepUnderTest = loadScript('testsPublishResults.groovy').testsPublishResults
+        testsPublishResultsScript = loadScript('testsPublishResults.groovy').testsPublishResults
         // add handler for generic step call
         helper.registerAllowedMethod('step', [Map.class], {
             parameters -> publisherStepOptions[parameters.$class] = parameters
@@ -46,7 +46,7 @@ class TestsPublishResultsTest extends BasePipelineTest {
 
     @Test
     void testPublishNothingWithDefaultSettings() throws Exception {
-        stepUnderTest.call()
+        testsPublishResultsScript.call()
 
         // ensure nothing is published
         assertTrue('WarningsPublisher options not empty', publisherStepOptions.junit == null)
@@ -57,7 +57,7 @@ class TestsPublishResultsTest extends BasePipelineTest {
 
     @Test
     void testPublishNothingWithAllDisabled() throws Exception {
-        stepUnderTest.call(junit: false, jacoco: false, cobertura: false, jmeter: false)
+        testsPublishResultsScript.call(junit: false, jacoco: false, cobertura: false, jmeter: false)
 
         // ensure nothing is published
         assertTrue('WarningsPublisher options not empty', publisherStepOptions.junit == null)
@@ -67,8 +67,8 @@ class TestsPublishResultsTest extends BasePipelineTest {
     }
 
     @Test
-    void testPublishAllWithDefaultSettings() throws Exception {
-        stepUnderTest.call(junit: true)
+    void testPublishUnitTestsWithDefaultSettings() throws Exception {
+        testsPublishResultsScript.call(junit: true)
 
         assertTrue('JUnit options are empty', publisherStepOptions.junit != null)
         // ensure default patterns are set
@@ -82,7 +82,7 @@ class TestsPublishResultsTest extends BasePipelineTest {
 
     @Test
     void testPublishCoverageWithDefaultSettings() throws Exception {
-        stepUnderTest.call(jacoco: true, cobertura: true)
+        testsPublishResultsScript.call(jacoco: true, cobertura: true)
 
         assertTrue('JaCoCo options are empty', publisherStepOptions.jacoco != null)
         assertTrue('Cobertura options are empty', publisherStepOptions.cobertura != null)
@@ -98,7 +98,7 @@ class TestsPublishResultsTest extends BasePipelineTest {
     @Ignore("failes due do class not found exception of JMeter parser")
     @Test
     void testPublishJMeterWithDefaultSettings() throws Exception {
-        stepUnderTest.call(jmeter: true)
+        testsPublishResultsScript.call(jmeter: true)
 
         assertTrue('JMeter options are empty', publisherStepOptions.PerformancePublisher != null)
         //assertEquals('JMeter default pattern not set', '**/*.jtl',
