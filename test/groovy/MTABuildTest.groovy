@@ -1,6 +1,6 @@
 import hudson.AbortException
-import org.jenkinsci.plugins.pipeline.utility.steps.shaded.org.yaml.snakeyaml.Yaml
-import org.jenkinsci.plugins.pipeline.utility.steps.shaded.org.yaml.snakeyaml.parser.ParserException
+import org.yaml.snakeyaml.Yaml
+import org.yaml.snakeyaml.parser.ParserException
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -42,10 +42,6 @@ public class MTABuildTest extends BasePipelineTest {
         mtaYaml = new File("$currentDir/mta.yaml")
         mtaYaml << defaultMtaYaml()
 
-        helper.registerAllowedMethod('readYaml', [Map], {
-            m ->
-                return new Yaml().load((m.file as File).text)
-        })
         helper.registerAllowedMethod('pwd', [], { currentDir } )
 
         binding.setVariable('PATH', '/usr/bin')
@@ -123,7 +119,7 @@ public class MTABuildTest extends BasePipelineTest {
 
         assert jscr.shell[1].contains(' -jar /mylocation/mta/mta.jar --mtar ')
 
-        assert jlr.log.contains('[mtaBuild] MTA JAR "/mylocation/mta/mta.jar" retrieved from parameters.')
+        assert jlr.log.contains('[mtaBuild] MTA JAR "/mylocation/mta/mta.jar" retrieved from configuration.')
     }
 
 
@@ -162,16 +158,6 @@ public class MTABuildTest extends BasePipelineTest {
 
 
     @Test
-    void noBuildTargetTest() {
-
-        thrown.expect(Exception)
-        thrown.expectMessage('ERROR - NO VALUE AVAILABLE FOR buildTarget')
-
-        mtaBuildScript.call()
-    }
-
-
-    @Test
     void mtaJarLocationFromEnvironmentTest() {
 
         binding.setVariable('env', [:])
@@ -181,6 +167,50 @@ public class MTABuildTest extends BasePipelineTest {
 
         assert jscr.shell[1].contains('-jar /env/mta/mta.jar --mtar')
         assert jlr.log.contains('[mtaBuild] MTA JAR "/env/mta/mta.jar" retrieved from environment.')
+    }
+
+
+    @Test
+    void mtaJarLocationFromCustomStepConfigurationTest() {
+
+        cpe.configuration = [general:[mtaJarLocation: '/general/mta']]
+
+        mtaBuildScript.call(script: [commonPipelineEnvironment: cpe],
+                      buildTarget: 'NEO')
+
+        assert jscr.shell[1].contains('-jar /general/mta/mta.jar --mtar')
+        assert jlr.log.contains('[mtaBuild] MTA JAR "/general/mta/mta.jar" retrieved from configuration.')
+    }
+
+
+    @Test
+    void buildTargetFromParametersTest() {
+
+        mtaBuildScript.call(buildTarget: 'NEO')
+
+        assert jscr.shell[1].contains('java -jar mta.jar --mtar com.mycompany.northwind.mtar --build-target=NEO build')
+    }
+
+
+    @Test
+    void buildTargetFromCustomStepConfigurationTest() {
+
+        cpe.configuration = [steps:[mtaBuild:[buildTarget: 'NEO']]]
+
+        mtaBuildScript.call(script: [commonPipelineEnvironment: cpe])
+
+        assert jscr.shell[1].contains('java -jar mta.jar --mtar com.mycompany.northwind.mtar --build-target=NEO build')
+    }
+
+
+    @Test
+    void buildTargetFromDefaultStepConfigurationTest() {
+
+        cpe.defaultConfiguration = [steps:[mtaBuild:[buildTarget: 'NEO']]]
+
+        mtaBuildScript.call(script: [commonPipelineEnvironment: cpe])
+
+        assert jscr.shell[1].contains('java -jar mta.jar --mtar com.mycompany.northwind.mtar --build-target=NEO build')
     }
 
 
