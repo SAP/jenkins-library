@@ -25,19 +25,9 @@ steps:
   checksPublishResults:
     aggregation:
       active: true
-      healthy: ''
-      unHealthy: ''
       thresholds:
         fail:
-          all: ''
-          low: ''
-          normal: ''
           high: '0'
-        unstable:
-          all: ''
-          low: ''
-          normal: ''
-          high: ''
     tasks:
       pattern: '**/*.java'
       low: ''
@@ -45,119 +35,49 @@ steps:
       high: 'FIXME'
       archive: true
       active: false
-      healthy: ''
-      unHealthy: ''
       thresholds:
         fail:
-          all: ''
-          low: ''
-          normal: ''
           high: '0'
-        unstable:
-          all: ''
-          low: ''
-          normal: ''
-          high: ''
     pmd:
       pattern: '**/target/pmd.xml'
       archive: true
       active: false
-      healthy: ''
-      unHealthy: ''
       thresholds:
         fail:
-          all: ''
-          low: ''
-          normal: ''
           high: '0'
-        unstable:
-          all: ''
-          low: ''
-          normal: ''
-          high: ''
     cpd:
       pattern: '**/target/cpd.xml'
       archive: true
       active: false
-      healthy: ''
-      unHealthy: ''
       thresholds:
         fail:
-          all: ''
-          low: ''
-          normal: ''
           high: '0'
-        unstable:
-          all: ''
-          low: ''
-          normal: ''
-          high: ''
     findbugs:
       pattern: '**/target/findbugsXml.xml, **/target/findbugs.xml'
       archive: true
       active: false
-      healthy: ''
-      unHealthy: ''
       thresholds:
         fail:
-          all: ''
-          low: ''
-          normal: ''
           high: '0'
-        unstable:
-          all: ''
-          low: ''
-          normal: ''
-          high: ''
     checkstyle:
       pattern: '**/target/checkstyle-result.xml'
       archive: true
       active: false
-      healthy: ''
-      unHealthy: ''
       thresholds:
         fail:
-          all: ''
-          low: ''
-          normal: ''
           high: '0'
-        unstable:
-          all: ''
-          low: ''
-          normal: ''
-          high: ''
     eslint:
       pattern: '**/eslint.xml'
       archive: true
       active: false
-      healthy: ''
-      unHealthy: ''
       thresholds:
         fail:
-          all: ''
-          low: ''
-          normal: ''
           high: '0'
-        unstable:
-          all: ''
-          low: ''
-          normal: ''
-          high: ''
     pylint:
       pattern: '**/pylint.log'
       archive: true
       active: false
-      healthy: ''
-      unHealthy: ''
       thresholds:
         fail:
-          all: ''
-          low: ''
-          normal: ''
           high: '0'
-        unstable:
-          all: ''
-          low: ''
-          normal: ''
-          high: ''
     archive: false
