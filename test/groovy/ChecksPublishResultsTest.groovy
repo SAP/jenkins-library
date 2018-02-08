@@ -188,20 +188,62 @@ class ChecksPublishResultsTest extends BasePipelineTest {
     }
 
     @Test
+    void testPublishWithDefaultThresholds() throws Exception {
+        stepUnderTest.call(pmd: true)
+
+        assertTrue("AnalysisPublisher options not set",
+            publisherStepOptions['AnalysisPublisher'] != null)
+        assertTrue("PmdPublisher options not set",
+            publisherStepOptions['PmdPublisher'] != null)
+        assertEquals("AnalysisPublisher thresholds configuration for failedTotalHigh not correct",
+            0, publisherStepOptions['AnalysisPublisher']['failedTotalHigh'])
+        assertEquals("PmdPublisher thresholds configuration for failedTotalHigh not correct",
+            0, publisherStepOptions['PmdPublisher']['failedTotalHigh'])
+        // ensure other values are empty
+        assertEquals("AnalysisPublisher thresholds configuration for failedTotalNormal is set",
+            null, publisherStepOptions['AnalysisPublisher']['failedTotalNormal'])
+        assertEquals("AnalysisPublisher thresholds configuration for failedTotalLow is set",
+            null, publisherStepOptions['AnalysisPublisher']['failedTotalLow'])
+        assertEquals("AnalysisPublisher thresholds configuration for failedTotalAll is set",
+            null, publisherStepOptions['AnalysisPublisher']['failedTotalAll'])
+        assertEquals("AnalysisPublisher thresholds configuration for unstableTotalHigh not correct",
+            null, publisherStepOptions['AnalysisPublisher']['unstableTotalHigh'])
+        assertEquals("AnalysisPublisher thresholds configuration for unstableTotalNormal is set",
+            null, publisherStepOptions['AnalysisPublisher']['unstableTotalNormal'])
+        assertEquals("AnalysisPublisher thresholds configuration for unstableTotalLow is set",
+            null, publisherStepOptions['AnalysisPublisher']['unstableTotalLow'])
+        assertEquals("AnalysisPublisher thresholds configuration for unstableTotalAll is set",
+            null, publisherStepOptions['AnalysisPublisher']['unstableTotalAll'])
+        // ensure nothing else is published
+        assertTrue("DryPublisher options not empty", publisherStepOptions['DryPublisher'] == null)
+        assertTrue("FindBugsPublisher options not empty", publisherStepOptions['FindBugsPublisher'] == null)
+        assertTrue("CheckStylePublisher options not empty", publisherStepOptions['CheckStylePublisher'] == null)
+        assertTrue("WarningsPublisher options not empty", publisherStepOptions['WarningsPublisher'] == null)
+    }
+
+    @Test
     void testPublishWithThresholds() throws Exception {
-        stepUnderTest.call(aggregation: [thresholds: [fail: [high: 0]]], pmd: true)
+        stepUnderTest.call(aggregation: [thresholds: [fail: [high: 10]]], pmd: true)
 
         assertTrue("AnalysisPublisher options not set", publisherStepOptions['AnalysisPublisher'] != null)
         assertTrue("PmdPublisher options not set", publisherStepOptions['PmdPublisher'] != null)
-        assertEquals("AnalysisPublisher thresholds configuration for failedTotalHigh not correct", '0', publisherStepOptions['AnalysisPublisher']['failedTotalHigh'])
+        assertEquals("AnalysisPublisher thresholds configuration for failedTotalHigh not correct",
+            10, publisherStepOptions['AnalysisPublisher']['failedTotalHigh'])
         // ensure other values are empty
-        assertTrue("AnalysisPublisher thresholds configuration for failedTotalNormal is set", publisherStepOptions['AnalysisPublisher']['failedTotalNormal'].isEmpty())
-        assertTrue("AnalysisPublisher thresholds configuration for failedTotalLow is set", publisherStepOptions['AnalysisPublisher']['failedTotalLow'].isEmpty())
-        assertTrue("AnalysisPublisher thresholds configuration for failedTotalAll is set", publisherStepOptions['AnalysisPublisher']['failedTotalAll'].isEmpty())
-        assertTrue("AnalysisPublisher thresholds configuration for unstableTotalHigh not correct", publisherStepOptions['AnalysisPublisher']['unstableTotalHigh'].isEmpty())
-        assertTrue("AnalysisPublisher thresholds configuration for unstableTotalNormal is set", publisherStepOptions['AnalysisPublisher']['unstableTotalNormal'].isEmpty())
-        assertTrue("AnalysisPublisher thresholds configuration for unstableTotalLow is set", publisherStepOptions['AnalysisPublisher']['unstableTotalLow'].isEmpty())
-        assertTrue("AnalysisPublisher thresholds configuration for unstableTotalAll is set", publisherStepOptions['AnalysisPublisher']['unstableTotalAll'].isEmpty())
+        assertEquals("AnalysisPublisher thresholds configuration for failedTotalNormal is set",
+            null, publisherStepOptions['AnalysisPublisher']['failedTotalNormal'])
+        assertEquals("AnalysisPublisher thresholds configuration for failedTotalLow is set",
+            null, publisherStepOptions['AnalysisPublisher']['failedTotalLow'])
+        assertEquals("AnalysisPublisher thresholds configuration for failedTotalAll is set",
+            null, publisherStepOptions['AnalysisPublisher']['failedTotalAll'])
+        assertEquals("AnalysisPublisher thresholds configuration for unstableTotalHigh not correct",
+            null, publisherStepOptions['AnalysisPublisher']['unstableTotalHigh'])
+        assertEquals("AnalysisPublisher thresholds configuration for unstableTotalNormal is set",
+            null, publisherStepOptions['AnalysisPublisher']['unstableTotalNormal'])
+        assertEquals("AnalysisPublisher thresholds configuration for unstableTotalLow is set",
+            null, publisherStepOptions['AnalysisPublisher']['unstableTotalLow'])
+        assertEquals("AnalysisPublisher thresholds configuration for unstableTotalAll is set",
+            null, publisherStepOptions['AnalysisPublisher']['unstableTotalAll'])
         // ensure nothing else is published
         assertTrue("DryPublisher options not empty", publisherStepOptions['DryPublisher'] == null)
         assertTrue("FindBugsPublisher options not empty", publisherStepOptions['FindBugsPublisher'] == null)
