@@ -19,13 +19,14 @@ def call(Map parameters = [:]) {
         if (script == null)
             script = [commonPipelineEnvironment: commonPipelineEnvironment]
         prepareDefaultValues script: script
+        prepare(parameters)
 
         List configurationKeys = [
             'aggregation', 'tasks', 'pmd', 'cpd', 'findbugs', 'checkstyle', 'eslint', 'pylint', 'archive'
         ]
+
         final Map stepDefaults = ConfigurationLoader.defaultStepConfiguration(script, STEP_NAME)
         final Map stepConfiguration = ConfigurationLoader.stepConfiguration(script, STEP_NAME)
-        prepare(parameters)
         Map configuration = ConfigurationMerger.merge(
             parameters, configurationKeys,
             stepConfiguration, configurationKeys,
