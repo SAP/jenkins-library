@@ -129,15 +129,10 @@ def createCommonOptionsMap(publisherName, settings){
 
 @NonCPS
 def prepare(parameters){
-    // ensure tool maps are initialized
-    parameters.aggregation = toMap(parameters.aggregation)
-    parameters.tasks = toMap(parameters.tasks)
-    parameters.pmd = toMap(parameters.pmd)
-    parameters.cpd = toMap(parameters.cpd)
-    parameters.findbugs = toMap(parameters.findbugs)
-    parameters.checkstyle = toMap(parameters.checkstyle)
-    parameters.eslint = toMap(parameters.eslint)
-    parameters.pylint = toMap(parameters.pylint)
+    // ensure tool maps are initialized correctly
+    for(String tool : ['aggregation','tasks','pmd','cpd','findbugs','checkstyle','eslint','pylint']){
+        parameters[tool] = toMap(parameters[tool])
+    }
     return parameters
 }
 
