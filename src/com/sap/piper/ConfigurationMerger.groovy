@@ -46,4 +46,19 @@ class ConfigurationMerger {
 
         return merged
     }
+
+    @NonCPS
+    def static merge(
+        Map parameters, List parameterKeys,
+        Map generalConfigurationMap, List generalConfigurationKeys, Map generalConfigurationDefaults,
+        Map stepConfigurationMap, List stepConfigurationKeys, Map stepConfigurationDefaults=[:]
+    ){
+        Map merged
+        Map mergedStepConfiguration = merge(stepConfigurationMap, stepConfigurationKeys, stepConfigurationDefaults)
+        Map mergedGeneralConfiguration = merge(generalConfigurationMap, generalConfigurationKeys, generalConfigurationDefaults)
+        merged = merge(mergedGeneralConfiguration, null, mergedStepConfiguration)
+        merged = merge(parameters, parameterKeys, merged)
+
+        return merged
+    }
 }
