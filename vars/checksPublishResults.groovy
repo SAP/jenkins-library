@@ -2,6 +2,7 @@ import com.cloudbees.groovy.cps.NonCPS
 
 import com.sap.piper.ConfigurationLoader
 import com.sap.piper.ConfigurationMerger
+import com.sap.piper.MapUtils
 
 import groovy.transform.Field
 
@@ -94,13 +95,8 @@ def reportWarnings(parserName, settings, doArchive){
 }
 
 @NonCPS
-def isMap(object){
-    return object in Map
-}
-
-@NonCPS
 def toMap(parameter){
-    if(isMap(parameter))
+    if(MapUtils.isMap(parameter))
         parameter.put('active', true)
     else if(Boolean.TRUE.equals(parameter))
         parameter = [active: true]
