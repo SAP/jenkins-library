@@ -212,9 +212,9 @@ class ChecksPublishResultsTest extends BasePipelineTest {
         assertTrue("PmdPublisher options not set",
             publisherStepOptions['PmdPublisher'] != null)
         assertEquals("AnalysisPublisher thresholds configuration for failedTotalHigh not correct",
-            0, publisherStepOptions['AnalysisPublisher']['failedTotalHigh'])
+            '0', publisherStepOptions['AnalysisPublisher']['failedTotalHigh'])
         assertEquals("PmdPublisher thresholds configuration for failedTotalHigh not correct",
-            0, publisherStepOptions['PmdPublisher']['failedTotalHigh'])
+            '0', publisherStepOptions['PmdPublisher']['failedTotalHigh'])
         // ensure other values are empty
         assertEquals("AnalysisPublisher thresholds configuration for failedTotalNormal is set",
             null, publisherStepOptions['AnalysisPublisher']['failedTotalNormal'])
@@ -239,12 +239,12 @@ class ChecksPublishResultsTest extends BasePipelineTest {
 
     @Test
     void testPublishWithThresholds() throws Exception {
-        checksPublishResultsScript.call(aggregation: [thresholds: [fail: [high: 10]]], pmd: true)
+        checksPublishResultsScript.call(aggregation: [thresholds: [fail: [high: '10']]], pmd: true)
 
         assertTrue("AnalysisPublisher options not set", publisherStepOptions['AnalysisPublisher'] != null)
         assertTrue("PmdPublisher options not set", publisherStepOptions['PmdPublisher'] != null)
         assertEquals("AnalysisPublisher thresholds configuration for failedTotalHigh not correct",
-            10, publisherStepOptions['AnalysisPublisher']['failedTotalHigh'])
+            '10', publisherStepOptions['AnalysisPublisher']['failedTotalHigh'])
         // ensure other values are empty
         assertEquals("AnalysisPublisher thresholds configuration for failedTotalNormal is set",
             null, publisherStepOptions['AnalysisPublisher']['failedTotalNormal'])
