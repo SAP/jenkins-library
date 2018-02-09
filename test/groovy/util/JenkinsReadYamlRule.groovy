@@ -29,7 +29,7 @@ class JenkinsReadYamlRule implements TestRule {
                     if(m.text) {
                         return new Yaml().load(m.text)
                     } else if(m.file) {
-                        throw new UnsupportedOperationException()
+                        return new Yaml().load((m.file as File).text)
                     } else {
                         throw new IllegalArgumentException("Key 'text' is missing in map ${m}.")
                     }
