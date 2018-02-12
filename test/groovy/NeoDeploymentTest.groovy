@@ -41,7 +41,7 @@ class NeoDeploymentTest extends BasePipelineTest {
     @Before
     void init() {
 
-        workspacePath = "${tmp.newFolder("workspace").toURI().getPath()}"
+        workspacePath = "${tmp.getRoot()}"
         warArchiveName = 'warArchive.war'
         propertiesFileName = 'config.properties'
         archiveName = "archive.mtar"
