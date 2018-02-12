@@ -130,7 +130,7 @@ checksPublishResults(
 none
 
 ## Side effects
-none
+If both ESLint and PyLint results are published, they are not correctly aggregated in the aggregator plugin.
 
 ## Exceptions
 none
