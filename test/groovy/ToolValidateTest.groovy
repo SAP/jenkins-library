@@ -31,7 +31,7 @@ class ToolValidateTest extends BasePipelineTest {
 
     private static home
 
-    def toolValidateScript
+    private toolValidateScript
 
 
     @BeforeClass
