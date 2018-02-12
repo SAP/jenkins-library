@@ -4,6 +4,8 @@ import org.junit.rules.TemporaryFolder
 
 import com.lesfurets.jenkins.unit.BasePipelineTest
 
+import org.junit.BeforeClass
+import org.junit.ClassRule
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -17,34 +19,42 @@ import util.Rules
 
 class NeoDeploymentTest extends BasePipelineTest {
 
+    @ClassRule
+    public static TemporaryFolder tmp = new TemporaryFolder()
+
     private ExpectedException thrown = new ExpectedException().none()
-    private TemporaryFolder tmp = new TemporaryFolder()
     private JenkinsLoggingRule jlr = new JenkinsLoggingRule(this)
     private JenkinsShellCallRule jscr = new JenkinsShellCallRule(this)
 
     @Rule
     public RuleChain ruleChain = Rules.getCommonRules(this)
                                       .around(thrown)
-                                      .around(tmp)
                                       .around(jlr)
                                       .around(jscr)
 
-    def workspacePath
-    def warArchiveName
-    def propertiesFileName
-    def archiveName
-
+    private static workspacePath
+    private static warArchiveName
+    private static propertiesFileName
+    private static archiveName
 
     def neoDeployScript
     def cpe
 
-    @Before
-    void init() {
+    @BeforeClass
+    static void createTestFiles() {
 
         workspacePath = "${tmp.getRoot()}"
         warArchiveName = 'warArchive.war'
         propertiesFileName = 'config.properties'
-        archiveName = "archive.mtar"
+        archiveName = 'archive.mtar'
+
+        tmp.newFile(warArchiveName) << "dummy war archive"
+        tmp.newFile(propertiesFileName) << "dummy properties file"
+        tmp.newFile(archiveName) << "dummy archive"
+    }
+
+    @Before
+    void init() {
 
         helper.registerAllowedMethod('dockerExecute', [Map, Closure], null)
         helper.registerAllowedMethod('fileExists', [String], { s -> return new File(workspacePath, s).exists() })
@@ -80,8 +90,6 @@ class NeoDeploymentTest extends BasePipelineTest {
 
         binding.getVariable('env')['NEO_HOME'] = '/opt/neo'
 
-        new File(workspacePath, archiveName) << "dummy archive"
-
         cpe.setConfigProperty('DEPLOY_HOST', 'test.deploy.host.com')
         cpe.setConfigProperty('CI_DEPLOY_ACCOUNT', 'trialuser123')
 
@@ -100,8 +108,6 @@ class NeoDeploymentTest extends BasePipelineTest {
     void straightForwardTestConfigViaConfiguration() {
 
         binding.getVariable('env')['NEO_HOME'] = '/opt/neo'
-
-        new File(workspacePath, archiveName) << "dummy archive"
 
         cpe.configuration.put('steps', [neoDeploy: [host: 'test.deploy.host.com',
                                                     account: 'trialuser123']])
@@ -122,9 +128,6 @@ class NeoDeploymentTest extends BasePipelineTest {
 
         //configuration via configurationFramekwork superseds.
         binding.getVariable('env')['NEO_HOME'] = '/opt/neo'
-
-        new File(workspacePath, archiveName) << "dummy archive"
-
 
         cpe.setConfigProperty('DEPLOY_HOST', 'configProperties.deploy.host.com')
         cpe.setConfigProperty('CI_DEPLOY_ACCOUNT', 'configPropsUser123')
@@ -149,8 +152,6 @@ class NeoDeploymentTest extends BasePipelineTest {
 
         binding.getVariable('env')['NEO_HOME'] = '/opt/neo'
 
-        new File(workspacePath, archiveName) << "dummy archive"
-
         thrown.expect(MissingPropertyException)
         thrown.expectMessage('No such property: username')
 
@@ -169,8 +170,6 @@ class NeoDeploymentTest extends BasePipelineTest {
 
         binding.getVariable('env')['NEO_HOME'] = '/opt/neo'
 
-        new File(workspacePath, archiveName) << "dummy archive"
-
         cpe.setConfigProperty('DEPLOY_HOST', 'test.deploy.host.com')
         cpe.setConfigProperty('CI_DEPLOY_ACCOUNT', 'trialuser123')
 
@@ -187,8 +186,6 @@ class NeoDeploymentTest extends BasePipelineTest {
     @Test
     void neoHomeNotSetTest() {
 
-        new File(workspacePath, archiveName) << "dummy archive"
-
         cpe.setConfigProperty('DEPLOY_HOST', 'test.deploy.host.com')
         cpe.setConfigProperty('CI_DEPLOY_ACCOUNT', 'trialuser123')
 
@@ -204,8 +201,6 @@ class NeoDeploymentTest extends BasePipelineTest {
 
     @Test
     void neoHomeAsParameterTest() {
-
-        new File(workspacePath, archiveName) << "dummy archive"
 
         cpe.setConfigProperty('DEPLOY_HOST', 'test.deploy.host.com')
         cpe.setConfigProperty('CI_DEPLOY_ACCOUNT', 'trialuser123')
@@ -243,14 +238,12 @@ class NeoDeploymentTest extends BasePipelineTest {
         cpe.setConfigProperty('CI_DEPLOY_ACCOUNT', 'trialuser123')
 
         neoDeployScript.call(script: [commonPipelineEnvironment: cpe],
-                       archivePath: archiveName)
+                       archivePath: 'wrongArchiveName')
     }
 
 
     @Test
     void scriptNotProvidedTest() {
-
-        new File(workspacePath, archiveName) << "dummy archive"
 
         thrown.expect(Exception)
         thrown.expectMessage('ERROR - NO VALUE AVAILABLE FOR host')
@@ -261,7 +254,6 @@ class NeoDeploymentTest extends BasePipelineTest {
     @Test
     void mtaDeployModeTest() {
         binding.getVariable('env')['NEO_HOME'] = '/opt/neo'
-        new File(workspacePath, archiveName) << "dummy archive"
 
         cpe.setConfigProperty('DEPLOY_HOST', 'test.deploy.host.com')
         cpe.setConfigProperty('CI_DEPLOY_ACCOUNT', 'trialuser123')
@@ -276,7 +268,6 @@ class NeoDeploymentTest extends BasePipelineTest {
     @Test
     void warFileParamsDeployModeTest() {
         binding.getVariable('env')['NEO_HOME'] = '/opt/neo'
-        new File(workspacePath, warArchiveName) << "dummy war archive"
 
         cpe.setConfigProperty('DEPLOY_HOST', 'test.deploy.host.com')
         cpe.setConfigProperty('CI_DEPLOY_ACCOUNT', 'trialuser123')
@@ -297,7 +288,6 @@ class NeoDeploymentTest extends BasePipelineTest {
     @Test
     void warFileParamsDeployModeRollingUpdateTest() {
         binding.getVariable('env')['NEO_HOME'] = '/opt/neo'
-        new File(workspacePath, warArchiveName) << "dummy war archive"
 
         cpe.setConfigProperty('DEPLOY_HOST', 'test.deploy.host.com')
         cpe.setConfigProperty('CI_DEPLOY_ACCOUNT', 'trialuser123')
@@ -318,8 +308,6 @@ class NeoDeploymentTest extends BasePipelineTest {
     @Test
     void warPropertiesFileDeployModeTest() {
         binding.getVariable('env')['NEO_HOME'] = '/opt/neo'
-        new File(workspacePath, warArchiveName) << "dummy war archive"
-        new File(workspacePath, propertiesFileName) << "dummy properties file"
 
         neoDeployScript.call(script: [commonPipelineEnvironment: cpe],
                              archivePath: warArchiveName,
@@ -338,8 +326,6 @@ class NeoDeploymentTest extends BasePipelineTest {
     @Test
     void warPropertiesFileDeployModeRollingUpdateTest() {
         binding.getVariable('env')['NEO_HOME'] = '/opt/neo'
-        new File(workspacePath, warArchiveName) << "dummy war archive"
-        new File(workspacePath, propertiesFileName) << "dummy properties file"
 
         neoDeployScript.call(script: [commonPipelineEnvironment: cpe],
                              archivePath: warArchiveName,
@@ -357,7 +343,6 @@ class NeoDeploymentTest extends BasePipelineTest {
 
     @Test
     void applicationNameNotProvidedTest() {
-        new File(workspacePath, warArchiveName) << "dummy war archive"
 
         thrown.expect(Exception)
         thrown.expectMessage('ERROR - NO VALUE AVAILABLE FOR applicationName')
@@ -375,7 +360,6 @@ class NeoDeploymentTest extends BasePipelineTest {
 
     @Test
     void runtimeNotProvidedTest() {
-        new File(workspacePath, warArchiveName) << "dummy war archive"
 
         thrown.expect(Exception)
         thrown.expectMessage('ERROR - NO VALUE AVAILABLE FOR runtime')
@@ -392,7 +376,6 @@ class NeoDeploymentTest extends BasePipelineTest {
 
     @Test
     void runtimeVersionNotProvidedTest() {
-        new File(workspacePath, warArchiveName) << "dummy war archive"
 
         thrown.expect(Exception)
         thrown.expectMessage('ERROR - NO VALUE AVAILABLE FOR runtimeVersion')
@@ -409,7 +392,6 @@ class NeoDeploymentTest extends BasePipelineTest {
 
     @Test
     void illegalDeployModeTest() {
-        new File(workspacePath, warArchiveName) << "dummy war archive"
 
         thrown.expect(Exception)
         thrown.expectMessage("[neoDeploy] Invalid deployMode = 'illegalMode'. Valid 'deployMode' values are: 'mta', 'warParams' and 'warPropertiesFile'")
@@ -429,7 +411,6 @@ class NeoDeploymentTest extends BasePipelineTest {
 
     @Test
     void illegalVMSizeTest() {
-        new File(workspacePath, warArchiveName) << "dummy war archive"
 
         thrown.expect(Exception)
         thrown.expectMessage("[neoDeploy] Invalid vmSize = 'illegalVM'. Valid 'vmSize' values are: 'lite', 'pro', 'prem' and 'prem-plus'.")
@@ -449,7 +430,6 @@ class NeoDeploymentTest extends BasePipelineTest {
 
     @Test
     void illegalWARActionTest() {
-        new File(workspacePath, warArchiveName) << "dummy war archive"
 
         thrown.expect(Exception)
         thrown.expectMessage("[neoDeploy] Invalid warAction = 'illegalWARAction'. Valid 'warAction' values are: 'deploy' and 'rolling-update'.")
@@ -469,7 +449,7 @@ class NeoDeploymentTest extends BasePipelineTest {
 
     @Test
     void deployHostProvidedAsDeprecatedParameterTest() {
-        new File(workspacePath, archiveName) << "dummy archive"
+
         cpe.setConfigProperty('CI_DEPLOY_ACCOUNT', 'configPropsUser123')
 
         neoDeployScript.call(script: [commonPipelineEnvironment: cpe],
@@ -482,7 +462,7 @@ class NeoDeploymentTest extends BasePipelineTest {
 
     @Test
     void deployAccountProvidedAsDeprecatedParameterTest() {
-        new File(workspacePath, archiveName) << "dummy archive"
+
         cpe.setConfigProperty('CI_DEPLOY_ACCOUNT', 'configPropsUser123')
 
         neoDeployScript.call(script: [commonPipelineEnvironment: cpe],
