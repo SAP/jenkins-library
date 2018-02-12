@@ -1,5 +1,8 @@
 import org.apache.commons.exec.*
 import hudson.AbortException
+
+import org.junit.BeforeClass
+import org.junit.ClassRule
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -14,26 +17,32 @@ import util.Rules
 
 class ToolValidateTest extends BasePipelineTest {
 
+    @ClassRule
+    public static TemporaryFolder tmp = new TemporaryFolder()
+
     private ExpectedException thrown = new ExpectedException().none()
-    private TemporaryFolder tmp = new TemporaryFolder()
     private JenkinsLoggingRule jlr = new JenkinsLoggingRule(this)
 
     @Rule
     public RuleChain ruleChain = Rules.getCommonRules(this)
-                                      .around(tmp)
                                       .around(thrown)
                                       .around(jlr)
 
 
-    private home
+    private static home
 
     def toolValidateScript
 
-    @Before
-    void init() {
+
+    @BeforeClass
+    static void createTestFiles() {
 
         home = "${tmp.getRoot()}"
         tmp.newFile('mta.jar')
+    }
+
+    @Before
+    void init() {
 
         binding.setVariable('JAVA_HOME', home)
 
