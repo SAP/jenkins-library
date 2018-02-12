@@ -46,7 +46,7 @@ class ToolValidateTest extends BasePipelineTest {
 
         binding.setVariable('JAVA_HOME', home)
 
-        toolValidateScript =  loadScript("toolValidate.groovy").toolValidate
+        toolValidateScript =  loadScript('toolValidate.groovy').toolValidate
     }
 
 
