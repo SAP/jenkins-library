@@ -76,7 +76,7 @@ class NeoDeploymentTest extends BasePipelineTest {
 
         })
 
-        binding.setVariable('env', [:])
+        binding.setVariable('env', ['NEO_HOME':'/opt/neo'])
 
         neoDeployScript = loadScript("neoDeploy.groovy").neoDeploy
         cpe = loadScript('commonPipelineEnvironment.groovy').commonPipelineEnvironment
@@ -87,8 +87,6 @@ class NeoDeploymentTest extends BasePipelineTest {
 
     @Test
     void straightForwardTestConfigViaConfigProperties() {
-
-        binding.getVariable('env')['NEO_HOME'] = '/opt/neo'
 
         cpe.setConfigProperty('DEPLOY_HOST', 'test.deploy.host.com')
         cpe.setConfigProperty('CI_DEPLOY_ACCOUNT', 'trialuser123')
@@ -109,8 +107,6 @@ class NeoDeploymentTest extends BasePipelineTest {
     @Test
     void straightForwardTestConfigViaConfiguration() {
 
-        binding.getVariable('env')['NEO_HOME'] = '/opt/neo'
-
         neoDeployScript.call(script: [commonPipelineEnvironment: cpe],
             archivePath: archiveName,
             neoCredentialsId: 'myCredentialsId'
@@ -124,9 +120,6 @@ class NeoDeploymentTest extends BasePipelineTest {
 
     @Test
     void straightForwardTestConfigViaConfigurationAndViaConfigProperties() {
-
-        //configuration via configurationFramekwork superseds.
-        binding.getVariable('env')['NEO_HOME'] = '/opt/neo'
 
         cpe.setConfigProperty('DEPLOY_HOST', 'configProperties.deploy.host.com')
         cpe.setConfigProperty('CI_DEPLOY_ACCOUNT', 'configPropsUser123')
@@ -149,8 +142,6 @@ class NeoDeploymentTest extends BasePipelineTest {
     @Test
     void badCredentialsIdTest() {
 
-        binding.getVariable('env')['NEO_HOME'] = '/opt/neo'
-
         thrown.expect(MissingPropertyException)
         thrown.expectMessage('No such property: username')
 
@@ -164,8 +155,6 @@ class NeoDeploymentTest extends BasePipelineTest {
     @Test
     void credentialsIdNotProvidedTest() {
 
-        binding.getVariable('env')['NEO_HOME'] = '/opt/neo'
-
         neoDeployScript.call(script: [commonPipelineEnvironment: cpe],
                        archivePath: archiveName
         )
@@ -178,6 +167,8 @@ class NeoDeploymentTest extends BasePipelineTest {
 
     @Test
     void neoHomeNotSetTest() {
+
+        binding.setVariable('env', [:])
 
         neoDeployScript.call(script: [commonPipelineEnvironment: cpe],
                        archivePath: archiveName
@@ -236,7 +227,6 @@ class NeoDeploymentTest extends BasePipelineTest {
 
     @Test
     void mtaDeployModeTest() {
-        binding.getVariable('env')['NEO_HOME'] = '/opt/neo'
 
         neoDeployScript.call(script: [commonPipelineEnvironment: cpe], archivePath: archiveName, deployMode: 'mta')
 
@@ -247,7 +237,6 @@ class NeoDeploymentTest extends BasePipelineTest {
 
     @Test
     void warFileParamsDeployModeTest() {
-        binding.getVariable('env')['NEO_HOME'] = '/opt/neo'
 
         neoDeployScript.call(script: [commonPipelineEnvironment: cpe],
                              applicationName: 'testApp',
@@ -264,7 +253,6 @@ class NeoDeploymentTest extends BasePipelineTest {
 
     @Test
     void warFileParamsDeployModeRollingUpdateTest() {
-        binding.getVariable('env')['NEO_HOME'] = '/opt/neo'
 
         neoDeployScript.call(script: [commonPipelineEnvironment: cpe],
                              archivePath: warArchiveName,
@@ -281,7 +269,6 @@ class NeoDeploymentTest extends BasePipelineTest {
 
     @Test
     void warPropertiesFileDeployModeTest() {
-        binding.getVariable('env')['NEO_HOME'] = '/opt/neo'
 
         neoDeployScript.call(script: [commonPipelineEnvironment: cpe],
                              archivePath: warArchiveName,
@@ -299,7 +286,6 @@ class NeoDeploymentTest extends BasePipelineTest {
 
     @Test
     void warPropertiesFileDeployModeRollingUpdateTest() {
-        binding.getVariable('env')['NEO_HOME'] = '/opt/neo'
 
         neoDeployScript.call(script: [commonPipelineEnvironment: cpe],
                              archivePath: warArchiveName,
