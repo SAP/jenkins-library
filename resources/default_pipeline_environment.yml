@@ -17,6 +17,8 @@ steps:
     dockerImage: 'maven:3.5-jdk-7'
   influxWriteData:
     influxServer: 'jenkins'
+  mtaBuild:
+    buildTarget: 'NEO'
   neoDeploy:
     deployMode: 'mta'
     warAction: 'deploy'
