@@ -99,9 +99,6 @@ class NeoDeploymentTest extends BasePipelineTest {
         )
 
         assert jscr.shell[0] =~ /#!\/bin\/bash "\/opt\/neo\/tools\/neo\.sh" deploy-mta --host 'test\.deploy\.host\.com' --account 'trialuser123' --synchronous --user 'anonymous' --password '\*\*\*\*\*\*\*\*' --source ".*"/
-
-        assert jlr.log.contains("[neoDeploy] Neo executable \"/opt/neo/tools/neo.sh\" retrieved from environment.")
-
     }
 
     @Test
@@ -113,9 +110,6 @@ class NeoDeploymentTest extends BasePipelineTest {
 )
 
         assert jscr.shell[0] =~ /#!\/bin\/bash "\/opt\/neo\/tools\/neo\.sh" deploy-mta --host 'test\.deploy\.host\.com' --account 'trialuser123' --synchronous --user 'anonymous' --password '\*\*\*\*\*\*\*\*' --source ".*"/
-
-        assert jlr.log.contains("[neoDeploy] Neo executable \"/opt/neo/tools/neo.sh\" retrieved from environment.")
-
     }
 
     @Test
@@ -133,9 +127,6 @@ class NeoDeploymentTest extends BasePipelineTest {
         )
 
         assert jscr.shell[0] =~ /#!\/bin\/bash "\/opt\/neo\/tools\/neo\.sh" deploy-mta --host 'configuration-frwk\.deploy\.host\.com' --account 'configurationFrwkUser123' --synchronous --user 'anonymous' --password '\*\*\*\*\*\*\*\*' --source ".*"/
-
-        assert jlr.log.contains("[neoDeploy] Neo executable \"/opt/neo/tools/neo.sh\" retrieved from environment.")
-
     }
 
 
@@ -160,8 +151,6 @@ class NeoDeploymentTest extends BasePipelineTest {
         )
 
         assert jscr.shell[0] =~ /#!\/bin\/bash "\/opt\/neo\/tools\/neo\.sh" deploy-mta --host 'test\.deploy\.host\.com' --account 'trialuser123' --synchronous --user 'defaultUser' --password '\*\*\*\*\*\*\*\*' --source ".*"/
-
-        assert jlr.log.contains("[neoDeploy] Neo executable \"/opt/neo/tools/neo.sh\" retrieved from environment.")
     }
 
 
@@ -190,6 +179,18 @@ class NeoDeploymentTest extends BasePipelineTest {
         )
 
         assert jscr.shell[0] =~ /#!\/bin\/bash "\/etc\/neo\/tools\/neo\.sh" deploy-mta --host 'test\.deploy\.host\.com' --account 'trialuser123' --synchronous --user 'anonymous' --password '\*\*\*\*\*\*\*\*' --source ".*"/
+    }
+
+
+    @Test
+    void neoHomeFromEnvironmentTest() {
+
+        neoDeployScript.call(script: [commonPipelineEnvironment: cpe],
+                       archivePath: archiveName
+        )
+
+        assert jscr.shell[0].contains('"/opt/neo/tools/neo.sh" deploy-mta')
+        assert jlr.log.contains('[neoDeploy] Neo executable "/opt/neo/tools/neo.sh" retrieved from environment.')
     }
 
 
@@ -230,9 +231,7 @@ class NeoDeploymentTest extends BasePipelineTest {
 
         neoDeployScript.call(script: [commonPipelineEnvironment: cpe], archivePath: archiveName, deployMode: 'mta')
 
-
         assert jscr.shell[0] =~ /#!\/bin\/bash "\/opt\/neo\/tools\/neo\.sh" deploy-mta --host 'test\.deploy\.host\.com' --account 'trialuser123' --synchronous --user 'defaultUser' --password '\*\*\*\*\*\*\*\*' --source ".*"/
-        assert jlr.log.contains("[neoDeploy] Neo executable \"/opt/neo/tools/neo.sh\" retrieved from environment.")
     }
 
     @Test
@@ -248,7 +247,6 @@ class NeoDeploymentTest extends BasePipelineTest {
                              archivePath: warArchiveName)
 
         assert jscr.shell[0] =~ /#!\/bin\/bash "\/opt\/neo\/tools\/neo\.sh" deploy --host 'test\.deploy\.host\.com' --account 'trialuser123' --application 'testApp' --runtime 'neo-javaee6-wp' --runtime-version '2\.125' --size 'lite' --user 'defaultUser' --password '\*\*\*\*\*\*\*\*' --source ".*\.war"/
-        assert jlr.log.contains("[neoDeploy] Neo executable \"/opt/neo/tools/neo.sh\" retrieved from environment.")
     }
 
     @Test
@@ -264,7 +262,6 @@ class NeoDeploymentTest extends BasePipelineTest {
                              vmSize: 'lite')
 
         assert jscr.shell[0] =~ /#!\/bin\/bash "\/opt\/neo\/tools\/neo\.sh" rolling-update --host 'test\.deploy\.host\.com' --account 'trialuser123' --application 'testApp' --runtime 'neo-javaee6-wp' --runtime-version '2\.125' --size 'lite' --user 'defaultUser' --password '\*\*\*\*\*\*\*\*' --source ".*\.war"/
-        assert jlr.log.contains("[neoDeploy] Neo executable \"/opt/neo/tools/neo.sh\" retrieved from environment.")
     }
 
     @Test
@@ -281,7 +278,6 @@ class NeoDeploymentTest extends BasePipelineTest {
                              vmSize: 'lite')
 
         assert jscr.shell[0] =~ /#!\/bin\/bash "\/opt\/neo\/tools\/neo\.sh" deploy .*\.properties --user 'defaultUser' --password '\*\*\*\*\*\*\*\*' --source ".*\.war"/
-        assert jlr.log.contains("[neoDeploy] Neo executable \"/opt/neo/tools/neo.sh\" retrieved from environment.")
     }
 
     @Test
@@ -298,7 +294,6 @@ class NeoDeploymentTest extends BasePipelineTest {
                              vmSize: 'lite')
 
         assert jscr.shell[0] =~ /#!\/bin\/bash "\/opt\/neo\/tools\/neo\.sh" rolling-update .*\.properties --user 'defaultUser' --password '\*\*\*\*\*\*\*\*' --source ".*\.war"/
-        assert jlr.log.contains("[neoDeploy] Neo executable \"/opt/neo/tools/neo.sh\" retrieved from environment.")
     }
 
     @Test
