@@ -91,5 +91,40 @@ class FileUtilsTest {
 
         FileUtils.validateDirectoryIsNotEmpty(notEmptyDir)
     }
+
+    @Test
+    void validateFileNoFilePathTest() {
+
+        thrown.expect(IllegalArgumentException)
+        thrown.expectMessage("The parameter 'filePath' can not be null or empty.")
+
+        FileUtils.validateFile(null)
+    }
+
+    @Test
+    void validateFileEmptyFilePathTest() {
+
+        thrown.expect(IllegalArgumentException)
+        thrown.expectMessage("The parameter 'filePath' can not be null or empty.")
+
+        FileUtils.validateFile('')
+    }
+
+    @Test
+    void validateFileDoesNotExistFileTest() {
+
+        def path = new File("$emptyDir", 'test').getAbsolutePath()
+
+        thrown.expect(AbortException)
+        thrown.expectMessage("'$path' does not exist.")
+
+        FileUtils.validateFile(path)
+    }
+
+    @Test
+    void validateFileTest() {
+
+        FileUtils.validateFile(file)
+    }
 }
 
