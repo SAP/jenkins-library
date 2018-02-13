@@ -48,9 +48,9 @@ class NeoDeploymentTest extends BasePipelineTest {
         propertiesFileName = 'config.properties'
         archiveName = 'archive.mtar'
 
-        tmp.newFile(warArchiveName) << "dummy war archive"
-        tmp.newFile(propertiesFileName) << "dummy properties file"
-        tmp.newFile(archiveName) << "dummy archive"
+        tmp.newFile(warArchiveName) << 'dummy war archive'
+        tmp.newFile(propertiesFileName) << 'dummy properties file'
+        tmp.newFile(archiveName) << 'dummy archive'
     }
 
     @Before
@@ -78,7 +78,7 @@ class NeoDeploymentTest extends BasePipelineTest {
 
         binding.setVariable('env', ['NEO_HOME':'/opt/neo'])
 
-        neoDeployScript = loadScript("neoDeploy.groovy").neoDeploy
+        neoDeployScript = loadScript('neoDeploy.groovy').neoDeploy
         cpe = loadScript('commonPipelineEnvironment.groovy').commonPipelineEnvironment
 
         cpe.configuration = [steps:[neoDeploy: [host: 'test.deploy.host.com', account: 'trialuser123']]]
@@ -208,7 +208,7 @@ class NeoDeploymentTest extends BasePipelineTest {
     void wrongArchivePathProvidedTest() {
 
         thrown.expect(AbortException)
-        thrown.expectMessage("Archive cannot be found")
+        thrown.expectMessage('Archive cannot be found')
 
         neoDeployScript.call(script: [commonPipelineEnvironment: cpe],
                        archivePath: 'wrongArchiveName')
