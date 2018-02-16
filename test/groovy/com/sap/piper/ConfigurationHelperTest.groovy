@@ -15,6 +15,7 @@ class ConfigurationHelperTest {
     void testGetProperty() {
         def configuration = new ConfigurationHelper(getConfiguration())
         Assert.assertEquals('maven:3.2-jdk-8-onbuild', configuration.getConfigProperty('dockerImage'))
+        Assert.assertEquals('maven:3.2-jdk-8-onbuild', configuration.getConfigProperty('dockerImage', 'default'))
         Assert.assertEquals('default', configuration.getConfigProperty('something', 'default'))
         Assert.assertTrue(configuration.isPropertyDefined('dockerImage'))
         Assert.assertFalse(configuration.isPropertyDefined('something'))
@@ -25,6 +26,12 @@ class ConfigurationHelperTest {
         def configuration = new ConfigurationHelper(getConfiguration())
         Assert.assertTrue(configuration.isPropertyDefined('dockerImage'))
         Assert.assertFalse(configuration.isPropertyDefined('something'))
+    }
+
+    @Test
+    void testIsPropertyDefinedWithInteger() {
+        def configuration = new ConfigurationHelper([dockerImage: 3])
+        Assert.assertTrue(configuration.isPropertyDefined('dockerImage'))
     }
 
     @Test
