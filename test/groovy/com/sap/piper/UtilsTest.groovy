@@ -1,75 +1,48 @@
 package com.sap.piper
 
-import com.lesfurets.jenkins.unit.BasePipelineTest
-import org.junit.Before
 import org.junit.Rule
+import org.junit.Before
 import org.junit.Test
 import org.junit.rules.ExpectedException
-import org.junit.rules.RuleChain
-import util.Rules
-import util.SharedLibraryCreator
 
-import static org.hamcrest.Matchers.containsString
-import static org.hamcrest.Matchers.hasSize
-import static org.junit.Assert.assertEquals
-import static org.junit.Assert.assertThat
+import com.sap.piper.Utils
 
-class UtilsTest extends BasePipelineTest {
+
+class UtilsTest {
 
     @Rule
-    public ExpectedException exception = ExpectedException.none()
+    public ExpectedException thrown = new ExpectedException().none()
 
-    @Rule
-    public RuleChain rules = Rules.getCommonRules(this, SharedLibraryCreator.lazyLoadedLibrary)
+    private utils = new Utils()
+    private parameters
 
-    Utils utils
 
     @Before
-    void init() throws Exception {
-        utils = new Utils()
-        prepareObjectInterceptors(utils)
-    }
+    void setup() {
 
-    void prepareObjectInterceptors(object) {
-        object.metaClass.invokeMethod = helper.getMethodInterceptor()
-        object.metaClass.static.invokeMethod = helper.getMethodInterceptor()
-        object.metaClass.methodMissing = helper.getMethodMissingInterceptor()
+        parameters = [:]
     }
 
     @Test
-    void testGetMandatoryParameterValid() {
+    void noValueGetMandatoryParameterTest() {
 
-        def sourceMap = [test1: 'value1', test2: 'value2']
+        thrown.expect(Exception)
+        thrown.expectMessage("ERROR - NO VALUE AVAILABLE FOR test")
 
-        def defaultFallbackMap = [myDefault1: 'default1']
-
-        assertEquals('value1', utils.getMandatoryParameter(sourceMap, 'test1', null))
-
-        assertEquals('value1', utils.getMandatoryParameter(sourceMap, 'test1', ''))
-
-        assertEquals('value1', utils.getMandatoryParameter(sourceMap, 'test1', 'customValue'))
-
+        utils.getMandatoryParameter(parameters, 'test', null)
     }
 
     @Test
-    void testGetMandatoryParameterDefaultFallback() {
+    void defaultValueGetMandatoryParameterTest() {
 
-        def myMap = [test1: 'value1', test2: 'value2']
-
-        assertEquals('', utils.getMandatoryParameter(myMap, 'test3', ''))
-        assertEquals('customValue', utils.getMandatoryParameter(myMap, 'test3', 'customValue'))
+        assert  utils.getMandatoryParameter(parameters, 'test', 'default') == 'default'
     }
 
-
     @Test
-    void testGetMandatoryParameterFail() {
+    void valueGetmandatoryParameterTest() {
 
-        def myMap = [test1: 'value1', test2: 'value2']
+        parameters.put('test', 'value')
 
-        exception.expect(Exception.class)
-
-        exception.expectMessage("ERROR - NO VALUE AVAILABLE FOR")
-
-        utils.getMandatoryParameter(myMap, 'test3', null)
+        assert utils.getMandatoryParameter(parameters, 'test', null) == 'value'
     }
 }

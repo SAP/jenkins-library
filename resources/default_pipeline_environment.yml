@@ -17,11 +17,72 @@ steps:
     dockerImage: 'maven:3.5-jdk-7'
   influxWriteData:
     influxServer: 'jenkins'
+  mtaBuild:
+    buildTarget: 'NEO'
   neoDeploy:
     deployMode: 'mta'
     warAction: 'deploy'
     vmSize: 'lite'
     neoCredentialsId: 'CI_CREDENTIALS_ID'
+  checksPublishResults:
+    aggregation:
+      active: true
+      thresholds:
+        fail:
+          high: '0'
+    tasks:
+      pattern: '**/*.java'
+      low: ''
+      normal: 'TODO,REVISE,XXX'
+      high: 'FIXME'
+      archive: true
+      active: false
+      thresholds:
+        fail:
+          high: '0'
+    pmd:
+      pattern: '**/target/pmd.xml'
+      archive: true
+      active: false
+      thresholds:
+        fail:
+          high: '0'
+    cpd:
+      pattern: '**/target/cpd.xml'
+      archive: true
+      active: false
+      thresholds:
+        fail:
+          high: '0'
+    findbugs:
+      pattern: '**/target/findbugsXml.xml, **/target/findbugs.xml'
+      archive: true
+      active: false
+      thresholds:
+        fail:
+          high: '0'
+    checkstyle:
+      pattern: '**/target/checkstyle-result.xml'
+      archive: true
+      active: false
+      thresholds:
+        fail:
+          high: '0'
+    eslint:
+      pattern: '**/eslint.xml'
+      archive: true
+      active: false
+      thresholds:
+        fail:
+          high: '0'
+    pylint:
+      pattern: '**/pylint.log'
+      archive: true
+      active: false
+      thresholds:
+        fail:
+          high: '0'
+    archive: false
   testsPublishResults:
     junit:
       pattern: '**/target/surefire-reports/*.xml'
