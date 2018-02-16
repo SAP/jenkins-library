@@ -1,6 +1,9 @@
 import hudson.AbortException
 import org.yaml.snakeyaml.Yaml
 import org.yaml.snakeyaml.parser.ParserException
+
+import org.junit.BeforeClass
+import org.junit.ClassRule
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -16,31 +19,40 @@ import util.Rules
 
 public class MTABuildTest extends BasePipelineTest {
 
+    @ClassRule
+    public static TemporaryFolder tmp = new TemporaryFolder()
+
     private ExpectedException thrown = new ExpectedException()
-    private TemporaryFolder tmp = new TemporaryFolder()
     private JenkinsLoggingRule jlr = new JenkinsLoggingRule(this)
     private JenkinsShellCallRule jscr = new JenkinsShellCallRule(this)
 
     @Rule
     public RuleChain ruleChain = Rules.getCommonRules(this)
             .around(thrown)
-            .around(tmp)
             .around(jlr)
             .around(jscr)
 
-
-    def currentDir
-    def mtaYaml
+    private static currentDir
+    private static newDir
+    private static mtaYaml
 
     def mtaBuildScript
     def cpe
 
+    @BeforeClass
+    static void createTestFiles() {
+
+        currentDir = "${tmp.getRoot()}"
+        mtaYaml = tmp.newFile('mta.yaml')
+        newDir = "$currentDir/newDir"
+        tmp.newFolder('newDir')
+        tmp.newFile('newDir/mta.yaml') << defaultMtaYaml()
+    }
+
     @Before
     void init() {
 
-        currentDir = tmp.newFolder().toURI().getPath()[0..-2] //omit final '/'
-        mtaYaml = new File("$currentDir/mta.yaml")
-        mtaYaml << defaultMtaYaml()
+        mtaYaml.text = defaultMtaYaml()
 
         helper.registerAllowedMethod('pwd', [], { currentDir } )
 
@@ -84,20 +96,13 @@ public class MTABuildTest extends BasePipelineTest {
     @Test
     void mtaBuildWithSurroundingDirTest() {
 
-        def newDirName = 'newDir'
-        def newDirPath = "$currentDir/$newDirName"
-        def newDir = new File(newDirPath)
-
-        newDir.mkdirs()
-        new File(newDir, 'mta.yaml') << defaultMtaYaml()
-
-        helper.registerAllowedMethod('pwd', [], { newDirPath } )
+        helper.registerAllowedMethod('pwd', [], { newDir } )
 
         def mtarFilePath = mtaBuildScript.call(buildTarget: 'NEO')
 
         assert jscr.shell[0] =~ /sed -ie "s\/\\\$\{timestamp\}\/`date \+%Y%m%d%H%M%S`\/g" ".*\/newDir\/mta.yaml"$/
 
-        assert mtarFilePath == "$currentDir/$newDirName/com.mycompany.northwind.mtar"
+        assert mtarFilePath == "$newDir/com.mycompany.northwind.mtar"
     }
 
 
@@ -214,7 +219,7 @@ public class MTABuildTest extends BasePipelineTest {
     }
 
 
-    private defaultMtaYaml() {
+    private static defaultMtaYaml() {
         return  '''
                 _schema-version: "2.0.0"
                 ID: "com.mycompany.northwind"
