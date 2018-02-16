@@ -1,5 +1,8 @@
 import org.apache.commons.exec.*
 import hudson.AbortException
+
+import org.junit.BeforeClass
+import org.junit.ClassRule
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -14,32 +17,36 @@ import util.Rules
 
 class ToolValidateTest extends BasePipelineTest {
 
+    @ClassRule
+    public static TemporaryFolder tmp = new TemporaryFolder()
+
     private ExpectedException thrown = new ExpectedException().none()
-    private TemporaryFolder tmp = new TemporaryFolder()
     private JenkinsLoggingRule jlr = new JenkinsLoggingRule(this)
 
     @Rule
     public RuleChain ruleChain = Rules.getCommonRules(this)
-                                      .around(tmp)
                                       .around(thrown)
                                       .around(jlr)
 
 
-    private notEmptyDir
+    private static home
 
-    def toolValidateScript
+    private toolValidateScript
+
+
+    @BeforeClass
+    static void createTestFiles() {
+
+        home = "${tmp.getRoot()}"
+        tmp.newFile('mta.jar')
+    }
 
     @Before
     void init() {
 
-        notEmptyDir = tmp.newFolder('notEmptyDir')
-        def path = "${notEmptyDir.getAbsolutePath()}${File.separator}test.txt"
-        File file = new File(path)
-        file.createNewFile()
+        binding.setVariable('JAVA_HOME', home)
 
-        binding.setVariable('JAVA_HOME', notEmptyDir.getAbsolutePath())
-
-        toolValidateScript =  loadScript("toolValidate.groovy").toolValidate
+        toolValidateScript =  loadScript('toolValidate.groovy').toolValidate
     }
 
 
@@ -85,7 +92,7 @@ class ToolValidateTest extends BasePipelineTest {
         thrown.expect(AbortException)
         thrown.expectMessage("The tool 'test' is not supported.")
 
-        toolValidateScript.call(tool: 'test', home: notEmptyDir.getAbsolutePath())
+        toolValidateScript.call(tool: 'test', home: home)
     }
 
     @Test
@@ -96,7 +103,7 @@ class ToolValidateTest extends BasePipelineTest {
 
         helper.registerAllowedMethod('sh', [Map], { Map m -> getNoVersion(m) })
 
-        toolValidateScript.call(tool: 'java', home: notEmptyDir.getAbsolutePath())
+        toolValidateScript.call(tool: 'java', home: home)
     }
 
     @Test
@@ -107,7 +114,7 @@ class ToolValidateTest extends BasePipelineTest {
 
         helper.registerAllowedMethod('sh', [Map], { Map m -> getNoVersion(m) })
 
-        toolValidateScript.call(tool: 'mta', home: notEmptyDir.getAbsolutePath())
+        toolValidateScript.call(tool: 'mta', home: home)
     }
 
     @Test
@@ -118,7 +125,7 @@ class ToolValidateTest extends BasePipelineTest {
 
         helper.registerAllowedMethod('sh', [Map], { Map m -> getNoVersion(m) })
 
-        toolValidateScript.call(tool: 'neo', home: notEmptyDir.getAbsolutePath())
+        toolValidateScript.call(tool: 'neo', home: home)
     }
 
     @Test
@@ -129,7 +136,7 @@ class ToolValidateTest extends BasePipelineTest {
 
         helper.registerAllowedMethod('sh', [Map], { Map m -> getNoVersion(m) })
 
-        toolValidateScript.call(tool: 'cm', home: notEmptyDir.getAbsolutePath())
+        toolValidateScript.call(tool: 'cm', home: home)
 
         script.execute()
     }
@@ -142,7 +149,7 @@ class ToolValidateTest extends BasePipelineTest {
 
         helper.registerAllowedMethod('sh', [Map], { Map m -> getIncompatibleVersion(m) })
 
-        toolValidateScript.call(tool: 'java', home: notEmptyDir.getAbsolutePath())
+        toolValidateScript.call(tool: 'java', home: home)
     }
 
     @Test
@@ -153,7 +160,7 @@ class ToolValidateTest extends BasePipelineTest {
 
         helper.registerAllowedMethod('sh', [Map], { Map m -> getIncompatibleVersion(m) })
 
-        toolValidateScript.call(tool: 'mta', home: notEmptyDir.getAbsolutePath())
+        toolValidateScript.call(tool: 'mta', home: home)
     }
 
     @Test
@@ -164,7 +171,7 @@ class ToolValidateTest extends BasePipelineTest {
 
         helper.registerAllowedMethod('sh', [Map], { Map m -> getIncompatibleVersion(m) })
 
-        toolValidateScript.call(tool: 'neo', home: notEmptyDir.getAbsolutePath())
+        toolValidateScript.call(tool: 'neo', home: home)
     }
 
     @Test
@@ -176,7 +183,7 @@ class ToolValidateTest extends BasePipelineTest {
         helper.registerAllowedMethod('sh', [Map], { Map m -> getIncompatibleVersion(m) })
         binding.setVariable('tool', 'cm')
 
-        toolValidateScript.call(tool: 'cm', home: notEmptyDir.getAbsolutePath())
+        toolValidateScript.call(tool: 'cm', home: home)
     }
 
     @Test
@@ -184,12 +191,10 @@ class ToolValidateTest extends BasePipelineTest {
 
         helper.registerAllowedMethod('sh', [Map], { Map m -> getVersion(m) })
 
-        toolValidateScript.call(tool: 'java', home: notEmptyDir.getAbsolutePath())
+        toolValidateScript.call(tool: 'java', home: home)
 
-        assert jlr.log.contains('--- BEGIN LIBRARY STEP: toolValidate.groovy ---')
-        assert jlr.log.contains('[INFO] Validating Java version 1.8.0 or compatible version.')
-        assert jlr.log.contains('[INFO] Java version 1.8.0 is installed.')
-        assert jlr.log.contains('--- END LIBRARY STEP: toolValidate.groovy ---')
+        assert jlr.log.contains('[toolValidate] Validating Java version 1.8.0 or compatible version.')
+        assert jlr.log.contains('[toolValidate] Java version 1.8.0 is installed.')
     }
 
     @Test
@@ -197,12 +202,10 @@ class ToolValidateTest extends BasePipelineTest {
 
         helper.registerAllowedMethod('sh', [Map], { Map m -> getVersion(m) })
 
-        toolValidateScript.call(tool: 'mta', home: notEmptyDir.getAbsolutePath())
+        toolValidateScript.call(tool: 'mta', home: home)
 
-        assert jlr.log.contains('--- BEGIN LIBRARY STEP: toolValidate.groovy ---')
-        assert jlr.log.contains('[INFO] Validating SAP Multitarget Application Archive Builder version 1.0.6 or compatible version.')
-        assert jlr.log.contains('[INFO] SAP Multitarget Application Archive Builder version 1.0.6 is installed.')
-        assert jlr.log.contains('--- END LIBRARY STEP: toolValidate.groovy ---')
+        assert jlr.log.contains('[toolValidate] Validating SAP Multitarget Application Archive Builder version 1.0.6 or compatible version.')
+        assert jlr.log.contains('[toolValidate] SAP Multitarget Application Archive Builder version 1.0.6 is installed.')
     }
 
     @Test
@@ -210,12 +213,10 @@ class ToolValidateTest extends BasePipelineTest {
 
         helper.registerAllowedMethod('sh', [Map], { Map m -> getVersion(m) })
 
-        toolValidateScript.call(tool: 'neo', home: notEmptyDir.getAbsolutePath())
+        toolValidateScript.call(tool: 'neo', home: home)
 
-        assert jlr.log.contains('--- BEGIN LIBRARY STEP: toolValidate.groovy ---')
-        assert jlr.log.contains('[INFO] Validating SAP Cloud Platform Console Client version 3.39.10 or compatible version.')
-        assert jlr.log.contains('[INFO] SAP Cloud Platform Console Client version 3.39.10 is installed.')
-        assert jlr.log.contains('--- END LIBRARY STEP: toolValidate.groovy ---')
+        assert jlr.log.contains('[toolValidate] Validating SAP Cloud Platform Console Client version 3.39.10 or compatible version.')
+        assert jlr.log.contains('[toolValidate] SAP Cloud Platform Console Client version 3.39.10 is installed.')
     }
 
     @Test
@@ -223,12 +224,10 @@ class ToolValidateTest extends BasePipelineTest {
 
         helper.registerAllowedMethod('sh', [Map], { Map m -> getVersion(m) })
 
-        toolValidateScript.call(tool: 'cm', home: notEmptyDir.getAbsolutePath())
+        toolValidateScript.call(tool: 'cm', home: home)
 
-        assert jlr.log.contains('--- BEGIN LIBRARY STEP: toolValidate.groovy ---')
-        assert jlr.log.contains('[INFO] Validating Change Management Command Line Interface version 0.0.1 or compatible version.')
-        assert jlr.log.contains('[INFO] Change Management Command Line Interface version 0.0.1 is installed.')
-        assert jlr.log.contains('--- END LIBRARY STEP: toolValidate.groovy ---')
+        assert jlr.log.contains('[toolValidate] Validating Change Management Command Line Interface version 0.0.1 or compatible version.')
+        assert jlr.log.contains('[toolValidate] Change Management Command Line Interface version 0.0.1 is installed.')
     }
 
     private getNoVersion(Map m) { 

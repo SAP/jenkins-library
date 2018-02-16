@@ -1,16 +1,37 @@
-import com.sap.piper.Utils
+import com.sap.piper.ConfigurationLoader
+import com.sap.piper.ConfigurationMerger
 
 
 def call(Map parameters = [:]) {
 
-    handlePipelineStepErrors (stepName: 'mtaBuild', stepParameters: parameters) {
+    def stepName = 'mtaBuild'
 
-        def utils = new Utils()
-        def buildTarget = utils.getMandatoryParameter(parameters, 'buildTarget', null)
-        def script = parameters.script
-        if (script == null){
-            script = [commonPipelineEnvironment: commonPipelineEnvironment]
-        }
+    List parameterKeys = [
+        'buildTarget',
+        'mtaJarLocation'
+    ]
+
+    List stepConfigurationKeys = [
+        'buildTarget'
+    ]
+
+    List generalConfigurationKeys = [
+        'mtaJarLocation'
+    ]
+
+    handlePipelineStepErrors (stepName: stepName, stepParameters: parameters) {
+
+        final script = parameters?.script ?: [commonPipelineEnvironment: commonPipelineEnvironment]
+
+        prepareDefaultValues script: script
+
+        final Map stepConfiguration = ConfigurationLoader.stepConfiguration(script, stepName)
+        final Map stepDefaults = ConfigurationLoader.defaultStepConfiguration(script, stepName)
+        final Map generalConfiguration = ConfigurationLoader.generalConfiguration(script)
+        final Map configuration = ConfigurationMerger.merge(
+                                      parameters, parameterKeys,
+                                      generalConfiguration, generalConfigurationKeys, [:],
+                                      stepConfiguration, stepConfigurationKeys, stepDefaults)
 
         def mtaYaml = readYaml file: "${pwd()}/mta.yaml"
 
@@ -24,7 +45,8 @@ def call(Map parameters = [:]) {
 
         def mtarFileName = "${id}.mtar"
 
-        def mtaJar = getMtaJar(parameters)
+        def mtaJar = getMtaJar(stepName, configuration)
+        def buildTarget = configuration.buildTarget
 
         sh  """#!/bin/bash
             export PATH=./node_modules/.bin:${PATH}
@@ -32,27 +54,28 @@ def call(Map parameters = [:]) {
             """
 
         def mtarFilePath = "${pwd()}/${mtarFileName}"
-        script.commonPipelineEnvironment.setMtarFilePath(mtarFilePath)
+        script?.commonPipelineEnvironment?.setMtarFilePath(mtarFilePath)
 
         return mtarFilePath
     }
 }
 
-private getMtaJar(parameters) {
+private getMtaJar(stepName, configuration) {
     def mtaJarLocation = 'mta.jar' //default, maybe it is in current working directory
 
-    if(parameters?.mtaJarLocation){
-        mtaJarLocation = "${parameters.mtaJarLocation}/mta.jar"
-        echo "[mtaBuild] MTA JAR \"${mtaJarLocation}\" retrieved from parameters."
+    if(configuration?.mtaJarLocation){
+        mtaJarLocation = "${configuration.mtaJarLocation}/mta.jar"
+        echo "[$stepName] MTA JAR \"${mtaJarLocation}\" retrieved from configuration."
         return mtaJarLocation
     }
 
     if(env?.MTA_JAR_LOCATION){
         mtaJarLocation = "${env.MTA_JAR_LOCATION}/mta.jar"
-        echo "[mtaBuild] MTA JAR \"${mtaJarLocation}\" retrieved from environment."
+        echo "[$stepName] MTA JAR \"${mtaJarLocation}\" retrieved from environment."
         return mtaJarLocation
     }
 
-    echo "[mtaBuild] Using MTA JAR from current working directory."
+    echo "[$stepName] Using MTA JAR from current working directory."
     return mtaJarLocation
 }
+

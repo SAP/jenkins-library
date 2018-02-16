@@ -1,5 +1,8 @@
+package com.sap.piper
+
+import org.junit.ClassRule
+import org.junit.BeforeClass
 import org.junit.Rule
-import org.junit.Before
 import org.junit.Test
 import org.junit.rules.ExpectedException
 import org.junit.rules.TemporaryFolder
@@ -11,26 +14,24 @@ import com.sap.piper.FileUtils
 
 class FileUtilsTest {
 
-    @Rule
-    public ExpectedException thrown = new ExpectedException().none()
+    @ClassRule
+    public static TemporaryFolder tmp = new TemporaryFolder()
 
     @Rule
-    public TemporaryFolder tmp = new TemporaryFolder()
+    public ExpectedException thrown = new ExpectedException()
 
-    private File emptyDir
-    private File notEmptyDir
-    private File notDir
+    private static emptyDir
+    private static notEmptyDir
+    private static file
 
+    @BeforeClass
+    static void createTestFiles() {
 
-    @Before
-    void setUp() {
-
-        emptyDir = tmp.newFolder('emptyDir')
-        notEmptyDir = tmp.newFolder('notEmptyDir')
-        File file = new File("${notEmptyDir.getAbsolutePath()}${File.separator}test.txt")
-        file.createNewFile()
-        notDir = tmp.newFile('noDir')
+        emptyDir = tmp.newFolder('emptyDir').getAbsolutePath()
+        notEmptyDir = tmp.newFolder('notEmptyDir').getAbsolutePath()
+        file = tmp.newFile('notEmptyDir/file').getAbsolutePath()
     }
+
 
     @Test
     void nullValidateDirectoryTest() {
@@ -38,7 +39,7 @@ class FileUtilsTest {
         thrown.expect(IllegalArgumentException)
         thrown.expectMessage("The parameter 'dir' can not be null or empty.")
 
-        FileUtils.validateDirectory(null)
+        FileUtils.validateDirectory()
     }
 
     @Test
@@ -53,7 +54,7 @@ class FileUtilsTest {
     @Test
     void doestNotExistValidateDirectoryTest() {
 
-        def path = "${emptyDir.getAbsolutePath()}${File.separator}test"
+        def path = new File("$emptyDir", 'test').getAbsolutePath()
 
         thrown.expect(AbortException)
         thrown.expectMessage("'$path' does not exist.")
@@ -65,29 +66,30 @@ class FileUtilsTest {
     void isNotDirectoryValidateDirectoryTest() {
 
         thrown.expect(AbortException)
-        thrown.expectMessage("'${notDir.getAbsolutePath()}' is not a directory.")
+        thrown.expectMessage("'$file' is not a directory.")
 
-        FileUtils.validateDirectory(notDir.getAbsolutePath())
+        FileUtils.validateDirectory(file)
     }
 
     @Test
     void validateDirectoryTest() {
 
-        FileUtils.validateDirectory(notEmptyDir.getAbsolutePath())
+        FileUtils.validateDirectory(notEmptyDir)
     }
 
     @Test
     void emptyDirValidateDirectoryIsNotEmptyTest() {
 
         thrown.expect(AbortException)
-        thrown.expectMessage("'${emptyDir.getAbsolutePath()}' is empty.")
+        thrown.expectMessage("'$emptyDir' is empty.")
 
-        FileUtils.validateDirectoryIsNotEmpty(emptyDir.getAbsolutePath())
+        FileUtils.validateDirectoryIsNotEmpty(emptyDir)
     }
 
     @Test
     void validateDirectoryIsNotEmptyTest() {
 
-        FileUtils.validateDirectoryIsNotEmpty(notEmptyDir.getAbsolutePath())
+        FileUtils.validateDirectoryIsNotEmpty(notEmptyDir)
     }
 }
+
