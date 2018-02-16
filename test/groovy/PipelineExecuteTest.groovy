@@ -48,11 +48,11 @@ class PipelineExecuteTest extends BasePipelineTest {
     void straightForwardTest() {
 
         pipelineExecuteScript.call(repoUrl: "https://test.com/myRepo.git")
-        assert load == "Jenkinsfile"
+        assert load == "pipelines/ui5-sap-cp/Jenkinsfile"
         assert checkoutParameters.branch == 'master'
         assert checkoutParameters.repoUrl == "https://test.com/myRepo.git"
         assert checkoutParameters.credentialsId == ''
-        assert checkoutParameters.path == 'Jenkinsfile'
+        assert checkoutParameters.path == 'pipelines/ui5-sap-cp/Jenkinsfile'
 
     }
 
@@ -70,14 +70,5 @@ class PipelineExecuteTest extends BasePipelineTest {
         assert checkoutParameters.credentialsId == 'abcd1234'
         assert checkoutParameters.path == 'path/to/Jenkinsfile'
 
-    }
-
-    @Test
-    void noRepoUrlTest() {
-
-        thrown.expect(Exception)
-        thrown.expectMessage("ERROR - NO VALUE AVAILABLE FOR repoUrl")
-
-        pipelineExecuteScript.call()
     }
 }

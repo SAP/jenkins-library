@@ -4,6 +4,11 @@ general:
 
 #Steps Specific Configuration
 steps:
+  pipelineExecute:
+    repoUrl: 'https://github.com/SAP/jenkins-pipelines.git'
+    branch: 'master'
+    path: 'pipelines/ui5-sap-cp/Jenkinsfile'
+    credentialsId: ''
   artifactSetVersion:
     timestampTemplate: '%Y%m%d%H%M%S'
     tagPrefix: 'build_'

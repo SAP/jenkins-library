@@ -1,5 +1,9 @@
 import com.sap.piper.Utils
 
+import com.sap.piper.ConfigurationLoader
+import com.sap.piper.ConfigurationMerger
+
+
 /**
  * pipelineExecute
  * Load and executes a pipeline from another git repository.
@@ -11,21 +15,37 @@ def call(Map parameters = [:]) {
 
         def path
 
-        handlePipelineStepErrors (stepName: 'pipelineExecute', stepParameters: parameters) {
+        def stepName = 'pipelineExecute'
 
-            def utils = new Utils()
+        List parameterKeys = [
+            'repoUrl',
+            'branch',
+            'path',
+            'credentialsId'
+        ]
 
-            // The coordinates of the pipeline script
-            def repo = utils.getMandatoryParameter(parameters, 'repoUrl', null)
-            def branch = utils.getMandatoryParameter(parameters, 'branch', 'master')
+        List stepConfigurationKeys = [
+            'repoUrl',
+            'branch',
+            'path',
+            'credentialsId'
+        ]
 
-            path = utils.getMandatoryParameter(parameters, 'path', 'Jenkinsfile')
+        handlePipelineStepErrors (stepName: stepName, stepParameters: parameters) {
 
-            // In case access to the repository containing the pipeline
-            // script is restricted the credentialsId of the credentials used for
-            // accessing the repository needs to be provided below. The corresponding
-            // credentials needs to be configured in Jenkins accordingly.
-            def credentialsId = utils.getMandatoryParameter(parameters, 'credentialsId', '')
+            final script = parameters?.script ?: [commonPipelineEnvironment: commonPipelineEnvironment]
+
+            prepareDefaultValues script: script
+
+            final Map stepConfiguration = ConfigurationLoader.stepConfiguration(script, stepName)
+            final Map stepDefaults = ConfigurationLoader.defaultStepConfiguration(script, stepName)
+            final Map configuration = ConfigurationMerger.merge(parameters, parameterKeys,
+                                      stepConfiguration, stepConfigurationKeys, stepDefaults)
+
+            def repo = configuration.repoUrl
+            def branch = configuration.branch
+            path = configuration.path
+            def credentialsId = configuration.credentialsId
 
             deleteDir()
 
