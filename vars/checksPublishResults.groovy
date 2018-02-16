@@ -7,6 +7,9 @@ import com.sap.piper.MapUtils
 import groovy.transform.Field
 
 @Field def STEP_NAME = 'checksPublishResults'
+@Field List TOOLS = [
+    'aggregation', 'tasks', 'pmd', 'cpd', 'findbugs', 'checkstyle', 'eslint', 'pylint'
+]
 
 /**
  * checksPublishResults
@@ -20,16 +23,14 @@ def call(Map parameters = [:]) {
             script = [commonPipelineEnvironment: commonPipelineEnvironment]
         prepareDefaultValues script: script
         prepare(parameters)
-
-        List configurationKeys = [
-            'aggregation', 'tasks', 'pmd', 'cpd', 'findbugs', 'checkstyle', 'eslint', 'pylint', 'archive'
-        ]
+        
+        List configKeys = TOOLS.plus('archive')
 
         final Map stepDefaults = ConfigurationLoader.defaultStepConfiguration(script, STEP_NAME)
         final Map stepConfiguration = ConfigurationLoader.stepConfiguration(script, STEP_NAME)
         Map configuration = ConfigurationMerger.merge(
-            parameters, configurationKeys,
-            stepConfiguration, configurationKeys,
+            parameters, configKeys,
+            stepConfiguration, configKeys,
             stepDefaults)
 
         def doArchive = configuration.get('archive')
@@ -131,7 +132,7 @@ def createCommonOptionsMap(publisherName, settings){
 @NonCPS
 def prepare(parameters){
     // ensure tool maps are initialized correctly
-    for(String tool : ['aggregation','tasks','pmd','cpd','findbugs','checkstyle','eslint','pylint']){
+    for(String tool : TOOLS){
         parameters[tool] = toMap(parameters[tool])
     }
     return parameters
