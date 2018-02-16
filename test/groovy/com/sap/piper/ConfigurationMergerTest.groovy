@@ -54,4 +54,51 @@ class ConfigurationMergerTest {
         Assert.assertEquals(1000, merged.fruits.cucumbers)
         Assert.assertEquals(null, merged.veggie)
     }
+
+    @Test
+    void testMergeGlobalAndStepConfiguration() {
+        Map parameters = [priority: 1]
+        List parameterKeys = ['priority']
+        Map stepConfiguration = [priority: 2]
+        List stepConfigurationKeys = ['priority']
+        Map globalConfiguration = [priority: 3]
+        List globalConfigurationKeys = ['priority']
+        Map stepDefaults = [priority: 4]
+        Map globalDefaults = [priority: 5]
+
+        Map merged = ConfigurationMerger.merge(
+            parameters, parameterKeys,
+            stepConfiguration, stepConfigurationKeys, stepDefaults,
+            globalConfiguration, globalConfigurationKeys, globalDefaults)
+
+        assert merged.priority == 1
+
+        merged = ConfigurationMerger.merge(
+            [:], [],
+            stepConfiguration, stepConfigurationKeys, stepDefaults,
+            globalConfiguration, globalConfigurationKeys, globalDefaults)
+
+        assert merged.priority == 2
+
+        merged = ConfigurationMerger.merge(
+            [:], [],
+            [:], stepConfigurationKeys, stepDefaults,
+            globalConfiguration, globalConfigurationKeys, globalDefaults)
+
+        assert merged.priority == 3
+
+        merged = ConfigurationMerger.merge(
+            [:], [],
+            [:], stepConfigurationKeys, stepDefaults,
+            [:], [], globalDefaults)
+
+        assert merged.priority == 4
+
+        merged = ConfigurationMerger.merge(
+            [:], [],
+            [:], [], [:],
+            [:], [], globalDefaults)
+
+        assert merged.priority == 5
+    }
 }
