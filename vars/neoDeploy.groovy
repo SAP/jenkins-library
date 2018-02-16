@@ -140,7 +140,7 @@ def call(parameters = [:]) {
             deployAccount = utils.getMandatoryParameter(configuration, 'account')
         }
 
-        def neoExecutable = getNeoExecutable(configuration)
+        def neoExecutable = utils.getNeoExecutable(this, stepName, configuration, env)
 
         def neoDeployScript
 
@@ -194,22 +194,3 @@ def call(parameters = [:]) {
     }
 }
 
-private getNeoExecutable(configuration) {
-
-    def neoExecutable = 'neo.sh' // default, if nothing below applies maybe it is the path.
-
-    if (configuration.neoHome) {
-        neoExecutable = "${configuration.neoHome}/tools/neo.sh"
-        echo "[neoDeploy] Neo executable \"${neoExecutable}\" retrieved from configuration."
-        return neoExecutable
-    }
-
-    if (env?.NEO_HOME) {
-        neoExecutable = "${env.NEO_HOME}/tools/neo.sh"
-        echo "[neoDeploy] Neo executable \"${neoExecutable}\" retrieved from environment."
-        return neoExecutable
-    }
-
-    echo "Using Neo executable from PATH."
-    return neoExecutable
-}

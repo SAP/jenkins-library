@@ -1,5 +1,6 @@
 import com.sap.piper.ConfigurationLoader
 import com.sap.piper.ConfigurationMerger
+import com.sap.piper.Utils
 
 
 def call(Map parameters = [:]) {
@@ -45,7 +46,8 @@ def call(Map parameters = [:]) {
 
         def mtarFileName = "${id}.mtar"
 
-        def mtaJar = getMtaJar(stepName, configuration)
+        def utils = new Utils()
+        def mtaJar = utils.getMtaJar(this, 'mtaBuild', configuration, env)
         def buildTarget = configuration.buildTarget
 
         sh  """#!/bin/bash
@@ -58,24 +60,5 @@ def call(Map parameters = [:]) {
 
         return mtarFilePath
     }
-}
-
-private getMtaJar(stepName, configuration) {
-    def mtaJarLocation = 'mta.jar' //default, maybe it is in current working directory
-
-    if(configuration?.mtaJarLocation){
-        mtaJarLocation = "${configuration.mtaJarLocation}/mta.jar"
-        echo "[$stepName] MTA JAR \"${mtaJarLocation}\" retrieved from configuration."
-        return mtaJarLocation
-    }
-
-    if(env?.MTA_JAR_LOCATION){
-        mtaJarLocation = "${env.MTA_JAR_LOCATION}/mta.jar"
-        echo "[$stepName] MTA JAR \"${mtaJarLocation}\" retrieved from environment."
-        return mtaJarLocation
-    }
-
-    echo "[$stepName] Using MTA JAR from current working directory."
-    return mtaJarLocation
 }
 
