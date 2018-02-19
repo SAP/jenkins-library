@@ -6,7 +6,7 @@ import com.sap.piper.MapUtils
 
 class ConfigurationMerger {
     @NonCPS
-    def static merge(Map configs, List configKeys, Map defaults) {
+    def static merge(Map configs, Set configKeys, Map defaults) {
         Map filteredConfig = configKeys?configs.subMap(configKeys):configs
         Map merged = [:]
 
@@ -23,8 +23,8 @@ class ConfigurationMerger {
 
     @NonCPS
     def static merge(
-        Map parameters, List parameterKeys,
-        Map configuration, List configurationKeys,
+        Map parameters, Set parameterKeys,
+        Map configuration, Set configurationKeys,
         Map defaults=[:]
     ){
         Map merged
@@ -34,9 +34,9 @@ class ConfigurationMerger {
     }
 
     @NonCPS
-    def static mergeWithPipelineData(Map parameters, List parameterKeys,
+    def static mergeWithPipelineData(Map parameters, Set parameterKeys,
                             Map pipelineDataMap,
-                            Map configurationMap, List configurationKeys,
+                            Map configurationMap, Set configurationKeys,
                             Map stepDefaults=[:]
     ){
         Map merged
@@ -49,9 +49,9 @@ class ConfigurationMerger {
 
     @NonCPS
     def static merge(
-        Map parameters, List parameterKeys,
-        Map generalConfigurationMap, List generalConfigurationKeys, Map generalConfigurationDefaults,
-        Map stepConfigurationMap, List stepConfigurationKeys, Map stepConfigurationDefaults=[:]
+        Map parameters, Set parameterKeys,
+        Map generalConfigurationMap, Set generalConfigurationKeys, Map generalConfigurationDefaults,
+        Map stepConfigurationMap, Set stepConfigurationKeys, Map stepConfigurationDefaults=[:]
     ){
         Map merged
         Map mergedStepConfiguration = merge(stepConfigurationMap, stepConfigurationKeys, stepConfigurationDefaults)

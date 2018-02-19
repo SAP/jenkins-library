@@ -17,7 +17,7 @@ def call(Map parameters = [:]) {
         final Map stepDefaults = ConfigurationLoader.defaultStepConfiguration(script, stepName)
         final Map stepConfiguration = ConfigurationLoader.stepConfiguration(script, stepName)
 
-        List parameterKeys = [
+        Set parameterKeys = [
             'artifactVersion',
             'influxServer',
             'influxPrefix'
@@ -25,7 +25,7 @@ def call(Map parameters = [:]) {
         Map pipelineDataMap = [
             artifactVersion: commonPipelineEnvironment.getArtifactVersion()
         ]
-        List stepConfigurationKeys = [
+        Set stepConfigurationKeys = [
             'influxServer',
             'influxPrefix'
         ]
