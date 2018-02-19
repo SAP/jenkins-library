@@ -11,7 +11,7 @@ def call(Map parameters = [:]) {
 
         final Map stepConfiguration = ConfigurationLoader.stepConfiguration(script, 'mavenExecute')
 
-        List parameterKeys = [
+        Set parameterKeys = [
             'dockerImage',
             'globalSettingsFile',
             'projectSettingsFile',
@@ -21,7 +21,7 @@ def call(Map parameters = [:]) {
             'm2Path',
             'defines'
         ]
-        List stepConfigurationKeys = [
+        Set stepConfigurationKeys = [
             'dockerImage',
             'globalSettingsFile',
             'projectSettingsFile',

@@ -29,7 +29,7 @@ def call(Map parameters = [:]) {
         final Map stepDefaults = ConfigurationLoader.defaultStepConfiguration(script, stepName)
         final Map stepConfiguration = ConfigurationLoader.stepConfiguration(script, stepName)
 
-        List parameterKeys = [
+        Set parameterKeys = [
             'artifactType',
             'buildTool',
             'dockerVersionSource',
@@ -47,7 +47,7 @@ def call(Map parameters = [:]) {
         Map pipelineDataMap = [
             gitCommitId: gitUtils.getGitCommitId()
         ]
-        List stepConfigurationKeys = [
+        Set stepConfigurationKeys = [
             'artifactType',
             'buildTool',
             'dockerVersionSource',
