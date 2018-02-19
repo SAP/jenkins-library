@@ -4,6 +4,8 @@ import org.junit.rules.TemporaryFolder
 
 import com.lesfurets.jenkins.unit.BasePipelineTest
 
+import org.junit.BeforeClass
+import org.junit.ClassRule
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -17,34 +19,42 @@ import util.Rules
 
 class NeoDeploymentTest extends BasePipelineTest {
 
+    @ClassRule
+    public static TemporaryFolder tmp = new TemporaryFolder()
+
     private ExpectedException thrown = new ExpectedException().none()
-    private TemporaryFolder tmp = new TemporaryFolder()
     private JenkinsLoggingRule jlr = new JenkinsLoggingRule(this)
     private JenkinsShellCallRule jscr = new JenkinsShellCallRule(this)
 
     @Rule
     public RuleChain ruleChain = Rules.getCommonRules(this)
                                       .around(thrown)
-                                      .around(tmp)
                                       .around(jlr)
                                       .around(jscr)
 
-    def workspacePath
-    def warArchiveName
-    def propertiesFileName
-    def archiveName
-
+    private static workspacePath
+    private static warArchiveName
+    private static propertiesFileName
+    private static archiveName
 
     def neoDeployScript
     def cpe
 
-    @Before
-    void init() {
+    @BeforeClass
+    static void createTestFiles() {
 
-        workspacePath = "${tmp.newFolder("workspace").toURI().getPath()}"
+        workspacePath = "${tmp.getRoot()}"
         warArchiveName = 'warArchive.war'
         propertiesFileName = 'config.properties'
-        archiveName = "archive.mtar"
+        archiveName = 'archive.mtar'
+
+        tmp.newFile(warArchiveName) << 'dummy war archive'
+        tmp.newFile(propertiesFileName) << 'dummy properties file'
+        tmp.newFile(archiveName) << 'dummy archive'
+    }
+
+    @Before
+    void init() {
 
         helper.registerAllowedMethod('dockerExecute', [Map, Closure], null)
         helper.registerAllowedMethod('fileExists', [String], { s -> return new File(workspacePath, s).exists() })
@@ -66,24 +76,22 @@ class NeoDeploymentTest extends BasePipelineTest {
 
         })
 
-        binding.setVariable('env', [:])
+        binding.setVariable('env', ['NEO_HOME':'/opt/neo'])
 
-        neoDeployScript = loadScript("neoDeploy.groovy").neoDeploy
+        neoDeployScript = loadScript('neoDeploy.groovy').neoDeploy
         cpe = loadScript('commonPipelineEnvironment.groovy').commonPipelineEnvironment
 
-
+        cpe.configuration = [steps:[neoDeploy: [host: 'test.deploy.host.com', account: 'trialuser123']]]
     }
 
 
     @Test
     void straightForwardTestConfigViaConfigProperties() {
 
-        binding.getVariable('env')['NEO_HOME'] = '/opt/neo'
-
-        new File(workspacePath, archiveName) << "dummy archive"
-
         cpe.setConfigProperty('DEPLOY_HOST', 'test.deploy.host.com')
         cpe.setConfigProperty('CI_DEPLOY_ACCOUNT', 'trialuser123')
+
+        cpe.configuration = [:]
 
         neoDeployScript.call(script: [commonPipelineEnvironment: cpe],
                        archivePath: archiveName,
@@ -91,20 +99,10 @@ class NeoDeploymentTest extends BasePipelineTest {
         )
 
         assert jscr.shell[0] =~ /#!\/bin\/bash "\/opt\/neo\/tools\/neo\.sh" deploy-mta --host 'test\.deploy\.host\.com' --account 'trialuser123' --synchronous --user 'anonymous' --password '\*\*\*\*\*\*\*\*' --source ".*"/
-
-        assert jlr.log.contains("[neoDeploy] Neo executable \"/opt/neo/tools/neo.sh\" retrieved from environment.")
-
     }
 
     @Test
     void straightForwardTestConfigViaConfiguration() {
-
-        binding.getVariable('env')['NEO_HOME'] = '/opt/neo'
-
-        new File(workspacePath, archiveName) << "dummy archive"
-
-        cpe.configuration.put('steps', [neoDeploy: [host: 'test.deploy.host.com',
-                                                    account: 'trialuser123']])
 
         neoDeployScript.call(script: [commonPipelineEnvironment: cpe],
             archivePath: archiveName,
@@ -112,25 +110,16 @@ class NeoDeploymentTest extends BasePipelineTest {
 )
 
         assert jscr.shell[0] =~ /#!\/bin\/bash "\/opt\/neo\/tools\/neo\.sh" deploy-mta --host 'test\.deploy\.host\.com' --account 'trialuser123' --synchronous --user 'anonymous' --password '\*\*\*\*\*\*\*\*' --source ".*"/
-
-        assert jlr.log.contains("[neoDeploy] Neo executable \"/opt/neo/tools/neo.sh\" retrieved from environment.")
-
     }
 
     @Test
     void straightForwardTestConfigViaConfigurationAndViaConfigProperties() {
 
-        //configuration via configurationFramekwork superseds.
-        binding.getVariable('env')['NEO_HOME'] = '/opt/neo'
-
-        new File(workspacePath, archiveName) << "dummy archive"
-
-
         cpe.setConfigProperty('DEPLOY_HOST', 'configProperties.deploy.host.com')
         cpe.setConfigProperty('CI_DEPLOY_ACCOUNT', 'configPropsUser123')
 
-        cpe.configuration.put('steps', [neoDeploy: [host: 'configuration-frwk.deploy.host.com',
-                                                    account: 'configurationFrwkUser123']])
+        cpe.configuration = [steps:[neoDeploy: [host: 'configuration-frwk.deploy.host.com',
+                                                account: 'configurationFrwkUser123']]]
 
         neoDeployScript.call(script: [commonPipelineEnvironment: cpe],
             archivePath: archiveName,
@@ -138,24 +127,14 @@ class NeoDeploymentTest extends BasePipelineTest {
         )
 
         assert jscr.shell[0] =~ /#!\/bin\/bash "\/opt\/neo\/tools\/neo\.sh" deploy-mta --host 'configuration-frwk\.deploy\.host\.com' --account 'configurationFrwkUser123' --synchronous --user 'anonymous' --password '\*\*\*\*\*\*\*\*' --source ".*"/
-
-        assert jlr.log.contains("[neoDeploy] Neo executable \"/opt/neo/tools/neo.sh\" retrieved from environment.")
-
     }
 
 
     @Test
     void badCredentialsIdTest() {
 
-        binding.getVariable('env')['NEO_HOME'] = '/opt/neo'
-
-        new File(workspacePath, archiveName) << "dummy archive"
-
         thrown.expect(MissingPropertyException)
         thrown.expectMessage('No such property: username')
-
-        cpe.setConfigProperty('DEPLOY_HOST', 'test.deploy.host.com')
-        cpe.setConfigProperty('CI_DEPLOY_ACCOUNT', 'trialuser123')
 
         neoDeployScript.call(script: [commonPipelineEnvironment: cpe],
                        archivePath: archiveName,
@@ -167,48 +146,30 @@ class NeoDeploymentTest extends BasePipelineTest {
     @Test
     void credentialsIdNotProvidedTest() {
 
-        binding.getVariable('env')['NEO_HOME'] = '/opt/neo'
-
-        new File(workspacePath, archiveName) << "dummy archive"
-
-        cpe.setConfigProperty('DEPLOY_HOST', 'test.deploy.host.com')
-        cpe.setConfigProperty('CI_DEPLOY_ACCOUNT', 'trialuser123')
-
         neoDeployScript.call(script: [commonPipelineEnvironment: cpe],
                        archivePath: archiveName
         )
 
         assert jscr.shell[0] =~ /#!\/bin\/bash "\/opt\/neo\/tools\/neo\.sh" deploy-mta --host 'test\.deploy\.host\.com' --account 'trialuser123' --synchronous --user 'defaultUser' --password '\*\*\*\*\*\*\*\*' --source ".*"/
-
-        assert jlr.log.contains("[neoDeploy] Neo executable \"/opt/neo/tools/neo.sh\" retrieved from environment.")
     }
 
 
     @Test
     void neoHomeNotSetTest() {
 
-        new File(workspacePath, archiveName) << "dummy archive"
-
-        cpe.setConfigProperty('DEPLOY_HOST', 'test.deploy.host.com')
-        cpe.setConfigProperty('CI_DEPLOY_ACCOUNT', 'trialuser123')
+        binding.setVariable('env', [:])
 
         neoDeployScript.call(script: [commonPipelineEnvironment: cpe],
                        archivePath: archiveName
         )
 
-        assert jscr.shell[0] =~ /#!\/bin\/bash "neo.sh" deploy-mta --host 'test\.deploy\.host\.com' --account 'trialuser123' --synchronous --user 'defaultUser' --password '\*\*\*\*\*\*\*\*' --source ".*"/
-
-        assert jlr.log.contains("Using Neo executable from PATH.")
+        assert jscr.shell[0].contains('"neo.sh" deploy-mta')
+        assert jlr.log.contains('Using Neo executable from PATH.')
     }
 
 
     @Test
     void neoHomeAsParameterTest() {
-
-        new File(workspacePath, archiveName) << "dummy archive"
-
-        cpe.setConfigProperty('DEPLOY_HOST', 'test.deploy.host.com')
-        cpe.setConfigProperty('CI_DEPLOY_ACCOUNT', 'trialuser123')
 
         neoDeployScript.call(script: [commonPipelineEnvironment: cpe],
                        archivePath: archiveName,
@@ -216,7 +177,20 @@ class NeoDeploymentTest extends BasePipelineTest {
                        neoHome: '/etc/neo'
         )
 
-        assert jscr.shell[0] =~ /#!\/bin\/bash "\/etc\/neo\/tools\/neo\.sh" deploy-mta --host 'test\.deploy\.host\.com' --account 'trialuser123' --synchronous --user 'anonymous' --password '\*\*\*\*\*\*\*\*' --source ".*"/
+        assert jscr.shell[0].contains('"/etc/neo/tools/neo.sh" deploy-mta')
+        assert jlr.log.contains('[neoDeploy] Neo executable "/etc/neo/tools/neo.sh" retrieved from configuration.')
+    }
+
+
+    @Test
+    void neoHomeFromEnvironmentTest() {
+
+        neoDeployScript.call(script: [commonPipelineEnvironment: cpe],
+                       archivePath: archiveName
+        )
+
+        assert jscr.shell[0].contains('"/opt/neo/tools/neo.sh" deploy-mta')
+        assert jlr.log.contains('[neoDeploy] Neo executable "/opt/neo/tools/neo.sh" retrieved from environment.')
     }
 
 
@@ -226,9 +200,6 @@ class NeoDeploymentTest extends BasePipelineTest {
         thrown.expect(Exception)
         thrown.expectMessage('Archive path not configured (parameter "archivePath").')
 
-        cpe.setConfigProperty('DEPLOY_HOST', 'test.deploy.host.com')
-        cpe.setConfigProperty('CI_DEPLOY_ACCOUNT', 'trialuser123')
-
         neoDeployScript.call(script: [commonPipelineEnvironment: cpe])
     }
 
@@ -237,49 +208,34 @@ class NeoDeploymentTest extends BasePipelineTest {
     void wrongArchivePathProvidedTest() {
 
         thrown.expect(AbortException)
-        thrown.expectMessage("Archive cannot be found")
-
-        cpe.setConfigProperty('DEPLOY_HOST', 'test.deploy.host.com')
-        cpe.setConfigProperty('CI_DEPLOY_ACCOUNT', 'trialuser123')
+        thrown.expectMessage('Archive cannot be found')
 
         neoDeployScript.call(script: [commonPipelineEnvironment: cpe],
-                       archivePath: archiveName)
+                       archivePath: 'wrongArchiveName')
     }
 
 
     @Test
     void scriptNotProvidedTest() {
 
-        new File(workspacePath, archiveName) << "dummy archive"
-
         thrown.expect(Exception)
         thrown.expectMessage('ERROR - NO VALUE AVAILABLE FOR host')
+
+        cpe.configuration = [:]
 
         neoDeployScript.call(archivePath: archiveName)
     }
 
     @Test
     void mtaDeployModeTest() {
-        binding.getVariable('env')['NEO_HOME'] = '/opt/neo'
-        new File(workspacePath, archiveName) << "dummy archive"
-
-        cpe.setConfigProperty('DEPLOY_HOST', 'test.deploy.host.com')
-        cpe.setConfigProperty('CI_DEPLOY_ACCOUNT', 'trialuser123')
 
         neoDeployScript.call(script: [commonPipelineEnvironment: cpe], archivePath: archiveName, deployMode: 'mta')
 
-
         assert jscr.shell[0] =~ /#!\/bin\/bash "\/opt\/neo\/tools\/neo\.sh" deploy-mta --host 'test\.deploy\.host\.com' --account 'trialuser123' --synchronous --user 'defaultUser' --password '\*\*\*\*\*\*\*\*' --source ".*"/
-        assert jlr.log.contains("[neoDeploy] Neo executable \"/opt/neo/tools/neo.sh\" retrieved from environment.")
     }
 
     @Test
     void warFileParamsDeployModeTest() {
-        binding.getVariable('env')['NEO_HOME'] = '/opt/neo'
-        new File(workspacePath, warArchiveName) << "dummy war archive"
-
-        cpe.setConfigProperty('DEPLOY_HOST', 'test.deploy.host.com')
-        cpe.setConfigProperty('CI_DEPLOY_ACCOUNT', 'trialuser123')
 
         neoDeployScript.call(script: [commonPipelineEnvironment: cpe],
                              applicationName: 'testApp',
@@ -291,16 +247,10 @@ class NeoDeploymentTest extends BasePipelineTest {
                              archivePath: warArchiveName)
 
         assert jscr.shell[0] =~ /#!\/bin\/bash "\/opt\/neo\/tools\/neo\.sh" deploy --host 'test\.deploy\.host\.com' --account 'trialuser123' --application 'testApp' --runtime 'neo-javaee6-wp' --runtime-version '2\.125' --size 'lite' --user 'defaultUser' --password '\*\*\*\*\*\*\*\*' --source ".*\.war"/
-        assert jlr.log.contains("[neoDeploy] Neo executable \"/opt/neo/tools/neo.sh\" retrieved from environment.")
     }
 
     @Test
     void warFileParamsDeployModeRollingUpdateTest() {
-        binding.getVariable('env')['NEO_HOME'] = '/opt/neo'
-        new File(workspacePath, warArchiveName) << "dummy war archive"
-
-        cpe.setConfigProperty('DEPLOY_HOST', 'test.deploy.host.com')
-        cpe.setConfigProperty('CI_DEPLOY_ACCOUNT', 'trialuser123')
 
         neoDeployScript.call(script: [commonPipelineEnvironment: cpe],
                              archivePath: warArchiveName,
@@ -312,14 +262,10 @@ class NeoDeploymentTest extends BasePipelineTest {
                              vmSize: 'lite')
 
         assert jscr.shell[0] =~ /#!\/bin\/bash "\/opt\/neo\/tools\/neo\.sh" rolling-update --host 'test\.deploy\.host\.com' --account 'trialuser123' --application 'testApp' --runtime 'neo-javaee6-wp' --runtime-version '2\.125' --size 'lite' --user 'defaultUser' --password '\*\*\*\*\*\*\*\*' --source ".*\.war"/
-        assert jlr.log.contains("[neoDeploy] Neo executable \"/opt/neo/tools/neo.sh\" retrieved from environment.")
     }
 
     @Test
     void warPropertiesFileDeployModeTest() {
-        binding.getVariable('env')['NEO_HOME'] = '/opt/neo'
-        new File(workspacePath, warArchiveName) << "dummy war archive"
-        new File(workspacePath, propertiesFileName) << "dummy properties file"
 
         neoDeployScript.call(script: [commonPipelineEnvironment: cpe],
                              archivePath: warArchiveName,
@@ -332,14 +278,10 @@ class NeoDeploymentTest extends BasePipelineTest {
                              vmSize: 'lite')
 
         assert jscr.shell[0] =~ /#!\/bin\/bash "\/opt\/neo\/tools\/neo\.sh" deploy .*\.properties --user 'defaultUser' --password '\*\*\*\*\*\*\*\*' --source ".*\.war"/
-        assert jlr.log.contains("[neoDeploy] Neo executable \"/opt/neo/tools/neo.sh\" retrieved from environment.")
     }
 
     @Test
     void warPropertiesFileDeployModeRollingUpdateTest() {
-        binding.getVariable('env')['NEO_HOME'] = '/opt/neo'
-        new File(workspacePath, warArchiveName) << "dummy war archive"
-        new File(workspacePath, propertiesFileName) << "dummy properties file"
 
         neoDeployScript.call(script: [commonPipelineEnvironment: cpe],
                              archivePath: warArchiveName,
@@ -352,18 +294,13 @@ class NeoDeploymentTest extends BasePipelineTest {
                              vmSize: 'lite')
 
         assert jscr.shell[0] =~ /#!\/bin\/bash "\/opt\/neo\/tools\/neo\.sh" rolling-update .*\.properties --user 'defaultUser' --password '\*\*\*\*\*\*\*\*' --source ".*\.war"/
-        assert jlr.log.contains("[neoDeploy] Neo executable \"/opt/neo/tools/neo.sh\" retrieved from environment.")
     }
 
     @Test
     void applicationNameNotProvidedTest() {
-        new File(workspacePath, warArchiveName) << "dummy war archive"
 
         thrown.expect(Exception)
         thrown.expectMessage('ERROR - NO VALUE AVAILABLE FOR applicationName')
-
-        cpe.setConfigProperty('DEPLOY_HOST', 'test.deploy.host.com')
-        cpe.setConfigProperty('CI_DEPLOY_ACCOUNT', 'trialuser123')
 
         neoDeployScript.call(script: [commonPipelineEnvironment: cpe],
                              archivePath: warArchiveName,
@@ -375,13 +312,9 @@ class NeoDeploymentTest extends BasePipelineTest {
 
     @Test
     void runtimeNotProvidedTest() {
-        new File(workspacePath, warArchiveName) << "dummy war archive"
 
         thrown.expect(Exception)
         thrown.expectMessage('ERROR - NO VALUE AVAILABLE FOR runtime')
-
-        cpe.setConfigProperty('DEPLOY_HOST', 'test.deploy.host.com')
-        cpe.setConfigProperty('CI_DEPLOY_ACCOUNT', 'trialuser123')
 
         neoDeployScript.call(script: [commonPipelineEnvironment: cpe],
                              archivePath: warArchiveName,
@@ -392,13 +325,9 @@ class NeoDeploymentTest extends BasePipelineTest {
 
     @Test
     void runtimeVersionNotProvidedTest() {
-        new File(workspacePath, warArchiveName) << "dummy war archive"
 
         thrown.expect(Exception)
         thrown.expectMessage('ERROR - NO VALUE AVAILABLE FOR runtimeVersion')
-
-        cpe.setConfigProperty('DEPLOY_HOST', 'test.deploy.host.com')
-        cpe.setConfigProperty('CI_DEPLOY_ACCOUNT', 'trialuser123')
 
         neoDeployScript.call(script: [commonPipelineEnvironment: cpe],
                              archivePath: warArchiveName,
@@ -409,13 +338,9 @@ class NeoDeploymentTest extends BasePipelineTest {
 
     @Test
     void illegalDeployModeTest() {
-        new File(workspacePath, warArchiveName) << "dummy war archive"
 
         thrown.expect(Exception)
         thrown.expectMessage("[neoDeploy] Invalid deployMode = 'illegalMode'. Valid 'deployMode' values are: 'mta', 'warParams' and 'warPropertiesFile'")
-
-        cpe.setConfigProperty('DEPLOY_HOST', 'test.deploy.host.com')
-        cpe.setConfigProperty('CI_DEPLOY_ACCOUNT', 'trialuser123')
 
         neoDeployScript.call(script: [commonPipelineEnvironment: cpe],
             archivePath: warArchiveName,
@@ -429,13 +354,9 @@ class NeoDeploymentTest extends BasePipelineTest {
 
     @Test
     void illegalVMSizeTest() {
-        new File(workspacePath, warArchiveName) << "dummy war archive"
 
         thrown.expect(Exception)
         thrown.expectMessage("[neoDeploy] Invalid vmSize = 'illegalVM'. Valid 'vmSize' values are: 'lite', 'pro', 'prem' and 'prem-plus'.")
-
-        cpe.setConfigProperty('DEPLOY_HOST', 'test.deploy.host.com')
-        cpe.setConfigProperty('CI_DEPLOY_ACCOUNT', 'trialuser123')
 
         neoDeployScript.call(script: [commonPipelineEnvironment: cpe],
             archivePath: warArchiveName,
@@ -449,13 +370,9 @@ class NeoDeploymentTest extends BasePipelineTest {
 
     @Test
     void illegalWARActionTest() {
-        new File(workspacePath, warArchiveName) << "dummy war archive"
 
         thrown.expect(Exception)
         thrown.expectMessage("[neoDeploy] Invalid warAction = 'illegalWARAction'. Valid 'warAction' values are: 'deploy' and 'rolling-update'.")
-
-        cpe.setConfigProperty('DEPLOY_HOST', 'test.deploy.host.com')
-        cpe.setConfigProperty('CI_DEPLOY_ACCOUNT', 'trialuser123')
 
         neoDeployScript.call(script: [commonPipelineEnvironment: cpe],
             archivePath: warArchiveName,
@@ -469,7 +386,7 @@ class NeoDeploymentTest extends BasePipelineTest {
 
     @Test
     void deployHostProvidedAsDeprecatedParameterTest() {
-        new File(workspacePath, archiveName) << "dummy archive"
+
         cpe.setConfigProperty('CI_DEPLOY_ACCOUNT', 'configPropsUser123')
 
         neoDeployScript.call(script: [commonPipelineEnvironment: cpe],
@@ -482,7 +399,7 @@ class NeoDeploymentTest extends BasePipelineTest {
 
     @Test
     void deployAccountProvidedAsDeprecatedParameterTest() {
-        new File(workspacePath, archiveName) << "dummy archive"
+
         cpe.setConfigProperty('CI_DEPLOY_ACCOUNT', 'configPropsUser123')
 
         neoDeployScript.call(script: [commonPipelineEnvironment: cpe],
