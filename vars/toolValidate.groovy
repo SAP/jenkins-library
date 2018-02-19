@@ -56,16 +56,19 @@ def validateJava(configuration) {
 
 def validateMta(configuration) {
     def executable = configuration.home ? "$configuration.home/mta.jar" : ToolUtils.getMtaJar(this, 'toolValidate', configuration, env)
+    FileUtils.validateFile(executable)
     validateTool('SAP Multitarget Application Archive Builder', executable, "$JAVA_HOME/bin/java -jar $executable -v", new Version(1, 0, 6))
 }
 
 def validateNeo(configuration) {
     def executable = configuration.home ? "$configuration.home/tools/neo.sh" : ToolUtils.getNeoExecutable(this, 'toolValidate', configuration, env)
+    FileUtils.validateFile(executable)
     validateTool('SAP Cloud Platform Console Client', executable, "$executable version", new Version(3, 39, 10))
 }
 
 def validateCm(configuration) {
     def executable = configuration.home ? "$configuration.home/bin/cmclient" : ToolUtils.getCmCliExecutable(this, 'toolValidate', configuration, env)
+    FileUtils.validateFile(executable)
     validateTool('Change Management Command Line Interface', executable, "$executable -v", new Version(0, 0, 1))
 }
 
