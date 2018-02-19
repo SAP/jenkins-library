@@ -1,5 +1,3 @@
-import static java.util.Arrays.asList
-
 import com.cloudbees.groovy.cps.NonCPS
 
 import com.sap.piper.ConfigurationLoader
@@ -23,9 +21,9 @@ def call(Map parameters = [:]) {
         prepareDefaultValues script: script
         prepare(parameters)
 
-        List configurationKeys = ['junit','jacoco','cobertura','jmeter']
         final Map stepDefaults = ConfigurationLoader.defaultStepConfiguration(script, STEP_NAME)
         final Map stepConfiguration = ConfigurationLoader.stepConfiguration(script, STEP_NAME)
+        List configurationKeys = ['junit','jacoco','cobertura','jmeter']
         Map configuration = ConfigurationMerger.merge(
             parameters, configurationKeys,
             stepConfiguration, configurationKeys,
@@ -95,8 +93,8 @@ def publishJMeterReport(Map settings = [:]){
     if(settings.active){
         def pattern = settings.get('pattern')
 
-        step([
-            $class: 'PerformancePublisher',
+        perfReport(
+            sourceDataFiles: pattern,
             errorFailedThreshold: settings.get('errorFailedThreshold'),
             errorUnstableThreshold: settings.get('errorUnstableThreshold'),
             errorUnstableResponseTimeThreshold: settings.get('errorUnstableResponseTimeThreshold'),
@@ -110,9 +108,8 @@ def publishJMeterReport(Map settings = [:]){
             nthBuildNumber: settings.get('nthBuildNumber'),
             configType: settings.get('configType'),
             failBuildIfNoResultFile: settings.get('failBuildIfNoResultFile'),
-            compareBuildPrevious: settings.get('compareBuildPrevious'),
-            parsers: asList(getJMeterParser().newInstance(pattern))
-        ])
+            compareBuildPrevious: settings.get('compareBuildPrevious')
+        )
         archiveResults(settings.get('archive'), pattern, settings.get('allowEmptyResults'))
     }
 }
@@ -122,16 +119,6 @@ def touchFiles(){
     def patternArray = pattern.split(',')
     for(def i = 0; i < patternArray.length; i++){
         sh "find . -wholename '${patternArray[i].trim()}' -exec touch {} \\;"
-    }
-}
-
-@NonCPS
-def getJMeterParser(){
-    // handle package renaming of JMeterParser class
-    try {
-        return this.class.classLoader.loadClass("hudson.plugins.performance.parsers.JMeterParser")
-    } catch (Exception e) {
-        return this.class.classLoader.loadClass("hudson.plugins.performance.JMeterParser")
     }
 }
 
