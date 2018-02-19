@@ -27,6 +27,10 @@ def call(parameters = [:]) {
         'warAction'
         ]
 
+    List generalConfigurationKeys = [
+        'neoHome'
+        ]
+
     List stepConfigurationKeys = [
         'account',
         'dockerEnvVars',
@@ -83,9 +87,11 @@ def call(parameters = [:]) {
 
         stepConfiguration.putAll(ConfigurationLoader.stepConfiguration(script, stepName))
 
-        Map configuration = ConfigurationMerger.merge(parameters, parameterKeys,
-                                                      stepConfiguration, stepConfigurationKeys,
-                                                      ConfigurationLoader.defaultStepConfiguration(script, stepName))
+        final Map defaultStepConfiguration = ConfigurationLoader.defaultStepConfiguration(script, stepName)
+        final Map generalConfiguration = ConfigurationLoader.generalConfiguration(script)
+        final Map configuration = ConfigurationMerger.merge(parameters, parameterKeys,
+                                                      stepConfiguration, stepConfigurationKeys, defaultStepConfiguration,
+                                                      generalConfiguration, generalConfigurationKeys)
 
         def archivePath = configuration.archivePath
         if(archivePath?.trim()) {

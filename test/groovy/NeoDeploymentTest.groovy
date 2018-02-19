@@ -197,7 +197,8 @@ class NeoDeploymentTest extends BasePipelineTest {
     @Test
     void neoHomeFromCustomStepConfigurationTest() {
 
-        cpe.configuration = [steps:[neoDeploy: [host: 'test.deploy.host.com', account: 'trialuser123', neoHome: '/step/neo']]]
+        cpe.configuration = [general:[neoHome: '/general/neo'],
+            steps:[neoDeploy: [host: 'test.deploy.host.com', account: 'trialuser123', neoHome: '/step/neo']]]
 
         neoDeployScript.call(script: [commonPipelineEnvironment: cpe],
                        archivePath: archiveName
@@ -205,6 +206,21 @@ class NeoDeploymentTest extends BasePipelineTest {
 
         assert jscr.shell[0].contains('"/step/neo/tools/neo.sh" deploy-mta')
         assert jlr.log.contains('[neoDeploy] Neo executable "/step/neo/tools/neo.sh" retrieved from configuration.')
+    }
+
+
+    @Test
+    void neoHomeFromCustomGeneralConfigurationTest() {
+
+        cpe.configuration = [general:[neoHome: '/general/neo'],
+            steps:[neoDeploy: [host: 'test.deploy.host.com', account: 'trialuser123']]]
+
+        neoDeployScript.call(script: [commonPipelineEnvironment: cpe],
+                       archivePath: archiveName
+        )
+
+        assert jscr.shell[0].contains('"/general/neo/tools/neo.sh" deploy-mta')
+        assert jlr.log.contains('[neoDeploy] Neo executable "/general/neo/tools/neo.sh" retrieved from configuration.')
     }
 
 
