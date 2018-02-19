@@ -7,6 +7,9 @@ import com.sap.piper.MapUtils
 import groovy.transform.Field
 
 @Field def STEP_NAME = 'testsPublishResults'
+@Field List TOOLS = [
+    'junit','jacoco','cobertura','jmeter'
+]
 /**
  * testResultsPublish
  *
@@ -23,7 +26,7 @@ def call(Map parameters = [:]) {
 
         final Map stepDefaults = ConfigurationLoader.defaultStepConfiguration(script, STEP_NAME)
         final Map stepConfiguration = ConfigurationLoader.stepConfiguration(script, STEP_NAME)
-        List configurationKeys = ['junit','jacoco','cobertura','jmeter']
+        List configurationKeys = TOOLS
         Map configuration = ConfigurationMerger.merge(
             parameters, configurationKeys,
             stepConfiguration, configurationKeys,
@@ -124,7 +127,7 @@ def touchFiles(){
 
 def archiveResults(archive, pattern, allowEmpty) {
     if(archive){
-        echo "[${STAP_NAME}] archive ${pattern}"
+        echo "[${STEP_NAME}] archive ${pattern}"
         archiveArtifacts artifacts: pattern, allowEmptyArchive: allowEmpty
     }
 }
@@ -132,7 +135,7 @@ def archiveResults(archive, pattern, allowEmpty) {
 @NonCPS
 def prepare(parameters){
     // ensure tool maps are initialized correctly
-    for(String tool : ['junit','jacoco','cobertura','jmeter']){
+    for(String tool : TOOLS){
         parameters[tool] = toMap(parameters[tool])
     }
     return parameters
@@ -148,4 +151,5 @@ def toMap(parameters){
         parameters = [active: false]
     else
         parameters = [:]
+    return parameters
 }
