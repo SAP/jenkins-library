@@ -195,6 +195,20 @@ class NeoDeploymentTest extends BasePipelineTest {
 
 
     @Test
+    void neoHomeFromCustomStepConfigurationTest() {
+
+        cpe.configuration = [steps:[neoDeploy: [host: 'test.deploy.host.com', account: 'trialuser123', neoHome: '/step/neo']]]
+
+        neoDeployScript.call(script: [commonPipelineEnvironment: cpe],
+                       archivePath: archiveName
+        )
+
+        assert jscr.shell[0].contains('"/step/neo/tools/neo.sh" deploy-mta')
+        assert jlr.log.contains('[neoDeploy] Neo executable "/step/neo/tools/neo.sh" retrieved from configuration.')
+    }
+
+
+    @Test
     void archiveNotProvidedTest() {
 
         thrown.expect(Exception)
