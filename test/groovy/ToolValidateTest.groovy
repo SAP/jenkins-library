@@ -28,17 +28,27 @@ class ToolValidateTest extends BasePipelineTest {
                                       .around(thrown)
                                       .around(jlr)
 
-
     private static home
+    private static mtaJar
+    private static neoExecutable
+    private static cmCliExecutable
 
     private toolValidateScript
-
+    private commonPipelineEnvironment
 
     @BeforeClass
     static void createTestFiles() {
 
         home = "${tmp.getRoot()}"
         tmp.newFile('mta.jar')
+        tmp.newFolder('tools')
+        tmp.newFolder('bin')
+        tmp.newFile('tools/neo.sh')
+        tmp.newFile('bin/cmclient')
+
+        mtaJar = "$home/mta.jar"
+        neoExecutable = "$home/tools/neo.sh"
+        cmCliExecutable = "$home/bin/cmclient"
     }
 
     @Before
@@ -47,43 +57,7 @@ class ToolValidateTest extends BasePipelineTest {
         binding.setVariable('JAVA_HOME', home)
 
         toolValidateScript =  loadScript('toolValidate.groovy').toolValidate
-    }
-
-
-    @Test
-    void nullHomeTest() {
-
-        thrown.expect(IllegalArgumentException)
-        thrown.expectMessage("The parameter 'home' can not be null or empty.")
-
-        toolValidateScript.call(tool: 'java', home: null)
-    }
-
-    @Test
-    void emptyHomeTest() {
-
-        thrown.expect(IllegalArgumentException)
-        thrown.expectMessage("The parameter 'home' can not be null or empty.")
-
-        toolValidateScript.call(tool: 'java', home: '')
-    }
-
-    @Test
-    void nullToolTest() {
-
-        thrown.expect(IllegalArgumentException)
-        thrown.expectMessage("The parameter 'tool' can not be null or empty.")
-
-        toolValidateScript.call(tool: null)
-    }
-
-    @Test
-    void emptyToolTest() {
-
-        thrown.expect(IllegalArgumentException)
-        thrown.expectMessage("The parameter 'tool' can not be null or empty.")
-
-        toolValidateScript.call(tool: '')
+        commonPipelineEnvironment = loadScript('commonPipelineEnvironment.groovy').commonPipelineEnvironment
     }
 
     @Test
@@ -229,6 +203,52 @@ class ToolValidateTest extends BasePipelineTest {
         assert jlr.log.contains('[toolValidate] Validating Change Management Command Line Interface version 0.0.1 or compatible version.')
         assert jlr.log.contains('[toolValidate] Change Management Command Line Interface version 0.0.1 is installed.')
     }
+
+    @Test
+    void toolNotSetTest() {
+
+        thrown.expect(Exception)
+        thrown.expectMessage("ERROR - NO VALUE AVAILABLE FOR tool")
+
+        toolValidateScript.call()
+    }
+
+    @Test
+    void mtaJarLocationFromCustomStepConfigurationTest() {
+
+        commonPipelineEnvironment.configuration = [general:[mtaJarLocation: "$home"]]
+
+        helper.registerAllowedMethod('sh', [Map], { Map m -> getVersion(m) })
+
+        toolValidateScript.call(script: [commonPipelineEnvironment: commonPipelineEnvironment], tool: 'mta')
+
+        assert jlr.log.contains("[toolValidate] MTA JAR \"$mtaJar\" retrieved from configuration.")
+    }
+
+    @Test
+    void neoHomeFromCustomStepConfigurationTest() {
+
+        commonPipelineEnvironment.configuration = [general:[neoHome: "$home"]]
+
+        helper.registerAllowedMethod('sh', [Map], { Map m -> getVersion(m) })
+
+        toolValidateScript.call(script: [commonPipelineEnvironment: commonPipelineEnvironment], tool: 'neo')
+
+        assert jlr.log.contains("[toolValidate] Neo executable \"$neoExecutable\" retrieved from configuration.")
+    }
+
+    @Test
+    void cmCliHomeFromCustomStepConfigurationTest() {
+
+        commonPipelineEnvironment.configuration = [general:[cmCliHome: "$home"]]
+
+        helper.registerAllowedMethod('sh', [Map], { Map m -> getVersion(m) })
+
+        toolValidateScript.call(script: [commonPipelineEnvironment: commonPipelineEnvironment], tool: 'cm')
+
+        assert jlr.log.contains("[toolValidate] Change Management Command Line Interface \"$cmCliExecutable\" retrieved from configuration.")
+    }
+
 
     private getNoVersion(Map m) { 
         throw new AbortException('script returned exit code 127')
