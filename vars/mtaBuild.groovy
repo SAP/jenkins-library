@@ -28,6 +28,19 @@ def call(Map parameters = [:]) {
                                       null,
                                       stepConfigurationKeys)
 
+        JAVA_HOME_CHECK : {
+
+            // in case JAVA_HOME is not set, but java is in the path we should not fail
+            // in order to be backward compatible. Before introducing that check here
+            // is worked also in case JAVA_HOME was not set, but java was in the path.
+            // toolValidate works only upon JAVA_HOME and fails in case it is not set.
+
+            def rc = sh script: 'which java' , returnStatus: true
+            if(script.JAVA_HOME || (!script.JAVA_HOME && rc != 0)) {
+                toolValidate tool: 'java', home: script.JAVA_HOME
+            }
+        }
+
         def mtaYaml = readYaml file: "${pwd()}/mta.yaml"
 
         //[Q]: Why not yaml.dump()? [A]: This reformats the whole file.
