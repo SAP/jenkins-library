@@ -1,7 +1,12 @@
 import com.sap.piper.Utils
+
+import groovy.transform.Field
+
 import com.sap.piper.ConfigurationLoader
 import com.sap.piper.ConfigurationMerger
 import com.sap.piper.ConfigurationType
+
+@Field def NEO_DEFAULT_CMD = 'neo.sh'
 
 def call(parameters = [:]) {
 
@@ -195,11 +200,11 @@ def call(parameters = [:]) {
                               // validate the version also in this case, we need to adjust
                               // toolValidate.
 
-                              def rc = sh script: 'which neo.sh', returnStatus: true
+                              def rc = sh script: "which ${NEO_DEFAULT_CMD}", returnStatus: true
                               if(neoHome || (!neoHome && rc != 0)) {
                                   toolValidate tool: 'neo', home: neoHome
                               } else {
-                                  echo "neo (neo.sh) has been found in path. Using this neo version without futher tool validation."
+                                  echo "neo (${NEO_DEFAULT_CMD}) has been found in path. Using this neo version without futher tool validation."
                               }
                           }
 
@@ -213,16 +218,16 @@ def call(parameters = [:]) {
 
 private getNeoExecutable(configuration) {
 
-    def neoExecutable = 'neo.sh' // default, if nothing below applies maybe it is the path.
+    def neoExecutable = NEO_DEFAULT_CMD // default, if nothing below applies maybe it is the path.
 
     if (configuration.neoHome) {
-        neoExecutable = "${configuration.neoHome}/tools/neo.sh"
+        neoExecutable = "${configuration.neoHome}/tools/${NEO_DEFAULT_CMD}"
         echo "[neoDeploy] Neo executable \"${neoExecutable}\" retrieved from configuration."
         return neoExecutable
     }
 
     if (env?.NEO_HOME) {
-        neoExecutable = "${env.NEO_HOME}/tools/neo.sh"
+        neoExecutable = "${env.NEO_HOME}/tools/${NEO_DEFAULT_CMD}"
         echo "[neoDeploy] Neo executable \"${neoExecutable}\" retrieved from environment."
         return neoExecutable
     }
