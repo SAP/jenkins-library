@@ -6,16 +6,16 @@ def call(Map parameters = [:]) {
 
     def stepName = 'mtaBuild'
 
-    List parameterKeys = [
+    Set parameterKeys = [
         'buildTarget',
         'mtaJarLocation'
     ]
 
-    List stepConfigurationKeys = [
+    Set stepConfigurationKeys = [
         'buildTarget'
     ]
 
-    List generalConfigurationKeys = [
+    Set generalConfigurationKeys = [
         'mtaJarLocation'
     ]
 
