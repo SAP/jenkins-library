@@ -12,10 +12,7 @@ def call(Map parameters = [:]) {
     ]
 
     Set stepConfigurationKeys = [
-        'buildTarget'
-    ]
-
-    Set generalConfigurationKeys = [
+        'buildTarget',
         'mtaJarLocation'
     ]
 
@@ -27,10 +24,8 @@ def call(Map parameters = [:]) {
 
         final Map stepConfiguration = ConfigurationLoader.stepConfiguration(script, stepName)
         final Map stepDefaults = ConfigurationLoader.defaultStepConfiguration(script, stepName)
-        final Map generalConfiguration = ConfigurationLoader.generalConfiguration(script)
         final Map configuration = ConfigurationMerger.merge(
                                       parameters, parameterKeys,
-                                      generalConfiguration, generalConfigurationKeys, [:],
                                       stepConfiguration, stepConfigurationKeys, stepDefaults)
 
         def mtaYaml = readYaml file: "${pwd()}/mta.yaml"

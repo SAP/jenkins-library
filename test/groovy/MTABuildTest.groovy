@@ -178,13 +178,13 @@ public class MTABuildTest extends BasePipelineTest {
     @Test
     void mtaJarLocationFromCustomStepConfigurationTest() {
 
-        cpe.configuration = [general:[mtaJarLocation: '/general/mta']]
+        cpe.configuration = [steps:[mtaBuild:[mtaJarLocation: '/step/mta']]]
 
         mtaBuildScript.call(script: [commonPipelineEnvironment: cpe],
                       buildTarget: 'NEO')
 
-        assert jscr.shell[1].contains('-jar /general/mta/mta.jar --mtar')
-        assert jlr.log.contains('[mtaBuild] MTA JAR "/general/mta/mta.jar" retrieved from configuration.')
+        assert jscr.shell[1].contains('-jar /step/mta/mta.jar --mtar')
+        assert jlr.log.contains('[mtaBuild] MTA JAR "/step/mta/mta.jar" retrieved from configuration.')
     }
 
 
