@@ -1,7 +1,18 @@
 import com.sap.piper.Utils
+
+import groovy.transform.Field
+
 import com.sap.piper.ConfigurationLoader
 import com.sap.piper.ConfigurationMerger
 import com.sap.piper.ConfigurationType
+
+//
+// envProps may be overwritten by tests, but only by tests.
+// [Q] Why not simply using the Map returned by getenv() itself?
+// [A] The unmodifiable map returned by getenv() is not serializable
+//     Since everythings needs to be serializabe (CPS pattern) we
+//     cannot use that map directly.
+@Field Map envProps = System.getenv().findAll { true }
 
 def call(parameters = [:]) {
 
@@ -185,6 +196,26 @@ def call(parameters = [:]) {
             dockerExecute(dockerImage: configuration.get('dockerImage'),
                           dockerEnvVars: configuration.get('dockerEnvVars'),
                           dockerOptions: configuration.get('dockerOptions')) {
+
+                JAVA_HOME_CHECK : {
+
+                    //
+                    // [Q] How is the java executable resolved by neo?
+                    // [A] They check for JAVA_HOME. If not present, they
+                    //     try to resolve it via ```which java```.
+                    //
+                    def javaHome = envProps.JAVA_HOME
+                    def rc = sh script: 'which java', returnStatus: true
+                    if(!javaHome && rc == 0) {
+                        // java home is not set`, but java is in path.
+                        // --> we skip the check and trust that we can work
+                        //     with java from the path.
+                        echo "Skipping tool validate check (java). " +
+                             "Java executable in path, but no JAVA_HOME found."
+                    } else {
+                        toolValidate tool: 'java', home: javaHome
+                    }
+                }
 
                 sh """${neoDeployScript} \
                       ${commonDeployParams}
