@@ -20,6 +20,9 @@ import util.JenkinsEnvironmentRule
 import util.Rules
 
 public class MtaBuildTest extends BasePipelineTest {
+
+    def toolJavaValidateCalled = false
+
     @ClassRule
     public static TemporaryFolder tmp = new TemporaryFolder()
 
@@ -59,6 +62,12 @@ public class MtaBuildTest extends BasePipelineTest {
         helper.registerAllowedMethod('pwd', [], { currentDir } )
 
         binding.setVariable('PATH', '/usr/bin')
+
+        helper.registerAllowedMethod('toolValidate', [Map], { m ->
+
+                                                              if(m.tool == 'java')
+                                                                  toolJavaValidateCalled = true
+                                                            })
     }
 
 
@@ -217,7 +226,22 @@ public class MtaBuildTest extends BasePipelineTest {
         assert jscr.shell.find { c -> c.contains('java -jar mta.jar --mtar com.mycompany.northwind.mtar --build-target=NEO build')}
     }
 
+    @Test
+    void toolJavaValidateCalled() {
 
+        jsr.step.call(buildTarget: 'NEO')
+
+        assert toolJavaValidateCalled
+    }
+
+    @Test
+    void toolValidateNotCalledWhenJavaHomeIsUnsetButJavaIsInPath() {
+
+        jscr.setReturnValue('which java', 0)
+        jsr.step.call(buildTarget: 'NEO')
+
+        assert !toolJavaValidateCalled
+}
     private static defaultMtaYaml() {
         return  '''
                 _schema-version: "2.0.0"
