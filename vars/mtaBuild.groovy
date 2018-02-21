@@ -1,6 +1,9 @@
 import com.sap.piper.ConfigurationLoader
 import com.sap.piper.ConfigurationMerger
 
+import groovy.transform.Field
+
+@Field def DEFAULT_MTA_JAR_NAME = 'mta.jar'
 
 def call(Map parameters = [:]) {
 
@@ -27,6 +30,16 @@ def call(Map parameters = [:]) {
                                       parameters, parameterKeys,
                                       null,
                                       stepConfigurationKeys)
+
+
+        MTA_JAR_FILE_VALIDATE: {
+            // same order like inside getMtaJar,
+            def mtaJarLocation = configuration?.mtaJarLocation ?: env?.MTA_JAR_LOCATION
+            def returnCodeLsMtaJar = sh script: 'ls mta.jar', returnStatus:true
+            if(mtaJarLocation || ( !mtaJarLocation && returnCodeLsMtaJar != 0)) {
+                toolValidate tool: 'mta', home: mtaJarLocation
+            }
+        }
 
         def mtaYaml = readYaml file: "${pwd()}/mta.yaml"
 
