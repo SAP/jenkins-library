@@ -20,6 +20,9 @@ import util.JenkinsEnvironmentRule
 import util.Rules
 
 public class MtaBuildTest extends BasePipelineTest {
+
+    def toolMtaValidateCalled = false
+
     @ClassRule
     public static TemporaryFolder tmp = new TemporaryFolder()
 
@@ -59,6 +62,20 @@ public class MtaBuildTest extends BasePipelineTest {
         helper.registerAllowedMethod('pwd', [], { currentDir } )
 
         binding.setVariable('PATH', '/usr/bin')
+
+        //
+        // needs to be after loading the scripts. Here we have a different behaviour
+        // for usual steps and for steps contained in the shared lib itself.
+        //
+        // toolValidate mocked here since we are not interested in testing
+        // toolValidate here. This is expected to be done in a test class for
+        // toolValidate.
+        //
+        helper.registerAllowedMethod('toolValidate', [Map], { m ->
+
+                                                              if(m.tool == 'mta')
+                                                                  toolMtaValidateCalled = true
+                                                            })
     }
 
 
@@ -217,6 +234,19 @@ public class MtaBuildTest extends BasePipelineTest {
         assert jscr.shell.find { c -> c.contains('java -jar mta.jar --mtar com.mycompany.northwind.mtar --build-target=NEO build')}
     }
 
+    @Test
+    void skipValidationInCaseMtarJarFileIsUsedFromWorkingDir() {
+        jscr.setReturnValue('ls mta.jar', 0)
+        jsr.step.call(script: [commonPipelineEnvironment: jer.env])
+        assert !toolMtaValidateCalled
+    }
+
+    @Test
+    void performValidationInCaseMtarJarFileIsNotUsedFromWorkingDir() {
+        jscr.setReturnValue('ls mta.jar', 1)
+        jsr.step.call(script: [commonPipelineEnvironment: jer.env])
+        assert toolMtaValidateCalled
+    }
 
     private static defaultMtaYaml() {
         return  '''
