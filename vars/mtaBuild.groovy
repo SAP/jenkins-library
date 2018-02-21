@@ -35,7 +35,7 @@ def call(Map parameters = [:]) {
         MTA_JAR_FILE_VALIDATE: {
             // same order like inside getMtaJar,
             def mtaJarLocation = configuration?.mtaJarLocation ?: env?.MTA_JAR_LOCATION
-            def returnCodeLsMtaJar = sh script: 'ls mta.jar', returnStatus:true
+            def returnCodeLsMtaJar = sh script: "ls ${DEFAULT_MTA_JAR_NAME}", returnStatus:true
             if(mtaJarLocation || ( !mtaJarLocation && returnCodeLsMtaJar != 0)) {
                 toolValidate tool: 'mta', home: mtaJarLocation
             }
@@ -69,7 +69,7 @@ def call(Map parameters = [:]) {
 }
 
 private getMtaJar(stepName, configuration) {
-    def mtaJarLocation = 'mta.jar' //default, maybe it is in current working directory
+    def mtaJarLocation = DEFAULT_MTA_JAR_NAME //default, maybe it is in current working directory
 
     if(configuration?.mtaJarLocation){
         mtaJarLocation = "${configuration.mtaJarLocation}/mta.jar"
