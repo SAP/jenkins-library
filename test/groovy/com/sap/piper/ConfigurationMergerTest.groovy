@@ -1,9 +1,17 @@
 package com.sap.piper
 
 import org.junit.Assert
+import org.junit.Rule
 import org.junit.Test
 
+import com.lesfurets.jenkins.unit.BasePipelineTest
+
+import util.JenkinsResetDefaultCacheRule
+
 class ConfigurationMergerTest {
+
+    @Rule
+    public JenkinsResetDefaultCacheRule resetDefaultValueCacheRule = new JenkinsResetDefaultCacheRule()
 
     @Test
     void testMerge(){
@@ -53,5 +61,15 @@ class ConfigurationMergerTest {
         Assert.assertEquals(10, merged.fruits.oranges)
         Assert.assertEquals(1000, merged.fruits.cucumbers)
         Assert.assertEquals(null, merged.veggie)
+    }
+
+    @Test
+   void testReadConfigInsideMerge() {
+        DefaultValueCache.createInstance([steps:[myStep:[overwrite: 'x', defaultKey1:'defaultValue1']]])
+        def config = [commonPipelineEnvironment: [configuration: [steps:[myStep:[overwrite: 'y', key1:'value1']]]]]
+        def mergeResult = ConfigurationMerger.merge(config, "myStep", [:], (Set)[], [:], (Set)['overwrite', 'key1'])
+        Assert.assertEquals('y', mergeResult.overwrite)
+        Assert.assertEquals('defaultValue1', mergeResult.defaultKey1)
+        Assert.assertEquals('value1', mergeResult.key1)
     }
 }
