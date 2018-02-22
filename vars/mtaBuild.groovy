@@ -38,6 +38,8 @@ def call(Map parameters = [:]) {
             def rc = sh script: 'which java' , returnStatus: true
             if(script.JAVA_HOME || (!script.JAVA_HOME && rc != 0)) {
                 toolValidate tool: 'java', home: script.JAVA_HOME
+            } else {
+                echo 'Tool validation (java) skipped. JAVA_HOME not set, but java executable in path.'
             }
         }
 
