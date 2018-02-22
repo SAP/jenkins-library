@@ -18,4 +18,10 @@ class FileUtils implements Serializable {
         def file = new File(dir)
         if (file.list().size() == 0) throw new AbortException("'${file.getAbsolutePath()}' is empty.")
     }
+
+    static validateFile(filePath) {
+        if (!filePath) throw new IllegalArgumentException("The parameter 'filePath' can not be null or empty.")
+        def file = new File(filePath)
+        if (!file.exists()) throw new AbortException("'${file.getAbsolutePath()}' does not exist.")
+    }
 }
