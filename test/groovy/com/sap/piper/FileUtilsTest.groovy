@@ -1,15 +1,10 @@
 package com.sap.piper
 
-import org.junit.ClassRule
-import org.junit.BeforeClass
-import org.junit.Rule
-import org.junit.Test
-import org.junit.rules.ExpectedException
-import org.junit.rules.TemporaryFolder
-
-import hudson.AbortException
+import org.junit.*
+import org.junit.rules.*
 
 import com.sap.piper.FileUtils
+import hudson.AbortException
 
 
 class FileUtilsTest {
@@ -90,6 +85,41 @@ class FileUtilsTest {
     void validateDirectoryIsNotEmptyTest() {
 
         FileUtils.validateDirectoryIsNotEmpty(notEmptyDir)
+    }
+
+    @Test
+    void validateFileNoFilePathTest() {
+
+        thrown.expect(IllegalArgumentException)
+        thrown.expectMessage("The parameter 'filePath' can not be null or empty.")
+
+        FileUtils.validateFile(null)
+    }
+
+    @Test
+    void validateFileEmptyFilePathTest() {
+
+        thrown.expect(IllegalArgumentException)
+        thrown.expectMessage("The parameter 'filePath' can not be null or empty.")
+
+        FileUtils.validateFile('')
+    }
+
+    @Test
+    void validateFileDoesNotExistFileTest() {
+
+        def path = new File("$emptyDir", 'test').getAbsolutePath()
+
+        thrown.expect(AbortException)
+        thrown.expectMessage("'$path' does not exist.")
+
+        FileUtils.validateFile(path)
+    }
+
+    @Test
+    void validateFileTest() {
+
+        FileUtils.validateFile(file)
     }
 }
 
