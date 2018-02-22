@@ -241,6 +241,7 @@ public class MtaBuildTest extends BasePipelineTest {
         jsr.step.call(buildTarget: 'NEO')
 
         assert !toolJavaValidateCalled
+        assert jlr.log.contains('Tool validation (java) skipped. JAVA_HOME not set, but java executable in path.')
 }
     private static defaultMtaYaml() {
         return  '''
