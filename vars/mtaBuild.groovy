@@ -72,13 +72,13 @@ private getMtaJar(stepName, configuration) {
     def mtaJarLocation = DEFAULT_MTA_JAR_NAME //default, maybe it is in current working directory
 
     if(configuration?.mtaJarLocation){
-        mtaJarLocation = "${configuration.mtaJarLocation}/mta.jar"
+        mtaJarLocation = "${configuration.mtaJarLocation}/${DEFAULT_MTA_JAR_NAME}"
         echo "[$stepName] MTA JAR \"${mtaJarLocation}\" retrieved from configuration."
         return mtaJarLocation
     }
 
     if(env?.MTA_JAR_LOCATION){
-        mtaJarLocation = "${env.MTA_JAR_LOCATION}/mta.jar"
+        mtaJarLocation = "${env.MTA_JAR_LOCATION}/${DEFAULT_MTA_JAR_NAME}"
         echo "[$stepName] MTA JAR \"${mtaJarLocation}\" retrieved from environment."
         return mtaJarLocation
     }
