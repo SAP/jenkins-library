@@ -98,7 +98,7 @@ def call(parameters = [:]) {
 
         def deployHost
         def deployAccount
-        def credentialsId = configuration.get('neoCredentialsId', '')
+        def credentialsId = configuration.get('neoCredentialsId')
         def deployMode = configuration.deployMode
         def warAction
         def propertiesFile
