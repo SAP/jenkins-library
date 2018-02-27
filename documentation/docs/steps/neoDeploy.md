@@ -19,13 +19,16 @@ needs to be extracted into the folder provided by `neoHome`. In case this parame
 ## Parameters when using MTA deployment method (default - MTA)
 | parameter          | mandatory | default                                                                                                                          | possible values |
 | -------------------|-----------|----------------------------------------------------------------------------------------------------------------------------------|-----------------|
-| `deployMode`       | yes       | `'MTA'`                                                                                      | `'MTA'`, `'WAR_PARAMS'`, `'WAR_PROPERTIESFILE'` |
+| `account`          | no        | `'account'` from step configuration `'neoDeploy'`                                                                                |                 |
+| `deployMode`       | yes       | `'MTA'`                                                                                                                          | `'MTA'`, `'WAR_PARAMS'`, `'WAR_PROPERTIESFILE'` |
 | `script`           | yes       |                                                                                                                                  |                 |
 | `archivePath`      | yes       |                                                                                                                                  |                 |
-| `deployHost`       | no        | `'account'` from step configuration `'neoDeploy'`, or propertey `'DEPLOY_HOST'` from `commonPipelineEnvironment` (deprecated)    |                 |
-| `deployAccount`    | no        | `'host'` from step configuration `'neoDeploy'`, or property `'CI_DEPLOY_ACCOUNT'` from `commonPipelineEnvironment` (deprecated)  |                 |
+| `deployHost` deprecated, use `host` | no        | `'account'` from step configuration `'neoDeploy'`, or propertey `'DEPLOY_HOST'` from `commonPipelineEnvironment` (deprecated)    |                 |
+| `deployAccount` deprecated, use `account` | no        | `'host'` from step configuration `'neoDeploy'`, or property `'CI_DEPLOY_ACCOUNT'` from `commonPipelineEnvironment` (deprecated)  |                 |
+| `host`  | no        | `'account'` from step configuration `'neoDeploy'`                                                                                           |                 |
 | `neoCredentialsId` | no        | `'neoCredentialsId'` from step configuration `'neoDeploy'` or hard coded value `'CI_CREDENTIALS_ID'`                             |                 |
-| `neoHome`          | no        | Environment is checked for `NEO_HOME`, <br>otherwise the neo toolset is expected in the path                                     |                 |
+| `neoHome`          | no        | `'neoHome'` from step configuration `'neoDeploy'`. Otherwise Environment is checked for `NEO_HOME`, <br>otherwise the neo toolset is expected in the path                                     |                 |
+
 ## Parameters when using WAR file deployment method with .properties file (WAR_PROPERTIESFILE)
 | parameter          | mandatory | default                                                                                      | possible values                                 |
 | -------------------|-----------|----------------------------------------------------------------------------------------------|-------------------------------------------------|
@@ -33,21 +36,24 @@ needs to be extracted into the folder provided by `neoHome`. In case this parame
 | `warAction`        | yes       | `'deploy'`                                                                                   | `'deploy'`, `'rolling-update'`                  |
 | `script`           | yes       |                                                                                              |                                                 |
 | `archivePath`      | yes       |                                                                                              |                                                 |
-| `neoCredentialsId` | no        | `'CI_CREDENTIALS_ID'`                                                                        |                                                 |
-| `neoHome`          | no        | Environment is checked for `NEO_HOME`, <br>otherwise the neo toolset is expected in the path |                                                 |
+| `neoCredentialsId` | no        | `'neoCredentialsId'` from step configuration `'neoDeploy'` or hard coded value `'CI_CREDENTIALS_ID'`                             |                 |
+| `neoHome`          | no        | `'neoHome'` from step configuration `'neoDeploy'`. Otherwise Environment is checked for `NEO_HOME`, <br>otherwise the neo toolset is expected in the path                                     |                 |
 | `propertiesFile`   | yes       |                                                                                              |                                                 |
+
 
 ## Parameters when using WAR file deployment method witout .properties file - with parameters (WAR_PARAMS)
 | parameter          | mandatory | default                                                                                      | possible values                                 |
 | -------------------|-----------|----------------------------------------------------------------------------------------------|-------------------------------------------------|
+| `account`          | no        | `'account'` from step configuration `'neoDeploy'`                                                                                |                 |
 | `deployMode`       | yes       | `'MTA'`                                                                                      | `'MTA'`, `'WAR_PARAMS'`, `'WAR_PROPERTIESFILE'` |
 | `warAction`        | yes       | `'deploy'`                                                                                   | `'deploy'`, `'rolling-update'`                  |
 | `script`           | yes       |                                                                                              |                                                 |
 | `archivePath`      | yes       |                                                                                              |                                                 |
-| `deployHost`       | no        | `'DEPLOY_HOST'` from `commonPipelineEnvironment`                                             |                                                 |
-| `deployAccount`    | no        | `'CI_DEPLOY_ACCOUNT'` from `commonPipelineEnvironment`                                       |                                                 |
-| `neoCredentialsId` | no        | `'CI_CREDENTIALS_ID'`                                                                        |                                                 |
-| `neoHome`          | no        | Environment is checked for `NEO_HOME`, <br>otherwise the neo toolset is expected in the path |                                                 |
+| `deployHost` deprecated, use `host` | no        | `'account'` from step configuration `'neoDeploy'`, or propertey `'DEPLOY_HOST'` from `commonPipelineEnvironment` (deprecated)    |                 |
+| `deployAccount` deprecated, use `account` | no        | `'host'` from step configuration `'neoDeploy'`, or property `'CI_DEPLOY_ACCOUNT'` from `commonPipelineEnvironment` (deprecated)  |                 |
+| `host`  | no        | `'account'` from step configuration `'neoDeploy'`                                                                                           |                 |
+| `neoCredentialsId` | no        | `'neoCredentialsId'` from step configuration `'neoDeploy'` or hard coded value `'CI_CREDENTIALS_ID'`                             |                 |
+| `neoHome`          | no        | `'neoHome'` from step configuration `'neoDeploy'`. Otherwise Environment is checked for `NEO_HOME`, <br>otherwise the neo toolset is expected in the path                                     |                 |
 | `applicationName`  | yes       |                                                                                              |                                                 |
 | `runtime`          | yes       |                                                                                              |                                                 |
 | `runtime-version`  | yes       |                                                                                              |                                                 |
@@ -67,6 +73,8 @@ needs to be extracted into the folder provided by `neoHome`. In case this parame
 * `runtime` - Name of SAP Cloud Platform application runtime
 * `runtime-version` - Version of SAP Cloud Platform application runtime
 * `size` - Compute unit (VM) size. Acceptable values: lite, pro, prem, prem-plus.
+
+The step is prepared for being executed in docker. The corresponding parameters can be applied. See step `dockerExecute` for details.
 
 ## Return value
 none
