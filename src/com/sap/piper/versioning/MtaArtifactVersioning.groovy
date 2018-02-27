@@ -1,4 +1,4 @@
-package com.sap.icd.jenkins.versioning
+package com.sap.piper.versioning
 
 class MtaArtifactVersioning extends ArtifactVersioning {
 
