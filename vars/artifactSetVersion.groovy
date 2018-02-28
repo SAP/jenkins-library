@@ -91,10 +91,10 @@ def call(Map parameters = [:]) {
 
         artifactVersioning.setVersion(newVersion)
 
+        def gitCommitId
+
         if (configuration.commitVersion) {
             sh 'git add .'
-
-            def gitCommitId
 
             sshagent([configuration.gitCredentialsId]) {
                 def gitUserMailConfig = ''
@@ -112,18 +112,17 @@ def call(Map parameters = [:]) {
 
                 gitCommitId = gitUtils.getGitCommitId()
             }
-
-            if (buildTool == 'docker' && configuration.artifactType == 'appContainer') {
-                script.commonPipelineEnvironment.setAppContainerProperty('artifactVersion', newVersion)
-                script.commonPipelineEnvironment.setAppContainerProperty('gitCommitId', gitCommitId)
-            } else {
-                //standard case
-                script.commonPipelineEnvironment.setArtifactVersion(newVersion)
-                script.commonPipelineEnvironment.setGitCommitId(gitCommitId)
-            }
-        } else {
-            script.commonPipelineEnvironment.setArtifactVersion(newVersion)
         }
+
+        if (buildTool == 'docker' && configuration.artifactType == 'appContainer') {
+            script.commonPipelineEnvironment.setAppContainerProperty('artifactVersion', newVersion)
+            script.commonPipelineEnvironment.setAppContainerProperty('gitCommitId', gitCommitId)
+        } else {
+            //standard case
+            script.commonPipelineEnvironment.setArtifactVersion(newVersion)
+            script.commonPipelineEnvironment.setGitCommitId(gitCommitId)
+        }
+
         echo "[${stepName}]New version: ${newVersion}"
     }
 }
