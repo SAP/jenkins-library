@@ -7,21 +7,26 @@ import static org.junit.Assert.assertTrue
 import org.junit.rules.RuleChain
 
 import util.Rules
+import util.JenkinsStepRule
+import util.JenkinsEnvironmentRule
 
 class DurationMeasureTest extends BasePipelineTest {
+    private JenkinsStepRule jsr = new JenkinsStepRule(this)
+    private JenkinsEnvironmentRule jer = new JenkinsEnvironmentRule(this)
 
     @Rule
-    public RuleChain rules = Rules.getCommonRules(this)
+    public RuleChain rules = Rules
+        .getCommonRules(this)
+        .around(jsr)
+        .around(jer)
 
     @Test
     void testDurationMeasurement() throws Exception {
-        def cpe = loadScript("commonPipelineEnvironment.groovy").commonPipelineEnvironment
-        def script = loadScript("durationMeasure.groovy")
         def bodyExecuted = false
-        script.call(script: [commonPipelineEnvironment: cpe], measurementName: 'test') {
+        jsr.step.call(script: [commonPipelineEnvironment: jer.env], measurementName: 'test') {
             bodyExecuted = true
         }
-        assertTrue(cpe.getPipelineMeasurement('test') != null)
+        assertTrue(jer.env.getPipelineMeasurement('test') != null)
         assertTrue(bodyExecuted)
         assertJobStatusSuccess()
     }

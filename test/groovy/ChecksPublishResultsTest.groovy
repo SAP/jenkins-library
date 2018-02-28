@@ -10,22 +10,23 @@ import static org.junit.Assert.assertEquals
 import static org.junit.Assert.assertTrue
 
 import util.Rules
+import util.JenkinsStepRule
 
 class ChecksPublishResultsTest extends BasePipelineTest {
-    Map publisherStepOptions
-    List archiveStepPatterns
+    private JenkinsStepRule jsr = new JenkinsStepRule(this)
 
     @Rule
-    public RuleChain ruleChain = Rules.getCommonRules(this)
+    public RuleChain ruleChain = Rules
+        .getCommonRules(this)
+        .around(jsr)
 
-    def checksPublishResultsScript
+    Map publisherStepOptions
+    List archiveStepPatterns
 
     @Before
     void init() {
         publisherStepOptions = [:]
         archiveStepPatterns = []
-        // prepare checkResultsPublish step
-        checksPublishResultsScript = loadScript("checksPublishResults.groovy").checksPublishResults
         // add handler for generic step call
         helper.registerAllowedMethod("step", [Map.class], {
             parameters -> publisherStepOptions[parameters.$class] = parameters
@@ -37,7 +38,7 @@ class ChecksPublishResultsTest extends BasePipelineTest {
 
     @Test
     void testPublishWithDefaultSettings() throws Exception {
-        checksPublishResultsScript.call()
+        jsr.step.call()
 
         assertTrue("AnalysisPublisher options not set", publisherStepOptions['AnalysisPublisher'] != null)
         // ensure nothing else is published
@@ -50,7 +51,7 @@ class ChecksPublishResultsTest extends BasePipelineTest {
 
     @Test
     void testPublishForJavaWithDefaultSettings() throws Exception {
-        checksPublishResultsScript.call(pmd: true, cpd: true, findbugs: true, checkstyle: true)
+        jsr.step.call(pmd: true, cpd: true, findbugs: true, checkstyle: true)
 
         assertTrue("AnalysisPublisher options not set", publisherStepOptions['AnalysisPublisher'] != null)
         assertTrue("PmdPublisher options not set", publisherStepOptions['PmdPublisher'] != null)
@@ -68,7 +69,7 @@ class ChecksPublishResultsTest extends BasePipelineTest {
 
     @Test
     void testPublishForJavaScriptWithDefaultSettings() throws Exception {
-        checksPublishResultsScript.call(eslint: true)
+        jsr.step.call(eslint: true)
 
         assertTrue("AnalysisPublisher options not set", publisherStepOptions['AnalysisPublisher'] != null)
         assertTrue("WarningsPublisher options not set", publisherStepOptions['WarningsPublisher'] != null)
@@ -86,7 +87,7 @@ class ChecksPublishResultsTest extends BasePipelineTest {
 
     @Test
     void testPublishForPythonWithDefaultSettings() throws Exception {
-        checksPublishResultsScript.call(pylint: true)
+        jsr.step.call(pylint: true)
 
         assertTrue("AnalysisPublisher options not set", publisherStepOptions['AnalysisPublisher'] != null)
         assertTrue("WarningsPublisher options not set", publisherStepOptions['WarningsPublisher'] != null)
@@ -105,7 +106,7 @@ class ChecksPublishResultsTest extends BasePipelineTest {
 
     @Test
     void testPublishNothing() throws Exception {
-        checksPublishResultsScript.call(aggregation: false)
+        jsr.step.call(aggregation: false)
 
         // ensure nothing is published
         assertTrue("AnalysisPublisher options not empty", publisherStepOptions['AnalysisPublisher'] == null)
@@ -118,7 +119,7 @@ class ChecksPublishResultsTest extends BasePipelineTest {
 
     @Test
     void testPublishNothingExplicitFalse() throws Exception {
-        checksPublishResultsScript.call(pmd: false)
+        jsr.step.call(pmd: false)
 
         assertTrue("AnalysisPublisher options not set", publisherStepOptions['AnalysisPublisher'] != null)
         // ensure nothing else is published
@@ -131,7 +132,7 @@ class ChecksPublishResultsTest extends BasePipelineTest {
 
     @Test
     void testPublishNothingImplicitTrue() throws Exception {
-        checksPublishResultsScript.call(pmd: [:])
+        jsr.step.call(pmd: [:])
 
         // ensure pmd is not published
         assertTrue("PmdPublisher options not set", publisherStepOptions['PmdPublisher'] != null)
@@ -139,7 +140,7 @@ class ChecksPublishResultsTest extends BasePipelineTest {
 
     @Test
     void testPublishNothingExplicitActiveFalse() throws Exception {
-        checksPublishResultsScript.call(pmd: [active: false])
+        jsr.step.call(pmd: [active: false])
 
         // ensure pmd is not published
         assertTrue("PmdPublisher options not empty", publisherStepOptions['PmdPublisher'] == null)
@@ -148,7 +149,7 @@ class ChecksPublishResultsTest extends BasePipelineTest {
     @Test
     void testPublishWithChangedStepDefaultSettings() throws Exception {
         // pmd has been set to active: true in step configuration
-        checksPublishResultsScript.call(script: [commonPipelineEnvironment: [
+        jsr.step.call(script: [commonPipelineEnvironment: [
             configuration: [steps: [checksPublishResults: [pmd: [active: true]]]]
         ]])
 
@@ -163,7 +164,7 @@ class ChecksPublishResultsTest extends BasePipelineTest {
 
     @Test
     void testPublishWithCustomPattern() throws Exception {
-        checksPublishResultsScript.call(eslint: [pattern: 'my-fancy-file.ext'], pmd: [pattern: 'this-is-not-a-patter.xml'])
+        jsr.step.call(eslint: [pattern: 'my-fancy-file.ext'], pmd: [pattern: 'this-is-not-a-patter.xml'])
 
         assertTrue("AnalysisPublisher options not set", publisherStepOptions['AnalysisPublisher'] != null)
         assertTrue("PmdPublisher options not set", publisherStepOptions['PmdPublisher'] != null)
@@ -180,7 +181,7 @@ class ChecksPublishResultsTest extends BasePipelineTest {
 
     @Test
     void testPublishWithArchive() throws Exception {
-        checksPublishResultsScript.call(archive: true, eslint: true, pmd: true, cpd: true, findbugs: true, checkstyle: true)
+        jsr.step.call(archive: true, eslint: true, pmd: true, cpd: true, findbugs: true, checkstyle: true)
 
         assertTrue("ArchivePatterns number not correct", archiveStepPatterns.size() == 5)
         assertTrue("ArchivePatterns contains no PMD pattern", archiveStepPatterns.contains('**/target/pmd.xml'))
@@ -192,7 +193,7 @@ class ChecksPublishResultsTest extends BasePipelineTest {
 
     @Test
     void testPublishWithPartialArchive() throws Exception {
-        checksPublishResultsScript.call(archive: true, eslint: [archive: false], pmd: true, cpd: true, findbugs: true, checkstyle: true)
+        jsr.step.call(archive: true, eslint: [archive: false], pmd: true, cpd: true, findbugs: true, checkstyle: true)
 
         assertTrue("ArchivePatterns number not correct", archiveStepPatterns.size() == 4)
         assertTrue("ArchivePatterns contains no PMD pattern", archiveStepPatterns.contains('**/target/pmd.xml'))
@@ -205,7 +206,7 @@ class ChecksPublishResultsTest extends BasePipelineTest {
 
     @Test
     void testPublishWithDefaultThresholds() throws Exception {
-        checksPublishResultsScript.call(pmd: true)
+        jsr.step.call(pmd: true)
 
         assertTrue("AnalysisPublisher options not set",
             publisherStepOptions['AnalysisPublisher'] != null)
@@ -239,7 +240,7 @@ class ChecksPublishResultsTest extends BasePipelineTest {
 
     @Test
     void testPublishWithThresholds() throws Exception {
-        checksPublishResultsScript.call(aggregation: [thresholds: [fail: [high: '10']]], pmd: true)
+        jsr.step.call(aggregation: [thresholds: [fail: [high: '10']]], pmd: true)
 
         assertTrue("AnalysisPublisher options not set", publisherStepOptions['AnalysisPublisher'] != null)
         assertTrue("PmdPublisher options not set", publisherStepOptions['PmdPublisher'] != null)
