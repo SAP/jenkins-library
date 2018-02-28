@@ -26,9 +26,6 @@ def call(Map parameters = [:]) {
 
         prepareDefaultValues script: script
 
-        final Map stepDefaults = ConfigurationLoader.defaultStepConfiguration(script, stepName)
-        final Map stepConfiguration = ConfigurationLoader.stepConfiguration(script, stepName)
-
         Set parameterKeys = [
             'artifactType',
             'buildTool',
@@ -62,7 +59,7 @@ def call(Map parameters = [:]) {
             'versioningTemplate'
         ]
 
-        Map configuration = ConfigurationMerger.mergeWithPipelineData(parameters, parameterKeys, pipelineDataMap, stepConfiguration, stepConfigurationKeys, stepDefaults)
+        Map configuration = ConfigurationMerger.merge(script, stepName, parameters, parameterKeys, pipelineDataMap, stepConfigurationKeys)
 
         def utils = new Utils()
         def buildTool = utils.getMandatoryParameter(configuration, 'buildTool')

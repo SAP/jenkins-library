@@ -14,9 +14,6 @@ def call(Map parameters = [:]) {
 
         prepareDefaultValues script: script
 
-        final Map stepDefaults = ConfigurationLoader.defaultStepConfiguration(script, stepName)
-        final Map stepConfiguration = ConfigurationLoader.stepConfiguration(script, stepName)
-
         Set parameterKeys = [
             'artifactVersion',
             'influxServer',
@@ -30,7 +27,7 @@ def call(Map parameters = [:]) {
             'influxPrefix'
         ]
 
-        Map configuration = ConfigurationMerger.mergeWithPipelineData(parameters, parameterKeys, pipelineDataMap, stepConfiguration, stepConfigurationKeys, stepDefaults)
+        Map configuration = ConfigurationMerger.merge(script, stepName, parameters, parameterKeys, pipelineDataMap, stepConfigurationKeys)
 
         def artifactVersion = configuration.artifactVersion
         if (!artifactVersion)  {

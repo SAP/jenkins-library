@@ -22,11 +22,11 @@ def call(Map parameters = [:]) {
 
         prepareDefaultValues script: script
 
-        final Map stepConfiguration = ConfigurationLoader.stepConfiguration(script, stepName)
-        final Map stepDefaults = ConfigurationLoader.defaultStepConfiguration(script, stepName)
         final Map configuration = ConfigurationMerger.merge(
+                                      script, stepName,
                                       parameters, parameterKeys,
-                                      stepConfiguration, stepConfigurationKeys, stepDefaults)
+                                      null,
+                                      stepConfigurationKeys)
 
         def mtaYaml = readYaml file: "${pwd()}/mta.yaml"
 

@@ -26,12 +26,11 @@ def call(Map parameters = [:]) {
         
         Set configKeys = TOOLS.plus('archive')
 
-        final Map stepDefaults = ConfigurationLoader.defaultStepConfiguration(script, STEP_NAME)
-        final Map stepConfiguration = ConfigurationLoader.stepConfiguration(script, STEP_NAME)
         Map configuration = ConfigurationMerger.merge(
+            script, STEP_NAME,
             parameters, configKeys,
-            stepConfiguration, configKeys,
-            stepDefaults)
+            null,
+            configKeys)
 
         def doArchive = configuration.get('archive')
         // JAVA
