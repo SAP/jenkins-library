@@ -15,29 +15,32 @@ import com.lesfurets.jenkins.unit.BasePipelineTest
 
 import util.JenkinsLoggingRule
 import util.JenkinsShellCallRule
+import util.JenkinsStepRule
+import util.JenkinsEnvironmentRule
 import util.Rules
 
-public class MTABuildTest extends BasePipelineTest {
-
+public class MtaBuildTest extends BasePipelineTest {
     @ClassRule
     public static TemporaryFolder tmp = new TemporaryFolder()
 
     private ExpectedException thrown = new ExpectedException()
     private JenkinsLoggingRule jlr = new JenkinsLoggingRule(this)
     private JenkinsShellCallRule jscr = new JenkinsShellCallRule(this)
+    private JenkinsStepRule jsr = new JenkinsStepRule(this)
+    private JenkinsEnvironmentRule jer = new JenkinsEnvironmentRule(this)
 
     @Rule
-    public RuleChain ruleChain = Rules.getCommonRules(this)
-            .around(thrown)
-            .around(jlr)
-            .around(jscr)
+    public RuleChain ruleChain = Rules
+        .getCommonRules(this)
+        .around(thrown)
+        .around(jlr)
+        .around(jscr)
+        .around(jsr)
+        .around(jer)
 
     private static currentDir
     private static newDir
     private static mtaYaml
-
-    def mtaBuildScript
-    def cpe
 
     @BeforeClass
     static void createTestFiles() {
@@ -51,22 +54,18 @@ public class MTABuildTest extends BasePipelineTest {
 
     @Before
     void init() {
-
         mtaYaml.text = defaultMtaYaml()
 
         helper.registerAllowedMethod('pwd', [], { currentDir } )
 
         binding.setVariable('PATH', '/usr/bin')
-
-        mtaBuildScript = loadScript('mtaBuild.groovy').mtaBuild
-        cpe = loadScript('commonPipelineEnvironment.groovy').commonPipelineEnvironment
     }
 
 
     @Test
     void environmentPathTest() {
 
-        mtaBuildScript.call(buildTarget: 'NEO')
+        jsr.step.call(buildTarget: 'NEO')
 
         assert jscr.shell[1].contains('PATH=./node_modules/.bin:/usr/bin')
     }
@@ -75,7 +74,7 @@ public class MTABuildTest extends BasePipelineTest {
     @Test
     void sedTest() {
 
-        mtaBuildScript.call(buildTarget: 'NEO')
+        jsr.step.call(buildTarget: 'NEO')
 
         assert jscr.shell[0] =~ /sed -ie "s\/\\\$\{timestamp\}\/`date \+%Y%m%d%H%M%S`\/g" ".*\/mta.yaml"$/
     }
@@ -84,10 +83,10 @@ public class MTABuildTest extends BasePipelineTest {
     @Test
     void mtarFilePathFromCommonPipelineEnviromentTest() {
 
-        mtaBuildScript.call(script: [commonPipelineEnvironment: cpe],
+        jsr.step.call(script: [commonPipelineEnvironment: jer.env],
                       buildTarget: 'NEO')
 
-        def mtarFilePath = cpe.getMtarFilePath()
+        def mtarFilePath = jer.env.getMtarFilePath()
 
         assert mtarFilePath == "$currentDir/com.mycompany.northwind.mtar"
     }
@@ -98,7 +97,7 @@ public class MTABuildTest extends BasePipelineTest {
 
         helper.registerAllowedMethod('pwd', [], { newDir } )
 
-        def mtarFilePath = mtaBuildScript.call(buildTarget: 'NEO')
+        def mtarFilePath = jsr.step.call(buildTarget: 'NEO')
 
         assert jscr.shell[0] =~ /sed -ie "s\/\\\$\{timestamp\}\/`date \+%Y%m%d%H%M%S`\/g" ".*\/newDir\/mta.yaml"$/
 
@@ -109,7 +108,7 @@ public class MTABuildTest extends BasePipelineTest {
     @Test
     void mtaJarLocationNotSetTest() {
 
-        mtaBuildScript.call(buildTarget: 'NEO')
+        jsr.step.call(buildTarget: 'NEO')
 
         assert jscr.shell[1].contains(' -jar mta.jar --mtar ')
 
@@ -120,7 +119,7 @@ public class MTABuildTest extends BasePipelineTest {
     @Test
     void mtaJarLocationAsParameterTest() {
 
-        mtaBuildScript.call(mtaJarLocation: '/mylocation/mta', buildTarget: 'NEO')
+        jsr.step.call(mtaJarLocation: '/mylocation/mta', buildTarget: 'NEO')
 
         assert jscr.shell[1].contains(' -jar /mylocation/mta/mta.jar --mtar ')
 
@@ -134,7 +133,7 @@ public class MTABuildTest extends BasePipelineTest {
         mtaYaml.delete()
         thrown.expect(FileNotFoundException)
 
-        mtaBuildScript.call(buildTarget: 'NEO')
+        jsr.step.call(buildTarget: 'NEO')
     }
 
 
@@ -146,7 +145,7 @@ public class MTABuildTest extends BasePipelineTest {
 
         mtaYaml.text = badMtaYaml()
 
-        mtaBuildScript.call(buildTarget: 'NEO')
+        jsr.step.call(buildTarget: 'NEO')
     }
 
 
@@ -158,7 +157,7 @@ public class MTABuildTest extends BasePipelineTest {
 
         mtaYaml.text = noIdMtaYaml()
 
-        mtaBuildScript.call(buildTarget: 'NEO')
+        jsr.step.call(buildTarget: 'NEO')
     }
 
 
@@ -168,7 +167,7 @@ public class MTABuildTest extends BasePipelineTest {
         binding.setVariable('env', [:])
         binding.getVariable('env')['MTA_JAR_LOCATION'] = '/env/mta'
 
-        mtaBuildScript.call(buildTarget: 'NEO')
+        jsr.step.call(buildTarget: 'NEO')
 
         assert jscr.shell[1].contains('-jar /env/mta/mta.jar --mtar')
         assert jlr.log.contains('[mtaBuild] MTA JAR "/env/mta/mta.jar" retrieved from environment.')
@@ -178,9 +177,9 @@ public class MTABuildTest extends BasePipelineTest {
     @Test
     void mtaJarLocationFromCustomStepConfigurationTest() {
 
-        cpe.configuration = [steps:[mtaBuild:[mtaJarLocation: '/step/mta']]]
+        jer.env.configuration = [steps:[mtaBuild:[mtaJarLocation: '/step/mta']]]
 
-        mtaBuildScript.call(script: [commonPipelineEnvironment: cpe],
+        jsr.step.call(script: [commonPipelineEnvironment: jer.env],
                       buildTarget: 'NEO')
 
         assert jscr.shell[1].contains('-jar /step/mta/mta.jar --mtar')
@@ -191,7 +190,7 @@ public class MTABuildTest extends BasePipelineTest {
     @Test
     void buildTargetFromParametersTest() {
 
-        mtaBuildScript.call(buildTarget: 'NEO')
+        jsr.step.call(buildTarget: 'NEO')
 
         assert jscr.shell[1].contains('java -jar mta.jar --mtar com.mycompany.northwind.mtar --build-target=NEO build')
     }
@@ -200,9 +199,9 @@ public class MTABuildTest extends BasePipelineTest {
     @Test
     void buildTargetFromCustomStepConfigurationTest() {
 
-        cpe.configuration = [steps:[mtaBuild:[buildTarget: 'NEO']]]
+        jer.env.configuration = [steps:[mtaBuild:[buildTarget: 'NEO']]]
 
-        mtaBuildScript.call(script: [commonPipelineEnvironment: cpe])
+        jsr.step.call(script: [commonPipelineEnvironment: jer.env])
 
         assert jscr.shell[1].contains('java -jar mta.jar --mtar com.mycompany.northwind.mtar --build-target=NEO build')
     }
@@ -211,9 +210,9 @@ public class MTABuildTest extends BasePipelineTest {
     @Test
     void buildTargetFromDefaultStepConfigurationTest() {
 
-        cpe.defaultConfiguration = [steps:[mtaBuild:[buildTarget: 'NEO']]]
+        jer.env.defaultConfiguration = [steps:[mtaBuild:[buildTarget: 'NEO']]]
 
-        mtaBuildScript.call(script: [commonPipelineEnvironment: cpe])
+        jsr.step.call(script: [commonPipelineEnvironment: jer.env])
 
         assert jscr.shell[1].contains('java -jar mta.jar --mtar com.mycompany.northwind.mtar --build-target=NEO build')
     }
