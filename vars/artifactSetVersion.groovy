@@ -1,9 +1,7 @@
-import com.sap.piper.ConfigurationLoader
 import com.sap.piper.ConfigurationMerger
 import com.sap.piper.GitUtils
 import com.sap.piper.Utils
 import com.sap.piper.versioning.ArtifactVersioning
-
 import groovy.text.SimpleTemplateEngine
 
 def call(Map parameters = [:]) {
@@ -126,10 +124,5 @@ def call(Map parameters = [:]) {
 }
 
 def getTimestamp(pattern){
-    return sh(returnStdout: true, script: "date +'${pattern}'").trim()
+    return sh(returnStdout: true, script: "date --universal +'${pattern}'").trim()
 }
-
-
-
-
-
