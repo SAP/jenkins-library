@@ -20,13 +20,14 @@ none
 | ----------|-----------|---------|-----------------|
 | script | no | empty `commonPipelineEnvironment` |  |
 | buildTool | no | maven | maven, docker |
+| commitVersion | no | `true` | `true`, `false` |
 | dockerVersionSource | no  | `''`  | FROM, (ENV name),appVersion  |
 | filePath | no | buildTool=`maven`: pom.xml <br />docker: Dockerfile |   |
 | gitCommitId |  no | `GitUtils.getGitCommitId()`   |   |
-| gitCredentialsId |  yes | as defined in custom configuration  |   |
+| gitCredentialsId |  If `commitVersion` is `true` | as defined in custom configuration  |   |
 | gitUserEMail | no |  |   |
 | gitUserName | no |   |   |
-| gitSshUrl | yes  |  |   |
+| gitSshUrl | If `commitVersion` is `true` |  |   |
 | tagPrefix | no  | 'build_'  |   |
 | timestamp | no  |  current time in format according to `timestampTemplate`  |   |
 | timestampTemplate | no | `%Y%m%d%H%M%S` |   |
@@ -34,6 +35,7 @@ none
 
 * `script` defines the global script environment of the Jenkinsfile run. Typically `this` is passed to this parameter. This allows the function to access the [`commonPipelineEnvironment`](commonPipelineEnvironment.md) for retrieving e.g. configuration parameters.
 * `buildTool` defines the tool which is used for building the artifact.
+* `commitVersion` controls if the changed version is committed and pushed to the repository.
 * `dockerVersionSource` specifies the source to be used for the main version which is used for generating the automatic version.
 
     * This can either be the version of the base image - as retrieved from the `FROM` statement within the Dockerfile, e.g. `FROM jenkins:2.46.2`
@@ -53,6 +55,7 @@ Following parameters can also be specified as step parameters using the global c
 
 * `artifactType`
 * `buildTool`
+* `commitVersion`
 * `dockerVersionSource`
 * `filePath`
 * `gitCredentialsId`

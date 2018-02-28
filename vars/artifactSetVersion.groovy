@@ -1,9 +1,7 @@
-import com.sap.piper.ConfigurationLoader
 import com.sap.piper.ConfigurationMerger
 import com.sap.piper.GitUtils
 import com.sap.piper.Utils
 import com.sap.piper.versioning.ArtifactVersioning
-
 import groovy.text.SimpleTemplateEngine
 
 def call(Map parameters = [:]) {
@@ -29,6 +27,7 @@ def call(Map parameters = [:]) {
         Set parameterKeys = [
             'artifactType',
             'buildTool',
+            'commitVersion',
             'dockerVersionSource',
             'filePath',
             'gitCommitId',
@@ -47,6 +46,7 @@ def call(Map parameters = [:]) {
         Set stepConfigurationKeys = [
             'artifactType',
             'buildTool',
+            'commitVersion',
             'dockerVersionSource',
             'filePath',
             'gitCredentialsId',
@@ -91,35 +91,38 @@ def call(Map parameters = [:]) {
 
         artifactVersioning.setVersion(newVersion)
 
-        sh 'git add .'
+        if (configuration.commitVersion) {
+            sh 'git add .'
 
-        def gitCommitId
+            def gitCommitId
 
-        sshagent([configuration.gitCredentialsId]) {
-            def gitUserMailConfig = ''
-            if (configuration.gitUserName  && configuration.gitUserEMail)
-                gitUserMailConfig = "-c user.email=\"${configuration.gitUserEMail}\" -c user.name \"${configuration.gitUserName}\""
+            sshagent([configuration.gitCredentialsId]) {
+                def gitUserMailConfig = ''
+                if (configuration.gitUserName && configuration.gitUserEMail)
+                    gitUserMailConfig = "-c user.email=\"${configuration.gitUserEMail}\" -c user.name \"${configuration.gitUserName}\""
 
-            try {
-                sh "git ${gitUserMailConfig} commit -m 'update version ${newVersion}'"
-            } catch (e) {
-                error "[${stepName}]git commit failed: ${e}"
+                try {
+                    sh "git ${gitUserMailConfig} commit -m 'update version ${newVersion}'"
+                } catch (e) {
+                    error "[${stepName}]git commit failed: ${e}"
+                }
+                sh "git remote set-url origin ${configuration.gitSshUrl}"
+                sh "git tag ${configuration.tagPrefix}${newVersion}"
+                sh "git push origin ${configuration.tagPrefix}${newVersion}"
+
+                gitCommitId = gitUtils.getGitCommitId()
             }
-            sh "git remote set-url origin ${configuration.gitSshUrl}"
-            sh "git tag ${configuration.tagPrefix}${newVersion}"
-            sh "git push origin ${configuration.tagPrefix}${newVersion}"
 
-            gitCommitId = gitUtils.getGitCommitId()
-
-        }
-
-        if(buildTool == 'docker' && configuration.artifactType == 'appContainer') {
-            script.commonPipelineEnvironment.setAppContainerProperty('artifactVersion', newVersion)
-            script.commonPipelineEnvironment.setAppContainerProperty('gitCommitId', gitCommitId)
+            if (buildTool == 'docker' && configuration.artifactType == 'appContainer') {
+                script.commonPipelineEnvironment.setAppContainerProperty('artifactVersion', newVersion)
+                script.commonPipelineEnvironment.setAppContainerProperty('gitCommitId', gitCommitId)
+            } else {
+                //standard case
+                script.commonPipelineEnvironment.setArtifactVersion(newVersion)
+                script.commonPipelineEnvironment.setGitCommitId(gitCommitId)
+            }
         } else {
-            //standard case
             script.commonPipelineEnvironment.setArtifactVersion(newVersion)
-            script.commonPipelineEnvironment.setGitCommitId(gitCommitId)
         }
         echo "[${stepName}]New version: ${newVersion}"
     }
