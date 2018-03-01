@@ -11,7 +11,7 @@ script:
   else
     # Only in case we are in master branch of the leading SAP repo we would like to deploy,
     # not from the forks.
-    if [[ "${TRAVIS_BRANCH}" == "master" && "${TRAVIS_REPO_SLUG}" == "SAP/jenkins-library" ]]
+    if [[ "${TRAVIS_BRANCH}" == "marcusholl/experimental" && "${TRAVIS_REPO_SLUG}" == "SAP/jenkins-library" ]]
     then
       ./gh-pages-deploy.sh
     fi
