@@ -15,8 +15,10 @@ def call(Map parameters = [:]) {
             gitUtils = new GitUtils()
         }
 
-        if (sh(returnStatus: true, script: 'git diff --quiet HEAD') != 0)
-            error "[${stepName}] Files in the workspace have been changed previously - aborting ${stepName}"
+        if (fileExists('.git')) {
+            if (sh(returnStatus: true, script: 'git diff --quiet HEAD') != 0)
+                error "[${stepName}] Files in the workspace have been changed previously - aborting ${stepName}"
+        }
 
         def script = parameters.script
         if (script == null)
@@ -41,7 +43,7 @@ def call(Map parameters = [:]) {
             'versioningTemplate'
         ]
         Map pipelineDataMap = [
-            gitCommitId: gitUtils.getGitCommitId()
+            gitCommitId: gitUtils.getGitCommitIdOrNull()
         ]
         Set stepConfigurationKeys = [
             'artifactType',
@@ -110,7 +112,7 @@ def call(Map parameters = [:]) {
                 sh "git tag ${configuration.tagPrefix}${newVersion}"
                 sh "git push origin ${configuration.tagPrefix}${newVersion}"
 
-                gitCommitId = gitUtils.getGitCommitId()
+                gitCommitId = gitUtils.getGitCommitIdOrNull()
             }
         }
 

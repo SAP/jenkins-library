@@ -45,6 +45,8 @@ class ArtifactSetVersionTest extends BasePipelineTest {
 
         gitUtils = new GitUtils()
         prepareObjectInterceptors(gitUtils)
+
+        this.helper.registerAllowedMethod('fileExists', [String.class], {true})
     }
 
     @Test
