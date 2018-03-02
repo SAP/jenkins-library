@@ -17,8 +17,6 @@ import static org.junit.Assert.assertFalse
 
 class DockerExecuteTest extends BasePipelineTest {
     private DockerMock docker
-    int whichDockerReturnValue = 0
-    def bodyExecuted
     
     private JenkinsLoggingRule jlr = new JenkinsLoggingRule(this)
     private JenkinsStepRule jsr = new JenkinsStepRule(this)
@@ -29,6 +27,9 @@ class DockerExecuteTest extends BasePipelineTest {
         .getCommonRules(this)
         .around(jlr)
         .around(jsr)
+    
+    int whichDockerReturnValue = 0
+    def bodyExecuted
 
     @Before
     void init() {
