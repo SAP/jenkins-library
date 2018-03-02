@@ -1,23 +1,25 @@
 #!groovy
 import com.lesfurets.jenkins.unit.BasePipelineTest
-import com.sap.piper.DefaultValueCache
 import com.sap.piper.GitUtils
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.ExpectedException
 import org.junit.rules.RuleChain
+import util.JenkinsEnvironmentRule
 import util.JenkinsLoggingRule
 import util.JenkinsReadMavenPomRule
 import util.JenkinsShellCallRule
-import util.JenkinsWriteFileRule
 import util.JenkinsStepRule
-import util.JenkinsEnvironmentRule
+import util.JenkinsWriteFileRule
 import util.Rules
 
 import static org.junit.Assert.assertEquals
 
 class ArtifactSetVersionTest extends BasePipelineTest {
+    Map dockerParameters
+    def mavenExecuteScript
+
     def gitUtils
     def sshAgentList = []
 
@@ -41,6 +43,16 @@ class ArtifactSetVersionTest extends BasePipelineTest {
 
     @Before
     void init() throws Throwable {
+        dockerParameters = [:]
+
+        helper.registerAllowedMethod("dockerExecute", [Map.class, Closure.class],
+            { parameters, closure ->
+                dockerParameters = parameters
+                closure()
+            })
+
+        mavenExecuteScript = loadScript("mavenExecute.groovy").mavenExecute
+
         helper.registerAllowedMethod("sshagent", [List.class, Closure.class], { list, closure ->
             sshAgentList = list
             return closure()
@@ -49,6 +61,9 @@ class ArtifactSetVersionTest extends BasePipelineTest {
         jscr.setReturnValue('git rev-parse HEAD', 'testCommitId')
         jscr.setReturnValue("date +'%Y%m%d%H%M%S'", '20180101010203')
         jscr.setReturnValue('git diff --quiet HEAD', 0)
+
+        binding.setVariable('Jenkins', [instance: [pluginManager: [plugins: [new DockerExecuteTest.PluginMock()]]]])
+
 
         gitUtils = new GitUtils()
         prepareObjectInterceptors(gitUtils)
@@ -61,19 +76,19 @@ class ArtifactSetVersionTest extends BasePipelineTest {
         assertEquals('1.2.3-20180101010203_testCommitId', jer.env.getArtifactVersion())
         assertEquals('testCommitId', jer.env.getGitCommitId())
 
-        assertEquals('mvn versions:set -DnewVersion=1.2.3-20180101010203_testCommitId --file pom.xml', jscr.shell[3])
-        assertEquals('git add .', jscr.shell[4])
-        assertEquals ("git commit -m 'update version 1.2.3-20180101010203_testCommitId'", jscr.shell[5])
-        assertEquals ("git remote set-url origin myGitSshUrl", jscr.shell[6])
-        assertEquals ("git tag build_1.2.3-20180101010203_testCommitId", jscr.shell[7])
-        assertEquals ("git push origin build_1.2.3-20180101010203_testCommitId", jscr.shell[8])
+        assertEquals('mvn --file \'pom.xml\' versions:set -DnewVersion=1.2.3-20180101010203_testCommitId', jscr.shell[5])
+        assertEquals('git add .', jscr.shell[6])
+        assertEquals ("git commit -m 'update version 1.2.3-20180101010203_testCommitId'", jscr.shell[7])
+        assertEquals ("git remote set-url origin myGitSshUrl", jscr.shell[8])
+        assertEquals ("git tag build_1.2.3-20180101010203_testCommitId", jscr.shell[9])
+        assertEquals ("git push origin build_1.2.3-20180101010203_testCommitId", jscr.shell[10])
     }
 
     @Test
     void testVersioningCustomGitUserAndEMail() {
         jsr.step.call(script: [commonPipelineEnvironment: jer.env], juStabGitUtils: gitUtils, buildTool: 'maven', gitSshUrl: 'myGitSshUrl', gitUserEMail: 'test@test.com', gitUserName: 'test')
 
-        assertEquals ('git -c user.email="test@test.com" -c user.name "test" commit -m \'update version 1.2.3-20180101010203_testCommitId\'', jscr.shell[5])
+        assertEquals ('git -c user.email="test@test.com" -c user.name "test" commit -m \'update version 1.2.3-20180101010203_testCommitId\'', jscr.shell[7])
     }
 
     @Test
@@ -108,4 +123,5 @@ class ArtifactSetVersionTest extends BasePipelineTest {
         object.metaClass.static.invokeMethod = helper.getMethodInterceptor()
         object.metaClass.methodMissing = helper.getMethodMissingInterceptor()
     }
+
 }

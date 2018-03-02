@@ -11,9 +11,12 @@ import util.JenkinsShellCallRule
 import util.Rules
 
 import static org.junit.Assert.assertEquals
-import static org.junit.Assert.assertTrue
 
 class MavenArtifactVersioningTest extends BasePipelineTest{
+
+    Map dockerParameters
+    def mavenExecuteScript
+    def commonPipelineEnvironment
 
     MavenArtifactVersioning av
 
@@ -24,7 +27,18 @@ class MavenArtifactVersioningTest extends BasePipelineTest{
     public RuleChain ruleChain = Rules.getCommonRules(this).around(jscr).around(thrown).around(new JenkinsReadMavenPomRule(this, 'test/resources/MavenArtifactVersioning'))
 
     @Before
-    public void init() {
+    void init() {
+        dockerParameters = [:]
+
+        helper.registerAllowedMethod("dockerExecute", [Map.class, Closure.class],
+            { parameters, closure ->
+                dockerParameters = parameters
+                closure()
+            })
+
+        mavenExecuteScript = loadScript("mavenExecute.groovy").mavenExecute
+        commonPipelineEnvironment = loadScript('commonPipelineEnvironment.groovy').commonPipelineEnvironment
+
         prepareObjectInterceptors(this)
     }
 
@@ -33,18 +47,16 @@ class MavenArtifactVersioningTest extends BasePipelineTest{
         av = new MavenArtifactVersioning(this, [filePath: 'pom.xml'])
         assertEquals('1.2.3', av.getVersion())
         av.setVersion('1.2.3-20180101')
-        assertEquals('mvn versions:set -DnewVersion=1.2.3-20180101 --file pom.xml', jscr.shell[0])
+        assertEquals('mvn --file \'pom.xml\' versions:set -DnewVersion=1.2.3-20180101', jscr.shell[0])
     }
-
 
     @Test
     void testVersioningCustomFilePathSnapshot() {
         av = new MavenArtifactVersioning(this, [filePath: 'snapshot/pom.xml'])
         assertEquals('1.2.3', av.getVersion())
         av.setVersion('1.2.3-20180101')
-        assertEquals('mvn versions:set -DnewVersion=1.2.3-20180101 --file snapshot/pom.xml', jscr.shell[0])
+        assertEquals('mvn --file \'snapshot/pom.xml\' versions:set -DnewVersion=1.2.3-20180101', jscr.shell[0])
     }
-
 
     void prepareObjectInterceptors(object) {
         object.metaClass.invokeMethod = helper.getMethodInterceptor()
