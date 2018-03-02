@@ -18,6 +18,9 @@ import util.Rules
 import static org.junit.Assert.assertEquals
 
 class ArtifactSetVersionTest extends BasePipelineTest {
+    def gitUtils
+    def sshAgentList = []
+
     private ExpectedException thrown = ExpectedException.none()
     private JenkinsLoggingRule jlr = new JenkinsLoggingRule(this)
     private JenkinsShellCallRule jscr = new JenkinsShellCallRule(this)
@@ -35,9 +38,6 @@ class ArtifactSetVersionTest extends BasePipelineTest {
         .around(jwfr)
         .around(jsr)
         .around(jer)
-
-    def gitUtils
-    def sshAgentList = []
 
     @Before
     void init() throws Throwable {
