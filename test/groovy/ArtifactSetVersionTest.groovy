@@ -21,12 +21,12 @@ class ArtifactSetVersionTest extends BasePipelineTest {
     def gitUtils
     def sshAgentList = []
 
-    ExpectedException thrown = ExpectedException.none()
-    JenkinsLoggingRule jlr = new JenkinsLoggingRule(this)
-    JenkinsShellCallRule jscr = new JenkinsShellCallRule(this)
-    JenkinsWriteFileRule jwfr = new JenkinsWriteFileRule(this)
-    JenkinsStepRule jsr = new JenkinsStepRule(this)
-    JenkinsEnvironmentRule jer = new JenkinsEnvironmentRule(this)
+    private ExpectedException thrown = ExpectedException.none()
+    private JenkinsLoggingRule jlr = new JenkinsLoggingRule(this)
+    private JenkinsShellCallRule jscr = new JenkinsShellCallRule(this)
+    private JenkinsWriteFileRule jwfr = new JenkinsWriteFileRule(this)
+    private JenkinsStepRule jsr = new JenkinsStepRule(this)
+    private JenkinsEnvironmentRule jer = new JenkinsEnvironmentRule(this)
 
     @Rule
     public RuleChain ruleChain = Rules
@@ -108,6 +108,4 @@ class ArtifactSetVersionTest extends BasePipelineTest {
         object.metaClass.static.invokeMethod = helper.getMethodInterceptor()
         object.metaClass.methodMissing = helper.getMethodMissingInterceptor()
     }
-
-
 }
