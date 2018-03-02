@@ -13,15 +13,15 @@ import util.Rules
 import util.JenkinsStepRule
 
 class ChecksPublishResultsTest extends BasePipelineTest {
+    Map publisherStepOptions
+    List archiveStepPatterns
+
     private JenkinsStepRule jsr = new JenkinsStepRule(this)
 
     @Rule
     public RuleChain ruleChain = Rules
         .getCommonRules(this)
         .around(jsr)
-
-    Map publisherStepOptions
-    List archiveStepPatterns
 
     @Before
     void init() {
