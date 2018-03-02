@@ -1,6 +1,5 @@
 #!groovy
 import com.lesfurets.jenkins.unit.BasePipelineTest
-import com.sap.piper.DefaultValueCache
 import com.sap.piper.GitUtils
 import org.junit.Before
 import org.junit.Rule
@@ -47,7 +46,7 @@ class ArtifactSetVersionTest extends BasePipelineTest {
         })
 
         jscr.setReturnValue('git rev-parse HEAD', 'testCommitId')
-        jscr.setReturnValue("date +'%Y%m%d%H%M%S'", '20180101010203')
+        jscr.setReturnValue("date --universal +'%Y%m%d%H%M%S'", '20180101010203')
         jscr.setReturnValue('git diff --quiet HEAD', 0)
 
         gitUtils = new GitUtils()
