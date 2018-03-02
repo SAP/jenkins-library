@@ -14,6 +14,8 @@ import static org.junit.Assert.assertEquals
 import static org.junit.Assert.assertNotNull
 
 class SetupCommonPipelineEnvironmentTest extends BasePipelineTest {
+    def usedConfigFile
+
     private JenkinsStepRule jsr = new JenkinsStepRule(this)
     private JenkinsEnvironmentRule jer = new JenkinsEnvironmentRule(this)
 
@@ -22,8 +24,6 @@ class SetupCommonPipelineEnvironmentTest extends BasePipelineTest {
         .getCommonRules(this)
         .around(jsr)
         .around(jer)
-
-    def usedConfigFile
 
     @Before
     void init() {
