@@ -6,12 +6,12 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.ExpectedException
 import org.junit.rules.RuleChain
-import util.JenkinsReadMavenPomRule
 import util.JenkinsShellCallRule
+import util.MockHelper
 import util.Rules
-import util.SharedLibraryCreator
 
 import static org.junit.Assert.assertEquals
+import static org.junit.Assert.assertNull
 
 class GitUtilsTest extends BasePipelineTest {
 
@@ -27,6 +27,7 @@ class GitUtilsTest extends BasePipelineTest {
     void init() throws Exception {
         gitUtils = new GitUtils()
         prepareObjectInterceptors(gitUtils)
+        gitUtils.fileExists = MockHelper
 
         jscr.setReturnValue('git rev-parse HEAD', 'testCommitId')
     }
@@ -39,9 +40,14 @@ class GitUtilsTest extends BasePipelineTest {
 
     @Test
     void testGetGitCommitId() {
+        this.helper.registerAllowedMethod('fileExists', [String.class], {true})
+        assertEquals('testCommitId', gitUtils.getGitCommitIdOrNull())
+    }
 
-        assertEquals('testCommitId', gitUtils.getGitCommitId())
-
+    @Test
+    void testGetGitCommitIdNotAGitRepo() {
+        this.helper.registerAllowedMethod('fileExists', [String.class], {false})
+        assertNull(gitUtils.getGitCommitIdOrNull())
     }
 
 }

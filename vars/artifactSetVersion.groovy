@@ -15,8 +15,10 @@ def call(Map parameters = [:]) {
             gitUtils = new GitUtils()
         }
 
-        if (sh(returnStatus: true, script: 'git diff --quiet HEAD') != 0)
-            error "[${stepName}] Files in the workspace have been changed previously - aborting ${stepName}"
+        if (fileExists('.git')) {
+            if (sh(returnStatus: true, script: 'git diff --quiet HEAD') != 0)
+                error "[${stepName}] Files in the workspace have been changed previously - aborting ${stepName}"
+        }
 
         def script = parameters.script
         if (script == null)
@@ -27,6 +29,7 @@ def call(Map parameters = [:]) {
         Set parameterKeys = [
             'artifactType',
             'buildTool',
+            'commitVersion',
             'dockerVersionSource',
             'filePath',
             'gitCommitId',
@@ -40,11 +43,12 @@ def call(Map parameters = [:]) {
             'versioningTemplate'
         ]
         Map pipelineDataMap = [
-            gitCommitId: gitUtils.getGitCommitId()
+            gitCommitId: gitUtils.getGitCommitIdOrNull()
         ]
         Set stepConfigurationKeys = [
             'artifactType',
             'buildTool',
+            'commitVersion',
             'dockerVersionSource',
             'filePath',
             'gitCredentialsId',
@@ -89,29 +93,30 @@ def call(Map parameters = [:]) {
 
         artifactVersioning.setVersion(newVersion)
 
-        sh 'git add .'
-
         def gitCommitId
 
-        sshagent([configuration.gitCredentialsId]) {
-            def gitUserMailConfig = ''
-            if (configuration.gitUserName  && configuration.gitUserEMail)
-                gitUserMailConfig = "-c user.email=\"${configuration.gitUserEMail}\" -c user.name \"${configuration.gitUserName}\""
+        if (configuration.commitVersion) {
+            sh 'git add .'
 
-            try {
-                sh "git ${gitUserMailConfig} commit -m 'update version ${newVersion}'"
-            } catch (e) {
-                error "[${stepName}]git commit failed: ${e}"
+            sshagent([configuration.gitCredentialsId]) {
+                def gitUserMailConfig = ''
+                if (configuration.gitUserName && configuration.gitUserEMail)
+                    gitUserMailConfig = "-c user.email=\"${configuration.gitUserEMail}\" -c user.name \"${configuration.gitUserName}\""
+
+                try {
+                    sh "git ${gitUserMailConfig} commit -m 'update version ${newVersion}'"
+                } catch (e) {
+                    error "[${stepName}]git commit failed: ${e}"
+                }
+                sh "git remote set-url origin ${configuration.gitSshUrl}"
+                sh "git tag ${configuration.tagPrefix}${newVersion}"
+                sh "git push origin ${configuration.tagPrefix}${newVersion}"
+
+                gitCommitId = gitUtils.getGitCommitIdOrNull()
             }
-            sh "git remote set-url origin ${configuration.gitSshUrl}"
-            sh "git tag ${configuration.tagPrefix}${newVersion}"
-            sh "git push origin ${configuration.tagPrefix}${newVersion}"
-
-            gitCommitId = gitUtils.getGitCommitId()
-
         }
 
-        if(buildTool == 'docker' && configuration.artifactType == 'appContainer') {
+        if (buildTool == 'docker' && configuration.artifactType == 'appContainer') {
             script.commonPipelineEnvironment.setAppContainerProperty('artifactVersion', newVersion)
             script.commonPipelineEnvironment.setAppContainerProperty('gitCommitId', gitCommitId)
         } else {
@@ -119,6 +124,7 @@ def call(Map parameters = [:]) {
             script.commonPipelineEnvironment.setArtifactVersion(newVersion)
             script.commonPipelineEnvironment.setGitCommitId(gitCommitId)
         }
+
         echo "[${stepName}]New version: ${newVersion}"
     }
 }

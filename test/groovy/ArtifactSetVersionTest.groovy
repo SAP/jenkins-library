@@ -6,13 +6,7 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.ExpectedException
 import org.junit.rules.RuleChain
-import util.JenkinsLoggingRule
-import util.JenkinsReadMavenPomRule
-import util.JenkinsShellCallRule
-import util.JenkinsWriteFileRule
-import util.JenkinsStepRule
-import util.JenkinsEnvironmentRule
-import util.Rules
+import util.*
 
 import static org.junit.Assert.assertEquals
 
@@ -51,6 +45,8 @@ class ArtifactSetVersionTest extends BasePipelineTest {
 
         gitUtils = new GitUtils()
         prepareObjectInterceptors(gitUtils)
+
+        this.helper.registerAllowedMethod('fileExists', [String.class], {true})
     }
 
     @Test
@@ -66,6 +62,14 @@ class ArtifactSetVersionTest extends BasePipelineTest {
         assertEquals ("git remote set-url origin myGitSshUrl", jscr.shell[6])
         assertEquals ("git tag build_1.2.3-20180101010203_testCommitId", jscr.shell[7])
         assertEquals ("git push origin build_1.2.3-20180101010203_testCommitId", jscr.shell[8])
+    }
+
+    @Test
+    void testVersioningWithoutCommit() {
+        jsr.step.call(script: [commonPipelineEnvironment: jer.env], juStabGitUtils: gitUtils, buildTool: 'maven', commitVersion: false)
+
+        assertEquals('1.2.3-20180101010203_testCommitId', jer.env.getArtifactVersion())
+        assertEquals('mvn versions:set -DnewVersion=1.2.3-20180101010203_testCommitId --file pom.xml', jscr.shell[3])
     }
 
     @Test
