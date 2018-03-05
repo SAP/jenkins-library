@@ -7,6 +7,7 @@ steps:
   artifactSetVersion:
     timestampTemplate: '%Y%m%d%H%M%S'
     tagPrefix: 'build_'
+    commitVersion: true
     maven:
       filePath: 'pom.xml'
       versioningTemplate: '${version}-${timestamp}${commitId?"_"+commitId:""}'

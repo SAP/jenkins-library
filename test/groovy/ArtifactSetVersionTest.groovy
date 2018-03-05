@@ -59,7 +59,7 @@ class ArtifactSetVersionTest extends BasePipelineTest {
         })
 
         jscr.setReturnValue('git rev-parse HEAD', 'testCommitId')
-        jscr.setReturnValue("date +'%Y%m%d%H%M%S'", '20180101010203')
+        jscr.setReturnValue("date --universal +'%Y%m%d%H%M%S'", '20180101010203')
         jscr.setReturnValue('git diff --quiet HEAD', 0)
 
         binding.setVariable('Jenkins', [instance: [pluginManager: [plugins: [new DockerExecuteTest.PluginMock()]]]])
@@ -67,6 +67,8 @@ class ArtifactSetVersionTest extends BasePipelineTest {
 
         gitUtils = new GitUtils()
         prepareObjectInterceptors(gitUtils)
+
+        this.helper.registerAllowedMethod('fileExists', [String.class], {true})
     }
 
     @Test
@@ -82,6 +84,14 @@ class ArtifactSetVersionTest extends BasePipelineTest {
         assertEquals ("git remote set-url origin myGitSshUrl", jscr.shell[8])
         assertEquals ("git tag build_1.2.3-20180101010203_testCommitId", jscr.shell[9])
         assertEquals ("git push origin build_1.2.3-20180101010203_testCommitId", jscr.shell[10])
+    }
+
+    @Test
+    void testVersioningWithoutCommit() {
+        jsr.step.call(script: [commonPipelineEnvironment: jer.env], juStabGitUtils: gitUtils, buildTool: 'maven', commitVersion: false)
+
+        assertEquals('1.2.3-20180101010203_testCommitId', jer.env.getArtifactVersion())
+        assertEquals('mvn versions:set -DnewVersion=1.2.3-20180101010203_testCommitId --file pom.xml', jscr.shell[3])
     }
 
     @Test

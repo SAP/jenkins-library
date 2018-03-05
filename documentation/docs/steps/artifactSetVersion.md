@@ -9,7 +9,10 @@ The version generated using this step will contain:
 * Timestamp
 * CommitId (by default the long version of the hash)
 
-After conducting automatic versioning the new version is pushed as a new tag into the source code repository (e.g. GitHub)
+Optionally, but enabled by default, the new version is pushed as a new tag into the source code repository (e.g. GitHub).
+If this option is chosen, git credentials and the repository URL needs to be provided.
+Since you might not want to configure the git credentials in Jenkins, committing and pushing can be disabled using the `commitVersion` parameter as described below.
+If you require strict reproducibility of your builds, this should be used.
 
 ## Prerequsites
 none
@@ -20,13 +23,14 @@ none
 | ----------|-----------|---------|-----------------|
 | script | no | empty `commonPipelineEnvironment` |  |
 | buildTool | no | maven | maven, docker |
+| commitVersion | no | `true` | `true`, `false` |
 | dockerVersionSource | no  | `''`  | FROM, (ENV name),appVersion  |
 | filePath | no | buildTool=`maven`: pom.xml <br />docker: Dockerfile |   |
 | gitCommitId |  no | `GitUtils.getGitCommitId()`   |   |
-| gitCredentialsId |  yes | as defined in custom configuration  |   |
+| gitCredentialsId |  If `commitVersion` is `true` | as defined in custom configuration  |   |
 | gitUserEMail | no |  |   |
 | gitUserName | no |   |   |
-| gitSshUrl | yes  |  |   |
+| gitSshUrl | If `commitVersion` is `true` |  |   |
 | tagPrefix | no  | 'build_'  |   |
 | timestamp | no  |  current time in format according to `timestampTemplate`  |   |
 | timestampTemplate | no | `%Y%m%d%H%M%S` |   |
@@ -34,6 +38,7 @@ none
 
 * `script` defines the global script environment of the Jenkinsfile run. Typically `this` is passed to this parameter. This allows the function to access the [`commonPipelineEnvironment`](commonPipelineEnvironment.md) for retrieving e.g. configuration parameters.
 * `buildTool` defines the tool which is used for building the artifact.
+* `commitVersion` controls if the changed version is committed and pushed to the git repository. If this is enabled (which is the default), you need to provide `gitCredentialsId` and `gitSshUrl`.
 * `dockerVersionSource` specifies the source to be used for the main version which is used for generating the automatic version.
 
     * This can either be the version of the base image - as retrieved from the `FROM` statement within the Dockerfile, e.g. `FROM jenkins:2.46.2`
@@ -53,6 +58,7 @@ Following parameters can also be specified as step parameters using the global c
 
 * `artifactType`
 * `buildTool`
+* `commitVersion`
 * `dockerVersionSource`
 * `filePath`
 * `gitCredentialsId`
