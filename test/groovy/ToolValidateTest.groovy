@@ -32,11 +32,25 @@ class ToolValidateTest extends BasePipelineTest {
         .around(jsr)
 
     private static home
+    private static mtaJar
+    private static neoExecutable
+    private static cmCliExecutable
+
 
     @BeforeClass
     static void createTestFiles() {
+
         home = "${tmp.getRoot()}"
+        tmp.newFolder('bin')
+        tmp.newFolder('bin', 'java')
         tmp.newFile('mta.jar')
+        tmp.newFolder('tools')
+        tmp.newFile('tools/neo.sh')
+        tmp.newFile('bin/cmclient')
+
+        mtaJar = "$home/mta.jar"
+        neoExecutable = "$home/tools/neo.sh"
+        cmCliExecutable = "$home/bin/cmclient"
     }
 
     @Before
@@ -88,7 +102,7 @@ class ToolValidateTest extends BasePipelineTest {
     @Test
     void unableToValidateJavaTest() {
         thrown.expect(AbortException)
-        thrown.expectMessage('The validation of Java failed.')
+        thrown.expectMessage('The verification of Java failed.')
 
         helper.registerAllowedMethod('sh', [Map], { Map m -> getNoVersion(m) })
 
@@ -98,7 +112,7 @@ class ToolValidateTest extends BasePipelineTest {
     @Test
     void unableToValidateMtaTest() {
         thrown.expect(AbortException)
-        thrown.expectMessage('The validation of SAP Multitarget Application Archive Builder failed.')
+        thrown.expectMessage('The verification of SAP Multitarget Application Archive Builder failed.')
 
         helper.registerAllowedMethod('sh', [Map], { Map m -> getNoVersion(m) })
 
@@ -108,7 +122,7 @@ class ToolValidateTest extends BasePipelineTest {
     @Test
     void unableToValidateNeoTest() {
         thrown.expect(AbortException)
-        thrown.expectMessage('The validation of SAP Cloud Platform Console Client failed.')
+        thrown.expectMessage('The verification of SAP Cloud Platform Console Client failed.')
 
         helper.registerAllowedMethod('sh', [Map], { Map m -> getNoVersion(m) })
 
@@ -118,7 +132,7 @@ class ToolValidateTest extends BasePipelineTest {
     @Test
     void unableToValidateCmTest() {
         thrown.expect(AbortException)
-        thrown.expectMessage('The validation of Change Management Command Line Interface failed.')
+        thrown.expectMessage('The verification of Change Management Command Line Interface failed.')
 
         helper.registerAllowedMethod('sh', [Map], { Map m -> getNoVersion(m) })
 
@@ -174,8 +188,8 @@ class ToolValidateTest extends BasePipelineTest {
 
         jsr.step.call(tool: 'java', home: home)
 
-        assert jlr.log.contains('[toolValidate] Validating Java version 1.8.0 or compatible version.')
-        assert jlr.log.contains('[toolValidate] Java version 1.8.0 is installed.')
+        assert jlr.log.contains('Verifying Java version 1.8.0 or compatible version.')
+        assert jlr.log.contains('Java version 1.8.0 is installed.')
     }
 
     @Test
@@ -184,8 +198,8 @@ class ToolValidateTest extends BasePipelineTest {
 
         jsr.step.call(tool: 'mta', home: home)
 
-        assert jlr.log.contains('[toolValidate] Validating SAP Multitarget Application Archive Builder version 1.0.6 or compatible version.')
-        assert jlr.log.contains('[toolValidate] SAP Multitarget Application Archive Builder version 1.0.6 is installed.')
+        assert jlr.log.contains('Verifying SAP Multitarget Application Archive Builder version 1.0.6 or compatible version.')
+        assert jlr.log.contains('SAP Multitarget Application Archive Builder version 1.0.6 is installed.')
     }
 
     @Test
@@ -194,8 +208,8 @@ class ToolValidateTest extends BasePipelineTest {
 
         jsr.step.call(tool: 'neo', home: home)
 
-        assert jlr.log.contains('[toolValidate] Validating SAP Cloud Platform Console Client version 3.39.10 or compatible version.')
-        assert jlr.log.contains('[toolValidate] SAP Cloud Platform Console Client version 3.39.10 is installed.')
+        assert jlr.log.contains('Verifying SAP Cloud Platform Console Client version 3.39.10 or compatible version.')
+        assert jlr.log.contains('SAP Cloud Platform Console Client version 3.39.10 is installed.')
     }
 
     @Test
@@ -204,8 +218,8 @@ class ToolValidateTest extends BasePipelineTest {
 
         jsr.step.call(tool: 'cm', home: home)
 
-        assert jlr.log.contains('[toolValidate] Validating Change Management Command Line Interface version 0.0.1 or compatible version.')
-        assert jlr.log.contains('[toolValidate] Change Management Command Line Interface version 0.0.1 is installed.')
+        assert jlr.log.contains('Verifying Change Management Command Line Interface version 0.0.1 or compatible version.')
+        assert jlr.log.contains('Change Management Command Line Interface version 0.0.1 is installed.')
     }
 
     private getNoVersion(Map m) {
