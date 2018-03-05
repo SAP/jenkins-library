@@ -91,7 +91,7 @@ class ArtifactSetVersionTest extends BasePipelineTest {
         jsr.step.call(script: [commonPipelineEnvironment: jer.env], juStabGitUtils: gitUtils, buildTool: 'maven', commitVersion: false)
 
         assertEquals('1.2.3-20180101010203_testCommitId', jer.env.getArtifactVersion())
-        assertEquals('mvn versions:set -DnewVersion=1.2.3-20180101010203_testCommitId --file pom.xml', jscr.shell[3])
+        assertEquals('mvn --file \'pom.xml\' versions:set -DnewVersion=1.2.3-20180101010203_testCommitId', jscr.shell[5])
     }
 
     @Test
