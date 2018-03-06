@@ -28,7 +28,6 @@ def call(Map parameters = [:]) {
         final Map configuration = ConfigurationMerger.merge(
                                       script, stepName,
                                       parameters, parameterKeys,
-                                      null,
                                       stepConfigurationKeys)
 
         MTA_JAR_FILE_VALIDATE: {

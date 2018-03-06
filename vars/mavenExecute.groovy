@@ -28,7 +28,6 @@ def call(Map parameters = [:]) {
 
         Map configuration = ConfigurationMerger.merge(script, 'mavenExecute',
                                                       parameters, parameterKeys,
-                                                      null,
                                                       stepConfigurationKeys)
 
         String command = "mvn"
