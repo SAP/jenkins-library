@@ -19,6 +19,12 @@ Executes the SAP MTA Archive Builder to create an mtar archive of the applicatio
 * `buildTarget` - The target platform to which the mtar can be deployed.
 * `mtaJarLocation` - The path of the `mta.jar` file. If no parameter is provided, neither at the level of the method call nor via step configuration, the path is retrieved from the Jenkins environment variables using `env.MTA_JAR_LOCATION`. If the Jenkins environment variable is not set it is assumed that `mta.jar` is located in the current working directory.
 
+## Step configuration
+The following parameters can also be specified as step parameters using the global configuration file:
+
+* `buildTarget`
+* `mtaJarLocation`
+
 ## Return value
 The file name of the resulting archive is returned with this step. The file name is extracted from the key `ID` defined in `mta.yaml`.
 

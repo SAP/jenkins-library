@@ -14,16 +14,7 @@ none
 ## Pipeline configuration
 none
 
-## Explanation of pipeline step
-Usage of pipeline step:
-
-```groovy
-durationMeasure (script: this, measurementName: 'build_duration') {
-    //execute your build
-}
-```
-
-Available parameters:
+## Parameters
 
 | parameter | mandatory | default | possible values |
 | ----------|-----------|---------|-----------------|
@@ -35,3 +26,13 @@ Details:
 * `script` defines the global script environment of the Jenkinsfile run. Typically `this` is passed to this parameter. This allows the function to access the [`commonPipelineEnvironment`](commonPipelineEnvironment.md) for storing the measured duration.
 * `measurementName` defines the name of the measurement which is written to the Influx database.
 
+## Step configuration
+none
+
+## Example
+
+```groovy
+durationMeasure (script: this, measurementName: 'build_duration') {
+    //execute your build
+}
+```

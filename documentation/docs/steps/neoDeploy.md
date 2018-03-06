@@ -77,6 +77,17 @@ needs to be extracted into the folder provided by `neoHome`. In case this parame
 
 The step is prepared for being executed in docker. The corresponding parameters can be applied. See step `dockerExecute` for details.
 
+## Step configuration
+The following parameters can also be specified as step parameters using the global configuration file:
+
+* `account`
+* `dockerEnvVars`
+* `dockerImage`
+* `dockerOptions`
+* `host`
+* `neoCredentialsId`
+* `neoHome`
+
 ## Return value
 none
 
