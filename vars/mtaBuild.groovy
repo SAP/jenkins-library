@@ -1,6 +1,9 @@
 import com.sap.piper.ConfigurationLoader
 import com.sap.piper.ConfigurationMerger
 
+import groovy.transform.Field
+
+@Field def DEFAULT_MTA_JAR_NAME = 'mta.jar'
 
 def call(Map parameters = [:]) {
 
@@ -27,6 +30,32 @@ def call(Map parameters = [:]) {
                                       parameters, parameterKeys,
                                       null,
                                       stepConfigurationKeys)
+
+        MTA_JAR_FILE_VALIDATE: {
+            // same order like inside getMtaJar,
+            def mtaJarLocation = configuration?.mtaJarLocation ?: env?.MTA_JAR_LOCATION
+            def returnCodeLsMtaJar = sh script: "ls ${DEFAULT_MTA_JAR_NAME}", returnStatus:true
+            if(mtaJarLocation || ( !mtaJarLocation && returnCodeLsMtaJar != 0)) {
+                toolValidate tool: 'mta', home: mtaJarLocation
+            } else {
+                echo "mta toolset (${DEFAULT_MTA_JAR_NAME}) has been found in current working directory. Using this version without further tool validation."
+            }
+        }
+
+        JAVA_HOME_CHECK : {
+
+            // in case JAVA_HOME is not set, but java is in the path we should not fail
+            // in order to be backward compatible. Before introducing that check here
+            // is worked also in case JAVA_HOME was not set, but java was in the path.
+            // toolValidate works only upon JAVA_HOME and fails in case it is not set.
+
+            def rc = sh script: 'which java' , returnStatus: true
+            if(script.JAVA_HOME || (!script.JAVA_HOME && rc != 0)) {
+                toolValidate tool: 'java', home: script.JAVA_HOME
+            } else {
+                echo 'Tool validation (java) skipped. JAVA_HOME not set, but java executable in path.'
+            }
+        }
 
         def mtaYaml = readYaml file: "${pwd()}/mta.yaml"
 
@@ -56,16 +85,16 @@ def call(Map parameters = [:]) {
 }
 
 private getMtaJar(stepName, configuration) {
-    def mtaJarLocation = 'mta.jar' //default, maybe it is in current working directory
+    def mtaJarLocation = DEFAULT_MTA_JAR_NAME //default, maybe it is in current working directory
 
     if(configuration?.mtaJarLocation){
-        mtaJarLocation = "${configuration.mtaJarLocation}/mta.jar"
+        mtaJarLocation = "${configuration.mtaJarLocation}/${DEFAULT_MTA_JAR_NAME}"
         echo "[$stepName] MTA JAR \"${mtaJarLocation}\" retrieved from configuration."
         return mtaJarLocation
     }
 
     if(env?.MTA_JAR_LOCATION){
-        mtaJarLocation = "${env.MTA_JAR_LOCATION}/mta.jar"
+        mtaJarLocation = "${env.MTA_JAR_LOCATION}/${DEFAULT_MTA_JAR_NAME}"
         echo "[$stepName] MTA JAR \"${mtaJarLocation}\" retrieved from environment."
         return mtaJarLocation
     }

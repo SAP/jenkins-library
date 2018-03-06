@@ -20,6 +20,10 @@ import util.JenkinsEnvironmentRule
 import util.Rules
 
 public class MtaBuildTest extends BasePipelineTest {
+
+    def toolMtaValidateCalled = false
+    def toolJavaValidateCalled = false
+
     @ClassRule
     public static TemporaryFolder tmp = new TemporaryFolder()
 
@@ -59,6 +63,23 @@ public class MtaBuildTest extends BasePipelineTest {
         helper.registerAllowedMethod('pwd', [], { currentDir } )
 
         binding.setVariable('PATH', '/usr/bin')
+
+        //
+        // needs to be after loading the scripts. Here we have a different behaviour
+        // for usual steps and for steps contained in the shared lib itself.
+        //
+        // toolValidate mocked here since we are not interested in testing
+        // toolValidate here. This is expected to be done in a test class for
+        // toolValidate.
+        //
+        helper.registerAllowedMethod('toolValidate', [Map], { m ->
+
+                                                              if(m.tool == 'mta')
+                                                                  toolMtaValidateCalled = true
+
+                                                              if(m.tool == 'java')
+                                                                  toolJavaValidateCalled = true
+                                                            })
     }
 
 
@@ -67,7 +88,7 @@ public class MtaBuildTest extends BasePipelineTest {
 
         jsr.step.call(buildTarget: 'NEO')
 
-        assert jscr.shell[1].contains('PATH=./node_modules/.bin:/usr/bin')
+        assert jscr.shell.find { c -> c.contains('PATH=./node_modules/.bin:/usr/bin')}
     }
 
 
@@ -76,7 +97,7 @@ public class MtaBuildTest extends BasePipelineTest {
 
         jsr.step.call(buildTarget: 'NEO')
 
-        assert jscr.shell[0] =~ /sed -ie "s\/\\\$\{timestamp\}\/`date \+%Y%m%d%H%M%S`\/g" ".*\/mta.yaml"$/
+        assert jscr.shell.find { c -> c =~ /sed -ie "s\/\\\$\{timestamp\}\/`date \+%Y%m%d%H%M%S`\/g" ".*\/mta.yaml"$/}
     }
 
 
@@ -99,7 +120,7 @@ public class MtaBuildTest extends BasePipelineTest {
 
         def mtarFilePath = jsr.step.call(buildTarget: 'NEO')
 
-        assert jscr.shell[0] =~ /sed -ie "s\/\\\$\{timestamp\}\/`date \+%Y%m%d%H%M%S`\/g" ".*\/newDir\/mta.yaml"$/
+        assert jscr.shell.find { c -> c =~ /sed -ie "s\/\\\$\{timestamp\}\/`date \+%Y%m%d%H%M%S`\/g" ".*\/newDir\/mta.yaml"$/}
 
         assert mtarFilePath == "$newDir/com.mycompany.northwind.mtar"
     }
@@ -110,7 +131,7 @@ public class MtaBuildTest extends BasePipelineTest {
 
         jsr.step.call(buildTarget: 'NEO')
 
-        assert jscr.shell[1].contains(' -jar mta.jar --mtar ')
+        assert jscr.shell.find { c -> c.contains(' -jar mta.jar --mtar ')}
 
         assert jlr.log.contains('[mtaBuild] Using MTA JAR from current working directory.')
     }
@@ -121,7 +142,7 @@ public class MtaBuildTest extends BasePipelineTest {
 
         jsr.step.call(mtaJarLocation: '/mylocation/mta', buildTarget: 'NEO')
 
-        assert jscr.shell[1].contains(' -jar /mylocation/mta/mta.jar --mtar ')
+        assert jscr.shell.find { c -> c.contains(' -jar /mylocation/mta/mta.jar --mtar ')}
 
         assert jlr.log.contains('[mtaBuild] MTA JAR "/mylocation/mta/mta.jar" retrieved from configuration.')
     }
@@ -169,7 +190,7 @@ public class MtaBuildTest extends BasePipelineTest {
 
         jsr.step.call(buildTarget: 'NEO')
 
-        assert jscr.shell[1].contains('-jar /env/mta/mta.jar --mtar')
+        assert jscr.shell.find { c -> c.contains('-jar /env/mta/mta.jar --mtar')}
         assert jlr.log.contains('[mtaBuild] MTA JAR "/env/mta/mta.jar" retrieved from environment.')
     }
 
@@ -182,7 +203,7 @@ public class MtaBuildTest extends BasePipelineTest {
         jsr.step.call(script: [commonPipelineEnvironment: jer.env],
                       buildTarget: 'NEO')
 
-        assert jscr.shell[1].contains('-jar /step/mta/mta.jar --mtar')
+        assert jscr.shell.find(){ c -> c.contains('-jar /step/mta/mta.jar --mtar')}
         assert jlr.log.contains('[mtaBuild] MTA JAR "/step/mta/mta.jar" retrieved from configuration.')
     }
 
@@ -192,7 +213,7 @@ public class MtaBuildTest extends BasePipelineTest {
 
         jsr.step.call(buildTarget: 'NEO')
 
-        assert jscr.shell[1].contains('java -jar mta.jar --mtar com.mycompany.northwind.mtar --build-target=NEO build')
+        assert jscr.shell.find { c -> c.contains('java -jar mta.jar --mtar com.mycompany.northwind.mtar --build-target=NEO build')}
     }
 
 
@@ -203,7 +224,7 @@ public class MtaBuildTest extends BasePipelineTest {
 
         jsr.step.call(script: [commonPipelineEnvironment: jer.env])
 
-        assert jscr.shell[1].contains('java -jar mta.jar --mtar com.mycompany.northwind.mtar --build-target=NEO build')
+        assert jscr.shell.find(){ c -> c.contains('java -jar mta.jar --mtar com.mycompany.northwind.mtar --build-target=NEO build')}
     }
 
 
@@ -214,9 +235,40 @@ public class MtaBuildTest extends BasePipelineTest {
 
         jsr.step.call(script: [commonPipelineEnvironment: jer.env])
 
-        assert jscr.shell[1].contains('java -jar mta.jar --mtar com.mycompany.northwind.mtar --build-target=NEO build')
+        assert jscr.shell.find { c -> c.contains('java -jar mta.jar --mtar com.mycompany.northwind.mtar --build-target=NEO build')}
     }
 
+    @Test
+    void skipValidationInCaseMtarJarFileIsUsedFromWorkingDir() {
+        jscr.setReturnValue('ls mta.jar', 0)
+        jsr.step.call(script: [commonPipelineEnvironment: jer.env])
+        assert !toolMtaValidateCalled
+    }
+
+    @Test
+    void performValidationInCaseMtarJarFileIsNotUsedFromWorkingDir() {
+        jscr.setReturnValue('ls mta.jar', 1)
+        jsr.step.call(script: [commonPipelineEnvironment: jer.env])
+        assert toolMtaValidateCalled
+    }
+
+    @Test
+    void toolJavaValidateCalled() {
+
+        jsr.step.call(buildTarget: 'NEO')
+
+        assert toolJavaValidateCalled
+    }
+
+    @Test
+    void toolValidateNotCalledWhenJavaHomeIsUnsetButJavaIsInPath() {
+
+        jscr.setReturnValue('which java', 0)
+        jsr.step.call(buildTarget: 'NEO')
+
+        assert !toolJavaValidateCalled
+        assert jlr.log.contains('Tool validation (java) skipped. JAVA_HOME not set, but java executable in path.')
+    }
 
     private static defaultMtaYaml() {
         return  '''
