@@ -20,6 +20,9 @@ import util.JenkinsEnvironmentRule
 import util.Rules
 
 class NeoDeployTest extends BasePipelineTest {
+
+    def toolJavaValidateCalled = false
+
     @ClassRule
     public static TemporaryFolder tmp = new TemporaryFolder()
 
@@ -97,6 +100,8 @@ class NeoDeployTest extends BasePipelineTest {
 
                                                                   if(m.tool == 'neo')
                                                                       toolNeoValidateCalled = true
+                                                                  if(m.tool == 'java')
+                                                                      toolJavaValidateCalled = true
                                                             })
     }
 
@@ -465,4 +470,26 @@ class NeoDeployTest extends BasePipelineTest {
         assert toolNeoValidateCalled
     }
 
+    @Test
+    void toolJavaValidateCalled() {
+
+        jsr.step.call(script: [commonPipelineEnvironment: jer.env],
+                               archivePath: archiveName,
+                               neoCredentialsId: 'myCredentialsId')
+
+        assert toolJavaValidateCalled
+    }
+
+    @Test
+    void toolValidateSkippedIfJavaHomeNotSetButJavaInPath() {
+
+        jscr.setReturnValue('which java', 0)
+        jsr.step.envProps = [:] // make sure we are not confused by JAVA_HOME in current env props.
+        jsr.step.call(script: [commonPipelineEnvironment: jer.env],
+                               archivePath: archiveName,
+                               neoCredentialsId: 'myCredentialsId')
+
+        assert ! toolJavaValidateCalled
+        assert jlr.log.contains('Skipping tool validate check (java). Java executable in path, but no JAVA_HOME found.')
+    }
 }
