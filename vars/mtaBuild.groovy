@@ -38,6 +38,8 @@ def call(Map parameters = [:]) {
             def returnCodeLsMtaJar = sh script: "ls ${DEFAULT_MTA_JAR_NAME}", returnStatus:true
             if(mtaJarLocation || ( !mtaJarLocation && returnCodeLsMtaJar != 0)) {
                 toolValidate tool: 'mta', home: mtaJarLocation
+            } else {
+                echo "mta toolset (${DEFAULT_MTA_JAR_NAME}) has been found in current working directory. Using this version without further tool validation."
             }
         }
 
