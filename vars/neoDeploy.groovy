@@ -186,6 +186,23 @@ def call(parameters = [:]) {
                           dockerEnvVars: configuration.get('dockerEnvVars'),
                           dockerOptions: configuration.get('dockerOptions')) {
 
+                          NEO_HOME_CHECK: {
+                              // same order like inside getNeoExecutable
+                              String neoHome = configuration.neoHome ?: env?.NEO_HOME
+
+                              // In case neo home is not set, but neo toolset is simply
+                              // in the path, we trust that everything is OK. In order to
+                              // validate the version also in this case, we need to adjust
+                              // toolValidate.
+
+                              def rc = sh script: 'which neo.sh', returnStatus: true
+                              if(neoHome || (!neoHome && rc != 0)) {
+                                  toolValidate tool: 'neo', home: neoHome
+                              } else {
+                                  echo "neo (neo.sh) has been found in path. Using this neo version without futher tool validation."
+                              }
+                          }
+
                 sh """${neoDeployScript} \
                       ${commonDeployParams}
                    """
