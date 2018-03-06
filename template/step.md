@@ -13,6 +13,11 @@ Brief description.
 
 * `<parameter>` - Detailed description of each parameter.
 
+## Step configuration
+The following parameters can also be specified as step parameters using the global configuration file:
+
+* `<parameter>`
+
 ## Return value
 none
 

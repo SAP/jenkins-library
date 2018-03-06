@@ -22,6 +22,7 @@ none
 | parameter | mandatory | default | possible values |
 | ----------|-----------|---------|-----------------|
 | script | no | empty `commonPipelineEnvironment` |  |
+| artifactType | no |  | 'appContainer' |
 | buildTool | no | maven | maven, docker |
 | commitVersion | no | `true` | `true`, `false` |
 | dockerVersionSource | no  | `''`  | FROM, (ENV name),appVersion  |
@@ -37,6 +38,7 @@ none
 | versioningTemplate | no | depending on `buildTool`<br />maven: `${version}-${timestamp}${commitId?"_"+commitId:""}`  |   |
 
 * `script` defines the global script environment of the Jenkinsfile run. Typically `this` is passed to this parameter. This allows the function to access the [`commonPipelineEnvironment`](commonPipelineEnvironment.md) for retrieving e.g. configuration parameters.
+* `artifactType` defines the type of the artifact.
 * `buildTool` defines the tool which is used for building the artifact.
 * `commitVersion` controls if the changed version is committed and pushed to the git repository. If this is enabled (which is the default), you need to provide `gitCredentialsId` and `gitSshUrl`.
 * `dockerVersionSource` specifies the source to be used for the main version which is used for generating the automatic version.
@@ -54,7 +56,7 @@ none
 * `timestamp` defines the timestamp to be used in the automatic version string. You could overwrite the default behavior by explicitly setting this string.
 
 ## Step configuration
-Following parameters can also be specified as step parameters using the global configuration file:
+The following parameters can also be specified as step parameters using the global configuration file:
 
 * `artifactType`
 * `buildTool`
@@ -70,9 +72,7 @@ Following parameters can also be specified as step parameters using the global c
 * `timestampTemplate`
 * `versioningTemplate`
 
-## Explanation of pipeline step
-
-Pipeline step:
+## Example
 
 ```groovy
 artifactSetVersion script: this, buildTool: 'maven'
