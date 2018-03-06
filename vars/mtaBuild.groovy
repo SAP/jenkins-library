@@ -31,7 +31,6 @@ def call(Map parameters = [:]) {
                                       null,
                                       stepConfigurationKeys)
 
-
         MTA_JAR_FILE_VALIDATE: {
             // same order like inside getMtaJar,
             def mtaJarLocation = configuration?.mtaJarLocation ?: env?.MTA_JAR_LOCATION
@@ -40,6 +39,21 @@ def call(Map parameters = [:]) {
                 toolValidate tool: 'mta', home: mtaJarLocation
             } else {
                 echo "mta toolset (${DEFAULT_MTA_JAR_NAME}) has been found in current working directory. Using this version without further tool validation."
+            }
+        }
+
+        JAVA_HOME_CHECK : {
+
+            // in case JAVA_HOME is not set, but java is in the path we should not fail
+            // in order to be backward compatible. Before introducing that check here
+            // is worked also in case JAVA_HOME was not set, but java was in the path.
+            // toolValidate works only upon JAVA_HOME and fails in case it is not set.
+
+            def rc = sh script: 'which java' , returnStatus: true
+            if(script.JAVA_HOME || (!script.JAVA_HOME && rc != 0)) {
+                toolValidate tool: 'java', home: script.JAVA_HOME
+            } else {
+                echo 'Tool validation (java) skipped. JAVA_HOME not set, but java executable in path.'
             }
         }
 

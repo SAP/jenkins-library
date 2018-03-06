@@ -22,6 +22,7 @@ import util.Rules
 public class MtaBuildTest extends BasePipelineTest {
 
     def toolMtaValidateCalled = false
+    def toolJavaValidateCalled = false
 
     @ClassRule
     public static TemporaryFolder tmp = new TemporaryFolder()
@@ -75,6 +76,9 @@ public class MtaBuildTest extends BasePipelineTest {
 
                                                               if(m.tool == 'mta')
                                                                   toolMtaValidateCalled = true
+
+                                                              if(m.tool == 'java')
+                                                                  toolJavaValidateCalled = true
                                                             })
     }
 
@@ -246,6 +250,24 @@ public class MtaBuildTest extends BasePipelineTest {
         jscr.setReturnValue('ls mta.jar', 1)
         jsr.step.call(script: [commonPipelineEnvironment: jer.env])
         assert toolMtaValidateCalled
+    }
+
+    @Test
+    void toolJavaValidateCalled() {
+
+        jsr.step.call(buildTarget: 'NEO')
+
+        assert toolJavaValidateCalled
+    }
+
+    @Test
+    void toolValidateNotCalledWhenJavaHomeIsUnsetButJavaIsInPath() {
+
+        jscr.setReturnValue('which java', 0)
+        jsr.step.call(buildTarget: 'NEO')
+
+        assert !toolJavaValidateCalled
+        assert jlr.log.contains('Tool validation (java) skipped. JAVA_HOME not set, but java executable in path.')
     }
 
     private static defaultMtaYaml() {
