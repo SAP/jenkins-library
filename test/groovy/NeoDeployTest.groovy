@@ -38,6 +38,8 @@ class NeoDeployTest extends BasePipelineTest {
         .around(jsr)
         .around(jer)
 
+    def toolNeoValidateCalled = false
+
     private static workspacePath
     private static warArchiveName
     private static propertiesFileName
@@ -82,6 +84,20 @@ class NeoDeployTest extends BasePipelineTest {
         binding.setVariable('env', ['NEO_HOME':'/opt/neo'])
 
         jer.env.configuration = [steps:[neoDeploy: [host: 'test.deploy.host.com', account: 'trialuser123']]]
+
+        //
+        // needs to be after loading the scripts. Here we have a different behaviour
+        // for usual steps and for steps contained in the shared lib itself.
+        //
+        // toolValidate mocked here since we are not interested in testing
+        // toolValidate here. This is expected to be done in a test class for
+        // toolValidate.
+        //
+        helper.registerAllowedMethod('toolValidate', [Map], { m ->
+
+                                                                  if(m.tool == 'neo')
+                                                                      toolNeoValidateCalled = true
+                                                            })
     }
 
 
@@ -162,6 +178,7 @@ class NeoDeployTest extends BasePipelineTest {
                        archivePath: archiveName
         )
 
+        assert jscr.shell.find { c -> c.contains('which neo.sh') }
         assert jscr.shell.find { c -> c.contains('"neo.sh" deploy-mta') }
         assert jlr.log.contains('Using Neo executable from PATH.')
     }
@@ -423,4 +440,29 @@ class NeoDeployTest extends BasePipelineTest {
 
         assert jlr.log.contains("Deprecated parameter 'deployAccount' is used. This will not work anymore in future versions. Use parameter 'account' instead.")
     }
+
+    @Test
+    void skipValidationWhenNeoToolsetIsInPathButNeoHomeNotProvidedViaConfigNorEnvironment() {
+
+        binding.setVariable('env', [:])
+        jscr.setReturnValue('which neo.sh', 0)
+        jsr.step.call(script: [commonPipelineEnvironment: jer.env],
+                               archivePath: archiveName,
+                               neoCredentialsId: 'myCredentialsId'
+        )
+        assert !toolNeoValidateCalled
+    }
+
+    @Test
+    void performValidationWhenNeoToolsetIsNotInPathAndNeoHomeNotProvidedViaConfigNorEnvironment() {
+
+        binding.setVariable('env', [:])
+        jscr.setReturnValue('which neo.sh', 1)
+        jsr.step.call(script: [commonPipelineEnvironment: jer.env],
+                               archivePath: archiveName,
+                               neoCredentialsId: 'myCredentialsId'
+        )
+        assert toolNeoValidateCalled
+    }
+
 }
