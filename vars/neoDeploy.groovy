@@ -9,7 +9,6 @@ import com.sap.piper.tools.Tool
 import com.sap.piper.tools.ToolVerifier
 import com.sap.piper.tools.ToolUtils
 
-@Field def NEO_DEFAULT_CMD = 'neo.sh'
 
 //
 // envProps may be overwritten by tests, but only by tests.
@@ -202,22 +201,7 @@ def call(parameters = [:]) {
                           dockerEnvVars: configuration.get('dockerEnvVars'),
                           dockerOptions: configuration.get('dockerOptions')) {
 
-                NEO_HOME_CHECK: {
-                    // same order like inside getNeoExecutable
-                    String neoHome = configuration.neoHome ?: env?.NEO_HOME
-
-                    // In case neo home is not set, but neo toolset is simply
-                    // in the path, we trust that everything is OK. In order to
-                    // validate the version also in this case, we need to adjust
-                    // toolValidate.
-
-                    def rc = sh script: "which ${NEO_DEFAULT_CMD}", returnStatus: true
-                    if(neoHome || (!neoHome && rc != 0)) {
-                        ToolVerifier.verifyToolVersion(neo, this, configuration)
-                    } else {
-                        echo "neo (${NEO_DEFAULT_CMD}) has been found in path. Using this neo version without futher tool validation."
-                    }
-                }
+                ToolVerifier.verifyToolVersion(neo, this, configuration)
 
                 JAVA_HOME_CHECK : {
 

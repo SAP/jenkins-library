@@ -42,7 +42,7 @@ class NeoDeployTest extends BasePipelineTest {
         .around(jsr)
         .around(jer)
 
-    def toolNeoValidateCalled = false
+    private toolJavaValidateCalled
 
     private static workspacePath
     private static warArchiveName
@@ -90,21 +90,7 @@ class NeoDeployTest extends BasePipelineTest {
 
         jer.env.configuration = [steps:[neoDeploy: [host: 'test.deploy.host.com', account: 'trialuser123']]]
 
-        //
-        // needs to be after loading the scripts. Here we have a different behaviour
-        // for usual steps and for steps contained in the shared lib itself.
-        //
-        // toolValidate mocked here since we are not interested in testing
-        // toolValidate here. This is expected to be done in a test class for
-        // toolValidate.
-        //
-        helper.registerAllowedMethod('toolValidate', [Map], { m ->
-
-                                                                  if(m.tool == 'neo')
-                                                                      toolNeoValidateCalled = true
-                                                                  if(m.tool == 'java')
-                                                                      toolJavaValidateCalled = true
-                                                            })
+        toolJavaValidateCalled = false
     }
 
 
@@ -455,31 +441,6 @@ class NeoDeployTest extends BasePipelineTest {
         assert jlr.log.contains("Deprecated parameter 'deployAccount' is used. This will not work anymore in future versions. Use parameter 'account' instead.")
     }
 
-	@Ignore('Tool validation disabled since it does not work properly in conjunction with slaves.')
-    @Test
-    void skipValidationWhenNeoToolsetIsInPathButNeoHomeNotProvidedViaConfigNorEnvironment() {
-
-        binding.setVariable('env', [:])
-        jscr.setReturnValue('which neo.sh', 0)
-        jsr.step.call(script: [commonPipelineEnvironment: jer.env],
-                               archivePath: archiveName,
-                               neoCredentialsId: 'myCredentialsId'
-        )
-        assert !toolNeoValidateCalled
-    }
-
-    @Ignore('Tool validation disabled since it does not work properly in conjunction with slaves.')
-    @Test
-    void performValidationWhenNeoToolsetIsNotInPathAndNeoHomeNotProvidedViaConfigNorEnvironment() {
-
-        binding.setVariable('env', [:])
-        jscr.setReturnValue('which neo.sh', 1)
-        jsr.step.call(script: [commonPipelineEnvironment: jer.env],
-                               archivePath: archiveName,
-                               neoCredentialsId: 'myCredentialsId'
-        )
-        assert toolNeoValidateCalled
-    }
 
     @Ignore('Tool validation disabled since it does not work properly in conjunction with slaves.')
     @Test
