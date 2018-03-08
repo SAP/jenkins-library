@@ -20,44 +20,43 @@ needs to be extracted into the folder provided by `neoHome`. In case this parame
 | parameter          | mandatory | default                       | possible values                                 |
 | -------------------|-----------|-------------------------------|-------------------------------------------------|
 | `account`          | no        |                               |                                                 |
-| `deployMode`       | yes       | `'mta'`                       | `'mta'`, `'warParams'`, `'warPropertiesFile'`   |
-| `script`           | yes       |                               |                                                 |
 | `archivePath`      | yes       |                               |                                                 |
-| `deployHost` deprecated, use `host` | no        |              |                                                 |
 | `deployAccount` deprecated, use `account` | no  |              |                                                 |
+| `deployHost` deprecated, use `host` | no        |              |                                                 |
+| `deployMode`       | yes       | `'mta'`                       | `'mta'`, `'warParams'`, `'warPropertiesFile'`   |
 | `host`             | no        |                               |                                                 |
 | `neoCredentialsId` | no        | `'CI_CREDENTIALS_ID'`         |                                                 |
 | `neoHome`          | no        |                               |                                                 |
+| `script`           | yes       |                               |                                                 |
 
 ## Parameters when using WAR file deployment method with .properties file (WAR_PROPERTIESFILE)
 | parameter          | mandatory | default                       | possible values                                 |
 | -------------------|-----------|-------------------------------|-------------------------------------------------|
 | `archivePath`      | yes       |                               |                                                 |
 | `deployMode`       | yes       | `'mta'`                       | `'mta'`, `'warParams'`, `'warPropertiesFile'`   |
-| `warAction`        | yes       | `'deploy'`                    | `'deploy'`, `'rolling-update'`                  |
-| `script`           | yes       |                               |                                                 |
-| `archivePath`      | yes       |                               |                                                 |
 | `neoCredentialsId` | no        | `'CI_CREDENTIALS_ID'`         |                                                 |
 | `neoHome`          | no        |                               |                                                 |
 | `propertiesFile`   | yes       |                               |                                                 |
+| `script`           | yes       |                               |                                                 |
+| `warAction`        | yes       | `'deploy'`                    | `'deploy'`, `'rolling-update'`                  |
 
 ## Parameters when using WAR file deployment method witout .properties file - with parameters (WAR_PARAMS)
 | parameter          | mandatory | default                       | possible values                                 |
 | -------------------|-----------|-------------------------------|-------------------------------------------------|
 | `account`          | no        |                               |                                                 |
-| `deployMode`       | yes       | `'mta'`                       |  `'mta'`, `'warParams'`, `'warPropertiesFile'`  |
-| `warAction`        | yes       | `'deploy'`                    | `'deploy'`, `'rolling-update'`                  |
-| `script`           | yes       |                               |                                                 |
+| `applicationName`  | yes       |                               |                                                 |
 | `archivePath`      | yes       |                               |                                                 |
-| `deployHost` deprecated, use `host` | no                       |                                                 |
 | `deployAccount` deprecated, use `account` | no                 |                                                 |
+| `deployHost` deprecated, use `host` | no                       |                                                 |
+| `deployMode`       | yes       | `'mta'`                       |  `'mta'`, `'warParams'`, `'warPropertiesFile'`  |
 | `host`             | no        |                               |                                                 |
 | `neoCredentialsId` | no        | `'CI_CREDENTIALS_ID'`         |                                                 |
 | `neoHome`          | no        |                               |                                                 |
-| `applicationName`  | yes       |                               |                                                 |
 | `runtime`          | yes       |                               |                                                 |
 | `runtime-version`  | yes       |                               |                                                 |
+| `script`           | yes       |                               |                                                 |
 | `vmSize`           | no        | `'lite'`                      | `'lite'`, `'pro'`, `'prem'`, `'prem-plus'`      |
+| `warAction`        | yes       | `'deploy'`                    | `'deploy'`, `'rolling-update'`                  |
 
 
 * `deployMode` - The deployment mode which should be used. Available options are `'MTA'` (default), `'WAR_PARAMS'` (deploying WAR file and passing all the deployment parameters via the function call) and `'WAR_PROPERTIESFILE'` (deploying WAR file and putting all the deployment parameters in a .properties file)
