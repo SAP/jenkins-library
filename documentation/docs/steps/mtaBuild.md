@@ -12,8 +12,8 @@ Executes the SAP MTA Archive Builder to create an mtar archive of the applicatio
 | parameter        | mandatory | default                                                | possible values    |
 | -----------------|-----------|--------------------------------------------------------|--------------------|
 | `script`         | yes       |                                                        |                    |
-| `buildTarget`    | yes       | `'buildTarget'` from step configuration `'mtaBuild'`   | 'CF', 'NEO', 'XSA' |
-| `mtaJarLocation` | no        | `'mtaJarLocation'`from step configuration `'mtaBuild'` |                    |
+| `buildTarget`    | yes       | `'NEO'`                                                | 'CF', 'NEO', 'XSA' |
+| `mtaJarLocation` | no        |                                                        |                    |
 
 * `script` - The common script environment of the Jenkinsfile running. Typically the reference to the script calling the pipeline step is provided with the `this` parameter, as in `script: this`. This allows the function to access the [`commonPipelineEnvironment`](commonPipelineEnvironment.md) for retrieving, for example, configuration parameters.
 * `buildTarget` - The target platform to which the mtar can be deployed.
