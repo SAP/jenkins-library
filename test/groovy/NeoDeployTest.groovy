@@ -6,6 +6,7 @@ import com.lesfurets.jenkins.unit.BasePipelineTest
 
 import org.junit.BeforeClass
 import org.junit.ClassRule
+import org.junit.Ignore
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -446,6 +447,7 @@ class NeoDeployTest extends BasePipelineTest {
         assert jlr.log.contains("Deprecated parameter 'deployAccount' is used. This will not work anymore in future versions. Use parameter 'account' instead.")
     }
 
+	@Ignore('Tool validation disabled since it does not work properly in conjunction with slaves.')
     @Test
     void skipValidationWhenNeoToolsetIsInPathButNeoHomeNotProvidedViaConfigNorEnvironment() {
 
@@ -458,6 +460,7 @@ class NeoDeployTest extends BasePipelineTest {
         assert !toolNeoValidateCalled
     }
 
+    @Ignore('Tool validation disabled since it does not work properly in conjunction with slaves.')
     @Test
     void performValidationWhenNeoToolsetIsNotInPathAndNeoHomeNotProvidedViaConfigNorEnvironment() {
 
@@ -470,6 +473,7 @@ class NeoDeployTest extends BasePipelineTest {
         assert toolNeoValidateCalled
     }
 
+    @Ignore('Tool validation disabled since it does not work properly in conjunction with slaves.')
     @Test
     void toolJavaValidateCalled() {
 
@@ -480,6 +484,7 @@ class NeoDeployTest extends BasePipelineTest {
         assert toolJavaValidateCalled
     }
 
+    @Ignore('Tool validation disabled since it does not work properly in conjunction with slaves.')
     @Test
     void toolValidateSkippedIfJavaHomeNotSetButJavaInPath() {
 
