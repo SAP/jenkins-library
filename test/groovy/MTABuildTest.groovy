@@ -4,6 +4,7 @@ import org.yaml.snakeyaml.parser.ParserException
 
 import org.junit.BeforeClass
 import org.junit.ClassRule
+import org.junit.Ignore
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -238,6 +239,7 @@ public class MtaBuildTest extends BasePipelineTest {
         assert jscr.shell.find { c -> c.contains('java -jar mta.jar --mtar com.mycompany.northwind.mtar --build-target=NEO build')}
     }
 
+    @Ignore('Tool validation disabled since it does not work properly in conjunction with slaves.')
     @Test
     void skipValidationInCaseMtarJarFileIsUsedFromWorkingDir() {
         jscr.setReturnValue('ls mta.jar', 0)
@@ -245,6 +247,7 @@ public class MtaBuildTest extends BasePipelineTest {
         assert !toolMtaValidateCalled
     }
 
+    @Ignore('Tool validation disabled since it does not work properly in conjunction with slaves.')
     @Test
     void performValidationInCaseMtarJarFileIsNotUsedFromWorkingDir() {
         jscr.setReturnValue('ls mta.jar', 1)
@@ -252,6 +255,7 @@ public class MtaBuildTest extends BasePipelineTest {
         assert toolMtaValidateCalled
     }
 
+    @Ignore('Tool validation disabled since it does not work properly in conjunction with slaves.')
     @Test
     void toolJavaValidateCalled() {
 
@@ -260,6 +264,7 @@ public class MtaBuildTest extends BasePipelineTest {
         assert toolJavaValidateCalled
     }
 
+    @Ignore('Tool validation disabled since it does not work properly in conjunction with slaves.')
     @Test
     void toolValidateNotCalledWhenJavaHomeIsUnsetButJavaIsInPath() {
 
