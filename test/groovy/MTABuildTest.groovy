@@ -226,21 +226,6 @@ public class MtaBuildTest extends BasePipelineTest {
         assert jscr.shell.find { c -> c.contains('java -jar mta.jar --mtar com.mycompany.northwind.mtar --build-target=NEO build')}
     }
 
-    @Ignore('Tool validation disabled since it does not work properly in conjunction with slaves.')
-    @Test
-    void skipValidationInCaseMtarJarFileIsUsedFromWorkingDir() {
-        jscr.setReturnValue('ls mta.jar', 0)
-        jsr.step.call(script: [commonPipelineEnvironment: jer.env])
-        assert !toolMtaValidateCalled
-    }
-
-    @Ignore('Tool validation disabled since it does not work properly in conjunction with slaves.')
-    @Test
-    void performValidationInCaseMtarJarFileIsNotUsedFromWorkingDir() {
-        jscr.setReturnValue('ls mta.jar', 1)
-        jsr.step.call(script: [commonPipelineEnvironment: jer.env])
-        assert toolMtaValidateCalled
-    }
 
     @Ignore('Tool validation disabled since it does not work properly in conjunction with slaves.')
     @Test
@@ -250,6 +235,7 @@ public class MtaBuildTest extends BasePipelineTest {
 
         assert toolJavaValidateCalled
     }
+
 
     @Ignore('Tool validation disabled since it does not work properly in conjunction with slaves.')
     @Test
