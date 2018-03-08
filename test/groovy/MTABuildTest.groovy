@@ -227,27 +227,6 @@ public class MtaBuildTest extends BasePipelineTest {
     }
 
 
-    @Ignore('Tool validation disabled since it does not work properly in conjunction with slaves.')
-    @Test
-    void toolJavaValidateCalled() {
-
-        jsr.step.call(buildTarget: 'NEO')
-
-        assert toolJavaValidateCalled
-    }
-
-
-    @Ignore('Tool validation disabled since it does not work properly in conjunction with slaves.')
-    @Test
-    void toolValidateNotCalledWhenJavaHomeIsUnsetButJavaIsInPath() {
-
-        jscr.setReturnValue('which java', 0)
-        jsr.step.call(buildTarget: 'NEO')
-
-        assert !toolJavaValidateCalled
-        assert jlr.log.contains('Tool validation (java) skipped. JAVA_HOME not set, but java executable in path.')
-    }
-
     private static defaultMtaYaml() {
         return  '''
                 _schema-version: "2.0.0"

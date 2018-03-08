@@ -4,8 +4,6 @@ import com.sap.piper.tools.Tool
 import com.sap.piper.tools.ToolVerifier
 import com.sap.piper.tools.ToolUtils
 
-import groovy.transform.Field
-
 
 def call(Map parameters = [:]) {
 
@@ -37,21 +35,8 @@ def call(Map parameters = [:]) {
         def mta = new Tool('SAP Multitarget Application Archive Builder', 'MTA_JAR_LOCATION', 'mtaJarLocation', '/', 'mta.jar', '1.0.6', '-v')
         ToolVerifier.verifyToolVersion(mta, this, configuration)
 
-        JAVA_HOME_CHECK : {
-
-            // in case JAVA_HOME is not set, but java is in the path we should not fail
-            // in order to be backward compatible. Before introducing that check here
-            // is worked also in case JAVA_HOME was not set, but java was in the path.
-            // toolValidate works only upon JAVA_HOME and fails in case it is not set.
-
-            def rc = sh script: 'which java' , returnStatus: true
-            if(script.JAVA_HOME || (!script.JAVA_HOME && rc != 0)) {
-                def java = new Tool('Java', 'JAVA_HOME', '', '/bin/', 'java', '1.8.0', '-version 2>&1')
-                ToolVerifier.verifyToolVersion(java, this, configuration)
-            } else {
-                echo 'Tool validation (java) skipped. JAVA_HOME not set, but java executable in path.'
-            }
-        }
+        def java = new Tool('Java', 'JAVA_HOME', '', '/bin/', 'java', '1.8.0', '-version 2>&1')
+        ToolVerifier.verifyToolVersion(java, this, configuration)
 
         def mtaYmlName = "${pwd()}/mta.yaml"
         def applicationName = configuration.applicationName

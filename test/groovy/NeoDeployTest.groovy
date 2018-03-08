@@ -42,8 +42,6 @@ class NeoDeployTest extends BasePipelineTest {
         .around(jsr)
         .around(jer)
 
-    private toolJavaValidateCalled
-
     private static workspacePath
     private static warArchiveName
     private static propertiesFileName
@@ -89,8 +87,6 @@ class NeoDeployTest extends BasePipelineTest {
         helper.registerAllowedMethod('sh', [Map], { Map m -> getVersionWithEnvVars(m) })
 
         jer.env.configuration = [steps:[neoDeploy: [host: 'test.deploy.host.com', account: 'trialuser123']]]
-
-        toolJavaValidateCalled = false
     }
 
 
@@ -441,31 +437,6 @@ class NeoDeployTest extends BasePipelineTest {
         assert jlr.log.contains("Deprecated parameter 'deployAccount' is used. This will not work anymore in future versions. Use parameter 'account' instead.")
     }
 
-
-    @Ignore('Tool validation disabled since it does not work properly in conjunction with slaves.')
-    @Test
-    void toolJavaValidateCalled() {
-
-        jsr.step.call(script: [commonPipelineEnvironment: jer.env],
-                               archivePath: archiveName,
-                               neoCredentialsId: 'myCredentialsId')
-
-        assert toolJavaValidateCalled
-    }
-
-    @Ignore('Tool validation disabled since it does not work properly in conjunction with slaves.')
-    @Test
-    void toolValidateSkippedIfJavaHomeNotSetButJavaInPath() {
-
-        jscr.setReturnValue('which java', 0)
-        jsr.step.envProps = [:] // make sure we are not confused by JAVA_HOME in current env props.
-        jsr.step.call(script: [commonPipelineEnvironment: jer.env],
-                               archivePath: archiveName,
-                               neoCredentialsId: 'myCredentialsId')
-
-        assert ! toolJavaValidateCalled
-        assert jlr.log.contains('Skipping tool validate check (java). Java executable in path, but no JAVA_HOME found.')
-    }
 
     private getVersionWithEnvVars(Map m) {
 
