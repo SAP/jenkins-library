@@ -36,7 +36,11 @@ def call(Map parameters = [:]) {
             def mtaJarLocation = configuration?.mtaJarLocation ?: env?.MTA_JAR_LOCATION
             def returnCodeLsMtaJar = sh script: "ls ${DEFAULT_MTA_JAR_NAME}", returnStatus:true
             if(mtaJarLocation || ( !mtaJarLocation && returnCodeLsMtaJar != 0)) {
-                toolValidate tool: 'mta', home: mtaJarLocation
+                // toolValidate commented since it is does not work in
+                // conjunction with jenkins slaves.
+                // TODO: switch on again when the issue is resolved.
+                // toolValidate tool: 'mta', home: mtaJarLocation
+                echo 'toolValidate (mta) is disabled.'
             } else {
                 echo "mta toolset (${DEFAULT_MTA_JAR_NAME}) has been found in current working directory. Using this version without further tool validation."
             }
@@ -51,7 +55,12 @@ def call(Map parameters = [:]) {
 
             def rc = sh script: 'which java' , returnStatus: true
             if(script.JAVA_HOME || (!script.JAVA_HOME && rc != 0)) {
-                toolValidate tool: 'java', home: script.JAVA_HOME
+                // toolValidate commented since it is does not work in
+                // conjunction with jenkins slaves.
+                // TODO: switch on again when the issue is resolved.
+                echo 'toolValidate (mta) is disabled.'
+                // toolValidate tool: 'java', home: script.JAVA_HOME
+                echo 'toolValidate (java) is disabled.'
             } else {
                 echo 'Tool validation (java) skipped. JAVA_HOME not set, but java executable in path.'
             }

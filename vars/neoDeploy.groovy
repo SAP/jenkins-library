@@ -210,7 +210,11 @@ def call(parameters = [:]) {
 
                     def rc = sh script: "which ${NEO_DEFAULT_CMD}", returnStatus: true
                     if(neoHome || (!neoHome && rc != 0)) {
-                        toolValidate tool: 'neo', home: neoHome
+                        // toolValidate commented since it is does not work in
+                        // conjunction with jenkins slaves.
+                        // TODO: switch on again when the issue is resolved.
+                        // toolValidate tool: 'neo', home: neoHome
+                        echo 'toolValidate (neo) is disabled.'
                     } else {
                         echo "neo (${NEO_DEFAULT_CMD}) has been found in path. Using this neo version without futher tool validation."
                     }
@@ -232,7 +236,11 @@ def call(parameters = [:]) {
                         echo "Skipping tool validate check (java). " +
                              "Java executable in path, but no JAVA_HOME found."
                     } else {
-                        toolValidate tool: 'java', home: javaHome
+                        // toolValidate commented since it is does not work in
+                        // conjunction with jenkins slaves.
+                        // TODO: switch on again when the issue is resolved.
+                        //toolValidate tool: 'java', home: javaHome
+                        echo 'toolValidate (java) is disabled.'
                     }
                 }
 
