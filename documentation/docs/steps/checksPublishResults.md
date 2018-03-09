@@ -102,6 +102,19 @@ Each of the parameters `aggregation`, `tasks`, `pmd`, `cpd`, `findbugs`, `checks
 | archive | no | `true` | `true`, `false` |
 | thresholds | no | none | see [thresholds](#thresholds) |
 
+## Step configuration
+Following parameters can also be specified as step parameters using the global configuration file:
+
+* `aggregation`
+* `tasks`
+* `pmd`
+* `cpd`
+* `findbugs`
+* `checkstyle`
+* `eslint`
+* `pylint`
+* `archive`
+
 ### Thresholds
 
 It is possible to define thresholds to fail the build on a certain count of findings. To achive this, just define your thresholds a followed for the specific check tool:

@@ -20,6 +20,9 @@ Proxy environment variables defined on the Jenkins machine are also available in
 * `dockerOptions` Docker options to be set when starting the container.
 * `dockerVolumeBind` Volumes that should be mounted into the container.
 
+## Step configuration
+None
+
 ## Exceptions
 
 None
