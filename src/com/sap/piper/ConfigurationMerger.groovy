@@ -37,13 +37,22 @@ class ConfigurationMerger {
     def static merge(
         def script, def stepName,
         Map parameters, Set parameterKeys,
+        Set stepConfigurationKeys
+    ) {
+          merge(script, stepName, parameters, parameterKeys, [:], stepConfigurationKeys)
+    }
+
+    @NonCPS
+    def static merge(
+        def script, def stepName,
+        Map parameters, Set parameterKeys,
         Map pipelineData,
         Set stepConfigurationKeys
     ) {
         Map stepDefaults = ConfigurationLoader.defaultStepConfiguration(script, stepName)
         Map stepConfiguration = ConfigurationLoader.stepConfiguration(script, stepName)
 
-        mergeWithPipelineData(parameters, parameterKeys, pipelineData ?: [:], stepConfiguration, stepConfigurationKeys, stepDefaults)
+        mergeWithPipelineData(parameters, parameterKeys, pipelineData, stepConfiguration, stepConfigurationKeys, stepDefaults)
     }
 
     @NonCPS
