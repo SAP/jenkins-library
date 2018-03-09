@@ -23,13 +23,12 @@ def call(Map parameters = [:]) {
             script = [commonPipelineEnvironment: commonPipelineEnvironment]
         prepareDefaultValues script: script
         prepare(parameters)
-        
+
         Set configKeys = TOOLS.plus('archive')
 
         Map configuration = ConfigurationMerger.merge(
             script, STEP_NAME,
             parameters, configKeys,
-            null,
             configKeys)
 
         def doArchive = configuration.get('archive')
