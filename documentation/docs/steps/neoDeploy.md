@@ -62,8 +62,8 @@ needs to be extracted into the folder provided by `neoHome`. In case this parame
 * `account` - The SAP Cloud Platform account to deploy to.
 * `applicationName` - Name of the application you want to manage, configure, or deploy
 * `archivePath`- The path to the archive for deployment to SAP CP.
-* `deployAccount` - The SAP Cloud Platform account to deploy to.
-* `deployHost` - The SAP Cloud Platform host to deploy to.
+* `deployAccount` - deprecated, use `account`. The SAP Cloud Platform account to deploy to.
+* `deployHost` - deprecated, use `host`. The SAP Cloud Platform host to deploy to.
 * `deployMode` - The deployment mode which should be used. Available options are `'MTA'` (default), `'WAR_PARAMS'` (deploying WAR file and passing all the deployment parameters via the function call) and `'WAR_PROPERTIESFILE'` (deploying WAR file and putting all the deployment parameters in a .properties file)
 * `host` - The SAP Cloud Platform host to deploy to.
 * `neoCredentialsId` - The Jenkins credentials containing user and password used for SAP CP deployment.
