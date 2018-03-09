@@ -17,56 +17,65 @@ needs to be extracted into the folder provided by `neoHome`. In case this parame
 * **Java 8 or higher** - needed by the *Neo-Java-Web-SDK*
 
 ## Parameters when using MTA deployment method (default - MTA)
-| parameter          | mandatory | default                                                                                                                          | possible values |
-| -------------------|-----------|----------------------------------------------------------------------------------------------------------------------------------|-----------------|
-| `deployMode`       | yes       | `'MTA'`                                                                                      | `'MTA'`, `'WAR_PARAMS'`, `'WAR_PROPERTIESFILE'` |
-| `script`           | yes       |                                                                                                                                  |                 |
-| `archivePath`      | yes       |                                                                                                                                  |                 |
-| `deployHost`       | no        | `'account'` from step configuration `'neoDeploy'`, or propertey `'DEPLOY_HOST'` from `commonPipelineEnvironment` (deprecated)    |                 |
-| `deployAccount`    | no        | `'host'` from step configuration `'neoDeploy'`, or property `'CI_DEPLOY_ACCOUNT'` from `commonPipelineEnvironment` (deprecated)  |                 |
-| `neoCredentialsId` | no        | `'neoCredentialsId'` from step configuration `'neoDeploy'` or hard coded value `'CI_CREDENTIALS_ID'`                             |                 |
-| `neoHome`          | no        | Environment is checked for `NEO_HOME`, <br>otherwise the neo toolset is expected in the path                                     |                 |
+| parameter          | mandatory | default                       | possible values                                 |
+| -------------------|-----------|-------------------------------|-------------------------------------------------|
+| `account`          | no        |                               |                                                 |
+| `archivePath`      | yes       |                               |                                                 |
+| `deployAccount` deprecated, use `account` | no  |              |                                                 |
+| `deployHost` deprecated, use `host` | no        |              |                                                 |
+| `deployMode`       | yes       | `'mta'`                       | `'mta'`, `'warParams'`, `'warPropertiesFile'`   |
+| `host`             | no        |                               |                                                 |
+| `neoCredentialsId` | no        | `'CI_CREDENTIALS_ID'`         |                                                 |
+| `neoHome`          | no        |                               |                                                 |
+| `script`           | yes       |                               |                                                 |
+
 ## Parameters when using WAR file deployment method with .properties file (WAR_PROPERTIESFILE)
-| parameter          | mandatory | default                                                                                      | possible values                                 |
-| -------------------|-----------|----------------------------------------------------------------------------------------------|-------------------------------------------------|
-| `deployMode`       | yes       | `'MTA'`                                                                                      | `'MTA'`, `'WAR_PARAMS'`, `'WAR_PROPERTIESFILE'` |
-| `warAction`        | yes       | `'deploy'`                                                                                   | `'deploy'`, `'rolling-update'`                  |
-| `script`           | yes       |                                                                                              |                                                 |
-| `archivePath`      | yes       |                                                                                              |                                                 |
-| `neoCredentialsId` | no        | `'CI_CREDENTIALS_ID'`                                                                        |                                                 |
-| `neoHome`          | no        | Environment is checked for `NEO_HOME`, <br>otherwise the neo toolset is expected in the path |                                                 |
-| `propertiesFile`   | yes       |                                                                                              |                                                 |
+| parameter          | mandatory | default                       | possible values                                 |
+| -------------------|-----------|-------------------------------|-------------------------------------------------|
+| `archivePath`      | yes       |                               |                                                 |
+| `deployMode`       | yes       | `'mta'`                       | `'mta'`, `'warParams'`, `'warPropertiesFile'`   |
+| `neoCredentialsId` | no        | `'CI_CREDENTIALS_ID'`         |                                                 |
+| `neoHome`          | no        |                               |                                                 |
+| `propertiesFile`   | yes       |                               |                                                 |
+| `script`           | yes       |                               |                                                 |
+| `warAction`        | yes       | `'deploy'`                    | `'deploy'`, `'rolling-update'`                  |
 
 ## Parameters when using WAR file deployment method witout .properties file - with parameters (WAR_PARAMS)
-| parameter          | mandatory | default                                                                                      | possible values                                 |
-| -------------------|-----------|----------------------------------------------------------------------------------------------|-------------------------------------------------|
-| `deployMode`       | yes       | `'MTA'`                                                                                      | `'MTA'`, `'WAR_PARAMS'`, `'WAR_PROPERTIESFILE'` |
-| `warAction`        | yes       | `'deploy'`                                                                                   | `'deploy'`, `'rolling-update'`                  |
-| `script`           | yes       |                                                                                              |                                                 |
-| `archivePath`      | yes       |                                                                                              |                                                 |
-| `deployHost`       | no        | `'DEPLOY_HOST'` from `commonPipelineEnvironment`                                             |                                                 |
-| `deployAccount`    | no        | `'CI_DEPLOY_ACCOUNT'` from `commonPipelineEnvironment`                                       |                                                 |
-| `neoCredentialsId` | no        | `'CI_CREDENTIALS_ID'`                                                                        |                                                 |
-| `neoHome`          | no        | Environment is checked for `NEO_HOME`, <br>otherwise the neo toolset is expected in the path |                                                 |
-| `applicationName`  | yes       |                                                                                              |                                                 |
-| `runtime`          | yes       |                                                                                              |                                                 |
-| `runtime-version`  | yes       |                                                                                              |                                                 |
-| `size`             | no        | `'lite'`                                                                                     | `'lite'`, `'pro'`, `'prem'`, `'prem-plus'`      |
+| parameter          | mandatory | default                       | possible values                                 |
+| -------------------|-----------|-------------------------------|-------------------------------------------------|
+| `account`          | no        |                               |                                                 |
+| `applicationName`  | yes       |                               |                                                 |
+| `archivePath`      | yes       |                               |                                                 |
+| `deployAccount` deprecated, use `account` | no                 |                                                 |
+| `deployHost` deprecated, use `host` | no                       |                                                 |
+| `deployMode`       | yes       | `'mta'`                       |  `'mta'`, `'warParams'`, `'warPropertiesFile'`  |
+| `host`             | no        |                               |                                                 |
+| `neoCredentialsId` | no        | `'CI_CREDENTIALS_ID'`         |                                                 |
+| `neoHome`          | no        |                               |                                                 |
+| `runtime`          | yes       |                               |                                                 |
+| `runtime-version`  | yes       |                               |                                                 |
+| `script`           | yes       |                               |                                                 |
+| `vmSize`           | no        | `'lite'`                      | `'lite'`, `'pro'`, `'prem'`, `'prem-plus'`      |
+| `warAction`        | yes       | `'deploy'`                    | `'deploy'`, `'rolling-update'`                  |
 
 
-* `deployMode` - The deployment mode which should be used. Available options are `'MTA'` (default), `'WAR_PARAMS'` (deploying WAR file and passing all the deployment parameters via the function call) and `'WAR_PROPERTIESFILE'` (deploying WAR file and putting all the deployment parameters in a .properties file)
-* `script` - The common script environment of the Jenkinsfile run. Typically `this` is passed to this parameter. This allows the function to access the [`commonPipelineEnvironment`](commonPipelineEnvironment.md) for retrieving e.g. configuration parameters.
+* `account` - The SAP Cloud Platform account to deploy to.
+* `applicationName` - Name of the application you want to manage, configure, or deploy
 * `archivePath`- The path to the archive for deployment to SAP CP.
-* `deployHost` - The SAP Cloud Platform host to deploy to.
-* `deployAccount` - The SAP Cloud Platform account to deploy to.
-* `credentialsId` - The Jenkins credentials containing user and password used for SAP CP deployment.
+* `deployAccount` - deprecated, use `account`. The SAP Cloud Platform account to deploy to.
+* `deployHost` - deprecated, use `host`. The SAP Cloud Platform host to deploy to.
+* `deployMode` - The deployment mode which should be used. Available options are `'mta'` (default), `'warParams'` (deploying WAR file and passing all the deployment parameters via the function call) and `'warPropertiesFile'` (deploying WAR file and putting all the deployment parameters in a .properties file)
+* `host` - The SAP Cloud Platform host to deploy to.
+* `neoCredentialsId` - The Jenkins credentials containing user and password used for SAP CP deployment.
 * `neoHome` - The path to the `neo-java-web-sdk` tool used for SAP CP deployment. If no parameter is provided, the path is retrieved from the Jenkins environment variables using `env.NEO_HOME`. If this Jenkins environment variable is not set it is assumed that the tool is available in the `PATH`.
 * `propertiesFile` - The path to the .properties file in which all necessary deployment properties for the application are defined.
-* `warAction` - Action mode when using WAR file mode. Available options are `deploy` (default) and `rolling-update` which performs update of an application without downtime in one go.
-* `applicationName` - Name of the application you want to manage, configure, or deploy
 * `runtime` - Name of SAP Cloud Platform application runtime
 * `runtime-version` - Version of SAP Cloud Platform application runtime
-* `size` - Compute unit (VM) size. Acceptable values: lite, pro, prem, prem-plus.
+* `script` - The common script environment of the Jenkinsfile run. Typically `this` is passed to this parameter. This allows the function to access the [`commonPipelineEnvironment`](commonPipelineEnvironment.md) for retrieving e.g. configuration parameters.
+* `vmSize` - Compute unit (VM) size. Acceptable values: lite, pro, prem, prem-plus.
+* `warAction` - Action mode when using WAR file mode. Available options are `deploy` (default) and `rolling-update` which performs update of an application without downtime in one go.
+
+The step is prepared for being executed in docker. The corresponding parameters can be applied. See step `dockerExecute` for details.
 
 ## Return value
 none
