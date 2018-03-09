@@ -59,6 +59,7 @@ needs to be extracted into the folder provided by `neoHome`. In case this parame
 | `warAction`        | yes       | `'deploy'`                    | `'deploy'`, `'rolling-update'`                  |
 
 
+* `account` - The SAP Cloud Platform account to deploy to.
 * `applicationName` - Name of the application you want to manage, configure, or deploy
 * `archivePath`- The path to the archive for deployment to SAP CP.
 * `deployAccount` - The SAP Cloud Platform account to deploy to.
