@@ -25,6 +25,10 @@ none
 * `path` The path to the Jenkinsfile, inside the repository, to be loaded.
 * `credentialsId` The Jenkins credentials containing user and password needed to access a private git repository.
 
+## Step configuration
+
+none
+
 ## Return value
 
 none
