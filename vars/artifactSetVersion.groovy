@@ -1,4 +1,4 @@
-import com.sap.piper.ConfigurationMerger
+import com.sap.piper.ConfigurationHelper
 import com.sap.piper.GitUtils
 import com.sap.piper.Utils
 import com.sap.piper.versioning.ArtifactVersioning
@@ -22,7 +22,7 @@ import groovy.text.SimpleTemplateEngine
     'timestampTemplate',
     'versioningTemplate'
 ]
-@Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS.minus('gitCommitId')
+@Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS.plus('gitCommitId')
 
 def call(Map parameters = [:]) {
 
