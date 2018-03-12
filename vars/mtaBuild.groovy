@@ -1,5 +1,8 @@
 import com.sap.piper.ConfigurationMerger
 import com.sap.piper.MtaUtils
+import com.sap.piper.tools.Tool
+import com.sap.piper.tools.ToolVerifier
+import com.sap.piper.tools.ToolUtils
 
 import groovy.transform.Field
 
@@ -32,16 +35,14 @@ def call(Map parameters = [:]) {
                                       parameters, parameterKeys,
                                       stepConfigurationKeys)
 
+        def mta = new Tool('SAP Multitarget Application Archive Builder', 'MTA_JAR_LOCATION', 'mtaJarLocation', '/', 'mta.jar', '1.0.6', '-v')
+
         MTA_JAR_FILE_VALIDATE: {
             // same order like inside getMtaJar,
             def mtaJarLocation = configuration?.mtaJarLocation ?: env?.MTA_JAR_LOCATION
             def returnCodeLsMtaJar = sh script: "ls ${DEFAULT_MTA_JAR_NAME}", returnStatus:true
             if(mtaJarLocation || ( !mtaJarLocation && returnCodeLsMtaJar != 0)) {
-                // toolValidate commented since it is does not work in
-                // conjunction with jenkins slaves.
-                // TODO: switch on again when the issue is resolved.
-                // toolValidate tool: 'mta', home: mtaJarLocation
-                echo 'toolValidate (mta) is disabled.'
+                ToolVerifier.verifyToolVersion(mta, this, configuration)
             } else {
                 echo "mta toolset (${DEFAULT_MTA_JAR_NAME}) has been found in current working directory. Using this version without further tool validation."
             }
@@ -56,12 +57,8 @@ def call(Map parameters = [:]) {
 
             def rc = sh script: 'which java' , returnStatus: true
             if(script.JAVA_HOME || (!script.JAVA_HOME && rc != 0)) {
-                // toolValidate commented since it is does not work in
-                // conjunction with jenkins slaves.
-                // TODO: switch on again when the issue is resolved.
-                echo 'toolValidate (mta) is disabled.'
-                // toolValidate tool: 'java', home: script.JAVA_HOME
-                echo 'toolValidate (java) is disabled.'
+                def java = new Tool('Java', 'JAVA_HOME', '', '/bin/', 'java', '1.8.0', '-version 2>&1')
+                ToolVerifier.verifyToolVersion(java, this, configuration)
             } else {
                 echo 'Tool validation (java) skipped. JAVA_HOME not set, but java executable in path.'
             }
@@ -90,8 +87,7 @@ def call(Map parameters = [:]) {
         }
 
         def mtarFileName = "${id}.mtar"
-
-        def mtaJar = getMtaJar(stepName, configuration)
+        def mtaJar = ToolUtils.getToolExecutable(mta, this, configuration)
         def buildTarget = configuration.buildTarget
 
         sh  """#!/bin/bash
@@ -106,21 +102,3 @@ def call(Map parameters = [:]) {
     }
 }
 
-private getMtaJar(stepName, configuration) {
-    def mtaJarLocation = DEFAULT_MTA_JAR_NAME //default, maybe it is in current working directory
-
-    if(configuration?.mtaJarLocation){
-        mtaJarLocation = "${configuration.mtaJarLocation}/${DEFAULT_MTA_JAR_NAME}"
-        echo "[$stepName] MTA JAR \"${mtaJarLocation}\" retrieved from configuration."
-        return mtaJarLocation
-    }
-
-    if(env?.MTA_JAR_LOCATION){
-        mtaJarLocation = "${env.MTA_JAR_LOCATION}/${DEFAULT_MTA_JAR_NAME}"
-        echo "[$stepName] MTA JAR \"${mtaJarLocation}\" retrieved from environment."
-        return mtaJarLocation
-    }
-
-    echo "[$stepName] Using MTA JAR from current working directory."
-    return mtaJarLocation
-}

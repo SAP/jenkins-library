@@ -45,6 +45,7 @@ public class MtaBuildTest extends BasePipelineTest {
     private static newDir
     private static mtaYaml
 
+
     @BeforeClass
     static void createTestFiles() {
 
@@ -60,27 +61,10 @@ public class MtaBuildTest extends BasePipelineTest {
         mtaYaml.text = defaultMtaYaml()
 
         helper.registerAllowedMethod('pwd', [], { currentDir } )
-		
         helper.registerAllowedMethod('fileExists', [GString.class], { false })
+        helper.registerAllowedMethod('sh', [Map], { Map m -> getVersionWithoutEnvVars(m) })
 
         binding.setVariable('PATH', '/usr/bin')
-
-        //
-        // needs to be after loading the scripts. Here we have a different behaviour
-        // for usual steps and for steps contained in the shared lib itself.
-        //
-        // toolValidate mocked here since we are not interested in testing
-        // toolValidate here. This is expected to be done in a test class for
-        // toolValidate.
-        //
-        helper.registerAllowedMethod('toolValidate', [Map], { m ->
-
-                                                              if(m.tool == 'mta')
-                                                                  toolMtaValidateCalled = true
-
-                                                              if(m.tool == 'java')
-                                                                  toolJavaValidateCalled = true
-                                                            })
     }
 
 
@@ -134,18 +118,20 @@ public class MtaBuildTest extends BasePipelineTest {
 
         assert jscr.shell.find { c -> c.contains(' -jar mta.jar --mtar ')}
 
-        assert jlr.log.contains('[mtaBuild] Using MTA JAR from current working directory.')
+        assert jlr.log.contains("SAP Multitarget Application Archive Builder expected on PATH or current working directory.")
+        assert jlr.log.contains("Using SAP Multitarget Application Archive Builder executable 'mta.jar'.")
     }
 
 
     @Test
     void mtaJarLocationAsParameterTest() {
 
-        jsr.step.call(mtaJarLocation: '/mylocation/mta', buildTarget: 'NEO')
+        jsr.step.call(mtaJarLocation: "/mylocation/mta", buildTarget: 'NEO')
 
-        assert jscr.shell.find { c -> c.contains(' -jar /mylocation/mta/mta.jar --mtar ')}
+        assert jscr.shell.find { c -> c.contains("-jar /mylocation/mta/mta.jar --mtar")}
 
-        assert jlr.log.contains('[mtaBuild] MTA JAR "/mylocation/mta/mta.jar" retrieved from configuration.')
+        assert jlr.log.contains("SAP Multitarget Application Archive Builder home '/mylocation/mta' retrieved from configuration.")
+        assert jlr.log.contains("Using SAP Multitarget Application Archive Builder executable '/mylocation/mta/mta.jar'.")
     }
 
 
@@ -186,26 +172,27 @@ public class MtaBuildTest extends BasePipelineTest {
     @Test
     void mtaJarLocationFromEnvironmentTest() {
 
-        binding.setVariable('env', [:])
-        binding.getVariable('env')['MTA_JAR_LOCATION'] = '/env/mta'
+        helper.registerAllowedMethod('sh', [Map], { Map m -> getVersionWithEnvVars(m) })
 
         jsr.step.call(buildTarget: 'NEO')
 
-        assert jscr.shell.find { c -> c.contains('-jar /env/mta/mta.jar --mtar')}
-        assert jlr.log.contains('[mtaBuild] MTA JAR "/env/mta/mta.jar" retrieved from environment.')
+        assert jscr.shell.find { c -> c.contains("-jar /env/mta/mta.jar --mtar")}
+        assert jlr.log.contains("SAP Multitarget Application Archive Builder home '/env/mta' retrieved from environment.")
+        assert jlr.log.contains("Using SAP Multitarget Application Archive Builder executable '/env/mta/mta.jar'.")
     }
 
 
     @Test
     void mtaJarLocationFromCustomStepConfigurationTest() {
 
-        jer.env.configuration = [steps:[mtaBuild:[mtaJarLocation: '/step/mta']]]
+        jer.env.configuration = [steps:[mtaBuild:[mtaJarLocation: "/config/mta"]]]
 
         jsr.step.call(script: [commonPipelineEnvironment: jer.env],
                       buildTarget: 'NEO')
 
-        assert jscr.shell.find(){ c -> c.contains('-jar /step/mta/mta.jar --mtar')}
-        assert jlr.log.contains('[mtaBuild] MTA JAR "/step/mta/mta.jar" retrieved from configuration.')
+        assert jscr.shell.find(){ c -> c.contains("-jar /config/mta/mta.jar --mtar")}
+        assert jlr.log.contains("SAP Multitarget Application Archive Builder home '/config/mta' retrieved from configuration.")
+        assert jlr.log.contains("Using SAP Multitarget Application Archive Builder executable '/config/mta/mta.jar'.")
     }
 
 
@@ -335,5 +322,53 @@ public class MtaBuildTest extends BasePipelineTest {
                       builder: grunt
                 build-result: dist
                 '''
+    }
+
+    private getVersionWithEnvVars(Map m) {
+
+        if(m.script.contains('java -version')) {
+            return '''openjdk version \"1.8.0_121\"
+                    OpenJDK Runtime Environment (build 1.8.0_121-8u121-b13-1~bpo8+1-b13)
+                    OpenJDK 64-Bit Server VM (build 25.121-b13, mixed mode)'''
+        } else if(m.script.contains('mta.jar -v')) {
+            return '1.0.6'
+        } else {
+            return getEnvVars(m)
+        }
+    }
+
+    private getVersionWithoutEnvVars(Map m) {
+
+        if(m.script.contains('java -version')) {
+            return '''openjdk version \"1.8.0_121\"
+                    OpenJDK Runtime Environment (build 1.8.0_121-8u121-b13-1~bpo8+1-b13)
+                    OpenJDK 64-Bit Server VM (build 25.121-b13, mixed mode)'''
+        } else if(m.script.contains('mta.jar -v')) {
+            return '1.0.6'
+        } else {
+            return getNoEnvVars(m)
+        }
+    }
+
+    private getEnvVars(Map m) {
+
+        if(m.script.contains('JAVA_HOME')) {
+            return '/env/java'
+        } else if(m.script.contains('MTA_JAR_LOCATION')) {
+            return '/env/mta'
+        } else {
+            return 0
+        }
+    }
+
+    private getNoEnvVars(Map m) {
+
+        if(m.script.contains('JAVA_HOME')) {
+            return ''
+        } else if(m.script.contains('MTA_JAR_LOCATION')) {
+            return ''
+        } else {
+            return 0
+        }
     }
 }
