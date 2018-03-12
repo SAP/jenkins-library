@@ -5,6 +5,9 @@ import groovy.transform.Field
 import com.sap.piper.ConfigurationLoader
 import com.sap.piper.ConfigurationMerger
 import com.sap.piper.ConfigurationType
+import com.sap.piper.tools.Tool
+import com.sap.piper.tools.ToolVerifier
+import com.sap.piper.tools.ToolUtils
 
 @Field def NEO_DEFAULT_CMD = 'neo.sh'
 
@@ -153,8 +156,8 @@ def call(parameters = [:]) {
             deployAccount = utils.getMandatoryParameter(configuration, 'account')
         }
 
-        def neoExecutable = getNeoExecutable(configuration)
-
+        def neo = new Tool('SAP Cloud Platform Console Client', 'NEO_HOME', 'neoHome', '/tools/', 'neo.sh', '3.39.10', 'version')
+        def neoExecutable = ToolUtils.getToolExecutable(neo, this, configuration)
         def neoDeployScript
 
         if (deployMode == 'mta') {
@@ -210,11 +213,7 @@ def call(parameters = [:]) {
 
                     def rc = sh script: "which ${NEO_DEFAULT_CMD}", returnStatus: true
                     if(neoHome || (!neoHome && rc != 0)) {
-                        // toolValidate commented since it is does not work in
-                        // conjunction with jenkins slaves.
-                        // TODO: switch on again when the issue is resolved.
-                        // toolValidate tool: 'neo', home: neoHome
-                        echo 'toolValidate (neo) is disabled.'
+                        ToolVerifier.verifyToolVersion(neo, this, configuration)
                     } else {
                         echo "neo (${NEO_DEFAULT_CMD}) has been found in path. Using this neo version without futher tool validation."
                     }
@@ -236,11 +235,8 @@ def call(parameters = [:]) {
                         echo "Skipping tool validate check (java). " +
                              "Java executable in path, but no JAVA_HOME found."
                     } else {
-                        // toolValidate commented since it is does not work in
-                        // conjunction with jenkins slaves.
-                        // TODO: switch on again when the issue is resolved.
-                        //toolValidate tool: 'java', home: javaHome
-                        echo 'toolValidate (java) is disabled.'
+                        def java = new Tool('Java', 'JAVA_HOME', '', '/bin/', 'java', '1.8.0', '-version 2>&1')
+                        ToolVerifier.verifyToolVersion(java, this, configuration)
                     }
                 }
 
@@ -250,24 +246,4 @@ def call(parameters = [:]) {
             }
         }
     }
-}
-
-private getNeoExecutable(configuration) {
-
-    def neoExecutable = NEO_DEFAULT_CMD // default, if nothing below applies maybe it is the path.
-
-    if (configuration.neoHome) {
-        neoExecutable = "${configuration.neoHome}/tools/${NEO_DEFAULT_CMD}"
-        echo "[neoDeploy] Neo executable \"${neoExecutable}\" retrieved from configuration."
-        return neoExecutable
-    }
-
-    if (env?.NEO_HOME) {
-        neoExecutable = "${env.NEO_HOME}/tools/${NEO_DEFAULT_CMD}"
-        echo "[neoDeploy] Neo executable \"${neoExecutable}\" retrieved from environment."
-        return neoExecutable
-    }
-
-    echo "Using Neo executable from PATH."
-    return neoExecutable
 }
