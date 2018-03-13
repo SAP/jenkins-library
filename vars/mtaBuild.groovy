@@ -1,5 +1,5 @@
-import com.sap.piper.ConfigurationLoader
 import com.sap.piper.ConfigurationMerger
+import com.sap.piper.MtaUtils
 
 import groovy.transform.Field
 
@@ -11,12 +11,14 @@ def call(Map parameters = [:]) {
 
     Set parameterKeys = [
         'buildTarget',
-        'mtaJarLocation'
+        'mtaJarLocation',
+        'applicationName'
     ]
 
     Set stepConfigurationKeys = [
         'buildTarget',
-        'mtaJarLocation'
+        'mtaJarLocation',
+        'applicationName'
     ]
 
     handlePipelineStepErrors (stepName: stepName, stepParameters: parameters) {
@@ -65,8 +67,16 @@ def call(Map parameters = [:]) {
             }
         }
 
-        def mtaYaml = readYaml file: "${pwd()}/mta.yaml"
+        def mtaYmlName = "${pwd()}/mta.yaml"
+        def applicationName = configuration.applicationName
 
+        if (!fileExists(mtaYmlName) && applicationName) {
+            MtaUtils mtaUtils = new MtaUtils(this)
+            mtaUtils.generateMtaDescriptorFromPackageJson("${pwd()}/package.json", mtaYmlName, applicationName)
+        }
+
+        def mtaYaml = readYaml file: "${pwd()}/mta.yaml"
+		
         //[Q]: Why not yaml.dump()? [A]: This reformats the whole file.
         sh "sed -ie \"s/\\\${timestamp}/`date +%Y%m%d%H%M%S`/g\" \"${pwd()}/mta.yaml\""
 
@@ -110,4 +120,3 @@ private getMtaJar(stepName, configuration) {
     echo "[$stepName] Using MTA JAR from current working directory."
     return mtaJarLocation
 }
-
