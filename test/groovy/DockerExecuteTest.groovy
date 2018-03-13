@@ -82,7 +82,8 @@ class DockerExecuteTest extends BasePipelineTest {
         }
         assertTrue(docker.getParameters().contains('--env https_proxy '))
         assertTrue(docker.getParameters().contains('--env http_proxy=http://proxy:8000'))
-        assertTrue(docker.getParameters().contains('-it --network=my-network'))
+        assertTrue(docker.getParameters().contains('-it'))
+        assertTrue(docker.getParameters().contains('--network=my-network'))
     }
 
     @Test
