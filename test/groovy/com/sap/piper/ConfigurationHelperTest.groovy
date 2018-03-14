@@ -55,7 +55,7 @@ class ConfigurationHelperTest {
     @Test
     void testConfigurationLoaderWithCustomSettings() {
         Map config = new ConfigurationHelper([property1: "27"])
-            .mixin([property1: "41"]], ['property2'])
+            .mixin([property1: "41"]])
             .use()
         // asserts
         Assert.assertThat(config, hasEntry('property1', false))
