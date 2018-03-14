@@ -47,28 +47,29 @@ class ConfigurationHelperTest {
 
     @Test
     void testConfigurationLoaderWithDefaults() {
-        Map config = new ConfigurationHelper([property1: "27"]).use()
+        Map config = new ConfigurationHelper([property1: '27']).use()
         // asserts
-        Assert.assertThat(config, hasEntry('property1', "27"))
+        Assert.assertThat(config, hasEntry('property1', '27'))
     }
 
     @Test
     void testConfigurationLoaderWithCustomSettings() {
-        Map config = new ConfigurationHelper([property1: "27"])
-            .mixin([property1: "41"])
+        Map config = new ConfigurationHelper([property1: '27'])
+            .mixin([property1: '41'])
             .use()
         // asserts
-        Assert.assertThat(config, hasEntry('property1', "41"))
+        Assert.assertThat(config, hasEntry('property1', '41'))
     }
 
     @Test
     void testConfigurationLoaderWithFilteredCustomSettings() {
         Set filter = ['property2']
-        Map config = new ConfigurationHelper([property1: "27"])
-            .mixin([property1: "41", property2: "28"], filter)
+        Map config = new ConfigurationHelper([property1: '27'])
+            .mixin([property1: '41', property2: '28', property3: '29'], filter)
             .use()
         // asserts
-        Assert.assertThat(config, hasEntry('property1', "27"))
-        Assert.assertThat(config, hasEntry('property2', "28"))
+        Assert.assertThat(config, hasEntry('property1', '27'))
+        Assert.assertThat(config, hasEntry('property2', '28'))
+        Assert.assertThat(config, not(hasKey('property3')))
     }
 }
