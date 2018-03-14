@@ -4,6 +4,8 @@ import groovy.test.GroovyAssert
 import org.junit.Assert
 import org.junit.Test
 
+import static org.hamcrest.Matchers.*
+
 class ConfigurationHelperTest {
 
     private static getConfiguration() {
@@ -41,5 +43,30 @@ class ConfigurationHelperTest {
         Assert.assertEquals('default', configuration.getMandatoryProperty('something', 'default'))
 
         GroovyAssert.shouldFail { configuration.getMandatoryProperty('something') }
+    }
+
+    @Test
+    void testConfigurationLoaderWithDefaults() {
+        Map config = new ConfigurationHelper([property1: "27"]).use()
+        // asserts
+        Assert.assertThat(config, hasEntry('property1', true))
+    }
+
+    @Test
+    void testConfigurationLoaderWithCustomSettings() {
+        Map config = new ConfigurationHelper([property1: "27"])
+            .mixin([property1: "41"]], ['property2'])
+            .use()
+        // asserts
+        Assert.assertThat(config, hasEntry('property1', false))
+    }
+
+    @Test
+    void testConfigurationLoaderWithFilteredCustomSettings() {
+        Map config = new ConfigurationHelper([property1: "27"])
+            .mixin([property1: "41"]], ['property2'])
+            .use()
+        // asserts
+        Assert.assertThat(config, hasEntry('property1', "27"))
     }
 }
