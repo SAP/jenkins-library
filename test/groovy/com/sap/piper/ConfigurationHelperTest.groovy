@@ -49,22 +49,23 @@ class ConfigurationHelperTest {
     void testConfigurationLoaderWithDefaults() {
         Map config = new ConfigurationHelper([property1: "27"]).use()
         // asserts
-        Assert.assertThat(config, hasEntry('property1', true))
+        Assert.assertThat(config, hasEntry('property1', "27"))
     }
 
     @Test
     void testConfigurationLoaderWithCustomSettings() {
         Map config = new ConfigurationHelper([property1: "27"])
-            .mixin([property1: "41"]])
+            .mixin([property1: "41"])
             .use()
         // asserts
-        Assert.assertThat(config, hasEntry('property1', false))
+        Assert.assertThat(config, hasEntry('property1', "41"))
     }
 
     @Test
     void testConfigurationLoaderWithFilteredCustomSettings() {
+        Set filter = ['property2']
         Map config = new ConfigurationHelper([property1: "27"])
-            .mixin([property1: "41"]], ['property2'])
+            .mixin([property1: "41"], filter)
             .use()
         // asserts
         Assert.assertThat(config, hasEntry('property1', "27"))
