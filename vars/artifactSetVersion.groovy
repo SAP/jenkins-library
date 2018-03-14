@@ -45,11 +45,11 @@ def call(Map parameters = [:]) {
         // load default & individual configuration
         Map configuration = ConfigurationHelper
             .loadStepDefaults(this)
-            .mixinStepConfig(script, STEP_CONFIG_KEYS)
+            .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS)
             .mixin(gitCommitId: gitUtils.getGitCommitIdOrNull())
             .mixin(parameters, PARAMETER_KEYS)
             .use()
-        
+
         def utils = new Utils()
         def buildTool = utils.getMandatoryParameter(configuration, 'buildTool')
 
