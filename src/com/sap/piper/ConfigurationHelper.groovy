@@ -1,36 +1,32 @@
 package com.sap.piper
 
 class ConfigurationHelper implements Serializable {
-    static class ConfigLoader implements Serializable {
-        private Map config
-        private String name
-
-        ConfigLoader(Script step){
-            if(!step.STEP_NAME)
-                throw new IllegalArgumentException('Step has no public name property!')
-            name = step.STEP_NAME
-            step.prepareDefaultValues()
-            config = ConfigurationLoader.defaultStepConfiguration(step, name)
-        }
-
-        ConfigLoader mixinStepConfig(commonPipelineEnvironment, Set filter = null){
-            Map stepConfiguration = ConfigurationLoader.stepConfiguration([commonPipelineEnvironment: commonPipelineEnvironment], name)
-            return mixin(stepConfiguration, filter)
-        }
-
-        ConfigLoader mixin(Map parameters, Set filter = null){
-            config = ConfigurationMerger.merge(parameters, filter, config)
-            return this
-        }
-
-        Map use(){ return config }
-    }
-
     static def loadStepDefaults(Script step){
-        return new ConfigLoader(step)
+        return new ConfigurationHelper(step)
     }
 
-    private final Map config
+    private Map config
+    private String name
+
+    ConfigurationHelper(Script step){
+        name = step.STEP_NAME
+        if(!name) throw new IllegalArgumentException('Step has no public name property!')
+        step.prepareDefaultValues()
+        config = ConfigurationLoader.defaultStepConfiguration(step, name)
+    }
+
+    ConfigurationHelper mixinStepConfig(commonPipelineEnvironment, Set filter = null){
+        if(!name) throw new IllegalArgumentException('Step has no public name property!')
+        Map stepConfiguration = ConfigurationLoader.stepConfiguration([commonPipelineEnvironment: commonPipelineEnvironment], name)
+        return mixin(stepConfiguration, filter)
+    }
+
+    ConfigurationHelper mixin(Map parameters, Set filter = null){
+        config = ConfigurationMerger.merge(parameters, filter, config)
+        return this
+    }
+
+    Map use(){ return config }
 
     ConfigurationHelper(Map config = [:]){
         this.config = config
