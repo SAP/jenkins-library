@@ -13,8 +13,8 @@ class ConfigurationHelper implements Serializable {
             config = ConfigurationLoader.defaultStepConfiguration(step, name)
         }
 
-        ConfigLoader mixinStepConfig(stepWithEnv, Set filter = null){
-            Map stepConfiguration = ConfigurationLoader.stepConfiguration(stepWithEnv, name)
+        ConfigLoader mixinStepConfig(commonPipelineEnvironment, Set filter = null){
+            Map stepConfiguration = ConfigurationLoader.stepConfiguration([commonPipelineEnvironment: commonPipelineEnvironment], name)
             return mixin(stepConfiguration, filter)
         }
 
