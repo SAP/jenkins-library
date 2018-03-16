@@ -3,6 +3,8 @@ package com.sap.piper
 class ConfigurationHelper implements Serializable {
     static def loadStepDefaults(Script step){
         return new ConfigurationHelper(step)
+            .initDefaults(step)
+            .loadDefaults(step)
     }
 
     private Map config
@@ -11,8 +13,16 @@ class ConfigurationHelper implements Serializable {
     ConfigurationHelper(Script step){
         name = step.STEP_NAME
         if(!name) throw new IllegalArgumentException('Step has no public name property!')
+    }
+
+    ConfigurationHelper initDefaults(Script step){
         step.prepareDefaultValues()
+        return this
+    }
+
+    ConfigurationHelper loadDefaults(Script step){
         config = ConfigurationLoader.defaultStepConfiguration(step, name)
+        return this
     }
 
     ConfigurationHelper mixinStepConfig(commonPipelineEnvironment, Set filter = null){
