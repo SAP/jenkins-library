@@ -46,6 +46,12 @@ Custom library steps can be added using a custom library according to the
 groovy coding to the `Jenkinsfile`. Your custom library can coexist next to the
 provided pipeline library.
 
+## API
+
+All steps are intended to be used by Pipelines. All the classes / groovy-scripts
+contained in the `src` folder are not part of the API and are subjected to change
+without prior notice.
+
 # Requirements
 
  * Java Runtime Environment 8
