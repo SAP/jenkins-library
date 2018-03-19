@@ -4,7 +4,21 @@ install:
 - pip install --user mkdocs mkdocs-material
 script:
 - mvn test -B
-- if [[ "${TRAVIS_PULL_REQUEST}" != "false" ]]; then cd documentation && mkdocs build --clean --verbose --strict && cd ..; fi;
+- |
+  if [[ "${TRAVIS_PULL_REQUEST}" != "false" ]]
+  then
+    cd documentation && mkdocs build --clean --verbose --strict && cd ..
+  else
+    # Only in case we are in master branch of the leading SAP repo we would like to deploy,
+    # not from the forks.
+    if [[ "${TRAVIS_BRANCH}" == "master" && "${TRAVIS_REPO_SLUG}" == "SAP/jenkins-library" ]]
+    then
+       openssl aes-256-cbc -K $encrypted_12c8071d2874_key -iv $encrypted_12c8071d2874_iv -in cfg/id_rsa.enc -out cfg/id_rsa -d
+      ./gh-pages-deploy.sh
+    else
+       echo "Publishing documentation skipped."
+    fi
+  fi
 cache:
   directories:
   - $HOME/.m2
