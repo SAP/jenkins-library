@@ -118,8 +118,8 @@ public class MtaBuildTest extends BasePipelineTest {
 
         assert jscr.shell.find { c -> c.contains(' -jar mta.jar --mtar ')}
 
-        assert jlr.log.contains("SAP Multitarget Application Archive Builder expected on PATH or current working directory.")
-        assert jlr.log.contains("Using SAP Multitarget Application Archive Builder executable 'mta.jar'.")
+        assert jlr.log.contains("SAP Multitarget Application Archive Builder expected on current working directory.")
+        assert jlr.log.contains("Using SAP Multitarget Application Archive Builder executable 'java -jar mta.jar'.")
     }
 
 
@@ -131,7 +131,7 @@ public class MtaBuildTest extends BasePipelineTest {
         assert jscr.shell.find { c -> c.contains("-jar /mylocation/mta/mta.jar --mtar")}
 
         assert jlr.log.contains("SAP Multitarget Application Archive Builder home '/mylocation/mta' retrieved from configuration.")
-        assert jlr.log.contains("Using SAP Multitarget Application Archive Builder executable '/mylocation/mta/mta.jar'.")
+        assert jlr.log.contains("Using SAP Multitarget Application Archive Builder executable 'java -jar /mylocation/mta/mta.jar'.")
     }
 
 
@@ -178,7 +178,7 @@ public class MtaBuildTest extends BasePipelineTest {
 
         assert jscr.shell.find { c -> c.contains("-jar /env/mta/mta.jar --mtar")}
         assert jlr.log.contains("SAP Multitarget Application Archive Builder home '/env/mta' retrieved from environment.")
-        assert jlr.log.contains("Using SAP Multitarget Application Archive Builder executable '/env/mta/mta.jar'.")
+        assert jlr.log.contains("Using SAP Multitarget Application Archive Builder executable 'java -jar /env/mta/mta.jar'.")
     }
 
 
@@ -192,7 +192,7 @@ public class MtaBuildTest extends BasePipelineTest {
 
         assert jscr.shell.find(){ c -> c.contains("-jar /config/mta/mta.jar --mtar")}
         assert jlr.log.contains("SAP Multitarget Application Archive Builder home '/config/mta' retrieved from configuration.")
-        assert jlr.log.contains("Using SAP Multitarget Application Archive Builder executable '/config/mta/mta.jar'.")
+        assert jlr.log.contains("Using SAP Multitarget Application Archive Builder executable 'java -jar /config/mta/mta.jar'.")
     }
 
 
@@ -318,7 +318,7 @@ public class MtaBuildTest extends BasePipelineTest {
     private getEnvVars(Map m) {
 
         if(m.script.contains('JAVA_HOME')) {
-            return '/env/java'
+            return ''
         } else if(m.script.contains('MTA_JAR_LOCATION')) {
             return '/env/mta'
         } else {

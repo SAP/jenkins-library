@@ -168,7 +168,7 @@ class NeoDeployTest extends BasePipelineTest {
         )
 
         assert jscr.shell.find { c -> c.contains('"neo.sh" deploy-mta') }
-        assert jlr.log.contains('SAP Cloud Platform Console Client expected on PATH or current working directory.')
+        assert jlr.log.contains('SAP Cloud Platform Console Client expected on PATH.')
         assert jlr.log.contains("Using SAP Cloud Platform Console Client executable 'neo.sh'.")
     }
 

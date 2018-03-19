@@ -3,9 +3,7 @@ import com.sap.piper.Utils
 import com.sap.piper.ConfigurationLoader
 import com.sap.piper.ConfigurationMerger
 import com.sap.piper.ConfigurationType
-import com.sap.piper.tools.Tool
-import com.sap.piper.tools.ToolVerifier
-import com.sap.piper.tools.ToolUtils
+import com.sap.piper.tools.ToolDescriptor
 
 
 def call(parameters = [:]) {
@@ -145,8 +143,8 @@ def call(parameters = [:]) {
             deployAccount = utils.getMandatoryParameter(configuration, 'account')
         }
 
-        def neo = new Tool('SAP Cloud Platform Console Client', 'NEO_HOME', 'neoHome', '/tools/', 'neo.sh', '3.39.10', 'version')
-        def neoExecutable = ToolUtils.getToolExecutable(neo, this, configuration)
+        def neo = new ToolDescriptor('SAP Cloud Platform Console Client', 'NEO_HOME', 'neoHome', '/tools/', 'neo.sh', '3.39.10', 'version')
+        def neoExecutable = neo.getExecutable(this, configuration)
         def neoDeployScript
 
         if (deployMode == 'mta') {
@@ -191,10 +189,10 @@ def call(parameters = [:]) {
                           dockerEnvVars: configuration.get('dockerEnvVars'),
                           dockerOptions: configuration.get('dockerOptions')) {
 
-                ToolVerifier.verifyToolVersion(neo, this, configuration)
+                neo.verify(this, configuration)
 
-                def java = new Tool('Java', 'JAVA_HOME', '', '/bin/', 'java', '1.8.0', '-version 2>&1')
-                ToolVerifier.verifyToolVersion(java, this, configuration)
+                def java = new ToolDescriptor('Java', 'JAVA_HOME', '', '/bin/', 'java', '1.8.0', '-version 2>&1')
+                java.verify(this, configuration)
 
                 sh """${neoDeployScript} \
                       ${commonDeployParams}
