@@ -1,8 +1,7 @@
 import com.sap.piper.ConfigurationMerger
 import com.sap.piper.MtaUtils
-import com.sap.piper.tools.Tool
-import com.sap.piper.tools.ToolVerifier
-import com.sap.piper.tools.ToolUtils
+import com.sap.piper.tools.JavaArchiveDescriptor
+import com.sap.piper.tools.ToolDescriptor
 
 
 def call(Map parameters = [:]) {
@@ -32,11 +31,11 @@ def call(Map parameters = [:]) {
                                       parameters, parameterKeys,
                                       stepConfigurationKeys)
 
-        def mta = new Tool('SAP Multitarget Application Archive Builder', 'MTA_JAR_LOCATION', 'mtaJarLocation', '/', 'mta.jar', '1.0.6', '-v')
-        ToolVerifier.verifyToolVersion(mta, this, configuration)
+        def java = new ToolDescriptor('Java', 'JAVA_HOME', '', '/bin/', 'java', '1.8.0', '-version 2>&1')
+        java.verify(this, configuration)
 
-        def java = new Tool('Java', 'JAVA_HOME', '', '/bin/', 'java', '1.8.0', '-version 2>&1')
-        ToolVerifier.verifyToolVersion(java, this, configuration)
+        def mta = new JavaArchiveDescriptor('SAP Multitarget Application Archive Builder', 'MTA_JAR_LOCATION', 'mtaJarLocation', '/', 'mta.jar', '1.0.6', '-v', java, '-jar')
+        mta.verify(this, configuration)
 
         def mtaYmlName = "${pwd()}/mta.yaml"
         def applicationName = configuration.applicationName
@@ -51,7 +50,7 @@ def call(Map parameters = [:]) {
         }
 
         def mtaYaml = readYaml file: "${pwd()}/mta.yaml"
-		
+
         //[Q]: Why not yaml.dump()? [A]: This reformats the whole file.
         sh "sed -ie \"s/\\\${timestamp}/`date +%Y%m%d%H%M%S`/g\" \"${pwd()}/mta.yaml\""
 
@@ -61,7 +60,7 @@ def call(Map parameters = [:]) {
         }
 
         def mtarFileName = "${id}.mtar"
-        def mtaJar = ToolUtils.getToolExecutable(mta, this, configuration)
+        def mtaJar = mta.getExecutable(this, configuration)
         def buildTarget = configuration.buildTarget
 
         sh  """#!/bin/bash
