@@ -62,7 +62,6 @@ class FileUtils implements Serializable {
 
     static isFile(script, filePath) {
         if (!filePath) throw new IllegalArgumentException("The parameter 'filePath' can not be null or empty.")
-        validateDirectoryOrFileExists(script, filePath)
         def returnStatus = script.sh returnStatus: true, script: """
                                                                #!/bin/bash --login
 

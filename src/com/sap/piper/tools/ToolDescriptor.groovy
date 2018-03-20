@@ -37,9 +37,11 @@ class ToolDescriptor implements Serializable {
         else if (configuration.containsKey(stepConfigurationKey)) {
             home = configuration.get(stepConfigurationKey)
             if (log) script.echo "$name home '$home' retrieved from configuration."
-        } else {
+        } else if (isOnPath(script, configuration)){
             home = ''
-            if (log) script.echo "$name expected on PATH."
+            if (log) script.echo "$name is on PATH."
+        } else {
+            throw new AbortException(getConfigurationOptions())
         }
         return home
     }
@@ -109,5 +111,29 @@ class ToolDescriptor implements Serializable {
           throw new AbortException("The installed version of $name is ${installedVersion.toString()}. Please install version $version or a compatible version.")
         }
         script.echo "Verification success. $name version ${installedVersion.toString()} is installed."
+    }
+
+    def getConfigurationOptions() {
+        def configOptions = "Please, configure $name home. $name home can be set "
+        if (environmentKey) configOptions += "using the environment variable '$environmentKey', or "
+        if (stepConfigurationKey) configOptions += "using the configuration key '$stepConfigurationKey', or "
+        configOptions += "on PATH."
+        return configOptions
+    }
+
+    def isOnPath(script, configuration) {
+
+        def path
+        try {
+          path = script.sh returnStdout: true, script: """#!/bin/bash --login
+                                                          which $executableName"""
+        } catch(AbortException e) {
+          def exitStatus = script.sh returnStatus: true, script: """#!/bin/bash --login
+                                                                    which $executableName"""
+          if (exitStatus == 1) return false
+          else throw new AbortException("The verification of $name failed. Script execution 'which $executableName' failed. $e.message.")
+        }
+        if (path.trim()) return true
+        else return false
     }
 }

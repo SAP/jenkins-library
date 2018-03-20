@@ -114,6 +114,18 @@ public class MtaBuildTest extends BasePipelineTest {
     @Test
     void mtaJarLocationNotSetTest() {
 
+        helper.registerAllowedMethod('sh', [Map], { Map m -> getVersionWithoutEnvVarsAndNotInCurrentDir(m) })
+
+        thrown.expect(AbortException)
+        thrown.expectMessage("Please, configure SAP Multitarget Application Archive Builder home. SAP Multitarget Application Archive Builder home can be set using the environment variable 'MTA_JAR_LOCATION', or " +
+                             "using the configuration key 'mtaJarLocation'.")
+
+        jsr.step.call(buildTarget: 'NEO')
+    }
+
+    @Test
+    void mtaJarLocationOnCurrentWorkingDirectoryTest() {
+
         jsr.step.call(buildTarget: 'NEO')
 
         assert jscr.shell.find { c -> c.contains(' -jar mta.jar --mtar ')}
@@ -121,7 +133,6 @@ public class MtaBuildTest extends BasePipelineTest {
         assert jlr.log.contains("SAP Multitarget Application Archive Builder expected on current working directory.")
         assert jlr.log.contains("Using SAP Multitarget Application Archive Builder executable 'java -jar mta.jar'.")
     }
-
 
     @Test
     void mtaJarLocationAsParameterTest() {
@@ -315,12 +326,27 @@ public class MtaBuildTest extends BasePipelineTest {
         }
     }
 
+    private getVersionWithoutEnvVarsAndNotInCurrentDir(Map m) {
+
+        if(m.script.contains('java -version')) {
+            return '''openjdk version \"1.8.0_121\"
+                    OpenJDK Runtime Environment (build 1.8.0_121-8u121-b13-1~bpo8+1-b13)
+                    OpenJDK 64-Bit Server VM (build 25.121-b13, mixed mode)'''
+        } else if(m.script.contains('mta.jar -v')) {
+            return '1.0.6'
+        } else {
+            return getNoEnvVarsAndNotInCurrentDir(m)
+        }
+    }
+
     private getEnvVars(Map m) {
 
         if(m.script.contains('JAVA_HOME')) {
             return ''
         } else if(m.script.contains('MTA_JAR_LOCATION')) {
             return '/env/mta'
+        } else if(m.script.contains('which java')) {
+            return '/path/java'
         } else {
             return 0
         }
@@ -332,8 +358,23 @@ public class MtaBuildTest extends BasePipelineTest {
             return ''
         } else if(m.script.contains('MTA_JAR_LOCATION')) {
             return ''
+        } else if(m.script.contains('which java')) {
+            return '/path/java'
         } else {
             return 0
+        }
+    }
+
+    private getNoEnvVarsAndNotInCurrentDir(Map m) {
+
+        if(m.script.contains('JAVA_HOME')) {
+            return ''
+        } else if(m.script.contains('MTA_JAR_LOCATION')) {
+            return ''
+        } else if(m.script.contains('which java')) {
+            return '/path/java'
+        } else {
+            return 1
         }
     }
 }

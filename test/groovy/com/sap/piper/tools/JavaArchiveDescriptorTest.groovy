@@ -176,6 +176,8 @@ class JavaArchiveDescriptorTest extends BasePipelineTest {
             return ''
         } else if(m.script.contains('MTA_JAR_LOCATION')) {
             return ''
+        } else if(m.script.contains('which java')) {
+            return '/path/java'
         } else {
             return 0
         }
@@ -190,7 +192,7 @@ class JavaArchiveDescriptorTest extends BasePipelineTest {
         } else if(m.script.contains('mta.jar -v')) {
             return '1.0.6'
         } else {
-            return ''
+            return getNoEnvVars(m)
         }
     }
 
@@ -199,7 +201,7 @@ class JavaArchiveDescriptorTest extends BasePipelineTest {
         if(m.script.contains('java -version') || m.script.contains('mta.jar -v')) {
             throw new AbortException('script returned exit code 127')
         } else {
-            return ''
+            return getNoEnvVars(m)
         }
     }
 
@@ -208,7 +210,7 @@ class JavaArchiveDescriptorTest extends BasePipelineTest {
         if(m.script.contains('java -version') || m.script.contains('mta.jar -v')) {
             return '1.0.5'
         } else {
-            return ''
+            return getNoEnvVars(m)
         }
     }
 }
