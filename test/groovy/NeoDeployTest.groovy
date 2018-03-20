@@ -161,14 +161,14 @@ class NeoDeployTest extends BasePipelineTest {
     @Test
     void neoHomeNotSetTest() {
 
-        helper.registerAllowedMethod('sh', [Map], { Map m -> getVersionWithoutEnvVars(m) })
+        helper.registerAllowedMethod('sh', [Map], { Map m -> getVersionWithPath(m) })
 
         jsr.step.call(script: [commonPipelineEnvironment: jer.env],
                        archivePath: archiveName
         )
 
         assert jscr.shell.find { c -> c.contains('"neo.sh" deploy-mta') }
-        assert jlr.log.contains('SAP Cloud Platform Console Client expected on PATH.')
+        assert jlr.log.contains('SAP Cloud Platform Console Client is on PATH.')
         assert jlr.log.contains("Using SAP Cloud Platform Console Client executable 'neo.sh'.")
     }
 
@@ -176,7 +176,7 @@ class NeoDeployTest extends BasePipelineTest {
     @Test
     void neoHomeAsParameterTest() {
 
-        helper.registerAllowedMethod('sh', [Map], { Map m -> getVersionWithoutEnvVars(m) })
+        helper.registerAllowedMethod('sh', [Map], { Map m -> getVersionWithPath(m) })
 
         jsr.step.call(script: [commonPipelineEnvironment: jer.env],
                        archivePath: archiveName,
@@ -206,7 +206,7 @@ class NeoDeployTest extends BasePipelineTest {
     @Test
     void neoHomeFromCustomStepConfigurationTest() {
 
-        helper.registerAllowedMethod('sh', [Map], { Map m -> getVersionWithoutEnvVars(m) })
+        helper.registerAllowedMethod('sh', [Map], { Map m -> getVersionWithPath(m) })
 
         jer.env.configuration = [steps:[neoDeploy: [host: 'test.deploy.host.com', account: 'trialuser123', neoHome: '/config/neo']]]
 
@@ -453,7 +453,7 @@ class NeoDeployTest extends BasePipelineTest {
         }
     }
 
-    private getVersionWithoutEnvVars(Map m) {
+    private getVersionWithPath(Map m) {
 
         if(m.script.contains('java -version')) {
             return '''openjdk version \"1.8.0_121\"
@@ -464,7 +464,7 @@ class NeoDeployTest extends BasePipelineTest {
                     SDK version    : 3.39.10
                     Runtime        : neo-java-web'''
         } else {
-            return getNoEnvVars(m)
+            return getPath(m)
         }
     }
 
@@ -474,17 +474,25 @@ class NeoDeployTest extends BasePipelineTest {
             return '/opt/java'
         } else if(m.script.contains('NEO_HOME')) {
             return '/opt/neo'
+        } else if (m.script.contains('which java')) {
+            return ''
+        } else if (m.script.contains('which neo')) {
+            return ''
         } else {
             return 0
         }
     }
 
-    private getNoEnvVars(Map m) {
+    private getPath(Map m) {
 
         if(m.script.contains('JAVA_HOME')) {
             return ''
         } else if(m.script.contains('NEO_HOME')) {
             return ''
+        } else if (m.script.contains('which java')) {
+            return '/path/java'
+        } else if (m.script.contains('which neo')) {
+            return '/path/neo'
         } else {
             return 0
         }
