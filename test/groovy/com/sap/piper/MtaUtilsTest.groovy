@@ -21,7 +21,8 @@ class MtaUtilsTest extends BasePipelineTest {
     private static srcPackageJson = 'test/resources/MtaUtils/package.json'
     private static mtaTemplate = 'resources/template_mta.yml'
     private static data
-    private static targetMtaDescriptor
+    private static String generatedFile
+    private static String targetMtaDescriptor
     private File badJson
     private mtaUtils
 
@@ -55,10 +56,7 @@ class MtaUtilsTest extends BasePipelineTest {
         prepareObjectInterceptors(script)
 
         this.helper.registerAllowedMethod('readJSON', [Map], { Map parameters ->
-            def js = new JsonSlurper()
-            def reader = new BufferedReader(new FileReader(parameters.file))
-            def j = js.parse(reader)
-            return j
+            return new JsonSlurper().parse(new File(parameters.file))
         })
 
         this.helper.registerAllowedMethod('libraryResource', [Map], {  Map parameters ->
@@ -70,12 +68,9 @@ class MtaUtilsTest extends BasePipelineTest {
         })
 
         this.helper.registerAllowedMethod('writeYaml', [Map], { Map parameters ->
-            def generatedFile = new File(parameters.file)
-            generatedFile.text = parameters.data
-            generatedFile.dump()
+            generatedFile = parameters.file
             data = parameters.data
         })
-
 
         this.helper.registerAllowedMethod('fileExists', [String.class], { true })
     }
@@ -182,9 +177,7 @@ class MtaUtilsTest extends BasePipelineTest {
     @Test
     void testFileGenerated() {
         mtaUtils.generateMtaDescriptorFromPackageJson(srcPackageJson, targetMtaDescriptor, 'testApplicationName')
-        def file = new File(targetMtaDescriptor)
-        assert file.exists()
-        assert file.canRead()
+        assert generatedFile.equals(targetMtaDescriptor)
     }
 
 
