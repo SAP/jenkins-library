@@ -10,15 +10,15 @@ def call(Map parameters = [:]) {
     def stepName = 'mtaBuild'
 
     Set parameterKeys = [
+        'applicationName',
         'buildTarget',
-        'mtaJarLocation',
-        'applicationName'
+        'mtaJarLocation'  
     ]
 
     Set stepConfigurationKeys = [
+        'applicationName',
         'buildTarget',
-        'mtaJarLocation',
-        'applicationName'
+        'mtaJarLocation'       
     ]
 
     handlePipelineStepErrors (stepName: stepName, stepParameters: parameters) {
@@ -70,9 +70,13 @@ def call(Map parameters = [:]) {
         def mtaYmlName = "${pwd()}/mta.yaml"
         def applicationName = configuration.applicationName
 
-        if (!fileExists(mtaYmlName) && applicationName) {
-            MtaUtils mtaUtils = new MtaUtils(this)
-            mtaUtils.generateMtaDescriptorFromPackageJson("${pwd()}/package.json", mtaYmlName, applicationName)
+        if (!fileExists(mtaYmlName)) {
+            if (!applicationName) {
+                echo "'applicationName' not provided as parameter - will not try to generate mta.yml file"
+            } else {
+                MtaUtils mtaUtils = new MtaUtils(this)
+                mtaUtils.generateMtaDescriptorFromPackageJson("${pwd()}/package.json", mtaYmlName, applicationName)
+            }
         }
 
         def mtaYaml = readYaml file: "${pwd()}/mta.yaml"
