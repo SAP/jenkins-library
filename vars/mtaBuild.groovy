@@ -12,13 +12,13 @@ def call(Map parameters = [:]) {
     Set parameterKeys = [
         'applicationName',
         'buildTarget',
-        'mtaJarLocation'  
+        'mtaJarLocation'
     ]
 
     Set stepConfigurationKeys = [
         'applicationName',
         'buildTarget',
-        'mtaJarLocation'       
+        'mtaJarLocation'
     ]
 
     handlePipelineStepErrors (stepName: stepName, stepParameters: parameters) {
