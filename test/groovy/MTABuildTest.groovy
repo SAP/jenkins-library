@@ -1,23 +1,21 @@
-import hudson.AbortException
-import org.yaml.snakeyaml.Yaml
-import org.yaml.snakeyaml.parser.ParserException
-
+import org.junit.Before
 import org.junit.BeforeClass
 import org.junit.ClassRule
 import org.junit.Ignore
-import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.ExpectedException
 import org.junit.rules.RuleChain
 import org.junit.rules.TemporaryFolder
+import org.yaml.snakeyaml.parser.ParserException
 
 import com.lesfurets.jenkins.unit.BasePipelineTest
 
+import hudson.AbortException
+import util.JenkinsEnvironmentRule
 import util.JenkinsLoggingRule
 import util.JenkinsShellCallRule
 import util.JenkinsStepRule
-import util.JenkinsEnvironmentRule
 import util.Rules
 
 public class MtaBuildTest extends BasePipelineTest {
@@ -62,6 +60,8 @@ public class MtaBuildTest extends BasePipelineTest {
         mtaYaml.text = defaultMtaYaml()
 
         helper.registerAllowedMethod('pwd', [], { currentDir } )
+		
+        helper.registerAllowedMethod('fileExists', [GString.class], { false })
 
         binding.setVariable('PATH', '/usr/bin')
 
