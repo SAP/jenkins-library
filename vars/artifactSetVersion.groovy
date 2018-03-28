@@ -57,7 +57,7 @@ def call(Map parameters = [:]) {
             configuration.filePath = configuration[buildTool].filePath //use default configuration
 
         def newVersion
-        def artifactVersioning = ArtifactVersioning.getArtifactVersioning(buildTool, this, configuration)
+        def artifactVersioning = ArtifactVersioning.getArtifactVersioning(buildTool, script, configuration)
 
         if(configuration.artifactType == 'appContainer' && configuration.dockerVersionSource == 'appVersion'){
             if (script.commonPipelineEnvironment.getArtifactVersion())
