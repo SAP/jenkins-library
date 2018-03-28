@@ -40,7 +40,7 @@ def call(Map parameters = [:]) {
 
         def script = parameters.script
         if (script == null)
-            script = [commonPipelineEnvironment: commonPipelineEnvironment]
+            script = this
 
         // load default & individual configuration
         Map configuration = ConfigurationHelper
