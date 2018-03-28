@@ -98,7 +98,7 @@ class ArtifactSetVersionTest extends BasePipelineTest {
     void testVersioningCustomGitUserAndEMail() {
         jsr.step.call(script: [commonPipelineEnvironment: jer.env], juStabGitUtils: gitUtils, buildTool: 'maven', gitSshUrl: 'myGitSshUrl', gitUserEMail: 'test@test.com', gitUserName: 'test')
 
-        assertEquals ('git -c user.email="test@test.com" -c user.name "test" commit -m \'update version 1.2.3-20180101010203_testCommitId\'', jscr.shell[7])
+        assertEquals ('git -c user.email="test@test.com" -c user.name="test" commit -m \'update version 1.2.3-20180101010203_testCommitId\'', jscr.shell[7])
     }
 
     @Test
