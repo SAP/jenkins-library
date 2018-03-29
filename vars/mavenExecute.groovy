@@ -10,6 +10,7 @@ def call(Map parameters = [:]) {
 
         Set parameterKeys = [
             'dockerImage',
+            'dockerOptions',
             'globalSettingsFile',
             'projectSettingsFile',
             'pomPath',
@@ -74,7 +75,7 @@ def call(Map parameters = [:]) {
             command += " ${defines}"
         }
 
-        dockerExecute(dockerImage: configuration.dockerImage) { sh command }
+        dockerExecute(dockerImage: configuration.dockerImage, dockerOptions: configuration.dockerOptions) { sh command }
     }
 }
 
