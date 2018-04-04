@@ -90,10 +90,6 @@ Each of the parameters `junit`, `jacoco`, `cobertura` and `jmeter` can be set to
 | failBuildIfNoResultFile | no | `false` | true, false |
 | compareBuildPrevious | no | `true` | true, false |
 | archive | no | `false` | true, false |
-| archive | no | `false` | true, false |
-| archive | no | `false` | true, false |
-| archive | no | `false` | true, false |
-| archive | no | `false` | true, false |
 | allowEmptyResults | no | `true` | true, false |
 
 ## Step configuration
