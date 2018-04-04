@@ -5,7 +5,7 @@ This step can publish test results from various sources.
 
 ## Prerequsites
 
-* **test result files** - To use this step, there must be static check result files available.
+* **test result files** - To use this step, there must be test result files available.
 * installed plugins:
   * [junit](https://plugins.jenkins.io/junit)
   * [jacoco](https://plugins.jenkins.io/jacoco)
