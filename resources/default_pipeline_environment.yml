@@ -84,3 +84,39 @@ steps:
         fail:
           high: '0'
     archive: false
+  testsPublishResults:
+    junit:
+      pattern: '**/target/surefire-reports/*.xml'
+      updateResults: false
+      allowEmptyResults: true
+      archive: false
+      active: false
+    jacoco:
+      pattern: '**/target/*.exec'
+      allowEmptyResults: true
+      archive: false
+      active: false
+    cobertura:
+      pattern: '**/target/coverage/cobertura-coverage.xml'
+      onlyStableBuilds: true
+      allowEmptyResults: true
+      archive: false
+      active: false
+    jmeter:
+      pattern: '**/*.jtl'
+      errorFailedThreshold: 20
+      errorUnstableThreshold: 10
+      errorUnstableResponseTimeThreshold: ''
+      relativeFailedThresholdPositive: 0
+      relativeFailedThresholdNegative: 0
+      relativeUnstableThresholdPositive: 0
+      relativeUnstableThresholdNegative: 0
+      modeOfThreshold: false
+      modeThroughput: false
+      nthBuildNumber: 0
+      configType: 'PRT'
+      failBuildIfNoResultFile: false
+      compareBuildPrevious: true
+      allowEmptyResults: true
+      archive: false
+      active: false
