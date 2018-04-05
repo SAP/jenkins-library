@@ -1,15 +1,19 @@
 import com.cloudbees.groovy.cps.NonCPS
 
-import com.sap.piper.ConfigurationLoader
+import com.sap.piper.ConfigurationHelper
 import com.sap.piper.ConfigurationMerger
 import com.sap.piper.MapUtils
 
 import groovy.transform.Field
 
-@Field def STEP_NAME = 'testsPublishResults'
 @Field List TOOLS = [
     'junit','jacoco','cobertura','jmeter'
 ]
+
+@Field def STEP_NAME = 'testsPublishResults'
+@Field Set STEP_CONFIG_KEYS = TOOLS
+@Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
+
 /**
  * testResultsPublish
  *
@@ -21,16 +25,14 @@ def call(Map parameters = [:]) {
         def script = parameters.script
         if (script == null)
             script = [commonPipelineEnvironment: commonPipelineEnvironment]
-        prepareDefaultValues script: script
         prepare(parameters)
 
-        final Map stepDefaults = ConfigurationLoader.defaultStepConfiguration(script, STEP_NAME)
-        final Map stepConfiguration = ConfigurationLoader.stepConfiguration(script, STEP_NAME)
-        List configurationKeys = TOOLS
-        Map configuration = ConfigurationMerger.merge(
-            parameters, configurationKeys,
-            stepConfiguration, configurationKeys,
-            stepDefaults)
+        // load default & individual configuration
+        Map configuration = ConfigurationHelper
+            .loadStepDefaults(this)
+            .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS)
+            .mixin(parameters, PARAMETER_KEYS)
+            .use()
 
         // UNIT TESTS
         publishJUnitReport(configuration.get('junit'))
