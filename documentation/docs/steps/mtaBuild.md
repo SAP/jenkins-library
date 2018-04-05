@@ -9,15 +9,24 @@ Executes the SAP MTA Archive Builder to create an mtar archive of the applicatio
 * **NodeJS installed** - the MTA Builder uses `npm` to download node module dependencies such as `grunt`.
 
 ## Parameters
-| parameter        | mandatory | default                           | possible values    |
-| -----------------|-----------|-----------------------------------|--------------------|
-| `script`         | yes       |                                   |                    |
-| `buildTarget`    | yes       |                                   | 'CF', 'NEO', 'XSA' |
-| `mtaJarLocation` | no        |                                   |                    |
+| parameter        | mandatory | default                                                | possible values    |
+| -----------------|-----------|--------------------------------------------------------|--------------------|
+| `script`         | yes       |                                                        |                    |
+| `buildTarget`    | yes       | `'NEO'`                                                | 'CF', 'NEO', 'XSA' |
+| `mtaJarLocation` | no        |                                                        |                    |
+| `applicationName`| no        |                                                        |                    |
 
 * `script` - The common script environment of the Jenkinsfile running. Typically the reference to the script calling the pipeline step is provided with the `this` parameter, as in `script: this`. This allows the function to access the [`commonPipelineEnvironment`](commonPipelineEnvironment.md) for retrieving, for example, configuration parameters.
 * `buildTarget` - The target platform to which the mtar can be deployed.
-* `mtaJarLocation` - The path of the `mta.jar` file. If no parameter is provided, the path is retrieved from the Jenkins environment variables using `env.MTA_JAR_LOCATION`. If the Jenkins environment variable is not set it is assumed that `mta.jar` is located in the current working directory.
+* `mtaJarLocation` - The path of the `mta.jar` file. If no parameter is provided, neither at the level of the method call nor via step configuration, the path is retrieved from the Jenkins environment variables using `env.MTA_JAR_LOCATION`. If the Jenkins environment variable is not set it is assumed that `mta.jar` is located in the current working directory.
+* `applicationName` - The name of the application which is being built. If the parameter has been provided and no `mta.yaml` exists, the `mta.yaml` will be automatically generated using this parameter and the information (`name` and `version`) from `package.json` before the actual build starts.
+
+## Step configuration
+The following parameters can also be specified as step parameters using the global configuration file:
+
+* `buildTarget`
+* `mtaJarLocation`
+* `applicationName`
 
 ## Return value
 The file name of the resulting archive is returned with this step. The file name is extracted from the key `ID` defined in `mta.yaml`.
@@ -37,3 +46,4 @@ dir('/path/to/FioriApp'){
   mtarFileName = mtaBuild script:this, buildTarget: 'NEO'
 }
 ```
+

@@ -1,32 +1,34 @@
 #!groovy
 import com.lesfurets.jenkins.unit.BasePipelineTest
-import com.sap.piper.DefaultValueCache
 import com.sap.piper.GitUtils
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.ExpectedException
 import org.junit.rules.RuleChain
+import util.JenkinsEnvironmentRule
 import util.JenkinsLoggingRule
 import util.JenkinsReadMavenPomRule
 import util.JenkinsShellCallRule
+import util.JenkinsStepRule
 import util.JenkinsWriteFileRule
 import util.Rules
 
 import static org.junit.Assert.assertEquals
 
 class ArtifactSetVersionTest extends BasePipelineTest {
+    Map dockerParameters
+    def mavenExecuteScript
 
-    Script artifactSetVersionScript
-
-    def cpe
     def gitUtils
     def sshAgentList = []
 
-    ExpectedException thrown = ExpectedException.none()
-    JenkinsLoggingRule jlr = new JenkinsLoggingRule(this)
-    JenkinsShellCallRule jscr = new JenkinsShellCallRule(this)
-    JenkinsWriteFileRule jwfr = new JenkinsWriteFileRule(this)
+    private ExpectedException thrown = ExpectedException.none()
+    private JenkinsLoggingRule jlr = new JenkinsLoggingRule(this)
+    private JenkinsShellCallRule jscr = new JenkinsShellCallRule(this)
+    private JenkinsWriteFileRule jwfr = new JenkinsWriteFileRule(this)
+    private JenkinsStepRule jsr = new JenkinsStepRule(this)
+    private JenkinsEnvironmentRule jer = new JenkinsEnvironmentRule(this)
 
     @Rule
     public RuleChain ruleChain = Rules
@@ -36,9 +38,20 @@ class ArtifactSetVersionTest extends BasePipelineTest {
         .around(jscr)
         .around(new JenkinsReadMavenPomRule(this, 'test/resources/MavenArtifactVersioning'))
         .around(jwfr)
+        .around(jsr)
+        .around(jer)
 
     @Before
     void init() throws Throwable {
+        dockerParameters = [:]
+
+        helper.registerAllowedMethod("dockerExecute", [Map.class, Closure.class],
+            { parameters, closure ->
+                dockerParameters = parameters
+                closure()
+            })
+
+        mavenExecuteScript = loadScript("mavenExecute.groovy").mavenExecute
 
         helper.registerAllowedMethod("sshagent", [List.class, Closure.class], { list, closure ->
             sshAgentList = list
@@ -46,62 +59,72 @@ class ArtifactSetVersionTest extends BasePipelineTest {
         })
 
         jscr.setReturnValue('git rev-parse HEAD', 'testCommitId')
-        jscr.setReturnValue("date +'%Y%m%d%H%M%S'", '20180101010203')
+        jscr.setReturnValue("date --universal +'%Y%m%d%H%M%S'", '20180101010203')
         jscr.setReturnValue('git diff --quiet HEAD', 0)
 
-        cpe = loadScript('commonPipelineEnvironment.groovy').commonPipelineEnvironment
-        artifactSetVersionScript = loadScript("artifactSetVersion.groovy")
+        binding.setVariable('Jenkins', [instance: [pluginManager: [plugins: [new DockerExecuteTest.PluginMock()]]]])
+
 
         gitUtils = new GitUtils()
         prepareObjectInterceptors(gitUtils)
+
+        this.helper.registerAllowedMethod('fileExists', [String.class], {true})
     }
 
     @Test
     void testVersioning() {
-        artifactSetVersionScript.call(script: [commonPipelineEnvironment: cpe], juStabGitUtils: gitUtils, buildTool: 'maven', gitSshUrl: 'myGitSshUrl')
+        jsr.step.call(script: [commonPipelineEnvironment: jer.env], juStabGitUtils: gitUtils, buildTool: 'maven', gitSshUrl: 'myGitSshUrl')
 
-        assertEquals('1.2.3-20180101010203_testCommitId', cpe.getArtifactVersion())
-        assertEquals('testCommitId', cpe.getGitCommitId())
+        assertEquals('1.2.3-20180101010203_testCommitId', jer.env.getArtifactVersion())
+        assertEquals('testCommitId', jer.env.getGitCommitId())
 
-        assertEquals('mvn versions:set -DnewVersion=1.2.3-20180101010203_testCommitId --file pom.xml', jscr.shell[3])
-        assertEquals('git add .', jscr.shell[4])
-        assertEquals ("git commit -m 'update version 1.2.3-20180101010203_testCommitId'", jscr.shell[5])
-        assertEquals ("git remote set-url origin myGitSshUrl", jscr.shell[6])
-        assertEquals ("git tag build_1.2.3-20180101010203_testCommitId", jscr.shell[7])
-        assertEquals ("git push origin build_1.2.3-20180101010203_testCommitId", jscr.shell[8])
+        assertEquals('mvn --file \'pom.xml\' versions:set -DnewVersion=1.2.3-20180101010203_testCommitId', jscr.shell[5])
+        assertEquals('git add .', jscr.shell[6])
+        assertEquals ("git commit -m 'update version 1.2.3-20180101010203_testCommitId'", jscr.shell[7])
+        assertEquals ("git remote set-url origin myGitSshUrl", jscr.shell[8])
+        assertEquals ("git tag build_1.2.3-20180101010203_testCommitId", jscr.shell[9])
+        assertEquals ("git push origin build_1.2.3-20180101010203_testCommitId", jscr.shell[10])
+    }
+
+    @Test
+    void testVersioningWithoutCommit() {
+        jsr.step.call(script: [commonPipelineEnvironment: jer.env], juStabGitUtils: gitUtils, buildTool: 'maven', commitVersion: false)
+
+        assertEquals('1.2.3-20180101010203_testCommitId', jer.env.getArtifactVersion())
+        assertEquals('mvn --file \'pom.xml\' versions:set -DnewVersion=1.2.3-20180101010203_testCommitId', jscr.shell[5])
     }
 
     @Test
     void testVersioningCustomGitUserAndEMail() {
-        artifactSetVersionScript.call(script: [commonPipelineEnvironment: cpe], juStabGitUtils: gitUtils, buildTool: 'maven', gitSshUrl: 'myGitSshUrl', gitUserEMail: 'test@test.com', gitUserName: 'test')
+        jsr.step.call(script: [commonPipelineEnvironment: jer.env], juStabGitUtils: gitUtils, buildTool: 'maven', gitSshUrl: 'myGitSshUrl', gitUserEMail: 'test@test.com', gitUserName: 'test')
 
-        assertEquals ('git -c user.email="test@test.com" -c user.name "test" commit -m \'update version 1.2.3-20180101010203_testCommitId\'', jscr.shell[5])
+        assertEquals ('git -c user.email="test@test.com" -c user.name="test" commit -m \'update version 1.2.3-20180101010203_testCommitId\'', jscr.shell[7])
     }
 
     @Test
     void testVersioningWithTimestamp() {
-        artifactSetVersionScript.call(script: [commonPipelineEnvironment: cpe], juStabGitUtils: gitUtils, buildTool: 'maven', timestamp: '2018')
-        assertEquals('1.2.3-2018_testCommitId', cpe.getArtifactVersion())
+        jsr.step.call(script: [commonPipelineEnvironment: jer.env], juStabGitUtils: gitUtils, buildTool: 'maven', timestamp: '2018')
+        assertEquals('1.2.3-2018_testCommitId', jer.env.getArtifactVersion())
     }
 
     @Test
     void testVersioningNoBuildTool() {
         thrown.expect(Exception)
         thrown.expectMessage('ERROR - NO VALUE AVAILABLE FOR buildTool')
-        artifactSetVersionScript.call(script: [commonPipelineEnvironment: cpe], juStabGitUtils: gitUtils)
+        jsr.step.call(script: [commonPipelineEnvironment: jer.env], juStabGitUtils: gitUtils)
     }
 
     @Test
     void testVersioningWithCustomTemplate() {
-        artifactSetVersionScript.call(script: [commonPipelineEnvironment: cpe], juStabGitUtils: gitUtils, buildTool: 'maven', versioningTemplate: '${version}-xyz')
-        assertEquals('1.2.3-xyz', cpe.getArtifactVersion())
+        jsr.step.call(script: [commonPipelineEnvironment: jer.env], juStabGitUtils: gitUtils, buildTool: 'maven', versioningTemplate: '${version}-xyz')
+        assertEquals('1.2.3-xyz', jer.env.getArtifactVersion())
     }
 
     @Test
     void testVersioningWithTypeAppContainer() {
-        cpe.setArtifactVersion('1.2.3-xyz')
-        artifactSetVersionScript.call(script: [commonPipelineEnvironment: cpe], juStabGitUtils: gitUtils, buildTool: 'docker', artifactType: 'appContainer', dockerVersionSource: 'appVersion')
-        assertEquals('1.2.3-xyz', cpe.getArtifactVersion())
+        jer.env.setArtifactVersion('1.2.3-xyz')
+        jsr.step.call(script: [commonPipelineEnvironment: jer.env], juStabGitUtils: gitUtils, buildTool: 'docker', artifactType: 'appContainer', dockerVersionSource: 'appVersion')
+        assertEquals('1.2.3-xyz', jer.env.getArtifactVersion())
         assertEquals('1.2.3-xyz', jwfr.files['VERSION'])
     }
 
@@ -110,6 +133,5 @@ class ArtifactSetVersionTest extends BasePipelineTest {
         object.metaClass.static.invokeMethod = helper.getMethodInterceptor()
         object.metaClass.methodMissing = helper.getMethodMissingInterceptor()
     }
-
 
 }

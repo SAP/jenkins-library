@@ -1,81 +1,114 @@
-import hudson.AbortException
-import org.yaml.snakeyaml.Yaml
-import org.yaml.snakeyaml.parser.ParserException
 import org.junit.Before
+import org.junit.BeforeClass
+import org.junit.ClassRule
+import org.junit.Ignore
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.ExpectedException
 import org.junit.rules.RuleChain
 import org.junit.rules.TemporaryFolder
+import org.yaml.snakeyaml.parser.ParserException
 
 import com.lesfurets.jenkins.unit.BasePipelineTest
 
+import hudson.AbortException
+import util.JenkinsEnvironmentRule
 import util.JenkinsLoggingRule
 import util.JenkinsShellCallRule
+import util.JenkinsStepRule
 import util.Rules
 
-public class MTABuildTest extends BasePipelineTest {
+public class MtaBuildTest extends BasePipelineTest {
+
+    def toolMtaValidateCalled = false
+    def toolJavaValidateCalled = false
+
+    @ClassRule
+    public static TemporaryFolder tmp = new TemporaryFolder()
 
     private ExpectedException thrown = new ExpectedException()
-    private TemporaryFolder tmp = new TemporaryFolder()
     private JenkinsLoggingRule jlr = new JenkinsLoggingRule(this)
     private JenkinsShellCallRule jscr = new JenkinsShellCallRule(this)
+    private JenkinsStepRule jsr = new JenkinsStepRule(this)
+    private JenkinsEnvironmentRule jer = new JenkinsEnvironmentRule(this)
 
     @Rule
-    public RuleChain ruleChain = Rules.getCommonRules(this)
-            .around(thrown)
-            .around(tmp)
-            .around(jlr)
-            .around(jscr)
+    public RuleChain ruleChain = Rules
+        .getCommonRules(this)
+        .around(thrown)
+        .around(jlr)
+        .around(jscr)
+        .around(jsr)
+        .around(jer)
 
+    private static currentDir
+    private static newDir
+    private static mtaYaml
 
-    def currentDir
-    def mtaYaml
+    @BeforeClass
+    static void createTestFiles() {
 
-    def mtaBuildScript
-    def cpe
+        currentDir = "${tmp.getRoot()}"
+        mtaYaml = tmp.newFile('mta.yaml')
+        newDir = "$currentDir/newDir"
+        tmp.newFolder('newDir')
+        tmp.newFile('newDir/mta.yaml') << defaultMtaYaml()
+    }
 
     @Before
     void init() {
-
-        currentDir = tmp.newFolder().toURI().getPath()[0..-2] //omit final '/'
-        mtaYaml = new File("$currentDir/mta.yaml")
-        mtaYaml << defaultMtaYaml()
+        mtaYaml.text = defaultMtaYaml()
 
         helper.registerAllowedMethod('pwd', [], { currentDir } )
+		
+        helper.registerAllowedMethod('fileExists', [GString.class], { false })
 
         binding.setVariable('PATH', '/usr/bin')
 
-        mtaBuildScript = loadScript('mtaBuild.groovy').mtaBuild
-        cpe = loadScript('commonPipelineEnvironment.groovy').commonPipelineEnvironment
+        //
+        // needs to be after loading the scripts. Here we have a different behaviour
+        // for usual steps and for steps contained in the shared lib itself.
+        //
+        // toolValidate mocked here since we are not interested in testing
+        // toolValidate here. This is expected to be done in a test class for
+        // toolValidate.
+        //
+        helper.registerAllowedMethod('toolValidate', [Map], { m ->
+
+                                                              if(m.tool == 'mta')
+                                                                  toolMtaValidateCalled = true
+
+                                                              if(m.tool == 'java')
+                                                                  toolJavaValidateCalled = true
+                                                            })
     }
 
 
     @Test
     void environmentPathTest() {
 
-        mtaBuildScript.call(buildTarget: 'NEO')
+        jsr.step.call(buildTarget: 'NEO')
 
-        assert jscr.shell[1].contains('PATH=./node_modules/.bin:/usr/bin')
+        assert jscr.shell.find { c -> c.contains('PATH=./node_modules/.bin:/usr/bin')}
     }
 
 
     @Test
     void sedTest() {
 
-        mtaBuildScript.call(buildTarget: 'NEO')
+        jsr.step.call(buildTarget: 'NEO')
 
-        assert jscr.shell[0] =~ /sed -ie "s\/\\\$\{timestamp\}\/`date \+%Y%m%d%H%M%S`\/g" ".*\/mta.yaml"$/
+        assert jscr.shell.find { c -> c =~ /sed -ie "s\/\\\$\{timestamp\}\/`date \+%Y%m%d%H%M%S`\/g" ".*\/mta.yaml"$/}
     }
 
 
     @Test
     void mtarFilePathFromCommonPipelineEnviromentTest() {
 
-        mtaBuildScript.call(script: [commonPipelineEnvironment: cpe],
+        jsr.step.call(script: [commonPipelineEnvironment: jer.env],
                       buildTarget: 'NEO')
 
-        def mtarFilePath = cpe.getMtarFilePath()
+        def mtarFilePath = jer.env.getMtarFilePath()
 
         assert mtarFilePath == "$currentDir/com.mycompany.northwind.mtar"
     }
@@ -84,29 +117,22 @@ public class MTABuildTest extends BasePipelineTest {
     @Test
     void mtaBuildWithSurroundingDirTest() {
 
-        def newDirName = 'newDir'
-        def newDirPath = "$currentDir/$newDirName"
-        def newDir = new File(newDirPath)
+        helper.registerAllowedMethod('pwd', [], { newDir } )
 
-        newDir.mkdirs()
-        new File(newDir, 'mta.yaml') << defaultMtaYaml()
+        def mtarFilePath = jsr.step.call(buildTarget: 'NEO')
 
-        helper.registerAllowedMethod('pwd', [], { newDirPath } )
+        assert jscr.shell.find { c -> c =~ /sed -ie "s\/\\\$\{timestamp\}\/`date \+%Y%m%d%H%M%S`\/g" ".*\/newDir\/mta.yaml"$/}
 
-        def mtarFilePath = mtaBuildScript.call(buildTarget: 'NEO')
-
-        assert jscr.shell[0] =~ /sed -ie "s\/\\\$\{timestamp\}\/`date \+%Y%m%d%H%M%S`\/g" ".*\/newDir\/mta.yaml"$/
-
-        assert mtarFilePath == "$currentDir/$newDirName/com.mycompany.northwind.mtar"
+        assert mtarFilePath == "$newDir/com.mycompany.northwind.mtar"
     }
 
 
     @Test
     void mtaJarLocationNotSetTest() {
 
-        mtaBuildScript.call(buildTarget: 'NEO')
+        jsr.step.call(buildTarget: 'NEO')
 
-        assert jscr.shell[1].contains(' -jar mta.jar --mtar ')
+        assert jscr.shell.find { c -> c.contains(' -jar mta.jar --mtar ')}
 
         assert jlr.log.contains('[mtaBuild] Using MTA JAR from current working directory.')
     }
@@ -115,9 +141,9 @@ public class MTABuildTest extends BasePipelineTest {
     @Test
     void mtaJarLocationAsParameterTest() {
 
-        mtaBuildScript.call(mtaJarLocation: '/mylocation/mta', buildTarget: 'NEO')
+        jsr.step.call(mtaJarLocation: '/mylocation/mta', buildTarget: 'NEO')
 
-        assert jscr.shell[1].contains(' -jar /mylocation/mta/mta.jar --mtar ')
+        assert jscr.shell.find { c -> c.contains(' -jar /mylocation/mta/mta.jar --mtar ')}
 
         assert jlr.log.contains('[mtaBuild] MTA JAR "/mylocation/mta/mta.jar" retrieved from configuration.')
     }
@@ -129,7 +155,7 @@ public class MTABuildTest extends BasePipelineTest {
         mtaYaml.delete()
         thrown.expect(FileNotFoundException)
 
-        mtaBuildScript.call(buildTarget: 'NEO')
+        jsr.step.call(buildTarget: 'NEO')
     }
 
 
@@ -141,7 +167,7 @@ public class MTABuildTest extends BasePipelineTest {
 
         mtaYaml.text = badMtaYaml()
 
-        mtaBuildScript.call(buildTarget: 'NEO')
+        jsr.step.call(buildTarget: 'NEO')
     }
 
 
@@ -153,7 +179,7 @@ public class MTABuildTest extends BasePipelineTest {
 
         mtaYaml.text = noIdMtaYaml()
 
-        mtaBuildScript.call(buildTarget: 'NEO')
+        jsr.step.call(buildTarget: 'NEO')
     }
 
 
@@ -163,9 +189,9 @@ public class MTABuildTest extends BasePipelineTest {
         binding.setVariable('env', [:])
         binding.getVariable('env')['MTA_JAR_LOCATION'] = '/env/mta'
 
-        mtaBuildScript.call(buildTarget: 'NEO')
+        jsr.step.call(buildTarget: 'NEO')
 
-        assert jscr.shell[1].contains('-jar /env/mta/mta.jar --mtar')
+        assert jscr.shell.find { c -> c.contains('-jar /env/mta/mta.jar --mtar')}
         assert jlr.log.contains('[mtaBuild] MTA JAR "/env/mta/mta.jar" retrieved from environment.')
     }
 
@@ -173,48 +199,83 @@ public class MTABuildTest extends BasePipelineTest {
     @Test
     void mtaJarLocationFromCustomStepConfigurationTest() {
 
-        cpe.configuration = [general:[mtaJarLocation: '/general/mta']]
+        jer.env.configuration = [steps:[mtaBuild:[mtaJarLocation: '/step/mta']]]
 
-        mtaBuildScript.call(script: [commonPipelineEnvironment: cpe],
+        jsr.step.call(script: [commonPipelineEnvironment: jer.env],
                       buildTarget: 'NEO')
 
-        assert jscr.shell[1].contains('-jar /general/mta/mta.jar --mtar')
-        assert jlr.log.contains('[mtaBuild] MTA JAR "/general/mta/mta.jar" retrieved from configuration.')
+        assert jscr.shell.find(){ c -> c.contains('-jar /step/mta/mta.jar --mtar')}
+        assert jlr.log.contains('[mtaBuild] MTA JAR "/step/mta/mta.jar" retrieved from configuration.')
     }
 
 
     @Test
     void buildTargetFromParametersTest() {
 
-        mtaBuildScript.call(buildTarget: 'NEO')
+        jsr.step.call(buildTarget: 'NEO')
 
-        assert jscr.shell[1].contains('java -jar mta.jar --mtar com.mycompany.northwind.mtar --build-target=NEO build')
+        assert jscr.shell.find { c -> c.contains('java -jar mta.jar --mtar com.mycompany.northwind.mtar --build-target=NEO build')}
     }
 
 
     @Test
     void buildTargetFromCustomStepConfigurationTest() {
 
-        cpe.configuration = [steps:[mtaBuild:[buildTarget: 'NEO']]]
+        jer.env.configuration = [steps:[mtaBuild:[buildTarget: 'NEO']]]
 
-        mtaBuildScript.call(script: [commonPipelineEnvironment: cpe])
+        jsr.step.call(script: [commonPipelineEnvironment: jer.env])
 
-        assert jscr.shell[1].contains('java -jar mta.jar --mtar com.mycompany.northwind.mtar --build-target=NEO build')
+        assert jscr.shell.find(){ c -> c.contains('java -jar mta.jar --mtar com.mycompany.northwind.mtar --build-target=NEO build')}
     }
 
 
     @Test
     void buildTargetFromDefaultStepConfigurationTest() {
 
-        cpe.defaultConfiguration = [steps:[mtaBuild:[buildTarget: 'NEO']]]
+        jer.env.defaultConfiguration = [steps:[mtaBuild:[buildTarget: 'NEO']]]
 
-        mtaBuildScript.call(script: [commonPipelineEnvironment: cpe])
+        jsr.step.call(script: [commonPipelineEnvironment: jer.env])
 
-        assert jscr.shell[1].contains('java -jar mta.jar --mtar com.mycompany.northwind.mtar --build-target=NEO build')
+        assert jscr.shell.find { c -> c.contains('java -jar mta.jar --mtar com.mycompany.northwind.mtar --build-target=NEO build')}
     }
 
+    @Ignore('Tool validation disabled since it does not work properly in conjunction with slaves.')
+    @Test
+    void skipValidationInCaseMtarJarFileIsUsedFromWorkingDir() {
+        jscr.setReturnValue('ls mta.jar', 0)
+        jsr.step.call(script: [commonPipelineEnvironment: jer.env])
+        assert !toolMtaValidateCalled
+    }
 
-    private defaultMtaYaml() {
+    @Ignore('Tool validation disabled since it does not work properly in conjunction with slaves.')
+    @Test
+    void performValidationInCaseMtarJarFileIsNotUsedFromWorkingDir() {
+        jscr.setReturnValue('ls mta.jar', 1)
+        jsr.step.call(script: [commonPipelineEnvironment: jer.env])
+        assert toolMtaValidateCalled
+    }
+
+    @Ignore('Tool validation disabled since it does not work properly in conjunction with slaves.')
+    @Test
+    void toolJavaValidateCalled() {
+
+        jsr.step.call(buildTarget: 'NEO')
+
+        assert toolJavaValidateCalled
+    }
+
+    @Ignore('Tool validation disabled since it does not work properly in conjunction with slaves.')
+    @Test
+    void toolValidateNotCalledWhenJavaHomeIsUnsetButJavaIsInPath() {
+
+        jscr.setReturnValue('which java', 0)
+        jsr.step.call(buildTarget: 'NEO')
+
+        assert !toolJavaValidateCalled
+        assert jlr.log.contains('Tool validation (java) skipped. JAVA_HOME not set, but java executable in path.')
+    }
+
+    private static defaultMtaYaml() {
         return  '''
                 _schema-version: "2.0.0"
                 ID: "com.mycompany.northwind"

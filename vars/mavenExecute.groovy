@@ -7,12 +7,10 @@ def call(Map parameters = [:]) {
         final script = parameters.script
 
         prepareDefaultValues script: script
-        final Map stepDefaults = ConfigurationLoader.defaultStepConfiguration(script, 'mavenExecute')
 
-        final Map stepConfiguration = ConfigurationLoader.stepConfiguration(script, 'mavenExecute')
-
-        List parameterKeys = [
+        Set parameterKeys = [
             'dockerImage',
+            'dockerOptions',
             'globalSettingsFile',
             'projectSettingsFile',
             'pomPath',
@@ -21,7 +19,7 @@ def call(Map parameters = [:]) {
             'm2Path',
             'defines'
         ]
-        List stepConfigurationKeys = [
+        Set stepConfigurationKeys = [
             'dockerImage',
             'globalSettingsFile',
             'projectSettingsFile',
@@ -29,7 +27,9 @@ def call(Map parameters = [:]) {
             'm2Path'
         ]
 
-        Map configuration = ConfigurationMerger.merge(parameters, parameterKeys, stepConfiguration, stepConfigurationKeys, stepDefaults)
+        Map configuration = ConfigurationMerger.merge(script, 'mavenExecute',
+                                                      parameters, parameterKeys,
+                                                      stepConfigurationKeys)
 
         String command = "mvn"
 
@@ -75,7 +75,7 @@ def call(Map parameters = [:]) {
             command += " ${defines}"
         }
 
-        dockerExecute(dockerImage: configuration.dockerImage) { sh command }
+        dockerExecute(dockerImage: configuration.dockerImage, dockerOptions: configuration.dockerOptions) { sh command }
     }
 }
 

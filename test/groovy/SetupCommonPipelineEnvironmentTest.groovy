@@ -7,24 +7,26 @@ import org.yaml.snakeyaml.Yaml
 import com.lesfurets.jenkins.unit.BasePipelineTest
 
 import util.Rules
+import util.JenkinsStepRule
+import util.JenkinsEnvironmentRule
 
 import static org.junit.Assert.assertEquals
 import static org.junit.Assert.assertNotNull
 
 class SetupCommonPipelineEnvironmentTest extends BasePipelineTest {
-
     def usedConfigFile
 
-    def setupCommonPipelineEnvironmentScript
-
-    def commonPipelineEnvironment
+    private JenkinsStepRule jsr = new JenkinsStepRule(this)
+    private JenkinsEnvironmentRule jer = new JenkinsEnvironmentRule(this)
 
     @Rule
-    public RuleChain rules = Rules.getCommonRules(this)
+    public RuleChain rules = Rules
+        .getCommonRules(this)
+        .around(jsr)
+        .around(jer)
 
     @Before
     void init() {
-
         def examplePipelineConfig = new File('test/resources/test_pipeline_config.yml').text
 
         helper.registerAllowedMethod("readYaml", [Map], { Map parameters ->
@@ -32,26 +34,21 @@ class SetupCommonPipelineEnvironmentTest extends BasePipelineTest {
             if(parameters.text) {
                 return yamlParser.load(parameters.text)
             }
-
             usedConfigFile = parameters.file
             return yamlParser.load(examplePipelineConfig)
         })
-
         helper.registerAllowedMethod("fileExists", [String], { String path ->
             return path.endsWith('.pipeline/config.yml')
         })
-
-        setupCommonPipelineEnvironmentScript = loadScript("setupCommonPipelineEnvironment.groovy").setupCommonPipelineEnvironment
-        commonPipelineEnvironment = loadScript('commonPipelineEnvironment.groovy').commonPipelineEnvironment
     }
 
     @Test
     void testIsConfigurationAvailable() throws Exception {
-        setupCommonPipelineEnvironmentScript.call(script: [commonPipelineEnvironment: commonPipelineEnvironment])
+        jsr.step.call(script: [commonPipelineEnvironment: jer.env])
 
         assertEquals('.pipeline/config.yml', usedConfigFile)
-        assertNotNull(commonPipelineEnvironment.configuration)
-        assertEquals('develop', commonPipelineEnvironment.configuration.general.productiveBranch)
-        assertEquals('my-maven-docker', commonPipelineEnvironment.configuration.steps.mavenExecute.dockerImage)
+        assertNotNull(jer.env.configuration)
+        assertEquals('develop', jer.env.configuration.general.productiveBranch)
+        assertEquals('my-maven-docker', jer.env.configuration.steps.mavenExecute.dockerImage)
     }
 }
