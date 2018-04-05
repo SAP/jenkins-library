@@ -13,6 +13,6 @@ class MavenArtifactVersioning extends ArtifactVersioning {
 
     @Override
     def setVersion(version) {
-        script.sh "mvn versions:set -DnewVersion=${version} --file ${configuration.filePath}"
+        script.mavenExecute script: script, goals: 'versions:set', defines: "-DnewVersion=${version}", pomPath: configuration.filePath
     }
 }

@@ -66,4 +66,13 @@ class MavenExecuteTest extends BasePipelineTest {
         String mvnCommand = "mvn --global-settings 'globalSettingsFile.xml' -Dmaven.repo.local='m2Path' --settings 'projectSettingsFile.xml' --file 'pom.xml' -o clean install -Dmaven.tests.skip=true"
         assertTrue(jscr.shell.contains(mvnCommand))
     }
+
+    @Test
+    void testMavenCommandForwardsDockerOptions() throws Exception {
+
+        mavenExecuteScript.call(script: [commonPipelineEnvironment: cpe], goals: 'clean install')
+        assertEquals('maven:3.5-jdk-7', dockerParameters.dockerImage)
+
+        assert jscr.shell[0] == 'mvn clean install'
+    }
 }

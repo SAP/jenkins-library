@@ -20,6 +20,9 @@ Initializes the [`commonPipelineEnvironment`](commonPipelineEnvironment.md), whi
 * `script` - The reference to the pipeline script (Jenkinsfile). Normally `this` needs to be provided.
 * `configFile` - Property file defining project specific settings.
 
+## Step configuration
+none
+
 ## Return value
 none
 

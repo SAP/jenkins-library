@@ -6,7 +6,7 @@ import com.sap.piper.MapUtils
 
 class ConfigurationMerger {
     @NonCPS
-    def static merge(Map configs, List configKeys, Map defaults) {
+    def static merge(Map configs, Set configKeys, Map defaults) {
         Map filteredConfig = configKeys?configs.subMap(configKeys):configs
         Map merged = [:]
 
@@ -23,8 +23,8 @@ class ConfigurationMerger {
 
     @NonCPS
     def static merge(
-        Map parameters, List parameterKeys,
-        Map configuration, List configurationKeys,
+        Map parameters, Set parameterKeys,
+        Map configuration, Set configurationKeys,
         Map defaults=[:]
     ){
         Map merged
@@ -34,29 +34,36 @@ class ConfigurationMerger {
     }
 
     @NonCPS
-    def static mergeWithPipelineData(Map parameters, List parameterKeys,
+    def static merge(
+        def script, def stepName,
+        Map parameters, Set parameterKeys,
+        Set stepConfigurationKeys
+    ) {
+          merge(script, stepName, parameters, parameterKeys, [:], stepConfigurationKeys)
+    }
+
+    @NonCPS
+    def static merge(
+        def script, def stepName,
+        Map parameters, Set parameterKeys,
+        Map pipelineData,
+        Set stepConfigurationKeys
+    ) {
+        Map stepDefaults = ConfigurationLoader.defaultStepConfiguration(script, stepName)
+        Map stepConfiguration = ConfigurationLoader.stepConfiguration(script, stepName)
+
+        mergeWithPipelineData(parameters, parameterKeys, pipelineData, stepConfiguration, stepConfigurationKeys, stepDefaults)
+    }
+
+    @NonCPS
+    def static mergeWithPipelineData(Map parameters, Set parameterKeys,
                             Map pipelineDataMap,
-                            Map configurationMap, List configurationKeys,
+                            Map configurationMap, Set configurationKeys,
                             Map stepDefaults=[:]
     ){
         Map merged
         merged = merge(configurationMap, configurationKeys, stepDefaults)
         merged = merge(pipelineDataMap, null, merged)
-        merged = merge(parameters, parameterKeys, merged)
-
-        return merged
-    }
-
-    @NonCPS
-    def static merge(
-        Map parameters, List parameterKeys,
-        Map generalConfigurationMap, List generalConfigurationKeys, Map generalConfigurationDefaults,
-        Map stepConfigurationMap, List stepConfigurationKeys, Map stepConfigurationDefaults=[:]
-    ){
-        Map merged
-        Map mergedStepConfiguration = merge(stepConfigurationMap, stepConfigurationKeys, stepConfigurationDefaults)
-        Map mergedGeneralConfiguration = merge(generalConfigurationMap, generalConfigurationKeys, generalConfigurationDefaults)
-        merged = merge(mergedGeneralConfiguration, null, mergedStepConfiguration)
         merged = merge(parameters, parameterKeys, merged)
 
         return merged

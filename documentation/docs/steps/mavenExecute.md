@@ -26,8 +26,9 @@ Executes a maven command inside a Docker container.
 * `m2Path` Path to the location of the local repository that should be used.
 * `defines` Additional properties.
 
-## Global Configuration
-The following parameters can also be specified using the global configuration file:
+## Step configuration
+The following parameters can also be specified as step parameters using the global configuration file:
+
 * `dockerImage`
 * `globalSettingsFile`
 * `projectSettingsFile`

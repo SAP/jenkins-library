@@ -80,16 +80,7 @@ You need to define the influxDB server in your pipeline as it is defined in the 
 influxDBServer=jenkins
 ```
 
-## Explanation of pipeline step
-
-Example usage of pipeline step:
-
-```groovy
-influxWriteData script: this
-```
-
-Available parameters:
-
+## Parameters
 
 | parameter | mandatory | default | possible values |
 | ----------|-----------|---------|-----------------|
@@ -98,6 +89,17 @@ Available parameters:
 | influxServer | no | `jenkins` |  |
 | influxPrefix | no | `null` |  |
 
+## Step configuration
+The following parameters can also be specified as step parameters using the global configuration file:
+
+* `influxServer`
+* `influxPrefix`
+
+## Example
+
+```groovy
+influxWriteData script: this
+```
 
 ## Work with InfluxDB and Grafana
 

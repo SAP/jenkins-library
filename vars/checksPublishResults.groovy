@@ -7,7 +7,7 @@ import com.sap.piper.MapUtils
 import groovy.transform.Field
 
 @Field def STEP_NAME = 'checksPublishResults'
-@Field List TOOLS = [
+@Field Set TOOLS = [
     'aggregation', 'tasks', 'pmd', 'cpd', 'findbugs', 'checkstyle', 'eslint', 'pylint'
 ]
 
@@ -23,15 +23,13 @@ def call(Map parameters = [:]) {
             script = [commonPipelineEnvironment: commonPipelineEnvironment]
         prepareDefaultValues script: script
         prepare(parameters)
-        
-        List configKeys = TOOLS.plus('archive')
 
-        final Map stepDefaults = ConfigurationLoader.defaultStepConfiguration(script, STEP_NAME)
-        final Map stepConfiguration = ConfigurationLoader.stepConfiguration(script, STEP_NAME)
+        Set configKeys = TOOLS.plus('archive')
+
         Map configuration = ConfigurationMerger.merge(
+            script, STEP_NAME,
             parameters, configKeys,
-            stepConfiguration, configKeys,
-            stepDefaults)
+            configKeys)
 
         def doArchive = configuration.get('archive')
         // JAVA
