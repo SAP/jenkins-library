@@ -169,7 +169,7 @@ class NeoDeployTest extends BasePipelineTest {
 
         assert jscr.shell.find { c -> c.contains('"neo.sh" deploy-mta') }
         assert jlr.log.contains('SAP Cloud Platform Console Client is on PATH.')
-        assert jlr.log.contains("Using SAP Cloud Platform Console Client executable 'neo.sh'.")
+        assert jlr.log.contains("Using SAP Cloud Platform Console Client 'neo.sh'.")
     }
 
 
@@ -186,7 +186,7 @@ class NeoDeployTest extends BasePipelineTest {
 
         assert jscr.shell.find{ c -> c = "\"/param/neo/tools/neo.sh\" deploy-mta" }
         assert jlr.log.contains("SAP Cloud Platform Console Client home '/param/neo' retrieved from configuration.")
-        assert jlr.log.contains("Using SAP Cloud Platform Console Client executable '/param/neo/tools/neo.sh'.")
+        assert jlr.log.contains("Using SAP Cloud Platform Console Client '/param/neo/tools/neo.sh'.")
     }
 
 
@@ -199,7 +199,7 @@ class NeoDeployTest extends BasePipelineTest {
 
         assert jscr.shell.find { c -> c.contains("\"/opt/neo/tools/neo.sh\" deploy-mta")}
         assert jlr.log.contains("SAP Cloud Platform Console Client home '/opt/neo' retrieved from environment.")
-        assert jlr.log.contains("Using SAP Cloud Platform Console Client executable '/opt/neo/tools/neo.sh'.")
+        assert jlr.log.contains("Using SAP Cloud Platform Console Client '/opt/neo/tools/neo.sh'.")
     }
 
 
@@ -216,7 +216,7 @@ class NeoDeployTest extends BasePipelineTest {
 
         assert jscr.shell.find { c -> c = "\"/config/neo/tools/neo.sh\" deploy-mta"}
         assert jlr.log.contains("SAP Cloud Platform Console Client home '/config/neo' retrieved from configuration.")
-        assert jlr.log.contains("Using SAP Cloud Platform Console Client executable '/config/neo/tools/neo.sh'.")
+        assert jlr.log.contains("Using SAP Cloud Platform Console Client '/config/neo/tools/neo.sh'.")
     }
 
 
@@ -475,9 +475,9 @@ class NeoDeployTest extends BasePipelineTest {
         } else if(m.script.contains('NEO_HOME')) {
             return '/opt/neo'
         } else if (m.script.contains('which java')) {
-            return ''
+            return 0
         } else if (m.script.contains('which neo')) {
-            return ''
+            return 0
         } else {
             return 0
         }
@@ -490,9 +490,9 @@ class NeoDeployTest extends BasePipelineTest {
         } else if(m.script.contains('NEO_HOME')) {
             return ''
         } else if (m.script.contains('which java')) {
-            return '/path/java'
+            return 0
         } else if (m.script.contains('which neo')) {
-            return '/path/neo'
+            return 0
         } else {
             return 0
         }

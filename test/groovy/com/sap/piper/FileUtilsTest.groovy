@@ -60,7 +60,7 @@ class FileUtilsTest extends BasePipelineTest {
     }
 
     @Test
-    void validateDirectory_emptyParmaterTest() {
+    void validateDirectory_emptyParameterTest() {
 
         thrown.expect(IllegalArgumentException)
         thrown.expectMessage("The parameter 'dir' can not be null or empty.")

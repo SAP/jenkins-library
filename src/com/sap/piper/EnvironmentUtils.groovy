@@ -6,15 +6,7 @@ import hudson.AbortException
 class EnvironmentUtils implements Serializable {
 
     def static isEnvironmentVariable(script, variable) {
-        def envVar
-        try {
-          envVar = script.sh returnStdout: true, script: """#!/bin/bash --login
-                                                            echo \$$variable"""
-        } catch(AbortException e) {
-          throw new AbortException("The verification of the environment variable '$variable' failed. Reason: $e.message.")
-        }
-        if (envVar.trim()) return true
-        else return false
+        return !getEnvironmentVariable(script, variable).isEmpty()
     }
 
     def static getEnvironmentVariable(script, variable) {

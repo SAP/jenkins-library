@@ -10,6 +10,8 @@ def call(Map parameters = [:]) {
 
     handlePipelineStepErrors (stepName: 'toolValidate', stepParameters: parameters) {
 
+        echo '[WARNING][toolValidate] This step is deprecated, and it will be removed in future versions. Validation is automatically done inside the steps.'
+
         def tool = parameters.tool
         def home = parameters.home
 
@@ -25,7 +27,7 @@ def call(Map parameters = [:]) {
                 return
             case 'mta':
                 def java = new ToolDescriptor('Java', 'JAVA_HOME', '', '/bin/', 'java', '1.8.0', '-version 2>&1')
-                def mta = new JavaArchiveDescriptor('SAP Multitarget Application Archive Builder', 'MTA_JAR_LOCATION', 'mtaJarLocation', '/', 'mta.jar', '1.0.6', '-v', java, '-jar')
+                def mta = new JavaArchiveDescriptor('SAP Multitarget Application Archive Builder', 'MTA_JAR_LOCATION', 'mtaJarLocation', '/', 'mta.jar', '1.0.6', '-v', java)
                 mta.verifyVersion(this, [mtaJarLocation: home])
                 return
             case 'neo':
