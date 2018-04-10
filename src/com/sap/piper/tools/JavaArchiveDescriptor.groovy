@@ -11,14 +11,14 @@ class JavaArchiveDescriptor extends ToolDescriptor {
     final javaTool
     final javaOptions
 
-    JavaArchiveDescriptor(name, environmentKey, stepConfigurationKey, executablePath, executableName, version, versionOption, javaTool, javaOptions) {
+    JavaArchiveDescriptor(name, environmentKey, stepConfigurationKey, executablePath, executableName, version, versionOption, javaTool, javaOptions = '') {
         super(name, environmentKey, stepConfigurationKey, executablePath, executableName, version, versionOption)
         this.javaTool = javaTool
         this.javaOptions = javaOptions
     }
 
     @Override
-    def getHome(script, configuration, log = true) {
+    def getToolLocation(script, configuration, log = true) {
 
         def home
         if (EnvironmentUtils.isEnvironmentVariable(script, environmentKey)) {
@@ -32,23 +32,24 @@ class JavaArchiveDescriptor extends ToolDescriptor {
             home = ''
             if (log) script.echo "$name expected on current working directory."
         } else {
-            throw new AbortException(getConfigurationOptions())
+            throw new AbortException(getMessage())
         }
         return home
     }
 
     @Override
-    def getExecutable(script, configuration, log = true) {
+    def getToolExecutable(script, configuration, log = true) {
 
-        def tool = getTool(script, configuration, log)
-        def javaExecutable = javaTool.getExecutable(script, configuration, false)
-        def executable = "$javaExecutable $javaOptions $tool"
-        if (log) script.echo "Using $name executable '$executable'."
-        return executable
+        def javaArchive = getTool(script, configuration, log)
+        if (log) script.echo "Using $name '$javaArchive'."
+        def javaExecutable = javaTool.getToolExecutable(script, configuration, false)
+        def javaCall = "$javaExecutable -jar"
+        if (javaOptions) javaCall += " $javaOptions"
+        return "$javaCall $javaArchive"
     }
 
     @Override
-    def getConfigurationOptions() {
+    def getMessage() {
         def configOptions = "Please, configure $name home. $name home can be set "
         if (environmentKey) configOptions += "using the environment variable '$environmentKey'"
         if (environmentKey && stepConfigurationKey) configOptions += ", or "

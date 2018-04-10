@@ -144,7 +144,7 @@ def call(parameters = [:]) {
         }
 
         def neo = new ToolDescriptor('SAP Cloud Platform Console Client', 'NEO_HOME', 'neoHome', '/tools/', 'neo.sh', '3.39.10', 'version')
-        def neoExecutable = neo.getExecutable(this, configuration)
+        def neoExecutable = neo.getToolExecutable(this, configuration)
         def neoDeployScript
 
         if (deployMode == 'mta') {

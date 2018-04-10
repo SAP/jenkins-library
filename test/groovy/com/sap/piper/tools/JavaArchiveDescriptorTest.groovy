@@ -38,7 +38,7 @@ class JavaArchiveDescriptorTest extends BasePipelineTest {
     static void init() {
 
         def java = new ToolDescriptor('Java', 'JAVA_HOME', '', '/bin/', 'java', '1.8.0', '-version 2>&1')
-        tool = new JavaArchiveDescriptor('SAP Multitarget Application Archive Builder', 'MTA_JAR_LOCATION', 'mtaJarLocation', '/', 'mta.jar', '1.0.6', '-v', java, '-jar')
+        tool = new JavaArchiveDescriptor('SAP Multitarget Application Archive Builder', 'MTA_JAR_LOCATION', 'mtaJarLocation', '/', 'mta.jar', '1.0.6', '-v', java)
     }
 
     @Before
@@ -56,7 +56,7 @@ class JavaArchiveDescriptorTest extends BasePipelineTest {
 
         helper.registerAllowedMethod('sh', [Map], { Map m -> getEnvVars(m) })
 
-        def toolHome = tool.getHome(script, configuration)
+        def toolHome = tool.getToolLocation(script, configuration)
 
         assert toolHome == '/env/mta'
         assert jlr.log.contains("$tool.name home '/env/mta' retrieved from environment.")
@@ -67,7 +67,7 @@ class JavaArchiveDescriptorTest extends BasePipelineTest {
 
         configuration = [mtaJarLocation: '/config/mta']
 
-        def toolHome = tool.getHome(script, configuration)
+        def toolHome = tool.getToolLocation(script, configuration)
 
         assert toolHome == '/config/mta'
         assert jlr.log.contains("$tool.name home '/config/mta' retrieved from configuration.")
@@ -76,7 +76,7 @@ class JavaArchiveDescriptorTest extends BasePipelineTest {
     @Test
     void getToolHomeFromCurrentWorkingDirectoryTest() {
 
-        def toolHome = tool.getHome(script, configuration)
+        def toolHome = tool.getToolLocation(script, configuration)
 
         assert toolHome == ''
         assert jlr.log.contains("$tool.name expected on current working directory.")
@@ -97,10 +97,10 @@ class JavaArchiveDescriptorTest extends BasePipelineTest {
 
         configuration = [mtaJarLocation: '/config/mta']
 
-        def toolExecutable = tool.getExecutable(script, configuration)
+        def toolExecutable = tool.getToolExecutable(script, configuration)
 
         assert toolExecutable == 'java -jar /config/mta/mta.jar'
-        assert jlr.log.contains("Using $tool.name executable 'java -jar /config/mta/mta.jar'.")
+        assert jlr.log.contains("Using $tool.name '/config/mta/mta.jar'.")
     }
 
     @Test
@@ -108,10 +108,10 @@ class JavaArchiveDescriptorTest extends BasePipelineTest {
 
         helper.registerAllowedMethod('sh', [Map], { Map m -> getEnvVars(m) })
 
-        tool.verifyHome(script, configuration)
+        tool.verifyToolLocation(script, configuration)
 
-        assert jlr.log.contains("Verifying $tool.name home '/env/mta'.")
-        assert jlr.log.contains("Verification success. $tool.name home '/env/mta' exists.")
+        assert jlr.log.contains("Verifying $tool.name location '/env/mta'.")
+        assert jlr.log.contains("Verification success. $tool.name location '/env/mta' exists.")
     }
 
     @Test
@@ -119,7 +119,7 @@ class JavaArchiveDescriptorTest extends BasePipelineTest {
 
         helper.registerAllowedMethod('sh', [Map], { Map m -> getEnvVars(m) })
 
-        tool.verifyTool(script, configuration)
+        tool.verifyToolExecutable(script, configuration)
 
         assert jlr.log.contains("Verifying $tool.name '/env/mta/mta.jar'.")
         assert jlr.log.contains("Verification success. $tool.name '/env/mta/mta.jar' exists.")
@@ -177,7 +177,7 @@ class JavaArchiveDescriptorTest extends BasePipelineTest {
         } else if(m.script.contains('MTA_JAR_LOCATION')) {
             return ''
         } else if(m.script.contains('which java')) {
-            return '/path/java'
+            return 0
         } else {
             return 0
         }

@@ -9,8 +9,7 @@ class FileUtils implements Serializable {
     static directoryOrFileExists(script, dirOrFile) {
         if (!dirOrFile) throw new IllegalArgumentException("The parameter 'dirOrFile' can not be null or empty.")
         def returnStatus = script.sh returnStatus: true, script: """
-                                                                 #!/bin/bash --login
-
+                                                                 set +x
                                                                  if [ -d $dirOrFile ]; then
                                                                    echo \"$dirOrFile exists.\"
                                                                    exit 0
@@ -22,32 +21,28 @@ class FileUtils implements Serializable {
                                                                    exit 1
                                                                  fi
                                                                  """
-        if (returnStatus == 0) return true
-        else return false
+        return returnStatus == 0
     }
 
     static isDirectory(script, dir) {
         if (!dir) throw new IllegalArgumentException("The parameter 'dir' can not be null or empty.")
         def returnStatus = script.sh returnStatus: true, script: """
-                                                                 #!/bin/bash --login
-
+                                                                 set +x
                                                                  if [ -d $dir ]; then
                                                                    echo \"$dir is a directory.\"
                                                                    exit 0
                                                                  else
                                                                    echo \"$dir is not a directory.\"
-                                                                   exit 0
+                                                                   exit 1
                                                                  fi
                                                                  """
-        if (returnStatus == 0) return true
-        else return false
+        return returnStatus == 0
     }
 
     static isDirectoryEmpty(script, dir) {
         if (!dir) throw new IllegalArgumentException("The parameter 'dir' can not be null or empty.")
         def returnStatus = script.sh returnStatus: true, script: """
-                                                               #!/bin/bash --login
-
+                                                               set +x
                                                                if [ -z "\$(ls -A $dir)" ]; then
                                                                  echo "$dir is empty."
                                                                  exit 1
@@ -56,15 +51,13 @@ class FileUtils implements Serializable {
                                                                  exit 0
                                                                fi
                                                                """
-        if (returnStatus == 0) return false
-        else return true
+        return returnStatus == 1
     }
 
     static isFile(script, filePath) {
         if (!filePath) throw new IllegalArgumentException("The parameter 'filePath' can not be null or empty.")
         def returnStatus = script.sh returnStatus: true, script: """
-                                                               #!/bin/bash --login
-
+                                                               set +x
                                                                if [ -f $filePath ]; then
                                                                  echo \"$filePath is a file.\"
                                                                  exit 0
@@ -73,8 +66,7 @@ class FileUtils implements Serializable {
                                                                  exit 1
                                                                fi
                                                                """
-        if (returnStatus == 0) return true
-        else return false
+        return returnStatus == 0
     }
 
     static validateDirectoryOrFileExists(script, dirOrFile) {

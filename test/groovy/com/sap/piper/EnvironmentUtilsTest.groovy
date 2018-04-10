@@ -38,7 +38,7 @@ class EnvironmentUtilsTest extends BasePipelineTest {
         helper.registerAllowedMethod('sh', [Map], { Map m -> throw new AbortException('') })
 
         thrown.expect(AbortException)
-        thrown.expectMessage("The verification of the environment variable 'JAVA_HOME' failed.")
+        thrown.expectMessage("There was an error requesting the environment variable 'JAVA_HOME'.")
 
         EnvironmentUtils.isEnvironmentVariable(script, 'JAVA_HOME')
     }
