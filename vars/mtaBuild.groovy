@@ -65,7 +65,7 @@ def call(Map parameters = [:]) {
 
         sh  """#!/bin/bash
             export PATH=./node_modules/.bin:${PATH}
-            java -jar ${mtaJar} --mtar ${mtarFileName} --build-target=${buildTarget} build
+            ${mtaJar} --mtar ${mtarFileName} --build-target=${buildTarget} build
             """
 
         def mtarFilePath = "${pwd()}/${mtarFileName}"
