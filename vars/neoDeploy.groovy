@@ -1,20 +1,10 @@
 import com.sap.piper.Utils
 
-import groovy.transform.Field
-
 import com.sap.piper.ConfigurationLoader
 import com.sap.piper.ConfigurationMerger
 import com.sap.piper.ConfigurationType
+import com.sap.piper.tools.ToolDescriptor
 
-@Field def NEO_DEFAULT_CMD = 'neo.sh'
-
-//
-// envProps may be overwritten by tests, but only by tests.
-// [Q] Why not simply using the Map returned by getenv() itself?
-// [A] The unmodifiable map returned by getenv() is not serializable
-//     Since everythings needs to be serializabe (CPS pattern) we
-//     cannot use that map directly.
-@Field Map envProps = System.getenv().findAll { true }
 
 def call(parameters = [:]) {
 
@@ -153,8 +143,8 @@ def call(parameters = [:]) {
             deployAccount = utils.getMandatoryParameter(configuration, 'account')
         }
 
-        def neoExecutable = getNeoExecutable(configuration)
-
+        def neo = new ToolDescriptor('SAP Cloud Platform Console Client', 'NEO_HOME', 'neoHome', '/tools/', 'neo.sh', '3.39.10', 'version')
+        def neoExecutable = neo.getToolExecutable(this, configuration)
         def neoDeployScript
 
         if (deployMode == 'mta') {
@@ -199,50 +189,10 @@ def call(parameters = [:]) {
                           dockerEnvVars: configuration.get('dockerEnvVars'),
                           dockerOptions: configuration.get('dockerOptions')) {
 
-                NEO_HOME_CHECK: {
-                    // same order like inside getNeoExecutable
-                    String neoHome = configuration.neoHome ?: env?.NEO_HOME
+                neo.verify(this, configuration)
 
-                    // In case neo home is not set, but neo toolset is simply
-                    // in the path, we trust that everything is OK. In order to
-                    // validate the version also in this case, we need to adjust
-                    // toolValidate.
-
-                    def rc = sh script: "which ${NEO_DEFAULT_CMD}", returnStatus: true
-                    if(neoHome || (!neoHome && rc != 0)) {
-                        // toolValidate commented since it is does not work in
-                        // conjunction with jenkins slaves.
-                        // TODO: switch on again when the issue is resolved.
-                        // toolValidate tool: 'neo', home: neoHome
-                        echo 'toolValidate (neo) is disabled.'
-                    } else {
-                        echo "neo (${NEO_DEFAULT_CMD}) has been found in path. Using this neo version without futher tool validation."
-                    }
-                }
-
-                JAVA_HOME_CHECK : {
-
-                    //
-                    // [Q] How is the java executable resolved by neo?
-                    // [A] They check for JAVA_HOME. If not present, they
-                    //     try to resolve it via ```which java```.
-                    //
-                    def javaHome = envProps.JAVA_HOME
-                    def rc = sh script: 'which java', returnStatus: true
-                    if(!javaHome && rc == 0) {
-                        // java home is not set`, but java is in path.
-                        // --> we skip the check and trust that we can work
-                        //     with java from the path.
-                        echo "Skipping tool validate check (java). " +
-                             "Java executable in path, but no JAVA_HOME found."
-                    } else {
-                        // toolValidate commented since it is does not work in
-                        // conjunction with jenkins slaves.
-                        // TODO: switch on again when the issue is resolved.
-                        //toolValidate tool: 'java', home: javaHome
-                        echo 'toolValidate (java) is disabled.'
-                    }
-                }
+                def java = new ToolDescriptor('Java', 'JAVA_HOME', '', '/bin/', 'java', '1.8.0', '-version 2>&1')
+                java.verify(this, configuration)
 
                 sh """${neoDeployScript} \
                       ${commonDeployParams}
@@ -250,24 +200,4 @@ def call(parameters = [:]) {
             }
         }
     }
-}
-
-private getNeoExecutable(configuration) {
-
-    def neoExecutable = NEO_DEFAULT_CMD // default, if nothing below applies maybe it is the path.
-
-    if (configuration.neoHome) {
-        neoExecutable = "${configuration.neoHome}/tools/${NEO_DEFAULT_CMD}"
-        echo "[neoDeploy] Neo executable \"${neoExecutable}\" retrieved from configuration."
-        return neoExecutable
-    }
-
-    if (env?.NEO_HOME) {
-        neoExecutable = "${env.NEO_HOME}/tools/${NEO_DEFAULT_CMD}"
-        echo "[neoDeploy] Neo executable \"${neoExecutable}\" retrieved from environment."
-        return neoExecutable
-    }
-
-    echo "Using Neo executable from PATH."
-    return neoExecutable
 }
