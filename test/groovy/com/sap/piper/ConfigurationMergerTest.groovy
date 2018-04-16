@@ -64,6 +64,17 @@ class ConfigurationMergerTest {
     }
 
     @Test
+    void testMergeDeepStructureWithMissingDefaults(){
+        Map defaults = [others:[apples: 18]]
+        Map configuration = [fruits: [bananaaas: 50, cucumbers: 1000]]
+        Set configurationKeys = ['fruits']
+        Map merged = ConfigurationMerger.merge(configuration, configurationKeys, defaults)
+        Assert.assertEquals(50, merged.fruits.bananaaas)
+        Assert.assertEquals(18, merged.others.apples)
+        Assert.assertEquals(1000, merged.fruits.cucumbers)
+    }
+
+    @Test
    void testReadConfigInsideMerge() {
         DefaultValueCache.createInstance([steps:[myStep:[overwrite: 'x', defaultKey1:'defaultValue1']]])
         def config = [commonPipelineEnvironment: [configuration: [steps:[myStep:[overwrite: 'y', key1:'value1']]]]]
