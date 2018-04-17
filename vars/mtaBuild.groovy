@@ -11,12 +11,14 @@ def call(Map parameters = [:]) {
     Set parameterKeys = [
         'applicationName',
         'buildTarget',
+        'extension',
         'mtaJarLocation'
     ]
 
     Set stepConfigurationKeys = [
         'applicationName',
         'buildTarget',
+        'extension',
         'mtaJarLocation'
     ]
 
@@ -63,9 +65,14 @@ def call(Map parameters = [:]) {
         def mtaJar = mta.getToolExecutable(this, configuration)
         def buildTarget = configuration.buildTarget
 
+        def mtaCall = "${mtaJar} --mtar ${mtarFileName} --build-target=${buildTarget}"
+
+        if (configuration.extension) mtaCall += " --extension=$configuration.extension"
+        mtaCall += ' build'
+
         sh  """#!/bin/bash
             export PATH=./node_modules/.bin:${PATH}
-            ${mtaJar} --mtar ${mtarFileName} --build-target=${buildTarget} build
+            $mtaCall
             """
 
         def mtarFilePath = "${pwd()}/${mtarFileName}"
