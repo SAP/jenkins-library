@@ -27,7 +27,7 @@ def call(Map parameters = [:]) {
                 return
             case 'mta':
                 def java = new ToolDescriptor('Java', 'JAVA_HOME', '', '/bin/', 'java', '1.8.0', '-version 2>&1')
-                def mta = new JavaArchiveDescriptor('SAP Multitarget Application Archive Builder', 'MTA_JAR_LOCATION', 'mtaJarLocation', '/', 'mta.jar', '1.0.6', '-v', java)
+                def mta = new JavaArchiveDescriptor('SAP Multitarget Application Archive Builder', 'MTA_JAR_LOCATION', 'mtaJarLocation', '1.0.6', '-v', java)
                 mta.verifyVersion(this, [mtaJarLocation: home])
                 return
             case 'neo':
