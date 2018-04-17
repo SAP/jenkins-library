@@ -237,6 +237,26 @@ public class MtaBuildTest extends BasePipelineTest {
     }
 
 
+    @Test
+    void extensionFromParametersTest() {
+
+        jsr.step.call(buildTarget: 'NEO', extension: 'param_extension')
+
+        assert jscr.shell.find { c -> c.contains('java -jar mta.jar --mtar com.mycompany.northwind.mtar --build-target=NEO --extension=param_extension build')}
+    }
+
+
+    @Test
+    void extensionFromCustomStepConfigurationTest() {
+
+        jer.env.configuration = [steps:[mtaBuild:[buildTarget: 'NEO', extension: 'config_extension']]]
+
+        jsr.step.call(script: [commonPipelineEnvironment: jer.env])
+
+        assert jscr.shell.find(){ c -> c.contains('java -jar mta.jar --mtar com.mycompany.northwind.mtar --build-target=NEO --extension=config_extension build')}
+    }
+
+
     private static defaultMtaYaml() {
         return  '''
                 _schema-version: "2.0.0"
