@@ -7,9 +7,10 @@ class ConfigurationLoaderTest {
 
     private static getScript() {
         Map configuration = [:]
-        configuration.general = [productiveBranch: 'master']
+        configuration.general = [productiveBranch: 'master', features: [feature1: true]]
         configuration.steps = [executeMaven: [dockerImage: 'maven:3.2-jdk-8-onbuild']]
         configuration.stages = [staticCodeChecks: [pmdExcludes: '**']]
+        configuration.postActions = [sendEmail: [recipients: 'myEmail']]
 
         Map defaultConfiguration = [:]
         defaultConfiguration.general = [productiveBranch: 'develop']
@@ -55,5 +56,17 @@ class ConfigurationLoaderTest {
     void testLoadDefaultGeneralConfiguration() {
         Map config = ConfigurationLoader.defaultGeneralConfiguration(getScript())
         Assert.assertEquals('develop', config.productiveBranch)
+    }
+
+    @Test
+    void testIsFeatureActive(){
+        Assert.assertTrue(ConfigurationLoader.isFeatureActive(getScript(), 'feature1'))
+        Assert.assertFalse(ConfigurationLoader.isFeatureActive(getScript(),'feature2'))
+    }
+
+    @Test
+    void testLostPostActionConfiguration(){
+        Map config = ConfigurationLoader.postActionConfiguration(getScript(), 'sendEmail')
+        Assert.assertEquals('myEmail', config.recipients)
     }
 }
