@@ -151,22 +151,20 @@ def call(parameters = [:]) {
         def neoVersions = ['neo-java-web': '3.39.10', 'neo-javaee6-wp': '2.132.6', 'neo-javaee7-wp': '1.21.13']
         def neo = new ToolDescriptor('SAP Cloud Platform Console Client', 'NEO_HOME', 'neoHome', '/tools/', 'neo.sh', neoVersions, 'version')
         def neoExecutable = neo.getToolExecutable(this, configuration)
-        def neoDeployScript
+        def neoDeployScript = """#!/bin/bash
+                                 "${neoExecutable}" ${warAction} \
+                              """
 
         if (deployMode == 'mta') {
-            neoDeployScript =
-                """#!/bin/bash
-                    "${neoExecutable}" ${warAction} \
-                    --host '${deployHost}' \
+            neoDeployScript +=
+                    """--host '${deployHost}' \
                     --account '${deployAccount}' \
                     --synchronous"""
         }
 
         if (deployMode == 'warParams') {
-            neoDeployScript =
-                """#!/bin/bash
-                    "${neoExecutable}" ${warAction} \
-                    --host '${deployHost}' \
+            neoDeployScript +=
+                    """--host '${deployHost}' \
                     --account '${deployAccount}' \
                     --application '${applicationName}' \
                     --runtime '${runtime}' \
@@ -175,10 +173,8 @@ def call(parameters = [:]) {
         }
 
         if (deployMode == 'warPropertiesFile') {
-            neoDeployScript =
-                """#!/bin/bash
-                    "${neoExecutable}" ${warAction} \
-                    ${propertiesFile}"""
+            neoDeployScript +=
+                    """${propertiesFile}"""
         }
 
         withCredentials([usernamePassword(
