@@ -155,18 +155,20 @@ def call(parameters = [:]) {
                                  "${neoExecutable}" ${warAction} \
                               """
 
-        if (deployMode == 'mta') {
+        if (deployMode in ['mta', 'warParams']) {
             neoDeployScript +=
                     """--host '${deployHost}' \
                     --account '${deployAccount}' \
-                    --synchronous"""
+                    """
+        }
+
+        if (deployMode == 'mta') {
+            neoDeployScript += "--synchronous"
         }
 
         if (deployMode == 'warParams') {
             neoDeployScript +=
-                    """--host '${deployHost}' \
-                    --account '${deployAccount}' \
-                    --application '${applicationName}' \
+                    """--application '${applicationName}' \
                     --runtime '${runtime}' \
                     --runtime-version '${runtimeVersion}' \
                     --size '${vmSize}'"""
