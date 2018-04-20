@@ -398,7 +398,7 @@ class NeoDeployTest extends BasePipelineTest {
     void illegalWARActionTest() {
 
         thrown.expect(Exception)
-        thrown.expectMessage("[neoDeploy] Invalid warAction = 'illegalWARAction'. Valid 'warAction' values are: 'deploy' and 'rolling-update'.")
+        thrown.expectMessage("[neoDeploy] Invalid warAction = 'illegalWARAction'. Valid 'warAction' values are: [deploy, rolling-update].")
 
         jsr.step.call(script: [commonPipelineEnvironment: jer.env],
             archivePath: warArchiveName,
