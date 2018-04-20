@@ -185,7 +185,7 @@ def call(parameters = [:]) {
             passwordVariable: 'password',
             usernameVariable: 'username')]) {
 
-            def commonDeployParams =
+            def credentials =
                 """--user '${username}' \
                    --password '${password}' \
                 """
@@ -199,7 +199,7 @@ def call(parameters = [:]) {
                 java.verify(this, configuration)
 
                 sh """${neoDeployScript} \
-                      ${commonDeployParams}
+                      ${credentials}
                    """
             }
         }
