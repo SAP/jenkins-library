@@ -382,7 +382,7 @@ class NeoDeployTest extends BasePipelineTest {
     void illegalVMSizeTest() {
 
         thrown.expect(Exception)
-        thrown.expectMessage("[neoDeploy] Invalid vmSize = 'illegalVM'. Valid 'vmSize' values are: 'lite', 'pro', 'prem' and 'prem-plus'.")
+        thrown.expectMessage("[neoDeploy] Invalid vmSize = 'illegalVM'. Valid 'vmSize' values are: [lite, pro, prem, prem-plus].")
 
         jsr.step.call(script: [commonPipelineEnvironment: jer.env],
             archivePath: warArchiveName,
