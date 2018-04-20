@@ -117,8 +117,9 @@ def call(parameters = [:]) {
 
         if (deployMode in ['warPropertiesFile', 'warParams']) {
             warAction = utils.getMandatoryParameter(configuration, 'warAction')
-            if (warAction != 'deploy' && warAction != 'rolling-update') {
-                throw new Exception("[neoDeploy] Invalid warAction = '${warAction}'. Valid 'warAction' values are: 'deploy' and 'rolling-update'.")
+            def warActions = ['deploy', 'rolling-update']
+            if (! (warAction in warActions)) {
+                throw new Exception("[neoDeploy] Invalid warAction = '${warAction}'. Valid 'warAction' values are: ${warActions}.")
             }
         }
 
