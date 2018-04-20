@@ -50,13 +50,13 @@ class ConfigurationMergerTest {
 
     @Test
     void testMergeDeepStructure(){
-        Map defaults = [fruits: [apples: 1, oranges: 10, bananaaas: 0]]
-        Map configuration = [fruits: [bananaaas: 50, cucumbers: 1000]]
+        Map defaults = [fruits: [apples: 1, oranges: 10, bananas: 0]]
+        Map configuration = [fruits: [bananas: 50, cucumbers: 1000]]
         Set configurationKeys = ['fruits']
         Map parameters = [fruits: [apples: 18], veggie: []]
         Set parameterKeys = ['fruits']
         Map merged = ConfigurationMerger.merge(parameters, parameterKeys, configuration, configurationKeys, defaults)
-        Assert.assertEquals(50, merged.fruits.bananaaas)
+        Assert.assertEquals(50, merged.fruits.bananas)
         Assert.assertEquals(18, merged.fruits.apples)
         Assert.assertEquals(10, merged.fruits.oranges)
         Assert.assertEquals(1000, merged.fruits.cucumbers)
@@ -66,10 +66,10 @@ class ConfigurationMergerTest {
     @Test
     void testMergeDeepStructureWithMissingDefaults(){
         Map defaults = [others:[apples: 18]]
-        Map configuration = [fruits: [bananaaas: 50, cucumbers: 1000]]
+        Map configuration = [fruits: [bananas: 50, cucumbers: 1000]]
         Set configurationKeys = ['fruits']
         Map merged = ConfigurationMerger.merge(configuration, configurationKeys, defaults)
-        Assert.assertEquals(50, merged.fruits.bananaaas)
+        Assert.assertEquals(50, merged.fruits.bananas)
         Assert.assertEquals(18, merged.others.apples)
         Assert.assertEquals(1000, merged.fruits.cucumbers)
     }
