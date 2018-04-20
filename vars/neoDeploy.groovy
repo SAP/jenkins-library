@@ -133,9 +133,10 @@ def call(parameters = [:]) {
             applicationName = utils.getMandatoryParameter(configuration, 'applicationName')
             runtime = utils.getMandatoryParameter(configuration, 'runtime')
             runtimeVersion = utils.getMandatoryParameter(configuration, 'runtimeVersion')
+            def vmSizes = ['lite', 'pro', 'prem', 'prem-plus']
             vmSize = configuration.vmSize
-            if (vmSize != 'lite' && vmSize !='pro' && vmSize != 'prem' && vmSize != 'prem-plus') {
-                throw new Exception("[neoDeploy] Invalid vmSize = '${vmSize}'. Valid 'vmSize' values are: 'lite', 'pro', 'prem' and 'prem-plus'.")
+            if (! (vmSize in vmSizes)) {
+                throw new Exception("[neoDeploy] Invalid vmSize = '${vmSize}'. Valid 'vmSize' values are: ${vmSizes}.")
             }
         }
 
