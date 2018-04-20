@@ -121,6 +121,8 @@ def call(parameters = [:]) {
             if (! (warAction in warActions)) {
                 throw new Exception("[neoDeploy] Invalid warAction = '${warAction}'. Valid 'warAction' values are: ${warActions}.")
             }
+        } else if(deployMode == 'mta') {
+            warAction = 'deploy-mta'
         }
 
         if (deployMode == 'warPropertiesFile') {
@@ -154,7 +156,7 @@ def call(parameters = [:]) {
         if (deployMode == 'mta') {
             neoDeployScript =
                 """#!/bin/bash
-                    "${neoExecutable}" deploy-mta \
+                    "${neoExecutable}" ${warAction} \
                     --host '${deployHost}' \
                     --account '${deployAccount}' \
                     --synchronous"""
