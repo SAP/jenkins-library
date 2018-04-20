@@ -153,6 +153,7 @@ def call(parameters = [:]) {
         def neoExecutable = neo.getToolExecutable(this, configuration)
         def neoDeployScript = """#!/bin/bash
                                  "${neoExecutable}" ${warAction} \
+                                 --source "${archivePath}" \
                               """
 
         if (deployMode in ['mta', 'warParams']) {
@@ -187,7 +188,6 @@ def call(parameters = [:]) {
             def commonDeployParams =
                 """--user '${username}' \
                    --password '${password}' \
-                   --source "${archivePath}" \
                 """
             dockerExecute(dockerImage: configuration.get('dockerImage'),
                           dockerEnvVars: configuration.get('dockerEnvVars'),
