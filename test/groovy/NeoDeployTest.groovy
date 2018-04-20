@@ -366,7 +366,7 @@ class NeoDeployTest extends BasePipelineTest {
     void illegalDeployModeTest() {
 
         thrown.expect(Exception)
-        thrown.expectMessage("[neoDeploy] Invalid deployMode = 'illegalMode'. Valid 'deployMode' values are: 'mta', 'warParams' and 'warPropertiesFile'")
+        thrown.expectMessage("[neoDeploy] Invalid deployMode = 'illegalMode'. Valid 'deployMode' values are: [mta, warParams, warPropertiesFile]")
 
         jsr.step.call(script: [commonPipelineEnvironment: jer.env],
             archivePath: warArchiveName,

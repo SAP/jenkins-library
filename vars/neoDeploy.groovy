@@ -110,11 +110,12 @@ def call(parameters = [:]) {
         def runtimeVersion
         def vmSize
 
-        if (deployMode != 'mta' && deployMode != 'warParams' && deployMode != 'warPropertiesFile') {
-            throw new Exception("[neoDeploy] Invalid deployMode = '${deployMode}'. Valid 'deployMode' values are: 'mta', 'warParams' and 'warPropertiesFile'")
+        def deployModes = ['mta', 'warParams', 'warPropertiesFile']
+        if (! (deployMode in deployModes)) {
+            throw new Exception("[neoDeploy] Invalid deployMode = '${deployMode}'. Valid 'deployMode' values are: ${deployModes}.")
         }
 
-        if (deployMode == 'warPropertiesFile' || deployMode == 'warParams') {
+        if (deployMode in ['warPropertiesFile', 'warParams']) {
             warAction = utils.getMandatoryParameter(configuration, 'warAction')
             if (warAction != 'deploy' && warAction != 'rolling-update') {
                 throw new Exception("[neoDeploy] Invalid warAction = '${warAction}'. Valid 'warAction' values are: 'deploy' and 'rolling-update'.")
@@ -138,7 +139,7 @@ def call(parameters = [:]) {
             }
         }
 
-        if (deployMode.equals('mta') || deployMode.equals('warParams')) {
+        if (deployMode in ['mta','warParams']) {
             deployHost = utils.getMandatoryParameter(configuration, 'host')
             deployAccount = utils.getMandatoryParameter(configuration, 'account')
         }
