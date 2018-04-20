@@ -1,4 +1,4 @@
-package com.sap.piper.tools
+package com.sap.piper
 
 import org.junit.Before
 import org.junit.Rule
