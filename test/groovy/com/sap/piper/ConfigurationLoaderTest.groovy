@@ -7,7 +7,7 @@ class ConfigurationLoaderTest {
 
     private static getScript() {
         Map configuration = [:]
-        configuration.general = [productiveBranch: 'master', features: [feature1: true]]
+        configuration.general = [productiveBranch: 'master', features: [feature1: true, feature3:false]]
         configuration.steps = [executeMaven: [dockerImage: 'maven:3.2-jdk-8-onbuild']]
         configuration.stages = [staticCodeChecks: [pmdExcludes: '**']]
         configuration.postActions = [sendEmail: [recipients: 'myEmail']]
@@ -62,10 +62,11 @@ class ConfigurationLoaderTest {
     void testIsFeatureActive(){
         Assert.assertTrue(ConfigurationLoader.isFeatureActive(getScript(), 'feature1'))
         Assert.assertFalse(ConfigurationLoader.isFeatureActive(getScript(),'feature2'))
+        Assert.assertFalse(ConfigurationLoader.isFeatureActive(getScript(),'feature3'))
     }
 
     @Test
-    void testLostPostActionConfiguration(){
+    void testLoadPostActionConfiguration(){
         Map config = ConfigurationLoader.postActionConfiguration(getScript(), 'sendEmail')
         Assert.assertEquals('myEmail', config.recipients)
     }
