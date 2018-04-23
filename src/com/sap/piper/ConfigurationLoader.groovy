@@ -39,11 +39,6 @@ class ConfigurationLoader implements Serializable {
     }
 
     @NonCPS
-    static boolean isFeatureActive(script, String feature){
-        generalConfiguration(script).features?.get(feature) ?: false
-    }
-
-    @NonCPS
     private static loadConfiguration(script, String type, String entryName, ConfigurationType configType){
         switch (configType) {
             case ConfigurationType.CUSTOM_CONFIGURATION:
