@@ -10,6 +10,8 @@ class ConfigurationMerger {
         Map filteredConfig = configKeys?configs.subMap(configKeys):configs
         Map merged = [:]
 
+        defaults = defaults ?: [:]
+
         merged.putAll(defaults)
 
         for(String key : filteredConfig.keySet())
