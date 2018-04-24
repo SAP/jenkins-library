@@ -110,14 +110,16 @@ def call(parameters = [:]) {
         def runtimeVersion
         def vmSize
 
-        if (deployMode != 'mta' && deployMode != 'warParams' && deployMode != 'warPropertiesFile') {
-            throw new Exception("[neoDeploy] Invalid deployMode = '${deployMode}'. Valid 'deployMode' values are: 'mta', 'warParams' and 'warPropertiesFile'")
+        def deployModes = ['mta', 'warParams', 'warPropertiesFile']
+        if (! (deployMode in deployModes)) {
+            throw new Exception("[neoDeploy] Invalid deployMode = '${deployMode}'. Valid 'deployMode' values are: ${deployModes}.")
         }
 
-        if (deployMode == 'warPropertiesFile' || deployMode == 'warParams') {
+        if (deployMode in ['warPropertiesFile', 'warParams']) {
             warAction = utils.getMandatoryParameter(configuration, 'warAction')
-            if (warAction != 'deploy' && warAction != 'rolling-update') {
-                throw new Exception("[neoDeploy] Invalid warAction = '${warAction}'. Valid 'warAction' values are: 'deploy' and 'rolling-update'.")
+            def warActions = ['deploy', 'rolling-update']
+            if (! (warAction in warActions)) {
+                throw new Exception("[neoDeploy] Invalid warAction = '${warAction}'. Valid 'warAction' values are: ${warActions}.")
             }
         }
 
@@ -132,13 +134,14 @@ def call(parameters = [:]) {
             applicationName = utils.getMandatoryParameter(configuration, 'applicationName')
             runtime = utils.getMandatoryParameter(configuration, 'runtime')
             runtimeVersion = utils.getMandatoryParameter(configuration, 'runtimeVersion')
+            def vmSizes = ['lite', 'pro', 'prem', 'prem-plus']
             vmSize = configuration.vmSize
-            if (vmSize != 'lite' && vmSize !='pro' && vmSize != 'prem' && vmSize != 'prem-plus') {
-                throw new Exception("[neoDeploy] Invalid vmSize = '${vmSize}'. Valid 'vmSize' values are: 'lite', 'pro', 'prem' and 'prem-plus'.")
+            if (! (vmSize in vmSizes)) {
+                throw new Exception("[neoDeploy] Invalid vmSize = '${vmSize}'. Valid 'vmSize' values are: ${vmSizes}.")
             }
         }
 
-        if (deployMode.equals('mta') || deployMode.equals('warParams')) {
+        if (deployMode in ['mta','warParams']) {
             deployHost = utils.getMandatoryParameter(configuration, 'host')
             deployAccount = utils.getMandatoryParameter(configuration, 'account')
         }

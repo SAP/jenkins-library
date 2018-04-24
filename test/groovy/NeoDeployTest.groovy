@@ -366,7 +366,7 @@ class NeoDeployTest extends BasePipelineTest {
     void illegalDeployModeTest() {
 
         thrown.expect(Exception)
-        thrown.expectMessage("[neoDeploy] Invalid deployMode = 'illegalMode'. Valid 'deployMode' values are: 'mta', 'warParams' and 'warPropertiesFile'")
+        thrown.expectMessage("[neoDeploy] Invalid deployMode = 'illegalMode'. Valid 'deployMode' values are: [mta, warParams, warPropertiesFile]")
 
         jsr.step.call(script: [commonPipelineEnvironment: jer.env],
             archivePath: warArchiveName,
@@ -382,7 +382,7 @@ class NeoDeployTest extends BasePipelineTest {
     void illegalVMSizeTest() {
 
         thrown.expect(Exception)
-        thrown.expectMessage("[neoDeploy] Invalid vmSize = 'illegalVM'. Valid 'vmSize' values are: 'lite', 'pro', 'prem' and 'prem-plus'.")
+        thrown.expectMessage("[neoDeploy] Invalid vmSize = 'illegalVM'. Valid 'vmSize' values are: [lite, pro, prem, prem-plus].")
 
         jsr.step.call(script: [commonPipelineEnvironment: jer.env],
             archivePath: warArchiveName,
@@ -398,7 +398,7 @@ class NeoDeployTest extends BasePipelineTest {
     void illegalWARActionTest() {
 
         thrown.expect(Exception)
-        thrown.expectMessage("[neoDeploy] Invalid warAction = 'illegalWARAction'. Valid 'warAction' values are: 'deploy' and 'rolling-update'.")
+        thrown.expectMessage("[neoDeploy] Invalid warAction = 'illegalWARAction'. Valid 'warAction' values are: [deploy, rolling-update].")
 
         jsr.step.call(script: [commonPipelineEnvironment: jer.env],
             archivePath: warArchiveName,
