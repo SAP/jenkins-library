@@ -89,7 +89,7 @@ class JavaArchiveDescriptorTest extends BasePipelineTest {
     void getJavaArchiveFileFromEnvironment_UnexpectedFormatTest() {
 
         thrown.expect(AbortException)
-        thrown.expectMessage("MTA_JAR_LOCATION has an unexpected format.")
+        thrown.expectMessage("The value '/env/mta/mta.jarr' of the environment variable 'MTA_JAR_LOCATION' has an unexpected format.")
 
         helper.registerAllowedMethod('sh', [Map], { Map m -> getUnexpectedFormatEnvVars(m) })
 
@@ -100,7 +100,7 @@ class JavaArchiveDescriptorTest extends BasePipelineTest {
     void getJavaArchiveFileFromConfiguration_UnexpectedFormatTest() {
 
         thrown.expect(AbortException)
-        thrown.expectMessage("mtaJarLocation has an unexpected format.")
+        thrown.expectMessage("The value '/config/mta/mta.jarr' of the configuration key 'mtaJarLocation' has an unexpected format.")
 
         configuration = [mtaJarLocation: '/config/mta/mta.jarr']
 
