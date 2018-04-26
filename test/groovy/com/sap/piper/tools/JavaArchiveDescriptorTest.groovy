@@ -50,7 +50,7 @@ class JavaArchiveDescriptorTest extends BasePipelineTest {
 
         script = loadScript('mtaBuild.groovy').mtaBuild
 
-        configuration = [:]
+        configuration = [:] //no default configuration
     }
 
     @Test
@@ -74,6 +74,16 @@ class JavaArchiveDescriptorTest extends BasePipelineTest {
         assert javaArchiveFile == '/config/mta/mta.jar'
         assert jlr.log.contains("SAP Multitarget Application Archive Builder file '/config/mta/mta.jar' retrieved from configuration.")
     }
+
+    @Test
+    void getJavaArchiveFileFailedTest() {
+
+        thrown.expect(AbortException)
+        thrown.expectMessage("Please, configure SAP Multitarget Application Archive Builder. SAP Multitarget Application Archive Builder can be set using the environment variable 'MTA_JAR_LOCATION', or " +
+                             "using the configuration key 'mtaJarLocation'.")
+
+        javaArchive.getFile(script, configuration)
+     }
 
     @Test
     void getJavaArchiveFileFromEnvironment_UnexpectedFormatTest() {
