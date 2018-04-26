@@ -86,8 +86,7 @@ class JavaArchiveDescriptor implements Serializable {
         def configOptions = "Please, configure $name. $name can be set "
         if (environmentKey) configOptions += "using the environment variable '$environmentKey'"
         if (environmentKey && stepConfigurationKey) configOptions += ", or "
-        if (stepConfigurationKey) configOptions += "using the configuration key '$stepConfigurationKey'"
-        configOptions += ", or it must be located on the current working directory."
+        if (stepConfigurationKey) configOptions += "using the configuration key '$stepConfigurationKey'."
         return configOptions
     }
 }

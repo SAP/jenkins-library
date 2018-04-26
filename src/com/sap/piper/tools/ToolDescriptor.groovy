@@ -13,7 +13,7 @@ class ToolDescriptor implements Serializable {
     final environmentKey
     final stepConfigurationKey
     final executablePath
-    public executableName
+    final executableName
     final version
     final versionOption
 
