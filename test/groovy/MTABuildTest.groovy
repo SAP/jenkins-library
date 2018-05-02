@@ -111,36 +111,13 @@ public class MtaBuildTest extends BasePipelineTest {
 
 
     @Test
-    void mtaJarLocationNotSetTest() {
-
-        helper.registerAllowedMethod('sh', [Map], { Map m -> getVersionWithoutEnvVarsAndNotInCurrentDir(m) })
-
-        thrown.expect(AbortException)
-        thrown.expectMessage("Please, configure SAP Multitarget Application Archive Builder home. SAP Multitarget Application Archive Builder home can be set using the environment variable 'MTA_JAR_LOCATION', or " +
-                             "using the configuration key 'mtaJarLocation'.")
-
-        jsr.step.call(buildTarget: 'NEO')
-    }
-
-    @Test
-    void mtaJarLocationOnCurrentWorkingDirectoryTest() {
-
-        jsr.step.call(buildTarget: 'NEO')
-
-        assert jscr.shell.find { c -> c.contains(' -jar mta.jar --mtar ')}
-
-        assert jlr.log.contains("SAP Multitarget Application Archive Builder expected on current working directory.")
-        assert jlr.log.contains("Using SAP Multitarget Application Archive Builder 'mta.jar'.")
-    }
-
-    @Test
     void mtaJarLocationAsParameterTest() {
 
-        jsr.step.call(mtaJarLocation: '/mylocation/mta', buildTarget: 'NEO')
+        jsr.step.call(mtaJarLocation: '/mylocation/mta/mta.jar', buildTarget: 'NEO')
 
         assert jscr.shell.find { c -> c.contains('-jar /mylocation/mta/mta.jar --mtar')}
 
-        assert jlr.log.contains("SAP Multitarget Application Archive Builder home '/mylocation/mta' retrieved from configuration.")
+        assert jlr.log.contains("SAP Multitarget Application Archive Builder file '/mylocation/mta/mta.jar' retrieved from configuration.")
         assert jlr.log.contains("Using SAP Multitarget Application Archive Builder '/mylocation/mta/mta.jar'.")
     }
 
@@ -187,7 +164,7 @@ public class MtaBuildTest extends BasePipelineTest {
         jsr.step.call(buildTarget: 'NEO')
 
         assert jscr.shell.find { c -> c.contains("-jar /env/mta/mta.jar --mtar")}
-        assert jlr.log.contains("SAP Multitarget Application Archive Builder home '/env/mta' retrieved from environment.")
+        assert jlr.log.contains("SAP Multitarget Application Archive Builder file '/env/mta/mta.jar' retrieved from environment.")
         assert jlr.log.contains("Using SAP Multitarget Application Archive Builder '/env/mta/mta.jar'.")
     }
 
@@ -195,14 +172,26 @@ public class MtaBuildTest extends BasePipelineTest {
     @Test
     void mtaJarLocationFromCustomStepConfigurationTest() {
 
-        jer.env.configuration = [steps:[mtaBuild:[mtaJarLocation: '/config/mta']]]
+        jer.env.configuration = [steps:[mtaBuild:[mtaJarLocation: '/config/mta/mta.jar']]]
 
         jsr.step.call(script: [commonPipelineEnvironment: jer.env],
                       buildTarget: 'NEO')
 
         assert jscr.shell.find(){ c -> c.contains("-jar /config/mta/mta.jar --mtar")}
-        assert jlr.log.contains("SAP Multitarget Application Archive Builder home '/config/mta' retrieved from configuration.")
+        assert jlr.log.contains("SAP Multitarget Application Archive Builder file '/config/mta/mta.jar' retrieved from configuration.")
         assert jlr.log.contains("Using SAP Multitarget Application Archive Builder '/config/mta/mta.jar'.")
+    }
+
+
+    @Test
+    void mtaJarLocationFromDefaultStepConfigurationTest() {
+
+        jsr.step.call(script: [commonPipelineEnvironment: jer.env],
+                      buildTarget: 'NEO')
+
+        assert jscr.shell.find(){ c -> c.contains("-jar mta.jar --mtar")}
+        assert jlr.log.contains("SAP Multitarget Application Archive Builder file 'mta.jar' retrieved from configuration.")
+        assert jlr.log.contains("Using SAP Multitarget Application Archive Builder 'mta.jar'.")
     }
 
 
@@ -363,7 +352,7 @@ public class MtaBuildTest extends BasePipelineTest {
         if(m.script.contains('JAVA_HOME')) {
             return ''
         } else if(m.script.contains('MTA_JAR_LOCATION')) {
-            return '/env/mta'
+            return '/env/mta/mta.jar'
         } else if(m.script.contains('which java')) {
             return 0
         } else {

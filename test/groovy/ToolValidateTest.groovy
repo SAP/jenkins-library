@@ -221,7 +221,7 @@ class ToolValidateTest extends BasePipelineTest {
         if(m.script.contains('JAVA_HOME')) {
             return '/env/java'
         } else if(m.script.contains('MTA_JAR_LOCATION')) {
-            return '/env/mta'
+            return '/env/mta/mta.jar'
         } else if(m.script.contains('NEO_HOME')) {
             return '/env/neo'
         } else if(m.script.contains('CM_CLI_HOME')) {

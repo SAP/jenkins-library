@@ -1,63 +1,92 @@
 package com.sap.piper.tools
 
+import com.sap.piper.VersionUtils
 import com.sap.piper.EnvironmentUtils
 import com.sap.piper.FileUtils
 
 import hudson.AbortException
 
 
-class JavaArchiveDescriptor extends ToolDescriptor {
+class JavaArchiveDescriptor implements Serializable {
 
+    final name
+    final environmentKey
+    final stepConfigurationKey
+    final version
+    final versionOption
     final javaTool
     final javaOptions
 
-    JavaArchiveDescriptor(name, environmentKey, stepConfigurationKey, executablePath, executableName, version, versionOption, javaTool, javaOptions = '') {
-        super(name, environmentKey, stepConfigurationKey, executablePath, executableName, version, versionOption)
+    JavaArchiveDescriptor(name, environmentKey, stepConfigurationKey, version, versionOption, javaTool, javaOptions = '') {
+        this.name = name
+        this.environmentKey = environmentKey
+        this.stepConfigurationKey = stepConfigurationKey
+        this.version = version
+        this.versionOption = versionOption
         this.javaTool = javaTool
         this.javaOptions = javaOptions
     }
 
-    @Override
-    def getToolLocation(script, configuration, log = true) {
+    def getFile(script, configuration, log = true) {
 
-        def home
+        def javaArchiveFile
         if (EnvironmentUtils.isEnvironmentVariable(script, environmentKey)) {
-            home = EnvironmentUtils.getEnvironmentVariable(script, environmentKey)
-            if (log) script.echo "$name home '$home' retrieved from environment."
+            javaArchiveFile = EnvironmentUtils.getEnvironmentVariable(script, environmentKey)
+            if (log) script.echo "$name file '$javaArchiveFile' retrieved from environment."
+            if (!isJavaArchiveFile(javaArchiveFile)) script.error "The value '$javaArchiveFile' of the environment variable '$environmentKey' has an unexpected format."
         }
         else if (configuration.containsKey(stepConfigurationKey)) {
-            home = configuration.get(stepConfigurationKey)
-            if (log) script.echo "$name home '$home' retrieved from configuration."
-        } else if (isOnCurrentWorkingDirectory(script)){
-            home = ''
-            if (log) script.echo "$name expected on current working directory."
+            javaArchiveFile = configuration.get(stepConfigurationKey)
+            if (log) script.echo "$name file '$javaArchiveFile' retrieved from configuration."
+            if (!isJavaArchiveFile(javaArchiveFile)) script.error "The value '$javaArchiveFile' of the configuration key '$stepConfigurationKey' has an unexpected format."
         } else {
             throw new AbortException(getMessage())
         }
-        return home
+        return javaArchiveFile
     }
 
-    @Override
-    def getToolExecutable(script, configuration, log = true) {
+    def isJavaArchiveFile(String javaArchiveFile) {
+        def group = javaArchiveFile =~ /(.+[\/\\])(\w+[.]jar)/
+        if (!group.matches() || group[0].size() == 0) group = javaArchiveFile =~ /(\w+[.]jar)/
+        if (!group.matches() || group[0].size() == 0) return false
+        return true
+    }
 
-        def javaArchive = getTool(script, configuration, log)
-        if (log) script.echo "Using $name '$javaArchive'."
+    def getCall(script, configuration, log = true) {
+
+        def javaArchiveFile = getFile(script, configuration, log)
+        if (log) script.echo "Using $name '$javaArchiveFile'."
         def javaExecutable = javaTool.getToolExecutable(script, configuration, false)
         def javaCall = "$javaExecutable -jar"
         if (javaOptions) javaCall += " $javaOptions"
-        return "$javaCall $javaArchive"
+        return "$javaCall $javaArchiveFile"
     }
 
-    @Override
+    def verify(script, configuration) {
+
+        verifyFile(script, configuration)
+        verifyVersion(script, configuration)
+    }
+
+    def verifyFile(script, configuration) {
+
+        def javaArchiveFile = getFile(script, configuration, false)
+        script.echo "Verifying $name '$javaArchiveFile'."
+        FileUtils.validateFile(script, javaArchiveFile)
+        script.echo "Verification success. $name '$javaArchiveFile' exists."
+    }
+
+    def verifyVersion(script, configuration) {
+
+        def javaArchiveCall = getCall(script, configuration, false)
+        VersionUtils.verifyVersion(script, name, javaArchiveCall, version, versionOption)
+    }
+
     def getMessage() {
-        def configOptions = "Please, configure $name home. $name home can be set "
+        def configOptions = "Please, configure $name. $name can be set "
         if (environmentKey) configOptions += "using the environment variable '$environmentKey'"
         if (environmentKey && stepConfigurationKey) configOptions += ", or "
         if (stepConfigurationKey) configOptions += "using the configuration key '$stepConfigurationKey'."
         return configOptions
-    }
-
-    def isOnCurrentWorkingDirectory(script) {
-        return FileUtils.isFile(script, executableName)
     }
 }
