@@ -20,6 +20,7 @@ steps:
     influxServer: 'jenkins'
   mtaBuild:
     buildTarget: 'NEO'
+    mtaJarLocation: 'mta.jar'
   neoDeploy:
     deployMode: 'mta'
     warAction: 'deploy'

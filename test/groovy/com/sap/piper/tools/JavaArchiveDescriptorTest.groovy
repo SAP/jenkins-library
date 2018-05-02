@@ -8,6 +8,7 @@ import org.junit.rules.ExpectedException
 import org.junit.rules.RuleChain
 
 import util.JenkinsLoggingRule
+import util.JenkinsErrorRule
 import util.Rules
 
 import com.lesfurets.jenkins.unit.BasePipelineTest
@@ -28,7 +29,7 @@ class JavaArchiveDescriptorTest extends BasePipelineTest {
                 .around(thrown)
                 .around(jlr)
 
-    private static tool
+    private static javaArchive
     private static configuration
 
     private script
@@ -38,124 +39,133 @@ class JavaArchiveDescriptorTest extends BasePipelineTest {
     static void init() {
 
         def java = new ToolDescriptor('Java', 'JAVA_HOME', '', '/bin/', 'java', '1.8.0', '-version 2>&1')
-        tool = new JavaArchiveDescriptor('SAP Multitarget Application Archive Builder', 'MTA_JAR_LOCATION', 'mtaJarLocation', '/', 'mta.jar', '1.0.6', '-v', java)
+        javaArchive = new JavaArchiveDescriptor('SAP Multitarget Application Archive Builder', 'MTA_JAR_LOCATION', 'mtaJarLocation', '1.0.6', '-v', java)
     }
 
     @Before
     void setup() {
 
         helper.registerAllowedMethod('sh', [Map], { Map m -> getNoEnvVars(m) })
+        helper.registerAllowedMethod('error', [String], { s -> throw new hudson.AbortException(s) })
 
         script = loadScript('mtaBuild.groovy').mtaBuild
 
-        configuration = [:]
+        configuration = [:] //no default configuration
     }
 
     @Test
-    void getToolHomeFromEnvironmentTest() {
+    void getJavaArchiveFileFromEnvironmentTest() {
 
         helper.registerAllowedMethod('sh', [Map], { Map m -> getEnvVars(m) })
 
-        def toolHome = tool.getToolLocation(script, configuration)
+        def javaArchiveFile = javaArchive.getFile(script, configuration)
 
-        assert toolHome == '/env/mta'
-        assert jlr.log.contains("$tool.name home '/env/mta' retrieved from environment.")
+        assert javaArchiveFile == '/env/mta/mta.jar'
+        assert jlr.log.contains("SAP Multitarget Application Archive Builder file '/env/mta/mta.jar' retrieved from environment.")
     }
 
     @Test
-    void getToolHomeFromConfigurationTest() {
+    void getJavaArchiveFileFromConfigurationTest() {
 
-        configuration = [mtaJarLocation: '/config/mta']
+        configuration = [mtaJarLocation: '/config/mta/mta.jar']
 
-        def toolHome = tool.getToolLocation(script, configuration)
+        def javaArchiveFile = javaArchive.getFile(script, configuration)
 
-        assert toolHome == '/config/mta'
-        assert jlr.log.contains("$tool.name home '/config/mta' retrieved from configuration.")
+        assert javaArchiveFile == '/config/mta/mta.jar'
+        assert jlr.log.contains("SAP Multitarget Application Archive Builder file '/config/mta/mta.jar' retrieved from configuration.")
     }
 
     @Test
-    void getToolHomeFromCurrentWorkingDirectoryTest() {
+    void getJavaArchiveFileFailedTest() {
 
-        def toolHome = tool.getToolLocation(script, configuration)
+        thrown.expect(AbortException)
+        thrown.expectMessage("Please, configure SAP Multitarget Application Archive Builder. SAP Multitarget Application Archive Builder can be set using the environment variable 'MTA_JAR_LOCATION', or " +
+                             "using the configuration key 'mtaJarLocation'.")
 
-        assert toolHome == ''
-        assert jlr.log.contains("$tool.name expected on current working directory.")
+        javaArchive.getFile(script, configuration)
+     }
+
+    @Test
+    void getJavaArchiveFileFromEnvironment_UnexpectedFormatTest() {
+
+        thrown.expect(AbortException)
+        thrown.expectMessage("The value '/env/mta/mta.jarr' of the environment variable 'MTA_JAR_LOCATION' has an unexpected format.")
+
+        helper.registerAllowedMethod('sh', [Map], { Map m -> getUnexpectedFormatEnvVars(m) })
+
+        javaArchive.getFile(script, configuration)
     }
 
     @Test
-    void getToolTest() {
+    void getJavaArchiveFileFromConfiguration_UnexpectedFormatTest() {
 
-        configuration = [mtaJarLocation: '/config/mta']
+        thrown.expect(AbortException)
+        thrown.expectMessage("The value '/config/mta/mta.jarr' of the configuration key 'mtaJarLocation' has an unexpected format.")
 
-        def toolExecutable = tool.getTool(script, configuration)
+        configuration = [mtaJarLocation: '/config/mta/mta.jarr']
 
-        assert toolExecutable == '/config/mta/mta.jar'
+        javaArchive.getFile(script, configuration)
     }
 
     @Test
-    void getToolExecutableTest() {
+    void getJavaArchiveCallTest() {
 
-        configuration = [mtaJarLocation: '/config/mta']
+        configuration = [mtaJarLocation: '/config/mta/mta.jar']
 
-        def toolExecutable = tool.getToolExecutable(script, configuration)
+        def javaArchiveCall = javaArchive.getCall(script, configuration)
 
-        assert toolExecutable == 'java -jar /config/mta/mta.jar'
-        assert jlr.log.contains("Using $tool.name '/config/mta/mta.jar'.")
+        assert javaArchiveCall == 'java -jar /config/mta/mta.jar'
+        assert jlr.log.contains("Using SAP Multitarget Application Archive Builder '/config/mta/mta.jar'.")
     }
 
     @Test
-    void verifyToolHomeTest() {
+    void verifyJavaArchiveFileTest() {
 
         helper.registerAllowedMethod('sh', [Map], { Map m -> getEnvVars(m) })
 
-        tool.verifyToolLocation(script, configuration)
+        javaArchive.verifyFile(script, configuration)
 
-        assert jlr.log.contains("Verifying $tool.name location '/env/mta'.")
-        assert jlr.log.contains("Verification success. $tool.name location '/env/mta' exists.")
+        assert jlr.log.contains("Verifying SAP Multitarget Application Archive Builder '/env/mta/mta.jar'.")
+        assert jlr.log.contains("Verification success. SAP Multitarget Application Archive Builder '/env/mta/mta.jar' exists.")
     }
 
     @Test
-    void verifyToolExecutableTest() {
+    void verifyJavaArchiveVersionTest() {
 
-        helper.registerAllowedMethod('sh', [Map], { Map m -> getEnvVars(m) })
-
-        tool.verifyToolExecutable(script, configuration)
-
-        assert jlr.log.contains("Verifying $tool.name '/env/mta/mta.jar'.")
-        assert jlr.log.contains("Verification success. $tool.name '/env/mta/mta.jar' exists.")
-    }
-
-    @Test
-    void verifyToolVersionTest() {
+        configuration = [mtaJarLocation: 'mta.jar']
 
         helper.registerAllowedMethod('sh', [Map], { Map m -> getVersion(m) })
 
-        tool.verifyVersion(script, configuration)
+        javaArchive.verifyVersion(script, configuration)
 
-        assert jlr.log.contains("Verifying $tool.name version $tool.version or compatible version.")
-        assert jlr.log.contains("Verification success. $tool.name version $tool.version is installed.")
+        assert jlr.log.contains("Verifying SAP Multitarget Application Archive Builder version 1.0.6 or compatible version.")
+        assert jlr.log.contains("Verification success. SAP Multitarget Application Archive Builder version 1.0.6 is installed.")
     }
 
     @Test
-    void verifyToolVersion_FailedTest() {
+    void verifyJavaArchiveVersion_FailedTest() {
+
+        configuration = [mtaJarLocation: 'mta.jar']
 
         thrown.expect(AbortException)
-        thrown.expectMessage("The verification of $tool.name failed. Please check 'java -jar mta.jar'. script returned exit code 127.")
+        thrown.expectMessage("The verification of SAP Multitarget Application Archive Builder failed. Please check 'java -jar mta.jar'. script returned exit code 127.")
 
         helper.registerAllowedMethod('sh', [Map], { Map m -> getVersionFailed(m) })
 
-        tool.verifyVersion(script, configuration)
+        javaArchive.verifyVersion(script, configuration)
     }
 
     @Test
-    void verifyToolVersion_IncompatibleVersionTest() {
+    void verifyJavaArchiveVersion_IncompatibleVersionTest() {
+
+        configuration = [mtaJarLocation: '/config/mta/mta.jar']
 
         thrown.expect(AbortException)
-        thrown.expectMessage("The installed version of $tool.name is 1.0.5. Please install version $tool.version or a compatible version.")
+        thrown.expectMessage("The installed version of SAP Multitarget Application Archive Builder is 1.0.5. Please install version 1.0.6 or a compatible version.")
 
         helper.registerAllowedMethod('sh', [Map], { Map m -> getIncompatibleVersion(m) })
 
-        tool.verifyVersion(script, configuration)
+        javaArchive.verifyVersion(script, configuration)
     }
 
 
@@ -164,7 +174,18 @@ class JavaArchiveDescriptorTest extends BasePipelineTest {
         if(m.script.contains('JAVA_HOME')) {
             return '/env/java'
         } else if(m.script.contains('MTA_JAR_LOCATION')) {
-            return '/env/mta'
+            return '/env/mta/mta.jar'
+        } else {
+            return 0
+        }
+    }
+
+    private getUnexpectedFormatEnvVars(Map m) {
+
+        if(m.script.contains('JAVA_HOME')) {
+            return '/env/java'
+        } else if(m.script.contains('MTA_JAR_LOCATION')) {
+            return '/env/mta/mta.jarr'
         } else {
             return 0
         }

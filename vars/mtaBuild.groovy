@@ -36,7 +36,7 @@ def call(Map parameters = [:]) {
         def java = new ToolDescriptor('Java', 'JAVA_HOME', '', '/bin/', 'java', '1.8.0', '-version 2>&1')
         java.verify(this, configuration)
 
-        def mta = new JavaArchiveDescriptor('SAP Multitarget Application Archive Builder', 'MTA_JAR_LOCATION', 'mtaJarLocation', '/', 'mta.jar', '1.0.6', '-v', java)
+        def mta = new JavaArchiveDescriptor('SAP Multitarget Application Archive Builder', 'MTA_JAR_LOCATION', 'mtaJarLocation', '1.0.6', '-v', java)
         mta.verify(this, configuration)
 
         def mtaYmlName = "${pwd()}/mta.yaml"
@@ -62,7 +62,7 @@ def call(Map parameters = [:]) {
         }
 
         def mtarFileName = "${id}.mtar"
-        def mtaJar = mta.getToolExecutable(this, configuration)
+        def mtaJar = mta.getCall(this, configuration)
         def buildTarget = configuration.buildTarget
 
         def mtaCall = "${mtaJar} --mtar ${mtarFileName} --build-target=${buildTarget}"
