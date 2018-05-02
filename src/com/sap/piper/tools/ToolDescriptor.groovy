@@ -1,5 +1,6 @@
 package com.sap.piper.tools
 
+import com.sap.piper.VersionUtils
 import com.sap.piper.EnvironmentUtils
 import com.sap.piper.FileUtils
 import com.sap.piper.Version
@@ -94,21 +95,7 @@ class ToolDescriptor implements Serializable {
     def verifyVersion(script, configuration) {
 
         def executable = getToolExecutable(script, configuration, false)
-
-        script.echo "Verifying $name version $version or compatible version."
-
-        def toolVersion
-        try {
-          toolVersion = script.sh returnStdout: true, script: """#!/bin/bash
-                                                                 $executable $versionOption"""
-        } catch(AbortException e) {
-          throw new AbortException("The verification of $name failed. Please check '$executable'. $e.message.")
-        }
-        def installedVersion = new Version(toolVersion)
-        if (!installedVersion.isCompatibleVersion(new Version(version))) {
-          throw new AbortException("The installed version of $name is ${installedVersion.toString()}. Please install version $version or a compatible version.")
-        }
-        script.echo "Verification success. $name version ${installedVersion.toString()} is installed."
+        VersionUtils.verifyVersion(script, name, executable, version, versionOption)
     }
 
     def getMessage() {
