@@ -1,5 +1,6 @@
 package com.sap.piper.tools
 
+import org.junit.Ignore
 import org.junit.BeforeClass
 import org.junit.Before
 import org.junit.Rule
@@ -75,6 +76,30 @@ class JavaArchiveDescriptorTest extends BasePipelineTest {
         assert jlr.log.contains("SAP Multitarget Application Archive Builder file '/config/mta/mta.jar' retrieved from configuration.")
     }
 
+    // Compatibility tests
+    @Test
+    void getJavaArchiveFileFromEnvironment_CompatibilityTest() {
+
+        helper.registerAllowedMethod('sh', [Map], { Map m -> getEnvVarsWithCompatibility(m) })
+
+        def javaArchiveFile = javaArchive.getFile(script, configuration)
+
+        assert javaArchiveFile == '/env/mta/mta.jar'
+        assert jlr.log.contains("SAP Multitarget Application Archive Builder file '/env/mta' retrieved from environment.")
+    }
+
+    @Test
+    void getJavaArchiveFileFromConfiguration_CompatibilityTest() {
+
+        configuration = [mtaJarLocation: '/config/mta']
+
+        def javaArchiveFile = javaArchive.getFile(script, configuration)
+
+        assert javaArchiveFile == '/config/mta/mta.jar'
+        assert jlr.log.contains("SAP Multitarget Application Archive Builder file '/config/mta' retrieved from configuration.")
+    }
+    //
+
     @Test
     void getJavaArchiveFileFailedTest() {
 
@@ -85,7 +110,7 @@ class JavaArchiveDescriptorTest extends BasePipelineTest {
         javaArchive.getFile(script, configuration)
      }
 
-    @Test
+    @Ignore('while compatibility code is not removed')
     void getJavaArchiveFileFromEnvironment_UnexpectedFormatTest() {
 
         thrown.expect(AbortException)
@@ -96,7 +121,7 @@ class JavaArchiveDescriptorTest extends BasePipelineTest {
         javaArchive.getFile(script, configuration)
     }
 
-    @Test
+    @Ignore('while compatibility code is not removed')
     void getJavaArchiveFileFromConfiguration_UnexpectedFormatTest() {
 
         thrown.expect(AbortException)
@@ -180,6 +205,18 @@ class JavaArchiveDescriptorTest extends BasePipelineTest {
         }
     }
 
+    private getEnvVarsWithCompatibility(Map m) {
+
+        if(m.script.contains('JAVA_HOME')) {
+            return '/env/java'
+        } else if(m.script.contains('MTA_JAR_LOCATION')) {
+            return '/env/mta'
+        } else {
+            return 0
+        }
+    }
+
+    /*
     private getUnexpectedFormatEnvVars(Map m) {
 
         if(m.script.contains('JAVA_HOME')) {
@@ -190,6 +227,7 @@ class JavaArchiveDescriptorTest extends BasePipelineTest {
             return 0
         }
     }
+    */
 
     private getNoEnvVars(Map m) {
 
