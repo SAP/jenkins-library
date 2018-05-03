@@ -15,16 +15,29 @@ class ToolDescriptor implements Serializable {
     final stepConfigurationKey
     final executablePath
     final executableName
-    final version
+    final singleVersion
+    final multipleVersions
     final versionOption
 
-    ToolDescriptor(name, environmentKey, stepConfigurationKey, executablePath, executableName, version, versionOption) {
+    ToolDescriptor(name, environmentKey, stepConfigurationKey, executablePath, executableName, String singleVersion, versionOption) {
         this.name = name
         this.environmentKey = environmentKey
         this.stepConfigurationKey = stepConfigurationKey
         this.executablePath = executablePath
         this.executableName = executableName
-        this.version = version
+        this.singleVersion = singleVersion
+        this.multipleVersions = [:]
+        this.versionOption = versionOption
+    }
+
+    ToolDescriptor(name, environmentKey, stepConfigurationKey, executablePath, executableName, Map multipleVersions, versionOption) {
+        this.name = name
+        this.environmentKey = environmentKey
+        this.stepConfigurationKey = stepConfigurationKey
+        this.executablePath = executablePath
+        this.executableName = executableName
+        this.singleVersion = ''
+        this.multipleVersions = multipleVersions
         this.versionOption = versionOption
     }
 
@@ -95,7 +108,8 @@ class ToolDescriptor implements Serializable {
     def verifyVersion(script, configuration) {
 
         def executable = getToolExecutable(script, configuration, false)
-        VersionUtils.verifyVersion(script, name, executable, version, versionOption)
+        if (singleVersion) VersionUtils.verifyVersion(script, name, executable, singleVersion, versionOption)
+        if (multipleVersions) VersionUtils.verifyVersion(script, name, executable, multipleVersions, versionOption)
     }
 
     def getMessage() {
