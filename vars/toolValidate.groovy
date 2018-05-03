@@ -31,7 +31,8 @@ def call(Map parameters = [:]) {
                 mta.verifyVersion(this, [mtaJarLocation: home])
                 return
             case 'neo':
-                def neo = new ToolDescriptor('SAP Cloud Platform Console Client', 'NEO_HOME', 'neoHome', '/tools/', 'neo.sh', '3.39.10', 'version')
+                def neoVersions = ['neo-java-web': '3.39.10', 'neo-javaee6-wp': '2.132.6', 'neo-javaee7-wp': '1.21.13']
+                def neo = new ToolDescriptor('SAP Cloud Platform Console Client', 'NEO_HOME', 'neoHome', '/tools/', 'neo.sh', neoVersions, 'version')
                 neo.verifyVersion(this, [neoHome: home])
                 return
             case 'cm':
