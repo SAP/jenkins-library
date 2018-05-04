@@ -5,11 +5,11 @@ import hudson.AbortException
 
 class EnvironmentUtils implements Serializable {
 
-    def static isEnvironmentVariable(script, variable) {
+    static boolean isEnvironmentVariable(script, variable) {
         return !getEnvironmentVariable(script, variable).isEmpty()
     }
 
-    def static getEnvironmentVariable(script, variable) {
+    static String getEnvironmentVariable(script, variable) {
         try {
           def envVar = script.sh returnStdout: true, script: """#!/bin/bash --login
                                                                 echo \$$variable"""

@@ -1,6 +1,6 @@
 package com.sap.piper
 
-def getGitCommitIdOrNull() {
+String getGitCommitIdOrNull() {
     if (fileExists('.git')) {
         return sh(returnStdout: true, script: 'git rev-parse HEAD').trim()
     } else {
@@ -8,6 +8,6 @@ def getGitCommitIdOrNull() {
     }
 }
 
-def getGitCommitId() {
+String getGitCommitId() {
     return sh(returnStdout: true, script: 'git rev-parse HEAD').trim()
 }
