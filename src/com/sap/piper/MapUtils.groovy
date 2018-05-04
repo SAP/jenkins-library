@@ -4,7 +4,7 @@ import com.cloudbees.groovy.cps.NonCPS
 
 class MapUtils implements Serializable {
     @NonCPS
-    static isMap(object){
+    static boolean isMap(object){
         return object in Map
     }
 }

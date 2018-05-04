@@ -1,12 +1,10 @@
 package com.sap.piper
 
 import hudson.AbortException
-import java.io.File
-
 
 class FileUtils implements Serializable {
 
-    static directoryOrFileExists(script, dirOrFile) {
+    static boolean directoryOrFileExists(script, dirOrFile) {
         if (!dirOrFile) throw new IllegalArgumentException("The parameter 'dirOrFile' can not be null or empty.")
         def returnStatus = script.sh returnStatus: true, script: """
                                                                  set +x
@@ -24,7 +22,7 @@ class FileUtils implements Serializable {
         return returnStatus == 0
     }
 
-    static isDirectory(script, dir) {
+    static boolean isDirectory(script, dir) {
         if (!dir) throw new IllegalArgumentException("The parameter 'dir' can not be null or empty.")
         def returnStatus = script.sh returnStatus: true, script: """
                                                                  set +x
@@ -39,7 +37,7 @@ class FileUtils implements Serializable {
         return returnStatus == 0
     }
 
-    static isDirectoryEmpty(script, dir) {
+    static boolean isDirectoryEmpty(script, dir) {
         if (!dir) throw new IllegalArgumentException("The parameter 'dir' can not be null or empty.")
         def returnStatus = script.sh returnStatus: true, script: """
                                                                set +x
@@ -54,7 +52,7 @@ class FileUtils implements Serializable {
         return returnStatus == 1
     }
 
-    static isFile(script, filePath) {
+    static boolean isFile(script, filePath) {
         if (!filePath) throw new IllegalArgumentException("The parameter 'filePath' can not be null or empty.")
         def returnStatus = script.sh returnStatus: true, script: """
                                                                set +x
