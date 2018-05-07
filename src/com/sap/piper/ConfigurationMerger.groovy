@@ -1,12 +1,11 @@
 package com.sap.piper
 
 import com.cloudbees.groovy.cps.NonCPS
-
 import com.sap.piper.MapUtils
 
 class ConfigurationMerger {
     @NonCPS
-    def static merge(Map configs, Set configKeys, Map defaults) {
+    static Map merge(Map configs, Set configKeys, Map defaults) {
         Map filteredConfig = configKeys?configs.subMap(configKeys):configs
         Map merged = [:]
 
@@ -24,7 +23,7 @@ class ConfigurationMerger {
     }
 
     @NonCPS
-    def static merge(
+    static Map merge(
         Map parameters, Set parameterKeys,
         Map configuration, Set configurationKeys,
         Map defaults=[:]
@@ -36,7 +35,7 @@ class ConfigurationMerger {
     }
 
     @NonCPS
-    def static merge(
+    static Map merge(
         def script, def stepName,
         Map parameters, Set parameterKeys,
         Set stepConfigurationKeys
@@ -45,7 +44,7 @@ class ConfigurationMerger {
     }
 
     @NonCPS
-    def static merge(
+    static Map merge(
         def script, def stepName,
         Map parameters, Set parameterKeys,
         Map pipelineData,
@@ -58,7 +57,7 @@ class ConfigurationMerger {
     }
 
     @NonCPS
-    def static mergeWithPipelineData(Map parameters, Set parameterKeys,
+    static Map mergeWithPipelineData(Map parameters, Set parameterKeys,
                             Map pipelineDataMap,
                             Map configurationMap, Set configurationKeys,
                             Map stepDefaults=[:]

@@ -34,12 +34,12 @@ class Version implements Serializable {
         return major == version.major && minor == version.minor && patch == version.patch
     }
 
-    def isHigher(version) {
+    boolean isHigher(version) {
         if (!version) throw new IllegalArgumentException("The parameter 'version' can not be null.")
         return major > version.major || major == version.major && ( minor > version.minor || minor == version.minor && patch > version.patch)
     }
 
-    def isCompatibleVersion(version) {
+    boolean isCompatibleVersion(version) {
         if (!version) throw new IllegalArgumentException("The parameter 'version' can not be null.")
         return this == version || isHigher(version) && major == version.major
     }
