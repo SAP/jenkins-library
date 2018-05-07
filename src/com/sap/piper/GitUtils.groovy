@@ -15,3 +15,17 @@ String getGitCommitIdOrNull() {
 String getGitCommitId() {
     return sh(returnStdout: true, script: 'git rev-parse HEAD').trim()
 }
+
+String[] extractLogLines(String filter = '',
+                         String from = 'origin/master',
+                         String to = 'HEAD',
+                         String format = '%b') {
+
+    sh ( returnStdout: true,
+         script: """#!/bin/bash
+                    git log --pretty=format:${format} ${from}..${to}
+                 """
+       )?.split('\n')
+        ?.findAll { line -> line ==~ /${filter}/ }
+
+}
