@@ -61,6 +61,7 @@ class ArtifactSetVersionTest extends BasePipelineTest {
         jscr.setReturnValue('git rev-parse HEAD', 'testCommitId')
         jscr.setReturnValue("date --universal +'%Y%m%d%H%M%S'", '20180101010203')
         jscr.setReturnValue('git diff --quiet HEAD', 0)
+        jscr.setReturnValue('git rev-parse --is-inside-work-tree 1>/dev/null 2>&1', 0)
 
         binding.setVariable('Jenkins', [instance: [pluginManager: [plugins: [new DockerExecuteTest.PluginMock()]]]])
 
@@ -78,12 +79,12 @@ class ArtifactSetVersionTest extends BasePipelineTest {
         assertEquals('1.2.3-20180101010203_testCommitId', jer.env.getArtifactVersion())
         assertEquals('testCommitId', jer.env.getGitCommitId())
 
-        assertEquals('mvn --file \'pom.xml\' versions:set -DnewVersion=1.2.3-20180101010203_testCommitId', jscr.shell[5])
-        assertEquals('git add .', jscr.shell[6])
-        assertEquals ("git commit -m 'update version 1.2.3-20180101010203_testCommitId'", jscr.shell[7])
-        assertEquals ("git remote set-url origin myGitSshUrl", jscr.shell[8])
-        assertEquals ("git tag build_1.2.3-20180101010203_testCommitId", jscr.shell[9])
-        assertEquals ("git push origin build_1.2.3-20180101010203_testCommitId", jscr.shell[10])
+        assertEquals('mvn --file \'pom.xml\' versions:set -DnewVersion=1.2.3-20180101010203_testCommitId', jscr.shell[6])
+        assertEquals('git add .', jscr.shell[7])
+        assertEquals ("git commit -m 'update version 1.2.3-20180101010203_testCommitId'", jscr.shell[8])
+        assertEquals ("git remote set-url origin myGitSshUrl", jscr.shell[9])
+        assertEquals ("git tag build_1.2.3-20180101010203_testCommitId", jscr.shell[10])
+        assertEquals ("git push origin build_1.2.3-20180101010203_testCommitId", jscr.shell[11])
     }
 
     @Test
@@ -91,7 +92,7 @@ class ArtifactSetVersionTest extends BasePipelineTest {
         jsr.step.call(script: jsr.step, juStabGitUtils: gitUtils, buildTool: 'maven', commitVersion: false)
 
         assertEquals('1.2.3-20180101010203_testCommitId', jer.env.getArtifactVersion())
-        assertEquals('mvn --file \'pom.xml\' versions:set -DnewVersion=1.2.3-20180101010203_testCommitId', jscr.shell[5])
+        assertEquals('mvn --file \'pom.xml\' versions:set -DnewVersion=1.2.3-20180101010203_testCommitId', jscr.shell[6])
     }
 
     @Test
@@ -99,14 +100,14 @@ class ArtifactSetVersionTest extends BasePipelineTest {
         jsr.step.call(juStabGitUtils: gitUtils, buildTool: 'maven', commitVersion: false)
 
         assertEquals('1.2.3-20180101010203_testCommitId', jer.env.getArtifactVersion())
-        assertEquals('mvn --file \'pom.xml\' versions:set -DnewVersion=1.2.3-20180101010203_testCommitId', jscr.shell[5])
+        assertEquals('mvn --file \'pom.xml\' versions:set -DnewVersion=1.2.3-20180101010203_testCommitId', jscr.shell[6])
     }
 
     @Test
     void testVersioningCustomGitUserAndEMail() {
         jsr.step.call(script: jsr.step, juStabGitUtils: gitUtils, buildTool: 'maven', gitSshUrl: 'myGitSshUrl', gitUserEMail: 'test@test.com', gitUserName: 'test')
 
-        assertEquals ('git -c user.email="test@test.com" -c user.name="test" commit -m \'update version 1.2.3-20180101010203_testCommitId\'', jscr.shell[7])
+        assertEquals ('git -c user.email="test@test.com" -c user.name="test" commit -m \'update version 1.2.3-20180101010203_testCommitId\'', jscr.shell[8])
     }
 
     @Test
