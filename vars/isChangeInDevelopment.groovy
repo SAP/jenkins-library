@@ -31,7 +31,7 @@ String getChangeId(GitUtils gitUtils, String from = 'origin/master', String to =
 
     def label = 'ChangeDocument\\s?:'
 
-    def log = gitUtils.extractLogLines('.*ChangeDocument\\s?:.*', from, to)
+    def log = gitUtils.extractLogLines(".*${label}.*", from, to)
 
     echo "LOG: ${log}"
 
