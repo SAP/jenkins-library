@@ -1,7 +1,7 @@
 package com.sap.piper
 
 String getGitCommitIdOrNull() {
-    if (fileExists('.git')) {
+    if (sh(returnStatus: true, script: 'git rev-parse --is-inside-work-tree 1>/dev/null 2>&1') == 0) {
         return getGitCommitId()
     } else {
         return null

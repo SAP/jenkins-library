@@ -27,7 +27,6 @@ class GitUtilsTest extends BasePipelineTest {
     void init() throws Exception {
         gitUtils = new GitUtils()
         prepareObjectInterceptors(gitUtils)
-        gitUtils.fileExists = MockHelper
 
         jscr.setReturnValue('git rev-parse HEAD', 'testCommitId')
     }
@@ -40,13 +39,13 @@ class GitUtilsTest extends BasePipelineTest {
 
     @Test
     void testGetGitCommitId() {
-        this.helper.registerAllowedMethod('fileExists', [String.class], {true})
+        jscr.setReturnValue('git rev-parse --is-inside-work-tree 1>/dev/null 2>&1', 0)
         assertEquals('testCommitId', gitUtils.getGitCommitIdOrNull())
     }
 
     @Test
     void testGetGitCommitIdNotAGitRepo() {
-        this.helper.registerAllowedMethod('fileExists', [String.class], {false})
+        jscr.setReturnValue('git rev-parse --is-inside-work-tree 1>/dev/null 2>&1', 128)
         assertNull(gitUtils.getGitCommitIdOrNull())
     }
 
