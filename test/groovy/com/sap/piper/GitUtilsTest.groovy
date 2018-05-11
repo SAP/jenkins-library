@@ -99,6 +99,16 @@ class GitUtilsTest extends BasePipelineTest {
     }
 
     @Test
+    void testExtractLogLinesFilterPreserveDuplicates() {
+        jscr.setReturnValue('#!/bin/bash git log --pretty=format:%b origin/master..HEAD', '123\nabc\n123')
+        String[] log = gitUtils.extractLogLines('12.*')
+        assertThat(log, is(notNullValue()))
+        assertThat(log.size(),is(equalTo(2)))
+        assertThat(log[0], is(equalTo('123')))
+        assertThat(log[1], is(equalTo('123')))
+    }
+
+    @Test
     void testExtractLogLinesFilterNoMatch() {
         jscr.setReturnValue('#!/bin/bash git log --pretty=format:%b origin/master..HEAD', 'abc\n123')
         String[] log = gitUtils.extractLogLines('xyz')
