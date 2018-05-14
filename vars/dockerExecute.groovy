@@ -12,7 +12,9 @@ def call(Map parameters = [:], body) {
         Map dockerVolumeBind = parameters.dockerVolumeBind ?: [:]
         def k8s = parameters.k8s ?: true
         parameters.k8s = k8s
+
         if (k8s) {
+            echo "redirecty to executeDocker"
             executeDocker parameters
         } else if (dockerImage) {
 
