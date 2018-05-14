@@ -33,8 +33,6 @@ String getChangeId(GitUtils gitUtils, String from = 'origin/master', String to =
 
     def log = gitUtils.extractLogLines(".*${label}.*", from, to)
 
-    echo "LOG: ${log}"
-
     def changeIds = log.collect { line -> line.replaceAll(label,'').trim() } .unique()
         changeIds.retainAll { line -> ! line.isEmpty() }
 
