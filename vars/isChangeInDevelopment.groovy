@@ -14,14 +14,6 @@ def call(parameters = [:]) {
 
     handlePipelineStepErrors (stepName: STEP_NAME, stepParameters: parameters) {
 
-        GitUtils gitUtils = new GitUtils()
-
-        if( ! gitUtils.insideWorkTree() ) {
-            throw new hudson.AbortException('Cannot retrieve change status. Not is a git work tree.')
-        } else {
-            echo '[INFO] Inside a git work tree.'
-        }
-
         def changeId = getChangeId(gitUtils, 'HEAD~2')
         echo "CHANGE-ID: ${changeId}"
     }
@@ -30,6 +22,14 @@ def call(parameters = [:]) {
 String getChangeId(GitUtils gitUtils, String from = 'origin/master', String to = 'HEAD') {
 
     def label = 'ChangeDocument\\s?:'
+
+    GitUtils gitUtils = new GitUtils()
+
+    if( ! gitUtils.insideWorkTree() ) {
+        throw new hudson.AbortException('Cannot retrieve change status. Not in a git work tree.')
+    } else {
+        echo '[INFO] Inside a git work tree.'
+    }
 
     def log = gitUtils.extractLogLines(".*${label}.*", from, to)
 
