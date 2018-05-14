@@ -11,6 +11,7 @@ def call(Map parameters = [:], body) {
         def dockerOptions = parameters.dockerOptions ?: ''
         Map dockerVolumeBind = parameters.dockerVolumeBind ?: [:]
         def k8s = parameters.k8s ?: true
+        parameters.k8s = k8s
         if (k8s) {
             executeDocker parameters
         } else if (dockerImage) {
