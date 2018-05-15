@@ -15,7 +15,7 @@ def call(Map parameters = [:], body) {
 
         if (k8s) {
             echo "redirecty to executeDocker"
-            executeDocker(parameters){
+            executeDockerNative(parameters){
                 body()
             }
         } else if (dockerImage) {
