@@ -15,7 +15,7 @@ def call(Map parameters = [:], body) {
 
         if (k8s) {
             echo "redirecty to executeDocker"
-            executeDocker(parameters){
+            executeDocker(parameters) {
                 body()
             }
         } else if (dockerImage) {
@@ -36,17 +36,16 @@ def call(Map parameters = [:], body) {
                 echo "[WARNING][$STEP_NAME] Cannot connect to docker daemon (command 'docker ps' did not return with '0'). Configured docker image '${dockerImage}' will not be used."
                 dockerImage = null
             }
-        }
-
-        if (!dockerImage) {
-            echo "[INFO][${STEP_NAME}] Running on local environment."
-            body()
-        } else {
             def image = docker.image(dockerImage)
             image.pull()
             image.inside(getDockerOptions(dockerEnvVars, dockerVolumeBind, dockerOptions)) {
                 body()
             }
+        }
+
+        if (!dockerImage) {
+            echo "[INFO][${STEP_NAME}] Running on local environment."
+            body()
         }
     }
 }
