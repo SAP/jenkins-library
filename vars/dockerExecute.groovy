@@ -15,7 +15,9 @@ def call(Map parameters = [:], body) {
 
         if (k8s) {
             echo "redirecty to executeDocker"
-            executeDocker parameters
+            executeDocker(parameters){
+                body()
+            }
         } else if (dockerImage) {
 
             if (!isPluginActive(PLUGIN_ID_DOCKER_WORKFLOW)) {
