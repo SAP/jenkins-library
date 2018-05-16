@@ -13,7 +13,7 @@ def call(Map parameters = [:], body) {
 
         if(dockerImage) {
 
-            if (! Jenkins.instance.pluginManager.plugins.find { p -> p.isActive() && p.getShortName() == PLUGIN_ID_DOCKER_WORKFLOW } ) {
+            if (! isPluginActive(PLUGIN_ID_DOCKER_WORKFLOW) ) {
                 echo "[WARNING][${STEP_NAME}] Docker not supported. Plugin '${PLUGIN_ID_DOCKER_WORKFLOW}' is not installed or not active. Configured docker image '${dockerImage}' will not be used."
                 dockerImage = null
             }
@@ -42,6 +42,11 @@ def call(Map parameters = [:], body) {
             }
         }
     }
+}
+
+@NonCPS
+private isPluginActive(String pluginId){
+    return Jenkins.instance.pluginManager.plugins.find { p -> p.isActive() && p.getShortName() == pluginId }
 }
 
 /**

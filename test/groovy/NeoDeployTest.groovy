@@ -42,12 +42,11 @@ class NeoDeployTest extends BasePipelineTest {
         .around(jsr)
         .around(jer)
 
-    def toolNeoValidateCalled = false
-
     private static workspacePath
     private static warArchiveName
     private static propertiesFileName
     private static archiveName
+
 
     @BeforeClass
     static void createTestFiles() {
@@ -85,25 +84,9 @@ class NeoDeployTest extends BasePipelineTest {
 
         })
 
-        binding.setVariable('env', ['NEO_HOME':'/opt/neo'])
+        helper.registerAllowedMethod('sh', [Map], { Map m -> getVersionWithEnvVars(m) })
 
         jer.env.configuration = [steps:[neoDeploy: [host: 'test.deploy.host.com', account: 'trialuser123']]]
-
-        //
-        // needs to be after loading the scripts. Here we have a different behaviour
-        // for usual steps and for steps contained in the shared lib itself.
-        //
-        // toolValidate mocked here since we are not interested in testing
-        // toolValidate here. This is expected to be done in a test class for
-        // toolValidate.
-        //
-        helper.registerAllowedMethod('toolValidate', [Map], { m ->
-
-                                                                  if(m.tool == 'neo')
-                                                                      toolNeoValidateCalled = true
-                                                                  if(m.tool == 'java')
-                                                                      toolJavaValidateCalled = true
-                                                            })
     }
 
 
@@ -178,29 +161,32 @@ class NeoDeployTest extends BasePipelineTest {
     @Test
     void neoHomeNotSetTest() {
 
-        binding.setVariable('env', [:])
+        helper.registerAllowedMethod('sh', [Map], { Map m -> getVersionWithPath(m) })
 
         jsr.step.call(script: [commonPipelineEnvironment: jer.env],
                        archivePath: archiveName
         )
 
-        assert jscr.shell.find { c -> c.contains('which neo.sh') }
         assert jscr.shell.find { c -> c.contains('"neo.sh" deploy-mta') }
-        assert jlr.log.contains('Using Neo executable from PATH.')
+        assert jlr.log.contains('SAP Cloud Platform Console Client is on PATH.')
+        assert jlr.log.contains("Using SAP Cloud Platform Console Client 'neo.sh'.")
     }
 
 
     @Test
     void neoHomeAsParameterTest() {
 
+        helper.registerAllowedMethod('sh', [Map], { Map m -> getVersionWithPath(m) })
+
         jsr.step.call(script: [commonPipelineEnvironment: jer.env],
                        archivePath: archiveName,
                        neoCredentialsId: 'myCredentialsId',
-                       neoHome: '/etc/neo'
+                       neoHome: '/param/neo'
         )
 
-        assert jscr.shell.find{ c -> c = '"/etc/neo/tools/neo.sh" deploy-mta' }
-        assert jlr.log.contains('[neoDeploy] Neo executable "/etc/neo/tools/neo.sh" retrieved from configuration.')
+        assert jscr.shell.find{ c -> c = "\"/param/neo/tools/neo.sh\" deploy-mta" }
+        assert jlr.log.contains("SAP Cloud Platform Console Client home '/param/neo' retrieved from configuration.")
+        assert jlr.log.contains("Using SAP Cloud Platform Console Client '/param/neo/tools/neo.sh'.")
     }
 
 
@@ -211,22 +197,26 @@ class NeoDeployTest extends BasePipelineTest {
                        archivePath: archiveName
         )
 
-        assert jscr.shell.find { c -> c.contains('"/opt/neo/tools/neo.sh" deploy-mta')}
-        assert jlr.log.contains('[neoDeploy] Neo executable "/opt/neo/tools/neo.sh" retrieved from environment.')
+        assert jscr.shell.find { c -> c.contains("\"/opt/neo/tools/neo.sh\" deploy-mta")}
+        assert jlr.log.contains("SAP Cloud Platform Console Client home '/opt/neo' retrieved from environment.")
+        assert jlr.log.contains("Using SAP Cloud Platform Console Client '/opt/neo/tools/neo.sh'.")
     }
 
 
     @Test
     void neoHomeFromCustomStepConfigurationTest() {
 
-        jer.env.configuration = [steps:[neoDeploy: [host: 'test.deploy.host.com', account: 'trialuser123', neoHome: '/step/neo']]]
+        helper.registerAllowedMethod('sh', [Map], { Map m -> getVersionWithPath(m) })
+
+        jer.env.configuration = [steps:[neoDeploy: [host: 'test.deploy.host.com', account: 'trialuser123', neoHome: '/config/neo']]]
 
         jsr.step.call(script: [commonPipelineEnvironment: jer.env],
                        archivePath: archiveName
         )
 
-        assert jscr.shell.find { c -> c = '"/step/neo/tools/neo.sh" deploy-mta'}
-        assert jlr.log.contains('[neoDeploy] Neo executable "/step/neo/tools/neo.sh" retrieved from configuration.')
+        assert jscr.shell.find { c -> c = "\"/config/neo/tools/neo.sh\" deploy-mta"}
+        assert jlr.log.contains("SAP Cloud Platform Console Client home '/config/neo' retrieved from configuration.")
+        assert jlr.log.contains("Using SAP Cloud Platform Console Client '/config/neo/tools/neo.sh'.")
     }
 
 
@@ -447,54 +437,64 @@ class NeoDeployTest extends BasePipelineTest {
         assert jlr.log.contains("Deprecated parameter 'deployAccount' is used. This will not work anymore in future versions. Use parameter 'account' instead.")
     }
 
-	@Ignore('Tool validation disabled since it does not work properly in conjunction with slaves.')
-    @Test
-    void skipValidationWhenNeoToolsetIsInPathButNeoHomeNotProvidedViaConfigNorEnvironment() {
 
-        binding.setVariable('env', [:])
-        jscr.setReturnValue('which neo.sh', 0)
-        jsr.step.call(script: [commonPipelineEnvironment: jer.env],
-                               archivePath: archiveName,
-                               neoCredentialsId: 'myCredentialsId'
-        )
-        assert !toolNeoValidateCalled
+    private getVersionWithEnvVars(Map m) {
+
+        if(m.script.contains('java -version')) {
+            return '''openjdk version \"1.8.0_121\"
+                    OpenJDK Runtime Environment (build 1.8.0_121-8u121-b13-1~bpo8+1-b13)
+                    OpenJDK 64-Bit Server VM (build 25.121-b13, mixed mode)'''
+        } else if(m.script.contains('neo.sh version')) {
+            return '''SAP Cloud Platform Console Client
+                    SDK version    : 3.39.10
+                    Runtime        : neo-java-web'''
+        } else {
+            return getEnvVars(m)
+        }
     }
 
-    @Ignore('Tool validation disabled since it does not work properly in conjunction with slaves.')
-    @Test
-    void performValidationWhenNeoToolsetIsNotInPathAndNeoHomeNotProvidedViaConfigNorEnvironment() {
+    private getVersionWithPath(Map m) {
 
-        binding.setVariable('env', [:])
-        jscr.setReturnValue('which neo.sh', 1)
-        jsr.step.call(script: [commonPipelineEnvironment: jer.env],
-                               archivePath: archiveName,
-                               neoCredentialsId: 'myCredentialsId'
-        )
-        assert toolNeoValidateCalled
+        if(m.script.contains('java -version')) {
+            return '''openjdk version \"1.8.0_121\"
+                    OpenJDK Runtime Environment (build 1.8.0_121-8u121-b13-1~bpo8+1-b13)
+                    OpenJDK 64-Bit Server VM (build 25.121-b13, mixed mode)'''
+        } else if(m.script.contains('neo.sh version')) {
+            return '''SAP Cloud Platform Console Client
+                    SDK version    : 3.39.10
+                    Runtime        : neo-java-web'''
+        } else {
+            return getPath(m)
+        }
     }
 
-    @Ignore('Tool validation disabled since it does not work properly in conjunction with slaves.')
-    @Test
-    void toolJavaValidateCalled() {
+    private getEnvVars(Map m) {
 
-        jsr.step.call(script: [commonPipelineEnvironment: jer.env],
-                               archivePath: archiveName,
-                               neoCredentialsId: 'myCredentialsId')
-
-        assert toolJavaValidateCalled
+        if(m.script.contains('JAVA_HOME')) {
+            return '/opt/java'
+        } else if(m.script.contains('NEO_HOME')) {
+            return '/opt/neo'
+        } else if (m.script.contains('which java')) {
+            return 0
+        } else if (m.script.contains('which neo')) {
+            return 0
+        } else {
+            return 0
+        }
     }
 
-    @Ignore('Tool validation disabled since it does not work properly in conjunction with slaves.')
-    @Test
-    void toolValidateSkippedIfJavaHomeNotSetButJavaInPath() {
+    private getPath(Map m) {
 
-        jscr.setReturnValue('which java', 0)
-        jsr.step.envProps = [:] // make sure we are not confused by JAVA_HOME in current env props.
-        jsr.step.call(script: [commonPipelineEnvironment: jer.env],
-                               archivePath: archiveName,
-                               neoCredentialsId: 'myCredentialsId')
-
-        assert ! toolJavaValidateCalled
-        assert jlr.log.contains('Skipping tool validate check (java). Java executable in path, but no JAVA_HOME found.')
+        if(m.script.contains('JAVA_HOME')) {
+            return ''
+        } else if(m.script.contains('NEO_HOME')) {
+            return ''
+        } else if (m.script.contains('which java')) {
+            return 0
+        } else if (m.script.contains('which neo')) {
+            return 0
+        } else {
+            return 0
+        }
     }
 }

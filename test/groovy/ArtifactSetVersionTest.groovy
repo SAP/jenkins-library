@@ -73,7 +73,7 @@ class ArtifactSetVersionTest extends BasePipelineTest {
 
     @Test
     void testVersioning() {
-        jsr.step.call(script: [commonPipelineEnvironment: jer.env], juStabGitUtils: gitUtils, buildTool: 'maven', gitSshUrl: 'myGitSshUrl')
+        jsr.step.call(script: jsr.step, juStabGitUtils: gitUtils, buildTool: 'maven', gitSshUrl: 'myGitSshUrl')
 
         assertEquals('1.2.3-20180101010203_testCommitId', jer.env.getArtifactVersion())
         assertEquals('testCommitId', jer.env.getGitCommitId())
@@ -88,7 +88,15 @@ class ArtifactSetVersionTest extends BasePipelineTest {
 
     @Test
     void testVersioningWithoutCommit() {
-        jsr.step.call(script: [commonPipelineEnvironment: jer.env], juStabGitUtils: gitUtils, buildTool: 'maven', commitVersion: false)
+        jsr.step.call(script: jsr.step, juStabGitUtils: gitUtils, buildTool: 'maven', commitVersion: false)
+
+        assertEquals('1.2.3-20180101010203_testCommitId', jer.env.getArtifactVersion())
+        assertEquals('mvn --file \'pom.xml\' versions:set -DnewVersion=1.2.3-20180101010203_testCommitId', jscr.shell[5])
+    }
+
+    @Test
+    void testVersioningWithoutScript() {
+        jsr.step.call(juStabGitUtils: gitUtils, buildTool: 'maven', commitVersion: false)
 
         assertEquals('1.2.3-20180101010203_testCommitId', jer.env.getArtifactVersion())
         assertEquals('mvn --file \'pom.xml\' versions:set -DnewVersion=1.2.3-20180101010203_testCommitId', jscr.shell[5])
@@ -96,14 +104,14 @@ class ArtifactSetVersionTest extends BasePipelineTest {
 
     @Test
     void testVersioningCustomGitUserAndEMail() {
-        jsr.step.call(script: [commonPipelineEnvironment: jer.env], juStabGitUtils: gitUtils, buildTool: 'maven', gitSshUrl: 'myGitSshUrl', gitUserEMail: 'test@test.com', gitUserName: 'test')
+        jsr.step.call(script: jsr.step, juStabGitUtils: gitUtils, buildTool: 'maven', gitSshUrl: 'myGitSshUrl', gitUserEMail: 'test@test.com', gitUserName: 'test')
 
-        assertEquals ('git -c user.email="test@test.com" -c user.name "test" commit -m \'update version 1.2.3-20180101010203_testCommitId\'', jscr.shell[7])
+        assertEquals ('git -c user.email="test@test.com" -c user.name="test" commit -m \'update version 1.2.3-20180101010203_testCommitId\'', jscr.shell[7])
     }
 
     @Test
     void testVersioningWithTimestamp() {
-        jsr.step.call(script: [commonPipelineEnvironment: jer.env], juStabGitUtils: gitUtils, buildTool: 'maven', timestamp: '2018')
+        jsr.step.call(script: jsr.step, juStabGitUtils: gitUtils, buildTool: 'maven', timestamp: '2018')
         assertEquals('1.2.3-2018_testCommitId', jer.env.getArtifactVersion())
     }
 
@@ -111,19 +119,19 @@ class ArtifactSetVersionTest extends BasePipelineTest {
     void testVersioningNoBuildTool() {
         thrown.expect(Exception)
         thrown.expectMessage('ERROR - NO VALUE AVAILABLE FOR buildTool')
-        jsr.step.call(script: [commonPipelineEnvironment: jer.env], juStabGitUtils: gitUtils)
+        jsr.step.call(script: jsr.step, juStabGitUtils: gitUtils)
     }
 
     @Test
     void testVersioningWithCustomTemplate() {
-        jsr.step.call(script: [commonPipelineEnvironment: jer.env], juStabGitUtils: gitUtils, buildTool: 'maven', versioningTemplate: '${version}-xyz')
+        jsr.step.call(script: jsr.step, juStabGitUtils: gitUtils, buildTool: 'maven', versioningTemplate: '${version}-xyz')
         assertEquals('1.2.3-xyz', jer.env.getArtifactVersion())
     }
 
     @Test
     void testVersioningWithTypeAppContainer() {
         jer.env.setArtifactVersion('1.2.3-xyz')
-        jsr.step.call(script: [commonPipelineEnvironment: jer.env], juStabGitUtils: gitUtils, buildTool: 'docker', artifactType: 'appContainer', dockerVersionSource: 'appVersion')
+        jsr.step.call(script: jsr.step, juStabGitUtils: gitUtils, buildTool: 'docker', artifactType: 'appContainer', dockerVersionSource: 'appVersion')
         assertEquals('1.2.3-xyz', jer.env.getArtifactVersion())
         assertEquals('1.2.3-xyz', jwfr.files['VERSION'])
     }

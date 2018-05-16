@@ -1,14 +1,32 @@
-import com.sap.piper.ConfigurationMerger
+import com.sap.piper.ConfigurationHelper
 import com.sap.piper.GitUtils
 import com.sap.piper.Utils
 import com.sap.piper.versioning.ArtifactVersioning
+
+import groovy.transform.Field
 import groovy.text.SimpleTemplateEngine
+
+@Field String STEP_NAME = 'artifactSetVersion'
+@Field Set STEP_CONFIG_KEYS = [
+    'artifactType',
+    'buildTool',
+    'commitVersion',
+    'dockerVersionSource',
+    'filePath',
+    'gitCredentialsId',
+    'gitUserEMail',
+    'gitUserName',
+    'gitSshUrl',
+    'tagPrefix',
+    'timestamp',
+    'timestampTemplate',
+    'versioningTemplate'
+]
+@Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS.plus('gitCommitId')
 
 def call(Map parameters = [:]) {
 
-    def stepName = 'artifactSetVersion'
-
-    handlePipelineStepErrors (stepName: stepName, stepParameters: parameters) {
+    handlePipelineStepErrors (stepName: STEP_NAME, stepParameters: parameters) {
 
         def gitUtils = parameters.juStabGitUtils
         if (gitUtils == null) {
@@ -17,51 +35,20 @@ def call(Map parameters = [:]) {
 
         if (fileExists('.git')) {
             if (sh(returnStatus: true, script: 'git diff --quiet HEAD') != 0)
-                error "[${stepName}] Files in the workspace have been changed previously - aborting ${stepName}"
+                error "[${STEP_NAME}] Files in the workspace have been changed previously - aborting ${STEP_NAME}"
         }
 
         def script = parameters.script
         if (script == null)
-            script = [commonPipelineEnvironment: commonPipelineEnvironment]
+            script = this
 
-        prepareDefaultValues script: script
-
-        Set parameterKeys = [
-            'artifactType',
-            'buildTool',
-            'commitVersion',
-            'dockerVersionSource',
-            'filePath',
-            'gitCommitId',
-            'gitCredentialsId',
-            'gitUserEMail',
-            'gitUserName',
-            'gitSshUrl',
-            'tagPrefix',
-            'timestamp',
-            'timestampTemplate',
-            'versioningTemplate'
-        ]
-        Map pipelineDataMap = [
-            gitCommitId: gitUtils.getGitCommitIdOrNull()
-        ]
-        Set stepConfigurationKeys = [
-            'artifactType',
-            'buildTool',
-            'commitVersion',
-            'dockerVersionSource',
-            'filePath',
-            'gitCredentialsId',
-            'gitUserEMail',
-            'gitUserName',
-            'gitSshUrl',
-            'tagPrefix',
-            'timestamp',
-            'timestampTemplate',
-            'versioningTemplate'
-        ]
-
-        Map configuration = ConfigurationMerger.merge(script, stepName, parameters, parameterKeys, pipelineDataMap, stepConfigurationKeys)
+        // load default & individual configuration
+        Map configuration = ConfigurationHelper
+            .loadStepDefaults(this)
+            .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS)
+            .mixin(gitCommitId: gitUtils.getGitCommitIdOrNull())
+            .mixin(parameters, PARAMETER_KEYS)
+            .use()
 
         def utils = new Utils()
         def buildTool = utils.getMandatoryParameter(configuration, 'buildTool')
@@ -70,14 +57,14 @@ def call(Map parameters = [:]) {
             configuration.filePath = configuration[buildTool].filePath //use default configuration
 
         def newVersion
-        def artifactVersioning = ArtifactVersioning.getArtifactVersioning(buildTool, this, configuration)
+        def artifactVersioning = ArtifactVersioning.getArtifactVersioning(buildTool, script, configuration)
 
         if(configuration.artifactType == 'appContainer' && configuration.dockerVersionSource == 'appVersion'){
             if (script.commonPipelineEnvironment.getArtifactVersion())
                 //replace + sign if available since + is not allowed in a Docker tag
                 newVersion = script.commonPipelineEnvironment.getArtifactVersion().replace('+', '_')
             else
-                error ("[${stepName}] No artifact version available for 'dockerVersionSource: appVersion' -> executeBuild needs to run for the application artifact first to set the artifactVersion for the application artifact.'")
+                error ("[${STEP_NAME}] No artifact version available for 'dockerVersionSource: appVersion' -> executeBuild needs to run for the application artifact first to set the artifactVersion for the application artifact.'")
         } else {
             def currentVersion = artifactVersioning.getVersion()
 
@@ -101,12 +88,12 @@ def call(Map parameters = [:]) {
             sshagent([configuration.gitCredentialsId]) {
                 def gitUserMailConfig = ''
                 if (configuration.gitUserName && configuration.gitUserEMail)
-                    gitUserMailConfig = "-c user.email=\"${configuration.gitUserEMail}\" -c user.name \"${configuration.gitUserName}\""
+                    gitUserMailConfig = "-c user.email=\"${configuration.gitUserEMail}\" -c user.name=\"${configuration.gitUserName}\""
 
                 try {
                     sh "git ${gitUserMailConfig} commit -m 'update version ${newVersion}'"
                 } catch (e) {
-                    error "[${stepName}]git commit failed: ${e}"
+                    error "[${STEP_NAME}]git commit failed: ${e}"
                 }
                 sh "git remote set-url origin ${configuration.gitSshUrl}"
                 sh "git tag ${configuration.tagPrefix}${newVersion}"
@@ -125,7 +112,7 @@ def call(Map parameters = [:]) {
             script.commonPipelineEnvironment.setGitCommitId(gitCommitId)
         }
 
-        echo "[${stepName}]New version: ${newVersion}"
+        echo "[${STEP_NAME}]New version: ${newVersion}"
     }
 }
 
