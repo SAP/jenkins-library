@@ -43,5 +43,6 @@ class VersionUtils implements Serializable {
                 script.echo "Verification success. $name version ${installedVersion.toString()} is installed."
             }
         }
+        script.echo "Verification success."
     }
 }
