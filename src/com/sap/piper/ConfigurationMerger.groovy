@@ -1,53 +1,72 @@
 package com.sap.piper
 
 import com.cloudbees.groovy.cps.NonCPS
+import com.sap.piper.MapUtils
 
 class ConfigurationMerger {
     @NonCPS
-    def static merge(Map configs, List configKeys, Map defaults=[:]) {
+    static Map merge(Map configs, Set configKeys, Map defaults) {
+        Map filteredConfig = configKeys?configs.subMap(configKeys):configs
         Map merged = [:]
+
+        defaults = defaults ?: [:]
+
         merged.putAll(defaults)
-        merged.putAll(filterByKeyAndNull(configs, configKeys))
 
+        for(String key : filteredConfig.keySet())
+            if(MapUtils.isMap(filteredConfig[key]))
+                merged[key] = merge(filteredConfig[key], null, defaults[key])
+            else if(filteredConfig[key] != null)
+                merged[key] = filteredConfig[key]
+            // else: keep defaults value and omit null values from config
         return merged
     }
 
     @NonCPS
-    def static merge(Map parameters, List parameterKeys, Map configurationMap, List configurationKeys, Map defaults=[:]){
-        Map merged = merge(configurationMap, configurationKeys, defaults)
-        merged.putAll(filterByKeyAndNull(parameters, parameterKeys))
-
+    static Map merge(
+        Map parameters, Set parameterKeys,
+        Map configuration, Set configurationKeys,
+        Map defaults=[:]
+    ){
+        Map merged
+        merged = merge(configuration, configurationKeys, defaults)
+        merged = merge(parameters, parameterKeys, merged)
         return merged
     }
 
     @NonCPS
-    def static mergeWithPipelineData(Map parameters, List parameterKeys,
+    static Map merge(
+        def script, def stepName,
+        Map parameters, Set parameterKeys,
+        Set stepConfigurationKeys
+    ) {
+          merge(script, stepName, parameters, parameterKeys, [:], stepConfigurationKeys)
+    }
+
+    @NonCPS
+    static Map merge(
+        def script, def stepName,
+        Map parameters, Set parameterKeys,
+        Map pipelineData,
+        Set stepConfigurationKeys
+    ) {
+        Map stepDefaults = ConfigurationLoader.defaultStepConfiguration(script, stepName)
+        Map stepConfiguration = ConfigurationLoader.stepConfiguration(script, stepName)
+
+        mergeWithPipelineData(parameters, parameterKeys, pipelineData, stepConfiguration, stepConfigurationKeys, stepDefaults)
+    }
+
+    @NonCPS
+    static Map mergeWithPipelineData(Map parameters, Set parameterKeys,
                             Map pipelineDataMap,
-                            Map configurationMap, List configurationKeys,
+                            Map configurationMap, Set configurationKeys,
                             Map stepDefaults=[:]
     ){
-        Map merged = [:]
-        merged.putAll(stepDefaults)
-        merged.putAll(filterByKeyAndNull(configurationMap, configurationKeys))
-        merged.putAll(pipelineDataMap)
-        merged.putAll(filterByKeyAndNull(parameters, parameterKeys))
+        Map merged
+        merged = merge(configurationMap, configurationKeys, stepDefaults)
+        merged = merge(pipelineDataMap, null, merged)
+        merged = merge(parameters, parameterKeys, merged)
 
         return merged
-    }
-
-    @NonCPS
-    private static filterByKeyAndNull(Map map, List keys) {
-        Map filteredMap = map.findAll {
-            if(it.value == null){
-                return false
-            }
-            return true
-        }
-
-        if(keys == null) {
-            return filteredMap
-        }
-
-        return filteredMap.subMap(keys)
     }
 }

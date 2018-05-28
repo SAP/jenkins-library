@@ -7,12 +7,12 @@ import org.junit.runner.Description
 import org.junit.runners.model.Statement
 import org.yaml.snakeyaml.Yaml
 
-class JenkinsConfigRule implements TestRule {
+class JenkinsReadYamlRule implements TestRule {
 
     final BasePipelineTest testInstance
 
 
-    JenkinsConfigRule(BasePipelineTest testInstance) {
+    JenkinsReadYamlRule(BasePipelineTest testInstance) {
         this.testInstance = testInstance
     }
 
@@ -25,11 +25,15 @@ class JenkinsConfigRule implements TestRule {
         return new Statement() {
             @Override
             void evaluate() throws Throwable {
-                testInstance.helper.registerAllowedMethod("readYaml", [Map], { Map parameters ->
-                    Yaml yamlParser = new Yaml()
-                    return yamlParser.load(parameters.text)
+                testInstance.helper.registerAllowedMethod("readYaml", [Map], { Map m ->
+                    if(m.text) {
+                        return new Yaml().load(m.text)
+                    } else if(m.file) {
+                        return new Yaml().load((m.file as File).text)
+                    } else {
+                        throw new IllegalArgumentException("Key 'text' is missing in map ${m}.")
+                    }
                 })
-                DefaultValueCache.reset()
 
                 base.evaluate()
             }

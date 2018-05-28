@@ -1,8 +1,4 @@
-import hudson.AbortException
-import util.JenkinsConfigRule
-import util.JenkinsSetupRule
-
-import org.junit.rules.TemporaryFolder
+import util.Rules
 
 import com.lesfurets.jenkins.unit.BasePipelineTest
 
@@ -12,24 +8,25 @@ import org.junit.Test
 import org.junit.rules.ExpectedException
 import org.junit.rules.RuleChain
 
-class PipelineExecuteTest extends BasePipelineTest {
+import util.JenkinsReadYamlRule
+import util.JenkinsStepRule
 
+class PipelineExecuteTest extends BasePipelineTest {
     private ExpectedException thrown = new ExpectedException().none()
+    private JenkinsStepRule jsr = new JenkinsStepRule(this)
 
     @Rule
-    public RuleChain ruleChain = RuleChain.outerRule(thrown)
-                                              .around(new JenkinsSetupRule(this))
-                                              .around(new JenkinsConfigRule(this))
+    public RuleChain ruleChain = Rules
+        .getCommonRules(this)
+        .around(thrown)
+        .around(jsr)
 
     def pipelinePath
     def checkoutParameters = [:]
     def load
 
-    def pipelineExecuteScript
-
     @Before
     void init() {
-
         pipelinePath = null
         checkoutParameters.clear()
         load = null
@@ -42,15 +39,12 @@ class PipelineExecuteTest extends BasePipelineTest {
             checkoutParameters.path = m.extensions[0].sparseCheckoutPaths[0].path
         })
         helper.registerAllowedMethod('load', [String], { s -> load = s })
-
-        pipelineExecuteScript = loadScript("pipelineExecute.groovy").pipelineExecute
     }
 
 
     @Test
     void straightForwardTest() {
-
-        pipelineExecuteScript.call(repoUrl: "https://test.com/myRepo.git")
+        jsr.step.call(repoUrl: "https://test.com/myRepo.git")
         assert load == "Jenkinsfile"
         assert checkoutParameters.branch == 'master'
         assert checkoutParameters.repoUrl == "https://test.com/myRepo.git"
@@ -61,8 +55,7 @@ class PipelineExecuteTest extends BasePipelineTest {
 
     @Test
     void parameterizeTest() {
-
-        pipelineExecuteScript.call(repoUrl: "https://test.com/anotherRepo.git",
+        jsr.step.call(repoUrl: "https://test.com/anotherRepo.git",
                              branch: 'feature',
                              path: 'path/to/Jenkinsfile',
                              credentialsId: 'abcd1234')
@@ -77,10 +70,9 @@ class PipelineExecuteTest extends BasePipelineTest {
 
     @Test
     void noRepoUrlTest() {
-
         thrown.expect(Exception)
         thrown.expectMessage("ERROR - NO VALUE AVAILABLE FOR repoUrl")
 
-        pipelineExecuteScript.call()
+        jsr.step.call()
     }
 }

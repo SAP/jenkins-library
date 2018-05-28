@@ -9,6 +9,10 @@ Afterwards the values can be loaded by the method: `ConfigurationLoader.defaultS
 
 None
 
+## Step configuration
+
+None
+
 ## Exceptions
 
 None

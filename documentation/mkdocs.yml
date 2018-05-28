@@ -2,6 +2,7 @@ site_name: Jenkins 2.0 Pipelines
 pages:
     - Home: index.md
     - 'Library steps':
+        - artifactSetVersion: steps/artifactSetVersion.md
         - commonPipelineEnvironment: steps/commonPipelineEnvironment.md
         - dockerExecute: steps/dockerExecute.md
         - durationMeasure: steps/durationMeasure.md
@@ -14,13 +15,6 @@ pages:
         - prepareDefaultValues: steps/prepareDefaultValues.md
         - setupCommonPipelineEnvironment: steps/setupCommonPipelineEnvironment.md
         - toolValidate: steps/toolValidate.md
-    - 'Library scripts':
-        - FileUtils: scripts/fileUtils.md
-        - JsonUtils: scripts/jsonUtils.md
-        - Utils: scripts/utils.md
-        - Version: scripts/version.md
-        - ConfigurationLoader: scripts/configurationLoader.md
-        - ConfigurationMerger: scripts/configurationMerger.md
     - 'Required Plugins': jenkins/requiredPlugins.md
 
 theme:

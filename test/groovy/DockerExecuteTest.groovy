@@ -6,9 +6,10 @@ import org.junit.rules.RuleChain
 
 import com.lesfurets.jenkins.unit.BasePipelineTest
 
-import util.JenkinsConfigRule
 import util.JenkinsLoggingRule
-import util.JenkinsSetupRule
+import util.Rules
+import util.JenkinsStepRule
+import util.JenkinsEnvironmentRule
 
 import static org.junit.Assert.assertEquals
 import static org.junit.Assert.assertTrue
@@ -18,62 +19,71 @@ class DockerExecuteTest extends BasePipelineTest {
     private DockerMock docker
 
     private JenkinsLoggingRule jlr = new JenkinsLoggingRule(this)
+    private JenkinsStepRule jsr = new JenkinsStepRule(this)
+    private JenkinsEnvironmentRule jer = new JenkinsEnvironmentRule(this)
 
     @Rule
-    public RuleChain ruleChain = RuleChain.outerRule(new JenkinsSetupRule(this))
-                                            .around(jlr)
-                                            .around(new JenkinsConfigRule(this))
+    public RuleChain ruleChain = Rules
+        .getCommonRules(this)
+        .around(jlr)
+        .around(jsr)
 
     int whichDockerReturnValue = 0
-
     def bodyExecuted
-
-    def cpe
-    def dockerExecuteScript;
 
     @Before
     void init() {
-
         bodyExecuted = false
         docker = new DockerMock()
         binding.setVariable('docker', docker)
         binding.setVariable('Jenkins', [instance: [pluginManager: [plugins: [new PluginMock()]]]])
 
         helper.registerAllowedMethod('sh', [Map.class], {return whichDockerReturnValue})
-
-        cpe = loadScript('commonPipelineEnvironment.groovy').commonPipelineEnvironment
-        dockerExecuteScript = loadScript('dockerExecute.groovy').dockerExecute
     }
 
     @Test
     void testExecuteInsideDocker() throws Exception {
 
-        dockerExecuteScript.call(script: [commonPipelineEnvironment: cpe],
+        jsr.step.call(script: [commonPipelineEnvironment: jer.env],
                       dockerImage: 'maven:3.5-jdk-8-alpine') {
             bodyExecuted = true
         }
 
         assertEquals('maven:3.5-jdk-8-alpine', docker.getImageName())
         assertTrue(docker.isImagePulled())
-        assertEquals(' --env http_proxy --env https_proxy --env no_proxy --env HTTP_PROXY --env HTTPS_PROXY --env NO_PROXY', docker.getParameters())
+        assertEquals('--env http_proxy --env https_proxy --env no_proxy --env HTTP_PROXY --env HTTPS_PROXY --env NO_PROXY', docker.getParameters().trim())
         assertTrue(bodyExecuted)
     }
 
     @Test
     void testExecuteInsideDockerWithParameters() throws Exception {
 
-        dockerExecuteScript.call(script: [commonPipelineEnvironment: cpe],
+        jsr.step.call(script: [commonPipelineEnvironment: jer.env],
                       dockerImage: 'maven:3.5-jdk-8-alpine',
                       dockerOptions: '-it',
                       dockerVolumeBind: ['my_vol': '/my_vol'],
                       dockerEnvVars: ['http_proxy': 'http://proxy:8000']) {
             bodyExecuted = true
         }
-        assertTrue(docker.getParameters().contains(' --env https_proxy '))
-        assertTrue(docker.getParameters().contains(' --env http_proxy=http://proxy:8000'))
-        assertTrue(docker.getParameters().contains(' -it'))
-        assertTrue(docker.getParameters().contains(' --volume my_vol:/my_vol'))
+        assertTrue(docker.getParameters().contains('--env https_proxy '))
+        assertTrue(docker.getParameters().contains('--env http_proxy=http://proxy:8000'))
+        assertTrue(docker.getParameters().contains('-it'))
+        assertTrue(docker.getParameters().contains('--volume my_vol:/my_vol'))
         assertTrue(bodyExecuted)
+    }
+
+    @Test
+    void testExecuteDockerWithDockerOptionsList() throws Exception {
+        jsr.step.call(script: [commonPipelineEnvironment: jer.env],
+            dockerImage: 'maven:3.5-jdk-8-alpine',
+            dockerOptions: ['-it', '--network=my-network'],
+            dockerEnvVars: ['http_proxy': 'http://proxy:8000']) {
+            bodyExecuted = true
+        }
+        assertTrue(docker.getParameters().contains('--env https_proxy '))
+        assertTrue(docker.getParameters().contains('--env http_proxy=http://proxy:8000'))
+        assertTrue(docker.getParameters().contains('-it'))
+        assertTrue(docker.getParameters().contains('--network=my-network'))
     }
 
     @Test
@@ -81,7 +91,7 @@ class DockerExecuteTest extends BasePipelineTest {
 
         whichDockerReturnValue = 1
 
-        dockerExecuteScript.call(script: [commonPipelineEnvironment: cpe],
+        jsr.step.call(script: [commonPipelineEnvironment: jer.env],
                       dockerImage: 'maven:3.5-jdk-8-alpine',
                       dockerOptions: '-it',
                       dockerVolumeBind: ['my_vol': '/my_vol'],

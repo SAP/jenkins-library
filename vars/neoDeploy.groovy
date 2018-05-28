@@ -1,16 +1,21 @@
 import com.sap.piper.Utils
+
 import com.sap.piper.ConfigurationLoader
 import com.sap.piper.ConfigurationMerger
 import com.sap.piper.ConfigurationType
+import com.sap.piper.tools.ToolDescriptor
+
 
 def call(parameters = [:]) {
 
     def stepName = 'neoDeploy'
 
-    List parameterKeys = [
+    Set parameterKeys = [
         'applicationName',
         'archivePath',
         'account',
+        'deployAccount', //deprecated, replaced by parameter 'account'
+        'deployHost', //deprecated, replaced by parameter 'host'
         'deployMode',
         'dockerEnvVars',
         'dockerImage',
@@ -25,7 +30,7 @@ def call(parameters = [:]) {
         'warAction'
         ]
 
-    List stepConfigurationKeys = [
+    Set stepConfigurationKeys = [
         'account',
         'dockerEnvVars',
         'dockerImage',
@@ -60,14 +65,21 @@ def call(parameters = [:]) {
             stepConfiguration.put('account', defaultDeployAccount)
         }
 
-        if(parameters.DEPLOY_HOST && !parameters.host) {
-            echo "[WARNING][${stepName}] Deprecated parameter 'DEPLOY_HOST' is used. This will not work anymore in future versions. Use parameter 'host' instead."
-            parameters.put('host', parameters.DEPLOY_HOST)
+        if(parameters.deployHost && !parameters.host) {
+            echo "[WARNING][${stepName}] Deprecated parameter 'deployHost' is used. This will not work anymore in future versions. Use parameter 'host' instead."
+            parameters.put('host', parameters.deployHost)
         }
 
-        if(parameters.CI_DEPLOY_ACCOUNT && !parameters.account) {
-            echo "[WARNING][${stepName}] Deprecated parameter 'CI_DEPLOY_ACCOUNT' is used. This will not work anymore in future versions. Use parameter 'account' instead."
-            parameters.put('account', parameters.CI_DEPLOY_ACCOUNT)
+        if(parameters.deployAccount && !parameters.account) {
+            echo "[WARNING][${stepName}] Deprecated parameter 'deployAccount' is used. This will not work anymore in future versions. Use parameter 'account' instead."
+            parameters.put('account', parameters.deployAccount)
+        }
+
+        def credId = script.commonPipelineEnvironment.getConfigProperty('neoCredentialsId')
+
+        if(credId && !parameters.neoCredentialsId) {
+            echo "[WARNING][${stepName}] Deprecated parameter 'neoCredentialsId' from old configuration framework is used. This will not work anymore in future versions."
+            parameters.put('neoCredentialsId', credId)
         }
 
         // Backward compatibility end
@@ -89,7 +101,7 @@ def call(parameters = [:]) {
 
         def deployHost
         def deployAccount
-        def credentialsId = configuration.get('neoCredentialsId', '')
+        def credentialsId = configuration.get('neoCredentialsId')
         def deployMode = configuration.deployMode
         def warAction
         def propertiesFile
@@ -98,14 +110,16 @@ def call(parameters = [:]) {
         def runtimeVersion
         def vmSize
 
-        if (deployMode != 'mta' && deployMode != 'warParams' && deployMode != 'warPropertiesFile') {
-            throw new Exception("[neoDeploy] Invalid deployMode = '${deployMode}'. Valid 'deployMode' values are: 'mta', 'warParams' and 'warPropertiesFile'")
+        def deployModes = ['mta', 'warParams', 'warPropertiesFile']
+        if (! (deployMode in deployModes)) {
+            throw new Exception("[neoDeploy] Invalid deployMode = '${deployMode}'. Valid 'deployMode' values are: ${deployModes}.")
         }
 
-        if (deployMode == 'warPropertiesFile' || deployMode == 'warParams') {
+        if (deployMode in ['warPropertiesFile', 'warParams']) {
             warAction = utils.getMandatoryParameter(configuration, 'warAction')
-            if (warAction != 'deploy' && warAction != 'rolling-update') {
-                throw new Exception("[neoDeploy] Invalid warAction = '${warAction}'. Valid 'warAction' values are: 'deploy' and 'rolling-update'.")
+            def warActions = ['deploy', 'rolling-update']
+            if (! (warAction in warActions)) {
+                throw new Exception("[neoDeploy] Invalid warAction = '${warAction}'. Valid 'warAction' values are: ${warActions}.")
             }
         }
 
@@ -120,19 +134,21 @@ def call(parameters = [:]) {
             applicationName = utils.getMandatoryParameter(configuration, 'applicationName')
             runtime = utils.getMandatoryParameter(configuration, 'runtime')
             runtimeVersion = utils.getMandatoryParameter(configuration, 'runtimeVersion')
+            def vmSizes = ['lite', 'pro', 'prem', 'prem-plus']
             vmSize = configuration.vmSize
-            if (vmSize != 'lite' && vmSize !='pro' && vmSize != 'prem' && vmSize != 'prem-plus') {
-                throw new Exception("[neoDeploy] Invalid vmSize = '${vmSize}'. Valid 'vmSize' values are: 'lite', 'pro', 'prem' and 'prem-plus'.")
+            if (! (vmSize in vmSizes)) {
+                throw new Exception("[neoDeploy] Invalid vmSize = '${vmSize}'. Valid 'vmSize' values are: ${vmSizes}.")
             }
         }
 
-        if (deployMode.equals('mta') || deployMode.equals('warParams')) {
+        if (deployMode in ['mta','warParams']) {
             deployHost = utils.getMandatoryParameter(configuration, 'host')
             deployAccount = utils.getMandatoryParameter(configuration, 'account')
         }
 
-        def neoExecutable = getNeoExecutable(configuration)
-
+        def neoVersions = ['neo-java-web': '3.39.10', 'neo-javaee6-wp': '2.132.6', 'neo-javaee7-wp': '1.21.13']
+        def neo = new ToolDescriptor('SAP Cloud Platform Console Client', 'NEO_HOME', 'neoHome', '/tools/', 'neo.sh', neoVersions, 'version')
+        def neoExecutable = neo.getToolExecutable(this, configuration)
         def neoDeployScript
 
         if (deployMode == 'mta') {
@@ -177,30 +193,15 @@ def call(parameters = [:]) {
                           dockerEnvVars: configuration.get('dockerEnvVars'),
                           dockerOptions: configuration.get('dockerOptions')) {
 
+                neo.verify(this, configuration)
+
+                def java = new ToolDescriptor('Java', 'JAVA_HOME', '', '/bin/', 'java', '1.8.0', '-version 2>&1')
+                java.verify(this, configuration)
+
                 sh """${neoDeployScript} \
                       ${commonDeployParams}
                    """
             }
         }
     }
-}
-
-private getNeoExecutable(configuration) {
-
-    def neoExecutable = 'neo.sh' // default, if nothing below applies maybe it is the path.
-
-    if (configuration.neoHome) {
-        neoExecutable = "${configuration.neoHome}/tools/neo.sh"
-        echo "[neoDeploy] Neo executable \"${neoExecutable}\" retrieved from configuration."
-        return neoExecutable
-    }
-
-    if (env?.NEO_HOME) {
-        neoExecutable = "${env.NEO_HOME}/tools/neo.sh"
-        echo "[neoDeploy] Neo executable \"${neoExecutable}\" retrieved from environment."
-        return neoExecutable
-    }
-
-    echo "Using Neo executable from PATH."
-    return neoExecutable
 }

@@ -1,15 +1,54 @@
-import com.sap.piper.Utils
+import com.sap.piper.ConfigurationMerger
+import com.sap.piper.MtaUtils
+import com.sap.piper.tools.JavaArchiveDescriptor
+import com.sap.piper.tools.ToolDescriptor
 
 
 def call(Map parameters = [:]) {
 
-    handlePipelineStepErrors (stepName: 'mtaBuild', stepParameters: parameters) {
+    def stepName = 'mtaBuild'
 
-        def utils = new Utils()
-        def buildTarget = utils.getMandatoryParameter(parameters, 'buildTarget', null)
-        def script = parameters.script
-        if (script == null){
-            script = [commonPipelineEnvironment: commonPipelineEnvironment]
+    Set parameterKeys = [
+        'applicationName',
+        'buildTarget',
+        'extension',
+        'mtaJarLocation'
+    ]
+
+    Set stepConfigurationKeys = [
+        'applicationName',
+        'buildTarget',
+        'extension',
+        'mtaJarLocation'
+    ]
+
+    handlePipelineStepErrors (stepName: stepName, stepParameters: parameters) {
+
+        final script = parameters?.script ?: [commonPipelineEnvironment: commonPipelineEnvironment]
+
+        prepareDefaultValues script: script
+
+        final Map configuration = ConfigurationMerger.merge(
+                                      script, stepName,
+                                      parameters, parameterKeys,
+                                      stepConfigurationKeys)
+
+        def java = new ToolDescriptor('Java', 'JAVA_HOME', '', '/bin/', 'java', '1.8.0', '-version 2>&1')
+        java.verify(this, configuration)
+
+        def mta = new JavaArchiveDescriptor('SAP Multitarget Application Archive Builder', 'MTA_JAR_LOCATION', 'mtaJarLocation', '1.0.6', '-v', java)
+        mta.verify(this, configuration)
+
+        def mtaYmlName = "${pwd()}/mta.yaml"
+        def applicationName = configuration.applicationName
+
+        if (!fileExists(mtaYmlName)) {
+            if (!applicationName) {
+                echo "'applicationName' not provided as parameter - will not try to generate mta.yml file"
+            } else {
+                MtaUtils mtaUtils = new MtaUtils(this)
+                mtaUtils.generateMtaDescriptorFromPackageJson("${pwd()}/package.json", mtaYmlName, applicationName)
+            }
         }
 
         def mtaYaml = readYaml file: "${pwd()}/mta.yaml"
@@ -23,36 +62,23 @@ def call(Map parameters = [:]) {
         }
 
         def mtarFileName = "${id}.mtar"
+        def mtaJar = mta.getCall(this, configuration)
+        def buildTarget = configuration.buildTarget
 
-        def mtaJar = getMtaJar(parameters)
+        def mtaCall = "${mtaJar} --mtar ${mtarFileName} --build-target=${buildTarget}"
+
+        if (configuration.extension) mtaCall += " --extension=$configuration.extension"
+        mtaCall += ' build'
 
         sh  """#!/bin/bash
             export PATH=./node_modules/.bin:${PATH}
-            java -jar ${mtaJar} --mtar ${mtarFileName} --build-target=${buildTarget} build
+            $mtaCall
             """
 
         def mtarFilePath = "${pwd()}/${mtarFileName}"
-        script.commonPipelineEnvironment.setMtarFilePath(mtarFilePath)
+        script?.commonPipelineEnvironment?.setMtarFilePath(mtarFilePath)
 
         return mtarFilePath
     }
 }
 
-private getMtaJar(parameters) {
-    def mtaJarLocation = 'mta.jar' //default, maybe it is in current working directory
-
-    if(parameters?.mtaJarLocation){
-        mtaJarLocation = "${parameters.mtaJarLocation}/mta.jar"
-        echo "[mtaBuild] MTA JAR \"${mtaJarLocation}\" retrieved from parameters."
-        return mtaJarLocation
-    }
-
-    if(env?.MTA_JAR_LOCATION){
-        mtaJarLocation = "${env.MTA_JAR_LOCATION}/mta.jar"
-        echo "[mtaBuild] MTA JAR \"${mtaJarLocation}\" retrieved from environment."
-        return mtaJarLocation
-    }
-
-    echo "[mtaBuild] Using MTA JAR from current working directory."
-    return mtaJarLocation
-}

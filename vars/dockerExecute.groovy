@@ -6,14 +6,14 @@ def call(Map parameters = [:], body) {
     def PLUGIN_ID_DOCKER_WORKFLOW = 'docker-workflow'
 
     handlePipelineStepErrors(stepName: STEP_NAME, stepParameters: parameters){
-        def dockerImage = parameters.get('dockerImage', '')
-        Map dockerEnvVars = parameters.get('dockerEnvVars', [:])
-        def dockerOptions = parameters.get('dockerOptions', '')
-        Map dockerVolumeBind = parameters.get('dockerVolumeBind', [:])
+        def dockerImage = parameters.dockerImage ?: ''
+        Map dockerEnvVars = parameters.dockerEnvVars ?: [:]
+        def dockerOptions = parameters.dockerOptions ?: ''
+        Map dockerVolumeBind = parameters.dockerVolumeBind ?: [:]
 
         if(dockerImage) {
 
-            if (! Jenkins.instance.pluginManager.plugins.find { p -> p.isActive() && p.getShortName() == PLUGIN_ID_DOCKER_WORKFLOW } ) {
+            if (! isPluginActive(PLUGIN_ID_DOCKER_WORKFLOW) ) {
                 echo "[WARNING][${STEP_NAME}] Docker not supported. Plugin '${PLUGIN_ID_DOCKER_WORKFLOW}' is not installed or not active. Configured docker image '${dockerImage}' will not be used."
                 dockerImage = null
             }
@@ -44,6 +44,11 @@ def call(Map parameters = [:], body) {
     }
 }
 
+@NonCPS
+private isPluginActive(String pluginId){
+    return Jenkins.instance.pluginManager.plugins.find { p -> p.isActive() && p.getShortName() == pluginId }
+}
+
 /**
  * Returns a string with docker options containing
  * environment variables (if set).
@@ -60,27 +65,34 @@ private getDockerOptions(Map dockerEnvVars, Map dockerVolumeBind, def dockerOpti
         'HTTPS_PROXY',
         'NO_PROXY'
     ]
-    def options = ""
+    def options = []
     if (dockerEnvVars) {
         for (String k : dockerEnvVars.keySet()) {
-            options += " --env ${k}=" + dockerEnvVars[k].toString()
+            options.add("--env ${k}=${dockerEnvVars[k].toString()}")
         }
     }
 
     for (String envVar : specialEnvironments) {
         if (dockerEnvVars == null || !dockerEnvVars.containsKey(envVar)) {
-            options += " --env ${envVar}"
+            options.add("--env ${envVar}")
         }
     }
 
     if (dockerVolumeBind) {
         for (String k : dockerVolumeBind.keySet()) {
-            options += " --volume ${k}:" + dockerVolumeBind[k].toString()
+            options.add("--volume ${k}:${dockerVolumeBind[k].toString()}")
         }
     }
 
-    if (dockerOptions) {
-        options += " ${dockerOptions}"
+    if (dockerOptions instanceof CharSequence) {
+        options.add(dockerOptions.toString())
+    } else if (dockerOptions instanceof List) {
+        for (String option : dockerOptions) {
+            options.add "${option}"
+        }
+    } else {
+        throw new IllegalArgumentException("Unexpected type for dockerOptions. Expected was either a list or a string. Actual type was: '${dockerOptions.getClass()}'")
     }
-    return options
+
+    return options.join(' ')
 }

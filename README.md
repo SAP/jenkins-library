@@ -1,4 +1,5 @@
 [![Build Status](https://travis-ci.org/SAP/jenkins-library.svg?branch=master)](https://travis-ci.org/SAP/jenkins-library)
+[![Coverage Status](https://coveralls.io/repos/github/SAP/jenkins-library/badge.svg?branch=jacocoCodeCoverage)](https://coveralls.io/github/SAP/jenkins-library?branch=jacocoCodeCoverage)
 
 # Description
 
@@ -45,9 +46,15 @@ Custom library steps can be added using a custom library according to the
 groovy coding to the `Jenkinsfile`. Your custom library can coexist next to the
 provided pipeline library.
 
+## API
+
+All steps are intended to be used by Pipelines. All the classes / groovy-scripts
+contained in the `src` folder are not part of the API and are subjected to change
+without prior notice.
+
 # Requirements
 
- * Java Runtime Environment 8 
+ * Java Runtime Environment 8
  * Installation of Jenkins v 2.60.3 or higher running on Linux. We tested with
    debian-stretch.
  * Jenkins Plugins installed as described in the [Required

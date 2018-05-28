@@ -9,9 +9,8 @@ import com.lesfurets.jenkins.unit.BasePipelineTest
 import static org.junit.Assert.assertEquals
 import static org.junit.Assert.assertTrue
 
-import util.JenkinsConfigRule
-import util.JenkinsSetupRule
 import util.JenkinsShellCallRule
+import util.Rules
 
 class MavenExecuteTest extends BasePipelineTest {
 
@@ -20,9 +19,8 @@ class MavenExecuteTest extends BasePipelineTest {
     private JenkinsShellCallRule jscr = new JenkinsShellCallRule(this)
 
     @Rule
-    public RuleChain ruleChain = RuleChain.outerRule(new JenkinsSetupRule(this))
-                                              .around(jscr)
-                                              .around(new JenkinsConfigRule(this))
+    public RuleChain ruleChain = Rules.getCommonRules(this)
+                                      .around(jscr)
 
     def mavenExecuteScript
     def cpe
@@ -67,5 +65,14 @@ class MavenExecuteTest extends BasePipelineTest {
         assertEquals('maven:3.5-jdk-8-alpine', dockerParameters.dockerImage)
         String mvnCommand = "mvn --global-settings 'globalSettingsFile.xml' -Dmaven.repo.local='m2Path' --settings 'projectSettingsFile.xml' --file 'pom.xml' -o clean install -Dmaven.tests.skip=true"
         assertTrue(jscr.shell.contains(mvnCommand))
+    }
+
+    @Test
+    void testMavenCommandForwardsDockerOptions() throws Exception {
+
+        mavenExecuteScript.call(script: [commonPipelineEnvironment: cpe], goals: 'clean install')
+        assertEquals('maven:3.5-jdk-7', dockerParameters.dockerImage)
+
+        assert jscr.shell[0] == 'mvn clean install'
     }
 }

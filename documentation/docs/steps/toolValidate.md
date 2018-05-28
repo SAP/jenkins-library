@@ -16,6 +16,9 @@ none
 * `tool` The tool that is checked for existence and compatible version.
 * `home` The location in the file system where Jenkins can access the tool.
 
+## Step configuration
+none
+
 ## Return value
 none
 
@@ -32,7 +35,4 @@ none
 ```groovy
 toolValidate tool: 'neo', home:'/path/to/neo-java-web-sdk'
 ```
-
-
-
 
