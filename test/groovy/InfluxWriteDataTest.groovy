@@ -63,7 +63,7 @@ class InfluxWriteDataTest extends BasePipelineTest {
         assertEquals('testInflux', stepMap.selectedTarget)
         assertEquals(null, stepMap.customPrefix)
         assertEquals([:], stepMap.customData)
-        assertEquals([pipeline_data:[:]], stepMap.customDataMap)
+        assertEquals([pipeline_data: [:], step_data: [:]], stepMap.customDataMap)
 
         assertTrue(fileMap.containsKey('jenkins_data.json'))
         assertTrue(fileMap.containsKey('pipeline_data.json'))

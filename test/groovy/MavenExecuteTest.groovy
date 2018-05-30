@@ -9,10 +9,11 @@ import com.lesfurets.jenkins.unit.BasePipelineTest
 import static org.junit.Assert.assertEquals
 import static org.junit.Assert.assertTrue
 
+import util.BasePiperTest
 import util.JenkinsShellCallRule
 import util.Rules
 
-class MavenExecuteTest extends BasePipelineTest {
+class MavenExecuteTest extends BasePiperTest {
 
     Map dockerParameters
 
@@ -23,7 +24,6 @@ class MavenExecuteTest extends BasePipelineTest {
                                       .around(jscr)
 
     def mavenExecuteScript
-    def cpe
 
     @Before
     void init() {
@@ -37,13 +37,12 @@ class MavenExecuteTest extends BasePipelineTest {
             })
 
         mavenExecuteScript = loadScript("mavenExecute.groovy").mavenExecute
-        cpe = loadScript('commonPipelineEnvironment.groovy').commonPipelineEnvironment
     }
 
     @Test
     void testExecuteBasicMavenCommand() throws Exception {
 
-        mavenExecuteScript.call(script: [commonPipelineEnvironment: cpe], goals: 'clean install')
+        mavenExecuteScript.call(script: nullScript, goals: 'clean install')
         assertEquals('maven:3.5-jdk-7', dockerParameters.dockerImage)
 
         assert jscr.shell[0] == 'mvn clean install'
@@ -53,7 +52,7 @@ class MavenExecuteTest extends BasePipelineTest {
     void testExecuteMavenCommandWithParameter() throws Exception {
 
         mavenExecuteScript.call(
-            script: [commonPipelineEnvironment: cpe],
+            script: nullScript,
             dockerImage: 'maven:3.5-jdk-8-alpine',
             goals: 'clean install',
             globalSettingsFile: 'globalSettingsFile.xml',
@@ -70,7 +69,7 @@ class MavenExecuteTest extends BasePipelineTest {
     @Test
     void testMavenCommandForwardsDockerOptions() throws Exception {
 
-        mavenExecuteScript.call(script: [commonPipelineEnvironment: cpe], goals: 'clean install')
+        mavenExecuteScript.call(script: nullScript, goals: 'clean install')
         assertEquals('maven:3.5-jdk-7', dockerParameters.dockerImage)
 
         assert jscr.shell[0] == 'mvn clean install'
