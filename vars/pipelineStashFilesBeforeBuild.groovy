@@ -30,10 +30,6 @@ def call(Map parameters = [:]) {
             .mixin(parameters, PARAMETER_KEYS)
             .use()
 
-        //required for backward compatibility
-        //ToDo: should be removed once switch to new yml configuration is done completely
-        config.runOpaTests = (config.runOpaTests instanceof Boolean)?:(config.runOpaTests == null?false:config.runOpaTests.toBoolean())
-
         if (config.runOpaTests){
             utils.stash('opa5', config.stashIncludes?.get('opa5')?config.stashIncludes.opa5:'**/*.*', config.stashExcludes?.get('opa5')?config.stashExcludes.opa5:'')
         }
