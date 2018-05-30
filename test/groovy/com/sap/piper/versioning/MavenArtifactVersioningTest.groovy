@@ -6,13 +6,14 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.ExpectedException
 import org.junit.rules.RuleChain
+import util.BasePiperTest
 import util.JenkinsReadMavenPomRule
 import util.JenkinsShellCallRule
 import util.Rules
 
 import static org.junit.Assert.assertEquals
 
-class MavenArtifactVersioningTest extends BasePipelineTest{
+class MavenArtifactVersioningTest extends BasePiperTest{
 
     Map dockerParameters
     def mavenExecuteScript
@@ -21,10 +22,12 @@ class MavenArtifactVersioningTest extends BasePipelineTest{
     MavenArtifactVersioning av
 
     JenkinsShellCallRule jscr = new JenkinsShellCallRule(this)
-    ExpectedException thrown = ExpectedException.none()
 
     @Rule
-    public RuleChain ruleChain = Rules.getCommonRules(this).around(jscr).around(thrown).around(new JenkinsReadMavenPomRule(this, 'test/resources/MavenArtifactVersioning'))
+    public RuleChain ruleChain = Rules
+        .getCommonRules(this)
+        .around(jscr)
+        .around(new JenkinsReadMavenPomRule(this, 'test/resources/MavenArtifactVersioning'))
 
     @Before
     void init() {
@@ -35,16 +38,11 @@ class MavenArtifactVersioningTest extends BasePipelineTest{
                 dockerParameters = parameters
                 closure()
             })
-
-        mavenExecuteScript = loadScript("mavenExecute.groovy").mavenExecute
-        commonPipelineEnvironment = loadScript('commonPipelineEnvironment.groovy').commonPipelineEnvironment
-
-        prepareObjectInterceptors(this)
     }
 
     @Test
     void testVersioning() {
-        av = new MavenArtifactVersioning(this, [filePath: 'pom.xml'])
+        av = new MavenArtifactVersioning(nullScript, [filePath: 'pom.xml'])
         assertEquals('1.2.3', av.getVersion())
         av.setVersion('1.2.3-20180101')
         assertEquals('mvn --file \'pom.xml\' versions:set -DnewVersion=1.2.3-20180101', jscr.shell[0])
@@ -52,15 +50,9 @@ class MavenArtifactVersioningTest extends BasePipelineTest{
 
     @Test
     void testVersioningCustomFilePathSnapshot() {
-        av = new MavenArtifactVersioning(this, [filePath: 'snapshot/pom.xml'])
+        av = new MavenArtifactVersioning(nullScript, [filePath: 'snapshot/pom.xml'])
         assertEquals('1.2.3', av.getVersion())
         av.setVersion('1.2.3-20180101')
         assertEquals('mvn --file \'snapshot/pom.xml\' versions:set -DnewVersion=1.2.3-20180101', jscr.shell[0])
-    }
-
-    void prepareObjectInterceptors(object) {
-        object.metaClass.invokeMethod = helper.getMethodInterceptor()
-        object.metaClass.static.invokeMethod = helper.getMethodInterceptor()
-        object.metaClass.methodMissing = helper.getMethodMissingInterceptor()
     }
 }
