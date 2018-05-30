@@ -15,11 +15,27 @@ class commonPipelineEnvironment implements Serializable {
     Map defaultConfiguration = [:]
 
     //each Map in influxCustomDataMap represents a measurement in Influx. Additional measurements can be added as a new Map entry of influxCustomDataMap
-    private Map influxCustomDataMap = [pipeline_data: [:]]
+    private Map influxCustomDataMap = [pipeline_data: [:], step_data: [:]]
     //influxCustomData represents measurement jenkins_custom_data in Influx. Metrics can be written into this map
     private Map influxCustomData = [:]
 
     private String mtarFilePath
+
+    def reset() {
+        appContainerProperties = [:]
+        artifactVersion = null
+
+        configProperties = [:]
+        configuration = [:]
+
+        gitCommitId = null
+        gitSshUrl = null
+
+        influxCustomData = [:]
+        influxCustomDataMap = [pipeline_data: [:], step_data: [:]]
+
+        mtarFilePath = null
+    }
 
     def setAppContainerProperty(property, value) {
         appContainerProperties[property] = value
