@@ -7,19 +7,8 @@ class ConfigurationMerger {
     @NonCPS
     static Map merge(Map configs, Set configKeys, Map defaults) {
         Map filteredConfig = configKeys?configs.subMap(configKeys):configs
-        Map merged = [:]
 
-        defaults = defaults ?: [:]
-
-        merged.putAll(defaults)
-
-        for(String key : filteredConfig.keySet())
-            if(MapUtils.isMap(filteredConfig[key]))
-                merged[key] = merge(filteredConfig[key], null, defaults[key])
-            else if(filteredConfig[key] != null)
-                merged[key] = filteredConfig[key]
-            // else: keep defaults value and omit null values from config
-        return merged
+        return MapUtils.merge(defaults, filteredConfig)
     }
 
     @NonCPS
