@@ -7,7 +7,7 @@ class ConfigurationHelper implements Serializable {
             .loadDefaults()
     }
 
-    private Map config
+    private Map config = [:]
     private String name
 
     ConfigurationHelper(Script step){
@@ -21,8 +21,19 @@ class ConfigurationHelper implements Serializable {
     }
 
     private final ConfigurationHelper loadDefaults(){
-        config = ConfigurationLoader.defaultStepConfiguration(null, name)
+        config = ConfigurationLoader.defaultGeneralConfiguration()
+        mixin(ConfigurationLoader.defaultStepConfiguration(null, name))
         return this
+    }
+
+    ConfigurationHelper mixinGeneralConfig(commonPipelineEnvironment, Set filter = null){
+        Map stepConfiguration = ConfigurationLoader.generalConfiguration([commonPipelineEnvironment: commonPipelineEnvironment])
+        return mixin(stepConfiguration, filter)
+    }
+
+    ConfigurationHelper mixinStageConfig(commonPipelineEnvironment, stageName, Set filter = null){
+        Map stageConfiguration = ConfigurationLoader.stageConfiguration([commonPipelineEnvironment: commonPipelineEnvironment], stageName)
+        return mixin(stageConfiguration, filter)
     }
 
     ConfigurationHelper mixinStepConfig(commonPipelineEnvironment, Set filter = null){
@@ -33,6 +44,26 @@ class ConfigurationHelper implements Serializable {
 
     ConfigurationHelper mixin(Map parameters, Set filter = null){
         config = ConfigurationMerger.merge(parameters, filter, config)
+        return this
+    }
+
+    Map dependingOn(dependentKey){
+        return [
+            mixin: {key ->
+                def dependentValue = config[dependentKey]
+                if(config[key] == null && dependentValue && config[dependentValue])
+                    config[key] = config[dependentValue][key]
+                return this
+            }
+        ]
+    }
+
+    ConfigurationHelper addIfEmpty(key, value){
+        if (config[key] instanceof Boolean) {
+            return this
+        } else if (!config[key]){
+            config[key] = value
+        }
         return this
     }
 
@@ -76,7 +107,7 @@ class ConfigurationHelper implements Serializable {
         return false
     }
 
-    def getMandatoryProperty(key, defaultValue) {
+    def getMandatoryProperty(key, defaultValue = null) {
 
         def paramValue = config[key]
 
@@ -84,11 +115,12 @@ class ConfigurationHelper implements Serializable {
             paramValue = defaultValue
 
         if (paramValue == null)
-            throw new Exception("ERROR - NO VALUE AVAILABLE FOR ${key}")
+            throw new IllegalArgumentException("ERROR - NO VALUE AVAILABLE FOR ${key}")
         return paramValue
     }
 
-    def getMandatoryProperty(key) {
-        return getMandatoryProperty(key, null)
+    def withMandatoryProperty(key){
+        getMandatoryProperty(key)
+        return this
     }
 }
