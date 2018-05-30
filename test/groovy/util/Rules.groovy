@@ -13,9 +13,9 @@ public class Rules {
 
     public static RuleChain getCommonRules(BasePipelineTest testCase, LibraryConfiguration libConfig) {
         return RuleChain.outerRule(new JenkinsSetupRule(testCase, libConfig))
-            .around(new JenkinsReadYamlRule(testCase))
+		    .around(new JenkinsReadYamlRule(testCase))
             .around(new JenkinsResetDefaultCacheRule())
             .around(new JenkinsErrorRule(testCase))
-            //.around(new JenkinsEnvironmentRule(testCase))
+			.around(new JenkinsEnvironmentRule(testCase))
     }
 }
