@@ -21,6 +21,11 @@ class JenkinsEnvironmentRule implements TestRule {
             @Override
             void evaluate() throws Throwable {
                 env = testInstance.loadScript('commonPipelineEnvironment.groovy').commonPipelineEnvironment
+                try {
+                    testInstance?.nullScript.commonPipelineEnvironment = env
+                } catch (MissingPropertyException e) {
+                    //kept for backward compatibility before all tests inherit from BasePiperTest
+                }
                 base.evaluate()
             }
         }
