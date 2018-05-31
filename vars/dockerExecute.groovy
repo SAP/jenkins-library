@@ -14,7 +14,7 @@ def call(Map parameters = [:], body) {
 
         if (k8s) {
             echo "redirecting to executeDocker"
-            executeDocker(stepParameters) {
+            executeDocker(dockerImage:parameters.dockerImage,dockerEnvVars:parameters.dockerEnvVars,dockerOptions:parameters.dockerOptions,dockerVolumeBind:parameters.dockerVolumeBind) {
                 body()
             }
         } else if (dockerImage) {
