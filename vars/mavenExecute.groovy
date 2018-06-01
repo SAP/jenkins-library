@@ -80,7 +80,8 @@ def call(Map parameters = [:]) {
 }
 
 private downloadSettingsFromUrl(String url){
-    String settings = fetchUrl(url)
-    writeFile file: 'settings.xml', text: settings
+    def settings = httpRequest url
+    writeFile file: 'settings.xml', text: settings.getContent()
+
 }
 

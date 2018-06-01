@@ -33,12 +33,18 @@ class JavaArchiveDescriptor implements Serializable {
         if (EnvironmentUtils.isEnvironmentVariable(script, environmentKey)) {
             javaArchiveFile = EnvironmentUtils.getEnvironmentVariable(script, environmentKey)
             if (log) script.echo "$name file '$javaArchiveFile' retrieved from environment."
-            if (!isJavaArchiveFile(javaArchiveFile)) script.error "The value '$javaArchiveFile' of the environment variable '$environmentKey' has an unexpected format."
+            if (!isJavaArchiveFile(javaArchiveFile)) {
+                //script.error "The value '$javaArchiveFile' of the environment variable '$environmentKey' has an unexpected format."
+                javaArchiveFile += '/mta.jar' // Compatibility code
+            }
         }
         else if (configuration.containsKey(stepConfigurationKey)) {
             javaArchiveFile = configuration.get(stepConfigurationKey)
             if (log) script.echo "$name file '$javaArchiveFile' retrieved from configuration."
-            if (!isJavaArchiveFile(javaArchiveFile)) script.error "The value '$javaArchiveFile' of the configuration key '$stepConfigurationKey' has an unexpected format."
+            if (!isJavaArchiveFile(javaArchiveFile)) {
+                //script.error "The value '$javaArchiveFile' of the configuration key '$stepConfigurationKey' has an unexpected format."
+                javaArchiveFile += '/mta.jar' // Compatibility code
+            }
         } else {
             throw new AbortException(getMessage())
         }
