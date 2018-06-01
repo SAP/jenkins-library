@@ -34,24 +34,6 @@ def call(Map parameters = [:]) {
             utils.stash('opa5', config.stashIncludes?.get('opa5')?config.stashIncludes.opa5:'**/*.*', config.stashExcludes?.get('opa5')?config.stashExcludes.opa5:'')
         }
 
-        //store git metadata for SourceClear agent
-        sh "mkdir -p gitmetadata"
-        sh "cp -rf .git/* gitmetadata"
-        sh "chmod -R u+w gitmetadata"
-        utils.stashWithMessage(
-            'git',
-            '[${STEP_NAME}] no git repo files detected: ',
-            config.stashIncludes.git,
-            config.stashExcludes.git
-        )
-
-        //store files required for tests, e.g. Gauge, SUT, ...
-        utils.stashWithMessage(
-            'tests',
-            '[${STEP_NAME}] no files for tests provided: ',
-            config.stashIncludes.tests,
-            config.stashExcludes.tests
-        )
         //store build descriptor files depending on technology, e.g. pom.xml, package.json
         utils.stash(
             'buildDescriptor',
@@ -65,19 +47,22 @@ def call(Map parameters = [:]) {
             config.stashIncludes.deployDescriptor,
             config.stashExcludes.deployDescriptor
         )
+        //store git metadata for SourceClear agent
+        sh "mkdir -p gitmetadata"
+        sh "cp -rf .git/* gitmetadata"
+        sh "chmod -R u+w gitmetadata"
+        utils.stashWithMessage(
+            'git',
+            '[${STEP_NAME}] no git repo files detected: ',
+            config.stashIncludes.git,
+            config.stashExcludes.git
+        )
         //store nsp & retire exclusion file for future use
         utils.stashWithMessage(
-            'opensource configuration',
-            '[${STEP_NAME}] no opensource configuration files provided: ',
-            config.stashIncludes.get('opensource configuration'),
-            config.stashExcludes.get('opensource configuration')
-        )
-        //store snyk config file for future use
-        utils.stashWithMessage(
-            'snyk configuration',
-            '[${STEP_NAME}] no snyk configuration files provided: ',
-            config.stashIncludes.get('snyk configuration'),
-            config.stashExcludes.get('snyk configuration')
+            'opensourceConfiguration',
+            '[${STEP_NAME}] no opensourceConfiguration files provided: ',
+            config.stashIncludes.get('opensourceConfiguration'),
+            config.stashExcludes.get('opensourceConfiguration')
         )
         //store pipeline configuration including additional groovy test scripts for future use
         utils.stashWithMessage(
@@ -86,12 +71,18 @@ def call(Map parameters = [:]) {
             config.stashIncludes.pipelineConfigAndTests,
             config.stashExcludes.pipelineConfigAndTests
         )
-
         utils.stashWithMessage(
             'securityDescriptor',
             '[${STEP_NAME}] no security descriptor found: ',
             config.stashIncludes.securityDescriptor,
             config.stashExcludes.securityDescriptor
+        )
+        //store files required for tests, e.g. Gauge, SUT, ...
+        utils.stashWithMessage(
+            'tests',
+            '[${STEP_NAME}] no files for tests provided: ',
+            config.stashIncludes.tests,
+            config.stashExcludes.tests
         )
     }
 }
