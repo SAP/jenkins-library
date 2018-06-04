@@ -55,7 +55,7 @@ Usage of pipeline step:
 
 ```groovy
 pipelineStashFiles script: this {
-  mavenExwecute script: this, ...
+  mavenExecute script: this, ...
 }
 ```
 
