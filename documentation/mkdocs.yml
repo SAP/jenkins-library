@@ -12,6 +12,7 @@ pages:
         - mtaBuild: steps/mtaBuild.md
         - neoDeploy: steps/neoDeploy.md
         - pipelineExecute: steps/pipelineExecute.md
+        - pipelineStashFiles: steps/pipelineStashFiles.md
         - prepareDefaultValues: steps/prepareDefaultValues.md
         - setupCommonPipelineEnvironment: steps/setupCommonPipelineEnvironment.md
         - toolValidate: steps/toolValidate.md
