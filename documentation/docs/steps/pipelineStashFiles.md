@@ -13,8 +13,8 @@ none
 | script | no | empty `commonPipelineEnvironment` |  |
 | runCheckmarx | no | false |  |
 | runOpaTests | no | false |  |
-| stashIncludes | no | not set |  |
-| stashExcludes | no | not set |  |
+| stashIncludes | no | see details |  |
+| stashExcludes | no | see details |  |
 
 Details:
 
@@ -59,5 +59,4 @@ pipelineStashFiles script: this {
 }
 ```
 
-Available parameters:
 
