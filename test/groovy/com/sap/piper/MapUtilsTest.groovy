@@ -22,9 +22,9 @@ class MapUtilsTest {
 
         Map merged = MapUtils.merge(a, b)
 
-              assert merged == [a: '1',
-                                b: '2',
-                                c: [d: 'x', e: '2']]
+        assert merged == [a: '1',
+                          b: '2',
+                          c: [d: 'x', e: '2']]
     }
 
     @Test
@@ -38,9 +38,9 @@ class MapUtilsTest {
 
         Map merged = MapUtils.merge(a, b)
 
-              assert merged == [a: '1',
-                                b: '2',
-                                c: [d: '1', e: '2']] // <-- here we do not have null, since skipNull defaults to true
+        assert merged == [a: '1',
+                          b: '2',
+                          c: [d: '1', e: '2']] // <-- here we do not have null, since skipNull defaults to true
     }
 
     @Test
@@ -54,8 +54,8 @@ class MapUtilsTest {
 
         Map merged = MapUtils.merge(a, b, false)
 
-              assert merged == [a: '1',
-                                b: '2',
-                                c: null] // <-- here we have null, since we have skipNull=false
+        assert merged == [a: '1',
+                          b: '2',
+                          c: null] // <-- here we have null, since we have skipNull=false
     }
 }
