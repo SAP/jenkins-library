@@ -58,4 +58,39 @@ class MapUtilsTest {
                           b: '2',
                           c: null] // <-- here we have null, since we have skipNull=false
     }
+    @Test
+    void testMergeMapNullNullValueIsPreservedFromOverlayMapIfNotInBaseMap(){
+
+        Map a = [a: '1',
+                 c: [d: '1',
+                     e: '2']],
+             b = [b: '2',
+                  c: null, // <-- Will not be taken into account, but the entry from the base map will be present.
+                  n: null];// <-- Will not be taken into account.
+
+        Map merged = MapUtils.merge(a, b)
+
+        assert merged == [a: '1',
+                          b: '2',
+                          c: [d: '1', e: '2']]
+    }
+
+    @Test
+    void testMergeMapNullValueInBaseMapIsPreserved(){
+
+        Map a = [a: '1',
+                 c: [d: '1',
+                     e: '2'],
+                 n: null], // <-- This entry will be preserved.
+             b = [b: '2',
+                  c: [d: 'x']];
+
+        Map merged = MapUtils.merge(a, b)
+
+        assert merged == [a: '1',
+                          b: '2',
+                          n: null,
+                          c: [d: 'x', e: '2']]
+    }
+
 }
