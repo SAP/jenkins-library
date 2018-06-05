@@ -28,7 +28,7 @@ class MapUtilsTest {
     }
 
     @Test
-    void testMergeMapNullValues(){
+    void testMergeMapNullValueDoesNotOverwriteNonNullValue(){
 
         Map a = [a: '1',
                  c: [d: '1',
@@ -40,7 +40,22 @@ class MapUtilsTest {
 
               assert merged == [a: '1',
                                 b: '2',
-                                c: [d: '1', e: '2']]
+                                c: [d: '1', e: '2']] // <-- here we do not have null, since skipNull defaults to true
     }
 
+    @Test
+    void testMergeMapNullValueOverwritesNonNullValueWhenSkipNullIsFalse(){
+
+        Map a = [a: '1',
+                 c: [d: '1',
+                     e: '2']],
+             b = [b: '2',
+                  c: null];
+
+        Map merged = MapUtils.merge(a, b, false)
+
+              assert merged == [a: '1',
+                                b: '2',
+                                c: null] // <-- here we have null, since we have skipNull=false
+    }
 }

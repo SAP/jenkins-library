@@ -19,7 +19,7 @@ class MapUtils implements Serializable {
         for(String key : b.keySet())
             //if(override || a[key] != null)
             if(isMap(b[key]))
-                result[key] = merge(a[key], b[key])
+                result[key] = merge(a[key], b[key], skipNull)
             else if(b[key] != null || !skipNull)
                 result[key] = b[key]
             // else: keep defaults value and omit null values from config
