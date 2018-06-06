@@ -9,6 +9,7 @@ class MapUtilsTest {
     void testIsMap(){
         Assert.assertTrue('Map is not recognized as Map', MapUtils.isMap([:]))
         Assert.assertTrue('String is recognized as Map', !MapUtils.isMap('I am not a Map'))
+        Assert.assertFalse('Null value is recognized as Map', MapUtils.isMap(null))
     }
 
     @Test
