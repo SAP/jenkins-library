@@ -1,18 +1,14 @@
-
-import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.RuleChain
-
+import util.BasePiperTest
 import util.JenkinsDockerExecuteRule
+import util.JenkinsShellCallRule
 import util.JenkinsStepRule
+import util.Rules
 
 import static org.junit.Assert.assertEquals
 import static org.junit.Assert.assertTrue
-
-import util.BasePiperTest
-import util.JenkinsShellCallRule
-import util.Rules
 
 class MavenExecuteTest extends BasePiperTest {
 
@@ -35,7 +31,16 @@ class MavenExecuteTest extends BasePiperTest {
         jsr.step.mavenExecute(script: nullScript, goals: 'clean install')
         assertEquals('maven:3.5-jdk-7', jder.dockerParams.dockerImage)
 
-        assert jscr.shell[0] == 'mvn clean install'
+        assert jscr.shell[0] == 'mvn --batch-mode -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn clean install'
+    }
+
+    @Test
+    void testExecuteBasicMavenCommandWithDownloadLogsEnabled() throws Exception {
+
+        jsr.step.mavenExecute(script: nullScript, goals: 'clean install', logSuccessfulMavenTransfers: true)
+        assertEquals('maven:3.5-jdk-7', jder.dockerParams.dockerImage)
+
+        assert jscr.shell[0] == 'mvn --batch-mode clean install'
     }
 
     @Test
@@ -52,7 +57,7 @@ class MavenExecuteTest extends BasePiperTest {
             m2Path: 'm2Path',
             defines: '-Dmaven.tests.skip=true')
         assertEquals('maven:3.5-jdk-8-alpine', jder.dockerParams.dockerImage)
-        String mvnCommand = "mvn --global-settings 'globalSettingsFile.xml' -Dmaven.repo.local='m2Path' --settings 'projectSettingsFile.xml' --file 'pom.xml' -o clean install -Dmaven.tests.skip=true"
+        String mvnCommand = "mvn --global-settings 'globalSettingsFile.xml' -Dmaven.repo.local='m2Path' --settings 'projectSettingsFile.xml' --file 'pom.xml' --batch-mode -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn -o clean install -Dmaven.tests.skip=true"
         assertTrue(jscr.shell.contains(mvnCommand))
     }
 
@@ -62,6 +67,6 @@ class MavenExecuteTest extends BasePiperTest {
         jsr.step.mavenExecute(script: nullScript, goals: 'clean install')
         assertEquals('maven:3.5-jdk-7', jder.dockerParams.dockerImage)
 
-        assert jscr.shell[0] == 'mvn clean install'
+        assert jscr.shell[0] == 'mvn --batch-mode -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn clean install'
     }
 }

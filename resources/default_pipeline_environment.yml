@@ -77,6 +77,7 @@ steps:
     influxServer: 'jenkins'
   mavenExecute:
     dockerImage: 'maven:3.5-jdk-7'
+    logSuccessfulMavenTransfers: false
   mtaBuild:
     buildTarget: 'NEO'
     mtaJarLocation: 'mta.jar'

@@ -1,4 +1,3 @@
-import com.sap.piper.ConfigurationLoader
 import com.sap.piper.ConfigurationMerger
 
 def call(Map parameters = [:]) {
@@ -17,7 +16,8 @@ def call(Map parameters = [:]) {
             'flags',
             'goals',
             'm2Path',
-            'defines'
+            'defines',
+            'logSuccessfulMavenTransfers'
         ]
         Set stepConfigurationKeys = [
             'dockerImage',
@@ -64,6 +64,13 @@ def call(Map parameters = [:]) {
         def mavenFlags = configuration.flags
         if (mavenFlags?.trim()) {
             command += " ${mavenFlags}"
+        }
+
+        final disableDownloadsFlag = ' --batch-mode -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn'
+        if (!configuration.logSuccessfulMavenTransfers) {
+            if (!command.contains(disableDownloadsFlag)) {
+                command += disableDownloadsFlag
+            }
         }
 
         def mavenGoals = configuration.goals
