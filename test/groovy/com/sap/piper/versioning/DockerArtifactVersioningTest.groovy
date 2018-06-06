@@ -1,22 +1,20 @@
 package com.sap.piper.versioning
 
-import com.lesfurets.jenkins.unit.BasePipelineTest
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.ExpectedException
 import org.junit.rules.RuleChain
+import util.BasePiperTest
 import util.JenkinsLoggingRule
 import util.JenkinsReadFileRule
-import util.JenkinsReadMavenPomRule
-import util.JenkinsShellCallRule
 import util.JenkinsWriteFileRule
 import util.Rules
 
 import static org.junit.Assert.assertEquals
 import static org.junit.Assert.assertTrue
 
-class DockerArtifactVersioningTest extends BasePipelineTest{
+class DockerArtifactVersioningTest extends BasePiperTest{
 
     DockerArtifactVersioning av
 

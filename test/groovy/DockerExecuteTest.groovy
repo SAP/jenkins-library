@@ -4,23 +4,20 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.RuleChain
 
-import com.lesfurets.jenkins.unit.BasePipelineTest
-
+import util.BasePiperTest
 import util.JenkinsLoggingRule
 import util.Rules
 import util.JenkinsStepRule
-import util.JenkinsEnvironmentRule
 
 import static org.junit.Assert.assertEquals
 import static org.junit.Assert.assertTrue
 import static org.junit.Assert.assertFalse
 
-class DockerExecuteTest extends BasePipelineTest {
+class DockerExecuteTest extends BasePiperTest {
     private DockerMock docker
 
     private JenkinsLoggingRule jlr = new JenkinsLoggingRule(this)
     private JenkinsStepRule jsr = new JenkinsStepRule(this)
-    private JenkinsEnvironmentRule jer = new JenkinsEnvironmentRule(this)
 
     @Rule
     public RuleChain ruleChain = Rules
@@ -44,7 +41,7 @@ class DockerExecuteTest extends BasePipelineTest {
     @Test
     void testExecuteInsideDocker() throws Exception {
 
-        jsr.step.call(script: [commonPipelineEnvironment: jer.env],
+        jsr.step.call(script: nullScript,
                       dockerImage: 'maven:3.5-jdk-8-alpine') {
             bodyExecuted = true
         }
@@ -58,7 +55,7 @@ class DockerExecuteTest extends BasePipelineTest {
     @Test
     void testExecuteInsideDockerWithParameters() throws Exception {
 
-        jsr.step.call(script: [commonPipelineEnvironment: jer.env],
+        jsr.step.call(script: nullScript,
                       dockerImage: 'maven:3.5-jdk-8-alpine',
                       dockerOptions: '-it',
                       dockerVolumeBind: ['my_vol': '/my_vol'],
@@ -74,7 +71,7 @@ class DockerExecuteTest extends BasePipelineTest {
 
     @Test
     void testExecuteDockerWithDockerOptionsList() throws Exception {
-        jsr.step.call(script: [commonPipelineEnvironment: jer.env],
+        jsr.step.call(script: nullScript,
             dockerImage: 'maven:3.5-jdk-8-alpine',
             dockerOptions: ['-it', '--network=my-network'],
             dockerEnvVars: ['http_proxy': 'http://proxy:8000']) {
@@ -91,7 +88,7 @@ class DockerExecuteTest extends BasePipelineTest {
 
         whichDockerReturnValue = 1
 
-        jsr.step.call(script: [commonPipelineEnvironment: jer.env],
+        jsr.step.call(script: nullScript,
                       dockerImage: 'maven:3.5-jdk-8-alpine',
                       dockerOptions: '-it',
                       dockerVolumeBind: ['my_vol': '/my_vol'],
