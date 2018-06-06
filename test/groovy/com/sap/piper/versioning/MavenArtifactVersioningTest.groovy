@@ -42,7 +42,7 @@ class MavenArtifactVersioningTest extends BasePiperTest{
         av = new MavenArtifactVersioning(nullScript, [filePath: 'pom.xml'])
         assertEquals('1.2.3', av.getVersion())
         av.setVersion('1.2.3-20180101')
-        assertEquals('mvn --file \'pom.xml\' versions:set -DnewVersion=1.2.3-20180101', jscr.shell[0])
+        assertEquals('mvn --file \'pom.xml\' --batch-mode -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn versions:set -DnewVersion=1.2.3-20180101', jscr.shell[0])
     }
 
     @Test
@@ -50,6 +50,6 @@ class MavenArtifactVersioningTest extends BasePiperTest{
         av = new MavenArtifactVersioning(nullScript, [filePath: 'snapshot/pom.xml'])
         assertEquals('1.2.3', av.getVersion())
         av.setVersion('1.2.3-20180101')
-        assertEquals('mvn --file \'snapshot/pom.xml\' versions:set -DnewVersion=1.2.3-20180101', jscr.shell[0])
+        assertEquals('mvn --file \'snapshot/pom.xml\' --batch-mode -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn versions:set -DnewVersion=1.2.3-20180101', jscr.shell[0])
     }
 }
