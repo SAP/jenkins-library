@@ -1,10 +1,8 @@
 package com.sap.piper.versioning
 
-import com.lesfurets.jenkins.unit.BasePipelineTest
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
-import org.junit.rules.ExpectedException
 import org.junit.rules.RuleChain
 import util.BasePiperTest
 import util.JenkinsReadMavenPomRule
@@ -16,7 +14,6 @@ import static org.junit.Assert.assertEquals
 class MavenArtifactVersioningTest extends BasePiperTest{
 
     Map dockerParameters
-    def mavenExecuteScript
     def commonPipelineEnvironment
 
     MavenArtifactVersioning av

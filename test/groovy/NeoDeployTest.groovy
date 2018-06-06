@@ -2,8 +2,6 @@ import hudson.AbortException
 
 import org.junit.rules.TemporaryFolder
 
-import com.lesfurets.jenkins.unit.BasePipelineTest
-
 import org.junit.BeforeClass
 import org.junit.ClassRule
 import org.junit.Ignore
@@ -12,15 +10,13 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.ExpectedException
 import org.junit.rules.RuleChain
-
-
+import util.BasePiperTest
 import util.JenkinsLoggingRule
 import util.JenkinsShellCallRule
 import util.JenkinsStepRule
-import util.JenkinsEnvironmentRule
 import util.Rules
 
-class NeoDeployTest extends BasePipelineTest {
+class NeoDeployTest extends BasePiperTest {
 
     def toolJavaValidateCalled = false
 
@@ -31,7 +27,6 @@ class NeoDeployTest extends BasePipelineTest {
     private JenkinsLoggingRule jlr = new JenkinsLoggingRule(this)
     private JenkinsShellCallRule jscr = new JenkinsShellCallRule(this)
     private JenkinsStepRule jsr = new JenkinsStepRule(this)
-    private JenkinsEnvironmentRule jer = new JenkinsEnvironmentRule(this)
 
     @Rule
     public RuleChain ruleChain = Rules
@@ -40,7 +35,6 @@ class NeoDeployTest extends BasePipelineTest {
         .around(jlr)
         .around(jscr)
         .around(jsr)
-        .around(jer)
 
     private static workspacePath
     private static warArchiveName
@@ -86,18 +80,18 @@ class NeoDeployTest extends BasePipelineTest {
 
         helper.registerAllowedMethod('sh', [Map], { Map m -> getVersionWithEnvVars(m) })
 
-        jer.env.configuration = [steps:[neoDeploy: [host: 'test.deploy.host.com', account: 'trialuser123']]]
+        nullScript.commonPipelineEnvironment.configuration = [steps:[neoDeploy: [host: 'test.deploy.host.com', account: 'trialuser123']]]
     }
 
 
     @Test
     void straightForwardTestConfigViaConfigProperties() {
 
-        jer.env.setConfigProperty('DEPLOY_HOST', 'test.deploy.host.com')
-        jer.env.setConfigProperty('CI_DEPLOY_ACCOUNT', 'trialuser123')
-        jer.env.configuration = [:]
+        nullScript.commonPipelineEnvironment.setConfigProperty('DEPLOY_HOST', 'test.deploy.host.com')
+        nullScript.commonPipelineEnvironment.setConfigProperty('CI_DEPLOY_ACCOUNT', 'trialuser123')
+        nullScript.commonPipelineEnvironment.configuration = [:]
 
-        jsr.step.call(script: [commonPipelineEnvironment: jer.env],
+        jsr.step.call(script: nullScript,
                        archivePath: archiveName,
                        neoCredentialsId: 'myCredentialsId'
         )
@@ -108,7 +102,7 @@ class NeoDeployTest extends BasePipelineTest {
     @Test
     void straightForwardTestConfigViaConfiguration() {
 
-        jsr.step.call(script: [commonPipelineEnvironment: jer.env],
+        jsr.step.call(script: nullScript,
             archivePath: archiveName,
             neoCredentialsId: 'myCredentialsId'
         )
@@ -119,13 +113,13 @@ class NeoDeployTest extends BasePipelineTest {
     @Test
     void straightForwardTestConfigViaConfigurationAndViaConfigProperties() {
 
-        jer.env.setConfigProperty('DEPLOY_HOST', 'configProperties.deploy.host.com')
-        jer.env.setConfigProperty('CI_DEPLOY_ACCOUNT', 'configPropsUser123')
+        nullScript.commonPipelineEnvironment.setConfigProperty('DEPLOY_HOST', 'configProperties.deploy.host.com')
+        nullScript.commonPipelineEnvironment.setConfigProperty('CI_DEPLOY_ACCOUNT', 'configPropsUser123')
 
-        jer.env.configuration = [steps:[neoDeploy: [host: 'configuration-frwk.deploy.host.com',
+        nullScript.commonPipelineEnvironment.configuration = [steps:[neoDeploy: [host: 'configuration-frwk.deploy.host.com',
                                                 account: 'configurationFrwkUser123']]]
 
-        jsr.step.call(script: [commonPipelineEnvironment: jer.env],
+        jsr.step.call(script: nullScript,
             archivePath: archiveName,
             neoCredentialsId: 'myCredentialsId'
         )
@@ -140,7 +134,7 @@ class NeoDeployTest extends BasePipelineTest {
         thrown.expect(MissingPropertyException)
         thrown.expectMessage('No such property: username')
 
-        jsr.step.call(script: [commonPipelineEnvironment: jer.env],
+        jsr.step.call(script: nullScript,
                        archivePath: archiveName,
                        neoCredentialsId: 'badCredentialsId'
         )
@@ -150,7 +144,7 @@ class NeoDeployTest extends BasePipelineTest {
     @Test
     void credentialsIdNotProvidedTest() {
 
-        jsr.step.call(script: [commonPipelineEnvironment: jer.env],
+        jsr.step.call(script: nullScript,
                        archivePath: archiveName
         )
 
@@ -163,7 +157,7 @@ class NeoDeployTest extends BasePipelineTest {
 
         helper.registerAllowedMethod('sh', [Map], { Map m -> getVersionWithPath(m) })
 
-        jsr.step.call(script: [commonPipelineEnvironment: jer.env],
+        jsr.step.call(script: nullScript,
                        archivePath: archiveName
         )
 
@@ -178,7 +172,7 @@ class NeoDeployTest extends BasePipelineTest {
 
         helper.registerAllowedMethod('sh', [Map], { Map m -> getVersionWithPath(m) })
 
-        jsr.step.call(script: [commonPipelineEnvironment: jer.env],
+        jsr.step.call(script: nullScript,
                        archivePath: archiveName,
                        neoCredentialsId: 'myCredentialsId',
                        neoHome: '/param/neo'
@@ -193,7 +187,7 @@ class NeoDeployTest extends BasePipelineTest {
     @Test
     void neoHomeFromEnvironmentTest() {
 
-        jsr.step.call(script: [commonPipelineEnvironment: jer.env],
+        jsr.step.call(script: nullScript,
                        archivePath: archiveName
         )
 
@@ -208,9 +202,9 @@ class NeoDeployTest extends BasePipelineTest {
 
         helper.registerAllowedMethod('sh', [Map], { Map m -> getVersionWithPath(m) })
 
-        jer.env.configuration = [steps:[neoDeploy: [host: 'test.deploy.host.com', account: 'trialuser123', neoHome: '/config/neo']]]
+        nullScript.commonPipelineEnvironment.configuration = [steps:[neoDeploy: [host: 'test.deploy.host.com', account: 'trialuser123', neoHome: '/config/neo']]]
 
-        jsr.step.call(script: [commonPipelineEnvironment: jer.env],
+        jsr.step.call(script: nullScript,
                        archivePath: archiveName
         )
 
@@ -226,7 +220,7 @@ class NeoDeployTest extends BasePipelineTest {
         thrown.expect(Exception)
         thrown.expectMessage('Archive path not configured (parameter "archivePath").')
 
-        jsr.step.call(script: [commonPipelineEnvironment: jer.env])
+        jsr.step.call(script: nullScript)
     }
 
 
@@ -236,7 +230,7 @@ class NeoDeployTest extends BasePipelineTest {
         thrown.expect(AbortException)
         thrown.expectMessage('Archive cannot be found')
 
-        jsr.step.call(script: [commonPipelineEnvironment: jer.env],
+        jsr.step.call(script: nullScript,
                        archivePath: 'wrongArchiveName')
     }
 
@@ -247,7 +241,7 @@ class NeoDeployTest extends BasePipelineTest {
         thrown.expect(Exception)
         thrown.expectMessage('ERROR - NO VALUE AVAILABLE FOR host')
 
-        jer.env.configuration = [:]
+        nullScript.commonPipelineEnvironment.configuration = [:]
 
         jsr.step.call(archivePath: archiveName)
     }
@@ -255,7 +249,7 @@ class NeoDeployTest extends BasePipelineTest {
     @Test
     void mtaDeployModeTest() {
 
-        jsr.step.call(script: [commonPipelineEnvironment: jer.env], archivePath: archiveName, deployMode: 'mta')
+        jsr.step.call(script: nullScript, archivePath: archiveName, deployMode: 'mta')
 
         assert jscr.shell.find { c -> c =~ /#!\/bin\/bash "\/opt\/neo\/tools\/neo\.sh" deploy-mta --host 'test\.deploy\.host\.com' --account 'trialuser123' --synchronous --user 'defaultUser' --password '\*\*\*\*\*\*\*\*' --source ".*"/}
     }
@@ -263,7 +257,7 @@ class NeoDeployTest extends BasePipelineTest {
     @Test
     void warFileParamsDeployModeTest() {
 
-        jsr.step.call(script: [commonPipelineEnvironment: jer.env],
+        jsr.step.call(script: nullScript,
                              applicationName: 'testApp',
                              runtime: 'neo-javaee6-wp',
                              runtimeVersion: '2.125',
@@ -278,7 +272,7 @@ class NeoDeployTest extends BasePipelineTest {
     @Test
     void warFileParamsDeployModeRollingUpdateTest() {
 
-        jsr.step.call(script: [commonPipelineEnvironment: jer.env],
+        jsr.step.call(script: nullScript,
                              archivePath: warArchiveName,
                              deployMode: 'warParams',
                              applicationName: 'testApp',
@@ -293,7 +287,7 @@ class NeoDeployTest extends BasePipelineTest {
     @Test
     void warPropertiesFileDeployModeTest() {
 
-        jsr.step.call(script: [commonPipelineEnvironment: jer.env],
+        jsr.step.call(script: nullScript,
                              archivePath: warArchiveName,
                              deployMode: 'warPropertiesFile',
                              propertiesFile: propertiesFileName,
@@ -309,7 +303,7 @@ class NeoDeployTest extends BasePipelineTest {
     @Test
     void warPropertiesFileDeployModeRollingUpdateTest() {
 
-        jsr.step.call(script: [commonPipelineEnvironment: jer.env],
+        jsr.step.call(script: nullScript,
                              archivePath: warArchiveName,
                              deployMode: 'warPropertiesFile',
                              propertiesFile: propertiesFileName,
@@ -328,7 +322,7 @@ class NeoDeployTest extends BasePipelineTest {
         thrown.expect(Exception)
         thrown.expectMessage('ERROR - NO VALUE AVAILABLE FOR applicationName')
 
-        jsr.step.call(script: [commonPipelineEnvironment: jer.env],
+        jsr.step.call(script: nullScript,
                              archivePath: warArchiveName,
                              deployMode: 'warParams',
                              runtime: 'neo-javaee6-wp',
@@ -342,7 +336,7 @@ class NeoDeployTest extends BasePipelineTest {
         thrown.expect(Exception)
         thrown.expectMessage('ERROR - NO VALUE AVAILABLE FOR runtime')
 
-        jsr.step.call(script: [commonPipelineEnvironment: jer.env],
+        jsr.step.call(script: nullScript,
                              archivePath: warArchiveName,
                              applicationName: 'testApp',
                              deployMode: 'warParams',
@@ -355,7 +349,7 @@ class NeoDeployTest extends BasePipelineTest {
         thrown.expect(Exception)
         thrown.expectMessage('ERROR - NO VALUE AVAILABLE FOR runtimeVersion')
 
-        jsr.step.call(script: [commonPipelineEnvironment: jer.env],
+        jsr.step.call(script: nullScript,
                              archivePath: warArchiveName,
                              applicationName: 'testApp',
                              deployMode: 'warParams',
@@ -368,7 +362,7 @@ class NeoDeployTest extends BasePipelineTest {
         thrown.expect(Exception)
         thrown.expectMessage("[neoDeploy] Invalid deployMode = 'illegalMode'. Valid 'deployMode' values are: [mta, warParams, warPropertiesFile]")
 
-        jsr.step.call(script: [commonPipelineEnvironment: jer.env],
+        jsr.step.call(script: nullScript,
             archivePath: warArchiveName,
             deployMode: 'illegalMode',
             applicationName: 'testApp',
@@ -384,7 +378,7 @@ class NeoDeployTest extends BasePipelineTest {
         thrown.expect(Exception)
         thrown.expectMessage("[neoDeploy] Invalid vmSize = 'illegalVM'. Valid 'vmSize' values are: [lite, pro, prem, prem-plus].")
 
-        jsr.step.call(script: [commonPipelineEnvironment: jer.env],
+        jsr.step.call(script: nullScript,
             archivePath: warArchiveName,
             deployMode: 'warParams',
             applicationName: 'testApp',
@@ -400,7 +394,7 @@ class NeoDeployTest extends BasePipelineTest {
         thrown.expect(Exception)
         thrown.expectMessage("[neoDeploy] Invalid warAction = 'illegalWARAction'. Valid 'warAction' values are: [deploy, rolling-update].")
 
-        jsr.step.call(script: [commonPipelineEnvironment: jer.env],
+        jsr.step.call(script: nullScript,
             archivePath: warArchiveName,
             deployMode: 'warParams',
             applicationName: 'testApp',
@@ -413,9 +407,9 @@ class NeoDeployTest extends BasePipelineTest {
     @Test
     void deployHostProvidedAsDeprecatedParameterTest() {
 
-        jer.env.setConfigProperty('CI_DEPLOY_ACCOUNT', 'configPropsUser123')
+        nullScript.commonPipelineEnvironment.setConfigProperty('CI_DEPLOY_ACCOUNT', 'configPropsUser123')
 
-        jsr.step.call(script: [commonPipelineEnvironment: jer.env],
+        jsr.step.call(script: nullScript,
                              archivePath: archiveName,
                              deployHost: "my.deploy.host.com"
         )
@@ -426,9 +420,9 @@ class NeoDeployTest extends BasePipelineTest {
     @Test
     void deployAccountProvidedAsDeprecatedParameterTest() {
 
-        jer.env.setConfigProperty('CI_DEPLOY_ACCOUNT', 'configPropsUser123')
+        nullScript.commonPipelineEnvironment.setConfigProperty('CI_DEPLOY_ACCOUNT', 'configPropsUser123')
 
-        jsr.step.call(script: [commonPipelineEnvironment: jer.env],
+        jsr.step.call(script: nullScript,
                              archivePath: archiveName,
                              host: "my.deploy.host.com",
                              deployAccount: "myAccount"

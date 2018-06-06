@@ -6,18 +6,13 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.ExpectedException
 import org.junit.rules.RuleChain
-
+import util.BasePiperTest
 import util.JenkinsLoggingRule
 import util.Rules
 
-import com.lesfurets.jenkins.unit.BasePipelineTest
-
-import com.sap.piper.tools.ToolDescriptor
-
 import hudson.AbortException
 
-
-class ToolDescriptorTest extends BasePipelineTest {
+class ToolDescriptorTest extends BasePiperTest {
 
     private ExpectedException thrown = new ExpectedException()
     private JenkinsLoggingRule jlr = new JenkinsLoggingRule(this)
