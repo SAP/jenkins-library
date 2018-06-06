@@ -1,4 +1,3 @@
-import com.sap.piper.ConfigurationLoader
 import com.sap.piper.ConfigurationMerger
 
 def call(Map parameters = [:]) {
@@ -17,7 +16,8 @@ def call(Map parameters = [:]) {
             'flags',
             'goals',
             'm2Path',
-            'defines'
+            'defines',
+            'logSuccessfulMavenTransfers'
         ]
         Set stepConfigurationKeys = [
             'dockerImage',
@@ -64,6 +64,19 @@ def call(Map parameters = [:]) {
         def mavenFlags = configuration.flags
         if (mavenFlags?.trim()) {
             command += " ${mavenFlags}"
+        }
+
+        // Always use Maven's batch mode
+        if (!(command.contains('-B') || command.contains('--batch-mode'))){
+            command += ' --batch-mode'
+        }
+
+        // Disable log for successful transfers by default. Note this requires the batch-mode flag.
+        final String disableSuccessfulMavenTransfersLogFlag = ' -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn'
+        if (!configuration.logSuccessfulMavenTransfers) {
+            if (!command.contains(disableSuccessfulMavenTransfersLogFlag)) {
+                command += disableSuccessfulMavenTransfersLogFlag
+            }
         }
 
         def mavenGoals = configuration.goals
