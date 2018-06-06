@@ -7,22 +7,35 @@ class MapUtils implements Serializable {
     static boolean isMap(object){
         return object in Map
     }
-    
+
     @NonCPS
-    static Map merge(Map a, Map b, skipNull = true/*, override = true*/) {
+    static Map pruneNulls(Map m) {
+
         Map result = [:]
-        
-        a = a ?: [:]
 
-        result.putAll(a)
+        m = m ?: [:]
 
-        for(String key : b.keySet())
-            //if(override || a[key] != null)
-            if(isMap(b[key]))
-                result[key] = merge(a[key], b[key], skipNull)
-            else if(b[key] != null || !skipNull)
-                result[key] = b[key]
-            // else: keep defaults value and omit null values from config
+        for(def e : m.entrySet())
+            if(isMap(e.value))
+                result[e.key] = pruneNulls(e.value)
+            else if(e.value != null)
+                result[e.key] = e.value
+        return result
+    }
+
+
+    @NonCPS
+    static Map merge(Map base, Map overlay) {
+
+        Map result = [:]
+
+        base = base ?: [:]
+
+        result.putAll(base)
+
+        for(def e : overlay.entrySet())
+            result[e.key] = isMap(e.value) ? merge(base[e.key], e.value) : e.value
+
         return result
     }
 }

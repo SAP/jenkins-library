@@ -8,7 +8,8 @@ class ConfigurationMerger {
     static Map merge(Map configs, Set configKeys, Map defaults) {
         Map filteredConfig = configKeys?configs.subMap(configKeys):configs
 
-        return MapUtils.merge(defaults, filteredConfig)
+        return MapUtils.merge(MapUtils.pruneNulls(defaults),
+                              MapUtils.pruneNulls(filteredConfig))
     }
 
     @NonCPS
