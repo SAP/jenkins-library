@@ -1,29 +1,26 @@
 #!groovy
-import com.lesfurets.jenkins.unit.BasePipelineTest
 import com.sap.piper.DefaultValueCache
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.RuleChain
+import util.BasePiperTest
 import util.JenkinsLoggingRule
 import util.JenkinsStepRule
-import util.JenkinsEnvironmentRule
 import util.Rules
 
 import static org.junit.Assert.assertTrue
 import static org.junit.Assert.assertEquals
 
-class InfluxWriteDataTest extends BasePipelineTest {
+class InfluxWriteDataTest extends BasePiperTest {
     public JenkinsLoggingRule loggingRule = new JenkinsLoggingRule(this)
     private JenkinsStepRule jsr = new JenkinsStepRule(this)
-    private JenkinsEnvironmentRule jer = new JenkinsEnvironmentRule(this)
 
     @Rule
     public RuleChain ruleChain = Rules
         .getCommonRules(this)
         .around(loggingRule)
         .around(jsr)
-        .around(jer)
 
     Map fileMap = [:]
     Map stepMap = [:]
@@ -55,8 +52,8 @@ class InfluxWriteDataTest extends BasePipelineTest {
     @Test
     void testInfluxWriteDataWithDefault() throws Exception {
 
-        jer.env.setArtifactVersion('1.2.3')
-        jsr.step.call(script: [commonPipelineEnvironment: jer.env])
+        nullScript.commonPipelineEnvironment.setArtifactVersion('1.2.3')
+        jsr.step.call(script: nullScript)
 
         assertTrue(loggingRule.log.contains('Artifact version: 1.2.3'))
 
@@ -74,8 +71,8 @@ class InfluxWriteDataTest extends BasePipelineTest {
     @Test
     void testInfluxWriteDataNoInflux() throws Exception {
 
-        jer.env.setArtifactVersion('1.2.3')
-        jsr.step.call(script: [commonPipelineEnvironment: jer.env], influxServer: '')
+        nullScript.commonPipelineEnvironment.setArtifactVersion('1.2.3')
+        jsr.step.call(script: nullScript, influxServer: '')
 
         assertEquals(0, stepMap.size())
 
@@ -88,7 +85,7 @@ class InfluxWriteDataTest extends BasePipelineTest {
     @Test
     void testInfluxWriteDataNoArtifactVersion() throws Exception {
 
-        jsr.step.call(script: [commonPipelineEnvironment: jer.env])
+        jsr.step.call(script: nullScript)
 
         assertEquals(0, stepMap.size())
         assertEquals(0, fileMap.size())

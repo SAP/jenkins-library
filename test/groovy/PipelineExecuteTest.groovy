@@ -1,6 +1,5 @@
+import util.BasePiperTest
 import util.Rules
-
-import com.lesfurets.jenkins.unit.BasePipelineTest
 
 import org.junit.Before
 import org.junit.Rule
@@ -8,10 +7,9 @@ import org.junit.Test
 import org.junit.rules.ExpectedException
 import org.junit.rules.RuleChain
 
-import util.JenkinsReadYamlRule
 import util.JenkinsStepRule
 
-class PipelineExecuteTest extends BasePipelineTest {
+class PipelineExecuteTest extends BasePiperTest {
     private ExpectedException thrown = new ExpectedException().none()
     private JenkinsStepRule jsr = new JenkinsStepRule(this)
 
