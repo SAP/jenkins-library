@@ -57,7 +57,7 @@ class MavenExecuteTest extends BasePiperTest {
             m2Path: 'm2Path',
             defines: '-Dmaven.tests.skip=true')
         assertEquals('maven:3.5-jdk-8-alpine', jder.dockerParams.dockerImage)
-        String mvnCommand = "mvn --global-settings 'globalSettingsFile.xml' -Dmaven.repo.local='m2Path' --settings 'projectSettingsFile.xml' --file 'pom.xml' --batch-mode -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn -o clean install -Dmaven.tests.skip=true"
+        String mvnCommand = "mvn --global-settings 'globalSettingsFile.xml' -Dmaven.repo.local='m2Path' --settings 'projectSettingsFile.xml' --file 'pom.xml' -o --batch-mode -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn clean install -Dmaven.tests.skip=true"
         assertTrue(jscr.shell.contains(mvnCommand))
     }
 

@@ -66,10 +66,16 @@ def call(Map parameters = [:]) {
             command += " ${mavenFlags}"
         }
 
-        final disableDownloadsFlag = ' --batch-mode -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn'
+        // Always use Maven's batch mode
+        if (!(command.contains('-B') || command.contains('--batch-mode'))){
+            command += ' --batch-mode'
+        }
+
+        // Disable log for successful transfers by default. Note this requires the batch-mode flag.
+        final String disableSuccessfulMavenTransfersLogFlag = ' -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn'
         if (!configuration.logSuccessfulMavenTransfers) {
-            if (!command.contains(disableDownloadsFlag)) {
-                command += disableDownloadsFlag
+            if (!command.contains(disableSuccessfulMavenTransfersLogFlag)) {
+                command += disableSuccessfulMavenTransfersLogFlag
             }
         }
 
