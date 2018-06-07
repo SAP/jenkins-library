@@ -31,9 +31,8 @@ class PipelineStashFilesAfterBuildTest extends BasePiperTest {
         )
         // asserts
         assertFalse(jlr.log.contains('Stash content: checkmarx'))
-        assertThat(jlr.log, containsString('Stash content: classFiles (include: **/target/classes/**/*.class, **/target/test-classes/**/*.class, exclude: )'))
-        assertThat(jlr.log, containsString('Stash content: sonar (include: **/jacoco*.exec, **/sonar-project.properties, exclude: )'))
-        assertFalse(jlr.log.contains('Stash content: postStagedFiles'))
+        assertThat(jlr.log, containsString('Stash content: classFiles'))
+        assertThat(jlr.log, containsString('Stash content: sonar'))
     }
 
     @Test
@@ -48,9 +47,9 @@ class PipelineStashFilesAfterBuildTest extends BasePiperTest {
             runCheckmarx: true
         )
         // asserts
-        assertThat(jlr.log, containsString('Stash content: checkmarx (include: **/*.js, **/*.scala, **/*.py, **/*.go, **/*.xml, **/*.html, exclude: **/*.mockserver.js, node_modules/**/*.js)'))
-        assertThat(jlr.log, containsString('Stash content: classFiles (include: **/target/classes/**/*.class, **/target/test-classes/**/*.class, exclude: )'))
-        assertThat(jlr.log, containsString('Stash content: sonar (include: **/jacoco*.exec, **/sonar-project.properties, exclude: )'))
+        assertThat(jlr.log, containsString('Stash content: checkmarx'))
+        assertThat(jlr.log, containsString('Stash content: classFiles'))
+        assertThat(jlr.log, containsString('Stash content: sonar'))
     }
 
     @Test
@@ -64,9 +63,9 @@ class PipelineStashFilesAfterBuildTest extends BasePiperTest {
             juStabUtils: utils,
         )
         // asserts
-        assertThat(jlr.log, containsString('Stash content: checkmarx (include: **/*.js, **/*.scala, **/*.py, **/*.go, **/*.xml, **/*.html, exclude: **/*.mockserver.js, node_modules/**/*.js)'))
-        assertThat(jlr.log, containsString('Stash content: classFiles (include: **/target/classes/**/*.class, **/target/test-classes/**/*.class, exclude: )'))
-        assertThat(jlr.log, containsString('Stash content: sonar (include: **/jacoco*.exec, **/sonar-project.properties, exclude: )'))
+        assertThat(jlr.log, containsString('Stash content: checkmarx'))
+        assertThat(jlr.log, containsString('Stash content: classFiles'))
+        assertThat(jlr.log, containsString('Stash content: sonar'))
     }
 
 }

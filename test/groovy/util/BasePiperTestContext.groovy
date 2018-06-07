@@ -2,6 +2,7 @@
 
 package util
 
+import com.sap.piper.GitUtils
 import com.sap.piper.Utils
 import org.codehaus.groovy.runtime.InvokerHelper
 import org.springframework.context.annotation.Bean
@@ -16,6 +17,13 @@ class BasePiperTestContext {
         nullScript.currentBuild = [:]
         LibraryLoadingTestExecutionListener.prepareObjectInterceptors(nullScript)
         return nullScript
+    }
+
+    @Bean
+    GitUtils mockGitUtils() {
+        def mockGitUtils = new GitUtils()
+        LibraryLoadingTestExecutionListener.prepareObjectInterceptors(mockGitUtils)
+        return mockGitUtils
     }
 
     @Bean

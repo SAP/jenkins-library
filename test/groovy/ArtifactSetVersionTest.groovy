@@ -1,11 +1,11 @@
 #!groovy
-import com.lesfurets.jenkins.unit.BasePipelineTest
-import com.sap.piper.GitUtils
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.ExpectedException
 import org.junit.rules.RuleChain
+import util.BasePiperTest
+import util.JenkinsDockerExecuteRule
 import util.JenkinsEnvironmentRule
 import util.JenkinsLoggingRule
 import util.JenkinsReadMavenPomRule
@@ -14,16 +14,17 @@ import util.JenkinsStepRule
 import util.JenkinsWriteFileRule
 import util.Rules
 
+import static org.hamcrest.Matchers.hasItem
+import static org.junit.Assert.assertThat
 import static org.junit.Assert.assertEquals
 
-class ArtifactSetVersionTest extends BasePipelineTest {
+class ArtifactSetVersionTest extends BasePiperTest {
     Map dockerParameters
-    def mavenExecuteScript
 
-    def gitUtils
     def sshAgentList = []
 
     private ExpectedException thrown = ExpectedException.none()
+    private JenkinsDockerExecuteRule jder = new JenkinsDockerExecuteRule(this)
     private JenkinsLoggingRule jlr = new JenkinsLoggingRule(this)
     private JenkinsShellCallRule jscr = new JenkinsShellCallRule(this)
     private JenkinsWriteFileRule jwfr = new JenkinsWriteFileRule(this)
@@ -38,20 +39,13 @@ class ArtifactSetVersionTest extends BasePipelineTest {
         .around(jscr)
         .around(new JenkinsReadMavenPomRule(this, 'test/resources/MavenArtifactVersioning'))
         .around(jwfr)
+        .around(jder)
         .around(jsr)
         .around(jer)
 
     @Before
     void init() throws Throwable {
         dockerParameters = [:]
-
-        helper.registerAllowedMethod("dockerExecute", [Map.class, Closure.class],
-            { parameters, closure ->
-                dockerParameters = parameters
-                closure()
-            })
-
-        mavenExecuteScript = loadScript("mavenExecute.groovy").mavenExecute
 
         helper.registerAllowedMethod("sshagent", [List.class, Closure.class], { list, closure ->
             sshAgentList = list
@@ -65,11 +59,7 @@ class ArtifactSetVersionTest extends BasePipelineTest {
 
         binding.setVariable('Jenkins', [instance: [pluginManager: [plugins: [new DockerExecuteTest.PluginMock()]]]])
 
-
-        gitUtils = new GitUtils()
-        prepareObjectInterceptors(gitUtils)
-
-        this.helper.registerAllowedMethod('fileExists', [String.class], {true})
+        helper.registerAllowedMethod('fileExists', [String.class], {true})
     }
 
     @Test
@@ -79,12 +69,12 @@ class ArtifactSetVersionTest extends BasePipelineTest {
         assertEquals('1.2.3-20180101010203_testCommitId', jer.env.getArtifactVersion())
         assertEquals('testCommitId', jer.env.getGitCommitId())
 
-        assertEquals('mvn --file \'pom.xml\' versions:set -DnewVersion=1.2.3-20180101010203_testCommitId', jscr.shell[6])
-        assertEquals('git add .', jscr.shell[7])
-        assertEquals ("git commit -m 'update version 1.2.3-20180101010203_testCommitId'", jscr.shell[8])
-        assertEquals ("git remote set-url origin myGitSshUrl", jscr.shell[9])
-        assertEquals ("git tag build_1.2.3-20180101010203_testCommitId", jscr.shell[10])
-        assertEquals ("git push origin build_1.2.3-20180101010203_testCommitId", jscr.shell[11])
+        assertThat(jscr.shell, hasItem("mvn --file 'pom.xml' --batch-mode -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn versions:set -DnewVersion=1.2.3-20180101010203_testCommitId"))
+        assertThat(jscr.shell, hasItem('git add .'))
+        assertThat(jscr.shell, hasItem("git commit -m 'update version 1.2.3-20180101010203_testCommitId'"))
+        assertThat(jscr.shell, hasItem("git remote set-url origin myGitSshUrl"))
+        assertThat(jscr.shell, hasItem("git tag build_1.2.3-20180101010203_testCommitId"))
+        assertThat(jscr.shell, hasItem("git push origin build_1.2.3-20180101010203_testCommitId"))
     }
 
     @Test
@@ -92,7 +82,7 @@ class ArtifactSetVersionTest extends BasePipelineTest {
         jsr.step.call(script: jsr.step, juStabGitUtils: gitUtils, buildTool: 'maven', commitVersion: false)
 
         assertEquals('1.2.3-20180101010203_testCommitId', jer.env.getArtifactVersion())
-        assertEquals('mvn --file \'pom.xml\' versions:set -DnewVersion=1.2.3-20180101010203_testCommitId', jscr.shell[6])
+        assertThat(jscr.shell, hasItem("mvn --file 'pom.xml' --batch-mode -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn versions:set -DnewVersion=1.2.3-20180101010203_testCommitId"))
     }
 
     @Test
@@ -100,14 +90,14 @@ class ArtifactSetVersionTest extends BasePipelineTest {
         jsr.step.call(juStabGitUtils: gitUtils, buildTool: 'maven', commitVersion: false)
 
         assertEquals('1.2.3-20180101010203_testCommitId', jer.env.getArtifactVersion())
-        assertEquals('mvn --file \'pom.xml\' versions:set -DnewVersion=1.2.3-20180101010203_testCommitId', jscr.shell[6])
+        assertThat(jscr.shell, hasItem("mvn --file 'pom.xml' --batch-mode -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn versions:set -DnewVersion=1.2.3-20180101010203_testCommitId"))
     }
 
     @Test
     void testVersioningCustomGitUserAndEMail() {
         jsr.step.call(script: jsr.step, juStabGitUtils: gitUtils, buildTool: 'maven', gitSshUrl: 'myGitSshUrl', gitUserEMail: 'test@test.com', gitUserName: 'test')
 
-        assertEquals ('git -c user.email="test@test.com" -c user.name="test" commit -m \'update version 1.2.3-20180101010203_testCommitId\'', jscr.shell[8])
+        assertThat(jscr.shell, hasItem("git -c user.email=\"test@test.com\" -c user.name=\"test\" commit -m 'update version 1.2.3-20180101010203_testCommitId'"))
     }
 
     @Test

@@ -3,6 +3,7 @@
 package util
 
 import com.lesfurets.jenkins.unit.BasePipelineTest
+import com.sap.piper.GitUtils
 import com.sap.piper.Utils
 import org.junit.Before
 import org.junit.runner.RunWith
@@ -21,6 +22,9 @@ abstract class BasePiperTest extends BasePipelineTest {
 
     @Autowired
     Script nullScript
+
+    @Autowired
+    GitUtils gitUtils
 
     @Autowired
     Utils utils

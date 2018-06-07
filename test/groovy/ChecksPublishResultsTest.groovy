@@ -4,7 +4,7 @@ import org.junit.Test
 import org.junit.rules.RuleChain
 import org.junit.Ignore
 
-import com.lesfurets.jenkins.unit.BasePipelineTest
+import util.BasePiperTest
 
 import static org.junit.Assert.assertEquals
 import static org.junit.Assert.assertTrue
@@ -12,7 +12,7 @@ import static org.junit.Assert.assertTrue
 import util.Rules
 import util.JenkinsStepRule
 
-class ChecksPublishResultsTest extends BasePipelineTest {
+class ChecksPublishResultsTest extends BasePiperTest {
     Map publisherStepOptions
     List archiveStepPatterns
 
