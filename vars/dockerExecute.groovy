@@ -14,7 +14,6 @@ def call(Map parameters = [:], body) {
 
         if (k8s) {
             echo "redirecting to executeDocker"
-            echo "envVars can be ${new EnvVars().masterEnvVars}"
             executeDocker(dockerImage:parameters.dockerImage,dockerEnvVars:parameters.dockerEnvVars,dockerOptions:parameters.dockerOptions,dockerVolumeBind:parameters.dockerVolumeBind) {
                 body()
             }
