@@ -1,5 +1,5 @@
 import com.cloudbees.groovy.cps.NonCPS
-import hudson.EnvVars;
+
 def call(Map parameters = [:], body) {
 
     def STEP_NAME = 'dockerExecute'
@@ -13,8 +13,11 @@ def call(Map parameters = [:], body) {
         def k8s = parameters.k8s ?: true
 
         if (k8s) {
-            echo "redirecting to executeDocker"
-            executeDocker(dockerImage:parameters.dockerImage,dockerEnvVars:parameters.dockerEnvVars,dockerOptions:parameters.dockerOptions,dockerVolumeBind:parameters.dockerVolumeBind) {
+            executeDockerOnKubernetes(
+                dockerImage: parameters.dockerImage,
+                dockerEnvVars: parameters.dockerEnvVars,
+                dockerOptions: parameters.dockerOptions,
+                dockerVolumeBind: parameters.dockerVolumeBind) {
                 body()
             }
         } else if (dockerImage) {
