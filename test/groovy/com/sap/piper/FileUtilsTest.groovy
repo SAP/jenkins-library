@@ -8,17 +8,13 @@ import org.junit.Test
 import org.junit.rules.ExpectedException
 import org.junit.rules.TemporaryFolder
 import org.junit.rules.RuleChain
-
+import util.BasePiperTest
 import util.Rules
-
-import com.lesfurets.jenkins.unit.BasePipelineTest
-
-import com.sap.piper.FileUtils
 
 import hudson.AbortException
 
 
-class FileUtilsTest extends BasePipelineTest {
+class FileUtilsTest extends BasePiperTest {
 
     @ClassRule
     public static TemporaryFolder tmp = new TemporaryFolder()
@@ -33,8 +29,6 @@ class FileUtilsTest extends BasePipelineTest {
     private static notEmptyDir
     private static file
 
-    private static script
-
     @BeforeClass
     static void createTestFiles() {
 
@@ -43,20 +37,13 @@ class FileUtilsTest extends BasePipelineTest {
         file = tmp.newFile('notEmptyDir/file.txt').getAbsolutePath()
     }
 
-    @Before
-    void setup() {
-
-        script = loadScript('commonPipelineEnvironment.groovy').commonPipelineEnvironment
-    }
-
-
     @Test
     void validateDirectory_nullParameterTest() {
 
         thrown.expect(IllegalArgumentException)
         thrown.expectMessage("The parameter 'dir' can not be null or empty.")
 
-        FileUtils.validateDirectory(script, null)
+        FileUtils.validateDirectory(nullScript, null)
     }
 
     @Test
@@ -65,7 +52,7 @@ class FileUtilsTest extends BasePipelineTest {
         thrown.expect(IllegalArgumentException)
         thrown.expectMessage("The parameter 'dir' can not be null or empty.")
 
-        FileUtils.validateDirectory(script, '')
+        FileUtils.validateDirectory(nullScript, '')
     }
 
     @Test
@@ -78,7 +65,7 @@ class FileUtilsTest extends BasePipelineTest {
         thrown.expect(AbortException)
         thrown.expectMessage("Validation failed. '$dir' does not exist.")
 
-        FileUtils.validateDirectory(script, dir)
+        FileUtils.validateDirectory(nullScript, dir)
     }
 
     @Test
@@ -89,7 +76,7 @@ class FileUtilsTest extends BasePipelineTest {
         thrown.expect(AbortException)
         thrown.expectMessage("Validation failed. '$file' is not a directory.")
 
-        FileUtils.validateDirectory(script, file)
+        FileUtils.validateDirectory(nullScript, file)
     }
 
     @Test
@@ -97,7 +84,7 @@ class FileUtilsTest extends BasePipelineTest {
 
         helper.registerAllowedMethod('sh', [Map], { Map m -> script(m, notEmptyDir) })
 
-        FileUtils.validateDirectory(script, notEmptyDir)
+        FileUtils.validateDirectory(nullScript, notEmptyDir)
     }
 
     @Test
@@ -108,7 +95,7 @@ class FileUtilsTest extends BasePipelineTest {
         thrown.expect(AbortException)
         thrown.expectMessage("Validation failed. '$emptyDir' is empty.")
 
-        FileUtils.validateDirectoryIsNotEmpty(script, emptyDir)
+        FileUtils.validateDirectoryIsNotEmpty(nullScript, emptyDir)
     }
 
     @Test
@@ -116,7 +103,7 @@ class FileUtilsTest extends BasePipelineTest {
 
         helper.registerAllowedMethod('sh', [Map], { Map m -> script(m, notEmptyDir) })
 
-        FileUtils.validateDirectoryIsNotEmpty(script, notEmptyDir)
+        FileUtils.validateDirectoryIsNotEmpty(nullScript, notEmptyDir)
     }
 
     @Test
@@ -125,7 +112,7 @@ class FileUtilsTest extends BasePipelineTest {
         thrown.expect(IllegalArgumentException)
         thrown.expectMessage("The parameter 'filePath' can not be null or empty.")
 
-        FileUtils.validateFile(script, null)
+        FileUtils.validateFile(nullScript, null)
     }
 
     @Test
@@ -134,7 +121,7 @@ class FileUtilsTest extends BasePipelineTest {
         thrown.expect(IllegalArgumentException)
         thrown.expectMessage("The parameter 'filePath' can not be null or empty.")
 
-        FileUtils.validateFile(script, '')
+        FileUtils.validateFile(nullScript, '')
     }
 
     @Test
@@ -147,7 +134,7 @@ class FileUtilsTest extends BasePipelineTest {
         thrown.expect(AbortException)
         thrown.expectMessage("Validation failed. '$path' does not exist.")
 
-        FileUtils.validateFile(script, path)
+        FileUtils.validateFile(nullScript, path)
     }
 
     @Test
@@ -155,7 +142,7 @@ class FileUtilsTest extends BasePipelineTest {
 
         helper.registerAllowedMethod('sh', [Map], { Map m -> script(m, file) })
 
-        FileUtils.validateFile(script, file)
+        FileUtils.validateFile(nullScript, file)
     }
 
 

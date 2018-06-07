@@ -6,15 +6,13 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.ExpectedException
 import org.junit.rules.RuleChain
-import org.junit.rules.TemporaryFolder
 
-import com.lesfurets.jenkins.unit.BasePipelineTest
-
+import util.BasePiperTest
 import util.JenkinsLoggingRule
 import util.JenkinsStepRule
 import util.Rules
 
-class ToolValidateTest extends BasePipelineTest {
+class ToolValidateTest extends BasePiperTest {
 
     private ExpectedException thrown = new ExpectedException().none()
     private JenkinsLoggingRule jlr = new JenkinsLoggingRule(this)
@@ -122,8 +120,6 @@ class ToolValidateTest extends BasePipelineTest {
         helper.registerAllowedMethod('sh', [Map], { Map m -> getNoVersion(m) })
 
         jsr.step.call(tool: 'cm', home: home)
-
-        script.execute()
     }
 
     @Test

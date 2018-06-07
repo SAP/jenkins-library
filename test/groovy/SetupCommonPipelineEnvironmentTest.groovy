@@ -4,26 +4,22 @@ import org.junit.Test
 import org.junit.rules.RuleChain
 import org.yaml.snakeyaml.Yaml
 
-import com.lesfurets.jenkins.unit.BasePipelineTest
-
+import util.BasePiperTest
 import util.Rules
 import util.JenkinsStepRule
-import util.JenkinsEnvironmentRule
 
 import static org.junit.Assert.assertEquals
 import static org.junit.Assert.assertNotNull
 
-class SetupCommonPipelineEnvironmentTest extends BasePipelineTest {
+class SetupCommonPipelineEnvironmentTest extends BasePiperTest {
     def usedConfigFile
 
     private JenkinsStepRule jsr = new JenkinsStepRule(this)
-    private JenkinsEnvironmentRule jer = new JenkinsEnvironmentRule(this)
 
     @Rule
     public RuleChain rules = Rules
         .getCommonRules(this)
         .around(jsr)
-        .around(jer)
 
     @Before
     void init() {
@@ -44,11 +40,11 @@ class SetupCommonPipelineEnvironmentTest extends BasePipelineTest {
 
     @Test
     void testIsConfigurationAvailable() throws Exception {
-        jsr.step.call(script: [commonPipelineEnvironment: jer.env])
+        jsr.step.call(script: nullScript)
 
         assertEquals('.pipeline/config.yml', usedConfigFile)
-        assertNotNull(jer.env.configuration)
-        assertEquals('develop', jer.env.configuration.general.productiveBranch)
-        assertEquals('my-maven-docker', jer.env.configuration.steps.mavenExecute.dockerImage)
+        assertNotNull(nullScript.commonPipelineEnvironment.configuration)
+        assertEquals('develop', nullScript.commonPipelineEnvironment.configuration.general.productiveBranch)
+        assertEquals('my-maven-docker', nullScript.commonPipelineEnvironment.configuration.steps.mavenExecute.dockerImage)
     }
 }

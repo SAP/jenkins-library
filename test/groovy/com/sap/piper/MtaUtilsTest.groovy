@@ -9,15 +9,13 @@ import org.junit.rules.RuleChain
 import org.junit.rules.TemporaryFolder
 import org.yaml.snakeyaml.Yaml
 
-import com.lesfurets.jenkins.unit.BasePipelineTest
-
 import groovy.json.JsonSlurper
 import hudson.AbortException
-import util.JenkinsEnvironmentRule
+import util.BasePiperTest
 import util.Rules
 
 
-class MtaUtilsTest extends BasePipelineTest {
+class MtaUtilsTest extends BasePiperTest {
     private static srcPackageJson = 'test/resources/MtaUtils/package.json'
     private static mtaTemplate = 'resources/template_mta.yml'
     private static data
@@ -26,26 +24,15 @@ class MtaUtilsTest extends BasePipelineTest {
     private File badJson
     private mtaUtils
 
-    @Rule
-    public JenkinsEnvironmentRule jer = new JenkinsEnvironmentRule(this)
-
-
-    @Rule
-    public ExpectedException thrown= ExpectedException.none();
+    private ExpectedException thrown= ExpectedException.none();
 
     @ClassRule
     public static TemporaryFolder tmp = new TemporaryFolder()
 
     @Rule
     public RuleChain ruleChain = Rules
-    .getCommonRules(this)
-    .around(jer)
-
-    void prepareObjectInterceptors(object) {
-        object.metaClass.invokeMethod = helper.getMethodInterceptor()
-        object.metaClass.static.invokeMethod = helper.getMethodInterceptor()
-        object.metaClass.methodMissing = helper.getMethodMissingInterceptor()
-    }
+        .getCommonRules(this)
+        .around(thrown)
 
     @Before
     void init() {

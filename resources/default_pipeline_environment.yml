@@ -77,6 +77,7 @@ steps:
     influxServer: 'jenkins'
   mavenExecute:
     dockerImage: 'maven:3.5-jdk-7'
+    logSuccessfulMavenTransfers: false
   mtaBuild:
     buildTarget: 'NEO'
     mtaJarLocation: 'mta.jar'
@@ -86,6 +87,7 @@ steps:
     vmSize: 'lite'
     neoCredentialsId: 'CI_CREDENTIALS_ID'
   pipelineStashFilesAfterBuild:
+    runOpaTests: false
     stashIncludes:
       checkmarx: '**/*.js, **/*.scala, **/*.py, **/*.go, **/*.xml, **/*.html'
       classFiles: '**/target/classes/**/*.class, **/target/test-classes/**/*.class'
@@ -95,22 +97,22 @@ steps:
       classFiles: ''
       sonar: ''
   pipelineStashFilesBeforeBuild:
+    runCheckmarx: false
     stashIncludes:
       buildDescriptor: '**/pom.xml, **/.mvn/**, **/assembly.xml, **/.swagger-codegen-ignore, **/package.json, **/requirements.txt, **/setup.py, **/whitesource_config.py, **/mta*.y*ml, **/.npmrc, **/whitesource.*.json, **/whitesource-fs-agent.config, .xmake.cfg, Dockerfile, **/VERSION, **/version.txt, **/build.sbt, **/sbtDescriptor.json, **/project/*'
       deployDescriptor: '**/manifest*.y*ml, **/*.mtaext.y*ml, **/*.mtaext, **/xs-app.json, helm/**, *.y*ml'
       git: '**/gitmetadata/**'
       opa5: '**/*.*'
-      'opensource configuration': '**/srcclr.yml, **/vulas-custom.properties, **/.nsprc, **/.retireignore, **/.retireignore.json, **/'
+      opensourceConfiguration: '**/srcclr.yml, **/vulas-custom.properties, **/.nsprc, **/.retireignore, **/.retireignore.json, **/.snyk'
       pipelineConfigAndTests: '.pipeline/*.*'
       securityDescriptor: '**/xs-security.json'
-      'snyk configuration': '**/.snyk'
       tests: '**/pom.xml, **/*.json, **/*.xml, **/src/**, **/node_modules/**, **/specs/**, **/env/**, **/*.js'
     stashExcludes:
       buildDescriptor: '**/node_modules/**/package.json'
       deployDescriptor: ''
       git: ''
       opa5: ''
-      'opensource configuration': ''
+      opensourceConfiguration: ''
       pipelineConfigAndTests: ''
       securityDescriptor: ''
       'snyk configuration': ''

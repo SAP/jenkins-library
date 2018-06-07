@@ -25,13 +25,19 @@ def call(Map parameters = [:]) {
             .mixinGeneralConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS)
             .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName?:env.STAGE_NAME, STEP_CONFIG_KEYS)
             .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS)
+            .mixin([
+                runCheckmarx: (script.commonPipelineEnvironment.configuration?.steps?.executeCheckmarxScan?.checkmarxProject != null && script.commonPipelineEnvironment.configuration.steps.executeCheckmarxScan.checkmarxProject.length()>0)
+            ])
             .mixin(parameters, PARAMETER_KEYS)
-            .addIfEmpty('runCheckmarx', (script.commonPipelineEnvironment.configuration?.steps?.executeCheckmarxScan?.checkmarxProject != null && script.commonPipelineEnvironment.configuration.steps.executeCheckmarxScan.checkmarxProject.length()>0))
             .use()
 
         // store files to be checked with checkmarx
         if (config.runCheckmarx) {
-            utils.stash('checkmarx', config.stashIncludes?.get('checkmarx')?config.stashIncludes.checkmarx:'**/*.js, **/*.scala, **/*.py, **/*.go, **/*.xml, **/*.html', config.stashExcludes?.get('checkmarx')?config.stashExcludes.checkmarx:'**/*.mockserver.js, node_modules/**/*.js')
+            utils.stash(
+                'checkmarx',
+                config.stashIncludes.checkmarx,
+                config.stashExcludes.checkmarx
+            )
         }
 
         utils.stashWithMessage(
