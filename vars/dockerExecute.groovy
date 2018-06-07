@@ -1,5 +1,5 @@
 import com.cloudbees.groovy.cps.NonCPS
-
+import hudson.EnvVars;
 def call(Map parameters = [:], body) {
 
     def STEP_NAME = 'dockerExecute'
