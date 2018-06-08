@@ -1,7 +1,7 @@
 import com.cloudbees.groovy.cps.NonCPS
 import com.sap.piper.SysEnv
 import org.codehaus.groovy.GroovyException
-
+import com.sap.piper.ConfigurationMerger
 import java.util.UUID
 
 def call(Map parameters = [:], body) {
