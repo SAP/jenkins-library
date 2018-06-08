@@ -31,7 +31,7 @@ def call(Map parameters = [:], body) {
         if (!config.dockerImage) throw new GroovyException('Docker image not specified.')
 
         def options = [name      : env.jaas_owner + '-jaas',
-                       label     : uniqueId,
+                       label     : config.uniqueId,
                        containers: getContainerList(config)]
 
         stashWorkspace(config)
