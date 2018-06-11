@@ -121,6 +121,8 @@ def call(parameters = [:]) {
             if (! (warAction in warActions)) {
                 throw new Exception("[neoDeploy] Invalid warAction = '${warAction}'. Valid 'warAction' values are: ${warActions}.")
             }
+        } else if(deployMode == 'mta') {
+            warAction = 'deploy-mta'
         }
 
         if (deployMode == 'warPropertiesFile') {
@@ -149,34 +151,33 @@ def call(parameters = [:]) {
         def neoVersions = ['neo-java-web': '3.39.10', 'neo-javaee6-wp': '2.132.6', 'neo-javaee7-wp': '1.21.13']
         def neo = new ToolDescriptor('SAP Cloud Platform Console Client', 'NEO_HOME', 'neoHome', '/tools/', 'neo.sh', neoVersions, 'version')
         def neoExecutable = neo.getToolExecutable(this, configuration)
-        def neoDeployScript
+        def neoDeployScript = """#!/bin/bash
+                                 "${neoExecutable}" ${warAction} \
+                                 --source "${archivePath}" \
+                              """
+
+        if (deployMode in ['mta', 'warParams']) {
+            neoDeployScript +=
+                    """--host '${deployHost}' \
+                    --account '${deployAccount}' \
+                    """
+        }
 
         if (deployMode == 'mta') {
-            neoDeployScript =
-                """#!/bin/bash
-                    "${neoExecutable}" deploy-mta \
-                    --host '${deployHost}' \
-                    --account '${deployAccount}' \
-                    --synchronous"""
+            neoDeployScript += "--synchronous"
         }
 
         if (deployMode == 'warParams') {
-            neoDeployScript =
-                """#!/bin/bash
-                    "${neoExecutable}" ${warAction} \
-                    --host '${deployHost}' \
-                    --account '${deployAccount}' \
-                    --application '${applicationName}' \
+            neoDeployScript +=
+                    """--application '${applicationName}' \
                     --runtime '${runtime}' \
                     --runtime-version '${runtimeVersion}' \
                     --size '${vmSize}'"""
         }
 
         if (deployMode == 'warPropertiesFile') {
-            neoDeployScript =
-                """#!/bin/bash
-                    "${neoExecutable}" ${warAction} \
-                    ${propertiesFile}"""
+            neoDeployScript +=
+                    """${propertiesFile}"""
         }
 
         withCredentials([usernamePassword(
@@ -184,10 +185,9 @@ def call(parameters = [:]) {
             passwordVariable: 'password',
             usernameVariable: 'username')]) {
 
-            def commonDeployParams =
+            def credentials =
                 """--user '${username}' \
                    --password '${password}' \
-                   --source "${archivePath}" \
                 """
             dockerExecute(dockerImage: configuration.get('dockerImage'),
                           dockerEnvVars: configuration.get('dockerEnvVars'),
@@ -199,7 +199,7 @@ def call(parameters = [:]) {
                 java.verify(this, configuration)
 
                 sh """${neoDeployScript} \
-                      ${commonDeployParams}
+                      ${credentials}
                    """
             }
         }
