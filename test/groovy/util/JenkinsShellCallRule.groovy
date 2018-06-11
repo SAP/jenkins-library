@@ -33,18 +33,22 @@ class JenkinsShellCallRule implements TestRule {
 
                 testInstance.helper.registerAllowedMethod("sh", [String.class], {
                     command ->
-                        shell.add(command.replaceAll(/\s+/," ").trim())
+                        shell.add(unify(command))
                 })
 
                 testInstance.helper.registerAllowedMethod("sh", [Map.class], {
                     m ->
                         shell.add(m.script.replaceAll(/\s+/," ").trim())
                         if (m.returnStdout || m.returnStatus)
-                            return returnValues[m.script]
+                            return returnValues[unify(m.script)]
                 })
 
                 base.evaluate()
             }
         }
+    }
+
+    private static String unify(String s) {
+        s.replaceAll(/\s+/," ").trim()
     }
 }
