@@ -54,19 +54,19 @@ class JavaArchiveDescriptorTest extends BasePiperTest {
 
         def javaArchiveFile = javaArchive.getFile(script, configuration)
 
-        assert javaArchiveFile == '/env/mta/mta.jar'
-        assert jlr.log.contains("SAP Multitarget Application Archive Builder file '/env/mta/mta.jar' retrieved from environment.")
+        assert javaArchiveFile == '/env/mta/mta_archive_builder-1.1.0.jar'
+        assert jlr.log.contains("SAP Multitarget Application Archive Builder file '/env/mta/mta_archive_builder-1.1.0.jar' retrieved from environment.")
     }
 
     @Test
     void getJavaArchiveFileFromConfigurationTest() {
 
-        configuration = [mtaJarLocation: '/config/mta/mta.jar']
+        configuration = [mtaJarLocation: '/config/mta/mta_archive_builder-1.1.0.jar']
 
         def javaArchiveFile = javaArchive.getFile(script, configuration)
 
-        assert javaArchiveFile == '/config/mta/mta.jar'
-        assert jlr.log.contains("SAP Multitarget Application Archive Builder file '/config/mta/mta.jar' retrieved from configuration.")
+        assert javaArchiveFile == '/config/mta/mta_archive_builder-1.1.0.jar'
+        assert jlr.log.contains("SAP Multitarget Application Archive Builder file '/config/mta/mta_archive_builder-1.1.0.jar' retrieved from configuration.")
     }
 
     // Compatibility tests
@@ -107,7 +107,7 @@ class JavaArchiveDescriptorTest extends BasePiperTest {
     void getJavaArchiveFileFromEnvironment_UnexpectedFormatTest() {
 
         thrown.expect(AbortException)
-        thrown.expectMessage("The value '/env/mta/mta.jarr' of the environment variable 'MTA_JAR_LOCATION' has an unexpected format.")
+        thrown.expectMessage("The value '/env/mta/mta_archive_builder-1.1.0.jarr' of the environment variable 'MTA_JAR_LOCATION' has an unexpected format.")
 
         helper.registerAllowedMethod('sh', [Map], { Map m -> getUnexpectedFormatEnvVars(m) })
 
@@ -118,9 +118,9 @@ class JavaArchiveDescriptorTest extends BasePiperTest {
     void getJavaArchiveFileFromConfiguration_UnexpectedFormatTest() {
 
         thrown.expect(AbortException)
-        thrown.expectMessage("The value '/config/mta/mta.jarr' of the configuration key 'mtaJarLocation' has an unexpected format.")
+        thrown.expectMessage("The value '/config/mta/mta_archive_builder-1.1.0.jarr' of the configuration key 'mtaJarLocation' has an unexpected format.")
 
-        configuration = [mtaJarLocation: '/config/mta/mta.jarr']
+        configuration = [mtaJarLocation: '/config/mta/mta_archive_builder-1.1.0.jarr']
 
         javaArchive.getFile(script, configuration)
     }
@@ -128,12 +128,12 @@ class JavaArchiveDescriptorTest extends BasePiperTest {
     @Test
     void getJavaArchiveCallTest() {
 
-        configuration = [mtaJarLocation: '/config/mta/mta.jar']
+        configuration = [mtaJarLocation: '/config/mta/mta_archive_builder-1.1.0.jar']
 
         def javaArchiveCall = javaArchive.getCall(script, configuration)
 
-        assert javaArchiveCall == 'java -jar /config/mta/mta.jar'
-        assert jlr.log.contains("Using SAP Multitarget Application Archive Builder '/config/mta/mta.jar'.")
+        assert javaArchiveCall == 'java -jar /config/mta/mta_archive_builder-1.1.0.jar'
+        assert jlr.log.contains("Using SAP Multitarget Application Archive Builder '/config/mta/mta_archive_builder-1.1.0.jar'.")
     }
 
     @Test
@@ -143,14 +143,14 @@ class JavaArchiveDescriptorTest extends BasePiperTest {
 
         javaArchive.verifyFile(script, configuration)
 
-        assert jlr.log.contains("Verifying SAP Multitarget Application Archive Builder '/env/mta/mta.jar'.")
-        assert jlr.log.contains("Verification success. SAP Multitarget Application Archive Builder '/env/mta/mta.jar' exists.")
+        assert jlr.log.contains("Verifying SAP Multitarget Application Archive Builder '/env/mta/mta_archive_builder-1.1.0.jar'.")
+        assert jlr.log.contains("Verification success. SAP Multitarget Application Archive Builder '/env/mta/mta_archive_builder-1.1.0.jar' exists.")
     }
 
     @Test
     void verifyJavaArchiveVersionTest() {
 
-        configuration = [mtaJarLocation: 'mta.jar']
+        configuration = [mtaJarLocation: 'mta_archive_builder-1.1.0.jar']
 
         helper.registerAllowedMethod('sh', [Map], { Map m -> getVersion(m) })
 
@@ -163,10 +163,10 @@ class JavaArchiveDescriptorTest extends BasePiperTest {
     @Test
     void verifyJavaArchiveVersion_FailedTest() {
 
-        configuration = [mtaJarLocation: 'mta.jar']
+        configuration = [mtaJarLocation: 'mta_archive_builder-1.1.0.jar']
 
         thrown.expect(AbortException)
-        thrown.expectMessage("The verification of SAP Multitarget Application Archive Builder failed. Please check 'java -jar mta.jar'. script returned exit code 127.")
+        thrown.expectMessage("The verification of SAP Multitarget Application Archive Builder failed. Please check 'java -jar mta_archive_builder-1.1.0.jar'. script returned exit code 127.")
 
         helper.registerAllowedMethod('sh', [Map], { Map m -> getVersionFailed(m) })
 
@@ -176,7 +176,7 @@ class JavaArchiveDescriptorTest extends BasePiperTest {
     @Test
     void verifyJavaArchiveVersion_IncompatibleVersionTest() {
 
-        configuration = [mtaJarLocation: '/config/mta/mta.jar']
+        configuration = [mtaJarLocation: '/config/mta/mta_archive_builder-1.1.0.jar']
 
         thrown.expect(AbortException)
         thrown.expectMessage("The installed version of SAP Multitarget Application Archive Builder is 1.0.5. Please install version 1.0.6 or a compatible version.")
@@ -192,7 +192,7 @@ class JavaArchiveDescriptorTest extends BasePiperTest {
         if(m.script.contains('JAVA_HOME')) {
             return '/env/java'
         } else if(m.script.contains('MTA_JAR_LOCATION')) {
-            return '/env/mta/mta.jar'
+            return '/env/mta/mta_archive_builder-1.1.0.jar'
         } else {
             return 0
         }
@@ -215,7 +215,7 @@ class JavaArchiveDescriptorTest extends BasePiperTest {
         if(m.script.contains('JAVA_HOME')) {
             return '/env/java'
         } else if(m.script.contains('MTA_JAR_LOCATION')) {
-            return '/env/mta/mta.jarr'
+            return '/env/mta/mta_archive_builder-1.1.0.jarr'
         } else {
             return 0
         }
@@ -241,7 +241,7 @@ class JavaArchiveDescriptorTest extends BasePiperTest {
             return '''openjdk version \"1.8.0_121\"
                     OpenJDK Runtime Environment (build 1.8.0_121-8u121-b13-1~bpo8+1-b13)
                     OpenJDK 64-Bit Server VM (build 25.121-b13, mixed mode)'''
-        } else if(m.script.contains('mta.jar -v')) {
+        } else if(m.script.contains('mta_archive_builder-1.1.0.jar -v')) {
             return '1.0.6'
         } else {
             return getNoEnvVars(m)
@@ -250,7 +250,7 @@ class JavaArchiveDescriptorTest extends BasePiperTest {
 
     private getVersionFailed(Map m) {
 
-        if(m.script.contains('java -version') || m.script.contains('mta.jar -v')) {
+        if(m.script.contains('java -version') || m.script.contains('mta_archive_builder-1.1.0.jar -v')) {
             throw new AbortException('script returned exit code 127')
         } else {
             return getNoEnvVars(m)
@@ -259,7 +259,7 @@ class JavaArchiveDescriptorTest extends BasePiperTest {
 
     private getIncompatibleVersion(Map m) {
 
-        if(m.script.contains('java -version') || m.script.contains('mta.jar -v')) {
+        if(m.script.contains('java -version') || m.script.contains('mta_archive_builder-1.1.0.jar -v')) {
             return '1.0.5'
         } else {
             return getNoEnvVars(m)
