@@ -52,8 +52,8 @@ class JavaArchiveDescriptor implements Serializable {
     }
 
     def isJavaArchiveFile(String javaArchiveFile) {
-        def group = javaArchiveFile =~ /(.+[\/\\])(\w+[.]jar)/
-        if (!group.matches() || group[0].size() == 0) group = javaArchiveFile =~ /(\w+[.]jar)/
+        def group = javaArchiveFile =~ /(.+[\/\\])(.+[.]jar)/
+        if (!group.matches() || group[0].size() == 0) group = javaArchiveFile =~ /(.+[.]jar)/
         if (!group.matches() || group[0].size() == 0) return false
         return true
     }
