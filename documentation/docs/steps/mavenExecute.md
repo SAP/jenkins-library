@@ -6,16 +6,17 @@ Executes a maven command inside a Docker container.
 
 ## Parameters
 
-| parameter            | mandatory | default           | example values             |
-| ---------------------|-----------|-------------------|----------------------------|
-| `dockerImage`        | no        | 'maven:3.5-jdk-7' |                            |
-| `globalSettingsFile` | no        |                   | 'local_folder/settings.xml'|
-| `projectSettingsFile`| no        |                   |                            |
-| `pomPath`            | no        |                   | 'local_folder/m2'          |
-| `flags`              | no        |                   | '-o'                       |
-| `goals`              | no        |                   | 'clean install'            |
-| `m2Path`             | no        |                   | 'local_folder/m2'          |
-| `defines`            | no        |                   | '-Dmaven.tests.skip=true'  |
+| parameter                      | mandatory | default           | example values             |
+| -------------------------------|-----------|-------------------|----------------------------|
+| `dockerImage`                  | no        | 'maven:3.5-jdk-7' |                            |
+| `globalSettingsFile`           | no        |                   | 'local_folder/settings.xml'|
+| `projectSettingsFile`          | no        |                   |                            |
+| `pomPath`                      | no        |                   | 'local_folder/m2'          |
+| `flags`                        | no        |                   | '-o'                       |
+| `goals`                        | no        |                   | 'clean install'            |
+| `m2Path`                       | no        |                   | 'local_folder/m2'          |
+| `defines`                      | no        |                   | '-Dmaven.tests.skip=true'  |
+| `logSuccessfulMavenTransfers`  | no        | `false`           | 'true'                     |
 
 * `dockerImage` Name of the docker image that should be used.
 * `globalSettingsFile` Path or url to the mvn settings file that should be used as global settings file. 
@@ -25,6 +26,7 @@ Executes a maven command inside a Docker container.
 * `goals` Maven goals that should be executed.
 * `m2Path` Path to the location of the local repository that should be used.
 * `defines` Additional properties.
+* `logSuccessfulMavenTransfers` configures maven to log successful downloads. This is set to `false` by default to reduce the noise in build logs.
 
 ## Step configuration
 The following parameters can also be specified as step parameters using the global configuration file:
