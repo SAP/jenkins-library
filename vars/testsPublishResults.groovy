@@ -119,7 +119,7 @@ def publishJMeterReport(Map settings = [:]){
     }
 }
 
-def touchFiles(){
+void touchFiles(pattern){
     echo "[${STEP_NAME}] update test results"
     def patternArray = pattern.split(',')
     for(def i = 0; i < patternArray.length; i++){
