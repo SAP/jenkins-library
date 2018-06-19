@@ -96,7 +96,7 @@ private getContainerList(config) {
 
     result = []
     result.push(containerTemplate(name: 'jnlp',
-        image: 'hpk92/jnlp-agent-k8s:latest',
+        image: 's4sdk/jenkins-agent-k8s:latest',
         args: '${computer.jnlpmac} ${computer.name}'))
     result.push(containerTemplate(name: 'container-exec',
         image: config.dockerImage,
