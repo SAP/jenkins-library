@@ -47,4 +47,23 @@ public class ChangeManagement implements Serializable {
             throw new ChangeManagementException("Cannot upload file '$filePath' for change document '$changeId' with transport request '$transportRequestId'. Return code from cmclient: $rc.")
         }
     }
+
+    void releaseTransportRequest(String changeId, String transportRequestId, String endpoint, String username, String password) {
+
+        int rc = script.sh(returnStatus: true,
+                    script:
+                    """#!/bin/bash
+                       cmclient -e '$endpoint' \
+                                -u '$username' \
+                                -p '$password' \
+                                -t SOLMAN \
+                              release-transport -cID '$changeId' -tID '$transportRequestId'
+                    """)
+
+        if(rc == 0) {
+            return
+        } else {
+            throw new ChangeManagementException("Cannot release Transport Request '$transportRequestId'. Return code from cmclient: $rc.")
+        }
+    }
 }
