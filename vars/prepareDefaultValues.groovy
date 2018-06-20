@@ -9,7 +9,7 @@ def call(Map parameters = [:]) {
             def customDefaults = parameters.customDefaults
 
             if(customDefaults in String)
-                customDefaults = [].plus(customDefaults)
+                customDefaults = [customDefaults]
             if(customDefaults in List)
                 configurationFiles += customDefaults
             for (def configFileName : configurationFiles){
