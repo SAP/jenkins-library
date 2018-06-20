@@ -8,12 +8,8 @@ class DefaultValueCache implements Serializable {
     // Contains defaults values provided by this library itself
     private Map defaultValues
 
-    // intended for describing e.g. the system landscape on customer side
-    private Map customDefaultValues
-
-    private DefaultValueCache(Map customeDefaultValues, Map customDefaultValues){
+    private DefaultValueCache(Map defaultValues){
         this.defaultValues = defaultValues
-        this.customDefaultValues = customDefaultValues ?: [:]
     }
 
     @NonCPS
@@ -21,18 +17,13 @@ class DefaultValueCache implements Serializable {
         return instance
     }
 
-    static createInstance(Map defaultValues, Map customDefaultValues){
-        instance = new DefaultValueCache(defaultValues, customDefaultValues)
+    static createInstance(Map defaultValues){
+        instance = new DefaultValueCache(defaultValues)
     }
 
     @NonCPS
     Map getDefaultValues(){
         return defaultValues
-    }
-
-    @NonCPS
-    Map getCustomDefaultValues(){
-        return customDefaultValues
     }
 
     static reset(){
