@@ -5,7 +5,6 @@ import com.cloudbees.groovy.cps.NonCPS
 class DefaultValueCache implements Serializable {
     private static DefaultValueCache instance
 
-    // Contains defaults values provided by this library itself
     private Map defaultValues
 
     private DefaultValueCache(Map defaultValues){
