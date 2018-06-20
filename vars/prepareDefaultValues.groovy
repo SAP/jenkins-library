@@ -1,26 +1,32 @@
 import com.sap.piper.DefaultValueCache
+import com.sap.piper.MapUtils
 
 import hudson.AbortException
 
 def call(Map parameters = [:]) {
     handlePipelineStepErrors (stepName: 'prepareDefaultValues', stepParameters: parameters) {
-        if(!DefaultValueCache.getInstance()) {
-            Map defaultValues  = readYaml text: libraryResource('default_pipeline_environment.yml')
-            Map customDefaultValues = null
+        if(!DefaultValueCache.getInstance() || parameters.customDefaults) {
+            def configurationFiles = ['default_pipeline_environment.yml']
+            def defaultConfiguration = [:]
 
-            def customDefaults = null
-
-            try {
-              customDefaults = libraryResource('pipeline_environment.yml')
-            } catch(AbortException e) {
-                // custom defaults file not found, that's OK the file is optional.
+            def customDefaults = parameters.customDefaults
+            if(customDefaults in String) // >> filename resolves to Map
+                customDefaults = [].plus(customDefaults)
+            // customDefaults is Map / null
+            configurationFiles += customDefaults
+        /*
+        if(defaults instanceof Map) // >> config map
+            defaults = [].plus(defaults)
+        */
+        //if(configurationFiles in List) // >> list of String / Map
+            for (def configFileName : configurationFiles){
+                def configuration = readYaml text: libraryResource(configFileName)
+                defaultConfiguration = MapUtils.merge(
+                        MapUtils.pruneNull(defaultConfiguration),
+                        MapUtils.pruneNull(configuration))
             }
 
-            if( customDefaults) {
-                customDefaultValues = readYaml text: customDefaults
-            }
-            echo "CUSTOM_DEFAULT_VALUES: '${customDefaultValues}'."
-            DefaultValueCache.createInstance(defaultValues, customDefaultValues)
+            DefaultValueCache.createInstance(defaultConfiguration)
         }
     }
 }
