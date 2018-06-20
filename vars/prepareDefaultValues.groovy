@@ -19,8 +19,8 @@ def call(Map parameters = [:]) {
             for (def configFileName : configurationFiles){
                 def configuration = readYaml text: libraryResource(configFileName)
                 defaultValues = MapUtils.merge(
-                        MapUtils.pruneNull(defaultValues),
-                        MapUtils.pruneNull(configuration))
+                        MapUtils.pruneNulls(defaultValues),
+                        MapUtils.pruneNulls(configuration))
             }
             DefaultValueCache.createInstance(defaultValues)
         }
