@@ -7,16 +7,13 @@ def call(Map parameters = [:]) {
             def defaultValues = [:]
             def configurationFiles = ['default_pipeline_environment.yml']
             def customDefaults = parameters.customDefaults
-            
-            if(customDefaults in String) // >> filename resolves to Map
+
+            if(customDefaults in String)
                 customDefaults = [].plus(customDefaults)
             if(customDefaults in List)
                 configurationFiles += customDefaults
-        /*
-        if(defaults instanceof Map) // >> config map
-            defaults = [].plus(defaults)
-        */
             for (def configFileName : configurationFiles){
+                if(configurationFiles.size() > 1) echo "Loading configuration file '${}'"
                 def configuration = readYaml text: libraryResource(configFileName)
                 defaultValues = MapUtils.merge(
                         MapUtils.pruneNulls(defaultValues),
