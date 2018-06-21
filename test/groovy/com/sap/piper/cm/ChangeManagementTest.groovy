@@ -25,13 +25,7 @@ public class ChangeManagementTest extends BasePiperTest {
                              'Not in a git work tree. ' +
                              'Change document id is extracted from git commit messages.')
 
-        GitUtils gitUtilsMock = new GitUtils() {
-            public boolean insideWorkTree() {
-                return false
-            }
-        }
-
-        new ChangeManagement(nullScript, gitUtilsMock).getChangeDocumentId()
+        new ChangeManagement(nullScript, gitUtilsMock(false, new String[0])).getChangeDocumentId()
     }
 
     @Test
@@ -40,20 +34,23 @@ public class ChangeManagementTest extends BasePiperTest {
         thrown.expect(ChangeManagementException)
         thrown.expectMessage('Cannot retrieve changeId from git commits.')
 
-        GitUtils gitUtilsMock = new GitUtils() {
-            public boolean insideWorkTree() {
-                return true
-            }
-
-            public String[] extractLogLines(
-                         String filter = '',
-                         String from = 'origin/master',
-                         String to = 'HEAD',
-                         String format = '%b') {
-                return new String[0]
-            }
-        }
-
-        new ChangeManagement(nullScript, gitUtilsMock).getChangeDocumentId()
+        new ChangeManagement(nullScript, gitUtilsMock(true, new String[0])).getChangeDocumentId()
     }
+
+	private GitUtils gitUtilsMock(boolean insideWorkTree, String[] changeIds) {
+		return new GitUtils() {
+			public boolean insideWorkTree() {
+				return insideWorkTree
+			}
+
+			public String[] extractLogLines(
+						 String filter = '',
+						 String from = 'origin/master',
+						 String to = 'HEAD',
+						 String format = '%b') {
+				return changeIds
+			}
+		}
+
+	}
 }
