@@ -11,6 +11,28 @@ public class ChangeManagement implements Serializable {
         this.script = script
     }
 
+    boolean isChangeInDevelopment(String changeId, String endpoint, String username, String password) {
+
+                int rc = script.sh(returnStatus: true,
+                            script:
+                            """#!/bin/bash
+                       cmclient -e "${endpoint}" \
+                                -u '${username}' \
+                                -p '${password}' \
+                                -t SOLMAN\
+                              is-change-in-development -cID '${changeId}' \
+                                                       --return-code
+                    """)
+
+                if(rc == 0) {
+                    return true
+                } else if(rc == 3) {
+                    return false
+                } else {
+                    throw new ChangeManagementException("Cannot retrieve change status. Return code from cmclient: ${rc}.")
+                }
+            }
+
     String createTransportRequest(String changeId, String developmentSystemId, String endpoint, String username, String password) {
 
         try {
