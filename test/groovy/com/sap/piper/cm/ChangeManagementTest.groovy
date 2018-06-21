@@ -37,20 +37,48 @@ public class ChangeManagementTest extends BasePiperTest {
         new ChangeManagement(nullScript, gitUtilsMock(true, new String[0])).getChangeDocumentId()
     }
 
-	private GitUtils gitUtilsMock(boolean insideWorkTree, String[] changeIds) {
-		return new GitUtils() {
-			public boolean insideWorkTree() {
-				return insideWorkTree
-			}
+    @Test
+    public void testRetrieveChangeDocumentNotUnique() {
 
-			public String[] extractLogLines(
-						 String filter = '',
-						 String from = 'origin/master',
-						 String to = 'HEAD',
-						 String format = '%b') {
-				return changeIds
-			}
-		}
+        thrown.expect(ChangeManagementException)
+        thrown.expectMessage('Multiple ChangeIds found')
 
-	}
+        String[] changeIds = [ 'a', 'b' ]
+        new ChangeManagement(nullScript, gitUtilsMock(true, changeIds)).getChangeDocumentId()
+    }
+
+    @Test
+    public void testRetrieveChangeDocumentSameChangeIdFoundTwice() {
+
+        String[] changeIds = [ 'a', 'a' ]
+        def changeID = new ChangeManagement(nullScript, gitUtilsMock(true, changeIds)).getChangeDocumentId()
+
+        assert changeID == 'a'
+    }
+
+    @Test
+    public void testRetrieveChangeDocumentWithUniqueResult() {
+
+        String[] changeIds = [ 'a' ];
+        def changeID = new ChangeManagement(nullScript, gitUtilsMock(true, changeIds)).getChangeDocumentId()
+
+        assert changeID == 'a'
+    }
+
+
+    private GitUtils gitUtilsMock(boolean insideWorkTree, String[] changeIds) {
+        return new GitUtils() {
+            public boolean insideWorkTree() {
+                return insideWorkTree
+            }
+
+            public String[] extractLogLines(
+                         String filter = '',
+                         String from = 'origin/master',
+                         String to = 'HEAD',
+                         String format = '%b') {
+                return changeIds
+            }
+        }
+    }
 }
