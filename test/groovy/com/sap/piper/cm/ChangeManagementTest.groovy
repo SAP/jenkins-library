@@ -51,6 +51,15 @@ public class ChangeManagementTest extends BasePiperTest {
     }
 
     @Test
+    public void testRetrieveChangeDocumentIdReturnsArrayWithNullValue() {
+
+        thrown.expect(ChangeManagementException)
+        thrown.expectMessage('Cannot retrieve changeId from git commits.')
+
+        new ChangeManagement(nullScript, gitUtilsMock(true, (String[])[ null ])).getChangeDocumentId()
+    }
+
+    @Test
     public void testRetrieveChangeDocumentNotUnique() {
 
         thrown.expect(ChangeManagementException)
