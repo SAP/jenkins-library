@@ -27,10 +27,10 @@ public class ChangeManagement implements Serializable {
         }
 
         def changeIds = gitUtils.extractLogLines(".*${label}.*", from, to, format)
-                                .collect { line -> line.replaceAll(label,'').trim() }
+                                .collect { line -> line?.replaceAll(label,'')?.trim() }
                                 .unique()
-            changeIds.retainAll { line -> ! line.isEmpty() }
 
+            changeIds.retainAll { line -> line != null && ! line.isEmpty() }
         if( changeIds.size() == 0 ) {
             throw new ChangeManagementException("Cannot retrieve changeId from git commits. Change id retrieved from git commit messages via pattern '${label}'.")
         } else if (changeIds.size() > 1) {
