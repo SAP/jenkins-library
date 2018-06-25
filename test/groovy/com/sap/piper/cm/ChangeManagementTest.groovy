@@ -3,6 +3,7 @@ package com.sap.piper.cm
 import static org.hamcrest.Matchers.allOf
 import static org.hamcrest.Matchers.containsString
 import static org.hamcrest.Matchers.equalTo
+import static org.hamcrest.Matchers.hasItem
 import static org.hamcrest.Matchers.is
 import static org.hamcrest.Matchers.not
 import static org.junit.Assert.assertThat
@@ -17,6 +18,7 @@ import org.junit.rules.RuleChain
 import com.sap.piper.GitUtils
 
 import util.BasePiperTest
+import util.JenkinsLoggingRule
 import util.JenkinsShellCallRule
 import util.Rules
 
@@ -25,12 +27,23 @@ public class ChangeManagementTest extends BasePiperTest {
     private ExpectedException thrown = ExpectedException.none()
 
     private JenkinsShellCallRule script = new JenkinsShellCallRule(this)
+	private JenkinsLoggingRule logging = new JenkinsLoggingRule(this)
 
     @Rule
     public RuleChain rules = Rules.getCommonRules(this)
         .around(thrown)
         .around(script)
+        .around(logging)
 
+	@Test
+	public void testGetChangeIdFromConfigWhenProvidedInsideConfig() {
+		String[] viaGitUtils = ['0815']
+		def changeDocumentId = new ChangeManagement(nullScript, gitUtilsMock(false, viaGitUtils))
+			.getChangeDocumentId([changeDocumentId: '0042'])
+
+		assertThat(logging.log, containsString('[INFO] Use changeDocumentId \'0042\' from configuration.'))
+		assertThat(changeDocumentId, is(equalTo('0042')))
+	}
     @Test
     public void testRetrieveChangeDocumentIdOutsideGitWorkTreeTest() {
 
@@ -83,8 +96,15 @@ public class ChangeManagementTest extends BasePiperTest {
     public void testRetrieveChangeDocumentWithUniqueResult() {
 
         String[] changeIds = [ 'a' ];
-        def changeID = new ChangeManagement(nullScript, gitUtilsMock(true, changeIds)).getChangeDocumentId()
 
+        def params = [ git_from: 'origin/master',
+                       git_to: 'HEAD',
+                       git_label: 'ChangeDocument\\s?:',
+                       git_format: '%b']
+
+        def changeID = new ChangeManagement(nullScript, gitUtilsMock(true, changeIds)).getChangeDocumentId(params)
+
+        assertThat(logging.log, containsString('[INFO] ChangeDocumentId \'a\' retrieved from git commit(s). '))
         assert changeID == 'a'
     }
 

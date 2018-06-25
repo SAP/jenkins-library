@@ -20,7 +20,7 @@ public class ChangeManagement implements Serializable {
     String getChangeDocumentId(Map config) {
 
             if(config.changeDocumentId) {
-                script.echo "[INFO] Use changeDocumentId ${config.changeDocumentId} from configuration."
+                script.echo "[INFO] Use changeDocumentId '${config.changeDocumentId}' from configuration."
                 return config.changeDocumentId
             }
 
@@ -31,7 +31,7 @@ public class ChangeManagement implements Serializable {
                                         config.git_label,
                                         config.git_format
                                    )
-            script.echo "[INFO] ChangeDocumentId retrieved from git commit(s): ${changeDocumentId}."
+            script.echo "[INFO] ChangeDocumentId '${changeDocumentId}' retrieved from git commit(s)."
 
             return changeDocumentId
         }
