@@ -1,8 +1,12 @@
 package com.sap.piper.mta
 
 import static org.hamcrest.Matchers.hasItem
+import static org.hamcrest.Matchers.hasKey
 import static org.hamcrest.Matchers.hasSize
+import static org.hamcrest.Matchers.hasEntry
 import static org.hamcrest.Matchers.not
+import static org.hamcrest.Matchers.is
+import static org.hamcrest.Matchers.containsString
 
 import static org.junit.Assert.assertThat
 import org.junit.Rule
@@ -39,5 +43,35 @@ class MtaMultiplexerTest extends BasePiperTest {
         assertThat(result, not(hasItem('pom.xml')))
         assertThat(result, hasSize(3))
         assertThat(jlr.log, containsString('Skipping pom.xml'))
+    }
+
+    @Test
+    void testCreateJobs() {
+        def optionsList = []
+        // prepare test data
+        helper.registerAllowedMethod("findFiles", [Map.class], { map ->
+            if (map.glob == '**/pom.xml') {
+                return [new File('some-service/pom.xml'), new File('some-other-service/pom.xml')].toArray()
+            }
+            if (map.glob == '**/package.json') {
+                return [new File('some-ui/package.json'), new File('somer-service-broker/package.json')].toArray()
+            }
+        })
+        // execute test
+        def result = MtaMultiplexer.createJobs(nullScript, ['myParameters':'value'], [], 'TestJobs', 'pom.xml', 'maven'){
+            options -> optionsList.push(options)
+        }
+        // invoke jobs
+        for(Closure c : result.values()) c()
+        // asserts
+        assertThat(result.size(), is(2))
+        assertThat(result, hasKey('TestJobs - some-other-service'))
+        assertThat(jlr.log, containsString('Found 2 maven descriptor files!'))
+        assertThat(optionsList.get(0), hasEntry('myParameters', 'value'))
+        assertThat(optionsList.get(0), hasEntry('scanType', 'maven'))
+        assertThat(optionsList.get(0), hasEntry('buildDescriptorFile', 'some-service/pom.xml'))
+        assertThat(optionsList.get(1), hasEntry('myParameters', 'value'))
+        assertThat(optionsList.get(1), hasEntry('scanType', 'maven'))
+        assertThat(optionsList.get(1), hasEntry('buildDescriptorFile', 'some-other-service/pom.xml'))
     }
 }
