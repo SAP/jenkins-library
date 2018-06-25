@@ -22,7 +22,7 @@ The step is stashing files before and after the build. This is due to the fact, 
 
 | stash name | mandatory | prerequisite | pattern |
 |---|---|---|---|
-|buildDescriptor|no| |includes: `**/pom.xml, **/.mvn/**, **/assembly.xml, **/.swagger-codegen-ignore, **/package.json, **/requirements.txt, **/setup.py, **/whitesource_config.py, **/mta*.y*ml, **/.npmrc, **/whitesource.*.json, **/whitesource-fs-agent.config, .xmake.cfg, Dockerfile, **/VERSION, **/version.txt, **/build.sbt, **/sbtDescriptor.json, **/project/*`<br /> excludes: `**/node_modules/**/package.json`|
+|buildDescriptor|no| |includes: `**/pom.xml, **/.mvn/**, **/assembly.xml, **/.swagger-codegen-ignore, **/package.json, **/requirements.txt, **/setup.py, **/whitesource_config.py, **/mta*.y*ml, **/.npmrc, **/whitesource.*.json, **/whitesource-fs-agent.config, Dockerfile, **/VERSION, **/version.txt, **/build.sbt, **/sbtDescriptor.json, **/project/*`<br /> excludes: `**/node_modules/**/package.json`|
 |checkmarx|no|Checkmarx is enabled|includes: `**/*.js, **/*.scala, **/*.go`<br /> excludes: `**/*.mockserver.js, node_modules/**/*.js`|
 |classFiles|no| |includes: `**/target/classes/**/*.class, **/target/test-classes/**/*.class` <br />excludes: `''`|
 |deployDescriptor|no| |includes: `**/manifest*.y*ml, **/*.mtaext.y*ml, **/*.mtaext, **/xs-app.json, helm/**, *.y*ml`<br />exclude: `''`|
