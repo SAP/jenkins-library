@@ -1,12 +1,12 @@
 package com.sap.piper.mta
 
+import static org.hamcrest.Matchers.containsString
+import static org.hamcrest.Matchers.hasEntry
 import static org.hamcrest.Matchers.hasItem
 import static org.hamcrest.Matchers.hasKey
 import static org.hamcrest.Matchers.hasSize
-import static org.hamcrest.Matchers.hasEntry
-import static org.hamcrest.Matchers.not
 import static org.hamcrest.Matchers.is
-import static org.hamcrest.Matchers.containsString
+import static org.hamcrest.Matchers.not
 
 import static org.junit.Assert.assertThat
 import org.junit.Rule
