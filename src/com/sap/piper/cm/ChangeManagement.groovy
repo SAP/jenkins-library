@@ -43,15 +43,9 @@ public class ChangeManagement implements Serializable {
     boolean isChangeInDevelopment(String changeId, String endpoint, String username, String password) {
 
                 int rc = script.sh(returnStatus: true,
-                            script:
-                            """#!/bin/bash
-                       cmclient -e "${endpoint}" \
-                                -u '${username}' \
-                                -p '${password}' \
-                                -t SOLMAN\
-                              is-change-in-development -cID '${changeId}' \
-                                                       --return-code
-                    """)
+                            script: getCMCommandLine(endpoint, username, password,
+                                                     'is-change-in-development', ['-cID', "'${changeId}'",
+                                                                                   '--return-code']))
 
                 if(rc == 0) {
                     return true
@@ -66,14 +60,8 @@ public class ChangeManagement implements Serializable {
 
         try {
           String transportRequest = script.sh(returnStdout: true,
-                    script:
-                    """#!/bin/bash
-                       cmclient -e '$endpoint' \
-                                -u '$username' \
-                                -p '$password' \
-                                -t SOLMAN \
-                              create-transport -cID '$changeId' -dID '$developmentSystemId'
-                    """)
+                    script: getCMCommandLine(endpoint, username, password, 'create-transport', ['-cID', changeId,
+                                                                                                '-dID', developmentSystemId]))
           return transportRequest.trim()
         } catch(AbortException e) {
           throw new ChangeManagementException("Cannot create a transport request for change id '$changeId'. $e.message.")
@@ -83,14 +71,10 @@ public class ChangeManagement implements Serializable {
     void uploadFileToTransportRequest(String changeId, String transportRequestId, String applicationId, String filePath, String endpoint, String username, String password) {
 
         int rc = script.sh(returnStatus: true,
-                    script:
-                    """#!/bin/bash
-                       cmclient -e '$endpoint' \
-                                -u '$username' \
-                                -p '$password' \
-                                -t SOLMAN \
-                              upload-file-to-transport -cID '$changeId' -tID '$transportRequestId' '$applicationId' '$filePath'
-                    """)
+                    script: getCMCommandLine(endpoint, username, password,
+                                            'upload-file-to-transport', ['-cID', changeId,
+                                                                         '-tID', transportRequestId,
+                                                                         applicationId, filePath]))
 
         if(rc == 0) {
             return
@@ -102,14 +86,9 @@ public class ChangeManagement implements Serializable {
     void releaseTransportRequest(String changeId, String transportRequestId, String endpoint, String username, String password) {
 
         int rc = script.sh(returnStatus: true,
-                    script:
-                    """#!/bin/bash
-                       cmclient -e '$endpoint' \
-                                -u '$username' \
-                                -p '$password' \
-                                -t SOLMAN \
-                              release-transport -cID '$changeId' -tID '$transportRequestId'
-                    """)
+                    script: getCMCommandLine(endpoint, username, password,
+                                            'release-transport', ['-cID', changeId,
+                                                                  '-tID', transportRequestId]))
 
         if(rc == 0) {
             return
