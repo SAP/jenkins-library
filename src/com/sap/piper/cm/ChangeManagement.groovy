@@ -117,4 +117,14 @@ public class ChangeManagement implements Serializable {
             throw new ChangeManagementException("Cannot release Transport Request '$transportRequestId'. Return code from cmclient: $rc.")
         }
     }
+
+    String getCMCommandLine(String endpoint, String username, String password, String command, List<String> args) {
+        return """#!/bin/bash
+                  cmclient -e '$endpoint' \
+                           -u '$username' \
+                           -p '$password' \
+                           -t SOLMAN \
+                          ${command} ${(args as Iterable).join(' ')}
+                    """
+    }
 }

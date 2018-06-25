@@ -125,6 +125,18 @@ public class ChangeManagementTest extends BasePiperTest {
         new ChangeManagement(nullScript, null).isChangeInDevelopment('001', 'endpoint', 'user', 'password')
     }
 
+    @Test
+    public void testGetCommandLine() {
+        String commandLine = new ChangeManagement(nullScript, null)
+            .getCMCommandLine('https://example.org/cm',
+                              "me",
+                              "topSecret",
+                              "the-command",
+                              ["-key1", "val1", "-key2", "val2"])
+        commandLine = commandLine.replaceAll(' +', " ")
+        assertThat(commandLine, containsString("cmclient -e 'https://example.org/cm' -u 'me' -p 'topSecret' -t SOLMAN the-command -key1 val1 -key2 val2"))
+}
+
     private GitUtils gitUtilsMock(boolean insideWorkTree, String[] changeIds) {
         return new GitUtils() {
             public boolean insideWorkTree() {
