@@ -40,12 +40,13 @@ public class ChangeManagement implements Serializable {
         return changeIds.get(0)
     }
 
-    boolean isChangeInDevelopment(String changeId, String endpoint, String username, String password) {
+    boolean isChangeInDevelopment(String changeId, String endpoint, String username, String password, String cmclientOpts = '') {
 
                 int rc = script.sh(returnStatus: true,
                             script: getCMCommandLine(endpoint, username, password,
                                                      'is-change-in-development', ['-cID', "'${changeId}'",
-                                                                                   '--return-code']))
+                                                                                   '--return-code'],
+                                                                               cmclientOpts))
 
                 if(rc == 0) {
                     return true
@@ -97,13 +98,24 @@ public class ChangeManagement implements Serializable {
         }
     }
 
-    String getCMCommandLine(String endpoint, String username, String password, String command, List<String> args) {
-        return """#!/bin/bash
-                  cmclient -e '$endpoint' \
+    String getCMCommandLine(String endpoint,
+                            String username,
+                            String password,
+                            String command,
+                            List<String> args,
+                            String cmclientOpts = '') {
+        String cmCommandLine = '#!/bin/bash'
+        if(cmclientOpts) {
+            cmCommandLine +=  """
+                             export CMCLIENT_OPTS="${cmclientOpts}" """
+        }
+        cmCommandLine += """
+                        cmclient -e '$endpoint' \
                            -u '$username' \
                            -p '$password' \
                            -t SOLMAN \
                           ${command} ${(args as Iterable).join(' ')}
                     """
+        return cmCommandLine
     }
 }
