@@ -1,12 +1,12 @@
 package com.sap.piper.mta
 
 class MtaMultiplexer implements Serializable {
-    static def createJobs(Script step, Map parameters, List excludeList, String jobPrefix, String buildDescriptorFile, String scanType, Closure worker) {
-        def jobs = [:]
+    static Map createJobs(Script step, Map parameters, List excludeList, String jobPrefix, String buildDescriptorFile, String scanType, Closure worker) {
+        Map jobs = [:]
         def filesToScan
 
         filesToScan = step.findFiles(glob: "**${File.separator}${buildDescriptorFile}")
-        step.echo "Found ${filesToScan.length} ${scanType} descriptor files"
+        step.echo "Found ${filesToScan.length} ${scanType} descriptor files!"
         filesToScan = removeExcludedFiles(step, filesToScan, excludeList)
 
         for (String file : filesToScan){
@@ -14,9 +14,7 @@ class MtaMultiplexer implements Serializable {
             options.putAll(parameters)
             options.scanType = scanType
             options.buildDescriptorFile = file
-            jobs.put("${jobPrefix} - ${file.replace("${File.separator}${buildDescriptorFile}",'')}", {
-                worker(options)
-            })
+            jobs["${jobPrefix} - ${file.replace("${File.separator}${buildDescriptorFile}",'')}"] = {worker(options)}
         }
         return jobs
     }
