@@ -24,11 +24,10 @@ class MtaMultiplexer implements Serializable {
     static def removeExcludedFiles(Script step, filesToScan, List filesToExclude){
         def filteredFiles = []
         for (File file : filesToScan) {
-            def filePath = file.path
-            if(filesToExclude.contains(file)){
-                step.echo "Skipping ${file}"
+            if(filesToExclude.contains(file.path)){
+                step.echo "Skipping ${file.path}"
             }else{
-                filteredFiles.add(filePath)
+                filteredFiles.add(file.path)
             }
         }
         return filteredFiles
