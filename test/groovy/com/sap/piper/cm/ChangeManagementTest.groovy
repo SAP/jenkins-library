@@ -98,7 +98,7 @@ public class ChangeManagementTest extends BasePiperTest {
         assertThat(script.shell[0], allOf(containsString("cmclient"),
                                             containsString("-u 'user'"),
                                             containsString("-p 'password'"),
-                                            containsString("-e \"endpoint\""),
+                                            containsString("-e 'endpoint'"),
                                             containsString('is-change-in-development'),
                                             containsString("-cID '001'"),
                                             containsString("-t SOLMAN")))
