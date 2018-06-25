@@ -10,7 +10,7 @@ import groovy.transform.Field
 @Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS.plus([
     'buildDescriptorFile',
     'dockerImage',
-    'dockerWorkspace'
+    'dockerWorkspace',
     'excludeMtaModules',
     'monitor',
     'scanType',
