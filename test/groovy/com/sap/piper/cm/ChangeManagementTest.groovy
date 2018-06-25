@@ -4,6 +4,7 @@ import static org.hamcrest.Matchers.allOf
 import static org.hamcrest.Matchers.containsString
 import static org.hamcrest.Matchers.equalTo
 import static org.hamcrest.Matchers.is
+import static org.hamcrest.Matchers.not
 import static org.junit.Assert.assertThat
 
 import org.hamcrest.Matchers
@@ -109,7 +110,11 @@ public class ChangeManagementTest extends BasePiperTest {
 
         script.setReturnValue(JenkinsShellCallRule.Type.REGEX, "cmclient.*is-change-in-development -cID '001'", 3)
 
-        boolean inDevelopment = new ChangeManagement(nullScript, null).isChangeInDevelopment('001', 'endpoint', 'user', 'password')
+        boolean inDevelopment = new ChangeManagement(nullScript, null)
+                                    .isChangeInDevelopment('001',
+                                                           'endpoint',
+                                                           'user',
+                                                           'password')
 
         assertThat(inDevelopment, is(equalTo(false)))
     }
@@ -126,7 +131,7 @@ public class ChangeManagementTest extends BasePiperTest {
     }
 
     @Test
-    public void testGetCommandLine() {
+    public void testGetCommandLineWithoutCMClientOpts() {
         String commandLine = new ChangeManagement(nullScript, null)
             .getCMCommandLine('https://example.org/cm',
                               "me",
@@ -134,8 +139,23 @@ public class ChangeManagementTest extends BasePiperTest {
                               "the-command",
                               ["-key1", "val1", "-key2", "val2"])
         commandLine = commandLine.replaceAll(' +', " ")
+        assertThat(commandLine, not(containsString("CMCLIENT_OPTS")))
         assertThat(commandLine, containsString("cmclient -e 'https://example.org/cm' -u 'me' -p 'topSecret' -t SOLMAN the-command -key1 val1 -key2 val2"))
 }
+
+@Test
+public void testGetCommandLineWithCMClientOpts() {
+    String commandLine = new ChangeManagement(nullScript, null)
+        .getCMCommandLine('https://example.org/cm',
+                          "me",
+                          "topSecret",
+                          "the-command",
+                          ["-key1", "val1", "-key2", "val2"],
+                          '-Djavax.net.debug=all')
+    commandLine = commandLine.replaceAll(' +', " ")
+    assertThat(commandLine, containsString('export CMCLIENT_OPTS="-Djavax.net.debug=all"'))
+}
+
 
     private GitUtils gitUtilsMock(boolean insideWorkTree, String[] changeIds) {
         return new GitUtils() {

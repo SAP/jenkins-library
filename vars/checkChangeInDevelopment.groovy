@@ -9,6 +9,7 @@ import com.sap.piper.cm.ChangeManagementException
 @Field def STEP_NAME = 'checkChangeInDevelopment'
 
 @Field Set parameterKeys = [
+    'cmClientOpts',
     'credentialsId',
     'endpoint',
     'failIfStatusIsNotInDevelopment',
@@ -19,6 +20,7 @@ import com.sap.piper.cm.ChangeManagementException
   ]
 
 @Field Set stepConfigurationKeys = [
+    'cmClientOpts',
     'credentialsId',
     'endpoint',
     'failIfStatusIsNotInDevelopment',
@@ -74,7 +76,7 @@ def call(parameters = [:]) {
             usernameVariable: 'username')]) {
 
             try {
-                isInDevelopment = cm.isChangeInDevelopment(changeId, configuration.endpoint, username, password)
+                isInDevelopment = cm.isChangeInDevelopment(changeId, configuration.endpoint, username, password, configuration.cmClientOpts)
             } catch(ChangeManagementException ex) {
                 throw new AbortException(ex.getMessage())
             }

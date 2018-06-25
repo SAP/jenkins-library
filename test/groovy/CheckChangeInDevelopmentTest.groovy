@@ -58,7 +58,8 @@ class CheckChangeInDevelopmentTest extends BasePiperTest {
             changeId: '001',
             endpoint: 'https://example.org/cm',
             userName: 'defaultUser',
-            password: '********'
+            password: '********',
+            cmclientOpts: null
         ]
     }
 
@@ -143,11 +144,12 @@ class CheckChangeInDevelopmentTest extends BasePiperTest {
                 return changeDocumentId
             }
 
-            boolean isChangeInDevelopment(String changeId, String endpoint, String userName, String password) {
+            boolean isChangeInDevelopment(String changeId, String endpoint, String userName, String password, String cmclientOpts) {
                 cmUtilReceivedParams.changeId = changeId
                 cmUtilReceivedParams.endpoint = endpoint
                 cmUtilReceivedParams.userName = userName
                 cmUtilReceivedParams.password = password
+                cmUtilReceivedParams.cmclientOpts = cmclientOpts
 
                 return inDevelopment
             }
