@@ -9,6 +9,7 @@ import com.sap.piper.cm.ChangeManagementException
 @Field def STEP_NAME = 'checkChangeInDevelopment'
 
 @Field Set parameterKeys = [
+    'changeDocumentId',
     'cmClientOpts',
     'credentialsId',
     'endpoint',
@@ -20,6 +21,7 @@ import com.sap.piper.cm.ChangeManagementException
   ]
 
 @Field Set stepConfigurationKeys = [
+    'changeDocumentId',
     'cmClientOpts',
     'credentialsId',
     'endpoint',
@@ -48,12 +50,8 @@ def call(parameters = [:]) {
         def changeId
 
         try {
-            changeId = cm.getChangeDocumentId(
-                                              configuration.git_from,
-                                              configuration.git_to,
-                                              configuration.git_label,
-                                              configuration.git_format
-                                            )
+
+            changeId = cm.getChangeDocumentId(configuration)
 
             if(! changeId?.trim()) {
                 throw new ChangeManagementException("ChangeId is null or empty.")
@@ -61,10 +59,6 @@ def call(parameters = [:]) {
         } catch(ChangeManagementException ex) {
             throw new AbortException(ex.getMessage())
         }
-
-        echo "[INFO] ChangeId retrieved from git commit(s): '${changeId}'. " +
-             "Commit range: '${configuration.git_from}..${configuration.git_to}'. " +
-             "Searching for label '${configuration.git_label}'."
 
         boolean isInDevelopment
 

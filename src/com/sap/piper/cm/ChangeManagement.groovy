@@ -1,5 +1,7 @@
 package com.sap.piper.cm
 
+import java.util.Map
+
 import com.sap.piper.GitUtils
 
 import hudson.AbortException
@@ -14,6 +16,25 @@ public class ChangeManagement implements Serializable {
         this.script = script
         this.gitUtils = gitUtils ?: new GitUtils()
     }
+
+    String getChangeDocumentId(Map config) {
+
+            if(config.changeDocumentId) {
+                script.echo "[INFO] Use changeDocumentId ${config.changeDocumentId} from configuration."
+                return config.changeDocumentId
+            }
+
+            script.echo "[INFO] Retrieving changeDocumentId from git commit(s) [FROM: ${config.git_from}, TO: ${config.git_to}]"
+            def changeDocumentId = getChangeDocumentId(
+                                        config.git_from,
+                                        config.git_to,
+                                        config.git_label,
+                                        config.git_format
+                                   )
+            script.echo "[INFO] ChangeDocumentId retrieved from git commit(s): ${changeDocumentId}."
+
+            return changeDocumentId
+        }
 
     String getChangeDocumentId(
                               String from = 'origin/master',
