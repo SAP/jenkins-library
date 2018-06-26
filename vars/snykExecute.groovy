@@ -83,16 +83,19 @@ def call(Map parameters = [:]) {
                             cmd.push('&& snyk test')
                             if(config.toJson)
                                 cmd.push("--json > ${config.snykResultFile}")
-                            sh cmd.join(' ')
+                            try{
+                                sh cmd.join(' ')
+                            }finally{
+                                if(config.toHtml)
+                                    sh "snyk-to-html -i ${path}${config.snykResultFile} -o ${path}snyk.html"
+                            }
                         }
                     }
                 }finally{
                     if(config.toJson)
                         archiveArtifacts "${path.replaceAll('\\./', '')}${config.snykResultFile}"
-                    if(config.toHtml){
-                        sh "cd '${path}' && snyk-to-html -i ${config.snykResultFile} -o snyk.html"
+                    if(config.toHtml)
                         archiveArtifacts "${path.replaceAll('\\./', '')}snyk.html"
-                    }
                 }
                 break
             default:
