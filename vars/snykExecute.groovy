@@ -11,7 +11,7 @@ import groovy.transform.Field
     'buildDescriptorFile',
     'dockerImage',
     'dockerWorkspace',
-    'excludeMtaModules',
+    'exclude',
     'monitor',
     'scanType',
     'snykOrg',
@@ -44,7 +44,7 @@ def call(Map parameters = [:]) {
                 def scanJobs = [failFast: false]
                 // create job for each package.json with scanType: 'npm'
                 scanJobs.putAll(MtaMultiplexer.createJobs(
-                    this, parameters, config.excludeMtaModules, 'Snyk', 'package.json', 'npm'
+                    this, parameters, config.exclude, 'Snyk', 'package.json', 'npm'
                 ){options -> snykExecute(options)})
                 // execute scan jobs in parallel
                 parallel scanJobs
