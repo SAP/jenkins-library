@@ -45,7 +45,7 @@ def call(Map parameters = [:]) {
                 // create job for each package.json with scanType: 'npm'
                 scanJobs.putAll(MtaMultiplexer.createJobs(
                     this, parameters, config.excludeMtaModules, 'Snyk', 'package.json', 'npm'
-                ){options -> executeSnykScan(options)})
+                ){options -> snykExecute(options)})
                 // execute scan jobs in parallel
                 parallel scanJobs
                 break

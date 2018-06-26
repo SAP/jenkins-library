@@ -67,9 +67,6 @@ class SnykExecuteTest extends BasePiperTest {
         helper.registerAllowedMethod('archiveArtifacts', [String], {
             s -> archiveStepPatterns.push(s.toString())
         })
-        helper.registerAllowedMethod('executeSnykScan', [Map], {
-            m -> jsr.step.snykExecute(m)
-        })
     }
 
     @Test
