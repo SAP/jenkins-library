@@ -16,7 +16,8 @@ import groovy.transform.Field
     'scanType',
     'snykOrg',
     'snykResultFile',
-    'toJson'
+    'toJson',
+    'toHtml'
 ])
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
 
@@ -65,6 +66,10 @@ def call(Map parameters = [:]) {
                         ) {
                             // install Snyk
                             sh 'npm install snyk --global --quiet'
+                            if(config.toHtml){
+                                config.toJson = true
+                                sh 'npm install snyk-to-html --global --quiet'
+                            }
                             // install NPM dependencies
                             sh "cd '${path}' && npm install --quiet"
                             // execute Snyk scan
@@ -84,6 +89,10 @@ def call(Map parameters = [:]) {
                 }finally{
                     if(config.toJson)
                         archiveArtifacts "${path.replaceAll('\\./', '')}${config.snykResultFile}"
+                    if(config.toHtml){
+                        sh "cd '${path}' && snyk-to-html -i ${config.snykResultFile} -o snyk.html"
+                        archiveArtifacts "${path.replaceAll('\\./', '')}snyk.html"
+                    }
                 }
                 break
             default:
