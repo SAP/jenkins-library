@@ -121,11 +121,11 @@ steps:
     excludeMtaModules: []
     monitor: true
     scanType: 'npm'
-    snykResultFile: 'snyk.json'
     stashContent:
       - 'buildDescriptor'
       - 'opensourceConfiguration'
     toJson: false
+    toHtml: false
   testsPublishResults:
     junit:
       pattern: '**/target/surefire-reports/*.xml'

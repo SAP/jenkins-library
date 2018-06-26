@@ -15,7 +15,6 @@ import groovy.transform.Field
     'monitor',
     'scanType',
     'snykOrg',
-    'snykResultFile',
     'toJson',
     'toHtml'
 ])
@@ -82,20 +81,17 @@ def call(Map parameters = [:]) {
                             }
                             cmd.push('&& snyk test')
                             if(config.toJson)
-                                cmd.push("--json > ${config.snykResultFile}")
+                                cmd.push("--json > snyk.json")
                             try{
                                 sh cmd.join(' ')
                             }finally{
-                                if(config.toHtml)
-                                    sh "snyk-to-html -i ${path}${config.snykResultFile} -o ${path}snyk.html"
+                                if(config.toHtml) sh "snyk-to-html -i ${path}snyk.json -o ${path}snyk.html"
                             }
                         }
                     }
                 }finally{
-                    if(config.toJson)
-                        archiveArtifacts "${path.replaceAll('\\./', '')}${config.snykResultFile}"
-                    if(config.toHtml)
-                        archiveArtifacts "${path.replaceAll('\\./', '')}snyk.html"
+                    if(config.toJson) archiveArtifacts "${path.replaceAll('\\./', '')}snyk.json"
+                    if(config.toHtml) archiveArtifacts "${path.replaceAll('\\./', '')}snyk.html"
                 }
                 break
             default:
