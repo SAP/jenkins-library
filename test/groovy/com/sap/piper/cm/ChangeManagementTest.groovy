@@ -143,7 +143,7 @@ public class ChangeManagementTest extends BasePiperTest {
     public void testIsChangeInDevelopmentThrowsExceptionWhenCMClientReturnsUnexpectedExitCode() {
 
         thrown.expect(ChangeManagementException)
-        thrown.expectMessage('Cannot retrieve change status. Return code from cmclient: 1')
+        thrown.expectMessage('Cannot retrieve status for change document \'001\'. Does this change exist? Return code from cmclient: 1.')
 
         script.setReturnValue(JenkinsShellCallRule.Type.REGEX, "cmclient.*is-change-in-development -cID '001'", 1)
 
