@@ -64,7 +64,7 @@ def call(Map parameters = [:]) {
                             dockerEnvVars: ['SNYK_TOKEN': token]
                         ) {
                             // install Snyk
-                            sh "npm install snyk --global --quiet"
+                            sh 'npm install snyk --global --quiet'
                             // install NPM dependencies
                             sh "cd '${path}' && npm install --quiet"
                             // execute Snyk scan
