@@ -32,9 +32,9 @@ def call(Map parameters = [:]) {
             .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS)
             .mixin(parameters, PARAMETER_KEYS)
             // check mandatory paramerers
-            .withMandatoryParameter('dockerImage')
-            .withMandatoryParameter('dockerWorkspace')
-            .withMandatoryParameter('snykCredentialsId')
+            .withMandatoryProperty('dockerImage')
+            .withMandatoryProperty('dockerWorkspace')
+            .withMandatoryProperty('snykCredentialsId')
             .use()
 
         utils.unstashAll(config.stashContent)
