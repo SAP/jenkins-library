@@ -163,3 +163,10 @@ steps:
       allowEmptyResults: true
       archive: false
       active: false
+  checkChangeInDevelopment:
+      credentialsId: 'CM'
+      failIfStatusIsNotInDevelopment: true
+      git_from: 'origin/master'
+      git_to: 'HEAD'
+      git_label: 'ChangeDocument\s?:'
+      git_format: '%b'
