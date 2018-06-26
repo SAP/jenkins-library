@@ -118,7 +118,7 @@ steps:
       tests: ''
   snykExecute:
     buildDescriptorFile: './package.json'
-    excludeMtaModules: []
+    exclude: []
     monitor: true
     scanType: 'npm'
     stashContent:
