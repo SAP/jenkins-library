@@ -1,4 +1,3 @@
-import com.sap.piper.GitUtils
 import groovy.transform.Field
 
 import com.sap.piper.ConfigurationMerger

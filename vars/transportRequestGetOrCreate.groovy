@@ -7,7 +7,7 @@ import com.sap.piper.cm.ChangeManagementException
 import hudson.AbortException
 
 
-@Field def STEP_NAME = 'transportRequestCreate'
+@Field def STEP_NAME = 'transportRequestGetOrCreate'
 
 @Field Set parameterKeys = [
     'changeDocumentId',
@@ -34,7 +34,7 @@ def call(parameters = [:]) {
                                                       stepConfigurationKeys)
 
         def changeDocumentId = configuration.changeDocumentId
-        if(!changeDocumentId) throw new AbortException('Change document id not provided (parameter: \'changeDocumentId\').')
+        if(!changeDocumentId) throw new AbortException('Change id not provided (parameter: \'changeDocumentId\').')
 
         def developmentSystemId = configuration.developmentSystemId
         if(!developmentSystemId) throw new AbortException('Development system id not provided (parameter: \'developmentSystemId\').')
@@ -45,9 +45,9 @@ def call(parameters = [:]) {
         def endpoint = configuration.endpoint
         if(!endpoint) throw new AbortException('Solution Manager endpoint not provided (parameter: \'endpoint\').')
 
-        def transportRequestId
+        def transportRequests
 
-        echo "[INFO] Creating transport request for change document '$changeDocumentId' and development system '$developmentSystemId'."
+        echo "[INFO] Getting transport requests for change document '$changeDocumentId'."
 
         withCredentials([usernamePassword(
             credentialsId: credentialsId,
@@ -55,13 +55,24 @@ def call(parameters = [:]) {
             usernameVariable: 'username')]) {
 
             try {
-                transportRequestId = cm.createTransportRequest(changeDocumentId, developmentSystemId, endpoint, username, password)
+                transportRequests = cm.getTransportRequests(changeDocumentId, endpoint, username, password)
             } catch(ChangeManagementException ex) {
                 throw new AbortException(ex.getMessage())
             }
-        }
 
-        echo "[INFO] Transport Request '$transportRequestId' has been successfully created."
+            if(transportRequests.length>1){
+                error "Too many open transport requests $transportRequests for change document '$changeDocumentId'."
+            }
+            else if(!transportRequests || transportRequests.length == 0 || (transportRequests.length == 1 && !transportRequests[0])){
+                echo "[INFO] There is no open transport requests for change document '$changeDocumentId'."
+                transportRequestId = cm.createTransportRequest(changeDocumentId, developmentSystemId, endpoint, username, password)
+            }
+            else {
+                transportRequestId = transportRequests[0]
+                echo "[INFO] Transport request '$transportRequestId' available for change document '$changeDocumentId'."
+            }
+        }
         return transportRequestId
     }
 }
+

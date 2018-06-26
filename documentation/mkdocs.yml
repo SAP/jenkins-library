@@ -18,6 +18,7 @@ pages:
         - setupCommonPipelineEnvironment: steps/setupCommonPipelineEnvironment.md
         - toolValidate: steps/toolValidate.md
         - transportRequestCreate: steps/transportRequestCreate.md
+        - transportRequestGetTransportRequests: steps/transportRequestGetTransports.md
         - transportRequestRelease:  steps/transportRequestRelease.md
         - transportRequestUploadFile: steps/transportRequestUploadFile.md
     - 'Required Plugins': jenkins/requiredPlugins.md

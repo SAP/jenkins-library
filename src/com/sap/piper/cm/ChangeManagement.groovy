@@ -90,6 +90,25 @@ public class ChangeManagement implements Serializable {
         }
     }
 
+    def getTransportRequests(String changeId, String endpoint, String username, String password) {
+
+        try {
+          def transportRequests = script.sh(returnStdout: true,
+                    script:
+                    """#!/bin/bash
+                       cmclient -e '$endpoint' \
+                                -u '$username' \
+                                -p '$password' \
+                                -t SOLMAN \
+                              get-transports --modifiable-only -cID '$changeId'
+                    """)
+          transportRequests = transportRequests.split("\n")
+          return transportRequests
+        } catch(AbortException e) {
+          throw new ChangeManagementException("Cannot get the transport requests for change document '$changeId'. $e.message.")
+        }
+    }
+
     void uploadFileToTransportRequest(String changeId, String transportRequestId, String applicationId, String filePath, String endpoint, String username, String password) {
 
         int rc = script.sh(returnStatus: true,
