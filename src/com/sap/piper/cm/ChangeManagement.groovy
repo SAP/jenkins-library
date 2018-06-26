@@ -74,7 +74,7 @@ public class ChangeManagement implements Serializable {
                 } else if(rc == 3) {
                     return false
                 } else {
-                    throw new ChangeManagementException("Cannot retrieve change status. Return code from cmclient: ${rc}.")
+                    throw new ChangeManagementException("Cannot retrieve status for change document '${changeId}'. Does this change exist? Return code from cmclient: ${rc}.")
                 }
             }
 
