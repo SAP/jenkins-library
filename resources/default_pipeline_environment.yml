@@ -115,8 +115,18 @@ steps:
       opensourceConfiguration: ''
       pipelineConfigAndTests: ''
       securityDescriptor: ''
-      'snyk configuration': ''
       tests: ''
+  snykExecute:
+    buildDescriptorFile: './package.json'
+    dockerImage: 'node:8.11.2-stretch'
+    exclude: []
+    monitor: true
+    scanType: 'npm'
+    stashContent:
+      - 'buildDescriptor'
+      - 'opensourceConfiguration'
+    toJson: false
+    toHtml: false
   testsPublishResults:
     junit:
       pattern: '**/target/surefire-reports/*.xml'
