@@ -88,7 +88,6 @@ class SnykExecuteTest extends BasePiperTest {
 
         assertThat(withCredentialsParameters.credentialsId, is('myPassword'))
         assertThat(jder.dockerParams, hasEntry('dockerImage', 'node:8.11.2-stretch'))
-        assertThat(jder.dockerParams, hasEntry('dockerWorkspace', '/home/node'))
         assertThat(jder.dockerParams.stashContent, hasItem('buildDescriptor'))
         assertThat(jder.dockerParams.stashContent, hasItem('opensourceConfiguration'))
     }
