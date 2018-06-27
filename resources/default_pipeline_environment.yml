@@ -1,5 +1,6 @@
 #Project Setup
 general:
+  cfApiEndpoint: 'https://api.cf.eu10.hana.ondemand.com'
   productiveBranch: 'master'
 
 #Steps Specific Configuration
@@ -14,6 +15,20 @@ steps:
     docker:
       filePath: 'Dockerfile'
       versioningTemplate: '${version}-${timestamp}${commitId?"_"+commitId:""}'
+  cloudFoundryDeploy:
+    deployTool: 'cf_native'
+    deployType: 'standard'
+    mtaDeployParameters: '-f'
+    mtaExtensionDescriptor: ''
+    mtaPath: ''
+    smokeTestScript: 'blueGreenCheck.sh'
+    stashContent: []
+    cf_native:
+      dockerImage: '<ToDo: Add Image>'
+      dockerWorkspace: '/home/piper'
+    mtaDeployPlugin:
+      dockerImage: '<ToDo: Add Image>'
+      dockerWorkspace: '/home/piper'
   checksPublishResults:
     aggregation:
       active: true
