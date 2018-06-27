@@ -32,10 +32,10 @@ class MtaMultiplexerTest extends BasePiperTest {
     void testFilterFiles() {
         // prepare test data
         def files = [
-            new File('pom.xml'),
-            new File('some-ui/pom.xml'),
-            new File('some-service/pom.xml'),
-            new File('some-other-service/pom.xml')
+            new File("pom.xml"),
+            new File("some-ui${File.separator}pom.xml"),
+            new File("some-service${File.separator}pom.xml"),
+            new File("some-other-service${File.separator}pom.xml")
         ].toArray()
         // execute test
         def result = MtaMultiplexer.removeExcludedFiles(nullScript, files, ['pom.xml'])
@@ -50,12 +50,13 @@ class MtaMultiplexerTest extends BasePiperTest {
         def optionsList = []
         // prepare test data
         helper.registerAllowedMethod("findFiles", [Map.class], { map ->
-            if (map.glob == '**/pom.xml') {
-                return [new File('some-service/pom.xml'), new File('some-other-service/pom.xml')].toArray()
+            if (map.glob == "**${File.separator}pom.xml") {
+                return [new File("some-service${File.separator}pom.xml"), new File("some-other-service${File.separator}pom.xml")].toArray()
             }
-            if (map.glob == '**/package.json') {
-                return [new File('some-ui/package.json'), new File('somer-service-broker/package.json')].toArray()
+            if (map.glob == "**${File.separator}package.json") {
+                return [new File("some-ui${File.separator}package.json"), new File("somer-service-broker${File.separator}package.json")].toArray()
             }
+            return [].toArray()
         })
         // execute test
         def result = MtaMultiplexer.createJobs(nullScript, ['myParameters':'value'], [], 'TestJobs', 'pom.xml', 'maven'){
