@@ -10,7 +10,6 @@ import groovy.transform.Field
 @Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS.plus([
     'buildDescriptorFile',
     'dockerImage',
-    'dockerWorkspace',
     'exclude',
     'monitor',
     'scanType',
@@ -33,7 +32,6 @@ def call(Map parameters = [:]) {
             .mixin(parameters, PARAMETER_KEYS)
             // check mandatory paramerers
             .withMandatoryProperty('dockerImage')
-            .withMandatoryProperty('dockerWorkspace')
             .withMandatoryProperty('snykCredentialsId')
             .use()
 
@@ -59,7 +57,6 @@ def call(Map parameters = [:]) {
                     )]) {
                         dockerExecute(
                             dockerImage: config.dockerImage,
-                            dockerWorkspace: config.dockerWorkspace,
                             stashContent: config.stashContent,
                             dockerEnvVars: ['SNYK_TOKEN': token]
                         ) {
