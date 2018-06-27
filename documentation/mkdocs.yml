@@ -16,6 +16,9 @@ pages:
         - prepareDefaultValues: steps/prepareDefaultValues.md
         - setupCommonPipelineEnvironment: steps/setupCommonPipelineEnvironment.md
         - toolValidate: steps/toolValidate.md
+        - transportRequestCreate: steps/transportRequestCreate.md
+        - transportRequestRelease:  steps/transportRequestRelease.md
+        - transportRequestUploadFile: steps/transportRequestUploadFile.md
     - 'Required Plugins': jenkins/requiredPlugins.md
 
 theme:
