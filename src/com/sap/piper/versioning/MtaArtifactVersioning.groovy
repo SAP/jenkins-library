@@ -2,20 +2,20 @@ package com.sap.piper.versioning
 
 class MtaArtifactVersioning extends ArtifactVersioning {
 
-    private String baseVersion
-
     protected MtaArtifactVersioning (script, configuration) {
         super(script, configuration)
     }
 
     @Override
     def getVersion() {
-        baseVersion = script.readYaml(file: configuration.filePath).version
-        return baseVersion
+        def mtaYaml = script.readYaml file: configuration.filePath
+        return mtaYaml.version
     }
 
     @Override
     def setVersion(version) {
-        script.sh "sed -i 's/version: ${baseVersion}/version: ${newVersion}/g' ${configuration.filePath}"
+        def search = "version: ${getVersion()}"
+        def replacement = "version: ${version}"
+        script.sh "sed -i 's/${search}/${replacement}/g' ${configuration.filePath}"
     }
 }
