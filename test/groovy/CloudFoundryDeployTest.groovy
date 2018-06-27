@@ -133,7 +133,7 @@ class CloudFoundryDeployTest extends BasePiperTest {
             cfManifest: 'test.yml'
         ])
 
-        assertEquals('to be changed', jedr.dockerParams.dockerImage)
+        assertEquals('s4sdk/docker-cf-cli', jedr.dockerParams.dockerImage)
         assertEquals('/home/piper', jedr.dockerParams.dockerWorkspace)
 
 

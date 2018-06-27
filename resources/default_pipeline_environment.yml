@@ -24,7 +24,7 @@ steps:
     smokeTestScript: 'blueGreenCheck.sh'
     stashContent: []
     cf_native:
-      dockerImage: '<ToDo: Add Image>'
+      dockerImage: 's4sdk/docker-cf-cli'
       dockerWorkspace: '/home/piper'
     mtaDeployPlugin:
       dockerImage: '<ToDo: Add Image>'
