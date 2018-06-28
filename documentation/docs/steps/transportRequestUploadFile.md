@@ -10,7 +10,7 @@ Uploads a file to a Transport Request for a Change Document on the Solution Mana
 | parameter        | mandatory | default                                                | possible values    |
 | -----------------|-----------|--------------------------------------------------------|--------------------|
 | `script`        | yes       |                                                    |                    |
-| `changeId`        | yes       |                                                    |                    |
+| `changeDocumentId`        | yes       |                                                    |                    |
 | `transportRequestId`| yes   |                                                    |                    |
 | `applicationId`  | yes       |                                                    |                    |
 | `filePath`        | yes       |                                                    |                    |
@@ -18,7 +18,7 @@ Uploads a file to a Transport Request for a Change Document on the Solution Mana
 | `cmEndpoint`        | yes       |                                                    |                    |
 
 * `script` - The common script environment of the Jenkinsfile running. Typically the reference to the script calling the pipeline step is provided with the `this` parameter, as in `script: this`. This allows the function to access the [`commonPipelineEnvironment`](commonPipelineEnvironment.md) for retrieving, for example, configuration parameters.
-* `changeId` - The id of the change document related to the transport request to release.
+* `changeDocumentId` - The id of the change document related to the transport request to release.
 * `transportRequestId` - The id of the transport request to release.
 * `applicationId` - The id of the application.
 * `filePath` - The path of the file to upload.
@@ -44,6 +44,6 @@ None.
 
 ## Example
 ```groovy
-transportRequestUploadFile script:this, changeId: '001', transportRequestId: '001', applicationId: '001', filePath: '/path'
+transportRequestUploadFile script:this, changeDocumentId: '001', transportRequestId: '001', applicationId: '001', filePath: '/path'
 ```
 
