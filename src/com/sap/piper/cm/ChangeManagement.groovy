@@ -12,7 +12,7 @@ public class ChangeManagement implements Serializable {
 
     public ChangeManagement(def script, GitUtils gitUtils = null) {
         this.script = script
-        this.gitUtils = gitUtils
+        this.gitUtils = gitUtils ?: new GitUtils()
     }
 
     String getChangeDocumentId(
