@@ -55,10 +55,10 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
     }
 
     @Test
-    public void changeIdNotProvidedTest() {
+    public void changeDocumentIdNotProvidedTest() {
 
         thrown.expect(AbortException)
-        thrown.expectMessage("Change id not provided (parameter: 'changeId').")
+        thrown.expectMessage("Change document id not provided (parameter: 'changeDocumentId').")
 
         jsr.step.call(script: nullScript, transportRequestId: '001', applicationId: 'app', filePath: '/path')
     }
@@ -69,7 +69,7 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
         thrown.expect(AbortException)
         thrown.expectMessage("Transport Request id not provided (parameter: 'transportRequestId').")
 
-        jsr.step.call(script: nullScript, changeId: '001', applicationId: 'app', filePath: '/path')
+        jsr.step.call(script: nullScript, changeDocumentId: '001', applicationId: 'app', filePath: '/path')
     }
 
     @Test
@@ -78,7 +78,7 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
         thrown.expect(AbortException)
         thrown.expectMessage("Application id not provided (parameter: 'applicationId').")
 
-        jsr.step.call(script: nullScript, changeId: '001', transportRequestId: '001', filePath: '/path')
+        jsr.step.call(script: nullScript, changeDocumentId: '001', transportRequestId: '001', filePath: '/path')
     }
 
     @Test
@@ -87,7 +87,7 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
         thrown.expect(AbortException)
         thrown.expectMessage("File path not provided (parameter: 'filePath').")
 
-        jsr.step.call(script: nullScript, changeId: '001', transportRequestId: '001', applicationId: 'app')
+        jsr.step.call(script: nullScript, changeDocumentId: '001', transportRequestId: '001', applicationId: 'app')
     }
 
     @Test
@@ -98,7 +98,7 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
         thrown.expect(AbortException)
         thrown.expectMessage("Cannot upload file '/path' for change document '001' with transport request '001'. Return code from cmclient: 1.")
 
-        jsr.step.call(script: nullScript, changeId: '001', transportRequestId: '001', applicationId: 'app', filePath: '/path')
+        jsr.step.call(script: nullScript, changeDocumentId: '001', transportRequestId: '001', applicationId: 'app', filePath: '/path')
     }
 
     @Test
@@ -106,7 +106,7 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
 
         helper.registerAllowedMethod('sh', [Map], { Map m -> return 0 })
 
-        jsr.step.call(script: nullScript, changeId: '001', transportRequestId: '001', applicationId: 'app', filePath: '/path')
+        jsr.step.call(script: nullScript, changeDocumentId: '001', transportRequestId: '001', applicationId: 'app', filePath: '/path')
 
         assert jlr.log.contains("[INFO] Uploading file '/path' to transport request '001' of change document '001'.")
         assert jlr.log.contains("[INFO] File '/path' has been successfully uploaded to transport request '001' of change document '001'.")

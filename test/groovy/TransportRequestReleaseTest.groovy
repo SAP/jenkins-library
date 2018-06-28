@@ -58,7 +58,7 @@ public class TransportRequestReleaseTest extends BasePiperTest {
     public void changeIdNotProvidedTest() {
 
         thrown.expect(AbortException)
-        thrown.expectMessage("Change id not provided (parameter: 'changeId').")
+        thrown.expectMessage("Change document id not provided (parameter: 'changeDocumentId').")
 
         jsr.step.call(script: nullScript, transportRequestId: '001')
     }
@@ -69,7 +69,7 @@ public class TransportRequestReleaseTest extends BasePiperTest {
         thrown.expect(AbortException)
         thrown.expectMessage("Transport Request id not provided (parameter: 'transportRequestId').")
 
-        jsr.step.call(script: nullScript, changeId: '001')
+        jsr.step.call(script: nullScript, changeDocumentId: '001')
     }
 
     @Test
@@ -80,7 +80,7 @@ public class TransportRequestReleaseTest extends BasePiperTest {
         thrown.expect(AbortException)
         thrown.expectMessage("Cannot release Transport Request '001'. Return code from cmclient: 1.")
 
-        jsr.step.call(script: nullScript, changeId: '001', transportRequestId: '001')
+        jsr.step.call(script: nullScript, changeDocumentId: '001', transportRequestId: '001')
     }
 
     @Test
@@ -88,7 +88,7 @@ public class TransportRequestReleaseTest extends BasePiperTest {
 
         helper.registerAllowedMethod('sh', [Map], { Map m -> return 0 })
 
-        jsr.step.call(script: nullScript, changeId: '001', transportRequestId: '001')
+        jsr.step.call(script: nullScript, changeDocumentId: '001', transportRequestId: '001')
 
         assert jlr.log.contains("[INFO] Closing transport request '001' for change document '001'.")
         assert jlr.log.contains("[INFO] Transport Request '001' has been successfully closed.")
