@@ -11,7 +11,7 @@ import hudson.AbortException
 @Field def STEP_NAME = 'transportRequestUploadFile'
 
 @Field Set parameterKeys = [
-    'changeId',
+    'changeDocumentId',
     'transportRequestId',
     'applicationId',
     'filePath',
@@ -36,8 +36,8 @@ def call(parameters = [:]) {
                                                       parameters, parameterKeys,
                                                       generalConfigurationKeys)
 
-        def changeId = configuration.changeId
-        if(!changeId) throw new AbortException("Change id not provided (parameter: 'changeId').")
+        def changeDocumentId = configuration.changeDocumentId
+        if(!changeDocumentId) throw new AbortException("Change document id not provided (parameter: 'changeDocumentId').")
 
         def transportRequestId = configuration.transportRequestId
         if(!transportRequestId) throw new AbortException("Transport Request id not provided (parameter: 'transportRequestId').")
@@ -54,7 +54,7 @@ def call(parameters = [:]) {
         def cmEndpoint = configuration.cmEndpoint
         if(!cmEndpoint) throw new AbortException("Solution Manager endpoint not provided (parameter: 'cmEndpoint').")
 
-        echo "[INFO] Uploading file '$filePath' to transport request '$transportRequestId' of change document '$changeId'."
+        echo "[INFO] Uploading file '$filePath' to transport request '$transportRequestId' of change document '$changeDocumentId'."
 
         withCredentials([usernamePassword(
             credentialsId: cmCredentialsId,
@@ -62,12 +62,12 @@ def call(parameters = [:]) {
             usernameVariable: 'username')]) {
 
             try {
-                cm.uploadFileToTransportRequest(changeId, transportRequestId, applicationId, filePath, cmEndpoint, username, password)
+                cm.uploadFileToTransportRequest(changeDocumentId, transportRequestId, applicationId, filePath, cmEndpoint, username, password)
             } catch(ChangeManagementException ex) {
                 throw new AbortException(ex.getMessage())
             }
         }
 
-        echo "[INFO] File '$filePath' has been successfully uploaded to transport request '$transportRequestId' of change document '$changeId'."
+        echo "[INFO] File '$filePath' has been successfully uploaded to transport request '$transportRequestId' of change document '$changeDocumentId'."
     }
 }

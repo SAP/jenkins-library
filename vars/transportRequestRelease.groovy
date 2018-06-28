@@ -11,7 +11,7 @@ import hudson.AbortException
 @Field def STEP_NAME = 'transportRequestRelease'
 
 @Field Set parameterKeys = [
-    'changeId',
+    'changeDocumentId',
     'transportRequestId',
     'cmCredentialsId',
     'cmEndpoint'
@@ -34,8 +34,8 @@ def call(parameters = [:]) {
                                                       parameters, parameterKeys,
                                                       stepConfigurationKeys)
 
-        def changeId = configuration.changeId
-        if(!changeId) throw new AbortException("Change id not provided (parameter: 'changeId').")
+        def changeDocumentId = configuration.changeDocumentId
+        if(!changeDocumentId) throw new AbortException("Change document id not provided (parameter: 'changeDocumentId').")
 
         def transportRequestId = configuration.transportRequestId
         if(!transportRequestId) throw new AbortException("Transport Request id not provided (parameter: 'transportRequestId').")
@@ -46,7 +46,7 @@ def call(parameters = [:]) {
         def cmEndpoint = configuration.cmEndpoint
         if(!cmEndpoint) throw new AbortException("Solution Manager endpoint not provided (parameter: 'cmEndpoint').")
 
-        echo "[INFO] Closing transport request '$transportRequestId' for change document '$changeId'."
+        echo "[INFO] Closing transport request '$transportRequestId' for change document '$changeDocumentId'."
 
         withCredentials([usernamePassword(
             credentialsId: cmCredentialsId,
@@ -54,7 +54,7 @@ def call(parameters = [:]) {
             usernameVariable: 'username')]) {
 
             try {
-                cm.releaseTransportRequest(changeId, transportRequestId, cmEndpoint, username, password)
+                cm.releaseTransportRequest(changeDocumentId, transportRequestId, cmEndpoint, username, password)
             } catch(ChangeManagementException ex) {
                 throw new AbortException(ex.getMessage())
             }
