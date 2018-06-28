@@ -10,12 +10,12 @@ Creates a Transport Request for a Change Document on the Solution Manager.
 | parameter        | mandatory | default                                                | possible values    |
 | -----------------|-----------|--------------------------------------------------------|--------------------|
 | `script`        | yes       |                                                    |                    |
-| `changeId`        | yes       |                                                    |                    |
+| `changeDocumentId`        | yes       |                                                    |                    |
 | `cmCredentialsId`  | yes       |                                                    |                    |
 | `cmEndpoint`        | yes       |                                                    |                    |
 
 * `script` - The common script environment of the Jenkinsfile running. Typically the reference to the script calling the pipeline step is provided with the `this` parameter, as in `script: this`. This allows the function to access the [`commonPipelineEnvironment`](commonPipelineEnvironment.md) for retrieving, for example, configuration parameters.
-* `changeId` - The id of the change document to transport.
+* `changeDocumentId` - The id of the change document to transport.
 * `cmCredentialsId` - The credentials to connect to the Solution Manager.
 * `cmEndpoint` - The address of the Solution Manager.
 
@@ -35,6 +35,6 @@ The id of the Transport Request that has been created.
 
 ## Example
 ```groovy
-def transportRequestId = transportRequestCreate script:this, changeId: '001'
+def transportRequestId = transportRequestCreate script:this, changeDocumentId: '001'
 ```
 

@@ -11,7 +11,7 @@ import hudson.AbortException
 @Field def STEP_NAME = 'transportRequestCreate'
 
 @Field Set parameterKeys = [
-    'changeId',
+    'changeDocumentId',
     'developmentSystemId',
     'cmCredentialsId',
     'cmEndpoint'
@@ -34,8 +34,8 @@ def call(parameters = [:]) {
                                                       parameters, parameterKeys,
                                                       stepConfigurationKeys)
 
-        def changeId = configuration.changeId
-        if(!changeId) throw new AbortException('Change id not provided (parameter: \'changeId\').')
+        def changeDocumentId = configuration.changeDocumentId
+        if(!changeDocumentId) throw new AbortException('Change document id not provided (parameter: \'changeDocumentId\').')
 
         def developmentSystemId = configuration.developmentSystemId
         if(!developmentSystemId) throw new AbortException('Development system id not provided (parameter: \'developmentSystemId\').')
@@ -48,7 +48,7 @@ def call(parameters = [:]) {
 
         def transportRequestId
 
-        echo "[INFO] Creating transport request for change document '$changeId' and development system '$developmentSystemId'."
+        echo "[INFO] Creating transport request for change document '$changeDocumentId' and development system '$developmentSystemId'."
 
         withCredentials([usernamePassword(
             credentialsId: cmCredentialsId,
@@ -56,7 +56,7 @@ def call(parameters = [:]) {
             usernameVariable: 'username')]) {
 
             try {
-                transportRequestId = cm.createTransportRequest(changeId, developmentSystemId, cmEndpoint, username, password)
+                transportRequestId = cm.createTransportRequest(changeDocumentId, developmentSystemId, cmEndpoint, username, password)
             } catch(ChangeManagementException ex) {
                 throw new AbortException(ex.getMessage())
             }

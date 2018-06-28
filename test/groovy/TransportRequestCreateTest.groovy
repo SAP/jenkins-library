@@ -58,7 +58,7 @@ public class TransportRequestCreateTest extends BasePiperTest {
     public void changeIdNotProvidedTest() {
 
         thrown.expect(AbortException)
-        thrown.expectMessage("Change id not provided (parameter: 'changeId').")
+        thrown.expectMessage("Change document id not provided (parameter: 'changeDocumentId').")
 
         jsr.step.call(script: nullScript, developmentSystemId: '001')
     }
@@ -69,7 +69,7 @@ public class TransportRequestCreateTest extends BasePiperTest {
         thrown.expect(AbortException)
         thrown.expectMessage("Development system id not provided (parameter: 'developmentSystemId').")
 
-        jsr.step.call(script: nullScript, changeId: '001')
+        jsr.step.call(script: nullScript, changeDocumentId: '001')
     }
 
     @Test
@@ -80,7 +80,7 @@ public class TransportRequestCreateTest extends BasePiperTest {
         thrown.expect(AbortException)
         thrown.expectMessage("Cannot create a transport request for change id '001'. Exception message.")
 
-        jsr.step.call(script: nullScript, changeId: '001', developmentSystemId: '001')
+        jsr.step.call(script: nullScript, changeDocumentId: '001', developmentSystemId: '001')
     }
 
     @Test
@@ -88,7 +88,7 @@ public class TransportRequestCreateTest extends BasePiperTest {
 
         helper.registerAllowedMethod('sh', [Map], { Map m -> return '001' })
 
-        jsr.step.call(script: nullScript, changeId: '001', developmentSystemId: '001')
+        jsr.step.call(script: nullScript, changeDocumentId: '001', developmentSystemId: '001')
 
         assert jlr.log.contains("[INFO] Creating transport request for change document '001' and development system '001'.")
         assert jlr.log.contains("[INFO] Transport Request '001' has been successfully created.")
