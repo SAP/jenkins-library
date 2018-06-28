@@ -47,8 +47,8 @@ public class TransportRequestCreateTest extends BasePiperTest {
         nullScript.commonPipelineEnvironment.configuration = [steps:
                                      [transportRequestCreate:
                                          [
-                                          cmCredentialsId: 'CM',
-                                          cmEndpoint: 'https://example.org/cm'
+                                          credentialsId: 'CM',
+                                          endpoint: 'https://example.org/cm'
                                          ]
                                      ]
                                  ]

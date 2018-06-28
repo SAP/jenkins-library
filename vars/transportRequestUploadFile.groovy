@@ -15,13 +15,13 @@ import hudson.AbortException
     'transportRequestId',
     'applicationId',
     'filePath',
-    'cmCredentialsId',
-    'cmEndpoint'
+    'credentialsId',
+    'endpoint'
   ]
 
 @Field Set generalConfigurationKeys = [
-    'cmCredentialsId',
-    'cmEndpoint'
+    'credentialsId',
+    'endpoint'
   ]
 
 def call(parameters = [:]) {
@@ -48,21 +48,21 @@ def call(parameters = [:]) {
         def filePath = configuration.filePath
         if(!filePath) throw new AbortException("File path not provided (parameter: 'filePath').")
 
-        def cmCredentialsId = configuration.cmCredentialsId
-        if(!cmCredentialsId) throw new AbortException("Credentials id not provided (parameter: 'cmCredentialsId').")
+        def credentialsId = configuration.credentialsId
+        if(!credentialsId) throw new AbortException("Credentials id not provided (parameter: 'credentialsId').")
 
-        def cmEndpoint = configuration.cmEndpoint
-        if(!cmEndpoint) throw new AbortException("Solution Manager endpoint not provided (parameter: 'cmEndpoint').")
+        def endpoint = configuration.endpoint
+        if(!endpoint) throw new AbortException("Solution Manager endpoint not provided (parameter: 'endpoint').")
 
         echo "[INFO] Uploading file '$filePath' to transport request '$transportRequestId' of change document '$changeDocumentId'."
 
         withCredentials([usernamePassword(
-            credentialsId: cmCredentialsId,
+            credentialsId: credentialsId,
             passwordVariable: 'password',
             usernameVariable: 'username')]) {
 
             try {
-                cm.uploadFileToTransportRequest(changeDocumentId, transportRequestId, applicationId, filePath, cmEndpoint, username, password)
+                cm.uploadFileToTransportRequest(changeDocumentId, transportRequestId, applicationId, filePath, endpoint, username, password)
             } catch(ChangeManagementException ex) {
                 throw new AbortException(ex.getMessage())
             }

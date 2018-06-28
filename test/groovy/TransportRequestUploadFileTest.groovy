@@ -47,8 +47,8 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
         nullScript.commonPipelineEnvironment.configuration = [steps:
                                      [transportRequestUploadFile:
                                          [
-                                          cmCredentialsId: 'CM',
-                                          cmEndpoint: 'https://example.org/cm'
+                                          credentialsId: 'CM',
+                                          endpoint: 'https://example.org/cm'
                                          ]
                                      ]
                                  ]
