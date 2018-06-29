@@ -78,12 +78,13 @@ public class ChangeManagement implements Serializable {
                 }
             }
 
-    String createTransportRequest(String changeId, String developmentSystemId, String endpoint, String username, String password) {
+    String createTransportRequest(String changeId, String developmentSystemId, String endpoint, String username, String password, String clientOpts = '') {
 
         try {
           String transportRequest = script.sh(returnStdout: true,
                     script: getCMCommandLine(endpoint, username, password, 'create-transport', ['-cID', changeId,
-                                                                                                '-dID', developmentSystemId]))
+                                                                                                '-dID', developmentSystemId],
+                                                                                              clientOpts))
           return transportRequest.trim()
         } catch(AbortException e) {
           throw new ChangeManagementException("Cannot create a transport request for change id '$changeId'. $e.message.")
