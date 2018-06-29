@@ -13,13 +13,13 @@ import hudson.AbortException
 @Field Set parameterKeys = [
     'changeDocumentId',
     'developmentSystemId',
-    'cmCredentialsId',
-    'cmEndpoint'
+    'credentialsId',
+    'endpoint'
   ]
 
 @Field Set stepConfigurationKeys = [
-    'cmCredentialsId',
-    'cmEndpoint'
+    'credentialsId',
+    'endpoint'
   ]
 
 def call(parameters = [:]) {
@@ -40,23 +40,23 @@ def call(parameters = [:]) {
         def developmentSystemId = configuration.developmentSystemId
         if(!developmentSystemId) throw new AbortException('Development system id not provided (parameter: \'developmentSystemId\').')
 
-        def cmCredentialsId = configuration.cmCredentialsId
-        if(!cmCredentialsId) throw new AbortException('Credentials id not provided (parameter: \'cmCredentialsId\').')
+        def credentialsId = configuration.credentialsId
+        if(!credentialsId) throw new AbortException('Credentials id not provided (parameter: \'credentialsId\').')
 
-        def cmEndpoint = configuration.cmEndpoint
-        if(!cmEndpoint) throw new AbortException('Solution Manager endpoint not provided (parameter: \'cmEndpoint\').')
+        def endpoint = configuration.endpoint
+        if(!endpoint) throw new AbortException('Solution Manager endpoint not provided (parameter: \'endpoint\').')
 
         def transportRequestId
 
         echo "[INFO] Creating transport request for change document '$changeDocumentId' and development system '$developmentSystemId'."
 
         withCredentials([usernamePassword(
-            credentialsId: cmCredentialsId,
+            credentialsId: credentialsId,
             passwordVariable: 'password',
             usernameVariable: 'username')]) {
 
             try {
-                transportRequestId = cm.createTransportRequest(changeDocumentId, developmentSystemId, cmEndpoint, username, password)
+                transportRequestId = cm.createTransportRequest(changeDocumentId, developmentSystemId, endpoint, username, password)
             } catch(ChangeManagementException ex) {
                 throw new AbortException(ex.getMessage())
             }
