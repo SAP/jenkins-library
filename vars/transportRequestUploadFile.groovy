@@ -36,7 +36,7 @@ def call(parameters = [:]) {
                                                       parameters, parameterKeys,
                                                       generalConfigurationKeys)
 
-        def changeDocumentId = configuration.changeDocumentId
+        def changeDocumentId = cm.getChangeDocumentId(configuration, parameters?.script?.commonPipelineEnvironment)
         if(!changeDocumentId) throw new AbortException("Change document id not provided (parameter: 'changeDocumentId').")
 
         def transportRequestId = configuration.transportRequestId

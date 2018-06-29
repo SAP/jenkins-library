@@ -51,7 +51,7 @@ def call(parameters = [:]) {
 
         try {
 
-            changeId = cm.getChangeDocumentId(configuration)
+            changeId = cm.getChangeDocumentId(configuration, parameters?.script?.commonPipelineEnvironment)
 
             if(! changeId?.trim()) {
                 throw new ChangeManagementException("ChangeId is null or empty.")
