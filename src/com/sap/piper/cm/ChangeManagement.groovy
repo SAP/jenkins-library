@@ -61,13 +61,13 @@ public class ChangeManagement implements Serializable {
         return changeIds.get(0)
     }
 
-    boolean isChangeInDevelopment(String changeId, String endpoint, String username, String password, String cmclientOpts = '') {
+    boolean isChangeInDevelopment(String changeId, String endpoint, String username, String password, String clientOpts = '') {
 
                 int rc = script.sh(returnStatus: true,
                             script: getCMCommandLine(endpoint, username, password,
                                                      'is-change-in-development', ['-cID', "'${changeId}'",
                                                                                    '--return-code'],
-                                                                               cmclientOpts))
+                                                                               clientOpts))
 
                 if(rc == 0) {
                     return true
@@ -105,12 +105,13 @@ public class ChangeManagement implements Serializable {
         }
     }
 
-    void releaseTransportRequest(String changeId, String transportRequestId, String endpoint, String username, String password) {
+    void releaseTransportRequest(String changeId, String transportRequestId, String endpoint, String username, String password, String clientOpts = '') {
 
         int rc = script.sh(returnStatus: true,
                     script: getCMCommandLine(endpoint, username, password,
                                             'release-transport', ['-cID', changeId,
-                                                                  '-tID', transportRequestId]))
+                                                                  '-tID', transportRequestId],
+                                                                clientOpts))
 
         if(rc == 0) {
             return
@@ -124,11 +125,11 @@ public class ChangeManagement implements Serializable {
                             String password,
                             String command,
                             List<String> args,
-                            String cmclientOpts = '') {
+                            String clientOpts = '') {
         String cmCommandLine = '#!/bin/bash'
-        if(cmclientOpts) {
+        if(clientOpts) {
             cmCommandLine +=  """
-                             export CMCLIENT_OPTS="${cmclientOpts}" """
+                             export CMCLIENT_OPTS="${clientOpts}" """
         }
         cmCommandLine += """
                         cmclient -e '$endpoint' \
