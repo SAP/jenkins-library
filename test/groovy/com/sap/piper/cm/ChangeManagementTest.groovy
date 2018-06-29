@@ -19,6 +19,7 @@ import com.sap.piper.GitUtils
 
 import util.BasePiperTest
 import util.JenkinsLoggingRule
+import util.JenkinsScriptLoaderRule
 import util.JenkinsShellCallRule
 import util.Rules
 
@@ -37,15 +38,15 @@ public class ChangeManagementTest extends BasePiperTest {
         .around(script)
         .around(logging)
 
-	@Test
-	public void testGetChangeIdFromConfigWhenProvidedInsideConfig() {
-		String[] viaGitUtils = ['0815']
-		def changeDocumentId = new ChangeManagement(nullScript, gitUtilsMock(false, viaGitUtils))
-			.getChangeDocumentId([changeDocumentId: '0042'])
+    @Test
+    public void testGetChangeIdFromConfigWhenProvidedInsideConfig() {
+        String[] viaGitUtils = ['0815']
+        def changeDocumentId = new ChangeManagement(nullScript, gitUtilsMock(false, viaGitUtils))
+            .getChangeDocumentId([changeDocumentId: '0042'])
 
-		assertThat(logging.log, containsString('[INFO] Use changeDocumentId \'0042\' from configuration.'))
-		assertThat(changeDocumentId, is(equalTo('0042')))
-	}
+        assertThat(logging.log, containsString('[INFO] Use changeDocumentId \'0042\' from configuration.'))
+        assertThat(changeDocumentId, is(equalTo('0042')))
+    }
     @Test
     public void testRetrieveChangeDocumentIdOutsideGitWorkTreeTest() {
 
@@ -193,12 +194,37 @@ public void testGetCommandLineWithCMClientOpts() {
     @Test
     public void testCreateTransportRequestFails() {
 
-        thrown.expect(ChangeManagementException)
-        thrown.expectMessage('Cannot create a transport request for change id \'001\'. Exception message.')
+        script.setReturnValue(JenkinsShellCallRule.Type.REGEX, '.*upload-file-to-transport.*', 1)
 
-        //suggestion: enable shell call rule for throwing exceptions and switch to shell call rule afterwards.
-        helper.registerAllowedMethod('sh', [Map], { throw new AbortException('Exception message') })
-        new ChangeManagement(nullScript).createTransportRequest('001', '002', '003', 'me', 'openSesame')
+        thrown.expect(ChangeManagementException)
+        thrown.expectMessage('Cannot upload file \'/path\' for change document \'001\''+
+                             ' with transport request \'002\'. Return code from cmclient: 1.')
+
+        new ChangeManagement(nullScript).uploadFileToTransportRequest('001',
+                                                                      '002',
+                                                                      'XXX',
+                                                                      '/path',
+                                                                      'https://example.org/cm',
+                                                                      'me',
+                                                                      'openSesame')
+    }
+
+    @Test
+    public void testUploadFileToTransportSucceeds() {
+
+        // the regex provided below is an implicit check that the command line is fine.
+        script.setReturnValue(JenkinsShellCallRule.Type.REGEX,, 'upload-file-to-transport.*-cID 001 -tID 002 XXX /path', 0)
+
+        new ChangeManagement(nullScript).uploadFileToTransportRequest('001',
+            '002',
+            'XXX',
+            '/path',
+            'https://example.org/cm',
+            'me',
+            'openSesame')
+
+        // no assert required here, since the regex registered above to the script rule is an implicit check for
+        // the command line.
     }
 
     private GitUtils gitUtilsMock(boolean insideWorkTree, String[] changeIds) {

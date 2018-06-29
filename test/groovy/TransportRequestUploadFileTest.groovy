@@ -4,6 +4,9 @@ import org.junit.Test
 import org.junit.rules.ExpectedException
 import org.junit.rules.RuleChain
 
+import com.sap.piper.cm.ChangeManagement
+import com.sap.piper.cm.ChangeManagementException
+
 import util.BasePiperTest
 import util.JenkinsStepRule
 import util.JenkinsLoggingRule
@@ -93,12 +96,27 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
     @Test
     public void uploadFileToTransportRequestFailureTest() {
 
-        helper.registerAllowedMethod('sh', [Map], { Map m -> return 1 })
+        ChangeManagement cm = new ChangeManagement(nullScript) {
+            void uploadFileToTransportRequest(String changeId,
+                                              String transportRequestId,
+                                              String applicationId,
+                                              String filePath,
+                                              String endpoint,
+                                              String username,
+                                              String password) {
+                throw new ChangeManagementException('Exception message')
+            }
+        }
 
         thrown.expect(AbortException)
-        thrown.expectMessage("Cannot upload file '/path' for change document '001' with transport request '001'. Return code from cmclient: 1.")
+        thrown.expectMessage("Exception message")
 
-        jsr.step.call(script: nullScript, changeDocumentId: '001', transportRequestId: '001', applicationId: 'app', filePath: '/path')
+        jsr.step.call(script: nullScript,
+                      changeDocumentId: '001',
+                      transportRequestId: '001',
+                      applicationId: 'app',
+                      filePath: '/path',
+                      cmUtils: cm)
     }
 
     @Test
