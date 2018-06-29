@@ -27,7 +27,7 @@ public class ChangeManagementTest extends BasePiperTest {
     private ExpectedException thrown = ExpectedException.none()
 
     private JenkinsShellCallRule script = new JenkinsShellCallRule(this)
-	private JenkinsLoggingRule logging = new JenkinsLoggingRule(this)
+    private JenkinsLoggingRule logging = new JenkinsLoggingRule(this)
 
     @Rule
     public RuleChain rules = Rules.getCommonRules(this)
@@ -41,7 +41,7 @@ public class ChangeManagementTest extends BasePiperTest {
         def changeDocumentId = new ChangeManagement(nullScript, gitUtilsMock(false, viaGitUtils))
             .getChangeDocumentId([changeDocumentId: '0042'])
 
-        assertThat(logging.log, containsString('[INFO] Use changeDocumentId \'0042\' from configuration.'))
+        assertThat(logging.log, containsString('[INFO] Using changeDocumentId \'0042\' from configuration.'))
         assertThat(changeDocumentId, is(equalTo('0042')))
     }
     @Test

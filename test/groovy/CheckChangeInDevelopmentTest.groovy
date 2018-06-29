@@ -90,7 +90,7 @@ class CheckChangeInDevelopmentTest extends BasePiperTest {
     public void changeDocumentIdRetrievalFailsTest() {
 
         thrown.expect(AbortException)
-        thrown.expectMessage('Something went wrong')
+        thrown.expectMessage('ChangeId is null or empty')
 
         ChangeManagement cm = new ChangeManagement(nullScript, null) {
 
