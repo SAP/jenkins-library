@@ -4,6 +4,9 @@ import org.junit.Test
 import org.junit.rules.ExpectedException
 import org.junit.rules.RuleChain
 
+import com.sap.piper.cm.ChangeManagement
+import com.sap.piper.cm.ChangeManagementException
+
 import util.BasePiperTest
 import util.JenkinsStepRule
 import util.JenkinsLoggingRule
@@ -75,20 +78,56 @@ public class TransportRequestCreateTest extends BasePiperTest {
     @Test
     public void createTransportRequestFailureTest() {
 
-        helper.registerAllowedMethod('sh', [Map], { Map m -> throw new AbortException('Exception message.') })
+        ChangeManagement cm = new ChangeManagement(nullScript) {
+
+            String createTransportRequest(String changeId,
+                                          String developmentSystemId,
+                                          String cmEndpoint,
+                                          String username,
+                                          String password) {
+
+                    throw new ChangeManagementException('Exception message.')
+            }
+        }
+
 
         thrown.expect(AbortException)
-        thrown.expectMessage("Cannot create a transport request for change id '001'. Exception message.")
+        thrown.expectMessage("Exception message.")
 
-        jsr.step.call(script: nullScript, changeDocumentId: '001', developmentSystemId: '001')
+        jsr.step.call(script: nullScript, changeDocumentId: '001', developmentSystemId: '001', cmUtils: cm)
     }
 
     @Test
     public void createTransportRequestSuccessTest() {
 
-        helper.registerAllowedMethod('sh', [Map], { Map m -> return '001' })
+        def result = [:]
 
-        jsr.step.call(script: nullScript, changeDocumentId: '001', developmentSystemId: '001')
+        ChangeManagement cm = new ChangeManagement(nullScript) {
+
+            String createTransportRequest(String changeId,
+                                          String developmentSystemId,
+                                          String cmEndpoint,
+                                          String username,
+                                          String password) {
+
+                result.changeId = changeId
+                result.developmentSystemId = developmentSystemId
+                result.cmEndpoint = cmEndpoint
+                result.username = username
+                result.password = password
+                return '001'
+            }
+        }
+
+        def transportId = jsr.step.call(script: nullScript, changeDocumentId: '001', developmentSystemId: '001', cmUtils: cm)
+
+        assert transportId == '001'
+        assert result == [changeId: '001',
+                         developmentSystemId: '001',
+                         cmEndpoint: 'https://example.org/cm',
+                         username: 'anonymous',
+                         password: '********'
+                         ]
 
         assert jlr.log.contains("[INFO] Creating transport request for change document '001' and development system '001'.")
         assert jlr.log.contains("[INFO] Transport Request '001' has been successfully created.")

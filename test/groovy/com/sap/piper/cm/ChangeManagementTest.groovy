@@ -22,12 +22,14 @@ import util.JenkinsLoggingRule
 import util.JenkinsShellCallRule
 import util.Rules
 
+import hudson.AbortException
+
 public class ChangeManagementTest extends BasePiperTest {
 
     private ExpectedException thrown = ExpectedException.none()
 
     private JenkinsShellCallRule script = new JenkinsShellCallRule(this)
-	private JenkinsLoggingRule logging = new JenkinsLoggingRule(this)
+    private JenkinsLoggingRule logging = new JenkinsLoggingRule(this)
 
     @Rule
     public RuleChain rules = Rules.getCommonRules(this)
@@ -176,6 +178,28 @@ public void testGetCommandLineWithCMClientOpts() {
     assertThat(commandLine, containsString('export CMCLIENT_OPTS="-Djavax.net.debug=all"'))
 }
 
+    @Test
+    public void testCreateTransportRequestSucceeds() {
+
+        script.setReturnValue(JenkinsShellCallRule.Type.REGEX, ".*cmclient.*create-transport -cID 001 -dID 002.*", '004')
+        def transportRequestId = new ChangeManagement(nullScript).createTransportRequest('001', '002', '003', 'me', 'openSesame')
+
+        // the check for the transportRequestID is sufficient. This checks implicit the command line since that value is
+        // returned only in case the shell call matches.
+        assert transportRequestId == '004'
+
+    }
+
+    @Test
+    public void testCreateTransportRequestFails() {
+
+        thrown.expect(ChangeManagementException)
+        thrown.expectMessage('Cannot create a transport request for change id \'001\'. Exception message.')
+
+        //suggestion: enable shell call rule for throwing exceptions and switch to shell call rule afterwards.
+        helper.registerAllowedMethod('sh', [Map], { throw new AbortException('Exception message') })
+        new ChangeManagement(nullScript).createTransportRequest('001', '002', '003', 'me', 'openSesame')
+    }
 
     private GitUtils gitUtilsMock(boolean insideWorkTree, String[] changeIds) {
         return new GitUtils() {
