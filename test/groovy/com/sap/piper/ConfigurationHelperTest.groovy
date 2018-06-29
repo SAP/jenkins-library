@@ -5,9 +5,14 @@ import groovy.test.GroovyAssert
 import static org.hamcrest.Matchers.*
 
 import org.junit.Assert
+import org.junit.Rule
 import org.junit.Test
+import org.junit.rules.ExpectedException
 
 class ConfigurationHelperTest {
+
+    @Rule
+    public ExpectedException thrown = ExpectedException.none()
 
     private static getConfiguration() {
         Map configuration = [dockerImage: 'maven:3.2-jdk-8-onbuild']
@@ -114,4 +119,33 @@ class ConfigurationHelperTest {
         Assert.assertThat(config, hasEntry('executeDocker2', false))
         Assert.assertThat(config, hasEntry('executeDocker3', false))
     }
+
+    @Test
+    public void testWithMandoryParameterReturnDefaultFailureMessage() {
+
+        thrown.expect(IllegalArgumentException)
+        thrown.expectMessage('ERROR - NO VALUE AVAILABLE FOR myKey')
+
+        new ConfigurationHelper().withMandatoryProperty('myKey')
+    }
+
+    @Test
+    public void testWithMandoryParameterReturnCustomerFailureMessage() {
+
+        thrown.expect(IllegalArgumentException)
+        thrown.expectMessage('My error message')
+
+        new ConfigurationHelper().withMandatoryProperty('myKey', 'My error message')
+    }
+
+    @Test
+    public void testWithMandoryParameterDefaultCustomFailureMessageProvidedSucceeds() {
+        new ConfigurationHelper([myKey: 'myValue']).withMandatoryProperty('myKey', 'My error message')
+    }
+
+    @Test
+    public void testWithMandoryParameterDefaultCustomFailureMessageNotProvidedSucceeds() {
+        new ConfigurationHelper([myKey: 'myValue']).withMandatoryProperty('myKey')
+    }
+
 }
