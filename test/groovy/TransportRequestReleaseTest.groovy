@@ -47,8 +47,8 @@ public class TransportRequestReleaseTest extends BasePiperTest {
         nullScript.commonPipelineEnvironment.configuration = [steps:
                                      [transportRequestRelease:
                                          [
-                                          cmCredentialsId: 'CM',
-                                          cmEndpoint: 'https://example.org/cm'
+                                          credentialsId: 'CM',
+                                          endpoint: 'https://example.org/cm'
                                          ]
                                      ]
                                  ]
