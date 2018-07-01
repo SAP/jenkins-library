@@ -127,6 +127,10 @@ steps:
       - 'opensourceConfiguration'
     toJson: false
     toHtml: false
+  sonarExecute:
+    dockerImage: 'newtmitch/sonar-scanner:3.2.0-alpine'
+    instance: 'SonarCloud'
+    options: "-Dsonar.projectVersion='${projectVersion}'"
   testsPublishResults:
     junit:
       pattern: '**/target/surefire-reports/*.xml'
