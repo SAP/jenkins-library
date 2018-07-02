@@ -99,7 +99,7 @@ steps:
   pipelineStashFilesBeforeBuild:
     runCheckmarx: false
     stashIncludes:
-      buildDescriptor: '**/pom.xml, **/.mvn/**, **/assembly.xml, **/.swagger-codegen-ignore, **/package.json, **/requirements.txt, **/setup.py, **/whitesource_config.py, **/mta*.y*ml, **/.npmrc, **/whitesource.*.json, **/whitesource-fs-agent.config, .xmake.cfg, Dockerfile, **/VERSION, **/version.txt, **/build.sbt, **/sbtDescriptor.json, **/project/*'
+      buildDescriptor: '**/pom.xml, **/.mvn/**, **/assembly.xml, **/.swagger-codegen-ignore, **/package.json, **/requirements.txt, **/setup.py, **/whitesource_config.py, **/mta*.y*ml, **/.npmrc, **/whitesource.*.json, **/whitesource-fs-agent.config, Dockerfile, **/VERSION, **/version.txt, **/build.sbt, **/sbtDescriptor.json, **/project/*'
       deployDescriptor: '**/manifest*.y*ml, **/*.mtaext.y*ml, **/*.mtaext, **/xs-app.json, helm/**, *.y*ml'
       git: '**/gitmetadata/**'
       opa5: '**/*.*'
@@ -115,8 +115,18 @@ steps:
       opensourceConfiguration: ''
       pipelineConfigAndTests: ''
       securityDescriptor: ''
-      'snyk configuration': ''
       tests: ''
+  snykExecute:
+    buildDescriptorFile: './package.json'
+    dockerImage: 'node:8.11.2-stretch'
+    exclude: []
+    monitor: true
+    scanType: 'npm'
+    stashContent:
+      - 'buildDescriptor'
+      - 'opensourceConfiguration'
+    toJson: false
+    toHtml: false
   testsPublishResults:
     junit:
       pattern: '**/target/surefire-reports/*.xml'
@@ -153,3 +163,10 @@ steps:
       allowEmptyResults: true
       archive: false
       active: false
+  checkChangeInDevelopment:
+      credentialsId: 'CM'
+      failIfStatusIsNotInDevelopment: true
+      git_from: 'origin/master'
+      git_to: 'HEAD'
+      git_label: 'ChangeDocument\s?:'
+      git_format: '%b'

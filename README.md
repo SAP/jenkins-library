@@ -1,5 +1,5 @@
 [![Build Status](https://travis-ci.org/SAP/jenkins-library.svg?branch=master)](https://travis-ci.org/SAP/jenkins-library)
-[![Coverage Status](https://coveralls.io/repos/github/SAP/jenkins-library/badge.svg?branch=jacocoCodeCoverage)](https://coveralls.io/github/SAP/jenkins-library?branch=jacocoCodeCoverage)
+[![Coverage Status](https://coveralls.io/repos/github/SAP/jenkins-library/badge.svg?branch=master)](https://coveralls.io/github/SAP/jenkins-library?branch=master)
 
 # Description
 
