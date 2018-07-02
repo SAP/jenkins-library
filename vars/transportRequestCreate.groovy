@@ -28,7 +28,7 @@ def call(parameters = [:]) {
 
         def script = parameters?.script ?: [commonPipelineEnvironment: commonPipelineEnvironment]
 
-        ChangeManagement cm = new ChangeManagement(script)
+        ChangeManagement cm = parameters?.cmUtils ?: new ChangeManagement(script)
 
         Map configuration = ConfigurationMerger.merge(parameters.script, STEP_NAME,
                                                       parameters, parameterKeys,
