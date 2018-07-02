@@ -142,7 +142,31 @@ class CloudFoundryDeployTest extends BasePiperTest {
         assertTrue(jscr.shell[1].contains('cf push "testAppName" -f "test.yml"'))
     }
 
-    //issue https://github.wdf.sap.corp/ContinuousDelivery/piper-library/issues/794
+    @Test
+    void testCfNativeWithAppNameCompatible() {
+
+        jsr.step.cloudFoundryDeploy([
+            script: nullScript,
+            juStabUtils: utils,
+            deployTool: 'cf_native',
+            org: 'testOrg',
+            space: 'testSpace',
+            credentialsId: 'test_cfCredentialsId',
+            appName: 'testAppName',
+            manifest: 'test.yml'
+        ])
+
+        assertEquals('s4sdk/docker-cf-cli', jedr.dockerParams.dockerImage)
+        assertEquals('/home/piper', jedr.dockerParams.dockerWorkspace)
+        assertEquals('200', jedr.dockerParams.dockerEnvVars.STATUS_CODE.toString())
+
+
+        assertTrue(jscr.shell[1].contains('cf login -u "test_cf" -p \'********\' -a https://api.cf.eu10.hana.ondemand.com -o "testOrg" -s "testSpace"'))
+        assertTrue(jscr.shell[1].contains('cf push "testAppName" -f "test.yml"'))
+
+        assertTrue (jlr.log.contains('[INFO] The parameter org is COMPATIBLE to the parameter cfOrg'))
+    }
+
     @Test
     void testCfNativeAppNameFromManifest() {
 
