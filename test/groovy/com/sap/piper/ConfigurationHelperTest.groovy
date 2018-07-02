@@ -114,4 +114,34 @@ class ConfigurationHelperTest {
         Assert.assertThat(config, hasEntry('executeDocker2', false))
         Assert.assertThat(config, hasEntry('executeDocker3', false))
     }
+
+    @Test
+    void testHandleCompatibility() {
+        def configuration = new ConfigurationHelper([old1: 'oldValue1', old2: 'oldValue2', test: 'testValue'])
+            .handleCompatibility(null, [old1: 'new1', old2: 'new2'])
+            .use()
+
+        Assert.assertThat(configuration.size(), is(5))
+        Assert.assertThat(configuration.new1, is('oldValue1'))
+        Assert.assertThat(configuration.new2, is('oldValue2'))
+    }
+
+    @Test
+    void testHandleCompatibilityNewAvailable() {
+        def configuration = new ConfigurationHelper([old1: 'oldValue1', new1: 'newValue1', test: 'testValue'])
+            .handleCompatibility(null, [old1: 'new1'])
+            .use()
+
+        Assert.assertThat(configuration.size(), is(3))
+        Assert.assertThat(configuration.new1, is('newValue1'))
+    }
+
+    @Test
+    void testHandleCompatibilityOldNotSet() {
+        def configuration = new ConfigurationHelper([old1: null, test: 'testValue'])
+            .handleCompatibility(null, [old1: 'new1'])
+            .use()
+
+        Assert.assertThat(configuration.size(), is(2))
+    }
 }

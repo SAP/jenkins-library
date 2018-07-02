@@ -22,6 +22,7 @@ steps:
     mtaExtensionDescriptor: ''
     mtaPath: ''
     smokeTestScript: 'blueGreenCheck.sh'
+    smokeTestStatusCode: 200
     stashContent: []
     cf_native:
       dockerImage: 's4sdk/docker-cf-cli'

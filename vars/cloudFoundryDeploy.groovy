@@ -4,7 +4,26 @@ import com.sap.piper.ConfigurationHelper
 import groovy.transform.Field
 
 @Field String STEP_NAME = 'cloudFoundryDeploy'
-@Field Set STEP_CONFIG_KEYS = ['cfApiEndpoint', 'cfAppName', 'cfCredentialsId', 'cfManifest', 'cfOrg', 'cfSpace', 'deployUser', 'deployTool', 'deployType', 'dockerImage', 'dockerWorkspace', 'mtaDeployParameters', 'mtaExtensionDescriptor', 'mtaPath', 'smokeTestScript', 'stashContent', 'useCAM']
+@Field Set STEP_CONFIG_KEYS_COMPATIBILITY = ['apiEndpoint', 'appName', 'credentialsId', 'deploymentType', 'manifest', 'org', 'space']
+@Field Set STEP_CONFIG_KEYS = STEP_CONFIG_KEYS_COMPATIBILITY + [
+    'cfApiEndpoint',
+    'cfAppName',
+    'cfCredentialsId',
+    'cfManifest',
+    'cfOrg',
+    'cfSpace',
+    'deployUser',
+    'deployTool',
+    'deployType',
+    'dockerImage',
+    'dockerWorkspace',
+    'mtaDeployParameters',
+    'mtaExtensionDescriptor',
+    'mtaPath',
+    'smokeTestScript',
+    'smokeTestStatusCode',
+    'stashContent']
+@Field Map CONFIG_KEY_COMPATIBILITY = [apiEndpoint: 'cfApiEndpoint', appName: 'cfAppName', credentialsId: 'cfCredentialsId', deploymentType: 'deployType', manifest: 'cfManifest', org: 'cfOrg', space: 'cfSpace']
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
 
 def call(Map parameters = [:]) {
@@ -23,11 +42,12 @@ def call(Map parameters = [:]) {
         Map config = ConfigurationHelper
             .loadStepDefaults(this)
             .mixinGeneralConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS)
-            .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName?:env.STAGE_NAME, STEP_CONFIG_KEYS)
             .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS)
+            .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName?:env.STAGE_NAME, STEP_CONFIG_KEYS)
             .mixin(parameters, PARAMETER_KEYS)
             .dependingOn('deployTool').mixin('dockerImage')
             .dependingOn('deployTool').mixin('dockerWorkspace')
+            .handleCompatibility(this, CONFIG_KEY_COMPATIBILITY)
             .withMandatoryProperty('cfOrg')
             .withMandatoryProperty('cfSpace')
             .use()
@@ -61,7 +81,7 @@ def call(Map parameters = [:]) {
 
             echo "[${STEP_NAME}] CF native deployment (${config.deployType}) with cfAppName=${config.cfAppName}, cfManifest=${config.cfManifest}, smokeTestScript=${config.smokeTestScript}"
 
-            dockerExecute (dockerImage: config.dockerImage, dockerWorkspace: config.dockerWorkspace, stashContent: config.stashContent, dockerEnvVars: ["CF_HOME":"${config.dockerWorkspace}", "CF_PLUGIN_HOME":"${config.dockerWorkspace}"]) {
+            dockerExecute (dockerImage: config.dockerImage, dockerWorkspace: config.dockerWorkspace, stashContent: config.stashContent, dockerEnvVars: [CF_HOME:"${config.dockerWorkspace}", CF_PLUGIN_HOME:"${config.dockerWorkspace}", STATUS_CODE: "${config.smokeTestStatusCode}"]) {
                 deployCfNative(config)
             }
 
@@ -111,7 +131,7 @@ def deployCfNative (config) {
         sh """#!/bin/bash
             set +x
             export HOME=/home/piper
-            cf login -u \"${config.useCAM?config.deployUser:username}\" -p '${password}' -a ${config.cfApiEndpoint} -o \"${config.cfOrg}\" -s \"${config.cfSpace}\"
+            cf login -u \"${username}\" -p '${password}' -a ${config.cfApiEndpoint} -o \"${config.cfOrg}\" -s \"${config.cfSpace}\"
             cf plugins
             cf ${deployCommand} ${config.cfAppName?"\"${config.cfAppName}\"":''} -f \"${config.cfManifest}\" ${config.smokeTest}"""
         def retVal = sh script: "cf app \"${config.cfAppName}-old\"", returnStatus: true

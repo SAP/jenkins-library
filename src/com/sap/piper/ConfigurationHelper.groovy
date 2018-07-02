@@ -47,6 +47,18 @@ class ConfigurationHelper implements Serializable {
         return this
     }
 
+    ConfigurationHelper handleCompatibility(Script script, Map compatibleParameters){
+        compatibleParameters.each {entry ->
+            if (config[entry.getValue()] == null && config[entry.getKey()] != null) {
+                config[entry.getValue()] = config[entry.getKey()]
+                if (script) {
+                    script.echo = "[INFO] The parameter ${getKey()} is COMPATIBLE to the parameter ${getValue()}"
+                }
+            }
+        }
+        return this
+    }
+
     Map dependingOn(dependentKey){
         return [
             mixin: {key ->

@@ -135,6 +135,7 @@ class CloudFoundryDeployTest extends BasePiperTest {
 
         assertEquals('s4sdk/docker-cf-cli', jedr.dockerParams.dockerImage)
         assertEquals('/home/piper', jedr.dockerParams.dockerWorkspace)
+        assertEquals('200', jedr.dockerParams.dockerEnvVars.STATUS_CODE.toString())
 
 
         assertTrue(jscr.shell[1].contains('cf login -u "test_cf" -p \'********\' -a https://api.cf.eu10.hana.ondemand.com -o "testOrg" -s "testSpace"'))
