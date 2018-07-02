@@ -1,6 +1,5 @@
 #Project Setup
 general:
-  cfApiEndpoint: 'https://api.cf.eu10.hana.ondemand.com'
   productiveBranch: 'master'
 
 #Steps Specific Configuration
@@ -16,6 +15,7 @@ steps:
       filePath: 'Dockerfile'
       versioningTemplate: '${version}-${timestamp}${commitId?"_"+commitId:""}'
   cloudFoundryDeploy:
+    cfApiEndpoint: 'https://api.cf.eu10.hana.ondemand.com'
     deployTool: 'cf_native'
     deployType: 'standard'
     mtaDeployParameters: '-f'
