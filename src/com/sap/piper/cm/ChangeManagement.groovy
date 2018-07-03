@@ -36,6 +36,46 @@ public class ChangeManagement implements Serializable {
             return changeDocumentId
         }
 
+    String getTransportRequestId(def commonPipelineEnvironment,
+                                 String transportRequestId,
+                                 String label,
+                                 String gitFrom,
+                                 String gitTo,
+                                 String gitFormat
+                                 ) {
+
+        String _transportRequestId = transportRequestId
+
+        if(_transportRequestId) {
+            commonPipelineEnvironment.setTransportRequestId(_transportRequestId)
+        }
+
+        _transportRequestId = commonPipelineEnvironment.getTransportRequestId()
+
+        if(_transportRequestId) {
+            return _transportRequestId
+        }
+
+        try {
+            script.echo "[INFO] Retrieving transportRequestId from git commit(s) [FROM: ${gitFrom}, TO: ${gitTo}]"
+
+            _transportRequestId = getTransportRequestId(
+                           label,
+                           gitFrom,
+                           gitTo,
+                           gitFormat
+                         )
+
+            script.echo "[INFO] Transport request id '${_transportRequestId}' retrieved from git commit(s)."
+            commonPipelineEnvironment.setTransportRequestId(_transportRequestId)
+
+        } catch(ChangeManagementException e) {
+            script.echo "[WARN] Cannot retrieve transport request id from commit history."
+            // OK, we return null
+        }
+        return _transportRequestId
+    }
+
     String getChangeDocumentId(
                               String from = 'origin/master',
                               String to = 'HEAD',
@@ -44,6 +84,16 @@ public class ChangeManagement implements Serializable {
                             ) {
 
         return getLabeledItem('ChangeDocumentId', from, to, label, format)
+    }
+
+    String getTransportRequestId(
+                              String label = 'TransportRequest\\s?:',
+                              String from = 'origin/master',
+                              String to = 'HEAD',
+                              String format = '%b'
+      ) {
+
+        return getLabeledItem('TransportRequestId', from, to, label, format)
     }
 
     private String getLabeledItem(

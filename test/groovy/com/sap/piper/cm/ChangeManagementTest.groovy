@@ -6,6 +6,7 @@ import static org.hamcrest.Matchers.equalTo
 import static org.hamcrest.Matchers.hasItem
 import static org.hamcrest.Matchers.is
 import static org.hamcrest.Matchers.not
+import static org.hamcrest.Matchers.nullValue
 import static org.junit.Assert.assertThat
 
 import org.hamcrest.Matchers
@@ -106,6 +107,64 @@ public class ChangeManagementTest extends BasePiperTest {
 
         assertThat(logging.log, containsString('[INFO] ChangeDocumentId \'a\' retrieved from git commit(s). '))
         assert changeID == 'a'
+    }
+
+    @Test
+    public void testGetTransportRequestIdFromConfigWhenProvidedViaConfig() {
+
+        def transportRequestCachedIdInsideCPE
+        def cpe = [setTransportRequestId: { tID -> transportRequestCachedIdInsideCPE = tID},
+                   getTransportRequestId: {return transportRequestCachedIdInsideCPE}]
+
+        String[] viaGitUtils = ['0815']
+        def transportRequestId = new ChangeManagement(nullScript, gitUtilsMock(true, viaGitUtils))
+            .getTransportRequestId(cpe, '0042', 'TransportRequest\\s?:', 'origin/master', 'HEAD', '%b')
+
+        // side effect check ...
+        assertThat('TransportRequestId is not cached in cpe as expected.',
+            transportRequestCachedIdInsideCPE, is (equalTo('0042')))
+
+        assertThat(transportRequestId, is(equalTo('0042')))
+    }
+
+    @Test
+    public void testGetTransportRequestIdFromConfigWhenNotViaConfig() {
+
+        def transportRequestCachedIdInsideCPE
+        def cpe = [setTransportRequestId: { tID -> transportRequestCachedIdInsideCPE = tID},
+                   getTransportRequestId: {return transportRequestCachedIdInsideCPE}]
+
+        def transportRequestId = new ChangeManagement(nullScript, gitUtilsMock(true, ['0815'] as String[]))
+            .getTransportRequestId(cpe, null, 'TransportRequest\\s?:', 'origin/master', 'HEAD', '%b')
+
+        // side effect check ...
+        assertThat('TransportRequestId is not cached in cpe as expected.',
+            transportRequestCachedIdInsideCPE, is (equalTo('0815')))
+
+        assertThat(transportRequestId, is(equalTo('0815')))
+    }
+
+    @Test
+    public void testGetTransportRequestReturnsNullInCaseNoValueIsProvided() {
+
+        // in order to ensure no exception is thrown in this case.
+
+        def transportRequestCachedIdInsideCPE
+        def cpe = [setTransportRequestId: { tID -> transportRequestCachedIdInsideCPE = tID},
+                   getTransportRequestId: {return transportRequestCachedIdInsideCPE}]
+
+        def transportRequestId = new ChangeManagement(nullScript, gitUtilsMock(true, [] as String[]))
+            .getTransportRequestId(cpe, null, 'TransportRequest\\s?:', 'origin/master', 'HEAD', '%b')
+
+        // side effect check ...
+        assertThat('TransportRequestId found in cache, but there should be nothing.',
+            transportRequestCachedIdInsideCPE, is (nullValue()))
+
+        // side effect check
+        assertThat('Required log entry not found',
+            logging.log, containsString('[WARN] Cannot retrieve transport request id from commit history.'))
+
+        assertThat(transportRequestId, is(nullValue()))
     }
 
     @Test
