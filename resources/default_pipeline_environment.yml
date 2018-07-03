@@ -86,6 +86,13 @@ steps:
     warAction: 'deploy'
     vmSize: 'lite'
     neoCredentialsId: 'CI_CREDENTIALS_ID'
+  newmanExecute:
+    dockerImage: 'node:8-stretch'
+    failOnError: true
+    newmanCollection: '**/*.postman_collection.json'
+    newmanEnvironment: ''
+    newmanGlobals: ''
+    newmanRunCommand: "run ${config.newmanCollection} --environment '${config.newmanEnvironment}' --globals '${config.newmanGlobals}' --reporters junit,html --reporter-junit-export target/newman/TEST-${config.newmanCollection.toString().replaceAll('/','_').tokenize('.').first()}.xml --reporter-html-export target/newman/TEST-${config.newmanCollection.toString().replaceAll('/','_').tokenize('.').first()}.html"
   pipelineStashFilesAfterBuild:
     runOpaTests: false
     stashIncludes:
