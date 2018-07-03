@@ -125,7 +125,7 @@ steps:
       tests: ''
   snykExecute:
     buildDescriptorFile: './package.json'
-    dockerImage: 'node:8.11.2-stretch'
+    dockerImage: 'node:8-stretch'
     exclude: []
     monitor: true
     scanType: 'npm'
