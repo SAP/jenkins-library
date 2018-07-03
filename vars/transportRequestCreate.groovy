@@ -62,6 +62,10 @@ def call(parameters = [:]) {
             }
         }
 
+        if(script.commonPipelineEnvironment) {
+            script.commonPipelineEnvironment.setTransportRequestId(transportRequestId)
+        }
+
         echo "[INFO] Transport Request '$transportRequestId' has been successfully created."
         return transportRequestId
     }

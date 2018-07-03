@@ -4,6 +4,8 @@ import org.junit.Test
 import org.junit.rules.ExpectedException
 import org.junit.rules.RuleChain
 
+import com.sap.piper.cm.ChangeManagement
+
 import util.BasePiperTest
 import util.JenkinsStepRule
 import util.JenkinsLoggingRule
@@ -66,10 +68,22 @@ public class TransportRequestReleaseTest extends BasePiperTest {
     @Test
     public void transportRequestIdNotProvidedTest() {
 
-        thrown.expect(AbortException)
-        thrown.expectMessage("Transport Request id not provided (parameter: 'transportRequestId').")
+        ChangeManagement cm = new ChangeManagement(nullScript) {
+            String getTransportRequestId(def commonPipelineEnvironment,
+                                         String transportRequestId,
+                                         String gitLabel,
+                                         String gitFrom,
+                                         String gitTo,
+                                         String gitFormat
+                                         ) {
+                return null
+            }
+        }
 
-        jsr.step.call(script: nullScript, changeDocumentId: '001')
+        thrown.expect(AbortException)
+        thrown.expectMessage("Transport Request id not provided (parameter: 'transportRequestId' or via commit history).")
+
+        jsr.step.call(script: nullScript, changeDocumentId: '001', cmUtils: cm)
     }
 
     @Test

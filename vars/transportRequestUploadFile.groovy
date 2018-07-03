@@ -16,12 +16,20 @@ import hudson.AbortException
     'applicationId',
     'filePath',
     'credentialsId',
-    'endpoint'
+    'endpoint',
+    'gitFrom',
+    'gitTo',
+    'gitFormat',
+    'labelTransportRequestId'
   ]
 
 @Field Set generalConfigurationKeys = [
     'credentialsId',
-    'endpoint'
+    'endpoint',
+    'gitFrom',
+    'gitTo',
+    'gitFormat',
+    'labelTransportRequestId'
   ]
 
 def call(parameters = [:]) {
@@ -30,7 +38,7 @@ def call(parameters = [:]) {
 
         def script = parameters?.script ?: [commonPipelineEnvironment: commonPipelineEnvironment]
 
-        ChangeManagement cm = new ChangeManagement(script)
+        ChangeManagement cm = parameters.cmUtils ?: new ChangeManagement(script)
 
         Map configuration = ConfigurationMerger.merge(parameters.script, STEP_NAME,
                                                       parameters, parameterKeys,
@@ -39,8 +47,15 @@ def call(parameters = [:]) {
         def changeDocumentId = configuration.changeDocumentId
         if(!changeDocumentId) throw new AbortException("Change document id not provided (parameter: 'changeDocumentId').")
 
-        def transportRequestId = configuration.transportRequestId
-        if(!transportRequestId) throw new AbortException("Transport Request id not provided (parameter: 'transportRequestId').")
+        def transportRequestId = cm.getTransportRequestId(
+                                                          script.commonPipelineEnvironment,
+                                                          configuration.transportRequestId,
+                                                          configuration.gitLabel,
+                                                          configuration.gitFrom,
+                                                          configuration.gitTo,
+                                                          configuration.gitFormat
+                                                         )
+        if(!transportRequestId) throw new AbortException("Transport Request id not provided (parameter: 'transportRequestId' or via commit history).")
 
         def applicationId = configuration.applicationId
         if(!applicationId) throw new AbortException("Application id not provided (parameter: 'applicationId').")
