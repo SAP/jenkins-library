@@ -7,12 +7,15 @@ import org.junit.rules.RuleChain;
 import com.sap.piper.DefaultValueCache
 
 import util.BasePiperTest
+import util.JenkinsLoggingRule
+import util.JenkinsShellCallRule
 import util.JenkinsStepRule;
 import util.Rules
 
 public class PrepareDefaultValuesTest extends BasePiperTest {
 
     private JenkinsStepRule jsr = new JenkinsStepRule(this)
+    private JenkinsLoggingRule jlr = new JenkinsLoggingRule(this)
     private ExpectedException thrown = ExpectedException.none()
 
     @Rule
@@ -20,6 +23,7 @@ public class PrepareDefaultValuesTest extends BasePiperTest {
         .getCommonRules(this)
         .around(thrown)
         .around(jsr)
+        .around(jlr)
 
     @Before
     public void setup() {
@@ -97,5 +101,22 @@ public class PrepareDefaultValuesTest extends BasePiperTest {
         assert DefaultValueCache.getInstance().getDefaultValues().size() == 2
         assert DefaultValueCache.getInstance().getDefaultValues().default == 'config'
         assert DefaultValueCache.getInstance().getDefaultValues().custom == 'myConfig'
+    }
+
+    @Test
+    public void testAssertNoLogMessageInCaseOfNoAdditionalConfigFiles() {
+
+        jsr.step.call(script: nullScript)
+
+        assert ! jlr.log.contains("Loading configuration file 'default_pipeline_environment.yml'")
+    }
+
+    @Test
+    public void testAssertLogMessageInCaseOfMoreThanOneConfigFile() {
+
+        jsr.step.call(script: nullScript, customDefaults: ['custom.yml'])
+
+        assert jlr.log.contains("Loading configuration file 'default_pipeline_environment.yml'")
+        assert jlr.log.contains("Loading configuration file 'custom.yml'")
     }
 }
