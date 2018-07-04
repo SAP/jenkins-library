@@ -78,8 +78,6 @@ class NewmanExecuteTest extends BasePiperTest {
             testRepository: 'testRepo',
             failOnError: false
         )
-        println(jscr.shell)
-        println(jlr.log)
         // asserts
         assertThat(jedr.dockerParams.dockerImage, is('testImage'))
         assertThat(testRepository, is('testRepo'))
