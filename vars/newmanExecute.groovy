@@ -4,7 +4,15 @@ import groovy.transform.Field
 import groovy.text.SimpleTemplateEngine
 
 @Field String STEP_NAME = 'newmanExecute'
-@Field Set STEP_CONFIG_KEYS = ['dockerImage','failOnError','newmanCollection','newmanEnvironment','newmanGlobals','newmanRunCommand','testRepository']
+@Field Set STEP_CONFIG_KEYS = [
+    'dockerImage',
+    'failOnError',
+    'newmanCollection',
+    'newmanEnvironment',
+    'newmanGlobals',
+    'newmanRunCommand',
+    'testRepository'
+]
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
 
 def call(Map parameters = [:]) {
@@ -29,9 +37,10 @@ def call(Map parameters = [:]) {
             ) {
                 sh "npm install newman --global --quiet"
                 for(String collection : collectionList){
-                    config.newmanCollection = collection
                     // resolve templates
-                    def command = SimpleTemplateEngine.newInstance().createTemplate(config.newmanRunCommand).make([config: config]).toString()
+                    def command = SimpleTemplateEngine.newInstance()
+                        .createTemplate(config.newmanRunCommand)
+                        .make([config: config.plus(newmanCollection: collection)]).toString()
                     sh "newman ${command}${config.failOnError?'':' --suppress-exit-code'}"
                 }
             }
