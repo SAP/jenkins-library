@@ -35,13 +35,14 @@ def call(Map parameters = [:]) {
             dockerExecute(
                 dockerImage: config.dockerImage
             ) {
-                sh "npm install newman --global --quiet"
+                sh 'npm install newman --global --quiet'
                 for(String collection : collectionList){
                     // resolve templates
                     def command = SimpleTemplateEngine.newInstance()
                         .createTemplate(config.newmanRunCommand)
-                        .make([config: config.plus(newmanCollection: collection)]).toString()
-                    sh "newman ${command}${config.failOnError?'':' --suppress-exit-code'}"
+                        .make([config: config.plus([newmanCollection: collection])]).toString()
+                    if(!config.failOnError) command += ' --suppress-exit-code'
+                    sh "newman ${command}"
                 }
             }
         }
