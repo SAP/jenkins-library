@@ -6,6 +6,7 @@ import static org.hamcrest.Matchers.equalTo
 import static org.hamcrest.Matchers.hasItem
 import static org.hamcrest.Matchers.is
 import static org.hamcrest.Matchers.not
+import static org.hamcrest.Matchers.nullValue
 import static org.junit.Assert.assertThat
 
 import org.hamcrest.Matchers
@@ -48,9 +49,9 @@ public class ChangeManagementTest extends BasePiperTest {
     public void testRetrieveChangeDocumentIdOutsideGitWorkTreeTest() {
 
         thrown.expect(ChangeManagementException)
-        thrown.expectMessage('Cannot retrieve change document id. ' +
+        thrown.expectMessage('Cannot retrieve ChangeDocumentId. ' +
                              'Not in a git work tree. ' +
-                             'Change document id is extracted from git commit messages.')
+                             'ChangeDocumentId is extracted from git commit messages.')
 
         new ChangeManagement(nullScript, gitUtilsMock(false, new String[0])).getChangeDocumentId()
     }
@@ -59,7 +60,7 @@ public class ChangeManagementTest extends BasePiperTest {
     public void testRetrieveChangeDocumentIdNothingFound() {
 
         thrown.expect(ChangeManagementException)
-        thrown.expectMessage('Cannot retrieve changeId from git commits.')
+        thrown.expectMessage('Cannot retrieve ChangeDocumentId from git commits.')
 
         new ChangeManagement(nullScript, gitUtilsMock(true, new String[0])).getChangeDocumentId()
     }
@@ -68,7 +69,7 @@ public class ChangeManagementTest extends BasePiperTest {
     public void testRetrieveChangeDocumentIdReturnsArrayWithNullValue() {
 
         thrown.expect(ChangeManagementException)
-        thrown.expectMessage('Cannot retrieve changeId from git commits.')
+        thrown.expectMessage('Cannot retrieve ChangeDocumentId from git commits.')
 
         new ChangeManagement(nullScript, gitUtilsMock(true, (String[])[ null ])).getChangeDocumentId()
     }
@@ -77,7 +78,7 @@ public class ChangeManagementTest extends BasePiperTest {
     public void testRetrieveChangeDocumentNotUnique() {
 
         thrown.expect(ChangeManagementException)
-        thrown.expectMessage('Multiple ChangeIds found')
+        thrown.expectMessage('Multiple ChangeDocumentIds found')
 
         String[] changeIds = [ 'a', 'b' ]
         new ChangeManagement(nullScript, gitUtilsMock(true, changeIds)).getChangeDocumentId()
@@ -106,6 +107,64 @@ public class ChangeManagementTest extends BasePiperTest {
 
         assertThat(logging.log, containsString('[INFO] ChangeDocumentId \'a\' retrieved from git commit(s). '))
         assert changeID == 'a'
+    }
+
+    @Test
+    public void testGetTransportRequestIdFromConfigWhenProvidedViaConfig() {
+
+        def transportRequestCachedIdInsideCPE
+        def cpe = [setTransportRequestId: { tID -> transportRequestCachedIdInsideCPE = tID},
+                   getTransportRequestId: {return transportRequestCachedIdInsideCPE}]
+
+        String[] viaGitUtils = ['0815']
+        def transportRequestId = new ChangeManagement(nullScript, gitUtilsMock(true, viaGitUtils))
+            .getTransportRequestId(cpe, '0042', 'TransportRequest\\s?:', 'origin/master', 'HEAD', '%b')
+
+        // side effect check ...
+        assertThat('TransportRequestId is not cached in cpe as expected.',
+            transportRequestCachedIdInsideCPE, is (equalTo('0042')))
+
+        assertThat(transportRequestId, is(equalTo('0042')))
+    }
+
+    @Test
+    public void testGetTransportRequestIdFromConfigWhenNotViaConfig() {
+
+        def transportRequestCachedIdInsideCPE
+        def cpe = [setTransportRequestId: { tID -> transportRequestCachedIdInsideCPE = tID},
+                   getTransportRequestId: {return transportRequestCachedIdInsideCPE}]
+
+        def transportRequestId = new ChangeManagement(nullScript, gitUtilsMock(true, ['0815'] as String[]))
+            .getTransportRequestId(cpe, null, 'TransportRequest\\s?:', 'origin/master', 'HEAD', '%b')
+
+        // side effect check ...
+        assertThat('TransportRequestId is not cached in cpe as expected.',
+            transportRequestCachedIdInsideCPE, is (equalTo('0815')))
+
+        assertThat(transportRequestId, is(equalTo('0815')))
+    }
+
+    @Test
+    public void testGetTransportRequestReturnsNullInCaseNoValueIsProvided() {
+
+        // in order to ensure no exception is thrown in this case.
+
+        def transportRequestCachedIdInsideCPE
+        def cpe = [setTransportRequestId: { tID -> transportRequestCachedIdInsideCPE = tID},
+                   getTransportRequestId: {return transportRequestCachedIdInsideCPE}]
+
+        def transportRequestId = new ChangeManagement(nullScript, gitUtilsMock(true, [] as String[]))
+            .getTransportRequestId(cpe, null, 'TransportRequest\\s?:', 'origin/master', 'HEAD', '%b')
+
+        // side effect check ...
+        assertThat('TransportRequestId found in cache, but there should be nothing.',
+            transportRequestCachedIdInsideCPE, is (nullValue()))
+
+        // side effect check
+        assertThat('Required log entry not found',
+            logging.log, containsString('[WARN] Cannot retrieve transport request id from commit history.'))
+
+        assertThat(transportRequestId, is(nullValue()))
     }
 
     @Test
