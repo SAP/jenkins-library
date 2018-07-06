@@ -19,15 +19,18 @@ import com.sap.piper.GitUtils
 
 import util.BasePiperTest
 import util.JenkinsLoggingRule
+import util.JenkinsScriptLoaderRule
 import util.JenkinsShellCallRule
 import util.Rules
+
+import hudson.AbortException
 
 public class ChangeManagementTest extends BasePiperTest {
 
     private ExpectedException thrown = ExpectedException.none()
 
     private JenkinsShellCallRule script = new JenkinsShellCallRule(this)
-	private JenkinsLoggingRule logging = new JenkinsLoggingRule(this)
+    private JenkinsLoggingRule logging = new JenkinsLoggingRule(this)
 
     @Rule
     public RuleChain rules = Rules.getCommonRules(this)
@@ -35,15 +38,15 @@ public class ChangeManagementTest extends BasePiperTest {
         .around(script)
         .around(logging)
 
-	@Test
-	public void testGetChangeIdFromConfigWhenProvidedInsideConfig() {
-		String[] viaGitUtils = ['0815']
-		def changeDocumentId = new ChangeManagement(nullScript, gitUtilsMock(false, viaGitUtils))
-			.getChangeDocumentId([changeDocumentId: '0042'])
+    @Test
+    public void testGetChangeIdFromConfigWhenProvidedInsideConfig() {
+        String[] viaGitUtils = ['0815']
+        def changeDocumentId = new ChangeManagement(nullScript, gitUtilsMock(false, viaGitUtils))
+            .getChangeDocumentId([changeDocumentId: '0042'])
 
-		assertThat(logging.log, containsString('[INFO] Use changeDocumentId \'0042\' from configuration.'))
-		assertThat(changeDocumentId, is(equalTo('0042')))
-	}
+        assertThat(logging.log, containsString('[INFO] Use changeDocumentId \'0042\' from configuration.'))
+        assertThat(changeDocumentId, is(equalTo('0042')))
+    }
     @Test
     public void testRetrieveChangeDocumentIdOutsideGitWorkTreeTest() {
 
@@ -176,6 +179,53 @@ public void testGetCommandLineWithCMClientOpts() {
     assertThat(commandLine, containsString('export CMCLIENT_OPTS="-Djavax.net.debug=all"'))
 }
 
+    @Test
+    public void testCreateTransportRequestSucceeds() {
+
+        script.setReturnValue(JenkinsShellCallRule.Type.REGEX, ".*cmclient.*create-transport -cID 001 -dID 002.*", '004')
+        def transportRequestId = new ChangeManagement(nullScript).createTransportRequest('001', '002', '003', 'me', 'openSesame')
+
+        // the check for the transportRequestID is sufficient. This checks implicit the command line since that value is
+        // returned only in case the shell call matches.
+        assert transportRequestId == '004'
+
+    }
+
+    @Test
+    public void testCreateTransportRequestFails() {
+
+        script.setReturnValue(JenkinsShellCallRule.Type.REGEX, '.*upload-file-to-transport.*', 1)
+
+        thrown.expect(ChangeManagementException)
+        thrown.expectMessage('Cannot upload file \'/path\' for change document \'001\''+
+                             ' with transport request \'002\'. Return code from cmclient: 1.')
+
+        new ChangeManagement(nullScript).uploadFileToTransportRequest('001',
+                                                                      '002',
+                                                                      'XXX',
+                                                                      '/path',
+                                                                      'https://example.org/cm',
+                                                                      'me',
+                                                                      'openSesame')
+    }
+
+    @Test
+    public void testUploadFileToTransportSucceeds() {
+
+        // the regex provided below is an implicit check that the command line is fine.
+        script.setReturnValue(JenkinsShellCallRule.Type.REGEX,, 'upload-file-to-transport.*-cID 001 -tID 002 XXX /path', 0)
+
+        new ChangeManagement(nullScript).uploadFileToTransportRequest('001',
+            '002',
+            'XXX',
+            '/path',
+            'https://example.org/cm',
+            'me',
+            'openSesame')
+
+        // no assert required here, since the regex registered above to the script rule is an implicit check for
+        // the command line.
+    }
 
     private GitUtils gitUtilsMock(boolean insideWorkTree, String[] changeIds) {
         return new GitUtils() {
