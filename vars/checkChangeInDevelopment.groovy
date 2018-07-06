@@ -36,11 +36,13 @@ def call(parameters = [:]) {
 
     handlePipelineStepErrors (stepName: STEP_NAME, stepParameters: parameters) {
 
-        prepareDefaultValues script: this
+        def script = parameters.script ?: [commonPipelineEnvironment: commonPipelineEnvironment]
+
+        prepareDefaultValues script: script
 
         GitUtils gitUtils = parameters?.gitUtils ?: new GitUtils()
 
-        ChangeManagement cm = parameters?.cmUtils ?: new ChangeManagement(parameters.script, gitUtils)
+        ChangeManagement cm = parameters?.cmUtils ?: new ChangeManagement(script, gitUtils)
 
         Map configuration = ConfigurationMerger.merge(parameters.script, STEP_NAME,
                                                       parameters, parameterKeys,
