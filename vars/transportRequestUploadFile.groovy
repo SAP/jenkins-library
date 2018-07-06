@@ -1,6 +1,7 @@
 import com.sap.piper.GitUtils
 import groovy.transform.Field
 
+import com.sap.piper.ConfigurationHelper
 import com.sap.piper.ConfigurationMerger
 import com.sap.piper.cm.ChangeManagement
 import com.sap.piper.cm.ChangeManagementException
@@ -24,6 +25,8 @@ import hudson.AbortException
     'endpoint'
   ]
 
+@Field Set stepConfigurationKeys = generalConfigurationKeys
+
 def call(parameters = [:]) {
 
     handlePipelineStepErrors (stepName: STEP_NAME, stepParameters: parameters) {
@@ -32,9 +35,13 @@ def call(parameters = [:]) {
 
         ChangeManagement cm = parameters.cmUtils ?: new ChangeManagement(script)
 
-        Map configuration = ConfigurationMerger.merge(parameters.script, STEP_NAME,
-                                                      parameters, parameterKeys,
-                                                      generalConfigurationKeys)
+        Map configuration = ConfigurationHelper
+                            .loadStepDefaults(this)
+                            .mixinGeneralConfig(script.commonPipelineEnvironment, generalConfigurationKeys)
+                            .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName?:env.STAGE_NAME, stepConfigurationKeys)
+                            .mixinStepConfig(script.commonPipelineEnvironment, stepConfigurationKeys)
+                            .mixin(parameters, parameterKeys)
+                            .use()
 
         def changeDocumentId = configuration.changeDocumentId
         if(!changeDocumentId) throw new AbortException("Change document id not provided (parameter: 'changeDocumentId').")
