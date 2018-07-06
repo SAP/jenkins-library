@@ -17,21 +17,38 @@ public class ChangeManagement implements Serializable {
         this.gitUtils = gitUtils ?: new GitUtils()
     }
 
-    String getChangeDocumentId(Map config) {
+    String getChangeDocumentId(Map config, def commonPipelineEnvironment = null) {
 
-            if(config.changeDocumentId) {
-                script.echo "[INFO] Use changeDocumentId '${config.changeDocumentId}' from configuration."
-                return config.changeDocumentId
+            def changeDocumentId = config.changeDocumentId
+
+            if(changeDocumentId) {
+                script.echo "[INFO] Using changeDocumentId '${changeDocumentId}' from configuration."
+                commonPipelineEnvironment?.setChangeDocumentId(changeDocumentId)
+                return changeDocumentId
+            }
+
+            changeDocumentId = commonPipelineEnvironment?.getChangeDocumentId()
+
+            if(changeDocumentId) {
+                script.echo "[INFO] Using cached changeDocumentId '${changeDocumentId}' from common pipeline environment."
+                commonPipelineEnvironment?.setChangeDocumentId(changeDocumentId)
+                return changeDocumentId
             }
 
             script.echo "[INFO] Retrieving changeDocumentId from git commit(s) [FROM: ${config.git_from}, TO: ${config.git_to}]"
-            def changeDocumentId = getChangeDocumentId(
-                                        config.git_from,
-                                        config.git_to,
-                                        config.git_label,
-                                        config.git_format
-                                   )
-            script.echo "[INFO] ChangeDocumentId '${changeDocumentId}' retrieved from git commit(s)."
+            try {
+                changeDocumentId = getChangeDocumentId(
+                                            config.git_from,
+                                            config.git_to,
+                                            config.git_label,
+                                            config.git_format)
+
+                script.echo "[INFO] ChangeDocumentId '${changeDocumentId}' retrieved from git commit(s)."
+                commonPipelineEnvironment?.setChangeDocumentId(changeDocumentId)
+            } catch(ChangeManagementException e) {
+                script.echo"[WARN] Cannot retrieve change document id from commit history: ${e.getMessage()}"
+                // OK, we return null.
+            }
 
             return changeDocumentId
         }

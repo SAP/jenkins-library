@@ -28,13 +28,13 @@ def call(parameters = [:]) {
 
         def script = parameters?.script ?: [commonPipelineEnvironment: commonPipelineEnvironment]
 
-        ChangeManagement cm = new ChangeManagement(script)
+        ChangeManagement cm = parameters?.cmUtils ?: new ChangeManagement(script)
 
         Map configuration = ConfigurationMerger.merge(parameters.script, STEP_NAME,
                                                       parameters, parameterKeys,
                                                       stepConfigurationKeys)
 
-        def changeDocumentId = configuration.changeDocumentId
+        def changeDocumentId = cm.getChangeDocumentId(configuration, parameters?.script?.commonPipelineEnvironment)
         if(!changeDocumentId) throw new AbortException('Change document id not provided (parameter: \'changeDocumentId\').')
 
         def developmentSystemId = configuration.developmentSystemId

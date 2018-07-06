@@ -27,7 +27,7 @@ public class ChangeManagementTest extends BasePiperTest {
     private ExpectedException thrown = ExpectedException.none()
 
     private JenkinsShellCallRule script = new JenkinsShellCallRule(this)
-	private JenkinsLoggingRule logging = new JenkinsLoggingRule(this)
+    private JenkinsLoggingRule logging = new JenkinsLoggingRule(this)
 
     @Rule
     public RuleChain rules = Rules.getCommonRules(this)
@@ -35,15 +35,31 @@ public class ChangeManagementTest extends BasePiperTest {
         .around(script)
         .around(logging)
 
-	@Test
-	public void testGetChangeIdFromConfigWhenProvidedInsideConfig() {
-		String[] viaGitUtils = ['0815']
-		def changeDocumentId = new ChangeManagement(nullScript, gitUtilsMock(false, viaGitUtils))
-			.getChangeDocumentId([changeDocumentId: '0042'])
+    @Test
+    public void testGetChangeIdFromConfig() {
+        String[] viaGitUtils = ['0815']
+        def cpe = nullScript.commonPipelineEnvironment
+        cpe.setChangeDocumentId('4711')
+        def changeDocumentId = new ChangeManagement(nullScript, gitUtilsMock(false, viaGitUtils))
+            .getChangeDocumentId([changeDocumentId: '0042'], cpe)
 
-		assertThat(logging.log, containsString('[INFO] Use changeDocumentId \'0042\' from configuration.'))
-		assertThat(changeDocumentId, is(equalTo('0042')))
-	}
+        assertThat(logging.log, containsString('[INFO] Using changeDocumentId \'0042\' from configuration.'))
+        assertThat(changeDocumentId, is(equalTo('0042')))
+    }
+
+    @Test
+    public void testGetChangeIdFromCPE() {
+        String[] viaGitUtils = ['0815']
+        def cpe = nullScript.commonPipelineEnvironment
+        cpe.setChangeDocumentId('4711')
+        def changeDocumentId = new ChangeManagement(nullScript, gitUtilsMock(false, viaGitUtils))
+            .getChangeDocumentId([:], cpe)
+
+        assertThat(logging.log, containsString('[INFO] Using cached changeDocumentId \'4711\' from common pipeline environment. '))
+        assertThat(changeDocumentId, is(equalTo('4711')))
+
+    }
+
     @Test
     public void testRetrieveChangeDocumentIdOutsideGitWorkTreeTest() {
 

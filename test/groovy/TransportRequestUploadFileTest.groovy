@@ -4,6 +4,8 @@ import org.junit.Test
 import org.junit.rules.ExpectedException
 import org.junit.rules.RuleChain
 
+import com.sap.piper.cm.ChangeManagement
+
 import util.BasePiperTest
 import util.JenkinsStepRule
 import util.JenkinsLoggingRule
@@ -57,10 +59,16 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
     @Test
     public void changeDocumentIdNotProvidedTest() {
 
+        ChangeManagement cm = new ChangeManagement(nullScript) {
+            String getChangeDocumentId(Map config, def cpe) {
+                 return null
+            }
+        }
+
         thrown.expect(AbortException)
         thrown.expectMessage("Change document id not provided (parameter: 'changeDocumentId').")
 
-        jsr.step.call(script: nullScript, transportRequestId: '001', applicationId: 'app', filePath: '/path')
+        jsr.step.call(script: nullScript, transportRequestId: '001', applicationId: 'app', filePath: '/path', cmUtils: cm)
     }
 
     @Test
