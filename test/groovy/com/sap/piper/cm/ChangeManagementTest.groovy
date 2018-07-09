@@ -100,10 +100,10 @@ public class ChangeManagementTest extends BasePiperTest {
 
         String[] changeIds = [ 'a' ];
 
-        def params = [ git_from: 'origin/master',
-                       git_to: 'HEAD',
-                       git_label: 'ChangeDocument\\s?:',
-                       git_format: '%b']
+        def params = [ gitFrom: 'origin/master',
+                       gitTo: 'HEAD',
+                       gitLabel: 'ChangeDocument\\s?:',
+                       gitFormat: '%b']
 
         def changeID = new ChangeManagement(nullScript, gitUtilsMock(true, changeIds)).getChangeDocumentId(params)
 
