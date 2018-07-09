@@ -28,7 +28,7 @@ public class ChangeManagement implements Serializable {
             def changeDocumentId = getChangeDocumentId(
                                         config.gitFrom,
                                         config.gitTo,
-                                        config.gitLabel,
+                                        config.gitChangeDocumentLabel,
                                         config.gitFormat
                                    )
             script.echo "[INFO] ChangeDocumentId '${changeDocumentId}' retrieved from git commit(s)."
