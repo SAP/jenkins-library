@@ -17,17 +17,17 @@ range and the pattern can be configured. For details see 'parameters' table.
 | `changeDocumentId` | yes       |                                                        |                    |
 | `credentialsId`    | yes       |                                                        |                    |
 | `endpoint`         | yes       |                                                        |                    |
-| `git_from`         | no        | `origin/master`                                        |                    |
-| `git_to`           | no        | `HEAD`                                                 |                    |
-| `git_label`        | no        | `ChangeDocument\s?:`                                   | regex pattern      |
+| `gitFrom`         | no        | `origin/master`                                        |                    |
+| `gitTo`           | no        | `HEAD`                                                 |                    |
+| `gitLabel`        | no        | `ChangeDocument\s?:`                                   | regex pattern      |
 
 * `script` - The common script environment of the Jenkinsfile running. Typically the reference to the script calling the pipeline step is provided with the `this` parameter, as in `script: this`. This allows the function to access the [`commonPipelineEnvironment`](commonPipelineEnvironment.md) for retrieving, for example, configuration parameters.
 * `changeDocumentId` - The id of the change document to transport. If not provided, it is retrieved from the git commit history.
 * `credentialsId` - The credentials to connect to the Solution Manager.
 * `endpoint` - The address of the Solution Manager.
-* `git_from` - The starting point for retrieving the change document id
-* `git_to` - The end point for retrieving the change document id
-* `git_label` - A pattern used for identifying lines holding the change document id.
+* `gitFrom` - The starting point for retrieving the change document id
+* `gitTo` - The end point for retrieving the change document id
+* `gitLabel` - A pattern used for identifying lines holding the change document id.
 
 ## Step configuration
 The following parameters can also be specified as step parameters using the global configuration file:

@@ -24,12 +24,12 @@ public class ChangeManagement implements Serializable {
                 return config.changeDocumentId
             }
 
-            script.echo "[INFO] Retrieving changeDocumentId from git commit(s) [FROM: ${config.git_from}, TO: ${config.git_to}]"
+            script.echo "[INFO] Retrieving changeDocumentId from git commit(s) [FROM: ${config.gitFrom}, TO: ${config.gitTo}]"
             def changeDocumentId = getChangeDocumentId(
-                                        config.git_from,
-                                        config.git_to,
-                                        config.git_label,
-                                        config.git_format
+                                        config.gitFrom,
+                                        config.gitTo,
+                                        config.gitLabel,
+                                        config.gitFormat
                                    )
             script.echo "[INFO] ChangeDocumentId '${changeDocumentId}' retrieved from git commit(s)."
 
