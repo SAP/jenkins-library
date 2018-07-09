@@ -16,7 +16,7 @@ import com.sap.piper.cm.ChangeManagementException
     'failIfStatusIsNotInDevelopment',
     'gitFrom',
     'gitTo',
-    'gitLabel',
+    'gitChangeDocumentLabel',
     'gitFormat'
   ]
 
@@ -28,7 +28,7 @@ import com.sap.piper.cm.ChangeManagementException
     'failIfStatusIsNotInDevelopment',
     'gitFrom',
     'gitTo',
-    'gitLabel',
+    'gitChangeDocumentLabel',
     'gitFormat'
   ]
 
