@@ -39,15 +39,6 @@ public class ChangeManagementTest extends BasePiperTest {
         .around(logging)
 
     @Test
-    public void testGetChangeIdFromConfigWhenProvidedInsideConfig() {
-        String[] viaGitUtils = ['0815']
-        def changeDocumentId = new ChangeManagement(nullScript, gitUtilsMock(false, viaGitUtils))
-            .getChangeDocumentId([changeDocumentId: '0042'])
-
-        assertThat(logging.log, containsString('[INFO] Use changeDocumentId \'0042\' from configuration.'))
-        assertThat(changeDocumentId, is(equalTo('0042')))
-    }
-    @Test
     public void testRetrieveChangeDocumentIdOutsideGitWorkTreeTest() {
 
         thrown.expect(ChangeManagementException)
@@ -92,22 +83,6 @@ public class ChangeManagementTest extends BasePiperTest {
         String[] changeIds = [ 'a', 'a' ]
         def changeID = new ChangeManagement(nullScript, gitUtilsMock(true, changeIds)).getChangeDocumentId()
 
-        assert changeID == 'a'
-    }
-
-    @Test
-    public void testRetrieveChangeDocumentWithUniqueResult() {
-
-        String[] changeIds = [ 'a' ];
-
-        def params = [ gitFrom: 'origin/master',
-                       gitTo: 'HEAD',
-                       gitChangeDocumentLabel: 'ChangeDocument\\s?:',
-                       gitFormat: '%b']
-
-        def changeID = new ChangeManagement(nullScript, gitUtilsMock(true, changeIds)).getChangeDocumentId(params)
-
-        assertThat(logging.log, containsString('[INFO] ChangeDocumentId \'a\' retrieved from git commit(s). '))
         assert changeID == 'a'
     }
 
