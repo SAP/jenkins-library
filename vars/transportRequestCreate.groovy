@@ -15,13 +15,21 @@ import hudson.AbortException
     'clientOpts',
     'developmentSystemId',
     'credentialsId',
-    'endpoint'
+    'endpoint',
+    'gitFrom',
+    'gitTo',
+    'gitChangeDocumentLabel',
+    'gitFormat'
   ]
 
 @Field Set stepConfigurationKeys = [
     'credentialsId',
     'clientOpts',
-    'endpoint'
+    'endpoint',
+    'gitFrom',
+    'gitTo',
+    'gitChangeDocumentLabel',
+    'gitFormat'
   ]
 
 def call(parameters = [:]) {
@@ -37,7 +45,33 @@ def call(parameters = [:]) {
                                                       stepConfigurationKeys)
 
         def changeDocumentId = configuration.changeDocumentId
-        if(!changeDocumentId) throw new AbortException('Change document id not provided (parameter: \'changeDocumentId\').')
+
+        if(changeDocumentId?.trim()) {
+
+            echo "[INFO] ChangeDocumentId '${changeDocumentId}' retrieved from parameters."
+
+        } else {
+
+            echo "[INFO] Retrieving ChangeDocumentId from commit history [from: ${configuration.gitFrom}, to: ${configuration.gitTo}]." +
+                 "Searching for pattern '${configuration.gitChangeDocumentLabel}'. Searching with format '${configuration.gitFormat}'."
+
+            try {
+                changeDocumentId = cm.getChangeDocumentId(
+                                                          configuration.gitFrom,
+                                                          configuration.gitTo,
+                                                          configuration.gitChangeDocumentLabel,
+                                                          configuration.gitFormat
+                                                         )
+
+                echo "[INFO] ChangeDocumentId '${changeDocumentId}' retrieved from commit history"
+            } catch(ChangeManagementException ex) {
+                echo "[WARN] Cannot retrieve changeDocumentId from commit history: ${ex.getMessage()}."
+            }
+        }
+
+        if(! changeDocumentId?.trim()) {
+            throw new AbortException("Change document id not provided (parameter: \'changeDocumentId\' or via commit history).")
+        }
 
         def developmentSystemId = configuration.developmentSystemId
         if(!developmentSystemId) throw new AbortException('Development system id not provided (parameter: \'developmentSystemId\').')
