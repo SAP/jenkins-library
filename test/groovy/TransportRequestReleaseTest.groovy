@@ -4,6 +4,9 @@ import org.junit.Test
 import org.junit.rules.ExpectedException
 import org.junit.rules.RuleChain
 
+import com.sap.piper.cm.ChangeManagement
+import com.sap.piper.cm.ChangeManagementException
+
 import util.BasePiperTest
 import util.JenkinsStepRule
 import util.JenkinsLoggingRule
@@ -57,10 +60,19 @@ public class TransportRequestReleaseTest extends BasePiperTest {
     @Test
     public void changeIdNotProvidedTest() {
 
-        thrown.expect(AbortException)
-        thrown.expectMessage("Change document id not provided (parameter: 'changeDocumentId').")
+        ChangeManagement cm = new ChangeManagement(nullScript) {
+            String getChangeDocumentId(String from,
+                                       String to,
+                                       String label,
+                                       String format) {
+                                throw new ChangeManagementException('Cannot retrieve change documentId')
+            }
+        }
 
-        jsr.step.call(script: nullScript, transportRequestId: '001')
+        thrown.expect(AbortException)
+        thrown.expectMessage("Change document id not provided (parameter: 'changeDocumentId' or via commit history).")
+
+        jsr.step.call(script: nullScript, transportRequestId: '001', cmUtils: cm)
     }
 
     @Test
