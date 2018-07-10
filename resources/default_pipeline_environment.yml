@@ -173,7 +173,25 @@ steps:
   checkChangeInDevelopment:
       credentialsId: 'CM'
       failIfStatusIsNotInDevelopment: true
-      git_from: 'origin/master'
-      git_to: 'HEAD'
-      git_label: 'ChangeDocument\s?:'
-      git_format: '%b'
+      gitFrom: 'origin/master'
+      gitTo: 'HEAD'
+      gitChangeDocumentLabel: 'ChangeDocument\s?:'
+      gitFormat: '%b'
+  transportRequestCreate:
+      credentialsId: 'CM'
+      gitFrom: 'origin/master'
+      gitTo: 'HEAD'
+      gitChangeDocumentLabel: 'ChangeDocument\s?:'
+      gitFormat: '%b'
+  transportRequestUploadFile:
+      credentialsId: 'CM'
+      gitFrom: 'origin/master'
+      gitTo: 'HEAD'
+      gitChangeDocumentLabel: 'ChangeDocument\s?:'
+      gitFormat: '%b'
+  transportRequestRelease:
+      credentialsId: 'CM'
+      gitFrom: 'origin/master'
+      gitTo: 'HEAD'
+      gitChangeDocumentLabel: 'ChangeDocument\s?:'
+      gitFormat: '%b'
