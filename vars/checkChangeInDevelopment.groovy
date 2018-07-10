@@ -46,18 +46,32 @@ def call(parameters = [:]) {
                                                       parameters, parameterKeys,
                                                       stepConfigurationKeys)
 
+        def changeId = configuration.changeDocumentId
 
-        def changeId
+        if(changeId?.trim()) {
 
-        try {
+          echo "[INFO] ChangeDocumentId retrieved from parameters."
 
-            changeId = cm.getChangeDocumentId(configuration)
+        } else {
 
-            if(! changeId?.trim()) {
-                throw new ChangeManagementException("ChangeId is null or empty.")
+          echo "[INFO] Retrieving ChangeDocumentId from commit history [from: ${configuration.gitFrom}, to: ${configuration.gitTo}]." +
+               "Searching for pattern '${configuration.gitChangeDocumentLabel}'. Searching with format '${configuration.gitFormat}'."
+
+            try {
+                changeId = cm.getChangeDocumentId(
+                                                  configuration.gitFrom,
+                                                  configuration.gitTo,
+                                                  configuration.gitChangeDocumentLabel,
+                                                  configuration.gitFormat
+                                                 )
+                if(changeId?.trim()) {
+                    echo "[INFO] ChangeDocumentId '${changeId}' retrieved from commit history"
+                } else {
+                    throw new ChangeManagementException("ChangeId is null or empty.")
+                }
+            } catch(ChangeManagementException ex) {
+                throw new AbortException(ex.getMessage())
             }
-        } catch(ChangeManagementException ex) {
-            throw new AbortException(ex.getMessage())
         }
 
         boolean isInDevelopment
