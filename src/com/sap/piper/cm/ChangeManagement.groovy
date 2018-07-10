@@ -17,25 +17,6 @@ public class ChangeManagement implements Serializable {
         this.gitUtils = gitUtils ?: new GitUtils()
     }
 
-    String getChangeDocumentId(Map config) {
-
-            if(config.changeDocumentId) {
-                script.echo "[INFO] Use changeDocumentId '${config.changeDocumentId}' from configuration."
-                return config.changeDocumentId
-            }
-
-            script.echo "[INFO] Retrieving changeDocumentId from git commit(s) [FROM: ${config.gitFrom}, TO: ${config.gitTo}]"
-            def changeDocumentId = getChangeDocumentId(
-                                        config.gitFrom,
-                                        config.gitTo,
-                                        config.gitChangeDocumentLabel,
-                                        config.gitFormat
-                                   )
-            script.echo "[INFO] ChangeDocumentId '${changeDocumentId}' retrieved from git commit(s)."
-
-            return changeDocumentId
-        }
-
     String getChangeDocumentId(
                               String from = 'origin/master',
                               String to = 'HEAD',
