@@ -8,12 +8,15 @@ steps:
     timestampTemplate: '%Y%m%d%H%M%S'
     tagPrefix: 'build_'
     commitVersion: true
-    maven:
-      filePath: 'pom.xml'
-      versioningTemplate: '${version}-${timestamp}${commitId?"_"+commitId:""}'
     docker:
       filePath: 'Dockerfile'
       versioningTemplate: '${version}-${timestamp}${commitId?"_"+commitId:""}'
+    maven:
+      filePath: 'pom.xml'
+      versioningTemplate: '${version}-${timestamp}${commitId?"_"+commitId:""}'
+    mta:
+      filePath: 'mta.yaml'
+      versioningTemplate: '${version}-${timestamp}${commitId?"+"+commitId:""}'
   checksPublishResults:
     aggregation:
       active: true
