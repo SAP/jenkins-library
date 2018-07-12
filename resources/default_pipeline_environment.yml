@@ -8,12 +8,15 @@ steps:
     timestampTemplate: '%Y%m%d%H%M%S'
     tagPrefix: 'build_'
     commitVersion: true
-    maven:
-      filePath: 'pom.xml'
-      versioningTemplate: '${version}-${timestamp}${commitId?"_"+commitId:""}'
     docker:
       filePath: 'Dockerfile'
       versioningTemplate: '${version}-${timestamp}${commitId?"_"+commitId:""}'
+    maven:
+      filePath: 'pom.xml'
+      versioningTemplate: '${version}-${timestamp}${commitId?"_"+commitId:""}'
+    mta:
+      filePath: 'mta.yaml'
+      versioningTemplate: '${version}-${timestamp}${commitId?"+"+commitId:""}'
   checksPublishResults:
     aggregation:
       active: true
@@ -92,7 +95,7 @@ steps:
     newmanCollection: '**/*.postman_collection.json'
     newmanEnvironment: ''
     newmanGlobals: ''
-    newmanRunCommand: "run ${config.newmanCollection} --environment '${config.newmanEnvironment}' --globals '${config.newmanGlobals}' --reporters junit,html --reporter-junit-export target/newman/TEST-${config.newmanCollection.toString().replaceAll('/','_').tokenize('.').first()}.xml --reporter-html-export target/newman/TEST-${config.newmanCollection.toString().replaceAll('/','_').tokenize('.').first()}.html"
+    newmanRunCommand: "run ${config.newmanCollection} --environment '${config.newmanEnvironment}' --globals '${config.newmanGlobals}' --reporters junit,html --reporter-junit-export target/newman/TEST-${config.newmanCollection.toString().replace(File.separatorChar,(char)'_').tokenize('.').first()}.xml --reporter-html-export target/newman/TEST-${config.newmanCollection.toString().replace(File.separatorChar,(char)'_').tokenize('.').first()}.html"
   pipelineStashFilesAfterBuild:
     runOpaTests: false
     stashIncludes:

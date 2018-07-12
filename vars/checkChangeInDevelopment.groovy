@@ -2,6 +2,7 @@ import com.sap.piper.GitUtils
 import groovy.transform.Field
 import hudson.AbortException
 
+import com.sap.piper.ConfigurationHelper
 import com.sap.piper.ConfigurationMerger
 import com.sap.piper.cm.ChangeManagement
 import com.sap.piper.cm.ChangeManagementException
@@ -32,19 +33,25 @@ import com.sap.piper.cm.ChangeManagementException
     'gitFormat'
   ]
 
+@Field Set generalConfigurationKeys = stepConfigurationKeys
+
 def call(parameters = [:]) {
 
     handlePipelineStepErrors (stepName: STEP_NAME, stepParameters: parameters) {
 
-        prepareDefaultValues script: this
+        def script = parameters.script ?: [commonPipelineEnvironment: commonPipelineEnvironment]
 
         GitUtils gitUtils = parameters?.gitUtils ?: new GitUtils()
 
-        ChangeManagement cm = parameters?.cmUtils ?: new ChangeManagement(parameters.script, gitUtils)
+        ChangeManagement cm = parameters?.cmUtils ?: new ChangeManagement(script, gitUtils)
 
-        Map configuration = ConfigurationMerger.merge(parameters.script, STEP_NAME,
-                                                      parameters, parameterKeys,
-                                                      stepConfigurationKeys)
+        Map configuration = ConfigurationHelper
+                            .loadStepDefaults(this)
+                            .mixinGeneralConfig(script.commonPipelineEnvironment, generalConfigurationKeys)
+                            .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName?:env.STAGE_NAME, stepConfigurationKeys)
+                            .mixinStepConfig(script.commonPipelineEnvironment, stepConfigurationKeys)
+                            .mixin(parameters, parameterKeys)
+                            .use()
 
         def changeId = configuration.changeDocumentId
 
