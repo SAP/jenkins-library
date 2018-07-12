@@ -22,6 +22,7 @@ import hudson.AbortException
     'gitFrom',
     'gitTo',
     'gitChangeDocumentLabel',
+    'gitTransportRequestLabel',
     'gitFormat'
   ]
 
@@ -32,6 +33,7 @@ import hudson.AbortException
     'gitFrom',
     'gitTo',
     'gitChangeDocumentLabel',
+    'gitTransportRequestLabel',
     'gitFormat'
   ]
 
@@ -79,12 +81,38 @@ def call(parameters = [:]) {
             }
         }
 
+
+        def transportRequestId = configuration.transportRequestId
+
+        if(transportRequestId?.trim()) {
+
+          echo "[INFO] Transport request id '${transportRequestId}' retrieved from parameters."
+
+        } else {
+
+          echo "[INFO] Retrieving transport request id from commit history [from: ${configuration.gitFrom}, to: ${configuration.gitTo}]." +
+               " Searching for pattern '${configuration.gitTransportRequestLabel}'. Searching with format '${configuration.gitFormat}'."
+
+            try {
+                transportRequestId = cm.getTransportRequestId(
+                                                  configuration.gitFrom,
+                                                  configuration.gitTo,
+                                                  configuration.gitTransportRequestLabel,
+                                                  configuration.gitFormat
+                                                 )
+
+                echo "[INFO] Transport request id '${transportRequestId}' retrieved from commit history"
+
+            } catch(ChangeManagementException ex) {
+                echo "[WARN] Cannot retrieve transportRequestId from commit history: ${ex.getMessage()}."
+            }
+        }
+
         if(! changeDocumentId?.trim()) {
             throw new AbortException("Change document id not provided (parameter: 'changeDocumentId' or via commit history).")
         }
 
-        def transportRequestId = configuration.transportRequestId
-        if(!transportRequestId) throw new AbortException("Transport Request id not provided (parameter: 'transportRequestId').")
+        if(!transportRequestId?.trim()) throw new AbortException("Transport Request id not provided (parameter: 'transportRequestId' or via commit history).")
 
         def applicationId = configuration.applicationId
         if(!applicationId) throw new AbortException("Application id not provided (parameter: 'applicationId').")
