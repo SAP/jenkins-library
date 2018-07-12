@@ -1,6 +1,7 @@
 import com.sap.piper.GitUtils
 import groovy.transform.Field
 
+import com.sap.piper.ConfigurationHelper
 import com.sap.piper.ConfigurationMerger
 import com.sap.piper.cm.ChangeManagement
 import com.sap.piper.cm.ChangeManagementException
@@ -12,6 +13,7 @@ import hudson.AbortException
 
 @Field Set parameterKeys = [
     'changeDocumentId',
+    'cmClientOpts',
     'transportRequestId',
     'applicationId',
     'filePath',
@@ -25,12 +27,15 @@ import hudson.AbortException
 
 @Field Set generalConfigurationKeys = [
     'credentialsId',
+    'cmClientOpts',
     'endpoint',
     'gitFrom',
     'gitTo',
     'gitChangeDocumentLabel',
     'gitFormat'
   ]
+
+@Field Set stepConfigurationKeys = generalConfigurationKeys
 
 def call(parameters = [:]) {
 
@@ -40,9 +45,13 @@ def call(parameters = [:]) {
 
         ChangeManagement cm = parameters.cmUtils ?: new ChangeManagement(script)
 
-        Map configuration = ConfigurationMerger.merge(parameters.script, STEP_NAME,
-                                                      parameters, parameterKeys,
-                                                      generalConfigurationKeys)
+        Map configuration = ConfigurationHelper
+                            .loadStepDefaults(this)
+                            .mixinGeneralConfig(script.commonPipelineEnvironment, generalConfigurationKeys)
+                            .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName?:env.STAGE_NAME, stepConfigurationKeys)
+                            .mixinStepConfig(script.commonPipelineEnvironment, stepConfigurationKeys)
+                            .mixin(parameters, parameterKeys)
+                            .use()
 
         def changeDocumentId = configuration.changeDocumentId
 
@@ -97,7 +106,7 @@ def call(parameters = [:]) {
             usernameVariable: 'username')]) {
 
             try {
-                cm.uploadFileToTransportRequest(changeDocumentId, transportRequestId, applicationId, filePath, endpoint, username, password)
+                cm.uploadFileToTransportRequest(changeDocumentId, transportRequestId, applicationId, filePath, endpoint, username, password, configuration.cmClientOpts)
             } catch(ChangeManagementException ex) {
                 throw new AbortException(ex.getMessage())
             }
