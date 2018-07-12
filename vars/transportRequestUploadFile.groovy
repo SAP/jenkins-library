@@ -13,7 +13,12 @@ import hudson.AbortException
 
 @Field Set generalConfigurationKeys = [
     'credentialsId',
-    'endpoint'
+    'cmClientOpts',
+    'endpoint',
+    'gitFrom',
+    'gitTo',
+    'gitChangeDocumentLabel',
+    'gitFormat'
   ]
 
 @Field Set parameterKeys = generalConfigurationKeys.plus([
@@ -41,7 +46,34 @@ def call(parameters = [:]) {
                             .use()
 
         def changeDocumentId = configuration.changeDocumentId
-        if(!changeDocumentId) throw new AbortException("Change document id not provided (parameter: 'changeDocumentId').")
+
+        if(changeDocumentId?.trim()) {
+
+          echo "[INFO] ChangeDocumentId '${changeDocumentId}' retrieved from parameters."
+
+        } else {
+
+          echo "[INFO] Retrieving ChangeDocumentId from commit history [from: ${configuration.gitFrom}, to: ${configuration.gitTo}]." +
+               "Searching for pattern '${configuration.gitChangeDocumentLabel}'. Searching with format '${configuration.gitFormat}'."
+
+            try {
+                changeDocumentId = cm.getChangeDocumentId(
+                                                  configuration.gitFrom,
+                                                  configuration.gitTo,
+                                                  configuration.gitChangeDocumentLabel,
+                                                  configuration.gitFormat
+                                                 )
+
+                echo "[INFO] ChangeDocumentId '${changeDocumentId}' retrieved from commit history"
+
+            } catch(ChangeManagementException ex) {
+                echo "[WARN] Cannot retrieve changeDocumentId from commit history: ${ex.getMessage()}."
+            }
+        }
+
+        if(! changeDocumentId?.trim()) {
+            throw new AbortException("Change document id not provided (parameter: 'changeDocumentId' or via commit history).")
+        }
 
         def transportRequestId = configuration.transportRequestId
         if(!transportRequestId) throw new AbortException("Transport Request id not provided (parameter: 'transportRequestId').")
@@ -66,7 +98,7 @@ def call(parameters = [:]) {
             usernameVariable: 'username')]) {
 
             try {
-                cm.uploadFileToTransportRequest(changeDocumentId, transportRequestId, applicationId, filePath, endpoint, username, password)
+                cm.uploadFileToTransportRequest(changeDocumentId, transportRequestId, applicationId, filePath, endpoint, username, password, configuration.cmClientOpts)
             } catch(ChangeManagementException ex) {
                 throw new AbortException(ex.getMessage())
             }
