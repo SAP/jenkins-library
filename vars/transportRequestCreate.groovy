@@ -41,31 +41,27 @@ def call(parameters = [:]) {
                             .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName?:env.STAGE_NAME, stepConfigurationKeys)
                             .mixinStepConfig(script.commonPipelineEnvironment, stepConfigurationKeys)
                             .mixin(parameters, parameterKeys)
+                            .withMandatoryProperty('endpoint')
+                            .withMandatoryProperty('changeDocumentId')
+                            .withMandatoryProperty('developmentSystemId')
                             .use()
-
-        def changeDocumentId = configuration.changeDocumentId
-        if(!changeDocumentId) throw new AbortException('Change document id not provided (parameter: \'changeDocumentId\').')
-
-        def developmentSystemId = configuration.developmentSystemId
-        if(!developmentSystemId) throw new AbortException('Development system id not provided (parameter: \'developmentSystemId\').')
-
-        def credentialsId = configuration.credentialsId
-        if(!credentialsId) throw new AbortException('Credentials id not provided (parameter: \'credentialsId\').')
-
-        def endpoint = configuration.endpoint
-        if(!endpoint) throw new AbortException('Solution Manager endpoint not provided (parameter: \'endpoint\').')
 
         def transportRequestId
 
-        echo "[INFO] Creating transport request for change document '$changeDocumentId' and development system '$developmentSystemId'."
+        echo "[INFO] Creating transport request for change document '${configuration.changeDocumentId}' and development system '${configuration.developmentSystemId}'."
 
         withCredentials([usernamePassword(
-            credentialsId: credentialsId,
+            credentialsId: configuration.credentialsId,
             passwordVariable: 'password',
             usernameVariable: 'username')]) {
 
             try {
-                transportRequestId = cm.createTransportRequest(changeDocumentId, developmentSystemId, endpoint, username, password, configuration.clientOpts)
+                transportRequestId = cm.createTransportRequest(configuration.changeDocumentId,
+                                                               configuration.developmentSystemId,
+                                                               configuration.endpoint,
+                                                               username,
+                                                               password,
+                                                               configuration.clientOpts)
             } catch(ChangeManagementException ex) {
                 throw new AbortException(ex.getMessage())
             }

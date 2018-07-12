@@ -60,8 +60,8 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
     @Test
     public void changeDocumentIdNotProvidedTest() {
 
-        thrown.expect(AbortException)
-        thrown.expectMessage("Change document id not provided (parameter: 'changeDocumentId').")
+        thrown.expect(IllegalArgumentException)
+        thrown.expectMessage("ERROR - NO VALUE AVAILABLE FOR changeDocumentId")
 
         jsr.step.call(script: nullScript, transportRequestId: '001', applicationId: 'app', filePath: '/path')
     }
@@ -69,8 +69,8 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
     @Test
     public void transportRequestIdNotProvidedTest() {
 
-        thrown.expect(AbortException)
-        thrown.expectMessage("Transport Request id not provided (parameter: 'transportRequestId').")
+        thrown.expect(IllegalArgumentException)
+        thrown.expectMessage("ERROR - NO VALUE AVAILABLE FOR transportRequestId")
 
         jsr.step.call(script: nullScript, changeDocumentId: '001', applicationId: 'app', filePath: '/path')
     }
@@ -78,8 +78,8 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
     @Test
     public void applicationIdNotProvidedTest() {
 
-        thrown.expect(AbortException)
-        thrown.expectMessage("Application id not provided (parameter: 'applicationId').")
+        thrown.expect(IllegalArgumentException)
+        thrown.expectMessage("ERROR - NO VALUE AVAILABLE FOR applicationId")
 
         jsr.step.call(script: nullScript, changeDocumentId: '001', transportRequestId: '001', filePath: '/path')
     }
@@ -87,8 +87,8 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
     @Test
     public void filePathNotProvidedTest() {
 
-        thrown.expect(AbortException)
-        thrown.expectMessage("File path not provided (parameter: 'filePath').")
+        thrown.expect(IllegalArgumentException)
+        thrown.expectMessage("ERROR - NO VALUE AVAILABLE FOR filePath")
 
         jsr.step.call(script: nullScript, changeDocumentId: '001', transportRequestId: '001', applicationId: 'app')
     }
