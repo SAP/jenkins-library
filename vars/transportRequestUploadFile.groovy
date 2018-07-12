@@ -13,6 +13,7 @@ import hudson.AbortException
 
 @Field Set parameterKeys = [
     'changeDocumentId',
+    'cmClientOpts',
     'transportRequestId',
     'applicationId',
     'filePath',
@@ -22,6 +23,7 @@ import hudson.AbortException
 
 @Field Set generalConfigurationKeys = [
     'credentialsId',
+    'cmClientOpts',
     'endpoint'
   ]
 
@@ -69,7 +71,7 @@ def call(parameters = [:]) {
             usernameVariable: 'username')]) {
 
             try {
-                cm.uploadFileToTransportRequest(changeDocumentId, transportRequestId, applicationId, filePath, endpoint, username, password)
+                cm.uploadFileToTransportRequest(changeDocumentId, transportRequestId, applicationId, filePath, endpoint, username, password, configuration.cmClientOpts)
             } catch(ChangeManagementException ex) {
                 throw new AbortException(ex.getMessage())
             }
