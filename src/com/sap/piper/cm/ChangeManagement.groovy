@@ -27,6 +27,16 @@ public class ChangeManagement implements Serializable {
         return getLabeledItem('ChangeDocumentId', from, to, label, format)
     }
 
+    String getTransportRequestId(
+                              String from = 'origin/master',
+                              String to = 'HEAD',
+                              String label = 'TransportRequest\\s?:',
+                              String format = '%b'
+                            ) {
+
+        return getLabeledItem('TransportRequestId', from, to, label, format)
+    }
+
     private String getLabeledItem(
                               String name,
                               String from,
