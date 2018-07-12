@@ -103,7 +103,8 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
                                               String filePath,
                                               String endpoint,
                                               String username,
-                                              String password) {
+                                              String password,
+                                              String cmclientOpts) {
                 throw new ChangeManagementException('Exception message')
             }
         }
