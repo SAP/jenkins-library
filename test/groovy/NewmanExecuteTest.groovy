@@ -86,11 +86,11 @@ class NewmanExecuteTest extends BasePiperTest {
     void testExecuteNewmanWithFolder() throws Exception {
         jsr.step.newmanExecute(
             script: nullScript,
-            newmanRunCommand: 'run ${config.newmanCollection} --iteration-data testDataFile --reporters junit,html --reporter-junit-export target/newman/TEST-${config.newmanCollection.toString().replaceAll(\'/\',\'_\').tokenize(\'.\').first()}.xml --reporter-html-export target/newman/TEST-${config.newmanCollection.toString().replaceAll(\'/\',\'_\').tokenize(\'.\').first()}.html'
+            newmanRunCommand: 'run ${config.newmanCollection} --iteration-data testDataFile --reporters junit,html --reporter-junit-export target/newman/TEST-${config.newmanCollection.toString().replace(File.separatorChar,(char)\'_\').tokenize(\'.\').first()}.xml --reporter-html-export target/newman/TEST-${config.newmanCollection.toString().replace(File.separatorChar,(char)\'_\').tokenize(\'.\').first()}.html'
         )
         // asserts
-        assertThat(jscr.shell, hasItem('newman run testCollectionsFolder/A.postman_collection.json --iteration-data testDataFile --reporters junit,html --reporter-junit-export target/newman/TEST-testCollectionsFolder_A.xml --reporter-html-export target/newman/TEST-testCollectionsFolder_A.html'))
-        assertThat(jscr.shell, hasItem('newman run testCollectionsFolder/B.postman_collection.json --iteration-data testDataFile --reporters junit,html --reporter-junit-export target/newman/TEST-testCollectionsFolder_B.xml --reporter-html-export target/newman/TEST-testCollectionsFolder_B.html'))
+        assertThat(jscr.shell, hasItem('newman run testCollectionsFolder'+File.separatorChar+'A.postman_collection.json --iteration-data testDataFile --reporters junit,html --reporter-junit-export target/newman/TEST-testCollectionsFolder_A.xml --reporter-html-export target/newman/TEST-testCollectionsFolder_A.html'))
+        assertThat(jscr.shell, hasItem('newman run testCollectionsFolder'+File.separatorChar+'B.postman_collection.json --iteration-data testDataFile --reporters junit,html --reporter-junit-export target/newman/TEST-testCollectionsFolder_B.xml --reporter-html-export target/newman/TEST-testCollectionsFolder_B.html'))
         assertJobStatusSuccess()
     }
 }
