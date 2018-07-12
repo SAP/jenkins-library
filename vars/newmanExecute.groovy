@@ -37,10 +37,14 @@ def call(Map parameters = [:]) {
             ) {
                 sh 'npm install newman --global --quiet'
                 for(String collection : collectionList){
+                    def collectionDisplayName = collection.toString().replace(File.separatorChar,(char)'_').tokenize('.').first()
                     // resolve templates
                     def command = SimpleTemplateEngine.newInstance()
                         .createTemplate(config.newmanRunCommand)
-                        .make([config: config.plus([newmanCollection: collection])]).toString()
+                        .make([
+                            config: config.plus([newmanCollection: collection]),
+                            collectionDisplayName: collectionDisplayName
+                        ]).toString()
                     if(!config.failOnError) command += ' --suppress-exit-code'
                     sh "newman ${command}"
                 }
