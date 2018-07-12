@@ -68,7 +68,7 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
                                        String format
                                     ) {
                                         throw new ChangeManagementException('Cannot retrieve changeId from git commits.')
-                                    }
+                                      }
         }
 
         thrown.expect(AbortException)
@@ -80,10 +80,21 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
     @Test
     public void transportRequestIdNotProvidedTest() {
 
-        thrown.expect(AbortException)
-        thrown.expectMessage("Transport Request id not provided (parameter: 'transportRequestId').")
+        ChangeManagement cm = new ChangeManagement(nullScript) {
+            String getTransportRequestId(
+                                       String from,
+                                       String to,
+                                       String pattern,
+                                       String format
+                                    ) {
+                                        throw new ChangeManagementException('Cannot retrieve transport request id from git commits.')
+                                    }
+        }
 
-        jsr.step.call(script: nullScript, changeDocumentId: '001', applicationId: 'app', filePath: '/path')
+        thrown.expect(AbortException)
+        thrown.expectMessage("Transport Request id not provided (parameter: 'transportRequestId' or via commit history).")
+
+        jsr.step.call(script: nullScript, changeDocumentId: '001', applicationId: 'app', filePath: '/path', cmUtils: cm)
     }
 
     @Test
