@@ -57,7 +57,7 @@ class JenkinsLoggingRule implements TestRule {
                         throw caught
                     }
 
-                    expected.each { substring -> assertThat("Substring '${substring} not contained in log.'",
+                    expected.each { substring -> assertThat("Substring '${substring}' not contained in log.",
                                                             log,
                                                             containsString(substring)) }
 
