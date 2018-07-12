@@ -11,19 +11,16 @@ import hudson.AbortException
 
 @Field def STEP_NAME = 'transportRequestRelease'
 
-@Field Set parameterKeys = [
-    'changeDocumentId',
-    'cmClientOpts',
-    'transportRequestId',
-    'credentialsId',
-    'endpoint'
-  ]
-
 @Field Set stepConfigurationKeys = [
     'credentialsId',
     'cmClientOpts',
     'endpoint'
   ]
+
+@Field Set parameterKeys = stepConfigurationKeys.plus([
+    'changeDocumentId',
+    'transportRequestId',
+  ])
 
 @Field Set generalConfigurationKeys = stepConfigurationKeys
 
