@@ -41,34 +41,30 @@ def call(parameters = [:]) {
                             .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName?:env.STAGE_NAME, stepConfigurationKeys)
                             .mixinStepConfig(script.commonPipelineEnvironment, stepConfigurationKeys)
                             .mixin(parameters, parameterKeys)
+                            .withMandatoryProperty('changeDocumentId')
+                            .withMandatoryProperty('transportRequestId')
+                            .withMandatoryProperty('endpoint')
                             .use()
 
-        def changeDocumentId = configuration.changeDocumentId
-        if(!changeDocumentId) throw new AbortException("Change document id not provided (parameter: 'changeDocumentId').")
-
-        def transportRequestId = configuration.transportRequestId
-        if(!transportRequestId) throw new AbortException("Transport Request id not provided (parameter: 'transportRequestId').")
-
-        def credentialsId = configuration.credentialsId
-        if(!credentialsId) throw new AbortException("Credentials id not provided (parameter: 'credentialsId').")
-
-        def endpoint = configuration.endpoint
-        if(!endpoint) throw new AbortException("Solution Manager endpoint not provided (parameter: 'endpoint').")
-
-        echo "[INFO] Closing transport request '$transportRequestId' for change document '$changeDocumentId'."
+        echo "[INFO] Closing transport request '${configuration.transportRequestId}' for change document '${configuration.changeDocumentId}'."
 
         withCredentials([usernamePassword(
-            credentialsId: credentialsId,
+            credentialsId: configuration.credentialsId,
             passwordVariable: 'password',
             usernameVariable: 'username')]) {
 
             try {
-                cm.releaseTransportRequest(changeDocumentId, transportRequestId, endpoint, username, password, configuration.cmClientOpts)
+                cm.releaseTransportRequest(configuration.changeDocumentId,
+                                           configuration.transportRequestId,
+                                           configuration.endpoint,
+                                           username,
+                                           password,
+                                           configuration.cmClientOpts)
             } catch(ChangeManagementException ex) {
                 throw new AbortException(ex.getMessage())
             }
         }
 
-        echo "[INFO] Transport Request '${transportRequestId}' has been successfully closed."
+        echo "[INFO] Transport Request '${configuration.transportRequestId}' has been successfully closed."
     }
 }

@@ -41,40 +41,33 @@ def call(parameters = [:]) {
                             .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName?:env.STAGE_NAME, stepConfigurationKeys)
                             .mixinStepConfig(script.commonPipelineEnvironment, stepConfigurationKeys)
                             .mixin(parameters, parameterKeys)
+                            .withMandatoryProperty('endpoint')
+                            .withMandatoryProperty('changeDocumentId')
+                            .withMandatoryProperty('transportRequestId')
+                            .withMandatoryProperty('applicationId')
+                            .withMandatoryProperty('filePath')
                             .use()
 
-        def changeDocumentId = configuration.changeDocumentId
-        if(!changeDocumentId) throw new AbortException("Change document id not provided (parameter: 'changeDocumentId').")
-
-        def transportRequestId = configuration.transportRequestId
-        if(!transportRequestId) throw new AbortException("Transport Request id not provided (parameter: 'transportRequestId').")
-
-        def applicationId = configuration.applicationId
-        if(!applicationId) throw new AbortException("Application id not provided (parameter: 'applicationId').")
-
-        def filePath = configuration.filePath
-        if(!filePath) throw new AbortException("File path not provided (parameter: 'filePath').")
-
-        def credentialsId = configuration.credentialsId
-        if(!credentialsId) throw new AbortException("Credentials id not provided (parameter: 'credentialsId').")
-
-        def endpoint = configuration.endpoint
-        if(!endpoint) throw new AbortException("Solution Manager endpoint not provided (parameter: 'endpoint').")
-
-        echo "[INFO] Uploading file '$filePath' to transport request '$transportRequestId' of change document '$changeDocumentId'."
+        echo "[INFO] Uploading file '${configuration.filePath}' to transport request '${configuration.transportRequestId}' of change document '${configuration.changeDocumentId}'."
 
         withCredentials([usernamePassword(
-            credentialsId: credentialsId,
+            credentialsId: configuration.credentialsId,
             passwordVariable: 'password',
             usernameVariable: 'username')]) {
 
             try {
-                cm.uploadFileToTransportRequest(changeDocumentId, transportRequestId, applicationId, filePath, endpoint, username, password)
+                cm.uploadFileToTransportRequest(configuration.changeDocumentId,
+                                                configuration.transportRequestId,
+                                                configuration.applicationId,
+                                                configuration.filePath,
+                                                configuration.endpoint,
+                                                username,
+                                                password)
             } catch(ChangeManagementException ex) {
                 throw new AbortException(ex.getMessage())
             }
         }
 
-        echo "[INFO] File '$filePath' has been successfully uploaded to transport request '$transportRequestId' of change document '$changeDocumentId'."
+        echo "[INFO] File '${configuration.filePath}' has been successfully uploaded to transport request '${configuration.transportRequestId}' of change document '${configuration.changeDocumentId}'."
     }
 }
