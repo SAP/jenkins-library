@@ -11,6 +11,7 @@ import com.sap.piper.cm.ChangeManagementException
 
 import hudson.AbortException
 import util.BasePiperTest
+import util.JenkinsCredentialsRule
 import util.JenkinsStepRule
 import util.Rules
 
@@ -24,18 +25,8 @@ class CheckChangeInDevelopmentTest extends BasePiperTest {
         .getCommonRules(this)
         .around(thrown)
         .around(jsr)
-
-    @Before
-    public void setup() {
-        helper.registerAllowedMethod('usernamePassword', [Map], { Map m ->
-            binding.setProperty('username', 'defaultUser')
-            binding.setProperty('password', '********')
-        })
-
-        helper.registerAllowedMethod('withCredentials', [List, Closure], { List l, Closure c ->
-            c()
-        })
-    }
+        .around(new JenkinsCredentialsRule(this)
+            .withCredentials('CM', 'anonymous', '********'))
 
     @After
     public void tearDown() {
@@ -57,7 +48,7 @@ class CheckChangeInDevelopmentTest extends BasePiperTest {
         assert cmUtilReceivedParams == [
             changeId: '001',
             endpoint: 'https://example.org/cm',
-            userName: 'defaultUser',
+            userName: 'anonymous',
             password: '********',
             cmclientOpts: null
         ]
