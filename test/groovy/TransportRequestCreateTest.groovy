@@ -62,9 +62,19 @@ public class TransportRequestCreateTest extends BasePiperTest {
     public void changeIdNotProvidedTest() {
 
         thrown.expect(IllegalArgumentException)
-        thrown.expectMessage("ERROR - NO VALUE AVAILABLE FOR changeDocumentId")
+        thrown.expectMessage("Change document id not provided (parameter: 'changeDocumentId' or via commit history).")
+        ChangeManagement cm = new ChangeManagement(nullScript) {
+            String getChangeDocumentId(
+                                       String from,
+                                       String to,
+                                       String label,
+                                       String format
+                                      ) {
+                                          throw new ChangeManagementException('Cannot retrieve changeId from git commits.')
+                                      }
+        }
 
-        jsr.step.call(script: nullScript, developmentSystemId: '001')
+        jsr.step.call(script: nullScript, developmentSystemId: '001', cmUtils: cm)
     }
 
     @Test
