@@ -45,8 +45,6 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
             }
          })
 
-        helper.registerAllowedMethod('sh', [Map], { Map m -> return 0 })
-
         nullScript.commonPipelineEnvironment.configuration = [steps:
                                      [transportRequestUploadFile:
                                          [
