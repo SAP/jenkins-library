@@ -134,7 +134,11 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
 
         helper.registerAllowedMethod('sh', [Map], { Map m -> return 0 })
 
-        jsr.step.call(script: nullScript, changeDocumentId: '001', transportRequestId: '001', applicationId: 'app', filePath: '/path')
+        jsr.step.call(script: nullScript,
+                      changeDocumentId: '001',
+                      transportRequestId: '001',
+                      applicationId: 'app',
+                      filePath: '/path')
 
         assert jlr.log.contains("[INFO] Uploading file '/path' to transport request '001' of change document '001'.")
         assert jlr.log.contains("[INFO] File '/path' has been successfully uploaded to transport request '001' of change document '001'.")
