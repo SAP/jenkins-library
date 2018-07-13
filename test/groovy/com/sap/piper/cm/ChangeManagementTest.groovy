@@ -202,6 +202,24 @@ public void testGetCommandLineWithCMClientOpts() {
         // the command line.
     }
 
+    @Test
+    public void testUploadFileToTransportFails() {
+
+        thrown.expect(ChangeManagementException)
+        thrown.expectMessage("Cannot upload file '/path' for change document '001' with transport request '002'. " +
+            "Return code from cmclient: 1.")
+
+        script.setReturnValue(JenkinsShellCallRule.Type.REGEX,, 'upload-file-to-transport', 1)
+
+        new ChangeManagement(nullScript).uploadFileToTransportRequest('001',
+            '002',
+            'XXX',
+            '/path',
+            'https://example.org/cm',
+            'me',
+            'openSesame')
+    }
+
     private GitUtils gitUtilsMock(boolean insideWorkTree, String[] changeIds) {
         return new GitUtils() {
             public boolean insideWorkTree() {
