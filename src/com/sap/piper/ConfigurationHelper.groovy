@@ -109,10 +109,7 @@ class ConfigurationHelper implements Serializable {
 
     def getMandatoryProperty(key, defaultValue = null, errorMessage = null) {
 
-        def paramValue = config[key]
-
-        if (paramValue == null)
-            paramValue = defaultValue
+        def paramValue = getConfigProperty(key, defaultValue)
 
         if (paramValue == null) {
             if(! errorMessage) errorMessage = "ERROR - NO VALUE AVAILABLE FOR ${key}"
