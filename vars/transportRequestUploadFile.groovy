@@ -37,13 +37,18 @@ def call(parameters = [:]) {
 
         ChangeManagement cm = parameters.cmUtils ?: new ChangeManagement(script)
 
-        Map configuration = ConfigurationHelper
-                            .loadStepDefaults(this)
-                            .mixinGeneralConfig(script.commonPipelineEnvironment, generalConfigurationKeys)
-                            .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName?:env.STAGE_NAME, stepConfigurationKeys)
-                            .mixinStepConfig(script.commonPipelineEnvironment, stepConfigurationKeys)
-                            .mixin(parameters, parameterKeys)
-                            .use()
+        ConfigurationHelper configHelper =
+            ConfigurationHelper.loadStepDefaults(this)
+                               .mixinGeneralConfig(script.commonPipelineEnvironment, generalConfigurationKeys)
+                               .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName?:env.STAGE_NAME, stepConfigurationKeys)
+                               .mixinStepConfig(script.commonPipelineEnvironment, stepConfigurationKeys)
+                               .mixin(parameters, parameterKeys)
+                               .withMandatoryProperty('endpoint')
+                               .withMandatoryProperty('transportRequestId')
+                               .withMandatoryProperty('applicationId')
+                               .withMandatoryProperty('filePath')
+
+        Map configuration = configHelper.use()
 
         def changeDocumentId = configuration.changeDocumentId
 
@@ -71,39 +76,33 @@ def call(parameters = [:]) {
             }
         }
 
-        if(! changeDocumentId?.trim()) {
-            throw new AbortException("Change document id not provided (parameter: 'changeDocumentId' or via commit history).")
-        }
+        configuration = configHelper
+                           .mixin([changeDocumentId: changeDocumentId?.trim() ?: null], ['changeDocumentId'] as Set)
+                           .withMandatoryProperty('changeDocumentId',
+                               "Change document id not provided (parameter: \'changeDocumentId\' or via commit history).")
+                           .use()
 
-        def transportRequestId = configuration.transportRequestId
-        if(!transportRequestId) throw new AbortException("Transport Request id not provided (parameter: 'transportRequestId').")
-
-        def applicationId = configuration.applicationId
-        if(!applicationId) throw new AbortException("Application id not provided (parameter: 'applicationId').")
-
-        def filePath = configuration.filePath
-        if(!filePath) throw new AbortException("File path not provided (parameter: 'filePath').")
-
-        def credentialsId = configuration.credentialsId
-        if(!credentialsId) throw new AbortException("Credentials id not provided (parameter: 'credentialsId').")
-
-        def endpoint = configuration.endpoint
-        if(!endpoint) throw new AbortException("Solution Manager endpoint not provided (parameter: 'endpoint').")
-
-        echo "[INFO] Uploading file '$filePath' to transport request '$transportRequestId' of change document '$changeDocumentId'."
+        echo "[INFO] Uploading file '${configuration.filePath}' to transport request '${configuration.transportRequestId}' of change document '${configuration.changeDocumentId}'."
 
         withCredentials([usernamePassword(
-            credentialsId: credentialsId,
+            credentialsId: configuration.credentialsId,
             passwordVariable: 'password',
             usernameVariable: 'username')]) {
 
             try {
-                cm.uploadFileToTransportRequest(changeDocumentId, transportRequestId, applicationId, filePath, endpoint, username, password, configuration.cmClientOpts)
+                cm.uploadFileToTransportRequest(configuration.changeDocumentId,
+                                                configuration.transportRequestId,
+                                                configuration.applicationId,
+                                                configuration.filePath,
+                                                configuration.endpoint,
+                                                username,
+                                                password,
+                                                configuration.cmClientOpts)
             } catch(ChangeManagementException ex) {
                 throw new AbortException(ex.getMessage())
             }
         }
 
-        echo "[INFO] File '$filePath' has been successfully uploaded to transport request '$transportRequestId' of change document '$changeDocumentId'."
+        echo "[INFO] File '${configuration.filePath}' has been successfully uploaded to transport request '${configuration.transportRequestId}' of change document '${configuration.changeDocumentId}'."
     }
 }
