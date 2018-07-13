@@ -9,8 +9,7 @@ import com.sap.piper.cm.ChangeManagementException
 
 @Field def STEP_NAME = 'checkChangeInDevelopment'
 
-@Field Set parameterKeys = [
-    'changeDocumentId',
+@Field Set stepConfigurationKeys = [
     'cmClientOpts',
     'credentialsId',
     'endpoint',
@@ -21,17 +20,7 @@ import com.sap.piper.cm.ChangeManagementException
     'gitFormat'
   ]
 
-@Field Set stepConfigurationKeys = [
-    'changeDocumentId',
-    'cmClientOpts',
-    'credentialsId',
-    'endpoint',
-    'failIfStatusIsNotInDevelopment',
-    'gitFrom',
-    'gitTo',
-    'gitChangeDocumentLabel',
-    'gitFormat'
-  ]
+@Field Set parameterKeys = stepConfigurationKeys.plus('changeDocumentId')
 
 @Field Set generalConfigurationKeys = stepConfigurationKeys
 
