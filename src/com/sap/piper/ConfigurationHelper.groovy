@@ -102,19 +102,11 @@ class ConfigurationHelper implements Serializable {
         this.config = config
     }
 
-    def getConfigProperty(key) {
+    /* private */ def getConfigPropertyNested(key) {
         return getConfigPropertyNested(config, key)
     }
 
-    def getConfigProperty(key, defaultValue) {
-        def value = getConfigProperty(key)
-        if (value == null) {
-            return defaultValue
-        }
-        return value
-    }
-
-    private getConfigPropertyNested(Map config, key) {
+    /* private */ static getConfigPropertyNested(Map config, key) {
 
         def separator = '/'
 
@@ -135,42 +127,22 @@ class ConfigurationHelper implements Serializable {
         return config[parts.head()]
     }
 
-    def isPropertyDefined(key){
+     private void existsMandatoryProperty(key, errorMessage) {
 
-        def value = getConfigProperty(key)
-
-        if(value == null){
-            return false
-        }
-
-        if(value.class == String){
-            return value?.isEmpty() == false
-        }
-
-        if(value){
-            return true
-        }
-
-        return false
-    }
-
-    def getMandatoryProperty(key, defaultValue = null, errorMessage = null) {
-
-        def paramValue = getConfigProperty(key, defaultValue)
+        def paramValue = getConfigPropertyNested(config, key)
 
         if (paramValue == null) {
             if(! errorMessage) errorMessage = "ERROR - NO VALUE AVAILABLE FOR ${key}"
             throw new IllegalArgumentException(errorMessage)
         }
-        return paramValue
     }
 
-    def withMandatoryProperty(key, errorMessage = null, condition = null){
+    ConfigurationHelper withMandatoryProperty(key, errorMessage = null, condition = null){
         if(condition){
             if(condition(this.config))
-                getMandatoryProperty(key, null, errorMessage)
+                existsMandatoryProperty(key, errorMessage)
         }else{
-            getMandatoryProperty(key, null, errorMessage)
+            existsMandatoryProperty(key, errorMessage)
         }
         return this
     }
