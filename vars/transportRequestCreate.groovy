@@ -11,18 +11,6 @@ import hudson.AbortException
 
 @Field def STEP_NAME = 'transportRequestCreate'
 
-@Field Set parameterKeys = [
-    'changeDocumentId',
-    'clientOpts',
-    'developmentSystemId',
-    'credentialsId',
-    'endpoint',
-    'gitFrom',
-    'gitTo',
-    'gitChangeDocumentLabel',
-    'gitFormat'
-  ]
-
 @Field Set stepConfigurationKeys = [
     'credentialsId',
     'clientOpts',
@@ -32,6 +20,8 @@ import hudson.AbortException
     'gitChangeDocumentLabel',
     'gitFormat'
   ]
+
+@Field Set parameterKeys = stepConfigurationKeys.plus(['changeDocumentId', 'developmentSystemId'])
 
 @Field generalConfigurationKeys = stepConfigurationKeys
 

@@ -11,20 +11,6 @@ import hudson.AbortException
 
 @Field def STEP_NAME = 'transportRequestUploadFile'
 
-@Field Set parameterKeys = [
-    'changeDocumentId',
-    'cmClientOpts',
-    'transportRequestId',
-    'applicationId',
-    'filePath',
-    'credentialsId',
-    'endpoint',
-    'gitFrom',
-    'gitTo',
-    'gitChangeDocumentLabel',
-    'gitFormat'
-  ]
-
 @Field Set generalConfigurationKeys = [
     'credentialsId',
     'cmClientOpts',
@@ -34,6 +20,12 @@ import hudson.AbortException
     'gitChangeDocumentLabel',
     'gitFormat'
   ]
+
+@Field Set parameterKeys = generalConfigurationKeys.plus([
+    'applicationId',
+    'changeDocumentId',
+    'filePath',
+    'transportRequestId'])
 
 @Field Set stepConfigurationKeys = generalConfigurationKeys
 
