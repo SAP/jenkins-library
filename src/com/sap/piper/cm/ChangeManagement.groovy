@@ -64,60 +64,62 @@ public class ChangeManagement implements Serializable {
         return items[0]
     }
 
-    boolean isChangeInDevelopment(String changeId, String endpoint, String username, String password, String clientOpts = '') {
+    boolean isChangeInDevelopment(String changeId, String endpoint, String credentialsId, String clientOpts = '') {
+        int rc = executeWithCredentials(endpoint, credentialsId, 'is-change-in-development', ['-cID', "'${changeId}'", '--return-code'],
+            clientOpts) as int
 
-                int rc = script.sh(returnStatus: true,
-                            script: getCMCommandLine(endpoint, username, password,
-                                                     'is-change-in-development', ['-cID', "'${changeId}'",
-                                                                                   '--return-code'],
-                                                                               clientOpts))
-
-                if(rc == 0) {
-                    return true
-                } else if(rc == 3) {
-                    return false
-                } else {
-                    throw new ChangeManagementException("Cannot retrieve status for change document '${changeId}'. Does this change exist? Return code from cmclient: ${rc}.")
-                }
-            }
-
-    String createTransportRequest(String changeId, String developmentSystemId, String endpoint, String username, String password, String clientOpts = '') {
-
-        try {
-          String transportRequest = script.sh(returnStdout: true,
-                    script: getCMCommandLine(endpoint, username, password, 'create-transport', ['-cID', changeId,
-                                                                                                '-dID', developmentSystemId],
-                                                                                              clientOpts))
-          return transportRequest.trim()
-        } catch(AbortException e) {
-          throw new ChangeManagementException("Cannot create a transport request for change id '$changeId'. $e.message.")
+        if (rc == 0) {
+            return true
+        } else if (rc == 3) {
+            return false
+        } else {
+            throw new ChangeManagementException("Cannot retrieve status for change document '${changeId}'. Does this change exist? Return code from cmclient: ${rc}.")
         }
     }
 
-    void uploadFileToTransportRequest(String changeId, String transportRequestId, String applicationId, String filePath, String endpoint, String username, String password, String cmclientOpts = '') {
+    String createTransportRequest(String changeId, String developmentSystemId, String endpoint, String credentialsId, String clientOpts = '') {
+        try {
+            def transportRequest = executeWithCredentials(endpoint, credentialsId, 'create-transport', ['-cID', changeId, '-dID', developmentSystemId],
+                clientOpts)
+            return transportRequest.trim() as String
+        }catch(AbortException e) {
+            throw new ChangeManagementException("Cannot create a transport request for change id '$changeId'. $e.message.")
+        }
+    }
 
-        int rc = script.sh(returnStatus: true,
-                    script: getCMCommandLine(endpoint, username, password,
-                                            'upload-file-to-transport', ['-cID', changeId,
-                                                                         '-tID', transportRequestId,
-                                                                         applicationId, filePath],
-                                                                        cmclientOpts))
+
+    void uploadFileToTransportRequest(String changeId, String transportRequestId, String applicationId, String filePath, String endpoint, String credentialsId, String cmclientOpts = '') {
+        int rc = executeWithCredentials(endpoint, credentialsId, 'upload-file-to-transport', ['-cID', changeId,
+                                                                                                 '-tID', transportRequestId,
+                                                                                                 applicationId, filePath],
+            cmclientOpts) as int
 
         if(rc == 0) {
             return
         } else {
             throw new ChangeManagementException("Cannot upload file '$filePath' for change document '$changeId' with transport request '$transportRequestId'. Return code from cmclient: $rc.")
         }
+
     }
 
-    void releaseTransportRequest(String changeId, String transportRequestId, String endpoint, String username, String password, String clientOpts = '') {
+    def executeWithCredentials(String endpoint, String credentialsId, String command, List<String> args, String clientOpts = '') {
+        script.withCredentials([script.usernamePassword(
+            credentialsId: credentialsId,
+            passwordVariable: 'password',
+            usernameVariable: 'username')]) {
+            def returnValue = script.sh(returnStatus: true,
+                script: getCMCommandLine(endpoint, script.username, script.password,
+                    command, args,
+                    clientOpts))
+            return returnValue;
 
-        int rc = script.sh(returnStatus: true,
-                    script: getCMCommandLine(endpoint, username, password,
-                                            'release-transport', ['-cID', changeId,
-                                                                  '-tID', transportRequestId],
-                                                                clientOpts))
+        }
 
+    }
+
+    void releaseTransportRequest(String changeId, String transportRequestId, String endpoint, String credentialsId, String clientOpts = '') {
+        int rc = executeWithCredentials( endpoint, credentialsId, 'release-transport', ['-cID', changeId,
+                                                                                        '-tID', transportRequestId], clientOpts) as int
         if(rc == 0) {
             return
         } else {
