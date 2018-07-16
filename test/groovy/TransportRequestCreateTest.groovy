@@ -61,6 +61,8 @@ public class TransportRequestCreateTest extends BasePiperTest {
     @Test
     public void changeIdNotProvidedTest() {
 
+        thrown.expect(IllegalArgumentException)
+        thrown.expectMessage("Change document id not provided (parameter: 'changeDocumentId' or via commit history).")
         ChangeManagement cm = new ChangeManagement(nullScript) {
             String getChangeDocumentId(
                                        String from,
@@ -72,17 +74,14 @@ public class TransportRequestCreateTest extends BasePiperTest {
                                       }
         }
 
-        thrown.expect(AbortException)
-        thrown.expectMessage("Change document id not provided (parameter: 'changeDocumentId' or via commit history).")
-
         jsr.step.call(script: nullScript, developmentSystemId: '001', cmUtils: cm)
     }
 
     @Test
     public void developmentSystemIdNotProvidedTest() {
 
-        thrown.expect(AbortException)
-        thrown.expectMessage("Development system id not provided (parameter: 'developmentSystemId').")
+        thrown.expect(IllegalArgumentException)
+        thrown.expectMessage("ERROR - NO VALUE AVAILABLE FOR developmentSystemId")
 
         jsr.step.call(script: nullScript, changeDocumentId: '001')
     }
