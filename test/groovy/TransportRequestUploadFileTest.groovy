@@ -60,6 +60,9 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
     @Test
     public void changeDocumentIdNotProvidedTest() {
 
+        thrown.expect(IllegalArgumentException)
+        thrown.expectMessage("Change document id not provided (parameter: 'changeDocumentId' or via commit history).")
+
         ChangeManagement cm = new ChangeManagement(nullScript) {
             String getChangeDocumentId(
                                        String from,
@@ -70,9 +73,6 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
                                         throw new ChangeManagementException('Cannot retrieve changeId from git commits.')
                                       }
         }
-
-        thrown.expect(AbortException)
-        thrown.expectMessage("Change document id not provided (parameter: 'changeDocumentId' or via commit history).")
 
         jsr.step.call(script: nullScript, transportRequestId: '001', applicationId: 'app', filePath: '/path', cmUtils: cm)
     }
@@ -91,8 +91,8 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
                                     }
         }
 
-        thrown.expect(AbortException)
-        thrown.expectMessage("Transport Request id not provided (parameter: 'transportRequestId' or via commit history).")
+        thrown.expect(IllegalArgumentException)
+        thrown.expectMessage("Transport request id not provided (parameter: 'transportRequestId' or via commit history).")
 
         jsr.step.call(script: nullScript, changeDocumentId: '001', applicationId: 'app', filePath: '/path', cmUtils: cm)
     }
@@ -100,8 +100,8 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
     @Test
     public void applicationIdNotProvidedTest() {
 
-        thrown.expect(AbortException)
-        thrown.expectMessage("Application id not provided (parameter: 'applicationId').")
+        thrown.expect(IllegalArgumentException)
+        thrown.expectMessage("ERROR - NO VALUE AVAILABLE FOR applicationId")
 
         jsr.step.call(script: nullScript, changeDocumentId: '001', transportRequestId: '001', filePath: '/path')
     }
@@ -109,8 +109,8 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
     @Test
     public void filePathNotProvidedTest() {
 
-        thrown.expect(AbortException)
-        thrown.expectMessage("File path not provided (parameter: 'filePath').")
+        thrown.expect(IllegalArgumentException)
+        thrown.expectMessage("ERROR - NO VALUE AVAILABLE FOR filePath")
 
         jsr.step.call(script: nullScript, changeDocumentId: '001', transportRequestId: '001', applicationId: 'app')
     }
