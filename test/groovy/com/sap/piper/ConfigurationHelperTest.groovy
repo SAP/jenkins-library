@@ -3,7 +3,10 @@ package com.sap.piper
 import groovy.test.GroovyAssert
 
 import static org.hamcrest.Matchers.*
+import static org.junit.Assert.assertEquals
+import static org.junit.Assert.assertThat
 
+import org.hamcrest.Matchers
 import org.junit.Assert
 import org.junit.Rule
 import org.junit.Test
@@ -27,6 +30,24 @@ class ConfigurationHelperTest {
         Assert.assertEquals('default', configuration.getConfigProperty('something', 'default'))
         Assert.assertTrue(configuration.isPropertyDefined('dockerImage'))
         Assert.assertFalse(configuration.isPropertyDefined('something'))
+    }
+
+    @Test
+    void testGetPropertyNestedLeafNodeIsString() {
+        def configuration = new ConfigurationHelper([a:[b: 'c']])
+        assertThat(configuration.getConfigProperty('a/b'), is('c'))
+    }
+
+    @Test
+    void testGetPropertyNestedLeafNodeIsMap() {
+        def configuration = new ConfigurationHelper([a:[b: [c: 'd']]])
+        assertThat(configuration.getConfigProperty('a/b'), is([c: 'd']))
+    }
+
+    @Test
+    void testGetPropertyNestedPathNotFound() {
+        def configuration = new ConfigurationHelper([a:[b: 'c']])
+        assertThat(configuration.getConfigProperty('a/c'), is((nullValue())))
     }
 
     @Test
