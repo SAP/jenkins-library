@@ -74,10 +74,7 @@ class ConfigurationHelper implements Serializable {
     }
 
     def getConfigProperty(key) {
-        if (config[key] != null && config[key].class == String) {
-            return config[key].trim()
-        }
-        return config[key]
+        return getConfigPropertyNested(config, key)
     }
 
     def getConfigProperty(key, defaultValue) {
@@ -86,6 +83,24 @@ class ConfigurationHelper implements Serializable {
             return defaultValue
         }
         return value
+    }
+
+    private getConfigPropertyNested(Map config, key) {
+
+        List parts = (key in String) ? (key as CharSequence).tokenize('/') : ([key] as List)
+
+        if(config[parts.head()] != null) {
+
+            if(config[parts.head()] in Map && parts.size() > 1) {
+                return getConfigPropertyNested(config[parts.head()], String.join('/', parts[1..parts.size()-1]))
+            }
+
+            if (config[parts.head()].class == String) {
+                return (config[parts.head()] as String).trim()
+            }
+        }
+
+        return config[parts.head()]
     }
 
     def isPropertyDefined(key){
