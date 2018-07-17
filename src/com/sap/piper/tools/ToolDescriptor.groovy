@@ -107,9 +107,12 @@ class ToolDescriptor implements Serializable {
 
     def verifyVersion(script, configuration) {
 
-        def executable = getToolExecutable(script, configuration, false)
-        if (singleVersion) VersionUtils.verifyVersion(script, name, executable, singleVersion, versionOption)
-        if (multipleVersions) VersionUtils.verifyVersion(script, name, executable, multipleVersions, versionOption)
+        if(versionOption) {
+            def executable = getToolExecutable(script, configuration, false)
+            def versionDesc = VersionUtils.getVersionDesc(script, name, executable, versionOption)
+            if (singleVersion) VersionUtils.verifyVersion(script, name, versionDesc, singleVersion)
+            if (multipleVersions) VersionUtils.verifyVersion(script, name, versionDesc, multipleVersions)
+        }
     }
 
     def getMessage() {
