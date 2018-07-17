@@ -193,6 +193,17 @@ class ToolDescriptorTest extends BasePiperTest {
         tool.verifyVersion(script, configuration)
     }
 
+    @Test
+    void verifyToolVersion_without_version_check() {
+
+        def tool = new ToolDescriptor('SAP Cloud Platform Console Client', 'NEO_HOME', 'neoHome', '/tools/', 'neo.sh', null, 'version')
+
+        helper.registerAllowedMethod('sh', [Map], { Map m -> getVersion(m) })
+
+        tool.verifyVersion(script, configuration)
+    }
+
+
 
     private getEnvVars(Map m) {
 
