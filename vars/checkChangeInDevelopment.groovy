@@ -10,14 +10,8 @@ import com.sap.piper.cm.ChangeManagementException
 @Field def STEP_NAME = 'checkChangeInDevelopment'
 
 @Field Set stepConfigurationKeys = [
-    'cmClientOpts',
-    'credentialsId',
-    'endpoint',
-    'failIfStatusIsNotInDevelopment',
-    'gitFrom',
-    'gitTo',
-    'gitChangeDocumentLabel',
-    'gitFormat'
+    'changeManagement',
+    'failIfStatusIsNotInDevelopment'
   ]
 
 @Field Set parameterKeys = stepConfigurationKeys.plus('changeDocumentId')
@@ -40,6 +34,17 @@ def call(parameters = [:]) {
                                            .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName?:env.STAGE_NAME, stepConfigurationKeys)
                                            .mixinStepConfig(script.commonPipelineEnvironment, stepConfigurationKeys)
                                            .mixin(parameters, parameterKeys)
+                                            // for the following parameters we expect defaults
+                                           .withMandatoryProperty('changeManagement/changeDocumentLabel')
+                                           .withMandatoryProperty('changeManagement/clientOpts')
+                                           .withMandatoryProperty('changeManagement/credentialsId')
+                                           .withMandatoryProperty('changeManagement/git/from')
+                                           .withMandatoryProperty('changeManagement/git/to')
+                                           .withMandatoryProperty('changeManagement/git/format')
+                                           .withMandatoryProperty('failIfStatusIsNotInDevelopment')
+                                           // for the following parameters we expect a value provided from outside
+                                           .withMandatoryProperty('changeManagement/endpoint')
+
 
         Map configuration = configHelper.use()
 
@@ -51,15 +56,15 @@ def call(parameters = [:]) {
 
         } else {
 
-          echo "[INFO] Retrieving ChangeDocumentId from commit history [from: ${configuration.gitFrom}, to: ${configuration.gitTo}]." +
-               "Searching for pattern '${configuration.gitChangeDocumentLabel}'. Searching with format '${configuration.gitFormat}'."
+          echo "[INFO] Retrieving ChangeDocumentId from commit history [from: ${configuration.changeManagement.git.from}, to: ${configuration.changeManagement.git.to}]." +
+               "Searching for pattern '${configuration.changeManagement.changeDocumentLabel}'. Searching with format '${configuration.changeManagement.git.format}'."
 
             try {
                 changeId = cm.getChangeDocumentId(
-                                                  configuration.gitFrom,
-                                                  configuration.gitTo,
-                                                  configuration.gitChangeDocumentLabel,
-                                                  configuration.gitFormat
+                                                  configuration.changeManagement.git.from,
+                                                  configuration.changeManagement.git.to,
+                                                  configuration.changeManagement.changeDocumentLabel,
+                                                  configuration.changeManagement.git.format
                                                  )
                 if(changeId?.trim()) {
                     echo "[INFO] ChangeDocumentId '${changeId}' retrieved from commit history"
@@ -70,11 +75,10 @@ def call(parameters = [:]) {
         }
 
         configuration = configHelper.mixin([changeDocumentId: changeId?.trim() ?: null], ['changeDocumentId'] as Set)
-                                    .withMandatoryProperty('endpoint')
                                     .withMandatoryProperty('changeDocumentId',
                                         "No changeDocumentId provided. Neither via parameter 'changeDocumentId' " +
-                                        "nor via label '${configuration.gitChangeDocumentLabel}' in commit range " +
-                                        "[from: ${configuration.gitFrom}, to: ${configuration.gitTo}].")
+                                        "nor via label '${configuration.changeManagement.changeDocumentLabel}' in commit range " +
+                                        "[from: ${configuration.changeManagement.git.from}, to: ${configuration.changeManagement.git.to}].")
                                     .use()
 
         boolean isInDevelopment
@@ -82,16 +86,16 @@ def call(parameters = [:]) {
         echo "[INFO] Checking if change document '${configuration.changeDocumentId}' is in development."
 
         withCredentials([usernamePassword(
-            credentialsId: configuration.credentialsId,
+            credentialsId: configuration.changeManagement.credentialsId,
             passwordVariable: 'password',
             usernameVariable: 'username')]) {
 
             try {
                 isInDevelopment = cm.isChangeInDevelopment(configuration.changeDocumentId,
-                                                           configuration.endpoint,
+                                                           configuration.changeManagement.endpoint,
                                                            username,
                                                            password,
-                                                           configuration.cmClientOpts)
+                                                           configuration.changeManagement.clientOpts)
             } catch(ChangeManagementException ex) {
                 throw new AbortException(ex.getMessage())
             }
