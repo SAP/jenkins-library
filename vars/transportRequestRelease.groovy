@@ -12,9 +12,7 @@ import hudson.AbortException
 @Field def STEP_NAME = 'transportRequestRelease'
 
 @Field Set stepConfigurationKeys = [
-    'credentialsId',
-    'cmClientOpts',
-    'endpoint'
+    'changeManagement'
   ]
 
 @Field Set parameterKeys = stepConfigurationKeys.plus([
@@ -40,23 +38,25 @@ def call(parameters = [:]) {
                             .mixin(parameters, parameterKeys)
                             .withMandatoryProperty('changeDocumentId')
                             .withMandatoryProperty('transportRequestId')
-                            .withMandatoryProperty('endpoint')
+                            .withMandatoryProperty('changeManagement/clientOpts')
+                            .withMandatoryProperty('changeManagement/credentialsId')
+                            .withMandatoryProperty('changeManagement/endpoint')
                             .use()
 
         echo "[INFO] Closing transport request '${configuration.transportRequestId}' for change document '${configuration.changeDocumentId}'."
 
         withCredentials([usernamePassword(
-            credentialsId: configuration.credentialsId,
+            credentialsId: configuration.changeManagement.credentialsId,
             passwordVariable: 'password',
             usernameVariable: 'username')]) {
 
             try {
                 cm.releaseTransportRequest(configuration.changeDocumentId,
                                            configuration.transportRequestId,
-                                           configuration.endpoint,
+                                           configuration.changeManagement.endpoint,
                                            username,
                                            password,
-                                           configuration.cmClientOpts)
+                                           configuration.changeManagement.clientOpts)
             } catch(ChangeManagementException ex) {
                 throw new AbortException(ex.getMessage())
             }
