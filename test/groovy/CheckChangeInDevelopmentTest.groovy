@@ -134,8 +134,10 @@ class CheckChangeInDevelopmentTest extends BasePiperTest {
     @Test
     public void nullChangeDocumentIdTest() {
 
-        thrown.expect(AbortException)
-        thrown.expectMessage("ChangeId is null or empty.")
+        thrown.expect(IllegalArgumentException)
+        thrown.expectMessage("No changeDocumentId provided. Neither via parameter 'changeDocumentId' " +
+                             "nor via label 'ChangeDocument\\s?:' in commit range " +
+                             "[from: origin/master, to: HEAD].")
 
         ChangeManagement cm = getChangeManagementUtils(false, null)
         jsr.step.checkChangeInDevelopment(
@@ -146,8 +148,10 @@ class CheckChangeInDevelopmentTest extends BasePiperTest {
     @Test
     public void emptyChangeDocumentIdTest() {
 
-        thrown.expect(AbortException)
-        thrown.expectMessage("ChangeId is null or empty.")
+        thrown.expect(IllegalArgumentException)
+        thrown.expectMessage("No changeDocumentId provided. Neither via parameter 'changeDocumentId' " +
+                             "nor via label 'ChangeDocument\\s?:' in commit range " +
+                             "[from: origin/master, to: HEAD].")
 
         ChangeManagement cm = getChangeManagementUtils(false, '')
         jsr.step.checkChangeInDevelopment(
