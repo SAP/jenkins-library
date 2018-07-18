@@ -24,22 +24,44 @@ public class ChangeManagement implements Serializable {
                               String format = '%b'
                             ) {
 
+        return getLabeledItem('ChangeDocumentId', from, to, label, format)
+    }
+
+    String getTransportRequestId(
+                              String from = 'origin/master',
+                              String to = 'HEAD',
+                              String label = 'TransportRequest\\s?:',
+                              String format = '%b'
+                            ) {
+
+        return getLabeledItem('ChangeDocumentId', from, to, label, format)
+    }
+
+    private String getLabeledItem(
+                              String name,
+                              String from,
+                              String to,
+                              String label,
+                              String format
+                            ) {
+
         if( ! gitUtils.insideWorkTree() ) {
-            throw new ChangeManagementException('Cannot retrieve change document id. Not in a git work tree. Change document id is extracted from git commit messages.')
+            throw new ChangeManagementException("Cannot retrieve ${name}. Not in a git work tree. ${name} is extracted from git commit messages.")
         }
 
-        def changeIds = gitUtils.extractLogLines(".*${label}.*", from, to, format)
+        def items = gitUtils.extractLogLines(".*${label}.*", from, to, format)
                                 .collect { line -> line?.replaceAll(label,'')?.trim() }
                                 .unique()
 
-            changeIds.retainAll { line -> line != null && ! line.isEmpty() }
-        if( changeIds.size() == 0 ) {
-            throw new ChangeManagementException("Cannot retrieve changeId from git commits. Change id retrieved from git commit messages via pattern '${label}'.")
-        } else if (changeIds.size() > 1) {
-            throw new ChangeManagementException("Multiple ChangeIds found: ${changeIds}. Change id retrieved from git commit messages via pattern '${label}'.")
+        items.retainAll { line -> line != null && ! line.isEmpty() }
+
+        if( items.size() == 0 ) {
+            throw new ChangeManagementException("Cannot retrieve ${name} from git commits. ${name} retrieved from git commit messages via pattern '${label}'.")
+        } else if (items.size() > 1) {
+            throw new ChangeManagementException("Multiple ${name}s found: ${items}. ${name} retrieved from git commit messages via pattern '${label}'.")
         }
 
-        return changeIds.get(0)
+        return items[0]
     }
 
     boolean isChangeInDevelopment(String changeId, String endpoint, String username, String password, String clientOpts = '') {

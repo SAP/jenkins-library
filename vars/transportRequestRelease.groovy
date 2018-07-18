@@ -14,7 +14,12 @@ import hudson.AbortException
 @Field Set stepConfigurationKeys = [
     'credentialsId',
     'cmClientOpts',
-    'endpoint'
+    'endpoint',
+    'gitChangeDocumentLabel',
+    'gitFrom',
+    'gitTo',
+    'gitTransportRequestLabel',
+    'gitFormat'
   ]
 
 @Field Set parameterKeys = stepConfigurationKeys.plus([
@@ -30,17 +35,78 @@ def call(parameters = [:]) {
 
         def script = parameters?.script ?: [commonPipelineEnvironment: commonPipelineEnvironment]
 
-        ChangeManagement cm = new ChangeManagement(script)
+        ChangeManagement cm = parameters.cmUtils ?: new ChangeManagement(script)
 
-        Map configuration = ConfigurationHelper
+        ConfigurationHelper configHelper = ConfigurationHelper
                             .loadStepDefaults(this)
                             .mixinGeneralConfig(script.commonPipelineEnvironment, generalConfigurationKeys)
                             .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName?:env.STAGE_NAME, stepConfigurationKeys)
                             .mixinStepConfig(script.commonPipelineEnvironment, stepConfigurationKeys)
                             .mixin(parameters, parameterKeys)
                             .withMandatoryProperty('changeDocumentId')
-                            .withMandatoryProperty('transportRequestId')
                             .withMandatoryProperty('endpoint')
+
+        Map configuration = configHelper.use()
+
+        def transportRequestId = configuration.transportRequestId
+
+        if(transportRequestId?.trim()) {
+
+          echo "[INFO] Transport request id '${transportRequestId}' retrieved from parameters."
+
+        } else {
+
+          echo "[INFO] Retrieving transport request id from commit history [from: ${configuration.gitFrom}, to: ${configuration.gitTo}]." +
+               " Searching for pattern '${configuration.gitTransportRequestLabel}'. Searching with format '${configuration.gitFormat}'."
+
+            try {
+                transportRequestId = cm.getTransportRequestId(
+                                                  configuration.gitFrom,
+                                                  configuration.gitTo,
+                                                  configuration.gitTransportRequestLabel,
+                                                  configuration.gitFormat
+                                                 )
+
+                echo "[INFO] Transport request id '${transportRequestId}' retrieved from commit history"
+
+            } catch(ChangeManagementException ex) {
+                echo "[WARN] Cannot retrieve transportRequestId from commit history: ${ex.getMessage()}."
+            }
+        }
+
+        def changeDocumentId = configuration.changeDocumentId
+
+        if(changeDocumentId?.trim()) {
+
+            echo "[INFO] ChangeDocumentId '${changeDocumentId}' retrieved from parameters."
+
+        } else {
+
+            echo "[INFO] Retrieving ChangeDocumentId from commit history [from: ${configuration.gitFrom}, to: ${configuration.gitTo}]." +
+                 "Searching for pattern '${configuration.gitChangeDocumentLabel}'. Searching with format '${configuration.gitFormat}'."
+
+            try {
+                changeDocumentId = cm.getChangeDocumentId(
+                                                  configuration.gitFrom,
+                                                  configuration.gitTo,
+                                                  configuration.gitChangeDocumentLabel,
+                                                  configuration.gitFormat
+                                                 )
+
+                echo "[INFO] ChangeDocumentId '${changeDocumentId}' retrieved from commit history"
+
+            } catch(ChangeManagementException ex) {
+                echo "[WARN] Cannot retrieve changeDocumentId from commit history: ${ex.getMessage()}."
+            }
+        }
+
+        configuration = configHelper
+                            .mixin([transportRequestId: transportRequestId?.trim() ?: null,
+                                    changeDocumentId: changeDocumentId?.trim() ?: null], ['transportRequestId', 'changeDocumentId'] as Set)
+                            .withMandatoryProperty('transportRequestId',
+                                "Transport request id not provided (parameter: \'transportRequestId\' or via commit history).")
+                            .withMandatoryProperty('changeDocumentId',
+                                "Change document id not provided (parameter: \'changeDocumentId\' or via commit history).")
                             .use()
 
         echo "[INFO] Closing transport request '${configuration.transportRequestId}' for change document '${configuration.changeDocumentId}'."

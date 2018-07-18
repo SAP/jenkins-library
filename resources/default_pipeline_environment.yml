@@ -197,4 +197,5 @@ steps:
       gitFrom: 'origin/master'
       gitTo: 'HEAD'
       gitChangeDocumentLabel: 'ChangeDocument\s?:'
+      gitTransportRequestLabel: 'TransportRequest\s?:'
       gitFormat: '%b'
