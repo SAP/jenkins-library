@@ -31,7 +31,6 @@ Releases a Transport Request for a Change Document on the Solution Manager.
 * `gitTransportReqeustLabel` - A pattern used for identifying lines holding the transport request id.
 * `gitFormat` - Specifies what part of the commit is scanned. By default the body of the commit message is scanned.
 
-
 ## Step configuration
 The following parameters can also be specified as step parameters using the global configuration file:
 
