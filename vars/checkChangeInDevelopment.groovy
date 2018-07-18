@@ -2,14 +2,14 @@ import com.sap.piper.GitUtils
 import groovy.transform.Field
 import hudson.AbortException
 
+import com.sap.piper.ConfigurationHelper
 import com.sap.piper.ConfigurationMerger
 import com.sap.piper.cm.ChangeManagement
 import com.sap.piper.cm.ChangeManagementException
 
 @Field def STEP_NAME = 'checkChangeInDevelopment'
 
-@Field Set parameterKeys = [
-    'changeDocumentId',
+@Field Set stepConfigurationKeys = [
     'cmClientOpts',
     'credentialsId',
     'endpoint',
@@ -20,31 +20,28 @@ import com.sap.piper.cm.ChangeManagementException
     'gitFormat'
   ]
 
-@Field Set stepConfigurationKeys = [
-    'changeDocumentId',
-    'cmClientOpts',
-    'credentialsId',
-    'endpoint',
-    'failIfStatusIsNotInDevelopment',
-    'gitFrom',
-    'gitTo',
-    'gitChangeDocumentLabel',
-    'gitFormat'
-  ]
+@Field Set parameterKeys = stepConfigurationKeys.plus('changeDocumentId')
+
+@Field Set generalConfigurationKeys = stepConfigurationKeys
 
 def call(parameters = [:]) {
 
     handlePipelineStepErrors (stepName: STEP_NAME, stepParameters: parameters) {
 
-        prepareDefaultValues script: this
+        def script = parameters.script ?: [commonPipelineEnvironment: commonPipelineEnvironment]
 
         GitUtils gitUtils = parameters?.gitUtils ?: new GitUtils()
 
-        ChangeManagement cm = parameters?.cmUtils ?: new ChangeManagement(parameters.script, gitUtils)
+        ChangeManagement cm = parameters?.cmUtils ?: new ChangeManagement(script, gitUtils)
 
-        Map configuration = ConfigurationMerger.merge(parameters.script, STEP_NAME,
-                                                      parameters, parameterKeys,
-                                                      stepConfigurationKeys)
+        ConfigurationHelper configHelper = ConfigurationHelper
+                                           .loadStepDefaults(this)
+                                           .mixinGeneralConfig(script.commonPipelineEnvironment, generalConfigurationKeys)
+                                           .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName?:env.STAGE_NAME, stepConfigurationKeys)
+                                           .mixinStepConfig(script.commonPipelineEnvironment, stepConfigurationKeys)
+                                           .mixin(parameters, parameterKeys)
+
+        Map configuration = configHelper.use()
 
         def changeId = configuration.changeDocumentId
 
@@ -66,17 +63,23 @@ def call(parameters = [:]) {
                                                  )
                 if(changeId?.trim()) {
                     echo "[INFO] ChangeDocumentId '${changeId}' retrieved from commit history"
-                } else {
-                    throw new ChangeManagementException("ChangeId is null or empty.")
                 }
             } catch(ChangeManagementException ex) {
                 throw new AbortException(ex.getMessage())
             }
         }
 
+        configuration = configHelper.mixin([changeDocumentId: changeId?.trim() ?: null], ['changeDocumentId'] as Set)
+                                    .withMandatoryProperty('endpoint')
+                                    .withMandatoryProperty('changeDocumentId',
+                                        "No changeDocumentId provided. Neither via parameter 'changeDocumentId' " +
+                                        "nor via label '${configuration.gitChangeDocumentLabel}' in commit range " +
+                                        "[from: ${configuration.gitFrom}, to: ${configuration.gitTo}].")
+                                    .use()
+
         boolean isInDevelopment
 
-        echo "[INFO] Checking if change document '$changeId' is in development."
+        echo "[INFO] Checking if change document '${configuration.changeDocumentId}' is in development."
 
         withCredentials([usernamePassword(
             credentialsId: configuration.credentialsId,
@@ -84,7 +87,11 @@ def call(parameters = [:]) {
             usernameVariable: 'username')]) {
 
             try {
-                isInDevelopment = cm.isChangeInDevelopment(changeId, configuration.endpoint, username, password, configuration.cmClientOpts)
+                isInDevelopment = cm.isChangeInDevelopment(configuration.changeDocumentId,
+                                                           configuration.endpoint,
+                                                           username,
+                                                           password,
+                                                           configuration.cmClientOpts)
             } catch(ChangeManagementException ex) {
                 throw new AbortException(ex.getMessage())
             }
