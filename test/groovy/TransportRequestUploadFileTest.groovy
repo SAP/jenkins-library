@@ -1,3 +1,5 @@
+import java.util.Map
+
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -27,6 +29,8 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
         .around(jsr)
         .around(jlr)
 
+    private Map cmUtilReceivedParams = [:]
+
     @Before
     public void setup() {
 
@@ -45,7 +49,7 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
             }
          })
 
-        helper.registerAllowedMethod('sh', [Map], { Map m -> return 0 })
+        cmUtilReceivedParams.clear()
 
         nullScript.commonPipelineEnvironment.configuration = [steps:
                                      [transportRequestUploadFile:
@@ -134,11 +138,75 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
     @Test
     public void uploadFileToTransportRequestSuccessTest() {
 
-        helper.registerAllowedMethod('sh', [Map], { Map m -> return 0 })
+        jlr.expect("[INFO] Uploading file '/path' to transport request '002' of change document '001'.")
+        jlr.expect("[INFO] File '/path' has been successfully uploaded to transport request '002' of change document '001'.")
 
-        jsr.step.call(script: nullScript, changeDocumentId: '001', transportRequestId: '001', applicationId: 'app', filePath: '/path')
+        ChangeManagement cm = new ChangeManagement(nullScript) {
+            void uploadFileToTransportRequest(String changeId,
+                                              String transportRequestId,
+                                              String applicationId,
+                                              String filePath,
+                                              String endpoint,
+                                              String username,
+                                              String password,
+                                              String cmclientOpts) {
 
-        assert jlr.log.contains("[INFO] Uploading file '/path' to transport request '001' of change document '001'.")
-        assert jlr.log.contains("[INFO] File '/path' has been successfully uploaded to transport request '001' of change document '001'.")
+                cmUtilReceivedParams.changeId = changeId
+                cmUtilReceivedParams.transportRequestId = transportRequestId
+                cmUtilReceivedParams.applicationId = applicationId
+                cmUtilReceivedParams.filePath = filePath
+                cmUtilReceivedParams.endpoint = endpoint
+                cmUtilReceivedParams.username = username
+                cmUtilReceivedParams.password = password
+                cmUtilReceivedParams.cmclientOpts = cmclientOpts
+            }
+        }
+
+        jsr.step.call(script: nullScript,
+                      changeDocumentId: '001',
+                      transportRequestId: '002',
+                      applicationId: 'app',
+                      filePath: '/path',
+                      cmUtils: cm)
+
+        assert cmUtilReceivedParams ==
+            [
+                changeId: '001',
+                transportRequestId: '002',
+                applicationId: 'app',
+                filePath: '/path',
+                endpoint: 'https://example.org/cm',
+                username: 'anonymous',
+                password: '********',
+                cmclientOpts: null
+            ]
     }
+
+    @Test
+    public void uploadFileToTransportRequestUploadFailureTest() {
+
+        thrown.expect(AbortException)
+        thrown.expectMessage('Upload failure.')
+
+        ChangeManagement cm = new ChangeManagement(nullScript) {
+            void uploadFileToTransportRequest(String changeId,
+                                              String transportRequestId,
+                                              String applicationId,
+                                              String filePath,
+                                              String endpoint,
+                                              String username,
+                                              String password,
+                                              String cmclientOpts) {
+                throw new ChangeManagementException('Upload failure.')
+            }
+        }
+
+        jsr.step.call(script: nullScript,
+                      changeDocumentId: '001',
+                      transportRequestId: '001',
+                      applicationId: 'app',
+                      filePath: '/path',
+                      cmUtils: cm)
+    }
+
 }

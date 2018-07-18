@@ -46,8 +46,6 @@ public class TransportRequestReleaseTest extends BasePiperTest {
             }
          })
 
-        helper.registerAllowedMethod('sh', [Map], { Map m -> return 0 })
-
         nullScript.commonPipelineEnvironment.configuration = [steps:
                                      [transportRequestRelease:
                                          [
