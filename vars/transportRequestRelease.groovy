@@ -13,8 +13,11 @@ import hudson.AbortException
 
 @Field Set stepConfigurationKeys = [
     'credentialsId',
-    'cmClientOpts',
-    'endpoint'
+    'endpoint',
+    'gitChangeDocumentLabel',
+    'gitFormat',
+    'gitFrom',
+    'gitTo'
   ]
 
 @Field Set parameterKeys = stepConfigurationKeys.plus([
@@ -30,7 +33,7 @@ def call(parameters = [:]) {
 
         def script = parameters?.script ?: [commonPipelineEnvironment: commonPipelineEnvironment]
 
-        ChangeManagement cm = new ChangeManagement(script)
+        ChangeManagement cm = parameters.cmUtils ?: new ChangeManagement(script)
 
         Map configuration = ConfigurationHelper
                             .loadStepDefaults(this)
@@ -42,6 +45,36 @@ def call(parameters = [:]) {
                             .withMandatoryProperty('transportRequestId')
                             .withMandatoryProperty('endpoint')
                             .use()
+
+        def changeDocumentId = configuration.changeDocumentId
+
+        if(changeDocumentId?.trim()) {
+
+            echo "[INFO] ChangeDocumentId '${changeDocumentId}' retrieved from parameters."
+
+        } else {
+
+            echo "[INFO] Retrieving ChangeDocumentId from commit history [from: ${configuration.gitFrom}, to: ${configuration.gitTo}]." +
+                 "Searching for pattern '${configuration.gitChangeDocumentLabel}'. Searching with format '${configuration.gitFormat}'."
+
+            try {
+                changeDocumentId = cm.getChangeDocumentId(
+                                                  configuration.gitFrom,
+                                                  configuration.gitTo,
+                                                  configuration.gitChangeDocumentLabel,
+                                                  configuration.gitFormat
+                                                 )
+
+                echo "[INFO] ChangeDocumentId '${changeDocumentId}' retrieved from commit history"
+
+            } catch(ChangeManagementException ex) {
+                echo "[WARN] Cannot retrieve changeDocumentId from commit history: ${ex.getMessage()}."
+            }
+        }
+
+        if(!changeDocumentId) {
+            throw new AbortException("Change document id not provided (parameter: 'changeDocumentId' or via commit history).")
+        }
 
         echo "[INFO] Closing transport request '${configuration.transportRequestId}' for change document '${configuration.changeDocumentId}'."
 
