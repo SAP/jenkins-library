@@ -73,7 +73,7 @@ def call(parameters = [:]) {
                                     .withMandatoryProperty('endpoint')
                                     .withMandatoryProperty('changeDocumentId',
                                         "No changeDocumentId provided. Neither via parameter 'changeDocumentId' " +
-                                        "nor via label 'configuration.gitChangeIdLabel' in commit range " +
+                                        "nor via label '${configuration.gitChangeDocumentLabel}' in commit range " +
                                         "[from: ${configuration.gitFrom}, to: ${configuration.gitTo}].")
                                     .use()
 
