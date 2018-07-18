@@ -13,6 +13,7 @@ import util.JenkinsLoggingRule
 import util.Rules
 
 import hudson.AbortException
+import hudson.scm.NullSCM
 
 
 public class TransportRequestReleaseTest extends BasePiperTest {
@@ -78,10 +79,19 @@ public class TransportRequestReleaseTest extends BasePiperTest {
     @Test
     public void transportRequestIdNotProvidedTest() {
 
-        thrown.expect(IllegalArgumentException)
-        thrown.expectMessage("ERROR - NO VALUE AVAILABLE FOR transportRequestId")
+        ChangeManagement cm = new ChangeManagement(nullScript) {
+            String getTransportRequestId(String from,
+                                         String to,
+                                         String label,
+                                         String format) {
+                throw new ChangeManagementException('Cannot retrieve transportRequestId')
+            }
+        }
 
-        jsr.step.call(script: nullScript, changeDocumentId: '001')
+        thrown.expect(IllegalArgumentException)
+        thrown.expectMessage("Transport request id not provided (parameter: 'transportRequestId' or via commit history).")
+
+        jsr.step.call(script: nullScript, changeDocumentId: '001', cmUtils: cm)
     }
 
     @Test
