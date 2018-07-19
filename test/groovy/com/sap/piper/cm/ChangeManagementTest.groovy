@@ -10,6 +10,7 @@ import static org.junit.Assert.assertThat
 
 import org.hamcrest.Matchers
 import org.junit.Assert
+import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.ExpectedException
@@ -32,11 +33,23 @@ public class ChangeManagementTest extends BasePiperTest {
     private JenkinsShellCallRule script = new JenkinsShellCallRule(this)
     private JenkinsLoggingRule logging = new JenkinsLoggingRule(this)
 
+    private receivedDockerParams = [:]
+
     @Rule
     public RuleChain rules = Rules.getCommonRules(this)
         .around(thrown)
         .around(script)
         .around(logging)
+
+    @Before
+    public void setup() {
+        receivedDockerParams.clear()
+        helper.registerAllowedMethod('dockerExecute', [Map, Closure],
+            {   m, c ->
+                receivedDockerParams.putAll(m);
+                c()
+            })
+    }
 
     @Test
     public void testRetrieveChangeDocumentIdOutsideGitWorkTreeTest() {
@@ -46,7 +59,7 @@ public class ChangeManagementTest extends BasePiperTest {
                              'Not in a git work tree. ' +
                              'ChangeDocumentId is extracted from git commit messages.')
 
-        new ChangeManagement(nullScript, gitUtilsMock(false, new String[0])).getChangeDocumentId()
+        new ChangeManagement(nullScript, null, gitUtilsMock(false, new String[0])).getChangeDocumentId()
     }
 
     @Test
@@ -55,7 +68,7 @@ public class ChangeManagementTest extends BasePiperTest {
         thrown.expect(ChangeManagementException)
         thrown.expectMessage('Cannot retrieve ChangeDocumentId from git commits.')
 
-        new ChangeManagement(nullScript, gitUtilsMock(true, new String[0])).getChangeDocumentId()
+        new ChangeManagement(nullScript, null, gitUtilsMock(true, new String[0])).getChangeDocumentId()
     }
 
     @Test
@@ -64,7 +77,7 @@ public class ChangeManagementTest extends BasePiperTest {
         thrown.expect(ChangeManagementException)
         thrown.expectMessage('Cannot retrieve ChangeDocumentId from git commits.')
 
-        new ChangeManagement(nullScript, gitUtilsMock(true, (String[])[ null ])).getChangeDocumentId()
+        new ChangeManagement(nullScript, null, gitUtilsMock(true, (String[])[ null ])).getChangeDocumentId()
     }
 
     @Test
@@ -74,14 +87,14 @@ public class ChangeManagementTest extends BasePiperTest {
         thrown.expectMessage('Multiple ChangeDocumentIds found')
 
         String[] changeIds = [ 'a', 'b' ]
-        new ChangeManagement(nullScript, gitUtilsMock(true, changeIds)).getChangeDocumentId()
+        new ChangeManagement(nullScript, null, gitUtilsMock(true, changeIds)).getChangeDocumentId()
     }
 
     @Test
     public void testRetrieveChangeDocumentSameChangeIdFoundTwice() {
 
         String[] changeIds = [ 'a', 'a' ]
-        def changeID = new ChangeManagement(nullScript, gitUtilsMock(true, changeIds)).getChangeDocumentId()
+        def changeID = new ChangeManagement(nullScript, null, gitUtilsMock(true, changeIds)).getChangeDocumentId()
 
         assert changeID == 'a'
     }
@@ -91,7 +104,7 @@ public class ChangeManagementTest extends BasePiperTest {
 
         script.setReturnValue(JenkinsShellCallRule.Type.REGEX, "cmclient.*is-change-in-development -cID '001'", 0)
 
-        boolean inDevelopment = new ChangeManagement(nullScript, null).isChangeInDevelopment('001', 'endpoint', 'user', 'password')
+        boolean inDevelopment = new ChangeManagement(nullScript, [:], null).isChangeInDevelopment('001', 'endpoint', 'user', 'password')
 
         assertThat(inDevelopment, is(equalTo(true)))
         assertThat(script.shell[0], allOf(containsString("cmclient"),
@@ -101,6 +114,13 @@ public class ChangeManagementTest extends BasePiperTest {
                                             containsString('is-change-in-development'),
                                             containsString("-cID '001'"),
                                             containsString("-t SOLMAN")))
+
+        assert receivedDockerParams == // do a real work check and update the params here
+            [ dockerImage:null,
+              dockerEnvVars:null,
+              dockerOptions: '',
+              dockerVolumeBind:[:]
+            ]
     }
 
     @Test

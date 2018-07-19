@@ -152,7 +152,7 @@ class CheckChangeInDevelopmentTest extends BasePiperTest {
 
     private ChangeManagement getChangeManagementUtils(boolean inDevelopment, String changeDocumentId = '001') {
 
-        return new ChangeManagement(nullScript, null) {
+        return new ChangeManagement(nullScript) {
 
             String getChangeDocumentId(
                 String filter,

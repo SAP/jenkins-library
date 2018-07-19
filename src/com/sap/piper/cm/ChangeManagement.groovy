@@ -11,10 +11,17 @@ public class ChangeManagement implements Serializable {
 
     private script
     private GitUtils gitUtils
+    private dockerParams
 
-    public ChangeManagement(def script, GitUtils gitUtils = null) {
+    public ChangeManagement(def script,
+                            def dockerParams = null,
+                            GitUtils gitUtils = null) {
         this.script = script
         this.gitUtils = gitUtils ?: new GitUtils()
+        this.dockerParams = dockerParams ?: [dockerImage: null,
+                                             dockerEnvVars: null,
+                                             dockerOptions: '',
+                                             dockerVolumeBind: [:]]
     }
 
     String getChangeDocumentId(
@@ -68,7 +75,8 @@ public class ChangeManagement implements Serializable {
 
                 int rc
 
-                script.dockerExecute() {
+                script.dockerExecute(dockerParams) {
+
                   rc = script.sh(returnStatus: true,
                                  script: getCMCommandLine(endpoint, username, password,
                                                           'is-change-in-development', ['-cID', "'${changeId}'",
