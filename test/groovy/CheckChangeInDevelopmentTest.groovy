@@ -136,7 +136,7 @@ class CheckChangeInDevelopmentTest extends BasePiperTest {
 
         thrown.expect(IllegalArgumentException)
         thrown.expectMessage("No changeDocumentId provided. Neither via parameter 'changeDocumentId' " +
-                             "nor via label 'configuration.gitChangeIdLabel' in commit range " +
+                             "nor via label 'ChangeDocument\\s?:' in commit range " +
                              "[from: origin/master, to: HEAD].")
 
         ChangeManagement cm = getChangeManagementUtils(false, null)
@@ -150,7 +150,7 @@ class CheckChangeInDevelopmentTest extends BasePiperTest {
 
         thrown.expect(IllegalArgumentException)
         thrown.expectMessage("No changeDocumentId provided. Neither via parameter 'changeDocumentId' " +
-                             "nor via label 'configuration.gitChangeIdLabel' in commit range " +
+                             "nor via label 'ChangeDocument\\s?:' in commit range " +
                              "[from: origin/master, to: HEAD].")
 
         ChangeManagement cm = getChangeManagementUtils(false, '')
