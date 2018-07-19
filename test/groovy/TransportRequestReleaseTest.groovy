@@ -8,6 +8,7 @@ import com.sap.piper.cm.ChangeManagement
 import com.sap.piper.cm.ChangeManagementException
 
 import util.BasePiperTest
+import util.JenkinsCredentialsRule
 import util.JenkinsStepRule
 import util.JenkinsLoggingRule
 import util.Rules
@@ -27,24 +28,11 @@ public class TransportRequestReleaseTest extends BasePiperTest {
         .around(thrown)
         .around(jsr)
         .around(jlr)
+        .around(new JenkinsCredentialsRule(this)
+            .withCredentials('CM', 'anonymous', '********'))
 
     @Before
     public void setup() {
-
-        helper.registerAllowedMethod('usernamePassword', [Map.class], {m -> return m})
-
-        helper.registerAllowedMethod('withCredentials', [List, Closure], { l, c ->
-
-            credentialsId = l[0].credentialsId
-            binding.setProperty('username', 'anonymous')
-            binding.setProperty('password', '********')
-            try {
-                c()
-            } finally {
-                binding.setProperty('username', null)
-                binding.setProperty('password', null)
-            }
-         })
 
         nullScript.commonPipelineEnvironment.configuration = [steps:
                                      [transportRequestRelease:
