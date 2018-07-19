@@ -4,12 +4,16 @@ import org.junit.Test
 import org.junit.rules.ExpectedException
 import org.junit.rules.RuleChain
 
+import com.sap.piper.cm.ChangeManagement
+import com.sap.piper.cm.ChangeManagementException
+
 import util.BasePiperTest
 import util.JenkinsStepRule
 import util.JenkinsLoggingRule
 import util.Rules
 
 import hudson.AbortException
+import hudson.scm.NullSCM
 
 
 public class TransportRequestReleaseTest extends BasePiperTest {
@@ -42,8 +46,6 @@ public class TransportRequestReleaseTest extends BasePiperTest {
             }
          })
 
-        helper.registerAllowedMethod('sh', [Map], { Map m -> return 0 })
-
         nullScript.commonPipelineEnvironment.configuration = [steps:
                                      [transportRequestRelease:
                                          [
@@ -57,19 +59,37 @@ public class TransportRequestReleaseTest extends BasePiperTest {
     @Test
     public void changeIdNotProvidedTest() {
 
+        ChangeManagement cm = new ChangeManagement(nullScript) {
+            String getChangeDocumentId(String from,
+                                       String to,
+                                       String label,
+                                       String format) {
+                                throw new ChangeManagementException('Cannot retrieve change documentId')
+            }
+        }
+
         thrown.expect(IllegalArgumentException)
         thrown.expectMessage("ERROR - NO VALUE AVAILABLE FOR changeDocumentId")
 
-        jsr.step.call(script: nullScript, transportRequestId: '001')
+        jsr.step.call(script: nullScript, transportRequestId: '001', cmUtils: cm)
     }
 
     @Test
     public void transportRequestIdNotProvidedTest() {
 
-        thrown.expect(IllegalArgumentException)
-        thrown.expectMessage("ERROR - NO VALUE AVAILABLE FOR transportRequestId")
+        ChangeManagement cm = new ChangeManagement(nullScript) {
+            String getTransportRequestId(String from,
+                                         String to,
+                                         String label,
+                                         String format) {
+                throw new ChangeManagementException('Cannot retrieve transportRequestId')
+            }
+        }
 
-        jsr.step.call(script: nullScript, changeDocumentId: '001')
+        thrown.expect(IllegalArgumentException)
+        thrown.expectMessage("Transport request id not provided (parameter: 'transportRequestId' or via commit history).")
+
+        jsr.step.call(script: nullScript, changeDocumentId: '001', cmUtils: cm)
     }
 
     @Test
