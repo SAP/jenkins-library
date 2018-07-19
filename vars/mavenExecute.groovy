@@ -88,6 +88,7 @@ def call(Map parameters = [:]) {
             command += " ${defines}"
         }
         if(env.jaas_owner){
+            echo "Not touching docker !!"
             container(name: 'container-exec') {
                    sh command 
            }
