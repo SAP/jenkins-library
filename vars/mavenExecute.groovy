@@ -87,8 +87,13 @@ def call(Map parameters = [:]) {
         if (defines?.trim()){
             command += " ${defines}"
         }
-
+        if(env.jaas_owner){
+            container(name: 'container-exec') {
+                   sh command 
+           }
+        }else{
         dockerExecute(dockerImage: configuration.dockerImage, dockerOptions: configuration.dockerOptions) { sh command }
+        }
     }
 }
 
