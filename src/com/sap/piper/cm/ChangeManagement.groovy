@@ -34,7 +34,7 @@ public class ChangeManagement implements Serializable {
                               String format = '%b'
                             ) {
 
-        return getLabeledItem('ChangeDocumentId', from, to, label, format)
+        return getLabeledItem('TransportRequestId', from, to, label, format)
     }
 
     private String getLabeledItem(
