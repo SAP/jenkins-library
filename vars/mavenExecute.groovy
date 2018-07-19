@@ -67,7 +67,7 @@ def call(Map parameters = [:]) {
         }
 
         // Always use Maven's batch mode
-        if (!(command.contains('-B') || command.contains('--batch-mode'))){
+        if (!(command =~ /--batch-mode|-B(?=\s)|-B$/)) {
             command += ' --batch-mode'
         }
 

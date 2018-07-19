@@ -63,10 +63,17 @@ class MavenExecuteTest extends BasePiperTest {
 
     @Test
     void testMavenCommandForwardsDockerOptions() throws Exception {
-
         jsr.step.mavenExecute(script: nullScript, goals: 'clean install')
         assertEquals('maven:3.5-jdk-7', jder.dockerParams.dockerImage)
 
-        assert jscr.shell[0] == 'mvn --batch-mode -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn clean install'
+        assertEquals('mvn --batch-mode -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn clean install', jscr.shell[0])
+    }
+
+    @Test
+    void testMavenCommandWithShortBatchModeFlag() throws Exception {
+        jsr.step.mavenExecute(script: nullScript, goals: 'clean install', flags: '-B')
+        assertEquals('maven:3.5-jdk-7', jder.dockerParams.dockerImage)
+
+        assertEquals('mvn -B -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn clean install', jscr.shell[0])
     }
 }
