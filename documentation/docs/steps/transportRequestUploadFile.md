@@ -19,6 +19,7 @@ Uploads a file to a Transport Request for a Change Document on the Solution Mana
 | `gitFrom`         | no        | `origin/master`                                        |                    |
 | `gitTo`           | no        | `HEAD`                                                 |                    |
 | `gitChangeDocumentLabel`        | no        | `ChangeDocument\s?:`                                   | regex pattern      |
+| `gitTransportRequestLabel`        | no        | `TransportRequest\s?:`                                   | regex pattern      |
 | `gitFormat`        | no        | `%b`                                                   | see `git log --help` |
 
 * `script` - The common script environment of the Jenkinsfile running. Typically the reference to the script calling the pipeline step is provided with the `this` parameter, as in `script: this`. This allows the function to access the [`commonPipelineEnvironment`](commonPipelineEnvironment.md) for retrieving, for example, configuration parameters.
@@ -31,6 +32,7 @@ Uploads a file to a Transport Request for a Change Document on the Solution Mana
 * `gitFrom` - The starting point for retrieving the change document id
 * `gitTo` - The end point for retrieving the change document id
 * `gitChangeDocumentLabel` - A pattern used for identifying lines holding the change document id.
+* `gitTransportRequestLabel` - A pattern used for identifying lines holding the transport request id.
 * `gitFormat` - Specifies what part of the commit is scanned. By default the body of the commit message is scanned.
 
 ## Step configuration
