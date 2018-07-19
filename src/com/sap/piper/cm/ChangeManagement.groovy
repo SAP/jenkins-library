@@ -66,12 +66,15 @@ public class ChangeManagement implements Serializable {
 
     boolean isChangeInDevelopment(String changeId, String endpoint, String username, String password, String clientOpts = '') {
 
-                int rc = script.sh(returnStatus: true,
-                            script: getCMCommandLine(endpoint, username, password,
-                                                     'is-change-in-development', ['-cID', "'${changeId}'",
-                                                                                   '--return-code'],
-                                                                               clientOpts))
+                int rc
 
+                script.dockerExecute() {
+                  rc = script.sh(returnStatus: true,
+                                 script: getCMCommandLine(endpoint, username, password,
+                                                          'is-change-in-development', ['-cID', "'${changeId}'",
+                                                                                       '--return-code'],
+                                                                                   clientOpts))
+                }
                 if(rc == 0) {
                     return true
                 } else if(rc == 3) {
