@@ -57,7 +57,7 @@ public class TransportRequestReleaseTest extends BasePiperTest {
         }
 
         thrown.expect(IllegalArgumentException)
-        thrown.expectMessage("ERROR - NO VALUE AVAILABLE FOR changeDocumentId")
+        thrown.expectMessage("Change document id not provided (parameter: 'changeDocumentId' or via commit history).")
 
         jsr.step.call(script: nullScript, transportRequestId: '001', cmUtils: cm)
     }
