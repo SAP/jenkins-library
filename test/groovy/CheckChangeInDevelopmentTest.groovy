@@ -103,8 +103,9 @@ class CheckChangeInDevelopmentTest extends BasePiperTest {
     @Test
     public void changeDocumentIdRetrievalFailsTest() {
 
-        thrown.expect(AbortException)
-        thrown.expectMessage('Something went wrong')
+        thrown.expect(IllegalArgumentException)
+        thrown.expectMessage("No changeDocumentId provided. Neither via parameter 'changeDocumentId' nor via " +
+                             "label 'ChangeDocument\\s?:' in commit range [from: origin/master, to: HEAD].")
 
         ChangeManagement cm = new ChangeManagement(nullScript, null) {
 

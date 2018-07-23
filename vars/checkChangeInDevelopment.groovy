@@ -65,7 +65,7 @@ def call(parameters = [:]) {
                     echo "[INFO] ChangeDocumentId '${changeId}' retrieved from commit history"
                 }
             } catch(ChangeManagementException ex) {
-                throw new AbortException(ex.getMessage())
+                echo "[WARN] Cannot retrieve changeDocumentId from commit history: ${ex.getMessage()}."
             }
         }
 
