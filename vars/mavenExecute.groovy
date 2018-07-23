@@ -91,7 +91,7 @@ def call(Map parameters = [:]) {
             echo "Not touching docker !!"
             container(name: 'container-exec') {
                    sh command 
-                   sh "pwd && ls -lrt && id && chmod -R a+w . && ls -lrt"
+                   sh "chown -R 1000:1000 ."
            }
         }else{
         dockerExecute(dockerImage: configuration.dockerImage, dockerOptions: configuration.dockerOptions) { sh command }
