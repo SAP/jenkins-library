@@ -87,15 +87,7 @@ def call(Map parameters = [:]) {
         if (defines?.trim()){
             command += " ${defines}"
         }
-        if(env.jaas_owner){
-            echo "Not touching docker !!"
-            container(name: 'container-exec') {
-                   sh command 
-                   sh "chown -R 1000:1000 ."
-           }
-        }else{
         dockerExecute(dockerImage: configuration.dockerImage, dockerOptions: configuration.dockerOptions) { sh command }
-        }
     }
 }
 
