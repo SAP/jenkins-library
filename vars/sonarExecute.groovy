@@ -17,7 +17,8 @@ import groovy.text.SimpleTemplateEngine
     'githubApiUrl', // URL to access GitHub WS API | default: https://api.github.com
     'githubOrg',
     'githubRepo',
-    'githubTokenCredentialsId'
+    'githubTokenCredentialsId',
+    'sonarTokenCredentialsId'
 ]
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
 @Field Set GENERAL_CONFIG_KEYS = STEP_CONFIG_KEYS
@@ -39,6 +40,7 @@ def call(Map parameters = [:], Closure body = null) {
                 changeId: env.CHANGE_ID
             )
             .mixin(parameters, PARAMETER_KEYS)
+            //.withMandatoryProperty('sonarTokenCredentialsId')
             .use()
         // check mandatory parameters
         if(config.isVoter){
@@ -54,34 +56,49 @@ def call(Map parameters = [:], Closure body = null) {
         // resolve templates
         config.options = SimpleTemplateEngine.newInstance().createTemplate(config.options).make([projectVersion: config.projectVersion]).toString()
 
-        dockerExecute(
-            dockerImage: config.dockerImage,
-        ){
-            withSonarQubeEnv(config.instance) {
-                if(config.isVoter){
-                    withCredentials([string(
-                        credentialsId: config.githubTokenCredentialsId,
-                        variable: 'GITHUB_TOKEN'
-                    )]){
-                        def options = [
-                            '-Dsonar.analysis.mode=preview'
-                            "-Dsonar.github.oauth=$GITHUB_TOKEN"
-                            "-Dsonar.github.pullRequest=${config.changeId}"
-                            "-Dsonar.github.repository=${config.githubOrg}/${config.githubRepo}"
-                        ]
-                        if(config.githubApiUrl)
-                            options.push("-Dsonar.github.endpoint=${config.githubApiUrl}")
-                        if(config.disableInlineComments)
-                            options.push("-Dsonar.github.disableInlineComments=${config.disableInlineComments}")
+        def worker = { c, b ->
+            withSonarQubeEnv(c.instance) {
+                if(b) b()
+                sh "sonar-scanner ${c.options}"
+            }
+        }
 
-                        if(body) body()
-                        sh "sonar-scanner ${config.options} ${options.join(' ')}"
-                    }
-                }else{
-                    if(body) body()
-                    sh "sonar-scanner ${config.options}"
+        if(config.sonarTokenCredentialsId){
+            worker = { c, b ->
+                withCredentials([string(
+                    credentialsId: c.sonarTokenCredentialsId,
+                    variable: 'SONAR_TOKEN'
+                )]){
+                    c.options += " -Dsonar.login=$SONAR_TOKEN"
+                    worker(c,b)
                 }
             }
+        }
+
+        if(config.isVoter){
+            worker = { c, b ->
+                withCredentials([string(
+                    credentialsId: c.githubTokenCredentialsId,
+                    variable: 'GITHUB_TOKEN'
+                )]){
+                    c.options += ' -Dsonar.analysis.mode=preview'
+                    c.options += " -Dsonar.github.oauth=$GITHUB_TOKEN"
+                    c.options += " -Dsonar.github.pullRequest=${c.changeId}"
+                    c.options += " -Dsonar.github.repository=${c.githubOrg}/${c.githubRepo}"
+                    if(c.githubApiUrl)
+                        c.options += " -Dsonar.github.endpoint=${c.githubApiUrl}"
+                    if(c.disableInlineComments)
+                        c.options += " -Dsonar.github.disableInlineComments=${c.disableInlineComments}"
+
+                    worker(c,b)
+                }
+            }
+        }
+
+        dockerExecute(
+            dockerImage: config.dockerImage
+        ){
+            worker(config, body)
         }
     }
 }
