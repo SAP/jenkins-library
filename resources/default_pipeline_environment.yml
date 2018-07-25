@@ -138,7 +138,7 @@ steps:
     toJson: false
     toHtml: false
   sonarExecute:
-    dockerImage: 'newtmitch/sonar-scanner:3.2.0-alpine'
+    dockerImage: 'newtmitch/sonar-scanner:3.2.0'
     instance: 'SonarCloud'
     options: "-Dsonar.projectVersion='${projectVersion}'"
   testsPublishResults:
