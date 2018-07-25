@@ -143,6 +143,24 @@ class CloudFoundryDeployTest extends BasePiperTest {
     }
 
     @Test
+    void testCfNativeWithAppNameCustomApi() {
+
+        jsr.step.cloudFoundryDeploy([
+            script: nullScript,
+            juStabUtils: utils,
+            deployTool: 'cf_native',
+            cfApiEndpoint: 'https://customApi',
+            cfOrg: 'testOrg',
+            cfSpace: 'testSpace',
+            cfCredentialsId: 'test_cfCredentialsId',
+            cfAppName: 'testAppName',
+            cfManifest: 'test.yml'
+        ])
+
+        assertTrue(jscr.shell[1].contains('cf login -u "test_cf" -p \'********\' -a https://customApi -o "testOrg" -s "testSpace"'))
+    }
+
+    @Test
     void testCfNativeWithAppNameCompatible() {
 
         jsr.step.cloudFoundryDeploy([

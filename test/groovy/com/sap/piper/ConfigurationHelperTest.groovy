@@ -161,8 +161,8 @@ class ConfigurationHelperTest {
 
     @Test
     void testHandleCompatibility() {
-        def configuration = new ConfigurationHelper([old1: 'oldValue1', old2: 'oldValue2', test: 'testValue'])
-            .handleCompatibility(null, [newStructure: [new1: 'old1', new2: 'old2']])
+        def configuration = new ConfigurationHelper()
+            .mixin([old1: 'oldValue1', old2: 'oldValue2', test: 'testValue'], null, null, [newStructure: [new1: 'old1', new2: 'old2']])
             .use()
 
         Assert.assertThat(configuration.size(), is(4))
@@ -171,9 +171,31 @@ class ConfigurationHelperTest {
     }
 
     @Test
+    void testHandleCompatibilityFlat() {
+        def configuration = new ConfigurationHelper()
+            .mixin([old1: 'oldValue1', old2: 'oldValue2', test: 'testValue'], null, null, [new1: 'old1', new2: 'old2'])
+            .use()
+
+        Assert.assertThat(configuration.size(), is(5))
+        Assert.assertThat(configuration.new1, is('oldValue1'))
+        Assert.assertThat(configuration.new2, is('oldValue2'))
+    }
+
+    @Test
+    void testHandleCompatibilityDeep() {
+        def configuration = new ConfigurationHelper()
+            .mixin([old1: 'oldValue1', old2: 'oldValue2', test: 'testValue'], null, null, [deep:[deeper:[newStructure: [new1: 'old1', new2: 'old2']]]])
+            .use()
+
+        Assert.assertThat(configuration.size(), is(4))
+        Assert.assertThat(configuration.deep.deeper.newStructure.new1, is('oldValue1'))
+        Assert.assertThat(configuration.deep.deeper.newStructure.new2, is('oldValue2'))
+    }
+
+    @Test
     void testHandleCompatibilityNewAvailable() {
         def configuration = new ConfigurationHelper([old1: 'oldValue1', newStructure: [new1: 'newValue1'], test: 'testValue'])
-            .handleCompatibility(null, [newStructure: [new1: 'old1', new2: 'old2']])
+            .mixin([old1: 'oldValue1', newStructure: [new1: 'newValue1'], test: 'testValue'], null, null, [newStructure: [new1: 'old1', new2: 'old2']])
             .use()
 
         Assert.assertThat(configuration.size(), is(3))
@@ -183,13 +205,14 @@ class ConfigurationHelperTest {
     @Test
     void testHandleCompatibilityOldNotSet() {
         def configuration = new ConfigurationHelper([old1: null, test: 'testValue'])
-            .handleCompatibility(null, [newStructure: [new1: 'old1', new2: 'old2']])
+            .mixin([old1: null, test: 'testValue'], null, null, [newStructure: [new1: 'old1', new2: 'old2']])
             .use()
 
         Assert.assertThat(configuration.size(), is(2))
         Assert.assertThat(configuration.newStructure.new1, is(null))
     }
-    @Test 
+
+    @Test
     public void testWithMandoryParameterReturnDefaultFailureMessage() {
 
         thrown.expect(IllegalArgumentException)

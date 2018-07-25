@@ -26,41 +26,48 @@ class ConfigurationHelper implements Serializable {
         return this
     }
 
-    ConfigurationHelper mixinGeneralConfig(commonPipelineEnvironment, Set filter = null){
+    ConfigurationHelper mixinGeneralConfig(commonPipelineEnvironment, Set filter = null, Script step = null, Map compatibleParameters = [:]){
         Map stepConfiguration = ConfigurationLoader.generalConfiguration([commonPipelineEnvironment: commonPipelineEnvironment])
-        return mixin(stepConfiguration, filter)
+        return mixin(stepConfiguration, filter, step, compatibleParameters)
     }
 
-    ConfigurationHelper mixinStageConfig(commonPipelineEnvironment, stageName, Set filter = null){
+    ConfigurationHelper mixinStageConfig(commonPipelineEnvironment, stageName, Set filter = null, Script step = null, Map compatibleParameters = [:]){
         Map stageConfiguration = ConfigurationLoader.stageConfiguration([commonPipelineEnvironment: commonPipelineEnvironment], stageName)
-        return mixin(stageConfiguration, filter)
+        return mixin(stageConfiguration, filter, step, compatibleParameters)
     }
 
-    ConfigurationHelper mixinStepConfig(commonPipelineEnvironment, Set filter = null){
+    ConfigurationHelper mixinStepConfig(commonPipelineEnvironment, Set filter = null, Script step = null, Map compatibleParameters = [:]){
         if(!name) throw new IllegalArgumentException('Step has no public name property!')
         Map stepConfiguration = ConfigurationLoader.stepConfiguration([commonPipelineEnvironment: commonPipelineEnvironment], name)
-        return mixin(stepConfiguration, filter)
+        return mixin(stepConfiguration, filter, step, compatibleParameters)
     }
 
-    ConfigurationHelper mixin(Map parameters, Set filter = null){
+    ConfigurationHelper mixin(Map parameters, Set filter = null, Script step = null, Map compatibleParameters = [:]){
+        if (parameters.size() > 0 && compatibleParameters.size() > 0) {
+            parameters = ConfigurationMerger.merge(handleCompatibility(step, compatibleParameters, parameters), null, parameters)
+        }
         config = ConfigurationMerger.merge(parameters, filter, config)
         return this
     }
 
-    ConfigurationHelper handleCompatibility(Script step, Map compatibleParameters){
+    ConfigurationHelper handleCompatibilityXXX(Script step, Map compatibleParameters){
         config = ConfigurationMerger.merge(recurseCompatibility(step, compatibleParameters, config), null, config)
         return this
     }
 
-    private Map recurseCompatibility(Script step, Map compatibleParameters, String paramStructure = '', configMap) {
+    private Map handleCompatibility(Script step, Map compatibleParameters, String paramStructure = '', Map configMap ) {
         Map newConfig = [:]
         compatibleParameters.each {entry ->
             if (entry.getValue() instanceof Map) {
                 paramStructure = (paramStructure ? paramStructure + '.' : '') + entry.getKey()
-                newConfig[entry.getKey()] = recurseCompatibility(step, entry.getValue(), paramStructure, (configMap!=null ? configMap[entry.getKey()] : null))
+                newConfig[entry.getKey()] = handleCompatibility(step, entry.getValue(), paramStructure, configMap)
             } else {
-                if (configMap == null || (configMap != null && configMap[entry.getKey()] == null)) {
-                    newConfig[entry.getKey()] = config[entry.getValue()]
+                def configSubMap = configMap
+                for(String key in paramStructure.tokenize('.')){
+                    configSubMap = configSubMap?.get(key)
+                }
+                if (configSubMap == null || (configSubMap != null && configSubMap[entry.getKey()] == null)) {
+                    newConfig[entry.getKey()] = configMap[entry.getValue()]
                     def paramName = (paramStructure ? paramStructure + '.' : '') + entry.getKey()
                     if (step) {
                         step.echo ("[INFO] The parameter '${entry.getValue()}' is COMPATIBLE to the parameter '${paramName}'")

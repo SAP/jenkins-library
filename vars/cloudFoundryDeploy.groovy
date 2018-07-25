@@ -4,15 +4,7 @@ import com.sap.piper.ConfigurationHelper
 import groovy.transform.Field
 
 @Field String STEP_NAME = 'cloudFoundryDeploy'
-@Field Set STEP_CONFIG_KEYS_COMPATIBILITY = [
-    'cfApiEndpoint',
-    'cfAppName',
-    'cfCredentialsId',
-    'cfManifest',
-    'cfOrg',
-    'cfSpace'
-]
-@Field Set STEP_CONFIG_KEYS = STEP_CONFIG_KEYS_COMPATIBILITY + [
+@Field Set STEP_CONFIG_KEYS = [
     'cloudFoundry',
     'deployUser',
     'deployTool',
@@ -43,15 +35,14 @@ def call(Map parameters = [:]) {
 
         Map config = ConfigurationHelper
             .loadStepDefaults(this)
-            .mixinGeneralConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS)
-            .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS)
-            .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName?:env.STAGE_NAME, STEP_CONFIG_KEYS)
-            .mixin(parameters, PARAMETER_KEYS)
+            .mixinGeneralConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS, this, CONFIG_KEY_COMPATIBILITY)
+            .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS, this, CONFIG_KEY_COMPATIBILITY)
+            .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName?:env.STAGE_NAME, STEP_CONFIG_KEYS, this, CONFIG_KEY_COMPATIBILITY)
+            .mixin(parameters, PARAMETER_KEYS, this, CONFIG_KEY_COMPATIBILITY)
             .dependingOn('deployTool').mixin('dockerImage')
             .dependingOn('deployTool').mixin('dockerWorkspace')
-            .handleCompatibility(this, CONFIG_KEY_COMPATIBILITY)
             .withMandatoryProperty('cloudFoundry/org')
-            .withMandatoryProperty('cloudFoundry/org')
+            .withMandatoryProperty('cloudFoundry/space')
             .use()
 
         echo "[${STEP_NAME}] General parameters: deployTool=${config.deployTool}, deployType=${config.deployType}, cfApiEndpoint=${config.cloudFoundry.apiEndpoint}, cfOrg=${config.cloudFoundry.org}, cfSpace=${config.cloudFoundry.space}, cfCredentialsId=${config.cloudFoundry.credentialsId}, deployUser=${config.deployUser}"
