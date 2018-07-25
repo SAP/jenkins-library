@@ -111,6 +111,7 @@ private getDockerOptions(Map dockerEnvVars, Map dockerVolumeBind, def dockerOpti
 
 @NonCPS
 boolean hasContainerDefined(script, dockerImage) {
+    echo "Values for${dockerImage} is ${script?.commonPipelineEnvironment?.configuration?.k8sMapping} and stage name is ${env.S4SDK_STAGE_NAME}"
     return script?.commonPipelineEnvironment?.configuration?.k8sMapping[env.S4SDK_STAGE_NAME].containsKey(dockerImage)
 }
 
