@@ -50,6 +50,23 @@ class ConfigurationHelperTest {
         assertThat(configuration.getConfigProperty('a/c'), is((nullValue())))
     }
 
+    void testGetPropertyNestedPathStartsWithTokenizer() {
+        def configuration = new ConfigurationHelper([k:'v'])
+        assertThat(configuration.getConfigProperty('/k'), is(('v')))
+    }
+
+    @Test
+    void testGetPropertyNestedPathEndsWithTokenizer() {
+        def configuration = new ConfigurationHelper([k:'v'])
+        assertThat(configuration.getConfigProperty('k/'), is(('v')))
+    }
+
+    @Test
+    void testGetPropertyNestedPathManyTokenizer() {
+        def configuration = new ConfigurationHelper([k1:[k2 : 'v']])
+        assertThat(configuration.getConfigProperty('///k1/////k2///'), is(('v')))
+    }
+
     @Test
     void testIsPropertyDefined() {
         def configuration = new ConfigurationHelper(getConfiguration())
