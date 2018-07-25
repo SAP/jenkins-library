@@ -3,11 +3,19 @@ package com.sap.piper
 import groovy.test.GroovyAssert
 
 import static org.hamcrest.Matchers.*
+import static org.junit.Assert.assertEquals
+import static org.junit.Assert.assertThat
 
+import org.hamcrest.Matchers
 import org.junit.Assert
+import org.junit.Rule
 import org.junit.Test
+import org.junit.rules.ExpectedException
 
 class ConfigurationHelperTest {
+
+    @Rule
+    public ExpectedException thrown = ExpectedException.none()
 
     private static getConfiguration() {
         Map configuration = [dockerImage: 'maven:3.2-jdk-8-onbuild']
@@ -22,6 +30,42 @@ class ConfigurationHelperTest {
         Assert.assertEquals('default', configuration.getConfigProperty('something', 'default'))
         Assert.assertTrue(configuration.isPropertyDefined('dockerImage'))
         Assert.assertFalse(configuration.isPropertyDefined('something'))
+    }
+
+    @Test
+    void testGetPropertyNestedLeafNodeIsString() {
+        def configuration = new ConfigurationHelper([a:[b: 'c']])
+        assertThat(configuration.getConfigProperty('a/b'), is('c'))
+    }
+
+    @Test
+    void testGetPropertyNestedLeafNodeIsMap() {
+        def configuration = new ConfigurationHelper([a:[b: [c: 'd']]])
+        assertThat(configuration.getConfigProperty('a/b'), is([c: 'd']))
+    }
+
+    @Test
+    void testGetPropertyNestedPathNotFound() {
+        def configuration = new ConfigurationHelper([a:[b: 'c']])
+        assertThat(configuration.getConfigProperty('a/c'), is((nullValue())))
+    }
+
+    @Test
+    void testGetPropertyNestedPathStartsWithTokenizer() {
+        def configuration = new ConfigurationHelper([k:'v'])
+        assertThat(configuration.getConfigProperty('/k'), is(('v')))
+    }
+
+    @Test
+    void testGetPropertyNestedPathEndsWithTokenizer() {
+        def configuration = new ConfigurationHelper([k:'v'])
+        assertThat(configuration.getConfigProperty('k/'), is(('v')))
+    }
+
+    @Test
+    void testGetPropertyNestedPathManyTokenizer() {
+        def configuration = new ConfigurationHelper([k1:[k2 : 'v']])
+        assertThat(configuration.getConfigProperty('///k1/////k2///'), is(('v')))
     }
 
     @Test
@@ -144,5 +188,32 @@ class ConfigurationHelperTest {
 
         Assert.assertThat(configuration.size(), is(2))
         Assert.assertThat(configuration.newStructure.new1, is(null))
+    }
+    @Test 
+    public void testWithMandoryParameterReturnDefaultFailureMessage() {
+
+        thrown.expect(IllegalArgumentException)
+        thrown.expectMessage('ERROR - NO VALUE AVAILABLE FOR myKey')
+
+        new ConfigurationHelper().withMandatoryProperty('myKey')
+    }
+
+    @Test
+    public void testWithMandoryParameterReturnCustomerFailureMessage() {
+
+        thrown.expect(IllegalArgumentException)
+        thrown.expectMessage('My error message')
+
+        new ConfigurationHelper().withMandatoryProperty('myKey', 'My error message')
+    }
+
+    @Test
+    public void testWithMandoryParameterDefaultCustomFailureMessageProvidedSucceeds() {
+        new ConfigurationHelper([myKey: 'myValue']).withMandatoryProperty('myKey', 'My error message')
+    }
+
+    @Test
+    public void testWithMandoryParameterDefaultCustomFailureMessageNotProvidedSucceeds() {
+        new ConfigurationHelper([myKey: 'myValue']).withMandatoryProperty('myKey')
     }
 }

@@ -56,10 +56,10 @@ class SnykExecuteTest extends BasePiperTest {
             }
         })
         helper.registerAllowedMethod("findFiles", [Map.class], { map ->
-            if (map.glob == '**/pom.xml')
-                return [new File('some-service/pom.xml'), new File('some-other-service/pom.xml')].toArray()
-            if (map.glob == '**/package.json')
-                return [new File('some-ui/package.json'), new File('some-service-broker/package.json')].toArray()
+            if (map.glob == "**${File.separator}pom.xml")
+                return [new File("some-service${File.separator}pom.xml"), new File("some-other-service${File.separator}pom.xml")].toArray()
+            if (map.glob == "**${File.separator}package.json")
+                return [new File("some-ui${File.separator}package.json"), new File("some-service-broker${File.separator}package.json")].toArray()
             return [].toArray()
         })
         helper.registerAllowedMethod('archiveArtifacts', [String], {
@@ -87,7 +87,7 @@ class SnykExecuteTest extends BasePiperTest {
         )
 
         assertThat(withCredentialsParameters.credentialsId, is('myPassword'))
-        assertThat(jder.dockerParams, hasEntry('dockerImage', 'node:8.11.2-stretch'))
+        assertThat(jder.dockerParams, hasEntry('dockerImage', 'node:8-stretch'))
         assertThat(jder.dockerParams.stashContent, hasItem('buildDescriptor'))
         assertThat(jder.dockerParams.stashContent, hasItem('opensourceConfiguration'))
     }
@@ -113,7 +113,7 @@ class SnykExecuteTest extends BasePiperTest {
             toJson: true
         )
         // asserts
-        assertThat(jscr.shell, hasItem('cd \'./\' && snyk monitor --org=myOrg && snyk test --json > snyk.json'))
+        assertThat(jscr.shell, hasItem("cd './' && snyk monitor --org=myOrg && snyk test --json > snyk.json".toString()))
         assertThat(archiveStepPatterns, hasItem('snyk.json'))
     }
 
@@ -125,7 +125,7 @@ class SnykExecuteTest extends BasePiperTest {
             scanType: 'mta'
         )
         // asserts
-        assertThat(jscr.shell, hasItem('cd \'some-ui/\' && snyk monitor && snyk test'))
-        assertThat(jscr.shell, hasItem('cd \'some-service-broker/\' && snyk monitor && snyk test'))
+        assertThat(jscr.shell, hasItem("cd 'some-ui${File.separator}' && snyk monitor && snyk test".toString()))
+        assertThat(jscr.shell, hasItem("cd 'some-service-broker${File.separator}' && snyk monitor && snyk test".toString()))
     }
 }

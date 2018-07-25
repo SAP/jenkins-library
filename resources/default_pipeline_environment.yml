@@ -8,29 +8,15 @@ steps:
     timestampTemplate: '%Y%m%d%H%M%S'
     tagPrefix: 'build_'
     commitVersion: true
-    maven:
-      filePath: 'pom.xml'
-      versioningTemplate: '${version}-${timestamp}${commitId?"_"+commitId:""}'
     docker:
       filePath: 'Dockerfile'
       versioningTemplate: '${version}-${timestamp}${commitId?"_"+commitId:""}'
-  cloudFoundryDeploy:
-    cloudFoundry:
-      apiEndpoint: 'https://api.cf.eu10.hana.ondemand.com'
-    deployTool: 'cf_native'
-    deployType: 'standard'
-    mtaDeployParameters: '-f'
-    mtaExtensionDescriptor: ''
-    mtaPath: ''
-    smokeTestScript: 'blueGreenCheck.sh'
-    smokeTestStatusCode: 200
-    stashContent: []
-    cf_native:
-      dockerImage: 's4sdk/docker-cf-cli'
-      dockerWorkspace: '/home/piper'
-    mtaDeployPlugin:
-      dockerImage: 's4sdk/docker-cf-cli'
-      dockerWorkspace: '/home/piper'
+    maven:
+      filePath: 'pom.xml'
+      versioningTemplate: '${version}-${timestamp}${commitId?"_"+commitId:""}'
+    mta:
+      filePath: 'mta.yaml'
+      versioningTemplate: '${version}-${timestamp}${commitId?"+"+commitId:""}'
   checksPublishResults:
     aggregation:
       active: true
@@ -90,6 +76,23 @@ steps:
         fail:
           high: '0'
     archive: false
+  cloudFoundryDeploy:
+    cloudFoundry:
+      apiEndpoint: 'https://api.cf.eu10.hana.ondemand.com'
+    deployTool: 'cf_native'
+    deployType: 'standard'
+    mtaDeployParameters: '-f'
+    mtaExtensionDescriptor: ''
+    mtaPath: ''
+    smokeTestScript: 'blueGreenCheck.sh'
+    smokeTestStatusCode: 200
+    stashContent: []
+    cf_native:
+      dockerImage: 's4sdk/docker-cf-cli'
+      dockerWorkspace: '/home/piper'
+    mtaDeployPlugin:
+      dockerImage: 's4sdk/docker-cf-cli'
+      dockerWorkspace: '/home/piper'
   influxWriteData:
     influxServer: 'jenkins'
   mavenExecute:
@@ -103,6 +106,13 @@ steps:
     warAction: 'deploy'
     vmSize: 'lite'
     neoCredentialsId: 'CI_CREDENTIALS_ID'
+  newmanExecute:
+    dockerImage: 'node:8-stretch'
+    failOnError: true
+    newmanCollection: '**/*.postman_collection.json'
+    newmanEnvironment: ''
+    newmanGlobals: ''
+    newmanRunCommand: "run ${config.newmanCollection} --environment '${config.newmanEnvironment}' --globals '${config.newmanGlobals}' --reporters junit,html --reporter-junit-export target/newman/TEST-${collectionDisplayName}.xml --reporter-html-export target/newman/TEST-${collectionDisplayName}.html"
   pipelineStashFilesAfterBuild:
     runOpaTests: false
     stashIncludes:
@@ -135,7 +145,7 @@ steps:
       tests: ''
   snykExecute:
     buildDescriptorFile: './package.json'
-    dockerImage: 'node:8.11.2-stretch'
+    dockerImage: 'node:8-stretch'
     exclude: []
     monitor: true
     scanType: 'npm'
@@ -180,3 +190,30 @@ steps:
       allowEmptyResults: true
       archive: false
       active: false
+  checkChangeInDevelopment:
+      credentialsId: 'CM'
+      failIfStatusIsNotInDevelopment: true
+      gitFrom: 'origin/master'
+      gitTo: 'HEAD'
+      gitChangeDocumentLabel: 'ChangeDocument\s?:'
+      gitFormat: '%b'
+  transportRequestCreate:
+      credentialsId: 'CM'
+      gitFrom: 'origin/master'
+      gitTo: 'HEAD'
+      gitChangeDocumentLabel: 'ChangeDocument\s?:'
+      gitFormat: '%b'
+  transportRequestUploadFile:
+      credentialsId: 'CM'
+      gitFrom: 'origin/master'
+      gitTo: 'HEAD'
+      gitChangeDocumentLabel: 'ChangeDocument\s?:'
+      gitTransportRequestLabel: 'TransportRequest\s?:'
+      gitFormat: '%b'
+  transportRequestRelease:
+      credentialsId: 'CM'
+      gitFrom: 'origin/master'
+      gitTo: 'HEAD'
+      gitChangeDocumentLabel: 'ChangeDocument\s?:'
+      gitTransportRequestLabel: 'TransportRequest\s?:'
+      gitFormat: '%b'

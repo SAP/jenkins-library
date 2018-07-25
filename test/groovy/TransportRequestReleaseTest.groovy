@@ -4,12 +4,17 @@ import org.junit.Test
 import org.junit.rules.ExpectedException
 import org.junit.rules.RuleChain
 
+import com.sap.piper.cm.ChangeManagement
+import com.sap.piper.cm.ChangeManagementException
+
 import util.BasePiperTest
+import util.JenkinsCredentialsRule
 import util.JenkinsStepRule
 import util.JenkinsLoggingRule
 import util.Rules
 
 import hudson.AbortException
+import hudson.scm.NullSCM
 
 
 public class TransportRequestReleaseTest extends BasePiperTest {
@@ -23,32 +28,17 @@ public class TransportRequestReleaseTest extends BasePiperTest {
         .around(thrown)
         .around(jsr)
         .around(jlr)
+        .around(new JenkinsCredentialsRule(this)
+            .withCredentials('CM', 'anonymous', '********'))
 
     @Before
     public void setup() {
 
-        helper.registerAllowedMethod('usernamePassword', [Map.class], {m -> return m})
-
-        helper.registerAllowedMethod('withCredentials', [List, Closure], { l, c ->
-
-            credentialsId = l[0].credentialsId
-            binding.setProperty('username', 'anonymous')
-            binding.setProperty('password', '********')
-            try {
-                c()
-            } finally {
-                binding.setProperty('username', null)
-                binding.setProperty('password', null)
-            }
-         })
-
-        helper.registerAllowedMethod('sh', [Map], { Map m -> return 0 })
-
         nullScript.commonPipelineEnvironment.configuration = [steps:
                                      [transportRequestRelease:
                                          [
-                                          cmCredentialsId: 'CM',
-                                          cmEndpoint: 'https://example.org/cm'
+                                          credentialsId: 'CM',
+                                          endpoint: 'https://example.org/cm'
                                          ]
                                      ]
                                  ]
@@ -57,19 +47,37 @@ public class TransportRequestReleaseTest extends BasePiperTest {
     @Test
     public void changeIdNotProvidedTest() {
 
-        thrown.expect(AbortException)
-        thrown.expectMessage("Change id not provided (parameter: 'changeId').")
+        ChangeManagement cm = new ChangeManagement(nullScript) {
+            String getChangeDocumentId(String from,
+                                       String to,
+                                       String label,
+                                       String format) {
+                                throw new ChangeManagementException('Cannot retrieve change documentId')
+            }
+        }
 
-        jsr.step.call(script: nullScript, transportRequestId: '001')
+        thrown.expect(IllegalArgumentException)
+        thrown.expectMessage("Change document id not provided (parameter: 'changeDocumentId' or via commit history).")
+
+        jsr.step.call(script: nullScript, transportRequestId: '001', cmUtils: cm)
     }
 
     @Test
     public void transportRequestIdNotProvidedTest() {
 
-        thrown.expect(AbortException)
-        thrown.expectMessage("Transport Request id not provided (parameter: 'transportRequestId').")
+        ChangeManagement cm = new ChangeManagement(nullScript) {
+            String getTransportRequestId(String from,
+                                         String to,
+                                         String label,
+                                         String format) {
+                throw new ChangeManagementException('Cannot retrieve transportRequestId')
+            }
+        }
 
-        jsr.step.call(script: nullScript, changeId: '001')
+        thrown.expect(IllegalArgumentException)
+        thrown.expectMessage("Transport request id not provided (parameter: 'transportRequestId' or via commit history).")
+
+        jsr.step.call(script: nullScript, changeDocumentId: '001', cmUtils: cm)
     }
 
     @Test
@@ -80,7 +88,7 @@ public class TransportRequestReleaseTest extends BasePiperTest {
         thrown.expect(AbortException)
         thrown.expectMessage("Cannot release Transport Request '001'. Return code from cmclient: 1.")
 
-        jsr.step.call(script: nullScript, changeId: '001', transportRequestId: '001')
+        jsr.step.call(script: nullScript, changeDocumentId: '001', transportRequestId: '001')
     }
 
     @Test
@@ -88,7 +96,7 @@ public class TransportRequestReleaseTest extends BasePiperTest {
 
         helper.registerAllowedMethod('sh', [Map], { Map m -> return 0 })
 
-        jsr.step.call(script: nullScript, changeId: '001', transportRequestId: '001')
+        jsr.step.call(script: nullScript, changeDocumentId: '001', transportRequestId: '001')
 
         assert jlr.log.contains("[INFO] Closing transport request '001' for change document '001'.")
         assert jlr.log.contains("[INFO] Transport Request '001' has been successfully closed.")
