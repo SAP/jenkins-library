@@ -50,7 +50,6 @@ class ConfigurationHelperTest {
         assertThat(configuration.getConfigProperty('a/c'), is((nullValue())))
     }
 
-    @Test
     void testGetPropertyNestedPathStartsWithTokenizer() {
         def configuration = new ConfigurationHelper([k:'v'])
         assertThat(configuration.getConfigProperty('/k'), is(('v')))
