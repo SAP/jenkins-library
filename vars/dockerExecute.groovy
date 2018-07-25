@@ -12,6 +12,8 @@ def call(Map parameters = [:], body) {
         Map dockerVolumeBind = parameters.dockerVolumeBind ?: [:]
         final script = parameters?.script ?: [commonPipelineEnvironment: commonPipelineEnvironment]
 
+        echo "Has container defined for ${dockerImage} and it is ${hasContainerDefined(dockerImage)} value is ${getContainerDefined(script, dockerImage)}"
+
         if (env.S4SDK_STAGE_NAME && hasContainerDefined(dockerImage)) {
             container(getContainerDefined(script, dockerImage)) {
                 echo "Executing inside a Kubernetes Container"
