@@ -10,9 +10,14 @@ def call(Map parameters = [:], body) {
         Map dockerEnvVars = parameters.dockerEnvVars ?: [:]
         def dockerOptions = parameters.dockerOptions ?: ''
         Map dockerVolumeBind = parameters.dockerVolumeBind ?: [:]
-        def k8s = parameters.k8s ?: true
+        final script = parameters?.script ?: [commonPipelineEnvironment: commonPipelineEnvironment]
 
-        if (k8s) {
+        if (env.S4SDK_STAGE_NAME && hasContainerDefined(dockerImage)) {
+            container(getContainerDefined(script, dockerImage)) {
+                echo "Executing inside a Kubernetes Container"
+                body()
+            }
+        } else if (env.jaas_owner) {
             executeDockerOnKubernetes(
                 dockerImage: parameters.dockerImage,
                 dockerEnvVars: parameters.dockerEnvVars,
@@ -101,4 +106,14 @@ private getDockerOptions(Map dockerEnvVars, Map dockerVolumeBind, def dockerOpti
     }
 
     return options.join(' ')
+}
+
+@NonCPS
+boolean hasContainerDefined(script, dockerImage) {
+    return script.k8sMapping[env.S4SDK_STAGE_NAME].containsKey(dockerImage)
+}
+
+@NonCPS
+def getContainerDefined(script, dockerImage) {
+    return script.k8sMapping[env.S4SDK_STAGE_NAME][dockerImage]
 }
