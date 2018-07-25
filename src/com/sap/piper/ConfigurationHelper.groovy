@@ -103,7 +103,6 @@ class ConfigurationHelper implements Serializable {
             }
         }
 
-
         return config[parts.head()]
     }
 
