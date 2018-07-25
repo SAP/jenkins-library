@@ -6,18 +6,17 @@ import groovy.text.SimpleTemplateEngine
 
 @Field String STEP_NAME = 'sonarExecute'
 @Field Set STEP_CONFIG_KEYS = [
+    'changeId', // voter only! the pull-request number
+    'disableInlineComments', // voter only! set to true to only enable a summary comment on the pull-request
     'dockerImage', // the image to run the sonar-scanner
+    'githubApiUrl', // voter only! URL to access GitHub WS API | default: https://api.github.com
+    'githubOrg', // voter only!
+    'githubRepo', // voter only!
+    'githubTokenCredentialsId', // voter only!
     'instance', // the instance name of the Sonar server configured in the Jenkins
+    'isVoter', // voter only! enables the preview mode
     'options',
     'projectVersion',
-    // needed for voter
-    'disableInlineComments', // set to true to only enable a summary comment on the pull-request
-    'isVoter', // enables the preview mode
-    'changeId', // the pull-request number
-    'githubApiUrl', // URL to access GitHub WS API | default: https://api.github.com
-    'githubOrg',
-    'githubRepo',
-    'githubTokenCredentialsId',
     'sonarTokenCredentialsId'
 ]
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
@@ -40,7 +39,6 @@ def call(Map parameters = [:], Closure body = null) {
                 changeId: env.CHANGE_ID
             )
             .mixin(parameters, PARAMETER_KEYS)
-            //.withMandatoryProperty('sonarTokenCredentialsId')
             .use()
         // check mandatory parameters
         if(config.isVoter){
