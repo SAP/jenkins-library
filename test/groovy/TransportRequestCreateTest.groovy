@@ -33,12 +33,17 @@ public class TransportRequestCreateTest extends BasePiperTest {
     @Before
     public void setup() {
 
-        nullScript.commonPipelineEnvironment.configuration = [steps:
-                                     [transportRequestCreate:
+
+        nullScript.commonPipelineEnvironment.configuration = [general:
+                                     [changeManagement:
                                          [
                                           credentialsId: 'CM',
                                           endpoint: 'https://example.org/cm',
-                                          clientOpts: '-DmyProp=myVal'
+                                          clientOpts: '-DmyProp=myVal',
+                                          changeDocumentLabel: 'ChangeId\\s?:',
+                                          git: [from: 'origin/master',
+                                                to: 'HEAD',
+                                                format: '%b']
                                          ]
                                      ]
                                  ]
