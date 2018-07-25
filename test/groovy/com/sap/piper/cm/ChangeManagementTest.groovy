@@ -42,9 +42,9 @@ public class ChangeManagementTest extends BasePiperTest {
     public void testRetrieveChangeDocumentIdOutsideGitWorkTreeTest() {
 
         thrown.expect(ChangeManagementException)
-        thrown.expectMessage('Cannot retrieve change document id. ' +
+        thrown.expectMessage('Cannot retrieve ChangeDocumentId. ' +
                              'Not in a git work tree. ' +
-                             'Change document id is extracted from git commit messages.')
+                             'ChangeDocumentId is extracted from git commit messages.')
 
         new ChangeManagement(nullScript, gitUtilsMock(false, new String[0])).getChangeDocumentId()
     }
@@ -53,7 +53,7 @@ public class ChangeManagementTest extends BasePiperTest {
     public void testRetrieveChangeDocumentIdNothingFound() {
 
         thrown.expect(ChangeManagementException)
-        thrown.expectMessage('Cannot retrieve changeId from git commits.')
+        thrown.expectMessage('Cannot retrieve ChangeDocumentId from git commits.')
 
         new ChangeManagement(nullScript, gitUtilsMock(true, new String[0])).getChangeDocumentId()
     }
@@ -62,7 +62,7 @@ public class ChangeManagementTest extends BasePiperTest {
     public void testRetrieveChangeDocumentIdReturnsArrayWithNullValue() {
 
         thrown.expect(ChangeManagementException)
-        thrown.expectMessage('Cannot retrieve changeId from git commits.')
+        thrown.expectMessage('Cannot retrieve ChangeDocumentId from git commits.')
 
         new ChangeManagement(nullScript, gitUtilsMock(true, (String[])[ null ])).getChangeDocumentId()
     }
@@ -71,7 +71,7 @@ public class ChangeManagementTest extends BasePiperTest {
     public void testRetrieveChangeDocumentNotUnique() {
 
         thrown.expect(ChangeManagementException)
-        thrown.expectMessage('Multiple ChangeIds found')
+        thrown.expectMessage('Multiple ChangeDocumentIds found')
 
         String[] changeIds = [ 'a', 'b' ]
         new ChangeManagement(nullScript, gitUtilsMock(true, changeIds)).getChangeDocumentId()
@@ -200,6 +200,24 @@ public void testGetCommandLineWithCMClientOpts() {
 
         // no assert required here, since the regex registered above to the script rule is an implicit check for
         // the command line.
+    }
+
+    @Test
+    public void testUploadFileToTransportFails() {
+
+        thrown.expect(ChangeManagementException)
+        thrown.expectMessage("Cannot upload file '/path' for change document '001' with transport request '002'. " +
+            "Return code from cmclient: 1.")
+
+        script.setReturnValue(JenkinsShellCallRule.Type.REGEX,, 'upload-file-to-transport', 1)
+
+        new ChangeManagement(nullScript).uploadFileToTransportRequest('001',
+            '002',
+            'XXX',
+            '/path',
+            'https://example.org/cm',
+            'me',
+            'openSesame')
     }
 
     private GitUtils gitUtilsMock(boolean insideWorkTree, String[] changeIds) {

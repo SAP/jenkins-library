@@ -13,6 +13,7 @@ Releases a Transport Request for a Change Document on the Solution Manager.
 | `changeDocumentId`        | yes       |                                                    |                    |
 | `transportRequestId`| yes   |                                                    |                    |
 | `changeManagement/changeDocumentLabel`        | no        | `ChangeDocument\s?:`                                   | regex pattern      |
+| `changeManagment/transportRequestLabel`        | no        | `TransportRequest\s?:`                                   | regex pattern |
 | `changeManagement/credentialsId`    | yes       |                                                        |                    |
 | `changeManagement/endpoint`         | yes       |                                                        |                    |
 | `changeManagement/git/from`         | no        | `origin/master`                                        |                    |
@@ -23,6 +24,7 @@ Releases a Transport Request for a Change Document on the Solution Manager.
 * `changeDocumentId` - The id of the change document related to the transport request to release.
 * `transportRequestId` - The id of the transport request to release.
 * `changeManagement/changeDocumentLabel` - A pattern used for identifying lines holding the change document id.
+* `changeManagment/transportRequestLabel` - A pattern used for identifying lines holding the transport request id.
 * `changeManagement/credentialsId` - The id of the credentials to connect to the Solution Manager. The credentials needs to be maintained on Jenkins.
 * `changeManagement/endpoint` - The address of the Solution Manager.
 * `changeManagement/git/from` - The starting point for retrieving the change document id

@@ -2,6 +2,7 @@
 general:
   productiveBranch: 'master'
   changeManagement:
+      transportRequestLabel: 'TransportRequest\s?:'
       changeDocumentLabel: 'ChangeDocument\s?:'
       clientOpts: ''
       credentialsId: 'CM'

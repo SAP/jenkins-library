@@ -87,12 +87,15 @@ class ConfigurationHelper implements Serializable {
 
     private getConfigPropertyNested(Map config, key) {
 
-        List parts = (key in String) ? (key as CharSequence).tokenize('/') : ([key] as List)
+        def separator = '/'
+
+        // reason for cast to CharSequence: String#tokenize(./.) causes a deprecation warning.
+        List parts = (key in String) ? (key as CharSequence).tokenize(separator) : ([key] as List)
 
         if(config[parts.head()] != null) {
 
-            if(config[parts.head()] in Map && parts.size() > 1) {
-                return getConfigPropertyNested(config[parts.head()], String.join('/', parts[1..parts.size()-1]))
+            if(config[parts.head()] in Map && ! parts.tail().isEmpty()) {
+                return getConfigPropertyNested(config[parts.head()], (parts.tail() as Iterable).join(separator))
             }
 
             if (config[parts.head()].class == String) {
