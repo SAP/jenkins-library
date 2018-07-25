@@ -50,11 +50,6 @@ class ConfigurationHelper implements Serializable {
         return this
     }
 
-    ConfigurationHelper handleCompatibilityXXX(Script step, Map compatibleParameters){
-        config = ConfigurationMerger.merge(recurseCompatibility(step, compatibleParameters, config), null, config)
-        return this
-    }
-
     private Map handleCompatibility(Script step, Map compatibleParameters, String paramStructure = '', Map configMap ) {
         Map newConfig = [:]
         compatibleParameters.each {entry ->
