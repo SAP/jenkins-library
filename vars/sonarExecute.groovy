@@ -63,11 +63,12 @@ def call(Map parameters = [:], Closure body = null) {
                         credentialsId: config.githubTokenCredentialsId,
                         variable: 'GITHUB_TOKEN'
                     )]){
-                        def options = []
-                        options.push('-Dsonar.analysis.mode=preview')
-                        options.push("-Dsonar.github.oauth=$GITHUB_TOKEN")
-                        options.push("-Dsonar.github.pullRequest=${config.changeId}")
-                        options.push("-Dsonar.github.repository=${config.githubOrg}/${config.githubRepo}")
+                        def options = [
+                            '-Dsonar.analysis.mode=preview'
+                            "-Dsonar.github.oauth=$GITHUB_TOKEN"
+                            "-Dsonar.github.pullRequest=${config.changeId}"
+                            "-Dsonar.github.repository=${config.githubOrg}/${config.githubRepo}"
+                        ]
                         if(config.githubApiUrl)
                             options.push("-Dsonar.github.endpoint=${config.githubApiUrl}")
                         if(config.disableInlineComments)
