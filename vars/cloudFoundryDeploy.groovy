@@ -50,8 +50,8 @@ def call(Map parameters = [:]) {
             .dependingOn('deployTool').mixin('dockerImage')
             .dependingOn('deployTool').mixin('dockerWorkspace')
             .handleCompatibility(this, CONFIG_KEY_COMPATIBILITY)
-            //.withMandatoryProperty('cloudFoundry.Org')
-            //.withMandatoryProperty('cloudFoundry.Space')
+            .withMandatoryProperty('cloudFoundry/org')
+            .withMandatoryProperty('cloudFoundry/org')
             .use()
 
         echo "[${STEP_NAME}] General parameters: deployTool=${config.deployTool}, deployType=${config.deployType}, cfApiEndpoint=${config.cloudFoundry.apiEndpoint}, cfOrg=${config.cloudFoundry.org}, cfSpace=${config.cloudFoundry.space}, cfCredentialsId=${config.cloudFoundry.credentialsId}, deployUser=${config.deployUser}"
