@@ -17,25 +17,6 @@ public class ChangeManagement implements Serializable {
         this.gitUtils = gitUtils ?: new GitUtils()
     }
 
-    String getChangeDocumentId(Map config) {
-
-            if(config.changeDocumentId) {
-                script.echo "[INFO] Use changeDocumentId '${config.changeDocumentId}' from configuration."
-                return config.changeDocumentId
-            }
-
-            script.echo "[INFO] Retrieving changeDocumentId from git commit(s) [FROM: ${config.git_from}, TO: ${config.git_to}]"
-            def changeDocumentId = getChangeDocumentId(
-                                        config.git_from,
-                                        config.git_to,
-                                        config.git_label,
-                                        config.git_format
-                                   )
-            script.echo "[INFO] ChangeDocumentId '${changeDocumentId}' retrieved from git commit(s)."
-
-            return changeDocumentId
-        }
-
     String getChangeDocumentId(
                               String from = 'origin/master',
                               String to = 'HEAD',
@@ -43,31 +24,53 @@ public class ChangeManagement implements Serializable {
                               String format = '%b'
                             ) {
 
+        return getLabeledItem('ChangeDocumentId', from, to, label, format)
+    }
+
+    String getTransportRequestId(
+                              String from = 'origin/master',
+                              String to = 'HEAD',
+                              String label = 'TransportRequest\\s?:',
+                              String format = '%b'
+                            ) {
+
+        return getLabeledItem('TransportRequestId', from, to, label, format)
+    }
+
+    private String getLabeledItem(
+                              String name,
+                              String from,
+                              String to,
+                              String label,
+                              String format
+                            ) {
+
         if( ! gitUtils.insideWorkTree() ) {
-            throw new ChangeManagementException('Cannot retrieve change document id. Not in a git work tree. Change document id is extracted from git commit messages.')
+            throw new ChangeManagementException("Cannot retrieve ${name}. Not in a git work tree. ${name} is extracted from git commit messages.")
         }
 
-        def changeIds = gitUtils.extractLogLines(".*${label}.*", from, to, format)
+        def items = gitUtils.extractLogLines(".*${label}.*", from, to, format)
                                 .collect { line -> line?.replaceAll(label,'')?.trim() }
                                 .unique()
 
-            changeIds.retainAll { line -> line != null && ! line.isEmpty() }
-        if( changeIds.size() == 0 ) {
-            throw new ChangeManagementException("Cannot retrieve changeId from git commits. Change id retrieved from git commit messages via pattern '${label}'.")
-        } else if (changeIds.size() > 1) {
-            throw new ChangeManagementException("Multiple ChangeIds found: ${changeIds}. Change id retrieved from git commit messages via pattern '${label}'.")
+        items.retainAll { line -> line != null && ! line.isEmpty() }
+
+        if( items.size() == 0 ) {
+            throw new ChangeManagementException("Cannot retrieve ${name} from git commits. ${name} retrieved from git commit messages via pattern '${label}'.")
+        } else if (items.size() > 1) {
+            throw new ChangeManagementException("Multiple ${name}s found: ${items}. ${name} retrieved from git commit messages via pattern '${label}'.")
         }
 
-        return changeIds.get(0)
+        return items[0]
     }
 
-    boolean isChangeInDevelopment(String changeId, String endpoint, String username, String password, String cmclientOpts = '') {
+    boolean isChangeInDevelopment(String changeId, String endpoint, String username, String password, String clientOpts = '') {
 
                 int rc = script.sh(returnStatus: true,
                             script: getCMCommandLine(endpoint, username, password,
                                                      'is-change-in-development', ['-cID', "'${changeId}'",
                                                                                    '--return-code'],
-                                                                               cmclientOpts))
+                                                                               clientOpts))
 
                 if(rc == 0) {
                     return true
@@ -78,25 +81,27 @@ public class ChangeManagement implements Serializable {
                 }
             }
 
-    String createTransportRequest(String changeId, String developmentSystemId, String endpoint, String username, String password) {
+    String createTransportRequest(String changeId, String developmentSystemId, String endpoint, String username, String password, String clientOpts = '') {
 
         try {
           String transportRequest = script.sh(returnStdout: true,
                     script: getCMCommandLine(endpoint, username, password, 'create-transport', ['-cID', changeId,
-                                                                                                '-dID', developmentSystemId]))
+                                                                                                '-dID', developmentSystemId],
+                                                                                              clientOpts))
           return transportRequest.trim()
         } catch(AbortException e) {
           throw new ChangeManagementException("Cannot create a transport request for change id '$changeId'. $e.message.")
         }
     }
 
-    void uploadFileToTransportRequest(String changeId, String transportRequestId, String applicationId, String filePath, String endpoint, String username, String password) {
+    void uploadFileToTransportRequest(String changeId, String transportRequestId, String applicationId, String filePath, String endpoint, String username, String password, String cmclientOpts = '') {
 
         int rc = script.sh(returnStatus: true,
                     script: getCMCommandLine(endpoint, username, password,
                                             'upload-file-to-transport', ['-cID', changeId,
                                                                          '-tID', transportRequestId,
-                                                                         applicationId, filePath]))
+                                                                         applicationId, filePath],
+                                                                        cmclientOpts))
 
         if(rc == 0) {
             return
@@ -105,12 +110,13 @@ public class ChangeManagement implements Serializable {
         }
     }
 
-    void releaseTransportRequest(String changeId, String transportRequestId, String endpoint, String username, String password) {
+    void releaseTransportRequest(String changeId, String transportRequestId, String endpoint, String username, String password, String clientOpts = '') {
 
         int rc = script.sh(returnStatus: true,
                     script: getCMCommandLine(endpoint, username, password,
                                             'release-transport', ['-cID', changeId,
-                                                                  '-tID', transportRequestId]))
+                                                                  '-tID', transportRequestId],
+                                                                clientOpts))
 
         if(rc == 0) {
             return
@@ -124,11 +130,11 @@ public class ChangeManagement implements Serializable {
                             String password,
                             String command,
                             List<String> args,
-                            String cmclientOpts = '') {
+                            String clientOpts = '') {
         String cmCommandLine = '#!/bin/bash'
-        if(cmclientOpts) {
+        if(clientOpts) {
             cmCommandLine +=  """
-                             export CMCLIENT_OPTS="${cmclientOpts}" """
+                             export CMCLIENT_OPTS="${clientOpts}" """
         }
         cmCommandLine += """
                         cmclient -e '$endpoint' \

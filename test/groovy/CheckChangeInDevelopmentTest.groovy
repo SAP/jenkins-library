@@ -11,6 +11,7 @@ import com.sap.piper.cm.ChangeManagementException
 
 import hudson.AbortException
 import util.BasePiperTest
+import util.JenkinsCredentialsRule
 import util.JenkinsStepRule
 import util.Rules
 
@@ -24,18 +25,8 @@ class CheckChangeInDevelopmentTest extends BasePiperTest {
         .getCommonRules(this)
         .around(thrown)
         .around(jsr)
-
-    @Before
-    public void setup() {
-        helper.registerAllowedMethod('usernamePassword', [Map], { Map m ->
-            binding.setProperty('username', 'defaultUser')
-            binding.setProperty('password', '********')
-        })
-
-        helper.registerAllowedMethod('withCredentials', [List, Closure], { List l, Closure c ->
-            c()
-        })
-    }
+        .around(new JenkinsCredentialsRule(this)
+            .withCredentials('CM', 'anonymous', '********'))
 
     @After
     public void tearDown() {
@@ -57,7 +48,7 @@ class CheckChangeInDevelopmentTest extends BasePiperTest {
         assert cmUtilReceivedParams == [
             changeId: '001',
             endpoint: 'https://example.org/cm',
-            userName: 'defaultUser',
+            userName: 'anonymous',
             password: '********',
             cmclientOpts: null
         ]
@@ -87,10 +78,34 @@ class CheckChangeInDevelopmentTest extends BasePiperTest {
     }
 
     @Test
+    public void ifChangeIdPresentAsParameterAndFromCommitsChangeIdFromParameterIsUsedTest() {
+        ChangeManagement cm = getChangeManagementUtils(true, '0815')
+
+        jsr.step.checkChangeInDevelopment(
+            changeDocumentId: '42',
+            cmUtils: cm,
+            endpoint: 'https://example.org/cm')
+
+        assert cmUtilReceivedParams.changeId == '42'
+    }
+
+    @Test
+    public void ifChangeIdNotPresentAsParameterButFromCommitsChangeIdFromCommitsIsUsedTest() {
+        ChangeManagement cm = getChangeManagementUtils(true, '0815')
+
+        jsr.step.checkChangeInDevelopment(
+            cmUtils: cm,
+            endpoint: 'https://example.org/cm')
+
+        assert cmUtilReceivedParams.changeId == '0815'
+    }
+
+    @Test
     public void changeDocumentIdRetrievalFailsTest() {
 
-        thrown.expect(AbortException)
-        thrown.expectMessage('Something went wrong')
+        thrown.expect(IllegalArgumentException)
+        thrown.expectMessage("No changeDocumentId provided. Neither via parameter 'changeDocumentId' nor via " +
+                             "label 'ChangeDocument\\s?:' in commit range [from: origin/master, to: HEAD].")
 
         ChangeManagement cm = new ChangeManagement(nullScript, null) {
 
@@ -111,8 +126,10 @@ class CheckChangeInDevelopmentTest extends BasePiperTest {
     @Test
     public void nullChangeDocumentIdTest() {
 
-        thrown.expect(AbortException)
-        thrown.expectMessage("ChangeId is null or empty.")
+        thrown.expect(IllegalArgumentException)
+        thrown.expectMessage("No changeDocumentId provided. Neither via parameter 'changeDocumentId' " +
+                             "nor via label 'ChangeDocument\\s?:' in commit range " +
+                             "[from: origin/master, to: HEAD].")
 
         ChangeManagement cm = getChangeManagementUtils(false, null)
         jsr.step.checkChangeInDevelopment(
@@ -123,8 +140,10 @@ class CheckChangeInDevelopmentTest extends BasePiperTest {
     @Test
     public void emptyChangeDocumentIdTest() {
 
-        thrown.expect(AbortException)
-        thrown.expectMessage("ChangeId is null or empty.")
+        thrown.expect(IllegalArgumentException)
+        thrown.expectMessage("No changeDocumentId provided. Neither via parameter 'changeDocumentId' " +
+                             "nor via label 'ChangeDocument\\s?:' in commit range " +
+                             "[from: origin/master, to: HEAD].")
 
         ChangeManagement cm = getChangeManagementUtils(false, '')
         jsr.step.checkChangeInDevelopment(

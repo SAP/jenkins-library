@@ -4,7 +4,7 @@ def call(Map parameters = [:]) {
 
         def script = parameters.script
 
-        prepareDefaultValues script: script
+        prepareDefaultValues script: script, customDefaults: parameters.customDefaults
 
         String configFile = parameters.get('configFile')
 

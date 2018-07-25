@@ -1,6 +1,7 @@
 import com.sap.piper.GitUtils
 import groovy.transform.Field
 
+import com.sap.piper.ConfigurationHelper
 import com.sap.piper.ConfigurationMerger
 import com.sap.piper.cm.ChangeManagement
 import com.sap.piper.cm.ChangeManagementException
@@ -10,17 +11,23 @@ import hudson.AbortException
 
 @Field def STEP_NAME = 'transportRequestRelease'
 
-@Field Set parameterKeys = [
-    'changeDocumentId',
-    'transportRequestId',
-    'credentialsId',
-    'endpoint'
-  ]
-
 @Field Set stepConfigurationKeys = [
     'credentialsId',
-    'endpoint'
+    'cmClientOpts',
+    'endpoint',
+    'gitChangeDocumentLabel',
+    'gitFrom',
+    'gitTo',
+    'gitTransportRequestLabel',
+    'gitFormat'
   ]
+
+@Field Set parameterKeys = stepConfigurationKeys.plus([
+    'changeDocumentId',
+    'transportRequestId',
+  ])
+
+@Field Set generalConfigurationKeys = stepConfigurationKeys
 
 def call(parameters = [:]) {
 
@@ -28,38 +35,98 @@ def call(parameters = [:]) {
 
         def script = parameters?.script ?: [commonPipelineEnvironment: commonPipelineEnvironment]
 
-        ChangeManagement cm = new ChangeManagement(script)
+        ChangeManagement cm = parameters.cmUtils ?: new ChangeManagement(script)
 
-        Map configuration = ConfigurationMerger.merge(script, STEP_NAME,
-                                                      parameters, parameterKeys,
-                                                      stepConfigurationKeys)
+        ConfigurationHelper configHelper = ConfigurationHelper
+                            .loadStepDefaults(this)
+                            .mixinGeneralConfig(script.commonPipelineEnvironment, generalConfigurationKeys)
+                            .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName?:env.STAGE_NAME, stepConfigurationKeys)
+                            .mixinStepConfig(script.commonPipelineEnvironment, stepConfigurationKeys)
+                            .mixin(parameters, parameterKeys)
+                            .withMandatoryProperty('endpoint')
 
-        def changeDocumentId = configuration.changeDocumentId
-        if(!changeDocumentId) throw new AbortException("Change document id not provided (parameter: 'changeDocumentId').")
+        Map configuration = configHelper.use()
 
         def transportRequestId = configuration.transportRequestId
-        if(!transportRequestId) throw new AbortException("Transport Request id not provided (parameter: 'transportRequestId').")
 
-        def credentialsId = configuration.credentialsId
-        if(!credentialsId) throw new AbortException("Credentials id not provided (parameter: 'credentialsId').")
+        if(transportRequestId?.trim()) {
 
-        def endpoint = configuration.endpoint
-        if(!endpoint) throw new AbortException("Solution Manager endpoint not provided (parameter: 'endpoint').")
+          echo "[INFO] Transport request id '${transportRequestId}' retrieved from parameters."
 
-        echo "[INFO] Closing transport request '$transportRequestId' for change document '$changeDocumentId'."
+        } else {
+
+          echo "[INFO] Retrieving transport request id from commit history [from: ${configuration.gitFrom}, to: ${configuration.gitTo}]." +
+               " Searching for pattern '${configuration.gitTransportRequestLabel}'. Searching with format '${configuration.gitFormat}'."
+
+            try {
+                transportRequestId = cm.getTransportRequestId(
+                                                  configuration.gitFrom,
+                                                  configuration.gitTo,
+                                                  configuration.gitTransportRequestLabel,
+                                                  configuration.gitFormat
+                                                 )
+
+                echo "[INFO] Transport request id '${transportRequestId}' retrieved from commit history"
+
+            } catch(ChangeManagementException ex) {
+                echo "[WARN] Cannot retrieve transportRequestId from commit history: ${ex.getMessage()}."
+            }
+        }
+
+        def changeDocumentId = configuration.changeDocumentId
+
+        if(changeDocumentId?.trim()) {
+
+            echo "[INFO] ChangeDocumentId '${changeDocumentId}' retrieved from parameters."
+
+        } else {
+
+            echo "[INFO] Retrieving ChangeDocumentId from commit history [from: ${configuration.gitFrom}, to: ${configuration.gitTo}]." +
+                 "Searching for pattern '${configuration.gitChangeDocumentLabel}'. Searching with format '${configuration.gitFormat}'."
+
+            try {
+                changeDocumentId = cm.getChangeDocumentId(
+                                                  configuration.gitFrom,
+                                                  configuration.gitTo,
+                                                  configuration.gitChangeDocumentLabel,
+                                                  configuration.gitFormat
+                                                 )
+
+                echo "[INFO] ChangeDocumentId '${changeDocumentId}' retrieved from commit history"
+
+            } catch(ChangeManagementException ex) {
+                echo "[WARN] Cannot retrieve changeDocumentId from commit history: ${ex.getMessage()}."
+            }
+        }
+
+        configuration = configHelper
+                            .mixin([transportRequestId: transportRequestId?.trim() ?: null,
+                                    changeDocumentId: changeDocumentId?.trim() ?: null], ['transportRequestId', 'changeDocumentId'] as Set)
+                            .withMandatoryProperty('transportRequestId',
+                                "Transport request id not provided (parameter: \'transportRequestId\' or via commit history).")
+                            .withMandatoryProperty('changeDocumentId',
+                                "Change document id not provided (parameter: \'changeDocumentId\' or via commit history).")
+                            .use()
+
+        echo "[INFO] Closing transport request '${configuration.transportRequestId}' for change document '${configuration.changeDocumentId}'."
 
         withCredentials([usernamePassword(
-            credentialsId: credentialsId,
+            credentialsId: configuration.credentialsId,
             passwordVariable: 'password',
             usernameVariable: 'username')]) {
 
             try {
-                cm.releaseTransportRequest(changeDocumentId, transportRequestId, endpoint, username, password)
+                cm.releaseTransportRequest(configuration.changeDocumentId,
+                                           configuration.transportRequestId,
+                                           configuration.endpoint,
+                                           username,
+                                           password,
+                                           configuration.cmClientOpts)
             } catch(ChangeManagementException ex) {
                 throw new AbortException(ex.getMessage())
             }
         }
 
-        echo "[INFO] Transport Request '${transportRequestId}' has been successfully closed."
+        echo "[INFO] Transport Request '${configuration.transportRequestId}' has been successfully closed."
     }
 }

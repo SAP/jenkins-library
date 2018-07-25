@@ -74,10 +74,7 @@ class ConfigurationHelper implements Serializable {
     }
 
     def getConfigProperty(key) {
-        if (config[key] != null && config[key].class == String) {
-            return config[key].trim()
-        }
-        return config[key]
+        return getConfigPropertyNested(config, key)
     }
 
     def getConfigProperty(key, defaultValue) {
@@ -86,6 +83,28 @@ class ConfigurationHelper implements Serializable {
             return defaultValue
         }
         return value
+    }
+
+    private getConfigPropertyNested(Map config, key) {
+
+        def separator = '/'
+
+        // reason for cast to CharSequence: String#tokenize(./.) causes a deprecation warning.
+        List parts = (key in String) ? (key as CharSequence).tokenize(separator) : ([key] as List)
+
+        if(config[parts.head()] != null) {
+
+            if(config[parts.head()] in Map && ! parts.tail().isEmpty()) {
+                return getConfigPropertyNested(config[parts.head()], (parts.tail() as Iterable).join(separator))
+            }
+
+            if (config[parts.head()].class == String) {
+                return (config[parts.head()] as String).trim()
+            }
+        }
+
+
+        return config[parts.head()]
     }
 
     def isPropertyDefined(key){
@@ -107,20 +126,19 @@ class ConfigurationHelper implements Serializable {
         return false
     }
 
-    def getMandatoryProperty(key, defaultValue = null) {
+    def getMandatoryProperty(key, defaultValue = null, errorMessage = null) {
 
-        def paramValue = config[key]
+        def paramValue = getConfigProperty(key, defaultValue)
 
-        if (paramValue == null)
-            paramValue = defaultValue
-
-        if (paramValue == null)
-            throw new IllegalArgumentException("ERROR - NO VALUE AVAILABLE FOR ${key}")
+        if (paramValue == null) {
+            if(! errorMessage) errorMessage = "ERROR - NO VALUE AVAILABLE FOR ${key}"
+            throw new IllegalArgumentException(errorMessage)
+        }
         return paramValue
     }
 
-    def withMandatoryProperty(key){
-        getMandatoryProperty(key)
+    def withMandatoryProperty(key, errorMessage = null){
+        getMandatoryProperty(key, null, errorMessage)
         return this
     }
 }
