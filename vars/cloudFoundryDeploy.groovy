@@ -4,14 +4,16 @@ import com.sap.piper.ConfigurationHelper
 import groovy.transform.Field
 
 @Field String STEP_NAME = 'cloudFoundryDeploy'
-@Field Set STEP_CONFIG_KEYS_COMPATIBILITY = ['apiEndpoint', 'appName', 'credentialsId', 'deploymentType', 'manifest', 'org', 'space']
-@Field Set STEP_CONFIG_KEYS = STEP_CONFIG_KEYS_COMPATIBILITY + [
+@Field Set STEP_CONFIG_KEYS_COMPATIBILITY = [
     'cfApiEndpoint',
     'cfAppName',
     'cfCredentialsId',
     'cfManifest',
     'cfOrg',
-    'cfSpace',
+    'cfSpace'
+]
+@Field Set STEP_CONFIG_KEYS = STEP_CONFIG_KEYS_COMPATIBILITY + [
+    'cloudFoundry',
     'deployUser',
     'deployTool',
     'deployType',
@@ -23,7 +25,7 @@ import groovy.transform.Field
     'smokeTestScript',
     'smokeTestStatusCode',
     'stashContent']
-@Field Map CONFIG_KEY_COMPATIBILITY = [apiEndpoint: 'cfApiEndpoint', appName: 'cfAppName', credentialsId: 'cfCredentialsId', deploymentType: 'deployType', manifest: 'cfManifest', org: 'cfOrg', space: 'cfSpace']
+@Field Map CONFIG_KEY_COMPATIBILITY = [cloudFoundry: [apiEndpoint: 'cfApiEndpoint', appName:'cfAppName', credentialsId: 'cfCredentialsId', manifest: 'cfManifest', org: 'cfOrg', space: 'cfSpace']]
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
 
 def call(Map parameters = [:]) {
@@ -48,11 +50,11 @@ def call(Map parameters = [:]) {
             .dependingOn('deployTool').mixin('dockerImage')
             .dependingOn('deployTool').mixin('dockerWorkspace')
             .handleCompatibility(this, CONFIG_KEY_COMPATIBILITY)
-            .withMandatoryProperty('cfOrg')
-            .withMandatoryProperty('cfSpace')
+            //.withMandatoryProperty('cloudFoundry.Org')
+            //.withMandatoryProperty('cloudFoundry.Space')
             .use()
 
-        echo "[${STEP_NAME}] General parameters: deployTool=${config.deployTool}, deployType=${config.deployType}, cfApiEndpoint=${config.cfApiEndpoint}, cfOrg=${config.cfOrg}, cfSpace=${config.cfSpace}, cfCredentialsId=${config.cfCredentialsId}, deployUser=${config.deployUser}"
+        echo "[${STEP_NAME}] General parameters: deployTool=${config.deployTool}, deployType=${config.deployType}, cfApiEndpoint=${config.cloudFoundry.apiEndpoint}, cfOrg=${config.cloudFoundry.org}, cfSpace=${config.cloudFoundry.space}, cfCredentialsId=${config.cloudFoundry.credentialsId}, deployUser=${config.deployUser}"
 
         utils.unstash 'deployDescriptor'
 
@@ -79,7 +81,7 @@ def call(Map parameters = [:]) {
             smokeTest = '--smoke-test $(pwd)/' + config.smokeTestScript
             sh "chmod +x ${config.smokeTestScript}"
 
-            echo "[${STEP_NAME}] CF native deployment (${config.deployType}) with cfAppName=${config.cfAppName}, cfManifest=${config.cfManifest}, smokeTestScript=${config.smokeTestScript}"
+            echo "[${STEP_NAME}] CF native deployment (${config.deployType}) with cfAppName=${config.cloudFoundry.appName}, cfManifest=${config.cloudFoundry.manifest}, smokeTestScript=${config.smokeTestScript}"
 
             dockerExecute (dockerImage: config.dockerImage, dockerWorkspace: config.dockerWorkspace, stashContent: config.stashContent, dockerEnvVars: [CF_HOME:"${config.dockerWorkspace}", CF_PLUGIN_HOME:"${config.dockerWorkspace}", STATUS_CODE: "${config.smokeTestStatusCode}"]) {
                 deployCfNative(config)
@@ -105,7 +107,7 @@ def findMtar(){
 
 def deployCfNative (config) {
     withCredentials([usernamePassword(
-        credentialsId: config.cfCredentialsId,
+        credentialsId: config.cloudFoundry.credentialsId,
         passwordVariable: 'password',
         usernameVariable: 'username'
     )]) {
@@ -117,26 +119,26 @@ def deployCfNative (config) {
         }
 
         // check if appName is available
-        if (config.cfAppName == null || config.cfAppName == '') {
-            if (fileExists(config.cfManifest)) {
-                def manifest = readYaml file: config.cfManifest
+        if (config.cloudFoundry.appName == null || config.cloudFoundry.appName == '') {
+            if (fileExists(config.cloudFoundry.manifest)) {
+                def manifest = readYaml file: config.cloudFoundry.manifest
                 if (!manifest || !manifest.applications || !manifest.applications[0].name)
-                    error "[${STEP_NAME}] ERROR: No appName available in manifest ${config.cfManifest}."
+                    error "[${STEP_NAME}] ERROR: No appName available in manifest ${config.cloudFoundry.manifest}."
 
             } else {
-                error "[${STEP_NAME}] ERROR: No manifest file ${config.cfManifest} found."
+                error "[${STEP_NAME}] ERROR: No manifest file ${config.cloudFoundry.manifest} found."
             }
         }
 
         sh """#!/bin/bash
             set +x
             export HOME=/home/piper
-            cf login -u \"${username}\" -p '${password}' -a ${config.cfApiEndpoint} -o \"${config.cfOrg}\" -s \"${config.cfSpace}\"
+            cf login -u \"${username}\" -p '${password}' -a ${config.cloudFoundry.apiEndpoint} -o \"${config.cloudFoundry.org}\" -s \"${config.cloudFoundry.space}\"
             cf plugins
-            cf ${deployCommand} ${config.cfAppName?"\"${config.cfAppName}\"":''} -f \"${config.cfManifest}\" ${config.smokeTest}"""
-        def retVal = sh script: "cf app \"${config.cfAppName}-old\"", returnStatus: true
+            cf ${deployCommand} ${config.cloudFoundry.appName?"\"${config.cloudFoundry.appName}\"":''} -f \"${config.cloudFoundry.manifest}\" ${config.smokeTest}"""
+        def retVal = sh script: "cf app \"${config.cloudFoundry.appName}-old\"", returnStatus: true
         if (retVal == 0) {
-            sh "cf delete \"${config.cfAppName}-old\" -r -f"
+            sh "cf delete \"${config.cloudFoundry.appName}-old\" -r -f"
         }
         sh "cf logout"
     }
@@ -151,7 +153,7 @@ def deployMta (config) {
         deployCommand = 'bg-deploy'
 
     withCredentials([usernamePassword(
-        credentialsId: config.cfCredentialsId,
+        credentialsId: config.cloudFoundry.credentialsId,
         passwordVariable: 'password',
         usernameVariable: 'username'
     )]) {
@@ -159,8 +161,8 @@ def deployMta (config) {
         sh """#!/bin/bash
             export HOME=/home/piper
             set +x
-            cf api ${config.cfApiEndpoint}
-            cf login -u ${username} -p '${password}' -a ${config.cfApiEndpoint} -o \"${config.cfOrg}\" -s \"${config.cfSpace}\"
+            cf api ${config.cloudFoundry.apiEndpoint}
+            cf login -u ${username} -p '${password}' -a ${config.cloudFoundry.apiEndpoint} -o \"${config.cloudFoundry.org}\" -s \"${config.cloudFoundry.space}\"
             cf plugins
             cf ${deployCommand} ${config.mtaPath} ${config.mtaDeployParameters} ${config.mtaExtensionDescriptor}"""
         sh "cf logout"

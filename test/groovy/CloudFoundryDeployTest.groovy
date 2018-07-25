@@ -149,11 +149,13 @@ class CloudFoundryDeployTest extends BasePiperTest {
             script: nullScript,
             juStabUtils: utils,
             deployTool: 'cf_native',
-            org: 'testOrg',
-            space: 'testSpace',
-            credentialsId: 'test_cfCredentialsId',
-            appName: 'testAppName',
-            manifest: 'test.yml'
+            cloudFoundry: [
+                org: 'testOrg',
+                space: 'testSpace',
+                credentialsId: 'test_cfCredentialsId',
+                appName: 'testAppName',
+                manifest: 'test.yml'
+            ]
         ])
 
         assertEquals('s4sdk/docker-cf-cli', jedr.dockerParams.dockerImage)
@@ -163,8 +165,6 @@ class CloudFoundryDeployTest extends BasePiperTest {
 
         assertTrue(jscr.shell[1].contains('cf login -u "test_cf" -p \'********\' -a https://api.cf.eu10.hana.ondemand.com -o "testOrg" -s "testSpace"'))
         assertTrue(jscr.shell[1].contains('cf push "testAppName" -f "test.yml"'))
-
-        assertTrue (jlr.log.contains('[INFO] The parameter org is COMPATIBLE to the parameter cfOrg'))
     }
 
     @Test
@@ -243,7 +243,7 @@ class CloudFoundryDeployTest extends BasePiperTest {
             mtaPath: 'target/test.mtar'
         ])
 
-        assertEquals('to be changed', jedr.dockerParams.dockerImage)
+        assertEquals('s4sdk/docker-cf-cli', jedr.dockerParams.dockerImage)
         assertEquals('/home/piper', jedr.dockerParams.dockerWorkspace)
 
         assertTrue(jscr.shell[0].contains('cf login -u test_cf -p \'********\' -a https://api.cf.eu10.hana.ondemand.com -o "testOrg" -s "testSpace"'))

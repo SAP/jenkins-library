@@ -15,7 +15,8 @@ steps:
       filePath: 'Dockerfile'
       versioningTemplate: '${version}-${timestamp}${commitId?"_"+commitId:""}'
   cloudFoundryDeploy:
-    cfApiEndpoint: 'https://api.cf.eu10.hana.ondemand.com'
+    cloudFoundry:
+      apiEndpoint: 'https://api.cf.eu10.hana.ondemand.com'
     deployTool: 'cf_native'
     deployType: 'standard'
     mtaDeployParameters: '-f'
@@ -28,7 +29,7 @@ steps:
       dockerImage: 's4sdk/docker-cf-cli'
       dockerWorkspace: '/home/piper'
     mtaDeployPlugin:
-      dockerImage: '<ToDo: Add Image>'
+      dockerImage: 's4sdk/docker-cf-cli'
       dockerWorkspace: '/home/piper'
   checksPublishResults:
     aggregation:

@@ -48,15 +48,27 @@ class ConfigurationHelper implements Serializable {
     }
 
     ConfigurationHelper handleCompatibility(Script step, Map compatibleParameters){
+        config = ConfigurationMerger.merge(recurseCompatibility(step, compatibleParameters, config), null, config)
+        return this
+    }
+
+    private Map recurseCompatibility(Script step, Map compatibleParameters, String paramStructure = '', configMap) {
+        Map newConfig = [:]
         compatibleParameters.each {entry ->
-            if (config[entry.getValue()] == null && config[entry.getKey()] != null) {
-                config[entry.getValue()] = config[entry.getKey()]
-                if (step) {
-                    step.echo ("[INFO] The parameter ${entry.getKey()} is COMPATIBLE to the parameter ${entry.getValue()}")
+            if (entry.getValue() instanceof Map) {
+                paramStructure = (paramStructure ? paramStructure + '.' : '') + entry.getKey()
+                newConfig[entry.getKey()] = recurseCompatibility(step, entry.getValue(), paramStructure, (configMap!=null ? configMap[entry.getKey()] : null))
+            } else {
+                if (configMap == null || (configMap != null && configMap[entry.getKey()] == null)) {
+                    newConfig[entry.getKey()] = config[entry.getValue()]
+                    def paramName = (paramStructure ? paramStructure + '.' : '') + entry.getKey()
+                    if (step) {
+                        step.echo ("[INFO] The parameter '${entry.getValue()}' is COMPATIBLE to the parameter '${paramName}'")
+                    }
                 }
             }
         }
-        return this
+        return newConfig
     }
 
     Map dependingOn(dependentKey){

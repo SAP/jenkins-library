@@ -118,30 +118,31 @@ class ConfigurationHelperTest {
     @Test
     void testHandleCompatibility() {
         def configuration = new ConfigurationHelper([old1: 'oldValue1', old2: 'oldValue2', test: 'testValue'])
-            .handleCompatibility(null, [old1: 'new1', old2: 'new2'])
+            .handleCompatibility(null, [newStructure: [new1: 'old1', new2: 'old2']])
             .use()
 
-        Assert.assertThat(configuration.size(), is(5))
-        Assert.assertThat(configuration.new1, is('oldValue1'))
-        Assert.assertThat(configuration.new2, is('oldValue2'))
+        Assert.assertThat(configuration.size(), is(4))
+        Assert.assertThat(configuration.newStructure.new1, is('oldValue1'))
+        Assert.assertThat(configuration.newStructure.new2, is('oldValue2'))
     }
 
     @Test
     void testHandleCompatibilityNewAvailable() {
-        def configuration = new ConfigurationHelper([old1: 'oldValue1', new1: 'newValue1', test: 'testValue'])
-            .handleCompatibility(null, [old1: 'new1'])
+        def configuration = new ConfigurationHelper([old1: 'oldValue1', newStructure: [new1: 'newValue1'], test: 'testValue'])
+            .handleCompatibility(null, [newStructure: [new1: 'old1', new2: 'old2']])
             .use()
 
         Assert.assertThat(configuration.size(), is(3))
-        Assert.assertThat(configuration.new1, is('newValue1'))
+        Assert.assertThat(configuration.newStructure.new1, is('newValue1'))
     }
 
     @Test
     void testHandleCompatibilityOldNotSet() {
         def configuration = new ConfigurationHelper([old1: null, test: 'testValue'])
-            .handleCompatibility(null, [old1: 'new1'])
+            .handleCompatibility(null, [newStructure: [new1: 'old1', new2: 'old2']])
             .use()
 
         Assert.assertThat(configuration.size(), is(2))
+        Assert.assertThat(configuration.newStructure.new1, is(null))
     }
 }
