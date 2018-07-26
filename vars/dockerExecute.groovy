@@ -12,7 +12,7 @@ def call(Map parameters = [:], body) {
         def dockerOptions = parameters.dockerOptions ?: ''
         Map dockerVolumeBind = parameters.dockerVolumeBind ?: [:]
         final script = parameters?.script ?: [commonPipelineEnvironment: commonPipelineEnvironment]
-        echo "$body is the body"
+        echo "${body.metaClass.classNode.getDeclaredMethods("doCall")[0].code.text} is the body"
         if (env.POD_NAME && hasContainerDefined(script, dockerImage)) {
             container(getContainerDefined(script, dockerImage)) {
                 echo "Executing inside a Kubernetes Container"
