@@ -93,6 +93,7 @@ steps:
     buildTarget: 'NEO'
     mtaJarLocation: 'mta.jar'
   neoDeploy:
+    dockerImage: 's4sdk/docker-neo-cli'
     deployMode: 'mta'
     warAction: 'deploy'
     vmSize: 'lite'
