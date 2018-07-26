@@ -12,7 +12,7 @@ def call(Map parameters = [:], body) {
         Map dockerVolumeBind = parameters.dockerVolumeBind ?: [:]
         final script = parameters?.script ?: [commonPipelineEnvironment: commonPipelineEnvironment]
 
-        if (env.STAGE_NAME && hasContainerDefined(script, dockerImage)) {
+        if (env.POD_NAME && hasContainerDefined(script, dockerImage)) {
             container(getContainerDefined(script, dockerImage)) {
                 echo "Executing inside a Kubernetes Container"
                 body()
