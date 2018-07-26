@@ -11,12 +11,12 @@ def call(Map parameters = [:], body) {
         def dockerOptions = parameters.dockerOptions ?: ''
         Map dockerVolumeBind = parameters.dockerVolumeBind ?: [:]
         final script = parameters?.script ?: [commonPipelineEnvironment: commonPipelineEnvironment]
-        echo "Has container defined for ${dockerImage} and it is ${hasContainerDefined(script, dockerImage)} value is ${getContainerDefined(script, dockerImage)}"
 
-        if (env.S4SDK_STAGE_NAME && hasContainerDefined(script, dockerImage)) {
+        if (env.STAGE_NAME && hasContainerDefined(script, dockerImage)) {
             container(getContainerDefined(script, dockerImage)) {
                 echo "Executing inside a Kubernetes Container"
                 body()
+                sh "chown -R 1000:1000 ."
             }
         } else if (env.jaas_owner) {
             executeDockerOnKubernetes(
@@ -111,11 +111,10 @@ private getDockerOptions(Map dockerEnvVars, Map dockerVolumeBind, def dockerOpti
 
 @NonCPS
 boolean hasContainerDefined(script, dockerImage) {
-    echo "Values for${dockerImage} is ${script?.commonPipelineEnvironment?.configuration?.k8sMapping} and stage name is ${env.S4SDK_STAGE_NAME}"
-    return script?.commonPipelineEnvironment?.configuration?.k8sMapping[env.S4SDK_STAGE_NAME].containsKey(dockerImage)
+    return script?.commonPipelineEnvironment?.configuration?.k8sMapping[env.STAGE_NAME].containsKey(dockerImage)
 }
 
 @NonCPS
 def getContainerDefined(script, dockerImage) {
-    return script?.commonPipelineEnvironment?.configuration?.k8sMapping[env.S4SDK_STAGE_NAME][dockerImage]
+    return script?.commonPipelineEnvironment?.configuration?.k8sMapping[env.STAGE_NAME][dockerImage]
 }

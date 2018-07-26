@@ -89,7 +89,6 @@ def call(Map parameters = [:]) {
         }
         dockerExecute(script: script, dockerImage: configuration.dockerImage, dockerOptions: configuration.dockerOptions) {
             sh command
-            sh "chown -R 1000:1000 ."
         }
     }
 }
