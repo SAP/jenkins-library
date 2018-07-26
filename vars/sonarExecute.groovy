@@ -34,8 +34,6 @@ def call(Map parameters = [:], Closure body = null) {
             .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName?:env.STAGE_NAME, GENERAL_CONFIG_KEYS)
             .mixin(
                 projectVersion: script.commonPipelineEnvironment.getArtifactVersion()?.tokenize('.')?.get(0),
-                githubOrg: script.commonPipelineEnvironment.getGithubOrg(),
-                githubRepo: script.commonPipelineEnvironment.getGithubRepo(),
                 changeId: env.CHANGE_ID
             )
             .mixin(parameters, PARAMETER_KEYS)
