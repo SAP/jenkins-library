@@ -213,6 +213,16 @@ class ConfigurationHelperTest {
     }
 
     @Test
+    void testHandleCompatibilityNoneAvailable() {
+        def configuration = new ConfigurationHelper([old1: null, test: 'testValue'])
+            .mixin([test: 'testValue'], null, null, [newStructure: [new1: 'old1', new2: 'old2']])
+            .use()
+
+        Assert.assertThat(configuration.size(), is(2))
+        Assert.assertThat(configuration.newStructure.new1, is(null))
+    }
+
+    @Test
     public void testWithMandoryParameterReturnDefaultFailureMessage() {
 
         thrown.expect(IllegalArgumentException)

@@ -74,7 +74,12 @@ def call(Map parameters = [:]) {
 
             echo "[${STEP_NAME}] CF native deployment (${config.deployType}) with cfAppName=${config.cloudFoundry.appName}, cfManifest=${config.cloudFoundry.manifest}, smokeTestScript=${config.smokeTestScript}"
 
-            dockerExecute (dockerImage: config.dockerImage, dockerWorkspace: config.dockerWorkspace, stashContent: config.stashContent, dockerEnvVars: [CF_HOME:"${config.dockerWorkspace}", CF_PLUGIN_HOME:"${config.dockerWorkspace}", STATUS_CODE: "${config.smokeTestStatusCode}"]) {
+            dockerExecute (
+                dockerImage: config.dockerImage,
+                dockerWorkspace: config.dockerWorkspace,
+                stashContent: config.stashContent,
+                dockerEnvVars: [CF_HOME:"${config.dockerWorkspace}", CF_PLUGIN_HOME:"${config.dockerWorkspace}", STATUS_CODE: "${config.smokeTestStatusCode}"]
+            ) {
                 deployCfNative(config)
             }
 
@@ -123,7 +128,7 @@ def deployCfNative (config) {
 
         sh """#!/bin/bash
             set +x
-            export HOME=/home/piper
+            export HOME=${config.dockerWorkspace}
             cf login -u \"${username}\" -p '${password}' -a ${config.cloudFoundry.apiEndpoint} -o \"${config.cloudFoundry.org}\" -s \"${config.cloudFoundry.space}\"
             cf plugins
             cf ${deployCommand} ${config.cloudFoundry.appName?"\"${config.cloudFoundry.appName}\"":''} -f \"${config.cloudFoundry.manifest}\" ${config.smokeTest}"""
@@ -150,7 +155,7 @@ def deployMta (config) {
     )]) {
         echo "[${STEP_NAME}] Deploying MTA (${config.mtaPath}) with following parameters: ${config.mtaExtensionDescriptor} ${config.mtaDeployParameters}"
         sh """#!/bin/bash
-            export HOME=/home/piper
+            export HOME=${config.dockerWorkspace}
             set +x
             cf api ${config.cloudFoundry.apiEndpoint}
             cf login -u ${username} -p '${password}' -a ${config.cloudFoundry.apiEndpoint} -o \"${config.cloudFoundry.org}\" -s \"${config.cloudFoundry.space}\"

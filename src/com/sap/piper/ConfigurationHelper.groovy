@@ -64,7 +64,7 @@ class ConfigurationHelper implements Serializable {
                 if (configSubMap == null || (configSubMap != null && configSubMap[entry.getKey()] == null)) {
                     newConfig[entry.getKey()] = configMap[entry.getValue()]
                     def paramName = (paramStructure ? paramStructure + '.' : '') + entry.getKey()
-                    if (step) {
+                    if (step && configMap[entry.getValue()] != null) {
                         step.echo ("[INFO] The parameter '${entry.getValue()}' is COMPATIBLE to the parameter '${paramName}'")
                     }
                 }
