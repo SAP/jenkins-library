@@ -123,7 +123,7 @@ boolean hasContainerDefined(script, dockerImage) {
 def getContainerDefined(script, dockerImage) {
     def k8sMapping = ConfigurationLoader.generalConfiguration(script)?.k8sMapping ?: [:]
     if (k8sMapping.containsKey(env.POD_NAME)) {
-        echo "${k8sMapping[env.POD_NAME].containsKey(dockerImage)} and value is ${dockerImage} ${k8sMapping[env.POD_NAME].get(dockerImage)}
+        echo "${k8sMapping[env.POD_NAME].containsKey(dockerImage)} and value is ${dockerImage} ${k8sMapping[env.POD_NAME].get(dockerImage)}"
     }
     return ''
 }
