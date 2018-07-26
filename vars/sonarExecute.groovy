@@ -62,18 +62,20 @@ def call(Map parameters = [:], Closure body = null) {
         }
 
         if(config.sonarTokenCredentialsId){
+            def workerForSonarAuth = worker
             worker = { c, b ->
                 withCredentials([string(
                     credentialsId: c.sonarTokenCredentialsId,
                     variable: 'SONAR_TOKEN'
                 )]){
                     c.options += " -Dsonar.login=$SONAR_TOKEN"
-                    worker(c,b)
+                    workerForSonarAuth(c,b)
                 }
             }
         }
 
         if(config.isVoter){
+            def workerForGithubAuth = worker
             worker = { c, b ->
                 withCredentials([string(
                     credentialsId: c.githubTokenCredentialsId,
@@ -88,7 +90,7 @@ def call(Map parameters = [:], Closure body = null) {
                     if(c.disableInlineComments)
                         c.options += " -Dsonar.github.disableInlineComments=${c.disableInlineComments}"
 
-                    worker(c,b)
+                    workerForGithubAuth(c,b)
                 }
             }
         }
