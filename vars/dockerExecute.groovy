@@ -111,7 +111,7 @@ private getDockerOptions(Map dockerEnvVars, Map dockerVolumeBind, def dockerOpti
 
 @NonCPS
 boolean hasContainerDefined(script, dockerImage) {
-    return script?.commonPipelineEnvironment?.configuration?.k8sMapping[env.POD_NAME].containsKey(dockerImage)
+    return script?.commonPipelineEnvironment?.configuration?.k8sMapping.?env.POD_NAME?.containsKey(dockerImage) ?: false
 }
 
 @NonCPS
