@@ -112,10 +112,18 @@ private getDockerOptions(Map dockerEnvVars, Map dockerVolumeBind, def dockerOpti
 
 @NonCPS
 boolean hasContainerDefined(script, dockerImage) {
-    return ConfigurationLoader.generalConfiguration(script)?.k8sMapping?.env.POD_NAME?.containsKey(dockerImage) ?: false
+    def k8sMapping = ConfigurationLoader.generalConfiguration(script)?.k8sMapping ?: [:]
+    if (k8sMapping.containsKey(env.POD_NAME)) {
+        return k8sMapping[env.POD_NAME].containsKey(dockerImage)
+    }
+    return false
 }
 
 @NonCPS
 def getContainerDefined(script, dockerImage) {
-    return ConfigurationLoader.generalConfiguration(script)?.k8sMapping?.env.POD_NAME?.dockerImage
+    def k8sMapping = ConfigurationLoader.generalConfiguration(script)?.k8sMapping ?: [:]
+    if (k8sMapping.containsKey(env.POD_NAME)) {
+        return k8sMapping[env.POD_NAME].containsKey(dockerImage)
+    }
+    return ''
 }
