@@ -1,4 +1,5 @@
 import com.cloudbees.groovy.cps.NonCPS
+import com.sap.piper.ConfigurationLoader
 
 def call(Map parameters = [:], body) {
 
@@ -111,10 +112,10 @@ private getDockerOptions(Map dockerEnvVars, Map dockerVolumeBind, def dockerOpti
 
 @NonCPS
 boolean hasContainerDefined(script, dockerImage) {
-    return script?.commonPipelineEnvironment?.configuration?.k8sMapping?.env.POD_NAME?.containsKey(dockerImage) ?: false
+    return ConfigurationLoader.generalConfiguration(script)?.k8sMapping?.env.POD_NAME?.containsKey(dockerImage) ?: false
 }
 
 @NonCPS
 def getContainerDefined(script, dockerImage) {
-    return script?.commonPipelineEnvironment?.configuration?.k8sMapping[env.POD_NAME][dockerImage]
+    return ConfigurationLoader.generalConfiguration(script)?.k8sMapping?.env.POD_NAME?.dockerImage
 }
