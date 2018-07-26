@@ -39,8 +39,8 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
 
         cmUtilReceivedParams.clear()
 
-        nullScript.commonPipelineEnvironment.configuration = [steps:
-                                     [transportRequestUploadFile:
+        nullScript.commonPipelineEnvironment.configuration = [general:
+                                     [changeManagement:
                                          [
                                           credentialsId: 'CM',
                                           endpoint: 'https://example.org/cm'
@@ -177,7 +177,7 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
                 endpoint: 'https://example.org/cm',
                 username: 'anonymous',
                 password: '********',
-                cmclientOpts: null
+                cmclientOpts: ''
             ]
     }
 
