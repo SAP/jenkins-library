@@ -12,11 +12,10 @@ def call(Map parameters = [:], body) {
         def dockerOptions = parameters.dockerOptions ?: ''
         Map dockerVolumeBind = parameters.dockerVolumeBind ?: [:]
         final script = parameters?.script ?: [commonPipelineEnvironment: commonPipelineEnvironment]
-
+        echo "$body is the body"
         if (env.POD_NAME && hasContainerDefined(script, dockerImage)) {
             container(getContainerDefined(script, dockerImage)) {
                 echo "Executing inside a Kubernetes Container"
-                echo "Body is ${body}"
                 body()
                 sh "chown -R 1000:1000 ."
             }
