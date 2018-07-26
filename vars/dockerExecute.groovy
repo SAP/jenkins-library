@@ -16,6 +16,7 @@ def call(Map parameters = [:], body) {
         if (env.POD_NAME && hasContainerDefined(script, dockerImage)) {
             container(getContainerDefined(script, dockerImage)) {
                 echo "Executing inside a Kubernetes Container"
+                echo "Body is ${body}"
                 body()
                 sh "chown -R 1000:1000 ."
             }
