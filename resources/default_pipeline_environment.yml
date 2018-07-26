@@ -1,7 +1,15 @@
 #Project Setup
 general:
   productiveBranch: 'master'
-
+  changeManagement:
+      transportRequestLabel: 'TransportRequest\s?:'
+      changeDocumentLabel: 'ChangeDocument\s?:'
+      clientOpts: ''
+      credentialsId: 'CM'
+      git:
+        from: 'origin/master'
+        to: 'HEAD'
+        format: '%b'
 #Steps Specific Configuration
 steps:
   artifactSetVersion:
@@ -191,29 +199,8 @@ steps:
       archive: false
       active: false
   checkChangeInDevelopment:
-      credentialsId: 'CM'
       failIfStatusIsNotInDevelopment: true
-      gitFrom: 'origin/master'
-      gitTo: 'HEAD'
-      gitChangeDocumentLabel: 'ChangeDocument\s?:'
-      gitFormat: '%b'
   transportRequestCreate:
-      credentialsId: 'CM'
-      gitFrom: 'origin/master'
-      gitTo: 'HEAD'
-      gitChangeDocumentLabel: 'ChangeDocument\s?:'
-      gitFormat: '%b'
+      developmentSystemId: null
   transportRequestUploadFile:
-      credentialsId: 'CM'
-      gitFrom: 'origin/master'
-      gitTo: 'HEAD'
-      gitChangeDocumentLabel: 'ChangeDocument\s?:'
-      gitTransportRequestLabel: 'TransportRequest\s?:'
-      gitFormat: '%b'
   transportRequestRelease:
-      credentialsId: 'CM'
-      gitFrom: 'origin/master'
-      gitTo: 'HEAD'
-      gitChangeDocumentLabel: 'ChangeDocument\s?:'
-      gitTransportRequestLabel: 'TransportRequest\s?:'
-      gitFormat: '%b'
