@@ -9,10 +9,12 @@ import util.Rules
 
 import static org.hamcrest.Matchers.allOf
 import static org.hamcrest.Matchers.containsString
-import static org.hamcrest.Matchers.not
 import static org.junit.Assert.assertEquals
 import static org.junit.Assert.assertThat
 import static org.junit.Assert.assertTrue
+
+import org.hamcrest.Matchers
+import org.junit.Assert
 
 class MavenExecuteTest extends BasePiperTest {
 
@@ -89,17 +91,5 @@ class MavenExecuteTest extends BasePiperTest {
         assertThat(jscr.shell[0],
             allOf(containsString('-Blah'),
                   containsString('--batch-mode')))
-    }
-
-    @Test
-    void testMavenCommandWithMultiLineFlags() throws Exception {
-        jsr.step.mavenExecute(script: nullScript, goals: 'clean install', flags: '-B\n--version')
-        assertEquals('maven:3.5-jdk-7', jder.dockerParams.dockerImage)
-
-        assertThat(jscr.shell[0],
-            allOf(containsString('-B'),
-                containsString('--version')))
-
-        assertThat(jscr.shell[0], not(containsString('--batch-mode')))
     }
 }
