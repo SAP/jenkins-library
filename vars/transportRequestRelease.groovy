@@ -12,14 +12,7 @@ import hudson.AbortException
 @Field def STEP_NAME = 'transportRequestRelease'
 
 @Field Set stepConfigurationKeys = [
-    'credentialsId',
-    'cmClientOpts',
-    'endpoint',
-    'gitChangeDocumentLabel',
-    'gitFrom',
-    'gitTo',
-    'gitTransportRequestLabel',
-    'gitFormat'
+    'changeManagement'
   ]
 
 @Field Set parameterKeys = stepConfigurationKeys.plus([
@@ -43,7 +36,12 @@ def call(parameters = [:]) {
                             .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName?:env.STAGE_NAME, stepConfigurationKeys)
                             .mixinStepConfig(script.commonPipelineEnvironment, stepConfigurationKeys)
                             .mixin(parameters, parameterKeys)
-                            .withMandatoryProperty('endpoint')
+                            .withMandatoryProperty('changeManagement/clientOpts')
+                            .withMandatoryProperty('changeManagement/credentialsId')
+                            .withMandatoryProperty('changeManagement/endpoint')
+                            .withMandatoryProperty('changeManagement/git/to')
+                            .withMandatoryProperty('changeManagement/git/from')
+                            .withMandatoryProperty('changeManagement/git/format')
 
         Map configuration = configHelper.use()
 
@@ -55,15 +53,15 @@ def call(parameters = [:]) {
 
         } else {
 
-          echo "[INFO] Retrieving transport request id from commit history [from: ${configuration.gitFrom}, to: ${configuration.gitTo}]." +
-               " Searching for pattern '${configuration.gitTransportRequestLabel}'. Searching with format '${configuration.gitFormat}'."
+          echo "[INFO] Retrieving transport request id from commit history [from: ${configuration.changeManagement.git.from}, to: ${configuration.changeManagement.git.to}]." +
+               " Searching for pattern '${configuration.gitTransportRequestLabel}'. Searching with format '${configuration.changeManagement.git.format}'."
 
             try {
                 transportRequestId = cm.getTransportRequestId(
-                                                  configuration.gitFrom,
-                                                  configuration.gitTo,
-                                                  configuration.gitTransportRequestLabel,
-                                                  configuration.gitFormat
+                                                  configuration.changeManagement.git.from,
+                                                  configuration.changeManagement.git.to,
+                                                  configuration.changeManagement.transportRequestLabel,
+                                                  configuration.changeManagement.git.format
                                                  )
 
                 echo "[INFO] Transport request id '${transportRequestId}' retrieved from commit history"
@@ -81,15 +79,15 @@ def call(parameters = [:]) {
 
         } else {
 
-            echo "[INFO] Retrieving ChangeDocumentId from commit history [from: ${configuration.gitFrom}, to: ${configuration.gitTo}]." +
-                 "Searching for pattern '${configuration.gitChangeDocumentLabel}'. Searching with format '${configuration.gitFormat}'."
+            echo "[INFO] Retrieving ChangeDocumentId from commit history [from: ${configuration.changeManagement.git.from}, to: ${configuration.changeManagement.git.to}]." +
+                 "Searching for pattern '${configuration.changeDocumentLabel}'. Searching with format '${configuration.changeManagement.git.format}'."
 
             try {
                 changeDocumentId = cm.getChangeDocumentId(
-                                                  configuration.gitFrom,
-                                                  configuration.gitTo,
-                                                  configuration.gitChangeDocumentLabel,
-                                                  configuration.gitFormat
+                                                  configuration.changeManagement.git.from,
+                                                  configuration.changeManagement.git.to,
+                                                  configuration.changeManagement.changeDocumentLabel,
+                                                  configuration.changeManagement.gitformat
                                                  )
 
                 echo "[INFO] ChangeDocumentId '${changeDocumentId}' retrieved from commit history"
@@ -111,17 +109,17 @@ def call(parameters = [:]) {
         echo "[INFO] Closing transport request '${configuration.transportRequestId}' for change document '${configuration.changeDocumentId}'."
 
         withCredentials([usernamePassword(
-            credentialsId: configuration.credentialsId,
+            credentialsId: configuration.changeManagement.credentialsId,
             passwordVariable: 'password',
             usernameVariable: 'username')]) {
 
             try {
                 cm.releaseTransportRequest(configuration.changeDocumentId,
                                            configuration.transportRequestId,
-                                           configuration.endpoint,
+                                           configuration.changeManagement.endpoint,
                                            username,
                                            password,
-                                           configuration.cmClientOpts)
+                                           configuration.changeManagement.clientOpts)
             } catch(ChangeManagementException ex) {
                 throw new AbortException(ex.getMessage())
             }
