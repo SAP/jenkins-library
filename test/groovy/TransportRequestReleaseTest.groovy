@@ -34,8 +34,8 @@ public class TransportRequestReleaseTest extends BasePiperTest {
     @Before
     public void setup() {
 
-        nullScript.commonPipelineEnvironment.configuration = [steps:
-                                     [transportRequestRelease:
+        nullScript.commonPipelineEnvironment.configuration = [general:
+                                     [changeManagement:
                                          [
                                           credentialsId: 'CM',
                                           endpoint: 'https://example.org/cm'
