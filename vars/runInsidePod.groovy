@@ -1,6 +1,7 @@
 import com.sap.piper.ConfigurationHelper
 import com.sap.piper.ConfigurationLoader
 import com.sap.piper.SysEnv
+
 import java.util.UUID
 
 def call(Map parameters = [:], body) {
@@ -15,7 +16,7 @@ def call(Map parameters = [:], body) {
     handleStepErrors(stepName: 'runInsidePod', stepParameters: [:]) {
         def options = [name      : 'dynamic-agent-' + uniqueId,
                        label     : uniqueId,
-                       containers: getContainerList(script,containersMap,dockerEnvVars, dockerWorkspace)]
+                       containers: getContainerList(script, containersMap, dockerEnvVars, dockerWorkspace)]
         podTemplate(options) {
             node(uniqueId) {
                 body()
@@ -24,7 +25,7 @@ def call(Map parameters = [:], body) {
     }
 }
 
-private getContainerList(script, containersMap,dockerEnvVars, dockerWorkspace ) {
+private getContainerList(script, containersMap, dockerEnvVars, dockerWorkspace) {
     def envVars
     def jnlpAgent = ConfigurationLoader.generalConfiguration(script).jnlpAgent ?:
 

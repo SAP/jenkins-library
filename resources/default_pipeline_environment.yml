@@ -5,14 +5,14 @@ general:
     enabled: false
     jnlpAgent: 'jenkinsci/jnlp-slave:latest'
   changeManagement:
-      transportRequestLabel: 'TransportRequest\s?:'
-      changeDocumentLabel: 'ChangeDocument\s?:'
-      clientOpts: ''
-      credentialsId: 'CM'
-      git:
-        from: 'origin/master'
-        to: 'HEAD'
-        format: '%b'
+    transportRequestLabel: 'TransportRequest\s?:'
+    changeDocumentLabel: 'ChangeDocument\s?:'
+    clientOpts: ''
+    credentialsId: 'CM'
+    git:
+      from: 'origin/master'
+      to: 'HEAD'
+      format: '%b'
 #Steps Specific Configuration
 steps:
   artifactSetVersion:

@@ -12,8 +12,8 @@ def call(Map parameters = [:], body) {
         def dockerOptions = parameters.dockerOptions ?: ''
         Map dockerVolumeBind = parameters.dockerVolumeBind ?: [:]
         final script = parameters?.script ?: [commonPipelineEnvironment: commonPipelineEnvironment]
-        boolean runOnKubernetes =
-        if (ConfigurationLoader.generalConfiguration(script)?.kubernetes?.enabled ?: false || env.jaas_owner) {
+
+        if (inKubernetes(script)) {
             if (env.POD_NAME && hasContainerDefined(script, dockerImage)) {
                 container(getContainerDefined(script, dockerImage)) {
                     echo "Executing inside a Kubernetes Container"
@@ -52,9 +52,7 @@ def call(Map parameters = [:], body) {
             image.inside(getDockerOptions(dockerEnvVars, dockerVolumeBind, dockerOptions)) {
                 body()
             }
-        }
-
-        if (!dockerImage) {
+        } else {
             echo "[INFO][${STEP_NAME}] Running on local environment."
             body()
         }
@@ -125,4 +123,9 @@ boolean hasContainerDefined(script, dockerImage) {
 def getContainerDefined(script, dockerImage) {
     def k8sMapping = ConfigurationLoader.generalConfiguration(script)?.kubernetes?.k8sMapping ?: [:]
     return k8sMapping[env.POD_NAME]?.get(dockerImage)
+}
+
+@NonCPS
+boolean inKubernetes(script) {
+    return ConfigurationLoader.generalConfiguration(script)?.kubernetes?.enabled ?: false
 }
