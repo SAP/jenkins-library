@@ -12,7 +12,7 @@ def call(Map parameters = [:], body) {
     def dockerEnvVars = configurationHelper.getConfigProperty('dockerEnvVars',[:])
     def dockerWorkspace = configurationHelper.getConfigProperty('dockerWorkspace','')
 
-    handleStepErrors(stepName: 'runAsPod', stepParameters: [:]) {
+    handleStepErrors(stepName: 'runInsidePod', stepParameters: [:]) {
         def options = [name      : 'dynamic-agent-' + uniqueId,
                        label     : uniqueId,
                        containers: getContainerList(script,containersMap,dockerEnvVars, dockerWorkspace)]

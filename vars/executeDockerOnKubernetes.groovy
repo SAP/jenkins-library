@@ -29,7 +29,7 @@ def call(Map parameters = [:], body) {
         if (!config.dockerImage) throw new GroovyException('Docker image not specified.')
 
         stashWorkspace(config)
-        runAsPod(script: script, containersMap: [config.dockerImage: 'container-exec'], dockerEnvVars: config.dockerEnvVars, dockerWorkspace: config.dockerWorkspace) {
+        runInsidePod(script: script, containersMap: [config.dockerImage: 'container-exec'], dockerEnvVars: config.dockerEnvVars, dockerWorkspace: config.dockerWorkspace) {
             echo "Execute container content in Kubernetes pod"
             utils.unstashAll(config.stashContent)
             body()
