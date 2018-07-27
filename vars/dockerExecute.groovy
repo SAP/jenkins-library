@@ -12,19 +12,22 @@ def call(Map parameters = [:], body) {
         def dockerOptions = parameters.dockerOptions ?: ''
         Map dockerVolumeBind = parameters.dockerVolumeBind ?: [:]
         final script = parameters?.script ?: [commonPipelineEnvironment: commonPipelineEnvironment]
-        if (env.POD_NAME && hasContainerDefined(script, dockerImage)) {
-            container(getContainerDefined(script, dockerImage)) {
-                echo "Executing inside a Kubernetes Container"
-                body()
-                sh "chown -R 1000:1000 ."
-            }
-        } else if (env.jaas_owner) {
-            executeDockerOnKubernetes(script: script,
-                dockerImage: parameters.dockerImage,
-                dockerEnvVars: parameters.dockerEnvVars,
-                dockerOptions: parameters.dockerOptions,
-                dockerVolumeBind: parameters.dockerVolumeBind) {
-                body()
+        boolean runOnKubernetes =
+        if (ConfigurationLoader.generalConfiguration(script)?.kubernetes?.enabled ?: false || env.jaas_owner) {
+            if (env.POD_NAME && hasContainerDefined(script, dockerImage)) {
+                container(getContainerDefined(script, dockerImage)) {
+                    echo "Executing inside a Kubernetes Container"
+                    body()
+                    sh "chown -R 1000:1000 ."
+                }
+            } else {
+                executeDockerOnKubernetes(script: script,
+                    dockerImage: parameters.dockerImage,
+                    dockerEnvVars: parameters.dockerEnvVars,
+                    dockerOptions: parameters.dockerOptions,
+                    dockerVolumeBind: parameters.dockerVolumeBind) {
+                    body()
+                }
             }
         } else if (dockerImage) {
 
@@ -111,7 +114,7 @@ private getDockerOptions(Map dockerEnvVars, Map dockerVolumeBind, def dockerOpti
 
 @NonCPS
 boolean hasContainerDefined(script, dockerImage) {
-    def k8sMapping = ConfigurationLoader.generalConfiguration(script)?.k8sMapping ?: [:]
+    def k8sMapping = ConfigurationLoader.generalConfiguration(script)?.kubernetes?.k8sMapping ?: [:]
     if (k8sMapping.containsKey(env.POD_NAME)) {
         return k8sMapping[env.POD_NAME].containsKey(dockerImage)
     }
@@ -120,9 +123,6 @@ boolean hasContainerDefined(script, dockerImage) {
 
 @NonCPS
 def getContainerDefined(script, dockerImage) {
-    def k8sMapping = ConfigurationLoader.generalConfiguration(script)?.k8sMapping ?: [:]
-    if (k8sMapping.containsKey(env.POD_NAME)) {
-        return k8sMapping[env.POD_NAME].get(dockerImage)
-    }
-    return ''
+    def k8sMapping = ConfigurationLoader.generalConfiguration(script)?.kubernetes?.k8sMapping ?: [:]
+    return k8sMapping[env.POD_NAME]?.get(dockerImage)
 }
