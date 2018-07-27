@@ -62,14 +62,14 @@ def call(Map parameters = [:]) {
         }
 
         if (config.deployTool == 'cf_native') {
-            def smokeTest = ''
+            config.smokeTest = ''
 
             if (config.smokeTestScript == 'blueGreenCheck.sh') {
                 writeFile file: config.smokeTestScript, text: libraryResource(config.smokeTestScript)
             } else {
                 utils.unstash 'pipelineConfigAndTests'
             }
-            smokeTest = '--smoke-test $(pwd)/' + config.smokeTestScript
+            config.smokeTest = '--smoke-test $(pwd)/' + config.smokeTestScript
             sh "chmod +x ${config.smokeTestScript}"
 
             echo "[${STEP_NAME}] CF native deployment (${config.deployType}) with cfAppName=${config.cloudFoundry.appName}, cfManifest=${config.cloudFoundry.manifest}, smokeTestScript=${config.smokeTestScript}"
