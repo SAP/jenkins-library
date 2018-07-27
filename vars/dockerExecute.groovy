@@ -7,49 +7,56 @@ def call(Map parameters = [:], body) {
     def PLUGIN_ID_DOCKER_WORKFLOW = 'docker-workflow'
 
     handlePipelineStepErrors(stepName: STEP_NAME, stepParameters: parameters) {
-        def dockerImage = parameters.dockerImage ?: ''
-        Map dockerEnvVars = parameters.dockerEnvVars ?: [:]
-        def dockerOptions = parameters.dockerOptions ?: ''
-        Map dockerVolumeBind = parameters.dockerVolumeBind ?: [:]
-        final script = parameters?.script ?: [commonPipelineEnvironment: commonPipelineEnvironment]
+        final script = parameters.script
+        ConfigurationHelper parameters = new ConfigurationHelper(parameters)
+        ConfigurationLoader generalConfig = ConfigurationLoader.generalConfiguration(script)
 
-        if (inKubernetes(script)) {
-            if (env.POD_NAME && hasContainerDefined(script, dockerImage)) {
-                container(getContainerDefined(script, dockerImage)) {
+        Set parameterKeys = ['dockerImage',
+                             'dockerOptions',
+                             'dockerEnvVars',
+                             'dockerVolumeBind']
+
+        Set generalConfigKeys = ['kubernetes']
+
+        Map config = ConfigurationMerger.merge(parameters, parameterKeys, generalConfig, generalConfigKeys)
+
+        if (isKubernetes(config)) {
+            if (env.POD_NAME && isContainerDefined(config, dockerImage)) {
+                container(getContainerDefined(config, dockerImage)) {
                     echo "Executing inside a Kubernetes Container"
                     body()
                     sh "chown -R 1000:1000 ."
                 }
             } else {
-                executeDockerOnKubernetes(script: script,
-                    dockerImage: parameters.dockerImage,
-                    dockerEnvVars: parameters.dockerEnvVars,
-                    dockerOptions: parameters.dockerOptions,
-                    dockerVolumeBind: parameters.dockerVolumeBind) {
+                dockerExecuteOnKubernetes(script: script,
+                    dockerImage: config.dockerImage,
+                    dockerEnvVars: config.dockerEnvVars,
+                    dockerOptions: config.dockerOptions,
+                    dockerVolumeBind: config.dockerVolumeBind) {
                     body()
                 }
             }
-        } else if (dockerImage) {
+        } else if (config.dockerImage) {
 
             if (!isPluginActive(PLUGIN_ID_DOCKER_WORKFLOW)) {
-                echo "[WARNING][${STEP_NAME}] Docker not supported. Plugin '${PLUGIN_ID_DOCKER_WORKFLOW}' is not installed or not active. Configured docker image '${dockerImage}' will not be used."
-                dockerImage = null
+                echo "[WARNING][${STEP_NAME}] Docker not supported. Plugin '${PLUGIN_ID_DOCKER_WORKFLOW}' is not installed or not active. Configured docker image '${config.dockerImage}' will not be used."
+                config.dockerImage = null
             }
 
             def returnCode = sh script: 'which docker > /dev/null', returnStatus: true
             if (returnCode != 0) {
-                echo "[WARNING][${STEP_NAME}] No docker environment found (command 'which docker' did not return with '0'). Configured docker image '${dockerImage}' will not be used."
-                dockerImage = null
+                echo "[WARNING][${STEP_NAME}] No docker environment found (command 'which docker' did not return with '0'). Configured docker image '${config.dockerImage}' will not be used."
+                config.dockerImage = null
             }
 
             returnCode = sh script: 'docker ps -q > /dev/null', returnStatus: true
             if (returnCode != 0) {
-                echo "[WARNING][$STEP_NAME] Cannot connect to docker daemon (command 'docker ps' did not return with '0'). Configured docker image '${dockerImage}' will not be used."
-                dockerImage = null
+                echo "[WARNING][$STEP_NAME] Cannot connect to docker daemon (command 'docker ps' did not return with '0'). Configured docker image '${config.dockerImage}' will not be used."
+                config.dockerImage = null
             }
-            def image = docker.image(dockerImage)
+            def image = docker.image(config.dockerImage)
             image.pull()
-            image.inside(getDockerOptions(dockerEnvVars, dockerVolumeBind, dockerOptions)) {
+            image.inside(getDockerOptions(config.dockerEnvVars, config.dockerVolumeBind, config.dockerOptions)) {
                 body()
             }
         } else {
@@ -111,8 +118,8 @@ private getDockerOptions(Map dockerEnvVars, Map dockerVolumeBind, def dockerOpti
 }
 
 @NonCPS
-boolean hasContainerDefined(script, dockerImage) {
-    def k8sMapping = ConfigurationLoader.generalConfiguration(script)?.kubernetes?.k8sMapping ?: [:]
+boolean isContainerDefined(config, dockerImage) {
+    def k8sMapping = config.k8sMapping ?: [:]
     if (k8sMapping.containsKey(env.POD_NAME)) {
         return k8sMapping[env.POD_NAME].containsKey(dockerImage)
     }
@@ -120,12 +127,12 @@ boolean hasContainerDefined(script, dockerImage) {
 }
 
 @NonCPS
-def getContainerDefined(script, dockerImage) {
-    def k8sMapping = ConfigurationLoader.generalConfiguration(script)?.kubernetes?.k8sMapping ?: [:]
+def getContainerDefined(config, dockerImage) {
+    def k8sMapping = config.k8sMapping
     return k8sMapping[env.POD_NAME]?.get(dockerImage)
 }
 
 @NonCPS
-boolean inKubernetes(script) {
-    return ConfigurationLoader.generalConfiguration(script)?.kubernetes?.enabled ?: false
+boolean isKubernetes(config) {
+    return config.kubernetes?.enabled ?: false
 }

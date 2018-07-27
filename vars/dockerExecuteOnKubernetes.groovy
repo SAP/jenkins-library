@@ -7,10 +7,10 @@ import org.codehaus.groovy.GroovyException
 import java.util.UUID
 
 def call(Map parameters = [:], body) {
-    def STEP_NAME = 'executeDockerOnKubernetes'
+    def STEP_NAME = 'dockerExecuteOnKubernetes'
     def PLUGIN_ID_KUBERNETES = 'kubernetes'
 
-    handlePipelineStepErrors(stepName: 'executeDockerOnKubernetes', stepParameters: parameters) {
+    handlePipelineStepErrors(stepName: 'dockerExecuteOnKubernetes', stepParameters: parameters) {
         def utils= new Utils()
         if (!isPluginActive(PLUGIN_ID_KUBERNETES)) {
             error("[ERROR][${STEP_NAME}] not supported. Plugin '${PLUGIN_ID_KUBERNETES}' is not installed or not active.")
@@ -25,7 +25,7 @@ def call(Map parameters = [:], body) {
                              'dockerEnvVars']
         Set stepConfigurationKeys = parameterKeys
 
-        Map config = ConfigurationMerger.merge(script, 'executeDockerOnKubernetes',
+        Map config = ConfigurationMerger.merge(script, 'dockerExecuteOnKubernetes',
             parameters, parameterKeys,
             stepConfigurationKeys)
 

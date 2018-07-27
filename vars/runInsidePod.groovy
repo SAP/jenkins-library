@@ -6,17 +6,12 @@ import java.util.UUID
 
 def call(Map parameters = [:], body) {
     def uniqueId = UUID.randomUUID().toString()
-
-    ConfigurationHelper configurationHelper = new ConfigurationHelper(parameters)
-    def script = configurationHelper.getConfigProperty('script')
-    def containersMap = configurationHelper.getConfigProperty('containersMap',[:])
-    def dockerEnvVars = configurationHelper.getConfigProperty('dockerEnvVars',[:])
-    def dockerWorkspace = configurationHelper.getConfigProperty('dockerWorkspace','')
+    ConfigurationHelper config = new ConfigurationHelper(parameters)
 
     handleStepErrors(stepName: 'runInsidePod', stepParameters: [:]) {
         def options = [name      : 'dynamic-agent-' + uniqueId,
                        label     : uniqueId,
-                       containers: getContainerList(script, containersMap, dockerEnvVars, dockerWorkspace)]
+                       containers: getContainerList(config)]
         podTemplate(options) {
             node(uniqueId) {
                 body()
@@ -25,19 +20,19 @@ def call(Map parameters = [:], body) {
     }
 }
 
-private getContainerList(script, containersMap, dockerEnvVars, dockerWorkspace) {
+private getContainerList(config) {
     def envVars
-    def jnlpAgent = ConfigurationLoader.generalConfiguration(script).kubernetes.jnlpAgent
+    def jnlpAgent = ConfigurationLoader.generalConfiguration(config.get('script')).kubernetes.jnlpAgent
 
-    envVars = getContainerEnvs(dockerEnvVars, dockerWorkspace)
+    envVars = getContainerEnvs(config.getConfigProperty('dockerEnvVars', [:]), config.getConfigProperty('dockerWorkspace', ''))
     result = []
     result.push(containerTemplate(name: 'jnlp',
         image: jnlpAgent,
         args: '${computer.jnlpmac} ${computer.name}'))
 
-    containersMap.each { k, v ->
-        result.push(containerTemplate(name: v,
-            image: k,
+    config.getConfigProperty('containersMap', [:]).each { containerName, imageName ->
+        result.push(containerTemplate(name: containerName,
+            image: imageName,
             alwaysPullImage: true,
             command: '/usr/bin/tail -f /dev/null',
             envVars: envVars))
