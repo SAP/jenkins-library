@@ -20,9 +20,9 @@ def call(Map parameters = [:], body) {
 
         Map config = ConfigurationMerger.merge(parameters, parameterKeys, generalConfig, generalConfigKeys)
 
-        if (isKubernetes(config)) {
-            if (env.POD_NAME && isContainerDefined(config, dockerImage)) {
-                container(getContainerDefined(config, dockerImage)) {
+        if (isKubernetes(config) && config.dockerImage) {
+            if (env.POD_NAME && isContainerDefined(config)) {
+                container(getContainerDefined(config)) {
                     echo "Executing inside a Kubernetes Container"
                     body()
                     sh "chown -R 1000:1000 ."
@@ -118,18 +118,18 @@ private getDockerOptions(Map dockerEnvVars, Map dockerVolumeBind, def dockerOpti
 }
 
 @NonCPS
-boolean isContainerDefined(config, dockerImage) {
+boolean isContainerDefined(config) {
     def k8sMapping = config.k8sMapping ?: [:]
     if (k8sMapping.containsKey(env.POD_NAME)) {
-        return k8sMapping[env.POD_NAME].containsKey(dockerImage)
+        return k8sMapping[env.POD_NAME].containsKey(config.dockerImage)
     }
     return false
 }
 
 @NonCPS
-def getContainerDefined(config, dockerImage) {
+def getContainerDefined(config) {
     def k8sMapping = config.k8sMapping
-    return k8sMapping[env.POD_NAME]?.get(dockerImage)
+    return k8sMapping[env.POD_NAME]?.get(config.dockerImage)
 }
 
 @NonCPS
