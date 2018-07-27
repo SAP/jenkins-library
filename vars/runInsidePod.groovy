@@ -27,8 +27,7 @@ def call(Map parameters = [:], body) {
 
 private getContainerList(script, containersMap, dockerEnvVars, dockerWorkspace) {
     def envVars
-    def jnlpAgent = ConfigurationLoader.generalConfiguration(script).jnlpAgent ?:
-
+    def jnlpAgent = ConfigurationLoader.generalConfiguration(script).kubernetes.jnlpAgent
 
     envVars = getContainerEnvs(dockerEnvVars, dockerWorkspace)
     result = []
