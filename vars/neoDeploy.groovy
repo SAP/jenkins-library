@@ -22,6 +22,7 @@ def call(parameters = [:]) {
         'dockerOptions',
         'host',
         'neoCredentialsId',
+        'neoHome',
         'propertiesFile',
         'runtime',
         'runtimeVersion',
@@ -35,7 +36,8 @@ def call(parameters = [:]) {
         'dockerImage',
         'dockerOptions',
         'host',
-        'neoCredentialsId'
+        'neoCredentialsId',
+        'neoHome'
         ]
 
     handlePipelineStepErrors (stepName: stepName, stepParameters: parameters) {
@@ -146,22 +148,26 @@ def call(parameters = [:]) {
             deployAccount = utils.getMandatoryParameter(configuration, 'account')
         }
 
-        def neoCmdArgs = """${warAction} \
+        def neo = new ToolDescriptor('SAP Cloud Platform Console Client', 'NEO_HOME', 'neoHome', '/tools/', 'neo.sh', null, 'version')
+        def neoExecutable = neo.getToolExecutable(this, configuration)
+        def neoDeployScript = """#!/bin/bash
+                                 "${neoExecutable}" ${warAction} \
                                  --source "${archivePath}" \
-                              """                              
+                              """
+
         if (deployMode in ['mta', 'warParams']) {
-            neoCmdArgs +=
+            neoDeployScript +=
                     """--host '${deployHost}' \
                     --account '${deployAccount}' \
                     """
         }
 
         if (deployMode == 'mta') {
-            neoCmdArgs += "--synchronous"
+            neoDeployScript += "--synchronous"
         }
 
         if (deployMode == 'warParams') {
-            neoCmdArgs +=
+            neoDeployScript +=
                     """--application '${applicationName}' \
                     --runtime '${runtime}' \
                     --runtime-version '${runtimeVersion}' \
@@ -169,7 +175,7 @@ def call(parameters = [:]) {
         }
 
         if (deployMode == 'warPropertiesFile') {
-            neoCmdArgs +=
+            neoDeployScript +=
                     """${propertiesFile}"""
         }
 
@@ -186,11 +192,12 @@ def call(parameters = [:]) {
                           dockerEnvVars: configuration.get('dockerEnvVars'),
                           dockerOptions: configuration.get('dockerOptions')) {
 
+                neo.verify(this, configuration)
+
                 def java = new ToolDescriptor('Java', 'JAVA_HOME', '', '/bin/', 'java', '1.8.0', '-version 2>&1')
                 java.verify(this, configuration)
 
-                sh """#!/bin/bash
-                    neo.sh ${neoCmdArgs} \
+                sh """${neoDeployScript} \
                       ${credentials}
                    """
             }
