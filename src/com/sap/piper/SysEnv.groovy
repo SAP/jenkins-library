@@ -1,5 +1,5 @@
 package com.sap.piper
-
+import com.cloudbees.groovy.cps.NonCPS
 class SysEnv implements Serializable {
     static final long serialVersionUID = 1L
 
