@@ -22,7 +22,6 @@ def call(parameters = [:]) {
         'dockerOptions',
         'host',
         'neoCredentialsId',
-        'neoHome',
         'propertiesFile',
         'runtime',
         'runtimeVersion',
@@ -36,8 +35,7 @@ def call(parameters = [:]) {
         'dockerImage',
         'dockerOptions',
         'host',
-        'neoCredentialsId',
-        'neoHome'
+        'neoCredentialsId'
         ]
 
     handlePipelineStepErrors (stepName: stepName, stepParameters: parameters) {
@@ -121,6 +119,8 @@ def call(parameters = [:]) {
             if (! (warAction in warActions)) {
                 throw new Exception("[neoDeploy] Invalid warAction = '${warAction}'. Valid 'warAction' values are: ${warActions}.")
             }
+        } else if(deployMode == 'mta') {
+            warAction = 'deploy-mta'
         }
 
         if (deployMode == 'warPropertiesFile') {
@@ -146,37 +146,31 @@ def call(parameters = [:]) {
             deployAccount = utils.getMandatoryParameter(configuration, 'account')
         }
 
-        def neoVersions = ['neo-java-web': '3.39.10', 'neo-javaee6-wp': '2.132.6', 'neo-javaee7-wp': '1.21.13']
-        def neo = new ToolDescriptor('SAP Cloud Platform Console Client', 'NEO_HOME', 'neoHome', '/tools/', 'neo.sh', neoVersions, 'version')
-        def neoExecutable = neo.getToolExecutable(this, configuration)
-        def neoDeployScript
+        def neoCmdArgs = """${warAction} \
+                                 --source "${archivePath}" \
+                              """                              
+        if (deployMode in ['mta', 'warParams']) {
+            neoCmdArgs +=
+                    """--host '${deployHost}' \
+                    --account '${deployAccount}' \
+                    """
+        }
 
         if (deployMode == 'mta') {
-            neoDeployScript =
-                """#!/bin/bash
-                    "${neoExecutable}" deploy-mta \
-                    --host '${deployHost}' \
-                    --account '${deployAccount}' \
-                    --synchronous"""
+            neoCmdArgs += "--synchronous"
         }
 
         if (deployMode == 'warParams') {
-            neoDeployScript =
-                """#!/bin/bash
-                    "${neoExecutable}" ${warAction} \
-                    --host '${deployHost}' \
-                    --account '${deployAccount}' \
-                    --application '${applicationName}' \
+            neoCmdArgs +=
+                    """--application '${applicationName}' \
                     --runtime '${runtime}' \
                     --runtime-version '${runtimeVersion}' \
                     --size '${vmSize}'"""
         }
 
         if (deployMode == 'warPropertiesFile') {
-            neoDeployScript =
-                """#!/bin/bash
-                    "${neoExecutable}" ${warAction} \
-                    ${propertiesFile}"""
+            neoCmdArgs +=
+                    """${propertiesFile}"""
         }
 
         withCredentials([usernamePassword(
@@ -184,22 +178,20 @@ def call(parameters = [:]) {
             passwordVariable: 'password',
             usernameVariable: 'username')]) {
 
-            def commonDeployParams =
+            def credentials =
                 """--user '${username}' \
                    --password '${password}' \
-                   --source "${archivePath}" \
                 """
             dockerExecute(dockerImage: configuration.get('dockerImage'),
                           dockerEnvVars: configuration.get('dockerEnvVars'),
                           dockerOptions: configuration.get('dockerOptions')) {
 
-                neo.verify(this, configuration)
-
                 def java = new ToolDescriptor('Java', 'JAVA_HOME', '', '/bin/', 'java', '1.8.0', '-version 2>&1')
                 java.verify(this, configuration)
 
-                sh """${neoDeployScript} \
-                      ${commonDeployParams}
+                sh """#!/bin/bash
+                    neo.sh ${neoCmdArgs} \
+                      ${credentials}
                    """
             }
         }

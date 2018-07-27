@@ -12,6 +12,8 @@ abstract class ArtifactVersioning implements Serializable {
 
     public static getArtifactVersioning(buildTool, script, configuration) {
         switch (buildTool) {
+            case 'mta':
+                return new MtaArtifactVersioning(script, configuration)
             case 'maven':
                 return new MavenArtifactVersioning(script, configuration)
             case 'docker':

@@ -7,8 +7,14 @@ import util.JenkinsShellCallRule
 import util.JenkinsStepRule
 import util.Rules
 
+import static org.hamcrest.Matchers.allOf
+import static org.hamcrest.Matchers.containsString
+import static org.hamcrest.Matchers.containsString
+import static org.hamcrest.Matchers.not
 import static org.junit.Assert.assertEquals
+import static org.junit.Assert.assertThat
 import static org.junit.Assert.assertTrue
+
 
 class MavenExecuteTest extends BasePiperTest {
 
@@ -63,10 +69,34 @@ class MavenExecuteTest extends BasePiperTest {
 
     @Test
     void testMavenCommandForwardsDockerOptions() throws Exception {
-
         jsr.step.mavenExecute(script: nullScript, goals: 'clean install')
         assertEquals('maven:3.5-jdk-7', jder.dockerParams.dockerImage)
 
-        assert jscr.shell[0] == 'mvn --batch-mode -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn clean install'
+        assertEquals('mvn --batch-mode -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn clean install', jscr.shell[0])
+    }
+
+    @Test
+    void testMavenCommandWithShortBatchModeFlag() throws Exception {
+        jsr.step.mavenExecute(script: nullScript, goals: 'clean install', flags: '-B')
+        assertEquals('maven:3.5-jdk-7', jder.dockerParams.dockerImage)
+
+        assertEquals('mvn -B -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn clean install', jscr.shell[0])
+    }
+
+    @Test
+    void testMavenCommandWithFalsePositiveMinusBFlag() throws Exception {
+        jsr.step.mavenExecute(script: nullScript, goals: 'clean install', flags: '-Blah')
+        assertEquals('maven:3.5-jdk-7', jder.dockerParams.dockerImage)
+
+        assertThat(jscr.shell[0],
+            allOf(containsString('-Blah'),
+                  containsString('--batch-mode')))
+    }
+
+    @Test
+    void testMavenCommandWithBatchModeMultiline() throws Exception {
+        jsr.step.mavenExecute(script: nullScript, goals: 'clean install', flags: ('''-B\\
+                                                                                    |--show-version''' as CharSequence).stripMargin())
+        assertThat(jscr.shell[0], not(containsString('--batch-mode')))
     }
 }
