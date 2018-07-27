@@ -12,7 +12,6 @@ def call(Map parameters = [:], body) {
         def dockerOptions = parameters.dockerOptions ?: ''
         Map dockerVolumeBind = parameters.dockerVolumeBind ?: [:]
         final script = parameters?.script ?: [commonPipelineEnvironment: commonPipelineEnvironment]
-        echo "${env.POD_NAME} and container ${hasContainerDefined(script, dockerImage)} ${getContainerDefined(script, dockerImage)}"
         if (env.POD_NAME && hasContainerDefined(script, dockerImage)) {
             container(getContainerDefined(script, dockerImage)) {
                 echo "Executing inside a Kubernetes Container"
@@ -123,7 +122,6 @@ boolean hasContainerDefined(script, dockerImage) {
 def getContainerDefined(script, dockerImage) {
     def k8sMapping = ConfigurationLoader.generalConfiguration(script)?.k8sMapping ?: [:]
     if (k8sMapping.containsKey(env.POD_NAME)) {
-        echo "${k8sMapping[env.POD_NAME].containsKey(dockerImage)} and value is ${dockerImage} ${k8sMapping[env.POD_NAME].get(dockerImage)}"
         return k8sMapping[env.POD_NAME].get(dockerImage)
     }
     return ''
