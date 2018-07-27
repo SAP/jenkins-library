@@ -18,7 +18,7 @@ def call(Map parameters = [:], body) {
 
         def options = [name      : 'dynamic-agent-' + uniqueId,
                        label     : uniqueId,
-                       containers: getContainerList(parameters)]
+                       containers: getContainerList(config)]
         podTemplate(options) {
             node(uniqueId) {
                 body()
@@ -33,7 +33,7 @@ private getContainerList(config) {
     envVars = getContainerEnvs(config)
     result = []
     result.push(containerTemplate(name: 'jnlp',
-        image: config.jnlpAgent,
+        image: config.kubernetes.jnlpAgent,
         args: '${computer.jnlpmac} ${computer.name}'))
 
     config.containersMap.each { imageName, containerName  ->
