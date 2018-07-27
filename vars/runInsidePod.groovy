@@ -26,7 +26,7 @@ def call(Map parameters = [:], body) {
 
 private getContainerList(script, containersMap,dockerEnvVars, dockerWorkspace ) {
     def envVars
-    def jnlpAgent = ConfigurationLoader.generalConfiguration(script).jnlpAgent ?: 's4sdk/jenkins-agent-k8s:latest'
+    def jnlpAgent = ConfigurationLoader.generalConfiguration(script).jnlpAgent ?: 'jenkinsci/jnlp-slave:latest'
 
 
     envVars = getContainerEnvs(dockerEnvVars, dockerWorkspace)
