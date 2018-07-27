@@ -1,6 +1,6 @@
 import com.sap.piper.ConfigurationLoader
 import com.sap.piper.SysEnv
-
+import com.sap.piper.ConfigurationMerger
 import java.util.UUID
 
 def call(Map parameters = [:], body) {
