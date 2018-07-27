@@ -8,10 +8,6 @@ def call(Map parameters = [:], body) {
 
     handlePipelineStepErrors(stepName: 'executeDockerOnKubernetes', stepParameters: parameters) {
         def utils= new Utils()
-        if (!isPluginActive(PLUGIN_ID_KUBERNETES)) {
-            error("[ERROR][${STEP_NAME}] not supported. Plugin '${PLUGIN_ID_KUBERNETES}' is not installed or not active.")
-        }
-
         final script = parameters.script
         prepareDefaultValues script: script
 
@@ -76,3 +72,7 @@ private unstashContainer(config) {
     }
 }
 
+@NonCPS
+private isPluginActive(String pluginId) {
+    return Jenkins.instance.pluginManager.plugins.find { p -> p.isActive() && p.getShortName() == pluginId }
+}
