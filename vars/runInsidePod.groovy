@@ -36,7 +36,7 @@ private getContainerList(config) {
         image: config.jnlpAgent,
         args: '${computer.jnlpmac} ${computer.name}'))
 
-    config.containersMap.each { containerName, imageName ->
+    config.containersMap.each { imageName, containerName  ->
         result.push(containerTemplate(name: containerName,
             image: imageName,
             alwaysPullImage: true,
