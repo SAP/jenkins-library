@@ -1,6 +1,10 @@
+import com.cloudbees.groovy.cps.NonCPS
 import com.sap.piper.ConfigurationMerger
+import com.sap.piper.SysEnv
 import com.sap.piper.Utils
 import org.codehaus.groovy.GroovyException
+
+import java.util.UUID
 
 def call(Map parameters = [:], body) {
     def STEP_NAME = 'executeDockerOnKubernetes'
@@ -8,6 +12,10 @@ def call(Map parameters = [:], body) {
 
     handlePipelineStepErrors(stepName: 'executeDockerOnKubernetes', stepParameters: parameters) {
         def utils= new Utils()
+        if (!isPluginActive(PLUGIN_ID_KUBERNETES)) {
+            error("[ERROR][${STEP_NAME}] not supported. Plugin '${PLUGIN_ID_KUBERNETES}' is not installed or not active.")
+        }
+
         final script = parameters.script
         prepareDefaultValues script: script
 
@@ -21,15 +29,18 @@ def call(Map parameters = [:], body) {
             parameters, parameterKeys,
             stepConfigurationKeys)
 
+        config.uniqueId = UUID.randomUUID().toString()
 
         if (!config.dockerImage) throw new GroovyException('Docker image not specified.')
         Map containersMap = [:]
         containersMap[config.get('dockerImage').toString()] = 'container-exec'
+
         stashWorkspace(config)
         runInsidePod(script: script, containersMap: containersMap, dockerEnvVars: config.dockerEnvVars, dockerWorkspace: config.dockerWorkspace) {
-            echo "Execute container content in Kubernetes pod"
             utils.unstashAll(config.stashContent)
-            body()
+            container(name: 'container-exec') {
+                body()
+            }
             stashContainer(config)
         }
         unstashContainer(config)
@@ -71,6 +82,7 @@ private unstashContainer(config) {
         echo "${ioe.getMessage()}"
     }
 }
+
 
 @NonCPS
 private isPluginActive(String pluginId) {
