@@ -92,7 +92,7 @@ steps:
   mavenExecute:
     dockerImage: 'maven:3.5-jdk-7'
     logSuccessfulMavenTransfers: false
-  executeDockerOnKubernetes:
+  dockerExecuteOnKubernetes:
     stashContent: []
     stashBackConfig:
       excludes: 'nohup.out'
