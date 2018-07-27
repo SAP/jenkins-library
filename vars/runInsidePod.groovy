@@ -75,6 +75,3 @@ private getContainerEnvs(dockerEnvVars, dockerWorkspace) {
 
     return containerEnv
 }
-
-
-

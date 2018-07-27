@@ -19,7 +19,7 @@ def call(Map parameters = [:], body) {
                 sh "chown -R 1000:1000 ."
             }
         } else if (env.jaas_owner) {
-            executeDockerOnKubernetes(
+            executeDockerOnKubernetes(script: script,
                 dockerImage: parameters.dockerImage,
                 dockerEnvVars: parameters.dockerEnvVars,
                 dockerOptions: parameters.dockerOptions,
