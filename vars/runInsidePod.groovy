@@ -9,7 +9,7 @@ def call(Map parameters = [:], body) {
     handleStepErrors(stepName: 'runInsidePod', stepParameters: [:]) {
 
         final script = parameters.script
-        ConfigurationLoader generalConfig = ConfigurationLoader.generalConfiguration(script)
+        Map generalConfig = ConfigurationLoader.generalConfiguration(script)
         Set parameterKeys = ['dockerImage',
                              'dockerOptions',
                              'containersMap']

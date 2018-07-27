@@ -9,7 +9,7 @@ def call(Map parameters = [:], body) {
 
     handlePipelineStepErrors(stepName: STEP_NAME, stepParameters: parameters) {
         final script = parameters.script
-        ConfigurationLoader generalConfig = ConfigurationLoader.generalConfiguration(script)
+        Map generalConfig = ConfigurationLoader.generalConfiguration(script)
 
         Set parameterKeys = ['dockerImage',
                              'dockerOptions',
