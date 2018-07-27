@@ -1,4 +1,3 @@
-import com.sap.piper.ConfigurationHelper
 import com.sap.piper.ConfigurationLoader
 import com.sap.piper.SysEnv
 
@@ -6,12 +5,20 @@ import java.util.UUID
 
 def call(Map parameters = [:], body) {
     def uniqueId = UUID.randomUUID().toString()
-    ConfigurationHelper config = new ConfigurationHelper(parameters)
 
     handleStepErrors(stepName: 'runInsidePod', stepParameters: [:]) {
+
+        final script = parameters.script
+        ConfigurationLoader generalConfig = ConfigurationLoader.generalConfiguration(script)
+        Set parameterKeys = ['dockerImage',
+                             'dockerOptions',
+                             'containersMap']
+        Set generalConfigKeys = ['kubernetes']
+        Map config = ConfigurationMerger.merge(parameters, parameterKeys, generalConfig, generalConfigKeys)
+
         def options = [name      : 'dynamic-agent-' + uniqueId,
                        label     : uniqueId,
-                       containers: getContainerList(config)]
+                       containers: getContainerList(parameters)]
         podTemplate(options) {
             node(uniqueId) {
                 body()
@@ -22,15 +29,14 @@ def call(Map parameters = [:], body) {
 
 private getContainerList(config) {
     def envVars
-    def jnlpAgent = ConfigurationLoader.generalConfiguration(config.get('script')).kubernetes.jnlpAgent
 
-    envVars = getContainerEnvs(config.getConfigProperty('dockerEnvVars', [:]), config.getConfigProperty('dockerWorkspace', ''))
+    envVars = getContainerEnvs(config)
     result = []
     result.push(containerTemplate(name: 'jnlp',
-        image: jnlpAgent,
+        image: config.jnlpAgent,
         args: '${computer.jnlpmac} ${computer.name}'))
 
-    config.getConfigProperty('containersMap', [:]).each { containerName, imageName ->
+    config.containersMap.each { containerName, imageName ->
         result.push(containerTemplate(name: containerName,
             image: imageName,
             alwaysPullImage: true,
@@ -47,9 +53,10 @@ private getContainerList(config) {
  * @param dockerEnvVars Map with environment variables
  * @param dockerWorkspace Path to working dir
  */
-private getContainerEnvs(dockerEnvVars, dockerWorkspace) {
+private getContainerEnvs(config) {
     def containerEnv = []
-
+    def dockerEnvVars = config.dockerEnvVars ?: [:]
+    def dockerWorkspace = config.dockerWorkspace ?: ''
     if (dockerEnvVars) {
         for (String k : dockerEnvVars.keySet()) {
             containerEnv << envVar(key: k, value: dockerEnvVars[k].toString())

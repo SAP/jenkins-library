@@ -1,5 +1,6 @@
 import com.cloudbees.groovy.cps.NonCPS
 import com.sap.piper.ConfigurationLoader
+import com.sap.piper.ConfigurationMerger
 
 def call(Map parameters = [:], body) {
 
@@ -8,7 +9,6 @@ def call(Map parameters = [:], body) {
 
     handlePipelineStepErrors(stepName: STEP_NAME, stepParameters: parameters) {
         final script = parameters.script
-        ConfigurationHelper parameters = new ConfigurationHelper(parameters)
         ConfigurationLoader generalConfig = ConfigurationLoader.generalConfiguration(script)
 
         Set parameterKeys = ['dockerImage',
