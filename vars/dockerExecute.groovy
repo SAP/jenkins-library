@@ -13,6 +13,7 @@ def call(Map parameters = [:], body) {
 
         Set parameterKeys = ['dockerImage',
                              'dockerOptions',
+                             'dockerWorkspace',
                              'dockerEnvVars',
                              'dockerVolumeBind']
 
@@ -134,5 +135,8 @@ def getContainerDefined(config) {
 
 @NonCPS
 boolean isKubernetes(config) {
-    return config?.kubernetes?.enabled ?: false
+    if (env.ON_K8S == 'true') {
+        return true
+    }
+    return false
 }
