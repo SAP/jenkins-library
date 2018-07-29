@@ -1,6 +1,7 @@
 import com.sap.piper.ConfigurationLoader
-import com.sap.piper.SysEnv
 import com.sap.piper.ConfigurationMerger
+import com.sap.piper.SysEnv
+
 import java.util.UUID
 
 def call(Map parameters = [:], body) {
@@ -12,6 +13,7 @@ def call(Map parameters = [:], body) {
         Map generalConfig = ConfigurationLoader.generalConfiguration(script)
         Set parameterKeys = ['dockerImage',
                              'dockerOptions',
+                             'dockerWorkspace',
                              'containersMap']
         Set generalConfigKeys = ['kubernetes']
         Map config = ConfigurationMerger.merge(parameters, parameterKeys, generalConfig, generalConfigKeys)
