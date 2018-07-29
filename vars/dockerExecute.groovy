@@ -134,5 +134,6 @@ def getContainerDefined(config) {
 
 @NonCPS
 boolean isKubernetes(config) {
+    echo "${config} is the config"
     return config.kubernetes?.enabled ?: false
 }
