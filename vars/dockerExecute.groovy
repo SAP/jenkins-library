@@ -19,7 +19,7 @@ def call(Map parameters = [:], body) {
         Set generalConfigKeys = ['kubernetes']
 
         Map config = ConfigurationMerger.merge(parameters, parameterKeys, generalConfig, generalConfigKeys)
-
+        echo "${isKubernetes(config)} is the config and ${config.dockerImage} and ${env.POD_NAME} and also ${isContainerDefined(config)}"
         if (isKubernetes(config) && config.dockerImage) {
             if (env.POD_NAME && isContainerDefined(config)) {
                 container(getContainerDefined(config)) {
