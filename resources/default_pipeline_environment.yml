@@ -2,7 +2,6 @@
 general:
   productiveBranch: 'master'
   kubernetes:
-    enabled: false
     jnlpAgent: 'jenkinsci/jnlp-slave:latest'
   changeManagement:
     transportRequestLabel: 'TransportRequest\s?:'

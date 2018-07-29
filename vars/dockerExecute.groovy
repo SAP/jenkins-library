@@ -13,13 +13,14 @@ def call(Map parameters = [:], body) {
 
         Set parameterKeys = ['dockerImage',
                              'dockerOptions',
+                             'dockerWorkspace',
                              'dockerEnvVars',
                              'dockerVolumeBind']
 
         Set generalConfigKeys = ['kubernetes']
 
         Map config = ConfigurationMerger.merge(parameters, parameterKeys, generalConfig, generalConfigKeys)
-        echo "${isKubernetes(config)} is the config and ${config.dockerImage} and ${env.POD_NAME} and also ${isContainerDefined(config)}"
+
         if (isKubernetes(config) && config.dockerImage) {
             if (env.POD_NAME && isContainerDefined(config)) {
                 container(getContainerDefined(config)) {
@@ -129,11 +130,13 @@ boolean isContainerDefined(config) {
 @NonCPS
 def getContainerDefined(config) {
     def k8sMapping = config.kubernetes.k8sMapping
-    return k8sMapping[env.POD_NAME]?.get(config.dockerImage)
+    return k8sMapping[env.POD_NAME].get(config.dockerImage)
 }
 
 @NonCPS
 boolean isKubernetes(config) {
-    echo "${config} is the config"
-    return config.kubernetes?.enabled ?: false
+    if (env.ON_K8S == 'true') {
+        return true
+    }
+    return false
 }
