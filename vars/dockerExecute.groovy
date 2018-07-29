@@ -119,7 +119,7 @@ private getDockerOptions(Map dockerEnvVars, Map dockerVolumeBind, def dockerOpti
 
 @NonCPS
 boolean isContainerDefined(config) {
-    def k8sMapping = config.k8sMapping ?: [:]
+    def k8sMapping = config?.kubernetes?.k8sMapping ?: [:]
     if (k8sMapping.containsKey(env.POD_NAME)) {
         return k8sMapping[env.POD_NAME].containsKey(config.dockerImage)
     }
@@ -128,7 +128,7 @@ boolean isContainerDefined(config) {
 
 @NonCPS
 def getContainerDefined(config) {
-    def k8sMapping = config.k8sMapping
+    def k8sMapping = config.kubernetes.k8sMapping
     return k8sMapping[env.POD_NAME]?.get(config.dockerImage)
 }
 
