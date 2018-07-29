@@ -59,7 +59,8 @@ def call(Map parameters = [:], body) {
             image.inside(getDockerOptions(config.dockerEnvVars, config.dockerVolumeBind, config.dockerOptions)) {
                 body()
             }
-        } else {
+        }
+        if (!config.dockerImage) {
             echo "[INFO][${STEP_NAME}] Running on local environment."
             body()
         }
