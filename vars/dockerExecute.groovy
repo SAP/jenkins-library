@@ -36,8 +36,7 @@ def call(Map parameters = [:], body) {
                     body()
                 }
             }
-        } else if (config.dockerImage) {
-
+        } else {
             if (!isPluginActive(PLUGIN_ID_DOCKER_WORKFLOW)) {
                 echo "[WARNING][${STEP_NAME}] Docker not supported. Plugin '${PLUGIN_ID_DOCKER_WORKFLOW}' is not installed or not active. Configured docker image '${config.dockerImage}' will not be used."
                 config.dockerImage = null
@@ -54,16 +53,19 @@ def call(Map parameters = [:], body) {
                 echo "[WARNING][$STEP_NAME] Cannot connect to docker daemon (command 'docker ps' did not return with '0'). Configured docker image '${config.dockerImage}' will not be used."
                 config.dockerImage = null
             }
-            def image = docker.image(config.dockerImage)
-            image.pull()
-            image.inside(getDockerOptions(config.dockerEnvVars, config.dockerVolumeBind, config.dockerOptions)) {
+            if (!config.dockerImage) {
+                echo "[INFO][${STEP_NAME}] Running on local environment."
                 body()
+            } else {
+                def image = docker.image(config.dockerImage)
+                image.pull()
+                image.inside(getDockerOptions(config.dockerEnvVars, config.dockerVolumeBind, config.dockerOptions)) {
+                    body()
+                }
             }
+
         }
-        if (!config.dockerImage) {
-            echo "[INFO][${STEP_NAME}] Running on local environment."
-            body()
-        }
+
     }
 }
 
