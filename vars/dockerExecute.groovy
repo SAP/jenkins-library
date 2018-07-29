@@ -19,7 +19,6 @@ def call(Map parameters = [:], body) {
         Set generalConfigKeys = ['kubernetes']
 
         Map config = ConfigurationMerger.merge(parameters, parameterKeys, generalConfig, generalConfigKeys)
-        echo "${isKubernetes(config)} is the config and ${config.dockerImage} and ${env.POD_NAME} and also ${isContainerDefined(config)}"
         if (isKubernetes(config) && config.dockerImage) {
             if (env.POD_NAME && isContainerDefined(config)) {
                 container(getContainerDefined(config)) {
@@ -104,16 +103,17 @@ private getDockerOptions(Map dockerEnvVars, Map dockerVolumeBind, def dockerOpti
         }
     }
 
-    if (dockerOptions instanceof CharSequence) {
-        options.add(dockerOptions.toString())
-    } else if (dockerOptions instanceof List) {
-        for (String option : dockerOptions) {
-            options.add "${option}"
+    if (dockerOptions) {
+        if (dockerOptions instanceof CharSequence) {
+            options.add(dockerOptions.toString())
+        } else if (dockerOptions instanceof List) {
+            for (String option : dockerOptions) {
+                options.add "${option}"
+            }
+        } else {
+            throw new IllegalArgumentException("Unexpected type for dockerOptions. Expected was either a list or a string. Actual type was: '${dockerOptions.getClass()}'")
         }
-    } else {
-        throw new IllegalArgumentException("Unexpected type for dockerOptions. Expected was either a list or a string. Actual type was: '${dockerOptions.getClass()}'")
     }
-
     return options.join(' ')
 }
 
