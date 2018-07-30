@@ -92,7 +92,7 @@ steps:
     mtaDeployParameters: '-f'
     mtaExtensionDescriptor: ''
     mtaPath: ''
-    smokeTestScript: 'blueGreenCheck.sh'
+    smokeTestScript: 'blueGreenCheckScript.sh'
     smokeTestStatusCode: 200
     stashContent: []
     cf_native:

@@ -65,7 +65,7 @@ def call(Map parameters = [:]) {
         if (config.deployTool == 'cf_native') {
             config.smokeTest = ''
 
-            if (config.smokeTestScript == 'blueGreenCheck.sh') {
+            if (config.smokeTestScript == 'blueGreenCheckScript.sh') {
                 writeFile file: config.smokeTestScript, text: libraryResource(config.smokeTestScript)
             } else {
                 utils.unstash 'pipelineConfigAndTests'
