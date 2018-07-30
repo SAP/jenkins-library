@@ -84,6 +84,23 @@ steps:
         fail:
           high: '0'
     archive: false
+  cloudFoundryDeploy:
+    cloudFoundry:
+      apiEndpoint: 'https://api.cf.eu10.hana.ondemand.com'
+    deployTool: 'cf_native'
+    deployType: 'standard'
+    mtaDeployParameters: '-f'
+    mtaExtensionDescriptor: ''
+    mtaPath: ''
+    smokeTestScript: 'blueGreenCheck.sh'
+    smokeTestStatusCode: 200
+    stashContent: []
+    cf_native:
+      dockerImage: 's4sdk/docker-cf-cli'
+      dockerWorkspace: '/home/piper'
+    mtaDeployPlugin:
+      dockerImage: 's4sdk/docker-cf-cli'
+      dockerWorkspace: '/home/piper'
   influxWriteData:
     influxServer: 'jenkins'
   mavenExecute:
