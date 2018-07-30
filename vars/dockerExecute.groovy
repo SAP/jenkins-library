@@ -20,7 +20,7 @@ def call(Map parameters = [:], body) {
         Set generalConfigKeys = ['kubernetes']
 
         Map config = ConfigurationMerger.merge(parameters, parameterKeys, generalConfig, generalConfigKeys)
-        if (isKubernetes(config) && config.dockerImage) {
+        if (isKubernetes() && config.dockerImage) {
             if (env.POD_NAME && isContainerDefined(config)) {
                 container(getContainerDefined(config)) {
                     echo "Executing inside a Kubernetes Container"
@@ -33,6 +33,7 @@ def call(Map parameters = [:], body) {
                     dockerEnvVars: config.dockerEnvVars,
                     dockerOptions: config.dockerOptions,
                     dockerVolumeBind: config.dockerVolumeBind) {
+                    echo "Executing inside a Kubernetes Pod"
                     body()
                 }
             }
@@ -137,7 +138,7 @@ def getContainerDefined(config) {
 }
 
 @NonCPS
-boolean isKubernetes(config) {
+boolean isKubernetes() {
     if (env.ON_K8S == 'true') {
         return true
     }

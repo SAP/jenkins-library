@@ -1,17 +1,13 @@
-
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.RuleChain
-
 import util.BasePiperTest
 import util.JenkinsLoggingRule
-import util.Rules
 import util.JenkinsStepRule
+import util.Rules
 
-import static org.junit.Assert.assertEquals
-import static org.junit.Assert.assertTrue
-import static org.junit.Assert.assertFalse
+import static org.junit.Assert.*
 
 class DockerExecuteTest extends BasePiperTest {
     private DockerMock docker
@@ -27,15 +23,64 @@ class DockerExecuteTest extends BasePiperTest {
 
     int whichDockerReturnValue = 0
     def bodyExecuted
+    def containerName
 
     @Before
     void init() {
         bodyExecuted = false
         docker = new DockerMock()
         binding.setVariable('docker', docker)
-        binding.setVariable('Jenkins', [instance: [pluginManager: [plugins: [new PluginMock()]]]])
-
+        binding.setVariable('Jenkins', [instance: [pluginManager: [plugins: [new PluginMock('kubernetes'), new PluginMock('docker-workflow')]]]])
         helper.registerAllowedMethod('sh', [Map.class], {return whichDockerReturnValue})
+    }
+
+    @Test
+    void testExecuteInsideContainer() throws Exception {
+        helper.registerAllowedMethod('container', [String.class, Closure.class], { String container, Closure body ->
+            containerName = container
+            body()
+        })
+        binding.setVariable('env', [POD_NAME: 'testpod', ON_K8S: 'true'])
+        nullScript.commonPipelineEnvironment.configuration = ['general': ['kubernetes': ['k8sMapping': ['testpod': ['maven:3.5-jdk-8-alpine': 'mavenexec']]]]]
+        jsr.step.call(script: nullScript,
+            dockerImage: 'maven:3.5-jdk-8-alpine',
+            dockerEnvVars: ['http_proxy': 'http://proxy:8000']) {
+            bodyExecuted = true
+        }
+
+        assertTrue(jlr.log.contains('Executing inside a Kubernetes Container'))
+        assertEquals('mavenexec', containerName)
+        assertTrue(bodyExecuted)
+     }
+
+    @Test
+    void testExecuteInsidePod() throws Exception {
+        helper.registerAllowedMethod('dockerExecuteOnKubernetes', [Map.class, Closure.class], { Map config, Closure body -> body()
+        })
+        binding.setVariable('env', [ON_K8S: 'true'])
+        nullScript.commonPipelineEnvironment.configuration = ['general': ['kubernetes': ['k8sMapping': ['testpod': ['maven:3.5-jdk-8-alpine': 'mavenexec']]]]]
+        jsr.step.call(script: nullScript,
+            dockerImage: 'maven:3.5-jdk-8-alpine',
+            dockerEnvVars: ['http_proxy': 'http://proxy:8000']) {
+            bodyExecuted = true
+        }
+        assertTrue(jlr.log.contains('Executing inside a Kubernetes Pod'))
+        assertTrue(bodyExecuted)
+    }
+
+    @Test
+    void testExecuteInsidePodWithEmptyMap() throws Exception {
+        helper.registerAllowedMethod('dockerExecuteOnKubernetes', [Map.class, Closure.class], { Map config, Closure body -> body()
+        })
+        binding.setVariable('env', [POD_NAME: 'testpod', ON_K8S: 'true'])
+        nullScript.commonPipelineEnvironment.configuration = ['general': ['kubernetes': ['k8sMapping': [:]]]]
+        jsr.step.call(script: nullScript,
+            dockerImage: 'maven:3.5-jdk-8-alpine',
+            dockerEnvVars: ['http_proxy': 'http://proxy:8000']) {
+            bodyExecuted = true
+        }
+        assertTrue(jlr.log.contains('Executing inside a Kubernetes Pod'))
+        assertTrue(bodyExecuted)
     }
 
     @Test
@@ -135,8 +180,14 @@ class DockerExecuteTest extends BasePiperTest {
     }
 
     private class PluginMock {
+        def pluginName
+
+        PluginMock(pluginName) {
+            this.pluginName = pluginName
+
+        }
         def getShortName() {
-            return 'docker-workflow'
+            return pluginName
         }
         boolean isActive() {
             return true
