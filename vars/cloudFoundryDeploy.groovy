@@ -43,6 +43,7 @@ def call(Map parameters = [:]) {
             .dependingOn('deployTool').mixin('dockerWorkspace')
             .withMandatoryProperty('cloudFoundry/org')
             .withMandatoryProperty('cloudFoundry/space')
+            .withMandatoryProperty('cloudFoundry/credentialsId')
             .use()
 
         echo "[${STEP_NAME}] General parameters: deployTool=${config.deployTool}, deployType=${config.deployType}, cfApiEndpoint=${config.cloudFoundry.apiEndpoint}, cfOrg=${config.cloudFoundry.org}, cfSpace=${config.cloudFoundry.space}, cfCredentialsId=${config.cloudFoundry.credentialsId}, deployUser=${config.deployUser}"
