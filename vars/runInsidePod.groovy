@@ -17,7 +17,6 @@ def call(Map parameters = [:], body) {
                               'imageToContainerMap']
         Map config = ConfigurationMerger.merge(parameters, parameterKeys, stepConfig, stepConfigKeys)
 
-        echo "The config is ${config}"
         def options = [name      : 'dynamic-agent-' + uniqueId,
                        label     : uniqueId,
                        containers: getContainerList(config)]
