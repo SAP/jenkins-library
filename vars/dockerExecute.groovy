@@ -9,7 +9,7 @@ def call(Map parameters = [:], body) {
 
     handlePipelineStepErrors(stepName: STEP_NAME, stepParameters: parameters) {
         final script = parameters.script
-        Map generalConfig = ConfigurationLoader.generalConfiguration(script)
+        Map stepConfig = ConfigurationLoader.stepConfiguration(script, 'kubernetes')
 
         Set parameterKeys = ['dockerImage',
                              'dockerOptions',
@@ -17,9 +17,10 @@ def call(Map parameters = [:], body) {
                              'dockerEnvVars',
                              'dockerVolumeBind']
 
-        Set generalConfigKeys = ['kubernetes']
+        Set stepConfigKeys = ['jnlpAgent',
+                              'imageToContainerMap']
 
-        Map config = ConfigurationMerger.merge(parameters, parameterKeys, generalConfig, generalConfigKeys)
+        Map config = ConfigurationMerger.merge(parameters, parameterKeys, stepConfig, stepConfigKeys)
         if (isKubernetes() && config.dockerImage) {
             if (env.POD_NAME && isContainerDefined(config)) {
                 container(getContainerDefined(config)) {
@@ -124,17 +125,17 @@ private getDockerOptions(Map dockerEnvVars, Map dockerVolumeBind, def dockerOpti
 
 @NonCPS
 boolean isContainerDefined(config) {
-    def k8sMapping = config?.kubernetes?.k8sMapping ?: [:]
-    if (k8sMapping.containsKey(env.POD_NAME)) {
-        return k8sMapping[env.POD_NAME].containsKey(config.dockerImage)
+    def imageToContainerMap = config?.imageToContainerMap ?: [:]
+    if (imageToContainerMap.containsKey(env.POD_NAME)) {
+        return imageToContainerMap[env.POD_NAME].containsKey(config.dockerImage)
     }
     return false
 }
 
 @NonCPS
 def getContainerDefined(config) {
-    def k8sMapping = config.kubernetes.k8sMapping
-    return k8sMapping[env.POD_NAME].get(config.dockerImage)
+    def imageToContainerMap = config.imageToContainerMap
+    return imageToContainerMap[env.POD_NAME].get(config.dockerImage)
 }
 
 @NonCPS

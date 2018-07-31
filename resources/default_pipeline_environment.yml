@@ -1,8 +1,6 @@
 #Project Setup
 general:
   productiveBranch: 'master'
-  kubernetes:
-    jnlpAgent: 'jenkinsci/jnlp-slave:latest'
   changeManagement:
     transportRequestLabel: 'TransportRequest\s?:'
     changeDocumentLabel: 'ChangeDocument\s?:'
@@ -88,6 +86,8 @@ steps:
     archive: false
   influxWriteData:
     influxServer: 'jenkins'
+  kubernetes:
+      jnlpAgent: 'jenkinsci/jnlp-slave:latest'
   mavenExecute:
     dockerImage: 'maven:3.5-jdk-7'
     logSuccessfulMavenTransfers: false

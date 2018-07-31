@@ -12,6 +12,7 @@ import util.JenkinsReadMavenPomRule
 import util.JenkinsShellCallRule
 import util.JenkinsStepRule
 import util.JenkinsWriteFileRule
+import util.PluginMock
 import util.Rules
 
 import static org.hamcrest.Matchers.hasItem
@@ -57,7 +58,7 @@ class ArtifactSetVersionTest extends BasePiperTest {
         jscr.setReturnValue('git diff --quiet HEAD', 0)
         jscr.setReturnValue('git rev-parse --is-inside-work-tree 1>/dev/null 2>&1', 0)
 
-        binding.setVariable('Jenkins', [instance: [pluginManager: [plugins: [new DockerExecuteTest.PluginMock()]]]])
+        binding.setVariable('Jenkins', [instance: [pluginManager: [plugins: [new PluginMock('docker-workflow')]]]])
 
         helper.registerAllowedMethod('fileExists', [String.class], {true})
     }
