@@ -2,22 +2,22 @@ import com.sap.piper.ConfigurationLoader
 import com.sap.piper.ConfigurationMerger
 import com.sap.piper.SysEnv
 
-import java.util.UUID
-
 def call(Map parameters = [:], body) {
     def uniqueId = UUID.randomUUID().toString()
 
     handleStepErrors(stepName: 'runInsidePod', stepParameters: [:]) {
 
         final script = parameters.script
-        Map generalConfig = ConfigurationLoader.generalConfiguration(script)
+        Map stepConfig = ConfigurationLoader.stepConfiguration(script, 'kubernetes')
         Set parameterKeys = ['dockerImage',
                              'dockerOptions',
                              'dockerWorkspace',
                              'containersMap']
-        Set generalConfigKeys = ['kubernetes']
-        Map config = ConfigurationMerger.merge(parameters, parameterKeys, generalConfig, generalConfigKeys)
+        Set stepConfigKeys = ['jnlpAgent',
+                              'imageToContainerMap']
+        Map config = ConfigurationMerger.merge(parameters, parameterKeys, stepConfig, stepConfigKeys)
 
+        echo "The config is ${config}"
         def options = [name      : 'dynamic-agent-' + uniqueId,
                        label     : uniqueId,
                        containers: getContainerList(config)]
@@ -35,7 +35,7 @@ private getContainerList(config) {
     envVars = getContainerEnvs(config)
     result = []
     result.push(containerTemplate(name: 'jnlp',
-        image: config.kubernetes.jnlpAgent,
+        image: config.jnlpAgent,
         args: '${computer.jnlpmac} ${computer.name}'))
 
     config.containersMap.each { imageName, containerName  ->
