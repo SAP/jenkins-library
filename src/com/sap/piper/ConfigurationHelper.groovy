@@ -162,8 +162,13 @@ class ConfigurationHelper implements Serializable {
         return paramValue
     }
 
-    def withMandatoryProperty(key, errorMessage = null){
-        getMandatoryProperty(key, null, errorMessage)
+    def withMandatoryProperty(key, errorMessage = null, condition = null){
+        if(condition){
+            if(condition(this.config))
+                getMandatoryProperty(key, null, errorMessage)
+        }else{
+            getMandatoryProperty(key, null, errorMessage)
+        }
         return this
     }
 }
