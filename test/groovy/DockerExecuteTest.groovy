@@ -42,7 +42,7 @@ class DockerExecuteTest extends BasePiperTest {
             body()
         })
         binding.setVariable('env', [POD_NAME: 'testpod', ON_K8S: 'true'])
-        nullScript.commonPipelineEnvironment.configuration = ['steps': ['kubernetes': ['imageToContainerMap': ['testpod': ['maven:3.5-jdk-8-alpine': 'mavenexec']]]]]
+        nullScript.commonPipelineEnvironment.configuration = ['general': ['jenkinsKubernetes': ['imageToContainerMap': ['testpod': ['maven:3.5-jdk-8-alpine': 'mavenexec']]]]]
         jsr.step.call(script: nullScript,
             dockerImage: 'maven:3.5-jdk-8-alpine',
             dockerEnvVars: ['http_proxy': 'http://proxy:8000']) {
@@ -59,7 +59,7 @@ class DockerExecuteTest extends BasePiperTest {
         helper.registerAllowedMethod('dockerExecuteOnKubernetes', [Map.class, Closure.class], { Map config, Closure body -> body()
         })
         binding.setVariable('env', [ON_K8S: 'true'])
-        nullScript.commonPipelineEnvironment.configuration = ['steps': ['kubernetes': ['imageToContainerMap': ['testpod': ['maven:3.5-jdk-8-alpine': 'mavenexec']]]]]
+        nullScript.commonPipelineEnvironment.configuration = ['general': ['jenkinsKubernetes': ['imageToContainerMap': ['testpod': ['maven:3.5-jdk-8-alpine': 'mavenexec']]]]]
         jsr.step.call(script: nullScript,
             dockerImage: 'maven:3.5-jdk-8-alpine',
             dockerEnvVars: ['http_proxy': 'http://proxy:8000']) {
@@ -74,7 +74,7 @@ class DockerExecuteTest extends BasePiperTest {
         helper.registerAllowedMethod('dockerExecuteOnKubernetes', [Map.class, Closure.class], { Map config, Closure body -> body()
         })
         binding.setVariable('env', [POD_NAME: 'testpod', ON_K8S: 'true'])
-        nullScript.commonPipelineEnvironment.configuration = ['steps': ['kubernetes': ['imageToContainerMap': [:]]]]
+        nullScript.commonPipelineEnvironment.configuration = ['general': ['jenkinsKubernetes': ['imageToContainerMap': [:]]]]
         jsr.step.call(script: nullScript,
             dockerImage: 'maven:3.5-jdk-8-alpine',
             dockerEnvVars: ['http_proxy': 'http://proxy:8000']) {

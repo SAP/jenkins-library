@@ -1,26 +1,30 @@
 import com.cloudbees.groovy.cps.NonCPS
-import com.sap.piper.ConfigurationLoader
-import com.sap.piper.ConfigurationMerger
+import com.sap.piper.ConfigurationHelper
+import groovy.transform.Field
 
-def call(Map parameters = [:], body) {
+@Field def STEP_NAME = 'dockerExecute'
+@Field def PLUGIN_ID_DOCKER_WORKFLOW = 'docker-workflow'
 
-    def STEP_NAME = 'dockerExecute'
-    def PLUGIN_ID_DOCKER_WORKFLOW = 'docker-workflow'
+@Field Set GENERAL_CONFIG_KEYS = ['jenkinsKubernetes']
 
-    handlePipelineStepErrors(stepName: STEP_NAME, stepParameters: parameters) {
-        final script = parameters.script
-        Map stepConfig = ConfigurationLoader.stepConfiguration(script, 'kubernetes')
-
-        Set parameterKeys = ['dockerImage',
+@Field Set PARAMETER_KEYS = ['dockerImage',
                              'dockerOptions',
                              'dockerWorkspace',
                              'dockerEnvVars',
                              'dockerVolumeBind']
 
-        Set stepConfigKeys = ['jnlpAgent',
-                              'imageToContainerMap']
 
-        Map config = ConfigurationMerger.merge(parameters, parameterKeys, stepConfig, stepConfigKeys)
+def call(Map parameters = [:], body) {
+    handlePipelineStepErrors(stepName: STEP_NAME, stepParameters: parameters) {
+        final script = parameters.script
+
+        Map config = ConfigurationHelper
+            .loadStepDefaults(this)
+            .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS)
+            .mixin(parameters, PARAMETER_KEYS)
+            .withMandatoryProperty('dockerImage')
+            .use()
+
         if (isKubernetes() && config.dockerImage) {
             if (env.POD_NAME && isContainerDefined(config)) {
                 container(getContainerDefined(config)) {
@@ -125,7 +129,7 @@ private getDockerOptions(Map dockerEnvVars, Map dockerVolumeBind, def dockerOpti
 
 @NonCPS
 boolean isContainerDefined(config) {
-    def imageToContainerMap = config?.imageToContainerMap ?: [:]
+    def imageToContainerMap = config?.jenkinsKubernetes?.imageToContainerMap ?: [:]
     if (imageToContainerMap.containsKey(env.POD_NAME)) {
         return imageToContainerMap[env.POD_NAME].containsKey(config.dockerImage)
     }
@@ -134,7 +138,7 @@ boolean isContainerDefined(config) {
 
 @NonCPS
 def getContainerDefined(config) {
-    def imageToContainerMap = config.imageToContainerMap
+    def imageToContainerMap = config?.jenkinsKubernetes?.imageToContainerMap
     return imageToContainerMap[env.POD_NAME].get(config.dockerImage)
 }
 

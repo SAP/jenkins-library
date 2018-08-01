@@ -1,21 +1,31 @@
-import com.sap.piper.ConfigurationLoader
+import com.sap.piper.ConfigurationHelper
 import com.sap.piper.ConfigurationMerger
 import com.sap.piper.SysEnv
+import groovy.transform.Field
+
+@Field def STEP_NAME = 'runInsidePod'
+
+@Field Set GENERAL_CONFIG_KEYS = ['jenkinsKubernetes']
+
+@Field Set PARAMETER_KEYS = ['dockerImage',
+                             'dockerOptions',
+                             'dockerWorkspace',
+                             'containersMap']
 
 def call(Map parameters = [:], body) {
     def uniqueId = UUID.randomUUID().toString()
 
-    handleStepErrors(stepName: 'runInsidePod', stepParameters: [:]) {
+    handleStepErrors(stepName: STEP_NAME, stepParameters: [:]) {
 
         final script = parameters.script
-        Map stepConfig = ConfigurationLoader.stepConfiguration(script, 'kubernetes')
-        Set parameterKeys = ['dockerImage',
-                             'dockerOptions',
-                             'dockerWorkspace',
-                             'containersMap']
-        Set stepConfigKeys = ['jnlpAgent',
-                              'imageToContainerMap']
-        Map config = ConfigurationMerger.merge(parameters, parameterKeys, stepConfig, stepConfigKeys)
+        Map config = ConfigurationMerger.merge(parameters, parameterKeys, generalConfig, generalConfigKeys)
+
+        Map config = ConfigurationHelper
+            .loadStepDefaults(this)
+            .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS)
+            .mixin(parameters, PARAMETER_KEYS)
+            .withMandatoryProperty('dockerImage')
+            .use()
 
         def options = [name      : 'dynamic-agent-' + uniqueId,
                        label     : uniqueId,
