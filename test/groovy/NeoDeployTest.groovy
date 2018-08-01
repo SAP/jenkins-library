@@ -100,7 +100,7 @@ class NeoDeployTest extends BasePiperTest {
         )
 
         Assert.assertThat(jscr.shell,
-            new CommandLineMatcher().hasProlog("#!/bin/bash neo.sh deploy-mta")
+            new CommandLineMatcher().hasProlog("#!/bin/bash \"/opt/neo/tools/neo.sh\" deploy-mta")
                                     .hasSingleQuotedOption('host', 'test\\.deploy\\.host\\.com')
                                     .hasSingleQuotedOption('account', 'trialuser123')
                                     .hasOption('synchronous', '')
@@ -118,7 +118,7 @@ class NeoDeployTest extends BasePiperTest {
         )
 
         Assert.assertThat(jscr.shell,
-            new CommandLineMatcher().hasProlog("#!/bin/bash neo.sh deploy-mta")
+            new CommandLineMatcher().hasProlog("#!/bin/bash \"/opt/neo/tools/neo.sh\" deploy-mta")
                                     .hasSingleQuotedOption('host', 'test\\.deploy\\.host\\.com')
                                     .hasSingleQuotedOption('account', 'trialuser123')
                                     .hasOption('synchronous', '')
@@ -142,7 +142,7 @@ class NeoDeployTest extends BasePiperTest {
         )
 
         Assert.assertThat(jscr.shell,
-            new CommandLineMatcher().hasProlog("#!/bin/bash neo.sh deploy-mta")
+            new CommandLineMatcher().hasProlog("#!/bin/bash \"/opt/neo/tools/neo.sh\" deploy-mta")
                                     .hasSingleQuotedOption('host', 'configuration-frwk\\.deploy\\.host\\.com')
                                     .hasSingleQuotedOption('account', 'configurationFrwkUser123')
                                     .hasOption('synchronous', '')
@@ -173,13 +173,75 @@ class NeoDeployTest extends BasePiperTest {
         )
 
         Assert.assertThat(jscr.shell,
-            new CommandLineMatcher().hasProlog("#!/bin/bash neo.sh deploy-mta")
+            new CommandLineMatcher().hasProlog("#!/bin/bash \"/opt/neo/tools/neo.sh\" deploy-mta")
                                     .hasSingleQuotedOption('host', 'test\\.deploy\\.host\\.com')
                                     .hasSingleQuotedOption('account', 'trialuser123')
                                     .hasOption('synchronous', '')
                                     .hasSingleQuotedOption('user', 'defaultUser')
                                     .hasSingleQuotedOption('password', '\\*\\*\\*\\*\\*\\*\\*\\*')
                                     .hasDoubleQuotedOption('source', '.*'))
+    }
+
+
+    @Test
+    void neoHomeNotSetTest() {
+
+        helper.registerAllowedMethod('sh', [Map], { Map m -> getVersionWithPath(m) })
+
+        jsr.step.call(script: nullScript,
+                       archivePath: archiveName
+        )
+
+        assert jscr.shell.find { c -> c.contains('"neo.sh" deploy-mta') }
+        assert jlr.log.contains('SAP Cloud Platform Console Client is on PATH.')
+        assert jlr.log.contains("Using SAP Cloud Platform Console Client 'neo.sh'.")
+    }
+
+
+    @Test
+    void neoHomeAsParameterTest() {
+
+        helper.registerAllowedMethod('sh', [Map], { Map m -> getVersionWithPath(m) })
+
+        jsr.step.call(script: nullScript,
+                       archivePath: archiveName,
+                       neoCredentialsId: 'myCredentialsId',
+                       neoHome: '/param/neo'
+        )
+
+        assert jscr.shell.find{ c -> c = "\"/param/neo/tools/neo.sh\" deploy-mta" }
+        assert jlr.log.contains("SAP Cloud Platform Console Client home '/param/neo' retrieved from configuration.")
+        assert jlr.log.contains("Using SAP Cloud Platform Console Client '/param/neo/tools/neo.sh'.")
+    }
+
+
+    @Test
+    void neoHomeFromEnvironmentTest() {
+
+        jsr.step.call(script: nullScript,
+                       archivePath: archiveName
+        )
+
+        assert jscr.shell.find { c -> c.contains("\"/opt/neo/tools/neo.sh\" deploy-mta")}
+        assert jlr.log.contains("SAP Cloud Platform Console Client home '/opt/neo' retrieved from environment.")
+        assert jlr.log.contains("Using SAP Cloud Platform Console Client '/opt/neo/tools/neo.sh'.")
+    }
+
+
+    @Test
+    void neoHomeFromCustomStepConfigurationTest() {
+
+        helper.registerAllowedMethod('sh', [Map], { Map m -> getVersionWithPath(m) })
+
+        nullScript.commonPipelineEnvironment.configuration = [steps:[neoDeploy: [host: 'test.deploy.host.com', account: 'trialuser123', neoHome: '/config/neo']]]
+
+        jsr.step.call(script: nullScript,
+                       archivePath: archiveName
+        )
+
+        assert jscr.shell.find { c -> c = "\"/config/neo/tools/neo.sh\" deploy-mta"}
+        assert jlr.log.contains("SAP Cloud Platform Console Client home '/config/neo' retrieved from configuration.")
+        assert jlr.log.contains("Using SAP Cloud Platform Console Client '/config/neo/tools/neo.sh'.")
     }
 
 
@@ -221,7 +283,7 @@ class NeoDeployTest extends BasePiperTest {
         jsr.step.call(script: nullScript, archivePath: archiveName, deployMode: 'mta')
 
         Assert.assertThat(jscr.shell,
-            new CommandLineMatcher().hasProlog("#!/bin/bash neo.sh deploy-mta")
+            new CommandLineMatcher().hasProlog("#!/bin/bash \"/opt/neo/tools/neo.sh\" deploy-mta")
                                     .hasSingleQuotedOption('host', 'test\\.deploy\\.host\\.com')
                                     .hasSingleQuotedOption('account', 'trialuser123')
                                     .hasOption('synchronous', '')
@@ -244,7 +306,7 @@ class NeoDeployTest extends BasePiperTest {
                              archivePath: warArchiveName)
 
         Assert.assertThat(jscr.shell,
-            new CommandLineMatcher().hasProlog("#!/bin/bash neo.sh deploy")
+            new CommandLineMatcher().hasProlog("#!/bin/bash \"/opt/neo/tools/neo.sh\" deploy")
                                     .hasSingleQuotedOption('host', 'test\\.deploy\\.host\\.com')
                                     .hasSingleQuotedOption('account', 'trialuser123')
                                     .hasSingleQuotedOption('application', 'testApp')
@@ -270,7 +332,7 @@ class NeoDeployTest extends BasePiperTest {
                              vmSize: 'lite')
 
         Assert.assertThat(jscr.shell,
-            new CommandLineMatcher().hasProlog("#!/bin/bash neo.sh rolling-update")
+            new CommandLineMatcher().hasProlog("#!/bin/bash \"/opt/neo/tools/neo.sh\" rolling-update")
                                     .hasSingleQuotedOption('host', 'test\\.deploy\\.host\\.com')
                                     .hasSingleQuotedOption('account', 'trialuser123')
                                     .hasSingleQuotedOption('application', 'testApp')
@@ -296,7 +358,7 @@ class NeoDeployTest extends BasePiperTest {
                              vmSize: 'lite')
 
         Assert.assertThat(jscr.shell,
-            new CommandLineMatcher().hasProlog("#!/bin/bash neo.sh deploy")
+            new CommandLineMatcher().hasProlog("#!/bin/bash \"/opt/neo/tools/neo.sh\" deploy")
                                     .hasArgument("config.properties")
                                     .hasSingleQuotedOption('user', 'defaultUser')
                                     .hasSingleQuotedOption('password', '\\*\\*\\*\\*\\*\\*\\*\\*')
@@ -317,7 +379,7 @@ class NeoDeployTest extends BasePiperTest {
                              vmSize: 'lite')
 
         Assert.assertThat(jscr.shell,
-            new CommandLineMatcher().hasProlog("#!/bin/bash neo.sh rolling-update")
+            new CommandLineMatcher().hasProlog("#!/bin/bash \"/opt/neo/tools/neo.sh\" rolling-update")
                                     .hasArgument('config.properties')
                                     .hasSingleQuotedOption('user', 'defaultUser')
                                     .hasSingleQuotedOption('password', '\\*\\*\\*\\*\\*\\*\\*\\*')
@@ -474,7 +536,11 @@ class NeoDeployTest extends BasePiperTest {
 
         if(m.script.contains('JAVA_HOME')) {
             return '/opt/java'
+        } else if(m.script.contains('NEO_HOME')) {
+            return '/opt/neo'
         } else if (m.script.contains('which java')) {
+            return 0
+        } else if (m.script.contains('which neo')) {
             return 0
         } else {
             return 0
@@ -485,7 +551,11 @@ class NeoDeployTest extends BasePiperTest {
 
         if(m.script.contains('JAVA_HOME')) {
             return ''
+        } else if(m.script.contains('NEO_HOME')) {
+            return ''
         } else if (m.script.contains('which java')) {
+            return 0
+        } else if (m.script.contains('which neo')) {
             return 0
         } else {
             return 0
