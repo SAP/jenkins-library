@@ -167,6 +167,7 @@ steps:
     dockerImage: 'newtmitch/sonar-scanner:3.2.0'
     instance: 'SonarCloud'
     options: "-Dsonar.projectVersion='${projectVersion}'"
+    useWebhook: false
   testsPublishResults:
     junit:
       pattern: '**/target/surefire-reports/*.xml'
