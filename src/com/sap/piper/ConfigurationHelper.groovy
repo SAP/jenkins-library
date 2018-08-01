@@ -157,7 +157,7 @@ class ConfigurationHelper implements Serializable {
 
         if (paramValue == null) {
             if(! errorMessage) errorMessage = "ERROR - NO VALUE AVAILABLE FOR ${key}"
-            throw new IllegalArgumentException(errorMessage.toString())
+            throw new IllegalArgumentException(errorMessage)
         }
         return paramValue
     }
