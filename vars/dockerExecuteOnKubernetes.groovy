@@ -1,33 +1,33 @@
 import com.cloudbees.groovy.cps.NonCPS
-import com.sap.piper.ConfigurationMerger
-import com.sap.piper.SysEnv
+import com.sap.piper.ConfigurationHelper
 import com.sap.piper.Utils
+import groovy.transform.Field
 import org.codehaus.groovy.GroovyException
 
-import java.util.UUID
+@Field def STEP_NAME = 'dockerExecuteOnKubernetes'
+@Field def PLUGIN_ID_KUBERNETES = 'kubernetes'
+
+@Field Set PARAMETER_KEYS = ['dindImage',
+                             'dockerImage',
+                             'dockerWorkspace',
+                             'dockerEnvVars']
+@Field Set STEP_CONFIG_KEYS = PARAMETER_KEYS.plus(['stashContent', 'stashIncludes', 'stashExcludes'])
 
 def call(Map parameters = [:], body) {
-    def STEP_NAME = 'dockerExecuteOnKubernetes'
-    def PLUGIN_ID_KUBERNETES = 'kubernetes'
 
-    handlePipelineStepErrors(stepName: 'dockerExecuteOnKubernetes', stepParameters: parameters) {
+    handlePipelineStepErrors(stepName: STEP_NAME, stepParameters: parameters) {
         def utils= new Utils()
         if (!isPluginActive(PLUGIN_ID_KUBERNETES)) {
             error("[ERROR][${STEP_NAME}] not supported. Plugin '${PLUGIN_ID_KUBERNETES}' is not installed or not active.")
         }
 
         final script = parameters.script
-        prepareDefaultValues script: script
-
-        Set parameterKeys = ['dindImage',
-                             'dockerImage',
-                             'dockerWorkspace',
-                             'dockerEnvVars']
-        Set stepConfigurationKeys = parameterKeys
-
-        Map config = ConfigurationMerger.merge(script, 'dockerExecuteOnKubernetes',
-            parameters, parameterKeys,
-            stepConfigurationKeys)
+        Map config = ConfigurationHelper
+            .loadStepDefaults(this)
+            .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS)
+            .mixin(parameters, PARAMETER_KEYS)
+            .withMandatoryProperty('dockerImage')
+            .use()
 
         config.uniqueId = UUID.randomUUID().toString()
 
@@ -37,7 +37,7 @@ def call(Map parameters = [:], body) {
 
         stashWorkspace(config)
         runInsidePod(script: script, containersMap: containersMap, dockerEnvVars: config.dockerEnvVars, dockerWorkspace: config.dockerWorkspace) {
-            utils.unstashAll(config.stashContent)
+            unstashWorkspace(config)
             container(name: 'container-exec') {
                 body()
             }
@@ -50,9 +50,8 @@ def call(Map parameters = [:], body) {
 private stashWorkspace(config) {
     if (config.stashContent.size() == 0) {
         try {
-            sh "chmod -R u+w ."
-            stash "workspace-${config.uniqueId}"
-            config.stashContent += 'workspace-' + config.uniqueId
+            sh "chown -R 1000:1000 ."
+            stash name: "workspace-${config.uniqueId}", include: config.stashIncludes.all, exclude: config.stashExcludes.excludes
         } catch (hudson.AbortException e) {
             echo "${e.getMessage()}"
         } catch (java.io.IOException ioe) {
@@ -62,10 +61,8 @@ private stashWorkspace(config) {
 }
 
 private stashContainer(config) {
-    def stashBackConfig = config.stashBackConfig
     try {
-        stashBackConfig.name = "container-${config.uniqueId}"
-        stash stashBackConfig
+        stash name: "container-${config.uniqueId}", include: config.stashIncludes.all, exclude: config.stashExcludes.excludes
     } catch (hudson.AbortException e) {
         echo "${e.getMessage()}"
     } catch (java.io.IOException ioe) {
@@ -83,6 +80,15 @@ private unstashContainer(config) {
     }
 }
 
+private unstashWorkspace(config) {
+    try {
+        unstash "workspace-${config.uniqueId}"
+    } catch (hudson.AbortException e) {
+        echo "${e.getMessage()}"
+    } catch (java.io.IOException ioe) {
+        echo "${ioe.getMessage()}"
+    }
+}
 
 @NonCPS
 private isPluginActive(String pluginId) {

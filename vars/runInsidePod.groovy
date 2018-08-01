@@ -1,5 +1,4 @@
 import com.sap.piper.ConfigurationHelper
-import com.sap.piper.ConfigurationMerger
 import com.sap.piper.SysEnv
 import groovy.transform.Field
 
@@ -18,7 +17,6 @@ def call(Map parameters = [:], body) {
     handleStepErrors(stepName: STEP_NAME, stepParameters: [:]) {
 
         final script = parameters.script
-        Map config = ConfigurationMerger.merge(parameters, parameterKeys, generalConfig, generalConfigKeys)
 
         Map config = ConfigurationHelper
             .loadStepDefaults(this)

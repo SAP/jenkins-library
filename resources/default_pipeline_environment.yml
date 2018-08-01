@@ -109,8 +109,11 @@ steps:
     dockerImage: 'maven:3.5-jdk-7'
     logSuccessfulMavenTransfers: false
   dockerExecuteOnKubernetes:
-    stashContent: []
-    stashBackConfig:
+    stashContent:
+      - all
+    stashIncludes:
+      all: '**/*.*'
+    stashExcludes:
       excludes: 'nohup.out'
   mtaBuild:
     buildTarget: 'NEO'
