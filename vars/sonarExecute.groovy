@@ -39,11 +39,11 @@ def call(Map parameters = [:], Closure body = null) {
             )
             .mixin(parameters, PARAMETER_KEYS)
             // check mandatory parameters
-            .withMandatoryProperty('changeId', { c -> return c.isVoter })
-            .withMandatoryProperty('githubTokenCredentialsId', { c -> return c.isVoter })
-            .withMandatoryProperty('githubOrg', { c -> return c.isVoter })
-            .withMandatoryProperty('githubRepo', { c -> return c.isVoter })
-            .withMandatoryProperty('projectVersion', { c -> return !c.isVoter })
+            .withMandatoryProperty('changeId', null, { c -> return c.isVoter })
+            .withMandatoryProperty('githubTokenCredentialsId', null, { c -> return c.isVoter })
+            .withMandatoryProperty('githubOrg', null, { c -> return c.isVoter })
+            .withMandatoryProperty('githubRepo', null, { c -> return c.isVoter })
+            .withMandatoryProperty('projectVersion', null, { c -> return !c.isVoter })
             .use()
         
         // resolve templates
