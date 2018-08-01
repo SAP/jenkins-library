@@ -38,18 +38,14 @@ def call(Map parameters = [:], Closure body = null) {
                 changeId: env.CHANGE_ID
             )
             .mixin(parameters, PARAMETER_KEYS)
+            // check mandatory parameters
+            .withMandatoryProperty('changeId', { c -> return c.isVoter })
+            .withMandatoryProperty('githubTokenCredentialsId', { c -> return c.isVoter })
+            .withMandatoryProperty('githubOrg', { c -> return c.isVoter })
+            .withMandatoryProperty('githubRepo', { c -> return c.isVoter })
+            .withMandatoryProperty('projectVersion', { c -> return !c.isVoter })
             .use()
-        // check mandatory parameters
-        if(config.isVoter){
-            new ConfigurationHelper(config)
-                .withMandatoryProperty('changeId')
-                .withMandatoryProperty('githubTokenCredentialsId')
-                .withMandatoryProperty('githubOrg')
-                .withMandatoryProperty('githubRepo')
-        }else{
-            new ConfigurationHelper(config)
-                .withMandatoryProperty('projectVersion')
-        }
+        
         // resolve templates
         config.options = SimpleTemplateEngine.newInstance().createTemplate(config.options).make([projectVersion: config.projectVersion]).toString()
 
