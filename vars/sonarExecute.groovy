@@ -17,7 +17,8 @@ import groovy.text.SimpleTemplateEngine
     'isVoter', // voter only! enables the preview mode
     'options',
     'projectVersion',
-    'sonarTokenCredentialsId'
+    'sonarTokenCredentialsId',
+    'useWebhook'
 ]
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
 @Field Set GENERAL_CONFIG_KEYS = STEP_CONFIG_KEYS
@@ -52,6 +53,12 @@ def call(Map parameters = [:], Closure body = null) {
         // resolve templates
         config.options = SimpleTemplateEngine.newInstance().createTemplate(config.options).make([projectVersion: config.projectVersion]).toString()
 
+        // https://docs.sonarqube.org/display/SONAR/Webhooks
+        // https://sonarcloud.io/documentation/webhooks
+        if(config.useWebhook){
+            config.options += " -Dsonar.webhooks.project='${env.JENKINS_URL}sonarqube-webhook/'"
+        }
+        
         def worker = { c, b ->
             withSonarQubeEnv(c.instance) {
                 if(b) b()
