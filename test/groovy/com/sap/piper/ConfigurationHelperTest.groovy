@@ -248,4 +248,30 @@ class ConfigurationHelperTest {
     public void testWithMandoryParameterDefaultCustomFailureMessageNotProvidedSucceeds() {
         new ConfigurationHelper([myKey: 'myValue']).withMandatoryProperty('myKey')
     }
+
+    @Test
+    public void testWithMandoryWithFalseCondition() {
+        thrown.none()
+
+        new ConfigurationHelper([enforce: false]).withMandatoryProperty('missingKey', null, {c -> return c.enforce})
+    }
+
+    @Test
+    public void testWithMandoryWithTrueConditionMissingValue() {
+        thrown.expect(IllegalArgumentException)
+        thrown.expectMessage('ERROR - NO VALUE AVAILABLE FOR missingKey')
+        
+        new ConfigurationHelper([enforce: true]).withMandatoryProperty('missingKey', null, {c -> return c.execute})
+    }
+
+    @Test
+    public void testWithMandoryWithTrueConditionExistingValue() {
+        thrown.none()
+        
+        def config = new ConfigurationHelper([existingKey: 'anyValue', enforce: true])
+            .withMandatoryProperty('existingKey', null, {c -> return c.execute})
+            .use()
+        
+        Assert.assertThat(config.size(), is(2))
+    }
 }
