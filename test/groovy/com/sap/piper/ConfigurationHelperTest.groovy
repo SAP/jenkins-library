@@ -253,7 +253,7 @@ class ConfigurationHelperTest {
     public void testWithMandoryWithFalseCondition() {
         thrown.none()
 
-        new ConfigurationHelper([enforce: false]).withMandatoryProperty('missingKey', null, {c -> return c.enforce})
+        new ConfigurationHelper([enforce: false]).withMandatoryProperty('missingKey', null, {c -> return c.get('execute')})
     }
 
     @Test
@@ -261,7 +261,7 @@ class ConfigurationHelperTest {
         thrown.expect(IllegalArgumentException)
         thrown.expectMessage('ERROR - NO VALUE AVAILABLE FOR missingKey')
         
-        new ConfigurationHelper([enforce: true]).withMandatoryProperty('missingKey', null, {c -> return c.execute})
+        new ConfigurationHelper([enforce: true]).withMandatoryProperty('missingKey', null, {c -> return c.get('execute')})
     }
 
     @Test
@@ -269,7 +269,7 @@ class ConfigurationHelperTest {
         thrown.none()
         
         def config = new ConfigurationHelper([existingKey: 'anyValue', enforce: true])
-            .withMandatoryProperty('existingKey', null, {c -> return c.execute})
+            .withMandatoryProperty('existingKey', null, {c -> return c.get('execute')})
             .use()
         
         Assert.assertThat(config.size(), is(2))
