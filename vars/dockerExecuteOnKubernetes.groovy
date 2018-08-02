@@ -14,9 +14,7 @@ import org.codehaus.groovy.GroovyException
 @Field Set STEP_CONFIG_KEYS = PARAMETER_KEYS.plus(['stashContent', 'stashIncludes', 'stashExcludes'])
 
 def call(Map parameters = [:], body) {
-
     handlePipelineStepErrors(stepName: STEP_NAME, stepParameters: parameters) {
-        def utils= new Utils()
         if (!isPluginActive(PLUGIN_ID_KUBERNETES)) {
             error("[ERROR][${STEP_NAME}] not supported. Plugin '${PLUGIN_ID_KUBERNETES}' is not installed or not active.")
         }
@@ -62,6 +60,7 @@ private stashWorkspace(config) {
 
 private stashContainer(config) {
     try {
+        sh "chown -R 1000:1000 ."
         stash name: "container-${config.uniqueId}", include: config.stashIncludes.all, exclude: config.stashExcludes.excludes
     } catch (hudson.AbortException e) {
         echo "${e.getMessage()}"

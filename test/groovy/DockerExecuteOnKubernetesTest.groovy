@@ -82,10 +82,4 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
         }
         assertTrue(failed)
     }
-
-    private class stepMock {
-        def unstash(name) {
-            return name
-        }
-    }
 }

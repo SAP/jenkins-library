@@ -6,8 +6,7 @@ import groovy.transform.Field
 
 @Field Set GENERAL_CONFIG_KEYS = ['jenkinsKubernetes']
 
-@Field Set PARAMETER_KEYS = ['dockerImage',
-                             'dockerOptions',
+@Field Set PARAMETER_KEYS = ['dockerOptions',
                              'dockerWorkspace',
                              'containersMap']
 
@@ -22,7 +21,7 @@ def call(Map parameters = [:], body) {
             .loadStepDefaults(this)
             .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS)
             .mixin(parameters, PARAMETER_KEYS)
-            .withMandatoryProperty('dockerImage')
+            .withMandatoryProperty('containersMap')
             .use()
 
         def options = [name      : 'dynamic-agent-' + uniqueId,
