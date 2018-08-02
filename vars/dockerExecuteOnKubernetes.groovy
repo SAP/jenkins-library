@@ -45,7 +45,7 @@ def call(Map parameters = [:], body) {
 
 private stashWorkspace(config) {
     try {
-        sh "chown -R 1000:1000 ."
+        sh "chmod -R u+w ."
         stash name: "workspace-${config.uniqueId}", include: config.stashIncludes.all, exclude: config.stashExcludes.excludes
     } catch (hudson.AbortException e) {
         echo "${e.getMessage()}"
@@ -56,7 +56,7 @@ private stashWorkspace(config) {
 
 private stashContainer(config) {
     try {
-        sh "chown -R 1000:1000 ."
+        sh "chmod -R u+w ."
         stash name: "container-${config.uniqueId}", include: config.stashIncludes.all, exclude: config.stashExcludes.excludes
     } catch (hudson.AbortException e) {
         echo "${e.getMessage()}"
