@@ -2,7 +2,7 @@
 general:
   productiveBranch: 'master'
   jenkinsKubernetes:
-    jnlpAgent: 'jenkinsci/jnlp-slave:latest'
+    jnlpAgent: 's4sdk/jenkins-agent-k8s:latest'
   changeManagement:
     transportRequestLabel: 'TransportRequest\s?:'
     changeDocumentLabel: 'ChangeDocument\s?:'
