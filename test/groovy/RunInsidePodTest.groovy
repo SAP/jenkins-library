@@ -132,6 +132,21 @@ class RunInsidePodTest extends BasePiperTest {
     }
 
     @Test
+    void testRunInsidePodUpperCaseContainerName() throws Exception {
+        jsr.step.call(script: nullScript,
+            containersMap: ['maven:3.5-jdk-8-alpine': 'MAVENEXECUTE'],
+            dockerEnvVars: ['customEnvKey': 'customEnvValue']) {
+            container(name: 'mavenexecute') {
+                bodyExecuted = true
+            }
+        }
+        assertEquals('mavenexecute', containerName)
+        assertTrue(containersList.contains('mavenexecute'))
+        assertTrue(imageList.contains('maven:3.5-jdk-8-alpine'))
+        assertTrue(bodyExecuted)
+    }
+
+    @Test
     void testRunOnPodNoContainerMap() throws Exception {
         boolean failed = false
         try {

@@ -28,7 +28,6 @@ def call(Map parameters = [:], body) {
 
         config.uniqueId = UUID.randomUUID().toString()
 
-        if (!config.dockerImage) throw new GroovyException('Docker image not specified.')
         Map containersMap = [:]
         containersMap[config.get('dockerImage').toString()] = 'container-exec'
 
@@ -45,15 +44,13 @@ def call(Map parameters = [:], body) {
 }
 
 private stashWorkspace(config) {
-    if (config.stashContent.size() == 0) {
-        try {
-            sh "chown -R 1000:1000 ."
-            stash name: "workspace-${config.uniqueId}", include: config.stashIncludes.all, exclude: config.stashExcludes.excludes
-        } catch (hudson.AbortException e) {
-            echo "${e.getMessage()}"
-        } catch (java.io.IOException ioe) {
-            echo "${ioe.getMessage()}"
-        }
+    try {
+        sh "chown -R 1000:1000 ."
+        stash name: "workspace-${config.uniqueId}", include: config.stashIncludes.all, exclude: config.stashExcludes.excludes
+    } catch (hudson.AbortException e) {
+        echo "${e.getMessage()}"
+    } catch (java.io.IOException ioe) {
+        echo "${ioe.getMessage()}"
     }
 }
 
