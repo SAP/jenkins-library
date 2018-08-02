@@ -139,7 +139,7 @@ boolean isContainerDefined(config) {
 @NonCPS
 def getContainerDefined(config) {
     def imageToContainerMap = config?.jenkinsKubernetes?.imageToContainerMap
-    return imageToContainerMap[env.POD_NAME].get(config.dockerImage)
+    return imageToContainerMap[env.POD_NAME].get(config.dockerImage).toLowerCase()
 }
 
 @NonCPS

@@ -8,12 +8,13 @@ import groovy.transform.Field
 
 @Field Set PARAMETER_KEYS = ['dockerOptions',
                              'dockerWorkspace',
+                             'dockerEnvVars',
                              'containersMap']
 
 def call(Map parameters = [:], body) {
     def uniqueId = UUID.randomUUID().toString()
 
-    handleStepErrors(stepName: STEP_NAME, stepParameters: [:]) {
+    handlePipelineStepErrors(stepName: STEP_NAME, stepParameters: parameters) {
 
         final script = parameters.script
 
@@ -37,7 +38,6 @@ def call(Map parameters = [:], body) {
 
 private getContainerList(config) {
     def envVars
-
     envVars = getContainerEnvs(config)
     result = []
     result.push(containerTemplate(name: 'jnlp',
@@ -45,7 +45,7 @@ private getContainerList(config) {
         args: '${computer.jnlpmac} ${computer.name}'))
 
     config.containersMap.each { imageName, containerName  ->
-        result.push(containerTemplate(name: containerName,
+        result.push(containerTemplate(name: containerName.toLowerCase(),
             image: imageName,
             alwaysPullImage: true,
             command: '/usr/bin/tail -f /dev/null',
@@ -58,8 +58,7 @@ private getContainerList(config) {
  * Returns a list of envVar object consisting of set
  * environment variables, params (Parametrized Build) and working directory.
  * (Kubernetes-Plugin only!)
- * @param dockerEnvVars Map with environment variables
- * @param dockerWorkspace Path to working dir
+ * @param config Map with configurations
  */
 private getContainerEnvs(config) {
     def containerEnv = []

@@ -1,6 +1,5 @@
 import com.cloudbees.groovy.cps.NonCPS
 import com.sap.piper.ConfigurationHelper
-import com.sap.piper.Utils
 import groovy.transform.Field
 import org.codehaus.groovy.GroovyException
 
