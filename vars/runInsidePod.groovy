@@ -41,7 +41,7 @@ private getContainerList(config) {
     envVars = getContainerEnvs(config)
     result = []
     result.push(containerTemplate(name: 'jnlp',
-        image: config.jnlpAgent,
+        image: config.jenkinsKubernetes.jnlpAgent,
         args: '${computer.jnlpmac} ${computer.name}'))
 
     config.containersMap.each { imageName, containerName  ->
