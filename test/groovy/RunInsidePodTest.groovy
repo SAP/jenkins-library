@@ -69,7 +69,7 @@ class RunInsidePodTest extends BasePiperTest {
         assertTrue(containersList.contains('mavenexecute'))
         assertTrue(imageList.contains('maven:3.5-jdk-8-alpine'))
         assertTrue(containersList.contains('jnlp'))
-        assertTrue(imageList.contains('jenkinsci/jnlp-slave:latest'))
+        assertTrue(imageList.contains('s4sdk/jenkins-agent-k8s:latest'))
         assertTrue(bodyExecuted)
     }
 
@@ -127,7 +127,7 @@ class RunInsidePodTest extends BasePiperTest {
         }
         assertEquals('jnlp', containerName)
         assertTrue(containersList.contains('jnlp'))
-        assertTrue(imageList.contains('jenkinsci/jnlp-slave:latest'))
+        assertTrue(imageList.contains('s4sdk/jenkins-agent-k8s:latest'))
         assertTrue(bodyExecuted)
     }
 
