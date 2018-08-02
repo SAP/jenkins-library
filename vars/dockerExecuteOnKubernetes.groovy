@@ -1,7 +1,6 @@
 import com.cloudbees.groovy.cps.NonCPS
 import com.sap.piper.ConfigurationHelper
 import groovy.transform.Field
-import org.codehaus.groovy.GroovyException
 
 @Field def STEP_NAME = 'dockerExecuteOnKubernetes'
 @Field def PLUGIN_ID_KUBERNETES = 'kubernetes'
@@ -33,11 +32,11 @@ def call(Map parameters = [:], body) {
 
         stashWorkspace(config)
         runInsidePod(script: script, containersMap: containersMap, dockerEnvVars: config.dockerEnvVars, dockerWorkspace: config.dockerWorkspace) {
-            unstashWorkspace(config)
             container(name: 'container-exec') {
+                unstashWorkspace(config)
                 body()
+                stashContainer(config)
             }
-            stashContainer(config)
         }
         unstashContainer(config)
     }
