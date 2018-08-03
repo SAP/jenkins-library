@@ -78,7 +78,7 @@ void pushToSWA(Map parameters, Map config) {
 
         def swaUrl = 'https://webanalytics.cfapps.eu10.hana.ondemand.com/tracker/log'
         def action_name = 'Piper Library OS'
-        def idsite = '73543761-41e6-0315-655f-353749ca8a6d'
+        def idsite = '827e8025-1e21-ae84-c3a3-3f62b70b0130'
         def url = 'https://github.com/SAP/jenkins-library'
         def event_type = 'library-os'
 
