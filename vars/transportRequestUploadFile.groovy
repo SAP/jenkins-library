@@ -37,6 +37,7 @@ def call(parameters = [:]) {
                                .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName?:env.STAGE_NAME, stepConfigurationKeys)
                                .mixinStepConfig(script.commonPipelineEnvironment, stepConfigurationKeys)
                                .mixin(parameters, parameterKeys)
+                               .addIfEmpty('filePath', script.commonPipelineEnvironment.getMtarFilePath())
                                .withMandatoryProperty('applicationId')
                                .withMandatoryProperty('changeManagement/changeDocumentLabel')
                                .withMandatoryProperty('changeManagement/clientOpts')
