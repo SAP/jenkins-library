@@ -40,7 +40,7 @@ Following data (non-personal) is collected for example:
 
         **Please note: this will only take effect in all steps if you run `setupCommonPipelineEnvironment` at the beginning of your pipeline**
 
-    2. Individual deaction per step by passing the parameter `collectTelemetryData: false`, like e.g. `setVersion script:this, collectTelemetryData: false`
+    2. Individual deactivation per step by passing the parameter `collectTelemetryData: false`, like e.g. `setVersion script:this, collectTelemetryData: false`
 
 
 ## Example configuration
