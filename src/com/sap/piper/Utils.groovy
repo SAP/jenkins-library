@@ -58,7 +58,7 @@ def generateSha1Inline(input) {
 
 void pushToSWA(Map parameters, Map config) {
     try {
-        //allow opt-out
+        //allow opt-out via configuration
         if (!config.collectTelemetryData) {
             return
         }
@@ -66,14 +66,14 @@ void pushToSWA(Map parameters, Map config) {
         def swaCustom = [:]
 
         /* SWA custom parameters:
-            custom3 = step name
-            custom4 = job url hashed
-            custom5 = build url hashed
-            custom11 = step related parameter 1
-            custom12 = step related parameter 2
-            custom13 = step related parameter 3
-            custom14 = step related parameter 4
-            custom15 = step related parameter 5
+            custom3 = step name (passed as parameter step)
+            custom4 = job url hashed (calculated)
+            custom5 = build url hashed (calculated)
+            custom11 = step related parameter 1 (passed as parameter stepParam1)
+            custom12 = step related parameter 2 (passed as parameter stepParam2)
+            custom13 = step related parameter 3 (passed as parameter stepParam3)
+            custom14 = step related parameter 4 (passed as parameter stepParam4)
+            custom15 = step related parameter 5 (passed as parameter stepParam5)
         */
 
         def swaUrl = 'https://webanalytics.cfapps.eu10.hana.ondemand.com/tracker/log'
@@ -104,9 +104,9 @@ void pushToSWA(Map parameters, Map config) {
         options.push("--connect-timeout 5")
         options.push("--max-time 20")
 
-        sh(returnStatus: true, script: "#!/bin/sh +x\ncurl ${options.join(' ')} > /dev/null 2>&1 || echo '[${parameters.get('step')}] Report to SWA failed!'")
+        sh(returnStatus: true, script: "#!/bin/sh +x\ncurl ${options.join(' ')} > /dev/null 2>&1 || echo '[${parameters.get('step')}] Telemetry Report to SWA failed!'")
     } catch (MissingContextVariableException noNode) {
-        echo "[${parameters.get('step')}] Report to SWA skipped, no node available!"
+        echo "[${parameters.get('step')}] Telemetry Report to SWA skipped, no node available!"
     } catch (ignore) {
         // some error occured in SWA reporting. This should not break anything though.
     }
