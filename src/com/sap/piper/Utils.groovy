@@ -104,10 +104,12 @@ void pushToSWA(Map parameters, Map config) {
         options.push("--connect-timeout 5")
         options.push("--max-time 20")
 
+        echo "${options.join(' ')}"
         sh(returnStatus: true, script: "#!/bin/sh +x\ncurl ${options.join(' ')} > /dev/null 2>&1 || echo '[${parameters.get('step')}] Telemetry Report to SWA failed!'")
     } catch (MissingContextVariableException noNode) {
         echo "[${parameters.get('step')}] Telemetry Report to SWA skipped, no node available!"
     } catch (ignore) {
+        error ignore
         // some error occured in SWA reporting. This should not break anything though.
     }
 }
