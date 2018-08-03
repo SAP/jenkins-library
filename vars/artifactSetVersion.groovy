@@ -29,7 +29,6 @@ def call(Map parameters = [:]) {
 
     handlePipelineStepErrors (stepName: STEP_NAME, stepParameters: parameters) {
 
-        // def utils = parameters.juStabUtils ?: new Utils()
         def gitUtils = parameters.juStabGitUtils ?: new GitUtils()
 
         if (fileExists('.git')) {
