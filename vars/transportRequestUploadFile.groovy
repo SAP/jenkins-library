@@ -37,6 +37,7 @@ def call(parameters = [:]) {
                                .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName?:env.STAGE_NAME, stepConfigurationKeys)
                                .mixinStepConfig(script.commonPipelineEnvironment, stepConfigurationKeys)
                                .mixin(parameters, parameterKeys)
+                               .addIfEmpty('filePath', script.commonPipelineEnvironment.getMtarFilePath())
                                .withMandatoryProperty('applicationId')
                                .withMandatoryProperty('changeManagement/changeDocumentLabel')
                                .withMandatoryProperty('changeManagement/clientOpts')
@@ -83,15 +84,15 @@ def call(parameters = [:]) {
 
         } else {
 
-          echo "[INFO] Retrieving transport request id from commit history [from: ${configuration.gitFrom}, to: ${configuration.gitTo}]." +
-               " Searching for pattern '${configuration.gitTransportRequestLabel}'. Searching with format '${configuration.gitFormat}'."
+          echo "[INFO] Retrieving transport request id from commit history [from: ${configuration.changeManagement.git.from}, to: ${configuration.changeManagement.git.to}]." +
+               " Searching for pattern '${configuration.changeManagement.transportRequestLabel}'. Searching with format '${configuration.changeManagement.git.format}'."
 
             try {
                 transportRequestId = cm.getTransportRequestId(
-                                                  configuration.gitFrom,
-                                                  configuration.gitTo,
-                                                  configuration.gitTransportRequestLabel,
-                                                  configuration.gitFormat
+                                                  configuration.changeManagement.git.from,
+                                                  configuration.changeManagement.git.to,
+                                                  configuration.changeManagement.transportRequestLabel,
+                                                  configuration.changeManagement.git.format
                                                  )
 
                 echo "[INFO] Transport request id '${transportRequestId}' retrieved from commit history"
