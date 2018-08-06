@@ -1,6 +1,7 @@
 #Project Setup
 general:
   productiveBranch: 'master'
+  collectTelemetryData: true
   changeManagement:
       transportRequestLabel: 'TransportRequest\s?:'
       changeDocumentLabel: 'ChangeDocument\s?:'
