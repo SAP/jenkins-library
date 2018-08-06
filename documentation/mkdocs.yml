@@ -1,9 +1,10 @@
 site_name: Jenkins 2.0 Pipelines
 pages:
     - Home: index.md
+    - Configuration: configuration.md
     - 'Library steps':
         - artifactSetVersion: steps/artifactSetVersion.md
-        - checkChangeInDevelopment: steps/checkChangeInDevelopment.md   
+        - checkChangeInDevelopment: steps/checkChangeInDevelopment.md
         - commonPipelineEnvironment: steps/commonPipelineEnvironment.md
         - dockerExecute: steps/dockerExecute.md
         - durationMeasure: steps/durationMeasure.md
