@@ -26,7 +26,7 @@ none
 | buildTool | no | maven | docker, dlang, golang, maven, mta, npm, pip, sbt |
 | commitVersion | no | `true` | `true`, `false` |
 | dockerVersionSource | no  | `''`  | FROM, (ENV name),appVersion  |
-| filePath | no | buildTool=`maven`: pom.xml <br />docker: Dockerfile |   |
+| filePath | no | buildTool=`docker`: Dockerfile <br />buildTool=`dlang`: dub.json <br />buildTool=`golang`: VERSION <br />buildTool=`maven`: pom.xml <br />buildTool=`mta`: mta.yaml <br />buildTool=`npm`: package.json <br />buildTool=`pip`: version.txt <br />buildTool=`sbt`: sbtDescriptor.json|  |
 | gitCommitId |  no | `GitUtils.getGitCommitId()`   |   |
 | gitSshCredentialsId |  If `commitVersion` is `true` | as defined in custom configuration  |   |
 | gitUserEMail | no |  |   |
@@ -35,7 +35,7 @@ none
 | tagPrefix | no  | 'build_'  |   |
 | timestamp | no  |  current time in format according to `timestampTemplate`  |   |
 | timestampTemplate | no | `%Y%m%d%H%M%S` |   |
-| versioningTemplate | no | depending on `buildTool`<br />maven: `${version}-${timestamp}${commitId?"_"+commitId:""}`  |   |
+| versioningTemplate | no |buildTool=`docker`: `${version}-${timestamp}${commitId?"_"+commitId:""}`<br> />buildTool=`dlang`: `${version}-${timestamp}${commitId?"+"+commitId:""}`<br />buildTool=`golang`:`${version}-${timestamp}${commitId?"+"+commitId:""}`<br />buildTool=`maven`: `${version}-${timestamp}${commitId?"_"+commitId:""}`<br />buildTool=`mta`: `${version}-${timestamp}${commitId?"+"+commitId:""}`<br />buildTool=`npm`: `${version}-${timestamp}${commitId?"+"+commitId:""}`<br />buildTool=`pip`: `${version}.${timestamp}${commitId?"."+commitId:""}`<br />buildTool=`sbt`: `${version}-${timestamp}${commitId?"+"+commitId:""}`|  |
 
 * `script` defines the global script environment of the Jenkinsfile run. Typically `this` is passed to this parameter. This allows the function to access the [`commonPipelineEnvironment`](commonPipelineEnvironment.md) for retrieving e.g. configuration parameters.
 * `artifactType` defines the type of the artifact.
