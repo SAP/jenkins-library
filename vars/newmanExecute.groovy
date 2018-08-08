@@ -32,8 +32,6 @@ def call(Map parameters = [:]) {
             .mixin(parameters, PARAMETER_KEYS)
             .use()
 
-        config.stashContent = utils.unstashAll(config.stashContent)
-
         if (config.testRepository) {
             def gitParameters = [url: config.testRepository]
             if (config.gitSshKeyCredentialsId) gitParameters.credentialsId = config.gitSshKeyCredentialsId
@@ -41,6 +39,8 @@ def call(Map parameters = [:]) {
             git gitParameters
             stash 'newmanContent'
             config.stashContent = ['newmanContent']
+        } else {
+            config.stashContent = utils.unstashAll(config.stashContent)
         }
 
         List collectionList = findFiles(glob: config.newmanCollection)?.toList()
