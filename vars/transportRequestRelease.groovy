@@ -1,4 +1,5 @@
 import com.sap.piper.GitUtils
+import com.sap.piper.Utils
 import groovy.transform.Field
 
 import com.sap.piper.ConfigurationHelper
@@ -44,6 +45,8 @@ def call(parameters = [:]) {
                             .withMandatoryProperty('changeManagement/git/format')
 
         Map configuration = configHelper.use()
+
+        new Utils().pushToSWA([step: STEP_NAME], configuration)
 
         def transportRequestId = configuration.transportRequestId
 

@@ -1,4 +1,5 @@
 import com.sap.piper.GitUtils
+import com.sap.piper.Utils
 import groovy.transform.Field
 
 import com.sap.piper.ConfigurationHelper
@@ -49,6 +50,8 @@ def call(parameters = [:]) {
                                .withMandatoryProperty('filePath')
 
         Map configuration = configHelper.use()
+
+        new Utils().pushToSWA([step: STEP_NAME], configuration)
 
         def changeDocumentId = configuration.changeDocumentId
 
