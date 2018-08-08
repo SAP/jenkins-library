@@ -23,12 +23,12 @@ none
 | ----------|-----------|---------|-----------------|
 | script | no | empty `commonPipelineEnvironment` |  |
 | artifactType | no |  | 'appContainer' |
-| buildTool | no | maven | maven, docker |
+| buildTool | no | maven | docker, dlang, golang, maven, mta, npm, pip, sbt |
 | commitVersion | no | `true` | `true`, `false` |
 | dockerVersionSource | no  | `''`  | FROM, (ENV name),appVersion  |
 | filePath | no | buildTool=`maven`: pom.xml <br />docker: Dockerfile |   |
 | gitCommitId |  no | `GitUtils.getGitCommitId()`   |   |
-| gitCredentialsId |  If `commitVersion` is `true` | as defined in custom configuration  |   |
+| gitSshCredentialsId |  If `commitVersion` is `true` | as defined in custom configuration  |   |
 | gitUserEMail | no |  |   |
 | gitUserName | no |   |   |
 | gitSshUrl | If `commitVersion` is `true` |  |   |
@@ -49,7 +49,7 @@ none
 
 * Using `filePath` you could define a custom path to the descriptor file.
 * `gitCommitId` defines the version prefix of the automatically generated version. By default it will take the long commitId hash. You could pass any other string (e.g. the short commitId hash) to be used. In case you don't want to have the gitCommitId added to the automatic versioning string you could set the value to an empty string: `''`.
-* `gitCredentialsId`defines the ssh git credentials to be used for writing the tag.
+* `gitSshCredentialsId`defines the ssh git credentials to be used for writing the tag.
 * The parameters `gitUserName` and `gitUserEMail` allow to overwrite the global git settings available on your Jenkins server
 * `gitSshUrl` defines the git ssh url to the source code repository.
 * `tagPrefix` defines the prefix wich is used for the git tag which is written during the versioning run.
