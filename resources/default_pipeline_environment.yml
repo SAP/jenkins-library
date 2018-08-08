@@ -1,8 +1,5 @@
 #Project Setup
 general:
-  productiveBranch: 'master'
-  jenkinsKubernetes:
-    jnlpAgent: 's4sdk/jenkins-agent-k8s:latest'
   changeManagement:
     transportRequestLabel: 'TransportRequest\s?:'
     changeDocumentLabel: 'ChangeDocument\s?:'
@@ -12,6 +9,10 @@ general:
       from: 'origin/master'
       to: 'HEAD'
       format: '%b'
+  collectTelemetryData: true
+  jenkinsKubernetes:
+    jnlpAgent: 's4sdk/jenkins-agent-k8s:latest'
+  productiveBranch: 'master'
 #Steps Specific Configuration
 steps:
   artifactSetVersion:
