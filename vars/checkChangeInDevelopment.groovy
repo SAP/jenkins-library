@@ -55,7 +55,7 @@ def call(parameters = [:]) {
 
         if(changeId?.trim()) {
 
-          echo "[INFO] ChangeDocumentId retrieved from parameters."
+            echo "[INFO] ChangeDocumentId retrieved from parameters."
 
         } else {
 
@@ -88,21 +88,18 @@ def call(parameters = [:]) {
 
         echo "[INFO] Checking if change document '${configuration.changeDocumentId}' is in development."
 
-        withCredentials([usernamePassword(
-            credentialsId: configuration.changeManagement.credentialsId,
-            passwordVariable: 'password',
-            usernameVariable: 'username')]) {
+        try {
 
-            try {
-                isInDevelopment = cm.isChangeInDevelopment(configuration.changeDocumentId,
-                                                           configuration.changeManagement.endpoint,
-                                                           username,
-                                                           password,
-                                                           configuration.changeManagement.clientOpts)
-            } catch(ChangeManagementException ex) {
-                throw new AbortException(ex.getMessage())
-            }
+
+            isInDevelopment = cm.isChangeInDevelopment(configuration.changeDocumentId,
+                configuration.changeManagement.endpoint,
+                configuration.changeManagement.credentialsId,
+                configuration.changeManagement.clientOpts)
+
+        } catch(ChangeManagementException ex) {
+            throw new AbortException(ex.getMessage())
         }
+
 
         if(isInDevelopment) {
             echo "[INFO] Change '${changeId}' is in status 'in development'."
