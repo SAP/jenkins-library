@@ -113,24 +113,21 @@ def call(parameters = [:]) {
 
         echo "[INFO] Uploading file '${configuration.filePath}' to transport request '${configuration.transportRequestId}' of change document '${configuration.changeDocumentId}'."
 
-        withCredentials([usernamePassword(
-            credentialsId: configuration.changeManagement.credentialsId,
-            passwordVariable: 'password',
-            usernameVariable: 'username')]) {
-
             try {
+
+
                 cm.uploadFileToTransportRequest(configuration.changeDocumentId,
                                                 configuration.transportRequestId,
                                                 configuration.applicationId,
                                                 configuration.filePath,
                                                 configuration.changeManagement.endpoint,
-                                                username,
-                                                password,
+                                                configuration.changeManagement.credentialsId,
                                                 configuration.changeManagement.clientOpts)
+
             } catch(ChangeManagementException ex) {
                 throw new AbortException(ex.getMessage())
             }
-        }
+
 
         echo "[INFO] File '${configuration.filePath}' has been successfully uploaded to transport request '${configuration.transportRequestId}' of change document '${configuration.changeDocumentId}'."
     }
