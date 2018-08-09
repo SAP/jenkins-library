@@ -1,4 +1,5 @@
 import com.sap.piper.GitUtils
+import com.sap.piper.Utils
 import groovy.transform.Field
 
 import com.sap.piper.ConfigurationHelper
@@ -44,6 +45,8 @@ def call(parameters = [:]) {
 
         Map configuration =  configHelper.use()
 
+        new Utils().pushToSWA([step: STEP_NAME], configuration)
+
         def changeDocumentId = configuration.changeDocumentId
 
         if(changeDocumentId?.trim()) {
@@ -79,22 +82,16 @@ def call(parameters = [:]) {
 
         echo "[INFO] Creating transport request for change document '${configuration.changeDocumentId}' and development system '${configuration.developmentSystemId}'."
 
-        withCredentials([usernamePassword(
-            credentialsId: configuration.changeManagement.credentialsId,
-            passwordVariable: 'password',
-            usernameVariable: 'username')]) {
-
             try {
                 transportRequestId = cm.createTransportRequest(configuration.changeDocumentId,
                                                                configuration.developmentSystemId,
                                                                configuration.changeManagement.endpoint,
-                                                               username,
-                                                               password,
+                                                               configuration.changeManagement.credentialsId,
                                                                configuration.changeManagement.clientOpts)
             } catch(ChangeManagementException ex) {
                 throw new AbortException(ex.getMessage())
             }
-        }
+
 
         echo "[INFO] Transport Request '$transportRequestId' has been successfully created."
         return transportRequestId
