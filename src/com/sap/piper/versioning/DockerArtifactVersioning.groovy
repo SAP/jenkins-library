@@ -5,13 +5,29 @@ class DockerArtifactVersioning extends ArtifactVersioning {
         super(script, configuration)
     }
 
-    @Override
     def getVersion() {
-        if (configuration.dockerVersionSource == 'FROM')
-            return  getVersionFromDockerBaseImageTag(configuration.filePath)
-        else
-            //standard assumption: version is assigned to an env variable
-            return getVersionFromDockerEnvVariable(configuration.filePath, configuration.dockerVersionSource)
+        if(configuration.artifactType == 'appContainer' && configuration.dockerVersionSource == 'appVersion'){
+            //replace + sign if available since + is not allowed in a Docker tag
+            if (script.commonPipelineEnvironment.getArtifactVersion()){
+                return script.commonPipelineEnvironment.getArtifactVersion().replace('+', '_')
+            }else{
+                throw new IllegalArgumentException("No artifact version available for 'dockerVersionSource: appVersion' -> executeBuild needs to run for the application artifact first to set the appVersion attribute.'")
+            }
+        } else if (configuration.dockerVersionSource == 'FROM') {
+            def version = getVersionFromDockerBaseImageTag(configuration.filePath)
+            if (version) {
+                return  getVersionFromDockerBaseImageTag(configuration.filePath)
+            } else {
+                throw new IllegalArgumentException("No version information available in FROM statement")
+            }
+        } else {
+            def version = getVersionFromDockerEnvVariable(configuration.filePath, configuration.dockerVersionSource)
+            if (version) {
+                return version
+            } else {
+                throw new IllegalArgumentException("ENV variable '${configuration.dockerVersionSource}' not found.")
+            }
+        }
     }
 
     @Override
