@@ -88,12 +88,14 @@ void call(Map parameters = [:], body) {
  */
 @NonCPS
 private getDockerOptions(Map dockerEnvVars, Map dockerVolumeBind, def dockerOptions) {
-    def specialEnvironments = ['http_proxy',
-                               'https_proxy',
-                               'no_proxy',
-                               'HTTP_PROXY',
-                               'HTTPS_PROXY',
-                               'NO_PROXY']
+    def specialEnvironments = [
+     'http_proxy',
+     'https_proxy',
+     'no_proxy',
+     'HTTP_PROXY',
+     'HTTPS_PROXY',
+     'NO_PROXY'
+     ]
     def options = []
     if (dockerEnvVars) {
         for (String k : dockerEnvVars.keySet()) {

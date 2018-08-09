@@ -2,9 +2,10 @@ import com.sap.piper.ConfigurationHelper
 import com.sap.piper.JenkinsUtils
 import groovy.transform.Field
 
+
 @Field def STEP_NAME = 'dockerExecuteOnKubernetes'
 @Field def PLUGIN_ID_KUBERNETES = 'kubernetes'
-
+@Field Set GENERAL_CONFIG_KEYS = []
 @Field Set PARAMETER_KEYS = ['dindImage',
                              'dockerImage',
                              'dockerWorkspace',
@@ -21,6 +22,8 @@ void call(Map parameters = [:], body) {
         final script = parameters.script
         Map config = ConfigurationHelper
             .loadStepDefaults(this)
+            .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS)
+            .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName?:env.STAGE_NAME, STEP_CONFIG_KEYS)
             .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS)
             .mixin(parameters, PARAMETER_KEYS)
             .withMandatoryProperty('dockerImage')
