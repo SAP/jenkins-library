@@ -10,6 +10,7 @@ general:
       to: 'HEAD'
       format: '%b'
   collectTelemetryData: true
+  gitSshKeyCredentialsId: '' #needed to allow sshagent to run with local ssh key
   jenkinsKubernetes:
     jnlpAgent: 's4sdk/jenkins-agent-k8s:latest'
   productiveBranch: 'master'
@@ -19,14 +20,29 @@ steps:
     timestampTemplate: '%Y%m%d%H%M%S'
     tagPrefix: 'build_'
     commitVersion: true
+    dlang:
+      filePath: 'dub.json'
+      versioningTemplate: '${version}-${timestamp}${commitId?"+"+commitId:""}'
     docker:
       filePath: 'Dockerfile'
       versioningTemplate: '${version}-${timestamp}${commitId?"_"+commitId:""}'
+    golang:
+      filePath: 'VERSION'
+      versioningTemplate: '${version}-${timestamp}${commitId?"+"+commitId:""}'
     maven:
       filePath: 'pom.xml'
       versioningTemplate: '${version}-${timestamp}${commitId?"_"+commitId:""}'
     mta:
       filePath: 'mta.yaml'
+      versioningTemplate: '${version}-${timestamp}${commitId?"+"+commitId:""}'
+    npm:
+      filePath: 'package.json'
+      versioningTemplate: '${version}-${timestamp}${commitId?"+"+commitId:""}'
+    pip:
+      filePath: 'version.txt'
+      versioningTemplate: '${version}.${timestamp}${commitId?"."+commitId:""}'
+    sbt:
+      filePath: 'sbtDescriptor.json'
       versioningTemplate: '${version}-${timestamp}${commitId?"+"+commitId:""}'
   checksPublishResults:
     aggregation:
