@@ -1,5 +1,5 @@
 import com.sap.piper.ConfigurationHelper
-
+import com.sap.piper.Utils
 import groovy.transform.Field
 import groovy.text.SimpleTemplateEngine
 
@@ -22,10 +22,13 @@ def call(Map parameters = [:]) {
         // load default & individual configuration
         Map config = ConfigurationHelper
             .loadStepDefaults(this)
+            .mixinGeneralConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS)
             .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS)
             .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName?:env.STAGE_NAME, STEP_CONFIG_KEYS)
             .mixin(parameters, PARAMETER_KEYS)
             .use()
+
+        new Utils().pushToSWA([step: STEP_NAME], config)
 
         List collectionList = findFiles(glob: config.newmanCollection)?.toList()
 

@@ -1,4 +1,5 @@
 import com.sap.piper.GitUtils
+import com.sap.piper.Utils
 import groovy.transform.Field
 import hudson.AbortException
 
@@ -47,6 +48,8 @@ def call(parameters = [:]) {
 
 
         Map configuration = configHelper.use()
+
+        new Utils().pushToSWA([step: STEP_NAME], configuration)
 
         def changeId = configuration.changeDocumentId
 
