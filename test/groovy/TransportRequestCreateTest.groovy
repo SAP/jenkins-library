@@ -36,6 +36,7 @@ public class TransportRequestCreateTest extends BasePiperTest {
 
         nullScript.commonPipelineEnvironment.configuration = [general:
                                      [changeManagement:
+
                                          [
                                           credentialsId: 'CM',
                                           endpoint: 'https://example.org/cm',
@@ -85,8 +86,7 @@ public class TransportRequestCreateTest extends BasePiperTest {
             String createTransportRequest(String changeId,
                                           String developmentSystemId,
                                           String cmEndpoint,
-                                          String username,
-                                          String password,
+                                          String credentialId,
                                           String clientOpts) {
 
                     throw new ChangeManagementException('Exception message.')
@@ -110,15 +110,14 @@ public class TransportRequestCreateTest extends BasePiperTest {
             String createTransportRequest(String changeId,
                                           String developmentSystemId,
                                           String cmEndpoint,
-                                          String username,
-                                          String password,
+                                          String credentialId,
                                           String clientOpts) {
 
                 result.changeId = changeId
                 result.developmentSystemId = developmentSystemId
                 result.cmEndpoint = cmEndpoint
-                result.username = username
-                result.password = password
+                result.credentialId = credentialId
+
                 result.clientOpts = clientOpts
                 return '001'
             }
@@ -130,8 +129,7 @@ public class TransportRequestCreateTest extends BasePiperTest {
         assert result == [changeId: '001',
                          developmentSystemId: '001',
                          cmEndpoint: 'https://example.org/cm',
-                         username: 'anonymous',
-                         password: '********',
+                         credentialId: 'CM',
                          clientOpts: '-DmyProp=myVal'
                          ]
 
