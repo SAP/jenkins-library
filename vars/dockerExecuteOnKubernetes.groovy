@@ -20,6 +20,9 @@ void call(Map parameters = [:], body) {
         }
 
         final script = parameters.script
+        if (script == null)
+            script = [commonPipelineEnvironment: commonPipelineEnvironment]
+
         Map config = ConfigurationHelper
             .loadStepDefaults(this)
             .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS)

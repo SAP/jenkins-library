@@ -18,6 +18,9 @@ import groovy.transform.Field
 void call(Map parameters = [:], body) {
     handlePipelineStepErrors(stepName: STEP_NAME, stepParameters: parameters) {
         final script = parameters.script
+        if (script == null)
+            script = [commonPipelineEnvironment: commonPipelineEnvironment]
+
         final jUtil = new JenkinsUtils()
         Map config = ConfigurationHelper
             .loadStepDefaults(this)

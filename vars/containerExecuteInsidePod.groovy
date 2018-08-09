@@ -19,6 +19,8 @@ void call(Map parameters = [:], body) {
     handlePipelineStepErrors(stepName: STEP_NAME, stepParameters: parameters) {
 
         final script = parameters.script
+        if (script == null)
+            script = [commonPipelineEnvironment: commonPipelineEnvironment]
 
         Map config = ConfigurationHelper
             .loadStepDefaults(this)
