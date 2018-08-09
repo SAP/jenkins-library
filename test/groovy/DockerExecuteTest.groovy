@@ -1,18 +1,14 @@
+import com.sap.piper.JenkinsUtils
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.RuleChain
-import util.BasePiperTest
-import util.JenkinsLoggingRule
-import util.JenkinsStepRule
-import util.PluginMock
-import util.Rules
+import util.*
 
 import static org.junit.Assert.*
 
 class DockerExecuteTest extends BasePiperTest {
     private DockerMock docker
-
     private JenkinsLoggingRule jlr = new JenkinsLoggingRule(this)
     private JenkinsStepRule jsr = new JenkinsStepRule(this)
 
@@ -30,8 +26,8 @@ class DockerExecuteTest extends BasePiperTest {
     void init() {
         bodyExecuted = false
         docker = new DockerMock()
+        JenkinsUtils.metaClass.Jenkins = [instance: [pluginManager: [plugins: [new PluginMock('docker-workflow')]]]]
         binding.setVariable('docker', docker)
-        binding.setVariable('Jenkins', [instance: [pluginManager: [plugins: [new PluginMock('kubernetes'), new PluginMock('docker-workflow')]]]])
         helper.registerAllowedMethod('sh', [Map.class], {return whichDockerReturnValue})
     }
 

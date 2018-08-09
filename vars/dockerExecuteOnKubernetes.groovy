@@ -1,5 +1,5 @@
-import com.cloudbees.groovy.cps.NonCPS
 import com.sap.piper.ConfigurationHelper
+import com.sap.piper.JenkinsUtils
 import groovy.transform.Field
 
 @Field def STEP_NAME = 'dockerExecuteOnKubernetes'
@@ -11,9 +11,10 @@ import groovy.transform.Field
                              'dockerEnvVars']
 @Field Set STEP_CONFIG_KEYS = PARAMETER_KEYS.plus(['stashContent', 'stashIncludes', 'stashExcludes'])
 
-def call(Map parameters = [:], body) {
+void call(Map parameters = [:], body) {
     handlePipelineStepErrors(stepName: STEP_NAME, stepParameters: parameters) {
-        if (!isPluginActive(PLUGIN_ID_KUBERNETES)) {
+        def jUtils = new JenkinsUtils()
+        if (!jUtils.isPluginActive(PLUGIN_ID_KUBERNETES)) {
             error("[ERROR][${STEP_NAME}] not supported. Plugin '${PLUGIN_ID_KUBERNETES}' is not installed or not active.")
         }
 
@@ -31,11 +32,14 @@ def call(Map parameters = [:], body) {
         containersMap[config.get('dockerImage').toString()] = 'container-exec'
 
         stashWorkspace(config)
-        runInsidePod(script: script, containersMap: containersMap, dockerEnvVars: config.dockerEnvVars, dockerWorkspace: config.dockerWorkspace) {
+        containerExecuteInsidePod(script: script, containersMap: containersMap, dockerEnvVars: config.dockerEnvVars, dockerWorkspace: config.dockerWorkspace) {
             container(name: 'container-exec') {
                 unstashWorkspace(config)
-                body()
-                stashContainer(config)
+                try {
+                    body()
+                } finally {
+                    stashContainer(config)
+                }
             }
         }
         unstashContainer(config)
@@ -84,7 +88,3 @@ private unstashWorkspace(config) {
     }
 }
 
-@NonCPS
-private isPluginActive(String pluginId) {
-    return Jenkins.instance.pluginManager.plugins.find { p -> p.isActive() && p.getShortName() == pluginId }
-}

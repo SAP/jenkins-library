@@ -1,5 +1,6 @@
 import com.cloudbees.groovy.cps.NonCPS
 import com.sap.piper.ConfigurationHelper
+import com.sap.piper.JenkinsUtils
 import groovy.transform.Field
 
 @Field def STEP_NAME = 'dockerExecute'
@@ -12,15 +13,17 @@ import groovy.transform.Field
                              'dockerWorkspace',
                              'dockerEnvVars',
                              'dockerVolumeBind']
+@Field Set STEP_CONFIG_KEYS = PARAMETER_KEYS
 
-
-def call(Map parameters = [:], body) {
+void call(Map parameters = [:], body) {
     handlePipelineStepErrors(stepName: STEP_NAME, stepParameters: parameters) {
         final script = parameters.script
-
+        final jUtil = new JenkinsUtils()
         Map config = ConfigurationHelper
             .loadStepDefaults(this)
             .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS)
+            .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName?:env.STAGE_NAME, STEP_CONFIG_KEYS)
+            .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS)
             .mixin(parameters, PARAMETER_KEYS)
             .withMandatoryProperty('dockerImage')
             .use()
@@ -33,17 +36,19 @@ def call(Map parameters = [:], body) {
                     sh "chown -R 1000:1000 ."
                 }
             } else {
-                dockerExecuteOnKubernetes(script: script,
+                dockerExecuteOnKubernetes(
+                    script: script,
                     dockerImage: config.dockerImage,
                     dockerEnvVars: config.dockerEnvVars,
                     dockerOptions: config.dockerOptions,
-                    dockerVolumeBind: config.dockerVolumeBind) {
+                    dockerVolumeBind: config.dockerVolumeBind
+                ){
                     echo "Executing inside a Kubernetes Pod"
                     body()
                 }
             }
         } else {
-            if (!isPluginActive(PLUGIN_ID_DOCKER_WORKFLOW)) {
+            if (!jUtil.isPluginActive(PLUGIN_ID_DOCKER_WORKFLOW)) {
                 echo "[WARNING][${STEP_NAME}] Docker not supported. Plugin '${PLUGIN_ID_DOCKER_WORKFLOW}' is not installed or not active. Configured docker image '${config.dockerImage}' will not be used."
                 config.dockerImage = null
             }
@@ -59,26 +64,21 @@ def call(Map parameters = [:], body) {
                 echo "[WARNING][$STEP_NAME] Cannot connect to docker daemon (command 'docker ps' did not return with '0'). Configured docker image '${config.dockerImage}' will not be used."
                 config.dockerImage = null
             }
-            if (!config.dockerImage) {
-                echo "[INFO][${STEP_NAME}] Running on local environment."
-                body()
-            } else {
+            if (config.dockerImage) {
                 def image = docker.image(config.dockerImage)
                 image.pull()
                 image.inside(getDockerOptions(config.dockerEnvVars, config.dockerVolumeBind, config.dockerOptions)) {
                     body()
                 }
+            } else {
+                echo "[INFO][${STEP_NAME}] Running on local environment."
+                body()
             }
-
         }
-
     }
 }
 
-@NonCPS
-private isPluginActive(String pluginId) {
-    return Jenkins.instance.pluginManager.plugins.find { p -> p.isActive() && p.getShortName() == pluginId }
-}
+
 
 /**
  * Returns a string with docker options containing

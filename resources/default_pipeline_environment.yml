@@ -110,11 +110,11 @@ steps:
     logSuccessfulMavenTransfers: false
   dockerExecuteOnKubernetes:
     stashContent:
-      - all
+      - workspace
     stashIncludes:
-      all: '**/*.*'
+      workspace: '**/*.*'
     stashExcludes:
-      excludes: 'nohup.out'
+      workspace: 'nohup.out'
   mtaBuild:
     buildTarget: 'NEO'
     mtaJarLocation: 'mta.jar'

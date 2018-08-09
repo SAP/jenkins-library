@@ -2,7 +2,7 @@ import com.sap.piper.ConfigurationHelper
 import com.sap.piper.SysEnv
 import groovy.transform.Field
 
-@Field def STEP_NAME = 'runInsidePod'
+@Field def STEP_NAME = 'containerExecuteInsidePod'
 
 @Field Set GENERAL_CONFIG_KEYS = ['jenkinsKubernetes']
 
@@ -11,7 +11,9 @@ import groovy.transform.Field
                              'dockerEnvVars',
                              'containersMap']
 
-def call(Map parameters = [:], body) {
+@Field Set STEP_CONFIG_KEYS = PARAMETER_KEYS
+
+void call(Map parameters = [:], body) {
     def uniqueId = UUID.randomUUID().toString()
 
     handlePipelineStepErrors(stepName: STEP_NAME, stepParameters: parameters) {
@@ -21,6 +23,8 @@ def call(Map parameters = [:], body) {
         Map config = ConfigurationHelper
             .loadStepDefaults(this)
             .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS)
+            .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName?:env.STAGE_NAME, STEP_CONFIG_KEYS)
+            .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS)
             .mixin(parameters, PARAMETER_KEYS)
             .withMandatoryProperty('containersMap')
             .use()

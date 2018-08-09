@@ -1,3 +1,4 @@
+import com.sap.piper.JenkinsUtils
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -36,13 +37,13 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
     @Before
     void init() {
         bodyExecuted = false
-        binding.setVariable('Jenkins', [instance: [pluginManager: [plugins: [new PluginMock('kubernetes'), new PluginMock('docker-workflow')]]]])
+        JenkinsUtils.metaClass.Jenkins = [instance: [pluginManager: [plugins: [new PluginMock('kubernetes'), new PluginMock('docker-workflow')]]]]
         helper.registerAllowedMethod('sh', [Map.class], {return whichDockerReturnValue})
         helper.registerAllowedMethod('container', [Map.class, Closure.class], { Map config, Closure body ->
             containerName = config.name
             body()
         })
-        helper.registerAllowedMethod('runInsidePod', [Map.class, Closure.class], { Map config, Closure body ->
+        helper.registerAllowedMethod('containerExecuteInsidePod', [Map.class, Closure.class], { Map config, Closure body ->
             config.containersMap.each { k, v -> dockerImage = k }
             containersMap = config.containersMap
             dockerEnvVars = config.dockerEnvVars

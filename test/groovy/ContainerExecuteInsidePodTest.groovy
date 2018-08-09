@@ -7,7 +7,7 @@ import util.*
 
 import static org.junit.Assert.*
 
-class RunInsidePodTest extends BasePiperTest {
+class ContainerExecuteInsidePodTest extends BasePiperTest {
     private ExpectedException thrown = ExpectedException.none()
     private JenkinsDockerExecuteRule jder = new JenkinsDockerExecuteRule(this)
     private JenkinsShellCallRule jscr = new JenkinsShellCallRule(this)
