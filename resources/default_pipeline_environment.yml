@@ -126,8 +126,6 @@ steps:
     dockerImage: 'maven:3.5-jdk-7'
     logSuccessfulMavenTransfers: false
   dockerExecuteOnKubernetes:
-    stashContent:
-      - workspace
     stashIncludes:
       workspace: '**/*.*'
     stashExcludes:

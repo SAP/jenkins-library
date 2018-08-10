@@ -28,7 +28,7 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
     int whichDockerReturnValue = 0
     def bodyExecuted
     def dockerImage
-    def containersMap
+    def containerMap
     def dockerEnvVars
     def dockerWorkspace
     def containerName = ''
@@ -37,15 +37,15 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
     @Before
     void init() {
         bodyExecuted = false
-        JenkinsUtils.metaClass.Jenkins = [instance: [pluginManager: [plugins: [new PluginMock('kubernetes'), new PluginMock('docker-workflow')]]]]
+        JenkinsUtils.metaClass.static.isPluginActive = { def s -> return true }
         helper.registerAllowedMethod('sh', [Map.class], {return whichDockerReturnValue})
         helper.registerAllowedMethod('container', [Map.class, Closure.class], { Map config, Closure body ->
             containerName = config.name
             body()
         })
         helper.registerAllowedMethod('containerExecuteInsidePod', [Map.class, Closure.class], { Map config, Closure body ->
-            config.containersMap.each { k, v -> dockerImage = k }
-            containersMap = config.containersMap
+            config.containerMap.each { k, v -> dockerImage = k }
+            containerMap = config.containerMap
             dockerEnvVars = config.dockerEnvVars
             dockerWorkspace = config.dockerWorkspace
             body()

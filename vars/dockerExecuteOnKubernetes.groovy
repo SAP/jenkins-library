@@ -10,12 +10,11 @@ import groovy.transform.Field
                              'dockerImage',
                              'dockerWorkspace',
                              'dockerEnvVars']
-@Field Set STEP_CONFIG_KEYS = PARAMETER_KEYS.plus(['stashContent', 'stashIncludes', 'stashExcludes'])
+@Field Set STEP_CONFIG_KEYS = PARAMETER_KEYS.plus(['stashIncludes', 'stashExcludes'])
 
 void call(Map parameters = [:], body) {
     handlePipelineStepErrors(stepName: STEP_NAME, stepParameters: parameters) {
-        def jUtils = new JenkinsUtils()
-        if (!jUtils.isPluginActive(PLUGIN_ID_KUBERNETES)) {
+        if (!JenkinsUtils.isPluginActive(PLUGIN_ID_KUBERNETES)) {
             error("[ERROR][${STEP_NAME}] not supported. Plugin '${PLUGIN_ID_KUBERNETES}' is not installed or not active.")
         }
 
@@ -34,11 +33,11 @@ void call(Map parameters = [:], body) {
 
         config.uniqueId = UUID.randomUUID().toString()
 
-        Map containersMap = [:]
-        containersMap[config.get('dockerImage').toString()] = 'container-exec'
+        Map containerMap = [:]
+        containerMap[config.get('dockerImage').toString()] = 'container-exec'
 
         stashWorkspace(config)
-        containerExecuteInsidePod(script: script, containersMap: containersMap, dockerEnvVars: config.dockerEnvVars, dockerWorkspace: config.dockerWorkspace) {
+        containerExecuteInsidePod(script: script, containerMap: containerMap, dockerEnvVars: config.dockerEnvVars, dockerWorkspace: config.dockerWorkspace) {
             container(name: 'container-exec') {
                 unstashWorkspace(config)
                 try {
@@ -55,7 +54,7 @@ void call(Map parameters = [:], body) {
 private stashWorkspace(config) {
     try {
         sh "chmod -R u+w ."
-        stash name: "workspace-${config.uniqueId}", include: config.stashIncludes.all, exclude: config.stashExcludes.excludes
+        stash name: "workspace-${config.uniqueId}", include: config.stashIncludes.workspace, exclude: config.stashExcludes.excludes
     } catch (hudson.AbortException e) {
         echo "${e.getMessage()}"
     } catch (java.io.IOException ioe) {
@@ -66,7 +65,7 @@ private stashWorkspace(config) {
 private stashContainer(config) {
     try {
         sh "chmod -R u+w ."
-        stash name: "container-${config.uniqueId}", include: config.stashIncludes.all, exclude: config.stashExcludes.excludes
+        stash name: "container-${config.uniqueId}", include: config.stashIncludes.workspace, exclude: config.stashExcludes.excludes
     } catch (hudson.AbortException e) {
         echo "${e.getMessage()}"
     } catch (java.io.IOException ioe) {

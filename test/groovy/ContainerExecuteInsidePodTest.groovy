@@ -60,7 +60,7 @@ class ContainerExecuteInsidePodTest extends BasePiperTest {
     @Test
     void testRunInsidePod() throws Exception {
         jsr.step.call(script: nullScript,
-            containersMap: ['maven:3.5-jdk-8-alpine': 'mavenexecute']) {
+            containerMap: ['maven:3.5-jdk-8-alpine': 'mavenexecute']) {
             container(name: 'mavenexecute') {
                 bodyExecuted = true
             }
@@ -77,7 +77,7 @@ class ContainerExecuteInsidePodTest extends BasePiperTest {
     void testRunInsidePodWithCustomJnlp() throws Exception {
         nullScript.commonPipelineEnvironment.configuration = ['general': ['jenkinsKubernetes': ['jnlpAgent': 'myJnalpAgent']]]
         jsr.step.call(script: nullScript,
-            containersMap: ['maven:3.5-jdk-8-alpine': 'mavenexecute']) {
+            containerMap: ['maven:3.5-jdk-8-alpine': 'mavenexecute']) {
             container(name: 'mavenexecute') {
                 bodyExecuted = true
             }
@@ -93,7 +93,7 @@ class ContainerExecuteInsidePodTest extends BasePiperTest {
     @Test
     void testRunInsidePodWithCustomWorkspace() throws Exception {
         jsr.step.call(script: nullScript,
-            containersMap: ['maven:3.5-jdk-8-alpine': 'mavenexecute'],
+            containerMap: ['maven:3.5-jdk-8-alpine': 'mavenexecute'],
             dockerWorkspace: '/home/piper') {
             container(name: 'mavenexecute') {
                 bodyExecuted = true
@@ -106,7 +106,7 @@ class ContainerExecuteInsidePodTest extends BasePiperTest {
     @Test
     void testRunInsidePodWithCustomEnv() throws Exception {
         jsr.step.call(script: nullScript,
-            containersMap: ['maven:3.5-jdk-8-alpine': 'mavenexecute'],
+            containerMap: ['maven:3.5-jdk-8-alpine': 'mavenexecute'],
             dockerEnvVars: ['customEnvKey': 'customEnvValue']) {
             container(name: 'mavenexecute') {
                 bodyExecuted = true
@@ -119,7 +119,7 @@ class ContainerExecuteInsidePodTest extends BasePiperTest {
     @Test
     void testRunInsidePodOnlyJnlp() throws Exception {
         jsr.step.call(script: nullScript,
-            containersMap: [:],
+            containerMap: [:],
             dockerEnvVars: ['customEnvKey': 'customEnvValue']) {
             container(name: 'jnlp') {
                 bodyExecuted = true
@@ -134,7 +134,7 @@ class ContainerExecuteInsidePodTest extends BasePiperTest {
     @Test
     void testRunInsidePodUpperCaseContainerName() throws Exception {
         jsr.step.call(script: nullScript,
-            containersMap: ['maven:3.5-jdk-8-alpine': 'MAVENEXECUTE'],
+            containerMap: ['maven:3.5-jdk-8-alpine': 'MAVENEXECUTE'],
             dockerEnvVars: ['customEnvKey': 'customEnvValue']) {
             container(name: 'mavenexecute') {
                 bodyExecuted = true

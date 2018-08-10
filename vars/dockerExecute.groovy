@@ -21,7 +21,6 @@ void call(Map parameters = [:], body) {
         if (script == null)
             script = [commonPipelineEnvironment: commonPipelineEnvironment]
 
-        final jUtil = new JenkinsUtils()
         Map config = ConfigurationHelper
             .loadStepDefaults(this)
             .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS)
@@ -51,7 +50,7 @@ void call(Map parameters = [:], body) {
                 }
             }
         } else {
-            if (!jUtil.isPluginActive(PLUGIN_ID_DOCKER_WORKFLOW)) {
+            if (!JenkinsUtils.isPluginActive(PLUGIN_ID_DOCKER_WORKFLOW)) {
                 echo "[WARNING][${STEP_NAME}] Docker not supported. Plugin '${PLUGIN_ID_DOCKER_WORKFLOW}' is not installed or not active. Configured docker image '${config.dockerImage}' will not be used."
                 config.dockerImage = null
             }

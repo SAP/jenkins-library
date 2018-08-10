@@ -26,7 +26,7 @@ class DockerExecuteTest extends BasePiperTest {
     void init() {
         bodyExecuted = false
         docker = new DockerMock()
-        JenkinsUtils.metaClass.Jenkins = [instance: [pluginManager: [plugins: [new PluginMock('docker-workflow')]]]]
+        JenkinsUtils.metaClass.static.isPluginActive = {def s -> return true}
         binding.setVariable('docker', docker)
         helper.registerAllowedMethod('sh', [Map.class], {return whichDockerReturnValue})
     }

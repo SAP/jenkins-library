@@ -9,7 +9,7 @@ import groovy.transform.Field
 @Field Set PARAMETER_KEYS = ['dockerOptions',
                              'dockerWorkspace',
                              'dockerEnvVars',
-                             'containersMap']
+                             'containerMap']
 
 @Field Set STEP_CONFIG_KEYS = PARAMETER_KEYS
 
@@ -28,7 +28,7 @@ void call(Map parameters = [:], body) {
             .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName?:env.STAGE_NAME, STEP_CONFIG_KEYS)
             .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS)
             .mixin(parameters, PARAMETER_KEYS)
-            .withMandatoryProperty('containersMap')
+            .withMandatoryProperty('containerMap')
             .use()
 
         def options = [name      : 'dynamic-agent-' + uniqueId,
@@ -47,10 +47,9 @@ private getContainerList(config) {
     envVars = getContainerEnvs(config)
     result = []
     result.push(containerTemplate(name: 'jnlp',
-        image: config.jenkinsKubernetes.jnlpAgent,
-        args: '${computer.jnlpmac} ${computer.name}'))
+        image: config.jenkinsKubernetes.jnlpAgent))
 
-    config.containersMap.each { imageName, containerName  ->
+    config.containerMap.each { imageName, containerName  ->
         result.push(containerTemplate(name: containerName.toLowerCase(),
             image: imageName,
             alwaysPullImage: true,
