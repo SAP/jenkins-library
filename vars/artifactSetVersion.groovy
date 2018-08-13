@@ -56,7 +56,6 @@ def call(Map parameters = [:], Closure body = null) {
         config = new ConfigurationHelper(config)
             .addIfEmpty('gitSshUrl', (config.buildTool == 'docker' && config.artifactType == 'appContainer')?script.commonPipelineEnvironment.getAppContainerProperty('gitSshUrl'):script.commonPipelineEnvironment.getGitSshUrl())
             .addIfEmpty('timestamp', getTimestamp(config.timestampTemplate))
-            .withMandatoryProperty('gitSshUrl')
             .use()
 
         new Utils().pushToSWA([step: STEP_NAME, stepParam1: config.buildTool, stepParam2: config.artifactType], config)
