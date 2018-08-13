@@ -59,9 +59,10 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
             dockerImage: 'maven:3.5-jdk-8-alpine',
             dockerOptions: '-it',
             dockerVolumeBind: ['my_vol': '/my_vol'],
-            dockerEnvVars: ['http_proxy': 'http://proxy:8000'], dockerWorkspace: '/home/piper') {
-            bodyExecuted = true
-        }
+            dockerEnvVars: ['http_proxy': 'http://proxy:8000'], dockerWorkspace: '/home/piper')
+            {
+                bodyExecuted = true
+            }
         assertEquals('container-exec', containerName)
         assertEquals('maven:3.5-jdk-8-alpine', dockerImage)
         assertEquals(['http_proxy': 'http://proxy:8000'], dockerEnvVars)

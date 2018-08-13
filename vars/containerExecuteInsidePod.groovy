@@ -6,8 +6,7 @@ import groovy.transform.Field
 
 @Field Set GENERAL_CONFIG_KEYS = ['jenkinsKubernetes']
 
-@Field Set PARAMETER_KEYS = ['dockerOptions',
-                             'dockerWorkspace',
+@Field Set PARAMETER_KEYS = ['dockerWorkspace',
                              'dockerEnvVars',
                              'containerMap']
 

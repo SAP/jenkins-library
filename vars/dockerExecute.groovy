@@ -42,8 +42,7 @@ void call(Map parameters = [:], body) {
                     script: script,
                     dockerImage: config.dockerImage,
                     dockerEnvVars: config.dockerEnvVars,
-                    dockerOptions: config.dockerOptions,
-                    dockerVolumeBind: config.dockerVolumeBind
+                    dockerWorkspace: config.dockerWorkspace
                 ){
                     echo "Executing inside a Kubernetes Pod"
                     body()

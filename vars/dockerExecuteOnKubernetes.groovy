@@ -6,8 +6,7 @@ import groovy.transform.Field
 @Field def STEP_NAME = 'dockerExecuteOnKubernetes'
 @Field def PLUGIN_ID_KUBERNETES = 'kubernetes'
 @Field Set GENERAL_CONFIG_KEYS = []
-@Field Set PARAMETER_KEYS = ['dindImage',
-                             'dockerImage',
+@Field Set PARAMETER_KEYS = ['dockerImage',
                              'dockerWorkspace',
                              'dockerEnvVars']
 @Field Set STEP_CONFIG_KEYS = PARAMETER_KEYS.plus(['stashIncludes', 'stashExcludes'])
@@ -35,7 +34,7 @@ void call(Map parameters = [:], body) {
 
         Map containerMap = [:]
         containerMap[config.get('dockerImage').toString()] = 'container-exec'
-
+        try {
         stashWorkspace(config)
         containerExecuteInsidePod(script: script, containerMap: containerMap, dockerEnvVars: config.dockerEnvVars, dockerWorkspace: config.dockerWorkspace) {
             container(name: 'container-exec') {
@@ -47,7 +46,9 @@ void call(Map parameters = [:], body) {
                 }
             }
         }
-        unstashContainer(config)
+        } finally {
+            unstashContainer(config)
+        }
     }
 }
 
