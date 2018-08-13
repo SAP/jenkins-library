@@ -46,7 +46,7 @@ withEnv(["ON_K8S=true"]){
   }
 ```
 
-The above example will create a pod with a maven container, and execute the closure inside it. 
+In the above example, the `dockerEcecute` step will internally invoke [dockerExecuteOnKubernetes](dockerExecuteonKuberenetes.md) step and execute the closure inside a pod. 
 
 ## Step configuration
 None
