@@ -6,7 +6,9 @@ pages:
         - artifactSetVersion: steps/artifactSetVersion.md
         - checkChangeInDevelopment: steps/checkChangeInDevelopment.md
         - commonPipelineEnvironment: steps/commonPipelineEnvironment.md
+        - containerExecuteOnKubernetes: steps/containerExecuteOnKubernetes.md
         - dockerExecute: steps/dockerExecute.md
+        - dockerExecuteOnKuberenetes: steps/dockerExecuteOnKuberenetes.md
         - durationMeasure: steps/durationMeasure.md
         - handlePipelineStepErrors: steps/handlePipelineStepErrors.md
         - influxWriteData: steps/influxWriteData.md
