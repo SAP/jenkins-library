@@ -1,4 +1,4 @@
-# dockerExecuteOnKuberenetes
+# dockerExecuteOnKubernetes
 
 ## Description
 

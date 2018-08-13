@@ -46,7 +46,7 @@ withEnv(["ON_K8S=true"]){
   }
 ```
 
-In the above example, the `dockerEcecute` step will internally invoke [dockerExecuteOnKubernetes](dockerExecuteonKuberenetes.md) step and execute the closure inside a pod. 
+In the above example, the `dockerEcecute` step will internally invoke [dockerExecuteOnKubernetes](dockerExecuteOnKubernetes.md) step and execute the closure inside a pod. 
 
 ## Step configuration
 None

@@ -8,7 +8,7 @@ pages:
         - commonPipelineEnvironment: steps/commonPipelineEnvironment.md
         - containerExecuteOnKubernetes: steps/containerExecuteOnKubernetes.md
         - dockerExecute: steps/dockerExecute.md
-        - dockerExecuteOnKuberenetes: steps/dockerExecuteOnKuberenetes.md
+        - dockerExecuteOnKubernetes: steps/dockerExecuteOnKubernetes.md
         - durationMeasure: steps/durationMeasure.md
         - handlePipelineStepErrors: steps/handlePipelineStepErrors.md
         - influxWriteData: steps/influxWriteData.md
