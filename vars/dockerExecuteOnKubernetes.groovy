@@ -35,17 +35,17 @@ void call(Map parameters = [:], body) {
         Map containerMap = [:]
         containerMap[config.get('dockerImage').toString()] = 'container-exec'
         try {
-        stashWorkspace(config)
-        containerExecuteInsidePod(script: script, containerMap: containerMap, dockerEnvVars: config.dockerEnvVars, dockerWorkspace: config.dockerWorkspace) {
-            container(name: 'container-exec') {
-                unstashWorkspace(config)
-                try {
-                    body()
-                } finally {
-                    stashContainer(config)
+            stashWorkspace(config)
+            containerExecuteInsidePod(script: script, containerMap: containerMap, dockerEnvVars: config.dockerEnvVars, dockerWorkspace: config.dockerWorkspace) {
+                container(name: 'container-exec') {
+                    unstashWorkspace(config)
+                    try {
+                        body()
+                    } finally {
+                        stashContainer(config)
+                    }
                 }
             }
-        }
         } finally {
             unstashContainer(config)
         }
