@@ -76,7 +76,7 @@ def call(Map parameters = [:], Closure body = null) {
 
         if (config.commitVersion) {
             config = new ConfigurationHelper(config)
-                .addIfEmpty(isAppContainer(config)
+                .addIfEmpty('gitSshUrl', isAppContainer(config)
                             ?script.commonPipelineEnvironment.getAppContainerProperty('gitSshUrl')
                             :script.commonPipelineEnvironment.getGitSshUrl())
                 .withMandatoryProperty('gitSshUrl')
