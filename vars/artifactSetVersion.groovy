@@ -52,12 +52,9 @@ def call(Map parameters = [:], Closure body = null) {
             .dependingOn('buildTool').mixin('filePath')
             .dependingOn('buildTool').mixin('versioningTemplate')
             .use()
-
-        config = new ConfigurationHelper(config)
-            .addIfEmpty('gitSshUrl', (config.buildTool == 'docker' && config.artifactType == 'appContainer')?script.commonPipelineEnvironment.getAppContainerProperty('gitSshUrl'):script.commonPipelineEnvironment.getGitSshUrl())
-            .addIfEmpty('timestamp', getTimestamp(config.timestampTemplate))
-            .use()
-
+        
+        config.timestamp = config.timestamp ?: getTimestamp(config.timestampTemplate))
+        
         new Utils().pushToSWA([step: STEP_NAME, stepParam1: config.buildTool, stepParam2: config.artifactType], config)
 
         def artifactVersioning = ArtifactVersioning.getArtifactVersioning(config.buildTool, script, config)
@@ -78,6 +75,13 @@ def call(Map parameters = [:], Closure body = null) {
         }
 
         if (config.commitVersion) {
+            config = new ConfigurationHelper(config)
+                .addIfEmpty(isAppContainer(config)
+                            ?script.commonPipelineEnvironment.getAppContainerProperty('gitSshUrl')
+                            :script.commonPipelineEnvironment.getGitSshUrl())
+                .withMandatoryProperty('gitSshUrl')
+                .use()
+            
             sh 'git add .'
 
             sshagent([config.gitSshKeyCredentialsId]) {
@@ -98,7 +102,7 @@ def call(Map parameters = [:], Closure body = null) {
             }
         }
 
-        if (config.buildTool == 'docker' && config.artifactType == 'appContainer') {
+        if (isAppContainer(config)) {
             script.commonPipelineEnvironment.setAppContainerProperty('artifactVersion', newVersion)
             script.commonPipelineEnvironment.setAppContainerProperty('gitCommitId', config.gitCommitId)
         } else {
@@ -109,6 +113,10 @@ def call(Map parameters = [:], Closure body = null) {
 
         echo "[${STEP_NAME}]New version: ${newVersion}"
     }
+}
+
+def isAppContainer(config){
+    return config.buildTool == 'docker' && config.artifactType == 'appContainer'
 }
 
 def getTimestamp(pattern){
