@@ -1,21 +1,46 @@
 #Project Setup
 general:
   productiveBranch: 'master'
-
+  collectTelemetryData: true
+  changeManagement:
+      transportRequestLabel: 'TransportRequest\s?:'
+      changeDocumentLabel: 'ChangeDocument\s?:'
+      clientOpts: ''
+      credentialsId: 'CM'
+      git:
+        from: 'origin/master'
+        to: 'HEAD'
+        format: '%b'
+  gitSshKeyCredentialsId: '' #needed to allow sshagent to run with local ssh key
 #Steps Specific Configuration
 steps:
   artifactSetVersion:
     timestampTemplate: '%Y%m%d%H%M%S'
     tagPrefix: 'build_'
     commitVersion: true
+    dlang:
+      filePath: 'dub.json'
+      versioningTemplate: '${version}-${timestamp}${commitId?"+"+commitId:""}'
     docker:
       filePath: 'Dockerfile'
       versioningTemplate: '${version}-${timestamp}${commitId?"_"+commitId:""}'
+    golang:
+      filePath: 'VERSION'
+      versioningTemplate: '${version}-${timestamp}${commitId?"+"+commitId:""}'
     maven:
       filePath: 'pom.xml'
       versioningTemplate: '${version}-${timestamp}${commitId?"_"+commitId:""}'
     mta:
       filePath: 'mta.yaml'
+      versioningTemplate: '${version}-${timestamp}${commitId?"+"+commitId:""}'
+    npm:
+      filePath: 'package.json'
+      versioningTemplate: '${version}-${timestamp}${commitId?"+"+commitId:""}'
+    pip:
+      filePath: 'version.txt'
+      versioningTemplate: '${version}.${timestamp}${commitId?"."+commitId:""}'
+    sbt:
+      filePath: 'sbtDescriptor.json'
       versioningTemplate: '${version}-${timestamp}${commitId?"+"+commitId:""}'
   checksPublishResults:
     aggregation:
@@ -76,6 +101,23 @@ steps:
         fail:
           high: '0'
     archive: false
+  cloudFoundryDeploy:
+    cloudFoundry:
+      apiEndpoint: 'https://api.cf.eu10.hana.ondemand.com'
+    deployTool: 'cf_native'
+    deployType: 'standard'
+    mtaDeployParameters: '-f'
+    mtaExtensionDescriptor: ''
+    mtaPath: ''
+    smokeTestScript: 'blueGreenCheckScript.sh'
+    smokeTestStatusCode: 200
+    stashContent: []
+    cf_native:
+      dockerImage: 's4sdk/docker-cf-cli'
+      dockerWorkspace: '/home/piper'
+    mtaDeployPlugin:
+      dockerImage: 's4sdk/docker-cf-cli'
+      dockerWorkspace: '/home/piper'
   influxWriteData:
     influxServer: 'jenkins'
   mavenExecute:
@@ -85,6 +127,7 @@ steps:
     buildTarget: 'NEO'
     mtaJarLocation: 'mta.jar'
   neoDeploy:
+    dockerImage: 's4sdk/docker-neo-cli'
     deployMode: 'mta'
     warAction: 'deploy'
     vmSize: 'lite'
@@ -96,6 +139,8 @@ steps:
     newmanEnvironment: ''
     newmanGlobals: ''
     newmanRunCommand: "run ${config.newmanCollection} --environment '${config.newmanEnvironment}' --globals '${config.newmanGlobals}' --reporters junit,html --reporter-junit-export target/newman/TEST-${collectionDisplayName}.xml --reporter-html-export target/newman/TEST-${collectionDisplayName}.html"
+    stashContent:
+      - 'tests'
   pipelineStashFilesAfterBuild:
     runOpaTests: false
     stashIncludes:
@@ -174,29 +219,8 @@ steps:
       archive: false
       active: false
   checkChangeInDevelopment:
-      credentialsId: 'CM'
       failIfStatusIsNotInDevelopment: true
-      gitFrom: 'origin/master'
-      gitTo: 'HEAD'
-      gitChangeDocumentLabel: 'ChangeDocument\s?:'
-      gitFormat: '%b'
   transportRequestCreate:
-      credentialsId: 'CM'
-      gitFrom: 'origin/master'
-      gitTo: 'HEAD'
-      gitChangeDocumentLabel: 'ChangeDocument\s?:'
-      gitFormat: '%b'
+      developmentSystemId: null
   transportRequestUploadFile:
-      credentialsId: 'CM'
-      gitFrom: 'origin/master'
-      gitTo: 'HEAD'
-      gitChangeDocumentLabel: 'ChangeDocument\s?:'
-      gitTransportRequestLabel: 'TransportRequest\s?:'
-      gitFormat: '%b'
   transportRequestRelease:
-      credentialsId: 'CM'
-      gitFrom: 'origin/master'
-      gitTo: 'HEAD'
-      gitChangeDocumentLabel: 'ChangeDocument\s?:'
-      gitTransportRequestLabel: 'TransportRequest\s?:'
-      gitFormat: '%b'

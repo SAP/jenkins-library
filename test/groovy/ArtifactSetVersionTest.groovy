@@ -47,6 +47,9 @@ class ArtifactSetVersionTest extends BasePiperTest {
     void init() throws Throwable {
         dockerParameters = [:]
 
+        nullScript.commonPipelineEnvironment.setArtifactVersion(null)
+        nullScript.commonPipelineEnvironment.setGitSshUrl('git@test.url')
+
         helper.registerAllowedMethod("sshagent", [List.class, Closure.class], { list, closure ->
             sshAgentList = list
             return closure()
@@ -64,7 +67,7 @@ class ArtifactSetVersionTest extends BasePiperTest {
 
     @Test
     void testVersioning() {
-        jsr.step.call(script: jsr.step, juStabGitUtils: gitUtils, buildTool: 'maven', gitSshUrl: 'myGitSshUrl')
+        jsr.step.artifactSetVersion(script: jsr.step, juStabGitUtils: gitUtils, buildTool: 'maven', gitSshUrl: 'myGitSshUrl')
 
         assertEquals('1.2.3-20180101010203_testCommitId', jer.env.getArtifactVersion())
         assertEquals('testCommitId', jer.env.getGitCommitId())
@@ -79,7 +82,7 @@ class ArtifactSetVersionTest extends BasePiperTest {
 
     @Test
     void testVersioningWithoutCommit() {
-        jsr.step.call(script: jsr.step, juStabGitUtils: gitUtils, buildTool: 'maven', commitVersion: false)
+        jsr.step.artifactSetVersion(script: jsr.step, juStabGitUtils: gitUtils, buildTool: 'maven', commitVersion: false)
 
         assertEquals('1.2.3-20180101010203_testCommitId', jer.env.getArtifactVersion())
         assertThat(jscr.shell, hasItem("mvn --file 'pom.xml' --batch-mode -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn versions:set -DnewVersion=1.2.3-20180101010203_testCommitId"))
@@ -87,7 +90,7 @@ class ArtifactSetVersionTest extends BasePiperTest {
 
     @Test
     void testVersioningWithoutScript() {
-        jsr.step.call(juStabGitUtils: gitUtils, buildTool: 'maven', commitVersion: false)
+        jsr.step.artifactSetVersion(juStabGitUtils: gitUtils, buildTool: 'maven', commitVersion: false)
 
         assertEquals('1.2.3-20180101010203_testCommitId', jer.env.getArtifactVersion())
         assertThat(jscr.shell, hasItem("mvn --file 'pom.xml' --batch-mode -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn versions:set -DnewVersion=1.2.3-20180101010203_testCommitId"))
@@ -95,14 +98,14 @@ class ArtifactSetVersionTest extends BasePiperTest {
 
     @Test
     void testVersioningCustomGitUserAndEMail() {
-        jsr.step.call(script: jsr.step, juStabGitUtils: gitUtils, buildTool: 'maven', gitSshUrl: 'myGitSshUrl', gitUserEMail: 'test@test.com', gitUserName: 'test')
+        jsr.step.artifactSetVersion(script: jsr.step, juStabGitUtils: gitUtils, buildTool: 'maven', gitSshUrl: 'myGitSshUrl', gitUserEMail: 'test@test.com', gitUserName: 'test')
 
         assertThat(jscr.shell, hasItem("git -c user.email=\"test@test.com\" -c user.name=\"test\" commit -m 'update version 1.2.3-20180101010203_testCommitId'"))
     }
 
     @Test
     void testVersioningWithTimestamp() {
-        jsr.step.call(script: jsr.step, juStabGitUtils: gitUtils, buildTool: 'maven', timestamp: '2018')
+        jsr.step.artifactSetVersion(script: jsr.step, juStabGitUtils: gitUtils, buildTool: 'maven', timestamp: '2018')
         assertEquals('1.2.3-2018_testCommitId', jer.env.getArtifactVersion())
     }
 
@@ -110,21 +113,33 @@ class ArtifactSetVersionTest extends BasePiperTest {
     void testVersioningNoBuildTool() {
         thrown.expect(Exception)
         thrown.expectMessage('ERROR - NO VALUE AVAILABLE FOR buildTool')
-        jsr.step.call(script: jsr.step, juStabGitUtils: gitUtils)
+        jsr.step.artifactSetVersion(script: jsr.step, juStabGitUtils: gitUtils)
     }
 
     @Test
     void testVersioningWithCustomTemplate() {
-        jsr.step.call(script: jsr.step, juStabGitUtils: gitUtils, buildTool: 'maven', versioningTemplate: '${version}-xyz')
+        jsr.step.artifactSetVersion(script: jsr.step, juStabGitUtils: gitUtils, buildTool: 'maven', versioningTemplate: '${version}-xyz')
         assertEquals('1.2.3-xyz', jer.env.getArtifactVersion())
     }
 
     @Test
     void testVersioningWithTypeAppContainer() {
+        nullScript.commonPipelineEnvironment.setAppContainerProperty('gitSshUrl', 'git@test.url')
         jer.env.setArtifactVersion('1.2.3-xyz')
-        jsr.step.call(script: jsr.step, juStabGitUtils: gitUtils, buildTool: 'docker', artifactType: 'appContainer', dockerVersionSource: 'appVersion')
+        jsr.step.artifactSetVersion(script: jsr.step, juStabGitUtils: gitUtils, buildTool: 'docker', artifactType: 'appContainer', dockerVersionSource: 'appVersion')
         assertEquals('1.2.3-xyz', jer.env.getArtifactVersion())
         assertEquals('1.2.3-xyz', jwfr.files['VERSION'])
+    }
+
+    @Test
+    void testCredentialCompatibility() {
+        jsr.step.artifactSetVersion (
+            script: nullScript,
+            buildTool: 'maven',
+            gitCredentialsId: 'testCredentials',
+            juStabGitUtils: gitUtils
+        )
+        assertThat(sshAgentList, hasItem('testCredentials'))
     }
 
     void prepareObjectInterceptors(object) {

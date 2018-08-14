@@ -26,25 +26,54 @@ class ConfigurationHelper implements Serializable {
         return this
     }
 
-    ConfigurationHelper mixinGeneralConfig(commonPipelineEnvironment, Set filter = null){
+    ConfigurationHelper mixinGeneralConfig(commonPipelineEnvironment, Set filter = null, Script step = null, Map compatibleParameters = [:]){
         Map stepConfiguration = ConfigurationLoader.generalConfiguration([commonPipelineEnvironment: commonPipelineEnvironment])
-        return mixin(stepConfiguration, filter)
+        return mixin(stepConfiguration, filter, step, compatibleParameters)
     }
 
-    ConfigurationHelper mixinStageConfig(commonPipelineEnvironment, stageName, Set filter = null){
+    ConfigurationHelper mixinStageConfig(commonPipelineEnvironment, stageName, Set filter = null, Script step = null, Map compatibleParameters = [:]){
         Map stageConfiguration = ConfigurationLoader.stageConfiguration([commonPipelineEnvironment: commonPipelineEnvironment], stageName)
-        return mixin(stageConfiguration, filter)
+        return mixin(stageConfiguration, filter, step, compatibleParameters)
     }
 
-    ConfigurationHelper mixinStepConfig(commonPipelineEnvironment, Set filter = null){
+    ConfigurationHelper mixinStepConfig(commonPipelineEnvironment, Set filter = null, Script step = null, Map compatibleParameters = [:]){
         if(!name) throw new IllegalArgumentException('Step has no public name property!')
         Map stepConfiguration = ConfigurationLoader.stepConfiguration([commonPipelineEnvironment: commonPipelineEnvironment], name)
-        return mixin(stepConfiguration, filter)
+        return mixin(stepConfiguration, filter, step, compatibleParameters)
     }
 
-    ConfigurationHelper mixin(Map parameters, Set filter = null){
+    ConfigurationHelper mixin(Map parameters, Set filter = null, Script step = null, Map compatibleParameters = [:]){
+        if (parameters.size() > 0 && compatibleParameters.size() > 0) {
+            parameters = ConfigurationMerger.merge(handleCompatibility(step, compatibleParameters, parameters), null, parameters)
+        }
+        if (filter) {
+            filter.add('collectTelemetryData')
+        }
         config = ConfigurationMerger.merge(parameters, filter, config)
         return this
+    }
+
+    private Map handleCompatibility(Script step, Map compatibleParameters, String paramStructure = '', Map configMap ) {
+        Map newConfig = [:]
+        compatibleParameters.each {entry ->
+            if (entry.getValue() instanceof Map) {
+                paramStructure = (paramStructure ? paramStructure + '.' : '') + entry.getKey()
+                newConfig[entry.getKey()] = handleCompatibility(step, entry.getValue(), paramStructure, configMap)
+            } else {
+                def configSubMap = configMap
+                for(String key in paramStructure.tokenize('.')){
+                    configSubMap = configSubMap?.get(key)
+                }
+                if (configSubMap == null || (configSubMap != null && configSubMap[entry.getKey()] == null)) {
+                    newConfig[entry.getKey()] = configMap[entry.getValue()]
+                    def paramName = (paramStructure ? paramStructure + '.' : '') + entry.getKey()
+                    if (step && configMap[entry.getValue()] != null) {
+                        step.echo ("[INFO] The parameter '${entry.getValue()}' is COMPATIBLE to the parameter '${paramName}'")
+                    }
+                }
+            }
+        }
+        return newConfig
     }
 
     Map dependingOn(dependentKey){
@@ -74,10 +103,7 @@ class ConfigurationHelper implements Serializable {
     }
 
     def getConfigProperty(key) {
-        if (config[key] != null && config[key].class == String) {
-            return config[key].trim()
-        }
-        return config[key]
+        return getConfigPropertyNested(config, key)
     }
 
     def getConfigProperty(key, defaultValue) {
@@ -86,6 +112,27 @@ class ConfigurationHelper implements Serializable {
             return defaultValue
         }
         return value
+    }
+
+    private getConfigPropertyNested(Map config, key) {
+
+        def separator = '/'
+
+        // reason for cast to CharSequence: String#tokenize(./.) causes a deprecation warning.
+        List parts = (key in String) ? (key as CharSequence).tokenize(separator) : ([key] as List)
+
+        if(config[parts.head()] != null) {
+
+            if(config[parts.head()] in Map && ! parts.tail().isEmpty()) {
+                return getConfigPropertyNested(config[parts.head()], (parts.tail() as Iterable).join(separator))
+            }
+
+            if (config[parts.head()].class == String) {
+                return (config[parts.head()] as String).trim()
+            }
+        }
+
+        return config[parts.head()]
     }
 
     def isPropertyDefined(key){
@@ -118,8 +165,13 @@ class ConfigurationHelper implements Serializable {
         return paramValue
     }
 
-    def withMandatoryProperty(key, errorMessage = null){
-        getMandatoryProperty(key, null, errorMessage)
+    def withMandatoryProperty(key, errorMessage = null, condition = null){
+        if(condition){
+            if(condition(this.config))
+                getMandatoryProperty(key, null, errorMessage)
+        }else{
+            getMandatoryProperty(key, null, errorMessage)
+        }
         return this
     }
 }

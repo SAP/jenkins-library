@@ -39,8 +39,8 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
 
         cmUtilReceivedParams.clear()
 
-        nullScript.commonPipelineEnvironment.configuration = [steps:
-                                     [transportRequestUploadFile:
+        nullScript.commonPipelineEnvironment.configuration = [general:
+                                     [changeManagement:
                                          [
                                           credentialsId: 'CM',
                                           endpoint: 'https://example.org/cm'
@@ -116,8 +116,7 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
                                               String applicationId,
                                               String filePath,
                                               String endpoint,
-                                              String username,
-                                              String password,
+                                              String credentialsId,
                                               String cmclientOpts) {
                 throw new ChangeManagementException('Exception message')
             }
@@ -146,8 +145,7 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
                                               String applicationId,
                                               String filePath,
                                               String endpoint,
-                                              String username,
-                                              String password,
+                                              String credentialsId,
                                               String cmclientOpts) {
 
                 cmUtilReceivedParams.changeId = changeId
@@ -155,8 +153,7 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
                 cmUtilReceivedParams.applicationId = applicationId
                 cmUtilReceivedParams.filePath = filePath
                 cmUtilReceivedParams.endpoint = endpoint
-                cmUtilReceivedParams.username = username
-                cmUtilReceivedParams.password = password
+                cmUtilReceivedParams.credentialsId = credentialsId
                 cmUtilReceivedParams.cmclientOpts = cmclientOpts
             }
         }
@@ -175,10 +172,66 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
                 applicationId: 'app',
                 filePath: '/path',
                 endpoint: 'https://example.org/cm',
-                username: 'anonymous',
-                password: '********',
-                cmclientOpts: null
+                credentialsId: 'CM',
+                cmclientOpts: ''
             ]
+    }
+
+    @Test
+    public void uploadFileToTransportRequestFilePathFromParameters() {
+
+        // this one is not used when file path is provided via signature
+        nullScript.commonPipelineEnvironment.setMtarFilePath('/path2')
+
+        ChangeManagement cm = new ChangeManagement(nullScript) {
+            void uploadFileToTransportRequest(String changeId,
+                                              String transportRequestId,
+                                              String applicationId,
+                                              String filePath,
+                                              String endpoint,
+                                              String credentialsId,
+                                              String cmclientOpts) {
+
+                cmUtilReceivedParams.filePath = filePath
+            }
+        }
+
+        jsr.step.call(script: nullScript,
+                      changeDocumentId: '001',
+                      transportRequestId: '002',
+                      applicationId: 'app',
+                      filePath: '/path',
+                      cmUtils: cm)
+
+        assert cmUtilReceivedParams.filePath == '/path'
+    }
+
+    @Test
+    public void uploadFileToTransportRequestFilePathFromCommonPipelineEnvironment() {
+
+        // this one is used since there is nothing in the signature
+        nullScript.commonPipelineEnvironment.setMtarFilePath('/path2')
+
+        ChangeManagement cm = new ChangeManagement(nullScript) {
+            void uploadFileToTransportRequest(String changeId,
+                                              String transportRequestId,
+                                              String applicationId,
+                                              String filePath,
+                                              String endpoint,
+                                              String credentialsId,
+                                              String cmclientOpts) {
+
+                cmUtilReceivedParams.filePath = filePath
+            }
+        }
+
+        jsr.step.call(script: nullScript,
+                      changeDocumentId: '001',
+                      transportRequestId: '002',
+                      applicationId: 'app',
+                      cmUtils: cm)
+
+        assert cmUtilReceivedParams.filePath == '/path2'
     }
 
     @Test
@@ -193,8 +246,7 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
                                               String applicationId,
                                               String filePath,
                                               String endpoint,
-                                              String username,
-                                              String password,
+                                              String credentialsId,
                                               String cmclientOpts) {
                 throw new ChangeManagementException('Upload failure.')
             }
