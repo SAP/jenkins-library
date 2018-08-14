@@ -34,8 +34,8 @@ public class TransportRequestReleaseTest extends BasePiperTest {
     @Before
     public void setup() {
 
-        nullScript.commonPipelineEnvironment.configuration = [steps:
-                                     [transportRequestRelease:
+        nullScript.commonPipelineEnvironment.configuration = [general:
+                                     [changeManagement:
                                          [
                                           credentialsId: 'CM',
                                           endpoint: 'https://example.org/cm'
@@ -57,7 +57,7 @@ public class TransportRequestReleaseTest extends BasePiperTest {
         }
 
         thrown.expect(IllegalArgumentException)
-        thrown.expectMessage("ERROR - NO VALUE AVAILABLE FOR changeDocumentId")
+        thrown.expectMessage("Change document id not provided (parameter: 'changeDocumentId' or via commit history).")
 
         jsr.step.call(script: nullScript, transportRequestId: '001', cmUtils: cm)
     }
@@ -87,11 +87,11 @@ public class TransportRequestReleaseTest extends BasePiperTest {
         thrown.expectMessage("Something went wrong")
 
         ChangeManagement cm = new ChangeManagement(nullScript) {
+
             void releaseTransportRequest(String changeId,
                                          String transportRequestId,
                                          String endpoint,
-                                         String username,
-                                         String password,
+                                         String credentialsId,
                                          String clientOpts) {
 
                 throw new ChangeManagementException('Something went wrong')
@@ -113,15 +113,13 @@ public class TransportRequestReleaseTest extends BasePiperTest {
             void releaseTransportRequest(String changeId,
                                          String transportRequestId,
                                          String endpoint,
-                                         String username,
-                                         String password,
+                                         String credentialsId,
                                          String clientOpts) {
 
                 receivedParams.changeId = changeId
                 receivedParams.transportRequestId = transportRequestId
                 receivedParams.endpoint = endpoint
-                receivedParams.username = username
-                receivedParams.password = password
+                receivedParams.credentialsId = credentialsId
                 receivedParams.clientOpts = clientOpts
             }
         }
@@ -131,8 +129,7 @@ public class TransportRequestReleaseTest extends BasePiperTest {
         assert receivedParams == [changeId: '001',
                                   transportRequestId: '002',
                                   endpoint: 'https://example.org/cm',
-                                  username: 'anonymous',
-                                  password: '********',
-                                  clientOpts: null]
+                                  credentialsId: 'CM',
+                                  clientOpts: '']
     }
 }
