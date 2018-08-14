@@ -53,7 +53,7 @@ def call(Map parameters = [:], Closure body = null) {
             .dependingOn('buildTool').mixin('versioningTemplate')
             .use()
         
-        config.timestamp = config.timestamp ?: getTimestamp(config.timestampTemplate))
+        config.timestamp = config.timestamp ?: getTimestamp(config.timestampTemplate)
         
         new Utils().pushToSWA([step: STEP_NAME, stepParam1: config.buildTool, stepParam2: config.artifactType], config)
 
