@@ -36,19 +36,6 @@ class ConfigurationMergerTest {
     }
 
     @Test
-    void testMergeCustomPipelineValues(){
-        Map defaults = [dockerImage: 'mvn']
-        Map parameters = [goals: 'install', flags: '']
-        Set parameterKeys = ['flags']
-        Map configuration = [flags: '-B']
-        Set configurationKeys = ['flags']
-        Map pipelineDataMap = [artifactVersion: '1.2.3', flags: 'test']
-        Map merged = ConfigurationMerger.mergeWithPipelineData(parameters, parameterKeys, pipelineDataMap, configuration, configurationKeys, defaults)
-        Assert.assertEquals('', merged.flags)
-        Assert.assertEquals('1.2.3', merged.artifactVersion)
-    }
-
-    @Test
     void testMergeDeepStructure(){
         Map defaults = [fruits: [apples: 1, oranges: 10, bananas: 0]]
         Map configuration = [fruits: [bananas: 50, cucumbers: 1000]]
@@ -72,15 +59,5 @@ class ConfigurationMergerTest {
         Assert.assertEquals(50, merged.fruits.bananas)
         Assert.assertEquals(18, merged.others.apples)
         Assert.assertEquals(1000, merged.fruits.cucumbers)
-    }
-
-    @Test
-   void testReadConfigInsideMerge() {
-        DefaultValueCache.createInstance([steps:[myStep:[overwrite: 'x', defaultKey1:'defaultValue1']]])
-        def config = [commonPipelineEnvironment: [configuration: [steps:[myStep:[overwrite: 'y', key1:'value1']]]]]
-        def mergeResult = ConfigurationMerger.merge(config, "myStep", [:], (Set)[], [:], (Set)['overwrite', 'key1'])
-        Assert.assertEquals('y', mergeResult.overwrite)
-        Assert.assertEquals('defaultValue1', mergeResult.defaultKey1)
-        Assert.assertEquals('value1', mergeResult.key1)
     }
 }

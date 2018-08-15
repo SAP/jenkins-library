@@ -1,54 +1,58 @@
+import com.sap.piper.ConfigurationHelper
 import com.sap.piper.ConfigurationLoader
 import com.sap.piper.ConfigurationMerger
 import com.sap.piper.JsonUtils
+import com.sap.piper.Utils
+
+import groovy.transform.Field
+
+@Field def STEP_NAME = 'influxWriteData'
+
+@Field Set GENERAL_CONFIG_KEYS = []
+@Field Set STEP_CONFIG_KEYS = [
+    'influxServer',
+    'influxPrefix'
+]
+@Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS.plus([
+    'artifactVersion'
+])
 
 def call(Map parameters = [:]) {
-
-    def stepName = 'influxWriteData'
-
-    handlePipelineStepErrors (stepName: stepName, stepParameters: parameters, allowBuildFailure: true) {
-
+    handlePipelineStepErrors (stepName: STEP_NAME, stepParameters: parameters, allowBuildFailure: true) {
         def script = parameters.script
         if (script == null)
-            script = [commonPipelineEnvironment: commonPipelineEnvironment]
+             script = [commonPipelineEnvironment: commonPipelineEnvironment]
 
-        prepareDefaultValues script: script
+        // load default & individual configuration
+        Map configuration = ConfigurationHelper
+            .loadStepDefaults(this)
+            .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS)
+            .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS)
+            .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName?:env.STAGE_NAME, STEP_CONFIG_KEYS)
+            .mixin([
+                artifactVersion: commonPipelineEnvironment.getArtifactVersion()
+            ])
+            .mixin(parameters, PARAMETER_KEYS)
+            .use()
 
-        Set parameterKeys = [
-            'artifactVersion',
-            'influxServer',
-            'influxPrefix'
-        ]
-        Map pipelineDataMap = [
-            artifactVersion: commonPipelineEnvironment.getArtifactVersion()
-        ]
-        Set stepConfigurationKeys = [
-            'influxServer',
-            'influxPrefix'
-        ]
+        new Utils().pushToSWA([step: STEP_NAME], configuration)
 
-        Map configuration = ConfigurationMerger.merge(script, stepName, parameters, parameterKeys, pipelineDataMap, stepConfigurationKeys)
-
-        def artifactVersion = configuration.artifactVersion
-        if (!artifactVersion)  {
+        if (!configuration.artifactVersion)  {
             //this takes care that terminated builds due to milestone-locking do not cause an error
-            echo "[${stepName}] no artifact version available -> exiting writeInflux without writing data"
+            echo "[${STEP_NAME}] no artifact version available -> exiting writeInflux without writing data"
             return
         }
 
-        def influxServer = configuration.influxServer
-        def influxPrefix = configuration.influxPrefix
-
-        echo """[${stepName}]----------------------------------------------------------
-Artifact version: ${artifactVersion}
-Influx server: ${influxServer}
-Influx prefix: ${influxPrefix}
+        echo """[${STEP_NAME}]----------------------------------------------------------
+Artifact version: ${configuration.artifactVersion}
+Influx server: ${configuration.influxServer}
+Influx prefix: ${configuration.influxPrefix}
 InfluxDB data: ${script.commonPipelineEnvironment.getInfluxCustomData()}
 InfluxDB data map: ${script.commonPipelineEnvironment.getInfluxCustomDataMap()}
-[${stepName}]----------------------------------------------------------"""
+[${STEP_NAME}]----------------------------------------------------------"""
 
-        if (influxServer)
-            step([$class: 'InfluxDbPublisher', selectedTarget: influxServer, customPrefix: influxPrefix, customData: script.commonPipelineEnvironment.getInfluxCustomData(), customDataMap: script.commonPipelineEnvironment.getInfluxCustomDataMap()])
+        if (configuration.influxServer)
+            step([$class: 'InfluxDbPublisher', selectedTarget: configuration.influxServer, customPrefix: configuration.influxPrefix, customData: script.commonPipelineEnvironment.getInfluxCustomData(), customDataMap: script.commonPipelineEnvironment.getInfluxCustomDataMap()])
 
         //write results into json file for archiving - also benefitial when no InfluxDB is available yet
         def jsonUtils = new JsonUtils()
