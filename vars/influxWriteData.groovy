@@ -31,32 +31,22 @@ def call(Map parameters = [:]) {
             .mixin(parameters, PARAMETER_KEYS)
             .use()
 
-        Map pipelineDataMap = [
-            artifactVersion: commonPipelineEnvironment.getArtifactVersion()
-        ]
-
-        Map configuration = ConfigurationMerger.merge(script, STEP_NAME, parameters, parameterKeys, pipelineDataMap, stepConfigurationKeys)
-
-        def artifactVersion = configuration.artifactVersion
-        if (!artifactVersion)  {
+        if (!configuration.artifactVersion)  {
             //this takes care that terminated builds due to milestone-locking do not cause an error
             echo "[${STEP_NAME}] no artifact version available -> exiting writeInflux without writing data"
             return
         }
 
-        def influxServer = configuration.influxServer
-        def influxPrefix = configuration.influxPrefix
-
         echo """[${STEP_NAME}]----------------------------------------------------------
-Artifact version: ${artifactVersion}
-Influx server: ${influxServer}
-Influx prefix: ${influxPrefix}
+Artifact version: ${configuration.artifactVersion}
+Influx server: ${configuration.influxServer}
+Influx prefix: ${configuration.influxPrefix}
 InfluxDB data: ${script.commonPipelineEnvironment.getInfluxCustomData()}
 InfluxDB data map: ${script.commonPipelineEnvironment.getInfluxCustomDataMap()}
 [${STEP_NAME}]----------------------------------------------------------"""
 
-        if (influxServer)
-            step([$class: 'InfluxDbPublisher', selectedTarget: influxServer, customPrefix: influxPrefix, customData: script.commonPipelineEnvironment.getInfluxCustomData(), customDataMap: script.commonPipelineEnvironment.getInfluxCustomDataMap()])
+        if (configuration.influxServer)
+            step([$class: 'InfluxDbPublisher', selectedTarget: configuration.influxServer, customPrefix: configuration.influxPrefix, customData: script.commonPipelineEnvironment.getInfluxCustomData(), customDataMap: script.commonPipelineEnvironment.getInfluxCustomDataMap()])
 
         //write results into json file for archiving - also benefitial when no InfluxDB is available yet
         def jsonUtils = new JsonUtils()
