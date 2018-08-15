@@ -46,6 +46,9 @@ class ConfigurationHelper implements Serializable {
         if (parameters.size() > 0 && compatibleParameters.size() > 0) {
             parameters = ConfigurationMerger.merge(handleCompatibility(step, compatibleParameters, parameters), null, parameters)
         }
+        if (filter) {
+            filter.add('collectTelemetryData')
+        }
         config = ConfigurationMerger.merge(parameters, filter, config)
         return this
     }

@@ -2,12 +2,12 @@ import com.sap.piper.ConfigurationHelper
 import com.sap.piper.Utils
 import groovy.transform.Field
 
-@Field String STEP_NAME = 'setupPipelineEnvironment'
+@Field String STEP_NAME = 'setupCommonPipelineEnvironment'
 @Field Set GENERAL_CONFIG_KEYS = ['collectTelemetryData']
 
 def call(Map parameters = [:]) {
 
-    handlePipelineStepErrors (stepName: 'setupCommonPipelineEnvironment', stepParameters: parameters) {
+    handlePipelineStepErrors (stepName: STEP_NAME, stepParameters: parameters) {
 
         def script = parameters.script
 
@@ -22,7 +22,7 @@ def call(Map parameters = [:]) {
             .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS)
             .use()
 
-        new Utils().pushToSWA([step: STEP_NAME], config)
+        new Utils().pushToSWA([step: STEP_NAME, stepParam4: parameters.customDefaults?'true':'false'], config)
     }
 }
 

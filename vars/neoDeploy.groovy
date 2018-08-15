@@ -1,94 +1,85 @@
+import com.sap.piper.ConfigurationHelper
 import com.sap.piper.Utils
 
-import com.sap.piper.ConfigurationLoader
-import com.sap.piper.ConfigurationMerger
-import com.sap.piper.ConfigurationType
 import com.sap.piper.tools.ToolDescriptor
 
+import groovy.transform.Field
+
+@Field String STEP_NAME = 'neoDeploy'
+@Field Set GENERAL_CONFIG_KEYS = []
+@Field Set STEP_CONFIG_KEYS = [
+    'account',
+    'dockerEnvVars',
+    'dockerImage',
+    'dockerOptions',
+    'host',
+    'neoCredentialsId',
+    'neoHome'
+]
+@Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS.plus([
+    'applicationName',
+    'archivePath',
+    'deployAccount', //deprecated, replaced by parameter 'account'
+    'deployHost', //deprecated, replaced by parameter 'host'
+    'deployMode',
+    'propertiesFile',
+    'runtime',
+    'runtimeVersion',
+    'vmSize',
+    'warAction'
+])
 
 def call(parameters = [:]) {
-
-    def stepName = 'neoDeploy'
-
-    Set parameterKeys = [
-        'applicationName',
-        'archivePath',
-        'account',
-        'deployAccount', //deprecated, replaced by parameter 'account'
-        'deployHost', //deprecated, replaced by parameter 'host'
-        'deployMode',
-        'dockerEnvVars',
-        'dockerImage',
-        'dockerOptions',
-        'host',
-        'neoCredentialsId',
-        'neoHome',
-        'propertiesFile',
-        'runtime',
-        'runtimeVersion',
-        'vmSize',
-        'warAction'
-        ]
-
-    Set stepConfigurationKeys = [
-        'account',
-        'dockerEnvVars',
-        'dockerImage',
-        'dockerOptions',
-        'host',
-        'neoCredentialsId',
-        'neoHome'
-        ]
-
-    handlePipelineStepErrors (stepName: stepName, stepParameters: parameters) {
+    handlePipelineStepErrors (stepName: STEP_NAME, stepParameters: parameters) {
 
         def script = parameters?.script ?: [commonPipelineEnvironment: commonPipelineEnvironment]
-
         def utils = new Utils()
 
         prepareDefaultValues script: script
 
-        final Map stepConfiguration = [:]
+        final Map stepCompatibilityConfiguration = [:]
 
         // Backward compatibility: ensure old configuration is taken into account
         // The old configuration in not stage / step specific
 
         def defaultDeployHost = script.commonPipelineEnvironment.getConfigProperty('DEPLOY_HOST')
         if(defaultDeployHost) {
-            echo "[WARNING][${stepName}] A deprecated configuration framework is used for configuring parameter 'DEPLOY_HOST'. This configuration framework will be removed in future versions."
-            stepConfiguration.put('host', defaultDeployHost)
+            echo "[WARNING][${STEP_NAME}] A deprecated configuration framework is used for configuring parameter 'DEPLOY_HOST'. This configuration framework will be removed in future versions."
+            stepCompatibilityConfiguration.put('host', defaultDeployHost)
         }
 
         def defaultDeployAccount = script.commonPipelineEnvironment.getConfigProperty('CI_DEPLOY_ACCOUNT')
         if(defaultDeployAccount) {
-            echo "[WARNING][${stepName}] A deprecated configuration framework is used for configuring parameter 'DEPLOY_ACCOUNT'. This configuration framekwork will be removed in future versions."
-            stepConfiguration.put('account', defaultDeployAccount)
+            echo "[WARNING][${STEP_NAME}] A deprecated configuration framework is used for configuring parameter 'DEPLOY_ACCOUNT'. This configuration framekwork will be removed in future versions."
+            stepCompatibilityConfiguration.put('account', defaultDeployAccount)
         }
 
         if(parameters.deployHost && !parameters.host) {
-            echo "[WARNING][${stepName}] Deprecated parameter 'deployHost' is used. This will not work anymore in future versions. Use parameter 'host' instead."
+            echo "[WARNING][${STEP_NAME}] Deprecated parameter 'deployHost' is used. This will not work anymore in future versions. Use parameter 'host' instead."
             parameters.put('host', parameters.deployHost)
         }
 
         if(parameters.deployAccount && !parameters.account) {
-            echo "[WARNING][${stepName}] Deprecated parameter 'deployAccount' is used. This will not work anymore in future versions. Use parameter 'account' instead."
+            echo "[WARNING][${STEP_NAME}] Deprecated parameter 'deployAccount' is used. This will not work anymore in future versions. Use parameter 'account' instead."
             parameters.put('account', parameters.deployAccount)
         }
 
         def credId = script.commonPipelineEnvironment.getConfigProperty('neoCredentialsId')
-
         if(credId && !parameters.neoCredentialsId) {
-            echo "[WARNING][${stepName}] Deprecated parameter 'neoCredentialsId' from old configuration framework is used. This will not work anymore in future versions."
+            echo "[WARNING][${STEP_NAME}] Deprecated parameter 'neoCredentialsId' from old configuration framework is used. This will not work anymore in future versions."
             parameters.put('neoCredentialsId', credId)
         }
-
         // Backward compatibility end
-
-        stepConfiguration.putAll(ConfigurationLoader.stepConfiguration(script, stepName))
-
-        Map configuration = ConfigurationMerger.merge(parameters, parameterKeys,
-                                                      stepConfiguration, stepConfigurationKeys,
-                                                      ConfigurationLoader.defaultStepConfiguration(script, stepName))
+        
+        // load default & individual configuration
+        Map configuration = ConfigurationHelper
+            .loadStepDefaults(this)
+            .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS)
+            .mixin(stepCompatibilityConfiguration)
+            .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS)
+            .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName?:env.STAGE_NAME, STEP_CONFIG_KEYS)
+            .mixin(parameters, PARAMETER_KEYS)
+            .use()
 
         def archivePath = configuration.archivePath
         if(archivePath?.trim()) {
