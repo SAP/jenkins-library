@@ -36,19 +36,6 @@ class ConfigurationMergerTest {
     }
 
     @Test
-    void testMergeCustomPipelineValues(){
-        Map defaults = [dockerImage: 'mvn']
-        Map parameters = [goals: 'install', flags: '']
-        Set parameterKeys = ['flags']
-        Map configuration = [flags: '-B']
-        Set configurationKeys = ['flags']
-        Map pipelineDataMap = [artifactVersion: '1.2.3', flags: 'test']
-        Map merged = ConfigurationMerger.mergeWithPipelineData(parameters, parameterKeys, pipelineDataMap, configuration, configurationKeys, defaults)
-        Assert.assertEquals('', merged.flags)
-        Assert.assertEquals('1.2.3', merged.artifactVersion)
-    }
-
-    @Test
     void testMergeDeepStructure(){
         Map defaults = [fruits: [apples: 1, oranges: 10, bananas: 0]]
         Map configuration = [fruits: [bananas: 50, cucumbers: 1000]]
