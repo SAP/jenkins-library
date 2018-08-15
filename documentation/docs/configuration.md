@@ -32,7 +32,7 @@ Following data (non-personal) is collected for example:
 **We store the telemetry data for not longer than 6 months on premises of SAP SE.**
 
 !!! note "Disable collection of telemetry data"
-    If you do not want to send telemetry data which helps this open source project to improve you can easily deactivate this.
+    If you do not want to send telemetry data you can easily deactivate this.
 
     This is done with either of the following two ways:
 

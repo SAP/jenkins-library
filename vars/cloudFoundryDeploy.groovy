@@ -46,6 +46,8 @@ def call(Map parameters = [:]) {
             .withMandatoryProperty('cloudFoundry/credentialsId')
             .use()
 
+        utils.pushToSWA([step: STEP_NAME, stepParam1: config.deployTool, stepParam2: config.deployType], config)
+
         echo "[${STEP_NAME}] General parameters: deployTool=${config.deployTool}, deployType=${config.deployType}, cfApiEndpoint=${config.cloudFoundry.apiEndpoint}, cfOrg=${config.cloudFoundry.org}, cfSpace=${config.cloudFoundry.space}, cfCredentialsId=${config.cloudFoundry.credentialsId}, deployUser=${config.deployUser}"
 
         utils.unstash 'deployDescriptor'
