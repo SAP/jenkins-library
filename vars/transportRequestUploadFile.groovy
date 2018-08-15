@@ -13,16 +13,17 @@ import hudson.AbortException
 @Field def STEP_NAME = 'transportRequestUploadFile'
 
 @Field Set generalConfigurationKeys = [
-    'changeManagement',
+    'changeManagement'
   ]
 
-@Field Set parameterKeys = generalConfigurationKeys.plus([
-    'applicationId',
+  @Field Set stepConfigurationKeys = generalConfigurationKeys.plus([
+      'applicationId'
+    ])
+
+@Field Set parameterKeys = stepConfigurationKeys.plus([
     'changeDocumentId',
     'filePath',
     'transportRequestId'])
-
-@Field Set stepConfigurationKeys = generalConfigurationKeys
 
 def call(parameters = [:]) {
 
@@ -32,22 +33,22 @@ def call(parameters = [:]) {
 
         ChangeManagement cm = parameters.cmUtils ?: new ChangeManagement(script)
 
-        ConfigurationHelper configHelper =
-            ConfigurationHelper.loadStepDefaults(this)
-                               .mixinGeneralConfig(script.commonPipelineEnvironment, generalConfigurationKeys)
-                               .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName?:env.STAGE_NAME, stepConfigurationKeys)
-                               .mixinStepConfig(script.commonPipelineEnvironment, stepConfigurationKeys)
-                               .mixin(parameters, parameterKeys)
-                               .addIfEmpty('filePath', script.commonPipelineEnvironment.getMtarFilePath())
-                               .withMandatoryProperty('applicationId')
-                               .withMandatoryProperty('changeManagement/changeDocumentLabel')
-                               .withMandatoryProperty('changeManagement/clientOpts')
-                               .withMandatoryProperty('changeManagement/credentialsId')
-                               .withMandatoryProperty('changeManagement/endpoint')
-                               .withMandatoryProperty('changeManagement/git/from')
-                               .withMandatoryProperty('changeManagement/git/to')
-                               .withMandatoryProperty('changeManagement/git/format')
-                               .withMandatoryProperty('filePath')
+        ConfigurationHelper configHelper = ConfigurationHelper
+            .loadStepDefaults(this)
+            .mixinGeneralConfig(script.commonPipelineEnvironment, generalConfigurationKeys)
+            .mixinStepConfig(script.commonPipelineEnvironment, stepConfigurationKeys)
+            .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName?:env.STAGE_NAME, stepConfigurationKeys)
+            .mixin(parameters, parameterKeys)
+            .addIfEmpty('filePath', script.commonPipelineEnvironment.getMtarFilePath())
+            .withMandatoryProperty('applicationId')
+            .withMandatoryProperty('changeManagement/changeDocumentLabel')
+            .withMandatoryProperty('changeManagement/clientOpts')
+            .withMandatoryProperty('changeManagement/credentialsId')
+            .withMandatoryProperty('changeManagement/endpoint')
+            .withMandatoryProperty('changeManagement/git/from')
+            .withMandatoryProperty('changeManagement/git/to')
+            .withMandatoryProperty('changeManagement/git/format')
+            .withMandatoryProperty('filePath')
 
         Map configuration = configHelper.use()
 
