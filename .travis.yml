@@ -6,7 +6,7 @@ sudo: false
 install:
 - pip install --user mkdocs==0.17.5 mkdocs-material==2.9.4
 script:
-- mvn clean verify --batch-mode
+- mvn clean test --batch-mode
 - |
   if [[ "${TRAVIS_PULL_REQUEST}" != "false" ]]
   then
