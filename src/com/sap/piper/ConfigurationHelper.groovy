@@ -1,7 +1,7 @@
 package com.sap.piper
 
 class ConfigurationHelper implements Serializable {
-    static def loadStepDefaults(Script step){
+    static ConfigurationHelper loadStepDefaults(Script step){
         return new ConfigurationHelper(step)
             .initDefaults(step)
             .loadDefaults()
