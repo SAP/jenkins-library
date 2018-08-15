@@ -178,6 +178,36 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
     }
 
     @Test
+    public void uploadFileToTransportRequestSuccessApplicationIdFromConfigurationTest() {
+
+        nullScript.commonPipelineEnvironment.configuration.put(['steps',
+                                                                   [transportRequestUploadFile:
+                                                                       [applicationId: 'AppIdfromConfig']]])
+
+        ChangeManagement cm = new ChangeManagement(nullScript) {
+            void uploadFileToTransportRequest(String changeId,
+                                              String transportRequestId,
+                                              String applicationId,
+                                              String filePath,
+                                              String endpoint,
+                                              String credentialsId,
+                                              String cmclientOpts) {
+
+                cmUtilReceivedParams.applicationId = applicationId
+            }
+        }
+
+        jsr.step.transportRequestUploadFile(
+                      script: nullScript,
+                      changeDocumentId: '001',
+                      transportRequestId: '002',
+                      filePath: '/path',
+                      cmUtils: cm)
+
+        assert cmUtilReceivedParams.applicationId == 'AppIdfromConfig'
+    }
+
+    @Test
     public void uploadFileToTransportRequestFilePathFromParameters() {
 
         // this one is not used when file path is provided via signature

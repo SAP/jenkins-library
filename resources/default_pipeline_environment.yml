@@ -111,7 +111,9 @@ steps:
     mtaPath: ''
     smokeTestScript: 'blueGreenCheckScript.sh'
     smokeTestStatusCode: 200
-    stashContent: []
+    stashContent:
+      - 'deployDescriptor'
+      - 'pipelineConfigAndTests'
     cf_native:
       dockerImage: 's4sdk/docker-cf-cli'
       dockerWorkspace: '/home/piper'
