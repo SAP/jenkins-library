@@ -10,14 +10,8 @@ def call(Map parameters = [:]) {
 
     handlePipelineStepErrors (stepName: STEP_NAME, stepParameters: parameters, stepNameDoc: 'stashFiles') {
 
-        def utils = parameters.juStabUtils
-        if (utils == null) {
-            utils = new Utils()
-        }
-
-        def script = parameters.script
-        if (script == null)
-            script = [commonPipelineEnvironment: commonPipelineEnvironment]
+        def utils = parameters?.juStabUtils ?: new Utils()
+        def script = parameters?.script ?: [commonPipelineEnvironment: commonPipelineEnvironment]
 
         //additional includes via passing e.g. stashIncludes: [opa5: '**/*.include']
         //additional excludes via passing e.g. stashExcludes: [opa5: '**/*.exclude']

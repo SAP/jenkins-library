@@ -29,16 +29,13 @@ def call(Map parameters = [:], Closure body = null) {
 
     handlePipelineStepErrors (stepName: STEP_NAME, stepParameters: parameters) {
 
-        def gitUtils = parameters.juStabGitUtils ?: new GitUtils()
+        def gitUtils = parameters?.juStabGitUtils ?: new GitUtils()
+        def script = parameters?.script ?: [commonPipelineEnvironment: commonPipelineEnvironment]
 
         if (fileExists('.git')) {
             if (sh(returnStatus: true, script: 'git diff --quiet HEAD') != 0)
                 error "[${STEP_NAME}] Files in the workspace have been changed previously - aborting ${STEP_NAME}"
         }
-
-        def script = parameters.script
-        if (script == null)
-            script = this
 
         // load default & individual configuration
         Map config = ConfigurationHelper

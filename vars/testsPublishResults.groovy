@@ -22,9 +22,8 @@ import groovy.transform.Field
  */
 def call(Map parameters = [:]) {
     handlePipelineStepErrors (stepName: STEP_NAME, stepParameters: parameters) {
-        def script = parameters.script
-        if (script == null)
-            script = [commonPipelineEnvironment: commonPipelineEnvironment]
+
+        def script = parameters?.script ?: [commonPipelineEnvironment: commonPipelineEnvironment]
         prepare(parameters)
 
         // load default & individual configuration

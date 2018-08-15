@@ -32,8 +32,8 @@ import groovy.transform.Field
 def call(parameters = [:]) {
     handlePipelineStepErrors (stepName: STEP_NAME, stepParameters: parameters) {
 
-        def script = parameters?.script ?: [commonPipelineEnvironment: commonPipelineEnvironment]
         def utils = new Utils()
+        def script = parameters?.script ?: [commonPipelineEnvironment: commonPipelineEnvironment]
 
         prepareDefaultValues script: script
 
@@ -70,7 +70,7 @@ def call(parameters = [:]) {
             parameters.put('neoCredentialsId', credId)
         }
         // Backward compatibility end
-        
+
         // load default & individual configuration
         Map configuration = ConfigurationHelper
             .loadStepDefaults(this)
