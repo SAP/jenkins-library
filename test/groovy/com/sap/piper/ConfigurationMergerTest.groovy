@@ -60,14 +60,4 @@ class ConfigurationMergerTest {
         Assert.assertEquals(18, merged.others.apples)
         Assert.assertEquals(1000, merged.fruits.cucumbers)
     }
-
-    @Test
-   void testReadConfigInsideMerge() {
-        DefaultValueCache.createInstance([steps:[myStep:[overwrite: 'x', defaultKey1:'defaultValue1']]])
-        def config = [commonPipelineEnvironment: [configuration: [steps:[myStep:[overwrite: 'y', key1:'value1']]]]]
-        def mergeResult = ConfigurationMerger.merge(config, "myStep", [:], (Set)[], [:], (Set)['overwrite', 'key1'])
-        Assert.assertEquals('y', mergeResult.overwrite)
-        Assert.assertEquals('defaultValue1', mergeResult.defaultKey1)
-        Assert.assertEquals('value1', mergeResult.key1)
-    }
 }
