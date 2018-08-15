@@ -1,6 +1,7 @@
 import com.sap.piper.ConfigurationLoader
 import com.sap.piper.ConfigurationMerger
 import com.sap.piper.JsonUtils
+import com.sap.piper.Utils
 
 import groovy.transform.Field
 
@@ -30,6 +31,8 @@ def call(Map parameters = [:]) {
             ])
             .mixin(parameters, PARAMETER_KEYS)
             .use()
+
+        new Utils().pushToSWA([step: STEP_NAME], config)
 
         if (!configuration.artifactVersion)  {
             //this takes care that terminated builds due to milestone-locking do not cause an error
