@@ -7,7 +7,6 @@ import groovy.transform.Field
 import groovy.text.SimpleTemplateEngine
 
 @Field String STEP_NAME = 'artifactSetVersion'
-@Field Set GENERAL_CONFIG_KEYS = ['collectTelemetryData']
 @Field Map CONFIG_KEY_COMPATIBILITY = [gitSshKeyCredentialsId: 'gitCredentialsId']
 @Field Set STEP_CONFIG_KEYS = [
     'artifactType',
@@ -60,7 +59,7 @@ def call(Map parameters = [:], Closure body = null) {
             .withMandatoryProperty('gitSshUrl')
             .use()
 
-        new Utils().pushToSWA([step: STEP_NAME, stepParam1: config.buildTool], config)
+        new Utils().pushToSWA([step: STEP_NAME, stepParam1: config.buildTool, stepParam2: config.artifactType], config)
 
         def artifactVersioning = ArtifactVersioning.getArtifactVersioning(config.buildTool, script, config)
         def currentVersion = artifactVersioning.getVersion()

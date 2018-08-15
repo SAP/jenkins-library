@@ -259,7 +259,7 @@ class ConfigurationHelperTest {
     public void testWithMandoryWithTrueConditionMissingValue() {
         thrown.expect(IllegalArgumentException)
         thrown.expectMessage('ERROR - NO VALUE AVAILABLE FOR missingKey')
-        
+
         new ConfigurationHelper([verify: true])
             .withMandatoryProperty('missingKey', null, { c -> return c.get('verify') })
     }
@@ -268,5 +268,15 @@ class ConfigurationHelperTest {
     public void testWithMandoryWithTrueConditionExistingValue() {
         new ConfigurationHelper([existingKey: 'anyValue', verify: true])
             .withMandatoryProperty('existingKey', null, { c -> return c.get('verify') })
+    }
+
+    @Test
+    public void testTelemetryConfigurationAvailable() {
+        Set filter = ['test']
+        def configuration = new ConfigurationHelper([test: 'testValue'])
+            .mixin([collectTelemetryData: false], filter)
+            .use()
+
+        Assert.assertThat(configuration, hasEntry('collectTelemetryData', false))
     }
 }
