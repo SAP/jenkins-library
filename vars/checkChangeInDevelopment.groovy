@@ -30,21 +30,21 @@ def call(parameters = [:]) {
         ChangeManagement cm = parameters?.cmUtils ?: new ChangeManagement(script, gitUtils)
 
         ConfigurationHelper configHelper = ConfigurationHelper
-                                           .loadStepDefaults(this)
-                                           .mixinGeneralConfig(script.commonPipelineEnvironment, generalConfigurationKeys)
-                                           .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName?:env.STAGE_NAME, stepConfigurationKeys)
-                                           .mixinStepConfig(script.commonPipelineEnvironment, stepConfigurationKeys)
-                                           .mixin(parameters, parameterKeys)
-                                            // for the following parameters we expect defaults
-                                           .withMandatoryProperty('changeManagement/changeDocumentLabel')
-                                           .withMandatoryProperty('changeManagement/clientOpts')
-                                           .withMandatoryProperty('changeManagement/credentialsId')
-                                           .withMandatoryProperty('changeManagement/git/from')
-                                           .withMandatoryProperty('changeManagement/git/to')
-                                           .withMandatoryProperty('changeManagement/git/format')
-                                           .withMandatoryProperty('failIfStatusIsNotInDevelopment')
-                                           // for the following parameters we expect a value provided from outside
-                                           .withMandatoryProperty('changeManagement/endpoint')
+            .loadStepDefaults(this)
+            .mixinGeneralConfig(script.commonPipelineEnvironment, generalConfigurationKeys)
+            .mixinStepConfig(script.commonPipelineEnvironment, stepConfigurationKeys)
+            .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName?:env.STAGE_NAME, stepConfigurationKeys)
+            .mixin(parameters, parameterKeys)
+            // for the following parameters we expect defaults
+            .withMandatoryProperty('changeManagement/changeDocumentLabel')
+            .withMandatoryProperty('changeManagement/clientOpts')
+            .withMandatoryProperty('changeManagement/credentialsId')
+            .withMandatoryProperty('changeManagement/git/from')
+            .withMandatoryProperty('changeManagement/git/to')
+            .withMandatoryProperty('changeManagement/git/format')
+            .withMandatoryProperty('failIfStatusIsNotInDevelopment')
+            // for the following parameters we expect a value provided from outside
+            .withMandatoryProperty('changeManagement/endpoint')
 
 
         Map configuration = configHelper.use()
