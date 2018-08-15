@@ -97,9 +97,8 @@ def call(Map parameters = [:], Closure body = null) {
                     error "[${STEP_NAME}]git commit failed: ${e}"
                 }
                 sh """#!/bin/bash
-                      git remote set-url origin ${config.gitSshUrl}
                       git tag ${config.tagPrefix}${newVersion}
-                      git push origin ${config.tagPrefix}${newVersion}"""
+                      git push ${config.gitSshUrl} ${config.tagPrefix}${newVersion}"""
 
                 config.gitCommitId = gitUtils.getGitCommitIdOrNull()
             }
