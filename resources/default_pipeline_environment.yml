@@ -42,6 +42,17 @@ steps:
     sbt:
       filePath: 'sbtDescriptor.json'
       versioningTemplate: '${version}-${timestamp}${commitId?"+"+commitId:""}'
+  batsExecuteTests:
+    dockerImage: 'node:8-stretch'
+    dockerWorkspace: '/home/node'
+    envVars: {}
+    outputFormat: 'junit' # tap, junit
+    testPath: 'src/test'
+    failOnError: false
+    repository: 'https://github.com/bats-core/bats-core.git'
+    stashContent:
+      - 'tests'
+    testPackage: 'piper-bats'
   checksPublishResults:
     aggregation:
       active: true

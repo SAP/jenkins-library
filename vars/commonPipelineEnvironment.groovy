@@ -96,6 +96,14 @@ class commonPipelineEnvironment implements Serializable {
         return influxCustomDataMap
     }
 
+    def setInfluxStepData (dataKey, value) {
+        influxCustomDataMap.step_data[dataKey] = value
+    }
+    def getInfluxStepData (dataKey) {
+        return influxCustomDataMap.step_data[dataKey]
+    }
+
+
     def getMtarFilePath() {
         return mtarFilePath
     }
