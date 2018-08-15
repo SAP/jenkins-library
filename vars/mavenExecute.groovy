@@ -1,35 +1,40 @@
-import com.sap.piper.ConfigurationMerger
+import com.sap.piper.ConfigurationHelper
+import com.sap.piper.Utils
+
+import groovy.transform.Field
+
+@Field def STEP_NAME = 'mavenExecute'
+
+@Field Set GENERAL_CONFIG_KEYS = []
+@Field Set STEP_CONFIG_KEYS = [
+    'dockerImage',
+    'globalSettingsFile',
+    'projectSettingsFile',
+    'pomPath',
+    'm2Path'
+]
+@Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS.plus([
+    'dockerOptions',
+    'flags',
+    'goals',
+    'defines',
+    'logSuccessfulMavenTransfers'
+])
 
 def call(Map parameters = [:]) {
-
-    handlePipelineStepErrors(stepName: 'mavenExecute', stepParameters: parameters) {
+    handlePipelineStepErrors(stepName: STEP_NAME, stepParameters: parameters) {
         final script = parameters.script
 
-        prepareDefaultValues script: script
+        // load default & individual configuration
+        Map configuration = ConfigurationHelper
+            .loadStepDefaults(this)
+            .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS)
+            .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS)
+            .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName?:env.STAGE_NAME, STEP_CONFIG_KEYS)
+            .mixin(parameters, PARAMETER_KEYS)
+            .use()
 
-        Set parameterKeys = [
-            'dockerImage',
-            'dockerOptions',
-            'globalSettingsFile',
-            'projectSettingsFile',
-            'pomPath',
-            'flags',
-            'goals',
-            'm2Path',
-            'defines',
-            'logSuccessfulMavenTransfers'
-        ]
-        Set stepConfigurationKeys = [
-            'dockerImage',
-            'globalSettingsFile',
-            'projectSettingsFile',
-            'pomPath',
-            'm2Path'
-        ]
-
-        Map configuration = ConfigurationMerger.merge(script, 'mavenExecute',
-                                                      parameters, parameterKeys,
-                                                      stepConfigurationKeys)
+        new Utils().pushToSWA([step: STEP_NAME], configuration)
 
         String command = "mvn"
 
@@ -95,6 +100,5 @@ def call(Map parameters = [:]) {
 private downloadSettingsFromUrl(String url){
     def settings = httpRequest url
     writeFile file: 'settings.xml', text: settings.getContent()
-
 }
 

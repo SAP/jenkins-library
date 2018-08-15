@@ -1,37 +1,36 @@
-import com.sap.piper.ConfigurationMerger
+import com.sap.piper.ConfigurationHelper
 import com.sap.piper.MtaUtils
+import com.sap.piper.Utils
 import com.sap.piper.tools.JavaArchiveDescriptor
 import com.sap.piper.tools.ToolDescriptor
 
+import groovy.transform.Field
+
+@Field def STEP_NAME = 'mtaBuild'
+
+@Field Set GENERAL_CONFIG_KEYS = []
+@Field Set STEP_CONFIG_KEYS = [
+    'applicationName',
+    'buildTarget',
+    'extension',
+    'mtaJarLocation'
+]
+@Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
 
 def call(Map parameters = [:]) {
-
-    def stepName = 'mtaBuild'
-
-    Set parameterKeys = [
-        'applicationName',
-        'buildTarget',
-        'extension',
-        'mtaJarLocation'
-    ]
-
-    Set stepConfigurationKeys = [
-        'applicationName',
-        'buildTarget',
-        'extension',
-        'mtaJarLocation'
-    ]
-
-    handlePipelineStepErrors (stepName: stepName, stepParameters: parameters) {
-
+    handlePipelineStepErrors (stepName: STEP_NAME, stepParameters: parameters) {
         final script = parameters?.script ?: [commonPipelineEnvironment: commonPipelineEnvironment]
 
-        prepareDefaultValues script: script
+        // load default & individual configuration
+        Map configuration = ConfigurationHelper
+            .loadStepDefaults(this)
+            .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS)
+            .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS)
+            .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName?:env.STAGE_NAME, STEP_CONFIG_KEYS)
+            .mixin(parameters, PARAMETER_KEYS)
+            .use()
 
-        final Map configuration = ConfigurationMerger.merge(
-                                      script, stepName,
-                                      parameters, parameterKeys,
-                                      stepConfigurationKeys)
+        new Utils().pushToSWA([step: STEP_NAME], configuration)
 
         def java = new ToolDescriptor('Java', 'JAVA_HOME', '', '/bin/', 'java', '1.8.0', '-version 2>&1')
         java.verify(this, configuration)
