@@ -41,7 +41,7 @@ def call(Map parameters = [:], Closure body = null) {
             script = this
 
         // load default & individual configuration
-        Map config = ConfigurationHelper
+        ConfigurationHelper configHelper = ConfigurationHelper
             .loadStepDefaults(this)
             .mixinGeneralConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS, this, CONFIG_KEY_COMPATIBILITY)
             .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS, this, CONFIG_KEY_COMPATIBILITY)
@@ -51,10 +51,12 @@ def call(Map parameters = [:], Closure body = null) {
             .withMandatoryProperty('buildTool')
             .dependingOn('buildTool').mixin('filePath')
             .dependingOn('buildTool').mixin('versioningTemplate')
-            .use()
-        
-        config.timestamp = config.timestamp ?: getTimestamp(config.timestampTemplate)
-        
+
+        Map config = configHelper.use()
+
+        config = configHelper.addIfEmpty('timestamp', getTimestamp(config.timestampTemplate))
+                             .use()
+
         new Utils().pushToSWA([step: STEP_NAME, stepParam1: config.buildTool, stepParam2: config.artifactType], config)
 
         def artifactVersioning = ArtifactVersioning.getArtifactVersioning(config.buildTool, script, config)
