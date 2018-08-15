@@ -32,7 +32,7 @@ def call(Map parameters = [:]) {
             .mixin(parameters, PARAMETER_KEYS)
             .use()
 
-        new Utils().pushToSWA([step: STEP_NAME], config)
+        new Utils().pushToSWA([step: STEP_NAME], configuration)
 
         if (!configuration.artifactVersion)  {
             //this takes care that terminated builds due to milestone-locking do not cause an error
