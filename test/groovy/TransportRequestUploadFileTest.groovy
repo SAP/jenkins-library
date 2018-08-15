@@ -116,8 +116,7 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
                                               String applicationId,
                                               String filePath,
                                               String endpoint,
-                                              String username,
-                                              String password,
+                                              String credentialsId,
                                               String cmclientOpts) {
                 throw new ChangeManagementException('Exception message')
             }
@@ -146,8 +145,7 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
                                               String applicationId,
                                               String filePath,
                                               String endpoint,
-                                              String username,
-                                              String password,
+                                              String credentialsId,
                                               String cmclientOpts) {
 
                 cmUtilReceivedParams.changeId = changeId
@@ -155,8 +153,7 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
                 cmUtilReceivedParams.applicationId = applicationId
                 cmUtilReceivedParams.filePath = filePath
                 cmUtilReceivedParams.endpoint = endpoint
-                cmUtilReceivedParams.username = username
-                cmUtilReceivedParams.password = password
+                cmUtilReceivedParams.credentialsId = credentialsId
                 cmUtilReceivedParams.cmclientOpts = cmclientOpts
             }
         }
@@ -175,8 +172,7 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
                 applicationId: 'app',
                 filePath: '/path',
                 endpoint: 'https://example.org/cm',
-                username: 'anonymous',
-                password: '********',
+                credentialsId: 'CM',
                 cmclientOpts: ''
             ]
     }
@@ -193,8 +189,7 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
                                               String applicationId,
                                               String filePath,
                                               String endpoint,
-                                              String username,
-                                              String password,
+                                              String credentialsId,
                                               String cmclientOpts) {
 
                 cmUtilReceivedParams.filePath = filePath
@@ -223,8 +218,7 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
                                               String applicationId,
                                               String filePath,
                                               String endpoint,
-                                              String username,
-                                              String password,
+                                              String credentialsId,
                                               String cmclientOpts) {
 
                 cmUtilReceivedParams.filePath = filePath
@@ -252,8 +246,7 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
                                               String applicationId,
                                               String filePath,
                                               String endpoint,
-                                              String username,
-                                              String password,
+                                              String credentialsId,
                                               String cmclientOpts) {
                 throw new ChangeManagementException('Upload failure.')
             }

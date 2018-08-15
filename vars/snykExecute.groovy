@@ -35,6 +35,8 @@ def call(Map parameters = [:]) {
             .withMandatoryProperty('snykCredentialsId')
             .use()
 
+        new Utils().pushToSWA([step: STEP_NAME], config)
+
         utils.unstashAll(config.stashContent)
 
         switch(config.scanType) {

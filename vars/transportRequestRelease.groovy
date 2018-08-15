@@ -1,4 +1,5 @@
 import com.sap.piper.GitUtils
+import com.sap.piper.Utils
 import groovy.transform.Field
 
 import com.sap.piper.ConfigurationHelper
@@ -44,6 +45,8 @@ def call(parameters = [:]) {
             .withMandatoryProperty('changeManagement/git/format')
 
         Map configuration = configHelper.use()
+
+        new Utils().pushToSWA([step: STEP_NAME], configuration)
 
         def transportRequestId = configuration.transportRequestId
 
@@ -108,22 +111,17 @@ def call(parameters = [:]) {
 
         echo "[INFO] Closing transport request '${configuration.transportRequestId}' for change document '${configuration.changeDocumentId}'."
 
-        withCredentials([usernamePassword(
-            credentialsId: configuration.changeManagement.credentialsId,
-            passwordVariable: 'password',
-            usernameVariable: 'username')]) {
-
             try {
                 cm.releaseTransportRequest(configuration.changeDocumentId,
                                            configuration.transportRequestId,
                                            configuration.changeManagement.endpoint,
-                                           username,
-                                           password,
+                                           configuration.changeManagement.credentialsId,
                                            configuration.changeManagement.clientOpts)
+
             } catch(ChangeManagementException ex) {
                 throw new AbortException(ex.getMessage())
             }
-        }
+
 
         echo "[INFO] Transport Request '${configuration.transportRequestId}' has been successfully closed."
     }

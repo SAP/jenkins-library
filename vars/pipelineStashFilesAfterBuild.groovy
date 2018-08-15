@@ -31,6 +31,8 @@ def call(Map parameters = [:]) {
             .mixin(parameters, PARAMETER_KEYS)
             .use()
 
+        new Utils().pushToSWA([step: STEP_NAME], config)
+
         // store files to be checked with checkmarx
         if (config.runCheckmarx) {
             utils.stash(
