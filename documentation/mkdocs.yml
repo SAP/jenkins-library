@@ -5,6 +5,7 @@ pages:
     - 'Library steps':
         - artifactSetVersion: steps/artifactSetVersion.md
         - checkChangeInDevelopment: steps/checkChangeInDevelopment.md
+        - cloudFoundryDeploy: steps/cloudFoundryDeploy.md
         - commonPipelineEnvironment: steps/commonPipelineEnvironment.md
         - dockerExecute: steps/dockerExecute.md
         - durationMeasure: steps/durationMeasure.md
