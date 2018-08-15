@@ -13,16 +13,17 @@ import hudson.AbortException
 @Field def STEP_NAME = 'transportRequestUploadFile'
 
 @Field Set generalConfigurationKeys = [
-    'changeManagement',
+    'changeManagement'
   ]
 
-@Field Set parameterKeys = generalConfigurationKeys.plus([
-    'applicationId',
+  @Field Set stepConfigurationKeys = generalConfigurationKeys.plus([
+      'applicationId'
+    ])
+
+@Field Set parameterKeys = stepConfigurationKeys.plus([
     'changeDocumentId',
     'filePath',
     'transportRequestId'])
-
-@Field Set stepConfigurationKeys = generalConfigurationKeys
 
 def call(parameters = [:]) {
 
