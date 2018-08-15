@@ -32,17 +32,17 @@ def call(parameters = [:]) {
         ChangeManagement cm = parameters.cmUtils ?: new ChangeManagement(script)
 
         ConfigurationHelper configHelper = ConfigurationHelper
-                            .loadStepDefaults(this)
-                            .mixinGeneralConfig(script.commonPipelineEnvironment, generalConfigurationKeys)
-                            .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName?:env.STAGE_NAME, stepConfigurationKeys)
-                            .mixinStepConfig(script.commonPipelineEnvironment, stepConfigurationKeys)
-                            .mixin(parameters, parameterKeys)
-                            .withMandatoryProperty('changeManagement/clientOpts')
-                            .withMandatoryProperty('changeManagement/credentialsId')
-                            .withMandatoryProperty('changeManagement/endpoint')
-                            .withMandatoryProperty('changeManagement/git/to')
-                            .withMandatoryProperty('changeManagement/git/from')
-                            .withMandatoryProperty('changeManagement/git/format')
+            .loadStepDefaults(this)
+            .mixinGeneralConfig(script.commonPipelineEnvironment, generalConfigurationKeys)
+            .mixinStepConfig(script.commonPipelineEnvironment, stepConfigurationKeys)
+            .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName?:env.STAGE_NAME, stepConfigurationKeys)
+            .mixin(parameters, parameterKeys)
+            .withMandatoryProperty('changeManagement/clientOpts')
+            .withMandatoryProperty('changeManagement/credentialsId')
+            .withMandatoryProperty('changeManagement/endpoint')
+            .withMandatoryProperty('changeManagement/git/to')
+            .withMandatoryProperty('changeManagement/git/from')
+            .withMandatoryProperty('changeManagement/git/format')
 
         Map configuration = configHelper.use()
 
