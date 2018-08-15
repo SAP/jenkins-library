@@ -216,6 +216,39 @@ public void testGetCommandLineWithCMClientOpts() {
             'me')
     }
 
+    @Test
+    public void testReleaseTransportRequestSucceeds() {
+
+        // the regex provided below is an implicit check that the command line is fine.
+        script.setReturnValue(JenkinsShellCallRule.Type.REGEX, 'release-transport.*-cID 001.*-tID 002', 0)
+
+        new ChangeManagement(nullScript).releaseTransportRequest('001',
+            '002',
+            'https://example.org',
+            'me',
+            'openSesame')
+
+        // no assert required here, since the regex registered above to the script rule is an implicit check for
+        // the command line.
+    }
+
+    @Test
+    public void testReleaseTransportRequestFails() {
+
+        thrown.expect(ChangeManagementException)
+        thrown.expectMessage("Cannot release Transport Request '002'. Return code from cmclient: 1.")
+
+        // the regex provided below is an implicit check that the command line is fine.
+        script.setReturnValue(JenkinsShellCallRule.Type.REGEX, 'release-transport.*-cID 001.*-tID 002', 1)
+
+        new ChangeManagement(nullScript).releaseTransportRequest('001',
+            '002',
+            'https://example.org',
+            'me',
+            'openSesame')
+    }
+
+
     private GitUtils gitUtilsMock(boolean insideWorkTree, String[] changeIds) {
         return new GitUtils() {
             public boolean insideWorkTree() {
