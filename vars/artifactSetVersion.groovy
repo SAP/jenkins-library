@@ -41,7 +41,7 @@ def call(Map parameters = [:], Closure body = null) {
             script = this
 
         // load default & individual configuration
-        Map config = ConfigurationHelper
+        ConfigurationHelper configHelper = ConfigurationHelper
             .loadStepDefaults(this)
             .mixinGeneralConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS, this, CONFIG_KEY_COMPATIBILITY)
             .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS, this, CONFIG_KEY_COMPATIBILITY)
@@ -51,13 +51,11 @@ def call(Map parameters = [:], Closure body = null) {
             .withMandatoryProperty('buildTool')
             .dependingOn('buildTool').mixin('filePath')
             .dependingOn('buildTool').mixin('versioningTemplate')
-            .use()
 
-        config = new ConfigurationHelper(config)
-            .addIfEmpty('gitSshUrl', (config.buildTool == 'docker' && config.artifactType == 'appContainer')?script.commonPipelineEnvironment.getAppContainerProperty('gitSshUrl'):script.commonPipelineEnvironment.getGitSshUrl())
-            .addIfEmpty('timestamp', getTimestamp(config.timestampTemplate))
-            .withMandatoryProperty('gitSshUrl')
-            .use()
+        Map config = configHelper.use()
+
+        config = configHelper.addIfEmpty('timestamp', getTimestamp(config.timestampTemplate))
+                             .use()
 
         new Utils().pushToSWA([step: STEP_NAME, stepParam1: config.buildTool, stepParam2: config.artifactType], config)
 
@@ -79,6 +77,13 @@ def call(Map parameters = [:], Closure body = null) {
         }
 
         if (config.commitVersion) {
+            config = new ConfigurationHelper(config)
+                .addIfEmpty('gitSshUrl', isAppContainer(config)
+                            ?script.commonPipelineEnvironment.getAppContainerProperty('gitSshUrl')
+                            :script.commonPipelineEnvironment.getGitSshUrl())
+                .withMandatoryProperty('gitSshUrl')
+                .use()
+            
             sh 'git add .'
 
             sshagent([config.gitSshKeyCredentialsId]) {
@@ -99,7 +104,7 @@ def call(Map parameters = [:], Closure body = null) {
             }
         }
 
-        if (config.buildTool == 'docker' && config.artifactType == 'appContainer') {
+        if (isAppContainer(config)) {
             script.commonPipelineEnvironment.setAppContainerProperty('artifactVersion', newVersion)
             script.commonPipelineEnvironment.setAppContainerProperty('gitCommitId', config.gitCommitId)
         } else {
@@ -110,6 +115,10 @@ def call(Map parameters = [:], Closure body = null) {
 
         echo "[${STEP_NAME}]New version: ${newVersion}"
     }
+}
+
+def isAppContainer(config){
+    return config.buildTool == 'docker' && config.artifactType == 'appContainer'
 }
 
 def getTimestamp(pattern){
