@@ -30,7 +30,7 @@ def call(Map parameters = [:], Closure body = null) {
     handlePipelineStepErrors (stepName: STEP_NAME, stepParameters: parameters) {
 
         def gitUtils = parameters?.juStabGitUtils ?: new GitUtils()
-        def script = parameters?.script ?: [commonPipelineEnvironment: commonPipelineEnvironment]
+        def script = parameters?.script ?: this
 
         if (fileExists('.git')) {
             if (sh(returnStatus: true, script: 'git diff --quiet HEAD') != 0)
