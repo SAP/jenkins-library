@@ -8,7 +8,6 @@ pages:
         - checkChangeInDevelopment: steps/checkChangeInDevelopment.md
         - cloudFoundryDeploy: steps/cloudFoundryDeploy.md
         - commonPipelineEnvironment: steps/commonPipelineEnvironment.md
-        - containerExecuteOnKubernetes: steps/containerExecuteOnKubernetes.md
         - dockerExecute: steps/dockerExecute.md
         - dockerExecuteOnKubernetes: steps/dockerExecuteOnKubernetes.md
         - durationMeasure: steps/durationMeasure.md

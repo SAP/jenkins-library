@@ -1,11 +1,12 @@
 package com.sap.piper
 import com.cloudbees.groovy.cps.NonCPS
-class SysEnv implements Serializable {
+
+class SystemEnv implements Serializable {
     static final long serialVersionUID = 1L
 
-    private Map env
+    private Map env = new HashMap<String, String>()
 
-    List<String> envNames=[
+    Set<String> envNames = [
         'HTTP_PROXY',
         'HTTPS_PROXY',
         'NO_PROXY',
@@ -14,20 +15,19 @@ class SysEnv implements Serializable {
         'no_proxy'
     ]
 
-    public SysEnv() {
-        env= new HashMap<String,String>()
+    SystemEnv() {
         fillMap()
     }
 
-    public String get(String key) {
+    String get(String key) {
         return env.get(key)
     }
 
-    public Map getEnv() {
+    Map getEnv() {
         return env
     }
 
-    public String remove(String key) {
+    String remove(String key) {
         return env.remove(key)
     }
 

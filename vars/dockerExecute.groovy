@@ -1,5 +1,6 @@
 import com.cloudbees.groovy.cps.NonCPS
 import com.sap.piper.ConfigurationHelper
+import com.sap.piper.ContainerMap
 import com.sap.piper.JenkinsUtils
 import groovy.transform.Field
 
@@ -20,7 +21,6 @@ void call(Map parameters = [:], body) {
         final script = parameters.script
         if (script == null)
             script = [commonPipelineEnvironment: commonPipelineEnvironment]
-
         Map config = ConfigurationHelper
             .loadStepDefaults(this)
             .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS)
@@ -29,7 +29,6 @@ void call(Map parameters = [:], body) {
             .mixin(parameters, PARAMETER_KEYS)
             .withMandatoryProperty('dockerImage')
             .use()
-
         if (isKubernetes() && config.dockerImage) {
             if (env.POD_NAME && isContainerDefined(config)) {
                 container(getContainerDefined(config)) {
@@ -49,23 +48,24 @@ void call(Map parameters = [:], body) {
                 }
             }
         } else {
+            boolean executeInsideDocker = true
             if (!JenkinsUtils.isPluginActive(PLUGIN_ID_DOCKER_WORKFLOW)) {
                 echo "[WARNING][${STEP_NAME}] Docker not supported. Plugin '${PLUGIN_ID_DOCKER_WORKFLOW}' is not installed or not active. Configured docker image '${config.dockerImage}' will not be used."
-                config.dockerImage = null
+                executeInsideDocker = false
             }
 
             def returnCode = sh script: 'which docker > /dev/null', returnStatus: true
             if (returnCode != 0) {
                 echo "[WARNING][${STEP_NAME}] No docker environment found (command 'which docker' did not return with '0'). Configured docker image '${config.dockerImage}' will not be used."
-                config.dockerImage = null
+                executeInsideDocker = false
             }
 
             returnCode = sh script: 'docker ps -q > /dev/null', returnStatus: true
             if (returnCode != 0) {
                 echo "[WARNING][$STEP_NAME] Cannot connect to docker daemon (command 'docker ps' did not return with '0'). Configured docker image '${config.dockerImage}' will not be used."
-                config.dockerImage = null
+                executeInsideDocker = false
             }
-            if (config.dockerImage) {
+            if (executeInsideDocker && config.dockerImage) {
                 def image = docker.image(config.dockerImage)
                 image.pull()
                 image.inside(getDockerOptions(config.dockerEnvVars, config.dockerVolumeBind, config.dockerOptions)) {
@@ -130,25 +130,21 @@ private getDockerOptions(Map dockerEnvVars, Map dockerVolumeBind, def dockerOpti
     return options.join(' ')
 }
 
-@NonCPS
+
 boolean isContainerDefined(config) {
-    def imageToContainerMap = config?.jenkinsKubernetes?.imageToContainerMap ?: [:]
-    if (imageToContainerMap.containsKey(env.POD_NAME)) {
-        return imageToContainerMap[env.POD_NAME].containsKey(config.dockerImage)
+    Map containerMap = ContainerMap.instance.getMap()
+    if (containerMap.containsKey(env.POD_NAME)) {
+        return containerMap.get(env.POD_NAME).containsKey(config.dockerImage)
     }
     return false
 }
 
-@NonCPS
+
 def getContainerDefined(config) {
-    def imageToContainerMap = config?.jenkinsKubernetes?.imageToContainerMap
-    return imageToContainerMap[env.POD_NAME].get(config.dockerImage).toLowerCase()
+    return ContainerMap.instance.getMap().get(env.POD_NAME).get(config.dockerImage).toLowerCase()
 }
 
-@NonCPS
+
 boolean isKubernetes() {
-    if (env.ON_K8S == 'true') {
-        return true
-    }
-    return false
+    return Boolean.valueOf(env.ON_K8S)
 }
