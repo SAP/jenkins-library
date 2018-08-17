@@ -33,12 +33,10 @@ None
 
 ```groovy
 withEnv(["ON_K8S=true"]){
-dockerExecuteOnKubernetes(script: script,
-                          dockerImage: 'maven:3.5-jdk-7')
-                          {
-                            sh "mvn clean install" 
-                          }
-                        }
+  dockerExecuteOnKubernetes(script: script, dockerImage: 'maven:3.5-jdk-7'){
+    sh "mvn clean install" 
+  }
+}
 ```
 
 
