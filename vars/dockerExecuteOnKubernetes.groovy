@@ -91,7 +91,11 @@ void executeOnPodWithSingleContainer(Map parameters, body) {
 private void stashWorkspace(config, prefix) {
     try {
         sh "chown -R 1000:1000 ."
-        stash name: "${prefix}-${config.uniqueId}", include: config.stashIncludes.workspace, exclude: config.stashExcludes.excludes
+        stash(
+            name: "${prefix}-${config.uniqueId}",
+            include: config.stashIncludes.workspace,
+            exclude: config.stashExcludes.excludes
+        )
     } catch (AbortException | IOException e) {
         echo "${e.getMessage()}"
     }
