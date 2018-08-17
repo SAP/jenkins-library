@@ -180,7 +180,7 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
     }
 
     @Test
-    void testDockerExecuteOnKubernetesEmptyMapNoDockerImage() throws Exception {
+    void testDockerExecuteOnKubernetesEmptyContainerMapNoDockerImage() throws Exception {
         exception.expect(IllegalArgumentException.class);
             jsr.step.call(script: nullScript,
                 containerMap: [:],
@@ -191,11 +191,4 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
             }
         assertFalse(bodyExecuted)
     }
-
-
-    private container(options, body) {
-        containerName = options.name
-        body()
-    }
 }
-

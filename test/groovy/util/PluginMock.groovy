@@ -13,6 +13,6 @@ class PluginMock {
     }
 
     boolean isActive() {
-        return true
+        return !pluginName.isEmpty()
     }
 }

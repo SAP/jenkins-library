@@ -36,9 +36,12 @@ If the Jenkins is setup on a Kubernetes cluster, then you can execute the closur
 
 ## Example
 
-```groovy
-export ON_K8S=true
+```sh
+# set environment variable 
+export ON_K8S=true"
+```
 
+```groovy
 dockerExecute(script: this, dockerImage: 'maven:3.5-jdk-7'){
     sh "mvn clean install"
 }
