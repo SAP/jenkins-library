@@ -1,7 +1,7 @@
 package com.sap.piper
 
+@Singleton
 class ContainerMap {
-    private static final ContainerMap instance = new ContainerMap();
     private Map containerMap = null
 
     Map getMap() {
