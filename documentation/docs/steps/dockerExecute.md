@@ -10,7 +10,7 @@ Proxy environment variables defined on the Jenkins machine are also available in
 
 | parameter          | mandatory | default                           | possible values            |
 | -------------------|-----------|-----------------------------------|----------------------------|
-| `script`      | no        | empty `globalPipelineEnvironment`                                |                            |
+| `script`           | no        | empty `globalPipelineEnvironment` |                            |
 | `dockerImage`      | no        | ''                                |                            |
 | `dockerEnvVars`    | no        | [:]                               |                            |
 | `dockerOptions`    | no        | ''                                |                            |
