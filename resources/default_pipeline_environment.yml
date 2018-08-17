@@ -1,6 +1,7 @@
 #Project Setup
 general:
   productiveBranch: 'master'
+  collectTelemetryData: true
   changeManagement:
     transportRequestLabel: 'TransportRequest\s?:'
     changeDocumentLabel: 'ChangeDocument\s?:'
@@ -10,7 +11,6 @@ general:
       from: 'origin/master'
       to: 'HEAD'
       format: '%b'
-  collectTelemetryData: true
   gitSshKeyCredentialsId: '' #needed to allow sshagent to run with local ssh key
   jenkinsKubernetes:
     jnlpAgent: 's4sdk/jenkins-agent-k8s:latest'
