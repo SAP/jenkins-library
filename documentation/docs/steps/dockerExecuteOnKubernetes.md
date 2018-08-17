@@ -12,10 +12,10 @@ Executes a closure inside a container in a kubernetes pod. Proxy environment var
 
 | parameter          | mandatory | default                           | possible values            |
 | -------------------|-----------|-----------------------------------|----------------------------|
-| `script`      | no        | empty `globalPipelineEnvironment`                                |                            |
-| `dockerImage`      | yes        |                                |                            |
+| `script`           | no        | empty `globalPipelineEnvironment` |                            |
+| `dockerImage`      | yes       |                                   |                            |
 | `dockerEnvVars`    | no        | [:]                               |                            |
-| `dockerWorkspace`    | no        | ''                                |                            |
+| `dockerWorkspace`  | no        | ''                                |                            |
 
 * `script` defines the global script environment of the Jenkinsfile run. Typically `this` is passed to this parameter. This allows the function to access the [`commonPipelineEnvironment`](commonPipelineEnvironment.md) for storing the measured duration.
 * `dockerImage` Name of the docker image that should be used. If empty, Docker is not used.
