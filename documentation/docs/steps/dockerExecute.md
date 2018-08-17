@@ -10,7 +10,7 @@ Proxy environment variables defined on the Jenkins machine are also available in
 
 | parameter          | mandatory | default                           | possible values            |
 | -------------------|-----------|-----------------------------------|----------------------------|
-| `script`      | no        | empty `globalPipelineEnvironment`                                |                            |
+| `script`           | no        | empty `globalPipelineEnvironment` |                            |
 | `dockerImage`      | no        | ''                                |                            |
 | `dockerEnvVars`    | no        | [:]                               |                            |
 | `dockerOptions`    | no        | ''                                |                            |
@@ -37,13 +37,11 @@ If the Jenkins is setup on a Kubernetes cluster, then you can execute the closur
 ## Example
 
 ```groovy
-withEnv(["ON_K8S=true"]){
-    dockerExecute(script: this, 
-                  dockerImage: 'maven:3.5-jdk-7')
-       {
-        sh "mvn clean install"
-       }
-  }
+export ON_K8S=true
+
+dockerExecute(script: this, dockerImage: 'maven:3.5-jdk-7'){
+    sh "mvn clean install"
+}
 ```
 
 In the above example, the `dockerEcecute` step will internally invoke [dockerExecuteOnKubernetes](dockerExecuteOnKubernetes.md) step and execute the closure inside a pod. 
