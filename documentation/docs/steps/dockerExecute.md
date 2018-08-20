@@ -23,14 +23,6 @@ Proxy environment variables defined on the Jenkins machine are also available in
 * `dockerVolumeBind` Volumes that should be mounted into the container.
 
 
-## Example
-
-```groovy
-dockerExecute(dockerImage: 'maven:3.5-jdk-7'){
-    sh "mvn clean install"
-}
-```
-
 ## Kubernetes support
 If the Jenkins is setup on a Kubernetes cluster, then you can execute the closure inside a container of a pod by setting an environment variable `ON_K8S` to `true`. However, it will ignore both `dockeOptions` and `dockerVolumeBind` values.
 
@@ -46,7 +38,14 @@ none
 ## Exceptions
 none
 
-## Example
+## Example 1: Run closure inside a docker container 
+
+```groovy
+dockerExecute(dockerImage: 'maven:3.5-jdk-7'){
+    sh "mvn clean install"
+}
+```
+## Example 2: Run closure inside a container in a kubernetes pod
 
 ```sh
 # set environment variable 
