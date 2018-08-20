@@ -54,9 +54,7 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
         bodyExecuted = false
         JenkinsUtils.metaClass.static.isPluginActive = { def s -> new PluginMock(s).isActive() }
         helper.registerAllowedMethod('sh', [Map.class], {return whichDockerReturnValue})
-        helper.registerAllowedMethod('container', [Map.class, Closure.class], { Map config, Closure body ->
-            containerName = config.name
-            body()
+        helper.registerAllowedMethod('container', [Map.class, Closure.class], { Map config, Closure body -> container(config){body()}
         })
         helper.registerAllowedMethod('podTemplate', [Map.class, Closure.class], { Map options, Closure body ->
             podName = options.name
@@ -189,5 +187,10 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
                 }
             }
         assertFalse(bodyExecuted)
+    }
+
+    private container(options, body) {
+        containerName = options.name
+        body()
     }
 }

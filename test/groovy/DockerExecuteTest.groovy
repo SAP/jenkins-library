@@ -46,7 +46,7 @@ class DockerExecuteTest extends BasePiperTest {
     }
 
     @Test
-    void testExecuteInsideContainer() throws Exception {
+    void testExecuteInsideContainerOfExistingPod() throws Exception {
         helper.registerAllowedMethod('container', [String.class, Closure.class], { String container, Closure body ->
             containerName = container
             body()
@@ -64,7 +64,7 @@ class DockerExecuteTest extends BasePiperTest {
      }
 
     @Test
-    void testExecuteInsidePod() throws Exception {
+    void testExecuteInsideNewlyCreatedPod() throws Exception {
         helper.registerAllowedMethod('dockerExecuteOnKubernetes', [Map.class, Closure.class], { Map config, Closure body -> body() })
         binding.setVariable('env', [ON_K8S: 'true'])
         ContainerMap.instance.setMap(['testpod': ['maven:3.5-jdk-8-alpine': 'mavenexec']])
@@ -78,7 +78,7 @@ class DockerExecuteTest extends BasePiperTest {
     }
 
     @Test
-    void testExecuteInsidePodWithEmptyMap() throws Exception {
+    void testExecuteInsidePodWithEmptyContainerMap() throws Exception {
         helper.registerAllowedMethod('dockerExecuteOnKubernetes', [Map.class, Closure.class], { Map config, Closure body -> body() })
         binding.setVariable('env', [POD_NAME: 'testpod', ON_K8S: 'true'])
         ContainerMap.instance.setMap([:])
@@ -106,7 +106,7 @@ class DockerExecuteTest extends BasePiperTest {
     }
 
     @Test
-    void testExecuteInsideDocker() throws Exception {
+    void testExecuteInsideDockerContainer() throws Exception {
         jsr.step.call(script: nullScript, dockerImage: 'maven:3.5-jdk-8-alpine') {
             bodyExecuted = true
         }
@@ -128,7 +128,7 @@ class DockerExecuteTest extends BasePiperTest {
     }
 
     @Test
-    void testExecuteInsideDockerWithParameters() throws Exception {
+    void testExecuteInsideDockerContainerWithParameters() throws Exception {
         jsr.step.call(script: nullScript,
                       dockerImage: 'maven:3.5-jdk-8-alpine',
                       dockerOptions: '-it',
@@ -144,7 +144,7 @@ class DockerExecuteTest extends BasePiperTest {
     }
 
     @Test
-    void testExecuteDockerWithDockerOptionsList() throws Exception {
+    void testExecuteInsideDockerContainerWithDockerOptionsList() throws Exception {
         jsr.step.call(script: nullScript,
             dockerImage: 'maven:3.5-jdk-8-alpine',
             dockerOptions: ['-it', '--network=my-network'],
