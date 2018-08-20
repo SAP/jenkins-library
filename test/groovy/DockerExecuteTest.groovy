@@ -3,7 +3,6 @@ import com.sap.piper.JenkinsUtils
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
-import org.junit.rules.ExpectedException
 import org.junit.rules.RuleChain
 
 import util.BasePiperTest
@@ -20,9 +19,6 @@ class DockerExecuteTest extends BasePiperTest {
     private DockerMock docker
     private JenkinsLoggingRule jlr = new JenkinsLoggingRule(this)
     private JenkinsStepRule jsr = new JenkinsStepRule(this)
-
-    @Rule
-    public final ExpectedException exception = ExpectedException.none();
 
     @Rule
     public RuleChain ruleChain = Rules
@@ -158,27 +154,13 @@ class DockerExecuteTest extends BasePiperTest {
     void testDockerNotInstalledResultsInLocalExecution() throws Exception {
         whichDockerReturnValue = 1
         jsr.step.call(script: nullScript,
-                      dockerImage: 'maven:3.5-jdk-8-alpine',
-                      dockerOptions: '-it',
-                      dockerVolumeBind: ['my_vol': '/my_vol'],
-                      dockerEnvVars: ['http_proxy': 'http://proxy:8000']) {
+            dockerOptions: '-it') {
             bodyExecuted = true
         }
         assertTrue(jlr.log.contains('No docker environment found'))
         assertTrue(jlr.log.contains('Running on local environment'))
         assertTrue(bodyExecuted)
         assertFalse(docker.isImagePulled())
-    }
-
-    @Test
-    void testDockerExecuteNoImageNameResultInException() throws Exception {
-        whichDockerReturnValue = 1
-        exception.expect(IllegalArgumentException.class);
-        jsr.step.call(script: nullScript,
-            dockerOptions: '-it') {
-            bodyExecuted = true
-        }
-
     }
 
     private class DockerMock {
