@@ -24,7 +24,7 @@ needs to be extracted into the folder provided by `neoHome`. In case this parame
 | parameter          | mandatory | default                       | possible values                                 |
 | -------------------|-----------|-------------------------------|-------------------------------------------------|
 | `account`          | no        |                               |                                                 |
-| `archivePath`      | yes       |                               |                                                 |
+| `archivePath`      | no        |                               |                                                 |
 | `deployAccount` deprecated, use `account` | no  |              |                                                 |
 | `deployHost` deprecated, use `host` | no        |              |                                                 |
 | `deployMode`       | yes       | `'mta'`                       | `'mta'`, `'warParams'`, `'warPropertiesFile'`   |
@@ -36,7 +36,7 @@ needs to be extracted into the folder provided by `neoHome`. In case this parame
 ## Parameters when using WAR file deployment method with .properties file (WAR_PROPERTIESFILE)
 | parameter          | mandatory | default                       | possible values                                 |
 | -------------------|-----------|-------------------------------|-------------------------------------------------|
-| `archivePath`      | yes       |                               |                                                 |
+| `archivePath`      | no        |                               |                                                 |
 | `deployMode`       | yes       | `'mta'`                       | `'mta'`, `'warParams'`, `'warPropertiesFile'`   |
 | `neoCredentialsId` | no        | `'CI_CREDENTIALS_ID'`         |                                                 |
 | `neoHome`          | no        |                               |                                                 |
@@ -49,7 +49,7 @@ needs to be extracted into the folder provided by `neoHome`. In case this parame
 | -------------------|-----------|-------------------------------|-------------------------------------------------|
 | `account`          | no        |                               |                                                 |
 | `applicationName`  | yes       |                               |                                                 |
-| `archivePath`      | yes       |                               |                                                 |
+| `archivePath`      | no        |                               |                                                 |
 | `deployAccount` deprecated, use `account` | no                 |                                                 |
 | `deployHost` deprecated, use `host` | no                       |                                                 |
 | `deployMode`       | yes       | `'mta'`                       |  `'mta'`, `'warParams'`, `'warPropertiesFile'`  |
@@ -65,7 +65,7 @@ needs to be extracted into the folder provided by `neoHome`. In case this parame
 
 * `account` - The SAP Cloud Platform account to deploy to.
 * `applicationName` - Name of the application you want to manage, configure, or deploy
-* `archivePath`- The path to the archive for deployment to SAP CP.
+* `archivePath`- The path to the archive for deployment to SAP CP. If not provided `mtarFilePath` from commom pipeline environment is used instead.
 * `deployAccount` - deprecated, use `account`. The SAP Cloud Platform account to deploy to.
 * `deployHost` - deprecated, use `host`. The SAP Cloud Platform host to deploy to.
 * `deployMode` - The deployment mode which should be used. Available options are `'mta'` (default), `'warParams'` (deploying WAR file and passing all the deployment parameters via the function call) and `'warPropertiesFile'` (deploying WAR file and putting all the deployment parameters in a .properties file)

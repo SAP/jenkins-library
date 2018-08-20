@@ -151,6 +151,27 @@ class NeoDeployTest extends BasePiperTest {
                                     .hasDoubleQuotedOption('source', '.*'))
     }
 
+    @Test
+    void archivePathFromCPETest() {
+        nullScript.commonPipelineEnvironment.setMtarFilePath('archive.mtar')
+        jsr.step.call(script: nullScript)
+
+        Assert.assertThat(jscr.shell,
+            new CommandLineMatcher().hasProlog("#!/bin/bash \"/opt/neo/tools/neo.sh\" deploy-mta")
+                                    .hasDoubleQuotedOption('source', 'archive.mtar'))
+    }
+
+    @Test
+    void archivePathFromParamsHasHigherPrecedenceThanCPETest() {
+        nullScript.commonPipelineEnvironment.setMtarFilePath('archive2.mtar')
+        jsr.step.call(script: nullScript,
+                      archivePath: "archive.mtar")
+
+        Assert.assertThat(jscr.shell,
+            new CommandLineMatcher().hasProlog("#!/bin/bash \"/opt/neo/tools/neo.sh\" deploy-mta")
+                                    .hasDoubleQuotedOption('source', 'archive.mtar'))
+    }
+
 
     @Test
     void badCredentialsIdTest() {
@@ -274,7 +295,7 @@ class NeoDeployTest extends BasePiperTest {
 
         nullScript.commonPipelineEnvironment.configuration = [:]
 
-        jsr.step.call(archivePath: archiveName)
+        jsr.step.call(script: nullScript, archivePath: archiveName)
     }
 
     @Test
