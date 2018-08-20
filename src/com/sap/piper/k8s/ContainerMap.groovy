@@ -1,4 +1,4 @@
-package com.sap.piper
+package com.sap.piper.k8s
 
 @Singleton
 class ContainerMap {

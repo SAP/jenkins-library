@@ -1,4 +1,4 @@
-package com.sap.piper
+package com.sap.piper.k8s
 import com.cloudbees.groovy.cps.NonCPS
 
 class SystemEnv implements Serializable {

@@ -32,7 +32,19 @@ dockerExecute(dockerImage: 'maven:3.5-jdk-7'){
 ```
 
 ## Kubernetes support
-If the Jenkins is setup on a Kubernetes cluster, then you can execute the closure inside a container of pod by setting an environment variable `ON_K8S` to `true`. However, it will ignore both `dockeOptions` and `dockerVolumeBind` values.
+If the Jenkins is setup on a Kubernetes cluster, then you can execute the closure inside a container of a pod by setting an environment variable `ON_K8S` to `true`. However, it will ignore both `dockeOptions` and `dockerVolumeBind` values.
+
+## Step configuration
+none
+
+## Return value
+none
+
+## Side effects
+none
+
+## Exceptions
+none
 
 ## Example
 
@@ -49,11 +61,6 @@ dockerExecute(script: this, dockerImage: 'maven:3.5-jdk-7'){
 
 In the above example, the `dockerEcecute` step will internally invoke [dockerExecuteOnKubernetes](dockerExecuteOnKubernetes.md) step and execute the closure inside a pod. 
 
-## Step configuration
-None
 
-## Exceptions
-
-None
 
 

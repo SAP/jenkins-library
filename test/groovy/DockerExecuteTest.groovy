@@ -1,4 +1,4 @@
-import com.sap.piper.ContainerMap
+import com.sap.piper.k8s.ContainerMap
 import com.sap.piper.JenkinsUtils
 import org.junit.Before
 import org.junit.Rule
@@ -7,9 +7,7 @@ import org.junit.rules.ExpectedException
 import org.junit.rules.RuleChain
 
 import util.BasePiperTest
-import util.JenkinsDockerExecuteRule
 import util.JenkinsLoggingRule
-import util.JenkinsShellCallRule
 import util.JenkinsStepRule
 import util.PluginMock
 import util.Rules

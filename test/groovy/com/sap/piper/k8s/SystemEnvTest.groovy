@@ -1,5 +1,6 @@
-package com.sap.piper
+package com.sap.piper.k8s
 
+import com.sap.piper.k8s.SystemEnv
 import org.junit.Before
 import org.junit.Test
 

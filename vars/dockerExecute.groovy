@@ -1,6 +1,6 @@
 import com.cloudbees.groovy.cps.NonCPS
 import com.sap.piper.ConfigurationHelper
-import com.sap.piper.ContainerMap
+import com.sap.piper.k8s.ContainerMap
 import com.sap.piper.JenkinsUtils
 import groovy.transform.Field
 
@@ -133,11 +133,11 @@ private getDockerOptions(Map dockerEnvVars, Map dockerVolumeBind, def dockerOpti
 
 boolean isContainerDefined(config) {
     Map containerMap = ContainerMap.instance.getMap()
-    
+
     if (!containerMap.containsKey(env.POD_NAME)) {
         return false
     }
-    
+
     return containerMap.get(env.POD_NAME).containsKey(config.dockerImage)
 }
 

@@ -1,7 +1,7 @@
 import com.cloudbees.groovy.cps.NonCPS
 import com.sap.piper.ConfigurationHelper
 import com.sap.piper.JenkinsUtils
-import com.sap.piper.SystemEnv
+import com.sap.piper.k8s.SystemEnv
 import groovy.transform.Field
 import hudson.AbortException
 
@@ -22,25 +22,22 @@ void call(Map parameters = [:], body) {
         final script = parameters.script
         if (script == null)
             script = [commonPipelineEnvironment: commonPipelineEnvironment]
+
+        ConfigurationHelper configHelper = ConfigurationHelper
+            .loadStepDefaults(this)
+            .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS)
+            .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName ?: env.STAGE_NAME, STEP_CONFIG_KEYS)
+            .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS)
+            .mixin(parameters, PARAMETER_KEYS)
+            .addIfEmpty('uniqueId', UUID.randomUUID().toString())
+        Map config = [:]
+
         if (parameters.containerMap) {
-            Map config = ConfigurationHelper
-                .loadStepDefaults(this)
-                .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS)
-                .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName ?: env.STAGE_NAME, STEP_CONFIG_KEYS)
-                .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS)
-                .mixin(parameters, PARAMETER_KEYS)
-                .addIfEmpty('uniqueId', UUID.randomUUID().toString())
-                .use()
+            config = configHelper.use()
             executeOnPodWithCustomContainerList(config: config) { body() }
 
         } else {
-            Map config = ConfigurationHelper
-                .loadStepDefaults(this)
-                .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS)
-                .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName ?: env.STAGE_NAME, STEP_CONFIG_KEYS)
-                .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS)
-                .mixin(parameters, PARAMETER_KEYS)
-                .addIfEmpty('uniqueId', UUID.randomUUID().toString())
+            config = configHelper
                 .withMandatoryProperty('dockerImage')
                 .use()
             executeOnPodWithSingleContainer(config: config) { body() }
@@ -68,26 +65,37 @@ void executeOnPodWithSingleContainer(Map parameters, body) {
     def config = parameters.config
     containerMap[config.get('dockerImage').toString()] = 'container-exec'
     config.containerMap = containerMap
+    /*
+     * There could be exceptions thrown by
+        - The podTemplate
+        - The container method
+        - The body
+     * We use nested exception handling in this case.
+     * In the first 2 cases, the workspace has not been modified. Hence, we can stash existing workspace as container and
+     * unstash in the finally block. In case of exception thrown by the body, we need to stash the workspace from the container
+     * in finally block
+     */
     try {
         stashWorkspace(config, 'workspace')
         podTemplate(getOptions(config)) {
             node(config.uniqueId) {
                 container(name: 'container-exec') {
-                    unstashWorkspace(config, 'workspace')
                     try {
+                        unstashWorkspace(config, 'workspace')
                         body()
                     } finally {
                         stashWorkspace(config, 'container')
-                    }
+                     }
                 }
             }
         }
+    } catch (e) {
+        stashWorkspace(config, 'container')
     } finally {
         unstashWorkspace(config, 'container')
     }
 }
 
-@NonCPS
 private void stashWorkspace(config, prefix) {
     try {
         sh "chown -R 1000:1000 ."
@@ -101,7 +109,6 @@ private void stashWorkspace(config, prefix) {
     }
 }
 
-@NonCPS
 private void unstashWorkspace(config, prefix) {
     try {
         unstash "${prefix}-${config.uniqueId}"

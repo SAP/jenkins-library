@@ -26,11 +26,16 @@ Executes a closure inside a container in a kubernetes pod. Proxy environment var
    Ex `['maven:3.5-jdk-8-alpine': 'mavenExecute', 'famiko/jmeter-base': 'checkJMeter', 's4sdk/docker-cf-cli': 'cloudfoundry']`
 
 ## Step configuration
-None
+none
+
+## Return value
+none
+
+## Side effects
+none
 
 ## Exceptions
-
-None
+none
 
 ## Example
 ```sh

@@ -134,16 +134,16 @@ steps:
     mtaDeployPlugin:
       dockerImage: 's4sdk/docker-cf-cli'
       dockerWorkspace: '/home/piper'
-  influxWriteData:
-    influxServer: 'jenkins'
-  mavenExecute:
-    dockerImage: 'maven:3.5-jdk-7'
-    logSuccessfulMavenTransfers: false
   dockerExecuteOnKubernetes:
     stashIncludes:
       workspace: '**/*.*'
     stashExcludes:
       workspace: 'nohup.out'
+  influxWriteData:
+    influxServer: 'jenkins'
+  mavenExecute:
+    dockerImage: 'maven:3.5-jdk-7'
+    logSuccessfulMavenTransfers: false
   mtaBuild:
     buildTarget: 'NEO'
     mtaJarLocation: 'mta.jar'
