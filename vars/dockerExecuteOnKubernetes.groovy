@@ -1,4 +1,3 @@
-import com.cloudbees.groovy.cps.NonCPS
 import com.sap.piper.ConfigurationHelper
 import com.sap.piper.JenkinsUtils
 import com.sap.piper.k8s.SystemEnv
@@ -91,6 +90,7 @@ void executeOnPodWithSingleContainer(Map parameters, body) {
         }
     } catch (e) {
         stashWorkspace(config, 'container')
+        throw e
     } finally {
         unstashWorkspace(config, 'container')
     }
@@ -98,6 +98,7 @@ void executeOnPodWithSingleContainer(Map parameters, body) {
 
 private void stashWorkspace(config, prefix) {
     try {
+        // Every dockerImage used in the dockerExecuteOnKubernetes should have user id 1000
         sh "chown -R 1000:1000 ."
         stash(
             name: "${prefix}-${config.uniqueId}",
