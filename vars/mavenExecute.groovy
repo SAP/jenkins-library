@@ -92,8 +92,9 @@ def call(Map parameters = [:]) {
         if (defines?.trim()){
             command += " ${defines}"
         }
-
-        dockerExecute(dockerImage: configuration.dockerImage, dockerOptions: configuration.dockerOptions) { sh command }
+        dockerExecute(script: script, dockerImage: configuration.dockerImage, dockerOptions: configuration.dockerOptions) {
+            sh command
+        }
     }
 }
 

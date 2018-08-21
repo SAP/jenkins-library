@@ -64,8 +64,6 @@ class ArtifactSetVersionTest extends BasePiperTest {
         jscr.setReturnValue('git diff --quiet HEAD', 0)
         jscr.setReturnValue('git rev-parse --is-inside-work-tree 1>/dev/null 2>&1', 0)
 
-        binding.setVariable('Jenkins', [instance: [pluginManager: [plugins: [new DockerExecuteTest.PluginMock()]]]])
-
         helper.registerAllowedMethod('fileExists', [String.class], {true})
     }
 
