@@ -3,14 +3,22 @@ package com.sap.piper
 import org.junit.Rule
 import org.junit.Before
 import org.junit.Test
+import static org.junit.Assert.assertThat
 import org.junit.rules.ExpectedException
+import org.junit.rules.RuleChain
+
+import static org.hamcrest.Matchers.hasItem
+import static org.hamcrest.Matchers.is
+import static org.hamcrest.Matchers.containsString
 
 import util.JenkinsLoggingRule
 import util.JenkinsShellCallRule
+import util.BasePiperTest
+import util.Rules
 
 import com.sap.piper.Utils
 
-class UtilsTest {
+class UtilsTest extends BasePiperTest {
     private ExpectedException thrown = ExpectedException.none()
     private JenkinsLoggingRule jlr = new JenkinsLoggingRule(this)
     private JenkinsShellCallRule jscr = new JenkinsShellCallRule(this)
@@ -21,8 +29,8 @@ class UtilsTest {
         .around(thrown)
         .around(jscr)
         .around(jlr)
-    
-    private utils = new Utils()
+
+    //private utils = new Utils()
     private parameters
 
     @Before
@@ -56,12 +64,36 @@ class UtilsTest {
 
     @Test
     void testSWAReporting() {
-        utils.pushToSWA(
-            [step: 'anything'],
-            null
-        )
-        println("SHELL: ${jscr.shell}")
-        println("LOG: ${jlr.log}")
-//        assertThat(jscr, containsString)
+        utils.env = [BUILD_URL: 'something', JOB_URL: 'nothing']
+        utils.pushToSWA([step: 'anything'], [collectTelemetryData: true])
+        // asserts
+        assertThat(jscr.shell, hasItem(containsString('curl -G -v "https://webanalytics.cfapps.eu10.hana.ondemand.com/tracker/log"')))
+        assertThat(jscr.shell, hasItem(containsString('action_name=Piper Library OS')))
+        assertThat(jscr.shell, hasItem(containsString('custom3=anything')))
+        assertThat(jscr.shell, hasItem(containsString('custom5=`echo -n \'something\' | sha1sum | sed \'s/ -//\'`')))
+    }
+
+    @Test
+    void testDisabledSWAReporting() {
+        utils.env = [BUILD_URL: 'something', JOB_URL: 'nothing']
+        utils.pushToSWA([step: 'anything'], [collectTelemetryData: false])
+        // asserts
+        assertThat(jlr.log, containsString('[anything] Telemetry Report to SWA disabled!'))
+    }
+
+    @Test
+    void testImplicitlyDisabledSWAReporting() {
+        utils.env = [BUILD_URL: 'something', JOB_URL: 'nothing']
+        utils.pushToSWA([step: 'anything'], null)
+        // asserts
+        assertThat(jlr.log, containsString('[anything] Telemetry Report to SWA disabled!'))
+    }
+
+    @Test
+    void testImplicitlyDisabledSWAReporting2() {
+        utils.env = [BUILD_URL: 'something', JOB_URL: 'nothing']
+        utils.pushToSWA([step: 'anything'], [:])
+        // asserts
+        assertThat(jlr.log, containsString('[anything] Telemetry Report to SWA disabled!'))
     }
 }
