@@ -5,17 +5,25 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.rules.ExpectedException
 
+import util.JenkinsLoggingRule
+import util.JenkinsShellCallRule
+
 import com.sap.piper.Utils
 
-
 class UtilsTest {
+    private ExpectedException thrown = ExpectedException.none()
+    private JenkinsLoggingRule jlr = new JenkinsLoggingRule(this)
+    private JenkinsShellCallRule jscr = new JenkinsShellCallRule(this)
 
     @Rule
-    public ExpectedException thrown = new ExpectedException().none()
-
+    public RuleChain rules = Rules
+        .getCommonRules(this)
+        .around(thrown)
+        .around(jscr)
+        .around(jlr)
+    
     private utils = new Utils()
     private parameters
-
 
     @Before
     void setup() {
@@ -44,5 +52,16 @@ class UtilsTest {
         parameters.put('test', 'value')
 
         assert utils.getMandatoryParameter(parameters, 'test', null) == 'value'
+    }
+
+    @Test
+    void testSWAReporting() {
+        utils.pushToSWA(
+            [step: 'anything'],
+            null
+        )
+        println("SHELL: ${jscr.shell}")
+        println("LOG: ${jlr.log}")
+//        assertThat(jscr, containsString)
     }
 }
