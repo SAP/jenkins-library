@@ -134,10 +134,10 @@ public class ChangeManagementTest extends BasePiperTest {
                               "me",
                               "topSecret",
                               "the-command",
-                              ["-key1", "val1", "-key2", "val2"])
+                              [new ChangeManagement.KeyValue("key1", "val1"), new ChangeManagement.KeyValue("key2", "val2")])
         commandLine = commandLine.replaceAll(' +', " ")
         assertThat(commandLine, not(containsString("CMCLIENT_OPTS")))
-        assertThat(commandLine, containsString("cmclient -e 'https://example.org/cm' -u 'me' -p 'topSecret' -t SOLMAN the-command -key1 val1 -key2 val2"))
+        assertThat(commandLine, containsString("cmclient -e 'https://example.org/cm' -u 'me' -p 'topSecret' -t SOLMAN the-command -key1 'val1' -key2 'val2'"))
     }
 
 @Test
@@ -147,16 +147,28 @@ public void testGetCommandLineWithCMClientOpts() {
                           "me",
                           "topSecret",
                           "the-command",
-                          ["-key1", "val1", "-key2", "val2"],
+                          [new ChangeManagement.KeyValue("key1", "val1"), new ChangeManagement.KeyValue("key2", "val2")],
                           '-Djavax.net.debug=all')
     commandLine = commandLine.replaceAll(' +', " ")
     assertThat(commandLine, containsString('export CMCLIENT_OPTS="-Djavax.net.debug=all"'))
 }
 
     @Test
+    public void testGetCommandLineWithBlanksInFilePath() {
+        String commandLine = new ChangeManagement(nullScript, null)
+            .getCMCommandLine('https://example.org/cm',
+                              "me",
+                              "topSecret",
+                              "the-command",
+                              [new ChangeManagement.KeyValue("key1", "/file path")])
+        commandLine = commandLine.replaceAll(' +', " ")
+        assertThat(commandLine, containsString("cmclient -e 'https://example.org/cm' -u 'me' -p 'topSecret' -t SOLMAN the-command -key1 '/file path'"))
+    }
+
+    @Test
     public void testCreateTransportRequestSucceeds() {
 
-        script.setReturnValue(JenkinsShellCallRule.Type.REGEX, ".*cmclient.*create-transport -cID 001 -dID 002.*", '004')
+        script.setReturnValue(JenkinsShellCallRule.Type.REGEX, ".*cmclient.*create-transport -cID '001' -dID '002'.*", '004')
         def transportRequestId = new ChangeManagement(nullScript).createTransportRequest('001', '002', '003', 'me')
 
         // the check for the transportRequestID is sufficient. This checks implicit the command line since that value is
@@ -186,7 +198,7 @@ public void testGetCommandLineWithCMClientOpts() {
     public void testUploadFileToTransportSucceeds() {
 
         // the regex provided below is an implicit check that the command line is fine.
-        script.setReturnValue(JenkinsShellCallRule.Type.REGEX,, 'upload-file-to-transport.*-cID 001 -tID 002 XXX /path', 0)
+        script.setReturnValue(JenkinsShellCallRule.Type.REGEX, "upload-file-to-transport.*-cID '001' -tID '002' XXX '/path'", 0)
 
         new ChangeManagement(nullScript).uploadFileToTransportRequest('001',
             '002',
@@ -220,7 +232,7 @@ public void testGetCommandLineWithCMClientOpts() {
     public void testReleaseTransportRequestSucceeds() {
 
         // the regex provided below is an implicit check that the command line is fine.
-        script.setReturnValue(JenkinsShellCallRule.Type.REGEX, 'release-transport.*-cID 001.*-tID 002', 0)
+        script.setReturnValue(JenkinsShellCallRule.Type.REGEX, "release-transport.*-cID '001'.*-tID '002'", 0)
 
         new ChangeManagement(nullScript).releaseTransportRequest('001',
             '002',
@@ -239,7 +251,7 @@ public void testGetCommandLineWithCMClientOpts() {
         thrown.expectMessage("Cannot release Transport Request '002'. Return code from cmclient: 1.")
 
         // the regex provided below is an implicit check that the command line is fine.
-        script.setReturnValue(JenkinsShellCallRule.Type.REGEX, 'release-transport.*-cID 001.*-tID 002', 1)
+        script.setReturnValue(JenkinsShellCallRule.Type.REGEX, "release-transport.*-cID '001'.*-tID '002'", 1)
 
         new ChangeManagement(nullScript).releaseTransportRequest('001',
             '002',
@@ -263,5 +275,53 @@ public void testGetCommandLineWithCMClientOpts() {
                 return changeIds
             }
         }
+    }
+    
+    @Test
+    public void opt_keyvalue_key_missing() {
+
+        thrown.expect(NullPointerException)
+        new ChangeManagement.KeyValue(null,"value")
+    }
+
+    @Test
+    public void opt_keyvalue_value_missing() {
+
+        thrown.expect(NullPointerException)
+        new ChangeManagement.KeyValue("key",null)
+    }
+
+    @Test
+    public void opt_keyvalue_tostring() {
+
+        assert new ChangeManagement.KeyValue("key","value").toString() == "-key 'value'"
+        assert new ChangeManagement.KeyValue("key","value").setQuotes(false).toString() == "-key value"
+    }
+
+    @Test
+    public void opt_switch_key_missing() {
+
+        thrown.expect(NullPointerException)
+        new ChangeManagement.Switch(null)
+    }
+
+    @Test
+    public void opt_switch_tostring() {
+
+        assert new ChangeManagement.Switch("key").toString() == "-key"
+    }
+    
+    @Test
+    public void opt_value_data_missing() {
+
+        thrown.expect(NullPointerException)
+        new ChangeManagement.Value(null)
+    }
+
+    @Test
+    public void opt_value_tostring() {
+
+        assert new ChangeManagement.Value("value").toString() == "'value'"
+        assert new ChangeManagement.Value("value").setQuotes(false).toString() == "value"
     }
 }
