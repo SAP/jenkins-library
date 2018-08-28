@@ -140,6 +140,22 @@ public class ChangeManagementTest extends BasePiperTest {
         assertThat(commandLine, containsString("cmclient -e 'https://example.org/cm' -u 'me' -p 'topSecret' -t SOLMAN the-command -key1 \"val1\" -key2 \"val2\""))
     }
 
+    @Test
+    public void testGetCommandLine_uploadFileToTransport() {
+        String commandLine = new ChangeManagement(nullScript, null)
+            .getCMCommandLine('https://example.org/cm',
+                              "me",
+                              "topSecret",
+                              "the-command",
+                              [new ChangeManagement.KeyValue('cID', '001'),
+                               new ChangeManagement.KeyValue('tID', '002'),
+                               '003', 
+                               new ChangeManagement.Value('/path to /file')])
+                              
+        commandLine = commandLine.replaceAll(' +', " ")
+        assertThat(commandLine, containsString("cmclient -e 'https://example.org/cm' -u 'me' -p 'topSecret' -t SOLMAN the-command -cID \"001\" -tID \"002\" 003 \"/path to /file\""))
+    }
+
 @Test
 public void testGetCommandLineWithCMClientOpts() {
     String commandLine = new ChangeManagement(nullScript, null)
@@ -280,10 +296,31 @@ public void testGetCommandLineWithCMClientOpts() {
     @Test
     public void opt_keyvalue_key_missing() {
 
-        thrown.expect(NullPointerException)
+        thrown.expect(IllegalArgumentException)
         new ChangeManagement.KeyValue(null,"value")
     }
 
+    @Test
+    public void opt_keyvalue_key_is_blank() {
+        
+        thrown.expect(IllegalArgumentException)
+        new ChangeManagement.KeyValue(" ","value")
+    }
+    
+    @Test
+    public void opt_keyvalue_key_contains_blank() {
+        
+        thrown.expect(IllegalArgumentException)
+        new ChangeManagement.KeyValue("k ey","value")
+    }
+    
+    @Test
+    public void opt_keyvalue_key_empty() {
+        
+        thrown.expect(IllegalArgumentException)
+        new ChangeManagement.KeyValue("","value")
+    }
+    
     @Test
     public void opt_keyvalue_value_missing() {
 
@@ -296,15 +333,30 @@ public void testGetCommandLineWithCMClientOpts() {
 
         assert new ChangeManagement.KeyValue("key","value").toString() == '-key "value"'
         assert new ChangeManagement.KeyValue("key","value").setQuotes(false).toString() == '-key value'
+        assert new ChangeManagement.KeyValue("key","").toString() == '-key ""'
     }
 
     @Test
     public void opt_switch_key_missing() {
 
-        thrown.expect(NullPointerException)
+        thrown.expect(IllegalArgumentException)
         new ChangeManagement.Switch(null)
     }
 
+    @Test
+    public void opt_switch_key_is_blank() {
+        
+        thrown.expect(IllegalArgumentException)
+        new ChangeManagement.Switch(" ")
+    }
+    
+    @Test
+    public void opt_switch_key_contains_blank() {
+        
+        thrown.expect(IllegalArgumentException)
+        new ChangeManagement.Switch("k ey")
+    }
+    
     @Test
     public void opt_switch_tostring() {
 
@@ -323,5 +375,6 @@ public void testGetCommandLineWithCMClientOpts() {
 
         assert new ChangeManagement.Value("value").toString() == '"value"'
         assert new ChangeManagement.Value("value").setQuotes(false).toString() == "value"
+        assert new ChangeManagement.Value("").toString() == '""'
     }
 }

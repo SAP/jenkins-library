@@ -15,7 +15,11 @@ import util.JenkinsWriteFileRule
 import util.Rules
 
 import static org.hamcrest.Matchers.hasItem
+import static org.hamcrest.Matchers.hasItems
+import static org.hamcrest.Matchers.notNullValue
+import static org.hamcrest.Matchers.containsString
 import static org.junit.Assert.assertThat
+
 import static org.junit.Assert.assertEquals
 
 class ArtifactSetVersionTest extends BasePiperTest {
@@ -60,8 +64,6 @@ class ArtifactSetVersionTest extends BasePiperTest {
         jscr.setReturnValue('git diff --quiet HEAD', 0)
         jscr.setReturnValue('git rev-parse --is-inside-work-tree 1>/dev/null 2>&1', 0)
 
-        binding.setVariable('Jenkins', [instance: [pluginManager: [plugins: [new DockerExecuteTest.PluginMock()]]]])
-
         helper.registerAllowedMethod('fileExists', [String.class], {true})
     }
 
@@ -72,12 +74,11 @@ class ArtifactSetVersionTest extends BasePiperTest {
         assertEquals('1.2.3-20180101010203_testCommitId', jer.env.getArtifactVersion())
         assertEquals('testCommitId', jer.env.getGitCommitId())
 
-        assertThat(jscr.shell, hasItem("mvn --file 'pom.xml' --batch-mode -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn versions:set -DnewVersion=1.2.3-20180101010203_testCommitId"))
+        assertThat(jscr.shell, hasItem("mvn --file 'pom.xml' --batch-mode -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn versions:set -DnewVersion=1.2.3-20180101010203_testCommitId -DgenerateBackupPoms=false"))
         assertThat(jscr.shell, hasItem('git add .'))
         assertThat(jscr.shell, hasItem("git commit -m 'update version 1.2.3-20180101010203_testCommitId'"))
-        assertThat(jscr.shell, hasItem("git remote set-url origin myGitSshUrl"))
-        assertThat(jscr.shell, hasItem("git tag build_1.2.3-20180101010203_testCommitId"))
-        assertThat(jscr.shell, hasItem("git push origin build_1.2.3-20180101010203_testCommitId"))
+        assertThat(jscr.shell, hasItems(containsString('git tag build_1.2.3-20180101010203_testCommitId'),
+                                        containsString('git push myGitSshUrl build_1.2.3-20180101010203_testCommitId')))
     }
 
     @Test
@@ -85,7 +86,7 @@ class ArtifactSetVersionTest extends BasePiperTest {
         jsr.step.artifactSetVersion(script: jsr.step, juStabGitUtils: gitUtils, buildTool: 'maven', commitVersion: false)
 
         assertEquals('1.2.3-20180101010203_testCommitId', jer.env.getArtifactVersion())
-        assertThat(jscr.shell, hasItem("mvn --file 'pom.xml' --batch-mode -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn versions:set -DnewVersion=1.2.3-20180101010203_testCommitId"))
+        assertThat(jscr.shell, hasItem("mvn --file 'pom.xml' --batch-mode -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn versions:set -DnewVersion=1.2.3-20180101010203_testCommitId -DgenerateBackupPoms=false"))
     }
 
     @Test
@@ -93,7 +94,7 @@ class ArtifactSetVersionTest extends BasePiperTest {
         jsr.step.artifactSetVersion(juStabGitUtils: gitUtils, buildTool: 'maven', commitVersion: false)
 
         assertEquals('1.2.3-20180101010203_testCommitId', jer.env.getArtifactVersion())
-        assertThat(jscr.shell, hasItem("mvn --file 'pom.xml' --batch-mode -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn versions:set -DnewVersion=1.2.3-20180101010203_testCommitId"))
+        assertThat(jscr.shell, hasItem("mvn --file 'pom.xml' --batch-mode -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn versions:set -DnewVersion=1.2.3-20180101010203_testCommitId -DgenerateBackupPoms=false"))
     }
 
     @Test

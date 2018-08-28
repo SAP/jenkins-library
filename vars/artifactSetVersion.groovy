@@ -31,7 +31,7 @@ def call(Map parameters = [:], Closure body = null) {
 
         def gitUtils = parameters.juStabGitUtils ?: new GitUtils()
 
-        if (fileExists('.git')) {
+        if (gitUtils.insideWorkTree()) {
             if (sh(returnStatus: true, script: 'git diff --quiet HEAD') != 0)
                 error "[${STEP_NAME}] Files in the workspace have been changed previously - aborting ${STEP_NAME}"
         }
@@ -96,9 +96,9 @@ def call(Map parameters = [:], Closure body = null) {
                 } catch (e) {
                     error "[${STEP_NAME}]git commit failed: ${e}"
                 }
-                sh "git remote set-url origin ${config.gitSshUrl}"
-                sh "git tag ${config.tagPrefix}${newVersion}"
-                sh "git push origin ${config.tagPrefix}${newVersion}"
+                sh """#!/bin/bash
+                      git tag ${config.tagPrefix}${newVersion}
+                      git push ${config.gitSshUrl} ${config.tagPrefix}${newVersion}"""
 
                 config.gitCommitId = gitUtils.getGitCommitIdOrNull()
             }

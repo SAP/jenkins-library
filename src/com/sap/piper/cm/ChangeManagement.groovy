@@ -65,7 +65,7 @@ public class ChangeManagement implements Serializable {
     }
 
     boolean isChangeInDevelopment(String changeId, String endpoint, String credentialsId, String clientOpts = '') {
-        int rc = executeWithCredentials(endpoint, credentialsId, 'is-change-in-development', [new KeyValue('cID', changeId), '--return-code'],
+        int rc = executeWithCredentials(endpoint, credentialsId, 'is-change-in-development', [new KeyValue('cID', changeId), new Raw('--return-code')],
             clientOpts) as int
 
         if (rc == 0) {
@@ -91,7 +91,7 @@ public class ChangeManagement implements Serializable {
     void uploadFileToTransportRequest(String changeId, String transportRequestId, String applicationId, String filePath, String endpoint, String credentialsId, String cmclientOpts = '') {
         int rc = executeWithCredentials(endpoint, credentialsId, 'upload-file-to-transport', [new KeyValue('cID', changeId),
                                                                                                  new KeyValue('tID', transportRequestId),
-                                                                                                 applicationId, new Value(filePath)],
+                                                                                                 new Raw(applicationId), new Value(filePath)],
             cmclientOpts) as int
 
         if(rc == 0) {
@@ -102,15 +102,18 @@ public class ChangeManagement implements Serializable {
 
     }
     
-    def executeWithCredentials(String endpoint, String credentialsId, String command, List<Objects> args, String clientOpts = '') {
+    def executeWithCredentials(String endpoint, String credentialsId, String command, List<CLOption> args, String clientOpts = '') {
         script.withCredentials([script.usernamePassword(
             credentialsId: credentialsId,
             passwordVariable: 'password',
             usernameVariable: 'username')]) {
-            def returnValue = script.sh(returnStatus: true,
-                script: getCMCommandLine(endpoint, script.username, script.password,
+            def cmScript = getCMCommandLine(endpoint, script.username, script.password,
                     command, args,
-                    clientOpts))
+                    clientOpts)
+            // user and password are masked by withCredentials
+            script.echo """[INFO] Executing command line: "${cmScript}"."""
+            def returnValue = script.sh(returnStatus: true,
+                script: cmScript)
             return returnValue;
 
         }
@@ -130,7 +133,7 @@ public class ChangeManagement implements Serializable {
                             String username,
                             String password,
                             String command,
-                            List<Object> args,
+                            List<CLOption> args,
                             String clientOpts = '') {
         String cmCommandLine = '#!/bin/bash'
         if(clientOpts) {
@@ -143,7 +146,7 @@ public class ChangeManagement implements Serializable {
                            -u '$username' \
                            -p '$password' \
                            -t SOLMAN \
-                          ${command} ${args.collect{it}.join(' ')}
+                          ${command} ${args.collect{it.toString()}.join(' ')}
                     """
         
         return cmCommandLine
@@ -187,20 +190,27 @@ public class ChangeManagement implements Serializable {
     public static final class KeyValue extends CLOption     {
         KeyValue(String key, String value) {
             super(key,value)
-            if(key==null) throw new NullPointerException("Option name is missing")
+            if(!key  || key =~ /\s/) throw new IllegalArgumentException("Option name is invalid: ${key} ")   
             if(value==null) throw new NullPointerException("Option value is missing")
         }
     }
     public static final class Switch extends CLOption {
         Switch(String key) {
             super(key,null)
-            if(key==null) throw new NullPointerException("Option name is missing")
+            if(!key  || key =~ /\s/) throw new IllegalArgumentException("Option name is invalid: ${key} ")   
         }
     }
     public static final class Value extends CLOption{
         Value(String value) {
             super(null,value)
             if(value==null) throw new NullPointerException("Option value is missing")
+        }
+    }
+    public static final class Raw extends CLOption{
+        Raw(String value) {
+            super(null,value)
+            if(value==null) throw new NullPointerException("Option value is missing")
+            setfQuote(false)
         }
     }
 }
