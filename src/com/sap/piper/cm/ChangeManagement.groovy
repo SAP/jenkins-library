@@ -65,7 +65,7 @@ public class ChangeManagement implements Serializable {
     }
 
     boolean isChangeInDevelopment(String changeId, String endpoint, String credentialsId, String clientOpts = '') {
-        int rc = executeWithCredentials(endpoint, credentialsId, 'is-change-in-development', [new KeyValue('cID', changeId), new Value('--return-code').setQuotes(false)],
+        int rc = executeWithCredentials(endpoint, credentialsId, 'is-change-in-development', [new KeyValue('cID', changeId), '--return-code'],
             clientOpts) as int
 
         if (rc == 0) {
@@ -91,7 +91,7 @@ public class ChangeManagement implements Serializable {
     void uploadFileToTransportRequest(String changeId, String transportRequestId, String applicationId, String filePath, String endpoint, String credentialsId, String cmclientOpts = '') {
         int rc = executeWithCredentials(endpoint, credentialsId, 'upload-file-to-transport', [new KeyValue('cID', changeId),
                                                                                                  new KeyValue('tID', transportRequestId),
-                                                                                                 new Value(applicationId).setQuotes(false), new Value(filePath)],
+                                                                                                 applicationId, new Value(filePath)],
             cmclientOpts) as int
 
         if(rc == 0) {
@@ -102,7 +102,7 @@ public class ChangeManagement implements Serializable {
 
     }
     
-    def executeWithCredentials(String endpoint, String credentialsId, String command, List<CLOption> args, String clientOpts = '') {
+    def executeWithCredentials(String endpoint, String credentialsId, String command, List<Objects> args, String clientOpts = '') {
         script.withCredentials([script.usernamePassword(
             credentialsId: credentialsId,
             passwordVariable: 'password',
@@ -130,7 +130,7 @@ public class ChangeManagement implements Serializable {
                             String username,
                             String password,
                             String command,
-                            List<CLOption> args,
+                            List<Object> args,
                             String clientOpts = '') {
         String cmCommandLine = '#!/bin/bash'
         if(clientOpts) {
@@ -153,14 +153,15 @@ public class ChangeManagement implements Serializable {
     {
         String key
         String value
-        boolean quoteValue=true;
+        boolean fQuote=true;
+        char quote='"'
         
         protected CLOption(String key, String value) {
             this.key = key
             this.value = value
         }
-        CLOption setQuotes(boolean quoteValue) {
-            this.quoteValue=quoteValue
+        CLOption setQuotes(boolean fQuote) {
+            this.fQuote=fQuote
             return this
         }
         String toString() {
@@ -172,8 +173,8 @@ public class ChangeManagement implements Serializable {
                 if(sb.length()!=0) {
                     sb.append(" ")
                 }
-                if(quoteValue) {
-                    sb.append("'$value'")
+                if(fQuote) {
+                    sb.append(quote).append(value).append(quote)
                 }
                 else {
                     sb.append(value)
