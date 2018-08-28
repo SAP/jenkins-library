@@ -107,10 +107,13 @@ public class ChangeManagement implements Serializable {
             credentialsId: credentialsId,
             passwordVariable: 'password',
             usernameVariable: 'username')]) {
-            def returnValue = script.sh(returnStatus: true,
-                script: getCMCommandLine(endpoint, script.username, script.password,
+            def cmScript = getCMCommandLine(endpoint, script.username, script.password,
                     command, args,
-                    clientOpts))
+                    clientOpts)
+            // user and password are masked by withCredentials
+            script.echo """[INFO] Executing command line: "${cmScript}"."""
+            def returnValue = script.sh(returnStatus: true,
+                script: cmScript)
             return returnValue;
 
         }
