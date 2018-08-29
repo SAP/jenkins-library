@@ -186,7 +186,7 @@ public void testGetCommandLineWithCMClientOpts() {
     public void testUploadFileToTransportSucceeds() {
 
         // the regex provided below is an implicit check that the command line is fine.
-        script.setReturnValue(JenkinsShellCallRule.Type.REGEX,, 'upload-file-to-transport.*-cID 001 -tID 002 XXX /path', 0)
+        script.setReturnValue(JenkinsShellCallRule.Type.REGEX,, 'upload-file-to-transport.*-cID 001 -tID 002 XXX "/path"', 0)
 
         new ChangeManagement(nullScript).uploadFileToTransportRequest('001',
             '002',

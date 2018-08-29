@@ -91,7 +91,7 @@ public class ChangeManagement implements Serializable {
     void uploadFileToTransportRequest(String changeId, String transportRequestId, String applicationId, String filePath, String endpoint, String credentialsId, String cmclientOpts = '') {
         int rc = executeWithCredentials(endpoint, credentialsId, 'upload-file-to-transport', ['-cID', changeId,
                                                                                                  '-tID', transportRequestId,
-                                                                                                 applicationId, filePath],
+                                                                                                 applicationId, "\"$filePath\""],
             cmclientOpts) as int
 
         if(rc == 0) {
