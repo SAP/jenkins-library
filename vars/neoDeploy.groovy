@@ -84,8 +84,8 @@ def call(parameters = [:]) {
         
         utils.pushToSWA([
             step: STEP_NAME, 
-            stepParam1: configuration.deployMode, // ['mta', 'warParams', 'warPropertiesFile']
-            stepParam2: configuration.warAction == 'rolling-update'?:'standard' // ['deploy', 'deploy-mta', 'rolling-update']
+            stepParam1: configuration.deployMode == 'mta'?'mta':'war', // ['mta', 'warParams', 'warPropertiesFile']
+            stepParam2: configuration.warAction == 'rolling-update'?'blue-green':'standard' // ['deploy', 'deploy-mta', 'rolling-update']
         ], configuration)
 
         def archivePath = configuration.archivePath
