@@ -7,9 +7,10 @@ import static org.junit.Assert.assertThat
 import org.junit.rules.ExpectedException
 import org.junit.rules.RuleChain
 
+import static org.hamcrest.Matchers.containsString
 import static org.hamcrest.Matchers.hasItem
 import static org.hamcrest.Matchers.is
-import static org.hamcrest.Matchers.containsString
+import static org.hamcrest.Matchers.not
 
 import util.JenkinsLoggingRule
 import util.JenkinsShellCallRule
@@ -79,6 +80,7 @@ class UtilsTest extends BasePiperTest {
         utils.pushToSWA([step: 'anything'], [collectTelemetryData: false])
         // asserts
         assertThat(jlr.log, containsString('[anything] Telemetry Report to SWA disabled!'))
+        assertThat(jscr.shell, not(hasItem(containsString('https://webanalytics.cfapps.eu10.hana.ondemand.com'))))
     }
 
     @Test
