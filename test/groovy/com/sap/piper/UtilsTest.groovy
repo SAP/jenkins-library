@@ -31,7 +31,6 @@ class UtilsTest extends BasePiperTest {
         .around(jscr)
         .around(jlr)
 
-    //private utils = new Utils()
     private parameters
 
     @Before
