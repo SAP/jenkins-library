@@ -59,7 +59,8 @@ def generateSha1Inline(input) {
 void pushToSWA(Map parameters, Map config) {
     try {
         //allow opt-out via configuration
-        if (!config.collectTelemetryData) {
+        if (!config?.collectTelemetryData) {
+            echo "[${parameters.get('step')}] Telemetry Report to SWA disabled!"
             return
         }
 
