@@ -3,15 +3,18 @@ general:
   productiveBranch: 'master'
   collectTelemetryData: true
   changeManagement:
-      transportRequestLabel: 'TransportRequest\s?:'
-      changeDocumentLabel: 'ChangeDocument\s?:'
-      clientOpts: ''
-      credentialsId: 'CM'
-      git:
-        from: 'origin/master'
-        to: 'HEAD'
-        format: '%b'
+    transportRequestLabel: 'TransportRequest\s?:'
+    changeDocumentLabel: 'ChangeDocument\s?:'
+    clientOpts: ''
+    credentialsId: 'CM'
+    git:
+      from: 'origin/master'
+      to: 'HEAD'
+      format: '%b'
   gitSshKeyCredentialsId: '' #needed to allow sshagent to run with local ssh key
+  jenkinsKubernetes:
+    jnlpAgent: 's4sdk/jenkins-agent-k8s:latest'
+
 #Steps Specific Configuration
 steps:
   artifactSetVersion:
@@ -131,6 +134,11 @@ steps:
     mtaDeployPlugin:
       dockerImage: 's4sdk/docker-cf-cli'
       dockerWorkspace: '/home/piper'
+  dockerExecuteOnKubernetes:
+    stashIncludes:
+      workspace: '**/*.*'
+    stashExcludes:
+      workspace: 'nohup.out'
   influxWriteData:
     influxServer: 'jenkins'
   mavenExecute:

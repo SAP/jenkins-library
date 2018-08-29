@@ -32,13 +32,13 @@ def call(Map parameters = [:], Closure body = null) {
         def gitUtils = parameters?.juStabGitUtils ?: new GitUtils()
         def script = parameters?.script ?: this
 
-        if (fileExists('.git')) {
+        if (gitUtils.insideWorkTree()) {
             if (sh(returnStatus: true, script: 'git diff --quiet HEAD') != 0)
                 error "[${STEP_NAME}] Files in the workspace have been changed previously - aborting ${STEP_NAME}"
         }
 
         // load default & individual configuration
-        Map config = ConfigurationHelper
+        ConfigurationHelper configHelper = ConfigurationHelper
             .loadStepDefaults(this)
             .mixinGeneralConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS, this, CONFIG_KEY_COMPATIBILITY)
             .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS, this, CONFIG_KEY_COMPATIBILITY)
@@ -48,13 +48,11 @@ def call(Map parameters = [:], Closure body = null) {
             .withMandatoryProperty('buildTool')
             .dependingOn('buildTool').mixin('filePath')
             .dependingOn('buildTool').mixin('versioningTemplate')
-            .use()
 
-        config = new ConfigurationHelper(config)
-            .addIfEmpty('gitSshUrl', (config.buildTool == 'docker' && config.artifactType == 'appContainer')?script.commonPipelineEnvironment.getAppContainerProperty('gitSshUrl'):script.commonPipelineEnvironment.getGitSshUrl())
-            .addIfEmpty('timestamp', getTimestamp(config.timestampTemplate))
-            .withMandatoryProperty('gitSshUrl')
-            .use()
+        Map config = configHelper.use()
+
+        config = configHelper.addIfEmpty('timestamp', getTimestamp(config.timestampTemplate))
+                             .use()
 
         new Utils().pushToSWA([step: STEP_NAME, stepParam1: config.buildTool, stepParam2: config.artifactType], config)
 
@@ -76,6 +74,13 @@ def call(Map parameters = [:], Closure body = null) {
         }
 
         if (config.commitVersion) {
+            config = new ConfigurationHelper(config)
+                .addIfEmpty('gitSshUrl', isAppContainer(config)
+                            ?script.commonPipelineEnvironment.getAppContainerProperty('gitSshUrl')
+                            :script.commonPipelineEnvironment.getGitSshUrl())
+                .withMandatoryProperty('gitSshUrl')
+                .use()
+            
             sh 'git add .'
 
             sshagent([config.gitSshKeyCredentialsId]) {
@@ -88,15 +93,15 @@ def call(Map parameters = [:], Closure body = null) {
                 } catch (e) {
                     error "[${STEP_NAME}]git commit failed: ${e}"
                 }
-                sh "git remote set-url origin ${config.gitSshUrl}"
-                sh "git tag ${config.tagPrefix}${newVersion}"
-                sh "git push origin ${config.tagPrefix}${newVersion}"
+                sh """#!/bin/bash
+                      git tag ${config.tagPrefix}${newVersion}
+                      git push ${config.gitSshUrl} ${config.tagPrefix}${newVersion}"""
 
                 config.gitCommitId = gitUtils.getGitCommitIdOrNull()
             }
         }
 
-        if (config.buildTool == 'docker' && config.artifactType == 'appContainer') {
+        if (isAppContainer(config)) {
             script.commonPipelineEnvironment.setAppContainerProperty('artifactVersion', newVersion)
             script.commonPipelineEnvironment.setAppContainerProperty('gitCommitId', config.gitCommitId)
         } else {
@@ -107,6 +112,10 @@ def call(Map parameters = [:], Closure body = null) {
 
         echo "[${STEP_NAME}]New version: ${newVersion}"
     }
+}
+
+def isAppContainer(config){
+    return config.buildTool == 'docker' && config.artifactType == 'appContainer'
 }
 
 def getTimestamp(pattern){

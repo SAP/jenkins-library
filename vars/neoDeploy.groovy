@@ -78,6 +78,7 @@ def call(parameters = [:]) {
             .mixin(stepCompatibilityConfiguration)
             .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS)
             .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName?:env.STAGE_NAME, STEP_CONFIG_KEYS)
+            .addIfEmpty('archivePath', script.commonPipelineEnvironment.getMtarFilePath())
             .mixin(parameters, PARAMETER_KEYS)
             .use()
 
