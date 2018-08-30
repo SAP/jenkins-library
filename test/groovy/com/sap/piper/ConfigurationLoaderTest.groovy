@@ -18,7 +18,7 @@ class ConfigurationLoaderTest {
         defaultConfiguration.stages = [staticCodeChecks: [pmdExcludes: '*.java']]
 
         def pipelineEnvironment = [configuration: configuration]
-        DefaultValueCache.createInstance(defaultConfiguration)
+        DefaultValueCache.createInstance(defaultConfiguration, null)
         return [commonPipelineEnvironment: pipelineEnvironment]
     }
 

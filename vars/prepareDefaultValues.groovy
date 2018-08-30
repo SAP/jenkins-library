@@ -19,7 +19,7 @@ def call(Map parameters = [:]) {
                         MapUtils.pruneNulls(defaultValues),
                         MapUtils.pruneNulls(configuration))
             }
-            DefaultValueCache.createInstance(defaultValues)
+            DefaultValueCache.createInstance(defaultValues, null)
         }
     }
 }
