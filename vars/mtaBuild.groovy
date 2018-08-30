@@ -35,51 +35,53 @@ def call(Map parameters = [:]) {
 
         new Utils().pushToSWA([step: STEP_NAME], configuration)
 
-        def java = new ToolDescriptor('Java', 'JAVA_HOME', '', '/bin/', 'java', '1.8.0', '-version 2>&1')
-        java.verify(this, configuration)
+        def mtarFileName = dockerExecute(script: script, dockerImage: configuration.dockerImage, dockerOptions: configuration.dockerOptions) {
+            def java = new ToolDescriptor('Java', 'JAVA_HOME', '', '/bin/', 'java', '1.8.0', '-version 2>&1')
+            java.verify(this, configuration)
 
-        def mta = new JavaArchiveDescriptor('SAP Multitarget Application Archive Builder', 'MTA_JAR_LOCATION', 'mtaJarLocation', '1.0.6', '-v', java)
-        mta.verify(this, configuration)
+            def mta = new JavaArchiveDescriptor('SAP Multitarget Application Archive Builder', 'MTA_JAR_LOCATION', 'mtaJarLocation', '1.0.6', '-v', java)
+            mta.verify(this, configuration)
 
-        def mtaYamlName = "mta.yaml"
-        def applicationName = configuration.applicationName
+            def mtaYmlName = "${pwd()}/mta.yaml"
+            def applicationName = configuration.applicationName
 
-        if (!fileExists(mtaYamlName)) {
-            if (!applicationName) {
-                echo "'applicationName' not provided as parameter - will not try to generate ${mtaYamlName} file"
-            } else {
-                MtaUtils mtaUtils = new MtaUtils(this)
-                mtaUtils.generateMtaDescriptorFromPackageJson("package.json", mtaYamlName, applicationName)
+            if (!fileExists(mtaYmlName)) {
+                if (!applicationName) {
+                    echo "'applicationName' not provided as parameter - will not try to generate mta.yml file"
+                } else {
+                    MtaUtils mtaUtils = new MtaUtils(this)
+                    mtaUtils.generateMtaDescriptorFromPackageJson("${pwd()}/package.json", mtaYmlName, applicationName)
+                }
             }
-        }
 
-        def mtaYaml = readYaml file: mtaYamlName
+            def mtaYaml = readYaml file: "${pwd()}/mta.yaml"
 
-        //[Q]: Why not yaml.dump()? [A]: This reformats the whole file.
-        sh "sed -ie \"s/\\\${timestamp}/`date +%Y%m%d%H%M%S`/g\" \"${mtaYamlName}\""
+            //[Q]: Why not yaml.dump()? [A]: This reformats the whole file.
+            sh "sed -ie \"s/\\\${timestamp}/`date +%Y%m%d%H%M%S`/g\" \"${pwd()}/mta.yaml\""
 
-        def id = mtaYaml.ID
-        if (!id) {
-            error "Property 'ID' not found in ${mtaYamlName} file."
-        }
+            def id = mtaYaml.ID
+            if (!id) {
+                error "Property 'ID' not found in mta.yaml file at: '${pwd()}'"
+            }
 
-        def mtarFileName = "${id}.mtar"
-        def mtaJar = mta.getCall(this, configuration)
-        def buildTarget = configuration.buildTarget
+            def mtarFileName = "${id}.mtar"
+            def mtaJar = mta.getCall(this, configuration)
+            def buildTarget = configuration.buildTarget
 
-        def mtaCall = "${mtaJar} --mtar ${mtarFileName} --build-target=${buildTarget}"
+            def mtaCall = "${mtaJar} --mtar ${mtarFileName} --build-target=${buildTarget}"
 
-        if (configuration.extension) mtaCall += " --extension=$configuration.extension"
-        mtaCall += ' build'
+            if (configuration.extension) mtaCall += " --extension=$configuration.extension"
+            mtaCall += ' build'
 
-        dockerExecute(script: script, dockerImage: configuration.dockerImage, dockerOptions: configuration.dockerOptions) {
             sh """#!/bin/bash
                 export PATH=./node_modules/.bin:${PATH}
                 $mtaCall
                 """
+
+            return mtarFileName
         }
 
-        def mtarFilePath = "${mtarFileName}"
+        def mtarFilePath = "${pwd()}/${mtarFileName}"
         script?.commonPipelineEnvironment?.setMtarFilePath(mtarFilePath)
 
         return mtarFilePath
