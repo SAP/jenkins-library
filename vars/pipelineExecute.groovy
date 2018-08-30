@@ -5,7 +5,7 @@ import com.sap.piper.Utils
  * Load and executes a pipeline from another git repository.
  *
  */
-def call(Map parameters = [:]) {
+void call(Map parameters = [:]) {
 
     node() {
 

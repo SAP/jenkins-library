@@ -20,7 +20,7 @@ import groovy.transform.Field
  * @param script global script environment of the Jenkinsfile run
  * @param others document all parameters
  */
-def call(Map parameters = [:]) {
+void call(Map parameters = [:]) {
     handlePipelineStepErrors (stepName: STEP_NAME, stepParameters: parameters) {
         def script = parameters.script
         if (script == null)
