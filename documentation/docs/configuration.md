@@ -1,6 +1,6 @@
 # Configuration
 
-Configuration is done via a yml-file, located at `.pipeline/config.yml` in the **master branch** of your source code repository.
+Configuration is done via a yml-file, located at `.pipeline/config.yml` in your source code repository. The file needs to be present in each relevant branch (e.g. master, feature branches, pull request branches).
 
 Your configuration inherits from the default configuration located at [https://github.com/SAP/jenkins-library/blob/master/resources/default_pipeline_environment.yml](https://github.com/SAP/jenkins-library/blob/master/resources/default_pipeline_environment.yml).
 
