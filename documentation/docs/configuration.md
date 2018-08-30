@@ -60,7 +60,7 @@ steps:
     newmanCollection: 'myNewmanCollection.file'
     newmanEnvironment: 'myNewmanEnvironment'
     newmanGlobals: 'myNewmanGlobals'
- ```
+```
 
 ## Access to configuration from custom scripts
 
