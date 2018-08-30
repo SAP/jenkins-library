@@ -18,15 +18,17 @@ Note that a version is formed by `major.minor.patch`, and a version is compatibl
 | -----------------|-----------|--------------------------------------------------------|--------------------|
 | `script`         | yes       |                                                        |                    |
 | `dockerImage`    | yes       |                                                        |                    |
+| `dockerOptions`  | no        | ''                                                     |                    |
 | `buildTarget`    | yes       | `'NEO'`                                                | 'CF', 'NEO', 'XSA' |
 | `extension`    | no       |                                                            |                    |
 | `mtaJarLocation` | no        | `'mta.jar'`                                        |                    |
 | `applicationName`| no        |                                                        |                    |
 
 * `script` - The common script environment of the Jenkinsfile running. Typically the reference to the script calling the pipeline step is provided with the `this` parameter, as in `script: this`. This allows the function to access the [`commonPipelineEnvironment`](commonPipelineEnvironment.md) for retrieving, for example, configuration parameters.
-* The Docker image to execute the MTA build.
+* `dockerImage` - The Docker image to execute the MTA build.
   A custom built image needs to include Multi-target Application Archive Builder.
   Refer to [SAP Help Portal](https://help.sap.com/viewer/58746c584026430a890170ac4d87d03b/Cloud/en-US/ba7dd5a47b7a4858a652d15f9673c28d.html) for information on how to set it up.
+* `dockerOptions` Docker options to be set when starting the container. It can be a list or a string.
 * `buildTarget` - The target platform to which the mtar can be deployed.
 * `extension` - The path to the extension descriptor file.
 * `mtaJarLocation` - The location of the SAP Multitarget Application Archive Builder jar file, including file name and extension. First, the location is retrieved from the environment variables using the environment variable`MTA_JAR_LOCATION`. If no environment variable is provided, the location is retrieved from the parameters, or the step configuration using the key `mtaJarLocation`. If SAP Multitarget Application Archive Builder is not found on one of the previous locations an AbortException is thrown.

@@ -12,11 +12,13 @@ import groovy.transform.Field
 @Field Set STEP_CONFIG_KEYS = [
     'applicationName',
     'buildTarget',
+    'dockerImage',
     'extension',
-    'mtaJarLocation',
-    'dockerImage'
+    'mtaJarLocation'
 ]
-@Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
+@Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS.plus([
+    'dockerOptions'
+])
 
 def call(Map parameters = [:]) {
     handlePipelineStepErrors (stepName: STEP_NAME, stepParameters: parameters) {
@@ -72,9 +74,9 @@ def call(Map parameters = [:]) {
 
         dockerExecute(script: script, dockerImage: configuration.dockerImage, dockerOptions: configuration.dockerOptions) {
             sh """#!/bin/bash
-            export PATH=./node_modules/.bin:${PATH}
-            $mtaCall
-            """
+                export PATH=./node_modules/.bin:${PATH}
+                $mtaCall
+                """
         }
 
         def mtarFilePath = "${mtarFileName}"
