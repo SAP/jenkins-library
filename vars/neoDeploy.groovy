@@ -81,6 +81,12 @@ def call(parameters = [:]) {
             .addIfEmpty('archivePath', script.commonPipelineEnvironment.getMtarFilePath())
             .mixin(parameters, PARAMETER_KEYS)
             .use()
+        
+        utils.pushToSWA([
+            step: STEP_NAME, 
+            stepParam1: configuration.deployMode == 'mta'?'mta':'war', // ['mta', 'warParams', 'warPropertiesFile']
+            stepParam2: configuration.warAction == 'rolling-update'?'blue-green':'standard' // ['deploy', 'deploy-mta', 'rolling-update']
+        ], configuration)
 
         def archivePath = configuration.archivePath
         if(archivePath?.trim()) {
