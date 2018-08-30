@@ -38,6 +38,7 @@ Note that the environment variable `MTA_JAR_LOCATION` has priority. In case that
 ## Step configuration
 The following parameters can also be specified as step parameters using the global configuration file:
 
+* `dockerImage`
 * `buildTarget`
 * `extension`
 * `mtaJarLocation`
