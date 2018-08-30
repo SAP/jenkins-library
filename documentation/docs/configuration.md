@@ -14,9 +14,40 @@ Configuration of the Piper steps as well the Piper templates can be done in a hi
 2. Stage configuration parameters define a Jenkins pipeline stage dependent set of parameters (e.g. deployment options for the `Acceptance` stage)
 3. Step configuration defines how steps behave in general (e.g. step `cloudFoundryDeploy`)
 4. General configuration parameters define parameters which are available across step boundaries
-5. Default configuration comes with the Piper library and is always available
+
+Stage, step and general configuration is provided in a layered manner.
+
+1. Project layer
+2. Custom layer(s)
+3. Default configuration layer
+
+Project specific configuration is provided in `.pipeline/config.yml`. Custom configuration is intended for holding configuration which is not project specific, but applies to all projects of a company/department (e.g. source code repositories, binary repositories). The default configuration layer contains properties shipped with the piper library itself. The project layer takes the highest predecense, the default configuration layer the lowest.
+
 
 ![Piper Configuration](images/piper_config.png)
+
+## How to configure custom layers.
+A custom configuration layer is represented by a file in the `resources` folder in a custom shared lib. The format of that file is the same than the `default_pipeline_environment.yml`. In order to use a custom layer register the custom shared lib in the same way like the piper library. Put a corresponding `@Library` statement in the pipeline and load the additional customer configuration layer by including it into the setupCommonPipelineEnvironment call:
+
+```
+  setupCommonPipelineEnvironment script:this,
+                                 customDefaults: '<THE_CONFIGURATION_FILE>'
+```
+
+It is possible to add several customer configurations which can be provided by several additional shard libs:
+
+
+```
+  setupCommonPipelineEnvironment script:this,
+                                 customDefaults: [
+                                                   '<CONFIGURATION_FILE_1>',
+                                                   '<CONFIGURATION_FILE_2>'
+                                                 ]
+```
+
+It needs to be ensured that several additional customer configuration files do not cause name clashes.
+
+It is possible to add several customer configurations which can be provided by several additional shard libs:
 
 ## Collecting telemetry data
 
