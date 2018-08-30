@@ -5,10 +5,12 @@ import com.cloudbees.groovy.cps.NonCPS
 class DefaultValueCache implements Serializable {
     private static DefaultValueCache instance
 
-    private Map defaultValues
+    enum Level { DEFAULTS }
+
+    private Map<Level, Map> configurations = [:]
 
     private DefaultValueCache(Map defaultValues){
-        this.defaultValues = defaultValues
+        this.configurations.put(Level.DEFAULTS, defaultValues)
     }
 
     @NonCPS
@@ -22,7 +24,7 @@ class DefaultValueCache implements Serializable {
 
     @NonCPS
     Map getDefaultValues(){
-        return defaultValues
+        return configurations.get(Level.DEFAULTS)
     }
 
     static reset(){
