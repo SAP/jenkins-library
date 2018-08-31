@@ -1,21 +1,27 @@
 package util
 
-import com.lesfurets.jenkins.unit.BasePipelineTest
-import com.sap.piper.DefaultValueCache
 import org.junit.rules.TestRule
 import org.junit.runner.Description
 import org.junit.runners.model.Statement
 import org.yaml.snakeyaml.Yaml
 
+import com.lesfurets.jenkins.unit.BasePipelineTest
+
 class JenkinsReadYamlRule implements TestRule {
     final BasePipelineTest testInstance
-    final String testRoot
 
-    JenkinsReadYamlRule(BasePipelineTest testInstance, testRoot = '') {
+    // Empty project configuration file registered by default
+    // since almost every test needs it.
+    def ymls = ['.pipeline/config.yml': {''}]
+
+    JenkinsReadYamlRule(BasePipelineTest testInstance) {
         this.testInstance = testInstance
-        this.testRoot = testRoot
     }
 
+    JenkinsReadYamlRule registerYaml(fileName, closure) {
+        ymls.put(fileName, closure)
+        return this
+    }
     @Override
     Statement apply(Statement base, Description description) {
         return statement(base)
@@ -29,7 +35,9 @@ class JenkinsReadYamlRule implements TestRule {
                     if(m.text) {
                         return new Yaml().load(m.text)
                     } else if(m.file) {
-                        return new Yaml().load(("${this.testRoot}${m.file}" as File).text)
+                        def closure = ymls.get(m.file)
+                        if(!closure) throw new NullPointerException("yaml file '${m.file}' not registered.")
+                        return new Yaml().load(closure())
                     } else {
                         throw new IllegalArgumentException("Key 'text' is missing in map ${m}.")
                     }

@@ -3,13 +3,14 @@ import org.junit.Rule;
 import org.junit.Test
 import org.junit.rules.ExpectedException
 import org.junit.rules.RuleChain;
-
 import com.sap.piper.DefaultValueCache
 
 import util.BasePiperTest
 import util.JenkinsLoggingRule
+import util.JenkinsReadYamlRule
 import util.JenkinsShellCallRule
 import util.JenkinsStepRule;
+
 import util.Rules
 
 public class PrepareDefaultValuesTest extends BasePiperTest {
@@ -21,6 +22,7 @@ public class PrepareDefaultValuesTest extends BasePiperTest {
     @Rule
     public RuleChain ruleChain = Rules
         .getCommonRules(this)
+        .around(new JenkinsReadYamlRule(this))
         .around(thrown)
         .around(jsr)
         .around(jlr)

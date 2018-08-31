@@ -1,3 +1,4 @@
+
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -9,8 +10,11 @@ import util.BasePiperTest
 import static org.junit.Assert.assertEquals
 import static org.junit.Assert.assertTrue
 
+
 import util.Rules
+import util.JenkinsReadYamlRule
 import util.JenkinsStepRule
+
 
 class ChecksPublishResultsTest extends BasePiperTest {
     Map publisherStepOptions
@@ -21,6 +25,7 @@ class ChecksPublishResultsTest extends BasePiperTest {
     @Rule
     public RuleChain ruleChain = Rules
         .getCommonRules(this)
+        .around(new JenkinsReadYamlRule(this))
         .around(jsr)
 
     @Before
