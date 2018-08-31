@@ -22,7 +22,8 @@ public class PrepareDefaultValuesTest extends BasePiperTest {
     @Rule
     public RuleChain ruleChain = Rules
         .getCommonRules(this)
-        .around(new JenkinsReadYamlRule(this))
+        .around(new JenkinsReadYamlRule(this)
+            .registerYaml('.pipeline/config.yml', { "config: 'default'" }))
         .around(thrown)
         .around(jsr)
         .around(jlr)
@@ -38,6 +39,15 @@ public class PrepareDefaultValuesTest extends BasePiperTest {
                 default: return "the:'end'"
             }
         })
+    }
+
+    @Test
+    public void testDefaultProjectConfigurationIsLoaded() {
+
+        jsr.step.call(script: nullScript)
+
+        assert DefaultValueCache.getInstance().getProjectConfiguration().size() == 1
+        assert DefaultValueCache.getInstance().getProjectConfiguration().config == 'default'
     }
 
     @Test
