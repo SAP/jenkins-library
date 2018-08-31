@@ -10,7 +10,9 @@ import com.lesfurets.jenkins.unit.BasePipelineTest
 class JenkinsReadYamlRule implements TestRule {
     final BasePipelineTest testInstance
 
-    def ymls = [:]
+    // Empty project configuration file registered by default
+    // since almost every test needs it.
+    def ymls = ['.pipeline/config.yml': {''}]
 
     JenkinsReadYamlRule(BasePipelineTest testInstance) {
         this.testInstance = testInstance
