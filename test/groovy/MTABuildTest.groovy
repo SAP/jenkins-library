@@ -12,6 +12,7 @@ import org.yaml.snakeyaml.parser.ParserException
 import hudson.AbortException
 import util.BasePiperTest
 import util.JenkinsLoggingRule
+import util.JenkinsReadYamlRule
 import util.JenkinsShellCallRule
 import util.JenkinsStepRule
 import util.Rules
@@ -32,6 +33,7 @@ public class MtaBuildTest extends BasePiperTest {
     @Rule
     public RuleChain ruleChain = Rules
         .getCommonRules(this)
+        .around(new JenkinsReadYamlRule(this))
         .around(thrown)
         .around(jlr)
         .around(jscr)

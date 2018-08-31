@@ -12,6 +12,7 @@ import util.JenkinsLoggingRule
 import util.JenkinsShellCallRule
 import util.JenkinsStepRule
 import util.JenkinsWriteFileRule
+import util.JenkinsReadYamlRule
 import util.Rules
 
 import static org.junit.Assert.assertThat
@@ -33,6 +34,7 @@ class CloudFoundryDeployTest extends BasePiperTest {
     @Rule
     public RuleChain rules = Rules
         .getCommonRules(this)
+        .around(new JenkinsReadYamlRule(this))
         .around(thrown)
         .around(jlr)
         .around(jscr)
