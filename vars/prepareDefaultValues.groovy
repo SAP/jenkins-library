@@ -20,7 +20,7 @@ def call(Map parameters = [:]) {
                         MapUtils.pruneNulls(configuration))
             }
 
-            def projectConfig = readYaml(file: '.pipeline/config.yml')
+            def projectConfig = readYaml(file: parameters.projectConfiguration ?: '.pipeline/config.yml')
 
             DefaultValueCache.createInstance(defaultValues, MapUtils.pruneNulls(projectConfig))
         }

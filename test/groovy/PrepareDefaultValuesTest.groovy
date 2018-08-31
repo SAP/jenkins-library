@@ -23,7 +23,8 @@ public class PrepareDefaultValuesTest extends BasePiperTest {
     public RuleChain ruleChain = Rules
         .getCommonRules(this)
         .around(new JenkinsReadYamlRule(this)
-            .registerYaml('.pipeline/config.yml', { "config: 'default'" }))
+            .registerYaml('.pipeline/config.yml', { "config: 'default'" })
+            .registerYaml('.pipeline/alternateConfig.yml', { "config: 'alternate'" }))
         .around(thrown)
         .around(jsr)
         .around(jlr)
@@ -48,6 +49,16 @@ public class PrepareDefaultValuesTest extends BasePiperTest {
 
         assert DefaultValueCache.getInstance().getProjectConfiguration().size() == 1
         assert DefaultValueCache.getInstance().getProjectConfiguration().config == 'default'
+    }
+
+    @Test
+    public void testAlternateProjectConfigurationIsLoaded() {
+
+        jsr.step.call(script: nullScript, projectConfiguration: '.pipeline/alternateConfig.yml')
+
+        assert DefaultValueCache.getInstance().getProjectConfiguration().size() == 1
+        assert DefaultValueCache.getInstance().getProjectConfiguration().config == 'alternate'
+
     }
 
     @Test
