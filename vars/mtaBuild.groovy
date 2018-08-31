@@ -38,26 +38,26 @@ def call(Map parameters = [:]) {
         def mta = new JavaArchiveDescriptor('SAP Multitarget Application Archive Builder', 'MTA_JAR_LOCATION', 'mtaJarLocation', '1.0.6', '-v', java)
         mta.verify(this, configuration)
 
-        def mtaYmlName = "${pwd()}/mta.yaml"
+        def mtaYamlName = "mta.yaml"
         def applicationName = configuration.applicationName
 
-        if (!fileExists(mtaYmlName)) {
+        if (!fileExists(mtaYamlName)) {
             if (!applicationName) {
-                echo "'applicationName' not provided as parameter - will not try to generate mta.yml file"
+                echo "'applicationName' not provided as parameter - will not try to generate ${mtaYamlName} file"
             } else {
                 MtaUtils mtaUtils = new MtaUtils(this)
-                mtaUtils.generateMtaDescriptorFromPackageJson("${pwd()}/package.json", mtaYmlName, applicationName)
+                mtaUtils.generateMtaDescriptorFromPackageJson("package.json", mtaYamlName, applicationName)
             }
         }
 
-        def mtaYaml = readYaml file: "${pwd()}/mta.yaml"
+        def mtaYaml = readYaml file: mtaYamlName
 
         //[Q]: Why not yaml.dump()? [A]: This reformats the whole file.
-        sh "sed -ie \"s/\\\${timestamp}/`date +%Y%m%d%H%M%S`/g\" \"${pwd()}/mta.yaml\""
+        sh "sed -ie \"s/\\\${timestamp}/`date +%Y%m%d%H%M%S`/g\" \"${mtaYamlName}\""
 
         def id = mtaYaml.ID
         if (!id) {
-            error "Property 'ID' not found in mta.yaml file at: '${pwd()}'"
+            error "Property 'ID' not found in ${mtaYamlName} file."
         }
 
         def mtarFileName = "${id}.mtar"
@@ -74,7 +74,7 @@ def call(Map parameters = [:]) {
             $mtaCall
             """
 
-        def mtarFilePath = "${pwd()}/${mtarFileName}"
+        def mtarFilePath = "${mtarFileName}"
         script?.commonPipelineEnvironment?.setMtarFilePath(mtarFilePath)
 
         return mtarFilePath
