@@ -1,8 +1,10 @@
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.RuleChain
+
 import util.BasePiperTest
 import util.JenkinsDockerExecuteRule
+import util.JenkinsReadYamlRule
 import util.JenkinsShellCallRule
 import util.JenkinsStepRule
 import util.Rules
@@ -15,7 +17,6 @@ import static org.junit.Assert.assertEquals
 import static org.junit.Assert.assertThat
 import static org.junit.Assert.assertTrue
 
-
 class MavenExecuteTest extends BasePiperTest {
 
     Map dockerParameters
@@ -27,6 +28,7 @@ class MavenExecuteTest extends BasePiperTest {
     @Rule
     public RuleChain ruleChain = Rules
         .getCommonRules(this)
+        .around(new JenkinsReadYamlRule(this))
         .around(jder)
         .around(jscr)
         .around(jsr)

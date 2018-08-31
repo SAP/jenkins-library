@@ -13,10 +13,10 @@ import util.BasePiperTest
 import util.JenkinsCredentialsRule
 import util.JenkinsStepRule
 import util.JenkinsLoggingRule
+import util.JenkinsReadYamlRule
 import util.Rules
 
 import hudson.AbortException
-
 
 public class TransportRequestUploadFileTest extends BasePiperTest {
 
@@ -27,6 +27,7 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
     @Rule
     public RuleChain ruleChain = Rules.getCommonRules(this)
         .around(thrown)
+        .around(new JenkinsReadYamlRule(this))
         .around(jsr)
         .around(jlr)
         .around(new JenkinsCredentialsRule(this)

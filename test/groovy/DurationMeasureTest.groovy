@@ -1,4 +1,5 @@
 #!groovy
+
 import org.junit.Rule
 import org.junit.Test
 import util.BasePiperTest
@@ -7,7 +8,9 @@ import static org.junit.Assert.assertTrue
 import org.junit.rules.RuleChain
 
 import util.Rules
+import util.JenkinsReadYamlRule
 import util.JenkinsStepRule
+
 
 class DurationMeasureTest extends BasePiperTest {
     private JenkinsStepRule jsr = new JenkinsStepRule(this)
@@ -15,6 +18,7 @@ class DurationMeasureTest extends BasePiperTest {
     @Rule
     public RuleChain rules = Rules
         .getCommonRules(this)
+        .around(new JenkinsReadYamlRule(this))
         .around(jsr)
 
     @Test
