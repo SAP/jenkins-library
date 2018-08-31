@@ -35,6 +35,8 @@ def call(Map parameters = [:]) {
 
         new Utils().pushToSWA([step: STEP_NAME], configuration)
 
+        def mtarFileName = ""
+
         dockerExecute(script: script, dockerImage: configuration.dockerImage, dockerOptions: configuration.dockerOptions) {
             def java = new ToolDescriptor('Java', 'JAVA_HOME', '', '/bin/', 'java', '1.8.0', '-version 2>&1')
             java.verify(this, configuration)
@@ -64,7 +66,7 @@ def call(Map parameters = [:]) {
                 error "Property 'ID' not found in mta.yaml file at: '${pwd()}'"
             }
 
-            def mtarFileName = "${id}.mtar"
+            mtarFileName = "${id}.mtar"
             def mtaJar = mta.getCall(this, configuration)
             def buildTarget = configuration.buildTarget
 
