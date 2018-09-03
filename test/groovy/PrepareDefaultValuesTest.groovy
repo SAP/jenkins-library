@@ -3,13 +3,14 @@ import org.junit.Rule;
 import org.junit.Test
 import org.junit.rules.ExpectedException
 import org.junit.rules.RuleChain;
-
 import com.sap.piper.DefaultValueCache
 
 import util.BasePiperTest
 import util.JenkinsLoggingRule
+import util.JenkinsReadYamlRule
 import util.JenkinsShellCallRule
 import util.JenkinsStepRule;
+
 import util.Rules
 
 public class PrepareDefaultValuesTest extends BasePiperTest {
@@ -21,6 +22,9 @@ public class PrepareDefaultValuesTest extends BasePiperTest {
     @Rule
     public RuleChain ruleChain = Rules
         .getCommonRules(this)
+        .around(new JenkinsReadYamlRule(this)
+            .registerYaml('.pipeline/config.yml', { "config: 'default'" })
+            .registerYaml('.pipeline/alternateConfig.yml', { "config: 'alternate'" }))
         .around(thrown)
         .around(jsr)
         .around(jlr)
@@ -28,15 +32,32 @@ public class PrepareDefaultValuesTest extends BasePiperTest {
     @Before
     public void setup() {
 
-        helper.registerAllowedMethod("libraryResource", [String], { fileName-> return fileName })
-        helper.registerAllowedMethod("readYaml", [Map], { m ->
-            switch(m.text) {
-                case 'default_pipeline_environment.yml': return [default: 'config']
-                case 'custom.yml': return [custom: 'myConfig']
+        helper.registerAllowedMethod("libraryResource", [String], { fileName ->
+            switch(fileName) {
+                case 'default_pipeline_environment.yml': return "default: 'config'"
+                case 'custom.yml': return "custom: 'myConfig'"
                 case 'not_found': throw new hudson.AbortException('No such library resource not_found could be found')
-                default: return [the:'end']
+                default: return "the:'end'"
             }
         })
+    }
+
+    @Test
+    public void testDefaultProjectConfigurationIsLoaded() {
+
+        jsr.step.call(script: nullScript)
+
+        assert DefaultValueCache.getInstance().getProjectConfiguration().size() == 1
+        assert DefaultValueCache.getInstance().getProjectConfiguration().config == 'default'
+    }
+
+    @Test
+    public void testAlternateProjectConfigurationIsLoaded() {
+
+        jsr.step.call(script: nullScript, projectConfiguration: '.pipeline/alternateConfig.yml')
+
+        assert DefaultValueCache.getInstance().getProjectConfiguration().size() == 1
+        assert DefaultValueCache.getInstance().getProjectConfiguration().config == 'alternate'
 
     }
 
@@ -52,7 +73,7 @@ public class PrepareDefaultValuesTest extends BasePiperTest {
     @Test
     public void testReInitializeOnCustomConfig() {
 
-        DefaultValueCache.createInstance([key:'value'])
+        DefaultValueCache.createInstance([key:'value'], null)
 
         // existing instance is dropped in case a custom config is provided.
         jsr.step.call(script: nullScript, customDefaults: 'custom.yml')
@@ -65,7 +86,7 @@ public class PrepareDefaultValuesTest extends BasePiperTest {
     @Test
     public void testNoReInitializeWithoutCustomConfig() {
 
-        DefaultValueCache.createInstance([key:'value'])
+        DefaultValueCache.createInstance([key:'value'], null)
 
         jsr.step.call(script: nullScript)
 

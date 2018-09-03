@@ -4,8 +4,10 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.RuleChain
+
 import util.BasePiperTest
 import util.JenkinsReadMavenPomRule
+import util.JenkinsReadYamlRule
 import util.JenkinsShellCallRule
 import util.Rules
 
@@ -23,6 +25,7 @@ class MavenArtifactVersioningTest extends BasePiperTest{
     @Rule
     public RuleChain ruleChain = Rules
         .getCommonRules(this)
+        .around(new JenkinsReadYamlRule(this))
         .around(jscr)
         .around(new JenkinsReadMavenPomRule(this, 'test/resources/versioning/MavenArtifactVersioning'))
 

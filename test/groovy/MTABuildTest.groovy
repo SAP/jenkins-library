@@ -12,6 +12,7 @@ import org.yaml.snakeyaml.parser.ParserException
 import hudson.AbortException
 import util.BasePiperTest
 import util.JenkinsLoggingRule
+import util.JenkinsReadYamlRule
 import util.JenkinsShellCallRule
 import util.JenkinsStepRule
 import util.Rules
@@ -28,35 +29,26 @@ public class MtaBuildTest extends BasePiperTest {
     private JenkinsLoggingRule jlr = new JenkinsLoggingRule(this)
     private JenkinsShellCallRule jscr = new JenkinsShellCallRule(this)
     private JenkinsStepRule jsr = new JenkinsStepRule(this)
+    private JenkinsReadYamlRule jryr = new JenkinsReadYamlRule(this).registerYaml('mta.yaml', { defaultMtaYaml() })
 
     @Rule
     public RuleChain ruleChain = Rules
         .getCommonRules(this)
+        .around(jryr)
         .around(thrown)
         .around(jlr)
         .around(jscr)
         .around(jsr)
 
-    private static currentDir
-    private static newDir
-    private static mtaYaml
-
     @BeforeClass
     static void createTestFiles() {
 
-        currentDir = "${tmp.getRoot()}"
-        mtaYaml = tmp.newFile('mta.yaml')
-        newDir = "$currentDir/newDir"
-        tmp.newFolder('newDir')
-        tmp.newFile('newDir/mta.yaml') << defaultMtaYaml()
     }
 
     @Before
     void init() {
-        mtaYaml.text = defaultMtaYaml()
 
-        helper.registerAllowedMethod('pwd', [], { currentDir } )
-        helper.registerAllowedMethod('fileExists', [GString.class], { false })
+        helper.registerAllowedMethod('fileExists', [String], { s -> false })
         helper.registerAllowedMethod('sh', [Map], { Map m -> getVersionWithoutEnvVars(m) })
 
         binding.setVariable('PATH', '/usr/bin')
@@ -77,7 +69,7 @@ public class MtaBuildTest extends BasePiperTest {
 
         jsr.step.call(buildTarget: 'NEO')
 
-        assert jscr.shell.find { c -> c =~ /sed -ie "s\/\\\$\{timestamp\}\/`date \+%Y%m%d%H%M%S`\/g" ".*\/mta.yaml"$/}
+        assert jscr.shell.find { c -> c =~ /sed -ie "s\/\\\$\{timestamp\}\/`date \+%Y%m%d%H%M%S`\/g" "mta.yaml"$/}
     }
 
 
@@ -89,22 +81,8 @@ public class MtaBuildTest extends BasePiperTest {
 
         def mtarFilePath = nullScript.commonPipelineEnvironment.getMtarFilePath()
 
-        assert mtarFilePath == "$currentDir/com.mycompany.northwind.mtar"
+        assert mtarFilePath == "com.mycompany.northwind.mtar"
     }
-
-
-    @Test
-    void mtaBuildWithSurroundingDirTest() {
-
-        helper.registerAllowedMethod('pwd', [], { newDir } )
-
-        def mtarFilePath = jsr.step.call(buildTarget: 'NEO')
-
-        assert jscr.shell.find { c -> c =~ /sed -ie "s\/\\\$\{timestamp\}\/`date \+%Y%m%d%H%M%S`\/g" ".*\/newDir\/mta.yaml"$/}
-
-        assert mtarFilePath == "$newDir/com.mycompany.northwind.mtar"
-    }
-
 
     @Test
     void mtaJarLocationAsParameterTest() {
@@ -121,7 +99,7 @@ public class MtaBuildTest extends BasePiperTest {
     @Test
     void noMtaPresentTest() {
 
-        mtaYaml.delete()
+        jryr.registerYaml('mta.yaml', { throw new FileNotFoundException() })
         thrown.expect(FileNotFoundException)
 
         jsr.step.call(buildTarget: 'NEO')
@@ -134,7 +112,7 @@ public class MtaBuildTest extends BasePiperTest {
         thrown.expect(ParserException)
         thrown.expectMessage('while parsing a block mapping')
 
-        mtaYaml.text = badMtaYaml()
+        jryr.registerYaml('mta.yaml', { badMtaYaml() })
 
         jsr.step.call(buildTarget: 'NEO')
     }
@@ -144,9 +122,9 @@ public class MtaBuildTest extends BasePiperTest {
     void noIdInMtaTest() {
 
         thrown.expect(AbortException)
-        thrown.expectMessage("Property 'ID' not found in mta.yaml file at: '")
+        thrown.expectMessage("Property 'ID' not found in mta.yaml file.")
 
-        mtaYaml.text = noIdMtaYaml()
+        jryr.registerYaml('mta.yaml', { noIdMtaYaml() })
 
         jsr.step.call(buildTarget: 'NEO')
     }
