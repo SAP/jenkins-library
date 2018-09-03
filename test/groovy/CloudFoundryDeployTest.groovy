@@ -6,6 +6,7 @@ import org.junit.rules.ExpectedException
 import org.junit.rules.RuleChain
 import org.yaml.snakeyaml.Yaml
 import util.BasePiperTest
+import util.JenkinsCredentialsRule
 import util.JenkinsEnvironmentRule
 import util.JenkinsDockerExecuteRule
 import util.JenkinsLoggingRule
@@ -39,27 +40,8 @@ class CloudFoundryDeployTest extends BasePiperTest {
         .around(jwfr)
         .around(jedr)
         .around(jer)
+        .around(new JenkinsCredentialsRule(this).withCredentials('test_cfCredentialsId', 'test_cf', '********'))
         .around(jsr) // needs to be activated after jedr, otherwise executeDocker is not mocked
-
-    @Before
-    void init() throws Throwable {
-        helper.registerAllowedMethod('usernamePassword', [Map], { m -> return m })
-        helper.registerAllowedMethod('withCredentials', [List, Closure], { l, c ->
-            if(l[0].credentialsId == 'test_cfCredentialsId') {
-                binding.setProperty('username', 'test_cf')
-                binding.setProperty('password', '********')
-            } else if(l[0].credentialsId == 'test_camCredentialsId') {
-                binding.setProperty('username', 'test_cam')
-                binding.setProperty('password', '********')
-            }
-            try {
-                c()
-            } finally {
-                binding.setProperty('username', null)
-                binding.setProperty('password', null)
-            }
-        })
-    }
 
     @Test
     void testNoTool() throws Exception {
