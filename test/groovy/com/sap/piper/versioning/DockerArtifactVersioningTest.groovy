@@ -20,7 +20,7 @@ class DockerArtifactVersioningTest extends BasePiperTest{
 
     String passedDir
 
-    JenkinsReadFileRule jrfr = new JenkinsReadFileRule(this, 'test/resources/DockerArtifactVersioning')
+    JenkinsReadFileRule jrfr = new JenkinsReadFileRule(this, 'test/resources/versioning/DockerArtifactVersioning')
     JenkinsWriteFileRule jwfr = new JenkinsWriteFileRule(this)
     JenkinsLoggingRule jlr = new JenkinsLoggingRule(this)
     ExpectedException thrown = ExpectedException.none()
