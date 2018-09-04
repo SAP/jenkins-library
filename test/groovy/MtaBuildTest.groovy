@@ -33,7 +33,6 @@ public class MtaBuildTest extends BasePiperTest {
     private JenkinsStepRule jsr = new JenkinsStepRule(this)
     private JenkinsReadYamlRule jryr = new JenkinsReadYamlRule(this).registerYaml('mta.yaml', defaultMtaYaml() )
 
-
     @Rule
     public RuleChain ruleChain = Rules
         .getCommonRules(this)
@@ -200,6 +199,13 @@ public class MtaBuildTest extends BasePiperTest {
         assert 'mta-docker-image:latest' == jder.dockerParams.dockerImage
     }
 
+    @Test
+    void canConfigureDockerOptions() {
+
+        jsr.step.call(script: nullScript, dockerOptions: 'something')
+
+        assert 'something' == jder.dockerParams.dockerOptions
+    }
 
     @Test
     void buildTargetFromDefaultStepConfigurationTest() {
