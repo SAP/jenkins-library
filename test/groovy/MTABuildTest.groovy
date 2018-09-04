@@ -124,7 +124,7 @@ public class MtaBuildTest extends BasePiperTest {
         thrown.expect(AbortException)
         thrown.expectMessage("Property 'ID' not found in mta.yaml file.")
 
-        jryr.registerYaml('mta.yaml', { noIdMtaYaml() })
+        jryr.registerYaml('mta.yaml', noIdMtaYaml() )
 
         jsr.step.call(buildTarget: 'NEO')
     }
