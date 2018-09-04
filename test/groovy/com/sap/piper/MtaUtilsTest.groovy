@@ -12,6 +12,7 @@ import org.yaml.snakeyaml.Yaml
 import groovy.json.JsonSlurper
 import hudson.AbortException
 import util.BasePiperTest
+import util.JenkinsReadYamlRule
 import util.Rules
 
 
@@ -32,6 +33,7 @@ class MtaUtilsTest extends BasePiperTest {
     @Rule
     public RuleChain ruleChain = Rules
         .getCommonRules(this)
+        .around(new JenkinsReadYamlRule(this))
         .around(thrown)
 
     @Before
