@@ -21,7 +21,7 @@ import groovy.transform.Field
 ])
 
 def call(Map parameters = [:]) {
-    handlePipelineStepErrors (stepName: STEP_NAME, stepParameters: parameters) {
+    handlePipelineStepErrors(stepName: STEP_NAME, stepParameters: parameters) {
         final script = parameters?.script ?: [commonPipelineEnvironment: commonPipelineEnvironment]
 
         // load default & individual configuration
@@ -29,13 +29,11 @@ def call(Map parameters = [:]) {
             .loadStepDefaults(this)
             .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS)
             .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS)
-            .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName?:env.STAGE_NAME, STEP_CONFIG_KEYS)
+            .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName ?: env.STAGE_NAME, STEP_CONFIG_KEYS)
             .mixin(parameters, PARAMETER_KEYS)
             .use()
 
         new Utils().pushToSWA([step: STEP_NAME], configuration)
-
-        def mtarFileName = ""
 
         dockerExecute(script: script, dockerImage: configuration.dockerImage, dockerOptions: configuration.dockerOptions) {
             def java = new ToolDescriptor('Java', 'JAVA_HOME', '', '/bin/', 'java', '1.8.0', '-version 2>&1')
@@ -44,29 +42,29 @@ def call(Map parameters = [:]) {
             def mta = new JavaArchiveDescriptor('SAP Multitarget Application Archive Builder', 'MTA_JAR_LOCATION', 'mtaJarLocation', '1.0.6', '-v', java)
             mta.verify(this, configuration)
 
-            def mtaYmlName = "${pwd()}/mta.yaml"
+            def mtaYamlName = "mta.yaml"
             def applicationName = configuration.applicationName
 
-            if (!fileExists(mtaYmlName)) {
+            if (!fileExists(mtaYamlName)) {
                 if (!applicationName) {
-                    echo "'applicationName' not provided as parameter - will not try to generate mta.yml file"
+                    echo "'applicationName' not provided as parameter - will not try to generate ${mtaYamlName} file"
                 } else {
                     MtaUtils mtaUtils = new MtaUtils(this)
-                    mtaUtils.generateMtaDescriptorFromPackageJson("${pwd()}/package.json", mtaYmlName, applicationName)
+                    mtaUtils.generateMtaDescriptorFromPackageJson("package.json", mtaYamlName, applicationName)
                 }
             }
 
-            def mtaYaml = readYaml file: "${pwd()}/mta.yaml"
+            def mtaYaml = readYaml file: mtaYamlName
 
             //[Q]: Why not yaml.dump()? [A]: This reformats the whole file.
-            sh "sed -ie \"s/\\\${timestamp}/`date +%Y%m%d%H%M%S`/g\" \"${pwd()}/mta.yaml\""
+            sh "sed -ie \"s/\\\${timestamp}/`date +%Y%m%d%H%M%S`/g\" \"${mtaYamlName}\""
 
             def id = mtaYaml.ID
             if (!id) {
-                error "Property 'ID' not found in mta.yaml file at: '${pwd()}'"
+                error "Property 'ID' not found in ${mtaYamlName} file."
             }
 
-            mtarFileName = "${id}.mtar"
+            def mtarFileName = "${id}.mtar"
             def mtaJar = mta.getCall(this, configuration)
             def buildTarget = configuration.buildTarget
 
@@ -76,13 +74,12 @@ def call(Map parameters = [:]) {
             mtaCall += ' build'
 
             sh """#!/bin/bash
-                export PATH=./node_modules/.bin:${PATH}
-                $mtaCall
-                """
-        }
+            export PATH=./node_modules/.bin:${PATH}
+            $mtaCall
+            """
 
-        def mtarFilePath = "${pwd()}/${mtarFileName}"
-        script?.commonPipelineEnvironment?.setMtarFilePath(mtarFilePath)
+            def mtarFilePath = "${mtarFileName}"
+            script?.commonPipelineEnvironment?.setMtarFilePath(mtarFilePath)
+        }
     }
 }
-
