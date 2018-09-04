@@ -29,7 +29,7 @@ public class MtaBuildTest extends BasePiperTest {
     private JenkinsLoggingRule jlr = new JenkinsLoggingRule(this)
     private JenkinsShellCallRule jscr = new JenkinsShellCallRule(this)
     private JenkinsStepRule jsr = new JenkinsStepRule(this)
-    private JenkinsReadYamlRule jryr = new JenkinsReadYamlRule(this).registerYaml('mta.yaml', { defaultMtaYaml() })
+    private JenkinsReadYamlRule jryr = new JenkinsReadYamlRule(this).registerYaml('mta.yaml', defaultMtaYaml() )
 
     @Rule
     public RuleChain ruleChain = Rules
@@ -112,7 +112,7 @@ public class MtaBuildTest extends BasePiperTest {
         thrown.expect(ParserException)
         thrown.expectMessage('while parsing a block mapping')
 
-        jryr.registerYaml('mta.yaml', { badMtaYaml() })
+        jryr.registerYaml('mta.yaml', badMtaYaml())
 
         jsr.step.call(buildTarget: 'NEO')
     }
