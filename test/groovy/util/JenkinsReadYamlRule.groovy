@@ -18,8 +18,8 @@ class JenkinsReadYamlRule implements TestRule {
         this.testInstance = testInstance
     }
 
-    JenkinsReadYamlRule registerYaml(fileName, closure) {
-        ymls.put(fileName, closure)
+    JenkinsReadYamlRule registerYaml(fileName, yaml) {
+        ymls.put(fileName, yaml)
         return this
     }
     @Override
@@ -32,15 +32,17 @@ class JenkinsReadYamlRule implements TestRule {
             @Override
             void evaluate() throws Throwable {
                 testInstance.helper.registerAllowedMethod("readYaml", [Map], { Map m ->
+                    def yml
                     if(m.text) {
-                        return new Yaml().load(m.text)
+                        yml = m.text
                     } else if(m.file) {
-                        def closure = ymls.get(m.file)
-                        if(!closure) throw new NullPointerException("yaml file '${m.file}' not registered.")
-                        return new Yaml().load(closure())
+                        yml = ymls.get(m.file)
+                        if(yml == null) throw new NullPointerException("yaml file '${m.file}' not registered.")
+                        if(yml instanceof Closure) yml = yml()
                     } else {
-                        throw new IllegalArgumentException("Key 'text' is missing in map ${m}.")
+                        throw new IllegalArgumentException("Key 'text' and 'file' are both missing in map ${m}.")
                     }
+                    return new Yaml().load(yml)
                 })
 
                 base.evaluate()

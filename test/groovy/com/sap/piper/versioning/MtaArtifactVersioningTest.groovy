@@ -17,7 +17,7 @@ class MtaArtifactVersioningTest extends BasePiperTest{
     @Rule
     public RuleChain ruleChain = Rules
         .getCommonRules(this)
-        .around(new JenkinsReadYamlRule(this).registerYaml('mta.yaml', {"version: '1.2.3'"}))
+        .around(new JenkinsReadYamlRule(this).registerYaml('mta.yaml', "version: '1.2.3'"))
         .around(jscr)
 
     @Test
