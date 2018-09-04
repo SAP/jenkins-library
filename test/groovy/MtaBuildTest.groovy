@@ -11,6 +11,7 @@ import org.yaml.snakeyaml.parser.ParserException
 
 import hudson.AbortException
 import util.BasePiperTest
+import util.JenkinsDockerExecuteRule
 import util.JenkinsLoggingRule
 import util.JenkinsReadYamlRule
 import util.JenkinsShellCallRule
@@ -28,6 +29,7 @@ public class MtaBuildTest extends BasePiperTest {
     private ExpectedException thrown = new ExpectedException()
     private JenkinsLoggingRule jlr = new JenkinsLoggingRule(this)
     private JenkinsShellCallRule jscr = new JenkinsShellCallRule(this)
+    private JenkinsDockerExecuteRule jder = new JenkinsDockerExecuteRule(this)
     private JenkinsStepRule jsr = new JenkinsStepRule(this)
     private JenkinsReadYamlRule jryr = new JenkinsReadYamlRule(this).registerYaml('mta.yaml', defaultMtaYaml() )
 
@@ -38,6 +40,7 @@ public class MtaBuildTest extends BasePiperTest {
         .around(thrown)
         .around(jlr)
         .around(jscr)
+        .around(jder)
         .around(jsr)
 
     @BeforeClass
@@ -188,6 +191,21 @@ public class MtaBuildTest extends BasePiperTest {
         assert jscr.shell.find(){ c -> c.contains('java -jar mta.jar --mtar com.mycompany.northwind.mtar --build-target=NEO build')}
     }
 
+    @Test
+    void canConfigureDockerImage() {
+
+        jsr.step.call(script: nullScript, dockerImage: 'mta-docker-image:latest')
+
+        assert 'mta-docker-image:latest' == jder.dockerParams.dockerImage
+    }
+
+    @Test
+    void canConfigureDockerOptions() {
+
+        jsr.step.call(script: nullScript, dockerOptions: 'something')
+
+        assert 'something' == jder.dockerParams.dockerOptions
+    }
 
     @Test
     void buildTargetFromDefaultStepConfigurationTest() {
