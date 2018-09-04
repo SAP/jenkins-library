@@ -12,6 +12,7 @@ import static org.junit.Assert.assertThat
 import util.BasePiperTest
 import util.JenkinsStepRule
 import util.JenkinsLoggingRule
+import util.JenkinsReadYamlRule
 import util.JenkinsShellCallRule
 import util.JenkinsDockerExecuteRule
 import util.Rules
@@ -27,6 +28,7 @@ class NewmanExecuteTest extends BasePiperTest {
     @Rule
     public RuleChain rules = Rules
         .getCommonRules(this)
+        .around(new JenkinsReadYamlRule(this))
         .around(thrown)
         .around(jedr)
         .around(jscr)

@@ -5,8 +5,8 @@ import org.junit.Test
 import org.junit.rules.RuleChain
 
 import util.BasePiperTest
+import util.JenkinsReadYamlRule
 import util.JenkinsStepRule
-
 import static org.junit.Assert.assertEquals
 import static org.junit.Assert.assertTrue
 
@@ -21,6 +21,7 @@ class TestsPublishResultsTest extends BasePiperTest {
     @Rule
     public RuleChain ruleChain = Rules
         .getCommonRules(this)
+        .around(new JenkinsReadYamlRule(this))
         .around(jsr)
 
     @Before
