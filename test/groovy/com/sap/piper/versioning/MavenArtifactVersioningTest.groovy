@@ -27,7 +27,7 @@ class MavenArtifactVersioningTest extends BasePiperTest{
         .getCommonRules(this)
         .around(new JenkinsReadYamlRule(this))
         .around(jscr)
-        .around(new JenkinsReadMavenPomRule(this, 'test/resources/MavenArtifactVersioning'))
+        .around(new JenkinsReadMavenPomRule(this, 'test/resources/versioning/MavenArtifactVersioning'))
 
     @Before
     void init() {

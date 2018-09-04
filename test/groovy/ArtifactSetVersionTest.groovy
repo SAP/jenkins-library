@@ -43,7 +43,7 @@ class ArtifactSetVersionTest extends BasePiperTest {
         .around(thrown)
         .around(jlr)
         .around(jscr)
-        .around(new JenkinsReadMavenPomRule(this, 'test/resources/MavenArtifactVersioning'))
+        .around(new JenkinsReadMavenPomRule(this, 'test/resources/versioning/MavenArtifactVersioning'))
         .around(jwfr)
         .around(jder)
         .around(jsr)
