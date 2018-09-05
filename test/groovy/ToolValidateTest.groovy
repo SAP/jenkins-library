@@ -9,6 +9,7 @@ import org.junit.rules.RuleChain
 
 import util.BasePiperTest
 import util.JenkinsLoggingRule
+import util.JenkinsReadYamlRule
 import util.JenkinsStepRule
 import util.Rules
 
@@ -21,6 +22,7 @@ class ToolValidateTest extends BasePiperTest {
     @Rule
     public RuleChain ruleChain = Rules
         .getCommonRules(this)
+        .around(new JenkinsReadYamlRule(this))
         .around(thrown)
         .around(jlr)
         .around(jsr)
@@ -145,17 +147,6 @@ class ToolValidateTest extends BasePiperTest {
     }
 
     @Test
-    void validateNeoIncompatibleVersionTest() {
-
-        thrown.expect(AbortException)
-        thrown.expectMessage('The installed version of SAP Cloud Platform Console Client is 1.126.51.')
-
-        helper.registerAllowedMethod('sh', [Map], { Map m -> getIncompatibleVersion(m) })
-
-        jsr.step.call(tool: 'neo', home: home)
-    }
-
-    @Test
     void validateCmIncompatibleVersionTest() {
 
         thrown.expect(AbortException)
@@ -195,9 +186,6 @@ class ToolValidateTest extends BasePiperTest {
         helper.registerAllowedMethod('sh', [Map], { Map m -> getVersion(m) })
 
         jsr.step.call(tool: 'neo', home: home)
-
-        assert jlr.log.contains('Verifying SAP Cloud Platform Console Client version 3.39.10 or compatible version.')
-        assert jlr.log.contains('SAP Cloud Platform Console Client version 3.39.10 is installed.')
     }
 
     @Test

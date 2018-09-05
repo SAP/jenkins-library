@@ -7,13 +7,14 @@ import groovy.transform.Field
 import groovy.text.SimpleTemplateEngine
 
 @Field String STEP_NAME = 'artifactSetVersion'
+@Field Map CONFIG_KEY_COMPATIBILITY = [gitSshKeyCredentialsId: 'gitCredentialsId']
 @Field Set STEP_CONFIG_KEYS = [
     'artifactType',
     'buildTool',
     'commitVersion',
     'dockerVersionSource',
     'filePath',
-    'gitCredentialsId',
+    'gitSshKeyCredentialsId',
     'gitUserEMail',
     'gitUserName',
     'gitSshUrl',
@@ -24,16 +25,13 @@ import groovy.text.SimpleTemplateEngine
 ]
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS.plus('gitCommitId')
 
-def call(Map parameters = [:]) {
+def call(Map parameters = [:], Closure body = null) {
 
     handlePipelineStepErrors (stepName: STEP_NAME, stepParameters: parameters) {
 
-        def gitUtils = parameters.juStabGitUtils
-        if (gitUtils == null) {
-            gitUtils = new GitUtils()
-        }
+        def gitUtils = parameters.juStabGitUtils ?: new GitUtils()
 
-        if (fileExists('.git')) {
+        if (gitUtils.insideWorkTree()) {
             if (sh(returnStatus: true, script: 'git diff --quiet HEAD') != 0)
                 error "[${STEP_NAME}] Files in the workspace have been changed previously - aborting ${STEP_NAME}"
         }
@@ -43,77 +41,84 @@ def call(Map parameters = [:]) {
             script = this
 
         // load default & individual configuration
-        Map configuration = ConfigurationHelper
+        ConfigurationHelper configHelper = ConfigurationHelper
             .loadStepDefaults(this)
-            .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS)
+            .mixinGeneralConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS, this, CONFIG_KEY_COMPATIBILITY)
+            .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS, this, CONFIG_KEY_COMPATIBILITY)
+            .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName?:env.STAGE_NAME, STEP_CONFIG_KEYS, this, CONFIG_KEY_COMPATIBILITY)
             .mixin(gitCommitId: gitUtils.getGitCommitIdOrNull())
-            .mixin(parameters, PARAMETER_KEYS)
-            .use()
+            .mixin(parameters, PARAMETER_KEYS, this, CONFIG_KEY_COMPATIBILITY)
+            .withMandatoryProperty('buildTool')
+            .dependingOn('buildTool').mixin('filePath')
+            .dependingOn('buildTool').mixin('versioningTemplate')
 
-        def utils = new Utils()
-        def buildTool = utils.getMandatoryParameter(configuration, 'buildTool')
+        Map config = configHelper.use()
 
-        if (!configuration.filePath)
-            configuration.filePath = configuration[buildTool].filePath //use default configuration
+        config = configHelper.addIfEmpty('timestamp', getTimestamp(config.timestampTemplate))
+                             .use()
+
+        new Utils().pushToSWA([step: STEP_NAME, stepParam1: config.buildTool, stepParam2: config.artifactType], config)
+
+        def artifactVersioning = ArtifactVersioning.getArtifactVersioning(config.buildTool, script, config)
+        def currentVersion = artifactVersioning.getVersion()
 
         def newVersion
-        def artifactVersioning = ArtifactVersioning.getArtifactVersioning(buildTool, script, configuration)
-
-        if(configuration.artifactType == 'appContainer' && configuration.dockerVersionSource == 'appVersion'){
-            if (script.commonPipelineEnvironment.getArtifactVersion())
-                //replace + sign if available since + is not allowed in a Docker tag
-                newVersion = script.commonPipelineEnvironment.getArtifactVersion().replace('+', '_')
-            else
-                error ("[${STEP_NAME}] No artifact version available for 'dockerVersionSource: appVersion' -> executeBuild needs to run for the application artifact first to set the artifactVersion for the application artifact.'")
+        if (config.artifactType == 'appContainer' && config.dockerVersionSource == 'appVersion'){
+            newVersion = currentVersion
         } else {
-            def currentVersion = artifactVersioning.getVersion()
-
-            def timestamp = configuration.timestamp ? configuration.timestamp : getTimestamp(configuration.timestampTemplate)
-
-            def versioningTemplate = configuration.versioningTemplate ? configuration.versioningTemplate : configuration[configuration.buildTool].versioningTemplate
-            //defined in default configuration
-            def binding = [version: currentVersion, timestamp: timestamp, commitId: configuration.gitCommitId]
-            def templatingEngine = new SimpleTemplateEngine()
-            def template = templatingEngine.createTemplate(versioningTemplate).make(binding)
-            newVersion = template.toString()
+            def binding = [version: currentVersion, timestamp: config.timestamp, commitId: config.gitCommitId]
+            newVersion = new SimpleTemplateEngine().createTemplate(config.versioningTemplate).make(binding).toString()
         }
 
         artifactVersioning.setVersion(newVersion)
 
-        def gitCommitId
+        if(body != null){
+            body(newVersion)
+        }
 
-        if (configuration.commitVersion) {
+        if (config.commitVersion) {
+            config = new ConfigurationHelper(config)
+                .addIfEmpty('gitSshUrl', isAppContainer(config)
+                            ?script.commonPipelineEnvironment.getAppContainerProperty('gitSshUrl')
+                            :script.commonPipelineEnvironment.getGitSshUrl())
+                .withMandatoryProperty('gitSshUrl')
+                .use()
+            
             sh 'git add .'
 
-            sshagent([configuration.gitCredentialsId]) {
+            sshagent([config.gitSshKeyCredentialsId]) {
                 def gitUserMailConfig = ''
-                if (configuration.gitUserName && configuration.gitUserEMail)
-                    gitUserMailConfig = "-c user.email=\"${configuration.gitUserEMail}\" -c user.name=\"${configuration.gitUserName}\""
+                if (config.gitUserName && config.gitUserEMail)
+                    gitUserMailConfig = "-c user.email=\"${config.gitUserEMail}\" -c user.name=\"${config.gitUserName}\""
 
                 try {
                     sh "git ${gitUserMailConfig} commit -m 'update version ${newVersion}'"
                 } catch (e) {
                     error "[${STEP_NAME}]git commit failed: ${e}"
                 }
-                sh "git remote set-url origin ${configuration.gitSshUrl}"
-                sh "git tag ${configuration.tagPrefix}${newVersion}"
-                sh "git push origin ${configuration.tagPrefix}${newVersion}"
+                sh """#!/bin/bash
+                      git tag ${config.tagPrefix}${newVersion}
+                      git push ${config.gitSshUrl} ${config.tagPrefix}${newVersion}"""
 
-                gitCommitId = gitUtils.getGitCommitIdOrNull()
+                config.gitCommitId = gitUtils.getGitCommitIdOrNull()
             }
         }
 
-        if (buildTool == 'docker' && configuration.artifactType == 'appContainer') {
+        if (isAppContainer(config)) {
             script.commonPipelineEnvironment.setAppContainerProperty('artifactVersion', newVersion)
-            script.commonPipelineEnvironment.setAppContainerProperty('gitCommitId', gitCommitId)
+            script.commonPipelineEnvironment.setAppContainerProperty('gitCommitId', config.gitCommitId)
         } else {
             //standard case
             script.commonPipelineEnvironment.setArtifactVersion(newVersion)
-            script.commonPipelineEnvironment.setGitCommitId(gitCommitId)
+            script.commonPipelineEnvironment.setGitCommitId(config.gitCommitId)
         }
 
         echo "[${STEP_NAME}]New version: ${newVersion}"
     }
+}
+
+def isAppContainer(config){
+    return config.buildTool == 'docker' && config.artifactType == 'appContainer'
 }
 
 def getTimestamp(pattern){

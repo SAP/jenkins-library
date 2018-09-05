@@ -138,6 +138,9 @@ class LibraryLoadingTestExecutionListener extends AbstractTestExecutionListener 
         helper.clearAllowedMethodCallbacks(LibraryLoadingTestExecutionListener.TRACKED_ON_METHODS)
         LibraryLoadingTestExecutionListener.TRACKED_ON_METHODS.clear()
 
+        helper.putAllAllowedMethodCallbacks(LibraryLoadingTestExecutionListener.RESTORE_ON_METHODS)
+        LibraryLoadingTestExecutionListener.RESTORE_ON_METHODS.clear()
+
         LibraryLoadingTestExecutionListener.START_METHOD_TRACKING = false
 
         testInstance.getNullScript().commonPipelineEnvironment.reset()

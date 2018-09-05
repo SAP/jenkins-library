@@ -21,6 +21,14 @@ String[] extractLogLines(String filter = '',
                          String to = 'HEAD',
                          String format = '%b') {
 
+   // Checks below: there was an value provided from outside, but the value was null.
+   // Throwing an exception is more transparent than making a fallback to the defaults
+   // used in case the paramter is omitted in the signature.
+   if(filter == null) throw new IllegalArgumentException('Parameter \'filter\' not provided.')
+   if(! from?.trim()) throw new IllegalArgumentException('Parameter \'from\' not provided.')
+   if(! to?.trim()) throw new IllegalArgumentException('Parameter \'to\' not provided.')
+   if(! format?.trim()) throw new IllegalArgumentException('Parameter \'format\' not provided.')
+
     sh ( returnStdout: true,
          script: """#!/bin/bash
                     git log --pretty=format:${format} ${from}..${to}

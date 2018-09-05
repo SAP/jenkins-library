@@ -25,10 +25,12 @@ def call(Map parameters = [:]) {
         Map config = ConfigurationHelper
             .loadStepDefaults(this)
             .mixinGeneralConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS)
-            .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName?:env.STAGE_NAME, STEP_CONFIG_KEYS)
             .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS)
+            .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName?:env.STAGE_NAME, STEP_CONFIG_KEYS)
             .mixin(parameters, PARAMETER_KEYS)
             .use()
+
+        new Utils().pushToSWA([step: STEP_NAME], config)
 
         if (config.runOpaTests){
             utils.stash('opa5', config.stashIncludes?.get('opa5')?config.stashIncludes.opa5:'**/*.*', config.stashExcludes?.get('opa5')?config.stashExcludes.opa5:'')

@@ -13,8 +13,10 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.ExpectedException
 import org.junit.rules.RuleChain
+
 import util.BasePiperTest
 import util.JenkinsLoggingRule
+import util.JenkinsReadYamlRule
 import util.JenkinsShellCallRule
 import util.JenkinsStepRule
 import util.Rules
@@ -34,6 +36,7 @@ class NeoDeployTest extends BasePiperTest {
     @Rule
     public RuleChain ruleChain = Rules
         .getCommonRules(this)
+        .around(new JenkinsReadYamlRule(this))
         .around(thrown)
         .around(jlr)
         .around(jscr)
@@ -149,6 +152,27 @@ class NeoDeployTest extends BasePiperTest {
                                     .hasSingleQuotedOption('user', 'anonymous')
                                     .hasSingleQuotedOption('password', '\\*\\*\\*\\*\\*\\*\\*\\*')
                                     .hasDoubleQuotedOption('source', '.*'))
+    }
+
+    @Test
+    void archivePathFromCPETest() {
+        nullScript.commonPipelineEnvironment.setMtarFilePath('archive.mtar')
+        jsr.step.call(script: nullScript)
+
+        Assert.assertThat(jscr.shell,
+            new CommandLineMatcher().hasProlog("#!/bin/bash \"/opt/neo/tools/neo.sh\" deploy-mta")
+                                    .hasDoubleQuotedOption('source', 'archive.mtar'))
+    }
+
+    @Test
+    void archivePathFromParamsHasHigherPrecedenceThanCPETest() {
+        nullScript.commonPipelineEnvironment.setMtarFilePath('archive2.mtar')
+        jsr.step.call(script: nullScript,
+                      archivePath: "archive.mtar")
+
+        Assert.assertThat(jscr.shell,
+            new CommandLineMatcher().hasProlog("#!/bin/bash \"/opt/neo/tools/neo.sh\" deploy-mta")
+                                    .hasDoubleQuotedOption('source', 'archive.mtar'))
     }
 
 
@@ -274,7 +298,7 @@ class NeoDeployTest extends BasePiperTest {
 
         nullScript.commonPipelineEnvironment.configuration = [:]
 
-        jsr.step.call(archivePath: archiveName)
+        jsr.step.call(script: nullScript, archivePath: archiveName)
     }
 
     @Test

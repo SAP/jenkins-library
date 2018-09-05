@@ -1,6 +1,19 @@
 #Project Setup
 general:
   productiveBranch: 'master'
+  collectTelemetryData: true
+  changeManagement:
+    transportRequestLabel: 'TransportRequest\s?:'
+    changeDocumentLabel: 'ChangeDocument\s?:'
+    clientOpts: ''
+    credentialsId: 'CM'
+    git:
+      from: 'origin/master'
+      to: 'HEAD'
+      format: '%b'
+  gitSshKeyCredentialsId: '' #needed to allow sshagent to run with local ssh key
+  jenkinsKubernetes:
+    jnlpAgent: 's4sdk/jenkins-agent-k8s:latest'
 
 #Steps Specific Configuration
 steps:
@@ -8,12 +21,41 @@ steps:
     timestampTemplate: '%Y%m%d%H%M%S'
     tagPrefix: 'build_'
     commitVersion: true
-    maven:
-      filePath: 'pom.xml'
-      versioningTemplate: '${version}-${timestamp}${commitId?"_"+commitId:""}'
+    dlang:
+      filePath: 'dub.json'
+      versioningTemplate: '${version}-${timestamp}${commitId?"+"+commitId:""}'
     docker:
       filePath: 'Dockerfile'
       versioningTemplate: '${version}-${timestamp}${commitId?"_"+commitId:""}'
+    golang:
+      filePath: 'VERSION'
+      versioningTemplate: '${version}-${timestamp}${commitId?"+"+commitId:""}'
+    maven:
+      filePath: 'pom.xml'
+      versioningTemplate: '${version}-${timestamp}${commitId?"_"+commitId:""}'
+    mta:
+      filePath: 'mta.yaml'
+      versioningTemplate: '${version}-${timestamp}${commitId?"+"+commitId:""}'
+    npm:
+      filePath: 'package.json'
+      versioningTemplate: '${version}-${timestamp}${commitId?"+"+commitId:""}'
+    pip:
+      filePath: 'version.txt'
+      versioningTemplate: '${version}.${timestamp}${commitId?"."+commitId:""}'
+    sbt:
+      filePath: 'sbtDescriptor.json'
+      versioningTemplate: '${version}-${timestamp}${commitId?"+"+commitId:""}'
+  batsExecuteTests:
+    dockerImage: 'node:8-stretch'
+    dockerWorkspace: '/home/node'
+    envVars: {}
+    outputFormat: 'junit' # tap, junit
+    testPath: 'src/test'
+    failOnError: false
+    repository: 'https://github.com/bats-core/bats-core.git'
+    stashContent:
+      - 'tests'
+    testPackage: 'piper-bats'
   checksPublishResults:
     aggregation:
       active: true
@@ -73,6 +115,30 @@ steps:
         fail:
           high: '0'
     archive: false
+  cloudFoundryDeploy:
+    cloudFoundry:
+      apiEndpoint: 'https://api.cf.eu10.hana.ondemand.com'
+    deployTool: 'cf_native'
+    deployType: 'standard'
+    mtaDeployParameters: '-f'
+    mtaExtensionDescriptor: ''
+    mtaPath: ''
+    smokeTestScript: 'blueGreenCheckScript.sh'
+    smokeTestStatusCode: 200
+    stashContent:
+      - 'deployDescriptor'
+      - 'pipelineConfigAndTests'
+    cf_native:
+      dockerImage: 's4sdk/docker-cf-cli'
+      dockerWorkspace: '/home/piper'
+    mtaDeployPlugin:
+      dockerImage: 's4sdk/docker-cf-cli'
+      dockerWorkspace: '/home/piper'
+  dockerExecuteOnKubernetes:
+    stashIncludes:
+      workspace: '**/*.*'
+    stashExcludes:
+      workspace: 'nohup.out'
   influxWriteData:
     influxServer: 'jenkins'
   mavenExecute:
@@ -82,10 +148,20 @@ steps:
     buildTarget: 'NEO'
     mtaJarLocation: 'mta.jar'
   neoDeploy:
+    dockerImage: 's4sdk/docker-neo-cli'
     deployMode: 'mta'
     warAction: 'deploy'
     vmSize: 'lite'
     neoCredentialsId: 'CI_CREDENTIALS_ID'
+  newmanExecute:
+    dockerImage: 'node:8-stretch'
+    failOnError: true
+    newmanCollection: '**/*.postman_collection.json'
+    newmanEnvironment: ''
+    newmanGlobals: ''
+    newmanRunCommand: "run ${config.newmanCollection} --environment '${config.newmanEnvironment}' --globals '${config.newmanGlobals}' --reporters junit,html --reporter-junit-export target/newman/TEST-${collectionDisplayName}.xml --reporter-html-export target/newman/TEST-${collectionDisplayName}.html"
+    stashContent:
+      - 'tests'
   pipelineStashFilesAfterBuild:
     runOpaTests: false
     stashIncludes:
@@ -99,7 +175,7 @@ steps:
   pipelineStashFilesBeforeBuild:
     runCheckmarx: false
     stashIncludes:
-      buildDescriptor: '**/pom.xml, **/.mvn/**, **/assembly.xml, **/.swagger-codegen-ignore, **/package.json, **/requirements.txt, **/setup.py, **/whitesource_config.py, **/mta*.y*ml, **/.npmrc, **/whitesource.*.json, **/whitesource-fs-agent.config, .xmake.cfg, Dockerfile, **/VERSION, **/version.txt, **/build.sbt, **/sbtDescriptor.json, **/project/*'
+      buildDescriptor: '**/pom.xml, **/.mvn/**, **/assembly.xml, **/.swagger-codegen-ignore, **/package.json, **/requirements.txt, **/setup.py, **/whitesource_config.py, **/mta*.y*ml, **/.npmrc, **/whitesource.*.json, **/whitesource-fs-agent.config, Dockerfile, **/VERSION, **/version.txt, **/build.sbt, **/sbtDescriptor.json, **/project/*'
       deployDescriptor: '**/manifest*.y*ml, **/*.mtaext.y*ml, **/*.mtaext, **/xs-app.json, helm/**, *.y*ml'
       git: '**/gitmetadata/**'
       opa5: '**/*.*'
@@ -115,8 +191,18 @@ steps:
       opensourceConfiguration: ''
       pipelineConfigAndTests: ''
       securityDescriptor: ''
-      'snyk configuration': ''
       tests: ''
+  snykExecute:
+    buildDescriptorFile: './package.json'
+    dockerImage: 'node:8-stretch'
+    exclude: []
+    monitor: true
+    scanType: 'npm'
+    stashContent:
+      - 'buildDescriptor'
+      - 'opensourceConfiguration'
+    toJson: false
+    toHtml: false
   testsPublishResults:
     junit:
       pattern: '**/target/surefire-reports/*.xml'
@@ -153,3 +239,9 @@ steps:
       allowEmptyResults: true
       archive: false
       active: false
+  checkChangeInDevelopment:
+      failIfStatusIsNotInDevelopment: true
+  transportRequestCreate:
+      developmentSystemId: null
+  transportRequestUploadFile:
+  transportRequestRelease:

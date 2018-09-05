@@ -12,10 +12,22 @@ abstract class ArtifactVersioning implements Serializable {
 
     public static getArtifactVersioning(buildTool, script, configuration) {
         switch (buildTool) {
-            case 'maven':
-                return new MavenArtifactVersioning(script, configuration)
+            case 'dlang':
+                return new DlangArtifactVersioning(script, configuration)
             case 'docker':
                 return new DockerArtifactVersioning(script, configuration)
+            case 'golang':
+                return new GolangArtifactVersioning(script, configuration)
+            case 'maven':
+                return new MavenArtifactVersioning(script, configuration)
+            case 'mta':
+                return new MtaArtifactVersioning(script, configuration)
+            case 'npm':
+                return new NpmArtifactVersioning(script, configuration)
+            case 'pip':
+                return new PipArtifactVersioning(script, configuration)
+            case 'sbt':
+                return new SbtArtifactVersioning(script, configuration)
             default:
                 throw new IllegalArgumentException("No versioning implementation for buildTool: ${buildTool} available.")
         }

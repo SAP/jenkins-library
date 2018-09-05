@@ -7,19 +7,9 @@ class ConfigurationMerger {
     @NonCPS
     static Map merge(Map configs, Set configKeys, Map defaults) {
         Map filteredConfig = configKeys?configs.subMap(configKeys):configs
-        Map merged = [:]
 
-        defaults = defaults ?: [:]
-
-        merged.putAll(defaults)
-
-        for(String key : filteredConfig.keySet())
-            if(MapUtils.isMap(filteredConfig[key]))
-                merged[key] = merge(filteredConfig[key], null, defaults[key])
-            else if(filteredConfig[key] != null)
-                merged[key] = filteredConfig[key]
-            // else: keep defaults value and omit null values from config
-        return merged
+        return MapUtils.merge(MapUtils.pruneNulls(defaults),
+                              MapUtils.pruneNulls(filteredConfig))
     }
 
     @NonCPS
@@ -41,32 +31,5 @@ class ConfigurationMerger {
         Set stepConfigurationKeys
     ) {
           merge(script, stepName, parameters, parameterKeys, [:], stepConfigurationKeys)
-    }
-
-    @NonCPS
-    static Map merge(
-        def script, def stepName,
-        Map parameters, Set parameterKeys,
-        Map pipelineData,
-        Set stepConfigurationKeys
-    ) {
-        Map stepDefaults = ConfigurationLoader.defaultStepConfiguration(script, stepName)
-        Map stepConfiguration = ConfigurationLoader.stepConfiguration(script, stepName)
-
-        mergeWithPipelineData(parameters, parameterKeys, pipelineData, stepConfiguration, stepConfigurationKeys, stepDefaults)
-    }
-
-    @NonCPS
-    static Map mergeWithPipelineData(Map parameters, Set parameterKeys,
-                            Map pipelineDataMap,
-                            Map configurationMap, Set configurationKeys,
-                            Map stepDefaults=[:]
-    ){
-        Map merged
-        merged = merge(configurationMap, configurationKeys, stepDefaults)
-        merged = merge(pipelineDataMap, null, merged)
-        merged = merge(parameters, parameterKeys, merged)
-
-        return merged
     }
 }

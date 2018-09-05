@@ -1,10 +1,15 @@
 site_name: Jenkins 2.0 Pipelines
 pages:
     - Home: index.md
+    - Configuration: configuration.md
     - 'Library steps':
         - artifactSetVersion: steps/artifactSetVersion.md
+        - batsExecuteTests: steps/batsExecuteTests.md
+        - checkChangeInDevelopment: steps/checkChangeInDevelopment.md
+        - cloudFoundryDeploy: steps/cloudFoundryDeploy.md
         - commonPipelineEnvironment: steps/commonPipelineEnvironment.md
         - dockerExecute: steps/dockerExecute.md
+        - dockerExecuteOnKubernetes: steps/dockerExecuteOnKubernetes.md
         - durationMeasure: steps/durationMeasure.md
         - handlePipelineStepErrors: steps/handlePipelineStepErrors.md
         - influxWriteData: steps/influxWriteData.md
@@ -16,6 +21,9 @@ pages:
         - prepareDefaultValues: steps/prepareDefaultValues.md
         - setupCommonPipelineEnvironment: steps/setupCommonPipelineEnvironment.md
         - toolValidate: steps/toolValidate.md
+        - transportRequestCreate: steps/transportRequestCreate.md
+        - transportRequestRelease:  steps/transportRequestRelease.md
+        - transportRequestUploadFile: steps/transportRequestUploadFile.md
     - 'Required Plugins': jenkins/requiredPlugins.md
 
 theme:
