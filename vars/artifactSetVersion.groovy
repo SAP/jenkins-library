@@ -98,11 +98,10 @@ def call(Map parameters = [:], Closure body = null) {
                       git tag ${config.tagPrefix}${newVersion}"""
                 config.gitCommitId = gitUtils.getGitCommitIdOrNull()
             } catch (e) {
-                    error "[${STEP_NAME}]git commit and tag failed: ${e}"
+                error "[${STEP_NAME}]git commit and tag failed: ${e}"
             }
 
             sshagent([config.gitSshKeyCredentialsId]) {
-
                 sh "git push ${config.gitSshUrl} ${config.tagPrefix}${newVersion}"
             }
         }
