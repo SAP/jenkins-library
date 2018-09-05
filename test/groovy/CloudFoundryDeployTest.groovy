@@ -12,6 +12,7 @@ import util.JenkinsLoggingRule
 import util.JenkinsShellCallRule
 import util.JenkinsStepRule
 import util.JenkinsWriteFileRule
+import util.JenkinsReadYamlRule
 import util.Rules
 
 import static org.junit.Assert.assertThat
@@ -29,10 +30,12 @@ class CloudFoundryDeployTest extends BasePiperTest {
     private JenkinsDockerExecuteRule jedr = new JenkinsDockerExecuteRule(this)
     private JenkinsStepRule jsr = new JenkinsStepRule(this)
     private JenkinsEnvironmentRule jer = new JenkinsEnvironmentRule(this)
+    private JenkinsReadYamlRule jryr = new JenkinsReadYamlRule(this)
 
     @Rule
     public RuleChain rules = Rules
         .getCommonRules(this)
+        .around(jryr)
         .around(thrown)
         .around(jlr)
         .around(jscr)
@@ -180,17 +183,7 @@ class CloudFoundryDeployTest extends BasePiperTest {
     @Test
     void testCfNativeAppNameFromManifest() {
         helper.registerAllowedMethod('fileExists', [String.class], { s -> return true })
-        helper.registerAllowedMethod("readYaml", [Map], { Map m ->
-            if(m.text) {
-                return new Yaml().load(m.text)
-            } else if(m.file == 'test.yml') {
-                return [applications: [[name: 'manifestAppName']]]
-            } else if(m.file) {
-                return new Yaml().load((m.file as File).text)
-            } else {
-                throw new IllegalArgumentException("Key 'text' is missing in map ${m}.")
-            }
-        })
+        jryr.registerYaml('test.yml', "[applications: [[name: 'manifestAppName']]]")
 
         jsr.step.cloudFoundryDeploy([
             script: nullScript,
@@ -209,18 +202,7 @@ class CloudFoundryDeployTest extends BasePiperTest {
     @Test
     void testCfNativeWithoutAppName() {
         helper.registerAllowedMethod('fileExists', [String.class], { s -> return true })
-        helper.registerAllowedMethod("readYaml", [Map], { Map m ->
-            if(m.text) {
-                return new Yaml().load(m.text)
-            } else if(m.file == 'test.yml') {
-                return [applications: [[]]]
-            } else if(m.file) {
-                return new Yaml().load((m.file as File).text)
-            } else {
-                throw new IllegalArgumentException("Key 'text' is missing in map ${m}.")
-            }
-        })
-
+        jryr.registerYaml('test.yml', "applications: [[]]")
         thrown.expect(hudson.AbortException)
         thrown.expectMessage('[cloudFoundryDeploy] ERROR: No appName available in manifest test.yml.')
 

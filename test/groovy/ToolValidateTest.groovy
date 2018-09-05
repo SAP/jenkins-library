@@ -9,6 +9,7 @@ import org.junit.rules.RuleChain
 
 import util.BasePiperTest
 import util.JenkinsLoggingRule
+import util.JenkinsReadYamlRule
 import util.JenkinsStepRule
 import util.Rules
 
@@ -21,6 +22,7 @@ class ToolValidateTest extends BasePiperTest {
     @Rule
     public RuleChain ruleChain = Rules
         .getCommonRules(this)
+        .around(new JenkinsReadYamlRule(this))
         .around(thrown)
         .around(jlr)
         .around(jsr)

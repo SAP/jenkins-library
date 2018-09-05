@@ -1,5 +1,6 @@
 import com.sap.piper.k8s.ContainerMap
 import com.sap.piper.JenkinsUtils
+
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -7,6 +8,7 @@ import org.junit.rules.RuleChain
 
 import util.BasePiperTest
 import util.JenkinsLoggingRule
+import util.JenkinsReadYamlRule
 import util.JenkinsStepRule
 import util.PluginMock
 import util.Rules
@@ -23,6 +25,7 @@ class DockerExecuteTest extends BasePiperTest {
     @Rule
     public RuleChain ruleChain = Rules
         .getCommonRules(this)
+        .around(new JenkinsReadYamlRule(this))
         .around(jlr)
         .around(jsr)
 

@@ -1,21 +1,27 @@
 package util
 
-import com.lesfurets.jenkins.unit.BasePipelineTest
-import com.sap.piper.DefaultValueCache
 import org.junit.rules.TestRule
 import org.junit.runner.Description
 import org.junit.runners.model.Statement
 import org.yaml.snakeyaml.Yaml
 
+import com.lesfurets.jenkins.unit.BasePipelineTest
+
 class JenkinsReadYamlRule implements TestRule {
     final BasePipelineTest testInstance
-    final String testRoot
 
-    JenkinsReadYamlRule(BasePipelineTest testInstance, testRoot = '') {
+    // Empty project configuration file registered by default
+    // since almost every test needs it.
+    def ymls = ['.pipeline/config.yml': {''}]
+
+    JenkinsReadYamlRule(BasePipelineTest testInstance) {
         this.testInstance = testInstance
-        this.testRoot = testRoot
     }
 
+    JenkinsReadYamlRule registerYaml(fileName, yaml) {
+        ymls.put(fileName, yaml)
+        return this
+    }
     @Override
     Statement apply(Statement base, Description description) {
         return statement(base)
@@ -26,13 +32,17 @@ class JenkinsReadYamlRule implements TestRule {
             @Override
             void evaluate() throws Throwable {
                 testInstance.helper.registerAllowedMethod("readYaml", [Map], { Map m ->
+                    def yml
                     if(m.text) {
-                        return new Yaml().load(m.text)
+                        yml = m.text
                     } else if(m.file) {
-                        return new Yaml().load(("${this.testRoot}${m.file}" as File).text)
+                        yml = ymls.get(m.file)
+                        if(yml == null) throw new NullPointerException("yaml file '${m.file}' not registered.")
+                        if(yml instanceof Closure) yml = yml()
                     } else {
-                        throw new IllegalArgumentException("Key 'text' is missing in map ${m}.")
+                        throw new IllegalArgumentException("Key 'text' and 'file' are both missing in map ${m}.")
                     }
+                    return new Yaml().load(yml)
                 })
 
                 base.evaluate()

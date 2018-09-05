@@ -1,5 +1,4 @@
 import org.junit.After
-
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.ExpectedException
@@ -12,6 +11,7 @@ import com.sap.piper.cm.ChangeManagementException
 import hudson.AbortException
 import util.BasePiperTest
 import util.JenkinsCredentialsRule
+import util.JenkinsReadYamlRule
 import util.JenkinsStepRule
 import util.Rules
 
@@ -23,6 +23,7 @@ class CheckChangeInDevelopmentTest extends BasePiperTest {
     @Rule
     public RuleChain ruleChain = Rules
         .getCommonRules(this)
+        .around(new JenkinsReadYamlRule(this))
         .around(thrown)
         .around(jsr)
         .around(new JenkinsCredentialsRule(this)
