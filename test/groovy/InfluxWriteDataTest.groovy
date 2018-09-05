@@ -7,6 +7,7 @@ import org.junit.rules.RuleChain
 import util.BasePiperTest
 import util.JenkinsLoggingRule
 import util.JenkinsStepRule
+import util.JenkinsReadYamlRule
 import util.Rules
 
 import static org.junit.Assert.assertTrue
@@ -19,6 +20,7 @@ class InfluxWriteDataTest extends BasePiperTest {
     @Rule
     public RuleChain ruleChain = Rules
         .getCommonRules(this)
+        .around(new JenkinsReadYamlRule(this))
         .around(loggingRule)
         .around(jsr)
 

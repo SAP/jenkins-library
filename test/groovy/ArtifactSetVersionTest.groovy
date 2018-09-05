@@ -9,6 +9,7 @@ import util.JenkinsDockerExecuteRule
 import util.JenkinsEnvironmentRule
 import util.JenkinsLoggingRule
 import util.JenkinsReadMavenPomRule
+import util.JenkinsReadYamlRule
 import util.JenkinsShellCallRule
 import util.JenkinsStepRule
 import util.JenkinsWriteFileRule
@@ -38,6 +39,7 @@ class ArtifactSetVersionTest extends BasePiperTest {
     @Rule
     public RuleChain ruleChain = Rules
         .getCommonRules(this)
+        .around(new JenkinsReadYamlRule(this))
         .around(thrown)
         .around(jlr)
         .around(jscr)
