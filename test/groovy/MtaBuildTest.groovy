@@ -88,6 +88,15 @@ public class MtaBuildTest extends BasePiperTest {
     }
 
     @Test
+    void deployablePathIsReturnedFromStepTest() {
+
+        def deployable = jsr.step.call(script: nullScript,
+                                       buildTarget: 'NEO')
+
+        assert deployable == 'com.mycompany.northwind.mtar'
+    }
+
+    @Test
     void mtaJarLocationAsParameterTest() {
 
         jsr.step.call(mtaJarLocation: '/mylocation/mta/mta.jar', buildTarget: 'NEO')
