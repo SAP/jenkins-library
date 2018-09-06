@@ -29,25 +29,24 @@ class ConfigurationHelper implements Serializable {
         return this
     }
 
-    ConfigurationHelper mixinGeneralConfig(commonPipelineEnvironment, Set filter = null, Script step = null, Map compatibleParameters = [:]){
+    ConfigurationHelper mixinGeneralConfig(commonPipelineEnvironment, Set filter = null,Map compatibleParameters = [:]){
         Map stepConfiguration = ConfigurationLoader.generalConfiguration([commonPipelineEnvironment: commonPipelineEnvironment])
-        return mixin(stepConfiguration, filter, step, compatibleParameters)
+        return mixin(stepConfiguration, filter, compatibleParameters)
     }
 
-    ConfigurationHelper mixinStageConfig(commonPipelineEnvironment, stageName, Set filter = null, Script step = null, Map compatibleParameters = [:]){
+    ConfigurationHelper mixinStageConfig(commonPipelineEnvironment, stageName, Set filter = null, Map compatibleParameters = [:]){
         Map stageConfiguration = ConfigurationLoader.stageConfiguration([commonPipelineEnvironment: commonPipelineEnvironment], stageName)
-        return mixin(stageConfiguration, filter, step, compatibleParameters)
+        return mixin(stageConfiguration, filter, compatibleParameters)
     }
 
-    ConfigurationHelper mixinStepConfig(commonPipelineEnvironment, Set filter = null, Script step = null, Map compatibleParameters = [:]){
-        if(!name) throw new IllegalArgumentException('Step has no public name property!')
+    ConfigurationHelper mixinStepConfig(commonPipelineEnvironment, Set filter = null, Map compatibleParameters = [:]){
         Map stepConfiguration = ConfigurationLoader.stepConfiguration([commonPipelineEnvironment: commonPipelineEnvironment], name)
-        return mixin(stepConfiguration, filter, step, compatibleParameters)
+        return mixin(stepConfiguration, filter, compatibleParameters)
     }
 
-    ConfigurationHelper mixin(Map parameters, Set filter = null, Script step = null, Map compatibleParameters = [:]){
+    ConfigurationHelper mixin(Map parameters, Set filter = null, Map compatibleParameters = [:]){
         if (parameters.size() > 0 && compatibleParameters.size() > 0) {
-            parameters = ConfigurationMerger.merge(handleCompatibility(step, compatibleParameters, parameters), null, parameters)
+            parameters = ConfigurationMerger.merge(handleCompatibility(compatibleParameters, parameters), null, parameters)
         }
         if (filter) {
             filter.add('collectTelemetryData')
@@ -56,12 +55,12 @@ class ConfigurationHelper implements Serializable {
         return this
     }
 
-    private Map handleCompatibility(Script step, Map compatibleParameters, String paramStructure = '', Map configMap ) {
+    private Map handleCompatibility(Map compatibleParameters, String paramStructure = '', Map configMap ) {
         Map newConfig = [:]
         compatibleParameters.each {entry ->
             if (entry.getValue() instanceof Map) {
                 paramStructure = (paramStructure ? paramStructure + '.' : '') + entry.getKey()
-                newConfig[entry.getKey()] = handleCompatibility(step, entry.getValue(), paramStructure, configMap)
+                newConfig[entry.getKey()] = handleCompatibility(entry.getValue(), paramStructure, configMap)
             } else {
                 def configSubMap = configMap
                 for(String key in paramStructure.tokenize('.')){
