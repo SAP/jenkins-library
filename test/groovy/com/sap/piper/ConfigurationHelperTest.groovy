@@ -173,7 +173,7 @@ class ConfigurationHelperTest {
     @Test
     void testHandleCompatibility() {
         def configuration = new ConfigurationHelper(mockScript)
-            .mixin([old1: 'oldValue1', old2: 'oldValue2', test: 'testValue'], null, null, [newStructure: [new1: 'old1', new2: 'old2']])
+            .mixin([old1: 'oldValue1', old2: 'oldValue2', test: 'testValue'], null, [newStructure: [new1: 'old1', new2: 'old2']])
             .use()
 
         Assert.assertThat(configuration.size(), is(4))
@@ -184,7 +184,7 @@ class ConfigurationHelperTest {
     @Test
     void testHandleCompatibilityFlat() {
         def configuration = new ConfigurationHelper(mockScript)
-            .mixin([old1: 'oldValue1', old2: 'oldValue2', test: 'testValue'], null, null, [new1: 'old1', new2: 'old2'])
+            .mixin([old1: 'oldValue1', old2: 'oldValue2', test: 'testValue'], null, [new1: 'old1', new2: 'old2'])
             .use()
 
         Assert.assertThat(configuration.size(), is(5))
@@ -195,7 +195,7 @@ class ConfigurationHelperTest {
     @Test
     void testHandleCompatibilityDeep() {
         def configuration = new ConfigurationHelper(mockScript)
-            .mixin([old1: 'oldValue1', old2: 'oldValue2', test: 'testValue'], null, null, [deep:[deeper:[newStructure: [new1: 'old1', new2: 'old2']]]])
+            .mixin([old1: 'oldValue1', old2: 'oldValue2', test: 'testValue'], null, [deep:[deeper:[newStructure: [new1: 'old1', new2: 'old2']]]])
             .use()
 
         Assert.assertThat(configuration.size(), is(4))
@@ -206,7 +206,7 @@ class ConfigurationHelperTest {
     @Test
     void testHandleCompatibilityNewAvailable() {
         def configuration = new ConfigurationHelper(mockScript, [old1: 'oldValue1', newStructure: [new1: 'newValue1'], test: 'testValue'])
-            .mixin([old1: 'oldValue1', newStructure: [new1: 'newValue1'], test: 'testValue'], null, null, [newStructure: [new1: 'old1', new2: 'old2']])
+            .mixin([old1: 'oldValue1', newStructure: [new1: 'newValue1'], test: 'testValue'], null, [newStructure: [new1: 'old1', new2: 'old2']])
             .use()
 
         Assert.assertThat(configuration.size(), is(3))
@@ -216,7 +216,7 @@ class ConfigurationHelperTest {
     @Test
     void testHandleCompatibilityOldNotSet() {
         def configuration = new ConfigurationHelper(mockScript, [old1: null, test: 'testValue'])
-            .mixin([old1: null, test: 'testValue'], null, null, [newStructure: [new1: 'old1', new2: 'old2']])
+            .mixin([old1: null, test: 'testValue'], null, [newStructure: [new1: 'old1', new2: 'old2']])
             .use()
 
         Assert.assertThat(configuration.size(), is(2))
@@ -226,7 +226,7 @@ class ConfigurationHelperTest {
     @Test
     void testHandleCompatibilityNoneAvailable() {
         def configuration = new ConfigurationHelper(mockScript, [old1: null, test: 'testValue'])
-            .mixin([test: 'testValue'], null, null, [newStructure: [new1: 'old1', new2: 'old2']])
+            .mixin([test: 'testValue'], null, [newStructure: [new1: 'old1', new2: 'old2']])
             .use()
 
         Assert.assertThat(configuration.size(), is(2))
