@@ -23,13 +23,4 @@ class ConfigurationMerger {
         merged = merge(parameters, parameterKeys, merged)
         return merged
     }
-
-    @NonCPS
-    static Map merge(
-        def script, def stepName,
-        Map parameters, Set parameterKeys,
-        Set stepConfigurationKeys
-    ) {
-          merge(script, stepName, parameters, parameterKeys, [:], stepConfigurationKeys)
-    }
 }
