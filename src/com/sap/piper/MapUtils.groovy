@@ -38,4 +38,27 @@ class MapUtils implements Serializable {
 
         return result
     }
+
+    /**
+     * @param m The map to which the changed denoted by closure <code>strategy</code>
+     *        should be applied.
+     *        The strategy is also applied to all sub-maps contained as values
+     *        in <code>m</code> in a recursive manner.
+     * @param strategy Strategy applied to all non-map entries
+     */
+    @NonCPS
+    static void traverse(Map m, Closure strategy) {
+
+        def updates = [:]
+        for(def e : m.entrySet()) {
+            if(isMap(e.value)) {
+                traverse(e.getValue(), strategy)
+            }
+            else
+                // do not update the map while it is traversed. Depending
+                // on the map implementation the behavior is undefined.
+                updates.put(e.key, strategy(e.value))
+        }
+        m.putAll(updates)
+    }
 }
