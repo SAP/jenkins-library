@@ -103,6 +103,7 @@ class ConfigurationHelper implements Serializable {
     }
 
     def getConfigProperty(key) {
+        use()
         return getConfigPropertyNested(config, key)
     }
 
