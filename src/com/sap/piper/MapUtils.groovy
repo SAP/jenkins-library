@@ -54,10 +54,11 @@ class MapUtils implements Serializable {
             if(isMap(e.value)) {
                 traverse(e.getValue(), strategy)
             }
-            else
+            else {
                 // do not update the map while it is traversed. Depending
                 // on the map implementation the behavior is undefined.
-                updates.put(e.key, strategy(e.value))
+                updates.put(e.getKey(), strategy(e.getValue()))
+            }
         }
         m.putAll(updates)
     }
