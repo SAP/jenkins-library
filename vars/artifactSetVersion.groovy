@@ -41,8 +41,8 @@ def call(Map parameters = [:], Closure body = null) {
             script = this
 
         // load default & individual configuration
-        ConfigurationHelper configHelper = ConfigurationHelper
-            .loadStepDefaults(this)
+        ConfigurationHelper configHelper = new ConfigurationHelper(this)
+            .loadStepDefaults()
             .mixinGeneralConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS, CONFIG_KEY_COMPATIBILITY)
             .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS, CONFIG_KEY_COMPATIBILITY)
             .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName?:env.STAGE_NAME, STEP_CONFIG_KEYS, CONFIG_KEY_COMPATIBILITY)

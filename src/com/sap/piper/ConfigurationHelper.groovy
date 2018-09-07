@@ -1,10 +1,10 @@
 package com.sap.piper
 
 class ConfigurationHelper implements Serializable {
-    static ConfigurationHelper loadStepDefaults(Script step){
-        return new ConfigurationHelper(step)
-            .initDefaults(step)
-            .loadDefaults()
+
+    ConfigurationHelper loadStepDefaults() {
+            initDefaults()
+            loadDefaults()
     }
 
     private Map config
@@ -18,8 +18,8 @@ class ConfigurationHelper implements Serializable {
         if(!name) throw new IllegalArgumentException('Step has no public name property!')
     }
 
-    private final ConfigurationHelper initDefaults(Script step){
-        step.prepareDefaultValues()
+    private final ConfigurationHelper initDefaults(){
+        this.script.prepareDefaultValues()
         return this
     }
 
