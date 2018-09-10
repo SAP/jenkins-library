@@ -78,8 +78,8 @@ class ArtifactSetVersionTest extends BasePiperTest {
 
         assertThat(jscr.shell, hasItem("mvn --file 'pom.xml' --batch-mode -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn versions:set -DnewVersion=1.2.3-20180101010203_testCommitId -DgenerateBackupPoms=false"))
         assertThat(jscr.shell, hasItem('git add .'))
-        assertThat(jscr.shell, hasItem("git commit -m 'update version 1.2.3-20180101010203_testCommitId'"))
-        assertThat(jscr.shell, hasItems(containsString('git tag build_1.2.3-20180101010203_testCommitId'),
+        assertThat(jscr.shell, hasItems(containsString("git commit -m 'update version 1.2.3-20180101010203_testCommitId'"),
+                                        containsString('git tag build_1.2.3-20180101010203_testCommitId'),
                                         containsString('git push myGitSshUrl build_1.2.3-20180101010203_testCommitId')))
     }
 
@@ -103,7 +103,7 @@ class ArtifactSetVersionTest extends BasePiperTest {
     void testVersioningCustomGitUserAndEMail() {
         jsr.step.artifactSetVersion(script: jsr.step, juStabGitUtils: gitUtils, buildTool: 'maven', gitSshUrl: 'myGitSshUrl', gitUserEMail: 'test@test.com', gitUserName: 'test')
 
-        assertThat(jscr.shell, hasItem("git -c user.email=\"test@test.com\" -c user.name=\"test\" commit -m 'update version 1.2.3-20180101010203_testCommitId'"))
+        assertThat(jscr.shell, hasItem(containsString("git -c user.email=\"test@test.com\" -c user.name=\"test\" commit -m 'update version 1.2.3-20180101010203_testCommitId'")))
     }
 
     @Test
