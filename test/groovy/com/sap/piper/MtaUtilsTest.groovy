@@ -39,10 +39,7 @@ class MtaUtilsTest extends BasePiperTest {
     @Before
     void init() {
         targetMtaDescriptor = "${tmp.getRoot()}/generated_mta.yml"
-        def script = new Object()
-        mtaUtils = new MtaUtils(script)
-
-        prepareObjectInterceptors(script)
+        mtaUtils = new MtaUtils(nullScript)
 
         this.helper.registerAllowedMethod('readJSON', [Map], { Map parameters ->
             return new JsonSlurper().parse(new File(parameters.file))
