@@ -82,10 +82,6 @@ The properties can also be configured on a per-step basis:
 
 The parameters can also be provided when the step is invoked. For examples see below.
 
-## Return value
-`true` in case the change document is in status 'in development'. Otherwise an hudson.AbortException is thrown. In case `failIfStatusIsNotInDevelopment`
-is set to `false`, `false` is returned in case the change document is not in status 'in development'
-
 ## Exceptions
 * `AbortException`:
     * If the change id is not provided via parameter and if the change document id cannot be retrieved from the commit history.

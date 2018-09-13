@@ -28,9 +28,6 @@ Executes a closure inside a container in a kubernetes pod. Proxy environment var
 ## Step configuration
 none
 
-## Return value
-none
-
 ## Side effects
 none
 

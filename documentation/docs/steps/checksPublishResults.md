@@ -139,9 +139,6 @@ checksPublishResults(
 
 ![StaticChecks Thresholds](../images/StaticChecks_Threshold.png)
 
-## Return value
-none
-
 ## Side effects
 If both ESLint and PyLint results are published, they are not correctly aggregated in the aggregator plugin.
 

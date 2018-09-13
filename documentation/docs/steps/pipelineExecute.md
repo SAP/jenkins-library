@@ -29,10 +29,6 @@ none
 
 none
 
-## Return value
-
-none
-
 ## Side effects
 
 none

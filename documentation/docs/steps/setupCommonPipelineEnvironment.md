@@ -23,9 +23,6 @@ Initializes the [`commonPipelineEnvironment`](commonPipelineEnvironment.md), whi
 ## Step configuration
 none
 
-## Return value
-none
-
 ## Side effects
 none
 

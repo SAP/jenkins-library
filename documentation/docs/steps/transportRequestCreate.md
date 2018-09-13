@@ -1,7 +1,8 @@
 # transportRequestCreate
 
 ## Description
-Creates a Transport Request for a Change Document on the Solution Manager.
+Creates a Transport Request for a Change Document on the Solution Manager The ID of the
+Transport Request that has been created is written into the common pipeline environment (property `transportRequestId`)
 
 ## Prerequisites
 * **[Change Management Client 2.0.0 or compatible version](http://central.maven.org/maven2/com/sap/devops/cmclient/dist.cli/)** - available for download on Maven Central.
@@ -78,8 +79,9 @@ The properties can also be configured on a per-step basis:
 
 The parameters can also be provided when the step is invoked. For examples see below.
 
-## Return value
-The id of the Transport Request that has been created.
+## Side effect
+The ID of the Transport Request that has been created is written into the common pipeline environment
+(property `transportRequestId`)
 
 ## Exceptions
 * `AbortException`:

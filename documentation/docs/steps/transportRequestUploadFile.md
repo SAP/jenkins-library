@@ -84,9 +84,6 @@ The properties can also be configured on a per-step basis:
 
 The parameters can also be provided when the step is invoked. For examples see below.
 
-## Return value
-None.
-
 ## Exceptions
 * `IllegalArgumentException`:
     * If the change id is not provided.

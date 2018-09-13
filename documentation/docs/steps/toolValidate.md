@@ -19,9 +19,6 @@ none
 ## Step configuration
 none
 
-## Return value
-none
-
 ## Side effects
 none
 

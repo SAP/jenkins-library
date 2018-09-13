@@ -1,7 +1,8 @@
 # mtaBuild
 
 ## Description
-Executes the SAP Multitarget Application Archive Builder to create an mtar archive of the application.
+Executes the SAP Multitarget Application Archive Builder to create an mtar archive of the application. The path
+relative to the workspace root is exposed via property `mtarFilePath` in the common pipeline environment.
 
 Before doing this, validates that SAP Multitarget Application Archive Builder exists and the version is compatible.
 
@@ -44,11 +45,8 @@ The following parameters can also be specified as step parameters using the glob
 * `mtaJarLocation`
 * `applicationName`
 
-## Return value
-The file name of the resulting archive is returned with this step. The file name is extracted from the key `ID` defined in `mta.yaml`.
-
 ## Side effects
-1. The file name of the resulting archive is written to the `commonPipelineEnvironment` with variable name `mtarFileName`.
+1. The file name of the resulting archive is written to the `commonPipelineEnvironment` with variable name `mtarFilePath`.
 
 ## Exceptions
 * `AbortException`:

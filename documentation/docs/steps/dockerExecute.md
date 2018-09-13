@@ -29,9 +29,6 @@ If the Jenkins is setup on a Kubernetes cluster, then you can execute the closur
 ## Step configuration
 none
 
-## Return value
-none
-
 ## Side effects
 none
 
