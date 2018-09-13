@@ -11,6 +11,7 @@ import com.sap.piper.cm.ChangeManagementException
 import hudson.AbortException
 import util.BasePiperTest
 import util.JenkinsCredentialsRule
+import util.JenkinsLoggingRule
 import util.JenkinsReadYamlRule
 import util.JenkinsStepRule
 import util.Rules
@@ -19,6 +20,7 @@ class CheckChangeInDevelopmentTest extends BasePiperTest {
 
     private ExpectedException thrown = ExpectedException.none()
     private JenkinsStepRule jsr = new JenkinsStepRule(this)
+    private JenkinsLoggingRule jlr = new JenkinsLoggingRule(this)
 
     @Rule
     public RuleChain ruleChain = Rules
@@ -40,11 +42,10 @@ class CheckChangeInDevelopmentTest extends BasePiperTest {
     public void changeIsInStatusDevelopmentTest() {
 
         ChangeManagement cm = getChangeManagementUtils(true)
-        boolean inDevelopment = jsr.step.checkChangeInDevelopment(
-                                    cmUtils: cm,
-                                    changeManagement: [endpoint: 'https://example.org/cm'])
+        jsr.step.checkChangeInDevelopment(
+            cmUtils: cm,
+            changeManagement: [endpoint: 'https://example.org/cm'])
 
-        assert inDevelopment
         assert cmUtilReceivedParams == [
             changeId: '001',
             endpoint: 'https://example.org/cm',
@@ -68,12 +69,16 @@ class CheckChangeInDevelopmentTest extends BasePiperTest {
     @Test
     public void changeIsNotInStatusDevelopmentButWeWouldLikeToSkipFailureTest() {
 
+        // the point here is there is no exception when the change is not
+        // in status 'in development'
+
+        jlr.expect('[WARNING] Change \'001\' is not in status \'in development\'. Failing the pipeline has been explicitly disabled.')
+
         ChangeManagement cm = getChangeManagementUtils(false)
-        boolean inDevelopment = jsr.step.checkChangeInDevelopment(
-                                    cmUtils: cm,
-                                    changeManagement: [endpoint: 'https://example.org/cm'],
-                                    failIfStatusIsNotInDevelopment: false)
-        assert !inDevelopment
+        jsr.step.checkChangeInDevelopment(
+            cmUtils: cm,
+            changeManagement: [endpoint: 'https://example.org/cm'],
+            failIfStatusIsNotInDevelopment: false)
     }
 
     @Test
