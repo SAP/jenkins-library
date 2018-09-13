@@ -36,10 +36,4 @@ class BasePiperTestContext {
         LibraryLoadingTestExecutionListener.prepareObjectInterceptors(mockUtils)
         return mockUtils
     }
-
-    @Bean
-    MockHelper mockHelper() {
-        return new MockHelper()
-    }
-
 }
