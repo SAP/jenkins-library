@@ -117,7 +117,7 @@ otherwise in the [LICENSE file][piper-library-license]
 [piper-library-pages-plugins]: https://sap.github.io/jenkins-library/jenkins/requiredPlugins
 [piper-library-issues]: https://github.com/SAP/jenkins-library/issues
 [piper-library-license]: ./LICENSE
-[piper-library-contribution]: ./CONTRIBUTING.md
+[piper-library-contribution]: .github/CONTRIBUTING.md
 [jenkins-doc-pipelines]: https://jenkins.io/solutions/pipeline
 [jenkins-doc-libraries]: https://jenkins.io/doc/book/pipeline/shared-libraries
 [jenkins-doc-steps]: https://jenkins.io/doc/pipeline/steps
