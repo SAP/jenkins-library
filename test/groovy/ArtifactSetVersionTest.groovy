@@ -1,9 +1,13 @@
 #!groovy
+
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.ExpectedException
 import org.junit.rules.RuleChain
+
+import com.sap.piper.GitUtils
+
 import util.BasePiperTest
 import util.JenkinsDockerExecuteRule
 import util.JenkinsEnvironmentRule
@@ -25,6 +29,16 @@ import static org.junit.Assert.assertEquals
 
 class ArtifactSetVersionTest extends BasePiperTest {
     Map dockerParameters
+
+    def GitUtils gitUtils = new GitUtils() {
+        boolean isWorkTreeDirty() {
+            return false
+        }
+
+        String getGitCommitIdOrNull() {
+            return 'testCommitId'
+        }
+    }
 
     def sshAgentList = []
 
@@ -61,10 +75,8 @@ class ArtifactSetVersionTest extends BasePiperTest {
             return closure()
         })
 
-        jscr.setReturnValue('git rev-parse HEAD', 'testCommitId')
         jscr.setReturnValue("date --universal +'%Y%m%d%H%M%S'", '20180101010203')
         jscr.setReturnValue('git diff --quiet HEAD', 0)
-        jscr.setReturnValue('git rev-parse --is-inside-work-tree 1>/dev/null 2>&1', 0)
 
         helper.registerAllowedMethod('fileExists', [String.class], {true})
     }
