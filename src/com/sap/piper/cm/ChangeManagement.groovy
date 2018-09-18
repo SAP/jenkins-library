@@ -9,6 +9,7 @@ import hudson.AbortException
 
 public class ChangeManagement implements Serializable {
 
+    public enum BackendType {SOLMAN, CTS, NONE}
     private script
     private GitUtils gitUtils
 
