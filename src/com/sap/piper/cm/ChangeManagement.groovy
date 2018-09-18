@@ -66,7 +66,7 @@ public class ChangeManagement implements Serializable {
     }
 
     boolean isChangeInDevelopment(String changeId, String endpoint, String credentialsId, String clientOpts = '') {
-        int rc = executeWithCredentials(endpoint, credentialsId, 'is-change-in-development', ['-cID', "'${changeId}'", '--return-code'],
+        int rc = executeWithCredentials(BackendType.SOLMAN, endpoint, credentialsId, 'is-change-in-development', ['-cID', "'${changeId}'", '--return-code'],
             clientOpts) as int
 
         if (rc == 0) {
@@ -80,7 +80,7 @@ public class ChangeManagement implements Serializable {
 
     String createTransportRequest(String changeId, String developmentSystemId, String endpoint, String credentialsId, String clientOpts = '') {
         try {
-            def transportRequest = executeWithCredentials(endpoint, credentialsId, 'create-transport', ['-cID', changeId, '-dID', developmentSystemId],
+            def transportRequest = executeWithCredentials(BackendType.SOLMAN, endpoint, credentialsId, 'create-transport', ['-cID', changeId, '-dID', developmentSystemId],
                 clientOpts)
             return transportRequest.trim() as String
         }catch(AbortException e) {
@@ -90,7 +90,7 @@ public class ChangeManagement implements Serializable {
 
 
     void uploadFileToTransportRequest(String changeId, String transportRequestId, String applicationId, String filePath, String endpoint, String credentialsId, String cmclientOpts = '') {
-        int rc = executeWithCredentials(endpoint, credentialsId, 'upload-file-to-transport', ['-cID', changeId,
+        int rc = executeWithCredentials(BackendType.SOLMAN, endpoint, credentialsId, 'upload-file-to-transport', ['-cID', changeId,
                                                                                                  '-tID', transportRequestId,
                                                                                                  applicationId, "\"$filePath\""],
             cmclientOpts) as int
@@ -103,12 +103,12 @@ public class ChangeManagement implements Serializable {
 
     }
 
-    def executeWithCredentials(String endpoint, String credentialsId, String command, List<String> args, String clientOpts = '') {
+    def executeWithCredentials(BackendType type, String endpoint, String credentialsId, String command, List<String> args, String clientOpts = '') {
         script.withCredentials([script.usernamePassword(
             credentialsId: credentialsId,
             passwordVariable: 'password',
             usernameVariable: 'username')]) {
-            def cmScript = getCMCommandLine(endpoint, script.username, script.password,
+            def cmScript = getCMCommandLine(type, endpoint, script.username, script.password,
                     command, args,
                     clientOpts)
             // user and password are masked by withCredentials
@@ -122,7 +122,7 @@ public class ChangeManagement implements Serializable {
     }
 
     void releaseTransportRequest(String changeId, String transportRequestId, String endpoint, String credentialsId, String clientOpts = '') {
-        int rc = executeWithCredentials( endpoint, credentialsId, 'release-transport', ['-cID', changeId,
+        int rc = executeWithCredentials(BackendType.SOLMAN, endpoint, credentialsId, 'release-transport', ['-cID', changeId,
                                                                                         '-tID', transportRequestId], clientOpts) as int
         if(rc == 0) {
             return
@@ -131,7 +131,8 @@ public class ChangeManagement implements Serializable {
         }
     }
 
-    String getCMCommandLine(String endpoint,
+    String getCMCommandLine(BackendType type,
+                            String endpoint,
                             String username,
                             String password,
                             String command,
@@ -146,7 +147,7 @@ public class ChangeManagement implements Serializable {
                         cmclient -e '$endpoint' \
                            -u '$username' \
                            -p '$password' \
-                           -t SOLMAN \
+                           -t ${type} \
                           ${command} ${(args as Iterable).join(' ')}
                     """
         return cmCommandLine
