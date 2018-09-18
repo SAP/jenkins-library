@@ -145,7 +145,8 @@ def call(parameters = [:]) {
             try {
 
 
-                cm.uploadFileToTransportRequest(configuration.changeDocumentId,
+                cm.uploadFileToTransportRequest(backendType,
+                                                configuration.changeDocumentId,
                                                 configuration.transportRequestId,
                                                 configuration.applicationId,
                                                 configuration.filePath,

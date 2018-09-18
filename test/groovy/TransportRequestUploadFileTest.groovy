@@ -112,7 +112,8 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
     public void uploadFileToTransportRequestFailureTest() {
 
         ChangeManagement cm = new ChangeManagement(nullScript) {
-            void uploadFileToTransportRequest(String changeId,
+            void uploadFileToTransportRequest(ChangeManagement.BackendType type,
+                                              String changeId,
                                               String transportRequestId,
                                               String applicationId,
                                               String filePath,
@@ -141,7 +142,8 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
         jlr.expect("[INFO] File '/path' has been successfully uploaded to transport request '002' of change document '001'.")
 
         ChangeManagement cm = new ChangeManagement(nullScript) {
-            void uploadFileToTransportRequest(String changeId,
+            void uploadFileToTransportRequest(ChangeManagement.BackendType type,
+                                              String changeId,
                                               String transportRequestId,
                                               String applicationId,
                                               String filePath,
@@ -149,6 +151,7 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
                                               String credentialsId,
                                               String cmclientOpts) {
 
+                cmUtilReceivedParams.type = type
                 cmUtilReceivedParams.changeId = changeId
                 cmUtilReceivedParams.transportRequestId = transportRequestId
                 cmUtilReceivedParams.applicationId = applicationId
@@ -168,6 +171,7 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
 
         assert cmUtilReceivedParams ==
             [
+                type: ChangeManagement.BackendType.SOLMAN,
                 changeId: '001',
                 transportRequestId: '002',
                 applicationId: 'app',
@@ -186,7 +190,8 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
                                                                        [applicationId: 'AppIdfromConfig']]])
 
         ChangeManagement cm = new ChangeManagement(nullScript) {
-            void uploadFileToTransportRequest(String changeId,
+            void uploadFileToTransportRequest(ChangeManagement.BackendType type,
+                                              String changeId,
                                               String transportRequestId,
                                               String applicationId,
                                               String filePath,
@@ -215,7 +220,8 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
         nullScript.commonPipelineEnvironment.setMtarFilePath('/path2')
 
         ChangeManagement cm = new ChangeManagement(nullScript) {
-            void uploadFileToTransportRequest(String changeId,
+            void uploadFileToTransportRequest(ChangeManagement.BackendType type,
+                                              String changeId,
                                               String transportRequestId,
                                               String applicationId,
                                               String filePath,
@@ -244,7 +250,8 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
         nullScript.commonPipelineEnvironment.setMtarFilePath('/path2')
 
         ChangeManagement cm = new ChangeManagement(nullScript) {
-            void uploadFileToTransportRequest(String changeId,
+            void uploadFileToTransportRequest(ChangeManagement.BackendType type,
+                                              String changeId,
                                               String transportRequestId,
                                               String applicationId,
                                               String filePath,
@@ -272,7 +279,8 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
         thrown.expectMessage('Upload failure.')
 
         ChangeManagement cm = new ChangeManagement(nullScript) {
-            void uploadFileToTransportRequest(String changeId,
+            void uploadFileToTransportRequest(ChangeManagement.BackendType type,
+                                              String changeId,
                                               String transportRequestId,
                                               String applicationId,
                                               String filePath,
