@@ -291,4 +291,17 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
                       cmUtils: cm)
     }
 
+    @Test
+    public void invalidBackendTypeTest() {
+        thrown.expect(AbortException)
+        thrown.expectMessage('Invalid backend type: \'DUMMY\'. Valid values: [SOLMAN, CTS, NONE]. ' +
+                             'Configuration: \'changeManagement/type\'.')
+
+        jsr.step.call(script: nullScript,
+                      applicationId: 'app',
+                      filePath: '/path',
+                      changeManagement: [type: 'DUMMY'])
+
+    }
+
 }
