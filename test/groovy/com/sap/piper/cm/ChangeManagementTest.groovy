@@ -130,7 +130,8 @@ public class ChangeManagementTest extends BasePiperTest {
     @Test
     public void testGetCommandLineWithoutCMClientOpts() {
         String commandLine = new ChangeManagement(nullScript, null)
-            .getCMCommandLine('https://example.org/cm',
+            .getCMCommandLine(ChangeManagement.BackendType.SOLMAN,
+                              'https://example.org/cm',
                               "me",
                               "topSecret",
                               "the-command",
@@ -143,7 +144,8 @@ public class ChangeManagementTest extends BasePiperTest {
 @Test
 public void testGetCommandLineWithCMClientOpts() {
     String commandLine = new ChangeManagement(nullScript, null)
-        .getCMCommandLine('https://example.org/cm',
+        .getCMCommandLine(ChangeManagement.BackendType.SOLMAN,
+                          'https://example.org/cm',
                           "me",
                           "topSecret",
                           "the-command",
