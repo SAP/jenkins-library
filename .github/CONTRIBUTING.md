@@ -27,7 +27,7 @@ Implementation of a functionality and its documentation shall happen within the 
 
 ### Coding pattern
 
-Pipeline steps must not make use of return values. The pattern for sharing parameters between pipeline steps or between a pipeline step and a pipeline script is sharing values via the common pipeline environment. Since there is no return value from a pipeline step the return value of a pipeline step is already `void` rather than `def`.
+Pipeline steps must not make use of return values. The pattern for sharing parameters between pipeline steps or between a pipeline step and a pipeline script is sharing values via the [`commonPipelineEnvironment`](../vars/commonPipelineEnvironment.groovy). Since there is no return value from a pipeline step the return value of a pipeline step is already `void` rather than `def`.
 
 ### Code Style
 The code should follow any stylistic and architectural guidelines prescribed by the project. In the absence of guidelines, mimic the styles and patterns in the existing code-base.
