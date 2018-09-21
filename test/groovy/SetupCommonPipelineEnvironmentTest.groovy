@@ -6,10 +6,12 @@ import org.yaml.snakeyaml.Yaml
 
 import util.BasePiperTest
 import util.Rules
+import util.JenkinsReadYamlRule
 import util.JenkinsStepRule
 
 import static org.junit.Assert.assertEquals
 import static org.junit.Assert.assertNotNull
+
 
 class SetupCommonPipelineEnvironmentTest extends BasePiperTest {
     def usedConfigFile

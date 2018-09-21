@@ -11,11 +11,11 @@ import util.BasePiperTest
 import util.JenkinsCredentialsRule
 import util.JenkinsStepRule
 import util.JenkinsLoggingRule
+import util.JenkinsReadYamlRule
 import util.Rules
 
 import hudson.AbortException
 import hudson.scm.NullSCM
-
 
 public class TransportRequestReleaseTest extends BasePiperTest {
 
@@ -25,6 +25,7 @@ public class TransportRequestReleaseTest extends BasePiperTest {
 
     @Rule
     public RuleChain ruleChain = Rules.getCommonRules(this)
+        .around(new JenkinsReadYamlRule(this))
         .around(thrown)
         .around(jsr)
         .around(jlr)
