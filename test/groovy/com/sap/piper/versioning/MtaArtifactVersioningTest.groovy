@@ -12,13 +12,12 @@ import static org.junit.Assert.assertEquals
 
 class MtaArtifactVersioningTest extends BasePiperTest{
 
-    JenkinsReadYamlRule jryr = new JenkinsReadYamlRule(this, 'test/resources/versioning/MtaArtifactVersioning/')
     JenkinsShellCallRule jscr = new JenkinsShellCallRule(this)
 
     @Rule
     public RuleChain ruleChain = Rules
         .getCommonRules(this)
-        .around(jryr)
+        .around(new JenkinsReadYamlRule(this).registerYaml('mta.yaml', "version: '1.2.3'"))
         .around(jscr)
 
     @Test
