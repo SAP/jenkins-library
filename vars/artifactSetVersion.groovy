@@ -86,21 +86,23 @@ def call(Map parameters = [:], Closure body = null) {
             
             sh 'git add .'
 
-            sshagent([config.gitSshKeyCredentialsId]) {
-                def gitUserMailConfig = ''
-                if (config.gitUserName && config.gitUserEMail)
-                    gitUserMailConfig = "-c user.email=\"${config.gitUserEMail}\" -c user.name=\"${config.gitUserName}\""
+            def gitConfig = []
 
-                try {
-                    sh "git ${gitUserMailConfig} commit -m 'update version ${newVersion}'"
-                } catch (e) {
-                    error "[${STEP_NAME}]git commit failed: ${e}"
-                }
+            if(config.gitUserEMail) gitConfig.add("-c user.email=\"${config.gitUserEMail}\"")
+            if(config.gitUserName)  gitConfig.add("-c user.name=\"${config.gitUserName}\"")
+            gitConfig = gitConfig.join(' ')
+
+            try {
                 sh """#!/bin/bash
-                      git tag ${config.tagPrefix}${newVersion}
-                      git push ${config.gitSshUrl} ${config.tagPrefix}${newVersion}"""
-
+                      git ${gitConfig} commit -m 'update version ${newVersion}'
+                      git tag ${config.tagPrefix}${newVersion}"""
                 config.gitCommitId = gitUtils.getGitCommitIdOrNull()
+            } catch (e) {
+                error "[${STEP_NAME}]git commit and tag failed: ${e}"
+            }
+
+            sshagent([config.gitSshKeyCredentialsId]) {
+                sh "git push ${config.gitSshUrl} ${config.tagPrefix}${newVersion}"
             }
         }
 

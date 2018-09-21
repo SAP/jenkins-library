@@ -1,13 +1,16 @@
 import com.sap.piper.JenkinsUtils
+
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.ExpectedException
 import org.junit.rules.RuleChain
 
+
 import util.BasePiperTest
 import util.JenkinsDockerExecuteRule
 import util.JenkinsLoggingRule
+import util.JenkinsReadYamlRule
 import util.JenkinsShellCallRule
 import util.JenkinsStepRule
 import util.PluginMock
@@ -27,6 +30,7 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
     @Rule
     public RuleChain ruleChain = Rules
         .getCommonRules(this)
+        .around(new JenkinsReadYamlRule(this))
         .around(exception)
         .around(jder)
         .around(jscr)
