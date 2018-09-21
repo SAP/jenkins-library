@@ -1,3 +1,5 @@
+import static com.sap.piper.Prerequisites.checkScript
+
 import com.sap.piper.ConfigurationHelper
 import com.sap.piper.GitUtils
 import com.sap.piper.Utils
@@ -21,7 +23,9 @@ import groovy.transform.Field
 
 def call(Map parameters = [:]) {
     handlePipelineStepErrors(stepName: STEP_NAME, stepParameters: parameters) {
-        def script = parameters?.script ?: [commonPipelineEnvironment: commonPipelineEnvironment]
+
+        def script = checkScript(this, parameters) ?: [commonPipelineEnvironment: commonPipelineEnvironment]
+
         def utils = parameters?.juStabUtils ?: new Utils()
 
         // load default & individual configuration

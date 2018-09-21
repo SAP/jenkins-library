@@ -1,3 +1,5 @@
+import static com.sap.piper.Prerequisites.checkScript
+
 import com.sap.piper.ConfigurationHelper
 import com.sap.piper.ConfigurationLoader
 import com.sap.piper.ConfigurationMerger
@@ -19,7 +21,8 @@ import groovy.transform.Field
 
 def call(Map parameters = [:]) {
     handlePipelineStepErrors (stepName: STEP_NAME, stepParameters: parameters, allowBuildFailure: true) {
-        def script = parameters.script
+
+        def script = checkScript(this, parameters)
         if (script == null)
              script = [commonPipelineEnvironment: commonPipelineEnvironment]
 

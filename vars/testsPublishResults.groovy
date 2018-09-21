@@ -1,3 +1,5 @@
+import static com.sap.piper.Prerequisites.checkScript
+
 import com.cloudbees.groovy.cps.NonCPS
 
 import com.sap.piper.ConfigurationHelper
@@ -21,9 +23,11 @@ import groovy.transform.Field
  */
 def call(Map parameters = [:]) {
     handlePipelineStepErrors (stepName: STEP_NAME, stepParameters: parameters) {
-        def script = parameters.script
+
+        def script = checkScript(this, parameters)
         if (script == null)
             script = [commonPipelineEnvironment: commonPipelineEnvironment]
+
         prepare(parameters)
 
         // load default & individual configuration

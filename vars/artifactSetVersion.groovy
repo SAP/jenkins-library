@@ -1,3 +1,5 @@
+import static com.sap.piper.Prerequisites.checkScript
+
 import com.sap.piper.ConfigurationHelper
 import com.sap.piper.GitUtils
 import com.sap.piper.Utils
@@ -29,17 +31,16 @@ def call(Map parameters = [:], Closure body = null) {
 
     handlePipelineStepErrors (stepName: STEP_NAME, stepParameters: parameters) {
 
+        def script = checkScript(this, parameters)
+
         def gitUtils = parameters.juStabGitUtils ?: new GitUtils()
 
         if (gitUtils.insideWorkTree()) {
             if (sh(returnStatus: true, script: 'git diff --quiet HEAD') != 0)
                 error "[${STEP_NAME}] Files in the workspace have been changed previously - aborting ${STEP_NAME}"
         }
-
-        def script = parameters.script
         if (script == null)
             script = this
-
         // load default & individual configuration
         ConfigurationHelper configHelper = ConfigurationHelper
             .loadStepDefaults(this)

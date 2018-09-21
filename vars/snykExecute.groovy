@@ -1,3 +1,5 @@
+import static com.sap.piper.Prerequisites.checkScript
+
 import com.sap.piper.ConfigurationHelper
 import com.sap.piper.Utils
 import com.sap.piper.mta.MtaMultiplexer
@@ -22,7 +24,8 @@ import groovy.transform.Field
 def call(Map parameters = [:]) {
     handlePipelineStepErrors(stepName: STEP_NAME, stepParameters: parameters) {
         def utils = parameters.juStabUtils ?: new Utils()
-        def script = parameters.script ?: [commonPipelineEnvironment: commonPipelineEnvironment]
+
+        def script = checkScript(this, parameters) ?: [commonPipelineEnvironment: commonPipelineEnvironment]
 
         Map config = ConfigurationHelper
             .loadStepDefaults(this)

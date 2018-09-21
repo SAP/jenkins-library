@@ -1,3 +1,5 @@
+import static com.sap.piper.Prerequisites.checkScript
+
 import com.cloudbees.groovy.cps.NonCPS
 import com.sap.piper.ConfigurationHelper
 import com.sap.piper.k8s.ContainerMap
@@ -28,9 +30,9 @@ import groovy.transform.Field
 
 void call(Map parameters = [:], body) {
     handlePipelineStepErrors(stepName: STEP_NAME, stepParameters: parameters) {
-        final script = parameters.script
-        if (script == null)
-            script = [commonPipelineEnvironment: commonPipelineEnvironment]
+
+        final script = checkScript(this, parameters) ?: [commonPipelineEnvironment: commonPipelineEnvironment]
+
         Map config = ConfigurationHelper
             .loadStepDefaults(this)
             .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS)
