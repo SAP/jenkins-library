@@ -44,7 +44,6 @@ def call(Map parameters = [:]) {
 
             def mtaYamlName = "mta.yaml"
             def applicationName = configuration.applicationName
-
             if (!fileExists(mtaYamlName)) {
                 if (!applicationName) {
                     echo "'applicationName' not provided as parameter - will not try to generate ${mtaYamlName} file"
