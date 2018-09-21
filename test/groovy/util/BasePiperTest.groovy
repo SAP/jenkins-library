@@ -18,13 +18,7 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner
 abstract class BasePiperTest extends BasePipelineTest {
 
     @Autowired
-    MockHelper mockHelper
-
-    @Autowired
     Script nullScript
-
-    @Autowired
-    GitUtils gitUtils
 
     @Autowired
     Utils utils
