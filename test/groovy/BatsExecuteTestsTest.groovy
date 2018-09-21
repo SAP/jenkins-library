@@ -20,6 +20,7 @@ class BatsExecuteTestsTest extends BasePiperTest {
     @Rule
     public RuleChain rules = Rules
         .getCommonRules(this)
+        .around(new JenkinsReadYamlRule(this))
         .around(thrown)
         .around(jder)
         .around(jscr)
