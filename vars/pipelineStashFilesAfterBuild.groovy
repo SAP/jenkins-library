@@ -1,3 +1,5 @@
+import static com.sap.piper.Prerequisites.checkScript
+
 import com.sap.piper.Utils
 import com.sap.piper.ConfigurationHelper
 import groovy.transform.Field
@@ -13,7 +15,8 @@ def call(Map parameters = [:]) {
         if (utils == null) {
             utils = new Utils()
         }
-        def script = parameters.script
+
+        def script = checkScript(this, parameters)
         if (script == null)
             script = [commonPipelineEnvironment: commonPipelineEnvironment]
 

@@ -1,3 +1,5 @@
+import static com.sap.piper.Prerequisites.checkScript
+
 import com.sap.piper.ConfigurationHelper
 import com.sap.piper.JenkinsUtils
 import com.sap.piper.k8s.SystemEnv
@@ -22,12 +24,12 @@ import hudson.AbortException
 
 void call(Map parameters = [:], body) {
     handlePipelineStepErrors(stepName: STEP_NAME, stepParameters: parameters) {
+
+        final script = checkScript(this, parameters) ?: [commonPipelineEnvironment: commonPipelineEnvironment]
+
         if (!JenkinsUtils.isPluginActive(PLUGIN_ID_KUBERNETES)) {
             error("[ERROR][${STEP_NAME}] not supported. Plugin '${PLUGIN_ID_KUBERNETES}' is not installed or not active.")
         }
-        final script = parameters.script
-        if (script == null)
-            script = [commonPipelineEnvironment: commonPipelineEnvironment]
 
         ConfigurationHelper configHelper = ConfigurationHelper
             .loadStepDefaults(this)
