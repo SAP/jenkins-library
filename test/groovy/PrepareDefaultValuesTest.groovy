@@ -30,16 +30,14 @@ public class PrepareDefaultValuesTest extends BasePiperTest {
     @Before
     public void setup() {
 
-        helper.registerAllowedMethod("libraryResource", [String], { fileName-> return fileName })
-        helper.registerAllowedMethod("readYaml", [Map], { m ->
-            switch(m.text) {
-                case 'default_pipeline_environment.yml': return [default: 'config']
-                case 'custom.yml': return [custom: 'myConfig']
+        helper.registerAllowedMethod("libraryResource", [String], { fileName ->
+            switch(fileName) {
+                case 'default_pipeline_environment.yml': return "default: 'config'"
+                case 'custom.yml': return "custom: 'myConfig'"
                 case 'not_found': throw new hudson.AbortException('No such library resource not_found could be found')
-                default: return [the:'end']
+                default: return "the:'end'"
             }
         })
-
     }
 
     @Test
