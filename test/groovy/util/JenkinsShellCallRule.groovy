@@ -61,14 +61,18 @@ class JenkinsShellCallRule implements TestRule {
                         shell.add(m.script.replaceAll(/\s+/," ").trim())
                         if (m.returnStdout || m.returnStatus) {
                             def unifiedScript = unify(m.script)
+                            def result = null
                             for(def e : returnValues.entrySet()) {
                                 if(e.key.type == Type.REGEX && unifiedScript =~ e.key.script) {
-                                    return e.value
+                                    result =  e.value
+                                    break
                                 } else if(e.key.type == Type.PLAIN && unifiedScript.equals(e.key.script)) {
-                                    return e.value
+                                    result = e.value
+                                    break
                                 }
                             }
-                            return null
+                            if(result instanceof Closure) result = result()
+                            return result
                         }
                 })
 
