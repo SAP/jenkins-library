@@ -21,9 +21,6 @@ abstract class BasePiperTest extends BasePipelineTest {
     Script nullScript
 
     @Autowired
-    GitUtils gitUtils
-
-    @Autowired
     Utils utils
 
     @Override
