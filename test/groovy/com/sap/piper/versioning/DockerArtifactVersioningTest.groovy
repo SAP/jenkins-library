@@ -40,13 +40,11 @@ class DockerArtifactVersioningTest extends BasePiperTest{
             passedDir = s
             return closure()
         })
-
-        prepareObjectInterceptors(this)
     }
 
     @Test
     void testVersioningFrom() {
-        av = new DockerArtifactVersioning(this, [filePath: 'Dockerfile', dockerVersionSource: 'FROM'])
+        av = new DockerArtifactVersioning(nullScript, [filePath: 'Dockerfile', dockerVersionSource: 'FROM'])
         assertEquals('1.2.3', av.getVersion())
         av.setVersion('1.2.3-20180101')
         assertEquals('1.2.3-20180101', jwfr.files['VERSION'])
@@ -55,15 +53,8 @@ class DockerArtifactVersioningTest extends BasePiperTest{
 
     @Test
     void testVersioningEnv() {
-        av = new DockerArtifactVersioning(this, [filePath: 'Dockerfile', dockerVersionSource: 'TEST'])
+        av = new DockerArtifactVersioning(nullScript, [filePath: 'Dockerfile', dockerVersionSource: 'TEST'])
         assertEquals('2.3.4', av.getVersion())
         assertTrue(jlr.log.contains('[DockerArtifactVersioning] Version from Docker environment variable TEST: 2.3.4'))
-    }
-
-
-    void prepareObjectInterceptors(object) {
-        object.metaClass.invokeMethod = helper.getMethodInterceptor()
-        object.metaClass.static.invokeMethod = helper.getMethodInterceptor()
-        object.metaClass.methodMissing = helper.getMethodMissingInterceptor()
     }
 }

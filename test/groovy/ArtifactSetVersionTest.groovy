@@ -156,11 +156,4 @@ class ArtifactSetVersionTest extends BasePiperTest {
         )
         assertThat(sshAgentList, hasItem('testCredentials'))
     }
-
-    void prepareObjectInterceptors(object) {
-        object.metaClass.invokeMethod = helper.getMethodInterceptor()
-        object.metaClass.static.invokeMethod = helper.getMethodInterceptor()
-        object.metaClass.methodMissing = helper.getMethodMissingInterceptor()
-    }
-
 }
