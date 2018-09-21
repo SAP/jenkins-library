@@ -19,7 +19,12 @@ import static org.junit.Assert.assertNotNull
 import static org.junit.Assert.assertNull
 import static org.junit.Assert.assertThat
 
+import org.springframework.beans.factory.annotation.Autowired
+
 class GitUtilsTest extends BasePiperTest {
+
+    @Autowired
+    GitUtils gitUtils
 
     JenkinsShellCallRule jscr = new JenkinsShellCallRule(this)
     ExpectedException thrown = ExpectedException.none()
