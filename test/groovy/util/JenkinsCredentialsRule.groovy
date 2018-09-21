@@ -14,6 +14,7 @@ import static org.hamcrest.Matchers.nullValue
 import static org.junit.Assert.assertThat;
 
 import org.hamcrest.Matchers
+import org.jenkinsci.plugins.credentialsbinding.impl.CredentialNotFoundException
 
 /**
  * By default a user &quot;anonymous&quot; with password &quot;********&quot;
@@ -47,15 +48,18 @@ class JenkinsCredentialsRule implements TestRule {
             @Override
             void evaluate() throws Throwable {
 
-                testInstance.helper.registerAllowedMethod('usernamePassword', [Map.class], {m -> return m})
+                testInstance.helper.registerAllowedMethod('usernamePassword', [Map.class],
+                    { m -> if (credentials.keySet().contains(m.credentialsId)) return m;
+                           // this is what really happens in case of an unknown credentials id,
+                           // checked with reality using credentials plugin 2.1.18.
+                           throw new CredentialNotFoundException(
+                               "Could not find credentials entry with ID '${m.credentialsId}'")
+                    })
 
                 testInstance.helper.registerAllowedMethod('withCredentials', [List, Closure], { l, c ->
 
                     def credsId = l[0].credentialsId
                     def creds = credentials.get(credsId)
-
-                    assertThat("Unexpected credentialsId received: '${credsId}'.",
-                        creds, is(not(nullValue())))
 
                     binding.setProperty('username', creds?.user)
                     binding.setProperty('password', creds?.passwd)
