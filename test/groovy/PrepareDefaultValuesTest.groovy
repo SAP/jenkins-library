@@ -54,11 +54,16 @@ public class PrepareDefaultValuesTest extends BasePiperTest {
     @Test
     public void testReInitializeOnCustomConfig() {
 
-        DefaultValueCache.createInstance([key:'value'])
+        def instance = DefaultValueCache.createInstance([key:'value'])
 
         // existing instance is dropped in case a custom config is provided.
         jsr.step.call(script: nullScript, customDefaults: 'custom.yml')
 
+        // this check is for checking we have another instance
+        assert ! instance.is(DefaultValueCache.getInstance())
+
+        // some additional checks that the configuration represented by the new
+        // config is fine
         assert DefaultValueCache.getInstance().getDefaultValues().size() == 2
         assert DefaultValueCache.getInstance().getDefaultValues().default == 'config'
         assert DefaultValueCache.getInstance().getDefaultValues().custom == 'myConfig'
@@ -67,10 +72,11 @@ public class PrepareDefaultValuesTest extends BasePiperTest {
     @Test
     public void testNoReInitializeWithoutCustomConfig() {
 
-        DefaultValueCache.createInstance([key:'value'])
+        def instance = DefaultValueCache.createInstance([key:'value'])
 
         jsr.step.call(script: nullScript)
 
+        assert instance.is(DefaultValueCache.getInstance())
         assert DefaultValueCache.getInstance().getDefaultValues().size() == 1
         assert DefaultValueCache.getInstance().getDefaultValues().key == 'value'
     }
