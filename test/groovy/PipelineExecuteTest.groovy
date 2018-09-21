@@ -7,6 +7,7 @@ import org.junit.Test
 import org.junit.rules.ExpectedException
 import org.junit.rules.RuleChain
 
+import util.JenkinsReadYamlRule
 import util.JenkinsStepRule
 
 class PipelineExecuteTest extends BasePiperTest {
@@ -16,6 +17,7 @@ class PipelineExecuteTest extends BasePiperTest {
     @Rule
     public RuleChain ruleChain = Rules
         .getCommonRules(this)
+        .around(new JenkinsReadYamlRule(this))
         .around(thrown)
         .around(jsr)
 

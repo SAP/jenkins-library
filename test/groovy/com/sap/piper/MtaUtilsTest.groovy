@@ -12,6 +12,7 @@ import org.yaml.snakeyaml.Yaml
 import groovy.json.JsonSlurper
 import hudson.AbortException
 import util.BasePiperTest
+import util.JenkinsReadYamlRule
 import util.Rules
 
 
@@ -32,15 +33,13 @@ class MtaUtilsTest extends BasePiperTest {
     @Rule
     public RuleChain ruleChain = Rules
         .getCommonRules(this)
+        .around(new JenkinsReadYamlRule(this))
         .around(thrown)
 
     @Before
     void init() {
         targetMtaDescriptor = "${tmp.getRoot()}/generated_mta.yml"
-        def script = new Object()
-        mtaUtils = new MtaUtils(script)
-
-        prepareObjectInterceptors(script)
+        mtaUtils = new MtaUtils(nullScript)
 
         this.helper.registerAllowedMethod('readJSON', [Map], { Map parameters ->
             return new JsonSlurper().parse(new File(parameters.file))

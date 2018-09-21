@@ -30,16 +30,10 @@ class BasePiperTestContext {
     Utils mockUtils() {
         def mockUtils = new Utils()
         mockUtils.steps = [
-            stash  : { m -> println "stash name = ${m.name}" },
-            unstash: { println "unstash called ..." }
+            stash  : {  },
+            unstash: {  }
         ]
         LibraryLoadingTestExecutionListener.prepareObjectInterceptors(mockUtils)
         return mockUtils
     }
-
-    @Bean
-    MockHelper mockHelper() {
-        return new MockHelper()
-    }
-
 }

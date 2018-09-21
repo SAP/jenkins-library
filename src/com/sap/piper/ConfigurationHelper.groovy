@@ -1,5 +1,7 @@
 package com.sap.piper
 
+import com.cloudbees.groovy.cps.NonCPS
+
 class ConfigurationHelper implements Serializable {
     static ConfigurationHelper loadStepDefaults(Script step){
         return new ConfigurationHelper(step)
@@ -96,13 +98,19 @@ class ConfigurationHelper implements Serializable {
         return this
     }
 
-    Map use(){ return config }
+    @NonCPS // required because we have a closure in the
+            // method body that cannot be CPS transformed
+    Map use(){
+        MapUtils.traverse(config, { v -> (v instanceof GString) ? v.toString() : v })
+        return config
+    }
 
     ConfigurationHelper(Map config = [:]){
         this.config = config
     }
 
     def getConfigProperty(key) {
+        use()
         return getConfigPropertyNested(config, key)
     }
 
