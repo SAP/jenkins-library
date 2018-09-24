@@ -4,7 +4,7 @@ branches:
 language: groovy
 sudo: false
 install:
-- pip install --user mkdocs==0.17.5 mkdocs-material==2.9.4
+- pip install --user mkdocs==0.17.5 mkdocs-material==2.9.4 pygments
 script:
 - mvn clean test --batch-mode
 - |
