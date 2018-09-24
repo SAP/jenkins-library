@@ -5,6 +5,7 @@ import groovy.transform.Field
 import com.sap.piper.ConfigurationHelper
 import com.sap.piper.ConfigurationMerger
 import com.sap.piper.cm.ChangeManagement
+import com.sap.piper.cm.BackendType
 import com.sap.piper.cm.ChangeManagementException
 
 import hudson.AbortException
@@ -39,7 +40,6 @@ def call(parameters = [:]) {
             .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName?:env.STAGE_NAME, stepConfigurationKeys)
             .mixin(parameters, parameterKeys)
             .addIfEmpty('filePath', script.commonPipelineEnvironment.getMtarFilePath())
-            .withMandatoryProperty('applicationId')
             .withMandatoryProperty('changeManagement/changeDocumentLabel')
             .withMandatoryProperty('changeManagement/clientOpts')
             .withMandatoryProperty('changeManagement/credentialsId')
@@ -54,19 +54,19 @@ def call(parameters = [:]) {
 
         new Utils().pushToSWA([step: STEP_NAME, stepParam1: configuration.changeManagement.type], configuration)
 
-        ChangeManagement.BackendType backendType
+        BackendType backendType
 
         try {
-            backendType = configuration.changeManagement.type as ChangeManagement.BackendType
+            backendType = configuration.changeManagement.type as BackendType
         } catch(IllegalArgumentException e) {
             error "Invalid backend type: '${configuration.changeManagement.type}'. " +
-                  "Valid values: [${ChangeManagement.BackendType.values().join(', ')}]. " +
+                  "Valid values: [${BackendType.values().join(', ')}]. " +
                   "Configuration: 'changeManagement/type'."
         }
 
         def changeDocumentId = null
 
-        if(backendType == ChangeManagement.BackendType.SOLMAN) {
+        if(backendType == BackendType.SOLMAN) {
 
             changeDocumentId = configuration.changeDocumentId
 
@@ -125,10 +125,11 @@ def call(parameters = [:]) {
             .mixin([changeDocumentId: changeDocumentId?.trim() ?: null,
                     transportRequestId: transportRequestId?.trim() ?: null], ['changeDocumentId', 'transportRequestId'] as Set)
 
-        if(backendType == ChangeManagement.BackendType.SOLMAN) {
+        if(backendType == BackendType.SOLMAN) {
             configHelper
                 .withMandatoryProperty('changeDocumentId',
                     "Change document id not provided (parameter: \'changeDocumentId\' or via commit history).")
+                .withMandatoryProperty('applicationId')
         }
         configuration = configHelper
                             .withMandatoryProperty('transportRequestId',
@@ -136,7 +137,7 @@ def call(parameters = [:]) {
                            .use()
 
         def uploadingMessage = ["[INFO] Uploading file '${configuration.filePath}' to transport request '${configuration.transportRequestId}'"]
-        if(backendType == ChangeManagement.BackendType.SOLMAN)
+        if(backendType == BackendType.SOLMAN)
             uploadingMessage << " of change document '${configuration.changeDocumentId}'"
         uploadingMessage << '.'
 
@@ -160,7 +161,7 @@ def call(parameters = [:]) {
 
 
         def uploadedMessage = ["[INFO] File '${configuration.filePath}' has been successfully uploaded to transport request '${configuration.transportRequestId}'"]
-        if(backendType == ChangeManagement.BackendType.SOLMAN)
+        if(backendType == BackendType.SOLMAN)
             uploadedMessage << " of change document '${configuration.changeDocumentId}'"
         uploadedMessage << '.'
         echo uploadedMessage.join()

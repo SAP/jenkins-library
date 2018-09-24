@@ -6,6 +6,7 @@ import org.junit.Test
 import org.junit.rules.ExpectedException
 import org.junit.rules.RuleChain
 
+import com.sap.piper.cm.BackendType
 import com.sap.piper.cm.ChangeManagement
 import com.sap.piper.cm.ChangeManagementException
 
@@ -51,7 +52,11 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
     }
 
     @Test
-    public void changeDocumentIdNotProvidedTest() {
+    public void changeDocumentIdNotProvidedSOLMANTest() {
+
+        // we expect the failure only for SOLMAN (which is the default).
+        // Use case for CTS without change document id is checked by the
+        // straight forward test case for CTS
 
         thrown.expect(IllegalArgumentException)
         thrown.expectMessage("Change document id not provided (parameter: 'changeDocumentId' or via commit history).")
@@ -91,7 +96,11 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
     }
 
     @Test
-    public void applicationIdNotProvidedTest() {
+    public void applicationIdNotProvidedSOLMANTest() {
+
+        // we expect the failure only for SOLMAN (which is the default).
+        // Use case for CTS without applicationId is checked by the
+        // straight forward test case for CTS
 
         thrown.expect(IllegalArgumentException)
         thrown.expectMessage("ERROR - NO VALUE AVAILABLE FOR applicationId")
@@ -112,7 +121,7 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
     public void uploadFileToTransportRequestFailureTest() {
 
         ChangeManagement cm = new ChangeManagement(nullScript) {
-            void uploadFileToTransportRequest(ChangeManagement.BackendType type,
+            void uploadFileToTransportRequest(BackendType type,
                                               String changeId,
                                               String transportRequestId,
                                               String applicationId,
@@ -136,13 +145,59 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
     }
 
     @Test
-    public void uploadFileToTransportRequestSuccessTest() {
+    public void uploadFileToTransportRequestCTSSuccessTest() {
+
+        jlr.expect("[INFO] Uploading file '/path' to transport request '002'.")
+        jlr.expect("[INFO] File '/path' has been successfully uploaded to transport request '002'.")
+
+        ChangeManagement cm = new ChangeManagement(nullScript) {
+            void uploadFileToTransportRequest(BackendType type,
+                                              String changeId,
+                                              String transportRequestId,
+                                              String applicationId,
+                                              String filePath,
+                                              String endpoint,
+                                              String credentialsId,
+                                              String cmclientOpts) {
+
+                cmUtilReceivedParams.type = type
+                cmUtilReceivedParams.changeId = changeId
+                cmUtilReceivedParams.transportRequestId = transportRequestId
+                cmUtilReceivedParams.applicationId = applicationId
+                cmUtilReceivedParams.filePath = filePath
+                cmUtilReceivedParams.endpoint = endpoint
+                cmUtilReceivedParams.credentialsId = credentialsId
+                cmUtilReceivedParams.cmclientOpts = cmclientOpts
+            }
+        }
+
+        jsr.step.call(script: nullScript,
+                      changeManagement: [type: 'CTS'],
+                      transportRequestId: '002',
+                      filePath: '/path',
+                      cmUtils: cm)
+
+        assert cmUtilReceivedParams ==
+            [
+                type: BackendType.CTS,
+                changeId: null,
+                transportRequestId: '002',
+                applicationId: null,
+                filePath: '/path',
+                endpoint: 'https://example.org/cm',
+                credentialsId: 'CM',
+                cmclientOpts: ''
+            ]
+    }
+
+    @Test
+    public void uploadFileToTransportRequestSOLMANSuccessTest() {
 
         jlr.expect("[INFO] Uploading file '/path' to transport request '002' of change document '001'.")
         jlr.expect("[INFO] File '/path' has been successfully uploaded to transport request '002' of change document '001'.")
 
         ChangeManagement cm = new ChangeManagement(nullScript) {
-            void uploadFileToTransportRequest(ChangeManagement.BackendType type,
+            void uploadFileToTransportRequest(BackendType type,
                                               String changeId,
                                               String transportRequestId,
                                               String applicationId,
@@ -171,7 +226,7 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
 
         assert cmUtilReceivedParams ==
             [
-                type: ChangeManagement.BackendType.SOLMAN,
+                type: BackendType.SOLMAN,
                 changeId: '001',
                 transportRequestId: '002',
                 applicationId: 'app',
@@ -190,7 +245,7 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
                                                                        [applicationId: 'AppIdfromConfig']]])
 
         ChangeManagement cm = new ChangeManagement(nullScript) {
-            void uploadFileToTransportRequest(ChangeManagement.BackendType type,
+            void uploadFileToTransportRequest(BackendType type,
                                               String changeId,
                                               String transportRequestId,
                                               String applicationId,
@@ -220,7 +275,7 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
         nullScript.commonPipelineEnvironment.setMtarFilePath('/path2')
 
         ChangeManagement cm = new ChangeManagement(nullScript) {
-            void uploadFileToTransportRequest(ChangeManagement.BackendType type,
+            void uploadFileToTransportRequest(BackendType type,
                                               String changeId,
                                               String transportRequestId,
                                               String applicationId,
@@ -250,7 +305,7 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
         nullScript.commonPipelineEnvironment.setMtarFilePath('/path2')
 
         ChangeManagement cm = new ChangeManagement(nullScript) {
-            void uploadFileToTransportRequest(ChangeManagement.BackendType type,
+            void uploadFileToTransportRequest(BackendType type,
                                               String changeId,
                                               String transportRequestId,
                                               String applicationId,
@@ -279,7 +334,7 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
         thrown.expectMessage('Upload failure.')
 
         ChangeManagement cm = new ChangeManagement(nullScript) {
-            void uploadFileToTransportRequest(ChangeManagement.BackendType type,
+            void uploadFileToTransportRequest(BackendType type,
                                               String changeId,
                                               String transportRequestId,
                                               String applicationId,

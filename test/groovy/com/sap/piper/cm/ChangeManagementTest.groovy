@@ -130,7 +130,7 @@ public class ChangeManagementTest extends BasePiperTest {
     @Test
     public void testGetCommandLineWithoutCMClientOpts() {
         String commandLine = new ChangeManagement(nullScript, null)
-            .getCMCommandLine(ChangeManagement.BackendType.SOLMAN,
+            .getCMCommandLine(BackendType.SOLMAN,
                               'https://example.org/cm',
                               "me",
                               "topSecret",
@@ -144,7 +144,7 @@ public class ChangeManagementTest extends BasePiperTest {
 @Test
 public void testGetCommandLineWithCMClientOpts() {
     String commandLine = new ChangeManagement(nullScript, null)
-        .getCMCommandLine(ChangeManagement.BackendType.SOLMAN,
+        .getCMCommandLine(BackendType.SOLMAN,
                           'https://example.org/cm',
                           "me",
                           "topSecret",
@@ -176,7 +176,8 @@ public void testGetCommandLineWithCMClientOpts() {
         thrown.expectMessage('Cannot upload file \'/path\' for change document \'001\''+
                              ' with transport request \'002\'. Return code from cmclient: 1.')
 
-        new ChangeManagement(nullScript).uploadFileToTransportRequest('001',
+        new ChangeManagement(nullScript).uploadFileToTransportRequest(BackendType.SOLMAN,
+                                                                      '001',
                                                                       '002',
                                                                       'XXX',
                                                                       '/path',
@@ -185,14 +186,35 @@ public void testGetCommandLineWithCMClientOpts() {
     }
 
     @Test
-    public void testUploadFileToTransportSucceeds() {
+    public void testUploadFileToTransportSucceedsSOLMAN() {
 
         // the regex provided below is an implicit check that the command line is fine.
-        script.setReturnValue(JenkinsShellCallRule.Type.REGEX,, 'upload-file-to-transport.*-cID 001 -tID 002 XXX "/path"', 0)
+        script.setReturnValue(JenkinsShellCallRule.Type.REGEX, 'upload-file-to-transport.*-cID 001 -tID 002 XXX "/path"', 0)
 
-        new ChangeManagement(nullScript).uploadFileToTransportRequest('001',
+        new ChangeManagement(nullScript).uploadFileToTransportRequest(
+            BackendType.SOLMAN,
+            '001',
             '002',
             'XXX',
+            '/path',
+            'https://example.org/cm',
+            'me')
+
+        // no assert required here, since the regex registered above to the script rule is an implicit check for
+        // the command line.
+    }
+
+    @Test
+    public void testUploadFileToTransportSucceedsCTS() {
+
+        // the regex provided below is an implicit check that the command line is fine.
+        script.setReturnValue(JenkinsShellCallRule.Type.REGEX, '-t CTS upload-file-to-transport -tID 002 "/path"', 0)
+
+        new ChangeManagement(nullScript).uploadFileToTransportRequest(
+            BackendType.CTS,
+            null,
+            '002',
+            null,
             '/path',
             'https://example.org/cm',
             'me')
@@ -210,7 +232,8 @@ public void testGetCommandLineWithCMClientOpts() {
 
         script.setReturnValue(JenkinsShellCallRule.Type.REGEX,, 'upload-file-to-transport', 1)
 
-        new ChangeManagement(nullScript).uploadFileToTransportRequest('001',
+        new ChangeManagement(nullScript).uploadFileToTransportRequest(BackendType.SOLMAN,
+            '001',
             '002',
             'XXX',
             '/path',
