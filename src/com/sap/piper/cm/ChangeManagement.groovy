@@ -9,7 +9,6 @@ import hudson.AbortException
 
 public class ChangeManagement implements Serializable {
 
-    public enum BackendType {SOLMAN, CTS, NONE}
     private script
     private GitUtils gitUtils
 
@@ -89,11 +88,27 @@ public class ChangeManagement implements Serializable {
     }
 
 
-    void uploadFileToTransportRequest(String changeId, String transportRequestId, String applicationId, String filePath, String endpoint, String credentialsId, String cmclientOpts = '') {
-        int rc = executeWithCredentials(BackendType.SOLMAN, endpoint, credentialsId, 'upload-file-to-transport', ['-cID', changeId,
-                                                                                                 '-tID', transportRequestId,
-                                                                                                 applicationId, "\"$filePath\""],
-            cmclientOpts) as int
+    void uploadFileToTransportRequest(BackendType type, String changeId, String transportRequestId, String applicationId, String filePath, String endpoint, String credentialsId, String cmclientOpts = '') {
+
+        def args = null
+
+        if(type == BackendType.SOLMAN) {
+            args = ['-cID', changeId,
+                    '-tID', transportRequestId,
+                    applicationId, "\"$filePath\""]
+        } else if (type == BackendType.CTS) {
+            args = ['-tID', transportRequestId,
+                    "\"$filePath\""]
+        } else {
+            throw new IllegalArgumentException("Invalid backend type: ${type}")
+        }
+
+        int rc = executeWithCredentials(type,
+                                        endpoint,
+                                        credentialsId,
+                                        'upload-file-to-transport',
+                                        args,
+                                        cmclientOpts) as int
 
         if(rc == 0) {
             return
