@@ -281,7 +281,7 @@ public void testGetCommandLineWithCMClientOpts() {
     public void testReleaseTransportRequestSucceedsCTS() {
 
         // the regex provided below is an implicit check that the command line is fine.
-        script.setReturnValue(JenkinsShellCallRule.Type.REGEX, '-t CTS release-transport.*-tID 002', 0)
+        script.setReturnValue(JenkinsShellCallRule.Type.REGEX, '-t CTS export-transport.*-tID 002', 0)
 
         new ChangeManagement(nullScript).releaseTransportRequest(
             BackendType.CTS,
