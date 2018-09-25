@@ -156,10 +156,28 @@ public void testGetCommandLineWithCMClientOpts() {
 }
 
     @Test
-    public void testCreateTransportRequestSucceeds() {
+    public void testCreateTransportRequestSOLMANSucceeds() {
 
         script.setReturnValue(JenkinsShellCallRule.Type.REGEX, ".*cmclient.*create-transport -cID 001 -dID 002.*", '004')
-        def transportRequestId = new ChangeManagement(nullScript).createTransportRequest('001', '002', '003', 'me')
+        def transportRequestId = new ChangeManagement(nullScript).createTransportRequestSOLMAN( '001', '002', '003', 'me')
+
+        // the check for the transportRequestID is sufficient. This checks implicit the command line since that value is
+        // returned only in case the shell call matches.
+        assert transportRequestId == '004'
+
+    }
+
+    @Test
+    public void testCreateTransportRequestCTSSucceeds() {
+
+        script.setReturnValue(JenkinsShellCallRule.Type.REGEX, 'cmclient.* -t CTS .*create-transport -tt W -ts XYZ -d "desc 123"$', '004')
+        def transportRequestId = new ChangeManagement(nullScript)
+            .createTransportRequestCTS(
+                'W', // transport type
+                'XYZ', // target system
+                'desc 123', // description
+                'https://example.org/cm',
+                'me')
 
         // the check for the transportRequestID is sufficient. This checks implicit the command line since that value is
         // returned only in case the shell call matches.

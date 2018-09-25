@@ -4,6 +4,7 @@ import groovy.transform.Field
 
 import com.sap.piper.ConfigurationHelper
 import com.sap.piper.ConfigurationMerger
+import com.sap.piper.cm.BackendType
 import com.sap.piper.cm.ChangeManagement
 import com.sap.piper.cm.ChangeManagementException
 
@@ -14,7 +15,10 @@ import hudson.AbortException
 
 @Field Set stepConfigurationKeys = [
     'changeManagement',
-     'developmentSystemId'
+    'description',          // CTS
+    'developmentSystemId',  // SOLMAN
+    'targetSystem',         // CTS
+    'transportType',        // CTS
   ]
 
 @Field Set parameterKeys = stepConfigurationKeys.plus(['changeDocumentId'])
@@ -41,53 +45,90 @@ def call(parameters = [:]) {
             .withMandatoryProperty('changeManagement/git/from')
             .withMandatoryProperty('changeManagement/git/to')
             .withMandatoryProperty('changeManagement/git/format')
-            .withMandatoryProperty('developmentSystemId')
 
         Map configuration =  configHelper.use()
 
         new Utils().pushToSWA([step: STEP_NAME], configuration)
 
-        def changeDocumentId = configuration.changeDocumentId
+        BackendType backendType
 
-        if(changeDocumentId?.trim()) {
+        try {
+            backendType = configuration.changeManagement.type as BackendType
+        } catch(IllegalArgumentException e) {
+            error "Invalid backend type: '${configuration.changeManagement.type}'. " +
+                  "Valid values: [${BackendType.values().join(', ')}]. " +
+                  "Configuration: 'changeManagement/type'."
+        }
 
-            echo "[INFO] ChangeDocumentId '${changeDocumentId}' retrieved from parameters."
+        configHelper.withMandatoryProperty('transportType', null, { backendType == BackendType.CTS})
+        configHelper.withMandatoryProperty('targetSystem', null, { backendType == BackendType.CTS})
+        configHelper.withMandatoryProperty('description', null, { backendType == BackendType.CTS})
 
-        } else {
+        def changeDocumentId = null
 
-            echo "[INFO] Retrieving ChangeDocumentId from commit history [from: ${configuration.changeManagement.git.from}, to: ${configuration.changeManagement.git.to}]." +
-                 "Searching for pattern '${configuration.changeDocumentLabel}'. Searching with format '${configuration.changeManagement.git.format}'."
+        if(backendType == BackendType.SOLMAN) {
 
-            try {
+            changeDocumentId = configuration.changeDocumentId
 
-                changeDocumentId = cm.getChangeDocumentId(
+            if(changeDocumentId?.trim()) {
+
+                echo "[INFO] ChangeDocumentId '${changeDocumentId}' retrieved from parameters."
+
+            } else {
+
+                echo "[INFO] Retrieving ChangeDocumentId from commit history [from: ${configuration.changeManagement.git.from}, to: ${configuration.changeManagement.git.to}]." +
+                     "Searching for pattern '${configuration.changeDocumentLabel}'. Searching with format '${configuration.changeManagement.git.format}'."
+
+                try {
+
+                    changeDocumentId = cm.getChangeDocumentId(
                                                           configuration.changeManagement.git.from,
                                                           configuration.changeManagement.git.to,
                                                           configuration.changeManagement.changeDocumentLabel,
                                                           configuration.changeManagement.git.format
                                                          )
 
-                echo "[INFO] ChangeDocumentId '${changeDocumentId}' retrieved from commit history"
-            } catch(ChangeManagementException ex) {
-                echo "[WARN] Cannot retrieve changeDocumentId from commit history: ${ex.getMessage()}."
+                    echo "[INFO] ChangeDocumentId '${changeDocumentId}' retrieved from commit history"
+                } catch(ChangeManagementException ex) {
+                    echo "[WARN] Cannot retrieve changeDocumentId from commit history: ${ex.getMessage()}."
+                }
             }
+            configHelper.mixin([changeDocumentId: changeDocumentId?.trim() ?: null], ['changeDocumentId'] as Set)
+                        .withMandatoryProperty('developmentSystemId')
+                        .withMandatoryProperty('changeDocumentId',
+                            "Change document id not provided (parameter: \'changeDocumentId\' or via commit history).")
         }
 
-        configuration = configHelper.mixin([changeDocumentId: changeDocumentId?.trim() ?: null], ['changeDocumentId'] as Set)
-                                    .withMandatoryProperty('changeDocumentId',
-                                        "Change document id not provided (parameter: \'changeDocumentId\' or via commit history).")
-                                    .use()
+        configuration = configHelper.use()
 
         def transportRequestId
 
-        echo "[INFO] Creating transport request for change document '${configuration.changeDocumentId}' and development system '${configuration.developmentSystemId}'."
+        def creatingMessage = ["[INFO] Creating transport request"]
+        if(backendType == BackendType.SOLMAN) {
+            creatingMessage << " for change document '${configuration.changeDocumentId}' and development system '${configuration.developmentSystemId}'"
+        }
+        creatingMessage << '.'
+        echo creatingMessage.join()
 
             try {
-                transportRequestId = cm.createTransportRequest(configuration.changeDocumentId,
+                if(backendType == BackendType.SOLMAN) {
+                    transportRequestId = cm.createTransportRequestSOLMAN(
+                                                               configuration.changeDocumentId,
                                                                configuration.developmentSystemId,
                                                                configuration.changeManagement.endpoint,
                                                                configuration.changeManagement.credentialsId,
                                                                configuration.changeManagement.clientOpts)
+                } else if(backendType == BackendType.CTS) {
+                    transportRequestId = cm.createTransportRequestCTS(
+                                                               configuration.transportType,
+                                                               configuration.targetSystem,
+                                                               configuration.description,
+                                                               configuration.changeManagement.endpoint,
+                                                               configuration.changeManagement.credentialsId,
+                                                               configuration.changeManagement.clientOpts)
+                } else {
+                  throw new IllegalArgumentException("Invalid backend type: '${backendType}'.")
+                }
             } catch(ChangeManagementException ex) {
                 throw new AbortException(ex.getMessage())
             }
