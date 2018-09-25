@@ -66,6 +66,7 @@ public class ChangeManagement implements Serializable {
 
     boolean isChangeInDevelopment(String changeId, String endpoint, String credentialsId, String clientOpts = '') {
         int rc = executeWithCredentials(endpoint, credentialsId, 'is-change-in-development', ['-cID', "'${changeId}'", '--return-code'],
+            false,
             clientOpts) as int
 
         if (rc == 0) {
@@ -80,6 +81,7 @@ public class ChangeManagement implements Serializable {
     String createTransportRequest(String changeId, String developmentSystemId, String endpoint, String credentialsId, String clientOpts = '') {
         try {
             def transportRequest = executeWithCredentials(endpoint, credentialsId, 'create-transport', ['-cID', changeId, '-dID', developmentSystemId],
+                false,
                 clientOpts)
             return transportRequest.trim() as String
         }catch(AbortException e) {
@@ -92,6 +94,7 @@ public class ChangeManagement implements Serializable {
         int rc = executeWithCredentials(endpoint, credentialsId, 'upload-file-to-transport', ['-cID', changeId,
                                                                                                  '-tID', transportRequestId,
                                                                                                  applicationId, "\"$filePath\""],
+            false,
             cmclientOpts) as int
 
         if(rc == 0) {
@@ -102,7 +105,7 @@ public class ChangeManagement implements Serializable {
 
     }
 
-    def executeWithCredentials(String endpoint, String credentialsId, String command, List<String> args, String clientOpts = '') {
+    def executeWithCredentials(String endpoint, String credentialsId, String command, List<String> args, boolean returnStdout = false, String clientOpts = '') {
         script.withCredentials([script.usernamePassword(
             credentialsId: credentialsId,
             passwordVariable: 'password',
@@ -110,19 +113,24 @@ public class ChangeManagement implements Serializable {
             def cmScript = getCMCommandLine(endpoint, script.username, script.password,
                     command, args,
                     clientOpts)
+
+            Map shArgs = [:]
+            if(returnStdout)
+                shArgs.put('returnStdout', true)
+            else
+                shArgs.put('returnStatus', true)
+
+            shArgs.put('script', cmScript)
+
             // user and password are masked by withCredentials
             script.echo """[INFO] Executing command line: "${cmScript}"."""
-            def returnValue = script.sh(returnStatus: true,
-                script: cmScript)
-            return returnValue;
-
+            return script.sh(shArgs)
         }
-
     }
 
     void releaseTransportRequest(String changeId, String transportRequestId, String endpoint, String credentialsId, String clientOpts = '') {
         int rc = executeWithCredentials( endpoint, credentialsId, 'release-transport', ['-cID', changeId,
-                                                                                        '-tID', transportRequestId], clientOpts) as int
+                                                                                        '-tID', transportRequestId], false, clientOpts) as int
         if(rc == 0) {
             return
         } else {
