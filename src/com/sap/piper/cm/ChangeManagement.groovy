@@ -82,9 +82,9 @@ public class ChangeManagement implements Serializable {
         try {
             def transportRequest = executeWithCredentials(BackendType.CTS, endpoint, credentialsId, 'create-transport',
                     ['-tt', transportType, '-ts', targetSystemId, '-d', "\"${description}\""],
-                    false,
+                    true,
                     clientOpts)
-            return transportRequest?.trim() as String
+            return (transportRequest as String)?.trim()
         }catch(AbortException e) {
             throw new ChangeManagementException("Cannot create a transport request. $e.message.")
         }
@@ -94,9 +94,9 @@ public class ChangeManagement implements Serializable {
 
         try {
             def transportRequest = executeWithCredentials(BackendType.SOLMAN, endpoint, credentialsId, 'create-transport', ['-cID', changeId, '-dID', developmentSystemId],
-                false,
+                true,
                 clientOpts)
-            return transportRequest.trim() as String
+            return (transportRequest as String)?.trim()
         }catch(AbortException e) {
             throw new ChangeManagementException("Cannot create a transport request for change id '$changeId'. $e.message.")
         }
