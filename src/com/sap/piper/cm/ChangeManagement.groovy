@@ -77,16 +77,28 @@ public class ChangeManagement implements Serializable {
         }
     }
 
-    String createTransportRequest(String changeId, String developmentSystemId, String endpoint, String credentialsId, String clientOpts = '') {
+    String createTransportRequestCTS(String transportType, String targetSystemId, String description, String endpoint, String credentialsId, String clientOpts = '') {
         try {
-            def transportRequest = executeWithCredentials(BackendType.SOLMAN, endpoint, credentialsId, 'create-transport', ['-cID', changeId, '-dID', developmentSystemId],
-                clientOpts)
-            return transportRequest.trim() as String
+            def transportRequest = executeWithCredentials(BackendType.CTS, endpoint, credentialsId, 'create-transport',
+                    ['-tt', transportType, '-ts', targetSystemId, '-d', "\"${description}\""],
+                    clientOpts)
+            return transportRequest?.trim() as String
+        }catch(AbortException e) {
+            throw new ChangeManagementException("Cannot create a transport request. $e.message.")
+        }
+    }
+
+    String createTransportRequestSOLMAN(String changeId, String developmentSystemId, String endpoint, String credentialsId, String clientOpts = '') {
+
+        try {
+            def transportRequest = executeWithCredentials(BackendType.SOLMAN, endpoint, credentialsId, 'create-transport',
+                    ['-cID', changeId, '-dID', developmentSystemId],
+                    clientOpts)
+            return transportRequest?.trim() as String
         }catch(AbortException e) {
             throw new ChangeManagementException("Cannot create a transport request for change id '$changeId'. $e.message.")
         }
     }
-
 
     void uploadFileToTransportRequest(BackendType type, String changeId, String transportRequestId, String applicationId, String filePath, String endpoint, String credentialsId, String cmclientOpts = '') {
 
