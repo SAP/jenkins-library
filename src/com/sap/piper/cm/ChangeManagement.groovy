@@ -66,6 +66,7 @@ public class ChangeManagement implements Serializable {
 
     boolean isChangeInDevelopment(String changeId, String endpoint, String credentialsId, String clientOpts = '') {
         int rc = executeWithCredentials(BackendType.SOLMAN, endpoint, credentialsId, 'is-change-in-development', ['-cID', "'${changeId}'", '--return-code'],
+            false,
             clientOpts) as int
 
         if (rc == 0) {
@@ -81,6 +82,7 @@ public class ChangeManagement implements Serializable {
         try {
             def transportRequest = executeWithCredentials(BackendType.CTS, endpoint, credentialsId, 'create-transport',
                     ['-tt', transportType, '-ts', targetSystemId, '-d', "\"${description}\""],
+                    false,
                     clientOpts)
             return transportRequest?.trim() as String
         }catch(AbortException e) {
@@ -91,10 +93,10 @@ public class ChangeManagement implements Serializable {
     String createTransportRequestSOLMAN(String changeId, String developmentSystemId, String endpoint, String credentialsId, String clientOpts = '') {
 
         try {
-            def transportRequest = executeWithCredentials(BackendType.SOLMAN, endpoint, credentialsId, 'create-transport',
-                    ['-cID', changeId, '-dID', developmentSystemId],
-                    clientOpts)
-            return transportRequest?.trim() as String
+            def transportRequest = executeWithCredentials(BackendType.SOLMAN, endpoint, credentialsId, 'create-transport', ['-cID', changeId, '-dID', developmentSystemId],
+                false,
+                clientOpts)
+            return transportRequest.trim() as String
         }catch(AbortException e) {
             throw new ChangeManagementException("Cannot create a transport request for change id '$changeId'. $e.message.")
         }
@@ -120,6 +122,7 @@ public class ChangeManagement implements Serializable {
                                         credentialsId,
                                         'upload-file-to-transport',
                                         args,
+                                        false,
                                         cmclientOpts) as int
 
         if(rc == 0) {
@@ -130,7 +133,7 @@ public class ChangeManagement implements Serializable {
 
     }
 
-    def executeWithCredentials(BackendType type, String endpoint, String credentialsId, String command, List<String> args, String clientOpts = '') {
+    def executeWithCredentials(BackendType type, String endpoint, String credentialsId, String command, List<String> args, boolean returnStdout = false, String clientOpts = '') {
         script.withCredentials([script.usernamePassword(
             credentialsId: credentialsId,
             passwordVariable: 'password',
@@ -138,19 +141,24 @@ public class ChangeManagement implements Serializable {
             def cmScript = getCMCommandLine(type, endpoint, script.username, script.password,
                     command, args,
                     clientOpts)
+
+            Map shArgs = [:]
+            if(returnStdout)
+                shArgs.put('returnStdout', true)
+            else
+                shArgs.put('returnStatus', true)
+
+            shArgs.put('script', cmScript)
+
             // user and password are masked by withCredentials
             script.echo """[INFO] Executing command line: "${cmScript}"."""
-            def returnValue = script.sh(returnStatus: true,
-                script: cmScript)
-            return returnValue;
-
+            return script.sh(shArgs)
         }
-
     }
 
     void releaseTransportRequest(String changeId, String transportRequestId, String endpoint, String credentialsId, String clientOpts = '') {
-        int rc = executeWithCredentials(BackendType.SOLMAN, endpoint, credentialsId, 'release-transport', ['-cID', changeId,
-                                                                                        '-tID', transportRequestId], clientOpts) as int
+        int rc = executeWithCredentials(BackendType.SOLMAN,  endpoint, credentialsId, 'release-transport', ['-cID', changeId,
+                                                                                        '-tID', transportRequestId], false, clientOpts) as int
         if(rc == 0) {
             return
         } else {
