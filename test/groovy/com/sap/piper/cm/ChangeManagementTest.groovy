@@ -260,12 +260,32 @@ public void testGetCommandLineWithCMClientOpts() {
     }
 
     @Test
-    public void testReleaseTransportRequestSucceeds() {
+    public void testReleaseTransportRequestSucceedsSOLMAN() {
 
         // the regex provided below is an implicit check that the command line is fine.
-        script.setReturnValue(JenkinsShellCallRule.Type.REGEX, 'release-transport.*-cID 001.*-tID 002', 0)
+        script.setReturnValue(JenkinsShellCallRule.Type.REGEX, '-t SOLMAN release-transport.*-cID 001.*-tID 002', 0)
 
-        new ChangeManagement(nullScript).releaseTransportRequest('001',
+        new ChangeManagement(nullScript).releaseTransportRequest(
+            BackendType.SOLMAN,
+            '001',
+            '002',
+            'https://example.org',
+            'me',
+            'openSesame')
+
+        // no assert required here, since the regex registered above to the script rule is an implicit check for
+        // the command line.
+    }
+
+    @Test
+    public void testReleaseTransportRequestSucceedsCTS() {
+
+        // the regex provided below is an implicit check that the command line is fine.
+        script.setReturnValue(JenkinsShellCallRule.Type.REGEX, '-t CTS release-transport.*-tID 002', 0)
+
+        new ChangeManagement(nullScript).releaseTransportRequest(
+            BackendType.CTS,
+            null,
             '002',
             'https://example.org',
             'me',
@@ -284,7 +304,9 @@ public void testGetCommandLineWithCMClientOpts() {
         // the regex provided below is an implicit check that the command line is fine.
         script.setReturnValue(JenkinsShellCallRule.Type.REGEX, 'release-transport.*-cID 001.*-tID 002', 1)
 
-        new ChangeManagement(nullScript).releaseTransportRequest('001',
+        new ChangeManagement(nullScript).releaseTransportRequest(
+            BackendType.SOLMAN,
+            '001',
             '002',
             'https://example.org',
             'me',

@@ -4,6 +4,7 @@ import groovy.transform.Field
 
 import com.sap.piper.ConfigurationHelper
 import com.sap.piper.ConfigurationMerger
+import com.sap.piper.cm.BackendType
 import com.sap.piper.cm.ChangeManagement
 import com.sap.piper.cm.ChangeManagementException
 
@@ -112,7 +113,8 @@ def call(parameters = [:]) {
         echo "[INFO] Closing transport request '${configuration.transportRequestId}' for change document '${configuration.changeDocumentId}'."
 
             try {
-                cm.releaseTransportRequest(configuration.changeDocumentId,
+                cm.releaseTransportRequest(BackendType.SOLMAN,
+                                           configuration.changeDocumentId,
                                            configuration.transportRequestId,
                                            configuration.changeManagement.endpoint,
                                            configuration.changeManagement.credentialsId,

@@ -4,6 +4,7 @@ import org.junit.Test
 import org.junit.rules.ExpectedException
 import org.junit.rules.RuleChain
 
+import com.sap.piper.cm.BackendType
 import com.sap.piper.cm.ChangeManagement
 import com.sap.piper.cm.ChangeManagementException
 
@@ -89,7 +90,8 @@ public class TransportRequestReleaseTest extends BasePiperTest {
 
         ChangeManagement cm = new ChangeManagement(nullScript) {
 
-            void releaseTransportRequest(String changeId,
+            void releaseTransportRequest(BackendType type,
+                                         String changeId,
                                          String transportRequestId,
                                          String endpoint,
                                          String credentialsId,
@@ -111,12 +113,14 @@ public class TransportRequestReleaseTest extends BasePiperTest {
         Map receivedParams = [:]
 
         ChangeManagement cm = new ChangeManagement(nullScript) {
-            void releaseTransportRequest(String changeId,
+            void releaseTransportRequest(BackendType type,
+                                         String changeId,
                                          String transportRequestId,
                                          String endpoint,
                                          String credentialsId,
                                          String clientOpts) {
 
+                receivedParams.type = type
                 receivedParams.changeId = changeId
                 receivedParams.transportRequestId = transportRequestId
                 receivedParams.endpoint = endpoint
@@ -127,7 +131,8 @@ public class TransportRequestReleaseTest extends BasePiperTest {
 
         jsr.step.call(script: nullScript, changeDocumentId: '001', transportRequestId: '002', cmUtils: cm)
 
-        assert receivedParams == [changeId: '001',
+        assert receivedParams == [type: BackendType.SOLMAN,
+                                  changeId: '001',
                                   transportRequestId: '002',
                                   endpoint: 'https://example.org/cm',
                                   credentialsId: 'CM',

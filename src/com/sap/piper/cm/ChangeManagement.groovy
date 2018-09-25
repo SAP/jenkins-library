@@ -156,9 +156,19 @@ public class ChangeManagement implements Serializable {
         }
     }
 
-    void releaseTransportRequest(String changeId, String transportRequestId, String endpoint, String credentialsId, String clientOpts = '') {
-        int rc = executeWithCredentials(BackendType.SOLMAN,  endpoint, credentialsId, 'release-transport', ['-cID', changeId,
-                                                                                        '-tID', transportRequestId], false, clientOpts) as int
+    void releaseTransportRequest(BackendType type,String changeId, String transportRequestId, String endpoint, String credentialsId, String clientOpts = '') {
+
+        List args = []
+
+        if(type == BackendType.SOLMAN) {
+            args << '-cID'
+            args << changeId
+        }
+
+        args << '-tID'
+        args << transportRequestId
+
+        int rc = executeWithCredentials(type, endpoint, credentialsId, 'release-transport', args, false, clientOpts) as int
         if(rc == 0) {
             return
         } else {
