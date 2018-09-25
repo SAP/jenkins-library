@@ -2,15 +2,17 @@ branches:
   only:
   - master
 language: groovy
-sudo: false
-install:
-- pip install --user mkdocs==0.17.5 mkdocs-material==2.9.4 pygments
+sudo: required
+services:
+ - docker
+before_install:
+- docker pull squidfunk/mkdocs-material
 script:
 - mvn clean test --batch-mode
 - |
   if [[ "${TRAVIS_PULL_REQUEST}" != "false" ]]
   then
-    cd documentation && mkdocs build --clean --verbose --strict && cd ..
+    cd documentation && docker run --rm -it -v ${PWD}:/docs squidfunk/mkdocs-material build --clean --verbose --strict && cd ..
   else
     # Only in case we are in master branch of the leading SAP repo we would like to deploy,
     # not from the forks.
