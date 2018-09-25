@@ -158,17 +158,23 @@ public class ChangeManagement implements Serializable {
 
     void releaseTransportRequest(BackendType type,String changeId, String transportRequestId, String endpoint, String credentialsId, String clientOpts = '') {
 
+        def cmd
         List args = []
 
         if(type == BackendType.SOLMAN) {
+            cmd = 'release-transport'
             args << '-cID'
             args << changeId
+        } else if(type == BackendType.CTS) {
+             cmd = 'export-transport'
+        } else {
+            throw new IllegalStateException("Invalid backend type: '${type}'")
         }
 
         args << '-tID'
         args << transportRequestId
 
-        int rc = executeWithCredentials(type, endpoint, credentialsId, 'release-transport', args, false, clientOpts) as int
+        int rc = executeWithCredentials(type, endpoint, credentialsId, cmd, args, false, clientOpts) as int
         if(rc == 0) {
             return
         } else {

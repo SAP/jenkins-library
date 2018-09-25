@@ -49,6 +49,16 @@ def call(parameters = [:]) {
 
         new Utils().pushToSWA([step: STEP_NAME], configuration)
 
+        BackendType backendType
+
+        try {
+            backendType = configuration.changeManagement.type as BackendType
+        } catch(IllegalArgumentException e) {
+            error "Invalid backend type: '${configuration.changeManagement.type}'. " +
+                  "Valid values: [${BackendType.values().join(', ')}]. " +
+                  "Configuration: 'changeManagement/type'."
+        }
+
         def transportRequestId = configuration.transportRequestId
 
         if(transportRequestId?.trim()) {
@@ -75,45 +85,55 @@ def call(parameters = [:]) {
             }
         }
 
-        def changeDocumentId = configuration.changeDocumentId
+        def changeDocumentId = null
 
-        if(changeDocumentId?.trim()) {
+        if(backendType == BackendType.SOLMAN) {
 
-            echo "[INFO] ChangeDocumentId '${changeDocumentId}' retrieved from parameters."
+            changeDocumentId = configuration.changeDocumentId
 
-        } else {
+            if(changeDocumentId?.trim()) {
 
-            echo "[INFO] Retrieving ChangeDocumentId from commit history [from: ${configuration.changeManagement.git.from}, to: ${configuration.changeManagement.git.to}]." +
-                 "Searching for pattern '${configuration.changeDocumentLabel}'. Searching with format '${configuration.changeManagement.git.format}'."
+                echo "[INFO] ChangeDocumentId '${changeDocumentId}' retrieved from parameters."
 
-            try {
-                changeDocumentId = cm.getChangeDocumentId(
-                                                  configuration.changeManagement.git.from,
-                                                  configuration.changeManagement.git.to,
-                                                  configuration.changeManagement.changeDocumentLabel,
-                                                  configuration.changeManagement.gitformat
-                                                 )
+            } else {
 
-                echo "[INFO] ChangeDocumentId '${changeDocumentId}' retrieved from commit history"
+                echo "[INFO] Retrieving ChangeDocumentId from commit history [from: ${configuration.changeManagement.git.from}, to: ${configuration.changeManagement.git.to}]." +
+                     "Searching for pattern '${configuration.changeDocumentLabel}'. Searching with format '${configuration.changeManagement.git.format}'."
 
-            } catch(ChangeManagementException ex) {
-                echo "[WARN] Cannot retrieve changeDocumentId from commit history: ${ex.getMessage()}."
+                try {
+                    changeDocumentId = cm.getChangeDocumentId(
+                                                      configuration.changeManagement.git.from,
+                                                      configuration.changeManagement.git.to,
+                                                      configuration.changeManagement.changeDocumentLabel,
+                                                      configuration.changeManagement.gitformat
+                                                     )
+
+                    echo "[INFO] ChangeDocumentId '${changeDocumentId}' retrieved from commit history"
+
+                } catch(ChangeManagementException ex) {
+                    echo "[WARN] Cannot retrieve changeDocumentId from commit history: ${ex.getMessage()}."
+                }
             }
+
+            configHelper.mixin([changeDocumentId: changeDocumentId?.trim() ?: null], ['changeDocumentId'] as Set)
+                        .withMandatoryProperty('changeDocumentId',
+                            "Change document id not provided (parameter: \'changeDocumentId\' or via commit history).")
+
         }
 
         configuration = configHelper
-                            .mixin([transportRequestId: transportRequestId?.trim() ?: null,
-                                    changeDocumentId: changeDocumentId?.trim() ?: null], ['transportRequestId', 'changeDocumentId'] as Set)
+                            .mixin([transportRequestId: transportRequestId?.trim() ?: null], ['transportRequestId'] as Set)
                             .withMandatoryProperty('transportRequestId',
                                 "Transport request id not provided (parameter: \'transportRequestId\' or via commit history).")
-                            .withMandatoryProperty('changeDocumentId',
-                                "Change document id not provided (parameter: \'changeDocumentId\' or via commit history).")
                             .use()
 
-        echo "[INFO] Closing transport request '${configuration.transportRequestId}' for change document '${configuration.changeDocumentId}'."
+        def closingMessage = ["[INFO] Closing transport request '${configuration.transportRequestId}'"]
+        if(backendType == BackendType.SOLMAN) closingMessage << " for change document '${configuration.changeDocumentId}'"
+        closingMessage << '.'
+        echo closingMessage.join()
 
             try {
-                cm.releaseTransportRequest(BackendType.SOLMAN,
+                cm.releaseTransportRequest(backendType,
                                            configuration.changeDocumentId,
                                            configuration.transportRequestId,
                                            configuration.changeManagement.endpoint,
