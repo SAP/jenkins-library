@@ -12,7 +12,7 @@ script:
 - |
   if [[ "${TRAVIS_PULL_REQUEST}" != "false" ]]
   then
-    cd documentation && docker run --rm -it -v ${PWD}:/docs squidfunk/mkdocs-material build --clean --verbose --strict && cd ..
+     docker run --rm -it -v ${TRAVIS_BUILD_DIR}:/docs -w /docs/documentation squidfunk/mkdocs-material build --clean --verbose --strict
   else
     # Only in case we are in master branch of the leading SAP repo we would like to deploy,
     # not from the forks.
@@ -28,8 +28,7 @@ script:
        git remote add docu "git@github.com:$TRAVIS_REPO_SLUG.git";
        git fetch docu gh-pages:gh-pages
        echo "Pushing to gh-pages of repository $TRAVIS_REPO_SLUG"
-       cd $TRAVIS_BUILD_DIR/documentation
-       docker run --rm -it -v ~/.ssh:/root/.ssh -v ${PWD}:/docs squidfunk/mkdocs-material gh-deploy -v --clean --remote-name docu
+       docker run --rm -it -v ~/.ssh:/root/.ssh -v ${TRAVIS_BUILD_DIR}:/docs -w /docs/documentation squidfunk/mkdocs-material gh-deploy -v --clean --remote-name docu
     else
        echo "Publishing documentation skipped."
     fi
