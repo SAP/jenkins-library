@@ -2,22 +2,33 @@ branches:
   only:
   - master
 language: groovy
-sudo: false
-install:
-- pip install --user mkdocs==0.17.5 mkdocs-material==2.9.4
+sudo: required
+services:
+ - docker
+before_install:
+- docker pull squidfunk/mkdocs-material
 script:
 - mvn clean test --batch-mode
 - |
   if [[ "${TRAVIS_PULL_REQUEST}" != "false" ]]
   then
-    cd documentation && mkdocs build --clean --verbose --strict && cd ..
+     docker run --rm -it -v ${TRAVIS_BUILD_DIR}:/docs -w /docs/documentation squidfunk/mkdocs-material build --clean --verbose --strict
   else
     # Only in case we are in master branch of the leading SAP repo we would like to deploy,
     # not from the forks.
     if [[ "${TRAVIS_BRANCH}" == "master" && "${TRAVIS_REPO_SLUG}" == "SAP/jenkins-library" ]]
     then
-       openssl aes-256-cbc -K $encrypted_12c8071d2874_key -iv $encrypted_12c8071d2874_iv -in cfg/id_rsa.enc -out cfg/id_rsa -d
-      ./gh-pages-deploy.sh
+       echo "Found change on master: Deployment of documentation"
+       PRIVATE_KEY="cfg/id_rsa"
+       openssl aes-256-cbc -K $encrypted_12c8071d2874_key -iv $encrypted_12c8071d2874_iv -in cfg/id_rsa.enc -out "${PRIVATE_KEY}" -d
+       chmod 600 "${PRIVATE_KEY}"
+       eval `ssh-agent -s`
+       ssh-add "${PRIVATE_KEY}"
+       git config user.name "Travis CI Publisher"
+       git remote add docu "git@github.com:$TRAVIS_REPO_SLUG.git";
+       git fetch docu gh-pages:gh-pages
+       echo "Pushing to gh-pages of repository $TRAVIS_REPO_SLUG"
+       docker run --rm -it -v ~/.ssh:/root/.ssh -v ${TRAVIS_BUILD_DIR}:/docs -w /docs/documentation squidfunk/mkdocs-material gh-deploy -v --clean --remote-name docu
     else
        echo "Publishing documentation skipped."
     fi
@@ -25,7 +36,6 @@ script:
 cache:
   directories:
   - $HOME/.m2
-  - $HOME/.cache/pip
 after_success:
   - mvn -DrepoToken=$COVERALLS_REPO_TOKEN org.jacoco:jacoco-maven-plugin:report org.eluder.coveralls:coveralls-maven-plugin:report
 #notifications:
