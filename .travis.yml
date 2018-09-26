@@ -21,6 +21,7 @@ script:
        echo "Found change on master: Deployment of documentation"
        PRIVATE_KEY="cfg/id_rsa"
        openssl aes-256-cbc -K $encrypted_12c8071d2874_key -iv $encrypted_12c8071d2874_iv -in cfg/id_rsa.enc -out "${PRIVATE_KEY}" -d
+       chmod a+x gh-pages-deploy.sh
        docker run --rm -it --entrypoint "./gh-pages-deploy.sh" -e "TRAVIS_REPO_SLUG=${TRAVIS_REPO_SLUG}" -v ${TRAVIS_BUILD_DIR}:/docs -w /docs squidfunk/mkdocs-material
     else
        echo "Publishing documentation skipped."
