@@ -269,4 +269,42 @@ class ConfigurationHelperTest {
         assert config.c instanceof java.lang.String
         assert config.nextLevel.b instanceof java.lang.String
     }
+
+    @Test
+    public void testWithMandatoryParameterCollectFailuresAllParamtersArePresentResultsInNoExceptionThrown() {
+        new ConfigurationHelper([myKey1: 'a', myKey2: 'b'])
+                                   .collectValidationFailures()
+                                   .withMandatoryProperty('myKey1')
+                                   .withMandatoryProperty('myKey2')
+                                   .use()
+    }
+
+    @Test
+    public void testWithMandatoryParameterCollectFailuresMultipleMissingParametersDoNotResultInFailuresDuringWithMandatoryProperties() {
+        new ConfigurationHelper([:]).collectValidationFailures()
+                                    .withMandatoryProperty('myKey1')
+                                    .withMandatoryProperty('myKey2')
+    }
+
+    @Test
+    public void testWithMandatoryParameterCollectFailuresMultipleMissingParametersResultsInFailureDuringUse() {
+        thrown.expect(IllegalArgumentException)
+        thrown.expectMessage('ERROR - NO VALUE AVAILABLE FOR: myKey2, myKey3')
+        new ConfigurationHelper([myKey1:'a']).collectValidationFailures()
+                                   .withMandatoryProperty('myKey1')
+                                   .withMandatoryProperty('myKey2')
+                                   .withMandatoryProperty('myKey3')
+                                   .use()
+    }
+
+    @Test
+    public void testWithMandatoryParameterCollectFailuresOneMissingParametersResultsInFailureDuringUse() {
+        thrown.expect(IllegalArgumentException)
+        thrown.expectMessage('ERROR - NO VALUE AVAILABLE FOR myKey2')
+        new ConfigurationHelper([myKey1:'a']).collectValidationFailures()
+                                   .withMandatoryProperty('myKey1')
+                                   .withMandatoryProperty('myKey2')
+                                   .use()
+    }
+
 }
