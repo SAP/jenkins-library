@@ -23,70 +23,32 @@ class ConfigurationHelperTest {
     }
 
     @Test
-    void testGetProperty() {
-        def configuration = new ConfigurationHelper(getConfiguration())
-        Assert.assertEquals('maven:3.2-jdk-8-onbuild', configuration.getConfigProperty('dockerImage'))
-        Assert.assertEquals('maven:3.2-jdk-8-onbuild', configuration.getConfigProperty('dockerImage', 'default'))
-        Assert.assertEquals('default', configuration.getConfigProperty('something', 'default'))
-        Assert.assertTrue(configuration.isPropertyDefined('dockerImage'))
-        Assert.assertFalse(configuration.isPropertyDefined('something'))
-    }
-
-    @Test
     void testGetPropertyNestedLeafNodeIsString() {
-        def configuration = new ConfigurationHelper([a:[b: 'c']])
-        assertThat(configuration.getConfigProperty('a/b'), is('c'))
+        assertThat(ConfigurationHelper.getConfigPropertyNested([a:[b: 'c']], 'a/b'), is('c'))
     }
 
     @Test
     void testGetPropertyNestedLeafNodeIsMap() {
-        def configuration = new ConfigurationHelper([a:[b: [c: 'd']]])
-        assertThat(configuration.getConfigProperty('a/b'), is([c: 'd']))
+        assertThat(ConfigurationHelper.getConfigPropertyNested([a:[b: [c: 'd']]], 'a/b'), is([c: 'd']))
     }
 
     @Test
     void testGetPropertyNestedPathNotFound() {
-        def configuration = new ConfigurationHelper([a:[b: 'c']])
-        assertThat(configuration.getConfigProperty('a/c'), is((nullValue())))
+        assertThat(ConfigurationHelper.getConfigPropertyNested([a:[b: 'c']], 'a/c'), is((nullValue())))
     }
 
     void testGetPropertyNestedPathStartsWithTokenizer() {
-        def configuration = new ConfigurationHelper([k:'v'])
-        assertThat(configuration.getConfigProperty('/k'), is(('v')))
+        assertThat(ConfigurationHelper.getConfigPropertyNested([k:'v'], '/k'), is(('v')))
     }
 
     @Test
     void testGetPropertyNestedPathEndsWithTokenizer() {
-        def configuration = new ConfigurationHelper([k:'v'])
-        assertThat(configuration.getConfigProperty('k/'), is(('v')))
+        assertThat(ConfigurationHelper.getConfigPropertyNested([k:'v'], 'k/'), is(('v')))
     }
 
     @Test
     void testGetPropertyNestedPathManyTokenizer() {
-        def configuration = new ConfigurationHelper([k1:[k2 : 'v']])
-        assertThat(configuration.getConfigProperty('///k1/////k2///'), is(('v')))
-    }
-
-    @Test
-    void testIsPropertyDefined() {
-        def configuration = new ConfigurationHelper(getConfiguration())
-        Assert.assertTrue(configuration.isPropertyDefined('dockerImage'))
-        Assert.assertFalse(configuration.isPropertyDefined('something'))
-    }
-
-    @Test
-    void testIsPropertyDefinedWithInteger() {
-        def configuration = new ConfigurationHelper([dockerImage: 3])
-        Assert.assertTrue(configuration.isPropertyDefined('dockerImage'))
-    }
-
-    @Test
-    void testGetMandatoryProperty() {
-        def configuration = new ConfigurationHelper(getConfiguration())
-        Assert.assertEquals('maven:3.2-jdk-8-onbuild', configuration.getMandatoryProperty('dockerImage'))
-        Assert.assertEquals('default', configuration.getMandatoryProperty('something', 'default'))
-
-        GroovyAssert.shouldFail { configuration.getMandatoryProperty('something') }
+        assertThat(ConfigurationHelper.getConfigPropertyNested([k1:[k2 : 'v']], '///k1/////k2///'), is(('v')))
     }
 
     @Test
