@@ -89,8 +89,8 @@ class ArtifactSetVersionTest extends BasePiperTest {
         assertEquals('testCommitId', jer.env.getGitCommitId())
 
         assertThat(jscr.shell, hasItem("mvn --file 'pom.xml' --batch-mode -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn versions:set -DnewVersion=1.2.3-20180101010203_testCommitId -DgenerateBackupPoms=false"))
-        assertThat(jscr.shell, hasItem('git add .'))
-        assertThat(jscr.shell, hasItems(containsString("git commit -m 'update version 1.2.3-20180101010203_testCommitId'"),
+        assertThat(jscr.shell, hasItems(containsString("git add ."),
+                                        containsString("git commit -m 'update version 1.2.3-20180101010203_testCommitId'"),
                                         containsString('git tag build_1.2.3-20180101010203_testCommitId'),
                                         containsString('git push myGitSshUrl build_1.2.3-20180101010203_testCommitId')))
     }
