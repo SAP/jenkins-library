@@ -12,6 +12,8 @@ class ConfigurationHelper implements Serializable {
     private Map config = [:]
     private String name
 
+    private Map validationResults = null
+
     ConfigurationHelper(Script step){
         name = step.STEP_NAME
         if(!name) throw new IllegalArgumentException('Step has no public name property!')
@@ -25,6 +27,11 @@ class ConfigurationHelper implements Serializable {
     private final ConfigurationHelper loadDefaults(){
         config = ConfigurationLoader.defaultGeneralConfiguration()
         mixin(ConfigurationLoader.defaultStepConfiguration(null, name))
+        return this
+    }
+
+    ConfigurationHelper collectValidationFailures() {
+        validationResults = validationResults ?: [:]
         return this
     }
 
@@ -101,6 +108,7 @@ class ConfigurationHelper implements Serializable {
     @NonCPS // required because we have a closure in the
             // method body that cannot be CPS transformed
     Map use(){
+        handleValidationFailures()
         MapUtils.traverse(config, { v -> (v instanceof GString) ? v.toString() : v })
         return config
     }
@@ -140,7 +148,12 @@ class ConfigurationHelper implements Serializable {
 
         if (paramValue == null) {
             if(! errorMessage) errorMessage = "ERROR - NO VALUE AVAILABLE FOR ${key}"
-            throw new IllegalArgumentException(errorMessage)
+
+            def iae = new IllegalArgumentException(errorMessage)
+            if(validationResults == null) {
+                throw iae
+            }
+            validationResults.put(key, iae)
         }
     }
 
@@ -153,4 +166,16 @@ class ConfigurationHelper implements Serializable {
         }
         return this
     }
+
+    @NonCPS
+    private handleValidationFailures() {
+        if(! validationResults) return
+        if(validationResults.size() == 1) throw validationResults.values().first()
+        String msg = 'ERROR - NO VALUE AVAILABLE FOR: ' +
+            (validationResults.keySet().stream().collect() as Iterable).join(', ')
+        IllegalArgumentException iae = new IllegalArgumentException(msg)
+        validationResults.each { e -> iae.addSuppressed(e.value) }
+        throw iae
+    }
+
 }
