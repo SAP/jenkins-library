@@ -117,16 +117,15 @@ class ConfigurationHelper implements Serializable {
         this.config = config
     }
 
-    /* private */ def getConfigPropertyNested(key) {
+    /* private */ def getConfigPropertyNested(CharSequence key) {
         return getConfigPropertyNested(config, key)
     }
 
-    /* private */ static getConfigPropertyNested(Map config, key) {
+    /* private */ static getConfigPropertyNested(Map config, CharSequence key) {
 
         def separator = '/'
 
-        // reason for cast to CharSequence: String#tokenize(./.) causes a deprecation warning.
-        List parts = (key in String) ? (key as CharSequence).tokenize(separator) : ([key] as List)
+        List parts = key.tokenize(separator)
 
         if(config[parts.head()] != null) {
 
@@ -142,7 +141,7 @@ class ConfigurationHelper implements Serializable {
         return config[parts.head()]
     }
 
-     private void existsMandatoryProperty(key, errorMessage) {
+     private void existsMandatoryProperty(CharSequence key, errorMessage) {
 
         def paramValue = getConfigPropertyNested(config, key)
 
@@ -157,7 +156,7 @@ class ConfigurationHelper implements Serializable {
         }
     }
 
-    ConfigurationHelper withMandatoryProperty(key, errorMessage = null, condition = null){
+    ConfigurationHelper withMandatoryProperty(CharSequence key, errorMessage = null, condition = null){
         if(condition){
             if(condition(this.config))
                 existsMandatoryProperty(key, errorMessage)

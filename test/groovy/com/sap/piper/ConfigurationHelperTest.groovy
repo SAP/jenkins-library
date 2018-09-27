@@ -233,6 +233,22 @@ class ConfigurationHelperTest {
     }
 
     @Test
+    public void testWithMandoryParameterParameterExistsAndEverythingIsFine() {
+        def  b = 'b'
+        new ConfigurationHelper([a: [b: 'v']])
+            .withMandatoryProperty('a/b')
+    }
+
+    @Test
+    public void testWithMandoryParameterParameterExistsWithKeyAsGString() {
+        def  b = 'b'
+        def key = "a/${b}"
+        assert key in GString
+        new ConfigurationHelper([a: [b: 'v']])
+            .withMandatoryProperty(key)
+    }
+
+    @Test
     public void testTelemetryConfigurationAvailable() {
         Set filter = ['test']
         def configuration = new ConfigurationHelper([test: 'testValue'])
