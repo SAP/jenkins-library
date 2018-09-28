@@ -34,4 +34,34 @@ public class StepHelpers {
         }
         return transportRequestId
     }
+
+    public static getChangeDocumentId(ChangeManagement cm, def step, Map configuration) {
+
+        def changeDocumentId = configuration.changeDocumentId
+
+        if(changeDocumentId?.trim()) {
+
+            step.echo "[INFO] ChangeDocumentId '${changeDocumentId}' retrieved from parameters."
+
+        } else {
+
+            step.echo "[INFO] Retrieving ChangeDocumentId from commit history [from: ${configuration.changeManagement.git.from}, to: ${configuration.changeManagement.git.to}]." +
+                      "Searching for pattern '${configuration.changeDocumentLabel}'. Searching with format '${configuration.changeManagement.git.format}'."
+
+            try {
+                changeDocumentId = cm.getChangeDocumentId(
+                                                          configuration.changeManagement.git.from,
+                                                          configuration.changeManagement.git.to,
+                                                          configuration.changeManagement.changeDocumentLabel,
+                                                          configuration.changeManagement.gitformat
+                                                         )
+
+                step.echo "[INFO] ChangeDocumentId '${changeDocumentId}' retrieved from commit history"
+
+            } catch(ChangeManagementException ex) {
+                step.echo "[WARN] Cannot retrieve changeDocumentId from commit history: ${ex.getMessage()}."
+            }
+        }
+        return changeDocumentId
+    }
 }
