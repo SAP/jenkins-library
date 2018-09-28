@@ -9,6 +9,7 @@ import com.sap.piper.cm.ChangeManagementException
 
 import hudson.AbortException
 
+import static com.sap.piper.cm.StepHelpers.getTransportRequestId
 
 @Field def STEP_NAME = 'transportRequestRelease'
 
@@ -48,31 +49,7 @@ def call(parameters = [:]) {
 
         new Utils().pushToSWA([step: STEP_NAME], configuration)
 
-        def transportRequestId = configuration.transportRequestId
-
-        if(transportRequestId?.trim()) {
-
-          echo "[INFO] Transport request id '${transportRequestId}' retrieved from parameters."
-
-        } else {
-
-          echo "[INFO] Retrieving transport request id from commit history [from: ${configuration.changeManagement.git.from}, to: ${configuration.changeManagement.git.to}]." +
-               " Searching for pattern '${configuration.gitTransportRequestLabel}'. Searching with format '${configuration.changeManagement.git.format}'."
-
-            try {
-                transportRequestId = cm.getTransportRequestId(
-                                                  configuration.changeManagement.git.from,
-                                                  configuration.changeManagement.git.to,
-                                                  configuration.changeManagement.transportRequestLabel,
-                                                  configuration.changeManagement.git.format
-                                                 )
-
-                echo "[INFO] Transport request id '${transportRequestId}' retrieved from commit history"
-
-            } catch(ChangeManagementException ex) {
-                echo "[WARN] Cannot retrieve transportRequestId from commit history: ${ex.getMessage()}."
-            }
-        }
+        def transportRequestId = getTransportRequestId(cm, this, configuration)
 
         def changeDocumentId = configuration.changeDocumentId
 
