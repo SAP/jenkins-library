@@ -40,19 +40,8 @@ def call(parameters = [:]) {
             .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName?:env.STAGE_NAME, stepConfigurationKeys)
             .mixin(parameters, parameterKeys)
             .addIfEmpty('filePath', script.commonPipelineEnvironment.getMtarFilePath())
-            .withMandatoryProperty('changeManagement/changeDocumentLabel')
-            .withMandatoryProperty('changeManagement/clientOpts')
-            .withMandatoryProperty('changeManagement/credentialsId')
-            .withMandatoryProperty('changeManagement/endpoint')
-            .withMandatoryProperty('changeManagement/type')
-            .withMandatoryProperty('changeManagement/git/from')
-            .withMandatoryProperty('changeManagement/git/to')
-            .withMandatoryProperty('changeManagement/git/format')
-            .withMandatoryProperty('filePath')
 
         Map configuration = configHelper.use()
-
-        new Utils().pushToSWA([step: STEP_NAME, stepParam1: configuration.changeManagement.type], configuration)
 
         BackendType backendType
 
@@ -63,6 +52,27 @@ def call(parameters = [:]) {
                   "Valid values: [${BackendType.values().join(', ')}]. " +
                   "Configuration: 'changeManagement/type'."
         }
+
+        if (backendType == BackendType.NONE) {
+            echo "[INFO] Change management integration intentionally switched off. " +
+                 "In order to enable it provide 'changeManagement/type with one of " +
+                 "[${BackendType.values().minus(BackendType.NONE).join(', ')}] and maintain " +
+                 "maintain other required properties like 'endpoint', 'credentialsId'."
+            return
+        }
+
+        configHelper
+            .withMandatoryProperty('changeManagement/changeDocumentLabel')
+            .withMandatoryProperty('changeManagement/clientOpts')
+            .withMandatoryProperty('changeManagement/credentialsId')
+            .withMandatoryProperty('changeManagement/endpoint')
+            .withMandatoryProperty('changeManagement/type')
+            .withMandatoryProperty('changeManagement/git/from')
+            .withMandatoryProperty('changeManagement/git/to')
+            .withMandatoryProperty('changeManagement/git/format')
+            .withMandatoryProperty('filePath')
+
+        new Utils().pushToSWA([step: STEP_NAME, stepParam1: configuration.changeManagement.type], configuration)
 
         def changeDocumentId = null
 

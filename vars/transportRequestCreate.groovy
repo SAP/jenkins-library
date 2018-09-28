@@ -39,16 +39,9 @@ def call(parameters = [:]) {
             .mixinStepConfig(script.commonPipelineEnvironment, stepConfigurationKeys)
             .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName?:env.STAGE_NAME, stepConfigurationKeys)
             .mixin(parameters, parameterKeys)
-            .withMandatoryProperty('changeManagement/clientOpts')
-            .withMandatoryProperty('changeManagement/credentialsId')
-            .withMandatoryProperty('changeManagement/endpoint')
-            .withMandatoryProperty('changeManagement/git/from')
-            .withMandatoryProperty('changeManagement/git/to')
-            .withMandatoryProperty('changeManagement/git/format')
+
 
         Map configuration =  configHelper.use()
-
-        new Utils().pushToSWA([step: STEP_NAME], configuration)
 
         BackendType backendType
 
@@ -60,9 +53,26 @@ def call(parameters = [:]) {
                   "Configuration: 'changeManagement/type'."
         }
 
-        configHelper.withMandatoryProperty('transportType', null, { backendType == BackendType.CTS})
-        configHelper.withMandatoryProperty('targetSystem', null, { backendType == BackendType.CTS})
-        configHelper.withMandatoryProperty('description', null, { backendType == BackendType.CTS})
+        if (backendType == BackendType.NONE) {
+            echo "[INFO] Change management integration intentionally switched off. " +
+                 "In order to enable it provide 'changeManagement/type with one of " +
+                 "[${BackendType.values().minus(BackendType.NONE).join(', ')}] and maintain " +
+                 "maintain other required properties like 'endpoint', 'credentialsId'."
+            return
+        }
+
+        new Utils().pushToSWA([step: STEP_NAME], configuration)
+
+        configHelper
+            .withMandatoryProperty('changeManagement/clientOpts')
+            .withMandatoryProperty('changeManagement/credentialsId')
+            .withMandatoryProperty('changeManagement/endpoint')
+            .withMandatoryProperty('changeManagement/git/from')
+            .withMandatoryProperty('changeManagement/git/to')
+            .withMandatoryProperty('changeManagement/git/format')
+            .withMandatoryProperty('transportType', null, { backendType == BackendType.CTS})
+            .withMandatoryProperty('targetSystem', null, { backendType == BackendType.CTS})
+            .withMandatoryProperty('description', null, { backendType == BackendType.CTS})
 
         def changeDocumentId = null
 

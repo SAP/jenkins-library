@@ -186,4 +186,12 @@ public class TransportRequestCreateTest extends BasePiperTest {
         assert jlr.log.contains("[INFO] Transport Request '001' has been successfully created.")
     }
 
+    @Test
+    public void cmIntegrationSwichtedOffTest() {
+
+        jlr.expect('[INFO] Change management integration intentionally switched off.')
+
+        jsr.step.call(
+            changeManagement: [type: 'NONE'])
+    }
 }
