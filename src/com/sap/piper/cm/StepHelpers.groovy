@@ -21,7 +21,7 @@ public class StepHelpers {
             step.echo "[INFO] Change management integration intentionally switched off. " +
                  "In order to enable it provide 'changeManagement/type with one of " +
                  "[${BackendType.values().minus(BackendType.NONE).join(', ')}] and maintain " +
-                 "maintain other required properties like 'endpoint', 'credentialsId'."
+                 "other required properties like 'endpoint', 'credentialsId'."
         }
 
         return backendType
