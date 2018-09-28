@@ -367,4 +367,13 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
 
     }
 
+    @Test
+    public void cmIntegrationSwichtedOffTest() {
+
+        jlr.expect('[INFO] Change management integration intentionally switched off.')
+
+        jsr.step.call(
+            changeManagement: [type: 'NONE'])
+    }
+
 }

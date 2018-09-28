@@ -5,6 +5,7 @@ import hudson.AbortException
 
 import com.sap.piper.ConfigurationHelper
 import com.sap.piper.ConfigurationMerger
+import com.sap.piper.cm.BackendType
 import com.sap.piper.cm.ChangeManagement
 import com.sap.piper.cm.ChangeManagementException
 
@@ -35,6 +36,30 @@ def call(parameters = [:]) {
             .mixinStepConfig(script.commonPipelineEnvironment, stepConfigurationKeys)
             .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName?:env.STAGE_NAME, stepConfigurationKeys)
             .mixin(parameters, parameterKeys)
+
+        Map configuration =  configHelper.use()
+
+        BackendType backendType
+
+        try {
+            backendType = configuration.changeManagement.type as BackendType
+        } catch(IllegalArgumentException e) {
+            error "Invalid backend type: '${configuration.changeManagement.type}'. " +
+                  "Valid values: [${BackendType.values().join(', ')}]. " +
+                  "Configuration: 'changeManagement/type'."
+        }
+
+        if (backendType == BackendType.NONE) {
+            echo "[INFO] Change management integration intentionally switched off. " +
+                 "In order to enable it provide 'changeManagement/type with one of " +
+                 "[${BackendType.values().minus(BackendType.NONE).join(', ')}] and maintain " +
+                 "maintain other required properties like 'endpoint', 'credentialsId'."
+            return
+        }
+
+        new Utils().pushToSWA([step: STEP_NAME], configuration)
+
+        configHelper
             // for the following parameters we expect defaults
             .withMandatoryProperty('changeManagement/changeDocumentLabel')
             .withMandatoryProperty('changeManagement/clientOpts')
@@ -46,10 +71,6 @@ def call(parameters = [:]) {
             // for the following parameters we expect a value provided from outside
             .withMandatoryProperty('changeManagement/endpoint')
 
-
-        Map configuration = configHelper.use()
-
-        new Utils().pushToSWA([step: STEP_NAME], configuration)
 
         def changeId = configuration.changeDocumentId
 

@@ -38,16 +38,9 @@ def call(parameters = [:]) {
             .mixinStepConfig(script.commonPipelineEnvironment, stepConfigurationKeys)
             .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName?:env.STAGE_NAME, stepConfigurationKeys)
             .mixin(parameters, parameterKeys)
-            .withMandatoryProperty('changeManagement/clientOpts')
-            .withMandatoryProperty('changeManagement/credentialsId')
-            .withMandatoryProperty('changeManagement/endpoint')
-            .withMandatoryProperty('changeManagement/git/to')
-            .withMandatoryProperty('changeManagement/git/from')
-            .withMandatoryProperty('changeManagement/git/format')
+
 
         Map configuration = configHelper.use()
-
-        new Utils().pushToSWA([step: STEP_NAME], configuration)
 
         BackendType backendType
 
@@ -58,6 +51,24 @@ def call(parameters = [:]) {
                   "Valid values: [${BackendType.values().join(', ')}]. " +
                   "Configuration: 'changeManagement/type'."
         }
+
+        if (backendType == BackendType.NONE) {
+            echo "[INFO] Change management integration intentionally switched off. " +
+                 "In order to enable it provide 'changeManagement/type with one of " +
+                 "[${BackendType.values().minus(BackendType.NONE).join(', ')}] and maintain " +
+                 "maintain other required properties like 'endpoint', 'credentialsId'."
+            return
+        }
+
+        configHelper
+            .withMandatoryProperty('changeManagement/clientOpts')
+            .withMandatoryProperty('changeManagement/credentialsId')
+            .withMandatoryProperty('changeManagement/endpoint')
+            .withMandatoryProperty('changeManagement/git/to')
+            .withMandatoryProperty('changeManagement/git/from')
+            .withMandatoryProperty('changeManagement/git/format')
+
+        new Utils().pushToSWA([step: STEP_NAME], configuration)
 
         def transportRequestId = configuration.transportRequestId
 

@@ -138,4 +138,13 @@ public class TransportRequestReleaseTest extends BasePiperTest {
                                   credentialsId: 'CM',
                                   clientOpts: '']
     }
+
+    @Test
+    public void cmIntegrationSwichtedOffTest() {
+
+        jlr.expect('[INFO] Change management integration intentionally switched off.')
+
+        jsr.step.call(
+            changeManagement: [type: 'NONE'])
+    }
 }
