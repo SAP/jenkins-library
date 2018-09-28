@@ -8,8 +8,9 @@ import com.sap.piper.cm.BackendType
 import com.sap.piper.cm.ChangeManagement
 import com.sap.piper.cm.ChangeManagementException
 
-import hudson.AbortException
+import static com.sap.piper.cm.StepHelpers.getBackendTypeAndLogInfoIfCMIntegrationDisabled
 
+import hudson.AbortException
 
 @Field def STEP_NAME = 'transportRequestCreate'
 
@@ -43,23 +44,8 @@ def call(parameters = [:]) {
 
         Map configuration =  configHelper.use()
 
-        BackendType backendType
-
-        try {
-            backendType = configuration.changeManagement.type as BackendType
-        } catch(IllegalArgumentException e) {
-            error "Invalid backend type: '${configuration.changeManagement.type}'. " +
-                  "Valid values: [${BackendType.values().join(', ')}]. " +
-                  "Configuration: 'changeManagement/type'."
-        }
-
-        if (backendType == BackendType.NONE) {
-            echo "[INFO] Change management integration intentionally switched off. " +
-                 "In order to enable it provide 'changeManagement/type with one of " +
-                 "[${BackendType.values().minus(BackendType.NONE).join(', ')}] and maintain " +
-                 "maintain other required properties like 'endpoint', 'credentialsId'."
-            return
-        }
+        BackendType backendType = getBackendTypeAndLogInfoIfCMIntegrationDisabled(this, configuration)
+        if(backendType == BackendType.NONE) return
 
         new Utils().pushToSWA([step: STEP_NAME], configuration)
 

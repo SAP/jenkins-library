@@ -12,6 +12,31 @@ public class ChangeManagement implements Serializable {
     private script
     private GitUtils gitUtils
 
+    public static class StepHelpers {
+
+        static BackendType getBackendTypeAndLogInfoIfCMIntegrationDisabled(def step, Map configuration) {
+
+            BackendType backendType
+
+            try {
+                backendType = configuration.changeManagement.type as BackendType
+            } catch(IllegalArgumentException e) {
+                step.error "Invalid backend type: '${configuration.changeManagement.type}'. " +
+                      "Valid values: [${BackendType.values().join(', ')}]. " +
+                      "Configuration: 'changeManagement/type'."
+            }
+
+            if (backendType == BackendType.NONE) {
+                step.echo "[INFO] Change management integration intentionally switched off. " +
+                     "In order to enable it provide 'changeManagement/type with one of " +
+                     "[${BackendType.values().minus(BackendType.NONE).join(', ')}] and maintain " +
+                     "maintain other required properties like 'endpoint', 'credentialsId'."
+            }
+
+            return backendType
+        }
+    }
+
     public ChangeManagement(def script, GitUtils gitUtils = null) {
         this.script = script
         this.gitUtils = gitUtils ?: new GitUtils()
