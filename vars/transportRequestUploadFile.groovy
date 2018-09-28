@@ -10,6 +10,7 @@ import com.sap.piper.cm.ChangeManagementException
 import hudson.AbortException
 
 import static com.sap.piper.cm.StepHelpers.getTransportRequestId
+import static com.sap.piper.cm.StepHelpers.getChangeDocumentId
 
 @Field def STEP_NAME = 'transportRequestUploadFile'
 
@@ -55,32 +56,7 @@ def call(parameters = [:]) {
 
         new Utils().pushToSWA([step: STEP_NAME], configuration)
 
-        def changeDocumentId = configuration.changeDocumentId
-
-        if(changeDocumentId?.trim()) {
-
-          echo "[INFO] ChangeDocumentId '${changeDocumentId}' retrieved from parameters."
-
-        } else {
-
-          echo "[INFO] Retrieving ChangeDocumentId from commit history [from: ${configuration.changeManagement.git.from}, to: ${configuration.changeManagement.git.to}]." +
-               "Searching for pattern '${configuration.changeManagement.changeDocumentLabel}'. Searching with format '${configuration.changeManagement.git.format}'."
-
-            try {
-                changeDocumentId = cm.getChangeDocumentId(
-                                                  configuration.changeManagement.git.from,
-                                                  configuration.changeManagement.git.to,
-                                                  configuration.changeManagement.changeDocumentLabel,
-                                                  configuration.changeManagement.git.format
-                                                 )
-
-                echo "[INFO] ChangeDocumentId '${changeDocumentId}' retrieved from commit history"
-
-            } catch(ChangeManagementException ex) {
-                echo "[WARN] Cannot retrieve changeDocumentId from commit history: ${ex.getMessage()}."
-            }
-        }
-
+        def changeDocumentId = getChangeDocumentId(cm, this, configuration)
         def transportRequestId = getTransportRequestId(cm, this, configuration)
 
         configuration = configHelper

@@ -8,6 +8,8 @@ import com.sap.piper.ConfigurationMerger
 import com.sap.piper.cm.ChangeManagement
 import com.sap.piper.cm.ChangeManagementException
 
+import static com.sap.piper.cm.StepHelpers.getChangeDocumentId
+
 @Field def STEP_NAME = 'checkChangeInDevelopment'
 
 @Field Set stepConfigurationKeys = [
@@ -51,31 +53,7 @@ def call(parameters = [:]) {
 
         new Utils().pushToSWA([step: STEP_NAME], configuration)
 
-        def changeId = configuration.changeDocumentId
-
-        if(changeId?.trim()) {
-
-            echo "[INFO] ChangeDocumentId retrieved from parameters."
-
-        } else {
-
-          echo "[INFO] Retrieving ChangeDocumentId from commit history [from: ${configuration.changeManagement.git.from}, to: ${configuration.changeManagement.git.to}]." +
-               "Searching for pattern '${configuration.changeManagement.changeDocumentLabel}'. Searching with format '${configuration.changeManagement.git.format}'."
-
-            try {
-                changeId = cm.getChangeDocumentId(
-                                                  configuration.changeManagement.git.from,
-                                                  configuration.changeManagement.git.to,
-                                                  configuration.changeManagement.changeDocumentLabel,
-                                                  configuration.changeManagement.git.format
-                                                 )
-                if(changeId?.trim()) {
-                    echo "[INFO] ChangeDocumentId '${changeId}' retrieved from commit history"
-                }
-            } catch(ChangeManagementException ex) {
-                echo "[WARN] Cannot retrieve changeDocumentId from commit history: ${ex.getMessage()}."
-            }
-        }
+        def changeId = getChangeDocumentId(cm, this, configuration)
 
         configuration = configHelper.mixin([changeDocumentId: changeId?.trim() ?: null], ['changeDocumentId'] as Set)
                                     .withMandatoryProperty('changeDocumentId',
