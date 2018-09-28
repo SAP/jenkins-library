@@ -41,6 +41,7 @@ public class TransportRequestCreateTest extends BasePiperTest {
 
                                          [
                                           credentialsId: 'CM',
+                                          type: 'SOLMAN',
                                           endpoint: 'https://example.org/cm',
                                           clientOpts: '-DmyProp=myVal',
                                           changeDocumentLabel: 'ChangeId\\s?:',

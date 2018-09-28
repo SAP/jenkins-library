@@ -45,6 +45,7 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
                                      [changeManagement:
                                          [
                                           credentialsId: 'CM',
+                                          type: 'SOLMAN',
                                           endpoint: 'https://example.org/cm'
                                          ]
                                      ]
