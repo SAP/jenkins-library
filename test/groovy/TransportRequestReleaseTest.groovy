@@ -40,6 +40,7 @@ public class TransportRequestReleaseTest extends BasePiperTest {
                                      [changeManagement:
                                          [
                                           credentialsId: 'CM',
+                                          type: 'SOLMAN',
                                           endpoint: 'https://example.org/cm'
                                          ]
                                      ]
