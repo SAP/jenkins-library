@@ -1,4 +1,4 @@
-def call(Map parameters = [:], body) {
+void call(Map parameters = [:], body) {
     handlePipelineStepErrors (stepName: 'pipelineStashFiles', stepParameters: parameters) {
         pipelineStashFilesBeforeBuild(parameters)
         body() //execute build

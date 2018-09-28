@@ -6,7 +6,7 @@ import com.sap.piper.tools.ToolDescriptor
 import hudson.AbortException
 
 
-def call(Map parameters = [:]) {
+void call(Map parameters = [:]) {
 
     handlePipelineStepErrors (stepName: 'toolValidate', stepParameters: parameters) {
 

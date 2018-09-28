@@ -19,7 +19,7 @@ import com.sap.piper.cm.ChangeManagementException
 
 @Field Set generalConfigurationKeys = stepConfigurationKeys
 
-def call(parameters = [:]) {
+void call(parameters = [:]) {
 
     handlePipelineStepErrors (stepName: STEP_NAME, stepParameters: parameters) {
 
