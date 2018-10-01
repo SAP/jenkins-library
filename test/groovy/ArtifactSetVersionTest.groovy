@@ -21,6 +21,7 @@ import util.Rules
 
 import static org.hamcrest.Matchers.hasItem
 import static org.hamcrest.Matchers.hasItems
+import static org.hamcrest.Matchers.not
 import static org.hamcrest.Matchers.notNullValue
 import static org.hamcrest.Matchers.containsString
 import static org.junit.Assert.assertThat
@@ -101,6 +102,7 @@ class ArtifactSetVersionTest extends BasePiperTest {
 
         assertEquals('1.2.3-20180101010203_testCommitId', jer.env.getArtifactVersion())
         assertThat(jscr.shell, hasItem("mvn --file 'pom.xml' --batch-mode -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn versions:set -DnewVersion=1.2.3-20180101010203_testCommitId -DgenerateBackupPoms=false"))
+        assertThat(jscr.shell, not(hasItem(containsString('commit'))))
     }
 
     @Test
