@@ -22,8 +22,9 @@ def call(Map parameters = [:]) {
             .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS)
             .use()
 
-        (parameter.utils ?: new Utils())
-                   .pushToSWA([step: STEP_NAME, stepParam4: parameters.customDefaults?'true':'false'], config)
+        (parameters.utils ?: new Utils())
+                   .pushToSWA([step: STEP_NAME, stepParam4: parameters.customDefaults?'true':'false',
+                                                stepParam5: Boolean.toString( ! (script?.commonPipelineEnvironment?.getConfigProperties() ?: [:]).isEmpty())], config)
     }
 }
 
