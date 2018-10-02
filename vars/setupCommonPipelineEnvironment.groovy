@@ -22,7 +22,8 @@ def call(Map parameters = [:]) {
             .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS)
             .use()
 
-        new Utils().pushToSWA([step: STEP_NAME, stepParam4: parameters.customDefaults?'true':'false'], config)
+        (parameter.utils ?: new Utils())
+                   .pushToSWA([step: STEP_NAME, stepParam4: parameters.customDefaults?'true':'false'], config)
     }
 }
 
