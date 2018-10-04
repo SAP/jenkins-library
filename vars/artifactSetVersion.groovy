@@ -84,8 +84,6 @@ def call(Map parameters = [:], Closure body = null) {
                 .withMandatoryProperty('gitSshUrl')
                 .use()
             
-            sh 'git add .'
-
             def gitConfig = []
 
             if(config.gitUserEMail) gitConfig.add("-c user.email=\"${config.gitUserEMail}\"")
@@ -94,6 +92,7 @@ def call(Map parameters = [:], Closure body = null) {
 
             try {
                 sh """#!/bin/bash
+                      git add .
                       git ${gitConfig} commit -m 'update version ${newVersion}'
                       git tag ${config.tagPrefix}${newVersion}"""
                 config.gitCommitId = gitUtils.getGitCommitIdOrNull()
