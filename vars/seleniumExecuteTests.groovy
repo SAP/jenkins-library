@@ -43,15 +43,15 @@ def call(Map parameters = [:], Closure body) {
         new Utils().pushToSWA([step: STEP_NAME], config)
 
         dockerExecute(
-                script: script,
-                containerPortMappings: config.containerPortMappings,
-                dockerImage: config.dockerImage,
-                dockerName: config.dockerName,
-                dockerWorkspace: config.dockerWorkspace,
-                sidecarEnvVars: config.sidecarEnvVars,
-                sidecarImage: config.sidecarImage,
-                sidecarName: config.sidecarName,
-                sidecarVolumeBind: config.sidecarVolumeBind,
+            script: script,
+            containerPortMappings: config.containerPortMappings,
+            dockerImage: config.dockerImage,
+            dockerName: config.dockerName,
+            dockerWorkspace: config.dockerWorkspace,
+            sidecarEnvVars: config.sidecarEnvVars,
+            sidecarImage: config.sidecarImage,
+            sidecarName: config.sidecarName,
+            sidecarVolumeBind: config.sidecarVolumeBind,
         ) {
             try {
                 if (config.testRepository) {
