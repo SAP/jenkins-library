@@ -1,8 +1,8 @@
-import com.sap.piper.Utils
 import com.sap.piper.ConfigurationHelper
+import com.sap.piper.GitUtils
 import com.sap.piper.Utils
-import groovy.transform.Field
 import groovy.text.SimpleTemplateEngine
+import groovy.transform.Field
 
 @Field String STEP_NAME = 'newmanExecute'
 @Field Set STEP_CONFIG_KEYS = [
@@ -36,12 +36,7 @@ def call(Map parameters = [:]) {
         new Utils().pushToSWA([step: STEP_NAME], config)
 
         if (config.testRepository) {
-            def gitParameters = [url: config.testRepository]
-            if (config.gitSshKeyCredentialsId) gitParameters.credentialsId = config.gitSshKeyCredentialsId
-            if (config.gitBranch) gitParameters.branch = config.gitBranch
-            git gitParameters
-            stash 'newmanContent'
-            config.stashContent = ['newmanContent']
+            GitUtils.handleTestRepository(this, config)
         } else {
             config.stashContent = utils.unstashAll(config.stashContent)
         }

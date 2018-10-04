@@ -1,11 +1,12 @@
-import com.sap.piper.Utils
 import com.sap.piper.ConfigurationHelper
+import com.sap.piper.GitUtils
+import com.sap.piper.Utils
 import groovy.text.SimpleTemplateEngine
 import groovy.transform.Field
 
 @Field String STEP_NAME = 'batsExecuteTests'
 @Field Set STEP_CONFIG_KEYS = [
-    'dockerImage', //
+    'dockerImage',
     'dockerWorkspace',
     'envVars',
     'failOnError',
@@ -41,12 +42,7 @@ def call(Map parameters = [:]) {
 
 
         if (config.testRepository) {
-            def gitParameters = [url: config.testRepository]
-            if (config.gitSshKeyCredentialsId?.length()>0) gitParameters.credentialsId = config.gitSshKeyCredentialsId
-            if (config.gitBranch?.length()>0) gitParameters.branch = config.gitBranch
-            git gitParameters
-            stash 'batsTests'
-            config.stashContent = ['batsTests']
+            GitUtils.handleTestRepository(this, config)
         } else {
             config.stashContent = utils.unstashAll(config.stashContent)
         }
