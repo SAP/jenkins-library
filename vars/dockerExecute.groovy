@@ -41,7 +41,7 @@ void call(Map parameters = [:], body) {
         if (isKubernetes() && config.dockerImage) {
             if (env.POD_NAME && isContainerDefined(config)) {
                 container(getContainerDefined(config)) {
-                    echo "Executing inside a Kubernetes Container"
+                    echo "[INFO][${STEP_NAME}] Executing inside a Kubernetes Container."
                     body()
                     sh "chown -R 1000:1000 ."
                 }
@@ -53,7 +53,7 @@ void call(Map parameters = [:], body) {
                         dockerEnvVars: config.dockerEnvVars,
                         dockerWorkspace: config.dockerWorkspace
                     ){
-                        echo "Executing inside a Kubernetes Pod"
+                        echo "[INFO][${STEP_NAME}] Executing inside a Kubernetes Pod"
                         body()
                     }
                 } else {
@@ -117,6 +117,7 @@ void call(Map parameters = [:], body) {
                         config.dockerOptions = config.dockerOptions?:[]
                         config.dockerOptions.add("--link ${c.id}:${config.sidecarName}")
                         image.inside(getDockerOptions(config.dockerEnvVars, config.dockerVolumeBind, config.dockerOptions)) {
+                            echo "[INFO][${STEP_NAME}] Running with sidecar container."
                             body()
                         }
                     }

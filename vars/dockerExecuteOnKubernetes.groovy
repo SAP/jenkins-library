@@ -53,18 +53,14 @@ void call(Map parameters = [:], body) {
 
 void executeOnPodWithCustomContainerList(Map parameters, body) {
     def config = parameters.config
-    //allow execution in dedicated container
-    if (config.containerName) {
-        podTemplate(getOptions(config)) {
-            node(config.uniqueId) {
+    podTemplate(getOptions(config)) {
+        node(config.uniqueId) {
+            //allow execution in dedicated container
+            if (config.containerName) {
                 container(name: config.containerName){
                     body()
                 }
-            }
-        }
-    } else {
-        podTemplate(getOptions(config)) {
-            node(config.uniqueId) {
+            } else {
                 body()
             }
         }

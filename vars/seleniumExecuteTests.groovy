@@ -40,7 +40,7 @@ def call(Map parameters = [:], Closure body) {
             .dependingOn('buildTool').mixin('dockerWorkspace')
             .use()
 
-        new Utils().pushToSWA([step: STEP_NAME], config)
+       utils.pushToSWA([step: STEP_NAME], config)
 
         dockerExecute(
                 script: script,
@@ -51,7 +51,7 @@ def call(Map parameters = [:], Closure body) {
                 sidecarEnvVars: config.sidecarEnvVars,
                 sidecarImage: config.sidecarImage,
                 sidecarName: config.sidecarName,
-                sidecarVolumeBind: config.sidecarVolumeBind,
+                sidecarVolumeBind: config.sidecarVolumeBind
         ) {
             try {
                 if (config.testRepository) {
