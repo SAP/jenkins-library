@@ -176,7 +176,7 @@ class DockerExecuteTest extends BasePiperTest {
             sidecarEnvVars: ['testEnv':'testVal'],
             sidecarImage: 'selenium/standalone-chrome',
             sidecarVolumeBind: ['/dev/shm':'/dev/shm'],
-            dockerLinkAlias: 'testAlias',
+            sidecarName: 'testAlias',
             sidecarPorts: ['4444':'4444', '1111':'1111']
         ) {
             bodyExecuted = true

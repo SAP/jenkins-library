@@ -40,7 +40,7 @@ def call(Map parameters = [:], Closure body) {
             .dependingOn('buildTool').mixin('dockerWorkspace')
             .use()
 
-       utils.pushToSWA([step: STEP_NAME], config)
+        utils.pushToSWA([step: STEP_NAME], config)
 
         dockerExecute(
                 script: script,
