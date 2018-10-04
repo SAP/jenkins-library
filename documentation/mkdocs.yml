@@ -19,6 +19,7 @@ nav:
         - pipelineExecute: steps/pipelineExecute.md
         - pipelineStashFiles: steps/pipelineStashFiles.md
         - prepareDefaultValues: steps/prepareDefaultValues.md
+        - seleniumExecuteTests: steps/seleniumExecuteTests.md
         - setupCommonPipelineEnvironment: steps/setupCommonPipelineEnvironment.md
         - toolValidate: steps/toolValidate.md
         - transportRequestCreate: steps/transportRequestCreate.md
