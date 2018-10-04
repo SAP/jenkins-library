@@ -7,10 +7,17 @@ import hudson.AbortException
 @Field def STEP_NAME = 'dockerExecuteOnKubernetes'
 @Field def PLUGIN_ID_KUBERNETES = 'kubernetes'
 @Field Set GENERAL_CONFIG_KEYS = ['jenkinsKubernetes']
-@Field Set PARAMETER_KEYS = ['dockerImage',
-                             'dockerWorkspace',
-                             'dockerEnvVars',
-                             'containerMap']
+@Field Set PARAMETER_KEYS = [
+    'containerCommands', //specify start command for containers to overwrite Piper default (`/usr/bin/tail -f /dev/null`). If container's defaultstart command should be used provide empty string like: `['selenium/standalone-chrome': '']`
+    'containerEnvVars', //specify environment variables per container. If not provided dockerEnvVars will be used
+    'containerMap', //specify multiple images which then form a kubernetes pod, example: containerMap: ['maven:3.5-jdk-8-alpine': 'mavenexecute','selenium/standalone-chrome': 'selenium']
+    'containerName', //optional configuration in combination with containerMap to define the container where the commands should be executed in
+    'containerPortMappings', //map which defines per docker image the port mappings, like containerPortMappings: ['selenium/standalone-chrome': [[name: 'selPort', containerPort: 4444, hostPort: 4444]]]
+    'containerWorkspaces', //specify workspace (=home directory of user) per container. If not provided dockerWorkspace will be used. If empty, home directory will not be set.
+    'dockerImage',
+    'dockerWorkspace',
+    'dockerEnvVars'
+]
 @Field Set STEP_CONFIG_KEYS = PARAMETER_KEYS.plus(['stashIncludes', 'stashExcludes'])
 
 void call(Map parameters = [:], body) {
@@ -48,7 +55,14 @@ void executeOnPodWithCustomContainerList(Map parameters, body) {
     def config = parameters.config
     podTemplate(getOptions(config)) {
         node(config.uniqueId) {
-            body()
+            //allow execution in dedicated container
+            if (config.containerName) {
+                container(name: config.containerName){
+                    body()
+                }
+            } else {
+                body()
+            }
         }
     }
 }
@@ -119,16 +133,35 @@ private void unstashWorkspace(config, prefix) {
 }
 
 private List getContainerList(config) {
-    def envVars = getContainerEnvs(config)
+
     result = []
-    result.push(containerTemplate(name: 'jnlp',
-        image: config.jenkinsKubernetes.jnlpAgent))
+    result.push(containerTemplate(
+        name: 'jnlp',
+        image: config.jenkinsKubernetes.jnlpAgent
+    ))
     config.containerMap.each { imageName, containerName ->
-        result.push(containerTemplate(name: containerName.toLowerCase(),
+        def templateParameters = [
+            name: containerName.toLowerCase(),
             image: imageName,
             alwaysPullImage: true,
-            command: '/usr/bin/tail -f /dev/null',
-            envVars: envVars))
+            envVars: getContainerEnvs(config, imageName)
+        ]
+
+        if (!config.containerCommands?.get(imageName)?.isEmpty()) {
+            templateParameters.command = config.containerCommands?.get(imageName)?: '/usr/bin/tail -f /dev/null'
+        }
+
+        if (config.containerPortMappings?.get(imageName)) {
+            def ports = []
+            def portCounter = 0
+            config.containerPortMappings.get(imageName).each {mapping ->
+                mapping.name = "${containerName}${portCounter}".toString()
+                ports.add(portMapping(mapping))
+                portCounter ++
+            }
+            templateParameters.ports = ports
+        }
+        result.push(containerTemplate(templateParameters))
     }
     return result
 }
@@ -139,10 +172,10 @@ private List getContainerList(config) {
  * (Kubernetes-Plugin only!)
  * @param config Map with configurations
  */
-private List getContainerEnvs(config) {
+private List getContainerEnvs(config, imageName) {
     def containerEnv = []
-    def dockerEnvVars = config.dockerEnvVars ?: [:]
-    def dockerWorkspace = config.dockerWorkspace ?: ''
+    def dockerEnvVars = config.containerEnvVars?.get(imageName) ?: config.dockerEnvVars ?: [:]
+    def dockerWorkspace = config.containerWorkspaces?.get(imageName) != null ? config.containerWorkspaces?.get(imageName) : config.dockerWorkspace ?: ''
 
     if (dockerEnvVars) {
         for (String k : dockerEnvVars.keySet()) {
