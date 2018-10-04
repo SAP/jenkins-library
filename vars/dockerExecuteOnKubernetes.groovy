@@ -8,12 +8,12 @@ import hudson.AbortException
 @Field def PLUGIN_ID_KUBERNETES = 'kubernetes'
 @Field Set GENERAL_CONFIG_KEYS = ['jenkinsKubernetes']
 @Field Set PARAMETER_KEYS = [
-    'containerCommands', //specify start command for containers to overwrite default. If default container start command should be used provide empty string like: ['selenium/standalone-chrome': '']
+    'containerCommands', //specify start command for containers to overwrite Piper default (`/usr/bin/tail -f /dev/null`). If container's defaultstart command should be used provide empty string like: `['selenium/standalone-chrome': '']`
     'containerEnvVars', //specify environment variables per container. If not provided dockerEnvVars will be used
     'containerMap', //specify multiple images which then form a kubernetes pod, example: containerMap: ['maven:3.5-jdk-8-alpine': 'mavenexecute','selenium/standalone-chrome': 'selenium']
     'containerName', //optional configuration in combination with containerMap to define the container where the commands should be executed in
     'containerPortMappings', //map which defines per docker image the port mappings, like containerPortMappings: ['selenium/standalone-chrome': [[name: 'selPort', containerPort: 4444, hostPort: 4444]]]
-    'containerWorkspace', //specify workspace (=home directory of user) per container. If not provided dockerWorkspace will be used. If empty, home directory will not be set.
+    'containerWorkspaces', //specify workspace (=home directory of user) per container. If not provided dockerWorkspace will be used. If empty, home directory will not be set.
     'dockerImage',
     'dockerWorkspace',
     'dockerEnvVars'
@@ -179,7 +179,7 @@ private List getContainerList(config) {
 private List getContainerEnvs(config, imageName) {
     def containerEnv = []
     def dockerEnvVars = config.containerEnvVars?.get(imageName) ?: config.dockerEnvVars ?: [:]
-    def dockerWorkspace = config.containerWorkspace?.get(imageName) != null ? config.containerWorkspace?.get(imageName) : config.dockerWorkspace ?: ''
+    def dockerWorkspace = config.containerWorkspaces?.get(imageName) != null ? config.containerWorkspaces?.get(imageName) : config.dockerWorkspace ?: ''
 
     if (dockerEnvVars) {
         for (String k : dockerEnvVars.keySet()) {

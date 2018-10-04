@@ -64,7 +64,7 @@ void call(Map parameters = [:], body) {
                         containerMap: [:],
                         containerName: config.dockerName,
                         containerPortMappings: [:],
-                        containerWorkspace: [:]
+                        containerWorkspaces: [:]
                     ]
                     paramMap.containerCommands[config.sidecarImage] = ''
 
@@ -76,8 +76,8 @@ void call(Map parameters = [:], body) {
 
                     paramMap.containerPortMappings = config.containerPortMappings
 
-                    paramMap.containerWorkspace[config.dockerImage] = config.dockerWorkspace
-                    paramMap.containerWorkspace[config.sidecarImage] = ''
+                    paramMap.containerWorkspaces[config.dockerImage] = config.dockerWorkspace
+                    paramMap.containerWorkspaces[config.sidecarImage] = ''
 
                     dockerExecuteOnKubernetes(paramMap){
                         echo "Executing inside a Kubernetes Pod with sidecar container"

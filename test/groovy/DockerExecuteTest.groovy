@@ -202,8 +202,8 @@ class DockerExecuteTest extends BasePiperTest {
             assertThat(params.containerMap, allOf(hasEntry('maven:3.5-jdk-8-alpine', 'maven'), hasEntry('selenium/standalone-chrome', 'selenium')))
             assertThat(params.containerName, is('maven'))
             assertThat(params.containerPortMappings['selenium/standalone-chrome'], hasItem(allOf(hasEntry('containerPort', 4444), hasEntry('hostPort', 4444))))
-            assertThat(params.containerWorkspace['maven:3.5-jdk-8-alpine'], is('/home/piper'))
-            assertThat(params.containerWorkspace['selenium/standalone-chrome'], is(''))
+            assertThat(params.containerWorkspaces['maven:3.5-jdk-8-alpine'], is('/home/piper'))
+            assertThat(params.containerWorkspaces['selenium/standalone-chrome'], is(''))
             body()
         })
         jsr.step.dockerExecute(

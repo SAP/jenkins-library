@@ -226,7 +226,7 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
             containerPortMappings: [
                 'selenium/standalone-chrome': [[containerPort: 4444, hostPort: 4444]]
             ],
-            containerWorkspace: [
+            containerWorkspaces: [
                 'selenium/standalone-chrome': ''
             ],
             dockerWorkspace: '/home/piper'
