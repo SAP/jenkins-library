@@ -42,26 +42,30 @@ def call(Map parameters = [:], Closure body) {
 
         utils.pushToSWA([step: STEP_NAME], config)
 
+        if (config.testRepository) {
+            def gitParameters = [url: config.testRepository]
+            if (config.gitSshKeyCredentialsId) gitParameters.credentialsId = config.gitSshKeyCredentialsId
+            if (config.gitBranch) gitParameters.branch = config.gitBranch
+            git gitParameters
+            stash 'seleniumContent'
+            config.stashContent = ['seleniumContent']
+        } else {
+            config.stashContent = utils.unstashAll(config.stashContent)
+        }
+
         dockerExecute(
-                script: script,
-                containerPortMappings: config.containerPortMappings,
-                dockerImage: config.dockerImage,
-                dockerName: config.dockerName,
-                dockerWorkspace: config.dockerWorkspace,
-                sidecarEnvVars: config.sidecarEnvVars,
-                sidecarImage: config.sidecarImage,
-                sidecarName: config.sidecarName,
-                sidecarVolumeBind: config.sidecarVolumeBind
+            script: script,
+            containerPortMappings: config.containerPortMappings,
+            dockerImage: config.dockerImage,
+            dockerName: config.dockerName,
+            dockerWorkspace: config.dockerWorkspace,
+            sidecarEnvVars: config.sidecarEnvVars,
+            sidecarImage: config.sidecarImage,
+            sidecarName: config.sidecarName,
+            sidecarVolumeBind: config.sidecarVolumeBind,
+            stashContent: config.stashContent
         ) {
             try {
-                if (config.testRepository) {
-                    def gitParameters = [url: config.testRepository]
-                    if (config.gitSshKeyCredentialsId) gitParameters.credentialsId = config.gitSshKeyCredentialsId
-                    if (config.gitBranch) gitParameters.branch = config.gitBranch
-                    git gitParameters
-                } else {
-                    config.stashContent = utils.unstashAll(config.stashContent)
-                }
                 body()
             } catch (err) {
                 if (config.failOnError) {
