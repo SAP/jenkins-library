@@ -80,7 +80,7 @@ void call(Map parameters = [:], body) {
                     paramMap.containerWorkspaces[config.sidecarImage] = ''
 
                     dockerExecuteOnKubernetes(paramMap){
-                        echo "Executing inside a Kubernetes Pod with sidecar container"
+                        echo "[INFO][${STEP_NAME}] Executing inside a Kubernetes Pod with sidecar container"
                         body()
                     }
                 }
