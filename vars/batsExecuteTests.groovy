@@ -40,12 +40,9 @@ def call(Map parameters = [:]) {
 
         script.commonPipelineEnvironment.setInfluxStepData('bats', false)
 
-
-        if (config.testRepository) {
-            GitUtils.handleTestRepository(this, config)
-        } else {
-            config.stashContent = utils.unstashAll(config.stashContent)
-        }
+        config.stashContent = config.testRepository
+            ?[GitUtils.handleTestRepository(this, config)]
+            :utils.unstashAll(config.stashContent)
 
         //resolve commonPipelineEnvironment references in envVars
         config.envVarList = []

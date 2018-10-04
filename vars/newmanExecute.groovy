@@ -35,11 +35,9 @@ def call(Map parameters = [:]) {
 
         new Utils().pushToSWA([step: STEP_NAME], config)
 
-        if (config.testRepository) {
-            GitUtils.handleTestRepository(this, config)
-        } else {
-            config.stashContent = utils.unstashAll(config.stashContent)
-        }
+        config.stashContent = config.testRepository
+            ?[GitUtils.handleTestRepository(this, config)]
+            :utils.unstashAll(config.stashContent)
 
         List collectionList = findFiles(glob: config.newmanCollection)?.toList()
         if (collectionList.isEmpty()) {

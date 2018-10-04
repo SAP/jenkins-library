@@ -109,24 +109,21 @@ class GitUtilsTest extends BasePiperTest {
 
     @Test
     void testHandleTestRepository() {
-        helper.registerAllowedMethod("git", [Map.class], { m ->
-            assertThat(m, hasEntry('url', 'repoUrl'))
-            assertThat(m, hasEntry('credentialsId', 'abc'))
-            assertThat(m, hasEntry('branch', 'master'))
-        })
-        helper.registerAllowedMethod("stash", [String.class], { s ->
-            assertThat(s, startsWith('testContent-'))
-        })
-
-        def config = [
+        def result, gitMap, stashName, config = [
             testRepository: 'repoUrl',
             gitSshKeyCredentialsId: 'abc',
             gitBranch: 'master'
         ]
 
-        GitUtils.handleTestRepository(nullScript, config)
-        println("LOG: ${jlr.log}")
+        helper.registerAllowedMethod('git', [Map.class], {m -> gitMap = m })
+        helper.registerAllowedMethod("stash", [String.class], { s -> stashName = s})
+
+        result = GitUtils.handleTestRepository(nullScript, config)
         // asserts
-        assertThat(config.stashContent, hasItem(startsWith('testContent-')))
+        assertThat(gitMap, hasEntry('url', config.testRepository))
+        assertThat(gitMap, hasEntry('credentialsId', config.gitSshKeyCredentialsId))
+        assertThat(gitMap, hasEntry('branch', config.gitBranch))
+        assertThat(stashName, startsWith('testContent-'))
+        assertThat(result, startsWith('testContent-'))
 	}
 }

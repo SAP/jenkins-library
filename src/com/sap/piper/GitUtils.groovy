@@ -38,7 +38,7 @@ String[] extractLogLines(String filter = '',
 
 }
 
-static void handleTestRepository(Script steps, Map config){
+static String handleTestRepository(Script steps, Map config){
     def stashName = "testContent-${UUID.randomUUID()}".toString()
     def options = [url: config.testRepository]
     if (config.gitSshKeyCredentialsId)
@@ -49,6 +49,6 @@ static void handleTestRepository(Script steps, Map config){
     steps.git options
     // stash test content
     steps.stash stashName
-    // alter stashContent
-    config.stashContent = [stashName]
+    // return stash name
+    return stashName
 }
