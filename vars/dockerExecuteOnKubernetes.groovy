@@ -36,19 +36,14 @@ void call(Map parameters = [:], body) {
             .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName ?: env.STAGE_NAME, STEP_CONFIG_KEYS)
             .mixin(parameters, PARAMETER_KEYS)
             .addIfEmpty('uniqueId', UUID.randomUUID().toString())
-        Map config = [:]
+        Map config = configHelper.use()
 
-        if (parameters.containerMap) {
-            config = configHelper.use()
-            executeOnPod(config, body)
-        } else {
-            config = configHelper
-                .withMandatoryProperty('dockerImage')
-                .use()
+        if (!parameters.containerMap) {
+            configHelper.withMandatoryProperty('dockerImage')
             config.containerName = 'container-exec'
             config.containerMap = ["${config.get('dockerImage')}": config.containerName]
-            executeOnPod(config, body)
         }
+        executeOnPod(config, body)
     }
 }
 
