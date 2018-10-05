@@ -45,6 +45,8 @@ void call(Map parameters = [:], body) {
             config = configHelper
                 .withMandatoryProperty('dockerImage')
                 .use()
+            config.containerName = 'container-exec'
+            config.containerMap = [config.get('dockerImage'): config.containerName]
             executeOnPodWithSingleContainer(config) { body() }
         }
     }
@@ -72,9 +74,6 @@ def getOptions(config) {
 }
 
 void executeOnPodWithSingleContainer(Map config, body) {
-    Map containerMap = [:]
-    containerMap[config.get('dockerImage').toString()] = 'container-exec'
-    config.containerMap = containerMap
     /*
      * There could be exceptions thrown by
         - The podTemplate
@@ -89,7 +88,7 @@ void executeOnPodWithSingleContainer(Map config, body) {
         stashWorkspace(config, 'workspace')
         podTemplate(getOptions(config)) {
             node(config.uniqueId) {
-                container(name: 'container-exec') {
+                container(name: config.containerName){
                     try {
                         unstashWorkspace(config, 'workspace')
                         body()
