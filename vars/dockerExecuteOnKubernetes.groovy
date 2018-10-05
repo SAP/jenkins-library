@@ -40,14 +40,14 @@ void call(Map parameters = [:], body) {
 
         if (parameters.containerMap) {
             config = configHelper.use()
-            executeOnPod(config) { body() }
+            executeOnPod(config, body)
         } else {
             config = configHelper
                 .withMandatoryProperty('dockerImage')
                 .use()
             config.containerName = 'container-exec'
             config.containerMap = [config.get('dockerImage'): config.containerName]
-            executeOnPod(config) { body() }
+            executeOnPod(config, body)
         }
     }
 }
@@ -58,7 +58,7 @@ def getOptions(config) {
             containers: getContainerList(config)]
 }
 
-void executeOnPod(Map config, body) {
+void executeOnPod(Map config, Closure body) {
     /*
      * There could be exceptions thrown by
         - The podTemplate
