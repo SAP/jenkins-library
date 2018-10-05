@@ -84,9 +84,9 @@ void executeOnPodWithSingleContainer(Map parameters, body) {
         - The container method
         - The body
      * We use nested exception handling in this case.
-     * In the first 2 cases, the workspace has not been modified. Hence, we can stash existing workspace as container and
-     * unstash in the finally block. In case of exception thrown by the body, we need to stash the workspace from the container
-     * in finally block
+     * In the first 2 cases, the 'container' stash is not created because the inner try/finally is not reached. 
+     * However, the workspace has not been modified and don't need to be restored.
+     * In case third case, we need to create the 'container' stash to bring the modified content back to the host.
      */
     try {
         stashWorkspace(config, 'workspace')
