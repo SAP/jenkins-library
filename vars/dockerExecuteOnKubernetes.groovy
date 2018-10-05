@@ -65,7 +65,8 @@ void executeOnPod(Map config, Closure body) {
      * In case third case, we need to create the 'container' stash to bring the modified content back to the host.
      */
     try {
-        stashWorkspace(config, 'workspace')
+        if (config.containerName)
+            stashWorkspace(config, 'workspace')
         podTemplate(getOptions(config)) {
             node(config.uniqueId) {
                 if (config.containerName) {
@@ -83,7 +84,8 @@ void executeOnPod(Map config, Closure body) {
             }
         }
     } finally {
-        unstashWorkspace(config, 'container')
+        if (config.containerName)
+            unstashWorkspace(config, 'container')
     }
 }
 
