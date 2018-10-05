@@ -40,19 +40,17 @@ void call(Map parameters = [:], body) {
 
         if (parameters.containerMap) {
             config = configHelper.use()
-            executeOnPodWithCustomContainerList(config: config) { body() }
-
+            executeOnPodWithCustomContainerList(config) { body() }
         } else {
             config = configHelper
                 .withMandatoryProperty('dockerImage')
                 .use()
-            executeOnPodWithSingleContainer(config: config) { body() }
+            executeOnPodWithSingleContainer(config) { body() }
         }
     }
 }
 
-void executeOnPodWithCustomContainerList(Map parameters, body) {
-    def config = parameters.config
+void executeOnPodWithCustomContainerList(Map config, body) {
     podTemplate(getOptions(config)) {
         node(config.uniqueId) {
             //allow execution in dedicated container
@@ -73,9 +71,8 @@ def getOptions(config) {
             containers: getContainerList(config)]
 }
 
-void executeOnPodWithSingleContainer(Map parameters, body) {
+void executeOnPodWithSingleContainer(Map config, body) {
     Map containerMap = [:]
-    def config = parameters.config
     containerMap[config.get('dockerImage').toString()] = 'container-exec'
     config.containerMap = containerMap
     /*
@@ -84,7 +81,7 @@ void executeOnPodWithSingleContainer(Map parameters, body) {
         - The container method
         - The body
      * We use nested exception handling in this case.
-     * In the first 2 cases, the 'container' stash is not created because the inner try/finally is not reached. 
+     * In the first 2 cases, the 'container' stash is not created because the inner try/finally is not reached.
      * However, the workspace has not been modified and don't need to be restored.
      * In case third case, we need to create the 'container' stash to bring the modified content back to the host.
      */
