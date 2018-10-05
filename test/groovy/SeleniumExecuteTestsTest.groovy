@@ -31,7 +31,6 @@ class SeleniumExecuteTestsTest extends BasePiperTest {
     @Before
     void init() throws Exception {
         bodyExecuted = false
-        helper.registerAllowedMethod('stash', [String.class], null)
         helper.registerAllowedMethod('git', [Map.class], {m ->
             gitMap = m
         })

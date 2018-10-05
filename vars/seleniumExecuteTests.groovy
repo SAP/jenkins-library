@@ -1,10 +1,9 @@
+import com.sap.piper.Utils
 import com.sap.piper.ConfigurationHelper
-import com.sap.piper.GitUtils
 import com.sap.piper.Utils
 import com.sap.piper.k8s.ContainerMap
-
-import groovy.text.SimpleTemplateEngine
 import groovy.transform.Field
+import groovy.text.SimpleTemplateEngine
 
 @Field String STEP_NAME = 'seleniumExecuteTests'
 @Field Set STEP_CONFIG_KEYS = [
@@ -43,26 +42,31 @@ def call(Map parameters = [:], Closure body) {
 
         utils.pushToSWA([step: STEP_NAME], config)
 
-        config.stashContent = config.testRepository
-            ?[GitUtils.handleTestRepository(this, config)]
-            :utils.unstashAll(config.stashContent)
-
         dockerExecute(
-            script: script,
-            containerPortMappings: config.containerPortMappings,
-            dockerImage: config.dockerImage,
-            dockerName: config.dockerName,
-            dockerWorkspace: config.dockerWorkspace,
-            sidecarEnvVars: config.sidecarEnvVars,
-            sidecarImage: config.sidecarImage,
-            sidecarName: config.sidecarName,
-            sidecarVolumeBind: config.sidecarVolumeBind,
-            stashContent: config.stashContent
+                script: script,
+                containerPortMappings: config.containerPortMappings,
+                dockerImage: config.dockerImage,
+                dockerName: config.dockerName,
+                dockerWorkspace: config.dockerWorkspace,
+                sidecarEnvVars: config.sidecarEnvVars,
+                sidecarImage: config.sidecarImage,
+                sidecarName: config.sidecarName,
+                sidecarVolumeBind: config.sidecarVolumeBind
         ) {
             try {
+                if (config.testRepository) {
+                    def gitParameters = [url: config.testRepository]
+                    if (config.gitSshKeyCredentialsId) gitParameters.credentialsId = config.gitSshKeyCredentialsId
+                    if (config.gitBranch) gitParameters.branch = config.gitBranch
+                    git gitParameters
+                } else {
+                    config.stashContent = utils.unstashAll(config.stashContent)
+                }
                 body()
             } catch (err) {
-                if (config.failOnError) throw err
+                if (config.failOnError) {
+                    throw err
+                }
             }
         }
     }
