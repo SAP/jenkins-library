@@ -40,29 +40,14 @@ void call(Map parameters = [:], body) {
 
         if (parameters.containerMap) {
             config = configHelper.use()
-            executeOnPodWithCustomContainerList(config) { body() }
+            executeOnPod(config) { body() }
         } else {
             config = configHelper
                 .withMandatoryProperty('dockerImage')
                 .use()
             config.containerName = 'container-exec'
             config.containerMap = [config.get('dockerImage'): config.containerName]
-            executeOnPodWithSingleContainer(config) { body() }
-        }
-    }
-}
-
-void executeOnPodWithCustomContainerList(Map config, body) {
-    podTemplate(getOptions(config)) {
-        node(config.uniqueId) {
-            //allow execution in dedicated container
-            if (config.containerName) {
-                container(name: config.containerName){
-                    body()
-                }
-            } else {
-                body()
-            }
+            executeOnPod(config) { body() }
         }
     }
 }
@@ -73,7 +58,7 @@ def getOptions(config) {
             containers: getContainerList(config)]
 }
 
-void executeOnPodWithSingleContainer(Map config, body) {
+void executeOnPod(Map config, body) {
     /*
      * There could be exceptions thrown by
         - The podTemplate
@@ -88,13 +73,17 @@ void executeOnPodWithSingleContainer(Map config, body) {
         stashWorkspace(config, 'workspace')
         podTemplate(getOptions(config)) {
             node(config.uniqueId) {
-                container(name: config.containerName){
-                    try {
-                        unstashWorkspace(config, 'workspace')
-                        body()
-                    } finally {
-                        stashWorkspace(config, 'container')
+                if (config.containerName) {
+                    container(name: config.containerName){
+                        try {
+                            unstashWorkspace(config, 'workspace')
+                            body()
+                        } finally {
+                            stashWorkspace(config, 'container')
+                        }
                     }
+                } else {
+                    body()
                 }
             }
         }
