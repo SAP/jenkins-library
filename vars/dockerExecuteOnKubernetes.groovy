@@ -98,13 +98,10 @@ void executeOnPodWithSingleContainer(Map parameters, body) {
                         body()
                     } finally {
                         stashWorkspace(config, 'container')
-                     }
+                    }
                 }
             }
         }
-    } catch (e) {
-        stashWorkspace(config, 'container')
-        throw e
     } finally {
         unstashWorkspace(config, 'container')
     }
