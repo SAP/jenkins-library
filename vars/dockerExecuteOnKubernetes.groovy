@@ -46,7 +46,7 @@ void call(Map parameters = [:], body) {
                 .withMandatoryProperty('dockerImage')
                 .use()
             config.containerName = 'container-exec'
-            config.containerMap = [config.get('dockerImage'): config.containerName]
+            config.containerMap = ["${config.get('dockerImage')}": config.containerName]
             executeOnPod(config, body)
         }
     }
