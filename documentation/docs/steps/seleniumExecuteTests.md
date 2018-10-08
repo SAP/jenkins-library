@@ -10,6 +10,9 @@ When executing in a
 * local Docker environment, please make sure to set Selenium host to **`selenium`** in your tests.
 * Kubernetes environment, plese make sure to set Seleniums host to **`localhost`** in your tests.
 
+!!! note "Proxy Environments"
+    If work in an environment containing a proxy, please make sure that `localhost`/`selenium` is added to your proxy exclusion list, e.g. via environment variable `NO_PROXY` & `no_proxy`. You can pass those via parameters `dockerEnvVars` and `sidecarEnvVars` directly to the containers if required.
+
 ## Prerequisites
 
 none
