@@ -36,34 +36,14 @@ void call(Map parameters = [:], body) {
             .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName ?: env.STAGE_NAME, STEP_CONFIG_KEYS)
             .mixin(parameters, PARAMETER_KEYS)
             .addIfEmpty('uniqueId', UUID.randomUUID().toString())
-        Map config = [:]
+        Map config = configHelper.use()
 
-        if (parameters.containerMap) {
-            config = configHelper.use()
-            executeOnPodWithCustomContainerList(config: config) { body() }
-
-        } else {
-            config = configHelper
-                .withMandatoryProperty('dockerImage')
-                .use()
-            executeOnPodWithSingleContainer(config: config) { body() }
+        if (!parameters.containerMap) {
+            configHelper.withMandatoryProperty('dockerImage')
+            config.containerName = 'container-exec'
+            config.containerMap = ["${config.get('dockerImage')}": config.containerName]
         }
-    }
-}
-
-void executeOnPodWithCustomContainerList(Map parameters, body) {
-    def config = parameters.config
-    podTemplate(getOptions(config)) {
-        node(config.uniqueId) {
-            //allow execution in dedicated container
-            if (config.containerName) {
-                container(name: config.containerName){
-                    body()
-                }
-            } else {
-                body()
-            }
-        }
+        executeOnPod(config, body)
     }
 }
 
@@ -73,37 +53,39 @@ def getOptions(config) {
             containers: getContainerList(config)]
 }
 
-void executeOnPodWithSingleContainer(Map parameters, body) {
-    Map containerMap = [:]
-    def config = parameters.config
-    containerMap[config.get('dockerImage').toString()] = 'container-exec'
-    config.containerMap = containerMap
+void executeOnPod(Map config, Closure body) {
     /*
      * There could be exceptions thrown by
         - The podTemplate
         - The container method
         - The body
      * We use nested exception handling in this case.
-     * In the first 2 cases, the 'container' stash is not created because the inner try/finally is not reached. 
+     * In the first 2 cases, the 'container' stash is not created because the inner try/finally is not reached.
      * However, the workspace has not been modified and don't need to be restored.
      * In case third case, we need to create the 'container' stash to bring the modified content back to the host.
      */
     try {
-        stashWorkspace(config, 'workspace')
+        if (config.containerName)
+            stashWorkspace(config, 'workspace')
         podTemplate(getOptions(config)) {
             node(config.uniqueId) {
-                container(name: 'container-exec') {
-                    try {
-                        unstashWorkspace(config, 'workspace')
-                        body()
-                    } finally {
-                        stashWorkspace(config, 'container')
+                if (config.containerName) {
+                    container(name: config.containerName){
+                        try {
+                            unstashWorkspace(config, 'workspace')
+                            body()
+                        } finally {
+                            stashWorkspace(config, 'container')
+                        }
                     }
+                } else {
+                    body()
                 }
             }
         }
     } finally {
-        unstashWorkspace(config, 'container')
+        if (config.containerName)
+            unstashWorkspace(config, 'container')
     }
 }
 
