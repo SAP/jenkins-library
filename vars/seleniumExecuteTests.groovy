@@ -1,5 +1,6 @@
 import com.sap.piper.Utils
 import com.sap.piper.ConfigurationHelper
+import com.sap.piper.GitUtils
 import com.sap.piper.Utils
 import com.sap.piper.k8s.ContainerMap
 import groovy.transform.Field
@@ -54,14 +55,9 @@ def call(Map parameters = [:], Closure body) {
                 sidecarVolumeBind: config.sidecarVolumeBind
         ) {
             try {
-                if (config.testRepository) {
-                    def gitParameters = [url: config.testRepository]
-                    if (config.gitSshKeyCredentialsId) gitParameters.credentialsId = config.gitSshKeyCredentialsId
-                    if (config.gitBranch) gitParameters.branch = config.gitBranch
-                    git gitParameters
-                } else {
-                    config.stashContent = utils.unstashAll(config.stashContent)
-                }
+                config.stashContent = config.testRepository
+                    ?[GitUtils.handleTestRepository(this, config)]
+                    :utils.unstashAll(config.stashContent)
                 body()
             } catch (err) {
                 if (config.failOnError) {
