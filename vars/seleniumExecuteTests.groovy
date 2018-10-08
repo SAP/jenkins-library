@@ -1,5 +1,6 @@
 import com.sap.piper.Utils
 import com.sap.piper.ConfigurationHelper
+import com.sap.piper.GitUtils
 import com.sap.piper.Utils
 import com.sap.piper.k8s.ContainerMap
 import groovy.transform.Field
