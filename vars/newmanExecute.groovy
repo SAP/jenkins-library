@@ -1,4 +1,3 @@
-import com.sap.piper.Utils
 import com.sap.piper.ConfigurationHelper
 import com.sap.piper.Utils
 import groovy.transform.Field
