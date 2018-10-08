@@ -30,6 +30,7 @@ void call(Map parameters = [:], body) {
         final script = parameters.script
         if (script == null)
             script = [commonPipelineEnvironment: commonPipelineEnvironment]
+        def utils = parameters?.juStabUtils ?: new Utils()
 
         ConfigurationHelper configHelper = ConfigurationHelper
             .loadStepDefaults(this)
@@ -45,7 +46,7 @@ void call(Map parameters = [:], body) {
             config.containerName = 'container-exec'
             config.containerMap = ["${config.get('dockerImage')}": config.containerName]
         }
-        executeOnPod(config, body)
+        executeOnPod(config, utils, body)
     }
 }
 
@@ -55,7 +56,7 @@ def getOptions(config) {
             containers: getContainerList(config)]
 }
 
-void executeOnPod(Map config, Closure body) {
+void executeOnPod(Map config, utils, Closure body) {
     /*
      * There could be exceptions thrown by
         - The podTemplate
