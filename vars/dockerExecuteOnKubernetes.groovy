@@ -1,5 +1,6 @@
 import com.sap.piper.ConfigurationHelper
 import com.sap.piper.JenkinsUtils
+import com.sap.piper.Utils
 import com.sap.piper.k8s.SystemEnv
 import groovy.transform.Field
 import hudson.AbortException
@@ -16,7 +17,8 @@ import hudson.AbortException
     'containerWorkspaces', //specify workspace (=home directory of user) per container. If not provided dockerWorkspace will be used. If empty, home directory will not be set.
     'dockerImage',
     'dockerWorkspace',
-    'dockerEnvVars'
+    'dockerEnvVars',
+    'stashContent'
 ]
 @Field Set STEP_CONFIG_KEYS = PARAMETER_KEYS.plus(['stashIncludes', 'stashExcludes'])
 
@@ -65,14 +67,15 @@ void executeOnPod(Map config, Closure body) {
      * In case third case, we need to create the 'container' stash to bring the modified content back to the host.
      */
     try {
-        if (config.containerName)
-            stashWorkspace(config, 'workspace')
+        if (config.containerName && config.stashContent.isEmpty()){
+            config.stashContent.add(stashWorkspace(config, 'workspace'))
+        }
         podTemplate(getOptions(config)) {
             node(config.uniqueId) {
                 if (config.containerName) {
                     container(name: config.containerName){
                         try {
-                            unstashWorkspace(config, 'workspace')
+                            utils.unstashAll(config.stashContent)
                             body()
                         } finally {
                             stashWorkspace(config, 'container')
@@ -89,18 +92,21 @@ void executeOnPod(Map config, Closure body) {
     }
 }
 
-private void stashWorkspace(config, prefix) {
+private String stashWorkspace(config, prefix) {
+    def stashName = "${prefix}-${config.uniqueId}"
     try {
         // Every dockerImage used in the dockerExecuteOnKubernetes should have user id 1000
         sh "chown -R 1000:1000 ."
         stash(
-            name: "${prefix}-${config.uniqueId}",
+            name: stashName,
             include: config.stashIncludes.workspace,
             exclude: config.stashExcludes.excludes
         )
+        return stashName
     } catch (AbortException | IOException e) {
         echo "${e.getMessage()}"
     }
+    return null
 }
 
 private void unstashWorkspace(config, prefix) {
