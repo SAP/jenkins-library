@@ -7,6 +7,7 @@ import util.*
 
 import static org.hamcrest.Matchers.hasItem
 import static org.hamcrest.Matchers.is
+import static org.hamcrest.Matchers.startsWith
 import static org.junit.Assert.assertThat
 
 class BatsExecuteTestsTest extends BasePiperTest {
@@ -104,7 +105,7 @@ class BatsExecuteTestsTest extends BasePiperTest {
             gitRepository = m
         })
         helper.registerAllowedMethod('stash', [String.class], {s ->
-            assertThat(s, is('batsTests'))
+            assertThat(s, startsWith('testContent-'))
         })
 
         jsr.step.batsExecuteTests(
@@ -115,7 +116,7 @@ class BatsExecuteTestsTest extends BasePiperTest {
 
         assertThat(gitRepository.size(), is(1))
         assertThat(gitRepository.url, is('testRepo'))
-        assertThat(jder.dockerParams.stashContent, hasItem('batsTests'))
+        assertThat(jder.dockerParams.stashContent, hasItem(startsWith('testContent-')))
     }
 
     @Test
@@ -125,7 +126,7 @@ class BatsExecuteTestsTest extends BasePiperTest {
             gitRepository = m
         })
         helper.registerAllowedMethod('stash', [String.class], {s ->
-            assertThat(s, is('batsTests'))
+            assertThat(s, startsWith('testContent-'))
         })
 
         jsr.step.batsExecuteTests(
