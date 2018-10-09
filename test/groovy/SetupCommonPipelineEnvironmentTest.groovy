@@ -86,5 +86,4 @@ class SetupCommonPipelineEnvironmentTest extends BasePiperTest {
             }
         }
     }
-
 }
