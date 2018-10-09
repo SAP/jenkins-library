@@ -1,3 +1,7 @@
+import groovy.transform.Field
+
+@Field STEP_NAME = 'durationMeasure'
+
 def call(Map parameters = [:], body) {
 
     def script = parameters.script
