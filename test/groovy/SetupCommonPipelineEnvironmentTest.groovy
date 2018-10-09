@@ -35,13 +35,21 @@ class SetupCommonPipelineEnvironmentTest extends BasePiperTest {
             usedConfigFile = parameters.file
             return yamlParser.load(examplePipelineConfig)
         })
-        helper.registerAllowedMethod("fileExists", [String], { String path ->
-            return path.endsWith('.pipeline/config.yml')
+        helper.registerAllowedMethod("readProperties", [Map], { Map parameters ->
+            usedConfigFile = parameters.file
+            Properties props = new Properties()
+            props.setProperty('key', 'value')
+            return props
         })
     }
 
     @Test
-    void testIsConfigurationAvailable() throws Exception {
+    void testIsYamlConfigurationAvailable() throws Exception {
+
+        helper.registerAllowedMethod("fileExists", [String], { String path ->
+            return path.endsWith('.pipeline/config.yml')
+        })
+
         jsr.step.call(script: nullScript)
 
         assertEquals('.pipeline/config.yml', usedConfigFile)
@@ -49,4 +57,19 @@ class SetupCommonPipelineEnvironmentTest extends BasePiperTest {
         assertEquals('develop', nullScript.commonPipelineEnvironment.configuration.general.productiveBranch)
         assertEquals('my-maven-docker', nullScript.commonPipelineEnvironment.configuration.steps.mavenExecute.dockerImage)
     }
+
+    @Test
+    void testIsPropertiesConfigurationAvailable() {
+
+        helper.registerAllowedMethod("fileExists", [String], { String path ->
+            return path.endsWith('.pipeline/config.properties')
+        })
+
+        jsr.step.call(script: nullScript)
+
+        assertEquals('.pipeline/config.properties', usedConfigFile)
+        assertNotNull(nullScript.commonPipelineEnvironment.configProperties)
+        assertEquals('value', nullScript.commonPipelineEnvironment.configProperties['key'])
+    }
+
 }
