@@ -1,7 +1,5 @@
 package com.sap.piper.cm
 
-import java.util.Map
-
 import com.sap.piper.GitUtils
 
 import hudson.AbortException
