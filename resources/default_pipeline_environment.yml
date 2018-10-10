@@ -192,6 +192,28 @@ steps:
       pipelineConfigAndTests: ''
       securityDescriptor: ''
       tests: ''
+  seleniumExecuteTests:
+    buildTool: 'npm'
+    containerPortMappings:
+      'selenium/standalone-chrome':
+        - containerPort: 4444
+          hostPort: 4444
+    dockerLinkAlias: 'selenium'
+    failOnError: true
+    sidecarImage: 'selenium/standalone-chrome'
+    sidecarName: 'selenium'
+    sidecarVolumeBind:
+      '/dev/shm': '/dev/shm'
+    stashContent:
+      - 'tests'
+    maven:
+      dockerImage: 'maven:3.5-jdk-7'
+      dockerName: 'maven'
+      dockerWorkspace: ''
+    npm:
+      dockerImage: 'node:8-stretch'
+      dockerName: 'npm'
+      dockerWorkspace: '/home/node'
   snykExecute:
     buildDescriptorFile: './package.json'
     dockerImage: 'node:8-stretch'

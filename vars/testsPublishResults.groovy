@@ -1,7 +1,6 @@
 import com.cloudbees.groovy.cps.NonCPS
 
 import com.sap.piper.ConfigurationHelper
-import com.sap.piper.ConfigurationMerger
 import com.sap.piper.MapUtils
 import com.sap.piper.Utils
 import groovy.transform.Field

@@ -1,5 +1,7 @@
 package com.sap.piper
 
+import com.cloudbees.groovy.cps.NonCPS
+
 class ConfigurationHelper implements Serializable {
     static ConfigurationHelper loadStepDefaults(Script step){
         return new ConfigurationHelper(step)
@@ -9,6 +11,8 @@ class ConfigurationHelper implements Serializable {
 
     private Map config = [:]
     private String name
+
+    private Map validationResults = null
 
     ConfigurationHelper(Script step){
         name = step.STEP_NAME
@@ -23,6 +27,11 @@ class ConfigurationHelper implements Serializable {
     private final ConfigurationHelper loadDefaults(){
         config = ConfigurationLoader.defaultGeneralConfiguration()
         mixin(ConfigurationLoader.defaultStepConfiguration(null, name))
+        return this
+    }
+
+    ConfigurationHelper collectValidationFailures() {
+        validationResults = validationResults ?: [:]
         return this
     }
 
@@ -96,25 +105,23 @@ class ConfigurationHelper implements Serializable {
         return this
     }
 
-    Map use(){ return config }
+    @NonCPS // required because we have a closure in the
+            // method body that cannot be CPS transformed
+    Map use(){
+        handleValidationFailures()
+        MapUtils.traverse(config, { v -> (v instanceof GString) ? v.toString() : v })
+        return config
+    }
 
     ConfigurationHelper(Map config = [:]){
         this.config = config
     }
 
-    def getConfigProperty(key) {
+    /* private */ def getConfigPropertyNested(key) {
         return getConfigPropertyNested(config, key)
     }
 
-    def getConfigProperty(key, defaultValue) {
-        def value = getConfigProperty(key)
-        if (value == null) {
-            return defaultValue
-        }
-        return value
-    }
-
-    private getConfigPropertyNested(Map config, key) {
+    /* private */ static getConfigPropertyNested(Map config, key) {
 
         def separator = '/'
 
@@ -135,43 +142,40 @@ class ConfigurationHelper implements Serializable {
         return config[parts.head()]
     }
 
-    def isPropertyDefined(key){
+     private void existsMandatoryProperty(key, errorMessage) {
 
-        def value = getConfigProperty(key)
-
-        if(value == null){
-            return false
-        }
-
-        if(value.class == String){
-            return value?.isEmpty() == false
-        }
-
-        if(value){
-            return true
-        }
-
-        return false
-    }
-
-    def getMandatoryProperty(key, defaultValue = null, errorMessage = null) {
-
-        def paramValue = getConfigProperty(key, defaultValue)
+        def paramValue = getConfigPropertyNested(config, key)
 
         if (paramValue == null) {
             if(! errorMessage) errorMessage = "ERROR - NO VALUE AVAILABLE FOR ${key}"
-            throw new IllegalArgumentException(errorMessage)
+
+            def iae = new IllegalArgumentException(errorMessage)
+            if(validationResults == null) {
+                throw iae
+            }
+            validationResults.put(key, iae)
         }
-        return paramValue
     }
 
-    def withMandatoryProperty(key, errorMessage = null, condition = null){
+    ConfigurationHelper withMandatoryProperty(key, errorMessage = null, condition = null){
         if(condition){
             if(condition(this.config))
-                getMandatoryProperty(key, null, errorMessage)
+                existsMandatoryProperty(key, errorMessage)
         }else{
-            getMandatoryProperty(key, null, errorMessage)
+            existsMandatoryProperty(key, errorMessage)
         }
         return this
     }
+
+    @NonCPS
+    private handleValidationFailures() {
+        if(! validationResults) return
+        if(validationResults.size() == 1) throw validationResults.values().first()
+        String msg = 'ERROR - NO VALUE AVAILABLE FOR: ' +
+            (validationResults.keySet().stream().collect() as Iterable).join(', ')
+        IllegalArgumentException iae = new IllegalArgumentException(msg)
+        validationResults.each { e -> iae.addSuppressed(e.value) }
+        throw iae
+    }
+
 }

@@ -1,12 +1,9 @@
 import org.junit.Before
-import org.junit.BeforeClass
-import org.junit.ClassRule
 import org.junit.Ignore
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.ExpectedException
 import org.junit.rules.RuleChain
-import org.junit.rules.TemporaryFolder
 import org.yaml.snakeyaml.parser.ParserException
 
 import hudson.AbortException
@@ -22,9 +19,6 @@ public class MtaBuildTest extends BasePiperTest {
 
     def toolMtaValidateCalled = false
     def toolJavaValidateCalled = false
-
-    @ClassRule
-    public static TemporaryFolder tmp = new TemporaryFolder()
 
     private ExpectedException thrown = new ExpectedException()
     private JenkinsLoggingRule jlr = new JenkinsLoggingRule(this)
@@ -42,11 +36,6 @@ public class MtaBuildTest extends BasePiperTest {
         .around(jscr)
         .around(jder)
         .around(jsr)
-
-    @BeforeClass
-    static void createTestFiles() {
-
-    }
 
     @Before
     void init() {
