@@ -162,6 +162,9 @@ steps:
     newmanRunCommand: "run ${config.newmanCollection} --environment '${config.newmanEnvironment}' --globals '${config.newmanGlobals}' --reporters junit,html --reporter-junit-export target/newman/TEST-${collectionDisplayName}.xml --reporter-html-export target/newman/TEST-${collectionDisplayName}.html"
     stashContent:
       - 'tests'
+  pipelineRestartSteps:
+    sendMail: true
+    timeoutInSeconds: 900
   pipelineStashFilesAfterBuild:
     runOpaTests: false
     stashIncludes:
