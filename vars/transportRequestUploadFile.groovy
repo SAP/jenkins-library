@@ -1,8 +1,7 @@
-import com.sap.piper.GitUtils
+import com.sap.piper.Utils
 import groovy.transform.Field
 
 import com.sap.piper.ConfigurationHelper
-import com.sap.piper.ConfigurationMerger
 import com.sap.piper.cm.ChangeManagement
 import com.sap.piper.cm.ChangeManagementException
 
@@ -12,16 +11,17 @@ import hudson.AbortException
 @Field def STEP_NAME = 'transportRequestUploadFile'
 
 @Field Set generalConfigurationKeys = [
-    'changeManagement',
+    'changeManagement'
   ]
 
-@Field Set parameterKeys = generalConfigurationKeys.plus([
-    'applicationId',
+  @Field Set stepConfigurationKeys = generalConfigurationKeys.plus([
+      'applicationId'
+    ])
+
+@Field Set parameterKeys = stepConfigurationKeys.plus([
     'changeDocumentId',
     'filePath',
     'transportRequestId'])
-
-@Field Set stepConfigurationKeys = generalConfigurationKeys
 
 def call(parameters = [:]) {
 
@@ -31,23 +31,26 @@ def call(parameters = [:]) {
 
         ChangeManagement cm = parameters.cmUtils ?: new ChangeManagement(script)
 
-        ConfigurationHelper configHelper =
-            ConfigurationHelper.loadStepDefaults(this)
-                               .mixinGeneralConfig(script.commonPipelineEnvironment, generalConfigurationKeys)
-                               .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName?:env.STAGE_NAME, stepConfigurationKeys)
-                               .mixinStepConfig(script.commonPipelineEnvironment, stepConfigurationKeys)
-                               .mixin(parameters, parameterKeys)
-                               .withMandatoryProperty('applicationId')
-                               .withMandatoryProperty('changeManagement/changeDocumentLabel')
-                               .withMandatoryProperty('changeManagement/clientOpts')
-                               .withMandatoryProperty('changeManagement/credentialsId')
-                               .withMandatoryProperty('changeManagement/endpoint')
-                               .withMandatoryProperty('changeManagement/git/from')
-                               .withMandatoryProperty('changeManagement/git/to')
-                               .withMandatoryProperty('changeManagement/git/format')
-                               .withMandatoryProperty('filePath')
+        ConfigurationHelper configHelper = ConfigurationHelper
+            .loadStepDefaults(this)
+            .mixinGeneralConfig(script.commonPipelineEnvironment, generalConfigurationKeys)
+            .mixinStepConfig(script.commonPipelineEnvironment, stepConfigurationKeys)
+            .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName?:env.STAGE_NAME, stepConfigurationKeys)
+            .mixin(parameters, parameterKeys)
+            .addIfEmpty('filePath', script.commonPipelineEnvironment.getMtarFilePath())
+            .withMandatoryProperty('applicationId')
+            .withMandatoryProperty('changeManagement/changeDocumentLabel')
+            .withMandatoryProperty('changeManagement/clientOpts')
+            .withMandatoryProperty('changeManagement/credentialsId')
+            .withMandatoryProperty('changeManagement/endpoint')
+            .withMandatoryProperty('changeManagement/git/from')
+            .withMandatoryProperty('changeManagement/git/to')
+            .withMandatoryProperty('changeManagement/git/format')
+            .withMandatoryProperty('filePath')
 
         Map configuration = configHelper.use()
+
+        new Utils().pushToSWA([step: STEP_NAME], configuration)
 
         def changeDocumentId = configuration.changeDocumentId
 
@@ -83,15 +86,15 @@ def call(parameters = [:]) {
 
         } else {
 
-          echo "[INFO] Retrieving transport request id from commit history [from: ${configuration.gitFrom}, to: ${configuration.gitTo}]." +
-               " Searching for pattern '${configuration.gitTransportRequestLabel}'. Searching with format '${configuration.gitFormat}'."
+          echo "[INFO] Retrieving transport request id from commit history [from: ${configuration.changeManagement.git.from}, to: ${configuration.changeManagement.git.to}]." +
+               " Searching for pattern '${configuration.changeManagement.transportRequestLabel}'. Searching with format '${configuration.changeManagement.git.format}'."
 
             try {
                 transportRequestId = cm.getTransportRequestId(
-                                                  configuration.gitFrom,
-                                                  configuration.gitTo,
-                                                  configuration.gitTransportRequestLabel,
-                                                  configuration.gitFormat
+                                                  configuration.changeManagement.git.from,
+                                                  configuration.changeManagement.git.to,
+                                                  configuration.changeManagement.transportRequestLabel,
+                                                  configuration.changeManagement.git.format
                                                  )
 
                 echo "[INFO] Transport request id '${transportRequestId}' retrieved from commit history"
@@ -112,24 +115,21 @@ def call(parameters = [:]) {
 
         echo "[INFO] Uploading file '${configuration.filePath}' to transport request '${configuration.transportRequestId}' of change document '${configuration.changeDocumentId}'."
 
-        withCredentials([usernamePassword(
-            credentialsId: configuration.changeManagement.credentialsId,
-            passwordVariable: 'password',
-            usernameVariable: 'username')]) {
-
             try {
+
+
                 cm.uploadFileToTransportRequest(configuration.changeDocumentId,
                                                 configuration.transportRequestId,
                                                 configuration.applicationId,
                                                 configuration.filePath,
                                                 configuration.changeManagement.endpoint,
-                                                username,
-                                                password,
+                                                configuration.changeManagement.credentialsId,
                                                 configuration.changeManagement.clientOpts)
+
             } catch(ChangeManagementException ex) {
                 throw new AbortException(ex.getMessage())
             }
-        }
+
 
         echo "[INFO] File '${configuration.filePath}' has been successfully uploaded to transport request '${configuration.transportRequestId}' of change document '${configuration.changeDocumentId}'."
     }

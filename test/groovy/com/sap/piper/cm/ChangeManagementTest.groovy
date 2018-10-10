@@ -21,6 +21,7 @@ import util.BasePiperTest
 import util.JenkinsLoggingRule
 import util.JenkinsScriptLoaderRule
 import util.JenkinsShellCallRule
+import util.JenkinsCredentialsRule
 import util.Rules
 
 import hudson.AbortException
@@ -37,6 +38,7 @@ public class ChangeManagementTest extends BasePiperTest {
         .around(thrown)
         .around(script)
         .around(logging)
+        .around(new JenkinsCredentialsRule(this).withCredentials('me','user','password'))
 
     @Test
     public void testRetrieveChangeDocumentIdOutsideGitWorkTreeTest() {
@@ -90,8 +92,7 @@ public class ChangeManagementTest extends BasePiperTest {
     public void testIsChangeInDevelopmentReturnsTrueWhenChangeIsInDevelopent() {
 
         script.setReturnValue(JenkinsShellCallRule.Type.REGEX, "cmclient.*is-change-in-development -cID '001'", 0)
-
-        boolean inDevelopment = new ChangeManagement(nullScript, null).isChangeInDevelopment('001', 'endpoint', 'user', 'password')
+        boolean inDevelopment = new ChangeManagement(nullScript, null).isChangeInDevelopment('001', 'endpoint', 'me')
 
         assertThat(inDevelopment, is(equalTo(true)))
         assertThat(script.shell[0], allOf(containsString("cmclient"),
@@ -111,8 +112,7 @@ public class ChangeManagementTest extends BasePiperTest {
         boolean inDevelopment = new ChangeManagement(nullScript, null)
                                     .isChangeInDevelopment('001',
                                                            'endpoint',
-                                                           'user',
-                                                           'password')
+                                                           'me')
 
         assertThat(inDevelopment, is(equalTo(false)))
     }
@@ -124,8 +124,7 @@ public class ChangeManagementTest extends BasePiperTest {
         thrown.expectMessage('Cannot retrieve status for change document \'001\'. Does this change exist? Return code from cmclient: 1.')
 
         script.setReturnValue(JenkinsShellCallRule.Type.REGEX, "cmclient.*is-change-in-development -cID '001'", 1)
-
-        new ChangeManagement(nullScript, null).isChangeInDevelopment('001', 'endpoint', 'user', 'password')
+        new ChangeManagement(nullScript, null).isChangeInDevelopment('001', 'endpoint', 'me')
     }
 
     @Test
@@ -139,7 +138,7 @@ public class ChangeManagementTest extends BasePiperTest {
         commandLine = commandLine.replaceAll(' +', " ")
         assertThat(commandLine, not(containsString("CMCLIENT_OPTS")))
         assertThat(commandLine, containsString("cmclient -e 'https://example.org/cm' -u 'me' -p 'topSecret' -t SOLMAN the-command -key1 val1 -key2 val2"))
-}
+    }
 
 @Test
 public void testGetCommandLineWithCMClientOpts() {
@@ -158,7 +157,7 @@ public void testGetCommandLineWithCMClientOpts() {
     public void testCreateTransportRequestSucceeds() {
 
         script.setReturnValue(JenkinsShellCallRule.Type.REGEX, ".*cmclient.*create-transport -cID 001 -dID 002.*", '004')
-        def transportRequestId = new ChangeManagement(nullScript).createTransportRequest('001', '002', '003', 'me', 'openSesame')
+        def transportRequestId = new ChangeManagement(nullScript).createTransportRequest('001', '002', '003', 'me')
 
         // the check for the transportRequestID is sufficient. This checks implicit the command line since that value is
         // returned only in case the shell call matches.
@@ -180,23 +179,21 @@ public void testGetCommandLineWithCMClientOpts() {
                                                                       'XXX',
                                                                       '/path',
                                                                       'https://example.org/cm',
-                                                                      'me',
-                                                                      'openSesame')
+                                                                      'me')
     }
 
     @Test
     public void testUploadFileToTransportSucceeds() {
 
         // the regex provided below is an implicit check that the command line is fine.
-        script.setReturnValue(JenkinsShellCallRule.Type.REGEX,, 'upload-file-to-transport.*-cID 001 -tID 002 XXX /path', 0)
+        script.setReturnValue(JenkinsShellCallRule.Type.REGEX,, 'upload-file-to-transport.*-cID 001 -tID 002 XXX "/path"', 0)
 
         new ChangeManagement(nullScript).uploadFileToTransportRequest('001',
             '002',
             'XXX',
             '/path',
             'https://example.org/cm',
-            'me',
-            'openSesame')
+            'me')
 
         // no assert required here, since the regex registered above to the script rule is an implicit check for
         // the command line.
@@ -216,9 +213,41 @@ public void testGetCommandLineWithCMClientOpts() {
             'XXX',
             '/path',
             'https://example.org/cm',
+            'me')
+    }
+
+    @Test
+    public void testReleaseTransportRequestSucceeds() {
+
+        // the regex provided below is an implicit check that the command line is fine.
+        script.setReturnValue(JenkinsShellCallRule.Type.REGEX, 'release-transport.*-cID 001.*-tID 002', 0)
+
+        new ChangeManagement(nullScript).releaseTransportRequest('001',
+            '002',
+            'https://example.org',
+            'me',
+            'openSesame')
+
+        // no assert required here, since the regex registered above to the script rule is an implicit check for
+        // the command line.
+    }
+
+    @Test
+    public void testReleaseTransportRequestFails() {
+
+        thrown.expect(ChangeManagementException)
+        thrown.expectMessage("Cannot release Transport Request '002'. Return code from cmclient: 1.")
+
+        // the regex provided below is an implicit check that the command line is fine.
+        script.setReturnValue(JenkinsShellCallRule.Type.REGEX, 'release-transport.*-cID 001.*-tID 002', 1)
+
+        new ChangeManagement(nullScript).releaseTransportRequest('001',
+            '002',
+            'https://example.org',
             'me',
             'openSesame')
     }
+
 
     private GitUtils gitUtilsMock(boolean insideWorkTree, String[] changeIds) {
         return new GitUtils() {

@@ -1,9 +1,8 @@
 import com.cloudbees.groovy.cps.NonCPS
 
 import com.sap.piper.ConfigurationHelper
-import com.sap.piper.ConfigurationMerger
 import com.sap.piper.MapUtils
-
+import com.sap.piper.Utils
 import groovy.transform.Field
 
 @Field List TOOLS = [
@@ -30,9 +29,13 @@ def call(Map parameters = [:]) {
         // load default & individual configuration
         Map configuration = ConfigurationHelper
             .loadStepDefaults(this)
+            .mixinGeneralConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS)
             .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS)
+            .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName ?: env.STAGE_NAME, STEP_CONFIG_KEYS)
             .mixin(parameters, PARAMETER_KEYS)
             .use()
+
+        new Utils().pushToSWA([step: STEP_NAME], configuration)
 
         // UNIT TESTS
         publishJUnitReport(configuration.get('junit'))

@@ -11,11 +11,11 @@ import util.BasePiperTest
 import util.JenkinsCredentialsRule
 import util.JenkinsStepRule
 import util.JenkinsLoggingRule
+import util.JenkinsReadYamlRule
 import util.Rules
 
 import hudson.AbortException
 import hudson.scm.NullSCM
-
 
 public class TransportRequestReleaseTest extends BasePiperTest {
 
@@ -25,6 +25,7 @@ public class TransportRequestReleaseTest extends BasePiperTest {
 
     @Rule
     public RuleChain ruleChain = Rules.getCommonRules(this)
+        .around(new JenkinsReadYamlRule(this))
         .around(thrown)
         .around(jsr)
         .around(jlr)
@@ -83,22 +84,53 @@ public class TransportRequestReleaseTest extends BasePiperTest {
     @Test
     public void releaseTransportRequestFailureTest() {
 
-        helper.registerAllowedMethod('sh', [Map], { Map m -> return 1 })
-
         thrown.expect(AbortException)
-        thrown.expectMessage("Cannot release Transport Request '001'. Return code from cmclient: 1.")
+        thrown.expectMessage("Something went wrong")
 
-        jsr.step.call(script: nullScript, changeDocumentId: '001', transportRequestId: '001')
+        ChangeManagement cm = new ChangeManagement(nullScript) {
+
+            void releaseTransportRequest(String changeId,
+                                         String transportRequestId,
+                                         String endpoint,
+                                         String credentialsId,
+                                         String clientOpts) {
+
+                throw new ChangeManagementException('Something went wrong')
+            }
+        }
+
+        jsr.step.call(script: nullScript, changeDocumentId: '001', transportRequestId: '001', cmUtils: cm)
     }
 
     @Test
     public void releaseTransportRequestSuccessTest() {
 
-        helper.registerAllowedMethod('sh', [Map], { Map m -> return 0 })
+        jlr.expect("[INFO] Closing transport request '002' for change document '001'.")
+        jlr.expect("[INFO] Transport Request '002' has been successfully closed.")
 
-        jsr.step.call(script: nullScript, changeDocumentId: '001', transportRequestId: '001')
+        Map receivedParams = [:]
 
-        assert jlr.log.contains("[INFO] Closing transport request '001' for change document '001'.")
-        assert jlr.log.contains("[INFO] Transport Request '001' has been successfully closed.")
+        ChangeManagement cm = new ChangeManagement(nullScript) {
+            void releaseTransportRequest(String changeId,
+                                         String transportRequestId,
+                                         String endpoint,
+                                         String credentialsId,
+                                         String clientOpts) {
+
+                receivedParams.changeId = changeId
+                receivedParams.transportRequestId = transportRequestId
+                receivedParams.endpoint = endpoint
+                receivedParams.credentialsId = credentialsId
+                receivedParams.clientOpts = clientOpts
+            }
+        }
+
+        jsr.step.call(script: nullScript, changeDocumentId: '001', transportRequestId: '002', cmUtils: cm)
+
+        assert receivedParams == [changeId: '001',
+                                  transportRequestId: '002',
+                                  endpoint: 'https://example.org/cm',
+                                  credentialsId: 'CM',
+                                  clientOpts: '']
     }
 }

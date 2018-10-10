@@ -1,8 +1,7 @@
-import com.sap.piper.GitUtils
+import com.sap.piper.Utils
 import groovy.transform.Field
 
 import com.sap.piper.ConfigurationHelper
-import com.sap.piper.ConfigurationMerger
 import com.sap.piper.cm.ChangeManagement
 import com.sap.piper.cm.ChangeManagementException
 
@@ -31,19 +30,21 @@ def call(parameters = [:]) {
         ChangeManagement cm = parameters.cmUtils ?: new ChangeManagement(script)
 
         ConfigurationHelper configHelper = ConfigurationHelper
-                            .loadStepDefaults(this)
-                            .mixinGeneralConfig(script.commonPipelineEnvironment, generalConfigurationKeys)
-                            .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName?:env.STAGE_NAME, stepConfigurationKeys)
-                            .mixinStepConfig(script.commonPipelineEnvironment, stepConfigurationKeys)
-                            .mixin(parameters, parameterKeys)
-                            .withMandatoryProperty('changeManagement/clientOpts')
-                            .withMandatoryProperty('changeManagement/credentialsId')
-                            .withMandatoryProperty('changeManagement/endpoint')
-                            .withMandatoryProperty('changeManagement/git/to')
-                            .withMandatoryProperty('changeManagement/git/from')
-                            .withMandatoryProperty('changeManagement/git/format')
+            .loadStepDefaults(this)
+            .mixinGeneralConfig(script.commonPipelineEnvironment, generalConfigurationKeys)
+            .mixinStepConfig(script.commonPipelineEnvironment, stepConfigurationKeys)
+            .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName?:env.STAGE_NAME, stepConfigurationKeys)
+            .mixin(parameters, parameterKeys)
+            .withMandatoryProperty('changeManagement/clientOpts')
+            .withMandatoryProperty('changeManagement/credentialsId')
+            .withMandatoryProperty('changeManagement/endpoint')
+            .withMandatoryProperty('changeManagement/git/to')
+            .withMandatoryProperty('changeManagement/git/from')
+            .withMandatoryProperty('changeManagement/git/format')
 
         Map configuration = configHelper.use()
+
+        new Utils().pushToSWA([step: STEP_NAME], configuration)
 
         def transportRequestId = configuration.transportRequestId
 
@@ -108,22 +109,17 @@ def call(parameters = [:]) {
 
         echo "[INFO] Closing transport request '${configuration.transportRequestId}' for change document '${configuration.changeDocumentId}'."
 
-        withCredentials([usernamePassword(
-            credentialsId: configuration.changeManagement.credentialsId,
-            passwordVariable: 'password',
-            usernameVariable: 'username')]) {
-
             try {
                 cm.releaseTransportRequest(configuration.changeDocumentId,
                                            configuration.transportRequestId,
                                            configuration.changeManagement.endpoint,
-                                           username,
-                                           password,
+                                           configuration.changeManagement.credentialsId,
                                            configuration.changeManagement.clientOpts)
+
             } catch(ChangeManagementException ex) {
                 throw new AbortException(ex.getMessage())
             }
-        }
+
 
         echo "[INFO] Transport Request '${configuration.transportRequestId}' has been successfully closed."
     }

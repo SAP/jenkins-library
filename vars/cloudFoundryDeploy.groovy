@@ -46,9 +46,11 @@ def call(Map parameters = [:]) {
             .withMandatoryProperty('cloudFoundry/credentialsId')
             .use()
 
+        utils.pushToSWA([step: STEP_NAME, stepParam1: config.deployTool, stepParam2: config.deployType], config)
+
         echo "[${STEP_NAME}] General parameters: deployTool=${config.deployTool}, deployType=${config.deployType}, cfApiEndpoint=${config.cloudFoundry.apiEndpoint}, cfOrg=${config.cloudFoundry.org}, cfSpace=${config.cloudFoundry.space}, cfCredentialsId=${config.cloudFoundry.credentialsId}, deployUser=${config.deployUser}"
 
-        utils.unstash 'deployDescriptor'
+        config.stashContent = utils.unstashAll(config.stashContent)
 
         if (config.deployTool == 'mtaDeployPlugin') {
             // set default mtar path
@@ -67,9 +69,8 @@ def call(Map parameters = [:]) {
 
             if (config.smokeTestScript == 'blueGreenCheckScript.sh') {
                 writeFile file: config.smokeTestScript, text: libraryResource(config.smokeTestScript)
-            } else {
-                utils.unstash 'pipelineConfigAndTests'
             }
+
             config.smokeTest = '--smoke-test $(pwd)/' + config.smokeTestScript
             sh "chmod +x ${config.smokeTestScript}"
 

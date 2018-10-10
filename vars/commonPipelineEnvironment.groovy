@@ -1,12 +1,12 @@
 class commonPipelineEnvironment implements Serializable {
-    private Map configProperties = [:]
+    Map configProperties = [:]
 
     //stores version of the artifact which is build during pipeline run
     def artifactVersion
 
     //stores the gitCommitId as well as additional git information for the build during pipeline run
-    private String gitCommitId
-    private String gitSshUrl
+    String gitCommitId
+    String gitSshUrl
 
     //stores properties for a pipeline which build an artifact and then bundles it into a container
     private Map appContainerProperties = [:]
@@ -19,7 +19,7 @@ class commonPipelineEnvironment implements Serializable {
     //influxCustomData represents measurement jenkins_custom_data in Influx. Metrics can be written into this map
     private Map influxCustomData = [:]
 
-    private String mtarFilePath
+    String mtarFilePath
 
     def reset() {
         appContainerProperties = [:]
@@ -45,22 +45,6 @@ class commonPipelineEnvironment implements Serializable {
         return appContainerProperties[property]
     }
 
-    def setArtifactVersion(version) {
-        artifactVersion = version
-    }
-
-    def getArtifactVersion() {
-        return artifactVersion
-    }
-
-    def setConfigProperties(map) {
-        configProperties = map
-    }
-
-    def getConfigProperties() {
-        return configProperties
-    }
-
     def setConfigProperty(property, value) {
         configProperties[property] = value
     }
@@ -72,22 +56,6 @@ class commonPipelineEnvironment implements Serializable {
             return configProperties[property]
     }
 
-    def setGitCommitId(commitId) {
-        gitCommitId = commitId
-    }
-
-    def getGitCommitId() {
-        return gitCommitId
-    }
-
-    def setGitSshUrl(url) {
-        gitSshUrl = url
-    }
-
-    def getGitSshUrl() {
-        return gitSshUrl
-    }
-
     def getInfluxCustomData() {
         return influxCustomData
     }
@@ -96,12 +64,11 @@ class commonPipelineEnvironment implements Serializable {
         return influxCustomDataMap
     }
 
-    def getMtarFilePath() {
-        return mtarFilePath
+    def setInfluxStepData (dataKey, value) {
+        influxCustomDataMap.step_data[dataKey] = value
     }
-
-    void setMtarFilePath(mtarFilePath) {
-        this.mtarFilePath = mtarFilePath
+    def getInfluxStepData (dataKey) {
+        return influxCustomDataMap.step_data[dataKey]
     }
 
     def setPipelineMeasurement (measurementName, value) {

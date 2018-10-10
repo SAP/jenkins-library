@@ -10,7 +10,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.sap.cp.jenkins</groupId>
     <artifactId>jenkins-library</artifactId>
-    <version>0.6</version>
+    <version>0.7</version>
 
     <name>SAP CP Piper Library</name>
     <description>Shared library containing steps and utilities to set up continuous deployment processes for SAP technologies.</description>
@@ -38,6 +38,7 @@
     </pluginRepositories>
 
     <properties>
+        <findbugs.skip>true</findbugs.skip>
         <jenkins.version>2.32.3</jenkins.version>
         <pipeline.version>2.5</pipeline.version>
         <cps.global.lib.version>2.6</cps.global.lib.version>

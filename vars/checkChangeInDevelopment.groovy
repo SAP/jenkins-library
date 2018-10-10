@@ -1,4 +1,5 @@
 import com.sap.piper.GitUtils
+import com.sap.piper.Utils
 import groovy.transform.Field
 import hudson.AbortException
 
@@ -29,30 +30,32 @@ def call(parameters = [:]) {
         ChangeManagement cm = parameters?.cmUtils ?: new ChangeManagement(script, gitUtils)
 
         ConfigurationHelper configHelper = ConfigurationHelper
-                                           .loadStepDefaults(this)
-                                           .mixinGeneralConfig(script.commonPipelineEnvironment, generalConfigurationKeys)
-                                           .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName?:env.STAGE_NAME, stepConfigurationKeys)
-                                           .mixinStepConfig(script.commonPipelineEnvironment, stepConfigurationKeys)
-                                           .mixin(parameters, parameterKeys)
-                                            // for the following parameters we expect defaults
-                                           .withMandatoryProperty('changeManagement/changeDocumentLabel')
-                                           .withMandatoryProperty('changeManagement/clientOpts')
-                                           .withMandatoryProperty('changeManagement/credentialsId')
-                                           .withMandatoryProperty('changeManagement/git/from')
-                                           .withMandatoryProperty('changeManagement/git/to')
-                                           .withMandatoryProperty('changeManagement/git/format')
-                                           .withMandatoryProperty('failIfStatusIsNotInDevelopment')
-                                           // for the following parameters we expect a value provided from outside
-                                           .withMandatoryProperty('changeManagement/endpoint')
+            .loadStepDefaults(this)
+            .mixinGeneralConfig(script.commonPipelineEnvironment, generalConfigurationKeys)
+            .mixinStepConfig(script.commonPipelineEnvironment, stepConfigurationKeys)
+            .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName?:env.STAGE_NAME, stepConfigurationKeys)
+            .mixin(parameters, parameterKeys)
+            // for the following parameters we expect defaults
+            .withMandatoryProperty('changeManagement/changeDocumentLabel')
+            .withMandatoryProperty('changeManagement/clientOpts')
+            .withMandatoryProperty('changeManagement/credentialsId')
+            .withMandatoryProperty('changeManagement/git/from')
+            .withMandatoryProperty('changeManagement/git/to')
+            .withMandatoryProperty('changeManagement/git/format')
+            .withMandatoryProperty('failIfStatusIsNotInDevelopment')
+            // for the following parameters we expect a value provided from outside
+            .withMandatoryProperty('changeManagement/endpoint')
 
 
         Map configuration = configHelper.use()
+
+        new Utils().pushToSWA([step: STEP_NAME], configuration)
 
         def changeId = configuration.changeDocumentId
 
         if(changeId?.trim()) {
 
-          echo "[INFO] ChangeDocumentId retrieved from parameters."
+            echo "[INFO] ChangeDocumentId retrieved from parameters."
 
         } else {
 
@@ -85,21 +88,18 @@ def call(parameters = [:]) {
 
         echo "[INFO] Checking if change document '${configuration.changeDocumentId}' is in development."
 
-        withCredentials([usernamePassword(
-            credentialsId: configuration.changeManagement.credentialsId,
-            passwordVariable: 'password',
-            usernameVariable: 'username')]) {
+        try {
 
-            try {
-                isInDevelopment = cm.isChangeInDevelopment(configuration.changeDocumentId,
-                                                           configuration.changeManagement.endpoint,
-                                                           username,
-                                                           password,
-                                                           configuration.changeManagement.clientOpts)
-            } catch(ChangeManagementException ex) {
-                throw new AbortException(ex.getMessage())
-            }
+
+            isInDevelopment = cm.isChangeInDevelopment(configuration.changeDocumentId,
+                configuration.changeManagement.endpoint,
+                configuration.changeManagement.credentialsId,
+                configuration.changeManagement.clientOpts)
+
+        } catch(ChangeManagementException ex) {
+            throw new AbortException(ex.getMessage())
         }
+
 
         if(isInDevelopment) {
             echo "[INFO] Change '${changeId}' is in status 'in development'."

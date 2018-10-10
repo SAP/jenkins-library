@@ -1,5 +1,4 @@
 import org.junit.After
-import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.ExpectedException
@@ -12,6 +11,7 @@ import com.sap.piper.cm.ChangeManagementException
 import hudson.AbortException
 import util.BasePiperTest
 import util.JenkinsCredentialsRule
+import util.JenkinsReadYamlRule
 import util.JenkinsStepRule
 import util.Rules
 
@@ -23,10 +23,11 @@ class CheckChangeInDevelopmentTest extends BasePiperTest {
     @Rule
     public RuleChain ruleChain = Rules
         .getCommonRules(this)
+        .around(new JenkinsReadYamlRule(this))
         .around(thrown)
         .around(jsr)
         .around(new JenkinsCredentialsRule(this)
-            .withCredentials('CM', 'anonymous', '********'))
+        .withCredentials('CM', 'anonymous', '********'))
 
     @After
     public void tearDown() {
@@ -44,12 +45,10 @@ class CheckChangeInDevelopmentTest extends BasePiperTest {
                                     changeManagement: [endpoint: 'https://example.org/cm'])
 
         assert inDevelopment
-
         assert cmUtilReceivedParams == [
             changeId: '001',
             endpoint: 'https://example.org/cm',
-            userName: 'anonymous',
-            password: '********',
+            credentialsId: 'CM',
             cmclientOpts: ''
         ]
     }
@@ -163,11 +162,10 @@ class CheckChangeInDevelopmentTest extends BasePiperTest {
                 return changeDocumentId
             }
 
-            boolean isChangeInDevelopment(String changeId, String endpoint, String userName, String password, String cmclientOpts) {
+            boolean isChangeInDevelopment(String changeId, String endpoint, String credentialsId, String cmclientOpts) {
                 cmUtilReceivedParams.changeId = changeId
                 cmUtilReceivedParams.endpoint = endpoint
-                cmUtilReceivedParams.userName = userName
-                cmUtilReceivedParams.password = password
+                cmUtilReceivedParams.credentialsId = credentialsId
                 cmUtilReceivedParams.cmclientOpts = cmclientOpts
 
                 return inDevelopment

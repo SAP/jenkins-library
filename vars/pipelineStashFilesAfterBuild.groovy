@@ -23,13 +23,15 @@ def call(Map parameters = [:]) {
         Map config = ConfigurationHelper
             .loadStepDefaults(this)
             .mixinGeneralConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS)
-            .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName?:env.STAGE_NAME, STEP_CONFIG_KEYS)
             .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS)
+            .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName?:env.STAGE_NAME, STEP_CONFIG_KEYS)
             .mixin([
                 runCheckmarx: (script.commonPipelineEnvironment.configuration?.steps?.executeCheckmarxScan?.checkmarxProject != null && script.commonPipelineEnvironment.configuration.steps.executeCheckmarxScan.checkmarxProject.length()>0)
             ])
             .mixin(parameters, PARAMETER_KEYS)
             .use()
+
+        new Utils().pushToSWA([step: STEP_NAME], config)
 
         // store files to be checked with checkmarx
         if (config.runCheckmarx) {

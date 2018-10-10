@@ -1,8 +1,7 @@
-import com.sap.piper.GitUtils
+import com.sap.piper.Utils
 import groovy.transform.Field
 
 import com.sap.piper.ConfigurationHelper
-import com.sap.piper.ConfigurationMerger
 import com.sap.piper.cm.ChangeManagement
 import com.sap.piper.cm.ChangeManagementException
 
@@ -29,20 +28,22 @@ def call(parameters = [:]) {
         ChangeManagement cm = parameters.cmUtils ?: new ChangeManagement(script)
 
         ConfigurationHelper configHelper = ConfigurationHelper
-                                            .loadStepDefaults(this)
-                                            .mixinGeneralConfig(script.commonPipelineEnvironment, generalConfigurationKeys)
-                                            .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName?:env.STAGE_NAME, stepConfigurationKeys)
-                                            .mixinStepConfig(script.commonPipelineEnvironment, stepConfigurationKeys)
-                                            .mixin(parameters, parameterKeys)
-                                            .withMandatoryProperty('changeManagement/clientOpts')
-                                            .withMandatoryProperty('changeManagement/credentialsId')
-                                            .withMandatoryProperty('changeManagement/endpoint')
-                                            .withMandatoryProperty('changeManagement/git/from')
-                                            .withMandatoryProperty('changeManagement/git/to')
-                                            .withMandatoryProperty('changeManagement/git/format')
-                                            .withMandatoryProperty('developmentSystemId')
+            .loadStepDefaults(this)
+            .mixinGeneralConfig(script.commonPipelineEnvironment, generalConfigurationKeys)
+            .mixinStepConfig(script.commonPipelineEnvironment, stepConfigurationKeys)
+            .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName?:env.STAGE_NAME, stepConfigurationKeys)
+            .mixin(parameters, parameterKeys)
+            .withMandatoryProperty('changeManagement/clientOpts')
+            .withMandatoryProperty('changeManagement/credentialsId')
+            .withMandatoryProperty('changeManagement/endpoint')
+            .withMandatoryProperty('changeManagement/git/from')
+            .withMandatoryProperty('changeManagement/git/to')
+            .withMandatoryProperty('changeManagement/git/format')
+            .withMandatoryProperty('developmentSystemId')
 
         Map configuration =  configHelper.use()
+
+        new Utils().pushToSWA([step: STEP_NAME], configuration)
 
         def changeDocumentId = configuration.changeDocumentId
 
@@ -79,22 +80,16 @@ def call(parameters = [:]) {
 
         echo "[INFO] Creating transport request for change document '${configuration.changeDocumentId}' and development system '${configuration.developmentSystemId}'."
 
-        withCredentials([usernamePassword(
-            credentialsId: configuration.changeManagement.credentialsId,
-            passwordVariable: 'password',
-            usernameVariable: 'username')]) {
-
             try {
                 transportRequestId = cm.createTransportRequest(configuration.changeDocumentId,
                                                                configuration.developmentSystemId,
                                                                configuration.changeManagement.endpoint,
-                                                               username,
-                                                               password,
+                                                               configuration.changeManagement.credentialsId,
                                                                configuration.changeManagement.clientOpts)
             } catch(ChangeManagementException ex) {
                 throw new AbortException(ex.getMessage())
             }
-        }
+
 
         echo "[INFO] Transport Request '$transportRequestId' has been successfully created."
         return transportRequestId

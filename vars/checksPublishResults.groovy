@@ -1,15 +1,20 @@
 import com.cloudbees.groovy.cps.NonCPS
 
-import com.sap.piper.ConfigurationLoader
-import com.sap.piper.ConfigurationMerger
+import com.sap.piper.ConfigurationHelper
 import com.sap.piper.MapUtils
+import com.sap.piper.Utils
 
 import groovy.transform.Field
 
 @Field def STEP_NAME = 'checksPublishResults'
+
 @Field Set TOOLS = [
     'aggregation', 'tasks', 'pmd', 'cpd', 'findbugs', 'checkstyle', 'eslint', 'pylint'
 ]
+
+@Field Set GENERAL_CONFIG_KEYS = []
+@Field Set STEP_CONFIG_KEYS = TOOLS.plus(['archive'])
+@Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
 
 /**
  * checksPublishResults
@@ -21,29 +26,32 @@ def call(Map parameters = [:]) {
         def script = parameters.script
         if (script == null)
             script = [commonPipelineEnvironment: commonPipelineEnvironment]
-        prepareDefaultValues script: script
+
         prepare(parameters)
 
-        Set configKeys = TOOLS.plus('archive')
+        // load default & individual configuration
+        Map configuration = ConfigurationHelper
+            .loadStepDefaults(this)
+            .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS)
+            .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS)
+            .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName?:env.STAGE_NAME, STEP_CONFIG_KEYS)
+            .mixin(parameters, PARAMETER_KEYS)
+            .use()
 
-        Map configuration = ConfigurationMerger.merge(
-            script, STEP_NAME,
-            parameters, configKeys,
-            configKeys)
+        new Utils().pushToSWA([step: STEP_NAME], configuration)
 
-        def doArchive = configuration.get('archive')
         // JAVA
-        report('PmdPublisher', configuration.get('pmd'), doArchive)
-        report('DryPublisher', configuration.get('cpd'), doArchive)
-        report('FindBugsPublisher', configuration.get('findbugs'), doArchive)
-        report('CheckStylePublisher', configuration.get('checkstyle'), doArchive)
+        report('PmdPublisher', configuration.pmd, configuration.archive)
+        report('DryPublisher', configuration.cpd, configuration.archive)
+        report('FindBugsPublisher', configuration.findbugs, configuration.archive)
+        report('CheckStylePublisher', configuration.checkstyle, configuration.archive)
         // JAVA SCRIPT
-        reportWarnings('JSLint', configuration.get('eslint'), doArchive)
+        reportWarnings('JSLint', configuration.eslint, configuration.archive)
         // PYTHON
-        reportWarnings('PyLint', configuration.get('pylint'), doArchive)
+        reportWarnings('PyLint', configuration.pylint, configuration.archive)
         // GENERAL
-        reportTasks(configuration.get('tasks'))
-        aggregateReports(configuration.get('aggregation'))
+        reportTasks(configuration.tasks)
+        aggregateReports(configuration.aggregation)
     }
 }
 

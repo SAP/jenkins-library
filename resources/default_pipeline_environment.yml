@@ -1,30 +1,61 @@
 #Project Setup
 general:
   productiveBranch: 'master'
+  collectTelemetryData: true
   changeManagement:
-      transportRequestLabel: 'TransportRequest\s?:'
-      changeDocumentLabel: 'ChangeDocument\s?:'
-      clientOpts: ''
-      credentialsId: 'CM'
-      git:
-        from: 'origin/master'
-        to: 'HEAD'
-        format: '%b'
+    transportRequestLabel: 'TransportRequest\s?:'
+    changeDocumentLabel: 'ChangeDocument\s?:'
+    clientOpts: ''
+    credentialsId: 'CM'
+    git:
+      from: 'origin/master'
+      to: 'HEAD'
+      format: '%b'
+  gitSshKeyCredentialsId: '' #needed to allow sshagent to run with local ssh key
+  jenkinsKubernetes:
+    jnlpAgent: 's4sdk/jenkins-agent-k8s:latest'
+
 #Steps Specific Configuration
 steps:
   artifactSetVersion:
     timestampTemplate: '%Y%m%d%H%M%S'
     tagPrefix: 'build_'
     commitVersion: true
+    dlang:
+      filePath: 'dub.json'
+      versioningTemplate: '${version}-${timestamp}${commitId?"+"+commitId:""}'
     docker:
       filePath: 'Dockerfile'
       versioningTemplate: '${version}-${timestamp}${commitId?"_"+commitId:""}'
+    golang:
+      filePath: 'VERSION'
+      versioningTemplate: '${version}-${timestamp}${commitId?"+"+commitId:""}'
     maven:
       filePath: 'pom.xml'
       versioningTemplate: '${version}-${timestamp}${commitId?"_"+commitId:""}'
     mta:
       filePath: 'mta.yaml'
       versioningTemplate: '${version}-${timestamp}${commitId?"+"+commitId:""}'
+    npm:
+      filePath: 'package.json'
+      versioningTemplate: '${version}-${timestamp}${commitId?"+"+commitId:""}'
+    pip:
+      filePath: 'version.txt'
+      versioningTemplate: '${version}.${timestamp}${commitId?"."+commitId:""}'
+    sbt:
+      filePath: 'sbtDescriptor.json'
+      versioningTemplate: '${version}-${timestamp}${commitId?"+"+commitId:""}'
+  batsExecuteTests:
+    dockerImage: 'node:8-stretch'
+    dockerWorkspace: '/home/node'
+    envVars: {}
+    outputFormat: 'junit' # tap, junit
+    testPath: 'src/test'
+    failOnError: false
+    repository: 'https://github.com/bats-core/bats-core.git'
+    stashContent:
+      - 'tests'
+    testPackage: 'piper-bats'
   checksPublishResults:
     aggregation:
       active: true
@@ -94,13 +125,20 @@ steps:
     mtaPath: ''
     smokeTestScript: 'blueGreenCheckScript.sh'
     smokeTestStatusCode: 200
-    stashContent: []
+    stashContent:
+      - 'deployDescriptor'
+      - 'pipelineConfigAndTests'
     cf_native:
       dockerImage: 's4sdk/docker-cf-cli'
       dockerWorkspace: '/home/piper'
     mtaDeployPlugin:
       dockerImage: 's4sdk/docker-cf-cli'
       dockerWorkspace: '/home/piper'
+  dockerExecuteOnKubernetes:
+    stashIncludes:
+      workspace: '**/*.*'
+    stashExcludes:
+      workspace: 'nohup.out'
   influxWriteData:
     influxServer: 'jenkins'
   mavenExecute:
@@ -122,6 +160,8 @@ steps:
     newmanEnvironment: ''
     newmanGlobals: ''
     newmanRunCommand: "run ${config.newmanCollection} --environment '${config.newmanEnvironment}' --globals '${config.newmanGlobals}' --reporters junit,html --reporter-junit-export target/newman/TEST-${collectionDisplayName}.xml --reporter-html-export target/newman/TEST-${collectionDisplayName}.html"
+    stashContent:
+      - 'tests'
   pipelineStashFilesAfterBuild:
     runOpaTests: false
     stashIncludes:
@@ -152,6 +192,28 @@ steps:
       pipelineConfigAndTests: ''
       securityDescriptor: ''
       tests: ''
+  seleniumExecuteTests:
+    buildTool: 'npm'
+    containerPortMappings:
+      'selenium/standalone-chrome':
+        - containerPort: 4444
+          hostPort: 4444
+    dockerLinkAlias: 'selenium'
+    failOnError: true
+    sidecarImage: 'selenium/standalone-chrome'
+    sidecarName: 'selenium'
+    sidecarVolumeBind:
+      '/dev/shm': '/dev/shm'
+    stashContent:
+      - 'tests'
+    maven:
+      dockerImage: 'maven:3.5-jdk-7'
+      dockerName: 'maven'
+      dockerWorkspace: ''
+    npm:
+      dockerImage: 'node:8-stretch'
+      dockerName: 'npm'
+      dockerWorkspace: '/home/node'
   snykExecute:
     buildDescriptorFile: './package.json'
     dockerImage: 'node:8-stretch'

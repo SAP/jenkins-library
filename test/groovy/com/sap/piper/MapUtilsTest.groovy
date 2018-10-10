@@ -43,4 +43,11 @@ class MapUtilsTest {
                                            c: [ d: 'abc',
                                                 e: '']]
     }
+
+    @Test
+    void testTraverse() {
+        Map m = [a: 'x1', m:[b: 'x2', c: 'otherString']]
+        MapUtils.traverse(m, { s -> (s.startsWith('x')) ? "replaced" : s})
+        assert m == [a: 'replaced', m: [b: 'replaced', c: 'otherString']]
+    }
 }
