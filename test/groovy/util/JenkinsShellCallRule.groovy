@@ -28,6 +28,8 @@ class JenkinsShellCallRule implements TestRule {
     List shell = []
 
     Map<Key, String> returnValues = [:]
+    Map<Key, String> returnStatus = [:]
+
 
     JenkinsShellCallRule(BasePipelineTest testInstance) {
         this.testInstance = testInstance
@@ -39,6 +41,10 @@ class JenkinsShellCallRule implements TestRule {
 
     def setReturnValue(type, script, value) {
         returnValues[new Key(type, script)] = value
+    }
+
+    def setReturnStatus(script, value) {
+        returnStatus[unify(script)] = value
     }
 
     @Override
@@ -59,8 +65,8 @@ class JenkinsShellCallRule implements TestRule {
                 testInstance.helper.registerAllowedMethod("sh", [Map.class], {
                     m ->
                         shell.add(m.script.replaceAll(/\s+/," ").trim())
+                        def unifiedScript = unify(m.script)
                         if (m.returnStdout || m.returnStatus) {
-                            def unifiedScript = unify(m.script)
                             def result = null
                             for(def e : returnValues.entrySet()) {
                                 if(e.key.type == Type.REGEX && unifiedScript =~ e.key.script) {
@@ -73,6 +79,13 @@ class JenkinsShellCallRule implements TestRule {
                             }
                             if(result instanceof Closure) result = result()
                             return result
+                        } else if (m.returnStatus) {
+                            if (returnStatus[unifiedScript]) {
+                                return returnStatus[unifiedScript]
+                            } else {
+                                return 0
+                            }
+
                         }
                 })
 

@@ -13,6 +13,7 @@ nav:
         - durationMeasure: steps/durationMeasure.md
         - handlePipelineStepErrors: steps/handlePipelineStepErrors.md
         - influxWriteData: steps/influxWriteData.md
+        - mailSendNotification: steps/mailSendNotification.md
         - mavenExecute: steps/mavenExecute.md
         - mtaBuild: steps/mtaBuild.md
         - neoDeploy: steps/neoDeploy.md
