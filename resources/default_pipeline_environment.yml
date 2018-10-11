@@ -207,7 +207,7 @@ steps:
     stashContent:
       - 'tests'
     maven:
-      dockerImage: 'maven:3.5-jdk-7'
+      dockerImage: 'maven:3.5-jdk-8'
       dockerName: 'maven'
       dockerWorkspace: ''
     npm:
