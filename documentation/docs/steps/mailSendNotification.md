@@ -40,7 +40,7 @@ mailSendNotification script: this
 ### Details:
 
 * `script` defines the global script environment of the Jenkinsfile run. Typically `this` is passed to this parameter. This allows the function to access the [`commonPipelineEnvironment`](commonPipelineEnvironment.md) for storing the measured duration.
-* `buildResult` may be used to overrule the build result coming from `currentBuild.result`. This is for example used in the step [`pipelineRestartSteps`](pipelineRestartSteps.md)
+* `buildResult` may be used to overrule the build result coming from `currentBuild.result`. This is for example used in the step `pipelineRestartSteps`
 * `gitCommitId` defines a dedicated git commitId for culprit retrieval.
 * `gitUrl` and `gitCommitId` are used to retrieve culprit information.
 * `gitSshKeyCredentialsId` only required if your git repository is protected. It defines the credentialsId for the git ssh credentials.
