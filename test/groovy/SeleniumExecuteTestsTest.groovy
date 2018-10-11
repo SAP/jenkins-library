@@ -47,6 +47,7 @@ class SeleniumExecuteTestsTest extends BasePiperTest {
         }
         assertThat(bodyExecuted, is(true))
         assertThat(jedr.dockerParams.containerPortMappings, is(['selenium/standalone-chrome': [[containerPort: 4444, hostPort: 4444]]]))
+        assertThat(jedr.dockerParams.dockerEnvVars, is(null))
         assertThat(jedr.dockerParams.dockerImage, is('node:8-stretch'))
         assertThat(jedr.dockerParams.dockerName, is('npm'))
         assertThat(jedr.dockerParams.dockerWorkspace, is('/home/node'))
@@ -56,6 +57,20 @@ class SeleniumExecuteTestsTest extends BasePiperTest {
         assertThat(jedr.dockerParams.sidecarVolumeBind, is(['/dev/shm': '/dev/shm']))
     }
 
+    @Test
+    void testExecuteSeleniumCustomBuildTool() {
+        jsr.step.seleniumExecuteTests(
+            script: nullScript,
+            buildTool: 'maven',
+            juStabUtils: utils
+        ) {
+            bodyExecuted = true
+        }
+        assertThat(bodyExecuted, is(true))
+        assertThat(jedr.dockerParams.dockerImage, is('maven:3.5-jdk-7'))
+        assertThat(jedr.dockerParams.dockerName, is('maven'))
+        assertThat(jedr.dockerParams.dockerWorkspace, is(''))
+    }
     @Test
     void testExecuteSeleniumError() {
         thrown.expectMessage('Error occured')

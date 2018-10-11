@@ -78,6 +78,7 @@ webdriverio
 | ----------|-----------|---------|-----------------|
 |script|yes|||
 |containerPortMappings|no|`[selenium/standalone-chrome:[[containerPort:4444, hostPort:4444]]]`||
+|dockerEnvVars|no|||
 |dockerImage|no|buildTool=`maven`: `maven:3.5-jdk-7`<br />buildTool=`npm`: `node:8-stretch`<br />||
 |dockerName|no|buildTool=`maven`: `maven`<br />buildTool=`npm`: `npm`<br />||
 |dockerWorkspace|no|buildTool=`maven`: ``<br />buildTool=`npm`: `/home/node`<br />||
@@ -93,6 +94,7 @@ webdriverio
 
 * `script` defines the global script environment of the Jenkinsfile run. Typically `this` is passed to this parameter. This allows the function to access the [`commonPipelineEnvironment`](commonPipelineEnvironment.md) for storing the measured duration.
 * `containerPortMappings`, see step [dockerExecute](dockerExecute.md)
+* `dockerEnvVars`, see step [dockerExecute](dockerExecute.md)
 * `dockerImage`, see step [dockerExecute](dockerExecute.md)
 * `dockerName`, see step [dockerExecute](dockerExecute.md)
 * `dockerWorkspace`, see step [dockerExecute](dockerExecute.md)
@@ -114,6 +116,7 @@ In following sections the configuration is possible:
 | ----------|-----------|---------|-----------------|
 |script||||
 |containerPortMappings|X|X|X|
+|dockerEnvVars|X|X|X|
 |dockerImage|X|X|X|
 |dockerName|X|X|X|
 |dockerWorkspace|X|X|X|
