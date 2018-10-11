@@ -118,7 +118,6 @@ public class TransportRequestCreateTest extends BasePiperTest {
                 result.developmentSystemId = developmentSystemId
                 result.cmEndpoint = cmEndpoint
                 result.credentialId = credentialId
-
                 result.clientOpts = clientOpts
                 return '001'
             }
