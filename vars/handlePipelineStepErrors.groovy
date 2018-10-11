@@ -1,3 +1,7 @@
+import groovy.transform.Field
+
+@Field STEP_NAME = 'handlePipelineStepErrors'
+
 
 def call(Map parameters = [:], body) {
 
