@@ -143,7 +143,7 @@ steps:
     buildTool: 'maven'
     dockerEnvVars:
       HUB: 'TRUE'
-      HUB_URL': 'http://localhost:4444/wd/hub'
+      HUB_URL: 'http://localhost:4444/wd/hub'
     failOnError: false
     installCommand: 'curl -SsL https://downloads.gauge.org/stable | sh -s -- --location=$HOME/bin/gauge'
     stashContent:
