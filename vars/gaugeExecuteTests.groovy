@@ -70,7 +70,7 @@ void call(Map parameters = [:]) {
                         if [ "$HOME" = "/" ]; then export HOME=$(pwd); fi
                         export PATH=$HOME/bin/gauge:$PATH
                         mkdir -p $HOME/bin/gauge
-                        ''' + 'curl -SsL https://downloads.gauge.org/stable | sh -s -- --location=$(pwd)/bin/gauge' + '''
+                        ''' + config.installCommand + '''
                         gauge telemetry off
                         gauge install ''' + config.languageRunner + '''
                         gauge install html-report
