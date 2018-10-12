@@ -1,7 +1,6 @@
 package com.sap.piper
 
 import com.cloudbees.groovy.cps.NonCPS
-import com.sap.piper.MapUtils
 
 class ConfigurationMerger {
     @NonCPS

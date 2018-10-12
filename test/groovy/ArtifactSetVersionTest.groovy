@@ -23,6 +23,7 @@ import static org.hamcrest.Matchers.hasItem
 import static org.hamcrest.Matchers.hasItems
 import static org.hamcrest.Matchers.not
 import static org.hamcrest.Matchers.notNullValue
+import static org.hamcrest.Matchers.stringContainsInOrder
 import static org.hamcrest.Matchers.containsString
 import static org.junit.Assert.assertThat
 
@@ -90,10 +91,13 @@ class ArtifactSetVersionTest extends BasePiperTest {
         assertEquals('testCommitId', jer.env.getGitCommitId())
 
         assertThat(jscr.shell, hasItem("mvn --file 'pom.xml' --batch-mode -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn versions:set -DnewVersion=1.2.3-20180101010203_testCommitId -DgenerateBackupPoms=false"))
-        assertThat(jscr.shell, hasItems(containsString("git add ."),
-                                        containsString("git commit -m 'update version 1.2.3-20180101010203_testCommitId'"),
-                                        containsString('git tag build_1.2.3-20180101010203_testCommitId'),
-                                        containsString('git push myGitSshUrl build_1.2.3-20180101010203_testCommitId')))
+        assertThat(jscr.shell.join(), stringContainsInOrder([
+                                            "git add .",
+                                            "git commit -m 'update version 1.2.3-20180101010203_testCommitId'",
+                                            'git tag build_1.2.3-20180101010203_testCommitId',
+                                            'git push myGitSshUrl build_1.2.3-20180101010203_testCommitId',
+                                            ]
+                                        ))
     }
 
     @Test
