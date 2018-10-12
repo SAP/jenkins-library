@@ -67,7 +67,7 @@ class SeleniumExecuteTestsTest extends BasePiperTest {
             bodyExecuted = true
         }
         assertThat(bodyExecuted, is(true))
-        assertThat(jedr.dockerParams.dockerImage, is('maven:3.5-jdk-7'))
+        assertThat(jedr.dockerParams.dockerImage, is('maven:3.5-jdk-8'))
         assertThat(jedr.dockerParams.dockerName, is('maven'))
         assertThat(jedr.dockerParams.dockerWorkspace, is(''))
     }

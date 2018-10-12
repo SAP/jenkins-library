@@ -52,7 +52,7 @@ class GaugeExecuteTestsTest extends BasePiperTest {
             'if [ "$HOME" = "/" ]; then export HOME=$(pwd); fi',
             'export PATH=$HOME/bin/gauge:$PATH',
             'mkdir -p $HOME/bin/gauge',
-            'curl -SsL https://downloads.gauge.org/stable | sh -s -- --location=$(pwd)/bin/gauge',
+            'curl -SsL https://downloads.gauge.org/stable | sh -s -- --location=$HOME/bin/gauge',
             'gauge telemetry off',
             'gauge install java',
             'gauge install html-report',
