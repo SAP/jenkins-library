@@ -63,7 +63,7 @@ void call(Map parameters = [:]) {
             dockerWorkspace: config.dockerWorkspace,
             stashContent: config.stashContent
         ) {
-            def gaugeScript = ''
+            String gaugeScript = ''
             if (config.installCommand) {
                 if (config.installCommand) {
                     gaugeScript = '''export HOME=${HOME:-$(pwd)}
