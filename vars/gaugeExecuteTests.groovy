@@ -68,9 +68,9 @@ void call(Map parameters = [:]) {
                 gaugeScript = '''export HOME=${HOME:-$(pwd)}
                 if [ "$HOME" = "/" ]; then export HOME=$(pwd); fi
                 export PATH=$HOME/bin/gauge:$PATH
-                mkdir -p $HOME/bin/gauge
-                ''' + config.installCommand + '''
-                gauge telemetry off
+                mkdir -p $HOME/bin/gauge''' + '\n' +
+                config.installCommand + '\n' +
+                '''gauge telemetry off
                 gauge install ''' + config.languageRunner + '''
                 gauge install html-report
                 gauge install xml-report
