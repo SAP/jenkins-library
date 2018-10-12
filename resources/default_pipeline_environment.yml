@@ -145,7 +145,7 @@ steps:
       HUB: 'TRUE'
       HUB_URL': 'http://localhost:4444/wd/hub'
     failOnError: false
-    installCommand: 'curl -SsL https://downloads.gauge.org/stable | sh -s -- --location=$(pwd)/bin/gauge'
+    installCommand: 'curl -SsL https://downloads.gauge.org/stable | sh -s -- --location=$HOME/bin/gauge'
     stashContent:
       - 'buildDescriptor'
       - 'tests'
