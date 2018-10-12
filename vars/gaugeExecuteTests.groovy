@@ -79,6 +79,8 @@ void call(Map parameters = [:]) {
 
             gaugeScript += config.runCommand
 
+            echo gaugeScript
+
             try {
                 sh "${gaugeScript} ${config.testOptions}"
                 script.commonPipelineEnvironment.setInfluxStepData('gauge', true)
