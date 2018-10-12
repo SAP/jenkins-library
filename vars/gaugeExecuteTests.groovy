@@ -65,16 +65,16 @@ void call(Map parameters = [:]) {
         ) {
             def gaugeScript = ''
             if (config.installCommand) {
-                gaugeScript = '''export HOME=${HOME:-$(pwd)}
-                if [ "$HOME" = "/" ]; then export HOME=$(pwd); fi
-                export PATH=$HOME/bin/gauge:$PATH
-                mkdir -p $HOME/bin/gauge''' + '\n' +
-                config.installCommand + '\n' +
-                '''gauge telemetry off
-                gauge install ''' + config.languageRunner + '''
-                gauge install html-report
-                gauge install xml-report
-                '''
+                gaugeScript = """#!/usr/bin/env bash
+export HOME=\${HOME:-\$(pwd)}
+if [ "\$HOME" = "/" ]; then export HOME=\$(pwd); fi
+export PATH=\$HOME/bin/gauge:\$PATH
+mkdir -p \$HOME/bin/gauge
+${config.installCommand}
+gauge telemetry off
+gauge install ${config.languageRunner}
+gauge install html-report
+gauge install xml-report"""
             }
 
             gaugeScript += config.runCommand
