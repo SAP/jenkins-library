@@ -3,7 +3,10 @@ import com.sap.piper.ConfigurationHelper
 import groovy.transform.Field
 
 @Field String STEP_NAME = 'healthExecuteCheck'
-@Field Set STEP_CONFIG_KEYS = ['healthEndpoint', 'testServerUrl']
+@Field Set STEP_CONFIG_KEYS = [
+    'healthEndpoint', 
+    'testServerUrl'
+]
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
 
 void call(Map parameters = [:]) {
@@ -19,8 +22,12 @@ void call(Map parameters = [:]) {
             .withMandatoryProperty('testServerUrl')
             .use()
 
-        def delimiter = config.testServerUrl.endsWith('/') ? '' : '/'
-        def checkUrl = config.testServerUrl + (config.healthEndpoint ? "${delimiter}${config.healthEndpoint}" : '')
+        def checkUrl = config.testServerUrl
+        if(config.healthEndpoint){
+            if(!checkUrl.endsWith('/'))
+                checkUrl += '/'
+            checkUrl += config.healthEndpoint
+        }
 
         def statusCode = curl(checkUrl)
         if (statusCode != '200') {
