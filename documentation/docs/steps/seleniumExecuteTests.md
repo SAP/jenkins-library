@@ -77,9 +77,10 @@ webdriverio
 | parameter | mandatory | default | possible values |
 | ----------|-----------|---------|-----------------|
 |script|yes|||
+|buildTool|no|`npm`|`maven`, `npm`|
 |containerPortMappings|no|`[selenium/standalone-chrome:[[containerPort:4444, hostPort:4444]]]`||
 |dockerEnvVars|no|||
-|dockerImage|no|buildTool=`maven`: `maven:3.5-jdk-7`<br />buildTool=`npm`: `node:8-stretch`<br />||
+|dockerImage|no|buildTool=`maven`: `maven:3.5-jdk-8`<br />buildTool=`npm`: `node:8-stretch`<br />||
 |dockerName|no|buildTool=`maven`: `maven`<br />buildTool=`npm`: `npm`<br />||
 |dockerWorkspace|no|buildTool=`maven`: ``<br />buildTool=`npm`: `/home/node`<br />||
 |failOnError|no|`true`||
@@ -93,6 +94,7 @@ webdriverio
 |testRepository|no|||
 
 * `script` defines the global script environment of the Jenkinsfile run. Typically `this` is passed to this parameter. This allows the function to access the [`commonPipelineEnvironment`](commonPipelineEnvironment.md) for storing the measured duration.
+* `buildTool` defines the build tool to be used for the test execution.
 * `containerPortMappings`, see step [dockerExecute](dockerExecute.md)
 * `dockerEnvVars`, see step [dockerExecute](dockerExecute.md)
 * `dockerImage`, see step [dockerExecute](dockerExecute.md)
@@ -115,6 +117,7 @@ In following sections the configuration is possible:
 | parameter | general | step | stage |
 | ----------|-----------|---------|-----------------|
 |script||||
+|buildTool||X|X|
 |containerPortMappings|X|X|X|
 |dockerEnvVars|X|X|X|
 |dockerImage|X|X|X|
