@@ -13,6 +13,7 @@ nav:
         - dockerExecuteOnKubernetes: steps/dockerExecuteOnKubernetes.md
         - durationMeasure: steps/durationMeasure.md
         - handlePipelineStepErrors: steps/handlePipelineStepErrors.md
+        - healthExecuteCheck: steps/healthExecuteCheck.md
         - influxWriteData: steps/influxWriteData.md
         - mailSendNotification: steps/mailSendNotification.md
         - mavenExecute: steps/mavenExecute.md
