@@ -28,8 +28,6 @@ class JenkinsShellCallRule implements TestRule {
     List shell = []
 
     Map<Key, String> returnValues = [:]
-    Map<Key, String> returnStatus = [:]
-
 
     JenkinsShellCallRule(BasePipelineTest testInstance) {
         this.testInstance = testInstance
