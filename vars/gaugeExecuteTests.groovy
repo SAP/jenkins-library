@@ -42,7 +42,7 @@ void call(Map parameters = [:]) {
             .dependingOn('buildTool').mixin('testOptions')
             .use()
 
-        utils.pushToSWA([step: STEP_NAME], config)
+        utils.pushToSWA([step: STEP_NAME, stepParam1: config.buildTool, stepParam2: config.dockerName], config)
 
         if(!config.dockerEnvVars.TARGET_SERVER_URL && config.testServerUrl)
             config.dockerEnvVars.TARGET_SERVER_URL = config.testServerUrl
@@ -65,18 +65,16 @@ void call(Map parameters = [:]) {
         ) {
             String gaugeScript = ''
             if (config.installCommand) {
-                if (config.installCommand) {
-                    gaugeScript = '''export HOME=${HOME:-$(pwd)}
-                        if [ "$HOME" = "/" ]; then export HOME=$(pwd); fi
-                        export PATH=$HOME/bin/gauge:$PATH
-                        mkdir -p $HOME/bin/gauge
-                        ''' + config.installCommand + '''
-                        gauge telemetry off
-                        gauge install ''' + config.languageRunner + '''
-                        gauge install html-report
-                        gauge install xml-report
-                        '''
-                }
+                gaugeScript = '''export HOME=${HOME:-$(pwd)}
+                    if [ "$HOME" = "/" ]; then export HOME=$(pwd); fi
+                    export PATH=$HOME/bin/gauge:$PATH
+                    mkdir -p $HOME/bin/gauge
+                    ''' + config.installCommand + '''
+                    gauge telemetry off
+                    gauge install ''' + config.languageRunner + '''
+                    gauge install html-report
+                    gauge install xml-report
+                    '''
             }
             gaugeScript += config.runCommand
 
