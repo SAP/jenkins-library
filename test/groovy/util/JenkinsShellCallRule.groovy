@@ -61,8 +61,8 @@ class JenkinsShellCallRule implements TestRule {
                 testInstance.helper.registerAllowedMethod("sh", [Map.class], {
                     m ->
                         shell.add(m.script.replaceAll(/\s+/," ").trim())
-                        def unifiedScript = unify(m.script)
                         if (m.returnStdout || m.returnStatus) {
+                            def unifiedScript = unify(m.script)
                             def result = null
                             for(def e : returnValues.entrySet()) {
                                 if(e.key.type == Type.REGEX && unifiedScript =~ e.key.script) {
