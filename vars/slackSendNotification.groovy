@@ -1,5 +1,5 @@
 import com.sap.piper.ConfigurationHelper
-
+import com.sap.piper.Utils
 import groovy.transform.Field
 import groovy.text.SimpleTemplateEngine
 
@@ -17,6 +17,8 @@ void call(Map parameters = [:]) {
             .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName?:env.STAGE_NAME, STEP_CONFIG_KEYS)
             .mixin(parameters, PARAMETER_KEYS)
             .use()
+
+        new Utils().pushToSWA([step: STEP_NAME], config)
 
         def buildStatus = script.currentBuild.result
         // resolve templates
