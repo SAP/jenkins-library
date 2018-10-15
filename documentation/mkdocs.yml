@@ -11,6 +11,7 @@ nav:
         - dockerExecute: steps/dockerExecute.md
         - dockerExecuteOnKubernetes: steps/dockerExecuteOnKubernetes.md
         - durationMeasure: steps/durationMeasure.md
+        - githubPublishRelease: steps/githubPublishRelease.md
         - handlePipelineStepErrors: steps/handlePipelineStepErrors.md
         - healthExecuteCheck: steps/healthExecuteCheck.md
         - influxWriteData: steps/influxWriteData.md
