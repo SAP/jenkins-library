@@ -43,10 +43,6 @@ class JenkinsShellCallRule implements TestRule {
         returnValues[new Key(type, script)] = value
     }
 
-    def setReturnStatus(script, value) {
-        returnStatus[unify(script)] = value
-    }
-
     @Override
     Statement apply(Statement base, Description description) {
         return statement(base)
@@ -78,14 +74,8 @@ class JenkinsShellCallRule implements TestRule {
                                 }
                             }
                             if(result instanceof Closure) result = result()
+                            if (!result && m.returnStatus) result = 0
                             return result
-                        } else if (m.returnStatus) {
-                            if (returnStatus[unifiedScript]) {
-                                return returnStatus[unifiedScript]
-                            } else {
-                                return 0
-                            }
-
                         }
                 })
 

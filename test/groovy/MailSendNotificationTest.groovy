@@ -82,7 +82,7 @@ user3@domain.com noreply+github@domain.com'''
     @Test
     void testCulpritsWithEmptyGitCommit() throws Exception {
 
-        jscr.setReturnStatus('git log > /dev/null 2>&1',1)
+        jscr.setReturnValue('git log > /dev/null 2>&1',1)
 
         jsr.step.getCulprits(
             [
@@ -99,7 +99,7 @@ user3@domain.com noreply+github@domain.com'''
     @Test
     void testCulpritsWithoutGitCommit() throws Exception {
 
-        jscr.setReturnStatus('git log > /dev/null 2>&1',1)
+        jscr.setReturnValue('git log > /dev/null 2>&1',1)
 
         jsr.step.getCulprits(
             [
@@ -116,7 +116,7 @@ user3@domain.com noreply+github@domain.com'''
     @Test
     void testCulpritsWithoutBranch() throws Exception {
 
-        jscr.setReturnStatus('git log > /dev/null 2>&1',1)
+        jscr.setReturnValue('git log > /dev/null 2>&1',1)
 
         jsr.step.getCulprits(
             [

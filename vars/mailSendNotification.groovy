@@ -1,5 +1,5 @@
 import com.sap.piper.ConfigurationHelper
-
+import com.sap.piper.Utils
 import groovy.text.SimpleTemplateEngine
 import groovy.transform.Field
 
@@ -38,6 +38,8 @@ void call(Map parameters = [:]) {
             )
             .mixin(parameters, PARAMETER_KEYS)
             .use()
+
+        new Utils().pushToSWA([step: STEP_NAME], config)
 
         //this takes care that terminated builds due to milestone-locking do not cause an error
         if (script.commonPipelineEnvironment.getBuildResult() == 'ABORTED') return
@@ -119,8 +121,11 @@ def getCulpritCommitters(config, currentBuild) {
             }
         }
     }else{
-        recipients = getCulprits(config, env.BRANCH_NAME, numberOfCommits)
-        deleteDir()
+        try{
+            recipients = getCulprits(config, env.BRANCH_NAME, numberOfCommits)
+        }finally{
+            deleteDir()
+        }
     }
     echo "[${STEP_NAME}] last ${numberOfCommits} commits revealed following responsibles ${recipients}"
     return recipients
@@ -128,26 +133,29 @@ def getCulpritCommitters(config, currentBuild) {
 
 def getCulprits(config, branch, numberOfCommits) {
     if (branch?.startsWith('PR-')) {
+        //special GitHub Pull Request handling
         deleteDir()
         sshagent(
             credentials: [config.gitSshKeyCredentialsId],
             ignoreMissing: true
         ) {
-            sh 'git init'
             def pullRequestID = branch.replaceAll('PR-', '')
             def localBranchName = "pr" + pullRequestID;
-            sh "git fetch ${config.gitUrl} pull/${pullRequestID}/head:${localBranchName} > /dev/null 2>&1"
-            sh "git checkout -f ${localBranchName} > /dev/null 2>&1"
+            sh """git init
+git fetch ${config.gitUrl} pull/${pullRequestID}/head:${localBranchName} > /dev/null 2>&1
+git checkout -f ${localBranchName} > /dev/null 2>&1
+"""
         }
     } else {
+        //standard git/GitHub handling
         if (config.gitCommitId) {
             deleteDir()
             sshagent(
                 credentials: [config.gitSshKeyCredentialsId],
                 ignoreMissing: true
             ) {
-                sh "git clone ${config.gitUrl} ."
-                sh "git checkout ${config.gitCommitId} > /dev/null 2>&1"
+                sh """git clone ${config.gitUrl} .
+git checkout ${config.gitCommitId} > /dev/null 2>&1"""
             }
         } else {
             def retCode = sh(returnStatus: true, script: 'git log > /dev/null 2>&1')
