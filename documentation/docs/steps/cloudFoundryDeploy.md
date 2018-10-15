@@ -106,7 +106,11 @@ The following parameters can also be specified as step/stage/general parameters 
 ## Example
 
 ```groovy
-artifactSetVersion script: this, buildTool: 'maven'
+cloudFoundryDeploy(
+    script: script,
+    deployType: 'blue-green',
+    cloudFoundry: target,
+    deployTool: 'cf_native'
+)
 ```
-
 
