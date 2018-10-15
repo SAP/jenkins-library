@@ -1,10 +1,10 @@
 import com.sap.piper.ConfigurationHelper
-
+import com.sap.piper.Utils
 import groovy.transform.Field
 
 @Field String STEP_NAME = 'healthExecuteCheck'
 @Field Set STEP_CONFIG_KEYS = [
-    'healthEndpoint', 
+    'healthEndpoint',
     'testServerUrl'
 ]
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
@@ -21,6 +21,8 @@ void call(Map parameters = [:]) {
             .mixin(parameters, PARAMETER_KEYS)
             .withMandatoryProperty('testServerUrl')
             .use()
+
+        new Utils().pushToSWA([step: STEP_NAME], config)
 
         def checkUrl = config.testServerUrl
         if(config.healthEndpoint){
