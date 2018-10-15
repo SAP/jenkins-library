@@ -269,3 +269,12 @@ steps:
       developmentSystemId: null
   transportRequestUploadFile:
   transportRequestRelease:
+
+  #defaults for stage wrapper
+  piperStageWrapper:
+    extensionLocation: '.pipeline/extensions/'
+    stageLocking: true
+    nodeLabel: ''
+    stashContent:
+      - 'pipelineConfigAndTests'
+    withNode: true
