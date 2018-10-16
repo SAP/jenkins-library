@@ -14,8 +14,10 @@ class CfManifestUtils {
                             throw new RuntimeException('More than one Cloud Foundry Buildpack is not supported. Please check your manifest.yaml file.')
                         }
                         application['buildpack'] = buildpacks[0]
+                        application.remove('buildpacks')
+                    } else {
+                        throw new RuntimeException('"buildpacks" in manifest.yaml is not a list. Please check your manifest.yaml file.')
                     }
-                    application.remove('buildpacks')
                 }
             }
         }
