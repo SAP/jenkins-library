@@ -10,14 +10,14 @@ import com.sap.piper.cm.ChangeManagementException
 
 @Field def STEP_NAME = 'checkChangeInDevelopment'
 
-@Field Set stepConfigurationKeys = [
+@Field Set STEP_CONFIG_KEYS = [
     'changeManagement',
     'failIfStatusIsNotInDevelopment'
   ]
 
-@Field Set parameterKeys = stepConfigurationKeys.plus('changeDocumentId')
+@Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS.plus('changeDocumentId')
 
-@Field Set generalConfigurationKeys = stepConfigurationKeys
+@Field Set GENERAL_CONFIG_KEYS = STEP_CONFIG_KEYS
 
 def call(parameters = [:]) {
 
@@ -31,19 +31,46 @@ def call(parameters = [:]) {
 
         ConfigurationHelper configHelper = ConfigurationHelper
             .loadStepDefaults(this)
-            .mixinGeneralConfig(script.commonPipelineEnvironment, generalConfigurationKeys)
-            .mixinStepConfig(script.commonPipelineEnvironment, stepConfigurationKeys)
-            .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName?:env.STAGE_NAME, stepConfigurationKeys)
-            .mixin(parameters, parameterKeys)
+            .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS)
+            .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS)
+            .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName?:env.STAGE_NAME, STEP_CONFIG_KEYS)
+            .mixin(parameters, PARAMETER_KEYS)
             // for the following parameters we expect defaults
+             /**
+               * A pattern used for identifying lines holding the change document id.
+               * @value regex pattern
+               */
             .withMandatoryProperty('changeManagement/changeDocumentLabel')
+             /**
+               * Additional options for cm command line client, e.g. like JAVA_OPTS.
+               */
             .withMandatoryProperty('changeManagement/clientOpts')
+             /**
+               * The id of the credentials to connect to the Solution Manager. The credentials needs to be maintained on Jenkins.
+               */
             .withMandatoryProperty('changeManagement/credentialsId')
+             /**
+               * The starting point for retrieving the change document id
+               */
             .withMandatoryProperty('changeManagement/git/from')
+             /**
+               *  The end point for retrieving the change document id
+               */
             .withMandatoryProperty('changeManagement/git/to')
+             /**
+               * Specifies what part of the commit is scanned. By default the body of the commit message is scanned.
+               * @value see `git log --help`
+               */
             .withMandatoryProperty('changeManagement/git/format')
+            /**
+              * When set to `false` the step will not fail in case the step is not in status 'in development'.
+              * @value `true`, `false`
+              */
             .withMandatoryProperty('failIfStatusIsNotInDevelopment')
             // for the following parameters we expect a value provided from outside
+            /**
+              * The address of the Solution Manager.
+              */
             .withMandatoryProperty('changeManagement/endpoint')
 
 
@@ -78,6 +105,10 @@ def call(parameters = [:]) {
         }
 
         configuration = configHelper.mixin([changeDocumentId: changeId?.trim() ?: null], ['changeDocumentId'] as Set)
+
+                                     /**
+                                       * The id of the change document to transport. If not provided, it is retrieved from the git commit history.
+                                       */
                                     .withMandatoryProperty('changeDocumentId',
                                         "No changeDocumentId provided. Neither via parameter 'changeDocumentId' " +
                                         "nor via label '${configuration.changeManagement.changeDocumentLabel}' in commit range " +
