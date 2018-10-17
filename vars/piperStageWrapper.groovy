@@ -43,7 +43,7 @@ void call(Map parameters = [:], body) {
 }
 
 String stageExitFilePath(String stageName, Map config) {
-    return "${config.extensionLocation}${stageName.replace(' ', '_')}.groovy".toLowerCase()
+    return "${config.extensionLocation}${stageName.replace(' ', '_').toLowerCase()}.groovy"
 }
 
 void stageLocking(Map config, Closure body) {
