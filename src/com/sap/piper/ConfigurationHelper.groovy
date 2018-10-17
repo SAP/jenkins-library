@@ -8,7 +8,7 @@ class ConfigurationHelper implements Serializable {
     }
 
     private Map config
-    private Script script
+    private Script step
     private String name
 
     static ConfigurationHelper newInstance(Script step, Map config = [:]) {
@@ -17,13 +17,13 @@ class ConfigurationHelper implements Serializable {
 
     private ConfigurationHelper(Script step, Map config){
         this.config = config ?: [:]
-        this.script = step
+        this.step = step
         this.name = step.STEP_NAME
         if(!this.name) throw new IllegalArgumentException('Step has no public name property!')
     }
 
     private final ConfigurationHelper initDefaults(){
-        this.script.prepareDefaultValues()
+        this.step.prepareDefaultValues()
         return this
     }
 
@@ -74,7 +74,7 @@ class ConfigurationHelper implements Serializable {
                     newConfig[entry.getKey()] = configMap[entry.getValue()]
                     def paramName = (paramStructure ? paramStructure + '.' : '') + entry.getKey()
                     if (configMap[entry.getValue()] != null) {
-                        this.script.echo ("[INFO] The parameter '${entry.getValue()}' is COMPATIBLE to the parameter '${paramName}'")
+                        this.step.echo ("[INFO] The parameter '${entry.getValue()}' is COMPATIBLE to the parameter '${paramName}'")
                     }
                 }
             }
