@@ -142,6 +142,8 @@ steps:
       workspace: '**/*.*'
     stashExcludes:
       workspace: 'nohup.out'
+  healthExecuteCheck:
+    healthEndpoint: ''
   influxWriteData:
     influxServer: 'jenkins'
   mavenExecute:
