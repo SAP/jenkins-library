@@ -23,7 +23,7 @@ class ConfigurationHelper implements Serializable {
         if(!this.name) throw new IllegalArgumentException('Step has no public name property!')
     }
 
-    ConfigurationHelper mixinGeneralConfig(commonPipelineEnvironment, Set filter = null,Map compatibleParameters = [:]){
+    ConfigurationHelper mixinGeneralConfig(commonPipelineEnvironment, Set filter = null, Map compatibleParameters = [:]){
         Map stepConfiguration = ConfigurationLoader.generalConfiguration([commonPipelineEnvironment: commonPipelineEnvironment])
         return mixin(stepConfiguration, filter, compatibleParameters)
     }
