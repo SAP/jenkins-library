@@ -139,7 +139,9 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
     @Test
     void testDockerExecuteOnKubernetesWithCustomJnlpWithDockerImage() throws Exception {
         nullScript.commonPipelineEnvironment.configuration = ['general': ['jenkinsKubernetes': ['jnlpAgent': 'myJnalpAgent']]]
-        jsr.step.dockerExecuteOnKubernetes(script: nullScript,
+        jsr.step.dockerExecuteOnKubernetes(
+            script: nullScript,
+            juStabUtils: utils,
             dockerImage: 'maven:3.5-jdk-8-alpine') {
             bodyExecuted = true
         }
@@ -195,7 +197,9 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
     @Test
     void testDockerExecuteOnKubernetesEmptyContainerMapNoDockerImage() throws Exception {
         exception.expect(IllegalArgumentException.class);
-            jsr.step.dockerExecuteOnKubernetes(script: nullScript,
+            jsr.step.dockerExecuteOnKubernetes(
+                script: nullScript,
+                juStabUtils: utils,
                 containerMap: [:],
                 dockerEnvVars: ['customEnvKey': 'customEnvValue']) {
                 container(name: 'jnlp') {
@@ -214,6 +218,7 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
         })
         jsr.step.dockerExecuteOnKubernetes(
             script: nullScript,
+            juStabUtils: utils,
             containerCommands: ['selenium/standalone-chrome': ''],
             containerEnvVars: [
                 'selenium/standalone-chrome': ['customEnvKey': 'customEnvValue']
