@@ -154,6 +154,11 @@ steps:
     healthEndpoint: ''
   influxWriteData:
     influxServer: 'jenkins'
+  mailSendNotification:
+    notificationAttachment: true
+    notifyCulprits: true
+    numLogLinesInBody: 100
+    wrapInNode: false
   mavenExecute:
     dockerImage: 'maven:3.5-jdk-7'
     logSuccessfulMavenTransfers: false

@@ -22,12 +22,12 @@ def call(Map parameters = [:], body) {
     } catch (Throwable err) {
         if (echoDetails)
             echo """----------------------------------------------------------
---- ERROR OCCURED IN LIBRARY STEP: ${stepName}
+--- ERROR OCCURRED IN LIBRARY STEP: ${stepName}
 ----------------------------------------------------------
 
 FOLLOWING PARAMETERS WERE AVAILABLE TO THIS STEP:
 ***
-${stepParameters}
+${stepParameters?.toString()}
 ***
 
 ERROR WAS:
