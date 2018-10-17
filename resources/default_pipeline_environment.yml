@@ -163,6 +163,8 @@ steps:
       languageRunner: 'js'
       runCommand: 'gauge run'
       testOptions: 'specs'
+  healthExecuteCheck:
+    healthEndpoint: ''
   influxWriteData:
     influxServer: 'jenkins'
   mavenExecute:
