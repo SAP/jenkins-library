@@ -12,6 +12,7 @@ nav:
         - dockerExecute: steps/dockerExecute.md
         - dockerExecuteOnKubernetes: steps/dockerExecuteOnKubernetes.md
         - durationMeasure: steps/durationMeasure.md
+        - gaugeExecuteTests: steps/gaugeExecuteTests.md
         - handlePipelineStepErrors: steps/handlePipelineStepErrors.md
         - healthExecuteCheck: steps/healthExecuteCheck.md
         - influxWriteData: steps/influxWriteData.md
