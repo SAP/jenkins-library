@@ -61,6 +61,10 @@ Deployment can be done
     - cfOrg
     - cfSpace
 
+!!! note
+    Due to [an incompatible change](https://github.com/cloudfoundry/cli/issues/1445) in the Cloud Foundry CLI, multiple buildpacks are not supported by this step.
+    If your `application` contains a list of `buildpacks` instead a single `buildpack`, this will be automatically re-written by the step.
+
 * `deployTool` defines the tool which should be used for deployment.
 * `deployType` defines the type of deployment, either `standard` deployment which results in a system downtime or a zero-downtime `blue-green` deployment.
 * `dockerImage` defines the Docker image containing the deployment tools (like cf cli, ...) and `dockerWorkspace` defines the home directory of the default user of the `dockerImage`
@@ -109,7 +113,7 @@ The following parameters can also be specified as step/stage/general parameters 
 cloudFoundryDeploy(
     script: script,
     deployType: 'blue-green',
-    cloudFoundry: target,
+    cloudFoundry: [apiEndpoint: 'https://test.server.com', appName:'cfAppName', credentialsId: 'cfCredentialsId', manifest: 'cfManifest', org: 'cfOrg', space: 'cfSpace'],
     deployTool: 'cf_native'
 )
 ```

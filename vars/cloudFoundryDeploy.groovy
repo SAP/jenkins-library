@@ -171,7 +171,17 @@ def deployMta (config) {
 
 def handleLegacyCfManifest(config) {
     def manifest = readYaml file: config.cloudFoundry.manifest
+    String originalManifest = manifest.toString()
     manifest = CfManifestUtils.transform(manifest)
-    sh "rm ${config.cloudFoundry.manifest}"
-    writeYaml file: config.cloudFoundry.manifest, data: manifest
+    String transformedManifest = manifest.toString()
+    sh "echo $originalManifest" //todo
+    sh "echo $transformedManifest" //todo
+    if (originalManifest != transformedManifest) {
+        echo "The file ${config.cloudFoundry.manifest} is not compatible with the Cloud Foundry blue-green deployment plugin. Re-writing inline."
+        echo "See this issue if you are interested in the background: https://github.com/cloudfoundry/cli/issues/1445"
+        echo "Original manifest file content: $originalManifest"
+        echo "Transformed manifest file content: $transformedManifest"
+        sh "rm ${config.cloudFoundry.manifest}"
+        writeYaml file: config.cloudFoundry.manifest, data: manifest
+    }
 }
