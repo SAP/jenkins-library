@@ -54,7 +54,7 @@ def call(Map parameters = [:]) {
 
         if (config.deployTool == 'mtaDeployPlugin') {
             // set default mtar path
-            config = new ConfigurationHelper(this, config)
+            config = ConfigurationHelper.newInstance(this, config)
                 .addIfEmpty('mtaPath', config.mtaPath?:findMtar())
                 .use()
 
