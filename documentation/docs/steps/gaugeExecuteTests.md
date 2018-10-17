@@ -11,6 +11,23 @@ This layout is propagated by Jez Humble and Dave Farley in their book "Continuou
 
 Using Gauge it is possible to write test specifications in [Markdown syntax](http://daringfireball.net/projects/markdown/syntax) and therefore allow e.g. product owners to write the relevant acceptance test specifications. At the same time it allows the developer to implement the steps described in the specification in her development environment.
 
+You can use the sample projects of Gauge, for example: https://github.com/getgauge/gauge-mvn-archetypes
+
+!!! note "Make sure to run against a Selenium Hub configuration"
+    In the test example of _gauge-archetype-selenium_ please make sure to allow it to run against a Selenium hub:
+
+    Please extend DriverFactory.java for example in following way:
+
+    ``` java
+    String hubUrl = System.getenv("HUB_URL");
+    //when running on a Docker deamon (and not using Kubernetes plugin), Docker images will be linked
+    //in this case hubUrl will be http://selenium:4444/wd/hub due to the linking of the containers
+    hubUrl = (hubUrl == null) ? "http://localhost:4444/wd/hub" : hubUrl;
+    Capabilities chromeCapabilities = DesiredCapabilities.chrome();
+    System.out.println("Running on Selenium Hub: " + hubUrl);
+    return new RemoteWebDriver(new URL(hubUrl), chromeCapabilities);
+    ```
+
 ## Prerequsites
 
 none
