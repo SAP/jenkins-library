@@ -27,7 +27,7 @@ def call(Map parameters = [:], body) {
 
 FOLLOWING PARAMETERS WERE AVAILABLE TO THIS STEP:
 ***
-${stepParameters}
+${stepParameters?.toString()}
 ***
 
 ERROR WAS:
