@@ -2,35 +2,25 @@ package com.sap.piper
 
 class ConfigurationHelper implements Serializable {
 
+    static ConfigurationHelper newInstance(Script step, Map config = [:]) {
+        new ConfigurationHelper(step, config)
+    }
+
     ConfigurationHelper loadStepDefaults() {
-            initDefaults()
-            loadDefaults()
+        this.step.prepareDefaultValues()
+        this.config = ConfigurationLoader.defaultGeneralConfiguration()
+        mixin(ConfigurationLoader.defaultStepConfiguration(null, name))
     }
 
     private Map config
     private Script step
     private String name
 
-    static ConfigurationHelper newInstance(Script step, Map config = [:]) {
-        new ConfigurationHelper(step, config)
-    }
-
     private ConfigurationHelper(Script step, Map config){
         this.config = config ?: [:]
         this.step = step
         this.name = step.STEP_NAME
         if(!this.name) throw new IllegalArgumentException('Step has no public name property!')
-    }
-
-    private final ConfigurationHelper initDefaults(){
-        this.step.prepareDefaultValues()
-        return this
-    }
-
-    private final ConfigurationHelper loadDefaults(){
-        config = ConfigurationLoader.defaultGeneralConfiguration()
-        mixin(ConfigurationLoader.defaultStepConfiguration(null, name))
-        return this
     }
 
     ConfigurationHelper mixinGeneralConfig(commonPipelineEnvironment, Set filter = null,Map compatibleParameters = [:]){
@@ -48,7 +38,7 @@ class ConfigurationHelper implements Serializable {
         return mixin(stepConfiguration, filter, compatibleParameters)
     }
 
-    ConfigurationHelper mixin(Map parameters, Set filter = null, Map compatibleParameters = [:]){
+    final ConfigurationHelper mixin(Map parameters, Set filter = null, Map compatibleParameters = [:]){
         if (parameters.size() > 0 && compatibleParameters.size() > 0) {
             parameters = ConfigurationMerger.merge(handleCompatibility(compatibleParameters, parameters), null, parameters)
         }
