@@ -146,8 +146,10 @@ steps:
     addDeltaToLastRelease: false
     customFilterExtension: ''
     excludeLabels:
-      - 'wontfix'
       - 'duplicate'
+      - 'invalid'
+      - 'question'
+      - 'wontfix'
   healthExecuteCheck:
     healthEndpoint: ''
   influxWriteData:

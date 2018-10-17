@@ -34,7 +34,7 @@ githubPublishRelease script: this, releaseBodyHeader: "**This is the latest succ
 |addClosedIssues|no|`false`||
 |addDeltaToLastRelease|no|`false`||
 |customFilterExtension|no|``||
-|excludeLabels|no|<ul><li>`wontfix`</li><li>`duplicate`</li></ul>||
+|excludeLabels|no|<ul><li>`duplicate`</li><li>`invalid`</li><li>`question`</li><li>`wontfix`</li></ul>||
 |githubApiUrl|no|`//https://api.github.com`||
 |githubOrg|yes|`script.commonPipelineEnvironment.getGitFolder()`||
 |githubRepo|yes|`script.commonPipelineEnvironment.getGitRepo()`||
