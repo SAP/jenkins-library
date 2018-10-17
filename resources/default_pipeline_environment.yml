@@ -139,6 +139,30 @@ steps:
       workspace: '**/*.*'
     stashExcludes:
       workspace: 'nohup.out'
+  gaugeExecuteTests:
+    buildTool: 'maven'
+    dockerEnvVars:
+      HUB: 'TRUE'
+      HUB_URL: 'http://localhost:4444/wd/hub'
+    failOnError: false
+    installCommand: 'curl -SsL https://downloads.gauge.org/stable | sh -s -- --location=$HOME/bin/gauge'
+    stashContent:
+      - 'buildDescriptor'
+      - 'tests'
+    maven:
+      dockerImage: 'maven:3.5-jdk-8'
+      dockerName: 'maven'
+      dockerWorkspace: ''
+      languageRunner: 'java'
+      runCommand: 'mvn test-compile gauge:execute'
+      testOptions: '-DspecsDir=specs'
+    npm:
+      dockerImage: 'node:8-stretch'
+      dockerName: 'npm'
+      dockerWorkspace: '/home/node'
+      languageRunner: 'js'
+      runCommand: 'gauge run'
+      testOptions: 'specs'
   healthExecuteCheck:
     healthEndpoint: ''
   influxWriteData:
@@ -214,7 +238,7 @@ steps:
     stashContent:
       - 'tests'
     maven:
-      dockerImage: 'maven:3.5-jdk-7'
+      dockerImage: 'maven:3.5-jdk-8'
       dockerName: 'maven'
       dockerWorkspace: ''
     npm:
