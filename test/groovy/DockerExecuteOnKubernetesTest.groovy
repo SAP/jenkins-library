@@ -87,7 +87,9 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
 
     @Test
     void testRunOnPodNoContainerMapOnlyDockerImage() throws Exception {
-        jsr.step.dockerExecuteOnKubernetes(script: nullScript,
+        jsr.step.dockerExecuteOnKubernetes(
+            script: nullScript,
+            juStabUtils: utils,
             dockerImage: 'maven:3.5-jdk-8-alpine',
             dockerOptions: '-it',
             dockerVolumeBind: ['my_vol': '/my_vol'],
