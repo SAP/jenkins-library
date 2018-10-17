@@ -80,7 +80,6 @@ public class CommonStepsTest extends BasePiperTest{
         def whitelist = [
             'transportRequestCreate',
             'durationMeasure',
-            'seleniumExecuteTests',
             ]
 
         for(def step in getSteps()) {
