@@ -8,9 +8,11 @@ class commonPipelineEnvironment implements Serializable {
     String gitCommitId
     String gitSshUrl
     String gitHttpsUrl
-    String gitFolder
-    String gitRepo
     String gitBranch
+
+    //GiutHub specific information
+    String githubOrg
+    String githubRepo
 
     //stores properties for a pipeline which build an artifact and then bundles it into a container
     private Map appContainerProperties = [:]
@@ -35,9 +37,10 @@ class commonPipelineEnvironment implements Serializable {
         gitCommitId = null
         gitSshUrl = null
         gitHttpsUrl = null
-        gitFolder = null
-        gitRepo = null
         gitBranch = null
+
+        githubOrg = null
+        githubRepo = null
 
         influxCustomData = [:]
         influxCustomDataMap = [pipeline_data: [:], step_data: [:]]
