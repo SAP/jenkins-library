@@ -28,7 +28,7 @@ gaugeExecuteTests script: this, testServerUrl: 'http://test.url'
 | parameter | mandatory | default | possible values |
 | ----------|-----------|---------|-----------------|
 |script|yes|||
-|buildTool|no|`maven`|`maven`, `npm`|
+|buildTool|no|`maven`||
 |dockerEnvVars|no|`[HUB:TRUE, HUB_URL:http://localhost:4444/wd/hub]`||
 |dockerImage|no|buildTool=`maven`: `maven:3.5-jdk-8`<br />buildTool=`npm`: `node:8-stretch`<br />||
 |dockerName|no|buildTool=`maven`: `maven`<br />buildTool=`npm`: `npm`<br />||
@@ -36,10 +36,14 @@ gaugeExecuteTests script: this, testServerUrl: 'http://test.url'
 |failOnError|no|`false`||
 |gitBranch|no|||
 |gitSshKeyCredentialsId|no|``||
+|installCommand|no|`curl -SsL https://downloads.gauge.org/stable | sh -s -- --location=$HOME/bin/gauge`||
+|languageRunner|no|buildTool=`maven`: `java`<br />buildTool=`npm`: `js`<br />||
+|runCommand|no|buildTool=`maven`: `mvn test-compile gauge:execute`<br />buildTool=`npm`: `gauge run`<br />||
 |stashContent|no|<ul><li>`buildDescriptor`</li><li>`tests`</li></ul>||
 |testOptions|no|buildTool=`maven`: `-DspecsDir=specs`<br />buildTool=`npm`: `specs`<br />||
 |testRepository|no|||
 |testServerUrl|no|||
+
 
 Details:
 
@@ -50,6 +54,9 @@ Details:
 * `dockerName`, see step [dockerExecute](dockerExecute.md)
 * `dockerWorkspace`, see step [dockerExecute](dockerExecute.md)
 * With `failOnError` you can define the behavior, in case tests fail. When this is set to `true` test results cannot be recorded using the `publishTestResults` step afterwards.
+* `installCommand` defines the command for installing Gauge. In case the `dockerImage` already contains Gauge it can be set to empty: ``.
+* `languageRunner` defines the Gauge language runner to be used.
+* `runCommand` defines the command which is used for executing Gauge.
 * If specific stashes should be considered for the tests, you can pass this via parameter `stashContent`
 * `testOptions` allows to set specific options for the Gauge execution. Details can be found for example [in the Gauge Maven plugin documentation](https://github.com/getgauge/gauge-maven-plugin#executing-specs)
 * In case the test implementation is stored in a different repository than the code itself, you can define the repository containing the tests using parameter `testRepository` and if required `gitBranch` (for a different branch than master) and `gitSshKeyCredentialsId` (for protected repositories). For protected repositories the `testRepository` needs to contain the ssh git url.
