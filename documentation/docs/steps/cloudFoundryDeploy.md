@@ -63,7 +63,7 @@ Deployment can be done
 
 !!! note
     Due to [an incompatible change](https://github.com/cloudfoundry/cli/issues/1445) in the Cloud Foundry CLI, multiple buildpacks are not supported by this step.
-    If your `application` contains a list of `buildpacks` instead a single `buildpack`, this will be automatically re-written by the step.
+    If your `application` contains a list of `buildpacks` instead a single `buildpack`, this will be automatically re-written by the step when blue-green deployment is used.
 
 * `deployTool` defines the tool which should be used for deployment.
 * `deployType` defines the type of deployment, either `standard` deployment which results in a system downtime or a zero-downtime `blue-green` deployment.
