@@ -11,11 +11,15 @@ class ConfigurationHelper implements Serializable {
     private Script script
     private String name
 
-    ConfigurationHelper(Script step, Map config = [:]){
+    static ConfigurationHelper newInstance(Script step, Map config = [:]) {
+        new ConfigurationHelper(step, config)
+    }
+
+    private ConfigurationHelper(Script step, Map config){
         this.config = config ?: [:]
         this.script = step
-        name = step.STEP_NAME
-        if(!name) throw new IllegalArgumentException('Step has no public name property!')
+        this.name = step.STEP_NAME
+        if(!this.name) throw new IllegalArgumentException('Step has no public name property!')
     }
 
     private final ConfigurationHelper initDefaults(){

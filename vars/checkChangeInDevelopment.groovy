@@ -29,7 +29,7 @@ def call(parameters = [:]) {
 
         ChangeManagement cm = parameters?.cmUtils ?: new ChangeManagement(script, gitUtils)
 
-        ConfigurationHelper configHelper = new ConfigurationHelper(this)
+        ConfigurationHelper configHelper = ConfigurationHelper.newInstance(this)
             .loadStepDefaults()
             .mixinGeneralConfig(script.commonPipelineEnvironment, generalConfigurationKeys)
             .mixinStepConfig(script.commonPipelineEnvironment, stepConfigurationKeys)

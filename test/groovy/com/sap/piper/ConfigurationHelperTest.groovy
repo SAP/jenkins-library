@@ -36,7 +36,7 @@ class ConfigurationHelperTest {
 
     @Test
     void testGetProperty() {
-        def configuration = new ConfigurationHelper(mockScript, getConfiguration())
+        def configuration = ConfigurationHelper.newInstance(mockScript, getConfiguration())
         Assert.assertEquals('maven:3.2-jdk-8-onbuild', configuration.getConfigProperty('dockerImage'))
         Assert.assertEquals('maven:3.2-jdk-8-onbuild', configuration.getConfigProperty('dockerImage', 'default'))
         Assert.assertEquals('default', configuration.getConfigProperty('something', 'default'))
@@ -46,55 +46,55 @@ class ConfigurationHelperTest {
 
     @Test
     void testGetPropertyNestedLeafNodeIsString() {
-        def configuration = new ConfigurationHelper(mockScript, [a:[b: 'c']])
+        def configuration = ConfigurationHelper.newInstance(mockScript, [a:[b: 'c']])
         assertThat(configuration.getConfigProperty('a/b'), is('c'))
     }
 
     @Test
     void testGetPropertyNestedLeafNodeIsMap() {
-        def configuration = new ConfigurationHelper(mockScript, [a:[b: [c: 'd']]])
+        def configuration = ConfigurationHelper.newInstance(mockScript, [a:[b: [c: 'd']]])
         assertThat(configuration.getConfigProperty('a/b'), is([c: 'd']))
     }
 
     @Test
     void testGetPropertyNestedPathNotFound() {
-        def configuration = new ConfigurationHelper(mockScript, [a:[b: 'c']])
+        def configuration = ConfigurationHelper.newInstance(mockScript, [a:[b: 'c']])
         assertThat(configuration.getConfigProperty('a/c'), is((nullValue())))
     }
 
     void testGetPropertyNestedPathStartsWithTokenizer() {
-        def configuration = new ConfigurationHelper([k:'v'])
+        def configuration = ConfigurationHelper.newInstance([k:'v'])
         assertThat(configuration.getConfigProperty('/k'), is(('v')))
     }
 
     @Test
     void testGetPropertyNestedPathEndsWithTokenizer() {
-        def configuration = new ConfigurationHelper(mockScript, [k:'v'])
+        def configuration = ConfigurationHelper.newInstance(mockScript, [k:'v'])
         assertThat(configuration.getConfigProperty('k/'), is(('v')))
     }
 
     @Test
     void testGetPropertyNestedPathManyTokenizer() {
-        def configuration = new ConfigurationHelper(mockScript, [k1:[k2 : 'v']])
+        def configuration = ConfigurationHelper.newInstance(mockScript, [k1:[k2 : 'v']])
         assertThat(configuration.getConfigProperty('///k1/////k2///'), is(('v')))
     }
 
     @Test
     void testIsPropertyDefined() {
-        def configuration = new ConfigurationHelper(mockScript, getConfiguration())
+        def configuration = ConfigurationHelper.newInstance(mockScript, getConfiguration())
         Assert.assertTrue(configuration.isPropertyDefined('dockerImage'))
         Assert.assertFalse(configuration.isPropertyDefined('something'))
     }
 
     @Test
     void testIsPropertyDefinedWithInteger() {
-        def configuration = new ConfigurationHelper(mockScript, [dockerImage: 3])
+        def configuration = ConfigurationHelper.newInstance(mockScript, [dockerImage: 3])
         Assert.assertTrue(configuration.isPropertyDefined('dockerImage'))
     }
 
     @Test
     void testGetMandatoryProperty() {
-        def configuration = new ConfigurationHelper(mockScript, getConfiguration())
+        def configuration = ConfigurationHelper.newInstance(mockScript, getConfiguration())
         Assert.assertEquals('maven:3.2-jdk-8-onbuild', configuration.getMandatoryProperty('dockerImage'))
         Assert.assertEquals('default', configuration.getMandatoryProperty('something', 'default'))
 
@@ -103,14 +103,14 @@ class ConfigurationHelperTest {
 
     @Test
     void testConfigurationLoaderWithDefaults() {
-        Map config = new ConfigurationHelper(mockScript, [property1: '27']).use()
+        Map config = ConfigurationHelper.newInstance(mockScript, [property1: '27']).use()
         // asserts
         Assert.assertThat(config, hasEntry('property1', '27'))
     }
 
     @Test
     void testConfigurationLoaderWithCustomSettings() {
-        Map config = new ConfigurationHelper(mockScript, [property1: '27'])
+        Map config = ConfigurationHelper.newInstance(mockScript, [property1: '27'])
             .mixin([property1: '41'])
             .use()
         // asserts
@@ -120,7 +120,7 @@ class ConfigurationHelperTest {
     @Test
     void testConfigurationLoaderWithFilteredCustomSettings() {
         Set filter = ['property2']
-        Map config = new ConfigurationHelper(mockScript, [property1: '27'])
+        Map config = ConfigurationHelper.newInstance(mockScript, [property1: '27'])
             .mixin([property1: '41', property2: '28', property3: '29'], filter)
             .use()
         // asserts
@@ -131,7 +131,7 @@ class ConfigurationHelperTest {
 
     @Test
     void testConfigurationLoaderWithBooleanValue() {
-        Map config = new ConfigurationHelper(mockScript, [property1: '27'])
+        Map config = ConfigurationHelper.newInstance(mockScript, [property1: '27'])
             .mixin([property1: false])
             .mixin([property2: false])
             .use()
@@ -142,7 +142,7 @@ class ConfigurationHelperTest {
 
     @Test
     void testConfigurationLoaderWithMixinDependent() {
-        Map config = new ConfigurationHelper(mockScript, [
+        Map config = ConfigurationHelper.newInstance(mockScript, [
                 type: 'maven',
                 maven: [dockerImage: 'mavenImage', dockerWorkspace: 'mavenWorkspace'],
                 npm: [dockerImage: 'npmImage', dockerWorkspace: 'npmWorkspace', executeDocker: true, executeDocker3: false],
@@ -172,7 +172,7 @@ class ConfigurationHelperTest {
 
     @Test
     void testHandleCompatibility() {
-        def configuration = new ConfigurationHelper(mockScript)
+        def configuration = ConfigurationHelper.newInstance(mockScript)
             .mixin([old1: 'oldValue1', old2: 'oldValue2', test: 'testValue'], null, [newStructure: [new1: 'old1', new2: 'old2']])
             .use()
 
@@ -183,7 +183,7 @@ class ConfigurationHelperTest {
 
     @Test
     void testHandleCompatibilityFlat() {
-        def configuration = new ConfigurationHelper(mockScript)
+        def configuration = ConfigurationHelper.newInstance(mockScript)
             .mixin([old1: 'oldValue1', old2: 'oldValue2', test: 'testValue'], null, [new1: 'old1', new2: 'old2'])
             .use()
 
@@ -194,7 +194,7 @@ class ConfigurationHelperTest {
 
     @Test
     void testHandleCompatibilityDeep() {
-        def configuration = new ConfigurationHelper(mockScript)
+        def configuration = ConfigurationHelper.newInstance(mockScript)
             .mixin([old1: 'oldValue1', old2: 'oldValue2', test: 'testValue'], null, [deep:[deeper:[newStructure: [new1: 'old1', new2: 'old2']]]])
             .use()
 
@@ -205,7 +205,7 @@ class ConfigurationHelperTest {
 
     @Test
     void testHandleCompatibilityNewAvailable() {
-        def configuration = new ConfigurationHelper(mockScript, [old1: 'oldValue1', newStructure: [new1: 'newValue1'], test: 'testValue'])
+        def configuration = ConfigurationHelper.newInstance(mockScript, [old1: 'oldValue1', newStructure: [new1: 'newValue1'], test: 'testValue'])
             .mixin([old1: 'oldValue1', newStructure: [new1: 'newValue1'], test: 'testValue'], null, [newStructure: [new1: 'old1', new2: 'old2']])
             .use()
 
@@ -215,7 +215,7 @@ class ConfigurationHelperTest {
 
     @Test
     void testHandleCompatibilityOldNotSet() {
-        def configuration = new ConfigurationHelper(mockScript, [old1: null, test: 'testValue'])
+        def configuration = ConfigurationHelper.newInstance(mockScript, [old1: null, test: 'testValue'])
             .mixin([old1: null, test: 'testValue'], null, [newStructure: [new1: 'old1', new2: 'old2']])
             .use()
 
@@ -225,7 +225,7 @@ class ConfigurationHelperTest {
 
     @Test
     void testHandleCompatibilityNoneAvailable() {
-        def configuration = new ConfigurationHelper(mockScript, [old1: null, test: 'testValue'])
+        def configuration = ConfigurationHelper.newInstance(mockScript, [old1: null, test: 'testValue'])
             .mixin([test: 'testValue'], null, [newStructure: [new1: 'old1', new2: 'old2']])
             .use()
 
@@ -239,7 +239,7 @@ class ConfigurationHelperTest {
         thrown.expect(IllegalArgumentException)
         thrown.expectMessage('ERROR - NO VALUE AVAILABLE FOR myKey')
 
-        new ConfigurationHelper(mockScript).withMandatoryProperty('myKey')
+        ConfigurationHelper.newInstance(mockScript).withMandatoryProperty('myKey')
     }
 
     @Test
@@ -248,22 +248,22 @@ class ConfigurationHelperTest {
         thrown.expect(IllegalArgumentException)
         thrown.expectMessage('My error message')
 
-        new ConfigurationHelper(mockScript).withMandatoryProperty('myKey', 'My error message')
+        ConfigurationHelper.newInstance(mockScript).withMandatoryProperty('myKey', 'My error message')
     }
 
     @Test
     public void testWithMandoryParameterDefaultCustomFailureMessageProvidedSucceeds() {
-        new ConfigurationHelper(mockScript, [myKey: 'myValue']).withMandatoryProperty('myKey', 'My error message')
+        ConfigurationHelper.newInstance(mockScript, [myKey: 'myValue']).withMandatoryProperty('myKey', 'My error message')
     }
 
     @Test
     public void testWithMandoryParameterDefaultCustomFailureMessageNotProvidedSucceeds() {
-        new ConfigurationHelper(mockScript, [myKey: 'myValue']).withMandatoryProperty('myKey')
+        ConfigurationHelper.newInstance(mockScript, [myKey: 'myValue']).withMandatoryProperty('myKey')
     }
 
     @Test
     public void testWithMandoryWithFalseCondition() {
-        new ConfigurationHelper(mockScript, [verify: false])
+        ConfigurationHelper.newInstance(mockScript, [verify: false])
             .withMandatoryProperty('missingKey', null, { c -> return c.get('verify') })
     }
 
@@ -272,20 +272,20 @@ class ConfigurationHelperTest {
         thrown.expect(IllegalArgumentException)
         thrown.expectMessage('ERROR - NO VALUE AVAILABLE FOR missingKey')
 
-        new ConfigurationHelper(mockScript, [verify: true])
+        ConfigurationHelper.newInstance(mockScript, [verify: true])
             .withMandatoryProperty('missingKey', null, { c -> return c.get('verify') })
     }
 
     @Test
     public void testWithMandoryWithTrueConditionExistingValue() {
-        new ConfigurationHelper(mockScript, [existingKey: 'anyValue', verify: true])
+        ConfigurationHelper.newInstance(mockScript, [existingKey: 'anyValue', verify: true])
             .withMandatoryProperty('existingKey', null, { c -> return c.get('verify') })
     }
 
     @Test
     public void testTelemetryConfigurationAvailable() {
         Set filter = ['test']
-        def configuration = new ConfigurationHelper(mockScript, [test: 'testValue'])
+        def configuration = ConfigurationHelper.newInstance(mockScript, [test: 'testValue'])
             .mixin([collectTelemetryData: false], filter)
             .use()
 

@@ -33,7 +33,7 @@ def call(Map parameters = [:]) {
         if (script == null)
             script = [commonPipelineEnvironment: commonPipelineEnvironment]
 
-        Map config = new ConfigurationHelper(this)
+        Map config = ConfigurationHelper.newInstance(this)
             .loadStepDefaults()
             .mixinGeneralConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS, CONFIG_KEY_COMPATIBILITY)
             .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS, CONFIG_KEY_COMPATIBILITY)
