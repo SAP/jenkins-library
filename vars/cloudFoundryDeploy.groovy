@@ -174,8 +174,6 @@ def handleLegacyCfManifest(config) {
     String originalManifest = manifest.toString()
     manifest = CfManifestUtils.transform(manifest)
     String transformedManifest = manifest.toString()
-    sh "echo $originalManifest" //todo
-    sh "echo $transformedManifest" //todo
     if (originalManifest != transformedManifest) {
         echo "The file ${config.cloudFoundry.manifest} is not compatible with the Cloud Foundry blue-green deployment plugin. Re-writing inline."
         echo "See this issue if you are interested in the background: https://github.com/cloudfoundry/cli/issues/1445"
