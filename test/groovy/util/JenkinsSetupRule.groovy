@@ -40,7 +40,7 @@ class JenkinsSetupRule implements TestRule {
                 testInstance.binding.setVariable('env', [
                     JOB_NAME    : 'p',
                     BUILD_NUMBER: '1',
-                    BUILD_URL   : ''
+                    BUILD_URL   : 'http://build.url',
                 ])
 
                 base.evaluate()
