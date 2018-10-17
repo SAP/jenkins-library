@@ -37,9 +37,10 @@ class commonPipelineEnvironment implements Serializable {
         gitCommitId = null
         gitSshUrl = null
         gitHttpsUrl = null
-        gitFolder = null
-        gitRepo = null
         gitBranch = null
+
+        githubOrg = null
+        githubRepo = null
 
         influxCustomData = [:]
         influxCustomDataMap = [pipeline_data: [:], step_data: [:]]
