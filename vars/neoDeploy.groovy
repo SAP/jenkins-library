@@ -72,8 +72,8 @@ def call(parameters = [:]) {
         // Backward compatibility end
         
         // load default & individual configuration
-        Map configuration = ConfigurationHelper
-            .loadStepDefaults(this)
+        Map configuration = ConfigurationHelper.newInstance(this)
+            .loadStepDefaults()
             .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS)
             .mixin(stepCompatibilityConfiguration)
             .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS)

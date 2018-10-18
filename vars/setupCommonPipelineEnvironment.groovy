@@ -17,8 +17,8 @@ def call(Map parameters = [:]) {
 
         loadConfigurationFromFile(script, configFile)
 
-        Map config = ConfigurationHelper
-            .loadStepDefaults(this)
+        Map config = ConfigurationHelper.newInstance(this)
+            .loadStepDefaults()
             .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS)
             .use()
 
