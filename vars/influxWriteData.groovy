@@ -17,7 +17,7 @@ import groovy.transform.Field
     'artifactVersion'
 ])
 
-def call(Map parameters = [:]) {
+void call(Map parameters = [:]) {
     handlePipelineStepErrors (stepName: STEP_NAME, stepParameters: parameters, allowBuildFailure: true) {
         def script = parameters.script
         if (script == null)

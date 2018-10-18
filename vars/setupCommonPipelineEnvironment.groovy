@@ -5,7 +5,7 @@ import groovy.transform.Field
 @Field String STEP_NAME = 'setupCommonPipelineEnvironment'
 @Field Set GENERAL_CONFIG_KEYS = ['collectTelemetryData']
 
-def call(Map parameters = [:]) {
+void call(Map parameters = [:]) {
 
     handlePipelineStepErrors (stepName: STEP_NAME, stepParameters: parameters) {
 

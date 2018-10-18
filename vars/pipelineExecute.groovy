@@ -11,7 +11,7 @@ import groovy.transform.Field
  * Load and executes a pipeline from another git repository.
  *
  */
-def call(Map parameters = [:]) {
+void call(Map parameters = [:]) {
 
     node() {
 

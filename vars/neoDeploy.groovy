@@ -29,7 +29,7 @@ import groovy.transform.Field
     'warAction'
 ])
 
-def call(parameters = [:]) {
+void call(parameters = [:]) {
     handlePipelineStepErrors (stepName: STEP_NAME, stepParameters: parameters) {
 
         def script = parameters?.script ?: [commonPipelineEnvironment: commonPipelineEnvironment]
@@ -70,7 +70,7 @@ def call(parameters = [:]) {
             parameters.put('neoCredentialsId', credId)
         }
         // Backward compatibility end
-        
+
         // load default & individual configuration
         Map configuration = ConfigurationHelper.newInstance(this)
             .loadStepDefaults()
@@ -81,9 +81,9 @@ def call(parameters = [:]) {
             .addIfEmpty('archivePath', script.commonPipelineEnvironment.getMtarFilePath())
             .mixin(parameters, PARAMETER_KEYS)
             .use()
-        
+
         utils.pushToSWA([
-            step: STEP_NAME, 
+            step: STEP_NAME,
             stepParam1: configuration.deployMode == 'mta'?'mta':'war', // ['mta', 'warParams', 'warPropertiesFile']
             stepParam2: configuration.warAction == 'rolling-update'?'blue-green':'standard' // ['deploy', 'deploy-mta', 'rolling-update']
         ], configuration)
