@@ -32,8 +32,8 @@ void call(Map parameters = [:]) {
         script.commonPipelineEnvironment.setInfluxStepData('gauge', false)
 
         // load default & individual configuration
-        Map config = ConfigurationHelper
-            .loadStepDefaults(this)
+        Map config = ConfigurationHelper.newInstance(this)
+            .loadStepDefaults()
             .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS)
             .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName?:env.STAGE_NAME, STEP_CONFIG_KEYS)
             .mixin(parameters, PARAMETER_KEYS)

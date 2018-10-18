@@ -27,8 +27,8 @@ def call(Map parameters = [:]) {
         def utils = parameters.juStabUtils ?: new Utils()
         def script = parameters.script ?: [commonPipelineEnvironment: commonPipelineEnvironment]
 
-        Map config = ConfigurationHelper
-            .loadStepDefaults(this)
+        Map config = ConfigurationHelper.newInstance(this)
+            .loadStepDefaults()
             .mixinGeneralConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS)
             .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS)
             .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName?:env.STAGE_NAME, STEP_CONFIG_KEYS)
