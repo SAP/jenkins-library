@@ -1,3 +1,7 @@
+import groovy.transform.Field
+
+@Field STEP_NAME = 'pipelineStashFiles'
+
 def call(Map parameters = [:], body) {
     handlePipelineStepErrors (stepName: 'pipelineStashFiles', stepParameters: parameters) {
         pipelineStashFilesBeforeBuild(parameters)
