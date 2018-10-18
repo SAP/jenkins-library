@@ -116,17 +116,6 @@ class DockerExecuteTest extends BasePiperTest {
     }
 
     @Test
-    void testExecuteInsideDockerNoScript() throws Exception {
-        jsr.step.dockerExecute(dockerImage: 'maven:3.5-jdk-8-alpine') {
-            bodyExecuted = true
-        }
-        assertEquals('maven:3.5-jdk-8-alpine', docker.getImageName())
-        assertTrue(docker.isImagePulled())
-        assertEquals('--env http_proxy --env https_proxy --env no_proxy --env HTTP_PROXY --env HTTPS_PROXY --env NO_PROXY', docker.getParameters().trim())
-        assertTrue(bodyExecuted)
-    }
-
-    @Test
     void testExecuteInsideDockerContainerWithParameters() throws Exception {
         jsr.step.dockerExecute(script: nullScript,
                       dockerImage: 'maven:3.5-jdk-8-alpine',
