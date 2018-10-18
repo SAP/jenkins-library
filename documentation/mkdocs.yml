@@ -21,6 +21,7 @@ nav:
         - mtaBuild: steps/mtaBuild.md
         - neoDeploy: steps/neoDeploy.md
         - pipelineExecute: steps/pipelineExecute.md
+        - pipelineRestartSteps: steps/pipelineRestartSteps.md
         - pipelineStashFiles: steps/pipelineStashFiles.md
         - prepareDefaultValues: steps/prepareDefaultValues.md
         - seleniumExecuteTests: steps/seleniumExecuteTests.md
