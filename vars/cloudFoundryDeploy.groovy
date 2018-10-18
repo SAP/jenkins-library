@@ -34,12 +34,12 @@ void call(Map parameters = [:]) {
         if (script == null)
             script = [commonPipelineEnvironment: commonPipelineEnvironment]
 
-        Map config = ConfigurationHelper
-            .loadStepDefaults(this)
-            .mixinGeneralConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS, this, CONFIG_KEY_COMPATIBILITY)
-            .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS, this, CONFIG_KEY_COMPATIBILITY)
-            .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName?:env.STAGE_NAME, STEP_CONFIG_KEYS, this, CONFIG_KEY_COMPATIBILITY)
-            .mixin(parameters, PARAMETER_KEYS, this, CONFIG_KEY_COMPATIBILITY)
+        Map config = ConfigurationHelper.newInstance(this)
+            .loadStepDefaults()
+            .mixinGeneralConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS, CONFIG_KEY_COMPATIBILITY)
+            .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS, CONFIG_KEY_COMPATIBILITY)
+            .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName?:env.STAGE_NAME, STEP_CONFIG_KEYS, CONFIG_KEY_COMPATIBILITY)
+            .mixin(parameters, PARAMETER_KEYS, CONFIG_KEY_COMPATIBILITY)
             .dependingOn('deployTool').mixin('dockerImage')
             .dependingOn('deployTool').mixin('dockerWorkspace')
             .withMandatoryProperty('cloudFoundry/org')
@@ -55,7 +55,7 @@ void call(Map parameters = [:]) {
 
         if (config.deployTool == 'mtaDeployPlugin') {
             // set default mtar path
-            config = new ConfigurationHelper(config)
+            config = ConfigurationHelper.newInstance(this, config)
                 .addIfEmpty('mtaPath', config.mtaPath?:findMtar())
                 .use()
 

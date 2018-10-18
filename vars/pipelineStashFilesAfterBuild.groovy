@@ -20,8 +20,8 @@ void call(Map parameters = [:]) {
         //additional includes via passing e.g. stashIncludes: [opa5: '**/*.include']
         //additional excludes via passing e.g. stashExcludes: [opa5: '**/*.exclude']
 
-        Map config = ConfigurationHelper
-            .loadStepDefaults(this)
+        Map config = ConfigurationHelper.newInstance(this)
+            .loadStepDefaults()
             .mixinGeneralConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS)
             .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS)
             .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName?:env.STAGE_NAME, STEP_CONFIG_KEYS)
