@@ -21,14 +21,16 @@ import hudson.AbortException
 
 def call(parameters = [:]) {
 
+    def transportRequestId
+
     handlePipelineStepErrors (stepName: STEP_NAME, stepParameters: parameters) {
 
         def script = parameters?.script ?: [commonPipelineEnvironment: commonPipelineEnvironment]
 
         ChangeManagement cm = parameters.cmUtils ?: new ChangeManagement(script)
 
-        ConfigurationHelper configHelper = ConfigurationHelper
-            .loadStepDefaults(this)
+        ConfigurationHelper configHelper = ConfigurationHelper.newInstance(this)
+            .loadStepDefaults()
             .mixinGeneralConfig(script.commonPipelineEnvironment, generalConfigurationKeys)
             .mixinStepConfig(script.commonPipelineEnvironment, stepConfigurationKeys)
             .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName?:env.STAGE_NAME, stepConfigurationKeys)
@@ -76,8 +78,6 @@ def call(parameters = [:]) {
                                         "Change document id not provided (parameter: \'changeDocumentId\' or via commit history).")
                                     .use()
 
-        def transportRequestId
-
         echo "[INFO] Creating transport request for change document '${configuration.changeDocumentId}' and development system '${configuration.developmentSystemId}'."
 
             try {
@@ -92,6 +92,7 @@ def call(parameters = [:]) {
 
 
         echo "[INFO] Transport Request '$transportRequestId' has been successfully created."
-        return transportRequestId
     }
+
+    return transportRequestId
 }

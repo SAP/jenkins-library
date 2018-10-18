@@ -3,7 +3,7 @@ import groovy.transform.Field
 @Field STEP_NAME = 'handlePipelineStepErrors'
 
 
-def call(Map parameters = [:], body) {
+void call(Map parameters = [:], body) {
 
     def stepParameters = parameters.stepParameters //mandatory
     def stepName = parameters.stepName //mandatory
@@ -40,7 +40,7 @@ FURTHER INFORMATION:
 * Source code of library step ${stepName}: https://github.com/SAP/jenkins-library/blob/master/vars/${stepName}.groovy
 * Library documentation: https://sap.github.io/jenkins-library/
 * Library repository: https://github.com/SAP/jenkins-library
- 
+
 ----------------------------------------------------------"""
         throw err
     } finally {
