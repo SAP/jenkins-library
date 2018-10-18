@@ -1,11 +1,17 @@
 # pipelineRestartSteps
 
 ## Description
-Jenkins pipelines by default don't allow to restart individual stages or steps in case a pipeline fails.
+Support of restarting failed stages or steps in a pipeline is limited in Jenkins.
 
-More details can be found in the [Jenkins Jira issue JENKINS-33846](https://issues.jenkins-ci.org/browse/JENKINS-33846)
+This has been documented in the [Jenkins Jira issue JENKINS-33846](https://issues.jenkins-ci.org/browse/JENKINS-33846).
 
-The step `pipelineRestartSteps` aims to nevertheless allow individual parts of a pipeline (e.g. a failed deployment) to be restarted.
+For declarative pipelines there is a solution available which partially addresses this topic:
+https://jenkins.io/doc/book/pipeline/running-pipelines/#restart-from-a-stage.
+
+Nonetheless, still features are missing, so it can't be used in all cases.
+The more complex Piper pipelines which share a state via [`commonPipelineEnvironment`](commonPipelineEnvironment.md) will for example not work with the standard _restart-from-stage_.
+
+The step `pipelineRestartSteps` aims to address this gap and allows individual parts of a pipeline (e.g. a failed deployment) to be restarted.
 
 This is done in a way that the pipeline waits for user input to restart the pipeline in case of a failure. In case this user input is not provided the pipeline stops after a timeout which can be configured.
 
