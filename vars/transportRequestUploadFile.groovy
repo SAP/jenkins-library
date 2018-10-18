@@ -23,7 +23,7 @@ import hudson.AbortException
     'filePath',
     'transportRequestId'])
 
-def call(parameters = [:]) {
+void call(parameters = [:]) {
 
     handlePipelineStepErrors (stepName: STEP_NAME, stepParameters: parameters) {
 

@@ -21,7 +21,7 @@ import groovy.transform.Field
 @Field Map CONFIG_KEY_COMPATIBILITY = [cloudFoundry: [apiEndpoint: 'cfApiEndpoint', appName:'cfAppName', credentialsId: 'cfCredentialsId', manifest: 'cfManifest', org: 'cfOrg', space: 'cfSpace']]
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
 
-def call(Map parameters = [:]) {
+void call(Map parameters = [:]) {
 
     handlePipelineStepErrors (stepName: STEP_NAME, stepParameters: parameters) {
 

@@ -9,7 +9,7 @@ import hudson.AbortException
 
 @Field STEP_NAME = 'toolValidate'
 
-def call(Map parameters = [:]) {
+void call(Map parameters = [:]) {
 
     handlePipelineStepErrors (stepName: 'toolValidate', stepParameters: parameters) {
 

@@ -19,7 +19,7 @@ import groovy.transform.Field
 ])
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
 
-def call(Map parameters = [:]) {
+void call(Map parameters = [:]) {
     handlePipelineStepErrors(stepName: STEP_NAME, stepParameters: parameters) {
         def utils = parameters.juStabUtils ?: new Utils()
         def script = parameters.script ?: [commonPipelineEnvironment: commonPipelineEnvironment]
