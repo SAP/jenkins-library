@@ -21,7 +21,7 @@ import groovy.transform.Field
     'logSuccessfulMavenTransfers'
 ])
 
-def call(Map parameters = [:]) {
+void call(Map parameters = [:]) {
     handlePipelineStepErrors(stepName: STEP_NAME, stepParameters: parameters) {
         final script = parameters.script
 
