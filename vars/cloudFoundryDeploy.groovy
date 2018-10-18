@@ -1,5 +1,6 @@
 import com.sap.piper.Utils
 import com.sap.piper.ConfigurationHelper
+import com.sap.piper.CfManifestUtils
 
 import groovy.transform.Field
 
@@ -112,6 +113,7 @@ def deployCfNative (config) {
         def deployCommand = 'push'
         if (config.deployType == 'blue-green') {
             deployCommand = 'blue-green-deploy'
+            handleLegacyCfManifest(config)
         } else {
             config.smokeTest = ''
         }
@@ -129,7 +131,7 @@ def deployCfNative (config) {
         }
 
         sh """#!/bin/bash
-            set +x
+            set +x  
             export HOME=${config.dockerWorkspace}
             cf login -u \"${username}\" -p '${password}' -a ${config.cloudFoundry.apiEndpoint} -o \"${config.cloudFoundry.org}\" -s \"${config.cloudFoundry.space}\"
             cf plugins
@@ -164,5 +166,20 @@ def deployMta (config) {
             cf plugins
             cf ${deployCommand} ${config.mtaPath} ${config.mtaDeployParameters} ${config.mtaExtensionDescriptor}"""
         sh "cf logout"
+    }
+}
+
+def handleLegacyCfManifest(config) {
+    def manifest = readYaml file: config.cloudFoundry.manifest
+    String originalManifest = manifest.toString()
+    manifest = CfManifestUtils.transform(manifest)
+    String transformedManifest = manifest.toString()
+    if (originalManifest != transformedManifest) {
+        echo """The file ${config.cloudFoundry.manifest} is not compatible with the Cloud Foundry blue-green deployment plugin. Re-writing inline.
+See this issue if you are interested in the background: https://github.com/cloudfoundry/cli/issues/1445.\n
+Original manifest file content: $originalManifest\n
+Transformed manifest file content: $transformedManifest"""
+        sh "rm ${config.cloudFoundry.manifest}"
+        writeYaml file: config.cloudFoundry.manifest, data: manifest
     }
 }

@@ -4,6 +4,7 @@ package util
 
 import com.lesfurets.jenkins.unit.BasePipelineTest
 import com.sap.piper.GitUtils
+import com.sap.piper.JenkinsUtils
 import com.sap.piper.Utils
 import org.junit.Before
 import org.junit.runner.RunWith
@@ -18,16 +19,13 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner
 abstract class BasePiperTest extends BasePipelineTest {
 
     @Autowired
-    MockHelper mockHelper
-
-    @Autowired
     Script nullScript
 
     @Autowired
-    GitUtils gitUtils
+    Utils utils
 
     @Autowired
-    Utils utils
+    JenkinsUtils jenkinsUtils
 
     @Override
     @Before
