@@ -13,6 +13,8 @@ import util.JenkinsStepRule
 import util.PluginMock
 import util.Rules
 
+import static org.hamcrest.Matchers.*
+import static org.junit.Assert.assertThat
 import static org.junit.Assert.assertTrue
 import static org.junit.Assert.assertEquals
 import static org.junit.Assert.assertFalse
@@ -50,7 +52,7 @@ class DockerExecuteTest extends BasePiperTest {
         })
         binding.setVariable('env', [POD_NAME: 'testpod', ON_K8S: 'true'])
         ContainerMap.instance.setMap(['testpod': ['maven:3.5-jdk-8-alpine': 'mavenexec']])
-        jsr.step.call(script: nullScript,
+        jsr.step.dockerExecute(script: nullScript,
             dockerImage: 'maven:3.5-jdk-8-alpine',
             dockerEnvVars: ['http_proxy': 'http://proxy:8000']) {
             bodyExecuted = true
@@ -65,7 +67,7 @@ class DockerExecuteTest extends BasePiperTest {
         helper.registerAllowedMethod('dockerExecuteOnKubernetes', [Map.class, Closure.class], { Map config, Closure body -> body() })
         binding.setVariable('env', [ON_K8S: 'true'])
         ContainerMap.instance.setMap(['testpod': ['maven:3.5-jdk-8-alpine': 'mavenexec']])
-        jsr.step.call(script: nullScript,
+        jsr.step.dockerExecute(script: nullScript,
             dockerImage: 'maven:3.5-jdk-8-alpine',
             dockerEnvVars: ['http_proxy': 'http://proxy:8000']) {
             bodyExecuted = true
@@ -79,7 +81,7 @@ class DockerExecuteTest extends BasePiperTest {
         helper.registerAllowedMethod('dockerExecuteOnKubernetes', [Map.class, Closure.class], { Map config, Closure body -> body() })
         binding.setVariable('env', [POD_NAME: 'testpod', ON_K8S: 'true'])
         ContainerMap.instance.setMap([:])
-        jsr.step.call(script: nullScript,
+        jsr.step.dockerExecute(script: nullScript,
             dockerImage: 'maven:3.5-jdk-8-alpine',
             dockerEnvVars: ['http_proxy': 'http://proxy:8000']) {
             bodyExecuted = true
@@ -93,7 +95,7 @@ class DockerExecuteTest extends BasePiperTest {
         helper.registerAllowedMethod('dockerExecuteOnKubernetes', [Map.class, Closure.class], { Map config, Closure body -> body() })
         binding.setVariable('env', [POD_NAME: 'testpod', ON_K8S: 'true'])
         ContainerMap.instance.setMap(['testpod':[:]])
-        jsr.step.call(script: nullScript,
+        jsr.step.dockerExecute(script: nullScript,
             dockerImage: 'maven:3.5-jdk-8-alpine',
             dockerEnvVars: ['http_proxy': 'http://proxy:8000']) {
             bodyExecuted = true
@@ -104,7 +106,7 @@ class DockerExecuteTest extends BasePiperTest {
 
     @Test
     void testExecuteInsideDockerContainer() throws Exception {
-        jsr.step.call(script: nullScript, dockerImage: 'maven:3.5-jdk-8-alpine') {
+        jsr.step.dockerExecute(script: nullScript, dockerImage: 'maven:3.5-jdk-8-alpine') {
             bodyExecuted = true
         }
         assertEquals('maven:3.5-jdk-8-alpine', docker.getImageName())
@@ -115,7 +117,7 @@ class DockerExecuteTest extends BasePiperTest {
 
     @Test
     void testExecuteInsideDockerNoScript() throws Exception {
-        jsr.step.call(dockerImage: 'maven:3.5-jdk-8-alpine') {
+        jsr.step.dockerExecute(dockerImage: 'maven:3.5-jdk-8-alpine') {
             bodyExecuted = true
         }
         assertEquals('maven:3.5-jdk-8-alpine', docker.getImageName())
@@ -126,7 +128,7 @@ class DockerExecuteTest extends BasePiperTest {
 
     @Test
     void testExecuteInsideDockerContainerWithParameters() throws Exception {
-        jsr.step.call(script: nullScript,
+        jsr.step.dockerExecute(script: nullScript,
                       dockerImage: 'maven:3.5-jdk-8-alpine',
                       dockerOptions: '-it',
                       dockerVolumeBind: ['my_vol': '/my_vol'],
@@ -142,7 +144,7 @@ class DockerExecuteTest extends BasePiperTest {
 
     @Test
     void testExecuteInsideDockerContainerWithDockerOptionsList() throws Exception {
-        jsr.step.call(script: nullScript,
+        jsr.step.dockerExecute(script: nullScript,
             dockerImage: 'maven:3.5-jdk-8-alpine',
             dockerOptions: ['-it', '--network=my-network'],
             dockerEnvVars: ['http_proxy': 'http://proxy:8000']) {
@@ -156,7 +158,7 @@ class DockerExecuteTest extends BasePiperTest {
     @Test
     void testDockerNotInstalledResultsInLocalExecution() throws Exception {
         whichDockerReturnValue = 1
-        jsr.step.call(script: nullScript,
+        jsr.step.dockerExecute(script: nullScript,
             dockerOptions: '-it') {
             bodyExecuted = true
         }
@@ -166,10 +168,70 @@ class DockerExecuteTest extends BasePiperTest {
         assertFalse(docker.isImagePulled())
     }
 
+    @Test
+    void testSidecarDefault(){
+        jsr.step.dockerExecute(
+            script: nullScript,
+            dockerImage: 'maven:3.5-jdk-8-alpine',
+            sidecarEnvVars: ['testEnv':'testVal'],
+            sidecarImage: 'selenium/standalone-chrome',
+            sidecarVolumeBind: ['/dev/shm':'/dev/shm'],
+            sidecarName: 'testAlias',
+            sidecarPorts: ['4444':'4444', '1111':'1111']
+        ) {
+            bodyExecuted = true
+        }
+
+        assertThat(bodyExecuted, is(true))
+        assertThat(docker.imagePullCount, is(2))
+        assertThat(docker.sidecarParameters, allOf(
+            containsString('--env testEnv=testVal'),
+            containsString('--volume /dev/shm:/dev/shm')
+        ))
+        assertThat(docker.parameters, containsString('--link uniqueId:testAlias'))
+    }
+
+    @Test
+    void testSidecarKubernetes(){
+        boolean dockerExecuteOnKubernetesCalled = false
+        binding.setVariable('env', [ON_K8S: 'true'])
+        helper.registerAllowedMethod('dockerExecuteOnKubernetes', [Map.class, Closure.class], { params, body ->
+            dockerExecuteOnKubernetesCalled = true
+            assertThat(params.containerCommands['selenium/standalone-chrome'], is(''))
+            assertThat(params.containerEnvVars, allOf(hasEntry('selenium/standalone-chrome', ['testEnv': 'testVal']),hasEntry('maven:3.5-jdk-8-alpine', null)))
+            assertThat(params.containerMap, allOf(hasEntry('maven:3.5-jdk-8-alpine', 'maven'), hasEntry('selenium/standalone-chrome', 'selenium')))
+            assertThat(params.containerName, is('maven'))
+            assertThat(params.containerPortMappings['selenium/standalone-chrome'], hasItem(allOf(hasEntry('containerPort', 4444), hasEntry('hostPort', 4444))))
+            assertThat(params.containerWorkspaces['maven:3.5-jdk-8-alpine'], is('/home/piper'))
+            assertThat(params.containerWorkspaces['selenium/standalone-chrome'], is(''))
+            body()
+        })
+        jsr.step.dockerExecute(
+            script: nullScript,
+            containerPortMappings: [
+                'selenium/standalone-chrome': [[name: 'selPort', containerPort: 4444, hostPort: 4444]]
+            ],
+            dockerImage: 'maven:3.5-jdk-8-alpine',
+            dockerName: 'maven',
+            dockerWorkspace: '/home/piper',
+            sidecarEnvVars: ['testEnv':'testVal'],
+            sidecarImage: 'selenium/standalone-chrome',
+            sidecarName: 'selenium',
+            sidecarVolumeBind: ['/dev/shm':'/dev/shm'],
+            dockerLinkAlias: 'testAlias',
+        ) {
+            bodyExecuted = true
+        }
+        assertThat(bodyExecuted, is(true))
+        assertThat(dockerExecuteOnKubernetesCalled, is(true))
+    }
+
     private class DockerMock {
         private String imageName
         private boolean imagePulled = false
+        private int imagePullCount = 0
         private String parameters
+        private String sidecarParameters
 
         DockerMock image(String imageName) {
             this.imageName = imageName
@@ -177,12 +239,18 @@ class DockerExecuteTest extends BasePiperTest {
         }
 
         void pull() {
+            imagePullCount++
             imagePulled = true
         }
 
         void inside(String parameters, body) {
             this.parameters = parameters
             body()
+        }
+
+        void withRun(String parameters, body) {
+            this.sidecarParameters = parameters
+            body([id: 'uniqueId'])
         }
 
         String getImageName() {

@@ -1,9 +1,13 @@
 #!groovy
+
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.ExpectedException
 import org.junit.rules.RuleChain
+
+import com.sap.piper.GitUtils
+
 import util.BasePiperTest
 import util.JenkinsDockerExecuteRule
 import util.JenkinsEnvironmentRule
@@ -17,7 +21,9 @@ import util.Rules
 
 import static org.hamcrest.Matchers.hasItem
 import static org.hamcrest.Matchers.hasItems
+import static org.hamcrest.Matchers.not
 import static org.hamcrest.Matchers.notNullValue
+import static org.hamcrest.Matchers.stringContainsInOrder
 import static org.hamcrest.Matchers.containsString
 import static org.junit.Assert.assertThat
 
@@ -25,6 +31,16 @@ import static org.junit.Assert.assertEquals
 
 class ArtifactSetVersionTest extends BasePiperTest {
     Map dockerParameters
+
+    def GitUtils gitUtils = new GitUtils() {
+        boolean insideWorkTree() {
+            return true
+        }
+
+        String getGitCommitIdOrNull() {
+            return 'testCommitId'
+        }
+    }
 
     def sshAgentList = []
 
@@ -61,10 +77,8 @@ class ArtifactSetVersionTest extends BasePiperTest {
             return closure()
         })
 
-        jscr.setReturnValue('git rev-parse HEAD', 'testCommitId')
         jscr.setReturnValue("date --universal +'%Y%m%d%H%M%S'", '20180101010203')
         jscr.setReturnValue('git diff --quiet HEAD', 0)
-        jscr.setReturnValue('git rev-parse --is-inside-work-tree 1>/dev/null 2>&1', 0)
 
         helper.registerAllowedMethod('fileExists', [String.class], {true})
     }
@@ -77,10 +91,13 @@ class ArtifactSetVersionTest extends BasePiperTest {
         assertEquals('testCommitId', jer.env.getGitCommitId())
 
         assertThat(jscr.shell, hasItem("mvn --file 'pom.xml' --batch-mode -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn versions:set -DnewVersion=1.2.3-20180101010203_testCommitId -DgenerateBackupPoms=false"))
-        assertThat(jscr.shell, hasItem('git add .'))
-        assertThat(jscr.shell, hasItems(containsString("git commit -m 'update version 1.2.3-20180101010203_testCommitId'"),
-                                        containsString('git tag build_1.2.3-20180101010203_testCommitId'),
-                                        containsString('git push myGitSshUrl build_1.2.3-20180101010203_testCommitId')))
+        assertThat(jscr.shell.join(), stringContainsInOrder([
+                                            "git add .",
+                                            "git commit -m 'update version 1.2.3-20180101010203_testCommitId'",
+                                            'git tag build_1.2.3-20180101010203_testCommitId',
+                                            'git push myGitSshUrl build_1.2.3-20180101010203_testCommitId',
+                                            ]
+                                        ))
     }
 
     @Test
@@ -89,6 +106,7 @@ class ArtifactSetVersionTest extends BasePiperTest {
 
         assertEquals('1.2.3-20180101010203_testCommitId', jer.env.getArtifactVersion())
         assertThat(jscr.shell, hasItem("mvn --file 'pom.xml' --batch-mode -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn versions:set -DnewVersion=1.2.3-20180101010203_testCommitId -DgenerateBackupPoms=false"))
+        assertThat(jscr.shell, not(hasItem(containsString('commit'))))
     }
 
     @Test
@@ -144,11 +162,4 @@ class ArtifactSetVersionTest extends BasePiperTest {
         )
         assertThat(sshAgentList, hasItem('testCredentials'))
     }
-
-    void prepareObjectInterceptors(object) {
-        object.metaClass.invokeMethod = helper.getMethodInterceptor()
-        object.metaClass.static.invokeMethod = helper.getMethodInterceptor()
-        object.metaClass.methodMissing = helper.getMethodMissingInterceptor()
-    }
-
 }

@@ -5,8 +5,10 @@ import org.junit.rules.TemporaryFolder
 import org.junit.BeforeClass
 import org.junit.ClassRule
 import org.junit.Ignore
+
 import org.hamcrest.BaseMatcher
 import org.hamcrest.Description
+import org.jenkinsci.plugins.credentialsbinding.impl.CredentialNotFoundException
 import org.junit.Assert
 import org.junit.Before
 import org.junit.Rule
@@ -15,6 +17,7 @@ import org.junit.rules.ExpectedException
 import org.junit.rules.RuleChain
 
 import util.BasePiperTest
+import util.JenkinsCredentialsRule
 import util.JenkinsLoggingRule
 import util.JenkinsReadYamlRule
 import util.JenkinsShellCallRule
@@ -40,6 +43,9 @@ class NeoDeployTest extends BasePiperTest {
         .around(thrown)
         .around(jlr)
         .around(jscr)
+        .around(new JenkinsCredentialsRule(this)
+            .withCredentials('myCredentialsId', 'anonymous', '********')
+            .withCredentials('CI_CREDENTIALS_ID', 'defaultUser', '********'))
         .around(jsr)
 
     private static workspacePath
@@ -66,24 +72,6 @@ class NeoDeployTest extends BasePiperTest {
 
         helper.registerAllowedMethod('dockerExecute', [Map, Closure], null)
         helper.registerAllowedMethod('fileExists', [String], { s -> return new File(workspacePath, s).exists() })
-        helper.registerAllowedMethod('usernamePassword', [Map], { m -> return m })
-        helper.registerAllowedMethod('withCredentials', [List, Closure], { l, c ->
-            if(l[0].credentialsId == 'myCredentialsId') {
-                binding.setProperty('username', 'anonymous')
-                binding.setProperty('password', '********')
-            } else if(l[0].credentialsId == 'CI_CREDENTIALS_ID') {
-                binding.setProperty('username', 'defaultUser')
-                binding.setProperty('password', '********')
-            }
-            try {
-                c()
-            } finally {
-                binding.setProperty('username', null)
-                binding.setProperty('password', null)
-            }
-
-        })
-
         helper.registerAllowedMethod('sh', [Map], { Map m -> getVersionWithEnvVars(m) })
 
         nullScript.commonPipelineEnvironment.configuration = [steps:[neoDeploy: [host: 'test.deploy.host.com', account: 'trialuser123']]]
@@ -179,8 +167,7 @@ class NeoDeployTest extends BasePiperTest {
     @Test
     void badCredentialsIdTest() {
 
-        thrown.expect(MissingPropertyException)
-        thrown.expectMessage('No such property: username')
+        thrown.expect(CredentialNotFoundException)
 
         jsr.step.call(script: nullScript,
                        archivePath: archiveName,

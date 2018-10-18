@@ -9,11 +9,21 @@ import groovy.transform.Field
 
 @Field Set GENERAL_CONFIG_KEYS = ['jenkinsKubernetes']
 
-@Field Set PARAMETER_KEYS = ['dockerImage',
-                             'dockerOptions',
-                             'dockerWorkspace',
-                             'dockerEnvVars',
-                             'dockerVolumeBind']
+@Field Set PARAMETER_KEYS = [
+    'containerPortMappings',
+    'dockerEnvVars',
+    'dockerImage',
+    'dockerName',
+    'dockerOptions',
+    'dockerWorkspace',
+    'dockerVolumeBind',
+    'sidecarName',
+    'sidecarEnvVars',
+    'sidecarImage',
+    'sidecarOptions',
+    'sidecarWorkspace',
+    'sidecarVolumeBind'
+]
 @Field Set STEP_CONFIG_KEYS = PARAMETER_KEYS
 
 void call(Map parameters = [:], body) {
@@ -31,19 +41,48 @@ void call(Map parameters = [:], body) {
         if (isKubernetes() && config.dockerImage) {
             if (env.POD_NAME && isContainerDefined(config)) {
                 container(getContainerDefined(config)) {
-                    echo "Executing inside a Kubernetes Container"
+                    echo "[INFO][${STEP_NAME}] Executing inside a Kubernetes Container."
                     body()
                     sh "chown -R 1000:1000 ."
                 }
             } else {
-                dockerExecuteOnKubernetes(
-                    script: script,
-                    dockerImage: config.dockerImage,
-                    dockerEnvVars: config.dockerEnvVars,
-                    dockerWorkspace: config.dockerWorkspace
-                ){
-                    echo "Executing inside a Kubernetes Pod"
-                    body()
+                if (!config.sidecarImage) {
+                    dockerExecuteOnKubernetes(
+                        script: script,
+                        dockerImage: config.dockerImage,
+                        dockerEnvVars: config.dockerEnvVars,
+                        dockerWorkspace: config.dockerWorkspace
+                    ){
+                        echo "[INFO][${STEP_NAME}] Executing inside a Kubernetes Pod"
+                        body()
+                    }
+                } else {
+                    Map paramMap = [
+                        script: script,
+                        containerCommands: [:],
+                        containerEnvVars: [:],
+                        containerMap: [:],
+                        containerName: config.dockerName,
+                        containerPortMappings: [:],
+                        containerWorkspaces: [:]
+                    ]
+                    paramMap.containerCommands[config.sidecarImage] = ''
+
+                    paramMap.containerEnvVars[config.dockerImage] = config.dockerEnvVars
+                    paramMap.containerEnvVars[config.sidecarImage] = config.sidecarEnvVars
+
+                    paramMap.containerMap[config.dockerImage] = config.dockerName
+                    paramMap.containerMap[config.sidecarImage] = config.sidecarName
+
+                    paramMap.containerPortMappings = config.containerPortMappings
+
+                    paramMap.containerWorkspaces[config.dockerImage] = config.dockerWorkspace
+                    paramMap.containerWorkspaces[config.sidecarImage] = ''
+
+                    dockerExecuteOnKubernetes(paramMap){
+                        echo "[INFO][${STEP_NAME}] Executing inside a Kubernetes Pod with sidecar container"
+                        body()
+                    }
                 }
             }
         } else {
@@ -67,8 +106,21 @@ void call(Map parameters = [:], body) {
             if (executeInsideDocker && config.dockerImage) {
                 def image = docker.image(config.dockerImage)
                 image.pull()
-                image.inside(getDockerOptions(config.dockerEnvVars, config.dockerVolumeBind, config.dockerOptions)) {
-                    body()
+                if (!config.sidecarImage) {
+                    image.inside(getDockerOptions(config.dockerEnvVars, config.dockerVolumeBind, config.dockerOptions)) {
+                        body()
+                    }
+                } else {
+                    def sidecarImage = docker.image(config.sidecarImage)
+                    sidecarImage.pull()
+                    sidecarImage.withRun(getDockerOptions(config.sidecarEnvVars, config.sidecarVolumeBind, config.sidecarOptions)) { c ->
+                        config.dockerOptions = config.dockerOptions?:[]
+                        config.dockerOptions.add("--link ${c.id}:${config.sidecarName}")
+                        image.inside(getDockerOptions(config.dockerEnvVars, config.dockerVolumeBind, config.dockerOptions)) {
+                            echo "[INFO][${STEP_NAME}] Running with sidecar container."
+                            body()
+                        }
+                    }
                 }
             } else {
                 echo "[INFO][${STEP_NAME}] Running on local environment."
