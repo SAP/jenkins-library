@@ -22,7 +22,7 @@ void call(Map parameters = [:], body) {
                 .createTemplate(libraryResource('com.sap.piper/templates/error.log'))
                 .make([
                     stepName: stepName,
-                    stepParameters: stepParameters?:toString(),
+                    stepParameters: stepParameters?.toString(),
                     error: err
                 ]).toString()
         throw err
