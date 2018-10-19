@@ -25,8 +25,8 @@ void call(Map parameters = [:]) {
         def script = parameters.script ?: [commonPipelineEnvironment: commonPipelineEnvironment]
 
         // load default & individual configuration
-        Map config = ConfigurationHelper
-            .loadStepDefaults(this)
+        Map config = ConfigurationHelper.newInstance(this)
+            .loadStepDefaults()
             .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS)
             .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS)
             .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName?:env.STAGE_NAME, STEP_CONFIG_KEYS)
@@ -122,12 +122,10 @@ ${data}
 
 boolean isExcluded(item, excludeLabels){
     def result = false
-    if (!excludeLabels.isEmpty()) {
-        excludeLabels.each {labelName ->
-            item.labels.each { label ->
-                if (label.name == labelName) {
-                    result = true
-                }
+    excludeLabels.each {labelName ->
+        item.labels.each { label ->
+            if (label.name == labelName) {
+                result = true
             }
         }
     }
