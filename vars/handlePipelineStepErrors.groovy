@@ -1,50 +1,34 @@
+import groovy.text.SimpleTemplateEngine
 import groovy.transform.Field
 
 @Field STEP_NAME = 'handlePipelineStepErrors'
 
-
 void call(Map parameters = [:], body) {
-
     def stepParameters = parameters.stepParameters //mandatory
     def stepName = parameters.stepName //mandatory
-    def echoDetails = parameters.get('echoDetails', true)
-
+    def verbose = parameters.get('echoDetails', true)
+    def message = ''
     try {
-
         if (stepParameters == null && stepName == null)
             error "step handlePipelineStepErrors requires following mandatory parameters: stepParameters, stepName"
 
-        if (echoDetails)
-            echo "--- BEGIN LIBRARY STEP: ${stepName}.groovy ---"
+        if (verbose)
+            echo "--- BEGIN LIBRARY STEP: ${stepName} ---"
 
         body()
-
     } catch (Throwable err) {
-        if (echoDetails)
-            echo """----------------------------------------------------------
---- ERROR OCCURRED IN LIBRARY STEP: ${stepName}
-----------------------------------------------------------
-
-FOLLOWING PARAMETERS WERE AVAILABLE TO THIS STEP:
-***
-${stepParameters?.toString()}
-***
-
-ERROR WAS:
-***
-${err}
-***
-
-FURTHER INFORMATION:
-* Documentation of library step ${stepName}: https://sap.github.io/jenkins-library/steps/${stepName}/
-* Source code of library step ${stepName}: https://github.com/SAP/jenkins-library/blob/master/vars/${stepName}.groovy
-* Library documentation: https://sap.github.io/jenkins-library/
-* Library repository: https://github.com/SAP/jenkins-library
-
-----------------------------------------------------------"""
+        if (verbose)
+            message += SimpleTemplateEngine.newInstance()
+                .createTemplate(libraryResource('com.sap.piper/templates/error.log'))
+                .make([
+                    stepName: stepName,
+                    stepParameters: stepParameters?:toString(),
+                    error: err
+                ]).toString()
         throw err
     } finally {
-        if (echoDetails)
-            echo "--- END LIBRARY STEP: ${stepName}.groovy ---"
+        if (verbose)
+            message += "--- END LIBRARY STEP: ${stepName} ---"
+            echo message
     }
 }
