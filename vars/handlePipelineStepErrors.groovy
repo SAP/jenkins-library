@@ -3,7 +3,7 @@ import groovy.transform.Field
 @Field STEP_NAME = 'handlePipelineStepErrors'
 
 
-def call(Map parameters = [:], body) {
+void call(Map parameters = [:], body) {
 
     def stepParameters = parameters.stepParameters //mandatory
     def stepName = parameters.stepName //mandatory
@@ -22,12 +22,12 @@ def call(Map parameters = [:], body) {
     } catch (Throwable err) {
         if (echoDetails)
             echo """----------------------------------------------------------
---- ERROR OCCURED IN LIBRARY STEP: ${stepName}
+--- ERROR OCCURRED IN LIBRARY STEP: ${stepName}
 ----------------------------------------------------------
 
 FOLLOWING PARAMETERS WERE AVAILABLE TO THIS STEP:
 ***
-${stepParameters}
+${stepParameters?.toString()}
 ***
 
 ERROR WAS:
@@ -40,7 +40,7 @@ FURTHER INFORMATION:
 * Source code of library step ${stepName}: https://github.com/SAP/jenkins-library/blob/master/vars/${stepName}.groovy
 * Library documentation: https://sap.github.io/jenkins-library/
 * Library repository: https://github.com/SAP/jenkins-library
- 
+
 ----------------------------------------------------------"""
         throw err
     } finally {

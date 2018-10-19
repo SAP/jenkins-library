@@ -19,14 +19,14 @@ import groovy.transform.Field
 ]
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
 
-def call(Map parameters = [:]) {
+void call(Map parameters = [:]) {
     handlePipelineStepErrors(stepName: STEP_NAME, stepParameters: parameters) {
         def script = parameters?.script ?: [commonPipelineEnvironment: commonPipelineEnvironment]
         def utils = parameters?.juStabUtils ?: new Utils()
 
         // load default & individual configuration
-        Map config = ConfigurationHelper
-            .loadStepDefaults(this)
+        Map config = ConfigurationHelper.newInstance(this)
+            .loadStepDefaults()
             .mixinGeneralConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS)
             .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS)
             .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName?:env.STAGE_NAME, STEP_CONFIG_KEYS)
