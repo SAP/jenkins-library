@@ -62,10 +62,6 @@ Map getLastRelease(config, TOKEN){
     } catch (e) {
         echo "[${STEP_NAME}] This is the first release - no previous releases available ${e.getMessage()}"
         config.addDeltaToLastRelease = false
-        result = [
-            published_at: '2017-06-21T15:11:57Z',
-            tag_name: ''
-        ]
     }
     return result
 }
@@ -75,7 +71,9 @@ String addClosedIssue(config, TOKEN, publishedAt){
         config.customFilterExtension = "&${config.customFilterExtension}"
     }
 
-    def response = httpRequest "${config.githubApiUrl}/repos/${config.githubOrg}/${config.githubRepo}/issues?access_token=${TOKEN}&per_page=100&state=closed&direction=asc&since=${publishedAt}${config.customFilterExtension}"
+    def publishedAtFilter = publishedAt ? "&since=${publishedAt}": ''
+
+    def response = httpRequest "${config.githubApiUrl}/repos/${config.githubOrg}/${config.githubRepo}/issues?access_token=${TOKEN}&per_page=100&state=closed&direction=asc${publishedAtFilter}${config.customFilterExtension}"
     def result = ''
 
     content = readJSON text: response.content
