@@ -29,6 +29,6 @@ void call(Map parameters = [:], body) {
     } finally {
         if (verbose)
             message += "--- END LIBRARY STEP: ${stepName} ---"
-            echo message
+        echo message
     }
 }
