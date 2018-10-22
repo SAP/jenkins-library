@@ -22,7 +22,7 @@ import static com.sap.piper.cm.StepHelpers.getBackendTypeAndLogInfoIfCMIntegrati
 
 @Field Set generalConfigurationKeys = stepConfigurationKeys
 
-def call(parameters = [:]) {
+void call(parameters = [:]) {
 
     handlePipelineStepErrors (stepName: STEP_NAME, stepParameters: parameters) {
 
@@ -32,8 +32,8 @@ def call(parameters = [:]) {
 
         ChangeManagement cm = parameters?.cmUtils ?: new ChangeManagement(script, gitUtils)
 
-        ConfigurationHelper configHelper = ConfigurationHelper
-            .loadStepDefaults(this)
+        ConfigurationHelper configHelper = ConfigurationHelper.newInstance(this)
+            .loadStepDefaults()
             .mixinGeneralConfig(script.commonPipelineEnvironment, generalConfigurationKeys)
             .mixinStepConfig(script.commonPipelineEnvironment, stepConfigurationKeys)
             .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName?:env.STAGE_NAME, stepConfigurationKeys)
@@ -111,14 +111,12 @@ def call(parameters = [:]) {
 
         if(isInDevelopment) {
             echo "[INFO] Change '${changeId}' is in status 'in development'."
-            return true
         } else {
             if(configuration.failIfStatusIsNotInDevelopment.toBoolean()) {
                 throw new AbortException("Change '${changeId}' is not in status 'in development'.")
 
             } else {
                 echo "[WARNING] Change '${changeId}' is not in status 'in development'. Failing the pipeline has been explicitly disabled."
-                return false
             }
         }
     }
