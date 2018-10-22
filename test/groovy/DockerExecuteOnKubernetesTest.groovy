@@ -16,6 +16,8 @@ import util.JenkinsStepRule
 import util.PluginMock
 import util.Rules
 
+import static org.hamcrest.Matchers.*
+import static org.junit.Assert.assertThat
 import static org.junit.Assert.assertTrue
 import static org.junit.Assert.assertEquals
 import static org.junit.Assert.assertFalse
@@ -48,6 +50,8 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
     def imageList = []
     def containerName = ''
     def envList = []
+    def portList = []
+    def containerCommands = []
 
 
     @Before
@@ -55,6 +59,8 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
         containersList = []
         imageList = []
         envList = []
+        portList = []
+        containerCommands = []
         bodyExecuted = false
         JenkinsUtils.metaClass.static.isPluginActive = { def s -> new PluginMock(s).isActive() }
         helper.registerAllowedMethod('sh', [Map.class], {return whichDockerReturnValue})
@@ -65,8 +71,12 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
             podLabel = options.label
             options.containers.each { option ->
                 containersList.add(option.name)
-                imageList.add(option.image)
+                imageList.add(option.image.toString())
                 envList.add(option.envVars)
+                portList.add(option.ports)
+                if (option.command) {
+                    containerCommands.add(option.command)
+                }
             }
             body()
         })
@@ -77,25 +87,26 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
 
     @Test
     void testRunOnPodNoContainerMapOnlyDockerImage() throws Exception {
-        jsr.step.call(script: nullScript,
+        jsr.step.dockerExecuteOnKubernetes(script: nullScript,
             dockerImage: 'maven:3.5-jdk-8-alpine',
             dockerOptions: '-it',
             dockerVolumeBind: ['my_vol': '/my_vol'],
-            dockerEnvVars: ['http_proxy': 'http://proxy:8000'], dockerWorkspace: '/home/piper'){
-                bodyExecuted = true
+            dockerEnvVars: ['http_proxy': 'http://proxy:8000'], dockerWorkspace: '/home/piper'
+        ){
+            bodyExecuted = true
         }
-        assertTrue(containersList.contains('container-exec'))
-        assertTrue(imageList.contains('maven:3.5-jdk-8-alpine'))
-        assertTrue(envList.toString().contains('http_proxy'))
-        assertTrue(envList.toString().contains('http://proxy:8000'))
-        assertTrue(envList.toString().contains('/home/piper'))
-        assertTrue(bodyExecuted)
+        assertThat(containersList, hasItem('container-exec'))
+        assertThat(imageList, hasItem('maven:3.5-jdk-8-alpine'))
+        assertThat(envList.toString(), containsString('http_proxy'))
+        assertThat(envList.toString(), containsString('http://proxy:8000'))
+        assertThat(envList.toString(), containsString('/home/piper'))
+        assertThat(bodyExecuted, is(true))
+        assertThat(containerCommands.size(), is(1))
     }
-
 
     @Test
     void testDockerExecuteOnKubernetesWithCustomContainerMap() throws Exception {
-        jsr.step.call(script: nullScript,
+        jsr.step.dockerExecuteOnKubernetes(script: nullScript,
             containerMap: ['maven:3.5-jdk-8-alpine': 'mavenexecute']) {
             container(name: 'mavenexecute') {
                 bodyExecuted = true
@@ -105,12 +116,13 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
         assertTrue(containersList.contains('mavenexecute'))
         assertTrue(imageList.contains('maven:3.5-jdk-8-alpine'))
         assertTrue(bodyExecuted)
+        assertThat(containerCommands.size(), is(1))
     }
 
     @Test
     void testDockerExecuteOnKubernetesWithCustomJnlpWithContainerMap() throws Exception {
         nullScript.commonPipelineEnvironment.configuration = ['general': ['jenkinsKubernetes': ['jnlpAgent': 'myJnalpAgent']]]
-        jsr.step.call(script: nullScript,
+        jsr.step.dockerExecuteOnKubernetes(script: nullScript,
             containerMap: ['maven:3.5-jdk-8-alpine': 'mavenexecute']) {
             container(name: 'mavenexecute') {
                 bodyExecuted = true
@@ -127,7 +139,7 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
     @Test
     void testDockerExecuteOnKubernetesWithCustomJnlpWithDockerImage() throws Exception {
         nullScript.commonPipelineEnvironment.configuration = ['general': ['jenkinsKubernetes': ['jnlpAgent': 'myJnalpAgent']]]
-        jsr.step.call(script: nullScript,
+        jsr.step.dockerExecuteOnKubernetes(script: nullScript,
             dockerImage: 'maven:3.5-jdk-8-alpine') {
             bodyExecuted = true
         }
@@ -141,7 +153,7 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
 
     @Test
     void testDockerExecuteOnKubernetesWithCustomWorkspace() throws Exception {
-        jsr.step.call(script: nullScript,
+        jsr.step.dockerExecuteOnKubernetes(script: nullScript,
             containerMap: ['maven:3.5-jdk-8-alpine': 'mavenexecute'],
             dockerWorkspace: '/home/piper') {
             container(name: 'mavenexecute') {
@@ -154,7 +166,7 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
 
     @Test
     void testDockerExecuteOnKubernetesWithCustomEnv() throws Exception {
-        jsr.step.call(script: nullScript,
+        jsr.step.dockerExecuteOnKubernetes(script: nullScript,
             containerMap: ['maven:3.5-jdk-8-alpine': 'mavenexecute'],
             dockerEnvVars: ['customEnvKey': 'customEnvValue']) {
             container(name: 'mavenexecute') {
@@ -167,7 +179,7 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
 
     @Test
     void testDockerExecuteOnKubernetesUpperCaseContainerName() throws Exception {
-        jsr.step.call(script: nullScript,
+        jsr.step.dockerExecuteOnKubernetes(script: nullScript,
             containerMap: ['maven:3.5-jdk-8-alpine': 'MAVENEXECUTE'],
             dockerEnvVars: ['customEnvKey': 'customEnvValue']) {
             container(name: 'mavenexecute') {
@@ -183,7 +195,7 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
     @Test
     void testDockerExecuteOnKubernetesEmptyContainerMapNoDockerImage() throws Exception {
         exception.expect(IllegalArgumentException.class);
-            jsr.step.call(script: nullScript,
+            jsr.step.dockerExecuteOnKubernetes(script: nullScript,
                 containerMap: [:],
                 dockerEnvVars: ['customEnvKey': 'customEnvValue']) {
                 container(name: 'jnlp') {
@@ -192,6 +204,55 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
             }
         assertFalse(bodyExecuted)
     }
+
+    @Test
+    void testSidecarDefault() {
+        List portMapping = []
+        helper.registerAllowedMethod('portMapping', [Map.class], {m ->
+            portMapping.add(m)
+            return m
+        })
+        jsr.step.dockerExecuteOnKubernetes(
+            script: nullScript,
+            containerCommands: ['selenium/standalone-chrome': ''],
+            containerEnvVars: [
+                'selenium/standalone-chrome': ['customEnvKey': 'customEnvValue']
+            ],
+            containerMap: [
+                'maven:3.5-jdk-8-alpine': 'mavenexecute',
+                'selenium/standalone-chrome': 'selenium'
+            ],
+            containerName: 'mavenexecute',
+            containerPortMappings: [
+                'selenium/standalone-chrome': [[containerPort: 4444, hostPort: 4444]]
+            ],
+            containerWorkspaces: [
+                'selenium/standalone-chrome': ''
+            ],
+            dockerWorkspace: '/home/piper'
+        ) {
+            bodyExecuted = true
+        }
+
+        assertThat(bodyExecuted, is(true))
+        assertThat(containerName, is('mavenexecute'))
+
+        assertThat(containersList, allOf(
+            hasItem('jnlp'),
+            hasItem('mavenexecute'),
+            hasItem('selenium'),
+        ))
+        assertThat(imageList, allOf(
+            hasItem('s4sdk/jenkins-agent-k8s:latest'),
+            hasItem('maven:3.5-jdk-8-alpine'),
+            hasItem('selenium/standalone-chrome'),
+        ))
+        assertThat(portList, hasItem(hasItem([name: 'selenium0', containerPort: 4444, hostPort: 4444])))
+        assertThat(portMapping, hasItem([name: 'selenium0', containerPort: 4444, hostPort: 4444]))
+        assertThat(containerCommands.size(), is(1))
+        assertThat(envList, hasItem(hasItem(allOf(hasEntry('key', 'customEnvKey'), hasEntry ('value','customEnvValue')))))
+    }
+
 
     private container(options, body) {
         containerName = options.name

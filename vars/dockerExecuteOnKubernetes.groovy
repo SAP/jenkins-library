@@ -7,10 +7,17 @@ import hudson.AbortException
 @Field def STEP_NAME = 'dockerExecuteOnKubernetes'
 @Field def PLUGIN_ID_KUBERNETES = 'kubernetes'
 @Field Set GENERAL_CONFIG_KEYS = ['jenkinsKubernetes']
-@Field Set PARAMETER_KEYS = ['dockerImage',
-                             'dockerWorkspace',
-                             'dockerEnvVars',
-                             'containerMap']
+@Field Set PARAMETER_KEYS = [
+    'containerCommands', //specify start command for containers to overwrite Piper default (`/usr/bin/tail -f /dev/null`). If container's defaultstart command should be used provide empty string like: `['selenium/standalone-chrome': '']`
+    'containerEnvVars', //specify environment variables per container. If not provided dockerEnvVars will be used
+    'containerMap', //specify multiple images which then form a kubernetes pod, example: containerMap: ['maven:3.5-jdk-8-alpine': 'mavenexecute','selenium/standalone-chrome': 'selenium']
+    'containerName', //optional configuration in combination with containerMap to define the container where the commands should be executed in
+    'containerPortMappings', //map which defines per docker image the port mappings, like containerPortMappings: ['selenium/standalone-chrome': [[name: 'selPort', containerPort: 4444, hostPort: 4444]]]
+    'containerWorkspaces', //specify workspace (=home directory of user) per container. If not provided dockerWorkspace will be used. If empty, home directory will not be set.
+    'dockerImage',
+    'dockerWorkspace',
+    'dockerEnvVars'
+]
 @Field Set STEP_CONFIG_KEYS = PARAMETER_KEYS.plus(['stashIncludes', 'stashExcludes'])
 
 void call(Map parameters = [:], body) {
@@ -22,34 +29,21 @@ void call(Map parameters = [:], body) {
         if (script == null)
             script = [commonPipelineEnvironment: commonPipelineEnvironment]
 
-        ConfigurationHelper configHelper = ConfigurationHelper
-            .loadStepDefaults(this)
+        ConfigurationHelper configHelper = ConfigurationHelper.newInstance(this)
+            .loadStepDefaults()
             .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS)
             .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS)
             .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName ?: env.STAGE_NAME, STEP_CONFIG_KEYS)
             .mixin(parameters, PARAMETER_KEYS)
             .addIfEmpty('uniqueId', UUID.randomUUID().toString())
-        Map config = [:]
+        Map config = configHelper.use()
 
-        if (parameters.containerMap) {
-            config = configHelper.use()
-            executeOnPodWithCustomContainerList(config: config) { body() }
-
-        } else {
-            config = configHelper
-                .withMandatoryProperty('dockerImage')
-                .use()
-            executeOnPodWithSingleContainer(config: config) { body() }
+        if (!parameters.containerMap) {
+            configHelper.withMandatoryProperty('dockerImage')
+            config.containerName = 'container-exec'
+            config.containerMap = ["${config.get('dockerImage')}": config.containerName]
         }
-    }
-}
-
-void executeOnPodWithCustomContainerList(Map parameters, body) {
-    def config = parameters.config
-    podTemplate(getOptions(config)) {
-        node(config.uniqueId) {
-            body()
-        }
+        executeOnPod(config, body)
     }
 }
 
@@ -59,40 +53,39 @@ def getOptions(config) {
             containers: getContainerList(config)]
 }
 
-void executeOnPodWithSingleContainer(Map parameters, body) {
-    Map containerMap = [:]
-    def config = parameters.config
-    containerMap[config.get('dockerImage').toString()] = 'container-exec'
-    config.containerMap = containerMap
+void executeOnPod(Map config, Closure body) {
     /*
      * There could be exceptions thrown by
         - The podTemplate
         - The container method
         - The body
      * We use nested exception handling in this case.
-     * In the first 2 cases, the workspace has not been modified. Hence, we can stash existing workspace as container and
-     * unstash in the finally block. In case of exception thrown by the body, we need to stash the workspace from the container
-     * in finally block
+     * In the first 2 cases, the 'container' stash is not created because the inner try/finally is not reached.
+     * However, the workspace has not been modified and don't need to be restored.
+     * In case third case, we need to create the 'container' stash to bring the modified content back to the host.
      */
     try {
-        stashWorkspace(config, 'workspace')
+        if (config.containerName)
+            stashWorkspace(config, 'workspace')
         podTemplate(getOptions(config)) {
             node(config.uniqueId) {
-                container(name: 'container-exec') {
-                    try {
-                        unstashWorkspace(config, 'workspace')
-                        body()
-                    } finally {
-                        stashWorkspace(config, 'container')
-                     }
+                if (config.containerName) {
+                    container(name: config.containerName){
+                        try {
+                            unstashWorkspace(config, 'workspace')
+                            body()
+                        } finally {
+                            stashWorkspace(config, 'container')
+                        }
+                    }
+                } else {
+                    body()
                 }
             }
         }
-    } catch (e) {
-        stashWorkspace(config, 'container')
-        throw e
     } finally {
-        unstashWorkspace(config, 'container')
+        if (config.containerName)
+            unstashWorkspace(config, 'container')
     }
 }
 
@@ -119,16 +112,35 @@ private void unstashWorkspace(config, prefix) {
 }
 
 private List getContainerList(config) {
-    def envVars = getContainerEnvs(config)
+
     result = []
-    result.push(containerTemplate(name: 'jnlp',
-        image: config.jenkinsKubernetes.jnlpAgent))
+    result.push(containerTemplate(
+        name: 'jnlp',
+        image: config.jenkinsKubernetes.jnlpAgent
+    ))
     config.containerMap.each { imageName, containerName ->
-        result.push(containerTemplate(name: containerName.toLowerCase(),
+        def templateParameters = [
+            name: containerName.toLowerCase(),
             image: imageName,
             alwaysPullImage: true,
-            command: '/usr/bin/tail -f /dev/null',
-            envVars: envVars))
+            envVars: getContainerEnvs(config, imageName)
+        ]
+
+        if (!config.containerCommands?.get(imageName)?.isEmpty()) {
+            templateParameters.command = config.containerCommands?.get(imageName)?: '/usr/bin/tail -f /dev/null'
+        }
+
+        if (config.containerPortMappings?.get(imageName)) {
+            def ports = []
+            def portCounter = 0
+            config.containerPortMappings.get(imageName).each {mapping ->
+                mapping.name = "${containerName}${portCounter}".toString()
+                ports.add(portMapping(mapping))
+                portCounter ++
+            }
+            templateParameters.ports = ports
+        }
+        result.push(containerTemplate(templateParameters))
     }
     return result
 }
@@ -139,10 +151,10 @@ private List getContainerList(config) {
  * (Kubernetes-Plugin only!)
  * @param config Map with configurations
  */
-private List getContainerEnvs(config) {
+private List getContainerEnvs(config, imageName) {
     def containerEnv = []
-    def dockerEnvVars = config.dockerEnvVars ?: [:]
-    def dockerWorkspace = config.dockerWorkspace ?: ''
+    def dockerEnvVars = config.containerEnvVars?.get(imageName) ?: config.dockerEnvVars ?: [:]
+    def dockerWorkspace = config.containerWorkspaces?.get(imageName) != null ? config.containerWorkspaces?.get(imageName) : config.dockerWorkspace ?: ''
 
     if (dockerEnvVars) {
         for (String k : dockerEnvVars.keySet()) {

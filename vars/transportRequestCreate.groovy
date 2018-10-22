@@ -1,9 +1,7 @@
-import com.sap.piper.GitUtils
 import com.sap.piper.Utils
 import groovy.transform.Field
 
 import com.sap.piper.ConfigurationHelper
-import com.sap.piper.ConfigurationMerger
 import com.sap.piper.cm.BackendType
 import com.sap.piper.cm.ChangeManagement
 import com.sap.piper.cm.ChangeManagementException
@@ -28,14 +26,16 @@ import hudson.AbortException
 
 def call(parameters = [:]) {
 
+    def transportRequestId
+
     handlePipelineStepErrors (stepName: STEP_NAME, stepParameters: parameters) {
 
         def script = parameters?.script ?: [commonPipelineEnvironment: commonPipelineEnvironment]
 
         ChangeManagement cm = parameters.cmUtils ?: new ChangeManagement(script)
 
-        ConfigurationHelper configHelper = ConfigurationHelper
-            .loadStepDefaults(this)
+        ConfigurationHelper configHelper = ConfigurationHelper.newInstance(this)
+            .loadStepDefaults()
             .mixinGeneralConfig(script.commonPipelineEnvironment, generalConfigurationKeys)
             .mixinStepConfig(script.commonPipelineEnvironment, stepConfigurationKeys)
             .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName?:env.STAGE_NAME, stepConfigurationKeys)
@@ -97,8 +97,6 @@ def call(parameters = [:]) {
 
         configuration = configHelper.use()
 
-        def transportRequestId
-
         def creatingMessage = ["[INFO] Creating transport request"]
         if(backendType == BackendType.SOLMAN) {
             creatingMessage << " for change document '${configuration.changeDocumentId}' and development system '${configuration.developmentSystemId}'"
@@ -131,6 +129,7 @@ def call(parameters = [:]) {
 
 
         echo "[INFO] Transport Request '$transportRequestId' has been successfully created."
-        return transportRequestId
     }
+
+    return transportRequestId
 }

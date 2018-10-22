@@ -1,11 +1,12 @@
-import com.sap.piper.Utils
 import com.sap.piper.ConfigurationHelper
+import com.sap.piper.GitUtils
+import com.sap.piper.Utils
 import groovy.text.SimpleTemplateEngine
 import groovy.transform.Field
 
 @Field String STEP_NAME = 'batsExecuteTests'
 @Field Set STEP_CONFIG_KEYS = [
-    'dockerImage', //
+    'dockerImage',
     'dockerWorkspace',
     'envVars',
     'failOnError',
@@ -20,14 +21,14 @@ import groovy.transform.Field
 ]
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
 
-def call(Map parameters = [:]) {
+void call(Map parameters = [:]) {
     handlePipelineStepErrors (stepName: STEP_NAME, stepParameters: parameters) {
 
         def utils = parameters.juStabUtils ?: new Utils()
         def script = parameters.script ?: [commonPipelineEnvironment: commonPipelineEnvironment]
 
-        Map config = ConfigurationHelper
-            .loadStepDefaults(this)
+        Map config = ConfigurationHelper.newInstance(this)
+            .loadStepDefaults()
             .mixinGeneralConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS)
             .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS)
             .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName?:env.STAGE_NAME, STEP_CONFIG_KEYS)
@@ -39,17 +40,9 @@ def call(Map parameters = [:]) {
 
         script.commonPipelineEnvironment.setInfluxStepData('bats', false)
 
-
-        if (config.testRepository) {
-            def gitParameters = [url: config.testRepository]
-            if (config.gitSshKeyCredentialsId?.length()>0) gitParameters.credentialsId = config.gitSshKeyCredentialsId
-            if (config.gitBranch?.length()>0) gitParameters.branch = config.gitBranch
-            git gitParameters
-            stash 'batsTests'
-            config.stashContent = ['batsTests']
-        } else {
-            config.stashContent = utils.unstashAll(config.stashContent)
-        }
+        config.stashContent = config.testRepository
+            ?[GitUtils.handleTestRepository(this, config)]
+            :utils.unstashAll(config.stashContent)
 
         //resolve commonPipelineEnvironment references in envVars
         config.envVarList = []

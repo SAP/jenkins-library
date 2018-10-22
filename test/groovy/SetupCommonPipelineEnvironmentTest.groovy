@@ -4,6 +4,8 @@ import org.junit.Test
 import org.junit.rules.RuleChain
 import org.yaml.snakeyaml.Yaml
 
+import com.sap.piper.Utils
+
 import util.BasePiperTest
 import util.Rules
 import util.JenkinsReadYamlRule
@@ -15,6 +17,7 @@ import static org.junit.Assert.assertNotNull
 
 class SetupCommonPipelineEnvironmentTest extends BasePiperTest {
     def usedConfigFile
+    def swaOldConfigUsed
 
     private JenkinsStepRule jsr = new JenkinsStepRule(this)
 
@@ -35,18 +38,52 @@ class SetupCommonPipelineEnvironmentTest extends BasePiperTest {
             usedConfigFile = parameters.file
             return yamlParser.load(examplePipelineConfig)
         })
-        helper.registerAllowedMethod("fileExists", [String], { String path ->
-            return path.endsWith('.pipeline/config.yml')
+        helper.registerAllowedMethod("readProperties", [Map], { Map parameters ->
+            usedConfigFile = parameters.file
+            Properties props = new Properties()
+            props.setProperty('key', 'value')
+            return props
         })
+
+        swaOldConfigUsed = null
     }
 
     @Test
-    void testIsConfigurationAvailable() throws Exception {
-        jsr.step.call(script: nullScript)
+    void testIsYamlConfigurationAvailable() throws Exception {
 
+        helper.registerAllowedMethod("fileExists", [String], { String path ->
+            return path.endsWith('.pipeline/config.yml')
+        })
+
+        jsr.step.call(script: nullScript, utils: getSWAMockedUtils())
+
+        assertEquals(Boolean.FALSE.toString(), swaOldConfigUsed)
         assertEquals('.pipeline/config.yml', usedConfigFile)
         assertNotNull(nullScript.commonPipelineEnvironment.configuration)
         assertEquals('develop', nullScript.commonPipelineEnvironment.configuration.general.productiveBranch)
         assertEquals('my-maven-docker', nullScript.commonPipelineEnvironment.configuration.steps.mavenExecute.dockerImage)
+    }
+
+    @Test
+    void testIsPropertiesConfigurationAvailable() {
+
+        helper.registerAllowedMethod("fileExists", [String], { String path ->
+            return path.endsWith('.pipeline/config.properties')
+        })
+
+        jsr.step.call(script: nullScript, utils: getSWAMockedUtils())
+
+        assertEquals(Boolean.TRUE.toString(), swaOldConfigUsed)
+        assertEquals('.pipeline/config.properties', usedConfigFile)
+        assertNotNull(nullScript.commonPipelineEnvironment.configProperties)
+        assertEquals('value', nullScript.commonPipelineEnvironment.configProperties['key'])
+    }
+
+    private getSWAMockedUtils() {
+        new Utils() {
+            void pushToSWA(Map payload, Map config) {
+                SetupCommonPipelineEnvironmentTest.this.swaOldConfigUsed = payload.stepParam5
+            }
+        }
     }
 }

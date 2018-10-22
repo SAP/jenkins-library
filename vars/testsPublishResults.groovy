@@ -1,7 +1,6 @@
 import com.cloudbees.groovy.cps.NonCPS
 
 import com.sap.piper.ConfigurationHelper
-import com.sap.piper.ConfigurationMerger
 import com.sap.piper.MapUtils
 import com.sap.piper.Utils
 import groovy.transform.Field
@@ -20,7 +19,7 @@ import groovy.transform.Field
  * @param script global script environment of the Jenkinsfile run
  * @param others document all parameters
  */
-def call(Map parameters = [:]) {
+void call(Map parameters = [:]) {
     handlePipelineStepErrors (stepName: STEP_NAME, stepParameters: parameters) {
         def script = parameters.script
         if (script == null)
@@ -28,8 +27,8 @@ def call(Map parameters = [:]) {
         prepare(parameters)
 
         // load default & individual configuration
-        Map configuration = ConfigurationHelper
-            .loadStepDefaults(this)
+        Map configuration = ConfigurationHelper.newInstance(this)
+            .loadStepDefaults()
             .mixinGeneralConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS)
             .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS)
             .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName ?: env.STAGE_NAME, STEP_CONFIG_KEYS)
@@ -123,7 +122,7 @@ def publishJMeterReport(Map settings = [:]){
     }
 }
 
-def touchFiles(){
+void touchFiles(pattern){
     echo "[${STEP_NAME}] update test results"
     def patternArray = pattern.split(',')
     for(def i = 0; i < patternArray.length; i++){

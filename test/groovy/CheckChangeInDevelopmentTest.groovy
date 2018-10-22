@@ -43,19 +43,21 @@ class CheckChangeInDevelopmentTest extends BasePiperTest {
     public void changeIsInStatusDevelopmentTest() {
 
         ChangeManagement cm = getChangeManagementUtils(true)
-        boolean inDevelopment = jsr.step.checkChangeInDevelopment(
-                                    cmUtils: cm,
-                                    changeManagement: [
-                                        type: 'SOLMAN',
-                                        endpoint: 'https://example.org/cm'])
+        jsr.step.checkChangeInDevelopment(
+                     cmUtils: cm,
+                     changeManagement: [
+                         type: 'SOLMAN',
+                         endpoint: 'https://example.org/cm'],
+                     failIfStatusIsNotInDevelopment: true)
 
-        assert inDevelopment
         assert cmUtilReceivedParams == [
             changeId: '001',
             endpoint: 'https://example.org/cm',
             credentialsId: 'CM',
             cmclientOpts: ''
         ]
+
+        // no exception in thrown, so the change is in status 'in development'.
     }
 
     @Test
