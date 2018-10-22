@@ -111,11 +111,16 @@ void call(Map parameters = [:], body) {
                         body()
                     }
                 } else {
+                    def networkName = "sidecar-${UUID.randomUUID()}"
+                    sh "docker network create ${networkName}"
+                    
+
                     def sidecarImage = docker.image(config.sidecarImage)
                     sidecarImage.pull()
+                    config.sidecarOptions.push("--network ${networkName}")
                     sidecarImage.withRun(getDockerOptions(config.sidecarEnvVars, config.sidecarVolumeBind, config.sidecarOptions)) { c ->
                         config.dockerOptions = config.dockerOptions?:[]
-                        config.dockerOptions.add("--link ${c.id}:${config.sidecarName}")
+                        config.dockerOptions.add("--network ${networkName}")
                         image.inside(getDockerOptions(config.dockerEnvVars, config.dockerVolumeBind, config.dockerOptions)) {
                             echo "[INFO][${STEP_NAME}] Running with sidecar container."
                             body()
