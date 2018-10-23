@@ -167,6 +167,18 @@ steps:
     healthEndpoint: ''
   influxWriteData:
     influxServer: 'jenkins'
+  karmaExecuteTests:
+    containerPortMappings:
+      'node:8-stretch':
+        - containerPort: 9876
+          hostPort: 9876
+    dockerImage: 'node:8-stretch'
+    dockerName: 'karma'
+    dockerWorkspace: '/home/node'
+    installCommand: 'npm install --quiet'
+    modules:
+      - '.'
+    runCommand: 'npm run karma'
   mailSendNotification:
     notificationAttachment: true
     notifyCulprits: true
