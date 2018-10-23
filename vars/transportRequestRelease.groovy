@@ -1,9 +1,8 @@
-import com.sap.piper.GitUtils
 import com.sap.piper.Utils
 import groovy.transform.Field
 
 import com.sap.piper.ConfigurationHelper
-import com.sap.piper.ConfigurationMerger
+import com.sap.piper.cm.BackendType
 import com.sap.piper.cm.ChangeManagement
 import com.sap.piper.cm.ChangeManagementException
 
@@ -11,6 +10,7 @@ import hudson.AbortException
 
 import static com.sap.piper.cm.StepHelpers.getTransportRequestId
 import static com.sap.piper.cm.StepHelpers.getChangeDocumentId
+import static com.sap.piper.cm.StepHelpers.getBackendTypeAndLogInfoIfCMIntegrationDisabled
 
 @Field def STEP_NAME = 'transportRequestRelease'
 
@@ -25,7 +25,7 @@ import static com.sap.piper.cm.StepHelpers.getChangeDocumentId
 
 @Field Set generalConfigurationKeys = stepConfigurationKeys
 
-def call(parameters = [:]) {
+void call(parameters = [:]) {
 
     handlePipelineStepErrors (stepName: STEP_NAME, stepParameters: parameters) {
 
@@ -33,12 +33,20 @@ def call(parameters = [:]) {
 
         ChangeManagement cm = parameters.cmUtils ?: new ChangeManagement(script)
 
-        ConfigurationHelper configHelper = ConfigurationHelper
-            .loadStepDefaults(this)
+        ConfigurationHelper configHelper = ConfigurationHelper.newInstance(this)
+            .loadStepDefaults()
             .mixinGeneralConfig(script.commonPipelineEnvironment, generalConfigurationKeys)
             .mixinStepConfig(script.commonPipelineEnvironment, stepConfigurationKeys)
             .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName?:env.STAGE_NAME, stepConfigurationKeys)
             .mixin(parameters, parameterKeys)
+
+
+        Map configuration = configHelper.use()
+
+        BackendType backendType = getBackendTypeAndLogInfoIfCMIntegrationDisabled(this, configuration)
+        if(backendType == BackendType.NONE) return
+
+        configHelper
             .withMandatoryProperty('changeManagement/clientOpts')
             .withMandatoryProperty('changeManagement/credentialsId')
             .withMandatoryProperty('changeManagement/endpoint')
@@ -46,26 +54,35 @@ def call(parameters = [:]) {
             .withMandatoryProperty('changeManagement/git/from')
             .withMandatoryProperty('changeManagement/git/format')
 
-        Map configuration = configHelper.use()
-
         new Utils().pushToSWA([step: STEP_NAME], configuration)
 
+        def changeDocumentId = null
         def transportRequestId = getTransportRequestId(cm, this, configuration)
-        def changeDocumentId = getChangeDocumentId(cm, this, configuration)
+
+        if(backendType == BackendType.SOLMAN) {
+
+            changeDocumentId = getChangeDocumentId(cm, this, configuration)
+
+            configHelper.mixin([changeDocumentId: changeDocumentId?.trim() ?: null], ['changeDocumentId'] as Set)
+                        .withMandatoryProperty('changeDocumentId',
+                            "Change document id not provided (parameter: \'changeDocumentId\' or via commit history).")
+
+        }
 
         configuration = configHelper
-                            .mixin([transportRequestId: transportRequestId?.trim() ?: null,
-                                    changeDocumentId: changeDocumentId?.trim() ?: null], ['transportRequestId', 'changeDocumentId'] as Set)
+                            .mixin([transportRequestId: transportRequestId?.trim() ?: null], ['transportRequestId'] as Set)
                             .withMandatoryProperty('transportRequestId',
                                 "Transport request id not provided (parameter: \'transportRequestId\' or via commit history).")
-                            .withMandatoryProperty('changeDocumentId',
-                                "Change document id not provided (parameter: \'changeDocumentId\' or via commit history).")
                             .use()
 
-        echo "[INFO] Closing transport request '${configuration.transportRequestId}' for change document '${configuration.changeDocumentId}'."
+        def closingMessage = ["[INFO] Closing transport request '${configuration.transportRequestId}'"]
+        if(backendType == BackendType.SOLMAN) closingMessage << " for change document '${configuration.changeDocumentId}'"
+        closingMessage << '.'
+        echo closingMessage.join()
 
             try {
-                cm.releaseTransportRequest(configuration.changeDocumentId,
+                cm.releaseTransportRequest(backendType,
+                                           configuration.changeDocumentId,
                                            configuration.transportRequestId,
                                            configuration.changeManagement.endpoint,
                                            configuration.changeManagement.credentialsId,
