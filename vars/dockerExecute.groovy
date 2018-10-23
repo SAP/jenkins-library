@@ -116,8 +116,9 @@ void call(Map parameters = [:], body) {
                     try{
                         def sidecarImage = docker.image(config.sidecarImage)
                         sidecarImage.pull()
-                        config.sidecarOptions.push("--network-alias ${config.sidecarName}")
-                        config.sidecarOptions.push("--network ${networkName}")
+                        config.sidecarOptions = config.sidecarOptions?:[]
+                        config.sidecarOptions.add("--network-alias ${config.sidecarName}")
+                        config.sidecarOptions.add("--network ${networkName}")
                         sidecarImage.withRun(getDockerOptions(config.sidecarEnvVars, config.sidecarVolumeBind, config.sidecarOptions)) { c ->
                             config.dockerOptions = config.dockerOptions?:[]
                             config.dockerOptions.add("--network-alias ${config.dockerName}")
