@@ -126,6 +126,7 @@ void call(Map parameters = [:], body) {
                             body()
                         }
                     }
+                    sh "docker network prune --force"
                 }
             } else {
                 echo "[INFO][${STEP_NAME}] Running on local environment."
