@@ -188,7 +188,8 @@ class DockerExecuteTest extends BasePiperTest {
             containsString('--env testEnv=testVal'),
             containsString('--volume /dev/shm:/dev/shm')
         ))
-        assertThat(docker.parameters, containsString('--link uniqueId:testAlias'))
+        assertThat(docker.parameters, containsString('--network sidecar-'))
+        assertThat(docker.parameters, containsString('--network-alias testAlias'))
     }
 
     @Test
@@ -217,8 +218,7 @@ class DockerExecuteTest extends BasePiperTest {
             sidecarEnvVars: ['testEnv':'testVal'],
             sidecarImage: 'selenium/standalone-chrome',
             sidecarName: 'selenium',
-            sidecarVolumeBind: ['/dev/shm':'/dev/shm'],
-            dockerLinkAlias: 'testAlias',
+            sidecarVolumeBind: ['/dev/shm':'/dev/shm']
         ) {
             bodyExecuted = true
         }
