@@ -194,7 +194,7 @@ class DockerExecuteTest extends BasePiperTest {
         assertThat(docker.parameters, allOf(
             containsString('--network sidecar-'),
             containsString('--network-alias maven')
-        )
+        ))
     }
 
     @Test
