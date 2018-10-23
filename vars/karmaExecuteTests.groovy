@@ -42,7 +42,6 @@ void call(Map parameters = [:]) {
 
         def testJobs = [:]
         def options = [
-            buildTool: 'npm',
             containerPortMappings: config.containerPortMappings,
             dockerEnvVars: config.dockerEnvVars,
             dockerImage: config.dockerImage,
