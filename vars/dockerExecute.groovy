@@ -17,9 +17,9 @@ import groovy.transform.Field
     'dockerOptions',
     'dockerWorkspace',
     'dockerVolumeBind',
-    'sidecarName',
     'sidecarEnvVars',
     'sidecarImage',
+    'sidecarName',
     'sidecarOptions',
     'sidecarWorkspace',
     'sidecarVolumeBind'
