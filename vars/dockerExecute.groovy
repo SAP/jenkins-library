@@ -128,7 +128,7 @@ void call(Map parameters = [:], body) {
                             }
                         }
                     }finally{
-                        sh "docker network prune --force"
+                        sh "docker network remove ${networkName}"
                     }
                 }
             } else {
