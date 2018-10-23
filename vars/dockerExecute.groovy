@@ -113,20 +113,23 @@ void call(Map parameters = [:], body) {
                 } else {
                     def networkName = "sidecar-${UUID.randomUUID()}"
                     sh "docker network create ${networkName}"
-                    def sidecarImage = docker.image(config.sidecarImage)
-                    sidecarImage.pull()
-                    config.sidecarOptions.push("--network-alias ${config.sidecarName}")
-                    config.sidecarOptions.push("--network ${networkName}")
-                    sidecarImage.withRun(getDockerOptions(config.sidecarEnvVars, config.sidecarVolumeBind, config.sidecarOptions)) { c ->
-                        config.dockerOptions = config.dockerOptions?:[]
-                        config.dockerOptions.add("--network-alias ${config.dockerName}")
-                        config.dockerOptions.add("--network ${networkName}")
-                        image.inside(getDockerOptions(config.dockerEnvVars, config.dockerVolumeBind, config.dockerOptions)) {
-                            echo "[INFO][${STEP_NAME}] Running with sidecar container."
-                            body()
+                    try{
+                        def sidecarImage = docker.image(config.sidecarImage)
+                        sidecarImage.pull()
+                        config.sidecarOptions.push("--network-alias ${config.sidecarName}")
+                        config.sidecarOptions.push("--network ${networkName}")
+                        sidecarImage.withRun(getDockerOptions(config.sidecarEnvVars, config.sidecarVolumeBind, config.sidecarOptions)) { c ->
+                            config.dockerOptions = config.dockerOptions?:[]
+                            config.dockerOptions.add("--network-alias ${config.dockerName}")
+                            config.dockerOptions.add("--network ${networkName}")
+                            image.inside(getDockerOptions(config.dockerEnvVars, config.dockerVolumeBind, config.dockerOptions)) {
+                                echo "[INFO][${STEP_NAME}] Running with sidecar container."
+                                body()
+                            }
                         }
+                    }finally{
+                        sh "docker network prune --force"
                     }
-                    sh "docker network prune --force"
                 }
             } else {
                 echo "[INFO][${STEP_NAME}] Running on local environment."
