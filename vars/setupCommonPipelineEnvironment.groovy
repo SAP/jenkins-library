@@ -5,7 +5,7 @@ import groovy.transform.Field
 @Field String STEP_NAME = 'setupCommonPipelineEnvironment'
 @Field Set GENERAL_CONFIG_KEYS = ['collectTelemetryData']
 
-def call(Map parameters = [:]) {
+void call(Map parameters = [:]) {
 
     handlePipelineStepErrors (stepName: STEP_NAME, stepParameters: parameters) {
 
@@ -17,12 +17,14 @@ def call(Map parameters = [:]) {
 
         loadConfigurationFromFile(script, configFile)
 
-        Map config = ConfigurationHelper
-            .loadStepDefaults(this)
+        Map config = ConfigurationHelper.newInstance(this)
+            .loadStepDefaults()
             .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS)
             .use()
 
-        new Utils().pushToSWA([step: STEP_NAME, stepParam4: parameters.customDefaults?'true':'false'], config)
+        (parameters.utils ?: new Utils())
+                   .pushToSWA([step: STEP_NAME, stepParam4: parameters.customDefaults?'true':'false',
+                                                stepParam5: Boolean.toString( ! (script?.commonPipelineEnvironment?.getConfigProperties() ?: [:]).isEmpty())], config)
     }
 }
 

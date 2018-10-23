@@ -1,12 +1,21 @@
 class commonPipelineEnvironment implements Serializable {
-    private Map configProperties = [:]
+    Map configProperties = [:]
 
     //stores version of the artifact which is build during pipeline run
     def artifactVersion
 
+    //Stores the current buildResult
+    String buildResult = 'SUCCESS'
+
     //stores the gitCommitId as well as additional git information for the build during pipeline run
-    private String gitCommitId
-    private String gitSshUrl
+    String gitCommitId
+    String gitSshUrl
+    String gitHttpsUrl
+    String gitBranch
+
+    //GiutHub specific information
+    String githubOrg
+    String githubRepo
 
     //stores properties for a pipeline which build an artifact and then bundles it into a container
     private Map appContainerProperties = [:]
@@ -19,7 +28,7 @@ class commonPipelineEnvironment implements Serializable {
     //influxCustomData represents measurement jenkins_custom_data in Influx. Metrics can be written into this map
     private Map influxCustomData = [:]
 
-    private String mtarFilePath
+    String mtarFilePath
 
     def reset() {
         appContainerProperties = [:]
@@ -30,6 +39,11 @@ class commonPipelineEnvironment implements Serializable {
 
         gitCommitId = null
         gitSshUrl = null
+        gitHttpsUrl = null
+        gitBranch = null
+
+        githubOrg = null
+        githubRepo = null
 
         influxCustomData = [:]
         influxCustomDataMap = [pipeline_data: [:], step_data: [:]]
@@ -45,22 +59,6 @@ class commonPipelineEnvironment implements Serializable {
         return appContainerProperties[property]
     }
 
-    def setArtifactVersion(version) {
-        artifactVersion = version
-    }
-
-    def getArtifactVersion() {
-        return artifactVersion
-    }
-
-    def setConfigProperties(map) {
-        configProperties = map
-    }
-
-    def getConfigProperties() {
-        return configProperties
-    }
-
     def setConfigProperty(property, value) {
         configProperties[property] = value
     }
@@ -70,22 +68,6 @@ class commonPipelineEnvironment implements Serializable {
             return configProperties[property].trim()
         else
             return configProperties[property]
-    }
-
-    def setGitCommitId(commitId) {
-        gitCommitId = commitId
-    }
-
-    def getGitCommitId() {
-        return gitCommitId
-    }
-
-    def setGitSshUrl(url) {
-        gitSshUrl = url
-    }
-
-    def getGitSshUrl() {
-        return gitSshUrl
     }
 
     def getInfluxCustomData() {
@@ -101,15 +83,6 @@ class commonPipelineEnvironment implements Serializable {
     }
     def getInfluxStepData (dataKey) {
         return influxCustomDataMap.step_data[dataKey]
-    }
-
-
-    def getMtarFilePath() {
-        return mtarFilePath
-    }
-
-    void setMtarFilePath(mtarFilePath) {
-        this.mtarFilePath = mtarFilePath
     }
 
     def setPipelineMeasurement (measurementName, value) {

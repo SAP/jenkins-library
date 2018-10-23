@@ -5,10 +5,12 @@ import hudson.AbortException
 
 import com.sap.piper.ConfigurationHelper
 import com.sap.piper.ConfigurationMerger
+import com.sap.piper.cm.BackendType
 import com.sap.piper.cm.ChangeManagement
 import com.sap.piper.cm.ChangeManagementException
 
 import static com.sap.piper.cm.StepHelpers.getChangeDocumentId
+import static com.sap.piper.cm.StepHelpers.getBackendTypeAndLogInfoIfCMIntegrationDisabled
 
 @Field def STEP_NAME = 'checkChangeInDevelopment'
 
@@ -21,7 +23,7 @@ import static com.sap.piper.cm.StepHelpers.getChangeDocumentId
 
 @Field Set generalConfigurationKeys = stepConfigurationKeys
 
-def call(parameters = [:]) {
+void call(parameters = [:]) {
 
     handlePipelineStepErrors (stepName: STEP_NAME, stepParameters: parameters) {
 
@@ -31,12 +33,21 @@ def call(parameters = [:]) {
 
         ChangeManagement cm = parameters?.cmUtils ?: new ChangeManagement(script, gitUtils)
 
-        ConfigurationHelper configHelper = ConfigurationHelper
-            .loadStepDefaults(this)
+        ConfigurationHelper configHelper = ConfigurationHelper.newInstance(this)
+            .loadStepDefaults()
             .mixinGeneralConfig(script.commonPipelineEnvironment, generalConfigurationKeys)
             .mixinStepConfig(script.commonPipelineEnvironment, stepConfigurationKeys)
             .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName?:env.STAGE_NAME, stepConfigurationKeys)
             .mixin(parameters, parameterKeys)
+
+        Map configuration =  configHelper.use()
+
+        BackendType backendType = getBackendTypeAndLogInfoIfCMIntegrationDisabled(this, configuration)
+        if(backendType == BackendType.NONE) return
+
+        new Utils().pushToSWA([step: STEP_NAME], configuration)
+
+        configHelper
             // for the following parameters we expect defaults
             .withMandatoryProperty('changeManagement/changeDocumentLabel')
             .withMandatoryProperty('changeManagement/clientOpts')
@@ -47,9 +58,6 @@ def call(parameters = [:]) {
             .withMandatoryProperty('failIfStatusIsNotInDevelopment')
             // for the following parameters we expect a value provided from outside
             .withMandatoryProperty('changeManagement/endpoint')
-
-
-        Map configuration = configHelper.use()
 
         new Utils().pushToSWA([step: STEP_NAME], configuration)
 
@@ -68,7 +76,6 @@ def call(parameters = [:]) {
 
         try {
 
-
             isInDevelopment = cm.isChangeInDevelopment(configuration.changeDocumentId,
                 configuration.changeManagement.endpoint,
                 configuration.changeManagement.credentialsId,
@@ -81,14 +88,12 @@ def call(parameters = [:]) {
 
         if(isInDevelopment) {
             echo "[INFO] Change '${changeId}' is in status 'in development'."
-            return true
         } else {
             if(configuration.failIfStatusIsNotInDevelopment.toBoolean()) {
                 throw new AbortException("Change '${changeId}' is not in status 'in development'.")
 
             } else {
                 echo "[WARNING] Change '${changeId}' is not in status 'in development'. Failing the pipeline has been explicitly disabled."
-                return false
             }
         }
     }
