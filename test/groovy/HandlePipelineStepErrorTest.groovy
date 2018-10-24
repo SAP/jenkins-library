@@ -71,7 +71,7 @@ class HandlePipelineStepErrorsTest extends BasePiperTest {
                 throw new Exception('TestError')
             }
         } catch (ignore) {
-            error = true
+            isReported = true
         } finally {
             // asserts
             assertThat(isReported, is(true))
