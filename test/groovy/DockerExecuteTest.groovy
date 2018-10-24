@@ -161,6 +161,7 @@ class DockerExecuteTest extends BasePiperTest {
     void testSidecarDefault(){
         jsr.step.dockerExecute(
             script: nullScript,
+            dockerName: 'maven',
             dockerImage: 'maven:3.5-jdk-8-alpine',
             sidecarEnvVars: ['testEnv':'testVal'],
             sidecarImage: 'selenium/standalone-chrome',
@@ -175,9 +176,14 @@ class DockerExecuteTest extends BasePiperTest {
         assertThat(docker.imagePullCount, is(2))
         assertThat(docker.sidecarParameters, allOf(
             containsString('--env testEnv=testVal'),
-            containsString('--volume /dev/shm:/dev/shm')
+            containsString('--volume /dev/shm:/dev/shm'),
+            containsString('--network sidecar-'),
+            containsString('--network-alias testAlias')
         ))
-        assertThat(docker.parameters, containsString('--link uniqueId:testAlias'))
+        assertThat(docker.parameters, allOf(
+            containsString('--network sidecar-'),
+            containsString('--network-alias maven')
+        ))
     }
 
     @Test
@@ -206,8 +212,7 @@ class DockerExecuteTest extends BasePiperTest {
             sidecarEnvVars: ['testEnv':'testVal'],
             sidecarImage: 'selenium/standalone-chrome',
             sidecarName: 'selenium',
-            sidecarVolumeBind: ['/dev/shm':'/dev/shm'],
-            dockerLinkAlias: 'testAlias',
+            sidecarVolumeBind: ['/dev/shm':'/dev/shm']
         ) {
             bodyExecuted = true
         }
