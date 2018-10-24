@@ -232,7 +232,6 @@ steps:
       'selenium/standalone-chrome':
         - containerPort: 4444
           hostPort: 4444
-    dockerLinkAlias: 'selenium'
     failOnError: true
     sidecarImage: 'selenium/standalone-chrome'
     sidecarName: 'selenium'
