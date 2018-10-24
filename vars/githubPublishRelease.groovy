@@ -56,11 +56,12 @@ void call(Map parameters = [:]) {
 
 Map getLastRelease(config, TOKEN){
     def result = [:]
-    try {
-        def response = httpRequest "${config.githubApiUrl}/repos/${config.githubOrg}/${config.githubRepo}/releases/latest?access_token=${TOKEN}"
+
+    def response = httpRequest "${config.githubApiUrl}/repos/${config.githubOrg}/${config.githubRepo}/releases/latest?access_token=${TOKEN}"
+    if (response.status == 200) {
         result = readJSON text: response.content
-    } catch (e) {
-        echo "[${STEP_NAME}] This is the first release - no previous releases available ${e.getMessage()}"
+    } else {
+        echo "[${STEP_NAME}] This is the first release - no previous releases available"
         config.addDeltaToLastRelease = false
     }
     return result
