@@ -114,7 +114,7 @@ class PiperStageWrapperTest extends BasePiperTest {
     @Test
     void testStageExit() {
         helper.registerAllowedMethod('fileExists', [String.class], {s ->
-            return true
+            return (s == '.pipeline/extensions/test.groovy')
         })
 
         helper.registerAllowedMethod('load', [String.class], {
@@ -132,7 +132,7 @@ class PiperStageWrapperTest extends BasePiperTest {
         }
 
         assertThat(testInt, is(2))
-        assertThat(jlr.log, containsString('[piperStageWrapper] Running interceptor \'.pipeline/extensions/test.groovy\' for test.'))
+        assertThat(jlr.log, containsString('[piperStageWrapper] Running project interceptor \'.pipeline/extensions/test.groovy\' for test.'))
         assertThat(jlr.log, containsString('Stage Name: test'))
         assertThat(jlr.log, containsString('Config 1:'))
         assertThat(jlr.log, containsString('Config 2:'))
