@@ -132,7 +132,6 @@
 
     </dependencies>
     <build>
-        <sourceDirectory>src</sourceDirectory>
         <plugins>
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
@@ -140,8 +139,21 @@
                 <version>1.12</version>
                 <executions>
                     <execution>
-                        <id>add-test-source</id>
+                        <id>add-groovy-sources</id>
                         <phase>generate-sources</phase>
+                        <goals>
+                            <goal>add-source</goal>
+                        </goals>
+                        <configuration>
+                            <sources>
+                                <source>src</source>
+                                <source>vars</source>
+                            </sources>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>add-groovy-test-sources</id>
+                        <phase>generate-test-sources</phase>
                         <goals>
                             <goal>add-test-source</goal>
                         </goals>
