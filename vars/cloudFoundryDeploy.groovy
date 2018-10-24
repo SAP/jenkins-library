@@ -120,6 +120,9 @@ def deployCfNative (config) {
 
         // check if appName is available
         if (config.cloudFoundry.appName == null || config.cloudFoundry.appName == '') {
+            if (config.deployType == 'blue-green') {
+                error "[${STEP_NAME}] ERROR: Blue-green plugin requires app name to be passed (see https://github.com/bluemixgaragelondon/cf-blue-green-deploy/issues/27)"
+            }
             if (fileExists(config.cloudFoundry.manifest)) {
                 def manifest = readYaml file: config.cloudFoundry.manifest
                 if (!manifest || !manifest.applications || !manifest.applications[0].name)
@@ -135,11 +138,7 @@ def deployCfNative (config) {
             export HOME=${config.dockerWorkspace}
             cf login -u \"${username}\" -p '${password}' -a ${config.cloudFoundry.apiEndpoint} -o \"${config.cloudFoundry.org}\" -s \"${config.cloudFoundry.space}\"
             cf plugins
-            cf ${deployCommand} ${config.cloudFoundry.appName?"\"${config.cloudFoundry.appName}\"":''} -f \"${config.cloudFoundry.manifest}\" ${config.smokeTest}"""
-        def retVal = sh script: "cf app \"${config.cloudFoundry.appName}-old\"", returnStatus: true
-        if (retVal == 0) {
-            sh "cf delete \"${config.cloudFoundry.appName}-old\" -r -f"
-        }
+            cf ${deployCommand} ${config.cloudFoundry.appName?"'${config.cloudFoundry.appName}'":''} ${config.deployType == 'blue-green'?'--delete-old-apps':''} -f '${config.cloudFoundry.manifest}' ${config.smokeTest}"""
         sh "cf logout"
     }
 }
