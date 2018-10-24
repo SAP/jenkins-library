@@ -3,7 +3,6 @@ import static org.hamcrest.Matchers.is
 import static org.hamcrest.Matchers.not
 import static org.hamcrest.Matchers.containsString
 
-import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.ExpectedException
@@ -27,20 +26,17 @@ class HandlePipelineStepErrorsTest extends BasePiperTest {
         .around(jsr)
         .around(thrown)
 
-    @Before
-    void init() throws Exception {}
-
     @Test
     void testBeginAndEndMessage() {
-        def body
+        def isExecuted
         jsr.step.handlePipelineStepErrors([
             stepName: 'testStep',
             stepParameters: ['something': 'anything']
         ]) {
-            body = 'executed'
+            isExecuted = true
         }
         // asserts
-        assertThat(body, is('executed'))
+        assertThat(isExecuted, is(true))
         assertThat(jlr.log, containsString('--- BEGIN LIBRARY STEP: testStep'))
         assertThat(jlr.log, containsString('--- END LIBRARY STEP: testStep'))
     }
@@ -66,7 +62,7 @@ class HandlePipelineStepErrorsTest extends BasePiperTest {
 
     @Test
     void testErrorsMessage() {
-        def error
+        def isReported
         try {
             jsr.step.handlePipelineStepErrors([
                 stepName: 'testStep',
@@ -75,10 +71,10 @@ class HandlePipelineStepErrorsTest extends BasePiperTest {
                 throw new Exception('TestError')
             }
         } catch (ignore) {
-            error = 'reported'
+            error = true
         } finally {
             // asserts
-            assertThat(error, is('reported'))
+            assertThat(isReported, is(true))
             assertThat(jlr.log, containsString('--- ERROR OCCURRED IN LIBRARY STEP: testStep'))
             assertThat(jlr.log, containsString('[something:anything]'))
         }
