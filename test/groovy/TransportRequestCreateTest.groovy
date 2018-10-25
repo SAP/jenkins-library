@@ -4,6 +4,7 @@ import org.junit.Test
 import org.junit.rules.ExpectedException
 import org.junit.rules.RuleChain
 
+import com.sap.piper.cm.BackendType
 import com.sap.piper.cm.ChangeManagement
 import com.sap.piper.cm.ChangeManagementException
 
@@ -40,6 +41,7 @@ public class TransportRequestCreateTest extends BasePiperTest {
 
                                          [
                                           credentialsId: 'CM',
+                                          type: 'SOLMAN',
                                           endpoint: 'https://example.org/cm',
                                           clientOpts: '-DmyProp=myVal',
                                           changeDocumentLabel: 'ChangeId\\s?:',
@@ -84,7 +86,8 @@ public class TransportRequestCreateTest extends BasePiperTest {
 
         ChangeManagement cm = new ChangeManagement(nullScript) {
 
-            String createTransportRequest(String changeId,
+            String createTransportRequestSOLMAN(
+                                          String changeId,
                                           String developmentSystemId,
                                           String cmEndpoint,
                                           String credentialId,
@@ -102,13 +105,14 @@ public class TransportRequestCreateTest extends BasePiperTest {
     }
 
     @Test
-    public void createTransportRequestSuccessTest() {
+    public void createTransportRequestSuccessSOLMANTest() {
 
         def result = [:]
 
         ChangeManagement cm = new ChangeManagement(nullScript) {
 
-            String createTransportRequest(String changeId,
+            String createTransportRequestSOLMAN(
+                                          String changeId,
                                           String developmentSystemId,
                                           String cmEndpoint,
                                           String credentialId,
@@ -135,5 +139,59 @@ public class TransportRequestCreateTest extends BasePiperTest {
 
         assert jlr.log.contains("[INFO] Creating transport request for change document '001' and development system '001'.")
         assert jlr.log.contains("[INFO] Transport Request '001' has been successfully created.")
+    }
+
+    @Test
+    public void createTransportRequestSuccessCTSTest() {
+
+        def result = [:]
+
+        ChangeManagement cm = new ChangeManagement(nullScript) {
+
+            String createTransportRequestCTS(
+                String transportType,
+                String targetSystemId,
+                String description,
+                String endpoint,
+                String credentialsId,
+                String clientOpts
+) {
+                result.transportType = transportType
+                result.targetSystemId = targetSystemId
+                result.description = description
+                result.endpoint = endpoint
+                result.credentialsId = credentialsId
+                result.clientOpts = clientOpts
+                return '001'
+            }
+        }
+
+        def transportId = jsr.step.call(script: nullScript,
+                                        transportType: 'W',
+                                        targetSystem: 'XYZ',
+                                        description: 'desc',
+                                        changeManagement: [type: 'CTS'],
+                                        cmUtils: cm)
+
+        assert transportId == '001'
+        assert result == [transportType: 'W',
+                         targetSystemId: 'XYZ',
+                         description: 'desc',
+                         endpoint: 'https://example.org/cm',
+                         credentialsId: 'CM',
+                         clientOpts: '-DmyProp=myVal'
+                         ]
+
+        assert jlr.log.contains("[INFO] Creating transport request.")
+        assert jlr.log.contains("[INFO] Transport Request '001' has been successfully created.")
+    }
+
+    @Test
+    public void cmIntegrationSwichtedOffTest() {
+
+        jlr.expect('[INFO] Change management integration intentionally switched off.')
+
+        jsr.step.call(
+            changeManagement: [type: 'NONE'])
     }
 }
