@@ -38,7 +38,7 @@ def call(parameters = [:]) {
             // for the following parameters we expect defaults
              /**
                * A pattern used for identifying lines holding the change document id.
-               * @value regex pattern
+               * @possibleValues regex pattern
                */
             .withMandatoryProperty('changeManagement/changeDocumentLabel')
              /**
@@ -59,12 +59,12 @@ def call(parameters = [:]) {
             .withMandatoryProperty('changeManagement/git/to')
              /**
                * Specifies what part of the commit is scanned. By default the body of the commit message is scanned.
-               * @value see `git log --help`
+               * @possibleValues see `git log --help`
                */
             .withMandatoryProperty('changeManagement/git/format')
             /**
               * When set to `false` the step will not fail in case the step is not in status 'in development'.
-              * @value `true`, `false`
+              * @possibleValues `true`, `false`
               */
             .withMandatoryProperty('failIfStatusIsNotInDevelopment')
             // for the following parameters we expect a value provided from outside

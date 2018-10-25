@@ -304,14 +304,14 @@ void scanDocu(File f, Map params) {
     if(docu) {
         def _line = line.replaceAll('^.*\\*/?', '').trim()
 
-        if(_line ==~ /@value.*/) {
+        if(_line ==~ /@possibleValues.*/) {
             value = true
         }
 
         if(_line) {
           if(value) {
-            if(_line ==~ /@value.*/)
-              _line = (_line =~ /@value\s*?(.*)/)[0][1]
+            if(_line ==~ /@possibleValues.*/)
+              _line = (_line =~ /@possibleValues\s*?(.*)/)[0][1]
             valueLines << _line
           } else {
             docuLines << _line
