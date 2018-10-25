@@ -44,6 +44,7 @@ class CheckChangeInDevelopmentTest extends BasePiperTest {
 
         ChangeManagement cm = getChangeManagementUtils(true)
         jsr.step.checkChangeInDevelopment(
+            script: nullScript, 
                      cmUtils: cm,
                      changeManagement: [
                          type: 'SOLMAN',
@@ -68,6 +69,7 @@ class CheckChangeInDevelopmentTest extends BasePiperTest {
 
         ChangeManagement cm = getChangeManagementUtils(false)
         jsr.step.checkChangeInDevelopment(
+            script: nullScript, 
             cmUtils: cm,
             changeManagement: [type: 'SOLMAN',
                                endpoint: 'https://example.org/cm'])
@@ -78,6 +80,7 @@ class CheckChangeInDevelopmentTest extends BasePiperTest {
 
         ChangeManagement cm = getChangeManagementUtils(false)
         boolean inDevelopment = jsr.step.checkChangeInDevelopment(
+            script: nullScript, 
                                     cmUtils: cm,
                                     changeManagement: [endpoint: 'https://example.org/cm'],
                                     failIfStatusIsNotInDevelopment: false)
@@ -89,6 +92,7 @@ class CheckChangeInDevelopmentTest extends BasePiperTest {
         ChangeManagement cm = getChangeManagementUtils(true, '0815')
 
         jsr.step.checkChangeInDevelopment(
+            script: nullScript, 
             changeDocumentId: '42',
             cmUtils: cm,
             changeManagement: [type: 'SOLMAN',
@@ -102,6 +106,7 @@ class CheckChangeInDevelopmentTest extends BasePiperTest {
         ChangeManagement cm = getChangeManagementUtils(true, '0815')
 
         jsr.step.checkChangeInDevelopment(
+            script: nullScript, 
             cmUtils: cm,
             changeManagement : [type: 'SOLMAN',
                                 endpoint: 'https://example.org/cm'])
@@ -128,6 +133,7 @@ class CheckChangeInDevelopmentTest extends BasePiperTest {
         }
 
         jsr.step.checkChangeInDevelopment(
+            script: nullScript, 
             cmUtils: cm,
             changeManagement: [type: 'SOLMAN',
                                endpoint: 'https://example.org/cm'])
@@ -143,6 +149,7 @@ class CheckChangeInDevelopmentTest extends BasePiperTest {
 
         ChangeManagement cm = getChangeManagementUtils(false, null)
         jsr.step.checkChangeInDevelopment(
+            script: nullScript, 
             cmUtils: cm,
             changeManagement: [endpoint: 'https://example.org/cm',
                                type: 'SOLMAN'])
@@ -158,6 +165,7 @@ class CheckChangeInDevelopmentTest extends BasePiperTest {
 
         ChangeManagement cm = getChangeManagementUtils(false, '')
         jsr.step.checkChangeInDevelopment(
+            script: nullScript, 
             cmUtils: cm,
             changeManagement: [type: 'SOLMAN',
                                endpoint: 'https://example.org/cm'])
@@ -169,6 +177,7 @@ class CheckChangeInDevelopmentTest extends BasePiperTest {
         jlr.expect('[INFO] Change management integration intentionally switched off.')
 
         jsr.step.checkChangeInDevelopment(
+            script: nullScript,
             changeManagement: [type: 'NONE'])
 
     }
