@@ -42,7 +42,9 @@ public class CommonStepsTest extends BasePiperTest{
     public void generalConfigKeysSetPresentTest() {
 
         def fieldName = 'GENERAL_CONFIG_KEYS'
-        def stepsWithoutGeneralConfigKeySet = fieldCheck(fieldName, fieldRelatedWhitelist)
+        // the steps added to the fieldRelatedWhitelist do not take the general config at all
+        def stepsWithoutGeneralConfigKeySet = fieldCheck(fieldName, fieldRelatedWhitelist.plus(['gaugeExecuteTests',
+                                                                                                'pipelineRestartSteps']))
 
         assertThat("Steps without ${fieldName} field (or that field is not a Set): ${stepsWithoutGeneralConfigKeySet}",
             stepsWithoutGeneralConfigKeySet, is(empty()))
