@@ -41,7 +41,7 @@ class CheckChangeInDevelopmentTest extends BasePiperTest {
 
         ChangeManagement cm = getChangeManagementUtils(true)
         jsr.step.checkChangeInDevelopment(
-            script: nullScript, 
+            script: nullScript,
                      cmUtils: cm,
                      changeManagement: [endpoint: 'https://example.org/cm'],
                      failIfStatusIsNotInDevelopment: true)
@@ -64,7 +64,7 @@ class CheckChangeInDevelopmentTest extends BasePiperTest {
 
         ChangeManagement cm = getChangeManagementUtils(false)
         jsr.step.checkChangeInDevelopment(
-            script: nullScript, 
+            script: nullScript,
             cmUtils: cm,
             changeManagement: [endpoint: 'https://example.org/cm'])
     }
@@ -74,7 +74,7 @@ class CheckChangeInDevelopmentTest extends BasePiperTest {
 
         ChangeManagement cm = getChangeManagementUtils(false)
         boolean inDevelopment = jsr.step.checkChangeInDevelopment(
-            script: nullScript, 
+            script: nullScript,
                                     cmUtils: cm,
                                     changeManagement: [endpoint: 'https://example.org/cm'],
                                     failIfStatusIsNotInDevelopment: false)
@@ -86,7 +86,7 @@ class CheckChangeInDevelopmentTest extends BasePiperTest {
         ChangeManagement cm = getChangeManagementUtils(true, '0815')
 
         jsr.step.checkChangeInDevelopment(
-            script: nullScript, 
+            script: nullScript,
             changeDocumentId: '42',
             cmUtils: cm,
             changeManagement: [endpoint: 'https://example.org/cm'])
@@ -99,7 +99,7 @@ class CheckChangeInDevelopmentTest extends BasePiperTest {
         ChangeManagement cm = getChangeManagementUtils(true, '0815')
 
         jsr.step.checkChangeInDevelopment(
-            script: nullScript, 
+            script: nullScript,
             cmUtils: cm,
             changeManagement : [endpoint: 'https://example.org/cm'])
 
@@ -125,7 +125,7 @@ class CheckChangeInDevelopmentTest extends BasePiperTest {
         }
 
         jsr.step.checkChangeInDevelopment(
-            script: nullScript, 
+            script: nullScript,
             cmUtils: cm,
             changeManagement: [endpoint: 'https://example.org/cm'])
     }
@@ -140,7 +140,7 @@ class CheckChangeInDevelopmentTest extends BasePiperTest {
 
         ChangeManagement cm = getChangeManagementUtils(false, null)
         jsr.step.checkChangeInDevelopment(
-            script: nullScript, 
+            script: nullScript,
             cmUtils: cm,
             changeManagement: [endpoint: 'https://example.org/cm'])
     }
@@ -155,7 +155,7 @@ class CheckChangeInDevelopmentTest extends BasePiperTest {
 
         ChangeManagement cm = getChangeManagementUtils(false, '')
         jsr.step.checkChangeInDevelopment(
-            script: nullScript, 
+            script: nullScript,
             cmUtils: cm,
             changeManagement: [endpoint: 'https://example.org/cm'])
     }
