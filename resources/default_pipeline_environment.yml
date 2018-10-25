@@ -3,6 +3,7 @@ general:
   productiveBranch: 'master'
   collectTelemetryData: true
   changeManagement:
+    type: 'NONE' # SOLMAN, CTS, NONE
     transportRequestLabel: 'TransportRequest\s?:'
     changeDocumentLabel: 'ChangeDocument\s?:'
     clientOpts: ''
