@@ -13,3 +13,5 @@ plugins:
       - FIXME
   markdownlint:
     enabled: true
+  shellcheck:
+    enabled: true
