@@ -63,7 +63,8 @@ public class ChangeManagement implements Serializable {
     }
 
     boolean isChangeInDevelopment(String changeId, String endpoint, String credentialsId, String clientOpts = '') {
-        int rc = executeWithCredentials(endpoint, credentialsId, 'is-change-in-development', ['-cID', "'${changeId}'", '--return-code'],
+        int rc = executeWithCredentials(BackendType.SOLMAN, endpoint, credentialsId, 'is-change-in-development', ['-cID', "'${changeId}'", '--return-code'],
+            false,
             clientOpts) as int
 
         if (rc == 0) {
@@ -75,22 +76,52 @@ public class ChangeManagement implements Serializable {
         }
     }
 
-    String createTransportRequest(String changeId, String developmentSystemId, String endpoint, String credentialsId, String clientOpts = '') {
+    String createTransportRequestCTS(String transportType, String targetSystemId, String description, String endpoint, String credentialsId, String clientOpts = '') {
         try {
-            def transportRequest = executeWithCredentials(endpoint, credentialsId, 'create-transport', ['-cID', changeId, '-dID', developmentSystemId],
+            def transportRequest = executeWithCredentials(BackendType.CTS, endpoint, credentialsId, 'create-transport',
+                    ['-tt', transportType, '-ts', targetSystemId, '-d', "\"${description}\""],
+                    true,
+                    clientOpts)
+            return (transportRequest as String)?.trim()
+        }catch(AbortException e) {
+            throw new ChangeManagementException("Cannot create a transport request. $e.message.")
+        }
+    }
+
+    String createTransportRequestSOLMAN(String changeId, String developmentSystemId, String endpoint, String credentialsId, String clientOpts = '') {
+
+        try {
+            def transportRequest = executeWithCredentials(BackendType.SOLMAN, endpoint, credentialsId, 'create-transport', ['-cID', changeId, '-dID', developmentSystemId],
+                true,
                 clientOpts)
-            return transportRequest.trim() as String
+            return (transportRequest as String)?.trim()
         }catch(AbortException e) {
             throw new ChangeManagementException("Cannot create a transport request for change id '$changeId'. $e.message.")
         }
     }
 
+    void uploadFileToTransportRequest(BackendType type, String changeId, String transportRequestId, String applicationId, String filePath, String endpoint, String credentialsId, String cmclientOpts = '') {
 
-    void uploadFileToTransportRequest(String changeId, String transportRequestId, String applicationId, String filePath, String endpoint, String credentialsId, String cmclientOpts = '') {
-        int rc = executeWithCredentials(endpoint, credentialsId, 'upload-file-to-transport', ['-cID', changeId,
-                                                                                                 '-tID', transportRequestId,
-                                                                                                 applicationId, "\"$filePath\""],
-            cmclientOpts) as int
+        def args = null
+
+        if(type == BackendType.SOLMAN) {
+            args = ['-cID', changeId,
+                    '-tID', transportRequestId,
+                    applicationId, "\"$filePath\""]
+        } else if (type == BackendType.CTS) {
+            args = ['-tID', transportRequestId,
+                    "\"$filePath\""]
+        } else {
+            throw new IllegalArgumentException("Invalid backend type: ${type}")
+        }
+
+        int rc = executeWithCredentials(type,
+                                        endpoint,
+                                        credentialsId,
+                                        'upload-file-to-transport',
+                                        args,
+                                        false,
+                                        cmclientOpts) as int
 
         if(rc == 0) {
             return
@@ -100,27 +131,48 @@ public class ChangeManagement implements Serializable {
 
     }
 
-    def executeWithCredentials(String endpoint, String credentialsId, String command, List<String> args, String clientOpts = '') {
+    def executeWithCredentials(BackendType type, String endpoint, String credentialsId, String command, List<String> args, boolean returnStdout = false, String clientOpts = '') {
         script.withCredentials([script.usernamePassword(
             credentialsId: credentialsId,
             passwordVariable: 'password',
             usernameVariable: 'username')]) {
-            def cmScript = getCMCommandLine(endpoint, script.username, script.password,
+            def cmScript = getCMCommandLine(type, endpoint, script.username, script.password,
                     command, args,
                     clientOpts)
+
+            Map shArgs = [:]
+            if(returnStdout)
+                shArgs.put('returnStdout', true)
+            else
+                shArgs.put('returnStatus', true)
+
+            shArgs.put('script', cmScript)
+
             // user and password are masked by withCredentials
             script.echo """[INFO] Executing command line: "${cmScript}"."""
-            def returnValue = script.sh(returnStatus: true,
-                script: cmScript)
-            return returnValue;
-
+            return script.sh(shArgs)
         }
-
     }
 
-    void releaseTransportRequest(String changeId, String transportRequestId, String endpoint, String credentialsId, String clientOpts = '') {
-        int rc = executeWithCredentials( endpoint, credentialsId, 'release-transport', ['-cID', changeId,
-                                                                                        '-tID', transportRequestId], clientOpts) as int
+    void releaseTransportRequest(BackendType type,String changeId, String transportRequestId, String endpoint, String credentialsId, String clientOpts = '') {
+
+        def cmd
+        List args = []
+
+        if(type == BackendType.SOLMAN) {
+            cmd = 'release-transport'
+            args << '-cID'
+            args << changeId
+        } else if(type == BackendType.CTS) {
+             cmd = 'export-transport'
+        } else {
+            throw new IllegalStateException("Invalid backend type: '${type}'")
+        }
+
+        args << '-tID'
+        args << transportRequestId
+
+        int rc = executeWithCredentials(type, endpoint, credentialsId, cmd, args, false, clientOpts) as int
         if(rc == 0) {
             return
         } else {
@@ -128,7 +180,8 @@ public class ChangeManagement implements Serializable {
         }
     }
 
-    String getCMCommandLine(String endpoint,
+    String getCMCommandLine(BackendType type,
+                            String endpoint,
                             String username,
                             String password,
                             String command,
@@ -143,7 +196,7 @@ public class ChangeManagement implements Serializable {
                         cmclient -e '$endpoint' \
                            -u '$username' \
                            -p '$password' \
-                           -t SOLMAN \
+                           -t ${type} \
                           ${command} ${(args as Iterable).join(' ')}
                     """
         return cmCommandLine

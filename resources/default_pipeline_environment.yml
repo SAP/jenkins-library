@@ -3,6 +3,7 @@ general:
   productiveBranch: 'master'
   collectTelemetryData: true
   changeManagement:
+    type: 'NONE' # SOLMAN, CTS, NONE
     transportRequestLabel: 'TransportRequest\s?:'
     changeDocumentLabel: 'ChangeDocument\s?:'
     clientOpts: ''
@@ -11,6 +12,8 @@ general:
       from: 'origin/master'
       to: 'HEAD'
       format: '%b'
+  githubApiUrl: 'https://api.github.com'
+  githubServerUrl: 'https://github.com'
   gitSshKeyCredentialsId: '' #needed to allow sshagent to run with local ssh key
   jenkinsKubernetes:
     jnlpAgent: 's4sdk/jenkins-agent-k8s:latest'
@@ -139,6 +142,15 @@ steps:
       workspace: '**/*.*'
     stashExcludes:
       workspace: 'nohup.out'
+  githubPublishRelease:
+    addClosedIssues: false
+    addDeltaToLastRelease: false
+    customFilterExtension: ''
+    excludeLabels:
+      - 'duplicate'
+      - 'invalid'
+      - 'question'
+      - 'wontfix'
   gaugeExecuteTests:
     buildTool: 'maven'
     dockerEnvVars:
