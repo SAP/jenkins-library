@@ -5,6 +5,9 @@ import com.sap.piper.CfManifestUtils
 import groovy.transform.Field
 
 @Field String STEP_NAME = 'cloudFoundryDeploy'
+
+@Field Set GENERAL_CONFIG_KEYS = STEP_CONFIG_KEYS
+
 @Field Set STEP_CONFIG_KEYS = [
     'cloudFoundry',
     'deployUser',
@@ -19,6 +22,7 @@ import groovy.transform.Field
     'smokeTestStatusCode',
     'stashContent']
 @Field Map CONFIG_KEY_COMPATIBILITY = [cloudFoundry: [apiEndpoint: 'cfApiEndpoint', appName:'cfAppName', credentialsId: 'cfCredentialsId', manifest: 'cfManifest', org: 'cfOrg', space: 'cfSpace']]
+
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
 
 void call(Map parameters = [:]) {
@@ -36,7 +40,7 @@ void call(Map parameters = [:]) {
 
         Map config = ConfigurationHelper.newInstance(this)
             .loadStepDefaults()
-            .mixinGeneralConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS, CONFIG_KEY_COMPATIBILITY)
+            .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS, CONFIG_KEY_COMPATIBILITY)
             .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS, CONFIG_KEY_COMPATIBILITY)
             .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName?:env.STAGE_NAME, STEP_CONFIG_KEYS, CONFIG_KEY_COMPATIBILITY)
             .mixin(parameters, PARAMETER_KEYS, CONFIG_KEY_COMPATIBILITY)
