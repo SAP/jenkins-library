@@ -12,7 +12,9 @@ import hudson.AbortException
 
 @Field def STEP_NAME = 'transportRequestCreate'
 
-@Field Set stepConfigurationKeys = [
+@Field GENERAL_CONFIG_KEYS = STEP_CONFIG_KEYS
+
+@Field Set STEP_CONFIG_KEYS = [
     'changeManagement',
     'description',          // CTS
     'developmentSystemId',  // SOLMAN
@@ -20,9 +22,7 @@ import hudson.AbortException
     'transportType',        // CTS
   ]
 
-@Field Set parameterKeys = stepConfigurationKeys.plus(['changeDocumentId'])
-
-@Field generalConfigurationKeys = stepConfigurationKeys
+@Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS.plus(['changeDocumentId'])
 
 def call(parameters = [:]) {
 
@@ -36,10 +36,10 @@ def call(parameters = [:]) {
 
         ConfigurationHelper configHelper = ConfigurationHelper.newInstance(this)
             .loadStepDefaults()
-            .mixinGeneralConfig(script.commonPipelineEnvironment, generalConfigurationKeys)
-            .mixinStepConfig(script.commonPipelineEnvironment, stepConfigurationKeys)
-            .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName?:env.STAGE_NAME, stepConfigurationKeys)
-            .mixin(parameters, parameterKeys)
+            .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS)
+            .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS)
+            .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName?:env.STAGE_NAME, STEP_CONFIG_KEYS)
+            .mixin(parameters, PARAMETER_KEYS)
 
 
         Map configuration =  configHelper.use()
