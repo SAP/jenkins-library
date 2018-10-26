@@ -141,6 +141,11 @@ class Helper {
       if(scanNextLineForParamName) {
           scanNextLineForParamName = false
 
+          // first we check if we have a header comment for a step
+          Matcher headerMatcher = (line =~ /(def|void)\s*call\s*\(/ )
+          if(headerMatcher.size() == 1 && headerMatcher[0].size() == 2) {
+          }
+          
           Matcher m = (line =~ /.*'(.*)'.*/)
           if(m.size() == 1 && m[0].size() == 2) {
             def param = m[0][1]
