@@ -12,6 +12,10 @@ import com.sap.piper.cm.ChangeManagementException
 
 @Field Set STEP_CONFIG_KEYS = [
     'changeManagement',
+    /**
+      * When set to `false` the step will not fail in case the step is not in status 'in development'.
+      * @possibleValues `true`, `false`
+      */
     'failIfStatusIsNotInDevelopment'
   ]
 
@@ -62,10 +66,6 @@ def call(parameters = [:]) {
                * @possibleValues see `git log --help`
                */
             .withMandatoryProperty('changeManagement/git/format')
-            /**
-              * When set to `false` the step will not fail in case the step is not in status 'in development'.
-              * @possibleValues `true`, `false`
-              */
             .withMandatoryProperty('failIfStatusIsNotInDevelopment')
             // for the following parameters we expect a value provided from outside
             /**
