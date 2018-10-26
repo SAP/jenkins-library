@@ -14,7 +14,8 @@ cache:
 # Travis Conditions: https://docs.travis-ci.com/user/conditional-builds-stages-jobs
 jobs:
   include:
-    - stage: Unit Tests
+    - stage: Tests
+      name: Unit Tests
       script: mvn clean test --batch-mode
       after_success: mvn -DrepoToken=$COVERALLS_REPO_TOKEN org.jacoco:jacoco-maven-plugin:report org.eluder.coveralls:coveralls-maven-plugin:report
 
