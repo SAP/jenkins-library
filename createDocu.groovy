@@ -141,7 +141,7 @@ class Helper {
       if(scanNextLineForParamName) {
           scanNextLineForParamName = false
 
-          Matcher m = (line =~ /.*withMandatoryProperty\(.*'(.*)'.*/)
+          Matcher m = (line =~ /.*'(.*)'.*/)
           if(m.size() == 1 && m[0].size() == 2) {
             // otherwise there is a comment we do care for
             def param = m[0][1]
