@@ -227,6 +227,8 @@ stepsDir = null
 outDir = null
 stepsDocuDir = null
 
+steps = []
+
 //
 // assign parameters
 
@@ -244,6 +246,10 @@ if(args.length >= 3)
   stepsDocuDir = new File(args[2])
 
 stepsDocuDir = stepsDocuDir ?: new File('documentation/docs/steps')
+
+
+if(args.length >= 4)
+  steps << args[3]
 
 // assign parameters
 //
@@ -271,12 +277,15 @@ if( !stepsDir.exists() ) {
 // sanity checks
 //
 
-List steps = []
 
 //
-// find all the steps we have to document
-stepsDir.traverse(type: FileType.FILES, maxDepth: 0)
-  { if(it.getName().endsWith('.groovy')) steps << (it =~ /vars\/(.*)\.groovy/)[0][1] }
+// find all the steps we have to document (if no step has been provided from outside)
+if( ! steps) {
+  stepsDir.traverse(type: FileType.FILES, maxDepth: 0)
+    { if(it.getName().endsWith('.groovy')) steps << (it =~ /vars\/(.*)\.groovy/)[0][1] }
+} else {
+  System.err << "[INFO] Generating docu only for step ${steps.size > 1 ? 's' : ''} ${steps}.\n"
+}
 
 def gse = new GroovyScriptEngine( [ stepsDir.getName()  ] as String[] , getClass().getClassLoader() )
 
