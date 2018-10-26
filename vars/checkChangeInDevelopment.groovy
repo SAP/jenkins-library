@@ -23,6 +23,9 @@ import com.sap.piper.cm.ChangeManagementException
 
 @Field Set GENERAL_CONFIG_KEYS = STEP_CONFIG_KEYS
 
+/**
+ * This is my header comment
+ */ 
 def call(parameters = [:]) {
 
     handlePipelineStepErrors (stepName: STEP_NAME, stepParameters: parameters) {
