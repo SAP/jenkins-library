@@ -271,18 +271,6 @@ if( !stepsDir.exists() ) {
 // sanity checks
 //
 
-blacklist = [
-                  'toolValidate',
-                  'setupCommonPipelineEnvironment',
-                  'durationMeasure',
-                  'prepareDefaultValues',
-                  'pipelineStashFilesAfterBuild',
-                  'pipelineStashFiles',
-                  'handlePipelineStepErrors',
-                  'commonPipelineEnvironment',
-                  'pipelineExecute',
-                ]
-
 List steps = []
 
 //
@@ -317,16 +305,6 @@ void handleStep(step, prepareDefaultValuesStep, gse) {
 
   if(!theStepDocuInput.exists()) {
     System.err << "[WARNING] step docu input file for step '${step}' is missing.\n"
-    return
-  }
-
-  if(blacklist.contains(step)) {
-    // in case a file is blacklisted from docu generation we simply copy over
-    // the docu input file in order to have always a complete set of step docu files.
-    // we do not touch the content of the file since we assume it has been carefully handcrafted.
-    theGeneratedStepDocu << theStepDocuInput.text
-
-    System.err << "[INFO] Step '${step}' is blacklisted. No docu will be created for that step.\n"
     return
   }
 
