@@ -143,8 +143,12 @@ class Helper {
 
           Matcher m = (line =~ /.*'(.*)'.*/)
           if(m.size() == 1 && m[0].size() == 2) {
-            // otherwise there is a comment we do care for
             def param = m[0][1]
+
+            if(params[param].docu ||
+               params[param].value)
+                   System.err << "[WARNING] There is already some documentation for parameter '${param}. Is this parameter documented twice?'\n"
+
             def _docu = [], _value = []
             docuLines.each { _docu << it  }
             valueLines.each { _value << it}
