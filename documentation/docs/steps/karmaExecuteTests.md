@@ -4,8 +4,8 @@
 
 In this step the ([Karma test runner](http://karma-runner.github.io)) is executed.
 
-The step is using the `seleniumExecuteTest` step which spins up two containers in a Docker network:
- - a Selenium container (`selenium/standalone-chrome`)
+The step is using the `seleniumExecuteTest` step to spins up two containers in a Docker network:
+ - a Selenium/Chrome container (`selenium/standalone-chrome`)
  - a NodeJS container (`node:8-stretch`)
 In the Docker network, the containers can be referenced by the values provided in `dockerName` and `sidecarName`, the default values are `karma` and `selenium`. These values must be used in the test configuration ([Karma `hostname`](https://karma-runner.github.io/1.0/config/configuration-file.html) and [WebDriver `hostname`](https://github.com/karma-runner/karma-webdriver-launcher#usage)).
 
