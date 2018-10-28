@@ -6,7 +6,7 @@ import groovy.text.SimpleTemplateEngine
 import groovy.transform.Field
 
 @Field String STEP_NAME = 'karmaExecuteTests'
-@Field Set STEP_CONFIG_KEYS = [
+@Field Set GENERAL_CONFIG_KEYS = [
     'containerPortMappings', //port mappings required for containers. This will only take effect inside a Kubernetes pod, format [[containerPort: 1111, hostPort: 1111]]
     'dockerEnvVars', //envVars to be set in the execution container if required
     'dockerImage', //Docker image for code execution
@@ -22,6 +22,7 @@ import groovy.transform.Field
     'sidecarVolumeBind', //volume bind. This will not take effect in Kubernetes pod.
     'stashContent' //list of stash names which are required to be unstashed before test run
 ]
+@Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
 
 void call(Map parameters = [:]) {
@@ -32,7 +33,7 @@ void call(Map parameters = [:]) {
         // load default & individual configuration
         Map config = ConfigurationHelper.newInstance(this)
             .loadStepDefaults()
-            .mixinGeneralConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS)
+            .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS)
             .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS)
             .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName?:env.STAGE_NAME, STEP_CONFIG_KEYS)
             .mixin(parameters, PARAMETER_KEYS)
