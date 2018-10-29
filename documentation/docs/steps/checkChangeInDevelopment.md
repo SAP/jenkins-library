@@ -9,7 +9,7 @@ __PARAMETER_TABLE__
 __PARAMETER_DESCRIPTION__
 
 
-
+__STEP_CONFIGURATION_SECTION__
 
 ## Step configuration
 The step is configured using a customer configuration file provided as
