@@ -13,6 +13,7 @@ class TemplateHelper {
 
     def t = ''
     t += '| name | mandatory | default | possible values |\n'
+    t += '|------|-----------|---------|-----------------|\n'
 
     parameters.keySet().toSorted().each {
 
@@ -126,7 +127,7 @@ class Helper {
     }
   }
 
-  static void scanDocu(File f, Map params) {
+  static void scanDocu(File f, Map step) {
 
     boolean docu = false,
             value = false,
@@ -141,26 +142,28 @@ class Helper {
       if(docuEnd) {
           docuEnd = false
 
-          // first we check if we have a header comment for a step
-          Matcher headerMatcher = (line =~ /(def|void)\s*call\s*\(/ )
-          if(headerMatcher.size() == 1 && headerMatcher[0].size() == 2) {
-          }
+          if(isHeader(line)) {
+            def _docu = []
+            docuLines.each { _docu << it  }
+            step.description = _docu*.trim().join('\n')
+          } else {
 
-          Matcher m = (line =~ /.*'(.*)'.*/)
-          if(m.size() == 1 && m[0].size() == 2) {
-            def param = m[0][1]
+            def param = retrieveParameterName(line)
 
-            if(params[param].docu ||
-               params[param].value)
-                   System.err << "[WARNING] There is already some documentation for parameter '${param}. Is this parameter documented twice?'\n"
+            if(!param) {
+              throw new RuntimeException('Cannot retrieve parameter for a comment')
+            }
+
+            if(step.parameters[param].docu ||
+              step.parameters[param].value)
+                System.err << "[WARNING] There is already some documentation for parameter '${param}. Is this parameter documented twice?'\n"
 
             def _docu = [], _value = []
             docuLines.each { _docu << it  }
             valueLines.each { _value << it}
-            params[param].docu = _docu*.trim().join(' ')
-            params[param].value = _value*.trim().join(' ')
+            step.parameters[param].docu = _docu*.trim().join(' ')
+            step.parameters[param].value = _value*.trim().join(' ')
           }
-
           docuLines.clear()
           valueLines.clear()
       }
@@ -170,20 +173,22 @@ class Helper {
       }
 
       if(docu) {
-        def _line = line.replaceAll('^.*\\*/?', '').trim()
-
-        if(_line ==~ /@possibleValues.*/) {
+        def _line = line
+        _line = _line.replaceAll('^\\s*', '') // leading white spaces
+        if(_line.startsWith('/**')) _line = _line.replaceAll('^\\/\\*\\*', '') // start comment
+        if(_line.startsWith('*/')) _line = _line.replaceAll('^\\*/', '') // end comment
+        if(_line.startsWith('*')) _line = _line.replaceAll('^\\*', '') // continue comment
+        if(_line ==~ /.*@possibleValues.*/) {
             value = true
         }
 
-        if(_line) {
-          if(value) {
-            if(_line ==~ /@possibleValues.*/)
-              _line = (_line =~ /@possibleValues\s*?(.*)/)[0][1]
-            valueLines << _line
-          } else {
-            docuLines << _line
+        if(value) {
+          if(_line) {
+              _line = (_line =~ /.*@possibleValues\s*?(.*)/)[0][1]
+              valueLines << _line
           }
+        } else {
+            docuLines << _line.trim()
         }
       }
 
@@ -195,6 +200,17 @@ class Helper {
     }
   }
 
+  private static isHeader(line) {
+    Matcher headerMatcher = (line =~ /(def|void)\s*call\s*\(/ )
+    return headerMatcher.size() == 1 && headerMatcher[0].size() == 2
+  }
+
+  private static retrieveParameterName(line) {
+      Matcher m = (line =~ /.*'(.*)'.*/)
+      if(m.size() == 1 && m[0].size() == 2)
+          return m[0][1]
+      return null
+  }
 
   static getScopedParameters(def script) {
 
@@ -307,7 +323,7 @@ for (step in steps) {
     handleStep(step, prepareDefaultValuesStep, gse)
   } catch(Exception e) {
     exceptionCaught = true
-    System.err << "${e.getClass().getName()} caught while handling step '${step}'."
+    System.err << "${e.getClass().getName()} caught while handling step '${step}': ${e.getMessage()}.\n"
   }
 }
 if(exceptionCaught) {
@@ -316,19 +332,19 @@ if(exceptionCaught) {
 }
 
 
-void handleStep(step, prepareDefaultValuesStep, gse) {
-  File theStep = new File(stepsDir, "${step}.groovy")
-  File theStepDocuInput = new File(stepsDocuDir, "${step}.md")
-  File theGeneratedStepDocu = new File(outDir, "${step}.md")
+void handleStep(stepName, prepareDefaultValuesStep, gse) {
+  File theStep = new File(stepsDir, "${stepName}.groovy")
+  File theStepDocuInput = new File(stepsDocuDir, "${stepName}.md")
+  File theGeneratedStepDocu = new File(outDir, "${stepName}.md")
 
   if(!theStepDocuInput.exists()) {
-    System.err << "[WARNING] step docu input file for step '${step}' is missing.\n"
+    System.err << "[WARNING] step docu input file for step '${stepName}' is missing.\n"
     return
   }
 
-  System.err << "[INFO] Handling step '${step}'.\n"
+  System.err << "[INFO] Handling step '${stepName}'.\n"
 
-  def defaultConfig = Helper.getConfigHelper(getClass().getClassLoader(), roots).loadStepDefaults(Helper.getDummyScript(prepareDefaultValuesStep, step)).use()
+  def defaultConfig = Helper.getConfigHelper(getClass().getClassLoader(), roots).loadStepDefaults(Helper.getDummyScript(prepareDefaultValuesStep, stepName)).use()
 
   def params = [] as Set
 
@@ -339,18 +355,17 @@ void handleStep(step, prepareDefaultValuesStep, gse) {
   def scopedParameters
 
   try {
-    scopedParameters = Helper.getScopedParameters(gse.createScript( "${step}.groovy", new Binding() ))
+    scopedParameters = Helper.getScopedParameters(gse.createScript( "${stepName}.groovy", new Binding() ))
     scopedParameters.each { k, v -> params.addAll(v) }
   } catch(Exception e) {
-    System.err << "[ERROR] Step '${step}' violates naming convention for scoped parameters: ${e}.\n"
+    System.err << "[ERROR] Step '${stepName}' violates naming convention for scoped parameters: ${e}.\n"
     throw e
   }
   def requiredParameters = Helper.getRequiredParameters(theStep)
 
   params.addAll(requiredParameters)
 
-
-  def parameters = [:]
+  def step = [parameters:[:]]
 
   Helper.normalize(params).toSorted().each {
 
@@ -361,7 +376,7 @@ void handleStep(step, prepareDefaultValuesStep, gse) {
                                 required: requiredParameters.contains((it as String))
                               ]
 
-    parameters.put(it, parameterProperties)
+    step.parameters.put(it, parameterProperties)
 
     // The scope is only defined for the first level of a hierarchical configuration.
     // If the first part is found, all nested parameters are allowed with that scope.
@@ -371,11 +386,12 @@ void handleStep(step, prepareDefaultValuesStep, gse) {
     }
   }
 
-  Helper.scanDocu(theStep, parameters)
+  Helper.scanDocu(theStep, step)
 
   def text = theStepDocuInput.text
-  text = text.replace('__PARAMETER_TABLE__', TemplateHelper.createParametersTable(parameters))
-  text = text.replace('__PARAMETER_DESCRIPTION__', TemplateHelper.createParameterDescriptionSection(parameters))
+  text = text.replace('__STEP_DESCRIPTION__', step.description)
+  text = text.replace('__PARAMETER_TABLE__', TemplateHelper.createParametersTable(step.parameters))
+  text = text.replace('__PARAMETER_DESCRIPTION__', TemplateHelper.createParameterDescriptionSection(step.parameters))
 
   theGeneratedStepDocu.withWriter { w -> w.write text }
 }

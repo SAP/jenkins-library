@@ -1,14 +1,7 @@
 # checkChangeInDevelopment
 
 ## Description
-Checks if a Change Document in SAP Solution Manager is in status 'in development'. The change document id is retrieved from the git commit history. The change document id
-can also be provided via parameter `changeDocumentId`. Any value provided as parameter has a higher precedence than a value from the commit history.
-
-By default the git commit messages between `origin/master` and `HEAD` are scanned for a line like `ChangeDocument : <changeDocumentId>`. The commit
-range and the pattern can be configured. For details see 'parameters' table.
-
-## Prerequisites
-* **[Change Management Client 2.0.0 or compatible version](http://central.maven.org/maven2/com/sap/devops/cmclient/dist.cli/)** - available for download on Maven Central.
+__STEP_DESCRIPTION__
 
 ## Parameters
 __PARAMETER_TABLE__
