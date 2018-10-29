@@ -318,14 +318,20 @@ def prepareDefaultValuesStep = Helper.getPrepareDefaultValuesStep(gse)
 
 boolean exceptionCaught = false
 
+def stepDescriptors = [:]
 for (step in steps) {
   try {
-    handleStep(step, prepareDefaultValuesStep, gse)
+    stepDescriptors."${step}" = handleStep(step, prepareDefaultValuesStep, gse)
   } catch(Exception e) {
     exceptionCaught = true
     System.err << "${e.getClass().getName()} caught while handling step '${step}': ${e.getMessage()}.\n"
   }
 }
+
+for(step in stepDescriptors) {
+  renderStep(step.key, step.value)
+}
+
 if(exceptionCaught) {
   System.err << "[ERROR] Exception caught during generating documentation. Check earlier log for details.\n"
   System.exit(1)
@@ -333,10 +339,31 @@ if(exceptionCaught) {
 
 System.err << "[INFO] done.\n"
 
-void handleStep(stepName, prepareDefaultValuesStep, gse) {
-  File theStep = new File(stepsDir, "${stepName}.groovy")
+void renderStep(stepName, stepProperties) {
+
   File theStepDocuInput = new File(stepsDocuDir, "${stepName}.md")
   File theGeneratedStepDocu = new File(outDir, "${stepName}.md")
+
+  if(!theStepDocuInput.exists()) {
+    System.err << "[WARNING] step docu input file for step '${stepName}' is missing.\n"
+    return
+  }
+
+  def text = theStepDocuInput.text
+  if(stepProperties.description) {
+    text = text.replace('__STEP_DESCRIPTION__', stepProperties.description)
+  }
+  if(stepProperties.parameters) {
+    text = text.replace('__PARAMETER_TABLE__', TemplateHelper.createParametersTable(stepProperties.parameters))
+    text = text.replace('__PARAMETER_DESCRIPTION__', TemplateHelper.createParameterDescriptionSection(stepProperties.parameters))
+  }
+  theGeneratedStepDocu.withWriter { w -> w.write text }
+}
+
+def handleStep(stepName, prepareDefaultValuesStep, gse) {
+
+  File theStep = new File(stepsDir, "${stepName}.groovy")
+  File theStepDocuInput = new File(stepsDocuDir, "${stepName}.md")
 
   if(!theStepDocuInput.exists()) {
     System.err << "[WARNING] step docu input file for step '${stepName}' is missing.\n"
@@ -404,10 +431,5 @@ void handleStep(stepName, prepareDefaultValuesStep, gse) {
 
   Helper.scanDocu(theStep, step)
 
-  def text = theStepDocuInput.text
-  text = text.replace('__STEP_DESCRIPTION__', step.description)
-  text = text.replace('__PARAMETER_TABLE__', TemplateHelper.createParametersTable(step.parameters))
-  text = text.replace('__PARAMETER_DESCRIPTION__', TemplateHelper.createParameterDescriptionSection(step.parameters))
-
-  theGeneratedStepDocu.withWriter { w -> w.write text }
+  step
 }
