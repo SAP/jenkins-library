@@ -33,6 +33,20 @@ class TemplateHelper {
 
     t
   }
+
+  static createStepConfigurationSection(Map parameters) {
+
+    def t = ''
+    t += '| parameter | general | step | stage |\n'
+    t += '|-----------|---------|------|-------|\n'
+
+    parameters.keySet().toSorted().each {
+      def props = parameters.get(it)
+      t += "| `${it}` | ${props.GENERAL_CONFIG ? 'X' : ''} | ${props.STEP_CONFIG ? 'X' : ''} | ${props.PARAMS ? 'X' : ''} |\n"
+    }
+
+    t
+  }
 }
 
 //
@@ -335,6 +349,7 @@ for(step in stepDescriptors) {
   } catch(Exception e) {
     exceptionCaught = true
     System.err << "${e.getClass().getName()} caught while rendering step '${step}': ${e.getMessage()}.\n"
+    System.exit(1)
   }
 }
 
@@ -362,6 +377,7 @@ void renderStep(stepName, stepProperties) {
   if(stepProperties.parameters) {
     text = text.replace('__PARAMETER_TABLE__', TemplateHelper.createParametersTable(stepProperties.parameters))
     text = text.replace('__PARAMETER_DESCRIPTION__', TemplateHelper.createParameterDescriptionSection(stepProperties.parameters))
+    text = text.replace('__STEP_CONFIGURATION_SECTION__', TemplateHelper.createStepConfigurationSection(stepProperties.parameters))
   }
   theGeneratedStepDocu.withWriter { w -> w.write text }
 }
@@ -411,7 +427,11 @@ def handleStep(stepName, prepareDefaultValuesStep, gse) {
                                      'step is provided with the this parameter, as in script: this. ' +
                                      'This allows the function to access the ' +
                                      'commonPipelineEnvironment for retrieving, for example, configuration parameters.',
-                               required: true
+                               required: true,
+
+                               GENERAL_CONFIG: 'false',
+                               STEP_CONFIG: 'false',
+                               PARAMS: 'true'
                              ]
 
   // END special handling for 'script' parameter
