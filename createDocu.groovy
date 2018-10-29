@@ -18,7 +18,7 @@ class TemplateHelper {
     parameters.keySet().toSorted().each {
 
       def props = parameters.get(it)
-      t +=  "| `${it}` | ${props.required ? 'yes' : 'no'} | `${(props.defaultValue ?: 'n/a') }` | ${props.value ?: 'n/a'} |\n"
+      t +=  "| `${it}` | ${props.required ? 'yes' : 'no'} | `${(props.defaultValue ?: '') }` | ${props.value ?: ''} |\n"
     }
 
     t
@@ -28,7 +28,7 @@ class TemplateHelper {
     def t =  ''
     parameters.keySet().toSorted().each {
       def props = parameters.get(it)
-      t += "* `${it}` - ${props.docu ?: 'n/a'}\n"
+      t += "* `${it}` - ${props.docu ?: ''}\n"
     }
 
     t
