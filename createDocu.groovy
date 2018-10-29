@@ -331,6 +331,7 @@ if(exceptionCaught) {
   System.exit(1)
 }
 
+System.err << "[INFO] done.\n"
 
 void handleStep(stepName, prepareDefaultValuesStep, gse) {
   File theStep = new File(stepsDir, "${stepName}.groovy")
@@ -410,5 +411,3 @@ void handleStep(stepName, prepareDefaultValuesStep, gse) {
 
   theGeneratedStepDocu.withWriter { w -> w.write text }
 }
-
-System.err << "[INFO] done.\n"
