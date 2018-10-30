@@ -41,7 +41,8 @@ def call(Map parameters = [:]) {
             .mixin(parameters, PARAMETER_KEYS)
             .use()
 
-        new Utils().pushToSWA([step: STEP_NAME], configuration)
+        new Utils().pushToSWA([step: STEP_NAME,
+                               stepParam1: parameters?.script == null], configuration)
 
         // JAVA
         report('PmdPublisher', configuration.pmd, configuration.archive)

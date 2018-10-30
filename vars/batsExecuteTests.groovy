@@ -39,7 +39,8 @@ def call(Map parameters = [:]) {
             .use()
 
         // report to SWA
-        utils.pushToSWA([step: STEP_NAME], config)
+        utils.pushToSWA([step: STEP_NAME,
+                         stepParam1: parameters?.script == null], config)
 
         script.commonPipelineEnvironment.setInfluxStepData('bats', false)
 
