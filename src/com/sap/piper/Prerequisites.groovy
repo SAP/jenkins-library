@@ -2,9 +2,6 @@ package com.sap.piper
 
 import static java.lang.Boolean.getBoolean
 
-/**
-  * @return <code>true</code> in case the script has been provided. <code>false</code> otherwise.
-  */
 static checkScript(def step, Map params) {
 
     def script = params?.script
