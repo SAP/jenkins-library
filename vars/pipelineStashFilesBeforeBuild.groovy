@@ -32,7 +32,8 @@ def call(Map parameters = [:]) {
             .mixin(parameters, PARAMETER_KEYS)
             .use()
 
-        new Utils().pushToSWA([step: STEP_NAME], config)
+        new Utils().pushToSWA([step: STEP_NAME,
+                               stepParam1: parameters?.script == null], config)
 
         if (config.runOpaTests){
             utils.stash('opa5', config.stashIncludes?.get('opa5')?config.stashIncludes.opa5:'**/*.*', config.stashExcludes?.get('opa5')?config.stashExcludes.opa5:'')
