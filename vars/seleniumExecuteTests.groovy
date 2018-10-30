@@ -9,7 +9,9 @@ import groovy.text.SimpleTemplateEngine
 
 @Field String STEP_NAME = 'seleniumExecuteTests'
 @Field Set STEP_CONFIG_KEYS = [
+    'buildTool', //defines the tool which is used for executing the tests
     'containerPortMappings', //port mappings required for containers. This will only take effect inside a Kubernetes pod, format [[containerPort: 1111, hostPort: 1111]]
+    'dockerEnvVars', //envVars to be set in the execution container if required
     'dockerImage', //Docker image for code execution
     'dockerName', //name of the Docker container. This will only take effect inside a Kubernetes pod.
     'dockerWorkspace', //user home directory for Docker execution. This will only take effect inside a Kubernetes pod.
@@ -25,14 +27,14 @@ import groovy.text.SimpleTemplateEngine
 ]
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
 
-def call(Map parameters = [:], Closure body) {
+void call(Map parameters = [:], Closure body) {
     handlePipelineStepErrors(stepName: STEP_NAME, stepParameters: parameters) {
         def script = checkScript(this, parameters) ?: [commonPipelineEnvironment: commonPipelineEnvironment]
         def utils = parameters?.juStabUtils ?: new Utils()
 
         // load default & individual configuration
-        Map config = ConfigurationHelper
-            .loadStepDefaults(this)
+        Map config = ConfigurationHelper.newInstance(this)
+            .loadStepDefaults()
             .mixinGeneralConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS)
             .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS)
             .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName?:env.STAGE_NAME, STEP_CONFIG_KEYS)
@@ -48,6 +50,7 @@ def call(Map parameters = [:], Closure body) {
         dockerExecute(
                 script: script,
                 containerPortMappings: config.containerPortMappings,
+                dockerEnvVars: config.dockerEnvVars,
                 dockerImage: config.dockerImage,
                 dockerName: config.dockerName,
                 dockerWorkspace: config.dockerWorkspace,

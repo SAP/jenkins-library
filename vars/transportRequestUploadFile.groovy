@@ -5,10 +5,12 @@ import groovy.transform.Field
 
 import com.sap.piper.ConfigurationHelper
 import com.sap.piper.cm.ChangeManagement
+import com.sap.piper.cm.BackendType
 import com.sap.piper.cm.ChangeManagementException
 
 import hudson.AbortException
 
+import static com.sap.piper.cm.StepHelpers.getBackendTypeAndLogInfoIfCMIntegrationDisabled
 
 @Field def STEP_NAME = 'transportRequestUploadFile'
 
@@ -25,7 +27,7 @@ import hudson.AbortException
     'filePath',
     'transportRequestId'])
 
-def call(parameters = [:]) {
+void call(parameters = [:]) {
 
     handlePipelineStepErrors (stepName: STEP_NAME, stepParameters: parameters) {
 
@@ -33,51 +35,62 @@ def call(parameters = [:]) {
 
         ChangeManagement cm = parameters.cmUtils ?: new ChangeManagement(script)
 
-        ConfigurationHelper configHelper = ConfigurationHelper
-            .loadStepDefaults(this)
+        ConfigurationHelper configHelper = ConfigurationHelper.newInstance(this)
+            .loadStepDefaults()
             .mixinGeneralConfig(script.commonPipelineEnvironment, generalConfigurationKeys)
             .mixinStepConfig(script.commonPipelineEnvironment, stepConfigurationKeys)
             .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName?:env.STAGE_NAME, stepConfigurationKeys)
             .mixin(parameters, parameterKeys)
             .addIfEmpty('filePath', script.commonPipelineEnvironment.getMtarFilePath())
-            .withMandatoryProperty('applicationId')
+
+        Map configuration = configHelper.use()
+
+        BackendType backendType = getBackendTypeAndLogInfoIfCMIntegrationDisabled(this, configuration)
+        if(backendType == BackendType.NONE) return
+
+        configHelper
             .withMandatoryProperty('changeManagement/changeDocumentLabel')
             .withMandatoryProperty('changeManagement/clientOpts')
             .withMandatoryProperty('changeManagement/credentialsId')
             .withMandatoryProperty('changeManagement/endpoint')
+            .withMandatoryProperty('changeManagement/type')
             .withMandatoryProperty('changeManagement/git/from')
             .withMandatoryProperty('changeManagement/git/to')
             .withMandatoryProperty('changeManagement/git/format')
             .withMandatoryProperty('filePath')
 
-        Map configuration = configHelper.use()
-
         new Utils().pushToSWA([step: STEP_NAME,
+                               stepParam1: configuration.changeManagement.type,
                                stepParam1: parameters?.script == null], configuration)
 
-        def changeDocumentId = configuration.changeDocumentId
+        def changeDocumentId = null
 
-        if(changeDocumentId?.trim()) {
+        if(backendType == BackendType.SOLMAN) {
 
-          echo "[INFO] ChangeDocumentId '${changeDocumentId}' retrieved from parameters."
+            changeDocumentId = configuration.changeDocumentId
 
-        } else {
+            if(changeDocumentId?.trim()) {
 
-          echo "[INFO] Retrieving ChangeDocumentId from commit history [from: ${configuration.changeManagement.git.from}, to: ${configuration.changeManagement.git.to}]." +
-               "Searching for pattern '${configuration.changeManagement.changeDocumentLabel}'. Searching with format '${configuration.changeManagement.git.format}'."
+              echo "[INFO] ChangeDocumentId '${changeDocumentId}' retrieved from parameters."
 
-            try {
-                changeDocumentId = cm.getChangeDocumentId(
-                                                  configuration.changeManagement.git.from,
-                                                  configuration.changeManagement.git.to,
-                                                  configuration.changeManagement.changeDocumentLabel,
-                                                  configuration.changeManagement.git.format
-                                                 )
+            } else {
 
-                echo "[INFO] ChangeDocumentId '${changeDocumentId}' retrieved from commit history"
+              echo "[INFO] Retrieving ChangeDocumentId from commit history [from: ${configuration.changeManagement.git.from}, to: ${configuration.changeManagement.git.to}]." +
+                   "Searching for pattern '${configuration.changeManagement.changeDocumentLabel}'. Searching with format '${configuration.changeManagement.git.format}'."
 
-            } catch(ChangeManagementException ex) {
-                echo "[WARN] Cannot retrieve changeDocumentId from commit history: ${ex.getMessage()}."
+                try {
+                    changeDocumentId = cm.getChangeDocumentId(
+                                                      configuration.changeManagement.git.from,
+                                                      configuration.changeManagement.git.to,
+                                                      configuration.changeManagement.changeDocumentLabel,
+                                                      configuration.changeManagement.git.format
+                                                     )
+
+                    echo "[INFO] ChangeDocumentId '${changeDocumentId}' retrieved from commit history"
+
+                } catch(ChangeManagementException ex) {
+                    echo "[WARN] Cannot retrieve changeDocumentId from commit history: ${ex.getMessage()}."
+                }
             }
         }
 
@@ -107,21 +120,33 @@ def call(parameters = [:]) {
             }
         }
 
+        configHelper
+            .mixin([changeDocumentId: changeDocumentId?.trim() ?: null,
+                    transportRequestId: transportRequestId?.trim() ?: null], ['changeDocumentId', 'transportRequestId'] as Set)
+
+        if(backendType == BackendType.SOLMAN) {
+            configHelper
+                .withMandatoryProperty('changeDocumentId',
+                    "Change document id not provided (parameter: \'changeDocumentId\' or via commit history).")
+                .withMandatoryProperty('applicationId')
+        }
         configuration = configHelper
-                           .mixin([changeDocumentId: changeDocumentId?.trim() ?: null,
-                                   transportRequestId: transportRequestId?.trim() ?: null], ['changeDocumentId', 'transportRequestId'] as Set)
-                           .withMandatoryProperty('changeDocumentId',
-                               "Change document id not provided (parameter: \'changeDocumentId\' or via commit history).")
-                           .withMandatoryProperty('transportRequestId',
+                            .withMandatoryProperty('transportRequestId',
                                "Transport request id not provided (parameter: \'transportRequestId\' or via commit history).")
                            .use()
 
-        echo "[INFO] Uploading file '${configuration.filePath}' to transport request '${configuration.transportRequestId}' of change document '${configuration.changeDocumentId}'."
+        def uploadingMessage = ["[INFO] Uploading file '${configuration.filePath}' to transport request '${configuration.transportRequestId}'"]
+        if(backendType == BackendType.SOLMAN)
+            uploadingMessage << " of change document '${configuration.changeDocumentId}'"
+        uploadingMessage << '.'
+
+        echo uploadingMessage.join()
 
             try {
 
 
-                cm.uploadFileToTransportRequest(configuration.changeDocumentId,
+                cm.uploadFileToTransportRequest(backendType,
+                                                configuration.changeDocumentId,
                                                 configuration.transportRequestId,
                                                 configuration.applicationId,
                                                 configuration.filePath,
@@ -134,6 +159,10 @@ def call(parameters = [:]) {
             }
 
 
-        echo "[INFO] File '${configuration.filePath}' has been successfully uploaded to transport request '${configuration.transportRequestId}' of change document '${configuration.changeDocumentId}'."
+        def uploadedMessage = ["[INFO] File '${configuration.filePath}' has been successfully uploaded to transport request '${configuration.transportRequestId}'"]
+        if(backendType == BackendType.SOLMAN)
+            uploadedMessage << " of change document '${configuration.changeDocumentId}'"
+        uploadedMessage << '.'
+        echo uploadedMessage.join()
     }
 }

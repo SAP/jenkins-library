@@ -4,17 +4,22 @@ import com.sap.piper.Utils
 import groovy.transform.Field
 
 import com.sap.piper.ConfigurationHelper
+import com.sap.piper.cm.BackendType
 import com.sap.piper.cm.ChangeManagement
 import com.sap.piper.cm.ChangeManagementException
 
-import hudson.AbortException
+import static com.sap.piper.cm.StepHelpers.getBackendTypeAndLogInfoIfCMIntegrationDisabled
 
+import hudson.AbortException
 
 @Field def STEP_NAME = 'transportRequestCreate'
 
 @Field Set stepConfigurationKeys = [
     'changeManagement',
-     'developmentSystemId'
+    'description',          // CTS
+    'developmentSystemId',  // SOLMAN
+    'targetSystem',         // CTS
+    'transportType',        // CTS
   ]
 
 @Field Set parameterKeys = stepConfigurationKeys.plus(['changeDocumentId'])
@@ -23,78 +28,111 @@ import hudson.AbortException
 
 def call(parameters = [:]) {
 
+    def transportRequestId
+
     handlePipelineStepErrors (stepName: STEP_NAME, stepParameters: parameters) {
 
         def script = checkScript(this, parameters) ?: [commonPipelineEnvironment: commonPipelineEnvironment]
 
         ChangeManagement cm = parameters.cmUtils ?: new ChangeManagement(script)
 
-        ConfigurationHelper configHelper = ConfigurationHelper
-            .loadStepDefaults(this)
+        ConfigurationHelper configHelper = ConfigurationHelper.newInstance(this)
+            .loadStepDefaults()
             .mixinGeneralConfig(script.commonPipelineEnvironment, generalConfigurationKeys)
             .mixinStepConfig(script.commonPipelineEnvironment, stepConfigurationKeys)
             .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName?:env.STAGE_NAME, stepConfigurationKeys)
             .mixin(parameters, parameterKeys)
+
+
+        Map configuration =  configHelper.use()
+
+        BackendType backendType = getBackendTypeAndLogInfoIfCMIntegrationDisabled(this, configuration)
+        if(backendType == BackendType.NONE) return
+
+        configHelper
             .withMandatoryProperty('changeManagement/clientOpts')
             .withMandatoryProperty('changeManagement/credentialsId')
             .withMandatoryProperty('changeManagement/endpoint')
             .withMandatoryProperty('changeManagement/git/from')
             .withMandatoryProperty('changeManagement/git/to')
             .withMandatoryProperty('changeManagement/git/format')
-            .withMandatoryProperty('developmentSystemId')
+            .withMandatoryProperty('transportType', null, { backendType == BackendType.CTS})
+            .withMandatoryProperty('targetSystem', null, { backendType == BackendType.CTS})
+            .withMandatoryProperty('description', null, { backendType == BackendType.CTS})
 
-        Map configuration =  configHelper.use()
+        def changeDocumentId = null
 
         new Utils().pushToSWA([step: STEP_NAME,
                                stepParam1: parameters?.script == null], configuration)
 
-        def changeDocumentId = configuration.changeDocumentId
+        if(backendType == BackendType.SOLMAN) {
 
-        if(changeDocumentId?.trim()) {
+            changeDocumentId = configuration.changeDocumentId
 
-            echo "[INFO] ChangeDocumentId '${changeDocumentId}' retrieved from parameters."
+            if(changeDocumentId?.trim()) {
 
-        } else {
+                echo "[INFO] ChangeDocumentId '${changeDocumentId}' retrieved from parameters."
 
-            echo "[INFO] Retrieving ChangeDocumentId from commit history [from: ${configuration.changeManagement.git.from}, to: ${configuration.changeManagement.git.to}]." +
-                 "Searching for pattern '${configuration.changeDocumentLabel}'. Searching with format '${configuration.changeManagement.git.format}'."
+            } else {
 
-            try {
+                echo "[INFO] Retrieving ChangeDocumentId from commit history [from: ${configuration.changeManagement.git.from}, to: ${configuration.changeManagement.git.to}]." +
+                     "Searching for pattern '${configuration.changeDocumentLabel}'. Searching with format '${configuration.changeManagement.git.format}'."
 
-                changeDocumentId = cm.getChangeDocumentId(
+                try {
+
+                    changeDocumentId = cm.getChangeDocumentId(
                                                           configuration.changeManagement.git.from,
                                                           configuration.changeManagement.git.to,
                                                           configuration.changeManagement.changeDocumentLabel,
                                                           configuration.changeManagement.git.format
                                                          )
 
-                echo "[INFO] ChangeDocumentId '${changeDocumentId}' retrieved from commit history"
-            } catch(ChangeManagementException ex) {
-                echo "[WARN] Cannot retrieve changeDocumentId from commit history: ${ex.getMessage()}."
+                    echo "[INFO] ChangeDocumentId '${changeDocumentId}' retrieved from commit history"
+                } catch(ChangeManagementException ex) {
+                    echo "[WARN] Cannot retrieve changeDocumentId from commit history: ${ex.getMessage()}."
+                }
             }
+            configHelper.mixin([changeDocumentId: changeDocumentId?.trim() ?: null], ['changeDocumentId'] as Set)
+                        .withMandatoryProperty('developmentSystemId')
+                        .withMandatoryProperty('changeDocumentId',
+                            "Change document id not provided (parameter: \'changeDocumentId\' or via commit history).")
         }
 
-        configuration = configHelper.mixin([changeDocumentId: changeDocumentId?.trim() ?: null], ['changeDocumentId'] as Set)
-                                    .withMandatoryProperty('changeDocumentId',
-                                        "Change document id not provided (parameter: \'changeDocumentId\' or via commit history).")
-                                    .use()
+        configuration = configHelper.use()
 
-        def transportRequestId
-
-        echo "[INFO] Creating transport request for change document '${configuration.changeDocumentId}' and development system '${configuration.developmentSystemId}'."
+        def creatingMessage = ["[INFO] Creating transport request"]
+        if(backendType == BackendType.SOLMAN) {
+            creatingMessage << " for change document '${configuration.changeDocumentId}' and development system '${configuration.developmentSystemId}'"
+        }
+        creatingMessage << '.'
+        echo creatingMessage.join()
 
             try {
-                transportRequestId = cm.createTransportRequest(configuration.changeDocumentId,
+                if(backendType == BackendType.SOLMAN) {
+                    transportRequestId = cm.createTransportRequestSOLMAN(
+                                                               configuration.changeDocumentId,
                                                                configuration.developmentSystemId,
                                                                configuration.changeManagement.endpoint,
                                                                configuration.changeManagement.credentialsId,
                                                                configuration.changeManagement.clientOpts)
+                } else if(backendType == BackendType.CTS) {
+                    transportRequestId = cm.createTransportRequestCTS(
+                                                               configuration.transportType,
+                                                               configuration.targetSystem,
+                                                               configuration.description,
+                                                               configuration.changeManagement.endpoint,
+                                                               configuration.changeManagement.credentialsId,
+                                                               configuration.changeManagement.clientOpts)
+                } else {
+                  throw new IllegalArgumentException("Invalid backend type: '${backendType}'.")
+                }
             } catch(ChangeManagementException ex) {
                 throw new AbortException(ex.getMessage())
             }
 
 
         echo "[INFO] Transport Request '$transportRequestId' has been successfully created."
-        return transportRequestId
     }
+
+    return transportRequestId
 }

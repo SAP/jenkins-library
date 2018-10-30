@@ -1,7 +1,7 @@
 import static com.sap.piper.Prerequisites.checkScript
 import groovy.transform.Field
 
-@Field STEP_NAME='durationMeasure'
+@Field STEP_NAME = 'durationMeasure'
 
 def call(Map parameters = [:], body) {
 
