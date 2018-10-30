@@ -175,8 +175,8 @@ class Helper {
             def _docu = [], _value = []
             docuLines.each { _docu << it  }
             valueLines.each { _value << it}
-            step.parameters[param].docu = _docu*.trim().join(' ')
-            step.parameters[param].value = _value*.trim().join(' ')
+            step.parameters[param].docu = _docu*.trim().join(' ').trim()
+            step.parameters[param].value = _value*.trim().join(' ').trim()
           }
           docuLines.clear()
           valueLines.clear()
