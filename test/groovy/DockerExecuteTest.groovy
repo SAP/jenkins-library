@@ -116,17 +116,6 @@ class DockerExecuteTest extends BasePiperTest {
     }
 
     @Test
-    void testExecuteInsideDockerNoScript() throws Exception {
-        jsr.step.dockerExecute(script: nullScript, dockerImage: 'maven:3.5-jdk-8-alpine') {
-            bodyExecuted = true
-        }
-        assertEquals('maven:3.5-jdk-8-alpine', docker.getImageName())
-        assertTrue(docker.isImagePulled())
-        assertEquals('--env http_proxy --env https_proxy --env no_proxy --env HTTP_PROXY --env HTTPS_PROXY --env NO_PROXY', docker.getParameters().trim())
-        assertTrue(bodyExecuted)
-    }
-
-    @Test
     void testExecuteInsideDockerContainerWithParameters() throws Exception {
         jsr.step.dockerExecute(script: nullScript,
                       dockerImage: 'maven:3.5-jdk-8-alpine',
@@ -172,6 +161,7 @@ class DockerExecuteTest extends BasePiperTest {
     void testSidecarDefault(){
         jsr.step.dockerExecute(
             script: nullScript,
+            dockerName: 'maven',
             dockerImage: 'maven:3.5-jdk-8-alpine',
             sidecarEnvVars: ['testEnv':'testVal'],
             sidecarImage: 'selenium/standalone-chrome',
@@ -186,9 +176,14 @@ class DockerExecuteTest extends BasePiperTest {
         assertThat(docker.imagePullCount, is(2))
         assertThat(docker.sidecarParameters, allOf(
             containsString('--env testEnv=testVal'),
-            containsString('--volume /dev/shm:/dev/shm')
+            containsString('--volume /dev/shm:/dev/shm'),
+            containsString('--network sidecar-'),
+            containsString('--network-alias testAlias')
         ))
-        assertThat(docker.parameters, containsString('--link uniqueId:testAlias'))
+        assertThat(docker.parameters, allOf(
+            containsString('--network sidecar-'),
+            containsString('--network-alias maven')
+        ))
     }
 
     @Test
@@ -217,8 +212,7 @@ class DockerExecuteTest extends BasePiperTest {
             sidecarEnvVars: ['testEnv':'testVal'],
             sidecarImage: 'selenium/standalone-chrome',
             sidecarName: 'selenium',
-            sidecarVolumeBind: ['/dev/shm':'/dev/shm'],
-            dockerLinkAlias: 'testAlias',
+            sidecarVolumeBind: ['/dev/shm':'/dev/shm']
         ) {
             bodyExecuted = true
         }

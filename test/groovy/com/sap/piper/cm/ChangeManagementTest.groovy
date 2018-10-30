@@ -130,7 +130,8 @@ public class ChangeManagementTest extends BasePiperTest {
     @Test
     public void testGetCommandLineWithoutCMClientOpts() {
         String commandLine = new ChangeManagement(nullScript, null)
-            .getCMCommandLine('https://example.org/cm',
+            .getCMCommandLine(BackendType.SOLMAN,
+                              'https://example.org/cm',
                               "me",
                               "topSecret",
                               "the-command",
@@ -143,7 +144,8 @@ public class ChangeManagementTest extends BasePiperTest {
 @Test
 public void testGetCommandLineWithCMClientOpts() {
     String commandLine = new ChangeManagement(nullScript, null)
-        .getCMCommandLine('https://example.org/cm',
+        .getCMCommandLine(BackendType.SOLMAN,
+                          'https://example.org/cm',
                           "me",
                           "topSecret",
                           "the-command",
@@ -154,10 +156,28 @@ public void testGetCommandLineWithCMClientOpts() {
 }
 
     @Test
-    public void testCreateTransportRequestSucceeds() {
+    public void testCreateTransportRequestSOLMANSucceeds() {
 
         script.setReturnValue(JenkinsShellCallRule.Type.REGEX, ".*cmclient.*create-transport -cID 001 -dID 002.*", '004')
-        def transportRequestId = new ChangeManagement(nullScript).createTransportRequest('001', '002', '003', 'me')
+        def transportRequestId = new ChangeManagement(nullScript).createTransportRequestSOLMAN( '001', '002', '003', 'me')
+
+        // the check for the transportRequestID is sufficient. This checks implicit the command line since that value is
+        // returned only in case the shell call matches.
+        assert transportRequestId == '004'
+
+    }
+
+    @Test
+    public void testCreateTransportRequestCTSSucceeds() {
+
+        script.setReturnValue(JenkinsShellCallRule.Type.REGEX, 'cmclient.* -t CTS .*create-transport -tt W -ts XYZ -d "desc 123"$', '004')
+        def transportRequestId = new ChangeManagement(nullScript)
+            .createTransportRequestCTS(
+                'W', // transport type
+                'XYZ', // target system
+                'desc 123', // description
+                'https://example.org/cm',
+                'me')
 
         // the check for the transportRequestID is sufficient. This checks implicit the command line since that value is
         // returned only in case the shell call matches.
@@ -174,7 +194,8 @@ public void testGetCommandLineWithCMClientOpts() {
         thrown.expectMessage('Cannot upload file \'/path\' for change document \'001\''+
                              ' with transport request \'002\'. Return code from cmclient: 1.')
 
-        new ChangeManagement(nullScript).uploadFileToTransportRequest('001',
+        new ChangeManagement(nullScript).uploadFileToTransportRequest(BackendType.SOLMAN,
+                                                                      '001',
                                                                       '002',
                                                                       'XXX',
                                                                       '/path',
@@ -183,14 +204,35 @@ public void testGetCommandLineWithCMClientOpts() {
     }
 
     @Test
-    public void testUploadFileToTransportSucceeds() {
+    public void testUploadFileToTransportSucceedsSOLMAN() {
 
         // the regex provided below is an implicit check that the command line is fine.
-        script.setReturnValue(JenkinsShellCallRule.Type.REGEX,, 'upload-file-to-transport.*-cID 001 -tID 002 XXX "/path"', 0)
+        script.setReturnValue(JenkinsShellCallRule.Type.REGEX, 'upload-file-to-transport.*-cID 001 -tID 002 XXX "/path"', 0)
 
-        new ChangeManagement(nullScript).uploadFileToTransportRequest('001',
+        new ChangeManagement(nullScript).uploadFileToTransportRequest(
+            BackendType.SOLMAN,
+            '001',
             '002',
             'XXX',
+            '/path',
+            'https://example.org/cm',
+            'me')
+
+        // no assert required here, since the regex registered above to the script rule is an implicit check for
+        // the command line.
+    }
+
+    @Test
+    public void testUploadFileToTransportSucceedsCTS() {
+
+        // the regex provided below is an implicit check that the command line is fine.
+        script.setReturnValue(JenkinsShellCallRule.Type.REGEX, '-t CTS upload-file-to-transport -tID 002 "/path"', 0)
+
+        new ChangeManagement(nullScript).uploadFileToTransportRequest(
+            BackendType.CTS,
+            null,
+            '002',
+            null,
             '/path',
             'https://example.org/cm',
             'me')
@@ -208,7 +250,8 @@ public void testGetCommandLineWithCMClientOpts() {
 
         script.setReturnValue(JenkinsShellCallRule.Type.REGEX,, 'upload-file-to-transport', 1)
 
-        new ChangeManagement(nullScript).uploadFileToTransportRequest('001',
+        new ChangeManagement(nullScript).uploadFileToTransportRequest(BackendType.SOLMAN,
+            '001',
             '002',
             'XXX',
             '/path',
@@ -217,12 +260,32 @@ public void testGetCommandLineWithCMClientOpts() {
     }
 
     @Test
-    public void testReleaseTransportRequestSucceeds() {
+    public void testReleaseTransportRequestSucceedsSOLMAN() {
 
         // the regex provided below is an implicit check that the command line is fine.
-        script.setReturnValue(JenkinsShellCallRule.Type.REGEX, 'release-transport.*-cID 001.*-tID 002', 0)
+        script.setReturnValue(JenkinsShellCallRule.Type.REGEX, '-t SOLMAN release-transport.*-cID 001.*-tID 002', 0)
 
-        new ChangeManagement(nullScript).releaseTransportRequest('001',
+        new ChangeManagement(nullScript).releaseTransportRequest(
+            BackendType.SOLMAN,
+            '001',
+            '002',
+            'https://example.org',
+            'me',
+            'openSesame')
+
+        // no assert required here, since the regex registered above to the script rule is an implicit check for
+        // the command line.
+    }
+
+    @Test
+    public void testReleaseTransportRequestSucceedsCTS() {
+
+        // the regex provided below is an implicit check that the command line is fine.
+        script.setReturnValue(JenkinsShellCallRule.Type.REGEX, '-t CTS export-transport.*-tID 002', 0)
+
+        new ChangeManagement(nullScript).releaseTransportRequest(
+            BackendType.CTS,
+            null,
             '002',
             'https://example.org',
             'me',
@@ -241,7 +304,9 @@ public void testGetCommandLineWithCMClientOpts() {
         // the regex provided below is an implicit check that the command line is fine.
         script.setReturnValue(JenkinsShellCallRule.Type.REGEX, 'release-transport.*-cID 001.*-tID 002', 1)
 
-        new ChangeManagement(nullScript).releaseTransportRequest('001',
+        new ChangeManagement(nullScript).releaseTransportRequest(
+            BackendType.SOLMAN,
+            '001',
             '002',
             'https://example.org',
             'me',

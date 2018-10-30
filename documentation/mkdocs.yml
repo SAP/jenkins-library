@@ -6,21 +6,28 @@ nav:
         - artifactSetVersion: steps/artifactSetVersion.md
         - batsExecuteTests: steps/batsExecuteTests.md
         - checkChangeInDevelopment: steps/checkChangeInDevelopment.md
+        - checksPublishResults: steps/checksPublishResults.md
         - cloudFoundryDeploy: steps/cloudFoundryDeploy.md
         - commonPipelineEnvironment: steps/commonPipelineEnvironment.md
         - dockerExecute: steps/dockerExecute.md
         - dockerExecuteOnKubernetes: steps/dockerExecuteOnKubernetes.md
         - durationMeasure: steps/durationMeasure.md
+        - githubPublishRelease: steps/githubPublishRelease.md
+        - gaugeExecuteTests: steps/gaugeExecuteTests.md
         - handlePipelineStepErrors: steps/handlePipelineStepErrors.md
+        - healthExecuteCheck: steps/healthExecuteCheck.md
         - influxWriteData: steps/influxWriteData.md
+        - mailSendNotification: steps/mailSendNotification.md
         - mavenExecute: steps/mavenExecute.md
         - mtaBuild: steps/mtaBuild.md
         - neoDeploy: steps/neoDeploy.md
         - pipelineExecute: steps/pipelineExecute.md
+        - pipelineRestartSteps: steps/pipelineRestartSteps.md
         - pipelineStashFiles: steps/pipelineStashFiles.md
         - prepareDefaultValues: steps/prepareDefaultValues.md
         - seleniumExecuteTests: steps/seleniumExecuteTests.md
         - setupCommonPipelineEnvironment: steps/setupCommonPipelineEnvironment.md
+        - testsPublishResults: steps/testsPublishResults.md
         - toolValidate: steps/toolValidate.md
         - transportRequestCreate: steps/transportRequestCreate.md
         - transportRequestRelease:  steps/transportRequestRelease.md

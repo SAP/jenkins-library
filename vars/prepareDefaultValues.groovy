@@ -1,7 +1,11 @@
 import com.sap.piper.DefaultValueCache
 import com.sap.piper.MapUtils
 
-def call(Map parameters = [:]) {
+import groovy.transform.Field
+
+@Field STEP_NAME = 'prepareDefaultValues'
+
+void call(Map parameters = [:]) {
     handlePipelineStepErrors (stepName: 'prepareDefaultValues', stepParameters: parameters) {
         if(!DefaultValueCache.getInstance() || parameters.customDefaults) {
             def defaultValues = [:]

@@ -27,7 +27,7 @@ import groovy.text.SimpleTemplateEngine
 ]
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS.plus('gitCommitId')
 
-def call(Map parameters = [:], Closure body = null) {
+void call(Map parameters = [:], Closure body = null) {
 
     handlePipelineStepErrors (stepName: STEP_NAME, stepParameters: parameters) {
 
@@ -42,13 +42,13 @@ def call(Map parameters = [:], Closure body = null) {
         if (script == null)
             script = this
         // load default & individual configuration
-        ConfigurationHelper configHelper = ConfigurationHelper
-            .loadStepDefaults(this)
-            .mixinGeneralConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS, this, CONFIG_KEY_COMPATIBILITY)
-            .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS, this, CONFIG_KEY_COMPATIBILITY)
-            .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName?:env.STAGE_NAME, STEP_CONFIG_KEYS, this, CONFIG_KEY_COMPATIBILITY)
+        ConfigurationHelper configHelper = ConfigurationHelper.newInstance(this)
+            .loadStepDefaults()
+            .mixinGeneralConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS, CONFIG_KEY_COMPATIBILITY)
+            .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS, CONFIG_KEY_COMPATIBILITY)
+            .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName?:env.STAGE_NAME, STEP_CONFIG_KEYS, CONFIG_KEY_COMPATIBILITY)
             .mixin(gitCommitId: gitUtils.getGitCommitIdOrNull())
-            .mixin(parameters, PARAMETER_KEYS, this, CONFIG_KEY_COMPATIBILITY)
+            .mixin(parameters, PARAMETER_KEYS, CONFIG_KEY_COMPATIBILITY)
             .withMandatoryProperty('buildTool')
             .dependingOn('buildTool').mixin('filePath')
             .dependingOn('buildTool').mixin('versioningTemplate')
@@ -78,7 +78,7 @@ def call(Map parameters = [:], Closure body = null) {
         }
 
         if (config.commitVersion) {
-            config = new ConfigurationHelper(config)
+            config = ConfigurationHelper.newInstance(this, config)
                 .addIfEmpty('gitSshUrl', isAppContainer(config)
                             ?script.commonPipelineEnvironment.getAppContainerProperty('gitSshUrl')
                             :script.commonPipelineEnvironment.getGitSshUrl())
