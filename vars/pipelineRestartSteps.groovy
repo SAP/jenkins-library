@@ -13,7 +13,7 @@ import groovy.transform.Field
 
 void call(Map parameters = [:], body) {
     handlePipelineStepErrors (stepName: STEP_NAME, stepParameters: parameters) {
-        def script = checkScript(this, parameters) ?: [commonPipelineEnvironment: commonPipelineEnvironment]
+        def script = checkScript(this, parameters) ?: this
         def jenkinsUtils = parameters.jenkinsUtilsStub ?: new JenkinsUtils()
         // load default & individual configuration
         Map config = ConfigurationHelper.newInstance(this)

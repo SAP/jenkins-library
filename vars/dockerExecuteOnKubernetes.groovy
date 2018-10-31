@@ -25,7 +25,7 @@ import hudson.AbortException
 void call(Map parameters = [:], body) {
     handlePipelineStepErrors(stepName: STEP_NAME, stepParameters: parameters) {
 
-        final script = checkScript(this, parameters) ?: [commonPipelineEnvironment: commonPipelineEnvironment]
+        final script = checkScript(this, parameters) ?: this
 
         if (!JenkinsUtils.isPluginActive(PLUGIN_ID_KUBERNETES)) {
             error("[ERROR][${STEP_NAME}] not supported. Plugin '${PLUGIN_ID_KUBERNETES}' is not installed or not active.")

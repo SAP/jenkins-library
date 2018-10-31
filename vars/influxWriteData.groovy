@@ -24,7 +24,7 @@ void call(Map parameters = [:]) {
 
         def script = checkScript(this, parameters)
         if (script == null)
-             script = [commonPipelineEnvironment: commonPipelineEnvironment]
+             script = this
 
         // load default & individual configuration
         Map configuration = ConfigurationHelper.newInstance(this)

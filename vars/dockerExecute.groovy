@@ -31,7 +31,7 @@ import groovy.transform.Field
 void call(Map parameters = [:], body) {
     handlePipelineStepErrors(stepName: STEP_NAME, stepParameters: parameters) {
 
-        final script = checkScript(this, parameters) ?: [commonPipelineEnvironment: commonPipelineEnvironment]
+        final script = checkScript(this, parameters) ?: this
 
         Map config = ConfigurationHelper.newInstance(this)
             .loadStepDefaults()

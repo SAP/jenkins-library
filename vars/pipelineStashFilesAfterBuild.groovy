@@ -18,7 +18,7 @@ void call(Map parameters = [:]) {
 
         def script = checkScript(this, parameters)
         if (script == null)
-            script = [commonPipelineEnvironment: commonPipelineEnvironment]
+            script = this
 
         //additional includes via passing e.g. stashIncludes: [opa5: '**/*.include']
         //additional excludes via passing e.g. stashExcludes: [opa5: '**/*.exclude']

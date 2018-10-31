@@ -29,7 +29,7 @@ void call(parameters = [:]) {
 
     handlePipelineStepErrors (stepName: STEP_NAME, stepParameters: parameters) {
 
-        def script = checkScript(this, parameters) ?: [commonPipelineEnvironment: commonPipelineEnvironment]
+        def script = checkScript(this, parameters) ?: this
 
         ChangeManagement cm = parameters.cmUtils ?: new ChangeManagement(script)
 

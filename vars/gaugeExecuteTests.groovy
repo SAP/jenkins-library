@@ -28,7 +28,7 @@ import groovy.transform.Field
 
 void call(Map parameters = [:]) {
     handlePipelineStepErrors (stepName: STEP_NAME, stepParameters: parameters) {
-        def script = checkScript(this, parameters)  ?: [commonPipelineEnvironment: commonPipelineEnvironment]
+        def script = checkScript(this, parameters)  ?: this
         def utils = parameters.juStabUtils ?: new Utils()
 
         script.commonPipelineEnvironment.setInfluxStepData('gauge', false)

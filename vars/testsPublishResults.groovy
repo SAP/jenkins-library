@@ -26,7 +26,7 @@ void call(Map parameters = [:]) {
 
         def script = checkScript(this, parameters)
         if (script == null)
-            script = [commonPipelineEnvironment: commonPipelineEnvironment]
+            script = this
 
         prepare(parameters)
 
