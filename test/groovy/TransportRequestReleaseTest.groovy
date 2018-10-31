@@ -145,7 +145,7 @@ public class TransportRequestReleaseTest extends BasePiperTest {
 
         jlr.expect('[INFO] Change management integration intentionally switched off.')
 
-        jsr.step.call(
+        jsr.step.call(script: nullScript,
             changeManagement: [type: 'NONE'])
     }
 }
