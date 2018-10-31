@@ -26,7 +26,7 @@ jobs:
       script: docker run --rm -it -v ${TRAVIS_BUILD_DIR}:/docs -w /docs/documentation squidfunk/mkdocs-material:3.0.4 build --clean --verbose --strict
     
     - name: Deploy
-      if: repo = "SAP/jenkins-library" AND fork = false AND branch = master AND NOT type = pull_request
+      if: repo = "SAP/jenkins-library" AND branch = master AND NOT type = pull_request
       install: 
         - docker pull squidfunk/mkdocs-material:3.0.4
         - |
