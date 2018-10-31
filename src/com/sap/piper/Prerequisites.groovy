@@ -8,10 +8,10 @@ static checkScript(def step, Map params) {
 
     if(script == null) {
 
-        step.currentBuild.status = 'UNSTABLE'
+        step.currentBuild.setResult('UNSTABLE')
 
         step.echo "[WARNING][${step.STEP_NAME}] No reference to surrounding script provided with key 'script', e.g. 'script: this'. " +
-                   "Build status has been set to '${step.currentBuild.status}'. In future versions of piper-lib the build will fail."
+                   "Build status has been set to 'UNSTABLE'. In future versions of piper-lib the build will fail."
 
         if(getBoolean('com.sap.piper.featureFlag.failOnMissingScript')) {
             step.error("[ERROR][${step.STEP_NAME}] No reference to surrounding script provided with key 'script', e.g. 'script: this'.")

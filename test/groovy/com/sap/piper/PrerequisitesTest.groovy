@@ -14,6 +14,8 @@ import util.Rules
 
 class PrerequisitesTest extends BasePiperTest {
 
+    def result = 'SUCCESS'
+
     @Rule
     public ExpectedException thrown = ExpectedException.none()
 
@@ -25,8 +27,11 @@ class PrerequisitesTest extends BasePiperTest {
 
     @Before
     public void init() {
-        nullScript.metaClass.STEP_NAME = 'dummy'
-        nullScript.currentBuild.status = 'SUCCESS'
+        nullScript.currentBuild = [
+            'setResult' : { r -> result = r },
+            STEP_NAME: 'dummy',
+        ]
+        nullScript.STEP_NAME = 'dummy'
     }
 
     @Test
@@ -35,7 +40,7 @@ class PrerequisitesTest extends BasePiperTest {
         def script = Prerequisites.checkScript(nullScript, [script:{}])
 
         assert script != null
-        assert nullScript.currentBuild.status == 'SUCCESS'
+        assert result == 'SUCCESS'
 
     }
 
@@ -43,12 +48,11 @@ class PrerequisitesTest extends BasePiperTest {
     public void checkScriptMissingTest() {
 
         jlr.expect('No reference to surrounding script provided with key \'script\'')
-        assert nullScript.currentBuild.status == 'SUCCESS'
 
         def script = Prerequisites.checkScript(nullScript, [:])
 
         assert script == null
-        assert nullScript.currentBuild.status == 'UNSTABLE'
+        assert result == 'UNSTABLE'
     }
 
     @Test
