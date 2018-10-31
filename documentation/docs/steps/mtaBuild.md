@@ -45,7 +45,7 @@ The following parameters can also be specified as step parameters using the glob
 * `applicationName`
 
 ## Return value
-The file name of the resulting archive is returned with this step. The file name is extracted from the key `ID` defined in `mta.yaml`.
+none
 
 ## Side effects
 1. The file name of the resulting archive is written to the `commonPipelineEnvironment` with variable name `mtarFileName`.
