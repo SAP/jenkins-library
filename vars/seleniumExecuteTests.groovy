@@ -29,7 +29,7 @@ import groovy.text.SimpleTemplateEngine
 
 void call(Map parameters = [:], Closure body) {
     handlePipelineStepErrors(stepName: STEP_NAME, stepParameters: parameters) {
-        def script = checkScript(this, parameters) ?: [commonPipelineEnvironment: commonPipelineEnvironment]
+        def script = checkScript(this, parameters) ?: this
         def utils = parameters?.juStabUtils ?: new Utils()
 
         // load default & individual configuration
