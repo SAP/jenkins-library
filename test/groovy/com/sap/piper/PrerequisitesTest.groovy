@@ -17,11 +17,11 @@ class PrerequisitesTest extends BasePiperTest {
     @Rule
     public ExpectedException thrown = ExpectedException.none()
 
-    @Rule
     public JenkinsLoggingRule jlr = new JenkinsLoggingRule(this)
 
     @Rule
     public RuleChain ruleChain = Rules.getCommonRules(this)
+                                      .around(jlr)
 
     @Before
     public void init() {
