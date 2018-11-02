@@ -128,6 +128,29 @@ class Helper {
     }
   }
 
+  static trim(List lines) {
+
+    removeLeadingEmptyLines(
+      removeLeadingEmptyLines(lines.reverse())
+        .reverse())
+  }
+
+  private static removeLeadingEmptyLines(lines) {
+
+    def _lines = new ArrayList(lines), trimmed = []
+
+    boolean empty = true
+
+    _lines.each() {
+
+        if(empty &&  ! it.trim()) return
+        empty = false
+        trimmed << it
+    }
+
+    trimmed
+  }
+
   private static normalize(Set p) {
 
     def normalized = [] as Set
@@ -185,6 +208,7 @@ class Helper {
           if(isHeader(line)) {
             def _docu = []
             docuLines.each { _docu << it  }
+            _docu = Helper.trim(_docu)
             step.description = _docu*.trim().join('\n')
           } else {
 
@@ -384,13 +408,13 @@ void renderStep(stepName, stepProperties) {
 
   def text = theStepDocu.text
   if(stepProperties.description) {
-    text = TemplateHelper.replaceParagraph(text, 2, 'Description', stepProperties.description)
+    text = TemplateHelper.replaceParagraph(text, 2, 'Description', '\n' + stepProperties.description)
   }
   if(stepProperties.parameters) {
 
-    text = TemplateHelper.replaceParagraph(text, 2, 'Parameters',
-              TemplateHelper.createParametersTable(stepProperties.parameters) + '\n\n' +
-              TemplateHelper.createParameterDescriptionSection(stepProperties.parameters) + '\n\n' +
+    text = TemplateHelper.replaceParagraph(text, 2, 'Parameters', '\n' +
+              TemplateHelper.createParametersTable(stepProperties.parameters) + '\n' +
+              TemplateHelper.createParameterDescriptionSection(stepProperties.parameters) + '\n' +
               TemplateHelper.createStepConfigurationSection(stepProperties.parameters))
   }
   theStepDocu.withWriter { w -> w.write text }

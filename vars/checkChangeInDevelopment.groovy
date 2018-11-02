@@ -30,8 +30,6 @@ import com.sap.piper.cm.ChangeManagementException
  * By default the git commit messages between `origin/master` and `HEAD` are scanned for a line like `ChangeDocument : <changeDocumentId>`. The commit
  * range and the pattern can be configured. For details see 'parameters' table.
  *
- * ## Prerequisites
- * * **[Change Management Client 2.0.0 or compatible version](http://central.maven.org/maven2/com/sap/devops/cmclient/dist.cli/)** - available for download on Maven Central.
  */ 
 def call(parameters = [:]) {
 
