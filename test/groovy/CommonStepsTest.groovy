@@ -33,7 +33,6 @@ public class CommonStepsTest extends BasePiperTest{
             'pipelineStashFilesBeforeBuild', // intended to be called from pipelineStashFiles
             'pipelineStashFiles', // only forwards to before/after step
             'pipelineExecute', // special step (infrastructure)
-            'prepareDefaultValues', // special step (infrastructure)
             'commonPipelineEnvironment', // special step (infrastructure)
             'handlePipelineStepErrors', // special step (infrastructure)
             ]
