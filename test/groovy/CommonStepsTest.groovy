@@ -25,6 +25,69 @@ public class CommonStepsTest extends BasePiperTest{
     @Rule
     public RuleChain ruleChain = Rules.getCommonRules(this)
 
+    private static fieldRelatedWhitelist = [
+            'toolValidate', // step is intended to be configured by other steps
+            'durationMeasure', // only expects parameters via signature
+            'prepareDefaultValues', // special step (infrastructure)
+            'pipelineStashFilesAfterBuild', // intended to be called from pipelineStashFiles
+            'pipelineStashFilesBeforeBuild', // intended to be called from pipelineStashFiles
+            'pipelineStashFiles', // only forwards to before/after step
+            'pipelineExecute', // special step (infrastructure)
+            'commonPipelineEnvironment', // special step (infrastructure)
+            'handlePipelineStepErrors', // special step (infrastructure)
+            ]
+
+    @Test
+    public void generalConfigKeysSetPresentTest() {
+
+        def fieldName = 'GENERAL_CONFIG_KEYS'
+        // the steps added to the fieldRelatedWhitelist do not take the general config at all
+        def stepsWithoutGeneralConfigKeySet = fieldCheck(fieldName, fieldRelatedWhitelist.plus(['gaugeExecuteTests',
+                                                                                                'pipelineRestartSteps']))
+
+        assertThat("Steps without ${fieldName} field (or that field is not a Set): ${stepsWithoutGeneralConfigKeySet}",
+            stepsWithoutGeneralConfigKeySet, is(empty()))
+    }
+
+    @Test
+    public void stepConfigKeysSetPresentTest() {
+
+        def fieldName = 'STEP_CONFIG_KEYS'
+        def stepsWithoutStepConfigKeySet = fieldCheck(fieldName, fieldRelatedWhitelist.plus('setupCommonPipelineEnvironment'))
+
+        assertThat("Steps without ${fieldName} field (or that field is not a Set): ${stepsWithoutStepConfigKeySet}",
+            stepsWithoutStepConfigKeySet, is(empty()))
+    }
+
+    @Test
+    public void parametersKeysSetPresentTest() {
+
+        def fieldName = 'PARAMETER_KEYS'
+        def stepsWithoutParametersKeySet = fieldCheck(fieldName, fieldRelatedWhitelist.plus('setupCommonPipelineEnvironment'))
+
+        assertThat("Steps without ${fieldName} field (or that field is not a Set): ${stepsWithoutParametersKeySet}",
+            stepsWithoutParametersKeySet, is(empty()))
+    }
+
+    private fieldCheck(fieldName, whitelist) {
+
+        def stepsWithoutGeneralConfigKeySet = []
+
+        for(def step in getSteps()) {
+            if(whitelist.contains(step)) continue
+
+            def fields = loadScript("${step}.groovy").getClass().getDeclaredFields() as Set
+            Field generalConfigKeyField = fields.find{ it.getName() == fieldName}
+            if(! generalConfigKeyField ||
+               ! generalConfigKeyField
+                   .getType()
+                   .isAssignableFrom(Set.class)) {
+                        stepsWithoutGeneralConfigKeySet.add(step)
+            }
+        }
+        return stepsWithoutGeneralConfigKeySet
+    }
+
     @Test
     public void stepsWithWrongFieldNameTest() {
 
