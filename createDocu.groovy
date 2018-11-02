@@ -62,7 +62,11 @@ class TemplateHelper {
 
   static createStepConfigurationSection(Map parameters) {
 
-    def t = ''
+    def t = '''|
+               |We recommend to define values of step parameters via [config.yml file](../configuration.md).
+               |
+               |In following sections the configuration is possible:'''.stripMargin()
+
     t += '| parameter | general | step | stage |\n'
     t += '|-----------|---------|------|-------|\n'
 
@@ -414,7 +418,10 @@ void renderStep(stepName, stepProperties) {
 
     text = TemplateHelper.replaceParagraph(text, 2, 'Parameters', '\n' +
               TemplateHelper.createParametersTable(stepProperties.parameters) + '\n' +
-              TemplateHelper.createParameterDescriptionSection(stepProperties.parameters) + '\n' +
+              TemplateHelper.createParameterDescriptionSection(stepProperties.parameters))
+
+
+    text = TemplateHelper.replaceParagraph(text, 2, 'Step configuration', '\n' +
               TemplateHelper.createStepConfigurationSection(stepProperties.parameters))
   }
   theStepDocu.withWriter { w -> w.write text }
