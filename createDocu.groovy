@@ -9,6 +9,32 @@ import java.util.regex.Matcher
 //
 class TemplateHelper {
 
+  static replaceParagraph(def textIn, int level, name, replacement) {
+
+    boolean insideParagraph = false
+    def textOut = ''
+
+    textIn.eachLine {
+
+      line ->
+
+        if(insideParagraph && line ==~ "^#{1,${level}} .*\$") {
+          insideParagraph = false
+        }
+
+        if(! insideParagraph) {
+          textOut += "${line}\n"
+        }
+
+        if(line ==~ "^#{${level}} ${name}.*\$") {
+          insideParagraph = true
+          textOut += "${replacement}\n\n"
+        }
+    }
+
+    textOut
+  }
+
   static createParametersTable(Map parameters) {
 
     def t = ''
@@ -263,7 +289,6 @@ roots = [
     ]
 
 stepsDir = null
-outDir = null
 stepsDocuDir = null
 
 steps = []
@@ -277,31 +302,19 @@ if(args.length >= 1)
 stepsDir = stepsDir ?: new File('vars')
 
 if(args.length >= 2)
-  outDir = new File(args[1])
-
-outDir = outDir ?: new File('out')
-
-if(args.length >= 3)
-  stepsDocuDir = new File(args[2])
+  stepsDocuDir = new File(args[1])
 
 stepsDocuDir = stepsDocuDir ?: new File('documentation/docs/steps')
 
 
-if(args.length >= 4)
-  steps << args[3]
+if(args.length >= 3)
+  steps << args[2]
 
 // assign parameters
 //
 
 //
 // sanity checks
-
-if( ! outDir.exists() ) {
-  if(! outDir.mkdirs()) {
-    System.err << "Cannot create output direcrory '${outDir}'.\n"
-    System.exit(1)
-  }
-}
 
 if( !stepsDocuDir.exists() ) {
   System.err << "Steps docu dir '${stepsDocuDir}' does not exist.\n"
@@ -362,32 +375,33 @@ System.err << "[INFO] done.\n"
 
 void renderStep(stepName, stepProperties) {
 
-  File theStepDocuInput = new File(stepsDocuDir, "${stepName}.md")
-  File theGeneratedStepDocu = new File(outDir, "${stepName}.md")
+  File theStepDocu = new File(stepsDocuDir, "${stepName}.md")
 
-  if(!theStepDocuInput.exists()) {
+  if(!theStepDocu.exists()) {
     System.err << "[WARNING] step docu input file for step '${stepName}' is missing.\n"
     return
   }
 
-  def text = theStepDocuInput.text
+  def text = theStepDocu.text
   if(stepProperties.description) {
-    text = text.replace('__STEP_DESCRIPTION__', stepProperties.description)
+    text = TemplateHelper.replaceParagraph(text, 2, 'Description', stepProperties.description)
   }
   if(stepProperties.parameters) {
-    text = text.replace('__PARAMETER_TABLE__', TemplateHelper.createParametersTable(stepProperties.parameters))
-    text = text.replace('__PARAMETER_DESCRIPTION__', TemplateHelper.createParameterDescriptionSection(stepProperties.parameters))
-    text = text.replace('__STEP_CONFIGURATION_SECTION__', TemplateHelper.createStepConfigurationSection(stepProperties.parameters))
+
+    text = TemplateHelper.replaceParagraph(text, 2, 'Parameters',
+              TemplateHelper.createParametersTable(stepProperties.parameters) + '\n\n' +
+              TemplateHelper.createParameterDescriptionSection(stepProperties.parameters) + '\n\n' +
+              TemplateHelper.createStepConfigurationSection(stepProperties.parameters))
   }
-  theGeneratedStepDocu.withWriter { w -> w.write text }
+  theStepDocu.withWriter { w -> w.write text }
 }
 
 def handleStep(stepName, prepareDefaultValuesStep, gse) {
 
   File theStep = new File(stepsDir, "${stepName}.groovy")
-  File theStepDocuInput = new File(stepsDocuDir, "${stepName}.md")
+  File theStepDocu = new File(stepsDocuDir, "${stepName}.md")
 
-  if(!theStepDocuInput.exists()) {
+  if(!theStepDocu.exists()) {
     System.err << "[WARNING] step docu input file for step '${stepName}' is missing.\n"
     return
   }
