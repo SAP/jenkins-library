@@ -122,9 +122,9 @@ void call(parameters = [:]) {
 
         configuration = configHelper.mixin([changeDocumentId: changeId?.trim() ?: null], ['changeDocumentId'] as Set)
 
-                                     /**
-                                       * The id of the change document to transport. If not provided, it is retrieved from the git commit history.
-                                       */
+                                    /**
+                                      * The id of the change document to transport. If not provided, it is retrieved from the git commit history.
+                                      */
                                     .withMandatoryProperty('changeDocumentId',
                                         "No changeDocumentId provided. Neither via parameter 'changeDocumentId' " +
                                         "nor via label '${configuration.changeManagement.changeDocumentLabel}' in commit range " +
