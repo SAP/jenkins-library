@@ -55,7 +55,7 @@ public class StepHelpers {
                                                             configuration.changeManagement.git.to,
                                                             configuration.changeManagement.changeDocumentLabel,
                                                             configuration.changeManagement.gitformat
-                                                         )
+                                                        )
 
                 step.echo "[INFO] ChangeDocumentId '${changeDocumentId}' retrieved from commit history"
 
