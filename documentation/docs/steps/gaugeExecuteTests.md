@@ -13,7 +13,7 @@ This layout is propagated by Jez Humble and Dave Farley in their book "Continuou
 
 Using Gauge it is possible to write test specifications in [Markdown syntax](http://daringfireball.net/projects/markdown/syntax) and therefore allow e.g. product owners to write the relevant acceptance test specifications. At the same time it allows the developer to implement the steps described in the specification in her development environment.
 
-You can use the sample projects of Gauge, for example: https://github.com/getgauge/gauge-mvn-archetypes
+You can use the [sample projects](https://github.com/getgauge/gauge-mvn-archetypes) of Gauge.
 
 !!! note "Make sure to run against a Selenium Hub configuration"
     In the test example of _gauge-archetype-selenium_ please make sure to allow it to run against a Selenium hub:

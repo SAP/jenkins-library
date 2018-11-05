@@ -112,11 +112,11 @@ As a first step you need to add your InfluxDB as Data source to your Grafana:
 - in the navigation go to data sources -> add data source:
   - name
   - type: InfluxDB
-  - Url: \http://&lt;host of your InfluxDB server&gt;:&lt;port&gt;
+  - Url: `http://<host of your InfluxDB server>:<port>`
   - Access: direct (not via proxy)
-  - database: &lt;name of the DB as specified above&gt;
-  - User: &lt;name of the admin user as specified in step above&gt;
-  - Password: &lt;password of the admin user as specified in step above&gt;
+  - database: `<name of the DB as specified above>`
+  - User: `<name of the admin user as specified in step above>`
+  - Password: `<password of the admin user as specified in step above>`
 
 !!! note "Jenkins as a Service"
     For Jenkins as a Service the data source configuration is already available.
