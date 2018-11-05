@@ -44,13 +44,13 @@ After you have started your InfluxDB docker you need to create a database:
 
 You can perform the above steps via commandline:
 
-  - The following command will create a database with name &lt;databasename&gt;
+- The following command will create a database with name &lt;databasename&gt;
 
-        `curl -i -XPOST http://localhost:8086/query --data-urlencode "q=CREATE DATABASE \<databasename\>"`
+  `curl -i -XPOST http://localhost:8086/query --data-urlencode "q=CREATE DATABASE \<databasename\>"`
 
-  - The admin user with the name &lt;adminusername&gt; and the password &lt;adminuserpwd&gt; can be created with
+- The admin user with the name &lt;adminusername&gt; and the password &lt;adminuserpwd&gt; can be created with
 
-        `curl -i -XPOST http://localhost:8086/query --data-urlencode "q=CREATE USER \<adminusername\> WITH PASSWORD '\<adminuserpwd\>' WITH ALL PRIVILEGES"`
+  `curl -i -XPOST http://localhost:8086/query --data-urlencode "q=CREATE USER \<adminusername\> WITH PASSWORD '\<adminuserpwd\>' WITH ALL PRIVILEGES"`
 
 Once you have started both docker containers and Influx and Grafana are running you need to configure the Jenkins Plugin according to your settings.
 
