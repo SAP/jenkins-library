@@ -12,7 +12,7 @@ You need to have a Bats test file. By default you would put this into directory 
 
 | parameter | mandatory | default | possible values |
 |-----------|-----------|---------|-----------------|
-| script | no | empty `globalPipelineEnvironment` |  |
+| script | yes |  |  |
 | dockerImage | no | `node:8-stretch` | |
 | dockerWorkspace | no |`/home/node`| |
 | envVars | no | `[:]` | |

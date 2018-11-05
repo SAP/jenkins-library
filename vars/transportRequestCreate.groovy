@@ -1,3 +1,5 @@
+import static com.sap.piper.Prerequisites.checkScript
+
 import com.sap.piper.Utils
 import groovy.transform.Field
 
@@ -30,7 +32,7 @@ def call(parameters = [:]) {
 
     handlePipelineStepErrors (stepName: STEP_NAME, stepParameters: parameters) {
 
-        def script = parameters?.script ?: [commonPipelineEnvironment: commonPipelineEnvironment]
+        def script = checkScript(this, parameters) ?: this
 
         ChangeManagement cm = parameters.cmUtils ?: new ChangeManagement(script)
 
@@ -47,8 +49,6 @@ def call(parameters = [:]) {
         BackendType backendType = getBackendTypeAndLogInfoIfCMIntegrationDisabled(this, configuration)
         if(backendType == BackendType.NONE) return
 
-        new Utils().pushToSWA([step: STEP_NAME], configuration)
-
         configHelper
             .withMandatoryProperty('changeManagement/clientOpts')
             .withMandatoryProperty('changeManagement/credentialsId')
@@ -61,6 +61,9 @@ def call(parameters = [:]) {
             .withMandatoryProperty('description', null, { backendType == BackendType.CTS})
 
         def changeDocumentId = null
+
+        new Utils().pushToSWA([step: STEP_NAME,
+                                stepParam1: parameters?.script == null], configuration)
 
         if(backendType == BackendType.SOLMAN) {
 
