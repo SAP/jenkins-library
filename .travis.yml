@@ -17,7 +17,7 @@ jobs:
     - stage: Tests
       name: Unit Tests
       before_script:
-        - curl -L https://codeclimate.com/downloads/test-reporter/test-reporter-latest-linux-amd64 > ./cc-test-reporter
+        - curl -L --output cc-test-reporter https://codeclimate.com/downloads/test-reporter/test-reporter-latest-linux-amd64
         - chmod +x ./cc-test-reporter
         - ./cc-test-reporter before-build
       script: mvn package --batch-mode
