@@ -72,6 +72,7 @@ class JenkinsShellCallRule implements TestRule {
                                 }
                             }
                             if(result instanceof Closure) result = result()
+                            if (!result && m.returnStatus) result = 0
                             return result
                         }
                 })

@@ -1,7 +1,10 @@
 # transportRequestCreate
 
 ## Description
-Creates a Transport Request for a Change Document on the Solution Manager.
+Creates
+
+* a Transport Request for a Change Document on the Solution Manager (type `SOLMAN`) or
+* a Transport Request inside an ABAP system (type`CTS`)
 
 ## Prerequisites
 * **[Change Management Client 2.0.0 or compatible version](http://central.maven.org/maven2/com/sap/devops/cmclient/dist.cli/)** - available for download on Maven Central.
@@ -10,7 +13,10 @@ Creates a Transport Request for a Change Document on the Solution Manager.
 | parameter        | mandatory | default                                                | possible values    |
 | -----------------|-----------|--------------------------------------------------------|--------------------|
 | `script`        | yes       |                                                    |                    |
-| `changeDocumentId`        | yes       |                                                    |                    |
+| `changeDocumentId`        | for `SOLMAN`      |                                                    |                    |
+| `transportType`  | for `CTS`  | no                                                    |                    |
+| `targetSystem`   | for `CTS`  | no                                                    |                    |
+| `description`    | for `CTS`  | no                                                    |                    |
 | `changeManagement/credentialsId`  | yes       |                                                    |                    |
 | `changeManagement/endpoint`        | yes       |                                                    |                    |
 | `changeManagement/clientOpts`     | no       |                                                     |                     |
@@ -18,16 +24,21 @@ Creates a Transport Request for a Change Document on the Solution Manager.
 | `changeManagement/git/to`           | no        | `HEAD`                                                 |                    |
 | `changeManagement/changeDocumentLabel`        | no        | `ChangeDocument\s?:`                                   | regex pattern      |
 | `changeManagement/git/format`        | no        | `%b`                                                   | see `git log --help` |
+| `changeManagement/type`           | no        | `SOLMAN`                                               | `SOLMAN`, `CTS`    |
 
 * `script` - The common script environment of the Jenkinsfile running. Typically the reference to the script calling the pipeline step is provided with the `this` parameter, as in `script: this`. This allows the function to access the [`commonPipelineEnvironment`](commonPipelineEnvironment.md) for retrieving, for example, configuration parameters.
-* `changeDocumentId` - The id of the change document to transport.
-* `changeManagement/credentialsId` - The credentials to connect to the Solution Manager.
-* `changeManagement/endpoint` - The address of the Solution Manager.
+* `changeDocumentId` - for `SOLMAN` only. The id of the change document to that the transport request is bound to. Typically this value is provided via commit message in the commit history.
+* `changeManagement/type` Where/how the transport request is created (via SAP Solution Manager, ABAP).
+* `changeManagement/credentialsId` - The credentials to connect to the service endpoint (Solution Manager, ABAP System).
+* `changeManagement/endpoint` - The service endpoint (Solution Manager, ABAP System).
 * `changeManagement/clientOpts`- Options forwarded to JVM used by the CM client, like `JAVA_OPTS`
 * `changeManagement/git/from` - The starting point for retrieving the change document id
 * `changeManagement/git/to` - The end point for retrieving the change document id
-* `changeManagement/changeDocumentLabel` - A pattern used for identifying lines holding the change document id.
+* `changeManagement/changeDocumentLabel` - For type `SOLMAN` only. A pattern used for identifying lines holding the change document id.
 * `changeManagement/git/format` - Specifies what part of the commit is scanned. By default the body of the commit message is scanned.
+* `description` - for `CTS` only. The description of the transport request.
+* `targetSystem` - for `CTS` only. The system receiving the transport request.
+* `transportType` - for type `CTS` only. Typically `W` (workbench) or `C` customizing.
 
 ## Step configuration
 The step is configured using a customer configuration file provided as
@@ -55,6 +66,7 @@ general:
     changeDocumentLabel: 'ChangeDocument\s?:'
     cmClientOpts: '-Djavax.net.ssl.trustStore=<path to truststore>'
     credentialsId: 'CM'
+    type: 'SOLMAN'
     endpoint: 'https://example.org/cm'
     git:
       from: 'HEAD~1'
@@ -72,6 +84,7 @@ The properties can also be configured on a per-step basis:
   steps:
     transportRequestCreate:
       changeManagement:
+        type: 'SOLMAN'
         endpoint: 'https://example.org/cm'
         [...]
 ```
@@ -89,9 +102,20 @@ The id of the Transport Request that has been created.
 
 ## Example
 ```groovy
+// SOLMAN
 def transportRequestId = transportRequestCreate script:this,
                                                 changeDocumentId: '001,'
                                                 changeManagement: [
+                                                  type: 'SOLMAN'
+                                                  endpoint: 'https://example.org/cm'
+                                                ]
+// CTS
+def transportRequestId = transportRequestCreate script:this,
+                                                transportType: 'W',
+                                                targetSystem: 'XYZ',
+                                                description: 'the description',
+                                                changeManagement: [
+                                                  type: 'CTS'
                                                   endpoint: 'https://example.org/cm'
                                                 ]
 ```

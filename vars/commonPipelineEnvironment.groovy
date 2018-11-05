@@ -4,9 +4,18 @@ class commonPipelineEnvironment implements Serializable {
     //stores version of the artifact which is build during pipeline run
     def artifactVersion
 
+    //Stores the current buildResult
+    String buildResult = 'SUCCESS'
+
     //stores the gitCommitId as well as additional git information for the build during pipeline run
     String gitCommitId
     String gitSshUrl
+    String gitHttpsUrl
+    String gitBranch
+
+    //GiutHub specific information
+    String githubOrg
+    String githubRepo
 
     //stores properties for a pipeline which build an artifact and then bundles it into a container
     private Map appContainerProperties = [:]
@@ -30,6 +39,11 @@ class commonPipelineEnvironment implements Serializable {
 
         gitCommitId = null
         gitSshUrl = null
+        gitHttpsUrl = null
+        gitBranch = null
+
+        githubOrg = null
+        githubRepo = null
 
         influxCustomData = [:]
         influxCustomDataMap = [pipeline_data: [:], step_data: [:]]

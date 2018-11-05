@@ -5,7 +5,7 @@ import groovy.transform.Field
 
 @Field STEP_NAME = 'prepareDefaultValues'
 
-def call(Map parameters = [:]) {
+void call(Map parameters = [:]) {
     handlePipelineStepErrors (stepName: 'prepareDefaultValues', stepParameters: parameters) {
         if(!DefaultValueCache.getInstance() || parameters.customDefaults) {
             def defaultValues = [:]

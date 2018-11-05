@@ -10,6 +10,7 @@ import groovy.transform.Field
 ]
 
 @Field def STEP_NAME = 'testsPublishResults'
+@Field Set GENERAL_CONFIG_KEYS = TOOLS
 @Field Set STEP_CONFIG_KEYS = TOOLS
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
 
@@ -19,7 +20,7 @@ import groovy.transform.Field
  * @param script global script environment of the Jenkinsfile run
  * @param others document all parameters
  */
-def call(Map parameters = [:]) {
+void call(Map parameters = [:]) {
     handlePipelineStepErrors (stepName: STEP_NAME, stepParameters: parameters) {
         def script = parameters.script
         if (script == null)
@@ -27,9 +28,9 @@ def call(Map parameters = [:]) {
         prepare(parameters)
 
         // load default & individual configuration
-        Map configuration = ConfigurationHelper
-            .loadStepDefaults(this)
-            .mixinGeneralConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS)
+        Map configuration = ConfigurationHelper.newInstance(this)
+            .loadStepDefaults()
+            .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS)
             .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS)
             .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName ?: env.STAGE_NAME, STEP_CONFIG_KEYS)
             .mixin(parameters, PARAMETER_KEYS)
