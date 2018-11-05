@@ -40,7 +40,7 @@ void call(Map parameters = [:]) {
             .use()
 
         new Utils().pushToSWA([step: STEP_NAME,
-                               stepParam1: parameters?.script == null], configuration)
+                                stepParam1: parameters?.script == null], configuration)
 
         // UNIT TESTS
         publishJUnitReport(configuration.get('junit'))

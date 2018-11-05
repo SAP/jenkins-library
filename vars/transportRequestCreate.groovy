@@ -63,7 +63,7 @@ def call(parameters = [:]) {
         def changeDocumentId = null
 
         new Utils().pushToSWA([step: STEP_NAME,
-                               stepParam1: parameters?.script == null], configuration)
+                                stepParam1: parameters?.script == null], configuration)
 
         if(backendType == BackendType.SOLMAN) {
 
