@@ -62,7 +62,7 @@ void call(parameters = [:]) {
         configuration = configHelper.use()
 
         new Utils().pushToSWA([step: STEP_NAME,
-                               stepParam1: parameters?.script == null], configuration)
+                                stepParam1: parameters?.script == null], configuration)
 
         def changeId = configuration.changeDocumentId
 
