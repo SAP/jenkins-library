@@ -13,14 +13,14 @@ import static com.sap.piper.cm.StepHelpers.getBackendTypeAndLogInfoIfCMIntegrati
 
 @Field def STEP_NAME = 'checkChangeInDevelopment'
 
-@Field Set stepConfigurationKeys = [
+@Field Set GENERAL_CONFIG_KEYS = STEP_CONFIG_KEYS
+
+@Field Set STEP_CONFIG_KEYS = [
     'changeManagement',
     'failIfStatusIsNotInDevelopment'
   ]
 
-@Field Set parameterKeys = stepConfigurationKeys.plus('changeDocumentId')
-
-@Field Set generalConfigurationKeys = stepConfigurationKeys
+@Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS.plus('changeDocumentId')
 
 void call(parameters = [:]) {
 
@@ -34,10 +34,10 @@ void call(parameters = [:]) {
 
         ConfigurationHelper configHelper = ConfigurationHelper.newInstance(this)
             .loadStepDefaults()
-            .mixinGeneralConfig(script.commonPipelineEnvironment, generalConfigurationKeys)
-            .mixinStepConfig(script.commonPipelineEnvironment, stepConfigurationKeys)
-            .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName?:env.STAGE_NAME, stepConfigurationKeys)
-            .mixin(parameters, parameterKeys)
+            .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS)
+            .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS)
+            .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName?:env.STAGE_NAME, STEP_CONFIG_KEYS)
+            .mixin(parameters, PARAMETER_KEYS)
 
         Map configuration =  configHelper.use()
 

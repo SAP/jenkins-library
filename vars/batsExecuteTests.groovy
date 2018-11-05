@@ -5,6 +5,9 @@ import groovy.text.SimpleTemplateEngine
 import groovy.transform.Field
 
 @Field String STEP_NAME = 'batsExecuteTests'
+
+@Field Set GENERAL_CONFIG_KEYS = STEP_CONFIG_KEYS
+
 @Field Set STEP_CONFIG_KEYS = [
     'dockerImage',
     'dockerWorkspace',
@@ -19,6 +22,7 @@ import groovy.transform.Field
     'testPath',
     'testRepository'
 ]
+
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
 
 void call(Map parameters = [:]) {
@@ -29,7 +33,7 @@ void call(Map parameters = [:]) {
 
         Map config = ConfigurationHelper.newInstance(this)
             .loadStepDefaults()
-            .mixinGeneralConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS)
+            .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS)
             .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS)
             .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName?:env.STAGE_NAME, STEP_CONFIG_KEYS)
             .mixin(parameters, PARAMETER_KEYS)
