@@ -100,6 +100,7 @@ Each of the parameters `junit`, `jacoco`, `cobertura` and `jmeter` can be set to
 | allowEmptyResults | no | `true` | true, false |
 
 ## Step configuration
+
 Following parameters can also be specified as step parameters using the global configuration file:
 
 * `junit`
