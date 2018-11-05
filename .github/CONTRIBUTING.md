@@ -1,6 +1,7 @@
 # Guidance on how to contribute
 
 There are two primary ways to help:
+
 * Using the issue tracker, and
 * Changing the code-base.
 

@@ -4,6 +4,7 @@
 
 In this step Gauge ([getgauge.io](http:getgauge.io)) acceptance tests are executed.
 Using Gauge it will be possible to have a three-tier test layout:
+
 * Acceptance Criteria
 * Test implemenation layer
 * Application driver layer

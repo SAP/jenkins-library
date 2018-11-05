@@ -16,9 +16,7 @@ Note that a version is formed by `major.minor.patch`, and a version is compatibl
 
 ![Jenkins credentials configuration](../images/neo_credentials.png)
 
-* **Neo Java Web SDK 3.39.10 or compatible version** - can be downloaded from [Maven Central](http://central.maven.org/maven2/com/sap/cloud/neo-java-web-sdk/). The Neo Java Web SDK
-needs to be extracted into the folder provided by `neoHome`. In case this parameters is not provided and there is no NEO_HOME parameter in the environment
-`<neoRoot>/tools` needs to be in the `PATH`. This step is also capable of triggering the neo deploy tool provided inside a docker image.
+* **Neo Java Web SDK 3.39.10 or compatible version** - can be downloaded from [Maven Central](http://central.maven.org/maven2/com/sap/cloud/neo-java-web-sdk/). The Neo Java Web SDK needs to be extracted into the folder provided by `neoHome`. In case this parameters is not provided and there is no NEO_HOME parameter in the environment `<neoRoot>/tools` needs to be in the `PATH`. This step is also capable of triggering the neo deploy tool provided inside a docker image.
 
 * **Java 8 or compatible version** - needed by the *Neo-Java-Web-SDK*
 
