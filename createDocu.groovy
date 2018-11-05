@@ -481,10 +481,10 @@ def handleStep(stepName, prepareDefaultValuesStep, gse) {
 
         it ->
 
-            def parameterProperties = [
-                                        defaultValue: Helper.getValue(defaultConfig, it.split('/')),
-                                        required: requiredParameters.contains((it as String))
-                                      ]
+            def parameterProperties =   [
+                                            defaultValue: Helper.getValue(defaultConfig, it.split('/')),
+                                            required: requiredParameters.contains((it as String))
+                                        ]
 
         step.parameters.put(it, parameterProperties)
 
