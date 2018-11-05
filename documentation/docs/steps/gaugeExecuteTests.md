@@ -37,6 +37,7 @@ none
 ## Example
 
 Pipeline step:
+
 ```groovy
 gaugeExecuteTests script: this, testServerUrl: 'http://test.url'
 ```

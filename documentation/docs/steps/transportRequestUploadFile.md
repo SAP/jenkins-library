@@ -58,8 +58,8 @@ prepareDefaultValues script: this,
                              customDefaults: 'myConfig.yml'
 ```
 
-Example content of ```'resources/myConfig.yml'``` in branch ```'master'``` of the repository denoted by
-```'foo'```:
+Example content of `'resources/myConfig.yml'` in branch `'master'` of the repository denoted by
+`'foo'`:
 
 ```yaml
 general:
