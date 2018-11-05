@@ -73,7 +73,7 @@ Deployment can be done
 #### Option cf_native
 
 * `appName` in `cloudFoundry` map (or `cfAppName`) defines the name of the application which will be deployed to the Cloud Foundry space.
-* `manifest in `cloudFoundry` map` (or `cfManifest`) defines the manifest to be used for Cloud Foundry deployment.
+* `manifest` in `cloudFoundry` maps (or `cfManifest`) defines the manifest to be used for Cloud Foundry deployment.
 
 !!! note
     Cloud Foundry supports the deployment of multiple applications using a single manifest file.

@@ -7,6 +7,7 @@ Enables UI test execution with Selenium in a sidecar container.
 The step executes a closure (see example below) connecting to a sidecar container with a Selenium Server.
 
 When executing in a
+
 * local Docker environment, please make sure to set Selenium host to **`selenium`** in your tests.
 * Kubernetes environment, plese make sure to set Seleniums host to **`localhost`** in your tests.
 

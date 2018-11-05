@@ -107,6 +107,7 @@ You can access your **Grafana** via Web-UI: &lt;host of your grafana(-docker)&gt
 (or another port in case you have defined another one when starting your docker)
 
 As a first step you need to add your InfluxDB as Data source to your Grafana:
+
 - Login as user admin (PW as defined when starting your docker)
 - in the navigation go to data sources -> add data source:
   - name
