@@ -92,8 +92,7 @@ class Helper {
         new GroovyClassLoader(classLoader, compilerConfig, true)
             .parseClass(new File('src/com/sap/piper/ConfigurationHelper.groovy'))
             .newInstance(script, [:])
-      }
-
+        }
 
     static getPrepareDefaultValuesStep(def gse) {
 
@@ -321,18 +320,18 @@ steps = []
 // assign parameters
 
 if(args.length >= 1)
-  stepsDir = new File(args[0])
+    stepsDir = new File(args[0])
 
 stepsDir = stepsDir ?: new File('vars')
 
 if(args.length >= 2)
-  stepsDocuDir = new File(args[1])
+    stepsDocuDir = new File(args[1])
 
 stepsDocuDir = stepsDocuDir ?: new File('documentation/docs/steps')
 
 
 if(args.length >= 3)
-  steps << args[2]
+    steps << args[2]
 
 // assign parameters
 //
@@ -341,13 +340,13 @@ if(args.length >= 3)
 // sanity checks
 
 if( !stepsDocuDir.exists() ) {
-  System.err << "Steps docu dir '${stepsDocuDir}' does not exist.\n"
-  System.exit(1)
+    System.err << "Steps docu dir '${stepsDocuDir}' does not exist.\n"
+    System.exit(1)
 }
 
 if( !stepsDir.exists() ) {
-  System.err << "Steps dir '${stepsDir}' does not exist.\n"
-  System.exit(1)
+    System.err << "Steps dir '${stepsDir}' does not exist.\n"
+    System.exit(1)
 }
 
 // sanity checks
@@ -357,10 +356,10 @@ if( !stepsDir.exists() ) {
 //
 // find all the steps we have to document (if no step has been provided from outside)
 if( ! steps) {
-  stepsDir.traverse(type: FileType.FILES, maxDepth: 0)
-    { if(it.getName().endsWith('.groovy')) steps << (it =~ /vars\/(.*)\.groovy/)[0][1] }
+    stepsDir.traverse(type: FileType.FILES, maxDepth: 0)
+        { if(it.getName().endsWith('.groovy')) steps << (it =~ /vars\/(.*)\.groovy/)[0][1] }
 } else {
-  System.err << "[INFO] Generating docu only for step ${steps.size > 1 ? 's' : ''} ${steps}.\n"
+    System.err << "[INFO] Generating docu only for step ${steps.size > 1 ? 's' : ''} ${steps}.\n"
 }
 
 def gse = new GroovyScriptEngine( [ stepsDir.getName()  ] as String[] , getClass().getClassLoader() )
@@ -371,100 +370,99 @@ boolean exceptionCaught = false
 
 def stepDescriptors = [:]
 for (step in steps) {
-  try {
-    stepDescriptors."${step}" = handleStep(step, prepareDefaultValuesStep, gse)
-  } catch(Exception e) {
-    exceptionCaught = true
-    System.err << "${e.getClass().getName()} caught while handling step '${step}': ${e.getMessage()}.\n"
-  }
+    try {
+        stepDescriptors."${step}" = handleStep(step, prepareDefaultValuesStep, gse)
+    } catch(Exception e) {
+        exceptionCaught = true
+        System.err << "${e.getClass().getName()} caught while handling step '${step}': ${e.getMessage()}.\n"
+    }
 }
 
 for(step in stepDescriptors) {
-  try {
-    renderStep(step.key, step.value)
-    System.err << "[INFO] Step '${step.key}' has been rendered.\n"
-  } catch(Exception e) {
-    exceptionCaught = true
-    System.err << "${e.getClass().getName()} caught while rendering step '${step}': ${e.getMessage()}.\n"
-    System.exit(1)
+    try {
+        renderStep(step.key, step.value)
+        System.err << "[INFO] Step '${step.key}' has been rendered.\n"
+    } catch(Exception e) {
+        exceptionCaught = true
+        System.err << "${e.getClass().getName()} caught while rendering step '${step}': ${e.getMessage()}.\n"
   }
 }
 
 if(exceptionCaught) {
-  System.err << "[ERROR] Exception caught during generating documentation. Check earlier log for details.\n"
-  System.exit(1)
+    System.err << "[ERROR] Exception caught during generating documentation. Check earlier log for details.\n"
+    System.exit(1)
 }
 
 System.err << "[INFO] done.\n"
 
 void renderStep(stepName, stepProperties) {
 
-  File theStepDocu = new File(stepsDocuDir, "${stepName}.md")
+    File theStepDocu = new File(stepsDocuDir, "${stepName}.md")
 
-  if(!theStepDocu.exists()) {
-    System.err << "[WARNING] step docu input file for step '${stepName}' is missing.\n"
-    return
-  }
+    if(!theStepDocu.exists()) {
+        System.err << "[WARNING] step docu input file for step '${stepName}' is missing.\n"
+        return
+    }
 
-  def text = theStepDocu.text
-  if(stepProperties.description) {
-    text = TemplateHelper.replaceParagraph(text, 2, 'Description', '\n' + stepProperties.description)
-  }
-  if(stepProperties.parameters) {
+    def text = theStepDocu.text
+    if(stepProperties.description) {
+        text = TemplateHelper.replaceParagraph(text, 2, 'Description', '\n' + stepProperties.description)
+    }
+    if(stepProperties.parameters) {
 
-    text = TemplateHelper.replaceParagraph(text, 2, 'Parameters', '\n' +
-              TemplateHelper.createParametersTable(stepProperties.parameters) + '\n' +
-              TemplateHelper.createParameterDescriptionSection(stepProperties.parameters))
+        text = TemplateHelper.replaceParagraph(text, 2, 'Parameters', '\n' +
+                TemplateHelper.createParametersTable(stepProperties.parameters) + '\n' +
+                TemplateHelper.createParameterDescriptionSection(stepProperties.parameters))
 
 
-    text = TemplateHelper.replaceParagraph(text, 2, 'Step configuration', '\n' +
-              TemplateHelper.createStepConfigurationSection(stepProperties.parameters))
-  }
-  theStepDocu.withWriter { w -> w.write text }
+        text = TemplateHelper.replaceParagraph(text, 2, 'Step configuration', '\n' +
+                TemplateHelper.createStepConfigurationSection(stepProperties.parameters))
+    }
+    theStepDocu.withWriter { w -> w.write text }
 }
 
 def handleStep(stepName, prepareDefaultValuesStep, gse) {
 
-  File theStep = new File(stepsDir, "${stepName}.groovy")
-  File theStepDocu = new File(stepsDocuDir, "${stepName}.md")
+    File theStep = new File(stepsDir, "${stepName}.groovy")
+    File theStepDocu = new File(stepsDocuDir, "${stepName}.md")
 
-  if(!theStepDocu.exists()) {
-    System.err << "[WARNING] step docu input file for step '${stepName}' is missing.\n"
-    return
-  }
+    if(!theStepDocu.exists()) {
+        System.err << "[WARNING] step docu input file for step '${stepName}' is missing.\n"
+        return
+    }
 
-  System.err << "[INFO] Handling step '${stepName}'.\n"
+    System.err << "[INFO] Handling step '${stepName}'.\n"
 
-  def defaultConfig = Helper.getConfigHelper(getClass().getClassLoader(),
-                                             roots,
-                                             Helper.getDummyScript(prepareDefaultValuesStep, stepName)).use()
+    def defaultConfig = Helper.getConfigHelper(getClass().getClassLoader(),
+                                               roots,
+                                               Helper.getDummyScript(prepareDefaultValuesStep, stepName)).use()
 
-  def params = [] as Set
+    def params = [] as Set
 
-  //
-  // scopedParameters is a map containing the scope as key and the parameters
-  // defined with that scope as a set of strings.
+    //
+    // scopedParameters is a map containing the scope as key and the parameters
+    // defined with that scope as a set of strings.
 
-  def scopedParameters
+    def scopedParameters
 
-  try {
-    scopedParameters = Helper.getScopedParameters(gse.createScript( "${stepName}.groovy", new Binding() ))
-    scopedParameters.each { k, v -> params.addAll(v) }
-  } catch(Exception e) {
-    System.err << "[ERROR] Step '${stepName}' violates naming convention for scoped parameters: ${e}.\n"
-    throw e
-  }
-  def requiredParameters = Helper.getRequiredParameters(theStep)
+    try {
+        scopedParameters = Helper.getScopedParameters(gse.createScript( "${stepName}.groovy", new Binding() ))
+        scopedParameters.each { k, v -> params.addAll(v) }
+    } catch(Exception e) {
+        System.err << "[ERROR] Step '${stepName}' violates naming convention for scoped parameters: ${e}.\n"
+        throw e
+    }
+    def requiredParameters = Helper.getRequiredParameters(theStep)
 
-  params.addAll(requiredParameters)
+    params.addAll(requiredParameters)
 
-  def step = [parameters:[:]]
+    def step = [parameters:[:]]
 
-  //
-  // START special handling for 'script' parameter
-  // ... would be better if there is no special handling required ...
+    //
+    // START special handling for 'script' parameter
+    // ... would be better if there is no special handling required ...
 
-  step.parameters['script'] = [
+    step.parameters['script'] = [
                                docu: 'The common script environment of the Jenkinsfile running. ' +
                                      'Typically the reference to the script calling the pipeline ' +
                                      'step is provided with the this parameter, as in script: this. ' +
@@ -477,28 +475,28 @@ def handleStep(stepName, prepareDefaultValuesStep, gse) {
                                PARAMS: 'true'
                              ]
 
-  // END special handling for 'script' parameter
+    // END special handling for 'script' parameter
 
-  Helper.normalize(params).toSorted().each {
+    Helper.normalize(params).toSorted().each {
 
-    it ->
+        it ->
 
-    def parameterProperties = [
-                                defaultValue: Helper.getValue(defaultConfig, it.split('/')),
-                                required: requiredParameters.contains((it as String))
-                              ]
+            def parameterProperties = [
+                                        defaultValue: Helper.getValue(defaultConfig, it.split('/')),
+                                        required: requiredParameters.contains((it as String))
+                                      ]
 
-    step.parameters.put(it, parameterProperties)
+        step.parameters.put(it, parameterProperties)
 
-    // The scope is only defined for the first level of a hierarchical configuration.
-    // If the first part is found, all nested parameters are allowed with that scope.
-    def firstPart = it.split('/').head()
-    scopedParameters.each { key, val ->
-      parameterProperties.put(key, val.contains(firstPart))
+        // The scope is only defined for the first level of a hierarchical configuration.
+        // If the first part is found, all nested parameters are allowed with that scope.
+        def firstPart = it.split('/').head()
+        scopedParameters.each { key, val ->
+            parameterProperties.put(key, val.contains(firstPart))
+        }
     }
-  }
 
-  Helper.scanDocu(theStep, step)
+    Helper.scanDocu(theStep, step)
 
-  step
+    step
 }
