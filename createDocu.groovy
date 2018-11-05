@@ -385,7 +385,7 @@ for(step in stepDescriptors) {
     } catch(Exception e) {
         exceptionCaught = true
         System.err << "${e.getClass().getName()} caught while rendering step '${step}': ${e.getMessage()}.\n"
-  }
+    }
 }
 
 if(exceptionCaught) {
@@ -434,8 +434,8 @@ def handleStep(stepName, prepareDefaultValuesStep, gse) {
     System.err << "[INFO] Handling step '${stepName}'.\n"
 
     def defaultConfig = Helper.getConfigHelper(getClass().getClassLoader(),
-                                               roots,
-                                               Helper.getDummyScript(prepareDefaultValuesStep, stepName)).use()
+                                                roots,
+                                                Helper.getDummyScript(prepareDefaultValuesStep, stepName)).use()
 
     def params = [] as Set
 
@@ -463,12 +463,12 @@ def handleStep(stepName, prepareDefaultValuesStep, gse) {
     // ... would be better if there is no special handling required ...
 
     step.parameters['script'] = [
-                               docu: 'The common script environment of the Jenkinsfile running. ' +
-                                     'Typically the reference to the script calling the pipeline ' +
-                                     'step is provided with the this parameter, as in script: this. ' +
-                                     'This allows the function to access the ' +
-                                     'commonPipelineEnvironment for retrieving, for example, configuration parameters.',
-                               required: true,
+                                docu: 'The common script environment of the Jenkinsfile running. ' +
+                                        'Typically the reference to the script calling the pipeline ' +
+                                        'step is provided with the this parameter, as in script: this. ' +
+                                        'This allows the function to access the ' +
+                                        'commonPipelineEnvironment for retrieving, for example, configuration parameters.',
+                                required: true,
 
                                GENERAL_CONFIG: 'false',
                                STEP_CONFIG: 'false',
