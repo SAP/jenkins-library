@@ -1,3 +1,5 @@
+import static com.sap.piper.Prerequisites.checkScript
+
 import com.sap.piper.ConfigurationHelper
 import com.sap.piper.Utils
 import groovy.text.SimpleTemplateEngine
@@ -21,7 +23,7 @@ import groovy.transform.Field
 
 void call(Map parameters = [:]) {
     handlePipelineStepErrors (stepName: STEP_NAME, stepParameters: parameters, allowBuildFailure: true) {
-        def script = parameters.script?:[commonPipelineEnvironment: commonPipelineEnvironment]
+        def script = checkScript(this, parameters) ?: this
 
         // load default & individual configuration
         Map config = ConfigurationHelper.newInstance(this)

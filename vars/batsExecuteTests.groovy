@@ -1,3 +1,5 @@
+import static com.sap.piper.Prerequisites.checkScript
+
 import com.sap.piper.ConfigurationHelper
 import com.sap.piper.GitUtils
 import com.sap.piper.Utils
@@ -29,7 +31,8 @@ void call(Map parameters = [:]) {
     handlePipelineStepErrors (stepName: STEP_NAME, stepParameters: parameters) {
 
         def utils = parameters.juStabUtils ?: new Utils()
-        def script = parameters.script ?: [commonPipelineEnvironment: commonPipelineEnvironment]
+
+        def script = checkScript(this, parameters) ?: this
 
         Map config = ConfigurationHelper.newInstance(this)
             .loadStepDefaults()
@@ -40,7 +43,8 @@ void call(Map parameters = [:]) {
             .use()
 
         // report to SWA
-        utils.pushToSWA([step: STEP_NAME], config)
+        utils.pushToSWA([step: STEP_NAME,
+                        stepParam1: parameters?.script == null], config)
 
         script.commonPipelineEnvironment.setInfluxStepData('bats', false)
 

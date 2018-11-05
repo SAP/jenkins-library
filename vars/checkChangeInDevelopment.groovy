@@ -1,3 +1,5 @@
+import static com.sap.piper.Prerequisites.checkScript
+
 import com.sap.piper.GitUtils
 import com.sap.piper.Utils
 import groovy.transform.Field
@@ -38,7 +40,7 @@ void call(parameters = [:]) {
 
     handlePipelineStepErrors (stepName: STEP_NAME, stepParameters: parameters) {
 
-        def script = parameters.script ?: [commonPipelineEnvironment: commonPipelineEnvironment]
+        def script = checkScript(this, parameters) ?: this
 
         GitUtils gitUtils = parameters?.gitUtils ?: new GitUtils()
 
@@ -55,8 +57,6 @@ void call(parameters = [:]) {
 
         BackendType backendType = getBackendTypeAndLogInfoIfCMIntegrationDisabled(this, configuration)
         if(backendType == BackendType.NONE) return
-
-        new Utils().pushToSWA([step: STEP_NAME], configuration)
 
         configHelper
             // for the following parameters we expect defaults
@@ -93,6 +93,11 @@ void call(parameters = [:]) {
               */
             .withMandatoryProperty('changeManagement/endpoint')
 
+
+        configuration = configHelper.use()
+
+        new Utils().pushToSWA([step: STEP_NAME,
+                                stepParam1: parameters?.script == null], configuration)
 
         def changeId = configuration.changeDocumentId
 

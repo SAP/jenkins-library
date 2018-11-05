@@ -1,3 +1,5 @@
+import static com.sap.piper.Prerequisites.checkScript
+
 import com.sap.piper.ConfigurationHelper
 import com.sap.piper.Utils
 
@@ -32,7 +34,8 @@ import groovy.transform.Field
 void call(parameters = [:]) {
     handlePipelineStepErrors (stepName: STEP_NAME, stepParameters: parameters) {
 
-        def script = parameters?.script ?: [commonPipelineEnvironment: commonPipelineEnvironment]
+        def script = checkScript(this, parameters) ?: this
+
         def utils = new Utils()
 
         prepareDefaultValues script: script
@@ -85,7 +88,8 @@ void call(parameters = [:]) {
         utils.pushToSWA([
             step: STEP_NAME,
             stepParam1: configuration.deployMode == 'mta'?'mta':'war', // ['mta', 'warParams', 'warPropertiesFile']
-            stepParam2: configuration.warAction == 'rolling-update'?'blue-green':'standard' // ['deploy', 'deploy-mta', 'rolling-update']
+            stepParam2: configuration.warAction == 'rolling-update'?'blue-green':'standard', // ['deploy', 'deploy-mta', 'rolling-update']
+            stepParam3: parameters?.script == null
         ], configuration)
 
         def archivePath = configuration.archivePath

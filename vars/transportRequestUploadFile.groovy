@@ -1,3 +1,5 @@
+import static com.sap.piper.Prerequisites.checkScript
+
 import com.sap.piper.Utils
 import groovy.transform.Field
 
@@ -29,7 +31,7 @@ void call(parameters = [:]) {
 
     handlePipelineStepErrors (stepName: STEP_NAME, stepParameters: parameters) {
 
-        def script = parameters?.script ?: [commonPipelineEnvironment: commonPipelineEnvironment]
+        def script = checkScript(this, parameters) ?: this
 
         ChangeManagement cm = parameters.cmUtils ?: new ChangeManagement(script)
 
@@ -57,7 +59,9 @@ void call(parameters = [:]) {
             .withMandatoryProperty('changeManagement/git/format')
             .withMandatoryProperty('filePath')
 
-        new Utils().pushToSWA([step: STEP_NAME, stepParam1: configuration.changeManagement.type], configuration)
+        new Utils().pushToSWA([step: STEP_NAME,
+                                stepParam1: configuration.changeManagement.type,
+                                stepParam2: parameters?.script == null], configuration)
 
         def changeDocumentId = null
 
