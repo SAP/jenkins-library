@@ -38,9 +38,9 @@ Available parameters:
 | jmeter | no | `false` | true, false |
 
 * `script` - The common script environment of the Jenkinsfile running.
-  Typically the reference to the script calling the pipeline step is provided
-  with the `this` parameter, as in `script: this`.
-  This allows the function to access the [`commonPipelineEnvironment`](commonPipelineEnvironment.md)
+    Typically the reference to the script calling the pipeline step is provided
+    with the `this` parameter, as in `script: this`.
+    This allows the function to access the [`commonPipelineEnvironment`](commonPipelineEnvironment.md)
   for retrieving, for example, configuration parameters.
 * `junit` - Publishes test results files in JUnit format with the [JUnit Plugin](https://plugins.jenkins.io/junit).
 * `jacoco` - Publishes code coverage with the [JaCoCo plugin](https://plugins.jenkins.io/jacoco) .

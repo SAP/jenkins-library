@@ -20,8 +20,8 @@ Executes a maven command inside a Docker container.
 | `logSuccessfulMavenTransfers`  | no        | `false`           | 'true'                     |
 
 * `script` defines the global script environment of the Jenkinsfile run.
-  Typically `this` is passed to this parameter. This allows the function
-  to access the commonPipelineEnvironment for retrieving, for example, configuration parameters..
+    Typically `this` is passed to this parameter. This allows the function
+    to access the commonPipelineEnvironment for retrieving, for example, configuration parameters..
 * `dockerImage` Name of the docker image that should be used.
 * `globalSettingsFile` Path or url to the mvn settings file that should be used as global settings file. 
 * `projectSettingsFile` Path or url to the mvn settings file that should be used as project settings file.
