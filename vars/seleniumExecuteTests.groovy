@@ -45,7 +45,7 @@ void call(Map parameters = [:], Closure body) {
             .use()
 
         utils.pushToSWA([step: STEP_NAME,
-                         stepParam1: parameters?.script == null], config)
+                        stepParam1: parameters?.script == null], config)
 
         dockerExecute(
                 script: script,
