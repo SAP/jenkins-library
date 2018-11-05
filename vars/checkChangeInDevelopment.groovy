@@ -33,7 +33,7 @@ import static com.sap.piper.cm.StepHelpers.getBackendTypeAndLogInfoIfCMIntegrati
  * By default the git commit messages between `origin/master` and `HEAD` are scanned for a line like `ChangeDocument : <changeDocumentId>`. The commit
  * range and the pattern can be configured. For details see 'parameters' table.
  *
- */ 
+ */
 void call(parameters = [:]) {
 
     handlePipelineStepErrors (stepName: STEP_NAME, stepParameters: parameters) {
@@ -60,31 +60,31 @@ void call(parameters = [:]) {
 
         configHelper
             // for the following parameters we expect defaults
-             /**
-               * A pattern used for identifying lines holding the change document id.
-               * @possibleValues regex pattern
-               */
+            /**
+              * A pattern used for identifying lines holding the change document id.
+              * @possibleValues regex pattern
+              */
             .withMandatoryProperty('changeManagement/changeDocumentLabel')
-             /**
-               * Additional options for cm command line client, e.g. like JAVA_OPTS.
-               */
+            /**
+              * Additional options for cm command line client, e.g. like JAVA_OPTS.
+              */
             .withMandatoryProperty('changeManagement/clientOpts')
-             /**
-               * The id of the credentials to connect to the Solution Manager. The credentials needs to be maintained on Jenkins.
-               */
+            /**
+              * The id of the credentials to connect to the Solution Manager. The credentials needs to be maintained on Jenkins.
+              */
             .withMandatoryProperty('changeManagement/credentialsId')
-             /**
-               * The starting point for retrieving the change document id
-               */
+            /**
+              * The starting point for retrieving the change document id
+              */
             .withMandatoryProperty('changeManagement/git/from')
-             /**
-               *  The end point for retrieving the change document id
-               */
+            /**
+              *  The end point for retrieving the change document id
+              */
             .withMandatoryProperty('changeManagement/git/to')
-             /**
-               * Specifies what part of the commit is scanned. By default the body of the commit message is scanned.
-               * @possibleValues see `git log --help`
-               */
+            /**
+              * Specifies what part of the commit is scanned. By default the body of the commit message is scanned.
+              * @possibleValues see `git log --help`
+              */
             .withMandatoryProperty('changeManagement/git/format')
             .withMandatoryProperty('failIfStatusIsNotInDevelopment')
             // for the following parameters we expect a value provided from outside
