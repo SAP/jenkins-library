@@ -9,30 +9,30 @@ import java.util.regex.Matcher
 //
 class TemplateHelper {
 
-  static replaceParagraph(def textIn, int level, name, replacement) {
+    static replaceParagraph(def textIn, int level, name, replacement) {
 
-    boolean insideParagraph = false
-    def textOut = ''
+        boolean insideParagraph = false
+        def textOut = ''
 
-    textIn.eachLine {
+        textIn.eachLine {
 
-      line ->
+            line ->
 
-        if(insideParagraph && line ==~ "^#{1,${level}} .*\$") {
-          insideParagraph = false
+            if(insideParagraph && line ==~ "^#{1,${level}} .*\$") {
+                insideParagraph = false
+            }
+
+            if(! insideParagraph) {
+                textOut += "${line}\n"
+            }
+
+            if(line ==~ "^#{${level}} ${name}.*\$") {
+                insideParagraph = true
+                textOut += "${replacement}\n\n"
+            }
         }
 
-        if(! insideParagraph) {
-          textOut += "${line}\n"
-        }
-
-        if(line ==~ "^#{${level}} ${name}.*\$") {
-          insideParagraph = true
-          textOut += "${replacement}\n\n"
-        }
-    }
-
-    textOut
+        textOut
   }
 
   static createParametersTable(Map parameters) {
