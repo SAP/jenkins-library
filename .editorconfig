@@ -16,3 +16,7 @@ indent_size = 2
 [LICENSE]
 indent_style = none
 indent_size = none
+[cfg/id_rsa.enc]
+end_of_line = none
+indent_style = none
+indent_size = none
