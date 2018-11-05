@@ -65,8 +65,8 @@ To setup your Jenkins you need to do two configuration steps:
 
 Once the plugin is available in your Jenkins:
 
-* go to "Manage Jenkins" > "Configure System" > scroll down to section "influxdb target"
-* maintain Influx data
+- go to "Manage Jenkins" > "Configure System" > scroll down to section "influxdb target"
+- maintain Influx data
 
 !!! note "Jenkins as a Service"
     For Jenkins as a Service instances this is already preset to the local InfluxDB with the name `jenkins`. In this case there is not need to do any additional configuration.
@@ -92,8 +92,8 @@ influxDBServer=jenkins
 
 The following parameters can also be specified as step parameters using the global configuration file:
 
-* `influxServer`
-* `influxPrefix`
+- `influxServer`
+- `influxPrefix`
 
 ## Example
 
@@ -127,8 +127,8 @@ As a first step you need to add your InfluxDB as Data source to your Grafana:
 
 The Influx plugin collects following data in the Piper context:
 
-* All data as per default [InfluxDB plugin capabilities](https://wiki.jenkins.io/display/JENKINS/InfluxDB+Plugin)
-* Additional data collected via `commonPipelineEnvironment.setInfluxCustomDataProperty()` and via `commonPipelineEnvironment.setPipelineMeasurement()`
+- All data as per default [InfluxDB plugin capabilities](https://wiki.jenkins.io/display/JENKINS/InfluxDB+Plugin)
+- Additional data collected via `commonPipelineEnvironment.setInfluxCustomDataProperty()` and via `commonPipelineEnvironment.setPipelineMeasurement()`
 
 !!! note "Add custom information to your InfluxDB"
     You can simply add custom data collected during your pipeline runs via available data objects.

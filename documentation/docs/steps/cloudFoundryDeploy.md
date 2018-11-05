@@ -40,13 +40,12 @@ Deployment can be done
 
 * `script` defines the global script environment of the Jenkinsfile run. Typically `this` is passed to this parameter. This allows the function to access the [`commonPipelineEnvironment`](commonPipelineEnvironment.md) for retrieving e.g. configuration parameters.
 * `cloudFoundry` defines a map containing following properties:
-
-  - `apiEndpoint`: Cloud Foundry API endpoint (default: `https://api.cf.eu10.hana.ondemand.com`)
-  - `appName`: App name of application to be deployed (optional)
-  - `credentialsId`: Credentials to be used for deployment (mandatory)
-  - `manifest`: Manifest to be used for deployment
-  - `org`: Cloud Foundry target organization (mandatory)
-  - `space`: Cloud Foundry target space (mandatory)
+  * `apiEndpoint`: Cloud Foundry API endpoint (default: `https://api.cf.eu10.hana.ondemand.com`)
+  * `appName`: App name of application to be deployed (optional)
+  * `credentialsId`: Credentials to be used for deployment (mandatory)
+  * `manifest`: Manifest to be used for deployment
+  * `org`: Cloud Foundry target organization (mandatory)
+  * `space`: Cloud Foundry target space (mandatory)
 
     Example: `cloudFoundry: [apiEndpoint: 'https://test.server.com', appName:'cfAppName', credentialsId: 'cfCredentialsId', manifest: 'cfManifest', org: 'cfOrg', space: 'cfSpace']`
 
