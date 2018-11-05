@@ -21,7 +21,7 @@ none
 
 | parameter | mandatory | default | possible values |
 | ----------|-----------|---------|-----------------|
-| script | no | empty `commonPipelineEnvironment` |  |
+| script | yes |  |  |
 | artifactType | no |  | 'appContainer' |
 | buildTool | no | maven | docker, dlang, golang, maven, mta, npm, pip, sbt |
 | commitVersion | no | `true` | `true`, `false` |

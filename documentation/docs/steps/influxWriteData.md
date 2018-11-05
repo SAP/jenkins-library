@@ -84,7 +84,7 @@ influxDBServer=jenkins
 
 | parameter | mandatory | default | possible values |
 | ----------|-----------|---------|-----------------|
-| script | no | empty `commonPipelineEnvironment` |  |
+| script | yes | |  |
 | artifactVersion | yes | commonPipelineEnvironment.getArtifactVersion() |  |
 | influxServer | no | `jenkins` |  |
 | influxPrefix | no | `null` |  |
