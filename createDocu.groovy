@@ -470,10 +470,10 @@ def handleStep(stepName, prepareDefaultValuesStep, gse) {
                                         'commonPipelineEnvironment for retrieving, for example, configuration parameters.',
                                 required: true,
 
-                               GENERAL_CONFIG: 'false',
-                               STEP_CONFIG: 'false',
-                               PARAMS: 'true'
-                             ]
+                                GENERAL_CONFIG: 'false',
+                                STEP_CONFIG: 'false',
+                                PARAMS: 'true'
+                            ]
 
     // END special handling for 'script' parameter
 
