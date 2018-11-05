@@ -10,6 +10,7 @@ import com.sap.piper.cm.ChangeManagementException
 
 import static com.sap.piper.cm.StepHelpers.getBackendTypeAndLogInfoIfCMIntegrationDisabled
 
+import static com.sap.piper.cm.StepHelpers.getChangeDocumentId
 import hudson.AbortException
 
 @Field def STEP_NAME = 'transportRequestCreate'
@@ -67,31 +68,8 @@ def call(parameters = [:]) {
 
         if(backendType == BackendType.SOLMAN) {
 
-            changeDocumentId = configuration.changeDocumentId
+            changeDocumentId = getChangeDocumentId(cm, this, configuration)
 
-            if(changeDocumentId?.trim()) {
-
-                echo "[INFO] ChangeDocumentId '${changeDocumentId}' retrieved from parameters."
-
-            } else {
-
-                echo "[INFO] Retrieving ChangeDocumentId from commit history [from: ${configuration.changeManagement.git.from}, to: ${configuration.changeManagement.git.to}]." +
-                     "Searching for pattern '${configuration.changeDocumentLabel}'. Searching with format '${configuration.changeManagement.git.format}'."
-
-                try {
-
-                    changeDocumentId = cm.getChangeDocumentId(
-                                                          configuration.changeManagement.git.from,
-                                                          configuration.changeManagement.git.to,
-                                                          configuration.changeManagement.changeDocumentLabel,
-                                                          configuration.changeManagement.git.format
-                                                         )
-
-                    echo "[INFO] ChangeDocumentId '${changeDocumentId}' retrieved from commit history"
-                } catch(ChangeManagementException ex) {
-                    echo "[WARN] Cannot retrieve changeDocumentId from commit history: ${ex.getMessage()}."
-                }
-            }
             configHelper.mixin([changeDocumentId: changeDocumentId?.trim() ?: null], ['changeDocumentId'] as Set)
                         .withMandatoryProperty('developmentSystemId')
                         .withMandatoryProperty('changeDocumentId',
