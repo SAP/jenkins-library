@@ -33,50 +33,50 @@ class TemplateHelper {
         }
 
         textOut
-  }
-
-  static createParametersTable(Map parameters) {
-
-    def t = ''
-    t += '| name | mandatory | default | possible values |\n'
-    t += '|------|-----------|---------|-----------------|\n'
-
-    parameters.keySet().toSorted().each {
-
-      def props = parameters.get(it)
-      t +=  "| `${it}` | ${props.required ? 'yes' : 'no'} | ${(props.defaultValue ? '`' +  props.defaultValue + '`' : '') } | ${props.value ?: ''} |\n"
     }
 
-    t
-  }
+    static createParametersTable(Map parameters) {
 
-  static createParameterDescriptionSection(Map parameters) {
-    def t =  ''
-    parameters.keySet().toSorted().each {
-      def props = parameters.get(it)
-      t += "* `${it}` - ${props.docu ?: ''}\n"
+        def t = ''
+        t += '| name | mandatory | default | possible values |\n'
+        t += '|------|-----------|---------|-----------------|\n'
+
+        parameters.keySet().toSorted().each {
+
+            def props = parameters.get(it)
+            t +=  "| `${it}` | ${props.required ? 'yes' : 'no'} | ${(props.defaultValue ? '`' +  props.defaultValue + '`' : '') } | ${props.value ?: ''} |\n"
+        }
+
+        t
     }
 
-    t
-  }
+    static createParameterDescriptionSection(Map parameters) {
+        def t =  ''
+        parameters.keySet().toSorted().each {
+            def props = parameters.get(it)
+            t += "* `${it}` - ${props.docu ?: ''}\n"
+        }
 
-  static createStepConfigurationSection(Map parameters) {
-
-    def t = '''|
-               |We recommend to define values of step parameters via [config.yml file](../configuration.md).
-               |
-               |In following sections the configuration is possible:'''.stripMargin()
-
-    t += '| parameter | general | step | stage |\n'
-    t += '|-----------|---------|------|-------|\n'
-
-    parameters.keySet().toSorted().each {
-      def props = parameters.get(it)
-      t += "| `${it}` | ${props.GENERAL_CONFIG ? 'X' : ''} | ${props.STEP_CONFIG ? 'X' : ''} | ${props.PARAMS ? 'X' : ''} |\n"
+        t
     }
 
-    t
-  }
+    static createStepConfigurationSection(Map parameters) {
+
+        def t = '''|
+                   |We recommend to define values of step parameters via [config.yml file](../configuration.md).
+                   |
+                   |In following sections the configuration is possible:'''.stripMargin()
+
+        t += '| parameter | general | step | stage |\n'
+        t += '|-----------|---------|------|-------|\n'
+
+        parameters.keySet().toSorted().each {
+            def props = parameters.get(it)
+            t += "| `${it}` | ${props.GENERAL_CONFIG ? 'X' : ''} | ${props.STEP_CONFIG ? 'X' : ''} | ${props.PARAMS ? 'X' : ''} |\n"
+        }
+
+        t
+    }
 }
 
 //
