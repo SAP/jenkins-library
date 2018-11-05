@@ -61,7 +61,7 @@ void call(parameters = [:]) {
 
         new Utils().pushToSWA([step: STEP_NAME,
                                stepParam1: configuration.changeManagement.type,
-                               stepParam1: parameters?.script == null], configuration)
+                               stepParam2: parameters?.script == null], configuration)
 
         def changeDocumentId = null
 

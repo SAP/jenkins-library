@@ -42,7 +42,7 @@ void call(Map parameters = [:]) {
             .use()
 
         new Utils().pushToSWA([step: STEP_NAME,
-                               stepParam1: parameters?.script == null], configuration)
+                                stepParam1: parameters?.script == null], configuration)
 
         // JAVA
         report('PmdPublisher', configuration.pmd, configuration.archive)

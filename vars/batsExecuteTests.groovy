@@ -40,7 +40,7 @@ void call(Map parameters = [:]) {
 
         // report to SWA
         utils.pushToSWA([step: STEP_NAME,
-                         stepParam1: parameters?.script == null], config)
+                        stepParam1: parameters?.script == null], config)
 
         script.commonPipelineEnvironment.setInfluxStepData('bats', false)
 
