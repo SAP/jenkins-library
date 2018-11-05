@@ -5,8 +5,10 @@
 In this step the ([Karma test runner](http://karma-runner.github.io)) is executed.
 
 The step is using the `seleniumExecuteTest` step to spins up two containers in a Docker network:
- - a Selenium/Chrome container (`selenium/standalone-chrome`)
- - a NodeJS container (`node:8-stretch`)
+
+- a Selenium/Chrome container (`selenium/standalone-chrome`)
+- a NodeJS container (`node:8-stretch`)
+
 In the Docker network, the containers can be referenced by the values provided in `dockerName` and `sidecarName`, the default values are `karma` and `selenium`. These values must be used in the test configuration ([Karma `hostname`](https://karma-runner.github.io/1.0/config/configuration-file.html) and [WebDriver `hostname`](https://github.com/karma-runner/karma-webdriver-launcher#usage)).
 
 !!! note
@@ -37,11 +39,45 @@ In the Docker network, the containers can be referenced by the values provided i
 |sidecarVolumeBind|no|||
 |stashContent|no|||
 
-* `<parameter>` - Detailed description of each parameter.
+- `script` - defines the global script environment of the Jenkinsfile run. Typically `this` is passed to this parameter. This allows the function to access the [`commonPipelineEnvironment`](commonPipelineEnvironment.md) for storing the measured duration.
+- `containerPortMappings` - see step [dockerExecute](dockerExecute.md)
+- `dockerEnvVars` - see step [dockerExecute](dockerExecute.md)
+- `dockerImage` - see step [dockerExecute](dockerExecute.md)
+- `dockerName` - see step [dockerExecute](dockerExecute.md)
+- `dockerWorkspace` - see step [dockerExecute](dockerExecute.md)
+- `failOnError` - see step [seleniumExecuteTests](seleniumExecuteTests.md)
+- `installCommand` - the command that is executed to install dependencies
+- `modules` - define the paths of the modules to execute tests on
+- `runCommand` - the command that is executed to start the tests
+- `sidecarEnvVars` - see step [dockerExecute](dockerExecute.md)
+- `sidecarImage` - see step [dockerExecute](dockerExecute.md)
+- `sidecarName` - see step [dockerExecute](dockerExecute.md)
+- `sidecarVolumeBind` - see step [dockerExecute](dockerExecute.md)
+- `stashContent` - pass specific stashed that should be considered for the tests
 
 ## Step configuration
 
-* `<parameter>`
+We recommend to define values of step parameters via [config.yml file](../configuration.md).
+
+In following sections the configuration is possible:
+
+| parameter | general | step | stage |
+| ----------|---------|------|-------|
+|script||||
+|containerPortMappings|X|X|X|
+|dockerEnvVars|X|X|X|
+|dockerImage|X|X|X|
+|dockerName|X|X|X|
+|dockerWorkspace|X|X|X|
+|failOnError|X|X|X|
+|installCommand|X|X|X|
+|modules|X|X|X|
+|runCommand|X|X|X|
+|sidecarEnvVars|X|X|X|
+|sidecarImage|X|X|X|
+|sidecarName|X|X|X|
+|sidecarVolumeBind|X|X|X|
+|stashContent|X|X|X|
 
 ## Return value
 
