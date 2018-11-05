@@ -86,7 +86,7 @@ webdriverio
 |dockerEnvVars|no|||
 |dockerImage|no|buildTool=`maven`: `maven:3.5-jdk-8`<br />buildTool=`npm`: `node:8-stretch`<br />||
 |dockerName|no|buildTool=`maven`: `maven`<br />buildTool=`npm`: `npm`<br />||
-|dockerWorkspace|no|buildTool=`maven`: ``<br />buildTool=`npm`: `/home/node`<br />||
+|dockerWorkspace|no|buildTool=`maven`: <br />buildTool=`npm`: `/home/node`<br />||
 |failOnError|no|`true`||
 |gitBranch|no|||
 |gitSshKeyCredentialsId|no|``||
