@@ -67,7 +67,6 @@ needs to be extracted into the folder provided by `neoHome`. In case this parame
 | `vmSize`           | no        | `'lite'`                      | `'lite'`, `'pro'`, `'prem'`, `'prem-plus'`      |
 | `warAction`        | yes       | `'deploy'`                    | `'deploy'`, `'rolling-update'`                  |
 
-
 * `account` - The SAP Cloud Platform account to deploy to.
 * `applicationName` - Name of the application you want to manage, configure, or deploy
 * `archivePath`- The path to the archive for deployment to SAP CP. If not provided `mtarFilePath` from commom pipeline environment is used instead.

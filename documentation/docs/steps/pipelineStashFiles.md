@@ -51,7 +51,6 @@ The following parameters can also be specified as step parameters using the glob
 * stashExcludes
 * stashIncludes
 
-
 ## Explanation of pipeline step
 
 Usage of pipeline step:
@@ -61,5 +60,3 @@ pipelineStashFiles script: this {
   mavenExecute script: this, ...
 }
 ```
-
-

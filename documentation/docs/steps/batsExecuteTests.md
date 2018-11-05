@@ -26,7 +26,6 @@ You need to have a Bats test file. By default you would put this into directory 
 | testPath | no | `src/test`| |
 | testRepository | no | | |
 
-
 Details:
 
 * `outputFormat` defines the format of the test result output. `junit` would be the standard for automated build environments but you could use also the option `tap`.
@@ -68,7 +67,6 @@ The following parameters can also be specified as step/stage/general parameters 
 * testPackage
 * testPath
 * testRepository
-
 
 ## Example
 

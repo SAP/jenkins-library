@@ -71,4 +71,3 @@ dir('/path/to/FioriApp'){
   mtarFileName = mtaBuild script:this, buildTarget: 'NEO'
 }
 ```
-

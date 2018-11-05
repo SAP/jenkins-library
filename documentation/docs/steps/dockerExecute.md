@@ -41,7 +41,6 @@ Proxy environment variables defined on the Jenkins machine are also available in
 * `sidecarVolumeBind`: as `dockerVolumeBind` for the sidecar container
 * `sidecarWorkspace`: as `dockerWorkspace` for the sidecar container
 
-
 ## Kubernetes support
 
 If the Jenkins is setup on a Kubernetes cluster, then you can execute the closure inside a container of a pod by setting an environment variable `ON_K8S` to `true`. However, it will ignore `containerPortMappings`, `dockerOptions` and `dockerVolumeBind` values.
@@ -69,7 +68,6 @@ In following sections the configuration is possible:
 |sidecarOptions||X|X|
 |sidecarVolumeBind||X|X|
 |sidecarWorkspace||X|X|
-
 
 ## Return value
 
@@ -124,7 +122,3 @@ dockerExecute(
     '''
 }
 ```
-
-
-
-

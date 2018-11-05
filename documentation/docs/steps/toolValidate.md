@@ -43,4 +43,3 @@ none
 ```groovy
 toolValidate tool: 'neo', home:'/path/to/neo-java-web-sdk'
 ```
-

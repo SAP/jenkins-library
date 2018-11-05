@@ -120,4 +120,3 @@ is set to `false`, `false` is returned in case the change document is not in sta
                                ]
                              ]
 ```
-

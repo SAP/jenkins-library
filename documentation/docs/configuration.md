@@ -42,7 +42,6 @@ Following data (non-personal) is collected for example:
 
     2. Individual deactivation per step by passing the parameter `collectTelemetryData: false`, like e.g. `setVersion script:this, collectTelemetryData: false`
 
-
 ## Example configuration
 
 ```
@@ -78,6 +77,3 @@ commonPipelineEnvironment.configuration.general.gitSshKeyCredentialsId
 Within library steps the `ConfigurationHelper` object is used.
 
 You can see its usage in all the Piper steps, for example [newmanExecute](https://github.com/SAP/jenkins-library/blob/master/vars/newmanExecute.groovy#L23).
-
-
-

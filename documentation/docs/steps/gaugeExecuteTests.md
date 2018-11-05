@@ -40,7 +40,6 @@ Pipeline step:
 gaugeExecuteTests script: this, testServerUrl: 'http://test.url'
 ```
 
-
 ## Parameters
 
 | parameter | mandatory | default | possible values |
@@ -61,7 +60,6 @@ gaugeExecuteTests script: this, testServerUrl: 'http://test.url'
 |testOptions|no|buildTool=`maven`: `-DspecsDir=specs`<br />buildTool=`npm`: `specs`<br />||
 |testRepository|no|||
 |testServerUrl|no|||
-
 
 Details:
 

@@ -95,7 +95,6 @@ none
 commonPipelineEnvironment.getConfigProperties()
 ```
 
-
 ### setConfigProperties(configuration)
 
 #### Description
@@ -124,7 +123,6 @@ none
 commonPipelineEnvironment.setConfigProperties([DEPLOY_HOST: 'deploy-host.com', DEPLOY_ACCOUNT: 'deploy-account'])
 ```
 
-
 ### getConfigProperty(property)
 
 #### Description
@@ -152,7 +150,6 @@ none
 ```groovy
 commonPipelineEnvironment.getConfigProperty('DEPLOY_HOST')
 ```
-
 
 ### setConfigProperty(property, value)
 
@@ -219,7 +216,6 @@ Returns the Influx custom data map which can be collected during pipeline run.
 It is used for example by step [`influxWriteData`](../steps/influxWriteData.md).
 The data map is a map of maps, like `[pipeline_data: [:], my_measurement: [:]]`
 Each map inside the map represents a dedicated measurement in the InfluxDB.
-
 
 #### Parameters
 

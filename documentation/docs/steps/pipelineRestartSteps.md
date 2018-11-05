@@ -20,7 +20,6 @@ This is done in a way that the pipeline waits for user input to restart the pipe
 
 none
 
-
 ## Example
 
 Usage of pipeline step:
@@ -38,7 +37,6 @@ pipelineRestartSteps (script: this) {
 
     In case you cannot use `node` inside this step, please choose the parameter `timeoutInSeconds` carefully!
 
-
 ## Parameters
 
 | parameter | mandatory | default | possible values |
@@ -52,7 +50,6 @@ pipelineRestartSteps (script: this) {
 * `script` defines the global script environment of the Jenkinsfile run. Typically `this` is passed to this parameter. This allows the function to access the [`commonPipelineEnvironment`](commonPipelineEnvironment.md) for storing the measured duration.
 * If `sendMail: true` the step `mailSendNotification` will be triggered in case of an error
 * `timeoutInSeconds` defines the time period where the job waits for input. Default is 15 minutes. Once this time is passed the job enters state FAILED.
-
 
 ## Step configuration
 
@@ -77,4 +74,3 @@ none
 ## Exceptions
 
 none
-

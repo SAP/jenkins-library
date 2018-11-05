@@ -23,7 +23,6 @@ Brief description.
 
 ```
 
-
 ## Method Details
 
 ### <method>(<arguments>)

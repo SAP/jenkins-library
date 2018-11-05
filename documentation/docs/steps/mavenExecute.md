@@ -52,7 +52,3 @@ None
 ```groovy
 mavenExecute script: this, goals: 'clean install'
 ```
-
-
-
-

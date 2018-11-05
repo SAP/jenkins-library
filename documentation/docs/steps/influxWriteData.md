@@ -34,7 +34,6 @@ For more advanced setup please reach out to the respective documentation:
 - https://hub.docker.com/_/influxdb/ (and https://github.com/docker-library/docs/tree/master/influxdb)
 - https://hub.docker.com/r/grafana/grafana/ (and https://github.com/grafana/grafana-docker)
 
-
 After you have started your InfluxDB docker you need to create a database:
 
 - in a Webbrowser open the InfluxDB Web-UI using the following URL: &lt;host of your docker&gt;:8083 (port 8083 is used for access via Web-UI, for Jenkins you use port 8086 to access the DB)
@@ -42,7 +41,6 @@ After you have started your InfluxDB docker you need to create a database:
 - create Admin user (this user you need to provide later to Jenkins)
 
 !!! hint "With InfluxDB version 1.1 the InfluxDB Web-UI is deprecated"
-
 
 You can perform the above steps via commandline:
 
@@ -124,7 +122,6 @@ As a first step you need to add your InfluxDB as Data source to your Grafana:
 
     Therefore no need to go through the data source configuration step unless you want to add addtional data sources.
 
-
 ## Data collected in InfluxDB
 
 The Influx plugin collects following data in the Piper context:
@@ -157,14 +154,12 @@ Measurements are potentially pre-fixed - see parameter `influxPrefix` above.
 | pipeline_data | Examples from the Piper templates:<br /><ul><li>build_duration</li><li>opa_duration</li><li>deploy_test_duration</li><li>deploy_test_duration</li><li>fortify_duration</li><li>release_duration</li><li>...</li></ul>| filled by step [`measureDuration`](durationMeasure.md) using parameter `measurementName`|
 | step_data | Considered, e.g.:<br /><ul><li>build_quality (Milestone/Release)</li><li>build_url</li><li>bats</li><li>checkmarx</li><li>fortify</li><li>gauge</li><li>nsp</li><li>opa</li><li>opensourcedependency</li><li>ppms</li><li>jmeter</li><li>supa</li><li>snyk</li><li>sonar</li><li>sourceclear</li><li>uiveri5</li><li>vulas</li><li>whitesource</li><li>traceability</li><li>...</li><li>xmakestage</li><li>xmakepromote</li></ul>| filled by `commonPipelineEnvironment.setInfluxStepData()` |
 
-
 ### Examples for InfluxDB queries which can be used in Grafana
 
 !!! caution "Project Names containing dashes (-)"
     The InfluxDB plugin replaces dashes (-) with underscores (\_).
 
     Please keep this in mind when specifying your project_name for a InfluxDB query.
-
 
 #### Example 1: Select last 10 successful builds
 
@@ -173,7 +168,6 @@ select top(build_number,10), build_result from jenkins_data WHERE build_result =
 ```
 
 #### Example 2: Select last 10 step names of failed builds
-
 
 ```
 select top(build_number,10), build_result, build_step from jenkins_custom_data WHERE build_result = 'FAILURE'
@@ -195,6 +189,3 @@ select top(build_number,10) AS "Build", build_url, build_quality, fortify, gauge
     With this query you can create transparency about which steps ran successfully / not successfully in your pipeline and which ones were not executed at all.
 
     By specifying all the steps you consider relevant in your select statement it is very easy to create this transparency.
-
-
-

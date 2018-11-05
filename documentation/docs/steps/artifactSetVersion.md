@@ -80,5 +80,3 @@ The following parameters can also be specified as step parameters using the glob
 ```groovy
 artifactSetVersion script: this, buildTool: 'maven'
 ```
-
-

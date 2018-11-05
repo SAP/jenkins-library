@@ -22,7 +22,6 @@ Usage of pipeline step:
 mailSendNotification script: this
 ```
 
-
 ## Parameters
 
 | parameter | mandatory | default | possible values |
@@ -58,7 +57,6 @@ mailSendNotification script: this
 * `projectName` may be used to specify a different name in the email subject.
 * `wrapInNode` needs to be set to `true` if step is used outside of a node context, e.g. post actions in a declarative pipeline script.
 
-
 ## Step configuration
 
 We recommend to define values of step parameters via [config.yml file](../configuration.md).
@@ -90,12 +88,3 @@ none
 ## Exceptions
 
 none
-
-
-
-
-
-
-
-
-

@@ -21,7 +21,6 @@ Deployment can be done
 
     ![Jenkins credentials configuration](../images/cf_credentials.png)
 
-
 ## Parameters
 
 | parameter | mandatory | default | possible values |
@@ -83,13 +82,11 @@ Deployment can be done
     In this case define `appName: ''` since the app name for the individual applications have to be defined via the manifest.
     You can find details in the [Cloud Foundry Documentation](https://docs.cloudfoundry.org/devguide/deploy-apps/manifest.html#multi-apps)
 
-
 #### MTA Deployment:
 
 * `mtaPath` define path to *.mtar for deployment.
 * `mtaExtensionDescriptor` defines additional extension descriptor file for deployment.
 * `mtaDeployParameters` defines additional parameters passed to mta deployment.
-
 
 ## Step configuration
 
@@ -118,4 +115,3 @@ cloudFoundryDeploy(
     deployTool: 'cf_native'
 )
 ```
-
