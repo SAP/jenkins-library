@@ -8,7 +8,7 @@ Executes a maven command inside a Docker container.
 
 | parameter                      | mandatory | default           | example values             |
 | -------------------------------|-----------|-------------------|----------------------------|
-| `script`                       | yes       |                   |                            |
+| `script` | yes |  |  |
 | `dockerImage`                  | no        | 'maven:3.5-jdk-7' |                            |
 | `globalSettingsFile`           | no        |                   | 'local_folder/settings.xml'|
 | `projectSettingsFile`          | no        |                   |                            |

@@ -60,8 +60,8 @@ void call(parameters = [:]) {
             .withMandatoryProperty('filePath')
 
         new Utils().pushToSWA([step: STEP_NAME,
-                               stepParam1: configuration.changeManagement.type,
-                               stepParam2: parameters?.script == null], configuration)
+                                stepParam1: configuration.changeManagement.type,
+                                stepParam2: parameters?.script == null], configuration)
 
         def changeDocumentId = null
 
