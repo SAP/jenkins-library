@@ -43,7 +43,7 @@ githubPublishRelease script: this, releaseBodyHeader: "**This is the latest succ
 |releaseBodyHeader|no|||
 |version|yes|`script.commonPipelineEnvironment.getArtifactVersion()`||
 
-### Details:
+### Details
 
 * `script` defines the global script environment of the Jenkinsfile run. Typically `this` is passed to this parameter. This allows the function to access the [`commonPipelineEnvironment`](commonPipelineEnvironment.md) for storing the measured duration.
 * All GitHub related properties allow you to overwrite the default behavior of identifying e.g. GitHub organization, GitHub repository.
@@ -53,7 +53,6 @@ githubPublishRelease script: this, releaseBodyHeader: "**This is the latest succ
 * If you set `addDeltaToLastRelease` to `true`, a link will be added to the relese information that brings up all commits since the last release.
 * By passing the parameter `customFilterExtension` it is possible to pass additional filter criteria for retrieving closed issues since the last release. Additional criteria could be for example specific `label`, or `filter` according to [GitHub API documentation](https://developer.github.com/v3/issues/).
 * It is possible to exclude issues with dedicated labels using parameter `excludeLabels`. Usage is like `excludeLabels: ['label1', 'label2']`
-
 
 ## Step configuration
 
