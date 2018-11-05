@@ -35,7 +35,7 @@ void call(Map parameters = [:]) {
             .use()
 
         new Utils().pushToSWA([step: STEP_NAME,
-                               stepParam1: parameters?.script == null], config)
+                                stepParam1: parameters?.script == null], config)
 
         // store files to be checked with checkmarx
         if (config.runCheckmarx) {
