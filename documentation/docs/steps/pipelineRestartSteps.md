@@ -45,7 +45,7 @@ pipelineRestartSteps (script: this) {
 |sendMail|no|`true`||
 |timeoutInSeconds|no|`900`||
 
-### Details:
+### Details
 
 * `script` defines the global script environment of the Jenkinsfile run. Typically `this` is passed to this parameter. This allows the function to access the [`commonPipelineEnvironment`](commonPipelineEnvironment.md) for storing the measured duration.
 * If `sendMail: true` the step `mailSendNotification` will be triggered in case of an error

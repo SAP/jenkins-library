@@ -104,7 +104,7 @@ dockerExecute(script: this, dockerImage: 'maven:3.5-jdk-7'){
 
 In the above example, the `dockerEcecute` step will internally invoke [dockerExecuteOnKubernetes](dockerExecuteOnKubernetes.md) step and execute the closure inside a pod.
 
-## Example 3: Run closure inside a container which is attached to a sidecar container (as for example used in [seleniumExecuteTests](seleniumExecuteTests.md):
+## Example 3: Run closure inside a container which is attached to a sidecar container (as for example used in [seleniumExecuteTests](seleniumExecuteTests.md)
 
 ```groovy
 dockerExecute(

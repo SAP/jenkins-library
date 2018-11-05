@@ -70,7 +70,7 @@ Deployment can be done
 * `smokeTestScript` allows to specify a script which performs a check during blue-green deployment. The script gets the FQDN as parameter and returns `exit code 0` in case check returned `smokeTestStatusCode`. More details can be found [here](https://github.com/bluemixgaragelondon/cf-blue-green-deploy#how-to-use) <br /> Currently this option is only considered for deployTool `cf_native`.
 * `stashContent` defines the stash names which should be unstashed at the beginning of the step. This makes the files available in case the step is started on an empty node.
 
-#### Option cf_native:
+#### Option cf_native
 
 * `appName` in `cloudFoundry` map (or `cfAppName`) defines the name of the application which will be deployed to the Cloud Foundry space.
 * `manifest in `cloudFoundry` map` (or `cfManifest`) defines the manifest to be used for Cloud Foundry deployment.
@@ -82,7 +82,7 @@ Deployment can be done
     In this case define `appName: ''` since the app name for the individual applications have to be defined via the manifest.
     You can find details in the [Cloud Foundry Documentation](https://docs.cloudfoundry.org/devguide/deploy-apps/manifest.html#multi-apps)
 
-#### MTA Deployment:
+#### MTA Deployment
 
 * `mtaPath` define path to *.mtar for deployment.
 * `mtaExtensionDescriptor` defines additional extension descriptor file for deployment.

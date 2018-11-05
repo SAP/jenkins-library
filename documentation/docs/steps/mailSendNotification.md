@@ -38,7 +38,7 @@ mailSendNotification script: this
 |projectName|no|||
 |wrapInNode|no|`false`||
 
-### Details:
+### Details
 
 * `script` defines the global script environment of the Jenkinsfile run. Typically `this` is passed to this parameter. This allows the function to access the [`commonPipelineEnvironment`](commonPipelineEnvironment.md) for storing the measured duration.
 * `buildResult` may be used to overrule the build result coming from `currentBuild.result`. This is for example used in the step `pipelineRestartSteps`
