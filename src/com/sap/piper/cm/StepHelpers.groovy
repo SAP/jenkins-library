@@ -16,14 +16,14 @@ public class StepHelpers {
         } else {
 
             step.echo "[INFO] Retrieving transport request id from commit history [from: ${configuration.changeManagement.git.from}, to: ${configuration.changeManagement.git.to}]." +
-                      " Searching for pattern '${configuration.changeManagement.transportRequestLabel}'. Searching with format '${configuration.changeManagement.git.format}'."
+                        " Searching for pattern '${configuration.changeManagement.transportRequestLabel}'. Searching with format '${configuration.changeManagement.git.format}'."
 
             try {
                 transportRequestId = cm.getTransportRequestId(
-                                                              configuration.changeManagement.git.from,
-                                                              configuration.changeManagement.git.to,
-                                                              configuration.changeManagement.transportRequestLabel,
-                                                              configuration.changeManagement.git.format
+                                                                configuration.changeManagement.git.from,
+                                                                configuration.changeManagement.git.to,
+                                                                configuration.changeManagement.transportRequestLabel,
+                                                                configuration.changeManagement.git.format
                                                              )
 
                 step.echo "[INFO] Transport request id '${transportRequestId}' retrieved from commit history"
