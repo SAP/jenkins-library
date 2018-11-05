@@ -1,9 +1,12 @@
 import static com.sap.piper.Prerequisites.checkScript
 
 import com.cloudbees.groovy.cps.NonCPS
+
 import com.sap.piper.ConfigurationHelper
-import com.sap.piper.k8s.ContainerMap
 import com.sap.piper.JenkinsUtils
+import com.sap.piper.Utils
+import com.sap.piper.k8s.ContainerMap
+
 import groovy.transform.Field
 
 @Field def STEP_NAME = 'dockerExecute'
@@ -24,7 +27,8 @@ import groovy.transform.Field
     'sidecarName',
     'sidecarOptions',
     'sidecarWorkspace',
-    'sidecarVolumeBind'
+    'sidecarVolumeBind',
+    'stashContent'
 ]
 @Field Set STEP_CONFIG_KEYS = PARAMETER_KEYS
 
@@ -32,6 +36,8 @@ void call(Map parameters = [:], body) {
     handlePipelineStepErrors(stepName: STEP_NAME, stepParameters: parameters) {
 
         final script = checkScript(this, parameters) ?: this
+
+        def utils = parameters?.juStabUtils ?: new Utils()
 
         Map config = ConfigurationHelper.newInstance(this)
             .loadStepDefaults()
@@ -53,7 +59,8 @@ void call(Map parameters = [:], body) {
                         script: script,
                         dockerImage: config.dockerImage,
                         dockerEnvVars: config.dockerEnvVars,
-                        dockerWorkspace: config.dockerWorkspace
+                        dockerWorkspace: config.dockerWorkspace,
+                        stashContent: config.stashContent
                     ){
                         echo "[INFO][${STEP_NAME}] Executing inside a Kubernetes Pod"
                         body()
@@ -66,7 +73,8 @@ void call(Map parameters = [:], body) {
                         containerMap: [:],
                         containerName: config.dockerName,
                         containerPortMappings: [:],
-                        containerWorkspaces: [:]
+                        containerWorkspaces: [:],
+                        stashContent: config.stashContent
                     ]
                     paramMap.containerCommands[config.sidecarImage] = ''
 
@@ -106,6 +114,7 @@ void call(Map parameters = [:], body) {
                 executeInsideDocker = false
             }
             if (executeInsideDocker && config.dockerImage) {
+                utils.unstashAll(config.stashContent)
                 def image = docker.image(config.dockerImage)
                 image.pull()
                 if (!config.sidecarImage) {

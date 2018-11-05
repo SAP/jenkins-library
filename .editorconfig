@@ -13,3 +13,12 @@ insert_final_newline = true
 trim_trailing_whitespace = true
 [*.{yml,yaml}]
 indent_size = 2
+[*.png]
+indent_style = none
+indent_size = none
+[LICENSE]
+indent_style = none
+indent_size = none
+[cfg/id_rsa.enc]
+indent_style = none
+indent_size = none
