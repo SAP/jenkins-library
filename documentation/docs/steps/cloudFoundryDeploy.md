@@ -26,7 +26,7 @@ Deployment can be done
 
 | parameter | mandatory | default | possible values |
 | ----------|-----------|---------|-----------------|
-| script | no | empty `commonPipelineEnvironment` |  |
+| script | yes |  |  |
 | cloudFoundry | yes |  |  |
 | deployTool | no | cf_native | cf_native, mtaDeployPlugin |
 | deployType | no | standard | standard, blue-green |
