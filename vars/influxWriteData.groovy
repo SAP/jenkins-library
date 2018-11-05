@@ -39,7 +39,7 @@ void call(Map parameters = [:]) {
             .use()
 
         new Utils().pushToSWA([step: STEP_NAME,
-                               stepParam1: parameters?.script == null], configuration)
+                                stepParam1: parameters?.script == null], configuration)
 
         if (!configuration.artifactVersion)  {
             //this takes care that terminated builds due to milestone-locking do not cause an error

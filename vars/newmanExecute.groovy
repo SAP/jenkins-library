@@ -38,7 +38,7 @@ void call(Map parameters = [:]) {
             .use()
 
         new Utils().pushToSWA([step: STEP_NAME,
-                               stepParam1: parameters?.script == null], config)
+                                stepParam1: parameters?.script == null], config)
 
         config.stashContent = config.testRepository
             ?[GitUtils.handleTestRepository(this, config)]
