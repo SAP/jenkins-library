@@ -47,14 +47,14 @@ public class StepHelpers {
         } else {
 
             step.echo "[INFO] Retrieving ChangeDocumentId from commit history [from: ${configuration.changeManagement.git.from}, to: ${configuration.changeManagement.git.to}]." +
-                        "Searching for pattern '${configuration.changeDocumentLabel}'. Searching with format '${configuration.changeManagement.git.format}'."
+                        "Searching for pattern '${configuration.changeManagement.changeDocumentLabel}'. Searching with format '${configuration.changeManagement.git.format}'."
 
             try {
                 changeDocumentId = cm.getChangeDocumentId(
                                                             configuration.changeManagement.git.from,
                                                             configuration.changeManagement.git.to,
                                                             configuration.changeManagement.changeDocumentLabel,
-                                                            configuration.changeManagement.gitformat
+                                                            configuration.changeManagement.git.format
                                                         )
 
                 step.echo "[INFO] ChangeDocumentId '${changeDocumentId}' retrieved from commit history"
