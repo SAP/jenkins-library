@@ -13,6 +13,10 @@ insert_final_newline = true
 trim_trailing_whitespace = true
 [*.{yml,yaml}]
 indent_size = 2
+[*.png]
+end_of_line = none
+indent_style = none
+indent_size = none
 [LICENSE]
 indent_style = none
 indent_size = none
