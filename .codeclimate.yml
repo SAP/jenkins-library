@@ -15,3 +15,8 @@ plugins:
     enabled: true
   shellcheck:
     enabled: true
+# https://docs.codeclimate.com/docs/advanced-configuration#section-exclude-patterns
+exclude_patterns:
+- 'documentation/docs/images/*.png'
+- 'documentation/docs/images/*.ico'
+- 'cfg/id_rsa.enc'
