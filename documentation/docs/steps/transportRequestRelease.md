@@ -93,10 +93,10 @@ None.
 ## Exceptions
 
 * `IllegalArgumentException`:
-    * If the change id is not provided (`SOLMAN` only)
-    * If the transport request id is not provided.
+  * If the change id is not provided (`SOLMAN` only)
+  * If the transport request id is not provided.
 * `AbortException`:
-    * If the release of the transport request fails.
+  * If the release of the transport request fails.
 
 ## Example
 

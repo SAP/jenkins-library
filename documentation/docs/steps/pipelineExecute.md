@@ -41,7 +41,7 @@ none
 ## Exceptions
 
 * `Exception`
-    * If `repoUrl` is not provided.
+  * If `repoUrl` is not provided.
 
 ## Example
 

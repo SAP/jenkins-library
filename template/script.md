@@ -19,7 +19,7 @@ Brief description.
 #### Exceptions
 
 * `ExceptionType`
-    * List of cases when exception is thrown.
+  * List of cases when exception is thrown.
 
 #### Example
 
@@ -50,7 +50,7 @@ none
 #### Exceptions
 
 * `ExceptionType`
-    * List of cases when exception is thrown.
+  * List of cases when exception is thrown.
 
 #### Example
 

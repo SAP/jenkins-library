@@ -108,17 +108,17 @@ none
 ## Exceptions
 
 * `Exception`:
-    * If `archivePath` is not provided.
-    * If `propertiesFile` is not provided (when using `'WAR_PROPERTIESFILE'` deployment mode).
-    * If `applicationName` is not provided (when using `'WAR_PARAMS'` deployment mode).
-    * If `runtime` is not provided (when using `'WAR_PARAMS'` deployment mode).
-    * If `runtime-version` is not provided (when using `'WAR_PARAMS'` deployment mode).
+  * If `archivePath` is not provided.
+  * If `propertiesFile` is not provided (when using `'WAR_PROPERTIESFILE'` deployment mode).
+  * If `applicationName` is not provided (when using `'WAR_PARAMS'` deployment mode).
+  * If `runtime` is not provided (when using `'WAR_PARAMS'` deployment mode).
+  * If `runtime-version` is not provided (when using `'WAR_PARAMS'` deployment mode).
 * `AbortException`:
-    * If neo-java-web-sdk is not installed, or `neoHome`is wrong.
-    * If `deployHost` is wrong.
-    * If `deployAccount` is wrong.
+  * If neo-java-web-sdk is not installed, or `neoHome`is wrong.
+  * If `deployHost` is wrong.
+  * If `deployAccount` is wrong.
 * `CredentialNotFoundException`:
-    * If the credentials cannot be resolved.
+  * If the credentials cannot be resolved.
 
 ## Example
 

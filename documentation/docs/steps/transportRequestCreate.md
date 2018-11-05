@@ -102,9 +102,9 @@ The id of the Transport Request that has been created.
 ## Exceptions
 
 * `AbortException`:
-    * If the creation of the transport request fails.
+  * If the creation of the transport request fails.
 * `IllegalStateException`:
-    * If the change id is not provided.
+  * If the change id is not provided.
 
 ## Example
 

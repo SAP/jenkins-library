@@ -94,10 +94,10 @@ is set to `false`, `false` is returned in case the change document is not in sta
 ## Exceptions
 
 * `AbortException`:
-    * If the change id is not provided via parameter and if the change document id cannot be retrieved from the commit history.
-    * If the change is not in status `in development`. In this case no exception will be thrown when `failIfStatusIsNotInDevelopment` is set to `false`.
+  * If the change id is not provided via parameter and if the change document id cannot be retrieved from the commit history.
+  * If the change is not in status `in development`. In this case no exception will be thrown when `failIfStatusIsNotInDevelopment` is set to `false`.
 * `IllegalArgumentException`:
-    * If a mandatory property is not provided.
+  * If a mandatory property is not provided.
 
 ## Examples
 

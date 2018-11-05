@@ -11,9 +11,9 @@ Note that a version is formed by `major.minor.patch`, and a version is compatibl
 ## Prerequisites
 
 * A docker image meeting the following requirements
-    * **SAP MTA Archive Builder 1.0.6 or compatible version** - can be downloaded from [SAP Development Tools](https://tools.hana.ondemand.com/#cloud).
-    * **Java 8 or compatible version** - necessary to run the `mta.jar` file.
-    * **NodeJS installed** - the MTA Builder uses `npm` to download node module dependencies such as `grunt`.
+  * **SAP MTA Archive Builder 1.0.6 or compatible version** - can be downloaded from [SAP Development Tools](https://tools.hana.ondemand.com/#cloud).
+  * **Java 8 or compatible version** - necessary to run the `mta.jar` file.
+  * **NodeJS installed** - the MTA Builder uses `npm` to download node module dependencies such as `grunt`.
 
 ## Parameters
 
@@ -59,9 +59,9 @@ none
 ## Exceptions
 
 * `AbortException`:
-    * If SAP Multitarget Application Archive Builder is not found.
-    * If there is an invalid `buildTarget`.
-    * If there is no key `ID` inside the `mta.yaml` file.
+  * If SAP Multitarget Application Archive Builder is not found.
+  * If there is an invalid `buildTarget`.
+  * If there is no key `ID` inside the `mta.yaml` file.
 
 ## Example
 

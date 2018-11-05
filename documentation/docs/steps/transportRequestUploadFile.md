@@ -99,12 +99,12 @@ None.
 ## Exceptions
 
 * `IllegalArgumentException`:
-    * If the change id is not provided (`SOLMAN` only).
-    * If the transport request id is not provided.
-    * If the application id is not provided (`SOLMAN` only).
-    * If the file path is not provided.
+  * If the change id is not provided (`SOLMAN` only).
+  * If the transport request id is not provided.
+  * If the application id is not provided (`SOLMAN` only).
+  * If the file path is not provided.
 * `AbortException`:
-    * If the upload fails.
+  * If the upload fails.
 
 ## Example
 

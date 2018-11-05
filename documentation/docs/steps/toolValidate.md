@@ -34,9 +34,9 @@ none
 ## Exceptions
 
 * `IllegalArgumentException`:
-    * If at least one of the parameters  `tool`, `home` is not provided.
+  * If at least one of the parameters  `tool`, `home` is not provided.
 * `AbortException`:
-    * If `tool` is not supported.
+  * If `tool` is not supported.
 
 ## Example
 

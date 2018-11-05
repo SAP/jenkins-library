@@ -33,7 +33,7 @@ none
 ## Exceptions
 
 * `ExceptionType`
-    * List of cases when exception is thrown.
+  * List of cases when exception is thrown.
 
 ## Example
 
