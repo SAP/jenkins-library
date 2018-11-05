@@ -9,7 +9,7 @@ The step is using the `seleniumExecuteTest` step to spins up two containers in a
 - a Selenium/Chrome container (`selenium/standalone-chrome`)
 - a NodeJS container (`node:8-stretch`)
 
-In the Docker network, the containers can be referenced by the values provided in `dockerName` and `sidecarName`, the default values are `karma` and `selenium`. These values must be used in the test configuration ([Karma `hostname`](https://karma-runner.github.io/1.0/config/configuration-file.html) and [WebDriver `hostname`](https://github.com/karma-runner/karma-webdriver-launcher#usage)).
+In the Docker network, the containers can be referenced by the values provided in `dockerName` and `sidecarName`, the default values are `karma` and `selenium`. These values must be used in the `hostname` properties of the test configuration ([Karma](https://karma-runner.github.io/1.0/config/configuration-file.html) and [WebDriver](https://github.com/karma-runner/karma-webdriver-launcher#usage)).
 
 !!! note
     In a Kubernetes environment, the containers both need to be referenced with `localhost`.
