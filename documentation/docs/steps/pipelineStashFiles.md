@@ -10,7 +10,7 @@ none
 
 | parameter | mandatory | default | possible values |
 | ----------|-----------|---------|-----------------|
-| script | no | empty `commonPipelineEnvironment` |  |
+| script | yes |  |  |
 | runCheckmarx | no | false |  |
 | runOpaTests | no | false |  |
 | stashIncludes | no | see details |  |
