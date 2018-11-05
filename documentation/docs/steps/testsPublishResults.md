@@ -50,7 +50,7 @@ Available parameters:
 
 Each of the parameters `junit`, `jacoco`, `cobertura` and `jmeter` can be set to `true` or `false` but also to a map of parameters to hand in different settings for the tools.
 
-**junit**
+### junit
 
 | parameter | mandatory | default | possible values |
 | ----------|-----------|---------|-----------------|
@@ -59,7 +59,7 @@ Each of the parameters `junit`, `jacoco`, `cobertura` and `jmeter` can be set to
 | updateResults | no | `false` | true, false |
 | allowEmptyResults | no | `true` | true, false |
 
-**jacoco**
+### jacoco
 
 | parameter | mandatory | default | possible values |
 | ----------|-----------|---------|-----------------|
@@ -69,7 +69,7 @@ Each of the parameters `junit`, `jacoco`, `cobertura` and `jmeter` can be set to
 | archive | no | `false` | true, false |
 | allowEmptyResults | no | `true` | true, false |
 
-**cobertura**
+### cobertura
 
 | parameter | mandatory | default | possible values |
 | ----------|-----------|---------|-----------------|
@@ -78,7 +78,7 @@ Each of the parameters `junit`, `jacoco`, `cobertura` and `jmeter` can be set to
 | allowEmptyResults | no | `true` | true, false |
 | onlyStableBuilds | no | `true` | true, false |
 
-**jmeter**
+### jmeter
 
 | parameter | mandatory | default | possible values |
 | ----------|-----------|---------|-----------------|
