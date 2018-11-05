@@ -1,3 +1,5 @@
+import static com.sap.piper.Prerequisites.checkScript
+
 import com.sap.piper.ConfigurationHelper
 import com.sap.piper.Utils
 
@@ -23,7 +25,8 @@ import groovy.transform.Field
 
 void call(Map parameters = [:]) {
     handlePipelineStepErrors(stepName: STEP_NAME, stepParameters: parameters) {
-        final script = parameters.script
+
+        final script = checkScript(this, parameters) ?: this
 
         // load default & individual configuration
         Map configuration = ConfigurationHelper.newInstance(this)
@@ -34,7 +37,8 @@ void call(Map parameters = [:]) {
             .mixin(parameters, PARAMETER_KEYS)
             .use()
 
-        new Utils().pushToSWA([step: STEP_NAME], configuration)
+        new Utils().pushToSWA([step: STEP_NAME,
+                                stepParam1: parameters?.script == null], configuration)
 
         String command = "mvn"
 

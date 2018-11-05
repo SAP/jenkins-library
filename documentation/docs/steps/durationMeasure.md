@@ -18,7 +18,7 @@ none
 
 | parameter | mandatory | default | possible values |
 | ----------|-----------|---------|-----------------|
-| script | no | empty `globalPipelineEnvironment` |  |
+| script | yes | |  |
 | measurementName | no | test_duration |  |
 
 Details:

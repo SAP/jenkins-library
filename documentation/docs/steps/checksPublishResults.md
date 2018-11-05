@@ -16,6 +16,7 @@ This step can publish static check results from various sources.
 ## Parameters
 | parameter      | mandatory | default                           | possible values    |
 | ---------------|-----------|-----------------------------------|--------------------|
+| script | yes | | |
 | aggregation | no | `true` | see below |
 | tasks | no | `false` | see below |
 | pmd | no | `false` | see below |
