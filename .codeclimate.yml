@@ -1,4 +1,3 @@
-version: "2"
 plugins:
   codenarc:
     enabled: true
@@ -6,6 +5,9 @@ plugins:
     enabled: true
     config:
       editorconfig: .editorconfig
+    exclude_patterns:
+    - "documentation/docs/images/"
+    - "cfg/id_rsa.enc"
   fixme:
     enabled: true
     config:
@@ -18,6 +20,4 @@ plugins:
     enabled: true
 # https://docs.codeclimate.com/docs/advanced-configuration#section-exclude-patterns
 exclude_patterns:
-- "documentation/docs/images/*.png"
-- "documentation/docs/images/*.ico"
-- "cfg/id_rsa.enc"
+- "test/resources/"
