@@ -14,15 +14,15 @@ import static com.sap.piper.cm.StepHelpers.getBackendTypeAndLogInfoIfCMIntegrati
 
 @Field def STEP_NAME = 'transportRequestUploadFile'
 
-@Field Set generalConfigurationKeys = [
+@Field Set GENERAL_CONFIG_KEYS = [
     'changeManagement'
   ]
 
-  @Field Set stepConfigurationKeys = generalConfigurationKeys.plus([
+@Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS.plus([
       'applicationId'
     ])
 
-@Field Set parameterKeys = stepConfigurationKeys.plus([
+@Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS.plus([
     'changeDocumentId',
     'filePath',
     'transportRequestId'])
@@ -37,10 +37,10 @@ void call(parameters = [:]) {
 
         ConfigurationHelper configHelper = ConfigurationHelper.newInstance(this)
             .loadStepDefaults()
-            .mixinGeneralConfig(script.commonPipelineEnvironment, generalConfigurationKeys)
-            .mixinStepConfig(script.commonPipelineEnvironment, stepConfigurationKeys)
-            .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName?:env.STAGE_NAME, stepConfigurationKeys)
-            .mixin(parameters, parameterKeys)
+            .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS)
+            .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS)
+            .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName?:env.STAGE_NAME, STEP_CONFIG_KEYS)
+            .mixin(parameters, PARAMETER_KEYS)
             .addIfEmpty('filePath', script.commonPipelineEnvironment.getMtarFilePath())
 
         Map configuration = configHelper.use()

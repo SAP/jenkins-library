@@ -10,6 +10,9 @@ import groovy.text.SimpleTemplateEngine
 
 @Field String STEP_NAME = 'artifactSetVersion'
 @Field Map CONFIG_KEY_COMPATIBILITY = [gitSshKeyCredentialsId: 'gitCredentialsId']
+
+@Field Set GENERAL_CONFIG_KEYS = STEP_CONFIG_KEYS
+
 @Field Set STEP_CONFIG_KEYS = [
     'artifactType',
     'buildTool',
@@ -25,6 +28,7 @@ import groovy.text.SimpleTemplateEngine
     'timestampTemplate',
     'versioningTemplate'
 ]
+
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS.plus('gitCommitId')
 
 void call(Map parameters = [:], Closure body = null) {
@@ -44,7 +48,7 @@ void call(Map parameters = [:], Closure body = null) {
         // load default & individual configuration
         ConfigurationHelper configHelper = ConfigurationHelper.newInstance(this)
             .loadStepDefaults()
-            .mixinGeneralConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS, CONFIG_KEY_COMPATIBILITY)
+            .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS, CONFIG_KEY_COMPATIBILITY)
             .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS, CONFIG_KEY_COMPATIBILITY)
             .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName?:env.STAGE_NAME, STEP_CONFIG_KEYS, CONFIG_KEY_COMPATIBILITY)
             .mixin(gitCommitId: gitUtils.getGitCommitIdOrNull())
