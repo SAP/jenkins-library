@@ -3,6 +3,7 @@ general:
   productiveBranch: 'master'
   collectTelemetryData: true
   changeManagement:
+    type: 'NONE' # SOLMAN, CTS, NONE
     transportRequestLabel: 'TransportRequest\s?:'
     changeDocumentLabel: 'ChangeDocument\s?:'
     clientOpts: ''
@@ -11,6 +12,8 @@ general:
       from: 'origin/master'
       to: 'HEAD'
       format: '%b'
+  githubApiUrl: 'https://api.github.com'
+  githubServerUrl: 'https://github.com'
   gitSshKeyCredentialsId: '' #needed to allow sshagent to run with local ssh key
   jenkinsKubernetes:
     jnlpAgent: 's4sdk/jenkins-agent-k8s:latest'
@@ -139,10 +142,48 @@ steps:
       workspace: '**/*.*'
     stashExcludes:
       workspace: 'nohup.out'
+  githubPublishRelease:
+    addClosedIssues: false
+    addDeltaToLastRelease: false
+    customFilterExtension: ''
+    excludeLabels:
+      - 'duplicate'
+      - 'invalid'
+      - 'question'
+      - 'wontfix'
+  gaugeExecuteTests:
+    buildTool: 'maven'
+    dockerEnvVars:
+      HUB: 'TRUE'
+      HUB_URL: 'http://localhost:4444/wd/hub'
+    failOnError: false
+    installCommand: 'curl -SsL https://downloads.gauge.org/stable | sh -s -- --location=$HOME/bin/gauge'
+    stashContent:
+      - 'buildDescriptor'
+      - 'tests'
+    maven:
+      dockerImage: 'maven:3.5-jdk-8'
+      dockerName: 'maven'
+      dockerWorkspace: ''
+      languageRunner: 'java'
+      runCommand: 'mvn test-compile gauge:execute'
+      testOptions: '-DspecsDir=specs'
+    npm:
+      dockerImage: 'node:8-stretch'
+      dockerName: 'npm'
+      dockerWorkspace: '/home/node'
+      languageRunner: 'js'
+      runCommand: 'gauge run'
+      testOptions: 'specs'
   healthExecuteCheck:
     healthEndpoint: ''
   influxWriteData:
     influxServer: 'jenkins'
+  mailSendNotification:
+    notificationAttachment: true
+    notifyCulprits: true
+    numLogLinesInBody: 100
+    wrapInNode: false
   mavenExecute:
     dockerImage: 'maven:3.5-jdk-7'
     logSuccessfulMavenTransfers: false
@@ -164,6 +205,9 @@ steps:
     newmanRunCommand: "run ${config.newmanCollection} --environment '${config.newmanEnvironment}' --globals '${config.newmanGlobals}' --reporters junit,html --reporter-junit-export target/newman/TEST-${collectionDisplayName}.xml --reporter-html-export target/newman/TEST-${collectionDisplayName}.html"
     stashContent:
       - 'tests'
+  pipelineRestartSteps:
+    sendMail: true
+    timeoutInSeconds: 900
   pipelineStashFilesAfterBuild:
     runOpaTests: false
     stashIncludes:
@@ -200,7 +244,6 @@ steps:
       'selenium/standalone-chrome':
         - containerPort: 4444
           hostPort: 4444
-    dockerLinkAlias: 'selenium'
     failOnError: true
     sidecarImage: 'selenium/standalone-chrome'
     sidecarName: 'selenium'
@@ -209,7 +252,7 @@ steps:
     stashContent:
       - 'tests'
     maven:
-      dockerImage: 'maven:3.5-jdk-7'
+      dockerImage: 'maven:3.5-jdk-8'
       dockerName: 'maven'
       dockerWorkspace: ''
     npm:

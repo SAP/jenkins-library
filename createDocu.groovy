@@ -84,14 +84,14 @@ class TemplateHelper {
 //
 class Helper {
 
-  static getConfigHelper(classLoader, roots) {
+  static getConfigHelper(classLoader, roots, script) {
 
     def compilerConfig = new CompilerConfiguration()
         compilerConfig.setClasspathList( roots )
 
     new GroovyClassLoader(classLoader, compilerConfig, true)
         .parseClass(new File('src/com/sap/piper/ConfigurationHelper.groovy'))
-        .newInstance()
+        .newInstance(script, [:])
   }
 
 
@@ -439,7 +439,9 @@ def handleStep(stepName, prepareDefaultValuesStep, gse) {
 
   System.err << "[INFO] Handling step '${stepName}'.\n"
 
-  def defaultConfig = Helper.getConfigHelper(getClass().getClassLoader(), roots).loadStepDefaults(Helper.getDummyScript(prepareDefaultValuesStep, stepName)).use()
+  def defaultConfig = Helper.getConfigHelper(getClass().getClassLoader(),
+                                             roots,
+                                             Helper.getDummyScript(prepareDefaultValuesStep, stepName)).use()
 
   def params = [] as Set
 

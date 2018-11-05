@@ -5,10 +5,15 @@ import hudson.AbortException
 
 import com.sap.piper.ConfigurationHelper
 import com.sap.piper.ConfigurationMerger
+import com.sap.piper.cm.BackendType
 import com.sap.piper.cm.ChangeManagement
 import com.sap.piper.cm.ChangeManagementException
 
+import static com.sap.piper.cm.StepHelpers.getBackendTypeAndLogInfoIfCMIntegrationDisabled
+
 @Field def STEP_NAME = 'checkChangeInDevelopment'
+
+@Field Set GENERAL_CONFIG_KEYS = STEP_CONFIG_KEYS
 
 @Field Set STEP_CONFIG_KEYS = [
     'changeManagement',
@@ -21,8 +26,6 @@ import com.sap.piper.cm.ChangeManagementException
 
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS.plus('changeDocumentId')
 
-@Field Set GENERAL_CONFIG_KEYS = STEP_CONFIG_KEYS
-
 /**
  * Checks if a Change Document in SAP Solution Manager is in status 'in development'. The change document id is retrieved from the git commit history. The change document id
  * can also be provided via parameter `changeDocumentId`. Any value provided as parameter has a higher precedence than a value from the commit history.
@@ -31,7 +34,7 @@ import com.sap.piper.cm.ChangeManagementException
  * range and the pattern can be configured. For details see 'parameters' table.
  *
  */ 
-def call(parameters = [:]) {
+void call(parameters = [:]) {
 
     handlePipelineStepErrors (stepName: STEP_NAME, stepParameters: parameters) {
 
@@ -41,12 +44,21 @@ def call(parameters = [:]) {
 
         ChangeManagement cm = parameters?.cmUtils ?: new ChangeManagement(script, gitUtils)
 
-        ConfigurationHelper configHelper = ConfigurationHelper
-            .loadStepDefaults(this)
+        ConfigurationHelper configHelper = ConfigurationHelper.newInstance(this)
+            .loadStepDefaults()
             .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS)
             .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS)
             .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName?:env.STAGE_NAME, STEP_CONFIG_KEYS)
             .mixin(parameters, PARAMETER_KEYS)
+
+        Map configuration =  configHelper.use()
+
+        BackendType backendType = getBackendTypeAndLogInfoIfCMIntegrationDisabled(this, configuration)
+        if(backendType == BackendType.NONE) return
+
+        new Utils().pushToSWA([step: STEP_NAME], configuration)
+
+        configHelper
             // for the following parameters we expect defaults
              /**
                * A pattern used for identifying lines holding the change document id.
@@ -81,10 +93,6 @@ def call(parameters = [:]) {
               */
             .withMandatoryProperty('changeManagement/endpoint')
 
-
-        Map configuration = configHelper.use()
-
-        new Utils().pushToSWA([step: STEP_NAME], configuration)
 
         def changeId = configuration.changeDocumentId
 
@@ -142,14 +150,12 @@ def call(parameters = [:]) {
 
         if(isInDevelopment) {
             echo "[INFO] Change '${changeId}' is in status 'in development'."
-            return true
         } else {
             if(configuration.failIfStatusIsNotInDevelopment.toBoolean()) {
                 throw new AbortException("Change '${changeId}' is not in status 'in development'.")
 
             } else {
                 echo "[WARNING] Change '${changeId}' is not in status 'in development'. Failing the pipeline has been explicitly disabled."
-                return false
             }
         }
     }
