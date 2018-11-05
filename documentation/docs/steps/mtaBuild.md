@@ -35,7 +35,7 @@ Note that a version is formed by `major.minor.patch`, and a version is compatibl
 * `buildTarget` - The target platform to which the mtar can be deployed.
 * `extension` - The path to the extension descriptor file.
 * `mtaJarLocation` - The location of the SAP Multitarget Application Archive Builder jar file, including file name and extension. First, the location is retrieved from the environment variables using the environment variable `MTA_JAR_LOCATION`. If no environment variable is provided, the location is retrieved from the parameters, or the step configuration using the key `mtaJarLocation`. If SAP Multitarget Application Archive Builder is not found on one of the previous locations an AbortException is thrown.
-Note that the environment variable `MTA_JAR_LOCATION` has priority. In case that the script runs on multiple nodes, SAP Multitarget Application Archive Builder must be located on all the nodes, therefore the environment variable must be also configured on all the nodes.
+  Note that the environment variable `MTA_JAR_LOCATION` has priority. In case that the script runs on multiple nodes, SAP Multitarget Application Archive Builder must be located on all the nodes, therefore the environment variable must be also configured on all the nodes.
 * `applicationName` - The name of the application which is being built. If the parameter has been provided and no `mta.yaml` exists, the `mta.yaml` will be automatically generated using this parameter and the information (`name` and `version`) from `package.json` before the actual build starts.
 
 ## Step configuration
