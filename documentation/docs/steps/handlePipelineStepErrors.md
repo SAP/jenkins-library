@@ -22,6 +22,7 @@ none
     1. Step beginning: `--- BEGIN LIBRARY STEP: ${stepName}.groovy ---`
     2. Step end: `--- END LIBRARY STEP: ${stepName}.groovy ---`
     3. Step errors:
+
     ```log
     ----------------------------------------------------------
     --- ERROR OCCURED IN LIBRARY STEP: ${stepName}
