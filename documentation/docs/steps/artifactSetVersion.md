@@ -1,6 +1,7 @@
 # artifactSetVersion
 
 ## Description
+
 The continuous delivery process requires that each build is done with a unique version number.
 
 The version generated using this step will contain:
@@ -15,6 +16,7 @@ Since you might not want to configure the git credentials in Jenkins, committing
 If you require strict reproducibility of your builds, this should be used.
 
 ## Prerequsites
+
 none
 
 ## Parameters
@@ -56,6 +58,7 @@ none
 * `timestamp` defines the timestamp to be used in the automatic version string. You could overwrite the default behavior by explicitly setting this string.
 
 ## Step configuration
+
 The following parameters can also be specified as step parameters using the global configuration file:
 
 * `artifactType`

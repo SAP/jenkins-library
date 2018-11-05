@@ -24,7 +24,7 @@ Executes a maven command inside a Docker container.
     to access the commonPipelineEnvironment for retrieving, for example,
     configuration parameters.
 * `dockerImage` Name of the docker image that should be used.
-* `globalSettingsFile` Path or url to the mvn settings file that should be used as global settings file. 
+* `globalSettingsFile` Path or url to the mvn settings file that should be used as global settings file.
 * `projectSettingsFile` Path or url to the mvn settings file that should be used as project settings file.
 * `pomPath` Path to the pom file that should be used.
 * `flags` Flags to provide when running mvn.
@@ -34,6 +34,7 @@ Executes a maven command inside a Docker container.
 * `logSuccessfulMavenTransfers` configures maven to log successful downloads. This is set to `false` by default to reduce the noise in build logs.
 
 ## Step configuration
+
 The following parameters can also be specified as step parameters using the global configuration file:
 
 * `dockerImage`

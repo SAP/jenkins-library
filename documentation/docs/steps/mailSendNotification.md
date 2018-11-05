@@ -1,6 +1,7 @@
 # mailSendNotification
 
 ## Description
+
 Sends notifications to all potential culprits of a current or previous build failure plus to fixed list of recipients.
 It will attach the current build log to the email.
 
@@ -10,6 +11,7 @@ Notifications are sent in following cases:
 * current build is successful and previous build failed or was unstable
 
 ## Prerequsites
+
 none
 
 ## Example
@@ -78,12 +80,15 @@ In following sections the configuration is possible:
 |wrapInNode||X|X|
 
 ## Return value
+
 none
 
 ## Side effects
+
 none
 
 ## Exceptions
+
 none
 
 

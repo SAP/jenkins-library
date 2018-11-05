@@ -1,6 +1,7 @@
 # pipelineRestartSteps
 
 ## Description
+
 Support of restarting failed stages or steps in a pipeline is limited in Jenkins.
 
 This has been documented in the [Jenkins Jira issue JENKINS-33846](https://issues.jenkins-ci.org/browse/JENKINS-33846).
@@ -16,6 +17,7 @@ The step `pipelineRestartSteps` aims to address this gap and allows individual p
 This is done in a way that the pipeline waits for user input to restart the pipeline in case of a failure. In case this user input is not provided the pipeline stops after a timeout which can be configured.
 
 ## Prerequisites
+
 none
 
 
@@ -65,11 +67,14 @@ In following sections the configuration is possible:
 |timeoutInSeconds|X|X|X|
 
 ## Return value
+
 none
 
 ## Side effects
+
 none
 
 ## Exceptions
+
 none
 

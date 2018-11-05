@@ -1,6 +1,7 @@
 # healthExecuteCheck
 
 ## Description
+
 Calls the health endpoint url of the application.
 
 The intention of the check is to verify that a suitable health endpoint is available. Such a health endpoint is required for operation purposes.

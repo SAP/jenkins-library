@@ -1,12 +1,15 @@
 # transportRequestRelease
 
 ## Description
+
 Releases a Transport Request.
 
 ## Prerequisites
+
 * **[Change Management Client 2.0.0 or compatible version](http://central.maven.org/maven2/com/sap/devops/cmclient/dist.cli/)** - available for download on Maven Central.
 
 ## Parameters
+
 | parameter        | mandatory | default                                                | possible values    |
 | -----------------|-----------|--------------------------------------------------------|--------------------|
 | `script`        | yes       |                                                    |                    |
@@ -33,6 +36,7 @@ Releases a Transport Request.
 * `changeManagement/git/format` - Specifies what part of the commit is scanned. By default the body of the commit message is scanned.
 
 ## Step configuration
+
 The step is configured using a customer configuration file provided as
 resource in an custom shared library.
 
@@ -83,9 +87,11 @@ The properties can also be configured on a per-step basis:
 The parameters can also be provided when the step is invoked. For examples see below.
 
 ## Return value
+
 None.
 
 ## Exceptions
+
 * `IllegalArgumentException`:
     * If the change id is not provided (`SOLMAN` only)
     * If the transport request id is not provided.
@@ -93,6 +99,7 @@ None.
     * If the release of the transport request fails.
 
 ## Example
+
 ```groovy
 // SOLMAN
 transportRequestRelease script:this,

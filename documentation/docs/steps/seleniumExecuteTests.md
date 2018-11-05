@@ -32,6 +32,7 @@ seleniumExecuteTests (script: this) {
 Example based on http://webdriver.io/guide/getstarted/modes.html and http://webdriver.io/guide.html
 
 #### Configuration for Local Docker Environment
+
 ```
 var webdriverio = require('webdriverio');
 var options = {
@@ -42,7 +43,9 @@ var options = {
     }
 };
 ```
+
 #### Configuration for Kubernetes Environment
+
 ```
 var webdriverio = require('webdriverio');
 var options = {
@@ -134,10 +137,13 @@ In following sections the configuration is possible:
 |testRepository|X|X|X|
 
 ## Return value
+
 none
 
 ## Side effects
+
 none
 
 ## Exceptions
+
 none

@@ -1,6 +1,7 @@
 # testsPublishResults
 
 ## Description
+
 This step can publish test results from various sources.
 
 ## Prerequsites
@@ -107,15 +108,19 @@ Following parameters can also be specified as step parameters using the global c
 * `jmeter`
 
 ## Return value
+
 none
 
 ## Side effects
+
 none
 
 ## Exceptions
+
 none
 
 ## Example
+
 ```groovy
 // publish test results with coverage
 testsPublishResults(

@@ -53,6 +53,7 @@ Details:
 * The parameter `repository` defines the version of **bats-core** to be used. By default we use the version from the master branch.
 
 ## Step configuration
+
 The following parameters can also be specified as step/stage/general parameters using the [global configuration](../configuration.md):
 
 * dockerImage

@@ -92,6 +92,7 @@ Deployment can be done
 
 
 ## Step configuration
+
 The following parameters can also be specified as step/stage/general parameters using the [global configuration](../configuration.md):
 
 * cloudFoundry

@@ -1,6 +1,7 @@
 # influxWriteData
 
 ## Description
+
 Since your Continuous Delivery Pipeline in Jenkins provides your productive development and delivery infrastructure you should monitor the pipeline to ensure it runs as expected. How to setup this monitoring is described in the following.
 
 You basically need three components:
@@ -90,6 +91,7 @@ influxDBServer=jenkins
 | influxPrefix | no | `null` |  |
 
 ## Step configuration
+
 The following parameters can also be specified as step parameters using the global configuration file:
 
 * `influxServer`
@@ -140,6 +142,7 @@ The Influx plugin collects following data in the Piper context:
     ```
 
 ### Collected InfluxDB measurements
+
 Measurements are potentially pre-fixed - see parameter `influxPrefix` above.
 
 | Measurement name | data column | description |

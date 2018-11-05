@@ -1,6 +1,7 @@
 # neoDeploy
 
 ## Description
+
 Deploys an Application to SAP Cloud Platform (SAP CP) using the SAP Cloud Platform Console Client (Neo Java Web SDK).
 
 Before doing this, validates that SAP Cloud Platform Console Client is installed and the version is compatible.
@@ -8,6 +9,7 @@ Before doing this, validates that SAP Cloud Platform Console Client is installed
 Note that a version is formed by `major.minor.patch`, and a version is compatible to another version if the minor and patch versions are higher, but the major version is not, e.g. if 3.39.10 is the expected version, 3.39.11 and 3.40.1 would be compatible versions, but 4.0.1 would not be a compatible version.
 
 ## Prerequisites
+
 * **SAP CP account** - the account to where the application is deployed.
 * **SAP CP user for deployment** - a user with deployment permissions in the given account.
 * **Jenkins credentials for deployment** - must be configured in Jenkins credentials with a dedicated Id.
@@ -21,6 +23,7 @@ needs to be extracted into the folder provided by `neoHome`. In case this parame
 * **Java 8 or compatible version** - needed by the *Neo-Java-Web-SDK*
 
 ## Parameters when using MTA deployment method (default - MTA)
+
 | parameter          | mandatory | default                       | possible values                                 |
 | -------------------|-----------|-------------------------------|-------------------------------------------------|
 | `account`          | no        |                               |                                                 |
@@ -34,6 +37,7 @@ needs to be extracted into the folder provided by `neoHome`. In case this parame
 | `script`           | yes       |                               |                                                 |
 
 ## Parameters when using WAR file deployment method with .properties file (WAR_PROPERTIESFILE)
+
 | parameter          | mandatory | default                       | possible values                                 |
 | -------------------|-----------|-------------------------------|-------------------------------------------------|
 | `archivePath`      | no        |                               |                                                 |
@@ -45,6 +49,7 @@ needs to be extracted into the folder provided by `neoHome`. In case this parame
 | `warAction`        | yes       | `'deploy'`                    | `'deploy'`, `'rolling-update'`                  |
 
 ## Parameters when using WAR file deployment method witout .properties file - with parameters (WAR_PARAMS)
+
 | parameter          | mandatory | default                       | possible values                                 |
 | -------------------|-----------|-------------------------------|-------------------------------------------------|
 | `account`          | no        |                               |                                                 |
@@ -82,6 +87,7 @@ needs to be extracted into the folder provided by `neoHome`. In case this parame
 The step is prepared for being executed in docker. The corresponding parameters can be applied. See step `dockerExecute` for details.
 
 ## Step configuration
+
 The following parameters can also be specified as step parameters using the global configuration file:
 
 * `account`
@@ -93,12 +99,15 @@ The following parameters can also be specified as step parameters using the glob
 * `neoHome`
 
 ## Return value
+
 none
 
 ## Side effects
+
 none
 
 ## Exceptions
+
 * `Exception`:
     * If `archivePath` is not provided.
     * If `propertiesFile` is not provided (when using `'WAR_PROPERTIESFILE'` deployment mode).
@@ -113,6 +122,7 @@ none
     * If the credentials cannot be resolved.
 
 ## Example
+
 ```groovy
 neoDeploy script: this, archivePath: 'path/to/archiveFile.mtar', credentialsId: 'my-credentials-id'
 ```
