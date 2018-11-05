@@ -84,231 +84,227 @@ class TemplateHelper {
 //
 class Helper {
 
-  static getConfigHelper(classLoader, roots, script) {
+    static getConfigHelper(classLoader, roots, script) {
 
-    def compilerConfig = new CompilerConfiguration()
-        compilerConfig.setClasspathList( roots )
+        def compilerConfig = new CompilerConfiguration()
+            compilerConfig.setClasspathList( roots )
 
-    new GroovyClassLoader(classLoader, compilerConfig, true)
-        .parseClass(new File('src/com/sap/piper/ConfigurationHelper.groovy'))
-        .newInstance(script, [:])
-  }
-
-
-  static getPrepareDefaultValuesStep(def gse) {
-
-    def prepareDefaultValuesStep = gse.createScript('prepareDefaultValues.groovy', new Binding())
-
-    prepareDefaultValuesStep.metaClass.handlePipelineStepErrors {
-      m, c ->  c()
-    }
-    prepareDefaultValuesStep.metaClass.libraryResource {
-      f ->  new File("resources/${f}").text
-    }
-
-    prepareDefaultValuesStep.metaClass.readYaml {
-      m -> new Yaml().load(m.text)
-    }
-
-    prepareDefaultValuesStep
-  }
-
-  static getDummyScript(def prepareDefaultValuesStep, def stepName) {
-
-    def _prepareDefaultValuesStep = prepareDefaultValuesStep
-    def _stepName = stepName
-
-    return  new Script() {
-
-      def STEP_NAME = _stepName
-
-      def prepareDefaultValues() {
-        _prepareDefaultValuesStep()
+        new GroovyClassLoader(classLoader, compilerConfig, true)
+            .parseClass(new File('src/com/sap/piper/ConfigurationHelper.groovy'))
+            .newInstance(script, [:])
       }
 
-      def run() {
-        throw new UnsupportedOperationException()
-      }
-    }
-  }
 
-  static trim(List lines) {
+    static getPrepareDefaultValuesStep(def gse) {
 
-    removeLeadingEmptyLines(
-      removeLeadingEmptyLines(lines.reverse())
-        .reverse())
-  }
+        def prepareDefaultValuesStep = gse.createScript('prepareDefaultValues.groovy', new Binding())
 
-  private static removeLeadingEmptyLines(lines) {
+        prepareDefaultValuesStep.metaClass.handlePipelineStepErrors {
+            m, c ->  c()
+        }
+        prepareDefaultValuesStep.metaClass.libraryResource {
+            f ->  new File("resources/${f}").text
+        }
+        prepareDefaultValuesStep.metaClass.readYaml {
+            m -> new Yaml().load(m.text)
+        }
 
-    def _lines = new ArrayList(lines), trimmed = []
-
-    boolean empty = true
-
-    _lines.each() {
-
-        if(empty &&  ! it.trim()) return
-        empty = false
-        trimmed << it
+        prepareDefaultValuesStep
     }
 
-    trimmed
-  }
+    static getDummyScript(def prepareDefaultValuesStep, def stepName) {
 
-  private static normalize(Set p) {
+        def _prepareDefaultValuesStep = prepareDefaultValuesStep
+        def _stepName = stepName
 
-    def normalized = [] as Set
+        return  new Script() {
 
-    def interim = [:]
-    p.each {
-      def parts = it.split('/') as List
-      _normalize(parts, interim)
-    }
+            def STEP_NAME = _stepName
 
-    interim.each { k, v -> flatten (normalized, k, v)   }
-
-    normalized
-  }
-
-  private static void _normalize(List parts, Map interim) {
-    if( parts.size >= 1) {
-      if( ! interim[parts.head()]) interim[parts.head()] = [:]
-      _normalize(parts.tail(), interim[parts.head()])
-    }
-  }
-
-
-  private static flatten(Set flat, def key, Map interim) {
-
-    if( ! interim ) flat << (key as String)
-
-    interim.each { k, v ->
-
-      def _key = "${key}/${k}"
-
-      if( v && v.size() > 0 )
-        flatten(flat, _key, v)
-      else {
-        flat << (_key as String)
-      }
-    }
-  }
-
-  static void scanDocu(File f, Map step) {
-
-    boolean docu = false,
-            value = false,
-            docuEnd = false
-
-    def docuLines = [],
-        valueLines = []
-
-    f.eachLine  {
-      line ->
-
-      if(docuEnd) {
-          docuEnd = false
-
-          if(isHeader(line)) {
-            def _docu = []
-            docuLines.each { _docu << it  }
-            _docu = Helper.trim(_docu)
-            step.description = _docu*.trim().join('\n')
-          } else {
-
-            def param = retrieveParameterName(line)
-
-            if(!param) {
-              throw new RuntimeException('Cannot retrieve parameter for a comment')
+            def prepareDefaultValues() {
+                _prepareDefaultValuesStep()
             }
 
-            if(step.parameters[param].docu ||
-              step.parameters[param].value)
-                System.err << "[WARNING] There is already some documentation for parameter '${param}. Is this parameter documented twice?'\n"
+            def run() {
+                throw new UnsupportedOperationException()
+            }
+        }
+    }
 
-            def _docu = [], _value = []
-            docuLines.each { _docu << it  }
-            valueLines.each { _value << it}
-            step.parameters[param].docu = _docu*.trim().join(' ').trim()
-            step.parameters[param].value = _value*.trim().join(' ').trim()
-          }
-          docuLines.clear()
-          valueLines.clear()
-      }
+    static trim(List lines) {
 
-      if( line.trim()  ==~ /^\/\*\*/ ) {
-        docu = true
-      }
+        removeLeadingEmptyLines(
+            removeLeadingEmptyLines(lines.reverse())
+                .reverse())
+    }
 
-      if(docu) {
-        def _line = line
-        _line = _line.replaceAll('^\\s*', '') // leading white spaces
-        if(_line.startsWith('/**')) _line = _line.replaceAll('^\\/\\*\\*', '') // start comment
-        if(_line.startsWith('*/')) _line = _line.replaceAll('^\\*/', '') // end comment
-        if(_line.startsWith('*')) _line = _line.replaceAll('^\\*', '') // continue comment
-        if(_line ==~ /.*@possibleValues.*/) {
-            value = true
+    private static removeLeadingEmptyLines(lines) {
+
+        def _lines = new ArrayList(lines), trimmed = []
+
+        boolean empty = true
+
+        _lines.each() {
+
+            if(empty &&  ! it.trim()) return
+            empty = false
+            trimmed << it
         }
 
-        if(value) {
-          if(_line) {
-              _line = (_line =~ /.*@possibleValues\s*?(.*)/)[0][1]
-              valueLines << _line
-          }
-        } else {
-            docuLines << _line.trim()
+        trimmed
+    }
+
+    private static normalize(Set p) {
+
+        def normalized = [] as Set
+
+        def interim = [:]
+        p.each {
+            def parts = it.split('/') as List
+            _normalize(parts, interim)
         }
-      }
 
-      if(docu && line.trim() ==~ /^\*\//) {
-        docu = false
-        value = false
-        docuEnd = true
-      }
+        interim.each { k, v -> flatten (normalized, k, v)   }
+
+        normalized
     }
-  }
 
-  private static isHeader(line) {
-    Matcher headerMatcher = (line =~ /(def|void)\s*call\s*\(/ )
-    return headerMatcher.size() == 1 && headerMatcher[0].size() == 2
-  }
-
-  private static retrieveParameterName(line) {
-      Matcher m = (line =~ /.*'(.*)'.*/)
-      if(m.size() == 1 && m[0].size() == 2)
-          return m[0][1]
-      return null
-  }
-
-  static getScopedParameters(def script) {
-
-    def params = [:]
-
-    params.put('STEP_CONFIG', script.STEP_CONFIG_KEYS ?: [])
-    params.put('GENERAL_CONFIG', script.GENERAL_CONFIG_KEYS ?: [] )
-    params.put('PARAMS', script.PARAMETER_KEYS ?: [] )
-
-    return params
-  }
-
-  static getRequiredParameters(File f) {
-    def params = [] as Set
-    f.eachLine  {
-      line ->
-      if( line ==~ /.*withMandatoryProperty.*/ ) {
-        def param = (line =~ /.*withMandatoryProperty\('(.*)'/)[0][1]
-        params << param
-      }
+    private static void _normalize(List parts, Map interim) {
+        if( parts.size >= 1) {
+            if( ! interim[parts.head()]) interim[parts.head()] = [:]
+            _normalize(parts.tail(), interim[parts.head()])
+        }
     }
-    return params
-  }
 
-  static getValue(Map config, def pPath) {
-    def p =config[pPath.head()]
-    if(pPath.size() == 1) return p // there is no tail
-    if(p in Map) getValue(p, pPath.tail())
-    else return p
-  }
+    private static flatten(Set flat, def key, Map interim) {
+
+        if( ! interim ) flat << (key as String)
+
+        interim.each { k, v ->
+
+            def _key = "${key}/${k}"
+
+            if( v && v.size() > 0 )
+                flatten(flat, _key, v)
+            else
+                flat << (_key as String)
+
+        }
+    }
+
+    static void scanDocu(File f, Map step) {
+
+        boolean docu = false,
+                value = false,
+                docuEnd = false
+
+        def docuLines = [], valueLines = []
+
+        f.eachLine  {
+            line ->
+
+            if(docuEnd) {
+                docuEnd = false
+
+                if(isHeader(line)) {
+                    def _docu = []
+                    docuLines.each { _docu << it  }
+                    _docu = Helper.trim(_docu)
+                    step.description = _docu*.trim().join('\n')
+                } else {
+
+                    def param = retrieveParameterName(line)
+
+                    if(!param) {
+                        throw new RuntimeException('Cannot retrieve parameter for a comment')
+                    }
+
+                    if(step.parameters[param].docu || step.parameters[param].value)
+                        System.err << "[WARNING] There is already some documentation for parameter '${param}. Is this parameter documented twice?'\n"
+
+                    def _docu = [], _value = []
+                    docuLines.each { _docu << it  }
+                    valueLines.each { _value << it}
+                    step.parameters[param].docu = _docu*.trim().join(' ').trim()
+                    step.parameters[param].value = _value*.trim().join(' ').trim()
+                }
+                docuLines.clear()
+                valueLines.clear()
+            }
+
+            if( line.trim()  ==~ /^\/\*\*/ ) {
+                docu = true
+            }
+
+            if(docu) {
+                def _line = line
+                _line = _line.replaceAll('^\\s*', '') // leading white spaces
+                if(_line.startsWith('/**')) _line = _line.replaceAll('^\\/\\*\\*', '') // start comment
+                if(_line.startsWith('*/')) _line = _line.replaceAll('^\\*/', '') // end comment
+                if(_line.startsWith('*')) _line = _line.replaceAll('^\\*', '') // continue comment
+                if(_line ==~ /.*@possibleValues.*/) {
+                    value = true
+                }
+
+                if(value) {
+                    if(_line) {
+                        _line = (_line =~ /.*@possibleValues\s*?(.*)/)[0][1]
+                        valueLines << _line
+                    }
+                } else {
+                    docuLines << _line.trim()
+                }
+            }
+
+            if(docu && line.trim() ==~ /^\*\//) {
+                docu = false
+                value = false
+                docuEnd = true
+            }
+        }
+    }
+
+    private static isHeader(line) {
+        Matcher headerMatcher = (line =~ /(def|void)\s*call\s*\(/ )
+        return headerMatcher.size() == 1 && headerMatcher[0].size() == 2
+    }
+
+    private static retrieveParameterName(line) {
+        Matcher m = (line =~ /.*'(.*)'.*/)
+        if(m.size() == 1 && m[0].size() == 2)
+            return m[0][1]
+        return null
+    }
+
+    static getScopedParameters(def script) {
+
+        def params = [:]
+
+        params.put('STEP_CONFIG', script.STEP_CONFIG_KEYS ?: [])
+        params.put('GENERAL_CONFIG', script.GENERAL_CONFIG_KEYS ?: [] )
+        params.put('PARAMS', script.PARAMETER_KEYS ?: [] )
+
+        return params
+    }
+
+    static getRequiredParameters(File f) {
+        def params = [] as Set
+        f.eachLine  {
+            line ->
+            if( line ==~ /.*withMandatoryProperty.*/ ) {
+                def param = (line =~ /.*withMandatoryProperty\('(.*)'/)[0][1]
+                params << param
+            }
+        }
+        return params
+    }
+
+    static getValue(Map config, def pPath) {
+        def p =config[pPath.head()]
+        if(pPath.size() == 1) return p // there is no tail
+        if(p in Map) getValue(p, pPath.tail())
+        else return p
+    }
 }
 
 roots = [
