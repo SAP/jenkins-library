@@ -37,7 +37,7 @@ Details:
     With `envVars` it is possible to pass either fixed values but also templates using [`commonPipelineEnvironment`](commonPipelineEnvironment.md).
 
     Example:
-    ```
+    ```yaml
     batsExecuteTests script: this, envVars = [
       FIX_VALUE: 'my fixed value',
       CONTAINER_NAME: '${commonPipelineEnvironment.configuration.steps.executeBatsTests.dockerContainerName}',

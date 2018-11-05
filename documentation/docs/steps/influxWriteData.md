@@ -164,25 +164,25 @@ Measurements are potentially pre-fixed - see parameter `influxPrefix` above.
 
 #### Example 1: Select last 10 successful builds
 
-```
+```sql
 select top(build_number,10), build_result from jenkins_data WHERE build_result = 'SUCCESS'
 ```
 
 #### Example 2: Select last 10 step names of failed builds
 
-```
+```sql
 select top(build_number,10), build_result, build_step from jenkins_custom_data WHERE build_result = 'FAILURE'
 ```
 
 #### Example 3: Select build duration of step for a specific project
 
-```
+```sql
 select build_duration / 1000 from "pipeline_data" WHERE project_name='PiperTestOrg_piper_test_master'
 ```
 
 #### Example 4: Get transparency about successful/failed steps for a specific project
 
-```
+```sql
 select top(build_number,10) AS "Build", build_url, build_quality, fortify, gauge, vulas, opa from step_data WHERE project_name='PiperTestOrg_piper_test_master'
 ```
 

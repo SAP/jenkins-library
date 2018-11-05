@@ -44,7 +44,7 @@ Following data (non-personal) is collected for example:
 
 ## Example configuration
 
-```
+```yaml
 general:
   gitSshKeyCredentialsId: GitHub_Test_SSH
 
@@ -68,7 +68,7 @@ Configuration is loaded into `commonPipelineEnvironment` during step [setupCommo
 You can access the configuration values via `commonPipelineEnvironment.configuration` which will return you the complete configuration map.
 
 Thus following access is for example possible (accessing `gitSshKeyCredentialsId` from `general` section):
-```
+```groovy
 commonPipelineEnvironment.configuration.general.gitSshKeyCredentialsId
 ```
 

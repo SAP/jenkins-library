@@ -41,12 +41,12 @@ range and the pattern can be configured. For details see 'parameters' table.
 The step is configured using a customer configuration file provided as
 resource in an custom shared library.
 
-```
+```groovy
 @Library('piper-library-os@master') _
 
 // the shared lib containing the additional configuration
 // needs to be configured in Jenkins
-@Library(foo@master') __
+@Library('foo@master') __
 
 // inside the shared lib denoted by 'foo' the additional configuration file
 // needs to be located under 'resources' ('resoures/myConfig.yml')
@@ -57,7 +57,7 @@ prepareDefaultValues script: this,
 Example content of ```'resources/myConfig.yml'``` in branch ```'master'``` of the repository denoted by
 ```'foo'```:
 
-```
+```yaml
 general:
   changeManagement:
     changeDocumentLabel: 'ChangeDocument\s?:'
@@ -74,7 +74,7 @@ The properties configured in section `'general/changeManagement'` are shared bet
 
 The properties can also be configured on a per-step basis:
 
-```
+```yaml
   [...]
   steps:
     checkChangeInDevelopment:

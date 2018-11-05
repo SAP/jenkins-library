@@ -126,7 +126,7 @@ neoDeploy script: this, archivePath: 'path/to/archiveFile.mtar', credentialsId: 
 
 Example configuration:
 
-```
+```yaml
 steps:
   <...>
   neoDeploy:

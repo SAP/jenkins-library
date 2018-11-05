@@ -34,7 +34,7 @@ Example based on http://webdriver.io/guide/getstarted/modes.html and http://webd
 
 #### Configuration for Local Docker Environment
 
-```
+```js
 var webdriverio = require('webdriverio');
 var options = {
     host: 'selenium',
@@ -47,7 +47,7 @@ var options = {
 
 #### Configuration for Kubernetes Environment
 
-```
+```js
 var webdriverio = require('webdriverio');
 var options = {
     host: 'localhost',
@@ -60,7 +60,7 @@ var options = {
 
 #### Test Code (index.js)
 
-```
+```js
 // ToDo: add configuration from above
 
 webdriverio
