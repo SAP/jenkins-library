@@ -33,6 +33,8 @@ nav:
         - transportRequestCreate: steps/transportRequestCreate.md
         - transportRequestRelease:  steps/transportRequestRelease.md
         - transportRequestUploadFile: steps/transportRequestUploadFile.md
+    - 'Scenarios':
+        - changeManagement: scenarios/changeManagement.md
     - 'Required Plugins': jenkins/requiredPlugins.md
 
 theme:
