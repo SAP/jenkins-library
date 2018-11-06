@@ -4,7 +4,7 @@ import com.sap.piper.Utils
 import groovy.transform.Field
 import groovy.text.SimpleTemplateEngine
 
-@Field String STEP_NAME = 'sonarExecute'
+@Field String STEP_NAME = 'sonarExecuteScan'
 @Field Set STEP_CONFIG_KEYS = [
     'changeId', // voter only! the pull-request number
     'disableInlineComments', // voter only! set to true to only enable a summary comment on the pull-request
