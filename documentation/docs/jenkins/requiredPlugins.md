@@ -54,4 +54,3 @@ The list below contains the plugin Id and version of the plugin.
 - workflow-scm-step 2.6
 - workflow-step-api 2.13
 - workflow-support 2.16
-
