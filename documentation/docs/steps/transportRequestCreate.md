@@ -1,15 +1,18 @@
 # transportRequestCreate
 
 ## Description
+
 Creates
 
 * a Transport Request for a Change Document on the Solution Manager (type `SOLMAN`) or
 * a Transport Request inside an ABAP system (type`CTS`)
 
 ## Prerequisites
+
 * **[Change Management Client 2.0.0 or compatible version](http://central.maven.org/maven2/com/sap/devops/cmclient/dist.cli/)** - available for download on Maven Central.
 
 ## Parameters
+
 | parameter        | mandatory | default                                                | possible values    |
 | -----------------|-----------|--------------------------------------------------------|--------------------|
 | `script`        | yes       |                                                    |                    |
@@ -41,15 +44,16 @@ Creates
 * `transportType` - for type `CTS` only. Typically `W` (workbench) or `C` customizing.
 
 ## Step configuration
+
 The step is configured using a customer configuration file provided as
 resource in an custom shared library.
 
-```
+```groovy
 @Library('piper-library-os@master') _
 
 // the shared lib containing the additional configuration
 // needs to be configured in Jenkins
-@Library(foo@master') __
+@Library('foo@master') __
 
 // inside the shared lib denoted by 'foo' the additional configuration file
 // needs to be located under 'resources' ('resoures/myConfig.yml')
@@ -57,10 +61,10 @@ prepareDefaultValues script: this,
                              customDefaults: 'myConfig.yml'
 ```
 
-Example content of ```'resources/myConfig.yml'``` in branch ```'master'``` of the repository denoted by
-```'foo'```:
+Example content of `'resources/myConfig.yml'` in branch `'master'` of the repository denoted by
+`'foo'`:
 
-```
+```yaml
 general:
   changeManagement:
     changeDocumentLabel: 'ChangeDocument\s?:'
@@ -79,7 +83,7 @@ all change managment related steps.
 
 The properties can also be configured on a per-step basis:
 
-```
+```yaml
   [...]
   steps:
     transportRequestCreate:
@@ -92,15 +96,18 @@ The properties can also be configured on a per-step basis:
 The parameters can also be provided when the step is invoked. For examples see below.
 
 ## Return value
+
 The id of the Transport Request that has been created.
 
 ## Exceptions
+
 * `AbortException`:
-    * If the creation of the transport request fails.
+  * If the creation of the transport request fails.
 * `IllegalStateException`:
-    * If the change id is not provided.
+  * If the change id is not provided.
 
 ## Example
+
 ```groovy
 // SOLMAN
 def transportRequestId = transportRequestCreate script:this,
@@ -119,4 +126,3 @@ def transportRequestId = transportRequestCreate script:this,
                                                   endpoint: 'https://example.org/cm'
                                                 ]
 ```
-
