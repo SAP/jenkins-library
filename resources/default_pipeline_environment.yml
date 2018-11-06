@@ -273,7 +273,7 @@ steps:
       - 'opensourceConfiguration'
     toJson: false
     toHtml: false
-  sonarExecute:
+  sonarExecuteScan:
     dockerImage: 'newtmitch/sonar-scanner:3.2.0'
     instance: 'SonarCloud'
     options: "-Dsonar.projectVersion='${projectVersion}'"
