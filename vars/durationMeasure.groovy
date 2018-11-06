@@ -1,10 +1,12 @@
+import static com.sap.piper.Prerequisites.checkScript
 import groovy.transform.Field
 
 @Field STEP_NAME = 'durationMeasure'
 
 def call(Map parameters = [:], body) {
 
-    def script = parameters.script
+    def script = checkScript(this, parameters)
+
     def measurementName = parameters.get('measurementName', 'test_duration')
 
     //start measurement

@@ -30,7 +30,7 @@ Proxy environment variables defined on the Jenkins machine are also available in
 * `containerPortMappings`: Map which defines per docker image the port mappings, like `containerPortMappings: ['selenium/standalone-chrome': [[name: 'selPort', containerPort: 4444, hostPort: 4444]]]`
 * `dockerEnvVars`: Environment variables to set in the container, e.g. [http_proxy:'proxy:8080']
 * `dockerImage`: Name of the docker image that should be used. If empty, Docker is not used and the command is executed directly on the Jenkins system.
-* `dockerName`: only relevant for Kubernetes case: Name of the container launching `dockerImage`
+* `dockerName`: Kubernetes case: Name of the container launching `dockerImage`, SideCar: Name of the container in local network
 * `dockerOptions` Docker options to be set when starting the container. It can be a list or a string.
 * `dockerVolumeBind` Volumes that should be mounted into the container.
 * `dockerWorkspace`: only relevant for Kubernetes case: specifies a dedicated user home directory for the container which will be passed as value for environment variable `HOME`
@@ -41,8 +41,8 @@ Proxy environment variables defined on the Jenkins machine are also available in
 * `sidecarVolumeBind`: as `dockerVolumeBind` for the sidecar container
 * `sidecarWorkspace`: as `dockerWorkspace` for the sidecar container
 
-
 ## Kubernetes support
+
 If the Jenkins is setup on a Kubernetes cluster, then you can execute the closure inside a container of a pod by setting an environment variable `ON_K8S` to `true`. However, it will ignore `containerPortMappings`, `dockerOptions` and `dockerVolumeBind` values.
 
 ## Step configuration
@@ -69,14 +69,16 @@ In following sections the configuration is possible:
 |sidecarVolumeBind||X|X|
 |sidecarWorkspace||X|X|
 
-
 ## Return value
+
 none
 
 ## Side effects
+
 none
 
 ## Exceptions
+
 none
 
 ## Example 1: Run closure inside a docker container
@@ -86,6 +88,7 @@ dockerExecute(dockerImage: 'maven:3.5-jdk-7'){
     sh "mvn clean install"
 }
 ```
+
 ## Example 2: Run closure inside a container in a kubernetes pod
 
 ```sh
@@ -101,7 +104,7 @@ dockerExecute(script: this, dockerImage: 'maven:3.5-jdk-7'){
 
 In the above example, the `dockerEcecute` step will internally invoke [dockerExecuteOnKubernetes](dockerExecuteOnKubernetes.md) step and execute the closure inside a pod.
 
-## Example 3: Run closure inside a container which is attached to a sidecar container (as for example used in [seleniumExecuteTests](seleniumExecuteTests.md):
+## Example 3: Run closure inside a container which is attached to a sidecar container (as for example used in [seleniumExecuteTests](seleniumExecuteTests.md)
 
 ```groovy
 dockerExecute(
@@ -119,7 +122,3 @@ dockerExecute(
     '''
 }
 ```
-
-
-
-

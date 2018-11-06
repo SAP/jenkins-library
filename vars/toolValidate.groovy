@@ -2,6 +2,7 @@ import com.sap.piper.FileUtils
 import com.sap.piper.Version
 import com.sap.piper.tools.JavaArchiveDescriptor
 import com.sap.piper.tools.ToolDescriptor
+import groovy.transform.Field
 
 import groovy.transform.Field
 
@@ -9,7 +10,7 @@ import hudson.AbortException
 
 @Field STEP_NAME = 'toolValidate'
 
-def call(Map parameters = [:]) {
+void call(Map parameters = [:]) {
 
     handlePipelineStepErrors (stepName: 'toolValidate', stepParameters: parameters) {
 

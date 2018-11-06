@@ -3,6 +3,7 @@
 package util
 
 import com.sap.piper.GitUtils
+import com.sap.piper.JenkinsUtils
 import com.sap.piper.Utils
 import org.codehaus.groovy.runtime.InvokerHelper
 import org.springframework.context.annotation.Bean
@@ -35,5 +36,12 @@ class BasePiperTestContext {
         ]
         LibraryLoadingTestExecutionListener.prepareObjectInterceptors(mockUtils)
         return mockUtils
+    }
+
+    @Bean
+    JenkinsUtils mockJenkinsUtils() {
+        def mockJenkinsUtils = new JenkinsUtils()
+        LibraryLoadingTestExecutionListener.prepareObjectInterceptors(mockJenkinsUtils)
+        return mockJenkinsUtils
     }
 }

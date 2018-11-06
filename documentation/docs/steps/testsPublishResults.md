@@ -1,6 +1,7 @@
 # testsPublishResults
 
 ## Description
+
 This step can publish test results from various sources.
 
 ## Prerequsites
@@ -31,11 +32,17 @@ Available parameters:
 
 | parameter | mandatory | default | possible values |
 | ----------|-----------|---------|-----------------|
+| script | yes | | |
 | junit | no | `false` | true, false |
 | jacoco | no | `false` | true, false |
 | cobertura | no | `false` | true, false |
 | jmeter | no | `false` | true, false |
 
+* `script` - The common script environment of the Jenkinsfile running.
+    Typically the reference to the script calling the pipeline step is provided
+    with the `this` parameter, as in `script: this`.
+    This allows the function to access the [`commonPipelineEnvironment`](commonPipelineEnvironment.md)
+    for retrieving, for example, configuration parameters.
 * `junit` - Publishes test results files in JUnit format with the [JUnit Plugin](https://plugins.jenkins.io/junit).
 * `jacoco` - Publishes code coverage with the [JaCoCo plugin](https://plugins.jenkins.io/jacoco) .
 * `cobertura` - Publishes code coverage with the [Cobertura plugin](https://plugins.jenkins.io/cobertura).
@@ -43,7 +50,7 @@ Available parameters:
 
 Each of the parameters `junit`, `jacoco`, `cobertura` and `jmeter` can be set to `true` or `false` but also to a map of parameters to hand in different settings for the tools.
 
-**junit**
+### junit
 
 | parameter | mandatory | default | possible values |
 | ----------|-----------|---------|-----------------|
@@ -52,7 +59,7 @@ Each of the parameters `junit`, `jacoco`, `cobertura` and `jmeter` can be set to
 | updateResults | no | `false` | true, false |
 | allowEmptyResults | no | `true` | true, false |
 
-**jacoco**
+### jacoco
 
 | parameter | mandatory | default | possible values |
 | ----------|-----------|---------|-----------------|
@@ -62,7 +69,7 @@ Each of the parameters `junit`, `jacoco`, `cobertura` and `jmeter` can be set to
 | archive | no | `false` | true, false |
 | allowEmptyResults | no | `true` | true, false |
 
-**cobertura**
+### cobertura
 
 | parameter | mandatory | default | possible values |
 | ----------|-----------|---------|-----------------|
@@ -71,7 +78,7 @@ Each of the parameters `junit`, `jacoco`, `cobertura` and `jmeter` can be set to
 | allowEmptyResults | no | `true` | true, false |
 | onlyStableBuilds | no | `true` | true, false |
 
-**jmeter**
+### jmeter
 
 | parameter | mandatory | default | possible values |
 | ----------|-----------|---------|-----------------|
@@ -93,6 +100,7 @@ Each of the parameters `junit`, `jacoco`, `cobertura` and `jmeter` can be set to
 | allowEmptyResults | no | `true` | true, false |
 
 ## Step configuration
+
 Following parameters can also be specified as step parameters using the global configuration file:
 
 * `junit`
@@ -101,15 +109,19 @@ Following parameters can also be specified as step parameters using the global c
 * `jmeter`
 
 ## Return value
+
 none
 
 ## Side effects
+
 none
 
 ## Exceptions
+
 none
 
 ## Example
+
 ```groovy
 // publish test results with coverage
 testsPublishResults(
