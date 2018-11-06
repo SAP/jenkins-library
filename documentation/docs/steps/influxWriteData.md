@@ -1,6 +1,7 @@
 # influxWriteData
 
 ## Description
+
 Since your Continuous Delivery Pipeline in Jenkins provides your productive development and delivery infrastructure you should monitor the pipeline to ensure it runs as expected. How to setup this monitoring is described in the following.
 
 You basically need three components:
@@ -33,7 +34,6 @@ For more advanced setup please reach out to the respective documentation:
 - https://hub.docker.com/_/influxdb/ (and https://github.com/docker-library/docs/tree/master/influxdb)
 - https://hub.docker.com/r/grafana/grafana/ (and https://github.com/grafana/grafana-docker)
 
-
 After you have started your InfluxDB docker you need to create a database:
 
 - in a Webbrowser open the InfluxDB Web-UI using the following URL: &lt;host of your docker&gt;:8083 (port 8083 is used for access via Web-UI, for Jenkins you use port 8086 to access the DB)
@@ -42,16 +42,15 @@ After you have started your InfluxDB docker you need to create a database:
 
 !!! hint "With InfluxDB version 1.1 the InfluxDB Web-UI is deprecated"
 
-
 You can perform the above steps via commandline:
 
-  - The following command will create a database with name &lt;databasename&gt;
+- The following command will create a database with name &lt;databasename&gt;
 
-        `curl -i -XPOST http://localhost:8086/query --data-urlencode "q=CREATE DATABASE \<databasename\>"`
+  `curl -i -XPOST http://localhost:8086/query --data-urlencode "q=CREATE DATABASE \<databasename\>"`
 
-  - The admin user with the name &lt;adminusername&gt; and the password &lt;adminuserpwd&gt; can be created with
+- The admin user with the name &lt;adminusername&gt; and the password &lt;adminuserpwd&gt; can be created with
 
-        `curl -i -XPOST http://localhost:8086/query --data-urlencode "q=CREATE USER \<adminusername\> WITH PASSWORD '\<adminuserpwd\>' WITH ALL PRIVILEGES"`
+  `curl -i -XPOST http://localhost:8086/query --data-urlencode "q=CREATE USER \<adminusername\> WITH PASSWORD '\<adminuserpwd\>' WITH ALL PRIVILEGES"`
 
 Once you have started both docker containers and Influx and Grafana are running you need to configure the Jenkins Plugin according to your settings.
 
@@ -66,8 +65,8 @@ To setup your Jenkins you need to do two configuration steps:
 
 Once the plugin is available in your Jenkins:
 
-* go to "Manage Jenkins" > "Configure System" > scroll down to section "influxdb target"
-* maintain Influx data
+- go to "Manage Jenkins" > "Configure System" > scroll down to section "influxdb target"
+- maintain Influx data
 
 !!! note "Jenkins as a Service"
     For Jenkins as a Service instances this is already preset to the local InfluxDB with the name `jenkins`. In this case there is not need to do any additional configuration.
@@ -90,10 +89,11 @@ influxDBServer=jenkins
 | influxPrefix | no | `null` |  |
 
 ## Step configuration
+
 The following parameters can also be specified as step parameters using the global configuration file:
 
-* `influxServer`
-* `influxPrefix`
+- `influxServer`
+- `influxPrefix`
 
 ## Example
 
@@ -107,28 +107,28 @@ You can access your **Grafana** via Web-UI: &lt;host of your grafana(-docker)&gt
 (or another port in case you have defined another one when starting your docker)
 
 As a first step you need to add your InfluxDB as Data source to your Grafana:
+
 - Login as user admin (PW as defined when starting your docker)
 - in the navigation go to data sources -> add data source:
   - name
   - type: InfluxDB
-  - Url: \http://&lt;host of your InfluxDB server&gt;:&lt;port&gt;
+  - Url: `http://<host of your InfluxDB server>:<port>`
   - Access: direct (not via proxy)
-  - database: &lt;name of the DB as specified above&gt;
-  - User: &lt;name of the admin user as specified in step above&gt;
-  - Password: &lt;password of the admin user as specified in step above&gt;
+  - database: `<name of the DB as specified above>`
+  - User: `<name of the admin user as specified in step above>`
+  - Password: `<password of the admin user as specified in step above>`
 
 !!! note "Jenkins as a Service"
     For Jenkins as a Service the data source configuration is already available.
 
     Therefore no need to go through the data source configuration step unless you want to add addtional data sources.
 
-
 ## Data collected in InfluxDB
 
 The Influx plugin collects following data in the Piper context:
 
-* All data as per default [InfluxDB plugin capabilities](https://wiki.jenkins.io/display/JENKINS/InfluxDB+Plugin)
-* Additional data collected via `commonPipelineEnvironment.setInfluxCustomDataProperty()` and via `commonPipelineEnvironment.setPipelineMeasurement()`
+- All data as per default [InfluxDB plugin capabilities](https://wiki.jenkins.io/display/JENKINS/InfluxDB+Plugin)
+- Additional data collected via `commonPipelineEnvironment.setInfluxCustomDataProperty()` and via `commonPipelineEnvironment.setPipelineMeasurement()`
 
 !!! note "Add custom information to your InfluxDB"
     You can simply add custom data collected during your pipeline runs via available data objects.
@@ -140,6 +140,7 @@ The Influx plugin collects following data in the Piper context:
     ```
 
 ### Collected InfluxDB measurements
+
 Measurements are potentially pre-fixed - see parameter `influxPrefix` above.
 
 | Measurement name | data column | description |
@@ -154,7 +155,6 @@ Measurements are potentially pre-fixed - see parameter `influxPrefix` above.
 | pipeline_data | Examples from the Piper templates:<br /><ul><li>build_duration</li><li>opa_duration</li><li>deploy_test_duration</li><li>deploy_test_duration</li><li>fortify_duration</li><li>release_duration</li><li>...</li></ul>| filled by step [`measureDuration`](durationMeasure.md) using parameter `measurementName`|
 | step_data | Considered, e.g.:<br /><ul><li>build_quality (Milestone/Release)</li><li>build_url</li><li>bats</li><li>checkmarx</li><li>fortify</li><li>gauge</li><li>nsp</li><li>opa</li><li>opensourcedependency</li><li>ppms</li><li>jmeter</li><li>supa</li><li>snyk</li><li>sonar</li><li>sourceclear</li><li>uiveri5</li><li>vulas</li><li>whitesource</li><li>traceability</li><li>...</li><li>xmakestage</li><li>xmakepromote</li></ul>| filled by `commonPipelineEnvironment.setInfluxStepData()` |
 
-
 ### Examples for InfluxDB queries which can be used in Grafana
 
 !!! caution "Project Names containing dashes (-)"
@@ -162,29 +162,27 @@ Measurements are potentially pre-fixed - see parameter `influxPrefix` above.
 
     Please keep this in mind when specifying your project_name for a InfluxDB query.
 
-
 #### Example 1: Select last 10 successful builds
 
-```
+```sql
 select top(build_number,10), build_result from jenkins_data WHERE build_result = 'SUCCESS'
 ```
 
 #### Example 2: Select last 10 step names of failed builds
 
-
-```
+```sql
 select top(build_number,10), build_result, build_step from jenkins_custom_data WHERE build_result = 'FAILURE'
 ```
 
 #### Example 3: Select build duration of step for a specific project
 
-```
+```sql
 select build_duration / 1000 from "pipeline_data" WHERE project_name='PiperTestOrg_piper_test_master'
 ```
 
 #### Example 4: Get transparency about successful/failed steps for a specific project
 
-```
+```sql
 select top(build_number,10) AS "Build", build_url, build_quality, fortify, gauge, vulas, opa from step_data WHERE project_name='PiperTestOrg_piper_test_master'
 ```
 
@@ -192,6 +190,3 @@ select top(build_number,10) AS "Build", build_url, build_quality, fortify, gauge
     With this query you can create transparency about which steps ran successfully / not successfully in your pipeline and which ones were not executed at all.
 
     By specifying all the steps you consider relevant in your select statement it is very easy to create this transparency.
-
-
-

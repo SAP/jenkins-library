@@ -1,6 +1,7 @@
 # mailSendNotification
 
 ## Description
+
 Sends notifications to all potential culprits of a current or previous build failure plus to fixed list of recipients.
 It will attach the current build log to the email.
 
@@ -10,6 +11,7 @@ Notifications are sent in following cases:
 * current build is successful and previous build failed or was unstable
 
 ## Prerequsites
+
 none
 
 ## Example
@@ -19,7 +21,6 @@ Usage of pipeline step:
 ```groovy
 mailSendNotification script: this
 ```
-
 
 ## Parameters
 
@@ -37,7 +38,7 @@ mailSendNotification script: this
 |projectName|no|||
 |wrapInNode|no|`false`||
 
-### Details:
+### Details
 
 * `script` defines the global script environment of the Jenkinsfile run. Typically `this` is passed to this parameter. This allows the function to access the [`commonPipelineEnvironment`](commonPipelineEnvironment.md) for storing the measured duration.
 * `buildResult` may be used to overrule the build result coming from `currentBuild.result`. This is for example used in the step `pipelineRestartSteps`
@@ -55,7 +56,6 @@ mailSendNotification script: this
 * `numLogLinesInBody` defines the number of log lines (=last lines of the log) which are included into the body of the notification email.
 * `projectName` may be used to specify a different name in the email subject.
 * `wrapInNode` needs to be set to `true` if step is used outside of a node context, e.g. post actions in a declarative pipeline script.
-
 
 ## Step configuration
 
@@ -78,19 +78,13 @@ In following sections the configuration is possible:
 |wrapInNode||X|X|
 
 ## Return value
+
 none
 
 ## Side effects
+
 none
 
 ## Exceptions
+
 none
-
-
-
-
-
-
-
-
-
