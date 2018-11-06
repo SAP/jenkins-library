@@ -27,7 +27,7 @@ import hudson.AbortException
 
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS.plus(['changeDocumentId'])
 
-def call(parameters = [:]) {
+void call(parameters = [:]) {
 
     def transportRequestId
 
@@ -112,5 +112,4 @@ def call(parameters = [:]) {
         echo "[INFO] Transport Request '$transportRequestId' has been successfully created."
         script.commonPipelineEnvironment.setTransportRequestId(transportRequestId)
     }
-    transportRequestId
 }
