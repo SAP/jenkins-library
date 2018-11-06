@@ -12,27 +12,36 @@ public class StepHelpers {
         if(transportRequestId?.trim()) {
 
             step.echo "[INFO] Transport request id '${transportRequestId}' retrieved from parameters."
+            return transportRequestId
 
-        } else {
-
-            step.echo "[INFO] Retrieving transport request id from commit history [from: ${configuration.changeManagement.git.from}, to: ${configuration.changeManagement.git.to}]." +
-                        " Searching for pattern '${configuration.changeManagement.transportRequestLabel}'. Searching with format '${configuration.changeManagement.git.format}'."
-
-            try {
-                transportRequestId = cm.getTransportRequestId(
-                                                                configuration.changeManagement.git.from,
-                                                                configuration.changeManagement.git.to,
-                                                                configuration.changeManagement.transportRequestLabel,
-                                                                configuration.changeManagement.git.format
-                                                            )
-
-                step.echo "[INFO] Transport request id '${transportRequestId}' retrieved from commit history"
-
-            } catch(ChangeManagementException ex) {
-                step.echo "[WARN] Cannot retrieve transportRequestId from commit history: ${ex.getMessage()}."
-            }
         }
-        return transportRequestId
+
+        transportRequestId = step.commonPipelineEnvironment.getTransportRequestId()
+
+        if(transportRequestId?.trim()) {
+            step.echo "[INFO] Transport request id '${transportRequestId}' retrieved from common pipeline environment."
+            return transportRequestId
+        }
+
+        step.echo "[INFO] Retrieving transport request id from commit history [from: ${configuration.changeManagement.git.from}, to: ${configuration.changeManagement.git.to}]." +
+                    " Searching for pattern '${configuration.changeManagement.transportRequestLabel}'. Searching with format '${configuration.changeManagement.git.format}'."
+
+        try {
+            transportRequestId = cm.getTransportRequestId(
+                                                            configuration.changeManagement.git.from,
+                                                            configuration.changeManagement.git.to,
+                                                            configuration.changeManagement.transportRequestLabel,
+                                                            configuration.changeManagement.git.format
+                                                        )
+
+            step.commonPipelineEnvironment.setTransportRequestId(transportRequestId)
+            step.echo "[INFO] Transport request id '${transportRequestId}' retrieved from commit history"
+
+        } catch(ChangeManagementException ex) {
+            step.echo "[WARN] Cannot retrieve transportRequestId from commit history: ${ex.getMessage()}."
+        }
+
+        transportRequestId
     }
 
     @NonCPS
