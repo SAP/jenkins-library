@@ -110,7 +110,7 @@ def call(parameters = [:]) {
 
 
         echo "[INFO] Transport Request '$transportRequestId' has been successfully created."
+        script.commonPipelineEnvironment.setTransportRequestId(transportRequestId)
     }
-
-    return transportRequestId
+    transportRequestId
 }

@@ -194,6 +194,10 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
     @Test
     public void uploadFileToTransportRequestSOLMANSuccessTest() {
 
+        // Here we test only the case where the transportRequestId is
+        // provided via parameters. The other cases are tested by
+        // corresponding tests for StepHelpers#getTransportRequestId(./.)
+
         jlr.expect("[INFO] Uploading file '/path' to transport request '002' of change document '001'.")
         jlr.expect("[INFO] File '/path' has been successfully uploaded to transport request '002' of change document '001'.")
 
