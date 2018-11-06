@@ -1,9 +1,11 @@
 # checksPublishResults
 
 ## Description
+
 This step can publish static check results from various sources.
 
 ## Prerequisites
+
 * **static check result files** - To use this step, there must be static check result files available.
 * installed plugins:
   * [pmd](https://plugins.jenkins.io/pmd)
@@ -14,6 +16,7 @@ This step can publish static check results from various sources.
   * [core](https://plugins.jenkins.io/core)
 
 ## Parameters
+
 | parameter      | mandatory | default                           | possible values    |
 | ---------------|-----------|-----------------------------------|--------------------|
 | script | yes | | |
@@ -38,13 +41,13 @@ This step can publish static check results from various sources.
 
 Each of the parameters `aggregation`, `tasks`, `pmd`, `cpd`, `findbugs`, `checkstyle`, `eslint` and `pylint` can be set to `true` or `false` but also to a map of parameters to hand in different settings for the tools.
 
-**aggregation**
+### aggregation
 
 | parameter | mandatory | default | possible values |
 | ----------|-----------|---------|-----------------|
 | thresholds | no | none | see [thresholds](#thresholds) |
 
-**tasks**
+### tasks
 
 | parameter | mandatory | default | possible values |
 | ----------|-----------|---------|-----------------|
@@ -55,7 +58,7 @@ Each of the parameters `aggregation`, `tasks`, `pmd`, `cpd`, `findbugs`, `checks
 | low | no |  |  |
 | thresholds | no | none | see [thresholds](#thresholds) |
 
-**pmd**
+### pmd
 
 | parameter | mandatory | default | possible values |
 | ----------|-----------|---------|-----------------|
@@ -63,7 +66,7 @@ Each of the parameters `aggregation`, `tasks`, `pmd`, `cpd`, `findbugs`, `checks
 | archive | no | `true` | `true`, `false` |
 | thresholds | no | none | see [thresholds](#thresholds) |
 
-**cpd**
+### cpd
 
 | parameter | mandatory | default | possible values |
 | ----------|-----------|---------|-----------------|
@@ -71,7 +74,7 @@ Each of the parameters `aggregation`, `tasks`, `pmd`, `cpd`, `findbugs`, `checks
 | archive | no | `true` | `true`, `false` |
 | thresholds | no | none | see [thresholds](#thresholds) |
 
-**findbugs**
+### findbugs
 
 | parameter | mandatory | default | possible values |
 | ----------|-----------|---------|-----------------|
@@ -79,7 +82,7 @@ Each of the parameters `aggregation`, `tasks`, `pmd`, `cpd`, `findbugs`, `checks
 | archive | no | `true` | true, false |
 | thresholds | no | none | see [thresholds](#thresholds) |
 
-**checkstyle**
+### checkstyle
 
 | parameter | mandatory | default | possible values |
 | ----------|-----------|---------|-----------------|
@@ -87,7 +90,7 @@ Each of the parameters `aggregation`, `tasks`, `pmd`, `cpd`, `findbugs`, `checks
 | archive | no | `true` | `true`, `false` |
 | thresholds | no | none | see [thresholds](#thresholds) |
 
-**eslint**
+### eslint
 
 | parameter | mandatory | default | possible values |
 | ----------|-----------|---------|-----------------|
@@ -95,7 +98,7 @@ Each of the parameters `aggregation`, `tasks`, `pmd`, `cpd`, `findbugs`, `checks
 | archive | no | `true` | `true`, `false` |
 | thresholds | no | none | see [thresholds](#thresholds) |
 
-**pylint**
+### pylint
 
 | parameter | mandatory | default | possible values |
 | ----------|-----------|---------|-----------------|
@@ -104,6 +107,7 @@ Each of the parameters `aggregation`, `tasks`, `pmd`, `cpd`, `findbugs`, `checks
 | thresholds | no | none | see [thresholds](#thresholds) |
 
 ## Step configuration
+
 Following parameters can also be specified as step parameters using the global configuration file:
 
 * `aggregation`
@@ -141,15 +145,19 @@ checksPublishResults(
 ![StaticChecks Thresholds](../images/StaticChecks_Threshold.png)
 
 ## Return value
+
 none
 
 ## Side effects
+
 If both ESLint and PyLint results are published, they are not correctly aggregated in the aggregator plugin.
 
 ## Exceptions
+
 none
 
 ## Example
+
 ```groovy
 // publish java results from pmd, cpd, checkstyle & findbugs
 checksPublishResults archive: true, pmd: true, cpd: true, findbugs: true, checkstyle: true, aggregation: [thresholds: [fail: [high: 0]]]

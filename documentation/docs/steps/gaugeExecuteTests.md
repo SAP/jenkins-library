@@ -1,8 +1,10 @@
 # gaugeExecuteTests
 
 ## Description
+
 In this step Gauge ([getgauge.io](http:getgauge.io)) acceptance tests are executed.
 Using Gauge it will be possible to have a three-tier test layout:
+
 * Acceptance Criteria
 * Test implemenation layer
 * Application driver layer
@@ -11,7 +13,7 @@ This layout is propagated by Jez Humble and Dave Farley in their book "Continuou
 
 Using Gauge it is possible to write test specifications in [Markdown syntax](http://daringfireball.net/projects/markdown/syntax) and therefore allow e.g. product owners to write the relevant acceptance test specifications. At the same time it allows the developer to implement the steps described in the specification in her development environment.
 
-You can use the sample projects of Gauge, for example: https://github.com/getgauge/gauge-mvn-archetypes
+You can use the [sample projects](https://github.com/getgauge/gauge-mvn-archetypes) of Gauge.
 
 !!! note "Make sure to run against a Selenium Hub configuration"
     In the test example of _gauge-archetype-selenium_ please make sure to allow it to run against a Selenium hub:
@@ -35,10 +37,10 @@ none
 ## Example
 
 Pipeline step:
+
 ```groovy
 gaugeExecuteTests script: this, testServerUrl: 'http://test.url'
 ```
-
 
 ## Parameters
 
@@ -49,7 +51,7 @@ gaugeExecuteTests script: this, testServerUrl: 'http://test.url'
 |dockerEnvVars|no|`[HUB:TRUE, HUB_URL:http://localhost:4444/wd/hub]`||
 |dockerImage|no|buildTool=`maven`: `maven:3.5-jdk-8`<br />buildTool=`npm`: `node:8-stretch`<br />||
 |dockerName|no|buildTool=`maven`: `maven`<br />buildTool=`npm`: `npm`<br />||
-|dockerWorkspace|no|buildTool=`maven`: ``<br />buildTool=`npm`: `/home/node`<br />||
+|dockerWorkspace|no|buildTool=`maven`: <br />buildTool=`npm`: `/home/node`<br />||
 |failOnError|no|`false`||
 |gitBranch|no|||
 |gitSshKeyCredentialsId|no|``||
@@ -60,7 +62,6 @@ gaugeExecuteTests script: this, testServerUrl: 'http://test.url'
 |testOptions|no|buildTool=`maven`: `-DspecsDir=specs`<br />buildTool=`npm`: `specs`<br />||
 |testRepository|no|||
 |testServerUrl|no|||
-
 
 Details:
 

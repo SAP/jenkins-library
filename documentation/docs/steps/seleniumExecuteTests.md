@@ -7,6 +7,7 @@ Enables UI test execution with Selenium in a sidecar container.
 The step executes a closure (see example below) connecting to a sidecar container with a Selenium Server.
 
 When executing in a
+
 * local Docker environment, please make sure to set Selenium host to **`selenium`** in your tests.
 * Kubernetes environment, plese make sure to set Seleniums host to **`localhost`** in your tests.
 
@@ -32,7 +33,8 @@ seleniumExecuteTests (script: this) {
 Example based on http://webdriver.io/guide/getstarted/modes.html and http://webdriver.io/guide.html
 
 #### Configuration for Local Docker Environment
-```
+
+```js
 var webdriverio = require('webdriverio');
 var options = {
     host: 'selenium',
@@ -42,8 +44,10 @@ var options = {
     }
 };
 ```
+
 #### Configuration for Kubernetes Environment
-```
+
+```js
 var webdriverio = require('webdriverio');
 var options = {
     host: 'localhost',
@@ -56,7 +60,7 @@ var options = {
 
 #### Test Code (index.js)
 
-```
+```js
 // ToDo: add configuration from above
 
 webdriverio
@@ -82,7 +86,7 @@ webdriverio
 |dockerEnvVars|no|||
 |dockerImage|no|buildTool=`maven`: `maven:3.5-jdk-8`<br />buildTool=`npm`: `node:8-stretch`<br />||
 |dockerName|no|buildTool=`maven`: `maven`<br />buildTool=`npm`: `npm`<br />||
-|dockerWorkspace|no|buildTool=`maven`: ``<br />buildTool=`npm`: `/home/node`<br />||
+|dockerWorkspace|no|buildTool=`maven`: <br />buildTool=`npm`: `/home/node`<br />||
 |failOnError|no|`true`||
 |gitBranch|no|||
 |gitSshKeyCredentialsId|no|``||
@@ -134,10 +138,13 @@ In following sections the configuration is possible:
 |testRepository|X|X|X|
 
 ## Return value
+
 none
 
 ## Side effects
+
 none
 
 ## Exceptions
+
 none

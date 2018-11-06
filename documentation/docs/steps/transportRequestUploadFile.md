@@ -1,12 +1,15 @@
 # transportRequestUploadFile
 
 ## Description
+
 Uploads a file to a Transport Request.
 
 ## Prerequisites
+
 * **[Change Management Client 2.0.0 or compatible version](http://central.maven.org/maven2/com/sap/devops/cmclient/dist.cli/)** - available for download on Maven Central.
 
 ## Parameters
+
 | parameter        | mandatory | default                                                | possible values    |
 | -----------------|-----------|--------------------------------------------------------|--------------------|
 | `script`        | yes       |                                                    |                    |
@@ -38,15 +41,16 @@ Uploads a file to a Transport Request.
 * `changeManagement/git/format` - Specifies what part of the commit is scanned. By default the body of the commit message is scanned.
 
 ## Step configuration
+
 The step is configured using a customer configuration file provided as
 resource in an custom shared library.
 
-```
+```groovy
 @Library('piper-library-os@master') _
 
 // the shared lib containing the additional configuration
 // needs to be configured in Jenkins
-@Library(foo@master') __
+@Library('foo@master') __
 
 // inside the shared lib denoted by 'foo' the additional configuration file
 // needs to be located under 'resources' ('resoures/myConfig.yml')
@@ -54,10 +58,10 @@ prepareDefaultValues script: this,
                              customDefaults: 'myConfig.yml'
 ```
 
-Example content of ```'resources/myConfig.yml'``` in branch ```'master'``` of the repository denoted by
-```'foo'```:
+Example content of `'resources/myConfig.yml'` in branch `'master'` of the repository denoted by
+`'foo'`:
 
-```
+```yaml
 general:
   changeManagement:
     changeDocumentLabel: 'ChangeDocument\s?:'
@@ -75,7 +79,7 @@ The properties configured in section `'general/changeManagement'` are shared bet
 
 The properties can also be configured on a per-step basis:
 
-```
+```yaml
   [...]
   steps:
     transportRequestUploadFile:
@@ -89,18 +93,21 @@ The properties can also be configured on a per-step basis:
 The parameters can also be provided when the step is invoked. For examples see below.
 
 ## Return value
+
 None.
 
 ## Exceptions
+
 * `IllegalArgumentException`:
-    * If the change id is not provided (`SOLMAN` only).
-    * If the transport request id is not provided.
-    * If the application id is not provided (`SOLMAN` only).
-    * If the file path is not provided.
+  * If the change id is not provided (`SOLMAN` only).
+  * If the transport request id is not provided.
+  * If the application id is not provided (`SOLMAN` only).
+  * If the file path is not provided.
 * `AbortException`:
-    * If the upload fails.
+  * If the upload fails.
 
 ## Example
+
 ```groovy
 // SOLMAN
 transportRequestUploadFile script:this,
@@ -121,4 +128,3 @@ transportRequestUploadFile script:this,
                              endpoint: 'https://example.org/cm'
                            ]
 ```
-

@@ -42,10 +42,9 @@ Following data (non-personal) is collected for example:
 
     2. Individual deactivation per step by passing the parameter `collectTelemetryData: false`, like e.g. `setVersion script:this, collectTelemetryData: false`
 
-
 ## Example configuration
 
-```
+```yaml
 general:
   gitSshKeyCredentialsId: GitHub_Test_SSH
 
@@ -69,7 +68,8 @@ Configuration is loaded into `commonPipelineEnvironment` during step [setupCommo
 You can access the configuration values via `commonPipelineEnvironment.configuration` which will return you the complete configuration map.
 
 Thus following access is for example possible (accessing `gitSshKeyCredentialsId` from `general` section):
-```
+
+```groovy
 commonPipelineEnvironment.configuration.general.gitSshKeyCredentialsId
 ```
 
@@ -78,6 +78,3 @@ commonPipelineEnvironment.configuration.general.gitSshKeyCredentialsId
 Within library steps the `ConfigurationHelper` object is used.
 
 You can see its usage in all the Piper steps, for example [newmanExecute](https://github.com/SAP/jenkins-library/blob/master/vars/newmanExecute.groovy#L23).
-
-
-
