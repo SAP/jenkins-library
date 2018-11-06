@@ -17,7 +17,7 @@ import util.JenkinsStepRule
 import util.JenkinsLoggingRule
 import util.Rules
 
-class SonarExecuteTest extends BasePiperTest {
+class SonarExecuteScanTest extends BasePiperTest {
     private ExpectedException thrown = ExpectedException.none()
     private JenkinsStepRule jsr = new JenkinsStepRule(this)
     private JenkinsLoggingRule jlr = new JenkinsLoggingRule(this)
@@ -59,7 +59,7 @@ class SonarExecuteTest extends BasePiperTest {
 
     @Test
     void testWithDefaults() throws Exception {
-        jsr.step.sonarExecute(
+        jsr.step.sonarExecuteScan(
             script: nullScript,
             juStabUtils: utils
         )
@@ -73,7 +73,7 @@ class SonarExecuteTest extends BasePiperTest {
 
     @Test
     void testWithCustomVersion() throws Exception {
-        jsr.step.sonarExecute(
+        jsr.step.sonarExecuteScan(
             script: nullScript,
             juStabUtils: utils,
             projectVersion: '2'
@@ -86,7 +86,7 @@ class SonarExecuteTest extends BasePiperTest {
 
     @Test
     void testWithCustomOptions() throws Exception {
-        jsr.step.sonarExecute(
+        jsr.step.sonarExecuteScan(
             script: nullScript,
             juStabUtils: utils,
             options: '-DmyCustomSettings -Dsonar.projectVersion=\'${projectVersion}\''
@@ -99,7 +99,7 @@ class SonarExecuteTest extends BasePiperTest {
 
     @Test
     void testWithCustomInstance() throws Exception {
-        jsr.step.sonarExecute(
+        jsr.step.sonarExecuteScan(
             script: nullScript,
             juStabUtils: utils,
             instance: 'MySonarInstance'
@@ -116,7 +116,7 @@ class SonarExecuteTest extends BasePiperTest {
         thrown.expectMessage('ERROR - NO VALUE AVAILABLE FOR projectVersion')
 
         nullScript.commonPipelineEnvironment.setArtifactVersion(null)
-        jsr.step.sonarExecute(
+        jsr.step.sonarExecuteScan(
             script: nullScript,
             juStabUtils: utils
         )
@@ -127,7 +127,7 @@ class SonarExecuteTest extends BasePiperTest {
 
     @Test
     void testWithClosure() throws Exception {
-        jsr.step.sonarExecute(
+        jsr.step.sonarExecuteScan(
             script: nullScript,
             juStabUtils: utils
         ){
@@ -143,7 +143,7 @@ class SonarExecuteTest extends BasePiperTest {
     void testWithGithubAuth() throws Exception {
         binding.setVariable('env', ['CHANGE_ID': '42'])
 
-        jsr.step.sonarExecute(
+        jsr.step.sonarExecuteScan(
             script: nullScript,
             juStabUtils: utils,
             isVoter: true,
@@ -163,7 +163,7 @@ class SonarExecuteTest extends BasePiperTest {
 
     @Test
     void testWithSonarAuth() throws Exception {
-        jsr.step.sonarExecute(
+        jsr.step.sonarExecuteScan(
             script: nullScript,
             juStabUtils: utils,
             sonarTokenCredentialsId: 'githubId'
