@@ -1,12 +1,15 @@
 # handlePipelineStepErrors
 
 ## Description
+
 Used by other steps to make error analysis easier. Lists parameters and other data available to the step in which the error occurs.
 
 ## Prerequisites
+
 none
 
 ## Parameters
+
 | parameter        | mandatory | default | possible values |
 | -----------------|-----------|---------|-----------------|
 | `stepParameters` | yes       |         |                 |
@@ -18,8 +21,9 @@ none
 * `echoDetails` - If set to true the following will be output to the console:
     1. Step beginning: `--- BEGIN LIBRARY STEP: ${stepName}.groovy ---`
     2. Step end: `--- END LIBRARY STEP: ${stepName}.groovy ---`
-    3. Step errors: 
-    ```
+    3. Step errors:
+
+    ```log
     ----------------------------------------------------------
     --- ERROR OCCURED IN LIBRARY STEP: ${stepName}
     ----------------------------------------------------------
@@ -39,18 +43,23 @@ none
     ```
 
 ## Step configuration
+
 none
 
 ## Return value
+
 none
 
 ## Side effects
+
 none
 
 ## Exceptions
+
 none
 
 ## Example
+
 ```groovy
 handlePipelineStepErrors (stepName: 'executeHealthCheck', stepParameters: parameters) {
   def url = new Utils().getMandatoryParameter(parameters, 'url', null)

@@ -11,10 +11,10 @@ the most important SAP technologies by means of Jenkins pipelines.
 
 Project "Piper" consists of two parts:
 
- * [A shared library][piper-library] containing steps and utilities that are
-   required by Jenkins pipelines.
- * A set of [Jenkins pipelines][piper-pipelines] using the piper library to
-   implement best practice processes.
+* [A shared library][piper-library] containing steps and utilities that are
+  required by Jenkins pipelines.
+* A set of [Jenkins pipelines][piper-pipelines] using the piper library to
+  implement best practice processes.
 
 Please follow [this link to our extended library documentation][piper-library-pages].
 
@@ -54,13 +54,13 @@ without prior notice.
 
 # Requirements
 
- * Java Runtime Environment 8
- * Installation of Jenkins v 2.60.3 or higher running on Linux. We tested with
-   debian-stretch.
- * Jenkins Plugins installed as described in the [Required
-   Plugin][piper-library-pages-plugins] section.
- * A Jenkins user with administration privileges.
- * The Jenkins instance has access to [github.com][github].
+* Java Runtime Environment 8
+* Installation of Jenkins v 2.60.3 or higher running on Linux. We tested with
+  debian-stretch.
+* Jenkins Plugins installed as described in the [Required
+  Plugin][piper-library-pages-plugins] section.
+* A Jenkins user with administration privileges.
+* The Jenkins instance has access to [github.com][github].
 
 # Download and Installation
 
@@ -83,7 +83,7 @@ To setup the shared library, you need to perform the following steps:
 Now the library is available as `piper-library-os` and can be used in any
 `Jenkinsfile` by adding this line:
 
-```
+```groovy
 @Library('piper-library-os') _
 ```
 

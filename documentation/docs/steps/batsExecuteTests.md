@@ -26,7 +26,6 @@ You need to have a Bats test file. By default you would put this into directory 
 | testPath | no | `src/test`| |
 | testRepository | no | | |
 
-
 Details:
 
 * `outputFormat` defines the format of the test result output. `junit` would be the standard for automated build environments but you could use also the option `tap`.
@@ -38,7 +37,8 @@ Details:
     With `envVars` it is possible to pass either fixed values but also templates using [`commonPipelineEnvironment`](commonPipelineEnvironment.md).
 
     Example:
-    ```
+
+    ```yaml
     batsExecuteTests script: this, envVars = [
       FIX_VALUE: 'my fixed value',
       CONTAINER_NAME: '${commonPipelineEnvironment.configuration.steps.executeBatsTests.dockerContainerName}',
@@ -53,6 +53,7 @@ Details:
 * The parameter `repository` defines the version of **bats-core** to be used. By default we use the version from the master branch.
 
 ## Step configuration
+
 The following parameters can also be specified as step/stage/general parameters using the [global configuration](../configuration.md):
 
 * dockerImage
@@ -67,7 +68,6 @@ The following parameters can also be specified as step/stage/general parameters 
 * testPackage
 * testPath
 * testRepository
-
 
 ## Example
 
