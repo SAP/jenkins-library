@@ -5,6 +5,7 @@ plugins:
     enabled: true
     config:
       editorconfig: .editorconfig
+    # https://docs.codeclimate.com/docs/advanced-configuration#section-exclude-patterns
     exclude_patterns:
     - "documentation/docs/images/"
     - "cfg/id_rsa.enc"
@@ -18,6 +19,3 @@ plugins:
     enabled: true
   shellcheck:
     enabled: true
-# https://docs.codeclimate.com/docs/advanced-configuration#section-exclude-patterns
-exclude_patterns:
-- "test/resources/"
