@@ -1,5 +1,7 @@
 [![Build Status](https://travis-ci.org/SAP/jenkins-library.svg?branch=master)](https://travis-ci.org/SAP/jenkins-library)
 [![Coverage Status](https://coveralls.io/repos/github/SAP/jenkins-library/badge.svg?branch=master)](https://coveralls.io/github/SAP/jenkins-library?branch=master)
+[![Maintainability](https://api.codeclimate.com/v1/badges/0e6a23344616e29b4ed0/maintainability)](https://codeclimate.com/github/SAP/jenkins-library/maintainability)
+[![Test Coverage](https://api.codeclimate.com/v1/badges/0e6a23344616e29b4ed0/test_coverage)](https://codeclimate.com/github/SAP/jenkins-library/test_coverage)
 
 # Description
 
@@ -11,10 +13,10 @@ the most important SAP technologies by means of Jenkins pipelines.
 
 Project "Piper" consists of two parts:
 
- * [A shared library][piper-library] containing steps and utilities that are
-   required by Jenkins pipelines.
- * A set of [Jenkins pipelines][piper-pipelines] using the piper library to
-   implement best practice processes.
+* [A shared library][piper-library] containing steps and utilities that are
+  required by Jenkins pipelines.
+* A set of [Jenkins pipelines][piper-pipelines] using the piper library to
+  implement best practice processes.
 
 Please follow [this link to our extended library documentation][piper-library-pages].
 
@@ -54,13 +56,13 @@ without prior notice.
 
 # Requirements
 
- * Java Runtime Environment 8
- * Installation of Jenkins v 2.60.3 or higher running on Linux. We tested with
-   debian-stretch.
- * Jenkins Plugins installed as described in the [Required
-   Plugin][piper-library-pages-plugins] section.
- * A Jenkins user with administration privileges.
- * The Jenkins instance has access to [github.com][github].
+* Java Runtime Environment 8
+* Installation of Jenkins v 2.60.3 or higher running on Linux. We tested with
+  debian-stretch.
+* Jenkins Plugins installed as described in the [Required
+  Plugin][piper-library-pages-plugins] section.
+* A Jenkins user with administration privileges.
+* The Jenkins instance has access to [github.com][github].
 
 # Download and Installation
 
@@ -83,7 +85,7 @@ To setup the shared library, you need to perform the following steps:
 Now the library is available as `piper-library-os` and can be used in any
 `Jenkinsfile` by adding this line:
 
-```
+```groovy
 @Library('piper-library-os') _
 ```
 
@@ -117,7 +119,7 @@ otherwise in the [LICENSE file][piper-library-license]
 [piper-library-pages-plugins]: https://sap.github.io/jenkins-library/jenkins/requiredPlugins
 [piper-library-issues]: https://github.com/SAP/jenkins-library/issues
 [piper-library-license]: ./LICENSE
-[piper-library-contribution]: ./CONTRIBUTING.md
+[piper-library-contribution]: .github/CONTRIBUTING.md
 [jenkins-doc-pipelines]: https://jenkins.io/solutions/pipeline
 [jenkins-doc-libraries]: https://jenkins.io/doc/book/pipeline/shared-libraries
 [jenkins-doc-steps]: https://jenkins.io/doc/pipeline/steps

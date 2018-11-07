@@ -1,11 +1,17 @@
 import com.sap.piper.Utils
 
+import groovy.transform.Field
+
+
+@Field STEP_NAME = 'pipelineExecute'
+
+
 /**
  * pipelineExecute
  * Load and executes a pipeline from another git repository.
  *
  */
-def call(Map parameters = [:]) {
+void call(Map parameters = [:]) {
 
     node() {
 
