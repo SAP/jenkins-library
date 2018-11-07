@@ -44,7 +44,7 @@ class PipelineExecuteTest extends BasePiperTest {
 
     @Test
     void straightForwardTest() {
-        jsr.step.call(repoUrl: "https://test.com/myRepo.git")
+        jsr.step.pipelineExecute(repoUrl: "https://test.com/myRepo.git")
         assert load == "Jenkinsfile"
         assert checkoutParameters.branch == 'master'
         assert checkoutParameters.repoUrl == "https://test.com/myRepo.git"
@@ -55,7 +55,7 @@ class PipelineExecuteTest extends BasePiperTest {
 
     @Test
     void parameterizeTest() {
-        jsr.step.call(repoUrl: "https://test.com/anotherRepo.git",
+        jsr.step.pipelineExecute(repoUrl: "https://test.com/anotherRepo.git",
                              branch: 'feature',
                              path: 'path/to/Jenkinsfile',
                              credentialsId: 'abcd1234')
@@ -73,6 +73,6 @@ class PipelineExecuteTest extends BasePiperTest {
         thrown.expect(Exception)
         thrown.expectMessage("ERROR - NO VALUE AVAILABLE FOR repoUrl")
 
-        jsr.step.call()
+        jsr.step.pipelineExecute()
     }
 }
