@@ -55,7 +55,7 @@ class SetupCommonPipelineEnvironmentTest extends BasePiperTest {
             return path.endsWith('.pipeline/config.yml')
         })
 
-        jsr.step.call(script: nullScript, utils: getSWAMockedUtils())
+        jsr.step.setupCommonPipelineEnvironment(script: nullScript, utils: getSWAMockedUtils())
 
         assertEquals(Boolean.FALSE.toString(), swaOldConfigUsed)
         assertEquals('.pipeline/config.yml', usedConfigFile)
@@ -71,7 +71,7 @@ class SetupCommonPipelineEnvironmentTest extends BasePiperTest {
             return path.endsWith('.pipeline/config.properties')
         })
 
-        jsr.step.call(script: nullScript, utils: getSWAMockedUtils())
+        jsr.step.setupCommonPipelineEnvironment(script: nullScript, utils: getSWAMockedUtils())
 
         assertEquals(Boolean.TRUE.toString(), swaOldConfigUsed)
         assertEquals('.pipeline/config.properties', usedConfigFile)
