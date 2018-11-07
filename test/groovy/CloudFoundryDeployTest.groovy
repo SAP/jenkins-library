@@ -125,7 +125,7 @@ class CloudFoundryDeployTest extends BasePiperTest {
         assertThat(jedr.dockerParams, hasEntry('dockerWorkspace', '/home/piper'))
         assertThat(jedr.dockerParams.dockerEnvVars, hasEntry('STATUS_CODE', "${200}"))
         assertThat(jscr.shell, hasItem(containsString('cf login -u "test_cf" -p \'********\' -a https://api.cf.eu10.hana.ondemand.com -o "testOrg" -s "testSpace"')))
-        assertThat(jscr.shell, hasItem(containsString("cf push 'testAppName' -f 'test.yml'")))
+        assertThat(jscr.shell, hasItem(containsString("cf push testAppName -f 'test.yml'")))
     }
 
     @Test
@@ -174,7 +174,7 @@ class CloudFoundryDeployTest extends BasePiperTest {
         assertThat(jedr.dockerParams, hasEntry('dockerWorkspace', '/home/piper'))
         assertThat(jedr.dockerParams.dockerEnvVars, hasEntry('STATUS_CODE', "${200}"))
         assertThat(jscr.shell, hasItem(containsString('cf login -u "test_cf" -p \'********\' -a https://api.cf.eu10.hana.ondemand.com -o "testOrg" -s "testSpace"')))
-        assertThat(jscr.shell, hasItem(containsString("cf push 'testAppName' -f 'test.yml'")))
+        assertThat(jscr.shell, hasItem(containsString("cf push testAppName -f 'test.yml'")))
     }
 
     @Test
@@ -243,7 +243,7 @@ class CloudFoundryDeployTest extends BasePiperTest {
         assertThat(jedr.dockerParams, hasEntry('dockerWorkspace', '/home/piper'))
 
         assertThat(jscr.shell, hasItem(containsString('cf login -u "test_cf" -p \'********\' -a https://api.cf.eu10.hana.ondemand.com -o "testOrg" -s "testSpace"')))
-        assertThat(jscr.shell, hasItem(containsString("cf blue-green-deploy 'testAppName' --delete-old-apps -f 'test.yml'")))
+        assertThat(jscr.shell, hasItem(containsString("cf blue-green-deploy testAppName --delete-old-apps -f 'test.yml'")))
     }
 
 

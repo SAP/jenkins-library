@@ -144,7 +144,7 @@ def deployCfNative (config) {
             export HOME=${config.dockerWorkspace}
             cf login -u \"${username}\" -p '${password}' -a ${config.cloudFoundry.apiEndpoint} -o \"${config.cloudFoundry.org}\" -s \"${config.cloudFoundry.space}\"
             cf plugins
-            cf ${deployCommand} ${config.cloudFoundry.appName?"'${config.cloudFoundry.appName}'":''} ${config.deployType == 'blue-green'?'--delete-old-apps':''} -f '${config.cloudFoundry.manifest}' ${config.smokeTest}"""
+            cf ${deployCommand} ${config.cloudFoundry.appName?:''} ${config.deployType == 'blue-green'?'--delete-old-apps':''} -f '${config.cloudFoundry.manifest}' ${config.smokeTest}"""
         sh "cf logout"
     }
 }
