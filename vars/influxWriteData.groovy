@@ -33,7 +33,7 @@ void call(Map parameters = [:]) {
             .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS)
             .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName?:env.STAGE_NAME, STEP_CONFIG_KEYS)
             .mixin([
-                artifactVersion: commonPipelineEnvironment.getArtifactVersion()
+                artifactVersion: script.commonPipelineEnvironment.getArtifactVersion()
             ])
             .mixin(parameters, PARAMETER_KEYS)
             .use()

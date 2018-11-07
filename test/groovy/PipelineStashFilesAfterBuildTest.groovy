@@ -26,7 +26,7 @@ class PipelineStashFilesAfterBuildTest extends BasePiperTest {
             searchTerm ->
                 return false
         })
-        jsr.step.call(
+        jsr.step.pipelineStashFilesAfterBuild(
             script: nullScript,
             juStabUtils: utils
         )
@@ -42,7 +42,7 @@ class PipelineStashFilesAfterBuildTest extends BasePiperTest {
             searchTerm ->
                 return true
         })
-        jsr.step.call(
+        jsr.step.pipelineStashFilesAfterBuild(
             script: nullScript,
             juStabUtils: utils,
             runCheckmarx: true
@@ -59,7 +59,7 @@ class PipelineStashFilesAfterBuildTest extends BasePiperTest {
             searchTerm ->
                 return true
         })
-        jsr.step.call(
+        jsr.step.pipelineStashFilesAfterBuild(
             script: [commonPipelineEnvironment: [configuration: [steps: [executeCheckmarxScan: [checkmarxProject: 'TestProject']]]]],
             juStabUtils: utils,
         )
