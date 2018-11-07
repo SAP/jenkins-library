@@ -5,6 +5,7 @@
 Executes a closure inside a container in a kubernetes pod. Proxy environment variables defined on the Jenkins machine are also available in the container.
 
 ## Prerequisites
+
 * The Jenkins should be running on kubernetes.
 * An environment variable `ON_K8S` should be created on Jenkins and initialized to `true`. This could for example be done via _Jenkins_ - _Manage Jenkins_ - _Configure System_ - _Global properties_ - _Environment variables_
 
@@ -64,15 +65,19 @@ In following sections the configuration is possible:
 |stashIncludes||X|X|
 
 ## Return value
+
 none
 
 ## Side effects
+
 none
 
 ## Exceptions
+
 none
 
 ## Example 1: Run a closure in a single container pod
+
 ```sh
 # set environment variable
 export ON_K8S=true"
@@ -87,6 +92,7 @@ dockerExecuteOnKubernetes(script: script, dockerImage: 'maven:3.5-jdk-7'){
 In the above example, a pod will be created with a docker container of image `maven:3.5-jdk-7`. The closure will be then executed inside the container.
 
 ## Example 2: Run a closure in a multi-container pod
+
 ```sh
 # set environment variable
 export ON_K8S=true"

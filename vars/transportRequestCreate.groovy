@@ -1,3 +1,5 @@
+import static com.sap.piper.Prerequisites.checkScript
+
 import com.sap.piper.Utils
 import groovy.transform.Field
 
@@ -8,11 +10,14 @@ import com.sap.piper.cm.ChangeManagementException
 
 import static com.sap.piper.cm.StepHelpers.getBackendTypeAndLogInfoIfCMIntegrationDisabled
 
+import static com.sap.piper.cm.StepHelpers.getChangeDocumentId
 import hudson.AbortException
 
 @Field def STEP_NAME = 'transportRequestCreate'
 
-@Field Set stepConfigurationKeys = [
+@Field GENERAL_CONFIG_KEYS = STEP_CONFIG_KEYS
+
+@Field Set STEP_CONFIG_KEYS = [
     'changeManagement',
     'description',          // CTS
     'developmentSystemId',  // SOLMAN
@@ -20,9 +25,7 @@ import hudson.AbortException
     'transportType',        // CTS
   ]
 
-@Field Set parameterKeys = stepConfigurationKeys.plus(['changeDocumentId'])
-
-@Field generalConfigurationKeys = stepConfigurationKeys
+@Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS.plus(['changeDocumentId'])
 
 def call(parameters = [:]) {
 
@@ -30,24 +33,22 @@ def call(parameters = [:]) {
 
     handlePipelineStepErrors (stepName: STEP_NAME, stepParameters: parameters) {
 
-        def script = parameters?.script ?: [commonPipelineEnvironment: commonPipelineEnvironment]
+        def script = checkScript(this, parameters) ?: this
 
         ChangeManagement cm = parameters.cmUtils ?: new ChangeManagement(script)
 
         ConfigurationHelper configHelper = ConfigurationHelper.newInstance(this)
             .loadStepDefaults()
-            .mixinGeneralConfig(script.commonPipelineEnvironment, generalConfigurationKeys)
-            .mixinStepConfig(script.commonPipelineEnvironment, stepConfigurationKeys)
-            .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName?:env.STAGE_NAME, stepConfigurationKeys)
-            .mixin(parameters, parameterKeys)
+            .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS)
+            .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS)
+            .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName?:env.STAGE_NAME, STEP_CONFIG_KEYS)
+            .mixin(parameters, PARAMETER_KEYS)
 
 
         Map configuration =  configHelper.use()
 
         BackendType backendType = getBackendTypeAndLogInfoIfCMIntegrationDisabled(this, configuration)
         if(backendType == BackendType.NONE) return
-
-        new Utils().pushToSWA([step: STEP_NAME], configuration)
 
         configHelper
             .withMandatoryProperty('changeManagement/clientOpts')
@@ -62,33 +63,13 @@ def call(parameters = [:]) {
 
         def changeDocumentId = null
 
+        new Utils().pushToSWA([step: STEP_NAME,
+                                stepParam1: parameters?.script == null], configuration)
+
         if(backendType == BackendType.SOLMAN) {
 
-            changeDocumentId = configuration.changeDocumentId
+            changeDocumentId = getChangeDocumentId(cm, this, configuration)
 
-            if(changeDocumentId?.trim()) {
-
-                echo "[INFO] ChangeDocumentId '${changeDocumentId}' retrieved from parameters."
-
-            } else {
-
-                echo "[INFO] Retrieving ChangeDocumentId from commit history [from: ${configuration.changeManagement.git.from}, to: ${configuration.changeManagement.git.to}]." +
-                     "Searching for pattern '${configuration.changeDocumentLabel}'. Searching with format '${configuration.changeManagement.git.format}'."
-
-                try {
-
-                    changeDocumentId = cm.getChangeDocumentId(
-                                                          configuration.changeManagement.git.from,
-                                                          configuration.changeManagement.git.to,
-                                                          configuration.changeManagement.changeDocumentLabel,
-                                                          configuration.changeManagement.git.format
-                                                         )
-
-                    echo "[INFO] ChangeDocumentId '${changeDocumentId}' retrieved from commit history"
-                } catch(ChangeManagementException ex) {
-                    echo "[WARN] Cannot retrieve changeDocumentId from commit history: ${ex.getMessage()}."
-                }
-            }
             configHelper.mixin([changeDocumentId: changeDocumentId?.trim() ?: null], ['changeDocumentId'] as Set)
                         .withMandatoryProperty('developmentSystemId')
                         .withMandatoryProperty('changeDocumentId',

@@ -1,3 +1,5 @@
+import static com.sap.piper.Prerequisites.checkScript
+
 import com.sap.piper.ConfigurationHelper
 import com.sap.piper.GitUtils
 import com.sap.piper.Utils
@@ -6,6 +8,9 @@ import groovy.transform.Field
 import groovy.text.SimpleTemplateEngine
 
 @Field String STEP_NAME = 'seleniumExecuteTests'
+
+@Field GENERAL_CONFIG_KEYS = STEP_CONFIG_KEYS
+
 @Field Set STEP_CONFIG_KEYS = [
     'buildTool', //defines the tool which is used for executing the tests
     'containerPortMappings', //port mappings required for containers. This will only take effect inside a Kubernetes pod, format [[containerPort: 1111, hostPort: 1111]]
@@ -23,17 +28,18 @@ import groovy.text.SimpleTemplateEngine
     'stashContent', //list of stash names which are required to be unstashed before test run
     'testRepository' //if tests are in a separate repository, git url can be defined. For protected repositories the git ssh url is required
 ]
+
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
 
 void call(Map parameters = [:], Closure body) {
     handlePipelineStepErrors(stepName: STEP_NAME, stepParameters: parameters) {
-        def script = parameters?.script ?: [commonPipelineEnvironment: commonPipelineEnvironment]
+        def script = checkScript(this, parameters) ?: this
         def utils = parameters?.juStabUtils ?: new Utils()
 
         // load default & individual configuration
         Map config = ConfigurationHelper.newInstance(this)
             .loadStepDefaults()
-            .mixinGeneralConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS)
+            .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS)
             .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS)
             .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName?:env.STAGE_NAME, STEP_CONFIG_KEYS)
             .mixin(parameters, PARAMETER_KEYS)
@@ -42,7 +48,8 @@ void call(Map parameters = [:], Closure body) {
             .dependingOn('buildTool').mixin('dockerWorkspace')
             .use()
 
-        utils.pushToSWA([step: STEP_NAME], config)
+        utils.pushToSWA([step: STEP_NAME,
+                        stepParam1: parameters?.script == null], config)
 
         dockerExecute(
                 script: script,

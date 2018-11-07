@@ -137,7 +137,10 @@ steps:
     mtaDeployPlugin:
       dockerImage: 's4sdk/docker-cf-cli'
       dockerWorkspace: '/home/piper'
+  dockerExecute:
+    stashContent: []
   dockerExecuteOnKubernetes:
+    stashContent: []
     stashIncludes:
       workspace: '**/*.*'
     stashExcludes:

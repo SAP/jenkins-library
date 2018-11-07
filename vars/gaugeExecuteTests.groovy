@@ -1,3 +1,5 @@
+import static com.sap.piper.Prerequisites.checkScript
+
 import com.sap.piper.Utils
 import com.sap.piper.ConfigurationHelper
 import com.sap.piper.GitUtils
@@ -26,7 +28,7 @@ import groovy.transform.Field
 
 void call(Map parameters = [:]) {
     handlePipelineStepErrors (stepName: STEP_NAME, stepParameters: parameters) {
-        def script = parameters.script ?: [commonPipelineEnvironment: commonPipelineEnvironment]
+        def script = checkScript(this, parameters)  ?: this
         def utils = parameters.juStabUtils ?: new Utils()
 
         script.commonPipelineEnvironment.setInfluxStepData('gauge', false)

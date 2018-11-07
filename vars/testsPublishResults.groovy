@@ -1,3 +1,5 @@
+import static com.sap.piper.Prerequisites.checkScript
+
 import com.cloudbees.groovy.cps.NonCPS
 
 import com.sap.piper.ConfigurationHelper
@@ -10,6 +12,7 @@ import groovy.transform.Field
 ]
 
 @Field def STEP_NAME = 'testsPublishResults'
+@Field Set GENERAL_CONFIG_KEYS = TOOLS
 @Field Set STEP_CONFIG_KEYS = TOOLS
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
 
@@ -21,21 +24,24 @@ import groovy.transform.Field
  */
 void call(Map parameters = [:]) {
     handlePipelineStepErrors (stepName: STEP_NAME, stepParameters: parameters) {
-        def script = parameters.script
+
+        def script = checkScript(this, parameters)
         if (script == null)
-            script = [commonPipelineEnvironment: commonPipelineEnvironment]
+            script = this
+
         prepare(parameters)
 
         // load default & individual configuration
         Map configuration = ConfigurationHelper.newInstance(this)
             .loadStepDefaults()
-            .mixinGeneralConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS)
+            .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS)
             .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS)
             .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName ?: env.STAGE_NAME, STEP_CONFIG_KEYS)
             .mixin(parameters, PARAMETER_KEYS)
             .use()
 
-        new Utils().pushToSWA([step: STEP_NAME], configuration)
+        new Utils().pushToSWA([step: STEP_NAME,
+                                stepParam1: parameters?.script == null], configuration)
 
         // UNIT TESTS
         publishJUnitReport(configuration.get('junit'))
