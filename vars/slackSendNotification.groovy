@@ -8,7 +8,7 @@ import groovy.text.SimpleTemplateEngine
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
 
 void call(Map parameters = [:]) {
-    handlePipelineStepErrors (stepName: STEP_NAME, stepParameters: parameters, allowBuildFailure: true) {
+    handlePipelineStepErrors (stepName: STEP_NAME, stepParameters: parameters) {
         def script = parameters?.script ?: [commonPipelineEnvironment: commonPipelineEnvironment, currentBuild: currentBuild]
         // load default & individual configuration
         Map config = ConfigurationHelper
