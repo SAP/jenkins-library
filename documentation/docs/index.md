@@ -9,5 +9,4 @@ work.
 For information on the project and installation of the library, please have a
 look at our [README.md][piper-pipelines-readme].
 
-
 [piper-pipelines-readme]: https://github.com/SAP/jenkins-library/blob/master/README.md

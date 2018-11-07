@@ -1,6 +1,7 @@
 # checkChangeInDevelopment
 
 ## Description
+
 Checks if a Change Document in SAP Solution Manager is in status 'in development'. The change document id is retrieved from the git commit history. The change document id
 can also be provided via parameter `changeDocumentId`. Any value provided as parameter has a higher precedence than a value from the commit history.
 
@@ -8,9 +9,11 @@ By default the git commit messages between `origin/master` and `HEAD` are scanne
 range and the pattern can be configured. For details see 'parameters' table.
 
 ## Prerequisites
+
 * **[Change Management Client 2.0.0 or compatible version](http://central.maven.org/maven2/com/sap/devops/cmclient/dist.cli/)** - available for download on Maven Central.
 
 ## Parameters
+
 | parameter          | mandatory | default                                                | possible values    |
 | -------------------|-----------|--------------------------------------------------------|--------------------|
 | `script`           | yes       |                                                        |                    |
@@ -34,15 +37,16 @@ range and the pattern can be configured. For details see 'parameters' table.
 * `failIfStatusIsNotInDevelopment` - when set to `false` the step will not fail in case the step is not in status 'in development'.
 
 ## Step configuration
+
 The step is configured using a customer configuration file provided as
 resource in an custom shared library.
 
-```
+```groovy
 @Library('piper-library-os@master') _
 
 // the shared lib containing the additional configuration
 // needs to be configured in Jenkins
-@Library(foo@master') __
+@Library('foo@master') __
 
 // inside the shared lib denoted by 'foo' the additional configuration file
 // needs to be located under 'resources' ('resoures/myConfig.yml')
@@ -50,10 +54,10 @@ prepareDefaultValues script: this,
                              customDefaults: 'myConfig.yml'
 ```
 
-Example content of ```'resources/myConfig.yml'``` in branch ```'master'``` of the repository denoted by
-```'foo'```:
+Example content of `'resources/myConfig.yml'` in branch `'master'` of the repository denoted by
+`'foo'`:
 
-```
+```yaml
 general:
   changeManagement:
     changeDocumentLabel: 'ChangeDocument\s?:'
@@ -70,7 +74,7 @@ The properties configured in section `'general/changeManagement'` are shared bet
 
 The properties can also be configured on a per-step basis:
 
-```
+```yaml
   [...]
   steps:
     checkChangeInDevelopment:
@@ -83,16 +87,20 @@ The properties can also be configured on a per-step basis:
 The parameters can also be provided when the step is invoked. For examples see below.
 
 ## Return value
+
 `true` in case the change document is in status 'in development'. Otherwise an hudson.AbortException is thrown. In case `failIfStatusIsNotInDevelopment`
 is set to `false`, `false` is returned in case the change document is not in status 'in development'
 
 ## Exceptions
+
 * `AbortException`:
-    * If the change id is not provided via parameter and if the change document id cannot be retrieved from the commit history.
-    * If the change is not in status `in development`. In this case no exception will be thrown when `failIfStatusIsNotInDevelopment` is set to `false`.
+  * If the change id is not provided via parameter and if the change document id cannot be retrieved from the commit history.
+  * If the change is not in status `in development`. In this case no exception will be thrown when `failIfStatusIsNotInDevelopment` is set to `false`.
 * `IllegalArgumentException`:
-    * If a mandatory property is not provided.
+  * If a mandatory property is not provided.
+
 ## Examples
+
 ```groovy
     // simple case. All mandatory parameters provided via
     // configuration, changeDocumentId provided via commit
@@ -112,4 +120,3 @@ is set to `false`, `false` is returned in case the change document is not in sta
                                ]
                              ]
 ```
-
