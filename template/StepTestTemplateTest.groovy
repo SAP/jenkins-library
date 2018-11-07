@@ -25,7 +25,7 @@ class StepTestTemplateTest extends BasePipelineTest {
 
     @Test
     void testStepTestTemplate() throws Exception {
-        jsr.step.call()
+        jsr.step.stepTestTemplate()
         // asserts
         assertTrue(true)
         assertJobStatusSuccess()
