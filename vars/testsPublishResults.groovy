@@ -1,7 +1,8 @@
+import static com.sap.piper.Prerequisites.checkScript
+
 import com.cloudbees.groovy.cps.NonCPS
 
 import com.sap.piper.ConfigurationHelper
-import com.sap.piper.ConfigurationMerger
 import com.sap.piper.MapUtils
 import com.sap.piper.Utils
 import groovy.transform.Field
@@ -11,6 +12,7 @@ import groovy.transform.Field
 ]
 
 @Field def STEP_NAME = 'testsPublishResults'
+@Field Set GENERAL_CONFIG_KEYS = TOOLS
 @Field Set STEP_CONFIG_KEYS = TOOLS
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
 
@@ -20,23 +22,26 @@ import groovy.transform.Field
  * @param script global script environment of the Jenkinsfile run
  * @param others document all parameters
  */
-def call(Map parameters = [:]) {
+void call(Map parameters = [:]) {
     handlePipelineStepErrors (stepName: STEP_NAME, stepParameters: parameters) {
-        def script = parameters.script
+
+        def script = checkScript(this, parameters)
         if (script == null)
-            script = [commonPipelineEnvironment: commonPipelineEnvironment]
+            script = this
+
         prepare(parameters)
 
         // load default & individual configuration
-        Map configuration = ConfigurationHelper
-            .loadStepDefaults(this)
-            .mixinGeneralConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS)
+        Map configuration = ConfigurationHelper.newInstance(this)
+            .loadStepDefaults()
+            .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS)
             .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS)
             .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName ?: env.STAGE_NAME, STEP_CONFIG_KEYS)
             .mixin(parameters, PARAMETER_KEYS)
             .use()
 
-        new Utils().pushToSWA([step: STEP_NAME], configuration)
+        new Utils().pushToSWA([step: STEP_NAME,
+                                stepParam1: parameters?.script == null], configuration)
 
         // UNIT TESTS
         publishJUnitReport(configuration.get('junit'))
@@ -123,7 +128,7 @@ def publishJMeterReport(Map settings = [:]){
     }
 }
 
-def touchFiles(){
+void touchFiles(pattern){
     echo "[${STEP_NAME}] update test results"
     def patternArray = pattern.split(',')
     for(def i = 0; i < patternArray.length; i++){

@@ -54,3 +54,18 @@ String[] extractLogLines(String filter = '',
         ?.findAll { line -> line ==~ /${filter}/ }
 
 }
+
+static String handleTestRepository(Script steps, Map config){
+    def stashName = "testContent-${UUID.randomUUID()}".toString()
+    def options = [url: config.testRepository]
+    if (config.gitSshKeyCredentialsId)
+        options.put('credentialsId', config.gitSshKeyCredentialsId)
+    if (config.gitBranch)
+        options.put('branch', config.gitBranch)
+    // checkout test repository
+    steps.git options
+    // stash test content
+    steps.stash stashName
+    // return stash name
+    return stashName
+}

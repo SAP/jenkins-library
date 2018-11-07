@@ -1,3 +1,5 @@
+import static com.sap.piper.Prerequisites.checkScript
+
 import com.sap.piper.ConfigurationHelper
 import com.sap.piper.GitUtils
 import com.sap.piper.Utils
@@ -8,6 +10,9 @@ import groovy.text.SimpleTemplateEngine
 
 @Field String STEP_NAME = 'artifactSetVersion'
 @Field Map CONFIG_KEY_COMPATIBILITY = [gitSshKeyCredentialsId: 'gitCredentialsId']
+
+@Field Set GENERAL_CONFIG_KEYS = STEP_CONFIG_KEYS
+
 @Field Set STEP_CONFIG_KEYS = [
     'artifactType',
     'buildTool',
@@ -23,30 +28,30 @@ import groovy.text.SimpleTemplateEngine
     'timestampTemplate',
     'versioningTemplate'
 ]
+
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS.plus('gitCommitId')
 
-def call(Map parameters = [:], Closure body = null) {
+void call(Map parameters = [:], Closure body = null) {
 
     handlePipelineStepErrors (stepName: STEP_NAME, stepParameters: parameters) {
+
+        def script = checkScript(this, parameters)
 
         def gitUtils = parameters.juStabGitUtils ?: new GitUtils()
 
         if (gitUtils.isWorkTreeDirty()) {
                 error "[${STEP_NAME}] Files in the workspace have been changed previously - aborting ${STEP_NAME}"
         }
-
-        def script = parameters.script
         if (script == null)
             script = this
-
         // load default & individual configuration
-        ConfigurationHelper configHelper = ConfigurationHelper
-            .loadStepDefaults(this)
-            .mixinGeneralConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS, this, CONFIG_KEY_COMPATIBILITY)
-            .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS, this, CONFIG_KEY_COMPATIBILITY)
-            .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName?:env.STAGE_NAME, STEP_CONFIG_KEYS, this, CONFIG_KEY_COMPATIBILITY)
+        ConfigurationHelper configHelper = ConfigurationHelper.newInstance(this)
+            .loadStepDefaults()
+            .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS, CONFIG_KEY_COMPATIBILITY)
+            .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS, CONFIG_KEY_COMPATIBILITY)
+            .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName?:env.STAGE_NAME, STEP_CONFIG_KEYS, CONFIG_KEY_COMPATIBILITY)
             .mixin(gitCommitId: gitUtils.getGitCommitIdOrNull())
-            .mixin(parameters, PARAMETER_KEYS, this, CONFIG_KEY_COMPATIBILITY)
+            .mixin(parameters, PARAMETER_KEYS, CONFIG_KEY_COMPATIBILITY)
             .withMandatoryProperty('buildTool')
             .dependingOn('buildTool').mixin('filePath')
             .dependingOn('buildTool').mixin('versioningTemplate')
@@ -56,7 +61,7 @@ def call(Map parameters = [:], Closure body = null) {
         config = configHelper.addIfEmpty('timestamp', getTimestamp(config.timestampTemplate))
                              .use()
 
-        new Utils().pushToSWA([step: STEP_NAME, stepParam1: config.buildTool, stepParam2: config.artifactType], config)
+        new Utils().pushToSWA([step: STEP_NAME, stepParam1: config.buildTool, stepParam2: config.artifactType, stepParam3: parameters?.script == null], config)
 
         def artifactVersioning = ArtifactVersioning.getArtifactVersioning(config.buildTool, script, config)
         def currentVersion = artifactVersioning.getVersion()
@@ -76,15 +81,13 @@ def call(Map parameters = [:], Closure body = null) {
         }
 
         if (config.commitVersion) {
-            config = new ConfigurationHelper(config)
+            config = ConfigurationHelper.newInstance(this, config)
                 .addIfEmpty('gitSshUrl', isAppContainer(config)
                             ?script.commonPipelineEnvironment.getAppContainerProperty('gitSshUrl')
                             :script.commonPipelineEnvironment.getGitSshUrl())
                 .withMandatoryProperty('gitSshUrl')
                 .use()
             
-            sh 'git add .'
-
             def gitConfig = []
 
             if(config.gitUserEMail) gitConfig.add("-c user.email=\"${config.gitUserEMail}\"")
@@ -93,6 +96,7 @@ def call(Map parameters = [:], Closure body = null) {
 
             try {
                 sh """#!/bin/bash
+                      git add .
                       git ${gitConfig} commit -m 'update version ${newVersion}'
                       git tag ${config.tagPrefix}${newVersion}"""
                 config.gitCommitId = gitUtils.getGitCommitIdOrNull()

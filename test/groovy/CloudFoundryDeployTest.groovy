@@ -6,6 +6,7 @@ import org.junit.rules.ExpectedException
 import org.junit.rules.RuleChain
 import org.yaml.snakeyaml.Yaml
 import util.BasePiperTest
+import util.JenkinsCredentialsRule
 import util.JenkinsEnvironmentRule
 import util.JenkinsDockerExecuteRule
 import util.JenkinsLoggingRule
@@ -42,27 +43,8 @@ class CloudFoundryDeployTest extends BasePiperTest {
         .around(jwfr)
         .around(jedr)
         .around(jer)
+        .around(new JenkinsCredentialsRule(this).withCredentials('test_cfCredentialsId', 'test_cf', '********'))
         .around(jsr) // needs to be activated after jedr, otherwise executeDocker is not mocked
-
-    @Before
-    void init() throws Throwable {
-        helper.registerAllowedMethod('usernamePassword', [Map], { m -> return m })
-        helper.registerAllowedMethod('withCredentials', [List, Closure], { l, c ->
-            if(l[0].credentialsId == 'test_cfCredentialsId') {
-                binding.setProperty('username', 'test_cf')
-                binding.setProperty('password', '********')
-            } else if(l[0].credentialsId == 'test_camCredentialsId') {
-                binding.setProperty('username', 'test_cam')
-                binding.setProperty('password', '********')
-            }
-            try {
-                c()
-            } finally {
-                binding.setProperty('username', null)
-                binding.setProperty('password', null)
-            }
-        })
-    }
 
     @Test
     void testNoTool() throws Exception {
@@ -123,6 +105,11 @@ class CloudFoundryDeployTest extends BasePiperTest {
 
     @Test
     void testCfNativeWithAppName() {
+        jryr.registerYaml('test.yml', "applications: [[name: 'manifestAppName']]")
+        helper.registerAllowedMethod('writeYaml', [Map], { Map parameters ->
+            generatedFile = parameters.file
+            data = parameters.data
+        })
         jsr.step.cloudFoundryDeploy([
             script: nullScript,
             juStabUtils: utils,
@@ -138,11 +125,16 @@ class CloudFoundryDeployTest extends BasePiperTest {
         assertThat(jedr.dockerParams, hasEntry('dockerWorkspace', '/home/piper'))
         assertThat(jedr.dockerParams.dockerEnvVars, hasEntry('STATUS_CODE', "${200}"))
         assertThat(jscr.shell, hasItem(containsString('cf login -u "test_cf" -p \'********\' -a https://api.cf.eu10.hana.ondemand.com -o "testOrg" -s "testSpace"')))
-        assertThat(jscr.shell, hasItem(containsString('cf push "testAppName" -f "test.yml"')))
+        assertThat(jscr.shell, hasItem(containsString("cf push testAppName -f 'test.yml'")))
     }
 
     @Test
     void testCfNativeWithAppNameCustomApi() {
+        jryr.registerYaml('test.yml', "applications: [[name: 'manifestAppName']]")
+        helper.registerAllowedMethod('writeYaml', [Map], { Map parameters ->
+            generatedFile = parameters.file
+            data = parameters.data
+        })
         jsr.step.cloudFoundryDeploy([
             script: nullScript,
             juStabUtils: utils,
@@ -160,6 +152,11 @@ class CloudFoundryDeployTest extends BasePiperTest {
 
     @Test
     void testCfNativeWithAppNameCompatible() {
+        jryr.registerYaml('test.yml', "applications: [[name: 'manifestAppName']]")
+        helper.registerAllowedMethod('writeYaml', [Map], { Map parameters ->
+            generatedFile = parameters.file
+            data = parameters.data
+        })
         jsr.step.cloudFoundryDeploy([
             script: nullScript,
             juStabUtils: utils,
@@ -177,13 +174,17 @@ class CloudFoundryDeployTest extends BasePiperTest {
         assertThat(jedr.dockerParams, hasEntry('dockerWorkspace', '/home/piper'))
         assertThat(jedr.dockerParams.dockerEnvVars, hasEntry('STATUS_CODE', "${200}"))
         assertThat(jscr.shell, hasItem(containsString('cf login -u "test_cf" -p \'********\' -a https://api.cf.eu10.hana.ondemand.com -o "testOrg" -s "testSpace"')))
-        assertThat(jscr.shell, hasItem(containsString('cf push "testAppName" -f "test.yml"')))
+        assertThat(jscr.shell, hasItem(containsString("cf push testAppName -f 'test.yml'")))
     }
 
     @Test
     void testCfNativeAppNameFromManifest() {
         helper.registerAllowedMethod('fileExists', [String.class], { s -> return true })
-        jryr.registerYaml('test.yml', "[applications: [[name: 'manifestAppName']]]")
+        jryr.registerYaml('test.yml', "applications: [[name: 'manifestAppName']]")
+        helper.registerAllowedMethod('writeYaml', [Map], { Map parameters ->
+            generatedFile = parameters.file
+            data = parameters.data
+        })
 
         jsr.step.cloudFoundryDeploy([
             script: nullScript,
@@ -196,13 +197,17 @@ class CloudFoundryDeployTest extends BasePiperTest {
         ])
         // asserts
         assertThat(jscr.shell, hasItem(containsString('cf login -u "test_cf" -p \'********\' -a https://api.cf.eu10.hana.ondemand.com -o "testOrg" -s "testSpace"')))
-        assertThat(jscr.shell, hasItem(containsString('cf push -f "test.yml"')))
+        assertThat(jscr.shell, hasItem(containsString("cf push -f 'test.yml'")))
     }
 
     @Test
     void testCfNativeWithoutAppName() {
         helper.registerAllowedMethod('fileExists', [String.class], { s -> return true })
         jryr.registerYaml('test.yml', "applications: [[]]")
+        helper.registerAllowedMethod('writeYaml', [Map], { Map parameters ->
+            generatedFile = parameters.file
+            data = parameters.data
+        })
         thrown.expect(hudson.AbortException)
         thrown.expectMessage('[cloudFoundryDeploy] ERROR: No appName available in manifest test.yml.')
 
@@ -216,6 +221,53 @@ class CloudFoundryDeployTest extends BasePiperTest {
             cfManifest: 'test.yml'
         ])
     }
+
+    @Test
+    void testCfNativeBlueGreen() {
+
+        jryr.registerYaml('test.yml', "applications: [[]]")
+
+        jsr.step.cloudFoundryDeploy([
+            script: nullScript,
+            juStabUtils: utils,
+            deployTool: 'cf_native',
+            deployType: 'blue-green',
+            cfOrg: 'testOrg',
+            cfSpace: 'testSpace',
+            cfCredentialsId: 'test_cfCredentialsId',
+            cfAppName: 'testAppName',
+            cfManifest: 'test.yml'
+        ])
+
+        assertThat(jedr.dockerParams, hasEntry('dockerImage', 's4sdk/docker-cf-cli'))
+        assertThat(jedr.dockerParams, hasEntry('dockerWorkspace', '/home/piper'))
+
+        assertThat(jscr.shell, hasItem(containsString('cf login -u "test_cf" -p \'********\' -a https://api.cf.eu10.hana.ondemand.com -o "testOrg" -s "testSpace"')))
+        assertThat(jscr.shell, hasItem(containsString("cf blue-green-deploy testAppName --delete-old-apps -f 'test.yml'")))
+    }
+
+
+    @Test
+    void testCfNativeWithoutAppNameBlueGreen() {
+
+        helper.registerAllowedMethod('fileExists', [String.class], { s -> return true })
+        jryr.registerYaml('test.yml', "applications: [[]]")
+
+        thrown.expect(hudson.AbortException)
+        thrown.expectMessage('[cloudFoundryDeploy] ERROR: Blue-green plugin requires app name to be passed (see https://github.com/bluemixgaragelondon/cf-blue-green-deploy/issues/27)')
+
+        jsr.step.cloudFoundryDeploy([
+            script: nullScript,
+            juStabUtils: utils,
+            deployTool: 'cf_native',
+            deployType: 'blue-green',
+            cfOrg: 'testOrg',
+            cfSpace: 'testSpace',
+            cfCredentialsId: 'test_cfCredentialsId',
+            cfManifest: 'test.yml'
+        ])
+    }
+
 
     @Test
     void testMta() {

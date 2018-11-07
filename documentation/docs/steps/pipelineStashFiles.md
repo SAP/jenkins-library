@@ -1,16 +1,18 @@
 # pipelineStashFiles
 
 ## Description
+
 This step stashes files that are needed in other build steps (on other nodes).
 
 ## Prerequsites
+
 none
 
 ## Parameters
 
 | parameter | mandatory | default | possible values |
 | ----------|-----------|---------|-----------------|
-| script | no | empty `commonPipelineEnvironment` |  |
+| script | yes |  |  |
 | runCheckmarx | no | false |  |
 | runOpaTests | no | false |  |
 | stashIncludes | no | see details |  |
@@ -41,13 +43,13 @@ The step is stashing files before and after the build. This is due to the fact, 
     * `stashExcludes: [tests: '**/NOTRELEVANT.*]`
 
 ## Step configuration
+
 The following parameters can also be specified as step parameters using the global configuration file:
 
 * runOpaTests
 * runCheckmarx
 * stashExcludes
 * stashIncludes
-
 
 ## Explanation of pipeline step
 
@@ -58,5 +60,3 @@ pipelineStashFiles script: this {
   mavenExecute script: this, ...
 }
 ```
-
-
