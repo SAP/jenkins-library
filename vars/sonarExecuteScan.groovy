@@ -25,7 +25,7 @@ import groovy.text.SimpleTemplateEngine
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
 @Field Set GENERAL_CONFIG_KEYS = STEP_CONFIG_KEYS
 
-def call(Map parameters = [:], Closure body = null) {
+void call(Map parameters = [:], Closure body = null) {
     handlePipelineStepErrors(stepName: STEP_NAME, stepParameters: parameters) {
         def utils = parameters.juStabUtils ?: new Utils()
         def script = checkScript(this, parameters) ?: this
