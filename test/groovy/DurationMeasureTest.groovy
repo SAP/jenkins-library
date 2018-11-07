@@ -24,7 +24,7 @@ class DurationMeasureTest extends BasePiperTest {
     @Test
     void testDurationMeasurement() throws Exception {
         def bodyExecuted = false
-        jsr.step.call(script: nullScript, measurementName: 'test') {
+        jsr.step.durationMeasure(script: nullScript, measurementName: 'test') {
             bodyExecuted = true
         }
         assertTrue(nullScript.commonPipelineEnvironment.getPipelineMeasurement('test') != null)
