@@ -7,6 +7,7 @@ Enables UI test execution with Selenium in a sidecar container.
 The step executes a closure (see example below) connecting to a sidecar container with a Selenium Server.
 
 When executing in a
+
 * local Docker environment, please make sure to set Selenium host to **`selenium`** in your tests.
 * Kubernetes environment, plese make sure to set Seleniums host to **`localhost`** in your tests.
 
@@ -32,7 +33,8 @@ seleniumExecuteTests (script: this) {
 Example based on http://webdriver.io/guide/getstarted/modes.html and http://webdriver.io/guide.html
 
 #### Configuration for Local Docker Environment
-```
+
+```js
 var webdriverio = require('webdriverio');
 var options = {
     host: 'selenium',
@@ -42,8 +44,10 @@ var options = {
     }
 };
 ```
+
 #### Configuration for Kubernetes Environment
-```
+
+```js
 var webdriverio = require('webdriverio');
 var options = {
     host: 'localhost',
@@ -56,7 +60,7 @@ var options = {
 
 #### Test Code (index.js)
 
-```
+```js
 // ToDo: add configuration from above
 
 webdriverio
@@ -77,10 +81,12 @@ webdriverio
 | parameter | mandatory | default | possible values |
 | ----------|-----------|---------|-----------------|
 |script|yes|||
+|buildTool|no|`npm`|`maven`, `npm`|
 |containerPortMappings|no|`[selenium/standalone-chrome:[[containerPort:4444, hostPort:4444]]]`||
-|dockerImage|no|buildTool=`maven`: `maven:3.5-jdk-7`<br />buildTool=`npm`: `node:8-stretch`<br />||
+|dockerEnvVars|no|||
+|dockerImage|no|buildTool=`maven`: `maven:3.5-jdk-8`<br />buildTool=`npm`: `node:8-stretch`<br />||
 |dockerName|no|buildTool=`maven`: `maven`<br />buildTool=`npm`: `npm`<br />||
-|dockerWorkspace|no|buildTool=`maven`: ``<br />buildTool=`npm`: `/home/node`<br />||
+|dockerWorkspace|no|buildTool=`maven`: <br />buildTool=`npm`: `/home/node`<br />||
 |failOnError|no|`true`||
 |gitBranch|no|||
 |gitSshKeyCredentialsId|no|``||
@@ -92,7 +98,9 @@ webdriverio
 |testRepository|no|||
 
 * `script` defines the global script environment of the Jenkinsfile run. Typically `this` is passed to this parameter. This allows the function to access the [`commonPipelineEnvironment`](commonPipelineEnvironment.md) for storing the measured duration.
+* `buildTool` defines the build tool to be used for the test execution.
 * `containerPortMappings`, see step [dockerExecute](dockerExecute.md)
+* `dockerEnvVars`, see step [dockerExecute](dockerExecute.md)
 * `dockerImage`, see step [dockerExecute](dockerExecute.md)
 * `dockerName`, see step [dockerExecute](dockerExecute.md)
 * `dockerWorkspace`, see step [dockerExecute](dockerExecute.md)
@@ -113,7 +121,9 @@ In following sections the configuration is possible:
 | parameter | general | step | stage |
 | ----------|-----------|---------|-----------------|
 |script||||
+|buildTool||X|X|
 |containerPortMappings|X|X|X|
+|dockerEnvVars|X|X|X|
 |dockerImage|X|X|X|
 |dockerName|X|X|X|
 |dockerWorkspace|X|X|X|
@@ -128,10 +138,13 @@ In following sections the configuration is possible:
 |testRepository|X|X|X|
 
 ## Return value
+
 none
 
 ## Side effects
+
 none
 
 ## Exceptions
+
 none

@@ -1,3 +1,5 @@
+import static com.sap.piper.Prerequisites.checkScript
+
 import com.sap.piper.ConfigurationHelper
 import com.sap.piper.Utils
 
@@ -29,10 +31,11 @@ import groovy.transform.Field
     'warAction'
 ])
 
-def call(parameters = [:]) {
+void call(parameters = [:]) {
     handlePipelineStepErrors (stepName: STEP_NAME, stepParameters: parameters) {
 
-        def script = parameters?.script ?: [commonPipelineEnvironment: commonPipelineEnvironment]
+        def script = checkScript(this, parameters) ?: this
+
         def utils = new Utils()
 
         prepareDefaultValues script: script
@@ -70,10 +73,10 @@ def call(parameters = [:]) {
             parameters.put('neoCredentialsId', credId)
         }
         // Backward compatibility end
-        
+
         // load default & individual configuration
-        Map configuration = ConfigurationHelper
-            .loadStepDefaults(this)
+        Map configuration = ConfigurationHelper.newInstance(this)
+            .loadStepDefaults()
             .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS)
             .mixin(stepCompatibilityConfiguration)
             .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS)
@@ -81,11 +84,12 @@ def call(parameters = [:]) {
             .addIfEmpty('archivePath', script.commonPipelineEnvironment.getMtarFilePath())
             .mixin(parameters, PARAMETER_KEYS)
             .use()
-        
+
         utils.pushToSWA([
-            step: STEP_NAME, 
+            step: STEP_NAME,
             stepParam1: configuration.deployMode == 'mta'?'mta':'war', // ['mta', 'warParams', 'warPropertiesFile']
-            stepParam2: configuration.warAction == 'rolling-update'?'blue-green':'standard' // ['deploy', 'deploy-mta', 'rolling-update']
+            stepParam2: configuration.warAction == 'rolling-update'?'blue-green':'standard', // ['deploy', 'deploy-mta', 'rolling-update']
+            stepParam3: parameters?.script == null
         ], configuration)
 
         def archivePath = configuration.archivePath

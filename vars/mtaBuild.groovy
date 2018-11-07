@@ -1,3 +1,5 @@
+import static com.sap.piper.Prerequisites.checkScript
+
 import com.sap.piper.ConfigurationHelper
 import com.sap.piper.MtaUtils
 import com.sap.piper.Utils
@@ -20,20 +22,22 @@ import groovy.transform.Field
     'dockerOptions'
 ])
 
-def call(Map parameters = [:]) {
+void call(Map parameters = [:]) {
     handlePipelineStepErrors(stepName: STEP_NAME, stepParameters: parameters) {
-        final script = parameters?.script ?: [commonPipelineEnvironment: commonPipelineEnvironment]
+
+        final script = checkScript(this, parameters) ?: this
 
         // load default & individual configuration
-        Map configuration = ConfigurationHelper
-            .loadStepDefaults(this)
+        Map configuration = ConfigurationHelper.newInstance(this)
+            .loadStepDefaults()
             .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS)
             .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS)
             .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName ?: env.STAGE_NAME, STEP_CONFIG_KEYS)
             .mixin(parameters, PARAMETER_KEYS)
             .use()
 
-        new Utils().pushToSWA([step: STEP_NAME], configuration)
+        new Utils().pushToSWA([step: STEP_NAME,
+                                stepParam1: parameters?.script == null], configuration)
 
         dockerExecute(script: script, dockerImage: configuration.dockerImage, dockerOptions: configuration.dockerOptions) {
             def java = new ToolDescriptor('Java', 'JAVA_HOME', '', '/bin/', 'java', '1.8.0', '-version 2>&1')

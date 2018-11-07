@@ -1,3 +1,5 @@
+import static com.sap.piper.Prerequisites.checkScript
+
 import com.sap.piper.Utils
 import com.sap.piper.ConfigurationHelper
 import groovy.transform.Field
@@ -6,22 +8,23 @@ import groovy.transform.Field
 @Field Set STEP_CONFIG_KEYS = ['runCheckmarx', 'stashIncludes', 'stashExcludes']
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
 
-def call(Map parameters = [:]) {
+void call(Map parameters = [:]) {
 
     handlePipelineStepErrors (stepName: STEP_NAME, stepParameters: parameters, stepNameDoc: 'stashFiles') {
         def utils = parameters.juStabUtils
         if (utils == null) {
             utils = new Utils()
         }
-        def script = parameters.script
+
+        def script = checkScript(this, parameters)
         if (script == null)
-            script = [commonPipelineEnvironment: commonPipelineEnvironment]
+            script = this
 
         //additional includes via passing e.g. stashIncludes: [opa5: '**/*.include']
         //additional excludes via passing e.g. stashExcludes: [opa5: '**/*.exclude']
 
-        Map config = ConfigurationHelper
-            .loadStepDefaults(this)
+        Map config = ConfigurationHelper.newInstance(this)
+            .loadStepDefaults()
             .mixinGeneralConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS)
             .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS)
             .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName?:env.STAGE_NAME, STEP_CONFIG_KEYS)
@@ -31,7 +34,8 @@ def call(Map parameters = [:]) {
             .mixin(parameters, PARAMETER_KEYS)
             .use()
 
-        new Utils().pushToSWA([step: STEP_NAME], config)
+        new Utils().pushToSWA([step: STEP_NAME,
+                                stepParam1: parameters?.script == null], config)
 
         // store files to be checked with checkmarx
         if (config.runCheckmarx) {

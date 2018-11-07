@@ -1,3 +1,5 @@
+import static com.sap.piper.Prerequisites.checkScript
+
 import com.cloudbees.groovy.cps.NonCPS
 
 import com.sap.piper.ConfigurationHelper
@@ -21,24 +23,26 @@ import groovy.transform.Field
  *
  * @param others document all parameters
  */
-def call(Map parameters = [:]) {
+void call(Map parameters = [:]) {
     handlePipelineStepErrors (stepName: STEP_NAME, stepParameters: parameters) {
-        def script = parameters.script
+
+        def script = checkScript(this, parameters)
         if (script == null)
-            script = [commonPipelineEnvironment: commonPipelineEnvironment]
+            script = this
 
         prepare(parameters)
 
         // load default & individual configuration
-        Map configuration = ConfigurationHelper
-            .loadStepDefaults(this)
+        Map configuration = ConfigurationHelper.newInstance(this)
+            .loadStepDefaults()
             .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS)
             .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS)
             .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName?:env.STAGE_NAME, STEP_CONFIG_KEYS)
             .mixin(parameters, PARAMETER_KEYS)
             .use()
 
-        new Utils().pushToSWA([step: STEP_NAME], configuration)
+        new Utils().pushToSWA([step: STEP_NAME,
+                                stepParam1: parameters?.script == null], configuration)
 
         // JAVA
         report('PmdPublisher', configuration.pmd, configuration.archive)

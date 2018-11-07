@@ -50,7 +50,7 @@ public class MtaBuildTest extends BasePiperTest {
     @Test
     void environmentPathTest() {
 
-        jsr.step.call(buildTarget: 'NEO')
+        jsr.step.call(script: nullScript, buildTarget: 'NEO')
 
         assert jscr.shell.find { c -> c.contains('PATH=./node_modules/.bin:/usr/bin')}
     }
@@ -59,7 +59,7 @@ public class MtaBuildTest extends BasePiperTest {
     @Test
     void sedTest() {
 
-        jsr.step.call(buildTarget: 'NEO')
+        jsr.step.call(script: nullScript, buildTarget: 'NEO')
 
         assert jscr.shell.find { c -> c =~ /sed -ie "s\/\\\$\{timestamp\}\/`date \+%Y%m%d%H%M%S`\/g" "mta.yaml"$/}
     }
@@ -79,7 +79,7 @@ public class MtaBuildTest extends BasePiperTest {
     @Test
     void mtaJarLocationAsParameterTest() {
 
-        jsr.step.call(mtaJarLocation: '/mylocation/mta/mta.jar', buildTarget: 'NEO')
+        jsr.step.call(script: nullScript, mtaJarLocation: '/mylocation/mta/mta.jar', buildTarget: 'NEO')
 
         assert jscr.shell.find { c -> c.contains('-jar /mylocation/mta/mta.jar --mtar')}
 
@@ -94,7 +94,7 @@ public class MtaBuildTest extends BasePiperTest {
         jryr.registerYaml('mta.yaml', { throw new FileNotFoundException() })
         thrown.expect(FileNotFoundException)
 
-        jsr.step.call(buildTarget: 'NEO')
+        jsr.step.call(script: nullScript, buildTarget: 'NEO')
     }
 
 
@@ -106,7 +106,7 @@ public class MtaBuildTest extends BasePiperTest {
 
         jryr.registerYaml('mta.yaml', badMtaYaml())
 
-        jsr.step.call(buildTarget: 'NEO')
+        jsr.step.call(script: nullScript, buildTarget: 'NEO')
     }
 
 
@@ -118,7 +118,7 @@ public class MtaBuildTest extends BasePiperTest {
 
         jryr.registerYaml('mta.yaml', noIdMtaYaml() )
 
-        jsr.step.call(buildTarget: 'NEO')
+        jsr.step.call(script: nullScript, buildTarget: 'NEO')
     }
 
 
@@ -127,7 +127,7 @@ public class MtaBuildTest extends BasePiperTest {
 
         helper.registerAllowedMethod('sh', [Map], { Map m -> getVersionWithEnvVars(m) })
 
-        jsr.step.call(buildTarget: 'NEO')
+        jsr.step.call(script: nullScript, buildTarget: 'NEO')
 
         assert jscr.shell.find { c -> c.contains("-jar /env/mta/mta.jar --mtar")}
         assert jlr.log.contains("SAP Multitarget Application Archive Builder file '/env/mta/mta.jar' retrieved from environment.")
@@ -164,7 +164,7 @@ public class MtaBuildTest extends BasePiperTest {
     @Test
     void buildTargetFromParametersTest() {
 
-        jsr.step.call(buildTarget: 'NEO')
+        jsr.step.call(script: nullScript, buildTarget: 'NEO')
 
         assert jscr.shell.find { c -> c.contains('java -jar mta.jar --mtar com.mycompany.northwind.mtar --build-target=NEO build')}
     }
@@ -210,7 +210,7 @@ public class MtaBuildTest extends BasePiperTest {
     @Test
     void extensionFromParametersTest() {
 
-        jsr.step.call(buildTarget: 'NEO', extension: 'param_extension')
+        jsr.step.call(script: nullScript, buildTarget: 'NEO', extension: 'param_extension')
 
         assert jscr.shell.find { c -> c.contains('java -jar mta.jar --mtar com.mycompany.northwind.mtar --build-target=NEO --extension=param_extension build')}
     }

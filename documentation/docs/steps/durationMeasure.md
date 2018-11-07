@@ -1,6 +1,7 @@
 # durationMeasure
 
 ## Description
+
 This step is used to measure the duration of a set of steps, e.g. a certain stage.
 The duration is stored in a Map. The measurement data can then be written to an Influx database using step [influxWriteData](influxWriteData.md).
 
@@ -9,16 +10,18 @@ The duration is stored in a Map. The measurement data can then be written to an 
     This then helps to counter identified issues with respective optimization measures, e.g parallelization of tests.
 
 ## Prerequisites
+
 none
 
 ## Pipeline configuration
+
 none
 
 ## Parameters
 
 | parameter | mandatory | default | possible values |
 | ----------|-----------|---------|-----------------|
-| script | no | empty `globalPipelineEnvironment` |  |
+| script | yes | |  |
 | measurementName | no | test_duration |  |
 
 Details:
@@ -27,6 +30,7 @@ Details:
 * `measurementName` defines the name of the measurement which is written to the Influx database.
 
 ## Step configuration
+
 none
 
 ## Example

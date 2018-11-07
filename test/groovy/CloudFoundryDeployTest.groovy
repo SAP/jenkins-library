@@ -105,6 +105,11 @@ class CloudFoundryDeployTest extends BasePiperTest {
 
     @Test
     void testCfNativeWithAppName() {
+        jryr.registerYaml('test.yml', "applications: [[name: 'manifestAppName']]")
+        helper.registerAllowedMethod('writeYaml', [Map], { Map parameters ->
+            generatedFile = parameters.file
+            data = parameters.data
+        })
         jsr.step.cloudFoundryDeploy([
             script: nullScript,
             juStabUtils: utils,
@@ -125,6 +130,11 @@ class CloudFoundryDeployTest extends BasePiperTest {
 
     @Test
     void testCfNativeWithAppNameCustomApi() {
+        jryr.registerYaml('test.yml', "applications: [[name: 'manifestAppName']]")
+        helper.registerAllowedMethod('writeYaml', [Map], { Map parameters ->
+            generatedFile = parameters.file
+            data = parameters.data
+        })
         jsr.step.cloudFoundryDeploy([
             script: nullScript,
             juStabUtils: utils,
@@ -142,6 +152,11 @@ class CloudFoundryDeployTest extends BasePiperTest {
 
     @Test
     void testCfNativeWithAppNameCompatible() {
+        jryr.registerYaml('test.yml', "applications: [[name: 'manifestAppName']]")
+        helper.registerAllowedMethod('writeYaml', [Map], { Map parameters ->
+            generatedFile = parameters.file
+            data = parameters.data
+        })
         jsr.step.cloudFoundryDeploy([
             script: nullScript,
             juStabUtils: utils,
@@ -165,7 +180,11 @@ class CloudFoundryDeployTest extends BasePiperTest {
     @Test
     void testCfNativeAppNameFromManifest() {
         helper.registerAllowedMethod('fileExists', [String.class], { s -> return true })
-        jryr.registerYaml('test.yml', "[applications: [[name: 'manifestAppName']]]")
+        jryr.registerYaml('test.yml', "applications: [[name: 'manifestAppName']]")
+        helper.registerAllowedMethod('writeYaml', [Map], { Map parameters ->
+            generatedFile = parameters.file
+            data = parameters.data
+        })
 
         jsr.step.cloudFoundryDeploy([
             script: nullScript,
@@ -185,6 +204,10 @@ class CloudFoundryDeployTest extends BasePiperTest {
     void testCfNativeWithoutAppName() {
         helper.registerAllowedMethod('fileExists', [String.class], { s -> return true })
         jryr.registerYaml('test.yml', "applications: [[]]")
+        helper.registerAllowedMethod('writeYaml', [Map], { Map parameters ->
+            generatedFile = parameters.file
+            data = parameters.data
+        })
         thrown.expect(hudson.AbortException)
         thrown.expectMessage('[cloudFoundryDeploy] ERROR: No appName available in manifest test.yml.')
 

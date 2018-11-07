@@ -1,3 +1,5 @@
+import static com.sap.piper.Prerequisites.checkScript
+
 import com.sap.piper.ConfigurationHelper
 import com.sap.piper.Utils
 import groovy.transform.Field
@@ -5,11 +7,11 @@ import groovy.transform.Field
 @Field String STEP_NAME = 'setupCommonPipelineEnvironment'
 @Field Set GENERAL_CONFIG_KEYS = ['collectTelemetryData']
 
-def call(Map parameters = [:]) {
+void call(Map parameters = [:]) {
 
     handlePipelineStepErrors (stepName: STEP_NAME, stepParameters: parameters) {
 
-        def script = parameters.script
+        def script = checkScript(this, parameters)
 
         prepareDefaultValues script: script, customDefaults: parameters.customDefaults
 
@@ -17,12 +19,14 @@ def call(Map parameters = [:]) {
 
         loadConfigurationFromFile(script, configFile)
 
-        Map config = ConfigurationHelper
-            .loadStepDefaults(this)
+        Map config = ConfigurationHelper.newInstance(this)
+            .loadStepDefaults()
             .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS)
             .use()
 
-        new Utils().pushToSWA([step: STEP_NAME, stepParam4: parameters.customDefaults?'true':'false'], config)
+        (parameters.utils ?: new Utils())
+                   .pushToSWA([step: STEP_NAME, stepParam4: parameters.customDefaults?'true':'false',
+                                                stepParam5: Boolean.toString( ! (script?.commonPipelineEnvironment?.getConfigProperties() ?: [:]).isEmpty())], config)
     }
 }
 
