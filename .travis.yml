@@ -16,8 +16,15 @@ jobs:
   include:
     - stage: Tests
       name: Unit Tests
-      script: mvn clean test --batch-mode
-      after_success: mvn -DrepoToken=$COVERALLS_REPO_TOKEN org.jacoco:jacoco-maven-plugin:report org.eluder.coveralls:coveralls-maven-plugin:report
+      before_script:
+        - curl -L --output cc-test-reporter https://codeclimate.com/downloads/test-reporter/test-reporter-latest-linux-amd64
+        - chmod +x ./cc-test-reporter
+        - ./cc-test-reporter before-build
+      script: mvn package --batch-mode
+      after_script:
+        - JACOCO_SOURCE_PATH="src vars test" ./cc-test-reporter format-coverage target/site/jacoco/jacoco.xml --input-type jacoco
+        - ./cc-test-reporter upload-coverage
+        - mvn -DrepoToken=$COVERALLS_REPO_TOKEN org.eluder.coveralls:coveralls-maven-plugin:report
 
     - stage: Docs
       name: Build
