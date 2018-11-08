@@ -72,6 +72,23 @@ void call(parameters = [:]) {
             echo "[WARNING][${STEP_NAME}] Deprecated parameter 'neoCredentialsId' from old configuration framework is used. This will not work anymore in future versions."
             parameters.put('neoCredentialsId', credId)
         }
+
+        if(! stepCompatibilityConfiguration.isEmpty()) {
+            echo "[WARNING][$STEP_NAME] You are using a deprecated configuration framework. This will be removed in " +
+                'futureVersions.\nAdd snippet below to \'./pipeline/config.yml\' and remove ' +
+                'file \'.pipeline/configuration.properties\'.\n' +
+                """|steps:
+                    |    neoDeploy:
+                    |        host: ${stepCompatibilityConfiguration.get('host', '<Add host here>')}
+                    |        account: ${stepCompatibilityConfiguration.get('account', '<Add account here>')}
+                """.stripMargin()
+
+            if(Boolean.getBoolean('com.sap.piper.featureFlag.buildUnstableWhenOldConfigFrameworkIsUsedByNeoDeploy')) {
+                script.currentBuild.setResult('UNSTABLE')
+                echo "[WARNING][$STEP_NAME] Build has been set to unstable since old config framework is used."
+            }
+        }
+
         // Backward compatibility end
 
         // load default & individual configuration
