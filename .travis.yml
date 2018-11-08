@@ -5,6 +5,9 @@ language: groovy
 sudo: required
 services:
   - docker
+env:
+  global:
+    MAVEN_OPTS=-Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn
 cache:
   directories:
   - $HOME/.m2
@@ -16,16 +19,22 @@ jobs:
   include:
     - stage: Tests
       name: Unit Tests
-      script: mvn clean test --batch-mode
-      after_success: mvn -DrepoToken=$COVERALLS_REPO_TOKEN org.jacoco:jacoco-maven-plugin:report org.eluder.coveralls:coveralls-maven-plugin:report
-
-    - stage: Docs
-      name: Build
+      before_script:
+        - curl -L --output cc-test-reporter https://codeclimate.com/downloads/test-reporter/test-reporter-latest-linux-amd64
+        - chmod +x ./cc-test-reporter
+        - ./cc-test-reporter before-build
+      script: mvn package --batch-mode
+      after_script:
+        - JACOCO_SOURCE_PATH="src vars test" ./cc-test-reporter format-coverage target/site/jacoco/jacoco.xml --input-type jacoco
+        - ./cc-test-reporter upload-coverage
+        - mvn -DrepoToken=$COVERALLS_REPO_TOKEN org.eluder.coveralls:coveralls-maven-plugin:report
+    - name: Docs Build
       if: type = pull_request
       install: docker pull squidfunk/mkdocs-material:3.0.4
       script: docker run --rm -it -v ${TRAVIS_BUILD_DIR}:/docs -w /docs/documentation squidfunk/mkdocs-material:3.0.4 build --clean --verbose --strict
     
-    - name: Deploy
+    - stage: Docs
+      name: Deploy
       if: repo = "SAP/jenkins-library" AND branch = master AND NOT type = pull_request
       install: 
         - docker pull squidfunk/mkdocs-material:3.0.4
