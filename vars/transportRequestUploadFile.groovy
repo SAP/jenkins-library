@@ -68,10 +68,10 @@ void call(parameters = [:]) {
         def changeDocumentId = null
 
         if(backendType == BackendType.SOLMAN) {
-            changeDocumentId = getChangeDocumentId(cm, this, configuration)
+            changeDocumentId = getChangeDocumentId(cm, script, configuration)
         }
 
-        def transportRequestId = getTransportRequestId(cm, this, configuration)
+        def transportRequestId = getTransportRequestId(cm, script, configuration)
 
         configHelper
             .mixin([changeDocumentId: changeDocumentId?.trim() ?: null,
