@@ -30,6 +30,8 @@ class commonPipelineEnvironment implements Serializable {
 
     String mtarFilePath
 
+    String changeDocumentId
+
     def reset() {
         appContainerProperties = [:]
         artifactVersion = null
@@ -49,6 +51,8 @@ class commonPipelineEnvironment implements Serializable {
         influxCustomDataMap = [pipeline_data: [:], step_data: [:]]
 
         mtarFilePath = null
+
+        changeDocumentId = null
     }
 
     def setAppContainerProperty(property, value) {
