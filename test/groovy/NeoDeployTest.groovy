@@ -1,3 +1,4 @@
+import com.sap.piper.Utils
 import hudson.AbortException
 
 import org.junit.rules.TemporaryFolder
@@ -5,6 +6,8 @@ import org.junit.rules.TemporaryFolder
 import org.junit.BeforeClass
 import org.junit.ClassRule
 import org.junit.Ignore
+
+import java.util.Map
 
 import org.hamcrest.BaseMatcher
 import org.hamcrest.Description
@@ -81,13 +84,22 @@ class NeoDeployTest extends BasePiperTest {
     @Test
     void straightForwardTestConfigViaConfigProperties() {
 
+        boolean notifyOldConfigFrameworkUsed = false
+
         nullScript.commonPipelineEnvironment.setConfigProperty('DEPLOY_HOST', 'test.deploy.host.com')
         nullScript.commonPipelineEnvironment.setConfigProperty('CI_DEPLOY_ACCOUNT', 'trialuser123')
         nullScript.commonPipelineEnvironment.configuration = [:]
 
+        def utils = new Utils() {
+            void pushToSWA(Map parameters, Map config) {
+                notifyOldConfigFrameworkUsed = parameters.stepParam4
+            }
+        }
+
         jsr.step.neoDeploy(script: nullScript,
                        archivePath: archiveName,
-                       neoCredentialsId: 'myCredentialsId'
+                       neoCredentialsId: 'myCredentialsId',
+                       utils: utils
         )
 
         Assert.assertThat(jscr.shell,
@@ -98,14 +110,25 @@ class NeoDeployTest extends BasePiperTest {
                                     .hasSingleQuotedOption('user', 'anonymous')
                                     .hasSingleQuotedOption('password', '\\*\\*\\*\\*\\*\\*\\*\\*')
                                     .hasDoubleQuotedOption('source', '.*'))
+
+        assert notifyOldConfigFrameworkUsed
     }
 
     @Test
     void straightForwardTestConfigViaConfiguration() {
 
+        boolean notifyOldConfigFrameworkUsed = true
+
+        def utils = new Utils() {
+            void pushToSWA(Map parameters, Map config) {
+                notifyOldConfigFrameworkUsed = parameters.stepParam4
+            }
+        }
+
         jsr.step.neoDeploy(script: nullScript,
             archivePath: archiveName,
-            neoCredentialsId: 'myCredentialsId'
+            neoCredentialsId: 'myCredentialsId',
+            utils: utils,
         )
 
         Assert.assertThat(jscr.shell,
@@ -116,6 +139,8 @@ class NeoDeployTest extends BasePiperTest {
                                     .hasSingleQuotedOption('user', 'anonymous')
                                     .hasSingleQuotedOption('password', '\\*\\*\\*\\*\\*\\*\\*\\*')
                                     .hasDoubleQuotedOption('source', '.*'))
+
+        assert !notifyOldConfigFrameworkUsed
     }
 
     @Test
