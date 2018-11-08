@@ -39,8 +39,7 @@ void call(Map parameters = [:], Closure body = null) {
 
         def gitUtils = parameters.juStabGitUtils ?: new GitUtils()
 
-        if (gitUtils.insideWorkTree()) {
-            if (sh(returnStatus: true, script: 'git diff --quiet HEAD') != 0)
+        if (gitUtils.isWorkTreeDirty()) {
                 error "[${STEP_NAME}] Files in the workspace have been changed previously - aborting ${STEP_NAME}"
         }
         if (script == null)

@@ -34,8 +34,8 @@ class ArtifactSetVersionTest extends BasePiperTest {
     Map dockerParameters
 
     def GitUtils gitUtils = new GitUtils() {
-        boolean insideWorkTree() {
-            return true
+        boolean isWorkTreeDirty() {
+            return false
         }
 
         String getGitCommitIdOrNull() {
