@@ -36,7 +36,7 @@ void call(parameters = [:]) {
 
         def script = checkScript(this, parameters) ?: this
 
-        def utils = new Utils()
+        def utils = parameters.utils ?: new Utils()
 
         prepareDefaultValues script: script
 
@@ -89,7 +89,8 @@ void call(parameters = [:]) {
             step: STEP_NAME,
             stepParam1: configuration.deployMode == 'mta'?'mta':'war', // ['mta', 'warParams', 'warPropertiesFile']
             stepParam2: configuration.warAction == 'rolling-update'?'blue-green':'standard', // ['deploy', 'deploy-mta', 'rolling-update']
-            stepParam3: parameters?.script == null
+            stepParam3: parameters?.script == null,
+            stepParam4: ! stepCompatibilityConfiguration.isEmpty(),
         ], configuration)
 
         def archivePath = configuration.archivePath
