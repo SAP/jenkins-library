@@ -84,11 +84,14 @@ class NeoDeployTest extends BasePiperTest {
     @Test
     void straightForwardTestConfigViaConfigProperties() {
 
+        boolean buildStatusHasBeenSet = false
         boolean notifyOldConfigFrameworkUsed = false
 
         nullScript.commonPipelineEnvironment.setConfigProperty('DEPLOY_HOST', 'test.deploy.host.com')
         nullScript.commonPipelineEnvironment.setConfigProperty('CI_DEPLOY_ACCOUNT', 'trialuser123')
         nullScript.commonPipelineEnvironment.configuration = [:]
+
+        nullScript.currentBuild = [setResult: {buildStatusHasBeenSet = true}]
 
         def utils = new Utils() {
             void pushToSWA(Map parameters, Map config) {
@@ -111,7 +114,35 @@ class NeoDeployTest extends BasePiperTest {
                                     .hasSingleQuotedOption('password', '\\*\\*\\*\\*\\*\\*\\*\\*')
                                     .hasDoubleQuotedOption('source', '.*'))
 
+        assert !buildStatusHasBeenSet
         assert notifyOldConfigFrameworkUsed
+    }
+
+    @Test
+    void testConfigViaConfigPropertiesSetsBuildToUnstable() {
+
+        def buildStatus = 'SUCCESS'
+
+        nullScript.commonPipelineEnvironment.setConfigProperty('DEPLOY_HOST', 'test.deploy.host.com')
+        nullScript.commonPipelineEnvironment.setConfigProperty('CI_DEPLOY_ACCOUNT', 'trialuser123')
+        nullScript.commonPipelineEnvironment.configuration = [:]
+
+        nullScript.currentBuild = [setResult: { r -> buildStatus = r}]
+
+        System.setProperty('com.sap.piper.featureFlag.buildUnstableWhenOldConfigFrameworkIsUsedByNeoDeploy',
+            Boolean.TRUE.toString())
+
+        try {
+            jsr.step.neoDeploy(script: nullScript,
+                               archivePath: archiveName,
+                               neoCredentialsId: 'myCredentialsId',
+                               utils: utils
+            )
+        } finally {
+            System.clearProperty('com.sap.piper.featureFlag.buildUnstableWhenOldConfigFrameworkIsUsedByNeoDeploy')
+        }
+
+        assert buildStatus == 'UNSTABLE'
     }
 
     @Test
