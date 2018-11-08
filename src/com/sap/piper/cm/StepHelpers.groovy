@@ -52,26 +52,35 @@ public class StepHelpers {
         if(changeDocumentId?.trim()) {
 
             step.echo "[INFO] ChangeDocumentId '${changeDocumentId}' retrieved from parameters."
-
-        } else {
-
-            step.echo "[INFO] Retrieving ChangeDocumentId from commit history [from: ${configuration.changeManagement.git.from}, to: ${configuration.changeManagement.git.to}]." +
-                        "Searching for pattern '${configuration.changeManagement.changeDocumentLabel}'. Searching with format '${configuration.changeManagement.git.format}'."
-
-            try {
-                changeDocumentId = cm.getChangeDocumentId(
-                                                            configuration.changeManagement.git.from,
-                                                            configuration.changeManagement.git.to,
-                                                            configuration.changeManagement.changeDocumentLabel,
-                                                            configuration.changeManagement.git.format
-                                                        )
-
-                step.echo "[INFO] ChangeDocumentId '${changeDocumentId}' retrieved from commit history"
-
-            } catch(ChangeManagementException ex) {
-                step.echo "[WARN] Cannot retrieve changeDocumentId from commit history: ${ex.getMessage()}."
-            }
+            return changeDocumentId
         }
+
+        changeDocumentId = step.commonPipelineEnvironment.getChangeDocumentId()
+
+        if(changeDocumentId?.trim()) {
+
+            step.echo "[INFO] ChangeDocumentId '${changeDocumentId}' retrieved from common pipeline environment."
+            return changeDocumentId
+        }
+
+        step.echo "[INFO] Retrieving ChangeDocumentId from commit history [from: ${configuration.changeManagement.git.from}, to: ${configuration.changeManagement.git.to}]." +
+                    "Searching for pattern '${configuration.changeManagement.changeDocumentLabel}'. Searching with format '${configuration.changeManagement.git.format}'."
+
+        try {
+            changeDocumentId = cm.getChangeDocumentId(
+                                                        configuration.changeManagement.git.from,
+                                                        configuration.changeManagement.git.to,
+                                                        configuration.changeManagement.changeDocumentLabel,
+                                                        configuration.changeManagement.git.format
+                                                    )
+
+            step.echo "[INFO] ChangeDocumentId '${changeDocumentId}' retrieved from commit history"
+            step.commonPipelineEnvironment.setChangeDocumentId(changeDocumentId)
+
+        } catch(ChangeManagementException ex) {
+            step.echo "[WARN] Cannot retrieve changeDocumentId from commit history: ${ex.getMessage()}."
+        }
+
         return changeDocumentId
     }
 

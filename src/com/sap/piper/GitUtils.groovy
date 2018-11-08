@@ -4,6 +4,23 @@ boolean insideWorkTree() {
     return sh(returnStatus: true, script: 'git rev-parse --is-inside-work-tree 1>/dev/null 2>&1') == 0
 }
 
+boolean isWorkTreeDirty() {
+
+    if(!insideWorkTree()) error 'Method \'isWorkTreeClean\' called outside a git work tree.'
+
+    def gitCmd = 'git diff --quiet HEAD'
+    def rc = sh(returnStatus: true, script: gitCmd)
+
+    // from git man page:
+    // "it exits with 1 if there were differences and 0 means no differences"
+    //
+    // in case of general git trouble, e.g. outside work tree this is indicated by
+    // a return code higher than 1.
+    if(rc == 0) return false
+    else if (rc == 1) return true
+    else error "git command '${gitCmd}' return with code '${rc}'. This indicates general trouble with git."
+}
+
 String getGitCommitIdOrNull() {
     if ( insideWorkTree() ) {
         return getGitCommitId()

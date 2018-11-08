@@ -43,7 +43,7 @@ public class PrepareDefaultValuesTest extends BasePiperTest {
     @Test
     public void testDefaultPipelineEnvironmentOnly() {
 
-        jsr.step.call(script: nullScript)
+        jsr.step.prepareDefaultValues(script: nullScript)
 
         assert DefaultValueCache.getInstance().getDefaultValues().size() == 1
         assert DefaultValueCache.getInstance().getDefaultValues().default == 'config'
@@ -55,7 +55,7 @@ public class PrepareDefaultValuesTest extends BasePiperTest {
         def instance = DefaultValueCache.createInstance([key:'value'])
 
         // existing instance is dropped in case a custom config is provided.
-        jsr.step.call(script: nullScript, customDefaults: 'custom.yml')
+        jsr.step.prepareDefaultValues(script: nullScript, customDefaults: 'custom.yml')
 
         // this check is for checking we have another instance
         assert ! instance.is(DefaultValueCache.getInstance())
@@ -72,7 +72,7 @@ public class PrepareDefaultValuesTest extends BasePiperTest {
 
         def instance = DefaultValueCache.createInstance([key:'value'])
 
-        jsr.step.call(script: nullScript)
+        jsr.step.prepareDefaultValues(script: nullScript)
 
         assert instance.is(DefaultValueCache.getInstance())
         assert DefaultValueCache.getInstance().getDefaultValues().size() == 1
@@ -86,13 +86,13 @@ public class PrepareDefaultValuesTest extends BasePiperTest {
         thrown.expect(hudson.AbortException.class)
         thrown.expectMessage('No such library resource not_found could be found')
 
-        jsr.step.call(script: nullScript, customDefaults: 'not_found')
+        jsr.step.prepareDefaultValues(script: nullScript, customDefaults: 'not_found')
     }
 
     @Test
     public void testDefaultPipelineEnvironmentWithCustomConfigReferencedAsString() {
 
-        jsr.step.call(script: nullScript, customDefaults: 'custom.yml')
+        jsr.step.prepareDefaultValues(script: nullScript, customDefaults: 'custom.yml')
 
         assert DefaultValueCache.getInstance().getDefaultValues().size() == 2
         assert DefaultValueCache.getInstance().getDefaultValues().default == 'config'
@@ -102,7 +102,7 @@ public class PrepareDefaultValuesTest extends BasePiperTest {
     @Test
     public void testDefaultPipelineEnvironmentWithCustomConfigReferencedAsList() {
 
-        jsr.step.call(script: nullScript, customDefaults: ['custom.yml'])
+        jsr.step.prepareDefaultValues(script: nullScript, customDefaults: ['custom.yml'])
 
         assert DefaultValueCache.getInstance().getDefaultValues().size() == 2
         assert DefaultValueCache.getInstance().getDefaultValues().default == 'config'
@@ -112,7 +112,7 @@ public class PrepareDefaultValuesTest extends BasePiperTest {
     @Test
     public void testAssertNoLogMessageInCaseOfNoAdditionalConfigFiles() {
 
-        jsr.step.call(script: nullScript)
+        jsr.step.prepareDefaultValues(script: nullScript)
 
         assert ! jlr.log.contains("Loading configuration file 'default_pipeline_environment.yml'")
     }
@@ -120,7 +120,7 @@ public class PrepareDefaultValuesTest extends BasePiperTest {
     @Test
     public void testAssertLogMessageInCaseOfMoreThanOneConfigFile() {
 
-        jsr.step.call(script: nullScript, customDefaults: ['custom.yml'])
+        jsr.step.prepareDefaultValues(script: nullScript, customDefaults: ['custom.yml'])
 
         assert jlr.log.contains("Loading configuration file 'default_pipeline_environment.yml'")
         assert jlr.log.contains("Loading configuration file 'custom.yml'")

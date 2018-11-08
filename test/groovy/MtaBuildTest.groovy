@@ -50,7 +50,7 @@ public class MtaBuildTest extends BasePiperTest {
     @Test
     void environmentPathTest() {
 
-        jsr.step.call(script: nullScript, buildTarget: 'NEO')
+        jsr.step.mtaBuild(script: nullScript, buildTarget: 'NEO')
 
         assert jscr.shell.find { c -> c.contains('PATH=./node_modules/.bin:/usr/bin')}
     }
@@ -59,7 +59,7 @@ public class MtaBuildTest extends BasePiperTest {
     @Test
     void sedTest() {
 
-        jsr.step.call(script: nullScript, buildTarget: 'NEO')
+        jsr.step.mtaBuild(script: nullScript, buildTarget: 'NEO')
 
         assert jscr.shell.find { c -> c =~ /sed -ie "s\/\\\$\{timestamp\}\/`date \+%Y%m%d%H%M%S`\/g" "mta.yaml"$/}
     }
@@ -68,7 +68,7 @@ public class MtaBuildTest extends BasePiperTest {
     @Test
     void mtarFilePathFromCommonPipelineEnviromentTest() {
 
-        jsr.step.call(script: nullScript,
+        jsr.step.mtaBuild(script: nullScript,
                       buildTarget: 'NEO')
 
         def mtarFilePath = nullScript.commonPipelineEnvironment.getMtarFilePath()
@@ -79,7 +79,7 @@ public class MtaBuildTest extends BasePiperTest {
     @Test
     void mtaJarLocationAsParameterTest() {
 
-        jsr.step.call(script: nullScript, mtaJarLocation: '/mylocation/mta/mta.jar', buildTarget: 'NEO')
+        jsr.step.mtaBuild(script: nullScript, mtaJarLocation: '/mylocation/mta/mta.jar', buildTarget: 'NEO')
 
         assert jscr.shell.find { c -> c.contains('-jar /mylocation/mta/mta.jar --mtar')}
 
@@ -94,7 +94,7 @@ public class MtaBuildTest extends BasePiperTest {
         jryr.registerYaml('mta.yaml', { throw new FileNotFoundException() })
         thrown.expect(FileNotFoundException)
 
-        jsr.step.call(script: nullScript, buildTarget: 'NEO')
+        jsr.step.mtaBuild(script: nullScript, buildTarget: 'NEO')
     }
 
 
@@ -106,7 +106,7 @@ public class MtaBuildTest extends BasePiperTest {
 
         jryr.registerYaml('mta.yaml', badMtaYaml())
 
-        jsr.step.call(script: nullScript, buildTarget: 'NEO')
+        jsr.step.mtaBuild(script: nullScript, buildTarget: 'NEO')
     }
 
 
@@ -118,7 +118,7 @@ public class MtaBuildTest extends BasePiperTest {
 
         jryr.registerYaml('mta.yaml', noIdMtaYaml() )
 
-        jsr.step.call(script: nullScript, buildTarget: 'NEO')
+        jsr.step.mtaBuild(script: nullScript, buildTarget: 'NEO')
     }
 
 
@@ -127,7 +127,7 @@ public class MtaBuildTest extends BasePiperTest {
 
         helper.registerAllowedMethod('sh', [Map], { Map m -> getVersionWithEnvVars(m) })
 
-        jsr.step.call(script: nullScript, buildTarget: 'NEO')
+        jsr.step.mtaBuild(script: nullScript, buildTarget: 'NEO')
 
         assert jscr.shell.find { c -> c.contains("-jar /env/mta/mta.jar --mtar")}
         assert jlr.log.contains("SAP Multitarget Application Archive Builder file '/env/mta/mta.jar' retrieved from environment.")
@@ -140,7 +140,7 @@ public class MtaBuildTest extends BasePiperTest {
 
         nullScript.commonPipelineEnvironment.configuration = [steps:[mtaBuild:[mtaJarLocation: '/config/mta/mta.jar']]]
 
-        jsr.step.call(script: nullScript,
+        jsr.step.mtaBuild(script: nullScript,
                       buildTarget: 'NEO')
 
         assert jscr.shell.find(){ c -> c.contains("-jar /config/mta/mta.jar --mtar")}
@@ -152,7 +152,7 @@ public class MtaBuildTest extends BasePiperTest {
     @Test
     void mtaJarLocationFromDefaultStepConfigurationTest() {
 
-        jsr.step.call(script: nullScript,
+        jsr.step.mtaBuild(script: nullScript,
                       buildTarget: 'NEO')
 
         assert jscr.shell.find(){ c -> c.contains("-jar mta.jar --mtar")}
@@ -164,7 +164,7 @@ public class MtaBuildTest extends BasePiperTest {
     @Test
     void buildTargetFromParametersTest() {
 
-        jsr.step.call(script: nullScript, buildTarget: 'NEO')
+        jsr.step.mtaBuild(script: nullScript, buildTarget: 'NEO')
 
         assert jscr.shell.find { c -> c.contains('java -jar mta.jar --mtar com.mycompany.northwind.mtar --build-target=NEO build')}
     }
@@ -175,7 +175,7 @@ public class MtaBuildTest extends BasePiperTest {
 
         nullScript.commonPipelineEnvironment.configuration = [steps:[mtaBuild:[buildTarget: 'NEO']]]
 
-        jsr.step.call(script: nullScript)
+        jsr.step.mtaBuild(script: nullScript)
 
         assert jscr.shell.find(){ c -> c.contains('java -jar mta.jar --mtar com.mycompany.northwind.mtar --build-target=NEO build')}
     }
@@ -183,7 +183,7 @@ public class MtaBuildTest extends BasePiperTest {
     @Test
     void canConfigureDockerImage() {
 
-        jsr.step.call(script: nullScript, dockerImage: 'mta-docker-image:latest')
+        jsr.step.mtaBuild(script: nullScript, dockerImage: 'mta-docker-image:latest')
 
         assert 'mta-docker-image:latest' == jder.dockerParams.dockerImage
     }
@@ -191,7 +191,7 @@ public class MtaBuildTest extends BasePiperTest {
     @Test
     void canConfigureDockerOptions() {
 
-        jsr.step.call(script: nullScript, dockerOptions: 'something')
+        jsr.step.mtaBuild(script: nullScript, dockerOptions: 'something')
 
         assert 'something' == jder.dockerParams.dockerOptions
     }
@@ -201,7 +201,7 @@ public class MtaBuildTest extends BasePiperTest {
 
         nullScript.commonPipelineEnvironment.defaultConfiguration = [steps:[mtaBuild:[buildTarget: 'NEO']]]
 
-        jsr.step.call(script: nullScript)
+        jsr.step.mtaBuild(script: nullScript)
 
         assert jscr.shell.find { c -> c.contains('java -jar mta.jar --mtar com.mycompany.northwind.mtar --build-target=NEO build')}
     }
@@ -210,7 +210,7 @@ public class MtaBuildTest extends BasePiperTest {
     @Test
     void extensionFromParametersTest() {
 
-        jsr.step.call(script: nullScript, buildTarget: 'NEO', extension: 'param_extension')
+        jsr.step.mtaBuild(script: nullScript, buildTarget: 'NEO', extension: 'param_extension')
 
         assert jscr.shell.find { c -> c.contains('java -jar mta.jar --mtar com.mycompany.northwind.mtar --build-target=NEO --extension=param_extension build')}
     }
@@ -221,7 +221,7 @@ public class MtaBuildTest extends BasePiperTest {
 
         nullScript.commonPipelineEnvironment.configuration = [steps:[mtaBuild:[buildTarget: 'NEO', extension: 'config_extension']]]
 
-        jsr.step.call(script: nullScript)
+        jsr.step.mtaBuild(script: nullScript)
 
         assert jscr.shell.find(){ c -> c.contains('java -jar mta.jar --mtar com.mycompany.northwind.mtar --build-target=NEO --extension=config_extension build')}
     }
