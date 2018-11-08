@@ -1,8 +1,8 @@
 package com.sap.piper
 
+import hudson.AbortException
 import static org.hamcrest.Matchers.equalTo
 import static org.hamcrest.Matchers.hasEntry
-import static org.hamcrest.Matchers.hasItem
 import static org.hamcrest.Matchers.is
 import static org.hamcrest.Matchers.notNullValue
 import static org.hamcrest.Matchers.startsWith
@@ -59,6 +59,36 @@ class GitUtilsTest extends BasePiperTest {
         assertFalse(gitUtils.insideWorkTree())
     }
 
+    @Test
+    void testWorkTreeDirty() {
+        jscr.setReturnValue('git rev-parse --is-inside-work-tree 1>/dev/null 2>&1', 0)
+        jscr.setReturnValue('git diff --quiet HEAD', 0)
+        assertFalse(gitUtils.isWorkTreeDirty())
+    }
+
+    @Test
+    void testWorkTreeDirtyOutsideWorktree() {
+        thrown.expect(AbortException)
+        thrown.expectMessage('Method \'isWorkTreeClean\' called outside a git work tree.')
+        jscr.setReturnValue('git rev-parse --is-inside-work-tree 1>/dev/null 2>&1', 1)
+        gitUtils.isWorkTreeDirty()
+    }
+
+    @Test
+    void testWorkTreeNotDirty() {
+        jscr.setReturnValue('git rev-parse --is-inside-work-tree 1>/dev/null 2>&1', 0)
+        jscr.setReturnValue('git diff --quiet HEAD', 1)
+        assertTrue(gitUtils.isWorkTreeDirty())
+    }
+
+    @Test
+    void testWorkTreeDirtyGeneralGitTrouble() {
+        thrown.expect(AbortException)
+        thrown.expectMessage('git command \'git diff --quiet HEAD\' return with code \'129\'. This indicates general trouble with git.')
+        jscr.setReturnValue('git rev-parse --is-inside-work-tree 1>/dev/null 2>&1', 0)
+        jscr.setReturnValue('git diff --quiet HEAD', 129) // e.g. when called outside work tree
+        gitUtils.isWorkTreeDirty()
+    }
 
     @Test
     void testGetGitCommitId() {
@@ -105,7 +135,7 @@ class GitUtilsTest extends BasePiperTest {
         String[] log = gitUtils.extractLogLines('xyz')
         assertNotNull(log)
         assertThat(log.size(),is(equalTo(0)))
-	}
+    }
 
     @Test
     void testHandleTestRepository() {
@@ -125,5 +155,5 @@ class GitUtilsTest extends BasePiperTest {
         assertThat(gitMap, hasEntry('branch', config.gitBranch))
         assertThat(stashName, startsWith('testContent-'))
         assertThat(result, startsWith('testContent-'))
-	}
+    }
 }
