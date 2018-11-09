@@ -108,10 +108,6 @@ Following parameters can also be specified as step parameters using the global c
 * `cobertura`
 * `jmeter`
 
-## Return value
-
-none
-
 ## Side effects
 
 none
