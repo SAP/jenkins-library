@@ -4,7 +4,6 @@ import com.cloudbees.groovy.cps.NonCPS
 
 public class StepHelpers {
 
-    @NonCPS
     public static def getTransportRequestId(ChangeManagement cm, def step, Map configuration) {
 
         def transportRequestId = configuration.transportRequestId
@@ -44,7 +43,6 @@ public class StepHelpers {
         transportRequestId
     }
 
-    @NonCPS
     public static getChangeDocumentId(ChangeManagement cm, def step, Map configuration) {
 
         def changeDocumentId = configuration.changeDocumentId
