@@ -4,25 +4,25 @@ import com.cloudbees.groovy.cps.NonCPS
 
 public class StepHelpers {
 
-    public static def getTransportRequestId(ChangeManagement cm, def step, Map configuration) {
+    public static def getTransportRequestId(ChangeManagement cm, def script, Map configuration) {
 
         def transportRequestId = configuration.transportRequestId
 
         if(transportRequestId?.trim()) {
 
-            step.echo "[INFO] Transport request id '${transportRequestId}' retrieved from parameters."
+            script.echo "[INFO] Transport request id '${transportRequestId}' retrieved from parameters."
             return transportRequestId
 
         }
 
-        transportRequestId = step.commonPipelineEnvironment.getTransportRequestId()
+        transportRequestId = script.commonPipelineEnvironment.getTransportRequestId()
 
         if(transportRequestId?.trim()) {
-            step.echo "[INFO] Transport request id '${transportRequestId}' retrieved from common pipeline environment."
+            script.echo "[INFO] Transport request id '${transportRequestId}' retrieved from common pipeline environment."
             return transportRequestId
         }
 
-        step.echo "[INFO] Retrieving transport request id from commit history [from: ${configuration.changeManagement.git.from}, to: ${configuration.changeManagement.git.to}]." +
+        script.echo "[INFO] Retrieving transport request id from commit history [from: ${configuration.changeManagement.git.from}, to: ${configuration.changeManagement.git.to}]." +
                     " Searching for pattern '${configuration.changeManagement.transportRequestLabel}'. Searching with format '${configuration.changeManagement.git.format}'."
 
         try {
@@ -33,35 +33,35 @@ public class StepHelpers {
                                                             configuration.changeManagement.git.format
                                                         )
 
-            step.commonPipelineEnvironment.setTransportRequestId(transportRequestId)
-            step.echo "[INFO] Transport request id '${transportRequestId}' retrieved from commit history"
+            script.commonPipelineEnvironment.setTransportRequestId(transportRequestId)
+            script.echo "[INFO] Transport request id '${transportRequestId}' retrieved from commit history"
 
         } catch(ChangeManagementException ex) {
-            step.echo "[WARN] Cannot retrieve transportRequestId from commit history: ${ex.getMessage()}."
+            script.echo "[WARN] Cannot retrieve transportRequestId from commit history: ${ex.getMessage()}."
         }
 
         transportRequestId
     }
 
-    public static getChangeDocumentId(ChangeManagement cm, def step, Map configuration) {
+    public static getChangeDocumentId(ChangeManagement cm, def script, Map configuration) {
 
         def changeDocumentId = configuration.changeDocumentId
 
         if(changeDocumentId?.trim()) {
 
-            step.echo "[INFO] ChangeDocumentId '${changeDocumentId}' retrieved from parameters."
+            script.echo "[INFO] ChangeDocumentId '${changeDocumentId}' retrieved from parameters."
             return changeDocumentId
         }
 
-        changeDocumentId = step.commonPipelineEnvironment.getChangeDocumentId()
+        changeDocumentId = script.commonPipelineEnvironment.getChangeDocumentId()
 
         if(changeDocumentId?.trim()) {
 
-            step.echo "[INFO] ChangeDocumentId '${changeDocumentId}' retrieved from common pipeline environment."
+            script.echo "[INFO] ChangeDocumentId '${changeDocumentId}' retrieved from common pipeline environment."
             return changeDocumentId
         }
 
-        step.echo "[INFO] Retrieving ChangeDocumentId from commit history [from: ${configuration.changeManagement.git.from}, to: ${configuration.changeManagement.git.to}]." +
+        script.echo "[INFO] Retrieving ChangeDocumentId from commit history [from: ${configuration.changeManagement.git.from}, to: ${configuration.changeManagement.git.to}]." +
                     "Searching for pattern '${configuration.changeManagement.changeDocumentLabel}'. Searching with format '${configuration.changeManagement.git.format}'."
 
         try {
@@ -72,31 +72,31 @@ public class StepHelpers {
                                                         configuration.changeManagement.git.format
                                                     )
 
-            step.echo "[INFO] ChangeDocumentId '${changeDocumentId}' retrieved from commit history"
-            step.commonPipelineEnvironment.setChangeDocumentId(changeDocumentId)
+            script.echo "[INFO] ChangeDocumentId '${changeDocumentId}' retrieved from commit history"
+            script.commonPipelineEnvironment.setChangeDocumentId(changeDocumentId)
 
         } catch(ChangeManagementException ex) {
-            step.echo "[WARN] Cannot retrieve changeDocumentId from commit history: ${ex.getMessage()}."
+            script.echo "[WARN] Cannot retrieve changeDocumentId from commit history: ${ex.getMessage()}."
         }
 
         return changeDocumentId
     }
 
     @NonCPS
-    static BackendType getBackendTypeAndLogInfoIfCMIntegrationDisabled(def step, Map configuration) {
+    static BackendType getBackendTypeAndLogInfoIfCMIntegrationDisabled(def script, Map configuration) {
 
         BackendType backendType
 
         try {
             backendType = configuration.changeManagement.type as BackendType
         } catch(IllegalArgumentException e) {
-            step.error "Invalid backend type: '${configuration.changeManagement.type}'. " +
+            script.error "Invalid backend type: '${configuration.changeManagement.type}'. " +
                   "Valid values: [${BackendType.values().join(', ')}]. " +
                   "Configuration: 'changeManagement/type'."
         }
 
         if (backendType == BackendType.NONE) {
-            step.echo "[INFO] Change management integration intentionally switched off. " +
+            script.echo "[INFO] Change management integration intentionally switched off. " +
                  "In order to enable it provide 'changeManagement/type with one of " +
                  "[${BackendType.values().minus(BackendType.NONE).join(', ')}] and maintain " +
                  "other required properties like 'endpoint', 'credentialsId'."
