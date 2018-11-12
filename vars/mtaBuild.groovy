@@ -77,6 +77,8 @@ void call(Map parameters = [:]) {
             if (configuration.extension) mtaCall += " --extension=$configuration.extension"
             mtaCall += ' build'
 
+            echo "[INFO] Executing mta build call: '${mtaCall}'."
+
             sh """#!/bin/bash
             export PATH=./node_modules/.bin:${PATH}
             $mtaCall
