@@ -62,11 +62,11 @@ void call(parameters = [:]) {
                                 stepParam1: parameters?.script == null], configuration)
 
         def changeDocumentId = null
-        def transportRequestId = getTransportRequestId(cm, this, configuration)
+        def transportRequestId = getTransportRequestId(cm, script, configuration)
 
         if(backendType == BackendType.SOLMAN) {
 
-            changeDocumentId = getChangeDocumentId(cm, this, configuration)
+            changeDocumentId = getChangeDocumentId(cm, script, configuration)
 
             configHelper.mixin([changeDocumentId: changeDocumentId?.trim() ?: null], ['changeDocumentId'] as Set)
                         .withMandatoryProperty('changeDocumentId',
