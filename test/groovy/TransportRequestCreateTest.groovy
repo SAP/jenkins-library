@@ -127,9 +127,9 @@ public class TransportRequestCreateTest extends BasePiperTest {
             }
         }
 
-        def transportId = jsr.step.transportRequestCreate(script: nullScript, changeDocumentId: '001', developmentSystemId: '001', cmUtils: cm)
+        jsr.step.transportRequestCreate(script: nullScript, changeDocumentId: '001', developmentSystemId: '001', cmUtils: cm)
 
-        assert transportId == '001'
+        assert nullScript.commonPipelineEnvironment.getTransportRequestId() == '001'
         assert result == [changeId: '001',
                          developmentSystemId: '001',
                          cmEndpoint: 'https://example.org/cm',
@@ -166,14 +166,14 @@ public class TransportRequestCreateTest extends BasePiperTest {
             }
         }
 
-        def transportId = jsr.step.transportRequestCreate(script: nullScript,
-                                        transportType: 'W',
-                                        targetSystem: 'XYZ',
-                                        description: 'desc',
-                                        changeManagement: [type: 'CTS'],
-                                        cmUtils: cm)
+        jsr.step.call(script: nullScript,
+                        transportType: 'W',
+                        targetSystem: 'XYZ',
+                        description: 'desc',
+                        changeManagement: [type: 'CTS'],
+                        cmUtils: cm)
 
-        assert transportId == '001'
+        assert nullScript.commonPipelineEnvironment.getTransportRequestId() == '001'
         assert result == [transportType: 'W',
                          targetSystemId: 'XYZ',
                          description: 'desc',
