@@ -55,6 +55,7 @@ void call(Map parameters = [:]) {
 
         def testJobs = [:]
         def options = [
+            script: script,
             containerPortMappings: config.containerPortMappings,
             dockerEnvVars: config.dockerEnvVars,
             dockerImage: config.dockerImage,
