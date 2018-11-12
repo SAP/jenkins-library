@@ -20,15 +20,18 @@ class StepHelpersTest extends BasePiperTest {
                 to: 'HEAD',
                 format: '%b'
             ],
-            changeDocumentLabel: "ChangeDocument:"
+            changeDocumentLabel: "ChangeDocument:",
+            transportRequestLabel: "TransportRequest:",
         ]
     ]
 
     private Map getChangeDocumentIdReceivedParameters = [:]
+    private Map getTransportRequestIdReceivedParameters = [:]
 
     @Before
     public void setup() {
         getChangeDocumentIdReceivedParameters.clear()
+        getTransportRequestIdReceivedParameters.clear()
     }
 
     JenkinsLoggingRule jlr = new JenkinsLoggingRule(this)
@@ -38,6 +41,20 @@ class StepHelpersTest extends BasePiperTest {
                                   .around(jlr)
 
     private ChangeManagement cm = new ChangeManagement(nullScript) {
+
+        String getTransportRequestId(
+                String from,
+                String to,
+                String label,
+                String format
+        ) {
+            getTransportRequestIdReceivedParameters['from'] = from
+            getTransportRequestIdReceivedParameters['to'] = to
+            getTransportRequestIdReceivedParameters['label'] = label
+            getTransportRequestIdReceivedParameters['format'] = format
+            return '097'
+        }
+
         String getChangeDocumentId(
                 String from,
                 String to,
@@ -53,6 +70,24 @@ class StepHelpersTest extends BasePiperTest {
     }
 
     @Test
+    public void transportRequestIdViaCommitHistoryTest() {
+
+        def transportRequestId = StepHelpers.getTransportRequestId(cm, nullScript, params)
+
+        assert transportRequestId == '097'
+        assert getTransportRequestIdReceivedParameters ==
+        [
+            from: 'HEAD~1',
+            to: 'HEAD',
+            label: 'TransportRequest:',
+            format: '%b'
+        ]
+
+        // We cache the value. Otherwise we have to retrieve it each time from the
+        // commit history.
+        assert nullScript.commonPipelineEnvironment.getTransportRequestId() == '097'
+    }
+
     public void changeDocumentIdViaCommitHistoryTest() {
 
         def changeDocumentId = StepHelpers.getChangeDocumentId(cm, nullScript, params)
@@ -69,10 +104,60 @@ class StepHelpersTest extends BasePiperTest {
         // We cache the value. Otherwise we have to retrieve it each time from the
         // commit history.
         assert nullScript.commonPipelineEnvironment.getChangeDocumentId() == '001'
-
     }
 
     @Test
+    public void transportRequestIdViaCommonPipelineEnvironmentTest() {
+
+        nullScript.commonPipelineEnvironment.setTransportRequestId('098')
+        def transportRequestId = StepHelpers.getTransportRequestId(cm, nullScript, params)
+
+        assert transportRequestId == '098'
+
+        // getTransportRequestId gets not called on ChangeManagement util class
+        // in this case.
+        assert getTransportRequestIdReceivedParameters == [:]
+    }
+
+    @Test
+    public void transportRequestIdViaParametersTest() {
+
+        params << [transportRequestId: '099']
+
+        def transportRequestId = StepHelpers.getTransportRequestId(cm, nullScript, params)
+
+        assert transportRequestId == '099'
+
+        // In case we get the transport request id via parameters we do not cache it
+        // Caller knows the transport request id anyway. So the caller can provide it with
+        // each call.
+        assert nullScript.commonPipelineEnvironment.getTransportRequestId() == null
+
+        // getTransportRequestId gets not called on ChangeManagement util class
+        // in this case.
+        assert getTransportRequestIdReceivedParameters == [:]
+    }
+
+    @Test
+    public void transportRequestIdNotProvidedTest() {
+
+        jlr.expect('Cannot retrieve transportRequestId from commit history')
+
+        def cm = new ChangeManagement(nullScript) {
+        String getTransportRequestId(
+                String from,
+                String to,
+                String label,
+                String format
+        )   {
+                throw new ChangeManagementException('Cannot retrieve transport request id')
+            }
+        }
+
+        def transportRequestId = StepHelpers.getTransportRequestId(cm, nullScript, params)
+        assert transportRequestId == null
+    }
+
     public void changeDocumentIdViaCommonPipelineEnvironmentTest() {
 
         nullScript.commonPipelineEnvironment.setChangeDocumentId('002')
@@ -120,8 +205,8 @@ class StepHelpersTest extends BasePiperTest {
             }
         }
 
-        def transportRequestId = StepHelpers.getChangeDocumentId(cm, nullScript, params)
+        def changeDocumentId = StepHelpers.getChangeDocumentId(cm, nullScript, params)
 
-        assert transportRequestId == null
+        assert changeDocumentId == null
     }
 }

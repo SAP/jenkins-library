@@ -27,7 +27,7 @@ import hudson.AbortException
 
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS.plus(['changeDocumentId'])
 
-def call(parameters = [:]) {
+void call(parameters = [:]) {
 
     def transportRequestId
 
@@ -68,7 +68,7 @@ def call(parameters = [:]) {
 
         if(backendType == BackendType.SOLMAN) {
 
-            changeDocumentId = getChangeDocumentId(cm, this, configuration)
+            changeDocumentId = getChangeDocumentId(cm, script, configuration)
 
             configHelper.mixin([changeDocumentId: changeDocumentId?.trim() ?: null], ['changeDocumentId'] as Set)
                         .withMandatoryProperty('developmentSystemId')
@@ -110,7 +110,6 @@ def call(parameters = [:]) {
 
 
         echo "[INFO] Transport Request '$transportRequestId' has been successfully created."
+        script.commonPipelineEnvironment.setTransportRequestId(transportRequestId)
     }
-
-    return transportRequestId
 }

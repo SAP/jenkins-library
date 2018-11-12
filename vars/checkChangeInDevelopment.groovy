@@ -97,7 +97,7 @@ void call(parameters = [:]) {
         new Utils().pushToSWA([step: STEP_NAME,
                                 stepParam1: parameters?.script == null], configuration)
 
-        def changeId = getChangeDocumentId(cm, this, configuration)
+        def changeId = getChangeDocumentId(cm, script, configuration)
 
         configuration = configHelper.mixin([changeDocumentId: changeId?.trim() ?: null], ['changeDocumentId'] as Set)
 
