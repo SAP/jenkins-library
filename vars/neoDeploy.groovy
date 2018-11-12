@@ -208,9 +208,12 @@ void call(parameters = [:]) {
                 """--user '${username}' \
                    --password '${password}' \
                 """
-            dockerExecute(dockerImage: configuration.get('dockerImage'),
-                          dockerEnvVars: configuration.get('dockerEnvVars'),
-                          dockerOptions: configuration.get('dockerOptions')) {
+            dockerExecute(
+                script: script,
+                dockerImage: configuration.get('dockerImage'),
+                dockerEnvVars: configuration.get('dockerEnvVars'),
+                dockerOptions: configuration.get('dockerOptions')
+            ) {
 
                 neo.verify(this, configuration)
 

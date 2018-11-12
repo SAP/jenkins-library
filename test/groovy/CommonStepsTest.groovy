@@ -216,7 +216,6 @@ public class CommonStepsTest extends BasePiperTest{
         def stepsWithCallMethodsOtherThanVoid = []
 
         def whitelist = [
-            'transportRequestCreate',
             'durationMeasure',
             ]
 

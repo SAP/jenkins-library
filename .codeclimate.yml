@@ -1,8 +1,15 @@
 plugins:
   codenarc:
     enabled: true
+    checks:
+      BooleanGetBoolean:
+        enabled: false
   editorconfig:
     enabled: true
+    checks:
+      # https://github.com/DavidAnson/markdownlint/blob/master/doc/Rules.md#md013---line-length
+      MD013:
+        enabled: false
     config:
       editorconfig: .editorconfig
     # https://docs.codeclimate.com/docs/advanced-configuration#section-exclude-patterns
