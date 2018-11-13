@@ -40,7 +40,7 @@ public class MtaBuildTest extends BasePiperTest {
     @Before
     void init() {
 
-        helper.registerAllowedMethod('fileExists', [String], { s -> false })
+        helper.registerAllowedMethod('fileExists', [String], { s -> s == 'mta.yaml' })
         helper.registerAllowedMethod('sh', [Map], { Map m -> getVersionWithoutEnvVars(m) })
 
         binding.setVariable('PATH', '/usr/bin')
@@ -90,9 +90,10 @@ public class MtaBuildTest extends BasePiperTest {
 
     @Test
     void noMtaPresentTest() {
-
-        jryr.registerYaml('mta.yaml', { throw new FileNotFoundException() })
-        thrown.expect(FileNotFoundException)
+        helper.registerAllowedMethod('fileExists', [String], { false })
+        thrown.expect(AbortException)
+        thrown.expectMessage('\'mta.yaml\' not found in project sources and \'applicationName\' not provided as parameter ' +
+                                '- cannot generate \'mta.yaml\' file.')
 
         jsr.step.mtaBuild(script: nullScript, buildTarget: 'NEO')
     }
