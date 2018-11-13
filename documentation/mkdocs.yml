@@ -33,6 +33,8 @@ nav:
         - transportRequestCreate: steps/transportRequestCreate.md
         - transportRequestRelease:  steps/transportRequestRelease.md
         - transportRequestUploadFile: steps/transportRequestUploadFile.md
+    - 'Scenarios':
+        - 'Fiori build and deploy': scenarios/ui5-sap-cp/Readme.md
     - 'Required Plugins': jenkins/requiredPlugins.md
 
 theme:
