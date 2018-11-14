@@ -2,6 +2,10 @@ package com.sap.piper
 
 import static java.lang.Boolean.getBoolean
 
+import static com.sap.piper.JenkinsUtils.isPluginActive
+
+import com.sap.piper.Dependencies
+
 static checkScript(def step, Map params) {
 
     def script = params?.script
@@ -19,4 +23,16 @@ static checkScript(def step, Map params) {
     }
 
     return script
+}
+
+static void checkRequiredPlugins(step) {
+
+    def requiredPlugins = step.getClass().getDeclaredMethod('call')?.getAnnotation(Dependencies)?.requiredPlugins() ?: []
+
+    def missingPlugins = []
+
+    for (plugin in requiredPlugins)
+        if(! isPluginActive(plugin)) missingPlugins << plugin
+
+    if(missingPlugins) step.error "The following plugins are required for step '${step.STEP_NAME}', but they are not available: ${missingPlugins}."
 }

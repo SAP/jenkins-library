@@ -1,4 +1,5 @@
 import static com.sap.piper.Prerequisites.checkScript
+import static com.sap.piper.Prerequisites.checkRequiredPlugins
 
 import com.sap.piper.GitUtils
 import com.sap.piper.Utils
@@ -7,6 +8,7 @@ import hudson.AbortException
 
 import com.sap.piper.ConfigurationHelper
 import com.sap.piper.ConfigurationMerger
+import com.sap.piper.Dependencies
 import com.sap.piper.cm.BackendType
 import com.sap.piper.cm.ChangeManagement
 import com.sap.piper.cm.ChangeManagementException
@@ -37,11 +39,13 @@ import static com.sap.piper.cm.StepHelpers.getBackendTypeAndLogInfoIfCMIntegrati
  * range and the pattern can be configured. For details see 'parameters' table.
  *
  */
+@Dependencies(requiredPlugins=['workflow-basic-steps'])
 void call(parameters = [:]) {
 
     handlePipelineStepErrors (stepName: STEP_NAME, stepParameters: parameters) {
 
         def script = checkScript(this, parameters) ?: this
+        checkRequiredPlugins(this)
 
         GitUtils gitUtils = parameters?.gitUtils ?: new GitUtils()
 

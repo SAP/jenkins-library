@@ -15,6 +15,7 @@ public class Rules {
         return RuleChain.outerRule(new JenkinsSetupRule(testCase, libConfig))
             .around(new JenkinsResetDefaultCacheRule())
             .around(new JenkinsErrorRule(testCase))
-			.around(new JenkinsEnvironmentRule(testCase))
+            .around(new JenkinsEnvironmentRule(testCase))
+            .around(new JenkinsDependenciesRule(testCase))
     }
 }
