@@ -187,6 +187,9 @@ steps:
       'node:8-stretch':
         - containerPort: 9876
           hostPort: 9876
+    dockerEnvVars:
+      NO_PROXY: 'localhost,selenium,$NO_PROXY'
+      no_proxy: 'localhost,selenium,$no_proxy'
     dockerImage: 'node:8-stretch'
     dockerName: 'karma'
     dockerWorkspace: '/home/node'
@@ -194,6 +197,12 @@ steps:
     modules:
       - '.'
     runCommand: 'npm run karma'
+    sidecarEnvVars:
+      NO_PROXY: 'localhost,karma,$NO_PROXY'
+      no_proxy: 'localhost,karma,$no_proxy'
+    stashContent:
+      - buildDescriptor
+      - tests
   mailSendNotification:
     notificationAttachment: true
     notifyCulprits: true
