@@ -287,7 +287,7 @@ steps:
     toHtml: false
   testsPublishResults:
     junit:
-      pattern: '**/target/surefire-reports/*.xml'
+      pattern: '**/TEST-*.xml'
       updateResults: false
       allowEmptyResults: true
       archive: false
