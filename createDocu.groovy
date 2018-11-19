@@ -65,7 +65,7 @@ class TemplateHelper {
         def t = '''|
                    |We recommend to define values of step parameters via [config.yml file](../configuration.md).
                    |
-                   |In following sections the configuration is possible:'''.stripMargin()
+                   |In following sections the configuration is possible:\n\n'''.stripMargin()
 
         t += '| parameter | general | step | stage |\n'
         t += '|-----------|---------|------|-------|\n'
