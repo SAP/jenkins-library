@@ -65,7 +65,7 @@ void call(Map parameters = [:]) {
                 .addIfEmpty('mtaPath', config.mtaPath?:findMtar())
                 .use()
 
-            dockerExecute(dockerImage: config.dockerImage, dockerWorkspace: config.dockerWorkspace, stashContent: config.stashContent) {
+            dockerExecute(script: script, dockerImage: config.dockerImage, dockerWorkspace: config.dockerWorkspace, stashContent: config.stashContent) {
                 deployMta(config)
             }
             return
@@ -84,6 +84,7 @@ void call(Map parameters = [:]) {
             echo "[${STEP_NAME}] CF native deployment (${config.deployType}) with cfAppName=${config.cloudFoundry.appName}, cfManifest=${config.cloudFoundry.manifest}, smokeTestScript=${config.smokeTestScript}"
 
             dockerExecute (
+                script: script,
                 dockerImage: config.dockerImage,
                 dockerWorkspace: config.dockerWorkspace,
                 stashContent: config.stashContent,
