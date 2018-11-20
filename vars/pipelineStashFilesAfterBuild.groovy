@@ -48,14 +48,14 @@ void call(Map parameters = [:]) {
 
         utils.stashWithMessage(
             'classFiles',
-            '[${STEP_NAME}] Failed to stash class files.',
+            "[${STEP_NAME}] Failed to stash class files.",
             config.stashIncludes.classFiles,
             config.stashExcludes.classFiles
         )
 
         utils.stashWithMessage(
             'sonar',
-            '[${STEP_NAME}] Failed to stash sonar files.',
+            "[${STEP_NAME}] Failed to stash sonar files.",
             config.stashIncludes.sonar,
             config.stashExcludes.sonar
         )
