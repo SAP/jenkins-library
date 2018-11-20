@@ -264,8 +264,8 @@ class Helper {
     }
 
     private static isHeader(line) {
-        Matcher headerMatcher = (line =~ /(def|void)\s*call\s*\(/ )
-        return headerMatcher.size() == 1 && headerMatcher[0].size() == 2
+        Matcher headerMatcher = (line =~ /(?:(?:def|void)\s*call\s*\()|(?:@.*)/ )
+        return headerMatcher.size() == 1
     }
 
     private static retrieveParameterName(line) {
