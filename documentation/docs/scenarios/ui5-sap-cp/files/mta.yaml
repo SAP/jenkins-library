@@ -14,4 +14,3 @@ modules:
     build-parameters:
       builder: grunt
       build-result: dist
-
