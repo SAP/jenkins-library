@@ -1,6 +1,5 @@
 # Docu stub
 
-
 # Project template files
 
 The following template files needs to be provided and adjusted on project level:
