@@ -15,6 +15,7 @@ import groovy.transform.Field
     'deployUser',
     'deployTool',
     'deployType',
+    'keepOldInstance',
     'dockerImage',
     'dockerWorkspace',
     'mtaDeployParameters',
@@ -118,8 +119,14 @@ def deployCfNative (config) {
         usernameVariable: 'username'
     )]) {
         def deployCommand = 'push'
+        def blueGreenDeployOptions = ''
+        boolean deleteOldInstance = !config.keepOldInstance
+
         if (config.deployType == 'blue-green') {
             deployCommand = 'blue-green-deploy'
+            if (deleteOldInstance) {
+                blueGreenDeployOptions = '--delete-old-apps'
+            }
             handleLegacyCfManifest(config)
         } else {
             config.smokeTest = ''
@@ -145,7 +152,14 @@ def deployCfNative (config) {
             export HOME=${config.dockerWorkspace}
             cf login -u \"${username}\" -p '${password}' -a ${config.cloudFoundry.apiEndpoint} -o \"${config.cloudFoundry.org}\" -s \"${config.cloudFoundry.space}\"
             cf plugins
-            cf ${deployCommand} ${config.cloudFoundry.appName?:''} ${config.deployType == 'blue-green'?'--delete-old-apps':''} -f '${config.cloudFoundry.manifest}' ${config.smokeTest}"""
+            cf ${deployCommand} ${config.cloudFoundry.appName?:''} ${blueGreenDeployOptions} -f '${config.cloudFoundry.manifest}' ${config.smokeTest}"""
+        if (config.keepOldInstance) {
+            sh """#!/bin/bash
+            set +x  
+            export HOME=${config.dockerWorkspace}
+            cf stop ${config.cloudFoundry.appName?:''}
+            """
+        }
         sh "cf logout"
     }
 }
