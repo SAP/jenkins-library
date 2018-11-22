@@ -4,34 +4,48 @@ branches:
 language: groovy
 sudo: required
 services:
- - docker
-before_install:
-- docker pull squidfunk/mkdocs-material:3.0.4
-script:
-- mvn clean test --batch-mode
-- |
-  if [[ "${TRAVIS_PULL_REQUEST}" != "false" ]]
-  then
-     docker run --rm -it -v ${TRAVIS_BUILD_DIR}:/docs -w /docs/documentation squidfunk/mkdocs-material:3.0.4 build --clean --verbose --strict
-  else
-    # Only in case we are in master branch of the leading SAP repo we would like to deploy,
-    # not from the forks.
-    if [[ "${TRAVIS_BRANCH}" == "master" && "${TRAVIS_REPO_SLUG}" == "SAP/jenkins-library" ]]
-    then
-       echo "Found change on master: Deployment of documentation"
-       PRIVATE_KEY="cfg/id_rsa"
-       openssl aes-256-cbc -K $encrypted_12c8071d2874_key -iv $encrypted_12c8071d2874_iv -in cfg/id_rsa.enc -out "${PRIVATE_KEY}" -d
-       chmod a+x gh-pages-deploy.sh
-       docker run --rm -it --entrypoint "./gh-pages-deploy.sh" -e "TRAVIS_REPO_SLUG=${TRAVIS_REPO_SLUG}" -v ${TRAVIS_BUILD_DIR}:/docs -w /docs squidfunk/mkdocs-material:3.0.4
-    else
-       echo "Publishing documentation skipped."
-    fi
-  fi
+  - docker
+env:
+  global:
+    MAVEN_OPTS=-Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn
 cache:
   directories:
   - $HOME/.m2
-after_success:
-  - mvn -DrepoToken=$COVERALLS_REPO_TOKEN org.jacoco:jacoco-maven-plugin:report org.eluder.coveralls:coveralls-maven-plugin:report
+
+# Travis Lifecycle: https://docs.travis-ci.com/user/job-lifecycle#the-job-lifecycle
+# Travis Stages: https://docs.travis-ci.com/user/build-stages/
+# Travis Conditions: https://docs.travis-ci.com/user/conditional-builds-stages-jobs
+jobs:
+  include:
+    - stage: Tests
+      name: Unit Tests
+      before_script:
+        - curl -L --output cc-test-reporter https://codeclimate.com/downloads/test-reporter/test-reporter-latest-linux-amd64
+        - chmod +x ./cc-test-reporter
+        - ./cc-test-reporter before-build
+      script: mvn package --batch-mode
+      after_script:
+        - JACOCO_SOURCE_PATH="src vars test" ./cc-test-reporter format-coverage target/site/jacoco/jacoco.xml --input-type jacoco
+        - ./cc-test-reporter upload-coverage
+        - mvn -DrepoToken=$COVERALLS_REPO_TOKEN org.eluder.coveralls:coveralls-maven-plugin:report
+    - name: Docs Build
+      if: type = pull_request
+      install: docker pull squidfunk/mkdocs-material:3.0.4
+      script: docker run --rm -it -v ${TRAVIS_BUILD_DIR}:/docs -w /docs/documentation squidfunk/mkdocs-material:3.0.4 build --clean --verbose --strict
+    
+    - stage: Docs
+      name: Deploy
+      if: repo = "SAP/jenkins-library" AND branch = master AND NOT type = pull_request
+      install: 
+        - docker pull squidfunk/mkdocs-material:3.0.4
+        - |
+          echo "Found change on master: Deployment of documentation"
+          PRIVATE_KEY="cfg/id_rsa"
+          openssl aes-256-cbc -K $encrypted_12c8071d2874_key -iv $encrypted_12c8071d2874_iv -in cfg/id_rsa.enc -out "${PRIVATE_KEY}" -d
+          chmod a+x gh-pages-deploy.sh        
+      script: docker run --rm -it --entrypoint "./gh-pages-deploy.sh" -e "TRAVIS_REPO_SLUG=${TRAVIS_REPO_SLUG}" -v ${TRAVIS_BUILD_DIR}:/docs -w /docs squidfunk/mkdocs-material:3.0.4
+      # TODO: make use of GHPages deploy provider: https://docs.travis-ci.com/user/deployment/pages/
+
 #notifications:
 #  slack:
 #    secure: UYzfd4QYLtAX39r8LzV1dYp7cKMhYRRjI/xswMEkR+RgdMWxVPPH3kcsNLwkdNGSPn1b8Aidz8YLss9JolrepWjwI283dK8EUthZAOw03+PmL5X/3nOJ7aGv0sxwYqF5ypltBrerTf6jtPUTcQdtao+0O8bgnzShc6nWWE4MLXonjOm1pZLRUo81un+0bzm8C2ABIeHC6xuZCRycXP5u1mW1nDLK3900uY1rxIDTSZKEzA0IzLQhE9uROvI1r48fW8cKJQQjMMO5PPorq+0eDl2YTE8rQr9ldvuRE7A/ubsOQR0N5F8iAv1JTZXuXGt62fw6eKDQ1h94suEk7X+baV0EwlfhsHXcI1MxRFwxNSr9k1WaVFfA4TrM8XYBAcW3JGRA51ZK3q4EcjpuxpupaA7kZDtH53W7ePzH2TIp6yknln1q+yfcsP7cGv38sSKpKwOyMgAPRElkZzcoo31kw/PLzKPXYJEovRqx/0lWzczbFSscsroNaGCavC02++bUnyUXW2W+PG4gDSBFVZjtrvTPKnZ6DpHXV97x6xC/CzyhFj/Nf+ao/J9IIfocnc4vXJojwS550KIvM7xCDJwa/+29dajj2l6dQqrcOe3UT3O5UGU9I0KkGEDMfkLOD71eRy58qiYz3y953e52DvvzWQJbvfuk8ubMO+Fmn4GyRz8=

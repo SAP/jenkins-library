@@ -8,6 +8,7 @@ import org.junit.rules.RuleChain
 
 import com.sap.piper.GitUtils
 
+import hudson.AbortException
 import util.BasePiperTest
 import util.JenkinsDockerExecuteRule
 import util.JenkinsEnvironmentRule
@@ -33,8 +34,8 @@ class ArtifactSetVersionTest extends BasePiperTest {
     Map dockerParameters
 
     def GitUtils gitUtils = new GitUtils() {
-        boolean insideWorkTree() {
-            return true
+        boolean isWorkTreeDirty() {
+            return false
         }
 
         String getGitCommitIdOrNull() {
@@ -107,14 +108,6 @@ class ArtifactSetVersionTest extends BasePiperTest {
         assertEquals('1.2.3-20180101010203_testCommitId', jer.env.getArtifactVersion())
         assertThat(jscr.shell, hasItem("mvn --file 'pom.xml' --batch-mode -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn versions:set -DnewVersion=1.2.3-20180101010203_testCommitId -DgenerateBackupPoms=false"))
         assertThat(jscr.shell, not(hasItem(containsString('commit'))))
-    }
-
-    @Test
-    void testVersioningWithoutScript() {
-        jsr.step.artifactSetVersion(juStabGitUtils: gitUtils, buildTool: 'maven', commitVersion: false)
-
-        assertEquals('1.2.3-20180101010203_testCommitId', jer.env.getArtifactVersion())
-        assertThat(jscr.shell, hasItem("mvn --file 'pom.xml' --batch-mode -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn versions:set -DnewVersion=1.2.3-20180101010203_testCommitId -DgenerateBackupPoms=false"))
     }
 
     @Test

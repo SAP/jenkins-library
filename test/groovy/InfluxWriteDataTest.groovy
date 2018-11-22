@@ -55,7 +55,7 @@ class InfluxWriteDataTest extends BasePiperTest {
     void testInfluxWriteDataWithDefault() throws Exception {
 
         nullScript.commonPipelineEnvironment.setArtifactVersion('1.2.3')
-        jsr.step.call(script: nullScript)
+        jsr.step.influxWriteData(script: nullScript)
 
         assertTrue(loggingRule.log.contains('Artifact version: 1.2.3'))
 
@@ -74,7 +74,7 @@ class InfluxWriteDataTest extends BasePiperTest {
     void testInfluxWriteDataNoInflux() throws Exception {
 
         nullScript.commonPipelineEnvironment.setArtifactVersion('1.2.3')
-        jsr.step.call(script: nullScript, influxServer: '')
+        jsr.step.influxWriteData(script: nullScript, influxServer: '')
 
         assertEquals(0, stepMap.size())
 
@@ -87,7 +87,7 @@ class InfluxWriteDataTest extends BasePiperTest {
     @Test
     void testInfluxWriteDataNoArtifactVersion() throws Exception {
 
-        jsr.step.call(script: nullScript)
+        jsr.step.influxWriteData(script: nullScript)
 
         assertEquals(0, stepMap.size())
         assertEquals(0, fileMap.size())

@@ -1,3 +1,5 @@
+import static com.sap.piper.Prerequisites.checkScript
+
 import com.sap.piper.ConfigurationHelper
 import com.sap.piper.Utils
 
@@ -32,8 +34,9 @@ import groovy.transform.Field
 void call(parameters = [:]) {
     handlePipelineStepErrors (stepName: STEP_NAME, stepParameters: parameters) {
 
-        def script = parameters?.script ?: [commonPipelineEnvironment: commonPipelineEnvironment]
-        def utils = new Utils()
+        def script = checkScript(this, parameters) ?: this
+
+        def utils = parameters.utils ?: new Utils()
 
         prepareDefaultValues script: script
 
@@ -69,6 +72,23 @@ void call(parameters = [:]) {
             echo "[WARNING][${STEP_NAME}] Deprecated parameter 'neoCredentialsId' from old configuration framework is used. This will not work anymore in future versions."
             parameters.put('neoCredentialsId', credId)
         }
+
+        if(! stepCompatibilityConfiguration.isEmpty()) {
+            echo "[WARNING][$STEP_NAME] You are using a deprecated configuration framework. This will be removed in " +
+                'futureVersions.\nAdd snippet below to \'./pipeline/config.yml\' and remove ' +
+                'file \'.pipeline/configuration.properties\'.\n' +
+                """|steps:
+                    |    neoDeploy:
+                    |        host: ${stepCompatibilityConfiguration.get('host', '<Add host here>')}
+                    |        account: ${stepCompatibilityConfiguration.get('account', '<Add account here>')}
+                """.stripMargin()
+
+            if(Boolean.getBoolean('com.sap.piper.featureFlag.buildUnstableWhenOldConfigFrameworkIsUsedByNeoDeploy')) {
+                script.currentBuild.setResult('UNSTABLE')
+                echo "[WARNING][$STEP_NAME] Build has been set to unstable since old config framework is used."
+            }
+        }
+
         // Backward compatibility end
 
         // load default & individual configuration
@@ -85,7 +105,9 @@ void call(parameters = [:]) {
         utils.pushToSWA([
             step: STEP_NAME,
             stepParam1: configuration.deployMode == 'mta'?'mta':'war', // ['mta', 'warParams', 'warPropertiesFile']
-            stepParam2: configuration.warAction == 'rolling-update'?'blue-green':'standard' // ['deploy', 'deploy-mta', 'rolling-update']
+            stepParam2: configuration.warAction == 'rolling-update'?'blue-green':'standard', // ['deploy', 'deploy-mta', 'rolling-update']
+            stepParam3: parameters?.script == null,
+            stepParam4: ! stepCompatibilityConfiguration.isEmpty(),
         ], configuration)
 
         def archivePath = configuration.archivePath
@@ -186,9 +208,12 @@ void call(parameters = [:]) {
                 """--user '${username}' \
                    --password '${password}' \
                 """
-            dockerExecute(dockerImage: configuration.get('dockerImage'),
-                          dockerEnvVars: configuration.get('dockerEnvVars'),
-                          dockerOptions: configuration.get('dockerOptions')) {
+            dockerExecute(
+                script: script,
+                dockerImage: configuration.get('dockerImage'),
+                dockerEnvVars: configuration.get('dockerEnvVars'),
+                dockerOptions: configuration.get('dockerOptions')
+            ) {
 
                 neo.verify(this, configuration)
 

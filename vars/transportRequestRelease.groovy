@@ -1,40 +1,54 @@
+import static com.sap.piper.Prerequisites.checkScript
+
 import com.sap.piper.Utils
 import groovy.transform.Field
 
 import com.sap.piper.ConfigurationHelper
+import com.sap.piper.cm.BackendType
 import com.sap.piper.cm.ChangeManagement
 import com.sap.piper.cm.ChangeManagementException
 
 import hudson.AbortException
 
+import static com.sap.piper.cm.StepHelpers.getTransportRequestId
+import static com.sap.piper.cm.StepHelpers.getChangeDocumentId
+import static com.sap.piper.cm.StepHelpers.getBackendTypeAndLogInfoIfCMIntegrationDisabled
 
 @Field def STEP_NAME = 'transportRequestRelease'
 
-@Field Set stepConfigurationKeys = [
+@Field Set GENERAL_CONFIG_KEYS = STEP_CONFIG_KEYS
+
+@Field Set STEP_CONFIG_KEYS = [
     'changeManagement'
   ]
 
-@Field Set parameterKeys = stepConfigurationKeys.plus([
+@Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS.plus([
     'changeDocumentId',
     'transportRequestId',
   ])
-
-@Field Set generalConfigurationKeys = stepConfigurationKeys
 
 void call(parameters = [:]) {
 
     handlePipelineStepErrors (stepName: STEP_NAME, stepParameters: parameters) {
 
-        def script = parameters?.script ?: [commonPipelineEnvironment: commonPipelineEnvironment]
+        def script = checkScript(this, parameters) ?: this
 
         ChangeManagement cm = parameters.cmUtils ?: new ChangeManagement(script)
 
         ConfigurationHelper configHelper = ConfigurationHelper.newInstance(this)
             .loadStepDefaults()
-            .mixinGeneralConfig(script.commonPipelineEnvironment, generalConfigurationKeys)
-            .mixinStepConfig(script.commonPipelineEnvironment, stepConfigurationKeys)
-            .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName?:env.STAGE_NAME, stepConfigurationKeys)
-            .mixin(parameters, parameterKeys)
+            .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS)
+            .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS)
+            .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName?:env.STAGE_NAME, STEP_CONFIG_KEYS)
+            .mixin(parameters, PARAMETER_KEYS)
+
+
+        Map configuration = configHelper.use()
+
+        BackendType backendType = getBackendTypeAndLogInfoIfCMIntegrationDisabled(this, configuration)
+        if(backendType == BackendType.NONE) return
+
+        configHelper
             .withMandatoryProperty('changeManagement/clientOpts')
             .withMandatoryProperty('changeManagement/credentialsId')
             .withMandatoryProperty('changeManagement/endpoint')
@@ -42,75 +56,38 @@ void call(parameters = [:]) {
             .withMandatoryProperty('changeManagement/git/from')
             .withMandatoryProperty('changeManagement/git/format')
 
-        Map configuration = configHelper.use()
+        configuration = configHelper.use()
 
-        new Utils().pushToSWA([step: STEP_NAME], configuration)
+        new Utils().pushToSWA([step: STEP_NAME,
+                                stepParam1: parameters?.script == null], configuration)
 
-        def transportRequestId = configuration.transportRequestId
+        def changeDocumentId = null
+        def transportRequestId = getTransportRequestId(cm, script, configuration)
 
-        if(transportRequestId?.trim()) {
+        if(backendType == BackendType.SOLMAN) {
 
-          echo "[INFO] Transport request id '${transportRequestId}' retrieved from parameters."
+            changeDocumentId = getChangeDocumentId(cm, script, configuration)
 
-        } else {
+            configHelper.mixin([changeDocumentId: changeDocumentId?.trim() ?: null], ['changeDocumentId'] as Set)
+                        .withMandatoryProperty('changeDocumentId',
+                            "Change document id not provided (parameter: \'changeDocumentId\' or via commit history).")
 
-          echo "[INFO] Retrieving transport request id from commit history [from: ${configuration.changeManagement.git.from}, to: ${configuration.changeManagement.git.to}]." +
-               " Searching for pattern '${configuration.gitTransportRequestLabel}'. Searching with format '${configuration.changeManagement.git.format}'."
-
-            try {
-                transportRequestId = cm.getTransportRequestId(
-                                                  configuration.changeManagement.git.from,
-                                                  configuration.changeManagement.git.to,
-                                                  configuration.changeManagement.transportRequestLabel,
-                                                  configuration.changeManagement.git.format
-                                                 )
-
-                echo "[INFO] Transport request id '${transportRequestId}' retrieved from commit history"
-
-            } catch(ChangeManagementException ex) {
-                echo "[WARN] Cannot retrieve transportRequestId from commit history: ${ex.getMessage()}."
-            }
-        }
-
-        def changeDocumentId = configuration.changeDocumentId
-
-        if(changeDocumentId?.trim()) {
-
-            echo "[INFO] ChangeDocumentId '${changeDocumentId}' retrieved from parameters."
-
-        } else {
-
-            echo "[INFO] Retrieving ChangeDocumentId from commit history [from: ${configuration.changeManagement.git.from}, to: ${configuration.changeManagement.git.to}]." +
-                 "Searching for pattern '${configuration.changeDocumentLabel}'. Searching with format '${configuration.changeManagement.git.format}'."
-
-            try {
-                changeDocumentId = cm.getChangeDocumentId(
-                                                  configuration.changeManagement.git.from,
-                                                  configuration.changeManagement.git.to,
-                                                  configuration.changeManagement.changeDocumentLabel,
-                                                  configuration.changeManagement.gitformat
-                                                 )
-
-                echo "[INFO] ChangeDocumentId '${changeDocumentId}' retrieved from commit history"
-
-            } catch(ChangeManagementException ex) {
-                echo "[WARN] Cannot retrieve changeDocumentId from commit history: ${ex.getMessage()}."
-            }
         }
 
         configuration = configHelper
-                            .mixin([transportRequestId: transportRequestId?.trim() ?: null,
-                                    changeDocumentId: changeDocumentId?.trim() ?: null], ['transportRequestId', 'changeDocumentId'] as Set)
+                            .mixin([transportRequestId: transportRequestId?.trim() ?: null], ['transportRequestId'] as Set)
                             .withMandatoryProperty('transportRequestId',
                                 "Transport request id not provided (parameter: \'transportRequestId\' or via commit history).")
-                            .withMandatoryProperty('changeDocumentId',
-                                "Change document id not provided (parameter: \'changeDocumentId\' or via commit history).")
                             .use()
 
-        echo "[INFO] Closing transport request '${configuration.transportRequestId}' for change document '${configuration.changeDocumentId}'."
+        def closingMessage = ["[INFO] Closing transport request '${configuration.transportRequestId}'"]
+        if(backendType == BackendType.SOLMAN) closingMessage << " for change document '${configuration.changeDocumentId}'"
+        closingMessage << '.'
+        echo closingMessage.join()
 
             try {
-                cm.releaseTransportRequest(configuration.changeDocumentId,
+                cm.releaseTransportRequest(backendType,
+                                           configuration.changeDocumentId,
                                            configuration.transportRequestId,
                                            configuration.changeManagement.endpoint,
                                            configuration.changeManagement.credentialsId,

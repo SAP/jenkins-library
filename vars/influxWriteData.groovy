@@ -1,3 +1,5 @@
+import static com.sap.piper.Prerequisites.checkScript
+
 import com.sap.piper.ConfigurationHelper
 import com.sap.piper.ConfigurationLoader
 import com.sap.piper.ConfigurationMerger
@@ -19,9 +21,10 @@ import groovy.transform.Field
 
 void call(Map parameters = [:]) {
     handlePipelineStepErrors (stepName: STEP_NAME, stepParameters: parameters, allowBuildFailure: true) {
-        def script = parameters.script
+
+        def script = checkScript(this, parameters)
         if (script == null)
-             script = [commonPipelineEnvironment: commonPipelineEnvironment]
+            script = this
 
         // load default & individual configuration
         Map configuration = ConfigurationHelper.newInstance(this)
@@ -30,12 +33,13 @@ void call(Map parameters = [:]) {
             .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS)
             .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName?:env.STAGE_NAME, STEP_CONFIG_KEYS)
             .mixin([
-                artifactVersion: commonPipelineEnvironment.getArtifactVersion()
+                artifactVersion: script.commonPipelineEnvironment.getArtifactVersion()
             ])
             .mixin(parameters, PARAMETER_KEYS)
             .use()
 
-        new Utils().pushToSWA([step: STEP_NAME], configuration)
+        new Utils().pushToSWA([step: STEP_NAME,
+                                stepParam1: parameters?.script == null], configuration)
 
         if (!configuration.artifactVersion)  {
             //this takes care that terminated builds due to milestone-locking do not cause an error

@@ -3,6 +3,7 @@ general:
   productiveBranch: 'master'
   collectTelemetryData: true
   changeManagement:
+    type: 'NONE' # SOLMAN, CTS, NONE
     transportRequestLabel: 'TransportRequest\s?:'
     changeDocumentLabel: 'ChangeDocument\s?:'
     clientOpts: ''
@@ -11,6 +12,8 @@ general:
       from: 'origin/master'
       to: 'HEAD'
       format: '%b'
+  githubApiUrl: 'https://api.github.com'
+  githubServerUrl: 'https://github.com'
   gitSshKeyCredentialsId: '' #needed to allow sshagent to run with local ssh key
   jenkinsKubernetes:
     jnlpAgent: 's4sdk/jenkins-agent-k8s:latest'
@@ -134,11 +137,23 @@ steps:
     mtaDeployPlugin:
       dockerImage: 's4sdk/docker-cf-cli'
       dockerWorkspace: '/home/piper'
+  dockerExecute:
+    stashContent: []
   dockerExecuteOnKubernetes:
+    stashContent: []
     stashIncludes:
       workspace: '**/*.*'
     stashExcludes:
       workspace: 'nohup.out'
+  githubPublishRelease:
+    addClosedIssues: false
+    addDeltaToLastRelease: false
+    customFilterExtension: ''
+    excludeLabels:
+      - 'duplicate'
+      - 'invalid'
+      - 'question'
+      - 'wontfix'
   gaugeExecuteTests:
     buildTool: 'maven'
     dockerEnvVars:
@@ -167,6 +182,27 @@ steps:
     healthEndpoint: ''
   influxWriteData:
     influxServer: 'jenkins'
+  karmaExecuteTests:
+    containerPortMappings:
+      'node:8-stretch':
+        - containerPort: 9876
+          hostPort: 9876
+    dockerEnvVars:
+      NO_PROXY: 'localhost,selenium,$NO_PROXY'
+      no_proxy: 'localhost,selenium,$no_proxy'
+    dockerImage: 'node:8-stretch'
+    dockerName: 'karma'
+    dockerWorkspace: '/home/node'
+    installCommand: 'npm install --quiet'
+    modules:
+      - '.'
+    runCommand: 'npm run karma'
+    sidecarEnvVars:
+      NO_PROXY: 'localhost,karma,$NO_PROXY'
+      no_proxy: 'localhost,karma,$no_proxy'
+    stashContent:
+      - buildDescriptor
+      - tests
   mailSendNotification:
     notificationAttachment: true
     notifyCulprits: true
@@ -260,7 +296,7 @@ steps:
     toHtml: false
   testsPublishResults:
     junit:
-      pattern: '**/target/surefire-reports/*.xml'
+      pattern: '**/TEST-*.xml'
       updateResults: false
       allowEmptyResults: true
       archive: false

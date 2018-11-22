@@ -11,6 +11,7 @@ import com.sap.piper.cm.ChangeManagementException
 import hudson.AbortException
 import util.BasePiperTest
 import util.JenkinsCredentialsRule
+import util.JenkinsLoggingRule
 import util.JenkinsReadYamlRule
 import util.JenkinsStepRule
 import util.Rules
@@ -19,6 +20,7 @@ class CheckChangeInDevelopmentTest extends BasePiperTest {
 
     private ExpectedException thrown = ExpectedException.none()
     private JenkinsStepRule jsr = new JenkinsStepRule(this)
+    private JenkinsLoggingRule jlr = new JenkinsLoggingRule(this)
 
     @Rule
     public RuleChain ruleChain = Rules
@@ -26,6 +28,7 @@ class CheckChangeInDevelopmentTest extends BasePiperTest {
         .around(new JenkinsReadYamlRule(this))
         .around(thrown)
         .around(jsr)
+        .around(jlr)
         .around(new JenkinsCredentialsRule(this)
         .withCredentials('CM', 'anonymous', '********'))
 
@@ -41,9 +44,12 @@ class CheckChangeInDevelopmentTest extends BasePiperTest {
 
         ChangeManagement cm = getChangeManagementUtils(true)
         jsr.step.checkChangeInDevelopment(
-                     cmUtils: cm,
-                     changeManagement: [endpoint: 'https://example.org/cm'],
-                     failIfStatusIsNotInDevelopment: true)
+            script: nullScript,
+            cmUtils: cm,
+            changeManagement: [
+                type: 'SOLMAN',
+                endpoint: 'https://example.org/cm'],
+            failIfStatusIsNotInDevelopment: true)
 
         assert cmUtilReceivedParams == [
             changeId: '001',
@@ -63,8 +69,10 @@ class CheckChangeInDevelopmentTest extends BasePiperTest {
 
         ChangeManagement cm = getChangeManagementUtils(false)
         jsr.step.checkChangeInDevelopment(
+            script: nullScript,
             cmUtils: cm,
-            changeManagement: [endpoint: 'https://example.org/cm'])
+            changeManagement: [type: 'SOLMAN',
+                               endpoint: 'https://example.org/cm'])
     }
 
     @Test
@@ -72,33 +80,11 @@ class CheckChangeInDevelopmentTest extends BasePiperTest {
 
         ChangeManagement cm = getChangeManagementUtils(false)
         boolean inDevelopment = jsr.step.checkChangeInDevelopment(
+                                    script: nullScript,
                                     cmUtils: cm,
                                     changeManagement: [endpoint: 'https://example.org/cm'],
                                     failIfStatusIsNotInDevelopment: false)
         assert !inDevelopment
-    }
-
-    @Test
-    public void ifChangeIdPresentAsParameterAndFromCommitsChangeIdFromParameterIsUsedTest() {
-        ChangeManagement cm = getChangeManagementUtils(true, '0815')
-
-        jsr.step.checkChangeInDevelopment(
-            changeDocumentId: '42',
-            cmUtils: cm,
-            changeManagement: [endpoint: 'https://example.org/cm'])
-
-        assert cmUtilReceivedParams.changeId == '42'
-    }
-
-    @Test
-    public void ifChangeIdNotPresentAsParameterButFromCommitsChangeIdFromCommitsIsUsedTest() {
-        ChangeManagement cm = getChangeManagementUtils(true, '0815')
-
-        jsr.step.checkChangeInDevelopment(
-            cmUtils: cm,
-            changeManagement : [endpoint: 'https://example.org/cm'])
-
-        assert cmUtilReceivedParams.changeId == '0815'
     }
 
     @Test
@@ -120,8 +106,10 @@ class CheckChangeInDevelopmentTest extends BasePiperTest {
         }
 
         jsr.step.checkChangeInDevelopment(
+            script: nullScript,
             cmUtils: cm,
-            changeManagement: [endpoint: 'https://example.org/cm'])
+            changeManagement: [type: 'SOLMAN',
+                               endpoint: 'https://example.org/cm'])
     }
 
     @Test
@@ -134,8 +122,10 @@ class CheckChangeInDevelopmentTest extends BasePiperTest {
 
         ChangeManagement cm = getChangeManagementUtils(false, null)
         jsr.step.checkChangeInDevelopment(
+            script: nullScript,
             cmUtils: cm,
-            changeManagement: [endpoint: 'https://example.org/cm'])
+            changeManagement: [endpoint: 'https://example.org/cm',
+                               type: 'SOLMAN'])
     }
 
     @Test
@@ -148,8 +138,21 @@ class CheckChangeInDevelopmentTest extends BasePiperTest {
 
         ChangeManagement cm = getChangeManagementUtils(false, '')
         jsr.step.checkChangeInDevelopment(
+            script: nullScript,
             cmUtils: cm,
-            changeManagement: [endpoint: 'https://example.org/cm'])
+            changeManagement: [type: 'SOLMAN',
+                               endpoint: 'https://example.org/cm'])
+    }
+
+    @Test
+    public void cmIntegrationSwichtedOffTest() {
+
+        jlr.expect('[INFO] Change management integration intentionally switched off.')
+
+        jsr.step.checkChangeInDevelopment(
+            script: nullScript,
+            changeManagement: [type: 'NONE'])
+
     }
 
     private ChangeManagement getChangeManagementUtils(boolean inDevelopment, String changeDocumentId = '001') {

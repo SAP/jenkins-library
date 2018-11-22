@@ -43,7 +43,7 @@ class ChecksPublishResultsTest extends BasePiperTest {
 
     @Test
     void testPublishWithDefaultSettings() throws Exception {
-        jsr.step.call()
+        jsr.step.checksPublishResults(script: nullScript)
 
         assertTrue("AnalysisPublisher options not set", publisherStepOptions['AnalysisPublisher'] != null)
         // ensure nothing else is published
@@ -56,7 +56,7 @@ class ChecksPublishResultsTest extends BasePiperTest {
 
     @Test
     void testPublishForJavaWithDefaultSettings() throws Exception {
-        jsr.step.call(pmd: true, cpd: true, findbugs: true, checkstyle: true)
+        jsr.step.checksPublishResults(script: nullScript, pmd: true, cpd: true, findbugs: true, checkstyle: true)
 
         assertTrue("AnalysisPublisher options not set", publisherStepOptions['AnalysisPublisher'] != null)
         assertTrue("PmdPublisher options not set", publisherStepOptions['PmdPublisher'] != null)
@@ -74,7 +74,7 @@ class ChecksPublishResultsTest extends BasePiperTest {
 
     @Test
     void testPublishForJavaScriptWithDefaultSettings() throws Exception {
-        jsr.step.call(eslint: true)
+        jsr.step.checksPublishResults(script: nullScript, eslint: true)
 
         assertTrue("AnalysisPublisher options not set", publisherStepOptions['AnalysisPublisher'] != null)
         assertTrue("WarningsPublisher options not set", publisherStepOptions['WarningsPublisher'] != null)
@@ -92,7 +92,7 @@ class ChecksPublishResultsTest extends BasePiperTest {
 
     @Test
     void testPublishForPythonWithDefaultSettings() throws Exception {
-        jsr.step.call(pylint: true)
+        jsr.step.checksPublishResults(script: nullScript, pylint: true)
 
         assertTrue("AnalysisPublisher options not set", publisherStepOptions['AnalysisPublisher'] != null)
         assertTrue("WarningsPublisher options not set", publisherStepOptions['WarningsPublisher'] != null)
@@ -111,7 +111,7 @@ class ChecksPublishResultsTest extends BasePiperTest {
 
     @Test
     void testPublishNothing() throws Exception {
-        jsr.step.call(aggregation: false)
+        jsr.step.checksPublishResults(script: nullScript, aggregation: false)
 
         // ensure nothing is published
         assertTrue("AnalysisPublisher options not empty", publisherStepOptions['AnalysisPublisher'] == null)
@@ -124,7 +124,7 @@ class ChecksPublishResultsTest extends BasePiperTest {
 
     @Test
     void testPublishNothingExplicitFalse() throws Exception {
-        jsr.step.call(pmd: false)
+        jsr.step.checksPublishResults(script: nullScript, pmd: false)
 
         assertTrue("AnalysisPublisher options not set", publisherStepOptions['AnalysisPublisher'] != null)
         // ensure nothing else is published
@@ -137,7 +137,7 @@ class ChecksPublishResultsTest extends BasePiperTest {
 
     @Test
     void testPublishNothingImplicitTrue() throws Exception {
-        jsr.step.call(pmd: [:])
+        jsr.step.checksPublishResults(script: nullScript, pmd: [:])
 
         // ensure pmd is not published
         assertTrue("PmdPublisher options not set", publisherStepOptions['PmdPublisher'] != null)
@@ -145,7 +145,7 @@ class ChecksPublishResultsTest extends BasePiperTest {
 
     @Test
     void testPublishNothingExplicitActiveFalse() throws Exception {
-        jsr.step.call(pmd: [active: false])
+        jsr.step.checksPublishResults(script: nullScript, pmd: [active: false])
 
         // ensure pmd is not published
         assertTrue("PmdPublisher options not empty", publisherStepOptions['PmdPublisher'] == null)
@@ -154,7 +154,7 @@ class ChecksPublishResultsTest extends BasePiperTest {
     @Test
     void testPublishWithChangedStepDefaultSettings() throws Exception {
         // pmd has been set to active: true in step configuration
-        jsr.step.call(script: [commonPipelineEnvironment: [
+        jsr.step.checksPublishResults(script: [commonPipelineEnvironment: [
             configuration: [steps: [checksPublishResults: [pmd: [active: true]]]]
         ]])
 
@@ -169,7 +169,7 @@ class ChecksPublishResultsTest extends BasePiperTest {
 
     @Test
     void testPublishWithCustomPattern() throws Exception {
-        jsr.step.call(eslint: [pattern: 'my-fancy-file.ext'], pmd: [pattern: 'this-is-not-a-patter.xml'])
+        jsr.step.checksPublishResults(script: nullScript, eslint: [pattern: 'my-fancy-file.ext'], pmd: [pattern: 'this-is-not-a-patter.xml'])
 
         assertTrue("AnalysisPublisher options not set", publisherStepOptions['AnalysisPublisher'] != null)
         assertTrue("PmdPublisher options not set", publisherStepOptions['PmdPublisher'] != null)
@@ -186,7 +186,7 @@ class ChecksPublishResultsTest extends BasePiperTest {
 
     @Test
     void testPublishWithArchive() throws Exception {
-        jsr.step.call(archive: true, eslint: true, pmd: true, cpd: true, findbugs: true, checkstyle: true)
+        jsr.step.checksPublishResults(script: nullScript, archive: true, eslint: true, pmd: true, cpd: true, findbugs: true, checkstyle: true)
 
         assertTrue("ArchivePatterns number not correct", archiveStepPatterns.size() == 5)
         assertTrue("ArchivePatterns contains no PMD pattern", archiveStepPatterns.contains('**/target/pmd.xml'))
@@ -198,7 +198,7 @@ class ChecksPublishResultsTest extends BasePiperTest {
 
     @Test
     void testPublishWithPartialArchive() throws Exception {
-        jsr.step.call(archive: true, eslint: [archive: false], pmd: true, cpd: true, findbugs: true, checkstyle: true)
+        jsr.step.checksPublishResults(script: nullScript, archive: true, eslint: [archive: false], pmd: true, cpd: true, findbugs: true, checkstyle: true)
 
         assertTrue("ArchivePatterns number not correct", archiveStepPatterns.size() == 4)
         assertTrue("ArchivePatterns contains no PMD pattern", archiveStepPatterns.contains('**/target/pmd.xml'))
@@ -211,7 +211,7 @@ class ChecksPublishResultsTest extends BasePiperTest {
 
     @Test
     void testPublishWithDefaultThresholds() throws Exception {
-        jsr.step.call(pmd: true)
+        jsr.step.checksPublishResults(script: nullScript, pmd: true)
 
         assertTrue("AnalysisPublisher options not set",
             publisherStepOptions['AnalysisPublisher'] != null)
@@ -245,7 +245,7 @@ class ChecksPublishResultsTest extends BasePiperTest {
 
     @Test
     void testPublishWithThresholds() throws Exception {
-        jsr.step.call(aggregation: [thresholds: [fail: [high: '10']]], pmd: true)
+        jsr.step.checksPublishResults(script: nullScript, aggregation: [thresholds: [fail: [high: '10']]], pmd: true)
 
         assertTrue("AnalysisPublisher options not set", publisherStepOptions['AnalysisPublisher'] != null)
         assertTrue("PmdPublisher options not set", publisherStepOptions['PmdPublisher'] != null)
