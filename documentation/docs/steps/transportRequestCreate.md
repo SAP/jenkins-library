@@ -47,6 +47,39 @@ The id of the transport request is availabe via [commonPipelineEnvironment.getTr
 
 ## Step configuration
 
+
+## Return value
+
+none
+
+## Exceptions
+
+* `AbortException`:
+  * If the creation of the transport request fails.
+* `IllegalStateException`:
+  * If the change id is not provided.
+
+## Example
+
+```groovy
+// SOLMAN
+def transportRequestId = transportRequestCreate script:this,
+                                                changeDocumentId: '001,'
+                                                changeManagement: [
+                                                  type: 'SOLMAN'
+                                                  endpoint: 'https://example.org/cm'
+                                                ]
+// CTS
+def transportRequestId = transportRequestCreate script:this,
+                                                transportType: 'W',
+                                                targetSystem: 'XYZ',
+                                                description: 'the description',
+                                                changeManagement: [
+                                                  type: 'CTS'
+                                                  endpoint: 'https://example.org/cm'
+                                                ]
+```
+
 The step is configured using a customer configuration file provided as
 resource in an custom shared library.
 
@@ -95,36 +128,4 @@ The properties can also be configured on a per-step basis:
         [...]
 ```
 
-The parameters can also be provided when the step is invoked. For examples see below.
-
-## Return value
-
-none
-
-## Exceptions
-
-* `AbortException`:
-  * If the creation of the transport request fails.
-* `IllegalStateException`:
-  * If the change id is not provided.
-
-## Example
-
-```groovy
-// SOLMAN
-def transportRequestId = transportRequestCreate script:this,
-                                                changeDocumentId: '001,'
-                                                changeManagement: [
-                                                  type: 'SOLMAN'
-                                                  endpoint: 'https://example.org/cm'
-                                                ]
-// CTS
-def transportRequestId = transportRequestCreate script:this,
-                                                transportType: 'W',
-                                                targetSystem: 'XYZ',
-                                                description: 'the description',
-                                                changeManagement: [
-                                                  type: 'CTS'
-                                                  endpoint: 'https://example.org/cm'
-                                                ]
-```
+The parameters can also be provided when the step is invoked.
