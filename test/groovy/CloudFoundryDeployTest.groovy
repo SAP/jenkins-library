@@ -19,6 +19,7 @@ import util.Rules
 import static org.junit.Assert.assertThat
 
 import static org.hamcrest.Matchers.hasItem
+import static org.hamcrest.Matchers.not
 import static org.hamcrest.Matchers.hasEntry
 import static org.hamcrest.Matchers.containsString
 
@@ -253,7 +254,7 @@ class CloudFoundryDeployTest extends BasePiperTest {
     }
 
     @Test
-    void testCfNativeBlueGreenStopOldInstance() {
+    void testCfNativeBlueGreenKeepOldInstance() {
 
         jryr.registerYaml('test.yml', "applications: [[]]")
 
@@ -279,6 +280,32 @@ class CloudFoundryDeployTest extends BasePiperTest {
         assertThat(jscr.shell, hasItem(containsString("cf logout")))
     }
 
+    @Test
+    void testCfNativeStandardShouldNotStopInstance() {
+
+        jryr.registerYaml('test.yml', "applications: [[]]")
+
+        jsr.step.cloudFoundryDeploy([
+            script: nullScript,
+            juStabUtils: utils,
+            deployTool: 'cf_native',
+            deployType: 'standard',
+            keepOldInstance: true,
+            cfOrg: 'testOrg',
+            cfSpace: 'testSpace',
+            cfCredentialsId: 'test_cfCredentialsId',
+            cfAppName: 'testAppName',
+            cfManifest: 'test.yml'
+        ])
+
+        assertThat(jedr.dockerParams, hasEntry('dockerImage', 's4sdk/docker-cf-cli'))
+        assertThat(jedr.dockerParams, hasEntry('dockerWorkspace', '/home/piper'))
+
+        assertThat(jscr.shell, hasItem(containsString('cf login -u "test_cf" -p \'********\' -a https://api.cf.eu10.hana.ondemand.com -o "testOrg" -s "testSpace"')))
+        assertThat(jscr.shell, hasItem(containsString("cf push testAppName -f 'test.yml'")))
+        assertThat(jscr.shell, not(hasItem(containsString("cf stop testAppName"))))
+        assertThat(jscr.shell, hasItem(containsString("cf logout")))
+    }
 
     @Test
     void testCfNativeWithoutAppNameBlueGreen() {

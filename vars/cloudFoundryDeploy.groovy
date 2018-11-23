@@ -118,19 +118,15 @@ def deployCfNative (config) {
         passwordVariable: 'password',
         usernameVariable: 'username'
     )]) {
-        def deployCommand = 'push'
-        def blueGreenDeployOptions = ''
-        boolean deleteOldInstance = !config.keepOldInstance
+        def deployCommand = getCfNativeDeployCommand(config)
 
         if (config.deployType == 'blue-green') {
-            deployCommand = 'blue-green-deploy'
-            if (deleteOldInstance) {
-                blueGreenDeployOptions = '--delete-old-apps'
-            }
             handleLegacyCfManifest(config)
         } else {
             config.smokeTest = ''
         }
+
+        def blueGreenDeployOptions = getCfNativeBlueGreenDeploymentOptions(config)
 
         // check if appName is available
         if (config.cloudFoundry.appName == null || config.cloudFoundry.appName == '') {
@@ -152,15 +148,27 @@ def deployCfNative (config) {
             export HOME=${config.dockerWorkspace}
             cf login -u \"${username}\" -p '${password}' -a ${config.cloudFoundry.apiEndpoint} -o \"${config.cloudFoundry.org}\" -s \"${config.cloudFoundry.space}\"
             cf plugins
-            cf ${deployCommand} ${config.cloudFoundry.appName?:''} ${blueGreenDeployOptions} -f '${config.cloudFoundry.manifest}' ${config.smokeTest}"""
-        if (config.keepOldInstance) {
-            sh """#!/bin/bash
-            set +x  
-            export HOME=${config.dockerWorkspace}
-            cf stop ${config.cloudFoundry.appName?:''}
+            cf ${deployCommand} ${config.cloudFoundry.appName?:''} ${blueGreenDeployOptions} -f '${config.cloudFoundry.manifest}' ${config.smokeTest}
+            ${(config.keepOldInstance && config.deployType == 'blue-green')?"cf stop ${config.cloudFoundry.appName}":''}
             """
-        }
         sh "cf logout"
+    }
+}
+
+private String getCfNativeDeployCommand(Map config) {
+    if (config.deployType == 'blue-green') {
+        return  'blue-green-deploy'
+    } else {
+        return 'push'
+    }
+}
+
+private String getCfNativeBlueGreenDeploymentOptions(Map config) {
+    boolean deleteOldInstance = !config.keepOldInstance
+    if (deleteOldInstance && config.deployType == 'blue-green') {
+        return '--delete-old-apps'
+    } else {
+        return ''
     }
 }
 
