@@ -103,6 +103,7 @@ void call(parameters = [:]) {
 
                                     /**
                                       * The id of the change document to transport. If not provided, it is retrieved from the git commit history.
+                                      * @mandatory yes, can be provided via git commit history
                                       */
                                     .withMandatoryProperty('changeDocumentId',
                                         "No changeDocumentId provided. Neither via parameter 'changeDocumentId' " +
