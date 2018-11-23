@@ -91,7 +91,7 @@ class Helper {
 
         new GroovyClassLoader(classLoader, compilerConfig, true)
             .parseClass(new File('src/com/sap/piper/ConfigurationHelper.groovy'))
-            .newInstance(script, [:])
+            .newInstance(script, [:]).loadStepDefaults()
         }
 
     static getPrepareDefaultValuesStep(def gse) {
