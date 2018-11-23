@@ -37,6 +37,39 @@ Releases a Transport Request.
 
 ## Step configuration
 
+
+## Return value
+
+None.
+
+## Exceptions
+
+* `IllegalArgumentException`:
+  * If the change id is not provided (`SOLMAN` only)
+  * If the transport request id is not provided.
+* `AbortException`:
+  * If the release of the transport request fails.
+
+## Example
+
+```groovy
+// SOLMAN
+transportRequestRelease script:this,
+                        changeDocumentId: '001',
+                        transportRequestId: '001',
+                        changeManagement: [
+                          type: 'SOLMAN'
+                          endpoint: 'https://example.org/cm'
+                        ]
+// CTS
+transportRequestRelease script:this,
+                        transportRequestId: '001',
+                        changeManagement: [
+                          type: 'CTS'
+                          endpoint: 'https://example.org/cm'
+                        ]
+```
+
 The step is configured using a customer configuration file provided as
 resource in an custom shared library.
 
@@ -84,36 +117,5 @@ The properties can also be configured on a per-step basis:
         [...]
 ```
 
-The parameters can also be provided when the step is invoked. For examples see below.
+The parameters can also be provided when the step is invoked.
 
-## Return value
-
-None.
-
-## Exceptions
-
-* `IllegalArgumentException`:
-  * If the change id is not provided (`SOLMAN` only)
-  * If the transport request id is not provided.
-* `AbortException`:
-  * If the release of the transport request fails.
-
-## Example
-
-```groovy
-// SOLMAN
-transportRequestRelease script:this,
-                        changeDocumentId: '001',
-                        transportRequestId: '001',
-                        changeManagement: [
-                          type: 'SOLMAN'
-                          endpoint: 'https://example.org/cm'
-                        ]
-// CTS
-transportRequestRelease script:this,
-                        transportRequestId: '001',
-                        changeManagement: [
-                          type: 'CTS'
-                          endpoint: 'https://example.org/cm'
-                        ]
-```
