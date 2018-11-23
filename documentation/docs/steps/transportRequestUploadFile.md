@@ -42,8 +42,46 @@ Uploads a file to a Transport Request.
 
 ## Step configuration
 
+## Return value
+
+None.
+
+## Exceptions
+
+* `IllegalArgumentException`:
+  * If the change id is not provided (`SOLMAN` only).
+  * If the transport request id is not provided.
+  * If the application id is not provided (`SOLMAN` only).
+  * If the file path is not provided.
+* `AbortException`:
+  * If the upload fails.
+
+## Example
+
+```groovy
+// SOLMAN
+transportRequestUploadFile script:this,
+                           changeDocumentId: '001',   // typically provided via git commit history
+                           transportRequestId: '001', // typically provided via git commit history
+                           applicationId: '001',
+                           filePath: '/path',
+                           changeManagement:[
+                             type: 'SOLMAN'
+                             endpoint: 'https://example.org/cm'
+                           ]
+// CTS
+transportRequestUploadFile script:this,
+                           transportRequestId: '001', // typically provided via git commit history
+                           filePath: '/path',
+                           changeManagement:[
+                             type: 'CTS'
+                             endpoint: 'https://example.org/cm'
+                           ]
+```
+
 The step is configured using a customer configuration file provided as
 resource in an custom shared library.
+
 
 ```groovy
 @Library('piper-library-os@master') _
@@ -90,41 +128,4 @@ The properties can also be configured on a per-step basis:
         [...]
 ```
 
-The parameters can also be provided when the step is invoked. For examples see below.
-
-## Return value
-
-None.
-
-## Exceptions
-
-* `IllegalArgumentException`:
-  * If the change id is not provided (`SOLMAN` only).
-  * If the transport request id is not provided.
-  * If the application id is not provided (`SOLMAN` only).
-  * If the file path is not provided.
-* `AbortException`:
-  * If the upload fails.
-
-## Example
-
-```groovy
-// SOLMAN
-transportRequestUploadFile script:this,
-                           changeDocumentId: '001',   // typically provided via git commit history
-                           transportRequestId: '001', // typically provided via git commit history
-                           applicationId: '001',
-                           filePath: '/path',
-                           changeManagement:[
-                             type: 'SOLMAN'
-                             endpoint: 'https://example.org/cm'
-                           ]
-// CTS
-transportRequestUploadFile script:this,
-                           transportRequestId: '001', // typically provided via git commit history
-                           filePath: '/path',
-                           changeManagement:[
-                             type: 'CTS'
-                             endpoint: 'https://example.org/cm'
-                           ]
-```
+The parameters can also be provided when the step is invoked.
