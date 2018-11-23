@@ -23,7 +23,14 @@ import static com.sap.piper.cm.StepHelpers.getBackendTypeAndLogInfoIfCMIntegrati
   ]
 
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS.plus([
+    /**
+      * for `SOLMAN` only. The id of the change document related to the transport request to release.
+      * @mandatory `SOLMAN` only
+      */
     'changeDocumentId',
+    /**
+      * The id of the transport request to release.
+      */
     'transportRequestId',
   ])
 
@@ -41,6 +48,11 @@ void call(parameters = [:]) {
             .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS)
             .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName?:env.STAGE_NAME, STEP_CONFIG_KEYS)
             .mixin(parameters, PARAMETER_KEYS)
+            /**
+              * Where/how the transport request is created (via SAP Solution Manager, ABAP).
+              * @possibleValues `SOLMAN`, `CTS`, `NONE`
+              */
+            .withMandatoryProperty('changeManagement/type')
 
 
         Map configuration = configHelper.use()
@@ -49,12 +61,40 @@ void call(parameters = [:]) {
         if(backendType == BackendType.NONE) return
 
         configHelper
+            /**
+              * Options forwarded to JVM used by the CM client, like `JAVA_OPTS`.
+              */
             .withMandatoryProperty('changeManagement/clientOpts')
+            /**
+              * The credentials to connect to the service endpoint (Solution Manager, ABAP System).
+              */
             .withMandatoryProperty('changeManagement/credentialsId')
+            /**
+              * The service endpoint (Solution Manager, ABAP System).
+              */
             .withMandatoryProperty('changeManagement/endpoint')
+            /**
+              * The end point for retrieving the change document id and/or transport request id.
+              */
             .withMandatoryProperty('changeManagement/git/to')
+            /**
+              * The starting point for retrieving the change document id and/or transport request id
+              */
             .withMandatoryProperty('changeManagement/git/from')
+            /**
+              * Specifies what part of the commit is scanned. By default the body of the commit message is scanned.
+              */
             .withMandatoryProperty('changeManagement/git/format')
+            /**
+              * For type `SOLMAN` only. A pattern used for identifying lines holding the change document id.
+              * @possibleValues regex pattern
+              */
+            .withMandatoryProperty('changeManagement/changeDocumentLabel')
+            /**
+              * A pattern used for identifying lines holding the transport request id.
+              * @possibleValues regex pattern
+              */
+            .withMandatoryProperty('changeManagement/transportRequestLabel')
 
         configuration = configHelper.use()
 
