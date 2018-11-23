@@ -485,7 +485,7 @@ def handleStep(stepName, prepareDefaultValuesStep, gse) {
     step.parameters['script'] = [
                                 docu: 'The common script environment of the Jenkinsfile running. ' +
                                         'Typically the reference to the script calling the pipeline ' +
-                                        'step is provided with the this parameter, as in script: this. ' +
+                                        'step is provided with the this parameter, as in `script: this`. ' +
                                         'This allows the function to access the ' +
                                         'commonPipelineEnvironment for retrieving, for example, configuration parameters.',
                                 required: true,
