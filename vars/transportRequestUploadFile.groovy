@@ -21,12 +21,27 @@ import static com.sap.piper.cm.StepHelpers.getBackendTypeAndLogInfoIfCMIntegrati
   ]
 
 @Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS.plus([
+     /**
+       * For type `SOLMAN` only. The id of the application.
+       * @mandatory `SOLMAN` only
+       */
       'applicationId'
     ])
 
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS.plus([
+    /**
+      * For type `SOLMAN` only. The id of the change document to that the
+      * transport request is bound to. Typically this value is provided via commit message in the commit history.
+      * @mandatory `SOLMAN` only
+      */
     'changeDocumentId',
+    /**
+      * The path of the file to upload.
+      */
     'filePath',
+    /**
+      * The id of the transport request to release. Typically provided via commit history.
+      */
     'transportRequestId'])
 
 void call(parameters = [:]) {
@@ -51,13 +66,45 @@ void call(parameters = [:]) {
         if(backendType == BackendType.NONE) return
 
         configHelper
+            /**
+              * For type `SOLMAN` only. A pattern used for identifying lines holding the change document id.
+              * @possibleValues regex pattern
+              */
             .withMandatoryProperty('changeManagement/changeDocumentLabel')
+            /**
+              * A pattern used for identifying lines holding the transport request id.
+              * @possibleValues regex pattern
+              */
+            .withMandatoryProperty('changeManagement/transportRequestLabel')
+            /**
+              * Options forwarded to JVM used by the CM client, like `JAVA_OPTS`.
+              */
             .withMandatoryProperty('changeManagement/clientOpts')
+            /**
+              * The credentials to connect to the service endpoint (Solution Manager, ABAP System).
+              */
             .withMandatoryProperty('changeManagement/credentialsId')
+            /**
+              * The service endpoint (Solution Manager, ABAP System).
+              */
             .withMandatoryProperty('changeManagement/endpoint')
+            /**
+              * Where/how the transport request is created (via SAP Solution Manager, ABAP).
+              * @possibleValues `SOLMAN`, `CTS`, `NONE`
+              */
             .withMandatoryProperty('changeManagement/type')
+            /**
+              * The starting point for retrieving the change document id and/or transport request id.
+              */
             .withMandatoryProperty('changeManagement/git/from')
+            /**
+              * The end point for retrieving the change document id and/or transport request id.
+              */
             .withMandatoryProperty('changeManagement/git/to')
+            /**
+              * Specifies what part of the commit is scanned. By default the body of the commit message is scanned.
+              * @possibleValues see `git log --help`
+              */
             .withMandatoryProperty('changeManagement/git/format')
             .withMandatoryProperty('filePath')
 
