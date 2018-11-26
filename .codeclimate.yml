@@ -26,3 +26,5 @@ plugins:
     enabled: true
   shellcheck:
     enabled: true
+exclude_patterns:
+  - "documentation/docs/steps/"
