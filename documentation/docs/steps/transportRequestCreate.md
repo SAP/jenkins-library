@@ -15,37 +15,62 @@ The id of the transport request is availabe via [commonPipelineEnvironment.getTr
 
 ## Parameters
 
-| parameter        | mandatory | default                                                | possible values    |
-| -----------------|-----------|--------------------------------------------------------|--------------------|
-| `script`        | yes       |                                                    |                    |
-| `changeDocumentId`        | for `SOLMAN`      |                                                    |                    |
-| `transportType`  | for `CTS`  | no                                                    |                    |
-| `targetSystem`   | for `CTS`  | no                                                    |                    |
-| `description`    | for `CTS`  | no                                                    |                    |
-| `changeManagement/credentialsId`  | yes       |                                                    |                    |
-| `changeManagement/endpoint`        | yes       |                                                    |                    |
-| `changeManagement/clientOpts`     | no       |                                                     |                     |
-| `changeManagement/git/from`         | no        | `origin/master`                                        |                    |
-| `changeManagement/git/to`           | no        | `HEAD`                                                 |                    |
-| `changeManagement/changeDocumentLabel`        | no        | `ChangeDocument\s?:`                                   | regex pattern      |
-| `changeManagement/git/format`        | no        | `%b`                                                   | see `git log --help` |
-| `changeManagement/type`           | no        | `SOLMAN`                                               | `SOLMAN`, `CTS`    |
+| name | mandatory | default | possible values |
+|------|-----------|---------|-----------------|
+| `changeDocumentId` | `SOLMAN` only, can be provided via git commit history. |  |  |
+| `changeManagement/changeDocumentLabel` | `SOLMAN` only | `ChangeDocument\s?:` | regex pattern |
+| `changeManagement/clientOpts` | yes |  |  |
+| `changeManagement/credentialsId` | yes | `CM` |  |
+| `changeManagement/endpoint` | yes |  |  |
+| `changeManagement/git/format` | yes | `%b` | see `git log --help` |
+| `changeManagement/git/from` | yes | `origin/master` |  |
+| `changeManagement/git/to` | yes | `HEAD` |  |
+| `changeManagement/type` | yes | `NONE` | `SOLMAN`, `CTS`, `NONE` |
+| `description` | `CTS` only |  |  |
+| `developmentSystemId` | `SOLMAN` only. |  |  |
+| `script` | yes |  |  |
+| `targetSystem` | `CTS` only |  |  |
+| `transportType` | `CTS` only |  |  |
 
-* `script` - The common script environment of the Jenkinsfile running. Typically the reference to the script calling the pipeline step is provided with the `this` parameter, as in `script: this`. This allows the function to access the [`commonPipelineEnvironment`](commonPipelineEnvironment.md) for retrieving, for example, configuration parameters.
 * `changeDocumentId` - for `SOLMAN` only. The id of the change document to that the transport request is bound to. Typically this value is provided via commit message in the commit history.
-* `changeManagement/type` Where/how the transport request is created (via SAP Solution Manager, ABAP).
+* `changeManagement/changeDocumentLabel` - For type `SOLMAN` only. A pattern used for identifying lines holding the change document id.
+* `changeManagement/clientOpts` - Options forwarded to JVM used by the CM client, like `JAVA_OPTS`.
 * `changeManagement/credentialsId` - The credentials to connect to the service endpoint (Solution Manager, ABAP System).
 * `changeManagement/endpoint` - The service endpoint (Solution Manager, ABAP System).
-* `changeManagement/clientOpts`- Options forwarded to JVM used by the CM client, like `JAVA_OPTS`
-* `changeManagement/git/from` - The starting point for retrieving the change document id
-* `changeManagement/git/to` - The end point for retrieving the change document id
-* `changeManagement/changeDocumentLabel` - For type `SOLMAN` only. A pattern used for identifying lines holding the change document id.
 * `changeManagement/git/format` - Specifies what part of the commit is scanned. By default the body of the commit message is scanned.
-* `description` - for `CTS` only. The description of the transport request.
-* `targetSystem` - for `CTS` only. The system receiving the transport request.
+* `changeManagement/git/from` - The starting point for retrieving the change document id.
+* `changeManagement/git/to` - The end point for retrieving the change document id.
+* `changeManagement/type` - Where/how the transport request is created (via SAP Solution Manager, ABAP).
+* `description` - For type `CTS` only. The description of the transport request.
+* `developmentSystemId` - for `SOLMAN` only. Outlines how the artifact is handled. For CTS use case: `SID~Type/Client`, e.g. `XX1~ABAP/100`, for SOLMAN use case: `SID~Typ`, e.g. `J01~JAVA`.
+* `script` - The common script environment of the Jenkinsfile running. Typically the reference to the script calling the pipeline step is provided with the this parameter, as in `script: this`. This allows the function to access the commonPipelineEnvironment for retrieving, for example, configuration parameters.
+* `targetSystem` - For type `CTS` only. The system receiving the transport request.
 * `transportType` - for type `CTS` only. Typically `W` (workbench) or `C` customizing.
 
+
 ## Step configuration
+
+
+We recommend to define values of step parameters via [config.yml file](../configuration.md).
+
+In following sections the configuration is possible:
+
+| parameter | general | step | stage |
+|-----------|---------|------|-------|
+| `changeDocumentId` |  |  | X |
+| `changeManagement/changeDocumentLabel` |  | X | X |
+| `changeManagement/clientOpts` |  | X | X |
+| `changeManagement/credentialsId` |  | X | X |
+| `changeManagement/endpoint` |  | X | X |
+| `changeManagement/git/format` |  | X | X |
+| `changeManagement/git/from` |  | X | X |
+| `changeManagement/git/to` |  | X | X |
+| `changeManagement/type` |  | X | X |
+| `description` |  | X | X |
+| `developmentSystemId` |  | X | X |
+| `script` | X | X | X |
+| `targetSystem` |  | X | X |
+| `transportType` |  | X | X |
 
 
 ## Return value

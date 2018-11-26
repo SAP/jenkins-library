@@ -10,32 +10,56 @@ Releases a Transport Request.
 
 ## Parameters
 
-| parameter        | mandatory | default                                                | possible values    |
-| -----------------|-----------|--------------------------------------------------------|--------------------|
-| `script`        | yes       |                                                    |                    |
-| `changeDocumentId`        | `SOLMAN` only       |                                                    |                    |
-| `transportRequestId`| yes   |                                                    |                    |
-| `changeManagement/changeDocumentLabel`        | no        | `ChangeDocument\s?:`                                   | regex pattern      |
-| `changeManagment/transportRequestLabel`        | no        | `TransportRequest\s?:`                                   | regex pattern |
-| `changeManagement/credentialsId`    | yes       |                                                        |                    |
-| `changeManagement/endpoint`         | yes       |                                                        |                    |
-| `changeManagement/git/from`         | no        | `origin/master`                                        |                    |
-| `changeManagement/git/to`           | no        | `HEAD`                                                 |                    |
-| `changeManagement/git/format`        | no        | `%b`                                                   | see `git log --help` |
-| `changeManagement/type`           | no        | `SOLMAN`                                               | `SOLMAN`, `CTS`    |
+| name | mandatory | default | possible values |
+|------|-----------|---------|-----------------|
+| `changeDocumentId` | `SOLMAN` only |  |  |
+| `changeManagement/changeDocumentLabel` | yes | `ChangeDocument\s?:` | regex pattern |
+| `changeManagement/clientOpts` | yes |  |  |
+| `changeManagement/credentialsId` | yes | `CM` |  |
+| `changeManagement/endpoint` | yes |  |  |
+| `changeManagement/git/format` | yes | `%b` |  |
+| `changeManagement/git/from` | yes | `origin/master` |  |
+| `changeManagement/git/to` | yes | `HEAD` |  |
+| `changeManagement/transportRequestLabel` | yes | `TransportRequest\s?:` | regex pattern |
+| `changeManagement/type` | yes | `NONE` | `SOLMAN`, `CTS`, `NONE` |
+| `script` | yes |  |  |
+| `transportRequestId` | yes |  |  |
 
-* `script` - The common script environment of the Jenkinsfile running. Typically the reference to the script calling the pipeline step is provided with the `this` parameter, as in `script: this`. This allows the function to access the [`commonPipelineEnvironment`](commonPipelineEnvironment.md) for retrieving, for example, configuration parameters.
 * `changeDocumentId` - for `SOLMAN` only. The id of the change document related to the transport request to release.
-* `transportRequestId` - The id of the transport request to release.
-* `changeManagement/changeDocumentLabel` - for `SOLMAN` only. A pattern used for identifying lines holding the change document id.
-* `changeManagment/transportRequestLabel` - A pattern used for identifying lines holding the transport request id.
+* `changeManagement/changeDocumentLabel` - For type `SOLMAN` only. A pattern used for identifying lines holding the change document id.
+* `changeManagement/clientOpts` - Options forwarded to JVM used by the CM client, like `JAVA_OPTS`.
 * `changeManagement/credentialsId` - The credentials to connect to the service endpoint (Solution Manager, ABAP System).
 * `changeManagement/endpoint` - The service endpoint (Solution Manager, ABAP System).
-* `changeManagement/git/from` - The starting point for retrieving the change document id and/or transport request id
-* `changeManagement/git/to` - The end point for retrieving the change document id and/or transport request id
 * `changeManagement/git/format` - Specifies what part of the commit is scanned. By default the body of the commit message is scanned.
+* `changeManagement/git/from` - The starting point for retrieving the change document id and/or transport request id
+* `changeManagement/git/to` - The end point for retrieving the change document id and/or transport request id.
+* `changeManagement/transportRequestLabel` - A pattern used for identifying lines holding the transport request id.
+* `changeManagement/type` - Where/how the transport request is created (via SAP Solution Manager, ABAP).
+* `script` - The common script environment of the Jenkinsfile running. Typically the reference to the script calling the pipeline step is provided with the this parameter, as in `script: this`. This allows the function to access the commonPipelineEnvironment for retrieving, for example, configuration parameters.
+* `transportRequestId` - The id of the transport request to release.
+
 
 ## Step configuration
+
+
+We recommend to define values of step parameters via [config.yml file](../configuration.md).
+
+In following sections the configuration is possible:
+
+| parameter | general | step | stage |
+|-----------|---------|------|-------|
+| `changeDocumentId` |  |  | X |
+| `changeManagement/changeDocumentLabel` |  | X | X |
+| `changeManagement/clientOpts` |  | X | X |
+| `changeManagement/credentialsId` |  | X | X |
+| `changeManagement/endpoint` |  | X | X |
+| `changeManagement/git/format` |  | X | X |
+| `changeManagement/git/from` |  | X | X |
+| `changeManagement/git/to` |  | X | X |
+| `changeManagement/transportRequestLabel` |  | X | X |
+| `changeManagement/type` |  | X | X |
+| `script` | X | X | X |
+| `transportRequestId` |  |  | X |
 
 
 ## Return value

@@ -14,29 +14,51 @@ range and the pattern can be configured. For details see 'parameters' table.
 
 ## Parameters
 
-| parameter          | mandatory | default                                                | possible values    |
-| -------------------|-----------|--------------------------------------------------------|--------------------|
-| `script`           | yes       |                                                        |                    |
-| `changeDocumentId` | yes       |                                                        |                    |
-| `changeManagement/changeDocumentLabel`        | no        | `ChangeDocument\s?:`                                   | regex pattern      |
-| `changeManagement/credentialsId`    | yes       |                                                        |                    |
-| `changeManagement/endpoint`         | yes       |                                                        |                    |
-| `changeManagement/git/from`         | no        | `origin/master`                                        |                    |
-| `changeManagement/git/to`           | no        | `HEAD`                                                 |                    |
-| `changeManagement/git/format`        | no        | `%b`                                                   | see `git log --help` |
-| `failIfStatusIsNotInDevelopment` | no | `true` | `true`, `false` |
+| name | mandatory | default | possible values |
+|------|-----------|---------|-----------------|
+| `changeDocumentId` | yes, can be provided via git commit history |  |  |
+| `changeManagement/changeDocumentLabel` | yes | `ChangeDocument\s?:` | regex pattern |
+| `changeManagement/clientOpts` | yes |  |  |
+| `changeManagement/credentialsId` | yes | `CM` |  |
+| `changeManagement/endpoint` | yes |  |  |
+| `changeManagement/git/format` | yes | `%b` | see `git log --help` |
+| `changeManagement/git/from` | yes | `origin/master` |  |
+| `changeManagement/git/to` | yes | `HEAD` |  |
+| `failIfStatusIsNotInDevelopment` | yes | `true` | `true`, `false` |
+| `script` | yes |  |  |
 
-* `script` - The common script environment of the Jenkinsfile running. Typically the reference to the script calling the pipeline step is provided with the `this` parameter, as in `script: this`. This allows the function to access the [`commonPipelineEnvironment`](commonPipelineEnvironment.md) for retrieving, for example, configuration parameters.
 * `changeDocumentId` - The id of the change document to transport. If not provided, it is retrieved from the git commit history.
 * `changeManagement/changeDocumentLabel` - A pattern used for identifying lines holding the change document id.
+* `changeManagement/clientOpts` - Additional options for cm command line client, e.g. like JAVA_OPTS.
 * `changeManagement/credentialsId` - The id of the credentials to connect to the Solution Manager. The credentials needs to be maintained on Jenkins.
 * `changeManagement/endpoint` - The address of the Solution Manager.
+* `changeManagement/git/format` - Specifies what part of the commit is scanned. By default the body of the commit message is scanned.
 * `changeManagement/git/from` - The starting point for retrieving the change document id
 * `changeManagement/git/to` - The end point for retrieving the change document id
-* `changeManagement/git/format` - Specifies what part of the commit is scanned. By default the body of the commit message is scanned.
-* `failIfStatusIsNotInDevelopment` - when set to `false` the step will not fail in case the step is not in status 'in development'.
+* `failIfStatusIsNotInDevelopment` - When set to `false` the step will not fail in case the step is not in status 'in development'.
+* `script` - The common script environment of the Jenkinsfile running. Typically the reference to the script calling the pipeline step is provided with the this parameter, as in `script: this`. This allows the function to access the commonPipelineEnvironment for retrieving, for example, configuration parameters.
+
 
 ## Step configuration
+
+
+We recommend to define values of step parameters via [config.yml file](../configuration.md).
+
+In following sections the configuration is possible:
+
+| parameter | general | step | stage |
+|-----------|---------|------|-------|
+| `changeDocumentId` |  |  | X |
+| `changeManagement/changeDocumentLabel` |  | X | X |
+| `changeManagement/clientOpts` |  | X | X |
+| `changeManagement/credentialsId` |  | X | X |
+| `changeManagement/endpoint` |  | X | X |
+| `changeManagement/git/format` |  | X | X |
+| `changeManagement/git/from` |  | X | X |
+| `changeManagement/git/to` |  | X | X |
+| `failIfStatusIsNotInDevelopment` |  | X | X |
+| `script` | X | X | X |
+
 
 ## Return value
 
