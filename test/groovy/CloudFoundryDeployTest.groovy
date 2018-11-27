@@ -275,6 +275,7 @@ class CloudFoundryDeployTest extends BasePiperTest {
 
         assertThat(jscr.shell, hasItem(containsString('cf login -u "test_cf" -p \'********\' -a https://api.cf.eu10.hana.ondemand.com -o "testOrg" -s "testSpace"')))
         assertThat(jscr.shell, hasItem(containsString("cf blue-green-deploy testAppName --delete-old-apps -f 'test.yml'")))
+        assertThat(jscr.shell, not(hasItem(containsString("cf stop testAppName-old"))))
         assertThat(jscr.shell, hasItem(containsString("cf logout")))
 
     }
