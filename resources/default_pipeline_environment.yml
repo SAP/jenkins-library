@@ -123,6 +123,7 @@ steps:
       apiEndpoint: 'https://api.cf.eu10.hana.ondemand.com'
     deployTool: 'cf_native'
     deployType: 'standard'
+    keepOldInstance: false
     mtaDeployParameters: '-f'
     mtaExtensionDescriptor: ''
     mtaPath: ''

@@ -15,6 +15,7 @@ import groovy.transform.Field
     'deployUser',
     'deployTool',
     'deployType',
+    'keepOldInstance',
     'dockerImage',
     'dockerWorkspace',
     'mtaDeployParameters',
@@ -117,13 +118,15 @@ def deployCfNative (config) {
         passwordVariable: 'password',
         usernameVariable: 'username'
     )]) {
-        def deployCommand = 'push'
+        def deployCommand = selectCfDeployCommandForDeployType(config)
+
         if (config.deployType == 'blue-green') {
-            deployCommand = 'blue-green-deploy'
             handleLegacyCfManifest(config)
         } else {
             config.smokeTest = ''
         }
+
+        def blueGreenDeployOptions = deleteOptionIfRequired(config)
 
         // check if appName is available
         if (config.cloudFoundry.appName == null || config.cloudFoundry.appName == '') {
@@ -145,8 +148,35 @@ def deployCfNative (config) {
             export HOME=${config.dockerWorkspace}
             cf login -u \"${username}\" -p '${password}' -a ${config.cloudFoundry.apiEndpoint} -o \"${config.cloudFoundry.org}\" -s \"${config.cloudFoundry.space}\"
             cf plugins
-            cf ${deployCommand} ${config.cloudFoundry.appName?:''} ${config.deployType == 'blue-green'?'--delete-old-apps':''} -f '${config.cloudFoundry.manifest}' ${config.smokeTest}"""
+            cf ${deployCommand} ${config.cloudFoundry.appName ?: ''} ${blueGreenDeployOptions} -f '${config.cloudFoundry.manifest}' ${config.smokeTest}
+            ${stopOldAppIfRequired(config)}
+            """
         sh "cf logout"
+    }
+}
+
+private String selectCfDeployCommandForDeployType(Map config) {
+    if (config.deployType == 'blue-green') {
+        return 'blue-green-deploy'
+    } else {
+        return 'push'
+    }
+}
+
+private String deleteOptionIfRequired(Map config) {
+    boolean deleteOldInstance = !config.keepOldInstance
+    if (deleteOldInstance && config.deployType == 'blue-green') {
+        return '--delete-old-apps'
+    } else {
+        return ''
+    }
+}
+
+private String stopOldAppIfRequired(Map config) {
+    if (config.keepOldInstance && config.deployType == 'blue-green') {
+        return "cf stop ${config.cloudFoundry.appName}-old"
+    } else {
+        return ''
     }
 }
 
