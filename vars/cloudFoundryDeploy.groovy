@@ -61,7 +61,7 @@ void call(Map parameters = [:]) {
         //make sure that all relevant descriptors, are available in workspace
         utils.unstashAll(config.stashContent)
         //make sure that for further execution whole workspace, e.g. also downloaded artifacts are considered
-        config.stashContent = [:]
+        config.stashContent = []
 
         if (config.deployTool == 'mtaDeployPlugin') {
             // set default mtar path
