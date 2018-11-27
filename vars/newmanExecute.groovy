@@ -18,6 +18,7 @@ import groovy.transform.Field
     'newmanCollection',
     'newmanEnvironment',
     'newmanGlobals',
+    'newmanInstallCommand',
     'newmanRunCommand',
     'stashContent',
     'testRepository'
@@ -56,10 +57,11 @@ void call(Map parameters = [:]) {
         }
 
         dockerExecute(
+            script: script,
             dockerImage: config.dockerImage,
             stashContent: config.stashContent
         ) {
-            sh 'npm install newman --global --quiet'
+            sh "${config.newmanInstallCommand}"
             for(String collection : collectionList){
                 def collectionDisplayName = collection.toString().replace(File.separatorChar,(char)'_').tokenize('.').first()
                 // resolve templates
