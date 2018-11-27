@@ -58,7 +58,10 @@ void call(Map parameters = [:]) {
 
         echo "[${STEP_NAME}] General parameters: deployTool=${config.deployTool}, deployType=${config.deployType}, cfApiEndpoint=${config.cloudFoundry.apiEndpoint}, cfOrg=${config.cloudFoundry.org}, cfSpace=${config.cloudFoundry.space}, cfCredentialsId=${config.cloudFoundry.credentialsId}, deployUser=${config.deployUser}"
 
-        config.stashContent = utils.unstashAll(config.stashContent)
+        //make sure that all relevant descriptors, are available in workspace
+        utils.unstashAll(config.stashContent)
+        //make sure that for further execution whole workspace, e.g. also downloaded artifacts are considered
+        config.stashContent = [:]
 
         if (config.deployTool == 'mtaDeployPlugin') {
             // set default mtar path
