@@ -43,6 +43,10 @@ import groovy.transform.Field
       */
     'newmanGlobals',
     /**
+      * The shell command that will be executed inside the docker container to install Newman.
+      */
+    'newmanInstallCommand',
+    /**
       * The newman command that will be executed inside the docker container.
       */
     'newmanRunCommand',
@@ -90,10 +94,11 @@ void call(Map parameters = [:]) {
         }
 
         dockerExecute(
+            script: script,
             dockerImage: config.dockerImage,
             stashContent: config.stashContent
         ) {
-            sh 'npm install newman --global --quiet'
+            sh "${config.newmanInstallCommand}"
             for(String collection : collectionList){
                 def collectionDisplayName = collection.toString().replace(File.separatorChar,(char)'_').tokenize('.').first()
                 // resolve templates
