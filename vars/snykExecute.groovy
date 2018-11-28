@@ -62,6 +62,7 @@ void call(Map parameters = [:]) {
                         variable: 'token'
                     )]) {
                         dockerExecute(
+                            script: script,
                             dockerImage: config.dockerImage,
                             stashContent: config.stashContent,
                             dockerEnvVars: ['SNYK_TOKEN': token]
