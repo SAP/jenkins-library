@@ -3,11 +3,13 @@ import com.sap.piper.ConfigurationHelper
 import com.sap.piper.ConfigurationLoader
 import groovy.transform.Field
 
+import static com.sap.piper.Prerequisites.checkScript
+
 @Field String STEP_NAME = 'piperStageWrapper'
 
 void call(Map parameters = [:], body) {
 
-    def script = parameters.script ?: [commonPipelineEnvironment: commonPipelineEnvironment]
+    final script = checkScript(this, parameters) ?: this
     def utils = parameters.juStabUtils ?: new Utils()
 
     def stageName = parameters.stageName?:env.STAGE_NAME
