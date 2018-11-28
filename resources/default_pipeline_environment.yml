@@ -339,8 +339,8 @@ steps:
 
   #defaults for stage wrapper
   piperStageWrapper:
-    extensionLocation: '.pipeline/extensions/'
-    globalExtensionLocation: '.pipeline/globalExtensions'
+    projectExtensionsDirectory: '.pipeline/extensions/'
+    globalExtensionsDirectory: ''
     stageLocking: true
     nodeLabel: ''
     stashContent:
