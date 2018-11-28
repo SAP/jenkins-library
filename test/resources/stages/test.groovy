@@ -1,6 +1,5 @@
-void call(body, stageName, config1, config2) {
+void call(body, stageName, config) {
     echo "Stage Name: ${stageName}"
-    echo "Config 1: ${config1}"
+    echo "Config: ${config}"
     body()
-    echo "Config 2: ${config2}"
 }

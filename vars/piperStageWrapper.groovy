@@ -22,7 +22,7 @@ void call(Map parameters = [:], body) {
         .use()
 
     stageLocking(config) {
-        withNode(config) {
+        node(config.nodeLabel) {
             try {
 
                 //Add general stage stashes to config.stashContent
@@ -33,16 +33,16 @@ void call(Map parameters = [:], body) {
                 if (Boolean.valueOf(env.ON_K8S) && containerMap.size() > 0) {
                     withEnv(["POD_NAME=${stageName}"]) {
                         dockerExecute(script: script, containerMap: containerMap) {
-                            executeStage(body, stageName, config, utils)
+                            executeStage(script, body, stageName, config, utils)
                         }
                     }
                 } else {
-                    executeStage(body, stageName, config, utils)
+                    executeStage(script, body, stageName, config, utils)
                 }
             } finally {
-                echo "Current build result in stage $stageName is ${currentBuild.currentResult}."
+                echo "Current build result in stage $stageName is ${script.currentBuild.currentResult}."
                 //Perform stashing of selected files in workspace
-                utils.stashList(script.commonPipelineEnvironment.configuration.stageStashes?.get(stageName)?.stashes ?: [])
+                utils.stashList(script, script.commonPipelineEnvironment.configuration.stageStashes?.get(stageName)?.stashes ?: [])
                 deleteDir()
             }
         }
@@ -60,7 +60,7 @@ private void stageLocking(Map config, Closure body) {
     }
 }
 
-private void executeStage(originalStage, stageName, config, utils) {
+private void executeStage(script, originalStage, stageName, config, utils) {
 
     boolean projectExtensions
     boolean globalExtensions
@@ -100,6 +100,6 @@ private void executeStage(originalStage, stageName, config, utils) {
 
     } finally {
         def duration = System.currentTimeMillis() - startTime
-        utils.pushToSWA(eventType: 'library-os-stage', stageName: stageName, custom1: "${currentBuild.currentResult}", custom2: "${startTime}", custom3: "${duration}", custom4: "${projectExtensions}", custom5: "${globalExtensions}")
+        utils.pushToSWA([eventType: 'library-os-stage', stageName: stageName, custom1: "${script.currentBuild.currentResult}", custom2: "${startTime}", custom3: "${duration}", custom4: "${projectExtensions}", custom5: "${globalExtensions}"], config)
     }
 }

@@ -31,6 +31,7 @@ class PiperStageWrapperTest extends BasePiperTest {
 
     @Before
     void init() throws Exception {
+
         helper.registerAllowedMethod('deleteDir', [], {return null})
         helper.registerAllowedMethod('lock', [Map.class, Closure.class], {m, body ->
             assertThat(m.resource.toString(), containsString('/10'))
@@ -49,12 +50,6 @@ class PiperStageWrapperTest extends BasePiperTest {
         helper.registerAllowedMethod('fileExists', [String.class], {s ->
             return false
         })
-    }
-
-    @Test
-    void testStageExitFilePath() {
-        def config = [extensionLocation: '.pipeline/extensions/']
-        assertThat(jsr.step.piperStageWrapper.stageExitFilePath('test Stage', config), is('.pipeline/extensions/test_stage.groovy'))
     }
 
     @Test
@@ -95,23 +90,6 @@ class PiperStageWrapperTest extends BasePiperTest {
     }
 
     @Test
-    void testNoNode() {
-        def testInt = 1
-        jsr.step.piperStageWrapper(
-            script: nullScript,
-            juStabUtils: utils,
-            ordinal: 10,
-            stageName: 'test',
-            withNode: false
-        ) {
-            testInt ++
-        }
-        assertThat(testInt, is(2))
-        assertThat(lockMap.size(), is(2))
-        assertThat(countNodeUsage, is(0))
-    }
-
-    @Test
     void testStageExit() {
         helper.registerAllowedMethod('fileExists', [String.class], {s ->
             return (s == '.pipeline/extensions/test.groovy')
@@ -134,8 +112,7 @@ class PiperStageWrapperTest extends BasePiperTest {
         assertThat(testInt, is(2))
         assertThat(jlr.log, containsString('[piperStageWrapper] Running project interceptor \'.pipeline/extensions/test.groovy\' for test.'))
         assertThat(jlr.log, containsString('Stage Name: test'))
-        assertThat(jlr.log, containsString('Config 1:'))
-        assertThat(jlr.log, containsString('Config 2:'))
+        assertThat(jlr.log, containsString('Config:'))
     }
 }
 

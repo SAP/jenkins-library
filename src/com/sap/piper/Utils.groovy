@@ -22,7 +22,7 @@ def stash(name, include = '**/*.*', exclude = '') {
     steps.stash name: name, includes: include, excludes: exclude
 }
 
-def stashList(List stashes, script) {
+def stashList(script, List stashes) {
     for (def stash : stashes) {
         def name = stash.name
         def include = stash.includes
