@@ -7,7 +7,7 @@ import com.sap.piper.Utils
 import groovy.text.SimpleTemplateEngine
 import groovy.transform.Field
 
-@Field String STEP_NAME = 'karmaExecuteTests'
+@Field String STEP_NAME = getClass().getName()
 @Field Set GENERAL_CONFIG_KEYS = [
     /** port mappings required for containers. This will only take effect inside a Kubernetes pod, format [[containerPort: 1111, hostPort: 1111]] */
     'containerPortMappings',
