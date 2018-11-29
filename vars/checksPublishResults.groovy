@@ -8,7 +8,7 @@ import com.sap.piper.Utils
 
 import groovy.transform.Field
 
-@Field def STEP_NAME = 'checksPublishResults'
+@Field def STEP_NAME = getClass().getName()
 
 @Field Set TOOLS = [
     'aggregation', 'tasks', 'pmd', 'cpd', 'findbugs', 'checkstyle', 'eslint', 'pylint'

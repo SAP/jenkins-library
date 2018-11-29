@@ -7,7 +7,7 @@ import com.sap.piper.k8s.SystemEnv
 import groovy.transform.Field
 import hudson.AbortException
 
-@Field def STEP_NAME = 'dockerExecuteOnKubernetes'
+@Field def STEP_NAME = getClass().getName()
 @Field def PLUGIN_ID_KUBERNETES = 'kubernetes'
 @Field Set GENERAL_CONFIG_KEYS = ['jenkinsKubernetes']
 @Field Set PARAMETER_KEYS = [

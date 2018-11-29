@@ -6,7 +6,7 @@ import com.sap.piper.CfManifestUtils
 
 import groovy.transform.Field
 
-@Field String STEP_NAME = 'cloudFoundryDeploy'
+@Field String STEP_NAME = getClass().getName()
 
 @Field Set GENERAL_CONFIG_KEYS = STEP_CONFIG_KEYS
 
