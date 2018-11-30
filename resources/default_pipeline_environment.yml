@@ -252,7 +252,7 @@ steps:
       git: '**/gitmetadata/**'
       opa5: '**/*.*'
       opensourceConfiguration: '**/srcclr.yml, **/vulas-custom.properties, **/.nsprc, **/.retireignore, **/.retireignore.json, **/.snyk'
-      pipelineConfigAndTests: '.pipeline/*.*'
+      pipelineConfigAndTests: '.pipeline/**'
       securityDescriptor: '**/xs-security.json'
       tests: '**/pom.xml, **/*.json, **/*.xml, **/src/**, **/node_modules/**, **/specs/**, **/env/**, **/*.js'
     stashExcludes:
