@@ -21,6 +21,9 @@ void call(Map parameters = [:], body) {
         .mixinGeneralConfig(script.commonPipelineEnvironment)
         .mixinStageConfig(script.commonPipelineEnvironment, stageName)
         .mixin(parameters)
+        .addIfEmpty('stageName', stageName)
+        .dependingOn('stageName').mixin('ordinal')
+        .dependingOn('stageName').mixin('stashContent')
         .use()
 
     stageLocking(config) {
