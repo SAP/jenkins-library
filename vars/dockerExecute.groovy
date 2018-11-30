@@ -14,7 +14,7 @@ import groovy.transform.Field
 
 @Field Set GENERAL_CONFIG_KEYS = ['jenkinsKubernetes']
 
-@Field Set PARAMETER_KEYS = [
+@Field Set STEP_CONFIG_KEYS = [
     'containerPortMappings',
     'dockerEnvVars',
     'dockerImage',
@@ -30,7 +30,8 @@ import groovy.transform.Field
     'sidecarVolumeBind',
     'stashContent'
 ]
-@Field Set STEP_CONFIG_KEYS = PARAMETER_KEYS
+
+@Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS.plus(['dockerPullSkip'])
 
 void call(Map parameters = [:], body) {
     handlePipelineStepErrors(stepName: STEP_NAME, stepParameters: parameters) {
@@ -116,7 +117,7 @@ void call(Map parameters = [:], body) {
             if (executeInsideDocker && config.dockerImage) {
                 utils.unstashAll(config.stashContent)
                 def image = docker.image(config.dockerImage)
-                image.pull()
+                if(!config.dockerPullSkip) image.pull()
                 if (!config.sidecarImage) {
                     image.inside(getDockerOptions(config.dockerEnvVars, config.dockerVolumeBind, config.dockerOptions)) {
                         body()
@@ -126,7 +127,7 @@ void call(Map parameters = [:], body) {
                     sh "docker network create ${networkName}"
                     try{
                         def sidecarImage = docker.image(config.sidecarImage)
-                        sidecarImage.pull()
+                        if(!config.dockerPullSkip) sidecarImage.pull()
                         config.sidecarOptions = config.sidecarOptions?:[]
                         if(config.sidecarName)
                             config.sidecarOptions.add("--network-alias ${config.sidecarName}")

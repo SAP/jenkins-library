@@ -140,6 +140,7 @@ steps:
       dockerWorkspace: '/home/piper'
   dockerExecute:
     stashContent: []
+    dockerPullSkip: false
   dockerExecuteOnKubernetes:
     stashContent: []
     stashIncludes:

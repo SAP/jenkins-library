@@ -16,6 +16,7 @@ Proxy environment variables defined on the Jenkins machine are also available in
 |dockerImage|no|`''`||
 |dockerName|no|||
 |dockerOptions|no|`''`||
+|dockerPullSkip|no|false|boolean value: `true`, `false` |
 |dockerVolumeBind|no|`[:]`||
 |dockerWorkspace|no|||
 |jenkinsKubernetes|no|`[jnlpAgent:s4sdk/jenkins-agent-k8s:latest]`||
@@ -32,6 +33,7 @@ Proxy environment variables defined on the Jenkins machine are also available in
 * `dockerImage`: Name of the docker image that should be used. If empty, Docker is not used and the command is executed directly on the Jenkins system.
 * `dockerName`: Kubernetes case: Name of the container launching `dockerImage`, SideCar: Name of the container in local network
 * `dockerOptions` Docker options to be set when starting the container. It can be a list or a string.
+* `dockerPullSkip`: Set this to 'true' to bypass docker image pulls. Usefull during development processes. Allows testing of images which are available in the local registry only.
 * `dockerVolumeBind` Volumes that should be mounted into the container.
 * `dockerWorkspace`: only relevant for Kubernetes case: specifies a dedicated user home directory for the container which will be passed as value for environment variable `HOME`
 * `sidecarEnvVars` defines environment variables for the sidecar container, similar to `dockerEnvVars`
@@ -59,6 +61,7 @@ In following sections the configuration is possible:
 |dockerImage||X|X|
 |dockerName||X|X|
 |dockerOptions||X|X|
+|dockerPullSkip|X|||
 |dockerVolumeBind||X|X|
 |dockerWorkspace||X|X|
 |jenkinsKubernetes|X|||
