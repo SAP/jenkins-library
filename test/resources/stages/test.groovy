@@ -3,3 +3,4 @@ void call(body, stageName, config) {
     echo "Config: ${config}"
     body()
 }
+return this
