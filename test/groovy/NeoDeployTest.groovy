@@ -568,6 +568,22 @@ class NeoDeployTest extends BasePiperTest {
         assert jlr.log.contains("Deprecated parameter 'deployAccount' is used. This will not work anymore in future versions. Use parameter 'account' instead.")
     }
 
+    @Test
+    void skipNeoDeploymentTest() {
+
+        jlr.expect('[INFO][neoDeploy] Neo deployment will be skipped since flag \'skip\' was provided with value \'true\'.')
+
+        jsr.step.neoDeploy(
+            script: nullScript,
+            skip: true,
+        )
+
+        //
+        // basically we have to ensure neo neo call has been emitted via sh.
+        // In fact no sh call at all happens in this case. Hence we
+        // simply check that there was not sh call ...
+        jscr.shell.isEmpty()
+    }
 
     private getVersionWithEnvVars(Map m) {
 

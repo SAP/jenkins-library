@@ -33,6 +33,7 @@ Note that a version is formed by `major.minor.patch`, and a version is compatibl
 | `neoCredentialsId` | no        | `'CI_CREDENTIALS_ID'`         |                                                 |
 | `neoHome`          | no        |                               |                                                 |
 | `script`           | yes       |                               |                                                 |
+| `skip`             | yes       | false                         | boolean value: `true`, `false`                  |
 
 ## Parameters when using WAR file deployment method with .properties file (WAR_PROPERTIESFILE)
 
@@ -44,6 +45,7 @@ Note that a version is formed by `major.minor.patch`, and a version is compatibl
 | `neoHome`          | no        |                               |                                                 |
 | `propertiesFile`   | yes       |                               |                                                 |
 | `script`           | yes       |                               |                                                 |
+| `skip`             | yes       | `false`                       | boolean value: `true`, `false`                  |
 | `warAction`        | yes       | `'deploy'`                    | `'deploy'`, `'rolling-update'`                  |
 
 ## Parameters when using WAR file deployment method witout .properties file - with parameters (WAR_PARAMS)
@@ -62,6 +64,7 @@ Note that a version is formed by `major.minor.patch`, and a version is compatibl
 | `runtime`          | yes       |                               |                                                 |
 | `runtime-version`  | yes       |                               |                                                 |
 | `script`           | yes       |                               |                                                 |
+| `skip`             | yes       | `false`                       | boolean value: `true`, `false`                  |
 | `vmSize`           | no        | `'lite'`                      | `'lite'`, `'pro'`, `'prem'`, `'prem-plus'`      |
 | `warAction`        | yes       | `'deploy'`                    | `'deploy'`, `'rolling-update'`                  |
 
@@ -78,6 +81,7 @@ Note that a version is formed by `major.minor.patch`, and a version is compatibl
 * `runtime` - Name of SAP Cloud Platform application runtime
 * `runtime-version` - Version of SAP Cloud Platform application runtime
 * `script` - The common script environment of the Jenkinsfile run. Typically `this` is passed to this parameter. This allows the function to access the [`commonPipelineEnvironment`](commonPipelineEnvironment.md) for retrieving e.g. configuration parameters.
+* skip - Set this to `true` to bypass artifact deploy.
 * `vmSize` - Compute unit (VM) size. Acceptable values: lite, pro, prem, prem-plus.
 * `warAction` - Action mode when using WAR file mode. Available options are `deploy` (default) and `rolling-update` which performs update of an application without downtime in one go.
 

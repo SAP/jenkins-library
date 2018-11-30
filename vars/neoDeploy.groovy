@@ -16,7 +16,8 @@ import groovy.transform.Field
     'dockerOptions',
     'host',
     'neoCredentialsId',
-    'neoHome'
+    'neoHome',
+    'skip'
 ]
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS.plus([
     'applicationName',
@@ -101,6 +102,11 @@ void call(parameters = [:]) {
             .addIfEmpty('archivePath', script.commonPipelineEnvironment.getMtarFilePath())
             .mixin(parameters, PARAMETER_KEYS)
             .use()
+
+        if(configuration.skip) {
+            echo "[INFO][${STEP_NAME}] Neo deployment will be skipped since flag 'skip' was provided with value '${configuration.skip}'."
+            return
+        }
 
         utils.pushToSWA([
             step: STEP_NAME,
