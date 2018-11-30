@@ -23,7 +23,6 @@ void call(Map parameters = [:], body) {
         .mixin(parameters)
         .addIfEmpty('stageName', stageName)
         .dependingOn('stageName').mixin('ordinal')
-        .dependingOn('stageName').mixin('stashContent')
         .use()
 
     stageLocking(config) {
