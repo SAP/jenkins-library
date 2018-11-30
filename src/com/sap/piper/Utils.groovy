@@ -32,9 +32,11 @@ def stashList(script, List stashes) {
             String lockName = "${script.commonPipelineEnvironment.configuration.stashFiles}/${stash.name}"
             lock(lockName) {
                 unstash stash.name
+                echo "Stash content: ${name} (include: ${include}, exclude: ${exclude})"
                 steps.stash name: name, includes: include, exclude: exclude, allowEmpty: true
             }
         } else {
+            echo "Stash content: ${name} (include: ${include}, exclude: ${exclude})"
             steps.stash name: name, includes: include, exclude: exclude, allowEmpty: true
         }
     }
