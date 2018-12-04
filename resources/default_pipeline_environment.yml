@@ -215,6 +215,7 @@ steps:
   mtaBuild:
     buildTarget: 'NEO'
     mtaJarLocation: 'mta.jar'
+    dockerImage: 'mta:latest'
   neoDeploy:
     dockerImage: 's4sdk/docker-neo-cli'
     deployMode: 'mta'
