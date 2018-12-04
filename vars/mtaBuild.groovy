@@ -1,4 +1,5 @@
 import static com.sap.piper.Prerequisites.checkScript
+import static java.lang.Boolean.getBoolean
 
 import com.sap.piper.ConfigurationHelper
 import com.sap.piper.MtaUtils
@@ -36,8 +37,7 @@ void call(Map parameters = [:]) {
             .mixin(parameters, PARAMETER_KEYS)
             .use()
 
-        new Utils().pushToSWA([step: STEP_NAME,
-                                stepParam1: parameters?.script == null], configuration)
+        boolean oldStyleMtaCall = false
 
         dockerExecute(script: script, dockerImage: configuration.dockerImage, dockerOptions: configuration.dockerOptions) {
             def java = new ToolDescriptor('Java', 'JAVA_HOME', '', '/bin/', 'java', '1.8.0', '-version 2>&1')
@@ -69,9 +69,15 @@ void call(Map parameters = [:]) {
             }
 
             def mtarFileName = "${id}.mtar"
-            def mtaJar = mta.getCall(this, configuration)
+            def mtaCall = 'mtaBuild'
 
-            def mtaCall = "${mtaJar} --mtar ${mtarFileName} --build-target=${configuration.buildTarget}"
+            oldStyleMtaCall = sh(returnStatus: true, script: "which ${mtaCall} > /dev/null") != 0
+
+            if(oldStyleMtaCall) {
+                mtaCall = mta.getCall(this, configuration)
+            }
+
+            mtaCall += " --mtar ${mtarFileName} --build-target=${configuration.buildTarget}"
 
             if (configuration.extension) mtaCall += " --extension=$configuration.extension"
             mtaCall += ' build'
@@ -84,6 +90,20 @@ void call(Map parameters = [:]) {
             """
 
             script?.commonPipelineEnvironment?.setMtarFilePath(mtarFileName)
+        }
+
+        new Utils().pushToSWA([step: STEP_NAME,
+                                stepParam1: parameters?.script == null,
+                                stepParam2: oldStyleMtaCall], configuration)
+
+        if(oldStyleMtaCall) {
+
+            currentBuild.setResult('UNSTABLE')
+
+            echo "[WARNING] Deprecation warning: An old style mta call has" +
+                " been detected. Calling mta this way will be disabled" +
+                " in future versions. For more details check the step" +
+                " docu at: 'https://sap.github.io/jenkins-library/steps/mtaBuild/'."
         }
     }
 }
