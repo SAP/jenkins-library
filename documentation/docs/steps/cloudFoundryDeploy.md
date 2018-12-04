@@ -29,6 +29,7 @@ Deployment can be done
 | cloudFoundry | yes |  |  |
 | deployTool | no | cf_native | cf_native, mtaDeployPlugin |
 | deployType | no | standard | standard, blue-green |
+| keepOldInstance | no | false | true, false |
 | dockerImage | no | s4sdk/docker-cf-cli |  |
 | dockerWorkspace | no | /home/piper |  |
 | mtaDeployParameters |  | -f |  |
@@ -65,6 +66,7 @@ Deployment can be done
 
 * `deployTool` defines the tool which should be used for deployment.
 * `deployType` defines the type of deployment, either `standard` deployment which results in a system downtime or a zero-downtime `blue-green` deployment.
+* `keepOldInstance` in case of a `blue-green` deployment the old instance will be deleted by default. If this option is set to true the old instance will remain stopped in the Cloud Foundry space.
 * `dockerImage` defines the Docker image containing the deployment tools (like cf cli, ...) and `dockerWorkspace` defines the home directory of the default user of the `dockerImage`
 * `smokeTestScript` allows to specify a script which performs a check during blue-green deployment. The script gets the FQDN as parameter and returns `exit code 0` in case check returned `smokeTestStatusCode`. More details can be found [here](https://github.com/bluemixgaragelondon/cf-blue-green-deploy#how-to-use) <br /> Currently this option is only considered for deployTool `cf_native`.
 * `stashContent` defines the stash names which should be unstashed at the beginning of the step. This makes the files available in case the step is started on an empty node.
