@@ -7,7 +7,7 @@ import com.sap.piper.tools.ToolDescriptor
 
 import groovy.transform.Field
 
-@Field String STEP_NAME = 'neoDeploy'
+@Field String STEP_NAME = getClass().getName()
 @Field Set GENERAL_CONFIG_KEYS = []
 @Field Set STEP_CONFIG_KEYS = [
     'account',
