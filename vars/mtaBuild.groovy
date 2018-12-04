@@ -73,9 +73,8 @@ void call(Map parameters = [:]) {
 
             def mtarFileName = "${id}.mtar"
             def mtaJar = mta.getCall(this, configuration)
-            def buildTarget = configuration.buildTarget
 
-            def mtaCall = "${mtaJar} --mtar ${mtarFileName} --build-target=${buildTarget}"
+            def mtaCall = "${mtaJar} --mtar ${mtarFileName} --build-target=${configuration.buildTarget}"
 
             if (configuration.extension) mtaCall += " --extension=$configuration.extension"
             mtaCall += ' build'
