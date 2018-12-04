@@ -8,7 +8,7 @@ import groovy.transform.Field
 
 import hudson.AbortException
 
-@Field STEP_NAME = 'toolValidate'
+@Field STEP_NAME = getClass().getName()
 
 void call(Map parameters = [:]) {
 

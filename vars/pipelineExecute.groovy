@@ -3,7 +3,7 @@ import com.sap.piper.Utils
 import groovy.transform.Field
 
 
-@Field STEP_NAME = 'pipelineExecute'
+@Field STEP_NAME = getClass().getName()
 
 
 /**
