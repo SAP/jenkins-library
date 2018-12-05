@@ -2,7 +2,7 @@
 
 ### Procedure
 
-1. Check if in SAP Solution Manager, there is a change document in status "in development". See [Check for a Change Document in Status "In Development"](#Check for a Change Document in Status "In Development").
+1. Check if in SAP Solution Manager, there is a change document in status "in development". See [Check for a Change Document in Status "In Development"](#Check-for-a-Change-Document-in-Status-"In-Development").
 2. Create a transport request for a change document in SAP Solution Manager.
 3. (Optional) Upload a file to your transport request.
 4. Release your transport request.
