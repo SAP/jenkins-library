@@ -72,7 +72,7 @@ To setup the shared library, you need to perform the following steps:
 1. Open the system configuration page (*Manage Jenkins > Configure System*).
 1. Scroll down to section *Global Pipeline Libraries* and add a new Library by
    clicking the *Add* button.
-    1. set *Library Name* to `piper-library-os`
+    1. set *Library Name* to `piper-lib-os`
     1. set *Default Version* to the branch or tag you want to consume (e.g.
        `master` or `v0.1`)
     1. set *Retrieval Method* to `Modern SCM`
@@ -82,11 +82,11 @@ To setup the shared library, you need to perform the following steps:
 
 ![Library Setup](./documentation/docs/images/setupInJenkins.png)
 
-Now the library is available as `piper-library-os` and can be used in any
+Now the library is available as `piper-lib-os` and can be used in any
 `Jenkinsfile` by adding this line:
 
 ```groovy
-@Library('piper-library-os') _
+@Library('piper-lib-os') _
 ```
 
 Jenkins will download the library during execution of the `Jenkinsfile`.

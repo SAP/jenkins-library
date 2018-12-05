@@ -5,7 +5,7 @@ import com.sap.piper.Utils
 
 import groovy.transform.Field
 
-@Field def STEP_NAME = 'mavenExecute'
+@Field def STEP_NAME = getClass().getName()
 
 @Field Set GENERAL_CONFIG_KEYS = []
 @Field Set STEP_CONFIG_KEYS = [

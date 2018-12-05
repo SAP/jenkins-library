@@ -1,7 +1,7 @@
 import groovy.text.SimpleTemplateEngine
 import groovy.transform.Field
 
-@Field STEP_NAME = 'handlePipelineStepErrors'
+@Field STEP_NAME = getClass().getName()
 
 void call(Map parameters = [:], body) {
     def stepParameters = parameters.stepParameters //mandatory
