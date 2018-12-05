@@ -2,13 +2,13 @@
 
 ### Procedure
 
-1. Check if in SAP Solution Manager, there is a change document in status "in development". See [`checkChangeInDevelopment`](#checkChangeInDevelopment).
+1. Check if in SAP Solution Manager, there is a change document in status "in development". See [Check for a Change Document in Status "In Development"](#Check for a Change Document in Status "In Development").
 2. Create a transport request for a change document in SAP Solution Manager.
 3. (Optional) Upload a file to your transport request.
 4. Release your transport request.
 
 
-## checkChangeInDevelopment
+## Check for a Change Document in Status "In Development"
 
 Check if in SAP Solution Manager, there is a change document in status "in development".
 
@@ -20,7 +20,7 @@ You have downloaded the Change Management Client 2.0.0 or a compatible version. 
 
 ### Context
 
-The change document ID is either retrieved from the Git commit history provided through the parameter `changeDocumentId`.
+The change document ID is either retrieved from the Git commit history or provided through the parameter `changeDocumentId`.
 
 
 ### Mandatory Parameters
@@ -29,8 +29,8 @@ The change document ID is either retrieved from the Git commit history provided 
 | --- | --- |
 | `script` | The common script environment of the running Jenkinsfile. |
 | `changeDocumentId` | The ID of the change document to transport. If you do not provide it specifically, it is retrieved from the Git commit history. |
-| `changeManagement/credentialsId` | The ID of the credentials that are required to connect to the SAP Solution Manager. The credentials have to be maintained on Jenkins. |
-| `changeManagement/endpoint` | The address of SAP Solution Manager |
+| `changeManagement/credentialsId` | The ID of the credentials that are required to connect to SAP Solution Manager. The credentials have to be maintained on Jenkins. |
+| `changeManagement/endpoint` | The address of SAP Solution Manager. |
 
 
 For an overview of the optional parameters, see [Parameters](https://github.com/SarahNoack/jenkins-library/blob/master/documentation/docs/steps/checkChangeInDevelopment.md#parameters).
@@ -83,11 +83,11 @@ The parameters can also be provided when the step is invoked. See [Examples](#Ex
 For exceptions, see [Exceptions](https://github.com/SarahNoack/jenkins-library/blob/master/documentation/docs/steps/checkChangeInDevelopment.md#exceptions).
 
 ### Examples
-* All mandatory parameters are provided through the configuration and the `changeDocumentId` is provided through the Git commit history:
+* All mandatory parameters are provided through the configuration and the `changeDocumentId` is retrieved from the Git commit history:
 ```
 checkChangeInDevelopment script:this
 ```
-* An explicit endpoint is provided and the `changeDocumentId` is searched for starting at the previous commit (`HEAD~1`):
+* An explicit endpoint is provided and the `changeDocumentId` is searched for starting from the previous commit (`HEAD~1`):
 ```
 checkChangeInDevelopment script:this,
                          changeManagement: [
