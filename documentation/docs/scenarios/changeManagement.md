@@ -1,9 +1,13 @@
 # Placeholder CM-Scenario
 
+### Prerequisites
+
+You have downloaded the Change Management Client 2.0.0 or a compatible version. See [Maven Central Repository](http://central.maven.org/maven2/com/sap/devops/cmclient/dist.cli/).
+
 ### Procedure
 
-1. Check if in SAP Solution Manager, there is a change document in status "in development". See [Check for a Change Document in Status "In Development"](#Check-for-a-Change-Document-in-Status-"In-Development").
-2. Create a transport request for a change document in SAP Solution Manager.
+1. Check if in SAP Solution Manager, there is a change document in status "in development". See [Check for a Change Document in Status "In Development"](#check-for-a-change-document-in-status-in-development").
+2. Create a transport request for a change document in SAP Solution Manager. See [Create a Transport Request](#create-a-transport-request).
 3. (Optional) Upload a file to your transport request.
 4. Release your transport request.
 
@@ -11,11 +15,6 @@
 ## Check for a Change Document in Status "In Development"
 
 Check if in SAP Solution Manager, there is a change document in status "in development".
-
-
-### Prerequisites
-
-You have downloaded the Change Management Client 2.0.0 or a compatible version. See [Maven Central Repository](http://central.maven.org/maven2/com/sap/devops/cmclient/dist.cli/).
 
 
 ### Context
@@ -75,7 +74,7 @@ steps:
 ```
 The parameters can also be provided when the step is invoked. See [Examples](#Examples)
 
-### Possible Return Values
+### Result
 
 * If the change document is in status "in development", the return value is `true`.
 * If the change document is not in status "in development", a `hudson.AbortException` is thrown.
@@ -97,3 +96,14 @@ checkChangeInDevelopment script:this,
                            ]
                          ]
 ```
+
+## Create a Transport Request
+
+Create a transport request for a change document in SAP Solution Manager.
+
+### Mandatory parameters
+
+| Parameter | Description |
+| --- | --- |
+| `script` | The common script envoronment of the running Jenkinsfile. The reference to the script that calls the pipeline step is privided by the `this` parameter, as in `script: this`. This allows the function to access the `commonPipelineEnvironment` to retrieve configuration parameters. |
+| `changeManagement/credentialsId` | 
