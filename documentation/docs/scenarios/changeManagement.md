@@ -26,7 +26,7 @@ The change document ID is either retrieved from the Git commit history provided 
 ### Mandatory Parameters
 
 | Parameter | Description |
-| `script` | The common script environment of the running Jenkinsfile.
+| `script` | The common script environment of the running Jenkinsfile. |
 | `changeDocumentId` | The ID of the change document to transport. I you do not provide it specifically, it is retrieved from the Git commit history. |
 | `changeManagement/credentialsId` | The ID of the credentials that are required to connect to the SAP Solution Manager. The credentials have to be maintained on Jenkins. |
 | `changeManagement/endpoint` | The address of SAP Solution Manager |
