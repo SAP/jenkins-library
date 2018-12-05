@@ -6,7 +6,7 @@ import com.sap.piper.Utils
 import groovy.text.SimpleTemplateEngine
 import groovy.transform.Field
 
-@Field String STEP_NAME = 'batsExecuteTests'
+@Field String STEP_NAME = getClass().getName()
 
 @Field Set GENERAL_CONFIG_KEYS = STEP_CONFIG_KEYS
 
