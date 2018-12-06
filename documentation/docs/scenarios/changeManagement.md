@@ -6,10 +6,10 @@ You have downloaded the Change Management Client 2.0.0 or a compatible version. 
 
 ### Procedure
 
-1. Check if in SAP Solution Manager, there is a change document in status "in development". See [Check for a Change Document in Status "In Development"](#check-for-a-change-document-in-status-in-development-checkchangeindevelopment").
-2. Create a transport request for a change document in SAP Solution Manager. See [Create a Transport Request](#create-a-transport-request-transportrequestcreate).
-3. (Optional) Upload a file to your transport request for a change document in SAP Solution Manager. See [(Optional) Upload a File to Your Transport Request](#optional-upload-a-file-to-a-transport-request-transportrequestuploadfile).
-4. Release your transport request for a change document in SAP Solution Manager. See [Release a Transport Request](#release-a-transport-request-transportrequestrelease).
+1. Check if in SAP Solution Manager, there is a change document in status "in development". See [Check for a Change Document in Status "In Development" (`checkChangeInDevelopment`)](#check-for-a-change-document-in-status-in-development-checkchangeindevelopment).
+2. Create a transport request for a change document in SAP Solution Manager. See [Create a Transport Request (`transportRequestCreate`)](#create-a-transport-request-transportrequestcreate).
+3. (Optional) Upload a file to your transport request for a change document in SAP Solution Manager. See [(Optional) Upload a File to Your Transport Request (`transportRequestUploadFile`)](#optional-upload-a-file-to-a-transport-request-transportrequestuploadfile).
+4. Release your transport request for a change document in SAP Solution Manager. See [Release a Transport Request (`transportRequestRelease`)](#release-a-transport-request-transportrequestrelease).
 
 
 ## Check for a Change Document in Status "In Development" (`checkChangeInDevelopment`)
@@ -26,7 +26,7 @@ The change document ID is either retrieved from the Git commit history or provid
 
 | Parameter | Description |
 | --- | --- |
-| `script` | The common script environment of the running Jenkinsfile. |
+| `script` | The common script envoronment of the running Jenkinsfile. The reference to the script that calls the pipeline step is privided by the `this` parameter, as in `script: this`. This allows the function to access the `commonPipelineEnvironment` to retrieve configuration parameters. |
 | `changeDocumentId` | The ID of the change document to transport. If you do not provide it specifically, it is retrieved from the Git commit history. |
 | `changeManagement/credentialsId` | The ID of the credentials that are required to connect to SAP Solution Manager. The credentials have to be maintained on Jenkins. |
 | `changeManagement/endpoint` | The address of SAP Solution Manager. |
