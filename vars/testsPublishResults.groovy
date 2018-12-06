@@ -11,7 +11,7 @@ import groovy.transform.Field
     'junit','jacoco','cobertura','jmeter'
 ]
 
-@Field def STEP_NAME = 'testsPublishResults'
+@Field def STEP_NAME = getClass().getName()
 @Field Set GENERAL_CONFIG_KEYS = TOOLS
 @Field Set STEP_CONFIG_KEYS = TOOLS
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS

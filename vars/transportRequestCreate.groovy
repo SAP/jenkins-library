@@ -13,7 +13,7 @@ import static com.sap.piper.cm.StepHelpers.getBackendTypeAndLogInfoIfCMIntegrati
 import static com.sap.piper.cm.StepHelpers.getChangeDocumentId
 import hudson.AbortException
 
-@Field def STEP_NAME = 'transportRequestCreate'
+@Field def STEP_NAME = getClass().getName()
 
 @Field GENERAL_CONFIG_KEYS = STEP_CONFIG_KEYS
 
