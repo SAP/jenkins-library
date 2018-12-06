@@ -82,8 +82,7 @@ void call(Map parameters = [:]) {
             $mtaCall
             """
 
-            def mtarFilePath = "${mtarFileName}"
-            script?.commonPipelineEnvironment?.setMtarFilePath(mtarFilePath)
+            script?.commonPipelineEnvironment?.setMtarFilePath(mtarFileName)
         }
     }
 }
