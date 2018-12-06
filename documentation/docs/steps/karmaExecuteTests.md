@@ -79,10 +79,6 @@ In following sections the configuration is possible:
 |sidecarVolumeBind|X|X|X|
 |stashContent|X|X|X|
 
-## Return value
-
-none
-
 ## Side effects
 
 Step uses `seleniumExecuteTest` & `dockerExecute` inside.
