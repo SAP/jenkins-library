@@ -4,7 +4,7 @@ import com.sap.piper.Utils
 import com.sap.piper.ConfigurationHelper
 import groovy.transform.Field
 
-@Field String STEP_NAME = 'pipelineStashFilesAfterBuild'
+@Field String STEP_NAME = getClass().getName()
 @Field Set STEP_CONFIG_KEYS = ['runCheckmarx', 'stashIncludes', 'stashExcludes']
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
 
@@ -48,14 +48,14 @@ void call(Map parameters = [:]) {
 
         utils.stashWithMessage(
             'classFiles',
-            '[${STEP_NAME}] Failed to stash class files.',
+            "[${STEP_NAME}] Failed to stash class files.",
             config.stashIncludes.classFiles,
             config.stashExcludes.classFiles
         )
 
         utils.stashWithMessage(
             'sonar',
-            '[${STEP_NAME}] Failed to stash sonar files.',
+            "[${STEP_NAME}] Failed to stash sonar files.",
             config.stashIncludes.sonar,
             config.stashExcludes.sonar
         )
