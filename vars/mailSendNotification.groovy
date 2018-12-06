@@ -5,7 +5,7 @@ import com.sap.piper.Utils
 import groovy.text.SimpleTemplateEngine
 import groovy.transform.Field
 
-@Field String STEP_NAME = 'mailSendNotification'
+@Field String STEP_NAME = getClass().getName()
 @Field Set GENERAL_CONFIG_KEYS = ['gitSshKeyCredentialsId']
 @Field Set STEP_CONFIG_KEYS = [
     'projectName',
@@ -134,42 +134,47 @@ def getCulpritCommitters(config, currentBuild) {
 }
 
 def getCulprits(config, branch, numberOfCommits) {
-    if (branch?.startsWith('PR-')) {
-        //special GitHub Pull Request handling
-        deleteDir()
-        sshagent(
-            credentials: [config.gitSshKeyCredentialsId],
-            ignoreMissing: true
-        ) {
-            def pullRequestID = branch.replaceAll('PR-', '')
-            def localBranchName = "pr" + pullRequestID;
-            sh """git init
-git fetch ${config.gitUrl} pull/${pullRequestID}/head:${localBranchName} > /dev/null 2>&1
-git checkout -f ${localBranchName} > /dev/null 2>&1
-"""
-        }
-    } else {
-        //standard git/GitHub handling
-        if (config.gitCommitId) {
+    try {
+        if (branch?.startsWith('PR-')) {
+            //special GitHub Pull Request handling
             deleteDir()
             sshagent(
                 credentials: [config.gitSshKeyCredentialsId],
                 ignoreMissing: true
             ) {
-                sh """git clone ${config.gitUrl} .
-git checkout ${config.gitCommitId} > /dev/null 2>&1"""
+                def pullRequestID = branch.replaceAll('PR-', '')
+                def localBranchName = "pr" + pullRequestID;
+                sh """git init
+    git fetch ${config.gitUrl} pull/${pullRequestID}/head:${localBranchName} > /dev/null 2>&1
+    git checkout -f ${localBranchName} > /dev/null 2>&1
+    """
             }
         } else {
-            def retCode = sh(returnStatus: true, script: 'git log > /dev/null 2>&1')
-            if (retCode != 0) {
-                echo "[${STEP_NAME}] No git context available to retrieve culprits"
-                return ''
+            //standard git/GitHub handling
+            if (config.gitCommitId) {
+                deleteDir()
+                sshagent(
+                    credentials: [config.gitSshKeyCredentialsId],
+                    ignoreMissing: true
+                ) {
+                    sh """git clone ${config.gitUrl} .
+    git checkout ${config.gitCommitId} > /dev/null 2>&1"""
+                }
+            } else {
+                def retCode = sh(returnStatus: true, script: 'git log > /dev/null 2>&1')
+                if (retCode != 0) {
+                    echo "[${STEP_NAME}] No git context available to retrieve culprits"
+                    return ''
+                }
             }
         }
-    }
 
-    def recipients = sh(returnStdout: true, script: "git log -${numberOfCommits} --pretty=format:'%ae %ce'")
-    return getDistinctRecipients(recipients)
+        def recipients = sh(returnStdout: true, script: "git log -${numberOfCommits} --pretty=format:'%ae %ce'")
+        return getDistinctRecipients(recipients)
+    } catch(err) {
+        echo "[${STEP_NAME}] Culprit retrieval from git failed with '${err.getMessage()}'. Please make sure to configure gitSshKeyCredentialsId. So far, only fixed list of recipients is used."
+        return ''
+    }
 }
 
 def getDistinctRecipients(recipients){

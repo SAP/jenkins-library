@@ -8,7 +8,7 @@ import com.sap.piper.tools.ToolDescriptor
 
 import groovy.transform.Field
 
-@Field def STEP_NAME = 'mtaBuild'
+@Field def STEP_NAME = getClass().getName()
 
 @Field Set GENERAL_CONFIG_KEYS = []
 @Field Set STEP_CONFIG_KEYS = [

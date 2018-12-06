@@ -9,7 +9,7 @@ import com.sap.piper.k8s.ContainerMap
 
 import groovy.transform.Field
 
-@Field def STEP_NAME = 'dockerExecute'
+@Field def STEP_NAME = getClass().getName()
 @Field def PLUGIN_ID_DOCKER_WORKFLOW = 'docker-workflow'
 
 @Field Set GENERAL_CONFIG_KEYS = ['jenkinsKubernetes']
