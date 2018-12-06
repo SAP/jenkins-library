@@ -77,10 +77,6 @@ In following sections the configuration is possible:
 |projectName||X|X|
 |wrapInNode||X|X|
 
-## Return value
-
-none
-
 ## Side effects
 
 none
