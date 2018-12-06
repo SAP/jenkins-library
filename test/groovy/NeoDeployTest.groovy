@@ -1,3 +1,4 @@
+import com.sap.piper.Utils
 import hudson.AbortException
 
 import org.junit.rules.TemporaryFolder
@@ -5,6 +6,8 @@ import org.junit.rules.TemporaryFolder
 import org.junit.BeforeClass
 import org.junit.ClassRule
 import org.junit.Ignore
+
+import java.util.Map
 
 import org.hamcrest.BaseMatcher
 import org.hamcrest.Description
@@ -81,13 +84,25 @@ class NeoDeployTest extends BasePiperTest {
     @Test
     void straightForwardTestConfigViaConfigProperties() {
 
+        boolean buildStatusHasBeenSet = false
+        boolean notifyOldConfigFrameworkUsed = false
+
         nullScript.commonPipelineEnvironment.setConfigProperty('DEPLOY_HOST', 'test.deploy.host.com')
         nullScript.commonPipelineEnvironment.setConfigProperty('CI_DEPLOY_ACCOUNT', 'trialuser123')
         nullScript.commonPipelineEnvironment.configuration = [:]
 
+        nullScript.currentBuild = [setResult: {buildStatusHasBeenSet = true}]
+
+        def utils = new Utils() {
+            void pushToSWA(Map parameters, Map config) {
+                notifyOldConfigFrameworkUsed = parameters.stepParam4
+            }
+        }
+
         jsr.step.neoDeploy(script: nullScript,
                        archivePath: archiveName,
-                       neoCredentialsId: 'myCredentialsId'
+                       neoCredentialsId: 'myCredentialsId',
+                       utils: utils
         )
 
         Assert.assertThat(jscr.shell,
@@ -98,14 +113,53 @@ class NeoDeployTest extends BasePiperTest {
                                     .hasSingleQuotedOption('user', 'anonymous')
                                     .hasSingleQuotedOption('password', '\\*\\*\\*\\*\\*\\*\\*\\*')
                                     .hasDoubleQuotedOption('source', '.*'))
+
+        assert !buildStatusHasBeenSet
+        assert notifyOldConfigFrameworkUsed
+    }
+
+    @Test
+    void testConfigViaConfigPropertiesSetsBuildToUnstable() {
+
+        def buildStatus = 'SUCCESS'
+
+        nullScript.commonPipelineEnvironment.setConfigProperty('DEPLOY_HOST', 'test.deploy.host.com')
+        nullScript.commonPipelineEnvironment.setConfigProperty('CI_DEPLOY_ACCOUNT', 'trialuser123')
+        nullScript.commonPipelineEnvironment.configuration = [:]
+
+        nullScript.currentBuild = [setResult: { r -> buildStatus = r}]
+
+        System.setProperty('com.sap.piper.featureFlag.buildUnstableWhenOldConfigFrameworkIsUsedByNeoDeploy',
+            Boolean.TRUE.toString())
+
+        try {
+            jsr.step.neoDeploy(script: nullScript,
+                               archivePath: archiveName,
+                               neoCredentialsId: 'myCredentialsId',
+                               utils: utils
+            )
+        } finally {
+            System.clearProperty('com.sap.piper.featureFlag.buildUnstableWhenOldConfigFrameworkIsUsedByNeoDeploy')
+        }
+
+        assert buildStatus == 'UNSTABLE'
     }
 
     @Test
     void straightForwardTestConfigViaConfiguration() {
 
+        boolean notifyOldConfigFrameworkUsed = true
+
+        def utils = new Utils() {
+            void pushToSWA(Map parameters, Map config) {
+                notifyOldConfigFrameworkUsed = parameters.stepParam4
+            }
+        }
+
         jsr.step.neoDeploy(script: nullScript,
             archivePath: archiveName,
-            neoCredentialsId: 'myCredentialsId'
+            neoCredentialsId: 'myCredentialsId',
+            utils: utils,
         )
 
         Assert.assertThat(jscr.shell,
@@ -116,6 +170,8 @@ class NeoDeployTest extends BasePiperTest {
                                     .hasSingleQuotedOption('user', 'anonymous')
                                     .hasSingleQuotedOption('password', '\\*\\*\\*\\*\\*\\*\\*\\*')
                                     .hasDoubleQuotedOption('source', '.*'))
+
+        assert !notifyOldConfigFrameworkUsed
     }
 
     @Test

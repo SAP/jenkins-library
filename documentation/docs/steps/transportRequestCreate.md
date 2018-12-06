@@ -7,6 +7,8 @@ Creates
 * a Transport Request for a Change Document on the Solution Manager (type `SOLMAN`) or
 * a Transport Request inside an ABAP system (type`CTS`)
 
+The id of the transport request is availabe via [commonPipelineEnvironment.getTransportRequestId()](commonPipelineEnvironment.md)
+
 ## Prerequisites
 
 * **[Change Management Client 2.0.0 or compatible version](http://central.maven.org/maven2/com/sap/devops/cmclient/dist.cli/)** - available for download on Maven Central.
@@ -49,7 +51,7 @@ The step is configured using a customer configuration file provided as
 resource in an custom shared library.
 
 ```groovy
-@Library('piper-library-os@master') _
+@Library('piper-lib-os@master') _
 
 // the shared lib containing the additional configuration
 // needs to be configured in Jenkins
@@ -97,7 +99,7 @@ The parameters can also be provided when the step is invoked. For examples see b
 
 ## Return value
 
-The id of the Transport Request that has been created.
+none
 
 ## Exceptions
 
