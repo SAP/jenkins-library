@@ -4,7 +4,7 @@ import com.sap.piper.JenkinsUtils
 import com.sap.piper.ConfigurationHelper
 import groovy.transform.Field
 
-@Field String STEP_NAME = 'pipelineRestartSteps'
+@Field String STEP_NAME = getClass().getName()
 @Field Set STEP_CONFIG_KEYS = [
     'sendMail',
     'timeoutInSeconds'
