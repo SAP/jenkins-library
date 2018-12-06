@@ -123,6 +123,7 @@ steps:
       apiEndpoint: 'https://api.cf.eu10.hana.ondemand.com'
     deployTool: 'cf_native'
     deployType: 'standard'
+    keepOldInstance: false
     mtaDeployParameters: '-f'
     mtaExtensionDescriptor: ''
     mtaPath: ''
@@ -187,6 +188,9 @@ steps:
       'node:8-stretch':
         - containerPort: 9876
           hostPort: 9876
+    dockerEnvVars:
+      NO_PROXY: 'localhost,selenium,$NO_PROXY'
+      no_proxy: 'localhost,selenium,$no_proxy'
     dockerImage: 'node:8-stretch'
     dockerName: 'karma'
     dockerWorkspace: '/home/node'
@@ -194,6 +198,12 @@ steps:
     modules:
       - '.'
     runCommand: 'npm run karma'
+    sidecarEnvVars:
+      NO_PROXY: 'localhost,karma,$NO_PROXY'
+      no_proxy: 'localhost,karma,$no_proxy'
+    stashContent:
+      - buildDescriptor
+      - tests
   mailSendNotification:
     notificationAttachment: true
     notifyCulprits: true
@@ -217,7 +227,8 @@ steps:
     newmanCollection: '**/*.postman_collection.json'
     newmanEnvironment: ''
     newmanGlobals: ''
-    newmanRunCommand: "run ${config.newmanCollection} --environment '${config.newmanEnvironment}' --globals '${config.newmanGlobals}' --reporters junit,html --reporter-junit-export target/newman/TEST-${collectionDisplayName}.xml --reporter-html-export target/newman/TEST-${collectionDisplayName}.html"
+    newmanInstallCommand: 'npm install newman newman-reporter-html --global --quiet'
+    newmanRunCommand: "run '${config.newmanCollection}' --environment '${config.newmanEnvironment}' --globals '${config.newmanGlobals}' --reporters junit,html --reporter-junit-export 'target/newman/TEST-${collectionDisplayName}.xml' --reporter-html-export 'target/newman/TEST-${collectionDisplayName}.html'"
     stashContent:
       - 'tests'
   pipelineRestartSteps:
@@ -287,7 +298,7 @@ steps:
     toHtml: false
   testsPublishResults:
     junit:
-      pattern: '**/target/surefire-reports/*.xml'
+      pattern: '**/TEST-*.xml'
       updateResults: false
       allowEmptyResults: true
       archive: false

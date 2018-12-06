@@ -14,7 +14,7 @@ import com.sap.piper.cm.ChangeManagementException
 import static com.sap.piper.cm.StepHelpers.getChangeDocumentId
 import static com.sap.piper.cm.StepHelpers.getBackendTypeAndLogInfoIfCMIntegrationDisabled
 
-@Field def STEP_NAME = 'checkChangeInDevelopment'
+@Field def STEP_NAME = getClass().getName()
 
 @Field Set GENERAL_CONFIG_KEYS = STEP_CONFIG_KEYS
 
@@ -97,7 +97,7 @@ void call(parameters = [:]) {
         new Utils().pushToSWA([step: STEP_NAME,
                                 stepParam1: parameters?.script == null], configuration)
 
-        def changeId = getChangeDocumentId(cm, this, configuration)
+        def changeId = getChangeDocumentId(cm, script, configuration)
 
         configuration = configHelper.mixin([changeDocumentId: changeId?.trim() ?: null], ['changeDocumentId'] as Set)
 

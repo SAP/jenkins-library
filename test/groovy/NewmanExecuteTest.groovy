@@ -68,7 +68,8 @@ class NewmanExecuteTest extends BasePiperTest {
             newmanGlobals: 'testGlobals'
         )
         // asserts
-        assertThat(jscr.shell, hasItem('newman run testCollection --environment \'testEnvironment\' --globals \'testGlobals\' --reporters junit,html --reporter-junit-export target/newman/TEST-testCollection.xml --reporter-html-export target/newman/TEST-testCollection.html'))
+        assertThat(jscr.shell, hasItem('npm install newman newman-reporter-html --global --quiet'))
+        assertThat(jscr.shell, hasItem('newman run \'testCollection\' --environment \'testEnvironment\' --globals \'testGlobals\' --reporters junit,html --reporter-junit-export \'target/newman/TEST-testCollection.xml\' --reporter-html-export \'target/newman/TEST-testCollection.html\''))
         assertThat(jedr.dockerParams.dockerImage, is('node:8-stretch'))
         assertThat(jlr.log, containsString('[newmanExecute] Found files [testCollection]'))
         assertJobStatusSuccess()
@@ -102,7 +103,7 @@ class NewmanExecuteTest extends BasePiperTest {
         // asserts
         assertThat(jedr.dockerParams.dockerImage, is('testImage'))
         assertThat(gitMap.url, is('testRepo'))
-        assertThat(jscr.shell, hasItem('newman run testCollection --environment \'testEnvironment\' --globals \'testGlobals\' --reporters junit,html --reporter-junit-export target/newman/TEST-testCollection.xml --reporter-html-export target/newman/TEST-testCollection.html --suppress-exit-code'))
+        assertThat(jscr.shell, hasItem('newman run \'testCollection\' --environment \'testEnvironment\' --globals \'testGlobals\' --reporters junit,html --reporter-junit-export \'target/newman/TEST-testCollection.xml\' --reporter-html-export \'target/newman/TEST-testCollection.html\' --suppress-exit-code'))
         assertJobStatusSuccess()
     }
 

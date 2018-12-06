@@ -54,7 +54,7 @@ Each of the parameters `junit`, `jacoco`, `cobertura` and `jmeter` can be set to
 
 | parameter | mandatory | default | possible values |
 | ----------|-----------|---------|-----------------|
-| pattern | no | `'**/target/surefire-reports/*.xml'` |  |
+| pattern | no | `'**/TEST-*.xml'` |  |
 | archive | no | `false` | true, false |
 | updateResults | no | `false` | true, false |
 | allowEmptyResults | no | `true` | true, false |

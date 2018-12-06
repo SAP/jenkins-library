@@ -108,6 +108,10 @@ public class TransportRequestReleaseTest extends BasePiperTest {
     @Test
     public void releaseTransportRequestSuccessTest() {
 
+        // Here we test only the case where the transportRequestId is
+        // provided via parameters. The other cases are tested by
+        // corresponding tests for StepHelpers#getTransportRequestId(./.)
+
         jlr.expect("[INFO] Closing transport request '002' for change document '001'.")
         jlr.expect("[INFO] Transport Request '002' has been successfully closed.")
 
