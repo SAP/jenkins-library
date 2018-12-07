@@ -1,6 +1,7 @@
 import com.sap.piper.Utils
 import com.sap.piper.ConfigurationHelper
 import com.sap.piper.ConfigurationLoader
+import com.sap.piper.k8s.ContainerMap
 import groovy.transform.Field
 
 import static com.sap.piper.Prerequisites.checkScript
@@ -34,6 +35,7 @@ void call(Map parameters = [:], body) {
 
                 utils.unstashAll(config.stashContent)
 
+                def containerMap = ContainerMap.instance.getMap().get(stageName) ?: [:]
                 if (Boolean.valueOf(env.ON_K8S) && containerMap.size() > 0) {
                     withEnv(["POD_NAME=${stageName}"]) {
                         dockerExecute(script: script, containerMap: containerMap) {
