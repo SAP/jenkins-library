@@ -1,4 +1,6 @@
-# Placeholder CM-Scenario
+# Change Request Management and Continuous Delivery in Hybrid Scenarios
+
+Combine both ABAP and non-ABAP sources and transport them through a test landscape to a productive landscape.
 
 ### Prerequisites
 
@@ -7,9 +9,9 @@ You have downloaded the Change Management Client 2.0.0 or a compatible version. 
 ### Procedure
 
 1. Check if in SAP Solution Manager, there is a change document in status "in development". See [Check for a Change Document in Status "In Development" (`checkChangeInDevelopment`)](#check-for-a-change-document-in-status-in-development-checkchangeindevelopment).
-2. Create a transport request for a change document in SAP Solution Manager. See [Create a Transport Request (`transportRequestCreate`)](#create-a-transport-request-transportrequestcreate).
-3. (Optional) Upload a file to your transport request for a change document in SAP Solution Manager. See [(Optional) Upload a File to Your Transport Request (`transportRequestUploadFile`)](#optional-upload-a-file-to-a-transport-request-transportrequestuploadfile).
-4. Release your transport request for a change document in SAP Solution Manager. See [Release a Transport Request (`transportRequestRelease`)](#release-a-transport-request-transportrequestrelease).
+2. (Optional) Create a transport request for a change document in SAP Solution Manager. See [(Optional) Create a Transport Request (`transportRequestCreate`)](#optional-create-a-transport-request-transportrequestcreate).
+3. Upload a file to your transport request for a change document in SAP Solution Manager. See [Upload a File to Your Transport Request (`transportRequestUploadFile`)](#upload-a-file-to-a-transport-request-transportrequestuploadfile).
+4. (Optional) Release your transport request for a change document in SAP Solution Manager. See [(Optional) Release a Transport Request (`transportRequestRelease`)](#optional-release-a-transport-request-transportrequestrelease).
 
 
 ## Check for a Change Document in Status "In Development" (`checkChangeInDevelopment`)
@@ -97,9 +99,25 @@ checkChangeInDevelopment script:this,
                          ]
 ```
 
-## Create a Transport Request (`transportRequestCreate`)
+## (Optional) Create a Transport Request (`transportRequestCreate`)
 
 Create a transport request for a change document in SAP Solution Manager.
+
+### Context
+
+Depending on your workflow, this step is optional. If you already have a transport request, define it in the commit message, for example:
+
+```
+Lorem ipsum dolor sit amet, cum sucipat
+
+    sed diam nonumy eirmod tempor invidunt ut labore
+    et dolore magna aliquyam erat, sed diam voluptua.
+    At vero eos et accusam et justo duo
+    dolores et ea rebum nisi bene.
+
+    TransportRequest: ZZZDK900026
+```
+Per default, it is expected that one of the commits between origin/master and the HEAD branch contains this transport request ID.
 
 ### Mandatory parameters
 
@@ -156,12 +174,11 @@ The parameters can also be provided when the step is invoked. See [Examples](#Ex
 
 As a result, you get the ID of the newly created transport request.
 
-For exceptions, see [Exceptions](https://github.com/SarahNoack/jenkins-library/blob/master/documentation/docs/steps/transportRequestCreate.md#exceptions).
+For exceptions, see **Exceptions** in [transportRequestCreate](https://sap.github.io/jenkins-library/steps/transportRequestCreate/).
 
 ### Example
 
 ```
-// SOLMAN
 def transportRequestId = transportRequestCreate script:this,
                                                 changeDocumentId: '001,'
                                                 changeManagement: [
@@ -170,9 +187,13 @@ def transportRequestId = transportRequestCreate script:this,
                                                 ]
 ```
 
-## (Optional) Upload a File to a Transport Request (`transportRequestUploadFile`)
+## Upload a File to a Transport Request (`transportRequestUploadFile`)
 
 Upload a file to your transport request for a change document in SAP Solution Manager.
+
+### Prerequisites
+
+You have built your Java sources. For an example, see [mtaBuild](https://sap.github.io/jenkins-library/steps/mtaBuild/).
 
 ### Mandatory Parameters
 
@@ -186,7 +207,7 @@ Upload a file to your transport request for a change document in SAP Solution Ma
 | `changeManagement/credentialsId` | The ID of the credentials that are required to connect to SAP Solution Manager. |
 | `changeManagement/endpoint` | The address of SAP Solution Manager. |
 
-For an overview of the optional parameters, see [Parameters](https://github.com/SarahNoack/jenkins-library/blob/master/documentation/docs/steps/transportRequestUploadFile.md#parameters).
+For an overview of the optional parameters, see **Parameters** in [transportRequestUploadFile](https://sap.github.io/jenkins-library/steps/transportRequestUploadFile/).
 
 ### Step Configuration
 
@@ -232,7 +253,7 @@ The parameters can also be provided when the step is invoked. See [Examples](#Ex
 
 ### Result
 
-For exceptions, see [Exceptions](https://github.com/SarahNoack/jenkins-library/blob/master/documentation/docs/steps/transportRequestUploadFile.md#exceptions).
+For exceptions, see **Exceptions** in [transportRequestUploadFile](https://sap.github.io/jenkins-library/steps/transportRequestUploadFile/).
 
 ### Example
 
@@ -248,7 +269,7 @@ transportRequestUploadFile script:this,
                            ]
 ```
 
-## Release a Transport Request (`transportRequestRelease`)
+## (Optional) Release a Transport Request (`transportRequestRelease`)
 
 Release your transport request for a change document in SAP Solution Manager.
 
@@ -262,7 +283,7 @@ Release your transport request for a change document in SAP Solution Manager.
 | `changeManagement/credentialsId` | The ID of the credentials that are required to connect to SAP Solution Manager. |
 |`changeManagement/endpoint` | The address of SAP Solution Manager. |
 
-For an overview of the optional parameters, see [Parameters](https://github.com/SarahNoack/jenkins-library/blob/master/documentation/docs/steps/transportRequestRelease.md#parameters).
+For an overview of the optional parameters, see **Parameters** in [transportRequestRelease](https://sap.github.io/jenkins-library/steps/transportRequestRelease/).
 
 ### Step Configuration
 
@@ -307,7 +328,7 @@ The parameters can also be provided when the step is invoked. See [Examples](#Ex
 
 ### Result
 
-For exceptions, see [Exceptions](https://github.com/SarahNoack/jenkins-library/blob/master/documentation/docs/steps/transportRequestRelease.md#exceptions).
+For exceptions, see **Exceptions** in [transportRequestRelease](https://sap.github.io/jenkins-library/steps/transportRequestRelease/).
 
 ### Example
 
