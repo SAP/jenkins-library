@@ -347,4 +347,3 @@ steps:
     nodeLabel: ''
     stashContent:
       - 'pipelineConfigAndTests'
-    withNode: true
