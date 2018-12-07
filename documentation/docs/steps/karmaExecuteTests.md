@@ -25,7 +25,7 @@ In the Docker network, the containers can be referenced by the values provided i
 | ----------|-----------|---------|-----------------|
 |script|yes|||
 |containerPortMappings|no|`[node:8-stretch: [[containerPort: 9876, hostPort: 9876]]]`||
-|dockerEnvVars|no|||
+|dockerEnvVars|no|`[ NO_PROXY: 'localhost,karma,$NO_PROXY', no_proxy: 'localhost,karma,$no_proxy']`||
 |dockerImage|no|`node:8-stretch`||
 |dockerName|no|`karma`||
 |dockerWorkspace|no|`/home/node`||
@@ -33,11 +33,11 @@ In the Docker network, the containers can be referenced by the values provided i
 |installCommand|no|`npm install --quiet`||
 |modules|no|`['.']`||
 |runCommand|no|`npm run karma`||
-|sidecarEnvVars|no|||
+|sidecarEnvVars|no|`[ NO_PROXY: 'localhost,selenium,$NO_PROXY', no_proxy: 'localhost,selenium,$no_proxy']`||
 |sidecarImage|no|||
 |sidecarName|no|||
 |sidecarVolumeBind|no|||
-|stashContent|no|||
+|stashContent|no|`['buildDescriptor', 'tests']`||
 
 - `script` - defines the global script environment of the Jenkinsfile run. Typically `this` is passed to this parameter. This allows the function to access the [`commonPipelineEnvironment`](commonPipelineEnvironment.md) for storing the measured duration.
 - `containerPortMappings` - see step [dockerExecute](dockerExecute.md)
@@ -78,10 +78,6 @@ In following sections the configuration is possible:
 |sidecarName|X|X|X|
 |sidecarVolumeBind|X|X|X|
 |stashContent|X|X|X|
-
-## Return value
-
-none
 
 ## Side effects
 

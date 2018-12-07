@@ -95,10 +95,6 @@ The following parameters can also be specified as step parameters using the glob
 * `neoCredentialsId`
 * `neoHome`
 
-## Return value
-
-none
-
 ## Side effects
 
 none

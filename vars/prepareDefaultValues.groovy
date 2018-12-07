@@ -3,7 +3,7 @@ import com.sap.piper.MapUtils
 
 import groovy.transform.Field
 
-@Field STEP_NAME = 'prepareDefaultValues'
+@Field STEP_NAME = getClass().getName()
 
 void call(Map parameters = [:]) {
     handlePipelineStepErrors (stepName: 'prepareDefaultValues', stepParameters: parameters) {

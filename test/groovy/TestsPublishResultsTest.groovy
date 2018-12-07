@@ -75,7 +75,7 @@ class TestsPublishResultsTest extends BasePiperTest {
         assertTrue('JUnit options are empty', publisherStepOptions.junit != null)
         // ensure default patterns are set
         assertEquals('JUnit default pattern not set correct',
-            '**/target/surefire-reports/*.xml', publisherStepOptions.junit.testResults)
+            '**/TEST-*.xml', publisherStepOptions.junit.testResults)
         // ensure nothing else is published
         assertTrue('JaCoCo options are not empty', publisherStepOptions.jacoco == null)
         assertTrue('Cobertura options are not empty', publisherStepOptions.cobertura == null)
