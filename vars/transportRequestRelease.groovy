@@ -14,7 +14,7 @@ import static com.sap.piper.cm.StepHelpers.getTransportRequestId
 import static com.sap.piper.cm.StepHelpers.getChangeDocumentId
 import static com.sap.piper.cm.StepHelpers.getBackendTypeAndLogInfoIfCMIntegrationDisabled
 
-@Field def STEP_NAME = 'transportRequestRelease'
+@Field def STEP_NAME = getClass().getName()
 
 @Field Set GENERAL_CONFIG_KEYS = STEP_CONFIG_KEYS
 
