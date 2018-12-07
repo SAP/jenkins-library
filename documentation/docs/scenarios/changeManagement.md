@@ -9,9 +9,9 @@ You have downloaded the Change Management Client 2.0.0 or a compatible version. 
 ### Procedure
 
 1. Check if in SAP Solution Manager, there is a change document in status "in development". See [Check for a Change Document in Status "In Development" (`checkChangeInDevelopment`)](#check-for-a-change-document-in-status-in-development-checkchangeindevelopment).
-2. (Optional) Create a transport request for a change document in SAP Solution Manager. See [(Optional) Create a Transport Request (`transportRequestCreate`)](#optional-create-a-transport-request-transportrequestcreate).
-3. Upload a file to your transport request for a change document in SAP Solution Manager. See [Upload a File to Your Transport Request (`transportRequestUploadFile`)](#upload-a-file-to-a-transport-request-transportrequestuploadfile).
-4. (Optional) Release your transport request for a change document in SAP Solution Manager. See [(Optional) Release a Transport Request (`transportRequestRelease`)](#optional-release-a-transport-request-transportrequestrelease).
+2. Create a transport request for a change document in SAP Solution Manager. See [(Optional) Create a Transport Request (`transportRequestCreate`)](#optional-create-a-transport-request-transportrequestcreate).
+3. (Optional) Upload a file to your transport request for a change document in SAP Solution Manager. See [Upload a File to Your Transport Request (`transportRequestUploadFile`)](#upload-a-file-to-a-transport-request-transportrequestuploadfile).
+4. Release your transport request for a change document in SAP Solution Manager. See [(Optional) Release a Transport Request (`transportRequestRelease`)](#optional-release-a-transport-request-transportrequestrelease).
 
 
 ## Check for a Change Document in Status "In Development" (`checkChangeInDevelopment`)
@@ -34,7 +34,7 @@ The change document ID is either retrieved from the Git commit history or provid
 | `changeManagement/endpoint` | The address of SAP Solution Manager. |
 
 
-For an overview of the optional parameters, see [Parameters](https://github.com/SarahNoack/jenkins-library/blob/master/documentation/docs/steps/checkChangeInDevelopment.md#parameters).
+For an overview of the optional parameters, see **Parameters** in [checkChangeInDevelopment](https://sap.github.io/jenkins-library/steps/checkChangeInDevelopment/).
 
 ### Step Configuration
 
@@ -81,7 +81,7 @@ The parameters can also be provided when the step is invoked. See [Examples](#Ex
 * If the change document is in status "in development", the return value is `true`.
 * If the change document is not in status "in development", a `hudson.AbortException` is thrown.
 
-For exceptions, see [Exceptions](https://github.com/SarahNoack/jenkins-library/blob/master/documentation/docs/steps/checkChangeInDevelopment.md#exceptions).
+For exceptions, see **Exceptions** in [checkChangeInDevelopment](https://sap.github.io/jenkins-library/steps/checkChangeInDevelopment/).
 
 ### Examples
 * All mandatory parameters are provided through the configuration and the `changeDocumentId` is retrieved from the Git commit history:
@@ -127,7 +127,7 @@ Per default, it is expected that one of the commits between origin/master and th
 | `changeManagement/credentialsId` |  The ID of the credentials that are required to connect to SAP Solution Manager. |
 | `changeManagement/endpoint` | The address of SAP Solution Manager. |
 
-For an overview of the optional parameters, see [Parameters](https://github.com/SarahNoack/jenkins-library/blob/master/documentation/docs/steps/transportRequestCreate.md#parameters).
+For an overview of the optional parameters, see **Parameters** in [transportRequestCreate](https://sap.github.io/jenkins-library/steps/transportRequestCreate/).
 
 ### Step configuration
 
@@ -207,7 +207,7 @@ You have built your Java sources. For an example, see [mtaBuild](https://sap.git
 | `changeManagement/credentialsId` | The ID of the credentials that are required to connect to SAP Solution Manager. |
 | `changeManagement/endpoint` | The address of SAP Solution Manager. |
 
-For an overview of the optional parameters, see **Parameters** in [transportRequestUploadFile](https://sap.github.io/jenkins-library/steps/transportRequestUploadFile/).
+For an overview of the optional parameters, see [Parameters](https://github.com/SarahNoack/jenkins-library/blob/master/documentation/docs/steps/transportRequestUploadFile.md#parameters).
 
 ### Step Configuration
 
@@ -253,7 +253,7 @@ The parameters can also be provided when the step is invoked. See [Examples](#Ex
 
 ### Result
 
-For exceptions, see **Exceptions** in [transportRequestUploadFile](https://sap.github.io/jenkins-library/steps/transportRequestUploadFile/).
+For exceptions, see [Exceptions](https://github.com/SarahNoack/jenkins-library/blob/master/documentation/docs/steps/transportRequestUploadFile.md#exceptions).
 
 ### Example
 
@@ -283,7 +283,7 @@ Release your transport request for a change document in SAP Solution Manager.
 | `changeManagement/credentialsId` | The ID of the credentials that are required to connect to SAP Solution Manager. |
 |`changeManagement/endpoint` | The address of SAP Solution Manager. |
 
-For an overview of the optional parameters, see **Parameters** in [transportRequestRelease](https://sap.github.io/jenkins-library/steps/transportRequestRelease/).
+For an overview of the optional parameters, see [Parameters](https://github.com/SarahNoack/jenkins-library/blob/master/documentation/docs/steps/transportRequestRelease.md#parameters).
 
 ### Step Configuration
 
@@ -328,7 +328,7 @@ The parameters can also be provided when the step is invoked. See [Examples](#Ex
 
 ### Result
 
-For exceptions, see **Exceptions** in [transportRequestRelease](https://sap.github.io/jenkins-library/steps/transportRequestRelease/).
+For exceptions, see [Exceptions](https://github.com/SarahNoack/jenkins-library/blob/master/documentation/docs/steps/transportRequestRelease.md#exceptions).
 
 ### Example
 
