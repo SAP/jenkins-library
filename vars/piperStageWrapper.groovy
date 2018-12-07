@@ -38,7 +38,7 @@ void call(Map parameters = [:], body) {
                 def containerMap = ContainerMap.instance.getMap().get(stageName) ?: [:]
                 if (Boolean.valueOf(env.ON_K8S) && containerMap.size() > 0) {
                     withEnv(["POD_NAME=${stageName}"]) {
-                        dockerExecute(script: script, containerMap: containerMap) {
+                        dockerExecuteOnKubernetes(script: script, containerMap: containerMap) {
                             executeStage(script, body, stageName, config, utils)
                         }
                     }
