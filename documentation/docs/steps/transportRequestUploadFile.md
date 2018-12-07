@@ -46,7 +46,7 @@ The step is configured using a customer configuration file provided as
 resource in an custom shared library.
 
 ```groovy
-@Library('piper-library-os@master') _
+@Library('piper-lib-os@master') _
 
 // the shared lib containing the additional configuration
 // needs to be configured in Jenkins
@@ -91,10 +91,6 @@ The properties can also be configured on a per-step basis:
 ```
 
 The parameters can also be provided when the step is invoked. For examples see below.
-
-## Return value
-
-None.
 
 ## Exceptions
 
