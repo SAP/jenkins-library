@@ -7,7 +7,7 @@ import com.sap.piper.k8s.ContainerMap
 import groovy.transform.Field
 import groovy.text.SimpleTemplateEngine
 
-@Field String STEP_NAME = 'seleniumExecuteTests'
+@Field String STEP_NAME = getClass().getName()
 
 @Field GENERAL_CONFIG_KEYS = STEP_CONFIG_KEYS
 

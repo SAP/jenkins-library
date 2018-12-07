@@ -30,6 +30,7 @@ class commonPipelineEnvironment implements Serializable {
 
     String mtarFilePath
 
+    String transportRequestId
     String changeDocumentId
 
     def reset() {
@@ -52,6 +53,7 @@ class commonPipelineEnvironment implements Serializable {
 
         mtarFilePath = null
 
+        transportRequestId = null
         changeDocumentId = null
     }
 
