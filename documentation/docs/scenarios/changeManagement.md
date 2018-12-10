@@ -105,7 +105,7 @@ Create a transport request for a change document in SAP Solution Manager.
 
 ### Context
 
-Depending on your workflow, this step is optional. If you already have a transport request, define it in the commit message, for example:
+Depending on your workflow, this step is optional. If you already have a transport request, define it in the commit message. For example:
 
 ```
 Lorem ipsum dolor sit amet, cum sucipat
@@ -207,7 +207,7 @@ You have built your Java sources. For an example, see [mtaBuild](https://sap.git
 | `changeManagement/credentialsId` | The ID of the credentials that are required to connect to SAP Solution Manager. |
 | `changeManagement/endpoint` | The address of SAP Solution Manager. |
 
-For an overview of the optional parameters, see [Parameters](https://github.com/SarahNoack/jenkins-library/blob/master/documentation/docs/steps/transportRequestUploadFile.md#parameters).
+For an overview of the optional parameters, see **Parameters** in [transportRequestUploadFile](https://sap.github.io/jenkins-library/steps/transportRequestUploadFile/).
 
 ### Step Configuration
 
@@ -253,7 +253,7 @@ The parameters can also be provided when the step is invoked. See [Examples](#Ex
 
 ### Result
 
-For exceptions, see [Exceptions](https://github.com/SarahNoack/jenkins-library/blob/master/documentation/docs/steps/transportRequestUploadFile.md#exceptions).
+For exceptions, see **Exceptions** in [transportRequestUploadFile](https://sap.github.io/jenkins-library/steps/transportRequestUploadFile/).
 
 ### Example
 
@@ -283,7 +283,7 @@ Release your transport request for a change document in SAP Solution Manager.
 | `changeManagement/credentialsId` | The ID of the credentials that are required to connect to SAP Solution Manager. |
 |`changeManagement/endpoint` | The address of SAP Solution Manager. |
 
-For an overview of the optional parameters, see [Parameters](https://github.com/SarahNoack/jenkins-library/blob/master/documentation/docs/steps/transportRequestRelease.md#parameters).
+For an overview of the optional parameters, see **Parameters** in [transportRequestRelease](https://sap.github.io/jenkins-library/steps/transportRequestRelease/).
 
 ### Step Configuration
 
@@ -328,7 +328,7 @@ The parameters can also be provided when the step is invoked. See [Examples](#Ex
 
 ### Result
 
-For exceptions, see [Exceptions](https://github.com/SarahNoack/jenkins-library/blob/master/documentation/docs/steps/transportRequestRelease.md#exceptions).
+For exceptions, see **Exceptions** in [transportRequestRelease](https://sap.github.io/jenkins-library/steps/transportRequestRelease/).
 
 ### Example
 
