@@ -41,7 +41,14 @@ public class MtaBuildTest extends BasePiperTest {
     void init() {
 
         helper.registerAllowedMethod('fileExists', [String], { s -> false })
-        helper.registerAllowedMethod('sh', [Map], { Map m -> getVersionWithoutEnvVars(m) })
+
+        jscr.setReturnValue(JenkinsShellCallRule.Type.REGEX, '.*\\$MTA_JAR_LOCATION.*', '')
+        jscr.setReturnValue(JenkinsShellCallRule.Type.REGEX, '.*\\$JAVA_HOME.*', '')
+        jscr.setReturnValue(JenkinsShellCallRule.Type.REGEX, '.*which java.*', 0)
+        jscr.setReturnValue(JenkinsShellCallRule.Type.REGEX, '.*java -version.*', '''openjdk version \"1.8.0_121\"
+                    OpenJDK Runtime Environment (build 1.8.0_121-8u121-b13-1~bpo8+1-b13)
+                    OpenJDK 64-Bit Server VM (build 25.121-b13, mixed mode)''')
+        jscr.setReturnValue(JenkinsShellCallRule.Type.REGEX, '.*mta\\.jar -v.*', '1.0.6')
 
         binding.setVariable('PATH', '/usr/bin')
     }
@@ -125,7 +132,7 @@ public class MtaBuildTest extends BasePiperTest {
     @Test
     void mtaJarLocationFromEnvironmentTest() {
 
-        helper.registerAllowedMethod('sh', [Map], { Map m -> getVersionWithEnvVars(m) })
+        jscr.setReturnValue(JenkinsShellCallRule.Type.REGEX, '.*\\$MTA_JAR_LOCATION.*', '/env/mta/mta.jar')
 
         jsr.step.mtaBuild(script: nullScript, buildTarget: 'NEO')
 
@@ -289,81 +296,4 @@ public class MtaBuildTest extends BasePiperTest {
                 '''
     }
 
-    private getVersionWithEnvVars(Map m) {
-
-        if(m.script.contains('java -version')) {
-            return '''openjdk version \"1.8.0_121\"
-                    OpenJDK Runtime Environment (build 1.8.0_121-8u121-b13-1~bpo8+1-b13)
-                    OpenJDK 64-Bit Server VM (build 25.121-b13, mixed mode)'''
-        } else if(m.script.contains('mta.jar -v')) {
-            return '1.0.6'
-        } else {
-            return getEnvVars(m)
-        }
-    }
-
-    private getVersionWithoutEnvVars(Map m) {
-
-        if(m.script.contains('java -version')) {
-            return '''openjdk version \"1.8.0_121\"
-                    OpenJDK Runtime Environment (build 1.8.0_121-8u121-b13-1~bpo8+1-b13)
-                    OpenJDK 64-Bit Server VM (build 25.121-b13, mixed mode)'''
-        } else if(m.script.contains('mta.jar -v')) {
-            return '1.0.6'
-        } else {
-            return getNoEnvVars(m)
-        }
-    }
-
-    private getVersionWithoutEnvVarsAndNotInCurrentDir(Map m) {
-
-        if(m.script.contains('java -version')) {
-            return '''openjdk version \"1.8.0_121\"
-                    OpenJDK Runtime Environment (build 1.8.0_121-8u121-b13-1~bpo8+1-b13)
-                    OpenJDK 64-Bit Server VM (build 25.121-b13, mixed mode)'''
-        } else if(m.script.contains('mta.jar -v')) {
-            return '1.0.6'
-        } else {
-            return getNoEnvVarsAndNotInCurrentDir(m)
-        }
-    }
-
-    private getEnvVars(Map m) {
-
-        if(m.script.contains('JAVA_HOME')) {
-            return ''
-        } else if(m.script.contains('MTA_JAR_LOCATION')) {
-            return '/env/mta/mta.jar'
-        } else if(m.script.contains('which java')) {
-            return 0
-        } else {
-            return 0
-        }
-    }
-
-    private getNoEnvVars(Map m) {
-
-        if(m.script.contains('JAVA_HOME')) {
-            return ''
-        } else if(m.script.contains('MTA_JAR_LOCATION')) {
-            return ''
-        } else if(m.script.contains('which java')) {
-            return 0
-        } else {
-            return 0
-        }
-    }
-
-    private getNoEnvVarsAndNotInCurrentDir(Map m) {
-
-        if(m.script.contains('JAVA_HOME')) {
-            return ''
-        } else if(m.script.contains('MTA_JAR_LOCATION')) {
-            return ''
-        } else if(m.script.contains('which java')) {
-            return 0
-        } else {
-            return 1
-        }
-    }
 }
