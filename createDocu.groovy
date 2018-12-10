@@ -44,7 +44,7 @@ class TemplateHelper {
         parameters.keySet().toSorted().each {
 
             def props = parameters.get(it)
-            t +=  "| `${it}` | ${props.required ? 'yes' : 'no'} | ${(props.defaultValue ? '`' +  props.defaultValue + '`' : '') } | ${props.value ?: ''} |\n"
+            t +=  "| `${it}` | ${props.mandatory ?: props.required ? 'yes' : 'no'} | ${(props.defaultValue ? '`' +  props.defaultValue + '`' : '') } | ${props.value ?: ''} |\n"
         }
 
         t
@@ -65,7 +65,7 @@ class TemplateHelper {
         def t = '''|
                    |We recommend to define values of step parameters via [config.yml file](../configuration.md).
                    |
-                   |In following sections the configuration is possible:'''.stripMargin()
+                   |In following sections the configuration is possible:\n\n'''.stripMargin()
 
         t += '| parameter | general | step | stage |\n'
         t += '|-----------|---------|------|-------|\n'
@@ -91,7 +91,7 @@ class Helper {
 
         new GroovyClassLoader(classLoader, compilerConfig, true)
             .parseClass(new File('src/com/sap/piper/ConfigurationHelper.groovy'))
-            .newInstance(script, [:])
+            .newInstance(script, [:]).loadStepDefaults()
         }
 
     static getPrepareDefaultValuesStep(def gse) {
@@ -195,9 +195,10 @@ class Helper {
 
         boolean docu = false,
                 value = false,
+                mandatory = false,
                 docuEnd = false
 
-        def docuLines = [], valueLines = []
+        def docuLines = [], valueLines = [], mandatoryLines = []
 
         f.eachLine  {
             line ->
@@ -221,14 +222,17 @@ class Helper {
                     if(step.parameters[param].docu || step.parameters[param].value)
                         System.err << "[WARNING] There is already some documentation for parameter '${param}. Is this parameter documented twice?'\n"
 
-                    def _docu = [], _value = []
+                    def _docu = [], _value = [], _mandatory = []
                     docuLines.each { _docu << it  }
                     valueLines.each { _value << it}
+                    mandatoryLines.each { _mandatory << it}
                     step.parameters[param].docu = _docu*.trim().join(' ').trim()
                     step.parameters[param].value = _value*.trim().join(' ').trim()
+                    step.parameters[param].mandatory = _mandatory*.trim().join(' ').trim()
                 }
                 docuLines.clear()
                 valueLines.clear()
+                mandatoryLines.clear()
             }
 
             if( line.trim()  ==~ /^\/\*\*/ ) {
@@ -242,7 +246,13 @@ class Helper {
                 if(_line.startsWith('*/')) _line = _line.replaceAll('^\\*/', '') // end comment
                 if(_line.startsWith('*')) _line = _line.replaceAll('^\\*', '') // continue comment
                 if(_line ==~ /.*@possibleValues.*/) {
+                    mandatory = false // should be something like reset attributes
                     value = true
+                }
+                // some remark for mandatory e.g. some parameters are only mandatory under certain conditions
+                if(_line ==~ /.*@mandatory.*/) {
+                    value = false // should be something like reset attributes ...
+                    mandatory = true
                 }
 
                 if(value) {
@@ -250,7 +260,16 @@ class Helper {
                         _line = (_line =~ /.*@possibleValues\s*?(.*)/)[0][1]
                         valueLines << _line
                     }
-                } else {
+                }
+
+                if(mandatory) {
+                    if(_line) {
+                        _line = (_line =~ /.*@mandatory\s*?(.*)/)[0][1]
+                        mandatoryLines << _line
+                    }
+                }
+
+                if(! value && ! mandatory) {
                     docuLines << _line.trim()
                 }
             }
@@ -258,14 +277,15 @@ class Helper {
             if(docu && line.trim() ==~ /^\*\//) {
                 docu = false
                 value = false
+                mandatory = false
                 docuEnd = true
             }
         }
     }
 
     private static isHeader(line) {
-        Matcher headerMatcher = (line =~ /(def|void)\s*call\s*\(/ )
-        return headerMatcher.size() == 1 && headerMatcher[0].size() == 2
+        Matcher headerMatcher = (line =~ /(?:(?:def|void)\s*call\s*\()|(?:@.*)/ )
+        return headerMatcher.size() == 1
     }
 
     private static retrieveParameterName(line) {
@@ -465,7 +485,7 @@ def handleStep(stepName, prepareDefaultValuesStep, gse) {
     step.parameters['script'] = [
                                 docu: 'The common script environment of the Jenkinsfile running. ' +
                                         'Typically the reference to the script calling the pipeline ' +
-                                        'step is provided with the this parameter, as in script: this. ' +
+                                        'step is provided with the this parameter, as in `script: this`. ' +
                                         'This allows the function to access the ' +
                                         'commonPipelineEnvironment for retrieving, for example, configuration parameters.',
                                 required: true,

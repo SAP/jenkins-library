@@ -137,10 +137,6 @@ In following sections the configuration is possible:
 |stashContent|X|X|X|
 |testRepository|X|X|X|
 
-## Return value
-
-none
-
 ## Side effects
 
 none

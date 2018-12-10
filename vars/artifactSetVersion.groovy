@@ -8,7 +8,7 @@ import com.sap.piper.versioning.ArtifactVersioning
 import groovy.transform.Field
 import groovy.text.SimpleTemplateEngine
 
-@Field String STEP_NAME = 'artifactSetVersion'
+@Field String STEP_NAME = getClass().getName()
 @Field Map CONFIG_KEY_COMPATIBILITY = [gitSshKeyCredentialsId: 'gitCredentialsId']
 
 @Field Set GENERAL_CONFIG_KEYS = STEP_CONFIG_KEYS

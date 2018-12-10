@@ -1,6 +1,9 @@
 plugins:
   codenarc:
     enabled: true
+    checks:
+      BooleanGetBoolean:
+        enabled: false
   editorconfig:
     enabled: true
     checks:

@@ -14,7 +14,7 @@ import static com.sap.piper.cm.StepHelpers.getTransportRequestId
 import static com.sap.piper.cm.StepHelpers.getChangeDocumentId
 import static com.sap.piper.cm.StepHelpers.getBackendTypeAndLogInfoIfCMIntegrationDisabled
 
-@Field def STEP_NAME = 'transportRequestRelease'
+@Field def STEP_NAME = getClass().getName()
 
 @Field Set GENERAL_CONFIG_KEYS = STEP_CONFIG_KEYS
 
@@ -62,11 +62,11 @@ void call(parameters = [:]) {
                                 stepParam1: parameters?.script == null], configuration)
 
         def changeDocumentId = null
-        def transportRequestId = getTransportRequestId(cm, this, configuration)
+        def transportRequestId = getTransportRequestId(cm, script, configuration)
 
         if(backendType == BackendType.SOLMAN) {
 
-            changeDocumentId = getChangeDocumentId(cm, this, configuration)
+            changeDocumentId = getChangeDocumentId(cm, script, configuration)
 
             configHelper.mixin([changeDocumentId: changeDocumentId?.trim() ?: null], ['changeDocumentId'] as Set)
                         .withMandatoryProperty('changeDocumentId',
