@@ -69,10 +69,6 @@ In following sections the configuration is possible:
 |sidecarVolumeBind||X|X|
 |sidecarWorkspace||X|X|
 
-## Return value
-
-none
-
 ## Side effects
 
 none

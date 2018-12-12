@@ -5,7 +5,7 @@ import com.sap.piper.Utils
 import groovy.text.SimpleTemplateEngine
 import groovy.transform.Field
 
-@Field String STEP_NAME = 'mailSendNotification'
+@Field String STEP_NAME = getClass().getName()
 @Field Set GENERAL_CONFIG_KEYS = ['gitSshKeyCredentialsId']
 @Field Set STEP_CONFIG_KEYS = [
     'projectName',

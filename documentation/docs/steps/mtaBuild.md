@@ -48,10 +48,6 @@ The following parameters can also be specified as step parameters using the glob
 * `mtaJarLocation`
 * `applicationName`
 
-## Return value
-
-none
-
 ## Side effects
 
 1. The file name of the resulting archive is written to the `commonPipelineEnvironment` with variable name `mtarFileName`.
