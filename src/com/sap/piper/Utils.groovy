@@ -22,6 +22,26 @@ def stash(name, include = '**/*.*', exclude = '') {
     steps.stash name: name, includes: include, excludes: exclude
 }
 
+def stashList(script, List stashes) {
+    for (def stash : stashes) {
+        def name = stash.name
+        def include = stash.includes
+        def exclude = stash.excludes
+
+        if (stash?.merge == true) {
+            String lockName = "${script.commonPipelineEnvironment.configuration.stashFiles}/${stash.name}"
+            lock(lockName) {
+                unstash stash.name
+                echo "Stash content: ${name} (include: ${include}, exclude: ${exclude})"
+                steps.stash name: name, includes: include, exclude: exclude, allowEmpty: true
+            }
+        } else {
+            echo "Stash content: ${name} (include: ${include}, exclude: ${exclude})"
+            steps.stash name: name, includes: include, exclude: exclude, allowEmpty: true
+        }
+    }
+}
+
 def stashWithMessage(name, msg, include = '**/*.*', exclude = '') {
     try {
         stash(name, include, exclude)
@@ -70,6 +90,7 @@ void pushToSWA(Map parameters, Map config) {
             custom3 = step name (passed as parameter step)
             custom4 = job url hashed (calculated)
             custom5 = build url hashed (calculated)
+            custom10 = stage name
             custom11 = step related parameter 1 (passed as parameter stepParam1)
             custom12 = step related parameter 2 (passed as parameter stepParam2)
             custom13 = step related parameter 3 (passed as parameter stepParam3)
@@ -81,11 +102,12 @@ void pushToSWA(Map parameters, Map config) {
         def action_name = 'Piper Library OS'
         def idsite = '827e8025-1e21-ae84-c3a3-3f62b70b0130'
         def url = 'https://github.com/SAP/jenkins-library'
-        def event_type = 'library-os'
+        def event_type = parameters.get('eventType') ?: 'library-os'
 
         swaCustom.custom3 = parameters.get('step')
         swaCustom.custom4 = generateSha1Inline(env.JOB_URL)
         swaCustom.custom5 = generateSha1Inline(env.BUILD_URL)
+        swaCustom.custom10 = parameters.get('stageName')
         swaCustom.custom11 = parameters.get('stepParam1')
         swaCustom.custom12 = parameters.get('stepParam2')
         swaCustom.custom13 = parameters.get('stepParam3')
@@ -99,7 +121,7 @@ void pushToSWA(Map parameters, Map config) {
         options.push("--data-urlencode \"idsite=${idsite}\"")
         options.push("--data-urlencode \"url=${url}\"")
         options.push("--data-urlencode \"event_type=${event_type}\"")
-        for(def key : ['custom3', 'custom4', 'custom5', 'custom11', 'custom12', 'custom13', 'custom14', 'custom15']){
+        for(def key : ['custom3', 'custom4', 'custom5', 'custom10', 'custom11', 'custom12', 'custom13', 'custom14', 'custom15']){
             if (swaCustom[key] != null) options.push("--data-urlencode \"${key}=${swaCustom[key]}\"")
         }
         options.push("--connect-timeout 5")
