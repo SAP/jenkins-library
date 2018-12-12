@@ -71,7 +71,7 @@ InfluxDB data map: ${script.commonPipelineEnvironment.getInfluxCustomDataMap()}
 }
 
 private void writeToInflux(config, script){
-    if (config.influxServer.length() > 0) {
+    if (config.influxServer) {
         step([
             $class: 'InfluxDbPublisher',
             selectedTarget: config.influxServer,
