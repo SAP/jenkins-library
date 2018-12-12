@@ -123,7 +123,7 @@ class LibraryLoadingTestExecutionListener extends AbstractTestExecutionListener 
     void beforeTestMethod(TestContext testContext) throws Exception {
         super.beforeTestMethod(testContext)
         def testInstance = testContext.getTestInstance()
-        testInstance.binding.setVariable('currentBuild', [result: 'SUCCESS'])
+        testInstance.binding.setVariable('currentBuild', [result: 'SUCCESS', currentResult: 'SUCCESS'])
         PipelineTestHelper helper = LibraryLoadingTestExecutionListener.getSingletonInstance()
         LibraryLoadingTestExecutionListener.START_METHOD_TRACKING = true
     }
