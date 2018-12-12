@@ -88,8 +88,3 @@ private void writeToInflux(config, script){
     archiveArtifacts artifacts: '*data.json', allowEmptyArchive: true
 
 }
-
-
-
-
-
