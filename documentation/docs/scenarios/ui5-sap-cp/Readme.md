@@ -40,8 +40,6 @@ For more information please check the documentation for the [MTA build](mtaBuild
 
 The steps included in this scenario require additional files in your project and execution environment on your Jenkins. See the end of this document for additional file templates.
 
-![Jenkins credentials configuration](../images/neo_credentials.png)
-
 - **Neo Java Web** - can be downloaded from [Maven Central](http://central.maven.org/maven2/com/sap/cloud/neo-java-web-sdk/).
 - **Java 8 or compatible version** - needed by the *Neo-Java-Web-SDK*
 
