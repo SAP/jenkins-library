@@ -191,10 +191,9 @@ public void testGetCommandLineWithCMClientOpts() {
         script.setReturnValue(JenkinsShellCallRule.Type.REGEX, '.*upload-file-to-transport.*', 1)
 
         thrown.expect(ChangeManagementException)
-        thrown.expectMessage('Cannot upload file \'/path\' for change document \'001\''+
-                             ' with transport request \'002\'. Return code from cmclient: 1.')
+        thrown.expectMessage('Cannot upload file into transport request. Return code from cmclient: 1.')
 
-        new ChangeManagement(nullScript).uploadFileToTransportRequest(BackendType.SOLMAN,
+        new ChangeManagement(nullScript).uploadFileToTransportRequestSOLMAN(
                                                                       '001',
                                                                       '002',
                                                                       'XXX',
@@ -209,8 +208,7 @@ public void testGetCommandLineWithCMClientOpts() {
         // the regex provided below is an implicit check that the command line is fine.
         script.setReturnValue(JenkinsShellCallRule.Type.REGEX, 'upload-file-to-transport.*-cID 001 -tID 002 XXX "/path"', 0)
 
-        new ChangeManagement(nullScript).uploadFileToTransportRequest(
-            BackendType.SOLMAN,
+        new ChangeManagement(nullScript).uploadFileToTransportRequestSOLMAN(
             '001',
             '002',
             'XXX',
@@ -228,9 +226,7 @@ public void testGetCommandLineWithCMClientOpts() {
         // the regex provided below is an implicit check that the command line is fine.
         script.setReturnValue(JenkinsShellCallRule.Type.REGEX, '-t CTS upload-file-to-transport -tID 002 "/path"', 0)
 
-        new ChangeManagement(nullScript).uploadFileToTransportRequest(
-            BackendType.CTS,
-            null,
+        new ChangeManagement(nullScript).uploadFileToTransportRequestCTS(
             '002',
             null,
             '/path',
@@ -245,12 +241,12 @@ public void testGetCommandLineWithCMClientOpts() {
     public void testUploadFileToTransportFails() {
 
         thrown.expect(ChangeManagementException)
-        thrown.expectMessage("Cannot upload file '/path' for change document '001' with transport request '002'. " +
+        thrown.expectMessage("Cannot upload file into transport request. " +
             "Return code from cmclient: 1.")
 
         script.setReturnValue(JenkinsShellCallRule.Type.REGEX,, 'upload-file-to-transport', 1)
 
-        new ChangeManagement(nullScript).uploadFileToTransportRequest(BackendType.SOLMAN,
+        new ChangeManagement(nullScript).uploadFileToTransportRequestSOLMAN(
             '001',
             '002',
             'XXX',

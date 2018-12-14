@@ -21,7 +21,11 @@ import static com.sap.piper.cm.StepHelpers.getBackendTypeAndLogInfoIfCMIntegrati
   ]
 
 @Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS.plus([
-      'applicationId'
+      'applicationId',
+      'developmentInstance',
+      'developmentClient',
+      'applicationDescription',
+      'abapPackage',
     ])
 
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS.plus([
@@ -51,6 +55,7 @@ void call(parameters = [:]) {
         if(backendType == BackendType.NONE) return
 
         configHelper
+            .collectValidationFailures()
             .withMandatoryProperty('changeManagement/changeDocumentLabel')
             .withMandatoryProperty('changeManagement/clientOpts')
             .withMandatoryProperty('changeManagement/credentialsId')
@@ -60,6 +65,11 @@ void call(parameters = [:]) {
             .withMandatoryProperty('changeManagement/git/to')
             .withMandatoryProperty('changeManagement/git/format')
             .withMandatoryProperty('filePath')
+            .withMandatoryProperty('developmentInstance', null, { backendType == BackendType.RFC })
+            .withMandatoryProperty('developmentClient', null, { backendType == BackendType.RFC })
+            .withMandatoryProperty('applicationDescription', null, { backendType == BackendType.RFC })
+            .withMandatoryProperty('abapPackage', null, { backendType == BackendType.RFC })
+            .withMandatoryProperty('applicationId', null, {backendType in [BackendType.SOLMAN, BackendType.RFC]})
 
         new Utils().pushToSWA([step: STEP_NAME,
                                 stepParam1: configuration.changeManagement.type,
@@ -81,7 +91,6 @@ void call(parameters = [:]) {
             configHelper
                 .withMandatoryProperty('changeDocumentId',
                     "Change document id not provided (parameter: \'changeDocumentId\' or via commit history).")
-                .withMandatoryProperty('applicationId')
         }
         configuration = configHelper
                             .withMandatoryProperty('transportRequestId',
@@ -97,15 +106,43 @@ void call(parameters = [:]) {
 
             try {
 
+                switch(backendType) {
 
-                cm.uploadFileToTransportRequest(backendType,
-                                                configuration.changeDocumentId,
-                                                configuration.transportRequestId,
-                                                configuration.applicationId,
-                                                configuration.filePath,
-                                                configuration.changeManagement.endpoint,
-                                                configuration.changeManagement.credentialsId,
-                                                configuration.changeManagement.clientOpts)
+                    case BackendType.SOLMAN:
+                        cm.uploadFileToTransportRequestSOLMAN(
+                            configuration.changeDocumentId,
+                            configuration.transportRequestId,
+                            configuration.applicationId,
+                            configuration.filePath,
+                            configuration.changeManagement.endpoint,
+                            configuration.changeManagement.credentialsId,
+                            configuration.changeManagement.clientOpts)
+                        break
+                    case BackendType.CTS:
+                        cm.uploadFileToTransportRequestCTS(
+                            configuration.transportRequestId,
+                            configuration.applicationId,
+                            configuration.filePath,
+                            configuration.changeManagement.endpoint,
+                            configuration.changeManagement.credentialsId,
+                            configuration.changeManagement.clientOpts)
+                        break
+                    case BackendType.RFC:
+                        cm.uploadFileToTransportRequestRFC(
+                            configuration.changeManagement.rfc.dockerImage,
+                            configuration.changeManagement.rfc.dockerOptions ?: [],
+                            configuration.transportRequestId,
+                            configuration.applicationId,
+                            configuration.filePath,
+                            configuration.changeManagement.endpoint,
+                            configuration.changeManagement.credentialsId,
+                            configuration.developmentInstance,
+                            configuration.developmentClient,
+                            configuration.applicationDescription,
+                            configuration.abapPackage)
+                        break
+
+                }
 
             } catch(ChangeManagementException ex) {
                 throw new AbortException(ex.getMessage())
