@@ -12,6 +12,9 @@ general:
       from: 'origin/master'
       to: 'HEAD'
       format: '%b'
+    rfc:
+      dockerImage: 'rfc'
+      dockerOptions: []
   githubApiUrl: 'https://api.github.com'
   githubServerUrl: 'https://github.com'
   gitSshKeyCredentialsId: '' #needed to allow sshagent to run with local ssh key
