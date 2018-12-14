@@ -1,4 +1,4 @@
-# FioriOnCloudPlatformPipeline
+# Pipeline for SAP UI5/Fiori On SAP Cloud Platform
 
 This is a so called scenario step. Scenario steps are aggregations of several steps implementing a simple, but complete pipeline. This should make simple scenarios easy to set up. Your `Jenkinsfile` can be as simple as:
 
