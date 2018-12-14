@@ -14,8 +14,8 @@ plugins:
       editorconfig: .editorconfig
     # https://docs.codeclimate.com/docs/advanced-configuration#section-exclude-patterns
     exclude_patterns:
-    - "documentation/docs/images/"
-    - "cfg/id_rsa.enc"
+    - "documentation/**/images/"
+    - "cfg/id_rsa.enc"  
   fixme:
     enabled: true
     config:
