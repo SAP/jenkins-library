@@ -10,7 +10,7 @@ This is a so called scenario step. Scenario steps are aggregations of several st
 
 ## Description
 
-This steps builds an SAP UI5 or Fiori based application using MTA and deploys the build result into an SAP Cloud Platform (Neo) account. This scenario wraps the [mtaBuild](mtaBuild.md) and [neoDeploy](neoDeploy.mta) steps.
+This steps builds an SAP UI5 or Fiori based application using MTA and deploys the build result into an SAP Cloud Platform (Neo) account. This scenario wraps the [mtaBuild](../mtaBuild.md) and [neoDeploy](../neoDeploy.md) steps.
 
 ![This pipeline in Jenkins Blue Ocean](images/pipeline.jpg)
 
@@ -28,7 +28,7 @@ A docker image meeting the following requirements:
 - **Java 8 or compatible version** - necessary to run the `mta.jar` file.
 - **NodeJS** - the MTA Builder requires `node` and `npm` to build the project.
 
-For more information please check the documentation for the [MTA build](mtaBuild.md).
+For more information please check the documentation for the [MTA build](../mtaBuild.md).
 
 ### Prerequisites for the Deployment to SAP Cloud Platform
 
@@ -43,7 +43,7 @@ The steps included in this scenario require additional files in your project and
 - **Neo Java Web** - can be downloaded from [Maven Central](http://central.maven.org/maven2/com/sap/cloud/neo-java-web-sdk/).
 - **Java 8 or compatible version** - needed by the *Neo-Java-Web-SDK*
 
-For more information please check the documentation for the [deployment](neoDeploy.md).
+For more information please check the documentation for the [deployment](../neoDeploy.md).
 
 ## Parameters
 
@@ -56,7 +56,7 @@ For more information please check the documentation for the [deployment](neoDepl
 | `buildTarget`    | yes       | `'NEO'`                                                | 'CF', 'NEO', 'XSA' |
 | `mtaJarLocation` | no        | `'mta.jar'`                                        |                    |
 
-For the full list of parameters please check the documentation for the [MTA build](mtaBuild.md).
+For the full list of parameters please check the documentation for the [MTA build](../mtaBuild.md).
 
 ### Parameters for the Deployment to SAP Cloud Platform
 
@@ -65,15 +65,15 @@ For the full list of parameters please check the documentation for the [MTA buil
 | `deployMode`       | yes       | `'mta'`                       | `'mta'`, `'warParams'`, `'warPropertiesFile'`   |
 | `script`           | yes       |                               |                                                 |
 
-For the full list of parameters please check the documentation for the [deployment](neoDeploy.md).
+For the full list of parameters please check the documentation for the [deployment](../neoDeploy.md).
 
 ## Step Configuration
 
 Please refer to our configurations documentation and the documentation for the individual steps:
 
-- [General configuration](configuration)
-- [MTA build configuration](mtaBuild.md)
-- [Deployment configuration](neoDeploy.md)
+- [General configuration](../configuration)
+- [MTA build configuration](../mtaBuild.md)
+- [Deployment configuration](../neoDeploy.md)
 
 ## Example
 
