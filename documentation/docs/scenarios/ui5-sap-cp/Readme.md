@@ -102,17 +102,17 @@ The following template files needs to be provided and adjusted on project level:
 
 ### `.npmrc`
 
-The [`.npmrc`](documentation/docs/scenarios/ui5-sap-cp/files/.npmrc)
+The [`.npmrc`](https://github.com/marcusholl/jenkins-library/tree/pr/scenarioUI5SAPCP/documentation/docs/scenarios/ui5-sap-cp/files/.npmrc)
   contains a reference to the SAP NPM registry: `@sap:registry https://npm.sap.com` that is required to fetch dependencies to build the application.
 
 ### `mta.yaml`
 
-The [`mta.yaml`](documentation/docs/scenarios/ui5-sap-cp/files/mta.yaml) controls the behavior of the mta toolset. Place the file in your application root folder and adjust the values in brackets with your data.
+The [`mta.yaml`](https://github.com/marcusholl/jenkins-library/tree/pr/scenarioUI5SAPCP/documentation/docs/scenarios/ui5-sap-cp/files/mta.yaml) controls the behavior of the mta toolset. Place the file in your application root folder and adjust the values in brackets with your data.
 
 ### `package.json`
 
-The [package.json](documentation/docs/scenarios/ui5-sap-cp/files/package.json) fetches the (dev-)dependencies that are required to build. Add the lines to your existing `package.json` file.
+The [package.json](https://github.com/marcusholl/jenkins-library/tree/pr/scenarioUI5SAPCP/documentation/docs/scenarios/ui5-sap-cp/files/package.json) fetches the (dev-)dependencies that are required to build. Add the lines to your existing `package.json` file.
 
 ### `Gruntfile.js`
 
-[Gruntfile.js](documentation/docs/scenarios/ui5-sap-cp/files/Gruntfile.js) controls the grunt build. By default these tasks are executed: `clean`, `build`, `lint`.
+[Gruntfile.js](https://github.com/marcusholl/jenkins-library/tree/pr/scenarioUI5SAPCP/documentation/docs/scenarios/ui5-sap-cp/files/Gruntfile.js) controls the grunt build. By default these tasks are executed: `clean`, `build`, `lint`.
