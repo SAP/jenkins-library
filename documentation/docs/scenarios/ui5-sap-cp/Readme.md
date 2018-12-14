@@ -1,63 +1,115 @@
-# Docu stub
+# FioriOnCloudPlatformPipeline
 
-# Purpose
-Here we should describe what this scenario does: It builds a SAPUI5 based application and deploys
-the build result into a NEO account. Build is performed via mta -> node -> grunt -> sap-best-practices plugin
-In fact it is `grunt clean, build, lint`.
+This is a so called scenario step. Scenario steps are aggregations of several steps implementing a simple, but complete pipeline. This should make simple scenarios easy to set up. Your `Jenkinsfile` can be as simple as:
 
-# The following tools are used
- - mta (jar file which must be present on the build server; later: via docker)
- - npm (needs to be installed and configured on the build server: later: via docker)
- - grunt (will be materialized through npm)
- - sap best practices (will be materialized through npm)
+```groovy
+@Library('piper-lib-os') _
 
-# Prerequisites (in the central environment)
+<scenario>Pipeline script: this
 
-  - piper lib registered
-  - npm installed and configured so that
-      - Grunt and the
-      - sap best practices build plugin can be materialized
-  - Neo deploy account available, credentials maintained in Jenkins.
+```
 
-# The reader should already know
+## Description
+This steps builds an SAP UI5 or Fiori based application using MTA and deploys the build result into an SAP Cloud Platform (Neo) account. This scenario wraps the [mtaBuild](mtaBuild.md) and [neoDeploy](neoDeploy.mta) steps.
 
-  - what a shared lib is and how it can be registered.
-  - understanding of node /grunt build
-  - SAP WEBIDE and the corresponding development workflow.
+## Prerequisites
 
-# Workflow
-  - Developer works inside WEB-IDE and commits changes into this git clone.
-  - Afterwards s?he pushes into a shared git repo.
-  - Jenkins (push or pull?) detects the changes and triggers a build.
-  - The build result gets deployed into the configured NEO account.
+#### General Prerequisites
+- project "Piper" requires a Jenkins (2.x) with pipeline plugins to run
+- project "Piper" needs to be [registered in Jenkins](https://github.com/SAP/jenkins-library/blob/master/README.md) as a Global Shared Library
 
-# References
-- https://developers.sap.com/germany/tutorials/webide-grunt-basic.html
+More specifically, the steps included in this scenario might require additional files in your project and execution environment on your Jenkins. 
 
-# Open questions:
-  * What is our relationship to the SAP-WEB-IDE?
+#### Prerequisites for the MTA Build
 
-# Project template files
+* A docker image meeting the following requirements:
+  * **SAP MTA Archive Builder** - can be downloaded from [SAP Development Tools](https://tools.hana.ondemand.com/#cloud).
+  * **Java 8 or compatible version** - necessary to run the `mta.jar` file.
+  * **NodeJS** - the MTA Builder requires `node` and `npm` to build the project.
+
+For more information please check the documentation for the [MTA build](mtaBuild.md).
+
+#### Prerequisites for the Deployment to SAP Cloud Platform
+
+* **SAP CP account** - the account to where the application is deployed.
+* **SAP CP user for deployment** - a user with deployment permissions in the given account.
+* **Jenkins credentials for deployment** - must be configured in Jenkins credentials with a dedicated Id.
+
+![Jenkins credentials configuration](../images/neo_credentials.png)
+
+* **Neo Java Web** - can be downloaded from [Maven Central](http://central.maven.org/maven2/com/sap/cloud/neo-java-web-sdk/).
+* **Java 8 or compatible version** - needed by the *Neo-Java-Web-SDK*
+
+For more information please check the documentation for the [deployment](neoDeploy.md).
+
+# Parameters
+
+#### Parameters for the MTA Build
+
+| parameter        | mandatory | default                                                | possible values    |
+| -----------------|-----------|--------------------------------------------------------|--------------------|
+| `script`         | yes       |                                                        |                    |
+| `dockerImage`    | yes       |                                                        |                    |
+| `buildTarget`    | yes       | `'NEO'`                                                | 'CF', 'NEO', 'XSA' |
+| `mtaJarLocation` | no        | `'mta.jar'`                                        |                    |
+
+For the full list of parameters please check the documentation for the [MTA build](mtaBuild.md).
+
+#### Parameters for the Deployment to SAP Cloud Platform
+
+| parameter          | mandatory | default                       | possible values                                 |
+| -------------------|-----------|-------------------------------|-------------------------------------------------|
+| `deployMode`       | yes       | `'mta'`                       | `'mta'`, `'warParams'`, `'warPropertiesFile'`   |
+| `script`           | yes       |                               |                                                 |
+
+For the full list of parameters please check the documentation for the [deployment](neoDeploy.md).
+
+# Step Configuration
+
+Please refer to our configurations documentation and the documentation for the individual steps:
+
+* [General configuration](configuration)
+* [MTA build configuration](mtaBuild.md)
+* [Deployment configuration](neoDeploy.md)
+
+
+## Example
+
+#### Jenkinsfile
+```groovy
+@Library('piper-lib-os') _
+
+fioriOnCloudPlatformPipeline script:this
+```
+
+#### .pipeline/config.yml
+
+```yaml
+steps:
+  mtaBuild:
+    buildTarget: 'NEO'
+  neoDeploy:
+    neoCredentialsId: 'NEO_DEPLOY'
+    account: 'your-account-id'
+```
+
+# Project Template Files
 
 The following template files needs to be provided and adjusted on project level:
 
-- *(.npmrc)[documentation/docs/scenarios/ui5-sap-cp/files/.npmrc]*
-  Must contain a reference to the SAP npm registry: `@sap:registry https://npm.sap.com`.
-  This dependency can be omitted on project lavel if it is provided in some higher configuration level (user, global).
-  In this case it needs to be ensured that this dependency is available during local development as well as in central
-  build infrastructure. Beside this the might might of course contain other npm configuration settings.
-- *(mta.yaml)[documentation/docs/scenarios/ui5-sap-cp/files/mta.yaml]* Controls the behavior of the mta toolset. Placeholders
-  (labeled like this `<placeholder`) needs to be replaced by valid values (version, applicationName). The `${timestamp}` in the version is replaced
-  by the piperLibrary step `mtaBuild` in order to be able to distiguish the build results. <comment mh>I'm not happy with
-  that approach modifying the sources here, we should check if this can be done in a better way.</comment mhend>
-- *(package.json)[documentation/docs/scenarios/ui5-sap-cp/files/package.json]* Must contain a development dependency to `@sap/grunt-sapui5-bestpractice-build`. And of course other dependencies if required.
-  Name, version and description needs to be maintained, too (placeholders).
-- (Guntfile.js)[documentation/docs/scenarios/ui5-sap-cp/files/Gruntfile.js] controls the grunt build. By default these tasks are executed: `clean`, `build`, `lint`. It is
-  less likely that this file needs to be changed.
+#### `.npmrc`
 
-# How we should extend our scenario
-  - relationship to CM?
-  - what about automated tests using the neo deploy space?
-  - what about deployment into several neo accounts, e.g. for testing multiple aspects
-  - what about deployment into production after successfully performed automated tests?
-  - what about publishing lint results in order to create awareness about the lint results?
+The [`.npmrc`](documentation/docs/scenarios/ui5-sap-cp/files/.npmrc)
+  contains a reference to the SAP NPM registry: `@sap:registry https://npm.sap.com` that is required to fetch dependencies to build the application.
+
+#### `mta.yaml`
+
+The [`mta.yaml`](documentation/docs/scenarios/ui5-sap-cp/files/mta.yaml) controls the behavior of the mta toolset. Place the file in your application root folder and adjust the values in brackets with your data.
+
+#### `package.json`
+
+The [package.json](documentation/docs/scenarios/ui5-sap-cp/files/package.json) fetches the (dev-)dependencies that are required to build. Add the lines to your existing `package.json` file.
+
+
+#### `Gruntfile.js`
+[Gruntfile.js](documentation/docs/scenarios/ui5-sap-cp/files/Gruntfile.js) controls the grunt build. By default these tasks are executed: `clean`, `build`, `lint`.
