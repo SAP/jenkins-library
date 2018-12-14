@@ -12,6 +12,9 @@ This is a so called scenario step. Scenario steps are aggregations of several st
 ## Description
 This steps builds an SAP UI5 or Fiori based application using MTA and deploys the build result into an SAP Cloud Platform (Neo) account. This scenario wraps the [mtaBuild](mtaBuild.md) and [neoDeploy](neoDeploy.mta) steps.
 
+
+![This pipeline in Jenkins Blue Ocean](images/pipeline.jpg)
+
 ## Prerequisites
 
 #### General Prerequisites
