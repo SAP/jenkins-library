@@ -11,14 +11,17 @@ import groovy.transform.Field
 @Field def STEP_NAME = getClass().getName()
 
 @Field Set GENERAL_CONFIG_KEYS = []
-@Field Set STEP_CONFIG_KEYS = [
+@Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS.plus([
+    'artifactVersion',
+    'customData',
+    'customDataTags',
+    'customDataMap',
+    'customDataMapTags',
     'influxServer',
     'influxPrefix',
     'wrapInNode'
-]
-@Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS.plus([
-    'artifactVersion'
 ])
+@Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
 
 void call(Map parameters = [:]) {
     handlePipelineStepErrors (stepName: STEP_NAME, stepParameters: parameters, allowBuildFailure: true) {
@@ -37,6 +40,10 @@ void call(Map parameters = [:]) {
                 artifactVersion: script.commonPipelineEnvironment.getArtifactVersion()
             ])
             .mixin(parameters, PARAMETER_KEYS)
+            .addIfNull('customData', script.commonPipelineEnvironment.getInfluxCustomData())
+            .addIfNull('customDataTags', script.commonPipelineEnvironment.getInfluxCustomDataTags())
+            .addIfNull('customDataMap', script.commonPipelineEnvironment.getInfluxCustomDataMap())
+            .addIfNull('customDataMapTags', script.commonPipelineEnvironment.getInfluxCustomDataMapTags())
             .use()
 
         new Utils().pushToSWA([step: STEP_NAME,
@@ -52,8 +59,10 @@ void call(Map parameters = [:]) {
 Artifact version: ${config.artifactVersion}
 Influx server: ${config.influxServer}
 Influx prefix: ${config.influxPrefix}
-InfluxDB data: ${script.commonPipelineEnvironment.getInfluxCustomData()}
-InfluxDB data map: ${script.commonPipelineEnvironment.getInfluxCustomDataMap()}
+InfluxDB data: ${config.customData}
+InfluxDB data tags: ${config.customDataTags}
+InfluxDB data map: ${config.customDataMap}
+InfluxDB data map tags: ${config.customDataMapTags}
 [${STEP_NAME}]----------------------------------------------------------"""
 
         if(config.wrapInNode){
@@ -76,15 +85,18 @@ private void writeToInflux(config, script){
             $class: 'InfluxDbPublisher',
             selectedTarget: config.influxServer,
             customPrefix: config.influxPrefix,
-            customData: script.commonPipelineEnvironment.getInfluxCustomData(),
-            customDataMap: script.commonPipelineEnvironment.getInfluxCustomDataMap()
+            customData: config.customData.size()>0 ? config.customData : null,
+            customDataTags: config.customDataTags.size()>0 ? config.customDataTags : null,
+            customDataMap: config.customDataMap.size()>0 ? config.customDataMap : null,
+            customDataMapTags: config.customDataMapTags.size()>0 ? config.customDataMapTags : null
         ])
     }
 
     //write results into json file for archiving - also benefitial when no InfluxDB is available yet
     def jsonUtils = new JsonUtils()
-    writeFile file: 'jenkins_data.json', text: jsonUtils.getPrettyJsonString(script.commonPipelineEnvironment.getInfluxCustomData())
-    writeFile file: 'pipeline_data.json', text: jsonUtils.getPrettyJsonString(script.commonPipelineEnvironment.getInfluxCustomDataMap())
+    writeFile file: 'jenkins_data.json', text: jsonUtils.getPrettyJsonString(config.customData)
+    writeFile file: 'pipeline_data.json', text: jsonUtils.getPrettyJsonString(config.customDataMap)
+    writeFile file: 'jenkins_data_tags.json', text: jsonUtils.getPrettyJsonString(config.customDataTags)
+    writeFile file: 'pipeline_data_tags.json', text: jsonUtils.getPrettyJsonString(config.customDataMapTags)
     archiveArtifacts artifacts: '*data.json', allowEmptyArchive: true
-
 }

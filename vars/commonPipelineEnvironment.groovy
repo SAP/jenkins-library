@@ -24,9 +24,13 @@ class commonPipelineEnvironment implements Serializable {
     Map defaultConfiguration = [:]
 
     //each Map in influxCustomDataMap represents a measurement in Influx. Additional measurements can be added as a new Map entry of influxCustomDataMap
-    private Map influxCustomDataMap = [pipeline_data: [:], step_data: [:]]
+    Map influxCustomDataMap = [pipeline_data: [:], step_data: [:]]
+    //each Map in influxCustomDataMapTags represents tags for certain measurement in Influx. Tags are required in Influx for easier querying data
+    Map influxCustomDataMapTags = [pipeline_data: [:]]
     //influxCustomData represents measurement jenkins_custom_data in Influx. Metrics can be written into this map
-    private Map influxCustomData = [:]
+    Map influxCustomData = [:]
+    //influxCustomDataTags represents tags in Influx. Tags are required in Influx for easier querying data
+    Map influxCustomDataTags = [:]
 
     String mtarFilePath
 
@@ -49,7 +53,9 @@ class commonPipelineEnvironment implements Serializable {
         githubRepo = null
 
         influxCustomData = [:]
+        influxCustomDataTags = [:]
         influxCustomDataMap = [pipeline_data: [:], step_data: [:]]
+        influxCustomDataMapTags = [pipeline_data: [:]]
 
         mtarFilePath = null
 
@@ -76,12 +82,14 @@ class commonPipelineEnvironment implements Serializable {
             return configProperties[property]
     }
 
-    def getInfluxCustomData() {
-        return influxCustomData
+    def setInfluxCustomDataTag(tag, value) {
+        influxCustomDataTags[tag] = value
     }
-
-    def getInfluxCustomDataMap() {
-        return influxCustomDataMap
+    def setInfluxCustomDataMapTag(measurement, tag, value) {
+        if (!influxCustomDataMapTags[measurement]) {
+            influxCustomDataMapTags[measurement] = [:]
+        }
+        influxCustomDataMapTags[measurement][tag] = value
     }
 
     def setInfluxStepData (dataKey, value) {

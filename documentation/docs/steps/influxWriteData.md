@@ -83,17 +83,33 @@ influxDBServer=jenkins
 
 | parameter | mandatory | default | possible values |
 | ----------|-----------|---------|-----------------|
-| script | yes | |  |
-| artifactVersion | yes | commonPipelineEnvironment.getArtifactVersion() |  |
-| influxServer | no | `jenkins` |  |
-| influxPrefix | no | `null` |  |
+|script|yes|||
+|artifactVersion|no|`commonPipelineEnvironment.getArtifactVersion()`||
+|customData|no|`commonPipelineEnvironment.getInfluxCustomData()`||
+|customDataMap|no|`commonPipelineEnvironment.getInfluxCustomDataMap()`||
+|customDataMapTags|no|`commonPipelineEnvironment.getInfluxCustomDataTags()`||
+|customDataTags|no|`commonPipelineEnvironment.getInfluxCustomDataTags()`||
+|influxPrefix|no|||
+|influxServer|no|||
+|wrapInNode|no|`false`||
 
 ## Step configuration
 
-The following parameters can also be specified as step parameters using the global configuration file:
+We recommend to define values of step parameters via [config.yml file](../configuration.md).
 
-- `influxServer`
-- `influxPrefix`
+In following sections the configuration is possible:
+
+| parameter | general | step | stage |
+| ----------|-----------|---------|-----------------|
+|script||||
+|artifactVersion||X|X|
+|customData||X|X|
+|customDataMap||X|X|
+|customDataMapTags||X|X|
+|customDataTags||X|X|
+|influxPrefix||X|X|
+|influxServer||X|X|
+|wrapInNode||X|X|
 
 ## Example
 
