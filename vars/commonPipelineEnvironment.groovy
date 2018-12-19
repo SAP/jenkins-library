@@ -85,7 +85,6 @@ class commonPipelineEnvironment implements Serializable {
     def getInfluxCustomData() {
         return influxCustomData
     }
- 
     void setInfluxCustomDataMapEntry(key, value) {
         influxCustomDataMap.put(key, value)
     }
