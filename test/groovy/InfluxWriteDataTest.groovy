@@ -149,7 +149,7 @@ class InfluxWriteDataTest extends BasePiperTest {
         nullScript.commonPipelineEnvironment.setArtifactVersion('1.2.3')
         nullScript.commonPipelineEnvironment.setInfluxCustomDataTags([tag1: 'testTag1'])
         nullScript.commonPipelineEnvironment.setInfluxCustomDataMapEntry('test_data', [key1: 'keyValue1'])
-        nullScript.commonPipelineEnvironment.setInfluxCustomDataMapTags([test_data: [tag1: 'tagValue1']])
+        nullScript.commonPipelineEnvironment.setInfluxCustomDataMapTag('test_data', 'tag1', 'tagValue1')
         jsr.step.influxWriteData(
             //juStabUtils: utils,
             script: nullScript,
