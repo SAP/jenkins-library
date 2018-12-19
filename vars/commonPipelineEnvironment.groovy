@@ -30,7 +30,7 @@ class commonPipelineEnvironment implements Serializable {
     //influxCustomData represents measurement jenkins_custom_data in Influx. Metrics can be written into this map
     private Map influxCustomData = [:]
     //influxCustomDataTags represents tags in Influx. Tags are required in Influx for easier querying data
-    Map influxCustomDataTags = [:]
+    private Map influxCustomDataTags = [:]
 
     String mtarFilePath
 
@@ -105,6 +105,10 @@ class commonPipelineEnvironment implements Serializable {
 
     def getInfluxCustomDataMapTags() {
         return influxCustomDataMapTags
+    }
+
+    def getInfluxCustomDataTags() {
+        return influxCustomDataTags
     }
 
     def setInfluxStepData (dataKey, value) {
