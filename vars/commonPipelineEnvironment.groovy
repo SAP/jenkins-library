@@ -82,47 +82,51 @@ class commonPipelineEnvironment implements Serializable {
             return configProperties[property]
     }
 
+    // goes into measurement jenkins_data
     def getInfluxCustomData() {
         return influxCustomData
     }
-    void setInfluxCustomDataMapEntry(key, value) {
-        influxCustomDataMap.put(key, value)
-    }
 
-    def getInfluxCustomDataMap() {
-        return influxCustomDataMap
-    }
-
+    // goes into measurement jenkins_data
     def setInfluxCustomDataTag(tag, value) {
         influxCustomDataTags[tag] = value
     }
+    // goes into measurement jenkins_data
+    def getInfluxCustomDataTags() {
+        return influxCustomDataTags
+    }
+    
+    def getInfluxCustomDataMap() {
+        return influxCustomDataMap
+    }
+    void setInfluxCustomDataMapEntry(measurement, key, value) {
+        if (!influxCustomDataMap[measurement]) {
+            influxCustomDataMap[measurement] = [:]
+        }
+        influxCustomDataMap[measurement][key] = value
+    }
+
+    def setInfluxStepData(key, value) {
+        setInfluxCustomDataMapEntry('step_data', key, value)
+    }
+    def getInfluxStepData(key) {
+        return influxCustomDataMap.step_data[key]
+    }
+
+    def setPipelineMeasurement(key, value) {
+        setInfluxCustomDataMapEntry('pipeline_data', key, value)
+    }
+    def getPipelineMeasurement(key) {
+        return influxCustomDataMap.pipeline_data[key]
+    }
+    
     def setInfluxCustomDataMapTag(measurement, tag, value) {
         if (!influxCustomDataMapTags[measurement]) {
             influxCustomDataMapTags[measurement] = [:]
         }
         influxCustomDataMapTags[measurement][tag] = value
     }
-
     def getInfluxCustomDataMapTags() {
         return influxCustomDataMapTags
-    }
-
-    def getInfluxCustomDataTags() {
-        return influxCustomDataTags
-    }
-
-    def setInfluxStepData (dataKey, value) {
-        influxCustomDataMap.step_data[dataKey] = value
-    }
-    def getInfluxStepData (dataKey) {
-        return influxCustomDataMap.step_data[dataKey]
-    }
-
-    def setPipelineMeasurement (measurementName, value) {
-        influxCustomDataMap.pipeline_data[measurementName] = value
-    }
-
-    def getPipelineMeasurement (measurementName) {
-        return influxCustomDataMap.pipeline_data[measurementName]
     }
 }
