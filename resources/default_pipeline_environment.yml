@@ -220,7 +220,6 @@ steps:
     deployMode: 'mta'
     warAction: 'deploy'
     vmSize: 'lite'
-    neoCredentialsId: 'CI_CREDENTIALS_ID'
   newmanExecute:
     dockerImage: 'node:8-stretch'
     failOnError: true
