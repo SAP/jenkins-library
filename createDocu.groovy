@@ -351,7 +351,9 @@ stepsDocuDir = stepsDocuDir ?: new File('documentation/docs/steps')
 
 
 if(args.length >= 3)
-    steps << args[2]
+    steps = (args as List).drop(2)  // the first two entries are stepsDir and docuDir
+                                    // the other parts are considered as step names
+
 
 // assign parameters
 //
