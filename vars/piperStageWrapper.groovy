@@ -81,7 +81,7 @@ private void executeStage(script, originalStage, stageName, config, utils) {
             echo "[${STEP_NAME}] Found global interceptor '${globalInterceptorFile}' for ${stageName}."
             // If we call the global interceptor, we will pass on originalStage as parameter
             body = {
-                globalInterceptorScript(body, stageName, config)
+                globalInterceptorScript(script, body, stageName, config)
             }
         }
 
@@ -90,7 +90,7 @@ private void executeStage(script, originalStage, stageName, config, utils) {
             Script projectInterceptorScript = load(projectInterceptorFile)
             echo "[${STEP_NAME}] Running project interceptor '${projectInterceptorFile}' for ${stageName}."
             // If we call the project interceptor, we will pass on body as parameter which contains either originalStage or the repository interceptor
-            projectInterceptorScript(body, stageName, config)
+            projectInterceptorScript(script, body, stageName, config)
         } else {
             //TODO: assign projectInterceptorScript to body as done for globalInterceptorScript, currently test framework does not seem to support this case. Further investigations needed.
             body()
