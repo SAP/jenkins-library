@@ -83,8 +83,8 @@ class commonPipelineEnvironment implements Serializable {
     }
 
     // goes into measurement jenkins_data
-    def setInfluxCustomDataEntry(tag, value) {
-        influxCustomData[tag] = value
+    def setInfluxCustomDataEntry(field, value) {
+        influxCustomData[field] = value
     }
     // goes into measurement jenkins_data
     def getInfluxCustomData() {
@@ -100,11 +100,11 @@ class commonPipelineEnvironment implements Serializable {
         return influxCustomDataTags
     }
 
-    void setInfluxCustomDataMapEntry(measurement, key, value) {
+    void setInfluxCustomDataMapEntry(measurement, field, value) {
         if (!influxCustomDataMap[measurement]) {
             influxCustomDataMap[measurement] = [:]
         }
-        influxCustomDataMap[measurement][key] = value
+        influxCustomDataMap[measurement][field] = value
     }
     def getInfluxCustomDataMap() {
         return influxCustomDataMap
