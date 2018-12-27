@@ -95,7 +95,7 @@ class commonPipelineEnvironment implements Serializable {
     def getInfluxCustomDataTags() {
         return influxCustomDataTags
     }
-    
+
     def getInfluxCustomDataMap() {
         return influxCustomDataMap
     }
@@ -119,8 +119,8 @@ class commonPipelineEnvironment implements Serializable {
     def getPipelineMeasurement(key) {
         return influxCustomDataMap.pipeline_data[key]
     }
-    
-    def setInfluxCustomDataMapTag(measurement, tag, value) {
+
+    def setInfluxCustomDataMapTagsEntry(measurement, tag, value) {
         if (!influxCustomDataMapTags[measurement]) {
             influxCustomDataMapTags[measurement] = [:]
         }
