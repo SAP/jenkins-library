@@ -21,6 +21,7 @@ Executes a closure inside a container in a kubernetes pod. Proxy environment var
 |containerMap|no|`[:]`||
 |containerName|no|||
 |containerPortMappings|no|||
+|containerShell|no|||
 |containerWorkspaces|no|||
 |dockerEnvVars|no|`[:]`||
 |dockerImage|yes|||
@@ -37,6 +38,7 @@ Executes a closure inside a container in a kubernetes pod. Proxy environment var
 
 * `containerName`: optional configuration in combination with containerMap to define the container where the commands should be executed in
 * `containerPortMappings`: Map which defines per docker image the port mappings, like `containerPortMappings: ['selenium/standalone-chrome': [[name: 'selPort', containerPort: 4444, hostPort: 4444]]]`
+* `containerShell` allows to specify the shell to be executed for container with containerName
 * `containerWorkspaces` specifies workspace (=home directory of user) per container. If not provided `dockerWorkspace` will be used. If empty, home directory will not be set.
 * `dockerImage` Name of the docker image that should be used. If empty, Docker is not used.
 * `dockerEnvVars` Environment variables to set in the container, e.g. [http_proxy:'proxy:8080']
