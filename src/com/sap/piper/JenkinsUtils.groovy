@@ -4,6 +4,7 @@ import com.cloudbees.groovy.cps.NonCPS
 import jenkins.model.Jenkins
 import org.jenkinsci.plugins.workflow.steps.MissingContextVariableException
 
+@API
 @NonCPS
 static def isPluginActive(pluginId) {
     return Jenkins.instance.pluginManager.plugins.find { p -> p.isActive() && p.getShortName() == pluginId }

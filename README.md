@@ -50,11 +50,11 @@ provided pipeline library.
 
 ## API
 
-All steps are intended to be used by Pipelines. All the classes / groovy-scripts
-contained in the `src` folder are by default not part of the API and are subjected to change
-without prior notice. Types and methods annotated with `@API` are considered to be API, used e.g.
-from other shared libraries. Changes to those methods/types needs to be announced, disussed and
-agreed.
+All steps (`vars` directory) are intended to be used by Pipelines and are considered API.
+All the classes / groovy-scripts contained in the `src` folder are by default not part of
+the API and are subjected to change without prior notice. Types and methods annotated with
+`@API` are considered to be API, used e.g. from other shared libraries. Changes to those
+methods/types needs to be announced, discussed and agreed.
 
 # Requirements
 
