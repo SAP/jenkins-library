@@ -2,6 +2,7 @@ package com.sap.piper
 
 import com.cloudbees.groovy.cps.NonCPS
 
+@API
 class ConfigurationMerger {
     @NonCPS
     static Map merge(Map configs, Set configKeys, Map defaults) {

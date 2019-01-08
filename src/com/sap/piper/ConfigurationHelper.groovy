@@ -2,6 +2,7 @@ package com.sap.piper
 
 import com.cloudbees.groovy.cps.NonCPS
 
+@API
 class ConfigurationHelper implements Serializable {
 
     static ConfigurationHelper newInstance(Script step, Map config = [:]) {
@@ -31,19 +32,16 @@ class ConfigurationHelper implements Serializable {
         return this
     }
 
-    @API
     ConfigurationHelper mixinGeneralConfig(commonPipelineEnvironment, Set filter = null, Map compatibleParameters = [:]){
         Map stepConfiguration = ConfigurationLoader.generalConfiguration([commonPipelineEnvironment: commonPipelineEnvironment])
         return mixin(stepConfiguration, filter, compatibleParameters)
     }
 
-    @API
     ConfigurationHelper mixinStageConfig(commonPipelineEnvironment, stageName, Set filter = null, Map compatibleParameters = [:]){
         Map stageConfiguration = ConfigurationLoader.stageConfiguration([commonPipelineEnvironment: commonPipelineEnvironment], stageName)
         return mixin(stageConfiguration, filter, compatibleParameters)
     }
 
-    @API
     ConfigurationHelper mixinStepConfig(commonPipelineEnvironment, Set filter = null, Map compatibleParameters = [:]){
         Map stepConfiguration = ConfigurationLoader.stepConfiguration([commonPipelineEnvironment: commonPipelineEnvironment], name)
         return mixin(stepConfiguration, filter, compatibleParameters)
@@ -103,7 +101,6 @@ class ConfigurationHelper implements Serializable {
         return this
     }
 
-    @API
     @NonCPS // required because we have a closure in the
             // method body that cannot be CPS transformed
     Map use(){
@@ -152,7 +149,6 @@ class ConfigurationHelper implements Serializable {
         }
     }
 
-    @API
     ConfigurationHelper withMandatoryProperty(key, errorMessage = null, condition = null){
         if(condition){
             if(condition(this.config))
