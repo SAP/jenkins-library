@@ -21,8 +21,6 @@ import groovy.transform.Field
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS.plus([
     'applicationName',
     'archivePath',
-    'deployAccount', //deprecated, replaced by parameter 'account'
-    'deployHost', //deprecated, replaced by parameter 'host'
     'deployMode',
     'propertiesFile',
     'runtime',
