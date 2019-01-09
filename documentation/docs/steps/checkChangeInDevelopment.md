@@ -2,14 +2,7 @@
 
 ## Description
 
-Checks if a Change Document in SAP Solution Manager is in status 'in development'. The change document id is retrieved from the git commit history. The change document id
-can also be provided via parameter `changeDocumentId`. Any value provided as parameter has a higher precedence than a value from the commit history.
-
-By default the git commit messages between `origin/master` and `HEAD` are scanned for a line like `ChangeDocument : <changeDocumentId>`. The commit
-range and the pattern can be configured. For details see 'parameters' table.
-
-In case the change is not in status 'in development' an `hudson.AbortException` is thrown. In case `failIfStatusIsNotInDevelopment`
-is set to `false`, no `hudson.AbortException` will be thrown. In this case there is only a message in the log stating the change is not in status 'in development'.
+Content here is generated from corresponnding step, see `vars`.
 
 ## Prerequisites
 
