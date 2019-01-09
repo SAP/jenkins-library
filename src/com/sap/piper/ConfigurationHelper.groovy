@@ -101,9 +101,7 @@ class ConfigurationHelper implements Serializable {
     }
 
     ConfigurationHelper addIfNull(key, value){
-        if (config[key] instanceof Boolean) {
-            return this
-        } else if (config[key] == null){
+        if (config[key] == null){
             config[key] = value
         }
         return this
