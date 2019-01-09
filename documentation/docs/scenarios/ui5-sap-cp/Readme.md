@@ -63,7 +63,7 @@ For more information please check the documentation for the [deployment](../../s
 
 ### Prerequisites in Your Project
 
-The steps included in this scenario require additional files in your project and execution environment on your Jenkins. 
+The steps included in this scenario require additional files in your project and execution environment on your Jenkins.
 
 The following template files needs to be provided and adjusted on project level:
 
