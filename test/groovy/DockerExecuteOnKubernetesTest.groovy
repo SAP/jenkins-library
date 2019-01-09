@@ -49,6 +49,7 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
     def containersList = []
     def imageList = []
     def containerName = ''
+    def containerShell = ''
     def envList = []
     def portList = []
     def containerCommands = []
@@ -260,9 +261,23 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
         assertThat(envList, hasItem(hasItem(allOf(hasEntry('key', 'customEnvKey'), hasEntry ('value','customEnvValue')))))
     }
 
+    @Test
+    void testDockerExecuteOnKubernetesWithCustomShell() {
+        jsr.step.dockerExecuteOnKubernetes(
+            script: nullScript,
+            juStabUtils: utils,
+            dockerImage: 'maven:3.5-jdk-8-alpine',
+            containerShell: '/busybox/sh'
+        ) {
+            //nothing to exeute
+        }
+        assertThat(containerShell, is('/busybox/sh'))
+    }
+
 
     private container(options, body) {
         containerName = options.name
+        containerShell = options.shell
         body()
     }
 }
