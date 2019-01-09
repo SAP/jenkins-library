@@ -88,33 +88,6 @@ class CheckChangeInDevelopmentTest extends BasePiperTest {
     }
 
     @Test
-    public void ifChangeIdPresentAsParameterAndFromCommitsChangeIdFromParameterIsUsedTest() {
-        ChangeManagement cm = getChangeManagementUtils(true, '0815')
-
-        jsr.step.checkChangeInDevelopment(
-            script: nullScript,
-            changeDocumentId: '42',
-            cmUtils: cm,
-            changeManagement: [type: 'SOLMAN',
-                               endpoint: 'https://example.org/cm'])
-
-        assert cmUtilReceivedParams.changeId == '42'
-    }
-
-    @Test
-    public void ifChangeIdNotPresentAsParameterButFromCommitsChangeIdFromCommitsIsUsedTest() {
-        ChangeManagement cm = getChangeManagementUtils(true, '0815')
-
-        jsr.step.checkChangeInDevelopment(
-            script: nullScript,
-            cmUtils: cm,
-            changeManagement : [type: 'SOLMAN',
-                                endpoint: 'https://example.org/cm'])
-
-        assert cmUtilReceivedParams.changeId == '0815'
-    }
-
-    @Test
     public void changeDocumentIdRetrievalFailsTest() {
 
         thrown.expect(IllegalArgumentException)

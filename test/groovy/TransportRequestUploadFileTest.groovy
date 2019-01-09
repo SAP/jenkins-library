@@ -73,7 +73,7 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
                                       }
         }
 
-        jsr.step.call(script: nullScript, transportRequestId: '001', applicationId: 'app', filePath: '/path', cmUtils: cm)
+        jsr.step.transportRequestUploadFile(script: nullScript, transportRequestId: '001', applicationId: 'app', filePath: '/path', cmUtils: cm)
     }
 
     @Test
@@ -93,7 +93,7 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
         thrown.expect(IllegalArgumentException)
         thrown.expectMessage("Transport request id not provided (parameter: 'transportRequestId' or via commit history).")
 
-        jsr.step.call(script: nullScript, changeDocumentId: '001', applicationId: 'app', filePath: '/path', cmUtils: cm)
+        jsr.step.transportRequestUploadFile(script: nullScript, changeDocumentId: '001', applicationId: 'app', filePath: '/path', cmUtils: cm)
     }
 
     @Test
@@ -106,7 +106,7 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
         thrown.expect(IllegalArgumentException)
         thrown.expectMessage("ERROR - NO VALUE AVAILABLE FOR applicationId")
 
-        jsr.step.call(script: nullScript, changeDocumentId: '001', transportRequestId: '001', filePath: '/path')
+        jsr.step.transportRequestUploadFile(script: nullScript, changeDocumentId: '001', transportRequestId: '001', filePath: '/path')
     }
 
     @Test
@@ -115,7 +115,7 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
         thrown.expect(IllegalArgumentException)
         thrown.expectMessage("ERROR - NO VALUE AVAILABLE FOR filePath")
 
-        jsr.step.call(script: nullScript, changeDocumentId: '001', transportRequestId: '001', applicationId: 'app')
+        jsr.step.transportRequestUploadFile(script: nullScript, changeDocumentId: '001', transportRequestId: '001', applicationId: 'app')
     }
 
     @Test
@@ -137,7 +137,7 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
         thrown.expect(AbortException)
         thrown.expectMessage("Exception message")
 
-        jsr.step.call(script: nullScript,
+        jsr.step.transportRequestUploadFile(script: nullScript,
                       changeDocumentId: '001',
                       transportRequestId: '001',
                       applicationId: 'app',
@@ -172,7 +172,7 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
             }
         }
 
-        jsr.step.call(script: nullScript,
+        jsr.step.transportRequestUploadFile(script: nullScript,
                       changeManagement: [type: 'CTS'],
                       transportRequestId: '002',
                       filePath: '/path',
@@ -193,6 +193,10 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
 
     @Test
     public void uploadFileToTransportRequestSOLMANSuccessTest() {
+
+        // Here we test only the case where the transportRequestId is
+        // provided via parameters. The other cases are tested by
+        // corresponding tests for StepHelpers#getTransportRequestId(./.)
 
         jlr.expect("[INFO] Uploading file '/path' to transport request '002' of change document '001'.")
         jlr.expect("[INFO] File '/path' has been successfully uploaded to transport request '002' of change document '001'.")
@@ -218,7 +222,7 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
             }
         }
 
-        jsr.step.call(script: nullScript,
+        jsr.step.transportRequestUploadFile(script: nullScript,
                       changeDocumentId: '001',
                       transportRequestId: '002',
                       applicationId: 'app',
@@ -289,7 +293,7 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
             }
         }
 
-        jsr.step.call(script: nullScript,
+        jsr.step.transportRequestUploadFile(script: nullScript,
                       changeDocumentId: '001',
                       transportRequestId: '002',
                       applicationId: 'app',
@@ -319,7 +323,7 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
             }
         }
 
-        jsr.step.call(script: nullScript,
+        jsr.step.transportRequestUploadFile(script: nullScript,
                       changeDocumentId: '001',
                       transportRequestId: '002',
                       applicationId: 'app',
@@ -347,7 +351,7 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
             }
         }
 
-        jsr.step.call(script: nullScript,
+        jsr.step.transportRequestUploadFile(script: nullScript,
                       changeDocumentId: '001',
                       transportRequestId: '001',
                       applicationId: 'app',
@@ -361,7 +365,7 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
         thrown.expectMessage('Invalid backend type: \'DUMMY\'. Valid values: [SOLMAN, CTS, NONE]. ' +
                              'Configuration: \'changeManagement/type\'.')
 
-        jsr.step.call(script: nullScript,
+        jsr.step.transportRequestUploadFile(script: nullScript,
                       applicationId: 'app',
                       filePath: '/path',
                       changeManagement: [type: 'DUMMY'])
@@ -373,7 +377,7 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
 
         jlr.expect('[INFO] Change management integration intentionally switched off.')
 
-        jsr.step.call(script: nullScript,
+        jsr.step.transportRequestUploadFile(script: nullScript,
             changeManagement: [type: 'NONE'])
     }
 

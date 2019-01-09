@@ -1,6 +1,9 @@
 plugins:
   codenarc:
     enabled: true
+    checks:
+      BooleanGetBoolean:
+        enabled: false
   editorconfig:
     enabled: true
     config:
@@ -17,5 +20,9 @@ plugins:
       - FIXME
   markdownlint:
     enabled: true
+    checks:
+      # https://github.com/DavidAnson/markdownlint/blob/master/doc/Rules.md#md013---line-length
+      MD013:
+        enabled: false
   shellcheck:
     enabled: true

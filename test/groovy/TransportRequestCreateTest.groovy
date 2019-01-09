@@ -69,7 +69,7 @@ public class TransportRequestCreateTest extends BasePiperTest {
                                       }
         }
 
-        jsr.step.call(script: nullScript, developmentSystemId: '001', cmUtils: cm)
+        jsr.step.transportRequestCreate(script: nullScript, developmentSystemId: '001', cmUtils: cm)
     }
 
     @Test
@@ -78,7 +78,7 @@ public class TransportRequestCreateTest extends BasePiperTest {
         thrown.expect(IllegalArgumentException)
         thrown.expectMessage("ERROR - NO VALUE AVAILABLE FOR developmentSystemId")
 
-        jsr.step.call(script: nullScript, changeDocumentId: '001')
+        jsr.step.transportRequestCreate(script: nullScript, changeDocumentId: '001')
     }
 
     @Test
@@ -101,7 +101,7 @@ public class TransportRequestCreateTest extends BasePiperTest {
         thrown.expect(AbortException)
         thrown.expectMessage("Exception message.")
 
-        jsr.step.call(script: nullScript, changeDocumentId: '001', developmentSystemId: '001', cmUtils: cm)
+        jsr.step.transportRequestCreate(script: nullScript, changeDocumentId: '001', developmentSystemId: '001', cmUtils: cm)
     }
 
     @Test
@@ -127,9 +127,9 @@ public class TransportRequestCreateTest extends BasePiperTest {
             }
         }
 
-        def transportId = jsr.step.call(script: nullScript, changeDocumentId: '001', developmentSystemId: '001', cmUtils: cm)
+        jsr.step.transportRequestCreate(script: nullScript, changeDocumentId: '001', developmentSystemId: '001', cmUtils: cm)
 
-        assert transportId == '001'
+        assert nullScript.commonPipelineEnvironment.getTransportRequestId() == '001'
         assert result == [changeId: '001',
                          developmentSystemId: '001',
                          cmEndpoint: 'https://example.org/cm',
@@ -166,14 +166,14 @@ public class TransportRequestCreateTest extends BasePiperTest {
             }
         }
 
-        def transportId = jsr.step.call(script: nullScript,
-                                        transportType: 'W',
-                                        targetSystem: 'XYZ',
-                                        description: 'desc',
-                                        changeManagement: [type: 'CTS'],
-                                        cmUtils: cm)
+        jsr.step.call(script: nullScript,
+                        transportType: 'W',
+                        targetSystem: 'XYZ',
+                        description: 'desc',
+                        changeManagement: [type: 'CTS'],
+                        cmUtils: cm)
 
-        assert transportId == '001'
+        assert nullScript.commonPipelineEnvironment.getTransportRequestId() == '001'
         assert result == [transportType: 'W',
                          targetSystemId: 'XYZ',
                          description: 'desc',
@@ -191,7 +191,7 @@ public class TransportRequestCreateTest extends BasePiperTest {
 
         jlr.expect('[INFO] Change management integration intentionally switched off.')
 
-        jsr.step.call(script: nullScript,
+        jsr.step.transportRequestCreate(script: nullScript,
             changeManagement: [type: 'NONE'])
     }
 }

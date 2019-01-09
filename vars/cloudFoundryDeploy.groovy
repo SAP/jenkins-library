@@ -6,7 +6,7 @@ import com.sap.piper.CfManifestUtils
 
 import groovy.transform.Field
 
-@Field String STEP_NAME = 'cloudFoundryDeploy'
+@Field String STEP_NAME = getClass().getName()
 
 @Field Set GENERAL_CONFIG_KEYS = STEP_CONFIG_KEYS
 
@@ -15,6 +15,7 @@ import groovy.transform.Field
     'deployUser',
     'deployTool',
     'deployType',
+    'keepOldInstance',
     'dockerImage',
     'dockerWorkspace',
     'mtaDeployParameters',
@@ -57,7 +58,10 @@ void call(Map parameters = [:]) {
 
         echo "[${STEP_NAME}] General parameters: deployTool=${config.deployTool}, deployType=${config.deployType}, cfApiEndpoint=${config.cloudFoundry.apiEndpoint}, cfOrg=${config.cloudFoundry.org}, cfSpace=${config.cloudFoundry.space}, cfCredentialsId=${config.cloudFoundry.credentialsId}, deployUser=${config.deployUser}"
 
-        config.stashContent = utils.unstashAll(config.stashContent)
+        //make sure that all relevant descriptors, are available in workspace
+        utils.unstashAll(config.stashContent)
+        //make sure that for further execution whole workspace, e.g. also downloaded artifacts are considered
+        config.stashContent = []
 
         if (config.deployTool == 'mtaDeployPlugin') {
             // set default mtar path
@@ -65,7 +69,7 @@ void call(Map parameters = [:]) {
                 .addIfEmpty('mtaPath', config.mtaPath?:findMtar())
                 .use()
 
-            dockerExecute(dockerImage: config.dockerImage, dockerWorkspace: config.dockerWorkspace, stashContent: config.stashContent) {
+            dockerExecute(script: script, dockerImage: config.dockerImage, dockerWorkspace: config.dockerWorkspace, stashContent: config.stashContent) {
                 deployMta(config)
             }
             return
@@ -84,6 +88,7 @@ void call(Map parameters = [:]) {
             echo "[${STEP_NAME}] CF native deployment (${config.deployType}) with cfAppName=${config.cloudFoundry.appName}, cfManifest=${config.cloudFoundry.manifest}, smokeTestScript=${config.smokeTestScript}"
 
             dockerExecute (
+                script: script,
                 dockerImage: config.dockerImage,
                 dockerWorkspace: config.dockerWorkspace,
                 stashContent: config.stashContent,
@@ -116,16 +121,21 @@ def deployCfNative (config) {
         passwordVariable: 'password',
         usernameVariable: 'username'
     )]) {
-        def deployCommand = 'push'
+        def deployCommand = selectCfDeployCommandForDeployType(config)
+
         if (config.deployType == 'blue-green') {
-            deployCommand = 'blue-green-deploy'
             handleLegacyCfManifest(config)
         } else {
             config.smokeTest = ''
         }
 
+        def blueGreenDeployOptions = deleteOptionIfRequired(config)
+
         // check if appName is available
         if (config.cloudFoundry.appName == null || config.cloudFoundry.appName == '') {
+            if (config.deployType == 'blue-green') {
+                error "[${STEP_NAME}] ERROR: Blue-green plugin requires app name to be passed (see https://github.com/bluemixgaragelondon/cf-blue-green-deploy/issues/27)"
+            }
             if (fileExists(config.cloudFoundry.manifest)) {
                 def manifest = readYaml file: config.cloudFoundry.manifest
                 if (!manifest || !manifest.applications || !manifest.applications[0].name)
@@ -138,15 +148,39 @@ def deployCfNative (config) {
 
         sh """#!/bin/bash
             set +x  
+            set -e
             export HOME=${config.dockerWorkspace}
             cf login -u \"${username}\" -p '${password}' -a ${config.cloudFoundry.apiEndpoint} -o \"${config.cloudFoundry.org}\" -s \"${config.cloudFoundry.space}\"
             cf plugins
-            cf ${deployCommand} ${config.cloudFoundry.appName?"\"${config.cloudFoundry.appName}\"":''} -f \"${config.cloudFoundry.manifest}\" ${config.smokeTest}"""
-        def retVal = sh script: "cf app \"${config.cloudFoundry.appName}-old\"", returnStatus: true
-        if (retVal == 0) {
-            sh "cf delete \"${config.cloudFoundry.appName}-old\" -r -f"
-        }
+            cf ${deployCommand} ${config.cloudFoundry.appName ?: ''} ${blueGreenDeployOptions} -f '${config.cloudFoundry.manifest}' ${config.smokeTest}
+            ${stopOldAppIfRequired(config)}
+            """
         sh "cf logout"
+    }
+}
+
+private String selectCfDeployCommandForDeployType(Map config) {
+    if (config.deployType == 'blue-green') {
+        return 'blue-green-deploy'
+    } else {
+        return 'push'
+    }
+}
+
+private String deleteOptionIfRequired(Map config) {
+    boolean deleteOldInstance = !config.keepOldInstance
+    if (deleteOldInstance && config.deployType == 'blue-green') {
+        return '--delete-old-apps'
+    } else {
+        return ''
+    }
+}
+
+private String stopOldAppIfRequired(Map config) {
+    if (config.keepOldInstance && config.deployType == 'blue-green') {
+        return "cf stop ${config.cloudFoundry.appName}-old"
+    } else {
+        return ''
     }
 }
 
@@ -167,6 +201,7 @@ def deployMta (config) {
         sh """#!/bin/bash
             export HOME=${config.dockerWorkspace}
             set +x
+            set -e
             cf api ${config.cloudFoundry.apiEndpoint}
             cf login -u ${username} -p '${password}' -a ${config.cloudFoundry.apiEndpoint} -o \"${config.cloudFoundry.org}\" -s \"${config.cloudFoundry.space}\"
             cf plugins

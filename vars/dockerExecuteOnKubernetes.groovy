@@ -7,7 +7,7 @@ import com.sap.piper.k8s.SystemEnv
 import groovy.transform.Field
 import hudson.AbortException
 
-@Field def STEP_NAME = 'dockerExecuteOnKubernetes'
+@Field def STEP_NAME = getClass().getName()
 @Field def PLUGIN_ID_KUBERNETES = 'kubernetes'
 @Field Set GENERAL_CONFIG_KEYS = ['jenkinsKubernetes']
 @Field Set PARAMETER_KEYS = [
@@ -16,6 +16,7 @@ import hudson.AbortException
     'containerMap', //specify multiple images which then form a kubernetes pod, example: containerMap: ['maven:3.5-jdk-8-alpine': 'mavenexecute','selenium/standalone-chrome': 'selenium']
     'containerName', //optional configuration in combination with containerMap to define the container where the commands should be executed in
     'containerPortMappings', //map which defines per docker image the port mappings, like containerPortMappings: ['selenium/standalone-chrome': [[name: 'selPort', containerPort: 4444, hostPort: 4444]]]
+    'containerShell', // allows to specify the shell to be executed for container with containerName
     'containerWorkspaces', //specify workspace (=home directory of user) per container. If not provided dockerWorkspace will be used. If empty, home directory will not be set.
     'dockerImage',
     'dockerWorkspace',
@@ -77,7 +78,11 @@ void executeOnPod(Map config, utils, Closure body) {
         podTemplate(getOptions(config)) {
             node(config.uniqueId) {
                 if (config.containerName) {
-                    container(name: config.containerName){
+                    Map containerParams = [name: config.containerName]
+                    if (config.containerShell) {
+                        containerParams.shell = config.containerShell
+                    }
+                    container(containerParams){
                         try {
                             utils.unstashAll(config.stashContent)
                             body()

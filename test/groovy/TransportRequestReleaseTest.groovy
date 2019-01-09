@@ -62,7 +62,7 @@ public class TransportRequestReleaseTest extends BasePiperTest {
         thrown.expect(IllegalArgumentException)
         thrown.expectMessage("Change document id not provided (parameter: 'changeDocumentId' or via commit history).")
 
-        jsr.step.call(script: nullScript, transportRequestId: '001', cmUtils: cm)
+        jsr.step.transportRequestRelease(script: nullScript, transportRequestId: '001', cmUtils: cm)
     }
 
     @Test
@@ -80,7 +80,7 @@ public class TransportRequestReleaseTest extends BasePiperTest {
         thrown.expect(IllegalArgumentException)
         thrown.expectMessage("Transport request id not provided (parameter: 'transportRequestId' or via commit history).")
 
-        jsr.step.call(script: nullScript, changeDocumentId: '001', cmUtils: cm)
+        jsr.step.transportRequestRelease(script: nullScript, changeDocumentId: '001', cmUtils: cm)
     }
 
     @Test
@@ -102,11 +102,15 @@ public class TransportRequestReleaseTest extends BasePiperTest {
             }
         }
 
-        jsr.step.call(script: nullScript, changeDocumentId: '001', transportRequestId: '001', cmUtils: cm)
+        jsr.step.transportRequestRelease(script: nullScript, changeDocumentId: '001', transportRequestId: '001', cmUtils: cm)
     }
 
     @Test
     public void releaseTransportRequestSuccessTest() {
+
+        // Here we test only the case where the transportRequestId is
+        // provided via parameters. The other cases are tested by
+        // corresponding tests for StepHelpers#getTransportRequestId(./.)
 
         jlr.expect("[INFO] Closing transport request '002' for change document '001'.")
         jlr.expect("[INFO] Transport Request '002' has been successfully closed.")
@@ -130,7 +134,7 @@ public class TransportRequestReleaseTest extends BasePiperTest {
             }
         }
 
-        jsr.step.call(script: nullScript, changeDocumentId: '001', transportRequestId: '002', cmUtils: cm)
+        jsr.step.transportRequestRelease(script: nullScript, changeDocumentId: '001', transportRequestId: '002', cmUtils: cm)
 
         assert receivedParams == [type: BackendType.SOLMAN,
                                   changeId: '001',
@@ -145,7 +149,7 @@ public class TransportRequestReleaseTest extends BasePiperTest {
 
         jlr.expect('[INFO] Change management integration intentionally switched off.')
 
-        jsr.step.call(script: nullScript,
+        jsr.step.transportRequestRelease(script: nullScript,
             changeManagement: [type: 'NONE'])
     }
 }

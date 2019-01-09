@@ -109,6 +109,7 @@ public class CommonStepsTest extends BasePiperTest{
             'pipelineExecute', // special step (infrastructure)
             'commonPipelineEnvironment', // special step (infrastructure)
             'handlePipelineStepErrors', // special step (infrastructure)
+            'piperStageWrapper' //intended to be called from within stages
             ]
 
     @Test
@@ -216,7 +217,6 @@ public class CommonStepsTest extends BasePiperTest{
         def stepsWithCallMethodsOtherThanVoid = []
 
         def whitelist = [
-            'transportRequestCreate',
             'durationMeasure',
             ]
 
@@ -238,7 +238,7 @@ public class CommonStepsTest extends BasePiperTest{
     private static getSteps() {
         List steps = []
         new File('vars').traverse(type: FileType.FILES, maxDepth: 0)
-            { if(it.getName().endsWith('.groovy')) steps << (it =~ /vars\/(.*)\.groovy/)[0][1] }
+            { if(it.getName().endsWith('.groovy')) steps << (it =~ /vars[\\\/](.*)\.groovy/)[0][1] }
         return steps
     }
 }
