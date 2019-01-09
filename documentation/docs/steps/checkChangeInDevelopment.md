@@ -8,6 +8,9 @@ can also be provided via parameter `changeDocumentId`. Any value provided as par
 By default the git commit messages between `origin/master` and `HEAD` are scanned for a line like `ChangeDocument : <changeDocumentId>`. The commit
 range and the pattern can be configured. For details see 'parameters' table.
 
+In case the change is not in status 'in development' an `hudson.AbortException` is thrown. In case `failIfStatusIsNotInDevelopment`
+is set to `false`, no `hudson.AbortException` will be thrown. In this case there is only a message in the log stating the change is not in status 'in development'.
+
 ## Prerequisites
 
 * **[Change Management Client 2.0.0 or compatible version](http://central.maven.org/maven2/com/sap/devops/cmclient/dist.cli/)** - available for download on Maven Central.
@@ -42,7 +45,7 @@ The step is configured using a customer configuration file provided as
 resource in an custom shared library.
 
 ```groovy
-@Library('piper-library-os@master') _
+@Library('piper-lib-os@master') _
 
 // the shared lib containing the additional configuration
 // needs to be configured in Jenkins
@@ -85,11 +88,6 @@ The properties can also be configured on a per-step basis:
 ```
 
 The parameters can also be provided when the step is invoked. For examples see below.
-
-## Return value
-
-`true` in case the change document is in status 'in development'. Otherwise an hudson.AbortException is thrown. In case `failIfStatusIsNotInDevelopment`
-is set to `false`, `false` is returned in case the change document is not in status 'in development'
 
 ## Exceptions
 
