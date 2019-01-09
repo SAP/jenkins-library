@@ -72,7 +72,7 @@ class TemplateHelper {
 
         parameters.keySet().toSorted().each {
             def props = parameters.get(it)
-            t += "| `${it}` | ${props.GENERAL_CONFIG ? 'X' : ''} | ${props.STEP_CONFIG ? 'X' : ''} | ${props.PARAMS ? 'X' : ''} |\n"
+            t += "| `${it}` | ${props.GENERAL_CONFIG ? 'X' : ''} | ${props.STEP_CONFIG ? 'X' : ''} | ${props.STAGE_CONFIG ? 'X' : ''} |\n"
         }
 
         t
@@ -301,7 +301,7 @@ class Helper {
 
         params.put('STEP_CONFIG', script.STEP_CONFIG_KEYS ?: [])
         params.put('GENERAL_CONFIG', script.GENERAL_CONFIG_KEYS ?: [] )
-        params.put('PARAMS', script.PARAMETER_KEYS ?: [] )
+        params.put('STAGE_CONFIG', script.PARAMETER_KEYS ?: [] )
 
         return params
     }
@@ -494,7 +494,7 @@ def handleStep(stepName, prepareDefaultValuesStep, gse) {
 
                                 GENERAL_CONFIG: false,
                                 STEP_CONFIG: false,
-                                PARAMS: false
+                                STAGE_CONFIG: false
                             ]
 
     // END special handling for 'script' parameter
