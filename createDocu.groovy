@@ -65,7 +65,7 @@ class TemplateHelper {
         def t = '''|
                    |We recommend to define values of step parameters via [config.yml file](../configuration.md).
                    |
-                   |In following sections the configuration is possible:\n\n'''.stripMargin()
+                   |In following sections of the config.yml the configuration is possible:\n\n'''.stripMargin()
 
         t += '| parameter | general | step | stage |\n'
         t += '|-----------|---------|------|-------|\n'
@@ -494,7 +494,7 @@ def handleStep(stepName, prepareDefaultValuesStep, gse) {
 
                                 GENERAL_CONFIG: false,
                                 STEP_CONFIG: false,
-                                PARAMS: true
+                                PARAMS: false
                             ]
 
     // END special handling for 'script' parameter
