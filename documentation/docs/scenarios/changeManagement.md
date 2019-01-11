@@ -53,8 +53,6 @@ node() {
 general:
   changeManagement:
       endpoint: 'https://<backend-system>/sap/opu/odata/sap/AI_CRM_GW_CM_CI_SRV'
-      git:
-          from: 'HEAD~1'
 credentialsId: 'CM'
      type: 'SOLMAN'
 steps:
