@@ -1,7 +1,7 @@
-void call(script, body, stageName, config) {
-    echo "Stage Name: ${stageName}"
-    echo "Config: ${config}"
-    body()
-    echo "Branch: ${script.commonPipelineEnvironment.gitBranch}"
+void call(Map params) {
+    echo "Stage Name: ${params.stageName}"
+    echo "Config: ${params.config}"
+    params.originalStage()
+    echo "Branch: ${params.script.commonPipelineEnvironment.gitBranch}"
 }
 return this
