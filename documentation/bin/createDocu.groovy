@@ -1,6 +1,7 @@
 import groovy.io.FileType;
 import org.yaml.snakeyaml.Yaml
 import org.codehaus.groovy.control.CompilerConfiguration
+import com.sap.piper.GenerateDocumentation
 import com.sap.piper.DefaultValueCache
 import java.util.regex.Matcher
 
@@ -324,6 +325,25 @@ class Helper {
         if(p in Map) getValue(p, pPath.tail())
         else return p
     }
+
+    static resolveDocuRelevantSteps(GroovyScriptEngine gse, File stepsDir) {
+
+        def docuRelevantSteps = []
+
+        stepsDir.traverse(type: FileType.FILES, maxDepth: 0) {
+            if(it.getName().endsWith('.groovy')) {
+                def scriptName = (it =~  /vars\/(.*)\.groovy/)[0][1]
+                def stepScript = gse.createScript("${scriptName}.groovy", new Binding())
+                for (def method in stepScript.getClass().getMethods()) {
+                    if(method.getName() == 'call' && method.getAnnotation(GenerateDocumentation) != null) {
+                        docuRelevantSteps << scriptName
+                        break
+                    }
+                }
+            }
+        }
+        docuRelevantSteps
+    }
 }
 
 roots = [
@@ -374,17 +394,15 @@ if( !stepsDir.exists() ) {
 // sanity checks
 //
 
+def gse = new GroovyScriptEngine( [ stepsDir.getName()  ] as String[] , getClass().getClassLoader() )
 
 //
 // find all the steps we have to document (if no step has been provided from outside)
 if( ! steps) {
-    stepsDir.traverse(type: FileType.FILES, maxDepth: 0)
-        { if(it.getName().endsWith('.groovy')) steps << (it =~ /vars\/(.*)\.groovy/)[0][1] }
+    steps = Helper.resolveDocuRelevantSteps(gse, stepsDir)
 } else {
     System.err << "[INFO] Generating docu only for step ${steps.size > 1 ? 's' : ''} ${steps}.\n"
 }
-
-def gse = new GroovyScriptEngine( [ stepsDir.getName()  ] as String[] , getClass().getClassLoader() )
 
 def prepareDefaultValuesStep = Helper.getPrepareDefaultValuesStep(gse)
 
