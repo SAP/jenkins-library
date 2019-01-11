@@ -1,5 +1,6 @@
 import static com.sap.piper.Prerequisites.checkScript
 
+import com.sap.piper.GenerateDocumentation
 import com.sap.piper.GitUtils
 import com.sap.piper.Utils
 import groovy.transform.Field
@@ -37,6 +38,7 @@ import static com.sap.piper.cm.StepHelpers.getBackendTypeAndLogInfoIfCMIntegrati
  * range and the pattern can be configured. For details see 'parameters' table.
  *
  */
+@GenerateDocumentation
 void call(parameters = [:]) {
 
     handlePipelineStepErrors (stepName: STEP_NAME, stepParameters: parameters) {
