@@ -13,6 +13,7 @@ Set up an agile development process which includes Jenkins CI and automatically 
 
 In many SAP development scenarios, it is vital to synchronize both backend and frontend deliveries. These deliveries are typically an SAP UI5 application and an ABAP backend from which it is served. The SAP UI5 parts are often developed agilely and use continuous integration pipelines that automatically build, test, and deploy the application.
 In this scenario, we want to show how an agile development process which includes Jenkins CI can automatically feed changes into SAP Solution Manager. In SAP Solution Manager, the parts of the application stack come together and can be subject to classic change and transport management.
+
 The basic work flow is as follows:
 
 1. Check SAP Solution Manager for a change document.
@@ -88,5 +89,4 @@ For the detailed description of the relevant parameters, see:
 ## Variations
 
 * Use the `landscape.yaml` for global landscape configuration. See [Configuration](https://sap.github.io/jenkins-library/configuration/).
-* Create a transport request on the fly. See [transportRequestCreate](https://sap.github.io/jenkins-library/steps/transportRequestCreate/) and [transportRequestRelease]
-(https://sap.github.io/jenkins-library/steps/transportRequestRelease/).
+* Create a transport request on the fly. See [transportRequestCreate](https://sap.github.io/jenkins-library/steps/transportRequestCreate/) and [transportRequestRelease](https://sap.github.io/jenkins-library/steps/transportRequestRelease/).
