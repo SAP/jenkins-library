@@ -1,343 +1,92 @@
-# Change Request Management and Continuous Delivery in Hybrid Scenarios
+# Hybrid Application Development with Jenkins and SAP Solution Manager
 
-Combine both ABAP and non-ABAP sources and transport them through a test landscape to a productive landscape.
+Set up an agile development process which includes Jenkins CI and automatically feeds changes into SAP Solution Manager.
 
-### Prerequisites
+## Prerequisites
 
-You have downloaded the Change Management Client 2.0.0 or a compatible version. See [Maven Central Repository](http://central.maven.org/maven2/com/sap/devops/cmclient/dist.cli/).
+* You meet the requirements for Project “Piper”. See [Requirements](https://github.com/SAP/jenkins-library/blob/master/README.md#requirements).
+* You have set up Project “Piper”. See [Download and Installation](https://github.com/SAP/jenkins-library/blob/master/README.md#download-and-installation).
+* You have installed SAP Solution Manager 7.2 SP6. See [README](https://github.com/SAP/devops-cm-client/blob/master/README.md).
+* You meet the prerequisites for the mtaBuild. See [mtaBuild](https://sap.github.io/jenkins-library/steps/mtaBuild/).
 
-### Procedure
+## Context
 
-1. Check if in SAP Solution Manager, there is a change document in status "in development". See [Check for a Change Document in Status "In Development" (`checkChangeInDevelopment`)](#check-for-a-change-document-in-status-in-development-checkchangeindevelopment).
-2. Create a transport request for a change document in SAP Solution Manager. See [(Optional) Create a Transport Request (`transportRequestCreate`)](#optional-create-a-transport-request-transportrequestcreate).
-3. (Optional) Upload a file to your transport request for a change document in SAP Solution Manager. See [Upload a File to Your Transport Request (`transportRequestUploadFile`)](#upload-a-file-to-a-transport-request-transportrequestuploadfile).
-4. Release your transport request for a change document in SAP Solution Manager. See [(Optional) Release a Transport Request (`transportRequestRelease`)](#optional-release-a-transport-request-transportrequestrelease).
+In many SAP development scenarios, it is vital to synchronize both backend and frontend deliveries. These deliveries are typically an SAP UI5 application and an ABAP backend from which it is served. The SAP UI5 parts are often developed agilely and use continuous integration pipelines that automatically build, test, and deploy the application.
+In this scenario, we want to show how an agile development process which includes Jenkins CI can automatically feed changes into SAP Solution Manager. In SAP Solution Manager, the parts of the application stack come together and can be subject to classic change and transport management.
+The basic work flow is as follows:
 
+1. Check SAP Solution Manager for a change document.
+2. Make sure that in SAP Solution Manager, there are transport requests for the components that are part of the delivery (for example, parts of SAP Cloud Platform and S/4HANA).
+3. Your development team makes changes which trigger the Jenkins pipeline.
+4. Jenkins builds and validates the changes and attaches them to the respective transport request.
+5. When the development team has finished, the change document in SAP Solution Manager is set to status “in test” and all components are transported to the Q system.
 
-## Check for a Change Document in Status "In Development" (`checkChangeInDevelopment`)
+## Code
 
-Check if in SAP Solution Manager, there is a change document in status "in development".
+### Jenkinsfile
 
-
-### Context
-
-The change document ID is either retrieved from the Git commit history or provided through the parameter `changeDocumentId`.
-
-
-### Mandatory Parameters
-
-| Parameter | Description |
-| --- | --- |
-| `script` | The common script envoronment of the running Jenkinsfile. The reference to the script that calls the pipeline step is privided by the `this` parameter, as in `script: this`. This allows the function to access the `commonPipelineEnvironment` to retrieve configuration parameters. |
-| `changeDocumentId` | The ID of the change document to transport. If you do not provide it specifically, it is retrieved from the Git commit history. |
-| `changeManagement/credentialsId` | The ID of the credentials that are required to connect to SAP Solution Manager. The credentials have to be maintained on Jenkins. |
-| `changeManagement/endpoint` | The address of SAP Solution Manager. |
-
-
-For an overview of the optional parameters, see **Parameters** in [checkChangeInDevelopment](https://sap.github.io/jenkins-library/steps/checkChangeInDevelopment/).
-
-### Step Configuration
-
-The step is configured by using a customer configuration file that is provided as a resource in a custom shared library.
 ```
-@Library('piper-library-os@master') _
+@Library('piper-library-os') _
 
-// the shared lib containing the additional configuration
-// must be configured in Jenkins
-@Library(foo@master') __
+node() {
 
-// in the shared lib denoted by 'foo', the additional configuration file
-// must be located under 'resources' ('resoures/myConfig.yml')
-prepareDefaultValues script: this, customDefaults: 'myConfig.yml'
+  stage('prepare') {
+      checkout scm
+      setupCommonPipelineEnvironment script:this
+      checkChangeInDevelopment script: this
+  }
+
+  stage('buildMta') {
+      mtaBuild script: this
+  }
+  stage('uploadToTransportRequest') {
+      transportRequestUploadFile script:this
+  }
+}
 ```
-Example content of `resources/myConfig.yaml` in branch `master` of the repository denoted by `foo`:
+
+### Configuration (`.pipeline/config.yml`)
+
 ```
+#Steps Specific Configuration
 general:
   changeManagement:
-    changeDocumentLabel: 'ChangeDocument\s?:'
-    cmClientOpts: '-Djavax.net.ssl.trustStore=<path to truststore>'
-    credentialsId: 'CM'
-    endpoint: 'https://example.org/cm'
-    git:
-      from: 'HEAD~1'
-      to: 'HEAD'
-      format: '%b'
-```
-The properties configured in section `general/changeManagement` are shared between all steps related to change management.
-You can also configure the properties on a per-step basis, for example:
-```  
-[...]
+      endpoint: 'https://<backend-system>/sap/opu/odata/sap/AI_CRM_GW_CM_CI_SRV'
+      git:
+          from: 'HEAD~1'
+credentialsId: 'CM'
+     type: 'SOLMAN'
 steps:
-  checkChangeInDevelopment:
-    changeManagement:
-      endpoint: 'https://example.org/cm'
-      [...]
-    failIfStatusIsNotInDevelopment: true
-```
-The parameters can also be provided when the step is invoked. See [Examples](#Examples).
-
-### Result
-
-* If the change document is in status "in development", the return value is `true`.
-* If the change document is not in status "in development", a `hudson.AbortException` is thrown.
-
-For exceptions, see **Exceptions** in [checkChangeInDevelopment](https://sap.github.io/jenkins-library/steps/checkChangeInDevelopment/).
-
-### Examples
-* All mandatory parameters are provided through the configuration and the `changeDocumentId` is retrieved from the Git commit history:
-```
-checkChangeInDevelopment script:this
-```
-* An explicit endpoint is provided and the `changeDocumentId` is searched for starting from the previous commit (`HEAD~1`):
-```
-checkChangeInDevelopment script:this,
-                         changeManagement: [
-                           endpoint: 'https:example.org/cm',
-                           git: [
-                             from: 'HEAD~1'
-                           ]
-                         ]
+  mtaBuild:
+    buildTarget: 'NEO'
+    transportRequestUploadFile:
+      applicationId: 'HCP'
 ```
 
-## (Optional) Create a Transport Request (`transportRequestCreate`)
+## Result
 
-Create a transport request for a change document in SAP Solution Manager.
-
-### Context
-
-Depending on your workflow, this step is optional. If you already have a transport request, define it in the commit message. For example:
+This pipeline checks the git commit for a valid change ID in status “in development” on the SAP Solution Manager endpoint. It uses credentials that must be store on Jenkins under the label “CM”. Commit messages typically look as follows:
 
 ```
-Lorem ipsum dolor sit amet, cum sucipat
+My change
 
-    sed diam nonumy eirmod tempor invidunt ut labore
-    et dolore magna aliquyam erat, sed diam voluptua.
-    At vero eos et accusam et justo duo
-    dolores et ea rebum nisi bene.
+Change description
 
-    TransportRequest: ZZZDK900026
-```
-Per default, it is expected that one of the commits between origin/master and the HEAD branch contains this transport request ID.
-
-### Mandatory parameters
-
-| Parameter | Description |
-| --- | --- |
-| `script` | The common script envoronment of the running Jenkinsfile. The reference to the script that calls the pipeline step is privided by the `this` parameter, as in `script: this`. This allows the function to access the `commonPipelineEnvironment` to retrieve configuration parameters. |
-| `changeManagement/credentialsId` |  The ID of the credentials that are required to connect to SAP Solution Manager. |
-| `changeManagement/endpoint` | The address of SAP Solution Manager. |
-
-For an overview of the optional parameters, see **Parameters** in [transportRequestCreate](https://sap.github.io/jenkins-library/steps/transportRequestCreate/).
-
-### Step configuration
-
-The step is configured by using a customer configuration file that is provided as a resource in a custom shared library.
-```
-@Library('piper-library-os@master') _
-
-// the shared lib containing the additional configuration
-// must be configured in Jenkins
-@Library(foo@master') __
-
-// in the shared lib denoted by 'foo', the additional configuration file
-// must be located under 'resources' ('resoures/myConfig.yml')
-prepareDefaultValues script: this, customDefaults: 'myConfig.yml'
-```
-Example content of `resources/myConfig.yaml` in branch `master` of the repository denoted by `foo`:
-```
-general:
-  changeManagement:
-    changeDocumentLabel: 'ChangeDocument\s?:'
-    cmClientOpts: '-Djavax.net.ssl.trustStore=<path to truststore>'
-    credentialsId: 'CM'
-    type: 'SOLMAN'
-    endpoint: 'https://example.org/cm'
-    git:
-      from: 'HEAD~1'
-      to: 'HEAD'
-      format: '%b'
-```
-The properties configured in section `general/changeManagement` are shared between all steps related to change management.
-You can also configure the properties on a per-step basis, for example:
-```
-[...]
- steps:
-   transportRequestCreate:
-     changeManagement:
-       type: 'SOLMAN'
-       endpoint: 'https://example.org/cm'
-       [...]
-```
-The parameters can also be provided when the step is invoked. See [Examples](#Examples).
-
-### Result
-
-As a result, you get the ID of the newly created transport request.
-
-For exceptions, see **Exceptions** in [transportRequestCreate](https://sap.github.io/jenkins-library/steps/transportRequestCreate/).
-
-### Example
-
-```
-def transportRequestId = transportRequestCreate script:this,
-                                                changeDocumentId: '001,'
-                                                changeManagement: [
-                                                  type: 'SOLMAN'
-                                                  endpoint: 'https://example.org/cm'
-                                                ]
+ChanMgmtId: …
 ```
 
-## Upload a File to a Transport Request (`transportRequestUploadFile`)
+If the change document is OK, a transport request is created on the fly. Then, the project is built as an MTA and attached to the transport request. After that, the change is further processed in SAP Solution Manager (for example, set to status "test" or "transport").
 
-Upload a file to your transport request for a change document in SAP Solution Manager.
+## Parameters
 
-### Prerequisites
+For the detailed description of the relevant parameters, see:
 
-You have built your Java sources. For an example, see [mtaBuild](https://sap.github.io/jenkins-library/steps/mtaBuild/).
+* [checkChangeInDevelopment](https://sap.github.io/jenkins-library/steps/checkChangeInDevelopment/)
+* [mtaBuild](https://sap.github.io/jenkins-library/steps/mtaBuild/)
+* [transportRequestUploadFile](https://sap.github.io/jenkins-library/steps/transportRequestUploadFile/)
 
-### Mandatory Parameters
+## Variations
 
-| Parameter | Description |
-| --- | --- |
-| `script` | The common script envoronment of the running Jenkinsfile. The reference to the script that calls the pipeline step is privided by the `this` parameter, as in `script: this`. This allows the function to access the `commonPipelineEnvironment` to retrieve configuration parameters. |
-| `changeDocumentId` | The ID of the change document related to the transport request that is to be released. The ID is retrieved from the Git commit history. |
-| `transportRequestId` | The ID of the transport request to release. The ID is retreved from the Git commit history. |
-| `applicationId` | The ID of the application. |
-| `filePath` | The path of the file to upload. |
-| `changeManagement/credentialsId` | The ID of the credentials that are required to connect to SAP Solution Manager. |
-| `changeManagement/endpoint` | The address of SAP Solution Manager. |
-
-For an overview of the optional parameters, see **Parameters** in [transportRequestUploadFile](https://sap.github.io/jenkins-library/steps/transportRequestUploadFile/).
-
-### Step Configuration
-
-The step is configured by using a customer configuration file that is provided as a resource in a custom shared library.
-```
-@Library('piper-library-os@master') _
-
-// the shared lib containing the additional configuration
-// must be configured in Jenkins
-@Library(foo@master') __
-
-// in the shared lib denoted by 'foo', the additional configuration file
-// must be located under 'resources' ('resoures/myConfig.yml')
-prepareDefaultValues script: this, customDefaults: 'myConfig.yml'
-```
-Example content of `resources/myConfig.yaml` in branch `master` of the repository denoted by `foo`:
-```
-general:
-  changeManagement:
-    changeDocumentLabel: 'ChangeDocument\s?:'
-    cmClientOpts: '-Djavax.net.ssl.trustStore=<path to truststore>'
-    credentialsId: 'CM'
-    type: 'SOLMAN'
-    endpoint: 'https://example.org/cm'
-    git:
-      from: 'HEAD~1'
-      to: 'HEAD'
-      format: '%b'
-  ```
-  The properties configured in section `general/changeManagement` are shared between all steps related to change management.
-  You can also configure the properties on a per-step basis, for example:
-  ```
-  [...]
- steps:
-   transportRequestUploadFile:
-     applicationId: 'FOO'
-     changeManagement:
-       type: 'SOLMAN'
-       endpoint: 'https://example.org/cm'
-       [...]
-```
-The parameters can also be provided when the step is invoked. See [Examples](#Examples).
-
-### Result
-
-For exceptions, see **Exceptions** in [transportRequestUploadFile](https://sap.github.io/jenkins-library/steps/transportRequestUploadFile/).
-
-### Example
-
-```
-transportRequestUploadFile script:this,
-                           changeDocumentId: '001',   // typically provided via git commit history
-                           transportRequestId: '001', // typically provided via git commit history
-                           applicationId: '001',
-                           filePath: '/path',
-                           changeManagement:[
-                             type: 'SOLMAN'
-                             endpoint: 'https://example.org/cm'
-                           ]
-```
-
-## (Optional) Release a Transport Request (`transportRequestRelease`)
-
-Release your transport request for a change document in SAP Solution Manager.
-
-### Mandatory parameters
-
-| Parameter | Description |
-| --- | --- |
-| `script` | The common script envoronment of the running Jenkinsfile. The reference to the script that calls the pipeline step is privided by the `this` parameter, as in `script: this`. This allows the function to access the `commonPipelineEnvironment` to retrieve configuration parameters. |
-| `changeDocumentId` |  The ID of the change document related to the transport request that is to be released. The ID is retrieved from the Git commit history. |
-| `transportRequestId` | The ID of the transport request to release. The ID is retreved from the Git commit history. |
-| `changeManagement/credentialsId` | The ID of the credentials that are required to connect to SAP Solution Manager. |
-|`changeManagement/endpoint` | The address of SAP Solution Manager. |
-
-For an overview of the optional parameters, see **Parameters** in [transportRequestRelease](https://sap.github.io/jenkins-library/steps/transportRequestRelease/).
-
-### Step Configuration
-
-The step is configured by using a customer configuration file that is provided as a resource in a custom shared library.
-```
-@Library('piper-library-os@master') _
-
-// the shared lib containing the additional configuration
-// must be configured in Jenkins
-@Library(foo@master') __
-
-// in the shared lib denoted by 'foo', the additional configuration file
-// must be located under 'resources' ('resoures/myConfig.yml')
-prepareDefaultValues script: this, customDefaults: 'myConfig.yml'
-```
-Example content of `resources/myConfig.yaml` in branch `master` of the repository denoted by `foo`:
-```
-general:
-  changeManagement:
-    changeDocumentLabel: 'ChangeDocument\s?:'
-    cmClientOpts: '-Djavax.net.ssl.trustStore=<path to truststore>'
-    credentialsId: 'CM'
-    type: 'SOLMAN'
-    endpoint: 'https://example.org/cm'
-    git:
-      from: 'HEAD~1'
-      to: 'HEAD'
-      format: '%b'
-```
-The properties configured in section `general/changeManagement` are shared between all steps related to change management.
-You can also configure the properties on a per-step basis, for example:
-```
-[...]
- steps:
-   transportRequestRelease:
-     changeManagement:
-       type: 'SOLMAN'
-       endpoint: 'https://example.org/cm'
-       [...]
-```
-The parameters can also be provided when the step is invoked. See [Examples](#Examples).
-
-### Result
-
-For exceptions, see **Exceptions** in [transportRequestRelease](https://sap.github.io/jenkins-library/steps/transportRequestRelease/).
-
-### Example
-
-```
-transportRequestRelease script:this,
-                        changeDocumentId: '001',
-                        transportRequestId: '001',
-                        changeManagement: [
-                          type: 'SOLMAN'
-                          endpoint: 'https://example.org/cm'
-                        ]
-```
+* Use the `landscape.yaml` for global landscape configuration. See [Configuration](https://sap.github.io/jenkins-library/configuration/).
+* Create a transport request on the fly. See [transportRequestCreate](https://sap.github.io/jenkins-library/steps/transportRequestCreate/) and [transportRequestRelease]
+(https://sap.github.io/jenkins-library/steps/transportRequestRelease/).
