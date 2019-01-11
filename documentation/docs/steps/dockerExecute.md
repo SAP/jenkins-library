@@ -7,11 +7,6 @@ The workspace is mounted into the docker image.
 Proxy environment variables defined on the Jenkins machine are also available in the Docker container.
 
 ## Parameters
-
-    'containerCommand',
-    'containerShell',
-
-
 | parameter | mandatory | default | possible values |
 | ----------|-----------|---------|-----------------|
 |script|yes|||
