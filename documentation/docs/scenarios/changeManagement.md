@@ -28,7 +28,7 @@ ChangeDocument: <Your Change Document ID>
 2. To communicate with SAP Solution Manager, the pipeline uses credentials that must be stored on Jenkins under the label `CM`.
 3. The required transport request is created on the fly. However, the change document can contain more components (for example, UI and backend components).
 4. The changes of your development team trigger the Jenkins pipeline. It builds and validates the changes and attaches them to the respective transport request.
-5. As soon as the development process is completed, the change document in SAP Solution Manager can be set to status `in test` and all components can be transported to the test system.
+5. As soon as the development process is completed, the change document in SAP Solution Manager can be set to status `to be tested` and all components can be transported to the test system.
 
 ## Example
 
