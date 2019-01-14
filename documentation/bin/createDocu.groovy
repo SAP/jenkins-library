@@ -58,13 +58,12 @@ class TemplateHelper {
             t += "* `${it}` - ${props.docu ?: ''}\n"
         }
 
-        t
+        t.trim()
     }
 
     static createStepConfigurationSection(Map parameters) {
 
-        def t = '''|
-                   |We recommend to define values of step parameters via [config.yml file](../configuration.md).
+        def t = '''|We recommend to define values of step parameters via [config.yml file](../configuration.md).
                    |
                    |In following sections of the config.yml the configuration is possible:\n\n'''.stripMargin()
 
@@ -76,7 +75,7 @@ class TemplateHelper {
             t += "| `${it}` | ${props.GENERAL_CONFIG ? 'X' : ''} | ${props.STEP_CONFIG ? 'X' : ''} | ${props.STAGE_CONFIG ? 'X' : ''} |\n"
         }
 
-        t
+        t.trim()
     }
 }
 
