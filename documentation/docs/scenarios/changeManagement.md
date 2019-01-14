@@ -36,7 +36,7 @@ The basic workflow is as follows:
 
 ### Jenkinsfile
 
-```
+```groovy
 @Library('piper-library-os') _
 
 node() {
@@ -62,7 +62,7 @@ node() {
 
 ### Configuration (`.pipeline/config.yml`)
 
-```
+```yaml
 #Steps Specific Configuration
 general:
   changeManagement:
