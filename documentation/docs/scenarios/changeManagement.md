@@ -4,11 +4,11 @@ Set up an agile development process with Jenkins CI, which automatically feeds c
 
 ## Prerequisites
 
-* You have downloaded the Java Runtime Environment 8.
-* You have downloaded Jenkins 2.60.3 or higher.
+* You have installed the Java Runtime Environment 8.
+* You have installed Jenkins 2.60.3 or higher.
 * You have set up Project “Piper”. See [README](https://github.com/SAP/jenkins-library/blob/master/README.md).
 * You have installed SAP Solution Manager 7.2 SP6. See [README](https://github.com/SAP/devops-cm-client/blob/master/README.md).
-* You have downloaded the Multi-Target Application (MTA) Archive Builder 1.0.6 or any compatible version. See [SAP Development Tools](https://tools.hana.ondemand.com/#cloud).
+* You have installed the Multi-Target Application (MTA) Archive Builder 1.0.6 or any compatible version. See [SAP Development Tools](https://tools.hana.ondemand.com/#cloud).
 
 ## Context
 
@@ -41,17 +41,19 @@ Change Document: <Your Change Document ID>
 node() {
 
   stage('prepare') {
-      checkout scm
-      setupCommonPipelineEnvironment script:this
-      checkChangeInDevelopment script: this
+    checkout scm
+    setupCommonPipelineEnvironment script:this
+    checkChangeInDevelopment script: this
   }
 
   stage('buildMta') {
-      mtaBuild script: this
+    mtaBuild script: this
   }
+
   stage('uploadToTransportRequest') {
-      transportRequestUploadFile script:this
+    transportRequestUploadFile script:this
   }
+
 }
 ```
 
