@@ -52,7 +52,9 @@ node() {
   }
 
   stage('uploadToTransportRequest') {
-    transportRequestUploadFile script:this
+    transportRequestCreate script: this 
+    transportRequestUploadFile script:this,
+        transportRequestId: commonPipelineEnvironment.getTransportRequestId()
   }
 
 }
