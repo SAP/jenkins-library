@@ -1,11 +1,11 @@
-# Develop Applications Hybridly with Jenkins and SAP Solution Manager
+# Develop Hybrid Applications with Jenkins and SAP Solution Manager
 
 Set up an agile development process with Jenkins CI, which automatically feeds changes into SAP Solution Manager.
 
 ## Prerequisites
 
 * You have downloaded the Java Runtime Environment 8.
-* You have donwloaded Jenkins 2.60.3 or higher.
+* You have downloaded Jenkins 2.60.3 or higher.
 * You have set up Project “Piper”. See [README](https://github.com/SAP/jenkins-library/blob/master/README.md).
 * You have installed SAP Solution Manager 7.2 SP6. See [README](https://github.com/SAP/devops-cm-client/blob/master/README.md).
 * You have downloaded the Multi-Target Application (MTA) Archive Builder 1.0.6 or any compatible version. See [SAP Development Tools](https://tools.hana.ondemand.com/#cloud).
@@ -27,7 +27,7 @@ The basic workflow is as follows:
 Change Document: <Your Change Document ID>
 ```
 2. To communicate with SAP Solution Manager, the pipeline uses credentials that must be stored on Jenkins under the label `CM`.
-3. The required trasport request is created on the fly. However, the change document can contain more components (for example, UI and backend components).
+3. The required transport request is created on the fly. However, the change document can contain more components (for example, UI and backend components).
 4. The changes of your development team trigger the Jenkins pipeline. It builds and validates the changes and attaches them to the respective transport request.
 5. As soon as the development process is completed, the change document in SAP Solution Manager can be set to status `in test` and all components can be transported to the test system.
 
