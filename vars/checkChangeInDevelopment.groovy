@@ -36,7 +36,6 @@ import static com.sap.piper.cm.StepHelpers.getBackendTypeAndLogInfoIfCMIntegrati
  *
  * By default the git commit messages between `origin/master` and `HEAD` are scanned for a line like `ChangeDocument : <changeDocumentId>`. The commit
  * range and the pattern can be configured. For details see 'parameters' table.
- *
  */
 @GenerateDocumentation
 void call(parameters = [:]) {
