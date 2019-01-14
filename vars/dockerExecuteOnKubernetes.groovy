@@ -11,7 +11,8 @@ import hudson.AbortException
 @Field def PLUGIN_ID_KUBERNETES = 'kubernetes'
 @Field Set GENERAL_CONFIG_KEYS = ['jenkinsKubernetes']
 @Field Set PARAMETER_KEYS = [
-    'containerCommands', //specify start command for containers to overwrite Piper default (`/usr/bin/tail -f /dev/null`). If container's defaultstart command should be used provide empty string like: `['selenium/standalone-chrome': '']`
+    'containerCommand', // specify start command for container created with dockerImage parameter to overwrite Piper default (`/usr/bin/tail -f /dev/null`).
+    'containerCommands', //specify start command for containers to overwrite Piper default (`/usr/bin/tail -f /dev/null`). If container's default start command should be used provide empty string like: `['selenium/standalone-chrome': '']`
     'containerEnvVars', //specify environment variables per container. If not provided dockerEnvVars will be used
     'containerMap', //specify multiple images which then form a kubernetes pod, example: containerMap: ['maven:3.5-jdk-8-alpine': 'mavenexecute','selenium/standalone-chrome': 'selenium']
     'containerName', //optional configuration in combination with containerMap to define the container where the commands should be executed in
@@ -49,6 +50,7 @@ void call(Map parameters = [:], body) {
             configHelper.withMandatoryProperty('dockerImage')
             config.containerName = 'container-exec'
             config.containerMap = ["${config.get('dockerImage')}": config.containerName]
+            config.containerCommands = config.containerCommand ? ["${config.get('dockerImage')}": config.containerCommand] : null
         }
         executeOnPod(config, utils, body)
     }
