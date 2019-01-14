@@ -64,13 +64,13 @@ node() {
 general:
   changeManagement:
     endpoint: 'https://<backend-system>/sap/opu/odata/sap/AI_CRM_GW_CM_CI_SRV'
-credentialsId: 'CM'
+    credentialsId: 'CM'
     type: 'SOLMAN'
 steps:
   mtaBuild:
     buildTarget: 'NEO'
-    transportRequestUploadFile:
-      applicationId: 'HCP'
+  transportRequestUploadFile:
+    applicationId: 'HCP'
 ```
 
 ## Parameters
