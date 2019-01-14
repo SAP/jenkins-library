@@ -23,8 +23,7 @@ The basic workflow is as follows:
 <Commit Message Header>
 
 <Commit Message Description>
-
-Change Document: <Your Change Document ID>
+ChangeDocument: <Your Change Document ID>
 ```
 2. To communicate with SAP Solution Manager, the pipeline uses credentials that must be stored on Jenkins under the label `CM`.
 3. The required transport request is created on the fly. However, the change document can contain more components (for example, UI and backend components).
