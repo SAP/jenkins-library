@@ -61,9 +61,9 @@ node() {
 #Steps Specific Configuration
 general:
   changeManagement:
-      endpoint: 'https://<backend-system>/sap/opu/odata/sap/AI_CRM_GW_CM_CI_SRV'
+    endpoint: 'https://<backend-system>/sap/opu/odata/sap/AI_CRM_GW_CM_CI_SRV'
 credentialsId: 'CM'
-     type: 'SOLMAN'
+    type: 'SOLMAN'
 steps:
   mtaBuild:
     buildTarget: 'NEO'
