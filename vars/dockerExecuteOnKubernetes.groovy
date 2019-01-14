@@ -84,12 +84,13 @@ void executeOnPod(Map config, utils, Closure body) {
                     if (config.containerShell) {
                         containerParams.shell = config.containerShell
                     }
+                    echo "ContainerConfig: ${containerParams}"
                     container(containerParams){
                         try {
                             utils.unstashAll(config.stashContent)
                             body()
                         } finally {
-                            stashWorkspace(config, 'container')
+                            stashWorkspace(config, 'container', true)
                         }
                     }
                 } else {
@@ -103,11 +104,14 @@ void executeOnPod(Map config, utils, Closure body) {
     }
 }
 
-private String stashWorkspace(config, prefix) {
+private String stashWorkspace(config, prefix, boolean chown = false) {
     def stashName = "${prefix}-${config.uniqueId}"
     try {
         // Every dockerImage used in the dockerExecuteOnKubernetes should have user id 1000
-        sh "chown -R 1000:1000 ."
+        if (chown)  {
+            sh """#!${config.containerShell?:'/bin/sh'}
+chown -R 1000:1000 ."""
+        }
         stash(
             name: stashName,
             include: config.stashIncludes.workspace,

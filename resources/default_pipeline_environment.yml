@@ -138,6 +138,15 @@ steps:
     mtaDeployPlugin:
       dockerImage: 's4sdk/docker-cf-cli'
       dockerWorkspace: '/home/piper'
+  containerExecuteStructureTests:
+    containerCommand: ''
+    containerShell: ''
+    dockerImage: ''
+    dockerOptions: "-u 0 --entrypoint=''"
+    failOnError: true
+    stashContent:
+      - 'tests'
+    testReportFilePath: 'cst-report.json'
   dockerExecute:
     stashContent: []
   dockerExecuteOnKubernetes:
@@ -254,7 +263,7 @@ steps:
       opensourceConfiguration: '**/srcclr.yml, **/vulas-custom.properties, **/.nsprc, **/.retireignore, **/.retireignore.json, **/.snyk'
       pipelineConfigAndTests: '.pipeline/**'
       securityDescriptor: '**/xs-security.json'
-      tests: '**/pom.xml, **/*.json, **/*.xml, **/src/**, **/node_modules/**, **/specs/**, **/env/**, **/*.js'
+      tests: '**/pom.xml, **/*.json, **/*.xml, **/src/**, **/node_modules/**, **/specs/**, **/env/**, **/*.js, **/tests/**'
     stashExcludes:
       buildDescriptor: '**/node_modules/**/package.json'
       deployDescriptor: ''
