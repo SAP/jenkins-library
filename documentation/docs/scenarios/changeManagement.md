@@ -18,13 +18,15 @@ In this scenario, we want to show how an agile development process with Jenkins 
 
 The basic workflow is as follows:
 
-1. The pipeline checks the Git commit message for a change document in status `in development`. The template for the commit message looks as follows:
-```
-<Commit Message Header>
+1. The pipeline scans the Git commit messages between `origin/master` and `HEAD` for a line like `ChangeDocument : <changeDocumentId>`, and validates that the change is in the correct status `in development`.The template for the commit message looks as follows:
 
-<Commit Message Description>
-ChangeDocument: <Your Change Document ID>
-```
+    ```
+    <Commit Message Header>
+    
+    <Commit Message Description>
+    ChangeDocument: <Your Change Document ID>
+    ```
+
 2. To communicate with SAP Solution Manager, the pipeline uses credentials that must be stored on Jenkins under the label `CM`.
 3. The required transport request is created on the fly. However, the change document can contain more components (for example, UI and backend components).
 4. The changes of your development team trigger the Jenkins pipeline. It builds and validates the changes and attaches them to the respective transport request.
