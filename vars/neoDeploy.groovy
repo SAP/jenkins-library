@@ -1,3 +1,5 @@
+import com.sap.piper.tools.neo.NeoCommandHelper
+
 import static com.sap.piper.Prerequisites.checkScript
 
 import com.sap.piper.ConfigurationHelper
@@ -21,13 +23,13 @@ import groovy.transform.Field
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS.plus([
     'applicationName',
     'archivePath',
-    'deployAccount', //deprecated, replaced by parameter 'account'
-    'deployHost', //deprecated, replaced by parameter 'host'
     'deployMode',
     'propertiesFile',
     'runtime',
     'runtimeVersion',
     'vmSize',
+    'vmArguments',
+    'environment',
     'warAction'
 ])
 
@@ -40,56 +42,7 @@ void call(parameters = [:]) {
 
         prepareDefaultValues script: script
 
-        final Map stepCompatibilityConfiguration = [:]
-
-        // Backward compatibility: ensure old configuration is taken into account
-        // The old configuration in not stage / step specific
-
-        def defaultDeployHost = script.commonPipelineEnvironment.getConfigProperty('DEPLOY_HOST')
-        if(defaultDeployHost) {
-            echo "[WARNING][${STEP_NAME}] A deprecated configuration framework is used for configuring parameter 'DEPLOY_HOST'. This configuration framework will be removed in future versions."
-            stepCompatibilityConfiguration.put('host', defaultDeployHost)
-        }
-
-        def defaultDeployAccount = script.commonPipelineEnvironment.getConfigProperty('CI_DEPLOY_ACCOUNT')
-        if(defaultDeployAccount) {
-            echo "[WARNING][${STEP_NAME}] A deprecated configuration framework is used for configuring parameter 'DEPLOY_ACCOUNT'. This configuration framekwork will be removed in future versions."
-            stepCompatibilityConfiguration.put('account', defaultDeployAccount)
-        }
-
-        if(parameters.deployHost && !parameters.host) {
-            echo "[WARNING][${STEP_NAME}] Deprecated parameter 'deployHost' is used. This will not work anymore in future versions. Use parameter 'host' instead."
-            parameters.put('host', parameters.deployHost)
-        }
-
-        if(parameters.deployAccount && !parameters.account) {
-            echo "[WARNING][${STEP_NAME}] Deprecated parameter 'deployAccount' is used. This will not work anymore in future versions. Use parameter 'account' instead."
-            parameters.put('account', parameters.deployAccount)
-        }
-
-        def credId = script.commonPipelineEnvironment.getConfigProperty('neoCredentialsId')
-        if(credId && !parameters.neoCredentialsId) {
-            echo "[WARNING][${STEP_NAME}] Deprecated parameter 'neoCredentialsId' from old configuration framework is used. This will not work anymore in future versions."
-            parameters.put('neoCredentialsId', credId)
-        }
-
-        if(! stepCompatibilityConfiguration.isEmpty()) {
-            echo "[WARNING][$STEP_NAME] You are using a deprecated configuration framework. This will be removed in " +
-                'futureVersions.\nAdd snippet below to \'./pipeline/config.yml\' and remove ' +
-                'file \'.pipeline/configuration.properties\'.\n' +
-                """|steps:
-                    |    neoDeploy:
-                    |        host: ${stepCompatibilityConfiguration.get('host', '<Add host here>')}
-                    |        account: ${stepCompatibilityConfiguration.get('account', '<Add account here>')}
-                """.stripMargin()
-
-            if(Boolean.getBoolean('com.sap.piper.featureFlag.buildUnstableWhenOldConfigFrameworkIsUsedByNeoDeploy')) {
-                script.currentBuild.setResult('UNSTABLE')
-                echo "[WARNING][$STEP_NAME] Build has been set to unstable since old config framework is used."
-            }
-        }
-
-        // Backward compatibility end
+        Map stepCompatibilityConfiguration = handleCompatibility(script, parameters)
 
         // load default & individual configuration
         Map configuration = ConfigurationHelper.newInstance(this)
@@ -110,120 +63,143 @@ void call(parameters = [:]) {
             stepParam4: ! stepCompatibilityConfiguration.isEmpty(),
         ], configuration)
 
-        def archivePath = configuration.archivePath
-        if(archivePath?.trim()) {
-            if (!fileExists(archivePath)) {
-                error "Archive cannot be found with parameter archivePath: '${archivePath}'."
+        ToolDescriptor neo = new ToolDescriptor('SAP Cloud Platform Console Client', 'NEO_HOME', 'neoHome', '/tools/', 'neo.sh', null, 'version')
+        ToolDescriptor java = new ToolDescriptor('Java', 'JAVA_HOME', '', '/bin/', 'java', '1.8.0', '-version 2>&1')
+
+        if(configuration.neoCredentialsId) {
+            withCredentials([usernamePassword(
+                credentialsId: credentialsId,
+                passwordVariable: 'NEO_PASSWORD',
+                usernameVariable: 'NEO_USERNAME')]) {
+
+                assertPasswordRules(NEO_PASSWORD)
+                NeoCommandHelper neoCommandHelper = new NeoCommandHelper(script, configuration, neo, NEO_USERNAME, NEO_PASSWORD)
+
+                dockerExecute(
+                    script: script,
+                    dockerImage: configuration.get('dockerImage'),
+                    dockerEnvVars: configuration.get('dockerEnvVars'),
+                    dockerOptions: configuration.get('dockerOptions')
+                ) {
+
+                    neo.verify(this, configuration)
+                    java.verify(this, configuration)
+
+                    lock("$STEP_NAME :${neoCommandHelper.resourceLock()}") {
+                        deploy(script, utils, configuration, neoCommandHelper, neo)
+                    }
+                }
             }
-        } else {
-            error "Archive path not configured (parameter \"archivePath\")."
         }
-
-        def deployHost
-        def deployAccount
-        def credentialsId = configuration.get('neoCredentialsId')
-        def deployMode = configuration.deployMode
-        def warAction
-        def propertiesFile
-        def applicationName
-        def runtime
-        def runtimeVersion
-        def vmSize
-
-        def deployModes = ['mta', 'warParams', 'warPropertiesFile']
-        if (! (deployMode in deployModes)) {
-            throw new Exception("[neoDeploy] Invalid deployMode = '${deployMode}'. Valid 'deployMode' values are: ${deployModes}.")
+        else {
+            error("[neoDeploy] No credentials defined for the deployment. Please specify the value for neoCredentialsId.")
         }
+    }
+}
 
+private deploy(script, utils, Map configuration, NeoCommandHelper neoCommandHelper, ToolDescriptor neoToolDescriptor){
+    def deployModes = ['mta', 'warParams', 'warPropertiesFile']
+    def deployMode = utils.getParameterInValueRange(script, configuration, 'deployMode', deployModes)
+
+    try {
         if (deployMode in ['warPropertiesFile', 'warParams']) {
-            warAction = utils.getMandatoryParameter(configuration, 'warAction')
             def warActions = ['deploy', 'rolling-update']
-            if (! (warAction in warActions)) {
-                throw new Exception("[neoDeploy] Invalid warAction = '${warAction}'. Valid 'warAction' values are: ${warActions}.")
+            def warAction = utils.getParameterInValueRange(script, configuration, 'warAction', warActions)
+
+            if (warAction == 'rolling-update') {
+                if (!isAppRunning(neoCommandHelper)) {
+                    warAction = 'deploy'
+                    echo "Rolling update not possible because application is not running. Falling back to standard deployment."
+                }
             }
-        } else if(deployMode == 'mta') {
+
+            echo "Link to the application dashboard: ${neoCommandHelper.cloudCockpitLink()}"
+
+            if (warAction == 'rolling-update') {
+                sh neoCommandHelper.rollingUpdateCommand()
+            } else {
+                sh neoCommandHelper.deployCommand()
+                sh neoCommandHelper.restartCommand()
+            }
+
+
+        } else if (deployMode == 'mta') {
             warAction = 'deploy-mta'
+
+            sh neoCommandHelper.deployMta()
         }
+    }
+    catch (Exception ex) {
+        echo "Error while deploying to SAP Cloud Platform. Here are the neo.sh logs:"
+        sh "cat ${neoToolDescriptor.getToolLocation()}/tools/log/*"
+        throw ex
+    }
+}
 
-        if (deployMode == 'warPropertiesFile') {
-            propertiesFile = utils.getMandatoryParameter(configuration, 'propertiesFile')
-            if (!fileExists(propertiesFile)){
-                error "Properties file cannot be found with parameter propertiesFile: '${propertiesFile}'."
-            }
+private boolean isAppRunning(NeoCommandHelper commandHelper) {
+    def status = sh script: "${commandHelper.statusCommand()} || true", returnStdout: true
+    return status.contains('Status: STARTED')
+}
+
+private handleCompatibility(script, parameters){
+    final Map stepCompatibilityConfiguration = [:]
+
+    // Backward compatibility: ensure old configuration is taken into account
+    // The old configuration in not stage / step specific
+
+    def defaultDeployHost = script.commonPipelineEnvironment.getConfigProperty('DEPLOY_HOST')
+    if(defaultDeployHost) {
+        echo "[WARNING][${STEP_NAME}] A deprecated configuration framework is used for configuring parameter 'DEPLOY_HOST'. This configuration framework will be removed in future versions."
+        stepCompatibilityConfiguration.put('host', defaultDeployHost)
+    }
+
+    def defaultDeployAccount = script.commonPipelineEnvironment.getConfigProperty('CI_DEPLOY_ACCOUNT')
+    if(defaultDeployAccount) {
+        echo "[WARNING][${STEP_NAME}] A deprecated configuration framework is used for configuring parameter 'DEPLOY_ACCOUNT'. This configuration framekwork will be removed in future versions."
+        stepCompatibilityConfiguration.put('account', defaultDeployAccount)
+    }
+
+    if(parameters.deployHost && !parameters.host) {
+        echo "[WARNING][${STEP_NAME}] Deprecated parameter 'deployHost' is used. This will not work anymore in future versions. Use parameter 'host' instead."
+        parameters.put('host', parameters.deployHost)
+    }
+
+    if(parameters.deployAccount && !parameters.account) {
+        echo "[WARNING][${STEP_NAME}] Deprecated parameter 'deployAccount' is used. This will not work anymore in future versions. Use parameter 'account' instead."
+        parameters.put('account', parameters.deployAccount)
+    }
+
+    def credId = script.commonPipelineEnvironment.getConfigProperty('neoCredentialsId')
+    if(credId && !parameters.neoCredentialsId) {
+        echo "[WARNING][${STEP_NAME}] Deprecated parameter 'neoCredentialsId' from old configuration framework is used. This will not work anymore in future versions."
+        parameters.put('neoCredentialsId', credId)
+    }
+
+    if(! stepCompatibilityConfiguration.isEmpty()) {
+        echo "[WARNING][$STEP_NAME] You are using a deprecated configuration framework. This will be removed in " +
+            'futureVersions.\nAdd snippet below to \'./pipeline/config.yml\' and remove ' +
+            'file \'.pipeline/configuration.properties\'.\n' +
+            """|steps:
+                    |    neoDeploy:
+                    |        host: ${stepCompatibilityConfiguration.get('host', '<Add host here>')}
+                    |        account: ${stepCompatibilityConfiguration.get('account', '<Add account here>')}
+                """.stripMargin()
+
+        if(Boolean.getBoolean('com.sap.piper.featureFlag.buildUnstableWhenOldConfigFrameworkIsUsedByNeoDeploy')) {
+            script.currentBuild.setResult('UNSTABLE')
+            echo "[WARNING][$STEP_NAME] Build has been set to unstable since old config framework is used."
         }
+    }
 
-        if (deployMode == 'warParams') {
-            applicationName = utils.getMandatoryParameter(configuration, 'applicationName')
-            runtime = utils.getMandatoryParameter(configuration, 'runtime')
-            runtimeVersion = utils.getMandatoryParameter(configuration, 'runtimeVersion')
-            def vmSizes = ['lite', 'pro', 'prem', 'prem-plus']
-            vmSize = configuration.vmSize
-            if (! (vmSize in vmSizes)) {
-                throw new Exception("[neoDeploy] Invalid vmSize = '${vmSize}'. Valid 'vmSize' values are: ${vmSizes}.")
-            }
-        }
+    return stepCompatibilityConfiguration
+}
 
-        if (deployMode in ['mta','warParams']) {
-            deployHost = utils.getMandatoryParameter(configuration, 'host')
-            deployAccount = utils.getMandatoryParameter(configuration, 'account')
-        }
-
-        def neo = new ToolDescriptor('SAP Cloud Platform Console Client', 'NEO_HOME', 'neoHome', '/tools/', 'neo.sh', null, 'version')
-        def neoExecutable = neo.getToolExecutable(this, configuration)
-        def neoDeployScript = """#!/bin/bash
-                                 "${neoExecutable}" ${warAction} \
-                                 --source "${archivePath}" \
-                              """
-
-        if (deployMode in ['mta', 'warParams']) {
-            neoDeployScript +=
-                    """--host '${deployHost}' \
-                    --account '${deployAccount}' \
-                    """
-        }
-
-        if (deployMode == 'mta') {
-            neoDeployScript += "--synchronous"
-        }
-
-        if (deployMode == 'warParams') {
-            neoDeployScript +=
-                    """--application '${applicationName}' \
-                    --runtime '${runtime}' \
-                    --runtime-version '${runtimeVersion}' \
-                    --size '${vmSize}'"""
-        }
-
-        if (deployMode == 'warPropertiesFile') {
-            neoDeployScript +=
-                    """${propertiesFile}"""
-        }
-
-        withCredentials([usernamePassword(
-            credentialsId: credentialsId,
-            passwordVariable: 'password',
-            usernameVariable: 'username')]) {
-
-            def credentials =
-                """--user '${username}' \
-                   --password '${password}' \
-                """
-            dockerExecute(
-                script: script,
-                dockerImage: configuration.get('dockerImage'),
-                dockerEnvVars: configuration.get('dockerEnvVars'),
-                dockerOptions: configuration.get('dockerOptions')
-            ) {
-
-                neo.verify(this, configuration)
-
-                def java = new ToolDescriptor('Java', 'JAVA_HOME', '', '/bin/', 'java', '1.8.0', '-version 2>&1')
-                java.verify(this, configuration)
-
-                sh """${neoDeployScript} \
-                      ${credentials}
-                   """
-            }
-        }
+private assertPasswordRules(String password){
+    if(password.startsWith("@")){
+        error("Your password for the deployment to SAP Cloud Platform contains characters which are not " +
+            "supported by the neo tools. " +
+            "For example it is not allowed that the password starts with @. " +
+            "Please consult the documentation for the neo command line tool for more information: " +
+            "https://help.sap.com/viewer/65de2977205c403bbc107264b8eccf4b/Cloud/en-US/8900b22376f84c609ee9baf5bf67130a.html")
     }
 }
