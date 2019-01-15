@@ -10,6 +10,8 @@ import util.JenkinsStepRule
 import util.JenkinsReadYamlRule
 import util.Rules
 
+import static org.hamcrest.Matchers.is
+import static org.junit.Assert.assertThat
 import static org.junit.Assert.assertTrue
 import static org.junit.Assert.assertEquals
 
@@ -95,5 +97,23 @@ class InfluxWriteDataTest extends BasePiperTest {
         assertTrue(loggingRule.log.contains('no artifact version available -> exiting writeInflux without writing data'))
 
         assertJobStatusSuccess()
+    }
+
+    @Test
+    void testInfluxWriteDataWrapInNode() throws Exception {
+
+        boolean nodeCalled = false
+        helper.registerAllowedMethod('node', [String.class, Closure.class]) {s, body ->
+            nodeCalled = true
+            return body()
+        }
+
+        helper.registerAllowedMethod("deleteDir", [], null)
+
+        nullScript.commonPipelineEnvironment.setArtifactVersion('1.2.3')
+        jsr.step.influxWriteData(script: nullScript, wrapInNode: true)
+
+        assertThat(nodeCalled, is(true))
+
     }
 }

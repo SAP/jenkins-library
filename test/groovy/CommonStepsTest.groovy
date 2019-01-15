@@ -109,6 +109,7 @@ public class CommonStepsTest extends BasePiperTest{
             'pipelineExecute', // special step (infrastructure)
             'commonPipelineEnvironment', // special step (infrastructure)
             'handlePipelineStepErrors', // special step (infrastructure)
+            'piperStageWrapper' //intended to be called from within stages
             ]
 
     @Test

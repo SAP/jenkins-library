@@ -21,6 +21,23 @@ class JenkinsShellCallRule implements TestRule {
             this.type = type
             this.script = script
         }
+
+        String toString() {
+            return "${type} : ${script}"
+        }
+
+        @Override
+        public int hashCode() {
+            return type.hashCode() * script.hashCode()
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+
+            if (obj == null || !obj instanceof Key) return false;
+            Key other = (Key) obj;
+            return type == other.type && script == other.script
+        }
     }
 
     final BasePipelineTest testInstance
