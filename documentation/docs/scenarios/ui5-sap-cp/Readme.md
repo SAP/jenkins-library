@@ -1,18 +1,43 @@
-# Pipeline for SAP UI5/Fiori On SAP Cloud Platform
+# Create a Pipeline for SAP UI5 or SAP Fiori on SAP Cloud platform
 
-This is a so called scenario step. Scenario steps are aggregations of several steps implementing a complete pipeline. This makes typical scenarios easy to set up.
+Create an application based on SAP UI5 or SAP Fiori and deploy the build result into an SAP Cloud Platform account in the Neo environment.
 
-## Description
+This document describes a scenario step, which means that it combines various different steps to create a complete pipeline.
 
-This steps builds an SAP UI5 or Fiori based application using MTA and deploys the build result into an SAP Cloud Platform (Neo) account. This scenario wraps the [mtaBuild](../../steps/mtaBuild.md) and [neoDeploy](../../steps/neoDeploy.md) steps.
+
+## Prerequisites
+
+* You have installed the Java Runtime Environment 8.
+* You have installed Jenkins 2.60.3 or higher.
+* You have set up Project “Piper”. See [README](https://github.com/SAP/jenkins-library/blob/master/README.md).
+* You have installed the Multi-Target Application (MTA) Archive Builder 1.0.6 or newer. See [SAP Development Tools](https://tools.hana.ondemand.com/#cloud).
+* You have installed Node.js including node and npm. See [Node.js](https://nodejs.org/en/download/).
+* You have installed the SAP Cloud Platform Neo Environment SDK. See [SAP Development Tools](https://tools.hana.ondemand.com/#cloud).
+
+
+### Project Prerequisites
+
+This scenario step requires additional files in your project and the execution environment on your Jenkins instance. On the project level, provide and adjust the following template:
+
+| File Name | Description |
+|-----|-----|
+| [`.npmrc`](https://github.com/marcusholl/jenkins-library/tree/pr/scenarioUI5SAPCP/documentation/docs/scenarios/ui5-sap-cp/files/.npmrc) | This file contains a reference to the SAP NPM registry (`@sap:registry https://npm.sap.com`), which is required to fetch dependencies to build the application. Place it in the root directory of your project. |
+| [`mta.yaml`](https://github.com/marcusholl/jenkins-library/tree/pr/scenarioUI5SAPCP/documentation/docs/scenarios/ui5-sap-cp/files/mta.yaml) | This file controls the behavior of the MTA toolset. Place it in your application root folder and adjust the values in brackets with your data. |
+| [`package.json`](https://github.com/marcusholl/jenkins-library/tree/pr/scenarioUI5SAPCP/documentation/docs/scenarios/ui5-sap-cp/files/package.json) | This file lists the required development dependencies for the build. Add the content to your existing `package.json` file. |
+| [`Gruntfile.js`](https://github.com/marcusholl/jenkins-library/tree/pr/scenarioUI5SAPCP/documentation/docs/scenarios/ui5-sap-cp/files/Gruntfile.js) | This file controls the grunt build. By default the tasks `clean`, `build`, and `lint` are executed. Place it in the root directory of your project. |
+
+
+## Context
+
+In this scenario step, we want to show how to build an application based on SAP UI5 or SAP Fiori by using the multi-target application (MTA) concept and how to deploy the build result into an SAP Cloud Platform account in the Neo environment. This document comprises the [mtaBuild](https://sap.github.io/jenkins-library/steps/mtaBuild/) and the [neoDeploy](https://sap.github.io/jenkins-library/steps/neoDeploy/) steps.
 
 ![This pipeline in Jenkins Blue Ocean](images/pipeline.jpg)
 
-To implement this you can use the following `Jenkinsfile` and `config.yml`. See below for prerequisites and configuration options.
+## Example
 
 ### Jenkinsfile
 
-The convention for pipeline definitions is to use a `Jenkinsfile` that resides in the root directory of your development sources.
+Following the convention for pipeline definitions, use a `Jenkinsfile` which resides in the root directory of your development sources.
 
 ```groovy
 @Library('piper-lib-os') _
@@ -20,9 +45,9 @@ The convention for pipeline definitions is to use a `Jenkinsfile` that resides i
 fioriOnCloudPlatformPipeline script:this
 ```
 
-### .pipeline/config.yml
+### Configuration (`.pipeline/config.yml`)
 
-This is a basic configuration example that is also located in the project's sources.
+This is a basic configuration example, which is also located in the sources of the project.
 
 ```yaml
 steps:
@@ -36,70 +61,27 @@ steps:
     host: 'hana.ondemand.com'
 ```
 
-## Prerequisites
-
-### General Prerequisites
-
-- Project "Piper" requires a Jenkins (2.x) with pipeline plugins to run.
-- Project "Piper" needs to be [registered in Jenkins](https://github.com/SAP/jenkins-library/blob/master/README.md) as a Global Shared Library.
-- **Java 8 or compatible version** is required for build and deployment tools.
-
-### Prerequisites for the MTA Build
-
-A docker image meeting the following requirements:
-- **SAP MTA Archive Builder** - can be downloaded from [SAP Development Tools](https://tools.hana.ondemand.com/#cloud).
-- **NodeJS** - the MTA Builder requires `node` and `npm` to build the project.
-
-For more information please check the documentation for the [MTA build](../../steps/mtaBuild.md).
-
-### Prerequisites for the Deployment to SAP Cloud Platform
-
-- **SAP CP account** - the account to where the application is deployed.
-- **SAP CP user for deployment** - a user with deployment permissions in the given account.
-- **Jenkins credentials for deployment** - must be configured in Jenkins credentials with a dedicated ID.
-- **Neo Java Web** - can be downloaded from [Maven Central](http://central.maven.org/maven2/com/sap/cloud/neo-java-web-sdk/).
-
-For more information please check the documentation for the [deployment](../../steps/neoDeploy.md).
-
-### Prerequisites in Your Project
-
-The steps included in this scenario require additional files in your project and execution environment on your Jenkins.
-
-The following template files needs to be provided and adjusted on project level:
-
-| File Name | Comment |
-|-----|-----|
-| [`.npmrc`](https://github.com/marcusholl/jenkins-library/tree/pr/scenarioUI5SAPCP/documentation/docs/scenarios/ui5-sap-cp/files/.npmrc) | Contains a reference to the SAP NPM registry: `@sap:registry https://npm.sap.com` that is required to fetch dependencies to build the application. Place it in your project's root directoy. |
-| [`mta.yaml`](https://github.com/marcusholl/jenkins-library/tree/pr/scenarioUI5SAPCP/documentation/docs/scenarios/ui5-sap-cp/files/mta.yaml) | Controls the behavior of the mta toolset. Place the file in your application root folder and adjust the values in brackets with your data. |
-| [`package.json`](https://github.com/marcusholl/jenkins-library/tree/pr/scenarioUI5SAPCP/documentation/docs/scenarios/ui5-sap-cp/files/package.json) | Lists the (dev-)dependencies that are required to build. Add the content to your existing `package.json` file. |
-| [`Gruntfile.js`](https://github.com/marcusholl/jenkins-library/tree/pr/scenarioUI5SAPCP/documentation/docs/scenarios/ui5-sap-cp/files/Gruntfile.js) | Controls the grunt build. By default these tasks are executed: `clean`, `build`, `lint`. Place it in your project's root directoy. |
-
-## Step Configuration
-
-The configuration must be stored in the `.pipeline/config.yml`.
-
-### Configuration for the MTA Build
+#### Configuration for the MTA Build
 
 | Parameter        | Description    |
 | -----------------|----------------|
-| `buildTarget`    | The target platform to which the mtar can be deployed, possible values: `CF`, `NEO`, `XSA` |
-| `mtaJarLocation` | The location of the SAP Multitarget Application Archive Builder jar file, including file name and extension. |
+| `buildTarget`    | The target platform to which the mtar can be deployed. Possible values are: `CF`, `NEO`, `XSA` |
+| `mtaJarLocation` | The location of the multi-target application archive builder jar file, including file name and extension. |
 
-For the full list of configuration options please check the documentation for the [MTA build](../../steps/mtaBuild.md).
 
-### Configuration for the Deployment to SAP Cloud Platform
+#### Configuration for the Deployment to SAP Cloud Platform
 
 | Parameter          | Description |
 | -------------------|-------------|
-| `account`           | The SAP Cloud Platform _account_ to deploy to. |
-| `host`           |  The SAP Cloud Platform _host_ to deploy to.. |
-| `neoCredentialsId` | The Jenkins credentials (not the password!) containing user and password used for SAP CP deployment. |
-| `neoHome`           | The path to the `neo-java-web-sdk` tool used for the deployment. |
+| `account`           | The SAP Cloud Platform account to deploy to. |
+| `host`           |  The SAP Cloud Platform host to deploy to. |
+| `neoCredentialsId` | The Jenkins credentials that contain the user and password which are used for the deployment on SAP Cloud Platform. |
+| `neoHome`           | The path to the `neo-java-web-sdk` tool that is used for the deployment. |
 
-For the full list of configuration options please check the documentation for the [deployment](../../steps/neoDeploy.md).
 
-For detailed information, please refer to our configurations documentation and the documentation for the individual steps:
+### Parameters
 
-- [General configuration](../../configuration)
-- [MTA build configuration](../../steps/mtaBuild.md)
-- [Deployment configuration](../../steps/neoDeploy.md)
+For the detailed description of the relevant parameters, see:
+
+* [mtaBuild](https://sap.github.io/jenkins-library/steps/mtaBuild/)
+* [neoDeploy](https://sap.github.io/jenkins-library/steps/neoDeploy/)
