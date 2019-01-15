@@ -25,7 +25,7 @@ class NeoCommandHelper {
     }
 
     String statusCommand() {
-        if(deploymentConfiguration.deployMode = "mta"){
+        if(deploymentConfiguration.deployMode == 'mta'){
             throw new Exception("This should not happen. Status command cannot be executed for MTA applications")
         }
         return "${neoTool()} status ${mainArgs()}"
@@ -59,10 +59,10 @@ class NeoCommandHelper {
 
         assertMandatoryParameter('host')
         assertMandatoryParameter('account')
-        assertMandatoryParameter('applicationName')
+        assertMandatoryParameter('application')
 
         return "https://account.${deploymentConfiguration.host}/cockpit#" +
-            "/acc/${deploymentConfiguration.account}/app/${deploymentConfiguration.applicationName}/dashboard"
+            "/acc/${deploymentConfiguration.account}/app/${deploymentConfiguration.application}/dashboard"
     }
 
     String resourceLock() {
@@ -77,16 +77,16 @@ class NeoCommandHelper {
         String resource = "${host}/${account}"
 
         if(deploymentConfiguration.deployMode = "warParams"){
-            assertMandatoryParameter("applicationName")
-            resource += "/${applicationName}"
+            assertMandatoryParameter("application")
+            resource += "/${application}"
         }
 
         return resource
     }
 
     private String source(){
-        assertFileIsConfiguredAndExists('archivePath')
-        return "--source ${deploymentConfiguration.archivePath}"
+        assertFileIsConfiguredAndExists('source')
+        return "--source ${deploymentConfiguration.source}"
     }
 
     private String mainArgs() {
@@ -104,8 +104,8 @@ class NeoCommandHelper {
         String mainArgs = "--host ${deploymentConfiguration.host} --account ${deploymentConfiguration.account} ${usernamePassword}"
 
         if(deploymentConfiguration.deployMode == 'warParams'){
-            assertMandatoryParameter('applicationName')
-            mainArgs += " --application ${deploymentConfiguration.applicationName}"
+            assertMandatoryParameter('application')
+            mainArgs += " --application ${deploymentConfiguration.application}"
         }
 
         return mainArgs
@@ -121,8 +121,8 @@ class NeoCommandHelper {
         args += " --runtime ${deploymentConfiguration.runtimeVersion}"
 
         if (deploymentConfiguration.size) {
-            def vmSizes = ['lite', 'pro', 'prem', 'prem-plus']
-            def size = new Utils().getParameterInValueRange(script, deploymentConfiguration,'vmSize',vmSizes)
+            def sizes = ['lite', 'pro', 'prem', 'prem-plus']
+            def size = new Utils().getParameterInValueRange(script, deploymentConfiguration,'size',sizes)
 
             args += " --size ${size}"
         }

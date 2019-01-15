@@ -10,28 +10,36 @@ import com.sap.piper.tools.ToolDescriptor
 import groovy.transform.Field
 
 @Field String STEP_NAME = getClass().getName()
-@Field Set GENERAL_CONFIG_KEYS = []
-@Field Set STEP_CONFIG_KEYS = [
-    'account',
+@Field Set GENERAL_CONFIG_KEYS = [
+    'neo'
+]
+@Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS.plus([
     'dockerEnvVars',
     'dockerImage',
     'dockerOptions',
-    'host',
-    'neoCredentialsId',
-    'neoHome'
-]
-@Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS.plus([
-    'applicationName',
-    'archivePath',
-    'deployMode',
-    'propertiesFile',
-    'runtime',
-    'runtimeVersion',
-    'vmSize',
-    'vmArguments',
-    'environment',
-    'warAction'
 ])
+
+@Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS.plus([
+    'source',
+    'deployMode',
+    'warAction',
+    'neoHome'
+])
+
+@Field Map CONFIG_KEY_COMPATIBILITY = [
+    neo: [
+        host: 'host',
+        account:'account',
+        application: 'applicationName',
+        credentialsId: 'neoCredentialsId',
+        propertiesFile: 'propertiesFile',
+        runtime: 'runtime',
+        runtimeVersion: 'runtimeVersion',
+        size: 'vmSize'
+
+    ],
+    source: 'archivePath'
+]
 
 void call(parameters = [:]) {
     handlePipelineStepErrors (stepName: STEP_NAME, stepParameters: parameters) {
@@ -49,10 +57,10 @@ void call(parameters = [:]) {
             .loadStepDefaults()
             .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS)
             .mixin(stepCompatibilityConfiguration)
-            .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS)
-            .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName?:env.STAGE_NAME, STEP_CONFIG_KEYS)
-            .addIfEmpty('archivePath', script.commonPipelineEnvironment.getMtarFilePath())
-            .mixin(parameters, PARAMETER_KEYS)
+            .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS, CONFIG_KEY_COMPATIBILITY)
+            .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName?:env.STAGE_NAME, STEP_CONFIG_KEYS, CONFIG_KEY_COMPATIBILITY)
+            .addIfEmpty('source', script.commonPipelineEnvironment.getMtarFilePath())
+            .mixin(parameters, PARAMETER_KEYS, CONFIG_KEY_COMPATIBILITY)
             .use()
 
         utils.pushToSWA([
