@@ -274,6 +274,19 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
         assertThat(containerShell, is('/busybox/sh'))
     }
 
+    @Test
+    void testDockerExecuteOnKubernetesWithCustomContainerCommand() {
+        jsr.step.dockerExecuteOnKubernetes(
+            script: nullScript,
+            juStabUtils: utils,
+            dockerImage: 'maven:3.5-jdk-8-alpine',
+            containerCommand: '/busybox/tail -f /dev/null'
+        ) {
+            //nothing to exeute
+        }
+        assertThat(containerCommands, hasItem('/busybox/tail -f /dev/null'))
+    }
+
 
     private container(options, body) {
         containerName = options.name

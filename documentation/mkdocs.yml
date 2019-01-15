@@ -22,6 +22,7 @@ nav:
         - mavenExecute: steps/mavenExecute.md
         - mtaBuild: steps/mtaBuild.md
         - neoDeploy: steps/neoDeploy.md
+        - newmanExecute: steps/newmanExecute.md
         - pipelineExecute: steps/pipelineExecute.md
         - pipelineRestartSteps: steps/pipelineRestartSteps.md
         - pipelineStashFiles: steps/pipelineStashFiles.md
