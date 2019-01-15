@@ -25,7 +25,7 @@ The basic workflow is as follows:
     <Commit Message Header>
 
     <Commit Message Description>
-    
+
     ChangeDocument: <Your Change Document ID>
     ```
 
@@ -78,7 +78,7 @@ steps:
     applicationId: 'HCP'
 ```
 
-## Parameters
+### Parameters
 
 For the detailed description of the relevant parameters, see:
 
