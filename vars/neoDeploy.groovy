@@ -61,6 +61,10 @@ void call(parameters = [:]) {
             .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName?:env.STAGE_NAME, STEP_CONFIG_KEYS, CONFIG_KEY_COMPATIBILITY)
             .addIfEmpty('source', script.commonPipelineEnvironment.getMtarFilePath())
             .mixin(parameters, PARAMETER_KEYS, CONFIG_KEY_COMPATIBILITY)
+            .withMandatoryProperty('neo')
+            .withMandatoryProperty('source')
+            .withMandatoryProperty('deployMode')
+            .withMandatoryProperty('warAction')
             .use()
 
         utils.pushToSWA([
@@ -81,7 +85,16 @@ void call(parameters = [:]) {
                 usernameVariable: 'NEO_USERNAME')]) {
 
                 assertPasswordRules(NEO_PASSWORD)
-                NeoCommandHelper neoCommandHelper = new NeoCommandHelper(script, configuration, neo, NEO_USERNAME, NEO_PASSWORD)
+                String neoExecutable = neo.getToolExecutable(script, deploymentConfiguration)
+                NeoCommandHelper neoCommandHelper = new NeoCommandHelper(
+                    script,
+                    configuration.deployMode,
+                    configuration.neo,
+                    neoExecutable,
+                    NEO_USERNAME,
+                    NEO_PASSWORD,
+                    configuration.source
+                )
 
                 dockerExecute(
                     script: script,
