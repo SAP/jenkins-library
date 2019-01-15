@@ -72,13 +72,18 @@ InfluxDB data map: ${script.commonPipelineEnvironment.getInfluxCustomDataMap()}
 
 private void writeToInflux(config, script){
     if (config.influxServer) {
-        step([
-            $class: 'InfluxDbPublisher',
-            selectedTarget: config.influxServer,
-            customPrefix: config.influxPrefix,
-            customData: script.commonPipelineEnvironment.getInfluxCustomData(),
-            customDataMap: script.commonPipelineEnvironment.getInfluxCustomDataMap()
-        ])
+        try {
+            step([
+                $class: 'InfluxDbPublisher',
+                selectedTarget: config.influxServer,
+                customPrefix: config.influxPrefix,
+                customData: script.commonPipelineEnvironment.getInfluxCustomData(),
+                customDataMap: script.commonPipelineEnvironment.getInfluxCustomDataMap()
+            ])
+        } catch (NullPointerException e){
+            // catch NPEs as long as https://issues.jenkins-ci.org/browse/JENKINS-55594 is not fixed & released
+            error "[$STEP_NAME] NullPointerException occured, is the correct target defined?"
+        }
     }
 
     //write results into json file for archiving - also benefitial when no InfluxDB is available yet
