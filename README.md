@@ -101,6 +101,7 @@ project][piper-library-issues].
 Feel free to open new issues for feature requests, bugs or general feedback on
 the [GitHub issues page of this project][piper-library-issues].
 
+Register to our [google group][google-group] in order to get updates or for asking questions.
 # Contributing
 
 Read and understand our [contribution guidelines][piper-library-contribution]
@@ -124,3 +125,4 @@ otherwise in the [LICENSE file][piper-library-license]
 [jenkins-doc-libraries]: https://jenkins.io/doc/book/pipeline/shared-libraries
 [jenkins-doc-steps]: https://jenkins.io/doc/pipeline/steps
 [jenkins-plugin-sharedlibs]: https://wiki.jenkins-ci.org/display/JENKINS/Pipeline+Shared+Groovy+Libraries+Plugin
+[google-group]: https://groups.google.com/forum/#!forum/project-piper
