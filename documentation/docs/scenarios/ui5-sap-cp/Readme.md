@@ -1,4 +1,4 @@
-# Create a Pipeline for SAP UI5 or SAP Fiori on SAP Cloud platform
+# Create a Pipeline for SAP UI5 or SAP Fiori on SAP Cloud Platform
 
 Create an application based on SAP UI5 or SAP Fiori and deploy the build result into an SAP Cloud Platform account in the Neo environment.
 
