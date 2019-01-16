@@ -14,7 +14,7 @@ class Analytics implements Serializable{
     }
 
     @NonCPS
-    static getInstance(){
+    static Analytics getInstance(){
         if(!instance) {
             createInstance()
 
@@ -26,12 +26,11 @@ class Analytics implements Serializable{
         return instance
     }
 
-    static createInstance(){
+    static void createInstance(){
         instance = new Analytics()
     }
 
-    public static notify(Script steps, Map config, Map payload){
-
+    static notify(Script steps, Map config, Map payload){
         //allow opt-out via configuration
         if (!config?.collectTelemetryData) {
             steps.echo "[${payload.get('step')}] telemetry reporting disabled!"
@@ -44,7 +43,6 @@ class Analytics implements Serializable{
             } catch (err) {
                 // some error occured in telemetry reporting. This should not break anything though.
             }
-
         }
     }
 
