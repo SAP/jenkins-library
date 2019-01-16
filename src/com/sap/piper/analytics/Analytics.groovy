@@ -37,7 +37,7 @@ class Analytics implements Serializable{
     static notify(Script steps, Map config, Map payload){
         //allow opt-out via configuration
         if (!config?.collectTelemetryData) {
-            steps.echo "[${payload.step}] telemetry reporting disabled!"
+            steps.echo "[${payload.step}] Telemetry reporting disabled!"
             return
         }
 

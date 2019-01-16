@@ -78,7 +78,7 @@ class UtilsTest extends BasePiperTest {
         utils.env = [BUILD_URL: 'something', JOB_URL: 'nothing']
         utils.pushToSWA([step: 'anything'], [collectTelemetryData: false])
         // asserts
-        assertThat(jlr.log, containsString('[anything] Telemetry Report to SWA disabled!'))
+        assertThat(jlr.log, containsString('[anything] Telemetry reporting disabled!'))
         assertThat(jscr.shell, not(hasItem(containsString('https://webanalytics.cfapps.eu10.hana.ondemand.com'))))
     }
 
@@ -87,7 +87,7 @@ class UtilsTest extends BasePiperTest {
         utils.env = [BUILD_URL: 'something', JOB_URL: 'nothing']
         utils.pushToSWA([step: 'anything'], null)
         // asserts
-        assertThat(jlr.log, containsString('[anything] Telemetry Report to SWA disabled!'))
+        assertThat(jlr.log, containsString('[anything] Telemetry reporting disabled!'))
     }
 
     @Test
@@ -95,6 +95,6 @@ class UtilsTest extends BasePiperTest {
         utils.env = [BUILD_URL: 'something', JOB_URL: 'nothing']
         utils.pushToSWA([step: 'anything'], [:])
         // asserts
-        assertThat(jlr.log, containsString('[anything] Telemetry Report to SWA disabled!'))
+        assertThat(jlr.log, containsString('[anything] Telemetry reporting disabled!'))
     }
 }
