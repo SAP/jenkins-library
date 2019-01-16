@@ -34,7 +34,7 @@ class NeoCommandHelperTest extends BasePiperTest {
             propertiesFile: 'file.properties'
         ]
 
-        String source = (deployMode == 'mta') ?'file.mta' :'file.war'
+        String source = (deployMode == 'mta') ? 'file.mta' : 'file.war'
         String username = 'username'
         String password = 'password'
         String neoExecutable = '/path/tools/neo.sh';
