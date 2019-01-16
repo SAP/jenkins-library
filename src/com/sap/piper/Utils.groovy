@@ -2,7 +2,9 @@ package com.sap.piper
 
 import com.cloudbees.groovy.cps.NonCPS
 import com.sap.piper.analytics.Analytics
-import org.jenkinsci.plugins.workflow.steps.MissingContextVariableException
+
+import java.nio.charset.StandardCharsets
+import java.security.MessageDigest
 
 @NonCPS
 def getMandatoryParameter(Map map, paramName, defaultValue = null) {
@@ -73,15 +75,24 @@ def unstashAll(stashContent) {
     return unstashedContent
 }
 
-def generateSha1Inline(input) {
-    return "`echo -n '${input}' | sha1sum | sed 's/  -//'`"
+@NonCPS
+def generateSha1(input) {
+    MessageDigest md = MessageDigest.getInstance("SHA-1");
+    byte[] hashInBytes = md.digest(password.getBytes(StandardCharsets.UTF_8));
+
+    // bytes to hex
+    StringBuilder sb = new StringBuilder();
+    for (byte b : hashInBytes) {
+        sb.append(String.format("%02x", b));
+    }
+    return sb.toString()
 }
 
 void pushToSWA(Map parameters, Map config) {
     parameters.actionName = parameters.get('actionName') ?: 'Piper Library OS'
     parameters.eventType = parameters.get('eventType') ?: 'library-os'
-    parameters.jobUrlSha1 =  generateSha1Inline(env.JOB_URL)
-    parameters.buildUrlSha1 = generateSha1Inline(env.BUILD_URL)
+    parameters.jobUrlSha1 =  generateSha1(env.JOB_URL)
+    parameters.buildUrlSha1 = generateSha1(env.BUILD_URL)
 
     Analytics.notify(this, config, parameters)
 }
