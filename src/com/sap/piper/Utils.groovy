@@ -89,11 +89,15 @@ def generateSha1(input) {
 }
 
 void pushToSWA(Map parameters, Map config) {
-    parameters.actionName = parameters.get('actionName') ?: 'Piper Library OS'
-    parameters.eventType = parameters.get('eventType') ?: 'library-os'
-    parameters.jobUrlSha1 =  generateSha1(env.JOB_URL)
-    parameters.buildUrlSha1 = generateSha1(env.BUILD_URL)
+    try {
+        parameters.actionName = parameters.get('actionName') ?: 'Piper Library OS'
+        parameters.eventType = parameters.get('eventType') ?: 'library-os'
+        parameters.jobUrlSha1 =  generateSha1(env.JOB_URL)
+        parameters.buildUrlSha1 = generateSha1(env.BUILD_URL)
 
-    Analytics.notify(this, config, parameters)
+        Analytics.notify(this, config, parameters)
+    } catch (ignore) {
+        // some error occured in telemetry reporting. This should not break anything though.
+    }
 }
 
