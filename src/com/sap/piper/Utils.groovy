@@ -77,13 +77,13 @@ def unstashAll(stashContent) {
 
 @NonCPS
 def generateSha1(input) {
-    MessageDigest md = MessageDigest.getInstance("SHA-1");
-    byte[] hashInBytes = md.digest(password.getBytes(StandardCharsets.UTF_8));
+    MessageDigest md = MessageDigest.getInstance("SHA-1")
+    byte[] hashInBytes = md.digest(input.getBytes(StandardCharsets.UTF_8))
 
     // bytes to hex
-    StringBuilder sb = new StringBuilder();
+    StringBuilder sb = new StringBuilder()
     for (byte b : hashInBytes) {
-        sb.append(String.format("%02x", b));
+        sb.append(String.format("%02x", b))
     }
     return sb.toString()
 }
