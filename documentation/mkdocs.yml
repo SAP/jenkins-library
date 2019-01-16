@@ -34,6 +34,9 @@ nav:
         - transportRequestCreate: steps/transportRequestCreate.md
         - transportRequestRelease:  steps/transportRequestRelease.md
         - transportRequestUploadFile: steps/transportRequestUploadFile.md
+    - 'Scenarios':
+        - 'Develop Hybrid Applications with Jenkins and SAP Solution Manager': scenarios/changeManagement.md
+        - 'Fiori (MTA) build and deployment to SAP Cloud Platform': scenarios/ui5-sap-cp/Readme.md
     - 'Required Plugins': jenkins/requiredPlugins.md
 
 theme:
