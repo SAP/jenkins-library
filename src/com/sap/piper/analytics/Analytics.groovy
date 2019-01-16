@@ -30,6 +30,10 @@ class Analytics implements Serializable{
         instance = new Analytics()
     }
 
+    static void registerEventListener(Closure listener){
+        getInstance().eventListeners.add(listener)
+    }
+
     static notify(Script steps, Map config, Map payload){
         //allow opt-out via configuration
         if (!config?.collectTelemetryData) {
@@ -44,10 +48,6 @@ class Analytics implements Serializable{
                 // some error occured in telemetry reporting. This should not break anything though.
             }
         }
-    }
-
-    void registerEventListener(Closure listener){
-        eventListeners.add(listener)
     }
 
     void piperOsDefaultReporting(Script steps, Map payload) {
