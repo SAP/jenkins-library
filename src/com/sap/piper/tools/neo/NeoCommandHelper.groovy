@@ -14,7 +14,7 @@ class NeoCommandHelper {
     private String source
 
     NeoCommandHelper(Script script, String deployMode, Map deploymentConfiguration, String pathToNeoExecutable,
-                     String user, String password, String source) {
+                    String user, String password, String source) {
         this.script = script
         this.deployMode = deployMode
         this.deploymentConfiguration = deploymentConfiguration
