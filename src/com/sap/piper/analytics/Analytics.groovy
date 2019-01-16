@@ -13,6 +13,10 @@ class Analytics implements Serializable{
         this.eventListeners = []
     }
 
+    private static void createInstance(){
+        instance = new Analytics()
+    }
+
     @NonCPS
     static Analytics getInstance(){
         if(!instance) {
@@ -26,10 +30,6 @@ class Analytics implements Serializable{
         return instance
     }
 
-    static void createInstance(){
-        instance = new Analytics()
-    }
-
     static void registerEventListener(Closure listener){
         getInstance().eventListeners.add(listener)
     }
@@ -37,7 +37,7 @@ class Analytics implements Serializable{
     static notify(Script steps, Map config, Map payload){
         //allow opt-out via configuration
         if (!config?.collectTelemetryData) {
-            steps.echo "[${payload.get('step')}] telemetry reporting disabled!"
+            steps.echo "[${payload.step}] telemetry reporting disabled!"
             return
         }
 
