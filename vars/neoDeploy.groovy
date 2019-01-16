@@ -53,7 +53,6 @@ void call(parameters = [:]) {
 
         Map stepCompatibilityConfiguration = handleCompatibility(script, parameters)
 
-        def errorMessage = new SimpleTemplateEngine().createTemplate('Error in neoDeploy: $key not configured.')
         // load default & individual configuration
         Map configuration = ConfigurationHelper.newInstance(this)
             .loadStepDefaults()
@@ -63,10 +62,10 @@ void call(parameters = [:]) {
             .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName ?: env.STAGE_NAME, STEP_CONFIG_KEYS, CONFIG_KEY_COMPATIBILITY)
             .addIfEmpty('source', script.commonPipelineEnvironment.getMtarFilePath())
             .mixin(parameters, PARAMETER_KEYS, CONFIG_KEY_COMPATIBILITY)
-            .withMandatoryProperty('neo', errorMessage.make([key: 'neo']).toString())
-            .withMandatoryProperty('source', errorMessage.make([key: 'source']).toString())
-            .withMandatoryProperty('deployMode', errorMessage.make([key: 'deployMode']).toString())
-            .withMandatoryProperty('warAction', errorMessage.make([key: 'warAction']).toString())
+            .withMandatoryProperty('neo', 'Error in neoDeploy: neo not configured.')
+            .withMandatoryProperty('source', 'Error in neoDeploy: source not configured.')
+            .withMandatoryProperty('deployMode', 'Error in neoDeploy: deployMode not configured.')
+            .withMandatoryProperty('warAction', 'Error in neoDeploy: warAction not configured.')
             .use()
 
         utils.pushToSWA([
