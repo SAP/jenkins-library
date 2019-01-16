@@ -1,5 +1,4 @@
 [![Build Status](https://travis-ci.org/SAP/jenkins-library.svg?branch=master)](https://travis-ci.org/SAP/jenkins-library)
-[![Coverage Status](https://coveralls.io/repos/github/SAP/jenkins-library/badge.svg?branch=master)](https://coveralls.io/github/SAP/jenkins-library?branch=master)
 [![Maintainability](https://api.codeclimate.com/v1/badges/0e6a23344616e29b4ed0/maintainability)](https://codeclimate.com/github/SAP/jenkins-library/maintainability)
 [![Test Coverage](https://api.codeclimate.com/v1/badges/0e6a23344616e29b4ed0/test_coverage)](https://codeclimate.com/github/SAP/jenkins-library/test_coverage)
 
