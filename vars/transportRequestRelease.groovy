@@ -58,8 +58,11 @@ void call(parameters = [:]) {
 
         configuration = configHelper.use()
 
-        new Utils().pushToSWA([step: STEP_NAME,
-                                stepParam1: parameters?.script == null], configuration)
+        new Utils().pushToSWA([
+            step: STEP_NAME,
+            stepParamKey1: 'script missing',
+            stepParam1: parameters?.script == null
+        ], configuration)
 
         def changeDocumentId = null
         def transportRequestId = getTransportRequestId(cm, script, configuration)

@@ -103,6 +103,19 @@ private void executeStage(script, originalStage, stageName, config, utils) {
         deleteDir()
 
         def duration = System.currentTimeMillis() - startTime
-        utils.pushToSWA([eventType: 'library-os-stage', stageName: stageName, stepParam1: "${script.currentBuild.currentResult}", stepParam2: "${startTime}", stepParam3: "${duration}", stepParam4: "${projectExtensions}", stepParam5: "${globalExtensions}"], config)
+        utils.pushToSWA([
+            eventType: 'library-os-stage',
+            stageName: stageName,
+            stepParamKey1: 'build result',
+            stepParam1: "${script.currentBuild.currentResult}",
+            stepParamKey2: 'stage start time',
+            stepParam2: "${startTime}",
+            stepParamKey3: 'stage duration',
+            stepParam3: "${duration}",
+            stepParamKey4: 'project extension provided',
+            stepParam4: "${projectExtensions}",
+            stepParamKey5: 'global extension provided',
+            stepParam5: "${globalExtensions}"
+        ], config)
     }
 }

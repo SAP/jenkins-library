@@ -54,7 +54,15 @@ void call(Map parameters = [:]) {
             .withMandatoryProperty('cloudFoundry/credentialsId')
             .use()
 
-        utils.pushToSWA([step: STEP_NAME, stepParam1: config.deployTool, stepParam2: config.deployType, stepParam3: parameters?.script == null], config)
+        utils.pushToSWA([
+            step: STEP_NAME,
+            stepParamKey1: 'deploy tool',
+            stepParam1: config.deployTool,
+            stepParamKey2: 'deploy type',
+            stepParam2: config.deployType,
+            stepParamKey3: 'script missing',
+            stepParam3: parameters?.script == null
+        ], config)
 
         echo "[${STEP_NAME}] General parameters: deployTool=${config.deployTool}, deployType=${config.deployType}, cfApiEndpoint=${config.cloudFoundry.apiEndpoint}, cfOrg=${config.cloudFoundry.org}, cfSpace=${config.cloudFoundry.space}, cfCredentialsId=${config.cloudFoundry.credentialsId}, deployUser=${config.deployUser}"
 
@@ -147,7 +155,7 @@ def deployCfNative (config) {
         }
 
         sh """#!/bin/bash
-            set +x  
+            set +x
             set -e
             export HOME=${config.dockerWorkspace}
             cf login -u \"${username}\" -p '${password}' -a ${config.cloudFoundry.apiEndpoint} -o \"${config.cloudFoundry.org}\" -s \"${config.cloudFoundry.space}\"

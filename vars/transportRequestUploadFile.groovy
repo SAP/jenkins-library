@@ -61,9 +61,13 @@ void call(parameters = [:]) {
             .withMandatoryProperty('changeManagement/git/format')
             .withMandatoryProperty('filePath')
 
-        new Utils().pushToSWA([step: STEP_NAME,
-                                stepParam1: configuration.changeManagement.type,
-                                stepParam2: parameters?.script == null], configuration)
+        new Utils().pushToSWA([
+            step: STEP_NAME,
+            stepParamKey1: 'change management type',
+            stepParam1: configuration.changeManagement.type,
+            stepParamKey2: 'script missing',
+            stepParam2: parameters?.script == null
+        ], configuration)
 
         def changeDocumentId = null
 

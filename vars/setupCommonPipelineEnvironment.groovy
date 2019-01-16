@@ -24,9 +24,13 @@ void call(Map parameters = [:]) {
             .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS)
             .use()
 
-        (parameters.utils ?: new Utils())
-                   .pushToSWA([step: STEP_NAME, stepParam4: parameters.customDefaults?'true':'false',
-                                                stepParam5: Boolean.toString( ! (script?.commonPipelineEnvironment?.getConfigProperties() ?: [:]).isEmpty())], config)
+        (parameters.utils ?: new Utils()).pushToSWA([
+            step: STEP_NAME,
+            stepParamKey4: 'custom defaults provided',
+            stepParam4: parameters.customDefaults?'true':'false',
+            stepParamKey5: 'legacy config provided',
+            stepParam5: Boolean.toString( ! (script?.commonPipelineEnvironment?.getConfigProperties() ?: [:]).isEmpty())
+        ], config)
     }
 }
 

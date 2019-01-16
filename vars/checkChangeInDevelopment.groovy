@@ -94,8 +94,11 @@ void call(parameters = [:]) {
               */
             .withMandatoryProperty('changeManagement/endpoint')
 
-        new Utils().pushToSWA([step: STEP_NAME,
-                                stepParam1: parameters?.script == null], configuration)
+        new Utils().pushToSWA([
+            step: STEP_NAME,
+            stepParamKey1: 'script missing',
+            stepParam1: parameters?.script == null
+        ], configuration)
 
         def changeId = getChangeDocumentId(cm, script, configuration)
 
