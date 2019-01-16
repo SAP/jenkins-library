@@ -2,7 +2,6 @@ package com.sap.piper.tools.neo
 
 import com.sap.piper.BashUtils
 import com.sap.piper.Utils
-import com.sap.piper.tools.ToolDescriptor
 
 class NeoCommandHelper {
 
@@ -10,46 +9,46 @@ class NeoCommandHelper {
     private String deployMode
     private Map deploymentConfiguration
     private String pathToNeoExecutable
-    private String username
+    private String user
     private String password
     private String source
 
     NeoCommandHelper(Script script, String deployMode, Map deploymentConfiguration, String pathToNeoExecutable,
-                     String username, String password, String source){
+                     String user, String password, String source){
         this.script = script
         this.deployMode = deployMode
         this.deploymentConfiguration = deploymentConfiguration
         this.pathToNeoExecutable = pathToNeoExecutable
-        this.username = username
+        this.user = user
         this.password = password
         this.source = source
     }
 
-    String neoTool(){
-        return pathToNeoExecutable
+    private String prolog(){
+        return "#!/bin/bash \"${pathToNeoExecutable}\""
     }
 
     String statusCommand() {
         if(deployMode == 'mta'){
             throw new Exception("This should not happen. Status command cannot be executed for MTA applications")
         }
-        return "${neoTool()} status ${mainArgs()}"
+        return "${prolog()} status ${mainArgs()}"
     }
 
     String rollingUpdateCommand() {
-        return "${neoTool()} rolling-update ${mainArgs()} ${source()} ${additionalArgs()}"
+        return "${prolog()} rolling-update ${mainArgs()} ${source()} ${additionalArgs()}"
     }
 
     String deployCommand() {
-        "${neoTool()} deploy ${mainArgs()} ${source()} ${additionalArgs()}"
+        "${prolog()} deploy ${mainArgs()} ${source()} ${additionalArgs()}"
     }
 
     String restartCommand() {
-        return "${neoTool()} restart --synchronous ${mainArgs()}"
+        return "${prolog()} restart --synchronous ${mainArgs()}"
     }
 
     String deployMta() {
-        return "${neoTool()} deploy-mta --synchronous ${mainArgs()} ${source()}"
+        return "${prolog()} deploy-mta --synchronous ${mainArgs()} ${source()}"
     }
 
     String cloudCockpitLink(){
@@ -83,11 +82,11 @@ class NeoCommandHelper {
         assertMandatoryParameter("host")
         assertMandatoryParameter("account")
 
-        String resource = "${host}/${account}"
+        String resource = "${deploymentConfiguration.host}/${deploymentConfiguration.account}"
 
         if(deployMode == "warParams"){
             assertMandatoryParameter("application")
-            resource += "/${application}"
+            resource += "/${deploymentConfiguration.application}"
         }
 
         return resource
@@ -95,11 +94,11 @@ class NeoCommandHelper {
 
     private String source(){
         assertFileExists(source)
-        return "--source ${source}"
+        return "--source ${BashUtils.escape(source)}"
     }
 
     private String mainArgs() {
-        String usernamePassword = "--username ${username} --password ${BashUtils.escape(password)}"
+        String usernamePassword = "--user ${BashUtils.escape(user)} --password ${BashUtils.escape(password)}"
 
         if(deployMode == 'warPropertiesFile'){
             assertMandatoryParameter('propertiesFile')
@@ -110,11 +109,12 @@ class NeoCommandHelper {
         assertMandatoryParameter('host')
         assertMandatoryParameter('account')
 
-        String targetArgs = "--host ${deploymentConfiguration.host} --account ${deploymentConfiguration.account}"
+        String targetArgs = "--host ${BashUtils.escape(deploymentConfiguration.host)}"
+        targetArgs += " --account ${BashUtils.escape(deploymentConfiguration.account)}"
 
         if(deployMode == 'warParams'){
             assertMandatoryParameter('application')
-            targetArgs += " --application ${deploymentConfiguration.application}"
+            targetArgs += " --application ${BashUtils.escape(deploymentConfiguration.application)}"
         }
 
         return "${targetArgs} ${usernamePassword}"
@@ -127,16 +127,16 @@ class NeoCommandHelper {
 
         String args = ""
         assertMandatoryParameter('runtime')
-        args += " --runtime ${deploymentConfiguration.runtime}"
+        args += " --runtime ${BashUtils.escape(deploymentConfiguration.runtime)}"
 
         assertMandatoryParameter('runtimeVersion')
-        args += " --runtime-version ${deploymentConfiguration.runtimeVersion}"
+        args += " --runtime-version ${BashUtils.escape(deploymentConfiguration.runtimeVersion)}"
 
         if (deploymentConfiguration.size) {
             def sizes = ['lite', 'pro', 'prem', 'prem-plus']
             def size = new Utils().getParameterInValueRange(script, deploymentConfiguration,'size',sizes)
 
-            args += " --size ${size}"
+            args += " --size ${BashUtils.escape(size)}"
         }
 
         if (deploymentConfiguration.containsKey('environment')) {
@@ -157,7 +157,7 @@ class NeoCommandHelper {
 
 
         if (deploymentConfiguration.containsKey('vmArguments')) {
-            args += " --vm-arguments \"${deploymentConfiguration.vmArguments}\""
+            args += " --vm-arguments ${BashUtils.escape(deploymentConfiguration.vmArguments)}"
         }
 
         return args
@@ -167,8 +167,8 @@ class NeoCommandHelper {
         assertFileIsConfiguredAndExists('propertiesFile')
 
         Map properties = script.readProperties file: deploymentConfiguration.propertiesFile
-        if(!properties.application || !properties.host || properties.account) {
-            script.error("Error in Neo deployment configuration. Configuration for host, account or application is missing in the properties file")
+        if(!properties.application || !properties.host || !properties.account) {
+            script.error("Error in Neo deployment configuration. Configuration for host, account or application is missing in the properties file.")
         }
 
         return properties
@@ -187,7 +187,7 @@ class NeoCommandHelper {
 
     private assertMandatoryParameter(configurationKey){
         if(!deploymentConfiguration[configurationKey]){
-            script.error("Error in Neo deployment configuration. Configuration for ${configurationKey} is missing")
+            script.error("Error in Neo deployment configuration. Configuration for ${configurationKey} is missing.")
         }
     }
 }
