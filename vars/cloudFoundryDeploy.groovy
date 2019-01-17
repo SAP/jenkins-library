@@ -148,6 +148,7 @@ def deployCfNative (config) {
 
         sh """#!/bin/bash
             set +x  
+            set -e
             export HOME=${config.dockerWorkspace}
             cf login -u \"${username}\" -p '${password}' -a ${config.cloudFoundry.apiEndpoint} -o \"${config.cloudFoundry.org}\" -s \"${config.cloudFoundry.space}\"
             cf plugins
@@ -200,6 +201,7 @@ def deployMta (config) {
         sh """#!/bin/bash
             export HOME=${config.dockerWorkspace}
             set +x
+            set -e
             cf api ${config.cloudFoundry.apiEndpoint}
             cf login -u ${username} -p '${password}' -a ${config.cloudFoundry.apiEndpoint} -o \"${config.cloudFoundry.org}\" -s \"${config.cloudFoundry.space}\"
             cf plugins

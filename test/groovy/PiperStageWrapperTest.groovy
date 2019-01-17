@@ -54,7 +54,7 @@ class PiperStageWrapperTest extends BasePiperTest {
 
     @Test
     void testDefault() {
-        def testInt = 1
+        def executed = false
         jsr.step.piperStageWrapper(
             script: nullScript,
             juStabUtils: utils,
@@ -62,16 +62,16 @@ class PiperStageWrapperTest extends BasePiperTest {
             stageName: 'test'
 
         ) {
-            testInt ++
+            executed = true
         }
-        assertThat(testInt, is(2))
+        assertThat(executed, is(true))
         assertThat(lockMap.size(), is(2))
         assertThat(countNodeUsage, is(1))
     }
 
     @Test
     void testNoLocking() {
-        def testInt = 1
+        def executed = false
         jsr.step.piperStageWrapper(
             script: nullScript,
             juStabUtils: utils,
@@ -81,9 +81,9 @@ class PiperStageWrapperTest extends BasePiperTest {
             stageName: 'test'
 
         ) {
-            testInt ++
+            executed = true
         }
-        assertThat(testInt, is(2))
+        assertThat(executed, is(true))
         assertThat(lockMap.size(), is(0))
         assertThat(countNodeUsage, is(1))
         assertThat(nodeLabel, is('testLabel'))
@@ -98,21 +98,23 @@ class PiperStageWrapperTest extends BasePiperTest {
         helper.registerAllowedMethod('load', [String.class], {
             return helper.loadScript('test/resources/stages/test.groovy')
         })
+        nullScript.commonPipelineEnvironment.gitBranch = 'testBranch'
 
-        def testInt = 1
+        def executed = false
         jsr.step.piperStageWrapper(
             script: nullScript,
             juStabUtils: utils,
             ordinal: 10,
             stageName: 'test'
         ) {
-            testInt ++
+            executed = true
         }
 
-        assertThat(testInt, is(2))
+        assertThat(executed, is(true))
         assertThat(jlr.log, containsString('[piperStageWrapper] Running project interceptor \'.pipeline/extensions/test.groovy\' for test.'))
         assertThat(jlr.log, containsString('Stage Name: test'))
-        assertThat(jlr.log, containsString('Config:'))
+        assertThat(jlr.log, containsString('Config: [productiveBranch:master,'))
+        assertThat(jlr.log, containsString('testBranch'))
     }
 }
 

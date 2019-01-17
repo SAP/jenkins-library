@@ -169,7 +169,7 @@ Measurements are potentially pre-fixed - see parameter `influxPrefix` above.
 | sonarqube_data | <ul><li>blocker_issues</li><li>critical_issues</li><li>info_issues</li><li>major_issues</li><li>minor_issues</li><li>lines_of_code</li><li>...</li></ul> | Details see [InfluxDB plugin documentation](https://wiki.jenkins.io/display/JENKINS/InfluxDB+Plugin) |
 | jenkins_custom_data | Piper fills following colums by default: <br /><ul><li>build_result</li><li>build_result_key</li><li>build_step (->step in case of error)</li><li>build_error (->error message in case of error)</li></ul> | filled by `commonPipelineEnvironment.setInfluxCustomDataProperty()` |
 | pipeline_data | Examples from the Piper templates:<br /><ul><li>build_duration</li><li>opa_duration</li><li>deploy_test_duration</li><li>deploy_test_duration</li><li>fortify_duration</li><li>release_duration</li><li>...</li></ul>| filled by step [`measureDuration`](durationMeasure.md) using parameter `measurementName`|
-| step_data | Considered, e.g.:<br /><ul><li>build_quality (Milestone/Release)</li><li>build_url</li><li>bats</li><li>checkmarx</li><li>fortify</li><li>gauge</li><li>nsp</li><li>opa</li><li>opensourcedependency</li><li>ppms</li><li>jmeter</li><li>supa</li><li>snyk</li><li>sonar</li><li>sourceclear</li><li>uiveri5</li><li>vulas</li><li>whitesource</li><li>traceability</li><li>...</li><li>xmakestage</li><li>xmakepromote</li></ul>| filled by `commonPipelineEnvironment.setInfluxStepData()` |
+| step_data | Considered, e.g.:<br /><ul><li>build_url</li><li>bats</li><li>checkmarx</li><li>fortify</li><li>gauge</li><li>nsp</li><li>snyk</li><li>sonar</li><li>...</li></ul>| filled by `commonPipelineEnvironment.setInfluxStepData()` |
 
 ### Examples for InfluxDB queries which can be used in Grafana
 
