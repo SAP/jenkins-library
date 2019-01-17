@@ -11,16 +11,53 @@ import groovy.transform.Field
 @Field Set GENERAL_CONFIG_KEYS = STEP_CONFIG_KEYS
 
 @Field Set STEP_CONFIG_KEYS = [
+    /**
+      * Docker image for code execution.
+      */
     'dockerImage',
+    /**
+      * Defines the behavior, in case tests fail.
+      * @possibleValues `true`, `false`
+      */
     'failOnError',
+    /**
+      * see `testRepository`
+      */
     'gitBranch',
+    /**
+      * see `testRepository`
+      */
     'gitSshKeyCredentialsId',
+    /**
+      * The test collection that should be executed. This could also be a file pattern.
+      */
     'newmanCollection',
+    /**
+      * Specify an environment file path or URL. Environments provide a set of variables that one can use within collections.
+      * see also [Newman docs](https://github.com/postmanlabs/newman#newman-run-collection-file-source-options)
+      */
     'newmanEnvironment',
+    /**
+      * Specify the file path or URL for global variables. Global variables are similar to environment variables but have a lower precedence and can be overridden by environment variables having the same name.
+      * see also [Newman docs](https://github.com/postmanlabs/newman#newman-run-collection-file-source-options)
+      */
     'newmanGlobals',
+    /**
+      * The shell command that will be executed inside the docker container to install Newman.
+      */
     'newmanInstallCommand',
+    /**
+      * The newman command that will be executed inside the docker container.
+      */
     'newmanRunCommand',
+    /**
+      * If specific stashes should be considered for the tests, you can pass this via this parameter.
+      */
     'stashContent',
+    /**
+      * In case the test implementation is stored in a different repository than the code itself, you can define the repository containing the tests using parameter `testRepository` and if required `gitBranch` (for a different branch than master) and `gitSshKeyCredentialsId` (for protected repositories).
+      * For protected repositories the `testRepository` needs to contain the ssh git url.
+      */
     'testRepository'
 ]
 

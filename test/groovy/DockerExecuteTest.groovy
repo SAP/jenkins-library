@@ -105,6 +105,28 @@ class DockerExecuteTest extends BasePiperTest {
     }
 
     @Test
+    void testExecuteInsidePodWithCustomCommandAndShell() throws Exception {
+        Map kubernetesConfig = [:]
+        helper.registerAllowedMethod('dockerExecuteOnKubernetes', [Map.class, Closure.class], {Map config, Closure body ->
+            kubernetesConfig = config
+            return body()
+        })
+        binding.setVariable('env', [ON_K8S: 'true'])
+        jsr.step.dockerExecute(
+            script: nullScript,
+            containerCommand: '/busybox/tail -f /dev/null',
+            containerShell: '/busybox/sh',
+            dockerImage: 'maven:3.5-jdk-8-alpine'
+        ){
+            bodyExecuted = true
+        }
+        assertTrue(jlr.log.contains('Executing inside a Kubernetes Pod'))
+        assertThat(kubernetesConfig.containerCommand, is('/busybox/tail -f /dev/null'))
+        assertThat(kubernetesConfig.containerShell, is('/busybox/sh'))
+        assertTrue(bodyExecuted)
+    }
+
+    @Test
     void testExecuteInsideDockerContainer() throws Exception {
         jsr.step.dockerExecute(script: nullScript, dockerImage: 'maven:3.5-jdk-8-alpine') {
             bodyExecuted = true

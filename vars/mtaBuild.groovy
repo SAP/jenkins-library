@@ -51,11 +51,14 @@ void call(Map parameters = [:]) {
 
             if (!fileExists(mtaYamlName)) {
                 if (!applicationName) {
-                    echo "'applicationName' not provided as parameter - will not try to generate ${mtaYamlName} file"
+                    error "'${mtaYamlName}' not found in project sources and 'applicationName' not provided as parameter - cannot generate '${mtaYamlName}' file."
                 } else {
+                    echo "[INFO] '${mtaYamlName}' file not found in project sources, but application name provided as parameter - generating '${mtaYamlName}' file."
                     MtaUtils mtaUtils = new MtaUtils(this)
                     mtaUtils.generateMtaDescriptorFromPackageJson("package.json", mtaYamlName, applicationName)
                 }
+            } else {
+                echo "[INFO] '${mtaYamlName}' file found in project sources."
             }
 
             def mtaYaml = readYaml file: mtaYamlName
@@ -77,13 +80,14 @@ void call(Map parameters = [:]) {
             if (configuration.extension) mtaCall += " --extension=$configuration.extension"
             mtaCall += ' build'
 
+            echo "[INFO] Executing mta build call: '${mtaCall}'."
+
             sh """#!/bin/bash
             export PATH=./node_modules/.bin:${PATH}
             $mtaCall
             """
 
-            def mtarFilePath = "${mtarFileName}"
-            script?.commonPipelineEnvironment?.setMtarFilePath(mtarFilePath)
+            script?.commonPipelineEnvironment?.setMtarFilePath(mtarFileName)
         }
     }
 }
