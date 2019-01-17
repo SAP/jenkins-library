@@ -7,10 +7,10 @@ class Analytics implements Serializable{
 
     private static Analytics instance
 
-    private List eventListeners
+    private List listenerList
 
     private Analytics(){
-        this.eventListeners = []
+        this.listenerList = []
     }
 
     private static void createInstance(){
@@ -25,13 +25,13 @@ class Analytics implements Serializable{
             Closure defaultListener = {payload ->
                 piperOsDefaultReporting(payload)
             }
-            registerEventListener(defaultListener)
+            registerListener(defaultListener)
         }
         return instance
     }
 
-    static void registerEventListener(Closure listener){
-        getInstance().eventListeners.add(listener)
+    static void registerListener(Closure listener){
+        getInstance().listenerList.add(listener)
     }
 
     static notify(Script steps, Map config, Map payload){
@@ -41,7 +41,7 @@ class Analytics implements Serializable{
             return
         }
 
-        getInstance().eventListeners.each { listener ->
+        getInstance().listenerList.each { listener ->
             try {
                 listener(steps, payload)
             } catch (err) {
@@ -71,9 +71,6 @@ class Analytics implements Serializable{
             def idsite = '827e8025-1e21-ae84-c3a3-3f62b70b0130'
             def url = 'https://github.com/SAP/jenkins-library'
 
-            def action_name = payload.actionName
-            def event_type = payload.eventType
-
             swaCustom.custom3 = payload.step
             swaCustom.custom4 =  payload.jobUrlSha1
             swaCustom.custom5 = payload.buildUrlSha1
@@ -87,10 +84,10 @@ class Analytics implements Serializable{
             def options = []
             options.push("-G")
             options.push("-v \"${swaUrl}\"")
-            options.push("--data-urlencode \"action_name=${action_name}\"")
+            options.push("--data-urlencode \"action_name=${payload.actionName}\"")
             options.push("--data-urlencode \"idsite=${idsite}\"")
             options.push("--data-urlencode \"url=${url}\"")
-            options.push("--data-urlencode \"event_type=${event_type}\"")
+            options.push("--data-urlencode \"event_type=${payload.eventType}\"")
             for(def key : ['custom3', 'custom4', 'custom5', 'custom10', 'custom11', 'custom12', 'custom13', 'custom14', 'custom15']){
                 if (swaCustom[key] != null) options.push("--data-urlencode \"${key}=${swaCustom[key]}\"")
             }
