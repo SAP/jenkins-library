@@ -14,7 +14,7 @@ class NeoCommandHelper {
     private String source
 
     NeoCommandHelper(Script script, DeployMode deployMode, Map deploymentConfiguration, String pathToNeoExecutable,
-                    String user, String password, String source) {
+                     String user, String password, String source) {
         this.script = script
         this.deployMode = deployMode
         this.deploymentConfiguration = deploymentConfiguration
@@ -65,9 +65,9 @@ class NeoCommandHelper {
                 "/acc/${deploymentConfiguration.account}/mtas"
         }
 
-        StepAssertions.assertMandatoryParameter(script, deploymentConfiguration,'host')
-        StepAssertions.assertMandatoryParameter(script, deploymentConfiguration,'account')
-        StepAssertions.assertMandatoryParameter(script, deploymentConfiguration,'application')
+        StepAssertions.assertMandatoryParameter(script, deploymentConfiguration, 'host')
+        StepAssertions.assertMandatoryParameter(script, deploymentConfiguration, 'account')
+        StepAssertions.assertMandatoryParameter(script, deploymentConfiguration, 'application')
 
         return "https://account.${deploymentConfiguration.host}/cockpit#" +
             "/acc/${deploymentConfiguration.account}/app/${deploymentConfiguration.application}/dashboard"
@@ -79,13 +79,13 @@ class NeoCommandHelper {
             return "${properties.host}/${properties.account}/${properties.application}"
         }
 
-        StepAssertions.assertMandatoryParameter(script, deploymentConfiguration,'host')
-        StepAssertions.assertMandatoryParameter(script, deploymentConfiguration,'account')
+        StepAssertions.assertMandatoryParameter(script, deploymentConfiguration, 'host')
+        StepAssertions.assertMandatoryParameter(script, deploymentConfiguration, 'account')
 
         String resource = "${deploymentConfiguration.host}/${deploymentConfiguration.account}"
 
         if (deployMode == DeployMode.WAR_PARAMS) {
-            StepAssertions.assertMandatoryParameter(script, deploymentConfiguration,'application')
+            StepAssertions.assertMandatoryParameter(script, deploymentConfiguration, 'application')
             resource += "/${deploymentConfiguration.application}"
         }
 
@@ -101,19 +101,19 @@ class NeoCommandHelper {
         String usernamePassword = "--user ${BashUtils.escape(user)} --password ${BashUtils.escape(password)}"
 
         if (deployMode == DeployMode.WAR_PROPERTIES_FILE) {
-            StepAssertions.assertMandatoryParameter(script, deploymentConfiguration,'propertiesFile')
-            StepAssertions.assertFileIsConfiguredAndExists(script, deploymentConfiguration,'propertiesFile')
+            StepAssertions.assertMandatoryParameter(script, deploymentConfiguration, 'propertiesFile')
+            StepAssertions.assertFileIsConfiguredAndExists(script, deploymentConfiguration, 'propertiesFile')
             return "${deploymentConfiguration.propertiesFile} ${usernamePassword}"
         }
 
-        StepAssertions.assertMandatoryParameter(script, deploymentConfiguration,'host')
-        StepAssertions.assertMandatoryParameter(script, deploymentConfiguration,'account')
+        StepAssertions.assertMandatoryParameter(script, deploymentConfiguration, 'host')
+        StepAssertions.assertMandatoryParameter(script, deploymentConfiguration, 'account')
 
         String targetArgs = "--host ${BashUtils.escape(deploymentConfiguration.host)}"
         targetArgs += " --account ${BashUtils.escape(deploymentConfiguration.account)}"
 
         if (deployMode == DeployMode.WAR_PARAMS) {
-            StepAssertions.assertMandatoryParameter(script, deploymentConfiguration,'application')
+            StepAssertions.assertMandatoryParameter(script, deploymentConfiguration, 'application')
             targetArgs += " --application ${BashUtils.escape(deploymentConfiguration.application)}"
         }
 
@@ -126,10 +126,10 @@ class NeoCommandHelper {
         }
 
         String args = ""
-        StepAssertions.assertMandatoryParameter(script, deploymentConfiguration,'runtime')
+        StepAssertions.assertMandatoryParameter(script, deploymentConfiguration, 'runtime')
         args += " --runtime ${BashUtils.escape(deploymentConfiguration.runtime)}"
 
-        StepAssertions.assertMandatoryParameter(script, deploymentConfiguration,'runtimeVersion')
+        StepAssertions.assertMandatoryParameter(script, deploymentConfiguration, 'runtimeVersion')
         args += " --runtime-version ${BashUtils.escape(deploymentConfiguration.runtimeVersion)}"
 
         if (deploymentConfiguration.size) {

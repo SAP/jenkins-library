@@ -9,11 +9,11 @@ enum DeployMode {
         this.value = value
     }
 
-    static stringValues(){
+    static stringValues() {
         return values().collect { each -> each.value }
     }
 
-    boolean isWarDeployment(){
+    boolean isWarDeployment() {
         return this != DeployMode.MTA
     }
 

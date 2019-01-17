@@ -10,7 +10,7 @@ enum WarAction {
         this.value = value
     }
 
-    static stringValues(){
+    static stringValues() {
         return values().collect { each -> each.value }
     }
 

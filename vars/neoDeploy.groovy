@@ -1,16 +1,12 @@
+import com.sap.piper.ConfigurationHelper
+import com.sap.piper.Utils
+import com.sap.piper.tools.ToolDescriptor
 import com.sap.piper.tools.neo.DeployMode
 import com.sap.piper.tools.neo.NeoCommandHelper
 import com.sap.piper.tools.neo.WarAction
-import groovy.text.SimpleTemplateEngine
+import groovy.transform.Field
 
 import static com.sap.piper.Prerequisites.checkScript
-
-import com.sap.piper.ConfigurationHelper
-import com.sap.piper.Utils
-
-import com.sap.piper.tools.ToolDescriptor
-
-import groovy.transform.Field
 
 @Field String STEP_NAME = getClass().getName()
 @Field Set GENERAL_CONFIG_KEYS = [
@@ -155,7 +151,7 @@ private deploy(script, utils, Map configuration, NeoCommandHelper neoCommandHelp
         }
     }
     catch (Exception ex) {
-        if(dockerImage){
+        if (dockerImage) {
             echo "Error while deploying to SAP Cloud Platform. Here are the neo.sh logs:"
             sh "cat /var/log/neo/*"
         }
