@@ -43,7 +43,7 @@ class UtilsTest extends BasePiperTest {
     void noValueGetMandatoryParameterTest() {
 
         thrown.expect(Exception)
-        thrown.expectMessage("ERROR - NO VALUE AVAILABLE FOR test")
+        thrown.expectMessage("[Error] Configuration missing for option test")
 
         utils.getMandatoryParameter(parameters, 'test', null)
     }

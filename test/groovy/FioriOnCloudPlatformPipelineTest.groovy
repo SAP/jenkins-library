@@ -1,3 +1,5 @@
+import util.JenkinsLockRule
+
 import static org.hamcrest.Matchers.allOf
 import static org.hamcrest.Matchers.containsString
 import static org.hamcrest.Matchers.equalTo
@@ -49,6 +51,7 @@ class FioriOnCloudPlatformPipelineTest extends BasePiperTest {
     JenkinsStepRule jsr = new JenkinsStepRule(this)
     JenkinsReadYamlRule jryr = new JenkinsReadYamlRule(this)
     JenkinsShellCallRule jscr = new JenkinsShellCallRule(this)
+    private JenkinsLockRule jlr = new JenkinsLockRule(this)
 
     @Rule
     public RuleChain ruleChain = Rules
@@ -56,6 +59,7 @@ class FioriOnCloudPlatformPipelineTest extends BasePiperTest {
         .around(jryr)
         .around(jsr)
         .around(jscr)
+        .around(jlr)
         .around(new JenkinsCredentialsRule(this)
         .withCredentials('CI_CREDENTIALS_ID', 'foo', 'terceSpot'))
 
