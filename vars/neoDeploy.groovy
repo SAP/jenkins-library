@@ -65,7 +65,6 @@ void call(parameters = [:]) {
             .withMandatoryProperty('neo', 'Error in neoDeploy: neo not configured.')
             .withMandatoryProperty('source', 'Error in neoDeploy: source not configured.')
             .withMandatoryProperty('deployMode', 'Error in neoDeploy: deployMode not configured.')
-            .withMandatoryProperty('warAction', 'Error in neoDeploy: warAction not configured.')
             .use()
 
         utils.pushToSWA([
