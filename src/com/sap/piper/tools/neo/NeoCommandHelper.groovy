@@ -25,7 +25,7 @@ class NeoCommandHelper {
     }
 
     private String prolog() {
-        return "#!/bin/bash \"${pathToNeoExecutable}\""
+        return "\"${pathToNeoExecutable}\""
     }
 
     String statusCommand() {

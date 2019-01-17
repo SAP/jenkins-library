@@ -113,7 +113,7 @@ class NeoDeployTest extends BasePiperTest {
             vmSize: 'lite')
 
         Assert.assertThat(shellRule.shell,
-            new CommandLineMatcher().hasProlog("#!/bin/bash \"/opt/neo/tools/neo.sh\" rolling-update")
+            new CommandLineMatcher().hasProlog("\"/opt/neo/tools/neo.sh\" rolling-update")
                 .hasSingleQuotedOption('host', 'test\\.deploy\\.host\\.com')
                 .hasSingleQuotedOption('account', 'trialuser123')
                 .hasSingleQuotedOption('application', 'testApp')
@@ -150,7 +150,7 @@ class NeoDeployTest extends BasePiperTest {
         )
 
         Assert.assertThat(shellRule.shell,
-            new CommandLineMatcher().hasProlog("#!/bin/bash \"/opt/neo/tools/neo.sh\" deploy-mta")
+            new CommandLineMatcher().hasProlog("\"/opt/neo/tools/neo.sh\" deploy-mta")
                 .hasSingleQuotedOption('host', 'test\\.deploy\\.host\\.com')
                 .hasSingleQuotedOption('account', 'trialuser123')
                 .hasOption('synchronous', '')
@@ -207,7 +207,7 @@ class NeoDeployTest extends BasePiperTest {
         )
 
         Assert.assertThat(shellRule.shell,
-            new CommandLineMatcher().hasProlog("#!/bin/bash \"/opt/neo/tools/neo.sh\" deploy-mta")
+            new CommandLineMatcher().hasProlog("\"/opt/neo/tools/neo.sh\" deploy-mta")
                 .hasSingleQuotedOption('host', 'test\\.deploy\\.host\\.com')
                 .hasSingleQuotedOption('account', 'trialuser123')
                 .hasOption('synchronous', '')
@@ -233,7 +233,7 @@ class NeoDeployTest extends BasePiperTest {
         )
 
         Assert.assertThat(shellRule.shell,
-            new CommandLineMatcher().hasProlog("#!/bin/bash \"/opt/neo/tools/neo.sh\" deploy-mta")
+            new CommandLineMatcher().hasProlog("\"/opt/neo/tools/neo.sh\" deploy-mta")
                 .hasSingleQuotedOption('host', 'configuration-frwk\\.deploy\\.host\\.com')
                 .hasSingleQuotedOption('account', 'configurationFrwkUser123')
                 .hasOption('synchronous', '')
@@ -248,7 +248,7 @@ class NeoDeployTest extends BasePiperTest {
         stepRule.step.neoDeploy(script: nullScript)
 
         Assert.assertThat(shellRule.shell,
-            new CommandLineMatcher().hasProlog("#!/bin/bash \"/opt/neo/tools/neo.sh\" deploy-mta")
+            new CommandLineMatcher().hasProlog("\"/opt/neo/tools/neo.sh\" deploy-mta")
                 .hasSingleQuotedOption('source', 'archive.mtar'))
     }
 
@@ -259,7 +259,7 @@ class NeoDeployTest extends BasePiperTest {
             source: "archive.mtar")
 
         Assert.assertThat(shellRule.shell,
-            new CommandLineMatcher().hasProlog("#!/bin/bash \"/opt/neo/tools/neo.sh\" deploy-mta")
+            new CommandLineMatcher().hasProlog("\"/opt/neo/tools/neo.sh\" deploy-mta")
                 .hasSingleQuotedOption('source', 'archive.mtar'))
     }
 
@@ -284,7 +284,7 @@ class NeoDeployTest extends BasePiperTest {
         )
 
         Assert.assertThat(shellRule.shell,
-            new CommandLineMatcher().hasProlog("#!/bin/bash \"/opt/neo/tools/neo.sh\" deploy-mta")
+            new CommandLineMatcher().hasProlog("\"/opt/neo/tools/neo.sh\" deploy-mta")
                 .hasSingleQuotedOption('host', 'test\\.deploy\\.host\\.com')
                 .hasSingleQuotedOption('account', 'trialuser123')
                 .hasOption('synchronous', '')
@@ -394,7 +394,7 @@ class NeoDeployTest extends BasePiperTest {
         stepRule.step.neoDeploy(script: nullScript, source: archiveName, deployMode: 'mta')
 
         Assert.assertThat(shellRule.shell,
-            new CommandLineMatcher().hasProlog("#!/bin/bash \"/opt/neo/tools/neo.sh\" deploy-mta")
+            new CommandLineMatcher().hasProlog("\"/opt/neo/tools/neo.sh\" deploy-mta")
                 .hasSingleQuotedOption('host', 'test\\.deploy\\.host\\.com')
                 .hasSingleQuotedOption('account', 'trialuser123')
                 .hasOption('synchronous', '')
@@ -419,7 +419,7 @@ class NeoDeployTest extends BasePiperTest {
             source: warArchiveName)
 
         Assert.assertThat(shellRule.shell,
-            new CommandLineMatcher().hasProlog("#!/bin/bash \"/opt/neo/tools/neo.sh\" deploy")
+            new CommandLineMatcher().hasProlog("\"/opt/neo/tools/neo.sh\" deploy")
                 .hasSingleQuotedOption('host', 'test\\.deploy\\.host\\.com')
                 .hasSingleQuotedOption('account', 'trialuser123')
                 .hasSingleQuotedOption('application', 'testApp')
@@ -450,7 +450,7 @@ class NeoDeployTest extends BasePiperTest {
         )
 
         Assert.assertThat(shellRule.shell,
-            new CommandLineMatcher().hasProlog("#!/bin/bash \"/opt/neo/tools/neo.sh\" rolling-update")
+            new CommandLineMatcher().hasProlog("\"/opt/neo/tools/neo.sh\" rolling-update")
                 .hasSingleQuotedOption('host', 'test\\.deploy\\.host\\.com')
                 .hasSingleQuotedOption('account', 'trialuser123')
                 .hasSingleQuotedOption('application', 'testApp')
@@ -479,7 +479,7 @@ class NeoDeployTest extends BasePiperTest {
         )
 
         Assert.assertThat(shellRule.shell,
-            new CommandLineMatcher().hasProlog("#!/bin/bash \"/opt/neo/tools/neo.sh\" deploy")
+            new CommandLineMatcher().hasProlog("\"/opt/neo/tools/neo.sh\" deploy")
                 .hasArgument("config.properties")
                 .hasSingleQuotedOption('user', 'defaultUser')
                 .hasSingleQuotedOption('password', '\\*\\*\\*\\*\\*\\*\\*\\*')
@@ -504,7 +504,7 @@ class NeoDeployTest extends BasePiperTest {
             ])
 
         Assert.assertThat(shellRule.shell,
-            new CommandLineMatcher().hasProlog("#!/bin/bash \"/opt/neo/tools/neo.sh\" rolling-update")
+            new CommandLineMatcher().hasProlog("\"/opt/neo/tools/neo.sh\" rolling-update")
                 .hasArgument('config.properties')
                 .hasSingleQuotedOption('user', 'defaultUser')
                 .hasSingleQuotedOption('password', '\\*\\*\\*\\*\\*\\*\\*\\*')
