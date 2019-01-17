@@ -1,3 +1,4 @@
+import com.cloudbees.plugins.credentials.common.CredentialsId
 import com.sap.piper.Utils
 import hudson.AbortException
 
@@ -87,9 +88,42 @@ class NeoDeployTest extends BasePiperTest {
         helper.registerAllowedMethod('fileExists', [String], { s -> return new File(workspacePath, s).exists() })
         mockShellCommands()
 
-        nullScript.commonPipelineEnvironment.configuration = [steps: [neoDeploy: [host: 'test.deploy.host.com', account: 'trialuser123']]]
+        nullScript.commonPipelineEnvironment.configuration = [steps: [neoDeploy: [neo: [host: 'test.deploy.host.com', account: 'trialuser123']]]]
     }
 
+    @Test
+    void straightForwardTestCompatibilityConfiguration(){
+        shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, '.* status .*', 'Status: STARTED')
+
+        nullScript.commonPipelineEnvironment.configuration = [
+            steps: [
+                neoDeploy: [
+                    host: 'test.deploy.host.com',
+                    account: 'trialuser123',
+                    neoCredentialsId: 'myCredentialsId'
+                ]]]
+
+        stepRule.step.neoDeploy(script: nullScript,
+            archivePath: warArchiveName,
+            deployMode: 'warParams',
+            applicationName: 'testApp',
+            runtime: 'neo-javaee6-wp',
+            runtimeVersion: '2.125',
+            warAction: 'rolling-update',
+            vmSize: 'lite')
+
+        Assert.assertThat(shellRule.shell,
+            new CommandLineMatcher().hasProlog("#!/bin/bash \"/opt/neo/tools/neo.sh\" rolling-update")
+                .hasSingleQuotedOption('host', 'test\\.deploy\\.host\\.com')
+                .hasSingleQuotedOption('account', 'trialuser123')
+                .hasSingleQuotedOption('application', 'testApp')
+                .hasSingleQuotedOption('runtime', 'neo-javaee6-wp')
+                .hasSingleQuotedOption('runtime-version', '2\\.125')
+                .hasSingleQuotedOption('size', 'lite')
+                .hasSingleQuotedOption('user', 'anonymous')
+                .hasSingleQuotedOption('password', '\\*\\*\\*\\*\\*\\*\\*\\*')
+                .hasSingleQuotedOption('source', '.*\\.war'))
+    }
 
     @Test
     void straightForwardTestConfigViaConfigProperties() {
@@ -110,8 +144,8 @@ class NeoDeployTest extends BasePiperTest {
         }
 
         stepRule.step.neoDeploy(script: nullScript,
-            archivePath: archiveName,
-            neoCredentialsId: 'myCredentialsId',
+            source: archiveName,
+            neo: [credentialsId: 'myCredentialsId'],
             utils: utils
         )
 
@@ -144,8 +178,8 @@ class NeoDeployTest extends BasePiperTest {
 
         try {
             stepRule.step.neoDeploy(script: nullScript,
-                archivePath: archiveName,
-                neoCredentialsId: 'myCredentialsId',
+                source: archiveName,
+                neo:[credentialsId: 'myCredentialsId'],
                 utils: utils
             )
         } finally {
@@ -167,8 +201,8 @@ class NeoDeployTest extends BasePiperTest {
         }
 
         stepRule.step.neoDeploy(script: nullScript,
-            archivePath: archiveName,
-            neoCredentialsId: 'myCredentialsId',
+            source: archiveName,
+            neo:[credentialsId: 'myCredentialsId'],
             utils: utils,
         )
 
@@ -190,12 +224,12 @@ class NeoDeployTest extends BasePiperTest {
         nullScript.commonPipelineEnvironment.setConfigProperty('DEPLOY_HOST', 'configProperties.deploy.host.com')
         nullScript.commonPipelineEnvironment.setConfigProperty('CI_DEPLOY_ACCOUNT', 'configPropsUser123')
 
-        nullScript.commonPipelineEnvironment.configuration = [steps: [neoDeploy: [host   : 'configuration-frwk.deploy.host.com',
-                                                                                  account: 'configurationFrwkUser123']]]
+        nullScript.commonPipelineEnvironment.configuration = [steps: [neoDeploy: [neo: [host   : 'configuration-frwk.deploy.host.com',
+                                                                                  account: 'configurationFrwkUser123']]]]
 
         stepRule.step.neoDeploy(script: nullScript,
-            archivePath: archiveName,
-            neoCredentialsId: 'myCredentialsId'
+            source: archiveName,
+            neo:[credentialsId: 'myCredentialsId']
         )
 
         Assert.assertThat(shellRule.shell,
@@ -222,7 +256,7 @@ class NeoDeployTest extends BasePiperTest {
     void archivePathFromParamsHasHigherPrecedenceThanCPETest() {
         nullScript.commonPipelineEnvironment.setMtarFilePath('archive2.mtar')
         stepRule.step.neoDeploy(script: nullScript,
-            archivePath: "archive.mtar")
+            source: "archive.mtar")
 
         Assert.assertThat(shellRule.shell,
             new CommandLineMatcher().hasProlog("#!/bin/bash \"/opt/neo/tools/neo.sh\" deploy-mta")
@@ -236,8 +270,8 @@ class NeoDeployTest extends BasePiperTest {
         thrown.expect(CredentialNotFoundException)
 
         stepRule.step.neoDeploy(script: nullScript,
-            archivePath: archiveName,
-            neoCredentialsId: 'badCredentialsId'
+            source: archiveName,
+            neo:[credentialsId: 'badCredentialsId']
         )
     }
 
@@ -246,7 +280,7 @@ class NeoDeployTest extends BasePiperTest {
     void credentialsIdNotProvidedTest() {
 
         stepRule.step.neoDeploy(script: nullScript,
-            archivePath: archiveName
+            source: archiveName
         )
 
         Assert.assertThat(shellRule.shell,
@@ -267,7 +301,7 @@ class NeoDeployTest extends BasePiperTest {
         mockHomeVariablesNotSet()
 
         stepRule.step.neoDeploy(script: nullScript,
-            archivePath: archiveName
+            source: archiveName
         )
 
         assert shellRule.shell.find { c -> c.contains('"neo.sh" deploy-mta') }
@@ -282,8 +316,8 @@ class NeoDeployTest extends BasePiperTest {
         mockHomeVariablesNotSet()
 
         stepRule.step.neoDeploy(script: nullScript,
-            archivePath: archiveName,
-            neoCredentialsId: 'myCredentialsId',
+            source: archiveName,
+            neo:[credentialsId: 'myCredentialsId'],
             neoHome: '/param/neo'
         )
 
@@ -297,7 +331,7 @@ class NeoDeployTest extends BasePiperTest {
     void neoHomeFromEnvironmentTest() {
 
         stepRule.step.neoDeploy(script: nullScript,
-            archivePath: archiveName
+            source: archiveName
         )
 
         assert shellRule.shell.find { c -> c.contains("\"/opt/neo/tools/neo.sh\" deploy-mta") }
@@ -311,10 +345,10 @@ class NeoDeployTest extends BasePiperTest {
 
         mockHomeVariablesNotSet()
 
-        nullScript.commonPipelineEnvironment.configuration = [steps: [neoDeploy: [host: 'test.deploy.host.com', account: 'trialuser123', neoHome: '/config/neo']]]
+        nullScript.commonPipelineEnvironment.configuration = [steps: [neoDeploy: [neo: [host: 'test.deploy.host.com', account: 'trialuser123'], neoHome: '/config/neo']]]
 
         stepRule.step.neoDeploy(script: nullScript,
-            archivePath: archiveName
+            source: archiveName
         )
 
         assert shellRule.shell.find { c -> c = "\"/config/neo/tools/neo.sh\" deploy-mta" }
@@ -338,9 +372,8 @@ class NeoDeployTest extends BasePiperTest {
 
         thrown.expect(AbortException)
         thrown.expectMessage('File wrongArchiveName cannot be found')
-
         stepRule.step.neoDeploy(script: nullScript,
-            archivePath: 'wrongArchiveName')
+            source: 'wrongArchiveName')
     }
 
 
@@ -352,13 +385,13 @@ class NeoDeployTest extends BasePiperTest {
 
         nullScript.commonPipelineEnvironment.configuration = [:]
 
-        stepRule.step.neoDeploy(script: nullScript, archivePath: archiveName)
+        stepRule.step.neoDeploy(script: nullScript, source: archiveName)
     }
 
     @Test
     void mtaDeployModeTest() {
 
-        stepRule.step.neoDeploy(script: nullScript, archivePath: archiveName, deployMode: 'mta')
+        stepRule.step.neoDeploy(script: nullScript, source: archiveName, deployMode: 'mta')
 
         Assert.assertThat(shellRule.shell,
             new CommandLineMatcher().hasProlog("#!/bin/bash \"/opt/neo/tools/neo.sh\" deploy-mta")
@@ -375,13 +408,15 @@ class NeoDeployTest extends BasePiperTest {
     void warFileParamsDeployModeTest() {
 
         stepRule.step.neoDeploy(script: nullScript,
-            applicationName: 'testApp',
-            runtime: 'neo-javaee6-wp',
-            runtimeVersion: '2.125',
+            neo: [
+                application: 'testApp',
+                runtime: 'neo-javaee6-wp',
+                runtimeVersion: '2.125',
+                size: 'lite',
+            ],
             deployMode: 'warParams',
-            vmSize: 'lite',
             warAction: 'deploy',
-            archivePath: warArchiveName)
+            source: warArchiveName)
 
         Assert.assertThat(shellRule.shell,
             new CommandLineMatcher().hasProlog("#!/bin/bash \"/opt/neo/tools/neo.sh\" deploy")
@@ -403,13 +438,16 @@ class NeoDeployTest extends BasePiperTest {
         shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, '.* status .*', 'Status: STARTED')
 
         stepRule.step.neoDeploy(script: nullScript,
-            archivePath: warArchiveName,
+            source: warArchiveName,
             deployMode: 'warParams',
-            applicationName: 'testApp',
-            runtime: 'neo-javaee6-wp',
-            runtimeVersion: '2.125',
             warAction: 'rolling-update',
-            vmSize: 'lite')
+            neo: [
+                application: 'testApp',
+                runtime: 'neo-javaee6-wp',
+                runtimeVersion: '2.125',
+                size: 'lite'
+            ]
+        )
 
         Assert.assertThat(shellRule.shell,
             new CommandLineMatcher().hasProlog("#!/bin/bash \"/opt/neo/tools/neo.sh\" rolling-update")
@@ -428,14 +466,17 @@ class NeoDeployTest extends BasePiperTest {
     void warPropertiesFileDeployModeTest() {
 
         stepRule.step.neoDeploy(script: nullScript,
-            archivePath: warArchiveName,
+            source: warArchiveName,
             deployMode: 'warPropertiesFile',
-            propertiesFile: propertiesFileName,
-            applicationName: 'testApp',
-            runtime: 'neo-javaee6-wp',
-            runtimeVersion: '2.125',
             warAction: 'deploy',
-            vmSize: 'lite')
+            neo: [
+                propertiesFile: propertiesFileName,
+                application: 'testApp',
+                runtime: 'neo-javaee6-wp',
+                runtimeVersion: '2.125',
+                size: 'lite'
+            ]
+        )
 
         Assert.assertThat(shellRule.shell,
             new CommandLineMatcher().hasProlog("#!/bin/bash \"/opt/neo/tools/neo.sh\" deploy")
@@ -451,14 +492,16 @@ class NeoDeployTest extends BasePiperTest {
         shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, '.* status .*', 'Status: STARTED')
 
         stepRule.step.neoDeploy(script: nullScript,
-            archivePath: warArchiveName,
+            source: warArchiveName,
             deployMode: 'warPropertiesFile',
-            propertiesFile: propertiesFileName,
-            applicationName: 'testApp',
-            runtime: 'neo-javaee6-wp',
-            runtimeVersion: '2.125',
             warAction: 'rolling-update',
-            vmSize: 'lite')
+            neo: [
+                propertiesFile: propertiesFileName,
+                application: 'testApp',
+                runtime: 'neo-javaee6-wp',
+                runtimeVersion: '2.125',
+                size: 'lite'
+            ])
 
         Assert.assertThat(shellRule.shell,
             new CommandLineMatcher().hasProlog("#!/bin/bash \"/opt/neo/tools/neo.sh\" rolling-update")
@@ -475,10 +518,12 @@ class NeoDeployTest extends BasePiperTest {
         thrown.expectMessage('Error in Neo deployment configuration. Configuration for application is missing.')
 
         stepRule.step.neoDeploy(script: nullScript,
-            archivePath: warArchiveName,
+            source: warArchiveName,
             deployMode: 'warParams',
-            runtime: 'neo-javaee6-wp',
-            runtimeVersion: '2.125'
+            neo: [
+                runtime: 'neo-javaee6-wp',
+                runtimeVersion: '2.125'
+            ]
         )
     }
 
@@ -489,10 +534,12 @@ class NeoDeployTest extends BasePiperTest {
         thrown.expectMessage('Error in Neo deployment configuration. Configuration for runtime is missing.')
 
         stepRule.step.neoDeploy(script: nullScript,
-            archivePath: warArchiveName,
-            applicationName: 'testApp',
-            deployMode: 'warParams',
-            runtimeVersion: '2.125')
+            source: warArchiveName,
+            neo: [
+                application: 'testApp',
+                runtimeVersion: '2.125'
+            ],
+            deployMode: 'warParams')
     }
 
     @Test
@@ -502,10 +549,12 @@ class NeoDeployTest extends BasePiperTest {
         thrown.expectMessage('Error in Neo deployment configuration. Configuration for runtimeVersion is missing.')
 
         stepRule.step.neoDeploy(script: nullScript,
-            archivePath: warArchiveName,
-            applicationName: 'testApp',
-            deployMode: 'warParams',
-            runtime: 'neo-javaee6-wp')
+            source: warArchiveName,
+            neo: [
+                application: 'testApp',
+                runtime: 'neo-javaee6-wp'
+            ],
+            deployMode: 'warParams')
     }
 
     @Test
@@ -515,13 +564,15 @@ class NeoDeployTest extends BasePiperTest {
         thrown.expectMessage("Invalid deployMode = 'illegalMode'. Valid 'deployMode' values are: [mta, warParams, warPropertiesFile].")
 
         stepRule.step.neoDeploy(script: nullScript,
-            archivePath: warArchiveName,
+            source: warArchiveName,
             deployMode: 'illegalMode',
-            applicationName: 'testApp',
-            runtime: 'neo-javaee6-wp',
-            runtimeVersion: '2.125',
             warAction: 'deploy',
-            vmSize: 'lite')
+            neo: [
+                application: 'testApp',
+                runtime: 'neo-javaee6-wp',
+                runtimeVersion: '2.125',
+                size: 'lite'
+            ])
     }
 
     @Test
@@ -531,13 +582,16 @@ class NeoDeployTest extends BasePiperTest {
         thrown.expectMessage("Invalid size = 'illegalVM'. Valid 'size' values are: [lite, pro, prem, prem-plus].")
 
         stepRule.step.neoDeploy(script: nullScript,
-            archivePath: warArchiveName,
+            source: warArchiveName,
             deployMode: 'warParams',
-            applicationName: 'testApp',
-            runtime: 'neo-javaee6-wp',
-            runtimeVersion: '2.125',
             warAction: 'deploy',
-            vmSize: 'illegalVM')
+            neo: [
+                application: 'testApp',
+                runtime: 'neo-javaee6-wp',
+                runtimeVersion: '2.125',
+                warAction: 'deploy',
+                size: 'illegalVM'
+            ])
     }
 
     @Test
@@ -547,13 +601,15 @@ class NeoDeployTest extends BasePiperTest {
         thrown.expectMessage("Invalid warAction = 'illegalWARAction'. Valid 'warAction' values are: [deploy, rolling-update].")
 
         stepRule.step.neoDeploy(script: nullScript,
-            archivePath: warArchiveName,
+            source: warArchiveName,
             deployMode: 'warParams',
-            applicationName: 'testApp',
-            runtime: 'neo-javaee6-wp',
-            runtimeVersion: '2.125',
             warAction: 'illegalWARAction',
-            vmSize: 'lite')
+            neo: [
+                application: 'testApp',
+                runtime: 'neo-javaee6-wp',
+                runtimeVersion: '2.125',
+                size: 'lite'
+            ])
     }
 
     @Test
@@ -562,7 +618,7 @@ class NeoDeployTest extends BasePiperTest {
         nullScript.commonPipelineEnvironment.setConfigProperty('CI_DEPLOY_ACCOUNT', 'configPropsUser123')
 
         stepRule.step.neoDeploy(script: nullScript,
-            archivePath: archiveName,
+            source: archiveName,
             deployHost: "my.deploy.host.com"
         )
 
@@ -575,8 +631,10 @@ class NeoDeployTest extends BasePiperTest {
         nullScript.commonPipelineEnvironment.setConfigProperty('CI_DEPLOY_ACCOUNT', 'configPropsUser123')
 
         stepRule.step.neoDeploy(script: nullScript,
-            archivePath: archiveName,
-            host: "my.deploy.host.com",
+            source: archiveName,
+            neo: [
+                host: "my.deploy.host.com",
+            ],
             deployAccount: "myAccount"
         )
 
