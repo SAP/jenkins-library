@@ -619,25 +619,6 @@ class NeoDeployTest extends BasePiperTest {
     }
 
     @Test
-    void illegalVMSizeTest() {
-
-        thrown.expect(Exception)
-        thrown.expectMessage("Invalid size = 'illegalVM'. Valid 'size' values are: [lite, pro, prem, prem-plus].")
-
-        stepRule.step.neoDeploy(script: nullScript,
-            source: warArchiveName,
-            deployMode: 'warParams',
-            warAction: 'deploy',
-            neo: [
-                application: 'testApp',
-                runtime: 'neo-javaee6-wp',
-                runtimeVersion: '2.125',
-                warAction: 'deploy',
-                size: 'illegalVM'
-            ])
-    }
-
-    @Test
     void illegalWARActionTest() {
 
         thrown.expect(Exception)

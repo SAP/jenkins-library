@@ -133,10 +133,7 @@ class NeoCommandHelper {
         args += " --runtime-version ${BashUtils.escape(deploymentConfiguration.runtimeVersion)}"
 
         if (deploymentConfiguration.size) {
-            def sizes = ['lite', 'pro', 'prem', 'prem-plus']
-            def size = new Utils().getParameterInValueRange(script, deploymentConfiguration, 'size', sizes)
-
-            args += " --size ${BashUtils.escape(size)}"
+            args += " --size ${BashUtils.escape(deploymentConfiguration.size)}"
         }
 
         if (deploymentConfiguration.containsKey('environment')) {
