@@ -1,7 +1,7 @@
 package com.sap.piper.tools.neo
 
 import com.sap.piper.BashUtils
-import com.sap.piper.Utils
+import com.sap.piper.StepAssertions
 
 class NeoCommandHelper {
 
@@ -65,9 +65,9 @@ class NeoCommandHelper {
                 "/acc/${deploymentConfiguration.account}/mtas"
         }
 
-        assertMandatoryParameter('host')
-        assertMandatoryParameter('account')
-        assertMandatoryParameter('application')
+        StepAssertions.assertMandatoryParameter(script, deploymentConfiguration,'host')
+        StepAssertions.assertMandatoryParameter(script, deploymentConfiguration,'account')
+        StepAssertions.assertMandatoryParameter(script, deploymentConfiguration,'application')
 
         return "https://account.${deploymentConfiguration.host}/cockpit#" +
             "/acc/${deploymentConfiguration.account}/app/${deploymentConfiguration.application}/dashboard"
@@ -79,13 +79,13 @@ class NeoCommandHelper {
             return "${properties.host}/${properties.account}/${properties.application}"
         }
 
-        assertMandatoryParameter("host")
-        assertMandatoryParameter("account")
+        StepAssertions.assertMandatoryParameter(script, deploymentConfiguration,'host')
+        StepAssertions.assertMandatoryParameter(script, deploymentConfiguration,'account')
 
         String resource = "${deploymentConfiguration.host}/${deploymentConfiguration.account}"
 
         if (deployMode == DeployMode.WAR_PARAMS) {
-            assertMandatoryParameter("application")
+            StepAssertions.assertMandatoryParameter(script, deploymentConfiguration,'application')
             resource += "/${deploymentConfiguration.application}"
         }
 
@@ -93,7 +93,7 @@ class NeoCommandHelper {
     }
 
     private String source() {
-        assertFileExists(source)
+        StepAssertions.assertFileExists(script, source)
         return "--source ${BashUtils.escape(source)}"
     }
 
@@ -101,19 +101,19 @@ class NeoCommandHelper {
         String usernamePassword = "--user ${BashUtils.escape(user)} --password ${BashUtils.escape(password)}"
 
         if (deployMode == DeployMode.WAR_PROPERTIES_FILE) {
-            assertMandatoryParameter('propertiesFile')
-            assertFileIsConfiguredAndExists('propertiesFile')
+            StepAssertions.assertMandatoryParameter(script, deploymentConfiguration,'propertiesFile')
+            StepAssertions.assertFileIsConfiguredAndExists(script, deploymentConfiguration,'propertiesFile')
             return "${deploymentConfiguration.propertiesFile} ${usernamePassword}"
         }
 
-        assertMandatoryParameter('host')
-        assertMandatoryParameter('account')
+        StepAssertions.assertMandatoryParameter(script, deploymentConfiguration,'host')
+        StepAssertions.assertMandatoryParameter(script, deploymentConfiguration,'account')
 
         String targetArgs = "--host ${BashUtils.escape(deploymentConfiguration.host)}"
         targetArgs += " --account ${BashUtils.escape(deploymentConfiguration.account)}"
 
         if (deployMode == DeployMode.WAR_PARAMS) {
-            assertMandatoryParameter('application')
+            StepAssertions.assertMandatoryParameter(script, deploymentConfiguration,'application')
             targetArgs += " --application ${BashUtils.escape(deploymentConfiguration.application)}"
         }
 
@@ -126,10 +126,10 @@ class NeoCommandHelper {
         }
 
         String args = ""
-        assertMandatoryParameter('runtime')
+        StepAssertions.assertMandatoryParameter(script, deploymentConfiguration,'runtime')
         args += " --runtime ${BashUtils.escape(deploymentConfiguration.runtime)}"
 
-        assertMandatoryParameter('runtimeVersion')
+        StepAssertions.assertMandatoryParameter(script, deploymentConfiguration,'runtimeVersion')
         args += " --runtime-version ${BashUtils.escape(deploymentConfiguration.runtimeVersion)}"
 
         if (deploymentConfiguration.size) {
@@ -161,7 +161,7 @@ class NeoCommandHelper {
     }
 
     private Map loadConfigurationFromPropertiesFile() {
-        assertFileIsConfiguredAndExists('propertiesFile')
+        StepAssertions.assertFileIsConfiguredAndExists(script, deploymentConfiguration, 'propertiesFile')
 
         Map properties = script.readProperties file: deploymentConfiguration.propertiesFile
         if (!properties.application || !properties.host || !properties.account) {
@@ -169,22 +169,5 @@ class NeoCommandHelper {
         }
 
         return properties
-    }
-
-    private assertFileIsConfiguredAndExists(configurationKey) {
-        assertMandatoryParameter(configurationKey)
-        assertFileExists(deploymentConfiguration[configurationKey])
-    }
-
-    private assertFileExists(filePath) {
-        if (!script.fileExists(filePath)) {
-            script.error("File ${filePath} cannot be found.")
-        }
-    }
-
-    private assertMandatoryParameter(configurationKey) {
-        if (!deploymentConfiguration[configurationKey]) {
-            script.error("Error in Neo deployment configuration. Configuration for ${configurationKey} is missing.")
-        }
     }
 }

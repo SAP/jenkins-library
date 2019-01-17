@@ -382,7 +382,7 @@ class NeoDeployTest extends BasePiperTest {
     void scriptNotProvidedTest() {
 
         thrown.expect(Exception)
-        thrown.expectMessage('Error in Neo deployment configuration. Configuration for host is missing.')
+        thrown.expectMessage('Configuration for host is missing.')
 
         nullScript.commonPipelineEnvironment.configuration = [:]
 
@@ -580,7 +580,7 @@ class NeoDeployTest extends BasePiperTest {
     void applicationNameNotProvidedTest() {
 
         thrown.expect(Exception)
-        thrown.expectMessage('Error in Neo deployment configuration. Configuration for application is missing.')
+        thrown.expectMessage('Configuration for application is missing.')
 
         stepRule.step.neoDeploy(script: nullScript,
             source: warArchiveName,
@@ -596,7 +596,7 @@ class NeoDeployTest extends BasePiperTest {
     void runtimeNotProvidedTest() {
 
         thrown.expect(Exception)
-        thrown.expectMessage('Error in Neo deployment configuration. Configuration for runtime is missing.')
+        thrown.expectMessage('Configuration for runtime is missing.')
 
         stepRule.step.neoDeploy(script: nullScript,
             source: warArchiveName,
@@ -611,7 +611,7 @@ class NeoDeployTest extends BasePiperTest {
     void runtimeVersionNotProvidedTest() {
 
         thrown.expect(Exception)
-        thrown.expectMessage('Error in Neo deployment configuration. Configuration for runtimeVersion is missing.')
+        thrown.expectMessage('Configuration for runtimeVersion is missing.')
 
         stepRule.step.neoDeploy(script: nullScript,
             source: warArchiveName,
