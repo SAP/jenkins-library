@@ -86,16 +86,6 @@ void call(parameters = [:]) {
                 usernameVariable: 'NEO_USERNAME')]) {
 
                 assertPasswordRules(NEO_PASSWORD)
-                String neoExecutable = neo.getToolExecutable(script, configuration)
-                NeoCommandHelper neoCommandHelper = new NeoCommandHelper(
-                    script,
-                    configuration.deployMode,
-                    configuration.neo,
-                    neoExecutable,
-                    NEO_USERNAME,
-                    NEO_PASSWORD,
-                    configuration.source
-                )
 
                 dockerExecute(
                     script: script,
@@ -106,6 +96,17 @@ void call(parameters = [:]) {
 
                     neo.verify(this, configuration)
                     java.verify(this, configuration)
+
+                    String neoExecutable = neo.getToolExecutable(script, configuration)
+                    NeoCommandHelper neoCommandHelper = new NeoCommandHelper(
+                        script,
+                        configuration.deployMode,
+                        configuration.neo,
+                        neoExecutable,
+                        NEO_USERNAME,
+                        NEO_PASSWORD,
+                        configuration.source
+                    )
 
                     lock("$STEP_NAME :${neoCommandHelper.resourceLock()}") {
                         deploy(script, utils, configuration, neoCommandHelper, neo)

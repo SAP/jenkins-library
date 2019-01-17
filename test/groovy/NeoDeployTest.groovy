@@ -463,6 +463,49 @@ class NeoDeployTest extends BasePiperTest {
     }
 
     @Test
+    void warFirstTimeRollingUpdateTest() {
+
+        shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, '.* status .*', 'ERROR: Application [testApp] not found')
+
+        stepRule.step.neoDeploy(script: nullScript,
+            source: warArchiveName,
+            deployMode: 'warParams',
+            warAction: 'rolling-update',
+            neo: [
+                application: 'testApp',
+                runtime: 'neo-javaee6-wp',
+                runtimeVersion: '2.125'
+            ]
+        )
+
+        Assert.assertThat(shellRule.shell,
+            new CommandLineMatcher()
+                .hasProlog("\"/opt/neo/tools/neo.sh\" deploy")
+                .hasSingleQuotedOption('application', 'testApp'))
+    }
+
+    @Test
+    void showLogsOnFailingDeployment() {
+
+        thrown.expect(Exception)
+        shellRule.failExecution(Type.REGEX, '.* deploy .*')
+
+        stepRule.step.neoDeploy(script: nullScript,
+            source: warArchiveName,
+            deployMode: 'warParams',
+            warAction: 'deploy',
+            neo: [
+                application: 'testApp',
+                runtime: 'neo-javaee6-wp',
+                runtimeVersion: '2.125'
+            ]
+        )
+
+        Assert.assertThat(shellRule.shell,
+            new CommandLineMatcher().hasProlog("cat /sdk/tools/log/*"))
+    }
+
+    @Test
     void warPropertiesFileDeployModeTest() {
 
         stepRule.step.neoDeploy(script: nullScript,
