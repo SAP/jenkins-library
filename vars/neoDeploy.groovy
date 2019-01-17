@@ -1,4 +1,6 @@
+import com.sap.piper.tools.neo.DeployMode
 import com.sap.piper.tools.neo.NeoCommandHelper
+import com.sap.piper.tools.neo.WarAction
 import groovy.text.SimpleTemplateEngine
 
 import static com.sap.piper.Prerequisites.checkScript
@@ -97,9 +99,13 @@ void call(parameters = [:]) {
                     java.verify(this, configuration)
 
                     String neoExecutable = neo.getToolExecutable(script, configuration)
+
+                    def deployModeString = utils.getParameterInValueRange(script, configuration, 'deployMode', DeployMode.stringValues())
+                    DeployMode deployMode = DeployMode.fromString(deployModeString)
+
                     NeoCommandHelper neoCommandHelper = new NeoCommandHelper(
                         script,
-                        configuration.deployMode,
+                        deployMode,
                         configuration.neo,
                         neoExecutable,
                         NEO_USERNAME,
@@ -108,7 +114,7 @@ void call(parameters = [:]) {
                     )
 
                     lock("$STEP_NAME :${neoCommandHelper.resourceLock()}") {
-                        deploy(script, utils, configuration, neoCommandHelper, configuration.dockerImage)
+                        deploy(script, utils, configuration, neoCommandHelper, configuration.dockerImage, deployMode)
                     }
                 }
             }
@@ -118,26 +124,24 @@ void call(parameters = [:]) {
     }
 }
 
-private deploy(script, utils, Map configuration, NeoCommandHelper neoCommandHelper, dockerImage) {
-    def deployModes = ['mta', 'warParams', 'warPropertiesFile']
-    def deployMode = utils.getParameterInValueRange(script, configuration, 'deployMode', deployModes)
+private deploy(script, utils, Map configuration, NeoCommandHelper neoCommandHelper, dockerImage, DeployMode deployMode) {
 
     try {
         withEnv(['neo_logging_location=/var/log/neo']) {
-            if (deployMode in ['warPropertiesFile', 'warParams']) {
-                def warActions = ['deploy', 'rolling-update']
-                def warAction = utils.getParameterInValueRange(script, configuration, 'warAction', warActions)
+            if (deployMode.isWarDeployment()) {
+                def warActionString = utils.getParameterInValueRange(script, configuration, 'warAction', WarAction.stringValues())
+                WarAction warAction = WarAction.fromString(warActionString)
 
-                if (warAction == 'rolling-update') {
+                if (warAction == WarAction.ROLLING_UPDATE) {
                     if (!isAppRunning(neoCommandHelper)) {
-                        warAction = 'deploy'
+                        warAction = WarAction.DEPLOY
                         echo "Rolling update not possible because application is not running. Falling back to standard deployment."
                     }
                 }
 
                 echo "Link to the application dashboard: ${neoCommandHelper.cloudCockpitLink()}"
 
-                if (warAction == 'rolling-update') {
+                if (warAction == WarAction.ROLLING_UPDATE) {
                     sh neoCommandHelper.rollingUpdateCommand()
                 } else {
                     sh neoCommandHelper.deployCommand()
@@ -145,9 +149,7 @@ private deploy(script, utils, Map configuration, NeoCommandHelper neoCommandHelp
                 }
 
 
-            } else if (deployMode == 'mta') {
-                warAction = 'deploy-mta'
-
+            } else if (deployMode == DeployMode.MTA) {
                 sh neoCommandHelper.deployMta()
             }
         }
