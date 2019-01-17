@@ -38,7 +38,6 @@ The parameter `neo` is a map which contains the following parameters:
 | `credentialsId`    | no        | `'CI_CREDENTIALS_ID'`         |                                                 |
 | `host`             | no        |                               |                                                 |
 
-
 ## Parameters when using WAR file deployment method with .properties file (WAR_PROPERTIESFILE)
 
 | parameter          | mandatory | default                       | possible values                                 |
@@ -143,7 +142,7 @@ steps:
   <...>
   neoDeploy:
     deployMode: mta
-    neo: 
+    neo:
       account: <myDeployAccount>
       host: hana.example.org
 ```
