@@ -4,7 +4,7 @@ import com.cloudbees.groovy.cps.NonCPS
 import org.jenkinsci.plugins.workflow.steps.MissingContextVariableException
 
 @NonCPS
-def getMandatoryParameter(Map map, paramName, defaultValue = null, String errorMessage=null) {
+def getMandatoryParameter(Map map, paramName, defaultValue = null, String customErrorMessage=null) {
 
     def paramValue = map[paramName]
 
@@ -12,12 +12,11 @@ def getMandatoryParameter(Map map, paramName, defaultValue = null, String errorM
         paramValue = defaultValue
 
     if (paramValue == null){
-        if(!errorMessage){
-            throw new Exception("[Error] Configuration missing for option $paramName.")
+        String errorMessage = "[Error] Configuration missing for option $paramName."
+        if(customErrorMessage){
+            errorMessage = customErrorMessage
         }
-        else {
-            throw new Exception(errorMessage)
-        }
+        throw new Exception(errorMessage)
     }
     return paramValue
 }

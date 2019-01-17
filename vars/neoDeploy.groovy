@@ -88,9 +88,9 @@ void call(parameters = [:]) {
 
                 dockerExecute(
                     script: script,
-                    dockerImage: configuration.get('dockerImage'),
-                    dockerEnvVars: configuration.get('dockerEnvVars'),
-                    dockerOptions: configuration.get('dockerOptions')
+                    dockerImage: configuration.dockerImage,
+                    dockerEnvVars: configuration.dockerEnvVars,
+                    dockerOptions: configuration.dockerOptions
                 ) {
 
                     neo.verify(this, configuration)
@@ -108,7 +108,7 @@ void call(parameters = [:]) {
                     )
 
                     lock("$STEP_NAME :${neoCommandHelper.resourceLock()}") {
-                        deploy(script, utils, configuration, neoCommandHelper, neo)
+                        deploy(script, utils, configuration, neoCommandHelper, configuration.dockerImage)
                     }
                 }
             }
@@ -118,41 +118,45 @@ void call(parameters = [:]) {
     }
 }
 
-private deploy(script, utils, Map configuration, NeoCommandHelper neoCommandHelper, ToolDescriptor neoToolDescriptor) {
+private deploy(script, utils, Map configuration, NeoCommandHelper neoCommandHelper, dockerImage) {
     def deployModes = ['mta', 'warParams', 'warPropertiesFile']
     def deployMode = utils.getParameterInValueRange(script, configuration, 'deployMode', deployModes)
 
     try {
-        if (deployMode in ['warPropertiesFile', 'warParams']) {
-            def warActions = ['deploy', 'rolling-update']
-            def warAction = utils.getParameterInValueRange(script, configuration, 'warAction', warActions)
+        withEnv(['neo_logging_location=/var/log/neo']) {
+            if (deployMode in ['warPropertiesFile', 'warParams']) {
+                def warActions = ['deploy', 'rolling-update']
+                def warAction = utils.getParameterInValueRange(script, configuration, 'warAction', warActions)
 
-            if (warAction == 'rolling-update') {
-                if (!isAppRunning(neoCommandHelper)) {
-                    warAction = 'deploy'
-                    echo "Rolling update not possible because application is not running. Falling back to standard deployment."
+                if (warAction == 'rolling-update') {
+                    if (!isAppRunning(neoCommandHelper)) {
+                        warAction = 'deploy'
+                        echo "Rolling update not possible because application is not running. Falling back to standard deployment."
+                    }
                 }
+
+                echo "Link to the application dashboard: ${neoCommandHelper.cloudCockpitLink()}"
+
+                if (warAction == 'rolling-update') {
+                    sh neoCommandHelper.rollingUpdateCommand()
+                } else {
+                    sh neoCommandHelper.deployCommand()
+                    sh neoCommandHelper.restartCommand()
+                }
+
+
+            } else if (deployMode == 'mta') {
+                warAction = 'deploy-mta'
+
+                sh neoCommandHelper.deployMta()
             }
-
-            echo "Link to the application dashboard: ${neoCommandHelper.cloudCockpitLink()}"
-
-            if (warAction == 'rolling-update') {
-                sh neoCommandHelper.rollingUpdateCommand()
-            } else {
-                sh neoCommandHelper.deployCommand()
-                sh neoCommandHelper.restartCommand()
-            }
-
-
-        } else if (deployMode == 'mta') {
-            warAction = 'deploy-mta'
-
-            sh neoCommandHelper.deployMta()
         }
     }
     catch (Exception ex) {
-        echo "Error while deploying to SAP Cloud Platform. Here are the neo.sh logs:"
-        sh "cat ${neoToolDescriptor.getToolLocation(script, configuration)}/tools/log/*"
+        if(dockerImage){
+            echo "Error while deploying to SAP Cloud Platform. Here are the neo.sh logs:"
+            sh "cat /var/log/neo/*"
+        }
         throw ex
     }
 }

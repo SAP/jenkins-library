@@ -22,7 +22,9 @@ class SetupCommonPipelineEnvironmentTest extends BasePiperTest {
     private JenkinsStepRule jsr = new JenkinsStepRule(this)
 
     @Rule
-    public RuleChain rules = Rules.getCommonRules(this)
+    public RuleChain rules = Rules
+        .getCommonRules(this)
+        .around(jsr)
 
     @Before
     void init() {

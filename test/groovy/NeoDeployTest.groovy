@@ -86,6 +86,7 @@ class NeoDeployTest extends BasePiperTest {
 
         helper.registerAllowedMethod('dockerExecute', [Map, Closure], null)
         helper.registerAllowedMethod('fileExists', [String], { s -> return new File(workspacePath, s).exists() })
+        helper.registerAllowedMethod('withEnv', [List, Closure], {envs, body -> body()})
         mockShellCommands()
 
         nullScript.commonPipelineEnvironment.configuration = [steps: [neoDeploy: [neo: [host: 'test.deploy.host.com', account: 'trialuser123']]]]
@@ -484,6 +485,27 @@ class NeoDeployTest extends BasePiperTest {
                 .hasSingleQuotedOption('application', 'testApp'))
     }
 
+    void warNotStartedRollingUpdateTest() {
+
+        shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, '.* status .*', 'Status: STOPPED')
+
+        stepRule.step.neoDeploy(script: nullScript,
+            source: warArchiveName,
+            deployMode: 'warParams',
+            warAction: 'rolling-update',
+            neo: [
+                application: 'testApp',
+                runtime: 'neo-javaee6-wp',
+                runtimeVersion: '2.125'
+            ]
+        )
+
+        Assert.assertThat(shellRule.shell,
+            new CommandLineMatcher()
+                .hasProlog("\"/opt/neo/tools/neo.sh\" deploy")
+                .hasSingleQuotedOption('application', 'testApp'))
+    }
+
     @Test
     void showLogsOnFailingDeployment() {
 
@@ -502,7 +524,7 @@ class NeoDeployTest extends BasePiperTest {
         )
 
         Assert.assertThat(shellRule.shell,
-            new CommandLineMatcher().hasProlog("cat /sdk/tools/log/*"))
+            new CommandLineMatcher().hasProlog("cat /var/log/neo/*"))
     }
 
     @Test
