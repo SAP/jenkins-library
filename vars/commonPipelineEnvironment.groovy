@@ -25,8 +25,12 @@ class commonPipelineEnvironment implements Serializable {
 
     //each Map in influxCustomDataMap represents a measurement in Influx. Additional measurements can be added as a new Map entry of influxCustomDataMap
     private Map influxCustomDataMap = [pipeline_data: [:], step_data: [:]]
+    //each Map in influxCustomDataMapTags represents tags for certain measurement in Influx. Tags are required in Influx for easier querying data
+    private Map influxCustomDataMapTags = [pipeline_data: [:]]
     //influxCustomData represents measurement jenkins_custom_data in Influx. Metrics can be written into this map
     private Map influxCustomData = [:]
+    //influxCustomDataTags represents tags in Influx. Tags are required in Influx for easier querying data
+    private Map influxCustomDataTags = [:]
 
     String mtarFilePath
 
@@ -49,7 +53,9 @@ class commonPipelineEnvironment implements Serializable {
         githubRepo = null
 
         influxCustomData = [:]
+        influxCustomDataTags = [:]
         influxCustomDataMap = [pipeline_data: [:], step_data: [:]]
+        influxCustomDataMapTags = [pipeline_data: [:]]
 
         mtarFilePath = null
 
@@ -76,26 +82,56 @@ class commonPipelineEnvironment implements Serializable {
             return configProperties[property]
     }
 
+    // goes into measurement jenkins_data
+    def setInfluxCustomDataEntry(field, value) {
+        influxCustomData[field] = value
+    }
+    // goes into measurement jenkins_data
     def getInfluxCustomData() {
         return influxCustomData
     }
 
+    // goes into measurement jenkins_data
+    def setInfluxCustomDataTagsEntry(tag, value) {
+        influxCustomDataTags[tag] = value
+    }
+
+    // goes into measurement jenkins_data
+    def getInfluxCustomDataTags() {
+        return influxCustomDataTags
+    }
+
+    void setInfluxCustomDataMapEntry(measurement, field, value) {
+        if (!influxCustomDataMap[measurement]) {
+            influxCustomDataMap[measurement] = [:]
+        }
+        influxCustomDataMap[measurement][field] = value
+    }
     def getInfluxCustomDataMap() {
         return influxCustomDataMap
     }
 
-    def setInfluxStepData (dataKey, value) {
-        influxCustomDataMap.step_data[dataKey] = value
+    def setInfluxCustomDataMapTagsEntry(measurement, tag, value) {
+        if (!influxCustomDataMapTags[measurement]) {
+            influxCustomDataMapTags[measurement] = [:]
+        }
+        influxCustomDataMapTags[measurement][tag] = value
     }
-    def getInfluxStepData (dataKey) {
-        return influxCustomDataMap.step_data[dataKey]
+    def getInfluxCustomDataMapTags() {
+        return influxCustomDataMapTags
     }
 
-    def setPipelineMeasurement (measurementName, value) {
-        influxCustomDataMap.pipeline_data[measurementName] = value
+    def setInfluxStepData(key, value) {
+        setInfluxCustomDataMapEntry('step_data', key, value)
+    }
+    def getInfluxStepData(key) {
+        return influxCustomDataMap.step_data[key]
     }
 
-    def getPipelineMeasurement (measurementName) {
-        return influxCustomDataMap.pipeline_data[measurementName]
+    def setPipelineMeasurement(key, value) {
+        setInfluxCustomDataMapEntry('pipeline_data', key, value)
+    }
+    def getPipelineMeasurement(key) {
+        return influxCustomDataMap.pipeline_data[key]
     }
 }
