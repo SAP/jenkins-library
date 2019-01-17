@@ -16,11 +16,11 @@ Pipeline step:
 newmanExecute script: this
 ```
 
-This step should be used in combination with `publishTestResults`:
+This step should be used in combination with `testsPublishResults`:
 
 ```groovy
 newmanExecute script: this, failOnError: false
-publishTestResults script: this, junit: [pattern: '**/newman/TEST-newman.xml']
+testsPublishResults script: this, junit: [pattern: '**/newman/TEST-*.xml']
 ```
 
 ## Parameters
