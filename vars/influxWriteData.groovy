@@ -95,8 +95,8 @@ private void writeToInflux(config, script){
     //write results into json file for archiving - also benefitial when no InfluxDB is available yet
     def jsonUtils = new JsonUtils()
     writeFile file: 'jenkins_data.json', text: jsonUtils.getPrettyJsonString(config.customData)
-    writeFile file: 'pipeline_data.json', text: jsonUtils.getPrettyJsonString(config.customDataMap)
+    writeFile file: 'influx_data.json', text: jsonUtils.getPrettyJsonString(config.customDataMap)
     writeFile file: 'jenkins_data_tags.json', text: jsonUtils.getPrettyJsonString(config.customDataTags)
-    writeFile file: 'pipeline_data_tags.json', text: jsonUtils.getPrettyJsonString(config.customDataMapTags)
+    writeFile file: 'influx_data_tags.json', text: jsonUtils.getPrettyJsonString(config.customDataMapTags)
     archiveArtifacts artifacts: '*data.json', allowEmptyArchive: true
 }

@@ -95,6 +95,7 @@ class commonPipelineEnvironment implements Serializable {
     def setInfluxCustomDataTagsEntry(tag, value) {
         influxCustomDataTags[tag] = value
     }
+
     // goes into measurement jenkins_data
     def getInfluxCustomDataTags() {
         return influxCustomDataTags

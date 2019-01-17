@@ -73,9 +73,9 @@ class InfluxWriteDataTest extends BasePiperTest {
         assertThat(stepMap.customDataMap, is([pipeline_data: [:], step_data: [:]]))
 
         assertThat(fileMap, hasKey('jenkins_data.json'))
-        assertThat(fileMap, hasKey('pipeline_data.json'))
+        assertThat(fileMap, hasKey('influx_data.json'))
         assertThat(fileMap, hasKey('jenkins_data_tags.json'))
-        assertThat(fileMap, hasKey('pipeline_data_tags.json'))
+        assertThat(fileMap, hasKey('influx_data_tags.json'))
 
         assertJobStatusSuccess()
     }
@@ -89,7 +89,7 @@ class InfluxWriteDataTest extends BasePiperTest {
         assertEquals(0, stepMap.size())
 
         assertTrue(fileMap.containsKey('jenkins_data.json'))
-        assertTrue(fileMap.containsKey('pipeline_data.json'))
+        assertTrue(fileMap.containsKey('influx_data.json'))
 
         assertJobStatusSuccess()
     }
