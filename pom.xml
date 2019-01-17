@@ -10,7 +10,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.sap.cp.jenkins</groupId>
     <artifactId>jenkins-library</artifactId>
-    <version>0.8</version>
+    <version>0.9</version>
 
     <name>SAP CP Piper Library</name>
     <description>Shared library containing steps and utilities to set up continuous deployment processes for SAP technologies.</description>
@@ -235,11 +235,6 @@
                         <goals><goal>report-integration</goal></goals>
                     </execution>
                 </executions>
-            </plugin>
-            <plugin>
-                <groupId>org.eluder.coveralls</groupId>
-                <artifactId>coveralls-maven-plugin</artifactId>
-                <version>4.3.0</version>
             </plugin>
         </plugins>
     </build>

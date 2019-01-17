@@ -16,6 +16,8 @@ import groovy.transform.Field
 
 @Field Set PARAMETER_KEYS = [
     'containerPortMappings',
+    'containerCommand',
+    'containerShell',
     'dockerEnvVars',
     'dockerImage',
     'dockerName',
@@ -57,6 +59,8 @@ void call(Map parameters = [:], body) {
                 if (!config.sidecarImage) {
                     dockerExecuteOnKubernetes(
                         script: script,
+                        containerCommand: config.containerCommand,
+                        containerShell: config.containerShell,
                         dockerImage: config.dockerImage,
                         dockerEnvVars: config.dockerEnvVars,
                         dockerWorkspace: config.dockerWorkspace,
