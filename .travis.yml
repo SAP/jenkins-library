@@ -27,7 +27,6 @@ jobs:
       after_script:
         - JACOCO_SOURCE_PATH="src vars test" ./cc-test-reporter format-coverage target/site/jacoco/jacoco.xml --input-type jacoco
         - ./cc-test-reporter upload-coverage
-        - mvn -DrepoToken=$COVERALLS_REPO_TOKEN org.eluder.coveralls:coveralls-maven-plugin:report
     - name: Docs Build
       if: type = pull_request
       install: docker pull squidfunk/mkdocs-material:3.0.4
