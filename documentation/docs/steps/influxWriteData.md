@@ -16,7 +16,7 @@ You basically need three components:
     It will create following files for you and archive them into your build:
 
     * `jenkins_data.json`: This file gives you build-specific information, like e.g. build result, stage where the build failed
-    * `pipeline_data.json`: This file gives you detailed information about your pipeline, e.g. stage durations, steps executed, ...
+    * `influx_data.json`: This file gives you detailed information about your pipeline, e.g. stage durations, steps executed, ...
 
 ## Prerequisites
 
