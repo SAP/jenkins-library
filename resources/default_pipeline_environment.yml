@@ -191,7 +191,7 @@ steps:
   healthExecuteCheck:
     healthEndpoint: ''
   influxWriteData:
-    influxServer: 'jenkins'
+    influxServer: ''
   karmaExecuteTests:
     containerPortMappings:
       'node:8-stretch':
