@@ -1,31 +1,12 @@
-import com.cloudbees.plugins.credentials.common.CredentialsId
 import com.sap.piper.Utils
 import hudson.AbortException
-
-import org.junit.rules.TemporaryFolder
-
-import org.junit.BeforeClass
-import org.junit.ClassRule
-import util.JenkinsLockRule
-import org.hamcrest.BaseMatcher
-import org.hamcrest.Description
 import org.jenkinsci.plugins.credentialsbinding.impl.CredentialNotFoundException
-import org.junit.Assert
-import org.junit.Before
-import org.junit.Rule
-import org.junit.Test
+import org.junit.*
 import org.junit.rules.ExpectedException
 import org.junit.rules.RuleChain
-
-import util.BasePiperTest
-import util.JenkinsCredentialsRule
-import util.JenkinsLoggingRule
-import util.JenkinsPropertiesRule
-import util.JenkinsReadYamlRule
-import util.JenkinsShellCallRule
+import org.junit.rules.TemporaryFolder
+import util.*
 import util.JenkinsShellCallRule.Type
-import util.JenkinsStepRule
-import util.Rules
 
 class NeoDeployTest extends BasePiperTest {
 
@@ -54,6 +35,7 @@ class NeoDeployTest extends BasePiperTest {
         .withCredentials('CI_CREDENTIALS_ID', 'defaultUser', '********'))
         .around(stepRule)
         .around(lockRule)
+        .around(new JenkinsWithEnvRule(this))
 
 
     private static workspacePath
@@ -86,7 +68,6 @@ class NeoDeployTest extends BasePiperTest {
 
         helper.registerAllowedMethod('dockerExecute', [Map, Closure], null)
         helper.registerAllowedMethod('fileExists', [String], { s -> return new File(workspacePath, s).exists() })
-        helper.registerAllowedMethod('withEnv', [List, Closure], {envs, body -> body()})
         mockShellCommands()
 
         nullScript.commonPipelineEnvironment.configuration = [steps: [neoDeploy: [neo: [host: 'test.deploy.host.com', account: 'trialuser123']]]]
@@ -709,78 +690,5 @@ class NeoDeployTest extends BasePiperTest {
         shellRule.setReturnValue(Type.REGEX, '.*NEO_HOME.*', '')
         shellRule.setReturnValue(Type.REGEX, '.*which java.*', 0)
         shellRule.setReturnValue(Type.REGEX, '.*which neo.*', 0)
-    }
-
-    class CommandLineMatcher extends BaseMatcher {
-
-        String prolog
-        Set<String> args = (Set) []
-        Set<MapEntry> opts = (Set) []
-
-        String hint = ''
-
-        CommandLineMatcher hasProlog(prolog) {
-            this.prolog = prolog
-            return this
-        }
-
-        CommandLineMatcher hasDoubleQuotedOption(String key, String value) {
-            hasOption(key, "\"${value}\"")
-            return this
-        }
-
-        CommandLineMatcher hasSingleQuotedOption(String key, String value) {
-            hasOption(key, "\'${value}\'")
-            return this
-        }
-
-        CommandLineMatcher hasOption(String key, String value) {
-            this.opts.add(new MapEntry(key, value))
-            return this
-        }
-
-        CommandLineMatcher hasArgument(String arg) {
-            this.args.add(arg)
-            return this
-        }
-
-        @Override
-        boolean matches(Object o) {
-
-            for (String cmd : o) {
-
-                hint = ''
-                boolean matches = true
-
-                if (!cmd.matches(/${prolog}.*/)) {
-                    hint = "A command line starting with \'${prolog}\'."
-                    matches = false
-                }
-
-                for (MapEntry opt : opts) {
-                    if (!cmd.matches(/.*[\s]*--${opt.key}[\s]*${opt.value}.*/)) {
-                        hint = "A command line containing option \'${opt.key}\' with value \'${opt.value}\'"
-                        matches = false
-                    }
-                }
-
-                for (String arg : args) {
-                    if (!cmd.matches(/.*[\s]*${arg}[\s]*.*/)) {
-                        hint = "A command line having argument '${arg}'."
-                        matches = false
-                    }
-                }
-
-                if (matches)
-                    return true
-            }
-
-            return false
-        }
-
-        @Override
-        public void describeTo(Description description) {
-            description.appendText(hint)
-        }
     }
 }

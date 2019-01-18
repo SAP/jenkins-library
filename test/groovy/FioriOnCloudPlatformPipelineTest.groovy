@@ -1,4 +1,6 @@
+import util.CommandLineMatcher
 import util.JenkinsLockRule
+import util.JenkinsWithEnvRule
 
 import static org.hamcrest.Matchers.allOf
 import static org.hamcrest.Matchers.containsString
@@ -60,6 +62,7 @@ class FioriOnCloudPlatformPipelineTest extends BasePiperTest {
         .around(jsr)
         .around(jscr)
         .around(jlr)
+        .around(new JenkinsWithEnvRule(this))
         .around(new JenkinsCredentialsRule(this)
         .withCredentials('CI_CREDENTIALS_ID', 'foo', 'terceSpot'))
 
@@ -133,8 +136,14 @@ class FioriOnCloudPlatformPipelineTest extends BasePiperTest {
 
         //
         // the neo deploy call:
-        assertThat(jscr.shell, hasItem('#!/bin/bash "/opt/sap/neo/tools/neo.sh" deploy-mta --source "test.mtar" ' +
-            '--host \'hana.example.com\' --account \'myTestAccount\' --synchronous ' +
-            '--user \'foo\' --password \'terceSpot\''))
+        Assert.assertThat(jscr.shell,
+            new CommandLineMatcher()
+                .hasProlog("\"/opt/sap/neo/tools/neo.sh\" deploy-mta")
+                .hasSingleQuotedOption('host', 'hana\\.example\\.com')
+                .hasSingleQuotedOption('account', 'myTestAccount')
+                .hasSingleQuotedOption('password', 'terceSpot')
+                .hasSingleQuotedOption('user', 'foo')
+                .hasSingleQuotedOption('source', 'test.mtar')
+                .hasArgument('synchronous'))
     }
 }
