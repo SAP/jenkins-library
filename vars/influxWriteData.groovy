@@ -1,8 +1,6 @@
 import static com.sap.piper.Prerequisites.checkScript
 
 import com.sap.piper.ConfigurationHelper
-import com.sap.piper.ConfigurationLoader
-import com.sap.piper.ConfigurationMerger
 import com.sap.piper.JsonUtils
 import com.sap.piper.Utils
 
