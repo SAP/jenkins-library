@@ -200,7 +200,7 @@ private getDockerOptions(Map dockerEnvVars, Map dockerVolumeBind, def dockerOpti
         }
         if (dockerOptions instanceof List) {
             for (String option : dockerOptions) {
-                options.add "${option}"
+                options << escapeBlanks(option)
             }
         } else {
             throw new IllegalArgumentException("Unexpected type for dockerOptions. Expected was either a list or a string. Actual type was: '${dockerOptions.getClass()}'")
@@ -228,4 +228,23 @@ def getContainerDefined(config) {
 
 boolean isKubernetes() {
     return Boolean.valueOf(env.ON_K8S)
+}
+
+/**
+ * Escapes blanks for values in key/value pairs
+ * E.g. <code>description=Lorem ipsum</code> is
+ * changed to <code>description=Lorem\ ipsum</code>.
+ */
+@NonCPS
+def escapeBlanks(def s) {
+
+    def EQ='='
+    def parts=s.split(EQ)
+
+    if(parts.length == 2) {
+        parts[1]=parts[1].replaceAll(' ', '\\\\ ')
+        s = parts.join(EQ)
+    }
+
+    return s
 }
