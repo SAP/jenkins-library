@@ -90,7 +90,7 @@ influxDBServer=jenkins
 |customDataMapTags|no|`commonPipelineEnvironment.getInfluxCustomDataTags()`||
 |customDataTags|no|`commonPipelineEnvironment.getInfluxCustomDataTags()`||
 |influxPrefix|no|||
-|influxServer|no|||
+|influxServer|no|`''`||
 |wrapInNode|no|`false`||
 
 ## Step configuration
