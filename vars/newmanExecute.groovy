@@ -109,7 +109,7 @@ void call(Map parameters = [:]) {
                         collectionDisplayName: collectionDisplayName
                     ]).toString()
                 if(!config.failOnError) command += ' --suppress-exit-code'
-                sh 'PATH=\$PATH:~/.npm-global/bin newman ${command}"
+                sh "PATH=\$PATH:~/.npm-global/bin newman ${command}"
             }
         }
     }
