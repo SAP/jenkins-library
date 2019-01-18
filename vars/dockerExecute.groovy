@@ -196,8 +196,9 @@ private getDockerOptions(Map dockerEnvVars, Map dockerVolumeBind, def dockerOpti
 
     if (dockerOptions) {
         if (dockerOptions instanceof CharSequence) {
-            options.add(dockerOptions.toString())
-        } else if (dockerOptions instanceof List) {
+            dockerOptions = [dockerOptions]
+        }
+        if (dockerOptions instanceof List) {
             for (String option : dockerOptions) {
                 options.add "${option}"
             }
