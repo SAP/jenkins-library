@@ -6,6 +6,7 @@ import org.junit.rules.RuleChain
 import static org.hamcrest.Matchers.hasItem
 import static org.hamcrest.Matchers.is
 import static org.hamcrest.Matchers.containsString
+import static org.hamcrest.Matchers.endsWith
 import static org.hamcrest.Matchers.startsWith
 
 import static org.junit.Assert.assertThat
