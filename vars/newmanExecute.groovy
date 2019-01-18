@@ -98,7 +98,7 @@ void call(Map parameters = [:]) {
             dockerImage: config.dockerImage,
             stashContent: config.stashContent
         ) {
-            sh "${config.newmanInstallCommand}"
+            sh "NPM_CONFIG_PREFIX=~/.npm-global ${config.newmanInstallCommand}"
             for(String collection : collectionList){
                 def collectionDisplayName = collection.toString().replace(File.separatorChar,(char)'_').tokenize('.').first()
                 // resolve templates
@@ -109,7 +109,7 @@ void call(Map parameters = [:]) {
                         collectionDisplayName: collectionDisplayName
                     ]).toString()
                 if(!config.failOnError) command += ' --suppress-exit-code'
-                sh "newman ${command}"
+                sh "PATH=\$PATH:~/.npm-global/bin newman ${command}"
             }
         }
     }
