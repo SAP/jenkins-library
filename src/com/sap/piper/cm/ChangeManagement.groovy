@@ -2,6 +2,7 @@ package com.sap.piper.cm
 
 import com.sap.piper.GitUtils
 
+import groovy.json.JsonSlurper
 import hudson.AbortException
 
 
@@ -100,6 +101,32 @@ public class ChangeManagement implements Serializable {
         }
     }
 
+    String createTransportRequestRFC(
+        String dockerImage,
+        List dockerOptions,
+        String endpoint,
+        String client,
+        String credentialsId,
+        String description) {
+
+        def command = 'cts createTransportRequest'
+        List args = [
+            "--env TRANSPORT_DESCRIPTION=${description}",
+            "--env ABAP_DEVELOPMENT_CLIENT=${client}"]
+
+        def transportRequestId = executeWithCredentials(
+            BackendType.RFC,
+            'rfc',
+            dockerOptions,
+            endpoint,
+            credentialsId,
+            command,
+            args,
+            true)
+
+        return new JsonSlurper().parseText(transportRequestId).REQUESTID
+    }
+
     void uploadFileToTransportRequestSOLMAN(
         String changeId,
         String transportRequestId,
@@ -170,7 +197,6 @@ public class ChangeManagement implements Serializable {
                 "--env ABAP_APPLICATION_DESC=${applicationDescription}",
                 "--env ABAP_PACKAGE=${abapPackage}",
                 "--env ZIP_FILE_URL=${filePath}",
-                "--env TRANSPORT_DESCRIPTION=TODO" // under discussion, maybe better simply via description
             ]
 
             uploadFileToTransportRequest(
@@ -241,17 +267,18 @@ public class ChangeManagement implements Serializable {
                     "--env ABAP_DEVELOPMENT_PASSWORD=${script.password}"])
 
                 dockerOptions = dockerOptions.plus(args)
-                def rc = 1
+
+                def result = 1
 
                 script.dockerExecute(script: script,
                                      dockerImage: dockerImage,
                                      dockerOptions: dockerOptions ) {
 
-                    rc = script.sh(shArgs)
+                    result = script.sh(shArgs)
 
                 }
 
-                return rc
+                return result
 
             } else {
 
