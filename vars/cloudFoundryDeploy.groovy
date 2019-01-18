@@ -1,3 +1,5 @@
+import com.sap.piper.JenkinsUtils
+
 import static com.sap.piper.Prerequisites.checkScript
 
 import com.sap.piper.Utils
@@ -32,10 +34,8 @@ void call(Map parameters = [:]) {
 
     handlePipelineStepErrors (stepName: STEP_NAME, stepParameters: parameters) {
 
-        def utils = parameters.juStabUtils
-        if (utils == null) {
-            utils = new Utils()
-        }
+        def utils = parameters.juStabUtils ?: new Utils()
+        def jenkinsUtils = parameters.jenkinsUtilsStub ?: new JenkinsUtils()
 
         def script = checkScript(this, parameters)
         if (script == null)
@@ -63,42 +63,54 @@ void call(Map parameters = [:]) {
         //make sure that for further execution whole workspace, e.g. also downloaded artifacts are considered
         config.stashContent = []
 
-        if (config.deployTool == 'mtaDeployPlugin') {
-            // set default mtar path
-            config = ConfigurationHelper.newInstance(this, config)
-                .addIfEmpty('mtaPath', config.mtaPath?:findMtar())
-                .use()
+        boolean deploy = false
+        boolean deploySuccess = true
+        try {
+            if (config.deployTool == 'mtaDeployPlugin') {
+                deploy = true
+                // set default mtar path
+                config = ConfigurationHelper.newInstance(this, config)
+                    .addIfEmpty('mtaPath', config.mtaPath?:findMtar())
+                    .use()
 
-            dockerExecute(script: script, dockerImage: config.dockerImage, dockerWorkspace: config.dockerWorkspace, stashContent: config.stashContent) {
-                deployMta(config)
+                dockerExecute(script: script, dockerImage: config.dockerImage, dockerWorkspace: config.dockerWorkspace, stashContent: config.stashContent) {
+                    deployMta(config)
+                }
             }
-            return
+
+            if (config.deployTool == 'cf_native') {
+                deploy = true
+                config.smokeTest = ''
+
+                if (config.smokeTestScript == 'blueGreenCheckScript.sh') {
+                    writeFile file: config.smokeTestScript, text: libraryResource(config.smokeTestScript)
+                }
+
+                config.smokeTest = '--smoke-test $(pwd)/' + config.smokeTestScript
+                sh "chmod +x ${config.smokeTestScript}"
+
+                echo "[${STEP_NAME}] CF native deployment (${config.deployType}) with cfAppName=${config.cloudFoundry.appName}, cfManifest=${config.cloudFoundry.manifest}, smokeTestScript=${config.smokeTestScript}"
+
+                dockerExecute (
+                    script: script,
+                    dockerImage: config.dockerImage,
+                    dockerWorkspace: config.dockerWorkspace,
+                    stashContent: config.stashContent,
+                    dockerEnvVars: [CF_HOME:"${config.dockerWorkspace}", CF_PLUGIN_HOME:"${config.dockerWorkspace}", STATUS_CODE: "${config.smokeTestStatusCode}"]
+                ) {
+                    deployCfNative(config)
+                }
+            }
+        } catch (err) {
+            deploySuccess = false
+            throw err
+        } finally {
+            if (deploy) {
+                reportToInflux(script, config, deploySuccess, jenkinsUtils)
+            }
+
         }
 
-        if (config.deployTool == 'cf_native') {
-            config.smokeTest = ''
-
-            if (config.smokeTestScript == 'blueGreenCheckScript.sh') {
-                writeFile file: config.smokeTestScript, text: libraryResource(config.smokeTestScript)
-            }
-
-            config.smokeTest = '--smoke-test $(pwd)/' + config.smokeTestScript
-            sh "chmod +x ${config.smokeTestScript}"
-
-            echo "[${STEP_NAME}] CF native deployment (${config.deployType}) with cfAppName=${config.cloudFoundry.appName}, cfManifest=${config.cloudFoundry.manifest}, smokeTestScript=${config.smokeTestScript}"
-
-            dockerExecute (
-                script: script,
-                dockerImage: config.dockerImage,
-                dockerWorkspace: config.dockerWorkspace,
-                stashContent: config.stashContent,
-                dockerEnvVars: [CF_HOME:"${config.dockerWorkspace}", CF_PLUGIN_HOME:"${config.dockerWorkspace}", STATUS_CODE: "${config.smokeTestStatusCode}"]
-            ) {
-                deployCfNative(config)
-            }
-
-            return
-        }
     }
 }
 
@@ -223,4 +235,34 @@ Transformed manifest file content: $transformedManifest"""
         sh "rm ${config.cloudFoundry.manifest}"
         writeYaml file: config.cloudFoundry.manifest, data: manifest
     }
+}
+
+
+private void reportToInflux(script, config, deploySuccess, JenkinsUtils jenkinsUtils) {
+    def deployUser = ''
+    withCredentials([usernamePassword(
+        credentialsId: config.cloudFoundry.credentialsId,
+        passwordVariable: 'password',
+        usernameVariable: 'username'
+    )]) {
+        deployUser = username
+    }
+
+    def timeFinished = new Date().format( 'MMM dd, yyyy - HH:mm:ss' )
+    def triggerCause = jenkinsUtils.isJobStartedByUser()?'USER':(jenkinsUtils.isJobStartedByTimer()?'TIMER': 'OTHER')
+
+    def deploymentData = [deployment_data: [
+        artifactUrl: 'n/a', //might be added later on during pipeline run (written to commonPipelineEnvironment)
+        deployTime: timeFinished,
+        jobTrigger: triggerCause
+    ]]
+    def deploymentDataTags = [deployment_data: [
+        artifactVersion: script.commonPipelineEnvironment.getArtifactVersion(),
+        deployUser: deployUser,
+        deployResult: deploySuccess?'SUCCESS':'FAILURE',
+        cfApiEndpoint: config.cloudFoundry.apiEndpoint,
+        cfOrg: config.cloudFoundry.org,
+        cfSpace: config.cloudFoundry.space,
+    ]]
+    writeInflux script: script, customData: [:], customDataTags: [:], customDataMap: deploymentData, customDataMapTags: deploymentDataTags
 }
