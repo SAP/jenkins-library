@@ -10,7 +10,7 @@ class BashUtilsTest {
         def input = 'C:\\some\\path'
 
         // When we escape the string
-        def result = BashUtils.escape(input)
+        def result = BashUtils.quoteAndEscape(input)
 
         // Then the string is surrounded by single quotes 'C:\some\path'
         def expected = "'C:\\some\\path'"
@@ -23,7 +23,7 @@ class BashUtilsTest {
         def input = "http://www.sap.com?\$filter='234'"
 
         // When we escape the string
-        def result = BashUtils.escape(input)
+        def result = BashUtils.quoteAndEscape(input)
 
         // Then the input string is surrounded by single quotes and each original ' is replaced by '"'"'
         // 'http://www.sap.com?$filter='"'"'234'"'"''
@@ -37,7 +37,7 @@ class BashUtilsTest {
         def input = "VQ5r\\%*h\"49'Ch>Jj?"
 
         // When we escape the string
-        def result = BashUtils.escape(input)
+        def result = BashUtils.quoteAndEscape(input)
 
         // Then the input string is surrounded by single quotes and each original ' is replaced by '"'"'
         // 'VQ5r\%*h"49'"'"'Ch>Jj?'

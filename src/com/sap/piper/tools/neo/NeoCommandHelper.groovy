@@ -94,11 +94,11 @@ class NeoCommandHelper {
 
     private String source() {
         StepAssertions.assertFileExists(script, source)
-        return "--source ${BashUtils.escape(source)}"
+        return "--source ${BashUtils.quoteAndEscape(source)}"
     }
 
     private String mainArgs() {
-        String usernamePassword = "--user ${BashUtils.escape(user)} --password ${BashUtils.escape(password)}"
+        String usernamePassword = "--user ${BashUtils.quoteAndEscape(user)} --password ${BashUtils.quoteAndEscape(password)}"
 
         if (deployMode == DeployMode.WAR_PROPERTIES_FILE) {
             StepAssertions.assertMandatoryParameter(script, deploymentConfiguration, 'propertiesFile')
@@ -109,12 +109,12 @@ class NeoCommandHelper {
         StepAssertions.assertMandatoryParameter(script, deploymentConfiguration, 'host')
         StepAssertions.assertMandatoryParameter(script, deploymentConfiguration, 'account')
 
-        String targetArgs = "--host ${BashUtils.escape(deploymentConfiguration.host)}"
-        targetArgs += " --account ${BashUtils.escape(deploymentConfiguration.account)}"
+        String targetArgs = "--host ${BashUtils.quoteAndEscape(deploymentConfiguration.host)}"
+        targetArgs += " --account ${BashUtils.quoteAndEscape(deploymentConfiguration.account)}"
 
         if (deployMode == DeployMode.WAR_PARAMS) {
             StepAssertions.assertMandatoryParameter(script, deploymentConfiguration, 'application')
-            targetArgs += " --application ${BashUtils.escape(deploymentConfiguration.application)}"
+            targetArgs += " --application ${BashUtils.quoteAndEscape(deploymentConfiguration.application)}"
         }
 
         return "${targetArgs} ${usernamePassword}"
@@ -127,13 +127,13 @@ class NeoCommandHelper {
 
         String args = ""
         StepAssertions.assertMandatoryParameter(script, deploymentConfiguration, 'runtime')
-        args += " --runtime ${BashUtils.escape(deploymentConfiguration.runtime)}"
+        args += " --runtime ${BashUtils.quoteAndEscape(deploymentConfiguration.runtime)}"
 
         StepAssertions.assertMandatoryParameter(script, deploymentConfiguration, 'runtimeVersion')
-        args += " --runtime-version ${BashUtils.escape(deploymentConfiguration.runtimeVersion)}"
+        args += " --runtime-version ${BashUtils.quoteAndEscape(deploymentConfiguration.runtimeVersion)}"
 
         if (deploymentConfiguration.size) {
-            args += " --size ${BashUtils.escape(deploymentConfiguration.size)}"
+            args += " --size ${BashUtils.quoteAndEscape(deploymentConfiguration.size)}"
         }
 
         if (deploymentConfiguration.containsKey('environment')) {
@@ -148,13 +148,13 @@ class NeoCommandHelper {
             for (int i = 0; i < keys.size(); i++) {
                 def key = keys[i]
                 def value = environment.get(keys[i])
-                args += " --ev ${BashUtils.escape(key)}=${BashUtils.escape(value)}"
+                args += " --ev ${BashUtils.quoteAndEscape(key)}=${BashUtils.quoteAndEscape(value)}"
             }
         }
 
 
         if (deploymentConfiguration.containsKey('vmArguments')) {
-            args += " --vm-arguments ${BashUtils.escape(deploymentConfiguration.vmArguments)}"
+            args += " --vm-arguments ${BashUtils.quoteAndEscape(deploymentConfiguration.vmArguments)}"
         }
 
         return args
