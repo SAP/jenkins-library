@@ -72,11 +72,11 @@ The parameter `neo` is a map which contains the following parameters:
 
 | parameter          | mandatory | default                       | possible values                                 |
 | -------------------|-----------|-------------------------------|-------------------------------------------------|
-| `account`          | no        |                               |                                                 |
+| `account`          | yes       |                               |                                                 |
 | `application`      | yes       |                               |                                                 |
 | `credentialsId`    | no        | `'CI_CREDENTIALS_ID'`         |                                                 |
 | `environment`      |           |                               |                                                 |
-| `host`             | no        |                               |                                                 |
+| `host`             | yes       |                               |                                                 |
 | `runtime`          | yes       |                               |                                                 |
 | `runtime-version`  | yes       |                               |                                                 |
 | `size`             | no        | `'lite'`                      | `'lite'`, `'pro'`, `'prem'`, `'prem-plus'`      |
