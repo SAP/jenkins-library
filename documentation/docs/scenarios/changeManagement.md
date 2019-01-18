@@ -34,8 +34,8 @@ The basic workflow is as follows:
 4. The changes of your development team trigger the Jenkins pipeline. It builds and validates the changes and attaches them to the respective transport request.
 5. As soon as the development process is completed, the change document in SAP Solution Manager can be set to status `to be tested` and all components can be transported to the test system.
 
-##### Hybrid Application Development Worflow
 ![Hybrid Application Development Workflow](../images/SolMan.png "Hybrid Application Development Workflow")
+##### Hybrid Application Development Worflow
 
 ## Example
 
