@@ -93,7 +93,7 @@ private void writeToInflux(config, script){
             ])
         } catch (NullPointerException e){
             if(!e.getMessage()){
-                // catch NPEs as long as https://issues.jenkins-ci.org/browse/JENKINS-55594 is not fixed & released
+                //TODO: catch NPEs as long as https://issues.jenkins-ci.org/browse/JENKINS-55594 is not fixed & released
                 error "[$STEP_NAME] NullPointerException occured, is the correct target defined?"
             }
             throw e
