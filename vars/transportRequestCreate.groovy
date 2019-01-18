@@ -60,6 +60,7 @@ void call(parameters = [:]) {
             .withMandatoryProperty('transportType', null, { backendType == BackendType.CTS})
             .withMandatoryProperty('targetSystem', null, { backendType == BackendType.CTS})
             .withMandatoryProperty('description', null, { backendType == BackendType.CTS})
+            .withMandatoryProperty('changeManagement/rfc/client', null, {backendType == BackendType.RFC})
 
         def changeDocumentId = null
 
@@ -101,6 +102,14 @@ void call(parameters = [:]) {
                                                                configuration.changeManagement.endpoint,
                                                                configuration.changeManagement.credentialsId,
                                                                configuration.changeManagement.clientOpts)
+                } else if (backendType == BackendType.RFC) {
+                  transportRequestId = cm.createTransportRequestRFC(
+                                                               configuration.changeManagement.rfc.dockerImage,
+                                                               configuration.changeManagement.rfc.dockerOptions ?: [],
+                                                               configuration.changeManagement.endpoint,
+                                                               configuration.changeManagement.rfc.client,
+                                                               configuration.changeManagement.credentialsId,
+                                                               configuration.description)
                 } else {
                   throw new IllegalArgumentException("Invalid backend type: '${backendType}'.")
                 }
