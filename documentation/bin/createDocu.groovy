@@ -1,6 +1,7 @@
 import groovy.io.FileType;
 import org.yaml.snakeyaml.Yaml
 import org.codehaus.groovy.control.CompilerConfiguration
+import com.sap.piper.GenerateDocumentation
 import com.sap.piper.DefaultValueCache
 import java.util.regex.Matcher
 
@@ -57,25 +58,24 @@ class TemplateHelper {
             t += "* `${it}` - ${props.docu ?: ''}\n"
         }
 
-        t
+        t.trim()
     }
 
     static createStepConfigurationSection(Map parameters) {
 
-        def t = '''|
-                   |We recommend to define values of step parameters via [config.yml file](../configuration.md).
+        def t = '''|We recommend to define values of step parameters via [config.yml file](../configuration.md).
                    |
-                   |In following sections the configuration is possible:\n\n'''.stripMargin()
+                   |In following sections of the config.yml the configuration is possible:\n\n'''.stripMargin()
 
         t += '| parameter | general | step | stage |\n'
         t += '|-----------|---------|------|-------|\n'
 
         parameters.keySet().toSorted().each {
             def props = parameters.get(it)
-            t += "| `${it}` | ${props.GENERAL_CONFIG ? 'X' : ''} | ${props.STEP_CONFIG ? 'X' : ''} | ${props.PARAMS ? 'X' : ''} |\n"
+            t += "| `${it}` | ${props.GENERAL_CONFIG ? 'X' : ''} | ${props.STEP_CONFIG ? 'X' : ''} | ${props.STAGE_CONFIG ? 'X' : ''} |\n"
         }
 
-        t
+        t.trim()
     }
 }
 
@@ -301,7 +301,7 @@ class Helper {
 
         params.put('STEP_CONFIG', script.STEP_CONFIG_KEYS ?: [])
         params.put('GENERAL_CONFIG', script.GENERAL_CONFIG_KEYS ?: [] )
-        params.put('PARAMS', script.PARAMETER_KEYS ?: [] )
+        params.put('STAGE_CONFIG', script.PARAMETER_KEYS ?: [] )
 
         return params
     }
@@ -323,6 +323,25 @@ class Helper {
         if(pPath.size() == 1) return p // there is no tail
         if(p in Map) getValue(p, pPath.tail())
         else return p
+    }
+
+    static resolveDocuRelevantSteps(GroovyScriptEngine gse, File stepsDir) {
+
+        def docuRelevantSteps = []
+
+        stepsDir.traverse(type: FileType.FILES, maxDepth: 0) {
+            if(it.getName().endsWith('.groovy')) {
+                def scriptName = (it =~  /vars\/(.*)\.groovy/)[0][1]
+                def stepScript = gse.createScript("${scriptName}.groovy", new Binding())
+                for (def method in stepScript.getClass().getMethods()) {
+                    if(method.getName() == 'call' && method.getAnnotation(GenerateDocumentation) != null) {
+                        docuRelevantSteps << scriptName
+                        break
+                    }
+                }
+            }
+        }
+        docuRelevantSteps
     }
 }
 
@@ -351,7 +370,9 @@ stepsDocuDir = stepsDocuDir ?: new File('documentation/docs/steps')
 
 
 if(args.length >= 3)
-    steps << args[2]
+    steps = (args as List).drop(2)  // the first two entries are stepsDir and docuDir
+                                    // the other parts are considered as step names
+
 
 // assign parameters
 //
@@ -372,17 +393,15 @@ if( !stepsDir.exists() ) {
 // sanity checks
 //
 
+def gse = new GroovyScriptEngine( [ stepsDir.getName()  ] as String[] , getClass().getClassLoader() )
 
 //
 // find all the steps we have to document (if no step has been provided from outside)
 if( ! steps) {
-    stepsDir.traverse(type: FileType.FILES, maxDepth: 0)
-        { if(it.getName().endsWith('.groovy')) steps << (it =~ /vars\/(.*)\.groovy/)[0][1] }
+    steps = Helper.resolveDocuRelevantSteps(gse, stepsDir)
 } else {
     System.err << "[INFO] Generating docu only for step ${steps.size > 1 ? 's' : ''} ${steps}.\n"
 }
-
-def gse = new GroovyScriptEngine( [ stepsDir.getName()  ] as String[] , getClass().getClassLoader() )
 
 def prepareDefaultValuesStep = Helper.getPrepareDefaultValuesStep(gse)
 
@@ -490,9 +509,9 @@ def handleStep(stepName, prepareDefaultValuesStep, gse) {
                                         'commonPipelineEnvironment for retrieving, for example, configuration parameters.',
                                 required: true,
 
-                                GENERAL_CONFIG: 'false',
-                                STEP_CONFIG: 'false',
-                                PARAMS: 'true'
+                                GENERAL_CONFIG: false,
+                                STEP_CONFIG: false,
+                                STAGE_CONFIG: false
                             ]
 
     // END special handling for 'script' parameter
@@ -501,9 +520,11 @@ def handleStep(stepName, prepareDefaultValuesStep, gse) {
 
         it ->
 
+            def defaultValue = Helper.getValue(defaultConfig, it.split('/'))
+
             def parameterProperties =   [
-                                            defaultValue: Helper.getValue(defaultConfig, it.split('/')),
-                                            required: requiredParameters.contains((it as String))
+                                            defaultValue: defaultValue,
+                                            required: requiredParameters.contains((it as String)) && defaultValue == null
                                         ]
 
         step.parameters.put(it, parameterProperties)
