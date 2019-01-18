@@ -6,6 +6,8 @@ import org.junit.rules.RuleChain
 import static org.hamcrest.Matchers.hasItem
 import static org.hamcrest.Matchers.is
 import static org.hamcrest.Matchers.containsString
+import static org.hamcrest.Matchers.endsWith
+import static org.hamcrest.Matchers.startsWith
 
 import static org.junit.Assert.assertThat
 
@@ -68,10 +70,25 @@ class NewmanExecuteTest extends BasePiperTest {
             newmanGlobals: 'testGlobals'
         )
         // asserts
-        assertThat(jscr.shell, hasItem('npm install newman newman-reporter-html --global --quiet'))
-        assertThat(jscr.shell, hasItem('newman run \'testCollection\' --environment \'testEnvironment\' --globals \'testGlobals\' --reporters junit,html --reporter-junit-export \'target/newman/TEST-testCollection.xml\' --reporter-html-export \'target/newman/TEST-testCollection.html\''))
+        assertThat(jscr.shell, hasItem(endsWith('npm install newman newman-reporter-html --global --quiet')))
+        assertThat(jscr.shell, hasItem(endsWith('newman run \'testCollection\' --environment \'testEnvironment\' --globals \'testGlobals\' --reporters junit,html --reporter-junit-export \'target/newman/TEST-testCollection.xml\' --reporter-html-export \'target/newman/TEST-testCollection.html\'')))
         assertThat(jedr.dockerParams.dockerImage, is('node:8-stretch'))
         assertThat(jlr.log, containsString('[newmanExecute] Found files [testCollection]'))
+        assertJobStatusSuccess()
+    }
+
+    @Test
+    void testGlobalInstall() throws Exception {
+        jsr.step.newmanExecute(
+            script: nullScript,
+            juStabUtils: utils,
+            newmanCollection: 'testCollection',
+            newmanEnvironment: 'testEnvironment',
+            newmanGlobals: 'testGlobals'
+        )
+        // asserts
+        assertThat(jscr.shell, hasItem(startsWith('NPM_CONFIG_PREFIX=~/.npm-global ')))
+        assertThat(jscr.shell, hasItem(startsWith('PATH=$PATH:~/.npm-global/bin')))
         assertJobStatusSuccess()
     }
 
@@ -103,7 +120,7 @@ class NewmanExecuteTest extends BasePiperTest {
         // asserts
         assertThat(jedr.dockerParams.dockerImage, is('testImage'))
         assertThat(gitMap.url, is('testRepo'))
-        assertThat(jscr.shell, hasItem('newman run \'testCollection\' --environment \'testEnvironment\' --globals \'testGlobals\' --reporters junit,html --reporter-junit-export \'target/newman/TEST-testCollection.xml\' --reporter-html-export \'target/newman/TEST-testCollection.html\' --suppress-exit-code'))
+        assertThat(jscr.shell, hasItem(endsWith('newman run \'testCollection\' --environment \'testEnvironment\' --globals \'testGlobals\' --reporters junit,html --reporter-junit-export \'target/newman/TEST-testCollection.xml\' --reporter-html-export \'target/newman/TEST-testCollection.html\' --suppress-exit-code')))
         assertJobStatusSuccess()
     }
 
@@ -115,8 +132,8 @@ class NewmanExecuteTest extends BasePiperTest {
             newmanRunCommand: 'run ${config.newmanCollection} --iteration-data testDataFile --reporters junit,html --reporter-junit-export target/newman/TEST-${config.newmanCollection.toString().replace(File.separatorChar,(char)\'_\').tokenize(\'.\').first()}.xml --reporter-html-export target/newman/TEST-${config.newmanCollection.toString().replace(File.separatorChar,(char)\'_\').tokenize(\'.\').first()}.html'
         )
         // asserts
-        assertThat(jscr.shell, hasItem('newman run testCollectionsFolder'+File.separatorChar+'A.postman_collection.json --iteration-data testDataFile --reporters junit,html --reporter-junit-export target/newman/TEST-testCollectionsFolder_A.xml --reporter-html-export target/newman/TEST-testCollectionsFolder_A.html'))
-        assertThat(jscr.shell, hasItem('newman run testCollectionsFolder'+File.separatorChar+'B.postman_collection.json --iteration-data testDataFile --reporters junit,html --reporter-junit-export target/newman/TEST-testCollectionsFolder_B.xml --reporter-html-export target/newman/TEST-testCollectionsFolder_B.html'))
+        assertThat(jscr.shell, hasItem(endsWith('newman run testCollectionsFolder'+File.separatorChar+'A.postman_collection.json --iteration-data testDataFile --reporters junit,html --reporter-junit-export target/newman/TEST-testCollectionsFolder_A.xml --reporter-html-export target/newman/TEST-testCollectionsFolder_A.html')))
+        assertThat(jscr.shell, hasItem(endsWith('newman run testCollectionsFolder'+File.separatorChar+'B.postman_collection.json --iteration-data testDataFile --reporters junit,html --reporter-junit-export target/newman/TEST-testCollectionsFolder_B.xml --reporter-html-export target/newman/TEST-testCollectionsFolder_B.html')))
         assertJobStatusSuccess()
     }
 }
