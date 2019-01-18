@@ -9,7 +9,7 @@ Set up an agile development process with Jenkins CI, which automatically feeds c
 * You have set up Project “Piper”. See [README](https://github.com/SAP/jenkins-library/blob/master/README.md).
 * You have installed SAP Solution Manager 7.2 SP6. See [README](https://github.com/SAP/devops-cm-client/blob/master/README.md).
 * You have installed the Multi-Target Application (MTA) Archive Builder 1.0.6 or newer. See [SAP Development Tools](https://tools.hana.ondemand.com/#cloud).
-* You have installed Node.js including node and npm. See https://nodejs.org/en/download/.
+* You have installed Node.js including node and npm. See [Node.js](https://nodejs.org/en/download/).
 
 ## Context
 

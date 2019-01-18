@@ -59,6 +59,6 @@ markdown_extensions:
 extra_css:
     - 'css/extra.css'
 edit_uri: edit/master/documentation/docs
-docs_dir: docs
+docs_dir: docs-tmp
 site_dir: docs-gen
 repo_url: https://github.com/SAP/jenkins-library
