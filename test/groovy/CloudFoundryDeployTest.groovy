@@ -58,7 +58,7 @@ class CloudFoundryDeployTest extends BasePiperTest {
 
     @Before
     void init() {
-        helper.registerAllowedMethod('writeInflux', [Map.class], {m ->
+        helper.registerAllowedMethod('influxWriteData', [Map.class], {m ->
             writeInfluxMap = m
         })
     }
