@@ -24,4 +24,3 @@ enum WarAction {
         return enumValue;
     }
 }
-

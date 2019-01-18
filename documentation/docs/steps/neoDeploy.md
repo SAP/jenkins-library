@@ -56,7 +56,6 @@ The parameter `neo` is a map which contains the following parameters:
 | `credentialsId`    | no        | `'CI_CREDENTIALS_ID'`         |                                                 |
 | `propertiesFile`   | yes       |                               |                                                 |
 
-
 ## Parameters when using WAR file deployment method without .properties file - with parameters (WAR_PARAMS)
 
 | parameter          | mandatory | default                       | possible values                                 |
