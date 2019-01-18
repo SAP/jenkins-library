@@ -264,5 +264,5 @@ private void reportToInflux(script, config, deploySuccess, JenkinsUtils jenkinsU
         cfOrg: config.cloudFoundry.org,
         cfSpace: config.cloudFoundry.space,
     ]]
-    writeInflux script: script, customData: [:], customDataTags: [:], customDataMap: deploymentData, customDataMapTags: deploymentDataTags
+    influxWriteData script: script, customData: [:], customDataTags: [:], customDataMap: deploymentData, customDataMapTags: deploymentDataTags
 }
