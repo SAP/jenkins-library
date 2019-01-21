@@ -97,4 +97,12 @@ class UtilsTest extends BasePiperTest {
         // asserts
         assertThat(jlr.log, containsString('[anything] Telemetry reporting disabled!'))
     }
+
+    @Test
+    void testGenerateSHA1() {
+        def result = utils.generateSha1('ContinuousDelivery')
+        // asserts
+        // generated with "echo -n 'ContinuousDelivery' | sha1sum | sed 's/  -//'"
+        assertThat(result, is('0dad6c33b6246702132454f604dee80740f399ad'))
+    }
 }

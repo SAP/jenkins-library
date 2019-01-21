@@ -100,4 +100,3 @@ void pushToSWA(Map parameters, Map config) {
         // some error occured in telemetry reporting. This should not break anything though.
     }
 }
-
