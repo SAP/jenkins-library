@@ -17,6 +17,10 @@ class Telemetry implements Serializable{
         instance = new Telemetry()
     }
 
+    protected static void clearInstance(){
+        instance = null
+    }
+
     @NonCPS
     protected static Telemetry getInstance(){
         if(!instance) {
