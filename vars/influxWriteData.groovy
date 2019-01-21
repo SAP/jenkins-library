@@ -44,8 +44,11 @@ void call(Map parameters = [:]) {
             .addIfNull('customDataMapTags', script.commonPipelineEnvironment.getInfluxCustomDataMapTags())
             .use()
 
-        new Utils().pushToSWA([step: STEP_NAME,
-                                stepParam1: parameters?.script == null], config)
+        new Utils().pushToSWA([
+            step: STEP_NAME,
+            stepParamKey1: 'scriptMissing',
+            stepParam1: parameters?.script == null
+        ], config)
 
         if (!config.artifactVersion)  {
             //this takes care that terminated builds due to milestone-locking do not cause an error
