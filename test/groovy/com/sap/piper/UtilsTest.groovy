@@ -2,6 +2,7 @@ package com.sap.piper
 
 import org.junit.Rule
 import org.junit.Before
+import org.junit.Ignore
 import org.junit.Test
 import static org.junit.Assert.assertThat
 import org.junit.rules.ExpectedException
@@ -63,6 +64,7 @@ class UtilsTest extends BasePiperTest {
     }
 
     @Test
+    @Ignore("replaced by TelemetryTest#testReportingToSWA")
     void testSWAReporting() {
         utils.env = [BUILD_URL: 'something', JOB_URL: 'nothing']
         utils.pushToSWA([step: 'anything'], [collectTelemetryData: true])
@@ -74,6 +76,7 @@ class UtilsTest extends BasePiperTest {
     }
 
     @Test
+    @Ignore("replaced by TelemetryTest#testNotifyWithOptOut")
     void testDisabledSWAReporting() {
         utils.env = [BUILD_URL: 'something', JOB_URL: 'nothing']
         utils.pushToSWA([step: 'anything'], [collectTelemetryData: false])
@@ -83,6 +86,7 @@ class UtilsTest extends BasePiperTest {
     }
 
     @Test
+    @Ignore("replaced by TelemetryTest#testNotifyWithOptOutWithoutConfig")
     void testImplicitlyDisabledSWAReporting() {
         utils.env = [BUILD_URL: 'something', JOB_URL: 'nothing']
         utils.pushToSWA([step: 'anything'], null)
@@ -91,6 +95,7 @@ class UtilsTest extends BasePiperTest {
     }
 
     @Test
+    @Ignore("replaced by TelemetryTest#testNotifyWithOptOutWithEmptyConfig")
     void testImplicitlyDisabledSWAReporting2() {
         utils.env = [BUILD_URL: 'something', JOB_URL: 'nothing']
         utils.pushToSWA([step: 'anything'], [:])
