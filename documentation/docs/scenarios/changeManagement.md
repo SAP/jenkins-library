@@ -9,7 +9,7 @@ Set up an agile development process with Jenkins CI, which automatically feeds c
 * You have set up Project “Piper”. See [README](https://github.com/SAP/jenkins-library/blob/master/README.md).
 * You have installed SAP Solution Manager 7.2 SP6. See [README](https://github.com/SAP/devops-cm-client/blob/master/README.md).
 * You have installed the Multi-Target Application (MTA) Archive Builder 1.0.6 or newer. See [SAP Development Tools](https://tools.hana.ondemand.com/#cloud).
-* You have installed Node.js including node and npm. See https://nodejs.org/en/download/.
+* You have installed Node.js including node and npm. See [Node.js](https://nodejs.org/en/download/).
 
 ## Context
 
@@ -33,6 +33,9 @@ The basic workflow is as follows:
 3. The required transport request is created on the fly. However, the change document can contain more components (for example, UI and backend components).
 4. The changes of your development team trigger the Jenkins pipeline. It builds and validates the changes and attaches them to the respective transport request.
 5. As soon as the development process is completed, the change document in SAP Solution Manager can be set to status `to be tested` and all components can be transported to the test system.
+
+![Hybrid Application Development Workflow](../images/SolMan_Scenario.png "Hybrid Application Development Workflow")
+##### Hybrid Application Development Worflow
 
 ## Example
 
