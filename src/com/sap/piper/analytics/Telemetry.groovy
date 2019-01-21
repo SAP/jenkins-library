@@ -13,11 +13,11 @@ class Telemetry implements Serializable{
         this.listenerList = []
     }
 
-    protected static void createInstance(){
+    protected static Telemetry createInstance(){
         instance = new Telemetry()
     }
 
-    protected static void clearInstance(){
+    protected static Telemetry clearInstance(){
         instance = null
     }
 
