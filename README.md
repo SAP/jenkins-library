@@ -1,5 +1,4 @@
 [![Build Status](https://travis-ci.org/SAP/jenkins-library.svg?branch=master)](https://travis-ci.org/SAP/jenkins-library)
-[![Coverage Status](https://coveralls.io/repos/github/SAP/jenkins-library/badge.svg?branch=master)](https://coveralls.io/github/SAP/jenkins-library?branch=master)
 [![Maintainability](https://api.codeclimate.com/v1/badges/0e6a23344616e29b4ed0/maintainability)](https://codeclimate.com/github/SAP/jenkins-library/maintainability)
 [![Test Coverage](https://api.codeclimate.com/v1/badges/0e6a23344616e29b4ed0/test_coverage)](https://codeclimate.com/github/SAP/jenkins-library/test_coverage)
 
@@ -101,6 +100,7 @@ project][piper-library-issues].
 Feel free to open new issues for feature requests, bugs or general feedback on
 the [GitHub issues page of this project][piper-library-issues].
 
+Register to our [google group][google-group] in order to get updates or for asking questions.
 # Contributing
 
 Read and understand our [contribution guidelines][piper-library-contribution]
@@ -124,3 +124,4 @@ otherwise in the [LICENSE file][piper-library-license]
 [jenkins-doc-libraries]: https://jenkins.io/doc/book/pipeline/shared-libraries
 [jenkins-doc-steps]: https://jenkins.io/doc/pipeline/steps
 [jenkins-plugin-sharedlibs]: https://wiki.jenkins-ci.org/display/JENKINS/Pipeline+Shared+Groovy+Libraries+Plugin
+[google-group]: https://groups.google.com/forum/#!forum/project-piper
