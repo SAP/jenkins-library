@@ -13,14 +13,11 @@ import static org.hamcrest.Matchers.hasItem
 import static org.hamcrest.Matchers.is
 import static org.hamcrest.Matchers.not
 import static org.hamcrest.Matchers.empty
-import static org.hamcrest.Matchers.anything
 
 import util.JenkinsLoggingRule
 import util.JenkinsShellCallRule
 import util.BasePiperTest
 import util.Rules
-
-import com.sap.piper.Utils
 
 class TelemetryTest extends BasePiperTest {
     private ExpectedException thrown = ExpectedException.none()
