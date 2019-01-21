@@ -27,7 +27,7 @@ class Telemetry implements Serializable{
             createInstance()
 
             registerListener({ steps, payload ->
-                instance.piperOsDefaultReporting(steps, payload)
+                piperOsDefaultReporting(steps, payload)
             })
         }
         return instance
@@ -54,7 +54,7 @@ class Telemetry implements Serializable{
         }
     }
 
-    protected void piperOsDefaultReporting(Script steps, Map payload) {
+    protected static void piperOsDefaultReporting(Script steps, Map payload) {
         try {
 
             def swaCustom = [:]
