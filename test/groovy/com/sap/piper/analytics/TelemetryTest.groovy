@@ -1,0 +1,133 @@
+package com.sap.piper.analytics
+
+import org.junit.Rule
+import org.junit.Before
+import org.junit.Test
+import static org.junit.Assert.assertThat
+import static org.junit.Assume.assumeThat
+import org.junit.rules.ExpectedException
+import org.junit.rules.RuleChain
+
+import static org.hamcrest.Matchers.containsString
+import static org.hamcrest.Matchers.hasItem
+import static org.hamcrest.Matchers.is
+import static org.hamcrest.Matchers.not
+import static org.hamcrest.Matchers.empty
+import static org.hamcrest.Matchers.anything
+
+import util.JenkinsLoggingRule
+import util.JenkinsShellCallRule
+import util.BasePiperTest
+import util.Rules
+
+import com.sap.piper.Utils
+
+class TelemetryTest extends BasePiperTest {
+    private ExpectedException thrown = ExpectedException.none()
+    private JenkinsLoggingRule jlr = new JenkinsLoggingRule(this)
+    private JenkinsShellCallRule jscr = new JenkinsShellCallRule(this)
+
+    @Rule
+    public RuleChain rules = Rules
+        .getCommonRules(this)
+        .around(thrown)
+        .around(jscr)
+        .around(jlr)
+
+    private parameters
+
+    @Before
+    void setup() {
+        Telemetry.clearInstance()
+        parameters = [:]
+    }
+
+    @Test
+    void testCreateInstance() {
+        Telemetry instanceUnderTest = Telemetry.createInstance()
+        // asserts
+        assertThat(instanceUnderTest.listenerList, is(empty()))
+    }
+
+    @Test
+    void testGetInstance() {
+        Telemetry instanceUnderTest = Telemetry.getInstance()
+        // asserts
+        assertThat(instanceUnderTest.listenerList, is(not(empty())))
+    }
+
+    @Test
+    void testRegisterListenerAndNotify() {
+        // prepare
+        Map notificationPayload = [:]
+        Telemetry instanceUnderTest = Telemetry.createInstance()
+        assumeThat(instanceUnderTest.listenerList, is(empty()))
+
+        Telemetry.registerListener({ steps, payload ->
+            notificationPayload = payload
+        })
+        // test
+        Telemetry.notify(nullScript, [collectTelemetryData: true], [step: 'anyStep', anything: 'something'])
+        // asserts
+        assertThat(instanceUnderTest.listenerList, is(not(empty())))
+        assertThat(notificationPayload, is([step: 'anyStep', anything: 'something']))
+    }
+
+    @Test
+    void testNotifyWithOptOut() {
+        // prepare
+        Map notificationPayload = [:]
+        Telemetry instanceUnderTest = Telemetry.createInstance()
+        assumeThat(instanceUnderTest.listenerList, is(empty()))
+        Telemetry.registerListener({ steps, payload ->
+            notificationPayload = payload
+        })
+        // test
+        Telemetry.notify(nullScript, [:], [step: 'anyStep', anything: 'something'])
+        // asserts
+        assertThat(instanceUnderTest.listenerList, is(not(empty())))
+        assertThat(jlr.log, containsString("[anyStep] Telemetry reporting disabled!"))
+        assertThat(notificationPayload.keySet(), is(empty()))
+    }
+
+    @Test
+    void testNotifyWithOptOutWithoutConfig() {
+        // prepare
+        Map notificationPayload = [:]
+        Telemetry instanceUnderTest = Telemetry.createInstance()
+        assumeThat(instanceUnderTest.listenerList, is(empty()))
+        Telemetry.registerListener({ steps, payload ->
+            notificationPayload = payload
+        })
+        // test
+        Telemetry.notify(nullScript, null, [step: 'anyStep', anything: 'something'])
+        // asserts
+        assertThat(instanceUnderTest.listenerList, is(not(empty())))
+        assertThat(jlr.log, containsString("[anyStep] Telemetry reporting disabled!"))
+        assertThat(notificationPayload.keySet(), is(empty()))
+    }
+
+    @Test
+    void testReportingToSWA() {
+        // prepare
+        Telemetry instanceUnderTest = Telemetry.getInstance()
+        assumeThat(instanceUnderTest.listenerList, is(not(empty())))
+        // test
+        Telemetry.notify(nullScript, [collectTelemetryData: true], [
+            actionName: 'Piper Library OS',
+            eventType: 'library-os',
+            jobUrlSha1: '1234',
+            buildUrlSha1: 'abcd',
+            step: 'anyStep',
+            stepParam1: 'something'
+        ])
+        // asserts
+        assertThat(jscr.shell, hasItem(containsString('curl -G -v "https://webanalytics.cfapps.eu10.hana.ondemand.com/tracker/log"')))
+        assertThat(jscr.shell, hasItem(containsString('--data-urlencode "action_name=Piper Library OS"')))
+        assertThat(jscr.shell, hasItem(containsString('--data-urlencode "event_type=library-os"')))
+        assertThat(jscr.shell, hasItem(containsString('--data-urlencode "custom3=anyStep"')))
+        assertThat(jscr.shell, hasItem(containsString('--data-urlencode "custom4=1234"')))
+        assertThat(jscr.shell, hasItem(containsString('--data-urlencode "custom5=abcd"')))
+        assertThat(jscr.shell, hasItem(containsString('--data-urlencode "custom11=something"')))
+    }
+}

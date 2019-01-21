@@ -26,10 +26,9 @@ class Telemetry implements Serializable{
         if(!instance) {
             createInstance()
 
-            Closure defaultListener = {payload ->
-                piperOsDefaultReporting(payload)
-            }
-            registerListener(defaultListener)
+            registerListener({ steps, payload ->
+                instance.piperOsDefaultReporting(steps, payload)
+            })
         }
         return instance
     }
@@ -48,8 +47,9 @@ class Telemetry implements Serializable{
         getInstance().listenerList.each { listener ->
             try {
                 listener(steps, payload)
-            } catch (err) {
+            } catch (ignore) {
                 // some error occured in telemetry reporting. This should not break anything though.
+                steps.echo "[${payload.step}] Telemetry Report with listener failed: ${ignore.getMessage()}"
             }
         }
     }
@@ -101,7 +101,7 @@ class Telemetry implements Serializable{
             steps.sh(returnStatus: true, script: "#!/bin/sh +x\ncurl ${options.join(' ')} > /dev/null 2>&1 || echo '[${payload.step}] Telemetry Report to SWA failed!'")
 
         } catch (MissingContextVariableException noNode) {
-            echo "[${payload.step}] Telemetry Report to SWA skipped, no node available!"
+            steps.echo "[${payload.step}] Telemetry Report to SWA skipped, no node available!"
         }
     }
 }
