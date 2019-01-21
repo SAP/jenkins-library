@@ -56,11 +56,11 @@ void call(Map parameters = [:]) {
 
         utils.pushToSWA([
             step: STEP_NAME,
-            stepParamKey1: 'deploy tool',
+            stepParamKey1: 'deployTool',
             stepParam1: config.deployTool,
-            stepParamKey2: 'deploy type',
+            stepParamKey2: 'deployType',
             stepParam2: config.deployType,
-            stepParamKey3: 'script missing',
+            stepParamKey3: 'scriptMissing',
             stepParam3: parameters?.script == null
         ], config)
 

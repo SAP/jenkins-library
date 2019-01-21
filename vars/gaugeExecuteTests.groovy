@@ -49,9 +49,9 @@ void call(Map parameters = [:]) {
 
         utils.pushToSWA([
             step: STEP_NAME,
-            stepParamKey1: 'build tool',
+            stepParamKey1: 'buildTool',
             stepParam1: config.buildTool,
-            stepParamKey2: 'docker name',
+            stepParamKey2: 'dockerName',
             stepParam2: config.dockerName
         ], config)
 

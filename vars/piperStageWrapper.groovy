@@ -106,15 +106,15 @@ private void executeStage(script, originalStage, stageName, config, utils) {
         utils.pushToSWA([
             eventType: 'library-os-stage',
             stageName: stageName,
-            stepParamKey1: 'build result',
+            stepParamKey1: 'buildResult',
             stepParam1: "${script.currentBuild.currentResult}",
-            stepParamKey2: 'stage start time',
+            stepParamKey2: 'stageStartTime',
             stepParam2: "${startTime}",
-            stepParamKey3: 'stage duration',
+            stepParamKey3: 'stageDuration',
             stepParam3: "${duration}",
-            stepParamKey4: 'project extension provided',
+            stepParamKey4: 'projectExtension',
             stepParam4: "${projectExtensions}",
-            stepParamKey5: 'global extension provided',
+            stepParamKey5: 'globalExtension',
             stepParam5: "${globalExtensions}"
         ], config)
     }

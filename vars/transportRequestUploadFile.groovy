@@ -63,9 +63,9 @@ void call(parameters = [:]) {
 
         new Utils().pushToSWA([
             step: STEP_NAME,
-            stepParamKey1: 'change management type',
+            stepParamKey1: 'changeManagementType',
             stepParam1: configuration.changeManagement.type,
-            stepParamKey2: 'script missing',
+            stepParamKey2: 'scriptMissing',
             stepParam2: parameters?.script == null
         ], configuration)
 

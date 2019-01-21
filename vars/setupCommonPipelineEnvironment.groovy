@@ -26,9 +26,9 @@ void call(Map parameters = [:]) {
 
         (parameters.utils ?: new Utils()).pushToSWA([
             step: STEP_NAME,
-            stepParamKey4: 'custom defaults provided',
+            stepParamKey4: 'customDefaults',
             stepParam4: parameters.customDefaults?'true':'false',
-            stepParamKey5: 'legacy config provided',
+            stepParamKey5: 'legacyConfig',
             stepParam5: Boolean.toString( ! (script?.commonPipelineEnvironment?.getConfigProperties() ?: [:]).isEmpty())
         ], config)
     }

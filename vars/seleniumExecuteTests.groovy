@@ -50,7 +50,7 @@ void call(Map parameters = [:], Closure body) {
 
         utils.pushToSWA([
             step: STEP_NAME,
-            stepParamKey1: 'script missing',
+            stepParamKey1: 'scriptMissing',
             stepParam1: parameters?.script == null
         ], config)
 

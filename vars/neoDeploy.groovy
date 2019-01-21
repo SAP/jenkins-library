@@ -104,13 +104,13 @@ void call(parameters = [:]) {
 
         utils.pushToSWA([
             step: STEP_NAME,
-            stepParamKey1: 'deploy mode',
+            stepParamKey1: 'deployMode',
             stepParam1: configuration.deployMode == 'mta'?'mta':'war', // ['mta', 'warParams', 'warPropertiesFile']
-            stepParamKey2: 'war action',
+            stepParamKey2: 'warAction',
             stepParam2: configuration.warAction == 'rolling-update'?'blue-green':'standard', // ['deploy', 'deploy-mta', 'rolling-update']
-            stepParamKey3: 'script missing',
+            stepParamKey3: 'scriptMissing',
             stepParam3: parameters?.script == null,
-            stepParamKey4: 'legacy config provided',
+            stepParamKey4: 'legacyConfig',
             stepParam4: ! stepCompatibilityConfiguration.isEmpty(),
         ], configuration)
 

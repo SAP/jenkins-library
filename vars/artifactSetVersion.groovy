@@ -63,11 +63,11 @@ void call(Map parameters = [:], Closure body = null) {
 
         new Utils().pushToSWA([
             step: STEP_NAME,
-            stepParamKey1: 'build tool',
+            stepParamKey1: 'buildTool',
             stepParam1: config.buildTool,
-            stepParamKey2: 'artifact type',
+            stepParamKey2: 'artifactType',
             stepParam2: config.artifactType,
-            stepParamKey3: 'script missing',
+            stepParamKey3: 'scriptMissing',
             stepParam3: parameters?.script == null
         ], config)
 
