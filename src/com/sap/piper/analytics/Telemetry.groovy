@@ -3,22 +3,22 @@ package com.sap.piper.analytics
 import com.cloudbees.groovy.cps.NonCPS
 import org.jenkinsci.plugins.workflow.steps.MissingContextVariableException
 
-class Telemtry implements Serializable{
+class Telemetry implements Serializable{
 
-    private static Telemtry instance
+    private static Telemetry instance
 
     private List listenerList
 
-    private Telemtry(){
+    private Telemetry(){
         this.listenerList = []
     }
 
     private static void createInstance(){
-        instance = new Telemtry()
+        instance = new Telemetry()
     }
 
     @NonCPS
-    static Telemtry getInstance(){
+    static Telemetry getInstance(){
         if(!instance) {
             createInstance()
 

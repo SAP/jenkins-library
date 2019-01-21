@@ -1,7 +1,7 @@
 package com.sap.piper
 
 import com.cloudbees.groovy.cps.NonCPS
-import com.sap.piper.analytics.Telemtry
+import com.sap.piper.analytics.Telemetry
 
 import java.nio.charset.StandardCharsets
 import java.security.MessageDigest
@@ -95,7 +95,7 @@ void pushToSWA(Map parameters, Map config) {
         parameters.jobUrlSha1 =  generateSha1(env.JOB_URL)
         parameters.buildUrlSha1 = generateSha1(env.BUILD_URL)
 
-        Telemtry.notify(this, config, parameters)
+        Telemetry.notify(this, config, parameters)
     } catch (ignore) {
         // some error occured in telemetry reporting. This should not break anything though.
     }
