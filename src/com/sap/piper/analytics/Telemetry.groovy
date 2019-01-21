@@ -5,20 +5,20 @@ import org.jenkinsci.plugins.workflow.steps.MissingContextVariableException
 
 class Telemetry implements Serializable{
 
-    private static Telemetry instance
+    protected static Telemetry instance
 
-    private List listenerList
+    protected List listenerList
 
-    private Telemetry(){
+    protected Telemetry(){
         this.listenerList = []
     }
 
-    private static void createInstance(){
+    protected static void createInstance(){
         instance = new Telemetry()
     }
 
     @NonCPS
-    static Telemetry getInstance(){
+    protected static Telemetry getInstance(){
         if(!instance) {
             createInstance()
 
@@ -50,7 +50,7 @@ class Telemetry implements Serializable{
         }
     }
 
-    void piperOsDefaultReporting(Script steps, Map payload) {
+    protected void piperOsDefaultReporting(Script steps, Map payload) {
         try {
 
             def swaCustom = [:]
