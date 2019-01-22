@@ -11,10 +11,10 @@ def getMandatoryParameter(Map map, paramName, defaultValue = null) {
     if (paramValue == null)
         paramValue = defaultValue
 
-    if (paramValue == null){
+    if (paramValue == null)
         throw new Exception("ERROR - NO VALUE AVAILABLE FOR ${paramName}")
-    }
     return paramValue
+
 }
 
 def stash(name, include = '**/*.*', exclude = '') {

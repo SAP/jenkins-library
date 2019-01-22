@@ -126,7 +126,8 @@ void call(parameters = [:]) {
 private deploy(script, utils, Map configuration, NeoCommandHelper neoCommandHelper, dockerImage, DeployMode deployMode) {
 
     try {
-        withEnv(['neo_logging_location=/var/log/neo']) {
+        sh "mkdir -p logs/neo"
+        withEnv(["neo_logging_location=${pwd()}/logs/neo"]) {
             if (deployMode.isWarDeployment()) {
                 ConfigurationHelper.newInstance(this, configuration).withPropertyInList('warAction', WarAction.stringValues())
                 WarAction warAction = WarAction.fromString(configuration.warAction)
@@ -156,7 +157,7 @@ private deploy(script, utils, Map configuration, NeoCommandHelper neoCommandHelp
     catch (Exception ex) {
         if (dockerImage) {
             echo "Error while deploying to SAP Cloud Platform. Here are the neo.sh logs:"
-            sh "cat /var/log/neo/*"
+            sh "cat logs/neo/*"
         }
         throw ex
     }
