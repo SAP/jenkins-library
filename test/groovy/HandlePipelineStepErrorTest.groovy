@@ -15,7 +15,7 @@ import util.JenkinsStepRule
 import util.Rules
 
 class HandlePipelineStepErrorsTest extends BasePiperTest {
-    private JenkinsStepRule jsr = new JenkinsStepRule(this)
+    private JenkinsStepRule stepRule = new JenkinsStepRule(this)
     private JenkinsLoggingRule loggingRule = new JenkinsLoggingRule(this)
     private ExpectedException thrown = ExpectedException.none()
 
@@ -23,13 +23,13 @@ class HandlePipelineStepErrorsTest extends BasePiperTest {
     public RuleChain rules = Rules
         .getCommonRules(this)
         .around(loggingRule)
-        .around(jsr)
+        .around(stepRule)
         .around(thrown)
 
     @Test
     void testBeginAndEndMessage() {
         def isExecuted
-        jsr.step.handlePipelineStepErrors([
+        stepRule.step.handlePipelineStepErrors([
             stepName: 'testStep',
             stepParameters: ['something': 'anything']
         ]) {
@@ -44,7 +44,7 @@ class HandlePipelineStepErrorsTest extends BasePiperTest {
     @Test
     void testNonVerbose() {
         try {
-            jsr.step.handlePipelineStepErrors([
+            stepRule.step.handlePipelineStepErrors([
                 stepName: 'testStep',
                 stepParameters: ['something': 'anything'],
                 echoDetails: false
@@ -64,7 +64,7 @@ class HandlePipelineStepErrorsTest extends BasePiperTest {
     void testErrorsMessage() {
         def isReported
         try {
-            jsr.step.handlePipelineStepErrors([
+            stepRule.step.handlePipelineStepErrors([
                 stepName: 'testStep',
                 stepParameters: ['something': 'anything']
             ]) {

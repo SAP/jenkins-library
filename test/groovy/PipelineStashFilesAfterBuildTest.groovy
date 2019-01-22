@@ -8,7 +8,7 @@ import static org.junit.Assert.assertFalse
 import static org.junit.Assert.assertThat
 
 class PipelineStashFilesAfterBuildTest extends BasePiperTest {
-    JenkinsStepRule jsr = new JenkinsStepRule(this)
+    JenkinsStepRule stepRule = new JenkinsStepRule(this)
     JenkinsLoggingRule loggingRule = new JenkinsLoggingRule(this)
     JenkinsReadJsonRule jrj = new JenkinsReadJsonRule(this)
 
@@ -18,7 +18,7 @@ class PipelineStashFilesAfterBuildTest extends BasePiperTest {
         .around(new JenkinsReadYamlRule(this))
         .around(jrj)
         .around(loggingRule)
-        .around(jsr)
+        .around(stepRule)
 
     @Test
     void testStashAfterBuild() {
@@ -26,7 +26,7 @@ class PipelineStashFilesAfterBuildTest extends BasePiperTest {
             searchTerm ->
                 return false
         })
-        jsr.step.pipelineStashFilesAfterBuild(
+        stepRule.step.pipelineStashFilesAfterBuild(
             script: nullScript,
             juStabUtils: utils
         )
@@ -42,7 +42,7 @@ class PipelineStashFilesAfterBuildTest extends BasePiperTest {
             searchTerm ->
                 return true
         })
-        jsr.step.pipelineStashFilesAfterBuild(
+        stepRule.step.pipelineStashFilesAfterBuild(
             script: nullScript,
             juStabUtils: utils,
             runCheckmarx: true
@@ -59,7 +59,7 @@ class PipelineStashFilesAfterBuildTest extends BasePiperTest {
             searchTerm ->
                 return true
         })
-        jsr.step.pipelineStashFilesAfterBuild(
+        stepRule.step.pipelineStashFilesAfterBuild(
             script: [commonPipelineEnvironment: [configuration: [steps: [executeCheckmarxScan: [checkmarxProject: 'TestProject']]]]],
             juStabUtils: utils,
         )

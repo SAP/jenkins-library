@@ -10,7 +10,7 @@ import static org.hamcrest.Matchers.*
 import static org.junit.Assert.assertThat
 
 class KarmaExecuteTestsTest extends BasePiperTest {
-    private JenkinsStepRule jsr = new JenkinsStepRule(this)
+    private JenkinsStepRule stepRule = new JenkinsStepRule(this)
     private JenkinsLoggingRule loggingRule = new JenkinsLoggingRule(this)
     private JenkinsShellCallRule shellRule = new JenkinsShellCallRule(this)
     private JenkinsEnvironmentRule jer = new JenkinsEnvironmentRule(this)
@@ -23,7 +23,7 @@ class KarmaExecuteTestsTest extends BasePiperTest {
         .around(shellRule)
         .around(loggingRule)
         .around(jer)
-        .around(jsr)
+        .around(stepRule)
         .around(thrown)
 
     def seleniumParams = [:]
@@ -40,7 +40,7 @@ class KarmaExecuteTestsTest extends BasePiperTest {
 
     @Test
     void testDefaults() throws Exception {
-        jsr.step.karmaExecuteTests(
+        stepRule.step.karmaExecuteTests(
             script: nullScript,
             juStabUtils: utils
         )

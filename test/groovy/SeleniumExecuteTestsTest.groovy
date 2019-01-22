@@ -11,7 +11,7 @@ import static org.junit.Assert.assertThat
 
 class SeleniumExecuteTestsTest extends BasePiperTest {
     private ExpectedException thrown = ExpectedException.none()
-    private JenkinsStepRule jsr = new JenkinsStepRule(this)
+    private JenkinsStepRule stepRule = new JenkinsStepRule(this)
     private JenkinsLoggingRule loggingRule = new JenkinsLoggingRule(this)
     private JenkinsShellCallRule shellRule = new JenkinsShellCallRule(this)
     private JenkinsDockerExecuteRule jedr = new JenkinsDockerExecuteRule(this)
@@ -22,7 +22,7 @@ class SeleniumExecuteTestsTest extends BasePiperTest {
         .around(new JenkinsReadYamlRule(this))
         .around(thrown)
         .around(jedr)
-        .around(jsr) // needs to be activated after jedr, otherwise executeDocker is not mocked
+        .around(stepRule) // needs to be activated after jedr, otherwise executeDocker is not mocked
 
     boolean bodyExecuted = false
 
@@ -39,7 +39,7 @@ class SeleniumExecuteTestsTest extends BasePiperTest {
 
     @Test
     void testExecuteSeleniumDefault() {
-        jsr.step.seleniumExecuteTests(
+        stepRule.step.seleniumExecuteTests(
             script: nullScript,
             juStabUtils: utils
         ) {
@@ -59,7 +59,7 @@ class SeleniumExecuteTestsTest extends BasePiperTest {
 
     @Test
     void testExecuteSeleniumCustomBuildTool() {
-        jsr.step.seleniumExecuteTests(
+        stepRule.step.seleniumExecuteTests(
             script: nullScript,
             buildTool: 'maven',
             juStabUtils: utils
@@ -74,7 +74,7 @@ class SeleniumExecuteTestsTest extends BasePiperTest {
     @Test
     void testExecuteSeleniumError() {
         thrown.expectMessage('Error occured')
-        jsr.step.seleniumExecuteTests(
+        stepRule.step.seleniumExecuteTests(
             script: nullScript,
             juStabUtils: utils
         ) {
@@ -84,7 +84,7 @@ class SeleniumExecuteTestsTest extends BasePiperTest {
 
     @Test
     void testExecuteSeleniumIgnoreError() {
-        jsr.step.seleniumExecuteTests(
+        stepRule.step.seleniumExecuteTests(
             script: nullScript,
             failOnError: false,
             juStabUtils: utils
@@ -97,7 +97,7 @@ class SeleniumExecuteTestsTest extends BasePiperTest {
 
     @Test
     void testExecuteSeleniumCustomRepo() {
-        jsr.step.seleniumExecuteTests(
+        stepRule.step.seleniumExecuteTests(
             script: nullScript,
             gitBranch: 'test',
             gitSshKeyCredentialsId: 'testCredentials',
