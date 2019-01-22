@@ -14,15 +14,15 @@ class SeleniumExecuteTestsTest extends BasePiperTest {
     private JenkinsStepRule stepRule = new JenkinsStepRule(this)
     private JenkinsLoggingRule loggingRule = new JenkinsLoggingRule(this)
     private JenkinsShellCallRule shellRule = new JenkinsShellCallRule(this)
-    private JenkinsDockerExecuteRule jedr = new JenkinsDockerExecuteRule(this)
+    private JenkinsDockerExecuteRule dockerExecuteRule = new JenkinsDockerExecuteRule(this)
 
     @Rule
     public RuleChain rules = Rules
         .getCommonRules(this)
         .around(new JenkinsReadYamlRule(this))
         .around(thrown)
-        .around(jedr)
-        .around(stepRule) // needs to be activated after jedr, otherwise executeDocker is not mocked
+        .around(dockerExecuteRule)
+        .around(stepRule) // needs to be activated after dockerExecuteRule, otherwise executeDocker is not mocked
 
     boolean bodyExecuted = false
 
@@ -46,15 +46,15 @@ class SeleniumExecuteTestsTest extends BasePiperTest {
             bodyExecuted = true
         }
         assertThat(bodyExecuted, is(true))
-        assertThat(jedr.dockerParams.containerPortMappings, is(['selenium/standalone-chrome': [[containerPort: 4444, hostPort: 4444]]]))
-        assertThat(jedr.dockerParams.dockerEnvVars, is(null))
-        assertThat(jedr.dockerParams.dockerImage, is('node:8-stretch'))
-        assertThat(jedr.dockerParams.dockerName, is('npm'))
-        assertThat(jedr.dockerParams.dockerWorkspace, is('/home/node'))
-        assertThat(jedr.dockerParams.sidecarEnvVars, is(null))
-        assertThat(jedr.dockerParams.sidecarImage, is('selenium/standalone-chrome'))
-        assertThat(jedr.dockerParams.sidecarName, is('selenium'))
-        assertThat(jedr.dockerParams.sidecarVolumeBind, is(['/dev/shm': '/dev/shm']))
+        assertThat(dockerExecuteRule.dockerParams.containerPortMappings, is(['selenium/standalone-chrome': [[containerPort: 4444, hostPort: 4444]]]))
+        assertThat(dockerExecuteRule.dockerParams.dockerEnvVars, is(null))
+        assertThat(dockerExecuteRule.dockerParams.dockerImage, is('node:8-stretch'))
+        assertThat(dockerExecuteRule.dockerParams.dockerName, is('npm'))
+        assertThat(dockerExecuteRule.dockerParams.dockerWorkspace, is('/home/node'))
+        assertThat(dockerExecuteRule.dockerParams.sidecarEnvVars, is(null))
+        assertThat(dockerExecuteRule.dockerParams.sidecarImage, is('selenium/standalone-chrome'))
+        assertThat(dockerExecuteRule.dockerParams.sidecarName, is('selenium'))
+        assertThat(dockerExecuteRule.dockerParams.sidecarVolumeBind, is(['/dev/shm': '/dev/shm']))
     }
 
     @Test
@@ -67,9 +67,9 @@ class SeleniumExecuteTestsTest extends BasePiperTest {
             bodyExecuted = true
         }
         assertThat(bodyExecuted, is(true))
-        assertThat(jedr.dockerParams.dockerImage, is('maven:3.5-jdk-8'))
-        assertThat(jedr.dockerParams.dockerName, is('maven'))
-        assertThat(jedr.dockerParams.dockerWorkspace, is(''))
+        assertThat(dockerExecuteRule.dockerParams.dockerImage, is('maven:3.5-jdk-8'))
+        assertThat(dockerExecuteRule.dockerParams.dockerName, is('maven'))
+        assertThat(dockerExecuteRule.dockerParams.dockerWorkspace, is(''))
     }
     @Test
     void testExecuteSeleniumError() {
