@@ -10,7 +10,7 @@ import static org.hamcrest.Matchers.*
 import static org.junit.Assert.assertThat
 
 class GaugeExecuteTestsTest extends BasePiperTest {
-    private JenkinsStepRule jsr = new JenkinsStepRule(this)
+    private JenkinsStepRule stepRule = new JenkinsStepRule(this)
     private JenkinsLoggingRule loggingRule = new JenkinsLoggingRule(this)
     private JenkinsShellCallRule shellRule = new JenkinsShellCallRule(this)
     private JenkinsEnvironmentRule jer = new JenkinsEnvironmentRule(this)
@@ -23,7 +23,7 @@ class GaugeExecuteTestsTest extends BasePiperTest {
         .around(shellRule)
         .around(loggingRule)
         .around(jer)
-        .around(jsr)
+        .around(stepRule)
         .around(thrown)
 
     def gitParams = [:]
@@ -42,7 +42,7 @@ class GaugeExecuteTestsTest extends BasePiperTest {
 
     @Test
     void testExecuteGaugeDefaultSuccess() throws Exception {
-        jsr.step.gaugeExecuteTests(
+        stepRule.step.gaugeExecuteTests(
             script: nullScript,
             juStabUtils: utils,
             testServerUrl: 'http://test.url'
@@ -70,7 +70,7 @@ class GaugeExecuteTestsTest extends BasePiperTest {
 
     @Test
     void testExecuteGaugeNode() throws Exception {
-        jsr.step.gaugeExecuteTests(
+        stepRule.step.gaugeExecuteTests(
             script: nullScript,
             buildTool: 'npm',
             dockerEnvVars: ['TARGET_SERVER_URL':'http://custom.url'],
@@ -96,7 +96,7 @@ class GaugeExecuteTestsTest extends BasePiperTest {
         thrown.expect(RuntimeException)
         thrown.expectMessage('Test Error')
         try {
-            jsr.step.gaugeExecuteTests(
+            stepRule.step.gaugeExecuteTests(
                 script: nullScript,
                 juStabUtils: utils,
                 dockerImage: 'testImage',
@@ -123,7 +123,7 @@ class GaugeExecuteTestsTest extends BasePiperTest {
         helper.registerAllowedMethod('git', [String.class], null)
         helper.registerAllowedMethod('stash', [String.class], null)
 
-        jsr.step.gaugeExecuteTests(
+        stepRule.step.gaugeExecuteTests(
             script: nullScript,
             juStabUtils: utils,
             testRepository: 'myTestRepo',

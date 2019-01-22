@@ -22,7 +22,7 @@ import org.junit.rules.ExpectedException
 
 class NewmanExecuteTest extends BasePiperTest {
     private ExpectedException thrown = ExpectedException.none()
-    private JenkinsStepRule jsr = new JenkinsStepRule(this)
+    private JenkinsStepRule stepRule = new JenkinsStepRule(this)
     private JenkinsLoggingRule loggingRule = new JenkinsLoggingRule(this)
     private JenkinsShellCallRule shellRule = new JenkinsShellCallRule(this)
     private JenkinsDockerExecuteRule jedr = new JenkinsDockerExecuteRule(this)
@@ -35,7 +35,7 @@ class NewmanExecuteTest extends BasePiperTest {
         .around(jedr)
         .around(shellRule)
         .around(loggingRule)
-        .around(jsr) // needs to be activated after jedr, otherwise executeDocker is not mocked
+        .around(stepRule) // needs to be activated after jedr, otherwise executeDocker is not mocked
 
     def gitMap
 
@@ -62,7 +62,7 @@ class NewmanExecuteTest extends BasePiperTest {
 
     @Test
     void testExecuteNewmanDefault() throws Exception {
-        jsr.step.newmanExecute(
+        stepRule.step.newmanExecute(
             script: nullScript,
             juStabUtils: utils,
             newmanCollection: 'testCollection',
@@ -79,7 +79,7 @@ class NewmanExecuteTest extends BasePiperTest {
 
     @Test
     void testGlobalInstall() throws Exception {
-        jsr.step.newmanExecute(
+        stepRule.step.newmanExecute(
             script: nullScript,
             juStabUtils: utils,
             newmanCollection: 'testCollection',
@@ -96,7 +96,7 @@ class NewmanExecuteTest extends BasePiperTest {
     void testExecuteNewmanWithNoCollection() throws Exception {
         thrown.expectMessage('[newmanExecute] No collection found with pattern \'notFound.json\'')
 
-        jsr.step.newmanExecute(
+        stepRule.step.newmanExecute(
             script: nullScript,
             juStabUtils: utils,
             newmanCollection: 'notFound.json'
@@ -107,7 +107,7 @@ class NewmanExecuteTest extends BasePiperTest {
 
     @Test
     void testExecuteNewmanFailOnError() throws Exception {
-        jsr.step.newmanExecute(
+        stepRule.step.newmanExecute(
             script: nullScript,
             juStabUtils: utils,
             newmanCollection: 'testCollection',
@@ -126,7 +126,7 @@ class NewmanExecuteTest extends BasePiperTest {
 
     @Test
     void testExecuteNewmanWithFolder() throws Exception {
-        jsr.step.newmanExecute(
+        stepRule.step.newmanExecute(
             script: nullScript,
             juStabUtils: utils,
             newmanRunCommand: 'run ${config.newmanCollection} --iteration-data testDataFile --reporters junit,html --reporter-junit-export target/newman/TEST-${config.newmanCollection.toString().replace(File.separatorChar,(char)\'_\').tokenize(\'.\').first()}.xml --reporter-html-export target/newman/TEST-${config.newmanCollection.toString().replace(File.separatorChar,(char)\'_\').tokenize(\'.\').first()}.html'

@@ -22,7 +22,7 @@ class SnykExecuteTest extends BasePiperTest {
     private JenkinsDockerExecuteRule jder = new JenkinsDockerExecuteRule(this)
     private JenkinsShellCallRule shellRule = new JenkinsShellCallRule(this)
     private JenkinsLoggingRule loggingRule = new JenkinsLoggingRule(this)
-    private JenkinsStepRule jsr = new JenkinsStepRule(this)
+    private JenkinsStepRule stepRule = new JenkinsStepRule(this)
 
     @Rule
     public RuleChain ruleChain = Rules
@@ -32,7 +32,7 @@ class SnykExecuteTest extends BasePiperTest {
         .around(jder)
         .around(shellRule)
         .around(loggingRule)
-        .around(jsr)
+        .around(stepRule)
 
     def withCredentialsParameters
     List archiveStepPatterns
@@ -74,7 +74,7 @@ class SnykExecuteTest extends BasePiperTest {
         thrown.expect(hudson.AbortException)
         thrown.expectMessage('[ERROR][snykExecute] ScanType \'seagul\' not supported!')
 
-        jsr.step.snykExecute(
+        stepRule.step.snykExecute(
             script: nullScript,
             juStabUtils: utils,
             scanType: 'seagul'
@@ -83,7 +83,7 @@ class SnykExecuteTest extends BasePiperTest {
 
     @Test
     void testDefaultsSettings() throws Exception {
-        jsr.step.snykExecute(
+        stepRule.step.snykExecute(
             script: nullScript,
             juStabUtils: utils
         )
@@ -96,7 +96,7 @@ class SnykExecuteTest extends BasePiperTest {
 
     @Test
     void testScanTypeNpm() throws Exception {
-        jsr.step.snykExecute(
+        stepRule.step.snykExecute(
             script: nullScript,
             juStabUtils: utils
         )
@@ -108,7 +108,7 @@ class SnykExecuteTest extends BasePiperTest {
 
     @Test
     void testScanTypeNpmWithOrgAndJsonReport() throws Exception {
-        jsr.step.snykExecute(
+        stepRule.step.snykExecute(
             script: nullScript,
             juStabUtils: utils,
             snykOrg: 'myOrg',
@@ -121,7 +121,7 @@ class SnykExecuteTest extends BasePiperTest {
 
     @Test
     void testScanTypeMta() throws Exception {
-        jsr.step.snykExecute(
+        stepRule.step.snykExecute(
             script: nullScript,
             juStabUtils: utils,
             scanType: 'mta'

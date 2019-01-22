@@ -16,7 +16,7 @@ import static org.junit.Assert.assertThat
 class PiperStageWrapperTest extends BasePiperTest {
 
     private JenkinsLoggingRule loggingRule = new JenkinsLoggingRule(this)
-    private JenkinsStepRule jsr = new JenkinsStepRule(this)
+    private JenkinsStepRule stepRule = new JenkinsStepRule(this)
 
     private Map lockMap = [:]
     private int countNodeUsage = 0
@@ -27,7 +27,7 @@ class PiperStageWrapperTest extends BasePiperTest {
         .getCommonRules(this)
         .around(new JenkinsReadYamlRule(this))
         .around(loggingRule)
-        .around(jsr)
+        .around(stepRule)
 
     @Before
     void init() throws Exception {
@@ -55,7 +55,7 @@ class PiperStageWrapperTest extends BasePiperTest {
     @Test
     void testDefault() {
         def executed = false
-        jsr.step.piperStageWrapper(
+        stepRule.step.piperStageWrapper(
             script: nullScript,
             juStabUtils: utils,
             ordinal: 10,
@@ -72,7 +72,7 @@ class PiperStageWrapperTest extends BasePiperTest {
     @Test
     void testNoLocking() {
         def executed = false
-        jsr.step.piperStageWrapper(
+        stepRule.step.piperStageWrapper(
             script: nullScript,
             juStabUtils: utils,
             nodeLabel: 'testLabel',
@@ -101,7 +101,7 @@ class PiperStageWrapperTest extends BasePiperTest {
         nullScript.commonPipelineEnvironment.gitBranch = 'testBranch'
 
         def executed = false
-        jsr.step.piperStageWrapper(
+        stepRule.step.piperStageWrapper(
             script: nullScript,
             juStabUtils: utils,
             ordinal: 10,

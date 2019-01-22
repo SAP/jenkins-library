@@ -13,7 +13,7 @@ import static org.junit.Assert.assertThat
 class BatsExecuteTestsTest extends BasePiperTest {
 
     private ExpectedException thrown = ExpectedException.none()
-    private JenkinsStepRule jsr = new JenkinsStepRule(this)
+    private JenkinsStepRule stepRule = new JenkinsStepRule(this)
     private JenkinsLoggingRule loggingRule = new JenkinsLoggingRule(this)
     private JenkinsShellCallRule shellRule = new JenkinsShellCallRule(this)
     private JenkinsDockerExecuteRule jder = new JenkinsDockerExecuteRule(this)
@@ -26,7 +26,7 @@ class BatsExecuteTestsTest extends BasePiperTest {
         .around(jder)
         .around(shellRule)
         .around(loggingRule)
-        .around(jsr)
+        .around(stepRule)
 
     List withEnvArgs = []
 
@@ -43,7 +43,7 @@ class BatsExecuteTestsTest extends BasePiperTest {
     @Test
     void testDefault() {
         nullScript.commonPipelineEnvironment.configuration = [general: [container: 'test-container']]
-        jsr.step.batsExecuteTests(
+        stepRule.step.batsExecuteTests(
             script: nullScript,
             juStabUtils: utils,
             dockerContainerName: 'test-container',
@@ -72,7 +72,7 @@ class BatsExecuteTestsTest extends BasePiperTest {
 
     @Test
     void testTap() {
-        jsr.step.batsExecuteTests(
+        stepRule.step.batsExecuteTests(
             script: nullScript,
             juStabUtils: utils,
             outputFormat: 'tap'
@@ -90,7 +90,7 @@ class BatsExecuteTestsTest extends BasePiperTest {
             }
         })
         thrown.expectMessage('Shell call failed')
-        jsr.step.batsExecuteTests(
+        stepRule.step.batsExecuteTests(
             script: nullScript,
             juStabUtils: utils,
             failOnError: true,
@@ -108,7 +108,7 @@ class BatsExecuteTestsTest extends BasePiperTest {
             assertThat(s, startsWith('testContent-'))
         })
 
-        jsr.step.batsExecuteTests(
+        stepRule.step.batsExecuteTests(
             script: nullScript,
             juStabUtils: utils,
             testRepository: 'testRepo',
@@ -129,7 +129,7 @@ class BatsExecuteTestsTest extends BasePiperTest {
             assertThat(s, startsWith('testContent-'))
         })
 
-        jsr.step.batsExecuteTests(
+        stepRule.step.batsExecuteTests(
             script: nullScript,
             juStabUtils: utils,
             gitBranch: 'test',

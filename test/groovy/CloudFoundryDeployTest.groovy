@@ -32,7 +32,7 @@ class CloudFoundryDeployTest extends BasePiperTest {
     private JenkinsShellCallRule shellRule = new JenkinsShellCallRule(this)
     private JenkinsWriteFileRule jwfr = new JenkinsWriteFileRule(this)
     private JenkinsDockerExecuteRule jedr = new JenkinsDockerExecuteRule(this)
-    private JenkinsStepRule jsr = new JenkinsStepRule(this)
+    private JenkinsStepRule stepRule = new JenkinsStepRule(this)
     private JenkinsEnvironmentRule jer = new JenkinsEnvironmentRule(this)
     private JenkinsReadYamlRule jryr = new JenkinsReadYamlRule(this)
 
@@ -55,7 +55,7 @@ class CloudFoundryDeployTest extends BasePiperTest {
         .around(jedr)
         .around(jer)
         .around(new JenkinsCredentialsRule(this).withCredentials('test_cfCredentialsId', 'test_cf', '********'))
-        .around(jsr) // needs to be activated after jedr, otherwise executeDocker is not mocked
+        .around(stepRule) // needs to be activated after jedr, otherwise executeDocker is not mocked
 
     @Before
     void init() {
@@ -83,7 +83,7 @@ class CloudFoundryDeployTest extends BasePiperTest {
             ]
         ]
 
-        jsr.step.cloudFoundryDeploy([
+        stepRule.step.cloudFoundryDeploy([
             script: nullScript,
             juStabUtils: utils,
             jenkinsUtilsStub: new JenkinsUtilsMock(),
@@ -112,7 +112,7 @@ class CloudFoundryDeployTest extends BasePiperTest {
             ]
         ]
 
-        jsr.step.cloudFoundryDeploy([
+        stepRule.step.cloudFoundryDeploy([
             script: nullScript,
             juStabUtils: utils,
             jenkinsUtilsStub: new JenkinsUtilsMock(),
@@ -130,7 +130,7 @@ class CloudFoundryDeployTest extends BasePiperTest {
             generatedFile = parameters.file
             data = parameters.data
         })
-        jsr.step.cloudFoundryDeploy([
+        stepRule.step.cloudFoundryDeploy([
             script: nullScript,
             juStabUtils: utils,
             jenkinsUtilsStub: new JenkinsUtilsMock(),
@@ -157,7 +157,7 @@ class CloudFoundryDeployTest extends BasePiperTest {
             generatedFile = parameters.file
             data = parameters.data
         })
-        jsr.step.cloudFoundryDeploy([
+        stepRule.step.cloudFoundryDeploy([
             script: nullScript,
             juStabUtils: utils,
             jenkinsUtilsStub: new JenkinsUtilsMock(),
@@ -180,7 +180,7 @@ class CloudFoundryDeployTest extends BasePiperTest {
             generatedFile = parameters.file
             data = parameters.data
         })
-        jsr.step.cloudFoundryDeploy([
+        stepRule.step.cloudFoundryDeploy([
             script: nullScript,
             juStabUtils: utils,
             jenkinsUtilsStub: new JenkinsUtilsMock(),
@@ -211,7 +211,7 @@ class CloudFoundryDeployTest extends BasePiperTest {
             data = parameters.data
         })
 
-        jsr.step.cloudFoundryDeploy([
+        stepRule.step.cloudFoundryDeploy([
             script: nullScript,
             juStabUtils: utils,
             jenkinsUtilsStub: new JenkinsUtilsMock(),
@@ -238,7 +238,7 @@ class CloudFoundryDeployTest extends BasePiperTest {
         thrown.expect(hudson.AbortException)
         thrown.expectMessage('[cloudFoundryDeploy] ERROR: No appName available in manifest test.yml.')
 
-        jsr.step.cloudFoundryDeploy([
+        stepRule.step.cloudFoundryDeploy([
             script: nullScript,
             juStabUtils: utils,
             jenkinsUtilsStub: new JenkinsUtilsMock(),
@@ -255,7 +255,7 @@ class CloudFoundryDeployTest extends BasePiperTest {
 
         jryr.registerYaml('test.yml', "applications: [[]]")
 
-        jsr.step.cloudFoundryDeploy([
+        stepRule.step.cloudFoundryDeploy([
             script: nullScript,
             juStabUtils: utils,
             jenkinsUtilsStub: new JenkinsUtilsMock(),
@@ -282,7 +282,7 @@ class CloudFoundryDeployTest extends BasePiperTest {
 
         jryr.registerYaml('test.yml', "applications: [[]]")
 
-        jsr.step.cloudFoundryDeploy([
+        stepRule.step.cloudFoundryDeploy([
             script: nullScript,
             juStabUtils: utils,
             jenkinsUtilsStub: new JenkinsUtilsMock(),
@@ -311,7 +311,7 @@ class CloudFoundryDeployTest extends BasePiperTest {
 
         jryr.registerYaml('test.yml', "applications: [[]]")
 
-        jsr.step.cloudFoundryDeploy([
+        stepRule.step.cloudFoundryDeploy([
             script: nullScript,
             juStabUtils: utils,
             jenkinsUtilsStub: new JenkinsUtilsMock(),
@@ -339,7 +339,7 @@ class CloudFoundryDeployTest extends BasePiperTest {
 
         jryr.registerYaml('test.yml', "applications: [[]]")
 
-        jsr.step.cloudFoundryDeploy([
+        stepRule.step.cloudFoundryDeploy([
             script: nullScript,
             juStabUtils: utils,
             jenkinsUtilsStub: new JenkinsUtilsMock(),
@@ -365,7 +365,7 @@ class CloudFoundryDeployTest extends BasePiperTest {
         thrown.expect(hudson.AbortException)
         thrown.expectMessage('[cloudFoundryDeploy] ERROR: Blue-green plugin requires app name to be passed (see https://github.com/bluemixgaragelondon/cf-blue-green-deploy/issues/27)')
 
-        jsr.step.cloudFoundryDeploy([
+        stepRule.step.cloudFoundryDeploy([
             script: nullScript,
             juStabUtils: utils,
             jenkinsUtilsStub: new JenkinsUtilsMock(),
@@ -381,7 +381,7 @@ class CloudFoundryDeployTest extends BasePiperTest {
 
     @Test
     void testMta() {
-        jsr.step.cloudFoundryDeploy([
+        stepRule.step.cloudFoundryDeploy([
             script: nullScript,
             juStabUtils: utils,
             jenkinsUtilsStub: new JenkinsUtilsMock(),
@@ -402,7 +402,7 @@ class CloudFoundryDeployTest extends BasePiperTest {
     @Test
     void testMtaBlueGreen() {
 
-        jsr.step.cloudFoundryDeploy([
+        stepRule.step.cloudFoundryDeploy([
             script: nullScript,
             juStabUtils: utils,
             jenkinsUtilsStub: new JenkinsUtilsMock(),
@@ -425,7 +425,7 @@ class CloudFoundryDeployTest extends BasePiperTest {
             data = parameters.data
         })
         nullScript.commonPipelineEnvironment.setArtifactVersion('1.2.3')
-        jsr.step.cloudFoundryDeploy([
+        stepRule.step.cloudFoundryDeploy([
             script: nullScript,
             juStabUtils: utils,
             jenkinsUtilsStub: new JenkinsUtilsMock(),

@@ -7,7 +7,7 @@ import static org.hamcrest.Matchers.containsString
 import static org.junit.Assert.*
 
 class PipelineStashFilesBeforeBuildTest extends BasePiperTest {
-    JenkinsStepRule jsr = new JenkinsStepRule(this)
+    JenkinsStepRule stepRule = new JenkinsStepRule(this)
     JenkinsLoggingRule loggingRule = new JenkinsLoggingRule(this)
     JenkinsShellCallRule shellRule = new JenkinsShellCallRule(this)
     //JenkinsReadJsonRule jrj = new JenkinsReadJsonRule(this)
@@ -19,12 +19,12 @@ class PipelineStashFilesBeforeBuildTest extends BasePiperTest {
         //.around(jrj)
         .around(loggingRule)
         .around(shellRule)
-        .around(jsr)
+        .around(stepRule)
 
     @Test
     void testStashBeforeBuildNoOpa() {
 
-        jsr.step.pipelineStashFilesBeforeBuild(script: nullScript, juStabUtils: utils)
+        stepRule.step.pipelineStashFilesBeforeBuild(script: nullScript, juStabUtils: utils)
 
         // asserts
         assertEquals('mkdir -p gitmetadata', shellRule.shell[0])
@@ -44,7 +44,7 @@ class PipelineStashFilesBeforeBuildTest extends BasePiperTest {
     @Test
     void testStashBeforeBuildOpa() {
 
-        jsr.step.pipelineStashFilesBeforeBuild(script: nullScript, juStabUtils: utils, runOpaTests: true)
+        stepRule.step.pipelineStashFilesBeforeBuild(script: nullScript, juStabUtils: utils, runOpaTests: true)
 
         // asserts
         assertThat(loggingRule.log, containsString('Stash content: buildDescriptor'))

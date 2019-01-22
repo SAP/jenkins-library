@@ -46,7 +46,7 @@ class FioriOnCloudPlatformPipelineTest extends BasePiperTest {
         *   mta.yaml
     */
 
-    JenkinsStepRule jsr = new JenkinsStepRule(this)
+    JenkinsStepRule stepRule = new JenkinsStepRule(this)
     JenkinsReadYamlRule jryr = new JenkinsReadYamlRule(this)
     JenkinsShellCallRule shellRule = new JenkinsShellCallRule(this)
 
@@ -54,7 +54,7 @@ class FioriOnCloudPlatformPipelineTest extends BasePiperTest {
     public RuleChain ruleChain = Rules
         .getCommonRules(this)
         .around(jryr)
-        .around(jsr)
+        .around(stepRule)
         .around(shellRule)
         .around(new JenkinsCredentialsRule(this)
         .withCredentials('CI_CREDENTIALS_ID', 'foo', 'terceSpot'))
@@ -113,7 +113,7 @@ class FioriOnCloudPlatformPipelineTest extends BasePiperTest {
                                     ]
                                 ]
 
-        jsr.step.fioriOnCloudPlatformPipeline(script: nullScript)
+        stepRule.step.fioriOnCloudPlatformPipeline(script: nullScript)
 
         //
         // the mta build call:

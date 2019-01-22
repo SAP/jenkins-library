@@ -13,14 +13,14 @@ class PipelineRestartStepsTest extends BasePiperTest {
 
     private JenkinsErrorRule jer = new JenkinsErrorRule(this)
     private JenkinsLoggingRule loggingRule = new JenkinsLoggingRule(this)
-    private JenkinsStepRule jsr = new JenkinsStepRule(this)
+    private JenkinsStepRule stepRule = new JenkinsStepRule(this)
 
     @Rule
     public RuleChain chain = Rules.getCommonRules(this)
         .around(new JenkinsReadYamlRule(this))
         .around(jer)
         .around(loggingRule)
-        .around(jsr)
+        .around(stepRule)
 
     @Test
     void testError() throws Exception {
@@ -50,7 +50,7 @@ class PipelineRestartStepsTest extends BasePiperTest {
         })
 
         try {
-            jsr.step.pipelineRestartSteps ([
+            stepRule.step.pipelineRestartSteps ([
                 script: nullScript,
                 jenkinsUtilsStub: jenkinsUtils,
                 sendMail: true,
@@ -93,7 +93,7 @@ class PipelineRestartStepsTest extends BasePiperTest {
         })
 
         try {
-            jsr.step.pipelineRestartSteps ([
+            stepRule.step.pipelineRestartSteps ([
                 script: nullScript,
                 jenkinsUtilsStub: jenkinsUtils,
                 sendMail: false,
@@ -111,7 +111,7 @@ class PipelineRestartStepsTest extends BasePiperTest {
     @Test
     void testSuccess() throws Exception {
 
-        jsr.step.pipelineRestartSteps ([
+        stepRule.step.pipelineRestartSteps ([
             script: nullScript,
             jenkinsUtilsStub: jenkinsUtils,
             sendMail: false,

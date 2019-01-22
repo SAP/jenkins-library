@@ -17,7 +17,7 @@ import static org.hamcrest.Matchers.*
 import static org.junit.Assert.assertThat
 
 class GithubPublishReleaseTest extends BasePiperTest {
-    private JenkinsStepRule jsr = new JenkinsStepRule(this)
+    private JenkinsStepRule stepRule = new JenkinsStepRule(this)
     private JenkinsLoggingRule loggingRule = new JenkinsLoggingRule(this)
     private JenkinsReadJsonRule jrjr = new JenkinsReadJsonRule(this)
     private ExpectedException thrown = ExpectedException.none()
@@ -28,7 +28,7 @@ class GithubPublishReleaseTest extends BasePiperTest {
         .around(new JenkinsReadYamlRule(this))
         .around(loggingRule)
         .around(jrjr)
-        .around(jsr)
+        .around(stepRule)
         .around(thrown)
 
     def data
@@ -82,7 +82,7 @@ class GithubPublishReleaseTest extends BasePiperTest {
 
     @Test
     void testPublishGithubReleaseWithDefaults() throws Exception {
-        jsr.step.githubPublishRelease(
+        stepRule.step.githubPublishRelease(
             script: nullScript,
             githubOrg: 'TestOrg',
             githubRepo: 'TestRepo',
@@ -112,7 +112,7 @@ class GithubPublishReleaseTest extends BasePiperTest {
 
     @Test
     void testPublishGithubRelease() throws Exception {
-        jsr.step.githubPublishRelease(
+        stepRule.step.githubPublishRelease(
             script: nullScript,
             githubOrg: 'TestOrg',
             githubRepo: 'TestRepo',
@@ -149,7 +149,7 @@ class GithubPublishReleaseTest extends BasePiperTest {
 
     @Test
     void testExcludeLabels() throws Exception {
-        jsr.step.githubPublishRelease(
+        stepRule.step.githubPublishRelease(
             script: nullScript,
             githubOrg: 'TestOrg',
             githubRepo: 'TestRepo',
@@ -189,8 +189,8 @@ class GithubPublishReleaseTest extends BasePiperTest {
             "body": ""
         }''')
         // asserts
-        assertThat(jsr.step.isExcluded(item, ['enhancement', 'won\'t fix']), is(true))
-        assertThat(jsr.step.isExcluded(item, ['won\'t fix']), is(false))
+        assertThat(stepRule.step.isExcluded(item, ['enhancement', 'won\'t fix']), is(true))
+        assertThat(stepRule.step.isExcluded(item, ['won\'t fix']), is(false))
         assertJobStatusSuccess()
     }
 }
