@@ -19,7 +19,7 @@ import util.Rules
 
 class SnykExecuteTest extends BasePiperTest {
     private ExpectedException thrown = ExpectedException.none()
-    private JenkinsDockerExecuteRule jder = new JenkinsDockerExecuteRule(this)
+    private JenkinsDockerExecuteRule dockerExecuteRule = new JenkinsDockerExecuteRule(this)
     private JenkinsShellCallRule shellRule = new JenkinsShellCallRule(this)
     private JenkinsLoggingRule loggingRule = new JenkinsLoggingRule(this)
     private JenkinsStepRule stepRule = new JenkinsStepRule(this)
@@ -29,7 +29,7 @@ class SnykExecuteTest extends BasePiperTest {
         .getCommonRules(this)
         .around(new JenkinsReadYamlRule(this))
         .around(thrown)
-        .around(jder)
+        .around(dockerExecuteRule)
         .around(shellRule)
         .around(loggingRule)
         .around(stepRule)
@@ -89,9 +89,9 @@ class SnykExecuteTest extends BasePiperTest {
         )
 
         assertThat(withCredentialsParameters.credentialsId, is('myPassword'))
-        assertThat(jder.dockerParams, hasEntry('dockerImage', 'node:8-stretch'))
-        assertThat(jder.dockerParams.stashContent, hasItem('buildDescriptor'))
-        assertThat(jder.dockerParams.stashContent, hasItem('opensourceConfiguration'))
+        assertThat(dockerExecuteRule.dockerParams, hasEntry('dockerImage', 'node:8-stretch'))
+        assertThat(dockerExecuteRule.dockerParams.stashContent, hasItem('buildDescriptor'))
+        assertThat(dockerExecuteRule.dockerParams.stashContent, hasItem('opensourceConfiguration'))
     }
 
     @Test

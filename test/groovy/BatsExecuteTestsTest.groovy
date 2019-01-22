@@ -16,14 +16,14 @@ class BatsExecuteTestsTest extends BasePiperTest {
     private JenkinsStepRule stepRule = new JenkinsStepRule(this)
     private JenkinsLoggingRule loggingRule = new JenkinsLoggingRule(this)
     private JenkinsShellCallRule shellRule = new JenkinsShellCallRule(this)
-    private JenkinsDockerExecuteRule jder = new JenkinsDockerExecuteRule(this)
+    private JenkinsDockerExecuteRule dockerExecuteRule = new JenkinsDockerExecuteRule(this)
 
     @Rule
     public RuleChain rules = Rules
         .getCommonRules(this)
         .around(new JenkinsReadYamlRule(this))
         .around(thrown)
-        .around(jder)
+        .around(dockerExecuteRule)
         .around(shellRule)
         .around(loggingRule)
         .around(stepRule)
@@ -61,8 +61,8 @@ class BatsExecuteTestsTest extends BasePiperTest {
         assertThat(shellRule.shell, hasItem('bats-core/bin/bats --recursive --tap src/test > \'TEST-testPackage.tap\''))
         assertThat(shellRule.shell, hasItem('cat \'TEST-testPackage.tap\''))
 
-        assertThat(jder.dockerParams.dockerImage, is('node:8-stretch'))
-        assertThat(jder.dockerParams.dockerWorkspace, is('/home/node'))
+        assertThat(dockerExecuteRule.dockerParams.dockerImage, is('node:8-stretch'))
+        assertThat(dockerExecuteRule.dockerParams.dockerWorkspace, is('/home/node'))
 
         assertThat(shellRule.shell, hasItem('npm install tap-xunit -g'))
         assertThat(shellRule.shell, hasItem('cat \'TEST-testPackage.tap\' | tap-xunit --package=\'testPackage\' > TEST-testPackage.xml'))
@@ -77,7 +77,7 @@ class BatsExecuteTestsTest extends BasePiperTest {
             juStabUtils: utils,
             outputFormat: 'tap'
         )
-        assertThat(jder.dockerParams.size(), is(0))
+        assertThat(dockerExecuteRule.dockerParams.size(), is(0))
     }
 
     @Test
@@ -116,7 +116,7 @@ class BatsExecuteTestsTest extends BasePiperTest {
 
         assertThat(gitRepository.size(), is(1))
         assertThat(gitRepository.url, is('testRepo'))
-        assertThat(jder.dockerParams.stashContent, hasItem(startsWith('testContent-')))
+        assertThat(dockerExecuteRule.dockerParams.stashContent, hasItem(startsWith('testContent-')))
     }
 
     @Test

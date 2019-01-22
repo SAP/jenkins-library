@@ -23,7 +23,7 @@ public class MtaBuildTest extends BasePiperTest {
     private ExpectedException thrown = new ExpectedException()
     private JenkinsLoggingRule loggingRule = new JenkinsLoggingRule(this)
     private JenkinsShellCallRule shellRule = new JenkinsShellCallRule(this)
-    private JenkinsDockerExecuteRule jder = new JenkinsDockerExecuteRule(this)
+    private JenkinsDockerExecuteRule dockerExecuteRule = new JenkinsDockerExecuteRule(this)
     private JenkinsStepRule stepRule = new JenkinsStepRule(this)
     private JenkinsReadYamlRule jryr = new JenkinsReadYamlRule(this).registerYaml('mta.yaml', defaultMtaYaml() )
 
@@ -34,7 +34,7 @@ public class MtaBuildTest extends BasePiperTest {
         .around(thrown)
         .around(loggingRule)
         .around(shellRule)
-        .around(jder)
+        .around(dockerExecuteRule)
         .around(stepRule)
 
     @Before
@@ -193,7 +193,7 @@ public class MtaBuildTest extends BasePiperTest {
 
         stepRule.step.mtaBuild(script: nullScript, dockerImage: 'mta-docker-image:latest')
 
-        assert 'mta-docker-image:latest' == jder.dockerParams.dockerImage
+        assert 'mta-docker-image:latest' == dockerExecuteRule.dockerParams.dockerImage
     }
 
     @Test
@@ -201,7 +201,7 @@ public class MtaBuildTest extends BasePiperTest {
 
         stepRule.step.mtaBuild(script: nullScript, dockerOptions: 'something')
 
-        assert 'something' == jder.dockerParams.dockerOptions
+        assert 'something' == dockerExecuteRule.dockerParams.dockerOptions
     }
 
     @Test
