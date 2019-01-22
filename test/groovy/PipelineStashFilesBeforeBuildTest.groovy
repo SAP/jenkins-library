@@ -10,13 +10,13 @@ class PipelineStashFilesBeforeBuildTest extends BasePiperTest {
     JenkinsStepRule stepRule = new JenkinsStepRule(this)
     JenkinsLoggingRule loggingRule = new JenkinsLoggingRule(this)
     JenkinsShellCallRule shellRule = new JenkinsShellCallRule(this)
-    //JenkinsReadJsonRule jrj = new JenkinsReadJsonRule(this)
+    //JenkinsReadJsonRule readJsonRule = new JenkinsReadJsonRule(this)
 
     @Rule
     public RuleChain rules = Rules
         .getCommonRules(this)
         .around(new JenkinsReadYamlRule(this))
-        //.around(jrj)
+        //.around(readJsonRule)
         .around(loggingRule)
         .around(shellRule)
         .around(stepRule)
