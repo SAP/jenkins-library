@@ -104,7 +104,7 @@ void call(parameters = [:]) {
                     DeployMode deployMode = DeployMode.fromString(deployModeString)
 
                     NeoCommandHelper neoCommandHelper = new NeoCommandHelper(
-                        script,
+                        this,
                         deployMode,
                         configuration.neo,
                         neoExecutable,

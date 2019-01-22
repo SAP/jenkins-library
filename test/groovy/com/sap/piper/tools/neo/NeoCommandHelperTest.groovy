@@ -36,6 +36,8 @@ class NeoCommandHelperTest extends BasePiperTest {
         String password = 'password'
         String neoExecutable = '/path/tools/neo.sh';
 
+        nullScript.STEP_NAME="neoDeploy"
+
         return new NeoCommandHelper(
             nullScript,
             deployMode,

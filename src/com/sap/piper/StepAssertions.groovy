@@ -1,20 +1,14 @@
 package com.sap.piper
 
 class StepAssertions {
-    def static assertFileIsConfiguredAndExists(Script script, Map configuration, String configurationKey) {
-        assertMandatoryParameter(script, configuration, configurationKey)
-        assertFileExists(script, configuration[configurationKey])
+    def static assertFileIsConfiguredAndExists(Script step, Map configuration, String configurationKey) {
+        ConfigurationHelper.newInstance(step, configuration).withMandatoryProperty(configurationKey)
+        assertFileExists(step, configuration[configurationKey])
     }
 
-    def static  assertFileExists(Script script, String filePath) {
-        if (!script.fileExists(filePath)) {
-            script.error("File ${filePath} cannot be found.")
-        }
-    }
-
-    def static assertMandatoryParameter(Script script, Map configuration, String configurationKey) {
-        if (!configuration[configurationKey]) {
-            script.error("Configuration for ${configurationKey} is missing.")
+    def static  assertFileExists(Script step, String filePath) {
+        if (!step.fileExists(filePath)) {
+            step.error("File ${filePath} cannot be found.")
         }
     }
 }
