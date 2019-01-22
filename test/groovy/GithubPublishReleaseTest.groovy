@@ -19,7 +19,7 @@ import static org.junit.Assert.assertThat
 class GithubPublishReleaseTest extends BasePiperTest {
     private JenkinsStepRule stepRule = new JenkinsStepRule(this)
     private JenkinsLoggingRule loggingRule = new JenkinsLoggingRule(this)
-    private JenkinsReadJsonRule jrjr = new JenkinsReadJsonRule(this)
+    private JenkinsReadJsonRule readJsonRule = new JenkinsReadJsonRule(this)
     private ExpectedException thrown = ExpectedException.none()
 
     @Rule
@@ -27,7 +27,7 @@ class GithubPublishReleaseTest extends BasePiperTest {
         .getCommonRules(this)
         .around(new JenkinsReadYamlRule(this))
         .around(loggingRule)
-        .around(jrjr)
+        .around(readJsonRule)
         .around(stepRule)
         .around(thrown)
 

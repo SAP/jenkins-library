@@ -13,13 +13,13 @@ import static org.junit.Assert.assertTrue
 
 class NpmArtifactVersioningTest extends BasePiperTest{
 
-    JenkinsReadJsonRule jrjr = new JenkinsReadJsonRule(this, 'test/resources/versioning/NpmArtifactVersioning/')
+    JenkinsReadJsonRule readJsonRule = new JenkinsReadJsonRule(this, 'test/resources/versioning/NpmArtifactVersioning/')
     JenkinsWriteJsonRule jwjr = new JenkinsWriteJsonRule(this)
 
     @Rule
     public RuleChain ruleChain = Rules
         .getCommonRules(this)
-        .around(jrjr)
+        .around(readJsonRule)
         .around(jwjr)
 
     @Test
