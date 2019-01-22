@@ -13,7 +13,7 @@ class GaugeExecuteTestsTest extends BasePiperTest {
     private JenkinsStepRule stepRule = new JenkinsStepRule(this)
     private JenkinsLoggingRule loggingRule = new JenkinsLoggingRule(this)
     private JenkinsShellCallRule shellRule = new JenkinsShellCallRule(this)
-    private JenkinsEnvironmentRule jer = new JenkinsEnvironmentRule(this)
+    private JenkinsEnvironmentRule environmentRule = new JenkinsEnvironmentRule(this)
     private ExpectedException thrown = ExpectedException.none()
 
     @Rule
@@ -22,7 +22,7 @@ class GaugeExecuteTestsTest extends BasePiperTest {
         .around(new JenkinsReadYamlRule(this))
         .around(shellRule)
         .around(loggingRule)
-        .around(jer)
+        .around(environmentRule)
         .around(stepRule)
         .around(thrown)
 

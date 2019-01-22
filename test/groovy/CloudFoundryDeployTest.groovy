@@ -33,7 +33,7 @@ class CloudFoundryDeployTest extends BasePiperTest {
     private JenkinsWriteFileRule jwfr = new JenkinsWriteFileRule(this)
     private JenkinsDockerExecuteRule jedr = new JenkinsDockerExecuteRule(this)
     private JenkinsStepRule stepRule = new JenkinsStepRule(this)
-    private JenkinsEnvironmentRule jer = new JenkinsEnvironmentRule(this)
+    private JenkinsEnvironmentRule environmentRule = new JenkinsEnvironmentRule(this)
     private JenkinsReadYamlRule readYamlRule = new JenkinsReadYamlRule(this)
 
     private writeInfluxMap = [:]
@@ -53,7 +53,7 @@ class CloudFoundryDeployTest extends BasePiperTest {
         .around(shellRule)
         .around(jwfr)
         .around(jedr)
-        .around(jer)
+        .around(environmentRule)
         .around(new JenkinsCredentialsRule(this).withCredentials('test_cfCredentialsId', 'test_cf', '********'))
         .around(stepRule) // needs to be activated after jedr, otherwise executeDocker is not mocked
 
