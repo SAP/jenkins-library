@@ -25,17 +25,17 @@ class NewmanExecuteTest extends BasePiperTest {
     private JenkinsStepRule stepRule = new JenkinsStepRule(this)
     private JenkinsLoggingRule loggingRule = new JenkinsLoggingRule(this)
     private JenkinsShellCallRule shellRule = new JenkinsShellCallRule(this)
-    private JenkinsDockerExecuteRule jedr = new JenkinsDockerExecuteRule(this)
+    private JenkinsDockerExecuteRule dockerExecuteRule = new JenkinsDockerExecuteRule(this)
 
     @Rule
     public RuleChain rules = Rules
         .getCommonRules(this)
         .around(new JenkinsReadYamlRule(this))
         .around(thrown)
-        .around(jedr)
+        .around(dockerExecuteRule)
         .around(shellRule)
         .around(loggingRule)
-        .around(stepRule) // needs to be activated after jedr, otherwise executeDocker is not mocked
+        .around(stepRule) // needs to be activated after dockerExecuteRule, otherwise executeDocker is not mocked
 
     def gitMap
 
@@ -72,7 +72,7 @@ class NewmanExecuteTest extends BasePiperTest {
         // asserts
         assertThat(shellRule.shell, hasItem(endsWith('npm install newman newman-reporter-html --global --quiet')))
         assertThat(shellRule.shell, hasItem(endsWith('newman run \'testCollection\' --environment \'testEnvironment\' --globals \'testGlobals\' --reporters junit,html --reporter-junit-export \'target/newman/TEST-testCollection.xml\' --reporter-html-export \'target/newman/TEST-testCollection.html\'')))
-        assertThat(jedr.dockerParams.dockerImage, is('node:8-stretch'))
+        assertThat(dockerExecuteRule.dockerParams.dockerImage, is('node:8-stretch'))
         assertThat(loggingRule.log, containsString('[newmanExecute] Found files [testCollection]'))
         assertJobStatusSuccess()
     }
@@ -118,7 +118,7 @@ class NewmanExecuteTest extends BasePiperTest {
             failOnError: false
         )
         // asserts
-        assertThat(jedr.dockerParams.dockerImage, is('testImage'))
+        assertThat(dockerExecuteRule.dockerParams.dockerImage, is('testImage'))
         assertThat(gitMap.url, is('testRepo'))
         assertThat(shellRule.shell, hasItem(endsWith('newman run \'testCollection\' --environment \'testEnvironment\' --globals \'testGlobals\' --reporters junit,html --reporter-junit-export \'target/newman/TEST-testCollection.xml\' --reporter-html-export \'target/newman/TEST-testCollection.html\' --suppress-exit-code')))
         assertJobStatusSuccess()
