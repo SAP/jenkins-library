@@ -2,6 +2,7 @@ import static com.sap.piper.Prerequisites.checkScript
 
 import com.sap.piper.ConfigurationHelper
 import com.sap.piper.GenerateDocumentation
+import com.sap.piper.Notify
 import com.sap.piper.Utils
 import com.sap.piper.mta.MtaMultiplexer
 
@@ -138,7 +139,7 @@ void call(Map parameters = [:]) {
                 }
                 break
             default:
-                error "[ERROR][${STEP_NAME}] ScanType '${config.scanType}' not supported!"
+                Notify.error(config, this, "The scanType '${config.scanType}' not supported!")
         }
     }
 }
