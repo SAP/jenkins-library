@@ -32,7 +32,7 @@ Deployment can be done
 | keepOldInstance | no | false | true, false |
 | dockerImage | no | s4sdk/docker-cf-cli |  |
 | dockerWorkspace | no | /home/piper |  |
-| mtaDeployParameters |  | -f |  |
+| mtaDeployParameters |  | for _deployType:standard_ `-f`<br />for _deployType:blue-green_ `-f --no-confirm` |  |
 | mtaExtensionDescriptor | no | '' |  |
 | mtaPath | no | '' |  |
 | smokeTestScript | no | blueGreenCheckScript.sh (provided by library). <br />Can be overwritten using config property 'smokeTestScript' |  |

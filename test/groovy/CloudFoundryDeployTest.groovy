@@ -16,6 +16,7 @@ import util.JenkinsWriteFileRule
 import util.JenkinsReadYamlRule
 import util.Rules
 
+import static org.hamcrest.Matchers.stringContainsInOrder
 import static org.junit.Assert.assertThat
 
 import static org.hamcrest.Matchers.hasItem
@@ -396,6 +397,24 @@ class CloudFoundryDeployTest extends BasePiperTest {
         assertThat(jscr.shell, hasItem(containsString('cf login -u test_cf -p \'********\' -a https://api.cf.eu10.hana.ondemand.com -o "testOrg" -s "testSpace"')))
         assertThat(jscr.shell, hasItem(containsString('cf deploy target/test.mtar -f')))
         assertThat(jscr.shell, hasItem(containsString('cf logout')))
+    }
+
+    @Test
+    void testMtaBlueGreen() {
+
+        jsr.step.cloudFoundryDeploy([
+            script: nullScript,
+            juStabUtils: utils,
+            jenkinsUtilsStub: new JenkinsUtilsMock(),
+            cfOrg: 'testOrg',
+            cfSpace: 'testSpace',
+            cfCredentialsId: 'test_cfCredentialsId',
+            deployTool: 'mtaDeployPlugin',
+            deployType: 'blue-green',
+            mtaPath: 'target/test.mtar'
+        ])
+
+        assertThat(jscr.shell, hasItem(stringContainsInOrder(["cf login -u test_cf", 'cf bg-deploy', '-f', '--no-confirm'])))
     }
 
     @Test
