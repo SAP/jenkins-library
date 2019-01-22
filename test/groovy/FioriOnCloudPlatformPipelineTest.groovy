@@ -47,13 +47,13 @@ class FioriOnCloudPlatformPipelineTest extends BasePiperTest {
     */
 
     JenkinsStepRule stepRule = new JenkinsStepRule(this)
-    JenkinsReadYamlRule jryr = new JenkinsReadYamlRule(this)
+    JenkinsReadYamlRule readYamlRule = new JenkinsReadYamlRule(this)
     JenkinsShellCallRule shellRule = new JenkinsShellCallRule(this)
 
     @Rule
     public RuleChain ruleChain = Rules
         .getCommonRules(this)
-        .around(jryr)
+        .around(readYamlRule)
         .around(stepRule)
         .around(shellRule)
         .around(new JenkinsCredentialsRule(this)
@@ -88,7 +88,7 @@ class FioriOnCloudPlatformPipelineTest extends BasePiperTest {
 
         //
         // the properties below we read out of the yaml file
-        jryr.registerYaml('mta.yaml', ('''
+        readYamlRule.registerYaml('mta.yaml', ('''
                                        |ID : "test"
                                        |PATH : "."
                                        |''' as CharSequence).stripMargin())

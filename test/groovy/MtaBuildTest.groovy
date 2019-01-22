@@ -25,12 +25,12 @@ public class MtaBuildTest extends BasePiperTest {
     private JenkinsShellCallRule shellRule = new JenkinsShellCallRule(this)
     private JenkinsDockerExecuteRule dockerExecuteRule = new JenkinsDockerExecuteRule(this)
     private JenkinsStepRule stepRule = new JenkinsStepRule(this)
-    private JenkinsReadYamlRule jryr = new JenkinsReadYamlRule(this).registerYaml('mta.yaml', defaultMtaYaml() )
+    private JenkinsReadYamlRule readYamlRule = new JenkinsReadYamlRule(this).registerYaml('mta.yaml', defaultMtaYaml() )
 
     @Rule
     public RuleChain ruleChain = Rules
         .getCommonRules(this)
-        .around(jryr)
+        .around(readYamlRule)
         .around(thrown)
         .around(loggingRule)
         .around(shellRule)
@@ -112,7 +112,7 @@ public class MtaBuildTest extends BasePiperTest {
         thrown.expect(ParserException)
         thrown.expectMessage('while parsing a block mapping')
 
-        jryr.registerYaml('mta.yaml', badMtaYaml())
+        readYamlRule.registerYaml('mta.yaml', badMtaYaml())
 
         stepRule.step.mtaBuild(script: nullScript, buildTarget: 'NEO')
     }
@@ -124,7 +124,7 @@ public class MtaBuildTest extends BasePiperTest {
         thrown.expect(AbortException)
         thrown.expectMessage("Property 'ID' not found in mta.yaml file.")
 
-        jryr.registerYaml('mta.yaml', noIdMtaYaml() )
+        readYamlRule.registerYaml('mta.yaml', noIdMtaYaml() )
 
         stepRule.step.mtaBuild(script: nullScript, buildTarget: 'NEO')
     }
