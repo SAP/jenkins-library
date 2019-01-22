@@ -20,7 +20,7 @@ class DockerArtifactVersioningTest extends BasePiperTest{
 
     String passedDir
 
-    JenkinsReadFileRule jrfr = new JenkinsReadFileRule(this, 'test/resources/versioning/DockerArtifactVersioning')
+    JenkinsReadFileRule readFileRule = new JenkinsReadFileRule(this, 'test/resources/versioning/DockerArtifactVersioning')
     JenkinsWriteFileRule writeFileRule = new JenkinsWriteFileRule(this)
     JenkinsLoggingRule loggingRule = new JenkinsLoggingRule(this)
     ExpectedException thrown = ExpectedException.none()
@@ -28,7 +28,7 @@ class DockerArtifactVersioningTest extends BasePiperTest{
     @Rule
     public RuleChain ruleChain = Rules
         .getCommonRules(this)
-        .around(jrfr)
+        .around(readFileRule)
         .around(writeFileRule)
         .around(loggingRule)
         .around(thrown)
