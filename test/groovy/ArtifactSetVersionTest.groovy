@@ -46,7 +46,7 @@ class ArtifactSetVersionTest extends BasePiperTest {
     def sshAgentList = []
 
     private ExpectedException thrown = ExpectedException.none()
-    private JenkinsDockerExecuteRule jder = new JenkinsDockerExecuteRule(this)
+    private JenkinsDockerExecuteRule dockerExecuteRule = new JenkinsDockerExecuteRule(this)
     private JenkinsLoggingRule loggingRule = new JenkinsLoggingRule(this)
     private JenkinsShellCallRule shellRule = new JenkinsShellCallRule(this)
     private JenkinsWriteFileRule jwfr = new JenkinsWriteFileRule(this)
@@ -62,7 +62,7 @@ class ArtifactSetVersionTest extends BasePiperTest {
         .around(shellRule)
         .around(new JenkinsReadMavenPomRule(this, 'test/resources/versioning/MavenArtifactVersioning'))
         .around(jwfr)
-        .around(jder)
+        .around(dockerExecuteRule)
         .around(stepRule)
         .around(jer)
 
