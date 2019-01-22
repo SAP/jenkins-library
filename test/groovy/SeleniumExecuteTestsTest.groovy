@@ -13,7 +13,7 @@ class SeleniumExecuteTestsTest extends BasePiperTest {
     private ExpectedException thrown = ExpectedException.none()
     private JenkinsStepRule jsr = new JenkinsStepRule(this)
     private JenkinsLoggingRule jlr = new JenkinsLoggingRule(this)
-    private JenkinsShellCallRule jscr = new JenkinsShellCallRule(this)
+    private JenkinsShellCallRule shellRule = new JenkinsShellCallRule(this)
     private JenkinsDockerExecuteRule jedr = new JenkinsDockerExecuteRule(this)
 
     @Rule

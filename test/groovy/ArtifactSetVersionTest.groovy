@@ -48,7 +48,7 @@ class ArtifactSetVersionTest extends BasePiperTest {
     private ExpectedException thrown = ExpectedException.none()
     private JenkinsDockerExecuteRule jder = new JenkinsDockerExecuteRule(this)
     private JenkinsLoggingRule jlr = new JenkinsLoggingRule(this)
-    private JenkinsShellCallRule jscr = new JenkinsShellCallRule(this)
+    private JenkinsShellCallRule shellRule = new JenkinsShellCallRule(this)
     private JenkinsWriteFileRule jwfr = new JenkinsWriteFileRule(this)
     private JenkinsStepRule jsr = new JenkinsStepRule(this)
     private JenkinsEnvironmentRule jer = new JenkinsEnvironmentRule(this)
@@ -59,7 +59,7 @@ class ArtifactSetVersionTest extends BasePiperTest {
         .around(new JenkinsReadYamlRule(this))
         .around(thrown)
         .around(jlr)
-        .around(jscr)
+        .around(shellRule)
         .around(new JenkinsReadMavenPomRule(this, 'test/resources/versioning/MavenArtifactVersioning'))
         .around(jwfr)
         .around(jder)
@@ -78,8 +78,8 @@ class ArtifactSetVersionTest extends BasePiperTest {
             return closure()
         })
 
-        jscr.setReturnValue("date --universal +'%Y%m%d%H%M%S'", '20180101010203')
-        jscr.setReturnValue('git diff --quiet HEAD', 0)
+        shellRule.setReturnValue("date --universal +'%Y%m%d%H%M%S'", '20180101010203')
+        shellRule.setReturnValue('git diff --quiet HEAD', 0)
 
         helper.registerAllowedMethod('fileExists', [String.class], {true})
     }
@@ -91,8 +91,8 @@ class ArtifactSetVersionTest extends BasePiperTest {
         assertEquals('1.2.3-20180101010203_testCommitId', jer.env.getArtifactVersion())
         assertEquals('testCommitId', jer.env.getGitCommitId())
 
-        assertThat(jscr.shell, hasItem("mvn --file 'pom.xml' --batch-mode -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn versions:set -DnewVersion=1.2.3-20180101010203_testCommitId -DgenerateBackupPoms=false"))
-        assertThat(jscr.shell.join(), stringContainsInOrder([
+        assertThat(shellRule.shell, hasItem("mvn --file 'pom.xml' --batch-mode -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn versions:set -DnewVersion=1.2.3-20180101010203_testCommitId -DgenerateBackupPoms=false"))
+        assertThat(shellRule.shell.join(), stringContainsInOrder([
                                             "git add .",
                                             "git commit -m 'update version 1.2.3-20180101010203_testCommitId'",
                                             'git tag build_1.2.3-20180101010203_testCommitId',
@@ -106,15 +106,15 @@ class ArtifactSetVersionTest extends BasePiperTest {
         jsr.step.artifactSetVersion(script: jsr.step, juStabGitUtils: gitUtils, buildTool: 'maven', commitVersion: false)
 
         assertEquals('1.2.3-20180101010203_testCommitId', jer.env.getArtifactVersion())
-        assertThat(jscr.shell, hasItem("mvn --file 'pom.xml' --batch-mode -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn versions:set -DnewVersion=1.2.3-20180101010203_testCommitId -DgenerateBackupPoms=false"))
-        assertThat(jscr.shell, not(hasItem(containsString('commit'))))
+        assertThat(shellRule.shell, hasItem("mvn --file 'pom.xml' --batch-mode -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn versions:set -DnewVersion=1.2.3-20180101010203_testCommitId -DgenerateBackupPoms=false"))
+        assertThat(shellRule.shell, not(hasItem(containsString('commit'))))
     }
 
     @Test
     void testVersioningCustomGitUserAndEMail() {
         jsr.step.artifactSetVersion(script: jsr.step, juStabGitUtils: gitUtils, buildTool: 'maven', gitSshUrl: 'myGitSshUrl', gitUserEMail: 'test@test.com', gitUserName: 'test')
 
-        assertThat(jscr.shell, hasItem(containsString("git -c user.email=\"test@test.com\" -c user.name=\"test\" commit -m 'update version 1.2.3-20180101010203_testCommitId'")))
+        assertThat(shellRule.shell, hasItem(containsString("git -c user.email=\"test@test.com\" -c user.name=\"test\" commit -m 'update version 1.2.3-20180101010203_testCommitId'")))
     }
 
     @Test

@@ -12,7 +12,7 @@ import static org.junit.Assert.assertThat
 class KarmaExecuteTestsTest extends BasePiperTest {
     private JenkinsStepRule jsr = new JenkinsStepRule(this)
     private JenkinsLoggingRule jlr = new JenkinsLoggingRule(this)
-    private JenkinsShellCallRule jscr = new JenkinsShellCallRule(this)
+    private JenkinsShellCallRule shellRule = new JenkinsShellCallRule(this)
     private JenkinsEnvironmentRule jer = new JenkinsEnvironmentRule(this)
     private ExpectedException thrown = ExpectedException.none()
 
@@ -20,7 +20,7 @@ class KarmaExecuteTestsTest extends BasePiperTest {
     public RuleChain rules = Rules
         .getCommonRules(this)
         .around(new JenkinsReadYamlRule(this))
-        .around(jscr)
+        .around(shellRule)
         .around(jlr)
         .around(jer)
         .around(jsr)
@@ -44,7 +44,7 @@ class KarmaExecuteTestsTest extends BasePiperTest {
             script: nullScript,
             juStabUtils: utils
         )
-        assertThat(jscr.shell, hasItems(
+        assertThat(shellRule.shell, hasItems(
             containsString("cd '.' && npm install --quiet"),
             containsString("cd '.' && npm run karma")
         ))

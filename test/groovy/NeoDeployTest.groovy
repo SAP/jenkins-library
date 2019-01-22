@@ -36,7 +36,7 @@ class NeoDeployTest extends BasePiperTest {
 
     private ExpectedException thrown = new ExpectedException().none()
     private JenkinsLoggingRule jlr = new JenkinsLoggingRule(this)
-    private JenkinsShellCallRule jscr = new JenkinsShellCallRule(this)
+    private JenkinsShellCallRule shellRule = new JenkinsShellCallRule(this)
     private JenkinsStepRule jsr = new JenkinsStepRule(this)
 
     @Rule
@@ -45,7 +45,7 @@ class NeoDeployTest extends BasePiperTest {
         .around(new JenkinsReadYamlRule(this))
         .around(thrown)
         .around(jlr)
-        .around(jscr)
+        .around(shellRule)
         .around(new JenkinsCredentialsRule(this)
             .withCredentials('myCredentialsId', 'anonymous', '********')
             .withCredentials('CI_CREDENTIALS_ID', 'defaultUser', '********'))
@@ -105,7 +105,7 @@ class NeoDeployTest extends BasePiperTest {
                        utils: utils
         )
 
-        Assert.assertThat(jscr.shell,
+        Assert.assertThat(shellRule.shell,
             new CommandLineMatcher().hasProlog("#!/bin/bash \"/opt/neo/tools/neo.sh\" deploy-mta")
                                     .hasSingleQuotedOption('host', 'test\\.deploy\\.host\\.com')
                                     .hasSingleQuotedOption('account', 'trialuser123')
@@ -162,7 +162,7 @@ class NeoDeployTest extends BasePiperTest {
             utils: utils,
         )
 
-        Assert.assertThat(jscr.shell,
+        Assert.assertThat(shellRule.shell,
             new CommandLineMatcher().hasProlog("#!/bin/bash \"/opt/neo/tools/neo.sh\" deploy-mta")
                                     .hasSingleQuotedOption('host', 'test\\.deploy\\.host\\.com')
                                     .hasSingleQuotedOption('account', 'trialuser123')
@@ -188,7 +188,7 @@ class NeoDeployTest extends BasePiperTest {
             neoCredentialsId: 'myCredentialsId'
         )
 
-        Assert.assertThat(jscr.shell,
+        Assert.assertThat(shellRule.shell,
             new CommandLineMatcher().hasProlog("#!/bin/bash \"/opt/neo/tools/neo.sh\" deploy-mta")
                                     .hasSingleQuotedOption('host', 'configuration-frwk\\.deploy\\.host\\.com')
                                     .hasSingleQuotedOption('account', 'configurationFrwkUser123')
@@ -203,7 +203,7 @@ class NeoDeployTest extends BasePiperTest {
         nullScript.commonPipelineEnvironment.setMtarFilePath('archive.mtar')
         jsr.step.neoDeploy(script: nullScript)
 
-        Assert.assertThat(jscr.shell,
+        Assert.assertThat(shellRule.shell,
             new CommandLineMatcher().hasProlog("#!/bin/bash \"/opt/neo/tools/neo.sh\" deploy-mta")
                                     .hasDoubleQuotedOption('source', 'archive.mtar'))
     }
@@ -214,7 +214,7 @@ class NeoDeployTest extends BasePiperTest {
         jsr.step.neoDeploy(script: nullScript,
                       archivePath: "archive.mtar")
 
-        Assert.assertThat(jscr.shell,
+        Assert.assertThat(shellRule.shell,
             new CommandLineMatcher().hasProlog("#!/bin/bash \"/opt/neo/tools/neo.sh\" deploy-mta")
                                     .hasDoubleQuotedOption('source', 'archive.mtar'))
     }
@@ -239,7 +239,7 @@ class NeoDeployTest extends BasePiperTest {
                        archivePath: archiveName
         )
 
-        Assert.assertThat(jscr.shell,
+        Assert.assertThat(shellRule.shell,
             new CommandLineMatcher().hasProlog("#!/bin/bash \"/opt/neo/tools/neo.sh\" deploy-mta")
                                     .hasSingleQuotedOption('host', 'test\\.deploy\\.host\\.com')
                                     .hasSingleQuotedOption('account', 'trialuser123')
@@ -259,7 +259,7 @@ class NeoDeployTest extends BasePiperTest {
                        archivePath: archiveName
         )
 
-        assert jscr.shell.find { c -> c.contains('"neo.sh" deploy-mta') }
+        assert shellRule.shell.find { c -> c.contains('"neo.sh" deploy-mta') }
         assert jlr.log.contains('SAP Cloud Platform Console Client is on PATH.')
         assert jlr.log.contains("Using SAP Cloud Platform Console Client 'neo.sh'.")
     }
@@ -276,7 +276,7 @@ class NeoDeployTest extends BasePiperTest {
                        neoHome: '/param/neo'
         )
 
-        assert jscr.shell.find{ c -> c = "\"/param/neo/tools/neo.sh\" deploy-mta" }
+        assert shellRule.shell.find{ c -> c = "\"/param/neo/tools/neo.sh\" deploy-mta" }
         assert jlr.log.contains("SAP Cloud Platform Console Client home '/param/neo' retrieved from configuration.")
         assert jlr.log.contains("Using SAP Cloud Platform Console Client '/param/neo/tools/neo.sh'.")
     }
@@ -289,7 +289,7 @@ class NeoDeployTest extends BasePiperTest {
                        archivePath: archiveName
         )
 
-        assert jscr.shell.find { c -> c.contains("\"/opt/neo/tools/neo.sh\" deploy-mta")}
+        assert shellRule.shell.find { c -> c.contains("\"/opt/neo/tools/neo.sh\" deploy-mta")}
         assert jlr.log.contains("SAP Cloud Platform Console Client home '/opt/neo' retrieved from environment.")
         assert jlr.log.contains("Using SAP Cloud Platform Console Client '/opt/neo/tools/neo.sh'.")
     }
@@ -306,7 +306,7 @@ class NeoDeployTest extends BasePiperTest {
                        archivePath: archiveName
         )
 
-        assert jscr.shell.find { c -> c = "\"/config/neo/tools/neo.sh\" deploy-mta"}
+        assert shellRule.shell.find { c -> c = "\"/config/neo/tools/neo.sh\" deploy-mta"}
         assert jlr.log.contains("SAP Cloud Platform Console Client home '/config/neo' retrieved from configuration.")
         assert jlr.log.contains("Using SAP Cloud Platform Console Client '/config/neo/tools/neo.sh'.")
     }
@@ -349,7 +349,7 @@ class NeoDeployTest extends BasePiperTest {
 
         jsr.step.neoDeploy(script: nullScript, archivePath: archiveName, deployMode: 'mta')
 
-        Assert.assertThat(jscr.shell,
+        Assert.assertThat(shellRule.shell,
             new CommandLineMatcher().hasProlog("#!/bin/bash \"/opt/neo/tools/neo.sh\" deploy-mta")
                                     .hasSingleQuotedOption('host', 'test\\.deploy\\.host\\.com')
                                     .hasSingleQuotedOption('account', 'trialuser123')
@@ -372,7 +372,7 @@ class NeoDeployTest extends BasePiperTest {
                              warAction: 'deploy',
                              archivePath: warArchiveName)
 
-        Assert.assertThat(jscr.shell,
+        Assert.assertThat(shellRule.shell,
             new CommandLineMatcher().hasProlog("#!/bin/bash \"/opt/neo/tools/neo.sh\" deploy")
                                     .hasSingleQuotedOption('host', 'test\\.deploy\\.host\\.com')
                                     .hasSingleQuotedOption('account', 'trialuser123')
@@ -398,7 +398,7 @@ class NeoDeployTest extends BasePiperTest {
                              warAction: 'rolling-update',
                              vmSize: 'lite')
 
-        Assert.assertThat(jscr.shell,
+        Assert.assertThat(shellRule.shell,
             new CommandLineMatcher().hasProlog("#!/bin/bash \"/opt/neo/tools/neo.sh\" rolling-update")
                                     .hasSingleQuotedOption('host', 'test\\.deploy\\.host\\.com')
                                     .hasSingleQuotedOption('account', 'trialuser123')
@@ -424,7 +424,7 @@ class NeoDeployTest extends BasePiperTest {
                              warAction: 'deploy',
                              vmSize: 'lite')
 
-        Assert.assertThat(jscr.shell,
+        Assert.assertThat(shellRule.shell,
             new CommandLineMatcher().hasProlog("#!/bin/bash \"/opt/neo/tools/neo.sh\" deploy")
                                     .hasArgument("config.properties")
                                     .hasSingleQuotedOption('user', 'defaultUser')
@@ -445,7 +445,7 @@ class NeoDeployTest extends BasePiperTest {
                              warAction: 'rolling-update',
                              vmSize: 'lite')
 
-        Assert.assertThat(jscr.shell,
+        Assert.assertThat(shellRule.shell,
             new CommandLineMatcher().hasProlog("#!/bin/bash \"/opt/neo/tools/neo.sh\" rolling-update")
                                     .hasArgument('config.properties')
                                     .hasSingleQuotedOption('user', 'defaultUser')

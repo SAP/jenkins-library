@@ -9,7 +9,7 @@ import static org.junit.Assert.*
 class PipelineStashFilesBeforeBuildTest extends BasePiperTest {
     JenkinsStepRule jsr = new JenkinsStepRule(this)
     JenkinsLoggingRule jlr = new JenkinsLoggingRule(this)
-    JenkinsShellCallRule jscr = new JenkinsShellCallRule(this)
+    JenkinsShellCallRule shellRule = new JenkinsShellCallRule(this)
     //JenkinsReadJsonRule jrj = new JenkinsReadJsonRule(this)
 
     @Rule
@@ -18,7 +18,7 @@ class PipelineStashFilesBeforeBuildTest extends BasePiperTest {
         .around(new JenkinsReadYamlRule(this))
         //.around(jrj)
         .around(jlr)
-        .around(jscr)
+        .around(shellRule)
         .around(jsr)
 
     @Test
@@ -27,9 +27,9 @@ class PipelineStashFilesBeforeBuildTest extends BasePiperTest {
         jsr.step.pipelineStashFilesBeforeBuild(script: nullScript, juStabUtils: utils)
 
         // asserts
-        assertEquals('mkdir -p gitmetadata', jscr.shell[0])
-        assertEquals('cp -rf .git/* gitmetadata', jscr.shell[1])
-        assertEquals('chmod -R u+w gitmetadata', jscr.shell[2])
+        assertEquals('mkdir -p gitmetadata', shellRule.shell[0])
+        assertEquals('cp -rf .git/* gitmetadata', shellRule.shell[1])
+        assertEquals('chmod -R u+w gitmetadata', shellRule.shell[2])
 
         assertThat(jlr.log, containsString('Stash content: buildDescriptor'))
         assertThat(jlr.log, containsString('Stash content: deployDescriptor'))

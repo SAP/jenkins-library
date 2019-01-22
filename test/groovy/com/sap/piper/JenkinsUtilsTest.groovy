@@ -16,18 +16,18 @@ import static org.junit.Assert.assertThat
 
 class JenkinsUtilsTest extends BasePiperTest {
     private JenkinsLoggingRule jlr = new JenkinsLoggingRule(this)
-    private JenkinsShellCallRule jscr = new JenkinsShellCallRule(this)
+    private JenkinsShellCallRule shellRule = new JenkinsShellCallRule(this)
 
     @Rule
     public RuleChain rules = Rules
         .getCommonRules(this)
-        .around(jscr)
+        .around(shellRule)
         .around(jlr)
 
     @Test
     void testNodeAvailable() {
         def result = jenkinsUtils.nodeAvailable()
-        assertThat(jscr.shell, contains("echo 'Node is available!'"))
+        assertThat(shellRule.shell, contains("echo 'Node is available!'"))
         assertThat(result, is(true))
     }
 
