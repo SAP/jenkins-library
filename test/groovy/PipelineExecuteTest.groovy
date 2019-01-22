@@ -71,7 +71,7 @@ class PipelineExecuteTest extends BasePiperTest {
     @Test
     void noRepoUrlTest() {
         thrown.expect(Exception)
-        thrown.expectMessage("[Error] Configuration missing for option repoUrl")
+        thrown.expectMessage("ERROR - NO VALUE AVAILABLE FOR repoUrl")
 
         jsr.step.pipelineExecute()
     }

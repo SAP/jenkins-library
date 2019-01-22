@@ -4,7 +4,7 @@ import com.cloudbees.groovy.cps.NonCPS
 import org.jenkinsci.plugins.workflow.steps.MissingContextVariableException
 
 @NonCPS
-def getMandatoryParameter(Map map, paramName, defaultValue = null, String customErrorMessage=null) {
+def getMandatoryParameter(Map map, paramName, defaultValue = null) {
 
     def paramValue = map[paramName]
 
@@ -12,21 +12,9 @@ def getMandatoryParameter(Map map, paramName, defaultValue = null, String custom
         paramValue = defaultValue
 
     if (paramValue == null){
-        String errorMessage = "[Error] Configuration missing for option $paramName."
-        if(customErrorMessage){
-            errorMessage = customErrorMessage
-        }
-        throw new Exception(errorMessage)
+        throw new Exception("ERROR - NO VALUE AVAILABLE FOR ${paramName}")
     }
     return paramValue
-}
-
-def getParameterInValueRange(script, Map configuration, String configurationKey, List values){
-    def value = getMandatoryParameter(configuration, configurationKey)
-    if(! (value in values) ){
-        script.error("Invalid ${configurationKey} = '${value}'. Valid '${configurationKey}' values are: ${values}.")
-    }
-    return value
 }
 
 def stash(name, include = '**/*.*', exclude = '') {

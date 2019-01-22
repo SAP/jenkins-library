@@ -1,12 +1,27 @@
 import com.sap.piper.Utils
 import hudson.AbortException
 import org.jenkinsci.plugins.credentialsbinding.impl.CredentialNotFoundException
-import org.junit.*
+import org.junit.Assert
+import org.junit.Before
+import org.junit.BeforeClass
+import org.junit.ClassRule
+import org.junit.Rule
+import org.junit.Test
 import org.junit.rules.ExpectedException
 import org.junit.rules.RuleChain
 import org.junit.rules.TemporaryFolder
-import util.*
+import util.BasePiperTest
+import util.CommandLineMatcher
+import util.JenkinsCredentialsRule
+import util.JenkinsLockRule
+import util.JenkinsLoggingRule
+import util.JenkinsPropertiesRule
+import util.JenkinsReadYamlRule
+import util.JenkinsShellCallRule
 import util.JenkinsShellCallRule.Type
+import util.JenkinsStepRule
+import util.JenkinsWithEnvRule
+import util.Rules
 
 class NeoDeployTest extends BasePiperTest {
 
@@ -343,7 +358,7 @@ class NeoDeployTest extends BasePiperTest {
     void archiveNotProvidedTest() {
 
         thrown.expect(Exception)
-        thrown.expectMessage('Error in neoDeploy: source not configured.')
+        thrown.expectMessage('ERROR - NO VALUE AVAILABLE FOR source')
 
         stepRule.step.neoDeploy(script: nullScript)
     }

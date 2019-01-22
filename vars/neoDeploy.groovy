@@ -60,9 +60,9 @@ void call(parameters = [:]) {
             .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName ?: env.STAGE_NAME, STEP_CONFIG_KEYS, CONFIG_KEY_COMPATIBILITY)
             .addIfEmpty('source', script.commonPipelineEnvironment.getMtarFilePath())
             .mixin(parameters, PARAMETER_KEYS, CONFIG_KEY_COMPATIBILITY)
-            .withMandatoryProperty('neo', 'Error in neoDeploy: neo not configured.')
-            .withMandatoryProperty('source', 'Error in neoDeploy: source not configured.')
-            .withMandatoryProperty('deployMode', 'Error in neoDeploy: deployMode not configured.')
+            .withMandatoryProperty('neo')
+            .withMandatoryProperty('source')
+            .withPropertyInList('deployMode', DeployMode.stringValues())
             .use()
 
         utils.pushToSWA([
@@ -100,8 +100,7 @@ void call(parameters = [:]) {
 
                     String neoExecutable = neo.getToolExecutable(script, configuration)
 
-                    def deployModeString = utils.getParameterInValueRange(script, configuration, 'deployMode', DeployMode.stringValues())
-                    DeployMode deployMode = DeployMode.fromString(deployModeString)
+                    DeployMode deployMode = DeployMode.fromString(configuration.deployMode)
 
                     NeoCommandHelper neoCommandHelper = new NeoCommandHelper(
                         this,
@@ -129,8 +128,8 @@ private deploy(script, utils, Map configuration, NeoCommandHelper neoCommandHelp
     try {
         withEnv(['neo_logging_location=/var/log/neo']) {
             if (deployMode.isWarDeployment()) {
-                def warActionString = utils.getParameterInValueRange(script, configuration, 'warAction', WarAction.stringValues())
-                WarAction warAction = WarAction.fromString(warActionString)
+                ConfigurationHelper.newInstance(this, configuration).withPropertyInList('warAction', WarAction.stringValues())
+                WarAction warAction = WarAction.fromString(configuration.warAction)
 
                 if (warAction == WarAction.ROLLING_UPDATE) {
                     if (!isAppRunning(neoCommandHelper)) {

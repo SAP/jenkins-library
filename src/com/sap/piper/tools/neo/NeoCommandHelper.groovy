@@ -14,6 +14,7 @@ class NeoCommandHelper {
     private String password
     private String source
 
+    //Warning: Commands generated with this class can contain passwords and should only be used within the step withCredentials
     NeoCommandHelper(Script step, DeployMode deployMode, Map deploymentConfiguration, String pathToNeoExecutable,
                     String user, String password, String source) {
         this.step = step
