@@ -21,14 +21,14 @@ import static org.junit.Assert.assertFalse
 
 class DockerExecuteTest extends BasePiperTest {
     private DockerMock docker
-    private JenkinsLoggingRule jlr = new JenkinsLoggingRule(this)
+    private JenkinsLoggingRule loggingRule = new JenkinsLoggingRule(this)
     private JenkinsStepRule jsr = new JenkinsStepRule(this)
 
     @Rule
     public RuleChain ruleChain = Rules
         .getCommonRules(this)
         .around(new JenkinsReadYamlRule(this))
-        .around(jlr)
+        .around(loggingRule)
         .around(jsr)
 
     int dockerPsReturnValue = 0
@@ -57,7 +57,7 @@ class DockerExecuteTest extends BasePiperTest {
             dockerEnvVars: ['http_proxy': 'http://proxy:8000']) {
             bodyExecuted = true
         }
-        assertTrue(jlr.log.contains('Executing inside a Kubernetes Container'))
+        assertTrue(loggingRule.log.contains('Executing inside a Kubernetes Container'))
         assertEquals('mavenexec', containerName)
         assertTrue(bodyExecuted)
      }
@@ -72,7 +72,7 @@ class DockerExecuteTest extends BasePiperTest {
             dockerEnvVars: ['http_proxy': 'http://proxy:8000']) {
             bodyExecuted = true
         }
-        assertTrue(jlr.log.contains('Executing inside a Kubernetes Pod'))
+        assertTrue(loggingRule.log.contains('Executing inside a Kubernetes Pod'))
         assertTrue(bodyExecuted)
     }
 
@@ -86,7 +86,7 @@ class DockerExecuteTest extends BasePiperTest {
             dockerEnvVars: ['http_proxy': 'http://proxy:8000']) {
             bodyExecuted = true
         }
-        assertTrue(jlr.log.contains('Executing inside a Kubernetes Pod'))
+        assertTrue(loggingRule.log.contains('Executing inside a Kubernetes Pod'))
         assertTrue(bodyExecuted)
     }
 
@@ -100,7 +100,7 @@ class DockerExecuteTest extends BasePiperTest {
             dockerEnvVars: ['http_proxy': 'http://proxy:8000']) {
             bodyExecuted = true
         }
-        assertTrue(jlr.log.contains('Executing inside a Kubernetes Pod'))
+        assertTrue(loggingRule.log.contains('Executing inside a Kubernetes Pod'))
         assertTrue(bodyExecuted)
     }
 
@@ -120,7 +120,7 @@ class DockerExecuteTest extends BasePiperTest {
         ){
             bodyExecuted = true
         }
-        assertTrue(jlr.log.contains('Executing inside a Kubernetes Pod'))
+        assertTrue(loggingRule.log.contains('Executing inside a Kubernetes Pod'))
         assertThat(kubernetesConfig.containerCommand, is('/busybox/tail -f /dev/null'))
         assertThat(kubernetesConfig.containerShell, is('/busybox/sh'))
         assertTrue(bodyExecuted)
@@ -173,8 +173,8 @@ class DockerExecuteTest extends BasePiperTest {
             dockerOptions: '-it') {
             bodyExecuted = true
         }
-        assertTrue(jlr.log.contains('Cannot connect to docker daemon'))
-        assertTrue(jlr.log.contains('Running on local environment'))
+        assertTrue(loggingRule.log.contains('Cannot connect to docker daemon'))
+        assertTrue(loggingRule.log.contains('Running on local environment'))
         assertTrue(bodyExecuted)
         assertFalse(docker.isImagePulled())
     }

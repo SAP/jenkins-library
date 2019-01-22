@@ -20,7 +20,7 @@ class CheckChangeInDevelopmentTest extends BasePiperTest {
 
     private ExpectedException thrown = ExpectedException.none()
     private JenkinsStepRule jsr = new JenkinsStepRule(this)
-    private JenkinsLoggingRule jlr = new JenkinsLoggingRule(this)
+    private JenkinsLoggingRule loggingRule = new JenkinsLoggingRule(this)
 
     @Rule
     public RuleChain ruleChain = Rules
@@ -28,7 +28,7 @@ class CheckChangeInDevelopmentTest extends BasePiperTest {
         .around(new JenkinsReadYamlRule(this))
         .around(thrown)
         .around(jsr)
-        .around(jlr)
+        .around(loggingRule)
         .around(new JenkinsCredentialsRule(this)
         .withCredentials('CM', 'anonymous', '********'))
 
@@ -147,7 +147,7 @@ class CheckChangeInDevelopmentTest extends BasePiperTest {
     @Test
     public void cmIntegrationSwichtedOffTest() {
 
-        jlr.expect('[INFO] Change management integration intentionally switched off.')
+        loggingRule.expect('[INFO] Change management integration intentionally switched off.')
 
         jsr.step.checkChangeInDevelopment(
             script: nullScript,

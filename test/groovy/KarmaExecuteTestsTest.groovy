@@ -11,7 +11,7 @@ import static org.junit.Assert.assertThat
 
 class KarmaExecuteTestsTest extends BasePiperTest {
     private JenkinsStepRule jsr = new JenkinsStepRule(this)
-    private JenkinsLoggingRule jlr = new JenkinsLoggingRule(this)
+    private JenkinsLoggingRule loggingRule = new JenkinsLoggingRule(this)
     private JenkinsShellCallRule shellRule = new JenkinsShellCallRule(this)
     private JenkinsEnvironmentRule jer = new JenkinsEnvironmentRule(this)
     private ExpectedException thrown = ExpectedException.none()
@@ -21,7 +21,7 @@ class KarmaExecuteTestsTest extends BasePiperTest {
         .getCommonRules(this)
         .around(new JenkinsReadYamlRule(this))
         .around(shellRule)
-        .around(jlr)
+        .around(loggingRule)
         .around(jer)
         .around(jsr)
         .around(thrown)

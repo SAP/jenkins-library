@@ -26,7 +26,7 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
     private ExpectedException exception = ExpectedException.none()
     private JenkinsDockerExecuteRule jder = new JenkinsDockerExecuteRule(this)
     private JenkinsShellCallRule shellRule = new JenkinsShellCallRule(this)
-    private JenkinsLoggingRule jlr = new JenkinsLoggingRule(this)
+    private JenkinsLoggingRule loggingRule = new JenkinsLoggingRule(this)
     private JenkinsStepRule jsr = new JenkinsStepRule(this)
 
     @Rule
@@ -36,7 +36,7 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
         .around(exception)
         .around(jder)
         .around(shellRule)
-        .around(jlr)
+        .around(loggingRule)
         .around(jsr)
     int whichDockerReturnValue = 0
     def bodyExecuted

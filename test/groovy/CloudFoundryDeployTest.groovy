@@ -28,7 +28,7 @@ import static org.hamcrest.Matchers.containsString
 class CloudFoundryDeployTest extends BasePiperTest {
 
     private ExpectedException thrown = ExpectedException.none()
-    private JenkinsLoggingRule jlr = new JenkinsLoggingRule(this)
+    private JenkinsLoggingRule loggingRule = new JenkinsLoggingRule(this)
     private JenkinsShellCallRule shellRule = new JenkinsShellCallRule(this)
     private JenkinsWriteFileRule jwfr = new JenkinsWriteFileRule(this)
     private JenkinsDockerExecuteRule jedr = new JenkinsDockerExecuteRule(this)
@@ -49,7 +49,7 @@ class CloudFoundryDeployTest extends BasePiperTest {
         .getCommonRules(this)
         .around(jryr)
         .around(thrown)
-        .around(jlr)
+        .around(loggingRule)
         .around(shellRule)
         .around(jwfr)
         .around(jedr)
@@ -91,7 +91,7 @@ class CloudFoundryDeployTest extends BasePiperTest {
             stageName: 'acceptance',
         ])
         // asserts
-        assertThat(jlr.log, containsString('[cloudFoundryDeploy] General parameters: deployTool=, deployType=standard, cfApiEndpoint=https://api.cf.eu10.hana.ondemand.com, cfOrg=testOrg, cfSpace=testSpace, cfCredentialsId=myCreds, deployUser=testUser'))
+        assertThat(loggingRule.log, containsString('[cloudFoundryDeploy] General parameters: deployTool=, deployType=standard, cfApiEndpoint=https://api.cf.eu10.hana.ondemand.com, cfOrg=testOrg, cfSpace=testSpace, cfCredentialsId=myCreds, deployUser=testUser'))
     }
 
     @Test
@@ -120,7 +120,7 @@ class CloudFoundryDeployTest extends BasePiperTest {
             stageName: 'acceptance'
         ])
         // asserts
-        assertThat(jlr.log, containsString('[cloudFoundryDeploy] General parameters: deployTool=notAvailable, deployType=standard, cfApiEndpoint=https://api.cf.eu10.hana.ondemand.com, cfOrg=testOrg, cfSpace=testSpace, cfCredentialsId=myCreds, deployUser=testUser'))
+        assertThat(loggingRule.log, containsString('[cloudFoundryDeploy] General parameters: deployTool=notAvailable, deployType=standard, cfApiEndpoint=https://api.cf.eu10.hana.ondemand.com, cfOrg=testOrg, cfSpace=testSpace, cfCredentialsId=myCreds, deployUser=testUser'))
     }
 
     @Test

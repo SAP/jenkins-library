@@ -32,13 +32,13 @@ class GitUtilsTest extends BasePiperTest {
     @Autowired
     GitUtils gitUtils
 
-    private JenkinsLoggingRule jlr = new JenkinsLoggingRule(this)
+    private JenkinsLoggingRule loggingRule = new JenkinsLoggingRule(this)
     private JenkinsShellCallRule shellRule = new JenkinsShellCallRule(this)
     private ExpectedException thrown = ExpectedException.none()
 
     @Rule
     public RuleChain ruleChain = Rules.getCommonRules(this)
-        .around(jlr)
+        .around(loggingRule)
         .around(shellRule)
         .around(thrown)
 

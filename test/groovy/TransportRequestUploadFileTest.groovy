@@ -23,14 +23,14 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
 
     private ExpectedException thrown = new ExpectedException()
     private JenkinsStepRule jsr = new JenkinsStepRule(this)
-    private JenkinsLoggingRule jlr = new JenkinsLoggingRule(this)
+    private JenkinsLoggingRule loggingRule = new JenkinsLoggingRule(this)
 
     @Rule
     public RuleChain ruleChain = Rules.getCommonRules(this)
         .around(thrown)
         .around(new JenkinsReadYamlRule(this))
         .around(jsr)
-        .around(jlr)
+        .around(loggingRule)
         .around(new JenkinsCredentialsRule(this)
             .withCredentials('CM', 'anonymous', '********'))
 
@@ -148,8 +148,8 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
     @Test
     public void uploadFileToTransportRequestCTSSuccessTest() {
 
-        jlr.expect("[INFO] Uploading file '/path' to transport request '002'.")
-        jlr.expect("[INFO] File '/path' has been successfully uploaded to transport request '002'.")
+        loggingRule.expect("[INFO] Uploading file '/path' to transport request '002'.")
+        loggingRule.expect("[INFO] File '/path' has been successfully uploaded to transport request '002'.")
 
         ChangeManagement cm = new ChangeManagement(nullScript) {
             void uploadFileToTransportRequest(BackendType type,
@@ -198,8 +198,8 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
         // provided via parameters. The other cases are tested by
         // corresponding tests for StepHelpers#getTransportRequestId(./.)
 
-        jlr.expect("[INFO] Uploading file '/path' to transport request '002' of change document '001'.")
-        jlr.expect("[INFO] File '/path' has been successfully uploaded to transport request '002' of change document '001'.")
+        loggingRule.expect("[INFO] Uploading file '/path' to transport request '002' of change document '001'.")
+        loggingRule.expect("[INFO] File '/path' has been successfully uploaded to transport request '002' of change document '001'.")
 
         ChangeManagement cm = new ChangeManagement(nullScript) {
             void uploadFileToTransportRequest(BackendType type,
@@ -375,7 +375,7 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
     @Test
     public void cmIntegrationSwichtedOffTest() {
 
-        jlr.expect('[INFO] Change management integration intentionally switched off.')
+        loggingRule.expect('[INFO] Change management integration intentionally switched off.')
 
         jsr.step.transportRequestUploadFile(script: nullScript,
             changeManagement: [type: 'NONE'])

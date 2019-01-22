@@ -23,7 +23,7 @@ import org.junit.rules.ExpectedException
 class NewmanExecuteTest extends BasePiperTest {
     private ExpectedException thrown = ExpectedException.none()
     private JenkinsStepRule jsr = new JenkinsStepRule(this)
-    private JenkinsLoggingRule jlr = new JenkinsLoggingRule(this)
+    private JenkinsLoggingRule loggingRule = new JenkinsLoggingRule(this)
     private JenkinsShellCallRule shellRule = new JenkinsShellCallRule(this)
     private JenkinsDockerExecuteRule jedr = new JenkinsDockerExecuteRule(this)
 
@@ -34,7 +34,7 @@ class NewmanExecuteTest extends BasePiperTest {
         .around(thrown)
         .around(jedr)
         .around(shellRule)
-        .around(jlr)
+        .around(loggingRule)
         .around(jsr) // needs to be activated after jedr, otherwise executeDocker is not mocked
 
     def gitMap
@@ -73,7 +73,7 @@ class NewmanExecuteTest extends BasePiperTest {
         assertThat(shellRule.shell, hasItem(endsWith('npm install newman newman-reporter-html --global --quiet')))
         assertThat(shellRule.shell, hasItem(endsWith('newman run \'testCollection\' --environment \'testEnvironment\' --globals \'testGlobals\' --reporters junit,html --reporter-junit-export \'target/newman/TEST-testCollection.xml\' --reporter-html-export \'target/newman/TEST-testCollection.html\'')))
         assertThat(jedr.dockerParams.dockerImage, is('node:8-stretch'))
-        assertThat(jlr.log, containsString('[newmanExecute] Found files [testCollection]'))
+        assertThat(loggingRule.log, containsString('[newmanExecute] Found files [testCollection]'))
         assertJobStatusSuccess()
     }
 

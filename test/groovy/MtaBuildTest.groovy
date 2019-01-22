@@ -21,7 +21,7 @@ public class MtaBuildTest extends BasePiperTest {
     def toolJavaValidateCalled = false
 
     private ExpectedException thrown = new ExpectedException()
-    private JenkinsLoggingRule jlr = new JenkinsLoggingRule(this)
+    private JenkinsLoggingRule loggingRule = new JenkinsLoggingRule(this)
     private JenkinsShellCallRule shellRule = new JenkinsShellCallRule(this)
     private JenkinsDockerExecuteRule jder = new JenkinsDockerExecuteRule(this)
     private JenkinsStepRule jsr = new JenkinsStepRule(this)
@@ -32,7 +32,7 @@ public class MtaBuildTest extends BasePiperTest {
         .getCommonRules(this)
         .around(jryr)
         .around(thrown)
-        .around(jlr)
+        .around(loggingRule)
         .around(shellRule)
         .around(jder)
         .around(jsr)
@@ -90,8 +90,8 @@ public class MtaBuildTest extends BasePiperTest {
 
         assert shellRule.shell.find { c -> c.contains('-jar /mylocation/mta/mta.jar --mtar')}
 
-        assert jlr.log.contains("SAP Multitarget Application Archive Builder file '/mylocation/mta/mta.jar' retrieved from configuration.")
-        assert jlr.log.contains("Using SAP Multitarget Application Archive Builder '/mylocation/mta/mta.jar'.")
+        assert loggingRule.log.contains("SAP Multitarget Application Archive Builder file '/mylocation/mta/mta.jar' retrieved from configuration.")
+        assert loggingRule.log.contains("Using SAP Multitarget Application Archive Builder '/mylocation/mta/mta.jar'.")
     }
 
 
@@ -138,8 +138,8 @@ public class MtaBuildTest extends BasePiperTest {
         jsr.step.mtaBuild(script: nullScript, buildTarget: 'NEO')
 
         assert shellRule.shell.find { c -> c.contains("-jar /env/mta/mta.jar --mtar")}
-        assert jlr.log.contains("SAP Multitarget Application Archive Builder file '/env/mta/mta.jar' retrieved from environment.")
-        assert jlr.log.contains("Using SAP Multitarget Application Archive Builder '/env/mta/mta.jar'.")
+        assert loggingRule.log.contains("SAP Multitarget Application Archive Builder file '/env/mta/mta.jar' retrieved from environment.")
+        assert loggingRule.log.contains("Using SAP Multitarget Application Archive Builder '/env/mta/mta.jar'.")
     }
 
 
@@ -152,8 +152,8 @@ public class MtaBuildTest extends BasePiperTest {
                       buildTarget: 'NEO')
 
         assert shellRule.shell.find(){ c -> c.contains("-jar /config/mta/mta.jar --mtar")}
-        assert jlr.log.contains("SAP Multitarget Application Archive Builder file '/config/mta/mta.jar' retrieved from configuration.")
-        assert jlr.log.contains("Using SAP Multitarget Application Archive Builder '/config/mta/mta.jar'.")
+        assert loggingRule.log.contains("SAP Multitarget Application Archive Builder file '/config/mta/mta.jar' retrieved from configuration.")
+        assert loggingRule.log.contains("Using SAP Multitarget Application Archive Builder '/config/mta/mta.jar'.")
     }
 
 
@@ -164,8 +164,8 @@ public class MtaBuildTest extends BasePiperTest {
                       buildTarget: 'NEO')
 
         assert shellRule.shell.find(){ c -> c.contains("-jar mta.jar --mtar")}
-        assert jlr.log.contains("SAP Multitarget Application Archive Builder file 'mta.jar' retrieved from configuration.")
-        assert jlr.log.contains("Using SAP Multitarget Application Archive Builder 'mta.jar'.")
+        assert loggingRule.log.contains("SAP Multitarget Application Archive Builder file 'mta.jar' retrieved from configuration.")
+        assert loggingRule.log.contains("Using SAP Multitarget Application Archive Builder 'mta.jar'.")
     }
 
 

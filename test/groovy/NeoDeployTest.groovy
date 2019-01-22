@@ -35,7 +35,7 @@ class NeoDeployTest extends BasePiperTest {
     public static TemporaryFolder tmp = new TemporaryFolder()
 
     private ExpectedException thrown = new ExpectedException().none()
-    private JenkinsLoggingRule jlr = new JenkinsLoggingRule(this)
+    private JenkinsLoggingRule loggingRule = new JenkinsLoggingRule(this)
     private JenkinsShellCallRule shellRule = new JenkinsShellCallRule(this)
     private JenkinsStepRule jsr = new JenkinsStepRule(this)
 
@@ -44,7 +44,7 @@ class NeoDeployTest extends BasePiperTest {
         .getCommonRules(this)
         .around(new JenkinsReadYamlRule(this))
         .around(thrown)
-        .around(jlr)
+        .around(loggingRule)
         .around(shellRule)
         .around(new JenkinsCredentialsRule(this)
             .withCredentials('myCredentialsId', 'anonymous', '********')
@@ -260,8 +260,8 @@ class NeoDeployTest extends BasePiperTest {
         )
 
         assert shellRule.shell.find { c -> c.contains('"neo.sh" deploy-mta') }
-        assert jlr.log.contains('SAP Cloud Platform Console Client is on PATH.')
-        assert jlr.log.contains("Using SAP Cloud Platform Console Client 'neo.sh'.")
+        assert loggingRule.log.contains('SAP Cloud Platform Console Client is on PATH.')
+        assert loggingRule.log.contains("Using SAP Cloud Platform Console Client 'neo.sh'.")
     }
 
 
@@ -277,8 +277,8 @@ class NeoDeployTest extends BasePiperTest {
         )
 
         assert shellRule.shell.find{ c -> c = "\"/param/neo/tools/neo.sh\" deploy-mta" }
-        assert jlr.log.contains("SAP Cloud Platform Console Client home '/param/neo' retrieved from configuration.")
-        assert jlr.log.contains("Using SAP Cloud Platform Console Client '/param/neo/tools/neo.sh'.")
+        assert loggingRule.log.contains("SAP Cloud Platform Console Client home '/param/neo' retrieved from configuration.")
+        assert loggingRule.log.contains("Using SAP Cloud Platform Console Client '/param/neo/tools/neo.sh'.")
     }
 
 
@@ -290,8 +290,8 @@ class NeoDeployTest extends BasePiperTest {
         )
 
         assert shellRule.shell.find { c -> c.contains("\"/opt/neo/tools/neo.sh\" deploy-mta")}
-        assert jlr.log.contains("SAP Cloud Platform Console Client home '/opt/neo' retrieved from environment.")
-        assert jlr.log.contains("Using SAP Cloud Platform Console Client '/opt/neo/tools/neo.sh'.")
+        assert loggingRule.log.contains("SAP Cloud Platform Console Client home '/opt/neo' retrieved from environment.")
+        assert loggingRule.log.contains("Using SAP Cloud Platform Console Client '/opt/neo/tools/neo.sh'.")
     }
 
 
@@ -307,8 +307,8 @@ class NeoDeployTest extends BasePiperTest {
         )
 
         assert shellRule.shell.find { c -> c = "\"/config/neo/tools/neo.sh\" deploy-mta"}
-        assert jlr.log.contains("SAP Cloud Platform Console Client home '/config/neo' retrieved from configuration.")
-        assert jlr.log.contains("Using SAP Cloud Platform Console Client '/config/neo/tools/neo.sh'.")
+        assert loggingRule.log.contains("SAP Cloud Platform Console Client home '/config/neo' retrieved from configuration.")
+        assert loggingRule.log.contains("Using SAP Cloud Platform Console Client '/config/neo/tools/neo.sh'.")
     }
 
 
@@ -551,7 +551,7 @@ class NeoDeployTest extends BasePiperTest {
                              deployHost: "my.deploy.host.com"
         )
 
-        assert jlr.log.contains("[WARNING][neoDeploy] Deprecated parameter 'deployHost' is used. This will not work anymore in future versions. Use parameter 'host' instead.")
+        assert loggingRule.log.contains("[WARNING][neoDeploy] Deprecated parameter 'deployHost' is used. This will not work anymore in future versions. Use parameter 'host' instead.")
     }
 
     @Test
@@ -565,7 +565,7 @@ class NeoDeployTest extends BasePiperTest {
                              deployAccount: "myAccount"
         )
 
-        assert jlr.log.contains("Deprecated parameter 'deployAccount' is used. This will not work anymore in future versions. Use parameter 'account' instead.")
+        assert loggingRule.log.contains("Deprecated parameter 'deployAccount' is used. This will not work anymore in future versions. Use parameter 'account' instead.")
     }
 
 

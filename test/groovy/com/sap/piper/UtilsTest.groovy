@@ -21,7 +21,7 @@ import com.sap.piper.Utils
 
 class UtilsTest extends BasePiperTest {
     private ExpectedException thrown = ExpectedException.none()
-    private JenkinsLoggingRule jlr = new JenkinsLoggingRule(this)
+    private JenkinsLoggingRule loggingRule = new JenkinsLoggingRule(this)
     private JenkinsShellCallRule shellRule = new JenkinsShellCallRule(this)
 
     @Rule
@@ -29,7 +29,7 @@ class UtilsTest extends BasePiperTest {
         .getCommonRules(this)
         .around(thrown)
         .around(shellRule)
-        .around(jlr)
+        .around(loggingRule)
 
     private parameters
 
@@ -78,7 +78,7 @@ class UtilsTest extends BasePiperTest {
         utils.env = [BUILD_URL: 'something', JOB_URL: 'nothing']
         utils.pushToSWA([step: 'anything'], [collectTelemetryData: false])
         // asserts
-        assertThat(jlr.log, containsString('[anything] Telemetry Report to SWA disabled!'))
+        assertThat(loggingRule.log, containsString('[anything] Telemetry Report to SWA disabled!'))
         assertThat(shellRule.shell, not(hasItem(containsString('https://webanalytics.cfapps.eu10.hana.ondemand.com'))))
     }
 
@@ -87,7 +87,7 @@ class UtilsTest extends BasePiperTest {
         utils.env = [BUILD_URL: 'something', JOB_URL: 'nothing']
         utils.pushToSWA([step: 'anything'], null)
         // asserts
-        assertThat(jlr.log, containsString('[anything] Telemetry Report to SWA disabled!'))
+        assertThat(loggingRule.log, containsString('[anything] Telemetry Report to SWA disabled!'))
     }
 
     @Test
@@ -95,6 +95,6 @@ class UtilsTest extends BasePiperTest {
         utils.env = [BUILD_URL: 'something', JOB_URL: 'nothing']
         utils.pushToSWA([step: 'anything'], [:])
         // asserts
-        assertThat(jlr.log, containsString('[anything] Telemetry Report to SWA disabled!'))
+        assertThat(loggingRule.log, containsString('[anything] Telemetry Report to SWA disabled!'))
     }
 }
