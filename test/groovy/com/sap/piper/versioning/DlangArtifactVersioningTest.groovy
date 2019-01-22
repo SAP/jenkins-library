@@ -14,19 +14,19 @@ import static org.junit.Assert.assertTrue
 class DlangArtifactVersioningTest extends BasePiperTest{
 
     JenkinsReadJsonRule readJsonRule = new JenkinsReadJsonRule(this, 'test/resources/versioning/DlangArtifactVersioning/')
-    JenkinsWriteJsonRule jwjr = new JenkinsWriteJsonRule(this)
+    JenkinsWriteJsonRule writeJsonRule = new JenkinsWriteJsonRule(this)
 
     @Rule
     public RuleChain ruleChain = Rules
         .getCommonRules(this)
         .around(readJsonRule)
-        .around(jwjr)
+        .around(writeJsonRule)
 
     @Test
     void testVersioning() {
         DlangArtifactVersioning av = new DlangArtifactVersioning(nullScript, [filePath: 'dub.json'])
         assertEquals('1.2.3', av.getVersion())
         av.setVersion('1.2.3-20180101')
-        assertTrue(jwjr.files['dub.json'].contains('1.2.3-20180101'))
+        assertTrue(writeJsonRule.files['dub.json'].contains('1.2.3-20180101'))
     }
 }
