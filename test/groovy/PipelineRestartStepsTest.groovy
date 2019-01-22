@@ -11,14 +11,14 @@ import static org.junit.Assert.assertThat
 
 class PipelineRestartStepsTest extends BasePiperTest {
 
-    private JenkinsErrorRule jer = new JenkinsErrorRule(this)
+    private JenkinsErrorRule errorRule = new JenkinsErrorRule(this)
     private JenkinsLoggingRule loggingRule = new JenkinsLoggingRule(this)
     private JenkinsStepRule stepRule = new JenkinsStepRule(this)
 
     @Rule
     public RuleChain chain = Rules.getCommonRules(this)
         .around(new JenkinsReadYamlRule(this))
-        .around(jer)
+        .around(errorRule)
         .around(loggingRule)
         .around(stepRule)
 
