@@ -49,7 +49,7 @@ class ArtifactSetVersionTest extends BasePiperTest {
     private JenkinsDockerExecuteRule dockerExecuteRule = new JenkinsDockerExecuteRule(this)
     private JenkinsLoggingRule loggingRule = new JenkinsLoggingRule(this)
     private JenkinsShellCallRule shellRule = new JenkinsShellCallRule(this)
-    private JenkinsWriteFileRule jwfr = new JenkinsWriteFileRule(this)
+    private JenkinsWriteFileRule writeFileRule = new JenkinsWriteFileRule(this)
     private JenkinsStepRule stepRule = new JenkinsStepRule(this)
     private JenkinsEnvironmentRule environmentRule = new JenkinsEnvironmentRule(this)
 
@@ -61,7 +61,7 @@ class ArtifactSetVersionTest extends BasePiperTest {
         .around(loggingRule)
         .around(shellRule)
         .around(new JenkinsReadMavenPomRule(this, 'test/resources/versioning/MavenArtifactVersioning'))
-        .around(jwfr)
+        .around(writeFileRule)
         .around(dockerExecuteRule)
         .around(stepRule)
         .around(environmentRule)
@@ -142,7 +142,7 @@ class ArtifactSetVersionTest extends BasePiperTest {
         environmentRule.env.setArtifactVersion('1.2.3-xyz')
         stepRule.step.artifactSetVersion(script: stepRule.step, juStabGitUtils: gitUtils, buildTool: 'docker', artifactType: 'appContainer', dockerVersionSource: 'appVersion')
         assertEquals('1.2.3-xyz', environmentRule.env.getArtifactVersion())
-        assertEquals('1.2.3-xyz', jwfr.files['VERSION'])
+        assertEquals('1.2.3-xyz', writeFileRule.files['VERSION'])
     }
 
     @Test

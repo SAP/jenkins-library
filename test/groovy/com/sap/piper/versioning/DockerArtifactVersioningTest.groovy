@@ -21,7 +21,7 @@ class DockerArtifactVersioningTest extends BasePiperTest{
     String passedDir
 
     JenkinsReadFileRule jrfr = new JenkinsReadFileRule(this, 'test/resources/versioning/DockerArtifactVersioning')
-    JenkinsWriteFileRule jwfr = new JenkinsWriteFileRule(this)
+    JenkinsWriteFileRule writeFileRule = new JenkinsWriteFileRule(this)
     JenkinsLoggingRule loggingRule = new JenkinsLoggingRule(this)
     ExpectedException thrown = ExpectedException.none()
 
@@ -29,7 +29,7 @@ class DockerArtifactVersioningTest extends BasePiperTest{
     public RuleChain ruleChain = Rules
         .getCommonRules(this)
         .around(jrfr)
-        .around(jwfr)
+        .around(writeFileRule)
         .around(loggingRule)
         .around(thrown)
 
@@ -47,7 +47,7 @@ class DockerArtifactVersioningTest extends BasePiperTest{
         av = new DockerArtifactVersioning(nullScript, [filePath: 'Dockerfile', dockerVersionSource: 'FROM'])
         assertEquals('1.2.3', av.getVersion())
         av.setVersion('1.2.3-20180101')
-        assertEquals('1.2.3-20180101', jwfr.files['VERSION'])
+        assertEquals('1.2.3-20180101', writeFileRule.files['VERSION'])
         assertTrue(loggingRule.log.contains('[DockerArtifactVersioning] Version from Docker base image tag: 1.2.3'))
     }
 
