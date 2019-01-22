@@ -18,7 +18,7 @@ import static org.junit.Assert.assertThat
 
 class GithubPublishReleaseTest extends BasePiperTest {
     private JenkinsStepRule jsr = new JenkinsStepRule(this)
-    private JenkinsLoggingRule jlr = new JenkinsLoggingRule(this)
+    private JenkinsLoggingRule loggingRule = new JenkinsLoggingRule(this)
     private JenkinsReadJsonRule jrjr = new JenkinsReadJsonRule(this)
     private ExpectedException thrown = ExpectedException.none()
 
@@ -26,7 +26,7 @@ class GithubPublishReleaseTest extends BasePiperTest {
     public RuleChain rules = Rules
         .getCommonRules(this)
         .around(new JenkinsReadYamlRule(this))
-        .around(jlr)
+        .around(loggingRule)
         .around(jrjr)
         .around(jsr)
         .around(thrown)
@@ -90,7 +90,7 @@ class GithubPublishReleaseTest extends BasePiperTest {
             version: '1.2.3'
         )
         // asserts
-        assertThat('this is not handled as a first release', jlr.log, not(containsString('[githubPublishRelease] This is the first release - no previous releases available')))
+        assertThat('this is not handled as a first release', loggingRule.log, not(containsString('[githubPublishRelease] This is the first release - no previous releases available')))
         assertThat('every request starts with the github api url', requestList, everyItem(startsWith('https://api.github.com')))
         assertThat('every request contains the github org & repo', requestList, everyItem(containsString('/TestOrg/TestRepo/')))
         // test githubTokenCredentialsId
@@ -123,7 +123,7 @@ class GithubPublishReleaseTest extends BasePiperTest {
             addDeltaToLastRelease: true
         )
         // asserts
-        assertThat('this is not handled as a first release', jlr.log, not(containsString('[githubPublishRelease] This is the first release - no previous releases available')))
+        assertThat('this is not handled as a first release', loggingRule.log, not(containsString('[githubPublishRelease] This is the first release - no previous releases available')))
         assertThat('every request starts with the github api url', requestList, everyItem(startsWith('https://api.github.com')))
         assertThat('every request contains the github org & repo', requestList, everyItem(containsString('/TestOrg/TestRepo/')))
         // test githubTokenCredentialsId

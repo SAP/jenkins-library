@@ -15,14 +15,14 @@ import static org.hamcrest.Matchers.*
 import static org.junit.Assert.assertThat
 
 class JenkinsUtilsTest extends BasePiperTest {
-    private JenkinsLoggingRule jlr = new JenkinsLoggingRule(this)
+    private JenkinsLoggingRule loggingRule = new JenkinsLoggingRule(this)
     private JenkinsShellCallRule shellRule = new JenkinsShellCallRule(this)
 
     @Rule
     public RuleChain rules = Rules
         .getCommonRules(this)
         .around(shellRule)
-        .around(jlr)
+        .around(loggingRule)
 
     @Test
     void testNodeAvailable() {
@@ -38,7 +38,7 @@ class JenkinsUtilsTest extends BasePiperTest {
         })
 
         def result = jenkinsUtils.nodeAvailable()
-        assertThat(jlr.log, containsString('No node context available.'))
+        assertThat(loggingRule.log, containsString('No node context available.'))
         assertThat(result, is(false))
     }
 

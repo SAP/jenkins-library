@@ -9,7 +9,7 @@ import static org.junit.Assert.assertThat
 
 class PipelineStashFilesAfterBuildTest extends BasePiperTest {
     JenkinsStepRule jsr = new JenkinsStepRule(this)
-    JenkinsLoggingRule jlr = new JenkinsLoggingRule(this)
+    JenkinsLoggingRule loggingRule = new JenkinsLoggingRule(this)
     JenkinsReadJsonRule jrj = new JenkinsReadJsonRule(this)
 
     @Rule
@@ -17,7 +17,7 @@ class PipelineStashFilesAfterBuildTest extends BasePiperTest {
         .getCommonRules(this)
         .around(new JenkinsReadYamlRule(this))
         .around(jrj)
-        .around(jlr)
+        .around(loggingRule)
         .around(jsr)
 
     @Test
@@ -31,9 +31,9 @@ class PipelineStashFilesAfterBuildTest extends BasePiperTest {
             juStabUtils: utils
         )
         // asserts
-        assertFalse(jlr.log.contains('Stash content: checkmarx'))
-        assertThat(jlr.log, containsString('Stash content: classFiles'))
-        assertThat(jlr.log, containsString('Stash content: sonar'))
+        assertFalse(loggingRule.log.contains('Stash content: checkmarx'))
+        assertThat(loggingRule.log, containsString('Stash content: classFiles'))
+        assertThat(loggingRule.log, containsString('Stash content: sonar'))
     }
 
     @Test
@@ -48,9 +48,9 @@ class PipelineStashFilesAfterBuildTest extends BasePiperTest {
             runCheckmarx: true
         )
         // asserts
-        assertThat(jlr.log, containsString('Stash content: checkmarx'))
-        assertThat(jlr.log, containsString('Stash content: classFiles'))
-        assertThat(jlr.log, containsString('Stash content: sonar'))
+        assertThat(loggingRule.log, containsString('Stash content: checkmarx'))
+        assertThat(loggingRule.log, containsString('Stash content: classFiles'))
+        assertThat(loggingRule.log, containsString('Stash content: sonar'))
     }
 
     @Test
@@ -64,9 +64,9 @@ class PipelineStashFilesAfterBuildTest extends BasePiperTest {
             juStabUtils: utils,
         )
         // asserts
-        assertThat(jlr.log, containsString('Stash content: checkmarx'))
-        assertThat(jlr.log, containsString('Stash content: classFiles'))
-        assertThat(jlr.log, containsString('Stash content: sonar'))
+        assertThat(loggingRule.log, containsString('Stash content: checkmarx'))
+        assertThat(loggingRule.log, containsString('Stash content: classFiles'))
+        assertThat(loggingRule.log, containsString('Stash content: sonar'))
     }
 
 }

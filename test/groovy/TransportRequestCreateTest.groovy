@@ -21,14 +21,14 @@ public class TransportRequestCreateTest extends BasePiperTest {
 
     private ExpectedException thrown = new ExpectedException()
     private JenkinsStepRule jsr = new JenkinsStepRule(this)
-    private JenkinsLoggingRule jlr = new JenkinsLoggingRule(this)
+    private JenkinsLoggingRule loggingRule = new JenkinsLoggingRule(this)
 
     @Rule
     public RuleChain ruleChain = Rules.getCommonRules(this)
         .around(new JenkinsReadYamlRule(this))
         .around(thrown)
         .around(jsr)
-        .around(jlr)
+        .around(loggingRule)
         .around(new JenkinsCredentialsRule(this)
             .withCredentials('CM', 'anonymous', '********'))
 
@@ -137,8 +137,8 @@ public class TransportRequestCreateTest extends BasePiperTest {
                          clientOpts: '-DmyProp=myVal'
                          ]
 
-        assert jlr.log.contains("[INFO] Creating transport request for change document '001' and development system '001'.")
-        assert jlr.log.contains("[INFO] Transport Request '001' has been successfully created.")
+        assert loggingRule.log.contains("[INFO] Creating transport request for change document '001' and development system '001'.")
+        assert loggingRule.log.contains("[INFO] Transport Request '001' has been successfully created.")
     }
 
     @Test
@@ -182,14 +182,14 @@ public class TransportRequestCreateTest extends BasePiperTest {
                          clientOpts: '-DmyProp=myVal'
                          ]
 
-        assert jlr.log.contains("[INFO] Creating transport request.")
-        assert jlr.log.contains("[INFO] Transport Request '001' has been successfully created.")
+        assert loggingRule.log.contains("[INFO] Creating transport request.")
+        assert loggingRule.log.contains("[INFO] Transport Request '001' has been successfully created.")
     }
 
     @Test
     public void cmIntegrationSwichtedOffTest() {
 
-        jlr.expect('[INFO] Change management integration intentionally switched off.')
+        loggingRule.expect('[INFO] Change management integration intentionally switched off.')
 
         jsr.step.transportRequestCreate(script: nullScript,
             changeManagement: [type: 'NONE'])

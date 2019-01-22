@@ -16,7 +16,7 @@ import util.Rules
 public class PrepareDefaultValuesTest extends BasePiperTest {
 
     private JenkinsStepRule jsr = new JenkinsStepRule(this)
-    private JenkinsLoggingRule jlr = new JenkinsLoggingRule(this)
+    private JenkinsLoggingRule loggingRule = new JenkinsLoggingRule(this)
     private ExpectedException thrown = ExpectedException.none()
 
     @Rule
@@ -25,7 +25,7 @@ public class PrepareDefaultValuesTest extends BasePiperTest {
         .around(new JenkinsReadYamlRule(this))
         .around(thrown)
         .around(jsr)
-        .around(jlr)
+        .around(loggingRule)
 
     @Before
     public void setup() {
@@ -114,7 +114,7 @@ public class PrepareDefaultValuesTest extends BasePiperTest {
 
         jsr.step.prepareDefaultValues(script: nullScript)
 
-        assert ! jlr.log.contains("Loading configuration file 'default_pipeline_environment.yml'")
+        assert ! loggingRule.log.contains("Loading configuration file 'default_pipeline_environment.yml'")
     }
 
     @Test
@@ -122,7 +122,7 @@ public class PrepareDefaultValuesTest extends BasePiperTest {
 
         jsr.step.prepareDefaultValues(script: nullScript, customDefaults: ['custom.yml'])
 
-        assert jlr.log.contains("Loading configuration file 'default_pipeline_environment.yml'")
-        assert jlr.log.contains("Loading configuration file 'custom.yml'")
+        assert loggingRule.log.contains("Loading configuration file 'default_pipeline_environment.yml'")
+        assert loggingRule.log.contains("Loading configuration file 'custom.yml'")
     }
 }

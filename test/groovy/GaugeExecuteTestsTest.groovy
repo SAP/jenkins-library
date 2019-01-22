@@ -11,7 +11,7 @@ import static org.junit.Assert.assertThat
 
 class GaugeExecuteTestsTest extends BasePiperTest {
     private JenkinsStepRule jsr = new JenkinsStepRule(this)
-    private JenkinsLoggingRule jlr = new JenkinsLoggingRule(this)
+    private JenkinsLoggingRule loggingRule = new JenkinsLoggingRule(this)
     private JenkinsShellCallRule shellRule = new JenkinsShellCallRule(this)
     private JenkinsEnvironmentRule jer = new JenkinsEnvironmentRule(this)
     private ExpectedException thrown = ExpectedException.none()
@@ -21,7 +21,7 @@ class GaugeExecuteTestsTest extends BasePiperTest {
         .getCommonRules(this)
         .around(new JenkinsReadYamlRule(this))
         .around(shellRule)
-        .around(jlr)
+        .around(loggingRule)
         .around(jer)
         .around(jsr)
         .around(thrown)
@@ -111,7 +111,7 @@ class GaugeExecuteTestsTest extends BasePiperTest {
             assertThat(seleniumParams.dockerName, is('testImageName'))
             assertThat(seleniumParams.dockerWorkspace, is('/home/test'))
             assertThat(seleniumParams.stashContent, hasSize(1))
-            assertThat(jlr.log, containsString('[gaugeExecuteTests] One or more tests failed'))
+            assertThat(loggingRule.log, containsString('[gaugeExecuteTests] One or more tests failed'))
             assertThat(nullScript.currentBuild.result, is('UNSTABLE'))
 
         }

@@ -9,7 +9,7 @@ import static org.hamcrest.Matchers.*
 import static org.junit.Assert.assertThat
 
 class MailSendNotificationTest extends BasePiperTest {
-    private JenkinsLoggingRule jlr = new JenkinsLoggingRule(this)
+    private JenkinsLoggingRule loggingRule = new JenkinsLoggingRule(this)
     private JenkinsStepRule jsr = new JenkinsStepRule(this)
     private JenkinsShellCallRule shellRule = new JenkinsShellCallRule(this)
 
@@ -17,7 +17,7 @@ class MailSendNotificationTest extends BasePiperTest {
     public RuleChain ruleChain = Rules
         .getCommonRules(this)
         .around(new JenkinsReadYamlRule(this))
-        .around(jlr)
+        .around(loggingRule)
         .around(shellRule)
         .around(jsr)
 
@@ -72,7 +72,7 @@ user3@domain.com noreply+github@domain.com'''
             ],
             'master',
             2)
-        println("LOGS: ${jlr.log}")
+        println("LOGS: ${loggingRule.log}")
         println("RESULT: ${result}")
         // asserts
         assertThat(result, containsString('user2@domain.com'))
@@ -93,7 +93,7 @@ user3@domain.com noreply+github@domain.com'''
             'master',
             2)
         // asserts
-        assertThat(jlr.log, containsString('[mailSendNotification] No git context available to retrieve culprits'))
+        assertThat(loggingRule.log, containsString('[mailSendNotification] No git context available to retrieve culprits'))
     }
 
     @Test
@@ -110,7 +110,7 @@ user3@domain.com noreply+github@domain.com'''
             'master',
             2)
         // asserts
-        assertThat(jlr.log, containsString('[mailSendNotification] No git context available to retrieve culprits'))
+        assertThat(loggingRule.log, containsString('[mailSendNotification] No git context available to retrieve culprits'))
     }
 
     @Test
@@ -127,7 +127,7 @@ user3@domain.com noreply+github@domain.com'''
             null,
             2)
         // asserts
-        assertThat(jlr.log, containsString('[mailSendNotification] No git context available to retrieve culprits'))
+        assertThat(loggingRule.log, containsString('[mailSendNotification] No git context available to retrieve culprits'))
     }
 
     @Test

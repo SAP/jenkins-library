@@ -14,7 +14,7 @@ class BatsExecuteTestsTest extends BasePiperTest {
 
     private ExpectedException thrown = ExpectedException.none()
     private JenkinsStepRule jsr = new JenkinsStepRule(this)
-    private JenkinsLoggingRule jlr = new JenkinsLoggingRule(this)
+    private JenkinsLoggingRule loggingRule = new JenkinsLoggingRule(this)
     private JenkinsShellCallRule shellRule = new JenkinsShellCallRule(this)
     private JenkinsDockerExecuteRule jder = new JenkinsDockerExecuteRule(this)
 
@@ -25,7 +25,7 @@ class BatsExecuteTestsTest extends BasePiperTest {
         .around(thrown)
         .around(jder)
         .around(shellRule)
-        .around(jlr)
+        .around(loggingRule)
         .around(jsr)
 
     List withEnvArgs = []

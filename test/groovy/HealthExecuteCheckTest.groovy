@@ -15,14 +15,14 @@ import static org.junit.Assert.assertThat
 
 class HealthExecuteCheckTest extends BasePiperTest {
     private JenkinsStepRule jsr = new JenkinsStepRule(this)
-    private JenkinsLoggingRule jlr = new JenkinsLoggingRule(this)
+    private JenkinsLoggingRule loggingRule = new JenkinsLoggingRule(this)
     private ExpectedException thrown = ExpectedException.none()
 
     @Rule
     public RuleChain rules = Rules
         .getCommonRules(this)
         .around(new JenkinsReadYamlRule(this))
-        .around(jlr)
+        .around(loggingRule)
         .around(jsr)
         .around(thrown)
 
@@ -46,7 +46,7 @@ class HealthExecuteCheckTest extends BasePiperTest {
             testServerUrl: testUrl
         )
 
-        assertThat(jlr.log, containsString("Health check for ${testUrl} successful"))
+        assertThat(loggingRule.log, containsString("Health check for ${testUrl} successful"))
     }
 
     @Test
@@ -71,7 +71,7 @@ class HealthExecuteCheckTest extends BasePiperTest {
             healthEndpoint: 'endpoint'
         )
 
-        assertThat(jlr.log, containsString("Health check for http://testserver/endpoint successful"))
+        assertThat(loggingRule.log, containsString("Health check for http://testserver/endpoint successful"))
     }
 
     @Test
@@ -82,7 +82,7 @@ class HealthExecuteCheckTest extends BasePiperTest {
             healthEndpoint: 'endpoint'
         )
 
-        assertThat(jlr.log, containsString("Health check for http://testserver/endpoint successful"))
+        assertThat(loggingRule.log, containsString("Health check for http://testserver/endpoint successful"))
     }
 
 }

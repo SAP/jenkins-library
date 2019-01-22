@@ -16,7 +16,7 @@ import util.Rules
 class ToolValidateTest extends BasePiperTest {
 
     private ExpectedException thrown = new ExpectedException().none()
-    private JenkinsLoggingRule jlr = new JenkinsLoggingRule(this)
+    private JenkinsLoggingRule loggingRule = new JenkinsLoggingRule(this)
     private JenkinsStepRule jsr = new JenkinsStepRule(this)
 
     @Rule
@@ -24,7 +24,7 @@ class ToolValidateTest extends BasePiperTest {
         .getCommonRules(this)
         .around(new JenkinsReadYamlRule(this))
         .around(thrown)
-        .around(jlr)
+        .around(loggingRule)
         .around(jsr)
 
     def home = 'home'
@@ -165,8 +165,8 @@ class ToolValidateTest extends BasePiperTest {
 
         jsr.step.toolValidate(tool: 'java', home: home)
 
-        assert jlr.log.contains('Verifying Java version 1.8.0 or compatible version.')
-        assert jlr.log.contains('Java version 1.8.0 is installed.')
+        assert loggingRule.log.contains('Verifying Java version 1.8.0 or compatible version.')
+        assert loggingRule.log.contains('Java version 1.8.0 is installed.')
     }
 
     @Test
@@ -176,8 +176,8 @@ class ToolValidateTest extends BasePiperTest {
 
         jsr.step.toolValidate(tool: 'mta', home: home)
 
-        assert jlr.log.contains('Verifying SAP Multitarget Application Archive Builder version 1.0.6 or compatible version.')
-        assert jlr.log.contains('SAP Multitarget Application Archive Builder version 1.0.6 is installed.')
+        assert loggingRule.log.contains('Verifying SAP Multitarget Application Archive Builder version 1.0.6 or compatible version.')
+        assert loggingRule.log.contains('SAP Multitarget Application Archive Builder version 1.0.6 is installed.')
     }
 
     @Test
@@ -195,8 +195,8 @@ class ToolValidateTest extends BasePiperTest {
 
         jsr.step.toolValidate(tool: 'cm', home: home)
 
-        assert jlr.log.contains('Verifying Change Management Command Line Interface version 0.0.1 or compatible version.')
-        assert jlr.log.contains('Change Management Command Line Interface version 0.0.1 is installed.')
+        assert loggingRule.log.contains('Verifying Change Management Command Line Interface version 0.0.1 or compatible version.')
+        assert loggingRule.log.contains('Change Management Command Line Interface version 0.0.1 is installed.')
     }
 
 

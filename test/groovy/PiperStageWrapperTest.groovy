@@ -15,7 +15,7 @@ import static org.junit.Assert.assertThat
 
 class PiperStageWrapperTest extends BasePiperTest {
 
-    private JenkinsLoggingRule jlr = new JenkinsLoggingRule(this)
+    private JenkinsLoggingRule loggingRule = new JenkinsLoggingRule(this)
     private JenkinsStepRule jsr = new JenkinsStepRule(this)
 
     private Map lockMap = [:]
@@ -26,7 +26,7 @@ class PiperStageWrapperTest extends BasePiperTest {
     public RuleChain rules = Rules
         .getCommonRules(this)
         .around(new JenkinsReadYamlRule(this))
-        .around(jlr)
+        .around(loggingRule)
         .around(jsr)
 
     @Before
@@ -111,10 +111,10 @@ class PiperStageWrapperTest extends BasePiperTest {
         }
 
         assertThat(executed, is(true))
-        assertThat(jlr.log, containsString('[piperStageWrapper] Running project interceptor \'.pipeline/extensions/test.groovy\' for test.'))
-        assertThat(jlr.log, containsString('Stage Name: test'))
-        assertThat(jlr.log, containsString('Config: [productiveBranch:master,'))
-        assertThat(jlr.log, containsString('testBranch'))
+        assertThat(loggingRule.log, containsString('[piperStageWrapper] Running project interceptor \'.pipeline/extensions/test.groovy\' for test.'))
+        assertThat(loggingRule.log, containsString('Stage Name: test'))
+        assertThat(loggingRule.log, containsString('Config: [productiveBranch:master,'))
+        assertThat(loggingRule.log, containsString('testBranch'))
     }
 }
 

@@ -47,7 +47,7 @@ class ArtifactSetVersionTest extends BasePiperTest {
 
     private ExpectedException thrown = ExpectedException.none()
     private JenkinsDockerExecuteRule jder = new JenkinsDockerExecuteRule(this)
-    private JenkinsLoggingRule jlr = new JenkinsLoggingRule(this)
+    private JenkinsLoggingRule loggingRule = new JenkinsLoggingRule(this)
     private JenkinsShellCallRule shellRule = new JenkinsShellCallRule(this)
     private JenkinsWriteFileRule jwfr = new JenkinsWriteFileRule(this)
     private JenkinsStepRule jsr = new JenkinsStepRule(this)
@@ -58,7 +58,7 @@ class ArtifactSetVersionTest extends BasePiperTest {
         .getCommonRules(this)
         .around(new JenkinsReadYamlRule(this))
         .around(thrown)
-        .around(jlr)
+        .around(loggingRule)
         .around(shellRule)
         .around(new JenkinsReadMavenPomRule(this, 'test/resources/versioning/MavenArtifactVersioning'))
         .around(jwfr)
