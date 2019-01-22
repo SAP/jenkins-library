@@ -209,8 +209,12 @@ def deployMta (config) {
     if (!config.mtaExtensionDescriptor.isEmpty() && !config.mtaExtensionDescriptor.startsWith('-e ')) config.mtaExtensionDescriptor = "-e ${config.mtaExtensionDescriptor}"
 
     def deployCommand = 'deploy'
-    if (config.deployType == 'blue-green')
+    if (config.deployType == 'blue-green') {
         deployCommand = 'bg-deploy'
+        if (config.mtaDeployParameters.indexOf('--no-confirm') < 0) {
+            config.mtaDeployParameters += ' --no-confirm'
+        }
+    }
 
     withCredentials([usernamePassword(
         credentialsId: config.cloudFoundry.credentialsId,
