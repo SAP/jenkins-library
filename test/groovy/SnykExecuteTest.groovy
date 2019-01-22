@@ -20,7 +20,7 @@ import util.Rules
 class SnykExecuteTest extends BasePiperTest {
     private ExpectedException thrown = ExpectedException.none()
     private JenkinsDockerExecuteRule jder = new JenkinsDockerExecuteRule(this)
-    private JenkinsShellCallRule jscr = new JenkinsShellCallRule(this)
+    private JenkinsShellCallRule shellRule = new JenkinsShellCallRule(this)
     private JenkinsLoggingRule jlr = new JenkinsLoggingRule(this)
     private JenkinsStepRule jsr = new JenkinsStepRule(this)
 
@@ -30,7 +30,7 @@ class SnykExecuteTest extends BasePiperTest {
         .around(new JenkinsReadYamlRule(this))
         .around(thrown)
         .around(jder)
-        .around(jscr)
+        .around(shellRule)
         .around(jlr)
         .around(jsr)
 
@@ -101,9 +101,9 @@ class SnykExecuteTest extends BasePiperTest {
             juStabUtils: utils
         )
         // asserts
-        assertThat(jscr.shell, hasItem('npm install snyk --global --quiet'))
-        assertThat(jscr.shell, hasItem('cd \'./\' && npm install --quiet'))
-        assertThat(jscr.shell, hasItem('cd \'./\' && snyk monitor && snyk test'))
+        assertThat(shellRule.shell, hasItem('npm install snyk --global --quiet'))
+        assertThat(shellRule.shell, hasItem('cd \'./\' && npm install --quiet'))
+        assertThat(shellRule.shell, hasItem('cd \'./\' && snyk monitor && snyk test'))
     }
 
     @Test
@@ -115,7 +115,7 @@ class SnykExecuteTest extends BasePiperTest {
             toJson: true
         )
         // asserts
-        assertThat(jscr.shell, hasItem("cd './' && snyk monitor --org=myOrg && snyk test --json > snyk.json".toString()))
+        assertThat(shellRule.shell, hasItem("cd './' && snyk monitor --org=myOrg && snyk test --json > snyk.json".toString()))
         assertThat(archiveStepPatterns, hasItem('snyk.json'))
     }
 
@@ -127,7 +127,7 @@ class SnykExecuteTest extends BasePiperTest {
             scanType: 'mta'
         )
         // asserts
-        assertThat(jscr.shell, hasItem("cd 'some-ui${File.separator}' && snyk monitor && snyk test".toString()))
-        assertThat(jscr.shell, hasItem("cd 'some-service-broker${File.separator}' && snyk monitor && snyk test".toString()))
+        assertThat(shellRule.shell, hasItem("cd 'some-ui${File.separator}' && snyk monitor && snyk test".toString()))
+        assertThat(shellRule.shell, hasItem("cd 'some-service-broker${File.separator}' && snyk monitor && snyk test".toString()))
     }
 }

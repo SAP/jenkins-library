@@ -29,7 +29,7 @@ class CloudFoundryDeployTest extends BasePiperTest {
 
     private ExpectedException thrown = ExpectedException.none()
     private JenkinsLoggingRule jlr = new JenkinsLoggingRule(this)
-    private JenkinsShellCallRule jscr = new JenkinsShellCallRule(this)
+    private JenkinsShellCallRule shellRule = new JenkinsShellCallRule(this)
     private JenkinsWriteFileRule jwfr = new JenkinsWriteFileRule(this)
     private JenkinsDockerExecuteRule jedr = new JenkinsDockerExecuteRule(this)
     private JenkinsStepRule jsr = new JenkinsStepRule(this)
@@ -50,7 +50,7 @@ class CloudFoundryDeployTest extends BasePiperTest {
         .around(jryr)
         .around(thrown)
         .around(jlr)
-        .around(jscr)
+        .around(shellRule)
         .around(jwfr)
         .around(jedr)
         .around(jer)
@@ -145,9 +145,9 @@ class CloudFoundryDeployTest extends BasePiperTest {
         assertThat(jedr.dockerParams, hasEntry('dockerImage', 's4sdk/docker-cf-cli'))
         assertThat(jedr.dockerParams, hasEntry('dockerWorkspace', '/home/piper'))
         assertThat(jedr.dockerParams.dockerEnvVars, hasEntry('STATUS_CODE', "${200}"))
-        assertThat(jscr.shell, hasItem(containsString('cf login -u "test_cf" -p \'********\' -a https://api.cf.eu10.hana.ondemand.com -o "testOrg" -s "testSpace"')))
-        assertThat(jscr.shell, hasItem(containsString("cf push testAppName -f 'test.yml'")))
-        assertThat(jscr.shell, hasItem(containsString("cf logout")))
+        assertThat(shellRule.shell, hasItem(containsString('cf login -u "test_cf" -p \'********\' -a https://api.cf.eu10.hana.ondemand.com -o "testOrg" -s "testSpace"')))
+        assertThat(shellRule.shell, hasItem(containsString("cf push testAppName -f 'test.yml'")))
+        assertThat(shellRule.shell, hasItem(containsString("cf logout")))
     }
 
     @Test
@@ -170,7 +170,7 @@ class CloudFoundryDeployTest extends BasePiperTest {
             cfManifest: 'test.yml'
         ])
         // asserts
-        assertThat(jscr.shell, hasItem(containsString('cf login -u "test_cf" -p \'********\' -a https://customApi -o "testOrg" -s "testSpace"')))
+        assertThat(shellRule.shell, hasItem(containsString('cf login -u "test_cf" -p \'********\' -a https://customApi -o "testOrg" -s "testSpace"')))
     }
 
     @Test
@@ -197,9 +197,9 @@ class CloudFoundryDeployTest extends BasePiperTest {
         assertThat(jedr.dockerParams, hasEntry('dockerImage', 's4sdk/docker-cf-cli'))
         assertThat(jedr.dockerParams, hasEntry('dockerWorkspace', '/home/piper'))
         assertThat(jedr.dockerParams.dockerEnvVars, hasEntry('STATUS_CODE', "${200}"))
-        assertThat(jscr.shell, hasItem(containsString('cf login -u "test_cf" -p \'********\' -a https://api.cf.eu10.hana.ondemand.com -o "testOrg" -s "testSpace"')))
-        assertThat(jscr.shell, hasItem(containsString("cf push testAppName -f 'test.yml'")))
-        assertThat(jscr.shell, hasItem(containsString("cf logout")))
+        assertThat(shellRule.shell, hasItem(containsString('cf login -u "test_cf" -p \'********\' -a https://api.cf.eu10.hana.ondemand.com -o "testOrg" -s "testSpace"')))
+        assertThat(shellRule.shell, hasItem(containsString("cf push testAppName -f 'test.yml'")))
+        assertThat(shellRule.shell, hasItem(containsString("cf logout")))
     }
 
     @Test
@@ -222,9 +222,9 @@ class CloudFoundryDeployTest extends BasePiperTest {
             cfManifest: 'test.yml'
         ])
         // asserts
-        assertThat(jscr.shell, hasItem(containsString('cf login -u "test_cf" -p \'********\' -a https://api.cf.eu10.hana.ondemand.com -o "testOrg" -s "testSpace"')))
-        assertThat(jscr.shell, hasItem(containsString("cf push -f 'test.yml'")))
-        assertThat(jscr.shell, hasItem(containsString("cf logout")))
+        assertThat(shellRule.shell, hasItem(containsString('cf login -u "test_cf" -p \'********\' -a https://api.cf.eu10.hana.ondemand.com -o "testOrg" -s "testSpace"')))
+        assertThat(shellRule.shell, hasItem(containsString("cf push -f 'test.yml'")))
+        assertThat(shellRule.shell, hasItem(containsString("cf logout")))
     }
 
     @Test
@@ -271,9 +271,9 @@ class CloudFoundryDeployTest extends BasePiperTest {
         assertThat(jedr.dockerParams, hasEntry('dockerImage', 's4sdk/docker-cf-cli'))
         assertThat(jedr.dockerParams, hasEntry('dockerWorkspace', '/home/piper'))
 
-        assertThat(jscr.shell, hasItem(containsString('cf login -u "test_cf" -p \'********\' -a https://api.cf.eu10.hana.ondemand.com -o "testOrg" -s "testSpace"')))
-        assertThat(jscr.shell, hasItem(containsString("cf blue-green-deploy testAppName --delete-old-apps -f 'test.yml'")))
-        assertThat(jscr.shell, hasItem(containsString("cf logout")))
+        assertThat(shellRule.shell, hasItem(containsString('cf login -u "test_cf" -p \'********\' -a https://api.cf.eu10.hana.ondemand.com -o "testOrg" -s "testSpace"')))
+        assertThat(shellRule.shell, hasItem(containsString("cf blue-green-deploy testAppName --delete-old-apps -f 'test.yml'")))
+        assertThat(shellRule.shell, hasItem(containsString("cf logout")))
 
     }
 
@@ -299,10 +299,10 @@ class CloudFoundryDeployTest extends BasePiperTest {
         assertThat(jedr.dockerParams, hasEntry('dockerImage', 's4sdk/docker-cf-cli'))
         assertThat(jedr.dockerParams, hasEntry('dockerWorkspace', '/home/piper'))
 
-        assertThat(jscr.shell, hasItem(containsString('cf login -u "test_cf" -p \'********\' -a https://api.cf.eu10.hana.ondemand.com -o "testOrg" -s "testSpace"')))
-        assertThat(jscr.shell, hasItem(containsString("cf blue-green-deploy testAppName --delete-old-apps -f 'test.yml'")))
-        assertThat(jscr.shell, not(hasItem(containsString("cf stop testAppName-old"))))
-        assertThat(jscr.shell, hasItem(containsString("cf logout")))
+        assertThat(shellRule.shell, hasItem(containsString('cf login -u "test_cf" -p \'********\' -a https://api.cf.eu10.hana.ondemand.com -o "testOrg" -s "testSpace"')))
+        assertThat(shellRule.shell, hasItem(containsString("cf blue-green-deploy testAppName --delete-old-apps -f 'test.yml'")))
+        assertThat(shellRule.shell, not(hasItem(containsString("cf stop testAppName-old"))))
+        assertThat(shellRule.shell, hasItem(containsString("cf logout")))
 
     }
 
@@ -328,10 +328,10 @@ class CloudFoundryDeployTest extends BasePiperTest {
         assertThat(jedr.dockerParams, hasEntry('dockerImage', 's4sdk/docker-cf-cli'))
         assertThat(jedr.dockerParams, hasEntry('dockerWorkspace', '/home/piper'))
 
-        assertThat(jscr.shell, hasItem(containsString('cf login -u "test_cf" -p \'********\' -a https://api.cf.eu10.hana.ondemand.com -o "testOrg" -s "testSpace"')))
-        assertThat(jscr.shell, hasItem(containsString("cf blue-green-deploy testAppName -f 'test.yml'")))
-        assertThat(jscr.shell, hasItem(containsString("cf stop testAppName-old")))
-        assertThat(jscr.shell, hasItem(containsString("cf logout")))
+        assertThat(shellRule.shell, hasItem(containsString('cf login -u "test_cf" -p \'********\' -a https://api.cf.eu10.hana.ondemand.com -o "testOrg" -s "testSpace"')))
+        assertThat(shellRule.shell, hasItem(containsString("cf blue-green-deploy testAppName -f 'test.yml'")))
+        assertThat(shellRule.shell, hasItem(containsString("cf stop testAppName-old")))
+        assertThat(shellRule.shell, hasItem(containsString("cf logout")))
     }
 
     @Test
@@ -353,7 +353,7 @@ class CloudFoundryDeployTest extends BasePiperTest {
             cfManifest: 'test.yml'
         ])
 
-        assertThat(jscr.shell, not(hasItem(containsString("cf stop testAppName-old"))))
+        assertThat(shellRule.shell, not(hasItem(containsString("cf stop testAppName-old"))))
     }
 
     @Test
@@ -394,9 +394,9 @@ class CloudFoundryDeployTest extends BasePiperTest {
         // asserts
         assertThat(jedr.dockerParams, hasEntry('dockerImage', 's4sdk/docker-cf-cli'))
         assertThat(jedr.dockerParams, hasEntry('dockerWorkspace', '/home/piper'))
-        assertThat(jscr.shell, hasItem(containsString('cf login -u test_cf -p \'********\' -a https://api.cf.eu10.hana.ondemand.com -o "testOrg" -s "testSpace"')))
-        assertThat(jscr.shell, hasItem(containsString('cf deploy target/test.mtar -f')))
-        assertThat(jscr.shell, hasItem(containsString('cf logout')))
+        assertThat(shellRule.shell, hasItem(containsString('cf login -u test_cf -p \'********\' -a https://api.cf.eu10.hana.ondemand.com -o "testOrg" -s "testSpace"')))
+        assertThat(shellRule.shell, hasItem(containsString('cf deploy target/test.mtar -f')))
+        assertThat(shellRule.shell, hasItem(containsString('cf logout')))
     }
 
     @Test
@@ -414,7 +414,7 @@ class CloudFoundryDeployTest extends BasePiperTest {
             mtaPath: 'target/test.mtar'
         ])
 
-        assertThat(jscr.shell, hasItem(stringContainsInOrder(["cf login -u test_cf", 'cf bg-deploy', '-f', '--no-confirm'])))
+        assertThat(shellRule.shell, hasItem(stringContainsInOrder(["cf login -u test_cf", 'cf bg-deploy', '-f', '--no-confirm'])))
     }
 
     @Test

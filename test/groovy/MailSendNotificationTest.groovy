@@ -11,14 +11,14 @@ import static org.junit.Assert.assertThat
 class MailSendNotificationTest extends BasePiperTest {
     private JenkinsLoggingRule jlr = new JenkinsLoggingRule(this)
     private JenkinsStepRule jsr = new JenkinsStepRule(this)
-    private JenkinsShellCallRule jscr = new JenkinsShellCallRule(this)
+    private JenkinsShellCallRule shellRule = new JenkinsShellCallRule(this)
 
     @Rule
     public RuleChain ruleChain = Rules
         .getCommonRules(this)
         .around(new JenkinsReadYamlRule(this))
         .around(jlr)
-        .around(jscr)
+        .around(shellRule)
         .around(jsr)
 
     @Before
@@ -62,7 +62,7 @@ user3@domain.com noreply+github@domain.com'''
         def gitCommand = "git log -2 --pretty=format:'%ae %ce'"
         def expected = "user2@domain.com user3@domain.com"
 
-        jscr.setReturnValue("git log -2 --pretty=format:'%ae %ce'", 'user2@domain.com user3@domain.com')
+        shellRule.setReturnValue("git log -2 --pretty=format:'%ae %ce'", 'user2@domain.com user3@domain.com')
 
         def result = jsr.step.getCulprits(
             [
@@ -82,7 +82,7 @@ user3@domain.com noreply+github@domain.com'''
     @Test
     void testCulpritsWithEmptyGitCommit() throws Exception {
 
-        jscr.setReturnValue('git log > /dev/null 2>&1',1)
+        shellRule.setReturnValue('git log > /dev/null 2>&1',1)
 
         jsr.step.getCulprits(
             [
@@ -99,7 +99,7 @@ user3@domain.com noreply+github@domain.com'''
     @Test
     void testCulpritsWithoutGitCommit() throws Exception {
 
-        jscr.setReturnValue('git log > /dev/null 2>&1',1)
+        shellRule.setReturnValue('git log > /dev/null 2>&1',1)
 
         jsr.step.getCulprits(
             [
@@ -116,7 +116,7 @@ user3@domain.com noreply+github@domain.com'''
     @Test
     void testCulpritsWithoutBranch() throws Exception {
 
-        jscr.setReturnValue('git log > /dev/null 2>&1',1)
+        shellRule.setReturnValue('git log > /dev/null 2>&1',1)
 
         jsr.step.getCulprits(
             [
@@ -196,7 +196,7 @@ user3@domain.com noreply+github@domain.com'''
             return null
         })
 
-        jscr.setReturnValue("git log -0 --pretty=format:'%ae %ce'", 'user2@domain.com user3@domain.com')
+        shellRule.setReturnValue("git log -0 --pretty=format:'%ae %ce'", 'user2@domain.com user3@domain.com')
 
         jsr.step.mailSendNotification(
             script: nullScript,
@@ -226,7 +226,7 @@ user3@domain.com noreply+github@domain.com'''
             return null
         })
 
-        jscr.setReturnValue("git log -0 --pretty=format:'%ae %ce'", 'user2@domain.com user3@domain.com')
+        shellRule.setReturnValue("git log -0 --pretty=format:'%ae %ce'", 'user2@domain.com user3@domain.com')
 
         jsr.step.mailSendNotification(
             script: nullScript,

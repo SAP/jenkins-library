@@ -12,7 +12,7 @@ import static org.junit.Assert.assertThat
 class GaugeExecuteTestsTest extends BasePiperTest {
     private JenkinsStepRule jsr = new JenkinsStepRule(this)
     private JenkinsLoggingRule jlr = new JenkinsLoggingRule(this)
-    private JenkinsShellCallRule jscr = new JenkinsShellCallRule(this)
+    private JenkinsShellCallRule shellRule = new JenkinsShellCallRule(this)
     private JenkinsEnvironmentRule jer = new JenkinsEnvironmentRule(this)
     private ExpectedException thrown = ExpectedException.none()
 
@@ -20,7 +20,7 @@ class GaugeExecuteTestsTest extends BasePiperTest {
     public RuleChain rules = Rules
         .getCommonRules(this)
         .around(new JenkinsReadYamlRule(this))
-        .around(jscr)
+        .around(shellRule)
         .around(jlr)
         .around(jer)
         .around(jsr)
@@ -47,7 +47,7 @@ class GaugeExecuteTestsTest extends BasePiperTest {
             juStabUtils: utils,
             testServerUrl: 'http://test.url'
         )
-        assertThat(jscr.shell, hasItem(stringContainsInOrder([
+        assertThat(shellRule.shell, hasItem(stringContainsInOrder([
             'export HOME=${HOME:-$(pwd)}',
             'if [ "$HOME" = "/" ]; then export HOME=$(pwd); fi',
             'export PATH=$HOME/bin/gauge:$PATH',
@@ -77,7 +77,7 @@ class GaugeExecuteTestsTest extends BasePiperTest {
             juStabUtils: utils,
             testOptions: 'testSpec'
         )
-        assertThat(jscr.shell, hasItem(stringContainsInOrder([
+        assertThat(shellRule.shell, hasItem(stringContainsInOrder([
             'gauge install js',
             'gauge run testSpec'
         ])))

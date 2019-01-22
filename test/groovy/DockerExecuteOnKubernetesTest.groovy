@@ -25,7 +25,7 @@ import static org.junit.Assert.assertFalse
 class DockerExecuteOnKubernetesTest extends BasePiperTest {
     private ExpectedException exception = ExpectedException.none()
     private JenkinsDockerExecuteRule jder = new JenkinsDockerExecuteRule(this)
-    private JenkinsShellCallRule jscr = new JenkinsShellCallRule(this)
+    private JenkinsShellCallRule shellRule = new JenkinsShellCallRule(this)
     private JenkinsLoggingRule jlr = new JenkinsLoggingRule(this)
     private JenkinsStepRule jsr = new JenkinsStepRule(this)
 
@@ -35,7 +35,7 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
         .around(new JenkinsReadYamlRule(this))
         .around(exception)
         .around(jder)
-        .around(jscr)
+        .around(shellRule)
         .around(jlr)
         .around(jsr)
     int whichDockerReturnValue = 0

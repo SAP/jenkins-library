@@ -15,7 +15,7 @@ class BatsExecuteTestsTest extends BasePiperTest {
     private ExpectedException thrown = ExpectedException.none()
     private JenkinsStepRule jsr = new JenkinsStepRule(this)
     private JenkinsLoggingRule jlr = new JenkinsLoggingRule(this)
-    private JenkinsShellCallRule jscr = new JenkinsShellCallRule(this)
+    private JenkinsShellCallRule shellRule = new JenkinsShellCallRule(this)
     private JenkinsDockerExecuteRule jder = new JenkinsDockerExecuteRule(this)
 
     @Rule
@@ -24,7 +24,7 @@ class BatsExecuteTestsTest extends BasePiperTest {
         .around(new JenkinsReadYamlRule(this))
         .around(thrown)
         .around(jder)
-        .around(jscr)
+        .around(shellRule)
         .around(jlr)
         .around(jsr)
 
@@ -57,15 +57,15 @@ class BatsExecuteTestsTest extends BasePiperTest {
         // asserts
         assertThat(withEnvArgs, hasItem('IMAGE_NAME=test/image'))
         assertThat(withEnvArgs, hasItem('CONTAINER_NAME=test-container'))
-        assertThat(jscr.shell, hasItem('git clone https://github.com/bats-core/bats-core.git'))
-        assertThat(jscr.shell, hasItem('bats-core/bin/bats --recursive --tap src/test > \'TEST-testPackage.tap\''))
-        assertThat(jscr.shell, hasItem('cat \'TEST-testPackage.tap\''))
+        assertThat(shellRule.shell, hasItem('git clone https://github.com/bats-core/bats-core.git'))
+        assertThat(shellRule.shell, hasItem('bats-core/bin/bats --recursive --tap src/test > \'TEST-testPackage.tap\''))
+        assertThat(shellRule.shell, hasItem('cat \'TEST-testPackage.tap\''))
 
         assertThat(jder.dockerParams.dockerImage, is('node:8-stretch'))
         assertThat(jder.dockerParams.dockerWorkspace, is('/home/node'))
 
-        assertThat(jscr.shell, hasItem('npm install tap-xunit -g'))
-        assertThat(jscr.shell, hasItem('cat \'TEST-testPackage.tap\' | tap-xunit --package=\'testPackage\' > TEST-testPackage.xml'))
+        assertThat(shellRule.shell, hasItem('npm install tap-xunit -g'))
+        assertThat(shellRule.shell, hasItem('cat \'TEST-testPackage.tap\' | tap-xunit --package=\'testPackage\' > TEST-testPackage.xml'))
 
         assertJobStatusSuccess()
     }
