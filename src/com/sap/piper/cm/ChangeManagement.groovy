@@ -257,10 +257,17 @@ public class ChangeManagement implements Serializable {
             passwordVariable: 'password',
             usernameVariable: 'username')]) {
 
+            Map shArgs = [:]
+
+            if(returnStdout)
+                shArgs.put('returnStdout', true)
+            else
+                shArgs.put('returnStatus', true)
+
             if(type == BackendType.RFC) {
 
-                Map shArgs = [returnStatus: true,
-                              'script': command]
+                shArgs.script = command
+
                 args = args.plus([
                     "--env ABAP_DEVELOPMENT_SERVER=${endpoint}",
                     "--env ABAP_DEVELOPMENT_USER=${script.username}",
@@ -286,13 +293,7 @@ public class ChangeManagement implements Serializable {
                     command, args,
                     clientOpts)
 
-                Map shArgs = [:]
-                if(returnStdout)
-                    shArgs.put('returnStdout', true)
-                else
-                    shArgs.put('returnStatus', true)
-
-                shArgs.put('script', cmScript)
+                shArgs.script = cmScript
 
                 // user and password are masked by withCredentials
                 script.echo """[INFO] Executing command line: "${cmScript}"."""
