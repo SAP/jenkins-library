@@ -13,13 +13,13 @@ import static org.junit.Assert.assertTrue
 
 class SbtArtifactVersioningTest extends BasePiperTest{
 
-    JenkinsReadJsonRule jrjr = new JenkinsReadJsonRule(this, 'test/resources/versioning/SbtArtifactVersioning/')
+    JenkinsReadJsonRule readJsonRule = new JenkinsReadJsonRule(this, 'test/resources/versioning/SbtArtifactVersioning/')
     JenkinsWriteJsonRule jwjr = new JenkinsWriteJsonRule(this)
 
     @Rule
     public RuleChain ruleChain = Rules
         .getCommonRules(this)
-        .around(jrjr)
+        .around(readJsonRule)
         .around(jwjr)
 
     @Test

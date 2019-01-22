@@ -13,13 +13,13 @@ import static org.junit.Assert.assertTrue
 
 class DlangArtifactVersioningTest extends BasePiperTest{
 
-    JenkinsReadJsonRule jrjr = new JenkinsReadJsonRule(this, 'test/resources/versioning/DlangArtifactVersioning/')
+    JenkinsReadJsonRule readJsonRule = new JenkinsReadJsonRule(this, 'test/resources/versioning/DlangArtifactVersioning/')
     JenkinsWriteJsonRule jwjr = new JenkinsWriteJsonRule(this)
 
     @Rule
     public RuleChain ruleChain = Rules
         .getCommonRules(this)
-        .around(jrjr)
+        .around(readJsonRule)
         .around(jwjr)
 
     @Test
