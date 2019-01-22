@@ -116,7 +116,7 @@ void call(Map parameters = [:], body) {
             if (executeInsideDocker && config.dockerImage) {
                 utils.unstashAll(config.stashContent)
                 def image = docker.image(config.dockerImage)
-//                image.pull()
+                image.pull()
                 if (!config.sidecarImage) {
                     image.inside(getDockerOptions(config.dockerEnvVars, config.dockerVolumeBind, config.dockerOptions)) {
                         body()
@@ -125,8 +125,8 @@ void call(Map parameters = [:], body) {
                     def networkName = "sidecar-${UUID.randomUUID()}"
                     sh "docker network create ${networkName}"
                     try{
-//                        def sidecarImage = docker.image(config.sidecarImage)
-//                        sidecarImage.pull()
+                        def sidecarImage = docker.image(config.sidecarImage)
+                        sidecarImage.pull()
                         config.sidecarOptions = config.sidecarOptions?:[]
                         if(config.sidecarName)
                             config.sidecarOptions.add("--network-alias ${config.sidecarName}")
