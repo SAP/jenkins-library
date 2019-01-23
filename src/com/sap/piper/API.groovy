@@ -1,9 +1,9 @@
-package com.sap.piper;
+package com.sap.piper
 
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
+import java.lang.annotation.ElementType
+import java.lang.annotation.Retention
+import java.lang.annotation.RetentionPolicy
+import java.lang.annotation.Target
 
 /**
  * Methods or classes annotated with this annotation are used outside
@@ -16,5 +16,8 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 @Target([ElementType.METHOD, ElementType.TYPE])
 @interface API {
-    boolean deprecated() default false;
+    /**
+     * API marked as deprecated should not be used and moved to non-deprecated API.
+     */
+    boolean deprecated() default false
 }
