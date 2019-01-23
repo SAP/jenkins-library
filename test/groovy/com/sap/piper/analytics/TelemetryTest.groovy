@@ -35,7 +35,7 @@ class TelemetryTest extends BasePiperTest {
 
     @Before
     void setup() {
-        Telemetry.clearInstance()
+        Telemetry.instance = null
         parameters = [:]
     }
 
