@@ -59,8 +59,7 @@ void call(Map parameters = [:], body) {
 def getOptions(config) {
     return [name      : 'dynamic-agent-' + config.uniqueId,
             label     : config.uniqueId,
-            containers: getContainerList(config),
-            alwaysPullImage: config.alwaysPullImage]
+            containers: getContainerList(config)]
 }
 
 void executeOnPod(Map config, utils, Closure body) {
@@ -140,7 +139,7 @@ private List getContainerList(config) {
         def templateParameters = [
             name: containerName.toLowerCase(),
             image: imageName,
-            alwaysPullImage: true,
+            alwaysPullImage: config.alwaysPullImage,
             envVars: getContainerEnvs(config, imageName)
         ]
 
