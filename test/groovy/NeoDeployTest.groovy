@@ -83,6 +83,7 @@ class NeoDeployTest extends BasePiperTest {
 
         helper.registerAllowedMethod('dockerExecute', [Map, Closure], null)
         helper.registerAllowedMethod('fileExists', [String], { s -> return new File(workspacePath, s).exists() })
+        helper.registerAllowedMethod('pwd', [], { return workspacePath })
         mockShellCommands()
 
         nullScript.commonPipelineEnvironment.configuration = [steps: [neoDeploy: [neo: [host: 'test.deploy.host.com', account: 'trialuser123']]]]

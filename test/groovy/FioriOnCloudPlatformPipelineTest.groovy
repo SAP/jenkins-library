@@ -105,6 +105,7 @@ class FioriOnCloudPlatformPipelineTest extends BasePiperTest {
         // to be able to extend the path we have to have some initial value.
         binding.setVariable('PATH', '/usr/bin')
 
+        helper.registerAllowedMethod('pwd', [], { return "./" })
     }
 
     @Test
