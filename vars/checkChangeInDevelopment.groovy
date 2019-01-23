@@ -1,12 +1,12 @@
 import static com.sap.piper.Prerequisites.checkScript
 
+import com.sap.piper.GenerateDocumentation
 import com.sap.piper.GitUtils
 import com.sap.piper.Utils
 import groovy.transform.Field
 import hudson.AbortException
 
 import com.sap.piper.ConfigurationHelper
-import com.sap.piper.ConfigurationMerger
 import com.sap.piper.cm.BackendType
 import com.sap.piper.cm.ChangeManagement
 import com.sap.piper.cm.ChangeManagementException
@@ -35,8 +35,8 @@ import static com.sap.piper.cm.StepHelpers.getBackendTypeAndLogInfoIfCMIntegrati
  *
  * By default the git commit messages between `origin/master` and `HEAD` are scanned for a line like `ChangeDocument : <changeDocumentId>`. The commit
  * range and the pattern can be configured. For details see 'parameters' table.
- *
  */
+@GenerateDocumentation
 void call(parameters = [:]) {
 
     handlePipelineStepErrors (stepName: STEP_NAME, stepParameters: parameters) {
@@ -94,8 +94,11 @@ void call(parameters = [:]) {
               */
             .withMandatoryProperty('changeManagement/endpoint')
 
-        new Utils().pushToSWA([step: STEP_NAME,
-                                stepParam1: parameters?.script == null], configuration)
+        new Utils().pushToSWA([
+            step: STEP_NAME,
+            stepParamKey1: 'scriptMissing',
+            stepParam1: parameters?.script == null
+        ], configuration)
 
         def changeId = getChangeDocumentId(cm, script, configuration)
 

@@ -1,10 +1,10 @@
 #!groovy
+import com.sap.piper.JenkinsUtils
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.ExpectedException
 import org.junit.rules.RuleChain
-import org.yaml.snakeyaml.Yaml
 import util.BasePiperTest
 import util.JenkinsCredentialsRule
 import util.JenkinsEnvironmentRule
@@ -16,9 +16,11 @@ import util.JenkinsWriteFileRule
 import util.JenkinsReadYamlRule
 import util.Rules
 
+import static org.hamcrest.Matchers.stringContainsInOrder
 import static org.junit.Assert.assertThat
 
 import static org.hamcrest.Matchers.hasItem
+import static org.hamcrest.Matchers.is
 import static org.hamcrest.Matchers.not
 import static org.hamcrest.Matchers.hasEntry
 import static org.hamcrest.Matchers.containsString
@@ -34,6 +36,14 @@ class CloudFoundryDeployTest extends BasePiperTest {
     private JenkinsEnvironmentRule jer = new JenkinsEnvironmentRule(this)
     private JenkinsReadYamlRule jryr = new JenkinsReadYamlRule(this)
 
+    private writeInfluxMap = [:]
+
+    class JenkinsUtilsMock extends JenkinsUtils {
+        def isJobStartedByUser() {
+            return true
+        }
+    }
+
     @Rule
     public RuleChain rules = Rules
         .getCommonRules(this)
@@ -46,6 +56,13 @@ class CloudFoundryDeployTest extends BasePiperTest {
         .around(jer)
         .around(new JenkinsCredentialsRule(this).withCredentials('test_cfCredentialsId', 'test_cf', '********'))
         .around(jsr) // needs to be activated after jedr, otherwise executeDocker is not mocked
+
+    @Before
+    void init() {
+        helper.registerAllowedMethod('influxWriteData', [Map.class], {m ->
+            writeInfluxMap = m
+        })
+    }
 
     @Test
     void testNoTool() throws Exception {
@@ -69,6 +86,7 @@ class CloudFoundryDeployTest extends BasePiperTest {
         jsr.step.cloudFoundryDeploy([
             script: nullScript,
             juStabUtils: utils,
+            jenkinsUtilsStub: new JenkinsUtilsMock(),
             deployTool: '',
             stageName: 'acceptance',
         ])
@@ -97,6 +115,7 @@ class CloudFoundryDeployTest extends BasePiperTest {
         jsr.step.cloudFoundryDeploy([
             script: nullScript,
             juStabUtils: utils,
+            jenkinsUtilsStub: new JenkinsUtilsMock(),
             deployTool: 'notAvailable',
             stageName: 'acceptance'
         ])
@@ -114,6 +133,7 @@ class CloudFoundryDeployTest extends BasePiperTest {
         jsr.step.cloudFoundryDeploy([
             script: nullScript,
             juStabUtils: utils,
+            jenkinsUtilsStub: new JenkinsUtilsMock(),
             deployTool: 'cf_native',
             cfOrg: 'testOrg',
             cfSpace: 'testSpace',
@@ -140,6 +160,7 @@ class CloudFoundryDeployTest extends BasePiperTest {
         jsr.step.cloudFoundryDeploy([
             script: nullScript,
             juStabUtils: utils,
+            jenkinsUtilsStub: new JenkinsUtilsMock(),
             deployTool: 'cf_native',
             cfApiEndpoint: 'https://customApi',
             cfOrg: 'testOrg',
@@ -162,6 +183,7 @@ class CloudFoundryDeployTest extends BasePiperTest {
         jsr.step.cloudFoundryDeploy([
             script: nullScript,
             juStabUtils: utils,
+            jenkinsUtilsStub: new JenkinsUtilsMock(),
             deployTool: 'cf_native',
             cloudFoundry: [
                 org: 'testOrg',
@@ -192,6 +214,7 @@ class CloudFoundryDeployTest extends BasePiperTest {
         jsr.step.cloudFoundryDeploy([
             script: nullScript,
             juStabUtils: utils,
+            jenkinsUtilsStub: new JenkinsUtilsMock(),
             deployTool: 'cf_native',
             cfOrg: 'testOrg',
             cfSpace: 'testSpace',
@@ -218,6 +241,7 @@ class CloudFoundryDeployTest extends BasePiperTest {
         jsr.step.cloudFoundryDeploy([
             script: nullScript,
             juStabUtils: utils,
+            jenkinsUtilsStub: new JenkinsUtilsMock(),
             deployTool: 'cf_native',
             cfOrg: 'testOrg',
             cfSpace: 'testSpace',
@@ -234,6 +258,7 @@ class CloudFoundryDeployTest extends BasePiperTest {
         jsr.step.cloudFoundryDeploy([
             script: nullScript,
             juStabUtils: utils,
+            jenkinsUtilsStub: new JenkinsUtilsMock(),
             deployTool: 'cf_native',
             deployType: 'blue-green',
             cfOrg: 'testOrg',
@@ -260,6 +285,7 @@ class CloudFoundryDeployTest extends BasePiperTest {
         jsr.step.cloudFoundryDeploy([
             script: nullScript,
             juStabUtils: utils,
+            jenkinsUtilsStub: new JenkinsUtilsMock(),
             deployTool: 'cf_native',
             deployType: 'blue-green',
             keepOldInstance: false,
@@ -288,6 +314,7 @@ class CloudFoundryDeployTest extends BasePiperTest {
         jsr.step.cloudFoundryDeploy([
             script: nullScript,
             juStabUtils: utils,
+            jenkinsUtilsStub: new JenkinsUtilsMock(),
             deployTool: 'cf_native',
             deployType: 'blue-green',
             keepOldInstance: true,
@@ -315,6 +342,7 @@ class CloudFoundryDeployTest extends BasePiperTest {
         jsr.step.cloudFoundryDeploy([
             script: nullScript,
             juStabUtils: utils,
+            jenkinsUtilsStub: new JenkinsUtilsMock(),
             deployTool: 'cf_native',
             deployType: 'standard',
             keepOldInstance: true,
@@ -340,6 +368,7 @@ class CloudFoundryDeployTest extends BasePiperTest {
         jsr.step.cloudFoundryDeploy([
             script: nullScript,
             juStabUtils: utils,
+            jenkinsUtilsStub: new JenkinsUtilsMock(),
             deployTool: 'cf_native',
             deployType: 'blue-green',
             cfOrg: 'testOrg',
@@ -355,6 +384,7 @@ class CloudFoundryDeployTest extends BasePiperTest {
         jsr.step.cloudFoundryDeploy([
             script: nullScript,
             juStabUtils: utils,
+            jenkinsUtilsStub: new JenkinsUtilsMock(),
             cfOrg: 'testOrg',
             cfSpace: 'testSpace',
             cfCredentialsId: 'test_cfCredentialsId',
@@ -368,4 +398,55 @@ class CloudFoundryDeployTest extends BasePiperTest {
         assertThat(jscr.shell, hasItem(containsString('cf deploy target/test.mtar -f')))
         assertThat(jscr.shell, hasItem(containsString('cf logout')))
     }
+
+    @Test
+    void testMtaBlueGreen() {
+
+        jsr.step.cloudFoundryDeploy([
+            script: nullScript,
+            juStabUtils: utils,
+            jenkinsUtilsStub: new JenkinsUtilsMock(),
+            cfOrg: 'testOrg',
+            cfSpace: 'testSpace',
+            cfCredentialsId: 'test_cfCredentialsId',
+            deployTool: 'mtaDeployPlugin',
+            deployType: 'blue-green',
+            mtaPath: 'target/test.mtar'
+        ])
+
+        assertThat(jscr.shell, hasItem(stringContainsInOrder(["cf login -u test_cf", 'cf bg-deploy', '-f', '--no-confirm'])))
+    }
+
+    @Test
+    void testInfluxReporting() {
+        jryr.registerYaml('test.yml', "applications: [[name: 'manifestAppName']]")
+        helper.registerAllowedMethod('writeYaml', [Map], { Map parameters ->
+            generatedFile = parameters.file
+            data = parameters.data
+        })
+        nullScript.commonPipelineEnvironment.setArtifactVersion('1.2.3')
+        jsr.step.cloudFoundryDeploy([
+            script: nullScript,
+            juStabUtils: utils,
+            jenkinsUtilsStub: new JenkinsUtilsMock(),
+            deployTool: 'cf_native',
+            cfOrg: 'testOrg',
+            cfSpace: 'testSpace',
+            cfCredentialsId: 'test_cfCredentialsId',
+            cfAppName: 'testAppName',
+            cfManifest: 'test.yml'
+        ])
+        // asserts
+        assertThat(writeInfluxMap.customDataMap.deployment_data.artifactUrl, is('n/a'))
+        assertThat(writeInfluxMap.customDataMap.deployment_data.deployTime, containsString(new Date().format( 'MMM dd, yyyy')))
+        assertThat(writeInfluxMap.customDataMap.deployment_data.jobTrigger, is('USER'))
+
+        assertThat(writeInfluxMap.customDataMapTags.deployment_data.artifactVersion, is('1.2.3'))
+        assertThat(writeInfluxMap.customDataMapTags.deployment_data.deployUser, is('test_cf'))
+        assertThat(writeInfluxMap.customDataMapTags.deployment_data.deployResult, is('SUCCESS'))
+        assertThat(writeInfluxMap.customDataMapTags.deployment_data.cfApiEndpoint, is('https://api.cf.eu10.hana.ondemand.com'))
+        assertThat(writeInfluxMap.customDataMapTags.deployment_data.cfOrg, is('testOrg'))
+        assertThat(writeInfluxMap.customDataMapTags.deployment_data.cfSpace, is('testSpace'))
+    }
+
 }

@@ -22,6 +22,7 @@ nav:
         - mavenExecute: steps/mavenExecute.md
         - mtaBuild: steps/mtaBuild.md
         - neoDeploy: steps/neoDeploy.md
+        - newmanExecute: steps/newmanExecute.md
         - pipelineExecute: steps/pipelineExecute.md
         - pipelineRestartSteps: steps/pipelineRestartSteps.md
         - pipelineStashFiles: steps/pipelineStashFiles.md
@@ -34,6 +35,9 @@ nav:
         - transportRequestCreate: steps/transportRequestCreate.md
         - transportRequestRelease:  steps/transportRequestRelease.md
         - transportRequestUploadFile: steps/transportRequestUploadFile.md
+    - 'Scenarios':
+        - 'Develop Hybrid Applications with Jenkins and SAP Solution Manager': scenarios/changeManagement.md
+        - 'Create a Pipeline for SAP UI5 or SAP Fiori on SAP Cloud Platform': scenarios/ui5-sap-cp/Readme.md
     - 'Required Plugins': jenkins/requiredPlugins.md
 
 theme:
@@ -56,6 +60,6 @@ markdown_extensions:
 extra_css:
     - 'css/extra.css'
 edit_uri: edit/master/documentation/docs
-docs_dir: docs
+docs_dir: docs-tmp
 site_dir: docs-gen
 repo_url: https://github.com/SAP/jenkins-library

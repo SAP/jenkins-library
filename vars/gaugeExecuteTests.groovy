@@ -47,7 +47,13 @@ void call(Map parameters = [:]) {
             .dependingOn('buildTool').mixin('testOptions')
             .use()
 
-        utils.pushToSWA([step: STEP_NAME, stepParam1: config.buildTool, stepParam2: config.dockerName], config)
+        utils.pushToSWA([
+            step: STEP_NAME,
+            stepParamKey1: 'buildTool',
+            stepParam1: config.buildTool,
+            stepParamKey2: 'dockerName',
+            stepParam2: config.dockerName
+        ], config)
 
         if(!config.dockerEnvVars.TARGET_SERVER_URL && config.testServerUrl)
             config.dockerEnvVars.TARGET_SERVER_URL = config.testServerUrl
