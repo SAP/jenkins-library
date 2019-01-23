@@ -10,10 +10,11 @@ import java.lang.annotation.Target;
  * this shared, e.g. in other shared libraries. In case there is the
  * need for changing this methods this should be clearly announced
  * in order to get a consensus about the change and in order to allow
- * users of the correponding class/method to adapt to the change accordingly.
+ * users of the corresponding class/method to adapt to the change accordingly.
  */
 
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.METHOD, ElementType.TYPE})
 public @interface API {
+    boolean deprecated() default false;
 }
