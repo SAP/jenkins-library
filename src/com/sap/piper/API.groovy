@@ -14,7 +14,7 @@ import java.lang.annotation.Target;
  */
 
 @Retention(RetentionPolicy.RUNTIME)
-@Target({ElementType.METHOD, ElementType.TYPE})
-public @interface API {
+@Target([ElementType.METHOD, ElementType.TYPE])
+@interface API {
     boolean deprecated() default false;
 }
