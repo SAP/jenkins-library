@@ -77,15 +77,10 @@ def unstashAll(stashContent) {
 
 @NonCPS
 def generateSha1(input) {
-    MessageDigest md = MessageDigest.getInstance("SHA-1")
-    byte[] hashInBytes = md.digest(input.getBytes(StandardCharsets.UTF_8))
-
-    // bytes to hex
-    StringBuilder sb = new StringBuilder()
-    for (byte b : hashInBytes) {
-        sb.append(String.format("%02x", b))
-    }
-    return sb.toString()
+    return MessageDigest
+        .getInstance("SHA-1")
+        .digest(input.getBytes(StandardCharsets.UTF_8))
+        .encodeHex().toString()
 }
 
 void pushToSWA(Map parameters, Map config) {
