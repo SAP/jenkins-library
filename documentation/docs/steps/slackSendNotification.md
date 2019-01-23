@@ -13,11 +13,9 @@ Notification contains:
 * Jenkins Build Number;
 * Jenkins Build URL.
 
-
 ## Prerequisites
 
 Installed and configured [Jenkins Slack plugin](https://github.com/jenkinsci/slack-plugin).
-
 
 ## Example
 
@@ -50,7 +48,7 @@ try {
 |credentialsId|no|||
 |message|no|||
 
-### Details:
+### Details
 
 * `script` defines the global script environment of the Jenkinsfile run. Typically `this` is passed to this parameter. This allows the function to access the [`commonPipelineEnvironment`](commonPipelineEnvironment.md) for storing the measured duration.
 * `baseUrl` allows overriding the Slack Plugin Integration Base Url specified in the global configuration.
@@ -58,7 +56,6 @@ try {
 * If `channel` is defined another than the default channel will be used.
 * `credentialsId` defines the Jenkins credentialId which holds the Slack token
 * With parameter `message` a custom message can be defined which is sent into the Slack channel.
-
 
 ## Step configuration
 
@@ -74,5 +71,3 @@ In following sections the configuration is possible:
 |color||X|X|
 |credentialsId||X|X|
 |message||X|X|
-
-
