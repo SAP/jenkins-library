@@ -273,7 +273,6 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
         assertTrue(containersList.contains('mavenexecute'))
         assertTrue(imageList.contains('maven:3.5-jdk-8-alpine'))
         assertTrue(bodyExecuted)
-        assertFalse(alwaysPullImage)
         assertThat(containerCommands.size(), is(1))
     }
 
