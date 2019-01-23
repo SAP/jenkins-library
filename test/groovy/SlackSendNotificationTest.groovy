@@ -14,15 +14,15 @@ import static org.junit.Assert.*
 class SlackSendNotificationTest extends BasePiperTest {
     def slackCallMap = [:]
 
-    private JenkinsLoggingRule jlr = new JenkinsLoggingRule(this)
-    private JenkinsStepRule jsr = new JenkinsStepRule(this)
+    private JenkinsLoggingRule loggingRule = new JenkinsLoggingRule(this)
+    private JenkinsStepRule stepRule = new JenkinsStepRule(this)
 
     @Rule
     public RuleChain ruleChain = Rules
         .getCommonRules(this)
         .around(new JenkinsReadYamlRule(this))
-        .around(jlr)
-        .around(jsr)
+        .around(loggingRule)
+        .around(stepRule)
 
     @Before
     void init() throws Exception {
@@ -31,7 +31,7 @@ class SlackSendNotificationTest extends BasePiperTest {
 
     @Test
     void testNotificationBuildSuccessDefaultChannel() throws Exception {
-        jsr.step.slackSendNotification(script: [currentBuild: [result: 'SUCCESS']])
+        stepRule.step.slackSendNotification(script: [currentBuild: [result: 'SUCCESS']])
         // asserts
         assertEquals('Message not set correctly', 'SUCCESS: Job p <http://build.url|#1>', slackCallMap.message.toString())
         assertNull('Channel not set correctly', slackCallMap.channel)
@@ -41,7 +41,7 @@ class SlackSendNotificationTest extends BasePiperTest {
 
     @Test
     void testNotificationBuildSuccessCustomChannel() throws Exception {
-        jsr.step.slackSendNotification(script: [currentBuild: [result: 'SUCCCESS']], channel: 'Test')
+        stepRule.step.slackSendNotification(script: [currentBuild: [result: 'SUCCCESS']], channel: 'Test')
         // asserts
         assertEquals('Channel not set correctly', 'Test', slackCallMap.channel)
         assertJobStatusSuccess()
@@ -49,7 +49,7 @@ class SlackSendNotificationTest extends BasePiperTest {
 
     @Test
     void testNotificationBuildFailed() throws Exception {
-        jsr.step.slackSendNotification(script: [currentBuild: [result: 'FAILURE']])
+        stepRule.step.slackSendNotification(script: [currentBuild: [result: 'FAILURE']])
         // asserts
         assertEquals('Message not set correctly', 'FAILURE: Job p <http://build.url|#1>', slackCallMap.message.toString())
         assertEquals('Color not set correctly', '#E60000', slackCallMap.color)
@@ -57,15 +57,15 @@ class SlackSendNotificationTest extends BasePiperTest {
 
     @Test
     void testNotificationBuildStatusNull() throws Exception {
-        jsr.step.slackSendNotification(script: [currentBuild: [:]])
+        stepRule.step.slackSendNotification(script: [currentBuild: [:]])
         // asserts
-        assertTrue('Missing build status not detected', jlr.log.contains('currentBuild.result is not set. Skipping Slack notification'))
+        assertTrue('Missing build status not detected', loggingRule.log.contains('currentBuild.result is not set. Skipping Slack notification'))
         assertJobStatusSuccess()
     }
 
     @Test
     void testNotificationCustomMessageAndColor() throws Exception {
-        jsr.step.slackSendNotification(script: [currentBuild: [:]], message: 'Custom Message', color: '#AAAAAA')
+        stepRule.step.slackSendNotification(script: [currentBuild: [:]], message: 'Custom Message', color: '#AAAAAA')
         // asserts
         assertEquals('Custom message not set correctly', 'Custom Message', slackCallMap.message.toString())
         assertEquals('Custom color not set correctly', '#AAAAAA', slackCallMap.color)
@@ -74,7 +74,7 @@ class SlackSendNotificationTest extends BasePiperTest {
 
     @Test
     void testNotificationWithCustomCredentials() throws Exception {
-        jsr.step.slackSendNotification(
+        stepRule.step.slackSendNotification(
             script: [currentBuild: [:]],
             message: 'I am no Message',
             baseUrl: 'https://my.base.url',
