@@ -60,11 +60,11 @@ class ContainerExecuteStructureTestsTest extends BasePiperTest {
         // asserts
         assertThat(jscr.shell, hasItem(allOf(
             stringContainsInOrder(['#!/busybox/sh', 'container-structure-test', '--config']),
-            containsString('--config cst\\test1.yml'),
-            containsString('--config cst\\test2.yml'),
+            containsString("--config cst${File.separator}test1.yml"),
+            containsString("--config cst${File.separator}test2.yml"),
             containsString('--driver docker'),
             containsString('--image myRegistry/myImage:myTag'),
-            containsString('--test-report ./cst-report.json'),
+            containsString('--test-report cst-report.json'),
         )))
         //currently no default Docker image
         assertThat(jedr.dockerParams.dockerImage, is('myRegistry:55555/pathTo/myImage:myTag'))
@@ -90,11 +90,11 @@ class ContainerExecuteStructureTestsTest extends BasePiperTest {
         // asserts
         assertThat(jscr.shell, hasItem(allOf(
             stringContainsInOrder(['#!/bin/sh', 'container-structure-test', '--config']),
-            containsString('--config cst\\test1.yml'),
-            containsString('--config cst\\test2.yml'),
+            containsString("--config cst${File.separator}test1.yml"),
+            containsString("--config cst${File.separator}test2.yml"),
             containsString('--driver tar'),
             containsString('--image myRegistry/myImage:myTag'),
-            containsString('--test-report ./cst-report.json'),
+            containsString('--test-report cst-report.json'),
         )))
         assertThat(jedr.dockerParams.dockerImage, is('myRegistry:55555/pathTo/myImage:myTag'))
         assertThat(jscr.shell, not(hasItem('docker pull myRegistry/myImage:myTag')))

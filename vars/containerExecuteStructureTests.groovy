@@ -87,8 +87,6 @@ void call(Map parameters = [:]) {
 
         utils.pushToSWA([step: STEP_NAME], config)
 
-        if (config.verbose) echo "[${STEP_NAME}] Configuration: ${config}"
-
         config.stashContent = utils.unstashAll(config.stashContent)
 
         List testConfig = findFiles(glob: config.testConfiguration)?.toList()
