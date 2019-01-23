@@ -44,8 +44,11 @@ void call(Map parameters = [:]) {
             .addIfNull('customDataMapTags', script.commonPipelineEnvironment.getInfluxCustomDataMapTags())
             .use()
 
-        new Utils().pushToSWA([step: STEP_NAME,
-                                stepParam1: parameters?.script == null], config)
+        new Utils().pushToSWA([
+            step: STEP_NAME,
+            stepParamKey1: 'scriptMissing',
+            stepParam1: parameters?.script == null
+        ], config)
 
         if (!config.artifactVersion)  {
             //this takes care that terminated builds due to milestone-locking do not cause an error
@@ -79,15 +82,23 @@ InfluxDB data map tags: ${config.customDataMapTags}
 
 private void writeToInflux(config, script){
     if (config.influxServer) {
-        step([
-            $class: 'InfluxDbPublisher',
-            selectedTarget: config.influxServer,
-            customPrefix: config.influxPrefix,
-            customData: config.customData.size()>0 ? config.customData : null,
-            customDataTags: config.customDataTags.size()>0 ? config.customDataTags : null,
-            customDataMap: config.customDataMap.size()>0 ? config.customDataMap : null,
-            customDataMapTags: config.customDataMapTags.size()>0 ? config.customDataMapTags : null
-        ])
+        try {
+            step([
+                $class: 'InfluxDbPublisher',
+                selectedTarget: config.influxServer,
+                customPrefix: config.influxPrefix,
+                customData: config.customData.size()>0 ? config.customData : null,
+                customDataTags: config.customDataTags.size()>0 ? config.customDataTags : null,
+                customDataMap: config.customDataMap.size()>0 ? config.customDataMap : null,
+                customDataMapTags: config.customDataMapTags.size()>0 ? config.customDataMapTags : null
+            ])
+        } catch (NullPointerException e){
+            if(!e.getMessage()){
+                //TODO: catch NPEs as long as https://issues.jenkins-ci.org/browse/JENKINS-55594 is not fixed & released
+                error "[$STEP_NAME] NullPointerException occured, is the correct target defined?"
+            }
+            throw e
+        }
     }
 
     //write results into json file for archiving - also benefitial when no InfluxDB is available yet
