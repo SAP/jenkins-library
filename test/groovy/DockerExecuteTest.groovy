@@ -31,7 +31,7 @@ class DockerExecuteTest extends BasePiperTest {
         .around(jlr)
         .around(jsr)
 
-    int whichDockerReturnValue = 0
+    int dockerPsReturnValue = 0
     def bodyExecuted
     def containerName
 
@@ -41,7 +41,7 @@ class DockerExecuteTest extends BasePiperTest {
         docker = new DockerMock()
         JenkinsUtils.metaClass.static.isPluginActive = {def s -> new PluginMock(s).isActive()}
         binding.setVariable('docker', docker)
-        helper.registerAllowedMethod('sh', [Map.class], {return whichDockerReturnValue})
+        helper.registerAllowedMethod('sh', [Map.class], {return dockerPsReturnValue})
     }
 
     @Test
@@ -105,6 +105,28 @@ class DockerExecuteTest extends BasePiperTest {
     }
 
     @Test
+    void testExecuteInsidePodWithCustomCommandAndShell() throws Exception {
+        Map kubernetesConfig = [:]
+        helper.registerAllowedMethod('dockerExecuteOnKubernetes', [Map.class, Closure.class], {Map config, Closure body ->
+            kubernetesConfig = config
+            return body()
+        })
+        binding.setVariable('env', [ON_K8S: 'true'])
+        jsr.step.dockerExecute(
+            script: nullScript,
+            containerCommand: '/busybox/tail -f /dev/null',
+            containerShell: '/busybox/sh',
+            dockerImage: 'maven:3.5-jdk-8-alpine'
+        ){
+            bodyExecuted = true
+        }
+        assertTrue(jlr.log.contains('Executing inside a Kubernetes Pod'))
+        assertThat(kubernetesConfig.containerCommand, is('/busybox/tail -f /dev/null'))
+        assertThat(kubernetesConfig.containerShell, is('/busybox/sh'))
+        assertTrue(bodyExecuted)
+    }
+
+    @Test
     void testExecuteInsideDockerContainer() throws Exception {
         jsr.step.dockerExecute(script: nullScript, dockerImage: 'maven:3.5-jdk-8-alpine') {
             bodyExecuted = true
@@ -128,14 +150,14 @@ class DockerExecuteTest extends BasePiperTest {
     void testExecuteInsideDockerContainerWithParameters() throws Exception {
         jsr.step.dockerExecute(script: nullScript,
                       dockerImage: 'maven:3.5-jdk-8-alpine',
-                      dockerOptions: '-it',
+                      dockerOptions: '-description=lorem ipsum',
                       dockerVolumeBind: ['my_vol': '/my_vol'],
                       dockerEnvVars: ['http_proxy': 'http://proxy:8000']) {
             bodyExecuted = true
         }
         assertTrue(docker.getParameters().contains('--env https_proxy '))
         assertTrue(docker.getParameters().contains('--env http_proxy=http://proxy:8000'))
-        assertTrue(docker.getParameters().contains('-it'))
+        assertTrue(docker.getParameters().contains('description=lorem\\ ipsum'))
         assertTrue(docker.getParameters().contains('--volume my_vol:/my_vol'))
         assertTrue(bodyExecuted)
     }
@@ -144,23 +166,24 @@ class DockerExecuteTest extends BasePiperTest {
     void testExecuteInsideDockerContainerWithDockerOptionsList() throws Exception {
         jsr.step.dockerExecute(script: nullScript,
             dockerImage: 'maven:3.5-jdk-8-alpine',
-            dockerOptions: ['-it', '--network=my-network'],
+            dockerOptions: ['-it', '--network=my-network', 'description=lorem ipsum'],
             dockerEnvVars: ['http_proxy': 'http://proxy:8000']) {
             bodyExecuted = true
         }
         assertTrue(docker.getParameters().contains('--env http_proxy=http://proxy:8000'))
         assertTrue(docker.getParameters().contains('-it'))
         assertTrue(docker.getParameters().contains('--network=my-network'))
+        assertTrue(docker.getParameters().contains('description=lorem\\ ipsum'))
     }
 
     @Test
     void testDockerNotInstalledResultsInLocalExecution() throws Exception {
-        whichDockerReturnValue = 1
+        dockerPsReturnValue = 1
         jsr.step.dockerExecute(script: nullScript,
             dockerOptions: '-it') {
             bodyExecuted = true
         }
-        assertTrue(jlr.log.contains('No docker environment found'))
+        assertTrue(jlr.log.contains('Cannot connect to docker daemon'))
         assertTrue(jlr.log.contains('Running on local environment'))
         assertTrue(bodyExecuted)
         assertFalse(docker.isImagePulled())

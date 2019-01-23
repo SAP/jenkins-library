@@ -184,7 +184,7 @@ steps:
   healthExecuteCheck:
     healthEndpoint: ''
   influxWriteData:
-    influxServer: 'jenkins'
+    influxServer: ''
   karmaExecuteTests:
     containerPortMappings:
       'node:8-stretch':
@@ -254,7 +254,7 @@ steps:
       git: '**/gitmetadata/**'
       opa5: '**/*.*'
       opensourceConfiguration: '**/srcclr.yml, **/vulas-custom.properties, **/.nsprc, **/.retireignore, **/.retireignore.json, **/.snyk'
-      pipelineConfigAndTests: '.pipeline/*.*'
+      pipelineConfigAndTests: '.pipeline/**'
       securityDescriptor: '**/xs-security.json'
       tests: '**/pom.xml, **/*.json, **/*.xml, **/src/**, **/node_modules/**, **/specs/**, **/env/**, **/*.js'
     stashExcludes:
@@ -340,3 +340,12 @@ steps:
       developmentSystemId: null
   transportRequestUploadFile:
   transportRequestRelease:
+
+  #defaults for stage wrapper
+  piperStageWrapper:
+    projectExtensionsDirectory: '.pipeline/extensions/'
+    globalExtensionsDirectory: ''
+    stageLocking: true
+    nodeLabel: ''
+    stashContent:
+      - 'pipelineConfigAndTests'

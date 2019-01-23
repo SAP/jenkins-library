@@ -49,6 +49,7 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
     def containersList = []
     def imageList = []
     def containerName = ''
+    def containerShell = ''
     def envList = []
     def portList = []
     def containerCommands = []
@@ -261,6 +262,32 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
     }
 
     @Test
+    void testDockerExecuteOnKubernetesWithCustomShell() {
+        jsr.step.dockerExecuteOnKubernetes(
+            script: nullScript,
+            juStabUtils: utils,
+            dockerImage: 'maven:3.5-jdk-8-alpine',
+            containerShell: '/busybox/sh'
+        ) {
+            //nothing to exeute
+        }
+        assertThat(containerShell, is('/busybox/sh'))
+    }
+
+    @Test
+    void testDockerExecuteOnKubernetesWithCustomContainerCommand() {
+        jsr.step.dockerExecuteOnKubernetes(
+            script: nullScript,
+            juStabUtils: utils,
+            dockerImage: 'maven:3.5-jdk-8-alpine',
+            containerCommand: '/busybox/tail -f /dev/null'
+        ) {
+            //nothing to exeute
+        }
+        assertThat(containerCommands, hasItem('/busybox/tail -f /dev/null'))
+    }
+
+    @Test
     void testDockerExecuteOnKubernetesWithSkippedImagePull() throws Exception {
         jsr.step.dockerExecuteOnKubernetes(script: nullScript,
             alwaysPullImage: false,
@@ -276,9 +303,9 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
         assertThat(containerCommands.size(), is(1))
     }
 
-
     private container(options, body) {
         containerName = options.name
+        containerShell = options.shell
         body()
     }
 }

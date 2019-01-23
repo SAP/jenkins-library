@@ -10,6 +10,13 @@ import util.JenkinsStepRule
 import util.JenkinsReadYamlRule
 import util.Rules
 
+import static org.hamcrest.Matchers.allOf
+import static org.hamcrest.Matchers.containsString
+import static org.hamcrest.Matchers.hasKey
+import static org.hamcrest.Matchers.hasValue
+import static org.hamcrest.Matchers.is
+import static org.hamcrest.Matchers.isEmptyOrNullString
+import static org.junit.Assert.assertThat
 import static org.junit.Assert.assertTrue
 import static org.junit.Assert.assertEquals
 
@@ -57,15 +64,18 @@ class InfluxWriteDataTest extends BasePiperTest {
         nullScript.commonPipelineEnvironment.setArtifactVersion('1.2.3')
         jsr.step.influxWriteData(script: nullScript)
 
-        assertTrue(loggingRule.log.contains('Artifact version: 1.2.3'))
+        assertThat(loggingRule.log, containsString('Artifact version: 1.2.3'))
 
-        assertEquals('testInflux', stepMap.selectedTarget)
-        assertEquals(null, stepMap.customPrefix)
-        assertEquals([:], stepMap.customData)
-        assertEquals([pipeline_data: [:], step_data: [:]], stepMap.customDataMap)
+        assertThat(stepMap.selectedTarget, is('testInflux'))
+        assertThat(stepMap.customPrefix, isEmptyOrNullString())
 
-        assertTrue(fileMap.containsKey('jenkins_data.json'))
-        assertTrue(fileMap.containsKey('pipeline_data.json'))
+        assertThat(stepMap.customData, isEmptyOrNullString())
+        assertThat(stepMap.customDataMap, is([pipeline_data: [:], step_data: [:]]))
+
+        assertThat(fileMap, hasKey('jenkins_data.json'))
+        assertThat(fileMap, hasKey('influx_data.json'))
+        assertThat(fileMap, hasKey('jenkins_data_tags.json'))
+        assertThat(fileMap, hasKey('influx_data_tags.json'))
 
         assertJobStatusSuccess()
     }
@@ -79,7 +89,7 @@ class InfluxWriteDataTest extends BasePiperTest {
         assertEquals(0, stepMap.size())
 
         assertTrue(fileMap.containsKey('jenkins_data.json'))
-        assertTrue(fileMap.containsKey('pipeline_data.json'))
+        assertTrue(fileMap.containsKey('influx_data.json'))
 
         assertJobStatusSuccess()
     }
@@ -96,4 +106,59 @@ class InfluxWriteDataTest extends BasePiperTest {
 
         assertJobStatusSuccess()
     }
+
+    @Test
+    void testInfluxWriteDataWrapInNode() throws Exception {
+
+        boolean nodeCalled = false
+        helper.registerAllowedMethod('node', [String.class, Closure.class]) {s, body ->
+            nodeCalled = true
+            return body()
+        }
+
+        helper.registerAllowedMethod("deleteDir", [], null)
+
+        nullScript.commonPipelineEnvironment.setArtifactVersion('1.2.3')
+        jsr.step.influxWriteData(script: nullScript, wrapInNode: true)
+
+        assertThat(nodeCalled, is(true))
+
+    }
+
+    @Test
+    void testInfluxCustomData() {
+        nullScript.commonPipelineEnvironment.setArtifactVersion('1.2.3')
+        jsr.step.influxWriteData(
+            //juStabUtils: utils,
+            script: nullScript,
+            influxServer: 'myInstance',
+            customData: [key1: 'test1'],
+            customDataTags: [tag1: 'testTag1'],
+            customDataMap: [test_data: [key1: 'keyValue1']],
+            customDataMapTags: [test_data: [tag1: 'tagValue1']]
+        )
+        assertThat(stepMap.customData, allOf(hasKey('key1'), hasValue('test1')))
+        assertThat(stepMap.customDataTags, allOf(hasKey('tag1'), hasValue('testTag1')))
+        assertThat(stepMap.customDataMap, hasKey('test_data'))
+        assertThat(stepMap.customDataMapTags, hasKey('test_data'))
+    }
+
+    @Test
+    void testInfluxCustomDataFromCPE() {
+        nullScript.commonPipelineEnvironment.reset()
+        nullScript.commonPipelineEnvironment.setArtifactVersion('1.2.3')
+        nullScript.commonPipelineEnvironment.setInfluxCustomDataTagsEntry('tag1', 'testTag1')
+        nullScript.commonPipelineEnvironment.setInfluxCustomDataMapEntry('test_data', 'key1', 'keyValue1')
+        nullScript.commonPipelineEnvironment.setInfluxCustomDataMapTagsEntry('test_data', 'tag1', 'tagValue1')
+        jsr.step.influxWriteData(
+            //juStabUtils: utils,
+            script: nullScript,
+            influxServer: 'myInstance'
+        )
+        assertThat(stepMap.customData, isEmptyOrNullString())
+        assertThat(stepMap.customDataTags, allOf(hasKey('tag1'), hasValue('testTag1')))
+        assertThat(stepMap.customDataMap, hasKey('test_data'))
+        assertThat(stepMap.customDataMapTags, hasKey('test_data'))
+    }
+
 }

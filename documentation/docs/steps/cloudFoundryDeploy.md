@@ -2,7 +2,7 @@
 
 ## Description
 
-Application will be deployed to a test or production space within Cloud Foundry.
+The application will be deployed to a test or production space within Cloud Foundry.
 Deployment can be done
 
 * in a standard way
@@ -14,7 +14,7 @@ Deployment can be done
     * Standard `cf push` and [Bluemix blue-green plugin](https://github.com/bluemixgaragelondon/cf-blue-green-deploy#how-to-use)
     * [MTA CF CLI Plugin](https://github.com/cloudfoundry-incubator/multiapps-cli-plugin)
 
-## Prerequsites
+## Prerequisites
 
 * Cloud Foundry organization, space and deployment user are available
 * Credentials for deployment have been configured in Jenkins with a dedicated Id
@@ -32,7 +32,7 @@ Deployment can be done
 | keepOldInstance | no | false | true, false |
 | dockerImage | no | s4sdk/docker-cf-cli |  |
 | dockerWorkspace | no | /home/piper |  |
-| mtaDeployParameters |  | -f |  |
+| mtaDeployParameters |  | for _deployType:standard_ `-f`<br />for _deployType:blue-green_ `-f --no-confirm` |  |
 | mtaExtensionDescriptor | no | '' |  |
 | mtaPath | no | '' |  |
 | smokeTestScript | no | blueGreenCheckScript.sh (provided by library). <br />Can be overwritten using config property 'smokeTestScript' |  |
