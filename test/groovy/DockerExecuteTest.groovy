@@ -141,14 +141,14 @@ class DockerExecuteTest extends BasePiperTest {
     void testExecuteInsideDockerContainerWithParameters() throws Exception {
         jsr.step.dockerExecute(script: nullScript,
                       dockerImage: 'maven:3.5-jdk-8-alpine',
-                      dockerOptions: '-it',
+                      dockerOptions: '-description=lorem ipsum',
                       dockerVolumeBind: ['my_vol': '/my_vol'],
                       dockerEnvVars: ['http_proxy': 'http://proxy:8000']) {
             bodyExecuted = true
         }
         assertTrue(docker.getParameters().contains('--env https_proxy '))
         assertTrue(docker.getParameters().contains('--env http_proxy=http://proxy:8000'))
-        assertTrue(docker.getParameters().contains('-it'))
+        assertTrue(docker.getParameters().contains('description=lorem\\ ipsum'))
         assertTrue(docker.getParameters().contains('--volume my_vol:/my_vol'))
         assertTrue(bodyExecuted)
     }
@@ -157,13 +157,14 @@ class DockerExecuteTest extends BasePiperTest {
     void testExecuteInsideDockerContainerWithDockerOptionsList() throws Exception {
         jsr.step.dockerExecute(script: nullScript,
             dockerImage: 'maven:3.5-jdk-8-alpine',
-            dockerOptions: ['-it', '--network=my-network'],
+            dockerOptions: ['-it', '--network=my-network', 'description=lorem ipsum'],
             dockerEnvVars: ['http_proxy': 'http://proxy:8000']) {
             bodyExecuted = true
         }
         assertTrue(docker.getParameters().contains('--env http_proxy=http://proxy:8000'))
         assertTrue(docker.getParameters().contains('-it'))
         assertTrue(docker.getParameters().contains('--network=my-network'))
+        assertTrue(docker.getParameters().contains('description=lorem\\ ipsum'))
     }
 
     @Test
