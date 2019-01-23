@@ -106,12 +106,6 @@ void call(Map parameters = [:], body) {
                 executeInsideDocker = false
             }
 
-            def returnCode = sh script: 'which docker > /dev/null', returnStatus: true
-            if (returnCode != 0) {
-                echo "[WARNING][${STEP_NAME}] No docker environment found (command 'which docker' did not return with '0'). Configured docker image '${config.dockerImage}' will not be used."
-                executeInsideDocker = false
-            }
-
             returnCode = sh script: 'docker ps -q > /dev/null', returnStatus: true
             if (returnCode != 0) {
                 echo "[WARNING][$STEP_NAME] Cannot connect to docker daemon (command 'docker ps' did not return with '0'). Configured docker image '${config.dockerImage}' will not be used."
@@ -196,10 +190,11 @@ private getDockerOptions(Map dockerEnvVars, Map dockerVolumeBind, def dockerOpti
 
     if (dockerOptions) {
         if (dockerOptions instanceof CharSequence) {
-            options.add(dockerOptions.toString())
-        } else if (dockerOptions instanceof List) {
+            dockerOptions = [dockerOptions]
+        }
+        if (dockerOptions instanceof List) {
             for (String option : dockerOptions) {
-                options.add "${option}"
+                options << escapeBlanks(option)
             }
         } else {
             throw new IllegalArgumentException("Unexpected type for dockerOptions. Expected was either a list or a string. Actual type was: '${dockerOptions.getClass()}'")
@@ -227,4 +222,23 @@ def getContainerDefined(config) {
 
 boolean isKubernetes() {
     return Boolean.valueOf(env.ON_K8S)
+}
+
+/**
+ * Escapes blanks for values in key/value pairs
+ * E.g. <code>description=Lorem ipsum</code> is
+ * changed to <code>description=Lorem\ ipsum</code>.
+ */
+@NonCPS
+def escapeBlanks(def s) {
+
+    def EQ='='
+    def parts=s.split(EQ)
+
+    if(parts.length == 2) {
+        parts[1]=parts[1].replaceAll(' ', '\\\\ ')
+        s = parts.join(EQ)
+    }
+
+    return s
 }

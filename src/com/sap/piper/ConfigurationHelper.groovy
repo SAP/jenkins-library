@@ -112,6 +112,7 @@ class ConfigurationHelper implements Serializable {
     Map use(){
         handleValidationFailures()
         MapUtils.traverse(config, { v -> (v instanceof GString) ? v.toString() : v })
+        if(config.verbose) step.echo "[${name}] Configuration: ${config}"
         return config
     }
 
