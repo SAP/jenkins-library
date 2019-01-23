@@ -7,20 +7,14 @@ class Telemetry implements Serializable{
 
     protected static Telemetry instance
 
-    protected List listenerList
+    protected List listenerList = []
 
-    protected Telemetry(){
-        this.listenerList = []
-    }
-
-    protected static Telemetry createInstance(){
-        instance = new Telemetry()
-    }
+    protected Telemetry(){}
 
     @NonCPS
     protected static Telemetry getInstance(){
         if(!instance) {
-            createInstance()
+            instance = new Telemetry()
 
             registerListener({ steps, payload ->
                 piperOsDefaultReporting(steps, payload)
