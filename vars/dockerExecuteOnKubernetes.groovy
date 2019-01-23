@@ -22,7 +22,7 @@ import hudson.AbortException
     'dockerEnvVars',
     'stashContent'
 ]
-@Field Set STEP_CONFIG_KEYS = PARAMETER_KEYS.plus(['stashIncludes', 'stashExcludes'])
+@Field Set STEP_CONFIG_KEYS = PARAMETER_KEYS.plus(['stashIncludes', 'stashExcludes','alwaysPullImage'])
 
 void call(Map parameters = [:], body) {
     handlePipelineStepErrors(stepName: STEP_NAME, stepParameters: parameters) {
@@ -56,7 +56,8 @@ void call(Map parameters = [:], body) {
 def getOptions(config) {
     return [name      : 'dynamic-agent-' + config.uniqueId,
             label     : config.uniqueId,
-            containers: getContainerList(config)]
+            containers: getContainerList(config),
+            alwaysPullImage: config.alwaysPullImage]
 }
 
 void executeOnPod(Map config, utils, Closure body) {

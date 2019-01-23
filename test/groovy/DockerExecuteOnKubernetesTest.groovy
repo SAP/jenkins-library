@@ -260,6 +260,23 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
         assertThat(envList, hasItem(hasItem(allOf(hasEntry('key', 'customEnvKey'), hasEntry ('value','customEnvValue')))))
     }
 
+    @Test
+    void testDockerExecuteOnKubernetesWithSkippedImagePull() throws Exception {
+        jsr.step.dockerExecuteOnKubernetes(script: nullScript,
+            alwaysPullImage: false,
+            containerMap: ['maven:3.5-jdk-8-alpine': 'mavenexecute']) {
+            container(name: 'mavenexecute') {
+                bodyExecuted = true
+            }
+        }
+        assertEquals('mavenexecute', containerName)
+        assertTrue(containersList.contains('mavenexecute'))
+        assertTrue(imageList.contains('maven:3.5-jdk-8-alpine'))
+        assertTrue(bodyExecuted)
+        assertFalse(alwaysPullImage)
+        assertThat(containerCommands.size(), is(1))
+    }
+
 
     private container(options, body) {
         containerName = options.name
