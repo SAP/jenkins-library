@@ -77,7 +77,7 @@ The parameter `neo` is a map which contains the following parameters:
 | `environment`      |           |                               |                                                 |
 | `host`             | yes       |                               |                                                 |
 | `runtime`          | yes       |                               |                                                 |
-| `runtime-version`  | yes       |                               |                                                 |
+| `runtimeVersion`  | yes       |                               |                                                 |
 | `size`             | no        | `'lite'`                      | `'lite'`, `'pro'`, `'prem'`, `'prem-plus'`      |
 | `vmArguments`      |           |                               |                                                 |
 
@@ -96,7 +96,7 @@ The parameters for `neo`:
 * `host` - The SAP Cloud Platform host to deploy to.
 * `propertiesFile` - The path to the .properties file in which all necessary deployment properties for the application are defined.
 * `runtime` - Name of SAP Cloud Platform application runtime
-* `runtime-version` - Version of SAP Cloud Platform application runtime
+* `runtimeVersion` - Version of SAP Cloud Platform application runtime
 * `size` - Compute unit (VM) size. Acceptable values: lite, pro, prem, prem-plus.
 * `vmArguments` - String of VM arguments passed to the JVM
 
@@ -122,7 +122,7 @@ none
   * If `propertiesFile` is not provided (when using `'WAR_PROPERTIESFILE'` deployment mode).
   * If `application` is not provided (when using `'WAR_PARAMS'` deployment mode).
   * If `runtime` is not provided (when using `'WAR_PARAMS'` deployment mode).
-  * If `runtime-version` is not provided (when using `'WAR_PARAMS'` deployment mode).
+  * If `runtimeVersion` is not provided (when using `'WAR_PARAMS'` deployment mode).
 * `AbortException`:
   * If neo-java-web-sdk is not installed, or `neoHome`is wrong.
 * `CredentialNotFoundException`:
