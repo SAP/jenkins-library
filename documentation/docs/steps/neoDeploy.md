@@ -46,7 +46,7 @@ Note that a version is formed by `major.minor.patch`, and a version is compatibl
 | `script`           | yes       |                               |                                                 |
 | `warAction`        | yes       | `'deploy'`                    | `'deploy'`, `'rolling-update'`                  |
 
-## Parameters when using WAR file deployment method witout .properties file - with parameters (WAR_PARAMS)
+## Parameters when using WAR file deployment method without .properties file - with parameters (WAR_PARAMS)
 
 | parameter          | mandatory | default                       | possible values                                 |
 | -------------------|-----------|-------------------------------|-------------------------------------------------|

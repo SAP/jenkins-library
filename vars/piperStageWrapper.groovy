@@ -81,7 +81,7 @@ private void executeStage(script, originalStage, stageName, config, utils) {
             echo "[${STEP_NAME}] Found global interceptor '${globalInterceptorFile}' for ${stageName}."
             // If we call the global interceptor, we will pass on originalStage as parameter
             body = {
-                globalInterceptorScript(body, stageName, config)
+                globalInterceptorScript(script: script, originalStage: body, stageName: stageName, config: config)
             }
         }
 
@@ -90,7 +90,7 @@ private void executeStage(script, originalStage, stageName, config, utils) {
             Script projectInterceptorScript = load(projectInterceptorFile)
             echo "[${STEP_NAME}] Running project interceptor '${projectInterceptorFile}' for ${stageName}."
             // If we call the project interceptor, we will pass on body as parameter which contains either originalStage or the repository interceptor
-            projectInterceptorScript(body, stageName, config)
+            projectInterceptorScript(script: script, originalStage: body, stageName: stageName, config: config)
         } else {
             //TODO: assign projectInterceptorScript to body as done for globalInterceptorScript, currently test framework does not seem to support this case. Further investigations needed.
             body()
@@ -103,6 +103,19 @@ private void executeStage(script, originalStage, stageName, config, utils) {
         deleteDir()
 
         def duration = System.currentTimeMillis() - startTime
-        utils.pushToSWA([eventType: 'library-os-stage', stageName: stageName, stepParam1: "${script.currentBuild.currentResult}", stepParam2: "${startTime}", stepParam3: "${duration}", stepParam4: "${projectExtensions}", stepParam5: "${globalExtensions}"], config)
+        utils.pushToSWA([
+            eventType: 'library-os-stage',
+            stageName: stageName,
+            stepParamKey1: 'buildResult',
+            stepParam1: "${script.currentBuild.currentResult}",
+            stepParamKey2: 'stageStartTime',
+            stepParam2: "${startTime}",
+            stepParamKey3: 'stageDuration',
+            stepParam3: "${duration}",
+            stepParamKey4: 'projectExtension',
+            stepParam4: "${projectExtensions}",
+            stepParamKey5: 'globalExtension',
+            stepParam5: "${globalExtensions}"
+        ], config)
     }
 }

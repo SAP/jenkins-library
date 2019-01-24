@@ -19,3 +19,32 @@ def nodeAvailable() {
     }
     return true
 }
+
+@NonCPS
+def getCurrentBuildInstance() {
+    return currentBuild
+}
+
+@NonCPS
+def getRawBuild() {
+    return getCurrentBuildInstance().rawBuild
+}
+
+def isJobStartedByTimer() {
+    return isJobStartedByCause(hudson.triggers.TimerTrigger.TimerTriggerCause.class)
+}
+
+def isJobStartedByUser() {
+    return isJobStartedByCause(hudson.model.Cause.UserIdCause.class)
+}
+
+@NonCPS
+def isJobStartedByCause(Class cause) {
+    def startedByGivenCause = false
+    def detectedCause = getRawBuild().getCause(cause)
+    if (null != detectedCause) {
+        startedByGivenCause = true
+        echo "Found build cause ${detectedCause}"
+    }
+    return startedByGivenCause
+}
