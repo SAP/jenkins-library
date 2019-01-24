@@ -290,7 +290,7 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
     @Test
     void testDockerExecuteOnKubernetesWithSkippedImagePull() throws Exception {
         jsr.step.dockerExecuteOnKubernetes(script: nullScript,
-            alwaysPullImage: false,
+            dockerAlwaysPullImage: false,
             containerMap: ['maven:3.5-jdk-8-alpine': 'mavenexecute']) {
             container(name: 'mavenexecute') {
                 bodyExecuted = true

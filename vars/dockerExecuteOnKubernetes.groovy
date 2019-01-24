@@ -10,7 +10,7 @@ import hudson.AbortException
 @Field def STEP_NAME = getClass().getName()
 @Field def PLUGIN_ID_KUBERNETES = 'kubernetes'
 @Field Set GENERAL_CONFIG_KEYS = ['jenkinsKubernetes']
-@Field Set PARAMETER_KEYS = [
+@Field Set STEP_CONFIG_KEYS = [
     'containerCommand', // specify start command for container created with dockerImage parameter to overwrite Piper default (`/usr/bin/tail -f /dev/null`).
     'containerCommands', //specify start command for containers to overwrite Piper default (`/usr/bin/tail -f /dev/null`). If container's default start command should be used provide empty string like: `['selenium/standalone-chrome': '']`
     'containerEnvVars', //specify environment variables per container. If not provided dockerEnvVars will be used
@@ -20,11 +20,12 @@ import hudson.AbortException
     'containerShell', // allows to specify the shell to be executed for container with containerName
     'containerWorkspaces', //specify workspace (=home directory of user) per container. If not provided dockerWorkspace will be used. If empty, home directory will not be set.
     'dockerImage',
+    'dockerAlwaysPullImage',
     'dockerWorkspace',
     'dockerEnvVars',
     'stashContent'
 ]
-@Field Set STEP_CONFIG_KEYS = PARAMETER_KEYS.plus(['stashIncludes', 'stashExcludes','alwaysPullImage'])
+@Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS.plus(['stashIncludes', 'stashExcludes'])
 
 void call(Map parameters = [:], body) {
     handlePipelineStepErrors(stepName: STEP_NAME, stepParameters: parameters) {
@@ -129,7 +130,6 @@ private void unstashWorkspace(config, prefix) {
 }
 
 private List getContainerList(config) {
-
     result = []
     result.push(containerTemplate(
         name: 'jnlp',
@@ -139,7 +139,7 @@ private List getContainerList(config) {
         def templateParameters = [
             name: containerName.toLowerCase(),
             image: imageName,
-            alwaysPullImage: config.alwaysPullImage,
+            alwaysPullImage: config.dockerAlwaysPullImage,
             envVars: getContainerEnvs(config, imageName)
         ]
 

@@ -1,19 +1,15 @@
 import static com.sap.piper.Prerequisites.checkScript
 
 import com.cloudbees.groovy.cps.NonCPS
-
 import com.sap.piper.ConfigurationHelper
 import com.sap.piper.JenkinsUtils
 import com.sap.piper.Utils
 import com.sap.piper.k8s.ContainerMap
-
 import groovy.transform.Field
 
 @Field def STEP_NAME = getClass().getName()
 @Field def PLUGIN_ID_DOCKER_WORKFLOW = 'docker-workflow'
-
 @Field Set GENERAL_CONFIG_KEYS = ['jenkinsKubernetes']
-
 @Field Set STEP_CONFIG_KEYS = [
     'containerPortMappings',
     'containerCommand',
@@ -24,6 +20,7 @@ import groovy.transform.Field
     'dockerOptions',
     'dockerWorkspace',
     'dockerVolumeBind',
+    'dockerAlwaysPullImage',
     'sidecarEnvVars',
     'sidecarImage',
     'sidecarName',
@@ -32,8 +29,7 @@ import groovy.transform.Field
     'sidecarVolumeBind',
     'stashContent'
 ]
-
-@Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS.plus(['alwaysPullImage'])
+@Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
 
 void call(Map parameters = [:], body) {
     handlePipelineStepErrors(stepName: STEP_NAME, stepParameters: parameters) {
@@ -115,7 +111,7 @@ void call(Map parameters = [:], body) {
             if (executeInsideDocker && config.dockerImage) {
                 utils.unstashAll(config.stashContent)
                 def image = docker.image(config.dockerImage)
-                if(config.alwaysPullImage) image.pull()
+                if(config.dockerAlwaysPullImage) image.pull()
                 if (!config.sidecarImage) {
                     image.inside(getDockerOptions(config.dockerEnvVars, config.dockerVolumeBind, config.dockerOptions)) {
                         body()
@@ -125,7 +121,7 @@ void call(Map parameters = [:], body) {
                     sh "docker network create ${networkName}"
                     try{
                         def sidecarImage = docker.image(config.sidecarImage)
-                        if(config.alwaysPullImage) sidecarImage.pull()
+                        if(config.dockerAlwaysPullImage) sidecarImage.pull()
                         config.sidecarOptions = config.sidecarOptions?:[]
                         if(config.sidecarName)
                             config.sidecarOptions.add("--network-alias ${config.sidecarName}")

@@ -140,7 +140,7 @@ class DockerExecuteTest extends BasePiperTest {
     @Test
     void testSkipDockerImagePull() {
         jsr.step.dockerExecute(script: nullScript,
-                               alwaysPullImage: false,
+                               dockerAlwaysPullImage: false,
                                dockerImage: 'maven:3.5-jdk-8-alpine') {
         }
         assert(!docker.isImagePulled())

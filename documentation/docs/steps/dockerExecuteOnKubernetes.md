@@ -26,6 +26,7 @@ Executes a closure inside a container in a kubernetes pod. Proxy environment var
 |containerWorkspaces|no|||
 |dockerEnvVars|no|`[:]`||
 |dockerImage|yes|||
+|dockerAlwaysPullImage|no|true|boolean value: `true`, `false` |
 |dockerWorkspace|no|`''`||
 |jenkinsKubernetes|no|`[jnlpAgent:s4sdk/jenkins-agent-k8s:latest]`||
 |stashExcludes|no|`[workspace:nohup.out]`||
@@ -43,6 +44,7 @@ Executes a closure inside a container in a kubernetes pod. Proxy environment var
 * `containerWorkspaces` specifies workspace (=home directory of user) per container. If not provided `dockerWorkspace` will be used. If empty, home directory will not be set.
 * `dockerImage` Name of the docker image that should be used. If empty, Docker is not used.
 * `dockerEnvVars` Environment variables to set in the container, e.g. [http_proxy:'proxy:8080']
+* `dockerAlwaysPullImage`: Set this to 'false' to bypass docker image pulls. Usefull during development processes. Allows testing of images which are available in the local registry only.
 * `dockerWorkspace` Docker options to be set when starting the container. It can be a list or a string.
 
 ## Step configuration
@@ -62,10 +64,11 @@ In following sections the configuration is possible:
 |containerWorkspaces||X|X|
 |dockerEnvVars||X|X|
 |dockerImage||X|X|
+|dockerAlwaysPullImage||X|X|
 |dockerWorkspace||X|X|
 |jenkinsKubernetes|X|||
-|stashExcludes||X|X|
-|stashIncludes||X|X|
+|stashExcludes|||X|
+|stashIncludes|||X|
 
 ## Side effects
 

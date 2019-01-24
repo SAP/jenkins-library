@@ -139,10 +139,10 @@ steps:
       dockerImage: 's4sdk/docker-cf-cli'
       dockerWorkspace: '/home/piper'
   dockerExecute:
-    alwaysPullImage: true
+    dockerAlwaysPullImage: true
     stashContent: []
   dockerExecuteOnKubernetes:
-    alwaysPullImage: true
+    dockerAlwaysPullImage: true
     stashContent: []
     stashIncludes:
       workspace: '**/*.*'
