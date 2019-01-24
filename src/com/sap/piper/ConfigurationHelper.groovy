@@ -2,6 +2,7 @@ package com.sap.piper
 
 import com.cloudbees.groovy.cps.NonCPS
 
+@API
 class ConfigurationHelper implements Serializable {
 
     static ConfigurationHelper newInstance(Script step, Map config = [:]) {
