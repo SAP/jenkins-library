@@ -21,15 +21,15 @@ import com.sap.piper.Utils
 
 class UtilsTest extends BasePiperTest {
     private ExpectedException thrown = ExpectedException.none()
-    private JenkinsLoggingRule jlr = new JenkinsLoggingRule(this)
-    private JenkinsShellCallRule jscr = new JenkinsShellCallRule(this)
+    private JenkinsLoggingRule loggingRule = new JenkinsLoggingRule(this)
+    private JenkinsShellCallRule shellRule = new JenkinsShellCallRule(this)
 
     @Rule
     public RuleChain rules = Rules
         .getCommonRules(this)
         .around(thrown)
-        .around(jscr)
-        .around(jlr)
+        .around(shellRule)
+        .around(loggingRule)
 
     private parameters
 
@@ -67,10 +67,10 @@ class UtilsTest extends BasePiperTest {
         utils.env = [BUILD_URL: 'something', JOB_URL: 'nothing']
         utils.pushToSWA([step: 'anything'], [collectTelemetryData: true])
         // asserts
-        assertThat(jscr.shell, hasItem(containsString('curl -G -v "https://webanalytics.cfapps.eu10.hana.ondemand.com/tracker/log"')))
-        assertThat(jscr.shell, hasItem(containsString('action_name=Piper Library OS')))
-        assertThat(jscr.shell, hasItem(containsString('custom3=anything')))
-        assertThat(jscr.shell, hasItem(containsString('custom5=`echo -n \'something\' | sha1sum | sed \'s/ -//\'`')))
+        assertThat(shellRule.shell, hasItem(containsString('curl -G -v "https://webanalytics.cfapps.eu10.hana.ondemand.com/tracker/log"')))
+        assertThat(shellRule.shell, hasItem(containsString('action_name=Piper Library OS')))
+        assertThat(shellRule.shell, hasItem(containsString('custom3=anything')))
+        assertThat(shellRule.shell, hasItem(containsString('custom5=`echo -n \'something\' | sha1sum | sed \'s/ -//\'`')))
     }
 
     @Test
@@ -78,8 +78,8 @@ class UtilsTest extends BasePiperTest {
         utils.env = [BUILD_URL: 'something', JOB_URL: 'nothing']
         utils.pushToSWA([step: 'anything'], [collectTelemetryData: false])
         // asserts
-        assertThat(jlr.log, containsString('[anything] Telemetry Report to SWA disabled!'))
-        assertThat(jscr.shell, not(hasItem(containsString('https://webanalytics.cfapps.eu10.hana.ondemand.com'))))
+        assertThat(loggingRule.log, containsString('[anything] Telemetry Report to SWA disabled!'))
+        assertThat(shellRule.shell, not(hasItem(containsString('https://webanalytics.cfapps.eu10.hana.ondemand.com'))))
     }
 
     @Test
@@ -87,7 +87,7 @@ class UtilsTest extends BasePiperTest {
         utils.env = [BUILD_URL: 'something', JOB_URL: 'nothing']
         utils.pushToSWA([step: 'anything'], null)
         // asserts
-        assertThat(jlr.log, containsString('[anything] Telemetry Report to SWA disabled!'))
+        assertThat(loggingRule.log, containsString('[anything] Telemetry Report to SWA disabled!'))
     }
 
     @Test
@@ -95,6 +95,6 @@ class UtilsTest extends BasePiperTest {
         utils.env = [BUILD_URL: 'something', JOB_URL: 'nothing']
         utils.pushToSWA([step: 'anything'], [:])
         // asserts
-        assertThat(jlr.log, containsString('[anything] Telemetry Report to SWA disabled!'))
+        assertThat(loggingRule.log, containsString('[anything] Telemetry Report to SWA disabled!'))
     }
 }

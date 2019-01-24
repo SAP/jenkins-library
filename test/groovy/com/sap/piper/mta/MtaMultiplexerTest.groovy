@@ -20,12 +20,12 @@ import util.Rules
 
 class MtaMultiplexerTest extends BasePiperTest {
     private ExpectedException thrown = ExpectedException.none()
-    private JenkinsLoggingRule jlr = new JenkinsLoggingRule(this)
+    private JenkinsLoggingRule loggingRule = new JenkinsLoggingRule(this)
 
     @Rule
     public RuleChain rules = Rules
         .getCommonRules(this)
-        .around(jlr)
+        .around(loggingRule)
         .around(thrown)
 
     @Test
@@ -42,7 +42,7 @@ class MtaMultiplexerTest extends BasePiperTest {
         // asserts
         assertThat(result, not(hasItem('pom.xml')))
         assertThat(result, hasSize(3))
-        assertThat(jlr.log, containsString('Skipping pom.xml'))
+        assertThat(loggingRule.log, containsString('Skipping pom.xml'))
     }
 
     @Test
@@ -67,7 +67,7 @@ class MtaMultiplexerTest extends BasePiperTest {
         // asserts
         assertThat(result.size(), is(2))
         assertThat(result, hasKey('TestJobs - some-other-service'))
-        assertThat(jlr.log, containsString('Found 2 maven descriptor files!'))
+        assertThat(loggingRule.log, containsString('Found 2 maven descriptor files!'))
         assertThat(optionsList.get(0), hasEntry('myParameters', 'value'))
         assertThat(optionsList.get(0), hasEntry('scanType', 'maven'))
         assertThat(optionsList.get(0), hasEntry('buildDescriptorFile', "some-service${File.separator}pom.xml".toString()))

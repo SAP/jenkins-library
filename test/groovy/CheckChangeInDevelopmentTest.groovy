@@ -19,16 +19,16 @@ import util.Rules
 class CheckChangeInDevelopmentTest extends BasePiperTest {
 
     private ExpectedException thrown = ExpectedException.none()
-    private JenkinsStepRule jsr = new JenkinsStepRule(this)
-    private JenkinsLoggingRule jlr = new JenkinsLoggingRule(this)
+    private JenkinsStepRule stepRule = new JenkinsStepRule(this)
+    private JenkinsLoggingRule loggingRule = new JenkinsLoggingRule(this)
 
     @Rule
     public RuleChain ruleChain = Rules
         .getCommonRules(this)
         .around(new JenkinsReadYamlRule(this))
         .around(thrown)
-        .around(jsr)
-        .around(jlr)
+        .around(stepRule)
+        .around(loggingRule)
         .around(new JenkinsCredentialsRule(this)
         .withCredentials('CM', 'anonymous', '********'))
 
@@ -43,7 +43,7 @@ class CheckChangeInDevelopmentTest extends BasePiperTest {
     public void changeIsInStatusDevelopmentTest() {
 
         ChangeManagement cm = getChangeManagementUtils(true)
-        jsr.step.checkChangeInDevelopment(
+        stepRule.step.checkChangeInDevelopment(
             script: nullScript,
             cmUtils: cm,
             changeManagement: [
@@ -68,7 +68,7 @@ class CheckChangeInDevelopmentTest extends BasePiperTest {
         thrown.expectMessage("Change '001' is not in status 'in development'")
 
         ChangeManagement cm = getChangeManagementUtils(false)
-        jsr.step.checkChangeInDevelopment(
+        stepRule.step.checkChangeInDevelopment(
             script: nullScript,
             cmUtils: cm,
             changeManagement: [type: 'SOLMAN',
@@ -79,7 +79,7 @@ class CheckChangeInDevelopmentTest extends BasePiperTest {
     public void changeIsNotInStatusDevelopmentButWeWouldLikeToSkipFailureTest() {
 
         ChangeManagement cm = getChangeManagementUtils(false)
-        boolean inDevelopment = jsr.step.checkChangeInDevelopment(
+        boolean inDevelopment = stepRule.step.checkChangeInDevelopment(
                                     script: nullScript,
                                     cmUtils: cm,
                                     changeManagement: [endpoint: 'https://example.org/cm'],
@@ -105,7 +105,7 @@ class CheckChangeInDevelopmentTest extends BasePiperTest {
             }
         }
 
-        jsr.step.checkChangeInDevelopment(
+        stepRule.step.checkChangeInDevelopment(
             script: nullScript,
             cmUtils: cm,
             changeManagement: [type: 'SOLMAN',
@@ -121,7 +121,7 @@ class CheckChangeInDevelopmentTest extends BasePiperTest {
                              "[from: origin/master, to: HEAD].")
 
         ChangeManagement cm = getChangeManagementUtils(false, null)
-        jsr.step.checkChangeInDevelopment(
+        stepRule.step.checkChangeInDevelopment(
             script: nullScript,
             cmUtils: cm,
             changeManagement: [endpoint: 'https://example.org/cm',
@@ -137,7 +137,7 @@ class CheckChangeInDevelopmentTest extends BasePiperTest {
                              "[from: origin/master, to: HEAD].")
 
         ChangeManagement cm = getChangeManagementUtils(false, '')
-        jsr.step.checkChangeInDevelopment(
+        stepRule.step.checkChangeInDevelopment(
             script: nullScript,
             cmUtils: cm,
             changeManagement: [type: 'SOLMAN',
@@ -147,9 +147,9 @@ class CheckChangeInDevelopmentTest extends BasePiperTest {
     @Test
     public void cmIntegrationSwichtedOffTest() {
 
-        jlr.expect('[INFO] Change management integration intentionally switched off.')
+        loggingRule.expect('[INFO] Change management integration intentionally switched off.')
 
-        jsr.step.checkChangeInDevelopment(
+        stepRule.step.checkChangeInDevelopment(
             script: nullScript,
             changeManagement: [type: 'NONE'])
 

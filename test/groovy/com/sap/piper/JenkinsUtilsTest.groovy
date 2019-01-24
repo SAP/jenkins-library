@@ -15,19 +15,19 @@ import static org.hamcrest.Matchers.*
 import static org.junit.Assert.assertThat
 
 class JenkinsUtilsTest extends BasePiperTest {
-    private JenkinsLoggingRule jlr = new JenkinsLoggingRule(this)
-    private JenkinsShellCallRule jscr = new JenkinsShellCallRule(this)
+    private JenkinsLoggingRule loggingRule = new JenkinsLoggingRule(this)
+    private JenkinsShellCallRule shellRule = new JenkinsShellCallRule(this)
 
     @Rule
     public RuleChain rules = Rules
         .getCommonRules(this)
-        .around(jscr)
-        .around(jlr)
+        .around(shellRule)
+        .around(loggingRule)
 
     @Test
     void testNodeAvailable() {
         def result = jenkinsUtils.nodeAvailable()
-        assertThat(jscr.shell, contains("echo 'Node is available!'"))
+        assertThat(shellRule.shell, contains("echo 'Node is available!'"))
         assertThat(result, is(true))
     }
 
@@ -38,7 +38,7 @@ class JenkinsUtilsTest extends BasePiperTest {
         })
 
         def result = jenkinsUtils.nodeAvailable()
-        assertThat(jlr.log, containsString('No node context available.'))
+        assertThat(loggingRule.log, containsString('No node context available.'))
         assertThat(result, is(false))
     }
 

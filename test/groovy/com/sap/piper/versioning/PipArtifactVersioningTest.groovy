@@ -12,20 +12,20 @@ import static org.junit.Assert.assertEquals
 
 class PipArtifactVersioningTest extends BasePiperTest{
 
-    JenkinsReadFileRule jrfr = new JenkinsReadFileRule(this, 'test/resources/versioning/PipArtifactVersioning/')
-    JenkinsWriteFileRule jwfr = new JenkinsWriteFileRule(this)
+    JenkinsReadFileRule readFileRule = new JenkinsReadFileRule(this, 'test/resources/versioning/PipArtifactVersioning/')
+    JenkinsWriteFileRule writeFileRule = new JenkinsWriteFileRule(this)
 
     @Rule
     public RuleChain ruleChain = Rules
         .getCommonRules(this)
-        .around(jrfr)
-        .around(jwfr)
+        .around(readFileRule)
+        .around(writeFileRule)
 
     @Test
     void testVersioning() {
         PipArtifactVersioning av = new PipArtifactVersioning(nullScript, [filePath: 'version.txt'])
         assertEquals('1.2.3', av.getVersion())
         av.setVersion('1.2.3-20180101')
-        assertEquals('1.2.3-20180101', jwfr.files['version.txt'])
+        assertEquals('1.2.3-20180101', writeFileRule.files['version.txt'])
     }
 }

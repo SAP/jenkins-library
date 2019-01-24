@@ -2,6 +2,7 @@ package com.sap.piper
 
 import com.cloudbees.groovy.cps.NonCPS
 
+@API(deprecated = true)
 class ConfigurationLoader implements Serializable {
     @NonCPS
     static Map stepConfiguration(script, String stepName) {
