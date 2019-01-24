@@ -9,17 +9,17 @@ import static org.hamcrest.Matchers.*
 import static org.junit.Assert.assertThat
 
 class MailSendNotificationTest extends BasePiperTest {
-    private JenkinsLoggingRule jlr = new JenkinsLoggingRule(this)
-    private JenkinsStepRule jsr = new JenkinsStepRule(this)
-    private JenkinsShellCallRule jscr = new JenkinsShellCallRule(this)
+    private JenkinsLoggingRule loggingRule = new JenkinsLoggingRule(this)
+    private JenkinsStepRule stepRule = new JenkinsStepRule(this)
+    private JenkinsShellCallRule shellRule = new JenkinsShellCallRule(this)
 
     @Rule
     public RuleChain ruleChain = Rules
         .getCommonRules(this)
         .around(new JenkinsReadYamlRule(this))
-        .around(jlr)
-        .around(jscr)
-        .around(jsr)
+        .around(loggingRule)
+        .around(shellRule)
+        .around(stepRule)
 
     @Before
     void init() throws Exception {
@@ -49,7 +49,7 @@ user3@domain.com noreply+github@domain.com
 user3@domain.com noreply+github@domain.com
 user3@domain.com noreply+github@domain.com'''
 
-        def result = jsr.step.getDistinctRecipients(input)
+        def result = stepRule.step.getDistinctRecipients(input)
         // asserts
         assertThat(result.split(' '), arrayWithSize(3))
         assertThat(result, containsString('user1@domain.com'))
@@ -62,9 +62,9 @@ user3@domain.com noreply+github@domain.com'''
         def gitCommand = "git log -2 --pretty=format:'%ae %ce'"
         def expected = "user2@domain.com user3@domain.com"
 
-        jscr.setReturnValue("git log -2 --pretty=format:'%ae %ce'", 'user2@domain.com user3@domain.com')
+        shellRule.setReturnValue("git log -2 --pretty=format:'%ae %ce'", 'user2@domain.com user3@domain.com')
 
-        def result = jsr.step.getCulprits(
+        def result = stepRule.step.getCulprits(
             [
                 gitSSHCredentialsId: '',
                 gitUrl: 'git@github.wdf.domain.com:IndustryCloudFoundation/pipeline-test-node.git',
@@ -72,7 +72,7 @@ user3@domain.com noreply+github@domain.com'''
             ],
             'master',
             2)
-        println("LOGS: ${jlr.log}")
+        println("LOGS: ${loggingRule.log}")
         println("RESULT: ${result}")
         // asserts
         assertThat(result, containsString('user2@domain.com'))
@@ -82,9 +82,9 @@ user3@domain.com noreply+github@domain.com'''
     @Test
     void testCulpritsWithEmptyGitCommit() throws Exception {
 
-        jscr.setReturnValue('git log > /dev/null 2>&1',1)
+        shellRule.setReturnValue('git log > /dev/null 2>&1',1)
 
-        jsr.step.getCulprits(
+        stepRule.step.getCulprits(
             [
                 gitSSHCredentialsId: '',
                 gitUrl: 'git@github.wdf.domain.com:IndustryCloudFoundation/pipeline-test-node.git',
@@ -93,15 +93,15 @@ user3@domain.com noreply+github@domain.com'''
             'master',
             2)
         // asserts
-        assertThat(jlr.log, containsString('[mailSendNotification] No git context available to retrieve culprits'))
+        assertThat(loggingRule.log, containsString('[mailSendNotification] No git context available to retrieve culprits'))
     }
 
     @Test
     void testCulpritsWithoutGitCommit() throws Exception {
 
-        jscr.setReturnValue('git log > /dev/null 2>&1',1)
+        shellRule.setReturnValue('git log > /dev/null 2>&1',1)
 
-        jsr.step.getCulprits(
+        stepRule.step.getCulprits(
             [
                 gitSSHCredentialsId: '',
                 gitUrl: 'git@github.wdf.domain.com:IndustryCloudFoundation/pipeline-test-node.git',
@@ -110,15 +110,15 @@ user3@domain.com noreply+github@domain.com'''
             'master',
             2)
         // asserts
-        assertThat(jlr.log, containsString('[mailSendNotification] No git context available to retrieve culprits'))
+        assertThat(loggingRule.log, containsString('[mailSendNotification] No git context available to retrieve culprits'))
     }
 
     @Test
     void testCulpritsWithoutBranch() throws Exception {
 
-        jscr.setReturnValue('git log > /dev/null 2>&1',1)
+        shellRule.setReturnValue('git log > /dev/null 2>&1',1)
 
-        jsr.step.getCulprits(
+        stepRule.step.getCulprits(
             [
                 gitSSHCredentialsId: '',
                 gitUrl: 'git@github.wdf.domain.com:IndustryCloudFoundation/pipeline-test-node.git',
@@ -127,7 +127,7 @@ user3@domain.com noreply+github@domain.com'''
             null,
             2)
         // asserts
-        assertThat(jlr.log, containsString('[mailSendNotification] No git context available to retrieve culprits'))
+        assertThat(loggingRule.log, containsString('[mailSendNotification] No git context available to retrieve culprits'))
     }
 
     @Test
@@ -165,7 +165,7 @@ user3@domain.com noreply+github@domain.com'''
             return ''
         })
 
-        jsr.step.mailSendNotification(
+        stepRule.step.mailSendNotification(
             script: nullScript,
             notifyCulprits: false,
             gitUrl: 'git@github.wdf.domain.com:IndustryCloudFoundation/pipeline-test-node.git'
@@ -196,9 +196,9 @@ user3@domain.com noreply+github@domain.com'''
             return null
         })
 
-        jscr.setReturnValue("git log -0 --pretty=format:'%ae %ce'", 'user2@domain.com user3@domain.com')
+        shellRule.setReturnValue("git log -0 --pretty=format:'%ae %ce'", 'user2@domain.com user3@domain.com')
 
-        jsr.step.mailSendNotification(
+        stepRule.step.mailSendNotification(
             script: nullScript,
             gitCommitId: 'abcd1234',
             //notifyCulprits: true,
@@ -226,9 +226,9 @@ user3@domain.com noreply+github@domain.com'''
             return null
         })
 
-        jscr.setReturnValue("git log -0 --pretty=format:'%ae %ce'", 'user2@domain.com user3@domain.com')
+        shellRule.setReturnValue("git log -0 --pretty=format:'%ae %ce'", 'user2@domain.com user3@domain.com')
 
-        jsr.step.mailSendNotification(
+        stepRule.step.mailSendNotification(
             script: nullScript,
             gitCommitId: 'abcd1234',
             gitUrl: 'git@github.wdf.domain.com:IndustryCloudFoundation/pipeline-test-node.git'

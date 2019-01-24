@@ -22,14 +22,14 @@ import static org.junit.Assert.assertEquals
 
 class InfluxWriteDataTest extends BasePiperTest {
     public JenkinsLoggingRule loggingRule = new JenkinsLoggingRule(this)
-    private JenkinsStepRule jsr = new JenkinsStepRule(this)
+    private JenkinsStepRule stepRule = new JenkinsStepRule(this)
 
     @Rule
     public RuleChain ruleChain = Rules
         .getCommonRules(this)
         .around(new JenkinsReadYamlRule(this))
         .around(loggingRule)
-        .around(jsr)
+        .around(stepRule)
 
     Map fileMap = [:]
     Map stepMap = [:]
@@ -62,7 +62,7 @@ class InfluxWriteDataTest extends BasePiperTest {
     void testInfluxWriteDataWithDefault() throws Exception {
 
         nullScript.commonPipelineEnvironment.setArtifactVersion('1.2.3')
-        jsr.step.influxWriteData(script: nullScript)
+        stepRule.step.influxWriteData(script: nullScript)
 
         assertThat(loggingRule.log, containsString('Artifact version: 1.2.3'))
 
@@ -84,7 +84,7 @@ class InfluxWriteDataTest extends BasePiperTest {
     void testInfluxWriteDataNoInflux() throws Exception {
 
         nullScript.commonPipelineEnvironment.setArtifactVersion('1.2.3')
-        jsr.step.influxWriteData(script: nullScript, influxServer: '')
+        stepRule.step.influxWriteData(script: nullScript, influxServer: '')
 
         assertEquals(0, stepMap.size())
 
@@ -97,7 +97,7 @@ class InfluxWriteDataTest extends BasePiperTest {
     @Test
     void testInfluxWriteDataNoArtifactVersion() throws Exception {
 
-        jsr.step.influxWriteData(script: nullScript)
+        stepRule.step.influxWriteData(script: nullScript)
 
         assertEquals(0, stepMap.size())
         assertEquals(0, fileMap.size())
@@ -119,7 +119,7 @@ class InfluxWriteDataTest extends BasePiperTest {
         helper.registerAllowedMethod("deleteDir", [], null)
 
         nullScript.commonPipelineEnvironment.setArtifactVersion('1.2.3')
-        jsr.step.influxWriteData(script: nullScript, wrapInNode: true)
+        stepRule.step.influxWriteData(script: nullScript, wrapInNode: true)
 
         assertThat(nodeCalled, is(true))
 
@@ -128,7 +128,7 @@ class InfluxWriteDataTest extends BasePiperTest {
     @Test
     void testInfluxCustomData() {
         nullScript.commonPipelineEnvironment.setArtifactVersion('1.2.3')
-        jsr.step.influxWriteData(
+        stepRule.step.influxWriteData(
             //juStabUtils: utils,
             script: nullScript,
             influxServer: 'myInstance',
@@ -150,7 +150,7 @@ class InfluxWriteDataTest extends BasePiperTest {
         nullScript.commonPipelineEnvironment.setInfluxCustomDataTagsEntry('tag1', 'testTag1')
         nullScript.commonPipelineEnvironment.setInfluxCustomDataMapEntry('test_data', 'key1', 'keyValue1')
         nullScript.commonPipelineEnvironment.setInfluxCustomDataMapTagsEntry('test_data', 'tag1', 'tagValue1')
-        jsr.step.influxWriteData(
+        stepRule.step.influxWriteData(
             //juStabUtils: utils,
             script: nullScript,
             influxServer: 'myInstance'
