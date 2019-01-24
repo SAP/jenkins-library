@@ -15,8 +15,8 @@ import util.Rules
 
 public class PrepareDefaultValuesTest extends BasePiperTest {
 
-    private JenkinsStepRule jsr = new JenkinsStepRule(this)
-    private JenkinsLoggingRule jlr = new JenkinsLoggingRule(this)
+    private JenkinsStepRule stepRule = new JenkinsStepRule(this)
+    private JenkinsLoggingRule loggingRule = new JenkinsLoggingRule(this)
     private ExpectedException thrown = ExpectedException.none()
 
     @Rule
@@ -24,8 +24,8 @@ public class PrepareDefaultValuesTest extends BasePiperTest {
         .getCommonRules(this)
         .around(new JenkinsReadYamlRule(this))
         .around(thrown)
-        .around(jsr)
-        .around(jlr)
+        .around(stepRule)
+        .around(loggingRule)
 
     @Before
     public void setup() {
@@ -43,7 +43,7 @@ public class PrepareDefaultValuesTest extends BasePiperTest {
     @Test
     public void testDefaultPipelineEnvironmentOnly() {
 
-        jsr.step.prepareDefaultValues(script: nullScript)
+        stepRule.step.prepareDefaultValues(script: nullScript)
 
         assert DefaultValueCache.getInstance().getDefaultValues().size() == 1
         assert DefaultValueCache.getInstance().getDefaultValues().default == 'config'
@@ -55,7 +55,7 @@ public class PrepareDefaultValuesTest extends BasePiperTest {
         def instance = DefaultValueCache.createInstance([key:'value'])
 
         // existing instance is dropped in case a custom config is provided.
-        jsr.step.prepareDefaultValues(script: nullScript, customDefaults: 'custom.yml')
+        stepRule.step.prepareDefaultValues(script: nullScript, customDefaults: 'custom.yml')
 
         // this check is for checking we have another instance
         assert ! instance.is(DefaultValueCache.getInstance())
@@ -72,7 +72,7 @@ public class PrepareDefaultValuesTest extends BasePiperTest {
 
         def instance = DefaultValueCache.createInstance([key:'value'])
 
-        jsr.step.prepareDefaultValues(script: nullScript)
+        stepRule.step.prepareDefaultValues(script: nullScript)
 
         assert instance.is(DefaultValueCache.getInstance())
         assert DefaultValueCache.getInstance().getDefaultValues().size() == 1
@@ -86,13 +86,13 @@ public class PrepareDefaultValuesTest extends BasePiperTest {
         thrown.expect(hudson.AbortException.class)
         thrown.expectMessage('No such library resource not_found could be found')
 
-        jsr.step.prepareDefaultValues(script: nullScript, customDefaults: 'not_found')
+        stepRule.step.prepareDefaultValues(script: nullScript, customDefaults: 'not_found')
     }
 
     @Test
     public void testDefaultPipelineEnvironmentWithCustomConfigReferencedAsString() {
 
-        jsr.step.prepareDefaultValues(script: nullScript, customDefaults: 'custom.yml')
+        stepRule.step.prepareDefaultValues(script: nullScript, customDefaults: 'custom.yml')
 
         assert DefaultValueCache.getInstance().getDefaultValues().size() == 2
         assert DefaultValueCache.getInstance().getDefaultValues().default == 'config'
@@ -102,7 +102,7 @@ public class PrepareDefaultValuesTest extends BasePiperTest {
     @Test
     public void testDefaultPipelineEnvironmentWithCustomConfigReferencedAsList() {
 
-        jsr.step.prepareDefaultValues(script: nullScript, customDefaults: ['custom.yml'])
+        stepRule.step.prepareDefaultValues(script: nullScript, customDefaults: ['custom.yml'])
 
         assert DefaultValueCache.getInstance().getDefaultValues().size() == 2
         assert DefaultValueCache.getInstance().getDefaultValues().default == 'config'
@@ -112,17 +112,17 @@ public class PrepareDefaultValuesTest extends BasePiperTest {
     @Test
     public void testAssertNoLogMessageInCaseOfNoAdditionalConfigFiles() {
 
-        jsr.step.prepareDefaultValues(script: nullScript)
+        stepRule.step.prepareDefaultValues(script: nullScript)
 
-        assert ! jlr.log.contains("Loading configuration file 'default_pipeline_environment.yml'")
+        assert ! loggingRule.log.contains("Loading configuration file 'default_pipeline_environment.yml'")
     }
 
     @Test
     public void testAssertLogMessageInCaseOfMoreThanOneConfigFile() {
 
-        jsr.step.prepareDefaultValues(script: nullScript, customDefaults: ['custom.yml'])
+        stepRule.step.prepareDefaultValues(script: nullScript, customDefaults: ['custom.yml'])
 
-        assert jlr.log.contains("Loading configuration file 'default_pipeline_environment.yml'")
-        assert jlr.log.contains("Loading configuration file 'custom.yml'")
+        assert loggingRule.log.contains("Loading configuration file 'default_pipeline_environment.yml'")
+        assert loggingRule.log.contains("Loading configuration file 'custom.yml'")
     }
 }
