@@ -140,6 +140,7 @@ steps:
       dockerWorkspace: '/home/piper'
   dockerExecute:
     dockerAlwaysPullImage: true
+    sidecarAlwaysPullImage: true
     stashContent: []
   dockerExecuteOnKubernetes:
     dockerAlwaysPullImage: true
