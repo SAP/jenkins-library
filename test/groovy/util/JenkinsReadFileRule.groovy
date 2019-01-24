@@ -9,10 +9,17 @@ class JenkinsReadFileRule implements TestRule {
 
     final BasePipelineTest testInstance
     final String testRoot
+    final String testFilename
 
     JenkinsReadFileRule(BasePipelineTest testInstance, String testRoot) {
         this.testInstance = testInstance
         this.testRoot = testRoot
+    }
+
+    JenkinsReadFileRule(BasePipelineTest testInstance, String testRoot, String testFileName) {
+        this.testInstance = testInstance
+        this.testRoot = testRoot
+        this.testFilename = testFileName
     }
 
     @Override
@@ -25,9 +32,21 @@ class JenkinsReadFileRule implements TestRule {
             @Override
             void evaluate() throws Throwable {
 
-                testInstance.helper.registerAllowedMethod( 'readFile', [String.class], {s -> return (loadFile("${testRoot}/${s}")).getText('UTF-8')} )
+                testInstance.helper.registerAllowedMethod( 'readFile', [String.class], {s ->
+                    if (testFilename) {
+                        return (loadFile("${testRoot}/${testFilename}")).getText('UTF-8')
+                    } else {
+                        return (loadFile("${testRoot}/${s}")).getText('UTF-8')
+                    }
+                } )
 
-                testInstance.helper.registerAllowedMethod( 'readFile', [Map.class], {m -> return (loadFile("${testRoot}/${m.file}")).getText(m.encoding?m.encoding:'UTF-8')} )
+                testInstance.helper.registerAllowedMethod( 'readFile', [Map.class], {m ->
+                    if (testFilename) {
+                        return (loadFile("${testRoot}/${testFilename}")).getText('UTF-8')
+                    } else {
+                        return (loadFile("${testRoot}/${s}")).getText('UTF-8')
+                    }
+                } )
 
                 base.evaluate()
             }
