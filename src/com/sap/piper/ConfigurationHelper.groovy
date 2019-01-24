@@ -167,7 +167,7 @@ class ConfigurationHelper implements Serializable {
         return this
     }
 
-    ConfigurationHelper withPropertyInList(String key, List values){
+    ConfigurationHelper withPropertyInList(String key, Set values){
         withMandatoryProperty(key)
         def value = config[key]
         if(! (value in values) ) {

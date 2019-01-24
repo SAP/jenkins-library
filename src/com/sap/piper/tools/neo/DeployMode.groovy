@@ -9,8 +9,8 @@ enum DeployMode {
         this.value = value
     }
 
-    static stringValues() {
-        return values().collect { each -> each.value }
+    static Set stringValues() {
+        return values().collect { each -> each.value } as Set
     }
 
     boolean isWarDeployment() {
