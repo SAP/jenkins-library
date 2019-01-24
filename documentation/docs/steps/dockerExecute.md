@@ -25,6 +25,7 @@ Proxy environment variables defined on the Jenkins machine are also available in
 |sidecarImage|no|||
 |sidecarName|no|||
 |sidecarOptions|no|||
+|sidecarAlwaysPullImage|no|true|boolean value: `true`, `false` |
 |sidecarVolumeBind|no|||
 |sidecarWorkspace|no|||
 
@@ -43,6 +44,7 @@ Proxy environment variables defined on the Jenkins machine are also available in
 * `sidecarImage`: Name of the docker image of the sidecar container. Do not provide this value if no sidecar container is required.
 * `sidecarName`: as `dockerName` for the sidecar container
 * `sidecarOptions`: as `dockerOptions` for the sidecar container
+* `sidecarAlwaysPullImage`: Set this to 'false' to bypass docker image pulls. Usefull during development processes. Allows testing of images which are available in the local registry only.
 * `sidecarVolumeBind`: as `dockerVolumeBind` for the sidecar container
 * `sidecarWorkspace`: as `dockerWorkspace` for the sidecar container
 
@@ -72,6 +74,7 @@ In following sections the configuration is possible:
 |sidecarImage||X|X|
 |sidecarName||X|X|
 |sidecarOptions||X|X|
+|sidecarAlwaysPullImage||X|X|
 |sidecarVolumeBind||X|X|
 |sidecarWorkspace||X|X|
 

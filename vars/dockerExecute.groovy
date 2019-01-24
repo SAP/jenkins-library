@@ -27,6 +27,7 @@ import groovy.transform.Field
     'sidecarOptions',
     'sidecarWorkspace',
     'sidecarVolumeBind',
+    'sidecarAlwaysPullImage',
     'stashContent'
 ]
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
@@ -111,7 +112,7 @@ void call(Map parameters = [:], body) {
             if (executeInsideDocker && config.dockerImage) {
                 utils.unstashAll(config.stashContent)
                 def image = docker.image(config.dockerImage)
-                if(config.dockerAlwaysPullImage) image.pull()
+                if (config.dockerAlwaysPullImage) image.pull()
                 if (!config.sidecarImage) {
                     image.inside(getDockerOptions(config.dockerEnvVars, config.dockerVolumeBind, config.dockerOptions)) {
                         body()
@@ -121,14 +122,14 @@ void call(Map parameters = [:], body) {
                     sh "docker network create ${networkName}"
                     try{
                         def sidecarImage = docker.image(config.sidecarImage)
-                        if(config.dockerAlwaysPullImage) sidecarImage.pull()
+                        if (config.sidecarAlwaysPullImage) sidecarImage.pull()
                         config.sidecarOptions = config.sidecarOptions?:[]
-                        if(config.sidecarName)
+                        if (config.sidecarName)
                             config.sidecarOptions.add("--network-alias ${config.sidecarName}")
                         config.sidecarOptions.add("--network ${networkName}")
                         sidecarImage.withRun(getDockerOptions(config.sidecarEnvVars, config.sidecarVolumeBind, config.sidecarOptions)) { c ->
                             config.dockerOptions = config.dockerOptions?:[]
-                            if(config.dockerName)
+                            if (config.dockerName)
                                 config.dockerOptions.add("--network-alias ${config.dockerName}")
                             config.dockerOptions.add("--network ${networkName}")
                             image.inside(getDockerOptions(config.dockerEnvVars, config.dockerVolumeBind, config.dockerOptions)) {
