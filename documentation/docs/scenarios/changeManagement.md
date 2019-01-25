@@ -24,10 +24,9 @@ The basic workflow is as follows:
 1. The pipeline scans the Git commit messages between `origin/master` and `HEAD` for a line like `ChangeDocument : <changeDocumentId>`, and validates that the change is in the correct status `in development`. For more information, see [checkChangeInDevelopment](https://sap.github.io/jenkins-library/steps/checkChangeInDevelopment/). The template for the commit message looks as follows:
 
     ```
-    <Commit Message Header>
+    Fix terminology in documentation
 
-    <Commit Message Description>
-
+    Terminology must be consistent with official channels.
     ChangeDocument: <Your Change Document ID>
     ```
 
