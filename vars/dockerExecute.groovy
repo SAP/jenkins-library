@@ -60,6 +60,7 @@ void call(Map parameters = [:], body) {
                         containerCommand: config.containerCommand,
                         containerShell: config.containerShell,
                         dockerImage: config.dockerImage,
+                        dockerAlwaysPullImage: config.dockerAlwaysPullImage,
                         dockerEnvVars: config.dockerEnvVars,
                         dockerWorkspace: config.dockerWorkspace,
                         stashContent: config.stashContent
@@ -72,6 +73,7 @@ void call(Map parameters = [:], body) {
                         script: script,
                         containerCommands: [:],
                         containerEnvVars: [:],
+                        containerAlwaysPullImageFlags: [:],
                         containerMap: [:],
                         containerName: config.dockerName,
                         containerPortMappings: [:],
@@ -82,6 +84,9 @@ void call(Map parameters = [:], body) {
 
                     paramMap.containerEnvVars[config.dockerImage] = config.dockerEnvVars
                     paramMap.containerEnvVars[config.sidecarImage] = config.sidecarEnvVars
+
+                    paramMap.containerAlwaysPullImageFlags[config.dockerImage] = config.dockerAlwaysPullImage
+                    paramMap.containerAlwaysPullImageFlags[config.sidecarImage] = config.sidecarAlwaysPullImage
 
                     paramMap.containerMap[config.dockerImage] = config.dockerName
                     paramMap.containerMap[config.sidecarImage] = config.sidecarName

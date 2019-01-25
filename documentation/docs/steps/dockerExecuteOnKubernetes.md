@@ -19,6 +19,7 @@ Executes a closure inside a container in a kubernetes pod. Proxy environment var
 |containerCommand|no|||
 |containerCommands|no|||
 |containerEnvVars|no|||
+|containerAlwaysPullImageFlags|no|true|boolean value: `true`, `false` |
 |containerMap|no|`[:]`||
 |containerName|no|||
 |containerPortMappings|no|||
@@ -36,6 +37,7 @@ Executes a closure inside a container in a kubernetes pod. Proxy environment var
 * `containerCommand`: allows to specify start command for container created with dockerImage parameter to overwrite Piper default (`/usr/bin/tail -f /dev/null`).
 * `containerCommands` specifies start command for containers to overwrite Piper default (`/usr/bin/tail -f /dev/null`). If container's defaultstart command should be used provide empty string like: `['selenium/standalone-chrome': '']`.
 * `containerEnvVars` specifies environment variables per container. If not provided `dockerEnvVars` will be used.
+* `containerAlwaysPullImageFlags` specifies the alwaysPullImage flag per container.
 * `containerMap` A map of docker image to the name of the container. The pod will be created with all the images from this map and they are labled based on the value field of each map entry.
    Example: `['maven:3.5-jdk-8-alpine': 'mavenExecute', 'selenium/standalone-chrome': 'selenium', 'famiko/jmeter-base': 'checkJMeter', 's4sdk/docker-cf-cli': 'cloudfoundry']`
 * `containerName`: optional configuration in combination with containerMap to define the container where the commands should be executed in
@@ -58,6 +60,7 @@ In following sections the configuration is possible:
 |script||||
 |containerCommands||X|X|
 |containerEnvVars||X|X|
+|containerAlwaysPullImageFlags||X|X|
 |containerMap||X|X|
 |containerName||X|X|
 |containerPortMappings||X|X|

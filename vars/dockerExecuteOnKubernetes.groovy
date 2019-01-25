@@ -14,6 +14,7 @@ import hudson.AbortException
     'containerCommand', // specify start command for container created with dockerImage parameter to overwrite Piper default (`/usr/bin/tail -f /dev/null`).
     'containerCommands', //specify start command for containers to overwrite Piper default (`/usr/bin/tail -f /dev/null`). If container's default start command should be used provide empty string like: `['selenium/standalone-chrome': '']`
     'containerEnvVars', //specify environment variables per container. If not provided dockerEnvVars will be used
+    'containerAlwaysPullImageFlags', // specifies the alwaysPullImage flag per container.
     'containerMap', //specify multiple images which then form a kubernetes pod, example: containerMap: ['maven:3.5-jdk-8-alpine': 'mavenexecute','selenium/standalone-chrome': 'selenium']
     'containerName', //optional configuration in combination with containerMap to define the container where the commands should be executed in
     'containerPortMappings', //map which defines per docker image the port mappings, like containerPortMappings: ['selenium/standalone-chrome': [[name: 'selPort', containerPort: 4444, hostPort: 4444]]]
@@ -139,7 +140,7 @@ private List getContainerList(config) {
         def templateParameters = [
             name: containerName.toLowerCase(),
             image: imageName,
-            alwaysPullImage: config.dockerAlwaysPullImage,
+            alwaysPullImage: config.containerAlwaysPullImageFlags?.get(imageName)?: config.dockerAlwaysPullImage,
             envVars: getContainerEnvs(config, imageName)
         ]
 
