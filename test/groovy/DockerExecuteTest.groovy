@@ -138,12 +138,35 @@ class DockerExecuteTest extends BasePiperTest {
     }
 
     @Test
-    void testSkipDockerImagePull() {
-        jsr.step.dockerExecute(script: nullScript,
-                               dockerAlwaysPullImage: false,
-                               dockerImage: 'maven:3.5-jdk-8-alpine') {
+    void testSkipDockerImagePull() throws Exception {
+        nullScript.commonPipelineEnvironment.configuration = [steps:[dockerExecute:[dockerAlwaysPullImage: false]]]
+        jsr.step.dockerExecute(
+            script: nullScript,
+            dockerImage: 'maven:3.5-jdk-8-alpine'
+        ) {
+            bodyExecuted = true
         }
-        assert(!docker.isImagePulled())
+        assertThat(docker.imagePullCount, is(0))
+        assertThat(bodyExecuted, is(true))
+    }
+
+    @Test
+    void testSkipSidecarImagePull() throws Exception {
+        jsr.step.dockerExecute(
+            script: nullScript,
+            dockerName: 'maven',
+            dockerImage: 'maven:3.5-jdk-8-alpine',
+            sidecarEnvVars: ['testEnv':'testVal'],
+            sidecarImage: 'selenium/standalone-chrome',
+            sidecarVolumeBind: ['/dev/shm':'/dev/shm'],
+            sidecarName: 'testAlias',
+            sidecarPorts: ['4444':'4444', '1111':'1111'],
+            sidecarAlwaysPullImage: false
+        ) {
+            bodyExecuted = true
+        }
+        assertThat(docker.imagePullCount, is(1))
+        assertThat(bodyExecuted, is(true))
     }
 
     @Test
