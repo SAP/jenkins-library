@@ -5,6 +5,7 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.ExpectedException
 import org.junit.rules.RuleChain
+
 import util.BasePiperTest
 import util.JenkinsCredentialsRule
 import util.JenkinsEnvironmentRule
@@ -28,12 +29,12 @@ import static org.hamcrest.Matchers.containsString
 
 class CloudFoundryDeployTest extends BasePiperTest {
 
-    private File tmpFile = File.createTempFile('mockoutput', '.txt')
+    private File tmpDir = File.createTempDir()
     private ExpectedException thrown = ExpectedException.none()
     private JenkinsLoggingRule loggingRule = new JenkinsLoggingRule(this)
     private JenkinsShellCallRule shellRule = new JenkinsShellCallRule(this)
     private JenkinsWriteFileRule writeFileRule = new JenkinsWriteFileRule(this)
-    private JenkinsReadFileRule readFileRule = new JenkinsReadFileRule(this, tmpFile.getParent(), tmpFile.name)
+    private JenkinsReadFileRule readFileRule = new JenkinsReadFileRule(this, tmpDir.getAbsolutePath())
     private JenkinsDockerExecuteRule dockerExecuteRule = new JenkinsDockerExecuteRule(this)
     private JenkinsStepRule stepRule = new JenkinsStepRule(this)
     private JenkinsEnvironmentRule environmentRule = new JenkinsEnvironmentRule(this)
@@ -313,6 +314,10 @@ class CloudFoundryDeployTest extends BasePiperTest {
     @Test
     void testCfNativeBlueGreenKeepOldInstance() {
 
+        // Strange that the content below does not matter. The file is required, but
+        // it should not be accessed in case from cf call is zero.
+        new File(tmpDir, 'cfStopOutput.txt').write('Content here does not matter')
+
         readYamlRule.registerYaml('test.yml', "applications: [[]]")
 
         stepRule.step.cloudFoundryDeploy([
@@ -340,10 +345,9 @@ class CloudFoundryDeployTest extends BasePiperTest {
 
     @Test
     void testCfNativeBlueGreenKeepOldInstanceShouldThrowErrorOnStopError(){
-        tmpFile.write('any error message')
+        new File(tmpDir, 'cfStopOutput.txt').write('any error message')
 
         shellRule.setReturnValue("cf stop testAppName-old &> cfStopOutput.txt", 1)
-        readFileRule.loadFile(tmpFile.absolutePath)
 
         readYamlRule.registerYaml('test.yml', "applications: [[]]")
 
