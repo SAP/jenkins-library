@@ -62,7 +62,7 @@ void call(parameters = [:]) {
             .mixin(parameters, PARAMETER_KEYS, CONFIG_KEY_COMPATIBILITY)
             .withMandatoryProperty('neo')
             .withMandatoryProperty('source')
-            .withPropertyInList('deployMode', DeployMode.stringValues())
+            .withPropertyInValues('deployMode', DeployMode.stringValues())
             .use()
 
         utils.pushToSWA([
@@ -129,7 +129,7 @@ private deploy(script, utils, Map configuration, NeoCommandHelper neoCommandHelp
         sh "mkdir -p logs/neo"
         withEnv(["neo_logging_location=${pwd()}/logs/neo"]) {
             if (deployMode.isWarDeployment()) {
-                ConfigurationHelper.newInstance(this, configuration).withPropertyInList('warAction', WarAction.stringValues())
+                ConfigurationHelper.newInstance(this, configuration).withPropertyInValues('warAction', WarAction.stringValues())
                 WarAction warAction = WarAction.fromString(configuration.warAction)
 
                 if (warAction == WarAction.ROLLING_UPDATE) {
