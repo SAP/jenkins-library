@@ -15,7 +15,7 @@ Set up an agile development process with Jenkins CI, which automatically feeds c
 
 In many SAP development scenarios, it is vital to synchronize both backend and frontend deliveries. These deliveries are typically an SAP UI5 application and an ABAP backend from which it is served. The SAP UI5 parts are often developed using agile practices and use Continuous Integration pipelines that automatically build, test, and deploy the application.
 
-**Note:** This scenario is only an example. You can also apply the demonstrated principles to scenarios with another component setup.
+**Note:** This is an example. You can easily apply this process to other scenarios and component sets.
 
 In this scenario, we want to show how an agile development process with Jenkins CI can automatically feed changes into SAP Solution Manager. In SAP Solution Manager, all parts of the application stack come together and can be subject to classic change and transport management.
 
