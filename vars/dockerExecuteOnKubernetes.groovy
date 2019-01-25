@@ -10,7 +10,7 @@ import hudson.AbortException
 @Field def STEP_NAME = getClass().getName()
 @Field def PLUGIN_ID_KUBERNETES = 'kubernetes'
 @Field Set GENERAL_CONFIG_KEYS = ['jenkinsKubernetes']
-@Field Set STEP_CONFIG_KEYS = [
+@Field Set PARAMETER_KEYS = [
     'containerCommand', // specify start command for container created with dockerImage parameter to overwrite Piper default (`/usr/bin/tail -f /dev/null`).
     'containerCommands', //specify start command for containers to overwrite Piper default (`/usr/bin/tail -f /dev/null`). If container's default start command should be used provide empty string like: `['selenium/standalone-chrome': '']`
     'containerEnvVars', //specify environment variables per container. If not provided dockerEnvVars will be used
@@ -25,7 +25,7 @@ import hudson.AbortException
     'dockerEnvVars',
     'stashContent'
 ]
-@Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS.plus(['stashIncludes', 'stashExcludes'])
+@Field Set STEP_CONFIG_KEYS = PARAMETER_KEYS.plus(['stashIncludes', 'stashExcludes'])
 
 void call(Map parameters = [:], body) {
     handlePipelineStepErrors(stepName: STEP_NAME, stepParameters: parameters) {
