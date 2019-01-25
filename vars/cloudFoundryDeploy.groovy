@@ -198,7 +198,7 @@ private String deleteOptionIfRequired(Map config) {
 
 private void stopOldAppIfRequired(Map config) {
     String oldAppName = "${config.cloudFoundry.appName}-old"
-    String cfStopOutputFileName = 'cfStopOutput.txt'
+    String cfStopOutputFileName = "${UUID.randomUUID()}-cfStopOutput.txt"
 
     if (config.keepOldInstance && config.deployType == 'blue-green') {
         int cfStopReturncode = sh (returnStatus: true, script: "cf stop $oldAppName  &> $cfStopOutputFileName")
