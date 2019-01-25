@@ -137,10 +137,11 @@ private List getContainerList(config) {
         image: config.jenkinsKubernetes.jnlpAgent
     ))
     config.containerMap.each { imageName, containerName ->
+        def containerAlwaysPullImage = config.containerAlwaysPullImageFlags?.get(imageName)
         def templateParameters = [
             name: containerName.toLowerCase(),
             image: imageName,
-            alwaysPullImage: config.containerAlwaysPullImageFlags?.get(imageName)?: config.dockerAlwaysPullImage,
+            alwaysPullImage: containerAlwaysPullImage != null ? containerAlwaysPullImage : config.dockerAlwaysPullImage,
             envVars: getContainerEnvs(config, imageName)
         ]
 
