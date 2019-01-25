@@ -67,8 +67,8 @@ In following sections the configuration is possible:
 |dockerAlwaysPullImage||X|X|
 |dockerWorkspace||X|X|
 |jenkinsKubernetes|X|||
-|stashExcludes|||X|
-|stashIncludes|||X|
+|stashExcludes||X|X|
+|stashIncludes||X|X|
 
 ## Side effects
 
