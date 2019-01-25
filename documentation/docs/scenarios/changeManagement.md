@@ -17,7 +17,7 @@ In many SAP development scenarios, it is vital to synchronize both backend and f
 
 **Note:** This scenario is only an example. You can also apply the demonstrated principles to scenarios with another component setup.
 
-In this scenario, we want to show how an agile development process with Jenkins CI can automatically feed changes into SAP Solution Manager. In SAP Solution Manager, all parts of the application stack come together and can be subject to classic change and transport management. 
+In this scenario, we want to show how an agile development process with Jenkins CI can automatically feed changes into SAP Solution Manager. In SAP Solution Manager, all parts of the application stack come together and can be subject to classic change and transport management.
 
 The basic workflow is as follows:
 
@@ -30,7 +30,7 @@ The basic workflow is as follows:
     ChangeDocument: <Your Change Document ID>
     ```
 
-**Note:** The blank line between message header and message description is mandatory.
+    **Note:** The blank line between message header and message description is mandatory.
 
 2. To communicate with SAP Solution Manager, the pipeline uses credentials that must be stored on Jenkins under the label `CM`. For more information, see [checkChangeInDevelopment](https://sap.github.io/jenkins-library/steps/checkChangeInDevelopment/).
 3. The required transport request is created on the fly. **Note:** The change document can contain various components (for example, UI and backend components).
