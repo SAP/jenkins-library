@@ -32,7 +32,7 @@ The basic workflow is as follows:
 
     **Note:** The blank line between message header and message description is mandatory.
 
-2. To communicate with SAP Solution Manager, the pipeline uses credentials that must be stored on Jenkins under the label `CM`. For more information, see [checkChangeInDevelopment](https://sap.github.io/jenkins-library/steps/checkChangeInDevelopment/).
+2. To communicate with SAP Solution Manager, the pipeline uses credentials that must be stored on Jenkins using the credential ID `CM`. For more information, see [checkChangeInDevelopment](https://sap.github.io/jenkins-library/steps/checkChangeInDevelopment/).
 3. The required transport request is created on the fly. **Note:** The change document can contain various components (for example, UI and backend components).
 4. The changes of your development team trigger the Jenkins pipeline. It builds and validates the changes and attaches them to the respective transport request.
 5. As soon as the development process is completed, the change document in SAP Solution Manager can be set to status `to be tested` and all components can be transported to the test system.
