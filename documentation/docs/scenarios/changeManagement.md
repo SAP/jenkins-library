@@ -21,7 +21,7 @@ In this scenario, we want to show how an agile development process with Jenkins 
 
 The basic workflow is as follows:
 
-1. The pipeline scans the Git commit messages for a line like `ChangeDocument : <changeDocumentId>`, and validates that the change is in the correct status `in development`. For more information, see [checkChangeInDevelopment](https://sap.github.io/jenkins-library/steps/checkChangeInDevelopment/). The template for the commit message looks as follows:
+1. The pipeline scans the Git commit messages for a line like `ChangeDocument : <changeDocumentId>`, and validates that the change is in the correct status `in development`. For more information, see [checkChangeInDevelopment](https://sap.github.io/jenkins-library/steps/checkChangeInDevelopment/). An example for the commit message looks as follows:
 
     ```
     Fix terminology in documentation
