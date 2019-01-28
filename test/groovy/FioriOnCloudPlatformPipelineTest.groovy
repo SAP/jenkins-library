@@ -115,9 +115,11 @@ class FioriOnCloudPlatformPipelineTest extends BasePiperTest {
             .commonPipelineEnvironment
                 .configuration =  [steps:
                                     [neoDeploy:
-                                        [ host: 'hana.example.com',
-                                          account: 'myTestAccount',
-                                        ]
+                                         [neo:
+                                              [ host: 'hana.example.com',
+                                                account: 'myTestAccount',
+                                              ]
+                                         ]
                                     ]
                                 ]
 
