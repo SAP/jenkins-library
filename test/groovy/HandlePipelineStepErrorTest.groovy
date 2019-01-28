@@ -15,21 +15,21 @@ import util.JenkinsStepRule
 import util.Rules
 
 class HandlePipelineStepErrorsTest extends BasePiperTest {
-    private JenkinsStepRule jsr = new JenkinsStepRule(this)
-    private JenkinsLoggingRule jlr = new JenkinsLoggingRule(this)
+    private JenkinsStepRule stepRule = new JenkinsStepRule(this)
+    private JenkinsLoggingRule loggingRule = new JenkinsLoggingRule(this)
     private ExpectedException thrown = ExpectedException.none()
 
     @Rule
     public RuleChain rules = Rules
         .getCommonRules(this)
-        .around(jlr)
-        .around(jsr)
+        .around(loggingRule)
+        .around(stepRule)
         .around(thrown)
 
     @Test
     void testBeginAndEndMessage() {
         def isExecuted
-        jsr.step.handlePipelineStepErrors([
+        stepRule.step.handlePipelineStepErrors([
             stepName: 'testStep',
             stepParameters: ['something': 'anything']
         ]) {
@@ -37,14 +37,14 @@ class HandlePipelineStepErrorsTest extends BasePiperTest {
         }
         // asserts
         assertThat(isExecuted, is(true))
-        assertThat(jlr.log, containsString('--- BEGIN LIBRARY STEP: testStep'))
-        assertThat(jlr.log, containsString('--- END LIBRARY STEP: testStep'))
+        assertThat(loggingRule.log, containsString('--- BEGIN LIBRARY STEP: testStep'))
+        assertThat(loggingRule.log, containsString('--- END LIBRARY STEP: testStep'))
     }
 
     @Test
     void testNonVerbose() {
         try {
-            jsr.step.handlePipelineStepErrors([
+            stepRule.step.handlePipelineStepErrors([
                 stepName: 'testStep',
                 stepParameters: ['something': 'anything'],
                 echoDetails: false
@@ -54,9 +54,9 @@ class HandlePipelineStepErrorsTest extends BasePiperTest {
         } catch (ignore) {
         } finally {
             // asserts
-            assertThat(jlr.log, not(containsString('--- BEGIN LIBRARY STEP: testStep')))
-            assertThat(jlr.log, not(containsString('--- END LIBRARY STEP: testStep')))
-            assertThat(jlr.log, not(containsString('--- ERROR OCCURRED IN LIBRARY STEP: testStep')))
+            assertThat(loggingRule.log, not(containsString('--- BEGIN LIBRARY STEP: testStep')))
+            assertThat(loggingRule.log, not(containsString('--- END LIBRARY STEP: testStep')))
+            assertThat(loggingRule.log, not(containsString('--- ERROR OCCURRED IN LIBRARY STEP: testStep')))
         }
     }
 
@@ -64,7 +64,7 @@ class HandlePipelineStepErrorsTest extends BasePiperTest {
     void testErrorsMessage() {
         def isReported
         try {
-            jsr.step.handlePipelineStepErrors([
+            stepRule.step.handlePipelineStepErrors([
                 stepName: 'testStep',
                 stepParameters: ['something': 'anything']
             ]) {
@@ -75,8 +75,8 @@ class HandlePipelineStepErrorsTest extends BasePiperTest {
         } finally {
             // asserts
             assertThat(isReported, is(true))
-            assertThat(jlr.log, containsString('--- ERROR OCCURRED IN LIBRARY STEP: testStep'))
-            assertThat(jlr.log, containsString('[something:anything]'))
+            assertThat(loggingRule.log, containsString('--- ERROR OCCURRED IN LIBRARY STEP: testStep'))
+            assertThat(loggingRule.log, containsString('[something:anything]'))
         }
     }
 }

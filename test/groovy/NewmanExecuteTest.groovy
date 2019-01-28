@@ -22,20 +22,20 @@ import org.junit.rules.ExpectedException
 
 class NewmanExecuteTest extends BasePiperTest {
     private ExpectedException thrown = ExpectedException.none()
-    private JenkinsStepRule jsr = new JenkinsStepRule(this)
-    private JenkinsLoggingRule jlr = new JenkinsLoggingRule(this)
-    private JenkinsShellCallRule jscr = new JenkinsShellCallRule(this)
-    private JenkinsDockerExecuteRule jedr = new JenkinsDockerExecuteRule(this)
+    private JenkinsStepRule stepRule = new JenkinsStepRule(this)
+    private JenkinsLoggingRule loggingRule = new JenkinsLoggingRule(this)
+    private JenkinsShellCallRule shellRule = new JenkinsShellCallRule(this)
+    private JenkinsDockerExecuteRule dockerExecuteRule = new JenkinsDockerExecuteRule(this)
 
     @Rule
     public RuleChain rules = Rules
         .getCommonRules(this)
         .around(new JenkinsReadYamlRule(this))
         .around(thrown)
-        .around(jedr)
-        .around(jscr)
-        .around(jlr)
-        .around(jsr) // needs to be activated after jedr, otherwise executeDocker is not mocked
+        .around(dockerExecuteRule)
+        .around(shellRule)
+        .around(loggingRule)
+        .around(stepRule) // needs to be activated after dockerExecuteRule, otherwise executeDocker is not mocked
 
     def gitMap
 
@@ -62,7 +62,7 @@ class NewmanExecuteTest extends BasePiperTest {
 
     @Test
     void testExecuteNewmanDefault() throws Exception {
-        jsr.step.newmanExecute(
+        stepRule.step.newmanExecute(
             script: nullScript,
             juStabUtils: utils,
             newmanCollection: 'testCollection',
@@ -70,16 +70,16 @@ class NewmanExecuteTest extends BasePiperTest {
             newmanGlobals: 'testGlobals'
         )
         // asserts
-        assertThat(jscr.shell, hasItem(endsWith('npm install newman newman-reporter-html --global --quiet')))
-        assertThat(jscr.shell, hasItem(endsWith('newman run \'testCollection\' --environment \'testEnvironment\' --globals \'testGlobals\' --reporters junit,html --reporter-junit-export \'target/newman/TEST-testCollection.xml\' --reporter-html-export \'target/newman/TEST-testCollection.html\'')))
-        assertThat(jedr.dockerParams.dockerImage, is('node:8-stretch'))
-        assertThat(jlr.log, containsString('[newmanExecute] Found files [testCollection]'))
+        assertThat(shellRule.shell, hasItem(endsWith('npm install newman newman-reporter-html --global --quiet')))
+        assertThat(shellRule.shell, hasItem(endsWith('newman run \'testCollection\' --environment \'testEnvironment\' --globals \'testGlobals\' --reporters junit,html --reporter-junit-export \'target/newman/TEST-testCollection.xml\' --reporter-html-export \'target/newman/TEST-testCollection.html\'')))
+        assertThat(dockerExecuteRule.dockerParams.dockerImage, is('node:8-stretch'))
+        assertThat(loggingRule.log, containsString('[newmanExecute] Found files [testCollection]'))
         assertJobStatusSuccess()
     }
 
     @Test
     void testGlobalInstall() throws Exception {
-        jsr.step.newmanExecute(
+        stepRule.step.newmanExecute(
             script: nullScript,
             juStabUtils: utils,
             newmanCollection: 'testCollection',
@@ -87,8 +87,8 @@ class NewmanExecuteTest extends BasePiperTest {
             newmanGlobals: 'testGlobals'
         )
         // asserts
-        assertThat(jscr.shell, hasItem(startsWith('NPM_CONFIG_PREFIX=~/.npm-global ')))
-        assertThat(jscr.shell, hasItem(startsWith('PATH=$PATH:~/.npm-global/bin')))
+        assertThat(shellRule.shell, hasItem(startsWith('NPM_CONFIG_PREFIX=~/.npm-global ')))
+        assertThat(shellRule.shell, hasItem(startsWith('PATH=$PATH:~/.npm-global/bin')))
         assertJobStatusSuccess()
     }
 
@@ -96,7 +96,7 @@ class NewmanExecuteTest extends BasePiperTest {
     void testExecuteNewmanWithNoCollection() throws Exception {
         thrown.expectMessage('[newmanExecute] No collection found with pattern \'notFound.json\'')
 
-        jsr.step.newmanExecute(
+        stepRule.step.newmanExecute(
             script: nullScript,
             juStabUtils: utils,
             newmanCollection: 'notFound.json'
@@ -107,7 +107,7 @@ class NewmanExecuteTest extends BasePiperTest {
 
     @Test
     void testExecuteNewmanFailOnError() throws Exception {
-        jsr.step.newmanExecute(
+        stepRule.step.newmanExecute(
             script: nullScript,
             juStabUtils: utils,
             newmanCollection: 'testCollection',
@@ -118,22 +118,22 @@ class NewmanExecuteTest extends BasePiperTest {
             failOnError: false
         )
         // asserts
-        assertThat(jedr.dockerParams.dockerImage, is('testImage'))
+        assertThat(dockerExecuteRule.dockerParams.dockerImage, is('testImage'))
         assertThat(gitMap.url, is('testRepo'))
-        assertThat(jscr.shell, hasItem(endsWith('newman run \'testCollection\' --environment \'testEnvironment\' --globals \'testGlobals\' --reporters junit,html --reporter-junit-export \'target/newman/TEST-testCollection.xml\' --reporter-html-export \'target/newman/TEST-testCollection.html\' --suppress-exit-code')))
+        assertThat(shellRule.shell, hasItem(endsWith('newman run \'testCollection\' --environment \'testEnvironment\' --globals \'testGlobals\' --reporters junit,html --reporter-junit-export \'target/newman/TEST-testCollection.xml\' --reporter-html-export \'target/newman/TEST-testCollection.html\' --suppress-exit-code')))
         assertJobStatusSuccess()
     }
 
     @Test
     void testExecuteNewmanWithFolder() throws Exception {
-        jsr.step.newmanExecute(
+        stepRule.step.newmanExecute(
             script: nullScript,
             juStabUtils: utils,
             newmanRunCommand: 'run ${config.newmanCollection} --iteration-data testDataFile --reporters junit,html --reporter-junit-export target/newman/TEST-${config.newmanCollection.toString().replace(File.separatorChar,(char)\'_\').tokenize(\'.\').first()}.xml --reporter-html-export target/newman/TEST-${config.newmanCollection.toString().replace(File.separatorChar,(char)\'_\').tokenize(\'.\').first()}.html'
         )
         // asserts
-        assertThat(jscr.shell, hasItem(endsWith('newman run testCollectionsFolder'+File.separatorChar+'A.postman_collection.json --iteration-data testDataFile --reporters junit,html --reporter-junit-export target/newman/TEST-testCollectionsFolder_A.xml --reporter-html-export target/newman/TEST-testCollectionsFolder_A.html')))
-        assertThat(jscr.shell, hasItem(endsWith('newman run testCollectionsFolder'+File.separatorChar+'B.postman_collection.json --iteration-data testDataFile --reporters junit,html --reporter-junit-export target/newman/TEST-testCollectionsFolder_B.xml --reporter-html-export target/newman/TEST-testCollectionsFolder_B.html')))
+        assertThat(shellRule.shell, hasItem(endsWith('newman run testCollectionsFolder'+File.separatorChar+'A.postman_collection.json --iteration-data testDataFile --reporters junit,html --reporter-junit-export target/newman/TEST-testCollectionsFolder_A.xml --reporter-html-export target/newman/TEST-testCollectionsFolder_A.html')))
+        assertThat(shellRule.shell, hasItem(endsWith('newman run testCollectionsFolder'+File.separatorChar+'B.postman_collection.json --iteration-data testDataFile --reporters junit,html --reporter-junit-export target/newman/TEST-testCollectionsFolder_B.xml --reporter-html-export target/newman/TEST-testCollectionsFolder_B.html')))
         assertJobStatusSuccess()
     }
 }

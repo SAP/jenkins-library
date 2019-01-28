@@ -1,3 +1,8 @@
+#
+# ATTENTION: This file is part of the API, breaking changes here directly affect the consumers of the library.
+#            Please avoid breaking changes if possible.
+#
+
 #Project Setup
 general:
   productiveBranch: 'master'

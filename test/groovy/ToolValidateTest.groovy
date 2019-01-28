@@ -16,16 +16,16 @@ import util.Rules
 class ToolValidateTest extends BasePiperTest {
 
     private ExpectedException thrown = new ExpectedException().none()
-    private JenkinsLoggingRule jlr = new JenkinsLoggingRule(this)
-    private JenkinsStepRule jsr = new JenkinsStepRule(this)
+    private JenkinsLoggingRule loggingRule = new JenkinsLoggingRule(this)
+    private JenkinsStepRule stepRule = new JenkinsStepRule(this)
 
     @Rule
     public RuleChain ruleChain = Rules
         .getCommonRules(this)
         .around(new JenkinsReadYamlRule(this))
         .around(thrown)
-        .around(jlr)
-        .around(jsr)
+        .around(loggingRule)
+        .around(stepRule)
 
     def home = 'home'
 
@@ -35,7 +35,7 @@ class ToolValidateTest extends BasePiperTest {
         thrown.expect(IllegalArgumentException)
         thrown.expectMessage("The parameter 'home' can not be null or empty.")
 
-        jsr.step.toolValidate(tool: 'java')
+        stepRule.step.toolValidate(tool: 'java')
     }
 
     @Test
@@ -44,7 +44,7 @@ class ToolValidateTest extends BasePiperTest {
         thrown.expect(IllegalArgumentException)
         thrown.expectMessage("The parameter 'home' can not be null or empty.")
 
-        jsr.step.toolValidate(tool: 'java', home: '')
+        stepRule.step.toolValidate(tool: 'java', home: '')
     }
 
     @Test
@@ -55,7 +55,7 @@ class ToolValidateTest extends BasePiperTest {
         thrown.expect(IllegalArgumentException)
         thrown.expectMessage("The parameter 'tool' can not be null or empty.")
 
-        jsr.step.toolValidate(tool: null, home: home)
+        stepRule.step.toolValidate(tool: null, home: home)
     }
 
     @Test
@@ -66,7 +66,7 @@ class ToolValidateTest extends BasePiperTest {
         thrown.expect(IllegalArgumentException)
         thrown.expectMessage("The parameter 'tool' can not be null or empty.")
 
-        jsr.step.toolValidate(tool: '', home: home)
+        stepRule.step.toolValidate(tool: '', home: home)
     }
 
     @Test
@@ -77,7 +77,7 @@ class ToolValidateTest extends BasePiperTest {
         thrown.expect(AbortException)
         thrown.expectMessage("The tool 'test' is not supported.")
 
-        jsr.step.toolValidate(tool: 'test', home: home)
+        stepRule.step.toolValidate(tool: 'test', home: home)
     }
 
     @Test
@@ -88,7 +88,7 @@ class ToolValidateTest extends BasePiperTest {
 
         helper.registerAllowedMethod('sh', [Map], { Map m -> getNoVersion(m) })
 
-        jsr.step.toolValidate(tool: 'java', home: home)
+        stepRule.step.toolValidate(tool: 'java', home: home)
     }
 
     @Test
@@ -99,7 +99,7 @@ class ToolValidateTest extends BasePiperTest {
 
         helper.registerAllowedMethod('sh', [Map], { Map m -> getNoVersion(m) })
 
-        jsr.step.toolValidate(tool: 'mta', home: home)
+        stepRule.step.toolValidate(tool: 'mta', home: home)
     }
 
     @Test
@@ -110,7 +110,7 @@ class ToolValidateTest extends BasePiperTest {
 
         helper.registerAllowedMethod('sh', [Map], { Map m -> getNoVersion(m) })
 
-        jsr.step.toolValidate(tool: 'neo', home: home)
+        stepRule.step.toolValidate(tool: 'neo', home: home)
     }
 
     @Test
@@ -121,7 +121,7 @@ class ToolValidateTest extends BasePiperTest {
 
         helper.registerAllowedMethod('sh', [Map], { Map m -> getNoVersion(m) })
 
-        jsr.step.toolValidate(tool: 'cm', home: home)
+        stepRule.step.toolValidate(tool: 'cm', home: home)
     }
 
     @Test
@@ -132,7 +132,7 @@ class ToolValidateTest extends BasePiperTest {
 
         helper.registerAllowedMethod('sh', [Map], { Map m -> getIncompatibleVersion(m) })
 
-        jsr.step.toolValidate(tool: 'java', home: home)
+        stepRule.step.toolValidate(tool: 'java', home: home)
     }
 
     @Test
@@ -143,7 +143,7 @@ class ToolValidateTest extends BasePiperTest {
 
         helper.registerAllowedMethod('sh', [Map], { Map m -> getIncompatibleVersion(m) })
 
-        jsr.step.toolValidate(tool: 'mta', home: home)
+        stepRule.step.toolValidate(tool: 'mta', home: home)
     }
 
     @Test
@@ -155,7 +155,7 @@ class ToolValidateTest extends BasePiperTest {
         helper.registerAllowedMethod('sh', [Map], { Map m -> getIncompatibleVersion(m) })
         binding.setVariable('tool', 'cm')
 
-        jsr.step.toolValidate(tool: 'cm', home: home)
+        stepRule.step.toolValidate(tool: 'cm', home: home)
     }
 
     @Test
@@ -163,10 +163,10 @@ class ToolValidateTest extends BasePiperTest {
 
         helper.registerAllowedMethod('sh', [Map], { Map m -> getVersion(m) })
 
-        jsr.step.toolValidate(tool: 'java', home: home)
+        stepRule.step.toolValidate(tool: 'java', home: home)
 
-        assert jlr.log.contains('Verifying Java version 1.8.0 or compatible version.')
-        assert jlr.log.contains('Java version 1.8.0 is installed.')
+        assert loggingRule.log.contains('Verifying Java version 1.8.0 or compatible version.')
+        assert loggingRule.log.contains('Java version 1.8.0 is installed.')
     }
 
     @Test
@@ -174,10 +174,10 @@ class ToolValidateTest extends BasePiperTest {
 
         helper.registerAllowedMethod('sh', [Map], { Map m -> getVersion(m) })
 
-        jsr.step.toolValidate(tool: 'mta', home: home)
+        stepRule.step.toolValidate(tool: 'mta', home: home)
 
-        assert jlr.log.contains('Verifying SAP Multitarget Application Archive Builder version 1.0.6 or compatible version.')
-        assert jlr.log.contains('SAP Multitarget Application Archive Builder version 1.0.6 is installed.')
+        assert loggingRule.log.contains('Verifying SAP Multitarget Application Archive Builder version 1.0.6 or compatible version.')
+        assert loggingRule.log.contains('SAP Multitarget Application Archive Builder version 1.0.6 is installed.')
     }
 
     @Test
@@ -185,7 +185,7 @@ class ToolValidateTest extends BasePiperTest {
 
         helper.registerAllowedMethod('sh', [Map], { Map m -> getVersion(m) })
 
-        jsr.step.toolValidate(tool: 'neo', home: home)
+        stepRule.step.toolValidate(tool: 'neo', home: home)
     }
 
     @Test
@@ -193,10 +193,10 @@ class ToolValidateTest extends BasePiperTest {
 
         helper.registerAllowedMethod('sh', [Map], { Map m -> getVersion(m) })
 
-        jsr.step.toolValidate(tool: 'cm', home: home)
+        stepRule.step.toolValidate(tool: 'cm', home: home)
 
-        assert jlr.log.contains('Verifying Change Management Command Line Interface version 0.0.1 or compatible version.')
-        assert jlr.log.contains('Change Management Command Line Interface version 0.0.1 is installed.')
+        assert loggingRule.log.contains('Verifying Change Management Command Line Interface version 0.0.1 or compatible version.')
+        assert loggingRule.log.contains('Change Management Command Line Interface version 0.0.1 is installed.')
     }
 
 
