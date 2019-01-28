@@ -7,7 +7,7 @@
 An efficient software development process is vital for success in building
 business applications on SAP Cloud Platform or SAP on-premise platforms. SAP
 addresses this need for efficiency with project "Piper". The goal of project
-"Piper" is to substantially ease setting up continuous deployment processes for
+"Piper" is to substantially ease setting up continuous delivery processes for
 the most important SAP technologies by means of Jenkins pipelines.
 
 Project "Piper" consists of two parts:
