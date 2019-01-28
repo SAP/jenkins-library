@@ -6,9 +6,8 @@ import com.sap.piper.Utils
 import groovy.transform.Field
 
 @Field def STEP_NAME = getClass().getName()
-@Field Set STEP_CONFIG_KEYS = [
-    'dockerImage'
-]
+@Field Set GENERAL_CONFIG_KEYS = []
+@Field Set STEP_CONFIG_KEYS = ['dockerImage']
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS + ['dockerOptions']
 
 void call(Map parameters = [:]) {
