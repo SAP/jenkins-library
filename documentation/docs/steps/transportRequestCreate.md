@@ -45,7 +45,7 @@ The id of the transport request is availabe via [commonPipelineEnvironment.getTr
 * `description` - for `CTS` only. The description of the transport request.
 * `targetSystem` - for `CTS` only. The system receiving the transport request.
 * `transportType` - for type `CTS` only. Typically `W` (workbench) or `C` customizing.
-* `developmentSystemId`- for `SOLMAN` only. The logical system id for which the transport request is created. The format is `<SID>~<TYPE>(/<CLIENT>)?`. For ABAP Systems the `developmentSystemId` looks like `DEV~ABAP/100`. For non-ABAP systems the `developmentSystemId` looks like e.g. `L21~EXT_SRV` or `J01~JAVA`. In case the system type (in the examples provided here: `EXT_SRV` or `JAVA`) the information can be retrieved from the Solution Manager instance.
+* `developmentSystemId`- for `SOLMAN` only. The logical system id for which the transport request is created. The format is `<SID>~<TYPE>(/<CLIENT>)?`. For ABAP Systems the `developmentSystemId` looks like `DEV~ABAP/100`. For non-ABAP systems the `developmentSystemId` looks like e.g. `L21~EXT_SRV` or `J01~JAVA`. In case the system type is not known (in the examples provided here: `EXT_SRV` or `JAVA`) the information can be retrieved from the Solution Manager instance.
 ## Step configuration
 
 The step is configured using a customer configuration file provided as
