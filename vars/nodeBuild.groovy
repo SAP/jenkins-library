@@ -1,7 +1,9 @@
-import groovy.transform.Field
+import static com.sap.piper.Prerequisites.checkScript
 
 import com.sap.piper.ConfigurationHelper
 import com.sap.piper.Utils
+
+import groovy.transform.Field
 
 @Field def STEP_NAME = getClass().getName()
 @Field Set STEP_CONFIG_KEYS = [
