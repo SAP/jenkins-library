@@ -1,5 +1,4 @@
-**changes:**
+# Changes
 
-- 
-- [ ] add tests
-- [ ] add documentation
+- [ ] Tests
+- [ ] Documentation

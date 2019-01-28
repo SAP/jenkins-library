@@ -7,11 +7,12 @@ The workspace is mounted into the docker image.
 Proxy environment variables defined on the Jenkins machine are also available in the Docker container.
 
 ## Parameters
-
 | parameter | mandatory | default | possible values |
 | ----------|-----------|---------|-----------------|
 |script|yes|||
+|containerCommand|no|||
 |containerPortMappings|no|||
+|containerShell|no|||
 |dockerEnvVars|no|`[:]`||
 |dockerImage|no|`''`||
 |dockerName|no|||
@@ -27,7 +28,9 @@ Proxy environment variables defined on the Jenkins machine are also available in
 |sidecarWorkspace|no|||
 
 * `script` defines the global script environment of the Jenkinsfile run. Typically `this` is passed to this parameter. This allows the function to access the [`commonPipelineEnvironment`](commonPipelineEnvironment.md) for storing the measured duration.
+* `containerCommand`: only used in case exeuction environment is Kubernetes, allows to specify start command for container created with dockerImage parameter to overwrite Piper default (`/usr/bin/tail -f /dev/null`).
 * `containerPortMappings`: Map which defines per docker image the port mappings, like `containerPortMappings: ['selenium/standalone-chrome': [[name: 'selPort', containerPort: 4444, hostPort: 4444]]]`
+* `containerShell`: only used in case exeuction environment is Kubernetes, allows to specify the shell to be used for execution of commands
 * `dockerEnvVars`: Environment variables to set in the container, e.g. [http_proxy:'proxy:8080']
 * `dockerImage`: Name of the docker image that should be used. If empty, Docker is not used and the command is executed directly on the Jenkins system.
 * `dockerName`: Kubernetes case: Name of the container launching `dockerImage`, SideCar: Name of the container in local network

@@ -27,11 +27,14 @@ jobs:
       after_script:
         - JACOCO_SOURCE_PATH="src vars test" ./cc-test-reporter format-coverage target/site/jacoco/jacoco.xml --input-type jacoco
         - ./cc-test-reporter upload-coverage
-        - mvn -DrepoToken=$COVERALLS_REPO_TOKEN org.eluder.coveralls:coveralls-maven-plugin:report
     - name: Docs Build
       if: type = pull_request
       install: docker pull squidfunk/mkdocs-material:3.0.4
-      script: docker run --rm -it -v ${TRAVIS_BUILD_DIR}:/docs -w /docs/documentation squidfunk/mkdocs-material:3.0.4 build --clean --verbose --strict
+      script:
+      - |
+        cp -r documentation/docs documentation/docs-tmp
+        documentation/bin/createDocu.sh vars documentation/docs-tmp/steps
+        docker run --rm -it -v ${TRAVIS_BUILD_DIR}:/docs -w /docs/documentation squidfunk/mkdocs-material:3.0.4 build --clean --verbose --strict
     
     - stage: Docs
       name: Deploy
@@ -43,6 +46,8 @@ jobs:
           PRIVATE_KEY="cfg/id_rsa"
           openssl aes-256-cbc -K $encrypted_12c8071d2874_key -iv $encrypted_12c8071d2874_iv -in cfg/id_rsa.enc -out "${PRIVATE_KEY}" -d
           chmod a+x gh-pages-deploy.sh        
+          cp -r documentation/docs documentation/docs-tmp
+          documentation/bin/createDocu.sh vars documentation/docs-tmp/steps
       script: docker run --rm -it --entrypoint "./gh-pages-deploy.sh" -e "TRAVIS_REPO_SLUG=${TRAVIS_REPO_SLUG}" -v ${TRAVIS_BUILD_DIR}:/docs -w /docs squidfunk/mkdocs-material:3.0.4
       # TODO: make use of GHPages deploy provider: https://docs.travis-ci.com/user/deployment/pages/
 

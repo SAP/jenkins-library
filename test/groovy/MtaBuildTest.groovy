@@ -21,27 +21,34 @@ public class MtaBuildTest extends BasePiperTest {
     def toolJavaValidateCalled = false
 
     private ExpectedException thrown = new ExpectedException()
-    private JenkinsLoggingRule jlr = new JenkinsLoggingRule(this)
-    private JenkinsShellCallRule jscr = new JenkinsShellCallRule(this)
-    private JenkinsDockerExecuteRule jder = new JenkinsDockerExecuteRule(this)
-    private JenkinsStepRule jsr = new JenkinsStepRule(this)
-    private JenkinsReadYamlRule jryr = new JenkinsReadYamlRule(this).registerYaml('mta.yaml', defaultMtaYaml() )
+    private JenkinsLoggingRule loggingRule = new JenkinsLoggingRule(this)
+    private JenkinsShellCallRule shellRule = new JenkinsShellCallRule(this)
+    private JenkinsDockerExecuteRule dockerExecuteRule = new JenkinsDockerExecuteRule(this)
+    private JenkinsStepRule stepRule = new JenkinsStepRule(this)
+    private JenkinsReadYamlRule readYamlRule = new JenkinsReadYamlRule(this).registerYaml('mta.yaml', defaultMtaYaml() )
 
     @Rule
     public RuleChain ruleChain = Rules
         .getCommonRules(this)
-        .around(jryr)
+        .around(readYamlRule)
         .around(thrown)
-        .around(jlr)
-        .around(jscr)
-        .around(jder)
-        .around(jsr)
+        .around(loggingRule)
+        .around(shellRule)
+        .around(dockerExecuteRule)
+        .around(stepRule)
 
     @Before
     void init() {
 
         helper.registerAllowedMethod('fileExists', [String], { s -> s == 'mta.yaml' })
-        helper.registerAllowedMethod('sh', [Map], { Map m -> getVersionWithoutEnvVars(m) })
+
+        shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, '.*\\$MTA_JAR_LOCATION.*', '')
+        shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, '.*\\$JAVA_HOME.*', '')
+        shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, '.*which java.*', 0)
+        shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, '.*java -version.*', '''openjdk version \"1.8.0_121\"
+                    OpenJDK Runtime Environment (build 1.8.0_121-8u121-b13-1~bpo8+1-b13)
+                    OpenJDK 64-Bit Server VM (build 25.121-b13, mixed mode)''')
+        shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, '.*mta\\.jar -v.*', '1.0.6')
 
         binding.setVariable('PATH', '/usr/bin')
     }
@@ -50,25 +57,25 @@ public class MtaBuildTest extends BasePiperTest {
     @Test
     void environmentPathTest() {
 
-        jsr.step.mtaBuild(script: nullScript, buildTarget: 'NEO')
+        stepRule.step.mtaBuild(script: nullScript, buildTarget: 'NEO')
 
-        assert jscr.shell.find { c -> c.contains('PATH=./node_modules/.bin:/usr/bin')}
+        assert shellRule.shell.find { c -> c.contains('PATH=./node_modules/.bin:/usr/bin')}
     }
 
 
     @Test
     void sedTest() {
 
-        jsr.step.mtaBuild(script: nullScript, buildTarget: 'NEO')
+        stepRule.step.mtaBuild(script: nullScript, buildTarget: 'NEO')
 
-        assert jscr.shell.find { c -> c =~ /sed -ie "s\/\\\$\{timestamp\}\/`date \+%Y%m%d%H%M%S`\/g" "mta.yaml"$/}
+        assert shellRule.shell.find { c -> c =~ /sed -ie "s\/\\\$\{timestamp\}\/`date \+%Y%m%d%H%M%S`\/g" "mta.yaml"$/}
     }
 
 
     @Test
     void mtarFilePathFromCommonPipelineEnviromentTest() {
 
-        jsr.step.mtaBuild(script: nullScript,
+        stepRule.step.mtaBuild(script: nullScript,
                       buildTarget: 'NEO')
 
         def mtarFilePath = nullScript.commonPipelineEnvironment.getMtarFilePath()
@@ -79,12 +86,12 @@ public class MtaBuildTest extends BasePiperTest {
     @Test
     void mtaJarLocationAsParameterTest() {
 
-        jsr.step.mtaBuild(script: nullScript, mtaJarLocation: '/mylocation/mta/mta.jar', buildTarget: 'NEO')
+        stepRule.step.mtaBuild(script: nullScript, mtaJarLocation: '/mylocation/mta/mta.jar', buildTarget: 'NEO')
 
-        assert jscr.shell.find { c -> c.contains('-jar /mylocation/mta/mta.jar --mtar')}
+        assert shellRule.shell.find { c -> c.contains('-jar /mylocation/mta/mta.jar --mtar')}
 
-        assert jlr.log.contains("SAP Multitarget Application Archive Builder file '/mylocation/mta/mta.jar' retrieved from configuration.")
-        assert jlr.log.contains("Using SAP Multitarget Application Archive Builder '/mylocation/mta/mta.jar'.")
+        assert loggingRule.log.contains("SAP Multitarget Application Archive Builder file '/mylocation/mta/mta.jar' retrieved from configuration.")
+        assert loggingRule.log.contains("Using SAP Multitarget Application Archive Builder '/mylocation/mta/mta.jar'.")
     }
 
 
@@ -95,7 +102,7 @@ public class MtaBuildTest extends BasePiperTest {
         thrown.expectMessage('\'mta.yaml\' not found in project sources and \'applicationName\' not provided as parameter ' +
                                 '- cannot generate \'mta.yaml\' file.')
 
-        jsr.step.mtaBuild(script: nullScript, buildTarget: 'NEO')
+        stepRule.step.mtaBuild(script: nullScript, buildTarget: 'NEO')
     }
 
 
@@ -105,9 +112,9 @@ public class MtaBuildTest extends BasePiperTest {
         thrown.expect(ParserException)
         thrown.expectMessage('while parsing a block mapping')
 
-        jryr.registerYaml('mta.yaml', badMtaYaml())
+        readYamlRule.registerYaml('mta.yaml', badMtaYaml())
 
-        jsr.step.mtaBuild(script: nullScript, buildTarget: 'NEO')
+        stepRule.step.mtaBuild(script: nullScript, buildTarget: 'NEO')
     }
 
 
@@ -117,22 +124,22 @@ public class MtaBuildTest extends BasePiperTest {
         thrown.expect(AbortException)
         thrown.expectMessage("Property 'ID' not found in mta.yaml file.")
 
-        jryr.registerYaml('mta.yaml', noIdMtaYaml() )
+        readYamlRule.registerYaml('mta.yaml', noIdMtaYaml() )
 
-        jsr.step.mtaBuild(script: nullScript, buildTarget: 'NEO')
+        stepRule.step.mtaBuild(script: nullScript, buildTarget: 'NEO')
     }
 
 
     @Test
     void mtaJarLocationFromEnvironmentTest() {
 
-        helper.registerAllowedMethod('sh', [Map], { Map m -> getVersionWithEnvVars(m) })
+        shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, '.*\\$MTA_JAR_LOCATION.*', '/env/mta/mta.jar')
 
-        jsr.step.mtaBuild(script: nullScript, buildTarget: 'NEO')
+        stepRule.step.mtaBuild(script: nullScript, buildTarget: 'NEO')
 
-        assert jscr.shell.find { c -> c.contains("-jar /env/mta/mta.jar --mtar")}
-        assert jlr.log.contains("SAP Multitarget Application Archive Builder file '/env/mta/mta.jar' retrieved from environment.")
-        assert jlr.log.contains("Using SAP Multitarget Application Archive Builder '/env/mta/mta.jar'.")
+        assert shellRule.shell.find { c -> c.contains("-jar /env/mta/mta.jar --mtar")}
+        assert loggingRule.log.contains("SAP Multitarget Application Archive Builder file '/env/mta/mta.jar' retrieved from environment.")
+        assert loggingRule.log.contains("Using SAP Multitarget Application Archive Builder '/env/mta/mta.jar'.")
     }
 
 
@@ -141,33 +148,33 @@ public class MtaBuildTest extends BasePiperTest {
 
         nullScript.commonPipelineEnvironment.configuration = [steps:[mtaBuild:[mtaJarLocation: '/config/mta/mta.jar']]]
 
-        jsr.step.mtaBuild(script: nullScript,
+        stepRule.step.mtaBuild(script: nullScript,
                       buildTarget: 'NEO')
 
-        assert jscr.shell.find(){ c -> c.contains("-jar /config/mta/mta.jar --mtar")}
-        assert jlr.log.contains("SAP Multitarget Application Archive Builder file '/config/mta/mta.jar' retrieved from configuration.")
-        assert jlr.log.contains("Using SAP Multitarget Application Archive Builder '/config/mta/mta.jar'.")
+        assert shellRule.shell.find(){ c -> c.contains("-jar /config/mta/mta.jar --mtar")}
+        assert loggingRule.log.contains("SAP Multitarget Application Archive Builder file '/config/mta/mta.jar' retrieved from configuration.")
+        assert loggingRule.log.contains("Using SAP Multitarget Application Archive Builder '/config/mta/mta.jar'.")
     }
 
 
     @Test
     void mtaJarLocationFromDefaultStepConfigurationTest() {
 
-        jsr.step.mtaBuild(script: nullScript,
+        stepRule.step.mtaBuild(script: nullScript,
                       buildTarget: 'NEO')
 
-        assert jscr.shell.find(){ c -> c.contains("-jar mta.jar --mtar")}
-        assert jlr.log.contains("SAP Multitarget Application Archive Builder file 'mta.jar' retrieved from configuration.")
-        assert jlr.log.contains("Using SAP Multitarget Application Archive Builder 'mta.jar'.")
+        assert shellRule.shell.find(){ c -> c.contains("-jar mta.jar --mtar")}
+        assert loggingRule.log.contains("SAP Multitarget Application Archive Builder file 'mta.jar' retrieved from configuration.")
+        assert loggingRule.log.contains("Using SAP Multitarget Application Archive Builder 'mta.jar'.")
     }
 
 
     @Test
     void buildTargetFromParametersTest() {
 
-        jsr.step.mtaBuild(script: nullScript, buildTarget: 'NEO')
+        stepRule.step.mtaBuild(script: nullScript, buildTarget: 'NEO')
 
-        assert jscr.shell.find { c -> c.contains('java -jar mta.jar --mtar com.mycompany.northwind.mtar --build-target=NEO build')}
+        assert shellRule.shell.find { c -> c.contains('java -jar mta.jar --mtar com.mycompany.northwind.mtar --build-target=NEO build')}
     }
 
 
@@ -176,25 +183,25 @@ public class MtaBuildTest extends BasePiperTest {
 
         nullScript.commonPipelineEnvironment.configuration = [steps:[mtaBuild:[buildTarget: 'NEO']]]
 
-        jsr.step.mtaBuild(script: nullScript)
+        stepRule.step.mtaBuild(script: nullScript)
 
-        assert jscr.shell.find(){ c -> c.contains('java -jar mta.jar --mtar com.mycompany.northwind.mtar --build-target=NEO build')}
+        assert shellRule.shell.find(){ c -> c.contains('java -jar mta.jar --mtar com.mycompany.northwind.mtar --build-target=NEO build')}
     }
 
     @Test
     void canConfigureDockerImage() {
 
-        jsr.step.mtaBuild(script: nullScript, dockerImage: 'mta-docker-image:latest')
+        stepRule.step.mtaBuild(script: nullScript, dockerImage: 'mta-docker-image:latest')
 
-        assert 'mta-docker-image:latest' == jder.dockerParams.dockerImage
+        assert 'mta-docker-image:latest' == dockerExecuteRule.dockerParams.dockerImage
     }
 
     @Test
     void canConfigureDockerOptions() {
 
-        jsr.step.mtaBuild(script: nullScript, dockerOptions: 'something')
+        stepRule.step.mtaBuild(script: nullScript, dockerOptions: 'something')
 
-        assert 'something' == jder.dockerParams.dockerOptions
+        assert 'something' == dockerExecuteRule.dockerParams.dockerOptions
     }
 
     @Test
@@ -202,18 +209,18 @@ public class MtaBuildTest extends BasePiperTest {
 
         nullScript.commonPipelineEnvironment.defaultConfiguration = [steps:[mtaBuild:[buildTarget: 'NEO']]]
 
-        jsr.step.mtaBuild(script: nullScript)
+        stepRule.step.mtaBuild(script: nullScript)
 
-        assert jscr.shell.find { c -> c.contains('java -jar mta.jar --mtar com.mycompany.northwind.mtar --build-target=NEO build')}
+        assert shellRule.shell.find { c -> c.contains('java -jar mta.jar --mtar com.mycompany.northwind.mtar --build-target=NEO build')}
     }
 
 
     @Test
     void extensionFromParametersTest() {
 
-        jsr.step.mtaBuild(script: nullScript, buildTarget: 'NEO', extension: 'param_extension')
+        stepRule.step.mtaBuild(script: nullScript, buildTarget: 'NEO', extension: 'param_extension')
 
-        assert jscr.shell.find { c -> c.contains('java -jar mta.jar --mtar com.mycompany.northwind.mtar --build-target=NEO --extension=param_extension build')}
+        assert shellRule.shell.find { c -> c.contains('java -jar mta.jar --mtar com.mycompany.northwind.mtar --build-target=NEO --extension=param_extension build')}
     }
 
 
@@ -222,9 +229,9 @@ public class MtaBuildTest extends BasePiperTest {
 
         nullScript.commonPipelineEnvironment.configuration = [steps:[mtaBuild:[buildTarget: 'NEO', extension: 'config_extension']]]
 
-        jsr.step.mtaBuild(script: nullScript)
+        stepRule.step.mtaBuild(script: nullScript)
 
-        assert jscr.shell.find(){ c -> c.contains('java -jar mta.jar --mtar com.mycompany.northwind.mtar --build-target=NEO --extension=config_extension build')}
+        assert shellRule.shell.find(){ c -> c.contains('java -jar mta.jar --mtar com.mycompany.northwind.mtar --build-target=NEO --extension=config_extension build')}
     }
 
 
@@ -290,81 +297,4 @@ public class MtaBuildTest extends BasePiperTest {
                 '''
     }
 
-    private getVersionWithEnvVars(Map m) {
-
-        if(m.script.contains('java -version')) {
-            return '''openjdk version \"1.8.0_121\"
-                    OpenJDK Runtime Environment (build 1.8.0_121-8u121-b13-1~bpo8+1-b13)
-                    OpenJDK 64-Bit Server VM (build 25.121-b13, mixed mode)'''
-        } else if(m.script.contains('mta.jar -v')) {
-            return '1.0.6'
-        } else {
-            return getEnvVars(m)
-        }
-    }
-
-    private getVersionWithoutEnvVars(Map m) {
-
-        if(m.script.contains('java -version')) {
-            return '''openjdk version \"1.8.0_121\"
-                    OpenJDK Runtime Environment (build 1.8.0_121-8u121-b13-1~bpo8+1-b13)
-                    OpenJDK 64-Bit Server VM (build 25.121-b13, mixed mode)'''
-        } else if(m.script.contains('mta.jar -v')) {
-            return '1.0.6'
-        } else {
-            return getNoEnvVars(m)
-        }
-    }
-
-    private getVersionWithoutEnvVarsAndNotInCurrentDir(Map m) {
-
-        if(m.script.contains('java -version')) {
-            return '''openjdk version \"1.8.0_121\"
-                    OpenJDK Runtime Environment (build 1.8.0_121-8u121-b13-1~bpo8+1-b13)
-                    OpenJDK 64-Bit Server VM (build 25.121-b13, mixed mode)'''
-        } else if(m.script.contains('mta.jar -v')) {
-            return '1.0.6'
-        } else {
-            return getNoEnvVarsAndNotInCurrentDir(m)
-        }
-    }
-
-    private getEnvVars(Map m) {
-
-        if(m.script.contains('JAVA_HOME')) {
-            return ''
-        } else if(m.script.contains('MTA_JAR_LOCATION')) {
-            return '/env/mta/mta.jar'
-        } else if(m.script.contains('which java')) {
-            return 0
-        } else {
-            return 0
-        }
-    }
-
-    private getNoEnvVars(Map m) {
-
-        if(m.script.contains('JAVA_HOME')) {
-            return ''
-        } else if(m.script.contains('MTA_JAR_LOCATION')) {
-            return ''
-        } else if(m.script.contains('which java')) {
-            return 0
-        } else {
-            return 0
-        }
-    }
-
-    private getNoEnvVarsAndNotInCurrentDir(Map m) {
-
-        if(m.script.contains('JAVA_HOME')) {
-            return ''
-        } else if(m.script.contains('MTA_JAR_LOCATION')) {
-            return ''
-        } else if(m.script.contains('which java')) {
-            return 0
-        } else {
-            return 1
-        }
-    }
 }

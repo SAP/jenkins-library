@@ -15,8 +15,8 @@ import static org.junit.Assert.assertThat
 
 class PiperStageWrapperTest extends BasePiperTest {
 
-    private JenkinsLoggingRule jlr = new JenkinsLoggingRule(this)
-    private JenkinsStepRule jsr = new JenkinsStepRule(this)
+    private JenkinsLoggingRule loggingRule = new JenkinsLoggingRule(this)
+    private JenkinsStepRule stepRule = new JenkinsStepRule(this)
 
     private Map lockMap = [:]
     private int countNodeUsage = 0
@@ -26,8 +26,8 @@ class PiperStageWrapperTest extends BasePiperTest {
     public RuleChain rules = Rules
         .getCommonRules(this)
         .around(new JenkinsReadYamlRule(this))
-        .around(jlr)
-        .around(jsr)
+        .around(loggingRule)
+        .around(stepRule)
 
     @Before
     void init() throws Exception {
@@ -54,25 +54,25 @@ class PiperStageWrapperTest extends BasePiperTest {
 
     @Test
     void testDefault() {
-        def testInt = 1
-        jsr.step.piperStageWrapper(
+        def executed = false
+        stepRule.step.piperStageWrapper(
             script: nullScript,
             juStabUtils: utils,
             ordinal: 10,
             stageName: 'test'
 
         ) {
-            testInt ++
+            executed = true
         }
-        assertThat(testInt, is(2))
+        assertThat(executed, is(true))
         assertThat(lockMap.size(), is(2))
         assertThat(countNodeUsage, is(1))
     }
 
     @Test
     void testNoLocking() {
-        def testInt = 1
-        jsr.step.piperStageWrapper(
+        def executed = false
+        stepRule.step.piperStageWrapper(
             script: nullScript,
             juStabUtils: utils,
             nodeLabel: 'testLabel',
@@ -81,9 +81,9 @@ class PiperStageWrapperTest extends BasePiperTest {
             stageName: 'test'
 
         ) {
-            testInt ++
+            executed = true
         }
-        assertThat(testInt, is(2))
+        assertThat(executed, is(true))
         assertThat(lockMap.size(), is(0))
         assertThat(countNodeUsage, is(1))
         assertThat(nodeLabel, is('testLabel'))
@@ -98,21 +98,23 @@ class PiperStageWrapperTest extends BasePiperTest {
         helper.registerAllowedMethod('load', [String.class], {
             return helper.loadScript('test/resources/stages/test.groovy')
         })
+        nullScript.commonPipelineEnvironment.gitBranch = 'testBranch'
 
-        def testInt = 1
-        jsr.step.piperStageWrapper(
+        def executed = false
+        stepRule.step.piperStageWrapper(
             script: nullScript,
             juStabUtils: utils,
             ordinal: 10,
             stageName: 'test'
         ) {
-            testInt ++
+            executed = true
         }
 
-        assertThat(testInt, is(2))
-        assertThat(jlr.log, containsString('[piperStageWrapper] Running project interceptor \'.pipeline/extensions/test.groovy\' for test.'))
-        assertThat(jlr.log, containsString('Stage Name: test'))
-        assertThat(jlr.log, containsString('Config:'))
+        assertThat(executed, is(true))
+        assertThat(loggingRule.log, containsString('[piperStageWrapper] Running project interceptor \'.pipeline/extensions/test.groovy\' for test.'))
+        assertThat(loggingRule.log, containsString('Stage Name: test'))
+        assertThat(loggingRule.log, containsString('Config: [productiveBranch:master,'))
+        assertThat(loggingRule.log, containsString('testBranch'))
     }
 }
 

@@ -15,12 +15,12 @@ import hudson.AbortException
 class ToolDescriptorTest extends BasePiperTest {
 
     private ExpectedException thrown = new ExpectedException()
-    private JenkinsLoggingRule jlr = new JenkinsLoggingRule(this)
+    private JenkinsLoggingRule loggingRule = new JenkinsLoggingRule(this)
 
     @Rule
     public RuleChain rules = Rules.getCommonRules(this)
                 .around(thrown)
-                .around(jlr)
+                .around(loggingRule)
 
     private static tool
     private static configuration
@@ -52,7 +52,7 @@ class ToolDescriptorTest extends BasePiperTest {
         def toolHome = tool.getToolLocation(script, configuration)
 
         assert toolHome == '/env/neo'
-        assert jlr.log.contains("SAP Cloud Platform Console Client home '/env/neo' retrieved from environment.")
+        assert loggingRule.log.contains("SAP Cloud Platform Console Client home '/env/neo' retrieved from environment.")
     }
 
     @Test
@@ -63,7 +63,7 @@ class ToolDescriptorTest extends BasePiperTest {
         def toolHome = tool.getToolLocation(script, configuration)
 
         assert toolHome == '/config/neo'
-        assert jlr.log.contains("SAP Cloud Platform Console Client home '/config/neo' retrieved from configuration.")
+        assert loggingRule.log.contains("SAP Cloud Platform Console Client home '/config/neo' retrieved from configuration.")
     }
 
     @Test
@@ -72,7 +72,7 @@ class ToolDescriptorTest extends BasePiperTest {
         def toolHome = tool.getToolLocation(script, configuration)
 
         assert toolHome == ''
-        assert jlr.log.contains("SAP Cloud Platform Console Client is on PATH.")
+        assert loggingRule.log.contains("SAP Cloud Platform Console Client is on PATH.")
     }
 
     @Test
@@ -93,7 +93,7 @@ class ToolDescriptorTest extends BasePiperTest {
         def toolExecutable = tool.getToolExecutable(script, configuration)
 
         assert toolExecutable == '/config/neo/tools/neo.sh'
-        assert jlr.log.contains("Using SAP Cloud Platform Console Client '/config/neo/tools/neo.sh'.")
+        assert loggingRule.log.contains("Using SAP Cloud Platform Console Client '/config/neo/tools/neo.sh'.")
     }
 
     @Test
@@ -103,8 +103,8 @@ class ToolDescriptorTest extends BasePiperTest {
 
         tool.verifyToolLocation(script, configuration)
 
-        assert jlr.log.contains("Verifying SAP Cloud Platform Console Client location '/env/neo'.")
-        assert jlr.log.contains("Verification success. SAP Cloud Platform Console Client location '/env/neo' exists.")
+        assert loggingRule.log.contains("Verifying SAP Cloud Platform Console Client location '/env/neo'.")
+        assert loggingRule.log.contains("Verification success. SAP Cloud Platform Console Client location '/env/neo' exists.")
     }
 
     @Test
@@ -114,8 +114,8 @@ class ToolDescriptorTest extends BasePiperTest {
 
         tool.verifyToolExecutable(script, configuration)
 
-        assert jlr.log.contains("Verifying SAP Cloud Platform Console Client '/env/neo/tools/neo.sh'.")
-        assert jlr.log.contains("Verification success. SAP Cloud Platform Console Client '/env/neo/tools/neo.sh' exists.")
+        assert loggingRule.log.contains("Verifying SAP Cloud Platform Console Client '/env/neo/tools/neo.sh'.")
+        assert loggingRule.log.contains("Verification success. SAP Cloud Platform Console Client '/env/neo/tools/neo.sh' exists.")
     }
 
     @Test
@@ -125,8 +125,8 @@ class ToolDescriptorTest extends BasePiperTest {
 
         tool.verifyVersion(script, configuration)
 
-        assert jlr.log.contains("Verifying SAP Cloud Platform Console Client version 3.39.10 or compatible version.")
-        assert jlr.log.contains("Verification success. SAP Cloud Platform Console Client version 3.39.10 is installed.")
+        assert loggingRule.log.contains("Verifying SAP Cloud Platform Console Client version 3.39.10 or compatible version.")
+        assert loggingRule.log.contains("Verification success. SAP Cloud Platform Console Client version 3.39.10 is installed.")
     }
 
     @Test
@@ -161,8 +161,8 @@ class ToolDescriptorTest extends BasePiperTest {
 
         tool.verifyVersion(script, configuration)
 
-        assert jlr.log.contains("Verifying SAP Cloud Platform Console Client version 3.39.10 or compatible version.")
-        assert jlr.log.contains("Verification success. SAP Cloud Platform Console Client version 3.39.10 is installed.")
+        assert loggingRule.log.contains("Verifying SAP Cloud Platform Console Client version 3.39.10 or compatible version.")
+        assert loggingRule.log.contains("Verification success. SAP Cloud Platform Console Client version 3.39.10 is installed.")
     }
 
     @Test
