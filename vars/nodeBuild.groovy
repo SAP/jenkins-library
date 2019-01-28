@@ -1,5 +1,8 @@
 import groovy.transform.Field
 
+import com.sap.piper.ConfigurationHelper
+import com.sap.piper.Utils
+
 @Field def STEP_NAME = getClass().getName()
 @Field Set STEP_CONFIG_KEYS = [
     'dockerImage'
