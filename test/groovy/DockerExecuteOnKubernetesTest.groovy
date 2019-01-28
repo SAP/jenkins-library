@@ -291,7 +291,7 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
 
     @Test
     void testSkipDockerImagePull() throws Exception {
-        jsr.step.dockerExecuteOnKubernetes(
+        stepRule.step.dockerExecuteOnKubernetes(
             script: nullScript,
             dockerAlwaysPullImage: false,
             containerMap: ['maven:3.5-jdk-8-alpine': 'mavenexecute']
@@ -306,7 +306,7 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
 
     @Test
     void testSkipSidecarImagePull() throws Exception {
-        jsr.step.dockerExecuteOnKubernetes(
+        stepRule.step.dockerExecuteOnKubernetes(
             script: nullScript,
             juStabUtils: utils,
             containerCommands: ['selenium/standalone-chrome': ''],

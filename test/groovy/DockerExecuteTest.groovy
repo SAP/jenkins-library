@@ -140,7 +140,7 @@ class DockerExecuteTest extends BasePiperTest {
     @Test
     void testSkipDockerImagePull() throws Exception {
         nullScript.commonPipelineEnvironment.configuration = [steps:[dockerExecute:[dockerAlwaysPullImage: false]]]
-        jsr.step.dockerExecute(
+        stepRule.step.dockerExecute(
             script: nullScript,
             dockerImage: 'maven:3.5-jdk-8-alpine'
         ) {
@@ -152,7 +152,7 @@ class DockerExecuteTest extends BasePiperTest {
 
     @Test
     void testSkipSidecarImagePull() throws Exception {
-        jsr.step.dockerExecute(
+        stepRule.step.dockerExecute(
             script: nullScript,
             dockerName: 'maven',
             dockerImage: 'maven:3.5-jdk-8-alpine',
