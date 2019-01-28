@@ -21,15 +21,15 @@ import hudson.scm.NullSCM
 public class TransportRequestReleaseTest extends BasePiperTest {
 
     private ExpectedException thrown = new ExpectedException()
-    private JenkinsStepRule jsr = new JenkinsStepRule(this)
-    private JenkinsLoggingRule jlr = new JenkinsLoggingRule(this)
+    private JenkinsStepRule stepRule = new JenkinsStepRule(this)
+    private JenkinsLoggingRule loggingRule = new JenkinsLoggingRule(this)
 
     @Rule
     public RuleChain ruleChain = Rules.getCommonRules(this)
         .around(new JenkinsReadYamlRule(this))
         .around(thrown)
-        .around(jsr)
-        .around(jlr)
+        .around(stepRule)
+        .around(loggingRule)
         .around(new JenkinsCredentialsRule(this)
             .withCredentials('CM', 'anonymous', '********'))
 
@@ -62,7 +62,7 @@ public class TransportRequestReleaseTest extends BasePiperTest {
         thrown.expect(IllegalArgumentException)
         thrown.expectMessage("Change document id not provided (parameter: 'changeDocumentId' or via commit history).")
 
-        jsr.step.transportRequestRelease(script: nullScript, transportRequestId: '001', cmUtils: cm)
+        stepRule.step.transportRequestRelease(script: nullScript, transportRequestId: '001', cmUtils: cm)
     }
 
     @Test
@@ -80,7 +80,7 @@ public class TransportRequestReleaseTest extends BasePiperTest {
         thrown.expect(IllegalArgumentException)
         thrown.expectMessage("Transport request id not provided (parameter: 'transportRequestId' or via commit history).")
 
-        jsr.step.transportRequestRelease(script: nullScript, changeDocumentId: '001', cmUtils: cm)
+        stepRule.step.transportRequestRelease(script: nullScript, changeDocumentId: '001', cmUtils: cm)
     }
 
     @Test
@@ -102,7 +102,7 @@ public class TransportRequestReleaseTest extends BasePiperTest {
             }
         }
 
-        jsr.step.transportRequestRelease(script: nullScript, changeDocumentId: '001', transportRequestId: '001', cmUtils: cm)
+        stepRule.step.transportRequestRelease(script: nullScript, changeDocumentId: '001', transportRequestId: '001', cmUtils: cm)
     }
 
     @Test
@@ -112,8 +112,8 @@ public class TransportRequestReleaseTest extends BasePiperTest {
         // provided via parameters. The other cases are tested by
         // corresponding tests for StepHelpers#getTransportRequestId(./.)
 
-        jlr.expect("[INFO] Closing transport request '002' for change document '001'.")
-        jlr.expect("[INFO] Transport Request '002' has been successfully closed.")
+        loggingRule.expect("[INFO] Closing transport request '002' for change document '001'.")
+        loggingRule.expect("[INFO] Transport Request '002' has been successfully closed.")
 
         Map receivedParams = [:]
 
@@ -134,7 +134,7 @@ public class TransportRequestReleaseTest extends BasePiperTest {
             }
         }
 
-        jsr.step.transportRequestRelease(script: nullScript, changeDocumentId: '001', transportRequestId: '002', cmUtils: cm)
+        stepRule.step.transportRequestRelease(script: nullScript, changeDocumentId: '001', transportRequestId: '002', cmUtils: cm)
 
         assert receivedParams == [type: BackendType.SOLMAN,
                                   changeId: '001',
@@ -147,9 +147,9 @@ public class TransportRequestReleaseTest extends BasePiperTest {
     @Test
     public void cmIntegrationSwichtedOffTest() {
 
-        jlr.expect('[INFO] Change management integration intentionally switched off.')
+        loggingRule.expect('[INFO] Change management integration intentionally switched off.')
 
-        jsr.step.transportRequestRelease(script: nullScript,
+        stepRule.step.transportRequestRelease(script: nullScript,
             changeManagement: [type: 'NONE'])
     }
 }

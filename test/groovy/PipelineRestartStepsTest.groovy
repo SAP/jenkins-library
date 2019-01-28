@@ -11,16 +11,16 @@ import static org.junit.Assert.assertThat
 
 class PipelineRestartStepsTest extends BasePiperTest {
 
-    private JenkinsErrorRule jer = new JenkinsErrorRule(this)
-    private JenkinsLoggingRule jlr = new JenkinsLoggingRule(this)
-    private JenkinsStepRule jsr = new JenkinsStepRule(this)
+    private JenkinsErrorRule errorRule = new JenkinsErrorRule(this)
+    private JenkinsLoggingRule loggingRule = new JenkinsLoggingRule(this)
+    private JenkinsStepRule stepRule = new JenkinsStepRule(this)
 
     @Rule
     public RuleChain chain = Rules.getCommonRules(this)
         .around(new JenkinsReadYamlRule(this))
-        .around(jer)
-        .around(jlr)
-        .around(jsr)
+        .around(errorRule)
+        .around(loggingRule)
+        .around(stepRule)
 
     @Test
     void testError() throws Exception {
@@ -50,7 +50,7 @@ class PipelineRestartStepsTest extends BasePiperTest {
         })
 
         try {
-            jsr.step.pipelineRestartSteps ([
+            stepRule.step.pipelineRestartSteps ([
                 script: nullScript,
                 jenkinsUtilsStub: jenkinsUtils,
                 sendMail: true,
@@ -60,7 +60,7 @@ class PipelineRestartStepsTest extends BasePiperTest {
                 throw new hudson.AbortException('I just created an error')
             }
         } catch(err) {
-            assertThat(jlr.log, containsString('ERROR occured: hudson.AbortException: I just created an error'))
+            assertThat(loggingRule.log, containsString('ERROR occured: hudson.AbortException: I just created an error'))
             assertThat(mailBuildResult, is('UNSTABLE'))
         }
     }
@@ -93,7 +93,7 @@ class PipelineRestartStepsTest extends BasePiperTest {
         })
 
         try {
-            jsr.step.pipelineRestartSteps ([
+            stepRule.step.pipelineRestartSteps ([
                 script: nullScript,
                 jenkinsUtilsStub: jenkinsUtils,
                 sendMail: false,
@@ -103,7 +103,7 @@ class PipelineRestartStepsTest extends BasePiperTest {
                 throw new hudson.AbortException('I just created an error')
             }
         } catch(err) {
-            assertThat(jlr.log, containsString('ERROR occured: hudson.AbortException: I just created an error'))
+            assertThat(loggingRule.log, containsString('ERROR occured: hudson.AbortException: I just created an error'))
             assertThat(mailBuildResult, is(''))
         }
     }
@@ -111,7 +111,7 @@ class PipelineRestartStepsTest extends BasePiperTest {
     @Test
     void testSuccess() throws Exception {
 
-        jsr.step.pipelineRestartSteps ([
+        stepRule.step.pipelineRestartSteps ([
             script: nullScript,
             jenkinsUtilsStub: jenkinsUtils,
             sendMail: false,
@@ -121,6 +121,6 @@ class PipelineRestartStepsTest extends BasePiperTest {
             nullScript.echo 'This is a test'
         }
 
-        assertThat(jlr.log, containsString('This is a test'))
+        assertThat(loggingRule.log, containsString('This is a test'))
     }
 }

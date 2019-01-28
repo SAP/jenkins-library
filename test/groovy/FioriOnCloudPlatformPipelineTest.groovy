@@ -1,3 +1,7 @@
+import util.CommandLineMatcher
+import util.JenkinsLockRule
+import util.JenkinsWithEnvRule
+
 import static org.hamcrest.Matchers.allOf
 import static org.hamcrest.Matchers.containsString
 import static org.hamcrest.Matchers.equalTo
@@ -46,16 +50,19 @@ class FioriOnCloudPlatformPipelineTest extends BasePiperTest {
         *   mta.yaml
     */
 
-    JenkinsStepRule jsr = new JenkinsStepRule(this)
-    JenkinsReadYamlRule jryr = new JenkinsReadYamlRule(this)
-    JenkinsShellCallRule jscr = new JenkinsShellCallRule(this)
+    JenkinsStepRule stepRule = new JenkinsStepRule(this)
+    JenkinsReadYamlRule readYamlRule = new JenkinsReadYamlRule(this)
+    JenkinsShellCallRule shellRule = new JenkinsShellCallRule(this)
+    private JenkinsLockRule jlr = new JenkinsLockRule(this)
 
     @Rule
     public RuleChain ruleChain = Rules
         .getCommonRules(this)
-        .around(jryr)
-        .around(jsr)
-        .around(jscr)
+        .around(readYamlRule)
+        .around(stepRule)
+        .around(shellRule)
+        .around(jlr)
+        .around(new JenkinsWithEnvRule(this))
         .around(new JenkinsCredentialsRule(this)
         .withCredentials('CI_CREDENTIALS_ID', 'foo', 'terceSpot'))
 
@@ -67,11 +74,11 @@ class FioriOnCloudPlatformPipelineTest extends BasePiperTest {
 
         //
         // Things we validate:
-        jscr.setReturnValue(JenkinsShellCallRule.Type.REGEX, '.*echo \\$JAVA_HOME.*', '/opt/sap/java')
-        jscr.setReturnValue(JenkinsShellCallRule.Type.REGEX, '.*echo \\$MTA_JAR_LOCATION.*', '/opt/sap')
-        jscr.setReturnValue(JenkinsShellCallRule.Type.REGEX, '.*echo \\$NEO_HOME.*', '/opt/sap/neo')
-        jscr.setReturnValue(JenkinsShellCallRule.Type.REGEX, ".*bin/java -version.*", '1.8.0') // the java version
-        jscr.setReturnValue(JenkinsShellCallRule.Type.REGEX, ".*bin/java -jar .*mta.jar", '1.36.0') // the mta version
+        shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, '.*echo \\$JAVA_HOME.*', '/opt/sap/java')
+        shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, '.*echo \\$MTA_JAR_LOCATION.*', '/opt/sap')
+        shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, '.*echo \\$NEO_HOME.*', '/opt/sap/neo')
+        shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, ".*bin/java -version.*", '1.8.0') // the java version
+        shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, ".*bin/java -jar .*mta.jar", '1.36.0') // the mta version
 
         //
         // there is a check for the mta.yaml file and for the deployable test.mtar file
@@ -88,7 +95,7 @@ class FioriOnCloudPlatformPipelineTest extends BasePiperTest {
 
         //
         // the properties below we read out of the yaml file
-        jryr.registerYaml('mta.yaml', ('''
+        readYamlRule.registerYaml('mta.yaml', ('''
                                        |ID : "test"
                                        |PATH : "."
                                        |''' as CharSequence).stripMargin())
@@ -98,6 +105,7 @@ class FioriOnCloudPlatformPipelineTest extends BasePiperTest {
         // to be able to extend the path we have to have some initial value.
         binding.setVariable('PATH', '/usr/bin')
 
+        helper.registerAllowedMethod('pwd', [], { return "./" })
     }
 
     @Test
@@ -113,11 +121,11 @@ class FioriOnCloudPlatformPipelineTest extends BasePiperTest {
                                     ]
                                 ]
 
-        jsr.step.fioriOnCloudPlatformPipeline(script: nullScript)
+        stepRule.step.fioriOnCloudPlatformPipeline(script: nullScript)
 
         //
         // the mta build call:
-        assertThat(jscr.shell, hasItem(
+        assertThat(shellRule.shell, hasItem(
                                 allOf(  containsString('java -jar /opt/sap/mta.jar'),
                                         containsString('--mtar test.mtar'),
                                         containsString('--build-target=NEO'),
@@ -129,8 +137,14 @@ class FioriOnCloudPlatformPipelineTest extends BasePiperTest {
 
         //
         // the neo deploy call:
-        assertThat(jscr.shell, hasItem('#!/bin/bash "/opt/sap/neo/tools/neo.sh" deploy-mta --source "test.mtar" ' +
-            '--host \'hana.example.com\' --account \'myTestAccount\' --synchronous ' +
-            '--user \'foo\' --password \'terceSpot\''))
+        Assert.assertThat(shellRule.shell,
+            new CommandLineMatcher()
+                .hasProlog("\"/opt/sap/neo/tools/neo.sh\" deploy-mta")
+                .hasSingleQuotedOption('host', 'hana\\.example\\.com')
+                .hasSingleQuotedOption('account', 'myTestAccount')
+                .hasSingleQuotedOption('password', 'terceSpot')
+                .hasSingleQuotedOption('user', 'foo')
+                .hasSingleQuotedOption('source', 'test.mtar')
+                .hasArgument('synchronous'))
     }
 }
