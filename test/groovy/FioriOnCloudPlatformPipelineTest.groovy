@@ -1,3 +1,7 @@
+import util.CommandLineMatcher
+import util.JenkinsLockRule
+import util.JenkinsWithEnvRule
+
 import static org.hamcrest.Matchers.allOf
 import static org.hamcrest.Matchers.containsString
 import static org.hamcrest.Matchers.equalTo
@@ -49,6 +53,7 @@ class FioriOnCloudPlatformPipelineTest extends BasePiperTest {
     JenkinsStepRule stepRule = new JenkinsStepRule(this)
     JenkinsReadYamlRule readYamlRule = new JenkinsReadYamlRule(this)
     JenkinsShellCallRule shellRule = new JenkinsShellCallRule(this)
+    private JenkinsLockRule jlr = new JenkinsLockRule(this)
 
     @Rule
     public RuleChain ruleChain = Rules
@@ -56,6 +61,8 @@ class FioriOnCloudPlatformPipelineTest extends BasePiperTest {
         .around(readYamlRule)
         .around(stepRule)
         .around(shellRule)
+        .around(jlr)
+        .around(new JenkinsWithEnvRule(this))
         .around(new JenkinsCredentialsRule(this)
         .withCredentials('CI_CREDENTIALS_ID', 'foo', 'terceSpot'))
 
@@ -98,6 +105,7 @@ class FioriOnCloudPlatformPipelineTest extends BasePiperTest {
         // to be able to extend the path we have to have some initial value.
         binding.setVariable('PATH', '/usr/bin')
 
+        helper.registerAllowedMethod('pwd', [], { return "./" })
     }
 
     @Test
@@ -129,8 +137,14 @@ class FioriOnCloudPlatformPipelineTest extends BasePiperTest {
 
         //
         // the neo deploy call:
-        assertThat(shellRule.shell, hasItem('#!/bin/bash "/opt/sap/neo/tools/neo.sh" deploy-mta --source "test.mtar" ' +
-            '--host \'hana.example.com\' --account \'myTestAccount\' --synchronous ' +
-            '--user \'foo\' --password \'terceSpot\''))
+        Assert.assertThat(shellRule.shell,
+            new CommandLineMatcher()
+                .hasProlog("\"/opt/sap/neo/tools/neo.sh\" deploy-mta")
+                .hasSingleQuotedOption('host', 'hana\\.example\\.com')
+                .hasSingleQuotedOption('account', 'myTestAccount')
+                .hasSingleQuotedOption('password', 'terceSpot')
+                .hasSingleQuotedOption('user', 'foo')
+                .hasSingleQuotedOption('source', 'test.mtar')
+                .hasArgument('synchronous'))
     }
 }
