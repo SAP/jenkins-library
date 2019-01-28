@@ -21,17 +21,17 @@ import static org.junit.Assert.assertFalse
 
 class DockerExecuteTest extends BasePiperTest {
     private DockerMock docker
-    private JenkinsLoggingRule jlr = new JenkinsLoggingRule(this)
-    private JenkinsStepRule jsr = new JenkinsStepRule(this)
+    private JenkinsLoggingRule loggingRule = new JenkinsLoggingRule(this)
+    private JenkinsStepRule stepRule = new JenkinsStepRule(this)
 
     @Rule
     public RuleChain ruleChain = Rules
         .getCommonRules(this)
         .around(new JenkinsReadYamlRule(this))
-        .around(jlr)
-        .around(jsr)
+        .around(loggingRule)
+        .around(stepRule)
 
-    int whichDockerReturnValue = 0
+    int dockerPsReturnValue = 0
     def bodyExecuted
     def containerName
 
@@ -41,7 +41,7 @@ class DockerExecuteTest extends BasePiperTest {
         docker = new DockerMock()
         JenkinsUtils.metaClass.static.isPluginActive = {def s -> new PluginMock(s).isActive()}
         binding.setVariable('docker', docker)
-        helper.registerAllowedMethod('sh', [Map.class], {return whichDockerReturnValue})
+        helper.registerAllowedMethod('sh', [Map.class], {return dockerPsReturnValue})
     }
 
     @Test
@@ -52,12 +52,12 @@ class DockerExecuteTest extends BasePiperTest {
         })
         binding.setVariable('env', [POD_NAME: 'testpod', ON_K8S: 'true'])
         ContainerMap.instance.setMap(['testpod': ['maven:3.5-jdk-8-alpine': 'mavenexec']])
-        jsr.step.dockerExecute(script: nullScript,
+        stepRule.step.dockerExecute(script: nullScript,
             dockerImage: 'maven:3.5-jdk-8-alpine',
             dockerEnvVars: ['http_proxy': 'http://proxy:8000']) {
             bodyExecuted = true
         }
-        assertTrue(jlr.log.contains('Executing inside a Kubernetes Container'))
+        assertTrue(loggingRule.log.contains('Executing inside a Kubernetes Container'))
         assertEquals('mavenexec', containerName)
         assertTrue(bodyExecuted)
      }
@@ -67,12 +67,12 @@ class DockerExecuteTest extends BasePiperTest {
         helper.registerAllowedMethod('dockerExecuteOnKubernetes', [Map.class, Closure.class], { Map config, Closure body -> body() })
         binding.setVariable('env', [ON_K8S: 'true'])
         ContainerMap.instance.setMap(['testpod': ['maven:3.5-jdk-8-alpine': 'mavenexec']])
-        jsr.step.dockerExecute(script: nullScript,
+        stepRule.step.dockerExecute(script: nullScript,
             dockerImage: 'maven:3.5-jdk-8-alpine',
             dockerEnvVars: ['http_proxy': 'http://proxy:8000']) {
             bodyExecuted = true
         }
-        assertTrue(jlr.log.contains('Executing inside a Kubernetes Pod'))
+        assertTrue(loggingRule.log.contains('Executing inside a Kubernetes Pod'))
         assertTrue(bodyExecuted)
     }
 
@@ -81,12 +81,12 @@ class DockerExecuteTest extends BasePiperTest {
         helper.registerAllowedMethod('dockerExecuteOnKubernetes', [Map.class, Closure.class], { Map config, Closure body -> body() })
         binding.setVariable('env', [POD_NAME: 'testpod', ON_K8S: 'true'])
         ContainerMap.instance.setMap([:])
-        jsr.step.dockerExecute(script: nullScript,
+        stepRule.step.dockerExecute(script: nullScript,
             dockerImage: 'maven:3.5-jdk-8-alpine',
             dockerEnvVars: ['http_proxy': 'http://proxy:8000']) {
             bodyExecuted = true
         }
-        assertTrue(jlr.log.contains('Executing inside a Kubernetes Pod'))
+        assertTrue(loggingRule.log.contains('Executing inside a Kubernetes Pod'))
         assertTrue(bodyExecuted)
     }
 
@@ -95,18 +95,40 @@ class DockerExecuteTest extends BasePiperTest {
         helper.registerAllowedMethod('dockerExecuteOnKubernetes', [Map.class, Closure.class], { Map config, Closure body -> body() })
         binding.setVariable('env', [POD_NAME: 'testpod', ON_K8S: 'true'])
         ContainerMap.instance.setMap(['testpod':[:]])
-        jsr.step.dockerExecute(script: nullScript,
+        stepRule.step.dockerExecute(script: nullScript,
             dockerImage: 'maven:3.5-jdk-8-alpine',
             dockerEnvVars: ['http_proxy': 'http://proxy:8000']) {
             bodyExecuted = true
         }
-        assertTrue(jlr.log.contains('Executing inside a Kubernetes Pod'))
+        assertTrue(loggingRule.log.contains('Executing inside a Kubernetes Pod'))
+        assertTrue(bodyExecuted)
+    }
+
+    @Test
+    void testExecuteInsidePodWithCustomCommandAndShell() throws Exception {
+        Map kubernetesConfig = [:]
+        helper.registerAllowedMethod('dockerExecuteOnKubernetes', [Map.class, Closure.class], {Map config, Closure body ->
+            kubernetesConfig = config
+            return body()
+        })
+        binding.setVariable('env', [ON_K8S: 'true'])
+        stepRule.step.dockerExecute(
+            script: nullScript,
+            containerCommand: '/busybox/tail -f /dev/null',
+            containerShell: '/busybox/sh',
+            dockerImage: 'maven:3.5-jdk-8-alpine'
+        ){
+            bodyExecuted = true
+        }
+        assertTrue(loggingRule.log.contains('Executing inside a Kubernetes Pod'))
+        assertThat(kubernetesConfig.containerCommand, is('/busybox/tail -f /dev/null'))
+        assertThat(kubernetesConfig.containerShell, is('/busybox/sh'))
         assertTrue(bodyExecuted)
     }
 
     @Test
     void testExecuteInsideDockerContainer() throws Exception {
-        jsr.step.dockerExecute(script: nullScript, dockerImage: 'maven:3.5-jdk-8-alpine') {
+        stepRule.step.dockerExecute(script: nullScript, dockerImage: 'maven:3.5-jdk-8-alpine') {
             bodyExecuted = true
         }
         assertEquals('maven:3.5-jdk-8-alpine', docker.getImageName())
@@ -117,49 +139,50 @@ class DockerExecuteTest extends BasePiperTest {
 
     @Test
     void testExecuteInsideDockerContainerWithParameters() throws Exception {
-        jsr.step.dockerExecute(script: nullScript,
+        stepRule.step.dockerExecute(script: nullScript,
                       dockerImage: 'maven:3.5-jdk-8-alpine',
-                      dockerOptions: '-it',
+                      dockerOptions: '-description=lorem ipsum',
                       dockerVolumeBind: ['my_vol': '/my_vol'],
                       dockerEnvVars: ['http_proxy': 'http://proxy:8000']) {
             bodyExecuted = true
         }
         assertTrue(docker.getParameters().contains('--env https_proxy '))
         assertTrue(docker.getParameters().contains('--env http_proxy=http://proxy:8000'))
-        assertTrue(docker.getParameters().contains('-it'))
+        assertTrue(docker.getParameters().contains('description=lorem\\ ipsum'))
         assertTrue(docker.getParameters().contains('--volume my_vol:/my_vol'))
         assertTrue(bodyExecuted)
     }
 
     @Test
     void testExecuteInsideDockerContainerWithDockerOptionsList() throws Exception {
-        jsr.step.dockerExecute(script: nullScript,
+        stepRule.step.dockerExecute(script: nullScript,
             dockerImage: 'maven:3.5-jdk-8-alpine',
-            dockerOptions: ['-it', '--network=my-network'],
+            dockerOptions: ['-it', '--network=my-network', 'description=lorem ipsum'],
             dockerEnvVars: ['http_proxy': 'http://proxy:8000']) {
             bodyExecuted = true
         }
         assertTrue(docker.getParameters().contains('--env http_proxy=http://proxy:8000'))
         assertTrue(docker.getParameters().contains('-it'))
         assertTrue(docker.getParameters().contains('--network=my-network'))
+        assertTrue(docker.getParameters().contains('description=lorem\\ ipsum'))
     }
 
     @Test
     void testDockerNotInstalledResultsInLocalExecution() throws Exception {
-        whichDockerReturnValue = 1
-        jsr.step.dockerExecute(script: nullScript,
+        dockerPsReturnValue = 1
+        stepRule.step.dockerExecute(script: nullScript,
             dockerOptions: '-it') {
             bodyExecuted = true
         }
-        assertTrue(jlr.log.contains('No docker environment found'))
-        assertTrue(jlr.log.contains('Running on local environment'))
+        assertTrue(loggingRule.log.contains('Cannot connect to docker daemon'))
+        assertTrue(loggingRule.log.contains('Running on local environment'))
         assertTrue(bodyExecuted)
         assertFalse(docker.isImagePulled())
     }
 
     @Test
     void testSidecarDefault(){
-        jsr.step.dockerExecute(
+        stepRule.step.dockerExecute(
             script: nullScript,
             dockerName: 'maven',
             dockerImage: 'maven:3.5-jdk-8-alpine',
@@ -201,7 +224,7 @@ class DockerExecuteTest extends BasePiperTest {
             assertThat(params.containerWorkspaces['selenium/standalone-chrome'], is(''))
             body()
         })
-        jsr.step.dockerExecute(
+        stepRule.step.dockerExecute(
             script: nullScript,
             containerPortMappings: [
                 'selenium/standalone-chrome': [[name: 'selPort', containerPort: 4444, hostPort: 4444]]

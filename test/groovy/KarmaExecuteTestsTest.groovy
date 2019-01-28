@@ -10,20 +10,20 @@ import static org.hamcrest.Matchers.*
 import static org.junit.Assert.assertThat
 
 class KarmaExecuteTestsTest extends BasePiperTest {
-    private JenkinsStepRule jsr = new JenkinsStepRule(this)
-    private JenkinsLoggingRule jlr = new JenkinsLoggingRule(this)
-    private JenkinsShellCallRule jscr = new JenkinsShellCallRule(this)
-    private JenkinsEnvironmentRule jer = new JenkinsEnvironmentRule(this)
+    private JenkinsStepRule stepRule = new JenkinsStepRule(this)
+    private JenkinsLoggingRule loggingRule = new JenkinsLoggingRule(this)
+    private JenkinsShellCallRule shellRule = new JenkinsShellCallRule(this)
+    private JenkinsEnvironmentRule environmentRule = new JenkinsEnvironmentRule(this)
     private ExpectedException thrown = ExpectedException.none()
 
     @Rule
     public RuleChain rules = Rules
         .getCommonRules(this)
         .around(new JenkinsReadYamlRule(this))
-        .around(jscr)
-        .around(jlr)
-        .around(jer)
-        .around(jsr)
+        .around(shellRule)
+        .around(loggingRule)
+        .around(environmentRule)
+        .around(stepRule)
         .around(thrown)
 
     def seleniumParams = [:]
@@ -40,11 +40,11 @@ class KarmaExecuteTestsTest extends BasePiperTest {
 
     @Test
     void testDefaults() throws Exception {
-        jsr.step.karmaExecuteTests(
+        stepRule.step.karmaExecuteTests(
             script: nullScript,
             juStabUtils: utils
         )
-        assertThat(jscr.shell, hasItems(
+        assertThat(shellRule.shell, hasItems(
             containsString("cd '.' && npm install --quiet"),
             containsString("cd '.' && npm run karma")
         ))
