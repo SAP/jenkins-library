@@ -1,6 +1,8 @@
-import com.sap.piper.Utils
 import com.sap.piper.ConfigurationHelper
+import com.sap.piper.GenerateDocumentation
 import com.sap.piper.GitUtils
+import com.sap.piper.Utils
+
 import groovy.text.SimpleTemplateEngine
 import groovy.transform.Field
 
@@ -9,27 +11,97 @@ import static com.sap.piper.Prerequisites.checkScript
 @Field String STEP_NAME = getClass().getName()
 
 @Field Set GENERAL_CONFIG_KEYS = [
+    /**
+     * In case a `testRepository` is provided and it is protected, access credentials (as Jenkins credentials) can be provided with `gitSshKeyCredentialsId`. **Note: In case of using a protected repository, `testRepository` should include the ssh link to the repository.**
+     * @possibleValues Jenkins credentialId
+     */
     'gitSshKeyCredentialsId',
+    /**
+     * @possibleValues `true`, `false`
+     */
     'verbose'
 ]
 @Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS.plus([
+    /**
+     * A map of environment variables to set in the container, e.g. [http_proxy:'proxy:8080'].
+     */
     'dockerEnvVars',
+    /**
+     * The name of the docker image that should be used. If empty, Docker is not used and the command is executed directly on the Jenkins system.
+     */
     'dockerImage',
+    /**
+     * Only relevant for Kubernetes case: Specifies a dedicated user home directory for the container which will be passed as value for environment variable `HOME`.
+     */
     'dockerWorkspace',
+    /**
+     *
+     */
     'failOnError',
+    /**
+     * In case a `testRepository` is provided the branch in this repository can be specified with `gitBranch`.
+     */
     'gitBranch',
+    /**
+     *
+     */
     'installCommand',
+    /**
+     *
+     */
     'runCommand',
+    /**
+     *
+     */
     'seleniumHost',
+    /**
+     *
+     */
     'seleniumPort',
+    /**
+     * A map of environment variables to set in the sidecar container, similar to `dockerEnvVars`.
+     */
     'sidecarEnvVars',
+    /**
+     * The name of the docker image of the sidecar container. If empty, no sidecar container is started.
+     */
     'sidecarImage',
+    /**
+     *
+     */
     'stashContent',
+    /**
+     *
+     */
     'testOptions',
+    /**
+     * With `testRepository` the tests can be loaded from another reposirory.
+     */
     'testRepository'
 ])
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
 
+/**
+ * With this step [UIVeri5](https://github.com/SAP/ui5-uiveri5) tests can be executed.
+ *
+ * UIVeri5 describes following benefits on its GitHub page:
+ *
+ * * Automatic synchronization with UI5 app rendering so there is no need to add waits and sleeps to your test. Tests are reliable by design.
+ * * Tests are written in synchronous manner, no callbacks, no promise chaining so are really simple to write and maintain.
+ * * Full power of webdriverjs, protractor and jasmine - deferred selectors, custom matchers, custom locators.
+ * * Control locators (OPA5 declarative matchers) allow locating and interacting with UI5 controls.
+ * * Does not depend on testability support in applications - works with autorefreshing views, resizing elements, animated transitions.
+ * * Declarative authentications - authentication flow over OAuth2 providers, etc.
+ * * Console operation, CI ready, fully configurable, no need for java (comming soon) or IDE.
+ * * Covers full ui5 browser matrix - Chrome,Firefox,IE,Edge,Safari,iOS,Android.
+ * * Open-source, modify to suite your specific neeeds.
+ *
+ * !!! note "Browser Matrix"
+ *     With this step and the underlying Docker image ([selenium/standalone-chrome](https://github.com/SeleniumHQ/docker-selenium/tree/master/StandaloneChrome)) only Chrome tests are possible.
+ *
+ *     Testing of further browsers can be done with using a custom Docker image.
+ */
+@GenerateDocumentation
 void call(Map parameters = [:]) {
     handlePipelineStepErrors (stepName: STEP_NAME, stepParameters: parameters) {
         def script = checkScript(this, parameters) ?: this
