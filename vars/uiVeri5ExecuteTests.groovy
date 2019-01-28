@@ -20,13 +20,13 @@ import static com.sap.piper.Prerequisites.checkScript
     'gitBranch',
     'installCommand',
     'runCommand',
-    'seleniumHostAndPort',
+    'seleniumHost',
+    'seleniumPort',
     'sidecarEnvVars',
     'sidecarImage',
     'stashContent',
     'testOptions',
-    'testRepository',
-    'testServerUrl'
+    'testRepository'
 ])
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
 
@@ -54,9 +54,6 @@ void call(Map parameters = [:]) {
         config.stashContent = config.testRepository ? [GitUtils.handleTestRepository(this, config)] : utils.unstashAll(config.stashContent)
         config.installCommand = SimpleTemplateEngine.newInstance().createTemplate(config.installCommand).make([config: config]).toString()
         config.runCommand = SimpleTemplateEngine.newInstance().createTemplate(config.runCommand).make([config: config]).toString()
-
-        if(!config.dockerEnvVars.TARGET_SERVER_URL)
-            config.dockerEnvVars.TARGET_SERVER_URL = config.testServerUrl
 
         seleniumExecuteTests(
             script: script,
