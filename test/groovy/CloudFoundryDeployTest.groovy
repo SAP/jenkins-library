@@ -306,7 +306,7 @@ class CloudFoundryDeployTest extends BasePiperTest {
 
         assertThat(shellRule.shell, hasItem(containsString('cf login -u "test_cf" -p \'********\' -a https://api.cf.eu10.hana.ondemand.com -o "testOrg" -s "testSpace"')))
         assertThat(shellRule.shell, hasItem(containsString("cf blue-green-deploy testAppName --delete-old-apps -f 'test.yml'")))
-        assertThat(shellRule.shell, not(hasItem(containsString("cf stop testAppName-old &> 1-cfStopOutput.txt"))))
+        assertThat(shellRule.shell, not(hasItem(containsString("cf stop testAppName-old &>"))))
         assertThat(shellRule.shell, hasItem(containsString("cf logout")))
 
     }
@@ -314,8 +314,6 @@ class CloudFoundryDeployTest extends BasePiperTest {
     @Test
     void testCfNativeBlueGreenKeepOldInstance() {
 
-        // Strange that the content below does not matter. The file is required, but
-        // it should not be accessed in case from cf call is zero.
         readYamlRule.registerYaml('test.yml', "applications: [[]]")
 
         stepRule.step.cloudFoundryDeploy([
@@ -337,20 +335,24 @@ class CloudFoundryDeployTest extends BasePiperTest {
 
         assertThat(shellRule.shell, hasItem(containsString('cf login -u "test_cf" -p \'********\' -a https://api.cf.eu10.hana.ondemand.com -o "testOrg" -s "testSpace"')))
         assertThat(shellRule.shell, hasItem(containsString("cf blue-green-deploy testAppName -f 'test.yml'")))
-        assertThat(shellRule.shell, hasItem(containsString("cf stop testAppName-old &> 1-cfStopOutput.txt")))
+        assertThat(shellRule.shell, hasItem(containsString("cf stop testAppName-old &>")))
         assertThat(shellRule.shell, hasItem(containsString("cf logout")))
     }
 
     @Test
     void testCfNativeBlueGreenKeepOldInstanceShouldThrowErrorOnStopError(){
+
+        // the name of the file which will be written contains a dynamically generated UUID
+        // we force randomUUID() to return 1 that we can use this file in the test
+        UUID.metaClass.static.randomUUID = { -> 1}
         new File(tmpDir, '1-cfStopOutput.txt').write('any error message')
 
         shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, '^cf stop testAppName-old &> .*$', 1)
-        UUID.metaClass.static.randomUUID = { -> 1}
 
         readYamlRule.registerYaml('test.yml', "applications: [[]]")
 
         thrown.expect(hudson.AbortException)
+        thrown.expectMessage("Could not stop application testAppName-old. Error: any error message")
 
         stepRule.step.cloudFoundryDeploy([
             script: nullScript,
@@ -393,7 +395,7 @@ class CloudFoundryDeployTest extends BasePiperTest {
             cfManifest: 'test.yml'
         ])
 
-        assertThat(shellRule.shell, not(hasItem(containsString("cf stop testAppName-old &> 1-cfStopOutput.txt"))))
+        assertThat(shellRule.shell, not(hasItem(containsString("cf stop testAppName-old &>"))))
     }
 
     @Test

@@ -174,7 +174,7 @@ def deployCfNative (config) {
             cf plugins
             cf ${deployCommand} ${config.cloudFoundry.appName ?: ''} ${blueGreenDeployOptions} -f '${config.cloudFoundry.manifest}' ${config.smokeTest}
             """
-        stopOldAppIfRequired(config)
+        stopOldAppIfRunning(config)
         sh "cf logout"
     }
 }
@@ -196,7 +196,7 @@ private String deleteOptionIfRequired(Map config) {
     }
 }
 
-private void stopOldAppIfRequired(Map config) {
+private void stopOldAppIfRunning(Map config) {
     String oldAppName = "${config.cloudFoundry.appName}-old"
     String cfStopOutputFileName = "${UUID.randomUUID()}-cfStopOutput.txt"
 
