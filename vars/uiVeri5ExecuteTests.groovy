@@ -31,7 +31,8 @@ import static com.sap.piper.Prerequisites.checkScript
      */
     'dockerWorkspace',
     /**
-     *
+     * With `failOnError` the behavior in case tests fail can be defined.
+     * @possibleValues `true`, `false`
      */
     'failOnError',
     /**
@@ -39,19 +40,19 @@ import static com.sap.piper.Prerequisites.checkScript
      */
     'gitBranch',
     /**
-     *
+     * The command that is executed to install the test tool.
      */
     'installCommand',
     /**
-     *
+     * The command that is executed to start the tests.
      */
     'runCommand',
     /**
-     *
+     * The host of the selenium hub, this is set automatically to `localhost` in a Kubernetes environment (determined by the `ON_K8S` environment variable) of to `selenium` in any other case. The value is only needed for the `runCommand`.
      */
     'seleniumHost',
     /**
-     *
+     * The port of the selenium hub. The value is only needed for the `runCommand`.
      */
     'seleniumPort',
     /**
@@ -63,11 +64,11 @@ import static com.sap.piper.Prerequisites.checkScript
      */
     'sidecarImage',
     /**
-     *
+     * If specific stashes should be considered for the tests, their names need to be passed via the parameter `stashContent`.
      */
     'stashContent',
     /**
-     *
+     * This allows to set specific options for the UIVeri5 execution. Details can be found [in the UIVeri5 documentation](https://github.com/SAP/ui5-uiveri5/blob/master/docs/config/config.md#configuration).
      */
     'testOptions',
     /**
