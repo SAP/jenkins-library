@@ -46,7 +46,7 @@ Executes a closure inside a container in a kubernetes pod. Proxy environment var
 * `containerWorkspaces` specifies workspace (=home directory of user) per container. If not provided `dockerWorkspace` will be used. If empty, home directory will not be set.
 * `dockerImage` Name of the docker image that should be used. If empty, Docker is not used.
 * `dockerEnvVars` Environment variables to set in the container, e.g. [http_proxy:'proxy:8080']
-* `dockerAlwaysPullImage`: Set this to 'false' to bypass docker image pulls. Usefull during development processes. Allows testing of images which are available in the local registry only.
+* `dockerAlwaysPullImage`: Set this to 'false' to bypass a docker image pull. Usefull during development process. Allows testing of images which are available in the local registry only.
 * `dockerWorkspace` Docker options to be set when starting the container. It can be a list or a string.
 
 ## Step configuration
