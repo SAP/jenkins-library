@@ -316,8 +316,6 @@ class CloudFoundryDeployTest extends BasePiperTest {
 
         // Strange that the content below does not matter. The file is required, but
         // it should not be accessed in case from cf call is zero.
-        new File(tmpDir, '1-cfStopOutput.txt').write('Content here does not matter')
-        UUID.metaClass.static.randomUUID = { -> 1}
         readYamlRule.registerYaml('test.yml', "applications: [[]]")
 
         stepRule.step.cloudFoundryDeploy([

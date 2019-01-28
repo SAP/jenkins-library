@@ -202,10 +202,13 @@ private void stopOldAppIfRequired(Map config) {
 
     if (config.keepOldInstance && config.deployType == 'blue-green') {
         int cfStopReturncode = sh (returnStatus: true, script: "cf stop $oldAppName  &> $cfStopOutputFileName")
-        String cfStopOutput = readFile(file: cfStopOutputFileName)
 
-        if (cfStopReturncode > 0 && !(cfStopOutput.contains("$oldAppName not found"))) {
+        if (cfStopReturncode > 0) {
+            String cfStopOutput = readFile(file: cfStopOutputFileName)
+
+            if (!cfStopOutput.contains("$oldAppName not found")) {
                 error "Could not stop application $oldAppName. Error: $cfStopOutput"
+            }
         }
     }
 }
