@@ -17,7 +17,7 @@ Proxy environment variables defined on the Jenkins machine are also available in
 |dockerImage|no|`''`||
 |dockerName|no|||
 |dockerOptions|no|`''`||
-|dockerAlwaysPullImage|no|true|boolean value: `true`, `false` |
+|dockerPullImage|no|true|boolean value: `true`, `false` |
 |dockerVolumeBind|no|`[:]`||
 |dockerWorkspace|no|||
 |jenkinsKubernetes|no|`[jnlpAgent:s4sdk/jenkins-agent-k8s:latest]`||
@@ -25,7 +25,7 @@ Proxy environment variables defined on the Jenkins machine are also available in
 |sidecarImage|no|||
 |sidecarName|no|||
 |sidecarOptions|no|||
-|sidecarAlwaysPullImage|no|true|boolean value: `true`, `false` |
+|sidecarPullImage|no|true|boolean value: `true`, `false` |
 |sidecarVolumeBind|no|||
 |sidecarWorkspace|no|||
 
@@ -37,14 +37,14 @@ Proxy environment variables defined on the Jenkins machine are also available in
 * `dockerImage`: Name of the docker image that should be used. If empty, Docker is not used and the command is executed directly on the Jenkins system.
 * `dockerName`: Kubernetes case: Name of the container launching `dockerImage`, SideCar: Name of the container in local network
 * `dockerOptions` Docker options to be set when starting the container. It can be a list or a string.
-* `dockerAlwaysPullImage`: Set this to 'false' to bypass a docker image pull. Usefull during development process. Allows testing of images which are available in the local registry only.
+* `dockerPullImage`: Set this to 'false' to bypass a docker image pull. Usefull during development process. Allows testing of images which are available in the local registry only.
 * `dockerVolumeBind` Volumes that should be mounted into the container.
 * `dockerWorkspace`: only relevant for Kubernetes case: specifies a dedicated user home directory for the container which will be passed as value for environment variable `HOME`
 * `sidecarEnvVars` defines environment variables for the sidecar container, similar to `dockerEnvVars`
 * `sidecarImage`: Name of the docker image of the sidecar container. Do not provide this value if no sidecar container is required.
 * `sidecarName`: as `dockerName` for the sidecar container
 * `sidecarOptions`: as `dockerOptions` for the sidecar container
-* `sidecarAlwaysPullImage`: Set this to 'false' to bypass a docker image pull. Usefull during development process. Allows testing of images which are available in the local registry only.
+* `sidecarPullImage`: Set this to 'false' to bypass a docker image pull. Usefull during development process. Allows testing of images which are available in the local registry only.
 * `sidecarVolumeBind`: as `dockerVolumeBind` for the sidecar container
 * `sidecarWorkspace`: as `dockerWorkspace` for the sidecar container
 
@@ -66,7 +66,7 @@ In following sections the configuration is possible:
 |dockerImage||X|X|
 |dockerName||X|X|
 |dockerOptions||X|X|
-|dockerAlwaysPullImage||X|X|
+|dockerPullImage||X|X|
 |dockerVolumeBind||X|X|
 |dockerWorkspace||X|X|
 |jenkinsKubernetes|X|||
@@ -74,7 +74,7 @@ In following sections the configuration is possible:
 |sidecarImage||X|X|
 |sidecarName||X|X|
 |sidecarOptions||X|X|
-|sidecarAlwaysPullImage||X|X|
+|sidecarPullImage||X|X|
 |sidecarVolumeBind||X|X|
 |sidecarWorkspace||X|X|
 

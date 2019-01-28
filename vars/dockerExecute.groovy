@@ -20,14 +20,14 @@ import groovy.transform.Field
     'dockerOptions',
     'dockerWorkspace',
     'dockerVolumeBind',
-    'dockerAlwaysPullImage',
+    'dockerPullImage',
     'sidecarEnvVars',
     'sidecarImage',
     'sidecarName',
     'sidecarOptions',
     'sidecarWorkspace',
     'sidecarVolumeBind',
-    'sidecarAlwaysPullImage',
+    'sidecarPullImage',
     'stashContent'
 ]
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
@@ -60,7 +60,7 @@ void call(Map parameters = [:], body) {
                         containerCommand: config.containerCommand,
                         containerShell: config.containerShell,
                         dockerImage: config.dockerImage,
-                        dockerAlwaysPullImage: config.dockerAlwaysPullImage,
+                        dockerPullImage: config.dockerPullImage,
                         dockerEnvVars: config.dockerEnvVars,
                         dockerWorkspace: config.dockerWorkspace,
                         stashContent: config.stashContent
@@ -73,7 +73,7 @@ void call(Map parameters = [:], body) {
                         script: script,
                         containerCommands: [:],
                         containerEnvVars: [:],
-                        containerAlwaysPullImageFlags: [:],
+                        containerPullImageFlags: [:],
                         containerMap: [:],
                         containerName: config.dockerName,
                         containerPortMappings: [:],
@@ -85,8 +85,8 @@ void call(Map parameters = [:], body) {
                     paramMap.containerEnvVars[config.dockerImage] = config.dockerEnvVars
                     paramMap.containerEnvVars[config.sidecarImage] = config.sidecarEnvVars
 
-                    paramMap.containerAlwaysPullImageFlags[config.dockerImage] = config.dockerAlwaysPullImage
-                    paramMap.containerAlwaysPullImageFlags[config.sidecarImage] = config.sidecarAlwaysPullImage
+                    paramMap.containerPullImageFlags[config.dockerImage] = config.dockerPullImage
+                    paramMap.containerPullImageFlags[config.sidecarImage] = config.sidecarPullImage
 
                     paramMap.containerMap[config.dockerImage] = config.dockerName
                     paramMap.containerMap[config.sidecarImage] = config.sidecarName
@@ -117,7 +117,7 @@ void call(Map parameters = [:], body) {
             if (executeInsideDocker && config.dockerImage) {
                 utils.unstashAll(config.stashContent)
                 def image = docker.image(config.dockerImage)
-                if (config.dockerAlwaysPullImage) image.pull()
+                if (config.dockerPullImage) image.pull()
                 else echo"[INFO][$STEP_NAME] Skipped docker image pull."
                 if (!config.sidecarImage) {
                     image.inside(getDockerOptions(config.dockerEnvVars, config.dockerVolumeBind, config.dockerOptions)) {
@@ -128,7 +128,7 @@ void call(Map parameters = [:], body) {
                     sh "docker network create ${networkName}"
                     try{
                         def sidecarImage = docker.image(config.sidecarImage)
-                        if (config.sidecarAlwaysPullImage) sidecarImage.pull()
+                        if (config.sidecarPullImage) sidecarImage.pull()
                         else echo"[INFO][$STEP_NAME] Skipped sidecar image pull."
                         config.sidecarOptions = config.sidecarOptions?:[]
                         if (config.sidecarName)

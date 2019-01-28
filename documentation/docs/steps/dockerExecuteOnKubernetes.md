@@ -19,7 +19,7 @@ Executes a closure inside a container in a kubernetes pod. Proxy environment var
 |containerCommand|no|||
 |containerCommands|no|||
 |containerEnvVars|no|||
-|containerAlwaysPullImageFlags|no|true|boolean value: `true`, `false` |
+|containerPullImageFlags|no|true|boolean value: `true`, `false` |
 |containerMap|no|`[:]`||
 |containerName|no|||
 |containerPortMappings|no|||
@@ -27,7 +27,7 @@ Executes a closure inside a container in a kubernetes pod. Proxy environment var
 |containerWorkspaces|no|||
 |dockerEnvVars|no|`[:]`||
 |dockerImage|yes|||
-|dockerAlwaysPullImage|no|true|boolean value: `true`, `false` |
+|dockerPullImage|no|true|boolean value: `true`, `false` |
 |dockerWorkspace|no|`''`||
 |jenkinsKubernetes|no|`[jnlpAgent:s4sdk/jenkins-agent-k8s:latest]`||
 |stashExcludes|no|`[workspace:nohup.out]`||
@@ -37,7 +37,7 @@ Executes a closure inside a container in a kubernetes pod. Proxy environment var
 * `containerCommand`: allows to specify start command for container created with dockerImage parameter to overwrite Piper default (`/usr/bin/tail -f /dev/null`).
 * `containerCommands` specifies start command for containers to overwrite Piper default (`/usr/bin/tail -f /dev/null`). If container's defaultstart command should be used provide empty string like: `['selenium/standalone-chrome': '']`.
 * `containerEnvVars` specifies environment variables per container. If not provided `dockerEnvVars` will be used.
-* `containerAlwaysPullImageFlags` specifies the alwaysPullImage flag per container.
+* `containerPullImageFlags` specifies the pullImage flag per container.
 * `containerMap` A map of docker image to the name of the container. The pod will be created with all the images from this map and they are labled based on the value field of each map entry.
    Example: `['maven:3.5-jdk-8-alpine': 'mavenExecute', 'selenium/standalone-chrome': 'selenium', 'famiko/jmeter-base': 'checkJMeter', 's4sdk/docker-cf-cli': 'cloudfoundry']`
 * `containerName`: optional configuration in combination with containerMap to define the container where the commands should be executed in
@@ -46,7 +46,7 @@ Executes a closure inside a container in a kubernetes pod. Proxy environment var
 * `containerWorkspaces` specifies workspace (=home directory of user) per container. If not provided `dockerWorkspace` will be used. If empty, home directory will not be set.
 * `dockerImage` Name of the docker image that should be used. If empty, Docker is not used.
 * `dockerEnvVars` Environment variables to set in the container, e.g. [http_proxy:'proxy:8080']
-* `dockerAlwaysPullImage`: Set this to 'false' to bypass a docker image pull. Usefull during development process. Allows testing of images which are available in the local registry only.
+* `dockerPullImage`: Set this to 'false' to bypass a docker image pull. Usefull during development process. Allows testing of images which are available in the local registry only.
 * `dockerWorkspace` Docker options to be set when starting the container. It can be a list or a string.
 
 ## Step configuration
@@ -60,14 +60,14 @@ In following sections the configuration is possible:
 |script||||
 |containerCommands||X|X|
 |containerEnvVars||X|X|
-|containerAlwaysPullImageFlags||X|X|
+|containerPullImageFlags||X|X|
 |containerMap||X|X|
 |containerName||X|X|
 |containerPortMappings||X|X|
 |containerWorkspaces||X|X|
 |dockerEnvVars||X|X|
 |dockerImage||X|X|
-|dockerAlwaysPullImage||X|X|
+|dockerPullImage||X|X|
 |dockerWorkspace||X|X|
 |jenkinsKubernetes|X|||
 |stashExcludes||X|X|

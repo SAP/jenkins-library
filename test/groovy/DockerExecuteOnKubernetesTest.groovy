@@ -53,7 +53,7 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
     def envList = []
     def portList = []
     def containerCommands = []
-    def alwaysPullImageMap = [:]
+    def pullImageMap = [:]
 
 
     @Before
@@ -79,7 +79,7 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
                 if (option.command) {
                     containerCommands.add(option.command)
                 }
-                alwaysPullImageMap.put(option.image.toString(), option.alwaysPullImage)
+                pullImageMap.put(option.image.toString(), option.alwaysPullImage)
             }
             body()
         })
@@ -293,14 +293,14 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
     void testSkipDockerImagePull() throws Exception {
         stepRule.step.dockerExecuteOnKubernetes(
             script: nullScript,
-            dockerAlwaysPullImage: false,
+            dockerPullImage: false,
             containerMap: ['maven:3.5-jdk-8-alpine': 'mavenexecute']
         ) {
             container(name: 'mavenexecute') {
                 bodyExecuted = true
             }
         }
-        assertEquals(false, alwaysPullImageMap.get('maven:3.5-jdk-8-alpine'))
+        assertEquals(false, pullImageMap.get('maven:3.5-jdk-8-alpine'))
         assertTrue(bodyExecuted)
     }
 
@@ -321,7 +321,7 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
             containerWorkspaces: [
                 'selenium/standalone-chrome': ''
             ],
-            containerAlwaysPullImageFlags: [
+            containerPullImageFlags: [
                 'maven:3.5-jdk-8-alpine': true,
                 'selenium/standalone-chrome': false
             ],
@@ -329,8 +329,8 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
         ) {
             bodyExecuted = true
         }
-        assertEquals(true, alwaysPullImageMap.get('maven:3.5-jdk-8-alpine'))
-        assertEquals(false, alwaysPullImageMap.get('selenium/standalone-chrome'))
+        assertEquals(true, pullImageMap.get('maven:3.5-jdk-8-alpine'))
+        assertEquals(false, pullImageMap.get('selenium/standalone-chrome'))
         assertTrue(bodyExecuted)
     }
 
