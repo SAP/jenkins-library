@@ -306,19 +306,23 @@ public class ChangeManagement implements Serializable {
 
         def cmd
         List args = []
-
         if(type == BackendType.SOLMAN) {
             cmd = 'release-transport'
             args << '-cID'
             args << changeId
+            args << '-tID'
+            args << transportRequestId
         } else if(type == BackendType.CTS) {
              cmd = 'export-transport'
+            args << '-tID'
+            args << transportRequestId
+        } else if(type ==BackendType.RFC) {
+            // do the right tasks
+            cmd = "cts releaseTransport:${transportRequestId}"
+            args = args.plus(["--env ABAP_DEVELOPMENT_CLIENT=001"])
         } else {
             throw new IllegalStateException("Invalid backend type: '${type}'")
         }
-
-        args << '-tID'
-        args << transportRequestId
 
         int rc = executeWithCredentials(type, '', [], endpoint, credentialsId, cmd, args, false, clientOpts) as int
         if(rc == 0) {
