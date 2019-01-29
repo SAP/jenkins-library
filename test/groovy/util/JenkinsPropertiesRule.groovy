@@ -19,6 +19,12 @@ class JenkinsPropertiesRule implements TestRule {
         configProperties = loadProperties(propertyPath)
     }
 
+    JenkinsPropertiesRule(BasePipelineTest testInstance, String propertyPath, Properties properties) {
+        this.testInstance = testInstance
+        this.propertyPath = propertyPath
+        configProperties = properties
+    }
+
 
     @Override
     Statement apply(Statement base, Description description) {

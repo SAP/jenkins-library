@@ -7,7 +7,6 @@ import groovy.transform.Field
 import hudson.AbortException
 
 import com.sap.piper.ConfigurationHelper
-import com.sap.piper.ConfigurationMerger
 import com.sap.piper.cm.BackendType
 import com.sap.piper.cm.ChangeManagement
 import com.sap.piper.cm.ChangeManagementException
@@ -95,8 +94,11 @@ void call(parameters = [:]) {
               */
             .withMandatoryProperty('changeManagement/endpoint')
 
-        new Utils().pushToSWA([step: STEP_NAME,
-                                stepParam1: parameters?.script == null], configuration)
+        new Utils().pushToSWA([
+            step: STEP_NAME,
+            stepParamKey1: 'scriptMissing',
+            stepParam1: parameters?.script == null
+        ], configuration)
 
         def changeId = getChangeDocumentId(cm, script, configuration)
 

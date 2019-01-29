@@ -2,6 +2,7 @@ package com.sap.piper
 
 import com.cloudbees.groovy.cps.NonCPS
 
+@API
 class ConfigurationHelper implements Serializable {
 
     static ConfigurationHelper newInstance(Script step, Map config = [:]) {
@@ -112,6 +113,7 @@ class ConfigurationHelper implements Serializable {
     Map use(){
         handleValidationFailures()
         MapUtils.traverse(config, { v -> (v instanceof GString) ? v.toString() : v })
+        if(config.verbose) step.echo "[${name}] Configuration: ${config}"
         return config
     }
 
@@ -161,6 +163,15 @@ class ConfigurationHelper implements Serializable {
                 existsMandatoryProperty(key, errorMessage)
         }else{
             existsMandatoryProperty(key, errorMessage)
+        }
+        return this
+    }
+
+    ConfigurationHelper withPropertyInValues(String key, Set values){
+        withMandatoryProperty(key)
+        def value = config[key]
+        if(! (value in values) ) {
+            throw new IllegalArgumentException("Invalid ${key} = '${value}'. Valid '${key}' values are: ${values}.")
         }
         return this
     }
