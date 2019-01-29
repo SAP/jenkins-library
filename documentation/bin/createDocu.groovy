@@ -210,7 +210,7 @@ class Helper {
                     def _docu = []
                     docuLines.each { _docu << it  }
                     _docu = Helper.trim(_docu)
-                    step.description = _docu*.trim().join('\n')
+                    step.description = _docu.join('\n')
                 } else {
 
                     def param = retrieveParameterName(line)
@@ -270,7 +270,7 @@ class Helper {
                 }
 
                 if(! value && ! mandatory) {
-                    docuLines << _line.trim()
+                    docuLines << _line
                 }
             }
 
