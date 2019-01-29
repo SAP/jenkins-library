@@ -3,6 +3,7 @@ import org.junit.Ignore
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.RuleChain
+import org.junit.rules.ExpectedException
 
 import util.BasePiperTest
 import util.JenkinsReadYamlRule
@@ -16,12 +17,14 @@ class TestsPublishResultsTest extends BasePiperTest {
     Map publisherStepOptions
     List archiveStepPatterns
 
+    private ExpectedException thrown = ExpectedException.none()
     private JenkinsStepRule stepRule = new JenkinsStepRule(this)
 
     @Rule
     public RuleChain ruleChain = Rules
         .getCommonRules(this)
         .around(new JenkinsReadYamlRule(this))
+        .around(thrown)
         .around(stepRule)
 
     @Before
@@ -125,5 +128,40 @@ class TestsPublishResultsTest extends BasePiperTest {
         assertTrue('JaCoCo options are not empty', publisherStepOptions.jacoco == null)
         assertTrue('Cobertura options are not empty', publisherStepOptions.cobertura == null)
         assertTrue('JMeter options are not empty', publisherStepOptions.jmeter == null)
+    }
+
+    @Test
+    void testBuildResultStatus() throws Exception {
+        // execute test
+        stepRule.step.testsPublishResults(
+            script: nullScript
+        )
+        // asserts
+        assertJobStatusSuccess()
+    }
+
+    @Test
+    void testBuildResultStatusWithTestFailures() throws Exception {
+        binding.setVariable('currentBuild', [result: 'UNSTABLE'])
+        // execute test
+        stepRule.step.testsPublishResults(
+            script: nullScript
+        )
+        // asserts
+        assertJobStatusUnstable()
+    }
+
+    @Test
+    void testBuildResultStatusWithFailOnError() throws Exception {
+        // prepare
+        binding.setVariable('currentBuild', [result: 'UNSTABLE'])
+        // asserts
+        thrown.expect(hudson.AbortException)
+        thrown.expectMessage('[testsPublishResults] Some tests failed!')
+        // execute test
+        stepRule.step.testsPublishResults(
+            script: nullScript,
+            failOnError: true
+        )
     }
 }
