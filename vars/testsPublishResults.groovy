@@ -56,7 +56,7 @@ void call(Map parameters = [:]) {
         // PERFORMANCE
         publishJMeterReport(configuration.get('jmeter'))
         // handle the results
-        if (currentBuild.result == 'UNSTABLE' && config.failOnError) {
+        if (currentBuild.result == 'UNSTABLE' && configuration.failOnError) {
             error "[${STEP_NAME}] Some tests failed!"
         }
     }
