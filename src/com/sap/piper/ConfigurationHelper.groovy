@@ -167,6 +167,15 @@ class ConfigurationHelper implements Serializable {
         return this
     }
 
+    ConfigurationHelper withPropertyInValues(String key, Set values){
+        withMandatoryProperty(key)
+        def value = config[key]
+        if(! (value in values) ) {
+            throw new IllegalArgumentException("Invalid ${key} = '${value}'. Valid '${key}' values are: ${values}.")
+        }
+        return this
+    }
+
     @NonCPS
     private handleValidationFailures() {
         if(! validationResults) return
