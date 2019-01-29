@@ -159,9 +159,13 @@ class TestsPublishResultsTest extends BasePiperTest {
         thrown.expect(hudson.AbortException)
         thrown.expectMessage('[testsPublishResults] Some tests failed!')
         // execute test
-        stepRule.step.testsPublishResults(
-            script: nullScript,
-            failOnError: true
-        )
+        try {
+            stepRule.step.testsPublishResults(
+                script: nullScript,
+                failOnError: true
+            )
+        } finally {
+            assertJobStatusFailure()
+        }
     }
 }
