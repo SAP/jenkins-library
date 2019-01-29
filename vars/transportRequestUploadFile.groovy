@@ -71,9 +71,13 @@ void call(parameters = [:]) {
             .withMandatoryProperty('abapPackage', null, { backendType == BackendType.RFC })
             .withMandatoryProperty('applicationId', null, {backendType in [BackendType.SOLMAN, BackendType.RFC]})
 
-        new Utils().pushToSWA([step: STEP_NAME,
-                                stepParam1: configuration.changeManagement.type,
-                                stepParam2: parameters?.script == null], configuration)
+        new Utils().pushToSWA([
+            step: STEP_NAME,
+            stepParamKey1: 'changeManagementType',
+            stepParam1: configuration.changeManagement.type,
+            stepParamKey2: 'scriptMissing',
+            stepParam2: parameters?.script == null
+        ], configuration)
 
         def changeDocumentId = null
 
