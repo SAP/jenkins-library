@@ -13,7 +13,9 @@ import groovy.transform.Field
 
 @Field def STEP_NAME = getClass().getName()
 @Field Set GENERAL_CONFIG_KEYS = TOOLS
-@Field Set STEP_CONFIG_KEYS = TOOLS
+@Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS.plus([
+    'failOnError'
+])
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
 
 /**
@@ -50,6 +52,10 @@ void call(Map parameters = [:]) {
         publishCoberturaReport(configuration.get('cobertura'))
         // PERFORMANCE
         publishJMeterReport(configuration.get('jmeter'))
+        // handle the results
+        if (currentBuild.result == 'UNSTABLE' && config.failOnError) {
+            error "[${STEP_NAME}] Some tests failed!"
+        }
     }
 }
 
