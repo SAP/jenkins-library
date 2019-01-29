@@ -1,5 +1,4 @@
 package com.sap.piper.cm
-
 import static org.hamcrest.Matchers.allOf
 import static org.hamcrest.Matchers.containsString
 import static org.hamcrest.Matchers.equalTo
@@ -7,6 +6,7 @@ import static org.hamcrest.Matchers.hasItem
 import static org.hamcrest.Matchers.is
 import static org.hamcrest.Matchers.not
 import static org.junit.Assert.assertThat
+import static org.junit.Assert.assertEquals
 
 import org.hamcrest.Matchers
 import org.junit.Assert
@@ -22,6 +22,7 @@ import util.JenkinsLoggingRule
 import util.JenkinsScriptLoaderRule
 import util.JenkinsShellCallRule
 import util.JenkinsCredentialsRule
+import util.JenkinsDockerExecuteRule
 import util.Rules
 
 import hudson.AbortException
@@ -32,6 +33,7 @@ public class ChangeManagementTest extends BasePiperTest {
 
     private JenkinsShellCallRule script = new JenkinsShellCallRule(this)
     private JenkinsLoggingRule logging = new JenkinsLoggingRule(this)
+    private JenkinsDockerExecuteRule dockerExecuteRule = new JenkinsDockerExecuteRule(this)
 
     @Rule
     public RuleChain rules = Rules.getCommonRules(this)
@@ -39,6 +41,7 @@ public class ChangeManagementTest extends BasePiperTest {
         .around(script)
         .around(logging)
         .around(new JenkinsCredentialsRule(this).withCredentials('me','user','password'))
+        .around(dockerExecuteRule)
 
     @Test
     public void testRetrieveChangeDocumentIdOutsideGitWorkTreeTest() {
@@ -238,7 +241,7 @@ public void testGetCommandLineWithCMClientOpts() {
     }
 
     @Test
-    public void testUploadFileToTransportFails() {
+    public void testUploadFileToTransportFailsSOLMAN() {
 
         thrown.expect(ChangeManagementException)
         thrown.expectMessage("Cannot upload file into transport request. " +
@@ -289,6 +292,32 @@ public void testGetCommandLineWithCMClientOpts() {
 
         // no assert required here, since the regex registered above to the script rule is an implicit check for
         // the command line.
+    }
+
+    @Test
+    public void testReleaseTransportRequestSucceedsRFC() {
+
+        // the regex provided below is an implicit check that the command line is fine.
+//      script.setReturnValue(JenkinsShellCallRule.Type.REGEX, '-tRFC releaseTransport.*-tID 002', 0)
+
+        new ChangeManagement(nullScript).releaseTransportRequest(
+            BackendType.RFC,
+            null,
+            '002',
+            'https://example.org',
+            'me',
+            'openSesame')
+
+        List stringDockerOptions = []
+        for(item in dockerExecuteRule.dockerParams.dockerOptions)
+        {
+            stringDockerOptions = stringDockerOptions.plus([item.toString()])
+        }
+        assertThat(stringDockerOptions, hasItem('--env ABAP_DEVELOPMENT_SERVER=https://example.org'))
+        assertThat(stringDockerOptions, hasItem('--env ABAP_DEVELOPMENT_USER=user'))
+        assertThat(stringDockerOptions, hasItem('--env ABAP_DEVELOPMENT_PASSWORD=password'))
+        assertThat(stringDockerOptions, hasItem('--env ABAP_DEVELOPMENT_CLIENT=001'))
+        assertThat(script.shell, hasItem('cts releaseTransport:002'))
     }
 
     @Test
