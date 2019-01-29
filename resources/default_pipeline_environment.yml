@@ -225,7 +225,6 @@ steps:
     deployMode: 'mta'
     warAction: 'deploy'
     neo:
-      size: 'lite'
       credentialsId: 'CI_CREDENTIALS_ID'
 
   newmanExecute:
