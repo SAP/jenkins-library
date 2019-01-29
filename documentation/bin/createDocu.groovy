@@ -245,6 +245,7 @@ class Helper {
                 if(_line.startsWith('/**')) _line = _line.replaceAll('^\\/\\*\\*', '') // start comment
                 if(_line.startsWith('*/')) _line = _line.replaceAll('^\\*/', '') // end comment
                 if(_line.startsWith('*')) _line = _line.replaceAll('^\\*', '') // continue comment
+                if(_line.startsWith(' ')) _line = _line.replaceAll('^\\s', '')
                 if(_line ==~ /.*@possibleValues.*/) {
                     mandatory = false // should be something like reset attributes
                     value = true
