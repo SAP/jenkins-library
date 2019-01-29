@@ -305,6 +305,8 @@ public class ChangeManagement implements Serializable {
     void releaseTransportRequest(BackendType type,String changeId, String transportRequestId, String endpoint, String credentialsId, String clientOpts = '') {
 
         def cmd
+        def dockerImage = ''
+        def dockerOptions = []
         List args = []
         if(type == BackendType.SOLMAN) {
             cmd = 'release-transport'
@@ -318,13 +320,14 @@ public class ChangeManagement implements Serializable {
             args << transportRequestId
         } else if(type ==BackendType.RFC) {
             // do the right tasks
+            dockerImage = 'rfc'
             cmd = "cts releaseTransport:${transportRequestId}"
             args = args.plus(["--env ABAP_DEVELOPMENT_CLIENT=001"])
         } else {
             throw new IllegalStateException("Invalid backend type: '${type}'")
         }
 
-        int rc = executeWithCredentials(type, '', [], endpoint, credentialsId, cmd, args, false, clientOpts) as int
+        int rc = executeWithCredentials(type, dockerImage, dockerOptions, endpoint, credentialsId, cmd, args, false, clientOpts) as int
         if(rc == 0) {
             return
         } else {
