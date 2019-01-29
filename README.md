@@ -1,5 +1,4 @@
 [![Build Status](https://travis-ci.org/SAP/jenkins-library.svg?branch=master)](https://travis-ci.org/SAP/jenkins-library)
-[![Coverage Status](https://coveralls.io/repos/github/SAP/jenkins-library/badge.svg?branch=master)](https://coveralls.io/github/SAP/jenkins-library?branch=master)
 [![Maintainability](https://api.codeclimate.com/v1/badges/0e6a23344616e29b4ed0/maintainability)](https://codeclimate.com/github/SAP/jenkins-library/maintainability)
 [![Test Coverage](https://api.codeclimate.com/v1/badges/0e6a23344616e29b4ed0/test_coverage)](https://codeclimate.com/github/SAP/jenkins-library/test_coverage)
 
@@ -8,7 +7,7 @@
 An efficient software development process is vital for success in building
 business applications on SAP Cloud Platform or SAP on-premise platforms. SAP
 addresses this need for efficiency with project "Piper". The goal of project
-"Piper" is to substantially ease setting up continuous deployment processes for
+"Piper" is to substantially ease setting up continuous delivery processes for
 the most important SAP technologies by means of Jenkins pipelines.
 
 Project "Piper" consists of two parts:
@@ -50,9 +49,11 @@ provided pipeline library.
 
 ## API
 
-All steps are intended to be used by Pipelines. All the classes / groovy-scripts
-contained in the `src` folder are not part of the API and are subjected to change
-without prior notice.
+All steps (`vars` and `resources` directory) are intended to be used by Pipelines and are considered API.
+All the classes / groovy-scripts contained in the `src` folder are by default not part of
+the API and are subjected to change without prior notice. Types and methods annotated with
+`@API` are considered to be API, used e.g. from other shared libraries. Changes to those
+methods/types needs to be announced, discussed and agreed.
 
 # Requirements
 
@@ -101,6 +102,7 @@ project][piper-library-issues].
 Feel free to open new issues for feature requests, bugs or general feedback on
 the [GitHub issues page of this project][piper-library-issues].
 
+Register to our [google group][google-group] in order to get updates or for asking questions.
 # Contributing
 
 Read and understand our [contribution guidelines][piper-library-contribution]
@@ -124,3 +126,4 @@ otherwise in the [LICENSE file][piper-library-license]
 [jenkins-doc-libraries]: https://jenkins.io/doc/book/pipeline/shared-libraries
 [jenkins-doc-steps]: https://jenkins.io/doc/pipeline/steps
 [jenkins-plugin-sharedlibs]: https://wiki.jenkins-ci.org/display/JENKINS/Pipeline+Shared+Groovy+Libraries+Plugin
+[google-group]: https://groups.google.com/forum/#!forum/project-piper

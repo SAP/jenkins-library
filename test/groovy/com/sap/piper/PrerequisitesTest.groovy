@@ -19,11 +19,11 @@ class PrerequisitesTest extends BasePiperTest {
     @Rule
     public ExpectedException thrown = ExpectedException.none()
 
-    public JenkinsLoggingRule jlr = new JenkinsLoggingRule(this)
+    public JenkinsLoggingRule loggingRule = new JenkinsLoggingRule(this)
 
     @Rule
     public RuleChain ruleChain = Rules.getCommonRules(this)
-                                      .around(jlr)
+                                      .around(loggingRule)
 
     @Before
     public void init() {
@@ -47,7 +47,7 @@ class PrerequisitesTest extends BasePiperTest {
     @Test
     public void checkScriptMissingTest() {
 
-        jlr.expect('No reference to surrounding script provided with key \'script\'')
+        loggingRule.expect('No reference to surrounding script provided with key \'script\'')
 
         def script = Prerequisites.checkScript(nullScript, [:])
 

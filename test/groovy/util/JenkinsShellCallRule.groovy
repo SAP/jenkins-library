@@ -1,9 +1,6 @@
 package util
 
 import com.lesfurets.jenkins.unit.BasePipelineTest
-
-import util.JenkinsShellCallRule.Type
-
 import org.junit.rules.TestRule
 import org.junit.runner.Description
 import org.junit.runners.model.Statement
@@ -12,12 +9,12 @@ class JenkinsShellCallRule implements TestRule {
 
     enum Type { PLAIN, REGEX }
 
-    class Key{
+    class Command {
 
         final Type type
         final String script
 
-        Key(Type type, String script) {
+        Command(Type type, String script) {
             this.type = type
             this.script = script
         }
@@ -34,8 +31,8 @@ class JenkinsShellCallRule implements TestRule {
         @Override
         public boolean equals(Object obj) {
 
-            if (obj == null || !obj instanceof Key) return false;
-            Key other = (Key) obj;
+            if (obj == null || !obj instanceof Command) return false;
+            Command other = (Command) obj;
             return type == other.type && script == other.script
         }
     }
@@ -44,7 +41,8 @@ class JenkinsShellCallRule implements TestRule {
 
     List shell = []
 
-    Map<Key, String> returnValues = [:]
+    Map<Command, String> returnValues = [:]
+    List<Command> failingCommands = []
 
     JenkinsShellCallRule(BasePipelineTest testInstance) {
         this.testInstance = testInstance
@@ -55,7 +53,11 @@ class JenkinsShellCallRule implements TestRule {
     }
 
     def setReturnValue(type, script, value) {
-        returnValues[new Key(type, script)] = value
+        returnValues[new Command(type, script)] = value
+    }
+
+    def failExecution(type, script) {
+        failingCommands.add(new Command(type, script))
     }
 
     @Override
@@ -70,15 +72,39 @@ class JenkinsShellCallRule implements TestRule {
 
                 testInstance.helper.registerAllowedMethod("sh", [String.class], {
                     command ->
-                        shell.add(unify(command))
+                        def unifiedScript = unify(command)
+
+                        shell.add(unifiedScript)
+
+                        for (Command failingCommand: failingCommands){
+                            if(failingCommand.type == Type.REGEX && unifiedScript =~ failingCommand.script) {
+                                throw new Exception("Script execution failed!")
+                                break
+                            } else if(failingCommand.type == Type.PLAIN && unifiedScript.equals(failingCommand.script)) {
+                                throw new Exception("Script execution failed!")
+                                break
+                            }
+                        }
                 })
 
                 testInstance.helper.registerAllowedMethod("sh", [Map.class], {
                     m ->
                         shell.add(m.script.replaceAll(/\s+/," ").trim())
+
+                        def unifiedScript = unify(m.script)
+                        for (Command failingCommand: failingCommands){
+                            if(failingCommand.type == Type.REGEX && unifiedScript =~ failingCommand.script) {
+                                throw new Exception("Script execution failed!")
+                                break
+                            } else if(failingCommand.type == Type.PLAIN && unifiedScript.equals(failingCommand.script)) {
+                                throw new Exception("Script execution failed!")
+                                break
+                            }
+                        }
+
                         if (m.returnStdout || m.returnStatus) {
-                            def unifiedScript = unify(m.script)
                             def result = null
+
                             for(def e : returnValues.entrySet()) {
                                 if(e.key.type == Type.REGEX && unifiedScript =~ e.key.script) {
                                     result =  e.value

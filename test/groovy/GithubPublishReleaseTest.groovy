@@ -17,18 +17,18 @@ import static org.hamcrest.Matchers.*
 import static org.junit.Assert.assertThat
 
 class GithubPublishReleaseTest extends BasePiperTest {
-    private JenkinsStepRule jsr = new JenkinsStepRule(this)
-    private JenkinsLoggingRule jlr = new JenkinsLoggingRule(this)
-    private JenkinsReadJsonRule jrjr = new JenkinsReadJsonRule(this)
+    private JenkinsStepRule stepRule = new JenkinsStepRule(this)
+    private JenkinsLoggingRule loggingRule = new JenkinsLoggingRule(this)
+    private JenkinsReadJsonRule readJsonRule = new JenkinsReadJsonRule(this)
     private ExpectedException thrown = ExpectedException.none()
 
     @Rule
     public RuleChain rules = Rules
         .getCommonRules(this)
         .around(new JenkinsReadYamlRule(this))
-        .around(jlr)
-        .around(jrjr)
-        .around(jsr)
+        .around(loggingRule)
+        .around(readJsonRule)
+        .around(stepRule)
         .around(thrown)
 
     def data
@@ -82,7 +82,7 @@ class GithubPublishReleaseTest extends BasePiperTest {
 
     @Test
     void testPublishGithubReleaseWithDefaults() throws Exception {
-        jsr.step.githubPublishRelease(
+        stepRule.step.githubPublishRelease(
             script: nullScript,
             githubOrg: 'TestOrg',
             githubRepo: 'TestRepo',
@@ -90,7 +90,7 @@ class GithubPublishReleaseTest extends BasePiperTest {
             version: '1.2.3'
         )
         // asserts
-        assertThat('this is not handled as a first release', jlr.log, not(containsString('[githubPublishRelease] This is the first release - no previous releases available')))
+        assertThat('this is not handled as a first release', loggingRule.log, not(containsString('[githubPublishRelease] This is the first release - no previous releases available')))
         assertThat('every request starts with the github api url', requestList, everyItem(startsWith('https://api.github.com')))
         assertThat('every request contains the github org & repo', requestList, everyItem(containsString('/TestOrg/TestRepo/')))
         // test githubTokenCredentialsId
@@ -112,7 +112,7 @@ class GithubPublishReleaseTest extends BasePiperTest {
 
     @Test
     void testPublishGithubRelease() throws Exception {
-        jsr.step.githubPublishRelease(
+        stepRule.step.githubPublishRelease(
             script: nullScript,
             githubOrg: 'TestOrg',
             githubRepo: 'TestRepo',
@@ -123,7 +123,7 @@ class GithubPublishReleaseTest extends BasePiperTest {
             addDeltaToLastRelease: true
         )
         // asserts
-        assertThat('this is not handled as a first release', jlr.log, not(containsString('[githubPublishRelease] This is the first release - no previous releases available')))
+        assertThat('this is not handled as a first release', loggingRule.log, not(containsString('[githubPublishRelease] This is the first release - no previous releases available')))
         assertThat('every request starts with the github api url', requestList, everyItem(startsWith('https://api.github.com')))
         assertThat('every request contains the github org & repo', requestList, everyItem(containsString('/TestOrg/TestRepo/')))
         // test githubTokenCredentialsId
@@ -149,7 +149,7 @@ class GithubPublishReleaseTest extends BasePiperTest {
 
     @Test
     void testExcludeLabels() throws Exception {
-        jsr.step.githubPublishRelease(
+        stepRule.step.githubPublishRelease(
             script: nullScript,
             githubOrg: 'TestOrg',
             githubRepo: 'TestRepo',
@@ -189,8 +189,8 @@ class GithubPublishReleaseTest extends BasePiperTest {
             "body": ""
         }''')
         // asserts
-        assertThat(jsr.step.isExcluded(item, ['enhancement', 'won\'t fix']), is(true))
-        assertThat(jsr.step.isExcluded(item, ['won\'t fix']), is(false))
+        assertThat(stepRule.step.isExcluded(item, ['enhancement', 'won\'t fix']), is(true))
+        assertThat(stepRule.step.isExcluded(item, ['won\'t fix']), is(false))
         assertJobStatusSuccess()
     }
 }

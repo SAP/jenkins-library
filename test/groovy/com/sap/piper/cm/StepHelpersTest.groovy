@@ -34,11 +34,11 @@ class StepHelpersTest extends BasePiperTest {
         getTransportRequestIdReceivedParameters.clear()
     }
 
-    JenkinsLoggingRule jlr = new JenkinsLoggingRule(this)
+    JenkinsLoggingRule loggingRule = new JenkinsLoggingRule(this)
 
     @Rule
     public RuleChain rules = Rules.getCommonRules(this)
-                                  .around(jlr)
+                                  .around(loggingRule)
 
     private ChangeManagement cm = new ChangeManagement(nullScript) {
 
@@ -141,7 +141,7 @@ class StepHelpersTest extends BasePiperTest {
     @Test
     public void transportRequestIdNotProvidedTest() {
 
-        jlr.expect('Cannot retrieve transportRequestId from commit history')
+        loggingRule.expect('Cannot retrieve transportRequestId from commit history')
 
         def cm = new ChangeManagement(nullScript) {
         String getTransportRequestId(
@@ -192,7 +192,7 @@ class StepHelpersTest extends BasePiperTest {
     @Test
     public void changeDocumentIdNotProvidedTest() {
 
-        jlr.expect('[WARN] Cannot retrieve changeDocumentId from commit history')
+        loggingRule.expect('[WARN] Cannot retrieve changeDocumentId from commit history')
 
         def cm = new ChangeManagement(nullScript) {
             String getChangeDocumentId(
