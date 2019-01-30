@@ -283,6 +283,42 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
     }
 
     @Test
+    public void uploadFileToTransportRequestRFCUploadFailsTest() {
+
+        thrown.expect(AbortException)
+        thrown.expectMessage('upload failed')
+
+        def cm = new ChangeManagement(nullScript) {
+
+            void uploadFileToTransportRequestRFC(
+                String dockerImage,
+                List dockerOptions,
+                String transportRequestId,
+                String applicationId,
+                String applicationURL,
+                String endpoint,
+                String credentialsId,
+                String developmentInstance,
+                String developmentClient,
+                String applicationDescription,
+                String abapPackage) {
+                throw new ChangeManagementException('upload failed')
+            }
+        }
+
+        stepRule.step.transportRequestUploadFile(script: nullScript,
+                 applicationUrl: 'http://example.org/blobstore/xyz.zip',
+                 transportRequestId: '123456',
+                 changeManagement: [type: 'RFC'],
+                 developmentInstance:'001',
+                 developmentClient: '002',
+                 applicationId: '42',
+                 applicationDescription: 'Lorem ipsum',
+                 abapPackage: 'XYZ',
+                 cmUtils: cm,)
+    }
+
+    @Test
     public void uploadFileToTransportRequestSOLMANSuccessTest() {
 
         // Here we test only the case where the transportRequestId is
