@@ -64,46 +64,6 @@ class UtilsTest extends BasePiperTest {
     }
 
     @Test
-    @Ignore("replaced by TelemetryTest#testReportingToSWA")
-    void testSWAReporting() {
-        utils.env = [BUILD_URL: 'something', JOB_URL: 'nothing']
-        utils.pushToSWA([step: 'anything'], [collectTelemetryData: true])
-        // asserts
-        assertThat(jscr.shell, hasItem(containsString('curl -G -v "https://webanalytics.cfapps.eu10.hana.ondemand.com/tracker/log"')))
-        assertThat(jscr.shell, hasItem(containsString('action_name=Piper Library OS')))
-        assertThat(jscr.shell, hasItem(containsString('custom3=anything')))
-        assertThat(jscr.shell, hasItem(containsString('custom5=`echo -n \'something\' | sha1sum | sed \'s/ -//\'`')))
-    }
-
-    @Test
-    @Ignore("replaced by TelemetryTest#testNotifyWithOptOut")
-    void testDisabledSWAReporting() {
-        utils.env = [BUILD_URL: 'something', JOB_URL: 'nothing']
-        utils.pushToSWA([step: 'anything'], [collectTelemetryData: false])
-        // asserts
-        assertThat(jlr.log, containsString('[anything] Telemetry reporting disabled!'))
-        assertThat(jscr.shell, not(hasItem(containsString('https://webanalytics.cfapps.eu10.hana.ondemand.com'))))
-    }
-
-    @Test
-    @Ignore("replaced by TelemetryTest#testNotifyWithOptOutWithoutConfig")
-    void testImplicitlyDisabledSWAReporting() {
-        utils.env = [BUILD_URL: 'something', JOB_URL: 'nothing']
-        utils.pushToSWA([step: 'anything'], null)
-        // asserts
-        assertThat(jlr.log, containsString('[anything] Telemetry reporting disabled!'))
-    }
-
-    @Test
-    @Ignore("replaced by TelemetryTest#testNotifyWithOptOutWithEmptyConfig")
-    void testImplicitlyDisabledSWAReporting2() {
-        utils.env = [BUILD_URL: 'something', JOB_URL: 'nothing']
-        utils.pushToSWA([step: 'anything'], [:])
-        // asserts
-        assertThat(jlr.log, containsString('[anything] Telemetry reporting disabled!'))
-    }
-
-    @Test
     void testGenerateSHA1() {
         def result = utils.generateSha1('ContinuousDelivery')
         // asserts
