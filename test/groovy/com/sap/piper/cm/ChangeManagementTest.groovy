@@ -194,7 +194,7 @@ public void testGetCommandLineWithCMClientOpts() {
         script.setReturnValue(JenkinsShellCallRule.Type.REGEX, '.*upload-file-to-transport.*', 1)
 
         thrown.expect(ChangeManagementException)
-        thrown.expectMessage('Cannot upload file into transport request. Return code from cmclient: 1.')
+        thrown.expectMessage('Cannot upload file into transport request. Return code from cm client: 1.')
 
         new ChangeManagement(nullScript).uploadFileToTransportRequestSOLMAN(
                                                                       '001',
@@ -245,7 +245,7 @@ public void testGetCommandLineWithCMClientOpts() {
 
         thrown.expect(ChangeManagementException)
         thrown.expectMessage("Cannot upload file into transport request. " +
-            "Return code from cmclient: 1.")
+            "Return code from cm client: 1.")
 
         script.setReturnValue(JenkinsShellCallRule.Type.REGEX,, 'upload-file-to-transport', 1)
 
