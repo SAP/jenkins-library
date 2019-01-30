@@ -236,7 +236,8 @@ public class ChangeManagement implements Serializable {
         if(rc == 0) {
             return
         } else {
-            throw new ChangeManagementException("Cannot upload file into transport request. Return code from cmclient: $rc.")
+            throw new ChangeManagementException(
+                "Cannot upload file into transport request. Return code from ${type == BackendType.RFC ? 'rfc' : 'cm'} client: $rc.")
         }
 
     }
