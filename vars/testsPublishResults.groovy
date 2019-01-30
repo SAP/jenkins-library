@@ -3,6 +3,7 @@ import static com.sap.piper.Prerequisites.checkScript
 import com.cloudbees.groovy.cps.NonCPS
 
 import com.sap.piper.ConfigurationHelper
+import com.sap.piper.JenkinsUtils
 import com.sap.piper.MapUtils
 import com.sap.piper.Utils
 import groovy.transform.Field
@@ -26,10 +27,7 @@ import groovy.transform.Field
  */
 void call(Map parameters = [:]) {
     handlePipelineStepErrors (stepName: STEP_NAME, stepParameters: parameters) {
-
-        def script = checkScript(this, parameters)
-        if (script == null)
-            script = this
+        def script = checkScript(this, parameters) ?: this
 
         prepare(parameters)
 
@@ -56,7 +54,7 @@ void call(Map parameters = [:]) {
         // PERFORMANCE
         publishJMeterReport(configuration.get('jmeter'))
         // handle the results
-        if (currentBuild.result == 'UNSTABLE' && configuration.failOnError) {
+        if (configuration.failOnError && JenkinsUtils.hasTestFailures(currentBuild)) {
             currentBuild.result = 'FAILURE'
             error "[${STEP_NAME}] Some tests failed!"
         }
