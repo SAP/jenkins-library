@@ -120,7 +120,7 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
     }
 
     @Test
-    public void uploadFileToTransportRequestFailureTest() {
+    public void uploadFileToTransportRequestSOLMANFailureTest() {
 
         ChangeManagement cm = new ChangeManagement(nullScript) {
             void uploadFileToTransportRequestSOLMAN(
@@ -258,7 +258,7 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
     }
 
     @Test
-    public void uploadFileToTransportRequestSuccessApplicationIdFromConfigurationTest() {
+    public void uploadFileToTransportRequestSOLMANSuccessApplicationIdFromConfigurationTest() {
 
         nullScript.commonPipelineEnvironment.configuration.put(['steps',
                                                                    [transportRequestUploadFile:
@@ -289,7 +289,7 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
     }
 
     @Test
-    public void uploadFileToTransportRequestFilePathFromParameters() {
+    public void uploadFileToTransportRequestSOLMANFilePathFromParameters() {
 
         // this one is not used when file path is provided via signature
         nullScript.commonPipelineEnvironment.setMtarFilePath('/path2')
@@ -319,7 +319,7 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
     }
 
     @Test
-    public void uploadFileToTransportRequestFilePathFromCommonPipelineEnvironment() {
+    public void uploadFileToTransportRequestSOLMANFilePathFromCommonPipelineEnvironment() {
 
         // this one is used since there is nothing in the signature
         nullScript.commonPipelineEnvironment.setMtarFilePath('/path2')
@@ -348,7 +348,7 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
     }
 
     @Test
-    public void uploadFileToTransportRequestUploadFailureTest() {
+    public void uploadFileToTransportRequestSOLMANUploadFailureTest() {
 
         thrown.expect(AbortException)
         thrown.expectMessage('Upload failure.')
