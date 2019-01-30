@@ -24,7 +24,7 @@ import hudson.AbortException
     'dockerImage',
     'dockerWorkspace',
     'dockerEnvVars',
-    'stashContent', 
+    'stashContent',
     'stashExcludes',
     'stashIncludes'
 ])
