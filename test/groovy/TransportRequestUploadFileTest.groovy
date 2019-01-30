@@ -197,7 +197,7 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
         helper.registerAllowedMethod('sh', [Map], {m -> return (m.script.startsWith('cts') ? 0 : 1)})
 
         stepRule.step.transportRequestUploadFile(script: nullScript,
-                 filePath: 'xyz.jar',
+                 applicationUrl: 'http://example.org/blobstore/xyz.zip',
                  transportRequestId: '123456',
                  changeManagement: [type: 'RFC'],
                  developmentInstance:'001',
