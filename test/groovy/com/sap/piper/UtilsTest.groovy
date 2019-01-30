@@ -22,15 +22,15 @@ import com.sap.piper.Utils
 
 class UtilsTest extends BasePiperTest {
     private ExpectedException thrown = ExpectedException.none()
-    private JenkinsLoggingRule jlr = new JenkinsLoggingRule(this)
-    private JenkinsShellCallRule jscr = new JenkinsShellCallRule(this)
+    private JenkinsLoggingRule loggingRule = new JenkinsLoggingRule(this)
+    private JenkinsShellCallRule shellRule = new JenkinsShellCallRule(this)
 
     @Rule
     public RuleChain rules = Rules
         .getCommonRules(this)
         .around(thrown)
-        .around(jscr)
-        .around(jlr)
+        .around(shellRule)
+        .around(loggingRule)
 
     private parameters
 
