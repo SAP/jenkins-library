@@ -1,3 +1,4 @@
+import java.util.List
 import java.util.Map
 
 import org.junit.Before
@@ -190,11 +191,46 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
     @Test
     public void uploadFileToTransportRequestRFCSuccessTest() {
 
-        JenkinsUtils.getMetaClass().static.isPluginActive = { true }
+        def cmUtilsReceivedParams
 
-        // TODO: split one test for the step and the other test for the cm toolset.
-        helper.registerAllowedMethod('dockerExecute', [Map, Closure], { m, c -> c() } )
-        helper.registerAllowedMethod('sh', [Map], {m -> return (m.script.startsWith('cts') ? 0 : 1)})
+        nullScript.commonPipelineEnvironment.configuration =
+        [general:
+            [changeManagement:
+                [
+                 endpoint: 'https://example.org/rfc'
+                ]
+            ]
+        ]
+
+        def cm = new ChangeManagement(nullScript) {
+
+            void uploadFileToTransportRequestRFC(
+                String dockerImage,
+                List dockerOptions,
+                String transportRequestId,
+                String applicationId,
+                String applicationURL,
+                String endpoint,
+                String credentialsId,
+                String developmentInstance,
+                String developmentClient,
+                String applicationDescription,
+                String abapPackage) {
+
+                cmUtilsReceivedParams = [
+                    dockerImage: dockerImage,
+                    dockerOptions: dockerOptions,
+                    transportRequestId: transportRequestId,
+                    applicationId: applicationId,
+                    applicationURL: applicationURL,
+                    endpoint: endpoint,
+                    credentialsId: credentialsId,
+                    developmentInstance: developmentInstance,
+                    developmentClient: developmentClient,
+                    applicationDescription: applicationDescription,
+                    abapPackage: abapPackage]
+            }
+        }
 
         stepRule.step.transportRequestUploadFile(script: nullScript,
                  applicationUrl: 'http://example.org/blobstore/xyz.zip',
@@ -204,9 +240,24 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
                  developmentClient: '002',
                  applicationId: '42',
                  applicationDescription: 'Lorem ipsum',
-                 abapPackage: 'APCK',)
-    }
+                 abapPackage: 'XYZ',
+                 cmUtils: cm,)
 
+        assert cmUtilsReceivedParams ==
+            [
+                dockerImage: 'rfc',
+                dockerOptions: [],
+                transportRequestId: '123456',
+                applicationId: '42',
+                applicationURL: 'http://example.org/blobstore/xyz.zip',
+                endpoint: 'https://example.org/rfc',
+                credentialsId: 'CM',
+                developmentInstance: '001',
+                developmentClient: '002',
+                applicationDescription: 'Lorem ipsum',
+                abapPackage:'XYZ'
+            ]
+    }
 
     @Test
     public void uploadFileToTransportRequestSOLMANSuccessTest() {
