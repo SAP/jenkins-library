@@ -116,7 +116,7 @@ public class ChangeManagement implements Serializable {
 
         def transportRequestId = executeWithCredentials(
             BackendType.RFC,
-            'rfc',
+            dockerImage,
             dockerOptions,
             endpoint,
             credentialsId,
