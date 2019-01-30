@@ -10,6 +10,10 @@ static def isPluginActive(pluginId) {
     return Jenkins.instance.pluginManager.plugins.find { p -> p.isActive() && p.getShortName() == pluginId }
 }
 
+static def boolean hasTestFailures(build){
+    return build.rawBuild.getAction(hudson.tasks.junit.TestResultAction.class).getFailCount() != 0
+}
+
 def nodeAvailable() {
     try {
         sh "echo 'Node is available!'"
