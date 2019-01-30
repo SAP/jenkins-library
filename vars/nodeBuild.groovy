@@ -34,6 +34,9 @@ void call(Map parameters = [:]) {
             dockerExecute(script: script, dockerImage: configuration.dockerImage, dockerOptions: configuration.dockerOptions) {
                 sh '''npm run build'''
             }
+        } else {
+            echo "[${STEP_NAME}] One or more tests failed"
+            script.currentBuild.result = 'UNSTABLE'
         }
     }
 }
