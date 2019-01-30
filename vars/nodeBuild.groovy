@@ -35,7 +35,7 @@ void call(Map parameters = [:]) {
                 sh '''npm run build'''
             }
         } else {
-            echo "[${STEP_NAME}] One or more tests failed"
+            echo "[${STEP_NAME}] package.json is not found."
             script.currentBuild.result = 'UNSTABLE'
         }
     }
