@@ -10,7 +10,7 @@ import groovy.transform.Field
 @Field def STEP_NAME = getClass().getName()
 @Field def PLUGIN_ID_DOCKER_WORKFLOW = 'docker-workflow'
 @Field Set GENERAL_CONFIG_KEYS = ['jenkinsKubernetes']
-@Field Set STEP_CONFIG_KEYS = [
+@Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS.plus([
     'containerPortMappings',
     'containerCommand',
     'containerShell',
@@ -29,7 +29,7 @@ import groovy.transform.Field
     'sidecarVolumeBind',
     'sidecarPullImage',
     'stashContent'
-]
+])
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
 
 void call(Map parameters = [:], body) {
