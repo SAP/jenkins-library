@@ -1,6 +1,10 @@
+import static org.hamcrest.Matchers.allOf
+import static org.hamcrest.Matchers.containsString
+
 import java.util.List
 import java.util.Map
 
+import org.hamcrest.Matchers
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -186,6 +190,25 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
                 credentialsId: 'CM',
                 cmclientOpts: ''
             ]
+    }
+
+    @Test
+    public void uploadFileToTransportRequestRFCSanityChecksTest() {
+
+        thrown.expect(IllegalArgumentException)
+        thrown.expectMessage(allOf(
+            containsString('NO VALUE AVAILABLE FOR'),
+            containsString('applicationUrl'),
+            containsString('developmentInstance'),
+            containsString('developmentClient'),
+            containsString('applicationDescription'),
+            containsString('abapPackage'),
+            containsString('applicationId')))
+
+        stepRule.step.transportRequestUploadFile(script: nullScript,
+                 transportRequestId: '123456', //no sanity check, can be read from git history
+                 changeManagement: [type: 'RFC'],
+        )
     }
 
     @Test
