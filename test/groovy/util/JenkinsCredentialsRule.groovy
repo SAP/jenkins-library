@@ -1,19 +1,9 @@
 package util
 
 import com.lesfurets.jenkins.unit.BasePipelineTest
-
-import org.junit.Assert
 import org.junit.rules.TestRule
 import org.junit.runner.Description
 import org.junit.runners.model.Statement
-
-import static org.hamcrest.Matchers.containsString
-import static org.hamcrest.Matchers.is
-import static org.hamcrest.Matchers.not
-import static org.hamcrest.Matchers.nullValue
-import static org.junit.Assert.assertThat;
-
-import org.hamcrest.Matchers
 import org.jenkinsci.plugins.credentialsbinding.impl.CredentialNotFoundException
 
 /**
@@ -56,18 +46,20 @@ class JenkinsCredentialsRule implements TestRule {
                                "Could not find credentials entry with ID '${m.credentialsId}'")
                     })
 
-                testInstance.helper.registerAllowedMethod('withCredentials', [List, Closure], { l, c ->
+                testInstance.helper.registerAllowedMethod('withCredentials', [List, Closure], { config, closure ->
 
-                    def credsId = l[0].credentialsId
+                    def credsId = config[0].credentialsId
+                    def passwordVariable = config[0].passwordVariable
+                    def usernameVariable = config[0].usernameVariable
                     def creds = credentials.get(credsId)
 
-                    binding.setProperty('username', creds?.user)
-                    binding.setProperty('password', creds?.passwd)
+                    binding.setProperty(usernameVariable, creds?.user)
+                    binding.setProperty(passwordVariable, creds?.passwd)
                     try {
-                        c()
+                        closure()
                     } finally {
-                        binding.setProperty('username', null)
-                        binding.setProperty('password', null)
+                        binding.setProperty(usernameVariable, null)
+                        binding.setProperty(passwordVariable, null)
                     }
                 })
 
