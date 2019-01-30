@@ -1,3 +1,8 @@
+#
+# ATTENTION: This file is part of the API, breaking changes here directly affect the consumers of the library.
+#            Please avoid breaking changes if possible.
+#
+
 #Project Setup
 general:
   productiveBranch: 'master'
@@ -228,8 +233,10 @@ steps:
     dockerImage: 's4sdk/docker-neo-cli'
     deployMode: 'mta'
     warAction: 'deploy'
-    vmSize: 'lite'
-    neoCredentialsId: 'CI_CREDENTIALS_ID'
+    neo:
+      size: 'lite'
+      credentialsId: 'CI_CREDENTIALS_ID'
+
   newmanExecute:
     dockerImage: 'node:8-stretch'
     failOnError: true
