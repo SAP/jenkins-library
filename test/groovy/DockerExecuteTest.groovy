@@ -31,7 +31,7 @@ class DockerExecuteTest extends BasePiperTest {
         .around(jlr)
         .around(jsr)
 
-    int whichDockerReturnValue = 0
+    int dockerPsReturnValue = 0
     def bodyExecuted
     def containerName
 
@@ -41,7 +41,7 @@ class DockerExecuteTest extends BasePiperTest {
         docker = new DockerMock()
         JenkinsUtils.metaClass.static.isPluginActive = {def s -> new PluginMock(s).isActive()}
         binding.setVariable('docker', docker)
-        helper.registerAllowedMethod('sh', [Map.class], {return whichDockerReturnValue})
+        helper.registerAllowedMethod('sh', [Map.class], {return dockerPsReturnValue})
     }
 
     @Test
@@ -168,12 +168,12 @@ class DockerExecuteTest extends BasePiperTest {
 
     @Test
     void testDockerNotInstalledResultsInLocalExecution() throws Exception {
-        whichDockerReturnValue = 1
+        dockerPsReturnValue = 1
         jsr.step.dockerExecute(script: nullScript,
             dockerOptions: '-it') {
             bodyExecuted = true
         }
-        assertTrue(jlr.log.contains('No docker environment found'))
+        assertTrue(jlr.log.contains('Cannot connect to docker daemon'))
         assertTrue(jlr.log.contains('Running on local environment'))
         assertTrue(bodyExecuted)
         assertFalse(docker.isImagePulled())
