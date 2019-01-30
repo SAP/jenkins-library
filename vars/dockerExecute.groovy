@@ -118,7 +118,7 @@ void call(Map parameters = [:], body) {
                 utils.unstashAll(config.stashContent)
                 def image = docker.image(config.dockerImage)
                 if (config.dockerPullImage) image.pull()
-                else echo"[INFO][$STEP_NAME] Skipped docker image pull."
+                else echo"[INFO][$STEP_NAME] Skipped pull of image '${config.dockerImage}'."
                 if (!config.sidecarImage) {
                     image.inside(getDockerOptions(config.dockerEnvVars, config.dockerVolumeBind, config.dockerOptions)) {
                         body()
@@ -129,7 +129,7 @@ void call(Map parameters = [:], body) {
                     try{
                         def sidecarImage = docker.image(config.sidecarImage)
                         if (config.sidecarPullImage) sidecarImage.pull()
-                        else echo"[INFO][$STEP_NAME] Skipped sidecar image pull."
+                        else echo"[INFO][$STEP_NAME] Skipped pull of image '${config.sidecarImage}'."
                         config.sidecarOptions = config.sidecarOptions?:[]
                         if (config.sidecarName)
                             config.sidecarOptions.add("--network-alias ${config.sidecarName}")
