@@ -51,8 +51,6 @@ class ContainerExecuteStructureTestsTest extends BasePiperTest {
         jsr.step.containerExecuteStructureTests(
             script: nullScript,
             juStabUtils: utils,
-            containerCommand: '/busybox/tail -f /dev/null',
-            containerShell: '/busybox/sh',
             testConfiguration: 'cst/*.yml',
             testImage: 'myRegistry/myImage:myTag'
         )
@@ -81,6 +79,8 @@ class ContainerExecuteStructureTestsTest extends BasePiperTest {
         jsr.step.containerExecuteStructureTests(
             script: nullScript,
             juStabUtils: utils,
+            containerCommand: '/busybox/tail -f /dev/null',
+            containerShell: '/bin/sh',
             dockerImage: 'myRegistry:55555/pathTo/myImage:myTag',
             testConfiguration: 'cst/*.yml',
             testImage: 'myRegistry/myImage:myTag'
@@ -96,6 +96,7 @@ class ContainerExecuteStructureTestsTest extends BasePiperTest {
             containsString('--test-report cst-report.json'),
         )))
         assertThat(jedr.dockerParams.dockerImage, is('myRegistry:55555/pathTo/myImage:myTag'))
+        assertThat(jedr.dockerParams.containerCommand, is('/busybox/tail -f /dev/null'))
         assertThat(jscr.shell, not(hasItem('docker pull myRegistry/myImage:myTag')))
     }
 

@@ -144,8 +144,8 @@ steps:
       dockerImage: 's4sdk/docker-cf-cli'
       dockerWorkspace: '/home/piper'
   containerExecuteStructureTests:
-    containerCommand: ''
-    containerShell: ''
+    containerCommand: '/busybox/tail -f /dev/null'
+    containerShell: '/busybox/sh'
     dockerImage: 'ppiper/container-structure-test'
     dockerOptions: "-u 0 --entrypoint=''"
     failOnError: true
