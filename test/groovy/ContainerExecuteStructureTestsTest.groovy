@@ -53,7 +53,6 @@ class ContainerExecuteStructureTestsTest extends BasePiperTest {
             juStabUtils: utils,
             containerCommand: '/busybox/tail -f /dev/null',
             containerShell: '/busybox/sh',
-            dockerImage: 'myRegistry:55555/pathTo/myImage:myTag',
             testConfiguration: 'cst/*.yml',
             testImage: 'myRegistry/myImage:myTag'
         )
@@ -67,7 +66,7 @@ class ContainerExecuteStructureTestsTest extends BasePiperTest {
             containsString('--test-report cst-report.json'),
         )))
         //currently no default Docker image
-        assertThat(jedr.dockerParams.dockerImage, is('myRegistry:55555/pathTo/myImage:myTag'))
+        assertThat(jedr.dockerParams.dockerImage, is('ppiper/container-structure-test'))
         assertThat(jedr.dockerParams.dockerOptions, is("-u 0 --entrypoint=''"))
         assertThat(jedr.dockerParams.containerCommand, is('/busybox/tail -f /dev/null'))
         assertThat(jedr.dockerParams.containerShell, is('/busybox/sh'))
@@ -108,9 +107,8 @@ class ContainerExecuteStructureTestsTest extends BasePiperTest {
         helper.registerAllowedMethod('sh', [String.class], {s ->
             if (s.startsWith('#!/busybox/sh\ncontainer-structure-test test')) {
                 throw new GroovyRuntimeException('shell call failed')
-            } else {
-                return null
             }
+            return null
         })
         thrown.expectMessage('shell call failed')
 
@@ -119,7 +117,6 @@ class ContainerExecuteStructureTestsTest extends BasePiperTest {
             juStabUtils: utils,
             containerCommand: '/busybox/tail -f /dev/null',
             containerShell: '/busybox/sh',
-            dockerImage: 'myRegistry:55555/pathTo/myImage:myTag',
             testConfiguration: 'cst/*.yml',
             testImage: 'myRegistry/myImage:myTag'
         )
@@ -133,9 +130,8 @@ class ContainerExecuteStructureTestsTest extends BasePiperTest {
         helper.registerAllowedMethod('sh', [String.class], {s ->
             if (s.startsWith('#!/busybox/sh\ncontainer-structure-test test')) {
                 throw new GroovyRuntimeException('shell call failed')
-            } else {
-                return null
             }
+            return null
         })
 
         jsr.step.containerExecuteStructureTests(
@@ -143,7 +139,6 @@ class ContainerExecuteStructureTestsTest extends BasePiperTest {
             juStabUtils: utils,
             containerCommand: '/busybox/tail -f /dev/null',
             containerShell: '/busybox/sh',
-            dockerImage: 'myRegistry:55555/pathTo/myImage:myTag',
             failOnError: false,
             testConfiguration: 'cst/*.yml',
             testImage: 'myRegistry/myImage:myTag'

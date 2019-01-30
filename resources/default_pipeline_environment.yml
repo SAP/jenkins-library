@@ -141,7 +141,7 @@ steps:
   containerExecuteStructureTests:
     containerCommand: ''
     containerShell: ''
-    dockerImage: ''
+    dockerImage: 'ppiper/container-structure-test'
     dockerOptions: "-u 0 --entrypoint=''"
     failOnError: true
     stashContent:
