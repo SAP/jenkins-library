@@ -233,13 +233,10 @@ public class ChangeManagement implements Serializable {
                                         args,
                                         false,
                                         cmclientOpts) as int
-        if(rc == 0) {
-            return
-        } else {
+        if(rc != 0) {
             throw new ChangeManagementException(
                 "Cannot upload file into transport request. Return code from ${type == BackendType.RFC ? 'rfc' : 'cm'} client: $rc.")
         }
-
     }
 
     def executeWithCredentials(BackendType type,
