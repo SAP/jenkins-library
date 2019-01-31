@@ -321,7 +321,7 @@ public void testGetCommandLineWithCMClientOpts() {
     }
 
     @Test
-    public void testReleaseTransportRequestFails() {
+    public void testReleaseTransportRequestFailsSOLMAN() {
 
         thrown.expect(ChangeManagementException)
         thrown.expectMessage("Cannot release Transport Request '002'. Return code from cmclient: 1.")
