@@ -114,8 +114,8 @@ chown -R 1000:1000 ."""
         }
         stash(
             name: stashName,
-            include: config.stashIncludes.workspace,
-            exclude: config.stashExcludes.excludes
+            includes: config.stashIncludes.workspace,
+            excludes: config.stashExcludes.excludes
         )
         return stashName
     } catch (AbortException | IOException e) {
