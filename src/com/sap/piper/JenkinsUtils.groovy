@@ -13,7 +13,7 @@ static def isPluginActive(pluginId) {
 
 static def boolean hasTestFailures(build){
     //build: https://javadoc.jenkins.io/plugin/workflow-support/org/jenkinsci/plugins/workflow/support/steps/build/RunWrapper.html
-    //getRawBuild: https://github.com/jenkinsci/workflow-job-plugin/blob/master/src/main/java/org/jenkinsci/plugins/workflow/job/WorkflowRun.java
+    //getRawBuild: https://javadoc.jenkins.io/plugin/workflow-job/org/jenkinsci/plugins/workflow/job/WorkflowRun.html
     //getAction: http://www.hudson-ci.org/javadoc/hudson/tasks/junit/TestResultAction.html
     def action = build?.getRawBuild()?.getAction(TestResultAction.class)
     if(action && action.getFailCount() != 0)
