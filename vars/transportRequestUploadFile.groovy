@@ -103,7 +103,9 @@ void call(parameters = [:]) {
                                "Transport request id not provided (parameter: \'transportRequestId\' or via commit history).")
                            .use()
 
-        def uploadingMessage = ["[INFO] Uploading file '${configuration.filePath}' to transport request '${configuration.transportRequestId}'"]
+        def uploadingMessage = ['[INFO] Uploading file ' +
+            "'${backendType == BackendType.RFC ? configuration.applicationUrl : configuration.filePath}' " +
+            "to transport request '${configuration.transportRequestId}'"]
         if(backendType == BackendType.SOLMAN)
             uploadingMessage << " of change document '${configuration.changeDocumentId}'"
         uploadingMessage << '.'
