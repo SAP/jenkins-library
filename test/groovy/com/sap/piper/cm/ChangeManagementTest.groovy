@@ -172,6 +172,34 @@ public void testGetCommandLineWithCMClientOpts() {
     }
 
     @Test
+    public void testCreateTransportRequestRFCSucceeds() {
+
+        script.setReturnValue('cts createTransportRequest', '{"REQUESTID":"XYZK9000004"}')
+
+        def transportRequestId = new ChangeManagement(nullScript).createTransportRequestRFC(
+            'rfc', // docker image
+            [], // docker options
+            'https://example.org/rfc', // endpoint
+            '01', // client
+            'me', // credentialsId
+            'Lorem ipsum' // description
+        )
+
+        assert dockerExecuteRule.dockerParams.dockerImage == 'rfc'
+
+        assert dockerExecuteRule.dockerParams.dockerOptions == [
+            '--env TRANSPORT_DESCRIPTION=Lorem ipsum',
+            '--env ABAP_DEVELOPMENT_CLIENT=01',
+            '--env ABAP_DEVELOPMENT_SERVER=https://example.org/rfc',
+            '--env ABAP_DEVELOPMENT_USER=user',
+            '--env ABAP_DEVELOPMENT_PASSWORD=password'
+        ]
+
+        assert transportRequestId == 'XYZK9000004'
+
+    }
+
+    @Test
     public void testCreateTransportRequestCTSSucceeds() {
 
         script.setReturnValue(JenkinsShellCallRule.Type.REGEX, 'cmclient.* -t CTS .*create-transport -tt W -ts XYZ -d "desc 123"$', '004')
