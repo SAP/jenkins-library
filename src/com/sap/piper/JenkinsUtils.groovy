@@ -16,9 +16,7 @@ static boolean hasTestFailures(build){
     //getRawBuild: https://javadoc.jenkins.io/plugin/workflow-job/org/jenkinsci/plugins/workflow/job/WorkflowRun.html
     //getAction: http://www.hudson-ci.org/javadoc/hudson/tasks/junit/TestResultAction.html
     def action = build?.getRawBuild()?.getAction(TestResultAction.class)
-    if(action && action.getFailCount() != 0)
-        return true
-    return false
+    return action && action.getFailCount() != 0
 }
 
 def nodeAvailable() {
