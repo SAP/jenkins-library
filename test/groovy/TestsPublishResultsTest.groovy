@@ -154,18 +154,20 @@ class TestsPublishResultsTest extends BasePiperTest {
     @Test
     void testBuildResultStatusWithFailOnError() throws Exception {
         // prepare
-        binding.setVariable('currentBuild', [result: 'UNSTABLE'])
+        nullScript.currentBuild.getRawBuild = {
+            return [getAction: { type ->
+                return [getFailCount: {
+                    return 6
+                }]
+            }]
+        }
         // asserts
         thrown.expect(hudson.AbortException)
         thrown.expectMessage('[testsPublishResults] Some tests failed!')
         // execute test
-        try {
-            stepRule.step.testsPublishResults(
-                script: nullScript,
-                failOnError: true
-            )
-        } finally {
-            assertJobStatusFailure()
-        }
+        stepRule.step.testsPublishResults(
+            script: nullScript,
+            failOnError: true
+        )
     }
 }

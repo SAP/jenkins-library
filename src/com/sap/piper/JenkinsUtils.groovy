@@ -3,7 +3,6 @@ package com.sap.piper
 import com.cloudbees.groovy.cps.NonCPS
 import jenkins.model.Jenkins
 import org.jenkinsci.plugins.workflow.steps.MissingContextVariableException
-import org.jenkinsci.plugins.workflow.support.steps.build.RunWrapper
 import hudson.tasks.junit.TestResultAction
 
 @API
@@ -12,7 +11,7 @@ static def isPluginActive(pluginId) {
     return Jenkins.instance.pluginManager.plugins.find { p -> p.isActive() && p.getShortName() == pluginId }
 }
 
-static def boolean hasTestFailures(RunWrapper build){
+static def boolean hasTestFailures(build){
     return build.getRawBuild().getAction(TestResultAction.class).getFailCount() != 0
 }
 

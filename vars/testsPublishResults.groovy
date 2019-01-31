@@ -54,8 +54,8 @@ void call(Map parameters = [:]) {
         // PERFORMANCE
         publishJMeterReport(configuration.get('jmeter'))
         // handle the results
-        if (configuration.failOnError && JenkinsUtils.hasTestFailures(currentBuild)) {
-            currentBuild.result = 'FAILURE'
+        if (configuration.failOnError && JenkinsUtils.hasTestFailures(script.currentBuild)) {
+            script.currentBuild.result = 'FAILURE'
             error "[${STEP_NAME}] Some tests failed!"
         }
     }
