@@ -11,7 +11,7 @@ static def isPluginActive(pluginId) {
     return Jenkins.instance.pluginManager.plugins.find { p -> p.isActive() && p.getShortName() == pluginId }
 }
 
-static def boolean hasTestFailures(build){
+static boolean hasTestFailures(build){
     //build: https://javadoc.jenkins.io/plugin/workflow-support/org/jenkinsci/plugins/workflow/support/steps/build/RunWrapper.html
     //getRawBuild: https://javadoc.jenkins.io/plugin/workflow-job/org/jenkinsci/plugins/workflow/job/WorkflowRun.html
     //getAction: http://www.hudson-ci.org/javadoc/hudson/tasks/junit/TestResultAction.html
