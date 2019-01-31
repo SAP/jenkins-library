@@ -210,7 +210,7 @@ class Helper {
                     def _docu = []
                     docuLines.each { _docu << it  }
                     _docu = Helper.trim(_docu)
-                    step.description = _docu*.trim().join('\n')
+                    step.description = _docu.join('\n')
                 } else {
 
                     def param = retrieveParameterName(line)
@@ -245,6 +245,7 @@ class Helper {
                 if(_line.startsWith('/**')) _line = _line.replaceAll('^\\/\\*\\*', '') // start comment
                 if(_line.startsWith('*/')) _line = _line.replaceAll('^\\*/', '') // end comment
                 if(_line.startsWith('*')) _line = _line.replaceAll('^\\*', '') // continue comment
+                if(_line.startsWith(' ')) _line = _line.replaceAll('^\\s', '')
                 if(_line ==~ /.*@possibleValues.*/) {
                     mandatory = false // should be something like reset attributes
                     value = true
@@ -270,7 +271,7 @@ class Helper {
                 }
 
                 if(! value && ! mandatory) {
-                    docuLines << _line.trim()
+                    docuLines << _line
                 }
             }
 
