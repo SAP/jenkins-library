@@ -326,9 +326,7 @@ public class ChangeManagement implements Serializable {
         }
 
         int rc = executeWithCredentials(type, dockerImage, dockerOptions, endpoint, credentialsId, cmd, args, false, clientOpts) as int
-        if(rc == 0) {
-            return
-        } else {
+        if(rc != 0) {
             throw new ChangeManagementException("Cannot release Transport Request '$transportRequestId'. Return code from cmclient: $rc.")
         }
     }
