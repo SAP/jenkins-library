@@ -44,7 +44,7 @@ Available parameters:
     with the `this` parameter, as in `script: this`.
     This allows the function to access the [`commonPipelineEnvironment`](commonPipelineEnvironment.md)
     for retrieving, for example, configuration parameters.
-* `failOnError` - JUnit sets the build result to `UNSTABLE` in case there are any failing tests. If `failOnError` it set the step will fail be build if the build result is set to `UNSTABLE`.
+* `failOnError` - If `failOnError` it set to `true` the step will fail the build if JUnit detected any failing tests.
 * `junit` - Publishes test results files in JUnit format with the [JUnit Plugin](https://plugins.jenkins.io/junit).
 * `jacoco` - Publishes code coverage with the [JaCoCo plugin](https://plugins.jenkins.io/jacoco) .
 * `cobertura` - Publishes code coverage with the [Cobertura plugin](https://plugins.jenkins.io/cobertura).
