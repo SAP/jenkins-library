@@ -277,6 +277,29 @@ public void testGetCommandLineWithCMClientOpts() {
     }
 
     @Test
+    public void testUploadFileToTransportFailsRFC() {
+
+        thrown.expect(ChangeManagementException)
+        thrown.expectMessage('Cannot upload file into transport request. Return code from rfc client: 1.')
+
+        script.setReturnValue('cts uploadToABAP:002', 1)
+
+        new ChangeManagement(nullScript).uploadFileToTransportRequestRFC(
+            'rfc',
+            [],
+            '002', //transportRequestId
+            '001', // applicationId
+            'https://example.org/mypath/deployArtifact.zip',
+            'https://example.org/rfc',
+            'me',
+            '01', //developmentInstance
+            '00', // developmentClient
+            'Lorem ipsum', // applicationDescription
+            'XYZ' // abapPackage
+            )
+    }
+
+    @Test
     public void testUploadFileToTransportFailsSOLMAN() {
 
         thrown.expect(ChangeManagementException)
