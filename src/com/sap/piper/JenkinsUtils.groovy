@@ -3,6 +3,8 @@ package com.sap.piper
 import com.cloudbees.groovy.cps.NonCPS
 import jenkins.model.Jenkins
 import org.jenkinsci.plugins.workflow.steps.MissingContextVariableException
+import org.jenkinsci.plugins.workflow.support.steps.build.RunWrapper
+import hudson.tasks.junit.TestResultAction
 
 @API
 @NonCPS
@@ -10,8 +12,8 @@ static def isPluginActive(pluginId) {
     return Jenkins.instance.pluginManager.plugins.find { p -> p.isActive() && p.getShortName() == pluginId }
 }
 
-static def boolean hasTestFailures(build){
-    return build.rawBuild.getAction(hudson.tasks.junit.TestResultAction.class).getFailCount() != 0
+static def boolean hasTestFailures(RunWrapper build){
+    return build.getRawBuild().getAction(TestResultAction.class).getFailCount() != 0
 }
 
 def nodeAvailable() {
