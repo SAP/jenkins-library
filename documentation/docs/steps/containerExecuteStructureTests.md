@@ -24,7 +24,6 @@ containerExecuteStructureTests(
 )
 ```
 
-
 ## Parameters
 
 | parameter | mandatory | default | possible values |
@@ -54,11 +53,10 @@ Details:
 * pullImage: Only relevant for testDriver 'docker'.
 * stashContent: If specific stashes should be considered for the tests, you can pass this via this parameter.
 * testConfiguration: Container structure test configuration in yml or json format. You can pass a pattern in order to execute multiple tests.
-* testDriver: Container structure test driver to be used for testing, please see https://github.com/GoogleContainerTools/container-structure-test for details.
+* testDriver: Container structure test driver to be used for testing, please see [https://github.com/GoogleContainerTools/container-structure-test](https://github.com/GoogleContainerTools/container-structure-test) for details.
 * testImage: Image to be tested
 * testReportFilePath: Path and name of the test report which will be generated
 * verbose: Print more detailed information into the log.
-
 
 ## Step configuration
 
@@ -81,5 +79,3 @@ In following sections the configuration is possible:
 |testImage||X|X|
 |testReportFilePath||X|X|
 |verbose|X|X|X|
-
-
