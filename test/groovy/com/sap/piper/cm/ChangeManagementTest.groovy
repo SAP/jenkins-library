@@ -1,5 +1,6 @@
 package com.sap.piper.cm
 import static org.hamcrest.Matchers.allOf
+import static org.hamcrest.Matchers.contains
 import static org.hamcrest.Matchers.containsString
 import static org.hamcrest.Matchers.equalTo
 import static org.hamcrest.Matchers.hasItem
@@ -238,6 +239,41 @@ public void testGetCommandLineWithCMClientOpts() {
 
         // no assert required here, since the regex registered above to the script rule is an implicit check for
         // the command line.
+    }
+
+    @Test
+    public void testUploadFileToTransportSucceedsRFC() {
+
+        new ChangeManagement(nullScript).uploadFileToTransportRequestRFC(
+            'rfc',
+            [],
+            '002', //transportRequestId
+            '001', // applicationId
+            'https://example.org/mypath/deployArtifact.zip',
+            'https://example.org/rfc',
+            'me',
+            '01', //developmentInstance
+            '00', // developmentClient
+            'Lorem ipsum', // applicationDescription
+            'XYZ' // abapPackage
+            )
+
+            assert dockerExecuteRule.dockerParams.dockerImage == 'rfc'
+
+            assert dockerExecuteRule.dockerParams.dockerOptions ==
+            [
+                '--env ABAP_DEVELOPMENT_INSTANCE=01',
+                '--env ABAP_DEVELOPMENT_CLIENT=00',
+                '--env ABAP_APPLICATION_NAME=001',
+                '--env ABAP_APPLICATION_DESC=Lorem ipsum',
+                '--env ABAP_PACKAGE=XYZ',
+                '--env ZIP_FILE_URL=https://example.org/mypath/deployArtifact.zip',
+                '--env ABAP_DEVELOPMENT_SERVER=https://example.org/rfc',
+                '--env ABAP_DEVELOPMENT_USER=user',
+                '--env ABAP_DEVELOPMENT_PASSWORD=password',
+            ]
+
+            assertThat(script.shell, contains('cts uploadToABAP:002'))
     }
 
     @Test
