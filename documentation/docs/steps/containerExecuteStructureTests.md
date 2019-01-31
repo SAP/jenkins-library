@@ -5,6 +5,7 @@
 In this step [Container Structure Tests](https://github.com/GoogleContainerTools/container-structure-test) are executed.
 
 This testing framework allows you to execute different test types against a Docker container, for example:
+
 * Command tests (only if a Docker Deamon is available)
 * File existence tests
 * File content tests
