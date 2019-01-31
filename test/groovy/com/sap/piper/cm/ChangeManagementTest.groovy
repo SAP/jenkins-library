@@ -190,23 +190,6 @@ public void testGetCommandLineWithCMClientOpts() {
     }
 
     @Test
-    public void testCreateTransportRequestFails() {
-
-        script.setReturnValue(JenkinsShellCallRule.Type.REGEX, '.*upload-file-to-transport.*', 1)
-
-        thrown.expect(ChangeManagementException)
-        thrown.expectMessage('Cannot upload file into transport request. Return code from cm client: 1.')
-
-        new ChangeManagement(nullScript).uploadFileToTransportRequestSOLMAN(
-                                                                      '001',
-                                                                      '002',
-                                                                      'XXX',
-                                                                      '/path',
-                                                                      'https://example.org/cm',
-                                                                      'me')
-    }
-
-    @Test
     public void testUploadFileToTransportSucceedsSOLMAN() {
 
         // the regex provided below is an implicit check that the command line is fine.
@@ -396,7 +379,6 @@ public void testGetCommandLineWithCMClientOpts() {
             'me',
             'openSesame')
     }
-
 
     private GitUtils gitUtilsMock(boolean insideWorkTree, String[] changeIds) {
         return new GitUtils() {
