@@ -1,3 +1,4 @@
+import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.RuleChain
@@ -25,6 +26,11 @@ class nodeBuildTest extends BasePiperTest {
         .around(dockerExecuteRule)
         .around(shellRule)
         .around(stepRule)
+
+    @Before
+    void init() {
+        helper.registerAllowedMethod('fileExists', [String], { s -> s == 'package.json' })
+    }
 
     @Test
     void testNodeBuild() throws Exception {

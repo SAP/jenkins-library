@@ -1,7 +1,6 @@
 import static com.sap.piper.Prerequisites.checkScript
 
 import com.sap.piper.ConfigurationHelper
-import com.sap.piper.FileUtils
 import com.sap.piper.Utils
 
 import groovy.transform.Field
@@ -30,13 +29,12 @@ void call(Map parameters = [:]) {
             stepParamKey1: 'scriptMissing',
             stepParam1: parameters?.script == null
         ], configuration)
-        if (FileUtils.directoryOrFileExists(this, 'package.json')) {
+        if (fileExists('package.json')) {
             dockerExecute(script: script, dockerImage: configuration.dockerImage, dockerOptions: configuration.dockerOptions) {
                 sh '''npm run build'''
             }
         } else {
-            echo "[${STEP_NAME}] package.json is not found."
-            script.currentBuild.result = 'UNSTABLE'
+            error "[${STEP_NAME}] package.json is not found."
         }
     }
 }
