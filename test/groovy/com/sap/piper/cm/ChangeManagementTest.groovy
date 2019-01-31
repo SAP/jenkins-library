@@ -200,6 +200,25 @@ public void testGetCommandLineWithCMClientOpts() {
     }
 
     @Test
+    public void testCreateTransportRequestRFCFails() {
+
+        thrown.expect(ChangeManagementException)
+        thrown.expectMessage('Cannot create transport request: script returned exit code 3')
+
+        script.setReturnValue('cts createTransportRequest',
+            { throw new AbortException('script returned exit code 3')})
+
+        def transportRequestId = new ChangeManagement(nullScript).createTransportRequestRFC(
+            'rfc', // docker image
+            [], // docker options
+            'https://example.org/rfc', // endpoint
+            '01', // client
+            'me', // credentialsId
+            'Lorem ipsum' // description
+        )
+    }
+
+    @Test
     public void testCreateTransportRequestCTSSucceeds() {
 
         script.setReturnValue(JenkinsShellCallRule.Type.REGEX, 'cmclient.* -t CTS .*create-transport -tt W -ts XYZ -d "desc 123"$', '004')

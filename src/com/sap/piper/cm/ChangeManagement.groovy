@@ -114,17 +114,24 @@ public class ChangeManagement implements Serializable {
             "--env TRANSPORT_DESCRIPTION=${description}",
             "--env ABAP_DEVELOPMENT_CLIENT=${client}"]
 
-        def transportRequestId = executeWithCredentials(
-            BackendType.RFC,
-            dockerImage,
-            dockerOptions,
-            endpoint,
-            credentialsId,
-            command,
-            args,
-            true)
+        try {
 
-        return new JsonSlurper().parseText(transportRequestId).REQUESTID
+            def transportRequestId = executeWithCredentials(
+                BackendType.RFC,
+                dockerImage,
+                dockerOptions,
+                endpoint,
+                credentialsId,
+                command,
+                args,
+                true)
+
+            return new JsonSlurper().parseText(transportRequestId).REQUESTID
+
+        } catch(AbortException ex) {
+            throw new ChangeManagementException(
+                "Cannot create transport request: ${ex.getMessage()}", ex)
+        }
     }
 
     void uploadFileToTransportRequestSOLMAN(
