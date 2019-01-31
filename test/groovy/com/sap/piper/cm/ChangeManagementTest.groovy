@@ -386,9 +386,6 @@ public void testGetCommandLineWithCMClientOpts() {
     @Test
     public void testReleaseTransportRequestSucceedsRFC() {
 
-        // the regex provided below is an implicit check that the command line is fine.
-//      script.setReturnValue(JenkinsShellCallRule.Type.REGEX, '-tRFC releaseTransport.*-tID 002', 0)
-
         new ChangeManagement(nullScript).releaseTransportRequest(
             BackendType.RFC,
             null,
