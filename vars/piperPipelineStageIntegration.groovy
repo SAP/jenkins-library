@@ -12,7 +12,7 @@ import static com.sap.piper.Prerequisites.checkScript
 ])
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
 
-def call(Map parameters = [:]) {
+void call(Map parameters = [:]) {
 
     def script = checkScript(this, parameters) ?: this
     def utils = parameters.juStabUtils ?: new Utils()
