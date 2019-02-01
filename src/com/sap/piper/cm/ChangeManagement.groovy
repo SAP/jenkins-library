@@ -369,10 +369,11 @@ public class ChangeManagement implements Serializable {
         List dockerOptions,
         String transportRequestId,
         String endpoint,
+        String developmentClient,
         String credentialsId) {
 
         def cmd = "cts releaseTransport:${transportRequestId}"
-        def args = ["--env ABAP_DEVELOPMENT_CLIENT=001"]
+        def args = ["--env ABAP_DEVELOPMENT_CLIENT=${developmentClient}"]
 
         int rc = executeWithCredentials(
             BackendType.RFC,

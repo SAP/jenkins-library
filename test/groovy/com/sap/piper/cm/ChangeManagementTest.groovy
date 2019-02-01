@@ -388,6 +388,7 @@ public void testGetCommandLineWithCMClientOpts() {
             [],
             '002',
             'https://example.org',
+            '001',
             'me')
 
         List stringDockerOptions = []
