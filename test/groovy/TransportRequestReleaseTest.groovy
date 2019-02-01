@@ -1,3 +1,7 @@
+import static org.hamcrest.Matchers.allOf
+import static org.hamcrest.Matchers.containsString
+
+import org.hamcrest.Matchers
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -157,6 +161,25 @@ public class TransportRequestReleaseTest extends BasePiperTest {
                     developmentClient: '003',
                     credentialsId: 'CM',
                 ]
+    }
+
+    @Test
+    public void releaseTransportRequestSanityChecksRFCTest() {
+
+        thrown.expect(IllegalArgumentException)
+        thrown.expectMessage(allOf(
+            containsString('ERROR - NO VALUE AVAILABLE FOR:'),
+            containsString('changeManagement/endpoint'),
+            containsString('developmentClient')))
+
+        nullScript
+            .commonPipelineEnvironment
+                .configuration = null
+
+        stepRule.step.transportRequestRelease(
+            script: nullScript,
+            changeManagement: [type: 'RFC'],
+            transportRequestId: '002')
     }
 
     @Test
