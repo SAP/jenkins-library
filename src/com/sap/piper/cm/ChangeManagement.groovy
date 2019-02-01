@@ -307,7 +307,13 @@ public class ChangeManagement implements Serializable {
         }
     }
 
-    void releaseTransportRequest(BackendType type,String changeId, String transportRequestId, String endpoint, String credentialsId, String clientOpts = '') {
+    void releaseTransportRequest(
+        BackendType type,
+        String changeId,
+        String transportRequestId,
+        String endpoint,
+        String credentialsId,
+        String clientOpts = '') {
 
         def cmd
         def dockerImage = ''
