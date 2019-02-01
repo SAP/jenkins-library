@@ -47,6 +47,7 @@ public class CommonStepsTest extends BasePiperTest{
                'commonPipelineEnvironment',
                'handlePipelineStepErrors',
                'pipelineExecute',
+               'piperPipeline',
                'prepareDefaultValues',
                'setupCommonPipelineEnvironment',
                'toolValidate',
