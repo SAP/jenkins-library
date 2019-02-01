@@ -164,6 +164,45 @@ public class TransportRequestReleaseTest extends BasePiperTest {
     }
 
     @Test
+    public void releaseTransportRequestFailsRFCTest() {
+
+        thrown.expect(AbortException)
+        thrown.expectMessage('Failed releasing transport request.')
+
+        nullScript
+            .commonPipelineEnvironment
+                .configuration
+                    .general
+                        .changeManagement =
+                            [
+                                credentialsId: 'CM',
+                                type: 'RFC',
+                                endpoint: 'https://example.org/rfc',
+                                rfc: [dockerImage: 'rfc']
+                            ]
+
+        ChangeManagement cm = new ChangeManagement(nullScript) {
+            void releaseTransportRequestRFC(
+                String dockerImage,
+                List dockerOptions,
+                String transportRequestId,
+                String endpoint,
+                String developmentClient,
+                String credentialsId) {
+
+                throw new ChangeManagementException('Failed releasing transport request.')
+            }
+        }
+
+        stepRule.step.transportRequestRelease(
+            script: nullScript,
+            transportRequestId: '002',
+            developmentClient: '003',
+            cmUtils: cm)
+
+    }
+
+    @Test
     public void releaseTransportRequestSanityChecksRFCTest() {
 
         thrown.expect(IllegalArgumentException)
