@@ -353,8 +353,7 @@ public void testGetCommandLineWithCMClientOpts() {
         // the regex provided below is an implicit check that the command line is fine.
         script.setReturnValue(JenkinsShellCallRule.Type.REGEX, '-t SOLMAN release-transport.*-cID 001.*-tID 002', 0)
 
-        new ChangeManagement(nullScript).releaseTransportRequest(
-            BackendType.SOLMAN,
+        new ChangeManagement(nullScript).releaseTransportRequestSOLMAN(
             '001',
             '002',
             'https://example.org',
@@ -371,9 +370,7 @@ public void testGetCommandLineWithCMClientOpts() {
         // the regex provided below is an implicit check that the command line is fine.
         script.setReturnValue(JenkinsShellCallRule.Type.REGEX, '-t CTS export-transport.*-tID 002', 0)
 
-        new ChangeManagement(nullScript).releaseTransportRequest(
-            BackendType.CTS,
-            null,
+        new ChangeManagement(nullScript).releaseTransportRequestCTS(
             '002',
             'https://example.org',
             'me',
@@ -386,13 +383,12 @@ public void testGetCommandLineWithCMClientOpts() {
     @Test
     public void testReleaseTransportRequestSucceedsRFC() {
 
-        new ChangeManagement(nullScript).releaseTransportRequest(
-            BackendType.RFC,
-            null,
+        new ChangeManagement(nullScript).releaseTransportRequestRFC(
+            '',
+            [],
             '002',
             'https://example.org',
-            'me',
-            'openSesame')
+            'me')
 
         List stringDockerOptions = []
         for(item in dockerExecuteRule.dockerParams.dockerOptions)
@@ -415,13 +411,11 @@ public void testGetCommandLineWithCMClientOpts() {
         // the regex provided below is an implicit check that the command line is fine.
         script.setReturnValue(JenkinsShellCallRule.Type.REGEX, 'release-transport.*-cID 001.*-tID 002', 1)
 
-        new ChangeManagement(nullScript).releaseTransportRequest(
-            BackendType.SOLMAN,
+        new ChangeManagement(nullScript).releaseTransportRequestSOLMAN(
             '001',
             '002',
             'https://example.org',
-            'me',
-            'openSesame')
+            'me')
     }
 
     private GitUtils gitUtilsMock(boolean insideWorkTree, String[] changeIds) {

@@ -89,13 +89,43 @@ void call(parameters = [:]) {
         echo closingMessage.join()
 
             try {
-                cm.releaseTransportRequest(backendType,
-                                           configuration.changeDocumentId,
-                                           configuration.transportRequestId,
-                                           configuration.changeManagement.endpoint,
-                                           configuration.changeManagement.credentialsId,
-                                           configuration.changeManagement.clientOpts)
 
+                switch(backendType) {
+
+                    case BackendType.SOLMAN:
+
+                        cm.releaseTransportRequestSOLMAN(
+                            configuration.changeDocumentId,
+                            configuration.transportRequestId,
+                            configuration.changeManagement.endpoint,
+                            configuration.changeManagement.credentialsId,
+                            configuration.changeManagement.clientOpts)
+                        break
+
+                    case BackendType.CTS:
+
+                        cm.releaseTransportRequestCTS(
+                            configuration.transportRequestId,
+                            configuration.changeManagement.endpoint,
+                            configuration.changeManagement.credentialsId,
+                            configuration.changeManagement.clientOpts)
+                        break
+
+                    case BackendType.RFC:
+
+                        cm.releaseTransportRequestRFC(
+                            configuration.changeManagement.rfc.dockerImage,
+                            configuration.changeManagement.rfc.dockerOptions,
+                            configuration.transportRequestId,
+                            configuration.changeManagement.endpoint,
+                            configuration.developmentClient,
+                            configuration.changeManagement.credentialsId)
+                        break
+
+                    default:
+
+                        throw new IllegalArgumentException("Invalid backend type: '${backendType}'.")
+                }
             } catch(ChangeManagementException ex) {
                 throw new AbortException(ex.getMessage())
             }
