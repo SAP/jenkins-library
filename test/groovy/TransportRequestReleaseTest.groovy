@@ -10,6 +10,7 @@ import com.sap.piper.cm.ChangeManagementException
 
 import util.BasePiperTest
 import util.JenkinsCredentialsRule
+import util.JenkinsDockerExecuteRule
 import util.JenkinsStepRule
 import util.JenkinsLoggingRule
 import util.JenkinsReadYamlRule
@@ -103,6 +104,59 @@ public class TransportRequestReleaseTest extends BasePiperTest {
         }
 
         stepRule.step.transportRequestRelease(script: nullScript, changeDocumentId: '001', transportRequestId: '001', cmUtils: cm)
+    }
+
+    @Test
+    public void releaseTransportRequestSuccessRFCTest() {
+
+        def receivedParameters
+
+        nullScript
+            .commonPipelineEnvironment
+                .configuration
+                    .general
+                        .changeManagement =
+                            [
+                                credentialsId: 'CM',
+                                type: 'RFC',
+                                endpoint: 'https://example.org/rfc',
+                                rfc: [dockerImage: 'rfc']
+                            ]
+
+        ChangeManagement cm = new ChangeManagement(nullScript) {
+            void releaseTransportRequestRFC(
+                String dockerImage,
+                List dockerOptions,
+                String transportRequestId,
+                String endpoint,
+                String developmentClient,
+                String credentialsId) {
+
+                receivedParameters = [
+                    dockerImage: dockerImage,
+                    dockerOptions: dockerOptions,
+                    transportRequestId: transportRequestId,
+                    endpoint: endpoint,
+                    developmentClient: developmentClient,
+                    credentialsId: credentialsId,
+                ]
+            }
+        }
+
+        stepRule.step.transportRequestRelease(
+            script: nullScript,
+            transportRequestId: '002',
+            developmentClient: '003',
+            cmUtils: cm)
+
+        assert receivedParameters == [
+                    dockerImage: 'rfc',
+                    dockerOptions: [],
+                    transportRequestId: '002',
+                    endpoint: 'https://example.org/rfc',
+                    developmentClient: '003',
+                    credentialsId: 'CM',
+                ]
     }
 
     @Test
