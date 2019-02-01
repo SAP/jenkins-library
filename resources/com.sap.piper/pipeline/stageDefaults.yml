@@ -1,0 +1,19 @@
+stages:
+  'Pull-Request Voting': {}
+  'Build': {}
+  'Additional Unit Tests': {}
+  Integration: {}
+  Acceptance:
+    stepConditions:
+      cloudFoundryDeploy:
+        config: 'cfSpace'
+      newmanExecute:
+        filePatternFromConfig: 'newmanCollection'
+        config: 'testRepository'
+      uiVeri5ExecuteTests:
+        filePattern: '**/conf.js'
+        config: 'testRepository'
+  Security: {}
+  Performance: {}
+  Promote: {}
+  Release: {}
