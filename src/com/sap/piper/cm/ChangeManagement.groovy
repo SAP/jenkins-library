@@ -307,41 +307,87 @@ public class ChangeManagement implements Serializable {
         }
     }
 
-    void releaseTransportRequest(
-        BackendType type,
+    void releaseTransportRequestSOLMAN(
         String changeId,
         String transportRequestId,
         String endpoint,
         String credentialsId,
         String clientOpts = '') {
 
-        def cmd
-        def dockerImage = ''
-        def dockerOptions = []
-        List args = []
-        if(type == BackendType.SOLMAN) {
-            cmd = 'release-transport'
-            args << '-cID'
-            args << changeId
-            args << '-tID'
-            args << transportRequestId
-        } else if(type == BackendType.CTS) {
-             cmd = 'export-transport'
-            args << '-tID'
-            args << transportRequestId
-        } else if(type ==BackendType.RFC) {
-            // do the right tasks
-            dockerImage = 'rfc'
-            cmd = "cts releaseTransport:${transportRequestId}"
-            args = args.plus(["--env ABAP_DEVELOPMENT_CLIENT=001"])
-        } else {
-            throw new IllegalStateException("Invalid backend type: '${type}'")
-        }
+        def cmd = 'release-transport'
+        def args = [
+            '-cID',
+            changeId,
+            '-tID',
+            transportRequestId,
+        ]
 
-        int rc = executeWithCredentials(type, dockerImage, dockerOptions, endpoint, credentialsId, cmd, args, false, clientOpts) as int
+        int rc = executeWithCredentials(
+            BackendType.SOLMAN,
+            '',
+            [],
+            endpoint,
+            credentialsId,
+            cmd,
+            args,
+            false) as int
+
         if(rc != 0) {
             throw new ChangeManagementException("Cannot release Transport Request '$transportRequestId'. Return code from cmclient: $rc.")
         }
+    }
+
+    void releaseTransportRequestCTS(
+        String transportRequestId,
+        String endpoint,
+        String credentialsId,
+        String clientOpts = '') {
+
+        def cmd = 'export-transport'
+        def args = [
+            '-tID',
+            transportRequestId,
+        ]
+
+        int rc = executeWithCredentials(
+            BackendType.CTS,
+            '',
+            [],
+            endpoint,
+            credentialsId,
+            cmd,
+            args,
+            false) as int
+
+        if(rc != 0) {
+            throw new ChangeManagementException("Cannot release Transport Request '$transportRequestId'. Return code from cmclient: $rc.")
+        }
+    }
+
+    void releaseTransportRequestRFC(
+        String dockerImage,
+        List dockerOptions,
+        String transportRequestId,
+        String endpoint,
+        String credentialsId) {
+
+        def cmd = "cts releaseTransport:${transportRequestId}"
+        def args = ["--env ABAP_DEVELOPMENT_CLIENT=001"]
+
+        int rc = executeWithCredentials(
+            BackendType.RFC,
+            dockerImage,
+            dockerOptions,
+            endpoint,
+            credentialsId,
+            cmd,
+            args,
+            false) as int
+
+        if(rc != 0) {
+            throw new ChangeManagementException("Cannot release Transport Request '$transportRequestId'. Return code from rfcclient: $rc.")
+        }
+
     }
 
     String getCMCommandLine(BackendType type,

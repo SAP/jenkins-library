@@ -91,7 +91,7 @@ public class TransportRequestReleaseTest extends BasePiperTest {
 
         ChangeManagement cm = new ChangeManagement(nullScript) {
 
-            void releaseTransportRequest(BackendType type,
+            void releaseTransportRequestSOLMAN(
                                          String changeId,
                                          String transportRequestId,
                                          String endpoint,
@@ -106,7 +106,7 @@ public class TransportRequestReleaseTest extends BasePiperTest {
     }
 
     @Test
-    public void releaseTransportRequestSuccessTest() {
+    public void releaseTransportRequestSuccessSOLMANTest() {
 
         // Here we test only the case where the transportRequestId is
         // provided via parameters. The other cases are tested by
@@ -118,14 +118,13 @@ public class TransportRequestReleaseTest extends BasePiperTest {
         Map receivedParams = [:]
 
         ChangeManagement cm = new ChangeManagement(nullScript) {
-            void releaseTransportRequest(BackendType type,
+            void releaseTransportRequestSOLMAN(
                                          String changeId,
                                          String transportRequestId,
                                          String endpoint,
                                          String credentialsId,
                                          String clientOpts) {
 
-                receivedParams.type = type
                 receivedParams.changeId = changeId
                 receivedParams.transportRequestId = transportRequestId
                 receivedParams.endpoint = endpoint
@@ -136,7 +135,7 @@ public class TransportRequestReleaseTest extends BasePiperTest {
 
         stepRule.step.transportRequestRelease(script: nullScript, changeDocumentId: '001', transportRequestId: '002', cmUtils: cm)
 
-        assert receivedParams == [type: BackendType.SOLMAN,
+        assert receivedParams == [
                                   changeId: '001',
                                   transportRequestId: '002',
                                   endpoint: 'https://example.org/cm',
