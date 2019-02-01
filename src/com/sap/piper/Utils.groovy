@@ -97,7 +97,7 @@ void pushToSWA(Map parameters, Map config) {
     }
 }
 
-String fillTemplate(String templateText, Map binding){
+static String fillTemplate(String templateText, Map binding){
     def engine = new SimpleTemplateEngine()
     String result = engine.createTemplate(templateText).make(binding)
     return result
