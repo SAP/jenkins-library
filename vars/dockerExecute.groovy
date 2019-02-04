@@ -21,19 +21,21 @@ import groovy.transform.Field
 ]
 @Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS.plus([
     /**
-     * only used in case exeuction environment is Kubernetes, allows to specify start command for container created with dockerImage parameter to overwrite Piper default (`/usr/bin/tail -f /dev/null`).
+     * Kubernetes only:
+     * Allows to specify start command for container created with dockerImage parameter to overwrite Piper default (`/usr/bin/tail -f /dev/null`).
      */
     'containerCommand',
     /**
-     * Map which defines per docker image the port mappings, like `containerPortMappings: ['selenium/standalone-chrome': [[name: 'selPort', containerPort: 4444, hostPort: 4444]]]`
+     * Map which defines per docker image the port mappings, e.g. `containerPortMappings: ['selenium/standalone-chrome': [[name: 'selPort', containerPort: 4444, hostPort: 4444]]]`.
      */
     'containerPortMappings',
     /**
-     * only used in case exeuction environment is Kubernetes, allows to specify the shell to be used for execution of commands
+     * Kubernetes only:
+     * Allows to specify the shell to be used for execution of commands.
      */
     'containerShell',
     /**
-     * Environment variables to set in the container, e.g. [http_proxy:'proxy:8080'].
+     * Environment variables to set in the container, e.g. [http_proxy: 'proxy:8080'].
      */
     'dockerEnvVars',
     /**
@@ -41,11 +43,14 @@ import groovy.transform.Field
      */
     'dockerImage',
     /**
-     * Kubernetes case: Name of the container launching `dockerImage`, SideCar: Name of the container in local network
+     * Kubernetes only:
+     * Name of the container launching `dockerImage`.
+     * SideCar only:
+     * Name of the container in local network.
      */
     'dockerName',
     /**
-     * Docker options to be set when starting the container. It can be a list or a string.
+     * Docker options to be set when starting the container (List or String).
      */
     'dockerOptions',
     /**
@@ -53,15 +58,16 @@ import groovy.transform.Field
      */
     'dockerVolumeBind',
     /**
-     * only relevant for Kubernetes case: specifies a dedicated user home directory for the container which will be passed as value for environment variable `HOME`
+     * Kubernetes only:
+     * Specifies a dedicated user home directory for the container which will be passed as value for environment variable `HOME`.
      */
     'dockerWorkspace',
     /**
-     * defines environment variables for the sidecar container, similar to `dockerEnvVars`
+     * as `dockerEnvVars` for the sidecar container
      */
     'sidecarEnvVars',
     /**
-     * Name of the docker image of the sidecar container. Do not provide this value if no sidecar container is required.
+     * as `dockerImage` for the sidecar container
      */
     'sidecarImage',
     /**
@@ -81,7 +87,7 @@ import groovy.transform.Field
      */
     'sidecarWorkspace',
     /**
-     * as `dockerWorkspace` for the sidecar container
+     * Specific stashes that should be considered for the step execution.
      */
     'stashContent'
 ])
