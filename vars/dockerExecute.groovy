@@ -92,7 +92,7 @@ import groovy.transform.Field
  * The workspace is mounted into the docker image.
  * Proxy environment variables defined on the Jenkins machine are also available in the Docker container.
  */
- @GenerateDocumentation
+@GenerateDocumentation
 void call(Map parameters = [:], body) {
     handlePipelineStepErrors(stepName: STEP_NAME, stepParameters: parameters) {
 
