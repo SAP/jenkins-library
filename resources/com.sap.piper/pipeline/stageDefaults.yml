@@ -1,6 +1,6 @@
 stages:
   'Pull-Request Voting': {}
-  'Build': {}
+  Build: {}
   'Additional Unit Tests': {}
   Integration: {}
   Acceptance:
@@ -15,5 +15,6 @@ stages:
         config: 'testRepository'
   Security: {}
   Performance: {}
+  Compliance: {}
   Promote: {}
   Release: {}
