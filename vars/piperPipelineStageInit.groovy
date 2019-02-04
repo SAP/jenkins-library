@@ -23,7 +23,7 @@ void call(Map parameters = [:]) {
     def stageName = parameters.stageName?:env.STAGE_NAME
 
     piperStageWrapper (script: script, stageName: stageName, stashContent: [], ordinal: 1) {
-        checkout scm
+        def scmInfo = checkout scm
 
         setupCommonPipelineEnvironment script: script, customDefaults: parameters.customDefaults
 
@@ -39,6 +39,9 @@ void call(Map parameters = [:]) {
 
         //perform stashing based on libray resource piper-stash-settings.yml if not configured otherwise
         initStashConfiguration(script, config)
+
+        setScmInfoOnCommonPipelineEnvironment(script, scmInfo)
+        script.commonPipelineEnvironment.setGitCommitId(scmInfo.GIT_COMMIT)
 
         if (config.verbose) {
             echo "piper-lib-os  configuration: ${script.commonPipelineEnvironment.configuration}"
@@ -82,4 +85,15 @@ private void initStashConfiguration (script, config) {
     Map stashConfiguration = readYaml(text: libraryResource(config.stashSettings))
     echo "Stash config: stashConfiguration"
     script.commonPipelineEnvironment.configuration.stageStashes = stashConfiguration
+}
+
+private void setScmInfoOnCommonPipelineEnvironment(script, scmInfo) {
+    if (scmInfo.GIT_URL.startsWith('https')) {
+        script.commonPipelineEnvironment.setGitSshUrl("git@${scmInfo.GIT_URL.split('//')[1]}")
+        script.commonPipelineEnvironment.setGitHttpsUrl(scmInfo.GIT_URL)
+
+    } else if (scmInfo.GIT_URL.indexOf('@') > 0) {
+        script.commonPipelineEnvironment.setGitSshUrl(scmInfo.GIT_URL)
+        script.commonPipelineEnvironment.setGitHttpsUrl("https://${scmInfo.GIT_URL.split('@')[1]}")
+    }
 }

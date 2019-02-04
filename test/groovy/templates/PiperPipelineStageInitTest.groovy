@@ -52,7 +52,7 @@ class PiperPipelineStageInitTest extends BasePiperTest {
 
         helper.registerAllowedMethod('checkout', [Closure.class], { c ->
             stepsCalled.add('checkout')
-            return null
+            return [GIT_BRANCH: 'master', GIT_COMMIT: 'testGitCommitId', GIT_URL: 'https://github.com/testOrg/testRepo']
         })
         binding.setVariable('scm', {})
 
@@ -129,5 +129,19 @@ class PiperPipelineStageInitTest extends BasePiperTest {
         assertThat(stepsCalled, hasItems('checkout', 'setupCommonPipelineEnvironment', 'piperInitRunStageConfiguration', 'pipelineStashFilesBeforeBuild'))
         assertThat(stepsCalled, not(hasItems('artifactSetVersion')))
 
+    }
+
+    @Test
+    void testSetScmInfoOnCommonPipelineEnvironment() {
+        def scmInfoTestList = [
+            [GIT_URL: 'https://github.com/testOrg/testRepo.git'],
+            [GIT_URL: 'git@github.com/testOrg/testRepo.git']
+        ]
+
+        scmInfoTestList.each {scmInfoTest ->
+            jsr.step.piperPipelineStageInit.setScmInfoOnCommonPipelineEnvironment(nullScript, scmInfoTest)
+            assertThat(nullScript.commonPipelineEnvironment.getGitSshUrl(), is('git@github.com/testOrg/testRepo.git'))
+            assertThat(nullScript.commonPipelineEnvironment.getGitHttpsUrl(), is('https://github.com/testOrg/testRepo.git'))
+        }
     }
 }
