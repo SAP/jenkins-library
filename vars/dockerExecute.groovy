@@ -212,7 +212,7 @@ void call(Map parameters = [:], body) {
 
 
 
-/**
+/*
  * Returns a string with docker options containing
  * environment variables (if set).
  * Possible to extend with further options.
@@ -283,7 +283,7 @@ boolean isKubernetes() {
     return Boolean.valueOf(env.ON_K8S)
 }
 
-/**
+/*
  * Escapes blanks for values in key/value pairs
  * E.g. <code>description=Lorem ipsum</code> is
  * changed to <code>description=Lorem\ ipsum</code>.
