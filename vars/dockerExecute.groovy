@@ -16,21 +16,21 @@ import groovy.transform.Field
     'jenkinsKubernetes'
 ]
 @Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS.plus([
-    'containerPortMappings',
     'containerCommand',
+    'containerPortMappings',
     'containerShell',
     'dockerEnvVars',
     'dockerImage',
     'dockerName',
     'dockerOptions',
-    'dockerWorkspace',
     'dockerVolumeBind',
+    'dockerWorkspace',
     'sidecarEnvVars',
     'sidecarImage',
     'sidecarName',
     'sidecarOptions',
-    'sidecarWorkspace',
     'sidecarVolumeBind',
+    'sidecarWorkspace',
     'stashContent'
 ])
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
