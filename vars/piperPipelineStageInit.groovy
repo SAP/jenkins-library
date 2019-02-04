@@ -32,8 +32,9 @@ void call(Map parameters = [:]) {
             .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS)
             .mixinStageConfig(script.commonPipelineEnvironment, stageName, STEP_CONFIG_KEYS)
             .mixin(parameters, PARAMETER_KEYS)
+            .addIfEmpty('stageConfigResource', 'com.sap.piper/pipeline/stageDefaults.yml')
+            .addIfEmpty('stashSettings', 'com.sap.piper/pipeline/stashSettings.yml')
             .withMandatoryProperty('buildTool')
-            .withMandatoryProperty('stashSettings')
             .use()
 
         //perform stashing based on libray resource piper-stash-settings.yml if not configured otherwise
@@ -48,7 +49,7 @@ void call(Map parameters = [:]) {
 
         checkBuildTool(config)
 
-        piperInitRunStageConfiguration script: script, stageConfigResource: 'com.sap.piper/pipeline/stageDefaults.yml'
+        piperInitRunStageConfiguration script: script, stageConfigResource: config.stageConfigResource
 
         if (env.BRANCH_NAME == config.productiveBranch) {
             artifactSetVersion script: script
