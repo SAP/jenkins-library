@@ -133,15 +133,19 @@ class PiperPipelineStageInitTest extends BasePiperTest {
 
     @Test
     void testSetScmInfoOnCommonPipelineEnvironment() {
+        //currently supported formats
         def scmInfoTestList = [
-            [GIT_URL: 'https://github.com/testOrg/testRepo.git'],
-            [GIT_URL: 'git@github.com/testOrg/testRepo.git']
+            [GIT_URL: 'https://github.com/testOrg/testRepo.git', expectedSsh: 'git@github.com:testOrg/testRepo.git', expectedHttp: 'https://github.com/testOrg/testRepo.git'],
+            [GIT_URL: 'https://github.com:7777/testOrg/testRepo.git', expectedSsh: 'git@github.com:testOrg/testRepo.git', expectedHttp: 'https://github.com:7777/testOrg/testRepo.git'],
+            [GIT_URL: 'git@github.com:testOrg/testRepo.git', expectedSsh: 'git@github.com:testOrg/testRepo.git', expectedHttp: 'https://github.com/testOrg/testRepo.git'],
+            [GIT_URL: 'ssh://git@github.com/testOrg/testRepo.git', expectedSsh: 'ssh://git@github.com/testOrg/testRepo.git', expectedHttp: 'https://github.com/testOrg/testRepo.git'],
+            [GIT_URL: 'ssh://git@github.com:7777/testOrg/testRepo.git', expectedSsh: 'ssh://git@github.com:7777/testOrg/testRepo.git', expectedHttp: 'https://github.com/testOrg/testRepo.git'],
         ]
 
         scmInfoTestList.each {scmInfoTest ->
             jsr.step.piperPipelineStageInit.setScmInfoOnCommonPipelineEnvironment(nullScript, scmInfoTest)
-            assertThat(nullScript.commonPipelineEnvironment.getGitSshUrl(), is('git@github.com/testOrg/testRepo.git'))
-            assertThat(nullScript.commonPipelineEnvironment.getGitHttpsUrl(), is('https://github.com/testOrg/testRepo.git'))
+            assertThat(nullScript.commonPipelineEnvironment.getGitSshUrl(), is(scmInfoTest.expectedSsh))
+            assertThat(nullScript.commonPipelineEnvironment.getGitHttpsUrl(), is(scmInfoTest.expectedHttp))
         }
     }
 }

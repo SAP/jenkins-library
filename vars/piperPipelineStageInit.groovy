@@ -88,12 +88,25 @@ private void initStashConfiguration (script, config) {
 }
 
 private void setScmInfoOnCommonPipelineEnvironment(script, scmInfo) {
-    if (scmInfo.GIT_URL.startsWith('https')) {
-        script.commonPipelineEnvironment.setGitSshUrl("git@${scmInfo.GIT_URL.split('//')[1]}")
-        script.commonPipelineEnvironment.setGitHttpsUrl(scmInfo.GIT_URL)
 
-    } else if (scmInfo.GIT_URL.indexOf('@') > 0) {
-        script.commonPipelineEnvironment.setGitSshUrl(scmInfo.GIT_URL)
-        script.commonPipelineEnvironment.setGitHttpsUrl("https://${scmInfo.GIT_URL.split('@')[1]}")
+    def gitUrl = scmInfo.GIT_URL
+
+    if (gitUrl.startsWith('http')) {
+        def httpPattern = /(https?):\/\/([^:\/]+)(?:[:\d\/]*)(.*)/
+        def gitMatcher = gitUrl =~ httpPattern
+        if (!gitMatcher.hasGroup() && gitMatcher.groupCount() != 3) return
+        script.commonPipelineEnvironment.setGitSshUrl("git@${gitMatcher[0][2]}:${gitMatcher[0][3]}")
+        script.commonPipelineEnvironment.setGitHttpsUrl(gitUrl)
+    } else if (gitUrl.startsWith('ssh')) {
+        //(.*)@([^:\/]*)(?:[:\d\/]*)(.*)
+        def httpPattern = /(.*)@([^:\/]*)(?:[:\d\/]*)(.*)/
+        def gitMatcher = gitUrl =~ httpPattern
+        if (!gitMatcher.hasGroup() && gitMatcher.groupCount() != 3) return
+        script.commonPipelineEnvironment.setGitSshUrl(gitUrl)
+        script.commonPipelineEnvironment.setGitHttpsUrl("https://${gitMatcher[0][2]}/${gitMatcher[0][3]}")
+    }
+    else if (gitUrl.indexOf('@') > 0) {
+        script.commonPipelineEnvironment.setGitSshUrl(gitUrl)
+        script.commonPipelineEnvironment.setGitHttpsUrl("https://${(gitUrl.split('@')[1]).replace(':', '/')}")
     }
 }
