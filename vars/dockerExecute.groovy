@@ -3,6 +3,7 @@ import static com.sap.piper.Prerequisites.checkScript
 import com.cloudbees.groovy.cps.NonCPS
 
 import com.sap.piper.ConfigurationHelper
+import com.sap.piper.GenerateDocumentation
 import com.sap.piper.JenkinsUtils
 import com.sap.piper.Utils
 import com.sap.piper.k8s.ContainerMap
@@ -35,6 +36,12 @@ import groovy.transform.Field
 ])
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
 
+/**
+ * Executes a closure inside a docker container with the specified docker image.
+ * The workspace is mounted into the docker image.
+ * Proxy environment variables defined on the Jenkins machine are also available in the Docker container.
+ */
+ @GenerateDocumentation
 void call(Map parameters = [:], body) {
     handlePipelineStepErrors(stepName: STEP_NAME, stepParameters: parameters) {
 
