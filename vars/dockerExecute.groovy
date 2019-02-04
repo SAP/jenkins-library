@@ -14,24 +14,75 @@ import groovy.transform.Field
 @Field def PLUGIN_ID_DOCKER_WORKFLOW = 'docker-workflow'
 
 @Field Set GENERAL_CONFIG_KEYS = [
+    /**
+     *
+     */
     'jenkinsKubernetes'
 ]
 @Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS.plus([
+    /**
+     * only used in case exeuction environment is Kubernetes, allows to specify start command for container created with dockerImage parameter to overwrite Piper default (`/usr/bin/tail -f /dev/null`).
+     */
     'containerCommand',
+    /**
+     * Map which defines per docker image the port mappings, like `containerPortMappings: ['selenium/standalone-chrome': [[name: 'selPort', containerPort: 4444, hostPort: 4444]]]`
+     */
     'containerPortMappings',
+    /**
+     * only used in case exeuction environment is Kubernetes, allows to specify the shell to be used for execution of commands
+     */
     'containerShell',
+    /**
+     * Environment variables to set in the container, e.g. [http_proxy:'proxy:8080'].
+     */
     'dockerEnvVars',
+    /**
+     * Name of the docker image that should be used. If empty, Docker is not used and the command is executed directly on the Jenkins system.
+     */
     'dockerImage',
+    /**
+     * Kubernetes case: Name of the container launching `dockerImage`, SideCar: Name of the container in local network
+     */
     'dockerName',
+    /**
+     * Docker options to be set when starting the container. It can be a list or a string.
+     */
     'dockerOptions',
+    /**
+     * Volumes that should be mounted into the container.
+     */
     'dockerVolumeBind',
+    /**
+     * only relevant for Kubernetes case: specifies a dedicated user home directory for the container which will be passed as value for environment variable `HOME`
+     */
     'dockerWorkspace',
+    /**
+     * defines environment variables for the sidecar container, similar to `dockerEnvVars`
+     */
     'sidecarEnvVars',
+    /**
+     * Name of the docker image of the sidecar container. Do not provide this value if no sidecar container is required.
+     */
     'sidecarImage',
+    /**
+     * as `dockerName` for the sidecar container
+     */
     'sidecarName',
+    /**
+     * as `dockerOptions` for the sidecar container
+     */
     'sidecarOptions',
+    /**
+     * as `dockerVolumeBind` for the sidecar container
+     */
     'sidecarVolumeBind',
+    /**
+     * as `dockerWorkspace` for the sidecar container
+     */
     'sidecarWorkspace',
+    /**
+     * as `dockerWorkspace` for the sidecar container
+     */
     'stashContent'
 ])
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
