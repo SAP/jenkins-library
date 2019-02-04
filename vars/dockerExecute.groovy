@@ -3,6 +3,7 @@ import static com.sap.piper.Prerequisites.checkScript
 import com.cloudbees.groovy.cps.NonCPS
 
 import com.sap.piper.ConfigurationHelper
+import com.sap.piper.GenerateDocumentation
 import com.sap.piper.JenkinsUtils
 import com.sap.piper.Utils
 import com.sap.piper.k8s.ContainerMap
@@ -13,28 +14,91 @@ import groovy.transform.Field
 @Field def PLUGIN_ID_DOCKER_WORKFLOW = 'docker-workflow'
 
 @Field Set GENERAL_CONFIG_KEYS = [
+    /**
+     *
+     */
     'jenkinsKubernetes'
 ]
 @Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS.plus([
-    'containerPortMappings',
+    /**
+     * Kubernetes only:
+     * Allows to specify start command for container created with dockerImage parameter to overwrite Piper default (`/usr/bin/tail -f /dev/null`).
+     */
     'containerCommand',
+    /**
+     * Map which defines per docker image the port mappings, e.g. `containerPortMappings: ['selenium/standalone-chrome': [[name: 'selPort', containerPort: 4444, hostPort: 4444]]]`.
+     */
+    'containerPortMappings',
+    /**
+     * Kubernetes only:
+     * Allows to specify the shell to be used for execution of commands.
+     */
     'containerShell',
+    /**
+     * Environment variables to set in the container, e.g. [http_proxy: 'proxy:8080'].
+     */
     'dockerEnvVars',
+    /**
+     * Name of the docker image that should be used. If empty, Docker is not used and the command is executed directly on the Jenkins system.
+     */
     'dockerImage',
+    /**
+     * Kubernetes only:
+     * Name of the container launching `dockerImage`.
+     * SideCar only:
+     * Name of the container in local network.
+     */
     'dockerName',
+    /**
+     * Docker options to be set when starting the container (List or String).
+     */
     'dockerOptions',
-    'dockerWorkspace',
+    /**
+     * Volumes that should be mounted into the container.
+     */
     'dockerVolumeBind',
+    /**
+     * Kubernetes only:
+     * Specifies a dedicated user home directory for the container which will be passed as value for environment variable `HOME`.
+     */
+    'dockerWorkspace',
+    /**
+     * as `dockerEnvVars` for the sidecar container
+     */
     'sidecarEnvVars',
+    /**
+     * as `dockerImage` for the sidecar container
+     */
     'sidecarImage',
+    /**
+     * as `dockerName` for the sidecar container
+     */
     'sidecarName',
+    /**
+     * as `dockerOptions` for the sidecar container
+     */
     'sidecarOptions',
-    'sidecarWorkspace',
+    /**
+     * as `dockerVolumeBind` for the sidecar container
+     */
     'sidecarVolumeBind',
+    /**
+     * as `dockerWorkspace` for the sidecar container
+     */
+    'sidecarWorkspace',
+    /**
+     * Specific stashes that should be considered for the step execution.
+     */
     'stashContent'
 ])
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
 
+/**
+ * Executes a closure inside a docker container with the specified docker image.
+ * The workspace is mounted into the docker image.
+ * Proxy environment variables defined on the Jenkins machine are also available in the Docker container.
+ */
+@GenerateDocumentation
 void call(Map parameters = [:], body) {
     handlePipelineStepErrors(stepName: STEP_NAME, stepParameters: parameters) {
 
@@ -154,7 +218,7 @@ void call(Map parameters = [:], body) {
 
 
 
-/**
+/*
  * Returns a string with docker options containing
  * environment variables (if set).
  * Possible to extend with further options.
@@ -225,7 +289,7 @@ boolean isKubernetes() {
     return Boolean.valueOf(env.ON_K8S)
 }
 
-/**
+/*
  * Escapes blanks for values in key/value pairs
  * E.g. <code>description=Lorem ipsum</code> is
  * changed to <code>description=Lorem\ ipsum</code>.
