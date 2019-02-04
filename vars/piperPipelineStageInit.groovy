@@ -48,10 +48,10 @@ void call(Map parameters = [:]) {
 
         checkBuildTool(config)
 
-        piperInitRunStageConfiguration script: script
+        piperInitRunStageConfiguration script: script, stageConfigResource: 'com.sap.piper/pipeline/stageDefaults.yml'
 
         if (env.BRANCH_NAME == config.productiveBranch) {
-            setVersion script: script
+            artifactSetVersion script: script
         }
 
         pipelineStashFilesBeforeBuild script: script

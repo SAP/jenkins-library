@@ -10,6 +10,7 @@ import util.*
 
 import static org.hamcrest.Matchers.hasItems
 import static org.hamcrest.Matchers.is
+import static org.hamcrest.Matchers.isEmptyOrNullString
 import static org.hamcrest.Matchers.not
 import static org.junit.Assert.assertThat
 
@@ -60,11 +61,12 @@ class PiperPipelineStageInitTest extends BasePiperTest {
         })
 
         helper.registerAllowedMethod('piperInitRunStageConfiguration', [Map.class], { m ->
+            assertThat(m.stageConfigResource, not(isEmptyOrNullString()))
             stepsCalled.add('piperInitRunStageConfiguration')
         })
 
-        helper.registerAllowedMethod('setVersion', [Map.class], { m ->
-            stepsCalled.add('setVersion')
+        helper.registerAllowedMethod('artifactSetVersion', [Map.class], { m ->
+            stepsCalled.add('artifactSetVersion')
         })
 
         helper.registerAllowedMethod('pipelineStashFilesBeforeBuild', [Map.class], { m ->
@@ -108,7 +110,7 @@ class PiperPipelineStageInitTest extends BasePiperTest {
             stashSettings: 'com.sap.piper/pipeline/stashSettings.yml'
         )
 
-        assertThat(stepsCalled, hasItems('checkout', 'setupCommonPipelineEnvironment', 'piperInitRunStageConfiguration', 'setVersion', 'pipelineStashFilesBeforeBuild'))
+        assertThat(stepsCalled, hasItems('checkout', 'setupCommonPipelineEnvironment', 'piperInitRunStageConfiguration', 'artifactSetVersion', 'pipelineStashFilesBeforeBuild'))
 
     }
 
@@ -125,7 +127,7 @@ class PiperPipelineStageInitTest extends BasePiperTest {
         )
 
         assertThat(stepsCalled, hasItems('checkout', 'setupCommonPipelineEnvironment', 'piperInitRunStageConfiguration', 'pipelineStashFilesBeforeBuild'))
-        assertThat(stepsCalled, not(hasItems('setVersion')))
+        assertThat(stepsCalled, not(hasItems('artifactSetVersion')))
 
     }
 }
