@@ -1,6 +1,7 @@
 import static com.sap.piper.Prerequisites.checkScript
 
 import com.sap.piper.ConfigurationHelper
+import com.sap.piper.GenerateDocumentation
 import com.sap.piper.JenkinsUtils
 import com.sap.piper.Utils
 import com.sap.piper.k8s.SystemEnv
@@ -34,6 +35,11 @@ import hudson.AbortException
     'stashExcludes'
 ])
 
+/**
+ * Executes a closure inside a container in a kubernetes pod.
+ * Proxy environment variables defined on the Jenkins machine are also available in the container.
+ */
+@GenerateDocumentation
 void call(Map parameters = [:], body) {
     handlePipelineStepErrors(stepName: STEP_NAME, stepParameters: parameters) {
 
