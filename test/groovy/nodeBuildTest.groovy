@@ -1,6 +1,8 @@
+import hudson.AbortException
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
+import org.junit.rules.ExpectedException
 import org.junit.rules.RuleChain
 
 import util.BasePiperTest
@@ -13,6 +15,9 @@ import util.Rules
 import static org.junit.Assert.assertEquals
 
 class nodeBuildTest extends BasePiperTest {
+
+    @Rule
+    public ExpectedException thrown = new ExpectedException().none()
 
     private JenkinsShellCallRule shellRule = new JenkinsShellCallRule(this)
     private JenkinsDockerExecuteRule dockerExecuteRule = new JenkinsDockerExecuteRule(this)
@@ -33,8 +38,16 @@ class nodeBuildTest extends BasePiperTest {
     }
 
     @Test
-    void testNodeBuild() throws Exception {
+    void testNodeBuild() {
         stepRule.step.nodeBuild(script: nullScript, dockerImage: 'node:latest')
         assertEquals('node:latest', dockerExecuteRule.dockerParams.dockerImage)
+    }
+
+    @Test
+    void testNoPackageJson() {
+        helper.registerAllowedMethod('fileExists', [String], { false })
+        thrown.expect(AbortException)
+        thrown.expectMessage('[nodeBuild] package.json is not found.')
+        stepRule.step.nodeBuild(script: nullScript, dockerImage: 'node:latest')
     }
 }
