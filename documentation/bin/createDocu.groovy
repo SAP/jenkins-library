@@ -235,7 +235,7 @@ class Helper {
                 mandatoryLines.clear()
             }
 
-            if( line.trim()  ==~ /^\/\*\*/ ) {
+            if( line.trim()  ==~ /^\/\*\*.*/ ) {
                 docu = true
             }
 
@@ -243,7 +243,7 @@ class Helper {
                 def _line = line
                 _line = _line.replaceAll('^\\s*', '') // leading white spaces
                 if(_line.startsWith('/**')) _line = _line.replaceAll('^\\/\\*\\*', '') // start comment
-                if(_line.startsWith('*/')) _line = _line.replaceAll('^\\*/', '') // end comment
+                if(_line.startsWith('*/') || _line.trim().endsWith('*/')) _line = _line.replaceAll('^\\*/', '').replaceAll('\\*/\\s*$', '') // end comment
                 if(_line.startsWith('*')) _line = _line.replaceAll('^\\*', '') // continue comment
                 if(_line.startsWith(' ')) _line = _line.replaceAll('^\\s', '')
                 if(_line ==~ /.*@possibleValues.*/) {
@@ -275,7 +275,7 @@ class Helper {
                 }
             }
 
-            if(docu && line.trim() ==~ /^\*\//) {
+            if(docu && line.trim() ==~ /^.*\*\//) {
                 docu = false
                 value = false
                 mandatory = false
