@@ -16,9 +16,7 @@ import static org.junit.Assert.assertEquals
 
 class nodeBuildTest extends BasePiperTest {
 
-    @Rule
-    public ExpectedException thrown = new ExpectedException().none()
-
+    private ExpectedException thrown = new ExpectedException().none()
     private JenkinsShellCallRule shellRule = new JenkinsShellCallRule(this)
     private JenkinsDockerExecuteRule dockerExecuteRule = new JenkinsDockerExecuteRule(this)
     private JenkinsStepRule stepRule = new JenkinsStepRule(this)
@@ -27,6 +25,7 @@ class nodeBuildTest extends BasePiperTest {
     @Rule
     public RuleChain ruleChain = Rules
         .getCommonRules(this)
+        .around(thrown)
         .around(yamlRule)
         .around(dockerExecuteRule)
         .around(shellRule)
