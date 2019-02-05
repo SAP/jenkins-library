@@ -5,7 +5,6 @@
 
 #Project Setup
 general:
-  productiveBranch: 'master'
   collectTelemetryData: true
   changeManagement:
     type: 'NONE' # SOLMAN, CTS, NONE
@@ -22,6 +21,8 @@ general:
   gitSshKeyCredentialsId: '' #needed to allow sshagent to run with local ssh key
   jenkinsKubernetes:
     jnlpAgent: 's4sdk/jenkins-agent-k8s:latest'
+  manualConfirmation: true
+  productiveBranch: 'master'
 
 #Steps Specific Configuration
 steps:
@@ -143,6 +144,15 @@ steps:
     mtaDeployPlugin:
       dockerImage: 's4sdk/docker-cf-cli'
       dockerWorkspace: '/home/piper'
+  containerExecuteStructureTests:
+    containerCommand: '/busybox/tail -f /dev/null'
+    containerShell: '/busybox/sh'
+    dockerImage: 'ppiper/container-structure-test'
+    dockerOptions: "-u 0 --entrypoint=''"
+    failOnError: true
+    stashContent:
+      - 'tests'
+    testReportFilePath: 'cst-report.json'
   dockerExecute:
     dockerPullImage: true
     sidecarPullImage: true
@@ -151,7 +161,7 @@ steps:
     dockerPullImage: true
     stashContent: []
     stashIncludes:
-      workspace: '**/*.*'
+      workspace: '**/*'
     stashExcludes:
       workspace: 'nohup.out'
   githubPublishRelease:
@@ -264,7 +274,7 @@ steps:
       opensourceConfiguration: '**/srcclr.yml, **/vulas-custom.properties, **/.nsprc, **/.retireignore, **/.retireignore.json, **/.snyk'
       pipelineConfigAndTests: '.pipeline/**'
       securityDescriptor: '**/xs-security.json'
-      tests: '**/pom.xml, **/*.json, **/*.xml, **/src/**, **/node_modules/**, **/specs/**, **/env/**, **/*.js'
+      tests: '**/pom.xml, **/*.json, **/*.xml, **/src/**, **/node_modules/**, **/specs/**, **/env/**, **/*.js, **/tests/**'
     stashExcludes:
       buildDescriptor: '**/node_modules/**/package.json'
       deployDescriptor: ''
@@ -348,6 +358,16 @@ steps:
       developmentSystemId: null
   transportRequestUploadFile:
   transportRequestRelease:
+  uiVeri5ExecuteTests:
+    failOnError: false
+    dockerEnvVars: {}
+    installCommand: 'npm install @ui5/uiveri5 --global --quiet'
+    seleniumPort: 4444
+    stashContent:
+      - 'buildDescriptor'
+      - 'tests'
+    testOptions: ''
+    runCommand: "uiveri5 --seleniumAddress='http://${config.seleniumHost}:${config.seleniumPort}/wd/hub'"
 
   #defaults for stage wrapper
   piperStageWrapper:
