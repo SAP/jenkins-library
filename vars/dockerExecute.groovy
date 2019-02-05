@@ -56,6 +56,10 @@ import groovy.transform.Field
      */
     'dockerVolumeBind',
     /**
+     * Set this to 'false' to bypass a docker image pull. Usefull during development process. Allows testing of images which are available in the local registry only.
+     */
+    'dockerPullImage',
+    /**
      * Kubernetes only:
      * Specifies a dedicated user home directory for the container which will be passed as value for environment variable `HOME`.
      */
@@ -80,6 +84,10 @@ import groovy.transform.Field
      * as `dockerVolumeBind` for the sidecar container
      */
     'sidecarVolumeBind',
+    /**
+     * Set this to 'false' to bypass a docker image pull. Usefull during development process. Allows testing of images which are available in the local registry only.
+     */
+    'sidecarPullImage',
     /**
      * as `dockerWorkspace` for the sidecar container
      */
