@@ -15,19 +15,63 @@ import hudson.AbortException
     'jenkinsKubernetes'
 ]
 @Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS.plus([
+    /**
+     * allows to specify start command for container created with dockerImage parameter to overwrite Piper default (`/usr/bin/tail -f /dev/null`).
+     */
     'containerCommand',
+    /**
+     * specifies start command for containers to overwrite Piper default (`/usr/bin/tail -f /dev/null`).
+     * If container's defaultstart command should be used provide empty string like: `['selenium/standalone-chrome': '']`.
+     */
     'containerCommands',
+    /**
+     * specifies environment variables per container. If not provided `dockerEnvVars` will be used.
+     */
     'containerEnvVars',
+    /**
+     * A map of docker image to the name of the container. The pod will be created with all the images from this map and they are labled based on the value field of each map entry.
+     * Example: `['maven:3.5-jdk-8-alpine': 'mavenExecute', 'selenium/standalone-chrome': 'selenium', 'famiko/jmeter-base': 'checkJMeter', 's4sdk/docker-cf-cli': 'cloudfoundry']`
+     */
     'containerMap',
+    /**
+     * optional configuration in combination with containerMap to define the container where the commands should be executed in
+     */
     'containerName',
+    /**
+     * Map which defines per docker image the port mappings, e.g. `containerPortMappings: ['selenium/standalone-chrome': [[name: 'selPort', containerPort: 4444, hostPort: 4444]]]`.
+     */
     'containerPortMappings',
+    /**
+     * allows to specify the shell to be executed for container with containerName
+     */
     'containerShell',
+    /**
+     * specifies workspace (=home directory of user) per container. If not provided `dockerWorkspace` will be used. If empty, home directory will not be set.
+     */
     'containerWorkspaces',
+    /**
+     * Environment variables to set in the container, e.g. [http_proxy:'proxy:8080']
+     */
     'dockerEnvVars',
+    /**
+     * Name of the docker image that should be used. If empty, Docker is not used.
+     */
     'dockerImage',
+    /**
+     * Docker options to be set when starting the container. It can be a list or a string.
+     */
     'dockerWorkspace',
+    /**
+     *
+     */
     'stashContent',
+    /**
+     *
+     */
     'stashExcludes',
+    /**
+     *
+     */
     'stashIncludes'
 ])
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS.minus([
