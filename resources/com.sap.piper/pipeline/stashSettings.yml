@@ -1,0 +1,14 @@
+Init:
+  unstash: []
+  stashes:
+  - name: "source"
+    includes: "**/*"
+    excludes: ".pipeline/**"
+
+'Central Build':
+  unstash: ['source']
+  stashes: []
+
+'Pull-Request Voting':
+  unstash: ['source']
+  stashes: []
