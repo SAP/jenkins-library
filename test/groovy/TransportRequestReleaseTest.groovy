@@ -89,7 +89,7 @@ public class TransportRequestReleaseTest extends BasePiperTest {
     }
 
     @Test
-    public void releaseTransportRequestFailureTest() {
+    public void releaseTransportRequestFailsSOLMANTest() {
 
         thrown.expect(AbortException)
         thrown.expectMessage("Something went wrong")
@@ -108,6 +108,37 @@ public class TransportRequestReleaseTest extends BasePiperTest {
         }
 
         stepRule.step.transportRequestRelease(script: nullScript, changeDocumentId: '001', transportRequestId: '001', cmUtils: cm)
+    }
+
+    @Test
+    public void releaseTransportRequestFailsCTSTest() {
+
+        thrown.expect(AbortException)
+        thrown.expectMessage("Something went wrong")
+
+        nullScript
+            .commonPipelineEnvironment
+                .configuration
+                    .general
+                        .changeManagement
+                            .type = 'CTS'
+
+        ChangeManagement cm = new ChangeManagement(nullScript) {
+
+            void releaseTransportRequestCTS(
+                                         String transportRequestId,
+                                         String endpoint,
+                                         String credentialsId,
+                                         String clientOpts) {
+
+                throw new ChangeManagementException('Something went wrong')
+            }
+        }
+
+        stepRule.step.transportRequestRelease(
+            script: nullScript,
+            transportRequestId: '001',
+            cmUtils: cm)
     }
 
     @Test
