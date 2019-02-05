@@ -41,6 +41,7 @@ class JenkinsSetupRule implements TestRule {
                     JOB_NAME    : 'p',
                     BUILD_NUMBER: '1',
                     BUILD_URL   : 'http://build.url',
+                    BRANCH_NAME: 'master'
                 ])
 
                 base.evaluate()
