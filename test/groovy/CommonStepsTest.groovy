@@ -47,6 +47,7 @@ public class CommonStepsTest extends BasePiperTest{
                'commonPipelineEnvironment',
                'handlePipelineStepErrors',
                'pipelineExecute',
+               'piperPipeline',
                'prepareDefaultValues',
                'setupCommonPipelineEnvironment',
                'toolValidate',
@@ -103,6 +104,7 @@ public class CommonStepsTest extends BasePiperTest{
             'toolValidate', // step is intended to be configured by other steps
             'durationMeasure', // only expects parameters via signature
             'prepareDefaultValues', // special step (infrastructure)
+            'piperPipeline', // special step (infrastructure)
             'pipelineStashFilesAfterBuild', // intended to be called from pipelineStashFiles
             'pipelineStashFilesBeforeBuild', // intended to be called from pipelineStashFiles
             'pipelineStashFiles', // only forwards to before/after step
@@ -166,7 +168,10 @@ public class CommonStepsTest extends BasePiperTest{
     @Test
     public void stepsWithWrongFieldNameTest() {
 
-        def whitelist = ['commonPipelineEnvironment']
+        def whitelist = [
+            'commonPipelineEnvironment',
+            'piperPipeline'
+        ]
 
         def stepsWithWrongStepName = []
 
