@@ -158,7 +158,7 @@ steps:
   dockerExecuteOnKubernetes:
     stashContent: []
     stashIncludes:
-      workspace: '**/*.*'
+      workspace: '**/*'
     stashExcludes:
       workspace: 'nohup.out'
   githubPublishRelease:
