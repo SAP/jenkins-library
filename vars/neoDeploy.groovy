@@ -1,6 +1,5 @@
 import com.sap.piper.ConfigurationHelper
 import com.sap.piper.Utils
-import com.sap.piper.tools.ToolDescriptor
 import com.sap.piper.tools.neo.DeployMode
 import com.sap.piper.tools.neo.NeoCommandHelper
 import com.sap.piper.tools.neo.WarAction
@@ -57,8 +56,6 @@ void call(parameters = [:]) {
             stepParam3: parameters?.script == null,
         ], configuration)
 
-        ToolDescriptor neo = new ToolDescriptor('SAP Cloud Platform Console Client', 'NEO_HOME', 'neoHome', '/tools/', 'neo.sh', null, 'version')
-
         if (configuration.neo.credentialsId) {
             withCredentials([usernamePassword(
                 credentialsId: configuration.neo.credentialsId,
@@ -74,7 +71,7 @@ void call(parameters = [:]) {
                     dockerOptions: configuration.dockerOptions
                 ) {
 
-                    String neoExecutable = neo.getToolExecutable(script, configuration)
+                    String neoExecutable = 'neo.sh'
 
                     DeployMode deployMode = DeployMode.fromString(configuration.deployMode)
 
