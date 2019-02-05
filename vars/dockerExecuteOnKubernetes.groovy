@@ -16,16 +16,16 @@ import hudson.AbortException
 ]
 @Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS.plus([
     /**
-     * allows to specify start command for container created with dockerImage parameter to overwrite Piper default (`/usr/bin/tail -f /dev/null`).
+     * Allows to specify start command for container created with dockerImage parameter to overwrite Piper default (`/usr/bin/tail -f /dev/null`).
      */
     'containerCommand',
     /**
-     * specifies start command for containers to overwrite Piper default (`/usr/bin/tail -f /dev/null`).
+     * Specifies start command for containers to overwrite Piper default (`/usr/bin/tail -f /dev/null`).
      * If container's defaultstart command should be used provide empty string like: `['selenium/standalone-chrome': '']`.
      */
     'containerCommands',
     /**
-     * specifies environment variables per container. If not provided `dockerEnvVars` will be used.
+     * Specifies environment variables per container. If not provided `dockerEnvVars` will be used.
      */
     'containerEnvVars',
     /**
@@ -34,7 +34,7 @@ import hudson.AbortException
      */
     'containerMap',
     /**
-     * optional configuration in combination with containerMap to define the container where the commands should be executed in
+     * Optional configuration in combination with containerMap to define the container where the commands should be executed in.
      */
     'containerName',
     /**
@@ -42,15 +42,15 @@ import hudson.AbortException
      */
     'containerPortMappings',
     /**
-     * allows to specify the shell to be executed for container with containerName
+     * Allows to specify the shell to be executed for container with containerName.
      */
     'containerShell',
     /**
-     * specifies workspace (=home directory of user) per container. If not provided `dockerWorkspace` will be used. If empty, home directory will not be set.
+     * Specifies a dedicated user home directory per container which will be passed as value for environment variable `HOME`. If not provided `dockerWorkspace` will be used.
      */
     'containerWorkspaces',
     /**
-     * Environment variables to set in the container, e.g. [http_proxy:'proxy:8080']
+     * Environment variables to set in the container, e.g. [http_proxy:'proxy:8080'].
      */
     'dockerEnvVars',
     /**
@@ -58,11 +58,11 @@ import hudson.AbortException
      */
     'dockerImage',
     /**
-     * Docker options to be set when starting the container. It can be a list or a string.
+     * Specifies a dedicated user home directory for the container which will be passed as value for environment variable `HOME`.
      */
     'dockerWorkspace',
     /**
-     *
+     * Specific stashes that should be considered for the step execution.
      */
     'stashContent',
     /**
