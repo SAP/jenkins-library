@@ -58,7 +58,6 @@ void call(parameters = [:]) {
         ], configuration)
 
         ToolDescriptor neo = new ToolDescriptor('SAP Cloud Platform Console Client', 'NEO_HOME', 'neoHome', '/tools/', 'neo.sh', null, 'version')
-        ToolDescriptor java = new ToolDescriptor('Java', 'JAVA_HOME', '', '/bin/', 'java', '1.8.0', '-version 2>&1')
 
         if (configuration.neo.credentialsId) {
             withCredentials([usernamePassword(
@@ -74,9 +73,6 @@ void call(parameters = [:]) {
                     dockerEnvVars: configuration.dockerEnvVars,
                     dockerOptions: configuration.dockerOptions
                 ) {
-
-                    neo.verify(this, configuration)
-                    java.verify(this, configuration)
 
                     String neoExecutable = neo.getToolExecutable(script, configuration)
 
