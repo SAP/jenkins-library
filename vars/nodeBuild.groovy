@@ -34,7 +34,7 @@ void call(Map parameters = [:]) {
         }
         if (fileExists('package.json')) {
             dockerExecute(script: script, dockerImage: configuration.dockerImage, dockerOptions: configuration.dockerOptions) {
-                sh """npm innstall && npm run ${configuration.npmScript}"""
+                sh """npm install && npm run ${configuration.npmScript}"""
             }
         } else {
             error "[${STEP_NAME}] package.json is not found."
