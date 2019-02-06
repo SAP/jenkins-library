@@ -1,9 +1,6 @@
-# Create a Pipeline for SAP UI5 or SAP Fiori on SAP Cloud Platform
+# Build and Deploy SAP UI5 or SAP Fiori Applications on SAP Cloud Platform with Jenkins
 
-Create an application based on SAP UI5 or SAP Fiori and deploy the build result into an SAP Cloud Platform account in the Neo environment.
-
-This document describes a scenario step, which means that it combines various different steps to create a complete pipeline.
-
+Build an application based on SAP UI5 or SAP Fiori with Jenkins and deploy the build result into an SAP Cloud Platform account in the Neo environment.
 
 ## Prerequisites
 
@@ -17,21 +14,28 @@ This document describes a scenario step, which means that it combines various di
 
 ### Project Prerequisites
 
-This scenario step requires additional files in your project and the execution environment on your Jenkins instance. On the project level, provide and adjust the following template:
+This scenario requires additional files in your project and in the execution environment on your Jenkins instance.
 
-| File Name | Description |
-|-----|-----|
-| [`.npmrc`](https://github.com/marcusholl/jenkins-library/tree/pr/scenarioUI5SAPCP/documentation/docs/scenarios/ui5-sap-cp/files/.npmrc) | This file contains a reference to the SAP NPM registry (`@sap:registry https://npm.sap.com`), which is required to fetch dependencies to build the application. Place it in the root directory of your project. |
-| [`mta.yaml`](https://github.com/marcusholl/jenkins-library/tree/pr/scenarioUI5SAPCP/documentation/docs/scenarios/ui5-sap-cp/files/mta.yaml) | This file controls the behavior of the MTA toolset. Place it in your application root folder and adjust the values in brackets with your data. |
-| [`package.json`](https://github.com/marcusholl/jenkins-library/tree/pr/scenarioUI5SAPCP/documentation/docs/scenarios/ui5-sap-cp/files/package.json) | This file lists the required development dependencies for the build. Add the content to your existing `package.json` file. |
-| [`Gruntfile.js`](https://github.com/marcusholl/jenkins-library/tree/pr/scenarioUI5SAPCP/documentation/docs/scenarios/ui5-sap-cp/files/Gruntfile.js) | This file controls the grunt build. By default the tasks `clean`, `build`, and `lint` are executed. Place it in the root directory of your project. |
+
+On the project level, provide and adjust the following template:
+
+| File Name | Description | Position |
+|-----|-----|-----|
+| [`.npmrc`](https://github.com/SAP/jenkins-library/blob/master/documentation/docs/scenarios/ui5-sap-cp/files/.npmrc) | This file contains a reference to the SAP NPM registry (`@sap:registry https://npm.sap.com`), which is required to fetch the dependencies required to build the application. | Place the `.npmrc` file in the root directory of your project. |
+| [`mta.yaml`](https://github.com/SAP/jenkins-library/blob/master/documentation/docs/scenarios/ui5-sap-cp/files/mta.yaml) | This file controls the behavior of the MTA toolset. | Place the `mta.yaml` file in your application root folder and adjust the values in brackets with your data. |
+| [`package.json`](https://github.com/SAP/jenkins-library/blob/master/documentation/docs/scenarios/ui5-sap-cp/files/package.json) | This file lists the required development dependencies for the build. | Add the content of the `package.json` file to your existing `package.json` file. |
+| [`Gruntfile.js`](https://github.com/SAP/jenkins-library/blob/master/documentation/docs/scenarios/ui5-sap-cp/files/Gruntfile.js) | This file controls the grunt build. By default the tasks `clean`, `build`, and `lint` are executed. | Place the `Gruntfile.js` in the root directory of your project. |
 
 
 ## Context
 
-In this scenario step, we want to show how to build an application based on SAP UI5 or SAP Fiori by using the multi-target application (MTA) concept and how to deploy the build result into an SAP Cloud Platform account in the Neo environment. This document comprises the [mtaBuild](https://sap.github.io/jenkins-library/steps/mtaBuild/) and the [neoDeploy](https://sap.github.io/jenkins-library/steps/neoDeploy/) steps.
+This scenario combines various different steps to create a complete pipeline.
+
+
+In this scenario, we want to show how to build an application based on SAP UI5 or SAP Fiori by using the multi-target application (MTA) concept and how to deploy the build result into an SAP Cloud Platform account in the Neo environment. This document comprises the [mtaBuild](https://sap.github.io/jenkins-library/steps/mtaBuild/) and the [neoDeploy](https://sap.github.io/jenkins-library/steps/neoDeploy/) steps.
 
 ![This pipeline in Jenkins Blue Ocean](images/pipeline.jpg)
+###### Screenshot: Build and Deploy Process in Jenkins
 
 ## Example
 
