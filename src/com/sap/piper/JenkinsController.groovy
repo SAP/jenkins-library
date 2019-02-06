@@ -45,11 +45,11 @@ class JenkinsController implements Serializable {
     }
 
     def waitForSuccess(String jobName, String branch) {
-        if (this.waitForJobStatus(branch, 'SUCCESS')) {
-            this.printConsoleText(branch)
+        if (this.waitForJobStatus(jobName, branch, 'SUCCESS')) {
+            this.printConsoleText(jobName, branch)
             script.echo "Build was successful"
         } else {
-            this.printConsoleText(branch)
+            this.printConsoleText(jobName, branch)
             script.error("Build of ${jobName} ${branch} was not successfull")
         }
     }
@@ -59,14 +59,14 @@ class JenkinsController implements Serializable {
     }
 
     def waitForJobStatus(String jobName, String branch, String status) {
-        def buildUrl = getBuildUrl(branch)
+        def buildUrl = getBuildUrl(jobName, branch)
         def timePerLoop = 10
 
         for (int i = 0; i < timeout; i += timePerLoop) {
             script.sleep timePerLoop
             try {
                 script.echo "Checking Build Status of ${jobName} ${branch}"
-                def buildInformation = retrieveBuildInformation(branch)
+                def buildInformation = retrieveBuildInformation(jobName, branch)
 
                 if (buildInformation.building) {
                     script.echo "Build is still in progress"
@@ -85,13 +85,13 @@ class JenkinsController implements Serializable {
         script.error("Timeout: Build of waiting for ${jobName} ${branch}")
     }
 
-    def getConsoleText(String branch) {
-        def consoleUrl = this.getBuildUrl(branch) + "/consoleText"
+    def getConsoleText(String jobName, String branch) {
+        def consoleUrl = this.getBuildUrl(jobName, branch) + "/consoleText"
         return new URL(consoleUrl).text
     }
 
-    def printConsoleText(String branch) {
-        String consoleOutput = getConsoleText(branch)
+    def printConsoleText(String jobName, String branch) {
+        String consoleOutput = getConsoleText(jobName, branch)
 
         script.echo '***********************************************'
         script.echo '** Begin Output of Example Application Build **'
@@ -105,7 +105,7 @@ class JenkinsController implements Serializable {
     }
 
     def retrieveBuildInformation(String jobName, String branch) {
-        def buildUrl = getBuildUrl(branch)
+        def buildUrl = getBuildUrl(jobName, branch)
         def url = "${buildUrl}/api/json"
         script.echo "Checking Build Status of ${jobName} ${branch}"
         script.echo "${jenkinsUrl}/job/${jobName}/job/${URLEncoder.encode(branch, "UTF-8")}/"
