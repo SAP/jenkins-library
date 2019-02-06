@@ -12,7 +12,7 @@ import util.JenkinsShellCallRule
 import util.JenkinsStepRule
 import util.Rules
 
-class npmExecuteTest extends BasePiperTest {
+class NpmExecuteTest extends BasePiperTest {
 
     private ExpectedException thrown = new ExpectedException().none()
     private JenkinsShellCallRule shellRule = new JenkinsShellCallRule(this)
@@ -36,7 +36,7 @@ class npmExecuteTest extends BasePiperTest {
 
     @Test
     void testNpmExecute() {
-        stepRule.step.npmExecute(script: nullScript, dockerImage: 'node:8-stretch', npmCommand: 'run build') {}
+        stepRule.step.npmExecute(script: nullScript, dockerImage: 'node:8-stretch', npmCommand: 'run build')
         assertEquals 'node:8-stretch', dockerExecuteRule.dockerParams.dockerImage
     }
 
@@ -45,6 +45,6 @@ class npmExecuteTest extends BasePiperTest {
         helper.registerAllowedMethod 'fileExists', [String], { false }
         thrown.expect AbortException
         thrown.expectMessage '[npmExecute] package.json is not found.'
-        stepRule.step.npmExecute(script: nullScript, dockerImage: 'node:8-stretch', npmCommand: 'run build') {}
+        stepRule.step.npmExecute(script: nullScript, dockerImage: 'node:8-stretch', npmCommand: 'run build')
     }
 }

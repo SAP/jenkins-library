@@ -8,7 +8,7 @@ import groovy.transform.Field
 @Field Set STEP_CONFIG_KEYS = ['dockerImage', 'npmCommand']
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS + ['dockerOptions']
 
-void call(Map parameters = [:], body) {
+void call(Map parameters = [:]) {
     handlePipelineStepErrors(stepName: STEP_NAME, stepParameters: parameters) {
 
         final script = checkScript(this, parameters) ?: this
@@ -39,7 +39,6 @@ void call(Map parameters = [:], body) {
             } else {
                 error "[${STEP_NAME}] package.json is not found."
             }
-            body()
         } catch (Exception e) {
             println "Error while executing npm. Here are the logs:"
             sh "cat ~/.npm/_logs/*"
