@@ -14,7 +14,7 @@ Build an application based on SAP UI5 or SAP Fiori with Jenkins and deploy the b
 
 ### Project Prerequisites
 
-This scenario requires additional files in your project and in the execution environment on your Jenkins instance. 
+This scenario requires additional files in your project and in the execution environment on your Jenkins instance.
 
 
 On the project level, provide and adjust the following template:
