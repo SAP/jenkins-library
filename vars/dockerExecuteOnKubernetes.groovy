@@ -62,7 +62,7 @@ import hudson.AbortException
      */
     'dockerImage',
     /**
-     * Set this to 'false' to bypass a docker image pull. 
+     * Set this to 'false' to bypass a docker image pull.
      * Usefull during development process. Allows testing of images which are available in the local registry only.
      */
     'dockerPullImage',
