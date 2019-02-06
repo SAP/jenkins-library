@@ -87,7 +87,6 @@ void call(Map parameters = [:]) {
 
             sh """#!/bin/bash
             export PATH=./node_modules/.bin:${PATH}
-            npm config set loglevel verbose
             $mtaCall
             """
 
