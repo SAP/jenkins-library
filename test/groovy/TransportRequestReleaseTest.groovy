@@ -195,6 +195,51 @@ public class TransportRequestReleaseTest extends BasePiperTest {
     }
 
     @Test
+    public void releaseTransportRequestSuccessCTSTest() {
+
+        def receivedParameters
+
+        nullScript
+            .commonPipelineEnvironment
+                .configuration
+                    .general
+                        .changeManagement =
+                            [
+                                credentialsId: 'CM',
+                                type: 'CTS',
+                                endpoint: 'https://example.org/cts'
+                            ]
+
+        ChangeManagement cm = new ChangeManagement(nullScript) {
+            void releaseTransportRequestCTS(
+                String transportRequestId,
+                String endpoint,
+                String credentialsId,
+                String clientOpts = '') {
+
+                receivedParameters = [
+                    transportRequestId: transportRequestId,
+                    endpoint: endpoint,
+                    credentialsId: credentialsId,
+                    clientOpts: clientOpts
+                ]
+            }
+        }
+
+        stepRule.step.transportRequestRelease(
+            script: nullScript,
+            transportRequestId: '002',
+            cmUtils: cm)
+
+        assert receivedParameters == [
+                    transportRequestId: '002',
+                    endpoint: 'https://example.org/cts',
+                    credentialsId: 'CM',
+                    clientOpts: ''
+                ]
+    }
+
+    @Test
     public void releaseTransportRequestFailsRFCTest() {
 
         thrown.expect(AbortException)
