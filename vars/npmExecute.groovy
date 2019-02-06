@@ -8,7 +8,7 @@ import groovy.transform.Field
 @Field Set STEP_CONFIG_KEYS = ['dockerImage', 'defaultNpmRegistry', 'npmScript']
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS + ['dockerOptions']
 
-def call(Map parameters = [:], body) {
+void call(Map parameters = [:], body) {
     handlePipelineStepErrors(stepName: STEP_NAME, stepParameters: parameters) {
 
         final script = checkScript(this, parameters) ?: this
