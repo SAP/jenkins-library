@@ -301,6 +301,24 @@ public class TransportRequestReleaseTest extends BasePiperTest {
     }
 
     @Test
+    public void releaseTransportRequestSanityChecksCTSTest() {
+
+        thrown.expect(IllegalArgumentException)
+        thrown.expectMessage(allOf(
+            containsString('ERROR - NO VALUE AVAILABLE FOR'),
+            containsString('changeManagement/endpoint')))
+
+        nullScript
+            .commonPipelineEnvironment
+                .configuration = null
+
+        stepRule.step.transportRequestRelease(
+            script: nullScript,
+            changeManagement: [type: 'CTS']
+        )
+    }
+
+    @Test
     public void releaseTransportRequestSanityChecksRFCTest() {
 
         thrown.expect(IllegalArgumentException)
