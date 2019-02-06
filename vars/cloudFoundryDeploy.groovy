@@ -121,7 +121,6 @@ void call(Map parameters = [:]) {
 }
 
 def findMtar(){
-    def mtarPath = ''
     def mtarFiles = findFiles(glob: '**/*.mtar')
 
     if(mtarFiles.length > 1){
