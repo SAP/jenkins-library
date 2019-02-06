@@ -7,7 +7,7 @@ import groovy.transform.Field
 
 @Field def STEP_NAME = getClass().getName()
 @Field Set GENERAL_CONFIG_KEYS = []
-@Field Set STEP_CONFIG_KEYS = ['dockerImage']
+@Field Set STEP_CONFIG_KEYS = ['dockerImage', 'npmScript']
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS + ['dockerOptions']
 
 void call(Map parameters = [:]) {
@@ -31,7 +31,7 @@ void call(Map parameters = [:]) {
         ], configuration)
         if (fileExists('package.json')) {
             dockerExecute(script: script, dockerImage: configuration.dockerImage, dockerOptions: configuration.dockerOptions) {
-                sh '''npm run build'''
+                sh """npm run ${npmScript}"""
             }
         } else {
             error "[${STEP_NAME}] package.json is not found."

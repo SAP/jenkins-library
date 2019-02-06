@@ -33,20 +33,20 @@ class nodeBuildTest extends BasePiperTest {
 
     @Before
     void init() {
-        helper.registerAllowedMethod('fileExists', [String], { s -> s == 'package.json' })
+        helper.registerAllowedMethod 'fileExists', [String], { s -> s == 'package.json' }
     }
 
     @Test
     void testNodeBuild() {
-        stepRule.step.nodeBuild(script: nullScript, dockerImage: 'node:latest')
-        assertEquals('node:latest', dockerExecuteRule.dockerParams.dockerImage)
+        stepRule.step.nodeBuild script: nullScript, dockerImage: 'node:lts-slim'
+        assertEquals 'node:lts-slim', dockerExecuteRule.dockerParams.dockerImage
     }
 
     @Test
     void testNoPackageJson() {
-        helper.registerAllowedMethod('fileExists', [String], { false })
-        thrown.expect(AbortException)
-        thrown.expectMessage('[nodeBuild] package.json is not found.')
-        stepRule.step.nodeBuild(script: nullScript, dockerImage: 'node:latest')
+        helper.registerAllowedMethod 'fileExists', [String], { false }
+        thrown.expect AbortException
+        thrown.expectMessage '[nodeBuild] package.json is not found.'
+        stepRule.step.nodeBuild script: nullScript, dockerImage: 'node:lts-slim'
     }
 }
