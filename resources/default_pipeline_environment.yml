@@ -253,7 +253,7 @@ steps:
       - 'tests'
   npmExecute:
     dockerImage: 'node:8-stretch'
-    npmScript: 'run build'
+    npmCommand: 'run build'
   pipelineRestartSteps:
     sendMail: true
     timeoutInSeconds: 900
