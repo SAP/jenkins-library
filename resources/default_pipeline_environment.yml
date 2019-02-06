@@ -252,8 +252,8 @@ steps:
     stashContent:
       - 'tests'
   npmExecute:
-    dockerImage: 'node:lts-slim'
-    npmScript: 'build'
+    dockerImage: 'node:8-stretch'
+    npmScript: 'run build'
   pipelineRestartSteps:
     sendMail: true
     timeoutInSeconds: 900

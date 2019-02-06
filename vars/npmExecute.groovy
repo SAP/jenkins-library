@@ -5,7 +5,7 @@ import groovy.transform.Field
 
 @Field def STEP_NAME = getClass().getName()
 @Field Set GENERAL_CONFIG_KEYS = []
-@Field Set STEP_CONFIG_KEYS = ['dockerImage', 'defaultNpmRegistry', 'npmScript']
+@Field Set STEP_CONFIG_KEYS = ['dockerImage', 'npmCommand']
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS + ['dockerOptions']
 
 void call(Map parameters = [:], body) {
@@ -29,12 +29,12 @@ void call(Map parameters = [:], body) {
         ], configuration)
 
         try {
-            if (configuration.defaultNpmRegistry) {
-                sh "npm config set registry ${configuration.defaultNpmRegistry}"
-            }
             if (fileExists('package.json')) {
                 dockerExecute(script: script, dockerImage: configuration.dockerImage, dockerOptions: configuration.dockerOptions) {
-                    sh "npm install && npm run ${configuration.npmScript}"
+                    sh """
+                        npm install
+                        npm ${configuration.npmCommand}
+                    """
                 }
             } else {
                 error "[${STEP_NAME}] package.json is not found."
