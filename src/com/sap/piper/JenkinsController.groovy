@@ -22,13 +22,12 @@ class JenkinsController implements Serializable {
                     return true
                 }
             } catch (Exception e) {
-                script.echo "Could not retrieve status for Jenkins. Retrying..."
-                script.echo e.getMessage()
+                script.echo "Could not retrieve status for Jenkins. Message: ${e.getMessage()}. Retrying..."
                 continue
             }
             return false
         }
-        script.error("Timeout: Build of waiting for Jenkins status}")
+        script.error("Timeout: Jenkins did not start within the expected time frame.")
     }
 
     private retrieveJenkinsStatus() {
@@ -76,13 +75,12 @@ class JenkinsController implements Serializable {
                     return true
                 }
             } catch (Exception e) {
-                script.echo "Could not retrieve status for ${buildUrl}. Retrying..."
-                script.echo e.getMessage()
+                script.echo "Could not retrieve status for ${buildUrl}. Message: ${e.getMessage()}. Retrying..."
                 continue
             }
             return false
         }
-        script.error("Timeout: Build of waiting for ${jobName} ${branch}")
+        script.error("Timeout: Build of job ${jobName}, branch ${branch} did not finish in the expected time frame.")
     }
 
     def getConsoleText(String jobName, String branch) {
