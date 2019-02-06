@@ -210,7 +210,7 @@ class Helper {
                     def _docu = []
                     docuLines.each { _docu << it  }
                     _docu = Helper.trim(_docu)
-                    step.description = _docu*.trim().join('\n')
+                    step.description = _docu.join('\n')
                 } else {
 
                     def param = retrieveParameterName(line)
@@ -235,7 +235,7 @@ class Helper {
                 mandatoryLines.clear()
             }
 
-            if( line.trim()  ==~ /^\/\*\*/ ) {
+            if( line.trim()  ==~ /^\/\*\*.*/ ) {
                 docu = true
             }
 
@@ -243,8 +243,9 @@ class Helper {
                 def _line = line
                 _line = _line.replaceAll('^\\s*', '') // leading white spaces
                 if(_line.startsWith('/**')) _line = _line.replaceAll('^\\/\\*\\*', '') // start comment
-                if(_line.startsWith('*/')) _line = _line.replaceAll('^\\*/', '') // end comment
+                if(_line.startsWith('*/') || _line.trim().endsWith('*/')) _line = _line.replaceAll('^\\*/', '').replaceAll('\\*/\\s*$', '') // end comment
                 if(_line.startsWith('*')) _line = _line.replaceAll('^\\*', '') // continue comment
+                if(_line.startsWith(' ')) _line = _line.replaceAll('^\\s', '')
                 if(_line ==~ /.*@possibleValues.*/) {
                     mandatory = false // should be something like reset attributes
                     value = true
@@ -270,11 +271,11 @@ class Helper {
                 }
 
                 if(! value && ! mandatory) {
-                    docuLines << _line.trim()
+                    docuLines << _line
                 }
             }
 
-            if(docu && line.trim() ==~ /^\*\//) {
+            if(docu && line.trim() ==~ /^.*\*\//) {
                 docu = false
                 value = false
                 mandatory = false

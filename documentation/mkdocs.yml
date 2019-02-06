@@ -9,6 +9,7 @@ nav:
         - checksPublishResults: steps/checksPublishResults.md
         - cloudFoundryDeploy: steps/cloudFoundryDeploy.md
         - commonPipelineEnvironment: steps/commonPipelineEnvironment.md
+        - containerExecuteStructureTests: steps/containerExecuteStructureTests.md
         - dockerExecute: steps/dockerExecute.md
         - dockerExecuteOnKubernetes: steps/dockerExecuteOnKubernetes.md
         - durationMeasure: steps/durationMeasure.md

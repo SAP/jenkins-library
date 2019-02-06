@@ -113,7 +113,7 @@ class PiperStageWrapperTest extends BasePiperTest {
         assertThat(executed, is(true))
         assertThat(loggingRule.log, containsString('[piperStageWrapper] Running project interceptor \'.pipeline/extensions/test.groovy\' for test.'))
         assertThat(loggingRule.log, containsString('Stage Name: test'))
-        assertThat(loggingRule.log, containsString('Config: [productiveBranch:master,'))
+        assertThat(loggingRule.log, containsString('Config: ['))
         assertThat(loggingRule.log, containsString('testBranch'))
     }
 }
