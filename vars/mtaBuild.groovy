@@ -44,10 +44,7 @@ void call(Map parameters = [:]) {
 
         dockerExecute(script: script, dockerImage: configuration.dockerImage, dockerOptions: configuration.dockerOptions) {
             def java = new ToolDescriptor('Java', 'JAVA_HOME', '', '/bin/', 'java', '1.8.0', '-version 2>&1')
-            java.verify(this, configuration)
-
             def mta = new JavaArchiveDescriptor('SAP Multitarget Application Archive Builder', 'MTA_JAR_LOCATION', 'mtaJarLocation', '1.0.6', '-v', java)
-            mta.verify(this, configuration)
 
             def mtaYamlName = "mta.yaml"
             def applicationName = configuration.applicationName

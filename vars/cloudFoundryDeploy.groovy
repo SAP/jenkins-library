@@ -173,8 +173,8 @@ def deployCfNative (config) {
             cf login -u \"${username}\" -p '${password}' -a ${config.cloudFoundry.apiEndpoint} -o \"${config.cloudFoundry.org}\" -s \"${config.cloudFoundry.space}\"
             cf plugins
             cf ${deployCommand} ${config.cloudFoundry.appName ?: ''} ${blueGreenDeployOptions} -f '${config.cloudFoundry.manifest}' ${config.smokeTest}
-            ${stopOldAppIfRequired(config)}
             """
+        stopOldAppIfRunning(config)
         sh "cf logout"
     }
 }
@@ -196,11 +196,20 @@ private String deleteOptionIfRequired(Map config) {
     }
 }
 
-private String stopOldAppIfRequired(Map config) {
+private void stopOldAppIfRunning(Map config) {
+    String oldAppName = "${config.cloudFoundry.appName}-old"
+    String cfStopOutputFileName = "${UUID.randomUUID()}-cfStopOutput.txt"
+
     if (config.keepOldInstance && config.deployType == 'blue-green') {
-        return "cf stop ${config.cloudFoundry.appName}-old"
-    } else {
-        return ''
+        int cfStopReturncode = sh (returnStatus: true, script: "cf stop $oldAppName  &> $cfStopOutputFileName")
+
+        if (cfStopReturncode > 0) {
+            String cfStopOutput = readFile(file: cfStopOutputFileName)
+
+            if (!cfStopOutput.contains("$oldAppName not found")) {
+                error "Could not stop application $oldAppName. Error: $cfStopOutput"
+            }
+        }
     }
 }
 

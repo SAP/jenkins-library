@@ -210,7 +210,7 @@ class Helper {
                     def _docu = []
                     docuLines.each { _docu << it  }
                     _docu = Helper.trim(_docu)
-                    step.description = _docu*.trim().join('\n')
+                    step.description = _docu.join('\n')
                 } else {
 
                     def param = retrieveParameterName(line)
@@ -235,7 +235,7 @@ class Helper {
                 mandatoryLines.clear()
             }
 
-            if( line.trim()  ==~ /^\/\*\*/ ) {
+            if( line.trim()  ==~ /^\/\*\*.*/ ) {
                 docu = true
             }
 
@@ -243,8 +243,9 @@ class Helper {
                 def _line = line
                 _line = _line.replaceAll('^\\s*', '') // leading white spaces
                 if(_line.startsWith('/**')) _line = _line.replaceAll('^\\/\\*\\*', '') // start comment
-                if(_line.startsWith('*/')) _line = _line.replaceAll('^\\*/', '') // end comment
+                if(_line.startsWith('*/') || _line.trim().endsWith('*/')) _line = _line.replaceAll('^\\*/', '').replaceAll('\\*/\\s*$', '') // end comment
                 if(_line.startsWith('*')) _line = _line.replaceAll('^\\*', '') // continue comment
+                if(_line.startsWith(' ')) _line = _line.replaceAll('^\\s', '')
                 if(_line ==~ /.*@possibleValues.*/) {
                     mandatory = false // should be something like reset attributes
                     value = true
@@ -270,11 +271,11 @@ class Helper {
                 }
 
                 if(! value && ! mandatory) {
-                    docuLines << _line.trim()
+                    docuLines << _line
                 }
             }
 
-            if(docu && line.trim() ==~ /^\*\//) {
+            if(docu && line.trim() ==~ /^.*\*\//) {
                 docu = false
                 value = false
                 mandatory = false
@@ -417,6 +418,19 @@ for (step in steps) {
     }
 }
 
+// replace @see tag in docu by docu from referenced step.
+for(step in stepDescriptors) {
+    if(step.value.parameters) {
+        for(param in step.value.parameters) {
+            if( param?.value?.docu?.contains('@see')) {
+                def otherStep = param.value.docu.replaceAll('@see', '').trim()
+                param.value.docu = fetchTextFrom(otherStep, param.key, stepDescriptors)
+                param.value.mandatory = fetchMandatoryFrom(otherStep, param.key, stepDescriptors)
+            }
+        }
+    }
+}
+
 for(step in stepDescriptors) {
     try {
         renderStep(step.key, step.value)
@@ -458,6 +472,26 @@ void renderStep(stepName, stepProperties) {
                 TemplateHelper.createStepConfigurationSection(stepProperties.parameters))
     }
     theStepDocu.withWriter { w -> w.write text }
+}
+
+def fetchTextFrom(def step, def parameterName, def steps) {
+    try {
+        def docuFromOtherStep = steps[step]?.parameters[parameterName]?.docu
+        if(! docuFromOtherStep) throw new IllegalStateException("No docu found for parameter '${parameterName}' in step ${step}.")
+        return docuFromOtherStep
+    } catch(e) {
+        System.err << "[ERROR] Cannot retrieve docu for parameter ${parameterName} from step ${step}.\n"
+        throw e
+    }
+}
+
+def fetchMandatoryFrom(def step, def parameterName, def steps) {
+    try {
+        return steps[step]?.parameters[parameterName]?.mandatory
+    } catch(e) {
+        System.err << "[ERROR] Cannot retrieve docu for parameter ${parameterName} from step ${step}.\n"
+        throw e
+    }
 }
 
 def handleStep(stepName, prepareDefaultValuesStep, gse) {
