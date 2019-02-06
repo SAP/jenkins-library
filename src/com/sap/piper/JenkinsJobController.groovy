@@ -73,6 +73,7 @@ class JenkinsJobController implements Serializable {
 
     def waitForSuccess(String branch) {
         if (this.waitForJobStatus(branch, 'SUCCESS')) {
+            this.printConsoleText(branch)
             script.echo "Build was successful"
         } else {
             this.printConsoleText(branch)
