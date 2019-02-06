@@ -29,6 +29,9 @@ void call(Map parameters = [:]) {
             stepParamKey1: 'scriptMissing',
             stepParam1: parameters?.script == null
         ], configuration)
+        if (!configuration.npmScript) {
+            error "[${STEP_NAME}] npmScript is not found in configuration."
+        }
         if (fileExists('package.json')) {
             dockerExecute(script: script, dockerImage: configuration.dockerImage, dockerOptions: configuration.dockerOptions) {
                 sh """npm run ${configuration.npmScript}"""

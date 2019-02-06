@@ -38,7 +38,7 @@ class nodeBuildTest extends BasePiperTest {
 
     @Test
     void testNodeBuild() {
-        stepRule.step.nodeBuild script: nullScript, dockerImage: 'node:lts-slim'
+        stepRule.step.nodeBuild script: nullScript, dockerImage: 'node:lts-slim', npmScript: 'build'
         assertEquals 'node:lts-slim', dockerExecuteRule.dockerParams.dockerImage
     }
 
@@ -47,6 +47,13 @@ class nodeBuildTest extends BasePiperTest {
         helper.registerAllowedMethod 'fileExists', [String], { false }
         thrown.expect AbortException
         thrown.expectMessage '[nodeBuild] package.json is not found.'
+        stepRule.step.nodeBuild script: nullScript, dockerImage: 'node:lts-slim', npmScript: 'build'
+    }
+
+    @Test
+    void testNoNpmScript() {
+        thrown.expect AbortException
+        thrown.expectMessage '[nodeBuild] npmScript is not found in configuration.'
         stepRule.step.nodeBuild script: nullScript, dockerImage: 'node:lts-slim'
     }
 }
