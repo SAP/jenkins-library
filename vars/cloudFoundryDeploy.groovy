@@ -125,7 +125,7 @@ def findMtar(){
     def mtarFiles = findFiles(glob: '**/*.mtar')
 
     if(mtarFiles.length > 1){
-        error 'Found multiple *.mtar files, please specify file via mtaPath parameter! ${mtarFiles}'
+        error "Found multiple *.mtar files, please specify file via mtaPath parameter! ${mtarFiles}"
     }
     if(mtarFiles.length == 1){
         return mtarFiles[0].path
