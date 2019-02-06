@@ -2,13 +2,13 @@ package com.sap.piper
 
 class JenkinsController implements Serializable {
     def script
-    def timeout = 3600
-    String jenkinsUrl = "http://localhost:8080"
+    String jenkinsUrl
+    def timeout
 
-    def createJob(String gitUri, String jobName) {
-        String genericJobTemplate = script.libraryResource "jobTemplate.xml"
-        String jobXml = Utils.fillTemplate(genericJobTemplate, [guid: UUID.randomUUID().toString(), gitUri: gitUri])
-        return this.createJobFromJobXml(jobXml, jobName)
+    JenkinsController(script, String jenkinsUrl = "http://localhost:8080", timeout = 3600) {
+        this.script = script
+        this.jenkinsUrl = jenkinsUrl
+        this.timeout = timeout
     }
 
     def waitForJenkinsStarted() {
@@ -31,45 +31,87 @@ class JenkinsController implements Serializable {
         script.error("Timeout: Build of waiting for Jenkins status}")
     }
 
-    JenkinsJobController createJobFromJobXml(String jobXml, String jobName) {
-        def retry = 0
-        def jobSuccessfullyCreated = false
-
-        def createJobEndpoint = BashUtils.quoteAndEscape("${jenkinsUrl}/createItem?name=${jobName}")
-
-
-        jobXml = BashUtils.quoteAndEscape(jobXml)
-
-        while (!jobSuccessfullyCreated && retry < 5) {
-            script.dir('resources') {
-                script.sh "curl -X POST ${createJobEndpoint} -v --header \"Content-Type: application/xml\" -d ${jobXml}"
-                script.sleep 5
-                jobSuccessfullyCreated = this.isJobAvailable(jobName)
-                retry++
-            }
-            if (jobSuccessfullyCreated) {
-                script.echo("Job has been successfully imported to test server")
-                return new JenkinsJobController(script: script, jenkinsUrl: jenkinsUrl, jobName: jobName)
-            }
-        }
-        script.error("Job has not been successfully imported to test server")
-    }
-
-    def isJobAvailable(String jobName) {
-        def jobStateEndpoint = BashUtils.quoteAndEscape("${jenkinsUrl}/job/${jobName}/api/json")
-        def statusCode = script.sh(
-            script: "curl -XGET -s -o /dev/null -I -w \"%{http_code}\" ${jobStateEndpoint}",
-            returnStdout: true
-        )
-        return statusCode == "200"
-    }
-
     private retrieveJenkinsStatus() {
         def apiUrl = "${jenkinsUrl}/api/json"
         script.echo "Checking Jenkins Status"
-        def response = script.fetchUrl(apiUrl)
+        def response = new URL(apiUrl).getText()
         def result = script.readJSON text: response
         return result.mode
+    }
+
+    //Trigger scanning of the multi branch builds
+    def buildJob(String jobName) {
+        script.sh "curl -s -X POST ${jenkinsUrl}/job/${jobName}/build"
+    }
+
+    def waitForSuccess(String jobName, String branch) {
+        if (this.waitForJobStatus(branch, 'SUCCESS')) {
+            this.printConsoleText(branch)
+            script.echo "Build was successful"
+        } else {
+            this.printConsoleText(branch)
+            script.error("Build of ${jobName} ${branch} was not successfull")
+        }
+    }
+
+    def getBuildUrl(String jobName, String branch) {
+        return "${jenkinsUrl}/job/${jobName}/job/${URLEncoder.encode(branch, "UTF-8")}/lastBuild/"
+    }
+
+    def waitForJobStatus(String jobName, String branch, String status) {
+        def buildUrl = getBuildUrl(branch)
+        def timePerLoop = 10
+
+        for (int i = 0; i < timeout; i += timePerLoop) {
+            script.sleep timePerLoop
+            try {
+                script.echo "Checking Build Status of ${jobName} ${branch}"
+                def buildInformation = retrieveBuildInformation(branch)
+
+                if (buildInformation.building) {
+                    script.echo "Build is still in progress"
+                    continue
+                }
+                if (buildInformation.result == status) {
+                    return true
+                }
+            } catch (Exception e) {
+                script.echo "Could not retrieve status for ${buildUrl}. Retrying..."
+                script.echo e.getMessage()
+                continue
+            }
+            return false
+        }
+        script.error("Timeout: Build of waiting for ${jobName} ${branch}")
+    }
+
+    def getConsoleText(String branch) {
+        def consoleUrl = this.getBuildUrl(branch) + "/consoleText"
+        return new URL(consoleUrl).text
+    }
+
+    def printConsoleText(String branch) {
+        String consoleOutput = getConsoleText(branch)
+
+        script.echo '***********************************************'
+        script.echo '** Begin Output of Example Application Build **'
+        script.echo '***********************************************'
+
+        script.echo consoleOutput
+
+        script.echo '*********************************************'
+        script.echo '** End Output of Example Application Build **'
+        script.echo '*********************************************'
+    }
+
+    def retrieveBuildInformation(String jobName, String branch) {
+        def buildUrl = getBuildUrl(branch)
+        def url = "${buildUrl}/api/json"
+        script.echo "Checking Build Status of ${jobName} ${branch}"
+        script.echo "${jenkinsUrl}/job/${jobName}/job/${URLEncoder.encode(branch, "UTF-8")}/"
+        def response = script.fetchUrl(url)
+        def result = script.readJSON text: response
+        return result
     }
 
 }
