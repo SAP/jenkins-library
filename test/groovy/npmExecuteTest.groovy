@@ -1,17 +1,16 @@
+import static org.junit.Assert.assertEquals
+import hudson.AbortException
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.ExpectedException
 import org.junit.rules.RuleChain
-
 import util.BasePiperTest
 import util.JenkinsDockerExecuteRule
 import util.JenkinsReadYamlRule
 import util.JenkinsShellCallRule
 import util.JenkinsStepRule
 import util.Rules
-
-import static org.junit.Assert.assertEquals
 
 class npmExecuteTest extends BasePiperTest {
 
@@ -37,22 +36,15 @@ class npmExecuteTest extends BasePiperTest {
 
     @Test
     void testNpmExecute() {
-        stepRule.step.npmExecute script: nullScript, dockerImage: 'node:lts-slim', npmScript: 'build'
+        stepRule.step.npmExecute(script: nullScript, dockerImage: 'node:lts-slim', npmScript: 'build') {}
         assertEquals 'node:lts-slim', dockerExecuteRule.dockerParams.dockerImage
     }
 
     @Test
     void testNoPackageJson() {
         helper.registerAllowedMethod 'fileExists', [String], { false }
-        thrown.expect hudson.AbortException
+        thrown.expect AbortException
         thrown.expectMessage '[npmExecute] package.json is not found.'
-        stepRule.step.npmExecute script: nullScript, dockerImage: 'node:lts-slim', npmScript: 'build'
-    }
-
-    @Test
-    void testNoNpmScript() {
-        thrown.expect hudson.AbortException
-        thrown.expectMessage '[npmExecute] npmScript is not found in configuration.'
-        stepRule.step.npmExecute script: nullScript, dockerImage: 'node:lts-slim', npmScript: ''
+        stepRule.step.npmExecute(script: nullScript, dockerImage: 'node:lts-slim', npmScript: 'build') {}
     }
 }

@@ -1,16 +1,14 @@
 import static com.sap.piper.Prerequisites.checkScript
-
 import com.sap.piper.ConfigurationHelper
 import com.sap.piper.Utils
-
 import groovy.transform.Field
 
 @Field def STEP_NAME = getClass().getName()
 @Field Set GENERAL_CONFIG_KEYS = []
-@Field Set STEP_CONFIG_KEYS = ['dockerImage', 'npmScript']
+@Field Set STEP_CONFIG_KEYS = ['dockerImage', 'defaultNpmRegistry', 'npmScript']
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS + ['dockerOptions']
 
-void call(Map parameters = [:]) {
+def call(Map parameters = [:], body) {
     handlePipelineStepErrors(stepName: STEP_NAME, stepParameters: parameters) {
 
         final script = checkScript(this, parameters) ?: this
@@ -29,15 +27,23 @@ void call(Map parameters = [:]) {
             stepParamKey1: 'scriptMissing',
             stepParam1: parameters?.script == null
         ], configuration)
-        if (!configuration.npmScript) {
-            error "[${STEP_NAME}] npmScript is not found in configuration."
-        }
-        if (fileExists('package.json')) {
-            dockerExecute(script: script, dockerImage: configuration.dockerImage, dockerOptions: configuration.dockerOptions) {
-                sh "npm install && npm run ${configuration.npmScript}"
+
+        try {
+            if (configuration.defaultNpmRegistry) {
+                sh "npm config set registry ${configuration.defaultNpmRegistry}"
             }
-        } else {
-            error "[${STEP_NAME}] package.json is not found."
+            if (fileExists('package.json')) {
+                dockerExecute(script: script, dockerImage: configuration.dockerImage, dockerOptions: configuration.dockerOptions) {
+                    sh "npm install && npm run ${configuration.npmScript}"
+                }
+            } else {
+                error "[${STEP_NAME}] package.json is not found."
+            }
+            body()
+        } catch (Exception e) {
+            println "Error while executing npm. Here are the logs:"
+            sh "cat ~/.npm/_logs/*"
+            throw e
         }
     }
 }
