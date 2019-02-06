@@ -1,13 +1,11 @@
 import static com.sap.piper.Prerequisites.checkScript
 
 import com.cloudbees.groovy.cps.NonCPS
-
 import com.sap.piper.ConfigurationHelper
 import com.sap.piper.GenerateDocumentation
 import com.sap.piper.JenkinsUtils
 import com.sap.piper.Utils
 import com.sap.piper.k8s.ContainerMap
-
 import groovy.transform.Field
 
 @Field def STEP_NAME = getClass().getName()
@@ -58,6 +56,10 @@ import groovy.transform.Field
      */
     'dockerVolumeBind',
     /**
+     * Set this to 'false' to bypass a docker image pull. Usefull during development process. Allows testing of images which are available in the local registry only.
+     */
+    'dockerPullImage',
+    /**
      * Kubernetes only:
      * Specifies a dedicated user home directory for the container which will be passed as value for environment variable `HOME`.
      */
@@ -82,6 +84,10 @@ import groovy.transform.Field
      * as `dockerVolumeBind` for the sidecar container
      */
     'sidecarVolumeBind',
+    /**
+     * Set this to 'false' to bypass a docker image pull. Usefull during development process. Allows testing of images which are available in the local registry only.
+     */
+    'sidecarPullImage',
     /**
      * as `dockerWorkspace` for the sidecar container
      */
@@ -127,6 +133,7 @@ void call(Map parameters = [:], body) {
                         containerCommand: config.containerCommand,
                         containerShell: config.containerShell,
                         dockerImage: config.dockerImage,
+                        dockerPullImage: config.dockerPullImage,
                         dockerEnvVars: config.dockerEnvVars,
                         dockerWorkspace: config.dockerWorkspace,
                         stashContent: config.stashContent
@@ -139,6 +146,7 @@ void call(Map parameters = [:], body) {
                         script: script,
                         containerCommands: [:],
                         containerEnvVars: [:],
+                        containerPullImageFlags: [:],
                         containerMap: [:],
                         containerName: config.dockerName,
                         containerPortMappings: [:],
@@ -149,6 +157,9 @@ void call(Map parameters = [:], body) {
 
                     paramMap.containerEnvVars[config.dockerImage] = config.dockerEnvVars
                     paramMap.containerEnvVars[config.sidecarImage] = config.sidecarEnvVars
+
+                    paramMap.containerPullImageFlags[config.dockerImage] = config.dockerPullImage
+                    paramMap.containerPullImageFlags[config.sidecarImage] = config.sidecarPullImage
 
                     paramMap.containerMap[config.dockerImage] = config.dockerName
                     paramMap.containerMap[config.sidecarImage] = config.sidecarName
@@ -179,7 +190,8 @@ void call(Map parameters = [:], body) {
             if (executeInsideDocker && config.dockerImage) {
                 utils.unstashAll(config.stashContent)
                 def image = docker.image(config.dockerImage)
-                image.pull()
+                if (config.dockerPullImage) image.pull()
+                else echo"[INFO][$STEP_NAME] Skipped pull of image '${config.dockerImage}'."
                 if (!config.sidecarImage) {
                     image.inside(getDockerOptions(config.dockerEnvVars, config.dockerVolumeBind, config.dockerOptions)) {
                         body()
@@ -189,14 +201,15 @@ void call(Map parameters = [:], body) {
                     sh "docker network create ${networkName}"
                     try{
                         def sidecarImage = docker.image(config.sidecarImage)
-                        sidecarImage.pull()
+                        if (config.sidecarPullImage) sidecarImage.pull()
+                        else echo"[INFO][$STEP_NAME] Skipped pull of image '${config.sidecarImage}'."
                         config.sidecarOptions = config.sidecarOptions?:[]
-                        if(config.sidecarName)
+                        if (config.sidecarName)
                             config.sidecarOptions.add("--network-alias ${config.sidecarName}")
                         config.sidecarOptions.add("--network ${networkName}")
                         sidecarImage.withRun(getDockerOptions(config.sidecarEnvVars, config.sidecarVolumeBind, config.sidecarOptions)) { c ->
                             config.dockerOptions = config.dockerOptions?:[]
-                            if(config.dockerName)
+                            if (config.dockerName)
                                 config.dockerOptions.add("--network-alias ${config.dockerName}")
                             config.dockerOptions.add("--network ${networkName}")
                             image.inside(getDockerOptions(config.dockerEnvVars, config.dockerVolumeBind, config.dockerOptions)) {
