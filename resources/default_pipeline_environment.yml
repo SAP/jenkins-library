@@ -154,8 +154,11 @@ steps:
       - 'tests'
     testReportFilePath: 'cst-report.json'
   dockerExecute:
+    dockerPullImage: true
+    sidecarPullImage: true
     stashContent: []
   dockerExecuteOnKubernetes:
+    dockerPullImage: true
     stashContent: []
     stashIncludes:
       workspace: '**/*'
