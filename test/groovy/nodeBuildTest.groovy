@@ -54,6 +54,6 @@ class nodeBuildTest extends BasePiperTest {
     void testNoNpmScript() {
         thrown.expect AbortException
         thrown.expectMessage '[nodeBuild] npmScript is not found in configuration.'
-        stepRule.step.nodeBuild script: nullScript, dockerImage: 'node:lts-slim'
+        stepRule.step.nodeBuild script: nullScript, dockerImage: 'node:lts-slim', npmScript: ''
     }
 }
