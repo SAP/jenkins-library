@@ -42,6 +42,10 @@ import hudson.AbortException
      */
     'containerPortMappings',
     /**
+     * Specifies the pullImage flag per container.
+     */
+    'containerPullImageFlags',
+    /**
      * Allows to specify the shell to be executed for container with containerName.
      */
     'containerShell',
@@ -57,6 +61,11 @@ import hudson.AbortException
      * Name of the docker image that should be used. If empty, Docker is not used.
      */
     'dockerImage',
+    /**
+     * Set this to 'false' to bypass a docker image pull. 
+     * Usefull during development process. Allows testing of images which are available in the local registry only.
+     */
+    'dockerPullImage',
     /**
      * Specifies a dedicated user home directory for the container which will be passed as value for environment variable `HOME`.
      */
@@ -191,17 +200,17 @@ private void unstashWorkspace(config, prefix) {
 }
 
 private List getContainerList(config) {
-
     result = []
     result.push(containerTemplate(
         name: 'jnlp',
         image: config.jenkinsKubernetes.jnlpAgent
     ))
     config.containerMap.each { imageName, containerName ->
+        def containerPullImage = config.containerPullImageFlags?.get(imageName)
         def templateParameters = [
             name: containerName.toLowerCase(),
             image: imageName,
-            alwaysPullImage: true,
+            alwaysPullImage: containerPullImage != null ? containerPullImage : config.dockerPullImage,
             envVars: getContainerEnvs(config, imageName)
         ]
 

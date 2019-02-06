@@ -5,7 +5,6 @@
 
 #Project Setup
 general:
-  productiveBranch: 'master'
   collectTelemetryData: true
   changeManagement:
     type: 'NONE' # SOLMAN, CTS, NONE
@@ -22,6 +21,8 @@ general:
   gitSshKeyCredentialsId: '' #needed to allow sshagent to run with local ssh key
   jenkinsKubernetes:
     jnlpAgent: 's4sdk/jenkins-agent-k8s:latest'
+  manualConfirmation: true
+  productiveBranch: 'master'
 
 #Steps Specific Configuration
 steps:
@@ -153,8 +154,11 @@ steps:
       - 'tests'
     testReportFilePath: 'cst-report.json'
   dockerExecute:
+    dockerPullImage: true
+    sidecarPullImage: true
     stashContent: []
   dockerExecuteOnKubernetes:
+    dockerPullImage: true
     stashContent: []
     stashIncludes:
       workspace: '**/*'
