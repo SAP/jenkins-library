@@ -53,7 +53,7 @@ public class TransportRequestReleaseTest extends BasePiperTest {
     }
 
     @Test
-    public void changeIdNotProvidedTest() {
+    public void changeDocumentIdNotProvidedSOLMANTest() {
 
         ChangeManagement cm = new ChangeManagement(nullScript) {
             String getChangeDocumentId(String from,
@@ -276,6 +276,28 @@ public class TransportRequestReleaseTest extends BasePiperTest {
             developmentClient: '003',
             cmUtils: cm)
 
+    }
+
+    @Test
+    public void releaseTransportRequestSanityChecksSOLMANTest() {
+
+        thrown.expect(IllegalArgumentException)
+        thrown.expectMessage(allOf(
+            containsString('ERROR - NO VALUE AVAILABLE FOR'),
+            containsString('changeManagement/endpoint')))
+
+        // changeDocumentId and transportRequestId are not checked
+        // by the sanity checks here since they are looked up from
+        // commit history in case they are not provided.
+
+        nullScript
+            .commonPipelineEnvironment
+                .configuration = null
+
+        stepRule.step.transportRequestRelease(
+            script: nullScript,
+            changeManagement: [type: 'SOLMAN']
+        )
     }
 
     @Test
