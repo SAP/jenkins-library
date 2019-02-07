@@ -257,8 +257,11 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
                  transportRequestId: '123456',
                  changeManagement: [
                      type: 'RFC',
-                     rfc: [developmentClient: '002']],
-                 developmentInstance:'001',
+                     rfc: [
+                         developmentClient: '002',
+                         developmentInstance: '001'
+                     ]
+                 ],
                  applicationName: '42',
                  applicationDescription: 'Lorem ipsum',
                  abapPackage: 'XYZ',
@@ -309,10 +312,11 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
                  transportRequestId: '123456',
                  changeManagement: [
                      type: 'RFC',
-                     rfc: [developmentClient: '002']
+                     rfc: [
+                         developmentClient: '002',
+                         developmentInstance: '001',
+                         ]
                      ],
-                 developmentInstance:'001',
-                 developmentClient: '002',
                  applicationName: '42',
                  applicationDescription: 'Lorem ipsum',
                  abapPackage: 'XYZ',

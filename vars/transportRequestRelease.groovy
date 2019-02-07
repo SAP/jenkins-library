@@ -56,7 +56,7 @@ void call(parameters = [:]) {
             .withMandatoryProperty('changeManagement/git/to')
             .withMandatoryProperty('changeManagement/git/from')
             .withMandatoryProperty('changeManagement/git/format')
-            .withMandatoryProperty('changeManagement/rfc/developmetInstance', null, { backendType == BackendType.RFC})
+            .withMandatoryProperty('changeManagement/rfc/developmentInstance', null, { backendType == BackendType.RFC})
             .withMandatoryProperty('changeManagement/rfc/developmentClient', null, { backendType == BackendType.RFC})
 
         configuration = configHelper.use()
