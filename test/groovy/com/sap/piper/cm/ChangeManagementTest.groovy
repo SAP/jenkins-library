@@ -181,6 +181,7 @@ public void testGetCommandLineWithCMClientOpts() {
             [], // docker options
             'https://example.org/rfc', // endpoint
             '01', // client
+            '001', // instance
             'me', // credentialsId
             'Lorem ipsum' // description
         )
@@ -189,6 +190,7 @@ public void testGetCommandLineWithCMClientOpts() {
 
         assert dockerExecuteRule.dockerParams.dockerOptions == [
             '--env TRANSPORT_DESCRIPTION=Lorem ipsum',
+            '--env ABAP_DEVELOPMENT_INSTANCE=001',
             '--env ABAP_DEVELOPMENT_CLIENT=01',
             '--env ABAP_DEVELOPMENT_SERVER=https://example.org/rfc',
             '--env ABAP_DEVELOPMENT_USER=user',
@@ -213,6 +215,7 @@ public void testGetCommandLineWithCMClientOpts() {
             [], // docker options
             'https://example.org/rfc', // endpoint
             '01', // client
+            '001', // instance
             'me', // credentialsId
             'Lorem ipsum' // description
         )
