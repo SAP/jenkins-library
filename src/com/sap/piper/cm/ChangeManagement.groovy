@@ -149,7 +149,7 @@ public class ChangeManagement implements Serializable {
                 applicationId, "\"$filePath\""
             ]
 
-        uploadFileToTransportRequest(
+        int rc = executeWithCredentials(
             BackendType.SOLMAN,
             '',
             [],
@@ -157,7 +157,13 @@ public class ChangeManagement implements Serializable {
             credentialsId,
             'upload-file-to-transport',
             args,
-            cmclientOpts)
+            false,
+            cmclientOpts) as int
+
+        if(rc != 0) {
+            throw new ChangeManagementException(
+                "Cannot upload file into transport request. Return code from cm client: $rc.")
+        }
     }
 
     void uploadFileToTransportRequestCTS(
@@ -172,7 +178,7 @@ public class ChangeManagement implements Serializable {
                 "\"$filePath\""
             ]
 
-        uploadFileToTransportRequest(
+        int rc = executeWithCredentials(
             BackendType.CTS,
             '',
             [],
@@ -180,7 +186,13 @@ public class ChangeManagement implements Serializable {
             credentialsId,
             'upload-file-to-transport',
             args,
-            cmclientOpts)
+            false,
+            cmclientOpts) as int
+
+        if(rc != 0) {
+            throw new ChangeManagementException(
+                "Cannot upload file into transport request. Return code from  cm client: $rc.")
+        }
     }
 
     void uploadFileToTransportRequestRFC(
@@ -203,45 +215,21 @@ public class ChangeManagement implements Serializable {
                 "--env ABAP_APPLICATION_DESC=${applicationDescription}",
                 "--env ABAP_PACKAGE=${abapPackage}",
                 "--env ZIP_FILE_URL=${filePath}",
-            ]
+        ]
 
-            uploadFileToTransportRequest(
-                BackendType.RFC,
-                dockerImage,
-                dockerOptions,
-                endpoint,
-                credentialsId,
-                "cts uploadToABAP:${transportRequestId}",
-                args,
-                null)
-    }
+        int rc = executeWithCredentials(
+            BackendType.RFC,
+            dockerImage,
+            dockerOptions,
+            endpoint,
+            credentialsId,
+            "cts uploadToABAP:${transportRequestId}",
+            args,
+            false) as int
 
-    private void uploadFileToTransportRequest(
-        BackendType type,
-        def dockerImage,
-        List dockerOptions,
-        def endpoint,
-        def credentialsId,
-        def command,
-        List args,
-        def cmclientOpts) {
-
-        if(! type in [BackendType.SOLMAN, BackendType.CTS, BackendType.RFC]) {
-            throw new IllegalArgumentException("Invalid backend type: ${type}")
-        }
-
-        int rc = executeWithCredentials(type,
-                                        dockerImage,
-                                        dockerOptions,
-                                        endpoint,
-                                        credentialsId,
-                                        command,
-                                        args,
-                                        false,
-                                        cmclientOpts) as int
         if(rc != 0) {
             throw new ChangeManagementException(
-                "Cannot upload file into transport request. Return code from ${type == BackendType.RFC ? 'rfc' : 'cm'} client: $rc.")
+                "Cannot upload file into transport request. Return code from rfc client: $rc.")
         }
     }
 
