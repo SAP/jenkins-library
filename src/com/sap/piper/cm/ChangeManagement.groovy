@@ -256,41 +256,47 @@ public class ChangeManagement implements Serializable {
             else
                 shArgs.put('returnStatus', true)
 
-            if(type == BackendType.RFC) {
+            def result = 1
 
-                shArgs.script = command
+            switch(type) {
 
-                args = args.plus([
-                    "--env ABAP_DEVELOPMENT_SERVER=${endpoint}",
-                    "--env ABAP_DEVELOPMENT_USER=${script.username}",
-                    "--env ABAP_DEVELOPMENT_PASSWORD=${script.password}"])
+                case BackendType.RFC:
 
-                dockerOptions = dockerOptions.plus(args)
+                    shArgs.script = command
 
-                def result = 1
+                    args = args.plus([
+                        "--env ABAP_DEVELOPMENT_SERVER=${endpoint}",
+                        "--env ABAP_DEVELOPMENT_USER=${script.username}",
+                        "--env ABAP_DEVELOPMENT_PASSWORD=${script.password}"])
 
-                script.dockerExecute(script: script,
-                                     dockerImage: dockerImage,
-                                     dockerOptions: dockerOptions ) {
+                    dockerOptions = dockerOptions.plus(args)
 
+
+                    script.dockerExecute(script: script,
+                                         dockerImage: dockerImage,
+                                         dockerOptions: dockerOptions ) {
+
+                        result = script.sh(shArgs)
+
+                    }
+
+                    break
+
+                case BackendType.SOLMAN:
+                case BackendType.CTS:
+
+                    shArgs.script = getCMCommandLine(type, endpoint, script.username, script.password,
+                        command, args,
+                        clientOpts)
+
+                    // user and password are masked by withCredentials
+                    script.echo """[INFO] Executing command line: "${shArgs.script}"."""
                     result = script.sh(shArgs)
 
-                }
-
-                return result
-
-            } else {
-
-                def cmScript = getCMCommandLine(type, endpoint, script.username, script.password,
-                    command, args,
-                    clientOpts)
-
-                shArgs.script = cmScript
-
-                // user and password are masked by withCredentials
-                script.echo """[INFO] Executing command line: "${cmScript}"."""
-                return script.sh(shArgs)
+                    break
             }
+
+            return result
         }
     }
 
