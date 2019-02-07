@@ -1,13 +1,30 @@
 import static com.sap.piper.Prerequisites.checkScript
+import com.sap.piper.GenerateDocumentation
 import com.sap.piper.ConfigurationHelper
 import com.sap.piper.Utils
 import groovy.transform.Field
 
 @Field def STEP_NAME = getClass().getName()
 @Field Set GENERAL_CONFIG_KEYS = []
-@Field Set STEP_CONFIG_KEYS = ['dockerImage', 'npmCommand']
-@Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS + ['dockerOptions']
-
+@Field Set STEP_CONFIG_KEYS = [
+    /**
+     * Name of the docker image that should be used, in which node should be installed and configured. Default value is 'node:8-stretch'.
+     */
+    'dockerImage',
+    /**
+     * Which NPM command should be executed. Default value is 'run build'.
+     */
+    'npmCommand']
+@Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS + [
+    /**
+     * Docker options to be set when starting the container.
+     */
+    'dockerOptions']
+/**
+ * Executes NPM commands inside a docker container.
+ * Docker image, docker options and npm commands can be specified or configured.
+ */
+@GenerateDocumentation
 void call(Map parameters = [:]) {
     handlePipelineStepErrors(stepName: STEP_NAME, stepParameters: parameters) {
 
