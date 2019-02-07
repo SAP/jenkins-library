@@ -60,7 +60,7 @@ void call(parameters = [:]) {
             .withMandatoryProperty('transportType', null, { backendType == BackendType.CTS})
             .withMandatoryProperty('targetSystem', null, { backendType == BackendType.CTS})
             .withMandatoryProperty('description', null, { backendType == BackendType.CTS})
-            .withMandatoryProperty('changeManagement/rfc/client', null, {backendType == BackendType.RFC})
+            .withMandatoryProperty('changeManagement/rfc/developmentClient', null, {backendType == BackendType.RFC})
 
         def changeDocumentId = null
 
