@@ -175,12 +175,14 @@ class DockerExecuteTest extends BasePiperTest {
                       dockerImage: 'maven:3.5-jdk-8-alpine',
                       dockerOptions: '-description=lorem ipsum',
                       dockerVolumeBind: ['my_vol': '/my_vol'],
-                      dockerEnvVars: ['http_proxy': 'http://proxy:8000']) {
+                      dockerEnvVars: ['http_proxy': 'http://proxy:8000',
+                                      'blanks': 'there are blanks']) {
             bodyExecuted = true
         }
         assertTrue(docker.getParameters().contains('--env https_proxy '))
         assertTrue(docker.getParameters().contains('--env http_proxy=http://proxy:8000'))
         assertTrue(docker.getParameters().contains('description=lorem\\ ipsum'))
+        assertTrue(docker.getParameters().contains('--env blanks=there\\ are\\ blanks'))
         assertTrue(docker.getParameters().contains('--volume my_vol:/my_vol'))
         assertTrue(bodyExecuted)
     }

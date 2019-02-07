@@ -249,8 +249,8 @@ private getDockerOptions(Map dockerEnvVars, Map dockerVolumeBind, def dockerOpti
     ]
     def options = []
     if (dockerEnvVars) {
-        for (String k : dockerEnvVars.keySet()) {
-            options.add("--env ${k}=${dockerEnvVars[k].toString()}")
+        for (def e : dockerEnvVars.entrySet()) {
+            options.add("--env ${e.key}=${escapeBlanks(e.value.toString())}")
         }
     }
 
@@ -272,7 +272,7 @@ private getDockerOptions(Map dockerEnvVars, Map dockerVolumeBind, def dockerOpti
         }
         if (dockerOptions instanceof List) {
             for (String option : dockerOptions) {
-                options << escapeBlanks(option)
+                options << escapeBlanksInValues(option)
             }
         } else {
             throw new IllegalArgumentException("Unexpected type for dockerOptions. Expected was either a list or a string. Actual type was: '${dockerOptions.getClass()}'")
@@ -308,15 +308,20 @@ boolean isKubernetes() {
  * changed to <code>description=Lorem\ ipsum</code>.
  */
 @NonCPS
-def escapeBlanks(def s) {
+def escapeBlanksInValues(def s) {
 
     def EQ='='
     def parts=s.split(EQ)
 
     if(parts.length == 2) {
-        parts[1]=parts[1].replaceAll(' ', '\\\\ ')
+        parts[1]=escapeBlanks(parts[1])
         s = parts.join(EQ)
     }
 
     return s
+}
+
+@NonCPS
+def escapeBlanks(def s) {
+    s.replaceAll(' ', '\\\\ ')
 }
