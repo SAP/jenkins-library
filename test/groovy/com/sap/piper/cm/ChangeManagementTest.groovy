@@ -390,6 +390,7 @@ public void testGetCommandLineWithCMClientOpts() {
             [],
             '002',
             'https://example.org',
+            '002',
             '001',
             'me')
 
@@ -402,6 +403,7 @@ public void testGetCommandLineWithCMClientOpts() {
         assertThat(stringDockerOptions, hasItem('--env ABAP_DEVELOPMENT_USER=user'))
         assertThat(stringDockerOptions, hasItem('--env ABAP_DEVELOPMENT_PASSWORD=password'))
         assertThat(stringDockerOptions, hasItem('--env ABAP_DEVELOPMENT_CLIENT=001'))
+        assertThat(stringDockerOptions, hasItem('--env ABAP_DEVELOPMENT_INSTANCE=002'))
         assertThat(script.shell, hasItem('cts releaseTransport:002'))
     }
 
