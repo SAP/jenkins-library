@@ -37,9 +37,7 @@ void call(Map parameters = [:]) {
         def utils = parameters.juStabUtils ?: new Utils()
         def jenkinsUtils = parameters.jenkinsUtilsStub ?: new JenkinsUtils()
 
-        def script = checkScript(this, parameters)
-        if (script == null)
-            script = this
+        final script = checkScript(this, parameters) ?: this
 
         Map config = ConfigurationHelper.newInstance(this)
             .loadStepDefaults()
@@ -123,11 +121,10 @@ void call(Map parameters = [:]) {
 }
 
 def findMtar(){
-    def mtarPath = ''
-    def mtarFiles = findFiles(glob: '**/target/*.mtar')
+    def mtarFiles = findFiles(glob: '**/*.mtar')
 
     if(mtarFiles.length > 1){
-        error 'Found multiple *.mtar files, please specify file via mtaPath parameter! ${mtarFiles}'
+        error "Found multiple *.mtar files, please specify file via mtaPath parameter! ${mtarFiles}"
     }
     if(mtarFiles.length == 1){
         return mtarFiles[0].path
