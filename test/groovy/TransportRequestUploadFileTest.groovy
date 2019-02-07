@@ -255,9 +255,10 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
         stepRule.step.transportRequestUploadFile(script: nullScript,
                  applicationUrl: 'http://example.org/blobstore/xyz.zip',
                  transportRequestId: '123456',
-                 changeManagement: [type: 'RFC'],
+                 changeManagement: [
+                     type: 'RFC',
+                     rfc: [developmentClient: '002']],
                  developmentInstance:'001',
-                 developmentClient: '002',
                  applicationName: '42',
                  applicationDescription: 'Lorem ipsum',
                  abapPackage: 'XYZ',
@@ -306,7 +307,10 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
         stepRule.step.transportRequestUploadFile(script: nullScript,
                  applicationUrl: 'http://example.org/blobstore/xyz.zip',
                  transportRequestId: '123456',
-                 changeManagement: [type: 'RFC'],
+                 changeManagement: [
+                     type: 'RFC',
+                     rfc: [developmentClient: '002']
+                     ],
                  developmentInstance:'001',
                  developmentClient: '002',
                  applicationName: '42',

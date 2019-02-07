@@ -181,7 +181,7 @@ public class TransportRequestReleaseTest extends BasePiperTest {
         stepRule.step.transportRequestRelease(
             script: nullScript,
             transportRequestId: '002',
-            developmentClient: '003',
+            changeManagement: [rfc: [developmentClient: '003']],
             cmUtils: cm)
 
         assert receivedParameters == [
@@ -273,7 +273,7 @@ public class TransportRequestReleaseTest extends BasePiperTest {
         stepRule.step.transportRequestRelease(
             script: nullScript,
             transportRequestId: '002',
-            developmentClient: '003',
+            changeManagement: [rfc: [developmentClient: '003']],
             cmUtils: cm)
 
     }

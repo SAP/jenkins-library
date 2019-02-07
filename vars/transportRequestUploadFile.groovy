@@ -24,7 +24,6 @@ import static com.sap.piper.cm.StepHelpers.getBackendTypeAndLogInfoIfCMIntegrati
       'applicationName', // RFC
       'applicationId', // SOLMAN
       'developmentInstance',
-      'developmentClient',
       'applicationDescription',
       'abapPackage',
     ])
@@ -69,7 +68,7 @@ void call(parameters = [:]) {
             .withMandatoryProperty('filePath', null, { backendType in [BackendType.SOLMAN, BackendType.CTS] })
             .withMandatoryProperty('applicationUrl', null, { backendType == BackendType.RFC })
             .withMandatoryProperty('developmentInstance', null, { backendType == BackendType.RFC })
-            .withMandatoryProperty('developmentClient', null, { backendType == BackendType.RFC })
+            .withMandatoryProperty('changeManagement/rfc/developmentClient', null, { backendType == BackendType.RFC })
             .withMandatoryProperty('applicationDescription', null, { backendType == BackendType.RFC })
             .withMandatoryProperty('abapPackage', null, { backendType == BackendType.RFC })
             .withMandatoryProperty('applicationId', null, {backendType == BackendType.SOLMAN})
@@ -137,6 +136,7 @@ void call(parameters = [:]) {
                             configuration.changeManagement.clientOpts)
                         break
                     case BackendType.RFC:
+
                         cm.uploadFileToTransportRequestRFC(
                             configuration.changeManagement.rfc.dockerImage,
                             configuration.changeManagement.rfc.dockerOptions ?: [],
@@ -146,7 +146,7 @@ void call(parameters = [:]) {
                             configuration.changeManagement.endpoint,
                             configuration.changeManagement.credentialsId,
                             configuration.developmentInstance,
-                            configuration.developmentClient,
+                            configuration.changeManagement.rfc.developmentClient,
                             configuration.applicationDescription,
                             configuration.abapPackage)
                         break
