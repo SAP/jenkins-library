@@ -28,20 +28,20 @@ In this scenario, we want to show how to implement a basic continuous delivery p
 ```groovy
 @Library('piper-library-os') _
 
-node(){  
-   stage('Prepare')   {  
+node(){
+  stage('Prepare')   {
       deleteDir()
       checkout scm
       setupCommonPipelineEnvironment script:this
-   }  
-   
-   stage('Build')   {  
+  }
+  
+  stage('Build')   {
       mtaBuild script:this, buildTarget:'CF'
-   }   
-   
-   stage('Deploy')   {  
+  }
+
+  stage('Deploy')   {
       cloudFoundryDeploy script:this, deployTool:'mtaDeployPlugin'
-   }
+  }
 }
 ```
 
