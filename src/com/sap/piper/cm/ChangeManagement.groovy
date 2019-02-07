@@ -105,14 +105,17 @@ public class ChangeManagement implements Serializable {
         String dockerImage,
         List dockerOptions,
         String endpoint,
-        String client,
+        String developmentClient,
+        String developmentInstance,
         String credentialsId,
         String description) {
 
         def command = 'cts createTransportRequest'
         List args = [
             "--env TRANSPORT_DESCRIPTION=${description}",
-            "--env ABAP_DEVELOPMENT_CLIENT=${client}"]
+            "--env ABAP_DEVELOPMENT_INSTANCE=${developmentInstance}",
+            "--env ABAP_DEVELOPMENT_CLIENT=${developmentClient}",
+            ]
 
         try {
 
