@@ -262,7 +262,6 @@ public void testGetCommandLineWithCMClientOpts() {
 
         new ChangeManagement(nullScript).uploadFileToTransportRequestCTS(
             '002',
-            null,
             '/path',
             'https://example.org/cm',
             'me')

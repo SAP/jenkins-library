@@ -162,7 +162,6 @@ public class ChangeManagement implements Serializable {
 
     void uploadFileToTransportRequestCTS(
         String transportRequestId,
-        String applicationId,
         String filePath,
         String endpoint,
         String credentialsId,
@@ -188,7 +187,7 @@ public class ChangeManagement implements Serializable {
         String dockerImage,
         List dockerOptions,
         String transportRequestId,
-        String applicationId,
+        String applicationName,
         String filePath,
         String endpoint,
         String credentialsId,
@@ -200,7 +199,7 @@ public class ChangeManagement implements Serializable {
         def args = [
                 "--env ABAP_DEVELOPMENT_INSTANCE=${developmentInstance}",
                 "--env ABAP_DEVELOPMENT_CLIENT=${developmentClient}",
-                "--env ABAP_APPLICATION_NAME=${applicationId}",
+                "--env ABAP_APPLICATION_NAME=${applicationName}",
                 "--env ABAP_APPLICATION_DESC=${applicationDescription}",
                 "--env ABAP_PACKAGE=${abapPackage}",
                 "--env ZIP_FILE_URL=${filePath}",

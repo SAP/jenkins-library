@@ -21,7 +21,8 @@ import static com.sap.piper.cm.StepHelpers.getBackendTypeAndLogInfoIfCMIntegrati
   ]
 
 @Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS.plus([
-      'applicationId',
+      'applicationName', // RFC
+      'applicationId', // SOLMAN
       'developmentInstance',
       'developmentClient',
       'applicationDescription',
@@ -71,7 +72,8 @@ void call(parameters = [:]) {
             .withMandatoryProperty('developmentClient', null, { backendType == BackendType.RFC })
             .withMandatoryProperty('applicationDescription', null, { backendType == BackendType.RFC })
             .withMandatoryProperty('abapPackage', null, { backendType == BackendType.RFC })
-            .withMandatoryProperty('applicationId', null, {backendType in [BackendType.SOLMAN, BackendType.RFC]})
+            .withMandatoryProperty('applicationId', null, {backendType == BackendType.SOLMAN})
+            .withMandatoryProperty('applicationName', null, {backendType == BackendType.RFC})
 
         new Utils().pushToSWA([
             step: STEP_NAME,
@@ -129,7 +131,6 @@ void call(parameters = [:]) {
                     case BackendType.CTS:
                         cm.uploadFileToTransportRequestCTS(
                             configuration.transportRequestId,
-                            configuration.applicationId,
                             configuration.filePath,
                             configuration.changeManagement.endpoint,
                             configuration.changeManagement.credentialsId,
@@ -140,7 +141,7 @@ void call(parameters = [:]) {
                             configuration.changeManagement.rfc.dockerImage,
                             configuration.changeManagement.rfc.dockerOptions ?: [],
                             configuration.transportRequestId,
-                            configuration.applicationId,
+                            configuration.applicationName,
                             configuration.applicationUrl,
                             configuration.changeManagement.endpoint,
                             configuration.changeManagement.credentialsId,
