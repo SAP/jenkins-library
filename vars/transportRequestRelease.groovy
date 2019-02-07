@@ -56,6 +56,7 @@ void call(parameters = [:]) {
             .withMandatoryProperty('changeManagement/git/to')
             .withMandatoryProperty('changeManagement/git/from')
             .withMandatoryProperty('changeManagement/git/format')
+            .withMandatoryProperty('changeManagement/rfc/developmetInstance', null, { backendType == BackendType.RFC})
             .withMandatoryProperty('changeManagement/rfc/developmentClient', null, { backendType == BackendType.RFC})
 
         configuration = configHelper.use()
@@ -120,6 +121,7 @@ void call(parameters = [:]) {
                             configuration.changeManagement.rfc.dockerOptions,
                             configuration.transportRequestId,
                             configuration.changeManagement.endpoint,
+                            configuration.changeManagement.rfc.developmentInstance,
                             configuration.changeManagement.rfc.developmentClient,
                             configuration.changeManagement.credentialsId)
                         break
