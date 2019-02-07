@@ -60,6 +60,7 @@ void call(parameters = [:]) {
             .withMandatoryProperty('transportType', null, { backendType == BackendType.CTS})
             .withMandatoryProperty('targetSystem', null, { backendType == BackendType.CTS})
             .withMandatoryProperty('description', null, { backendType == BackendType.CTS})
+            .withMandatoryProperty('changeManagement/rfc/developmentInstance', null, {backendType == BackendType.RFC})
             .withMandatoryProperty('changeManagement/rfc/developmentClient', null, {backendType == BackendType.RFC})
 
         def changeDocumentId = null
@@ -110,7 +111,8 @@ void call(parameters = [:]) {
                                                                configuration.changeManagement.rfc.dockerImage,
                                                                configuration.changeManagement.rfc.dockerOptions ?: [],
                                                                configuration.changeManagement.endpoint,
-                                                               configuration.changeManagement.rfc.client,
+                                                               onfiguration.changeManagement.rfc.developmentInstance,
+                                                               configuration.changeManagement.rfc.developmenClient,
                                                                configuration.changeManagement.credentialsId,
                                                                configuration.description)
                 } else {
