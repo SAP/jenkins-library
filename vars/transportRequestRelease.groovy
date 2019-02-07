@@ -24,8 +24,7 @@ import static com.sap.piper.cm.StepHelpers.getBackendTypeAndLogInfoIfCMIntegrati
 
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS.plus([
     'changeDocumentId',
-    'transportRequestId',
-    'developmentClient', // RFC only
+    'transportRequestId'
   ])
 
 void call(parameters = [:]) {
@@ -57,7 +56,7 @@ void call(parameters = [:]) {
             .withMandatoryProperty('changeManagement/git/to')
             .withMandatoryProperty('changeManagement/git/from')
             .withMandatoryProperty('changeManagement/git/format')
-            .withMandatoryProperty('developmentClient', null, { backendType == BackendType.RFC})
+            .withMandatoryProperty('changeManagement/rfc/developmentClient', null, { backendType == BackendType.RFC})
 
         configuration = configHelper.use()
 
@@ -121,7 +120,7 @@ void call(parameters = [:]) {
                             configuration.changeManagement.rfc.dockerOptions,
                             configuration.transportRequestId,
                             configuration.changeManagement.endpoint,
-                            configuration.developmentClient,
+                            configuration.changeManagement.rfc.developmentClient,
                             configuration.changeManagement.credentialsId)
                         break
 
