@@ -271,6 +271,8 @@ public class ChangeManagement implements Serializable {
 
                     dockerOptions = dockerOptions.plus(args)
 
+                    // user and password are masked by withCredentials
+                    script.echo """[INFO] Executing command line: "${shArgs.script}"."""
 
                     script.dockerExecute(script: script,
                                          dockerImage: dockerImage,
@@ -291,6 +293,7 @@ public class ChangeManagement implements Serializable {
 
                     // user and password are masked by withCredentials
                     script.echo """[INFO] Executing command line: "${shArgs.script}"."""
+
                     result = script.sh(shArgs)
 
                     break
