@@ -160,14 +160,12 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
         ChangeManagement cm = new ChangeManagement(nullScript) {
             void uploadFileToTransportRequestCTS(
                                               String transportRequestId,
-                                              String applicationId,
                                               String filePath,
                                               String endpoint,
                                               String credentialsId,
                                               String cmclientOpts) {
 
                 cmUtilReceivedParams.transportRequestId = transportRequestId
-                cmUtilReceivedParams.applicationId = applicationId
                 cmUtilReceivedParams.filePath = filePath
                 cmUtilReceivedParams.endpoint = endpoint
                 cmUtilReceivedParams.credentialsId = credentialsId
@@ -184,7 +182,6 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
         assert cmUtilReceivedParams ==
             [
                 transportRequestId: '002',
-                applicationId: null,
                 filePath: '/path',
                 endpoint: 'https://example.org/cm',
                 credentialsId: 'CM',
@@ -203,7 +200,7 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
             containsString('developmentClient'),
             containsString('applicationDescription'),
             containsString('abapPackage'),
-            containsString('applicationId')))
+            containsString('applicationName')))
 
         stepRule.step.transportRequestUploadFile(script: nullScript,
                  transportRequestId: '123456', //no sanity check, can be read from git history
@@ -244,7 +241,7 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
                     dockerImage: dockerImage,
                     dockerOptions: dockerOptions,
                     transportRequestId: transportRequestId,
-                    applicationId: applicationId,
+                    applicationName: applicationId,
                     applicationURL: applicationURL,
                     endpoint: endpoint,
                     credentialsId: credentialsId,
@@ -261,7 +258,7 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
                  changeManagement: [type: 'RFC'],
                  developmentInstance:'001',
                  developmentClient: '002',
-                 applicationId: '42',
+                 applicationName: '42',
                  applicationDescription: 'Lorem ipsum',
                  abapPackage: 'XYZ',
                  cmUtils: cm,)
@@ -271,7 +268,7 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
                 dockerImage: 'rfc',
                 dockerOptions: [],
                 transportRequestId: '123456',
-                applicationId: '42',
+                applicationName: '42',
                 applicationURL: 'http://example.org/blobstore/xyz.zip',
                 endpoint: 'https://example.org/rfc',
                 credentialsId: 'CM',
@@ -312,7 +309,7 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
                  changeManagement: [type: 'RFC'],
                  developmentInstance:'001',
                  developmentClient: '002',
-                 applicationId: '42',
+                 applicationName: '42',
                  applicationDescription: 'Lorem ipsum',
                  abapPackage: 'XYZ',
                  cmUtils: cm,)
