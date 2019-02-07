@@ -164,6 +164,7 @@ public class TransportRequestReleaseTest extends BasePiperTest {
                 List dockerOptions,
                 String transportRequestId,
                 String endpoint,
+                String developmentInstance,
                 String developmentClient,
                 String credentialsId) {
 
@@ -172,6 +173,7 @@ public class TransportRequestReleaseTest extends BasePiperTest {
                     dockerOptions: dockerOptions,
                     transportRequestId: transportRequestId,
                     endpoint: endpoint,
+                    developmentInstance: developmentInstance,
                     developmentClient: developmentClient,
                     credentialsId: credentialsId,
                 ]
@@ -181,7 +183,12 @@ public class TransportRequestReleaseTest extends BasePiperTest {
         stepRule.step.transportRequestRelease(
             script: nullScript,
             transportRequestId: '002',
-            changeManagement: [rfc: [developmentClient: '003']],
+            changeManagement: [
+                rfc: [
+                    developmentClient: '003',
+                    developmentInstance: '002',
+                ]
+            ],
             cmUtils: cm)
 
         assert receivedParameters == [
@@ -189,6 +196,7 @@ public class TransportRequestReleaseTest extends BasePiperTest {
                     dockerOptions: [],
                     transportRequestId: '002',
                     endpoint: 'https://example.org/rfc',
+                    developmentInstance: '002',
                     developmentClient: '003',
                     credentialsId: 'CM',
                 ]
@@ -263,6 +271,7 @@ public class TransportRequestReleaseTest extends BasePiperTest {
                 List dockerOptions,
                 String transportRequestId,
                 String endpoint,
+                String developmentInstance,
                 String developmentClient,
                 String credentialsId) {
 
@@ -273,7 +282,12 @@ public class TransportRequestReleaseTest extends BasePiperTest {
         stepRule.step.transportRequestRelease(
             script: nullScript,
             transportRequestId: '002',
-            changeManagement: [rfc: [developmentClient: '003']],
+            changeManagement: [
+                rfc: [
+                    developmentClient: '003',
+                    developmentInstance: '002'
+                ]
+            ],
             cmUtils: cm)
 
     }

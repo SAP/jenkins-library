@@ -23,7 +23,6 @@ import static com.sap.piper.cm.StepHelpers.getBackendTypeAndLogInfoIfCMIntegrati
 @Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS.plus([
       'applicationName', // RFC
       'applicationId', // SOLMAN
-      'developmentInstance',
       'applicationDescription',
       'abapPackage',
     ])
@@ -67,7 +66,7 @@ void call(parameters = [:]) {
             .withMandatoryProperty('changeManagement/git/format')
             .withMandatoryProperty('filePath', null, { backendType in [BackendType.SOLMAN, BackendType.CTS] })
             .withMandatoryProperty('applicationUrl', null, { backendType == BackendType.RFC })
-            .withMandatoryProperty('developmentInstance', null, { backendType == BackendType.RFC })
+            .withMandatoryProperty('changeManagement/rfc/developmentInstance', null, { backendType == BackendType.RFC })
             .withMandatoryProperty('changeManagement/rfc/developmentClient', null, { backendType == BackendType.RFC })
             .withMandatoryProperty('applicationDescription', null, { backendType == BackendType.RFC })
             .withMandatoryProperty('abapPackage', null, { backendType == BackendType.RFC })
@@ -145,7 +144,7 @@ void call(parameters = [:]) {
                             configuration.applicationUrl,
                             configuration.changeManagement.endpoint,
                             configuration.changeManagement.credentialsId,
-                            configuration.developmentInstance,
+                            configuration.changeManagement.rfc.developmentInstance,
                             configuration.changeManagement.rfc.developmentClient,
                             configuration.applicationDescription,
                             configuration.abapPackage)
