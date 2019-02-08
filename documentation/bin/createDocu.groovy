@@ -72,7 +72,7 @@ class TemplateHelper {
 
         parameters.keySet().toSorted().each {
             def props = parameters.get(it)
-            t += "| `${it}` | ${props.GENERAL_CONFIG ? 'X' : ''} | ${props.STEP_CONFIG ? 'X' : ''} | ${props.STAGE_CONFIG ? 'X' : ''} |\n"
+            t += "| `${it}` | ${props.GENERAL_CONFIG ? 'X' : ''} | ${props.STEP_CONFIG ? 'X' : ''} | ${props.STAGE_CONFIG ? 'X' : ''} |\n"
         }
 
         t.trim()
@@ -418,6 +418,19 @@ for (step in steps) {
     }
 }
 
+// replace @see tag in docu by docu from referenced step.
+for(step in stepDescriptors) {
+    if(step.value.parameters) {
+        for(param in step.value.parameters) {
+            if( param?.value?.docu?.contains('@see')) {
+                def otherStep = param.value.docu.replaceAll('@see', '').trim()
+                param.value.docu = fetchTextFrom(otherStep, param.key, stepDescriptors)
+                param.value.mandatory = fetchMandatoryFrom(otherStep, param.key, stepDescriptors)
+            }
+        }
+    }
+}
+
 for(step in stepDescriptors) {
     try {
         renderStep(step.key, step.value)
@@ -459,6 +472,26 @@ void renderStep(stepName, stepProperties) {
                 TemplateHelper.createStepConfigurationSection(stepProperties.parameters))
     }
     theStepDocu.withWriter { w -> w.write text }
+}
+
+def fetchTextFrom(def step, def parameterName, def steps) {
+    try {
+        def docuFromOtherStep = steps[step]?.parameters[parameterName]?.docu
+        if(! docuFromOtherStep) throw new IllegalStateException("No docu found for parameter '${parameterName}' in step ${step}.")
+        return docuFromOtherStep
+    } catch(e) {
+        System.err << "[ERROR] Cannot retrieve docu for parameter ${parameterName} from step ${step}.\n"
+        throw e
+    }
+}
+
+def fetchMandatoryFrom(def step, def parameterName, def steps) {
+    try {
+        return steps[step]?.parameters[parameterName]?.mandatory
+    } catch(e) {
+        System.err << "[ERROR] Cannot retrieve docu for parameter ${parameterName} from step ${step}.\n"
+        throw e
+    }
 }
 
 def handleStep(stepName, prepareDefaultValuesStep, gse) {

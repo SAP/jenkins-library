@@ -154,8 +154,11 @@ steps:
       - 'tests'
     testReportFilePath: 'cst-report.json'
   dockerExecute:
+    dockerPullImage: true
+    sidecarPullImage: true
     stashContent: []
   dockerExecuteOnKubernetes:
+    dockerPullImage: true
     stashContent: []
     stashIncludes:
       workspace: '**/*'
@@ -314,6 +317,7 @@ steps:
     toJson: false
     toHtml: false
   testsPublishResults:
+    failOnError: false
     junit:
       pattern: '**/TEST-*.xml'
       updateResults: false
