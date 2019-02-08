@@ -46,14 +46,11 @@ void call(Map parameters = [:]) {
             stepParam1: parameters?.script == null
         ], configuration)
 
-        // UNIT TESTS
         publishJUnitReport(configuration.get('junit'))
-        // CODE COVERAGE
         publishJacocoReport(configuration.get('jacoco'))
         publishCoberturaReport(configuration.get('cobertura'))
-        // PERFORMANCE
         publishJMeterReport(configuration.get('jmeter'))
-        // handle the results
+
         if (configuration.failOnError && JenkinsUtils.hasTestFailures(script.currentBuild)) {
             script.currentBuild.result = 'FAILURE'
             error "[${STEP_NAME}] Some tests failed!"
