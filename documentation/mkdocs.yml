@@ -1,6 +1,6 @@
 site_name: Jenkins 2.0 Pipelines
 nav:
-    - Home: index.md
+    - Home: ../README.md
     - Configuration: configuration.md
     - 'Library steps':
         - artifactSetVersion: steps/artifactSetVersion.md
