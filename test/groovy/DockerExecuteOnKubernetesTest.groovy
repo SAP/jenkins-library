@@ -53,6 +53,7 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
     def envList = []
     def portList = []
     def containerCommands = []
+    def pullImageMap = [:]
 
 
     @Before
@@ -78,6 +79,7 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
                 if (option.command) {
                     containerCommands.add(option.command)
                 }
+                pullImageMap.put(option.image.toString(), option.alwaysPullImage)
             }
             body()
         })
@@ -287,6 +289,50 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
         assertThat(containerCommands, hasItem('/busybox/tail -f /dev/null'))
     }
 
+    @Test
+    void testSkipDockerImagePull() throws Exception {
+        stepRule.step.dockerExecuteOnKubernetes(
+            script: nullScript,
+            dockerPullImage: false,
+            containerMap: ['maven:3.5-jdk-8-alpine': 'mavenexecute']
+        ) {
+            container(name: 'mavenexecute') {
+                bodyExecuted = true
+            }
+        }
+        assertEquals(false, pullImageMap.get('maven:3.5-jdk-8-alpine'))
+        assertTrue(bodyExecuted)
+    }
+
+    @Test
+    void testSkipSidecarImagePull() throws Exception {
+        stepRule.step.dockerExecuteOnKubernetes(
+            script: nullScript,
+            juStabUtils: utils,
+            containerCommands: ['selenium/standalone-chrome': ''],
+            containerEnvVars: [
+                'selenium/standalone-chrome': ['customEnvKey': 'customEnvValue']
+            ],
+            containerMap: [
+                'maven:3.5-jdk-8-alpine': 'mavenexecute',
+                'selenium/standalone-chrome': 'selenium'
+            ],
+            containerName: 'mavenexecute',
+            containerWorkspaces: [
+                'selenium/standalone-chrome': ''
+            ],
+            containerPullImageFlags: [
+                'maven:3.5-jdk-8-alpine': true,
+                'selenium/standalone-chrome': false
+            ],
+            dockerWorkspace: '/home/piper'
+        ) {
+            bodyExecuted = true
+        }
+        assertEquals(true, pullImageMap.get('maven:3.5-jdk-8-alpine'))
+        assertEquals(false, pullImageMap.get('selenium/standalone-chrome'))
+        assertTrue(bodyExecuted)
+    }
 
     private container(options, body) {
         containerName = options.name
