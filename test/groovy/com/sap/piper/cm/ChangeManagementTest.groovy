@@ -188,13 +188,13 @@ public void testGetCommandLineWithCMClientOpts() {
 
         assert dockerExecuteRule.dockerParams.dockerImage == 'rfc'
 
-        assert dockerExecuteRule.dockerParams.dockerOptions == [
-            '--env TRANSPORT_DESCRIPTION=Lorem ipsum',
-            '--env ABAP_DEVELOPMENT_INSTANCE=001',
-            '--env ABAP_DEVELOPMENT_CLIENT=01',
-            '--env ABAP_DEVELOPMENT_SERVER=https://example.org/rfc',
-            '--env ABAP_DEVELOPMENT_USER=user',
-            '--env ABAP_DEVELOPMENT_PASSWORD=password'
+        assert dockerExecuteRule.dockerParams.dockerEnvVars == [
+            TRANSPORT_DESCRIPTION: 'Lorem ipsum',
+            ABAP_DEVELOPMENT_INSTANCE: '001',
+            ABAP_DEVELOPMENT_CLIENT: '01',
+            ABAP_DEVELOPMENT_SERVER: 'https://example.org/rfc',
+            ABAP_DEVELOPMENT_USER: 'user',
+            ABAP_DEVELOPMENT_PASSWORD: 'password',
         ]
 
         assert transportRequestId == 'XYZK9000004'
@@ -292,17 +292,17 @@ public void testGetCommandLineWithCMClientOpts() {
 
             assert dockerExecuteRule.dockerParams.dockerImage == 'rfc'
 
-            assert dockerExecuteRule.dockerParams.dockerOptions ==
+            assert dockerExecuteRule.dockerParams.dockerEnvVars ==
             [
-                '--env ABAP_DEVELOPMENT_INSTANCE=01',
-                '--env ABAP_DEVELOPMENT_CLIENT=00',
-                '--env ABAP_APPLICATION_NAME=001',
-                '--env ABAP_APPLICATION_DESC=Lorem ipsum',
-                '--env ABAP_PACKAGE=XYZ',
-                '--env ZIP_FILE_URL=https://example.org/mypath/deployArtifact.zip',
-                '--env ABAP_DEVELOPMENT_SERVER=https://example.org/rfc',
-                '--env ABAP_DEVELOPMENT_USER=user',
-                '--env ABAP_DEVELOPMENT_PASSWORD=password',
+                ABAP_DEVELOPMENT_INSTANCE: '01',
+                ABAP_DEVELOPMENT_CLIENT: '00',
+                ABAP_APPLICATION_NAME: '001',
+                ABAP_APPLICATION_DESC: 'Lorem ipsum',
+                ABAP_PACKAGE: 'XYZ',
+                ZIP_FILE_URL: 'https://example.org/mypath/deployArtifact.zip',
+                ABAP_DEVELOPMENT_SERVER: 'https://example.org/rfc',
+                ABAP_DEVELOPMENT_USER: 'user',
+                ABAP_DEVELOPMENT_PASSWORD: 'password',
             ]
 
             assertThat(script.shell, contains('cts uploadToABAP:002'))
@@ -394,16 +394,14 @@ public void testGetCommandLineWithCMClientOpts() {
             '001',
             'me')
 
-        List stringDockerOptions = []
-        for(item in dockerExecuteRule.dockerParams.dockerOptions)
-        {
-            stringDockerOptions = stringDockerOptions.plus([item.toString()])
-        }
-        assertThat(stringDockerOptions, hasItem('--env ABAP_DEVELOPMENT_SERVER=https://example.org'))
-        assertThat(stringDockerOptions, hasItem('--env ABAP_DEVELOPMENT_USER=user'))
-        assertThat(stringDockerOptions, hasItem('--env ABAP_DEVELOPMENT_PASSWORD=password'))
-        assertThat(stringDockerOptions, hasItem('--env ABAP_DEVELOPMENT_CLIENT=001'))
-        assertThat(stringDockerOptions, hasItem('--env ABAP_DEVELOPMENT_INSTANCE=002'))
+        assert dockerExecuteRule.dockerParams.dockerEnvVars == [
+            ABAP_DEVELOPMENT_SERVER: 'https://example.org',
+            ABAP_DEVELOPMENT_USER: 'user',
+            ABAP_DEVELOPMENT_PASSWORD: 'password',
+            ABAP_DEVELOPMENT_CLIENT: '001',
+            ABAP_DEVELOPMENT_INSTANCE: '002',
+        ]
+
         assertThat(script.shell, hasItem('cts releaseTransport:002'))
     }
 

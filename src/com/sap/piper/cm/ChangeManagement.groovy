@@ -111,11 +111,11 @@ public class ChangeManagement implements Serializable {
         String description) {
 
         def command = 'cts createTransportRequest'
-        List args = [
-            "--env TRANSPORT_DESCRIPTION=${description}",
-            "--env ABAP_DEVELOPMENT_INSTANCE=${developmentInstance}",
-            "--env ABAP_DEVELOPMENT_CLIENT=${developmentClient}",
-            ]
+        def args = [
+            TRANSPORT_DESCRIPTION: description,
+            ABAP_DEVELOPMENT_INSTANCE: developmentInstance,
+            ABAP_DEVELOPMENT_CLIENT: developmentClient,
+        ]
 
         try {
 
@@ -212,12 +212,12 @@ public class ChangeManagement implements Serializable {
         String abapPackage) {
 
         def args = [
-                "--env ABAP_DEVELOPMENT_INSTANCE=${developmentInstance}",
-                "--env ABAP_DEVELOPMENT_CLIENT=${developmentClient}",
-                "--env ABAP_APPLICATION_NAME=${applicationName}",
-                "--env ABAP_APPLICATION_DESC=${applicationDescription}",
-                "--env ABAP_PACKAGE=${abapPackage}",
-                "--env ZIP_FILE_URL=${filePath}",
+            ABAP_DEVELOPMENT_INSTANCE: developmentInstance,
+            ABAP_DEVELOPMENT_CLIENT: developmentClient,
+            ABAP_APPLICATION_NAME: applicationName,
+            ABAP_APPLICATION_DESC: applicationDescription,
+            ABAP_PACKAGE: abapPackage,
+            ZIP_FILE_URL: filePath,
         ]
 
         int rc = executeWithCredentials(
@@ -242,7 +242,7 @@ public class ChangeManagement implements Serializable {
                                String endpoint,
                                String credentialsId,
                                String command,
-                               List args,
+                               def args,
                                boolean returnStdout = false,
                                String clientOpts = '') {
 
@@ -265,21 +265,24 @@ public class ChangeManagement implements Serializable {
 
                 case BackendType.RFC:
 
+                    if(! (args in Map)) {
+                        throw new IllegalArgumentException("args expected as Map for backend types ${[BackendType.RFC]}")
+                    }
+
                     shArgs.script = command
 
                     args = args.plus([
-                        "--env ABAP_DEVELOPMENT_SERVER=${endpoint}",
-                        "--env ABAP_DEVELOPMENT_USER=${script.username}",
-                        "--env ABAP_DEVELOPMENT_PASSWORD=${script.password}"])
-
-                    dockerOptions = dockerOptions.plus(args)
+                        ABAP_DEVELOPMENT_SERVER: endpoint,
+                        ABAP_DEVELOPMENT_USER: script.username,
+                        ABAP_DEVELOPMENT_PASSWORD: script.password,
+                    ])
 
                     // user and password are masked by withCredentials
                     script.echo """[INFO] Executing command line: "${shArgs.script}"."""
 
                     script.dockerExecute(script: script,
                                          dockerImage: dockerImage,
-                                         dockerOptions: dockerOptions ) {
+                                         dockerEnvVars: args ) {
 
                         result = script.sh(shArgs)
 
@@ -289,6 +292,9 @@ public class ChangeManagement implements Serializable {
 
                 case BackendType.SOLMAN:
                 case BackendType.CTS:
+
+                    if(! (args in Collection))
+                        throw new IllegalArgumentException("args expected as Collection for backend types ${[BackendType.SOLMAN, BackendType.CTS]}")
 
                     shArgs.script = getCMCommandLine(type, endpoint, script.username, script.password,
                         command, args,
@@ -374,8 +380,9 @@ public class ChangeManagement implements Serializable {
 
         def cmd = "cts releaseTransport:${transportRequestId}"
         def args = [
-            "--env ABAP_DEVELOPMENT_INSTANCE=${developmentInstance}",
-            "--env ABAP_DEVELOPMENT_CLIENT=${developmentClient}"]
+            ABAP_DEVELOPMENT_INSTANCE: developmentInstance,
+            ABAP_DEVELOPMENT_CLIENT: developmentClient,
+        ]
 
         int rc = executeWithCredentials(
             BackendType.RFC,
