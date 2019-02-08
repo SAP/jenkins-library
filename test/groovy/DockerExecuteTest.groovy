@@ -2,7 +2,6 @@ import com.sap.piper.k8s.ContainerMap
 import com.sap.piper.JenkinsUtils
 
 import org.junit.Before
-import org.junit.Ignore
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.RuleChain
@@ -128,7 +127,6 @@ class DockerExecuteTest extends BasePiperTest {
     }
 
     @Test
-    @Ignore
     void testExecuteInsideDockerContainer() throws Exception {
         stepRule.step.dockerExecute(script: nullScript, dockerImage: 'maven:3.5-jdk-8-alpine') {
             bodyExecuted = true
@@ -137,6 +135,38 @@ class DockerExecuteTest extends BasePiperTest {
         assertTrue(docker.isImagePulled())
         assertEquals('--env http_proxy --env https_proxy --env no_proxy --env HTTP_PROXY --env HTTPS_PROXY --env NO_PROXY', docker.getParameters().trim())
         assertTrue(bodyExecuted)
+    }
+
+    @Test
+    void testSkipDockerImagePull() throws Exception {
+        nullScript.commonPipelineEnvironment.configuration = [steps:[dockerExecute:[dockerPullImage: false]]]
+        stepRule.step.dockerExecute(
+            script: nullScript,
+            dockerImage: 'maven:3.5-jdk-8-alpine'
+        ) {
+            bodyExecuted = true
+        }
+        assertThat(docker.imagePullCount, is(0))
+        assertThat(bodyExecuted, is(true))
+    }
+
+    @Test
+    void testSkipSidecarImagePull() throws Exception {
+        stepRule.step.dockerExecute(
+            script: nullScript,
+            dockerName: 'maven',
+            dockerImage: 'maven:3.5-jdk-8-alpine',
+            sidecarEnvVars: ['testEnv':'testVal'],
+            sidecarImage: 'selenium/standalone-chrome',
+            sidecarVolumeBind: ['/dev/shm':'/dev/shm'],
+            sidecarName: 'testAlias',
+            sidecarPorts: ['4444':'4444', '1111':'1111'],
+            sidecarPullImage: false
+        ) {
+            bodyExecuted = true
+        }
+        assertThat(docker.imagePullCount, is(1))
+        assertThat(bodyExecuted, is(true))
     }
 
     @Test
@@ -183,7 +213,6 @@ class DockerExecuteTest extends BasePiperTest {
     }
 
     @Test
-    @Ignore
     void testSidecarDefault(){
         stepRule.step.dockerExecute(
             script: nullScript,

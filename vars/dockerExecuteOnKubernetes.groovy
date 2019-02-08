@@ -1,6 +1,7 @@
 import static com.sap.piper.Prerequisites.checkScript
 
 import com.sap.piper.ConfigurationHelper
+import com.sap.piper.GenerateDocumentation
 import com.sap.piper.JenkinsUtils
 import com.sap.piper.Utils
 import com.sap.piper.k8s.SystemEnv
@@ -9,23 +10,89 @@ import hudson.AbortException
 
 @Field def STEP_NAME = getClass().getName()
 @Field def PLUGIN_ID_KUBERNETES = 'kubernetes'
-@Field Set GENERAL_CONFIG_KEYS = ['jenkinsKubernetes']
-@Field Set PARAMETER_KEYS = [
-    'containerCommand', // specify start command for container created with dockerImage parameter to overwrite Piper default (`/usr/bin/tail -f /dev/null`).
-    'containerCommands', //specify start command for containers to overwrite Piper default (`/usr/bin/tail -f /dev/null`). If container's default start command should be used provide empty string like: `['selenium/standalone-chrome': '']`
-    'containerEnvVars', //specify environment variables per container. If not provided dockerEnvVars will be used
-    'containerMap', //specify multiple images which then form a kubernetes pod, example: containerMap: ['maven:3.5-jdk-8-alpine': 'mavenexecute','selenium/standalone-chrome': 'selenium']
-    'containerName', //optional configuration in combination with containerMap to define the container where the commands should be executed in
-    'containerPortMappings', //map which defines per docker image the port mappings, like containerPortMappings: ['selenium/standalone-chrome': [[name: 'selPort', containerPort: 4444, hostPort: 4444]]]
-    'containerShell', // allows to specify the shell to be executed for container with containerName
-    'containerWorkspaces', //specify workspace (=home directory of user) per container. If not provided dockerWorkspace will be used. If empty, home directory will not be set.
-    'dockerImage',
-    'dockerWorkspace',
-    'dockerEnvVars',
-    'stashContent'
-]
-@Field Set STEP_CONFIG_KEYS = PARAMETER_KEYS.plus(['stashIncludes', 'stashExcludes'])
 
+@Field Set GENERAL_CONFIG_KEYS = [
+    'jenkinsKubernetes'
+]
+@Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS.plus([
+    /**
+     * Allows to specify start command for container created with dockerImage parameter to overwrite Piper default (`/usr/bin/tail -f /dev/null`).
+     */
+    'containerCommand',
+    /**
+     * Specifies start command for containers to overwrite Piper default (`/usr/bin/tail -f /dev/null`).
+     * If container's defaultstart command should be used provide empty string like: `['selenium/standalone-chrome': '']`.
+     */
+    'containerCommands',
+    /**
+     * Specifies environment variables per container. If not provided `dockerEnvVars` will be used.
+     */
+    'containerEnvVars',
+    /**
+     * A map of docker image to the name of the container. The pod will be created with all the images from this map and they are labled based on the value field of each map entry.
+     * Example: `['maven:3.5-jdk-8-alpine': 'mavenExecute', 'selenium/standalone-chrome': 'selenium', 'famiko/jmeter-base': 'checkJMeter', 's4sdk/docker-cf-cli': 'cloudfoundry']`
+     */
+    'containerMap',
+    /**
+     * Optional configuration in combination with containerMap to define the container where the commands should be executed in.
+     */
+    'containerName',
+    /**
+     * Map which defines per docker image the port mappings, e.g. `containerPortMappings: ['selenium/standalone-chrome': [[name: 'selPort', containerPort: 4444, hostPort: 4444]]]`.
+     */
+    'containerPortMappings',
+    /**
+     * Specifies the pullImage flag per container.
+     */
+    'containerPullImageFlags',
+    /**
+     * Allows to specify the shell to be executed for container with containerName.
+     */
+    'containerShell',
+    /**
+     * Specifies a dedicated user home directory per container which will be passed as value for environment variable `HOME`. If not provided `dockerWorkspace` will be used.
+     */
+    'containerWorkspaces',
+    /**
+     * Environment variables to set in the container, e.g. [http_proxy:'proxy:8080'].
+     */
+    'dockerEnvVars',
+    /**
+     * Name of the docker image that should be used. If empty, Docker is not used.
+     */
+    'dockerImage',
+    /**
+     * Set this to 'false' to bypass a docker image pull.
+     * Usefull during development process. Allows testing of images which are available in the local registry only.
+     */
+    'dockerPullImage',
+    /**
+     * Specifies a dedicated user home directory for the container which will be passed as value for environment variable `HOME`.
+     */
+    'dockerWorkspace',
+    /**
+     * Specific stashes that should be considered for the step execution.
+     */
+    'stashContent',
+    /**
+     *
+     */
+    'stashExcludes',
+    /**
+     *
+     */
+    'stashIncludes'
+])
+@Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS.minus([
+    'stashIncludes',
+    'stashExcludes'
+])
+
+/**
+ * Executes a closure inside a container in a kubernetes pod.
+ * Proxy environment variables defined on the Jenkins machine are also available in the container.
+ */
+@GenerateDocumentation
 void call(Map parameters = [:], body) {
     handlePipelineStepErrors(stepName: STEP_NAME, stepParameters: parameters) {
 
@@ -115,7 +182,7 @@ chown -R 1000:1000 ."""
         stash(
             name: stashName,
             includes: config.stashIncludes.workspace,
-            excludes: config.stashExcludes.excludes
+            excludes: config.stashExcludes.workspace
         )
         return stashName
     } catch (AbortException | IOException e) {
@@ -133,17 +200,17 @@ private void unstashWorkspace(config, prefix) {
 }
 
 private List getContainerList(config) {
-
     result = []
     result.push(containerTemplate(
         name: 'jnlp',
         image: config.jenkinsKubernetes.jnlpAgent
     ))
     config.containerMap.each { imageName, containerName ->
+        def containerPullImage = config.containerPullImageFlags?.get(imageName)
         def templateParameters = [
             name: containerName.toLowerCase(),
             image: imageName,
-            alwaysPullImage: true,
+            alwaysPullImage: containerPullImage != null ? containerPullImage : config.dockerPullImage,
             envVars: getContainerEnvs(config, imageName)
         ]
 
@@ -166,7 +233,7 @@ private List getContainerList(config) {
     return result
 }
 
-/**
+/*
  * Returns a list of envVar object consisting of set
  * environment variables, params (Parametrized Build) and working directory.
  * (Kubernetes-Plugin only!)
