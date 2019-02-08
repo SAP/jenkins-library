@@ -157,7 +157,7 @@ void call(parameters = [:]) {
             }
 
 
-        def uploadedMessage = ["[INFO] File '${configuration.filePath}' has been successfully uploaded to transport request '${configuration.transportRequestId}'"]
+        def uploadedMessage = ["[INFO] File '${backendType == BackendType.RFC ? configuration.applicationUrl : configuration.filePath}' has been successfully uploaded to transport request '${configuration.transportRequestId}'"]
         if(backendType == BackendType.SOLMAN)
             uploadedMessage << " of change document '${configuration.changeDocumentId}'"
         uploadedMessage << '.'
