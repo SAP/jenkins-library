@@ -35,6 +35,7 @@ nav:
         - transportRequestCreate: steps/transportRequestCreate.md
         - transportRequestRelease:  steps/transportRequestRelease.md
         - transportRequestUploadFile: steps/transportRequestUploadFile.md
+        - uiVeri5ExecuteTests: steps/uiVeri5ExecuteTests.md
     - 'Scenarios':
         - 'Build and Deploy Hybrid Applications with Jenkins and SAP Solution Manager': scenarios/changeManagement.md
         - 'Create a Pipeline for SAP UI5 or SAP Fiori on SAP Cloud Platform': scenarios/ui5-sap-cp/Readme.md
