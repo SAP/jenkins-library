@@ -137,7 +137,7 @@ class TestsPublishResultsTest extends BasePiperTest {
     }
 
     @Test
-    void testBuildResultStatusWithTestFailures() throws Exception {
+    void testBuildWithTestFailuresAndWithoutFailOnError() throws Exception {
         nullScript.currentBuild.getRawBuild = {
             return [getAction: { type ->
                 return [getFailCount: {
@@ -151,7 +151,7 @@ class TestsPublishResultsTest extends BasePiperTest {
     }
 
     @Test
-    void testBuildResultStatusWithFailOnError() throws Exception {
+    void testBuildWithTestFailuresAndWithFailOnError() throws Exception {
         nullScript.currentBuild.getRawBuild = {
             return [getAction: { type ->
                 return [getFailCount: {
