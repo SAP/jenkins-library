@@ -55,7 +55,9 @@ testsPublishResults script: this, junit: [pattern: '**/newman/TEST-*.xml']
 
 We recommend to define values of step parameters via [config.yml file](../configuration.md).
 
-In following sections the configuration is possible:| parameter | general | step | stage |
+In following sections the configuration is possible:
+
+| parameter | general | step | stage |
 |-----------|---------|------|-------|
 | `dockerImage` |  | X | X |
 | `failOnError` |  | X | X |
