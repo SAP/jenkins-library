@@ -34,7 +34,7 @@ node(){
   }
 
   stage('Build')   {
-      mtaBuild script:this, buildTarget:'CF'
+      mtaBuild script:this
   }
 
   stage('Deploy')   {
