@@ -17,9 +17,7 @@ Set up a basic continuous delivery process for developing applications according
 
 The Application Programming Model for SAP Cloud Platform is an end-to-end best practice guide for developing applications on SAP Cloud Platform and provides a supportive set of APIs, languages, and libraries. For more information about the SAP Cloud Application Programming Model, see [Working with the SAP Cloud Application Programming Model](https://help.sap.com/viewer/65de2977205c403bbc107264b8eccf4b/Cloud/en-US/00823f91779d4d42aa29a498e0535cdf.html).
 
-In this scenario, we want to show how to implement a basic continuous delivery process for developing applications according to this programming model with the help of project "Piper" on Jenkins.
-
-**Note**: This document does not provide you with a fully developed continuous integration (CI) and continuous delivery (CD) pipeline but describes a basic scenario to implement automatisation, which you can adapt and enrich according to your specific needs.
+In this scenario, we want to show how to implement a basic continuous delivery process for developing applications according to this programming model with the help of project "Piper" on Jenkins. This basic scenario can be adapted and enriched according to your specific needs.
 
 ## Example
 
