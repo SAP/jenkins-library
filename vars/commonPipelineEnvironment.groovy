@@ -1,3 +1,6 @@
+import com.sap.piper.ConfigurationLoader
+import com.sap.piper.ConfigurationMerger
+
 class commonPipelineEnvironment implements Serializable {
     Map configProperties = [:]
 
@@ -134,4 +137,18 @@ class commonPipelineEnvironment implements Serializable {
     def getPipelineMeasurement(key) {
         return influxCustomDataMap.pipeline_data[key]
     }
+
+    Map getStepConfiguration(stepName, stageName = env.STAGE_NAME, includeDefaults = true) {
+        Map defaults = [:]
+        if (includeDefaults) {
+            defaults = ConfigurationLoader.defaultGeneralConfiguration()
+            defaults = ConfigurationMerger.merge(ConfigurationLoader.defaultStepConfiguration(null, stepName), null, defaults)
+            defaults = ConfigurationMerger.merge(ConfigurationLoader.defaultStageConfiguration(null, stageName), null, defaults)
+        }
+        Map config = ConfigurationMerger.merge(configuration.get('general') ?: [:], null, defaults)
+        config = ConfigurationMerger.merge(configuration.get('steps')?.get(stepName) ?: [:], null, config)
+        config = ConfigurationMerger.merge(configuration.get('stages')?.get(stageName) ?: [:], null, config)
+        return config
+    }
+
 }

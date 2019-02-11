@@ -54,7 +54,6 @@ private void stageLocking(Map config, Closure body) {
 }
 
 private void executeStage(script, originalStage, stageName, config, utils) {
-
     boolean projectExtensions
     boolean globalExtensions
     def startTime = System.currentTimeMillis()
@@ -108,14 +107,19 @@ private void executeStage(script, originalStage, stageName, config, utils) {
             stageName: stageName,
             stepParamKey1: 'buildResult',
             stepParam1: "${script.currentBuild.currentResult}",
+            buildResult: "${script.currentBuild.currentResult}",
             stepParamKey2: 'stageStartTime',
             stepParam2: "${startTime}",
+            stageStartTime: "${startTime}",
             stepParamKey3: 'stageDuration',
             stepParam3: "${duration}",
+            stageDuration: "${duration}",
             stepParamKey4: 'projectExtension',
             stepParam4: "${projectExtensions}",
+            projectExtension: "${projectExtensions}",
             stepParamKey5: 'globalExtension',
-            stepParam5: "${globalExtensions}"
+            stepParam5: "${globalExtensions}",
+            globalExtension: "${globalExtensions}"
         ], config)
     }
 }

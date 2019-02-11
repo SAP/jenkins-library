@@ -16,6 +16,7 @@ class BasePiperTestContext {
     Script nullScript() {
         def nullScript = InvokerHelper.createScript(null, new Binding())
         nullScript.currentBuild = [:]
+        nullScript.env = [:]
         LibraryLoadingTestExecutionListener.prepareObjectInterceptors(nullScript)
         return nullScript
     }
