@@ -107,14 +107,14 @@ void call(parameters = [:]) {
                                                                configuration.changeManagement.credentialsId,
                                                                configuration.changeManagement.clientOpts)
                 } else if (backendType == BackendType.RFC) {
-                  transportRequestId = cm.createTransportRequestRFC(
-                                                               configuration.changeManagement.rfc.dockerImage,
-                                                               configuration.changeManagement.rfc.dockerOptions ?: [],
-                                                               configuration.changeManagement.endpoint,
-                                                               onfiguration.changeManagement.rfc.developmentInstance,
-                                                               configuration.changeManagement.rfc.developmenClient,
-                                                               configuration.changeManagement.credentialsId,
-                                                               configuration.description)
+                    transportRequestId = cm.createTransportRequestRFC(
+                                                                configuration.changeManagement.rfc.dockerImage,
+                                                                configuration.changeManagement.rfc.dockerOptions ?: [],
+                                                                configuration.changeManagement.endpoint,
+                                                                onfiguration.changeManagement.rfc.developmentInstance,
+                                                                configuration.changeManagement.rfc.developmenClient,
+                                                                configuration.changeManagement.credentialsId,
+                                                                configuration.description)
                 } else {
                   throw new IllegalArgumentException("Invalid backend type: '${backendType}'.")
                 }

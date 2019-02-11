@@ -236,18 +236,19 @@ public class ChangeManagement implements Serializable {
         }
     }
 
-    def executeWithCredentials(BackendType type,
-                               String dockerImage,
-                               List dockerOptions,
-                               String endpoint,
-                               String credentialsId,
-                               String command,
-                               def args,
-                               boolean returnStdout = false,
-                               String clientOpts = '') {
+    def executeWithCredentials(
+        BackendType type,
+        String dockerImage,
+        List dockerOptions,
+        String endpoint,
+        String credentialsId,
+        String command,
+        def args,
+        boolean returnStdout = false,
+        String clientOpts = '') {
 
-       def script = this.script
-       script.withCredentials([script.usernamePassword(
+        def script = this.script
+        script.withCredentials([script.usernamePassword(
             credentialsId: credentialsId,
             passwordVariable: 'password',
             usernameVariable: 'username')]) {
@@ -280,9 +281,10 @@ public class ChangeManagement implements Serializable {
                     // user and password are masked by withCredentials
                     script.echo """[INFO] Executing command line: "${shArgs.script}"."""
 
-                    script.dockerExecute(script: script,
-                                         dockerImage: dockerImage,
-                                         dockerEnvVars: args ) {
+                    script.dockerExecute(
+                        script: script,
+                        dockerImage: dockerImage,
+                        dockerEnvVars: args ) {
 
                         result = script.sh(shArgs)
 
