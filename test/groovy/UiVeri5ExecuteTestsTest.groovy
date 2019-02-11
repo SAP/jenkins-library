@@ -1,5 +1,4 @@
 #!groovy
-package steps
 
 import static org.hamcrest.Matchers.*
 
