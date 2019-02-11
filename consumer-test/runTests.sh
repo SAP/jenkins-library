@@ -2,7 +2,7 @@
 
 set -ex
 
-LIBRARY_VERSION_UNDER_TEST=${TRAVIS_COMMIT:-master}
+LIBRARY_VERSION_UNDER_TEST=$(git log --format="%H" -n 1)
 
 rm -rf workspace
 git clone -b infrastructure-integration-test https://github.com/sap/cloud-s4-sdk-book workspace
