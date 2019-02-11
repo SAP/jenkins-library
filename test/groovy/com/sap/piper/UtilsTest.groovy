@@ -38,6 +38,7 @@ class UtilsTest extends BasePiperTest {
     void setup() {
 
         parameters = [:]
+
     }
 
     @Test
@@ -69,5 +70,12 @@ class UtilsTest extends BasePiperTest {
         // asserts
         // generated with "echo -n 'ContinuousDelivery' | sha1sum | sed 's/  -//'"
         assertThat(result, is('0dad6c33b6246702132454f604dee80740f399ad'))
+    }
+
+    @Test
+    void testUnstashAllSkipNull() {
+
+        def stashResult = utils.unstashAll(['a', null, 'b'])
+        assert stashResult == ['a', 'b']
     }
 }
