@@ -27,6 +27,7 @@ jobs:
       after_script:
         - JACOCO_SOURCE_PATH="src vars test" ./cc-test-reporter format-coverage target/site/jacoco/jacoco.xml --input-type jacoco
         - ./cc-test-reporter upload-coverage
+        - cd consumer-test && chmod +x runTests.sh && ./runTests.sh
     - name: Docs Build
       if: type = pull_request
       install: docker pull squidfunk/mkdocs-material:3.0.4

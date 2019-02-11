@@ -1,4 +1,5 @@
-# Configuration for the Build-orchestrator Jenkins
+jenkins:
+  numExecutors: 10
 unclassified:
   globallibraries:
     libraries:
@@ -9,11 +10,24 @@ unclassified:
           scm:
             git:
               remote: "https://github.com/SAP/cloud-s4-sdk-pipeline-lib.git"
-#Fixme: Use master branch once https://github.com/SAP/jenkins-library/pull/477 is merged
-    - defaultVersion: "jenkins-controller"
+    - defaultVersion: "master"
       name: "piper-library-os"
       retriever:
         modernSCM:
           scm:
             git:
               remote: "https://github.com/SAP/jenkins-library.git"
+credentials:
+  system:
+    domainCredentials:
+      - credentials:
+          - usernamePassword:
+              scope: GLOBAL
+              id: "MY-ERP"
+              username: MY_USER
+              password: ${ERP_PW}
+          - usernamePassword:
+              scope: GLOBAL
+              id: "cf"
+              username: P2001099548
+              password: ${CF_PW}
