@@ -10,6 +10,19 @@ import java.util.regex.Matcher
 //
 class TemplateHelper {
 
+    static replaceTitle(def textIn, stepName) {
+        def textOut = ''
+        textIn.eachLine {
+            line, lineNumber ->
+                if (line ==~ "^#{1} .*\$" && lineNumber == 0) {
+                    textOut += "# ${stepName}\n"
+                } else {
+                    textOut += "${line}\n"
+                }
+        }
+        textOut
+    }
+
     static replaceParagraph(def textIn, int level, name, replacement) {
 
         boolean insideParagraph = false
@@ -458,6 +471,7 @@ void renderStep(stepName, stepProperties) {
     }
 
     def text = theStepDocu.text
+    text = TemplateHelper.replaceTitle(text, stepName)
     if(stepProperties.description) {
         text = TemplateHelper.replaceParagraph(text, 2, 'Description', '\n' + stepProperties.description)
     }
