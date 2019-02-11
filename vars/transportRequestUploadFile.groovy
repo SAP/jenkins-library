@@ -21,10 +21,10 @@ import static com.sap.piper.cm.StepHelpers.getBackendTypeAndLogInfoIfCMIntegrati
   ]
 
 @Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS.plus([
-      'applicationName', // RFC
-      'applicationId', // SOLMAN
-      'applicationDescription',
-      'abapPackage',
+        'applicationName', // RFC
+        'applicationId', // SOLMAN
+        'applicationDescription',
+        'abapPackage',
     ])
 
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS.plus([
