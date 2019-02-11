@@ -14,7 +14,7 @@ class TemplateHelper {
         def textOut = ''
         textIn.eachLine {
             line, lineNumber ->
-                if (line ==~ "^#{1} .*\$" && lineNumber == 0) {
+                if (lineNumber == 0 && line ==~ "^#{1} .*\$") {
                     textOut += "# ${stepName}\n"
                 } else {
                     textOut += "${line}\n"
