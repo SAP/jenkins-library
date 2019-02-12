@@ -16,7 +16,7 @@ unclassified:
         modernSCM:
           scm:
             git:
-              remote: "https://github.com/SAP/jenkins-library.git"
+              remote: "https://github.com/__REPO_SLUG__.git"
 credentials:
   system:
     domainCredentials:
