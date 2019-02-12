@@ -155,6 +155,20 @@ class CheckChangeInDevelopmentTest extends BasePiperTest {
 
     }
 
+    @Test
+    public void stageConfigIsConsideredWithParamKeysTest() {
+
+        nullScript.commonPipelineEnvironment.configuration = [stages:[hugo:[changeDocumentId:'4711']]]
+        ChangeManagement cm = getChangeManagementUtils(true, '')
+
+        stepRule.step.checkChangeInDevelopment(
+            script: nullScript,
+            cmUtils: cm,
+            changeManagement: [type: 'SOLMAN',
+                               endpoint: 'https://example.org/cm'],
+            stageName: 'hugo')
+    }
+
     private ChangeManagement getChangeManagementUtils(boolean inDevelopment, String changeDocumentId = '001') {
 
         return new ChangeManagement(nullScript, null) {
