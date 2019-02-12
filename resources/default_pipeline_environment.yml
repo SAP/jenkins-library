@@ -253,7 +253,7 @@ steps:
       - 'tests'
   pipelineRestartSteps:
     sendMail: true
-    timeoutInSeconds: 900
+    timeoutInSeconds: 300
   pipelineStashFilesAfterBuild:
     runOpaTests: false
     stashIncludes:
