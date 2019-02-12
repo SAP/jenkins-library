@@ -2,6 +2,10 @@
 
 set -ex
 
+# Workaround for our example project
+docker pull ppiper/cf-cli:latest
+docker tag localhost:5000/ppiper/cf-cli ppiper/cf-cli:latest
+
 LIBRARY_VERSION_UNDER_TEST=$(git log --format="%H" -n 1)
 
 rm -rf workspace
