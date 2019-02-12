@@ -64,7 +64,7 @@ public class ChangeManagement implements Serializable {
     }
 
     boolean isChangeInDevelopment(String changeId, String endpoint, String credentialsId, String clientOpts = '') {
-        int rc = executeWithCredentials(BackendType.SOLMAN, '', [], endpoint, credentialsId, 'is-change-in-development', ['-cID', "'${changeId}'", '--return-code'],
+        int rc = executeWithCredentials(BackendType.SOLMAN, [:], endpoint, credentialsId, 'is-change-in-development', ['-cID', "'${changeId}'", '--return-code'],
             false,
             clientOpts) as int
 
@@ -79,7 +79,7 @@ public class ChangeManagement implements Serializable {
 
     String createTransportRequestCTS(String transportType, String targetSystemId, String description, String endpoint, String credentialsId, String clientOpts = '') {
         try {
-            def transportRequest = executeWithCredentials(BackendType.CTS, '', [], endpoint, credentialsId, 'create-transport',
+            def transportRequest = executeWithCredentials(BackendType.CTS, [:], endpoint, credentialsId, 'create-transport',
                     ['-tt', transportType, '-ts', targetSystemId, '-d', "\"${description}\""],
                     true,
                     clientOpts)
@@ -92,7 +92,7 @@ public class ChangeManagement implements Serializable {
     String createTransportRequestSOLMAN(String changeId, String developmentSystemId, String endpoint, String credentialsId, String clientOpts = '') {
 
         try {
-            def transportRequest = executeWithCredentials(BackendType.SOLMAN, '', [], endpoint, credentialsId, 'create-transport', ['-cID', changeId, '-dID', developmentSystemId],
+            def transportRequest = executeWithCredentials(BackendType.SOLMAN, [:], endpoint, credentialsId, 'create-transport', ['-cID', changeId, '-dID', developmentSystemId],
                 true,
                 clientOpts)
             return (transportRequest as String)?.trim()
@@ -121,8 +121,7 @@ public class ChangeManagement implements Serializable {
 
             def transportRequestId = executeWithCredentials(
                 BackendType.RFC,
-                dockerImage,
-                dockerOptions,
+                [image: dockerImage, options: dockerOptions],
                 endpoint,
                 credentialsId,
                 command,
@@ -154,8 +153,7 @@ public class ChangeManagement implements Serializable {
 
         int rc = executeWithCredentials(
             BackendType.SOLMAN,
-            '',
-            [],
+            [:],
             endpoint,
             credentialsId,
             'upload-file-to-transport',
@@ -183,8 +181,7 @@ public class ChangeManagement implements Serializable {
 
         int rc = executeWithCredentials(
             BackendType.CTS,
-            '',
-            [],
+            [:],
             endpoint,
             credentialsId,
             'upload-file-to-transport',
@@ -199,8 +196,7 @@ public class ChangeManagement implements Serializable {
     }
 
     void uploadFileToTransportRequestRFC(
-        String dockerImage,
-        List dockerOptions,
+        Map docker,
         String transportRequestId,
         String applicationName,
         String filePath,
@@ -222,8 +218,7 @@ public class ChangeManagement implements Serializable {
 
         int rc = executeWithCredentials(
             BackendType.RFC,
-            dockerImage,
-            dockerOptions,
+            docker,
             endpoint,
             credentialsId,
             "cts uploadToABAP:${transportRequestId}",
@@ -238,8 +233,7 @@ public class ChangeManagement implements Serializable {
 
     def executeWithCredentials(
         BackendType type,
-        String dockerImage,
-        List dockerOptions,
+        Map docker,
         String endpoint,
         String credentialsId,
         String command,
@@ -283,8 +277,10 @@ public class ChangeManagement implements Serializable {
 
                     script.dockerExecute(
                         script: script,
-                        dockerImage: dockerImage,
-                        dockerEnvVars: args ) {
+                        dockerImage: docker.image,
+                        dockerOptions: docker.options,
+                        dockerEnvVars: (docker.envVars?:[:]).plus(args),
+                        dockerPullImage: docker.pullImage) {
 
                         result = script.sh(shArgs)
 
@@ -331,8 +327,7 @@ public class ChangeManagement implements Serializable {
 
         int rc = executeWithCredentials(
             BackendType.SOLMAN,
-            '',
-            [],
+            [:],
             endpoint,
             credentialsId,
             cmd,
@@ -358,8 +353,7 @@ public class ChangeManagement implements Serializable {
 
         int rc = executeWithCredentials(
             BackendType.CTS,
-            '',
-            [],
+            [:],
             endpoint,
             credentialsId,
             cmd,
@@ -388,8 +382,8 @@ public class ChangeManagement implements Serializable {
 
         int rc = executeWithCredentials(
             BackendType.RFC,
-            dockerImage,
-            dockerOptions,
+            [image: dockerImage,
+             options: dockerOptions],
             endpoint,
             credentialsId,
             cmd,

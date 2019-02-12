@@ -225,8 +225,7 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
         def cm = new ChangeManagement(nullScript) {
 
             void uploadFileToTransportRequestRFC(
-                String dockerImage,
-                List dockerOptions,
+                Map docker,
                 String transportRequestId,
                 String applicationId,
                 String applicationURL,
@@ -238,8 +237,7 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
                 String abapPackage) {
 
                 cmUtilsReceivedParams = [
-                    dockerImage: dockerImage,
-                    dockerOptions: dockerOptions,
+                    docker: docker,
                     transportRequestId: transportRequestId,
                     applicationName: applicationId,
                     applicationURL: applicationURL,
@@ -269,8 +267,12 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
 
         assert cmUtilsReceivedParams ==
             [
-                dockerImage: 'rfc',
-                dockerOptions: [],
+                docker: [
+                    image: 'rfc',
+                    options: [],
+                    envVars: [:],
+                    imagePull: true
+                ],
                 transportRequestId: '123456',
                 applicationName: '42',
                 applicationURL: 'http://example.org/blobstore/xyz.zip',
@@ -292,8 +294,7 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
         def cm = new ChangeManagement(nullScript) {
 
             void uploadFileToTransportRequestRFC(
-                String dockerImage,
-                List dockerOptions,
+                Map docker,
                 String transportRequestId,
                 String applicationId,
                 String applicationURL,
@@ -313,6 +314,12 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
                  changeManagement: [
                      type: 'RFC',
                      rfc: [
+                         docker: [
+                             image: 'rfc',
+                             options: [],
+                             envVars: [:],
+                             imagePull: false,
+                         ],
                          developmentClient: '002',
                          developmentInstance: '001',
                          ]

@@ -68,6 +68,10 @@ void call(parameters = [:]) {
             .withMandatoryProperty('applicationUrl', null, { backendType == BackendType.RFC })
             .withMandatoryProperty('changeManagement/rfc/developmentInstance', null, { backendType == BackendType.RFC })
             .withMandatoryProperty('changeManagement/rfc/developmentClient', null, { backendType == BackendType.RFC })
+            .withMandatoryProperty('changeManagement/rfc/docker/image', null, {backendType == BackendType.RFC})
+            .withMandatoryProperty('changeManagement/rfc/docker/options', null, {backendType == BackendType.RFC})
+            .withMandatoryProperty('changeManagement/rfc/docker/envVars', null, {backendType == BackendType.RFC})
+            .withMandatoryProperty('changeManagement/rfc/docker/imagePull', null, {backendType == BackendType.RFC})
             .withMandatoryProperty('applicationDescription', null, { backendType == BackendType.RFC })
             .withMandatoryProperty('abapPackage', null, { backendType == BackendType.RFC })
             .withMandatoryProperty('applicationId', null, {backendType == BackendType.SOLMAN})
@@ -137,8 +141,7 @@ void call(parameters = [:]) {
                     case BackendType.RFC:
 
                         cm.uploadFileToTransportRequestRFC(
-                            configuration.changeManagement.rfc.dockerImage,
-                            configuration.changeManagement.rfc.dockerOptions ?: [],
+                            configuration.changeManagement.rfc.docker ?: [],
                             configuration.transportRequestId,
                             configuration.applicationName,
                             configuration.applicationUrl,

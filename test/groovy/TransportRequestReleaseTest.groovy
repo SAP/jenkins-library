@@ -155,7 +155,10 @@ public class TransportRequestReleaseTest extends BasePiperTest {
                                 credentialsId: 'CM',
                                 type: 'RFC',
                                 endpoint: 'https://example.org/rfc',
-                                rfc: [dockerImage: 'rfc']
+                                rfc: [
+                                    dockerImage: 'rfc',
+                                    dockerOptions: [],
+                                ]
                             ]
 
         ChangeManagement cm = new ChangeManagement(nullScript) {
