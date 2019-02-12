@@ -177,8 +177,7 @@ public void testGetCommandLineWithCMClientOpts() {
         script.setReturnValue('cts createTransportRequest', '{"REQUESTID":"XYZK9000004"}')
 
         def transportRequestId = new ChangeManagement(nullScript).createTransportRequestRFC(
-            'rfc', // docker image
-            [], // docker options
+            [image: 'rfc', options: []],
             'https://example.org/rfc', // endpoint
             '01', // client
             '001', // instance
@@ -211,8 +210,7 @@ public void testGetCommandLineWithCMClientOpts() {
             { throw new AbortException('script returned exit code 3')})
 
         def transportRequestId = new ChangeManagement(nullScript).createTransportRequestRFC(
-            'rfc', // docker image
-            [], // docker options
+            [image: 'rfc', options: []],
             'https://example.org/rfc', // endpoint
             '01', // client
             '001', // instance
