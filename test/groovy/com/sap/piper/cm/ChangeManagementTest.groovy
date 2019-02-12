@@ -277,8 +277,7 @@ public void testGetCommandLineWithCMClientOpts() {
     public void testUploadFileToTransportSucceedsRFC() {
 
         new ChangeManagement(nullScript).uploadFileToTransportRequestRFC(
-            'rfc',
-            [],
+            [image:'rfc', options: [], pullImage: true],
             '002', //transportRequestId
             '001', // applicationId
             'https://example.org/mypath/deployArtifact.zip',
@@ -290,7 +289,9 @@ public void testGetCommandLineWithCMClientOpts() {
             'XYZ' // abapPackage
             )
 
+
             assert dockerExecuteRule.dockerParams.dockerImage == 'rfc'
+            assert dockerExecuteRule.dockerParams.dockerPullImage == true
 
             assert dockerExecuteRule.dockerParams.dockerEnvVars ==
             [
@@ -317,8 +318,7 @@ public void testGetCommandLineWithCMClientOpts() {
         script.setReturnValue('cts uploadToABAP:002', 1)
 
         new ChangeManagement(nullScript).uploadFileToTransportRequestRFC(
-            'rfc',
-            [],
+            [:],
             '002', //transportRequestId
             '001', // applicationId
             'https://example.org/mypath/deployArtifact.zip',
