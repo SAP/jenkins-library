@@ -108,10 +108,9 @@ void call(parameters = [:]) {
                                                                configuration.changeManagement.clientOpts)
                 } else if (backendType == BackendType.RFC) {
                     transportRequestId = cm.createTransportRequestRFC(
-                                                                configuration.changeManagement.rfc.dockerImage,
-                                                                configuration.changeManagement.rfc.dockerOptions ?: [],
+                                                                configuration.changeManagement.rfc.docker,
                                                                 configuration.changeManagement.endpoint,
-                                                                onfiguration.changeManagement.rfc.developmentInstance,
+                                                                configuration.changeManagement.rfc.developmentInstance,
                                                                 configuration.changeManagement.rfc.developmenClient,
                                                                 configuration.changeManagement.credentialsId,
                                                                 configuration.description)

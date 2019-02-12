@@ -102,8 +102,7 @@ public class ChangeManagement implements Serializable {
     }
 
     String createTransportRequestRFC(
-        String dockerImage,
-        List dockerOptions,
+        Map docker,
         String endpoint,
         String developmentClient,
         String developmentInstance,
@@ -121,7 +120,7 @@ public class ChangeManagement implements Serializable {
 
             def transportRequestId = executeWithCredentials(
                 BackendType.RFC,
-                [image: dockerImage, options: dockerOptions],
+                docker,
                 endpoint,
                 credentialsId,
                 command,
