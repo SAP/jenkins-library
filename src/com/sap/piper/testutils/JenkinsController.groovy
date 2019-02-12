@@ -1,4 +1,4 @@
-package com.sap.piper
+package com.sap.piper.jenkins
 
 class JenkinsController implements Serializable {
     def script
@@ -33,7 +33,7 @@ class JenkinsController implements Serializable {
     private retrieveJenkinsStatus() {
         def apiUrl = "${jenkinsUrl}/api/json"
         script.echo "Checking Jenkins Status"
-        def response = new URL(apiUrl).getText()
+        def response = new URL(apiUrl).text
         def result = script.readJSON text: response
         return result.mode
     }
@@ -107,7 +107,7 @@ class JenkinsController implements Serializable {
         def url = "${buildUrl}/api/json"
         script.echo "Checking Build Status of ${jobName} ${branch}"
         script.echo "${jenkinsUrl}/job/${jobName}/job/${URLEncoder.encode(branch, "UTF-8")}/"
-        def response = script.fetchUrl(url)
+        def response = new URL(url).text
         def result = script.readJSON text: response
         return result
     }
