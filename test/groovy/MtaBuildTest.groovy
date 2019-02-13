@@ -234,6 +234,15 @@ public class MtaBuildTest extends BasePiperTest {
         assert shellRule.shell.find(){ c -> c.contains('java -jar mta.jar --mtar com.mycompany.northwind.mtar --build-target=NEO --extension=config_extension build')}
     }
 
+    @Test
+    void generalConfigMixinTest() {
+
+        nullScript.commonPipelineEnvironment.configuration = [general:[dockerImage:'foo']]
+
+        stepRule.step.mtaBuild(script: nullScript)
+
+        assert 'foo' != dockerExecuteRule.dockerParams.get('dockerImage')
+    }
 
     private static defaultMtaYaml() {
         return  '''
