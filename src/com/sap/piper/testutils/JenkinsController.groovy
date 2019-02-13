@@ -22,7 +22,8 @@ class JenkinsController implements Serializable {
                     return true
                 }
             } catch (Exception e) {
-                script.echo "Could not retrieve status for Jenkins. Message: ${e.getMessage()}. Retrying..."
+                script.echo "Could not retrieve status for Jenkins at ${jenkinsUrl}/api/json. Message: ${e.getMessage()}. Retrying..."
+                e.printStackTrace()
                 continue
             }
             return false
