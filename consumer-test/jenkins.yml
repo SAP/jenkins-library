@@ -23,11 +23,6 @@ credentials:
       - credentials:
           - usernamePassword:
               scope: GLOBAL
-              id: "MY-ERP"
-              username: MY_USER
-              password: ${ERP_PW}
-          - usernamePassword:
-              scope: GLOBAL
               id: "devops-docker-images-IT-cf"
               username: ${CX_INFRA_IT_CF_USERNAME}
               password: ${CX_INFRA_IT_CF_PASSWORD}
