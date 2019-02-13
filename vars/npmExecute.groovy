@@ -49,9 +49,10 @@ void call(Map parameters = [:]) {
             if (!fileExists('package.json')) {
                 error "[${STEP_NAME}] package.json is not found."
             }
+            installCommand = fileExists('package-lock.json')?'ci':'install'
             dockerExecute(script: script, dockerImage: configuration.dockerImage, dockerOptions: configuration.dockerOptions) {
                 sh """
-                        npm install
+                        npm ${installCommand}
                         npm ${configuration.npmCommand}
                     """
             }
