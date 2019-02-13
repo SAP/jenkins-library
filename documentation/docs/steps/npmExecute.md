@@ -2,15 +2,15 @@
 
 ## Description
 
-Content here is generated from corresponnding step, see `vars`.
+Content here is generated from corresponding step, see `vars`.
 
 ## Parameters
 
-Content here is generated from corresponnding step, see `vars`.
+Content here is generated from corresponding step, see `vars`.
 
 ## Step configuration
 
-Content here is generated from corresponnding step, see `vars`.
+Content here is generated from corresponding step, see `vars`.
 
 ## Exceptions
 
