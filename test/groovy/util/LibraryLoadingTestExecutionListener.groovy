@@ -152,11 +152,9 @@ class LibraryLoadingTestExecutionListener extends AbstractTestExecutionListener 
         helper.registerAllowedMethod("node", [String.class, Closure.class], null)
         helper.registerAllowedMethod("node", [Closure.class], null)
         helper.registerAllowedMethod( method('sh', Map.class), {m ->
-            println "sh-command: $m.script"
             return ""
         } )
         helper.registerAllowedMethod( method('sh', String.class), {s ->
-            println "sh-command: $s"
             return ""
         } )
         helper.registerAllowedMethod("checkout", [Map.class], null)
