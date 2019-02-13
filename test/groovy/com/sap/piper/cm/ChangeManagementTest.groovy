@@ -384,8 +384,7 @@ public void testGetCommandLineWithCMClientOpts() {
     public void testReleaseTransportRequestSucceedsRFC() {
 
         new ChangeManagement(nullScript).releaseTransportRequestRFC(
-            '',
-            [],
+            [:],
             '002',
             'https://example.org',
             '002',
