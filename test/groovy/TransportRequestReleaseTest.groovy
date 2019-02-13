@@ -163,8 +163,7 @@ public class TransportRequestReleaseTest extends BasePiperTest {
 
         ChangeManagement cm = new ChangeManagement(nullScript) {
             void releaseTransportRequestRFC(
-                String dockerImage,
-                List dockerOptions,
+                Map docker,
                 String transportRequestId,
                 String endpoint,
                 String developmentInstance,
@@ -172,8 +171,7 @@ public class TransportRequestReleaseTest extends BasePiperTest {
                 String credentialsId) {
 
                 receivedParameters = [
-                    dockerImage: dockerImage,
-                    dockerOptions: dockerOptions,
+                    docker: docker,
                     transportRequestId: transportRequestId,
                     endpoint: endpoint,
                     developmentInstance: developmentInstance,
@@ -195,8 +193,12 @@ public class TransportRequestReleaseTest extends BasePiperTest {
             cmUtils: cm)
 
         assert receivedParameters == [
-                    dockerImage: 'rfc',
-                    dockerOptions: [],
+                    docker: [
+                        image: 'rfc',
+                        options: [],
+                        envVars: [:],
+                        imagePull: true,
+                    ],
                     transportRequestId: '002',
                     endpoint: 'https://example.org/rfc',
                     developmentInstance: '002',
@@ -270,8 +272,7 @@ public class TransportRequestReleaseTest extends BasePiperTest {
 
         ChangeManagement cm = new ChangeManagement(nullScript) {
             void releaseTransportRequestRFC(
-                String dockerImage,
-                List dockerOptions,
+                Map docker,
                 String transportRequestId,
                 String endpoint,
                 String developmentInstance,

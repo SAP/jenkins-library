@@ -117,8 +117,7 @@ void call(parameters = [:]) {
                     case BackendType.RFC:
 
                         cm.releaseTransportRequestRFC(
-                            configuration.changeManagement.rfc.dockerImage,
-                            configuration.changeManagement.rfc.dockerOptions,
+                            configuration.changeManagement.rfc.docker,
                             configuration.transportRequestId,
                             configuration.changeManagement.endpoint,
                             configuration.changeManagement.rfc.developmentInstance,

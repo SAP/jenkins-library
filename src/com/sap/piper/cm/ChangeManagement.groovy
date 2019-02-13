@@ -365,8 +365,7 @@ public class ChangeManagement implements Serializable {
     }
 
     void releaseTransportRequestRFC(
-        String dockerImage,
-        List dockerOptions,
+        Map docker,
         String transportRequestId,
         String endpoint,
         String developmentInstance,
@@ -381,8 +380,7 @@ public class ChangeManagement implements Serializable {
 
         int rc = executeWithCredentials(
             BackendType.RFC,
-            [image: dockerImage,
-             options: dockerOptions],
+            docker,
             endpoint,
             credentialsId,
             cmd,
