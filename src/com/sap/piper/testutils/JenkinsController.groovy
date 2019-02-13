@@ -1,5 +1,7 @@
 package com.sap.piper.jenkins
 
+import com.cloudbees.groovy.cps.NonCPS
+
 class JenkinsController implements Serializable {
     def script
     String jenkinsUrl
@@ -34,7 +36,7 @@ class JenkinsController implements Serializable {
     private retrieveJenkinsStatus() {
         def apiUrl = "${jenkinsUrl}/api/json"
         script.echo "Checking Jenkins Status"
-        def response = new URL(apiUrl).text
+        def response = getTextFromUrl(apiUrl)
         def result = script.readJSON text: response
         return result.mode
     }
@@ -86,7 +88,7 @@ class JenkinsController implements Serializable {
 
     def getConsoleText(String jobName, String branch) {
         def consoleUrl = this.getBuildUrl(jobName, branch) + "/consoleText"
-        return new URL(consoleUrl).text
+        return getTextFromUrl(consoleUrl)
     }
 
     def printConsoleText(String jobName, String branch) {
@@ -108,9 +110,13 @@ class JenkinsController implements Serializable {
         def url = "${buildUrl}/api/json"
         script.echo "Checking Build Status of ${jobName} ${branch}"
         script.echo "${jenkinsUrl}/job/${jobName}/job/${URLEncoder.encode(branch, "UTF-8")}/"
-        def response = new URL(url).text
+        def response = getTextFromUrl(url)
         def result = script.readJSON text: response
         return result
     }
 
+    @NonCPS
+    private static String getTextFromUrl(url) {
+        return new URL(url).getText()
+    }
 }

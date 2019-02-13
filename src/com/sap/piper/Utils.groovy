@@ -97,6 +97,7 @@ void pushToSWA(Map parameters, Map config) {
     }
 }
 
+@NonCPS
 static String fillTemplate(String templateText, Map binding){
     def engine = new SimpleTemplateEngine()
     String result = engine.createTemplate(templateText).make(binding)
