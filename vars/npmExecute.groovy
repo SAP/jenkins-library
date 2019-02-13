@@ -46,7 +46,7 @@ void call(Map parameters = [:]) {
         ], configuration)
 
         try {
-            if (fileExists('package.json')) {
+            if (!fileExists('package.json')) {
                 error "[${STEP_NAME}] package.json is not found."
             }
             dockerExecute(script: script, dockerImage: configuration.dockerImage, dockerOptions: configuration.dockerOptions) {
