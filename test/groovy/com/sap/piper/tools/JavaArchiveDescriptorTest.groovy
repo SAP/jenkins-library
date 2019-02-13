@@ -16,12 +16,12 @@ import hudson.AbortException
 class JavaArchiveDescriptorTest extends BasePiperTest {
 
     private ExpectedException thrown = new ExpectedException()
-    private JenkinsLoggingRule jlr = new JenkinsLoggingRule(this)
+    private JenkinsLoggingRule loggingRule = new JenkinsLoggingRule(this)
 
     @Rule
     public RuleChain rules = Rules.getCommonRules(this)
                 .around(thrown)
-                .around(jlr)
+                .around(loggingRule)
 
     private static javaArchive
     private static configuration
@@ -55,7 +55,7 @@ class JavaArchiveDescriptorTest extends BasePiperTest {
         def javaArchiveFile = javaArchive.getFile(script, configuration)
 
         assert javaArchiveFile == '/env/mta/mta_archive_builder-1.1.0.jar'
-        assert jlr.log.contains("SAP Multitarget Application Archive Builder file '/env/mta/mta_archive_builder-1.1.0.jar' retrieved from environment.")
+        assert loggingRule.log.contains("SAP Multitarget Application Archive Builder file '/env/mta/mta_archive_builder-1.1.0.jar' retrieved from environment.")
     }
 
     @Test
@@ -66,7 +66,7 @@ class JavaArchiveDescriptorTest extends BasePiperTest {
         def javaArchiveFile = javaArchive.getFile(script, configuration)
 
         assert javaArchiveFile == '/config/mta/mta_archive_builder-1.1.0.jar'
-        assert jlr.log.contains("SAP Multitarget Application Archive Builder file '/config/mta/mta_archive_builder-1.1.0.jar' retrieved from configuration.")
+        assert loggingRule.log.contains("SAP Multitarget Application Archive Builder file '/config/mta/mta_archive_builder-1.1.0.jar' retrieved from configuration.")
     }
 
     // Compatibility tests
@@ -78,7 +78,7 @@ class JavaArchiveDescriptorTest extends BasePiperTest {
         def javaArchiveFile = javaArchive.getFile(script, configuration)
 
         assert javaArchiveFile == '/env/mta/mta.jar'
-        assert jlr.log.contains("SAP Multitarget Application Archive Builder file '/env/mta' retrieved from environment.")
+        assert loggingRule.log.contains("SAP Multitarget Application Archive Builder file '/env/mta' retrieved from environment.")
     }
 
     @Test
@@ -89,7 +89,7 @@ class JavaArchiveDescriptorTest extends BasePiperTest {
         def javaArchiveFile = javaArchive.getFile(script, configuration)
 
         assert javaArchiveFile == '/config/mta/mta.jar'
-        assert jlr.log.contains("SAP Multitarget Application Archive Builder file '/config/mta' retrieved from configuration.")
+        assert loggingRule.log.contains("SAP Multitarget Application Archive Builder file '/config/mta' retrieved from configuration.")
     }
     //
 
@@ -133,7 +133,7 @@ class JavaArchiveDescriptorTest extends BasePiperTest {
         def javaArchiveCall = javaArchive.getCall(script, configuration)
 
         assert javaArchiveCall == 'java -jar /config/mta/mta_archive_builder-1.1.0.jar'
-        assert jlr.log.contains("Using SAP Multitarget Application Archive Builder '/config/mta/mta_archive_builder-1.1.0.jar'.")
+        assert loggingRule.log.contains("Using SAP Multitarget Application Archive Builder '/config/mta/mta_archive_builder-1.1.0.jar'.")
     }
 
     @Test
@@ -143,8 +143,8 @@ class JavaArchiveDescriptorTest extends BasePiperTest {
 
         javaArchive.verifyFile(script, configuration)
 
-        assert jlr.log.contains("Verifying SAP Multitarget Application Archive Builder '/env/mta/mta_archive_builder-1.1.0.jar'.")
-        assert jlr.log.contains("Verification success. SAP Multitarget Application Archive Builder '/env/mta/mta_archive_builder-1.1.0.jar' exists.")
+        assert loggingRule.log.contains("Verifying SAP Multitarget Application Archive Builder '/env/mta/mta_archive_builder-1.1.0.jar'.")
+        assert loggingRule.log.contains("Verification success. SAP Multitarget Application Archive Builder '/env/mta/mta_archive_builder-1.1.0.jar' exists.")
     }
 
     @Test
@@ -156,8 +156,8 @@ class JavaArchiveDescriptorTest extends BasePiperTest {
 
         javaArchive.verifyVersion(script, configuration)
 
-        assert jlr.log.contains("Verifying SAP Multitarget Application Archive Builder version 1.0.6 or compatible version.")
-        assert jlr.log.contains("Verification success. SAP Multitarget Application Archive Builder version 1.0.6 is installed.")
+        assert loggingRule.log.contains("Verifying SAP Multitarget Application Archive Builder version 1.0.6 or compatible version.")
+        assert loggingRule.log.contains("Verification success. SAP Multitarget Application Archive Builder version 1.0.6 is installed.")
     }
 
     @Test

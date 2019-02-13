@@ -19,20 +19,20 @@ import util.Rules
 
 class SnykExecuteTest extends BasePiperTest {
     private ExpectedException thrown = ExpectedException.none()
-    private JenkinsDockerExecuteRule jder = new JenkinsDockerExecuteRule(this)
-    private JenkinsShellCallRule jscr = new JenkinsShellCallRule(this)
-    private JenkinsLoggingRule jlr = new JenkinsLoggingRule(this)
-    private JenkinsStepRule jsr = new JenkinsStepRule(this)
+    private JenkinsDockerExecuteRule dockerExecuteRule = new JenkinsDockerExecuteRule(this)
+    private JenkinsShellCallRule shellRule = new JenkinsShellCallRule(this)
+    private JenkinsLoggingRule loggingRule = new JenkinsLoggingRule(this)
+    private JenkinsStepRule stepRule = new JenkinsStepRule(this)
 
     @Rule
     public RuleChain ruleChain = Rules
         .getCommonRules(this)
         .around(new JenkinsReadYamlRule(this))
         .around(thrown)
-        .around(jder)
-        .around(jscr)
-        .around(jlr)
-        .around(jsr)
+        .around(dockerExecuteRule)
+        .around(shellRule)
+        .around(loggingRule)
+        .around(stepRule)
 
     def withCredentialsParameters
     List archiveStepPatterns
@@ -74,7 +74,7 @@ class SnykExecuteTest extends BasePiperTest {
         thrown.expect(hudson.AbortException)
         thrown.expectMessage('[ERROR][snykExecute] ScanType \'seagul\' not supported!')
 
-        jsr.step.snykExecute(
+        stepRule.step.snykExecute(
             script: nullScript,
             juStabUtils: utils,
             scanType: 'seagul'
@@ -83,51 +83,51 @@ class SnykExecuteTest extends BasePiperTest {
 
     @Test
     void testDefaultsSettings() throws Exception {
-        jsr.step.snykExecute(
+        stepRule.step.snykExecute(
             script: nullScript,
             juStabUtils: utils
         )
 
         assertThat(withCredentialsParameters.credentialsId, is('myPassword'))
-        assertThat(jder.dockerParams, hasEntry('dockerImage', 'node:8-stretch'))
-        assertThat(jder.dockerParams.stashContent, hasItem('buildDescriptor'))
-        assertThat(jder.dockerParams.stashContent, hasItem('opensourceConfiguration'))
+        assertThat(dockerExecuteRule.dockerParams, hasEntry('dockerImage', 'node:8-stretch'))
+        assertThat(dockerExecuteRule.dockerParams.stashContent, hasItem('buildDescriptor'))
+        assertThat(dockerExecuteRule.dockerParams.stashContent, hasItem('opensourceConfiguration'))
     }
 
     @Test
     void testScanTypeNpm() throws Exception {
-        jsr.step.snykExecute(
+        stepRule.step.snykExecute(
             script: nullScript,
             juStabUtils: utils
         )
         // asserts
-        assertThat(jscr.shell, hasItem('npm install snyk --global --quiet'))
-        assertThat(jscr.shell, hasItem('cd \'./\' && npm install --quiet'))
-        assertThat(jscr.shell, hasItem('cd \'./\' && snyk monitor && snyk test'))
+        assertThat(shellRule.shell, hasItem('npm install snyk --global --quiet'))
+        assertThat(shellRule.shell, hasItem('cd \'./\' && npm install --quiet'))
+        assertThat(shellRule.shell, hasItem('cd \'./\' && snyk monitor && snyk test'))
     }
 
     @Test
     void testScanTypeNpmWithOrgAndJsonReport() throws Exception {
-        jsr.step.snykExecute(
+        stepRule.step.snykExecute(
             script: nullScript,
             juStabUtils: utils,
             snykOrg: 'myOrg',
             toJson: true
         )
         // asserts
-        assertThat(jscr.shell, hasItem("cd './' && snyk monitor --org=myOrg && snyk test --json > snyk.json".toString()))
+        assertThat(shellRule.shell, hasItem("cd './' && snyk monitor --org=myOrg && snyk test --json > snyk.json".toString()))
         assertThat(archiveStepPatterns, hasItem('snyk.json'))
     }
 
     @Test
     void testScanTypeMta() throws Exception {
-        jsr.step.snykExecute(
+        stepRule.step.snykExecute(
             script: nullScript,
             juStabUtils: utils,
             scanType: 'mta'
         )
         // asserts
-        assertThat(jscr.shell, hasItem("cd 'some-ui${File.separator}' && snyk monitor && snyk test".toString()))
-        assertThat(jscr.shell, hasItem("cd 'some-service-broker${File.separator}' && snyk monitor && snyk test".toString()))
+        assertThat(shellRule.shell, hasItem("cd 'some-ui${File.separator}' && snyk monitor && snyk test".toString()))
+        assertThat(shellRule.shell, hasItem("cd 'some-service-broker${File.separator}' && snyk monitor && snyk test".toString()))
     }
 }

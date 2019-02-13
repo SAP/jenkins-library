@@ -63,10 +63,6 @@ In following sections the configuration is possible:
 |sendMail|X|X|X|
 |timeoutInSeconds|X|X|X|
 
-## Return value
-
-none
-
 ## Side effects
 
 none

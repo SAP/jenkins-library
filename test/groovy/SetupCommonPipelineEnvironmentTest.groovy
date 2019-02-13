@@ -19,12 +19,12 @@ class SetupCommonPipelineEnvironmentTest extends BasePiperTest {
     def usedConfigFile
     def swaOldConfigUsed
 
-    private JenkinsStepRule jsr = new JenkinsStepRule(this)
+    private JenkinsStepRule stepRule = new JenkinsStepRule(this)
 
     @Rule
     public RuleChain rules = Rules
         .getCommonRules(this)
-        .around(jsr)
+        .around(stepRule)
 
     @Before
     void init() {
@@ -55,7 +55,7 @@ class SetupCommonPipelineEnvironmentTest extends BasePiperTest {
             return path.endsWith('.pipeline/config.yml')
         })
 
-        jsr.step.call(script: nullScript, utils: getSWAMockedUtils())
+        stepRule.step.setupCommonPipelineEnvironment(script: nullScript, utils: getSWAMockedUtils())
 
         assertEquals(Boolean.FALSE.toString(), swaOldConfigUsed)
         assertEquals('.pipeline/config.yml', usedConfigFile)
@@ -71,7 +71,7 @@ class SetupCommonPipelineEnvironmentTest extends BasePiperTest {
             return path.endsWith('.pipeline/config.properties')
         })
 
-        jsr.step.call(script: nullScript, utils: getSWAMockedUtils())
+        stepRule.step.setupCommonPipelineEnvironment(script: nullScript, utils: getSWAMockedUtils())
 
         assertEquals(Boolean.TRUE.toString(), swaOldConfigUsed)
         assertEquals('.pipeline/config.properties', usedConfigFile)

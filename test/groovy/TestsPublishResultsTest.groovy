@@ -3,6 +3,7 @@ import org.junit.Ignore
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.RuleChain
+import org.junit.rules.ExpectedException
 
 import util.BasePiperTest
 import util.JenkinsReadYamlRule
@@ -16,13 +17,15 @@ class TestsPublishResultsTest extends BasePiperTest {
     Map publisherStepOptions
     List archiveStepPatterns
 
-    private JenkinsStepRule jsr = new JenkinsStepRule(this)
+    private ExpectedException thrown = ExpectedException.none()
+    private JenkinsStepRule stepRule = new JenkinsStepRule(this)
 
     @Rule
     public RuleChain ruleChain = Rules
         .getCommonRules(this)
         .around(new JenkinsReadYamlRule(this))
-        .around(jsr)
+        .around(thrown)
+        .around(stepRule)
 
     @Before
     void init() {
@@ -48,7 +51,7 @@ class TestsPublishResultsTest extends BasePiperTest {
 
     @Test
     void testPublishNothingWithDefaultSettings() throws Exception {
-        jsr.step.testsPublishResults(script: nullScript)
+        stepRule.step.testsPublishResults(script: nullScript)
 
         // ensure nothing is published
         assertTrue('WarningsPublisher options not empty', publisherStepOptions.junit == null)
@@ -59,7 +62,7 @@ class TestsPublishResultsTest extends BasePiperTest {
 
     @Test
     void testPublishNothingWithAllDisabled() throws Exception {
-        jsr.step.testsPublishResults(script: nullScript, junit: false, jacoco: false, cobertura: false, jmeter: false)
+        stepRule.step.testsPublishResults(script: nullScript, junit: false, jacoco: false, cobertura: false, jmeter: false)
 
         // ensure nothing is published
         assertTrue('WarningsPublisher options not empty', publisherStepOptions.junit == null)
@@ -70,12 +73,12 @@ class TestsPublishResultsTest extends BasePiperTest {
 
     @Test
     void testPublishUnitTestsWithDefaultSettings() throws Exception {
-        jsr.step.testsPublishResults(script: nullScript, junit: true)
+        stepRule.step.testsPublishResults(script: nullScript, junit: true)
 
         assertTrue('JUnit options are empty', publisherStepOptions.junit != null)
         // ensure default patterns are set
         assertEquals('JUnit default pattern not set correct',
-            '**/target/surefire-reports/*.xml', publisherStepOptions.junit.testResults)
+            '**/TEST-*.xml', publisherStepOptions.junit.testResults)
         // ensure nothing else is published
         assertTrue('JaCoCo options are not empty', publisherStepOptions.jacoco == null)
         assertTrue('Cobertura options are not empty', publisherStepOptions.cobertura == null)
@@ -84,7 +87,7 @@ class TestsPublishResultsTest extends BasePiperTest {
 
     @Test
     void testPublishCoverageWithDefaultSettings() throws Exception {
-        jsr.step.testsPublishResults(script: nullScript, jacoco: true, cobertura: true)
+        stepRule.step.testsPublishResults(script: nullScript, jacoco: true, cobertura: true)
 
         assertTrue('JaCoCo options are empty', publisherStepOptions.jacoco != null)
         assertTrue('Cobertura options are empty', publisherStepOptions.cobertura != null)
@@ -99,7 +102,7 @@ class TestsPublishResultsTest extends BasePiperTest {
 
     @Test
     void testPublishJMeterWithDefaultSettings() throws Exception {
-        jsr.step.testsPublishResults(script: nullScript, jmeter: true)
+        stepRule.step.testsPublishResults(script: nullScript, jmeter: true)
 
         assertTrue('JMeter options are empty', publisherStepOptions.jmeter != null)
         assertEquals('JMeter default pattern not set',
@@ -113,7 +116,7 @@ class TestsPublishResultsTest extends BasePiperTest {
 
     @Test
     void testPublishUnitTestsWithCustomSettings() throws Exception {
-        jsr.step.testsPublishResults(script: nullScript, junit: [pattern: 'fancy/file/path', archive: true, active: true])
+        stepRule.step.testsPublishResults(script: nullScript, junit: [pattern: 'fancy/file/path', archive: true, active: true])
 
         assertTrue('JUnit options are empty', publisherStepOptions.junit != null)
         // ensure default patterns are set
@@ -125,5 +128,41 @@ class TestsPublishResultsTest extends BasePiperTest {
         assertTrue('JaCoCo options are not empty', publisherStepOptions.jacoco == null)
         assertTrue('Cobertura options are not empty', publisherStepOptions.cobertura == null)
         assertTrue('JMeter options are not empty', publisherStepOptions.jmeter == null)
+    }
+
+    @Test
+    void testBuildResultStatus() throws Exception {
+        stepRule.step.testsPublishResults(script: nullScript)
+        assertJobStatusSuccess()
+    }
+
+    @Test
+    void testBuildWithTestFailuresAndWithoutFailOnError() throws Exception {
+        nullScript.currentBuild.getRawBuild = {
+            return [getAction: { type ->
+                return [getFailCount: {
+                    return 6
+                }]
+            }]
+        }
+        
+        stepRule.step.testsPublishResults(script: nullScript)
+        assertJobStatusSuccess()
+    }
+
+    @Test
+    void testBuildWithTestFailuresAndWithFailOnError() throws Exception {
+        nullScript.currentBuild.getRawBuild = {
+            return [getAction: { type ->
+                return [getFailCount: {
+                    return 6
+                }]
+            }]
+        }
+
+        thrown.expect(hudson.AbortException)
+        thrown.expectMessage('[testsPublishResults] Some tests failed!')
+
+        stepRule.step.testsPublishResults(script: nullScript, failOnError: true)
     }
 }

@@ -8,7 +8,7 @@ import com.sap.piper.Utils
 
 import groovy.transform.Field
 
-@Field def STEP_NAME = 'checksPublishResults'
+@Field def STEP_NAME = getClass().getName()
 
 @Field Set TOOLS = [
     'aggregation', 'tasks', 'pmd', 'cpd', 'findbugs', 'checkstyle', 'eslint', 'pylint'
@@ -41,8 +41,11 @@ void call(Map parameters = [:]) {
             .mixin(parameters, PARAMETER_KEYS)
             .use()
 
-        new Utils().pushToSWA([step: STEP_NAME,
-                                stepParam1: parameters?.script == null], configuration)
+        new Utils().pushToSWA([
+            step: STEP_NAME,
+            stepParamKey1: 'scriptMissing',
+            stepParam1: parameters?.script == null
+        ], configuration)
 
         // JAVA
         report('PmdPublisher', configuration.pmd, configuration.archive)

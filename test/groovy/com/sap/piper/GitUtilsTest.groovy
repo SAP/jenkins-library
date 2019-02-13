@@ -1,8 +1,8 @@
 package com.sap.piper
 
+import hudson.AbortException
 import static org.hamcrest.Matchers.equalTo
 import static org.hamcrest.Matchers.hasEntry
-import static org.hamcrest.Matchers.hasItem
 import static org.hamcrest.Matchers.is
 import static org.hamcrest.Matchers.notNullValue
 import static org.hamcrest.Matchers.startsWith
@@ -32,50 +32,80 @@ class GitUtilsTest extends BasePiperTest {
     @Autowired
     GitUtils gitUtils
 
-    private JenkinsLoggingRule jlr = new JenkinsLoggingRule(this)
-    private JenkinsShellCallRule jscr = new JenkinsShellCallRule(this)
+    private JenkinsLoggingRule loggingRule = new JenkinsLoggingRule(this)
+    private JenkinsShellCallRule shellRule = new JenkinsShellCallRule(this)
     private ExpectedException thrown = ExpectedException.none()
 
     @Rule
     public RuleChain ruleChain = Rules.getCommonRules(this)
-        .around(jlr)
-        .around(jscr)
+        .around(loggingRule)
+        .around(shellRule)
         .around(thrown)
 
     @Before
     void init() throws Exception {
-        jscr.setReturnValue('git rev-parse HEAD', 'testCommitId')
+        shellRule.setReturnValue('git rev-parse HEAD', 'testCommitId')
     }
 
     @Test
     void TestIsInsideWorkTree() {
-        jscr.setReturnValue('git rev-parse --is-inside-work-tree 1>/dev/null 2>&1', 0)
+        shellRule.setReturnValue('git rev-parse --is-inside-work-tree 1>/dev/null 2>&1', 0)
         assertTrue(gitUtils.insideWorkTree())
     }
 
     @Test
     void TestIsNotInsideWorkTree() {
-        jscr.setReturnValue('git rev-parse --is-inside-work-tree 1>/dev/null 2>&1', 1)
+        shellRule.setReturnValue('git rev-parse --is-inside-work-tree 1>/dev/null 2>&1', 1)
         assertFalse(gitUtils.insideWorkTree())
     }
 
+    @Test
+    void testWorkTreeDirty() {
+        shellRule.setReturnValue('git rev-parse --is-inside-work-tree 1>/dev/null 2>&1', 0)
+        shellRule.setReturnValue('git diff --quiet HEAD', 0)
+        assertFalse(gitUtils.isWorkTreeDirty())
+    }
+
+    @Test
+    void testWorkTreeDirtyOutsideWorktree() {
+        thrown.expect(AbortException)
+        thrown.expectMessage('Method \'isWorkTreeClean\' called outside a git work tree.')
+        shellRule.setReturnValue('git rev-parse --is-inside-work-tree 1>/dev/null 2>&1', 1)
+        gitUtils.isWorkTreeDirty()
+    }
+
+    @Test
+    void testWorkTreeNotDirty() {
+        shellRule.setReturnValue('git rev-parse --is-inside-work-tree 1>/dev/null 2>&1', 0)
+        shellRule.setReturnValue('git diff --quiet HEAD', 1)
+        assertTrue(gitUtils.isWorkTreeDirty())
+    }
+
+    @Test
+    void testWorkTreeDirtyGeneralGitTrouble() {
+        thrown.expect(AbortException)
+        thrown.expectMessage('git command \'git diff --quiet HEAD\' return with code \'129\'. This indicates general trouble with git.')
+        shellRule.setReturnValue('git rev-parse --is-inside-work-tree 1>/dev/null 2>&1', 0)
+        shellRule.setReturnValue('git diff --quiet HEAD', 129) // e.g. when called outside work tree
+        gitUtils.isWorkTreeDirty()
+    }
 
     @Test
     void testGetGitCommitId() {
-        jscr.setReturnValue('git rev-parse --is-inside-work-tree 1>/dev/null 2>&1', 0)
+        shellRule.setReturnValue('git rev-parse --is-inside-work-tree 1>/dev/null 2>&1', 0)
         assertEquals('testCommitId', gitUtils.getGitCommitIdOrNull())
     }
 
     @Test
     void testGetGitCommitIdNotAGitRepo() {
-        jscr.setReturnValue('git rev-parse --is-inside-work-tree 1>/dev/null 2>&1', 128)
+        shellRule.setReturnValue('git rev-parse --is-inside-work-tree 1>/dev/null 2>&1', 128)
         assertNull(gitUtils.getGitCommitIdOrNull())
     }
 
     @Test
     void testExtractLogLinesWithDefaults() {
         gitUtils.extractLogLines()
-        assertTrue(jscr.shell
+        assertTrue(shellRule.shell
                          .stream()
                            .anyMatch( { it ->
                              it.contains('git log --pretty=format:%b origin/master..HEAD')}))
@@ -84,7 +114,7 @@ class GitUtilsTest extends BasePiperTest {
     @Test
     void testExtractLogLinesWithCustomValues() {
         gitUtils.extractLogLines('myFilter', 'HEAD~5', 'HEAD~1', '%B')
-        assertTrue( jscr.shell
+        assertTrue( shellRule.shell
                           .stream()
                             .anyMatch( { it ->
                                it.contains('git log --pretty=format:%B HEAD~5..HEAD~1')}))
@@ -92,7 +122,7 @@ class GitUtilsTest extends BasePiperTest {
 
     @Test
     void testExtractLogLinesFilter() {
-        jscr.setReturnValue('#!/bin/bash git log --pretty=format:%b origin/master..HEAD', 'abc\n123')
+        shellRule.setReturnValue('#!/bin/bash git log --pretty=format:%b origin/master..HEAD', 'abc\n123')
         String[] log = gitUtils.extractLogLines('12.*')
         assertThat(log, is(notNullValue()))
         assertThat(log.size(),is(equalTo(1)))
@@ -101,11 +131,11 @@ class GitUtilsTest extends BasePiperTest {
 
     @Test
     void testExtractLogLinesFilterNoMatch() {
-        jscr.setReturnValue('#!/bin/bash git log --pretty=format:%b origin/master..HEAD', 'abc\n123')
+        shellRule.setReturnValue('#!/bin/bash git log --pretty=format:%b origin/master..HEAD', 'abc\n123')
         String[] log = gitUtils.extractLogLines('xyz')
         assertNotNull(log)
         assertThat(log.size(),is(equalTo(0)))
-	}
+    }
 
     @Test
     void testHandleTestRepository() {
@@ -125,5 +155,5 @@ class GitUtilsTest extends BasePiperTest {
         assertThat(gitMap, hasEntry('branch', config.gitBranch))
         assertThat(stashName, startsWith('testContent-'))
         assertThat(result, startsWith('testContent-'))
-	}
+    }
 }

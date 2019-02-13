@@ -13,20 +13,20 @@ import static org.junit.Assert.assertThat
 class BatsExecuteTestsTest extends BasePiperTest {
 
     private ExpectedException thrown = ExpectedException.none()
-    private JenkinsStepRule jsr = new JenkinsStepRule(this)
-    private JenkinsLoggingRule jlr = new JenkinsLoggingRule(this)
-    private JenkinsShellCallRule jscr = new JenkinsShellCallRule(this)
-    private JenkinsDockerExecuteRule jder = new JenkinsDockerExecuteRule(this)
+    private JenkinsStepRule stepRule = new JenkinsStepRule(this)
+    private JenkinsLoggingRule loggingRule = new JenkinsLoggingRule(this)
+    private JenkinsShellCallRule shellRule = new JenkinsShellCallRule(this)
+    private JenkinsDockerExecuteRule dockerExecuteRule = new JenkinsDockerExecuteRule(this)
 
     @Rule
     public RuleChain rules = Rules
         .getCommonRules(this)
         .around(new JenkinsReadYamlRule(this))
         .around(thrown)
-        .around(jder)
-        .around(jscr)
-        .around(jlr)
-        .around(jsr)
+        .around(dockerExecuteRule)
+        .around(shellRule)
+        .around(loggingRule)
+        .around(stepRule)
 
     List withEnvArgs = []
 
@@ -43,7 +43,7 @@ class BatsExecuteTestsTest extends BasePiperTest {
     @Test
     void testDefault() {
         nullScript.commonPipelineEnvironment.configuration = [general: [container: 'test-container']]
-        jsr.step.batsExecuteTests(
+        stepRule.step.batsExecuteTests(
             script: nullScript,
             juStabUtils: utils,
             dockerContainerName: 'test-container',
@@ -57,27 +57,27 @@ class BatsExecuteTestsTest extends BasePiperTest {
         // asserts
         assertThat(withEnvArgs, hasItem('IMAGE_NAME=test/image'))
         assertThat(withEnvArgs, hasItem('CONTAINER_NAME=test-container'))
-        assertThat(jscr.shell, hasItem('git clone https://github.com/bats-core/bats-core.git'))
-        assertThat(jscr.shell, hasItem('bats-core/bin/bats --recursive --tap src/test > \'TEST-testPackage.tap\''))
-        assertThat(jscr.shell, hasItem('cat \'TEST-testPackage.tap\''))
+        assertThat(shellRule.shell, hasItem('git clone https://github.com/bats-core/bats-core.git'))
+        assertThat(shellRule.shell, hasItem('bats-core/bin/bats --recursive --tap src/test > \'TEST-testPackage.tap\''))
+        assertThat(shellRule.shell, hasItem('cat \'TEST-testPackage.tap\''))
 
-        assertThat(jder.dockerParams.dockerImage, is('node:8-stretch'))
-        assertThat(jder.dockerParams.dockerWorkspace, is('/home/node'))
+        assertThat(dockerExecuteRule.dockerParams.dockerImage, is('node:8-stretch'))
+        assertThat(dockerExecuteRule.dockerParams.dockerWorkspace, is('/home/node'))
 
-        assertThat(jscr.shell, hasItem('npm install tap-xunit -g'))
-        assertThat(jscr.shell, hasItem('cat \'TEST-testPackage.tap\' | tap-xunit --package=\'testPackage\' > TEST-testPackage.xml'))
+        assertThat(shellRule.shell, hasItem('npm install tap-xunit -g'))
+        assertThat(shellRule.shell, hasItem('cat \'TEST-testPackage.tap\' | tap-xunit --package=\'testPackage\' > TEST-testPackage.xml'))
 
         assertJobStatusSuccess()
     }
 
     @Test
     void testTap() {
-        jsr.step.batsExecuteTests(
+        stepRule.step.batsExecuteTests(
             script: nullScript,
             juStabUtils: utils,
             outputFormat: 'tap'
         )
-        assertThat(jder.dockerParams.size(), is(0))
+        assertThat(dockerExecuteRule.dockerParams.size(), is(0))
     }
 
     @Test
@@ -90,7 +90,7 @@ class BatsExecuteTestsTest extends BasePiperTest {
             }
         })
         thrown.expectMessage('Shell call failed')
-        jsr.step.batsExecuteTests(
+        stepRule.step.batsExecuteTests(
             script: nullScript,
             juStabUtils: utils,
             failOnError: true,
@@ -108,7 +108,7 @@ class BatsExecuteTestsTest extends BasePiperTest {
             assertThat(s, startsWith('testContent-'))
         })
 
-        jsr.step.batsExecuteTests(
+        stepRule.step.batsExecuteTests(
             script: nullScript,
             juStabUtils: utils,
             testRepository: 'testRepo',
@@ -116,7 +116,7 @@ class BatsExecuteTestsTest extends BasePiperTest {
 
         assertThat(gitRepository.size(), is(1))
         assertThat(gitRepository.url, is('testRepo'))
-        assertThat(jder.dockerParams.stashContent, hasItem(startsWith('testContent-')))
+        assertThat(dockerExecuteRule.dockerParams.stashContent, hasItem(startsWith('testContent-')))
     }
 
     @Test
@@ -129,7 +129,7 @@ class BatsExecuteTestsTest extends BasePiperTest {
             assertThat(s, startsWith('testContent-'))
         })
 
-        jsr.step.batsExecuteTests(
+        stepRule.step.batsExecuteTests(
             script: nullScript,
             juStabUtils: utils,
             gitBranch: 'test',

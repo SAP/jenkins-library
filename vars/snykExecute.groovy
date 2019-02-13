@@ -6,7 +6,7 @@ import com.sap.piper.mta.MtaMultiplexer
 
 import groovy.transform.Field
 
-@Field def STEP_NAME = 'snykExecute'
+@Field def STEP_NAME = getClass().getName()
 
 @Field Set GENERAL_CONFIG_KEYS = ['snykCredentialsId']
 @Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS.plus([
@@ -38,8 +38,11 @@ void call(Map parameters = [:]) {
             .withMandatoryProperty('snykCredentialsId')
             .use()
 
-        new Utils().pushToSWA([step: STEP_NAME,
-                                stepParam1: parameters?.script == null], config)
+        new Utils().pushToSWA([
+            step: STEP_NAME,
+            stepParamKey1: 'scriptMissing',
+            stepParam1: parameters?.script == null
+        ], config)
 
         utils.unstashAll(config.stashContent)
 
@@ -62,6 +65,7 @@ void call(Map parameters = [:]) {
                         variable: 'token'
                     )]) {
                         dockerExecute(
+                            script: script,
                             dockerImage: config.dockerImage,
                             stashContent: config.stashContent,
                             dockerEnvVars: ['SNYK_TOKEN': token]

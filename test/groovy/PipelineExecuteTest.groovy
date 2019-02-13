@@ -12,14 +12,14 @@ import util.JenkinsStepRule
 
 class PipelineExecuteTest extends BasePiperTest {
     private ExpectedException thrown = new ExpectedException().none()
-    private JenkinsStepRule jsr = new JenkinsStepRule(this)
+    private JenkinsStepRule stepRule = new JenkinsStepRule(this)
 
     @Rule
     public RuleChain ruleChain = Rules
         .getCommonRules(this)
         .around(new JenkinsReadYamlRule(this))
         .around(thrown)
-        .around(jsr)
+        .around(stepRule)
 
     def pipelinePath
     def checkoutParameters = [:]
@@ -44,7 +44,7 @@ class PipelineExecuteTest extends BasePiperTest {
 
     @Test
     void straightForwardTest() {
-        jsr.step.call(repoUrl: "https://test.com/myRepo.git")
+        stepRule.step.pipelineExecute(repoUrl: "https://test.com/myRepo.git")
         assert load == "Jenkinsfile"
         assert checkoutParameters.branch == 'master'
         assert checkoutParameters.repoUrl == "https://test.com/myRepo.git"
@@ -55,7 +55,7 @@ class PipelineExecuteTest extends BasePiperTest {
 
     @Test
     void parameterizeTest() {
-        jsr.step.call(repoUrl: "https://test.com/anotherRepo.git",
+        stepRule.step.pipelineExecute(repoUrl: "https://test.com/anotherRepo.git",
                              branch: 'feature',
                              path: 'path/to/Jenkinsfile',
                              credentialsId: 'abcd1234')
@@ -73,6 +73,6 @@ class PipelineExecuteTest extends BasePiperTest {
         thrown.expect(Exception)
         thrown.expectMessage("ERROR - NO VALUE AVAILABLE FOR repoUrl")
 
-        jsr.step.call()
+        stepRule.step.pipelineExecute()
     }
 }

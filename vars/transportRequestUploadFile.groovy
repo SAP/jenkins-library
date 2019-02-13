@@ -14,7 +14,7 @@ import static com.sap.piper.cm.StepHelpers.getTransportRequestId
 import static com.sap.piper.cm.StepHelpers.getChangeDocumentId
 import static com.sap.piper.cm.StepHelpers.getBackendTypeAndLogInfoIfCMIntegrationDisabled
 
-@Field def STEP_NAME = 'transportRequestUploadFile'
+@Field def STEP_NAME = getClass().getName()
 
 @Field Set GENERAL_CONFIG_KEYS = [
     'changeManagement'
@@ -61,17 +61,21 @@ void call(parameters = [:]) {
             .withMandatoryProperty('changeManagement/git/format')
             .withMandatoryProperty('filePath')
 
-        new Utils().pushToSWA([step: STEP_NAME,
-                                stepParam1: configuration.changeManagement.type,
-                                stepParam2: parameters?.script == null], configuration)
+        new Utils().pushToSWA([
+            step: STEP_NAME,
+            stepParamKey1: 'changeManagementType',
+            stepParam1: configuration.changeManagement.type,
+            stepParamKey2: 'scriptMissing',
+            stepParam2: parameters?.script == null
+        ], configuration)
 
         def changeDocumentId = null
 
         if(backendType == BackendType.SOLMAN) {
-            changeDocumentId = getChangeDocumentId(cm, this, configuration)
+            changeDocumentId = getChangeDocumentId(cm, script, configuration)
         }
 
-        def transportRequestId = getTransportRequestId(cm, this, configuration)
+        def transportRequestId = getTransportRequestId(cm, script, configuration)
 
         configHelper
             .mixin([changeDocumentId: changeDocumentId?.trim() ?: null,

@@ -1,6 +1,7 @@
 import groovy.io.FileType;
 import org.yaml.snakeyaml.Yaml
 import org.codehaus.groovy.control.CompilerConfiguration
+import com.sap.piper.GenerateDocumentation
 import com.sap.piper.DefaultValueCache
 import java.util.regex.Matcher
 
@@ -44,7 +45,7 @@ class TemplateHelper {
         parameters.keySet().toSorted().each {
 
             def props = parameters.get(it)
-            t +=  "| `${it}` | ${props.required ? 'yes' : 'no'} | ${(props.defaultValue ? '`' +  props.defaultValue + '`' : '') } | ${props.value ?: ''} |\n"
+            t +=  "| `${it}` | ${props.mandatory ?: props.required ? 'yes' : 'no'} | ${(props.defaultValue ? '`' +  props.defaultValue + '`' : '') } | ${props.value ?: ''} |\n"
         }
 
         t
@@ -57,25 +58,24 @@ class TemplateHelper {
             t += "* `${it}` - ${props.docu ?: ''}\n"
         }
 
-        t
+        t.trim()
     }
 
     static createStepConfigurationSection(Map parameters) {
 
-        def t = '''|
-                   |We recommend to define values of step parameters via [config.yml file](../configuration.md).
+        def t = '''|We recommend to define values of step parameters via [config.yml file](../configuration.md).
                    |
-                   |In following sections the configuration is possible:'''.stripMargin()
+                   |In following sections of the config.yml the configuration is possible:\n\n'''.stripMargin()
 
         t += '| parameter | general | step | stage |\n'
         t += '|-----------|---------|------|-------|\n'
 
         parameters.keySet().toSorted().each {
             def props = parameters.get(it)
-            t += "| `${it}` | ${props.GENERAL_CONFIG ? 'X' : ''} | ${props.STEP_CONFIG ? 'X' : ''} | ${props.PARAMS ? 'X' : ''} |\n"
+            t += "| `${it}` | ${props.GENERAL_CONFIG ? 'X' : ''} | ${props.STEP_CONFIG ? 'X' : ''} | ${props.STAGE_CONFIG ? 'X' : ''} |\n"
         }
 
-        t
+        t.trim()
     }
 }
 
@@ -91,7 +91,7 @@ class Helper {
 
         new GroovyClassLoader(classLoader, compilerConfig, true)
             .parseClass(new File('src/com/sap/piper/ConfigurationHelper.groovy'))
-            .newInstance(script, [:])
+            .newInstance(script, [:]).loadStepDefaults()
         }
 
     static getPrepareDefaultValuesStep(def gse) {
@@ -195,9 +195,10 @@ class Helper {
 
         boolean docu = false,
                 value = false,
+                mandatory = false,
                 docuEnd = false
 
-        def docuLines = [], valueLines = []
+        def docuLines = [], valueLines = [], mandatoryLines = []
 
         f.eachLine  {
             line ->
@@ -209,7 +210,7 @@ class Helper {
                     def _docu = []
                     docuLines.each { _docu << it  }
                     _docu = Helper.trim(_docu)
-                    step.description = _docu*.trim().join('\n')
+                    step.description = _docu.join('\n')
                 } else {
 
                     def param = retrieveParameterName(line)
@@ -221,17 +222,20 @@ class Helper {
                     if(step.parameters[param].docu || step.parameters[param].value)
                         System.err << "[WARNING] There is already some documentation for parameter '${param}. Is this parameter documented twice?'\n"
 
-                    def _docu = [], _value = []
+                    def _docu = [], _value = [], _mandatory = []
                     docuLines.each { _docu << it  }
                     valueLines.each { _value << it}
+                    mandatoryLines.each { _mandatory << it}
                     step.parameters[param].docu = _docu*.trim().join(' ').trim()
                     step.parameters[param].value = _value*.trim().join(' ').trim()
+                    step.parameters[param].mandatory = _mandatory*.trim().join(' ').trim()
                 }
                 docuLines.clear()
                 valueLines.clear()
+                mandatoryLines.clear()
             }
 
-            if( line.trim()  ==~ /^\/\*\*/ ) {
+            if( line.trim()  ==~ /^\/\*\*.*/ ) {
                 docu = true
             }
 
@@ -239,10 +243,17 @@ class Helper {
                 def _line = line
                 _line = _line.replaceAll('^\\s*', '') // leading white spaces
                 if(_line.startsWith('/**')) _line = _line.replaceAll('^\\/\\*\\*', '') // start comment
-                if(_line.startsWith('*/')) _line = _line.replaceAll('^\\*/', '') // end comment
+                if(_line.startsWith('*/') || _line.trim().endsWith('*/')) _line = _line.replaceAll('^\\*/', '').replaceAll('\\*/\\s*$', '') // end comment
                 if(_line.startsWith('*')) _line = _line.replaceAll('^\\*', '') // continue comment
+                if(_line.startsWith(' ')) _line = _line.replaceAll('^\\s', '')
                 if(_line ==~ /.*@possibleValues.*/) {
+                    mandatory = false // should be something like reset attributes
                     value = true
+                }
+                // some remark for mandatory e.g. some parameters are only mandatory under certain conditions
+                if(_line ==~ /.*@mandatory.*/) {
+                    value = false // should be something like reset attributes ...
+                    mandatory = true
                 }
 
                 if(value) {
@@ -250,22 +261,32 @@ class Helper {
                         _line = (_line =~ /.*@possibleValues\s*?(.*)/)[0][1]
                         valueLines << _line
                     }
-                } else {
-                    docuLines << _line.trim()
+                }
+
+                if(mandatory) {
+                    if(_line) {
+                        _line = (_line =~ /.*@mandatory\s*?(.*)/)[0][1]
+                        mandatoryLines << _line
+                    }
+                }
+
+                if(! value && ! mandatory) {
+                    docuLines << _line
                 }
             }
 
-            if(docu && line.trim() ==~ /^\*\//) {
+            if(docu && line.trim() ==~ /^.*\*\//) {
                 docu = false
                 value = false
+                mandatory = false
                 docuEnd = true
             }
         }
     }
 
     private static isHeader(line) {
-        Matcher headerMatcher = (line =~ /(def|void)\s*call\s*\(/ )
-        return headerMatcher.size() == 1 && headerMatcher[0].size() == 2
+        Matcher headerMatcher = (line =~ /(?:(?:def|void)\s*call\s*\()|(?:@.*)/ )
+        return headerMatcher.size() == 1
     }
 
     private static retrieveParameterName(line) {
@@ -281,7 +302,7 @@ class Helper {
 
         params.put('STEP_CONFIG', script.STEP_CONFIG_KEYS ?: [])
         params.put('GENERAL_CONFIG', script.GENERAL_CONFIG_KEYS ?: [] )
-        params.put('PARAMS', script.PARAMETER_KEYS ?: [] )
+        params.put('STAGE_CONFIG', script.PARAMETER_KEYS ?: [] )
 
         return params
     }
@@ -303,6 +324,25 @@ class Helper {
         if(pPath.size() == 1) return p // there is no tail
         if(p in Map) getValue(p, pPath.tail())
         else return p
+    }
+
+    static resolveDocuRelevantSteps(GroovyScriptEngine gse, File stepsDir) {
+
+        def docuRelevantSteps = []
+
+        stepsDir.traverse(type: FileType.FILES, maxDepth: 0) {
+            if(it.getName().endsWith('.groovy')) {
+                def scriptName = (it =~  /vars\/(.*)\.groovy/)[0][1]
+                def stepScript = gse.createScript("${scriptName}.groovy", new Binding())
+                for (def method in stepScript.getClass().getMethods()) {
+                    if(method.getName() == 'call' && method.getAnnotation(GenerateDocumentation) != null) {
+                        docuRelevantSteps << scriptName
+                        break
+                    }
+                }
+            }
+        }
+        docuRelevantSteps
     }
 }
 
@@ -331,7 +371,9 @@ stepsDocuDir = stepsDocuDir ?: new File('documentation/docs/steps')
 
 
 if(args.length >= 3)
-    steps << args[2]
+    steps = (args as List).drop(2)  // the first two entries are stepsDir and docuDir
+                                    // the other parts are considered as step names
+
 
 // assign parameters
 //
@@ -352,17 +394,15 @@ if( !stepsDir.exists() ) {
 // sanity checks
 //
 
+def gse = new GroovyScriptEngine( [ stepsDir.getName()  ] as String[] , getClass().getClassLoader() )
 
 //
 // find all the steps we have to document (if no step has been provided from outside)
 if( ! steps) {
-    stepsDir.traverse(type: FileType.FILES, maxDepth: 0)
-        { if(it.getName().endsWith('.groovy')) steps << (it =~ /vars\/(.*)\.groovy/)[0][1] }
+    steps = Helper.resolveDocuRelevantSteps(gse, stepsDir)
 } else {
     System.err << "[INFO] Generating docu only for step ${steps.size > 1 ? 's' : ''} ${steps}.\n"
 }
-
-def gse = new GroovyScriptEngine( [ stepsDir.getName()  ] as String[] , getClass().getClassLoader() )
 
 def prepareDefaultValuesStep = Helper.getPrepareDefaultValuesStep(gse)
 
@@ -375,6 +415,19 @@ for (step in steps) {
     } catch(Exception e) {
         exceptionCaught = true
         System.err << "${e.getClass().getName()} caught while handling step '${step}': ${e.getMessage()}.\n"
+    }
+}
+
+// replace @see tag in docu by docu from referenced step.
+for(step in stepDescriptors) {
+    if(step.value.parameters) {
+        for(param in step.value.parameters) {
+            if( param?.value?.docu?.contains('@see')) {
+                def otherStep = param.value.docu.replaceAll('@see', '').trim()
+                param.value.docu = fetchTextFrom(otherStep, param.key, stepDescriptors)
+                param.value.mandatory = fetchMandatoryFrom(otherStep, param.key, stepDescriptors)
+            }
+        }
     }
 }
 
@@ -421,6 +474,26 @@ void renderStep(stepName, stepProperties) {
     theStepDocu.withWriter { w -> w.write text }
 }
 
+def fetchTextFrom(def step, def parameterName, def steps) {
+    try {
+        def docuFromOtherStep = steps[step]?.parameters[parameterName]?.docu
+        if(! docuFromOtherStep) throw new IllegalStateException("No docu found for parameter '${parameterName}' in step ${step}.")
+        return docuFromOtherStep
+    } catch(e) {
+        System.err << "[ERROR] Cannot retrieve docu for parameter ${parameterName} from step ${step}.\n"
+        throw e
+    }
+}
+
+def fetchMandatoryFrom(def step, def parameterName, def steps) {
+    try {
+        return steps[step]?.parameters[parameterName]?.mandatory
+    } catch(e) {
+        System.err << "[ERROR] Cannot retrieve docu for parameter ${parameterName} from step ${step}.\n"
+        throw e
+    }
+}
+
 def handleStep(stepName, prepareDefaultValuesStep, gse) {
 
     File theStep = new File(stepsDir, "${stepName}.groovy")
@@ -465,14 +538,14 @@ def handleStep(stepName, prepareDefaultValuesStep, gse) {
     step.parameters['script'] = [
                                 docu: 'The common script environment of the Jenkinsfile running. ' +
                                         'Typically the reference to the script calling the pipeline ' +
-                                        'step is provided with the this parameter, as in script: this. ' +
+                                        'step is provided with the this parameter, as in `script: this`. ' +
                                         'This allows the function to access the ' +
                                         'commonPipelineEnvironment for retrieving, for example, configuration parameters.',
                                 required: true,
 
-                                GENERAL_CONFIG: 'false',
-                                STEP_CONFIG: 'false',
-                                PARAMS: 'true'
+                                GENERAL_CONFIG: false,
+                                STEP_CONFIG: false,
+                                STAGE_CONFIG: false
                             ]
 
     // END special handling for 'script' parameter
@@ -481,9 +554,11 @@ def handleStep(stepName, prepareDefaultValuesStep, gse) {
 
         it ->
 
+            def defaultValue = Helper.getValue(defaultConfig, it.split('/'))
+
             def parameterProperties =   [
-                                            defaultValue: Helper.getValue(defaultConfig, it.split('/')),
-                                            required: requiredParameters.contains((it as String))
+                                            defaultValue: defaultValue,
+                                            required: requiredParameters.contains((it as String)) && defaultValue == null
                                         ]
 
         step.parameters.put(it, parameterProperties)

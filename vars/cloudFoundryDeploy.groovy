@@ -1,3 +1,5 @@
+import com.sap.piper.JenkinsUtils
+
 import static com.sap.piper.Prerequisites.checkScript
 
 import com.sap.piper.Utils
@@ -6,7 +8,7 @@ import com.sap.piper.CfManifestUtils
 
 import groovy.transform.Field
 
-@Field String STEP_NAME = 'cloudFoundryDeploy'
+@Field String STEP_NAME = getClass().getName()
 
 @Field Set GENERAL_CONFIG_KEYS = STEP_CONFIG_KEYS
 
@@ -15,6 +17,7 @@ import groovy.transform.Field
     'deployUser',
     'deployTool',
     'deployType',
+    'keepOldInstance',
     'dockerImage',
     'dockerWorkspace',
     'mtaDeployParameters',
@@ -31,14 +34,10 @@ void call(Map parameters = [:]) {
 
     handlePipelineStepErrors (stepName: STEP_NAME, stepParameters: parameters) {
 
-        def utils = parameters.juStabUtils
-        if (utils == null) {
-            utils = new Utils()
-        }
+        def utils = parameters.juStabUtils ?: new Utils()
+        def jenkinsUtils = parameters.jenkinsUtilsStub ?: new JenkinsUtils()
 
-        def script = checkScript(this, parameters)
-        if (script == null)
-            script = this
+        final script = checkScript(this, parameters) ?: this
 
         Map config = ConfigurationHelper.newInstance(this)
             .loadStepDefaults()
@@ -53,56 +52,79 @@ void call(Map parameters = [:]) {
             .withMandatoryProperty('cloudFoundry/credentialsId')
             .use()
 
-        utils.pushToSWA([step: STEP_NAME, stepParam1: config.deployTool, stepParam2: config.deployType, stepParam3: parameters?.script == null], config)
+        utils.pushToSWA([
+            step: STEP_NAME,
+            stepParamKey1: 'deployTool',
+            stepParam1: config.deployTool,
+            stepParamKey2: 'deployType',
+            stepParam2: config.deployType,
+            stepParamKey3: 'scriptMissing',
+            stepParam3: parameters?.script == null
+        ], config)
 
         echo "[${STEP_NAME}] General parameters: deployTool=${config.deployTool}, deployType=${config.deployType}, cfApiEndpoint=${config.cloudFoundry.apiEndpoint}, cfOrg=${config.cloudFoundry.org}, cfSpace=${config.cloudFoundry.space}, cfCredentialsId=${config.cloudFoundry.credentialsId}, deployUser=${config.deployUser}"
 
-        config.stashContent = utils.unstashAll(config.stashContent)
+        //make sure that all relevant descriptors, are available in workspace
+        utils.unstashAll(config.stashContent)
+        //make sure that for further execution whole workspace, e.g. also downloaded artifacts are considered
+        config.stashContent = []
 
-        if (config.deployTool == 'mtaDeployPlugin') {
-            // set default mtar path
-            config = ConfigurationHelper.newInstance(this, config)
-                .addIfEmpty('mtaPath', config.mtaPath?:findMtar())
-                .use()
+        boolean deploy = false
+        boolean deploySuccess = true
+        try {
+            if (config.deployTool == 'mtaDeployPlugin') {
+                deploy = true
+                // set default mtar path
+                config = ConfigurationHelper.newInstance(this, config)
+                    .addIfEmpty('mtaPath', config.mtaPath?:findMtar())
+                    .use()
 
-            dockerExecute(dockerImage: config.dockerImage, dockerWorkspace: config.dockerWorkspace, stashContent: config.stashContent) {
-                deployMta(config)
+                dockerExecute(script: script, dockerImage: config.dockerImage, dockerWorkspace: config.dockerWorkspace, stashContent: config.stashContent) {
+                    deployMta(config)
+                }
             }
-            return
+
+            if (config.deployTool == 'cf_native') {
+                deploy = true
+                config.smokeTest = ''
+
+                if (config.smokeTestScript == 'blueGreenCheckScript.sh') {
+                    writeFile file: config.smokeTestScript, text: libraryResource(config.smokeTestScript)
+                }
+
+                config.smokeTest = '--smoke-test $(pwd)/' + config.smokeTestScript
+                sh "chmod +x ${config.smokeTestScript}"
+
+                echo "[${STEP_NAME}] CF native deployment (${config.deployType}) with cfAppName=${config.cloudFoundry.appName}, cfManifest=${config.cloudFoundry.manifest}, smokeTestScript=${config.smokeTestScript}"
+
+                dockerExecute (
+                    script: script,
+                    dockerImage: config.dockerImage,
+                    dockerWorkspace: config.dockerWorkspace,
+                    stashContent: config.stashContent,
+                    dockerEnvVars: [CF_HOME:"${config.dockerWorkspace}", CF_PLUGIN_HOME:"${config.dockerWorkspace}", STATUS_CODE: "${config.smokeTestStatusCode}"]
+                ) {
+                    deployCfNative(config)
+                }
+            }
+        } catch (err) {
+            deploySuccess = false
+            throw err
+        } finally {
+            if (deploy) {
+                reportToInflux(script, config, deploySuccess, jenkinsUtils)
+            }
+
         }
 
-        if (config.deployTool == 'cf_native') {
-            config.smokeTest = ''
-
-            if (config.smokeTestScript == 'blueGreenCheckScript.sh') {
-                writeFile file: config.smokeTestScript, text: libraryResource(config.smokeTestScript)
-            }
-
-            config.smokeTest = '--smoke-test $(pwd)/' + config.smokeTestScript
-            sh "chmod +x ${config.smokeTestScript}"
-
-            echo "[${STEP_NAME}] CF native deployment (${config.deployType}) with cfAppName=${config.cloudFoundry.appName}, cfManifest=${config.cloudFoundry.manifest}, smokeTestScript=${config.smokeTestScript}"
-
-            dockerExecute (
-                dockerImage: config.dockerImage,
-                dockerWorkspace: config.dockerWorkspace,
-                stashContent: config.stashContent,
-                dockerEnvVars: [CF_HOME:"${config.dockerWorkspace}", CF_PLUGIN_HOME:"${config.dockerWorkspace}", STATUS_CODE: "${config.smokeTestStatusCode}"]
-            ) {
-                deployCfNative(config)
-            }
-
-            return
-        }
     }
 }
 
 def findMtar(){
-    def mtarPath = ''
-    def mtarFiles = findFiles(glob: '**/target/*.mtar')
+    def mtarFiles = findFiles(glob: '**/*.mtar')
 
     if(mtarFiles.length > 1){
-        error 'Found multiple *.mtar files, please specify file via mtaPath parameter! ${mtarFiles}'
+        error "Found multiple *.mtar files, please specify file via mtaPath parameter! ${mtarFiles}"
     }
     if(mtarFiles.length == 1){
         return mtarFiles[0].path
@@ -116,13 +138,15 @@ def deployCfNative (config) {
         passwordVariable: 'password',
         usernameVariable: 'username'
     )]) {
-        def deployCommand = 'push'
+        def deployCommand = selectCfDeployCommandForDeployType(config)
+
         if (config.deployType == 'blue-green') {
-            deployCommand = 'blue-green-deploy'
             handleLegacyCfManifest(config)
         } else {
             config.smokeTest = ''
         }
+
+        def blueGreenDeployOptions = deleteOptionIfRequired(config)
 
         // check if appName is available
         if (config.cloudFoundry.appName == null || config.cloudFoundry.appName == '') {
@@ -140,12 +164,49 @@ def deployCfNative (config) {
         }
 
         sh """#!/bin/bash
-            set +x  
+            set +x
+            set -e
             export HOME=${config.dockerWorkspace}
             cf login -u \"${username}\" -p '${password}' -a ${config.cloudFoundry.apiEndpoint} -o \"${config.cloudFoundry.org}\" -s \"${config.cloudFoundry.space}\"
             cf plugins
-            cf ${deployCommand} ${config.cloudFoundry.appName?:''} ${config.deployType == 'blue-green'?'--delete-old-apps':''} -f '${config.cloudFoundry.manifest}' ${config.smokeTest}"""
+            cf ${deployCommand} ${config.cloudFoundry.appName ?: ''} ${blueGreenDeployOptions} -f '${config.cloudFoundry.manifest}' ${config.smokeTest}
+            """
+        stopOldAppIfRunning(config)
         sh "cf logout"
+    }
+}
+
+private String selectCfDeployCommandForDeployType(Map config) {
+    if (config.deployType == 'blue-green') {
+        return 'blue-green-deploy'
+    } else {
+        return 'push'
+    }
+}
+
+private String deleteOptionIfRequired(Map config) {
+    boolean deleteOldInstance = !config.keepOldInstance
+    if (deleteOldInstance && config.deployType == 'blue-green') {
+        return '--delete-old-apps'
+    } else {
+        return ''
+    }
+}
+
+private void stopOldAppIfRunning(Map config) {
+    String oldAppName = "${config.cloudFoundry.appName}-old"
+    String cfStopOutputFileName = "${UUID.randomUUID()}-cfStopOutput.txt"
+
+    if (config.keepOldInstance && config.deployType == 'blue-green') {
+        int cfStopReturncode = sh (returnStatus: true, script: "cf stop $oldAppName  &> $cfStopOutputFileName")
+
+        if (cfStopReturncode > 0) {
+            String cfStopOutput = readFile(file: cfStopOutputFileName)
+
+            if (!cfStopOutput.contains("$oldAppName not found")) {
+                error "Could not stop application $oldAppName. Error: $cfStopOutput"
+            }
+        }
     }
 }
 
@@ -154,8 +215,12 @@ def deployMta (config) {
     if (!config.mtaExtensionDescriptor.isEmpty() && !config.mtaExtensionDescriptor.startsWith('-e ')) config.mtaExtensionDescriptor = "-e ${config.mtaExtensionDescriptor}"
 
     def deployCommand = 'deploy'
-    if (config.deployType == 'blue-green')
+    if (config.deployType == 'blue-green') {
         deployCommand = 'bg-deploy'
+        if (config.mtaDeployParameters.indexOf('--no-confirm') < 0) {
+            config.mtaDeployParameters += ' --no-confirm'
+        }
+    }
 
     withCredentials([usernamePassword(
         credentialsId: config.cloudFoundry.credentialsId,
@@ -166,6 +231,7 @@ def deployMta (config) {
         sh """#!/bin/bash
             export HOME=${config.dockerWorkspace}
             set +x
+            set -e
             cf api ${config.cloudFoundry.apiEndpoint}
             cf login -u ${username} -p '${password}' -a ${config.cloudFoundry.apiEndpoint} -o \"${config.cloudFoundry.org}\" -s \"${config.cloudFoundry.space}\"
             cf plugins
@@ -187,4 +253,34 @@ Transformed manifest file content: $transformedManifest"""
         sh "rm ${config.cloudFoundry.manifest}"
         writeYaml file: config.cloudFoundry.manifest, data: manifest
     }
+}
+
+
+private void reportToInflux(script, config, deploySuccess, JenkinsUtils jenkinsUtils) {
+    def deployUser = ''
+    withCredentials([usernamePassword(
+        credentialsId: config.cloudFoundry.credentialsId,
+        passwordVariable: 'password',
+        usernameVariable: 'username'
+    )]) {
+        deployUser = username
+    }
+
+    def timeFinished = new Date().format( 'MMM dd, yyyy - HH:mm:ss' )
+    def triggerCause = jenkinsUtils.isJobStartedByUser()?'USER':(jenkinsUtils.isJobStartedByTimer()?'TIMER': 'OTHER')
+
+    def deploymentData = [deployment_data: [
+        artifactUrl: 'n/a', //might be added later on during pipeline run (written to commonPipelineEnvironment)
+        deployTime: timeFinished,
+        jobTrigger: triggerCause
+    ]]
+    def deploymentDataTags = [deployment_data: [
+        artifactVersion: script.commonPipelineEnvironment.getArtifactVersion(),
+        deployUser: deployUser,
+        deployResult: deploySuccess?'SUCCESS':'FAILURE',
+        cfApiEndpoint: config.cloudFoundry.apiEndpoint,
+        cfOrg: config.cloudFoundry.org,
+        cfSpace: config.cloudFoundry.space,
+    ]]
+    influxWriteData script: script, customData: [:], customDataTags: [:], customDataMap: deploymentData, customDataMapTags: deploymentDataTags
 }

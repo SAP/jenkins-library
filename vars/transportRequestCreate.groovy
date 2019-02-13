@@ -13,7 +13,7 @@ import static com.sap.piper.cm.StepHelpers.getBackendTypeAndLogInfoIfCMIntegrati
 import static com.sap.piper.cm.StepHelpers.getChangeDocumentId
 import hudson.AbortException
 
-@Field def STEP_NAME = 'transportRequestCreate'
+@Field def STEP_NAME = getClass().getName()
 
 @Field GENERAL_CONFIG_KEYS = STEP_CONFIG_KEYS
 
@@ -27,7 +27,7 @@ import hudson.AbortException
 
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS.plus(['changeDocumentId'])
 
-def call(parameters = [:]) {
+void call(parameters = [:]) {
 
     def transportRequestId
 
@@ -63,12 +63,15 @@ def call(parameters = [:]) {
 
         def changeDocumentId = null
 
-        new Utils().pushToSWA([step: STEP_NAME,
-                                stepParam1: parameters?.script == null], configuration)
+        new Utils().pushToSWA([
+            step: STEP_NAME,
+            stepParamKey1: 'scriptMissing',
+            stepParam1: parameters?.script == null
+        ], configuration)
 
         if(backendType == BackendType.SOLMAN) {
 
-            changeDocumentId = getChangeDocumentId(cm, this, configuration)
+            changeDocumentId = getChangeDocumentId(cm, script, configuration)
 
             configHelper.mixin([changeDocumentId: changeDocumentId?.trim() ?: null], ['changeDocumentId'] as Set)
                         .withMandatoryProperty('developmentSystemId')
@@ -110,7 +113,6 @@ def call(parameters = [:]) {
 
 
         echo "[INFO] Transport Request '$transportRequestId' has been successfully created."
+        script.commonPipelineEnvironment.setTransportRequestId(transportRequestId)
     }
-
-    return transportRequestId
 }

@@ -1,13 +1,16 @@
 plugins:
   codenarc:
     enabled: true
+    checks:
+      BooleanGetBoolean:
+        enabled: false
   editorconfig:
     enabled: true
     config:
       editorconfig: .editorconfig
     # https://docs.codeclimate.com/docs/advanced-configuration#section-exclude-patterns
     exclude_patterns:
-    - "documentation/docs/images/"
+    - "documentation/**/images/"
     - "cfg/id_rsa.enc"
   fixme:
     enabled: true
@@ -17,5 +20,9 @@ plugins:
       - FIXME
   markdownlint:
     enabled: true
+    checks:
+      # https://github.com/DavidAnson/markdownlint/blob/master/doc/Rules.md#md013---line-length
+      MD013:
+        enabled: false
   shellcheck:
     enabled: true

@@ -7,7 +7,7 @@ import com.sap.piper.k8s.ContainerMap
 import groovy.transform.Field
 import groovy.text.SimpleTemplateEngine
 
-@Field String STEP_NAME = 'seleniumExecuteTests'
+@Field String STEP_NAME = getClass().getName()
 
 @Field GENERAL_CONFIG_KEYS = STEP_CONFIG_KEYS
 
@@ -48,8 +48,11 @@ void call(Map parameters = [:], Closure body) {
             .dependingOn('buildTool').mixin('dockerWorkspace')
             .use()
 
-        utils.pushToSWA([step: STEP_NAME,
-                        stepParam1: parameters?.script == null], config)
+        utils.pushToSWA([
+            step: STEP_NAME,
+            stepParamKey1: 'scriptMissing',
+            stepParam1: parameters?.script == null
+        ], config)
 
         dockerExecute(
                 script: script,

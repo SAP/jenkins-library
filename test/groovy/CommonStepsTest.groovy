@@ -47,6 +47,7 @@ public class CommonStepsTest extends BasePiperTest{
                'commonPipelineEnvironment',
                'handlePipelineStepErrors',
                'pipelineExecute',
+               'piperPipeline',
                'prepareDefaultValues',
                'setupCommonPipelineEnvironment',
                'toolValidate',
@@ -103,12 +104,14 @@ public class CommonStepsTest extends BasePiperTest{
             'toolValidate', // step is intended to be configured by other steps
             'durationMeasure', // only expects parameters via signature
             'prepareDefaultValues', // special step (infrastructure)
+            'piperPipeline', // special step (infrastructure)
             'pipelineStashFilesAfterBuild', // intended to be called from pipelineStashFiles
             'pipelineStashFilesBeforeBuild', // intended to be called from pipelineStashFiles
             'pipelineStashFiles', // only forwards to before/after step
             'pipelineExecute', // special step (infrastructure)
             'commonPipelineEnvironment', // special step (infrastructure)
             'handlePipelineStepErrors', // special step (infrastructure)
+            'piperStageWrapper' //intended to be called from within stages
             ]
 
     @Test
@@ -165,7 +168,10 @@ public class CommonStepsTest extends BasePiperTest{
     @Test
     public void stepsWithWrongFieldNameTest() {
 
-        def whitelist = ['commonPipelineEnvironment']
+        def whitelist = [
+            'commonPipelineEnvironment',
+            'piperPipeline'
+        ]
 
         def stepsWithWrongStepName = []
 
@@ -216,7 +222,6 @@ public class CommonStepsTest extends BasePiperTest{
         def stepsWithCallMethodsOtherThanVoid = []
 
         def whitelist = [
-            'transportRequestCreate',
             'durationMeasure',
             ]
 
@@ -238,7 +243,7 @@ public class CommonStepsTest extends BasePiperTest{
     private static getSteps() {
         List steps = []
         new File('vars').traverse(type: FileType.FILES, maxDepth: 0)
-            { if(it.getName().endsWith('.groovy')) steps << (it =~ /vars\/(.*)\.groovy/)[0][1] }
+            { if(it.getName().endsWith('.groovy')) steps << (it =~ /vars[\\\/](.*)\.groovy/)[0][1] }
         return steps
     }
 }

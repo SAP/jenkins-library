@@ -8,7 +8,7 @@ import com.sap.piper.versioning.ArtifactVersioning
 import groovy.transform.Field
 import groovy.text.SimpleTemplateEngine
 
-@Field String STEP_NAME = 'artifactSetVersion'
+@Field String STEP_NAME = getClass().getName()
 @Field Map CONFIG_KEY_COMPATIBILITY = [gitSshKeyCredentialsId: 'gitCredentialsId']
 
 @Field Set GENERAL_CONFIG_KEYS = STEP_CONFIG_KEYS
@@ -39,8 +39,7 @@ void call(Map parameters = [:], Closure body = null) {
 
         def gitUtils = parameters.juStabGitUtils ?: new GitUtils()
 
-        if (gitUtils.insideWorkTree()) {
-            if (sh(returnStatus: true, script: 'git diff --quiet HEAD') != 0)
+        if (gitUtils.isWorkTreeDirty()) {
                 error "[${STEP_NAME}] Files in the workspace have been changed previously - aborting ${STEP_NAME}"
         }
         if (script == null)
@@ -62,7 +61,15 @@ void call(Map parameters = [:], Closure body = null) {
         config = configHelper.addIfEmpty('timestamp', getTimestamp(config.timestampTemplate))
                              .use()
 
-        new Utils().pushToSWA([step: STEP_NAME, stepParam1: config.buildTool, stepParam2: config.artifactType, stepParam3: parameters?.script == null], config)
+        new Utils().pushToSWA([
+            step: STEP_NAME,
+            stepParamKey1: 'buildTool',
+            stepParam1: config.buildTool,
+            stepParamKey2: 'artifactType',
+            stepParam2: config.artifactType,
+            stepParamKey3: 'scriptMissing',
+            stepParam3: parameters?.script == null
+        ], config)
 
         def artifactVersioning = ArtifactVersioning.getArtifactVersioning(config.buildTool, script, config)
         def currentVersion = artifactVersioning.getVersion()
@@ -88,7 +95,7 @@ void call(Map parameters = [:], Closure body = null) {
                             :script.commonPipelineEnvironment.getGitSshUrl())
                 .withMandatoryProperty('gitSshUrl')
                 .use()
-            
+
             def gitConfig = []
 
             if(config.gitUserEMail) gitConfig.add("-c user.email=\"${config.gitUserEMail}\"")

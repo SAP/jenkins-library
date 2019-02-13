@@ -2,6 +2,7 @@ package com.sap.piper
 
 import com.cloudbees.groovy.cps.NonCPS
 
+@API
 class DefaultValueCache implements Serializable {
     private static DefaultValueCache instance
 

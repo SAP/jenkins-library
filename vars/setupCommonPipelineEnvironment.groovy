@@ -4,7 +4,7 @@ import com.sap.piper.ConfigurationHelper
 import com.sap.piper.Utils
 import groovy.transform.Field
 
-@Field String STEP_NAME = 'setupCommonPipelineEnvironment'
+@Field String STEP_NAME = getClass().getName()
 @Field Set GENERAL_CONFIG_KEYS = ['collectTelemetryData']
 
 void call(Map parameters = [:]) {
@@ -24,9 +24,13 @@ void call(Map parameters = [:]) {
             .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS)
             .use()
 
-        (parameters.utils ?: new Utils())
-                   .pushToSWA([step: STEP_NAME, stepParam4: parameters.customDefaults?'true':'false',
-                                                stepParam5: Boolean.toString( ! (script?.commonPipelineEnvironment?.getConfigProperties() ?: [:]).isEmpty())], config)
+        (parameters.utils ?: new Utils()).pushToSWA([
+            step: STEP_NAME,
+            stepParamKey4: 'customDefaults',
+            stepParam4: parameters.customDefaults?'true':'false',
+            stepParamKey5: 'legacyConfig',
+            stepParam5: Boolean.toString( ! (script?.commonPipelineEnvironment?.getConfigProperties() ?: [:]).isEmpty())
+        ], config)
     }
 }
 

@@ -3,6 +3,7 @@ import static com.sap.piper.Prerequisites.checkScript
 import com.cloudbees.groovy.cps.NonCPS
 
 import com.sap.piper.ConfigurationHelper
+import com.sap.piper.JenkinsUtils
 import com.sap.piper.MapUtils
 import com.sap.piper.Utils
 import groovy.transform.Field
@@ -11,9 +12,11 @@ import groovy.transform.Field
     'junit','jacoco','cobertura','jmeter'
 ]
 
-@Field def STEP_NAME = 'testsPublishResults'
+@Field def STEP_NAME = getClass().getName()
 @Field Set GENERAL_CONFIG_KEYS = TOOLS
-@Field Set STEP_CONFIG_KEYS = TOOLS
+@Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS.plus([
+    'failOnError'
+])
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
 
 /**
@@ -24,10 +27,7 @@ import groovy.transform.Field
  */
 void call(Map parameters = [:]) {
     handlePipelineStepErrors (stepName: STEP_NAME, stepParameters: parameters) {
-
-        def script = checkScript(this, parameters)
-        if (script == null)
-            script = this
+        def script = checkScript(this, parameters) ?: this
 
         prepare(parameters)
 
@@ -40,16 +40,21 @@ void call(Map parameters = [:]) {
             .mixin(parameters, PARAMETER_KEYS)
             .use()
 
-        new Utils().pushToSWA([step: STEP_NAME,
-                                stepParam1: parameters?.script == null], configuration)
+        new Utils().pushToSWA([
+            step: STEP_NAME,
+            stepParamKey1: 'scriptMissing',
+            stepParam1: parameters?.script == null
+        ], configuration)
 
-        // UNIT TESTS
         publishJUnitReport(configuration.get('junit'))
-        // CODE COVERAGE
         publishJacocoReport(configuration.get('jacoco'))
         publishCoberturaReport(configuration.get('cobertura'))
-        // PERFORMANCE
         publishJMeterReport(configuration.get('jmeter'))
+
+        if (configuration.failOnError && JenkinsUtils.hasTestFailures(script.currentBuild)) {
+            script.currentBuild.result = 'FAILURE'
+            error "[${STEP_NAME}] Some tests failed!"
+        }
     }
 }
 

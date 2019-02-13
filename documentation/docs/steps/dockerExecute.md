@@ -2,44 +2,11 @@
 
 ## Description
 
-Executes a closure inside a docker container with the specified docker image.
-The workspace is mounted into the docker image.
-Proxy environment variables defined on the Jenkins machine are also available in the Docker container.
+Content here is generated from corresponnding step, see `vars`.
 
 ## Parameters
 
-| parameter | mandatory | default | possible values |
-| ----------|-----------|---------|-----------------|
-|script|yes|||
-|containerPortMappings|no|||
-|dockerEnvVars|no|`[:]`||
-|dockerImage|no|`''`||
-|dockerName|no|||
-|dockerOptions|no|`''`||
-|dockerVolumeBind|no|`[:]`||
-|dockerWorkspace|no|||
-|jenkinsKubernetes|no|`[jnlpAgent:s4sdk/jenkins-agent-k8s:latest]`||
-|sidecarEnvVars|no|||
-|sidecarImage|no|||
-|sidecarName|no|||
-|sidecarOptions|no|||
-|sidecarVolumeBind|no|||
-|sidecarWorkspace|no|||
-
-* `script` defines the global script environment of the Jenkinsfile run. Typically `this` is passed to this parameter. This allows the function to access the [`commonPipelineEnvironment`](commonPipelineEnvironment.md) for storing the measured duration.
-* `containerPortMappings`: Map which defines per docker image the port mappings, like `containerPortMappings: ['selenium/standalone-chrome': [[name: 'selPort', containerPort: 4444, hostPort: 4444]]]`
-* `dockerEnvVars`: Environment variables to set in the container, e.g. [http_proxy:'proxy:8080']
-* `dockerImage`: Name of the docker image that should be used. If empty, Docker is not used and the command is executed directly on the Jenkins system.
-* `dockerName`: Kubernetes case: Name of the container launching `dockerImage`, SideCar: Name of the container in local network
-* `dockerOptions` Docker options to be set when starting the container. It can be a list or a string.
-* `dockerVolumeBind` Volumes that should be mounted into the container.
-* `dockerWorkspace`: only relevant for Kubernetes case: specifies a dedicated user home directory for the container which will be passed as value for environment variable `HOME`
-* `sidecarEnvVars` defines environment variables for the sidecar container, similar to `dockerEnvVars`
-* `sidecarImage`: Name of the docker image of the sidecar container. Do not provide this value if no sidecar container is required.
-* `sidecarName`: as `dockerName` for the sidecar container
-* `sidecarOptions`: as `dockerOptions` for the sidecar container
-* `sidecarVolumeBind`: as `dockerVolumeBind` for the sidecar container
-* `sidecarWorkspace`: as `dockerWorkspace` for the sidecar container
+Content here is generated from corresponnding step, see `vars`.
 
 ## Kubernetes support
 
@@ -47,31 +14,7 @@ If the Jenkins is setup on a Kubernetes cluster, then you can execute the closur
 
 ## Step configuration
 
-We recommend to define values of step parameters via [config.yml file](../configuration.md).
-
-In following sections the configuration is possible:
-
-| parameter | general | step | stage |
-| ----------|-----------|---------|-----------------|
-|script||||
-|containerPortMappings||X|X|
-|dockerEnvVars||X|X|
-|dockerImage||X|X|
-|dockerName||X|X|
-|dockerOptions||X|X|
-|dockerVolumeBind||X|X|
-|dockerWorkspace||X|X|
-|jenkinsKubernetes|X|||
-|sidecarEnvVars||X|X|
-|sidecarImage||X|X|
-|sidecarName||X|X|
-|sidecarOptions||X|X|
-|sidecarVolumeBind||X|X|
-|sidecarWorkspace||X|X|
-
-## Return value
-
-none
+Content here is generated from corresponnding step, see `vars`.
 
 ## Side effects
 

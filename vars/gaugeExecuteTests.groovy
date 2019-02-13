@@ -6,7 +6,7 @@ import com.sap.piper.GitUtils
 import groovy.text.SimpleTemplateEngine
 import groovy.transform.Field
 
-@Field String STEP_NAME = 'gaugeExecuteTests'
+@Field String STEP_NAME = getClass().getName()
 @Field Set STEP_CONFIG_KEYS = [
     'buildTool',
     'dockerEnvVars',
@@ -47,7 +47,13 @@ void call(Map parameters = [:]) {
             .dependingOn('buildTool').mixin('testOptions')
             .use()
 
-        utils.pushToSWA([step: STEP_NAME, stepParam1: config.buildTool, stepParam2: config.dockerName], config)
+        utils.pushToSWA([
+            step: STEP_NAME,
+            stepParamKey1: 'buildTool',
+            stepParam1: config.buildTool,
+            stepParamKey2: 'dockerName',
+            stepParam2: config.dockerName
+        ], config)
 
         if(!config.dockerEnvVars.TARGET_SERVER_URL && config.testServerUrl)
             config.dockerEnvVars.TARGET_SERVER_URL = config.testServerUrl

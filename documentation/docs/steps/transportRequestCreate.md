@@ -7,6 +7,8 @@ Creates
 * a Transport Request for a Change Document on the Solution Manager (type `SOLMAN`) or
 * a Transport Request inside an ABAP system (type`CTS`)
 
+The id of the transport request is availabe via [commonPipelineEnvironment.getTransportRequestId()](commonPipelineEnvironment.md)
+
 ## Prerequisites
 
 * **[Change Management Client 2.0.0 or compatible version](http://central.maven.org/maven2/com/sap/devops/cmclient/dist.cli/)** - available for download on Maven Central.
@@ -28,6 +30,7 @@ Creates
 | `changeManagement/changeDocumentLabel`        | no        | `ChangeDocument\s?:`                                   | regex pattern      |
 | `changeManagement/git/format`        | no        | `%b`                                                   | see `git log --help` |
 | `changeManagement/type`           | no        | `SOLMAN`                                               | `SOLMAN`, `CTS`    |
+| `developmentSystemId` | for `SOLMAN` |         | |
 
 * `script` - The common script environment of the Jenkinsfile running. Typically the reference to the script calling the pipeline step is provided with the `this` parameter, as in `script: this`. This allows the function to access the [`commonPipelineEnvironment`](commonPipelineEnvironment.md) for retrieving, for example, configuration parameters.
 * `changeDocumentId` - for `SOLMAN` only. The id of the change document to that the transport request is bound to. Typically this value is provided via commit message in the commit history.
@@ -42,14 +45,14 @@ Creates
 * `description` - for `CTS` only. The description of the transport request.
 * `targetSystem` - for `CTS` only. The system receiving the transport request.
 * `transportType` - for type `CTS` only. Typically `W` (workbench) or `C` customizing.
-
+* `developmentSystemId`- for `SOLMAN` only. The logical system id for which the transport request is created. The format is `<SID>~<TYPE>(/<CLIENT>)?`. For ABAP Systems the `developmentSystemId` looks like `DEV~ABAP/100`. For non-ABAP systems the `developmentSystemId` looks like e.g. `L21~EXT_SRV` or `J01~JAVA`. In case the system type is not known (in the examples provided here: `EXT_SRV` or `JAVA`) the information can be retrieved from the Solution Manager instance.
 ## Step configuration
 
 The step is configured using a customer configuration file provided as
 resource in an custom shared library.
 
 ```groovy
-@Library('piper-library-os@master') _
+@Library('piper-lib-os@master') _
 
 // the shared lib containing the additional configuration
 // needs to be configured in Jenkins
@@ -97,7 +100,7 @@ The parameters can also be provided when the step is invoked. For examples see b
 
 ## Return value
 
-The id of the Transport Request that has been created.
+none
 
 ## Exceptions
 

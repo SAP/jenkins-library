@@ -5,7 +5,7 @@ import com.sap.piper.Utils
 
 import groovy.transform.Field
 
-@Field def STEP_NAME = 'mavenExecute'
+@Field def STEP_NAME = getClass().getName()
 
 @Field Set GENERAL_CONFIG_KEYS = []
 @Field Set STEP_CONFIG_KEYS = [
@@ -37,8 +37,11 @@ void call(Map parameters = [:]) {
             .mixin(parameters, PARAMETER_KEYS)
             .use()
 
-        new Utils().pushToSWA([step: STEP_NAME,
-                                stepParam1: parameters?.script == null], configuration)
+        new Utils().pushToSWA([
+            step: STEP_NAME,
+            stepParamKey1: 'scriptMissing',
+            stepParam1: parameters?.script == null
+        ], configuration)
 
         String command = "mvn"
 

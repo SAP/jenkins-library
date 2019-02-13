@@ -1,37 +1,110 @@
 import static com.sap.piper.Prerequisites.checkScript
 
 import com.cloudbees.groovy.cps.NonCPS
-
 import com.sap.piper.ConfigurationHelper
+import com.sap.piper.GenerateDocumentation
 import com.sap.piper.JenkinsUtils
 import com.sap.piper.Utils
 import com.sap.piper.k8s.ContainerMap
-
 import groovy.transform.Field
 
-@Field def STEP_NAME = 'dockerExecute'
+@Field def STEP_NAME = getClass().getName()
 @Field def PLUGIN_ID_DOCKER_WORKFLOW = 'docker-workflow'
 
-@Field Set GENERAL_CONFIG_KEYS = ['jenkinsKubernetes']
-
-@Field Set PARAMETER_KEYS = [
-    'containerPortMappings',
-    'dockerEnvVars',
-    'dockerImage',
-    'dockerName',
-    'dockerOptions',
-    'dockerWorkspace',
-    'dockerVolumeBind',
-    'sidecarEnvVars',
-    'sidecarImage',
-    'sidecarName',
-    'sidecarOptions',
-    'sidecarWorkspace',
-    'sidecarVolumeBind',
-    'stashContent'
+@Field Set GENERAL_CONFIG_KEYS = [
+    /**
+     *
+     */
+    'jenkinsKubernetes'
 ]
-@Field Set STEP_CONFIG_KEYS = PARAMETER_KEYS
+@Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS.plus([
+    /**
+     * Kubernetes only:
+     * Allows to specify start command for container created with dockerImage parameter to overwrite Piper default (`/usr/bin/tail -f /dev/null`).
+     */
+    'containerCommand',
+    /**
+     * Map which defines per docker image the port mappings, e.g. `containerPortMappings: ['selenium/standalone-chrome': [[name: 'selPort', containerPort: 4444, hostPort: 4444]]]`.
+     */
+    'containerPortMappings',
+    /**
+     * Kubernetes only:
+     * Allows to specify the shell to be used for execution of commands.
+     */
+    'containerShell',
+    /**
+     * Environment variables to set in the container, e.g. [http_proxy: 'proxy:8080'].
+     */
+    'dockerEnvVars',
+    /**
+     * Name of the docker image that should be used. If empty, Docker is not used and the command is executed directly on the Jenkins system.
+     */
+    'dockerImage',
+    /**
+     * Kubernetes only:
+     * Name of the container launching `dockerImage`.
+     * SideCar only:
+     * Name of the container in local network.
+     */
+    'dockerName',
+    /**
+     * Docker options to be set when starting the container (List or String).
+     */
+    'dockerOptions',
+    /**
+     * Volumes that should be mounted into the container.
+     */
+    'dockerVolumeBind',
+    /**
+     * Set this to 'false' to bypass a docker image pull. Usefull during development process. Allows testing of images which are available in the local registry only.
+     */
+    'dockerPullImage',
+    /**
+     * Kubernetes only:
+     * Specifies a dedicated user home directory for the container which will be passed as value for environment variable `HOME`.
+     */
+    'dockerWorkspace',
+    /**
+     * as `dockerEnvVars` for the sidecar container
+     */
+    'sidecarEnvVars',
+    /**
+     * as `dockerImage` for the sidecar container
+     */
+    'sidecarImage',
+    /**
+     * as `dockerName` for the sidecar container
+     */
+    'sidecarName',
+    /**
+     * as `dockerOptions` for the sidecar container
+     */
+    'sidecarOptions',
+    /**
+     * as `dockerVolumeBind` for the sidecar container
+     */
+    'sidecarVolumeBind',
+    /**
+     * Set this to 'false' to bypass a docker image pull. Usefull during development process. Allows testing of images which are available in the local registry only.
+     */
+    'sidecarPullImage',
+    /**
+     * as `dockerWorkspace` for the sidecar container
+     */
+    'sidecarWorkspace',
+    /**
+     * Specific stashes that should be considered for the step execution.
+     */
+    'stashContent'
+])
+@Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
 
+/**
+ * Executes a closure inside a docker container with the specified docker image.
+ * The workspace is mounted into the docker image.
+ * Proxy environment variables defined on the Jenkins machine are also available in the Docker container.
+ */
+@GenerateDocumentation
 void call(Map parameters = [:], body) {
     handlePipelineStepErrors(stepName: STEP_NAME, stepParameters: parameters) {
 
@@ -57,7 +130,10 @@ void call(Map parameters = [:], body) {
                 if (!config.sidecarImage) {
                     dockerExecuteOnKubernetes(
                         script: script,
+                        containerCommand: config.containerCommand,
+                        containerShell: config.containerShell,
                         dockerImage: config.dockerImage,
+                        dockerPullImage: config.dockerPullImage,
                         dockerEnvVars: config.dockerEnvVars,
                         dockerWorkspace: config.dockerWorkspace,
                         stashContent: config.stashContent
@@ -70,6 +146,7 @@ void call(Map parameters = [:], body) {
                         script: script,
                         containerCommands: [:],
                         containerEnvVars: [:],
+                        containerPullImageFlags: [:],
                         containerMap: [:],
                         containerName: config.dockerName,
                         containerPortMappings: [:],
@@ -80,6 +157,9 @@ void call(Map parameters = [:], body) {
 
                     paramMap.containerEnvVars[config.dockerImage] = config.dockerEnvVars
                     paramMap.containerEnvVars[config.sidecarImage] = config.sidecarEnvVars
+
+                    paramMap.containerPullImageFlags[config.dockerImage] = config.dockerPullImage
+                    paramMap.containerPullImageFlags[config.sidecarImage] = config.sidecarPullImage
 
                     paramMap.containerMap[config.dockerImage] = config.dockerName
                     paramMap.containerMap[config.sidecarImage] = config.sidecarName
@@ -102,12 +182,6 @@ void call(Map parameters = [:], body) {
                 executeInsideDocker = false
             }
 
-            def returnCode = sh script: 'which docker > /dev/null', returnStatus: true
-            if (returnCode != 0) {
-                echo "[WARNING][${STEP_NAME}] No docker environment found (command 'which docker' did not return with '0'). Configured docker image '${config.dockerImage}' will not be used."
-                executeInsideDocker = false
-            }
-
             returnCode = sh script: 'docker ps -q > /dev/null', returnStatus: true
             if (returnCode != 0) {
                 echo "[WARNING][$STEP_NAME] Cannot connect to docker daemon (command 'docker ps' did not return with '0'). Configured docker image '${config.dockerImage}' will not be used."
@@ -116,7 +190,8 @@ void call(Map parameters = [:], body) {
             if (executeInsideDocker && config.dockerImage) {
                 utils.unstashAll(config.stashContent)
                 def image = docker.image(config.dockerImage)
-                image.pull()
+                if (config.dockerPullImage) image.pull()
+                else echo"[INFO][$STEP_NAME] Skipped pull of image '${config.dockerImage}'."
                 if (!config.sidecarImage) {
                     image.inside(getDockerOptions(config.dockerEnvVars, config.dockerVolumeBind, config.dockerOptions)) {
                         body()
@@ -126,14 +201,15 @@ void call(Map parameters = [:], body) {
                     sh "docker network create ${networkName}"
                     try{
                         def sidecarImage = docker.image(config.sidecarImage)
-                        sidecarImage.pull()
+                        if (config.sidecarPullImage) sidecarImage.pull()
+                        else echo"[INFO][$STEP_NAME] Skipped pull of image '${config.sidecarImage}'."
                         config.sidecarOptions = config.sidecarOptions?:[]
-                        if(config.sidecarName)
+                        if (config.sidecarName)
                             config.sidecarOptions.add("--network-alias ${config.sidecarName}")
                         config.sidecarOptions.add("--network ${networkName}")
                         sidecarImage.withRun(getDockerOptions(config.sidecarEnvVars, config.sidecarVolumeBind, config.sidecarOptions)) { c ->
                             config.dockerOptions = config.dockerOptions?:[]
-                            if(config.dockerName)
+                            if (config.dockerName)
                                 config.dockerOptions.add("--network-alias ${config.dockerName}")
                             config.dockerOptions.add("--network ${networkName}")
                             image.inside(getDockerOptions(config.dockerEnvVars, config.dockerVolumeBind, config.dockerOptions)) {
@@ -155,7 +231,7 @@ void call(Map parameters = [:], body) {
 
 
 
-/**
+/*
  * Returns a string with docker options containing
  * environment variables (if set).
  * Possible to extend with further options.
@@ -192,10 +268,11 @@ private getDockerOptions(Map dockerEnvVars, Map dockerVolumeBind, def dockerOpti
 
     if (dockerOptions) {
         if (dockerOptions instanceof CharSequence) {
-            options.add(dockerOptions.toString())
-        } else if (dockerOptions instanceof List) {
+            dockerOptions = [dockerOptions]
+        }
+        if (dockerOptions instanceof List) {
             for (String option : dockerOptions) {
-                options.add "${option}"
+                options << escapeBlanks(option)
             }
         } else {
             throw new IllegalArgumentException("Unexpected type for dockerOptions. Expected was either a list or a string. Actual type was: '${dockerOptions.getClass()}'")
@@ -223,4 +300,23 @@ def getContainerDefined(config) {
 
 boolean isKubernetes() {
     return Boolean.valueOf(env.ON_K8S)
+}
+
+/*
+ * Escapes blanks for values in key/value pairs
+ * E.g. <code>description=Lorem ipsum</code> is
+ * changed to <code>description=Lorem\ ipsum</code>.
+ */
+@NonCPS
+def escapeBlanks(def s) {
+
+    def EQ='='
+    def parts=s.split(EQ)
+
+    if(parts.length == 2) {
+        parts[1]=parts[1].replaceAll(' ', '\\\\ ')
+        s = parts.join(EQ)
+    }
+
+    return s
 }

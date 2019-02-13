@@ -1,6 +1,10 @@
+#
+# ATTENTION: This file is part of the API, breaking changes here directly affect the consumers of the library.
+#            Please avoid breaking changes if possible.
+#
+
 #Project Setup
 general:
-  productiveBranch: 'master'
   collectTelemetryData: true
   changeManagement:
     type: 'NONE' # SOLMAN, CTS, NONE
@@ -17,6 +21,8 @@ general:
   gitSshKeyCredentialsId: '' #needed to allow sshagent to run with local ssh key
   jenkinsKubernetes:
     jnlpAgent: 's4sdk/jenkins-agent-k8s:latest'
+  manualConfirmation: true
+  productiveBranch: 'master'
 
 #Steps Specific Configuration
 steps:
@@ -123,6 +129,7 @@ steps:
       apiEndpoint: 'https://api.cf.eu10.hana.ondemand.com'
     deployTool: 'cf_native'
     deployType: 'standard'
+    keepOldInstance: false
     mtaDeployParameters: '-f'
     mtaExtensionDescriptor: ''
     mtaPath: ''
@@ -137,12 +144,24 @@ steps:
     mtaDeployPlugin:
       dockerImage: 's4sdk/docker-cf-cli'
       dockerWorkspace: '/home/piper'
+  containerExecuteStructureTests:
+    containerCommand: '/busybox/tail -f /dev/null'
+    containerShell: '/busybox/sh'
+    dockerImage: 'ppiper/container-structure-test'
+    dockerOptions: "-u 0 --entrypoint=''"
+    failOnError: true
+    stashContent:
+      - 'tests'
+    testReportFilePath: 'cst-report.json'
   dockerExecute:
+    dockerPullImage: true
+    sidecarPullImage: true
     stashContent: []
   dockerExecuteOnKubernetes:
+    dockerPullImage: true
     stashContent: []
     stashIncludes:
-      workspace: '**/*.*'
+      workspace: '**/*'
     stashExcludes:
       workspace: 'nohup.out'
   githubPublishRelease:
@@ -181,7 +200,28 @@ steps:
   healthExecuteCheck:
     healthEndpoint: ''
   influxWriteData:
-    influxServer: 'jenkins'
+    influxServer: ''
+  karmaExecuteTests:
+    containerPortMappings:
+      'node:8-stretch':
+        - containerPort: 9876
+          hostPort: 9876
+    dockerEnvVars:
+      NO_PROXY: 'localhost,selenium,$NO_PROXY'
+      no_proxy: 'localhost,selenium,$no_proxy'
+    dockerImage: 'node:8-stretch'
+    dockerName: 'karma'
+    dockerWorkspace: '/home/node'
+    installCommand: 'npm install --quiet'
+    modules:
+      - '.'
+    runCommand: 'npm run karma'
+    sidecarEnvVars:
+      NO_PROXY: 'localhost,karma,$NO_PROXY'
+      no_proxy: 'localhost,karma,$no_proxy'
+    stashContent:
+      - buildDescriptor
+      - tests
   mailSendNotification:
     notificationAttachment: true
     notifyCulprits: true
@@ -197,15 +237,18 @@ steps:
     dockerImage: 's4sdk/docker-neo-cli'
     deployMode: 'mta'
     warAction: 'deploy'
-    vmSize: 'lite'
-    neoCredentialsId: 'CI_CREDENTIALS_ID'
+    neo:
+      size: 'lite'
+      credentialsId: 'CI_CREDENTIALS_ID'
+
   newmanExecute:
     dockerImage: 'node:8-stretch'
     failOnError: true
     newmanCollection: '**/*.postman_collection.json'
     newmanEnvironment: ''
     newmanGlobals: ''
-    newmanRunCommand: "run ${config.newmanCollection} --environment '${config.newmanEnvironment}' --globals '${config.newmanGlobals}' --reporters junit,html --reporter-junit-export target/newman/TEST-${collectionDisplayName}.xml --reporter-html-export target/newman/TEST-${collectionDisplayName}.html"
+    newmanInstallCommand: 'npm install newman newman-reporter-html --global --quiet'
+    newmanRunCommand: "run '${config.newmanCollection}' --environment '${config.newmanEnvironment}' --globals '${config.newmanGlobals}' --reporters junit,html --reporter-junit-export 'target/newman/TEST-${collectionDisplayName}.xml' --reporter-html-export 'target/newman/TEST-${collectionDisplayName}.html'"
     stashContent:
       - 'tests'
   pipelineRestartSteps:
@@ -229,9 +272,9 @@ steps:
       git: '**/gitmetadata/**'
       opa5: '**/*.*'
       opensourceConfiguration: '**/srcclr.yml, **/vulas-custom.properties, **/.nsprc, **/.retireignore, **/.retireignore.json, **/.snyk'
-      pipelineConfigAndTests: '.pipeline/*.*'
+      pipelineConfigAndTests: '.pipeline/**'
       securityDescriptor: '**/xs-security.json'
-      tests: '**/pom.xml, **/*.json, **/*.xml, **/src/**, **/node_modules/**, **/specs/**, **/env/**, **/*.js'
+      tests: '**/pom.xml, **/*.json, **/*.xml, **/src/**, **/node_modules/**, **/specs/**, **/env/**, **/*.js, **/tests/**'
     stashExcludes:
       buildDescriptor: '**/node_modules/**/package.json'
       deployDescriptor: ''
@@ -262,6 +305,9 @@ steps:
       dockerImage: 'node:8-stretch'
       dockerName: 'npm'
       dockerWorkspace: '/home/node'
+  slackSendNotification:
+    color: "${buildStatus == 'SUCCESS'?'#008000':'#E60000'}"
+    defaultMessage: "${buildStatus}: Job ${env.JOB_NAME} <${env.BUILD_URL}|#${env.BUILD_NUMBER}>"
   snykExecute:
     buildDescriptorFile: './package.json'
     dockerImage: 'node:8-stretch'
@@ -279,8 +325,9 @@ steps:
     options: "-Dsonar.projectVersion='${projectVersion}'"
     useWebhook: false
   testsPublishResults:
+    failOnError: false
     junit:
-      pattern: '**/target/surefire-reports/*.xml'
+      pattern: '**/TEST-*.xml'
       updateResults: false
       allowEmptyResults: true
       archive: false
@@ -320,3 +367,22 @@ steps:
       developmentSystemId: null
   transportRequestUploadFile:
   transportRequestRelease:
+  uiVeri5ExecuteTests:
+    failOnError: false
+    dockerEnvVars: {}
+    installCommand: 'npm install @ui5/uiveri5 --global --quiet'
+    seleniumPort: 4444
+    stashContent:
+      - 'buildDescriptor'
+      - 'tests'
+    testOptions: ''
+    runCommand: "uiveri5 --seleniumAddress='http://${config.seleniumHost}:${config.seleniumPort}/wd/hub'"
+
+  #defaults for stage wrapper
+  piperStageWrapper:
+    projectExtensionsDirectory: '.pipeline/extensions/'
+    globalExtensionsDirectory: ''
+    stageLocking: true
+    nodeLabel: ''
+    stashContent:
+      - 'pipelineConfigAndTests'

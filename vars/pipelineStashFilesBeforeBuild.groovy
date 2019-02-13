@@ -4,7 +4,7 @@ import com.sap.piper.Utils
 import com.sap.piper.ConfigurationHelper
 import groovy.transform.Field
 
-@Field String STEP_NAME = 'pipelineStashFilesBeforeBuild'
+@Field String STEP_NAME = getClass().getName()
 @Field Set STEP_CONFIG_KEYS = ['runOpaTests', 'stashIncludes', 'stashExcludes']
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
 
@@ -32,8 +32,11 @@ void call(Map parameters = [:]) {
             .mixin(parameters, PARAMETER_KEYS)
             .use()
 
-        new Utils().pushToSWA([step: STEP_NAME,
-                                stepParam1: parameters?.script == null], config)
+        new Utils().pushToSWA([
+            step: STEP_NAME,
+            stepParamKey1: 'scriptMissing',
+            stepParam1: parameters?.script == null
+        ], config)
 
         if (config.runOpaTests){
             utils.stash('opa5', config.stashIncludes?.get('opa5')?config.stashIncludes.opa5:'**/*.*', config.stashExcludes?.get('opa5')?config.stashExcludes.opa5:'')
@@ -48,7 +51,7 @@ void call(Map parameters = [:]) {
         //store deployment descriptor files depending on technology, e.g. *.mtaext.yml
         utils.stashWithMessage(
             'deployDescriptor',
-            '[${STEP_NAME}] no deployment descriptor files provided: ',
+            "[${STEP_NAME}] no deployment descriptor files provided: ",
             config.stashIncludes.deployDescriptor,
             config.stashExcludes.deployDescriptor
         )
@@ -58,34 +61,34 @@ void call(Map parameters = [:]) {
         sh "chmod -R u+w gitmetadata"
         utils.stashWithMessage(
             'git',
-            '[${STEP_NAME}] no git repo files detected: ',
+            "[${STEP_NAME}] no git repo files detected: ",
             config.stashIncludes.git,
             config.stashExcludes.git
         )
         //store nsp & retire exclusion file for future use
         utils.stashWithMessage(
             'opensourceConfiguration',
-            '[${STEP_NAME}] no opensourceConfiguration files provided: ',
+            "[${STEP_NAME}] no opensourceConfiguration files provided: ",
             config.stashIncludes.get('opensourceConfiguration'),
             config.stashExcludes.get('opensourceConfiguration')
         )
         //store pipeline configuration including additional groovy test scripts for future use
         utils.stashWithMessage(
             'pipelineConfigAndTests',
-            '[${STEP_NAME}] no pipeline configuration and test files found: ',
+            "[${STEP_NAME}] no pipeline configuration and test files found: ",
             config.stashIncludes.pipelineConfigAndTests,
             config.stashExcludes.pipelineConfigAndTests
         )
         utils.stashWithMessage(
             'securityDescriptor',
-            '[${STEP_NAME}] no security descriptor found: ',
+            "[${STEP_NAME}] no security descriptor found: ",
             config.stashIncludes.securityDescriptor,
             config.stashExcludes.securityDescriptor
         )
         //store files required for tests, e.g. Gauge, SUT, ...
         utils.stashWithMessage(
             'tests',
-            '[${STEP_NAME}] no files for tests provided: ',
+            "[${STEP_NAME}] no files for tests provided: ",
             config.stashIncludes.tests,
             config.stashExcludes.tests
         )

@@ -33,6 +33,7 @@ Available parameters:
 | parameter | mandatory | default | possible values |
 | ----------|-----------|---------|-----------------|
 | script | yes | | |
+| `failOnError` | no | `false` | `true`, `false` |
 | junit | no | `false` | true, false |
 | jacoco | no | `false` | true, false |
 | cobertura | no | `false` | true, false |
@@ -43,6 +44,7 @@ Available parameters:
     with the `this` parameter, as in `script: this`.
     This allows the function to access the [`commonPipelineEnvironment`](commonPipelineEnvironment.md)
     for retrieving, for example, configuration parameters.
+* `failOnError` - If `failOnError` it set to `true` the step will fail the build if JUnit detected any failing tests.
 * `junit` - Publishes test results files in JUnit format with the [JUnit Plugin](https://plugins.jenkins.io/junit).
 * `jacoco` - Publishes code coverage with the [JaCoCo plugin](https://plugins.jenkins.io/jacoco) .
 * `cobertura` - Publishes code coverage with the [Cobertura plugin](https://plugins.jenkins.io/cobertura).
@@ -54,7 +56,7 @@ Each of the parameters `junit`, `jacoco`, `cobertura` and `jmeter` can be set to
 
 | parameter | mandatory | default | possible values |
 | ----------|-----------|---------|-----------------|
-| pattern | no | `'**/target/surefire-reports/*.xml'` |  |
+| pattern | no | `'**/TEST-*.xml'` |  |
 | archive | no | `false` | true, false |
 | updateResults | no | `false` | true, false |
 | allowEmptyResults | no | `true` | true, false |
@@ -107,10 +109,6 @@ Following parameters can also be specified as step parameters using the global c
 * `jacoco`
 * `cobertura`
 * `jmeter`
-
-## Return value
-
-none
 
 ## Side effects
 
