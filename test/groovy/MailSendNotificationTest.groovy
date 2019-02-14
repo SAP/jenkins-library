@@ -72,8 +72,6 @@ user3@domain.com noreply+github@domain.com'''
             ],
             'master',
             2)
-        println("LOGS: ${loggingRule.log}")
-        println("RESULT: ${result}")
         // asserts
         assertThat(result, containsString('user2@domain.com'))
         assertThat(result, containsString('user3@domain.com'))

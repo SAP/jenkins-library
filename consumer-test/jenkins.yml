@@ -1,0 +1,29 @@
+jenkins:
+  numExecutors: 10
+unclassified:
+  globallibraries:
+    libraries:
+    - defaultVersion: "master"
+      name: "s4sdk-pipeline-library"
+      retriever:
+        modernSCM:
+          scm:
+            git:
+              remote: "https://github.com/SAP/cloud-s4-sdk-pipeline-lib.git"
+    - defaultVersion: "master"
+      name: "piper-library-os"
+      retriever:
+        modernSCM:
+          scm:
+            git:
+              remote: "https://github.com/__REPO_SLUG__.git"
+credentials:
+  system:
+    domainCredentials:
+      - credentials:
+          - usernamePassword:
+              scope: GLOBAL
+              id: "devops-docker-images-IT-cf"
+              username: ${CX_INFRA_IT_CF_USERNAME}
+              password: ${CX_INFRA_IT_CF_PASSWORD}
+              description: "SAP CP Trail account for test deployment"
