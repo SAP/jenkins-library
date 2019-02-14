@@ -120,16 +120,16 @@ void call(Map parameters = [:], body) {
             .mixin(parameters, PARAMETER_KEYS)
             .use()
 
+        new Utils().pushToSWA([
+            step: STEP_NAME,
+            stepParamKey1: 'kubernetes',
+            stepParam1: isKubernetes(),
+            stepParamKey2: 'scriptMissing',
+            stepParam2: parameters?.script == null
+        ], config)
+
         if (isKubernetes() && config.dockerImage) {
             if (env.POD_NAME && isContainerDefined(config)) {
-                new Utils().pushToSWA([
-                    step: STEP_NAME,
-                    stepParamKey1: 'kubernetes',
-                    stepParam1: true,
-                    stepParamKey2: 'scriptMissing',
-                    stepParam2: parameters?.script == null
-                ], config)
-
                 container(getContainerDefined(config)) {
                     echo "[INFO][${STEP_NAME}] Executing inside a Kubernetes Container."
                     body()
@@ -185,14 +185,6 @@ void call(Map parameters = [:], body) {
                 }
             }
         } else {
-            new Utils().pushToSWA([
-                step: STEP_NAME,
-                stepParamKey1: 'kubernetes',
-                stepParam1: false,
-                stepParamKey2: 'scriptMissing',
-                stepParam2: parameters?.script == null
-            ], config)
-
             boolean executeInsideDocker = true
             if (!JenkinsUtils.isPluginActive(PLUGIN_ID_DOCKER_WORKFLOW)) {
                 echo "[WARNING][${STEP_NAME}] Docker not supported. Plugin '${PLUGIN_ID_DOCKER_WORKFLOW}' is not installed or not active. Configured docker image '${config.dockerImage}' will not be used."
