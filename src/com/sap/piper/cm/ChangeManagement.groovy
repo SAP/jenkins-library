@@ -204,7 +204,8 @@ public class ChangeManagement implements Serializable {
         String developmentInstance,
         String developmentClient,
         String applicationDescription,
-        String abapPackage) {
+        String abapPackage,
+        String codePage) {
 
         def args = [
             ABAP_DEVELOPMENT_INSTANCE: developmentInstance,
@@ -213,6 +214,7 @@ public class ChangeManagement implements Serializable {
             ABAP_APPLICATION_DESC: applicationDescription,
             ABAP_PACKAGE: abapPackage,
             ZIP_FILE_URL: filePath,
+            CODE_PAGE: codePage,
         ]
 
         int rc = executeWithCredentials(

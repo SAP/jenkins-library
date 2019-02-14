@@ -234,7 +234,8 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
                 String developmentInstance,
                 String developmentClient,
                 String applicationDescription,
-                String abapPackage) {
+                String abapPackage,
+                String codePage) {
 
                 cmUtilsReceivedParams = [
                     docker: docker,
@@ -246,12 +247,14 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
                     developmentInstance: developmentInstance,
                     developmentClient: developmentClient,
                     applicationDescription: applicationDescription,
-                    abapPackage: abapPackage]
+                    abapPackage: abapPackage,
+                    codePage: codePage]
             }
         }
 
         stepRule.step.transportRequestUploadFile(script: nullScript,
                  applicationUrl: 'http://example.org/blobstore/xyz.zip',
+                 codePage: 'UTF-9',
                  transportRequestId: '123456',
                  changeManagement: [
                      type: 'RFC',
@@ -281,7 +284,8 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
                 developmentInstance: '001',
                 developmentClient: '002',
                 applicationDescription: 'Lorem ipsum',
-                abapPackage:'XYZ'
+                abapPackage:'XYZ',
+                codePage: 'UTF-9',
             ]
     }
 
@@ -303,13 +307,15 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
                 String developmentInstance,
                 String developmentClient,
                 String applicationDescription,
-                String abapPackage) {
+                String abapPackage,
+                String codePage) {
                 throw new ChangeManagementException('upload failed')
             }
         }
 
         stepRule.step.transportRequestUploadFile(script: nullScript,
                  applicationUrl: 'http://example.org/blobstore/xyz.zip',
+                 codePage: 'UTF-9',
                  transportRequestId: '123456',
                  changeManagement: [
                      type: 'RFC',
