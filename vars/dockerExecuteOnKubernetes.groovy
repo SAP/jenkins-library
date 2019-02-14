@@ -113,6 +113,12 @@ void call(Map parameters = [:], body) {
             .addIfEmpty('uniqueId', UUID.randomUUID().toString())
         Map config = configHelper.use()
 
+        new Utils().pushToSWA([
+            step: STEP_NAME,
+            stepParamKey1: 'scriptMissing',
+            stepParam1: parameters?.script == null
+        ], config)
+
         if (!parameters.containerMap) {
             configHelper.withMandatoryProperty('dockerImage')
             config.containerName = 'container-exec'

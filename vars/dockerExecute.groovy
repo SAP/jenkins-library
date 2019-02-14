@@ -119,6 +119,7 @@ void call(Map parameters = [:], body) {
             .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName?:env.STAGE_NAME, STEP_CONFIG_KEYS)
             .mixin(parameters, PARAMETER_KEYS)
             .use()
+
         if (isKubernetes() && config.dockerImage) {
             if (env.POD_NAME && isContainerDefined(config)) {
                 container(getContainerDefined(config)) {
@@ -176,6 +177,12 @@ void call(Map parameters = [:], body) {
                 }
             }
         } else {
+            new Utils().pushToSWA([
+                step: STEP_NAME,
+                stepParamKey1: 'scriptMissing',
+                stepParam1: parameters?.script == null
+            ], config)
+
             boolean executeInsideDocker = true
             if (!JenkinsUtils.isPluginActive(PLUGIN_ID_DOCKER_WORKFLOW)) {
                 echo "[WARNING][${STEP_NAME}] Docker not supported. Plugin '${PLUGIN_ID_DOCKER_WORKFLOW}' is not installed or not active. Configured docker image '${config.dockerImage}' will not be used."
