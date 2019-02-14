@@ -36,8 +36,14 @@ class NpmExecuteTest extends BasePiperTest {
 
     @Test
     void testNpmExecute() {
-        stepRule.step.npmExecute(script: nullScript, dockerImage: 'node:8-stretch', npmCommand: 'run build')
+        stepRule.step.npmExecute(script: nullScript, dockerImage: 'node:8-stretch')
         assertEquals 'node:8-stretch', dockerExecuteRule.dockerParams.dockerImage
+    }
+
+    @Test
+    void testNpmExecuteWithClosure() {
+        stepRule.step.npmExecute(script: nullScript, dockerImage: 'node:8-stretch', npmCommand: 'run build') { }
+        assert shellRule.shell.find { c -> c.contains('npm run build') }
     }
 
     @Test
