@@ -56,7 +56,7 @@ public class TransportRequestCreateTest extends BasePiperTest {
     }
 
     @Test
-    public void changeIdNotProvidedTest() {
+    public void changeIdNotProvidedSOLANTest() {
 
         thrown.expect(IllegalArgumentException)
         thrown.expectMessage("Change document id not provided (parameter: 'changeDocumentId' or via commit history).")
@@ -75,7 +75,7 @@ public class TransportRequestCreateTest extends BasePiperTest {
     }
 
     @Test
-    public void developmentSystemIdNotProvidedTest() {
+    public void developmentSystemIdNotProvidedSOLMANTest() {
 
         thrown.expect(IllegalArgumentException)
         thrown.expectMessage("ERROR - NO VALUE AVAILABLE FOR developmentSystemId")
@@ -84,7 +84,7 @@ public class TransportRequestCreateTest extends BasePiperTest {
     }
 
     @Test
-    public void createTransportRequestFailureTest() {
+    public void createTransportRequestFailureSOLMANTest() {
 
         ChangeManagement cm = new ChangeManagement(nullScript) {
 
