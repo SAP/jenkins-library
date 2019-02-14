@@ -6,7 +6,7 @@ import com.cloudbees.groovy.cps.NonCPS
 class ConfigurationMerger {
     @NonCPS
     static Map merge(Map configs, Set configKeys, Map defaults) {
-        Map filteredConfig = configKeys==null?configs:configKeys.size()==0?[:]:configs.subMap(configKeys)
+        Map filteredConfig = configKeys==null? configs: configs.subMap(configKeys)
 
         return MapUtils.merge(MapUtils.pruneNulls(defaults),
                               MapUtils.pruneNulls(filteredConfig))

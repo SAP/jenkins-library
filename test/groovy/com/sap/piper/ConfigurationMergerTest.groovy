@@ -36,6 +36,24 @@ class ConfigurationMergerTest {
     }
 
     @Test
+    void testMergeParameterWithEmptyKeys(){
+        Map defaults = [buildTarget: 'NEO', mtaJarLocation: 'mta.jar']
+        Map parameters = [dockerImage: 'foo']
+        Set parameterKeys = []
+        Map merged = ConfigurationMerger.merge(parameters, parameterKeys, defaults)
+        Assert.assertEquals(null, merged.dockerImage)
+    }
+
+    @Test
+    void testMergeParameterWithNullKeys(){
+        Map defaults = [buildTarget: 'NEO', mtaJarLocation: 'mta.jar']
+        Map parameters = [dockerImage: 'foo']
+        Set parameterKeys = null
+        Map merged = ConfigurationMerger.merge(parameters, parameterKeys, defaults)
+        Assert.assertEquals('foo', merged.dockerImage)
+    }
+
+    @Test
     void testMergeDeepStructure(){
         Map defaults = [fruits: [apples: 1, oranges: 10, bananas: 0]]
         Map configuration = [fruits: [bananas: 50, cucumbers: 1000]]
