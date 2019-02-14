@@ -235,7 +235,8 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
                 String developmentClient,
                 String applicationDescription,
                 String abapPackage,
-                String codePage) {
+                String codePage,
+                boolean acceptUnixStyleLineEndings) {
 
                 cmUtilsReceivedParams = [
                     docker: docker,
@@ -248,13 +249,15 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
                     developmentClient: developmentClient,
                     applicationDescription: applicationDescription,
                     abapPackage: abapPackage,
-                    codePage: codePage]
+                    codePage: codePage,
+                    acceptUnixStyleLineEndings: acceptUnixStyleLineEndings]
             }
         }
 
         stepRule.step.transportRequestUploadFile(script: nullScript,
                  applicationUrl: 'http://example.org/blobstore/xyz.zip',
                  codePage: 'UTF-9',
+                 acceptUnixStyleLineEndings: true,
                  transportRequestId: '123456',
                  changeManagement: [
                      type: 'RFC',
@@ -286,6 +289,7 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
                 applicationDescription: 'Lorem ipsum',
                 abapPackage:'XYZ',
                 codePage: 'UTF-9',
+                acceptUnixStyleLineEndings: true,
             ]
     }
 
@@ -308,7 +312,8 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
                 String developmentClient,
                 String applicationDescription,
                 String abapPackage,
-                String codePage) {
+                String codePage,
+                boolean acceptUnixStyleLineEndings) {
                 throw new ChangeManagementException('upload failed')
             }
         }
@@ -316,6 +321,7 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
         stepRule.step.transportRequestUploadFile(script: nullScript,
                  applicationUrl: 'http://example.org/blobstore/xyz.zip',
                  codePage: 'UTF-9',
+                 acceptUnixStyleLineEndings: true,
                  transportRequestId: '123456',
                  changeManagement: [
                      type: 'RFC',

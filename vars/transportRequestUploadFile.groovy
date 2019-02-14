@@ -26,6 +26,7 @@ import static com.sap.piper.cm.StepHelpers.getBackendTypeAndLogInfoIfCMIntegrati
         'applicationDescription',
         'abapPackage',
         'codePage', //RFC
+        'acceptUnixStyleLineEndings', // RFC
     ])
 
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS.plus([
@@ -68,6 +69,7 @@ void call(parameters = [:]) {
             .withMandatoryProperty('filePath', null, { backendType in [BackendType.SOLMAN, BackendType.CTS] })
             .withMandatoryProperty('applicationUrl', null, { backendType == BackendType.RFC })
             .withMandatoryProperty('codePage', null, { backendType == BackendType.RFC })
+            .withMandatoryProperty('acceptUnixStyleLineEndings', null, { backendType == BackendType.RFC })
             .withMandatoryProperty('changeManagement/rfc/developmentInstance', null, { backendType == BackendType.RFC })
             .withMandatoryProperty('changeManagement/rfc/developmentClient', null, { backendType == BackendType.RFC })
             .withMandatoryProperty('changeManagement/rfc/docker/image', null, {backendType == BackendType.RFC})
@@ -153,7 +155,8 @@ void call(parameters = [:]) {
                             configuration.changeManagement.rfc.developmentClient,
                             configuration.applicationDescription,
                             configuration.abapPackage,
-                            configuration.codePage)
+                            configuration.codePage,
+                            configuration.acceptUnixStyleLineEndings)
                         break
 
                 }
