@@ -122,6 +122,14 @@ void call(Map parameters = [:], body) {
 
         if (isKubernetes() && config.dockerImage) {
             if (env.POD_NAME && isContainerDefined(config)) {
+                new Utils().pushToSWA([
+                    step: STEP_NAME,
+                    stepParamKey1: 'kubernetes',
+                    stepParam1: true,
+                    stepParamKey2: 'scriptMissing',
+                    stepParam2: parameters?.script == null
+                ], config)
+
                 container(getContainerDefined(config)) {
                     echo "[INFO][${STEP_NAME}] Executing inside a Kubernetes Container."
                     body()
@@ -179,8 +187,10 @@ void call(Map parameters = [:], body) {
         } else {
             new Utils().pushToSWA([
                 step: STEP_NAME,
-                stepParamKey1: 'scriptMissing',
-                stepParam1: parameters?.script == null
+                stepParamKey1: 'kubernetes',
+                stepParam1: false,
+                stepParamKey2: 'scriptMissing',
+                stepParam2: parameters?.script == null
             ], config)
 
             boolean executeInsideDocker = true
