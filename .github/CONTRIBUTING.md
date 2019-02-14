@@ -19,6 +19,7 @@ Generally speaking, you should fork this repository, make changes in your own fo
 
 * [Configure this repository as a remote for your own fork](https://help.github.com/articles/configuring-a-remote-for-a-fork/), and
 * [Sync your fork with this repository](https://help.github.com/articles/syncing-a-fork/) before beginning to work on a new pull-request.
+* For the consumer tests you'll need to configure `CX_INFRA_IT_CF_USERNAME` and `CX_INFRA_IT_CF_PASSWORD` with valid credentials for SAP Cloud Platform in [TravisCI](https://docs.travis-ci.com/user/environment-variables/#defining-variables-in-repository-settings).
 
 ### Tests
 
