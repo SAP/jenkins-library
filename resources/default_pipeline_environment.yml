@@ -233,6 +233,7 @@ steps:
   mtaBuild:
     buildTarget: 'NEO'
     mtaJarLocation: 'mta.jar'
+    dockerImage: 'ppiper/mta-archive-builder'
   neoDeploy:
     dockerImage: 's4sdk/docker-neo-cli'
     deployMode: 'mta'
