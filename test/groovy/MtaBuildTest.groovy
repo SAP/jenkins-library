@@ -73,7 +73,7 @@ public class MtaBuildTest extends BasePiperTest {
 
 
     @Test
-    void mtarFilePathFromCommonPipelineEnviromentTest() {
+    void marFilePathFromCommonPipelineEnvironmentTest() {
 
         stepRule.step.mtaBuild(script: nullScript,
                       buildTarget: 'NEO')
@@ -163,9 +163,9 @@ public class MtaBuildTest extends BasePiperTest {
         stepRule.step.mtaBuild(script: nullScript,
                       buildTarget: 'NEO')
 
-        assert shellRule.shell.find(){ c -> c.contains("-jar mta.jar --mtar")}
-        assert loggingRule.log.contains("SAP Multitarget Application Archive Builder file 'mta.jar' retrieved from configuration.")
-        assert loggingRule.log.contains("Using SAP Multitarget Application Archive Builder 'mta.jar'.")
+        assert shellRule.shell.find(){ c -> c.contains("-jar /opt/sap/mta/lib/mta.jar --mtar")}
+        assert loggingRule.log.contains("SAP Multitarget Application Archive Builder file '/opt/sap/mta/lib/mta.jar' retrieved from configuration.")
+        assert loggingRule.log.contains("Using SAP Multitarget Application Archive Builder '/opt/sap/mta/lib/mta.jar'.")
     }
 
 
@@ -174,7 +174,7 @@ public class MtaBuildTest extends BasePiperTest {
 
         stepRule.step.mtaBuild(script: nullScript, buildTarget: 'NEO')
 
-        assert shellRule.shell.find { c -> c.contains('java -jar mta.jar --mtar com.mycompany.northwind.mtar --build-target=NEO build')}
+        assert shellRule.shell.find { c -> c.contains('java -jar /opt/sap/mta/lib/mta.jar --mtar com.mycompany.northwind.mtar --build-target=NEO build')}
     }
 
 
@@ -185,7 +185,7 @@ public class MtaBuildTest extends BasePiperTest {
 
         stepRule.step.mtaBuild(script: nullScript)
 
-        assert shellRule.shell.find(){ c -> c.contains('java -jar mta.jar --mtar com.mycompany.northwind.mtar --build-target=NEO build')}
+        assert shellRule.shell.find(){ c -> c.contains('java -jar /opt/sap/mta/lib/mta.jar --mtar com.mycompany.northwind.mtar --build-target=NEO build')}
     }
 
     @Test
@@ -211,7 +211,7 @@ public class MtaBuildTest extends BasePiperTest {
 
         stepRule.step.mtaBuild(script: nullScript)
 
-        assert shellRule.shell.find { c -> c.contains('java -jar mta.jar --mtar com.mycompany.northwind.mtar --build-target=NEO build')}
+        assert shellRule.shell.find { c -> c.contains('java -jar /opt/sap/mta/lib/mta.jar --mtar com.mycompany.northwind.mtar --build-target=NEO build')}
     }
 
 
@@ -220,7 +220,7 @@ public class MtaBuildTest extends BasePiperTest {
 
         stepRule.step.mtaBuild(script: nullScript, buildTarget: 'NEO', extension: 'param_extension')
 
-        assert shellRule.shell.find { c -> c.contains('java -jar mta.jar --mtar com.mycompany.northwind.mtar --build-target=NEO --extension=param_extension build')}
+        assert shellRule.shell.find { c -> c.contains('java -jar /opt/sap/mta/lib/mta.jar --mtar com.mycompany.northwind.mtar --build-target=NEO --extension=param_extension build')}
     }
 
 
@@ -231,7 +231,7 @@ public class MtaBuildTest extends BasePiperTest {
 
         stepRule.step.mtaBuild(script: nullScript)
 
-        assert shellRule.shell.find(){ c -> c.contains('java -jar mta.jar --mtar com.mycompany.northwind.mtar --build-target=NEO --extension=config_extension build')}
+        assert shellRule.shell.find(){ c -> c.contains('java -jar /opt/sap/mta/lib/mta.jar --mtar com.mycompany.northwind.mtar --build-target=NEO --extension=config_extension build')}
     }
 
 
