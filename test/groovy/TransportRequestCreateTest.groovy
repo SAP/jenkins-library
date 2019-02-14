@@ -1,5 +1,10 @@
+import static org.hamcrest.Matchers.allOf
+import static org.hamcrest.Matchers.containsString
+
 import java.util.Map
 
+import org.hamcrest.Matchers
+import org.hamcrest.core.StringContains
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -280,6 +285,21 @@ public class TransportRequestCreateTest extends BasePiperTest {
             developmentSystemId: '001',
             description: '',
             cmUtils: cm)
+    }
+
+    @Test
+    public void createTransportRequestSanityChecksRFCTest() {
+
+        thrown.expect(IllegalArgumentException)
+        thrown.expectMessage(allOf(
+            containsString('changeManagement/rfc/developmentInstance'),
+            containsString('changeManagement/rfc/developmentClient'),
+            ))
+        stepRule.step.transportRequestCreate(
+            script: nullScript,
+            changeManagement: [
+                type: 'RFC',
+            ])
     }
 
     @Test
