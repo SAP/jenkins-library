@@ -248,6 +248,41 @@ public class TransportRequestCreateTest extends BasePiperTest {
     }
 
     @Test
+    public void createTransportRequestFailureRFCTest() {
+
+        thrown.expect(AbortException)
+        thrown.expectMessage('upload failed')
+
+        ChangeManagement cm = new ChangeManagement(nullScript) {
+
+            String createTransportRequestRFC(
+                Map docker,
+                String endpoint,
+                String developmentClient,
+                String developmentInstance,
+                String credentialsId,
+                String description) {
+
+                throw new ChangeManagementException('upload failed')
+            }
+        }
+
+        stepRule.step.transportRequestCreate(
+            script: nullScript,
+            changeManagement: [
+                type: 'RFC',
+                rfc: [
+                    developmentInstance: '01',
+                    developmentClient: '001',
+                ],
+                endpoint: 'https://example.org/rfc',
+            ],
+            developmentSystemId: '001',
+            description: '',
+            cmUtils: cm)
+    }
+
+    @Test
     public void cmIntegrationSwichtedOffTest() {
 
         loggingRule.expect('[INFO] Change management integration intentionally switched off.')
