@@ -284,7 +284,8 @@ public void testGetCommandLineWithCMClientOpts() {
             '01', //developmentInstance
             '00', // developmentClient
             'Lorem ipsum', // applicationDescription
-            'XYZ' // abapPackage
+            'XYZ', // abapPackage
+            'UTF-9', //codePage
             )
 
 
@@ -302,6 +303,7 @@ public void testGetCommandLineWithCMClientOpts() {
                 ABAP_DEVELOPMENT_SERVER: 'https://example.org/rfc',
                 ABAP_DEVELOPMENT_USER: 'user',
                 ABAP_DEVELOPMENT_PASSWORD: 'password',
+                CODE_PAGE: 'UTF-9',
             ]
 
             assertThat(script.shell, contains('cts uploadToABAP:002'))
@@ -325,7 +327,8 @@ public void testGetCommandLineWithCMClientOpts() {
             '01', //developmentInstance
             '00', // developmentClient
             'Lorem ipsum', // applicationDescription
-            'XYZ' // abapPackage
+            'XYZ', // abapPackage
+            'UTF-9', // codePage
             )
     }
 
