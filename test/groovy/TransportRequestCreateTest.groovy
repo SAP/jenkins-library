@@ -1,3 +1,5 @@
+import java.util.Map
+
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -181,6 +183,65 @@ public class TransportRequestCreateTest extends BasePiperTest {
                          credentialsId: 'CM',
                          clientOpts: '-DmyProp=myVal'
                          ]
+
+        assert loggingRule.log.contains("[INFO] Creating transport request.")
+        assert loggingRule.log.contains("[INFO] Transport Request '001' has been successfully created.")
+    }
+
+    @Test
+    public void createTransportRequestSuccessRFCTest() {
+
+        def result = [:]
+
+        ChangeManagement cm = new ChangeManagement(nullScript) {
+
+            String createTransportRequestRFC(
+                Map docker,
+                String endpoint,
+                String developmentClient,
+                String developmentInstance,
+                String credentialsId,
+                String description) {
+
+                result.docker = docker
+                result.endpoint = endpoint
+                result.developmentClient = developmentClient
+                result.developmentInstance= developmentInstance
+                result.credentialsId = credentialsId
+                result.description = description
+
+                return '001'
+            }
+        }
+
+        stepRule.step.transportRequestCreate(
+            script: nullScript,
+            changeManagement: [
+                type: 'RFC',
+                rfc: [
+                    developmentInstance: '01',
+                    developmentClient: '001',
+                ],
+                endpoint: 'https://example.org/rfc',
+            ],
+            developmentSystemId: '001',
+            description: '',
+            cmUtils: cm)
+
+        assert nullScript.commonPipelineEnvironment.getTransportRequestId() == '001'
+        assert result == [
+            docker: [
+                image: 'rfc',
+                options: [],
+                envVars: [:],
+                imagePull: true
+            ],
+            endpoint: 'https://example.org/rfc',
+            developmentClient: '01',
+            developmentInstance: '001',
+            credentialsId: 'CM',
+            description: ''
+        ]
 
         assert loggingRule.log.contains("[INFO] Creating transport request.")
         assert loggingRule.log.contains("[INFO] Transport Request '001' has been successfully created.")

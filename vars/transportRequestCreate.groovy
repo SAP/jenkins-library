@@ -38,6 +38,7 @@ void call(parameters = [:]) {
         ChangeManagement cm = parameters.cmUtils ?: new ChangeManagement(script)
 
         ConfigurationHelper configHelper = ConfigurationHelper.newInstance(this)
+            .collectValidationFailures()
             .loadStepDefaults()
             .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS)
             .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS)
@@ -90,7 +91,8 @@ void call(parameters = [:]) {
         creatingMessage << '.'
         echo creatingMessage.join()
 
-            try {
+
+        try {
                 if(backendType == BackendType.SOLMAN) {
                     transportRequestId = cm.createTransportRequestSOLMAN(
                                                                configuration.changeDocumentId,
@@ -111,7 +113,7 @@ void call(parameters = [:]) {
                                                                 configuration.changeManagement.rfc.docker,
                                                                 configuration.changeManagement.endpoint,
                                                                 configuration.changeManagement.rfc.developmentInstance,
-                                                                configuration.changeManagement.rfc.developmenClient,
+                                                                configuration.changeManagement.rfc.developmentClient,
                                                                 configuration.changeManagement.credentialsId,
                                                                 configuration.description)
                 } else {
