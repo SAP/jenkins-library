@@ -4,7 +4,7 @@ LIBRARY_VERSION_UNDER_TEST=$(git log --format="%H" -n 1)
 REPOSITORY_UNDER_TEST=${TRAVIS_REPO_SLUG:-SAP/jenkins-library}
 
 rm -rf workspace
-git clone -b master https://github.com/radsoulbeard/MyUi5Pipeline.git workspace
+git clone -b master https://github.com/radsoulbeard/openui5-sample-app.git workspace
 cp -f jenkins.yml workspace
 cd workspace
 sed -i -e "s:__REPO_SLUG__:${REPOSITORY_UNDER_TEST}:g" jenkins.yml
