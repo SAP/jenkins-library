@@ -364,6 +364,7 @@ steps:
       developmentSystemId: null
   transportRequestUploadFile:
       failOnWarning: true
+      verbose: false
   transportRequestRelease:
   uiVeri5ExecuteTests:
     failOnError: false

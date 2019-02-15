@@ -27,6 +27,7 @@ import static com.sap.piper.cm.StepHelpers.getBackendTypeAndLogInfoIfCMIntegrati
         'abapPackage',
         'codePage', //RFC
         'acceptUnixStyleLineEndings', // RFC
+        'verbose', // RFC
     ])
 
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS.plus([
@@ -81,6 +82,7 @@ void call(parameters = [:]) {
             .withMandatoryProperty('applicationId', null, {backendType == BackendType.SOLMAN})
             .withMandatoryProperty('applicationName', null, {backendType == BackendType.RFC})
             .withMandatoryProperty('failOnWarning', null, {backendType == BackendType.RFC})
+            .withMandatoryProperty('verbose', null, {backendType == BackendType.RFC})
 
         new Utils().pushToSWA([
             step: STEP_NAME,
@@ -159,6 +161,7 @@ void call(parameters = [:]) {
                             configuration.codePage,
                             configuration.acceptUnixStyleLineEndings,
                             configuration.failOnWarning,
+                            configuration.verbose
                         )
 
                         break
