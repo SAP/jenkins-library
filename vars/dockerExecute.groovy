@@ -123,9 +123,9 @@ void call(Map parameters = [:], body) {
         new Utils().pushToSWA([
             step: STEP_NAME,
             stepParamKey1: 'scriptMissing',
-            stepParam1: parameters?.script == null
+            stepParam1: parameters?.script == null,
             stepParamKey2: 'kubernetes',
-            stepParam2: isKubernetes(),
+            stepParam2: isKubernetes()
         ], config)
 
         if (isKubernetes() && config.dockerImage) {
