@@ -363,6 +363,7 @@ steps:
   transportRequestCreate:
       developmentSystemId: null
   transportRequestUploadFile:
+      failOnWarning: true
   transportRequestRelease:
   uiVeri5ExecuteTests:
     failOnError: false

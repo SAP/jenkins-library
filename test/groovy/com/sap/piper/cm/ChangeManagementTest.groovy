@@ -287,6 +287,7 @@ public void testGetCommandLineWithCMClientOpts() {
             'XYZ', // abapPackage
             'UTF-9', //codePage
             true, // accept unix style EOL
+            true, //failUploadOnWarning
             )
 
 
@@ -306,6 +307,7 @@ public void testGetCommandLineWithCMClientOpts() {
                 ABAP_DEVELOPMENT_PASSWORD: 'password',
                 CODE_PAGE: 'UTF-9',
                 ABAP_ACCEPT_UNIX_STYLE_EOL: 'X',
+                FAIL_UPLOAD_ON_WARNING: 'true',
             ]
 
             assertThat(script.shell, contains('cts uploadToABAP:002'))
@@ -332,6 +334,7 @@ public void testGetCommandLineWithCMClientOpts() {
             'XYZ', // abapPackage
             'UTF-9', // codePage
             true, // accept unix style EOL
+            true, // failUploadOnWarning
             )
     }
 
