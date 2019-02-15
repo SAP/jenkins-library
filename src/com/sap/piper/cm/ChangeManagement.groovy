@@ -207,7 +207,8 @@ public class ChangeManagement implements Serializable {
         String abapPackage,
         String codePage,
         boolean acceptUnixStyleEndOfLine,
-        boolean failOnWarning) {
+        boolean failOnWarning,
+        boolean verbose) {
 
         def args = [
             ABAP_DEVELOPMENT_INSTANCE: developmentInstance,
@@ -219,6 +220,7 @@ public class ChangeManagement implements Serializable {
             CODE_PAGE: codePage,
             ABAP_ACCEPT_UNIX_STYLE_EOL: acceptUnixStyleEndOfLine ? 'X' : '-',
             FAIL_UPLOAD_ON_WARNING: Boolean.toString(failOnWarning),
+            VERBOSE: Boolean.toString(verbose),
         ]
 
         int rc = executeWithCredentials(
