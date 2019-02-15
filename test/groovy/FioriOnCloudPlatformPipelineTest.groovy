@@ -141,7 +141,7 @@ class FioriOnCloudPlatformPipelineTest extends BasePiperTest {
         // the neo deploy call:
         Assert.assertThat(shellRule.shell,
             new CommandLineMatcher()
-                .hasProlog("\"neo.sh\" deploy-mta")
+                .hasProlog("neo.sh deploy-mta")
                 .hasSingleQuotedOption('host', 'hana\\.example\\.com')
                 .hasSingleQuotedOption('account', 'myTestAccount')
                 .hasSingleQuotedOption('password', 'terceSpot')

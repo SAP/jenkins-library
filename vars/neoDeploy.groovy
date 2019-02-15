@@ -71,15 +71,12 @@ void call(parameters = [:]) {
                     dockerOptions: configuration.dockerOptions
                 ) {
 
-                    String neoExecutable = 'neo.sh'
-
                     DeployMode deployMode = DeployMode.fromString(configuration.deployMode)
 
                     NeoCommandHelper neoCommandHelper = new NeoCommandHelper(
                         this,
                         deployMode,
                         configuration.neo,
-                        neoExecutable,
                         NEO_USERNAME,
                         NEO_PASSWORD,
                         configuration.source
