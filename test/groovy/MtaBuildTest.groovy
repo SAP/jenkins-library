@@ -73,7 +73,7 @@ public class MtaBuildTest extends BasePiperTest {
 
 
     @Test
-    void marFilePathFromCommonPipelineEnvironmentTest() {
+    void mtarFilePathFromCommonPipelineEnvironmentTest() {
 
         stepRule.step.mtaBuild(script: nullScript,
                       buildTarget: 'NEO')
