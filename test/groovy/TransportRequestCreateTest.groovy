@@ -161,8 +161,7 @@ public class TransportRequestCreateTest extends BasePiperTest {
                 String description,
                 String endpoint,
                 String credentialsId,
-                String clientOpts
-) {
+                String clientOpts) {
                 result.transportType = transportType
                 result.targetSystemId = targetSystemId
                 result.description = description

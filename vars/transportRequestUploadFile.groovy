@@ -80,6 +80,7 @@ void call(parameters = [:]) {
             .withMandatoryProperty('abapPackage', null, { backendType == BackendType.RFC })
             .withMandatoryProperty('applicationId', null, {backendType == BackendType.SOLMAN})
             .withMandatoryProperty('applicationName', null, {backendType == BackendType.RFC})
+            .withMandatoryProperty('failOnWarning', null, {backendType == BackendType.RFC})
 
         new Utils().pushToSWA([
             step: STEP_NAME,
@@ -156,7 +157,10 @@ void call(parameters = [:]) {
                             configuration.applicationDescription,
                             configuration.abapPackage,
                             configuration.codePage,
-                            configuration.acceptUnixStyleLineEndings)
+                            configuration.acceptUnixStyleLineEndings,
+                            configuration.failOnWarning,
+                        )
+
                         break
 
                 }

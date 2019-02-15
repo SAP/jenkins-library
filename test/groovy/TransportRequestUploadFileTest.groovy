@@ -236,7 +236,8 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
                 String applicationDescription,
                 String abapPackage,
                 String codePage,
-                boolean acceptUnixStyleLineEndings) {
+                boolean acceptUnixStyleLineEndings,
+                boolean failUploadOnWarning) {
 
                 cmUtilsReceivedParams = [
                     docker: docker,
@@ -250,7 +251,9 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
                     applicationDescription: applicationDescription,
                     abapPackage: abapPackage,
                     codePage: codePage,
-                    acceptUnixStyleLineEndings: acceptUnixStyleLineEndings]
+                    acceptUnixStyleLineEndings: acceptUnixStyleLineEndings,
+                    failUploadOnWarning: failUploadOnWarning,
+                ]
             }
         }
 
@@ -290,6 +293,7 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
                 abapPackage:'XYZ',
                 codePage: 'UTF-9',
                 acceptUnixStyleLineEndings: true,
+                failUploadOnWarning: true,
             ]
     }
 
@@ -313,7 +317,8 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
                 String applicationDescription,
                 String abapPackage,
                 String codePage,
-                boolean acceptUnixStyleLineEndings) {
+                boolean acceptUnixStyleLineEndings,
+                boolean failOnUploadWarning) {
                 throw new ChangeManagementException('upload failed')
             }
         }
