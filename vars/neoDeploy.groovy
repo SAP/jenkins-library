@@ -62,6 +62,7 @@ void call(parameters = [:]) {
             .mixin(parameters, PARAMETER_KEYS, CONFIG_KEY_COMPATIBILITY)
             .withMandatoryProperty('neo')
             .withMandatoryProperty('source')
+            .withMandatoryProperty('neo/credentialsId')
             .withPropertyInValues('deployMode', DeployMode.stringValues())
             .use()
 
