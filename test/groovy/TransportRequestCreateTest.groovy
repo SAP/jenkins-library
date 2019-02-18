@@ -238,7 +238,7 @@ public class TransportRequestCreateTest extends BasePiperTest {
                 image: 'rfc',
                 options: [],
                 envVars: [:],
-                imagePull: true
+                pullImage: true
             ],
             endpoint: 'https://example.org/rfc',
             developmentClient: '01',

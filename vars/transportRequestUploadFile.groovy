@@ -76,7 +76,7 @@ void call(parameters = [:]) {
             .withMandatoryProperty('changeManagement/rfc/docker/image', null, {backendType == BackendType.RFC})
             .withMandatoryProperty('changeManagement/rfc/docker/options', null, {backendType == BackendType.RFC})
             .withMandatoryProperty('changeManagement/rfc/docker/envVars', null, {backendType == BackendType.RFC})
-            .withMandatoryProperty('changeManagement/rfc/docker/imagePull', null, {backendType == BackendType.RFC})
+            .withMandatoryProperty('changeManagement/rfc/docker/pullImage', null, {backendType == BackendType.RFC})
             .withMandatoryProperty('applicationDescription', null, { backendType == BackendType.RFC })
             .withMandatoryProperty('abapPackage', null, { backendType == BackendType.RFC })
             .withMandatoryProperty('applicationId', null, {backendType == BackendType.SOLMAN})

@@ -281,7 +281,7 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
                     image: 'rfc',
                     options: [],
                     envVars: [:],
-                    imagePull: true
+                    pullImage: true
                 ],
                 transportRequestId: '123456',
                 applicationName: '42',
@@ -337,7 +337,7 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
                              image: 'rfc',
                              options: [],
                              envVars: [:],
-                             imagePull: false,
+                             pullImage: false,
                          ],
                          developmentClient: '002',
                          developmentInstance: '001',
