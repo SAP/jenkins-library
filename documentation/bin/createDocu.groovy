@@ -1,40 +1,14 @@
-import groovy.io.FileType;
+import groovy.io.FileType
 import org.yaml.snakeyaml.Yaml
 import org.codehaus.groovy.control.CompilerConfiguration
 import com.sap.piper.GenerateDocumentation
-import com.sap.piper.DefaultValueCache
 import java.util.regex.Matcher
+import groovy.text.StreamingTemplateEngine
 
 //
 // Collects helper functions for rendering the docu
 //
 class TemplateHelper {
-
-    static replaceParagraph(def textIn, int level, name, replacement) {
-
-        boolean insideParagraph = false
-        def textOut = ''
-
-        textIn.eachLine {
-
-            line ->
-
-            if(insideParagraph && line ==~ "^#{1,${level}} .*\$") {
-                insideParagraph = false
-            }
-
-            if(! insideParagraph) {
-                textOut += "${line}\n"
-            }
-
-            if(line ==~ "^#{${level}} ${name}.*\$") {
-                insideParagraph = true
-                textOut += "${replacement}\n\n"
-            }
-        }
-
-        textOut
-    }
 
     static createParametersTable(Map parameters) {
 
@@ -59,6 +33,10 @@ class TemplateHelper {
         }
 
         t.trim()
+    }
+
+    static createParametersSection(Map parameters) {
+        createParametersTable(parameters) + '\n' + createParameterDescriptionSection(parameters)
     }
 
     static createStepConfigurationSection(Map parameters) {
@@ -332,7 +310,7 @@ class Helper {
 
         stepsDir.traverse(type: FileType.FILES, maxDepth: 0) {
             if(it.getName().endsWith('.groovy')) {
-                def scriptName = (it =~  /vars\/(.*)\.groovy/)[0][1]
+                def scriptName = (it =~  /vars\${File.separator}(.*)\.groovy/)[0][1]
                 def stepScript = gse.createScript("${scriptName}.groovy", new Binding())
                 for (def method in stepScript.getClass().getMethods()) {
                     if(method.getName() == 'call' && method.getAnnotation(GenerateDocumentation) != null) {
@@ -457,20 +435,15 @@ void renderStep(stepName, stepProperties) {
         return
     }
 
-    def text = theStepDocu.text
-    if(stepProperties.description) {
-        text = TemplateHelper.replaceParagraph(text, 2, 'Description', '\n' + stepProperties.description)
-    }
-    if(stepProperties.parameters) {
+    def binding = [
+        docGenStepName      : stepName,
+        docGenDescription   : 'Description\n\n' + stepProperties.description,
+        docGenParameters    : 'Parameters\n\n' + TemplateHelper.createParametersSection(stepProperties.parameters),
+        docGenConfiguration : 'Step configuration\n\n' + TemplateHelper.createStepConfigurationSection(stepProperties.parameters)
+    ]
+    def template = new StreamingTemplateEngine().createTemplate(theStepDocu.text)
+    String text = template.make(binding)
 
-        text = TemplateHelper.replaceParagraph(text, 2, 'Parameters', '\n' +
-                TemplateHelper.createParametersTable(stepProperties.parameters) + '\n' +
-                TemplateHelper.createParameterDescriptionSection(stepProperties.parameters))
-
-
-        text = TemplateHelper.replaceParagraph(text, 2, 'Step configuration', '\n' +
-                TemplateHelper.createStepConfigurationSection(stepProperties.parameters))
-    }
     theStepDocu.withWriter { w -> w.write text }
 }
 
