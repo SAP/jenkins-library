@@ -3,6 +3,7 @@ import org.junit.Ignore
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.RuleChain
+import org.junit.rules.ExpectedException
 
 import util.BasePiperTest
 import util.JenkinsReadYamlRule
@@ -16,12 +17,14 @@ class TestsPublishResultsTest extends BasePiperTest {
     Map publisherStepOptions
     List archiveStepPatterns
 
+    private ExpectedException thrown = ExpectedException.none()
     private JenkinsStepRule stepRule = new JenkinsStepRule(this)
 
     @Rule
     public RuleChain ruleChain = Rules
         .getCommonRules(this)
         .around(new JenkinsReadYamlRule(this))
+        .around(thrown)
         .around(stepRule)
 
     @Before
@@ -125,5 +128,41 @@ class TestsPublishResultsTest extends BasePiperTest {
         assertTrue('JaCoCo options are not empty', publisherStepOptions.jacoco == null)
         assertTrue('Cobertura options are not empty', publisherStepOptions.cobertura == null)
         assertTrue('JMeter options are not empty', publisherStepOptions.jmeter == null)
+    }
+
+    @Test
+    void testBuildResultStatus() throws Exception {
+        stepRule.step.testsPublishResults(script: nullScript)
+        assertJobStatusSuccess()
+    }
+
+    @Test
+    void testBuildWithTestFailuresAndWithoutFailOnError() throws Exception {
+        nullScript.currentBuild.getRawBuild = {
+            return [getAction: { type ->
+                return [getFailCount: {
+                    return 6
+                }]
+            }]
+        }
+        
+        stepRule.step.testsPublishResults(script: nullScript)
+        assertJobStatusSuccess()
+    }
+
+    @Test
+    void testBuildWithTestFailuresAndWithFailOnError() throws Exception {
+        nullScript.currentBuild.getRawBuild = {
+            return [getAction: { type ->
+                return [getFailCount: {
+                    return 6
+                }]
+            }]
+        }
+
+        thrown.expect(hudson.AbortException)
+        thrown.expectMessage('[testsPublishResults] Some tests failed!')
+
+        stepRule.step.testsPublishResults(script: nullScript, failOnError: true)
     }
 }

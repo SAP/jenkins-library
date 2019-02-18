@@ -30,14 +30,17 @@ nav:
         - prepareDefaultValues: steps/prepareDefaultValues.md
         - seleniumExecuteTests: steps/seleniumExecuteTests.md
         - setupCommonPipelineEnvironment: steps/setupCommonPipelineEnvironment.md
+        - slackSendNotification: steps/slackSendNotification.md
         - testsPublishResults: steps/testsPublishResults.md
         - toolValidate: steps/toolValidate.md
         - transportRequestCreate: steps/transportRequestCreate.md
         - transportRequestRelease:  steps/transportRequestRelease.md
         - transportRequestUploadFile: steps/transportRequestUploadFile.md
+        - uiVeri5ExecuteTests: steps/uiVeri5ExecuteTests.md
     - 'Scenarios':
-        - 'Develop Hybrid Applications with Jenkins and SAP Solution Manager': scenarios/changeManagement.md
-        - 'Create a Pipeline for SAP UI5 or SAP Fiori on SAP Cloud Platform': scenarios/ui5-sap-cp/Readme.md
+        - 'Build and Deploy Hybrid Applications with Jenkins and SAP Solution Manager': scenarios/changeManagement.md
+        - 'Build and Deploy SAP UI5 or SAP Fiori Applications on SAP Cloud Platform with Jenkins': scenarios/ui5-sap-cp/Readme.md
+        - 'Build and Deploy Applications with Jenkins and the SAP Cloud Application Programming Model': scenarios/CAP_Scenario.md
     - 'Required Plugins': jenkins/requiredPlugins.md
 
 theme:
