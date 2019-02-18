@@ -3,13 +3,15 @@ jenkins:
 unclassified:
   globallibraries:
     libraries:
-    - defaultVersion: "master"
+#    - defaultVersion: "master" 
+    - defaultVersion: ${LIBRARY_VERSION_UNDER_TEST}
       name: "piper-lib-os"
       retriever:
         modernSCM:
           scm:
             git:
-              remote: "https://github.com/__REPO_SLUG__.git"
+#              remote: "https://github.com/__REPO_SLUG__.git"  
+              remote: "https://github.com/${REPOSITORY_UNDER_TEST}.git"
 credentials:
   system:
     domainCredentials:
