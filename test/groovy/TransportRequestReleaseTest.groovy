@@ -197,7 +197,7 @@ public class TransportRequestReleaseTest extends BasePiperTest {
                         image: 'rfc',
                         options: [],
                         envVars: [:],
-                        imagePull: true,
+                        pullImage: true,
                     ],
                     transportRequestId: '002',
                     endpoint: 'https://example.org/rfc',

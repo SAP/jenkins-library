@@ -21,7 +21,7 @@ general:
         image: 'rfc'
         options: []
         envVars: {}
-        imagePull: true
+        pullImage: true
   githubApiUrl: 'https://api.github.com'
   githubServerUrl: 'https://github.com'
   gitSshKeyCredentialsId: '' #needed to allow sshagent to run with local ssh key
