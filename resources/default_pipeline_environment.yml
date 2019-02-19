@@ -363,6 +363,8 @@ steps:
   transportRequestCreate:
       developmentSystemId: null
   transportRequestUploadFile:
+      acceptUnixStyleLineEndings: true
+      codePage: 'UTF-8'
       failOnWarning: true
       verbose: false
   transportRequestRelease:
