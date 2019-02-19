@@ -10,6 +10,9 @@ class commonPipelineEnvironment implements Serializable {
     //Stores the current buildResult
     String buildResult = 'SUCCESS'
 
+    // Reference to image object created with docker.build() during pipeline execution
+    def dockerBuildImage
+
     //stores the gitCommitId as well as additional git information for the build during pipeline run
     String gitCommitId
     String gitSshUrl
@@ -46,6 +49,8 @@ class commonPipelineEnvironment implements Serializable {
 
         configProperties = [:]
         configuration = [:]
+
+        dockerBuildImage = null
 
         gitCommitId = null
         gitSshUrl = null
