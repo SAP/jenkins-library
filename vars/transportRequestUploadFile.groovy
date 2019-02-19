@@ -24,6 +24,8 @@ import static com.sap.piper.cm.StepHelpers.getBackendTypeAndLogInfoIfCMIntegrati
         'applicationName', // RFC
         'applicationId', // SOLMAN
         'applicationDescription',
+        'filePath', // SOLMAN, CTS
+        'applicationUrl', // RFC
         'abapPackage',
         'codePage', //RFC
         'acceptUnixStyleLineEndings', // RFC
@@ -32,8 +34,6 @@ import static com.sap.piper.cm.StepHelpers.getBackendTypeAndLogInfoIfCMIntegrati
 
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS.plus([
     'changeDocumentId',
-    'filePath',
-    'applicationUrl',
     'transportRequestId'])
 
 void call(parameters = [:]) {
