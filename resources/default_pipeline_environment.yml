@@ -331,8 +331,10 @@ steps:
   sonarExecuteScan:
     dockerImage: 'newtmitch/sonar-scanner:3.2.0'
     instance: 'SonarCloud'
-    options: "-Dsonar.projectVersion='${projectVersion}'"
+    options: []
     useWebhook: false
+    pullRequestProvider: 'github'
+    sonarScannerUrl: 'https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-3.3.0.1492-linux.zip'
   testsPublishResults:
     failOnError: false
     junit:

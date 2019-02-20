@@ -6,8 +6,10 @@ import static com.sap.piper.Prerequisites.checkScript
 import groovy.transform.Field
 import groovy.text.SimpleTemplateEngine
 
-@Field String STEP_NAME = 'sonarExecuteScan'
-@Field Set STEP_CONFIG_KEYS = [
+@Field String STEP_NAME = getClass().getName()
+
+@Field Set GENERAL_CONFIG_KEYS = []
+@Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS.plus([
     'changeId', // voter only! the pull-request number
     'disableInlineComments', // voter only! set to true to only enable a summary comment on the pull-request
     'dockerImage', // the image to run the sonar-scanner
@@ -20,12 +22,12 @@ import groovy.text.SimpleTemplateEngine
     'options',
     'projectVersion',
     'sonarTokenCredentialsId',
-    'useWebhook'
-]
+    'legacyPRHandling'
+    //'useWebhook'
+])
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
-@Field Set GENERAL_CONFIG_KEYS = STEP_CONFIG_KEYS
 
-void call(Map parameters = [:], Closure body = null) {
+void call(Map parameters = [:]) {
     handlePipelineStepErrors(stepName: STEP_NAME, stepParameters: parameters) {
         def utils = parameters.juStabUtils ?: new Utils()
         def script = checkScript(this, parameters) ?: this
@@ -47,53 +49,62 @@ void call(Map parameters = [:], Closure body = null) {
             .withMandatoryProperty('githubRepo', null, { c -> return c.isVoter })
             .withMandatoryProperty('projectVersion', null, { c -> return !c.isVoter })
             .use()
-        
-        // resolve templates
-        config.options = SimpleTemplateEngine.newInstance().createTemplate(config.options).make([projectVersion: config.projectVersion]).toString()
 
-        // https://docs.sonarqube.org/display/SONAR/Webhooks
-        // https://sonarcloud.io/documentation/webhooks
-        if(config.useWebhook){
-            config.options += " -Dsonar.webhooks.project='${env.JENKINS_URL}sonarqube-webhook/'"
-        }
-        
-        def worker = { c, b ->
+        def worker = { c ->
             withSonarQubeEnv(c.instance) {
-                if(b) b()
-                sh "sonar-scanner ${c.options}"
+                installSonarScanner(c)
+
+                if(c.projectVersion) c.options.add("-Dsonar.projectVersion='${c.projectVersion}'")
+
+                sh "PATH=\$PATH:~/.sonar-scanner/bin sonar-scanner ${c.options.join(' ')}"
             }
         }
 
         if(config.sonarTokenCredentialsId){
             def workerForSonarAuth = worker
-            worker = { c, b ->
+            worker = { c ->
                 withCredentials([string(
                     credentialsId: c.sonarTokenCredentialsId,
                     variable: 'SONAR_TOKEN'
                 )]){
-                    c.options += " -Dsonar.login=$SONAR_TOKEN"
-                    workerForSonarAuth(c,b)
+                    c.options.add(" -Dsonar.login=$SONAR_TOKEN")
+                    workerForSonarAuth(c)
                 }
             }
         }
 
         if(config.isVoter){
             def workerForGithubAuth = worker
-            worker = { c, b ->
+            worker = { c ->
                 withCredentials([string(
                     credentialsId: c.githubTokenCredentialsId,
                     variable: 'GITHUB_TOKEN'
                 )]){
-                    c.options += ' -Dsonar.analysis.mode=preview'
-                    c.options += " -Dsonar.github.oauth=$GITHUB_TOKEN"
-                    c.options += " -Dsonar.github.pullRequest=${c.changeId}"
-                    c.options += " -Dsonar.github.repository=${c.githubOrg}/${c.githubRepo}"
-                    if(c.githubApiUrl)
-                        c.options += " -Dsonar.github.endpoint=${c.githubApiUrl}"
-                    if(c.disableInlineComments)
-                        c.options += " -Dsonar.github.disableInlineComments=${c.disableInlineComments}"
+                    if(c.legacyPRHandling) {
+                        // support for https://docs.sonarqube.org/display/PLUG/GitHub+Plugin
+                        c.options.add('-Dsonar.analysis.mode=preview')
+                        c.options.add("-Dsonar.github.oauth=$GITHUB_TOKEN")
+                        c.options.add("-Dsonar.github.pullRequest=${c.changeId}")
+                        c.options.add("-Dsonar.github.repository=${c.githubOrg}/${c.githubRepo}")
+                        if(c.githubApiUrl) c.options.add("-Dsonar.github.endpoint=${c.githubApiUrl}")
+                        if(c.disableInlineComments) c.options.add("-Dsonar.github.disableInlineComments=${c.disableInlineComments}")
+                    } else {
+                        // see https://sonarcloud.io/documentation/analysis/pull-request/
+                        sonar.pullrequest.branch
+                        sonar.pullrequest.base
 
-                    workerForGithubAuth(c,b)
+                        c.options.add("-Dsonar.pullrequest.key=${c.changeId}")
+                        switch(c.pullRequestProvider){
+                            case 'github':
+                                c.options.add("-Dsonar.pullrequest.github.repository=${c.githubOrg}/${c.githubRepo}")
+                                break;
+                            default: error "Pull-Request provider '${c.pullRequestProvider}' is not supported!"
+                        }
+                        //GH
+                        sonar.pullrequest.github.repository
+                    }
+
+                    workerForGithubAuth(c)
                 }
             }
         }
@@ -101,7 +112,18 @@ void call(Map parameters = [:], Closure body = null) {
         dockerExecute(
             dockerImage: config.dockerImage
         ){
-            worker(config, body)
+            worker(config)
         }
     }
+}
+
+void installSonarScanner(config){
+    def filename = config.sonarScannerUrl.tokenize('/').last()
+
+    sh """
+        cd ~
+        curl ${config.sonarScannerUrl} -O -J -L
+        unzip ${filename}
+        mv ${filename.replace('.zip', '')} .sonar-scanner
+    """
 }
