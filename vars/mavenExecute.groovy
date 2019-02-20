@@ -9,19 +9,18 @@ import groovy.transform.Field
 
 @Field Set GENERAL_CONFIG_KEYS = []
 @Field Set STEP_CONFIG_KEYS = [
+    'defines',
     'dockerImage',
-    'globalSettingsFile',
-    'projectSettingsFile',
-    'pomPath',
-    'm2Path'
-]
-@Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS.plus([
     'dockerOptions',
     'flags',
+    'globalSettingsFile',
     'goals',
-    'defines',
-    'logSuccessfulMavenTransfers'
-])
+    'logSuccessfulMavenTransfers',
+    'm2Path',
+    'pomPath',
+    'projectSettingsFile',
+]
+@Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
 
 void call(Map parameters = [:]) {
     handlePipelineStepErrors(stepName: STEP_NAME, stepParameters: parameters) {
