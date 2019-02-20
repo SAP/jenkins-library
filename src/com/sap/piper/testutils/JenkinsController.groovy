@@ -43,7 +43,7 @@ class JenkinsController implements Serializable {
 
     //Trigger scanning of the multi branch builds
     def buildJob(String jobName) {
-        script.sh "curl -s -X POST ${jenkinsUrl}/job/${jobName}/build"
+        script.sh "curl -s -X POST ${jenkinsUrl}/job/${URLEncoder.encode(jobName, 'UTF-8')}/build"
     }
 
     def waitForSuccess(String jobName, String branch) {
@@ -57,7 +57,7 @@ class JenkinsController implements Serializable {
     }
 
     def getBuildUrl(String jobName, String branch) {
-        return "${jenkinsUrl}/job/${jobName}/job/${URLEncoder.encode(branch, "UTF-8")}/lastBuild/"
+        return "${jenkinsUrl}/job/${URLEncoder.encode(jobName, 'UTF-8')}/job/${URLEncoder.encode(branch, 'UTF-8')}/lastBuild/"
     }
 
     def waitForJobStatus(String jobName, String branch, String status) {
@@ -109,7 +109,7 @@ class JenkinsController implements Serializable {
         def buildUrl = getBuildUrl(jobName, branch)
         def url = "${buildUrl}/api/json"
         script.echo "Checking Build Status of ${jobName} ${branch}"
-        script.echo "${jenkinsUrl}/job/${jobName}/job/${URLEncoder.encode(branch, "UTF-8")}/"
+        script.echo "${jenkinsUrl}/job/${URLEncoder.encode(jobName, 'UTF-8')}/job/${URLEncoder.encode(branch, 'UTF-8')}/"
         def response = getTextFromUrl(url)
         def result = script.readJSON text: response
         return result
