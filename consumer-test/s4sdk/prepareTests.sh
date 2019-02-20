@@ -6,7 +6,9 @@ REPOSITORY_UNDER_TEST=${TRAVIS_REPO_SLUG:-SAP/jenkins-library}
 rm -rf workspace
 git clone -b consumer-test-neo https://github.com/sap/cloud-s4-sdk-book workspace
 cp -f ../jenkins.yml workspace
-cd workspace
+cd workspace || exit 1
+
+# Configure path to library-repository under test in Jenkins config
 sed -i -e "s:__REPO_SLUG__:${REPOSITORY_UNDER_TEST}:g" jenkins.yml
 
 # Force usage of library version under test by setting it in the Jenkinsfile which is then the first definition and thus has the highest precedence
