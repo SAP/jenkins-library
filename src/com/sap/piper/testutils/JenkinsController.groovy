@@ -43,20 +43,21 @@ class JenkinsController implements Serializable {
 
     //Trigger scanning of the multi branch builds
     def buildJob(String jobName) {
-        script.sh "curl -s -X POST ${jenkinsUrl}/job/${encodeUrl(jobName)}/build"
+        script.sh "curl -s -X POST ${jenkinsUrl}/job/${jobName}/build"
     }
 
     def waitForSuccess(String jobName, String branch) {
-        this.printConsoleText(jobName, branch)
         if (this.waitForJobStatus(jobName, branch, 'SUCCESS')) {
+            this.printConsoleText(jobName, branch)
             script.echo "Build was successful"
         } else {
-            script.error("Build of ${jobName} ${branch} was not successful")
+            this.printConsoleText(jobName, branch)
+            script.error("Build of ${jobName} ${branch} was not successfull")
         }
     }
 
     def getBuildUrl(String jobName, String branch) {
-        return "${jenkinsUrl}/job/${encodeUrl(jobName)}/job/${encodeUrl(branch)}/lastBuild/"
+        return "${jenkinsUrl}/job/${jobName}/job/${URLEncoder.encode(branch, "UTF-8")}/lastBuild/"
     }
 
     def waitForJobStatus(String jobName, String branch, String status) {
@@ -108,7 +109,7 @@ class JenkinsController implements Serializable {
         def buildUrl = getBuildUrl(jobName, branch)
         def url = "${buildUrl}/api/json"
         script.echo "Checking Build Status of ${jobName} ${branch}"
-        script.echo "${jenkinsUrl}/job/${encodeUrl(jobName)}/job/${encodeUrl(branch)}/"
+        script.echo "${jenkinsUrl}/job/${jobName}/job/${URLEncoder.encode(branch, "UTF-8")}/"
         def response = getTextFromUrl(url)
         def result = script.readJSON text: response
         return result
@@ -117,9 +118,5 @@ class JenkinsController implements Serializable {
     @NonCPS
     private static String getTextFromUrl(url) {
         return new URL(url).getText()
-    }
-
-    private static String encodeUrl(String url) {
-        return URLEncoder.encode(url, 'UTF-8')
     }
 }
