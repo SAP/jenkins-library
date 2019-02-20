@@ -1,10 +1,12 @@
 #!/usr/bin/env bash
 
+EXAMPLE_PROJECT_BRANCH=$1
+
 LIBRARY_VERSION_UNDER_TEST=$(git log --format="%H" -n 1)
 REPOSITORY_UNDER_TEST=${TRAVIS_REPO_SLUG:-SAP/jenkins-library}
 
 rm -rf workspace
-git clone -b consumer-test-neo https://github.com/sap/cloud-s4-sdk-book workspace
+git clone -b ${EXAMPLE_PROJECT_BRANCH} https://github.com/sap/cloud-s4-sdk-book workspace
 cp -f ../jenkins.yml workspace
 cd workspace || exit 1
 
