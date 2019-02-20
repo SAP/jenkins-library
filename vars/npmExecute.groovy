@@ -16,7 +16,7 @@ import groovy.transform.Field
      */
     'defaultNpmRegistry',
     /**
-     * Which NPM command should be executed. Default value is 'run build'.
+     * Which NPM command should be executed.
      */
     'npmCommand']
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS + [
@@ -57,9 +57,9 @@ void call(Map parameters = [:], body = null) {
                 if (configuration.defaultNpmRegistry) {
                     sh "npm config set registry ${configuration.defaultNpmRegistry}"
                 }
-                sh """
-                        npm ${configuration.npmCommand}
-                    """
+                if (configuration.npmCommand) {
+                    sh "npm ${configuration.npmCommand}"
+                }
                 if (body) {
                     body()
                 }
