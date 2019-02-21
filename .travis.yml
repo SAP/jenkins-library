@@ -36,10 +36,10 @@ jobs:
         documentation/bin/createDocu.sh vars documentation/docs-tmp/steps
         docker run --rm -it -v ${TRAVIS_BUILD_DIR}:/docs -w /docs/documentation squidfunk/mkdocs-material:3.0.4 build --clean --verbose --strict
     - name: Consumer Tests for s4sdk pipeline (CloudFoundry)
-      if: repo = "SAP/jenkins-library" AND branch =~ /^master$|^integration\/.*$/
+      if: repo = "SAP/jenkins-library" AND branch =~ /^master$|^it\/.*$/
       script: cd consumer-test/s4sdk/CloudFoundry && chmod +x runTests.sh && ./runTests.sh
     - name: Consumer Tests for s4sdk pipeline (Neo Environment)
-      if: repo = "SAP/jenkins-library" AND (branch = master OR branch = integration)
+      if: repo = "SAP/jenkins-library" AND branch =~ /^master$|^integration\/.*$/
       script: cd consumer-test/s4sdk/NeoEnvironment && chmod +x runTests.sh && ./runTests.sh
 
     - stage: Docs
