@@ -13,7 +13,7 @@ void call(Map parameters = [:], body) {
             error "The step handlePipelineStepErrors requires following mandatory parameters: stepParameters, stepName"
 
         if (verbose)
-            echo "--- Begin library step of ${stepName} ---"
+            echo "--- Begin library step of: ${stepName} ---"
 
         body()
     } catch (Throwable err) {
@@ -28,7 +28,7 @@ void call(Map parameters = [:], body) {
         throw err
     } finally {
         if (verbose)
-            message += "--- End library step of ${stepName} ---"
+            message += "--- End library step of: ${stepName} ---"
         echo message
     }
 }
