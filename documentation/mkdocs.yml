@@ -30,6 +30,7 @@ nav:
         - prepareDefaultValues: steps/prepareDefaultValues.md
         - seleniumExecuteTests: steps/seleniumExecuteTests.md
         - setupCommonPipelineEnvironment: steps/setupCommonPipelineEnvironment.md
+        - slackSendNotification: steps/slackSendNotification.md
         - testsPublishResults: steps/testsPublishResults.md
         - toolValidate: steps/toolValidate.md
         - transportRequestCreate: steps/transportRequestCreate.md
