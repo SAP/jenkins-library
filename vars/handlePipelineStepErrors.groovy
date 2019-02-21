@@ -10,10 +10,10 @@ void call(Map parameters = [:], body) {
     def message = ''
     try {
         if (stepParameters == null && stepName == null)
-            error "step handlePipelineStepErrors requires following mandatory parameters: stepParameters, stepName"
+            error "The step handlePipelineStepErrors requires following mandatory parameters: stepParameters, stepName"
 
         if (verbose)
-            echo "--- BEGIN LIBRARY STEP: ${stepName} ---"
+            echo "--- Begin library step of ${stepName} ---"
 
         body()
     } catch (Throwable err) {
@@ -28,7 +28,7 @@ void call(Map parameters = [:], body) {
         throw err
     } finally {
         if (verbose)
-            message += "--- END LIBRARY STEP: ${stepName} ---"
+            message += "--- End library step of ${stepName} ---"
         echo message
     }
 }
