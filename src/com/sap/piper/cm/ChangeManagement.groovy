@@ -339,7 +339,8 @@ public class ChangeManagement implements Serializable {
             credentialsId,
             cmd,
             args,
-            false) as int
+            false,
+            clientOpts) as int
 
         if(rc != 0) {
             throw new ChangeManagementException("Cannot release Transport Request '$transportRequestId'. Return code from cmclient: $rc.")
