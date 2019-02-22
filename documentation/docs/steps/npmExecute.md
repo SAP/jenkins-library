@@ -1,10 +1,8 @@
-# uiVeri5ExecuteTests
+# npmExecute
 
 ## Description
 
 Content here is generated from corresponding step, see `vars`.
-
-## Prerequisites
 
 ## Parameters
 
@@ -16,4 +14,10 @@ Content here is generated from corresponding step, see `vars`.
 
 ## Exceptions
 
+None
+
 ## Examples
+
+```groovy
+npmExecute script: this, dockerImage: 'node:8-stretch', npmCommand: 'run build'
+```
