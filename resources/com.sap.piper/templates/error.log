@@ -1,18 +1,18 @@
 ----------------------------------------------------------
---- ERROR OCCURRED IN LIBRARY STEP: ${stepName}
+--- An error occurred in the library step: ${stepName}
 ----------------------------------------------------------
 
-FOLLOWING PARAMETERS WERE AVAILABLE TO THIS STEP:
+The following parameters were available to the step:
 ***
 ${stepParameters}
 ***
 
-ERROR WAS:
+The error was:
 ***
 ${error}
 ***
 
-FURTHER INFORMATION:
+Further information:
 * Documentation of library step ${stepName}: https://sap.github.io/jenkins-library/steps/${stepName}/
 * Source code of library step ${stepName}: https://github.com/SAP/jenkins-library/blob/master/vars/${stepName}.groovy
 * Library documentation: https://sap.github.io/jenkins-library/
