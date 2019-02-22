@@ -39,7 +39,7 @@ jobs:
       if: repo = "SAP/jenkins-library" && ( (type != pull_request AND  branch =~ /^master$|^it\/.*$/) || (type == pull_request AND branch =~ /^it\/.*$/) )
       script: cd consumer-test/s4sdk/CloudFoundry && chmod +x runTests.sh && ./runTests.sh
     - name: Consumer Tests for s4sdk pipeline (Neo Environment)
-      if: repo = "SAP/jenkins-library" AND branch =~ /^master$|^it\/.*$/ AND NOT type = pull_request
+      if: repo = "SAP/jenkins-library" && ( (type != pull_request AND  branch =~ /^master$|^it\/.*$/) || (type == pull_request AND branch =~ /^it\/.*$/) )
       script: cd consumer-test/s4sdk/NeoEnvironment && chmod +x runTests.sh && ./runTests.sh
 
     - stage: Docs
