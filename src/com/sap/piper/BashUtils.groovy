@@ -1,5 +1,7 @@
 package com.sap.piper
 
+import com.cloudbees.groovy.cps.NonCPS
+
 class BashUtils implements Serializable {
     static final long serialVersionUID = 1L
 
@@ -8,5 +10,11 @@ class BashUtils implements Serializable {
 
         def escapedString = str.replace("'", "'\"'\"'")
         return "'${escapedString}'"
+    }
+
+    @NonCPS
+    static String escapeBlanks(CharSequence c) {
+        if(! c) return c
+        c.replaceAll(' ', '\\\\ ')
     }
 }

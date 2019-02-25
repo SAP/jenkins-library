@@ -44,4 +44,14 @@ class BashUtilsTest {
         def expected = "'VQ5r\\%*h\"49'\"'\"'Ch>Jj?'"
         Assert.assertEquals(expected, result)
     }
+
+    @Test
+    void escapeBlanksTest() {
+        Assert.assertEquals('This\\ contains\\ blanks', BashUtils.escapeBlanks('This contains blanks'))
+    }
+
+    @Test
+    void escapeBlanksCalledWithNullTest() {
+        Assert.assertNull(BashUtils.escapeBlanks(null))
+    }
 }

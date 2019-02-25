@@ -1,4 +1,5 @@
 import static com.sap.piper.Prerequisites.checkScript
+import static com.sap.piper.BashUtils.escapeBlanks
 
 import com.cloudbees.groovy.cps.NonCPS
 import com.sap.piper.ConfigurationHelper
@@ -319,9 +320,4 @@ def escapeBlanksInValues(def s) {
     }
 
     return s
-}
-
-@NonCPS
-def escapeBlanks(def s) {
-    s.replaceAll(' ', '\\\\ ')
 }
