@@ -35,8 +35,10 @@ jobs:
         cp -r documentation/docs documentation/docs-tmp
         documentation/bin/createDocu.sh vars documentation/docs-tmp/steps
         docker run --rm -it -v ${TRAVIS_BUILD_DIR}:/docs -w /docs/documentation squidfunk/mkdocs-material:3.0.4 build --clean --verbose --strict
-    - name: Consumer Tests for s4sdk pipeline
-      script: cd consumer-test && chmod +x runTests.sh && ./runTests.sh
+    - name: Consumer Tests for s4sdk pipeline (CloudFoundry)
+      script: cd consumer-test/s4sdk/CloudFoundry && chmod +x runTests.sh && ./runTests.sh
+    - name: Consumer Tests for s4sdk pipeline (Neo Environment)
+      script: cd consumer-test/s4sdk/NeoEnvironment && chmod +x runTests.sh && ./runTests.sh
 
     - stage: Docs
       name: Deploy
