@@ -2,14 +2,12 @@
 
 TEST_AREA=$1
 TEST_CASE=$2
-TEST_CASE_ROOT="workspaces/${TEST_AREA}/${TEST_CASE}"
+TEST_CASE_ROOT=$3
 TEST_CASE_WORKSPACE="${TEST_CASE_ROOT}/workspace"
 
 LIBRARY_VERSION_UNDER_TEST=$(git log --format="%H" -n 1)
 REPOSITORY_UNDER_TEST=${TRAVIS_REPO_SLUG:-SAP/jenkins-library}
 
-[ -e "${TEST_CASE_ROOT}" ] && rm -rf "${TEST_CASE_ROOT}"
-mkdir -p "${TEST_CASE_ROOT}"
 git clone -b "${TEST_CASE}" https://github.com/sap/cloud-s4-sdk-book "${TEST_CASE_WORKSPACE}"
 cp -f jenkins.yml "${TEST_CASE_WORKSPACE}"
 cd "${TEST_CASE_WORKSPACE}" || exit 1
