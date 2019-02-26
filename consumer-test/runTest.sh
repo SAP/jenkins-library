@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 
-EXAMPLE_PROJECT_BRANCH=$1
+TEST_CASE=$1
 
 LIBRARY_VERSION_UNDER_TEST=$(git log --format="%H" -n 1)
 REPOSITORY_UNDER_TEST=${TRAVIS_REPO_SLUG:-SAP/jenkins-library}
 
 rm -rf workspace
-git clone -b "${EXAMPLE_PROJECT_BRANCH}" https://github.com/sap/cloud-s4-sdk-book workspace
+git clone -b "${TEST_CASE}" https://github.com/sap/cloud-s4-sdk-book workspace
 cp -f jenkins.yml workspace
 cd workspace || exit 1
 
@@ -20,6 +20,6 @@ echo "@Library(\"piper-library-os@$LIBRARY_VERSION_UNDER_TEST\") _" | cat - Jenk
 git commit --all --author="piper-testing-bot <piper-testing-bot@example.com>" --message="Set piper lib version for test"
 
 docker run -v /var/run/docker.sock:/var/run/docker.sock -v "${PWD}":/workspace -v /tmp -e CASC_JENKINS_CONFIG=/workspace/jenkins.yml \
-    -e CX_INFRA_IT_CF_USERNAME -e CX_INFRA_IT_CF_PASSWORD -e BRANCH_NAME="${EXAMPLE_PROJECT_BRANCH}" ppiper/jenkinsfile-runner
+    -e CX_INFRA_IT_CF_USERNAME -e CX_INFRA_IT_CF_PASSWORD -e BRANCH_NAME="${TEST_CASE}" ppiper/jenkinsfile-runner
 
 cd -
