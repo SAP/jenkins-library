@@ -3,18 +3,18 @@
 WORKSPACES_ROOT=workspaces
 [ -e "${WORKSPACES_ROOT}"  ] && rm -rf ${WORKSPACES_ROOT}
 
-TEST_CASES=`find . -type f -depth 2 -name '*.yml'`
+TEST_CASES=$(find . -type f -depth 2 -name '*.yml')
 
 i=0
 for f in ${TEST_CASES}
 do
-    testCase=`basename ${f%.*}`
-    area=`dirname ${f#*/}`
+    testCase=$(basename "${f%.*}")
+    area=$(dirname "${f#*/}")
     echo "[INFO] Running test case \"${testCase}\" in area \"${area}\"."
     TEST_CASE_ROOT="${WORKSPACES_ROOT}/${area}/${testCase}"
     [ -e "${TEST_CASE_ROOT}" ] && rm -rf "${TEST_CASE_ROOT}"
     mkdir -p "${TEST_CASE_ROOT}"
-    source runTest.sh "${area}" "${testCase}" "${TEST_CASE_ROOT}" &> "${TEST_CASE_ROOT}/log.txt" &
+    source ./runTest.sh "${testCase}" "${TEST_CASE_ROOT}" &> "${TEST_CASE_ROOT}/log.txt" &
     pid=$!
     processes[$i]="${testCase}:${pid}"
     echo "[INFO] Test case \"${testCase}\" in area \"${area}\" launched. (PID: \"${pid}\")."
@@ -28,7 +28,7 @@ do
     testCase=${p%:*}
     processId=${p#*:}
     echo "[INFO] Waiting for test case \"${testCase}\" (PID: \"${processId}\")."
-    wait ${processId}
+    wait "${processId}"
     echo "[INFO] Test case \"${testCase}\" finished (PID: \"${processId}\")."
     echo "[INFO] <START> Logs for test case \"${testCase}\"."
     cat "${TEST_CASE_ROOT}/log.txt"
