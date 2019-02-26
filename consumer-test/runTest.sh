@@ -7,7 +7,7 @@ REPOSITORY_UNDER_TEST=${TRAVIS_REPO_SLUG:-SAP/jenkins-library}
 
 rm -rf workspace
 git clone -b "${EXAMPLE_PROJECT_BRANCH}" https://github.com/sap/cloud-s4-sdk-book workspace
-cp -f ../jenkins.yml workspace
+cp -f jenkins.yml workspace
 cd workspace || exit 1
 
 # Configure path to library-repository under test in Jenkins config
@@ -21,3 +21,5 @@ git commit --all --author="piper-testing-bot <piper-testing-bot@example.com>" --
 
 docker run -v /var/run/docker.sock:/var/run/docker.sock -v "${PWD}":/workspace -v /tmp -e CASC_JENKINS_CONFIG=/workspace/jenkins.yml \
     -e CX_INFRA_IT_CF_USERNAME -e CX_INFRA_IT_CF_PASSWORD -e BRANCH_NAME="${EXAMPLE_PROJECT_BRANCH}" ppiper/jenkinsfile-runner
+
+cd -
