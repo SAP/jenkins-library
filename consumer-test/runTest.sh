@@ -24,4 +24,8 @@ git commit --all --author="piper-testing-bot <piper-testing-bot@example.com>" --
 docker run -v /var/run/docker.sock:/var/run/docker.sock -v "${PWD}":/workspace -v /tmp -e CASC_JENKINS_CONFIG=/workspace/jenkins.yml \
     -e CX_INFRA_IT_CF_USERNAME -e CX_INFRA_IT_CF_PASSWORD -e BRANCH_NAME="${TEST_CASE}" ppiper/jenkinsfile-runner
 
+RC=$?
+
 cd -
+
+[ "${RC}" == 0 ] && touch "${TEST_CASE_ROOT}/SUCCESS"
