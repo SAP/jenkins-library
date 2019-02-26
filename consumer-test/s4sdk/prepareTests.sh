@@ -18,3 +18,6 @@ echo "@Library(\"piper-library-os@$LIBRARY_VERSION_UNDER_TEST\") _" | cat - Jenk
 
 # Commit the changed version because artifactSetVersion expects the git repo not to be dirty
 git commit --all --author="piper-testing-bot <piper-testing-bot@example.com>" --message="Set piper lib version for test"
+
+docker run -v /var/run/docker.sock:/var/run/docker.sock -v "${PWD}":/workspace -v /tmp -e CASC_JENKINS_CONFIG=/workspace/jenkins.yml \
+    -e CX_INFRA_IT_CF_USERNAME -e CX_INFRA_IT_CF_PASSWORD -e BRANCH_NAME="${EXAMPLE_PROJECT_BRANCH}" ppiper/jenkinsfile-runner
