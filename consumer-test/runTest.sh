@@ -1,8 +1,7 @@
 #!/usr/bin/env bash
 
-TEST_AREA=$1
-TEST_CASE=$2
-TEST_CASE_ROOT=$3
+TEST_CASE=$1
+TEST_CASE_ROOT=$2
 TEST_CASE_WORKSPACE="${TEST_CASE_ROOT}/workspace"
 
 LIBRARY_VERSION_UNDER_TEST=$(git log --format="%H" -n 1)
