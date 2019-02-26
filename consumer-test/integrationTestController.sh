@@ -1,16 +1,15 @@
 #!/bin/bash
 
 WORKSPACES_ROOT=workspaces
-LOG_ROOT="logs"
 [ -e "${WORKSPACES_ROOT}"  ] && rm -rf ${WORKSPACES_ROOT}
-[ -e "${LOG_ROOT}"  ] && rm -rf ${LOG_ROOT}
-
-mkdir -p "${LOG_ROOT}"
 
 for f in `find . -type f -depth 2 -name '*.yml'`
 do
   testCase=`basename ${f%.*}`
   area=`dirname ${f#*/}`
-  source runTest.sh "${area}" "${testCase}" &> "logs/${area}-${testCase}.log"
+  TEST_CASE_ROOT="${WORKSPACES_ROOT}/${area}/${testCase}"
+  [ -e "${TEST_CASE_ROOT}" ] && rm -rf "${TEST_CASE_ROOT}"
+  mkdir -p "${TEST_CASE_ROOT}"
+  source runTest.sh "${area}" "${testCase}" "${TEST_CASE_ROOT}" &> "${TEST_CASE_ROOT}/log.txt"
 
 done
