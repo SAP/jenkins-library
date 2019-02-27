@@ -21,6 +21,8 @@ do
     let i=i+1
 done
 
+[ "${i}" == 0 ] && { echo "No tests has been executed."; exit 1;  }
+
 #
 # wait for the test cases and cat the log
 for p in "${processes[@]}"
