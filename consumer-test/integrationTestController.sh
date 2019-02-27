@@ -35,9 +35,6 @@ do
     echo "[INFO] Waiting for test case \"${testCase}\" (PID: \"${processId}\")."
     wait "${processId}"
     echo "[INFO] Test case \"${testCase}\" finished (PID: \"${processId}\")."
-    echo "[INFO] <START> Logs for test case \"${testCase}\"."
-    cat "${TEST_CASE_ROOT}/log.txt"
-    echo "[INFO] <END> Logs for test case \"${testCase}\"."
 done
 
 kill -PIPE "${notificationThreadPid}" &>/dev/null
