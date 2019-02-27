@@ -3,7 +3,7 @@
 WORKSPACES_ROOT=workspaces
 [ -e "${WORKSPACES_ROOT}"  ] && rm -rf ${WORKSPACES_ROOT}
 
-TEST_CASES=$(find testCases -depth 2 -name '*.yml')
+TEST_CASES=$(find testCases -name '*.yml')
 
 i=0
 for f in ${TEST_CASES}
