@@ -25,6 +25,6 @@ docker run -v /var/run/docker.sock:/var/run/docker.sock -v "${PWD}":/workspace -
 
 RC=$?
 
-cd - || { echo "[ERROR] change directory back into integration test root folder failed."; exit 1; }
+cd - &> /dev/null || { echo "[ERROR] change directory back into integration test root folder failed."; exit 1; }
 
 [ "${RC}" == 0 ] && touch "${TEST_CASE_ROOT}/SUCCESS"
