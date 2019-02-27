@@ -1,5 +1,10 @@
 #!/bin/bash
 
+curl -X POST \
+    --data "{\"state\": \"pending\", \"target_url\": \"${TRAVIS_BUILD_WEB_URL}\", \"description\": \"Integration tests pending.\", \"context\": \"integration-tests\"}" \
+    --user "${INTEGRATION_TEST_VOTING_USER}:${INTEGRATION_TEST_VOTING_TOKEN}" \
+    "https://api.github.com/repos/SAP/jenkins-library/statuses/${TRAVIS_COMMIT}"
+
 WORKSPACES_ROOT=workspaces
 [ -e "${WORKSPACES_ROOT}"  ] && rm -rf ${WORKSPACES_ROOT}
 
@@ -68,11 +73,27 @@ do
     printf "[INFO] %-30s: %s\n" "${testCase}" ${status}
 done
 
+STATUS_DESCRIPTION="The integration tests failed."
+STATUS_STATE="failure"
+
 if [ "${failure}" == "true" ]
 then
     echo "[WARNING] There are test failures. Check earlier log for details."
-    exit 1
+else
+    STATUS_DESCRIPTION="The integration tests succeeded."
+    STATUS_STATE="success"
 fi
 
 echo "[INFO] Integration tests succeeded."
+
+curl -X POST \
+    --data "{\"state\": \"${STATUS_STATE}\", \"target_url\": \"${TRAVIS_BUILD_WEB_URL}\", \"description\": \"${STATUS_DESCRIPTION}\", \"context\": \"integration-tests\"}" \
+    --user "${INTEGRATION_TEST_VOTING_USER}:${INTEGRATION_TEST_VOTING_TOKEN}" \
+    "https://api.github.com/repos/SAP/jenkins-library/statuses/${TRAVIS_COMMIT}"
+
+if [ "${failure}" == "true" ]
+then
+    exit 1
+fi
+
 exit 0
