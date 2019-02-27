@@ -5,6 +5,9 @@ WORKSPACES_ROOT=workspaces
 
 TEST_CASES=$(find testCases -name '*.yml')
 
+while true; do sleep 10; echo "[INFO] Integration tests still running."; done &
+notificationThreadPid=$!
+
 i=0
 for f in ${TEST_CASES}
 do
@@ -36,6 +39,8 @@ do
     cat "${TEST_CASE_ROOT}/log.txt"
     echo "[INFO] <END> Logs for test case \"${testCase}\"."
 done
+
+kill -PIPE "${notificationThreadPid}" &>/dev/null
 
 #
 # list test case status
