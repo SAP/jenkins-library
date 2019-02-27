@@ -232,7 +232,8 @@ steps:
     logSuccessfulMavenTransfers: false
   mtaBuild:
     buildTarget: 'NEO'
-    mtaJarLocation: 'mta.jar'
+    mtaJarLocation: '/opt/sap/mta/lib/mta.jar'
+    dockerImage: 'ppiper/mta-archive-builder'
   neoDeploy:
     dockerImage: 's4sdk/docker-neo-cli'
     deployMode: 'mta'
@@ -251,6 +252,8 @@ steps:
     newmanRunCommand: "run '${config.newmanCollection}' --environment '${config.newmanEnvironment}' --globals '${config.newmanGlobals}' --reporters junit,html --reporter-junit-export 'target/newman/TEST-${collectionDisplayName}.xml' --reporter-html-export 'target/newman/TEST-${collectionDisplayName}.html'"
     stashContent:
       - 'tests'
+  npmExecute:
+    dockerImage: 'node:8-stretch'
   pipelineRestartSteps:
     sendMail: true
     timeoutInSeconds: 900
@@ -305,6 +308,9 @@ steps:
       dockerImage: 'node:8-stretch'
       dockerName: 'npm'
       dockerWorkspace: '/home/node'
+  slackSendNotification:
+    color: "${buildStatus == 'SUCCESS'?'#008000':'#E60000'}"
+    defaultMessage: "${buildStatus}: Job ${env.JOB_NAME} <${env.BUILD_URL}|#${env.BUILD_NUMBER}>"
   snykExecute:
     buildDescriptorFile: './package.json'
     dockerImage: 'node:8-stretch'
