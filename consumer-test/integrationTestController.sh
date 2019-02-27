@@ -3,7 +3,7 @@
 curl -X POST \
     --data "{\"state\": \"pending\", \"target_url\": \"${TRAVIS_BUILD_WEB_URL}\", \"description\": \"Integration tests pending.\", \"context\": \"integration-tests\"}" \
     --user "${INTEGRATION_TEST_VOTING_USER}:${INTEGRATION_TEST_VOTING_TOKEN}" \
-    "https://api.github.com/repos/SAP/jenkins-library/statuses/${TRAVIS_COMMIT}"
+    "https://api.github.com/repos/SAP/jenkins-library/statuses/${TRAVIS_PULL_REQUEST_SHA}"
 
 WORKSPACES_ROOT=workspaces
 [ -e "${WORKSPACES_ROOT}"  ] && rm -rf ${WORKSPACES_ROOT}
@@ -89,7 +89,7 @@ echo "[INFO] Integration tests succeeded."
 curl -X POST \
     --data "{\"state\": \"${STATUS_STATE}\", \"target_url\": \"${TRAVIS_BUILD_WEB_URL}\", \"description\": \"${STATUS_DESCRIPTION}\", \"context\": \"integration-tests\"}" \
     --user "${INTEGRATION_TEST_VOTING_USER}:${INTEGRATION_TEST_VOTING_TOKEN}" \
-    "https://api.github.com/repos/SAP/jenkins-library/statuses/${TRAVIS_COMMIT}"
+    "https://api.github.com/repos/SAP/jenkins-library/statuses/${TRAVIS_PULL_REQUEST_SHA}"
 
 if [ "${failure}" == "true" ]
 then
