@@ -43,6 +43,17 @@ done
 kill -PIPE "${notificationThreadPid}" &>/dev/null
 
 #
+# provide the logs
+for p in "${processes[@]}"
+do
+    testCase=${p%:*}
+    processId=${p#*:}
+    echo "[INFO] === START === Logs for test case \"${testCase}\" ===."
+    cat "${TEST_CASE_ROOT}/log.txt"
+    echo "[INFO] === END === Logs for test case \"${testCase}\" ===."
+done
+
+#
 # list test case status
 echo "[INFO] Build status:"
 failure="false"
