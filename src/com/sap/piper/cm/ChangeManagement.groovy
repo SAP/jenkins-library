@@ -77,9 +77,9 @@ public class ChangeManagement implements Serializable {
         }
     }
 
-    String createTransportRequestCTS(String transportType, String targetSystemId, String description, String endpoint, String credentialsId, String clientOpts = '') {
+    String createTransportRequestCTS(Map docker, String transportType, String targetSystemId, String description, String endpoint, String credentialsId, String clientOpts = '') {
         try {
-            def transportRequest = executeWithCredentials(BackendType.CTS, [:], endpoint, credentialsId, 'create-transport',
+            def transportRequest = executeWithCredentials(BackendType.CTS, docker, endpoint, credentialsId, 'create-transport',
                     ['-tt', transportType, '-ts', targetSystemId, '-d', "\"${description}\""],
                     true,
                     clientOpts)
