@@ -265,13 +265,20 @@ public void testGetCommandLineWithCMClientOpts() {
         script.setReturnValue(JenkinsShellCallRule.Type.REGEX, '-t CTS upload-file-to-transport -tID 002 "/path"', 0)
 
         new ChangeManagement(nullScript).uploadFileToTransportRequestCTS(
+            [
+                image: 'ppiper/cmclient',
+                pullImage: true
+             ],
             '002',
             '/path',
             'https://example.org/cm',
             'me')
 
-        // no assert required here, since the regex registered above to the script rule is an implicit check for
-        // the command line.
+        assert dockerExecuteRule.getDockerParams().dockerImage == 'ppiper/cmclient'
+        assert dockerExecuteRule.getDockerParams().dockerPullImage == true
+
+        // no assert for the shell command required here, since the regex registered
+        // above to the script rule is an implicit check for the command line.
     }
 
     @Test

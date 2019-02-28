@@ -169,6 +169,7 @@ public class ChangeManagement implements Serializable {
     }
 
     void uploadFileToTransportRequestCTS(
+        Map docker,
         String transportRequestId,
         String filePath,
         String endpoint,
@@ -182,7 +183,7 @@ public class ChangeManagement implements Serializable {
 
         int rc = executeWithCredentials(
             BackendType.CTS,
-            [:],
+            docker,
             endpoint,
             credentialsId,
             'upload-file-to-transport',
