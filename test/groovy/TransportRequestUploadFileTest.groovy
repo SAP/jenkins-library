@@ -21,6 +21,7 @@ import util.JenkinsCredentialsRule
 import util.JenkinsStepRule
 import util.JenkinsLoggingRule
 import util.JenkinsReadYamlRule
+import util.JenkinsDockerExecuteRule
 import util.Rules
 
 import hudson.AbortException
@@ -159,12 +160,14 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
 
         ChangeManagement cm = new ChangeManagement(nullScript) {
             void uploadFileToTransportRequestCTS(
+                                              Map docker,
                                               String transportRequestId,
                                               String filePath,
                                               String endpoint,
                                               String credentialsId,
                                               String cmclientOpts) {
 
+                cmUtilReceivedParams.docker = docker
                 cmUtilReceivedParams.transportRequestId = transportRequestId
                 cmUtilReceivedParams.filePath = filePath
                 cmUtilReceivedParams.endpoint = endpoint
@@ -181,12 +184,19 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
 
         assert cmUtilReceivedParams ==
             [
+                docker: [
+                    image: 'ppiper/cm-client',
+                    options:[],
+                    envVars:[:],
+                    pullImage:true
+                ],
                 transportRequestId: '002',
                 filePath: '/path',
                 endpoint: 'https://example.org/cm',
                 credentialsId: 'CM',
                 cmclientOpts: ''
             ]
+
     }
 
     @Test

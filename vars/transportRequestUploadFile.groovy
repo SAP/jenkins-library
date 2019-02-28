@@ -139,6 +139,7 @@ void call(parameters = [:]) {
                         break
                     case BackendType.CTS:
                         cm.uploadFileToTransportRequestCTS(
+                            configuration.changeManagement.cts?.docker ?: [:],
                             configuration.transportRequestId,
                             configuration.filePath,
                             configuration.changeManagement.endpoint,

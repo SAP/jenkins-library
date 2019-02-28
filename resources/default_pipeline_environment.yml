@@ -16,6 +16,12 @@ general:
       from: 'origin/master'
       to: 'HEAD'
       format: '%b'
+    cts:
+      docker:
+        image: 'ppiper/cm-client'
+        options: []
+        envVars: {}
+        pullImage: true
     rfc:
       docker:
         image: 'rfc'
