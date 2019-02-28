@@ -355,6 +355,7 @@ public class ChangeManagement implements Serializable {
     }
 
     void releaseTransportRequestCTS(
+        Map docker,
         String transportRequestId,
         String endpoint,
         String credentialsId,
@@ -368,7 +369,7 @@ public class ChangeManagement implements Serializable {
 
         int rc = executeWithCredentials(
             BackendType.CTS,
-            [:],
+            docker,
             endpoint,
             credentialsId,
             cmd,

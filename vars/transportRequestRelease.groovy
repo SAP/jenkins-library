@@ -111,6 +111,7 @@ void call(parameters = [:]) {
                     case BackendType.CTS:
 
                         cm.releaseTransportRequestCTS(
+                            configuration.changeManagement.cts.docker,
                             configuration.transportRequestId,
                             configuration.changeManagement.endpoint,
                             configuration.changeManagement.credentialsId,
