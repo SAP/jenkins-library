@@ -424,6 +424,10 @@ public void testGetCommandLineWithCMClientOpts() {
         script.setReturnValue(JenkinsShellCallRule.Type.REGEX, '-t CTS export-transport.*-tID 002', 0)
 
         new ChangeManagement(nullScript).releaseTransportRequestCTS(
+            [
+                image: 'ppiper/cm-client',
+                pullImage: true,
+            ],
             '002',
             'https://example.org',
             'me',
@@ -431,6 +435,9 @@ public void testGetCommandLineWithCMClientOpts() {
 
         // no assert required here, since the regex registered above to the script rule is an implicit check for
         // the command line.
+
+        assert dockerExecuteRule.getDockerParams().dockerImage == 'ppiper/cm-client'
+        assert dockerExecuteRule.getDockerParams().dockerPullImage == true
     }
 
     @Test
