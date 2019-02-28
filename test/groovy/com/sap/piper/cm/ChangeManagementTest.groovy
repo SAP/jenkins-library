@@ -96,7 +96,12 @@ public class ChangeManagementTest extends BasePiperTest {
     public void testIsChangeInDevelopmentReturnsTrueWhenChangeIsInDevelopent() {
 
         script.setReturnValue(JenkinsShellCallRule.Type.REGEX, "cmclient.*is-change-in-development -cID '001'", 0)
-        boolean inDevelopment = new ChangeManagement(nullScript, null).isChangeInDevelopment('001', 'endpoint', 'me')
+        boolean inDevelopment = new ChangeManagement(nullScript, null).isChangeInDevelopment(
+            [
+                image: 'ppiper/cm-client',
+                pullImage: true,
+            ],
+            '001', 'endpoint', 'me')
 
         assertThat(inDevelopment, is(equalTo(true)))
         assertThat(script.shell[0], allOf(containsString("cmclient"),
@@ -106,6 +111,9 @@ public class ChangeManagementTest extends BasePiperTest {
                                             containsString('is-change-in-development'),
                                             containsString("-cID '001'"),
                                             containsString("-t SOLMAN")))
+
+        assert dockerExecuteRule.getDockerParams().dockerImage == 'ppiper/cm-client'
+        assert dockerExecuteRule.getDockerParams().dockerPullImage == true
     }
 
     @Test
@@ -114,7 +122,8 @@ public class ChangeManagementTest extends BasePiperTest {
         script.setReturnValue(JenkinsShellCallRule.Type.REGEX, "cmclient.*is-change-in-development -cID '001'", 3)
 
         boolean inDevelopment = new ChangeManagement(nullScript, null)
-                                    .isChangeInDevelopment('001',
+                                    .isChangeInDevelopment([:],
+                                                           '001',
                                                            'endpoint',
                                                            'me')
 
@@ -128,7 +137,7 @@ public class ChangeManagementTest extends BasePiperTest {
         thrown.expectMessage('Cannot retrieve status for change document \'001\'. Does this change exist? Return code from cmclient: 1.')
 
         script.setReturnValue(JenkinsShellCallRule.Type.REGEX, "cmclient.*is-change-in-development -cID '001'", 1)
-        new ChangeManagement(nullScript, null).isChangeInDevelopment('001', 'endpoint', 'me')
+        new ChangeManagement(nullScript, null).isChangeInDevelopment([:], '001', 'endpoint', 'me')
     }
 
     @Test
