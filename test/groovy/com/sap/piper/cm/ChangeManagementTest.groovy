@@ -400,6 +400,10 @@ public void testGetCommandLineWithCMClientOpts() {
         script.setReturnValue(JenkinsShellCallRule.Type.REGEX, '-t SOLMAN release-transport.*-cID 001.*-tID 002', 0)
 
         new ChangeManagement(nullScript).releaseTransportRequestSOLMAN(
+            [
+                image: 'ppiper/cm-client',
+                imagePull: true,
+            ],
             '001',
             '002',
             'https://example.org',
@@ -408,6 +412,9 @@ public void testGetCommandLineWithCMClientOpts() {
 
         // no assert required here, since the regex registered above to the script rule is an implicit check for
         // the command line.
+
+        dockerExecuteRule.getDockerParams().dockerImage == 'ppiper/cm-client'
+        dockerExecuteRule.getDockerParams().pullImage == true
     }
 
     @Test
@@ -460,6 +467,10 @@ public void testGetCommandLineWithCMClientOpts() {
         script.setReturnValue(JenkinsShellCallRule.Type.REGEX, 'release-transport.*-cID 001.*-tID 002', 1)
 
         new ChangeManagement(nullScript).releaseTransportRequestSOLMAN(
+            [
+                image: 'ppiper/cm-client',
+                imagePull: true,
+            ],
             '001',
             '002',
             'https://example.org',
