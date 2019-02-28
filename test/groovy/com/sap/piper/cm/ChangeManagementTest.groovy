@@ -228,6 +228,10 @@ public void testGetCommandLineWithCMClientOpts() {
         script.setReturnValue(JenkinsShellCallRule.Type.REGEX, 'cmclient.* -t CTS .*create-transport -tt W -ts XYZ -d "desc 123"$', '004')
         def transportRequestId = new ChangeManagement(nullScript)
             .createTransportRequestCTS(
+                [
+                    image: 'ppiper/cmclient',
+                    pullImage: true
+                ],
                 'W', // transport type
                 'XYZ', // target system
                 'desc 123', // description
@@ -237,6 +241,9 @@ public void testGetCommandLineWithCMClientOpts() {
         // the check for the transportRequestID is sufficient. This checks implicit the command line since that value is
         // returned only in case the shell call matches.
         assert transportRequestId == '004'
+
+        dockerExecuteRule.getDockerParams().dockerImage = 'ppiper/cmclient'
+        dockerExecuteRule.getDockerParams().dockerPullImage = true
 
     }
 

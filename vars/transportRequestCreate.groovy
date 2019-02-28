@@ -104,6 +104,7 @@ void call(parameters = [:]) {
                                                                configuration.changeManagement.clientOpts)
                 } else if(backendType == BackendType.CTS) {
                     transportRequestId = cm.createTransportRequestCTS(
+                                                                configuration.changeManagement.cts.docker,
                                                                configuration.transportType,
                                                                configuration.targetSystem,
                                                                configuration.description,

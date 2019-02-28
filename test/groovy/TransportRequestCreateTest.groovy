@@ -156,12 +156,14 @@ public class TransportRequestCreateTest extends BasePiperTest {
         ChangeManagement cm = new ChangeManagement(nullScript) {
 
             String createTransportRequestCTS(
+                Map docker,
                 String transportType,
                 String targetSystemId,
                 String description,
                 String endpoint,
                 String credentialsId,
                 String clientOpts) {
+                result.docker = docker
                 result.transportType = transportType
                 result.targetSystemId = targetSystemId
                 result.description = description
@@ -180,7 +182,14 @@ public class TransportRequestCreateTest extends BasePiperTest {
                         cmUtils: cm)
 
         assert nullScript.commonPipelineEnvironment.getTransportRequestId() == '001'
-        assert result == [transportType: 'W',
+        assert result == [
+                         docker: [
+                             image: 'ppiper/cm-client',
+                             pullImage: true,
+                             envVars: [:],
+                             options: [],
+                         ],
+                         transportType: 'W',
                          targetSystemId: 'XYZ',
                          description: 'desc',
                          endpoint: 'https://example.org/cm',
