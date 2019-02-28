@@ -324,6 +324,7 @@ public class ChangeManagement implements Serializable {
     }
 
     void releaseTransportRequestSOLMAN(
+        Map docker,
         String changeId,
         String transportRequestId,
         String endpoint,
@@ -340,7 +341,7 @@ public class ChangeManagement implements Serializable {
 
         int rc = executeWithCredentials(
             BackendType.SOLMAN,
-            [:],
+            docker,
             endpoint,
             credentialsId,
             cmd,
