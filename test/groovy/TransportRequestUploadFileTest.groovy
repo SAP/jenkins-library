@@ -130,6 +130,7 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
 
         ChangeManagement cm = new ChangeManagement(nullScript) {
             void uploadFileToTransportRequestSOLMAN(
+                                              Map docker,
                                               String changeId,
                                               String transportRequestId,
                                               String applicationId,
@@ -371,6 +372,7 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
 
         ChangeManagement cm = new ChangeManagement(nullScript) {
             void uploadFileToTransportRequestSOLMAN(
+                                              Map docker,
                                               String changeId,
                                               String transportRequestId,
                                               String applicationId,
@@ -379,6 +381,7 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
                                               String credentialsId,
                                               String cmclientOpts) {
 
+                cmUtilReceivedParams.docker = docker
                 cmUtilReceivedParams.changeId = changeId
                 cmUtilReceivedParams.transportRequestId = transportRequestId
                 cmUtilReceivedParams.applicationId = applicationId
@@ -398,6 +401,12 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
 
         assert cmUtilReceivedParams ==
             [
+                docker: [
+                    image: 'ppiper/cm-client',
+                    pullImage: true,
+                    envVars: [:],
+                    options: [],
+                ],
                 changeId: '001',
                 transportRequestId: '002',
                 applicationId: 'app',
@@ -417,6 +426,7 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
 
         ChangeManagement cm = new ChangeManagement(nullScript) {
             void uploadFileToTransportRequestSOLMAN(
+                                              Map docker,
                                               String changeId,
                                               String transportRequestId,
                                               String applicationId,
@@ -447,6 +457,7 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
 
         ChangeManagement cm = new ChangeManagement(nullScript) {
             void uploadFileToTransportRequestSOLMAN(
+                                              Map docker,
                                               String changeId,
                                               String transportRequestId,
                                               String applicationId,
@@ -477,6 +488,7 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
 
         ChangeManagement cm = new ChangeManagement(nullScript) {
             void uploadFileToTransportRequestSOLMAN(
+                                              Map docker,
                                               String changeId,
                                               String transportRequestId,
                                               String applicationId,
@@ -506,6 +518,7 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
 
         ChangeManagement cm = new ChangeManagement(nullScript) {
             void uploadFileToTransportRequestSOLMAN(
+                                              Map docker,
                                               String changeId,
                                               String transportRequestId,
                                               String applicationId,

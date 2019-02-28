@@ -138,6 +138,7 @@ public class ChangeManagement implements Serializable {
     }
 
     void uploadFileToTransportRequestSOLMAN(
+        Map docker,
         String changeId,
         String transportRequestId,
         String applicationId,
@@ -154,7 +155,7 @@ public class ChangeManagement implements Serializable {
 
         int rc = executeWithCredentials(
             BackendType.SOLMAN,
-            [:],
+            docker,
             endpoint,
             credentialsId,
             'upload-file-to-transport',

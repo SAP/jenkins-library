@@ -129,6 +129,7 @@ void call(parameters = [:]) {
 
                     case BackendType.SOLMAN:
                         cm.uploadFileToTransportRequestSOLMAN(
+                            configuration.changeManagement.solman?.docker ?: [:],
                             configuration.changeDocumentId,
                             configuration.transportRequestId,
                             configuration.applicationId,

@@ -262,6 +262,10 @@ public void testGetCommandLineWithCMClientOpts() {
         script.setReturnValue(JenkinsShellCallRule.Type.REGEX, 'upload-file-to-transport.*-cID 001 -tID 002 XXX "/path"', 0)
 
         new ChangeManagement(nullScript).uploadFileToTransportRequestSOLMAN(
+            [
+                image: 'ppiper/cm-client',
+                imagePull: true,
+            ],
             '001',
             '002',
             'XXX',
@@ -269,8 +273,12 @@ public void testGetCommandLineWithCMClientOpts() {
             'https://example.org/cm',
             'me')
 
-        // no assert required here, since the regex registered above to the script rule is an implicit check for
-        // the command line.
+        // no assert required here for the shell script, since the regex registered above
+        // to the script rule is an implicit check for the command line.
+
+        dockerExecuteRule.getDockerParams().dockerImage = 'ppiper/cmclient'
+        dockerExecuteRule.getDockerParams().dockerPullImage = true
+
     }
 
     @Test
@@ -376,6 +384,7 @@ public void testGetCommandLineWithCMClientOpts() {
         script.setReturnValue(JenkinsShellCallRule.Type.REGEX,, 'upload-file-to-transport', 1)
 
         new ChangeManagement(nullScript).uploadFileToTransportRequestSOLMAN(
+            [:],
             '001',
             '002',
             'XXX',
