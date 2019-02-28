@@ -89,10 +89,10 @@ public class ChangeManagement implements Serializable {
         }
     }
 
-    String createTransportRequestSOLMAN(String changeId, String developmentSystemId, String endpoint, String credentialsId, String clientOpts = '') {
+    String createTransportRequestSOLMAN(Map docker, String changeId, String developmentSystemId, String endpoint, String credentialsId, String clientOpts = '') {
 
         try {
-            def transportRequest = executeWithCredentials(BackendType.SOLMAN, [:], endpoint, credentialsId, 'create-transport', ['-cID', changeId, '-dID', developmentSystemId],
+            def transportRequest = executeWithCredentials(BackendType.SOLMAN, docker, endpoint, credentialsId, 'create-transport', ['-cID', changeId, '-dID', developmentSystemId],
                 true,
                 clientOpts)
             return (transportRequest as String)?.trim()
