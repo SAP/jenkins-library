@@ -148,7 +148,7 @@ void call(parameters = [:]) {
                     case BackendType.RFC:
 
                         cm.uploadFileToTransportRequestRFC(
-                            configuration.changeManagement.rfc.docker ?: [],
+                            configuration.changeManagement.rfc.docker ?: [:],
                             configuration.transportRequestId,
                             configuration.applicationName,
                             configuration.applicationUrl,
