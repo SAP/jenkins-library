@@ -251,6 +251,9 @@ public class ChangeManagement implements Serializable {
         String clientOpts = '') {
 
         def script = this.script
+
+        docker = docker ?: [:]
+
         script.withCredentials([script.usernamePassword(
             credentialsId: credentialsId,
             passwordVariable: 'password',
