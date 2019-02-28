@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>${reportTitle}</title>
+    <style type="text/css">${style}</style>
+</head>
+<body>
+    <h1>${reportTitle}</h1>
+    <h2>
+        <span>
+          <i>WhiteSource product name: ${whitesourceProductName}</i><br />
+        	<i>Filtered project names: ${whitesourceProjectNames?:''}</i>
+        </span>
+    </h2>
+    <div>
+        <h3> total number of vulnerabilities: ${totalVulnerabilities}<br />
+        total number of high/critical vulnerabilities with CVSS score >= 7.0: ${totalSevereVulnerabilities}
+    </h3>
+    </div>
+    <p>Snapshot taken:${now} GMT</p>
+    <table>
+    <tr>
+      <th>Entry #</th>
+      <th>Date</th>
+      <th>CVE</th>
+      <th>CVSS Score</th>
+      <th>CVSS Version</th>
+      <th>Project</th>
+      <th>Library file name</th>
+      <th>Library group ID</th>
+      <th>Library artifact ID</th>
+      <th>Library version</th>
+      <th>Description</th>
+      <th>Top fix</th>
+    </tr>
+
+    ${vulnerabilityTable}
+
+    </table>
+</body>
+</html>

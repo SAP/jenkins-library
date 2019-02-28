@@ -254,6 +254,67 @@ steps:
       - 'tests'
   npmExecute:
     dockerImage: 'node:8-stretch'
+  whitesourceExecuteScan:
+    buildDescriptorExcludeList: []
+    parallelLimit: 0
+    licensingVulnerabilities: true
+    securityVulnerabilities: false
+    reporting: true
+    vulnerabilityReportFileName: 'piper_whitesource_vulnerability_report'
+    vulnerabilityReportTitle: 'Whitesource Security Vulnerability Report'
+    projectNames: []
+    jreDownloadUrl: 'https://github.com/SAP/SapMachine/releases/download/sapmachine-11.0.2/sapmachine-jre-11.0.2_linux-x64_bin.tar.gz'
+    whitesourceAccessor: 'com.sap.piper.internal.integration.InternalWhitesource'
+    mta:
+      stashContent:
+        - 'buildDescriptor'
+        - 'opensourceConfiguration'
+    maven:
+      buildDescriptorFile: './pom.xml'
+      dockerImage: 'docker.wdf.sap.corp:50000/piper/maven'
+      dockerWorkspace: '/home/piper'
+      agentFileName: 'wss-unified-agent.jar'
+      agentDownloadUrl: 'https://github.com/whitesource/unified-agent-distribution/raw/master/standAlone/${config.agentFileName}'
+      agentParameters: ''
+      configFilePath: './wss-unified-agent.config'
+      stashContent:
+        - 'buildDescriptor'
+        - 'opensourceConfiguration'
+    npm:
+      buildDescriptorFile: './package.json'
+      dockerImage: 'docker.wdf.sap.corp:50000/piper/node'
+      dockerWorkspace: '/home/piper'
+      agentFileName: 'wss-unified-agent.jar'
+      agentDownloadUrl: 'https://github.com/whitesource/unified-agent-distribution/raw/master/standAlone/${config.agentFileName}'
+      agentParameters: ''
+      configFilePath: './wss-unified-agent.config'
+      stashContent:
+        - 'buildDescriptor'
+        - 'opensourceConfiguration'
+    pip:
+      buildDescriptorFile: './setup.py'
+      dockerImage: 'docker.wdf.sap.corp:50000/piper/node'
+      dockerWorkspace: '/home/piper'
+      agentFileName: 'wss-unified-agent.jar'
+      agentDownloadUrl: 'https://github.com/whitesource/unified-agent-distribution/raw/master/standAlone/${config.agentFileName}'
+      agentParameters: ''
+      configFilePath: './wss-unified-agent.config'
+      stashContent:
+        - 'buildDescriptor'
+        - 'opensourceConfiguration'
+    sbt:
+      buildDescriptorFile: './build.sbt'
+      dockerImage: 'docker.wdf.sap.corp:50000/piper/sbt'
+      dockerWorkspace: '/home/piper'
+      agentFileName: 'wss-unified-agent.jar'
+      agentDownloadUrl: 'https://github.com/whitesource/unified-agent-distribution/raw/master/standAlone/${config.agentFileName}'
+      agentParameters: ''
+      configFilePath: './wss-unified-agent.config'
+      stashContent:
+        - 'buildDescriptor'
+        - 'opensourceConfiguration'
+    verbose: false
+    timeout: 0
   pipelineRestartSteps:
     sendMail: true
     timeoutInSeconds: 900
