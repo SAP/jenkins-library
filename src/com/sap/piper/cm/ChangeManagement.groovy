@@ -263,6 +263,8 @@ public class ChangeManagement implements Serializable {
             else
                 shArgs.put('returnStatus', true)
 
+            Map dockerEnvVars = docker.envVars ?: [:]
+
             def result = 1
 
             switch(type) {
@@ -281,19 +283,7 @@ public class ChangeManagement implements Serializable {
                         ABAP_DEVELOPMENT_PASSWORD: script.password,
                     ])
 
-                    // user and password are masked by withCredentials
-                    script.echo """[INFO] Executing command line: "${shArgs.script}"."""
-
-                    script.dockerExecute(
-                        script: script,
-                        dockerImage: docker.image,
-                        dockerOptions: docker.options,
-                        dockerEnvVars: (docker.envVars?:[:]).plus(args),
-                        dockerPullImage: docker.pullImage) {
-
-                        result = script.sh(shArgs)
-
-                    }
+                    dockerEnvVars += args
 
                     break
 
@@ -307,13 +297,22 @@ public class ChangeManagement implements Serializable {
                         command, args,
                         clientOpts)
 
-                    // user and password are masked by withCredentials
-                    script.echo """[INFO] Executing command line: "${shArgs.script}"."""
+                    break
+            }
+
+        // user and password are masked by withCredentials
+        script.echo """[INFO] Executing command line: "${shArgs.script}"."""
+
+                script.dockerExecute(
+                    script: script,
+                    dockerImage: docker.image,
+                    dockerOptions: docker.options,
+                    dockerEnvVars: dockerEnvVars,
+                    dockerPullImage: docker.pullImage) {
 
                     result = script.sh(shArgs)
 
-                    break
-            }
+                    }
 
             return result
         }
