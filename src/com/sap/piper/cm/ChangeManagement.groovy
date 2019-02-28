@@ -63,8 +63,8 @@ public class ChangeManagement implements Serializable {
         return items[0]
     }
 
-    boolean isChangeInDevelopment(String changeId, String endpoint, String credentialsId, String clientOpts = '') {
-        int rc = executeWithCredentials(BackendType.SOLMAN, [:], endpoint, credentialsId, 'is-change-in-development', ['-cID', "'${changeId}'", '--return-code'],
+    boolean isChangeInDevelopment(Map docker, String changeId, String endpoint, String credentialsId, String clientOpts = '') {
+        int rc = executeWithCredentials(BackendType.SOLMAN, docker, endpoint, credentialsId, 'is-change-in-development', ['-cID', "'${changeId}'", '--return-code'],
             false,
             clientOpts) as int
 
