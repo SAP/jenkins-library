@@ -1,9 +1,23 @@
 #!/bin/bash
 
+#
+# In case the build is performed for a pull request TRAVIS_COMMIT is a merge
+# commit between the base branch and the PR branch HEAD. That commit is actually built.
+# But for notifying about a build status we need the commit which is currenty
+# the HEAD of the PR branch.
+#
+# In case the build is performed for a simple branch (not associated with a PR)
+# In this case there is no merge commit between any base branch and HEAD of a PR branch.
+# The commit which we need for notifying about a build status is in this case simply
+# TRAVIS_COMMIT itself.
+#
+COMMIT_HASH_FOR_STATUS_NOTIFICATIONS="${TRAVIS_PULL_REQUEST_SHA}"
+[ -z "${COMMIT_HASH_FOR_STATUS_NOTIFICATIONS}" ] && COMMIT_HASH_FOR_STATUS_NOTIFICATIONS="${TRAVIS_COMMIT}"
+
 curl -X POST \
     --data "{\"state\": \"pending\", \"target_url\": \"${TRAVIS_BUILD_WEB_URL}\", \"description\": \"Integration tests pending.\", \"context\": \"integration-tests\"}" \
     --user "${INTEGRATION_TEST_VOTING_USER}:${INTEGRATION_TEST_VOTING_TOKEN}" \
-    "https://api.github.com/repos/SAP/jenkins-library/statuses/${TRAVIS_PULL_REQUEST_SHA}"
+    "https://api.github.com/repos/SAP/jenkins-library/statuses/${COMMIT_HASH_FOR_STATUS_NOTIFICATIONS}"
 
 WORKSPACES_ROOT=workspaces
 [ -e "${WORKSPACES_ROOT}"  ] && rm -rf ${WORKSPACES_ROOT}
@@ -89,7 +103,7 @@ echo "[INFO] Integration tests succeeded."
 curl -X POST \
     --data "{\"state\": \"${STATUS_STATE}\", \"target_url\": \"${TRAVIS_BUILD_WEB_URL}\", \"description\": \"${STATUS_DESCRIPTION}\", \"context\": \"integration-tests\"}" \
     --user "${INTEGRATION_TEST_VOTING_USER}:${INTEGRATION_TEST_VOTING_TOKEN}" \
-    "https://api.github.com/repos/SAP/jenkins-library/statuses/${TRAVIS_PULL_REQUEST_SHA}"
+    "https://api.github.com/repos/SAP/jenkins-library/statuses/${COMMIT_HASH_FOR_STATUS_NOTIFICATIONS}"
 
 if [ "${failure}" == "true" ]
 then
