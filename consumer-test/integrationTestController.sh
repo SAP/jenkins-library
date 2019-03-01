@@ -24,6 +24,12 @@ function notify() {
     "https://api.github.com/repos/SAP/jenkins-library/statuses/${hash}" || fail "Cannot send notification. curl return code: $?"
 }
 
+function cleanup() {
+    [ -z "${notificationThreadPid}" ] || kill -PIPE "${notificationThreadPid}" &>/dev/null
+}
+
+trap cleanup EXIT
+
 #
 # In case the build is performed for a pull request TRAVIS_COMMIT is a merge
 # commit between the base branch and the PR branch HEAD. That commit is actually built.
@@ -82,7 +88,7 @@ do
     echo "[INFO] Test case \"${testCase}\" in area \"${area}\" finished (PID: \"${processId}\")."
 done
 
-kill -PIPE "${notificationThreadPid}" &>/dev/null
+kill -PIPE "${notificationThreadPid}" &>/dev/null && notificationThreadPid=""
 
 #
 # provide the logs
