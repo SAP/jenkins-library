@@ -63,7 +63,7 @@ do
     mkdir -p "${TEST_CASE_ROOT}" || fail "Cannot create test case root director for test case \"${testCase}\"." 1
     source ./runTest.sh "${testCase}" "${TEST_CASE_ROOT}" &> "${TEST_CASE_ROOT}/log.txt" &
     pid=$!
-    processes[$i]="${testCase}:${pid}"
+    processes[$i]="${area}/${testCase}:${pid}"
     echo "[INFO] Test case \"${testCase}\" in area \"${area}\" launched. (PID: \"${pid}\")."
     let i=i+1
 done
@@ -74,11 +74,12 @@ done
 # wait for the test cases and cat the log
 for p in "${processes[@]}"
 do
-    testCase=${p%:*}
+    area=$(dirname ${p%:*})
+    testCase=$(basename ${p%:*})
     processId=${p#*:}
-    echo "[INFO] Waiting for test case \"${testCase}\" (PID: \"${processId}\")."
+    echo "[INFO] Waiting for test case \"${testCase}\" in area \"${area}\" (PID: \"${processId}\")."
     wait "${processId}"
-    echo "[INFO] Test case \"${testCase}\" finished (PID: \"${processId}\")."
+    echo "[INFO] Test case \"${testCase}\" in area \"${area}\" finished (PID: \"${processId}\")."
 done
 
 kill -PIPE "${notificationThreadPid}" &>/dev/null
@@ -87,7 +88,8 @@ kill -PIPE "${notificationThreadPid}" &>/dev/null
 # provide the logs
 for p in "${processes[@]}"
 do
-    testCase=${p%:*}
+    area=$(dirname ${p%:*})
+    testCase=$(basename ${p%:*})
     echo "[INFO] === START === Logs for test case \"${testCase}\" ===."
     cat "${TEST_CASE_ROOT}/log.txt"
     echo "[INFO] === END === Logs for test case \"${testCase}\" ===."
@@ -100,7 +102,9 @@ failure="false"
 for p in "${processes[@]}"
 do
     status="UNDEFINED"
-    testCase=${p%:*}
+    area=$(dirname ${p%:*})
+    testCase=$(basename ${p%:*})
+    TEST_CASE_ROOT="${WORKSPACES_ROOT}/${area}/${testCase}"
     if [ -f "${TEST_CASE_ROOT}/SUCCESS" ]
     then
         status="SUCCESS"
