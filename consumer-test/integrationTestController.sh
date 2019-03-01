@@ -4,7 +4,7 @@ function fail() {
     local message="$1"
     local returnCode=${2:-1}
     echo "[ERROR] ${message}" >&2
-    exit ${returnCode}
+    exit "${returnCode}"
 }
 
 function notify() {
@@ -74,9 +74,9 @@ done
 # wait for the test cases and cat the log
 for p in "${processes[@]}"
 do
-    area=$(dirname ${p%:*})
-    testCase=$(basename ${p%:*})
-    processId=${p#*:}
+    area=$(dirname "${p%:*}")
+    testCase=$(basename "${p%:*}")
+    processId="${p#*:}"
     echo "[INFO] Waiting for test case \"${testCase}\" in area \"${area}\" (PID: \"${processId}\")."
     wait "${processId}"
     echo "[INFO] Test case \"${testCase}\" in area \"${area}\" finished (PID: \"${processId}\")."
@@ -88,8 +88,8 @@ kill -PIPE "${notificationThreadPid}" &>/dev/null
 # provide the logs
 for p in "${processes[@]}"
 do
-    area=$(dirname ${p%:*})
-    testCase=$(basename ${p%:*})
+    area=$(dirname "${p%:*}")
+    testCase=$(basename "${p%:*}")
     echo "[INFO] === START === Logs for test case \"${testCase}\" ===."
     cat "${TEST_CASE_ROOT}/log.txt"
     echo "[INFO] === END === Logs for test case \"${testCase}\" ===."
@@ -102,8 +102,8 @@ failure="false"
 for p in "${processes[@]}"
 do
     status="UNDEFINED"
-    area=$(dirname ${p%:*})
-    testCase=$(basename ${p%:*})
+    area=$(dirname "${p%:*}")
+    testCase=$(basename "${p%:*}")
     TEST_CASE_ROOT="${WORKSPACES_ROOT}/${area}/${testCase}"
     if [ -f "${TEST_CASE_ROOT}/SUCCESS" ]
     then
