@@ -71,34 +71,4 @@ class WhitesourceOrgAdminRepositoryTest extends BasePiperTest {
             name : 'Correct Name Cloud'
         ])
     }
-
-    @Test
-    void testHttpWhitesourceCallUserKey() {
-        def config = [serviceUrl: "http://some.host.whitesource.com/api/"]
-        def requestBody = [ "\"someJson\"" : [ "\"someObject\"" : "\"abcdef\"" ] ]
-
-        def requestParams
-        helper.registerAllowedMethod('httpRequest', [Map], { p ->
-            requestParams = p
-        })
-        helper.registerAllowedMethod('withCredentials', [List, Closure], { l, c ->
-            repository.setProperty("orgAdminUserKey", "4711")
-            c()
-        })
-
-        repository.httpWhitesource(requestBody)
-
-        assertThat(requestParams, is(
-            [
-                url        : config.serviceUrl,
-                httpMode   : 'POST',
-                acceptType : 'APPLICATION_JSON',
-                contentType: 'APPLICATION_JSON',
-                requestBody: requestBody,
-                quiet      : false,
-                proxy      : "http://proxy.wdf.sap.corp:8080",
-                userKey    : "4711"
-            ]
-        ))
-    }
 }

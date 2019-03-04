@@ -234,8 +234,6 @@ class WhitesourceRepository implements Serializable {
 
     @NonCPS
     protected void fetchFileFromWhiteSource(String fileName, Map params) {
-        if(config.verbose)
-            script.echo "Entered routine to send file download request"
         handleAdditionalRequestParameters(params)
         def serializedContent = new JsonUtils().jsonToString(params)
 
