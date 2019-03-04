@@ -234,6 +234,8 @@ class WhitesourceRepository implements Serializable {
 
     @NonCPS
     protected void fetchFileFromWhiteSource(String fileName, Map params) {
+        if(config.verbose)
+            script.echo "Entered routine to send file download request"
         handleAdditionalRequestParameters(params)
         def serializedContent = new JsonUtils().jsonToString(params)
 
@@ -243,7 +245,8 @@ class WhitesourceRepository implements Serializable {
         script.sh "${config.verbose ? '' : '#!/bin/sh -e\n'}curl -o ${fileName} -X POST ${config.serviceUrl} -H 'Content-Type: application/json' -d \'${serializedContent}\'"
     }
 
-    private void handleAdditionalRequestParameters(params) {
+    @NonCPS
+    protected void handleAdditionalRequestParameters(params) {
         if(config.userKey)
             params["userKey"] = config.userKey
     }
