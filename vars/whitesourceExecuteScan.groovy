@@ -218,7 +218,6 @@ void analyseWhitesourceResults(Map config, WhitesourceRepository repository, Whi
     }
 
     def pdfName = "whitesource-riskReport.pdf"
-    echo "Fetching summary report of the Whitesource"
     repository.fetchReportForProduct(pdfName)
     archiveArtifacts artifacts: pdfName
     echo "A summary of the Whitesource findings was stored as artifact under the name ${pdfName}"
