@@ -1,5 +1,5 @@
 #!groovy
-
+import com.sap.piper.DescriptorUtils
 import com.sap.piper.JsonUtils
 import com.sap.piper.integration.WhitesourceOrgAdminRepository
 import com.sap.piper.integration.WhitesourceRepository
@@ -11,6 +11,7 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.ExpectedException
 import org.junit.rules.RuleChain
+import org.springframework.beans.factory.annotation.Autowired
 import util.*
 
 import static org.hamcrest.Matchers.*
@@ -38,6 +39,9 @@ class WhitesourceExecuteScanTest extends BasePiperTest {
 
     def whitesourceOrgAdminRepositoryStub
     def whitesourceStub
+
+    @Autowired
+    DescriptorUtils descriptorUtilsStub
 
     @Before
     void init() {
@@ -124,7 +128,7 @@ class WhitesourceExecuteScanTest extends BasePiperTest {
         helper.registerAllowedMethod( "getNpmGAV", [String], {return [group: 'com.sap.node', artifact: 'test-node', version: '1.2.3']})
         helper.registerAllowedMethod( "getSbtGAV", [String], {return [group: 'com.sap.sbt', artifact: 'test-scala', version: '1.2.3']})
         helper.registerAllowedMethod( "getPipGAV", [String], {return [artifact: 'test-python', version: '1.2.3']})
-        helper.registerAllowedMethod( "readMavenGAV", [String], {return [group: 'com.sap.maven', artifact: 'test-java', version: '1.2.3']})
+        helper.registerAllowedMethod( "getMavenGAV", [String], {return [group: 'com.sap.maven', artifact: 'test-java', version: '1.2.3']})
 
         nullScript.commonPipelineEnvironment.configuration = nullScript.commonPipelineEnvironment.configuration ?: [:]
         nullScript.commonPipelineEnvironment.configuration['steps'] = nullScript.commonPipelineEnvironment.configuration['steps'] ?: [:]
@@ -158,6 +162,7 @@ class WhitesourceExecuteScanTest extends BasePiperTest {
             script                               : nullScript,
             whitesourceRepositoryStub            : whitesourceStub,
             whitesourceOrgAdminRepositoryStub    : whitesourceOrgAdminRepositoryStub,
+            descriptorUtilsStub                  : descriptorUtilsStub,
             scanType                             : 'maven',
             juStabUtils                          : utils,
             orgToken                             : 'testOrgToken',
@@ -200,6 +205,7 @@ class WhitesourceExecuteScanTest extends BasePiperTest {
             script                               : nullScript,
             whitesourceRepositoryStub            : whitesourceStub,
             whitesourceOrgAdminRepositoryStub    : whitesourceOrgAdminRepositoryStub,
+            descriptorUtilsStub                  : descriptorUtilsStub,
             scanType                             : 'npm',
             juStabUtils                          : utils,
             orgToken                             : 'testOrgToken',
@@ -246,6 +252,7 @@ class WhitesourceExecuteScanTest extends BasePiperTest {
             script                               : nullScript,
             whitesourceRepositoryStub            : whitesourceStub,
             whitesourceOrgAdminRepositoryStub    : whitesourceOrgAdminRepositoryStub,
+            descriptorUtilsStub                  : descriptorUtilsStub,
             scanType                             : 'npm',
             productName                          : 'SHC - Piper',
             configFilePath                       : './../../testConfigPath',
@@ -278,6 +285,7 @@ class WhitesourceExecuteScanTest extends BasePiperTest {
             script                               : nullScript,
             whitesourceRepositoryStub            : whitesourceStub,
             whitesourceOrgAdminRepositoryStub    : whitesourceOrgAdminRepositoryStub,
+            descriptorUtilsStub                  : descriptorUtilsStub,
             scanType                             : 'pip',
             juStabUtils                          : utils,
             orgToken                             : 'testOrgToken',
@@ -322,6 +330,7 @@ class WhitesourceExecuteScanTest extends BasePiperTest {
             script                               : nullScript,
             whitesourceRepositoryStub            : whitesourceStub,
             whitesourceOrgAdminRepositoryStub    : whitesourceOrgAdminRepositoryStub,
+            descriptorUtilsStub                  : descriptorUtilsStub,
             scanType                             : 'sbt',
             juStabUtils                          : utils,
             productName                          : 'testProductName',
@@ -365,6 +374,7 @@ class WhitesourceExecuteScanTest extends BasePiperTest {
             script                               : nullScript,
             whitesourceRepositoryStub            : whitesourceStub,
             whitesourceOrgAdminRepositoryStub    : whitesourceOrgAdminRepositoryStub,
+            descriptorUtilsStub                  : descriptorUtilsStub,
             scanType                             : 'maven',
             agentDownloadUrl                     : '',
             jreDownloadUrl                       : '',
@@ -418,6 +428,7 @@ class WhitesourceExecuteScanTest extends BasePiperTest {
             script                               : nullScript,
             whitesourceRepositoryStub            : whitesourceStub,
             whitesourceOrgAdminRepositoryStub    : whitesourceOrgAdminRepositoryStub,
+            descriptorUtilsStub                  : descriptorUtilsStub,
             scanType                             : 'mta',
             productName                          : 'SHC - Piper',
             buildDescriptorExcludeList           : ["maven2${File.separator}pom.xml".toString(), "npm2${File.separator}package.json".toString()],
@@ -734,6 +745,7 @@ class WhitesourceExecuteScanTest extends BasePiperTest {
             securityVulnerabilities              : true,
             whitesourceRepositoryStub            : whitesourceStub,
             whitesourceOrgAdminRepositoryStub    : whitesourceOrgAdminRepositoryStub,
+            descriptorUtilsStub                  : descriptorUtilsStub,
             orgToken                             : 'testOrgToken',
             productName                          : 'SHC - Piper',
             projectNames                         : [ 'piper-demo - 0.0.1' ]
@@ -765,6 +777,7 @@ class WhitesourceExecuteScanTest extends BasePiperTest {
             script                               : nullScript,
             whitesourceRepositoryStub            : whitesourceStub,
             whitesourceOrgAdminRepositoryStub    : whitesourceOrgAdminRepositoryStub,
+            descriptorUtilsStub                  : descriptorUtilsStub,
             scanType                             : 'npm',
             juStabUtils                          : utils,
             securityVulnerabilities              : true,
@@ -798,6 +811,7 @@ class WhitesourceExecuteScanTest extends BasePiperTest {
             script                               : nullScript,
             whitesourceRepositoryStub            : whitesourceStub,
             whitesourceOrgAdminRepositoryStub    : whitesourceOrgAdminRepositoryStub,
+            descriptorUtilsStub                  : descriptorUtilsStub,
             scanType                             : 'npm',
             juStabUtils                          : utils,
             securityVulnerabilities              : true,
