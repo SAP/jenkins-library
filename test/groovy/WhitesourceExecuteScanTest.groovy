@@ -113,7 +113,7 @@ class WhitesourceExecuteScanTest extends BasePiperTest {
         helper.registerAllowedMethod("fetchProjectsMetaInfo", [], {
             return new JsonUtils().parseJsonSerializable("{ \"projectVitals\": [{ \"id\": 261964, \"name\": \"piper-demo - 0.0.1\", \"token\": \"a2a62e5d7beb4170ad4dccfa3316b5a4cd3fadefc56c49f88fbf9400a09f7d94\", \"creationDate\": \"2017-09-21 00:28:06 +0000\", \"lastUpdatedDate\": \"2017-10-12 01:03:05 +0000\" }]}").projectVitals
         })
-        helper.registerAllowedMethod("fetchReportForProduct", [], { })
+        helper.registerAllowedMethod("fetchReportForProduct", [String], { })
         helper.registerAllowedMethod( "fetchProjectLicenseAlerts", [Object.class], {
             return new JsonUtils().parseJsonSerializable("{ \"alerts\": [] }").alerts
         })
