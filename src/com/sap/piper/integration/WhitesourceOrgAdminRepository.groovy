@@ -2,7 +2,6 @@ package com.sap.piper.integration
 
 import com.cloudbees.groovy.cps.NonCPS
 import com.sap.piper.JsonUtils
-import com.sap.piper.Utils
 
 class WhitesourceOrgAdminRepository implements Serializable {
 
