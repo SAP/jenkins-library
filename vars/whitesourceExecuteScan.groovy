@@ -1,3 +1,4 @@
+import com.sap.piper.DescriptorUtils
 import com.sap.piper.JsonUtils
 import com.sap.piper.Utils
 import com.sap.piper.integration.WhitesourceOrgAdminRepository
@@ -50,6 +51,7 @@ void call(Map parameters = [:]) {
     handlePipelineStepErrors(stepName: STEP_NAME, stepParameters: parameters) {
         def script = checkScript(this, parameters) ?: this
         def utils = parameters.juStabUtils ?: new Utils()
+        def descriptorUtils = parameters.descriptorUtilsStub ?: new DescriptorUtils()
         def statusCode = 1
 
         // load default & individual configuration
@@ -91,7 +93,7 @@ void call(Map parameters = [:]) {
         def whitesourceRepository = parameters.whitesourceRepositoryStub ?: new WhitesourceRepository(this, config)
         def whitesourceOrgAdminRepository = parameters.whitesourceOrgAdminRepositoryStub ?: new WhitesourceOrgAdminRepository(this, config)
 
-        statusCode = triggerWhitesourceScanWithUserKey(script, config, utils, parameters, whitesourceRepository, whitesourceOrgAdminRepository)
+        statusCode = triggerWhitesourceScanWithUserKey(script, config, utils, descriptorUtils, parameters, whitesourceRepository, whitesourceOrgAdminRepository)
 
         checkStatus(statusCode, config)
 
@@ -99,7 +101,7 @@ void call(Map parameters = [:]) {
     }
 }
 
-private def triggerWhitesourceScanWithUserKey(script, config, utils, parameters, repository, orgAdminRepository) {
+private def triggerWhitesourceScanWithUserKey(script, config, utils, descriptorUtils, parameters, repository, orgAdminRepository) {
     withCredentials ([string(
         credentialsId: config.userTokenCredentialsId,
         variable: 'userKey'
@@ -151,22 +153,22 @@ private def triggerWhitesourceScanWithUserKey(script, config, utils, parameters,
                 def gav
                 switch (config.scanType) {
                     case 'npm':
-                        gav = utils.getNpmGAV(config.buildDescriptorFile)
+                        gav = descriptorUtils.getNpmGAV(config.buildDescriptorFile)
                         config.projectName = gav.group + "." + gav.artifact
                         config.productVersion = gav.version
                         break
                     case 'sbt':
-                        gav = utils.getSbtGAV(config.buildDescriptorFile)
+                        gav = descriptorUtils.getSbtGAV(config.buildDescriptorFile)
                         config.projectName = gav.group + "." + gav.artifact
                         config.productVersion = gav.version
                         break
                     case 'pip':
-                        gav = utils.getPipGAV(config.buildDescriptorFile)
+                        gav = descriptorUtils.getPipGAV(config.buildDescriptorFile)
                         config.projectName = gav.artifact
                         config.productVersion = gav.version
                         break
                     default:
-                        gav = utils.readMavenGAV(config.buildDescriptorFile)
+                        gav = descriptorUtils.getMavenGAV(config.buildDescriptorFile)
                         config.projectName = gav.group + "." + gav.artifact
                         config.productVersion = gav.version
                         break
