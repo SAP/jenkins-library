@@ -295,7 +295,7 @@ class WhitesourceExecuteScanTest extends BasePiperTest {
 
         assertThat(loggingRule.log, containsString('Unstash content: buildDescriptor'))
 
-        assertThat(dockerExecuteRule.dockerParams, hasEntry('dockerImage', 'python:3.7.2-slim-stretch'))
+        assertThat(dockerExecuteRule.dockerParams, hasEntry('dockerImage', 'python:3.7.2-stretch'))
         assertThat(dockerExecuteRule.dockerParams, hasEntry('dockerWorkspace', '/home/python'))
         assertThat(dockerExecuteRule.dockerParams, hasEntry('stashContent', ['buildDescriptor', 'opensourceConfiguration', 'modified whitesource config 420a1bc5c82f57e80307205d8625304f']))
 
