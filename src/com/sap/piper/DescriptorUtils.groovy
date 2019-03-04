@@ -1,5 +1,16 @@
 package com.sap.piper
 
+import groovy.transform.Field
+
+import java.util.regex.Pattern
+
+@Field
+def name = Pattern.compile("(.*)name=['\"](.*?)['\"](.*)", Pattern.DOTALL)
+@Field
+def version = Pattern.compile("(.*)version=['\"](.*?)['\"](.*)", Pattern.DOTALL)
+@Field
+def method = Pattern.compile("(.*)\\(\\)", Pattern.DOTALL)
+
 def getMavenGAV(fileName) {
     def result = [:]
     def descriptor = readMavenPom(file: fileName)
