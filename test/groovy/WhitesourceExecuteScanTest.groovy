@@ -115,6 +115,9 @@ class WhitesourceExecuteScanTest extends BasePiperTest {
         helper.registerAllowedMethod( "fetchProductLicenseAlerts", [], {
             return new JsonUtils().parseJsonSerializable("{ \"alerts\": [] }").alerts
         })
+        helper.registerAllowedMethod( "fetchVulnerabilities", [List], {
+            return new JsonUtils().parseJsonSerializable("{ \"alerts\": [] }").alerts
+        })
         helper.registerAllowedMethod( "publishHTML", [Map], {})
 
         helper.registerAllowedMethod( "getNpmGAV", [String], {return [group: 'com.sap.node', artifact: 'test-node', version: '1.2.3']})
@@ -163,8 +166,8 @@ class WhitesourceExecuteScanTest extends BasePiperTest {
         assertThat(loggingRule.log, containsString('Unstash content: buildDescriptor'))
         assertThat(loggingRule.log, containsString('Unstash content: opensourceConfiguration'))
 
-        assertThat(dockerExecuteRule.dockerParams, hasEntry('dockerImage', 'docker.wdf.sap.corp:50000/piper/maven'))
-        assertThat(dockerExecuteRule.dockerParams, hasEntry('dockerWorkspace', '/home/piper'))
+        assertThat(dockerExecuteRule.dockerParams, hasEntry('dockerImage', 'maven:3.5-jdk-7'))
+        assertThat(dockerExecuteRule.dockerParams, hasEntry('dockerWorkspace', '/home/java'))
         assertThat(dockerExecuteRule.dockerParams, hasEntry('stashContent', ['buildDescriptor', 'opensourceConfiguration', 'modified whitesource config 420a1bc5c82f57e80307205d8625304f']))
 
         assertThat(shellRule.shell, Matchers.hasItems(
@@ -207,8 +210,8 @@ class WhitesourceExecuteScanTest extends BasePiperTest {
         assertThat(loggingRule.log, containsString('Unstash content: buildDescriptor'))
         assertThat(loggingRule.log, containsString('Unstash content: opensourceConfiguration'))
 
-        assertThat(dockerExecuteRule.dockerParams, hasEntry('dockerImage', 'docker.wdf.sap.corp:50000/piper/node'))
-        assertThat(dockerExecuteRule.dockerParams, hasEntry('dockerWorkspace', '/home/piper'))
+        assertThat(dockerExecuteRule.dockerParams, hasEntry('dockerImage', 'node:8-stretch'))
+        assertThat(dockerExecuteRule.dockerParams, hasEntry('dockerWorkspace', '/home/node'))
         assertThat(dockerExecuteRule.dockerParams, hasEntry('stashContent', ['buildDescriptor', 'opensourceConfiguration', 'modified whitesource config 420a1bc5c82f57e80307205d8625304f']))
         assertThat(shellRule.shell, Matchers.hasItems(
             is('curl --location --output wss-unified-agent.jar https://github.com/whitesource/unified-agent-distribution/raw/master/standAlone/wss-unified-agent.jar'),
@@ -283,8 +286,8 @@ class WhitesourceExecuteScanTest extends BasePiperTest {
 
         assertThat(loggingRule.log, containsString('Unstash content: buildDescriptor'))
 
-        assertThat(dockerExecuteRule.dockerParams, hasEntry('dockerImage', 'docker.wdf.sap.corp:50000/piper/node'))
-        assertThat(dockerExecuteRule.dockerParams, hasEntry('dockerWorkspace', '/home/piper'))
+        assertThat(dockerExecuteRule.dockerParams, hasEntry('dockerImage', 'python:3.7.2-slim-stretch'))
+        assertThat(dockerExecuteRule.dockerParams, hasEntry('dockerWorkspace', '/home/python'))
         assertThat(dockerExecuteRule.dockerParams, hasEntry('stashContent', ['buildDescriptor', 'opensourceConfiguration', 'modified whitesource config 420a1bc5c82f57e80307205d8625304f']))
 
         assertThat(shellRule.shell, Matchers.hasItems(
@@ -328,8 +331,8 @@ class WhitesourceExecuteScanTest extends BasePiperTest {
         assertThat(loggingRule.log, containsString('Unstash content: buildDescriptor'))
         assertThat(loggingRule.log, containsString('Unstash content: opensourceConfiguration'))
 
-        assertThat(dockerExecuteRule.dockerParams, hasEntry('dockerImage', 'docker.wdf.sap.corp:50000/piper/sbt'))
-        assertThat(dockerExecuteRule.dockerParams, hasEntry('dockerWorkspace', '/home/piper'))
+        assertThat(dockerExecuteRule.dockerParams, hasEntry('dockerImage', 'hseeberger/scala-sbt:8u181_2.12.8_1.2.8'))
+        assertThat(dockerExecuteRule.dockerParams, hasEntry('dockerWorkspace', '/home/scala'))
         assertThat(dockerExecuteRule.dockerParams, hasEntry('stashContent', ['buildDescriptor', 'opensourceConfiguration', 'modified whitesource config 420a1bc5c82f57e80307205d8625304f']))
 
         assertThat(shellRule.shell, Matchers.hasItems(
@@ -363,7 +366,7 @@ class WhitesourceExecuteScanTest extends BasePiperTest {
             whitesourceOrgAdminRepositoryStub    : whitesourceOrgAdminRepositoryStub,
             scanType                             : 'maven',
             agentDownloadUrl                     : '',
-            jreDownloadUrl                     : '',
+            jreDownloadUrl                       : '',
             agentParameters                      : 'testParams',
             juStabUtils                          : utils,
             orgToken                             : 'testOrgToken',
@@ -669,7 +672,7 @@ class WhitesourceExecuteScanTest extends BasePiperTest {
             ])
             return result
         })
-        helper.registerAllowedMethod("fetchVulnerabilities", [Object.class], {
+        helper.registerAllowedMethod("fetchVulnerabilities", [List], {
             return new JsonUtils().parseJsonSerializable("{ \"alerts\": [ { \"vulnerability\": { \"name\": \"CVE-2017-15095\", \"type\": \"CVE\", \"severity\": \"high\", \"score\": 7.5, \"cvss3_severity\": \"high\", \"cvss3_score\": 9.8, \"scoreMetadataVector\": \"CVSS:3.0/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H\", \"publishDate\": \"2018-02-06\", \"url\": \"https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2017-15095\", \"description\": \"A deserialization flaw was discovered in the jackson-databind in versions before 2.8.10 and 2.9.1, which could allow an unauthenticated user to perform code execution by sending the maliciously crafted input to the readValue method of the ObjectMapper. This issue extends the previous flaw CVE-2017-7525 by blacklisting more classes that could be used maliciously.\", \"topFix\": { \"vulnerability\": \"CVE-2017-15095\", \"type\": \"CHANGE_FILES\", \"origin\": \"GITHUB_COMMIT\", \"url\": \"https://github.com/FasterXML/jackson-databind/commit/60d459ce\"," +
                 "\"fixResolution\": \"src/test/java/com/fasterxml/jackson/databind/interop/IllegalTypesCheckTest.java,release-notes/VERSION,src/main/java/com/fasterxml/jackson/databind/deser/BeanDeserializerFactory.java\", \"date\": \"2017-04-13\", \"message\": \"Fix #1599 for 2.8.9\\n\\nMerge branch '2.7' into 2.8\", \"extraData\": \"key=60d459c&committerName=cowtowncoder&committerUrl=https://github.com/cowtowncoder&committerAvatar=https://avatars0.githubusercontent.com/u/55065?v=4\" }, \"allFixes\": [ { \"vulnerability\": \"CVE-2017-15095\", \"type\": \"CHANGE_FILES\", \"origin\": \"GITHUB_COMMIT\", \"url\": \"https://github.com/FasterXML/jackson-databind/commit/60d459ce\", \"fixResolution\": \"src/test/java/com/fasterxml/jackson/databind/interop/IllegalTypesCheckTest.java,release-notes/VERSION,src/main/java/com/fasterxml/jackson/databind/deser/BeanDeserializerFactory.java\", \"date\": \"2017-04-13\", \"message\": \"Fix #1599 for 2.8.9\\n\\nMerge branch '2.7' into 2.8\"," +
                 "\"extraData\": \"key=60d459c&committerName=cowtowncoder&committerUrl=https://github.com/cowtowncoder&committerAvatar=https://avatars0.githubusercontent.com/u/55065?v=4\" }, { \"vulnerability\": \"CVE-2017-15095\", \"type\": \"CHANGE_FILES\", \"origin\": \"GITHUB_COMMIT\", \"url\": \"https://github.com/FasterXML/jackson-databind/commit/e865a7a4464da63ded9f4b1a2328ad85c9ded78b#diff-98084d808198119d550a9211e128a16f\", \"fixResolution\": \"src/test/java/com/fasterxml/jackson/databind/interop/IllegalTypesCheckTest.java,release-notes/VERSION,src/main/java/com/fasterxml/jackson/databind/deser/BeanDeserializerFactory.java\", \"date\": \"2017-12-12\", \"message\": \"Fix #1737 (#1857)\", \"extraData\": \"key=e865a7a&committerName=cowtowncoder&committerUrl=https://github.com/cowtowncoder&committerAvatar=https://avatars0.githubusercontent.com/u/55065?v=4\" }, { \"vulnerability\": \"CVE-2017-15095\", \"type\": \"CHANGE_FILES\", \"origin\": \"GITHUB_COMMIT\", \"url\": \"https://github.com/FasterXML/jackson-databind/commit/e8f043d1\"," +
@@ -749,7 +752,7 @@ class WhitesourceExecuteScanTest extends BasePiperTest {
             ])
             return result
         })
-        helper.registerAllowedMethod("fetchVulnerabilities", [Object.class], {
+        helper.registerAllowedMethod("fetchVulnerabilities", [List], {
             return new JsonUtils().parseJsonSerializable("{ \"alerts\": [ { \"vulnerability\": { \"name\": \"CVE-2017-15095\", \"type\": \"CVE\", \"severity\": \"high\", \"score\": 2.1, \"cvss3_severity\": \"high\", \"cvss3_score\": 5.3, \"scoreMetadataVector\": \"CVSS:3.0/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H\", \"publishDate\": \"2018-02-06\", \"url\": \"https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2017-15095\", \"description\": \"A deserialization flaw was discovered in the jackson-databind in versions before 2.8.10 and 2.9.1, which could allow an unauthenticated user to perform code execution by sending the maliciously crafted input to the readValue method of the ObjectMapper. This issue extends the previous flaw CVE-2017-7525 by blacklisting more classes that could be used maliciously.\", \"topFix\": { \"vulnerability\": \"CVE-2017-15095\", \"type\": \"CHANGE_FILES\", \"origin\": \"GITHUB_COMMIT\", \"url\": \"https://github.com/FasterXML/jackson-databind/commit/60d459ce\"," +
                 "\"fixResolution\": \"src/test/java/com/fasterxml/jackson/databind/interop/IllegalTypesCheckTest.java,release-notes/VERSION,src/main/java/com/fasterxml/jackson/databind/deser/BeanDeserializerFactory.java\", \"date\": \"2017-04-13\", \"message\": \"Fix #1599 for 2.8.9\\n\\nMerge branch '2.7' into 2.8\", \"extraData\": \"key=60d459c&committerName=cowtowncoder&committerUrl=https://github.com/cowtowncoder&committerAvatar=https://avatars0.githubusercontent.com/u/55065?v=4\" }, \"allFixes\": [ { \"vulnerability\": \"CVE-2017-15095\", \"type\": \"CHANGE_FILES\", \"origin\": \"GITHUB_COMMIT\", \"url\": \"https://github.com/FasterXML/jackson-databind/commit/60d459ce\", \"fixResolution\": \"src/test/java/com/fasterxml/jackson/databind/interop/IllegalTypesCheckTest.java,release-notes/VERSION,src/main/java/com/fasterxml/jackson/databind/deser/BeanDeserializerFactory.java\", \"date\": \"2017-04-13\", \"message\": \"Fix #1599 for 2.8.9\\n\\nMerge branch '2.7' into 2.8\"," +
                 "\"extraData\": \"key=60d459c&committerName=cowtowncoder&committerUrl=https://github.com/cowtowncoder&committerAvatar=https://avatars0.githubusercontent.com/u/55065?v=4\" }, { \"vulnerability\": \"CVE-2017-15095\", \"type\": \"CHANGE_FILES\", \"origin\": \"GITHUB_COMMIT\", \"url\": \"https://github.com/FasterXML/jackson-databind/commit/e865a7a4464da63ded9f4b1a2328ad85c9ded78b#diff-98084d808198119d550a9211e128a16f\", \"fixResolution\": \"src/test/java/com/fasterxml/jackson/databind/interop/IllegalTypesCheckTest.java,release-notes/VERSION,src/main/java/com/fasterxml/jackson/databind/deser/BeanDeserializerFactory.java\", \"date\": \"2017-12-12\", \"message\": \"Fix #1737 (#1857)\", \"extraData\": \"key=e865a7a&committerName=cowtowncoder&committerUrl=https://github.com/cowtowncoder&committerAvatar=https://avatars0.githubusercontent.com/u/55065?v=4\" }, { \"vulnerability\": \"CVE-2017-15095\", \"type\": \"CHANGE_FILES\", \"origin\": \"GITHUB_COMMIT\"," +

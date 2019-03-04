@@ -271,7 +271,7 @@ steps:
     maven:
       buildDescriptorFile: './pom.xml'
       dockerImage: 'maven:3.5-jdk-7'
-      dockerWorkspace: '/home/piper'
+      dockerWorkspace: '/home/java'
       agentFileName: 'wss-unified-agent.jar'
       agentDownloadUrl: 'https://github.com/whitesource/unified-agent-distribution/raw/master/standAlone/${config.agentFileName}'
       agentParameters: ''
@@ -281,8 +281,8 @@ steps:
         - 'opensourceConfiguration'
     npm:
       buildDescriptorFile: './package.json'
-      dockerImage: 'node:11.10.1-stretch-slim'
-      dockerWorkspace: '/home/piper'
+      dockerImage: 'node:8-stretch'
+      dockerWorkspace: '/home/node'
       agentFileName: 'wss-unified-agent.jar'
       agentDownloadUrl: 'https://github.com/whitesource/unified-agent-distribution/raw/master/standAlone/${config.agentFileName}'
       agentParameters: ''
@@ -293,7 +293,7 @@ steps:
     pip:
       buildDescriptorFile: './setup.py'
       dockerImage: 'python:3.7.2-slim-stretch'
-      dockerWorkspace: '/home/piper'
+      dockerWorkspace: '/home/python'
       agentFileName: 'wss-unified-agent.jar'
       agentDownloadUrl: 'https://github.com/whitesource/unified-agent-distribution/raw/master/standAlone/${config.agentFileName}'
       agentParameters: ''
@@ -304,7 +304,7 @@ steps:
     sbt:
       buildDescriptorFile: './build.sbt'
       dockerImage: 'hseeberger/scala-sbt:8u181_2.12.8_1.2.8'
-      dockerWorkspace: '/home/piper'
+      dockerWorkspace: '/home/scala'
       agentFileName: 'wss-unified-agent.jar'
       agentDownloadUrl: 'https://github.com/whitesource/unified-agent-distribution/raw/master/standAlone/${config.agentFileName}'
       agentParameters: ''
