@@ -173,13 +173,13 @@ class WhitesourceRepository implements Serializable {
         return matchedProjects
     }
 
-    void fetchReportForProduct() {
+    void fetchReportForProduct(reportName) {
         def requestContent = [
             requestType: "getProductRiskReport",
             productToken: config.productToken
         ]
 
-        fetchFileFromWhiteSource("whitesource-riskReport.pdf", requestContent)
+        fetchFileFromWhiteSource(reportName, requestContent)
 
     }
 
