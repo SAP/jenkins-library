@@ -1,7 +1,9 @@
 package com.sap.piper
 
+import com.cloudbees.groovy.cps.NonCPS
 import groovy.transform.Field
 
+import java.util.regex.Matcher
 import java.util.regex.Pattern
 
 @Field
@@ -105,4 +107,10 @@ def getPipGAV(file = 'setup.py') {
 
     echo "loaded ${result} from ${file}"
     return result
+}
+
+@NonCPS
+private def matches(regex, input) {
+    def m = new Matcher(regex, input)
+    return m.matches() ? m.group(2) : ''
 }
