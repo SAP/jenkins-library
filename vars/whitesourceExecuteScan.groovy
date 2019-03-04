@@ -203,14 +203,14 @@ private def triggerWhitesourceScanWithUserKey(script, config, utils, descriptorU
         }
 
         if (config.reporting) {
-            analyseWhitesourceResults(utils, config, repository, orgAdminRepository)
+            analyseWhitesourceResults(config, repository, orgAdminRepository)
         }
 
         return statusCode
     }
 }
 
-void analyseWhitesourceResults(Utils utils, Map config, WhitesourceRepository repository, WhitesourceOrgAdminRepository orgAdminRepository) {
+void analyseWhitesourceResults(Map config, WhitesourceRepository repository, WhitesourceOrgAdminRepository orgAdminRepository) {
     if (!config.productToken) {
         def metaInfo = orgAdminRepository.fetchProductMetaInfo()
         echo "Meta Information: $metaInfo"
