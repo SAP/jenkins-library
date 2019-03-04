@@ -197,6 +197,11 @@ private def triggerWhitesourceScanWithUserKey(script, config, utils, descriptorU
 
                     statusCode = sh(script: "${javaCmd} ${options.join(' ')} ${config.agentParameters}", returnStatus: true)
 
+                    if (config.jreDownloadUrl) {
+                        sh "rm -r ./bin ./conf ./legal ./lib ./man"
+                        javaCmd = './bin/java'
+                    }
+
                     // archive whitesource result files
                     archiveArtifacts artifacts: "whitesource/*.*", allowEmptyArchive: true
                 }
