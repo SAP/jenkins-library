@@ -69,7 +69,7 @@ class WhiteSourceConfigurationHelperTest extends BasePiperTest {
 
     @Test
     void testExtendConfigurationFileUnifiedAgent() {
-        WhitesourceConfigurationHelper.extendConfigurationFile(nullScript, [scanType: 'unifiedAgent', configFilePath: './config', orgToken: 'abcd', productName: 'name', productToken: '1234', userKey: '0000'], "./")
+        WhitesourceConfigurationHelper.extendConfigurationFile(nullScript, utils, [scanType: 'unifiedAgent', configFilePath: './config', orgToken: 'abcd', productName: 'name', productToken: '1234', userKey: '0000'], "./")
         assertThat(jwfr.files['./config.c92a71303bcc841344e07d1bf49d1f9b'], containsString("apiKey=abcd"))
         assertThat(jwfr.files['./config.c92a71303bcc841344e07d1bf49d1f9b'], containsString("productName=name"))
         assertThat(jwfr.files['./config.c92a71303bcc841344e07d1bf49d1f9b'], containsString("productToken=1234"))
@@ -78,7 +78,7 @@ class WhiteSourceConfigurationHelperTest extends BasePiperTest {
 
     @Test
     void testExtendConfigurationFileNpm() {
-        WhitesourceConfigurationHelper.extendConfigurationFile(nullScript, [scanType: 'npm', configFilePath: './config', orgToken: 'abcd', productName: 'name', productToken: '1234', userKey: '0000'], "./")
+        WhitesourceConfigurationHelper.extendConfigurationFile(nullScript, utils, [scanType: 'npm', configFilePath: './config', orgToken: 'abcd', productName: 'name', productToken: '1234', userKey: '0000'], "./")
         assertThat(jwfr.files['./config.c92a71303bcc841344e07d1bf49d1f9b'], containsString("\"apiKey\": \"abcd\","))
         assertThat(jwfr.files['./config.c92a71303bcc841344e07d1bf49d1f9b'], containsString("\"productName\": \"name\","))
         assertThat(jwfr.files['./config.c92a71303bcc841344e07d1bf49d1f9b'], containsString("\"productToken\": \"1234\","))
@@ -87,7 +87,7 @@ class WhiteSourceConfigurationHelperTest extends BasePiperTest {
 
     @Test
     void testExtendConfigurationFilePip() {
-        WhitesourceConfigurationHelper.extendConfigurationFile(nullScript, [scanType: 'pip', configFilePath: './setup.py', orgToken: 'abcd', productName: 'name', productToken: '1234', userKey: '0000'], "./")
+        WhitesourceConfigurationHelper.extendConfigurationFile(nullScript, utils, [scanType: 'pip', configFilePath: './setup.py', orgToken: 'abcd', productName: 'name', productToken: '1234', userKey: '0000'], "./")
         assertThat(jwfr.files['./setup.py.8813e60e0d9f7cacf0c414ae4964816f.py'], containsString("'org_token': 'abcd',"))
         assertThat(jwfr.files['./setup.py.8813e60e0d9f7cacf0c414ae4964816f.py'], containsString("'product_name': 'name',"))
         assertThat(jwfr.files['./setup.py.8813e60e0d9f7cacf0c414ae4964816f.py'], containsString("'product_token': '1234',"))
@@ -96,7 +96,7 @@ class WhiteSourceConfigurationHelperTest extends BasePiperTest {
 
     @Test
     void testExtendConfigurationFileSbt() {
-        WhitesourceConfigurationHelper.extendConfigurationFile(nullScript, [scanType: 'sbt', configFilePath: './build.sbt', orgToken: 'abcd', productName: 'name', productToken: '1234', userKey: '0000', agentUrl: 'http://mo-393ef744d.mo.sap.corp:8080/wsui/wspluginProxy.jsp'], "./")
+        WhitesourceConfigurationHelper.extendConfigurationFile(nullScript, utils, [scanType: 'sbt', configFilePath: './build.sbt', orgToken: 'abcd', productName: 'name', productToken: '1234', userKey: '0000', agentUrl: 'http://mo-393ef744d.mo.sap.corp:8080/wsui/wspluginProxy.jsp'], "./")
         assertThat(jwfr.files['./build.sbt'], containsString("whitesourceOrgToken in ThisBuild := \"abcd\""))
         assertThat(jwfr.files['./build.sbt'], containsString("whitesourceProduct in ThisBuild := \"name\""))
         assertThat(jwfr.files['./build.sbt'], containsString("whitesourceServiceUrl in ThisBuild := uri(\"http://mo-393ef744d.mo.sap.corp:8080/wsui/wspluginProxy.jsp\")"))

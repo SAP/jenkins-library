@@ -8,7 +8,7 @@ class WhitesourceConfigurationHelper implements Serializable {
 
     private static def SCALA_CONTENT_KEY = "@__content"
 
-    static def extendUAConfigurationFile(script, config, path) {
+    static def extendUAConfigurationFile(script, utils, config, path) {
         def mapping = []
         def parsingClosure = { fileReadPath -> return script.readProperties (file: fileReadPath) }
         def serializationClosure = { configuration -> serializeUAConfig(configuration) }
@@ -78,10 +78,10 @@ class WhitesourceConfigurationHelper implements Serializable {
                 break
         }
 
-        rewriteConfiguration(script, config, mapping, suffix, path, inputFile, targetFile, parsingClosure, serializationClosure)
+        rewriteConfiguration(script, utils, config, mapping, suffix, path, inputFile, targetFile, parsingClosure, serializationClosure)
     }
 
-    static def extendConfigurationFile(script, config, path) {
+    static def extendConfigurationFile(script, utils, config, path) {
         def mapping = [:]
         def parsingClosure
         def serializationClosure
@@ -134,10 +134,10 @@ class WhitesourceConfigurationHelper implements Serializable {
                 break
         }
 
-        rewriteConfiguration(script, config, mapping, suffix, path, inputFile, targetFile, parsingClosure, serializationClosure)
+        rewriteConfiguration(script, utils, config, mapping, suffix, path, inputFile, targetFile, parsingClosure, serializationClosure)
     }
 
-    static private def rewriteConfiguration(script, config, mapping, suffix, path, inputFile, targetFile, parsingClosure, serializationClosure) {
+    static private def rewriteConfiguration(script, utils, config, mapping, suffix, path, inputFile, targetFile, parsingClosure, serializationClosure) {
         def inputFilePath = "${path}${inputFile}"
         def outputFilePath = "${path}${targetFile}"
         def moduleSpecificFile = parsingClosure(inputFilePath)
@@ -162,7 +162,7 @@ class WhitesourceConfigurationHelper implements Serializable {
         script.writeFile file: outputFilePath, text: output
         if(config.stashContent && config.stashContent.size() > 0) {
             def stashName = "modified whitesource config ${suffix}".toString()
-            new Utils().stashWithMessage (
+            utils.stashWithMessage (
                 stashName,
                 "Stashing modified Whitesource configuration",
                 outputFilePath.replaceFirst('\\./', '')
