@@ -213,11 +213,12 @@ private def triggerWhitesourceScanWithUserKey(script, config, utils, descriptorU
 void analyseWhitesourceResults(Map config, WhitesourceRepository repository, WhitesourceOrgAdminRepository orgAdminRepository) {
     if (!config.productToken) {
         def metaInfo = orgAdminRepository.fetchProductMetaInfo()
-        echo "Meta Information: $metaInfo"
+        echo "Meta Information: ${metaInfo}"
         config.productToken = metaInfo.token
     }
 
     def pdfName = "whitesource-riskReport.pdf"
+    echo "Fetching summary report of the Whitesource"
     repository.fetchReportForProduct(pdfName)
     archiveArtifacts artifacts: pdfName
     echo "A summary of the Whitesource findings was stored as artifact under the name ${pdfName}"

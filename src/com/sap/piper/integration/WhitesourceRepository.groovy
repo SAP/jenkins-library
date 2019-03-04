@@ -180,7 +180,6 @@ class WhitesourceRepository implements Serializable {
         ]
 
         fetchFileFromWhiteSource(reportName, requestContent)
-
     }
 
     def fetchProductLicenseAlerts() {
@@ -234,7 +233,7 @@ class WhitesourceRepository implements Serializable {
     }
 
     @NonCPS
-    private void fetchFileFromWhiteSource(String fileName, Map params) {
+    protected void fetchFileFromWhiteSource(String fileName, Map params) {
         handleAdditionalRequestParameters(params)
         def serializedContent = new JsonUtils().getPrettyJsonString(params)
 
