@@ -235,7 +235,7 @@ class WhitesourceRepository implements Serializable {
     @NonCPS
     protected void fetchFileFromWhiteSource(String fileName, Map params) {
         handleAdditionalRequestParameters(params)
-        def serializedContent = new JsonUtils().getPrettyJsonString(params)
+        def serializedContent = new JsonUtils().jsonToString(params)
 
         if(config.verbose)
             script.echo "Sending curl request with parameters ${params}"
