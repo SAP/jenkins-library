@@ -26,6 +26,7 @@ import static com.sap.piper.Prerequisites.checkScript
     'internalServiceUrl',
     'jreDownloadUrl',
     'licensingVulnerabilities',
+    'orgAdminUserTokenCredentialsId',
     'orgToken',
     'parallelLimit',
     'reporting',
