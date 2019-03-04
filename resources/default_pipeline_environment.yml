@@ -292,7 +292,7 @@ steps:
         - 'opensourceConfiguration'
     pip:
       buildDescriptorFile: './setup.py'
-      dockerImage: 'python:3.7.2-slim-stretch'
+      dockerImage: 'python:3.7.2-stretch'
       dockerWorkspace: '/home/python'
       agentFileName: 'wss-unified-agent.jar'
       agentDownloadUrl: 'https://github.com/whitesource/unified-agent-distribution/raw/master/standAlone/${config.agentFileName}'
