@@ -217,10 +217,10 @@ void analyseWhitesourceResults(Utils utils, Map config, WhitesourceRepository re
         config.productToken = metaInfo.token
     }
 
-    repository.fetchReportForProduct()
     def pdfName = "whitesource-riskReport.pdf"
+    repository.fetchReportForProduct(pdfName)
     archiveArtifacts artifacts: pdfName
-    echo "A summary of the Whitesource findings was stored as artifact under the name $pdfName"
+    echo "A summary of the Whitesource findings was stored as artifact under the name ${pdfName}"
 
     int violationCount = fetchViolationCount(config, repository)
     checkViolationStatus(violationCount)
