@@ -256,15 +256,14 @@ steps:
     dockerImage: 'node:8-stretch'
   whitesourceExecuteScan:
     buildDescriptorExcludeList: []
-    parallelLimit: 0
+    parallelLimit: 15
     licensingVulnerabilities: true
-    securityVulnerabilities: false
+    securityVulnerabilities: true
     reporting: true
     vulnerabilityReportFileName: 'piper_whitesource_vulnerability_report'
-    vulnerabilityReportTitle: 'Whitesource Security Vulnerability Report'
+    vulnerabilityReportTitle: 'WhiteSource Security Vulnerability Report'
     projectNames: []
     jreDownloadUrl: 'https://github.com/SAP/SapMachine/releases/download/sapmachine-11.0.2/sapmachine-jre-11.0.2_linux-x64_bin.tar.gz'
-    whitesourceAccessor: 'com.sap.piper.internal.integration.InternalWhitesource'
     mta:
       stashContent:
         - 'buildDescriptor'
