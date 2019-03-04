@@ -58,6 +58,9 @@ void call(Map parameters = [:]) {
             .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS)
             .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS)
             .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName ?: env.STAGE_NAME, STEP_CONFIG_KEYS)
+            .mixin([
+                style      : libraryResource('piper.css')
+            ])
             .mixin(parameters, PARAMETER_KEYS)
             .dependingOn('scanType').mixin('buildDescriptorFile')
             .dependingOn('scanType').mixin('configFilePath')
@@ -341,7 +344,7 @@ def getReportHtml(config, vulnerabilityList, numSevereVulns) {
             totalSevereVulnerabilities  : numSevereVulns,
             totalVulnerabilities        : vulnerabilityList.size(),
             vulnerabilityTable          : vulnerabilityTable,
-            whitesourceProductName      : config.whitesourceProductName,
-            whitesourceProjectNames     : config.whitesourceProjectNames
+            whitesourceProductName      : config.productName,
+            whitesourceProjectNames     : config.projectNames
         ]).toString()
 }
