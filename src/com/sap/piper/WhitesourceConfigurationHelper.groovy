@@ -8,7 +8,7 @@ class WhitesourceConfigurationHelper implements Serializable {
 
     private static def SCALA_CONTENT_KEY = "@__content"
 
-    static def extendUAConfigurationFile(script, Utils utils, config, path) {
+    static def extendUAConfigurationFile(script, config, path) {
         def mapping = []
         def parsingClosure = { fileReadPath -> return script.readProperties (file: fileReadPath) }
         def serializationClosure = { configuration -> serializeUAConfig(configuration) }
@@ -78,10 +78,10 @@ class WhitesourceConfigurationHelper implements Serializable {
                 break
         }
 
-        rewriteConfiguration(script, config, utils, mapping, suffix, path, inputFile, targetFile, parsingClosure, serializationClosure)
+        rewriteConfiguration(script, config, mapping, suffix, path, inputFile, targetFile, parsingClosure, serializationClosure)
     }
 
-    static def extendConfigurationFile(script, Utils utils, config, path) {
+    static def extendConfigurationFile(script, config, path) {
         def mapping = [:]
         def parsingClosure
         def serializationClosure
@@ -98,7 +98,7 @@ class WhitesourceConfigurationHelper implements Serializable {
                     [name: 'userKey', value: config.userKey, warnIfPresent: true]
                 ]
                 parsingClosure = { fileReadPath -> return script.readProperties (file: fileReadPath) }
-                serializationClosure = { Properties configuration -> new StringWriter().with{ w -> configuration.store(w, null); w }.toString() }
+                serializationClosure = { configuration -> serializeUAConfig(configuration) }
                 break
             case 'npm':
                 mapping = [
@@ -108,7 +108,7 @@ class WhitesourceConfigurationHelper implements Serializable {
                     [name: 'userKey', value: config.userKey, warnIfPresent: true]
                 ]
                 parsingClosure = { fileReadPath -> return script.readJSON (file: fileReadPath) }
-                serializationClosure = { configuration -> return utils.jsonToString(configuration) }
+                serializationClosure = { configuration -> return new JsonUtils().getPrettyJsonString(configuration) }
                 break
             case 'pip':
                 mapping = [
@@ -134,10 +134,10 @@ class WhitesourceConfigurationHelper implements Serializable {
                 break
         }
 
-        rewriteConfiguration(script, config, utils, mapping, suffix, path, inputFile, targetFile, parsingClosure, serializationClosure)
+        rewriteConfiguration(script, config, mapping, suffix, path, inputFile, targetFile, parsingClosure, serializationClosure)
     }
 
-    static private def rewriteConfiguration(script, config, utils, mapping, suffix, path, inputFile, targetFile, parsingClosure, serializationClosure) {
+    static private def rewriteConfiguration(script, config, mapping, suffix, path, inputFile, targetFile, parsingClosure, serializationClosure) {
         def inputFilePath = "${path}${inputFile}"
         def outputFilePath = "${path}${targetFile}"
         def moduleSpecificFile = parsingClosure(inputFilePath)
@@ -162,7 +162,7 @@ class WhitesourceConfigurationHelper implements Serializable {
         script.writeFile file: outputFilePath, text: output
         if(config.stashContent && config.stashContent.size() > 0) {
             def stashName = "modified whitesource config ${suffix}".toString()
-            utils.stashWithMessage (
+            new Utils().stashWithMessage (
                 stashName,
                 "Stashing modified Whitesource configuration",
                 outputFilePath.replaceFirst('\\./', '')
