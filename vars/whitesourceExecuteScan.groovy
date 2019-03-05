@@ -14,6 +14,19 @@ import static com.sap.piper.Prerequisites.checkScript
 
 @Field String STEP_NAME = 'whitesourceExecuteScan'
 @Field Set GENERAL_CONFIG_KEYS = [
+    'orgAdminUserTokenCredentialsId',
+    'orgToken',
+    'productName',
+    'productVersion',
+    'productToken',
+    'projectNames',
+    'scanType',
+    'serviceUrl',
+    'internalServiceUrl',
+    'userTokenCredentialsId',
+    'verbose'
+]
+@Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS + [
     'agentDownloadUrl',
     'agentFileName',
     'agentParameters',
@@ -23,29 +36,19 @@ import static com.sap.piper.Prerequisites.checkScript
     'configFilePath',
     'dockerImage',
     'dockerWorkspace',
-    'internalServiceUrl',
     'jreDownloadUrl',
     'licensingVulnerabilities',
-    'orgAdminUserTokenCredentialsId',
-    'orgToken',
     'parallelLimit',
     'reporting',
-    'scanType',
     'securityVulnerabilities',
+    'cvssSeverityLimit',
     'stashContent',
     'timeout',
-    'productName',
-    'productVersion',
-    'productToken',
-    'projectNames',
-    'serviceUrl',
-    'userTokenCredentialsId',
     'vulnerabilityReportFileName',
     'vulnerabilityReportTitle',
-    'whitesourceAccessor',
-    'verbose'
+    'whitesourceAccessor'
 ]
-@Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS
+
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
 
 void call(Map parameters = [:]) {
@@ -77,6 +80,7 @@ void call(Map parameters = [:]) {
             .withMandatoryProperty('productName')
             .use()
 
+        config.cvssSeverityLimit = Integer.valueOf(config.cvssSeverityLimit)
         config.stashContent = utils.unstashAll(config.stashContent)
         config.projectNames = (config.projectNames instanceof List) ? config.projectNames : config.projectNames?.tokenize(',')
         parameters.projectNames = config.projectNames
@@ -199,7 +203,6 @@ private def triggerWhitesourceScanWithUserKey(script, config, utils, descriptorU
 
                     if (config.jreDownloadUrl) {
                         sh "rm -r ./bin ./conf ./legal ./lib ./man"
-                        javaCmd = './bin/java'
                     }
 
                     // archive whitesource result files
@@ -228,8 +231,10 @@ void analyseWhitesourceResults(Map config, WhitesourceRepository repository, Whi
     archiveArtifacts artifacts: pdfName
     echo "A summary of the Whitesource findings was stored as artifact under the name ${pdfName}"
 
-    int violationCount = fetchViolationCount(config, repository)
-    checkViolationStatus(violationCount)
+    if(config.licensingVulnerabilities) {
+        def violationCount = fetchViolationCount(config, repository)
+        checkViolationStatus(violationCount)
+    }
 
     if (config.securityVulnerabilities)
         config.severeVulnerabilities = checkSecurityViolations(config, repository)
@@ -255,7 +260,7 @@ void checkViolationStatus(int violationCount) {
     if (violationCount == 0) {
         echo "****\r\n[${STEP_NAME}] No policy violations found. You can deploy to production, and set the \"Intellectual Property (IP) Scan Plan\" in Sirius to completed. \r\n****"
     } else {
-        error "[${STEP_NAME}] Whitesource found $violationCount policy violations for your product"
+        error "[${STEP_NAME}] Whitesource found ${violationCount} policy violations for your product"
     }
 }
 
@@ -265,7 +270,7 @@ int checkSecurityViolations(Map config, WhitesourceRepository repository) {
     def severeVulnerabilities = 0
     whitesourceVulnerabilities.each {
         item ->
-            if (item.vulnerability.score >= 7 || item.vulnerability.cvss3_score >= 7)
+            if ((item.vulnerability.score >= config.cvssSeverityLimit || item.vulnerability.cvss3_score >= config.cvssSeverityLimit) && config.cvssSeverityLimit >= 0)
                 severeVulnerabilities++
     }
 
@@ -304,6 +309,9 @@ void checkStatus(int statusCode, config) {
                 break
             case 251:
                 errorMessage += "The server failed to analyze the scan"
+                break
+            case 250:
+                errorMessage += "Pre-step failure"
                 break
             default:
                 errorMessage += "Whitesource scan failed with unknown error code '${statusCode}'"
