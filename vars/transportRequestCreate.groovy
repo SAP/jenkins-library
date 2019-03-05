@@ -23,6 +23,7 @@ import hudson.AbortException
     'developmentSystemId',  // SOLMAN
     'targetSystem',         // CTS
     'transportType',        // CTS
+    'verbose',              // RFC
   ]
 
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS.plus(['changeDocumentId'])
@@ -63,6 +64,7 @@ void call(parameters = [:]) {
             .withMandatoryProperty('description', null, { backendType == BackendType.CTS})
             .withMandatoryProperty('changeManagement/rfc/developmentInstance', null, {backendType == BackendType.RFC})
             .withMandatoryProperty('changeManagement/rfc/developmentClient', null, {backendType == BackendType.RFC})
+            .withMandatoryProperty('verbose', null, {backendType == BackendType.RFC})
 
         def changeDocumentId = null
 
@@ -115,7 +117,8 @@ void call(parameters = [:]) {
                                                                 configuration.changeManagement.rfc.developmentInstance,
                                                                 configuration.changeManagement.rfc.developmentClient,
                                                                 configuration.changeManagement.credentialsId,
-                                                                configuration.description)
+                                                                configuration.description,
+                                                                configuration.verbose)
                 } else {
                   throw new IllegalArgumentException("Invalid backend type: '${backendType}'.")
                 }
