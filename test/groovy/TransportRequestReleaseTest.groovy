@@ -158,7 +158,7 @@ public class TransportRequestReleaseTest extends BasePiperTest {
                                 rfc: [
                                     dockerImage: 'rfc',
                                     dockerOptions: [],
-                                ]
+                                ],
                             ]
 
         ChangeManagement cm = new ChangeManagement(nullScript) {
@@ -168,7 +168,8 @@ public class TransportRequestReleaseTest extends BasePiperTest {
                 String endpoint,
                 String developmentInstance,
                 String developmentClient,
-                String credentialsId) {
+                String credentialsId,
+                boolean verbose) {
 
                 receivedParameters = [
                     docker: docker,
@@ -177,6 +178,7 @@ public class TransportRequestReleaseTest extends BasePiperTest {
                     developmentInstance: developmentInstance,
                     developmentClient: developmentClient,
                     credentialsId: credentialsId,
+                    verbose: verbose,
                 ]
             }
         }
@@ -190,6 +192,7 @@ public class TransportRequestReleaseTest extends BasePiperTest {
                     developmentInstance: '002',
                 ]
             ],
+            verbose: true,
             cmUtils: cm)
 
         assert receivedParameters == [
@@ -204,6 +207,7 @@ public class TransportRequestReleaseTest extends BasePiperTest {
                     developmentInstance: '002',
                     developmentClient: '003',
                     credentialsId: 'CM',
+                    'verbose': true,
                 ]
     }
 
@@ -277,7 +281,8 @@ public class TransportRequestReleaseTest extends BasePiperTest {
                 String endpoint,
                 String developmentInstance,
                 String developmentClient,
-                String credentialsId) {
+                String credentialsId,
+                boolean verbose) {
 
                 throw new ChangeManagementException('Failed releasing transport request.')
             }

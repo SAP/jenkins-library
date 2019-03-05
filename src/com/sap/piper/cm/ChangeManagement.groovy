@@ -381,12 +381,14 @@ public class ChangeManagement implements Serializable {
         String endpoint,
         String developmentInstance,
         String developmentClient,
-        String credentialsId) {
+        String credentialsId,
+        boolean verbose) {
 
         def cmd = "cts releaseTransport:${transportRequestId}"
         def args = [
             ABAP_DEVELOPMENT_INSTANCE: developmentInstance,
             ABAP_DEVELOPMENT_CLIENT: developmentClient,
+            VERBOSE: verbose,
         ]
 
         int rc = executeWithCredentials(

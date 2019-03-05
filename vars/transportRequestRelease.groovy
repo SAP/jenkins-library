@@ -24,7 +24,8 @@ import static com.sap.piper.cm.StepHelpers.getBackendTypeAndLogInfoIfCMIntegrati
 
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS.plus([
     'changeDocumentId',
-    'transportRequestId'
+    'transportRequestId',
+    'verbose',
   ])
 
 void call(parameters = [:]) {
@@ -58,6 +59,7 @@ void call(parameters = [:]) {
             .withMandatoryProperty('changeManagement/git/format')
             .withMandatoryProperty('changeManagement/rfc/developmentInstance', null, { backendType == BackendType.RFC})
             .withMandatoryProperty('changeManagement/rfc/developmentClient', null, { backendType == BackendType.RFC})
+            .withMandatoryProperty('verbose', null, { backendType == BackendType.RFC})
 
         configuration = configHelper.use()
 
@@ -122,7 +124,8 @@ void call(parameters = [:]) {
                             configuration.changeManagement.endpoint,
                             configuration.changeManagement.rfc.developmentInstance,
                             configuration.changeManagement.rfc.developmentClient,
-                            configuration.changeManagement.credentialsId)
+                            configuration.changeManagement.credentialsId,
+                            configuration.verbose)
                         break
 
                     default:

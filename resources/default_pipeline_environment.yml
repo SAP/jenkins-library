@@ -369,6 +369,7 @@ steps:
       failOnWarning: true
       verbose: false
   transportRequestRelease:
+      verbose: false
   uiVeri5ExecuteTests:
     failOnError: false
     dockerEnvVars: {}
