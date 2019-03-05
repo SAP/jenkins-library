@@ -404,7 +404,8 @@ public void testGetCommandLineWithCMClientOpts() {
             'https://example.org',
             '002',
             '001',
-            'me')
+            'me',
+            true)
 
         assert dockerExecuteRule.dockerParams.dockerEnvVars == [
             ABAP_DEVELOPMENT_SERVER: 'https://example.org',
@@ -412,6 +413,7 @@ public void testGetCommandLineWithCMClientOpts() {
             ABAP_DEVELOPMENT_PASSWORD: 'password',
             ABAP_DEVELOPMENT_CLIENT: '001',
             ABAP_DEVELOPMENT_INSTANCE: '002',
+            VERBOSE: true,
         ]
 
         assertThat(script.shell, hasItem('cts releaseTransport:002'))
