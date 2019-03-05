@@ -76,11 +76,12 @@ void call(Map parameters = [:]) {
             .dependingOn('scanType').mixin('agentDownloadUrl')
             .dependingOn('scanType').mixin('agentFileName')
             .dependingOn('scanType').mixin('agentParameters')
+            .withMandatoryProperty('orgToken')
             .withMandatoryProperty('userTokenCredentialsId')
             .withMandatoryProperty('productName')
             .use()
 
-        config.cvssSeverityLimit = Integer.valueOf(config.cvssSeverityLimit)
+        config.cvssSeverityLimit = config.cvssSeverityLimit ? Integer.valueOf(config.cvssSeverityLimit) : -1
         config.stashContent = utils.unstashAll(config.stashContent)
         config.projectNames = (config.projectNames instanceof List) ? config.projectNames : config.projectNames?.tokenize(',')
         parameters.projectNames = config.projectNames
