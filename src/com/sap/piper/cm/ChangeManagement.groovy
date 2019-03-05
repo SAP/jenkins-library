@@ -107,13 +107,15 @@ public class ChangeManagement implements Serializable {
         String developmentClient,
         String developmentInstance,
         String credentialsId,
-        String description) {
+        String description,
+        boolean verbose) {
 
         def command = 'cts createTransportRequest'
         def args = [
             TRANSPORT_DESCRIPTION: description,
             ABAP_DEVELOPMENT_INSTANCE: developmentInstance,
             ABAP_DEVELOPMENT_CLIENT: developmentClient,
+            VERBOSE: verbose,
         ]
 
         try {

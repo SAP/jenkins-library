@@ -362,6 +362,7 @@ steps:
       failIfStatusIsNotInDevelopment: true
   transportRequestCreate:
       developmentSystemId: null
+      verbose: false
   transportRequestUploadFile:
       acceptUnixStyleLineEndings: true
       codePage: 'UTF-8'

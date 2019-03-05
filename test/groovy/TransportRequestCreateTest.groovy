@@ -205,7 +205,8 @@ public class TransportRequestCreateTest extends BasePiperTest {
                 String developmentClient,
                 String developmentInstance,
                 String credentialsId,
-                String description) {
+                String description,
+                boolean verbose) {
 
                 result.docker = docker
                 result.endpoint = endpoint
@@ -213,6 +214,7 @@ public class TransportRequestCreateTest extends BasePiperTest {
                 result.developmentInstance= developmentInstance
                 result.credentialsId = credentialsId
                 result.description = description
+                result.verbose = verbose
 
                 return '001'
             }
@@ -230,7 +232,8 @@ public class TransportRequestCreateTest extends BasePiperTest {
             ],
             developmentSystemId: '001',
             description: '',
-            cmUtils: cm)
+            cmUtils: cm,
+            verbose: true)
 
         assert nullScript.commonPipelineEnvironment.getTransportRequestId() == '001'
         assert result == [
@@ -244,7 +247,8 @@ public class TransportRequestCreateTest extends BasePiperTest {
             developmentClient: '01',
             developmentInstance: '001',
             credentialsId: 'CM',
-            description: ''
+            description: '',
+            verbose: true
         ]
 
         assert loggingRule.log.contains("[INFO] Creating transport request.")
@@ -265,7 +269,8 @@ public class TransportRequestCreateTest extends BasePiperTest {
                 String developmentClient,
                 String developmentInstance,
                 String credentialsId,
-                String description) {
+                String description,
+                boolean verbose) {
 
                 throw new ChangeManagementException('upload failed')
             }

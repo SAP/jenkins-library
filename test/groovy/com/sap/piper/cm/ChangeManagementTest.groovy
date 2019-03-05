@@ -182,7 +182,8 @@ public void testGetCommandLineWithCMClientOpts() {
             '01', // client
             '001', // instance
             'me', // credentialsId
-            'Lorem ipsum' // description
+            'Lorem ipsum', // description
+            true // verbose
         )
 
         assert dockerExecuteRule.dockerParams.dockerImage == 'rfc'
@@ -194,6 +195,7 @@ public void testGetCommandLineWithCMClientOpts() {
             ABAP_DEVELOPMENT_SERVER: 'https://example.org/rfc',
             ABAP_DEVELOPMENT_USER: 'user',
             ABAP_DEVELOPMENT_PASSWORD: 'password',
+            VERBOSE: true
         ]
 
         assert transportRequestId == 'XYZK9000004'
@@ -215,7 +217,8 @@ public void testGetCommandLineWithCMClientOpts() {
             '01', // client
             '001', // instance
             'me', // credentialsId
-            'Lorem ipsum' // description
+            'Lorem ipsum', // description
+            true, //verbose
         )
     }
 
