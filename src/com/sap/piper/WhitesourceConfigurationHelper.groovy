@@ -28,13 +28,13 @@ class WhitesourceConfigurationHelper implements Serializable {
             mapping += [name: 'log.level', value: 'debug']
 
         mapping += [
-            [name: 'apiKey', value: config.orgToken, warnIfPresent: true],
+            [name: 'apiKey', value: config.orgToken],
             [name: 'productName', value: config.productName],
             [name: 'productVersion', value: config.productVersion],
             [name: 'projectName', value: config.projectName],
             [name: 'projectVersion', value: config.productVersion],
             [name: 'productToken', value: config.productToken, omitIfPresent: 'projectToken'],
-            [name: 'userKey', value: config.userKey, warnIfPresent: true],
+            [name: 'userKey', value: config.userKey],
             [name: 'forceUpdate', value: true],
             [name: 'offline', value: false],
             [name: 'ignoreSourceFiles', value: true],
@@ -90,8 +90,6 @@ class WhitesourceConfigurationHelper implements Serializable {
 
         mapping.each {
             entry ->
-                if (entry.warnIfPresent && moduleSpecificFile[entry.name])
-                    //Notify.warning(script, "Obsolete configuration ${entry.name} detected, please omit its use and rely on configuration via Piper.", 'WhitesourceConfigurationHelper')
                 def dependentValue = entry.omitIfPresent ? moduleSpecificFile[entry.omitIfPresent] : null
                 if ((entry.omitIfPresent && !dependentValue || !entry.omitIfPresent) && entry.value && entry.value != 'null' && entry.value != '')
                     moduleSpecificFile[entry.name] = entry.value.toString()
