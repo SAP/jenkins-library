@@ -310,7 +310,7 @@ steps:
       dockerWorkspace: '/home/node'
   slackSendNotification:
     color: "${buildStatus == 'SUCCESS'?'#008000':'#E60000'}"
-    defaultMessage: "${buildStatus}: Job ${env.JOB_NAME} <${env.BUILD_URL}|#${env.BUILD_NUMBER}>"
+    defaultMessage: "${buildStatus}: Job <${env.BUILD_URL}|${env.JOB_NAME} #${env.BUILD_NUMBER}>"
   snykExecute:
     buildDescriptorFile: './package.json'
     dockerImage: 'node:8-stretch'
