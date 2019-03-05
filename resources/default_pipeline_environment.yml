@@ -259,6 +259,7 @@ steps:
     parallelLimit: 15
     licensingVulnerabilities: true
     securityVulnerabilities: true
+    cvssSeverityLimit: -1
     reporting: true
     vulnerabilityReportFileName: 'piper_whitesource_vulnerability_report'
     vulnerabilityReportTitle: 'WhiteSource Security Vulnerability Report'
