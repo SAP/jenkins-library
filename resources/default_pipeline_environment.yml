@@ -265,18 +265,18 @@ steps:
     vulnerabilityReportTitle: 'WhiteSource Security Vulnerability Report'
     projectNames: []
     jreDownloadUrl: 'https://github.com/SAP/SapMachine/releases/download/sapmachine-11.0.2/sapmachine-jre-11.0.2_linux-x64_bin.tar.gz'
+    agentFileName: 'wss-unified-agent.jar'
+    agentDownloadUrl: 'https://github.com/whitesource/unified-agent-distribution/raw/master/standAlone/${config.agentFileName}'
+    agentParameters: ''
+    configFilePath: './wss-unified-agent.config'
     mta:
       stashContent:
         - 'buildDescriptor'
         - 'opensourceConfiguration'
     maven:
       buildDescriptorFile: './pom.xml'
-      dockerImage: 'maven:3.5-jdk-7'
+      dockerImage: 'maven:3.5-jdk-8'
       dockerWorkspace: '/home/java'
-      agentFileName: 'wss-unified-agent.jar'
-      agentDownloadUrl: 'https://github.com/whitesource/unified-agent-distribution/raw/master/standAlone/${config.agentFileName}'
-      agentParameters: ''
-      configFilePath: './wss-unified-agent.config'
       stashContent:
         - 'buildDescriptor'
         - 'opensourceConfiguration'
@@ -284,10 +284,6 @@ steps:
       buildDescriptorFile: './package.json'
       dockerImage: 'node:8-stretch'
       dockerWorkspace: '/home/node'
-      agentFileName: 'wss-unified-agent.jar'
-      agentDownloadUrl: 'https://github.com/whitesource/unified-agent-distribution/raw/master/standAlone/${config.agentFileName}'
-      agentParameters: ''
-      configFilePath: './wss-unified-agent.config'
       stashContent:
         - 'buildDescriptor'
         - 'opensourceConfiguration'
@@ -295,10 +291,6 @@ steps:
       buildDescriptorFile: './setup.py'
       dockerImage: 'python:3.7.2-stretch'
       dockerWorkspace: '/home/python'
-      agentFileName: 'wss-unified-agent.jar'
-      agentDownloadUrl: 'https://github.com/whitesource/unified-agent-distribution/raw/master/standAlone/${config.agentFileName}'
-      agentParameters: ''
-      configFilePath: './wss-unified-agent.config'
       stashContent:
         - 'buildDescriptor'
         - 'opensourceConfiguration'
@@ -306,10 +298,6 @@ steps:
       buildDescriptorFile: './build.sbt'
       dockerImage: 'hseeberger/scala-sbt:8u181_2.12.8_1.2.8'
       dockerWorkspace: '/home/scala'
-      agentFileName: 'wss-unified-agent.jar'
-      agentDownloadUrl: 'https://github.com/whitesource/unified-agent-distribution/raw/master/standAlone/${config.agentFileName}'
-      agentParameters: ''
-      configFilePath: './wss-unified-agent.config'
       stashContent:
         - 'buildDescriptor'
         - 'opensourceConfiguration'
