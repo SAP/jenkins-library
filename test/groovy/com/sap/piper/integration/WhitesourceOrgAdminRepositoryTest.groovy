@@ -30,8 +30,6 @@ class WhitesourceOrgAdminRepositoryTest extends BasePiperTest {
 
     @Before
     void init() throws Exception {
-        nullScript.env['HTTP_PROXY'] = "http://proxy.wdf.sap.corp:8080"
-
         repository = new WhitesourceOrgAdminRepository(nullScript, [serviceUrl: "http://some.host.whitesource.com/api/", verbose: true])
         LibraryLoadingTestExecutionListener.prepareObjectInterceptors(repository)
     }
@@ -70,5 +68,31 @@ class WhitesourceOrgAdminRepositoryTest extends BasePiperTest {
             token: '1111111-1111-1111-1111-111111111111',
             name : 'Correct Name Cloud'
         ])
+    }
+
+    @Test
+    void testHttpWhitesourceInternalCallUserKey() {
+        nullScript.env.orgAdminUserKey = "4711"
+        def config = [ serviceUrl: "http://some.host.whitesource.com/api/", verbose: false, orgAdminUserKey: nullScript.env.orgAdminUserKey]
+        def requestBody = ["someJson" : [ "someObject" : "abcdef" ]]
+
+        def requestParams
+        helper.registerAllowedMethod('httpRequest', [Map], { p ->
+            requestParams = p
+        })
+
+        repository.httpWhitesource(requestBody)
+
+        assertThat(requestParams, is(
+            [
+                url        : config.serviceUrl,
+                httpMode   : 'POST',
+                acceptType : 'APPLICATION_JSON',
+                contentType: 'APPLICATION_JSON',
+                requestBody: requestBody,
+                quiet      : true,
+                userKey    : config.orgAdminUserKey
+            ]
+        ))
     }
 }
