@@ -45,11 +45,28 @@ import static com.sap.piper.Prerequisites.checkScript
     'stashContent',
     'timeout',
     'vulnerabilityReportFileName',
-    'vulnerabilityReportTitle',
-    'whitesourceAccessor'
+    'vulnerabilityReportTitle'
 ]
 
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
+
+@Field Map CONFIG_KEY_COMPATIBILITY = [
+    whitesource   : [
+        'orgAdminUserTokenCredentialsId' : 'orgAdminUserTokenCredentialsId',
+        'orgToken'                       : 'orgToken',
+        'productName'                    : 'productName',
+        'productVersion'                 : 'productVersion',
+        'productToken'                   : 'productToken',
+        'projectNames'                   : 'projectNames',
+        'scanType'                       : 'scanType',
+        'serviceUrl'                     : 'serviceUrl',
+        'userTokenCredentialsId'         : 'userTokenCredentialsId'
+    ],
+    whitesourceUserTokenCredentialsId    : 'userTokenCredentialsId',
+    whitesourceProductName               : 'productName',
+    whitesourceProjectNames              : 'projectNames',
+    whitesourceProductToken              : 'productToken'
+]
 
 void call(Map parameters = [:]) {
     handlePipelineStepErrors(stepName: STEP_NAME, stepParameters: parameters) {
@@ -61,9 +78,9 @@ void call(Map parameters = [:]) {
         // load default & individual configuration
         Map config = ConfigurationHelper.newInstance(this)
             .loadStepDefaults()
-            .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS)
-            .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS)
-            .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName ?: env.STAGE_NAME, STEP_CONFIG_KEYS)
+            .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS, CONFIG_KEY_COMPATIBILITY)
+            .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS, CONFIG_KEY_COMPATIBILITY)
+            .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName ?: env.STAGE_NAME, STEP_CONFIG_KEYS, CONFIG_KEY_COMPATIBILITY)
             .mixin([
                 style : libraryResource('piper-os.css')
             ])
@@ -78,7 +95,7 @@ void call(Map parameters = [:]) {
             .withMandatoryProperty('productName')
             .use()
 
-        config.cvssSeverityLimit = config.cvssSeverityLimit ? Integer.valueOf(config.cvssSeverityLimit) : -1
+        config.cvssSeverityLimit = config.cvssSeverityLimit == null ? -1 : Integer.valueOf(config.cvssSeverityLimit)
         config.stashContent = utils.unstashAll(config.stashContent)
         config.projectNames = (config.projectNames instanceof List) ? config.projectNames : config.projectNames?.tokenize(',')
         parameters.projectNames = config.projectNames
@@ -267,7 +284,7 @@ int fetchViolationCount(Map config, WhitesourceRepository repository) {
 
 void checkViolationStatus(int violationCount) {
     if (violationCount == 0) {
-        echo "****\r\n[${STEP_NAME}] No policy violations found. You can deploy to production, and set the \"Intellectual Property (IP) Scan Plan\" in Sirius to completed. \r\n****"
+        echo "[${STEP_NAME}] No policy violations found"
     } else {
         error "[${STEP_NAME}] Whitesource found ${violationCount} policy violations for your product"
     }

@@ -760,7 +760,7 @@ class WhitesourceExecuteScanTest extends BasePiperTest {
     }
 
     @Test
-    void testCheckFindingBelowSeven() {
+    void testCheckFindingBelowThreshold() {
         helper.registerAllowedMethod("readProperties", [Map], {
             def result = new Properties()
             result.putAll([
@@ -790,11 +790,53 @@ class WhitesourceExecuteScanTest extends BasePiperTest {
             securityVulnerabilities              : true,
             orgToken                             : 'testOrgToken',
             productName                          : 'SHC - Piper',
-            projectNames                         : [ 'piper-demo - 0.0.1' ]
+            projectNames                         : [ 'piper-demo - 0.0.1' ],
+            cvssSeverityLimit                    : 7
         ])
 
-        assertThat(loggingRule.log, containsString('WARNING: 1 Open Source Software Security vulnerabilities with CVSS score below 7.0 detected.'))
+        assertThat(loggingRule.log, containsString('WARNING: 1 Open Source Software Security vulnerabilities with CVSS score below 7 detected.'))
         assertThat(writeFileRule.files['piper_whitesource_vulnerability_report.json'], not(isEmptyOrNullString()))
+    }
+
+    @Test
+    void testCheckFindingAbove() {
+        helper.registerAllowedMethod("readProperties", [Map], {
+            def result = new Properties()
+            result.putAll([
+                "apiKey": "b39d1328-52e2-42e3-98f0-932709daf3f0",
+                "productName": "SHC - Piper",
+                "checkPolicies": "true",
+                "projectName": "pipeline-test-node",
+                "projectVersion": "1.0.0"
+            ])
+            return result
+        })
+        helper.registerAllowedMethod("fetchVulnerabilities", [List], {
+            return new JsonUtils().parseJsonSerializable("{ \"alerts\": [ { \"vulnerability\": { \"name\": \"CVE-2017-15095\", \"type\": \"CVE\", \"severity\": \"high\", \"score\": 2.1, \"cvss3_severity\": \"high\", \"cvss3_score\": 5.3, \"scoreMetadataVector\": \"CVSS:3.0/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H\", \"publishDate\": \"2018-02-06\", \"url\": \"https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2017-15095\", \"description\": \"A deserialization flaw was discovered in the jackson-databind in versions before 2.8.10 and 2.9.1, which could allow an unauthenticated user to perform code execution by sending the maliciously crafted input to the readValue method of the ObjectMapper. This issue extends the previous flaw CVE-2017-7525 by blacklisting more classes that could be used maliciously.\", \"topFix\": { \"vulnerability\": \"CVE-2017-15095\", \"type\": \"CHANGE_FILES\", \"origin\": \"GITHUB_COMMIT\", \"url\": \"https://github.com/FasterXML/jackson-databind/commit/60d459ce\"," +
+                "\"fixResolution\": \"src/test/java/com/fasterxml/jackson/databind/interop/IllegalTypesCheckTest.java,release-notes/VERSION,src/main/java/com/fasterxml/jackson/databind/deser/BeanDeserializerFactory.java\", \"date\": \"2017-04-13\", \"message\": \"Fix #1599 for 2.8.9\\n\\nMerge branch '2.7' into 2.8\", \"extraData\": \"key=60d459c&committerName=cowtowncoder&committerUrl=https://github.com/cowtowncoder&committerAvatar=https://avatars0.githubusercontent.com/u/55065?v=4\" }, \"allFixes\": [ { \"vulnerability\": \"CVE-2017-15095\", \"type\": \"CHANGE_FILES\", \"origin\": \"GITHUB_COMMIT\", \"url\": \"https://github.com/FasterXML/jackson-databind/commit/60d459ce\", \"fixResolution\": \"src/test/java/com/fasterxml/jackson/databind/interop/IllegalTypesCheckTest.java,release-notes/VERSION,src/main/java/com/fasterxml/jackson/databind/deser/BeanDeserializerFactory.java\", \"date\": \"2017-04-13\", \"message\": \"Fix #1599 for 2.8.9\\n\\nMerge branch '2.7' into 2.8\"," +
+                "\"extraData\": \"key=60d459c&committerName=cowtowncoder&committerUrl=https://github.com/cowtowncoder&committerAvatar=https://avatars0.githubusercontent.com/u/55065?v=4\" }, { \"vulnerability\": \"CVE-2017-15095\", \"type\": \"CHANGE_FILES\", \"origin\": \"GITHUB_COMMIT\", \"url\": \"https://github.com/FasterXML/jackson-databind/commit/e865a7a4464da63ded9f4b1a2328ad85c9ded78b#diff-98084d808198119d550a9211e128a16f\", \"fixResolution\": \"src/test/java/com/fasterxml/jackson/databind/interop/IllegalTypesCheckTest.java,release-notes/VERSION,src/main/java/com/fasterxml/jackson/databind/deser/BeanDeserializerFactory.java\", \"date\": \"2017-12-12\", \"message\": \"Fix #1737 (#1857)\", \"extraData\": \"key=e865a7a&committerName=cowtowncoder&committerUrl=https://github.com/cowtowncoder&committerAvatar=https://avatars0.githubusercontent.com/u/55065?v=4\" }, { \"vulnerability\": \"CVE-2017-15095\", \"type\": \"CHANGE_FILES\", \"origin\": \"GITHUB_COMMIT\"," +
+                "\"url\": \"https://github.com/FasterXML/jackson-databind/commit/e8f043d1\", \"fixResolution\": \"release-notes/VERSION,src/main/java/com/fasterxml/jackson/databind/deser/BeanDeserializerFactory.java\", \"date\": \"2017-06-30\", \"message\": \"Fix #1680\", \"extraData\": \"key=e8f043d&committerName=cowtowncoder&committerUrl=https://github.com/cowtowncoder&committerAvatar=https://avatars0.githubusercontent.com/u/55065?v=4\" } ], \"fixResolutionText\": \"Replace or update the following files: IllegalTypesCheckTest.java, VERSION, BeanDeserializerFactory.java\", \"references\": [] }, \"type\": \"SECURITY_VULNERABILITY\", \"level\": \"MAJOR\", \"library\": { \"keyUuid\": \"13f7802e-8aa1-4303-a5db-1d0c85e871a9\", \"keyId\": 23410061, \"filename\": \"jackson-databind-2.8.8.jar\", \"name\": \"jackson-databind\", \"groupId\": \"com.fasterxml.jackson.core\", \"artifactId\": \"jackson-databind\", \"version\": \"2.8.8\", \"sha1\": \"bf88c7b27e95cbadce4e7c316a56c3efffda8026\"," +
+                "\"type\": \"Java\", \"references\": { \"url\": \"http://github.com/FasterXML/jackson\", \"issueUrl\": \"https://github.com/FasterXML/jackson-databind/issues\", \"pomUrl\": \"http://repo.jfrog.org/artifactory/list/repo1/com/fasterxml/jackson/core/jackson-databind/2.8.8/jackson-databind-2.8.8.pom\", \"scmUrl\": \"http://github.com/FasterXML/jackson-databind\" }, \"licenses\": [ { \"name\": \"Apache 2.0\", \"url\": \"http://apache.org/licenses/LICENSE-2.0\", \"profileInfo\": { \"copyrightRiskScore\": \"THREE\", \"patentRiskScore\": \"ONE\", \"copyleft\": \"NO\", \"linking\": \"DYNAMIC\", \"royaltyFree\": \"CONDITIONAL\" } } ] }, \"project\": \"pipeline-test - 0.0.1\", \"projectId\": 302194, \"projectToken\": \"1b8fdc36cb6949f482d0fd936a39dab69d6b34f43fff4dda8a9241f2c6e536c7\", \"directDependency\": false, \"description\": \"High:5,\", \"date\": \"2017-11-15\" } ] }").alerts
+        })
+
+        try {
+            stepRule.step.whitesourceExecuteScan([
+                script                           : nullScript,
+                whitesourceRepositoryStub        : whitesourceStub,
+                whitesourceOrgAdminRepositoryStub: whitesourceOrgAdminRepositoryStub,
+                descriptorUtilsStub              : descriptorUtilsStub,
+                scanType                         : 'npm',
+                juStabUtils                      : utils,
+                securityVulnerabilities          : true,
+                orgToken                         : 'testOrgToken',
+                productName                      : 'SHC - Piper',
+                projectNames                     : ['piper-demo - 0.0.1'],
+                cvssSeverityLimit                : 0
+            ])
+        } catch (e) {
+            assertThat(e.getMessage(), containsString('[whitesourceExecuteScan] 1 Open Source Software Security vulnerabilities with CVSS score greater or equal 0 detected. - '))
+            assertThat(writeFileRule.files['piper_whitesource_vulnerability_report.json'], not(isEmptyOrNullString()))
+        }
     }
 
     @Test
@@ -833,7 +875,6 @@ class WhitesourceExecuteScanTest extends BasePiperTest {
 
     @Test
     void testCheckStatus_0() {
-
         def error = false
         try {
             stepRule.step.checkStatus(0, [licensingVulnerabilities: true])
@@ -931,10 +972,10 @@ class WhitesourceExecuteScanTest extends BasePiperTest {
     void testCheckStatus_vulnerability() {
         def error = false
         try {
-            stepRule.step.checkStatus(0, [licensingVulnerabilities: false, securityVulnerabilities: true, severeVulnerabilities: 5])
+            stepRule.step.checkStatus(0, [licensingVulnerabilities: false, securityVulnerabilities: true, severeVulnerabilities: 5, cvssSeverityLimit: 7])
         } catch (e) {
             error = true
-            assertThat(e.getMessage(), is("[whitesourceExecuteScan] 5 Open Source Software Security vulnerabilities with CVSS score greater or equal 7.0 detected. - "))
+            assertThat(e.getMessage(), is("[whitesourceExecuteScan] 5 Open Source Software Security vulnerabilities with CVSS score greater or equal 7 detected. - "))
         }
         assertThat(error, is(true))
     }
@@ -948,7 +989,7 @@ class WhitesourceExecuteScanTest extends BasePiperTest {
             error = true
         }
         assertThat(error, is(false))
-        assertThat(loggingRule.log, containsString("****\r\n[whitesourceExecuteScan] No policy violations found. You can deploy to production, and set the \"Intellectual Property (IP) Scan Plan\" in Sirius to completed. \r\n****"))
+        assertThat(loggingRule.log, containsString("[whitesourceExecuteScan] No policy violations found"))
     }
 
     @Test
