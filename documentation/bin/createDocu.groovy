@@ -1,8 +1,7 @@
-import groovy.io.FileType;
+import groovy.io.FileType
 import org.yaml.snakeyaml.Yaml
 import org.codehaus.groovy.control.CompilerConfiguration
 import com.sap.piper.GenerateDocumentation
-import com.sap.piper.DefaultValueCache
 import java.util.regex.Matcher
 
 //

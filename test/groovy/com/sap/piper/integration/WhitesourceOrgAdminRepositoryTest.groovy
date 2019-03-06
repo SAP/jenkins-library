@@ -1,6 +1,5 @@
 package com.sap.piper.integration
 
-import com.sap.piper.JsonUtils
 import org.junit.After
 import org.junit.Before
 import org.junit.Rule
