@@ -218,7 +218,7 @@ class WhitesourceRepository implements Serializable {
             timeout    : config.timeout
         ]
 
-        if (script.env.HTTP_PROXY && !config.serviceUrl.matches('http(s)*://.*\\.sap\\.corp.*'))
+        if (script.env.HTTP_PROXY)
             params["httpProxy"] = script.env.HTTP_PROXY
 
         if(config.verbose)
