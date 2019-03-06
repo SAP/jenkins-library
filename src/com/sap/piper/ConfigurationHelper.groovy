@@ -49,7 +49,7 @@ class ConfigurationHelper implements Serializable {
 
     final ConfigurationHelper mixin(Map parameters, Set filter = null, Map compatibleParameters = [:]){
         if (parameters.size() > 0 && compatibleParameters.size() > 0) {
-            parameters = ConfigurationMerger.merge(handleCompatibility(compatibleParameters, parameters), null, parameters)
+            parameters = ConfigurationMerger.merge(handleCompatibility(compatibleParameters, parameters, config), null, parameters)
         }
         if (filter) {
             filter.add('collectTelemetryData')
