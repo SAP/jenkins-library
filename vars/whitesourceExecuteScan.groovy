@@ -149,15 +149,15 @@ import static com.sap.piper.Prerequisites.checkScript
 
 @Field Map CONFIG_KEY_COMPATIBILITY = [
     whitesource   : [
-        'orgAdminUserTokenCredentialsId' : 'orgAdminUserTokenCredentialsId',
-        'orgToken'                       : 'orgToken',
-        'productName'                    : 'productName',
-        'productVersion'                 : 'productVersion',
-        'productToken'                   : 'productToken',
-        'projectNames'                   : 'projectNames',
-        'scanType'                       : 'scanType',
-        'serviceUrl'                     : 'serviceUrl',
-        'userTokenCredentialsId'         : 'userTokenCredentialsId'
+        orgAdminUserTokenCredentialsId   : 'orgAdminUserTokenCredentialsId',
+        orgToken                         : 'orgToken',
+        productName                      : 'productName',
+        productVersion                   : 'productVersion',
+        productToken                     : 'productToken',
+        projectNames                     : 'projectNames',
+        scanType                         : 'scanType',
+        serviceUrl                       : 'serviceUrl',
+        userTokenCredentialsId           : 'userTokenCredentialsId'
     ],
     whitesourceUserTokenCredentialsId    : 'userTokenCredentialsId',
     whitesourceProductName               : 'productName',
