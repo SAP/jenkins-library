@@ -23,6 +23,7 @@ general:
     jnlpAgent: 's4sdk/jenkins-agent-k8s:latest'
   manualConfirmation: true
   productiveBranch: 'master'
+  serviceUrl: 'https://saas.whitesourcesoftware.com/api'
 
 #Steps Specific Configuration
 steps:
