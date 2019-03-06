@@ -42,13 +42,40 @@ class WhitesourceOrgAdminRepository implements Serializable {
             }
         }
 
-        if (!foundMetaProduct)
-            script.error "[WhiteSource] Could not fetch/find requested product '${config.productName}'"
-
         return foundMetaProduct
     }
 
+    def createProduct() {
+        def requestBody = [
+            requestType: "createProduct",
+            orgToken: config.orgToken,
+            productName: config.productName
+        ]
+        def response = issueHttpRequest(requestBody)
+        def parsedResponse = new JsonUtils().parseJsonSerializable(response.content)
+        def metaInfo = parsedResponse
 
+        def groups = []
+        def users = []
+        config.emailAddressesOfInitialProductAdmins.each {
+            email -> users.add(["email": config.emailOfInitialProductAdmin])
+        }
+
+        requestBody = [
+            "requestType" : "setProductAssignments",
+            "productToken" : metaInfo.productToken,
+            "productMembership" : ["userAssignments":[], "groupAssignments":groups],
+            "productAdmins" : ["userAssignments":users],
+            "alertsEmailReceivers" : ["userAssignments":[]]
+        ]
+        issueHttpRequest(requestBody)
+
+        return metaInfo
+    }
+
+    def issueHttpRequest(requestBody) {
+        internalWhitesource ? internalWhitesource.httpWhitesource(requestBody) : httpWhitesource(requestBody)
+    }
 
     @NonCPS
     protected def httpWhitesource(requestBody) {
