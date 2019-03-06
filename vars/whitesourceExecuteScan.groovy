@@ -281,7 +281,7 @@ int checkSecurityViolations(Map config, WhitesourceRepository repository) {
     archiveArtifacts(artifacts: "${config.vulnerabilityReportFileName}.*")
 
     if (whitesourceVulnerabilities.size() - severeVulnerabilities > 0)
-        echo "[${STEP_NAME}] WARNING: ${whitesourceVulnerabilities.size() - severeVulnerabilities} Open Source Software Security vulnerabilities with CVSS score below 7.0 detected."
+        echo "[${STEP_NAME}] WARNING: ${whitesourceVulnerabilities.size() - severeVulnerabilities} Open Source Software Security vulnerabilities with CVSS score below ${config.cvssSeverityLimit} detected."
     if (whitesourceVulnerabilities.size() == 0)
         echo "[${STEP_NAME}] No Open Source Software Security vulnerabilities detected."
 
