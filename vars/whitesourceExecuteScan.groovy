@@ -148,21 +148,19 @@ import static com.sap.piper.Prerequisites.checkScript
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
 
 @Field Map CONFIG_KEY_COMPATIBILITY = [
-    whitesource   : [
-        orgAdminUserTokenCredentialsId   : 'orgAdminUserTokenCredentialsId',
-        orgToken                         : 'orgToken',
-        productName                      : 'productName',
-        productVersion                   : 'productVersion',
-        productToken                     : 'productToken',
-        projectNames                     : 'projectNames',
-        scanType                         : 'scanType',
-        serviceUrl                       : 'serviceUrl',
-        userTokenCredentialsId           : 'userTokenCredentialsId'
-    ],
-    whitesourceUserTokenCredentialsId    : 'userTokenCredentialsId',
-    whitesourceProductName               : 'productName',
-    whitesourceProjectNames              : 'projectNames',
-    whitesourceProductToken              : 'productToken'
+    orgAdminUserTokenCredentialsId   : 'whitesource.orgAdminUserTokenCredentialsId',
+    orgToken                         : 'whitesource.orgToken',
+    productName                      : 'whitesource.productName',
+    productVersion                   : 'whitesource.productVersion',
+    productToken                     : 'whitesource.productToken',
+    projectNames                     : 'whitesource.projectNames',
+    scanType                         : 'whitesource.scanType',
+    serviceUrl                       : 'whitesource.serviceUrl',
+    userTokenCredentialsId           : 'whitesource.userTokenCredentialsId',
+    userTokenCredentialsId           : 'whitesourceUserTokenCredentialsId',
+    productName                      : 'whitesourceProductName',
+    projectNames                     : 'whitesourceProjectNames',
+    productToken                     : 'whitesourceProductToken'
 ]
 
 /**

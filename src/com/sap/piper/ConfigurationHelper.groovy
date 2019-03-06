@@ -33,8 +33,8 @@ class ConfigurationHelper implements Serializable {
     }
 
     ConfigurationHelper mixinGeneralConfig(commonPipelineEnvironment, Set filter = null, Map compatibleParameters = [:]){
-        Map stepConfiguration = ConfigurationLoader.generalConfiguration([commonPipelineEnvironment: commonPipelineEnvironment])
-        return mixin(stepConfiguration, filter, compatibleParameters)
+        Map generalConfiguration = ConfigurationLoader.generalConfiguration([commonPipelineEnvironment: commonPipelineEnvironment])
+        return mixin(generalConfiguration, filter, compatibleParameters)
     }
 
     ConfigurationHelper mixinStageConfig(commonPipelineEnvironment, stageName, Set filter = null, Map compatibleParameters = [:]){
@@ -49,7 +49,7 @@ class ConfigurationHelper implements Serializable {
 
     final ConfigurationHelper mixin(Map parameters, Set filter = null, Map compatibleParameters = [:]){
         if (parameters.size() > 0 && compatibleParameters.size() > 0) {
-            parameters = ConfigurationMerger.merge(handleCompatibility(compatibleParameters, parameters, config), null, parameters)
+            parameters = ConfigurationMerger.merge(handleCompatibility(compatibleParameters, parameters), null, parameters)
         }
         if (filter) {
             filter.add('collectTelemetryData')
