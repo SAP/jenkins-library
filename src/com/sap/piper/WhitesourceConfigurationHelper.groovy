@@ -2,8 +2,6 @@ package com.sap.piper
 
 import com.cloudbees.groovy.cps.NonCPS
 
-import java.security.MessageDigest
-
 class WhitesourceConfigurationHelper implements Serializable {
 
     static def extendUAConfigurationFile(script, utils, config, path) {
@@ -11,7 +9,7 @@ class WhitesourceConfigurationHelper implements Serializable {
         def parsingClosure = { fileReadPath -> return script.readProperties (file: fileReadPath) }
         def serializationClosure = { configuration -> serializeUAConfig(configuration) }
         def inputFile = config.configFilePath.replaceFirst('\\./', '')
-        def suffix = MessageDigest.getInstance("MD5").digest(config.configFilePath.bytes).encodeHex().toString()
+        def suffix = utils.generateSha1(config.configFilePath)
         def targetFile = "${inputFile}.${suffix}"
         if(config.productName.startsWith('DIST - ')) {
             mapping += [

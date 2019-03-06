@@ -174,18 +174,18 @@ class WhitesourceExecuteScanTest extends BasePiperTest {
         assertThat(loggingRule.log, containsString('Unstash content: buildDescriptor'))
         assertThat(loggingRule.log, containsString('Unstash content: opensourceConfiguration'))
 
-        assertThat(dockerExecuteRule.dockerParams, hasEntry('dockerImage', 'maven:3.5-jdk-7'))
+        assertThat(dockerExecuteRule.dockerParams, hasEntry('dockerImage', 'maven:3.5-jdk-8'))
         assertThat(dockerExecuteRule.dockerParams, hasEntry('dockerWorkspace', '/home/java'))
-        assertThat(dockerExecuteRule.dockerParams, hasEntry('stashContent', ['buildDescriptor', 'opensourceConfiguration', 'modified whitesource config 420a1bc5c82f57e80307205d8625304f']))
+        assertThat(dockerExecuteRule.dockerParams, hasEntry('stashContent', ['buildDescriptor', 'opensourceConfiguration', 'modified whitesource config d3aa80454919391024374ba46b4df082d15ab9a3']))
 
         assertThat(shellRule.shell, Matchers.hasItems(
             is('curl --location --output wss-unified-agent.jar https://github.com/whitesource/unified-agent-distribution/raw/master/standAlone/wss-unified-agent.jar'),
-            is('./bin/java -jar wss-unified-agent.jar -c \'./wss-unified-agent.config.420a1bc5c82f57e80307205d8625304f\' -apiKey \'testOrgToken\' -userKey \'token-0815\' -product \'testProduct\'')
+            is('./bin/java -jar wss-unified-agent.jar -c \'./wss-unified-agent.config.d3aa80454919391024374ba46b4df082d15ab9a3\' -apiKey \'testOrgToken\' -userKey \'token-0815\' -product \'testProduct\'')
         ))
 
-        assertThat(writeFileRule.files['./wss-unified-agent.config.420a1bc5c82f57e80307205d8625304f'], containsString('apiKey=testOrgToken'))
-        assertThat(writeFileRule.files['./wss-unified-agent.config.420a1bc5c82f57e80307205d8625304f'], containsString('productName=testProduct'))
-        assertThat(writeFileRule.files['./wss-unified-agent.config.420a1bc5c82f57e80307205d8625304f'], containsString('userKey=token-0815'))
+        assertThat(writeFileRule.files['./wss-unified-agent.config.d3aa80454919391024374ba46b4df082d15ab9a3'], containsString('apiKey=testOrgToken'))
+        assertThat(writeFileRule.files['./wss-unified-agent.config.d3aa80454919391024374ba46b4df082d15ab9a3'], containsString('productName=testProduct'))
+        assertThat(writeFileRule.files['./wss-unified-agent.config.d3aa80454919391024374ba46b4df082d15ab9a3'], containsString('userKey=token-0815'))
     }
 
 
@@ -221,19 +221,19 @@ class WhitesourceExecuteScanTest extends BasePiperTest {
 
         assertThat(dockerExecuteRule.dockerParams, hasEntry('dockerImage', 'node:8-stretch'))
         assertThat(dockerExecuteRule.dockerParams, hasEntry('dockerWorkspace', '/home/node'))
-        assertThat(dockerExecuteRule.dockerParams, hasEntry('stashContent', ['buildDescriptor', 'opensourceConfiguration', 'modified whitesource config 420a1bc5c82f57e80307205d8625304f']))
+        assertThat(dockerExecuteRule.dockerParams, hasEntry('stashContent', ['buildDescriptor', 'opensourceConfiguration', 'modified whitesource config d3aa80454919391024374ba46b4df082d15ab9a3']))
         assertThat(shellRule.shell, Matchers.hasItems(
             is('curl --location --output wss-unified-agent.jar https://github.com/whitesource/unified-agent-distribution/raw/master/standAlone/wss-unified-agent.jar'),
             is('curl --location --output jvm.tar.gz https://github.com/SAP/SapMachine/releases/download/sapmachine-11.0.2/sapmachine-jre-11.0.2_linux-x64_bin.tar.gz && tar --strip-components=1 -xzf jvm.tar.gz'),
-            is('./bin/java -jar wss-unified-agent.jar -c \'./wss-unified-agent.config.420a1bc5c82f57e80307205d8625304f\' -apiKey \'testOrgToken\' -userKey \'token-0815\' -product \'testProductName\'')
+            is('./bin/java -jar wss-unified-agent.jar -c \'./wss-unified-agent.config.d3aa80454919391024374ba46b4df082d15ab9a3\' -apiKey \'testOrgToken\' -userKey \'token-0815\' -product \'testProductName\'')
         ))
 
-        assertThat(writeFileRule.files['./wss-unified-agent.config.420a1bc5c82f57e80307205d8625304f'], containsString('apiKey=testOrgToken'))
-        assertThat(writeFileRule.files['./wss-unified-agent.config.420a1bc5c82f57e80307205d8625304f'], containsString('productName=testProductName'))
-        assertThat(writeFileRule.files['./wss-unified-agent.config.420a1bc5c82f57e80307205d8625304f'], containsString('productToken=testProductToken'))
-        assertThat(writeFileRule.files['./wss-unified-agent.config.420a1bc5c82f57e80307205d8625304f'], containsString('productVersion=1.2.3'))
-        assertThat(writeFileRule.files['./wss-unified-agent.config.420a1bc5c82f57e80307205d8625304f'], containsString('projectName=com.sap.node.test-node'))
-        assertThat(writeFileRule.files['./wss-unified-agent.config.420a1bc5c82f57e80307205d8625304f'], containsString('userKey=token-0815'))
+        assertThat(writeFileRule.files['./wss-unified-agent.config.d3aa80454919391024374ba46b4df082d15ab9a3'], containsString('apiKey=testOrgToken'))
+        assertThat(writeFileRule.files['./wss-unified-agent.config.d3aa80454919391024374ba46b4df082d15ab9a3'], containsString('productName=testProductName'))
+        assertThat(writeFileRule.files['./wss-unified-agent.config.d3aa80454919391024374ba46b4df082d15ab9a3'], containsString('productToken=testProductToken'))
+        assertThat(writeFileRule.files['./wss-unified-agent.config.d3aa80454919391024374ba46b4df082d15ab9a3'], containsString('productVersion=1.2.3'))
+        assertThat(writeFileRule.files['./wss-unified-agent.config.d3aa80454919391024374ba46b4df082d15ab9a3'], containsString('projectName=com.sap.node.test-node'))
+        assertThat(writeFileRule.files['./wss-unified-agent.config.d3aa80454919391024374ba46b4df082d15ab9a3'], containsString('userKey=token-0815'))
     }
 
     @Test
@@ -259,13 +259,14 @@ class WhitesourceExecuteScanTest extends BasePiperTest {
             productName                          : 'SHC - Piper',
             configFilePath                       : './../../testConfigPath',
             file                                 : 'package.json',
-            juStabUtils                          : utils
+            juStabUtils                          : utils,
+            orgToken                             : 'b39d1328-52e2-42e3-98f0-932709daf3f0'
         ])
 
         assertThat(shellRule.shell, Matchers.hasItems(
             is('curl --location --output wss-unified-agent.jar https://github.com/whitesource/unified-agent-distribution/raw/master/standAlone/wss-unified-agent.jar'),
             is('curl --location --output jvm.tar.gz https://github.com/SAP/SapMachine/releases/download/sapmachine-11.0.2/sapmachine-jre-11.0.2_linux-x64_bin.tar.gz && tar --strip-components=1 -xzf jvm.tar.gz'),
-            is('./bin/java -jar wss-unified-agent.jar -c \'./../../testConfigPath.092aaffe7a79d11da13593b63b929754\' -userKey \'token-0815\' -product \'SHC - Piper\'')
+            is('./bin/java -jar wss-unified-agent.jar -c \'./../../testConfigPath.2766cacc0cf1449dd4034385f4a9f0a6fdb755cf\' -apiKey \'b39d1328-52e2-42e3-98f0-932709daf3f0\' -userKey \'token-0815\' -product \'SHC - Piper\'')
         ))
     }
 
@@ -299,19 +300,19 @@ class WhitesourceExecuteScanTest extends BasePiperTest {
 
         assertThat(dockerExecuteRule.dockerParams, hasEntry('dockerImage', 'python:3.7.2-stretch'))
         assertThat(dockerExecuteRule.dockerParams, hasEntry('dockerWorkspace', '/home/python'))
-        assertThat(dockerExecuteRule.dockerParams, hasEntry('stashContent', ['buildDescriptor', 'opensourceConfiguration', 'modified whitesource config 420a1bc5c82f57e80307205d8625304f']))
+        assertThat(dockerExecuteRule.dockerParams, hasEntry('stashContent', ['buildDescriptor', 'opensourceConfiguration', 'modified whitesource config d3aa80454919391024374ba46b4df082d15ab9a3']))
 
         assertThat(shellRule.shell, Matchers.hasItems(
             is('curl --location --output wss-unified-agent.jar https://github.com/whitesource/unified-agent-distribution/raw/master/standAlone/wss-unified-agent.jar'),
             is('curl --location --output jvm.tar.gz https://github.com/SAP/SapMachine/releases/download/sapmachine-11.0.2/sapmachine-jre-11.0.2_linux-x64_bin.tar.gz && tar --strip-components=1 -xzf jvm.tar.gz'),
-            is('./bin/java -jar wss-unified-agent.jar -c \'./wss-unified-agent.config.420a1bc5c82f57e80307205d8625304f\' -apiKey \'testOrgToken\' -userKey \'token-0815\' -product \'testProductName\'')
+            is('./bin/java -jar wss-unified-agent.jar -c \'./wss-unified-agent.config.d3aa80454919391024374ba46b4df082d15ab9a3\' -apiKey \'testOrgToken\' -userKey \'token-0815\' -product \'testProductName\'')
         ))
 
-        assertThat(writeFileRule.files['./wss-unified-agent.config.420a1bc5c82f57e80307205d8625304f'], containsString('apiKey=testOrgToken'))
-        assertThat(writeFileRule.files['./wss-unified-agent.config.420a1bc5c82f57e80307205d8625304f'], containsString('productName=testProductName'))
-        assertThat(writeFileRule.files['./wss-unified-agent.config.420a1bc5c82f57e80307205d8625304f'], containsString('userKey=token-0815'))
-        assertThat(writeFileRule.files['./wss-unified-agent.config.420a1bc5c82f57e80307205d8625304f'], containsString('productVersion=1.2.3'))
-        assertThat(writeFileRule.files['./wss-unified-agent.config.420a1bc5c82f57e80307205d8625304f'], containsString('projectName=test-python'))
+        assertThat(writeFileRule.files['./wss-unified-agent.config.d3aa80454919391024374ba46b4df082d15ab9a3'], containsString('apiKey=testOrgToken'))
+        assertThat(writeFileRule.files['./wss-unified-agent.config.d3aa80454919391024374ba46b4df082d15ab9a3'], containsString('productName=testProductName'))
+        assertThat(writeFileRule.files['./wss-unified-agent.config.d3aa80454919391024374ba46b4df082d15ab9a3'], containsString('userKey=token-0815'))
+        assertThat(writeFileRule.files['./wss-unified-agent.config.d3aa80454919391024374ba46b4df082d15ab9a3'], containsString('productVersion=1.2.3'))
+        assertThat(writeFileRule.files['./wss-unified-agent.config.d3aa80454919391024374ba46b4df082d15ab9a3'], containsString('projectName=test-python'))
     }
     
     @Test
@@ -345,18 +346,18 @@ class WhitesourceExecuteScanTest extends BasePiperTest {
 
         assertThat(dockerExecuteRule.dockerParams, hasEntry('dockerImage', 'hseeberger/scala-sbt:8u181_2.12.8_1.2.8'))
         assertThat(dockerExecuteRule.dockerParams, hasEntry('dockerWorkspace', '/home/scala'))
-        assertThat(dockerExecuteRule.dockerParams, hasEntry('stashContent', ['buildDescriptor', 'opensourceConfiguration', 'modified whitesource config 420a1bc5c82f57e80307205d8625304f']))
+        assertThat(dockerExecuteRule.dockerParams, hasEntry('stashContent', ['buildDescriptor', 'opensourceConfiguration', 'modified whitesource config d3aa80454919391024374ba46b4df082d15ab9a3']))
 
         assertThat(shellRule.shell, Matchers.hasItems(
             is('curl --location --output wss-unified-agent.jar https://github.com/whitesource/unified-agent-distribution/raw/master/standAlone/wss-unified-agent.jar'),
-            is('./bin/java -jar wss-unified-agent.jar -c \'./wss-unified-agent.config.420a1bc5c82f57e80307205d8625304f\' -apiKey \'testOrgToken\' -userKey \'token-0815\' -product \'testProductName\'')
+            is('./bin/java -jar wss-unified-agent.jar -c \'./wss-unified-agent.config.d3aa80454919391024374ba46b4df082d15ab9a3\' -apiKey \'testOrgToken\' -userKey \'token-0815\' -product \'testProductName\'')
         ))
 
-        assertThat(writeFileRule.files['./wss-unified-agent.config.420a1bc5c82f57e80307205d8625304f'], containsString('apiKey=testOrgToken'))
-        assertThat(writeFileRule.files['./wss-unified-agent.config.420a1bc5c82f57e80307205d8625304f'], containsString('productName=testProductName'))
-        assertThat(writeFileRule.files['./wss-unified-agent.config.420a1bc5c82f57e80307205d8625304f'], containsString('userKey=token-0815'))
-        assertThat(writeFileRule.files['./wss-unified-agent.config.420a1bc5c82f57e80307205d8625304f'], containsString('productVersion=1.2.3'))
-        assertThat(writeFileRule.files['./wss-unified-agent.config.420a1bc5c82f57e80307205d8625304f'], containsString('projectName=com.sap.sbt.test-scala'))
+        assertThat(writeFileRule.files['./wss-unified-agent.config.d3aa80454919391024374ba46b4df082d15ab9a3'], containsString('apiKey=testOrgToken'))
+        assertThat(writeFileRule.files['./wss-unified-agent.config.d3aa80454919391024374ba46b4df082d15ab9a3'], containsString('productName=testProductName'))
+        assertThat(writeFileRule.files['./wss-unified-agent.config.d3aa80454919391024374ba46b4df082d15ab9a3'], containsString('userKey=token-0815'))
+        assertThat(writeFileRule.files['./wss-unified-agent.config.d3aa80454919391024374ba46b4df082d15ab9a3'], containsString('productVersion=1.2.3'))
+        assertThat(writeFileRule.files['./wss-unified-agent.config.d3aa80454919391024374ba46b4df082d15ab9a3'], containsString('projectName=com.sap.sbt.test-scala'))
     }
 
     @Test
@@ -386,7 +387,7 @@ class WhitesourceExecuteScanTest extends BasePiperTest {
             productName                          : 'testProductName'
         ])
 
-        assertThat(shellRule.shell[0], is('java -jar wss-unified-agent.jar -c \'./wss-unified-agent.config.420a1bc5c82f57e80307205d8625304f\' -apiKey \'testOrgToken\' -userKey \'token-0815\' -product \'testProductName\' testParams'))
+        assertThat(shellRule.shell[0], is('java -jar wss-unified-agent.jar -c \'./wss-unified-agent.config.d3aa80454919391024374ba46b4df082d15ab9a3\' -apiKey \'testOrgToken\' -userKey \'token-0815\' -product \'testProductName\' testParams'))
     }
 
     @Test
@@ -435,7 +436,8 @@ class WhitesourceExecuteScanTest extends BasePiperTest {
             productName                          : 'SHC - Piper',
             buildDescriptorExcludeList           : ["maven2${File.separator}pom.xml".toString(), "npm2${File.separator}package.json".toString()],
             reporting                            : true,
-            juStabUtils                          : utils
+            juStabUtils                          : utils,
+            orgToken                             : 'b39d1328-52e2-42e3-98f0-932709daf3f0'
         ])
 
         assertThat(loggingRule.log, containsString('Unstash content: buildDescriptor'))
@@ -494,7 +496,8 @@ class WhitesourceExecuteScanTest extends BasePiperTest {
             productName                          : 'SHC - Piper',
             buildDescriptorExcludeList           : ["maven2${File.separator}pom.xml".toString()],
             juStabUtils                          : utils,
-            parallelLimit                        : 3
+            parallelLimit                        : 3,
+            orgToken                             : 'b39d1328-52e2-42e3-98f0-932709daf3f0'
         ])
 
         assertThat(loggingRule.log, containsString('Unstash content: buildDescriptor'))
@@ -556,7 +559,8 @@ class WhitesourceExecuteScanTest extends BasePiperTest {
             scanType                             : 'mta',
             productName                          : 'SHC - Piper',
             buildDescriptorExcludeList           : "maven2${File.separator}pom.xml",
-            juStabUtils                          : utils
+            juStabUtils                          : utils,
+            orgToken                             : 'b39d1328-52e2-42e3-98f0-932709daf3f0'
         ])
 
         assertThat(parallelMap.keySet(), hasSize(4))
