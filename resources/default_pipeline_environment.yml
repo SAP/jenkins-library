@@ -256,6 +256,8 @@ steps:
   npmExecute:
     dockerImage: 'node:8-stretch'
   whitesourceExecuteScan:
+    createProductFromPipeline: true
+    emailAddressesOfInitialProductAdmins: []
     buildDescriptorExcludeList: []
     parallelLimit: 15
     licensingVulnerabilities: true

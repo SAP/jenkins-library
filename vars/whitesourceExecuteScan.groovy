@@ -224,8 +224,15 @@ private def triggerWhitesourceScanWithUserKey(script, config, utils, descriptorU
 void analyseWhitesourceResults(Map config, WhitesourceRepository repository, WhitesourceOrgAdminRepository orgAdminRepository) {
     if (!config.productToken) {
         def metaInfo = orgAdminRepository.fetchProductMetaInfo()
-        echo "Meta Information: ${metaInfo}"
-        config.productToken = metaInfo.token
+        def key = "token"
+        if(!metaInfo && config.createProductFromPipeline) {
+            metaInfo = orgAdminRepository.createProduct()
+            key = "productToken"
+        } else if(!metaInfo) {
+            error "[WhiteSource] Could not fetch/find requested product '${config.productName}' and automatic creation has been disabled"
+        }
+        echo "Meta Info: ${metaInfo}"
+        config.productToken = metaInfo[key]
     }
 
     def pdfName = "whitesource-riskReport.pdf"
