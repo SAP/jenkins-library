@@ -193,7 +193,7 @@ void call(Map parameters = [:]) {
             .mixin([
                 style : libraryResource('piper-os.css')
             ])
-            .mixin(parameters, PARAMETER_KEYS)
+            .mixin(parameters, PARAMETER_KEYS, CONFIG_KEY_COMPATIBILITY)
             .dependingOn('scanType').mixin('buildDescriptorFile')
             .dependingOn('scanType').mixin('configFilePath')
             .dependingOn('scanType').mixin('dockerImage')
