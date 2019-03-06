@@ -12,7 +12,7 @@ import groovy.text.SimpleTemplateEngine
 
 import static com.sap.piper.Prerequisites.checkScript
 
-@Field String STEP_NAME = 'whitesourceExecuteScan'
+@Field String STEP_NAME = getClass().getName()
 @Field Set GENERAL_CONFIG_KEYS = [
     'orgAdminUserTokenCredentialsId',
     'orgToken',
