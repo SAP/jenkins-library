@@ -341,7 +341,7 @@ def getReportHtml(config, vulnerabilityList, numSevereVulns) {
                 <td>${i + 1}</td>
                 <td>${item.date}</td>
                 <td><a href=\"${item.vulnerability.url}\">${item.vulnerability.name}</a></td>
-                <td class=\"${score < 7.0 ? 'warn' : 'notok'}\">${score}</td>
+                <td class=\"${score < config.cvssSeverityLimit ? 'warn' : 'notok'}\">${score}</td>
                 <td>${item.vulnerability.cvss3_score > 0 ? 'v3' : 'v2'}</td>
                 <td>${item.project}</td>
                 <td>${item.library.filename}</td>
