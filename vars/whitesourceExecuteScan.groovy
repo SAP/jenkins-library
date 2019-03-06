@@ -12,7 +12,7 @@ import groovy.text.SimpleTemplateEngine
 
 import static com.sap.piper.Prerequisites.checkScript
 
-@Field String STEP_NAME = 'whitesourceExecuteScan'
+@Field String STEP_NAME = getClass().getName()
 @Field Set GENERAL_CONFIG_KEYS = [
     'orgAdminUserTokenCredentialsId',
     'orgToken',
@@ -288,7 +288,7 @@ int checkSecurityViolations(Map config, WhitesourceRepository repository) {
     archiveArtifacts(artifacts: "${config.vulnerabilityReportFileName}.*")
 
     if (whitesourceVulnerabilities.size() - severeVulnerabilities > 0)
-        echo "[${STEP_NAME}] WARNING: ${whitesourceVulnerabilities.size() - severeVulnerabilities} Open Source Software Security vulnerabilities with CVSS score below 7.0 detected."
+        echo "[${STEP_NAME}] WARNING: ${whitesourceVulnerabilities.size() - severeVulnerabilities} Open Source Software Security vulnerabilities with CVSS score below ${config.cvssSeverityLimit} detected."
     if (whitesourceVulnerabilities.size() == 0)
         echo "[${STEP_NAME}] No Open Source Software Security vulnerabilities detected."
 
@@ -299,7 +299,7 @@ int checkSecurityViolations(Map config, WhitesourceRepository repository) {
 void checkStatus(int statusCode, config) {
     def errorMessage = ""
     if(config.securityVulnerabilities && config.severeVulnerabilities > 0)
-        errorMessage += "${config.severeVulnerabilities} Open Source Software Security vulnerabilities with CVSS score greater or equal 7.0 detected. - "
+        errorMessage += "${config.severeVulnerabilities} Open Source Software Security vulnerabilities with CVSS score greater or equal ${config.cvssSeverityLimit} detected. - "
     if (config.licensingVulnerabilities)
         switch (statusCode) {
             case 0:
@@ -348,7 +348,7 @@ def getReportHtml(config, vulnerabilityList, numSevereVulns) {
                 <td>${i + 1}</td>
                 <td>${item.date}</td>
                 <td><a href=\"${item.vulnerability.url}\">${item.vulnerability.name}</a></td>
-                <td class=\"${score < 7.0 ? 'warn' : 'notok'}\">${score}</td>
+                <td class=\"${score < config.cvssSeverityLimit ? 'warn' : 'notok'}\">${score}</td>
                 <td>${item.vulnerability.cvss3_score > 0 ? 'v3' : 'v2'}</td>
                 <td>${item.project}</td>
                 <td>${item.library.filename}</td>
