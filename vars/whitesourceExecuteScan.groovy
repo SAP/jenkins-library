@@ -1,4 +1,5 @@
 import com.sap.piper.DescriptorUtils
+import com.sap.piper.GenerateDocumentation
 import com.sap.piper.JsonUtils
 import com.sap.piper.Utils
 import com.sap.piper.integration.WhitesourceOrgAdminRepository
@@ -14,37 +15,133 @@ import static com.sap.piper.Prerequisites.checkScript
 
 @Field String STEP_NAME = getClass().getName()
 @Field Set GENERAL_CONFIG_KEYS = [
+    /**
+     * Jenkins credentials ID referring to the organization admin's token.
+     */
     'orgAdminUserTokenCredentialsId',
+    /**
+     * WhiteSource token identifying your organization.
+     */
     'orgToken',
+    /**
+     * Name of the WhiteSource product to be created and used for results aggregation.
+     */
     'productName',
+    /**
+     * Version of the WhiteSource product to be created and used for results aggregation, usually determined automatically.
+     */
     'productVersion',
+    /**
+     * Token of the WhiteSource product to be created and used for results aggregation, usually determined automatically.
+     */
     'productToken',
+    /**
+     * List of WhiteSource projects to be included in the assessment part of the step, usually determined automatically.
+     */
     'projectNames',
+    /**
+     * Type of development stack used to implement the solution.
+     * @possibleValues `maven`, `mta`, `npm`, `pip`, `sbt`
+     */
     'scanType',
+    /**
+     * URL to the WhiteSource server API used for communication, defaults to `https://saas.whitesourcesoftware.com/api`.
+     */
     'serviceUrl',
-    'internalServiceUrl',
+    /**
+     * Jenkins credentials ID referring to the product admin's token.
+     */
     'userTokenCredentialsId',
+    /**
+     * Whether verbose output should be produced.
+     * @possibleValues `true`, `false`
+     */
     'verbose'
 ]
 @Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS + [
+    /**
+     * URL used to download the latest version of the WhiteSource Unified Agent.
+     */
     'agentDownloadUrl',
+    /**
+     * Locally used name for the Unified Agent jar file after download.
+     */
     'agentFileName',
+    /**
+     * Additional parameters passed to the Unified Agent command line.
+     */
     'agentParameters',
-    'artifactUrl',
+    /**
+     * List of build descriptors and therefore modules to exclude from the scan and assessment activities.
+     */
     'buildDescriptorExcludeList',
+    /**
+     * Explicit path to the build descriptor file.
+     */
     'buildDescriptorFile',
+    /**
+     * Explicit path to the WhiteSource Unified Agent configuration file.
+     */
     'configFilePath',
+    /**
+     * Whether to create the related WhiteSource product on the fly based on the supplied pipeline configuration.
+     */
+    'createProductFromPipeline',
+    /**
+     * The list of email addresses to assign as product admins for newly created WhiteSource products.
+     */
+    'emailAddressesOfInitialProductAdmins',
+    /**
+     * Docker image to be used for scanning.
+     */
     'dockerImage',
+    /**
+     * Docker workspace to be used for scanning.
+     */
     'dockerWorkspace',
+    /**
+     * URL used for downloading the Java Runtime Environment (JRE) required to run the WhiteSource Unified Agent.
+     */
     'jreDownloadUrl',
+    /**
+     * Whether license compliance is considered and reported as part of the assessment.
+     * @possibleValues `true`, `false`
+     */
     'licensingVulnerabilities',
+    /**
+     * Limit of parallel jobs being run at once in case of `scanType: 'mta'` based scenarios, defaults to `15`.
+     */
     'parallelLimit',
+    /**
+     * Whether assessment is being done at all, defaults to `true`.
+     * @possibleValues `true`, `false`
+     */
     'reporting',
+    /**
+     * Whether security compliance is considered and reported as part of the assessment.
+     * @possibleValues `true`, `false`
+     */
     'securityVulnerabilities',
+    /**
+     * Limit of tollerable CVSS v3 score upon assessment and in consequence fails the build, defaults to  `-1`.
+     * @possibleValues `-1` to switch failing off, any `positive integer between 0 and 10` to fail on issues with the specified limit or above
+     */
     'cvssSeverityLimit',
+    /**
+     * List of stashes to be unstashed into the workspace before performing the scan.
+     */
     'stashContent',
+    /**
+     * Timeout in seconds until a HTTP call is forcefully terminated.
+     */
     'timeout',
+    /**
+     * Name of the file the vulnerability report is written to.
+     */
     'vulnerabilityReportFileName',
+    /**
+     * Title of vulnerability report written during the assessment phase.
+     */
     'vulnerabilityReportTitle'
 ]
 
@@ -68,6 +165,18 @@ import static com.sap.piper.Prerequisites.checkScript
     whitesourceProductToken              : 'productToken'
 ]
 
+/**
+ * With this step [WhiteSource](https://www.whitesource.com) security and license compliance scans can be executed and assessed.
+ *
+ * WhiteSource is a Software as a Service offering based on a so called unified scanning agent that locally determines the dependency
+ * tree of a node.js, Java, Python, Ruby, or Scala based solution and sends it to the WhiteSource server for a policy based license compliance
+ * check and additional Free and Open Source Software Publicly Known Vulnerabilities assessment.
+ *
+ * !!! note "Docker Images"
+ *     The underlying Docker images are public and specific to the solution's programming language(s) and may therefore be exchanged
+ *     to fit and suite the relevant scenario. The default Python environment used is i.e. Python 3 based.
+ */
+@GenerateDocumentation
 void call(Map parameters = [:]) {
     handlePipelineStepErrors(stepName: STEP_NAME, stepParameters: parameters) {
         def script = checkScript(this, parameters) ?: this
