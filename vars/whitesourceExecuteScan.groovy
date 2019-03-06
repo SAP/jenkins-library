@@ -292,7 +292,7 @@ int checkSecurityViolations(Map config, WhitesourceRepository repository) {
 void checkStatus(int statusCode, config) {
     def errorMessage = ""
     if(config.securityVulnerabilities && config.severeVulnerabilities > 0)
-        errorMessage += "${config.severeVulnerabilities} Open Source Software Security vulnerabilities with CVSS score greater or equal 7.0 detected. - "
+        errorMessage += "${config.severeVulnerabilities} Open Source Software Security vulnerabilities with CVSS score greater or equal ${config.cvssSeverityLimit} detected. - "
     if (config.licensingVulnerabilities)
         switch (statusCode) {
             case 0:
