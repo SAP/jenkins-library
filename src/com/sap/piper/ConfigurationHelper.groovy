@@ -9,10 +9,11 @@ class ConfigurationHelper implements Serializable {
         new ConfigurationHelper(step, config)
     }
 
-    ConfigurationHelper loadStepDefaults() {
+    ConfigurationHelper loadStepDefaults(Map compatibleParameters = [:]) {
         this.step.prepareDefaultValues()
         this.config = ConfigurationLoader.defaultGeneralConfiguration()
-        mixin(ConfigurationLoader.defaultStepConfiguration(null, name))
+        mixin(ConfigurationLoader.defaultGeneralConfiguration(), null, compatibleParameters)
+        mixin(ConfigurationLoader.defaultStepConfiguration(null, name), null, compatibleParameters)
     }
 
     private Map config
@@ -71,11 +72,10 @@ class ConfigurationHelper implements Serializable {
                 }
                 if (configSubMap == null || (configSubMap != null && configSubMap[entry.getKey()] == null)) {
                     def stages = entry.getValue()?.tokenize('.')
-                    def configOldSubMap = configMap
-                    def value = resolveToFlat(stages, configOldSubMap)
-                    def paramName = (paramStructure ? paramStructure + '.' : '') + entry.getKey()
+                    def value = resolveToFlat(stages, configMap)
                     if (value != null) {
                         newConfig[entry.getKey()] = value
+                        def paramName = (paramStructure ? paramStructure + '.' : '') + entry.getKey()
                         this.step.echo ("[INFO] The parameter '${entry.getValue()}' is COMPATIBLE to the parameter '${paramName}'")
                     }
                 }
@@ -84,11 +84,12 @@ class ConfigurationHelper implements Serializable {
         return newConfig
     }
 
-    private String resolveToFlat(List stages, configMap) {
+    private String resolveToFlat(stages, configMap) {
+        def first = 0
         def result
-        def configSubMap = configMap[stages[0]]
+        def configSubMap = configMap[stages[first]]
         if(configSubMap instanceof Map) {
-            stages.remove(0)
+            stages.remove(first)
             result = resolveToFlat(stages, configSubMap)
         } else {
             result = configSubMap
