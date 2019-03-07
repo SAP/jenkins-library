@@ -136,6 +136,8 @@ class WhitesourceExecuteScanTest extends BasePiperTest {
         nullScript.commonPipelineEnvironment.configuration['steps'] = nullScript.commonPipelineEnvironment.configuration['steps'] ?: [:]
         nullScript.commonPipelineEnvironment.configuration['steps']['whitesourceExecuteScan'] = nullScript.commonPipelineEnvironment.configuration['steps']['whitesourceExecuteScan'] ?: [:]
         nullScript.commonPipelineEnvironment.configuration['general'] = nullScript.commonPipelineEnvironment.configuration['general'] ?: [:]
+        nullScript.commonPipelineEnvironment.configuration['general']['whitesource'] = nullScript.commonPipelineEnvironment.configuration['general']['whitesource'] ?: [:]
+        nullScript.commonPipelineEnvironment.configuration['general']['whitesource']['serviceUrl'] = "http://some.host.whitesource.com/api/"
         nullScript.commonPipelineEnvironment.setConfigProperty('userTokenCredentialsId', 'ID-123456789')
         nullScript.commonPipelineEnvironment.configuration['steps']['whitesourceExecuteScan']['userTokenCredentialsId'] = 'ID-123456789'
     }

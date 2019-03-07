@@ -197,6 +197,7 @@ void call(Map parameters = [:]) {
             .dependingOn('scanType').mixin('dockerImage')
             .dependingOn('scanType').mixin('dockerWorkspace')
             .dependingOn('scanType').mixin('stashContent')
+            .withMandatoryProperty('serviceUrl')
             .withMandatoryProperty('orgToken')
             .withMandatoryProperty('userTokenCredentialsId')
             .withMandatoryProperty('productName')
