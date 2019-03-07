@@ -70,7 +70,9 @@ class ConfigurationHelper implements Serializable {
                     configSubMap = configSubMap?.get(key)
                 }
                 if (configSubMap == null || (configSubMap != null && configSubMap[entry.getKey()] == null)) {
-                    newConfig[entry.getKey()] = configMap[entry.getValue()]
+                    def stages = entry.getValue()?.tokenize('.')
+                    def configOldSubMap = configMap
+                    newConfig[entry.getKey()] = resolveToFlat(stages, configOldSubMap)
                     def paramName = (paramStructure ? paramStructure + '.' : '') + entry.getKey()
                     if (configMap[entry.getValue()] != null) {
                         this.step.echo ("[INFO] The parameter '${entry.getValue()}' is COMPATIBLE to the parameter '${paramName}'")
@@ -79,6 +81,18 @@ class ConfigurationHelper implements Serializable {
             }
         }
         return newConfig
+    }
+
+    private String resolveToFlat(List stages, configMap) {
+        def result
+        def configSubMap = configMap[stages[0]]
+        if(configSubMap instanceof Map) {
+            stages.remove(0)
+            result = resolveToFlat(stages, configSubMap)
+        } else {
+            result = configSubMap
+        }
+        return result
     }
 
     Map dependingOn(dependentKey){
