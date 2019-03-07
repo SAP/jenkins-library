@@ -164,7 +164,7 @@ import static com.sap.piper.Prerequisites.checkScript
 ]
 
 /**
- * With this step [WhiteSource](https://www.whitesource.com) security and license compliance scans can be executed and assessed.
+ * With this step [WhiteSource](https://www.whitesourcesoftware.com) security and license compliance scans can be executed and assessed.
  *
  * WhiteSource is a Software as a Service offering based on a so called unified scanning agent that locally determines the dependency
  * tree of a node.js, Java, Python, Ruby, or Scala based solution and sends it to the WhiteSource server for a policy based license compliance
