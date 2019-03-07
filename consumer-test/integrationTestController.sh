@@ -66,7 +66,7 @@ do
     echo "[INFO] Running test case \"${testCase}\" in area \"${area}\"."
     TEST_CASE_ROOT="${WORKSPACES_ROOT}/${area}/${testCase}"
     [ -e "${TEST_CASE_ROOT}" ] && rm -rf "${TEST_CASE_ROOT}"
-    mkdir -p "${TEST_CASE_ROOT}" || fail "Cannot create test case root director for test case \"${testCase}\"." 1
+    mkdir -p "${TEST_CASE_ROOT}" || fail "Cannot create test case root directory for test case \"${testCase}\"." 1
     source ./runTest.sh "${testCase}" "${TEST_CASE_ROOT}" &> "${TEST_CASE_ROOT}/log.txt" &
     pid=$!
     processes[$i]="${area}/${testCase}:${pid}"
