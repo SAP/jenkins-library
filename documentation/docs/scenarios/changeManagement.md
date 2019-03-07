@@ -1,4 +1,4 @@
-# Develop Hybrid Applications with Jenkins and SAP Solution Manager
+# Build and Deploy Hybrid Applications with Jenkins and SAP Solution Manager
 
 Set up an agile development process with Jenkins CI, which automatically feeds changes into SAP Solution Manager.
 
@@ -38,7 +38,7 @@ The basic workflow is as follows:
 5. As soon as the development process is completed, the change document in SAP Solution Manager can be set to status `to be tested` and all components can be transported to the test system.
 
 ![Hybrid Application Development Workflow](../images/Scenario_SolMan.png "Hybrid Application Development Workflow")
-##### Hybrid Application Development Worflow
+###### Hybrid Application Development Workflow
 
 ## Example
 
@@ -92,4 +92,6 @@ For the detailed description of the relevant parameters, see:
 
 * [checkChangeInDevelopment](https://sap.github.io/jenkins-library/steps/checkChangeInDevelopment/)
 * [mtaBuild](https://sap.github.io/jenkins-library/steps/mtaBuild/)
+* [transportRequestCreate](https://sap.github.io/jenkins-library/steps/transportRequestCreate/)
 * [transportRequestUploadFile](https://sap.github.io/jenkins-library/steps/transportRequestUploadFile/)
+* [transportRequestRelease](https://sap.github.io/jenkins-library/steps/transportRequestRelease/)

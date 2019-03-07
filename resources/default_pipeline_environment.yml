@@ -5,7 +5,6 @@
 
 #Project Setup
 general:
-  productiveBranch: 'master'
   collectTelemetryData: true
   changeManagement:
     type: 'NONE' # SOLMAN, CTS, NONE
@@ -22,6 +21,8 @@ general:
   gitSshKeyCredentialsId: '' #needed to allow sshagent to run with local ssh key
   jenkinsKubernetes:
     jnlpAgent: 's4sdk/jenkins-agent-k8s:latest'
+  manualConfirmation: true
+  productiveBranch: 'master'
 
 #Steps Specific Configuration
 steps:
@@ -143,12 +144,24 @@ steps:
     mtaDeployPlugin:
       dockerImage: 's4sdk/docker-cf-cli'
       dockerWorkspace: '/home/piper'
+  containerExecuteStructureTests:
+    containerCommand: '/busybox/tail -f /dev/null'
+    containerShell: '/busybox/sh'
+    dockerImage: 'ppiper/container-structure-test'
+    dockerOptions: "-u 0 --entrypoint=''"
+    failOnError: true
+    stashContent:
+      - 'tests'
+    testReportFilePath: 'cst-report.json'
   dockerExecute:
+    dockerPullImage: true
+    sidecarPullImage: true
     stashContent: []
   dockerExecuteOnKubernetes:
+    dockerPullImage: true
     stashContent: []
     stashIncludes:
-      workspace: '**/*.*'
+      workspace: '**/*'
     stashExcludes:
       workspace: 'nohup.out'
   githubPublishRelease:
@@ -219,7 +232,8 @@ steps:
     logSuccessfulMavenTransfers: false
   mtaBuild:
     buildTarget: 'NEO'
-    mtaJarLocation: 'mta.jar'
+    mtaJarLocation: '/opt/sap/mta/lib/mta.jar'
+    dockerImage: 'ppiper/mta-archive-builder'
   neoDeploy:
     dockerImage: 's4sdk/docker-neo-cli'
     deployMode: 'mta'
@@ -238,6 +252,8 @@ steps:
     newmanRunCommand: "run '${config.newmanCollection}' --environment '${config.newmanEnvironment}' --globals '${config.newmanGlobals}' --reporters junit,html --reporter-junit-export 'target/newman/TEST-${collectionDisplayName}.xml' --reporter-html-export 'target/newman/TEST-${collectionDisplayName}.html'"
     stashContent:
       - 'tests'
+  npmExecute:
+    dockerImage: 'node:8-stretch'
   pipelineRestartSteps:
     sendMail: true
     timeoutInSeconds: 900
@@ -261,7 +277,7 @@ steps:
       opensourceConfiguration: '**/srcclr.yml, **/vulas-custom.properties, **/.nsprc, **/.retireignore, **/.retireignore.json, **/.snyk'
       pipelineConfigAndTests: '.pipeline/**'
       securityDescriptor: '**/xs-security.json'
-      tests: '**/pom.xml, **/*.json, **/*.xml, **/src/**, **/node_modules/**, **/specs/**, **/env/**, **/*.js'
+      tests: '**/pom.xml, **/*.json, **/*.xml, **/src/**, **/node_modules/**, **/specs/**, **/env/**, **/*.js, **/tests/**'
     stashExcludes:
       buildDescriptor: '**/node_modules/**/package.json'
       deployDescriptor: ''
@@ -292,6 +308,9 @@ steps:
       dockerImage: 'node:8-stretch'
       dockerName: 'npm'
       dockerWorkspace: '/home/node'
+  slackSendNotification:
+    color: "${buildStatus == 'SUCCESS'?'#008000':'#E60000'}"
+    defaultMessage: "${buildStatus}: Job ${env.JOB_NAME} <${env.BUILD_URL}|#${env.BUILD_NUMBER}>"
   snykExecute:
     buildDescriptorFile: './package.json'
     dockerImage: 'node:8-stretch'
@@ -304,6 +323,7 @@ steps:
     toJson: false
     toHtml: false
   testsPublishResults:
+    failOnError: false
     junit:
       pattern: '**/TEST-*.xml'
       updateResults: false
@@ -345,6 +365,16 @@ steps:
       developmentSystemId: null
   transportRequestUploadFile:
   transportRequestRelease:
+  uiVeri5ExecuteTests:
+    failOnError: false
+    dockerEnvVars: {}
+    installCommand: 'npm install @ui5/uiveri5 --global --quiet'
+    seleniumPort: 4444
+    stashContent:
+      - 'buildDescriptor'
+      - 'tests'
+    testOptions: ''
+    runCommand: "uiveri5 --seleniumAddress='http://${config.seleniumHost}:${config.seleniumPort}/wd/hub'"
 
   #defaults for stage wrapper
   piperStageWrapper:
