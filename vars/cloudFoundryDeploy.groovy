@@ -37,9 +37,7 @@ void call(Map parameters = [:]) {
         def utils = parameters.juStabUtils ?: new Utils()
         def jenkinsUtils = parameters.jenkinsUtilsStub ?: new JenkinsUtils()
 
-        def script = checkScript(this, parameters)
-        if (script == null)
-            script = this
+        final script = checkScript(this, parameters) ?: this
 
         Map config = ConfigurationHelper.newInstance(this)
             .loadStepDefaults()
@@ -123,11 +121,10 @@ void call(Map parameters = [:]) {
 }
 
 def findMtar(){
-    def mtarPath = ''
-    def mtarFiles = findFiles(glob: '**/target/*.mtar')
+    def mtarFiles = findFiles(glob: '**/*.mtar')
 
     if(mtarFiles.length > 1){
-        error 'Found multiple *.mtar files, please specify file via mtaPath parameter! ${mtarFiles}'
+        error "Found multiple *.mtar files, please specify file via mtaPath parameter! ${mtarFiles}"
     }
     if(mtarFiles.length == 1){
         return mtarFiles[0].path
@@ -173,8 +170,8 @@ def deployCfNative (config) {
             cf login -u \"${username}\" -p '${password}' -a ${config.cloudFoundry.apiEndpoint} -o \"${config.cloudFoundry.org}\" -s \"${config.cloudFoundry.space}\"
             cf plugins
             cf ${deployCommand} ${config.cloudFoundry.appName ?: ''} ${blueGreenDeployOptions} -f '${config.cloudFoundry.manifest}' ${config.smokeTest}
-            ${stopOldAppIfRequired(config)}
             """
+        stopOldAppIfRunning(config)
         sh "cf logout"
     }
 }
@@ -196,11 +193,20 @@ private String deleteOptionIfRequired(Map config) {
     }
 }
 
-private String stopOldAppIfRequired(Map config) {
+private void stopOldAppIfRunning(Map config) {
+    String oldAppName = "${config.cloudFoundry.appName}-old"
+    String cfStopOutputFileName = "${UUID.randomUUID()}-cfStopOutput.txt"
+
     if (config.keepOldInstance && config.deployType == 'blue-green') {
-        return "cf stop ${config.cloudFoundry.appName}-old"
-    } else {
-        return ''
+        int cfStopReturncode = sh (returnStatus: true, script: "cf stop $oldAppName  &> $cfStopOutputFileName")
+
+        if (cfStopReturncode > 0) {
+            String cfStopOutput = readFile(file: cfStopOutputFileName)
+
+            if (!cfStopOutput.contains("$oldAppName not found")) {
+                error "Could not stop application $oldAppName. Error: $cfStopOutput"
+            }
+        }
     }
 }
 

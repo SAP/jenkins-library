@@ -5,11 +5,13 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.ExpectedException
 import org.junit.rules.RuleChain
+
 import util.BasePiperTest
 import util.JenkinsCredentialsRule
 import util.JenkinsEnvironmentRule
 import util.JenkinsDockerExecuteRule
 import util.JenkinsLoggingRule
+import util.JenkinsReadFileRule
 import util.JenkinsShellCallRule
 import util.JenkinsStepRule
 import util.JenkinsWriteFileRule
@@ -27,10 +29,12 @@ import static org.hamcrest.Matchers.containsString
 
 class CloudFoundryDeployTest extends BasePiperTest {
 
+    private File tmpDir = File.createTempDir()
     private ExpectedException thrown = ExpectedException.none()
     private JenkinsLoggingRule loggingRule = new JenkinsLoggingRule(this)
     private JenkinsShellCallRule shellRule = new JenkinsShellCallRule(this)
     private JenkinsWriteFileRule writeFileRule = new JenkinsWriteFileRule(this)
+    private JenkinsReadFileRule readFileRule = new JenkinsReadFileRule(this, tmpDir.getAbsolutePath())
     private JenkinsDockerExecuteRule dockerExecuteRule = new JenkinsDockerExecuteRule(this)
     private JenkinsStepRule stepRule = new JenkinsStepRule(this)
     private JenkinsEnvironmentRule environmentRule = new JenkinsEnvironmentRule(this)
@@ -52,6 +56,7 @@ class CloudFoundryDeployTest extends BasePiperTest {
         .around(loggingRule)
         .around(shellRule)
         .around(writeFileRule)
+        .around(readFileRule)
         .around(dockerExecuteRule)
         .around(environmentRule)
         .around(new JenkinsCredentialsRule(this).withCredentials('test_cfCredentialsId', 'test_cf', '********'))
@@ -301,7 +306,7 @@ class CloudFoundryDeployTest extends BasePiperTest {
 
         assertThat(shellRule.shell, hasItem(containsString('cf login -u "test_cf" -p \'********\' -a https://api.cf.eu10.hana.ondemand.com -o "testOrg" -s "testSpace"')))
         assertThat(shellRule.shell, hasItem(containsString("cf blue-green-deploy testAppName --delete-old-apps -f 'test.yml'")))
-        assertThat(shellRule.shell, not(hasItem(containsString("cf stop testAppName-old"))))
+        assertThat(shellRule.shell, not(hasItem(containsString("cf stop testAppName-old &>"))))
         assertThat(shellRule.shell, hasItem(containsString("cf logout")))
 
     }
@@ -330,8 +335,45 @@ class CloudFoundryDeployTest extends BasePiperTest {
 
         assertThat(shellRule.shell, hasItem(containsString('cf login -u "test_cf" -p \'********\' -a https://api.cf.eu10.hana.ondemand.com -o "testOrg" -s "testSpace"')))
         assertThat(shellRule.shell, hasItem(containsString("cf blue-green-deploy testAppName -f 'test.yml'")))
-        assertThat(shellRule.shell, hasItem(containsString("cf stop testAppName-old")))
+        assertThat(shellRule.shell, hasItem(containsString("cf stop testAppName-old &>")))
         assertThat(shellRule.shell, hasItem(containsString("cf logout")))
+    }
+
+    @Test
+    void testCfNativeBlueGreenKeepOldInstanceShouldThrowErrorOnStopError(){
+
+        // the name of the file which will be written contains a dynamically generated UUID
+        // we force randomUUID() to return 1 that we can use this file in the test
+        UUID.metaClass.static.randomUUID = { -> 1}
+        new File(tmpDir, '1-cfStopOutput.txt').write('any error message')
+
+        shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, '^cf stop testAppName-old &> .*$', 1)
+
+        readYamlRule.registerYaml('test.yml', "applications: [[]]")
+
+        thrown.expect(hudson.AbortException)
+        thrown.expectMessage("Could not stop application testAppName-old. Error: any error message")
+
+        stepRule.step.cloudFoundryDeploy([
+            script: nullScript,
+            juStabUtils: utils,
+            jenkinsUtilsStub: new JenkinsUtilsMock(),
+            deployTool: 'cf_native',
+            deployType: 'blue-green',
+            keepOldInstance: true,
+            cfOrg: 'testOrg',
+            cfSpace: 'testSpace',
+            cfCredentialsId: 'test_cfCredentialsId',
+            cfAppName: 'testAppName',
+            cfManifest: 'test.yml'
+        ])
+
+        assertThat(dockerExecuteRule.dockerParams, hasEntry('dockerImage', 's4sdk/docker-cf-cli'))
+        assertThat(dockerExecuteRule.dockerParams, hasEntry('dockerWorkspace', '/home/piper'))
+
+        assertThat(shellRule.shell, hasItem(containsString('cf login -u "test_cf" -p \'********\' -a https://api.cf.eu10.hana.ondemand.com -o "testOrg" -s "testSpace"')))
+        assertThat(shellRule.shell, hasItem(containsString("cf blue-green-deploy testAppName -f 'test.yml'")))
+        assertThat(shellRule.shell, hasItem(containsString("cf stop testAppName-old &> 1-cfStopOutput.txt")))
     }
 
     @Test
@@ -353,7 +395,7 @@ class CloudFoundryDeployTest extends BasePiperTest {
             cfManifest: 'test.yml'
         ])
 
-        assertThat(shellRule.shell, not(hasItem(containsString("cf stop testAppName-old"))))
+        assertThat(shellRule.shell, not(hasItem(containsString("cf stop testAppName-old &>"))))
     }
 
     @Test
