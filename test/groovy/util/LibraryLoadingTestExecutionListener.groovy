@@ -1,5 +1,7 @@
 package util
 
+import groovy.json.JsonOutput
+
 import com.lesfurets.jenkins.unit.InterceptingGCL
 import com.lesfurets.jenkins.unit.MethodSignature
 import com.lesfurets.jenkins.unit.PipelineTestHelper
@@ -11,6 +13,8 @@ import org.springframework.test.context.support.DependencyInjectionTestExecution
 import static com.lesfurets.jenkins.unit.MethodSignature.method
 
 class LibraryLoadingTestExecutionListener extends AbstractTestExecutionListener {
+
+    static StepTracker stepTracker = new StepTracker()
 
     static PipelineTestHelper singletonInstance
 
@@ -100,6 +104,9 @@ class LibraryLoadingTestExecutionListener extends AbstractTestExecutionListener 
         super.afterTestClass(testContext)
         PipelineTestHelper helper = LibraryLoadingTestExecutionListener.getSingletonInstance()
         helper.clearAllowedMethodCallbacks(LibraryLoadingTestExecutionListener.TRACKED_ON_CLASS)
+
+        stepTracker.add(testContext.testClass.getSimpleName(), LibraryLoadingTestExecutionListener.TRACKED_ON_CLASS)
+
         LibraryLoadingTestExecutionListener.TRACKED_ON_CLASS.clear()
 
         helper.putAllAllowedMethodCallbacks(LibraryLoadingTestExecutionListener.RESTORE_ON_CLASS)
@@ -135,6 +142,9 @@ class LibraryLoadingTestExecutionListener extends AbstractTestExecutionListener 
         PipelineTestHelper helper = LibraryLoadingTestExecutionListener.getSingletonInstance()
 
         helper.clearCallStack()
+
+        stepTracker.add(testInstance.getClass().getSimpleName(), LibraryLoadingTestExecutionListener.TRACKED_ON_METHODS)
+
         helper.clearAllowedMethodCallbacks(LibraryLoadingTestExecutionListener.TRACKED_ON_METHODS)
         LibraryLoadingTestExecutionListener.TRACKED_ON_METHODS.clear()
 
