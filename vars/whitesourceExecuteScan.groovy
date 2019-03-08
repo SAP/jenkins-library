@@ -156,11 +156,7 @@ import static com.sap.piper.Prerequisites.checkScript
     projectNames                     : 'whitesource.projectNames',
     scanType                         : 'whitesource.scanType',
     serviceUrl                       : 'whitesource.serviceUrl',
-    userTokenCredentialsId           : 'whitesource.userTokenCredentialsId',
-    userTokenCredentialsId           : 'whitesourceUserTokenCredentialsId',
-    productName                      : 'whitesourceProductName',
-    projectNames                     : 'whitesourceProjectNames',
-    productToken                     : 'whitesourceProductToken'
+    userTokenCredentialsId           : 'whitesource.userTokenCredentialsId'
 ]
 
 /**
