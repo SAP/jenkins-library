@@ -71,8 +71,8 @@ class WhitesourceOrgAdminRepositoryTest extends BasePiperTest {
 
     @Test
     void testHttpWhitesourceInternalCallUserKey() {
-        nullScript.env.orgAdminUserKey = "4711"
-        def config = [ serviceUrl: "http://some.host.whitesource.com/api/", verbose: false, orgAdminUserKey: nullScript.env.orgAdminUserKey]
+        repository.orgAdminUserKey = "4711"
+        def config = [ serviceUrl: "http://some.host.whitesource.com/api/", verbose: false, orgAdminUserKey: "4711"]
         def requestBody = ["someJson" : [ "someObject" : "abcdef" ]]
 
         def requestParams

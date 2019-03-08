@@ -9,6 +9,8 @@ class WhitesourceOrgAdminRepository implements Serializable {
     final internalWhitesource
     final Map config
 
+    def orgAdminUserKey
+
     WhitesourceOrgAdminRepository(Script script, Map config) {
         this.script = script
         this.config = config
@@ -81,7 +83,7 @@ class WhitesourceOrgAdminRepository implements Serializable {
             credentialsId: config.orgAdminUserTokenCredentialsId,
             variable: 'orgAdminUserKey'
         )]) {
-            requestBody["userKey"] = script.env.orgAdminUserKey
+            requestBody["userKey"] = orgAdminUserKey
             def serializedBody = new JsonUtils().jsonToString(requestBody)
             def params = [
                 url        : config.serviceUrl,
