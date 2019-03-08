@@ -5,7 +5,7 @@ import com.sap.piper.GenerateDocumentation
 import java.util.regex.Matcher
 
 //
-// Collects helper functions for rendering the docu
+// Collects helper functions for rendering the documentation
 //
 class TemplateHelper {
 
@@ -83,13 +83,15 @@ class TemplateHelper {
 //
 class Helper {
 
+    static projectRoot = new File(Helper.class.protectionDomain.codeSource.location.path).getParentFile().getParentFile().getParentFile()
+
     static getConfigHelper(classLoader, roots, script) {
 
         def compilerConfig = new CompilerConfiguration()
             compilerConfig.setClasspathList( roots )
 
         new GroovyClassLoader(classLoader, compilerConfig, true)
-            .parseClass(new File('src/com/sap/piper/ConfigurationHelper.groovy'))
+            .parseClass(new File(projectRoot, 'src/com/sap/piper/ConfigurationHelper.groovy'))
             .newInstance(script, [:]).loadStepDefaults()
         }
 
@@ -101,7 +103,7 @@ class Helper {
             m, c ->  c()
         }
         prepareDefaultValuesStep.metaClass.libraryResource {
-            f ->  new File("resources/${f}").text
+            f ->  new File(projectRoot,"resources/${f}").text
         }
         prepareDefaultValuesStep.metaClass.readYaml {
             m -> new Yaml().load(m.text)
@@ -331,8 +333,8 @@ class Helper {
 
         stepsDir.traverse(type: FileType.FILES, maxDepth: 0) {
             if(it.getName().endsWith('.groovy')) {
-                def scriptName = (it =~  /vars\/(.*)\.groovy/)[0][1]
-                def stepScript = gse.createScript("${scriptName}.groovy", new Binding())
+                def scriptName = (it.getName() =~  /(.*)\.groovy/)[0][1]
+                def stepScript = gse.createScript(it.getName(), new Binding())
                 for (def method in stepScript.getClass().getMethods()) {
                     if(method.getName() == 'call' && method.getAnnotation(GenerateDocumentation) != null) {
                         docuRelevantSteps << scriptName
@@ -346,8 +348,8 @@ class Helper {
 }
 
 roots = [
-    'vars',
-    'src',
+    new File(Helper.projectRoot, "vars").getAbsolutePath(),
+    new File(Helper.projectRoot, "src").getAbsolutePath()
     ]
 
 stepsDir = null
@@ -361,12 +363,12 @@ steps = []
 if(args.length >= 1)
     stepsDir = new File(args[0])
 
-stepsDir = stepsDir ?: new File('vars')
+stepsDir = stepsDir ?: new File(Helper.projectRoot, "vars")
 
 if(args.length >= 2)
     stepsDocuDir = new File(args[1])
 
-stepsDocuDir = stepsDocuDir ?: new File('documentation/docs/steps')
+stepsDocuDir = stepsDocuDir ?: new File(Helper.projectRoot, "documentation/docs/steps")
 
 
 if(args.length >= 3)
@@ -393,7 +395,7 @@ if( !stepsDir.exists() ) {
 // sanity checks
 //
 
-def gse = new GroovyScriptEngine( [ stepsDir.getName()  ] as String[] , getClass().getClassLoader() )
+def gse = new GroovyScriptEngine([ stepsDir.getAbsolutePath()  ] as String[], GenerateDocumentation.class.getClassLoader() )
 
 //
 // find all the steps we have to document (if no step has been provided from outside)
