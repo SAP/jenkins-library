@@ -138,7 +138,7 @@ def getOptions(config) {
             yaml      : generatePodSpec(config)
     ]
     if (namespace) {
-      options.namespace = namespace
+        options.namespace = namespace
     }
     return options
 }
@@ -188,18 +188,18 @@ void executeOnPod(Map config, utils, Closure body) {
 def generatePodSpec(Map config) {
     def containers = getContainerList(config)
     def podSpec = [
-      apiVersion: "v1",
-      kind: "Pod",
-      metadata: [
-        lables: config.uniqueId
-      ],
-      spec: [
-        containers: containers
-      ]
+        apiVersion: "v1",
+        kind: "Pod",
+        metadata: [
+            lables: config.uniqueId
+        ],
+        spec: [
+            containers: containers
+        ]
     ]
     def securityContext = config.jenkinsKubernetes.securityContext
     if (securityContext) {
-      podSpec.spec.securityContext = securityContext
+        podSpec.spec.securityContext = securityContext
     }
     return new JsonBuilder(podSpec).toPrettyString()
 }
@@ -236,10 +236,10 @@ private void unstashWorkspace(config, prefix) {
 
 private List getContainerList(config) {
     def result = [
-      [
-        name: 'jnlp',
-        image: config.jenkinsKubernetes.jnlpAgent
-      ]
+        [
+            name: 'jnlp',
+            image: config.jenkinsKubernetes.jnlpAgent
+        ]
     ]
     config.containerMap.each { imageName, containerName ->
         def containerPullImage = config.containerPullImageFlags?.get(imageName)
@@ -256,7 +256,7 @@ private List getContainerList(config) {
             containerSpec['command'] = ['/usr/bin/tail', '-f', '/dev/null']
         } else {
             containerSpec['command'] =
-              (configuredCommand in List) ? configuredCommand : [shell, '-c', configuredCommand]
+                (configuredCommand in List) ? configuredCommand : [shell, '-c', configuredCommand]
         }
 
         if (config.containerPortMappings?.get(imageName)) {
@@ -292,7 +292,7 @@ private List getContainerEnvs(config, imageName) {
     def dockerWorkspace = config.containerWorkspaces?.get(imageName) != null ? config.containerWorkspaces?.get(imageName) : config.dockerWorkspace ?: ''
 
     def envVar = { e ->
-      [ name: e.key, value: e.value ]
+        [ name: e.key, value: e.value ]
     }
 
     if (dockerEnvVars) {
