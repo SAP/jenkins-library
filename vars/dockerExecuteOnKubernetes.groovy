@@ -7,6 +7,7 @@ import com.sap.piper.Utils
 import com.sap.piper.k8s.SystemEnv
 import groovy.transform.Field
 import hudson.AbortException
+import groovy.json.JsonBuilder
 
 @Field def STEP_NAME = getClass().getName()
 @Field def PLUGIN_ID_KUBERNETES = 'kubernetes'
@@ -124,9 +125,11 @@ void call(Map parameters = [:], body) {
 }
 
 def getOptions(config) {
-    return [name      : 'dynamic-agent-' + config.uniqueId,
+    def options = [
+            name      : 'dynamic-agent-' + config.uniqueId,
             label     : config.uniqueId,
-            containers: getContainerList(config)]
+            yaml      : generatePodSpec(config)
+    ]
 }
 
 void executeOnPod(Map config, utils, Closure body) {
@@ -171,6 +174,21 @@ void executeOnPod(Map config, utils, Closure body) {
     }
 }
 
+def generatePodSpec(Map config) {
+    def containers = getContainerList(config)
+    def podSpec = [
+      apiVersion: "v1",
+      kind: "Pod",
+      metadata: [
+        lables: config.uniqueId
+      ],
+      spec: [
+        containers: containers
+      ]
+    ]
+    return new JsonBuilder(podSpec).toPrettyString()
+}
+
 private String stashWorkspace(config, prefix, boolean chown = false) {
     def stashName = "${prefix}-${config.uniqueId}"
     try {
@@ -200,25 +218,37 @@ private void unstashWorkspace(config, prefix) {
 }
 
 private List getContainerList(config) {
-    result = []
-    result.push(containerTemplate(
+    def result = [
+      [
         name: 'jnlp',
         image: config.jenkinsKubernetes.jnlpAgent
-    ))
+      ]
+    ]
     config.containerMap.each { imageName, containerName ->
         def containerPullImage = config.containerPullImageFlags?.get(imageName)
-        def templateParameters = [
+        def containerSpec = [
             name: containerName.toLowerCase(),
             image: imageName,
-            alwaysPullImage: containerPullImage != null ? containerPullImage : config.dockerPullImage,
-            envVars: getContainerEnvs(config, imageName)
+            imagePullPolicy: containerPullImage ? "Always" : "IfNotPresent",
+            env: getContainerEnvs(config, imageName)
         ]
 
-        if (!config.containerCommands?.get(imageName)?.isEmpty()) {
-            templateParameters.command = config.containerCommands?.get(imageName)?: '/usr/bin/tail -f /dev/null'
+        def configuredCommand = config.containerCommands?.get(imageName)
+        def shell = config.containerShell?.get(imageName) ?: '/bin/sh'
+        if (configuredCommand == null) {
+            containerSpec['command'] = ['/usr/bin/tail', '-f', '/dev/null']
+        } else {
+            containerSpec['command'] =
+              (configuredCommand in List) ? configuredCommand : [shell, '-c', configuredCommand]
         }
 
         if (config.containerPortMappings?.get(imageName)) {
+            def portMapping = { m -> [
+                name: m.name,
+                port: m.containerPort,
+                hostPort: m.hostPort
+            ]}
+
             def ports = []
             def portCounter = 0
             config.containerPortMappings.get(imageName).each {mapping ->
@@ -226,9 +256,9 @@ private List getContainerList(config) {
                 ports.add(portMapping(mapping))
                 portCounter ++
             }
-            templateParameters.ports = ports
+            containerSpec.ports = ports
         }
-        result.push(containerTemplate(templateParameters))
+        result.push(containerSpec)
     }
     return result
 }
@@ -244,6 +274,10 @@ private List getContainerEnvs(config, imageName) {
     def dockerEnvVars = config.containerEnvVars?.get(imageName) ?: config.dockerEnvVars ?: [:]
     def dockerWorkspace = config.containerWorkspaces?.get(imageName) != null ? config.containerWorkspaces?.get(imageName) : config.dockerWorkspace ?: ''
 
+    def envVar = { e ->
+      [ name: e.key, value: e.value ]
+    }
+
     if (dockerEnvVars) {
         for (String k : dockerEnvVars.keySet()) {
             containerEnv << envVar(key: k, value: dockerEnvVars[k].toString())
@@ -258,11 +292,6 @@ private List getContainerEnvs(config, imageName) {
     SystemEnv systemEnv = new SystemEnv()
     for (String env : systemEnv.getEnv().keySet()) {
         containerEnv << envVar(key: env, value: systemEnv.get(env))
-    }
-
-    // ContainerEnv array can't be empty. Using a stub to avoid failure.
-    if (!containerEnv) {
-        containerEnv << envVar(key: "EMPTY_VAR", value: " ")
     }
 
     return containerEnv
