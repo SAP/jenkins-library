@@ -85,6 +85,8 @@ import groovy.json.JsonBuilder
     'stashIncludes',
     /**
      * The Kubernetes namespace the pods should be scheduled in.
+     * We use it as defined by Kubernetes:
+     *     https://kubernetes.io/docs/tasks/configure-pod-container/security-context/
      */
     'namespace'
 ])
@@ -156,7 +158,6 @@ void executeOnPod(Map config, utils, Closure body) {
         if (config.containerName && config.stashContent.isEmpty()){
             config.stashContent.add(stashWorkspace(config, 'workspace'))
         }
-        println "options: " + getOptions(config)
         podTemplate(getOptions(config)) {
             node(config.uniqueId) {
                 if (config.containerName) {
@@ -196,16 +197,22 @@ def generatePodSpec(Map config) {
         containers: containers
       ]
     ]
+    def securityContext = config.jenkinsKubernetes.securityContext
+    if (securityContext) {
+      podSpec.spec.securityContext = securityContext
+    }
     return new JsonBuilder(podSpec).toPrettyString()
 }
 
 private String stashWorkspace(config, prefix, boolean chown = false) {
     def stashName = "${prefix}-${config.uniqueId}"
     try {
-        // Every dockerImage used in the dockerExecuteOnKubernetes should have user id 1000
         if (chown)  {
+            def securityContext = config.jenkinsKubernetes.securityContext
+            def runAsUser = securityContext?.runAsUser
+            def fsGroup = securityContext?.fsGroup
             sh """#!${config.containerShell?:'/bin/sh'}
-chown -R 1000:1000 ."""
+chown -R ${runAsUser}:${fsGroup} ."""
         }
         stash(
             name: stashName,
