@@ -82,7 +82,11 @@ import groovy.json.JsonBuilder
     /**
      *
      */
-    'stashIncludes'
+    'stashIncludes',
+    /**
+     * The Kubernetes namespace the pods should be scheduled in.
+     */
+    'namespace'
 ])
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS.minus([
     'stashIncludes',
@@ -125,11 +129,16 @@ void call(Map parameters = [:], body) {
 }
 
 def getOptions(config) {
+    def namespace = config.jenkinsKubernetes.namespace
     def options = [
             name      : 'dynamic-agent-' + config.uniqueId,
             label     : config.uniqueId,
             yaml      : generatePodSpec(config)
     ]
+    if (namespace) {
+      options.namespace = namespace
+    }
+    return options
 }
 
 void executeOnPod(Map config, utils, Closure body) {
@@ -147,6 +156,7 @@ void executeOnPod(Map config, utils, Closure body) {
         if (config.containerName && config.stashContent.isEmpty()){
             config.stashContent.add(stashWorkspace(config, 'workspace'))
         }
+        println "options: " + getOptions(config)
         podTemplate(getOptions(config)) {
             node(config.uniqueId) {
                 if (config.containerName) {
