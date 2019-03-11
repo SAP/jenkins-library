@@ -359,10 +359,10 @@ void analyseWhitesourceResults(Map config, WhitesourceRepository repository, Whi
     if (!config.productToken) {
         def metaInfo = orgAdminRepository.fetchProductMetaInfo()
         def key = "token"
-        if(!metaInfo && config.createProductFromPipeline) {
+        if(null != metaInfo && !metaInfo[key] && config.createProductFromPipeline) {
             metaInfo = orgAdminRepository.createProduct()
             key = "productToken"
-        } else if(!metaInfo) {
+        } else if(null == metaInfo || !metaInfo[key]) {
             error "[WhiteSource] Could not fetch/find requested product '${config.productName}' and automatic creation has been disabled"
         }
         echo "Meta Info: ${metaInfo}"
