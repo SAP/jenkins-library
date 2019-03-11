@@ -5,9 +5,10 @@ import com.sap.piper.GenerateDocumentation
 import com.sap.piper.JenkinsUtils
 import com.sap.piper.Utils
 import com.sap.piper.k8s.SystemEnv
+
+import groovy.json.JsonBuilder
 import groovy.transform.Field
 import hudson.AbortException
-import groovy.json.JsonBuilder
 
 @Field def STEP_NAME = getClass().getName()
 @Field def PLUGIN_ID_KUBERNETES = 'kubernetes'
@@ -82,13 +83,7 @@ import groovy.json.JsonBuilder
     /**
      *
      */
-    'stashIncludes',
-    /**
-     * The Kubernetes namespace the pods should be scheduled in.
-     * We use it as defined by Kubernetes:
-     *     https://kubernetes.io/docs/tasks/configure-pod-container/security-context/
-     */
-    'namespace'
+    'stashIncludes'
 ])
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS.minus([
     'stashIncludes',
@@ -133,9 +128,9 @@ void call(Map parameters = [:], body) {
 def getOptions(config) {
     def namespace = config.jenkinsKubernetes.namespace
     def options = [
-            name      : 'dynamic-agent-' + config.uniqueId,
-            label     : config.uniqueId,
-            yaml      : generatePodSpec(config)
+        name      : 'dynamic-agent-' + config.uniqueId,
+        label     : config.uniqueId,
+        yaml      : generatePodSpec(config)
     ]
     if (namespace) {
         options.namespace = namespace
@@ -235,12 +230,10 @@ private void unstashWorkspace(config, prefix) {
 }
 
 private List getContainerList(config) {
-    def result = [
-        [
-            name: 'jnlp',
-            image: config.jenkinsKubernetes.jnlpAgent
-        ]
-    ]
+    def result = [[
+        name: 'jnlp',
+        image: config.jenkinsKubernetes.jnlpAgent
+    ]]
     config.containerMap.each { imageName, containerName ->
         def containerPullImage = config.containerPullImageFlags?.get(imageName)
         def containerSpec = [
@@ -251,20 +244,31 @@ private List getContainerList(config) {
         ]
 
         def configuredCommand = config.containerCommands?.get(imageName)
-        def shell = config.containerShell?.get(imageName) ?: '/bin/sh'
+        def shell = config.containerShell ?: '/bin/sh'
         if (configuredCommand == null) {
-            containerSpec['command'] = ['/usr/bin/tail', '-f', '/dev/null']
-        } else {
+            containerSpec['command'] = [
+                '/usr/bin/tail',
+                '-f',
+                '/dev/null'
+            ]
+        } else if(configuredCommand != "") {
+            // apparently "" is used as a flag for not settings container commands !?
             containerSpec['command'] =
-                (configuredCommand in List) ? configuredCommand : [shell, '-c', configuredCommand]
+                    (configuredCommand in List) ? configuredCommand : [
+                        shell,
+                        '-c',
+                        configuredCommand
+                    ]
         }
 
         if (config.containerPortMappings?.get(imageName)) {
-            def portMapping = { m -> [
-                name: m.name,
-                port: m.containerPort,
-                hostPort: m.hostPort
-            ]}
+            def portMapping = { m ->
+                [
+                    name: m.name,
+                    port: m.containerPort,
+                    hostPort: m.hostPort
+                ]
+            }
 
             def ports = []
             def portCounter = 0
