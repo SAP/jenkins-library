@@ -9,10 +9,6 @@ class WhitesourceOrgAdminRepository implements Serializable {
     final internalWhitesource
     final Map config
 
-    WhitesourceOrgAdminRepository() {
-        super()
-    }
-
     WhitesourceOrgAdminRepository(Script script, Map config) {
         this.script = script
         this.config = config
