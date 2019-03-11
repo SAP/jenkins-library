@@ -246,6 +246,20 @@ private def triggerWhitesourceScanWithUserKey(script, config, utils, descriptorU
         config.userKey = userKey
         def statusCode = 1
         echo "Triggering Whitesource scan on product '${config.productName}' with token '${config.productToken}' using credentials with ID '${config.userTokenCredentialsId}'"
+
+        if (!config.productToken) {
+            def metaInfo = orgAdminRepository.fetchProductMetaInfo()
+            def key = "token"
+            if((null == metaInfo || !metaInfo[key]) && config.createProductFromPipeline) {
+                metaInfo = orgAdminRepository.createProduct()
+                key = "productToken"
+            } else if(null == metaInfo || !metaInfo[key]) {
+                error "[WhiteSource] Could not fetch/find requested product '${config.productName}' and automatic creation has been disabled"
+            }
+            echo "Meta Info: ${metaInfo}"
+            config.productToken = metaInfo[key]
+        }
+
         switch (config.scanType) {
             case 'mta':
                 def scanJobs = [:]
@@ -348,27 +362,14 @@ private def triggerWhitesourceScanWithUserKey(script, config, utils, descriptorU
         }
 
         if (config.reporting) {
-            analyseWhitesourceResults(config, repository, orgAdminRepository)
+            analyseWhitesourceResults(config, repository)
         }
 
         return statusCode
     }
 }
 
-void analyseWhitesourceResults(Map config, WhitesourceRepository repository, WhitesourceOrgAdminRepository orgAdminRepository) {
-    if (!config.productToken) {
-        def metaInfo = orgAdminRepository.fetchProductMetaInfo()
-        def key = "token"
-        if((null == metaInfo || !metaInfo[key]) && config.createProductFromPipeline) {
-            metaInfo = orgAdminRepository.createProduct()
-            key = "productToken"
-        } else if(null == metaInfo || !metaInfo[key]) {
-            error "[WhiteSource] Could not fetch/find requested product '${config.productName}' and automatic creation has been disabled"
-        }
-        echo "Meta Info: ${metaInfo}"
-        config.productToken = metaInfo[key]
-    }
-
+void analyseWhitesourceResults(Map config, WhitesourceRepository repository) {
     def pdfName = "whitesource-riskReport.pdf"
     repository.fetchReportForProduct(pdfName)
     archiveArtifacts artifacts: pdfName
