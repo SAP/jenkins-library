@@ -197,6 +197,8 @@ steps:
       languageRunner: 'js'
       runCommand: 'gauge run'
       testOptions: 'specs'
+  handlePipelineStepErrors:
+    echoDetails: true
   healthExecuteCheck:
     healthEndpoint: ''
   influxWriteData:
