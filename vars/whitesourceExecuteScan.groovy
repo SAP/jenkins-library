@@ -359,7 +359,7 @@ void analyseWhitesourceResults(Map config, WhitesourceRepository repository, Whi
     if (!config.productToken) {
         def metaInfo = orgAdminRepository.fetchProductMetaInfo()
         def key = "token"
-        if(null != metaInfo && !metaInfo[key] && config.createProductFromPipeline) {
+        if((null == metaInfo || !metaInfo[key]) && config.createProductFromPipeline) {
             metaInfo = orgAdminRepository.createProduct()
             key = "productToken"
         } else if(null == metaInfo || !metaInfo[key]) {

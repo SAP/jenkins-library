@@ -56,7 +56,7 @@ class WhitesourceOrgAdminRepository implements Serializable {
         def groups = []
         def users = []
         config.emailAddressesOfInitialProductAdmins.each {
-            email -> users.add(["email": config.emailOfInitialProductAdmin])
+            email -> users.add(["email": email])
         }
 
         requestBody = [
