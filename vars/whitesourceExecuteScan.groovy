@@ -217,11 +217,24 @@ void call(Map parameters = [:]) {
         def whitesourceRepository = parameters.whitesourceRepositoryStub ?: new WhitesourceRepository(this, config)
         def whitesourceOrgAdminRepository = parameters.whitesourceOrgAdminRepositoryStub ?: new WhitesourceOrgAdminRepository(this, config)
 
-        statusCode = triggerWhitesourceScanWithUserKey(script, config, utils, descriptorUtils, parameters, whitesourceRepository, whitesourceOrgAdminRepository)
-
+        if(config.orgAdminUserTokenCredentialsId) {
+            statusCode = triggerWhitesourceScanWithOrgAdminUserKey(script, config, utils, descriptorUtils, parameters, whitesourceRepository, whitesourceOrgAdminRepository)
+        } else {
+            statusCode = triggerWhitesourceScanWithUserKey(script, config, utils, descriptorUtils, parameters, whitesourceRepository, whitesourceOrgAdminRepository)
+        }
         checkStatus(statusCode, config)
 
         script.commonPipelineEnvironment.setInfluxStepData('whitesource', true)
+    }
+}
+
+private def triggerWhitesourceScanWithOrgAdminUserKey(script, config, utils, descriptorUtils, parameters, repository, orgAdminRepository) {
+    withCredentials ([script.string(
+        credentialsId: config.orgAdminUserTokenCredentialsId,
+        variable: 'orgAdminUserKey'
+    )]) {
+        config.orgAdminUserKey = orgAdminUserKey
+        triggerWhitesourceScanWithUserKey(script, config, utils, descriptorUtils, parameters, repository, orgAdminRepository)
     }
 }
 

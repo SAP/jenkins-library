@@ -1,5 +1,7 @@
 package com.sap.piper.integration
 
+import com.lesfurets.jenkins.unit.PipelineTestHelper
+import org.codehaus.groovy.runtime.InvokerHelper
 import org.junit.After
 import org.junit.Before
 import org.junit.Rule
@@ -71,8 +73,8 @@ class WhitesourceOrgAdminRepositoryTest extends BasePiperTest {
 
     @Test
     void testHttpWhitesourceInternalCallUserKey() {
-        repository.orgAdminUserKey = "4711"
         def config = [ serviceUrl: "http://some.host.whitesource.com/api/", verbose: false, orgAdminUserKey: "4711"]
+        repository.config.putAll(config)
         def requestBody = ["someJson" : [ "someObject" : "abcdef" ]]
 
         def requestParams
