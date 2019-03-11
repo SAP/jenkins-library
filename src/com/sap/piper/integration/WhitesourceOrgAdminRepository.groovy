@@ -9,7 +9,9 @@ class WhitesourceOrgAdminRepository implements Serializable {
     final internalWhitesource
     final Map config
 
-    def orgAdminUserKey
+    WhitesourceOrgAdminRepository() {
+        super()
+    }
 
     WhitesourceOrgAdminRepository(Script script, Map config) {
         this.script = script
@@ -79,34 +81,29 @@ class WhitesourceOrgAdminRepository implements Serializable {
 
     @NonCPS
     protected def httpWhitesource(requestBody) {
-        script.withCredentials ([script.string(
-            credentialsId: config.orgAdminUserTokenCredentialsId,
-            variable: 'orgAdminUserKey'
-        )]) {
-            requestBody["userKey"] = orgAdminUserKey
-            def serializedBody = new JsonUtils().jsonToString(requestBody)
-            def params = [
-                url        : config.serviceUrl,
-                httpMode   : 'POST',
-                acceptType : 'APPLICATION_JSON',
-                contentType: 'APPLICATION_JSON',
-                requestBody: serializedBody,
-                quiet      : !config.verbose,
-                timeout    : config.timeout
-            ]
+        requestBody["userKey"] = config.orgAdminUserKey
+        def serializedBody = new JsonUtils().jsonToString(requestBody)
+        def params = [
+            url        : config.serviceUrl,
+            httpMode   : 'POST',
+            acceptType : 'APPLICATION_JSON',
+            contentType: 'APPLICATION_JSON',
+            requestBody: serializedBody,
+            quiet      : !config.verbose,
+            timeout    : config.timeout
+        ]
 
-            if (script.env.HTTP_PROXY)
-                params["httpProxy"] = script.env.HTTP_PROXY
+        if (script.env.HTTP_PROXY)
+            params["httpProxy"] = script.env.HTTP_PROXY
 
-            if (config.verbose)
-                script.echo "Sending http request with parameters ${params}"
+        if (config.verbose)
+            script.echo "Sending http request with parameters ${params}"
 
-            def response = script.httpRequest(params)
+        def response = script.httpRequest(params)
 
-            if (config.verbose)
-                script.echo "Received response ${response}"
+        if (config.verbose)
+            script.echo "Received response ${response}"
 
-            return response
-        }
+        return response
     }
 }
