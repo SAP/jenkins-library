@@ -9,25 +9,23 @@ class NeoCommandHelper {
     private Script step
     private DeployMode deployMode
     private Map deploymentConfiguration
-    private String pathToNeoExecutable
     private String user
     private String password
     private String source
 
     //Warning: Commands generated with this class can contain passwords and should only be used within the step withCredentials
-    NeoCommandHelper(Script step, DeployMode deployMode, Map deploymentConfiguration, String pathToNeoExecutable,
+    NeoCommandHelper(Script step, DeployMode deployMode, Map deploymentConfiguration,
                     String user, String password, String source) {
         this.step = step
         this.deployMode = deployMode
         this.deploymentConfiguration = deploymentConfiguration
-        this.pathToNeoExecutable = pathToNeoExecutable
         this.user = user
         this.password = password
         this.source = source
     }
 
     private String prolog() {
-        return "\"${pathToNeoExecutable}\""
+        return 'neo.sh'
     }
 
     String statusCommand() {
