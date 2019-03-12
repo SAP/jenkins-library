@@ -142,12 +142,22 @@ import static com.sap.piper.Prerequisites.checkScript
     /**
      * Title of vulnerability report written during the assessment phase.
      */
-    'vulnerabilityReportTitle'
+    'vulnerabilityReportTitle',
+    'whitesourceProductName',
+    'whitesourceProductToken',
+    'whitesourceProjectNames',
+    'whitesourceUserTokenCredentialsId'
 ]
 
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
 
 @Field Map CONFIG_KEY_COMPATIBILITY = [
+    whitesource                      : [
+        productName                        : 'whitesourceProductName',
+        productToken                       : 'whitesourceProductToken',
+        projectNames                       : 'whitesourceProjectNames',
+        userTokenCredentialsId             : 'whitesourceUserTokenCredentialsId'
+    ],
     orgAdminUserTokenCredentialsId   : 'whitesource.orgAdminUserTokenCredentialsId',
     orgToken                         : 'whitesource.orgToken',
     productName                      : 'whitesource.productName',
@@ -156,11 +166,7 @@ import static com.sap.piper.Prerequisites.checkScript
     projectNames                     : 'whitesource.projectNames',
     scanType                         : 'whitesource.scanType',
     serviceUrl                       : 'whitesource.serviceUrl',
-    userTokenCredentialsId           : 'whitesource.userTokenCredentialsId',
-    productName                      : 'whitesourceProductName',
-    productToken                     : 'whitesourceProductToken',
-    projectNames                     : 'whitesourceProjectNames',
-    userTokenCredentialsId           : 'whitesourceUserTokenCredentialsId'
+    userTokenCredentialsId           : 'whitesource.userTokenCredentialsId'
 ]
 
 /**

@@ -63,8 +63,8 @@ class ConfigurationHelper implements Serializable {
         Map newConfig = [:]
         compatibleParameters.each {entry ->
             if (entry.getValue() instanceof Map) {
-                paramStructure = (paramStructure ? paramStructure + '.' : '') + entry.getKey()
-                newConfig[entry.getKey()] = handleCompatibility(entry.getValue(), paramStructure, configMap)
+                def internalParamStructure = (paramStructure ? paramStructure + '.' : '') + entry.getKey()
+                newConfig[entry.getKey()] = handleCompatibility(entry.getValue(), internalParamStructure, configMap)
             } else {
                 def configSubMap = configMap
                 for(String key in paramStructure.tokenize('.')){
@@ -73,6 +73,8 @@ class ConfigurationHelper implements Serializable {
                 if (configSubMap == null || (configSubMap != null && configSubMap[entry.getKey()] == null)) {
                     def stages = entry.getValue()?.tokenize('.')
                     def value = resolveToFlat(stages, configMap)
+                    if(null == value)
+                        value = resolveToFlat(stages, newConfig)
                     if (value != null) {
                         newConfig[entry.getKey()] = value
                         def paramName = (paramStructure ? paramStructure + '.' : '') + entry.getKey()
@@ -87,9 +89,9 @@ class ConfigurationHelper implements Serializable {
     private String resolveToFlat(stages, configMap) {
         def first = 0
         def result
-        def configSubMap = configMap[stages[first]]
+        def configSubMap = configMap[stages?.get(first)]
         if(configSubMap instanceof Map) {
-            stages.remove(first)
+            stages?.remove(first)
             result = resolveToFlat(stages, configSubMap)
         } else {
             result = configSubMap
