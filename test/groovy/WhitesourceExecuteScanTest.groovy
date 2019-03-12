@@ -173,7 +173,7 @@ class WhitesourceExecuteScanTest extends BasePiperTest {
             scanType                             : 'maven',
             juStabUtils                          : utils,
             orgToken                             : 'testOrgToken',
-            productName                          : 'testProduct'
+            whitesourceProductName               : 'testProduct'
         ])
 
         assertThat(loggingRule.log, containsString('Unstash content: buildDescriptor'))
