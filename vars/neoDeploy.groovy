@@ -43,6 +43,7 @@ void call(parameters = [:]) {
             .mixin(parameters, PARAMETER_KEYS)
             .withMandatoryProperty('neo')
             .withMandatoryProperty('source')
+            .withMandatoryProperty('neo/credentialsId')
             .withPropertyInValues('deployMode', DeployMode.stringValues())
             .use()
 
@@ -56,39 +57,35 @@ void call(parameters = [:]) {
             stepParam3: parameters?.script == null,
         ], configuration)
 
-        if (configuration.neo.credentialsId) {
-            withCredentials([usernamePassword(
-                credentialsId: configuration.neo.credentialsId,
-                passwordVariable: 'NEO_PASSWORD',
-                usernameVariable: 'NEO_USERNAME')]) {
 
-                assertPasswordRules(NEO_PASSWORD)
+        withCredentials([usernamePassword(
+            credentialsId: configuration.neo.credentialsId,
+            passwordVariable: 'NEO_PASSWORD',
+            usernameVariable: 'NEO_USERNAME')]) {
 
-                dockerExecute(
-                    script: script,
-                    dockerImage: configuration.dockerImage,
-                    dockerEnvVars: configuration.dockerEnvVars,
-                    dockerOptions: configuration.dockerOptions
-                ) {
+            assertPasswordRules(NEO_PASSWORD)
 
-                    DeployMode deployMode = DeployMode.fromString(configuration.deployMode)
+            dockerExecute(
+                script: script,
+                dockerImage: configuration.dockerImage,
+                dockerEnvVars: configuration.dockerEnvVars,
+                dockerOptions: configuration.dockerOptions
+            ) {
+                DeployMode deployMode = DeployMode.fromString(configuration.deployMode)
 
-                    NeoCommandHelper neoCommandHelper = new NeoCommandHelper(
-                        this,
-                        deployMode,
-                        configuration.neo,
-                        NEO_USERNAME,
-                        NEO_PASSWORD,
-                        configuration.source
-                    )
+                NeoCommandHelper neoCommandHelper = new NeoCommandHelper(
+                    this,
+                    deployMode,
+                    configuration.neo,
+                    NEO_USERNAME,
+                    NEO_PASSWORD,
+                    configuration.source
+                )
 
-                    lock("$STEP_NAME :${neoCommandHelper.resourceLock()}") {
-                        deploy(script, utils, configuration, neoCommandHelper, configuration.dockerImage, deployMode)
-                    }
+                lock("$STEP_NAME :${neoCommandHelper.resourceLock()}") {
+                    deploy(script, utils, configuration, neoCommandHelper, configuration.dockerImage, deployMode)
                 }
             }
-        } else {
-            error("[neoDeploy] No credentials defined for the deployment. Please specify the value for credentialsId for neo.")
         }
     }
 }
