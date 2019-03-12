@@ -125,6 +125,9 @@ class WhitesourceExecuteScanTest extends BasePiperTest {
         helper.registerAllowedMethod( "fetchVulnerabilities", [List], {
             return new JsonUtils().parseJsonSerializable("{ \"alerts\": [] }").alerts
         })
+        helper.registerAllowedMethod( "createProduct", [], {
+            return new JsonUtils().parseJsonSerializable("{ \"productToken\": \"e30132d8e8f04a4c8be6332c75a0ff0580ab326fa7534540ad326e97a74d945b\" }")
+        })
         helper.registerAllowedMethod( "publishHTML", [Map], {})
 
         helper.registerAllowedMethod( "getNpmGAV", [String], {return [group: 'com.sap.node', artifact: 'test-node', version: '1.2.3']})

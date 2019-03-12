@@ -39,11 +39,7 @@ class WhitesourceConfigurationHelper implements Serializable {
             [name: 'resolveAllDependencies', value: false]
         ]
         switch (config.scanType) {
-            case 'maven':
-                mapping += [
 
-                ]
-                break
             case 'npm':
                 mapping += [
 
@@ -72,6 +68,21 @@ class WhitesourceConfigurationHelper implements Serializable {
 
                 ]
                 break
+            case 'golang':
+                mapping += [
+
+                ]
+                break
+            case 'dlang':
+                mapping += [
+
+                ]
+                break
+            default:
+                // maven
+                mapping += [
+
+                ]
         }
 
         rewriteConfiguration(script, utils, config, mapping, suffix, path, inputFile, targetFile, parsingClosure, serializationClosure)
