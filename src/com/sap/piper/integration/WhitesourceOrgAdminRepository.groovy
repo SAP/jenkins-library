@@ -25,8 +25,7 @@ class WhitesourceOrgAdminRepository implements Serializable {
             requestType: "getOrganizationProductVitals",
             orgToken: config.orgToken
         ]
-        def response = internalWhitesource ? internalWhitesource.httpWhitesource(requestBody) : httpWhitesource(requestBody)
-        def parsedResponse = new JsonUtils().parseJsonSerializable(response.content)
+        def parsedResponse = issueHttpRequest(requestBody)
 
         findProductMeta(parsedResponse)
     }
@@ -49,8 +48,7 @@ class WhitesourceOrgAdminRepository implements Serializable {
             orgToken: config.orgToken,
             productName: config.productName
         ]
-        def response = issueHttpRequest(requestBody)
-        def parsedResponse = new JsonUtils().parseJsonSerializable(response.content)
+        def parsedResponse = issueHttpRequest(requestBody)
         def metaInfo = parsedResponse
 
         def groups = []
@@ -72,7 +70,12 @@ class WhitesourceOrgAdminRepository implements Serializable {
     }
 
     def issueHttpRequest(requestBody) {
-        internalWhitesource ? internalWhitesource.httpWhitesource(requestBody) : httpWhitesource(requestBody)
+        def response = internalWhitesource ? internalWhitesource.httpWhitesource(requestBody) : httpWhitesource(requestBody)
+        def parsedResponse = new JsonUtils().parseJsonSerializable(response.content)
+        if(parsedResponse?.errorCode){
+            script.error "[WhiteSource] Request failed with error message '${parsedResponse.errorMessage}' (${parsedResponse.errorCode})."
+        }
+        return parsedResponse
     }
 
     @NonCPS
