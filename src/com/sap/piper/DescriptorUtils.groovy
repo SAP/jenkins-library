@@ -70,24 +70,6 @@ def getSbtGAV(file = 'sbtDescriptor.json') {
     return result
 }
 
-def getMtaGAV(file = 'mta.yaml', xmakeConfigFile = '.xmake.cfg') {
-    def result = [:]
-    def descriptor = readYaml(file: file)
-    def xmakeConfig = readProperties(file: xmakeConfigFile)
-
-    result['group'] = xmakeConfig['mtar-group']
-    result['artifact'] = descriptor.ID
-    result['version'] = descriptor.version
-    result['packaging'] = 'mtar'
-    // using default value: https://github.wdf.sap.corp/dtxmake/xmake-mta-plugin#complete-list-of-default-values
-    if(!result['group']){
-        result['group'] = 'com.sap.prd.xmake.example.mtars'
-        Notify.warning(this, "No groupID set in '.xmake.cfg', using default groupID '${result['group']}'.", 'com.sap.icd.jenkins.Utils')
-    }
-    echo "loaded ${result} from ${file} and ${xmakeConfigFile}"
-    return result
-}
-
 def getPipGAV(file = 'setup.py') {
     def result = [:]
     def descriptor = sh(returnStdout: true, script: "cat ${file}")

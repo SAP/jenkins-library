@@ -51,6 +51,23 @@ class DescriptorUtilsTest extends BasePiperTest {
     }
 
     @Test
+    void testGetSbtGAV() {
+
+        helper.registerAllowedMethod("readJSON", [Map.class], {
+            searchConfig ->
+                def packageJsonFile = new File("test/resources/DescriptorUtils/sbt/${searchConfig.file}")
+                return new JsonUtils().parseJsonSerializable(packageJsonFile.text)
+        })
+
+        def gav = descriptorUtils.getSbtGAV('sbtDescriptor.json')
+
+        assertEquals(gav.group, 'sap')
+        assertEquals(gav.artifact, 'hdi-deploy')
+        assertEquals(gav.packaging, 'test')
+        assertEquals(gav.version, '2.3.0')
+    }
+
+    @Test
     void testGetDlangGAV() {
 
         helper.registerAllowedMethod("readJSON", [Map.class], {
