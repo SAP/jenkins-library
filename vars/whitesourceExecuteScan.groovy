@@ -245,7 +245,7 @@ private def triggerWhitesourceScanWithUserKey(script, config, utils, descriptorU
     )]) {
         config.userKey = userKey
         def statusCode = 1
-        echo "Triggering Whitesource scan on product '${config.productName}' with token '${config.productToken}' using credentials with ID '${config.userTokenCredentialsId}'"
+        echo "Triggering Whitesource scan on product '${config.productName}'${config.productToken ? ' with token \'' + config.productToken + '\'' : ''} using product admin credentials with ID '${config.userTokenCredentialsId}'${config.orgAdminUserTokenCredentialsId ? ' and organization admin credentials with ID \'' + config.orgAdminUserTokenCredentialsId + '\'' : ''}"
 
         if (!config.productToken) {
             def metaInfo = orgAdminRepository.fetchProductMetaInfo()
