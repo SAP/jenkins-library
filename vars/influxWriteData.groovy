@@ -35,7 +35,10 @@ void call(Map parameters = [:]) {
             .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS)
             .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName?:env.STAGE_NAME, STEP_CONFIG_KEYS)
             .mixin([
-                artifactVersion: script.commonPipelineEnvironment.getArtifactVersion()
+                artifactVersion: script.commonPipelineEnvironment.getArtifactVersion(),
+                influxPrefix: script.commonPipelineEnvironment.getGithubOrg() && script.commonPipelineEnvironment.getGithubRepo()
+                    ? "${script.commonPipelineEnvironment.getGithubOrg()}_${script.commonPipelineEnvironment.getGithubRepo()}"
+                    : null
             ])
             .mixin(parameters, PARAMETER_KEYS)
             .addIfNull('customData', script.commonPipelineEnvironment.getInfluxCustomData())
