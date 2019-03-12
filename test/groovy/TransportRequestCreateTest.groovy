@@ -202,8 +202,8 @@ public class TransportRequestCreateTest extends BasePiperTest {
             String createTransportRequestRFC(
                 Map docker,
                 String endpoint,
-                String developmentClient,
                 String developmentInstance,
+                String developmentClient,
                 String credentialsId,
                 String description,
                 boolean verbose) {
@@ -244,8 +244,8 @@ public class TransportRequestCreateTest extends BasePiperTest {
                 pullImage: true
             ],
             endpoint: 'https://example.org/rfc',
-            developmentClient: '01',
-            developmentInstance: '001',
+            developmentClient: '001',
+            developmentInstance: '01',
             credentialsId: 'CM',
             description: '',
             verbose: true
