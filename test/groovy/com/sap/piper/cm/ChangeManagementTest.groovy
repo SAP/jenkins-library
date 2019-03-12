@@ -179,8 +179,8 @@ public void testGetCommandLineWithCMClientOpts() {
         def transportRequestId = new ChangeManagement(nullScript).createTransportRequestRFC(
             [image: 'rfc', options: []],
             'https://example.org/rfc', // endpoint
-            '01', // client
-            '001', // instance
+            '01', // instance
+            '001', // client
             'me', // credentialsId
             'Lorem ipsum', // description
             true // verbose
@@ -190,8 +190,8 @@ public void testGetCommandLineWithCMClientOpts() {
 
         assert dockerExecuteRule.dockerParams.dockerEnvVars == [
             TRANSPORT_DESCRIPTION: 'Lorem ipsum',
-            ABAP_DEVELOPMENT_INSTANCE: '001',
-            ABAP_DEVELOPMENT_CLIENT: '01',
+            ABAP_DEVELOPMENT_INSTANCE: '01',
+            ABAP_DEVELOPMENT_CLIENT: '001',
             ABAP_DEVELOPMENT_SERVER: 'https://example.org/rfc',
             ABAP_DEVELOPMENT_USER: 'user',
             ABAP_DEVELOPMENT_PASSWORD: 'password',
@@ -214,8 +214,8 @@ public void testGetCommandLineWithCMClientOpts() {
         def transportRequestId = new ChangeManagement(nullScript).createTransportRequestRFC(
             [image: 'rfc', options: []],
             'https://example.org/rfc', // endpoint
-            '01', // client
-            '001', // instance
+            '001', // client
+            '01', // instance
             'me', // credentialsId
             'Lorem ipsum', // description
             true, //verbose
@@ -284,8 +284,8 @@ public void testGetCommandLineWithCMClientOpts() {
             'https://example.org/mypath/deployArtifact.zip',
             'https://example.org/rfc',
             'me',
-            '01', //developmentInstance
-            '00', // developmentClient
+            '00', //developmentInstance
+            '001', // developmentClient
             'Lorem ipsum', // applicationDescription
             'XYZ', // abapPackage
             'UTF-9', //codePage
@@ -300,8 +300,8 @@ public void testGetCommandLineWithCMClientOpts() {
 
             assert dockerExecuteRule.dockerParams.dockerEnvVars ==
             [
-                ABAP_DEVELOPMENT_INSTANCE: '01',
-                ABAP_DEVELOPMENT_CLIENT: '00',
+                ABAP_DEVELOPMENT_INSTANCE: '00',
+                ABAP_DEVELOPMENT_CLIENT: '001',
                 ABAP_APPLICATION_NAME: '001',
                 ABAP_APPLICATION_DESC: 'Lorem ipsum',
                 ABAP_PACKAGE: 'XYZ',
@@ -333,8 +333,8 @@ public void testGetCommandLineWithCMClientOpts() {
             'https://example.org/mypath/deployArtifact.zip',
             'https://example.org/rfc',
             'me',
-            '01', //developmentInstance
-            '00', // developmentClient
+            '00', //developmentInstance
+            '001', // developmentClient
             'Lorem ipsum', // applicationDescription
             'XYZ', // abapPackage
             'UTF-9', // codePage
