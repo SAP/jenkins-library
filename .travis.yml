@@ -1,6 +1,7 @@
 branches:
   only:
   - master
+  - /^it\/.*$/
 language: groovy
 sudo: required
 services:
@@ -35,8 +36,9 @@ jobs:
         cp -r documentation/docs documentation/docs-tmp
         documentation/bin/createDocu.sh vars documentation/docs-tmp/steps
         docker run --rm -it -v ${TRAVIS_BUILD_DIR}:/docs -w /docs/documentation squidfunk/mkdocs-material:3.0.4 build --clean --verbose --strict
-    - name: Consumer Tests for s4sdk pipeline
-      script: cd consumer-test && chmod +x runTests.sh && ./runTests.sh
+    - name: Consumer Tests
+      if: repo = "SAP/jenkins-library" && ( (type != pull_request && branch =~ /^master$|^it\/.*$/) || (type == pull_request && head_repo = "SAP/jenkins-library" && head_branch =~ /^it\/.*$/) )
+      script: cd consumer-test && chmod +x integrationTestController.sh && ./integrationTestController.sh
 
     - stage: Docs
       name: Deploy
