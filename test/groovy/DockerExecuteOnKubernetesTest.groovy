@@ -264,7 +264,7 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
             hasItem('maven:3.5-jdk-8-alpine'),
             hasItem('selenium/standalone-chrome'),
         ))
-        assertThat(portList, hasItem(hasItem([name: 'selenium0', port: 4444, hostPort: 4444])))
+        assertThat(portList, hasItem(hasItem([name: 'selenium0', containPort: 4444, hostPort: 4444])))
         assertThat(containerCommands.size(), is(1))
         assertThat(envList, hasItem(hasItem(allOf(hasEntry('name', 'customEnvKey'), hasEntry ('value','customEnvValue')))))
     }
