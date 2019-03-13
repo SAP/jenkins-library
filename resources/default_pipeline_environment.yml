@@ -199,6 +199,8 @@ steps:
       testOptions: 'specs'
   handlePipelineStepErrors:
     echoDetails: true
+    libraryDocumentationUrl: 'https://sap.github.io/jenkins-library/'
+    libraryRepositoryUrl: 'https://github.com/SAP/jenkins-library/'
   healthExecuteCheck:
     healthEndpoint: ''
   influxWriteData:

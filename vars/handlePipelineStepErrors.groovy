@@ -7,8 +7,12 @@ import groovy.transform.Field
 
 @Field STEP_NAME = getClass().getName()
 
+@Field Set GENERAL_CONFIG_KEYS = []
+@Field Set STEP_CONFIG_KEYS = []
 @Field Set PARAMETER_KEYS = [
     'echoDetails',
+    'libraryDocumentationUrl',
+    'libraryRepositoryUrl',
     'stepName',
     'stepNameDoc',
     'stepParameters'
@@ -44,9 +48,11 @@ void call(Map parameters = [:], body) {
 @NonCPS
 String formatErrorMessage(Map config, error){
     Map binding = [
+        error: error,
+        libraryDocumentationUrl: config.libraryDocumentationUrl,
+        libraryRepositoryUrl: config.libraryRepositoryUrl,
         stepName: config.stepName,
-        stepParameters: config.stepParameters?.toString(),
-        error: error
+        stepParameters: config.stepParameters?.toString()
     ]
     return SimpleTemplateEngine
         .newInstance()
