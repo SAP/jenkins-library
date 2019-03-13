@@ -1,37 +1,61 @@
 package com.sap.piper
 
+import hudson.AbortException
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.RuleChain
 import util.BasePiperTest
+import util.JenkinsEnvironmentRule
+import util.JenkinsErrorRule
 import util.JenkinsLoggingRule
 import util.JenkinsSetupRule
 import util.LibraryLoadingTestExecutionListener
-import util.SharedLibraryCreator
 
 import static org.junit.Assert.assertEquals
+import static org.junit.Assert.assertThat
+import static org.hamcrest.core.Is.*
 
 class DescriptorUtilsTest extends BasePiperTest {
 
     @Rule
-    public JenkinsSetupRule setUpRule = new JenkinsSetupRule(this, SharedLibraryCreator.lazyLoadedLibrary)
+    public JenkinsErrorRule errorRule = new JenkinsErrorRule(this)
+    @Rule
+    public JenkinsEnvironmentRule environmentRule = new JenkinsEnvironmentRule(this)
+    @Rule
+    public JenkinsSetupRule setUpRule = new JenkinsSetupRule(this)
+    @Rule
     public JenkinsLoggingRule loggingRule = new JenkinsLoggingRule(this)
 
     @Rule
     public RuleChain ruleChain =
         RuleChain.outerRule(setUpRule)
+            .around(errorRule)
+            .around(environmentRule)
             .around(loggingRule)
 
     DescriptorUtils descriptorUtils
 
     @Before
     void init() throws Exception {
-        nullScript.commonPipelineEnvironment = new Object() {
-            def reset() {}
-        }
         descriptorUtils = new DescriptorUtils()
         LibraryLoadingTestExecutionListener.prepareObjectInterceptors(descriptorUtils)
+    }
+
+    @Test
+    void testGetNpmGAVSapArtifact() {
+
+        helper.registerAllowedMethod("readJSON", [Map.class], {
+            searchConfig ->
+                def packageJsonFile = new File("test/resources/DescriptorUtils/npm/${searchConfig.file}")
+                return new JsonUtils().parseJsonSerializable(packageJsonFile.text)
+        })
+
+        def gav = descriptorUtils.getNpmGAV('package2.json')
+
+        assertEquals(gav.group, '')
+        assertEquals(gav.artifact, 'some-test')
+        assertEquals(gav.version, '1.2.3')
     }
 
     @Test
@@ -48,6 +72,23 @@ class DescriptorUtilsTest extends BasePiperTest {
         assertEquals(gav.group, '@sap')
         assertEquals(gav.artifact, 'hdi-deploy')
         assertEquals(gav.version, '2.3.0')
+    }
+
+    @Test
+    void testGetNpmGAVSapArtifactError() {
+
+        helper.registerAllowedMethod("readJSON", [Map.class], {
+            searchConfig ->
+                def packageJsonFile = new File("test/resources/DescriptorUtils/npm/${searchConfig.file}")
+                return new JsonUtils().parseJsonSerializable(packageJsonFile.text)
+        })
+
+        try {
+            descriptorUtils.getNpmGAV('package3.json')
+        } catch (e) {
+            assertThat(e, isA(AbortException.class))
+            assertThat(e.getMessage(), is("Unable to parse package name '@someerror'"))
+        }
     }
 
     @Test
