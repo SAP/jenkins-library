@@ -265,7 +265,7 @@ private List getContainerList(config) {
             def portMapping = { m ->
                 [
                     name: m.name,
-                    port: m.containerPort,
+                    containerPort: m.containerPort,
                     hostPort: m.hostPort
                 ]
             }
