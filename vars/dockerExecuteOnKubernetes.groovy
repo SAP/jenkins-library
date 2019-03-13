@@ -83,7 +83,13 @@ import hudson.AbortException
     /**
      *
      */
-    'stashIncludes'
+    'stashIncludes',
+    /**
+     * Kubernetes Security Context used for the pod.
+     * Can be used to specify uid and fsGroup.
+     * See: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/
+     */
+    'securityContext'
 ])
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS.minus([
     'stashIncludes',
@@ -180,7 +186,7 @@ void executeOnPod(Map config, utils, Closure body) {
     }
 }
 
-def generatePodSpec(Map config) {
+private String generatePodSpec(Map config) {
     def containers = getContainerList(config)
     def podSpec = [
         apiVersion: "v1",
@@ -192,10 +198,8 @@ def generatePodSpec(Map config) {
             containers: containers
         ]
     ]
-    def securityContext = config.jenkinsKubernetes.securityContext
-    if (securityContext) {
-        podSpec.spec.securityContext = securityContext
-    }
+    podSpec.spec.securityContext = getSecurityContext(config)
+
     return new JsonBuilder(podSpec).toPrettyString()
 }
 
@@ -203,9 +207,9 @@ private String stashWorkspace(config, prefix, boolean chown = false) {
     def stashName = "${prefix}-${config.uniqueId}"
     try {
         if (chown)  {
-            def securityContext = config.jenkinsKubernetes.securityContext
-            def runAsUser = securityContext?.runAsUser
-            def fsGroup = securityContext?.fsGroup
+            def securityContext = getSecurityContext(config)
+            def runAsUser = securityContext?.runAsUser ?: 1000
+            def fsGroup = securityContext?.fsGroup ?: 1000
             sh """#!${config.containerShell?:'/bin/sh'}
 chown -R ${runAsUser}:${fsGroup} ."""
         }
@@ -219,6 +223,10 @@ chown -R ${runAsUser}:${fsGroup} ."""
         echo "${e.getMessage()}"
     }
     return null
+}
+
+private Map getSecurityContext(Map config) {
+    return config.securityContext ?: config.jenkinsKubernetes.securityContext ?: [:]
 }
 
 private void unstashWorkspace(config, prefix) {
