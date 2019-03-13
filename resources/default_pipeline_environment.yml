@@ -28,8 +28,9 @@ general:
   jenkinsKubernetes:
     jnlpAgent: 's4sdk/jenkins-agent-k8s:latest'
     securityContext:
-      runAsUser: 1000
-      fsGroup: 1000
+    # Setting security context globally is currently not working with jaas
+    #  runAsUser: 1000
+    #  fsGroup: 1000
   manualConfirmation: true
   productiveBranch: 'master'
 
