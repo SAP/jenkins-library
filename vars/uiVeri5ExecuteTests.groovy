@@ -74,7 +74,12 @@ import static com.sap.piper.Prerequisites.checkScript
     /**
      * With `testRepository` the tests can be loaded from another reposirory.
      */
-    'testRepository'
+    'testRepository',
+    /**
+     * The `testServerUrl` is passed as environment variable `TARGET_SERVER_URL` to the test execution.
+     * The tests should read the host information from this environment variable in order to be infrastructure agnostic.
+     */
+    'testServerUrl'
 ])
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
 
@@ -123,6 +128,7 @@ void call(Map parameters = [:]) {
         config.stashContent = config.testRepository ? [GitUtils.handleTestRepository(this, config)] : utils.unstashAll(config.stashContent)
         config.installCommand = SimpleTemplateEngine.newInstance().createTemplate(config.installCommand).make([config: config]).toString()
         config.runCommand = SimpleTemplateEngine.newInstance().createTemplate(config.runCommand).make([config: config]).toString()
+        config.dockerEnvVars.TARGET_SERVER_URL = config.dockerEnvVars.TARGET_SERVER_URL ?: config.testServerUrl
 
         seleniumExecuteTests(
             script: script,
