@@ -100,6 +100,22 @@ class DescriptorUtilsTest extends BasePiperTest {
     }
 
     @Test
+    void testGetPipGAVFromVersionTxt() {
+
+        helper.registerAllowedMethod("sh", [Map.class], {
+            map ->
+                def descriptorFile = new File("test/resources/DescriptorUtils/pip/${map.script.substring(4, map.script.size())}")
+                return descriptorFile.text
+        })
+
+        def gav = descriptorUtils.getPipGAV('setup.py')
+
+        assertEquals('', gav.group)
+        assertEquals('some-test', gav.artifact)
+        assertEquals('1.0.0-SNAPSHOT', gav.version)
+    }
+
+    @Test
     void testGetMavenGAVComplete() {
 
         helper.registerAllowedMethod("readMavenPom", [Map.class], {
