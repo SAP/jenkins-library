@@ -19,23 +19,23 @@ none
 * `stepParameters` - The parameters from the step to be executed. The list of parameters is then shown in the console output.
 * `stepName` - The name of the step executed to be shown in the console output.
 * `echoDetails` - If set to true the following will be output to the console:
-    1. Step beginning: `--- BEGIN LIBRARY STEP: ${stepName}.groovy ---`
-    2. Step end: `--- END LIBRARY STEP: ${stepName}.groovy ---`
+    1. Step beginning: `--- Begin library step: ${stepName}.groovy ---`
+    2. Step end: `--- End library step: ${stepName}.groovy ---`
     3. Step errors:
 
     ```log
     ----------------------------------------------------------
-    --- ERROR OCCURED IN LIBRARY STEP: ${stepName}
+    --- An error occurred in the library step: ${stepName}
     ----------------------------------------------------------
-    FOLLOWING PARAMETERS WERE AVAILABLE TO THIS STEP:
+    The following parameters were available to the step:
     ***
     ${stepParameters}
     ***
-    ERROR WAS:
+    The error was:
     ***
     ${err}
     ***
-    FURTHER INFORMATION:
+    Further information:
     * Documentation of step ${stepName}: .../${stepName}/
     * Pipeline documentation: https://...
     * GitHub repository for pipeline steps: https://...

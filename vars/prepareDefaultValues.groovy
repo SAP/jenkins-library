@@ -6,7 +6,7 @@ import groovy.transform.Field
 @Field STEP_NAME = getClass().getName()
 
 void call(Map parameters = [:]) {
-    handlePipelineStepErrors (stepName: 'prepareDefaultValues', stepParameters: parameters) {
+    handlePipelineStepErrors (stepName: 'prepareDefaultValues', stepParameters: parameters, echoDetails: false) {
         if(!DefaultValueCache.getInstance() || parameters.customDefaults) {
             def defaultValues = [:]
             def configFileList = ['default_pipeline_environment.yml']
