@@ -50,6 +50,19 @@ class WhitesourceRepositoryTest extends BasePiperTest {
     }
 
     @Test
+    void testMissingConfig() {
+        def errorCaught = false
+        try {
+            new WhitesourceRepository(null, [:])
+        } catch (e) {
+            errorCaught = true
+            assertThat(e, isA(AbortException.class))
+            assertThat(e.getMessage(), is("Parameter 'serviceUrl' must be provided as part of the configuration."))
+        }
+        assertThat(errorCaught, is(true))
+    }
+
+    @Test
     void testResolveProjectsMeta() {
         def whitesourceMetaResponse = [
             projectVitals: [
@@ -233,6 +246,7 @@ class WhitesourceRepositoryTest extends BasePiperTest {
     @Test
     void testHttpWhitesourceExternalCallNoUserKey() {
         def config = [ whitesourceServiceUrl: "https://saas.whitesource.com/api", verbose: true]
+        repository.config.putAll(config)
         def requestBody = "{ \"someJson\" : { \"someObject\" : \"abcdef\" } }"
 
         def requestParams
@@ -326,7 +340,7 @@ class WhitesourceRepositoryTest extends BasePiperTest {
 
     @Test
     void testFetchReportForProduct() {
-        repository.config.putAll([ whitesourceServiceUrl: "http://mo-323123123.sap.corp/some", verbose: false, productToken: "4711"])
+        repository.config.putAll([ whitesourceServiceUrl: "http://mo-323123123.sap.corp/some", verbose: true, productToken: "4711"])
         def command
         helper.registerAllowedMethod('sh', [String], { cmd ->
             command = cmd
@@ -340,6 +354,8 @@ curl -o test.file -X POST http://some.host.whitesource.com/api/ -H 'Content-Type
     "productToken": "4711"
 }'''
         ))
+
+        assertThat(jlr.log, containsString("Sending curl request with parameters [requestType:getProductRiskReport, productToken:4711]"))
     }
 
     @Test
@@ -380,7 +396,6 @@ curl -o test.file -X POST http://some.host.whitesource.com/api/ -H 'Content-Type
     void testFetchProjectLicenseAlerts() {
         def projectToken = "8547"
         def config = [ serviceUrl: "http://some.host.whitesource.com/api/", userKey: "4711"]
-        nullScript.env['HTTP_PROXY'] = "http://test.sap.com:8080"
         repository.config.putAll(config)
 
         def requestBody = [
@@ -412,7 +427,7 @@ curl -o test.file -X POST http://some.host.whitesource.com/api/ -H 'Content-Type
     }
 
     @Test
-    void testFetchProdjectsMetaInfo() {
+    void testFetchProjectsMetaInfo() {
         def config = [ serviceUrl: "http://some.host.whitesource.com/api/", userKey: "4711", productToken: '8475', projectNames: ['testProject1', 'testProject2']]
         nullScript.env['HTTP_PROXY'] = "http://test.sap.com:8080"
         repository.config.putAll(config)
@@ -445,6 +460,29 @@ curl -o test.file -X POST http://some.host.whitesource.com/api/ -H 'Content-Type
 
         assertThat(result, is([[ name: "testProduct1"], [ name: "testProduct2"]]))
     }
+
+    @Test
+    void testFetchProjectsMetaInfoError() {
+        def config = [ serviceUrl: "http://some.host.whitesource.com/api/", userKey: "4711", productName: 'kjdkjkhd', productToken: '8475', projectNames: ['testProject1', 'testProject2']]
+        repository.config.putAll(config)
+
+        def requestParams
+        helper.registerAllowedMethod('httpRequest', [Map], { p ->
+            requestParams = p
+            return [ content: "{ }"]
+        })
+
+        def errorCaught = false
+        try {
+            repository.fetchProjectsMetaInfo()
+        } catch (e) {
+            errorCaught = true
+            assertThat(e, isA(AbortException.class))
+            assertThat(e.getMessage(), is("[WhiteSource] Could not fetch any projects for product '${config.productName}' from backend, response was {}"))
+        }
+        assertThat(errorCaught, is(true))
+    }
+
 
     @Test
     void testFetchVulnerabilitiesOnProjects() {

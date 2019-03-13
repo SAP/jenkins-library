@@ -193,7 +193,7 @@ class WhitesourceRepository implements Serializable {
         def response = script.httpRequest(params)
 
         if(config.verbose)
-            script.echo "Received response ${reponse}"
+            script.echo "Received response ${response}"
 
         return response
     }

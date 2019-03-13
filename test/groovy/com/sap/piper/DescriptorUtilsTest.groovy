@@ -12,6 +12,8 @@ import util.JenkinsLoggingRule
 import util.JenkinsSetupRule
 import util.LibraryLoadingTestExecutionListener
 
+import static org.assertj.core.api.Assertions.assertThat
+import static org.hamcrest.Matchers.is
 import static org.junit.Assert.assertEquals
 import static org.junit.Assert.assertThat
 import static org.hamcrest.core.Is.*
@@ -83,12 +85,15 @@ class DescriptorUtilsTest extends BasePiperTest {
                 return new JsonUtils().parseJsonSerializable(packageJsonFile.text)
         })
 
+        def errorCaught = false
         try {
             descriptorUtils.getNpmGAV('package3.json')
         } catch (e) {
+            errorCaught = true
             assertThat(e, isA(AbortException.class))
             assertThat(e.getMessage(), is("Unable to parse package name '@someerror'"))
         }
+        assertThat(errorCaught, is(true))
     }
 
     @Test

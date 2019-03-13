@@ -46,6 +46,24 @@ class WhitesourceOrgAdminRepositoryTest extends BasePiperTest {
     }
 
     @Test
+    void testMissingConfig() {
+        def errorCaught = false
+        try {
+            new WhitesourceOrgAdminRepository(null, [:])
+        } catch (e) {
+            errorCaught = true
+            assertThat(e, isA(AbortException.class))
+            assertThat(e.getMessage(), is("Parameter 'serviceUrl' must be provided as part of the configuration."))
+        }
+        assertThat(errorCaught, is(true))
+    }
+
+    @Test
+    void testAccessor() {
+        new WhitesourceOrgAdminRepository(nullScript, [whitesourceAccessor: "com.sap.piper.integration.WhitesourceRepository", serviceUrl: "http://test.com"])
+    }
+
+    @Test
     void testResolveProductMeta() {
 
         def whitesourceMetaResponse = [
@@ -202,7 +220,7 @@ class WhitesourceOrgAdminRepositoryTest extends BasePiperTest {
         def requestParams
         helper.registerAllowedMethod('httpRequest', [Map], { p ->
             requestParams = p
-            return [content: "{ \"error\" : \"4546\", \"errorMessage\" : \"some text\" } }"]
+            return [content: "{ \"errorCode\" : \"4546\", \"errorMessage\" : \"some text\" } }"]
         })
 
         def errorCaught = false
