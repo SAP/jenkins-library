@@ -47,7 +47,7 @@ class WhitesourceExecuteScanTest extends BasePiperTest {
 
     @Before
     void init() {
-        def credentialsStore = ['ID-123456789': 'token-0815', 'ID-abcdefg': ['testUser', 'testPassword']]
+        def credentialsStore = ['ID-123456789': 'token-0815', 'ID-9876543': 'token-0816', 'ID-abcdefg': ['testUser', 'testPassword']]
         def withCredentialsBindings
         helper.registerAllowedMethod('string', [Map], {
             m ->
@@ -319,6 +319,91 @@ class WhitesourceExecuteScanTest extends BasePiperTest {
         assertThat(writeFileRule.files['./wss-unified-agent.config.d3aa80454919391024374ba46b4df082d15ab9a3'], containsString('productVersion=1.2.3'))
         assertThat(writeFileRule.files['./wss-unified-agent.config.d3aa80454919391024374ba46b4df082d15ab9a3'], containsString('projectName=test-python'))
     }
+
+    @Test
+    void testWithOrgAdminCredentials() {
+        helper.registerAllowedMethod("readProperties", [Map], {
+            def result = new Properties()
+            result.putAll([
+                "apiKey": "b39d1328-52e2-42e3-98f0-932709daf3f0",
+                "productName": "SHC - Piper",
+                "checkPolicies": "true",
+                "projectName": "python-test",
+                "projectVersion": "1.0.0"
+            ])
+            return result
+        })
+
+        stepRule.step.whitesourceExecuteScan([
+            script                               : nullScript,
+            whitesourceRepositoryStub            : whitesourceStub,
+            whitesourceOrgAdminRepositoryStub    : whitesourceOrgAdminRepositoryStub,
+            descriptorUtilsStub                  : descriptorUtilsStub,
+            scanType                             : 'pip',
+            juStabUtils                          : utils,
+            orgToken                             : 'testOrgToken',
+            productName                          : 'testProductName',
+            orgAdminUserTokenCredentialsId       : 'ID-9876543',
+            reporting                            : false
+        ])
+
+        assertThat(loggingRule.log, containsString('Unstash content: buildDescriptor'))
+
+        assertThat(dockerExecuteRule.dockerParams, hasEntry('dockerImage', 'python:3.7.2-stretch'))
+        assertThat(dockerExecuteRule.dockerParams, hasEntry('dockerWorkspace', '/home/python'))
+        assertThat(dockerExecuteRule.dockerParams, hasEntry('stashContent', ['buildDescriptor', 'opensourceConfiguration', 'modified whitesource config d3aa80454919391024374ba46b4df082d15ab9a3']))
+
+        assertThat(shellRule.shell, Matchers.hasItems(
+            is('curl --location --output wss-unified-agent.jar https://github.com/whitesource/unified-agent-distribution/raw/master/standAlone/wss-unified-agent.jar'),
+            is('curl --location --output jvm.tar.gz https://github.com/SAP/SapMachine/releases/download/sapmachine-11.0.2/sapmachine-jre-11.0.2_linux-x64_bin.tar.gz && tar --strip-components=1 -xzf jvm.tar.gz'),
+            is('./bin/java -jar wss-unified-agent.jar -c \'./wss-unified-agent.config.d3aa80454919391024374ba46b4df082d15ab9a3\' -apiKey \'testOrgToken\' -userKey \'token-0815\' -product \'testProductName\'')
+        ))
+
+        assertThat(writeFileRule.files['./wss-unified-agent.config.d3aa80454919391024374ba46b4df082d15ab9a3'], containsString('apiKey=testOrgToken'))
+        assertThat(writeFileRule.files['./wss-unified-agent.config.d3aa80454919391024374ba46b4df082d15ab9a3'], containsString('productName=testProductName'))
+        assertThat(writeFileRule.files['./wss-unified-agent.config.d3aa80454919391024374ba46b4df082d15ab9a3'], containsString('userKey=token-0815'))
+        assertThat(writeFileRule.files['./wss-unified-agent.config.d3aa80454919391024374ba46b4df082d15ab9a3'], containsString('productVersion=1.2.3'))
+        assertThat(writeFileRule.files['./wss-unified-agent.config.d3aa80454919391024374ba46b4df082d15ab9a3'], containsString('projectName=test-python'))
+    }
+
+    @Test
+    void testNoProjectNoCreation() {
+        helper.registerAllowedMethod("readProperties", [Map], {
+            def result = new Properties()
+            result.putAll([
+                "apiKey": "b39d1328-52e2-42e3-98f0-932709daf3f0",
+                "productName": "SHC - Piper",
+                "checkPolicies": "true",
+                "projectName": "python-test",
+                "projectVersion": "1.0.0"
+            ])
+            return result
+        })
+
+        def errorCaught = false
+        try {
+            stepRule.step.whitesourceExecuteScan([
+                script                           : nullScript,
+                whitesourceRepositoryStub        : whitesourceStub,
+                whitesourceOrgAdminRepositoryStub: whitesourceOrgAdminRepositoryStub,
+                descriptorUtilsStub              : descriptorUtilsStub,
+                scanType                         : 'pip',
+                juStabUtils                      : utils,
+                orgToken                         : 'testOrgToken',
+                productName                      : 'testProductName',
+                createProductFromPipeline        : false,
+                orgAdminUserTokenCredentialsId   : 'ID-9876543',
+                reporting                        : false
+            ])
+        } catch (e) {
+            errorCaught = true
+            assertThat(e, isA(AbortException.class))
+            assertThat(e.getMessage(), is("[WhiteSource] Could not fetch/find requested product 'testProductName' and automatic creation has been disabled"))
+        }
+
+        assertThat(loggingRule.log, containsString('Unstash content: buildDescriptor'))
+        assertThat(errorCaught, is(true))
+    }
     
     @Test
     void testSbt() {
@@ -415,6 +500,9 @@ class WhitesourceExecuteScanTest extends BasePiperTest {
             if (map.glob == "**${File.separator}package.json") {
                 return [new File('npm1/package.json'), new File('npm2/package.json')].toArray()
             }
+            if (map.glob == "**${File.separator}setup.py") {
+                return [new File('pip/setup.py')].toArray()
+            }
             return [].toArray()
         })
 
@@ -429,6 +517,7 @@ class WhitesourceExecuteScanTest extends BasePiperTest {
             parallelMap = map
             parallelMap['Whitesource - maven1']()
             parallelMap['Whitesource - npm1']()
+            parallelMap['Whitesource - pip']()
         })
 
         //need to use call due to mock above
@@ -450,7 +539,8 @@ class WhitesourceExecuteScanTest extends BasePiperTest {
 
         assertThat(parallelMap, hasKey('Whitesource - maven1'))
         assertThat(parallelMap, hasKey('Whitesource - npm1'))
-        assertThat(parallelMap.keySet(), hasSize(3))
+        assertThat(parallelMap, hasKey('Whitesource - pip'))
+        assertThat(parallelMap.keySet(), hasSize(4))
 
         assertThat(whitesourceCalls, hasItem(allOf(
             hasEntry('scanType', 'maven'),
@@ -458,8 +548,12 @@ class WhitesourceExecuteScanTest extends BasePiperTest {
         )))
         assertThat(whitesourceCalls, hasItem(allOf(
             hasEntry('scanType', 'npm'),
-            hasEntry('projectNames', ["com.sap.maven.test-java - 1.2.3", "com.sap.node.test-node - 1.2.3"]),
             hasEntry('buildDescriptorFile', "npm1${File.separator}package.json".toString())
+        )))
+        assertThat(whitesourceCalls, hasItem(allOf(
+            hasEntry('scanType', 'pip'),
+            hasEntry('projectNames', ["com.sap.maven.test-java - 1.2.3", "com.sap.node.test-node - 1.2.3", "test-python - 1.2.3"]),
+            hasEntry('buildDescriptorFile', "pip${File.separator}setup.py".toString())
         )))
     }
 
