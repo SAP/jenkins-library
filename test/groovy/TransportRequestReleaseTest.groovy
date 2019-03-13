@@ -1,3 +1,7 @@
+import static org.hamcrest.Matchers.allOf
+import static org.hamcrest.Matchers.containsString
+
+import org.hamcrest.Matchers
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -10,6 +14,7 @@ import com.sap.piper.cm.ChangeManagementException
 
 import util.BasePiperTest
 import util.JenkinsCredentialsRule
+import util.JenkinsDockerExecuteRule
 import util.JenkinsStepRule
 import util.JenkinsLoggingRule
 import util.JenkinsReadYamlRule
@@ -48,7 +53,7 @@ public class TransportRequestReleaseTest extends BasePiperTest {
     }
 
     @Test
-    public void changeIdNotProvidedTest() {
+    public void changeDocumentIdNotProvidedSOLMANTest() {
 
         ChangeManagement cm = new ChangeManagement(nullScript) {
             String getChangeDocumentId(String from,
@@ -84,14 +89,14 @@ public class TransportRequestReleaseTest extends BasePiperTest {
     }
 
     @Test
-    public void releaseTransportRequestFailureTest() {
+    public void releaseTransportRequestFailsSOLMANTest() {
 
         thrown.expect(AbortException)
         thrown.expectMessage("Something went wrong")
 
         ChangeManagement cm = new ChangeManagement(nullScript) {
 
-            void releaseTransportRequest(BackendType type,
+            void releaseTransportRequestSOLMAN(
                                          String changeId,
                                          String transportRequestId,
                                          String endpoint,
@@ -106,7 +111,257 @@ public class TransportRequestReleaseTest extends BasePiperTest {
     }
 
     @Test
-    public void releaseTransportRequestSuccessTest() {
+    public void releaseTransportRequestFailsCTSTest() {
+
+        thrown.expect(AbortException)
+        thrown.expectMessage("Something went wrong")
+
+        nullScript
+            .commonPipelineEnvironment
+                .configuration
+                    .general
+                        .changeManagement
+                            .type = 'CTS'
+
+        ChangeManagement cm = new ChangeManagement(nullScript) {
+
+            void releaseTransportRequestCTS(
+                                         String transportRequestId,
+                                         String endpoint,
+                                         String credentialsId,
+                                         String clientOpts) {
+
+                throw new ChangeManagementException('Something went wrong')
+            }
+        }
+
+        stepRule.step.transportRequestRelease(
+            script: nullScript,
+            transportRequestId: '001',
+            cmUtils: cm)
+    }
+
+    @Test
+    public void releaseTransportRequestSuccessRFCTest() {
+
+        def receivedParameters
+
+        nullScript
+            .commonPipelineEnvironment
+                .configuration
+                    .general
+                        .changeManagement =
+                            [
+                                credentialsId: 'CM',
+                                type: 'RFC',
+                                endpoint: 'https://example.org/rfc',
+                                rfc: [
+                                    dockerImage: 'rfc',
+                                    dockerOptions: [],
+                                ],
+                            ]
+
+        ChangeManagement cm = new ChangeManagement(nullScript) {
+            void releaseTransportRequestRFC(
+                Map docker,
+                String transportRequestId,
+                String endpoint,
+                String developmentInstance,
+                String developmentClient,
+                String credentialsId,
+                boolean verbose) {
+
+                receivedParameters = [
+                    docker: docker,
+                    transportRequestId: transportRequestId,
+                    endpoint: endpoint,
+                    developmentInstance: developmentInstance,
+                    developmentClient: developmentClient,
+                    credentialsId: credentialsId,
+                    verbose: verbose,
+                ]
+            }
+        }
+
+        stepRule.step.transportRequestRelease(
+            script: nullScript,
+            transportRequestId: '002',
+            changeManagement: [
+                rfc: [
+                    developmentClient: '003',
+                    developmentInstance: '002',
+                ]
+            ],
+            verbose: true,
+            cmUtils: cm)
+
+        assert receivedParameters == [
+                    docker: [
+                        image: 'rfc',
+                        options: [],
+                        envVars: [:],
+                        pullImage: true,
+                    ],
+                    transportRequestId: '002',
+                    endpoint: 'https://example.org/rfc',
+                    developmentInstance: '002',
+                    developmentClient: '003',
+                    credentialsId: 'CM',
+                    'verbose': true,
+                ]
+    }
+
+    @Test
+    public void releaseTransportRequestSuccessCTSTest() {
+
+        def receivedParameters
+
+        nullScript
+            .commonPipelineEnvironment
+                .configuration
+                    .general
+                        .changeManagement =
+                            [
+                                credentialsId: 'CM',
+                                type: 'CTS',
+                                endpoint: 'https://example.org/cts'
+                            ]
+
+        ChangeManagement cm = new ChangeManagement(nullScript) {
+            void releaseTransportRequestCTS(
+                String transportRequestId,
+                String endpoint,
+                String credentialsId,
+                String clientOpts = '') {
+
+                receivedParameters = [
+                    transportRequestId: transportRequestId,
+                    endpoint: endpoint,
+                    credentialsId: credentialsId,
+                    clientOpts: clientOpts
+                ]
+            }
+        }
+
+        stepRule.step.transportRequestRelease(
+            script: nullScript,
+            transportRequestId: '002',
+            cmUtils: cm)
+
+        assert receivedParameters == [
+                    transportRequestId: '002',
+                    endpoint: 'https://example.org/cts',
+                    credentialsId: 'CM',
+                    clientOpts: ''
+                ]
+    }
+
+    @Test
+    public void releaseTransportRequestFailsRFCTest() {
+
+        thrown.expect(AbortException)
+        thrown.expectMessage('Failed releasing transport request.')
+
+        nullScript
+            .commonPipelineEnvironment
+                .configuration
+                    .general
+                        .changeManagement =
+                            [
+                                credentialsId: 'CM',
+                                type: 'RFC',
+                                endpoint: 'https://example.org/rfc',
+                                rfc: [dockerImage: 'rfc']
+                            ]
+
+        ChangeManagement cm = new ChangeManagement(nullScript) {
+            void releaseTransportRequestRFC(
+                Map docker,
+                String transportRequestId,
+                String endpoint,
+                String developmentInstance,
+                String developmentClient,
+                String credentialsId,
+                boolean verbose) {
+
+                throw new ChangeManagementException('Failed releasing transport request.')
+            }
+        }
+
+        stepRule.step.transportRequestRelease(
+            script: nullScript,
+            transportRequestId: '002',
+            changeManagement: [
+                rfc: [
+                    developmentClient: '003',
+                    developmentInstance: '002'
+                ]
+            ],
+            cmUtils: cm)
+
+    }
+
+    @Test
+    public void releaseTransportRequestSanityChecksSOLMANTest() {
+
+        thrown.expect(IllegalArgumentException)
+        thrown.expectMessage(allOf(
+            containsString('ERROR - NO VALUE AVAILABLE FOR'),
+            containsString('changeManagement/endpoint')))
+
+        // changeDocumentId and transportRequestId are not checked
+        // by the sanity checks here since they are looked up from
+        // commit history in case they are not provided.
+
+        nullScript
+            .commonPipelineEnvironment
+                .configuration = null
+
+        stepRule.step.transportRequestRelease(
+            script: nullScript,
+            changeManagement: [type: 'SOLMAN']
+        )
+    }
+
+    @Test
+    public void releaseTransportRequestSanityChecksCTSTest() {
+
+        thrown.expect(IllegalArgumentException)
+        thrown.expectMessage(allOf(
+            containsString('ERROR - NO VALUE AVAILABLE FOR'),
+            containsString('changeManagement/endpoint')))
+
+        nullScript
+            .commonPipelineEnvironment
+                .configuration = null
+
+        stepRule.step.transportRequestRelease(
+            script: nullScript,
+            changeManagement: [type: 'CTS']
+        )
+    }
+
+    @Test
+    public void releaseTransportRequestSanityChecksRFCTest() {
+
+        thrown.expect(IllegalArgumentException)
+        thrown.expectMessage(allOf(
+            containsString('ERROR - NO VALUE AVAILABLE FOR:'),
+            containsString('changeManagement/endpoint'),
+            containsString('developmentClient')))
+
+        nullScript
+            .commonPipelineEnvironment
+                .configuration = null
+
+        stepRule.step.transportRequestRelease(
+            script: nullScript,
+            changeManagement: [type: 'RFC'],
+            transportRequestId: '002')
+    }
+
+    @Test
+    public void releaseTransportRequestSuccessSOLMANTest() {
 
         // Here we test only the case where the transportRequestId is
         // provided via parameters. The other cases are tested by
@@ -118,14 +373,13 @@ public class TransportRequestReleaseTest extends BasePiperTest {
         Map receivedParams = [:]
 
         ChangeManagement cm = new ChangeManagement(nullScript) {
-            void releaseTransportRequest(BackendType type,
+            void releaseTransportRequestSOLMAN(
                                          String changeId,
                                          String transportRequestId,
                                          String endpoint,
                                          String credentialsId,
                                          String clientOpts) {
 
-                receivedParams.type = type
                 receivedParams.changeId = changeId
                 receivedParams.transportRequestId = transportRequestId
                 receivedParams.endpoint = endpoint
@@ -136,7 +390,7 @@ public class TransportRequestReleaseTest extends BasePiperTest {
 
         stepRule.step.transportRequestRelease(script: nullScript, changeDocumentId: '001', transportRequestId: '002', cmUtils: cm)
 
-        assert receivedParams == [type: BackendType.SOLMAN,
+        assert receivedParams == [
                                   changeId: '001',
                                   transportRequestId: '002',
                                   endpoint: 'https://example.org/cm',
