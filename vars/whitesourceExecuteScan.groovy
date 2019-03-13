@@ -142,11 +142,7 @@ import static com.sap.piper.Prerequisites.checkScript
     /**
      * Title of vulnerability report written during the assessment phase.
      */
-    'vulnerabilityReportTitle',
-    'whitesourceProductName',
-    'whitesourceProductToken',
-    'whitesourceProjectNames',
-    'whitesourceUserTokenCredentialsId'
+    'vulnerabilityReportTitle'
 ]
 
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
