@@ -15,6 +15,8 @@ import util.LibraryLoadingTestExecutionListener
 import util.Rules
 
 import static org.assertj.core.api.Assertions.assertThat
+import static org.hamcrest.Matchers.containsString
+import static org.hamcrest.Matchers.containsString
 import static org.hamcrest.Matchers.is
 import static org.hamcrest.Matchers.isA
 
@@ -49,8 +51,6 @@ class WhitesourceRepositoryTest extends BasePiperTest {
 
     @Test
     void testResolveProjectsMeta() {
-
-
         def whitesourceMetaResponse = [
             projectVitals: [
                 [
@@ -340,5 +340,200 @@ curl -o test.file -X POST http://some.host.whitesource.com/api/ -H 'Content-Type
     "productToken": "4711"
 }'''
         ))
+    }
+
+    @Test
+    void testFetchProductLicenseAlerts() {
+        def config = [ serviceUrl: "http://some.host.whitesource.com/api/", userKey: "4711", productToken: "8547"]
+        nullScript.env['HTTP_PROXY'] = "http://test.sap.com:8080"
+        repository.config.putAll(config)
+
+        def requestBody = [
+            requestType: "getProductAlertsByType",
+            alertType: "REJECTED_BY_POLICY_RESOURCE",
+            productToken: config.productToken
+        ]
+
+        def requestParams
+        helper.registerAllowedMethod('httpRequest', [Map], { p ->
+            requestParams = p
+            return [ content: "{ \"alerts\" : [] }"]
+        })
+
+        repository.fetchProductLicenseAlerts()
+
+        assertThat(requestParams, is(
+            [
+                url        : config.serviceUrl,
+                httpMode   : 'POST',
+                acceptType : 'APPLICATION_JSON',
+                contentType: 'APPLICATION_JSON',
+                requestBody: requestBody,
+                quiet      : false,
+                userKey    : config.userKey,
+                httpProxy  : "http://test.sap.com:8080"
+            ]
+        ))
+    }
+
+    @Test
+    void testFetchProjectLicenseAlerts() {
+        def projectToken = "8547"
+        def config = [ serviceUrl: "http://some.host.whitesource.com/api/", userKey: "4711"]
+        nullScript.env['HTTP_PROXY'] = "http://test.sap.com:8080"
+        repository.config.putAll(config)
+
+        def requestBody = [
+            requestType: "getProjectAlertsByType",
+            alertType: "REJECTED_BY_POLICY_RESOURCE",
+            projectToken: projectToken
+        ]
+
+        def requestParams
+        helper.registerAllowedMethod('httpRequest', [Map], { p ->
+            requestParams = p
+            return [ content: "{ \"alerts\" : [] }"]
+        })
+
+        repository.fetchProjectLicenseAlerts(projectToken)
+
+        assertThat(requestParams, is(
+            [
+                url        : config.serviceUrl,
+                httpMode   : 'POST',
+                acceptType : 'APPLICATION_JSON',
+                contentType: 'APPLICATION_JSON',
+                requestBody: requestBody,
+                quiet      : false,
+                userKey    : config.userKey,
+                httpProxy  : "http://test.sap.com:8080"
+            ]
+        ))
+    }
+
+    @Test
+    void testFetchProdjectsMetaInfo() {
+        def config = [ serviceUrl: "http://some.host.whitesource.com/api/", userKey: "4711", productToken: '8475', projectNames: ['testProject1', 'testProject2']]
+        nullScript.env['HTTP_PROXY'] = "http://test.sap.com:8080"
+        repository.config.putAll(config)
+
+        def requestBody = [
+            requestType: "getProductProjectVitals",
+            productToken: config.productToken
+        ]
+
+        def requestParams
+        helper.registerAllowedMethod('httpRequest', [Map], { p ->
+            requestParams = p
+            return [ content: "{ \"projectVitals\" : [ { \"name\": \"testProject1\"}, { \"name\": \"testProject2\"} ] }"]
+        })
+
+        def result = repository.fetchProjectsMetaInfo()
+
+        assertThat(requestParams, is(
+            [
+                url        : config.serviceUrl,
+                httpMode   : 'POST',
+                acceptType : 'APPLICATION_JSON',
+                contentType: 'APPLICATION_JSON',
+                requestBody: requestBody,
+                quiet      : false,
+                userKey    : config.userKey,
+                httpProxy  : "http://test.sap.com:8080"
+            ]
+        ))
+
+        assertThat(result, is([[ name: "testProduct1"], [ name: "testProduct2"]]))
+    }
+
+    @Test
+    void testFetchVulnerabilitiesOnProjects() {
+        def config = [ serviceUrl: "http://some.host.whitesource.com/api/", userKey: "4711", productToken: '8475', projectNames: ['testProject1', 'testProject2']]
+        nullScript.env['HTTP_PROXY'] = "http://test.sap.com:8080"
+        repository.config.putAll(config)
+
+        def requestBody1 = [
+            requestType : "getProjectAlertsByType",
+            alertType : "SECURITY_VULNERABILITY",
+            projectToken: "1234"
+        ]
+
+        def requestBody2 = [
+            requestType : "getProjectAlertsByType",
+            alertType : "SECURITY_VULNERABILITY",
+            projectToken: "2345"
+        ]
+
+        def requestParams = []
+        helper.registerAllowedMethod('httpRequest', [Map], { p ->
+            requestParams.add(p)
+            return [ content: "{ \"alerts\" : [ { \"vulnerability\" : { \"cvss3_score\" : \"7\"} } ] }"]
+        })
+
+        def result = repository.fetchVulnerabilities([ [name: "testProject1", token: "1234"], [name: "testProject2", token: "2345"] ])
+
+        assertThat(requestParams[0], is(
+            [
+                url        : config.serviceUrl,
+                httpMode   : 'POST',
+                acceptType : 'APPLICATION_JSON',
+                contentType: 'APPLICATION_JSON',
+                requestBody: requestBody1,
+                quiet      : false,
+                userKey    : config.userKey,
+                httpProxy  : "http://test.sap.com:8080"
+            ]
+        ))
+
+        assertThat(requestParams[1], is(
+            [
+                url        : config.serviceUrl,
+                httpMode   : 'POST',
+                acceptType : 'APPLICATION_JSON',
+                contentType: 'APPLICATION_JSON',
+                requestBody: requestBody2,
+                quiet      : false,
+                userKey    : config.userKey,
+                httpProxy  : "http://test.sap.com:8080"
+            ]
+        ))
+
+        assertThat(result.size(), is(2))
+    }
+
+    @Test
+    void testFetchVulnerabilitiesOnProduct() {
+        def config = [ serviceUrl: "http://some.host.whitesource.com/api/", userKey: "4711", productToken: '8475', productName : 'testProduct']
+        nullScript.env['HTTP_PROXY'] = "http://test.sap.com:8080"
+        repository.config.putAll(config)
+
+        def requestBody = [
+            requestType : "getProductAlertsByType",
+            alertType : "SECURITY_VULNERABILITY",
+            productToken: config.productToken,
+        ]
+
+        def requestParams = []
+        helper.registerAllowedMethod('httpRequest', [Map], { p ->
+            requestParams.add(p)
+            return [ content: "{ \"alerts\" : [ { \"vulnerability\" : { \"cvss3_score\" : \"7\"} } ] }"]
+        })
+
+        def result = repository.fetchVulnerabilities([ [name: "testProject1", token: "1234"], [name: "testProject2", token: "2345"] ])
+
+        assertThat(requestParams[0], is(
+            [
+                url        : config.serviceUrl,
+                httpMode   : 'POST',
+                acceptType : 'APPLICATION_JSON',
+                contentType: 'APPLICATION_JSON',
+                requestBody: requestBody,
+                quiet      : false,
+                userKey    : config.userKey,
+                httpProxy  : "http://test.sap.com:8080"
+            ]
+        ))
+
+        assertThat(result.size(), is(1))
     }
 }

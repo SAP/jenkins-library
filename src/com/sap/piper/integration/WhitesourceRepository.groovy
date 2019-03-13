@@ -47,40 +47,6 @@ class WhitesourceRepository implements Serializable {
         return fetchedVulnerabilities
     }
 
-    List fetchLibraries(whitesourceProjectsMetaInformation) {
-        def fetchedLibraries = []
-        if (config.projectNames) {
-            for (int i = 0; i < whitesourceProjectsMetaInformation.size(); i++) {
-                def metaInfo = whitesourceProjectsMetaInformation[i]
-                def requestBody = [
-                    requestType : "getProjectLicenses",
-                    projectToken: metaInfo.token
-                ]
-
-                def response = fetchWhitesourceResource(requestBody)
-                fetchedLibraries.addAll(response.libraries)
-            }
-        } else {
-            def requestBody = [
-                requestType : "getProductLicenses",
-                productToken: config.productToken
-            ]
-
-            def response = fetchWhitesourceResource(requestBody)
-            fetchedLibraries.addAll(response.libraries)
-        }
-
-        sortLibrariesAlphabeticallyGAV(fetchedLibraries)
-
-        return listUniqueEntries(fetchedLibraries)
-    }
-
-    @NonCPS
-    def listUniqueEntries(Collection list) {
-        return list.unique()
-    }
-
-
     protected def fetchWhitesourceResource(Map requestBody) {
         final def response = httpWhitesource(requestBody)
         def parsedResponse = new JsonUtils().parseJsonSerializable(response.content)
