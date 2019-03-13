@@ -38,7 +38,7 @@ The basic workflow is as follows:
 5. As soon as the development process is completed, the change document in SAP Solution Manager can be set to status `to be tested` and all components can be transported to the test system.
 
 ![Hybrid Application Development Workflow](../images/Scenario_SolMan.png "Hybrid Application Development Workflow")
-##### Hybrid Application Development Worflow
+###### Hybrid Application Development Workflow
 
 ## Example
 

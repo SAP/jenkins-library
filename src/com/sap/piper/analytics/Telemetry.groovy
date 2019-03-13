@@ -30,7 +30,7 @@ class Telemetry implements Serializable{
     static notify(Script steps, Map config, Map payload){
         //allow opt-out via configuration
         if (!config?.collectTelemetryData) {
-            steps.echo "[${payload.step}] Telemetry reporting disabled!"
+            steps.echo "[${payload.step}] Sending telemetry data is disabled."
             return
         }
 
