@@ -1,4 +1,5 @@
 import com.sap.piper.ConfigurationHelper
+import com.sap.piper.GenerateDocumentation
 import com.sap.piper.Utils
 
 import static com.sap.piper.Prerequisites.checkScript
@@ -30,7 +31,7 @@ import groovy.text.SimpleTemplateEngine
      */
     'githubTokenCredentialsId',
     /**
-     * The Jenkins credentialsId for a Sonar token. It is needed for non-anonymous analysis runs. see https://sonarcloud.io/account/security
+     * The Jenkins credentialsId for a SonarQube token. It is needed for non-anonymous analysis runs. see https://sonarcloud.io/account/security
      */
     'sonarTokenCredentialsId',
 ]
@@ -46,7 +47,7 @@ import groovy.text.SimpleTemplateEngine
      */
     'dockerImage',
     /**
-     * The name of the Sonar instance defined in the Jenkins settings.
+     * The name of the SonarQube instance defined in the Jenkins settings.
      */
     'instance',
     /**
@@ -70,6 +71,10 @@ import groovy.text.SimpleTemplateEngine
 ])
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
 
+/**
+ * The step executes the [sonar-scanner](https://docs.sonarqube.org/display/SCAN/Analyzing+with+SonarQube+Scanner) cli command to scan the defined sources and publish the results to a SonarQube instance.
+ */
+@GenerateDocumentation
 void call(Map parameters = [:]) {
     handlePipelineStepErrors(stepName: STEP_NAME, stepParameters: parameters) {
         def utils = parameters.juStabUtils ?: new Utils()
@@ -100,7 +105,7 @@ void call(Map parameters = [:]) {
                 // prefix options
                 c.options = c.options.collect { it.startsWith('-D') ? it : "-D${it}" }
 
-                sh "PATH=\$PATH:${WORKSPACE}/.sonar-scanner/bin sonar-scanner ${c.options.join(' ')}"
+                sh "PATH=\$PATH:${env.WORKSPACE}/.sonar-scanner/bin sonar-scanner ${c.options.join(' ')}"
             }
         }
 
