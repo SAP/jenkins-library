@@ -39,7 +39,7 @@ class WhitesourceRepositoryTest extends BasePiperTest {
     void init() throws Exception {
         nullScript.env['HTTP_PROXY'] = "http://proxy.wdf.sap.corp:8080"
 
-        repository = new WhitesourceRepository(nullScript, [serviceUrl: "http://some.host.whitesource.com/api/"])
+        repository = new WhitesourceRepository(nullScript, [whitesource: [serviceUrl: "http://some.host.whitesource.com/api/"]])
         LibraryLoadingTestExecutionListener.prepareObjectInterceptors(repository)
     }
 
@@ -57,7 +57,7 @@ class WhitesourceRepositoryTest extends BasePiperTest {
         } catch (e) {
             errorCaught = true
             assertThat(e, isA(AbortException.class))
-            assertThat(e.getMessage(), is("Parameter 'serviceUrl' must be provided as part of the configuration."))
+            assertThat(e.getMessage(), is("Parameter 'whitesource.serviceUrl' must be provided as part of the configuration."))
         }
         assertThat(errorCaught, is(true))
     }
@@ -126,7 +126,7 @@ class WhitesourceRepositoryTest extends BasePiperTest {
 
         exception.expectMessage("Correct Project Name")
 
-        repository.config['projectNames'] = ["Correct Project Name"]
+        repository.config.putAll([whitesource : [ projectNames: ["Correct Project Name"]]])
 
         repository.findProjectsMeta(whitesourceMetaResponse.projectVitals)
     }

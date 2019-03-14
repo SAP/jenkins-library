@@ -59,22 +59,21 @@ class ConfigurationHelper implements Serializable {
         return this
     }
 
-    private Map handleCompatibility(Map compatibleParameters, String paramStructure = '', Map configMap ) {
+    private Map handleCompatibility(Map compatibleParameters, String paramStructure = '', Map configMap, Map newConfigMap = [:] ) {
         Map newConfig = [:]
         compatibleParameters.each {entry ->
             if (entry.getValue() instanceof Map) {
                 def internalParamStructure = (paramStructure ? paramStructure + '.' : '') + entry.getKey()
-                newConfig[entry.getKey()] = handleCompatibility(entry.getValue(), internalParamStructure, configMap)
+                newConfig[entry.getKey()] = handleCompatibility(entry.getValue(), internalParamStructure, configMap, newConfig)
             } else {
                 def configSubMap = configMap
                 for(String key in paramStructure.tokenize('.')){
                     configSubMap = configSubMap?.get(key)
                 }
                 if (configSubMap == null || (configSubMap != null && configSubMap[entry.getKey()] == null)) {
-                    def stages = entry.getValue()?.tokenize('.')
-                    def value = resolveToFlat(stages, configMap)
+                    def value = configMap[entry.getValue()]
                     if(null == value)
-                        value = resolveToFlat(stages, newConfig)
+                        value = newConfigMap[entry.getValue()]
                     if (value != null) {
                         newConfig[entry.getKey()] = value
                         def paramName = (paramStructure ? paramStructure + '.' : '') + entry.getKey()
@@ -84,19 +83,6 @@ class ConfigurationHelper implements Serializable {
             }
         }
         return newConfig
-    }
-
-    private String resolveToFlat(stages, configMap) {
-        def first = 0
-        def result
-        def configSubMap = configMap[stages?.get(first)]
-        if(configSubMap instanceof Map) {
-            stages?.remove(first)
-            result = resolveToFlat(stages, configSubMap)
-        } else {
-            result = configSubMap
-        }
-        return result
     }
 
     Map dependingOn(dependentKey){

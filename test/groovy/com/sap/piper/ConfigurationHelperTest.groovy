@@ -167,17 +167,6 @@ class ConfigurationHelperTest {
     }
 
     @Test
-    void testHandleCompatibilityFlatten() {
-        def configuration = ConfigurationHelper.newInstance(mockScript)
-            .mixin([old1: [deeper: 'oldValue1'], old2: [deeper: 'oldValue2'], test: 'testValue'], null, [new1: 'old1.deeper', new2: 'old2.deeper'])
-            .use()
-
-        Assert.assertThat(configuration.size(), is(5))
-        Assert.assertThat(configuration.new1, is('oldValue1'))
-        Assert.assertThat(configuration.new2, is('oldValue2'))
-    }
-
-    @Test
     void testHandleCompatibilityNewAvailable() {
         def configuration = ConfigurationHelper.newInstance(mockScript, [old1: 'oldValue1', newStructure: [new1: 'newValue1'], test: 'testValue'])
             .mixin([old1: 'oldValue1', newStructure: [new1: 'newValue1'], test: 'testValue'], null, [newStructure: [new1: 'old1', new2: 'old2']])
@@ -205,6 +194,17 @@ class ConfigurationHelperTest {
 
         Assert.assertThat(configuration.size(), is(2))
         Assert.assertThat(configuration.newStructure.new1, is(null))
+    }
+
+    @Test
+    void testHandleCompatibilityPremigratedValues() {
+        def configuration = ConfigurationHelper.newInstance(mockScript, [old1: null, test: 'testValue'])
+            .mixin([someValueToMigrate: 'testValue2'], null, [someValueToMigrateSecondTime: 'someValueToMigrate', newStructure: [new1: 'old1', new2: 'someValueToMigrateSecondTime']])
+            .use()
+
+        Assert.assertThat(configuration.size(), is(4))
+        Assert.assertThat(configuration.newStructure.new1, is(null))
+        Assert.assertThat(configuration.newStructure.new2, is('testValue2'))
     }
 
     @Test
