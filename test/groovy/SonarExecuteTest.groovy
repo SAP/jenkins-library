@@ -13,12 +13,14 @@ import static org.junit.Assert.assertThat
 import util.BasePiperTest
 import util.JenkinsDockerExecuteRule
 import util.JenkinsShellCallRule
+import util.JenkinsReadYamlRule
 import util.JenkinsStepRule
 import util.JenkinsLoggingRule
 import util.Rules
 
 class SonarExecuteScanTest extends BasePiperTest {
     private ExpectedException thrown = ExpectedException.none()
+    private JenkinsReadYamlRule readYamlRule = new JenkinsReadYamlRule(this)
     private JenkinsStepRule jsr = new JenkinsStepRule(this)
     private JenkinsLoggingRule jlr = new JenkinsLoggingRule(this)
     private JenkinsShellCallRule jscr = new JenkinsShellCallRule(this)
@@ -27,6 +29,7 @@ class SonarExecuteScanTest extends BasePiperTest {
     @Rule
     public RuleChain rules = Rules
         .getCommonRules(this)
+        .around(readYamlRule)
         .around(thrown)
         .around(jedr)
         .around(jscr)
