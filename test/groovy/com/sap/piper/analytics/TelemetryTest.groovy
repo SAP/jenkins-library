@@ -82,7 +82,7 @@ class TelemetryTest extends BasePiperTest {
         Telemetry.notify(nullScript, [collectTelemetryData: false], [step: 'anyStep', anything: 'something'])
         // asserts
         assertThat(Telemetry.getInstance().listenerList, is(not(empty())))
-        assertThat(jlr.log, containsString("[anyStep] Telemetry reporting disabled!"))
+        assertThat(jlr.log, containsString("[anyStep] Sending telemetry data is disabled."))
         assertThat(notificationPayload.keySet(), is(empty()))
     }
 
@@ -99,7 +99,7 @@ class TelemetryTest extends BasePiperTest {
         Telemetry.notify(nullScript, [:], [step: 'anyStep', anything: 'something'])
         // asserts
         assertThat(Telemetry.getInstance().listenerList, is(not(empty())))
-        assertThat(jlr.log, containsString("[anyStep] Telemetry reporting disabled!"))
+        assertThat(jlr.log, containsString("[anyStep] Sending telemetry data is disabled."))
         assertThat(notificationPayload.keySet(), is(empty()))
     }
 
@@ -116,7 +116,7 @@ class TelemetryTest extends BasePiperTest {
         Telemetry.notify(nullScript, null, [step: 'anyStep', anything: 'something'])
         // asserts
         assertThat(Telemetry.getInstance().listenerList, is(not(empty())))
-        assertThat(jlr.log, containsString("[anyStep] Telemetry reporting disabled!"))
+        assertThat(jlr.log, containsString("[anyStep] Sending telemetry data is disabled."))
         assertThat(notificationPayload.keySet(), is(empty()))
     }
 

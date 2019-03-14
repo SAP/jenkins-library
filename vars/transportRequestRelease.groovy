@@ -25,6 +25,7 @@ import static com.sap.piper.cm.StepHelpers.getBackendTypeAndLogInfoIfCMIntegrati
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS.plus([
     'changeDocumentId',
     'transportRequestId',
+    'verbose',
   ])
 
 void call(parameters = [:]) {
@@ -49,12 +50,16 @@ void call(parameters = [:]) {
         if(backendType == BackendType.NONE) return
 
         configHelper
+            .collectValidationFailures()
             .withMandatoryProperty('changeManagement/clientOpts')
             .withMandatoryProperty('changeManagement/credentialsId')
             .withMandatoryProperty('changeManagement/endpoint')
             .withMandatoryProperty('changeManagement/git/to')
             .withMandatoryProperty('changeManagement/git/from')
             .withMandatoryProperty('changeManagement/git/format')
+            .withMandatoryProperty('changeManagement/rfc/developmentInstance', null, { backendType == BackendType.RFC})
+            .withMandatoryProperty('changeManagement/rfc/developmentClient', null, { backendType == BackendType.RFC})
+            .withMandatoryProperty('verbose', null, { backendType == BackendType.RFC})
 
         configuration = configHelper.use()
 
@@ -89,13 +94,44 @@ void call(parameters = [:]) {
         echo closingMessage.join()
 
             try {
-                cm.releaseTransportRequest(backendType,
-                                           configuration.changeDocumentId,
-                                           configuration.transportRequestId,
-                                           configuration.changeManagement.endpoint,
-                                           configuration.changeManagement.credentialsId,
-                                           configuration.changeManagement.clientOpts)
 
+                switch(backendType) {
+
+                    case BackendType.SOLMAN:
+
+                        cm.releaseTransportRequestSOLMAN(
+                            configuration.changeDocumentId,
+                            configuration.transportRequestId,
+                            configuration.changeManagement.endpoint,
+                            configuration.changeManagement.credentialsId,
+                            configuration.changeManagement.clientOpts)
+                        break
+
+                    case BackendType.CTS:
+
+                        cm.releaseTransportRequestCTS(
+                            configuration.transportRequestId,
+                            configuration.changeManagement.endpoint,
+                            configuration.changeManagement.credentialsId,
+                            configuration.changeManagement.clientOpts)
+                        break
+
+                    case BackendType.RFC:
+
+                        cm.releaseTransportRequestRFC(
+                            configuration.changeManagement.rfc.docker,
+                            configuration.transportRequestId,
+                            configuration.changeManagement.endpoint,
+                            configuration.changeManagement.rfc.developmentInstance,
+                            configuration.changeManagement.rfc.developmentClient,
+                            configuration.changeManagement.credentialsId,
+                            configuration.verbose)
+                        break
+
+                    default:
+
+                        throw new IllegalArgumentException("Invalid backend type: '${backendType}'.")
+                }
             } catch(ChangeManagementException ex) {
                 throw new AbortException(ex.getMessage())
             }
