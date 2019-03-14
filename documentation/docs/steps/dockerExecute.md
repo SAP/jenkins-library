@@ -2,11 +2,11 @@
 
 ## Description
 
-Content here is generated from corresponnding step, see `vars`.
+Content here is generated from corresponding step, see `vars`.
 
 ## Parameters
 
-Content here is generated from corresponnding step, see `vars`.
+Content here is generated from corresponding step, see `vars`.
 
 ## Kubernetes support
 
@@ -14,7 +14,7 @@ If the Jenkins is setup on a Kubernetes cluster, then you can execute the closur
 
 ## Step configuration
 
-Content here is generated from corresponnding step, see `vars`.
+Content here is generated from corresponding step, see `vars`.
 
 ## Side effects
 
