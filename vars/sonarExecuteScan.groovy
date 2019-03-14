@@ -54,7 +54,7 @@ void call(Map parameters = [:]) {
 
                 if(!env.CHANGE_ID && c.projectVersion) c.options.add("-Dsonar.projectVersion='${c.projectVersion}'")
 
-                sh "PATH=${WORKSPACE}/.sonar-scanner/bin sonar-scanner ${c.options.join(' ')}"
+                sh "PATH=\$PATH:${WORKSPACE}/.sonar-scanner/bin sonar-scanner ${c.options.join(' ')}"
             }
         }
 
