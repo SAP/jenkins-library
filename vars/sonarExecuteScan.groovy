@@ -8,22 +8,65 @@ import groovy.text.SimpleTemplateEngine
 
 @Field String STEP_NAME = getClass().getName()
 
-@Field Set GENERAL_CONFIG_KEYS = []
-@Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS.plus([
-    // DEPRECATED: SonarQube LTS
-    'disableInlineComments', // voter only! set to true to only enable a summary comment on the pull-request
-    'dockerImage', // the image to run the sonar-scanner
-    // DEPRECATED: SonarQube LTS
+@Field Set GENERAL_CONFIG_KEYS = [
+    /**
+     * GitHub Plugin only:
+     * The URL to the Github API. see https://docs.sonarqube.org/display/PLUG/GitHub+Plugin#GitHubPlugin-Usage
+     */
     'githubApiUrl', // voter only! URL to access GitHub WS API | default: https://api.github.com
-    'githubOrg', // voter only!
-    'githubRepo', // voter only!
-    // DEPRECATED: SonarQube LTS
-    'githubTokenCredentialsId', // voter only!
-    'instance', // the instance name of the Sonar server configured in the Jenkins
-    'options',
-    'projectVersion',
+    /**
+     * Pull-Request voting only:
+     * The Github organization.
+     */
+    'githubOrg',
+    /**
+     * Pull-Request voting only:
+     * The Github repository.
+     */
+    'githubRepo',
+    /**
+     * GitHub Plugin only:
+     * The Jenkins credentialId for a Github token. It is needed to report findings back to the pull-request.
+     */
+    'githubTokenCredentialsId',
+    /**
+     * The Jenkins credentialsId for a Sonar token. It is needed for non-anonymous analysis runs. see https://sonarcloud.io/account/security
+     */
     'sonarTokenCredentialsId',
-    'legacyPRHandling'
+]
+@Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS.plus([
+    /**
+     * GitHub Plugin only:
+     * Set to true to only enable a summary comment on the pull-request.
+     */
+    'disableInlineComments',
+    /**
+     * Name of the docker image that should be used. If empty, Docker is not used and the command is executed directly on the Jenkins system.
+     * @see dockerExecute
+     */
+    'dockerImage',
+    /**
+     * The name of the Sonar instance defined in the Jenkins settings.
+     */
+    'instance',
+    /**
+     * Activated the pull-request handling using the [GitHub Plugin](https://docs.sonarqube.org/display/PLUG/GitHub+Plugin) (deprecated).
+     * @possibleValues `true`, `false`
+     */
+    'legacyPRHandling',
+    /**
+     * A list of options which are passed to the `sonar-scanner`.
+     */
+    'options',
+    /**
+     * SonarCloud.io only:
+     * Organization that the project will be assigned to.
+     */
+    'organizationKey',
+    /**
+     *
+     */
+    'projectVersion'
 ])
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
 
@@ -42,17 +85,20 @@ void call(Map parameters = [:]) {
             )
             .mixin(parameters, PARAMETER_KEYS)
             // check mandatory parameters
-            .withMandatoryProperty('githubTokenCredentialsId', null, { c -> return env.CHANGE_ID })
-            .withMandatoryProperty('githubOrg', null, { c -> return env.CHANGE_ID })
-            .withMandatoryProperty('githubRepo', null, { c -> return env.CHANGE_ID })
-            .withMandatoryProperty('projectVersion', null, { c -> return !env.CHANGE_ID })
+            .withMandatoryProperty('githubTokenCredentialsId', null, { conf -> conf.legacyPRHandling && isPullRequest() })
+            .withMandatoryProperty('githubOrg', null, { isPullRequest() })
+            .withMandatoryProperty('githubRepo', null, { isPullRequest() })
             .use()
 
         def worker = { c ->
             withSonarQubeEnv(c.instance) {
                 loadSonarScanner(c)
 
-                if(!env.CHANGE_ID && c.projectVersion) c.options.add("-Dsonar.projectVersion='${c.projectVersion}'")
+                if(c.projectVersion && !isPullRequest()) c.options.add("-Dsonar.projectVersion=${c.projectVersion}")
+                if(c.organization) c.options.add("-Dsonar.organization=${c.organization}")
+
+                // prefix options
+                c.options = c.options.collect { it.startsWith('-D') ? it : "-D${it}" }
 
                 sh "PATH=\$PATH:${WORKSPACE}/.sonar-scanner/bin sonar-scanner ${c.options.join(' ')}"
             }
@@ -65,13 +111,13 @@ void call(Map parameters = [:]) {
                     credentialsId: c.sonarTokenCredentialsId,
                     variable: 'SONAR_TOKEN'
                 )]){
-                    c.options.add(" -Dsonar.login=$SONAR_TOKEN")
+                    c.options.add("-Dsonar.login=$SONAR_TOKEN")
                     workerForSonarAuth(c)
                 }
             }
         }
 
-        if(env.CHANGE_ID){
+        if(isPullRequest()){
             def workerForGithubAuth = worker
             worker = { c ->
                 if(c.legacyPRHandling) {
@@ -82,10 +128,11 @@ void call(Map parameters = [:]) {
                         // support for https://docs.sonarqube.org/display/PLUG/GitHub+Plugin
                         c.options.add('-Dsonar.analysis.mode=preview')
                         c.options.add("-Dsonar.github.oauth=$GITHUB_TOKEN")
-                        c.options.add("-Dsonar.github.pullRequest=${c.changeId}")
+                        c.options.add("-Dsonar.github.pullRequest=${env.changeId}")
                         c.options.add("-Dsonar.github.repository=${c.githubOrg}/${c.githubRepo}")
                         if(c.githubApiUrl) c.options.add("-Dsonar.github.endpoint=${c.githubApiUrl}")
                         if(c.disableInlineComments) c.options.add("-Dsonar.github.disableInlineComments=${c.disableInlineComments}")
+                        workerForGithubAuth(c)
                     }
                 } else {
                     // see https://sonarcloud.io/documentation/analysis/pull-request/
@@ -113,7 +160,11 @@ void call(Map parameters = [:]) {
     }
 }
 
-void loadSonarScanner(config){
+private Boolean isPullRequest(){
+    return env.CHANGE_ID
+}
+
+private void loadSonarScanner(config){
     def filename = new File(config.sonarScannerUrl).getName()
     def foldername = filename.replace('.zip', '').replace('cli-', '')
 
