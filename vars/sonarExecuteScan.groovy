@@ -51,11 +51,11 @@ void call(Map parameters = [:]) {
 
         def worker = { c ->
             withSonarQubeEnv(c.instance) {
-                installSonarScanner(c)
+                loadSonarScanner(c)
 
                 if(c.projectVersion) c.options.add("-Dsonar.projectVersion='${c.projectVersion}'")
 
-                sh "PATH=\$PATH:${WORKSPACE}/.sonar-scanner/bin sonar-scanner ${c.options.join(' ')}"
+                sh "PATH=${WORKSPACE}/.sonar-scanner/bin sonar-scanner ${c.options.join(' ')}"
             }
         }
 
@@ -102,7 +102,6 @@ void call(Map parameters = [:]) {
                         //GH
                         sonar.pullrequest.github.repository
                     }
-
                     workerForGithubAuth(c)
                 }
             }
@@ -117,12 +116,13 @@ void call(Map parameters = [:]) {
     }
 }
 
-void installSonarScanner(config){
-    def filename = config.sonarScannerUrl.tokenize('/').last()
+void loadSonarScanner(config){
+    def filename = new File(config.sonarScannerUrl).getName()
+    def foldername = filename.replace('.zip', '').replace('cli-', '')
 
     sh """
         curl --remote-name --remote-header-name --location --silent --show-error ${config.sonarScannerUrl}
         unzip -q ${filename}
-        mv ${filename.replace('.zip', '').replace('cli-', '')} .sonar-scanner
+        mv ${foldername} .sonar-scanner
     """
 }
