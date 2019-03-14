@@ -23,7 +23,6 @@ import groovy.text.SimpleTemplateEngine
     'projectVersion',
     'sonarTokenCredentialsId',
     'legacyPRHandling'
-    //'useWebhook'
 ])
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
 
@@ -124,6 +123,6 @@ void installSonarScanner(config){
         cd ~
         curl ${config.sonarScannerUrl} -O -J -L
         unzip ${filename}
-        mv ${filename.replace('.zip', '')} .sonar-scanner
+        mv ${filename.replace('.zip', '').replace('cli-', '')} .sonar-scanner
     """
 }
