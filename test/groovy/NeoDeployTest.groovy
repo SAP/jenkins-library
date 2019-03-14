@@ -89,7 +89,7 @@ class NeoDeployTest extends BasePiperTest {
     }
 
     @Test
-    void straightForwardTestConfigViaConfiguration() {
+    void straightForwardTestConfigViaParameters() {
 
         boolean notifyOldConfigFrameworkUsed = true
 
@@ -118,16 +118,22 @@ class NeoDeployTest extends BasePiperTest {
     }
 
     @Test
-    void straightForwardTestConfigViaConfigurationAndViaConfigProperties() {
+    void straightForwardTestConfigViaConfiguration() {
 
         nullScript.commonPipelineEnvironment.setConfigProperty('DEPLOY_HOST', 'configProperties.deploy.host.com')
         nullScript.commonPipelineEnvironment.setConfigProperty('CI_DEPLOY_ACCOUNT', 'configPropsUser123')
 
-        nullScript.commonPipelineEnvironment.configuration = [steps: [neoDeploy: [neo: [host   : 'configuration-frwk.deploy.host.com',
-                                                                                  account: 'configurationFrwkUser123']]]]
+        nullScript.commonPipelineEnvironment.configuration = [steps: [
+            neoDeploy: [
+                neo: [
+                    host: 'configuration-frwk.deploy.host.com',
+                    account: 'configurationFrwkUser123'
+                ],
+                source: archiveName
+            ]
+        ]]
 
         stepRule.step.neoDeploy(script: nullScript,
-            source: archiveName,
             neo:[credentialsId: 'myCredentialsId']
         )
 
@@ -138,7 +144,7 @@ class NeoDeployTest extends BasePiperTest {
                 .hasOption('synchronous', '')
                 .hasSingleQuotedOption('user', 'anonymous')
                 .hasSingleQuotedOption('password', '\\*\\*\\*\\*\\*\\*\\*\\*')
-                .hasSingleQuotedOption('source', '.*'))
+                .hasSingleQuotedOption('source', archiveName))
     }
 
     @Test
