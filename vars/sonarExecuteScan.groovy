@@ -121,7 +121,7 @@ void installSonarScanner(config){
     def filename = config.sonarScannerUrl.tokenize('/').last()
 
     sh """
-        curl ${config.sonarScannerUrl} -O -J -L
+        curl --remote-name --remote-header-name --location --silent --show-error ${config.sonarScannerUrl}
         unzip -q ${filename}
         mv ${filename.replace('.zip', '').replace('cli-', '')} .sonar-scanner
     """
