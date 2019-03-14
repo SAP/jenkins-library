@@ -26,10 +26,12 @@ class WhitesourceExecuteScanTest extends BasePiperTest {
     private JenkinsWriteFileRule writeFileRule = new JenkinsWriteFileRule(this)
     private JenkinsStepRule stepRule = new JenkinsStepRule(this)
     private JenkinsErrorRule errorRule = new JenkinsErrorRule(this)
+    private JenkinsEnvironmentRule environmentRule = new JenkinsEnvironmentRule(this)
 
     @Rule
     public RuleChain ruleChain = Rules
         .getCommonRules(this)
+        .around(environmentRule)
         .around(new JenkinsReadYamlRule(this))
         .around(thrown)
         .around(dockerExecuteRule)
@@ -103,10 +105,10 @@ class WhitesourceExecuteScanTest extends BasePiperTest {
             return [].toArray()
         })
 
-        whitesourceOrgAdminRepositoryStub = new WhitesourceOrgAdminRepository(nullScript, [serviceUrl: "http://some.host.whitesource.com/api/"])
+        whitesourceOrgAdminRepositoryStub = new WhitesourceOrgAdminRepository(nullScript, [whitesource: [serviceUrl: "http://some.host.whitesource.com/api/"]])
         LibraryLoadingTestExecutionListener.prepareObjectInterceptors(whitesourceOrgAdminRepositoryStub)
 
-        whitesourceStub = new WhitesourceRepository(nullScript, [serviceUrl: "http://some.host.whitesource.com/api/"])
+        whitesourceStub = new WhitesourceRepository(nullScript, [whitesource: [serviceUrl: "http://some.host.whitesource.com/api/"]])
         LibraryLoadingTestExecutionListener.prepareObjectInterceptors(whitesourceStub)
 
         helper.registerAllowedMethod("fetchProductMetaInfo", [], {
@@ -527,11 +529,13 @@ class WhitesourceExecuteScanTest extends BasePiperTest {
             whitesourceOrgAdminRepositoryStub    : whitesourceOrgAdminRepositoryStub,
             descriptorUtilsStub                  : descriptorUtilsStub,
             scanType                             : 'mta',
-            productName                          : 'SHC - Piper',
+            whitesource: [
+                productName                          : 'SHC - Piper',
+                orgToken                             : 'b39d1328-52e2-42e3-98f0-932709daf3f0'
+            ],
             buildDescriptorExcludeList           : ["maven2${File.separator}pom.xml".toString(), "npm2${File.separator}package.json".toString()],
             reporting                            : true,
-            juStabUtils                          : utils,
-            orgToken                             : 'b39d1328-52e2-42e3-98f0-932709daf3f0'
+            juStabUtils                          : utils
         ])
 
         assertThat(loggingRule.log, containsString('Unstash content: buildDescriptor'))
@@ -542,19 +546,26 @@ class WhitesourceExecuteScanTest extends BasePiperTest {
         assertThat(parallelMap, hasKey('Whitesource - pip'))
         assertThat(parallelMap.keySet(), hasSize(4))
 
-        assertThat(whitesourceCalls, hasItem(allOf(
-            hasEntry('scanType', 'maven'),
-            hasEntry('buildDescriptorFile', "maven1${File.separator}pom.xml".toString())
-        )))
-        assertThat(whitesourceCalls, hasItem(allOf(
-            hasEntry('scanType', 'npm'),
-            hasEntry('buildDescriptorFile', "npm1${File.separator}package.json".toString())
-        )))
-        assertThat(whitesourceCalls, hasItem(allOf(
-            hasEntry('scanType', 'pip'),
-            hasEntry('projectNames', ["com.sap.maven.test-java - 1.2.3", "com.sap.node.test-node - 1.2.3", "test-python - 1.2.3"]),
-            hasEntry('buildDescriptorFile', "pip${File.separator}setup.py".toString())
-        )))
+        assertThat(whitesourceCalls,
+            contains(
+                allOf(
+                    hasEntry('scanType', 'maven'),
+                    hasEntry('buildDescriptorFile', "maven1${File.separator}pom.xml".toString())
+                ),
+                allOf(
+                    hasEntry('scanType', 'npm'),
+                    hasEntry('buildDescriptorFile', "npm1${File.separator}package.json".toString())
+                ),
+                allOf(
+                    hasEntry('scanType', 'pip'),
+                    hasEntry('buildDescriptorFile', "pip${File.separator}setup.py".toString())
+                )
+            )
+        )
+
+        assertThat(whitesourceCalls[0]['whitesource']['projectNames'], contains("com.sap.maven.test-java - 1.2.3", "com.sap.node.test-node - 1.2.3", "test-python - 1.2.3"))
+        assertThat(whitesourceCalls[1]['whitesource']['projectNames'], contains("com.sap.maven.test-java - 1.2.3", "com.sap.node.test-node - 1.2.3", "test-python - 1.2.3"))
+        assertThat(whitesourceCalls[2]['whitesource']['projectNames'], contains("com.sap.maven.test-java - 1.2.3", "com.sap.node.test-node - 1.2.3", "test-python - 1.2.3"))
     }
 
     @Test
@@ -669,36 +680,36 @@ class WhitesourceExecuteScanTest extends BasePiperTest {
     @Test
     void testNPMStatusCheckScanException() {
         thrown.expect(AbortException.class)
-        stepRule.step.checkStatus(-1 & 0xFF, [licensingVulnerabilities: true])
+        stepRule.step.checkStatus(-1 & 0xFF, [whitesource:[licensingVulnerabilities: true]])
     }
 
     @Test
     void testNPMStatusCheckPolicyViolation() {
         thrown.expect(AbortException.class)
-        stepRule.step.checkStatus(-2 & 0xFF, [licensingVulnerabilities: true])
+        stepRule.step.checkStatus(-2 & 0xFF, [whitesource:[licensingVulnerabilities: true]])
     }
 
     @Test
     void testNPMStatusCheckNoPolicyViolation() {
-        stepRule.step.checkStatus(-2 & 0xFF, [licensingVulnerabilities: false])
+        stepRule.step.checkStatus(-2 & 0xFF, [whitesource:[licensingVulnerabilities: false]])
     }
 
     @Test
     void testNPMStatusCheckClientException() {
         thrown.expect(AbortException.class)
-        stepRule.step.checkStatus(-3 & 0xFF, [licensingVulnerabilities: true])
+        stepRule.step.checkStatus(-3 & 0xFF, [whitesource:[licensingVulnerabilities: true]])
     }
 
     @Test
     void testNPMStatusCheckConnectionException() {
         thrown.expect(AbortException.class)
-        stepRule.step.checkStatus(-4 & 0xFF, [licensingVulnerabilities: true])
+        stepRule.step.checkStatus(-4 & 0xFF, [whitesource:[licensingVulnerabilities: true]])
     }
 
     @Test
     void testNPMStatusCheckServerException() {
         thrown.expect(AbortException.class)
-        stepRule.step.checkStatus(-3 & 0xFF, [licensingVulnerabilities: true])
+        stepRule.step.checkStatus(-3 & 0xFF, [whitesource:[licensingVulnerabilities: true]])
     }
 
     @Test
@@ -736,8 +747,7 @@ class WhitesourceExecuteScanTest extends BasePiperTest {
     @Test
     void  testFetchViolationCountProjectNotZero() {
 
-        def config = [projectNames: ["piper-java-cc - 0.0.1", "pipeline-test - 0.0.1"]]
-
+        def config = [whitesource: [projectNames: ["piper-java-cc - 0.0.1", "pipeline-test - 0.0.1"]]]
         def projectTokens = [[token:"abc-project-token"],[token:"def-project-token"]]
         helper.registerAllowedMethod('fetchProjectsMetaInfo', [], { return projectTokens })
         helper.registerAllowedMethod('fetchProjectLicenseAlerts', [String], { projectToken ->
@@ -976,7 +986,7 @@ class WhitesourceExecuteScanTest extends BasePiperTest {
     void testCheckStatus_0() {
         def error = false
         try {
-            stepRule.step.checkStatus(0, [licensingVulnerabilities: true])
+            stepRule.step.checkStatus(0, [whitesource:[licensingVulnerabilities: true]])
         } catch (e) {
             error = true
         }
@@ -987,7 +997,7 @@ class WhitesourceExecuteScanTest extends BasePiperTest {
     void testCheckStatus_255() {
         def error = false
         try {
-            stepRule.step.checkStatus(255, [licensingVulnerabilities: true])
+            stepRule.step.checkStatus(255, [whitesource:[licensingVulnerabilities: true]])
         } catch (e) {
             error = true
             assertThat(e.getMessage(), is("[whitesourceExecuteScan] The scan resulted in an error"))
@@ -999,7 +1009,7 @@ class WhitesourceExecuteScanTest extends BasePiperTest {
     void testCheckStatus_254() {
         def error = false
         try {
-            stepRule.step.checkStatus(254, [licensingVulnerabilities: true])
+            stepRule.step.checkStatus(254, [whitesource:[licensingVulnerabilities: true]])
         } catch (e) {
             error = true
             assertThat(e.getMessage(), is("[whitesourceExecuteScan] Whitesource found one or multiple policy violations"))
@@ -1011,7 +1021,7 @@ class WhitesourceExecuteScanTest extends BasePiperTest {
     void testCheckStatus_253() {
         def error = false
         try {
-            stepRule.step.checkStatus(253, [licensingVulnerabilities: true])
+            stepRule.step.checkStatus(253, [whitesource:[licensingVulnerabilities: true]])
         } catch (e) {
             error = true
             assertThat(e.getMessage(), is("[whitesourceExecuteScan] The local scan client failed to execute the scan"))
@@ -1023,7 +1033,7 @@ class WhitesourceExecuteScanTest extends BasePiperTest {
     void testCheckStatus_252() {
         def error = false
         try {
-            stepRule.step.checkStatus(252, [licensingVulnerabilities: true])
+            stepRule.step.checkStatus(252, [whitesource:[licensingVulnerabilities: true]])
         } catch (e) {
             error = true
             assertThat(e.getMessage(), is("[whitesourceExecuteScan] There was a failure in the connection to the WhiteSource servers"))
@@ -1035,7 +1045,7 @@ class WhitesourceExecuteScanTest extends BasePiperTest {
     void testCheckStatus_251() {
         def error = false
         try {
-            stepRule.step.checkStatus(251, [licensingVulnerabilities: true])
+            stepRule.step.checkStatus(251, [whitesource:[licensingVulnerabilities: true]])
         } catch (e) {
             error = true
             assertThat(e.getMessage(), is("[whitesourceExecuteScan] The server failed to analyze the scan"))
@@ -1047,7 +1057,7 @@ class WhitesourceExecuteScanTest extends BasePiperTest {
     void testCheckStatus_250() {
         def error = false
         try {
-            stepRule.step.checkStatus(250, [licensingVulnerabilities: true])
+            stepRule.step.checkStatus(250, [whitesource:[licensingVulnerabilities: true]])
         } catch (e) {
             error = true
             assertThat(e.getMessage(), is("[whitesourceExecuteScan] Pre-step failure"))
@@ -1059,7 +1069,7 @@ class WhitesourceExecuteScanTest extends BasePiperTest {
     void testCheckStatus_127() {
         def error = false
         try {
-            stepRule.step.checkStatus(127, [licensingVulnerabilities: true])
+            stepRule.step.checkStatus(127, [whitesource:[licensingVulnerabilities: true]])
         } catch (e) {
             error = true
             assertThat(e.getMessage(), is("[whitesourceExecuteScan] Whitesource scan failed with unknown error code '127'"))
@@ -1071,7 +1081,7 @@ class WhitesourceExecuteScanTest extends BasePiperTest {
     void testCheckStatus_vulnerability() {
         def error = false
         try {
-            stepRule.step.checkStatus(0, [licensingVulnerabilities: false, securityVulnerabilities: true, severeVulnerabilities: 5, cvssSeverityLimit: 7])
+            stepRule.step.checkStatus(0, [whitesource:[licensingVulnerabilities: false, securityVulnerabilities: true, severeVulnerabilities: 5, cvssSeverityLimit: 7]])
         } catch (e) {
             error = true
             assertThat(e.getMessage(), is("[whitesourceExecuteScan] 5 Open Source Software Security vulnerabilities with CVSS score greater or equal 7 detected. - "))

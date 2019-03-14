@@ -11,35 +11,34 @@ class WhitesourceConfigurationHelper implements Serializable {
         def inputFile = config.configFilePath.replaceFirst('\\./', '')
         def suffix = utils.generateSha1(config.configFilePath)
         def targetFile = "${inputFile}.${suffix}"
-        if(config.productName.startsWith('DIST - ')) {
+        if(config.whitesource.productName.startsWith('DIST - ')) {
             mapping += [
-                [name: 'checkPolicies', value: false],
-                [name: 'forceCheckAllDependencies', value: false]
+                [name: 'checkPolicies', value: false, force: true],
+                [name: 'forceCheckAllDependencies', value: false, force: true]
             ]
-        } else if(config.productName.startsWith('SHC - ')) {
+        } else if(config.whitesource.productName.startsWith('SHC - ')) {
             mapping += [
-                [name: 'checkPolicies', value: true],
-                [name: 'forceCheckAllDependencies', value: true]
+                [name: 'checkPolicies', value: true, force: true],
+                [name: 'forceCheckAllDependencies', value: true, force: true]
             ]
         }
-        if(config.verbose)
-            mapping += [name: 'log.level', value: 'debug']
+        if(config.whitesource.verbose)
+            mapping += [name: 'log.level', value: 'debug', force: true]
 
         mapping += [
-            [name: 'apiKey', value: config.orgToken],
-            [name: 'productName', value: config.productName],
-            [name: 'productVersion', value: config.productVersion],
-            [name: 'projectName', value: config.projectName],
-            [name: 'projectVersion', value: config.productVersion],
-            [name: 'productToken', value: config.productToken, omitIfPresent: 'projectToken'],
-            [name: 'userKey', value: config.userKey],
-            [name: 'forceUpdate', value: true],
-            [name: 'offline', value: false],
-            [name: 'ignoreSourceFiles', value: true],
-            [name: 'resolveAllDependencies', value: false]
+            [name: 'apiKey', value: config.whitesource.orgToken, force: true],
+            [name: 'productName', value: config.whitesource.productName, force: true],
+            [name: 'productVersion', value: config.whitesource.productVersion, force: true],
+            [name: 'projectName', value: config.whitesource.projectName, force: true],
+            [name: 'projectVersion', value: config.whitesource.productVersion, force: true],
+            [name: 'productToken', value: config.whitesource.productToken, omitIfPresent: 'projectToken', force: true],
+            [name: 'userKey', value: config.whitesource.userKey, force: true],
+            [name: 'forceUpdate', value: true, force: true],
+            [name: 'offline', value: false, force: true],
+            [name: 'ignoreSourceFiles', value: true, force: true],
+            [name: 'resolveAllDependencies', value: false, force: true]
         ]
         switch (config.scanType) {
-
             case 'npm':
                 mapping += [
 
@@ -47,8 +46,8 @@ class WhitesourceConfigurationHelper implements Serializable {
                 break
             case 'pip':
                 mapping += [
-                    [name: 'python.resolveDependencies', value: true],
-                    [name: 'python.ignoreSourceFiles', value: true],
+                    [name: 'python.resolveDependencies', value: true, force: true],
+                    [name: 'python.ignoreSourceFiles', value: true, force: true],
                     [name: 'python.ignorePipInstallErrors', value: false],
                     [name: 'python.installVirtualenv', value: true],
                     [name: 'python.resolveHierarchyTree', value: true],
@@ -70,7 +69,14 @@ class WhitesourceConfigurationHelper implements Serializable {
                 break
             case 'golang':
                 mapping += [
-
+                    [name: 'go.resolveDependencies', value: true, force: true],
+                    [name: 'go.ignoreSourceFiles', value: true, force: true],
+                    [name: 'go.collectDependenciesAtRuntime', value: true],
+                    [name: 'go.dependencyManager', value: ''],
+                    [name: 'includes', value: '**/*.lock'],
+                    [name: 'excludes', value: '**/*sources.jar **/*javadoc.jar'],
+                    [name: 'case.sensitive.glob', value: false],
+                    [name: 'followSymbolicLinks', value: true]
                 ]
                 break
             case 'dlang':
@@ -100,13 +106,13 @@ class WhitesourceConfigurationHelper implements Serializable {
         mapping.each {
             entry ->
                 def dependentValue = entry.omitIfPresent ? moduleSpecificFile[entry.omitIfPresent] : null
-                if ((entry.omitIfPresent && !dependentValue || !entry.omitIfPresent) && entry.value && entry.value != 'null' && entry.value != '')
+                if ((entry.omitIfPresent && !dependentValue || !entry.omitIfPresent) && (entry.force || moduleSpecificFile[entry.name] == null) && entry.value != 'null')
                     moduleSpecificFile[entry.name] = entry.value.toString()
         }
 
         def output = serializationClosure(moduleSpecificFile)
 
-        if(config.verbose)
+        if(config.whitesource.verbose)
             script.echo "Writing config file ${outputFilePath} with content:\n${output}"
         script.writeFile file: outputFilePath, text: output
         if(config.stashContent && config.stashContent.size() > 0) {
@@ -124,10 +130,7 @@ class WhitesourceConfigurationHelper implements Serializable {
     @NonCPS
     static private def serializeUAConfig(configuration) {
         Properties p = new Properties()
-        configuration.each {
-            entry ->
-                p.setProperty(entry.key, entry.value)
-        }
+        p.putAll(configuration)
 
         new StringWriter().with{ w -> p.store(w, null); w }.toString()
     }

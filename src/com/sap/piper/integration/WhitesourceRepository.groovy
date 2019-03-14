@@ -12,13 +12,13 @@ class WhitesourceRepository implements Serializable {
         this.script = script
         this.config = config
 
-        if(!config.serviceUrl)
-            script.error "Parameter 'serviceUrl' must be provided as part of the configuration."
+        if(!config.whitesource.serviceUrl)
+            script.error "Parameter 'whitesource.serviceUrl' must be provided as part of the configuration."
     }
 
     List fetchVulnerabilities(whitesourceProjectsMetaInformation) {
         def fetchedVulnerabilities = []
-        if (config.projectNames) {
+        if (config.whitesource.projectNames) {
             for (int i = 0; i < whitesourceProjectsMetaInformation.size(); i++) {
                 def metaInfo = whitesourceProjectsMetaInformation[i]
 
@@ -35,7 +35,7 @@ class WhitesourceRepository implements Serializable {
             def requestBody = [
                 requestType : "getProductAlertsByType",
                 alertType : "SECURITY_VULNERABILITY",
-                productToken: config.productToken,
+                productToken: config.whitesource.productToken,
             ]
 
             def response = fetchWhitesourceResource(requestBody)
@@ -99,17 +99,17 @@ class WhitesourceRepository implements Serializable {
 
     List fetchProjectsMetaInfo() {
         def projectsMetaInfo = []
-        if(config.projectNames){
+        if(config.whitesource.projectNames){
             def requestBody = [
                 requestType: "getProductProjectVitals",
-                productToken: config.productToken
+                productToken: config.whitesource.productToken
             ]
             def response = fetchWhitesourceResource(requestBody)
 
             if(response?.projectVitals) {
                 projectsMetaInfo.addAll(findProjectsMeta(response.projectVitals))
             } else {
-                script.error "[WhiteSource] Could not fetch any projects for product '${config.productName}' from backend, response was ${response}"
+                script.error "[WhiteSource] Could not fetch any projects for product '${config.whitesource.productName}' from backend, response was ${response}"
             }
         }
         return projectsMetaInfo
@@ -117,8 +117,8 @@ class WhitesourceRepository implements Serializable {
 
     List findProjectsMeta(projectVitals) {
         def matchedProjects = []
-        for (int i = 0; i < config.projectNames?.size(); i++) {
-            def requestedProjectName = config.projectNames[i].trim()
+        for (int i = 0; i < config.whitesource.projectNames?.size(); i++) {
+            def requestedProjectName = config.whitesource.projectNames[i].trim()
             def matchedProjectInfo = null
 
             for (int j = 0; j < projectVitals.size(); j++) {
@@ -132,7 +132,7 @@ class WhitesourceRepository implements Serializable {
             if (matchedProjectInfo != null) {
                 matchedProjects.add(matchedProjectInfo)
             } else {
-                script.error "[WhiteSource] Could not fetch/find requested project '${requestedProjectName}' for product '${config.productName}'"
+                script.error "[WhiteSource] Could not fetch/find requested project '${requestedProjectName}' for product '${config.whitesource.productName}'"
             }
         }
 
@@ -142,7 +142,7 @@ class WhitesourceRepository implements Serializable {
     void fetchReportForProduct(reportName) {
         def requestContent = [
             requestType: "getProductRiskReport",
-            productToken: config.productToken
+            productToken: config.whitesource.productToken
         ]
 
         fetchFileFromWhiteSource(reportName, requestContent)
@@ -152,7 +152,7 @@ class WhitesourceRepository implements Serializable {
         def requestContent = [
             requestType: "getProductAlertsByType",
             alertType: "REJECTED_BY_POLICY_RESOURCE",
-            productToken: config.productToken
+            productToken: config.whitesource.productToken
         ]
         def parsedResponse = fetchWhitesourceResource(requestContent)
 
@@ -175,24 +175,24 @@ class WhitesourceRepository implements Serializable {
         handleAdditionalRequestParameters(requestBody)
         def serializedBody = new JsonUtils().getPrettyJsonString(requestBody)
         def params = [
-            url        : config.serviceUrl,
+            url        : config.whitesource.serviceUrl,
             httpMode   : 'POST',
             acceptType : 'APPLICATION_JSON',
             contentType: 'APPLICATION_JSON',
             requestBody: serializedBody,
-            quiet      : !config.verbose,
-            timeout    : config.timeout
+            quiet      : !config.whitesource.verbose,
+            timeout    : config.whitesource.timeout
         ]
 
         if (script.env.HTTP_PROXY)
             params["httpProxy"] = script.env.HTTP_PROXY
 
-        if(config.verbose)
+        if(config.whitesource.verbose)
             script.echo "Sending http request with parameters ${params}"
 
         def response = script.httpRequest(params)
 
-        if(config.verbose)
+        if(config.whitesource.verbose)
             script.echo "Received response ${response}"
 
         return response
@@ -203,15 +203,15 @@ class WhitesourceRepository implements Serializable {
         handleAdditionalRequestParameters(params)
         def serializedContent = new JsonUtils().jsonToString(params)
 
-        if(config.verbose)
+        if(config.whitesource.verbose)
             script.echo "Sending curl request with parameters ${params}"
 
-        script.sh "${config.verbose ? '' : '#!/bin/sh -e\n'}curl -o ${fileName} -X POST ${config.serviceUrl} -H 'Content-Type: application/json' -d \'${serializedContent}\'"
+        script.sh "${config.whitesource.verbose ? '' : '#!/bin/sh -e\n'}curl -o ${fileName} -X POST ${config.whitesource.serviceUrl} -H 'Content-Type: application/json' -d \'${serializedContent}\'"
     }
 
     @NonCPS
     protected void handleAdditionalRequestParameters(params) {
-        if(config.userKey)
-            params["userKey"] = config.userKey
+        if(config.whitesource.userKey)
+            params["userKey"] = config.whitesource.userKey
     }
 }

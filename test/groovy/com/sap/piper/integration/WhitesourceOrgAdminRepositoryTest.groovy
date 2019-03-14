@@ -35,7 +35,7 @@ class WhitesourceOrgAdminRepositoryTest extends BasePiperTest {
 
     @Before
     void init() throws Exception {
-        repository = new WhitesourceOrgAdminRepository(nullScript, [serviceUrl: "http://some.host.whitesource.com/api/", verbose: true])
+        repository = new WhitesourceOrgAdminRepository(nullScript, [whitesource: [serviceUrl: "http://some.host.whitesource.com/api/"], verbose: true])
         LibraryLoadingTestExecutionListener.prepareObjectInterceptors(repository)
     }
 
@@ -53,14 +53,14 @@ class WhitesourceOrgAdminRepositoryTest extends BasePiperTest {
         } catch (e) {
             errorCaught = true
             assertThat(e, isA(AbortException.class))
-            assertThat(e.getMessage(), is("Parameter 'serviceUrl' must be provided as part of the configuration."))
+            assertThat(e.getMessage(), is("Parameter 'whitesource.serviceUrl' must be provided as part of the configuration."))
         }
         assertThat(errorCaught, is(true))
     }
 
     @Test
     void testAccessor() {
-        new WhitesourceOrgAdminRepository(nullScript, [whitesourceAccessor: "com.sap.piper.integration.WhitesourceRepository", serviceUrl: "http://test.com"])
+        new WhitesourceOrgAdminRepository(nullScript, [whitesourceAccessor: "com.sap.piper.integration.WhitesourceRepository", whitesource: [serviceUrl: "http://test.com"]])
     }
 
     @Test
@@ -83,7 +83,7 @@ class WhitesourceOrgAdminRepositoryTest extends BasePiperTest {
             ]
         ]
 
-        repository.config['productName'] = "Correct Name Cloud"
+        repository.config.putAll([whitesource: [productName: "Correct Name Cloud"]])
 
         def result = repository.findProductMeta(whitesourceMetaResponse)
 
