@@ -108,7 +108,7 @@ Register to our [google group][google-group] in order to get updates or for aski
 Read and understand our [contribution guidelines][piper-library-contribution]
 before opening a pull request.
 
-# [License][piper-library-license]
+# License
 
 Copyright (c) 2017 SAP SE or an SAP affiliate company. All rights reserved.
 This file is licensed under the Apache Software License, v. 2 except as noted
