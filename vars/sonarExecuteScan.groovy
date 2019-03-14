@@ -55,7 +55,7 @@ void call(Map parameters = [:]) {
 
                 if(c.projectVersion) c.options.add("-Dsonar.projectVersion='${c.projectVersion}'")
 
-                sh "PATH=\$PATH:~/.sonar-scanner/bin sonar-scanner ${c.options.join(' ')}"
+                sh "PATH=\$PATH:${WORKSPACE}/.sonar-scanner/bin sonar-scanner ${c.options.join(' ')}"
             }
         }
 
@@ -109,6 +109,7 @@ void call(Map parameters = [:]) {
         }
 
         dockerExecute(
+            script: script,
             dockerImage: config.dockerImage
         ){
             worker(config)
@@ -120,7 +121,6 @@ void installSonarScanner(config){
     def filename = config.sonarScannerUrl.tokenize('/').last()
 
     sh """
-        cd ~
         curl ${config.sonarScannerUrl} -O -J -L
         unzip ${filename}
         mv ${filename.replace('.zip', '').replace('cli-', '')} .sonar-scanner
