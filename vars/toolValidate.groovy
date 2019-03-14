@@ -14,7 +14,7 @@ void call(Map parameters = [:]) {
 
     handlePipelineStepErrors (stepName: 'toolValidate', stepParameters: parameters) {
 
-        echo '[WARNING][toolValidate] This step is deprecated, and it will be removed in future versions. Validation is automatically done inside the steps.'
+        echo '[WARNING][toolValidate] This step is deprecated, and it will be removed in future versions.'
 
         def tool = parameters.tool
         def home = parameters.home
