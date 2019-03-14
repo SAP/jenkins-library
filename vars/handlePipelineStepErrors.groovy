@@ -37,6 +37,7 @@ void call(Map parameters = [:], body) {
     } catch (Throwable error) {
         if (config.echoDetails)
             message += formatErrorMessage(config, error)
+        writeErrorToInfluxData(config, error)
         throw error
     } finally {
         if (config.echoDetails)
@@ -46,7 +47,7 @@ void call(Map parameters = [:], body) {
 }
 
 @NonCPS
-String formatErrorMessage(Map config, error){
+private String formatErrorMessage(Map config, error){
     Map binding = [
         error: error,
         libraryDocumentationUrl: config.libraryDocumentationUrl,
@@ -59,4 +60,14 @@ String formatErrorMessage(Map config, error){
         .createTemplate(libraryResource('com.sap.piper/templates/error.log'))
         .make(binding)
         .toString()
+}
+
+private void writeErrorToInfluxData(Map config, error){
+    def script = config?.stepParameters?.script
+
+    if(script && script.commonPipelineEnvironment?.getInfluxCustomDataMapTags().build_error_message == null){
+        script.commonPipelineEnvironment?.setInfluxCustomDataMapTagsEntry('pipeline_data', 'build_error_step', config.stepName)
+        script.commonPipelineEnvironment?.setInfluxCustomDataMapTagsEntry('pipeline_data', 'build_error_stage', script.env?.STAGE_NAME)
+        script.commonPipelineEnvironment?.setInfluxCustomDataMapEntry('pipeline_data', 'build_error_message', error.getMessage())
+    }
 }
