@@ -120,9 +120,6 @@ class NeoDeployTest extends BasePiperTest {
     @Test
     void straightForwardTestConfigViaConfiguration() {
 
-        nullScript.commonPipelineEnvironment.setConfigProperty('DEPLOY_HOST', 'configProperties.deploy.host.com')
-        nullScript.commonPipelineEnvironment.setConfigProperty('CI_DEPLOY_ACCOUNT', 'configPropsUser123')
-
         nullScript.commonPipelineEnvironment.configuration = [steps: [
             neoDeploy: [
                 neo: [
