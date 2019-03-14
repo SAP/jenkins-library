@@ -99,8 +99,8 @@ void call(Map parameters = [:]) {
             withSonarQubeEnv(c.instance) {
                 loadSonarScanner(c)
 
-                if(c.projectVersion && !isPullRequest()) c.options.add("-Dsonar.projectVersion=${c.projectVersion}")
-                if(c.organization) c.options.add("-Dsonar.organization=${c.organization}")
+                if(c.projectVersion && !isPullRequest()) c.options.add("sonar.projectVersion=${c.projectVersion}")
+                if(c.organization) c.options.add("sonar.organization=${c.organization}")
 
                 // prefix options
                 c.options = c.options.collect { it.startsWith('-D') ? it : "-D${it}" }
@@ -116,7 +116,7 @@ void call(Map parameters = [:]) {
                     credentialsId: c.sonarTokenCredentialsId,
                     variable: 'SONAR_TOKEN'
                 )]){
-                    c.options.add("-Dsonar.login=$SONAR_TOKEN")
+                    c.options.add("sonar.login=$SONAR_TOKEN")
                     workerForSonarAuth(c)
                 }
             }
@@ -131,23 +131,23 @@ void call(Map parameters = [:]) {
                         variable: 'GITHUB_TOKEN'
                     )]){
                         // support for https://docs.sonarqube.org/display/PLUG/GitHub+Plugin
-                        c.options.add('-Dsonar.analysis.mode=preview')
-                        c.options.add("-Dsonar.github.oauth=$GITHUB_TOKEN")
-                        c.options.add("-Dsonar.github.pullRequest=${env.changeId}")
-                        c.options.add("-Dsonar.github.repository=${c.githubOrg}/${c.githubRepo}")
-                        if(c.githubApiUrl) c.options.add("-Dsonar.github.endpoint=${c.githubApiUrl}")
-                        if(c.disableInlineComments) c.options.add("-Dsonar.github.disableInlineComments=${c.disableInlineComments}")
+                        c.options.add('sonar.analysis.mode=preview')
+                        c.options.add("sonar.github.oauth=$GITHUB_TOKEN")
+                        c.options.add("sonar.github.pullRequest=${env.changeId}")
+                        c.options.add("sonar.github.repository=${c.githubOrg}/${c.githubRepo}")
+                        if(c.githubApiUrl) c.options.add("sonar.github.endpoint=${c.githubApiUrl}")
+                        if(c.disableInlineComments) c.options.add("sonar.github.disableInlineComments=${c.disableInlineComments}")
                         workerForGithubAuth(c)
                     }
                 } else {
                     // see https://sonarcloud.io/documentation/analysis/pull-request/
-                    c.options.add("-Dsonar.pullrequest.key=${env.CHANGE_ID}")
-                    c.options.add("-Dsonar.pullrequest.base=${env.CHANGE_TARGET}")
-                    c.options.add("-Dsonar.pullrequest.branch=${env.BRANCH_NAME}")
-                    c.options.add("-Dsonar.pullrequest.provider=${c.pullRequestProvider}")
+                    c.options.add("sonar.pullrequest.key=${env.CHANGE_ID}")
+                    c.options.add("sonar.pullrequest.base=${env.CHANGE_TARGET}")
+                    c.options.add("sonar.pullrequest.branch=${env.BRANCH_NAME}")
+                    c.options.add("sonar.pullrequest.provider=${c.pullRequestProvider}")
                     switch(c.pullRequestProvider){
                         case 'github':
-                            c.options.add("-Dsonar.pullrequest.github.repository=${c.githubOrg}/${c.githubRepo}")
+                            c.options.add("sonar.pullrequest.github.repository=${c.githubOrg}/${c.githubRepo}")
                             break;
                         default: error "Pull-Request provider '${c.pullRequestProvider}' is not supported!"
                     }
