@@ -122,7 +122,7 @@ void installSonarScanner(config){
 
     sh """
         curl ${config.sonarScannerUrl} -O -J -L
-        unzip ${filename}
+        unzip -q ${filename}
         mv ${filename.replace('.zip', '').replace('cli-', '')} .sonar-scanner
     """
 }
