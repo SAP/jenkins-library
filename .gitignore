@@ -16,4 +16,4 @@ target/
 targets/
 documentation/docs-gen
 
-consumer-test/workspace
+consumer-test/**/workspace
