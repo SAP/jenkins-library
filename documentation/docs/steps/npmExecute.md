@@ -1,16 +1,12 @@
-# npmExecute
 
-## Description
+# ${docGenStepName}
 
-Content here is generated from corresponding step, see `vars`.
 
-## Parameters
+## ${docGenDescription}
 
-Content here is generated from corresponding step, see `vars`.
+## ${docGenParameters}
 
-## Step configuration
-
-Content here is generated from corresponding step, see `vars`.
+## ${docGenConfiguration}
 
 ## Exceptions
 
