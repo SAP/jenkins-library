@@ -16,17 +16,17 @@ void call(Map parameters = [:], body) {
             echo "--- Begin library step of: ${stepName} ---"
 
         body()
-    } catch (Throwable err) {
+    } catch (Throwable error) {
         if (verbose)
             message += SimpleTemplateEngine.newInstance()
                 .createTemplate(libraryResource('com.sap.piper/templates/error.log'))
                 .make([
                     stepName: stepName,
                     stepParameters: stepParameters?.toString(),
-                    error: err
+                    error: error
                 ]).toString()
         writeErrorToInfluxData(parameters, error)
-        throw err
+        throw error
     } finally {
         if (verbose)
             message += "--- End library step of: ${stepName} ---"
