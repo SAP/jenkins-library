@@ -10,15 +10,16 @@ import groovy.text.SimpleTemplateEngine
 
 @Field Set GENERAL_CONFIG_KEYS = []
 @Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS.plus([
-    'changeId', // voter only! the pull-request number
+    // DEPRECATED: SonarQube LTS
     'disableInlineComments', // voter only! set to true to only enable a summary comment on the pull-request
     'dockerImage', // the image to run the sonar-scanner
+    // DEPRECATED: SonarQube LTS
     'githubApiUrl', // voter only! URL to access GitHub WS API | default: https://api.github.com
     'githubOrg', // voter only!
     'githubRepo', // voter only!
+    // DEPRECATED: SonarQube LTS
     'githubTokenCredentialsId', // voter only!
     'instance', // the instance name of the Sonar server configured in the Jenkins
-    'isVoter', // voter only! enables the preview mode
     'options',
     'projectVersion',
     'sonarTokenCredentialsId',
@@ -37,23 +38,21 @@ void call(Map parameters = [:]) {
             .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS)
             .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName?:env.STAGE_NAME, GENERAL_CONFIG_KEYS)
             .mixin(
-                projectVersion: script.commonPipelineEnvironment.getArtifactVersion()?.tokenize('.')?.get(0),
-                changeId: env.CHANGE_ID
+                projectVersion: script.commonPipelineEnvironment.getArtifactVersion()?.tokenize('.')?.get(0)
             )
             .mixin(parameters, PARAMETER_KEYS)
             // check mandatory parameters
-            .withMandatoryProperty('changeId', null, { c -> return c.isVoter })
-            .withMandatoryProperty('githubTokenCredentialsId', null, { c -> return c.isVoter })
-            .withMandatoryProperty('githubOrg', null, { c -> return c.isVoter })
-            .withMandatoryProperty('githubRepo', null, { c -> return c.isVoter })
-            .withMandatoryProperty('projectVersion', null, { c -> return !c.isVoter })
+            .withMandatoryProperty('githubTokenCredentialsId', null, { c -> return env.CHANGE_ID })
+            .withMandatoryProperty('githubOrg', null, { c -> return env.CHANGE_ID })
+            .withMandatoryProperty('githubRepo', null, { c -> return env.CHANGE_ID })
+            .withMandatoryProperty('projectVersion', null, { c -> return !env.CHANGE_ID })
             .use()
 
         def worker = { c ->
             withSonarQubeEnv(c.instance) {
                 loadSonarScanner(c)
 
-                if(c.projectVersion) c.options.add("-Dsonar.projectVersion='${c.projectVersion}'")
+                if(!env.CHANGE_ID && c.projectVersion) c.options.add("-Dsonar.projectVersion='${c.projectVersion}'")
 
                 sh "PATH=${WORKSPACE}/.sonar-scanner/bin sonar-scanner ${c.options.join(' ')}"
             }
@@ -72,14 +71,14 @@ void call(Map parameters = [:]) {
             }
         }
 
-        if(config.isVoter){
+        if(env.CHANGE_ID){
             def workerForGithubAuth = worker
             worker = { c ->
-                withCredentials([string(
-                    credentialsId: c.githubTokenCredentialsId,
-                    variable: 'GITHUB_TOKEN'
-                )]){
-                    if(c.legacyPRHandling) {
+                if(c.legacyPRHandling) {
+                    withCredentials([string(
+                        credentialsId: c.githubTokenCredentialsId,
+                        variable: 'GITHUB_TOKEN'
+                    )]){
                         // support for https://docs.sonarqube.org/display/PLUG/GitHub+Plugin
                         c.options.add('-Dsonar.analysis.mode=preview')
                         c.options.add("-Dsonar.github.oauth=$GITHUB_TOKEN")
@@ -87,20 +86,18 @@ void call(Map parameters = [:]) {
                         c.options.add("-Dsonar.github.repository=${c.githubOrg}/${c.githubRepo}")
                         if(c.githubApiUrl) c.options.add("-Dsonar.github.endpoint=${c.githubApiUrl}")
                         if(c.disableInlineComments) c.options.add("-Dsonar.github.disableInlineComments=${c.disableInlineComments}")
-                    } else {
-                        // see https://sonarcloud.io/documentation/analysis/pull-request/
-                        sonar.pullrequest.branch
-                        sonar.pullrequest.base
-
-                        c.options.add("-Dsonar.pullrequest.key=${c.changeId}")
-                        switch(c.pullRequestProvider){
-                            case 'github':
-                                c.options.add("-Dsonar.pullrequest.github.repository=${c.githubOrg}/${c.githubRepo}")
-                                break;
-                            default: error "Pull-Request provider '${c.pullRequestProvider}' is not supported!"
-                        }
-                        //GH
-                        sonar.pullrequest.github.repository
+                    }
+                } else {
+                    // see https://sonarcloud.io/documentation/analysis/pull-request/
+                    c.options.add("-Dsonar.pullrequest.key=${env.CHANGE_ID}")
+                    c.options.add("-Dsonar.pullrequest.base=${env.CHANGE_TARGET}")
+                    c.options.add("-Dsonar.pullrequest.branch=${env.BRANCH_NAME}")
+                    c.options.add("-Dsonar.pullrequest.provider=${c.pullRequestProvider}")
+                    switch(c.pullRequestProvider){
+                        case 'github':
+                            c.options.add("-Dsonar.pullrequest.github.repository=${c.githubOrg}/${c.githubRepo}")
+                            break;
+                        default: error "Pull-Request provider '${c.pullRequestProvider}' is not supported!"
                     }
                     workerForGithubAuth(c)
                 }
