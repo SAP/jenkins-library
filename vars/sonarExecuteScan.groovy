@@ -80,7 +80,7 @@ void call(Map parameters = [:]) {
         def utils = parameters.juStabUtils ?: new Utils()
         def script = checkScript(this, parameters) ?: this
         // load default & individual configuration
-        Map config = ConfigurationHelper.newInstance(this)
+        Map configuration = ConfigurationHelper.newInstance(this)
             .loadStepDefaults()
             .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS)
             .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS)
@@ -90,77 +90,78 @@ void call(Map parameters = [:]) {
             )
             .mixin(parameters, PARAMETER_KEYS)
             // check mandatory parameters
-            .withMandatoryProperty('githubTokenCredentialsId', null, { conf -> conf.legacyPRHandling && isPullRequest() })
+            .withMandatoryProperty('githubTokenCredentialsId', null, { config -> config.legacyPRHandling && isPullRequest() })
             .withMandatoryProperty('githubOrg', null, { isPullRequest() })
             .withMandatoryProperty('githubRepo', null, { isPullRequest() })
             .use()
 
-        def worker = { c ->
-            withSonarQubeEnv(c.instance) {
-                loadSonarScanner(c)
 
-                if(c.projectVersion && !isPullRequest()) c.options.add("sonar.projectVersion=${c.projectVersion}")
-                if(c.organization) c.options.add("sonar.organization=${c.organization}")
+        def worker = { config ->
+            withSonarQubeEnv(config.instance) {
+                loadSonarScanner(config)
+
+                if(config.projectVersion && !isPullRequest()) config.options.add("sonar.projectVersion=${config.projectVersion}")
+                if(config.organization) config.options.add("sonar.organization=${config.organization}")
 
                 // prefix options
-                c.options = c.options.collect { it.startsWith('-D') ? it : "-D${it}" }
+                config.options = config.options.collect { it.startsWith('-D') ? it : "-D${it}" }
 
-                sh "PATH=\$PATH:${env.WORKSPACE}/.sonar-scanner/bin sonar-scanner ${c.options.join(' ')}"
+                sh "PATH=\$PATH:${env.WORKSPACE}/.sonar-scanner/bin sonar-scanner ${config.options.join(' ')}"
             }
         }
 
-        if(config.sonarTokenCredentialsId){
+        if(configuration.sonarTokenCredentialsId){
             def workerForSonarAuth = worker
-            worker = { c ->
+            worker = { config ->
                 withCredentials([string(
-                    credentialsId: c.sonarTokenCredentialsId,
+                    credentialsId: config.sonarTokenCredentialsId,
                     variable: 'SONAR_TOKEN'
                 )]){
-                    c.options.add("sonar.login=$SONAR_TOKEN")
-                    workerForSonarAuth(c)
+                    config.options.add("sonar.login=$SONAR_TOKEN")
+                    workerForSonarAuth(config)
                 }
             }
         }
 
         if(isPullRequest()){
             def workerForGithubAuth = worker
-            worker = { c ->
-                if(c.legacyPRHandling) {
+            worker = { config ->
+                if(config.legacyPRHandling) {
                     withCredentials([string(
-                        credentialsId: c.githubTokenCredentialsId,
+                        credentialsId: config.githubTokenCredentialsId,
                         variable: 'GITHUB_TOKEN'
                     )]){
                         // support for https://docs.sonarqube.org/display/PLUG/GitHub+Plugin
-                        c.options.add('sonar.analysis.mode=preview')
-                        c.options.add("sonar.github.oauth=$GITHUB_TOKEN")
-                        c.options.add("sonar.github.pullRequest=${env.changeId}")
-                        c.options.add("sonar.github.repository=${c.githubOrg}/${c.githubRepo}")
-                        if(c.githubApiUrl) c.options.add("sonar.github.endpoint=${c.githubApiUrl}")
-                        if(c.disableInlineComments) c.options.add("sonar.github.disableInlineComments=${c.disableInlineComments}")
-                        workerForGithubAuth(c)
+                        config.options.add('sonar.analysis.mode=preview')
+                        config.options.add("sonar.github.oauth=$GITHUB_TOKEN")
+                        config.options.add("sonar.github.pullRequest=${env.changeId}")
+                        config.options.add("sonar.github.repository=${config.githubOrg}/${config.githubRepo}")
+                        if(config.githubApiUrl) config.options.add("sonar.github.endpoint=${config.githubApiUrl}")
+                        if(config.disableInlineComments) config.options.add("sonar.github.disableInlineComments=${config.disableInlineComments}")
+                        workerForGithubAuth(config)
                     }
                 } else {
                     // see https://sonarcloud.io/documentation/analysis/pull-request/
-                    c.options.add("sonar.pullrequest.key=${env.CHANGE_ID}")
-                    c.options.add("sonar.pullrequest.base=${env.CHANGE_TARGET}")
-                    c.options.add("sonar.pullrequest.branch=${env.BRANCH_NAME}")
-                    c.options.add("sonar.pullrequest.provider=${c.pullRequestProvider}")
-                    switch(c.pullRequestProvider){
+                    config.options.add("sonar.pullrequest.key=${env.CHANGE_ID}")
+                    config.options.add("sonar.pullrequest.base=${env.CHANGE_TARGET}")
+                    config.options.add("sonar.pullrequest.branch=${env.BRANCH_NAME}")
+                    config.options.add("sonar.pullrequest.provider=${config.pullRequestProvider}")
+                    switch(config.pullRequestProvider){
                         case 'github':
-                            c.options.add("sonar.pullrequest.github.repository=${c.githubOrg}/${c.githubRepo}")
+                            config.options.add("sonar.pullrequest.github.repository=${config.githubOrg}/${config.githubRepo}")
                             break;
-                        default: error "Pull-Request provider '${c.pullRequestProvider}' is not supported!"
+                        default: error "Pull-Request provider '${config.pullRequestProvider}' is not supported!"
                     }
-                    workerForGithubAuth(c)
+                    workerForGithubAuth(config)
                 }
             }
         }
 
         dockerExecute(
             script: script,
-            dockerImage: config.dockerImage
+            dockerImage: configuration.dockerImage
         ){
-            worker(config)
+            worker(configuration)
         }
     }
 }
