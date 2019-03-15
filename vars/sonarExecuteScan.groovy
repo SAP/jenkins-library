@@ -142,7 +142,7 @@ void call(Map parameters = [:]) {
                         // support for https://docs.sonarqube.org/display/PLUG/GitHub+Plugin
                         config.options.add('sonar.analysis.mode=preview')
                         config.options.add("sonar.github.oauth=$GITHUB_TOKEN")
-                        config.options.add("sonar.github.pullRequest=${env.changeId}")
+                        config.options.add("sonar.github.pullRequest=${env.CHANGE_ID}")
                         config.options.add("sonar.github.repository=${config.githubOrg}/${config.githubRepo}")
                         if(config.githubApiUrl) config.options.add("sonar.github.endpoint=${config.githubApiUrl}")
                         if(config.disableInlineComments) config.options.add("sonar.github.disableInlineComments=${config.disableInlineComments}")
