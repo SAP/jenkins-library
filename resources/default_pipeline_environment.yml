@@ -333,7 +333,7 @@ steps:
     instance: 'SonarCloud'
     options: []
     pullRequestProvider: 'github'
-    sonarScannerUrl: 'https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-3.3.0.1492-linux.zip'
+    sonarScannerDownloadUrl: 'https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-3.3.0.1492-linux.zip'
   testsPublishResults:
     failOnError: false
     junit:

@@ -179,11 +179,11 @@ private Boolean isPullRequest(){
 }
 
 private void loadSonarScanner(config){
-    def filename = new File(config.sonarScannerUrl).getName()
+    def filename = new File(config.sonarScannerDownloadUrl).getName()
     def foldername = filename.replace('.zip', '').replace('cli-', '')
 
     sh """
-        curl --remote-name --remote-header-name --location --silent --show-error ${config.sonarScannerUrl}
+        curl --remote-name --remote-header-name --location --silent --show-error ${config.sonarScannerDownloadUrl}
         unzip -q ${filename}
         mv ${foldername} .sonar-scanner
     """
