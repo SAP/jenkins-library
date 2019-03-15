@@ -95,6 +95,10 @@ import groovy.transform.Field
     /**
      * Specific stashes that should be considered for the step execution.
      */
+    'sidecarReadyCommand',
+    /**
+     * Command executed inside the container which returns exit code 0 when the container is ready to be used.
+     */
     'stashContent'
 ])
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
@@ -171,6 +175,9 @@ void call(Map parameters = [:], body) {
 
                     dockerExecuteOnKubernetes(paramMap){
                         echo "[INFO][${STEP_NAME}] Executing inside a Kubernetes Pod with sidecar container"
+                        if(config.sidecarReadyCommand) {
+                            waitForSidecarReadyOnKubernetes(config.sidecarName, config.sidecarReadyCommand)
+                        }
                         body()
                     }
                 }
@@ -207,13 +214,16 @@ void call(Map parameters = [:], body) {
                         if (config.sidecarName)
                             config.sidecarOptions.add("--network-alias ${config.sidecarName}")
                         config.sidecarOptions.add("--network ${networkName}")
-                        sidecarImage.withRun(getDockerOptions(config.sidecarEnvVars, config.sidecarVolumeBind, config.sidecarOptions)) { c ->
+                        sidecarImage.withRun(getDockerOptions(config.sidecarEnvVars, config.sidecarVolumeBind, config.sidecarOptions)) { containerId ->
                             config.dockerOptions = config.dockerOptions?:[]
                             if (config.dockerName)
                                 config.dockerOptions.add("--network-alias ${config.dockerName}")
                             config.dockerOptions.add("--network ${networkName}")
                             image.inside(getDockerOptions(config.dockerEnvVars, config.dockerVolumeBind, config.dockerOptions)) {
                                 echo "[INFO][${STEP_NAME}] Running with sidecar container."
+                                if(config.sidecarReadyCommand) {
+                                    waitForSidecarReadyOnDocker(containerId, config.sidecarReadyCommand)
+                                }
                                 body()
                             }
                         }
@@ -229,6 +239,25 @@ void call(Map parameters = [:], body) {
     }
 }
 
+private waitForSidecarReadyOnDocker(String containerId, String command){
+    while(true){
+        String statusCode = sh script:"docker exec ${containerId} $command", returnStatus:true
+        if(statusCode == "0") return;
+        echo "Waiting for sidecar container"
+        sleep 10
+    }
+}
+
+private waitForSidecarReadyOnKubernetes(String containerName, String command){
+    container(name: containerName){
+        while(true){
+            String statusCode = sh script:command, returnStatus:true
+            if(statusCode == "0") return;
+            echo "Waiting for sidecar container"
+            sleep 10
+        }
+    }
+}
 
 
 /*
