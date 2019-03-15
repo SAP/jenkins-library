@@ -175,14 +175,6 @@ void call(Map parameters = [:], body) {
 
                     dockerExecuteOnKubernetes(paramMap){
                         echo "[INFO][${STEP_NAME}] Executing inside a Kubernetes Pod with sidecar container"
-                        container(name: config.sidecarName){
-                            while(true){
-                                String statusCode = sh script:config.sidecarReadyCommand, returnStatus:true
-                                if(statusCode == "0") return;
-                                echo "Waiting for sidecar container"
-                                sleep 10
-                            }
-                        }
                         body()
                     }
                 }
@@ -219,21 +211,21 @@ void call(Map parameters = [:], body) {
                         if (config.sidecarName)
                             config.sidecarOptions.add("--network-alias ${config.sidecarName}")
                         config.sidecarOptions.add("--network ${networkName}")
-                        sidecarImage.withRun(getDockerOptions(config.sidecarEnvVars, config.sidecarVolumeBind, config.sidecarOptions)) { containerId ->
+                        sidecarImage.withRun(getDockerOptions(config.sidecarEnvVars, config.sidecarVolumeBind, config.sidecarOptions)) { container ->
                             config.dockerOptions = config.dockerOptions?:[]
                             if (config.dockerName)
                                 config.dockerOptions.add("--network-alias ${config.dockerName}")
                             config.dockerOptions.add("--network ${networkName}")
+                            if(config.sidecarReadyCommand) {
+                                while(true){
+                                    String statusCode = sh script:"docker exec ${container.id} ${config.sidecarReadyCommand}", returnStatus:true
+                                    if(statusCode == "0") return;
+                                    echo "Waiting for sidecar container"
+                                    sleep 10
+                                }
+                            }
                             image.inside(getDockerOptions(config.dockerEnvVars, config.dockerVolumeBind, config.dockerOptions)) {
                                 echo "[INFO][${STEP_NAME}] Running with sidecar container."
-                                if(config.sidecarReadyCommand) {
-                                    while(true){
-                                        String statusCode = sh script:"docker exec ${containerId} ${config.sidecarReadyCommand}", returnStatus:true
-                                        if(statusCode == "0") return;
-                                        echo "Waiting for sidecar container"
-                                        sleep 10
-                                    }
-                                }
                                 body()
                             }
                         }
