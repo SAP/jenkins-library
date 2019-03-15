@@ -1,3 +1,10 @@
+import static org.hamcrest.Matchers.allOf
+import static org.hamcrest.Matchers.containsString
+
+import java.util.Map
+
+import org.hamcrest.Matchers
+import org.hamcrest.core.StringContains
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -54,7 +61,7 @@ public class TransportRequestCreateTest extends BasePiperTest {
     }
 
     @Test
-    public void changeIdNotProvidedTest() {
+    public void changeIdNotProvidedSOLANTest() {
 
         thrown.expect(IllegalArgumentException)
         thrown.expectMessage("Change document id not provided (parameter: 'changeDocumentId' or via commit history).")
@@ -73,7 +80,7 @@ public class TransportRequestCreateTest extends BasePiperTest {
     }
 
     @Test
-    public void developmentSystemIdNotProvidedTest() {
+    public void developmentSystemIdNotProvidedSOLMANTest() {
 
         thrown.expect(IllegalArgumentException)
         thrown.expectMessage("ERROR - NO VALUE AVAILABLE FOR developmentSystemId")
@@ -82,7 +89,7 @@ public class TransportRequestCreateTest extends BasePiperTest {
     }
 
     @Test
-    public void createTransportRequestFailureTest() {
+    public void createTransportRequestFailureSOLMANTest() {
 
         ChangeManagement cm = new ChangeManagement(nullScript) {
 
@@ -154,8 +161,7 @@ public class TransportRequestCreateTest extends BasePiperTest {
                 String description,
                 String endpoint,
                 String credentialsId,
-                String clientOpts
-) {
+                String clientOpts) {
                 result.transportType = transportType
                 result.targetSystemId = targetSystemId
                 result.description = description
@@ -184,6 +190,120 @@ public class TransportRequestCreateTest extends BasePiperTest {
 
         assert loggingRule.log.contains("[INFO] Creating transport request.")
         assert loggingRule.log.contains("[INFO] Transport Request '001' has been successfully created.")
+    }
+
+    @Test
+    public void createTransportRequestSuccessRFCTest() {
+
+        def result = [:]
+
+        ChangeManagement cm = new ChangeManagement(nullScript) {
+
+            String createTransportRequestRFC(
+                Map docker,
+                String endpoint,
+                String developmentInstance,
+                String developmentClient,
+                String credentialsId,
+                String description,
+                boolean verbose) {
+
+                result.docker = docker
+                result.endpoint = endpoint
+                result.developmentClient = developmentClient
+                result.developmentInstance= developmentInstance
+                result.credentialsId = credentialsId
+                result.description = description
+                result.verbose = verbose
+
+                return '001'
+            }
+        }
+
+        stepRule.step.transportRequestCreate(
+            script: nullScript,
+            changeManagement: [
+                type: 'RFC',
+                rfc: [
+                    developmentInstance: '01',
+                    developmentClient: '001',
+                ],
+                endpoint: 'https://example.org/rfc',
+            ],
+            developmentSystemId: '001',
+            description: '',
+            cmUtils: cm,
+            verbose: true)
+
+        assert nullScript.commonPipelineEnvironment.getTransportRequestId() == '001'
+        assert result == [
+            docker: [
+                image: 'rfc',
+                options: [],
+                envVars: [:],
+                pullImage: true
+            ],
+            endpoint: 'https://example.org/rfc',
+            developmentClient: '001',
+            developmentInstance: '01',
+            credentialsId: 'CM',
+            description: '',
+            verbose: true
+        ]
+
+        assert loggingRule.log.contains("[INFO] Creating transport request.")
+        assert loggingRule.log.contains("[INFO] Transport Request '001' has been successfully created.")
+    }
+
+    @Test
+    public void createTransportRequestFailureRFCTest() {
+
+        thrown.expect(AbortException)
+        thrown.expectMessage('upload failed')
+
+        ChangeManagement cm = new ChangeManagement(nullScript) {
+
+            String createTransportRequestRFC(
+                Map docker,
+                String endpoint,
+                String developmentClient,
+                String developmentInstance,
+                String credentialsId,
+                String description,
+                boolean verbose) {
+
+                throw new ChangeManagementException('upload failed')
+            }
+        }
+
+        stepRule.step.transportRequestCreate(
+            script: nullScript,
+            changeManagement: [
+                type: 'RFC',
+                rfc: [
+                    developmentInstance: '01',
+                    developmentClient: '001',
+                ],
+                endpoint: 'https://example.org/rfc',
+            ],
+            developmentSystemId: '001',
+            description: '',
+            cmUtils: cm)
+    }
+
+    @Test
+    public void createTransportRequestSanityChecksRFCTest() {
+
+        thrown.expect(IllegalArgumentException)
+        thrown.expectMessage(allOf(
+            containsString('changeManagement/rfc/developmentInstance'),
+            containsString('changeManagement/rfc/developmentClient'),
+            ))
+        stepRule.step.transportRequestCreate(
+            script: nullScript,
+            changeManagement: [
+                type: 'RFC',
+            ])
     }
 
     @Test
