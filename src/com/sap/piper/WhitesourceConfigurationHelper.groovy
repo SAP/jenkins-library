@@ -38,6 +38,8 @@ class WhitesourceConfigurationHelper implements Serializable {
             [name: 'ignoreSourceFiles', value: true, force: true],
             [name: 'resolveAllDependencies', value: false, force: true]
         ]
+        if(!['pip', 'golang'].contains(config.scanType))
+            script.echo "[Whitesource] Configuration for scanType: '${config.scanType}' is not yet hardened, please do a quality assessment of your scan results."
         switch (config.scanType) {
             case 'npm':
                 mapping += [
