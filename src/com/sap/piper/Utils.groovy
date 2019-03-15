@@ -55,6 +55,7 @@ def stashWithMessage(name, msg, include = '**/*.*', exclude = '') {
 }
 
 def unstash(name, msg = "Unstash failed:") {
+
     def unstashedContent = []
     try {
         echo "Unstash content: ${name}"
@@ -70,7 +71,9 @@ def unstashAll(stashContent) {
     def unstashedContent = []
     if (stashContent) {
         for (i = 0; i < stashContent.size(); i++) {
-            unstashedContent += unstash(stashContent[i])
+            if(stashContent[i]) {
+                unstashedContent += unstash(stashContent[i])
+            }
         }
     }
     return unstashedContent
