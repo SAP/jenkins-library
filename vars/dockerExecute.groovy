@@ -146,6 +146,10 @@ void call(Map parameters = [:], body) {
                         body()
                     }
                 } else {
+                    if(!config.dockerName){
+                        config.dockerName = UUID.randomUUID().toString()
+                    }
+
                     Map paramMap = [
                         script: script,
                         containerCommands: [:],
@@ -157,6 +161,7 @@ void call(Map parameters = [:], body) {
                         containerWorkspaces: [:],
                         stashContent: config.stashContent
                     ]
+
                     paramMap.containerCommands[config.sidecarImage] = ''
 
                     paramMap.containerEnvVars[config.dockerImage] = config.dockerEnvVars
