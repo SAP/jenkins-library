@@ -176,7 +176,7 @@ void call(Map parameters = [:], body) {
                     dockerExecuteOnKubernetes(paramMap){
                         echo "[INFO][${STEP_NAME}] Executing inside a Kubernetes Pod with sidecar container"
                         if(config.sidecarReadyCommand) {
-                            waitForSidecarReadyOnKubernetes(config.sidecarName, config.sidecarReadyCommand)
+                            this.waitForSidecarReadyOnKubernetes(config.sidecarName, config.sidecarReadyCommand)
                         }
                         body()
                     }
@@ -222,7 +222,7 @@ void call(Map parameters = [:], body) {
                             image.inside(getDockerOptions(config.dockerEnvVars, config.dockerVolumeBind, config.dockerOptions)) {
                                 echo "[INFO][${STEP_NAME}] Running with sidecar container."
                                 if(config.sidecarReadyCommand) {
-                                    waitForSidecarReadyOnDocker(containerId, config.sidecarReadyCommand)
+                                    this.waitForSidecarReadyOnDocker(containerId, config.sidecarReadyCommand)
                                 }
                                 body()
                             }
