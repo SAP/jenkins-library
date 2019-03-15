@@ -49,7 +49,7 @@ class WhitesourceOrgAdminRepositoryTest extends BasePiperTest {
     void testMissingConfig() {
         def errorCaught = false
         try {
-            new WhitesourceOrgAdminRepository(null, [:])
+            new WhitesourceOrgAdminRepository(nullScript, [:])
         } catch (e) {
             errorCaught = true
             assertThat(e, isA(AbortException.class))
@@ -95,7 +95,7 @@ class WhitesourceOrgAdminRepositoryTest extends BasePiperTest {
 
     @Test
     void testHttpWhitesourceInternalCallUserKey() {
-        def config = [ serviceUrl: "http://some.host.whitesource.com/api/", verbose: false, orgAdminUserKey: "4711"]
+        def config = [whitesource: [ serviceUrl: "http://some.host.whitesource.com/api/", orgAdminUserKey: "4711"], verbose: false]
         repository.config.putAll(config)
         def requestBody = ["someJson" : [ "someObject" : "abcdef" ]]
 
@@ -121,7 +121,7 @@ class WhitesourceOrgAdminRepositoryTest extends BasePiperTest {
 
     @Test
     void testHttpWhitesourceInternalCallUserKeyVerboseProxy() {
-        def config = [ serviceUrl: "http://some.host.whitesource.com/api/", verbose: true, orgAdminUserKey: "4711"]
+        def config = [whitesource: [ serviceUrl: "http://some.host.whitesource.com/api/", orgAdminUserKey: "4711"], verbose: true]
         nullScript.env['HTTP_PROXY'] = "http://test.sap.com:8080"
         repository.config.putAll(config)
         def requestBody = ["someJson" : [ "someObject" : "abcdef" ]]
@@ -153,12 +153,14 @@ class WhitesourceOrgAdminRepositoryTest extends BasePiperTest {
     @Test
     void testCreateProduct() {
         def config = [
-            serviceUrl: "http://some.host.whitesource.com/api/",
-            verbose: false,
-            orgAdminUserKey: "4711",
-            orgToken: "abcd1234",
-            productName: "testProduct",
-            emailAddressesOfInitialProductAdmins: ['some@somewhere.com', 'some2@somewhere.com']
+            whitesource: [
+                    serviceUrl: "http://some.host.whitesource.com/api/",
+                    verbose: false,
+                    orgAdminUserKey: "4711",
+                    orgToken: "abcd1234",
+                    productName: "testProduct",
+                    emailAddressesOfInitialProductAdmins: ['some@somewhere.com', 'some2@somewhere.com']
+                ]
         ]
         repository.config.putAll(config)
         def requestBody1 = [
@@ -213,7 +215,7 @@ class WhitesourceOrgAdminRepositoryTest extends BasePiperTest {
 
     @Test
     void testIssueHttpRequestError() {
-        def config = [ serviceUrl: "http://some.host.whitesource.com/api/", verbose: false, orgAdminUserKey: "4711"]
+        def config = [whitesource: [ serviceUrl: "http://some.host.whitesource.com/api/", orgAdminUserKey: "4711"], verbose: false]
         repository.config.putAll(config)
         def requestBody = ["someJson" : [ "someObject" : "abcdef" ]]
 
@@ -248,7 +250,7 @@ class WhitesourceOrgAdminRepositoryTest extends BasePiperTest {
 
     @Test
     void testFetchProductMetaInfo() {
-        def config = [ serviceUrl: "http://some.host.whitesource.com/api/", verbose: true, orgAdminUserKey: "4711", orgToken: "12345", productName: "testProduct"]
+        def config = [whitesource: [ serviceUrl: "http://some.host.whitesource.com/api/", orgAdminUserKey: "4711", orgToken: "12345", productName: "testProduct"], verbose: true]
         nullScript.env['HTTP_PROXY'] = "http://test.sap.com:8080"
         repository.config.putAll(config)
 

@@ -166,8 +166,8 @@ import static com.sap.piper.Prerequisites.checkScript
         productToken                            : 'productToken',
         projectNames                            : 'projectNames',
         serviceUrl                              : 'serviceUrl',
+        configFilePath                          : 'configFilePath',
         userTokenCredentialsId                  : 'userTokenCredentialsId',
-        verbose                                 : 'verbose',
         agentDownloadUrl                        : 'agentDownloadUrl',
         agentFileName                           : 'agentFileName',
         agentParameters                         : 'agentParameters',
@@ -217,10 +217,10 @@ void call(Map parameters = [:]) {
             ])
             .mixin(parameters, PARAMETER_KEYS, CONFIG_KEY_COMPATIBILITY)
             .dependingOn('scanType').mixin('buildDescriptorFile')
-            .dependingOn('scanType').mixin('configFilePath')
             .dependingOn('scanType').mixin('dockerImage')
             .dependingOn('scanType').mixin('dockerWorkspace')
             .dependingOn('scanType').mixin('stashContent')
+            .dependingOn('scanType').mixin('whitesource/configFilePath')
             .withMandatoryProperty('whitesource/serviceUrl')
             .withMandatoryProperty('whitesource/orgToken')
             .withMandatoryProperty('whitesource/userTokenCredentialsId')
@@ -279,7 +279,7 @@ private def triggerWhitesourceScanWithUserKey(script, config, utils, descriptorU
         if (!config.whitesource.productToken) {
             def metaInfo = orgAdminRepository.fetchProductMetaInfo()
             def key = "token"
-            if((null == metaInfo || !metaInfo[key]) && config.createProductFromPipeline) {
+            if((null == metaInfo || !metaInfo[key]) && config.whitesource.createProductFromPipeline) {
                 metaInfo = orgAdminRepository.createProduct()
                 key = "productToken"
             } else if(null == metaInfo || !metaInfo[key]) {
@@ -369,7 +369,7 @@ private def triggerWhitesourceScanWithUserKey(script, config, utils, descriptorU
                         javaCmd = './bin/java'
                     }
 
-                    def options = ["-jar ${config.whitesource.agentFileName} -c \'${config.configFilePath}\'"]
+                    def options = ["-jar ${config.whitesource.agentFileName} -c \'${config.whitesource.configFilePath}\'"]
                     if (config.whitesource.orgToken) options.push("-apiKey '${config.whitesource.orgToken}'")
                     if (config.whitesource.userKey) options.push("-userKey '${config.whitesource.userKey}'")
                     if (config.whitesource.productName) options.push("-product '${config.whitesource.productName}'")
