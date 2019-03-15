@@ -24,8 +24,8 @@ Generally speaking, you should fork this repository, make changes in your own fo
 
 All pipeline library coding _must_ come with automated unit tests.
 
-Beside that we have an integration test suite. This test are not triggered during normal pull request builds. These tests are mandatory before a change can be merged. It is the duty of the team member of the SAP/jenkins-library project to execute these tests.
-In order to trigger these test the `HEAD` commit of the branch associated with the PullRequest needs to be pushed under the branch pattern `it/.*` (recommanded naming conventioon `it/<Number of the pull request>. As a result the status `integration-tests` is pushed to github and will be shown in the pull request.
+Beside that we have an integration test suite. The integration test suite is not triggered during normal pull request builds. Integration tests are mandatory before a change can be merged. It is the duty of a team member of the SAP/jenkins-library project to execute these tests.
+In order to trigger the integration test suite the `HEAD` commit of the branch associated with the PullRequest needs to be pushed under the branch pattern `it/.*` (recommended naming convention `it/<Number of the pull request>. As a result the status `integration-tests` will be updated in the pull request.
 
 ### Documentation
 
