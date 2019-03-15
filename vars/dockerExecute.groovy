@@ -255,7 +255,13 @@ private waitForSidecarReady(String command){
     int timeoutInSeconds = 5 * 60
     int maxRetries = timeoutInSeconds / sleepTimeInSeconds
     int retries = 0
-    while(sh(script:command, returnStatus:true) != "0" && retries <= maxRetries){
+    while(true){
+        String status = sh script:command, returnStatus:true
+        if(status == "0") return
+        if(retries > maxRetries){
+            error("Timeout while waiting for sidecar container to be ready")
+        }
+
         echo "Waiting for sidecar container"
         sleep sleepTimeInSeconds
         retries++
