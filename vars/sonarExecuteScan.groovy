@@ -13,26 +13,26 @@ import groovy.text.SimpleTemplateEngine
     /**
      * Pull-Request voting only:
      * The URL to the Github API. see https://docs.sonarqube.org/display/PLUG/GitHub+Plugin#GitHubPlugin-Usage
-     * @deprecated: only supported in LTS / < 7.2
+     * deprecated: only supported in LTS / < 7.2
      */
     'githubApiUrl',
     /**
      * Pull-Request voting only:
      * The Github organization.
-     * @default: script.commonPipelineEnvironment.getGithubOrg()
+     * @default: `commonPipelineEnvironment.getGithubOrg()`
      */
     'githubOrg',
     /**
      * Pull-Request voting only:
      * The Github repository.
-     * @default: script.commonPipelineEnvironment.getGithubRepo()
+     * @default: `commonPipelineEnvironment.getGithubRepo()`
      */
     'githubRepo',
     /**
      * Pull-Request voting only:
      * The Jenkins credentialId for a Github token. It is needed to report findings back to the pull-request.
+     * deprecated: only supported in LTS / < 7.2
      * @possibleValues Jenkins credential id
-     * @deprecated: only supported in LTS / < 7.2
      */
     'githubTokenCredentialsId',
     /**
@@ -45,13 +45,13 @@ import groovy.text.SimpleTemplateEngine
     /**
      * Pull-Request voting only:
      * Disables the pull-request decoration with inline comments.
+     * deprecated: only supported in LTS / < 7.2
      * @possibleValues `true`, `false`
-     * @deprecated: only supported in LTS / < 7.2
      */
     'disableInlineComments',
     /**
      * Name of the docker image that should be used. If empty, Docker is not used and the command is executed directly on the Jenkins system.
-     * @see dockerExecute
+     * see dockerExecute
      */
     'dockerImage',
     /**
@@ -61,8 +61,8 @@ import groovy.text.SimpleTemplateEngine
     /**
      * Pull-Request voting only:
      * Activates the pull-request handling using the [GitHub Plugin](https://docs.sonarqube.org/display/PLUG/GitHub+Plugin) (deprecated).
+     * deprecated: only supported in LTS / < 7.2
      * @possibleValues `true`, `false`
-     * @deprecated: only supported in LTS / < 7.2
      */
     'legacyPRHandling',
     /**
@@ -70,13 +70,12 @@ import groovy.text.SimpleTemplateEngine
      */
     'options',
     /**
-     * SonarCloud.io only:
-     * Organization that the project will be assigned to.
+     * Organization that the project will be assigned to in SonarCloud.io.
      */
     'organization',
     /**
      * The project version that is reported to SonarQube.
-     * @default: script.commonPipelineEnvironment.getArtifactVersion()?.tokenize('.')?.get(0)
+     * @default: major number of `commonPipelineEnvironment.getArtifactVersion()`
      */
     'projectVersion'
 ])
