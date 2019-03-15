@@ -11,34 +11,42 @@ import groovy.text.SimpleTemplateEngine
 
 @Field Set GENERAL_CONFIG_KEYS = [
     /**
-     * GitHub Plugin only:
+     * Pull-Request voting only:
      * The URL to the Github API. see https://docs.sonarqube.org/display/PLUG/GitHub+Plugin#GitHubPlugin-Usage
+     * @deprecated: only supported in LTS / < 7.2
      */
-    'githubApiUrl', // voter only! URL to access GitHub WS API | default: https://api.github.com
+    'githubApiUrl',
     /**
      * Pull-Request voting only:
      * The Github organization.
+     * @default: script.commonPipelineEnvironment.getGithubOrg()
      */
     'githubOrg',
     /**
      * Pull-Request voting only:
      * The Github repository.
+     * @default: script.commonPipelineEnvironment.getGithubRepo()
      */
     'githubRepo',
     /**
-     * GitHub Plugin only:
+     * Pull-Request voting only:
      * The Jenkins credentialId for a Github token. It is needed to report findings back to the pull-request.
+     * @possibleValues Jenkins credential id
+     * @deprecated: only supported in LTS / < 7.2
      */
     'githubTokenCredentialsId',
     /**
      * The Jenkins credentialsId for a SonarQube token. It is needed for non-anonymous analysis runs. see https://sonarcloud.io/account/security
+     * @possibleValues Jenkins credential id
      */
     'sonarTokenCredentialsId',
 ]
 @Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS.plus([
     /**
-     * GitHub Plugin only:
-     * Set to true to only enable a summary comment on the pull-request.
+     * Pull-Request voting only:
+     * Disables the pull-request decoration with inline comments.
+     * @possibleValues `true`, `false`
+     * @deprecated: only supported in LTS / < 7.2
      */
     'disableInlineComments',
     /**
@@ -51,8 +59,10 @@ import groovy.text.SimpleTemplateEngine
      */
     'instance',
     /**
-     * Activated the pull-request handling using the [GitHub Plugin](https://docs.sonarqube.org/display/PLUG/GitHub+Plugin) (deprecated).
+     * Pull-Request voting only:
+     * Activates the pull-request handling using the [GitHub Plugin](https://docs.sonarqube.org/display/PLUG/GitHub+Plugin) (deprecated).
      * @possibleValues `true`, `false`
+     * @deprecated: only supported in LTS / < 7.2
      */
     'legacyPRHandling',
     /**
@@ -63,9 +73,10 @@ import groovy.text.SimpleTemplateEngine
      * SonarCloud.io only:
      * Organization that the project will be assigned to.
      */
-    'organizationKey',
+    'organization',
     /**
-     *
+     * The project version that is reported to SonarQube.
+     * @default: script.commonPipelineEnvironment.getArtifactVersion()?.tokenize('.')?.get(0)
      */
     'projectVersion'
 ])
@@ -85,24 +96,22 @@ void call(Map parameters = [:]) {
             .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS)
             .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS)
             .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName?:env.STAGE_NAME, GENERAL_CONFIG_KEYS)
-            .mixin(
-                projectVersion: script.commonPipelineEnvironment.getArtifactVersion()?.tokenize('.')?.get(0)
-            )
             .mixin(parameters, PARAMETER_KEYS)
+            .addIfEmpty('projectVersion', script.commonPipelineEnvironment.getArtifactVersion()?.tokenize('.')?.get(0))
+            .addIfEmpty('githubOrg', script.commonPipelineEnvironment.getGithubOrg())
+            .addIfEmpty('githubRepo', script.commonPipelineEnvironment.getGithubRepo())
             // check mandatory parameters
             .withMandatoryProperty('githubTokenCredentialsId', null, { config -> config.legacyPRHandling && isPullRequest() })
             .withMandatoryProperty('githubOrg', null, { isPullRequest() })
             .withMandatoryProperty('githubRepo', null, { isPullRequest() })
             .use()
 
-
         def worker = { config ->
             withSonarQubeEnv(config.instance) {
                 loadSonarScanner(config)
 
-                if(config.projectVersion && !isPullRequest()) config.options.add("sonar.projectVersion=${config.projectVersion}")
                 if(config.organization) config.options.add("sonar.organization=${config.organization}")
-
+                if(config.projectVersion) config.options.add("sonar.projectVersion=${config.projectVersion}")
                 // prefix options
                 config.options = config.options.collect { it.startsWith('-D') ? it : "-D${it}" }
 
