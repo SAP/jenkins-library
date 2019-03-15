@@ -23,6 +23,7 @@ import hudson.AbortException
     'developmentSystemId',  // SOLMAN
     'targetSystem',         // CTS
     'transportType',        // CTS
+    'verbose',              // RFC
   ]
 
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS.plus(['changeDocumentId'])
@@ -38,6 +39,7 @@ void call(parameters = [:]) {
         ChangeManagement cm = parameters.cmUtils ?: new ChangeManagement(script)
 
         ConfigurationHelper configHelper = ConfigurationHelper.newInstance(this)
+            .collectValidationFailures()
             .loadStepDefaults()
             .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS)
             .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS)
@@ -60,6 +62,9 @@ void call(parameters = [:]) {
             .withMandatoryProperty('transportType', null, { backendType == BackendType.CTS})
             .withMandatoryProperty('targetSystem', null, { backendType == BackendType.CTS})
             .withMandatoryProperty('description', null, { backendType == BackendType.CTS})
+            .withMandatoryProperty('changeManagement/rfc/developmentInstance', null, {backendType == BackendType.RFC})
+            .withMandatoryProperty('changeManagement/rfc/developmentClient', null, {backendType == BackendType.RFC})
+            .withMandatoryProperty('verbose', null, {backendType == BackendType.RFC})
 
         def changeDocumentId = null
 
@@ -88,7 +93,8 @@ void call(parameters = [:]) {
         creatingMessage << '.'
         echo creatingMessage.join()
 
-            try {
+
+        try {
                 if(backendType == BackendType.SOLMAN) {
                     transportRequestId = cm.createTransportRequestSOLMAN(
                                                                configuration.changeDocumentId,
@@ -104,6 +110,15 @@ void call(parameters = [:]) {
                                                                configuration.changeManagement.endpoint,
                                                                configuration.changeManagement.credentialsId,
                                                                configuration.changeManagement.clientOpts)
+                } else if (backendType == BackendType.RFC) {
+                    transportRequestId = cm.createTransportRequestRFC(
+                                                                configuration.changeManagement.rfc.docker,
+                                                                configuration.changeManagement.endpoint,
+                                                                configuration.changeManagement.rfc.developmentInstance,
+                                                                configuration.changeManagement.rfc.developmentClient,
+                                                                configuration.changeManagement.credentialsId,
+                                                                configuration.description,
+                                                                configuration.verbose)
                 } else {
                   throw new IllegalArgumentException("Invalid backend type: '${backendType}'.")
                 }

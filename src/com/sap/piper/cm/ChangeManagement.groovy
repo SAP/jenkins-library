@@ -2,6 +2,7 @@ package com.sap.piper.cm
 
 import com.sap.piper.GitUtils
 
+import groovy.json.JsonSlurper
 import hudson.AbortException
 
 
@@ -63,7 +64,7 @@ public class ChangeManagement implements Serializable {
     }
 
     boolean isChangeInDevelopment(String changeId, String endpoint, String credentialsId, String clientOpts = '') {
-        int rc = executeWithCredentials(BackendType.SOLMAN, endpoint, credentialsId, 'is-change-in-development', ['-cID', "'${changeId}'", '--return-code'],
+        int rc = executeWithCredentials(BackendType.SOLMAN, [:], endpoint, credentialsId, 'is-change-in-development', ['-cID', "'${changeId}'", '--return-code'],
             false,
             clientOpts) as int
 
@@ -78,7 +79,7 @@ public class ChangeManagement implements Serializable {
 
     String createTransportRequestCTS(String transportType, String targetSystemId, String description, String endpoint, String credentialsId, String clientOpts = '') {
         try {
-            def transportRequest = executeWithCredentials(BackendType.CTS, endpoint, credentialsId, 'create-transport',
+            def transportRequest = executeWithCredentials(BackendType.CTS, [:], endpoint, credentialsId, 'create-transport',
                     ['-tt', transportType, '-ts', targetSystemId, '-d', "\"${description}\""],
                     true,
                     clientOpts)
@@ -91,7 +92,7 @@ public class ChangeManagement implements Serializable {
     String createTransportRequestSOLMAN(String changeId, String developmentSystemId, String endpoint, String credentialsId, String clientOpts = '') {
 
         try {
-            def transportRequest = executeWithCredentials(BackendType.SOLMAN, endpoint, credentialsId, 'create-transport', ['-cID', changeId, '-dID', developmentSystemId],
+            def transportRequest = executeWithCredentials(BackendType.SOLMAN, [:], endpoint, credentialsId, 'create-transport', ['-cID', changeId, '-dID', developmentSystemId],
                 true,
                 clientOpts)
             return (transportRequest as String)?.trim()
@@ -100,84 +101,309 @@ public class ChangeManagement implements Serializable {
         }
     }
 
-    void uploadFileToTransportRequest(BackendType type, String changeId, String transportRequestId, String applicationId, String filePath, String endpoint, String credentialsId, String cmclientOpts = '') {
+    String createTransportRequestRFC(
+        Map docker,
+        String endpoint,
+        String developmentInstance,
+        String developmentClient,
+        String credentialsId,
+        String description,
+        boolean verbose) {
 
-        def args = null
+        def command = 'cts createTransportRequest'
+        def args = [
+            TRANSPORT_DESCRIPTION: description,
+            ABAP_DEVELOPMENT_INSTANCE: developmentInstance,
+            ABAP_DEVELOPMENT_CLIENT: developmentClient,
+            VERBOSE: verbose,
+        ]
 
-        if(type == BackendType.SOLMAN) {
-            args = ['-cID', changeId,
-                    '-tID', transportRequestId,
-                    applicationId, "\"$filePath\""]
-        } else if (type == BackendType.CTS) {
-            args = ['-tID', transportRequestId,
-                    "\"$filePath\""]
-        } else {
-            throw new IllegalArgumentException("Invalid backend type: ${type}")
+        try {
+
+            def transportRequestId = executeWithCredentials(
+                BackendType.RFC,
+                docker,
+                endpoint,
+                credentialsId,
+                command,
+                args,
+                true)
+
+            return new JsonSlurper().parseText(transportRequestId).REQUESTID
+
+        } catch(AbortException ex) {
+            throw new ChangeManagementException(
+                "Cannot create transport request: ${ex.getMessage()}", ex)
         }
-
-        int rc = executeWithCredentials(type,
-                                        endpoint,
-                                        credentialsId,
-                                        'upload-file-to-transport',
-                                        args,
-                                        false,
-                                        cmclientOpts) as int
-
-        if(rc == 0) {
-            return
-        } else {
-            throw new ChangeManagementException("Cannot upload file '$filePath' for change document '$changeId' with transport request '$transportRequestId'. Return code from cmclient: $rc.")
-        }
-
     }
 
-    def executeWithCredentials(BackendType type, String endpoint, String credentialsId, String command, List<String> args, boolean returnStdout = false, String clientOpts = '') {
+    void uploadFileToTransportRequestSOLMAN(
+        String changeId,
+        String transportRequestId,
+        String applicationId,
+        String filePath,
+        String endpoint,
+        String credentialsId,
+        String cmclientOpts = '') {
+
+        def args = [
+                '-cID', changeId,
+                '-tID', transportRequestId,
+                applicationId, "\"$filePath\""
+            ]
+
+        int rc = executeWithCredentials(
+            BackendType.SOLMAN,
+            [:],
+            endpoint,
+            credentialsId,
+            'upload-file-to-transport',
+            args,
+            false,
+            cmclientOpts) as int
+
+        if(rc != 0) {
+            throw new ChangeManagementException(
+                "Cannot upload file into transport request. Return code from cm client: $rc.")
+        }
+    }
+
+    void uploadFileToTransportRequestCTS(
+        String transportRequestId,
+        String filePath,
+        String endpoint,
+        String credentialsId,
+        String cmclientOpts = '') {
+
+        def args = [
+                '-tID', transportRequestId,
+                "\"$filePath\""
+            ]
+
+        int rc = executeWithCredentials(
+            BackendType.CTS,
+            [:],
+            endpoint,
+            credentialsId,
+            'upload-file-to-transport',
+            args,
+            false,
+            cmclientOpts) as int
+
+        if(rc != 0) {
+            throw new ChangeManagementException(
+                "Cannot upload file into transport request. Return code from  cm client: $rc.")
+        }
+    }
+
+    void uploadFileToTransportRequestRFC(
+        Map docker,
+        String transportRequestId,
+        String applicationName,
+        String filePath,
+        String endpoint,
+        String credentialsId,
+        String developmentInstance,
+        String developmentClient,
+        String applicationDescription,
+        String abapPackage,
+        String codePage,
+        boolean acceptUnixStyleEndOfLine,
+        boolean failOnWarning,
+        boolean verbose) {
+
+        def args = [
+            ABAP_DEVELOPMENT_INSTANCE: developmentInstance,
+            ABAP_DEVELOPMENT_CLIENT: developmentClient,
+            ABAP_APPLICATION_NAME: applicationName,
+            ABAP_APPLICATION_DESC: applicationDescription,
+            ABAP_PACKAGE: abapPackage,
+            ZIP_FILE_URL: filePath,
+            CODE_PAGE: codePage,
+            ABAP_ACCEPT_UNIX_STYLE_EOL: acceptUnixStyleEndOfLine ? 'X' : '-',
+            FAIL_UPLOAD_ON_WARNING: Boolean.toString(failOnWarning),
+            VERBOSE: Boolean.toString(verbose),
+        ]
+
+        int rc = executeWithCredentials(
+            BackendType.RFC,
+            docker,
+            endpoint,
+            credentialsId,
+            "cts uploadToABAP:${transportRequestId}",
+            args,
+            false) as int
+
+        if(rc != 0) {
+            throw new ChangeManagementException(
+                "Cannot upload file into transport request. Return code from rfc client: $rc.")
+        }
+    }
+
+    def executeWithCredentials(
+        BackendType type,
+        Map docker,
+        String endpoint,
+        String credentialsId,
+        String command,
+        def args,
+        boolean returnStdout = false,
+        String clientOpts = '') {
+
+        def script = this.script
         script.withCredentials([script.usernamePassword(
             credentialsId: credentialsId,
             passwordVariable: 'password',
             usernameVariable: 'username')]) {
-            def cmScript = getCMCommandLine(type, endpoint, script.username, script.password,
-                    command, args,
-                    clientOpts)
 
             Map shArgs = [:]
+
             if(returnStdout)
                 shArgs.put('returnStdout', true)
             else
                 shArgs.put('returnStatus', true)
 
-            shArgs.put('script', cmScript)
+            def result = 1
 
-            // user and password are masked by withCredentials
-            script.echo """[INFO] Executing command line: "${cmScript}"."""
-            return script.sh(shArgs)
+            switch(type) {
+
+                case BackendType.RFC:
+
+                    if(! (args in Map)) {
+                        throw new IllegalArgumentException("args expected as Map for backend types ${[BackendType.RFC]}")
+                    }
+
+                    shArgs.script = command
+
+                    args = args.plus([
+                        ABAP_DEVELOPMENT_SERVER: endpoint,
+                        ABAP_DEVELOPMENT_USER: script.username,
+                        ABAP_DEVELOPMENT_PASSWORD: script.password,
+                    ])
+
+                    // user and password are masked by withCredentials
+                    script.echo """[INFO] Executing command line: "${shArgs.script}"."""
+
+                    script.dockerExecute(
+                        script: script,
+                        dockerImage: docker.image,
+                        dockerOptions: docker.options,
+                        dockerEnvVars: (docker.envVars?:[:]).plus(args),
+                        dockerPullImage: docker.pullImage) {
+
+                        result = script.sh(shArgs)
+
+                    }
+
+                    break
+
+                case BackendType.SOLMAN:
+                case BackendType.CTS:
+
+                    if(! (args in Collection))
+                        throw new IllegalArgumentException("args expected as Collection for backend types ${[BackendType.SOLMAN, BackendType.CTS]}")
+
+                    shArgs.script = getCMCommandLine(type, endpoint, script.username, script.password,
+                        command, args,
+                        clientOpts)
+
+                    // user and password are masked by withCredentials
+                    script.echo """[INFO] Executing command line: "${shArgs.script}"."""
+
+                    result = script.sh(shArgs)
+
+                    break
+            }
+
+            return result
         }
     }
 
-    void releaseTransportRequest(BackendType type,String changeId, String transportRequestId, String endpoint, String credentialsId, String clientOpts = '') {
+    void releaseTransportRequestSOLMAN(
+        String changeId,
+        String transportRequestId,
+        String endpoint,
+        String credentialsId,
+        String clientOpts = '') {
 
-        def cmd
-        List args = []
+        def cmd = 'release-transport'
+        def args = [
+            '-cID',
+            changeId,
+            '-tID',
+            transportRequestId,
+        ]
 
-        if(type == BackendType.SOLMAN) {
-            cmd = 'release-transport'
-            args << '-cID'
-            args << changeId
-        } else if(type == BackendType.CTS) {
-             cmd = 'export-transport'
-        } else {
-            throw new IllegalStateException("Invalid backend type: '${type}'")
-        }
+        int rc = executeWithCredentials(
+            BackendType.SOLMAN,
+            [:],
+            endpoint,
+            credentialsId,
+            cmd,
+            args,
+            false,
+            clientOpts) as int
 
-        args << '-tID'
-        args << transportRequestId
-
-        int rc = executeWithCredentials(type, endpoint, credentialsId, cmd, args, false, clientOpts) as int
-        if(rc == 0) {
-            return
-        } else {
+        if(rc != 0) {
             throw new ChangeManagementException("Cannot release Transport Request '$transportRequestId'. Return code from cmclient: $rc.")
         }
+    }
+
+    void releaseTransportRequestCTS(
+        String transportRequestId,
+        String endpoint,
+        String credentialsId,
+        String clientOpts = '') {
+
+        def cmd = 'export-transport'
+        def args = [
+            '-tID',
+            transportRequestId,
+        ]
+
+        int rc = executeWithCredentials(
+            BackendType.CTS,
+            [:],
+            endpoint,
+            credentialsId,
+            cmd,
+            args,
+            false) as int
+
+        if(rc != 0) {
+            throw new ChangeManagementException("Cannot release Transport Request '$transportRequestId'. Return code from cmclient: $rc.")
+        }
+    }
+
+    void releaseTransportRequestRFC(
+        Map docker,
+        String transportRequestId,
+        String endpoint,
+        String developmentInstance,
+        String developmentClient,
+        String credentialsId,
+        boolean verbose) {
+
+        def cmd = "cts releaseTransport:${transportRequestId}"
+        def args = [
+            ABAP_DEVELOPMENT_INSTANCE: developmentInstance,
+            ABAP_DEVELOPMENT_CLIENT: developmentClient,
+            VERBOSE: verbose,
+        ]
+
+        int rc = executeWithCredentials(
+            BackendType.RFC,
+            docker,
+            endpoint,
+            credentialsId,
+            cmd,
+            args,
+            false) as int
+
+        if(rc != 0) {
+            throw new ChangeManagementException("Cannot release Transport Request '$transportRequestId'. Return code from rfcclient: $rc.")
+        }
+
     }
 
     String getCMCommandLine(BackendType type,
