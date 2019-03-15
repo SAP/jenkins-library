@@ -16,19 +16,30 @@ void call(Map parameters = [:], body) {
             echo "--- Begin library step of: ${stepName} ---"
 
         body()
-    } catch (Throwable err) {
+    } catch (Throwable error) {
         if (verbose)
             message += SimpleTemplateEngine.newInstance()
                 .createTemplate(libraryResource('com.sap.piper/templates/error.log'))
                 .make([
                     stepName: stepName,
                     stepParameters: stepParameters?.toString(),
-                    error: err
+                    error: error
                 ]).toString()
-        throw err
+        writeErrorToInfluxData(parameters, error)
+        throw error
     } finally {
         if (verbose)
             message += "--- End library step of: ${stepName} ---"
         echo message
+    }
+}
+
+private void writeErrorToInfluxData(config, error){
+    def script = config?.stepParameters?.script
+
+    if(script && script.commonPipelineEnvironment?.getInfluxCustomDataMapTags().build_error_message == null){
+        script.commonPipelineEnvironment?.setInfluxCustomDataMapTagsEntry('pipeline_data', 'build_error_step', config.stepName)
+        script.commonPipelineEnvironment?.setInfluxCustomDataMapTagsEntry('pipeline_data', 'build_error_stage', script.env?.STAGE_NAME)
+        script.commonPipelineEnvironment?.setInfluxCustomDataMapEntry('pipeline_data', 'build_error_message', error.getMessage())
     }
 }
