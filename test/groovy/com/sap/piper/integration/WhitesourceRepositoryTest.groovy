@@ -53,7 +53,7 @@ class WhitesourceRepositoryTest extends BasePiperTest {
     void testMissingConfig() {
         def errorCaught = false
         try {
-            new WhitesourceRepository(null, [:])
+            new WhitesourceRepository(nullScript, [:])
         } catch (e) {
             errorCaught = true
             assertThat(e, isA(AbortException.class))
@@ -81,8 +81,9 @@ class WhitesourceRepositoryTest extends BasePiperTest {
             ]
         ]
 
-        repository.config['productName'] = "Correct Name Cloud"
-        repository.config['projectNames'] = ["Correct Project Name", "Correct Project Name2"]
+        repository.config.whitesource = [:]
+        repository.config.whitesource['productName'] = "Correct Name Cloud"
+        repository.config.whitesource['projectNames'] = ["Correct Project Name", "Correct Project Name2"]
 
         def result = repository.findProjectsMeta(whitesourceMetaResponse.projectVitals)
 
@@ -103,8 +104,6 @@ class WhitesourceRepositoryTest extends BasePiperTest {
 
     @Test
     void testResolveProjectsMetaFailNotFound() {
-
-
         def whitesourceMetaResponse = [
             projectVitals: [
                 [
@@ -126,7 +125,7 @@ class WhitesourceRepositoryTest extends BasePiperTest {
 
         exception.expectMessage("Correct Project Name")
 
-        repository.config.putAll([whitesource : [ projectNames: ["Correct Project Name"]]])
+        repository.config.putAll([whitesource : [projectNames: ["Correct Project Name"]]])
 
         repository.findProjectsMeta(whitesourceMetaResponse.projectVitals)
     }
@@ -245,7 +244,7 @@ class WhitesourceRepositoryTest extends BasePiperTest {
 
     @Test
     void testHttpWhitesourceExternalCallNoUserKey() {
-        def config = [ whitesourceServiceUrl: "https://saas.whitesource.com/api", verbose: true]
+        def config = [whitesource: [serviceUrl: "https://saas.whitesource.com/api"], verbose: true]
         repository.config.putAll(config)
         def requestBody = "{ \"someJson\" : { \"someObject\" : \"abcdef\" } }"
 
@@ -258,7 +257,7 @@ class WhitesourceRepositoryTest extends BasePiperTest {
 
         assertThat(requestParams, is(
             [
-                url        : config.whitesourceServiceUrl,
+                url        : config.whitesource.serviceUrl,
                 httpMode   : 'POST',
                 acceptType : 'APPLICATION_JSON',
                 contentType: 'APPLICATION_JSON',
@@ -271,7 +270,7 @@ class WhitesourceRepositoryTest extends BasePiperTest {
 
     @Test
     void testHttpWhitesourceExternalCallUserKey() {
-        def config = [ serviceUrl: "https://saas.whitesource.com/api", verbose: true, userKey: "4711"]
+        def config = [whitesource: [ serviceUrl: "https://saas.whitesource.com/api", userKey: "4711"], verbose: true]
         def requestBody = "{ \"someJson\" : { \"someObject\" : \"abcdef\" } }"
 
         def requestParams
@@ -283,7 +282,7 @@ class WhitesourceRepositoryTest extends BasePiperTest {
 
         assertThat(requestParams, is(
             [
-                url        : config.whitesourceServiceUrl,
+                url        : config.whitesource.serviceUrl,
                 httpMode   : 'POST',
                 acceptType : 'APPLICATION_JSON',
                 contentType: 'APPLICATION_JSON',
@@ -297,7 +296,7 @@ class WhitesourceRepositoryTest extends BasePiperTest {
 
     @Test
     void testHttpWhitesourceInternalCallUserKey() {
-        def config = [ whitesourceServiceUrl: "http://mo-323123123.sap.corp/some", verbose: false, userKey: "4711"]
+        def config = [whitesource: [serviceUrl: "http://mo-323123123.sap.corp/some", userKey: "4711"], verbose: false]
         def requestBody = "{ \"someJson\" : { \"someObject\" : \"abcdef\" } }"
 
         def requestParams
@@ -309,7 +308,7 @@ class WhitesourceRepositoryTest extends BasePiperTest {
 
         assertThat(requestParams, is(
             [
-                url        : config.whitesourceServiceUrl,
+                url        : config.whitesource.serviceUrl,
                 httpMode   : 'POST',
                 acceptType : 'APPLICATION_JSON',
                 contentType: 'APPLICATION_JSON',
@@ -340,7 +339,7 @@ class WhitesourceRepositoryTest extends BasePiperTest {
 
     @Test
     void testFetchReportForProduct() {
-        repository.config.putAll([ whitesourceServiceUrl: "http://mo-323123123.sap.corp/some", verbose: true, productToken: "4711"])
+        repository.config.putAll([whitesource: [serviceUrl: "http://mo-323123123.sap.corp/some", productToken: "4711"], verbose: true])
         def command
         helper.registerAllowedMethod('sh', [String], { cmd ->
             command = cmd
@@ -360,7 +359,7 @@ curl -o test.file -X POST http://some.host.whitesource.com/api/ -H 'Content-Type
 
     @Test
     void testFetchProductLicenseAlerts() {
-        def config = [ serviceUrl: "http://some.host.whitesource.com/api/", userKey: "4711", productToken: "8547"]
+        def config = [whitesource: [serviceUrl: "http://some.host.whitesource.com/api/", userKey: "4711", productToken: "8547"]]
         nullScript.env['HTTP_PROXY'] = "http://test.sap.com:8080"
         repository.config.putAll(config)
 
@@ -380,13 +379,13 @@ curl -o test.file -X POST http://some.host.whitesource.com/api/ -H 'Content-Type
 
         assertThat(requestParams, is(
             [
-                url        : config.serviceUrl,
+                url        : config.whitesource.serviceUrl,
                 httpMode   : 'POST',
                 acceptType : 'APPLICATION_JSON',
                 contentType: 'APPLICATION_JSON',
                 requestBody: requestBody,
                 quiet      : false,
-                userKey    : config.userKey,
+                userKey    : config.whitesource.userKey,
                 httpProxy  : "http://test.sap.com:8080"
             ]
         ))
@@ -395,7 +394,7 @@ curl -o test.file -X POST http://some.host.whitesource.com/api/ -H 'Content-Type
     @Test
     void testFetchProjectLicenseAlerts() {
         def projectToken = "8547"
-        def config = [ serviceUrl: "http://some.host.whitesource.com/api/", userKey: "4711"]
+        def config = [whitesource: [serviceUrl: "http://some.host.whitesource.com/api/", userKey: "4711"]]
         repository.config.putAll(config)
 
         def requestBody = [
@@ -414,13 +413,13 @@ curl -o test.file -X POST http://some.host.whitesource.com/api/ -H 'Content-Type
 
         assertThat(requestParams, is(
             [
-                url        : config.serviceUrl,
+                url        : config.whitesource.serviceUrl,
                 httpMode   : 'POST',
                 acceptType : 'APPLICATION_JSON',
                 contentType: 'APPLICATION_JSON',
                 requestBody: requestBody,
                 quiet      : false,
-                userKey    : config.userKey,
+                userKey    : config.whitesource.userKey,
                 httpProxy  : "http://test.sap.com:8080"
             ]
         ))
@@ -428,7 +427,7 @@ curl -o test.file -X POST http://some.host.whitesource.com/api/ -H 'Content-Type
 
     @Test
     void testFetchProjectsMetaInfo() {
-        def config = [ serviceUrl: "http://some.host.whitesource.com/api/", userKey: "4711", productToken: '8475', projectNames: ['testProject1', 'testProject2']]
+        def config = [whitesource: [serviceUrl: "http://some.host.whitesource.com/api/", userKey: "4711", productToken: '8475', projectNames: ['testProject1', 'testProject2']]]
         nullScript.env['HTTP_PROXY'] = "http://test.sap.com:8080"
         repository.config.putAll(config)
 
@@ -447,13 +446,13 @@ curl -o test.file -X POST http://some.host.whitesource.com/api/ -H 'Content-Type
 
         assertThat(requestParams, is(
             [
-                url        : config.serviceUrl,
+                url        : config.whitesource.serviceUrl,
                 httpMode   : 'POST',
                 acceptType : 'APPLICATION_JSON',
                 contentType: 'APPLICATION_JSON',
                 requestBody: requestBody,
                 quiet      : false,
-                userKey    : config.userKey,
+                userKey    : config.whitesource.userKey,
                 httpProxy  : "http://test.sap.com:8080"
             ]
         ))
@@ -463,7 +462,7 @@ curl -o test.file -X POST http://some.host.whitesource.com/api/ -H 'Content-Type
 
     @Test
     void testFetchProjectsMetaInfoError() {
-        def config = [ serviceUrl: "http://some.host.whitesource.com/api/", userKey: "4711", productName: 'kjdkjkhd', productToken: '8475', projectNames: ['testProject1', 'testProject2']]
+        def config = [whitesource: [serviceUrl: "http://some.host.whitesource.com/api/", userKey: "4711", productName: 'kjdkjkhd', productToken: '8475', projectNames: ['testProject1', 'testProject2']]]
         repository.config.putAll(config)
 
         def requestParams
@@ -486,7 +485,7 @@ curl -o test.file -X POST http://some.host.whitesource.com/api/ -H 'Content-Type
 
     @Test
     void testFetchVulnerabilitiesOnProjects() {
-        def config = [ serviceUrl: "http://some.host.whitesource.com/api/", userKey: "4711", productToken: '8475', projectNames: ['testProject1', 'testProject2']]
+        def config = [whitesource: [serviceUrl: "http://some.host.whitesource.com/api/", userKey: "4711", productToken: '8475', projectNames: ['testProject1', 'testProject2']]]
         nullScript.env['HTTP_PROXY'] = "http://test.sap.com:8080"
         repository.config.putAll(config)
 
@@ -512,26 +511,26 @@ curl -o test.file -X POST http://some.host.whitesource.com/api/ -H 'Content-Type
 
         assertThat(requestParams[0], is(
             [
-                url        : config.serviceUrl,
+                url        : config.whitesource.serviceUrl,
                 httpMode   : 'POST',
                 acceptType : 'APPLICATION_JSON',
                 contentType: 'APPLICATION_JSON',
                 requestBody: requestBody1,
                 quiet      : false,
-                userKey    : config.userKey,
+                userKey    : config.whitesource.userKey,
                 httpProxy  : "http://test.sap.com:8080"
             ]
         ))
 
         assertThat(requestParams[1], is(
             [
-                url        : config.serviceUrl,
+                url        : config.whitesource.serviceUrl,
                 httpMode   : 'POST',
                 acceptType : 'APPLICATION_JSON',
                 contentType: 'APPLICATION_JSON',
                 requestBody: requestBody2,
                 quiet      : false,
-                userKey    : config.userKey,
+                userKey    : config.whitesource.userKey,
                 httpProxy  : "http://test.sap.com:8080"
             ]
         ))
@@ -541,7 +540,7 @@ curl -o test.file -X POST http://some.host.whitesource.com/api/ -H 'Content-Type
 
     @Test
     void testFetchVulnerabilitiesOnProduct() {
-        def config = [ serviceUrl: "http://some.host.whitesource.com/api/", userKey: "4711", productToken: '8475', productName : 'testProduct']
+        def config = [whitesource: [serviceUrl: "http://some.host.whitesource.com/api/", userKey: "4711", productToken: '8475', productName : 'testProduct']]
         nullScript.env['HTTP_PROXY'] = "http://test.sap.com:8080"
         repository.config.putAll(config)
 
@@ -561,13 +560,13 @@ curl -o test.file -X POST http://some.host.whitesource.com/api/ -H 'Content-Type
 
         assertThat(requestParams[0], is(
             [
-                url        : config.serviceUrl,
+                url        : config.whitesource.serviceUrl,
                 httpMode   : 'POST',
                 acceptType : 'APPLICATION_JSON',
                 contentType: 'APPLICATION_JSON',
                 requestBody: requestBody,
                 quiet      : false,
-                userKey    : config.userKey,
+                userKey    : config.whitesource.userKey,
                 httpProxy  : "http://test.sap.com:8080"
             ]
         ))

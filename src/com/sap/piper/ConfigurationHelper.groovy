@@ -5,6 +5,8 @@ import com.cloudbees.groovy.cps.NonCPS
 @API
 class ConfigurationHelper implements Serializable {
 
+    def static SEPARATOR = '/'
+
     static ConfigurationHelper newInstance(Script step, Map config = [:]) {
         new ConfigurationHelper(step, config)
     }
@@ -88,9 +90,16 @@ class ConfigurationHelper implements Serializable {
     Map dependingOn(dependentKey){
         return [
             mixin: {key ->
+                def parts = tokenizeKey(key)
+                def targetMap = config
+                if(parts.size() > 1) {
+                    key = parts.last()
+                    parts.remove(key)
+                    targetMap = getConfigPropertyNested(config, (parts as Iterable).join(SEPARATOR))
+                }
                 def dependentValue = config[dependentKey]
-                if(config[key] == null && dependentValue && config[dependentValue])
-                    config[key] = config[dependentValue][key]
+                if(targetMap[key] == null && dependentValue && config[dependentValue])
+                    targetMap[key] = config[dependentValue][key]
                 return this
             }
         ]
@@ -127,26 +136,28 @@ class ConfigurationHelper implements Serializable {
 
     /* private */ static getConfigPropertyNested(Map config, key) {
 
-        def separator = '/'
+        List parts = tokenizeKey(key)
 
-        // reason for cast to CharSequence: String#tokenize(./.) causes a deprecation warning.
-        List parts = (key in String) ? (key as CharSequence).tokenize(separator) : ([key] as List)
+        if (config[parts.head()] != null) {
 
-        if(config[parts.head()] != null) {
-
-            if(config[parts.head()] in Map && ! parts.tail().isEmpty()) {
-                return getConfigPropertyNested(config[parts.head()], (parts.tail() as Iterable).join(separator))
+            if (config[parts.head()] in Map && !parts.tail().isEmpty()) {
+                return getConfigPropertyNested(config[parts.head()], (parts.tail() as Iterable).join(SEPARATOR))
             }
 
             if (config[parts.head()].class == String) {
                 return (config[parts.head()] as String).trim()
             }
         }
-
         return config[parts.head()]
     }
 
-     private void existsMandatoryProperty(key, errorMessage) {
+    /* private */  static tokenizeKey(String key) {
+        // reason for cast to CharSequence: String#tokenize(./.) causes a deprecation warning.
+        List parts = (key in String) ? (key as CharSequence).tokenize(SEPARATOR) : ([key] as List)
+        return parts
+    }
+
+    private void existsMandatoryProperty(key, errorMessage) {
 
         def paramValue = getConfigPropertyNested(config, key)
 

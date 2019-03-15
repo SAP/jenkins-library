@@ -12,7 +12,7 @@ class WhitesourceOrgAdminRepository implements Serializable {
     WhitesourceOrgAdminRepository(Script script, Map config) {
         this.script = script
         this.config = config
-        if(!this.config.whitesource.serviceUrl && !this.config.whitesourceAccessor)
+        if(!this.config.whitesource?.serviceUrl && !this.config.whitesourceAccessor)
             script.error "Parameter 'whitesource.serviceUrl' must be provided as part of the configuration."
         if(this.config.whitesourceAccessor instanceof String) {
             def clazz = this.class.classLoader.loadClass(this.config.whitesourceAccessor)
@@ -88,19 +88,19 @@ class WhitesourceOrgAdminRepository implements Serializable {
             acceptType : 'APPLICATION_JSON',
             contentType: 'APPLICATION_JSON',
             requestBody: serializedBody,
-            quiet      : !config.whitesource.verbose,
+            quiet      : !config.verbose,
             timeout    : config.whitesource.timeout
         ]
 
         if (script.env.HTTP_PROXY)
             params["httpProxy"] = script.env.HTTP_PROXY
 
-        if (config.whitesource.verbose)
+        if (config.verbose)
             script.echo "Sending http request with parameters ${params}"
 
         def response = script.httpRequest(params)
 
-        if (config.whitesource.verbose)
+        if (config.verbose)
             script.echo "Received response ${response}"
 
         return response

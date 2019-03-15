@@ -10,6 +10,7 @@ import util.JenkinsWriteFileRule
 import util.Rules
 
 import static org.hamcrest.Matchers.containsString
+import static org.hamcrest.Matchers.hasItem
 import static org.junit.Assert.assertThat
 
 class WhiteSourceConfigurationHelperTest extends BasePiperTest {
@@ -28,10 +29,46 @@ class WhiteSourceConfigurationHelperTest extends BasePiperTest {
     }
 
     @Test
-    void testExtendConfigurationFileUnifiedAgentPip() {
-        WhitesourceConfigurationHelper.extendUAConfigurationFile(nullScript, utils, [scanType: 'pip', configFilePath: './config', whitesource: [serviceUrl: "http://some.host.whitesource.com/api/", orgToken: 'abcd', productName: 'name', productToken: '1234', userKey: '0000']], "./")
+    void testExtendConfigurationFileUnifiedAgentMaven() {
+        WhitesourceConfigurationHelper.extendUAConfigurationFile(nullScript, utils, [scanType: 'none', whitesource: [configFilePath: './config',serviceUrl: "http://some.host.whitesource.com/api/", orgToken: 'abcd', productName: 'DIST - name1', productToken: '1234', userKey: '0000']], "./")
         assertThat(jwfr.files['./config.847f9aec2f93de9000d5fa4e6eaace2283ae6377'], containsString("apiKey=abcd"))
-        assertThat(jwfr.files['./config.847f9aec2f93de9000d5fa4e6eaace2283ae6377'], containsString("productName=name"))
+        assertThat(jwfr.files['./config.847f9aec2f93de9000d5fa4e6eaace2283ae6377'], containsString("productName=DIST - name1"))
+        assertThat(jwfr.files['./config.847f9aec2f93de9000d5fa4e6eaace2283ae6377'], containsString("productToken=1234"))
+        assertThat(jwfr.files['./config.847f9aec2f93de9000d5fa4e6eaace2283ae6377'], containsString("userKey=0000"))
+    }
+
+    @Test
+    void testExtendConfigurationFileUnifiedAgentNpm() {
+        WhitesourceConfigurationHelper.extendUAConfigurationFile(nullScript, utils, [scanType: 'npm', whitesource: [configFilePath: './config',serviceUrl: "http://some.host.whitesource.com/api/", orgToken: 'abcd', productName: 'DIST - name1', productToken: '1234', userKey: '0000']], "./")
+        assertThat(jwfr.files['./config.847f9aec2f93de9000d5fa4e6eaace2283ae6377'], containsString("apiKey=abcd"))
+        assertThat(jwfr.files['./config.847f9aec2f93de9000d5fa4e6eaace2283ae6377'], containsString("productName=DIST - name1"))
+        assertThat(jwfr.files['./config.847f9aec2f93de9000d5fa4e6eaace2283ae6377'], containsString("productToken=1234"))
+        assertThat(jwfr.files['./config.847f9aec2f93de9000d5fa4e6eaace2283ae6377'], containsString("userKey=0000"))
+    }
+
+    @Test
+    void testExtendConfigurationFileUnifiedAgentSbt() {
+        WhitesourceConfigurationHelper.extendUAConfigurationFile(nullScript, utils, [scanType: 'sbt', whitesource: [configFilePath: './config',serviceUrl: "http://some.host.whitesource.com/api/", orgToken: 'abcd', productName: 'DIST - name1', productToken: '1234', userKey: '0000']], "./")
+        assertThat(jwfr.files['./config.847f9aec2f93de9000d5fa4e6eaace2283ae6377'], containsString("apiKey=abcd"))
+        assertThat(jwfr.files['./config.847f9aec2f93de9000d5fa4e6eaace2283ae6377'], containsString("productName=DIST - name1"))
+        assertThat(jwfr.files['./config.847f9aec2f93de9000d5fa4e6eaace2283ae6377'], containsString("productToken=1234"))
+        assertThat(jwfr.files['./config.847f9aec2f93de9000d5fa4e6eaace2283ae6377'], containsString("userKey=0000"))
+    }
+
+    @Test
+    void testExtendConfigurationFileUnifiedAgentDlang() {
+        WhitesourceConfigurationHelper.extendUAConfigurationFile(nullScript, utils, [scanType: 'dlang', whitesource: [configFilePath: './config',serviceUrl: "http://some.host.whitesource.com/api/", orgToken: 'abcd', productName: 'DIST - name1', productToken: '1234', userKey: '0000']], "./")
+        assertThat(jwfr.files['./config.847f9aec2f93de9000d5fa4e6eaace2283ae6377'], containsString("apiKey=abcd"))
+        assertThat(jwfr.files['./config.847f9aec2f93de9000d5fa4e6eaace2283ae6377'], containsString("productName=DIST - name1"))
+        assertThat(jwfr.files['./config.847f9aec2f93de9000d5fa4e6eaace2283ae6377'], containsString("productToken=1234"))
+        assertThat(jwfr.files['./config.847f9aec2f93de9000d5fa4e6eaace2283ae6377'], containsString("userKey=0000"))
+    }
+
+    @Test
+    void testExtendConfigurationFileUnifiedAgentPip() {
+        WhitesourceConfigurationHelper.extendUAConfigurationFile(nullScript, utils, [scanType: 'pip', whitesource: [configFilePath: './config',serviceUrl: "http://some.host.whitesource.com/api/", orgToken: 'abcd', productName: 'DIST - name1', productToken: '1234', userKey: '0000']], "./")
+        assertThat(jwfr.files['./config.847f9aec2f93de9000d5fa4e6eaace2283ae6377'], containsString("apiKey=abcd"))
+        assertThat(jwfr.files['./config.847f9aec2f93de9000d5fa4e6eaace2283ae6377'], containsString("productName=DIST - name1"))
         assertThat(jwfr.files['./config.847f9aec2f93de9000d5fa4e6eaace2283ae6377'], containsString("productToken=1234"))
         assertThat(jwfr.files['./config.847f9aec2f93de9000d5fa4e6eaace2283ae6377'], containsString("userKey=0000"))
         assertThat(jwfr.files['./config.847f9aec2f93de9000d5fa4e6eaace2283ae6377'], containsString("python.resolveDependencies=true"))
@@ -39,13 +76,16 @@ class WhiteSourceConfigurationHelperTest extends BasePiperTest {
 
     @Test
     void testExtendConfigurationFileUnifiedAgentVerbose() {
-        WhitesourceConfigurationHelper.extendUAConfigurationFile(nullScript, utils, [scanType: 'pip', configFilePath: './config', whitesource: [serviceUrl: "http://some.host.whitesource.com/api/", orgToken: 'abcd', productName: 'name', productToken: '1234', userKey: '0000', verbose: true]], "./")
+        def config = [scanType: 'golang', whitesource: [configFilePath: './config', serviceUrl: "http://some.host.whitesource.com/api/", orgToken: 'abcd', productName: 'SHC - name2', productToken: '1234', userKey: '0000'], stashContent: ['some', 'stashes'], verbose: true]
+        WhitesourceConfigurationHelper.extendUAConfigurationFile(nullScript, utils, config, "./")
         assertThat(jwfr.files['./config.847f9aec2f93de9000d5fa4e6eaace2283ae6377'], containsString("apiKey=abcd"))
-        assertThat(jwfr.files['./config.847f9aec2f93de9000d5fa4e6eaace2283ae6377'], containsString("productName=name"))
+        assertThat(jwfr.files['./config.847f9aec2f93de9000d5fa4e6eaace2283ae6377'], containsString("productName=SHC - name2"))
         assertThat(jwfr.files['./config.847f9aec2f93de9000d5fa4e6eaace2283ae6377'], containsString("productToken=1234"))
         assertThat(jwfr.files['./config.847f9aec2f93de9000d5fa4e6eaace2283ae6377'], containsString("userKey=0000"))
-        assertThat(jwfr.files['./config.847f9aec2f93de9000d5fa4e6eaace2283ae6377'], containsString("python.resolveDependencies=true"))
+        assertThat(jwfr.files['./config.847f9aec2f93de9000d5fa4e6eaace2283ae6377'], containsString("go.resolveDependencies=true"))
         assertThat(jwfr.files['./config.847f9aec2f93de9000d5fa4e6eaace2283ae6377'], containsString("log.level=debug"))
+
+        assertThat(config.stashContent, hasItem(containsString('modified whitesource config ')))
     }
 
     @Test
@@ -54,7 +94,7 @@ class WhiteSourceConfigurationHelperTest extends BasePiperTest {
         p.putAll(['python.resolveDependencies': 'false', 'python.ignoreSourceFiles': 'false', 'python.ignorePipInstallErrors': 'true','python.installVirtualenv': 'false'])
         helper.registerAllowedMethod('readProperties', [Map], {return p})
 
-        WhitesourceConfigurationHelper.extendUAConfigurationFile(nullScript, utils, [scanType: 'pip', configFilePath: './config', whitesource: [serviceUrl: "http://some.host.whitesource.com/api/", orgToken: 'abcd', productName: 'name', productToken: '1234', userKey: '0000', verbose: true]], "./")
+        WhitesourceConfigurationHelper.extendUAConfigurationFile(nullScript, utils, [scanType: 'pip', whitesource: [configFilePath: './config', serviceUrl: "http://some.host.whitesource.com/api/", orgToken: 'abcd', productName: 'name', productToken: '1234', userKey: '0000'], verbose: true], "./")
         assertThat(jwfr.files['./config.847f9aec2f93de9000d5fa4e6eaace2283ae6377'], containsString("apiKey=abcd"))
         assertThat(jwfr.files['./config.847f9aec2f93de9000d5fa4e6eaace2283ae6377'], containsString("productName=name"))
         assertThat(jwfr.files['./config.847f9aec2f93de9000d5fa4e6eaace2283ae6377'], containsString("productToken=1234"))

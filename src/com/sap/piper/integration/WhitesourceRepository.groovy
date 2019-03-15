@@ -12,7 +12,7 @@ class WhitesourceRepository implements Serializable {
         this.script = script
         this.config = config
 
-        if(!config.whitesource.serviceUrl)
+        if(!config?.whitesource?.serviceUrl)
             script.error "Parameter 'whitesource.serviceUrl' must be provided as part of the configuration."
     }
 
@@ -180,19 +180,19 @@ class WhitesourceRepository implements Serializable {
             acceptType : 'APPLICATION_JSON',
             contentType: 'APPLICATION_JSON',
             requestBody: serializedBody,
-            quiet      : !config.whitesource.verbose,
+            quiet      : !config.verbose,
             timeout    : config.whitesource.timeout
         ]
 
         if (script.env.HTTP_PROXY)
             params["httpProxy"] = script.env.HTTP_PROXY
 
-        if(config.whitesource.verbose)
+        if(config.verbose)
             script.echo "Sending http request with parameters ${params}"
 
         def response = script.httpRequest(params)
 
-        if(config.whitesource.verbose)
+        if(config.verbose)
             script.echo "Received response ${response}"
 
         return response
@@ -203,10 +203,10 @@ class WhitesourceRepository implements Serializable {
         handleAdditionalRequestParameters(params)
         def serializedContent = new JsonUtils().jsonToString(params)
 
-        if(config.whitesource.verbose)
+        if(config.verbose)
             script.echo "Sending curl request with parameters ${params}"
 
-        script.sh "${config.whitesource.verbose ? '' : '#!/bin/sh -e\n'}curl -o ${fileName} -X POST ${config.whitesource.serviceUrl} -H 'Content-Type: application/json' -d \'${serializedContent}\'"
+        script.sh "${config.verbose ? '' : '#!/bin/sh -e\n'}curl -o ${fileName} -X POST ${config.whitesource.serviceUrl} -H 'Content-Type: application/json' -d \'${serializedContent}\'"
     }
 
     @NonCPS

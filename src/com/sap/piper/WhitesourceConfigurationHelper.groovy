@@ -8,8 +8,8 @@ class WhitesourceConfigurationHelper implements Serializable {
         def mapping = []
         def parsingClosure = { fileReadPath -> return script.readProperties (file: fileReadPath) }
         def serializationClosure = { configuration -> serializeUAConfig(configuration) }
-        def inputFile = config.configFilePath.replaceFirst('\\./', '')
-        def suffix = utils.generateSha1(config.configFilePath)
+        def inputFile = config.whitesource.configFilePath.replaceFirst('\\./', '')
+        def suffix = utils.generateSha1(config.whitesource.configFilePath)
         def targetFile = "${inputFile}.${suffix}"
         if(config.whitesource.productName.startsWith('DIST - ')) {
             mapping += [
@@ -22,7 +22,7 @@ class WhitesourceConfigurationHelper implements Serializable {
                 [name: 'forceCheckAllDependencies', value: true, force: true]
             ]
         }
-        if(config.whitesource.verbose)
+        if(config.verbose)
             mapping += [name: 'log.level', value: 'debug', force: true]
 
         mapping += [
@@ -99,7 +99,7 @@ class WhitesourceConfigurationHelper implements Serializable {
         def outputFilePath = "${path}${targetFile}"
         def moduleSpecificFile = parsingClosure(inputFilePath)
         if (!moduleSpecificFile)
-            moduleSpecificFile = parsingClosure(config.configFilePath)
+            moduleSpecificFile = parsingClosure(config.whitesource.configFilePath)
         if (!moduleSpecificFile)
             moduleSpecificFile = [:]
 
@@ -112,7 +112,7 @@ class WhitesourceConfigurationHelper implements Serializable {
 
         def output = serializationClosure(moduleSpecificFile)
 
-        if(config.whitesource.verbose)
+        if(config.verbose)
             script.echo "Writing config file ${outputFilePath} with content:\n${output}"
         script.writeFile file: outputFilePath, text: output
         if(config.stashContent && config.stashContent.size() > 0) {
@@ -124,7 +124,7 @@ class WhitesourceConfigurationHelper implements Serializable {
             )
             config.stashContent += [stashName]
         }
-        config.configFilePath = outputFilePath
+        config.whitesource.configFilePath = outputFilePath
     }
 
     @NonCPS
