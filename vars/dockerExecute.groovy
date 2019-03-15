@@ -147,7 +147,7 @@ void call(Map parameters = [:], body) {
                     }
                 } else {
                     if(!config.dockerName){
-                        config.dockerName = "container-exec"
+                        config.dockerName = UUID.randomUUID().toString()
                     }
 
                     Map paramMap = [
