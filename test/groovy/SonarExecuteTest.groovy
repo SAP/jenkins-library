@@ -34,17 +34,16 @@ class SonarExecuteScanTest extends BasePiperTest {
         .around(jedr)
         .around(jscr)
         .around(jlr)
-        .around(jsr) // needs to be activated after jedr, otherwise executeDocker is not mocked
+        .around(jsr)
 
     def sonarInstance
 
     @Before
     void init() throws Exception {
         sonarInstance = null
-        helper.registerAllowedMethod("withSonarQubeEnv", [String.class, Closure.class], {
-                string, closure ->
-                    sonarInstance = string
-                    return closure()
+        helper.registerAllowedMethod("withSonarQubeEnv", [String.class, Closure.class], { string, closure ->
+            sonarInstance = string
+            return closure()
         })
         helper.registerAllowedMethod("unstash", [String.class], { stashInput -> return []})
         helper.registerAllowedMethod("fileExists", [String.class], { file -> return file })
@@ -57,7 +56,7 @@ class SonarExecuteScanTest extends BasePiperTest {
                 binding.setProperty(l[0].variable, null)
             }
         })
-        nullScript.commonPipelineEnvironment.setArtifactVersion('1.2.3-20180101-010203_0f54a5d53bcd29b4d747d8d168f52f2ceddf7198')
+        nullScript.commonPipelineEnvironment.setArtifactVersion('1.2.3-20180101')
     }
 
     @Test
@@ -69,8 +68,21 @@ class SonarExecuteScanTest extends BasePiperTest {
 
         // asserts
         assertThat('Sonar instance is not set to the default value', sonarInstance, is('SonarCloud'))
-        assertThat('Sonar project version is not set to the default value', jscr.shell, hasItem('sonar-scanner -Dsonar.projectVersion=\'1\''))
-        assertThat('Docker image is not set to the default value', jedr.dockerParams.dockerImage, is('newtmitch/sonar-scanner:3.2.0'))
+        assertThat('Sonar project version is not set to the default value', jscr.shell, hasItem(containsString('sonar-scanner -Dsonar.projectVersion=1')))
+        assertThat('Docker image is not set to the default value', jedr.dockerParams.dockerImage, is('maven:3.5-jdk-8'))
+        assertJobStatusSuccess()
+    }
+
+    @Test
+    void testWithOptionals() throws Exception {
+        jsr.step.sonarExecuteScan(
+            script: nullScript,
+            juStabUtils: utils,
+            organization: 'TestOrg-github'
+        )
+
+        // asserts
+        assertThat(jscr.shell, hasItem(containsString('-Dsonar.organization=TestOrg-github')))
         assertJobStatusSuccess()
     }
 
@@ -83,7 +95,7 @@ class SonarExecuteScanTest extends BasePiperTest {
         )
 
         // asserts
-        assertThat('Sonar project version is not set to the custom value', jscr.shell, hasItem('sonar-scanner -Dsonar.projectVersion=\'2\''))
+        assertThat('Sonar project version is not set to the custom value', jscr.shell, hasItem(containsString('sonar-scanner -Dsonar.projectVersion=2')))
         assertJobStatusSuccess()
     }
 
@@ -92,11 +104,24 @@ class SonarExecuteScanTest extends BasePiperTest {
         jsr.step.sonarExecuteScan(
             script: nullScript,
             juStabUtils: utils,
-            options: '-DmyCustomSettings -Dsonar.projectVersion=\'${projectVersion}\''
+            options: '-DmyCustomSettings'
         )
 
         // asserts
-        assertThat('Sonar options are not set to the custom value', jscr.shell, hasItem('sonar-scanner -DmyCustomSettings -Dsonar.projectVersion=\'1\''))
+        assertThat('Sonar options are not set to the custom value', jscr.shell, hasItem(containsString('sonar-scanner -DmyCustomSettings')))
+        assertJobStatusSuccess()
+    }
+
+    @Test
+    void testWithCustomOptionsList() throws Exception {
+        jsr.step.sonarExecuteScan(
+            script: nullScript,
+            juStabUtils: utils,
+            options: ['myCustomSettings', 'sonar.host.url=localhost']
+        )
+
+        // asserts
+        assertThat('Sonar options are not set to the custom value', jscr.shell, hasItem(containsString('sonar-scanner -DmyCustomSettings -Dsonar.host.url=localhost')))
         assertJobStatusSuccess()
     }
 
@@ -112,11 +137,11 @@ class SonarExecuteScanTest extends BasePiperTest {
         assertThat('Sonar instance is not set to the custom value', sonarInstance.toString(), is('MySonarInstance'))
         assertJobStatusSuccess()
     }
-
+/*
     @Test
     void testWithEmptyProjectVersion() throws Exception {
-        thrown.expect(Exception)
-        thrown.expectMessage('ERROR - NO VALUE AVAILABLE FOR projectVersion')
+        //thrown.expect(Exception)
+        //thrown.expectMessage('ERROR - NO VALUE AVAILABLE FOR projectVersion')
 
         nullScript.commonPipelineEnvironment.setArtifactVersion(null)
         jsr.step.sonarExecuteScan(
@@ -127,7 +152,7 @@ class SonarExecuteScanTest extends BasePiperTest {
         // asserts
         assertJobStatusFailure()
     }
-
+*//*
     @Test
     void testWithClosure() throws Exception {
         jsr.step.sonarExecuteScan(
@@ -141,7 +166,7 @@ class SonarExecuteScanTest extends BasePiperTest {
         assertThat(jlr.log, containsString('in closure'))
         assertJobStatusSuccess()
     }
-
+*/
     @Test
     void testWithGithubAuth() throws Exception {
         binding.setVariable('env', ['CHANGE_ID': '42'])
@@ -149,7 +174,7 @@ class SonarExecuteScanTest extends BasePiperTest {
         jsr.step.sonarExecuteScan(
             script: nullScript,
             juStabUtils: utils,
-            isVoter: true,
+            legacyPRHandling: true,
             githubTokenCredentialsId: 'githubId',
             githubOrg: 'testOrg',
             githubRepo: 'testRepo'

@@ -105,6 +105,9 @@ void call(Map parameters = [:]) {
             .withMandatoryProperty('githubRepo', null, { isPullRequest() })
             .use()
 
+        if(configuration.options instanceof String)
+            configuration.options = [].plus(configuration.options)
+
         def worker = { config ->
             withSonarQubeEnv(config.instance) {
                 loadSonarScanner(config)
