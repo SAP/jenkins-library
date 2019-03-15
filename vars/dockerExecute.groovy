@@ -176,9 +176,9 @@ void call(Map parameters = [:], body) {
                     dockerExecuteOnKubernetes(paramMap){
                         echo "[INFO][${STEP_NAME}] Executing inside a Kubernetes Pod with sidecar container"
                         container(name: config.sidecarName){
-                            while(true){
+                            while((sh(script:config.sidecarReadyCommand, returnStatus:true)!="0")){
                                 String statusCode = sh script:config.sidecarReadyCommand, returnStatus:true
-                                if(statusCode == "0") return;
+                                if(statusCode == "0") break;
                                 echo "Waiting for sidecar container"
                                 sleep 10
                             }
@@ -227,7 +227,7 @@ void call(Map parameters = [:], body) {
                             if(config.sidecarReadyCommand) {
                                 while(true){
                                     String statusCode = sh script:"docker exec ${container.id} ${config.sidecarReadyCommand}", returnStatus:true
-                                    if(statusCode == "0") return;
+                                    if(statusCode == "0") break;
                                     echo "Waiting for sidecar container"
                                     sleep 10
                                 }
@@ -248,27 +248,6 @@ void call(Map parameters = [:], body) {
         }
     }
 }
-
-private waitForSidecarReadyOnDocker(String containerId, String command){
-    while(true){
-        String statusCode = sh script:"docker exec ${containerId} $command", returnStatus:true
-        if(statusCode == "0") return;
-        echo "Waiting for sidecar container"
-        sleep 10
-    }
-}
-
-private waitForSidecarReadyOnKubernetes(String containerName, String command){
-    container(name: containerName){
-        while(true){
-            String statusCode = sh script:command, returnStatus:true
-            if(statusCode == "0") return;
-            echo "Waiting for sidecar container"
-            sleep 10
-        }
-    }
-}
-
 
 /*
  * Returns a string with docker options containing
