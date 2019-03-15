@@ -280,6 +280,7 @@ class Helper {
 
         params.put('STEP_CONFIG', script.STEP_CONFIG_KEYS ?: [])
         params.put('GENERAL_CONFIG', script.GENERAL_CONFIG_KEYS ?: [] )
+        params.put('STAGE_CONFIG', script.PARAMETER_KEYS ?: [] )
 
         return params
     }
