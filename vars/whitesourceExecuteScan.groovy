@@ -530,6 +530,7 @@ def getReportHtml(config, vulnerabilityList, numSevereVulns) {
             now                         : now,
             reportTitle                 : config.whitesource.vulnerabilityReportTitle,
             style                       : config.style,
+            cvssSeverityLimit           : config.whitesource.cvssSeverityLimit,
             totalSevereVulnerabilities  : numSevereVulns,
             totalVulnerabilities        : vulnerabilityList.size(),
             vulnerabilityTable          : vulnerabilityTable,
