@@ -21,12 +21,19 @@ import static com.sap.piper.cm.StepHelpers.getBackendTypeAndLogInfoIfCMIntegrati
   ]
 
 @Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS.plus([
-      'applicationId'
+        'applicationName', // RFC
+        'applicationId', // SOLMAN
+        'applicationDescription',
+        'filePath', // SOLMAN, CTS
+        'applicationUrl', // RFC
+        'abapPackage',
+        'codePage', //RFC
+        'acceptUnixStyleLineEndings', // RFC
+        'verbose', // RFC
     ])
 
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS.plus([
     'changeDocumentId',
-    'filePath',
     'transportRequestId'])
 
 void call(parameters = [:]) {
@@ -51,6 +58,7 @@ void call(parameters = [:]) {
         if(backendType == BackendType.NONE) return
 
         configHelper
+            .collectValidationFailures()
             .withMandatoryProperty('changeManagement/changeDocumentLabel')
             .withMandatoryProperty('changeManagement/clientOpts')
             .withMandatoryProperty('changeManagement/credentialsId')
@@ -59,7 +67,22 @@ void call(parameters = [:]) {
             .withMandatoryProperty('changeManagement/git/from')
             .withMandatoryProperty('changeManagement/git/to')
             .withMandatoryProperty('changeManagement/git/format')
-            .withMandatoryProperty('filePath')
+            .withMandatoryProperty('filePath', null, { backendType in [BackendType.SOLMAN, BackendType.CTS] })
+            .withMandatoryProperty('applicationUrl', null, { backendType == BackendType.RFC })
+            .withMandatoryProperty('codePage', null, { backendType == BackendType.RFC })
+            .withMandatoryProperty('acceptUnixStyleLineEndings', null, { backendType == BackendType.RFC })
+            .withMandatoryProperty('changeManagement/rfc/developmentInstance', null, { backendType == BackendType.RFC })
+            .withMandatoryProperty('changeManagement/rfc/developmentClient', null, { backendType == BackendType.RFC })
+            .withMandatoryProperty('changeManagement/rfc/docker/image', null, {backendType == BackendType.RFC})
+            .withMandatoryProperty('changeManagement/rfc/docker/options', null, {backendType == BackendType.RFC})
+            .withMandatoryProperty('changeManagement/rfc/docker/envVars', null, {backendType == BackendType.RFC})
+            .withMandatoryProperty('changeManagement/rfc/docker/pullImage', null, {backendType == BackendType.RFC})
+            .withMandatoryProperty('applicationDescription', null, { backendType == BackendType.RFC })
+            .withMandatoryProperty('abapPackage', null, { backendType == BackendType.RFC })
+            .withMandatoryProperty('applicationId', null, {backendType == BackendType.SOLMAN})
+            .withMandatoryProperty('applicationName', null, {backendType == BackendType.RFC})
+            .withMandatoryProperty('failOnWarning', null, {backendType == BackendType.RFC})
+            .withMandatoryProperty('verbose', null, {backendType == BackendType.RFC})
 
         new Utils().pushToSWA([
             step: STEP_NAME,
@@ -85,14 +108,15 @@ void call(parameters = [:]) {
             configHelper
                 .withMandatoryProperty('changeDocumentId',
                     "Change document id not provided (parameter: \'changeDocumentId\' or via commit history).")
-                .withMandatoryProperty('applicationId')
         }
         configuration = configHelper
                             .withMandatoryProperty('transportRequestId',
                                "Transport request id not provided (parameter: \'transportRequestId\' or via commit history).")
                            .use()
 
-        def uploadingMessage = ["[INFO] Uploading file '${configuration.filePath}' to transport request '${configuration.transportRequestId}'"]
+        def uploadingMessage = ['[INFO] Uploading file ' +
+            "'${backendType == BackendType.RFC ? configuration.applicationUrl : configuration.filePath}' " +
+            "to transport request '${configuration.transportRequestId}'"]
         if(backendType == BackendType.SOLMAN)
             uploadingMessage << " of change document '${configuration.changeDocumentId}'"
         uploadingMessage << '.'
@@ -101,22 +125,55 @@ void call(parameters = [:]) {
 
             try {
 
+                switch(backendType) {
 
-                cm.uploadFileToTransportRequest(backendType,
-                                                configuration.changeDocumentId,
-                                                configuration.transportRequestId,
-                                                configuration.applicationId,
-                                                configuration.filePath,
-                                                configuration.changeManagement.endpoint,
-                                                configuration.changeManagement.credentialsId,
-                                                configuration.changeManagement.clientOpts)
+                    case BackendType.SOLMAN:
+                        cm.uploadFileToTransportRequestSOLMAN(
+                            configuration.changeDocumentId,
+                            configuration.transportRequestId,
+                            configuration.applicationId,
+                            configuration.filePath,
+                            configuration.changeManagement.endpoint,
+                            configuration.changeManagement.credentialsId,
+                            configuration.changeManagement.clientOpts)
+                        break
+                    case BackendType.CTS:
+                        cm.uploadFileToTransportRequestCTS(
+                            configuration.transportRequestId,
+                            configuration.filePath,
+                            configuration.changeManagement.endpoint,
+                            configuration.changeManagement.credentialsId,
+                            configuration.changeManagement.clientOpts)
+                        break
+                    case BackendType.RFC:
+
+                        cm.uploadFileToTransportRequestRFC(
+                            configuration.changeManagement.rfc.docker ?: [],
+                            configuration.transportRequestId,
+                            configuration.applicationName,
+                            configuration.applicationUrl,
+                            configuration.changeManagement.endpoint,
+                            configuration.changeManagement.credentialsId,
+                            configuration.changeManagement.rfc.developmentInstance,
+                            configuration.changeManagement.rfc.developmentClient,
+                            configuration.applicationDescription,
+                            configuration.abapPackage,
+                            configuration.codePage,
+                            configuration.acceptUnixStyleLineEndings,
+                            configuration.failOnWarning,
+                            configuration.verbose
+                        )
+
+                        break
+
+                }
 
             } catch(ChangeManagementException ex) {
                 throw new AbortException(ex.getMessage())
             }
 
 
-        def uploadedMessage = ["[INFO] File '${configuration.filePath}' has been successfully uploaded to transport request '${configuration.transportRequestId}'"]
+        def uploadedMessage = ["[INFO] File '${backendType == BackendType.RFC ? configuration.applicationUrl : configuration.filePath}' has been successfully uploaded to transport request '${configuration.transportRequestId}'"]
         if(backendType == BackendType.SOLMAN)
             uploadedMessage << " of change document '${configuration.changeDocumentId}'"
         uploadedMessage << '.'
