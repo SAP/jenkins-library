@@ -1,18 +1,12 @@
-# uiVeri5ExecuteTests
+# ${docGenStepName}
 
-## Description
-
-Content here is generated from corresponding step, see `vars`.
+## ${docGenDescription}
 
 ## Prerequisites
 
-## Parameters
+## ${docGenParameters}
 
-Content here is generated from corresponding step, see `vars`.
-
-## Step configuration
-
-Content here is generated from corresponding step, see `vars`.
+## ${docGenConfiguration}
 
 ## Exceptions
 

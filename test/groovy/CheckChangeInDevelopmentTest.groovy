@@ -4,7 +4,7 @@ import org.junit.Test
 import org.junit.rules.ExpectedException
 import org.junit.rules.RuleChain
 
-import com.sap.piper.GitUtils
+import com.sap.piper.cm.BackendType
 import com.sap.piper.cm.ChangeManagement
 import com.sap.piper.cm.ChangeManagementException
 
@@ -153,6 +153,23 @@ class CheckChangeInDevelopmentTest extends BasePiperTest {
             script: nullScript,
             changeManagement: [type: 'NONE'])
 
+    }
+
+    @Test
+    public void stageConfigIsNotConsideredWithParamKeysTest() {
+
+        nullScript.commonPipelineEnvironment.configuration = [stages:[foo:[changeDocumentId:'12345']]]
+        ChangeManagement cm = getChangeManagementUtils(true, '')
+
+        thrown.expect(IllegalArgumentException)
+        thrown.expectMessage('No changeDocumentId provided.')
+
+        stepRule.step.checkChangeInDevelopment(
+            script: nullScript,
+            cmUtils: cm,
+            changeManagement: [type: BackendType.SOLMAN,
+                               endpoint: 'https://example.org/cm'],
+            stageName: 'foo')
     }
 
     private ChangeManagement getChangeManagementUtils(boolean inDevelopment, String changeDocumentId = '001') {
