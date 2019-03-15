@@ -175,13 +175,8 @@ void call(Map parameters = [:], body) {
 
                     dockerExecuteOnKubernetes(paramMap){
                         echo "[INFO][${STEP_NAME}] Executing inside a Kubernetes Pod with sidecar container"
-                        container(name: config.sidecarName){
-                            while((sh(script:config.sidecarReadyCommand, returnStatus:true)!="0")){
-                                String statusCode = sh script:config.sidecarReadyCommand, returnStatus:true
-                                if(statusCode == "0") break;
-                                echo "Waiting for sidecar container"
-                                sleep 10
-                            }
+                        if(config.sidecarReadyCommand) {
+                            waitForSidecarReadyOnKubernetes(config.sidecarName, config.sidecarReadyCommand)
                         }
                         body()
                     }
@@ -225,12 +220,7 @@ void call(Map parameters = [:], body) {
                                 config.dockerOptions.add("--network-alias ${config.dockerName}")
                             config.dockerOptions.add("--network ${networkName}")
                             if(config.sidecarReadyCommand) {
-                                while(true){
-                                    String statusCode = sh script:"docker exec ${container.id} ${config.sidecarReadyCommand}", returnStatus:true
-                                    if(statusCode == "0") break;
-                                    echo "Waiting for sidecar container"
-                                    sleep 10
-                                }
+                                waitForSidecarReadyOnDocker(container.id, config.sidecarReadyCommand)
                             }
                             image.inside(getDockerOptions(config.dockerEnvVars, config.dockerVolumeBind, config.dockerOptions)) {
                                 echo "[INFO][${STEP_NAME}] Running with sidecar container."
@@ -246,6 +236,29 @@ void call(Map parameters = [:], body) {
                 body()
             }
         }
+    }
+}
+
+private waitForSidecarReadyOnDocker(String containerId, String command){
+    String dockerCommand = "docker exec ${containerId} ${command}"
+    waitForSidecarReady(dockerCommand)
+}
+
+private waitForSidecarReadyOnKubernetes(String containerName, String command){
+    container(name: containerName){
+        waitForSidecarReady(command)
+    }
+}
+
+private waitForSidecarReady(String command){
+    int sleepTimeInSeconds = 10
+    int timeoutInSeconds = 5 * 60
+    int maxRetries = timeoutInSeconds / sleepTimeInSeconds
+    int retries = 0
+    while(sh(script:command, returnStatus:true) != "0" && retries <= maxRetries){
+        echo "Waiting for sidecar container"
+        sleep sleepTimeInSeconds
+        retries++
     }
 }
 
