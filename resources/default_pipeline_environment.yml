@@ -16,6 +16,12 @@ general:
       from: 'origin/master'
       to: 'HEAD'
       format: '%b'
+    rfc:
+      docker:
+        image: 'rfc'
+        options: []
+        envVars: {}
+        pullImage: true
   githubApiUrl: 'https://api.github.com'
   githubServerUrl: 'https://github.com'
   gitSshKeyCredentialsId: '' #needed to allow sshagent to run with local ssh key
@@ -416,8 +422,14 @@ steps:
       failIfStatusIsNotInDevelopment: true
   transportRequestCreate:
       developmentSystemId: null
+      verbose: false
   transportRequestUploadFile:
+      acceptUnixStyleLineEndings: true
+      codePage: 'UTF-8'
+      failOnWarning: true
+      verbose: false
   transportRequestRelease:
+      verbose: false
   uiVeri5ExecuteTests:
     failOnError: false
     dockerEnvVars: {}
