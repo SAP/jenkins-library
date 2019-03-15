@@ -175,6 +175,14 @@ void call(Map parameters = [:], body) {
 
                     dockerExecuteOnKubernetes(paramMap){
                         echo "[INFO][${STEP_NAME}] Executing inside a Kubernetes Pod with sidecar container"
+                        container(name: config.sidecarName){
+                            while(true){
+                                String statusCode = sh script:config.sidecarReadyCommand, returnStatus:true
+                                if(statusCode == "0") return;
+                                echo "Waiting for sidecar container"
+                                sleep 10
+                            }
+                        }
                         body()
                     }
                 }
