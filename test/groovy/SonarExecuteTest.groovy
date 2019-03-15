@@ -74,19 +74,6 @@ class SonarExecuteScanTest extends BasePiperTest {
     }
 
     @Test
-    void testWithOptionals() throws Exception {
-        jsr.step.sonarExecuteScan(
-            script: nullScript,
-            juStabUtils: utils,
-            organization: 'TestOrg-github'
-        )
-
-        // asserts
-        assertThat(jscr.shell, hasItem(containsString('-Dsonar.organization=TestOrg-github')))
-        assertJobStatusSuccess()
-    }
-
-    @Test
     void testWithCustomVersion() throws Exception {
         jsr.step.sonarExecuteScan(
             script: nullScript,
@@ -104,11 +91,11 @@ class SonarExecuteScanTest extends BasePiperTest {
         jsr.step.sonarExecuteScan(
             script: nullScript,
             juStabUtils: utils,
-            options: '-DmyCustomSettings'
+            options: '-Dsonar.host.url=localhost'
         )
 
         // asserts
-        assertThat('Sonar options are not set to the custom value', jscr.shell, hasItem(containsString('sonar-scanner -DmyCustomSettings')))
+        assertThat('Sonar options are not set to the custom value', jscr.shell, hasItem(containsString('sonar-scanner -Dsonar.host.url=localhost')))
         assertJobStatusSuccess()
     }
 
@@ -117,11 +104,11 @@ class SonarExecuteScanTest extends BasePiperTest {
         jsr.step.sonarExecuteScan(
             script: nullScript,
             juStabUtils: utils,
-            options: ['myCustomSettings', 'sonar.host.url=localhost']
+            options: ['sonar.host.url=localhost']
         )
 
         // asserts
-        assertThat('Sonar options are not set to the custom value', jscr.shell, hasItem(containsString('sonar-scanner -DmyCustomSettings -Dsonar.host.url=localhost')))
+        assertThat('Sonar options are not set to the custom value', jscr.shell, hasItem(containsString('sonar-scanner -Dsonar.host.url=localhost')))
         assertJobStatusSuccess()
     }
 
@@ -137,46 +124,62 @@ class SonarExecuteScanTest extends BasePiperTest {
         assertThat('Sonar instance is not set to the custom value', sonarInstance.toString(), is('MySonarInstance'))
         assertJobStatusSuccess()
     }
-/*
-    @Test
-    void testWithEmptyProjectVersion() throws Exception {
-        //thrown.expect(Exception)
-        //thrown.expectMessage('ERROR - NO VALUE AVAILABLE FOR projectVersion')
 
-        nullScript.commonPipelineEnvironment.setArtifactVersion(null)
+    @Test
+    void testWithPRHandling() throws Exception {
+        binding.setVariable('env', [
+            'CHANGE_ID': '42',
+            'CHANGE_TARGET': 'master',
+            'BRANCH_NAME': 'feature/anything'
+        ])
+        nullScript.commonPipelineEnvironment.setGithubOrg('testOrg')
+        //nullScript.commonPipelineEnvironment.setGithubRepo('testRepo')
+
         jsr.step.sonarExecuteScan(
             script: nullScript,
-            juStabUtils: utils
+            juStabUtils: utils,
+            //githubOrg: 'testOrg',
+            githubRepo: 'testRepo'
+        )
+        // asserts
+        assertThat(jscr.shell, hasItem(allOf(
+            containsString('-Dsonar.pullrequest.key=42'),
+            containsString('-Dsonar.pullrequest.base=master'),
+            containsString('-Dsonar.pullrequest.branch=feature/anything'),
+            containsString('-Dsonar.pullrequest.provider=github'),
+            containsString('-Dsonar.pullrequest.github.repository=testOrg/testRepo')
+        )))
+        assertJobStatusSuccess()
+    }
+
+    @Test
+    void testWithPRHandlingWithoutMandatory() throws Exception {
+        thrown.expect(Exception)
+        thrown.expectMessage('ERROR - NO VALUE AVAILABLE FOR githubRepo')
+
+        binding.setVariable('env', ['CHANGE_ID': '42'])
+        jsr.step.sonarExecuteScan(
+            script: nullScript,
+            juStabUtils: utils,
+            githubOrg: 'testOrg'
         )
 
         // asserts
         assertJobStatusFailure()
     }
-*//*
-    @Test
-    void testWithClosure() throws Exception {
-        jsr.step.sonarExecuteScan(
-            script: nullScript,
-            juStabUtils: utils
-        ){
-            nullScript.echo "in closure"
-        }
 
-        // asserts
-        assertThat(jlr.log, containsString('in closure'))
-        assertJobStatusSuccess()
-    }
-*/
     @Test
-    void testWithGithubAuth() throws Exception {
+    void testWithLegacyPRHandling() throws Exception {
         binding.setVariable('env', ['CHANGE_ID': '42'])
+        nullScript.commonPipelineEnvironment.setGithubOrg('testOrg')
+        //nullScript.commonPipelineEnvironment.setGithubRepo('testRepo')
 
         jsr.step.sonarExecuteScan(
             script: nullScript,
             juStabUtils: utils,
             legacyPRHandling: true,
             githubTokenCredentialsId: 'githubId',
-            githubOrg: 'testOrg',
+            //githubOrg: 'testOrg',
             githubRepo: 'testRepo'
         )
         // asserts
@@ -190,6 +193,24 @@ class SonarExecuteScanTest extends BasePiperTest {
     }
 
     @Test
+    void testWithLegacyPRHandlingWithoutMandatory() throws Exception {
+        thrown.expect(Exception)
+        thrown.expectMessage('ERROR - NO VALUE AVAILABLE FOR githubTokenCredentialsId')
+
+        binding.setVariable('env', ['CHANGE_ID': '42'])
+        jsr.step.sonarExecuteScan(
+            script: nullScript,
+            juStabUtils: utils,
+            legacyPRHandling: true,
+            githubOrg: 'testOrg',
+            githubRepo: 'testRepo'
+        )
+
+        // asserts
+        assertJobStatusFailure()
+    }
+
+    @Test
     void testWithSonarAuth() throws Exception {
         jsr.step.sonarExecuteScan(
             script: nullScript,
@@ -197,9 +218,20 @@ class SonarExecuteScanTest extends BasePiperTest {
             sonarTokenCredentialsId: 'githubId'
         )
         // asserts
-        assertThat(jscr.shell, hasItem(
-            containsString('-Dsonar.login=TOKEN_githubId')
-        ))
+        assertThat(jscr.shell, hasItem(containsString('-Dsonar.login=TOKEN_githubId')))
+        assertJobStatusSuccess()
+    }
+
+    @Test
+    void testWithSonarCloudOrganization() throws Exception {
+        jsr.step.sonarExecuteScan(
+            script: nullScript,
+            juStabUtils: utils,
+            organization: 'TestOrg-github'
+        )
+
+        // asserts
+        assertThat(jscr.shell, hasItem(containsString('-Dsonar.organization=TestOrg-github')))
         assertJobStatusSuccess()
     }
 }
