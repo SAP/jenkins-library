@@ -45,12 +45,12 @@ class TemplateHelper {
                    |
                    |In following sections of the config.yml the configuration is possible:\n\n'''.stripMargin()
 
-        t += '| parameter | general | step | stage |\n'
-        t += '|-----------|---------|------|-------|\n'
+        t += '| parameter | general | step/stage |\n'
+        t += '|-----------|---------|------------|\n'
 
         parameters.keySet().toSorted().each {
             def props = parameters.get(it)
-            t += "| `${it}` | ${props.GENERAL_CONFIG ? 'X' : ''} | ${props.STEP_CONFIG ? 'X' : ''} | ${props.STAGE_CONFIG ? 'X' : ''} |\n"
+            t += "| `${it}` | ${props.GENERAL_CONFIG ? 'X' : ''} | ${props.STEP_CONFIG ? 'X' : ''} |\n"
         }
 
         t.trim()
@@ -517,8 +517,7 @@ def handleStep(stepName, prepareDefaultValuesStep, gse) {
                                 required: true,
 
                                 GENERAL_CONFIG: false,
-                                STEP_CONFIG: false,
-                                STAGE_CONFIG: false
+                                STEP_CONFIG: false
                             ]
 
     // END special handling for 'script' parameter
