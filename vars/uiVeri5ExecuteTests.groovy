@@ -11,33 +11,21 @@ import static com.sap.piper.Prerequisites.checkScript
 @Field String STEP_NAME = getClass().getName()
 
 @Field Set GENERAL_CONFIG_KEYS = [
-    /**
-     * In case a `testRepository` is provided and it is protected, access credentials (as Jenkins credentials) can be provided with `gitSshKeyCredentialsId`. **Note: In case of using a protected repository, `testRepository` should include the ssh link to the repository.**
-     * @possibleValues Jenkins credentials id
-     */
+    /** @see seleniumExecuteTests */
     'gitSshKeyCredentialsId'
 ]
 @Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS.plus([
-    /**
-     * A map of environment variables to set in the container, e.g. [http_proxy:'proxy:8080'].
-     */
+    /** @see dockerExecute */
     'dockerEnvVars',
-    /**
-     * The name of the docker image that should be used. If empty, Docker is not used and the command is executed directly on the Jenkins system.
-     */
+    /** @see dockerExecute */
     'dockerImage',
-    /**
-     * Only relevant for Kubernetes case: Specifies a dedicated user home directory for the container which will be passed as value for environment variable `HOME`.
-     */
+    /** @see dockerExecute */
     'dockerWorkspace',
-    /**
-     * With `failOnError` the behavior in case tests fail can be defined.
-     * @possibleValues `true`, `false`
-     */
+    //TODO: transitive defaults
+    //TODO: transitive possible values
+    /** @see seleniumExecuteTests */
     'failOnError',
-    /**
-     * In case a `testRepository` is provided the branch in this repository can be specified with `gitBranch`.
-     */
+    /** @see seleniumExecuteTests */
     'gitBranch',
     /**
      * The command that is executed to install the test tool.
@@ -55,25 +43,17 @@ import static com.sap.piper.Prerequisites.checkScript
      * The port of the selenium hub. The value is only needed for the `runCommand`.
      */
     'seleniumPort',
-    /**
-     * A map of environment variables to set in the sidecar container, similar to `dockerEnvVars`.
-     */
+    /** @see dockerExecute */
     'sidecarEnvVars',
-    /**
-     * The name of the docker image of the sidecar container. If empty, no sidecar container is started.
-     */
+    /** @see dockerExecute */
     'sidecarImage',
-    /**
-     * If specific stashes should be considered for the tests, their names need to be passed via the parameter `stashContent`.
-     */
+    /** @see dockerExecute */
     'stashContent',
     /**
      * This allows to set specific options for the UIVeri5 execution. Details can be found [in the UIVeri5 documentation](https://github.com/SAP/ui5-uiveri5/blob/master/docs/config/config.md#configuration).
      */
     'testOptions',
-    /**
-     * With `testRepository` the tests can be loaded from another reposirory.
-     */
+    /** @see seleniumExecuteTests */
     'testRepository',
     /**
      * The `testServerUrl` is passed as environment variable `TARGET_SERVER_URL` to the test execution.

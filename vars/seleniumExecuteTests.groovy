@@ -10,6 +10,7 @@ import groovy.text.SimpleTemplateEngine
 
 @Field String STEP_NAME = getClass().getName()
 
+//TODO: limit parameter visibility
 @Field GENERAL_CONFIG_KEYS = [
     /**
      * Defines the tool which is used for executing the tests
@@ -36,7 +37,7 @@ import groovy.text.SimpleTemplateEngine
      */
     'gitBranch',
     /**
-     * Only if `testRepository` is provided: credentials for a protected testRepository
+     * Only if `testRepository` is provided: Credentials for a protected testRepository
      * @possibleValues Jenkins credentials id
      */
     'gitSshKeyCredentialsId',
