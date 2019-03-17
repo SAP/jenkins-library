@@ -13,7 +13,7 @@ import static com.sap.piper.Prerequisites.checkScript
 @Field Set GENERAL_CONFIG_KEYS = [
     /**
      * In case a `testRepository` is provided and it is protected, access credentials (as Jenkins credentials) can be provided with `gitSshKeyCredentialsId`. **Note: In case of using a protected repository, `testRepository` should include the ssh link to the repository.**
-     * @possibleValues Jenkins credentialId
+     * @possibleValues Jenkins credentials id
      */
     'gitSshKeyCredentialsId'
 ]
