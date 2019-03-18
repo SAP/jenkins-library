@@ -5,8 +5,8 @@ import com.sap.piper.GenerateDocumentation
 import com.sap.piper.JenkinsUtils
 import com.sap.piper.Utils
 import com.sap.piper.k8s.SystemEnv
+import com.sap.piper.JsonUtils
 
-import groovy.json.JsonBuilder
 import groovy.transform.Field
 import hudson.AbortException
 
@@ -200,8 +200,9 @@ private String generatePodSpec(Map config) {
     ]
     podSpec.spec.securityContext = getSecurityContext(config)
 
-    return new JsonBuilder(podSpec).toPrettyString()
+    return new JsonUtils().getPrettyJsonString(podSpec)
 }
+
 
 private String stashWorkspace(config, prefix, boolean chown = false) {
     def stashName = "${prefix}-${config.uniqueId}"
