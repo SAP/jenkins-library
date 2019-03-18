@@ -82,7 +82,9 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
                 containersList.add(container.name)
                 imageList.add(container.image.toString())
                 envList.add(container.env)
-                portList.add(container.ports)
+                if(container.ports) {
+                    portList.add(container.ports)
+                }
                 if (container.command) {
                     containerCommands.add(container.command)
                 }
@@ -90,9 +92,6 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
             }
             body()
         })
-        helper.registerAllowedMethod('node', [String.class, Closure.class], { String nodeName, Closure body -> body() })
-        helper.registerAllowedMethod('envVar', [Map.class], { Map option -> return option })
-        helper.registerAllowedMethod('containerTemplate', [Map.class], { Map option -> return option })
     }
 
     @Test
@@ -264,7 +263,8 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
             hasItem('maven:3.5-jdk-8-alpine'),
             hasItem('selenium/standalone-chrome'),
         ))
-        assertThat(portList, hasItem(hasItem([name: 'selenium0', containPort: 4444, hostPort: 4444])))
+        // assertThat(portList, is(null))
+        assertThat(portList, hasItem([[name: 'selenium0', containerPort: 4444, hostPort: 4444]]))
         assertThat(containerCommands.size(), is(1))
         assertThat(envList, hasItem(hasItem(allOf(hasEntry('name', 'customEnvKey'), hasEntry ('value','customEnvValue')))))
     }
