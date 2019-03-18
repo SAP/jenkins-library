@@ -93,11 +93,11 @@ import groovy.transform.Field
      */
     'sidecarWorkspace',
     /**
-     * Specific stashes that should be considered for the step execution.
+     * Command executed inside the container which returns exit code 0 when the container is ready to be used.
      */
     'sidecarReadyCommand',
     /**
-     * Command executed inside the container which returns exit code 0 when the container is ready to be used.
+     * Specific stashes that should be considered for the step execution.
      */
     'stashContent'
 ])
@@ -177,9 +177,6 @@ void call(Map parameters = [:], body) {
 
                     paramMap.containerWorkspaces[config.dockerImage] = config.dockerWorkspace
                     paramMap.containerWorkspaces[config.sidecarImage] = ''
-
-                    echo config.toString()
-                    echo paramMap.toString()
 
                     dockerExecuteOnKubernetes(paramMap){
                         echo "[INFO][${STEP_NAME}] Executing inside a Kubernetes Pod with sidecar container"
@@ -264,13 +261,13 @@ private waitForSidecarReady(String command){
     int maxRetries = timeoutInSeconds / sleepTimeInSeconds
     int retries = 0
     while(true){
+        echo "Waiting for sidecar container"
         String status = sh script:command, returnStatus:true
         if(status == "0") return
         if(retries > maxRetries){
             error("Timeout while waiting for sidecar container to be ready")
         }
 
-        echo "Waiting for sidecar container"
         sleep sleepTimeInSeconds
         retries++
     }
