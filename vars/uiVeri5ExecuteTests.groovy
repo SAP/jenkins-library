@@ -21,9 +21,10 @@ import static com.sap.piper.Prerequisites.checkScript
     'dockerImage',
     /** @see dockerExecute */
     'dockerWorkspace',
-    //TODO: transitive defaults
-    //TODO: transitive possible values
-    /** @see seleniumExecuteTests */
+    /**
+     * With `failOnError` the behavior in case tests fail can be defined.
+     * @possibleValues `true`, `false`
+     */
     'failOnError',
     /** @see seleniumExecuteTests */
     'gitBranch',
