@@ -15,11 +15,11 @@ import static com.sap.piper.Prerequisites.checkScript
     'dockerEnvVars',
     'dockerImage',
     'dockerOptions',
-    'neoHome'
+    'neoHome',
+    'source'
 ])
 
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS.plus([
-    'source',
     'deployMode',
     'warAction'
 ])
