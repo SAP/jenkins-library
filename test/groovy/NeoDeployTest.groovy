@@ -3,6 +3,7 @@ import hudson.AbortException
 
 import static org.hamcrest.Matchers.allOf
 import static org.hamcrest.Matchers.containsString
+import static org.hamcrest.Matchers.not
 
 import org.hamcrest.Matchers
 import org.jenkinsci.plugins.credentialsbinding.impl.CredentialNotFoundException
@@ -10,7 +11,6 @@ import org.junit.Assert
 import org.junit.Before
 import org.junit.BeforeClass
 import org.junit.ClassRule
-import org.junit.Ignore
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.ExpectedException
@@ -233,8 +233,12 @@ class NeoDeployTest extends BasePiperTest {
     public void sanityChecksDeployModeWarPropertiesFileTest() {
 
         thrown.expect(IllegalArgumentException)
-        // using this deploy mode account and host are provided by the properties file
-        thrown.expectMessage('ERROR - NO VALUE AVAILABLE FOR source')
+        // using this deploy mode 'account' and 'host' are provided by the properties file
+        thrown.expectMessage(
+            allOf(
+                containsString('ERROR - NO VALUE AVAILABLE FOR source'),
+                not(containsString('neo/host')),
+                not(containsString('neo/account'))))
 
         nullScript.commonPipelineEnvironment.configuration = [:]
 
