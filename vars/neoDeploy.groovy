@@ -1,6 +1,5 @@
 import com.sap.piper.ConfigurationHelper
 import com.sap.piper.Utils
-import com.sap.piper.tools.ToolDescriptor
 import com.sap.piper.tools.neo.DeployMode
 import com.sap.piper.tools.neo.NeoCommandHelper
 import com.sap.piper.tools.neo.WarAction
@@ -16,29 +15,14 @@ import static com.sap.piper.Prerequisites.checkScript
     'dockerEnvVars',
     'dockerImage',
     'dockerOptions',
-    'neoHome'
+    'neoHome',
+    'source'
 ])
 
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS.plus([
-    'source',
     'deployMode',
     'warAction'
 ])
-
-@Field Map CONFIG_KEY_COMPATIBILITY = [
-    neo   : [
-        host          : 'host',
-        account       : 'account',
-        application   : 'applicationName',
-        credentialsId : 'neoCredentialsId',
-        propertiesFile: 'propertiesFile',
-        runtime       : 'runtime',
-        runtimeVersion: 'runtimeVersion',
-        size          : 'vmSize'
-
-    ],
-    source: 'archivePath'
-]
 
 void call(parameters = [:]) {
     handlePipelineStepErrors(stepName: STEP_NAME, stepParameters: parameters) {
@@ -49,21 +33,31 @@ void call(parameters = [:]) {
 
         prepareDefaultValues script: script
 
-        Map stepCompatibilityConfiguration = handleCompatibility(script, parameters)
-
         // load default & individual configuration
-        Map configuration = ConfigurationHelper.newInstance(this)
+        ConfigurationHelper configHelper = ConfigurationHelper.newInstance(this)
             .loadStepDefaults()
             .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS)
-            .mixin(stepCompatibilityConfiguration)
-            .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS, CONFIG_KEY_COMPATIBILITY)
-            .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName ?: env.STAGE_NAME, STEP_CONFIG_KEYS, CONFIG_KEY_COMPATIBILITY)
+            .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS)
+            .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName ?: env.STAGE_NAME, STEP_CONFIG_KEYS)
             .addIfEmpty('source', script.commonPipelineEnvironment.getMtarFilePath())
-            .mixin(parameters, PARAMETER_KEYS, CONFIG_KEY_COMPATIBILITY)
-            .withMandatoryProperty('neo')
+            .mixin(parameters, PARAMETER_KEYS)
+            .withMandatoryProperty('neo/host')
+            .withMandatoryProperty('neo/account')
             .withMandatoryProperty('source')
+            .withMandatoryProperty('neo/credentialsId')
             .withPropertyInValues('deployMode', DeployMode.stringValues())
-            .use()
+
+        Map configuration = configHelper.use()
+
+        DeployMode deployMode = DeployMode.fromString(configuration.deployMode)
+
+        def isWarParamsDeployMode = { deployMode == DeployMode.WAR_PARAMS }
+
+        configHelper
+            .withMandatoryProperty('neo/application', null, isWarParamsDeployMode)
+            .withMandatoryProperty('neo/runtime', null, isWarParamsDeployMode)
+            .withMandatoryProperty('neo/runtimeVersion', null, isWarParamsDeployMode)
+
 
         utils.pushToSWA([
             step: STEP_NAME,
@@ -73,52 +67,35 @@ void call(parameters = [:]) {
             stepParam2: configuration.warAction == 'rolling-update'?'blue-green':'standard', // ['deploy', 'deploy-mta', 'rolling-update']
             stepParamKey3: 'scriptMissing',
             stepParam3: parameters?.script == null,
-            stepParamKey4: 'legacyConfig',
-            stepParam4: !stepCompatibilityConfiguration.isEmpty(),
         ], configuration)
 
-        ToolDescriptor neo = new ToolDescriptor('SAP Cloud Platform Console Client', 'NEO_HOME', 'neoHome', '/tools/', 'neo.sh', null, 'version')
-        ToolDescriptor java = new ToolDescriptor('Java', 'JAVA_HOME', '', '/bin/', 'java', '1.8.0', '-version 2>&1')
 
-        if (configuration.neo.credentialsId) {
-            withCredentials([usernamePassword(
-                credentialsId: configuration.neo.credentialsId,
-                passwordVariable: 'NEO_PASSWORD',
-                usernameVariable: 'NEO_USERNAME')]) {
+        withCredentials([usernamePassword(
+            credentialsId: configuration.neo.credentialsId,
+            passwordVariable: 'NEO_PASSWORD',
+            usernameVariable: 'NEO_USERNAME')]) {
 
-                assertPasswordRules(NEO_PASSWORD)
+            assertPasswordRules(NEO_PASSWORD)
 
-                dockerExecute(
-                    script: script,
-                    dockerImage: configuration.dockerImage,
-                    dockerEnvVars: configuration.dockerEnvVars,
-                    dockerOptions: configuration.dockerOptions
-                ) {
+            dockerExecute(
+                script: script,
+                dockerImage: configuration.dockerImage,
+                dockerEnvVars: configuration.dockerEnvVars,
+                dockerOptions: configuration.dockerOptions
+            ) {
+                NeoCommandHelper neoCommandHelper = new NeoCommandHelper(
+                    this,
+                    deployMode,
+                    configuration.neo,
+                    NEO_USERNAME,
+                    NEO_PASSWORD,
+                    configuration.source
+                )
 
-                    neo.verify(this, configuration)
-                    java.verify(this, configuration)
-
-                    String neoExecutable = neo.getToolExecutable(script, configuration)
-
-                    DeployMode deployMode = DeployMode.fromString(configuration.deployMode)
-
-                    NeoCommandHelper neoCommandHelper = new NeoCommandHelper(
-                        this,
-                        deployMode,
-                        configuration.neo,
-                        neoExecutable,
-                        NEO_USERNAME,
-                        NEO_PASSWORD,
-                        configuration.source
-                    )
-
-                    lock("$STEP_NAME :${neoCommandHelper.resourceLock()}") {
-                        deploy(script, utils, configuration, neoCommandHelper, configuration.dockerImage, deployMode)
-                    }
+                lock("$STEP_NAME :${neoCommandHelper.resourceLock()}") {
+                    deploy(script, utils, configuration, neoCommandHelper, configuration.dockerImage, deployMode)
                 }
             }
-        } else {
-            error("[neoDeploy] No credentials defined for the deployment. Please specify the value for credentialsId for neo.")
         }
     }
 }
@@ -166,61 +143,6 @@ private deploy(script, utils, Map configuration, NeoCommandHelper neoCommandHelp
 private boolean isAppRunning(NeoCommandHelper commandHelper) {
     def status = sh script: "${commandHelper.statusCommand()} || true", returnStdout: true
     return status.contains('Status: STARTED')
-}
-
-private handleCompatibility(script, parameters) {
-    final Map neoCompatibilityConfiguration = [:]
-
-    // Backward compatibility: ensure old configuration is taken into account
-    // The old configuration in not stage / step specific
-
-    def defaultDeployHost = script.commonPipelineEnvironment.getConfigProperty('DEPLOY_HOST')
-    if (defaultDeployHost) {
-        echo "[WARNING][${STEP_NAME}] A deprecated configuration framework is used for configuring parameter 'DEPLOY_HOST'. This configuration framework will be removed in future versions."
-        neoCompatibilityConfiguration.put('host', defaultDeployHost)
-    }
-
-    def defaultDeployAccount = script.commonPipelineEnvironment.getConfigProperty('CI_DEPLOY_ACCOUNT')
-    if (defaultDeployAccount) {
-        echo "[WARNING][${STEP_NAME}] A deprecated configuration framework is used for configuring parameter 'DEPLOY_ACCOUNT'. This configuration framekwork will be removed in future versions."
-        neoCompatibilityConfiguration.put('account', defaultDeployAccount)
-    }
-
-    if (parameters.deployHost && !parameters.host) {
-        echo "[WARNING][${STEP_NAME}] Deprecated parameter 'deployHost' is used. This will not work anymore in future versions. Use parameter 'host' instead."
-        parameters.put('host', parameters.deployHost)
-    }
-
-    if (parameters.deployAccount && !parameters.account) {
-        echo "[WARNING][${STEP_NAME}] Deprecated parameter 'deployAccount' is used. This will not work anymore in future versions. Use parameter 'account' instead."
-        parameters.put('account', parameters.deployAccount)
-    }
-
-    def credId = script.commonPipelineEnvironment.getConfigProperty('neoCredentialsId')
-    if (credId && !parameters.neoCredentialsId) {
-        echo "[WARNING][${STEP_NAME}] Deprecated parameter 'neoCredentialsId' from old configuration framework is used. This will not work anymore in future versions."
-        parameters.put('neoCredentialsId', credId)
-    }
-
-    if (!neoCompatibilityConfiguration.isEmpty()) {
-        echo "[WARNING][$STEP_NAME] You are using a deprecated configuration framework. This will be removed in " +
-            'futureVersions.\nAdd snippet below to \'./pipeline/config.yml\' and remove ' +
-            'file \'.pipeline/configuration.properties\'.\n' +
-            """|steps:
-                    |    neoDeploy:
-                    |        neo:
-                    |            host: ${neoCompatibilityConfiguration.get('host', '<Add host here>')}
-                    |            account: ${neoCompatibilityConfiguration.get('account', '<Add account here>')}
-                """.stripMargin()
-
-        if (Boolean.getBoolean('com.sap.piper.featureFlag.buildUnstableWhenOldConfigFrameworkIsUsedByNeoDeploy')) {
-            script.currentBuild.setResult('UNSTABLE')
-            echo "[WARNING][$STEP_NAME] Build has been set to unstable since old config framework is used."
-        }
-        return [neo: neoCompatibilityConfiguration]
-    }
-
-    return [:]
 }
 
 private assertPasswordRules(String password) {
