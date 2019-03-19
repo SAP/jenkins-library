@@ -89,7 +89,7 @@ class NeoDeployTest extends BasePiperTest {
     }
 
     @Test
-    void straightForwardTestConfigViaConfiguration() {
+    void straightForwardTestConfigViaParameters() {
 
         boolean notifyOldConfigFrameworkUsed = true
 
@@ -118,16 +118,19 @@ class NeoDeployTest extends BasePiperTest {
     }
 
     @Test
-    void straightForwardTestConfigViaConfigurationAndViaConfigProperties() {
+    void straightForwardTestConfigViaConfiguration() {
 
-        nullScript.commonPipelineEnvironment.setConfigProperty('DEPLOY_HOST', 'configProperties.deploy.host.com')
-        nullScript.commonPipelineEnvironment.setConfigProperty('CI_DEPLOY_ACCOUNT', 'configPropsUser123')
-
-        nullScript.commonPipelineEnvironment.configuration = [steps: [neoDeploy: [neo: [host   : 'configuration-frwk.deploy.host.com',
-                                                                                  account: 'configurationFrwkUser123']]]]
+        nullScript.commonPipelineEnvironment.configuration = [steps: [
+            neoDeploy: [
+                neo: [
+                    host: 'configuration-frwk.deploy.host.com',
+                    account: 'configurationFrwkUser123'
+                ],
+                source: archiveName
+            ]
+        ]]
 
         stepRule.step.neoDeploy(script: nullScript,
-            source: archiveName,
             neo:[credentialsId: 'myCredentialsId']
         )
 
@@ -138,7 +141,7 @@ class NeoDeployTest extends BasePiperTest {
                 .hasOption('synchronous', '')
                 .hasSingleQuotedOption('user', 'anonymous')
                 .hasSingleQuotedOption('password', '\\*\\*\\*\\*\\*\\*\\*\\*')
-                .hasSingleQuotedOption('source', '.*'))
+                .hasSingleQuotedOption('source', archiveName))
     }
 
     @Test
@@ -217,7 +220,7 @@ class NeoDeployTest extends BasePiperTest {
     void scriptNotProvidedTest() {
 
         thrown.expect(Exception)
-        thrown.expectMessage('ERROR - NO VALUE AVAILABLE FOR host')
+        thrown.expectMessage('ERROR - NO VALUE AVAILABLE FOR neo/host')
 
         nullScript.commonPipelineEnvironment.configuration = [:]
 
@@ -415,7 +418,7 @@ class NeoDeployTest extends BasePiperTest {
     void applicationNameNotProvidedTest() {
 
         thrown.expect(Exception)
-        thrown.expectMessage('ERROR - NO VALUE AVAILABLE FOR application')
+        thrown.expectMessage('ERROR - NO VALUE AVAILABLE FOR neo/application')
 
         stepRule.step.neoDeploy(script: nullScript,
             source: warArchiveName,
@@ -431,7 +434,7 @@ class NeoDeployTest extends BasePiperTest {
     void runtimeNotProvidedTest() {
 
         thrown.expect(Exception)
-        thrown.expectMessage('ERROR - NO VALUE AVAILABLE FOR runtime')
+        thrown.expectMessage('ERROR - NO VALUE AVAILABLE FOR neo/runtime')
 
         stepRule.step.neoDeploy(script: nullScript,
             source: warArchiveName,
@@ -446,7 +449,7 @@ class NeoDeployTest extends BasePiperTest {
     void runtimeVersionNotProvidedTest() {
 
         thrown.expect(Exception)
-        thrown.expectMessage('ERROR - NO VALUE AVAILABLE FOR runtimeVersion')
+        thrown.expectMessage('ERROR - NO VALUE AVAILABLE FOR neo/runtimeVersion')
 
         stepRule.step.neoDeploy(script: nullScript,
             source: warArchiveName,

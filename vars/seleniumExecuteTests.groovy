@@ -11,7 +11,7 @@ import groovy.text.SimpleTemplateEngine
 @Field String STEP_NAME = getClass().getName()
 
 //TODO: limit parameter visibility
-@Field GENERAL_CONFIG_KEYS = [
+@Field Set GENERAL_CONFIG_KEYS = [
     /**
      * Defines the tool which is used for executing the tests
      * @possibleValues `'maven'`, `'npm'`
