@@ -1,7 +1,6 @@
 package com.sap.piper.tools.neo
 
 import com.sap.piper.BashUtils
-import com.sap.piper.ConfigurationHelper
 import com.sap.piper.StepAssertions
 
 class NeoCommandHelper {
@@ -58,19 +57,10 @@ class NeoCommandHelper {
                 "/acc/${properties.account}/app/${properties.application}/dashboard"
         }
 
-        ConfigurationHelper configurationHelper = ConfigurationHelper.newInstance(step, deploymentConfiguration)
-
-        configurationHelper
-            .withMandatoryProperty('host')
-            .withMandatoryProperty('account')
-
         if (deployMode == DeployMode.MTA) {
             return "https://account.${deploymentConfiguration.host}/cockpit#" +
                 "/acc/${deploymentConfiguration.account}/mtas"
         }
-
-        configurationHelper
-            .withMandatoryProperty('application')
 
         return "https://account.${deploymentConfiguration.host}/cockpit#" +
             "/acc/${deploymentConfiguration.account}/app/${deploymentConfiguration.application}/dashboard"
@@ -82,17 +72,9 @@ class NeoCommandHelper {
             return "${properties.host}/${properties.account}/${properties.application}"
         }
 
-        ConfigurationHelper configurationHelper = ConfigurationHelper.newInstance(step, deploymentConfiguration)
-        configurationHelper
-            .withMandatoryProperty('host')
-            .withMandatoryProperty('account')
-
-
         String resource = "${deploymentConfiguration.host}/${deploymentConfiguration.account}"
 
         if (deployMode == DeployMode.WAR_PARAMS) {
-            configurationHelper
-                .withMandatoryProperty('application')
 
             resource += "/${deploymentConfiguration.application}"
         }
@@ -113,17 +95,10 @@ class NeoCommandHelper {
             return "${deploymentConfiguration.propertiesFile} ${usernamePassword}"
         }
 
-        ConfigurationHelper configurationHelper = ConfigurationHelper.newInstance(step, deploymentConfiguration)
-        configurationHelper
-            .withMandatoryProperty('host')
-            .withMandatoryProperty('account')
-
         String targetArgs = "--host ${BashUtils.quoteAndEscape(deploymentConfiguration.host)}"
         targetArgs += " --account ${BashUtils.quoteAndEscape(deploymentConfiguration.account)}"
 
         if (deployMode == DeployMode.WAR_PARAMS) {
-            configurationHelper
-                .withMandatoryProperty('application')
 
             targetArgs += " --application ${BashUtils.quoteAndEscape(deploymentConfiguration.application)}"
         }
@@ -136,13 +111,8 @@ class NeoCommandHelper {
             return ""
         }
 
-        ConfigurationHelper configurationHelper = ConfigurationHelper.newInstance(step, deploymentConfiguration)
-
         String args = ""
-        configurationHelper.withMandatoryProperty('runtime')
         args += " --runtime ${BashUtils.quoteAndEscape(deploymentConfiguration.runtime)}"
-
-        configurationHelper.withMandatoryProperty('runtimeVersion')
         args += " --runtime-version ${BashUtils.quoteAndEscape(deploymentConfiguration.runtimeVersion)}"
 
         if (deploymentConfiguration.size) {
