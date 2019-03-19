@@ -41,8 +41,6 @@ void call(parameters = [:]) {
             .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName ?: env.STAGE_NAME, STEP_CONFIG_KEYS)
             .addIfEmpty('source', script.commonPipelineEnvironment.getMtarFilePath())
             .mixin(parameters, PARAMETER_KEYS)
-            .withMandatoryProperty('neo/host')
-            .withMandatoryProperty('neo/account')
             .withMandatoryProperty('source')
             .withMandatoryProperty('neo/credentialsId')
             .withPropertyInValues('deployMode', DeployMode.stringValues())
@@ -51,12 +49,15 @@ void call(parameters = [:]) {
 
         DeployMode deployMode = DeployMode.fromString(configuration.deployMode)
 
-        def isWarParamsDeployMode = { deployMode == DeployMode.WAR_PARAMS }
+        def isWarParamsDeployMode = { deployMode == DeployMode.WAR_PARAMS },
+            isNotWarPropertiesDeployMode = {deployMode != DeployMode.WAR_PROPERTIES_FILE}
 
         configHelper
             .withMandatoryProperty('neo/application', null, isWarParamsDeployMode)
             .withMandatoryProperty('neo/runtime', null, isWarParamsDeployMode)
             .withMandatoryProperty('neo/runtimeVersion', null, isWarParamsDeployMode)
+            .withMandatoryProperty('neo/host', null, isNotWarPropertiesDeployMode)
+            .withMandatoryProperty('neo/account', null, isNotWarPropertiesDeployMode)
 
 
         utils.pushToSWA([
