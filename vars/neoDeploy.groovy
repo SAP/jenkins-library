@@ -15,11 +15,11 @@ import static com.sap.piper.Prerequisites.checkScript
     'dockerEnvVars',
     'dockerImage',
     'dockerOptions',
-    'neoHome'
+    'neoHome',
+    'source'
 ])
 
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS.plus([
-    'source',
     'deployMode',
     'warAction'
 ])
@@ -34,18 +34,30 @@ void call(parameters = [:]) {
         prepareDefaultValues script: script
 
         // load default & individual configuration
-        Map configuration = ConfigurationHelper.newInstance(this)
+        ConfigurationHelper configHelper = ConfigurationHelper.newInstance(this)
             .loadStepDefaults()
             .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS)
             .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS)
             .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName ?: env.STAGE_NAME, STEP_CONFIG_KEYS)
             .addIfEmpty('source', script.commonPipelineEnvironment.getMtarFilePath())
             .mixin(parameters, PARAMETER_KEYS)
-            .withMandatoryProperty('neo')
+            .withMandatoryProperty('neo/host')
+            .withMandatoryProperty('neo/account')
             .withMandatoryProperty('source')
             .withMandatoryProperty('neo/credentialsId')
             .withPropertyInValues('deployMode', DeployMode.stringValues())
-            .use()
+
+        Map configuration = configHelper.use()
+
+        DeployMode deployMode = DeployMode.fromString(configuration.deployMode)
+
+        def isWarParamsDeployMode = { deployMode == DeployMode.WAR_PARAMS }
+
+        configHelper
+            .withMandatoryProperty('neo/application', null, isWarParamsDeployMode)
+            .withMandatoryProperty('neo/runtime', null, isWarParamsDeployMode)
+            .withMandatoryProperty('neo/runtimeVersion', null, isWarParamsDeployMode)
+
 
         utils.pushToSWA([
             step: STEP_NAME,
@@ -71,8 +83,6 @@ void call(parameters = [:]) {
                 dockerEnvVars: configuration.dockerEnvVars,
                 dockerOptions: configuration.dockerOptions
             ) {
-                DeployMode deployMode = DeployMode.fromString(configuration.deployMode)
-
                 NeoCommandHelper neoCommandHelper = new NeoCommandHelper(
                     this,
                     deployMode,

@@ -104,12 +104,13 @@ The step is prepared for being executed in docker. The corresponding parameters 
 
 ## Step configuration
 
-The parameter `neo` including all  can also be specified as a global parameter using the global configuration file.
+The parameter `neo` including all options can also be specified as a global parameter using the global configuration file.
 
 The following parameters can also be specified as step parameters using the global configuration file:
 
 * `dockerImage`
 * `neoHome`
+* `source`
 
 ## Side effects
 
