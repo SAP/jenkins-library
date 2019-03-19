@@ -9,7 +9,7 @@ import groovy.text.SimpleTemplateEngine
 
 @Field String STEP_NAME = getClass().getName()
 
-@Field GENERAL_CONFIG_KEYS = STEP_CONFIG_KEYS
+@Field Set GENERAL_CONFIG_KEYS = STEP_CONFIG_KEYS
 
 @Field Set STEP_CONFIG_KEYS = [
     'buildTool', //defines the tool which is used for executing the tests
