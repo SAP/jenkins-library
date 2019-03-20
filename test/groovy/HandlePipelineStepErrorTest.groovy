@@ -11,6 +11,7 @@ import static org.junit.Assert.assertThat
 
 import util.BasePiperTest
 import util.JenkinsLoggingRule
+import util.JenkinsReadYamlRule
 import util.JenkinsStepRule
 import util.Rules
 
@@ -22,6 +23,7 @@ class HandlePipelineStepErrorsTest extends BasePiperTest {
     @Rule
     public RuleChain rules = Rules
         .getCommonRules(this)
+        .around(new JenkinsReadYamlRule(this))
         .around(loggingRule)
         .around(stepRule)
         .around(thrown)
@@ -78,5 +80,63 @@ class HandlePipelineStepErrorsTest extends BasePiperTest {
             assertThat(loggingRule.log, containsString('--- An error occurred in the library step: testStep'))
             assertThat(loggingRule.log, containsString('[something:anything]'))
         }
+    }
+    
+    @Test
+    void testHandleErrorsIgnoreFailure() {
+        def errorOccured = false
+        try {
+            jsr.step.handlePipelineStepErrors([
+                stepName: 'test',
+                stepParameters: [jenkinsUtilsStub: jenkinsUtils, script: nullScript],
+                failOnError: false
+            ]) {
+                throw new Exception('TestError')
+            }
+        } catch (err) {
+            errorOccured = true
+        }
+        assertThat(errorOccured, is(false))
+        assertThat(nullScript.currentBuild.result, is('UNSTABLE'))
+    }
+
+    @Test
+    void testHandleErrorsIgnoreFailureBlacklist() {
+        def errorOccured = false
+
+        //define blacklist in defaults
+        helper.registerAllowedMethod("readYaml", [Map], { Map m ->
+            return [steps: [handleStepErrors: [mandatorySteps: ['step1', 'test']]]]
+        })
+
+        try {
+            jsr.step.handlePipelineStepErrors([
+                stepName: 'test',
+                stepParameters: [jenkinsUtilsStub: jenkinsUtils, script: nullScript],
+                failOnError: false
+            ]) {
+                throw new Exception('TestError')
+            }
+        } catch (err) {
+            errorOccured = true
+        }
+        assertThat(errorOccured, is(true))
+    }
+
+    @Test
+    void testHandleErrorsIgnoreFailureNoScript() {
+        def errorOccured = false
+        try {
+            jsr.step.handlePipelineStepErrors([
+                stepName: 'test',
+                stepParameters: [jenkinsUtilsStub: jenkinsUtils],
+                failOnError: false
+            ]) {
+                throw new Exception('TestError')
+            }
+        } catch (err) {
+            errorOccured = true
+        }
+        assertThat(errorOccured, is(false))
     }
 }
