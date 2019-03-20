@@ -1,6 +1,7 @@
 import static com.sap.piper.Prerequisites.checkScript
 
 import com.sap.piper.ConfigurationHelper
+import com.sap.piper.GenerateDocumentation
 import com.sap.piper.GitUtils
 import com.sap.piper.Utils
 import com.sap.piper.k8s.ContainerMap
@@ -9,28 +10,70 @@ import groovy.text.SimpleTemplateEngine
 
 @Field String STEP_NAME = getClass().getName()
 
-@Field Set GENERAL_CONFIG_KEYS = STEP_CONFIG_KEYS
-
-@Field Set STEP_CONFIG_KEYS = [
-    'buildTool', //defines the tool which is used for executing the tests
-    'containerPortMappings', //port mappings required for containers. This will only take effect inside a Kubernetes pod, format [[containerPort: 1111, hostPort: 1111]]
-    'dockerEnvVars', //envVars to be set in the execution container if required
-    'dockerImage', //Docker image for code execution
-    'dockerName', //name of the Docker container. This will only take effect inside a Kubernetes pod.
-    'dockerWorkspace', //user home directory for Docker execution. This will only take effect inside a Kubernetes pod.
+//TODO: limit parameter visibility
+@Field Set GENERAL_CONFIG_KEYS = [
+    /**
+     * Defines the tool which is used for executing the tests
+     * @possibleValues `'maven'`, `'npm'`
+     */
+    'buildTool',
+    /** @see dockerExecute */
+    'containerPortMappings',
+    /** @see dockerExecute */
+    'dockerEnvVars',
+    /** @see dockerExecute */
+    'dockerImage',
+    /** @see dockerExecute */
+    'dockerName',
+    /** @see dockerExecute */
+    'dockerWorkspace',
+    /**
+     * With `failOnError` the behavior in case tests fail can be defined.
+     * @possibleValues `true`, `false`
+     */
     'failOnError',
-    'gitBranch', //only if testRepository is used: branch of testRepository. Default is master
-    'gitSshKeyCredentialsId', //only if testRepository is used: ssh credentials id in case a protected testRepository is used
-    'sidecarEnvVars', //envVars to be set in Selenium container if required
-    'sidecarImage', //image for Selenium execution which runs as sidecar to dockerImage
-    'sidecarName', //name of the Selenium container. If not on Kubernetes pod, this will define the name of the link to the Selenium container and is thus required for accessing the server, example http://selenium:4444 (default)
-    'sidecarVolumeBind', //volume bind. This will not take effect in Kubernetes pod.
-    'stashContent', //list of stash names which are required to be unstashed before test run
-    'testRepository' //if tests are in a separate repository, git url can be defined. For protected repositories the git ssh url is required
+    /**
+     * Only if `testRepository` is provided: Branch of testRepository, defaults to master.
+     */
+    'gitBranch',
+    /**
+     * Only if `testRepository` is provided: Credentials for a protected testRepository
+     * @possibleValues Jenkins credentials id
+     */
+    'gitSshKeyCredentialsId',
+    /** @see dockerExecute */
+    'sidecarEnvVars',
+    /** @see dockerExecute */
+    'sidecarImage',
+    /** @see dockerExecute */
+    'sidecarName',
+    /** @see dockerExecute */
+    'sidecarVolumeBind',
+    /** @see dockerExecute */
+    'stashContent',
+    /**
+     * Define an additional repository where the test implementation is located.
+     * For protected repositories the `testRepository` needs to contain the ssh git url.
+     */
+    'testRepository'
 ]
-
+@Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
 
+/**
+ * Enables UI test execution with Selenium in a sidecar container.
+ *
+ * The step executes a closure (see example below) connecting to a sidecar container with a Selenium Server.
+ *
+ * When executing in a
+ *
+ * * local Docker environment, please make sure to set Selenium host to **`selenium`** in your tests.
+ * * Kubernetes environment, plese make sure to set Seleniums host to **`localhost`** in your tests.
+ *
+ * !!! note "Proxy Environments"
+ *     If work in an environment containing a proxy, please make sure that `localhost`/`selenium` is added to your proxy exclusion list, e.g. via environment variable `NO_PROXY` & `no_proxy`. You can pass those via parameters `dockerEnvVars` and `sidecarEnvVars` directly to the containers if required.
+ */
+@GenerateDocumentation
 void call(Map parameters = [:], Closure body) {
     handlePipelineStepErrors(stepName: STEP_NAME, stepParameters: parameters) {
         def script = checkScript(this, parameters) ?: this
