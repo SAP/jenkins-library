@@ -44,8 +44,8 @@ void call(Map parameters = [:], body) {
         body()
     } catch (AbortException ae) {
         if (config.echoDetails)
-            message += formatErrorMessage(config, error)
-        writeErrorToInfluxData(config, error)
+            message += formatErrorMessage(config, ae)
+        writeErrorToInfluxData(config, ae)
         if (config.failOnError || config.stepName in config.mandatorySteps) {
             throw ae
         }

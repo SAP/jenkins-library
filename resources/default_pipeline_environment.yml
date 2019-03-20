@@ -376,17 +376,17 @@ steps:
       archive: false
       active: false
   checkChangeInDevelopment:
-    failIfStatusIsNotInDevelopment: true
+      failIfStatusIsNotInDevelopment: true
   transportRequestCreate:
-    developmentSystemId: null
-    verbose: false
+      developmentSystemId: null
+      verbose: false
   transportRequestUploadFile:
-    acceptUnixStyleLineEndings: true
-    codePage: 'UTF-8'
-    failOnWarning: true
-    verbose: false
+      acceptUnixStyleLineEndings: true
+      codePage: 'UTF-8'
+      failOnWarning: true
+      verbose: false
   transportRequestRelease:
-    verbose: false
+      verbose: false
   uiVeri5ExecuteTests:
     failOnError: false
     dockerEnvVars: {}

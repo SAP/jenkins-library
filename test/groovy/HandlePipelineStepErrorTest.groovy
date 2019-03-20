@@ -1,4 +1,6 @@
 #!groovy
+import hudson.AbortException
+
 import static org.hamcrest.Matchers.is
 import static org.hamcrest.Matchers.not
 import static org.hamcrest.Matchers.containsString
@@ -86,12 +88,12 @@ class HandlePipelineStepErrorsTest extends BasePiperTest {
     void testHandleErrorsIgnoreFailure() {
         def errorOccured = false
         try {
-            jsr.step.handlePipelineStepErrors([
+            stepRule.step.handlePipelineStepErrors([
                 stepName: 'test',
                 stepParameters: [jenkinsUtilsStub: jenkinsUtils, script: nullScript],
                 failOnError: false
             ]) {
-                throw new Exception('TestError')
+                throw new AbortException('TestError')
             }
         } catch (err) {
             errorOccured = true
@@ -106,16 +108,16 @@ class HandlePipelineStepErrorsTest extends BasePiperTest {
 
         //define blacklist in defaults
         helper.registerAllowedMethod("readYaml", [Map], { Map m ->
-            return [steps: [handleStepErrors: [mandatorySteps: ['step1', 'test']]]]
+            return [steps: [handlePipelineStepErrors: [mandatorySteps: ['step1', 'test']]]]
         })
 
         try {
-            jsr.step.handlePipelineStepErrors([
+            stepRule.step.handlePipelineStepErrors([
                 stepName: 'test',
                 stepParameters: [jenkinsUtilsStub: jenkinsUtils, script: nullScript],
                 failOnError: false
             ]) {
-                throw new Exception('TestError')
+                throw new AbortException('TestError')
             }
         } catch (err) {
             errorOccured = true
@@ -127,12 +129,12 @@ class HandlePipelineStepErrorsTest extends BasePiperTest {
     void testHandleErrorsIgnoreFailureNoScript() {
         def errorOccured = false
         try {
-            jsr.step.handlePipelineStepErrors([
+            stepRule.step.handlePipelineStepErrors([
                 stepName: 'test',
                 stepParameters: [jenkinsUtilsStub: jenkinsUtils],
                 failOnError: false
             ]) {
-                throw new Exception('TestError')
+                throw new AbortException('TestError')
             }
         } catch (err) {
             errorOccured = true
