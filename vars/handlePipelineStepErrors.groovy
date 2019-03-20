@@ -10,15 +10,29 @@ import hudson.AbortException
 
 @Field Set GENERAL_CONFIG_KEYS = []
 @Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS.plus([
+    /**
+     * Defines the behavior, in case an error occurs which is handled by this step. When set to `false` an error results in an "UNSTABLE" build result and the pipeline can continue.
+     * @possibleValues `true`, `false`
+     */
     'failOnError',
+    /** Defines a list of mandatory steps (step names) which have to be successful (=stop the pipeline), even if `failOnError: false` */
     'mandatorySteps'
 ])
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS.plus([
+    /**
+     * Specifies if error details should be printed into the console log.
+     * @possibleValues `true`, `false`
+     */
     'echoDetails',
+    /** This parameter can be used to change the root path of the Library documentation. */
     'libraryDocumentationUrl',
+    /** This parameter can be used to change the root path of the Library repository. */
     'libraryRepositoryUrl',
+    /** Defines the name of the step for which the error handling is active. It will be shown in the console log.*/
     'stepName',
+    /** Defines the documented step, in case the documentation reference should point to a different step. */
     'stepNameDoc',
+    /** Passes the parameters of the step which uses the error handling onto the error handling. The list of parameters is then shown in the console output.*/
     'stepParameters'
 ])
 
