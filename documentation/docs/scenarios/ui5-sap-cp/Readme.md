@@ -59,10 +59,11 @@ steps:
     buildTarget: 'NEO'
     mtaJarLocation: '/opt/sap/mta.jar'
   neoDeploy:
-    neoCredentialsId: 'NEO_DEPLOY'
     neoHome: '/opt/sap/neo-sdk/'
-    account: 'your-account-id'
-    host: 'hana.ondemand.com'
+    neo:
+      credentialsId: 'NEO_DEPLOY'
+      account: 'your-account-id'
+      host: 'hana.ondemand.com'
 ```
 
 #### Configuration for the MTA Build
@@ -77,10 +78,10 @@ steps:
 
 | Parameter          | Description |
 | -------------------|-------------|
+| `neoHome`           | The path to the `neo-java-web-sdk` tool that is used for the deployment. |
+| `credentialsId` | The Jenkins credentials that contain the user and password which are used for the deployment on SAP Cloud Platform.|
 | `account`           | The SAP Cloud Platform account to deploy to. |
 | `host`           |  The SAP Cloud Platform host to deploy to. |
-| `neoCredentialsId` | The Jenkins credentials that contain the user and password which are used for the deployment on SAP Cloud Platform. |
-| `neoHome`           | The path to the `neo-java-web-sdk` tool that is used for the deployment. |
 
 
 ### Parameters
