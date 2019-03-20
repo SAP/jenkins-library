@@ -96,6 +96,7 @@ for p in "${processes[@]}"
 do
     area=$(dirname "${p%:*}")
     testCase=$(basename "${p%:*}")
+    TEST_CASE_ROOT="${WORKSPACES_ROOT}/${area}/${testCase}"
     echo "[INFO] === START === Logs for test case \"${testCase}\" ===."
     cat "${TEST_CASE_ROOT}/log.txt"
     echo "[INFO] === END === Logs for test case \"${testCase}\" ===."
