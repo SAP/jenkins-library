@@ -73,6 +73,12 @@ import hudson.AbortException
      */
     'dockerWorkspace',
     /**
+     * Kubernetes Security Context used for the pod.
+     * Can be used to specify uid and fsGroup.
+     * See: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/
+     */
+    'securityContext',
+    /**
      * Specific stashes that should be considered for the step execution.
      */
     'stashContent',
@@ -83,13 +89,7 @@ import hudson.AbortException
     /**
      *
      */
-    'stashIncludes',
-    /**
-     * Kubernetes Security Context used for the pod.
-     * Can be used to specify uid and fsGroup.
-     * See: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/
-     */
-    'securityContext'
+    'stashIncludes'
 ])
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS.minus([
     'stashIncludes',
