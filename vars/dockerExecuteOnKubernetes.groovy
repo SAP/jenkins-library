@@ -271,19 +271,15 @@ private List getContainerList(config) {
         }
 
         if (config.containerPortMappings?.get(imageName)) {
-            def portMapping = { m ->
-                [
-                    name: m.name,
-                    containerPort: m.containerPort,
-                    hostPort: m.hostPort
-                ]
-            }
-
             def ports = []
             def portCounter = 0
             config.containerPortMappings.get(imageName).each {mapping ->
-                mapping.name = "${containerName}${portCounter}".toString()
-                ports.add(portMapping(mapping))
+                def name = "${containerName}${portCounter}".toString()
+                if(mapping.containerPort != mapping.hostPort) {
+                    echo ("Warning: containerPort and hostPort are different for container '${containerName}'. "
+                        + "The hostPort will be ignored.")
+                }
+                ports.add([name: name, containerPort: mapping.containerPort])
                 portCounter ++
             }
             containerSpec.ports = ports
