@@ -207,6 +207,13 @@ steps:
       languageRunner: 'js'
       runCommand: 'gauge run'
       testOptions: 'specs'
+    bundler:
+      dockerImage: 'ruby:2.5.3-stretch'
+      dockerName: 'bundler'
+      dockerWorkspace: '/home/seluser'
+      languageRunner: 'ruby'
+      runCommand: 'bundle install && bundle exec gauge run'
+      testOptions: 'specs'
   handlePipelineStepErrors:
     echoDetails: true
     libraryDocumentationUrl: 'https://sap.github.io/jenkins-library/'
@@ -322,6 +329,10 @@ steps:
       dockerImage: 'node:8-stretch'
       dockerName: 'npm'
       dockerWorkspace: '/home/node'
+    bundler:
+      dockerImage: 'ruby:2.5.3-stretch'
+      dockerName: 'bundler'
+      dockerWorkspace: '/home/seluser'
   slackSendNotification:
     color: "${buildStatus == 'SUCCESS'?'#008000':'#E60000'}"
     defaultMessage: "${buildStatus}: Job ${env.JOB_NAME} <${env.BUILD_URL}|#${env.BUILD_NUMBER}>"
