@@ -23,5 +23,5 @@ None
 ## Examples
 
 ```groovy
-whitesourceExecuteScan script: this, scanType: 'pip', whitesource: [ productName: 'My Whitesource Product', userTokenCredentialsId: 'companyAdminToken', orgAdminUserTokenCredentialsId: 'orgAdmiToken', orgToken: 'myWhitesourceOrganizationToken' ]
+whitesourceExecuteScan script: this, scanType: 'pip', productName: 'My Whitesource Product', userTokenCredentialsId: 'companyAdminToken', orgAdminUserTokenCredentialsId: 'orgAdmiToken', orgToken: 'myWhitesourceOrganizationToken'
 ```

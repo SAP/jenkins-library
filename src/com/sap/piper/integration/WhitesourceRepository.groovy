@@ -49,7 +49,7 @@ class WhitesourceRepository implements Serializable {
 
     protected def fetchWhitesourceResource(Map requestBody) {
         final def response = httpWhitesource(requestBody)
-        def parsedResponse = new JsonUtils().parseJsonSerializable(response.content)
+        def parsedResponse = new JsonUtils().jsonStringToGroovyObject(response.content)
 
         if(parsedResponse?.errorCode){
             script.error "[WhiteSource] Request failed with error message '${parsedResponse.errorMessage}' (${parsedResponse.errorCode})."
@@ -173,7 +173,7 @@ class WhitesourceRepository implements Serializable {
     @NonCPS
     protected def httpWhitesource(requestBody) {
         handleAdditionalRequestParameters(requestBody)
-        def serializedBody = new JsonUtils().getPrettyJsonString(requestBody)
+        def serializedBody = new JsonUtils().groovyObjectToPrettyJsonString(requestBody)
         def params = [
             url        : config.whitesource.serviceUrl,
             httpMode   : 'POST',
@@ -201,7 +201,7 @@ class WhitesourceRepository implements Serializable {
     @NonCPS
     protected void fetchFileFromWhiteSource(String fileName, Map params) {
         handleAdditionalRequestParameters(params)
-        def serializedContent = new JsonUtils().jsonToString(params)
+        def serializedContent = new JsonUtils().groovyObjectToPrettyJsonString(params)
 
         if(config.verbose)
             script.echo "Sending curl request with parameters ${params}"

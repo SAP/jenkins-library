@@ -12,7 +12,6 @@ import util.JenkinsLoggingRule
 import util.JenkinsSetupRule
 import util.LibraryLoadingTestExecutionListener
 
-import static org.assertj.core.api.Assertions.assertThat
 import static org.hamcrest.Matchers.is
 import static org.junit.Assert.assertEquals
 import static org.junit.Assert.assertThat
@@ -50,7 +49,7 @@ class DescriptorUtilsTest extends BasePiperTest {
         helper.registerAllowedMethod("readJSON", [Map.class], {
             searchConfig ->
                 def packageJsonFile = new File("test/resources/DescriptorUtils/npm/${searchConfig.file}")
-                return new JsonUtils().parseJsonSerializable(packageJsonFile.text)
+                return new JsonUtils().jsonStringToGroovyObject(packageJsonFile.text)
         })
 
         def gav = descriptorUtils.getNpmGAV('package2.json')
@@ -66,7 +65,7 @@ class DescriptorUtilsTest extends BasePiperTest {
         helper.registerAllowedMethod("readJSON", [Map.class], {
             searchConfig ->
                 def packageJsonFile = new File("test/resources/DescriptorUtils/npm/${searchConfig.file}")
-                return new JsonUtils().parseJsonSerializable(packageJsonFile.text)
+                return new JsonUtils().jsonStringToGroovyObject(packageJsonFile.text)
         })
 
         def gav = descriptorUtils.getNpmGAV('package.json')
@@ -82,7 +81,7 @@ class DescriptorUtilsTest extends BasePiperTest {
         helper.registerAllowedMethod("readJSON", [Map.class], {
             searchConfig ->
                 def packageJsonFile = new File("test/resources/DescriptorUtils/npm/${searchConfig.file}")
-                return new JsonUtils().parseJsonSerializable(packageJsonFile.text)
+                return new JsonUtils().jsonStringToGroovyObject(packageJsonFile.text)
         })
 
         def errorCaught = false
@@ -102,7 +101,7 @@ class DescriptorUtilsTest extends BasePiperTest {
         helper.registerAllowedMethod("readJSON", [Map.class], {
             searchConfig ->
                 def packageJsonFile = new File("test/resources/DescriptorUtils/sbt/${searchConfig.file}")
-                return new JsonUtils().parseJsonSerializable(packageJsonFile.text)
+                return new JsonUtils().jsonStringToGroovyObject(packageJsonFile.text)
         })
 
         def gav = descriptorUtils.getSbtGAV('sbtDescriptor.json')
@@ -119,7 +118,7 @@ class DescriptorUtilsTest extends BasePiperTest {
         helper.registerAllowedMethod("readJSON", [Map.class], {
             searchConfig ->
                 def packageJsonFile = new File("test/resources/DescriptorUtils/dlang/${searchConfig.file}")
-                return new JsonUtils().parseJsonSerializable(packageJsonFile.text)
+                return new JsonUtils().jsonStringToGroovyObject(packageJsonFile.text)
         })
 
         def gav = descriptorUtils.getDlangGAV('dub.json')
