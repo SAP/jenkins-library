@@ -4,6 +4,7 @@ import static org.hamcrest.Matchers.equalTo
 import static org.hamcrest.Matchers.is
 import static org.junit.Assert.assertThat
 import static org.junit.Assert.fail
+import static util.StepHelper.getSteps
 
 import java.io.File;
 import java.util.stream.Collectors
@@ -240,12 +241,5 @@ public class CommonStepsTest extends BasePiperTest{
 
         assertThat("Steps with call methods with return types other than void: ${stepsWithCallMethodsOtherThanVoid}",
             stepsWithCallMethodsOtherThanVoid, is(empty()))
-    }
-
-    private static getSteps() {
-        List steps = []
-        new File('vars').traverse(type: FileType.FILES, maxDepth: 0)
-            { if(it.getName().endsWith('.groovy')) steps << (it =~ /vars[\\\/](.*)\.groovy/)[0][1] }
-        return steps
     }
 }
