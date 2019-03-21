@@ -52,6 +52,12 @@ class CheckChangeInDevelopmentTest extends BasePiperTest {
             failIfStatusIsNotInDevelopment: true)
 
         assert cmUtilReceivedParams == [
+            docker: [
+                image: 'ppiper/cm-client',
+                options:[],
+                envVars:[:],
+                pullImage:true,
+            ],
             changeId: '001',
             endpoint: 'https://example.org/cm',
             credentialsId: 'CM',
@@ -184,7 +190,8 @@ class CheckChangeInDevelopmentTest extends BasePiperTest {
                 return changeDocumentId
             }
 
-            boolean isChangeInDevelopment(String changeId, String endpoint, String credentialsId, String cmclientOpts) {
+            boolean isChangeInDevelopment(Map docker, String changeId, String endpoint, String credentialsId, String cmclientOpts) {
+                cmUtilReceivedParams.docker = docker
                 cmUtilReceivedParams.changeId = changeId
                 cmUtilReceivedParams.endpoint = endpoint
                 cmUtilReceivedParams.credentialsId = credentialsId
