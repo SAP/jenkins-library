@@ -78,10 +78,10 @@ steps:
 
 | Parameter          | Description |
 | -------------------|-------------|
-| `neoHome`           | The path to the `neo-java-web-sdk` tool that is used for the deployment. |
-| `credentialsId` | The Jenkins credentials that contain the user and password which are used for the deployment on SAP Cloud Platform.|
 | `account`           | The SAP Cloud Platform account to deploy to. |
+| `credentialsId` | The Jenkins credentials that contain the user and password which are used for the deployment on SAP Cloud Platform.|
 | `host`           |  The SAP Cloud Platform host to deploy to. |
+| `neoHome`           | The path to the `neo-java-web-sdk` tool that is used for the deployment. |
 
 
 ### Parameters
