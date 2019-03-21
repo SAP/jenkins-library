@@ -81,8 +81,8 @@ class WhitesourceRepository implements Serializable {
     void sortVulnerabilitiesByScore(List vulnerabilities) {
         script.echo "${vulnerabilities.size() > 0 ? 'WARNING: ' : ''}found a total of ${vulnerabilities.size()} vulnerabilities"
         vulnerabilities.sort { o1, o2 ->
-            def cvss3score1 = o1.vulnerability.cvss3_score != 0 ? o1.vulnerability.cvss3_score : o1.vulnerability.score
-            def cvss3score2 = o2.vulnerability.cvss3_score != 0 ? o2.vulnerability.cvss3_score : o2.vulnerability.score
+            def cvss3score1 = o1.vulnerability.cvss3_score == 0 ? o1.vulnerability.score : o1.vulnerability.cvss3_score
+            def cvss3score2 = o2.vulnerability.cvss3_score == 0 ? o2.vulnerability.score : o2.vulnerability.cvss3_score
 
             def comparisionResult = cvss3score1 <=> cvss3score2
 
