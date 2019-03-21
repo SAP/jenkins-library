@@ -353,7 +353,7 @@ private def triggerWhitesourceScanWithUserKey(script, config, utils, descriptorU
                         config.whitesource.projectName = gav.artifact
                         config.whitesource.productVersion = gav.version
                         break
-                    default:
+                    case 'maven':
                         gav = descriptorUtils.getMavenGAV(config.buildDescriptorFile)
                         config.whitesource.projectName = gav.group + "." + gav.artifact
                         config.whitesource.productVersion = gav.version

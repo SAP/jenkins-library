@@ -86,11 +86,11 @@ class WhitesourceConfigurationHelper implements Serializable {
 
                 ]
                 break
-            default:
-                // maven
+            case 'maven':
                 mapping += [
 
                 ]
+                break
         }
 
         rewriteConfiguration(script, utils, config, mapping, suffix, path, inputFile, targetFile, parsingClosure, serializationClosure)
