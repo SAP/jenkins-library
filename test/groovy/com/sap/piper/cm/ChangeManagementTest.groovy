@@ -96,7 +96,12 @@ public class ChangeManagementTest extends BasePiperTest {
     public void testIsChangeInDevelopmentReturnsTrueWhenChangeIsInDevelopent() {
 
         script.setReturnValue(JenkinsShellCallRule.Type.REGEX, "cmclient.*is-change-in-development -cID '001'", 0)
-        boolean inDevelopment = new ChangeManagement(nullScript, null).isChangeInDevelopment('001', 'endpoint', 'me')
+        boolean inDevelopment = new ChangeManagement(nullScript, null).isChangeInDevelopment(
+            [
+                image: 'ppiper/cm-client',
+                pullImage: true,
+            ],
+            '001', 'endpoint', 'me')
 
         assertThat(inDevelopment, is(equalTo(true)))
         assertThat(script.shell[0], allOf(containsString("cmclient"),
@@ -106,6 +111,9 @@ public class ChangeManagementTest extends BasePiperTest {
                                             containsString('is-change-in-development'),
                                             containsString("-cID '001'"),
                                             containsString("-t SOLMAN")))
+
+        assert dockerExecuteRule.getDockerParams().dockerImage == 'ppiper/cm-client'
+        assert dockerExecuteRule.getDockerParams().dockerPullImage == true
     }
 
     @Test
@@ -114,7 +122,8 @@ public class ChangeManagementTest extends BasePiperTest {
         script.setReturnValue(JenkinsShellCallRule.Type.REGEX, "cmclient.*is-change-in-development -cID '001'", 3)
 
         boolean inDevelopment = new ChangeManagement(nullScript, null)
-                                    .isChangeInDevelopment('001',
+                                    .isChangeInDevelopment([:],
+                                                           '001',
                                                            'endpoint',
                                                            'me')
 
@@ -128,7 +137,7 @@ public class ChangeManagementTest extends BasePiperTest {
         thrown.expectMessage('Cannot retrieve status for change document \'001\'. Does this change exist? Return code from cmclient: 1.')
 
         script.setReturnValue(JenkinsShellCallRule.Type.REGEX, "cmclient.*is-change-in-development -cID '001'", 1)
-        new ChangeManagement(nullScript, null).isChangeInDevelopment('001', 'endpoint', 'me')
+        new ChangeManagement(nullScript, null).isChangeInDevelopment([:], '001', 'endpoint', 'me')
     }
 
     @Test
@@ -163,11 +172,19 @@ public void testGetCommandLineWithCMClientOpts() {
     public void testCreateTransportRequestSOLMANSucceeds() {
 
         script.setReturnValue(JenkinsShellCallRule.Type.REGEX, ".*cmclient.*create-transport -cID 001 -dID 002.*", '004')
-        def transportRequestId = new ChangeManagement(nullScript).createTransportRequestSOLMAN( '001', '002', '003', 'me')
+        def transportRequestId = new ChangeManagement(nullScript).createTransportRequestSOLMAN(
+            [
+                image: 'ppiper/cm-client',
+                pullImage: true,
+            ],
+            '001', '002', '003', 'me')
 
         // the check for the transportRequestID is sufficient. This checks implicit the command line since that value is
         // returned only in case the shell call matches.
         assert transportRequestId == '004'
+
+        assert dockerExecuteRule.getDockerParams().dockerImage == 'ppiper/cm-client'
+        assert dockerExecuteRule.getDockerParams().dockerPullImage == true
 
     }
 
@@ -228,6 +245,10 @@ public void testGetCommandLineWithCMClientOpts() {
         script.setReturnValue(JenkinsShellCallRule.Type.REGEX, 'cmclient.* -t CTS .*create-transport -tt W -ts XYZ -d "desc 123"$', '004')
         def transportRequestId = new ChangeManagement(nullScript)
             .createTransportRequestCTS(
+                [
+                    image: 'ppiper/cmclient',
+                    pullImage: true
+                ],
                 'W', // transport type
                 'XYZ', // target system
                 'desc 123', // description
@@ -238,6 +259,9 @@ public void testGetCommandLineWithCMClientOpts() {
         // returned only in case the shell call matches.
         assert transportRequestId == '004'
 
+        dockerExecuteRule.getDockerParams().dockerImage = 'ppiper/cmclient'
+        dockerExecuteRule.getDockerParams().dockerPullImage = true
+
     }
 
     @Test
@@ -247,6 +271,10 @@ public void testGetCommandLineWithCMClientOpts() {
         script.setReturnValue(JenkinsShellCallRule.Type.REGEX, 'upload-file-to-transport.*-cID 001 -tID 002 XXX "/path"', 0)
 
         new ChangeManagement(nullScript).uploadFileToTransportRequestSOLMAN(
+            [
+                image: 'ppiper/cm-client',
+                imagePull: true,
+            ],
             '001',
             '002',
             'XXX',
@@ -254,8 +282,12 @@ public void testGetCommandLineWithCMClientOpts() {
             'https://example.org/cm',
             'me')
 
-        // no assert required here, since the regex registered above to the script rule is an implicit check for
-        // the command line.
+        // no assert required here for the shell script, since the regex registered above
+        // to the script rule is an implicit check for the command line.
+
+        dockerExecuteRule.getDockerParams().dockerImage = 'ppiper/cmclient'
+        dockerExecuteRule.getDockerParams().dockerPullImage = true
+
     }
 
     @Test
@@ -265,13 +297,20 @@ public void testGetCommandLineWithCMClientOpts() {
         script.setReturnValue(JenkinsShellCallRule.Type.REGEX, '-t CTS upload-file-to-transport -tID 002 "/path"', 0)
 
         new ChangeManagement(nullScript).uploadFileToTransportRequestCTS(
+            [
+                image: 'ppiper/cmclient',
+                pullImage: true
+             ],
             '002',
             '/path',
             'https://example.org/cm',
             'me')
 
-        // no assert required here, since the regex registered above to the script rule is an implicit check for
-        // the command line.
+        assert dockerExecuteRule.getDockerParams().dockerImage == 'ppiper/cmclient'
+        assert dockerExecuteRule.getDockerParams().dockerPullImage == true
+
+        // no assert for the shell command required here, since the regex registered
+        // above to the script rule is an implicit check for the command line.
     }
 
     @Test
@@ -354,6 +393,7 @@ public void testGetCommandLineWithCMClientOpts() {
         script.setReturnValue(JenkinsShellCallRule.Type.REGEX,, 'upload-file-to-transport', 1)
 
         new ChangeManagement(nullScript).uploadFileToTransportRequestSOLMAN(
+            [:],
             '001',
             '002',
             'XXX',
@@ -369,6 +409,10 @@ public void testGetCommandLineWithCMClientOpts() {
         script.setReturnValue(JenkinsShellCallRule.Type.REGEX, '-t SOLMAN release-transport.*-cID 001.*-tID 002', 0)
 
         new ChangeManagement(nullScript).releaseTransportRequestSOLMAN(
+            [
+                image: 'ppiper/cm-client',
+                imagePull: true,
+            ],
             '001',
             '002',
             'https://example.org',
@@ -377,6 +421,9 @@ public void testGetCommandLineWithCMClientOpts() {
 
         // no assert required here, since the regex registered above to the script rule is an implicit check for
         // the command line.
+
+        dockerExecuteRule.getDockerParams().dockerImage == 'ppiper/cm-client'
+        dockerExecuteRule.getDockerParams().pullImage == true
     }
 
     @Test
@@ -386,6 +433,10 @@ public void testGetCommandLineWithCMClientOpts() {
         script.setReturnValue(JenkinsShellCallRule.Type.REGEX, '-t CTS export-transport.*-tID 002', 0)
 
         new ChangeManagement(nullScript).releaseTransportRequestCTS(
+            [
+                image: 'ppiper/cm-client',
+                pullImage: true,
+            ],
             '002',
             'https://example.org',
             'me',
@@ -393,6 +444,9 @@ public void testGetCommandLineWithCMClientOpts() {
 
         // no assert required here, since the regex registered above to the script rule is an implicit check for
         // the command line.
+
+        assert dockerExecuteRule.getDockerParams().dockerImage == 'ppiper/cm-client'
+        assert dockerExecuteRule.getDockerParams().dockerPullImage == true
     }
 
     @Test
@@ -429,6 +483,10 @@ public void testGetCommandLineWithCMClientOpts() {
         script.setReturnValue(JenkinsShellCallRule.Type.REGEX, 'release-transport.*-cID 001.*-tID 002', 1)
 
         new ChangeManagement(nullScript).releaseTransportRequestSOLMAN(
+            [
+                image: 'ppiper/cm-client',
+                imagePull: true,
+            ],
             '001',
             '002',
             'https://example.org',
