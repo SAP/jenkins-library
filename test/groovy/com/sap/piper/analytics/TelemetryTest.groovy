@@ -8,6 +8,7 @@ import static org.junit.Assume.assumeThat
 import org.junit.rules.ExpectedException
 import org.junit.rules.RuleChain
 
+import static org.hamcrest.Matchers.startsWith
 import static org.hamcrest.Matchers.containsString
 import static org.hamcrest.Matchers.hasItem
 import static org.hamcrest.Matchers.is
@@ -122,6 +123,13 @@ class TelemetryTest extends BasePiperTest {
 
     @Test
     void testReportingToSWA() {
+        def httpParams = null
+        helper.registerAllowedMethod('httpRequest', [Map.class], {m ->
+            httpParams = m
+        })
+        helper.registerAllowedMethod("timeout", [Map.class, Closure.class], { m,c ->
+            c()
+        })
         // prepare
         assumeThat(Telemetry.getInstance().listenerList, is(not(empty())))
         // test
@@ -134,12 +142,13 @@ class TelemetryTest extends BasePiperTest {
             stepParam1: 'something'
         ])
         // asserts
-        assertThat(jscr.shell, hasItem(containsString('curl -G -v "https://webanalytics.cfapps.eu10.hana.ondemand.com/tracker/log"')))
-        assertThat(jscr.shell, hasItem(containsString('--data-urlencode "action_name=Piper Library OS"')))
-        assertThat(jscr.shell, hasItem(containsString('--data-urlencode "event_type=library-os"')))
-        assertThat(jscr.shell, hasItem(containsString('--data-urlencode "custom3=anyStep"')))
-        assertThat(jscr.shell, hasItem(containsString('--data-urlencode "custom4=1234"')))
-        assertThat(jscr.shell, hasItem(containsString('--data-urlencode "custom5=abcd"')))
-        assertThat(jscr.shell, hasItem(containsString('--data-urlencode "custom11=something"')))
+        assertThat(httpParams, is(not(null)))
+        assertThat(httpParams?.url, startsWith('https://webanalytics.cfapps.eu10.hana.ondemand.com/tracker/log?'))
+        assertThat(httpParams?.url, containsString('action_name=Piper%2FLibrary%2FOS'))
+        assertThat(httpParams?.url, containsString('event_type=library-os'))
+        assertThat(httpParams?.url, containsString('custom3=anyStep'))
+        assertThat(httpParams?.url, containsString('custom4=1234'))
+        assertThat(httpParams?.url, containsString('custom5=abcd'))
+        assertThat(httpParams?.url, containsString('custom11=something'))
     }
 }
