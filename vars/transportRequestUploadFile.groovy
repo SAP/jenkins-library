@@ -129,6 +129,7 @@ void call(parameters = [:]) {
 
                     case BackendType.SOLMAN:
                         cm.uploadFileToTransportRequestSOLMAN(
+                            configuration.changeManagement.solman?.docker ?: [:],
                             configuration.changeDocumentId,
                             configuration.transportRequestId,
                             configuration.applicationId,
@@ -139,6 +140,7 @@ void call(parameters = [:]) {
                         break
                     case BackendType.CTS:
                         cm.uploadFileToTransportRequestCTS(
+                            configuration.changeManagement.cts?.docker ?: [:],
                             configuration.transportRequestId,
                             configuration.filePath,
                             configuration.changeManagement.endpoint,
@@ -148,7 +150,7 @@ void call(parameters = [:]) {
                     case BackendType.RFC:
 
                         cm.uploadFileToTransportRequestRFC(
-                            configuration.changeManagement.rfc.docker ?: [],
+                            configuration.changeManagement.rfc.docker ?: [:],
                             configuration.transportRequestId,
                             configuration.applicationName,
                             configuration.applicationUrl,
