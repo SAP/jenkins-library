@@ -304,6 +304,13 @@ steps:
       stashContent:
         - 'buildDescriptor'
         - 'opensourceConfiguration'
+    golang:
+      buildDescriptorFile: './setup.py'
+      dockerImage: 'golang:1.12.1-stretch'
+      dockerWorkspace: '/home/golang'
+      stashContent:
+        - 'buildDescriptor'
+        - 'opensourceConfiguration'
     sbt:
       buildDescriptorFile: './build.sbt'
       dockerImage: 'hseeberger/scala-sbt:8u181_2.12.8_1.2.8'

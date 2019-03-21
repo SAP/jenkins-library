@@ -16,7 +16,7 @@ class WhitesourceConfigurationHelper implements Serializable {
                 [name: 'checkPolicies', value: false, force: true],
                 [name: 'forceCheckAllDependencies', value: false, force: true]
             ]
-        } else if(config.whitesource.productName.startsWith('SHC - ')) {
+        } else {
             mapping += [
                 [name: 'checkPolicies', value: true, force: true],
                 [name: 'forceCheckAllDependencies', value: true, force: true]
@@ -39,7 +39,7 @@ class WhitesourceConfigurationHelper implements Serializable {
             [name: 'resolveAllDependencies', value: false, force: true]
         ]
         if(!['pip', 'golang'].contains(config.scanType))
-            script.echo "[Whitesource] Configuration for scanType: '${config.scanType}' is not yet hardened, please do a quality assessment of your scan results."
+            script.echo "[Warning][Whitesource] Configuration for scanType: '${config.scanType}' is not yet hardened, please do a quality assessment of your scan results."
         switch (config.scanType) {
             case 'npm':
                 mapping += [

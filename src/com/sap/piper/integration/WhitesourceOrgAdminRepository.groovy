@@ -71,7 +71,7 @@ class WhitesourceOrgAdminRepository implements Serializable {
 
     def issueHttpRequest(requestBody) {
         def response = internalWhitesource ? internalWhitesource.httpWhitesource(requestBody) : httpWhitesource(requestBody)
-        def parsedResponse = new JsonUtils().parseJsonSerializable(response.content)
+        def parsedResponse = new JsonUtils().jsonStringToGroovyObject(response.content)
         if(parsedResponse?.errorCode){
             script.error "[WhiteSource] Request failed with error message '${parsedResponse.errorMessage}' (${parsedResponse.errorCode})."
         }
@@ -81,7 +81,7 @@ class WhitesourceOrgAdminRepository implements Serializable {
     @NonCPS
     protected def httpWhitesource(requestBody) {
         requestBody["userKey"] = config.whitesource.orgAdminUserKey
-        def serializedBody = new JsonUtils().jsonToString(requestBody)
+        def serializedBody = new JsonUtils().groovyObjectToPrettyJsonString(requestBody)
         def params = [
             url        : config.whitesource.serviceUrl,
             httpMode   : 'POST',

@@ -15,47 +15,57 @@ import static com.sap.piper.Prerequisites.checkScript
 
 @Field String STEP_NAME = getClass().getName()
 @Field Set GENERAL_CONFIG_KEYS = [
-    /**
-     * Wrapper object to bundle any of the other configuration settings on general and stage level.
-     */
     'whitesource',
     /**
      * Jenkins credentials ID referring to the organization admin's token.
+     * @parentConfigKey whitesource
      */
     'orgAdminUserTokenCredentialsId',
     /**
      * WhiteSource token identifying your organization.
+     * @parentConfigKey whitesource
      */
     'orgToken',
     /**
      * Name of the WhiteSource product to be created and used for results aggregation.
+     * @parentConfigKey whitesource
      */
     'productName',
     /**
      * Version of the WhiteSource product to be created and used for results aggregation, usually determined automatically.
+     * @parentConfigKey whitesource
      */
     'productVersion',
     /**
      * Token of the WhiteSource product to be created and used for results aggregation, usually determined automatically.
+     * @parentConfigKey whitesource
      */
     'productToken',
     /**
      * List of WhiteSource projects to be included in the assessment part of the step, usually determined automatically.
+     * @parentConfigKey whitesource
      */
     'projectNames',
+    /**
+     * URL used for downloading the Java Runtime Environment (JRE) required to run the WhiteSource Unified Agent.
+     * @parentConfigKey whitesource
+     */
+    'jreDownloadUrl',
+    /**
+     * URL to the WhiteSource server API used for communication, defaults to `https://saas.whitesourcesoftware.com/api`.
+     * @parentConfigKey whitesource
+     */
+    'serviceUrl',
+    /**
+     * Jenkins credentials ID referring to the product admin's token.
+     * @parentConfigKey whitesource
+     */
+    'userTokenCredentialsId',
     /**
      * Type of development stack used to implement the solution.
      * @possibleValues `maven`, `mta`, `npm`, `pip`, `sbt`
      */
     'scanType',
-    /**
-     * URL to the WhiteSource server API used for communication, defaults to `https://saas.whitesourcesoftware.com/api`.
-     */
-    'serviceUrl',
-    /**
-     * Jenkins credentials ID referring to the product admin's token.
-     */
-    'userTokenCredentialsId',
     /**
      * Whether verbose output should be produced.
      * @possibleValues `true`, `false`
@@ -103,10 +113,6 @@ import static com.sap.piper.Prerequisites.checkScript
      * Docker workspace to be used for scanning.
      */
     'dockerWorkspace',
-    /**
-     * URL used for downloading the Java Runtime Environment (JRE) required to run the WhiteSource Unified Agent.
-     */
-    'jreDownloadUrl',
     /**
      * Whether license compliance is considered and reported as part of the assessment.
      * @possibleValues `true`, `false`
@@ -353,7 +359,11 @@ private def triggerWhitesourceScanWithUserKey(script, config, utils, descriptorU
                         config.whitesource.productVersion = gav.version
                         break
                 }
-                config.whitesource['projectNames'].add("${config.whitesource.projectName} - ${config.whitesource.productVersion}".toString())
+
+                def projectName = "${config.whitesource.projectName} - ${config.whitesource.productVersion}".toString()
+                if(!config.whitesource['projectNames'].contains(projectName))
+                    config.whitesource['projectNames'].add(projectName)
+
                 WhitesourceConfigurationHelper.extendUAConfigurationFile(script, utils, config, path)
                 dockerExecute(script: script, dockerImage: config.dockerImage, dockerWorkspace: config.dockerWorkspace, stashContent: config.stashContent) {
                     if (config.whitesource.agentDownloadUrl) {
@@ -447,7 +457,7 @@ int checkSecurityViolations(Map config, WhitesourceRepository repository) {
                 severeVulnerabilities++
     }
 
-    writeFile(file: "${config.vulnerabilityReportFileName}.json", text: new JsonUtils().getPrettyJsonString(vulnerabilities))
+    writeFile(file: "${config.vulnerabilityReportFileName}.json", text: new JsonUtils().groovyObjectToPrettyJsonString(vulnerabilities))
     writeFile(file: "${config.vulnerabilityReportFileName}.html", text: getReportHtml(config, vulnerabilities, severeVulnerabilities))
     archiveArtifacts(artifacts: "${config.vulnerabilityReportFileName}.*")
 
