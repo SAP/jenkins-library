@@ -109,10 +109,12 @@ def getGoGAV(file = './') {
 }
 
 private getVersionFromFile(file) {
-    def versionString = readFile(file: file)
-    if (versionString) {
-        return versionString.trim()
-    }
+    try {
+        def versionString = readFile(file: file)
+        if (versionString) {
+            return versionString.trim()
+        }
+    } catch (java.nio.file.NoSuchFileException e) {/* NOP */}
     return ''
 }
 
