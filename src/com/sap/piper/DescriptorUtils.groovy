@@ -88,7 +88,7 @@ def getPipGAV(file = 'setup.py') {
     return result
 }
 
-def getGoGAV(file = './') {
+def getGoGAV(file = './glide.yaml') {
     def f = new File(file)
     def path = f.getAbsoluteFile().getParentFile()
     def result = [:]
