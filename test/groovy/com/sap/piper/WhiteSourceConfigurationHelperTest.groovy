@@ -90,7 +90,7 @@ class WhiteSourceConfigurationHelperTest extends BasePiperTest {
     }
 
     @Test
-    void testExtendConfigurationFileUnifiedAgentVerbose() {
+    void testExtendConfigurationFileUnifiedAgentGolangVerbose() {
         def config = [scanType: 'golang', whitesource: [configFilePath: './config', serviceUrl: "http://some.host.whitesource.com/api/", orgToken: 'abcd', productName: 'SHC - name2', productToken: '1234', userKey: '0000'], stashContent: ['some', 'stashes'], verbose: true]
         WhitesourceConfigurationHelper.extendUAConfigurationFile(nullScript, utils, config, "./")
         assertThat(jwfr.files['./config.847f9aec2f93de9000d5fa4e6eaace2283ae6377'], containsString("apiKey=abcd"))
