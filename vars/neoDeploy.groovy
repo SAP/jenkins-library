@@ -15,11 +15,11 @@ import static com.sap.piper.Prerequisites.checkScript
     'dockerEnvVars',
     'dockerImage',
     'dockerOptions',
-    'neoHome'
+    'neoHome',
+    'source'
 ])
 
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS.plus([
-    'source',
     'deployMode',
     'warAction'
 ])
@@ -34,17 +34,34 @@ void call(parameters = [:]) {
         prepareDefaultValues script: script
 
         // load default & individual configuration
-        Map configuration = ConfigurationHelper.newInstance(this)
+        ConfigurationHelper configHelper = ConfigurationHelper.newInstance(this)
             .loadStepDefaults()
             .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS)
             .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS)
             .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName ?: env.STAGE_NAME, STEP_CONFIG_KEYS)
             .addIfEmpty('source', script.commonPipelineEnvironment.getMtarFilePath())
             .mixin(parameters, PARAMETER_KEYS)
-            .withMandatoryProperty('neo')
+            .collectValidationFailures()
+            .withPropertyInValues('deployMode', DeployMode.stringValues())
+
+        Map configuration = configHelper.use()
+
+        DeployMode deployMode = DeployMode.fromString(configuration.deployMode)
+
+        def isWarParamsDeployMode = { deployMode == DeployMode.WAR_PARAMS },
+            isNotWarPropertiesDeployMode = {deployMode != DeployMode.WAR_PROPERTIES_FILE}
+
+        configHelper
             .withMandatoryProperty('source')
             .withMandatoryProperty('neo/credentialsId')
-            .withPropertyInValues('deployMode', DeployMode.stringValues())
+            .withMandatoryProperty('neo/application', null, isWarParamsDeployMode)
+            .withMandatoryProperty('neo/runtime', null, isWarParamsDeployMode)
+            .withMandatoryProperty('neo/runtimeVersion', null, isWarParamsDeployMode)
+            .withMandatoryProperty('neo/host', null, isNotWarPropertiesDeployMode)
+            .withMandatoryProperty('neo/account', null, isNotWarPropertiesDeployMode)
+            //
+            // call 'use()' a second time in order to get the collected validation failures
+            // since the map did not change, it is not required to replace the previous configuration map.
             .use()
 
         utils.pushToSWA([
@@ -71,8 +88,6 @@ void call(parameters = [:]) {
                 dockerEnvVars: configuration.dockerEnvVars,
                 dockerOptions: configuration.dockerOptions
             ) {
-                DeployMode deployMode = DeployMode.fromString(configuration.deployMode)
-
                 NeoCommandHelper neoCommandHelper = new NeoCommandHelper(
                     this,
                     deployMode,

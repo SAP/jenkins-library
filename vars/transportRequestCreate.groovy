@@ -97,6 +97,7 @@ void call(parameters = [:]) {
         try {
                 if(backendType == BackendType.SOLMAN) {
                     transportRequestId = cm.createTransportRequestSOLMAN(
+                                                                configuration.changeManagement.solman.docker,
                                                                configuration.changeDocumentId,
                                                                configuration.developmentSystemId,
                                                                configuration.changeManagement.endpoint,
@@ -104,6 +105,7 @@ void call(parameters = [:]) {
                                                                configuration.changeManagement.clientOpts)
                 } else if(backendType == BackendType.CTS) {
                     transportRequestId = cm.createTransportRequestCTS(
+                                                                configuration.changeManagement.cts.docker,
                                                                configuration.transportType,
                                                                configuration.targetSystem,
                                                                configuration.description,
