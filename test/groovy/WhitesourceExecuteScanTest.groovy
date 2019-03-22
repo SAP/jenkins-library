@@ -238,7 +238,7 @@ class WhitesourceExecuteScanTest extends BasePiperTest {
         assertThat(writeFileRule.files['./wss-unified-agent.config.d3aa80454919391024374ba46b4df082d15ab9a3'], containsString('apiKey=testOrgToken'))
         assertThat(writeFileRule.files['./wss-unified-agent.config.d3aa80454919391024374ba46b4df082d15ab9a3'], containsString('productName=testProductName'))
         assertThat(writeFileRule.files['./wss-unified-agent.config.d3aa80454919391024374ba46b4df082d15ab9a3'], containsString('productToken=testProductToken'))
-        assertThat(writeFileRule.files['./wss-unified-agent.config.d3aa80454919391024374ba46b4df082d15ab9a3'], containsString('productVersion=1.2.3'))
+        assertThat(writeFileRule.files['./wss-unified-agent.config.d3aa80454919391024374ba46b4df082d15ab9a3'], containsString('productVersion=1'))
         assertThat(writeFileRule.files['./wss-unified-agent.config.d3aa80454919391024374ba46b4df082d15ab9a3'], containsString('projectName=com.sap.node.test-node'))
         assertThat(writeFileRule.files['./wss-unified-agent.config.d3aa80454919391024374ba46b4df082d15ab9a3'], containsString('userKey=token-0815'))
     }
@@ -318,7 +318,7 @@ class WhitesourceExecuteScanTest extends BasePiperTest {
         assertThat(writeFileRule.files['./wss-unified-agent.config.d3aa80454919391024374ba46b4df082d15ab9a3'], containsString('apiKey=testOrgToken'))
         assertThat(writeFileRule.files['./wss-unified-agent.config.d3aa80454919391024374ba46b4df082d15ab9a3'], containsString('productName=testProductName'))
         assertThat(writeFileRule.files['./wss-unified-agent.config.d3aa80454919391024374ba46b4df082d15ab9a3'], containsString('userKey=token-0815'))
-        assertThat(writeFileRule.files['./wss-unified-agent.config.d3aa80454919391024374ba46b4df082d15ab9a3'], containsString('productVersion=1.2.3'))
+        assertThat(writeFileRule.files['./wss-unified-agent.config.d3aa80454919391024374ba46b4df082d15ab9a3'], containsString('productVersion=1'))
         assertThat(writeFileRule.files['./wss-unified-agent.config.d3aa80454919391024374ba46b4df082d15ab9a3'], containsString('projectName=test-python'))
     }
 
@@ -364,7 +364,7 @@ class WhitesourceExecuteScanTest extends BasePiperTest {
         assertThat(writeFileRule.files['./wss-unified-agent.config.d3aa80454919391024374ba46b4df082d15ab9a3'], containsString('apiKey=testOrgToken'))
         assertThat(writeFileRule.files['./wss-unified-agent.config.d3aa80454919391024374ba46b4df082d15ab9a3'], containsString('productName=testProductName'))
         assertThat(writeFileRule.files['./wss-unified-agent.config.d3aa80454919391024374ba46b4df082d15ab9a3'], containsString('userKey=token-0815'))
-        assertThat(writeFileRule.files['./wss-unified-agent.config.d3aa80454919391024374ba46b4df082d15ab9a3'], containsString('productVersion=1.2.3'))
+        assertThat(writeFileRule.files['./wss-unified-agent.config.d3aa80454919391024374ba46b4df082d15ab9a3'], containsString('productVersion=1'))
         assertThat(writeFileRule.files['./wss-unified-agent.config.d3aa80454919391024374ba46b4df082d15ab9a3'], containsString('projectName=test-python'))
     }
 
@@ -448,7 +448,7 @@ class WhitesourceExecuteScanTest extends BasePiperTest {
         assertThat(writeFileRule.files['./wss-unified-agent.config.d3aa80454919391024374ba46b4df082d15ab9a3'], containsString('apiKey=testOrgToken'))
         assertThat(writeFileRule.files['./wss-unified-agent.config.d3aa80454919391024374ba46b4df082d15ab9a3'], containsString('productName=testProductName'))
         assertThat(writeFileRule.files['./wss-unified-agent.config.d3aa80454919391024374ba46b4df082d15ab9a3'], containsString('userKey=token-0815'))
-        assertThat(writeFileRule.files['./wss-unified-agent.config.d3aa80454919391024374ba46b4df082d15ab9a3'], containsString('productVersion=1.2.3'))
+        assertThat(writeFileRule.files['./wss-unified-agent.config.d3aa80454919391024374ba46b4df082d15ab9a3'], containsString('productVersion=1'))
         assertThat(writeFileRule.files['./wss-unified-agent.config.d3aa80454919391024374ba46b4df082d15ab9a3'], containsString('projectName=com.sap.sbt.test-scala'))
     }
 
@@ -504,7 +504,7 @@ class WhitesourceExecuteScanTest extends BasePiperTest {
         assertThat(writeFileRule.files['./myProject/wss-unified-agent.config.d3aa80454919391024374ba46b4df082d15ab9a3'], containsString('apiKey=testOrgToken'))
         assertThat(writeFileRule.files['./myProject/wss-unified-agent.config.d3aa80454919391024374ba46b4df082d15ab9a3'], containsString('productName=testProductName'))
         assertThat(writeFileRule.files['./myProject/wss-unified-agent.config.d3aa80454919391024374ba46b4df082d15ab9a3'], containsString('userKey=token-0815'))
-        assertThat(writeFileRule.files['./myProject/wss-unified-agent.config.d3aa80454919391024374ba46b4df082d15ab9a3'], containsString('productVersion=1.2.3'))
+        assertThat(writeFileRule.files['./myProject/wss-unified-agent.config.d3aa80454919391024374ba46b4df082d15ab9a3'], containsString('productVersion=1'))
         assertThat(writeFileRule.files['./myProject/wss-unified-agent.config.d3aa80454919391024374ba46b4df082d15ab9a3'], containsString('projectName=myProject'))
     }
 
@@ -530,7 +530,7 @@ class WhitesourceExecuteScanTest extends BasePiperTest {
                 "productName": "SHC - Piper",
                 "checkPolicies": "true",
                 "projectName": "python-test",
-                "projectVersion": "1.0.0"
+                "projectVersion": "2.0.0"
             ])
             return result
         })
@@ -562,7 +562,7 @@ class WhitesourceExecuteScanTest extends BasePiperTest {
         assertThat(writeFileRule.files['./wss-unified-agent.config.d3aa80454919391024374ba46b4df082d15ab9a3'], containsString('apiKey=testOrgToken'))
         assertThat(writeFileRule.files['./wss-unified-agent.config.d3aa80454919391024374ba46b4df082d15ab9a3'], containsString('productName=testProductName'))
         assertThat(writeFileRule.files['./wss-unified-agent.config.d3aa80454919391024374ba46b4df082d15ab9a3'], containsString('userKey=token-0815'))
-        assertThat(writeFileRule.files['./wss-unified-agent.config.d3aa80454919391024374ba46b4df082d15ab9a3'], containsString('productVersion=1.2.3'))
+        assertThat(writeFileRule.files['./wss-unified-agent.config.d3aa80454919391024374ba46b4df082d15ab9a3'], containsString('productVersion=1'))
         assertThat(writeFileRule.files['./wss-unified-agent.config.d3aa80454919391024374ba46b4df082d15ab9a3'], containsString('projectName=testOrg.testRepo'))
     }
 
@@ -576,7 +576,7 @@ class WhitesourceExecuteScanTest extends BasePiperTest {
                 "productName": "SHC - Piper",
                 "checkPolicies": "true",
                 "projectName": "python-test",
-                "projectVersion": "1.0.0"
+                "projectVersion": "2.0.0"
             ])
             return result
         })
@@ -606,7 +606,7 @@ class WhitesourceExecuteScanTest extends BasePiperTest {
                 "productName": "SHC - Piper",
                 "checkPolicies": "true",
                 "projectName": "python-test",
-                "projectVersion": "1.0.0"
+                "projectVersion": "2.0.0"
             ])
             return result
         })
@@ -678,9 +678,9 @@ class WhitesourceExecuteScanTest extends BasePiperTest {
             )
         )
 
-        assertThat(whitesourceCalls[0]['whitesource']['projectNames'], contains("com.sap.maven.test-java - 1.2.3", "com.sap.node.test-node - 1.2.3", "test-python - 1.2.3"))
-        assertThat(whitesourceCalls[1]['whitesource']['projectNames'], contains("com.sap.maven.test-java - 1.2.3", "com.sap.node.test-node - 1.2.3", "test-python - 1.2.3"))
-        assertThat(whitesourceCalls[2]['whitesource']['projectNames'], contains("com.sap.maven.test-java - 1.2.3", "com.sap.node.test-node - 1.2.3", "test-python - 1.2.3"))
+        assertThat(whitesourceCalls[0]['whitesource']['projectNames'], contains("com.sap.maven.test-java - 1", "com.sap.node.test-node - 1", "test-python - 1"))
+        assertThat(whitesourceCalls[1]['whitesource']['projectNames'], contains("com.sap.maven.test-java - 1", "com.sap.node.test-node - 1", "test-python - 1"))
+        assertThat(whitesourceCalls[2]['whitesource']['projectNames'], contains("com.sap.maven.test-java - 1", "com.sap.node.test-node - 1", "test-python - 1"))
     }
 
     @Test
@@ -910,7 +910,7 @@ class WhitesourceExecuteScanTest extends BasePiperTest {
                 "productName": "SHC - Piper",
                 "checkPolicies": "true",
                 "projectName": "python-test",
-                "projectVersion": "1.0.0"
+                "projectVersion": "2.0.0"
             ])
             return result
         })
@@ -992,7 +992,7 @@ class WhitesourceExecuteScanTest extends BasePiperTest {
                 "productName": "SHC - Piper",
                 "checkPolicies": "true",
                 "projectName": "pipeline-test-node",
-                "projectVersion": "1.0.0"
+                "projectVersion": "2.0.0"
             ])
             return result
         })
@@ -1031,7 +1031,7 @@ class WhitesourceExecuteScanTest extends BasePiperTest {
                 "productName": "SHC - Piper",
                 "checkPolicies": "true",
                 "projectName": "pipeline-test-node",
-                "projectVersion": "1.0.0"
+                "projectVersion": "2.0.0"
             ])
             return result
         })
@@ -1072,7 +1072,7 @@ class WhitesourceExecuteScanTest extends BasePiperTest {
                 "productName": "SHC - Piper",
                 "checkPolicies": "true",
                 "projectName": "pipeline-test-node",
-                "projectVersion": "1.0.0"
+                "projectVersion": "2.0.0"
             ])
             return result
         })
