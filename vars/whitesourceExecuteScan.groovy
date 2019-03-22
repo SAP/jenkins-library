@@ -338,7 +338,7 @@ private def triggerWhitesourceScanWithUserKey(script, config, utils, descriptorU
                 def path = config.buildDescriptorFile.substring(0, config.buildDescriptorFile.lastIndexOf('/') + 1)
                 resolveProjectIdentifiers(script, descriptorUtils, config)
 
-                def projectName = "${config.whitesource.projectName} - ${config.whitesource.productVersion}".toString()
+                def projectName = "${config.whitesource.projectName}${config.whitesource.productVersion?' - ':''}${config.whitesource.productVersion}".toString()
                 if(!config.whitesource['projectNames'].contains(projectName))
                     config.whitesource['projectNames'].add(projectName)
 
@@ -418,7 +418,7 @@ private resolveProjectIdentifiers(script, descriptorUtils, config) {
         }
 
         if (!config.whitesource.productVersion) {
-            config.whitesource.productVersion = gav.version
+            config.whitesource.productVersion = gav.version?.tokenize('.')?.get(0)
         }
     }
 }
