@@ -305,9 +305,9 @@ steps:
         - 'buildDescriptor'
         - 'opensourceConfiguration'
     golang:
-      buildDescriptorFile: './setup.py'
-      dockerImage: 'golang:1.12.1-stretch'
-      dockerWorkspace: '/home/golang'
+      buildDescriptorFile: './glide.yaml'
+      dockerImage: 'instrumentisto/glide:0.13.1-go1.10'
+      dockerWorkspace: '/home/glide'
       stashContent:
         - 'buildDescriptor'
         - 'opensourceConfiguration'

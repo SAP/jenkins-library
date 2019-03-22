@@ -72,7 +72,7 @@ def getSbtGAV(file = 'sbtDescriptor.json') {
 
 def getPipGAV(file = 'setup.py') {
     def result = [:]
-    def descriptor = sh(returnStdout: true, script: "cat ${file}")
+    def descriptor = readFile(file: file)
 
     result['group'] = ''
     result['packaging'] = ''
@@ -81,14 +81,39 @@ def getPipGAV(file = 'setup.py') {
 
     if (result['version'] == '' || matches(method, result['version'])) {
         file = file.replace('setup.py', 'version.txt')
-        def versionString = sh(returnStdout: true, script: "cat ${file}")
-        if (versionString) {
-            result['version'] = versionString.trim()
-        }
+        result['version'] = getVersionFromFile(file)
     }
 
     echo "loaded ${result} from ${file}"
     return result
+}
+
+def getGoGAV(file = './') {
+    def f = new File(file)
+    def path = f.getAbsoluteFile().getParentFile()
+    def result = [:]
+
+    result['group'] = ''
+    result['packaging'] = ''
+    result['artifact'] = path.getName()
+    file = new File(path, 'version.txt').getAbsolutePath()
+    result['version'] = getVersionFromFile(file)
+
+    if (!result['version']) {
+        file = new File(path, 'VERSION').getAbsolutePath()
+        result['version'] = getVersionFromFile(file)
+    }
+
+    echo "loaded ${result} from ${file}"
+    return result
+}
+
+private getVersionFromFile(file) {
+    def versionString = readFile(file: file)
+    if (versionString) {
+        return versionString.trim()
+    }
+    return ''
 }
 
 @NonCPS

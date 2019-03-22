@@ -131,9 +131,9 @@ class DescriptorUtilsTest extends BasePiperTest {
     @Test
     void testGetPipGAV() {
 
-        helper.registerAllowedMethod("sh", [Map.class], {
+        helper.registerAllowedMethod("readFile", [Map.class], {
             map ->
-                def descriptorFile = new File("test/resources/utilsTest/${map.script.substring(4, map.script.size())}")
+                def descriptorFile = new File("test/resources/utilsTest/${map.file}")
                 return descriptorFile.text
         })
 
@@ -147,9 +147,9 @@ class DescriptorUtilsTest extends BasePiperTest {
     @Test
     void testGetPipGAVFromVersionTxt() {
 
-        helper.registerAllowedMethod("sh", [Map.class], {
+        helper.registerAllowedMethod("readFile", [Map.class], {
             map ->
-                def descriptorFile = new File("test/resources/DescriptorUtils/pip/${map.script.substring(4, map.script.size())}")
+                def descriptorFile = new File("test/resources/DescriptorUtils/pip/${map.file}")
                 return descriptorFile.text
         })
 
@@ -207,5 +207,25 @@ class DescriptorUtilsTest extends BasePiperTest {
         assertEquals(gav.artifact, 'test-artifact')
         assertEquals(gav.version, '1.2.4')
         assertEquals(gav.packaging, 'jar')
+    }
+
+    @Test
+    void testGetGoGAV() {
+
+        helper.registerAllowedMethod("readFile", [Map.class], {
+            map ->
+                def path = 'test/resources/DescriptorUtils/go/' + map.file.substring(map.file.lastIndexOf(File.separator) + 1, map.file.length())
+                def descriptorFile = new File(path)
+                if(descriptorFile.exists())
+                    return descriptorFile.text
+                else
+                    return null
+        })
+
+        def gav = descriptorUtils.getGoGAV('./myProject/glide.yaml')
+
+        assertEquals('', gav.group)
+        assertEquals('myProject', gav.artifact)
+        assertEquals('1.2.3', gav.version)
     }
 }

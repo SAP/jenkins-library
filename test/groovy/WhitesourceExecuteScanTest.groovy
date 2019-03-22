@@ -453,6 +453,63 @@ class WhitesourceExecuteScanTest extends BasePiperTest {
     }
 
     @Test
+    void testGo() {
+        helper.registerAllowedMethod("readFile", [Map.class], {
+            map ->
+                def path = 'test/resources/DescriptorUtils/go/' + map.file.substring(map.file.lastIndexOf(File.separator) + 1, map.file.length())
+                def descriptorFile = new File(path)
+                if(descriptorFile.exists())
+                    return descriptorFile.text
+                else
+                    return null
+        })
+
+        helper.registerAllowedMethod("readProperties", [Map], {
+            def result = new Properties()
+            result.putAll([
+                "apiKey": "b39d1328-52e2-42e3-98f0-932709daf3f0",
+                "productName": "SHC - Piper",
+                "checkPolicies": "true",
+                "projectName": "python-test",
+                "projectVersion": "1.0.0"
+            ])
+            return result
+        })
+
+        stepRule.step.whitesourceExecuteScan([
+            script                               : nullScript,
+            whitesourceRepositoryStub            : whitesourceStub,
+            whitesourceOrgAdminRepositoryStub    : whitesourceOrgAdminRepositoryStub,
+            descriptorUtilsStub                  : descriptorUtilsStub,
+            scanType                             : 'golang',
+            juStabUtils                          : utils,
+            productName                          : 'testProductName',
+            orgToken                             : 'testOrgToken',
+            reporting                            : false,
+            buildDescriptorFile                  : './myProject/glide.yaml'
+        ])
+
+        assertThat(loggingRule.log, containsString('Unstash content: buildDescriptor'))
+        assertThat(loggingRule.log, containsString('Unstash content: opensourceConfiguration'))
+
+        assertThat(dockerExecuteRule.dockerParams, hasEntry('dockerImage', 'instrumentisto/glide:0.13.1-go1.10'))
+        assertThat(dockerExecuteRule.dockerParams, hasEntry('dockerWorkspace', '/home/glide'))
+        assertThat(dockerExecuteRule.dockerParams, hasEntry('stashContent', ['buildDescriptor', 'opensourceConfiguration', 'modified whitesource config d3aa80454919391024374ba46b4df082d15ab9a3']))
+
+        assertThat(shellRule.shell, Matchers.hasItems(
+            is('curl --location --output wss-unified-agent.jar https://github.com/whitesource/unified-agent-distribution/raw/master/standAlone/wss-unified-agent.jar'),
+            is('./bin/java -jar wss-unified-agent.jar -c \'./myProject/wss-unified-agent.config.d3aa80454919391024374ba46b4df082d15ab9a3\' -apiKey \'testOrgToken\' -userKey \'token-0815\' -product \'testProductName\'')
+        ))
+
+        assertThat(writeFileRule.files['./myProject/wss-unified-agent.config.d3aa80454919391024374ba46b4df082d15ab9a3'], containsString('apiKey=testOrgToken'))
+        assertThat(writeFileRule.files['./myProject/wss-unified-agent.config.d3aa80454919391024374ba46b4df082d15ab9a3'], containsString('productName=testProductName'))
+        assertThat(writeFileRule.files['./myProject/wss-unified-agent.config.d3aa80454919391024374ba46b4df082d15ab9a3'], containsString('userKey=token-0815'))
+        assertThat(writeFileRule.files['./myProject/wss-unified-agent.config.d3aa80454919391024374ba46b4df082d15ab9a3'], containsString('productVersion=1.2.3'))
+        assertThat(writeFileRule.files['./myProject/wss-unified-agent.config.d3aa80454919391024374ba46b4df082d15ab9a3'], containsString('projectName=myProject'))
+    }
+
+
+    @Test
     void testAgentNoDownloads() {
         helper.registerAllowedMethod("readProperties", [Map], {
             def result = new Properties()
