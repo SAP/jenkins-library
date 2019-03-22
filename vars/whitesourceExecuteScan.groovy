@@ -413,13 +413,12 @@ private resolveProjectIdentifiers(script, descriptorUtils, config) {
                 break
         }
 
-        if(!config.whitesource.projectName) {
+        if(!config.whitesource.projectName)
             config.whitesource.projectName = "${gav.group?:''}${gav.group?'.':''}${gav.artifact}"
-        }
 
-        if (!config.whitesource.productVersion) {
-            config.whitesource.productVersion = gav.version?.tokenize('.')?.get(0)
-        }
+        def version = gav.version?.tokenize('.')?.head()
+        if(version && !config.whitesource.productVersion)
+            config.whitesource.productVersion = version
     }
 }
 
