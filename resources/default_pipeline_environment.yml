@@ -16,6 +16,18 @@ general:
       from: 'origin/master'
       to: 'HEAD'
       format: '%b'
+    solman:
+      docker:
+        image: 'ppiper/cm-client'
+        options: []
+        envVars: {}
+        pullImage: true
+    cts:
+      docker:
+        image: 'ppiper/cm-client'
+        options: []
+        envVars: {}
+        pullImage: true
     rfc:
       docker:
         image: 'rfc'
