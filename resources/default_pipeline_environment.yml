@@ -326,7 +326,7 @@ steps:
         - 'opensourceConfiguration'
     golang:
       buildDescriptorFile: './glide.yaml'
-      dockerImage: 'instrumentisto/glide:0.13.1-go1.10'
+      dockerImage: 'fabiorphp/golang-glide:1.11-stretch'
       dockerWorkspace: '/home/glide'
       stashContent:
         - 'buildDescriptor'

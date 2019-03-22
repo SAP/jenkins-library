@@ -492,7 +492,7 @@ class WhitesourceExecuteScanTest extends BasePiperTest {
         assertThat(loggingRule.log, containsString('Unstash content: buildDescriptor'))
         assertThat(loggingRule.log, containsString('Unstash content: opensourceConfiguration'))
 
-        assertThat(dockerExecuteRule.dockerParams, hasEntry('dockerImage', 'instrumentisto/glide:0.13.1-go1.10'))
+        assertThat(dockerExecuteRule.dockerParams, hasEntry('dockerImage', 'fabiorphp/golang-glide:1.11-stretch'))
         assertThat(dockerExecuteRule.dockerParams, hasEntry('dockerWorkspace', '/home/glide'))
         assertThat(dockerExecuteRule.dockerParams, hasEntry('stashContent', ['buildDescriptor', 'opensourceConfiguration', 'modified whitesource config d3aa80454919391024374ba46b4df082d15ab9a3']))
 
@@ -550,7 +550,7 @@ class WhitesourceExecuteScanTest extends BasePiperTest {
         assertThat(loggingRule.log, containsString('Unstash content: buildDescriptor'))
         assertThat(loggingRule.log, containsString('Unstash content: opensourceConfiguration'))
 
-        assertThat(dockerExecuteRule.dockerParams, hasEntry('dockerImage', 'instrumentisto/glide:0.13.1-go1.10'))
+        assertThat(dockerExecuteRule.dockerParams, hasEntry('dockerImage', 'fabiorphp/golang-glide:1.11-stretch'))
         assertThat(dockerExecuteRule.dockerParams, hasEntry('dockerWorkspace', '/home/glide'))
         assertThat(dockerExecuteRule.dockerParams, hasEntry('stashContent', ['buildDescriptor', 'opensourceConfiguration', 'modified whitesource config d3aa80454919391024374ba46b4df082d15ab9a3']))
 
