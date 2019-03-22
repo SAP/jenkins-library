@@ -336,36 +336,7 @@ private def triggerWhitesourceScanWithUserKey(script, config, utils, descriptorU
                 break
             default:
                 def path = config.buildDescriptorFile.substring(0, config.buildDescriptorFile.lastIndexOf('/') + 1)
-                def gav
-                switch (config.scanType) {
-                    case 'npm':
-                        gav = descriptorUtils.getNpmGAV(config.buildDescriptorFile)
-                        config.whitesource.projectName = gav.group + "." + gav.artifact
-                        config.whitesource.productVersion = gav.version
-                        break
-                    case 'sbt':
-                        gav = descriptorUtils.getSbtGAV(config.buildDescriptorFile)
-                        config.whitesource.projectName = gav.group + "." + gav.artifact
-                        config.whitesource.productVersion = gav.version
-                        break
-                    case 'pip':
-                        gav = descriptorUtils.getPipGAV(config.buildDescriptorFile)
-                        config.whitesource.projectName = gav.artifact
-                        config.whitesource.productVersion = gav.version
-                        break
-                    case 'golang':
-                        gav = descriptorUtils.getGoGAV(config.buildDescriptorFile)
-                        config.whitesource.projectName = gav.artifact
-                        config.whitesource.productVersion = gav.version
-                        break
-                    case 'dlang':
-                        break
-                    case 'maven':
-                        gav = descriptorUtils.getMavenGAV(config.buildDescriptorFile)
-                        config.whitesource.projectName = gav.group + "." + gav.artifact
-                        config.whitesource.productVersion = gav.version
-                        break
-                }
+                resolveProjectIdentifiers(script, descriptorUtils, config)
 
                 def projectName = "${config.whitesource.projectName} - ${config.whitesource.productVersion}".toString()
                 if(!config.whitesource['projectNames'].contains(projectName))
@@ -412,6 +383,43 @@ private def triggerWhitesourceScanWithUserKey(script, config, utils, descriptorU
         }
 
         return statusCode
+    }
+}
+
+private resolveProjectIdentifiers(script, descriptorUtils, config) {
+    if (!config.whitesource.projectName || !config.whitesource.productVersion) {
+        def gav
+        switch (config.scanType) {
+            case 'npm':
+                gav = descriptorUtils.getNpmGAV(config.buildDescriptorFile)
+                break
+            case 'sbt':
+                gav = descriptorUtils.getSbtGAV(config.buildDescriptorFile)
+                break
+            case 'pip':
+                gav = descriptorUtils.getPipGAV(config.buildDescriptorFile)
+                break
+            case 'golang':
+                gav = descriptorUtils.getGoGAV(config.buildDescriptorFile)
+                if (gav.artifact == '.') {
+                    gav.group = script.commonPipelineEnvironment.getGithubOrg()
+                    gav.artifact =  script.commonPipelineEnvironment.getGithubRepo()
+                }
+                break
+            case 'dlang':
+                break
+            case 'maven':
+                gav = descriptorUtils.getMavenGAV(config.buildDescriptorFile)
+                break
+        }
+
+        if(!config.whitesource.projectName) {
+            config.whitesource.projectName = "${gav.group?:''}${gav.group?'.':''}${gav.artifact}"
+        }
+
+        if (!config.whitesource.productVersion) {
+            config.whitesource.productVersion = gav.version
+        }
     }
 }
 
