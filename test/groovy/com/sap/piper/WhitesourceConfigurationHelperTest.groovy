@@ -15,7 +15,7 @@ import static org.hamcrest.Matchers.hasItem
 import static org.hamcrest.Matchers.not
 import static org.junit.Assert.assertThat
 
-class WhiteSourceConfigurationHelperTest extends BasePiperTest {
+class WhitesourceConfigurationHelperTest extends BasePiperTest {
     JenkinsReadFileRule jrfr = new JenkinsReadFileRule(this, 'test/resources/utilsTest/')
     JenkinsWriteFileRule jwfr = new JenkinsWriteFileRule(this)
     JenkinsLoggingRule jlr = new JenkinsLoggingRule(this)
@@ -29,7 +29,35 @@ class WhiteSourceConfigurationHelperTest extends BasePiperTest {
 
     @Before
     void init() {
+        def p = new Properties()
+        p.put("log.level", "debug")
+        helper.registerAllowedMethod('readProperties', [Map], {return p})
+    }
+
+    @Test
+    void testExtendConfigurationFileUnifiedAgentEmptyConfig() {
         helper.registerAllowedMethod('readProperties', [Map], {return new Properties()})
+        WhitesourceConfigurationHelper.extendUAConfigurationFile(nullScript, utils, [scanType: 'none', whitesource: [configFilePath: './config',serviceUrl: "http://some.host.whitesource.com/api/", orgToken: 'abcd', productName: 'DIST - name1', productToken: '1234', userKey: '0000']], "./")
+        assertThat(jwfr.files['./config.847f9aec2f93de9000d5fa4e6eaace2283ae6377'], not(containsString("log.level=debug")))
+        assertThat(jwfr.files['./config.847f9aec2f93de9000d5fa4e6eaace2283ae6377'], containsString("apiKey=abcd"))
+        assertThat(jwfr.files['./config.847f9aec2f93de9000d5fa4e6eaace2283ae6377'], containsString("productName=DIST - name1"))
+        assertThat(jwfr.files['./config.847f9aec2f93de9000d5fa4e6eaace2283ae6377'], containsString("productToken=1234"))
+        assertThat(jwfr.files['./config.847f9aec2f93de9000d5fa4e6eaace2283ae6377'], containsString("userKey=0000"))
+
+        assertThat(jlr.log, containsString("[Whitesource] Configuration for scanType: 'none' is not yet hardened, please do a quality assessment of your scan results."))
+    }
+
+    @Test
+    void testExtendConfigurationFileUnifiedAgentConfigDeeper() {
+        helper.registerAllowedMethod('readProperties', [Map], { m -> if (!m.file.contains('testModule')) return new Properties() else return null })
+        WhitesourceConfigurationHelper.extendUAConfigurationFile(nullScript, utils, [scanType: 'none', whitesource: [configFilePath: './config',serviceUrl: "http://some.host.whitesource.com/api/", orgToken: 'abcd', productName: 'DIST - name1', productToken: '1234', userKey: '0000']], "./testModule/")
+        assertThat(jwfr.files['./testModule/config.847f9aec2f93de9000d5fa4e6eaace2283ae6377'], not(containsString("log.level=debug")))
+        assertThat(jwfr.files['./testModule/config.847f9aec2f93de9000d5fa4e6eaace2283ae6377'], containsString("apiKey=abcd"))
+        assertThat(jwfr.files['./testModule/config.847f9aec2f93de9000d5fa4e6eaace2283ae6377'], containsString("productName=DIST - name1"))
+        assertThat(jwfr.files['./testModule/config.847f9aec2f93de9000d5fa4e6eaace2283ae6377'], containsString("productToken=1234"))
+        assertThat(jwfr.files['./testModule/config.847f9aec2f93de9000d5fa4e6eaace2283ae6377'], containsString("userKey=0000"))
+
+        assertThat(jlr.log, containsString("[Whitesource] Configuration for scanType: 'none' is not yet hardened, please do a quality assessment of your scan results."))
     }
 
     @Test
@@ -110,8 +138,8 @@ class WhiteSourceConfigurationHelperTest extends BasePiperTest {
         p.putAll(['python.resolveDependencies': 'false', 'python.ignoreSourceFiles': 'false', 'python.ignorePipInstallErrors': 'true','python.installVirtualenv': 'false'])
         helper.registerAllowedMethod('readProperties', [Map], {return p})
 
-        WhitesourceConfigurationHelper.extendUAConfigurationFile(nullScript, utils, [scanType: 'pip', whitesource: [configFilePath: './config', serviceUrl: "http://some.host.whitesource.com/api/", orgToken: 'abcd', productName: 'name', productToken: '1234', userKey: '0000'], verbose: true], "./")
-        assertThat(jwfr.files['./config.847f9aec2f93de9000d5fa4e6eaace2283ae6377'], containsString("apiKey=abcd"))
+        WhitesourceConfigurationHelper.extendUAConfigurationFile(nullScript, utils, [scanType: 'pip', whitesource: [configFilePath: './config', serviceUrl: "http://some.host.whitesource.com/api/", orgToken: 'cdfg', productName: 'name', productToken: '1234', userKey: '0000'], verbose: true], "./")
+        assertThat(jwfr.files['./config.847f9aec2f93de9000d5fa4e6eaace2283ae6377'], containsString("apiKey=cdfg"))
         assertThat(jwfr.files['./config.847f9aec2f93de9000d5fa4e6eaace2283ae6377'], containsString("productName=name"))
         assertThat(jwfr.files['./config.847f9aec2f93de9000d5fa4e6eaace2283ae6377'], containsString("productToken=1234"))
         assertThat(jwfr.files['./config.847f9aec2f93de9000d5fa4e6eaace2283ae6377'], containsString("userKey=0000"))

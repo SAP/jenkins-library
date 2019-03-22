@@ -23,7 +23,7 @@ class WhitesourceConfigurationHelper implements Serializable {
             ]
         }
         if(config.verbose)
-            mapping += [name: 'log.level', value: 'debug', force: true]
+            mapping += [name: 'log.level', value: 'debug']
 
         mapping += [
             [name: 'apiKey', value: config.whitesource.orgToken, force: true],
@@ -100,7 +100,7 @@ class WhitesourceConfigurationHelper implements Serializable {
         def inputFilePath = "${path}${inputFile}"
         def outputFilePath = "${path}${targetFile}"
         def moduleSpecificFile = parsingClosure(inputFilePath)
-        if (!moduleSpecificFile)
+        if (!moduleSpecificFile && inputFilePath != config.whitesource.configFilePath)
             moduleSpecificFile = parsingClosure(config.whitesource.configFilePath)
         if (!moduleSpecificFile)
             moduleSpecificFile = [:]
