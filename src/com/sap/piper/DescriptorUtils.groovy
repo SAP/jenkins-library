@@ -90,7 +90,7 @@ def getPipGAV(file = 'setup.py') {
 
 def getGoGAV(file = './glide.yaml') {
     def f = new File(file)
-    def path = f.getAbsoluteFile().getParentFile()
+    def path = f.getCanonicalFile().getParentFile()
     def result = [:]
 
     result['group'] = ''
