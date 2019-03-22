@@ -1,5 +1,11 @@
 import com.sap.piper.Utils
 import hudson.AbortException
+
+import static org.hamcrest.Matchers.allOf
+import static org.hamcrest.Matchers.containsString
+import static org.hamcrest.Matchers.not
+
+import org.hamcrest.Matchers
 import org.jenkinsci.plugins.credentialsbinding.impl.CredentialNotFoundException
 import org.junit.Assert
 import org.junit.Before
@@ -89,7 +95,7 @@ class NeoDeployTest extends BasePiperTest {
     }
 
     @Test
-    void straightForwardTestConfigViaConfiguration() {
+    void straightForwardTestConfigViaParameters() {
 
         boolean notifyOldConfigFrameworkUsed = true
 
@@ -118,16 +124,19 @@ class NeoDeployTest extends BasePiperTest {
     }
 
     @Test
-    void straightForwardTestConfigViaConfigurationAndViaConfigProperties() {
+    void straightForwardTestConfigViaConfiguration() {
 
-        nullScript.commonPipelineEnvironment.setConfigProperty('DEPLOY_HOST', 'configProperties.deploy.host.com')
-        nullScript.commonPipelineEnvironment.setConfigProperty('CI_DEPLOY_ACCOUNT', 'configPropsUser123')
-
-        nullScript.commonPipelineEnvironment.configuration = [steps: [neoDeploy: [neo: [host   : 'configuration-frwk.deploy.host.com',
-                                                                                  account: 'configurationFrwkUser123']]]]
+        nullScript.commonPipelineEnvironment.configuration = [steps: [
+            neoDeploy: [
+                neo: [
+                    host: 'configuration-frwk.deploy.host.com',
+                    account: 'configurationFrwkUser123'
+                ],
+                source: archiveName
+            ]
+        ]]
 
         stepRule.step.neoDeploy(script: nullScript,
-            source: archiveName,
             neo:[credentialsId: 'myCredentialsId']
         )
 
@@ -138,7 +147,7 @@ class NeoDeployTest extends BasePiperTest {
                 .hasOption('synchronous', '')
                 .hasSingleQuotedOption('user', 'anonymous')
                 .hasSingleQuotedOption('password', '\\*\\*\\*\\*\\*\\*\\*\\*')
-                .hasSingleQuotedOption('source', '.*'))
+                .hasSingleQuotedOption('source', archiveName))
     }
 
     @Test
@@ -194,16 +203,6 @@ class NeoDeployTest extends BasePiperTest {
     }
 
     @Test
-    void archiveNotProvidedTest() {
-
-        thrown.expect(Exception)
-        thrown.expectMessage('ERROR - NO VALUE AVAILABLE FOR source')
-
-        stepRule.step.neoDeploy(script: nullScript)
-    }
-
-
-    @Test
     void wrongArchivePathProvidedTest() {
 
         thrown.expect(AbortException)
@@ -214,14 +213,55 @@ class NeoDeployTest extends BasePiperTest {
 
 
     @Test
-    void scriptNotProvidedTest() {
+    void sanityChecksDeployModeMTATest() {
 
         thrown.expect(Exception)
-        thrown.expectMessage('ERROR - NO VALUE AVAILABLE FOR host')
+        thrown.expectMessage(
+            allOf(
+                containsString('ERROR - NO VALUE AVAILABLE FOR:'),
+                containsString('neo/host'),
+                containsString('neo/account'),
+                containsString('source')))
 
         nullScript.commonPipelineEnvironment.configuration = [:]
 
-        stepRule.step.neoDeploy(script: nullScript, source: archiveName)
+        // deployMode mta is the default, but for the sake of transparency it is better to repeat it.
+        stepRule.step.neoDeploy(script: nullScript, deployMode: 'mta')
+    }
+
+    @Test
+    public void sanityChecksDeployModeWarPropertiesFileTest() {
+
+        thrown.expect(IllegalArgumentException)
+        // using this deploy mode 'account' and 'host' are provided by the properties file
+        thrown.expectMessage(
+            allOf(
+                containsString('ERROR - NO VALUE AVAILABLE FOR source'),
+                not(containsString('neo/host')),
+                not(containsString('neo/account'))))
+
+        nullScript.commonPipelineEnvironment.configuration = [:]
+
+        stepRule.step.neoDeploy(script: nullScript, deployMode: 'warPropertiesFile')
+    }
+
+    @Test
+    public void sanityChecksDeployModeWarParamsTest() {
+
+        thrown.expect(IllegalArgumentException)
+        thrown.expectMessage(
+            allOf(
+                containsString('ERROR - NO VALUE AVAILABLE FOR:'),
+                containsString('source'),
+                containsString('neo/application'),
+                containsString('neo/runtime'),
+                containsString('neo/runtimeVersion'),
+                containsString('neo/host'),
+                containsString('neo/account')))
+
+        nullScript.commonPipelineEnvironment.configuration = [:]
+
+        stepRule.step.neoDeploy(script: nullScript, deployMode: 'warParams')
     }
 
     @Test
@@ -409,52 +449,6 @@ class NeoDeployTest extends BasePiperTest {
                 .hasSingleQuotedOption('user', 'defaultUser')
                 .hasSingleQuotedOption('password', '\\*\\*\\*\\*\\*\\*\\*\\*')
                 .hasSingleQuotedOption('source', '.*\\.war'))
-    }
-
-    @Test
-    void applicationNameNotProvidedTest() {
-
-        thrown.expect(Exception)
-        thrown.expectMessage('ERROR - NO VALUE AVAILABLE FOR application')
-
-        stepRule.step.neoDeploy(script: nullScript,
-            source: warArchiveName,
-            deployMode: 'warParams',
-            neo: [
-                runtime: 'neo-javaee6-wp',
-                runtimeVersion: '2.125'
-            ]
-        )
-    }
-
-    @Test
-    void runtimeNotProvidedTest() {
-
-        thrown.expect(Exception)
-        thrown.expectMessage('ERROR - NO VALUE AVAILABLE FOR runtime')
-
-        stepRule.step.neoDeploy(script: nullScript,
-            source: warArchiveName,
-            neo: [
-                application: 'testApp',
-                runtimeVersion: '2.125'
-            ],
-            deployMode: 'warParams')
-    }
-
-    @Test
-    void runtimeVersionNotProvidedTest() {
-
-        thrown.expect(Exception)
-        thrown.expectMessage('ERROR - NO VALUE AVAILABLE FOR runtimeVersion')
-
-        stepRule.step.neoDeploy(script: nullScript,
-            source: warArchiveName,
-            neo: [
-                application: 'testApp',
-                runtime: 'neo-javaee6-wp'
-            ],
-            deployMode: 'warParams')
     }
 
     @Test

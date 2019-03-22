@@ -32,6 +32,7 @@ nav:
         - seleniumExecuteTests: steps/seleniumExecuteTests.md
         - setupCommonPipelineEnvironment: steps/setupCommonPipelineEnvironment.md
         - slackSendNotification: steps/slackSendNotification.md
+        - snykExecute: steps/snykExecute.md
         - testsPublishResults: steps/testsPublishResults.md
         - toolValidate: steps/toolValidate.md
         - transportRequestCreate: steps/transportRequestCreate.md

@@ -7,6 +7,7 @@ import org.junit.rules.ExpectedException
 import org.junit.rules.RuleChain
 
 
+import groovy.json.JsonSlurper
 import util.BasePiperTest
 import util.JenkinsDockerExecuteRule
 import util.JenkinsLoggingRule
@@ -54,7 +55,8 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
     def portList = []
     def containerCommands = []
     def pullImageMap = [:]
-
+    def namespace
+    def securityContext
 
     @Before
     void init() {
@@ -71,21 +73,25 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
         helper.registerAllowedMethod('podTemplate', [Map.class, Closure.class], { Map options, Closure body ->
             podName = options.name
             podLabel = options.label
-            options.containers.each { option ->
-                containersList.add(option.name)
-                imageList.add(option.image.toString())
-                envList.add(option.envVars)
-                portList.add(option.ports)
-                if (option.command) {
-                    containerCommands.add(option.command)
+            namespace = options.namespace
+            def podSpec = new JsonSlurper().parseText(options.yaml)  // this yaml is actually json
+            def containers = podSpec.spec.containers
+            securityContext = podSpec.spec.securityContext
+
+            containers.each { container ->
+                containersList.add(container.name)
+                imageList.add(container.image.toString())
+                envList.add(container.env)
+                if(container.ports) {
+                    portList.add(container.ports)
                 }
-                pullImageMap.put(option.image.toString(), option.alwaysPullImage)
+                if (container.command) {
+                    containerCommands.add(container.command)
+                }
+                pullImageMap.put(container.image.toString(), container.imagePullPolicy == "Always")
             }
             body()
         })
-        helper.registerAllowedMethod('node', [String.class, Closure.class], { String nodeName, Closure body -> body() })
-        helper.registerAllowedMethod('envVar', [Map.class], { Map option -> return option })
-        helper.registerAllowedMethod('containerTemplate', [Map.class], { Map option -> return option })
     }
 
     @Test
@@ -257,10 +263,10 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
             hasItem('maven:3.5-jdk-8-alpine'),
             hasItem('selenium/standalone-chrome'),
         ))
-        assertThat(portList, hasItem(hasItem([name: 'selenium0', containerPort: 4444, hostPort: 4444])))
-        assertThat(portMapping, hasItem([name: 'selenium0', containerPort: 4444, hostPort: 4444]))
+        // assertThat(portList, is(null))
+        assertThat(portList, hasItem([[name: 'selenium0', containerPort: 4444, hostPort: 4444]]))
         assertThat(containerCommands.size(), is(1))
-        assertThat(envList, hasItem(hasItem(allOf(hasEntry('key', 'customEnvKey'), hasEntry ('value','customEnvValue')))))
+        assertThat(envList, hasItem(hasItem(allOf(hasEntry('name', 'customEnvKey'), hasEntry ('value','customEnvValue')))))
     }
 
     @Test
@@ -286,7 +292,7 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
         ) {
             //nothing to exeute
         }
-        assertThat(containerCommands, hasItem('/busybox/tail -f /dev/null'))
+        assertThat(containerCommands, hasItem(['/bin/sh', '-c', '/busybox/tail -f /dev/null']))
     }
 
     @Test
@@ -333,6 +339,36 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
         assertEquals(false, pullImageMap.get('selenium/standalone-chrome'))
         assertTrue(bodyExecuted)
     }
+
+    @Test
+    void testDockerExecuteOnKubernetesWithCustomNamespace() {
+        def expectedNamespace = "sandbox"
+        nullScript.commonPipelineEnvironment.configuration = [general: [jenkinsKubernetes: [namespace: expectedNamespace]]]
+
+        stepRule.step.dockerExecuteOnKubernetes(
+                script: nullScript,
+                juStabUtils: utils,
+                dockerImage: 'maven:3.5-jdk-8-alpine',
+                ) { bodyExecuted = true }
+        assertTrue(bodyExecuted)
+        assertThat(namespace, is(equalTo(expectedNamespace)))
+    }
+
+    @Test
+    void testDockerExecuteOnKubernetesWithSecurityContext() {
+        def expectedSecurityContext = [ runAsUser: 1000, fsGroup: 1000 ]
+        nullScript.commonPipelineEnvironment.configuration = [general: [jenkinsKubernetes: [
+                    securityContext: expectedSecurityContext]]]
+
+        stepRule.step.dockerExecuteOnKubernetes(
+                script: nullScript,
+                juStabUtils: utils,
+                dockerImage: 'maven:3.5-jdk-8-alpine',
+                ) { bodyExecuted = true }
+        assertTrue(bodyExecuted)
+        assertThat(securityContext, is(equalTo(expectedSecurityContext)))
+    }
+
 
     private container(options, body) {
         containerName = options.name
