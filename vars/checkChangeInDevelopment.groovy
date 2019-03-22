@@ -115,7 +115,9 @@ void call(parameters = [:]) {
 
         try {
 
-            isInDevelopment = cm.isChangeInDevelopment(configuration.changeDocumentId,
+            isInDevelopment = cm.isChangeInDevelopment(
+                configuration.changeManagement.solman.docker,
+                configuration.changeDocumentId,
                 configuration.changeManagement.endpoint,
                 configuration.changeManagement.credentialsId,
                 configuration.changeManagement.clientOpts)
