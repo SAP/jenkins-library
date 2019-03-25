@@ -400,7 +400,7 @@ private resolveProjectIdentifiers(script, descriptorUtils, config) {
                 gav = descriptorUtils.getPipGAV(config.buildDescriptorFile)
                 break
             case 'golang':
-                gav = descriptorUtils.getGoGAV(config.buildDescriptorFile)
+                gav = descriptorUtils.getGoGAV(config.buildDescriptorFile, new URI(script.commonPipelineEnvironment.getGitHttpsUrl()))
                 break
             case 'dlang':
                 break

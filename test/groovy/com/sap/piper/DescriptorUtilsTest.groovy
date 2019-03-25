@@ -214,7 +214,7 @@ class DescriptorUtilsTest extends BasePiperTest {
 
         helper.registerAllowedMethod("readFile", [Map.class], {
             map ->
-                def path = 'test/resources/DescriptorUtils/go/' + map.file.substring(map.file.lastIndexOf(File.separator) + 1, map.file.length())
+                def path = 'test/resources/DescriptorUtils/go/' + map.file.substring(map.file.lastIndexOf('/') + 1, map.file.length())
                 def descriptorFile = new File(path)
                 if(descriptorFile.exists())
                     return descriptorFile.text
@@ -222,10 +222,10 @@ class DescriptorUtilsTest extends BasePiperTest {
                     return null
         })
 
-        def gav = descriptorUtils.getGoGAV('./myProject/glide.yaml')
+        def gav = descriptorUtils.getGoGAV('./myProject/Gopkg.toml', new URI('https://github.wdf.sap.corp/test/golang'))
 
         assertEquals('', gav.group)
-        assertEquals('myProject', gav.artifact)
+        assertEquals('github.wdf.sap.corp/test/golang.myProject', gav.artifact)
         assertEquals('1.2.3', gav.version)
     }
 }

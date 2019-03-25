@@ -88,15 +88,15 @@ def getPipGAV(file = 'setup.py') {
     return result
 }
 
-def getGoGAV(file = './Gopkg.toml') {
-    def descriptor = readYaml(file: file)
+def getGoGAV(file = './Gopkg.toml', URI repoUrl) {
+    def name = "${repoUrl.getHost()}${repoUrl.getPath()}"
     def path = file.substring(0, file.lastIndexOf('/') + 1)
     def module = path?.replaceAll(/\./, '')?.replaceAll('/', '')
     def result = [:]
 
     result['group'] = ''
     result['packaging'] = ''
-    result['artifact'] = "${descriptor.package}${module?'.':''}${module?:''}"
+    result['artifact'] = "${name}${module?'.':''}${module?:''}".toString()
     file = path + 'version.txt'
     result['version'] = getVersionFromFile(file)
 
