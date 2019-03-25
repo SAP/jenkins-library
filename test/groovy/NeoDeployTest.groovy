@@ -29,8 +29,6 @@ import util.Rules
 
 class NeoDeployTest extends BasePiperTest {
 
-    def toolJavaValidateCalled = false
-
     private ExpectedException thrown = new ExpectedException().none()
     private JenkinsLoggingRule loggingRule = new JenkinsLoggingRule(this)
     private JenkinsShellCallRule shellRule = new JenkinsShellCallRule(this)
