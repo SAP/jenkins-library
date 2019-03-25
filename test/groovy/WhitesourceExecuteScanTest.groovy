@@ -12,6 +12,7 @@ import org.junit.Test
 import org.junit.rules.ExpectedException
 import org.junit.rules.RuleChain
 import org.springframework.beans.factory.annotation.Autowired
+import org.yaml.snakeyaml.Yaml
 import util.*
 
 import static org.hamcrest.Matchers.*
@@ -454,6 +455,24 @@ class WhitesourceExecuteScanTest extends BasePiperTest {
 
     @Test
     void testGo() {
+        helper.registerAllowedMethod("readYaml", [Map.class], {
+            map ->
+                def result = null
+                if(map.file) {
+                    def path = 'test/resources/DescriptorUtils/go/' + map.file.substring(map.file.lastIndexOf('/') + 1, map.file.length())
+                    def descriptorFile = new File(path)
+                    if (descriptorFile.exists())
+                        result = descriptorFile.text
+                } else {
+                    result = map.text
+                }
+
+                if(result)
+                    new Yaml().load(result)
+                else
+                    null
+        })
+
         helper.registerAllowedMethod("readFile", [Map.class], {
             map ->
                 def path = 'test/resources/DescriptorUtils/go/' + map.file.substring(map.file.lastIndexOf('/') + 1, map.file.length())
@@ -505,13 +524,28 @@ class WhitesourceExecuteScanTest extends BasePiperTest {
         assertThat(writeFileRule.files['./myProject/wss-unified-agent.config.d3aa80454919391024374ba46b4df082d15ab9a3'], containsString('productName=testProductName'))
         assertThat(writeFileRule.files['./myProject/wss-unified-agent.config.d3aa80454919391024374ba46b4df082d15ab9a3'], containsString('userKey=token-0815'))
         assertThat(writeFileRule.files['./myProject/wss-unified-agent.config.d3aa80454919391024374ba46b4df082d15ab9a3'], containsString('productVersion=1'))
-        assertThat(writeFileRule.files['./myProject/wss-unified-agent.config.d3aa80454919391024374ba46b4df082d15ab9a3'], containsString('projectName=myProject'))
+        assertThat(writeFileRule.files['./myProject/wss-unified-agent.config.d3aa80454919391024374ba46b4df082d15ab9a3'], containsString('projectName=github.wdf.sap.corp/TestOrg/GolangTest.myProject'))
     }
 
     @Test
     void testGoDefaults() {
-        nullScript.commonPipelineEnvironment.setGithubOrg("testOrg")
-        nullScript.commonPipelineEnvironment.setGithubRepo("testRepo")
+        helper.registerAllowedMethod("readYaml", [Map.class], {
+            map ->
+                def result = null
+                if(map.file) {
+                    def path = 'test/resources/DescriptorUtils/go/' + map.file.substring(map.file.lastIndexOf('/') + 1, map.file.length())
+                    def descriptorFile = new File(path)
+                    if (descriptorFile.exists())
+                        result = descriptorFile.text
+                } else {
+                    result = map.text
+                }
+
+                if(result)
+                    new Yaml().load(result)
+                else
+                    null
+        })
 
         helper.registerAllowedMethod("readFile", [Map.class], {
             map ->
@@ -563,7 +597,7 @@ class WhitesourceExecuteScanTest extends BasePiperTest {
         assertThat(writeFileRule.files['./wss-unified-agent.config.d3aa80454919391024374ba46b4df082d15ab9a3'], containsString('productName=testProductName'))
         assertThat(writeFileRule.files['./wss-unified-agent.config.d3aa80454919391024374ba46b4df082d15ab9a3'], containsString('userKey=token-0815'))
         assertThat(writeFileRule.files['./wss-unified-agent.config.d3aa80454919391024374ba46b4df082d15ab9a3'], containsString('productVersion=1'))
-        assertThat(writeFileRule.files['./wss-unified-agent.config.d3aa80454919391024374ba46b4df082d15ab9a3'], containsString('projectName=testOrg.testRepo'))
+        assertThat(writeFileRule.files['./wss-unified-agent.config.d3aa80454919391024374ba46b4df082d15ab9a3'], containsString('projectName=github.wdf.sap.corp/TestOrg/GolangTest'))
     }
 
 

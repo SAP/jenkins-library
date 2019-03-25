@@ -89,12 +89,14 @@ def getPipGAV(file = 'setup.py') {
 }
 
 def getGoGAV(file = './glide.yaml') {
+    def descriptor = readYaml(file: file)
     def path = file.substring(0, file.lastIndexOf('/') + 1)
+    def module = path?.replaceAll(/\./, '')?.replaceAll('/', '')
     def result = [:]
 
     result['group'] = ''
     result['packaging'] = ''
-    result['artifact'] = path?.replaceAll(/\./, '')?.replaceAll('/', '')
+    result['artifact'] = "${descriptor.package}${module?'.':''}${module?:''}"
     file = path + 'version.txt'
     result['version'] = getVersionFromFile(file)
 
