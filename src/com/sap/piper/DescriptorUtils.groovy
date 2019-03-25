@@ -89,18 +89,17 @@ def getPipGAV(file = 'setup.py') {
 }
 
 def getGoGAV(file = './glide.yaml') {
-    def f = new File(file)
-    def path = f.getCanonicalFile().getParentFile()
+    def path = file.substring(0, file.lastIndexOf('/') + 1)
     def result = [:]
 
     result['group'] = ''
     result['packaging'] = ''
-    result['artifact'] = path.getName()
-    file = new File(path, 'version.txt').getAbsolutePath()
+    result['artifact'] = path?.replaceAll(/\./, '')?.replaceAll('/', '')
+    file = path + 'version.txt'
     result['version'] = getVersionFromFile(file)
 
     if (!result['version']) {
-        file = new File(path, 'VERSION').getAbsolutePath()
+        file = path + 'VERSION'
         result['version'] = getVersionFromFile(file)
     }
 
