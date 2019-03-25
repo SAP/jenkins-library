@@ -100,6 +100,7 @@ void call(parameters = [:]) {
                     case BackendType.SOLMAN:
 
                         cm.releaseTransportRequestSOLMAN(
+                            configuration.changeManagement.solman.docker,
                             configuration.changeDocumentId,
                             configuration.transportRequestId,
                             configuration.changeManagement.endpoint,
@@ -110,6 +111,7 @@ void call(parameters = [:]) {
                     case BackendType.CTS:
 
                         cm.releaseTransportRequestCTS(
+                            configuration.changeManagement.cts.docker,
                             configuration.transportRequestId,
                             configuration.changeManagement.endpoint,
                             configuration.changeManagement.credentialsId,

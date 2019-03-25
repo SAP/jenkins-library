@@ -97,6 +97,7 @@ public class TransportRequestReleaseTest extends BasePiperTest {
         ChangeManagement cm = new ChangeManagement(nullScript) {
 
             void releaseTransportRequestSOLMAN(
+                                         Map docker,
                                          String changeId,
                                          String transportRequestId,
                                          String endpoint,
@@ -126,6 +127,7 @@ public class TransportRequestReleaseTest extends BasePiperTest {
         ChangeManagement cm = new ChangeManagement(nullScript) {
 
             void releaseTransportRequestCTS(
+                                         Map docker,
                                          String transportRequestId,
                                          String endpoint,
                                          String credentialsId,
@@ -229,12 +231,14 @@ public class TransportRequestReleaseTest extends BasePiperTest {
 
         ChangeManagement cm = new ChangeManagement(nullScript) {
             void releaseTransportRequestCTS(
+                Map docker,
                 String transportRequestId,
                 String endpoint,
                 String credentialsId,
                 String clientOpts = '') {
 
                 receivedParameters = [
+                    docker: docker,
                     transportRequestId: transportRequestId,
                     endpoint: endpoint,
                     credentialsId: credentialsId,
@@ -249,6 +253,12 @@ public class TransportRequestReleaseTest extends BasePiperTest {
             cmUtils: cm)
 
         assert receivedParameters == [
+                    docker: [
+                        image:'ppiper/cm-client',
+                        options:[],
+                        envVars:[:],
+                        pullImage:true,
+                    ],
                     transportRequestId: '002',
                     endpoint: 'https://example.org/cts',
                     credentialsId: 'CM',
@@ -374,12 +384,14 @@ public class TransportRequestReleaseTest extends BasePiperTest {
 
         ChangeManagement cm = new ChangeManagement(nullScript) {
             void releaseTransportRequestSOLMAN(
+                                         Map docker,
                                          String changeId,
                                          String transportRequestId,
                                          String endpoint,
                                          String credentialsId,
                                          String clientOpts) {
 
+                receivedParams.docker = docker
                 receivedParams.changeId = changeId
                 receivedParams.transportRequestId = transportRequestId
                 receivedParams.endpoint = endpoint
@@ -391,6 +403,12 @@ public class TransportRequestReleaseTest extends BasePiperTest {
         stepRule.step.transportRequestRelease(script: nullScript, changeDocumentId: '001', transportRequestId: '002', cmUtils: cm)
 
         assert receivedParams == [
+                                  docker: [
+                                      image: 'ppiper/cm-client',
+                                      pullImage: true,
+                                      envVars: [:],
+                                      options: [],
+                                  ],
                                   changeId: '001',
                                   transportRequestId: '002',
                                   endpoint: 'https://example.org/cm',
