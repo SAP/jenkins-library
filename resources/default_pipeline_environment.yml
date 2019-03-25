@@ -326,7 +326,7 @@ steps:
         - 'opensourceConfiguration'
     golang:
       buildDescriptorFile: './Gopkg.toml'
-      dockerImage: 'golang:1.12-stretch'
+      dockerImage: 'instrumentisto/dep:0.5'
       dockerWorkspace: '/home/dep'
       stashContent:
         - 'buildDescriptor'
