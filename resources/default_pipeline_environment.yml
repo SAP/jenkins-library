@@ -325,9 +325,9 @@ steps:
         - 'buildDescriptor'
         - 'opensourceConfiguration'
     golang:
-      buildDescriptorFile: './glide.yaml'
-      dockerImage: 'fabiorphp/golang-glide:1.11-stretch'
-      dockerWorkspace: '/home/glide'
+      buildDescriptorFile: './Gopkg.toml'
+      dockerImage: 'golang:1.12-stretch'
+      dockerWorkspace: '/home/dep'
       stashContent:
         - 'buildDescriptor'
         - 'opensourceConfiguration'
@@ -356,7 +356,7 @@ steps:
   pipelineStashFilesBeforeBuild:
     runCheckmarx: false
     stashIncludes:
-      buildDescriptor: '**/pom.xml, **/.mvn/**, **/assembly.xml, **/.swagger-codegen-ignore, **/package.json, **/requirements.txt, **/setup.py, **/whitesource_config.py, **/mta*.y*ml, **/.npmrc, **/whitesource.*.json, **/whitesource-fs-agent.config, Dockerfile, **/VERSION, **/version.txt, **/glide.*, **/Gopkg.*, **/build.sbt, **/sbtDescriptor.json, **/project/*'
+      buildDescriptor: '**/pom.xml, **/.mvn/**, **/assembly.xml, **/.swagger-codegen-ignore, **/package.json, **/requirements.txt, **/setup.py, **/whitesource_config.py, **/mta*.y*ml, **/.npmrc, **/whitesource.*.json, **/whitesource-fs-agent.config, Dockerfile, **/VERSION, **/version.txt, **/Gopkg.*, **/build.sbt, **/sbtDescriptor.json, **/project/*'
       deployDescriptor: '**/manifest*.y*ml, **/*.mtaext.y*ml, **/*.mtaext, **/xs-app.json, helm/**, *.y*ml'
       git: '**/gitmetadata/**'
       opa5: '**/*.*'
