@@ -2,7 +2,7 @@
 
 ## ${docGenDescription}
 
-## Prequisites
+## Prerequisites
 
 * prepared Postman with a test collection
 
