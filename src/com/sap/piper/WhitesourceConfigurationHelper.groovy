@@ -28,9 +28,9 @@ class WhitesourceConfigurationHelper implements Serializable {
         mapping += [
             [name: 'apiKey', value: config.whitesource.orgToken, force: true],
             [name: 'productName', value: config.whitesource.productName, force: true],
-            [name: 'productVersion', value: config.whitesource.productVersion, force: true],
+            [name: 'productVersion', value: config.whitesource.productVersion?:'', force: true],
             [name: 'projectName', value: config.whitesource.projectName, force: true],
-            [name: 'projectVersion', value: config.whitesource.productVersion, force: true],
+            [name: 'projectVersion', value: config.whitesource.productVersion?:'', force: true],
             [name: 'productToken', value: config.whitesource.productToken, omitIfPresent: 'projectToken', force: true],
             [name: 'userKey', value: config.whitesource.userKey, force: true],
             [name: 'forceUpdate', value: true, force: true],
