@@ -8,12 +8,12 @@ import static org.junit.Assume.assumeThat
 import org.junit.rules.ExpectedException
 import org.junit.rules.RuleChain
 
-import static org.hamcrest.Matchers.startsWith
+import static org.hamcrest.Matchers.allOf
 import static org.hamcrest.Matchers.containsString
-import static org.hamcrest.Matchers.hasItem
+import static org.hamcrest.Matchers.empty
 import static org.hamcrest.Matchers.is
 import static org.hamcrest.Matchers.not
-import static org.hamcrest.Matchers.empty
+import static org.hamcrest.Matchers.startsWith
 
 import util.JenkinsLoggingRule
 import util.JenkinsShellCallRule
@@ -123,9 +123,6 @@ class TelemetryTest extends BasePiperTest {
 
     @Test
     void testReportingToSWA() {
-        utils.env.JOB_URL = 'https://test.jenkins.com/test/'
-        utils.env.BUILD_URL = 'https://test.jenkins.com/test/123'
-
         def httpParams = null
         helper.registerAllowedMethod('httpRequest', [Map.class], {m ->
             httpParams = m
@@ -146,12 +143,14 @@ class TelemetryTest extends BasePiperTest {
         ])
         // asserts
         assertThat(httpParams, is(not(null)))
-        assertThat(httpParams?.url, startsWith('https://webanalytics.cfapps.eu10.hana.ondemand.com/tracker/log?'))
-        assertThat(httpParams?.url, containsString('action_name=Piper%2FLibrary%2FOS'))
-        assertThat(httpParams?.url, containsString('event_type=library-os'))
-        assertThat(httpParams?.url, containsString('custom3=anyStep'))
-        assertThat(httpParams?.url, containsString('custom4=1234'))
-        assertThat(httpParams?.url, containsString('custom5=abcd'))
-        assertThat(httpParams?.url, containsString('custom11=something'))
+        assertThat(httpParams?.url.toString(), allOf(
+            startsWith('https://webanalytics.cfapps.eu10.hana.ondemand.com/tracker/log?'),
+            containsString('action_name=Piper+Library+OS'),
+            containsString('event_type=library-os'),
+            containsString('custom3=anyStep'),
+            containsString('custom4=1234'),
+            containsString('custom5=abcd'),
+            containsString('custom11=something')
+        ))
     }
 }
