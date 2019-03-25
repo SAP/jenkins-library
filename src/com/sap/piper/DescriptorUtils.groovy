@@ -88,7 +88,7 @@ def getPipGAV(file = 'setup.py') {
     return result
 }
 
-def getGoGAV(file = './glide.yaml') {
+def getGoGAV(file = './Gopkg.toml') {
     def descriptor = readYaml(file: file)
     def path = file.substring(0, file.lastIndexOf('/') + 1)
     def module = path?.replaceAll(/\./, '')?.replaceAll('/', '')
