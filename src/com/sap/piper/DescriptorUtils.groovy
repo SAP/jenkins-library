@@ -114,7 +114,9 @@ private getVersionFromFile(file) {
         if (versionString) {
             return versionString.trim()
         }
-    } catch (java.nio.file.NoSuchFileException e) {/* NOP */}
+    } catch (java.nio.file.NoSuchFileException e) {
+        echo "Failed to load version string from file ${file} due to ${e}"
+    }
     return ''
 }
 
