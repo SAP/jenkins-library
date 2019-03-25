@@ -417,7 +417,7 @@ private resolveProjectIdentifiers(script, descriptorUtils, config) {
             config.whitesource.projectName = "${gav.group?:''}${gav.group?'.':''}${gav.artifact}"
 
         def versionFragments = gav.version?.tokenize('.')
-        def version = versionFragments ? versionFragments.head() : null
+        def version = versionFragments.size() > 0 ? versionFragments.head() : null
         if(version && !config.whitesource.productVersion)
             config.whitesource.productVersion = version
     }

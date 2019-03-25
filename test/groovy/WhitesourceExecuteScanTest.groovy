@@ -456,7 +456,7 @@ class WhitesourceExecuteScanTest extends BasePiperTest {
     void testGo() {
         helper.registerAllowedMethod("readFile", [Map.class], {
             map ->
-                def path = 'test/resources/DescriptorUtils/go/' + map.file.substring(map.file.lastIndexOf(File.separator) + 1, map.file.length())
+                def path = 'test/resources/DescriptorUtils/go/' + map.file.substring(map.file.lastIndexOf('/') + 1, map.file.length())
                 def descriptorFile = new File(path)
                 if(descriptorFile.exists())
                     return descriptorFile.text
@@ -471,7 +471,7 @@ class WhitesourceExecuteScanTest extends BasePiperTest {
                 "productName": "SHC - Piper",
                 "checkPolicies": "true",
                 "projectName": "python-test",
-                "projectVersion": "1.0.0"
+                "projectVersion": "2.0.0"
             ])
             return result
         })
@@ -515,7 +515,7 @@ class WhitesourceExecuteScanTest extends BasePiperTest {
 
         helper.registerAllowedMethod("readFile", [Map.class], {
             map ->
-                def path = 'test/resources/DescriptorUtils/go/' + map.file.substring(map.file.lastIndexOf(File.separator) + 1, map.file.length())
+                def path = 'test/resources/DescriptorUtils/go/' + map.file.substring(map.file.lastIndexOf('/') + 1, map.file.length())
                 def descriptorFile = new File(path)
                 if(descriptorFile.exists())
                     return descriptorFile.text
