@@ -401,10 +401,6 @@ private resolveProjectIdentifiers(script, descriptorUtils, config) {
                 break
             case 'golang':
                 gav = descriptorUtils.getGoGAV(config.buildDescriptorFile)
-                if (!gav.artifact) {
-                    gav.group = script.commonPipelineEnvironment.getGithubOrg()
-                    gav.artifact =  script.commonPipelineEnvironment.getGithubRepo()
-                }
                 break
             case 'dlang':
                 break
