@@ -123,6 +123,9 @@ class TelemetryTest extends BasePiperTest {
 
     @Test
     void testReportingToSWA() {
+        utils.env.JOB_URL = 'https://test.jenkins.com/test/'
+        utils.env.BUILD_URL = 'https://test.jenkins.com/test/123'
+
         def httpParams = null
         helper.registerAllowedMethod('httpRequest', [Map.class], {m ->
             httpParams = m
