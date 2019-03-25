@@ -455,23 +455,7 @@ class WhitesourceExecuteScanTest extends BasePiperTest {
 
     @Test
     void testGo() {
-        helper.registerAllowedMethod("readYaml", [Map.class], {
-            map ->
-                def result = null
-                if(map.file) {
-                    def path = 'test/resources/DescriptorUtils/go/' + map.file.substring(map.file.lastIndexOf('/') + 1, map.file.length())
-                    def descriptorFile = new File(path)
-                    if (descriptorFile.exists())
-                        result = descriptorFile.text
-                } else {
-                    result = map.text
-                }
-
-                if(result)
-                    new Yaml().load(result)
-                else
-                    null
-        })
+        nullScript.commonPipelineEnvironment.gitHttpsUrl = 'https://github.wdf.sap.corp/test/golang'
 
         helper.registerAllowedMethod("readFile", [Map.class], {
             map ->
@@ -511,8 +495,8 @@ class WhitesourceExecuteScanTest extends BasePiperTest {
         assertThat(loggingRule.log, containsString('Unstash content: buildDescriptor'))
         assertThat(loggingRule.log, containsString('Unstash content: opensourceConfiguration'))
 
-        assertThat(dockerExecuteRule.dockerParams, hasEntry('dockerImage', 'fabiorphp/golang-glide:1.11-stretch'))
-        assertThat(dockerExecuteRule.dockerParams, hasEntry('dockerWorkspace', '/home/glide'))
+        assertThat(dockerExecuteRule.dockerParams, hasEntry('dockerImage', 'golang:1.12-stretch'))
+        assertThat(dockerExecuteRule.dockerParams, hasEntry('dockerWorkspace', '/home/dep'))
         assertThat(dockerExecuteRule.dockerParams, hasEntry('stashContent', ['buildDescriptor', 'opensourceConfiguration', 'modified whitesource config d3aa80454919391024374ba46b4df082d15ab9a3']))
 
         assertThat(shellRule.shell, Matchers.hasItems(
@@ -524,28 +508,12 @@ class WhitesourceExecuteScanTest extends BasePiperTest {
         assertThat(writeFileRule.files['./myProject/wss-unified-agent.config.d3aa80454919391024374ba46b4df082d15ab9a3'], containsString('productName=testProductName'))
         assertThat(writeFileRule.files['./myProject/wss-unified-agent.config.d3aa80454919391024374ba46b4df082d15ab9a3'], containsString('userKey=token-0815'))
         assertThat(writeFileRule.files['./myProject/wss-unified-agent.config.d3aa80454919391024374ba46b4df082d15ab9a3'], containsString('productVersion=1'))
-        assertThat(writeFileRule.files['./myProject/wss-unified-agent.config.d3aa80454919391024374ba46b4df082d15ab9a3'], containsString('projectName=github.wdf.sap.corp/TestOrg/GolangTest.myProject'))
+        assertThat(writeFileRule.files['./myProject/wss-unified-agent.config.d3aa80454919391024374ba46b4df082d15ab9a3'], containsString('projectName=github.wdf.sap.corp/test/golang.myProject'))
     }
 
     @Test
     void testGoDefaults() {
-        helper.registerAllowedMethod("readYaml", [Map.class], {
-            map ->
-                def result = null
-                if(map.file) {
-                    def path = 'test/resources/DescriptorUtils/go/' + map.file.substring(map.file.lastIndexOf('/') + 1, map.file.length())
-                    def descriptorFile = new File(path)
-                    if (descriptorFile.exists())
-                        result = descriptorFile.text
-                } else {
-                    result = map.text
-                }
-
-                if(result)
-                    new Yaml().load(result)
-                else
-                    null
-        })
+        nullScript.commonPipelineEnvironment.gitHttpsUrl = 'https://github.wdf.sap.corp/test/golang'
 
         helper.registerAllowedMethod("readFile", [Map.class], {
             map ->
@@ -584,8 +552,8 @@ class WhitesourceExecuteScanTest extends BasePiperTest {
         assertThat(loggingRule.log, containsString('Unstash content: buildDescriptor'))
         assertThat(loggingRule.log, containsString('Unstash content: opensourceConfiguration'))
 
-        assertThat(dockerExecuteRule.dockerParams, hasEntry('dockerImage', 'fabiorphp/golang-glide:1.11-stretch'))
-        assertThat(dockerExecuteRule.dockerParams, hasEntry('dockerWorkspace', '/home/glide'))
+        assertThat(dockerExecuteRule.dockerParams, hasEntry('dockerImage', 'golang:1.12-stretch'))
+        assertThat(dockerExecuteRule.dockerParams, hasEntry('dockerWorkspace', '/home/dep'))
         assertThat(dockerExecuteRule.dockerParams, hasEntry('stashContent', ['buildDescriptor', 'opensourceConfiguration', 'modified whitesource config d3aa80454919391024374ba46b4df082d15ab9a3']))
 
         assertThat(shellRule.shell, Matchers.hasItems(
@@ -597,7 +565,7 @@ class WhitesourceExecuteScanTest extends BasePiperTest {
         assertThat(writeFileRule.files['./wss-unified-agent.config.d3aa80454919391024374ba46b4df082d15ab9a3'], containsString('productName=testProductName'))
         assertThat(writeFileRule.files['./wss-unified-agent.config.d3aa80454919391024374ba46b4df082d15ab9a3'], containsString('userKey=token-0815'))
         assertThat(writeFileRule.files['./wss-unified-agent.config.d3aa80454919391024374ba46b4df082d15ab9a3'], containsString('productVersion=1'))
-        assertThat(writeFileRule.files['./wss-unified-agent.config.d3aa80454919391024374ba46b4df082d15ab9a3'], containsString('projectName=github.wdf.sap.corp/TestOrg/GolangTest'))
+        assertThat(writeFileRule.files['./wss-unified-agent.config.d3aa80454919391024374ba46b4df082d15ab9a3'], containsString('projectName=github.wdf.sap.corp/test/golang'))
     }
 
 
