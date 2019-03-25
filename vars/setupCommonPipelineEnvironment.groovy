@@ -31,6 +31,9 @@ void call(Map parameters = [:]) {
             stepParamKey5: 'legacyConfig',
             stepParam5: Boolean.toString( ! (script?.commonPipelineEnvironment?.getConfigProperties() ?: [:]).isEmpty())
         ], config)
+
+        script.commonPipelineEnvironment.setInfluxStepData('build_url', env.BUILD_URL)
+        script.commonPipelineEnvironment.setInfluxPipelineData('build_url', env.BUILD_URL)
     }
 }
 
