@@ -38,8 +38,11 @@ class WhitesourceConfigurationHelper implements Serializable {
             [name: 'ignoreSourceFiles', value: true, force: true],
             [name: 'resolveAllDependencies', value: false, force: true]
         ]
+
+        // To be removed once all scenarios are fully supported
         if(!['pip', 'golang'].contains(config.scanType))
             script.echo "[Warning][Whitesource] Configuration for scanType: '${config.scanType}' is not yet hardened, please do a quality assessment of your scan results."
+
         switch (config.scanType) {
             case 'npm':
                 mapping += [
@@ -74,7 +77,7 @@ class WhitesourceConfigurationHelper implements Serializable {
                     [name: 'go.resolveDependencies', value: true, force: true],
                     [name: 'go.ignoreSourceFiles', value: true, force: true],
                     [name: 'go.collectDependenciesAtRuntime', value: true],
-                    [name: 'go.dependencyManager', value: ''],
+                    [name: 'go.dependencyManager', value: 'glide'],
                     [name: 'includes', value: '**/*.lock'],
                     [name: 'excludes', value: '**/*sources.jar **/*javadoc.jar'],
                     [name: 'case.sensitive.glob', value: false],
