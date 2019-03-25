@@ -89,7 +89,7 @@ def getPipGAV(file = 'setup.py') {
 }
 
 def getGoGAV(file = './Gopkg.toml', URI repoUrl) {
-    def name = "${repoUrl.getHost()}${repoUrl.getPath()}"
+    def name = "${repoUrl.getHost()}${repoUrl.getPath().replaceAll(/\.git/, '')}"
     def path = file.substring(0, file.lastIndexOf('/') + 1)
     def module = path?.replaceAll(/\./, '')?.replaceAll('/', '')
     def result = [:]
