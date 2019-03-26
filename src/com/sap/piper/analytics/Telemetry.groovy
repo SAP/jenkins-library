@@ -2,8 +2,6 @@ package com.sap.piper.analytics
 
 import com.cloudbees.groovy.cps.NonCPS
 
-import java.net.URLEncoder
-
 import org.jenkinsci.plugins.workflow.steps.FlowInterruptedException
 
 class Telemetry implements Serializable{
