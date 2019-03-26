@@ -76,9 +76,9 @@ class WhitesourceConfigurationHelper implements Serializable {
                 mapping += [
                     [name: 'go.resolveDependencies', value: true, force: true],
                     [name: 'go.ignoreSourceFiles', value: true, force: true],
-                    [name: 'go.collectDependenciesAtRuntime', value: true],
-                    [name: 'go.dependencyManager', value: ''],
-                    [name: 'includes', value: '**/Gopkg.*'],
+                    [name: 'go.collectDependenciesAtRuntime', value: false],
+                    [name: 'go.dependencyManager', value: 'dep'],
+                    [name: 'includes', value: '**/*.lock'],
                     [name: 'excludes', value: '**/*sources.jar **/*javadoc.jar'],
                     [name: 'case.sensitive.glob', value: false],
                     [name: 'followSymbolicLinks', value: true]
