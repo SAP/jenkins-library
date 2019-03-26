@@ -1,8 +1,6 @@
-# dockerExecuteOnKubernetes
+# ${docGenStepName}
 
-## Description
-
-Content here is generated from corresponnding step, see `vars`.
+## ${docGenDescription}
 
 ## Prerequisites
 
@@ -11,13 +9,9 @@ Content here is generated from corresponnding step, see `vars`.
 
 ![Jenkins environment variable configuration](../images/k8s_env.png)
 
-## Parameters
+## ${docGenParameters}
 
-Content here is generated from corresponnding step, see `vars`.
-
-## Step configuration
-
-Content here is generated from corresponnding step, see `vars`.
+## ${docGenConfiguration}
 
 ## Side effects
 

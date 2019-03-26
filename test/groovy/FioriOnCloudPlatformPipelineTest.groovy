@@ -93,6 +93,8 @@ class FioriOnCloudPlatformPipelineTest extends BasePiperTest {
             it == 'test.mtar'
         })
 
+        helper.registerAllowedMethod("deleteDir",[], null)
+
         //
         // the properties below we read out of the yaml file
         readYamlRule.registerYaml('mta.yaml', ('''
@@ -105,6 +107,8 @@ class FioriOnCloudPlatformPipelineTest extends BasePiperTest {
         // to be able to extend the path we have to have some initial value.
         binding.setVariable('PATH', '/usr/bin')
 
+        binding.setVariable('scm', null)
+
         helper.registerAllowedMethod('pwd', [], { return "./" })
     }
 
@@ -115,9 +119,11 @@ class FioriOnCloudPlatformPipelineTest extends BasePiperTest {
             .commonPipelineEnvironment
                 .configuration =  [steps:
                                     [neoDeploy:
-                                        [ host: 'hana.example.com',
-                                          account: 'myTestAccount',
-                                        ]
+                                         [neo:
+                                              [ host: 'hana.example.com',
+                                                account: 'myTestAccount',
+                                              ]
+                                         ]
                                     ]
                                 ]
 
@@ -139,7 +145,7 @@ class FioriOnCloudPlatformPipelineTest extends BasePiperTest {
         // the neo deploy call:
         Assert.assertThat(shellRule.shell,
             new CommandLineMatcher()
-                .hasProlog("\"/opt/sap/neo/tools/neo.sh\" deploy-mta")
+                .hasProlog("neo.sh deploy-mta")
                 .hasSingleQuotedOption('host', 'hana\\.example\\.com')
                 .hasSingleQuotedOption('account', 'myTestAccount')
                 .hasSingleQuotedOption('password', 'terceSpot')

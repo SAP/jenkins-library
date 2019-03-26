@@ -1,12 +1,13 @@
 package com.sap.piper.cm
-
 import static org.hamcrest.Matchers.allOf
+import static org.hamcrest.Matchers.contains
 import static org.hamcrest.Matchers.containsString
 import static org.hamcrest.Matchers.equalTo
 import static org.hamcrest.Matchers.hasItem
 import static org.hamcrest.Matchers.is
 import static org.hamcrest.Matchers.not
 import static org.junit.Assert.assertThat
+import static org.junit.Assert.assertEquals
 
 import org.hamcrest.Matchers
 import org.junit.Assert
@@ -22,6 +23,7 @@ import util.JenkinsLoggingRule
 import util.JenkinsScriptLoaderRule
 import util.JenkinsShellCallRule
 import util.JenkinsCredentialsRule
+import util.JenkinsDockerExecuteRule
 import util.Rules
 
 import hudson.AbortException
@@ -32,6 +34,7 @@ public class ChangeManagementTest extends BasePiperTest {
 
     private JenkinsShellCallRule script = new JenkinsShellCallRule(this)
     private JenkinsLoggingRule logging = new JenkinsLoggingRule(this)
+    private JenkinsDockerExecuteRule dockerExecuteRule = new JenkinsDockerExecuteRule(this)
 
     @Rule
     public RuleChain rules = Rules.getCommonRules(this)
@@ -39,6 +42,7 @@ public class ChangeManagementTest extends BasePiperTest {
         .around(script)
         .around(logging)
         .around(new JenkinsCredentialsRule(this).withCredentials('me','user','password'))
+        .around(dockerExecuteRule)
 
     @Test
     public void testRetrieveChangeDocumentIdOutsideGitWorkTreeTest() {
@@ -92,7 +96,12 @@ public class ChangeManagementTest extends BasePiperTest {
     public void testIsChangeInDevelopmentReturnsTrueWhenChangeIsInDevelopent() {
 
         script.setReturnValue(JenkinsShellCallRule.Type.REGEX, "cmclient.*is-change-in-development -cID '001'", 0)
-        boolean inDevelopment = new ChangeManagement(nullScript, null).isChangeInDevelopment('001', 'endpoint', 'me')
+        boolean inDevelopment = new ChangeManagement(nullScript, null).isChangeInDevelopment(
+            [
+                image: 'ppiper/cm-client',
+                pullImage: true,
+            ],
+            '001', 'endpoint', 'me')
 
         assertThat(inDevelopment, is(equalTo(true)))
         assertThat(script.shell[0], allOf(containsString("cmclient"),
@@ -102,6 +111,9 @@ public class ChangeManagementTest extends BasePiperTest {
                                             containsString('is-change-in-development'),
                                             containsString("-cID '001'"),
                                             containsString("-t SOLMAN")))
+
+        assert dockerExecuteRule.getDockerParams().dockerImage == 'ppiper/cm-client'
+        assert dockerExecuteRule.getDockerParams().dockerPullImage == true
     }
 
     @Test
@@ -110,7 +122,8 @@ public class ChangeManagementTest extends BasePiperTest {
         script.setReturnValue(JenkinsShellCallRule.Type.REGEX, "cmclient.*is-change-in-development -cID '001'", 3)
 
         boolean inDevelopment = new ChangeManagement(nullScript, null)
-                                    .isChangeInDevelopment('001',
+                                    .isChangeInDevelopment([:],
+                                                           '001',
                                                            'endpoint',
                                                            'me')
 
@@ -124,7 +137,7 @@ public class ChangeManagementTest extends BasePiperTest {
         thrown.expectMessage('Cannot retrieve status for change document \'001\'. Does this change exist? Return code from cmclient: 1.')
 
         script.setReturnValue(JenkinsShellCallRule.Type.REGEX, "cmclient.*is-change-in-development -cID '001'", 1)
-        new ChangeManagement(nullScript, null).isChangeInDevelopment('001', 'endpoint', 'me')
+        new ChangeManagement(nullScript, null).isChangeInDevelopment([:], '001', 'endpoint', 'me')
     }
 
     @Test
@@ -159,12 +172,71 @@ public void testGetCommandLineWithCMClientOpts() {
     public void testCreateTransportRequestSOLMANSucceeds() {
 
         script.setReturnValue(JenkinsShellCallRule.Type.REGEX, ".*cmclient.*create-transport -cID 001 -dID 002.*", '004')
-        def transportRequestId = new ChangeManagement(nullScript).createTransportRequestSOLMAN( '001', '002', '003', 'me')
+        def transportRequestId = new ChangeManagement(nullScript).createTransportRequestSOLMAN(
+            [
+                image: 'ppiper/cm-client',
+                pullImage: true,
+            ],
+            '001', '002', '003', 'me')
 
         // the check for the transportRequestID is sufficient. This checks implicit the command line since that value is
         // returned only in case the shell call matches.
         assert transportRequestId == '004'
 
+        assert dockerExecuteRule.getDockerParams().dockerImage == 'ppiper/cm-client'
+        assert dockerExecuteRule.getDockerParams().dockerPullImage == true
+
+    }
+
+    @Test
+    public void testCreateTransportRequestRFCSucceeds() {
+
+        script.setReturnValue('cts createTransportRequest', '{"REQUESTID":"XYZK9000004"}')
+
+        def transportRequestId = new ChangeManagement(nullScript).createTransportRequestRFC(
+            [image: 'rfc', options: []],
+            'https://example.org/rfc', // endpoint
+            '01', // instance
+            '001', // client
+            'me', // credentialsId
+            'Lorem ipsum', // description
+            true // verbose
+        )
+
+        assert dockerExecuteRule.dockerParams.dockerImage == 'rfc'
+
+        assert dockerExecuteRule.dockerParams.dockerEnvVars == [
+            TRANSPORT_DESCRIPTION: 'Lorem ipsum',
+            ABAP_DEVELOPMENT_INSTANCE: '01',
+            ABAP_DEVELOPMENT_CLIENT: '001',
+            ABAP_DEVELOPMENT_SERVER: 'https://example.org/rfc',
+            ABAP_DEVELOPMENT_USER: 'user',
+            ABAP_DEVELOPMENT_PASSWORD: 'password',
+            VERBOSE: true
+        ]
+
+        assert transportRequestId == 'XYZK9000004'
+
+    }
+
+    @Test
+    public void testCreateTransportRequestRFCFails() {
+
+        thrown.expect(ChangeManagementException)
+        thrown.expectMessage('Cannot create transport request: script returned exit code 3')
+
+        script.setReturnValue('cts createTransportRequest',
+            { throw new AbortException('script returned exit code 3')})
+
+        def transportRequestId = new ChangeManagement(nullScript).createTransportRequestRFC(
+            [image: 'rfc', options: []],
+            'https://example.org/rfc', // endpoint
+            '001', // client
+            '01', // instance
+            'me', // credentialsId
+            'Lorem ipsum', // description
+            true, //verbose
+        )
     }
 
     @Test
@@ -173,6 +245,10 @@ public void testGetCommandLineWithCMClientOpts() {
         script.setReturnValue(JenkinsShellCallRule.Type.REGEX, 'cmclient.* -t CTS .*create-transport -tt W -ts XYZ -d "desc 123"$', '004')
         def transportRequestId = new ChangeManagement(nullScript)
             .createTransportRequestCTS(
+                [
+                    image: 'ppiper/cmclient',
+                    pullImage: true
+                ],
                 'W', // transport type
                 'XYZ', // target system
                 'desc 123', // description
@@ -183,24 +259,9 @@ public void testGetCommandLineWithCMClientOpts() {
         // returned only in case the shell call matches.
         assert transportRequestId == '004'
 
-    }
+        dockerExecuteRule.getDockerParams().dockerImage = 'ppiper/cmclient'
+        dockerExecuteRule.getDockerParams().dockerPullImage = true
 
-    @Test
-    public void testCreateTransportRequestFails() {
-
-        script.setReturnValue(JenkinsShellCallRule.Type.REGEX, '.*upload-file-to-transport.*', 1)
-
-        thrown.expect(ChangeManagementException)
-        thrown.expectMessage('Cannot upload file \'/path\' for change document \'001\''+
-                             ' with transport request \'002\'. Return code from cmclient: 1.')
-
-        new ChangeManagement(nullScript).uploadFileToTransportRequest(BackendType.SOLMAN,
-                                                                      '001',
-                                                                      '002',
-                                                                      'XXX',
-                                                                      '/path',
-                                                                      'https://example.org/cm',
-                                                                      'me')
     }
 
     @Test
@@ -209,8 +270,11 @@ public void testGetCommandLineWithCMClientOpts() {
         // the regex provided below is an implicit check that the command line is fine.
         script.setReturnValue(JenkinsShellCallRule.Type.REGEX, 'upload-file-to-transport.*-cID 001 -tID 002 XXX "/path"', 0)
 
-        new ChangeManagement(nullScript).uploadFileToTransportRequest(
-            BackendType.SOLMAN,
+        new ChangeManagement(nullScript).uploadFileToTransportRequestSOLMAN(
+            [
+                image: 'ppiper/cm-client',
+                imagePull: true,
+            ],
             '001',
             '002',
             'XXX',
@@ -218,8 +282,12 @@ public void testGetCommandLineWithCMClientOpts() {
             'https://example.org/cm',
             'me')
 
-        // no assert required here, since the regex registered above to the script rule is an implicit check for
-        // the command line.
+        // no assert required here for the shell script, since the regex registered above
+        // to the script rule is an implicit check for the command line.
+
+        dockerExecuteRule.getDockerParams().dockerImage = 'ppiper/cmclient'
+        dockerExecuteRule.getDockerParams().dockerPullImage = true
+
     }
 
     @Test
@@ -228,29 +296,104 @@ public void testGetCommandLineWithCMClientOpts() {
         // the regex provided below is an implicit check that the command line is fine.
         script.setReturnValue(JenkinsShellCallRule.Type.REGEX, '-t CTS upload-file-to-transport -tID 002 "/path"', 0)
 
-        new ChangeManagement(nullScript).uploadFileToTransportRequest(
-            BackendType.CTS,
-            null,
+        new ChangeManagement(nullScript).uploadFileToTransportRequestCTS(
+            [
+                image: 'ppiper/cmclient',
+                pullImage: true
+             ],
             '002',
-            null,
             '/path',
             'https://example.org/cm',
             'me')
 
-        // no assert required here, since the regex registered above to the script rule is an implicit check for
-        // the command line.
+        assert dockerExecuteRule.getDockerParams().dockerImage == 'ppiper/cmclient'
+        assert dockerExecuteRule.getDockerParams().dockerPullImage == true
+
+        // no assert for the shell command required here, since the regex registered
+        // above to the script rule is an implicit check for the command line.
     }
 
     @Test
-    public void testUploadFileToTransportFails() {
+    public void testUploadFileToTransportSucceedsRFC() {
+
+        new ChangeManagement(nullScript).uploadFileToTransportRequestRFC(
+            [image:'rfc', options: [], pullImage: true],
+            '002', //transportRequestId
+            '001', // applicationId
+            'https://example.org/mypath/deployArtifact.zip',
+            'https://example.org/rfc',
+            'me',
+            '00', //developmentInstance
+            '001', // developmentClient
+            'Lorem ipsum', // applicationDescription
+            'XYZ', // abapPackage
+            'UTF-9', //codePage
+            true, // accept unix style EOL
+            true, // failUploadOnWarning
+            false, // verbose
+            )
+
+
+            assert dockerExecuteRule.dockerParams.dockerImage == 'rfc'
+            assert dockerExecuteRule.dockerParams.dockerPullImage == true
+
+            assert dockerExecuteRule.dockerParams.dockerEnvVars ==
+            [
+                ABAP_DEVELOPMENT_INSTANCE: '00',
+                ABAP_DEVELOPMENT_CLIENT: '001',
+                ABAP_APPLICATION_NAME: '001',
+                ABAP_APPLICATION_DESC: 'Lorem ipsum',
+                ABAP_PACKAGE: 'XYZ',
+                ZIP_FILE_URL: 'https://example.org/mypath/deployArtifact.zip',
+                ABAP_DEVELOPMENT_SERVER: 'https://example.org/rfc',
+                ABAP_DEVELOPMENT_USER: 'user',
+                ABAP_DEVELOPMENT_PASSWORD: 'password',
+                CODE_PAGE: 'UTF-9',
+                ABAP_ACCEPT_UNIX_STYLE_EOL: 'X',
+                FAIL_UPLOAD_ON_WARNING: 'true',
+                VERBOSE: 'false'
+            ]
+
+            assertThat(script.shell, contains('cts uploadToABAP:002'))
+    }
+
+    @Test
+    public void testUploadFileToTransportFailsRFC() {
 
         thrown.expect(ChangeManagementException)
-        thrown.expectMessage("Cannot upload file '/path' for change document '001' with transport request '002'. " +
-            "Return code from cmclient: 1.")
+        thrown.expectMessage('Cannot upload file into transport request. Return code from rfc client: 1.')
+
+        script.setReturnValue('cts uploadToABAP:002', 1)
+
+        new ChangeManagement(nullScript).uploadFileToTransportRequestRFC(
+            [:],
+            '002', //transportRequestId
+            '001', // applicationId
+            'https://example.org/mypath/deployArtifact.zip',
+            'https://example.org/rfc',
+            'me',
+            '00', //developmentInstance
+            '001', // developmentClient
+            'Lorem ipsum', // applicationDescription
+            'XYZ', // abapPackage
+            'UTF-9', // codePage
+            true, // accept unix style EOL
+            true, // failUploadOnWarning
+            false, // verbose
+            )
+    }
+
+    @Test
+    public void testUploadFileToTransportFailsSOLMAN() {
+
+        thrown.expect(ChangeManagementException)
+        thrown.expectMessage("Cannot upload file into transport request. " +
+            "Return code from cm client: 1.")
 
         script.setReturnValue(JenkinsShellCallRule.Type.REGEX,, 'upload-file-to-transport', 1)
 
-        new ChangeManagement(nullScript).uploadFileToTransportRequest(BackendType.SOLMAN,
+        new ChangeManagement(nullScript).uploadFileToTransportRequestSOLMAN(
+            [:],
             '001',
             '002',
             'XXX',
@@ -265,8 +408,11 @@ public void testGetCommandLineWithCMClientOpts() {
         // the regex provided below is an implicit check that the command line is fine.
         script.setReturnValue(JenkinsShellCallRule.Type.REGEX, '-t SOLMAN release-transport.*-cID 001.*-tID 002', 0)
 
-        new ChangeManagement(nullScript).releaseTransportRequest(
-            BackendType.SOLMAN,
+        new ChangeManagement(nullScript).releaseTransportRequestSOLMAN(
+            [
+                image: 'ppiper/cm-client',
+                imagePull: true,
+            ],
             '001',
             '002',
             'https://example.org',
@@ -275,6 +421,9 @@ public void testGetCommandLineWithCMClientOpts() {
 
         // no assert required here, since the regex registered above to the script rule is an implicit check for
         // the command line.
+
+        dockerExecuteRule.getDockerParams().dockerImage == 'ppiper/cm-client'
+        dockerExecuteRule.getDockerParams().pullImage == true
     }
 
     @Test
@@ -283,9 +432,11 @@ public void testGetCommandLineWithCMClientOpts() {
         // the regex provided below is an implicit check that the command line is fine.
         script.setReturnValue(JenkinsShellCallRule.Type.REGEX, '-t CTS export-transport.*-tID 002', 0)
 
-        new ChangeManagement(nullScript).releaseTransportRequest(
-            BackendType.CTS,
-            null,
+        new ChangeManagement(nullScript).releaseTransportRequestCTS(
+            [
+                image: 'ppiper/cm-client',
+                pullImage: true,
+            ],
             '002',
             'https://example.org',
             'me',
@@ -293,10 +444,37 @@ public void testGetCommandLineWithCMClientOpts() {
 
         // no assert required here, since the regex registered above to the script rule is an implicit check for
         // the command line.
+
+        assert dockerExecuteRule.getDockerParams().dockerImage == 'ppiper/cm-client'
+        assert dockerExecuteRule.getDockerParams().dockerPullImage == true
     }
 
     @Test
-    public void testReleaseTransportRequestFails() {
+    public void testReleaseTransportRequestSucceedsRFC() {
+
+        new ChangeManagement(nullScript).releaseTransportRequestRFC(
+            [:],
+            '002',
+            'https://example.org',
+            '002',
+            '001',
+            'me',
+            true)
+
+        assert dockerExecuteRule.dockerParams.dockerEnvVars == [
+            ABAP_DEVELOPMENT_SERVER: 'https://example.org',
+            ABAP_DEVELOPMENT_USER: 'user',
+            ABAP_DEVELOPMENT_PASSWORD: 'password',
+            ABAP_DEVELOPMENT_CLIENT: '001',
+            ABAP_DEVELOPMENT_INSTANCE: '002',
+            VERBOSE: true,
+        ]
+
+        assertThat(script.shell, hasItem('cts releaseTransport:002'))
+    }
+
+    @Test
+    public void testReleaseTransportRequestFailsSOLMAN() {
 
         thrown.expect(ChangeManagementException)
         thrown.expectMessage("Cannot release Transport Request '002'. Return code from cmclient: 1.")
@@ -304,15 +482,16 @@ public void testGetCommandLineWithCMClientOpts() {
         // the regex provided below is an implicit check that the command line is fine.
         script.setReturnValue(JenkinsShellCallRule.Type.REGEX, 'release-transport.*-cID 001.*-tID 002', 1)
 
-        new ChangeManagement(nullScript).releaseTransportRequest(
-            BackendType.SOLMAN,
+        new ChangeManagement(nullScript).releaseTransportRequestSOLMAN(
+            [
+                image: 'ppiper/cm-client',
+                imagePull: true,
+            ],
             '001',
             '002',
             'https://example.org',
-            'me',
-            'openSesame')
+            'me')
     }
-
 
     private GitUtils gitUtilsMock(boolean insideWorkTree, String[] changeIds) {
         return new GitUtils() {

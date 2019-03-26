@@ -1,19 +1,16 @@
-# uiVeri5ExecuteTests
+# ${docGenStepName}
 
-## Description
-
-Content here is generated from corresponnding step, see `vars`.
+## ${docGenDescription}
 
 ## Prerequisites
 
-## Parameters
+## ${docGenParameters}
 
-Content here is generated from corresponnding step, see `vars`.
-
-## Step configuration
-
-Content here is generated from corresponnding step, see `vars`.
+## ${docGenConfiguration}
 
 ## Exceptions
+
+If you see an error like `fatal: Not a git repository (or any parent up to mount point /home/jenkins)` it is likely that your test description cannot be found.<br />
+Please make sure to point parameter `testOptions` to your `conf.js` file like `testOptions: './path/to/my/tests/conf.js'`
 
 ## Examples

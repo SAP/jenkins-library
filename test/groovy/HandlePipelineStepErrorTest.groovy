@@ -11,6 +11,7 @@ import static org.junit.Assert.assertThat
 
 import util.BasePiperTest
 import util.JenkinsLoggingRule
+import util.JenkinsReadYamlRule
 import util.JenkinsStepRule
 import util.Rules
 
@@ -22,6 +23,7 @@ class HandlePipelineStepErrorsTest extends BasePiperTest {
     @Rule
     public RuleChain rules = Rules
         .getCommonRules(this)
+        .around(new JenkinsReadYamlRule(this))
         .around(loggingRule)
         .around(stepRule)
         .around(thrown)
@@ -37,8 +39,8 @@ class HandlePipelineStepErrorsTest extends BasePiperTest {
         }
         // asserts
         assertThat(isExecuted, is(true))
-        assertThat(loggingRule.log, containsString('--- BEGIN LIBRARY STEP: testStep'))
-        assertThat(loggingRule.log, containsString('--- END LIBRARY STEP: testStep'))
+        assertThat(loggingRule.log, containsString('--- Begin library step of: testStep'))
+        assertThat(loggingRule.log, containsString('--- End library step of: testStep'))
     }
 
     @Test
@@ -54,9 +56,9 @@ class HandlePipelineStepErrorsTest extends BasePiperTest {
         } catch (ignore) {
         } finally {
             // asserts
-            assertThat(loggingRule.log, not(containsString('--- BEGIN LIBRARY STEP: testStep')))
-            assertThat(loggingRule.log, not(containsString('--- END LIBRARY STEP: testStep')))
-            assertThat(loggingRule.log, not(containsString('--- ERROR OCCURRED IN LIBRARY STEP: testStep')))
+            assertThat(loggingRule.log, not(containsString('--- Begin library step of: testStep')))
+            assertThat(loggingRule.log, not(containsString('--- End library step: testStep')))
+            assertThat(loggingRule.log, not(containsString('--- An error occurred in the library step: testStep')))
         }
     }
 
@@ -75,7 +77,7 @@ class HandlePipelineStepErrorsTest extends BasePiperTest {
         } finally {
             // asserts
             assertThat(isReported, is(true))
-            assertThat(loggingRule.log, containsString('--- ERROR OCCURRED IN LIBRARY STEP: testStep'))
+            assertThat(loggingRule.log, containsString('--- An error occurred in the library step: testStep'))
             assertThat(loggingRule.log, containsString('[something:anything]'))
         }
     }

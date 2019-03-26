@@ -2,6 +2,7 @@ package com.sap.piper
 
 import com.cloudbees.groovy.cps.NonCPS
 import com.sap.piper.analytics.Telemetry
+import groovy.text.SimpleTemplateEngine
 
 import java.nio.charset.StandardCharsets
 import java.security.MessageDigest
@@ -54,6 +55,7 @@ def stashWithMessage(name, msg, include = '**/*.*', exclude = '') {
 }
 
 def unstash(name, msg = "Unstash failed:") {
+
     def unstashedContent = []
     try {
         echo "Unstash content: ${name}"
@@ -69,7 +71,9 @@ def unstashAll(stashContent) {
     def unstashedContent = []
     if (stashContent) {
         for (i = 0; i < stashContent.size(); i++) {
-            unstashedContent += unstash(stashContent[i])
+            if(stashContent[i]) {
+                unstashedContent += unstash(stashContent[i])
+            }
         }
     }
     return unstashedContent
@@ -94,4 +98,11 @@ void pushToSWA(Map parameters, Map config) {
     } catch (ignore) {
         // some error occured in telemetry reporting. This should not break anything though.
     }
+}
+
+@NonCPS
+static String fillTemplate(String templateText, Map binding){
+    def engine = new SimpleTemplateEngine()
+    String result = engine.createTemplate(templateText).make(binding)
+    return result
 }

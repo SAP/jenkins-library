@@ -24,6 +24,7 @@ nav:
         - mtaBuild: steps/mtaBuild.md
         - neoDeploy: steps/neoDeploy.md
         - newmanExecute: steps/newmanExecute.md
+        - npmExecute: steps/npmExecute.md
         - pipelineExecute: steps/pipelineExecute.md
         - pipelineRestartSteps: steps/pipelineRestartSteps.md
         - pipelineStashFiles: steps/pipelineStashFiles.md
@@ -31,6 +32,7 @@ nav:
         - seleniumExecuteTests: steps/seleniumExecuteTests.md
         - setupCommonPipelineEnvironment: steps/setupCommonPipelineEnvironment.md
         - slackSendNotification: steps/slackSendNotification.md
+        - snykExecute: steps/snykExecute.md
         - testsPublishResults: steps/testsPublishResults.md
         - toolValidate: steps/toolValidate.md
         - transportRequestCreate: steps/transportRequestCreate.md

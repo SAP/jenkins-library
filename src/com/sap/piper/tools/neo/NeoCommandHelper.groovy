@@ -1,7 +1,6 @@
 package com.sap.piper.tools.neo
 
 import com.sap.piper.BashUtils
-import com.sap.piper.ConfigurationHelper
 import com.sap.piper.StepAssertions
 
 class NeoCommandHelper {
@@ -9,25 +8,23 @@ class NeoCommandHelper {
     private Script step
     private DeployMode deployMode
     private Map deploymentConfiguration
-    private String pathToNeoExecutable
     private String user
     private String password
     private String source
 
     //Warning: Commands generated with this class can contain passwords and should only be used within the step withCredentials
-    NeoCommandHelper(Script step, DeployMode deployMode, Map deploymentConfiguration, String pathToNeoExecutable,
+    NeoCommandHelper(Script step, DeployMode deployMode, Map deploymentConfiguration,
                     String user, String password, String source) {
         this.step = step
         this.deployMode = deployMode
         this.deploymentConfiguration = deploymentConfiguration
-        this.pathToNeoExecutable = pathToNeoExecutable
         this.user = user
         this.password = password
         this.source = source
     }
 
     private String prolog() {
-        return "\"${pathToNeoExecutable}\""
+        return 'neo.sh'
     }
 
     String statusCommand() {
@@ -60,19 +57,10 @@ class NeoCommandHelper {
                 "/acc/${properties.account}/app/${properties.application}/dashboard"
         }
 
-        ConfigurationHelper configurationHelper = ConfigurationHelper.newInstance(step, deploymentConfiguration)
-
-        configurationHelper
-            .withMandatoryProperty('host')
-            .withMandatoryProperty('account')
-
         if (deployMode == DeployMode.MTA) {
             return "https://account.${deploymentConfiguration.host}/cockpit#" +
                 "/acc/${deploymentConfiguration.account}/mtas"
         }
-
-        configurationHelper
-            .withMandatoryProperty('application')
 
         return "https://account.${deploymentConfiguration.host}/cockpit#" +
             "/acc/${deploymentConfiguration.account}/app/${deploymentConfiguration.application}/dashboard"
@@ -84,17 +72,9 @@ class NeoCommandHelper {
             return "${properties.host}/${properties.account}/${properties.application}"
         }
 
-        ConfigurationHelper configurationHelper = ConfigurationHelper.newInstance(step, deploymentConfiguration)
-        configurationHelper
-            .withMandatoryProperty('host')
-            .withMandatoryProperty('account')
-
-
         String resource = "${deploymentConfiguration.host}/${deploymentConfiguration.account}"
 
         if (deployMode == DeployMode.WAR_PARAMS) {
-            configurationHelper
-                .withMandatoryProperty('application')
 
             resource += "/${deploymentConfiguration.application}"
         }
@@ -115,17 +95,10 @@ class NeoCommandHelper {
             return "${deploymentConfiguration.propertiesFile} ${usernamePassword}"
         }
 
-        ConfigurationHelper configurationHelper = ConfigurationHelper.newInstance(step, deploymentConfiguration)
-        configurationHelper
-            .withMandatoryProperty('host')
-            .withMandatoryProperty('account')
-
         String targetArgs = "--host ${BashUtils.quoteAndEscape(deploymentConfiguration.host)}"
         targetArgs += " --account ${BashUtils.quoteAndEscape(deploymentConfiguration.account)}"
 
         if (deployMode == DeployMode.WAR_PARAMS) {
-            configurationHelper
-                .withMandatoryProperty('application')
 
             targetArgs += " --application ${BashUtils.quoteAndEscape(deploymentConfiguration.application)}"
         }
@@ -138,13 +111,8 @@ class NeoCommandHelper {
             return ""
         }
 
-        ConfigurationHelper configurationHelper = ConfigurationHelper.newInstance(step, deploymentConfiguration)
-
         String args = ""
-        configurationHelper.withMandatoryProperty('runtime')
         args += " --runtime ${BashUtils.quoteAndEscape(deploymentConfiguration.runtime)}"
-
-        configurationHelper.withMandatoryProperty('runtimeVersion')
         args += " --runtime-version ${BashUtils.quoteAndEscape(deploymentConfiguration.runtimeVersion)}"
 
         if (deploymentConfiguration.size) {
