@@ -194,6 +194,8 @@ import static com.sap.piper.Prerequisites.checkScript
 ]
 
 /**
+ * BETA
+ *
  * With this step [WhiteSource](https://www.whitesourcesoftware.com) security and license compliance scans can be executed and assessed.
  *
  * WhiteSource is a Software as a Service offering based on a so called unified agent that locally determines the dependency
@@ -201,8 +203,16 @@ import static com.sap.piper.Prerequisites.checkScript
  * check and additional Free and Open Source Software Publicly Known Vulnerabilities detection.
  *
  * !!! note "Docker Images"
- *     The underlying Docker images are public and specific to the solution's programming language(s) and may therefore be exchanged
- *     to fit and suite the relevant scenario. The default Python environment used is i.e. Python 3 based.
+ *     The underlying Docker images are public and specific to the solution's programming language(s) and therefore may have to be exchanged
+ *     to fit to and support the relevant scenario. The default Python environment used is i.e. Python 3 based.
+ *
+ * !!! warn "Restrictions"
+ *     Currently the step does contain hardened scan configurations for `scanType` `'pip'` and `'go'`. Other environments are still being elaborated,
+ *     so please thoroughly check your results and do not take them for granted by default.
+ *     Also not all environments have been thoroughly tested already therefore you might need to tweak around with the default containers used or
+ *     create your own ones to adequately support your scenario. To do so please modify `dockerImage` and `dockerWorkspace` parameters.
+ *     The step expects an environment containing the programming language related compiler/interpreter as well as the related build tool. For a list
+ *     of the supported build tools per environment please refer to the [WhiteSource Unified Agent Documentation](https://whitesource.atlassian.net/wiki/spaces/WD/pages/33718339/Unified+Agent).
  */
 @GenerateDocumentation
 void call(Map parameters = [:]) {
