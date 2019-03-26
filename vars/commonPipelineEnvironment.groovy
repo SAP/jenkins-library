@@ -2,7 +2,6 @@ import com.sap.piper.ConfigurationLoader
 import com.sap.piper.ConfigurationMerger
 
 class commonPipelineEnvironment implements Serializable {
-    Map configProperties = [:]
 
     //stores version of the artifact which is build during pipeline run
     def artifactVersion
@@ -44,7 +43,6 @@ class commonPipelineEnvironment implements Serializable {
         appContainerProperties = [:]
         artifactVersion = null
 
-        configProperties = [:]
         configuration = [:]
 
         gitCommitId = null
@@ -72,17 +70,6 @@ class commonPipelineEnvironment implements Serializable {
 
     def getAppContainerProperty(property) {
         return appContainerProperties[property]
-    }
-
-    def setConfigProperty(property, value) {
-        configProperties[property] = value
-    }
-
-    def getConfigProperty(property) {
-        if (configProperties[property] != null)
-            return configProperties[property].trim()
-        else
-            return configProperties[property]
     }
 
     // goes into measurement jenkins_data
