@@ -333,7 +333,7 @@ steps:
         - 'opensourceConfiguration'
       additionalInstallCommand: >-
         curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
-        && mkdir -p \$GOPATH/src/${config.whitesource.projectName}
+        && mkdir -p \$GOPATH/src/${config.whitesource.projectName.substring(0, config.whitesource.projectName.lastIndexOf('/'))}
         && ln -s \$(pwd) \$GOPATH/src/${config.whitesource.projectName}
         && cd \$GOPATH/src/${config.whitesource.projectName} && dep ensure
     sbt:
