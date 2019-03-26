@@ -15,7 +15,7 @@ public class StepHelpers {
 
         }
 
-        transportRequestId = script.commonPipelineEnvironment.getTransportRequestId()
+        transportRequestId = script.commonPipelineEnvironment.getCustomProperty('transportRequestId')
 
         if(transportRequestId?.trim()) {
             script.echo "[INFO] Transport request id '${transportRequestId}' retrieved from common pipeline environment."
@@ -33,7 +33,7 @@ public class StepHelpers {
                                                             configuration.changeManagement.git.format
                                                         )
 
-            script.commonPipelineEnvironment.setTransportRequestId(transportRequestId)
+            script.commonPipelineEnvironment.setCustomProperty('transportRequestId', "${transportRequestId}")
             script.echo "[INFO] Transport request id '${transportRequestId}' retrieved from commit history"
 
         } catch(ChangeManagementException ex) {

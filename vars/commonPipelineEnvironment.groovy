@@ -46,7 +46,6 @@ class commonPipelineEnvironment implements Serializable {
         return customPropertiesMap.get(property)
     }
 
-    String transportRequestId
     String changeDocumentId
 
     def reset() {
@@ -72,7 +71,6 @@ class commonPipelineEnvironment implements Serializable {
         mtarFilePath = null
         customPropertiesMap = [:]
 
-        transportRequestId = null
         changeDocumentId = null
     }
 
