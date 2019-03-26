@@ -79,14 +79,6 @@ class NeoDeployTest extends BasePiperTest {
     @Test
     void straightForwardTestConfigViaParameters() {
 
-        boolean notifyOldConfigFrameworkUsed = true
-
-        def utils = new Utils() {
-            void pushToSWA(Map parameters, Map config) {
-                notifyOldConfigFrameworkUsed = parameters.stepParam4
-            }
-        }
-
         stepRule.step.neoDeploy(script: nullScript,
             source: archiveName,
             neo:[credentialsId: 'myCredentialsId'],
@@ -101,8 +93,6 @@ class NeoDeployTest extends BasePiperTest {
                 .hasSingleQuotedOption('user', 'anonymous')
                 .hasSingleQuotedOption('password', '\\*\\*\\*\\*\\*\\*\\*\\*')
                 .hasSingleQuotedOption('source', '.*'))
-
-        assert !notifyOldConfigFrameworkUsed
     }
 
     @Test
