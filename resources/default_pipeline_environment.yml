@@ -334,8 +334,8 @@ steps:
       additionalInstallCommand: >-
         curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
         && mkdir -p /go/src/${config.whitesource.projectName}
-        && ln -s $(pwd) $GOPATH/${config.whitesource.projectName}
-        && cd $GOPATH/src/${config.whitesource.projectName} && dep ensure
+        && ln -s \$(pwd) \$GOPATH/${config.whitesource.projectName}
+        && cd \$GOPATH/src/${config.whitesource.projectName} && dep ensure
     sbt:
       buildDescriptorFile: './build.sbt'
       dockerImage: 'hseeberger/scala-sbt:8u181_2.12.8_1.2.8'
