@@ -93,6 +93,8 @@ class FioriOnCloudPlatformPipelineTest extends BasePiperTest {
             it == 'test.mtar'
         })
 
+        helper.registerAllowedMethod("deleteDir",[], null)
+
         //
         // the properties below we read out of the yaml file
         readYamlRule.registerYaml('mta.yaml', ('''
@@ -104,6 +106,8 @@ class FioriOnCloudPlatformPipelineTest extends BasePiperTest {
         // we need the path variable since we extend the path in the mtaBuild step. In order
         // to be able to extend the path we have to have some initial value.
         binding.setVariable('PATH', '/usr/bin')
+
+        binding.setVariable('scm', null)
 
         helper.registerAllowedMethod('pwd', [], { return "./" })
     }
