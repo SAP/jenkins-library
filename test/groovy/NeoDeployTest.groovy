@@ -47,7 +47,7 @@ class NeoDeployTest extends BasePiperTest {
     public RuleChain ruleChain = Rules
         .getCommonRules(this)
         .around(new JenkinsReadYamlRule(this))
-        .around(new JenkinsPropertiesRule(this, propertiesFileName, configProperties))
+        .around(new JenkinsPropertiesRule(this, warPropertiesFileName, warProperties))
         .around(thrown)
         .around(loggingRule)
         .around(shellRule)
@@ -61,9 +61,9 @@ class NeoDeployTest extends BasePiperTest {
 
     private static workspacePath
     private static warArchiveName
-    private static propertiesFileName
+    private static warPropertiesFileName
     private static archiveName
-    private static configProperties
+    private static warProperties
 
 
     @BeforeClass
@@ -71,16 +71,16 @@ class NeoDeployTest extends BasePiperTest {
 
         workspacePath = "${tmp.getRoot()}"
         warArchiveName = 'warArchive.war'
-        propertiesFileName = 'config.properties'
         archiveName = 'archive.mtar'
+        warPropertiesFileName = 'war.properties'
 
-        configProperties = new Properties()
-        configProperties.put('account', 'trialuser123')
-        configProperties.put('host', 'test.deploy.host.com')
-        configProperties.put('application', 'testApp')
+        warProperties = new Properties()
+        warProperties.put('account', 'trialuser123')
+        warProperties.put('host', 'test.deploy.host.com')
+        warProperties.put('application', 'testApp')
 
         tmp.newFile(warArchiveName) << 'dummy war archive'
-        tmp.newFile(propertiesFileName) << 'dummy properties file'
+        tmp.newFile(warPropertiesFileName) << 'dummy war properties file'
         tmp.newFile(archiveName) << 'dummy archive'
     }
 
@@ -410,7 +410,7 @@ class NeoDeployTest extends BasePiperTest {
             deployMode: 'warPropertiesFile',
             warAction: 'deploy',
             neo: [
-                propertiesFile: propertiesFileName,
+                propertiesFile: warPropertiesFileName,
                 application: 'testApp',
                 runtime: 'neo-javaee6-wp',
                 runtimeVersion: '2.125',
@@ -420,7 +420,7 @@ class NeoDeployTest extends BasePiperTest {
 
         Assert.assertThat(shellRule.shell,
             new CommandLineMatcher().hasProlog("neo.sh deploy")
-                .hasArgument("config.properties")
+                .hasArgument('war.properties')
                 .hasSingleQuotedOption('user', 'defaultUser')
                 .hasSingleQuotedOption('password', '\\*\\*\\*\\*\\*\\*\\*\\*')
                 .hasSingleQuotedOption('source', '.*\\.war'))
@@ -436,7 +436,7 @@ class NeoDeployTest extends BasePiperTest {
             deployMode: 'warPropertiesFile',
             warAction: 'rolling-update',
             neo: [
-                propertiesFile: propertiesFileName,
+                propertiesFile: warPropertiesFileName,
                 application: 'testApp',
                 runtime: 'neo-javaee6-wp',
                 runtimeVersion: '2.125',
@@ -445,7 +445,7 @@ class NeoDeployTest extends BasePiperTest {
 
         Assert.assertThat(shellRule.shell,
             new CommandLineMatcher().hasProlog("neo.sh rolling-update")
-                .hasArgument('config.properties')
+                .hasArgument('war.properties')
                 .hasSingleQuotedOption('user', 'defaultUser')
                 .hasSingleQuotedOption('password', '\\*\\*\\*\\*\\*\\*\\*\\*')
                 .hasSingleQuotedOption('source', '.*\\.war'))
