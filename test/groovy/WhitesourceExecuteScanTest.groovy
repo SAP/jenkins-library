@@ -144,7 +144,7 @@ class WhitesourceExecuteScanTest extends BasePiperTest {
         nullScript.commonPipelineEnvironment.configuration['general'] = nullScript.commonPipelineEnvironment.configuration['general'] ?: [:]
         nullScript.commonPipelineEnvironment.configuration['general']['whitesource'] = nullScript.commonPipelineEnvironment.configuration['general']['whitesource'] ?: [:]
         nullScript.commonPipelineEnvironment.configuration['general']['whitesource']['serviceUrl'] = "http://some.host.whitesource.com/api/"
-        nullScript.commonPipelineEnvironment.setConfigProperty('userTokenCredentialsId', 'ID-123456789')
+        nullScript.commonPipelineEnvironment.configuration['general']['whitesource']['userTokenCredentialsId'] = 'ID-123456789'
         nullScript.commonPipelineEnvironment.configuration['steps']['whitesourceExecuteScan']['userTokenCredentialsId'] = 'ID-123456789'
     }
 
@@ -496,7 +496,7 @@ class WhitesourceExecuteScanTest extends BasePiperTest {
         assertThat(loggingRule.log, containsString('Unstash content: opensourceConfiguration'))
 
         assertThat(dockerExecuteRule.dockerParams, hasEntry('dockerImage', 'golang:1.12-stretch'))
-        assertThat(dockerExecuteRule.dockerParams, hasEntry('dockerWorkspace', '/home/modules'))
+        assertThat(dockerExecuteRule.dockerParams, hasEntry('dockerWorkspace', '/home/dep'))
         assertThat(dockerExecuteRule.dockerParams, hasEntry('stashContent', ['buildDescriptor', 'opensourceConfiguration', 'modified whitesource config d3aa80454919391024374ba46b4df082d15ab9a3']))
 
         assertThat(shellRule.shell, Matchers.hasItems(
@@ -553,7 +553,7 @@ class WhitesourceExecuteScanTest extends BasePiperTest {
         assertThat(loggingRule.log, containsString('Unstash content: opensourceConfiguration'))
 
         assertThat(dockerExecuteRule.dockerParams, hasEntry('dockerImage', 'golang:1.12-stretch'))
-        assertThat(dockerExecuteRule.dockerParams, hasEntry('dockerWorkspace', '/home/modules'))
+        assertThat(dockerExecuteRule.dockerParams, hasEntry('dockerWorkspace', '/home/dep'))
         assertThat(dockerExecuteRule.dockerParams, hasEntry('stashContent', ['buildDescriptor', 'opensourceConfiguration', 'modified whitesource config d3aa80454919391024374ba46b4df082d15ab9a3']))
 
         assertThat(shellRule.shell, Matchers.hasItems(
