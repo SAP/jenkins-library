@@ -74,6 +74,10 @@ import static com.sap.piper.Prerequisites.checkScript
 ]
 @Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS + [
     /**
+     * Additional install command that can be used to populate the default docker image for some scenarios.
+     */
+    'additionalInstallCommand',
+    /**
      * URL used to download the latest version of the WhiteSource Unified Agent.
      */
     'agentDownloadUrl',
