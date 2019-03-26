@@ -7,7 +7,7 @@ Creates
 * a Transport Request for a Change Document on the Solution Manager (type `SOLMAN`) or
 * a Transport Request inside an ABAP system (type`CTS`)
 
-The id of the transport request is availabe via [commonPipelineEnvironment.getProperty('transportRequestId')](commonPipelineEnvironment.md)
+The id of the transport request is availabe via [commonPipelineEnvironment.getCustomProperty('transportRequestId')](commonPipelineEnvironment.md)
 
 ## Prerequisites
 
