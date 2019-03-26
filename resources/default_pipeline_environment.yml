@@ -326,11 +326,16 @@ steps:
         - 'opensourceConfiguration'
     golang:
       buildDescriptorFile: './Gopkg.toml'
-      dockerImage: 'instrumentisto/dep:0.5'
-      dockerWorkspace: '/go/src/scan'
+      dockerImage: 'golang:1.12.1-stretch'
+      dockerWorkspace: '/home/dep'
       stashContent:
         - 'buildDescriptor'
         - 'opensourceConfiguration'
+      additionalInstallCommand: >
+        curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh \
+        mkdir -p /go/src/${config.whitesource.projectName} \
+        ln -s $(pwd) $GOPATH/${config.whitesource.projectName} \
+        cd $GOPATH/src/${config.whitesource.projectName} && dep ensure
     sbt:
       buildDescriptorFile: './build.sbt'
       dockerImage: 'hseeberger/scala-sbt:8u181_2.12.8_1.2.8'

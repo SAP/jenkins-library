@@ -189,7 +189,8 @@ import static com.sap.piper.Prerequisites.checkScript
         cvssSeverityLimit                       : 'cvssSeverityLimit',
         timeout                                 : 'timeout',
         vulnerabilityReportFileName             : 'vulnerabilityReportFileName',
-        vulnerabilityReportTitle                : 'vulnerabilityReportTitle'
+        vulnerabilityReportTitle                : 'vulnerabilityReportTitle',
+        additionalInstallCommand                : 'additionalInstallCommand'
     ]
 ]
 
@@ -237,6 +238,7 @@ void call(Map parameters = [:]) {
             .dependingOn('scanType').mixin('dockerWorkspace')
             .dependingOn('scanType').mixin('stashContent')
             .dependingOn('scanType').mixin('whitesource/configFilePath')
+            .dependingOn('scanType').mixin('whitesource/additionalInstallCommand')
             .withMandatoryProperty('whitesource/serviceUrl')
             .withMandatoryProperty('whitesource/orgToken')
             .withMandatoryProperty('whitesource/userTokenCredentialsId')
@@ -366,6 +368,9 @@ private def triggerWhitesourceScanWithUserKey(script, config, utils, descriptorU
                         sh "curl ${script.env.HTTP_PROXY ? '--proxy ' + script.env.HTTP_PROXY + ' ' : ''}--location --output jvm.tar.gz ${config.whitesource.jreDownloadUrl} && tar --strip-components=1 -xzf jvm.tar.gz".toString()
                         javaCmd = './bin/java'
                     }
+
+                    if(config.whitesource.additionalInstallCommand)
+                        sh new GStringTemplateEngine().createTemplate(config.whitesource.additionalInstallCommand).make([config: config]).toString()
 
                     def options = ["-jar ${config.whitesource.agentFileName} -c \'${config.whitesource.configFilePath}\'"]
                     if (config.whitesource.orgToken) options.push("-apiKey '${config.whitesource.orgToken}'")
