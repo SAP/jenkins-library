@@ -276,7 +276,7 @@ private List getContainerList(config) {
             config.containerPortMappings.get(imageName).each {mapping ->
                 def name = "${containerName}${portCounter}".toString()
                 if(mapping.containerPort != mapping.hostPort) {
-                    echo ("Warning: containerPort and hostPort are different for container '${containerName}'. "
+                    echo ("[WARNING][${STEP_NAME}]: containerPort and hostPort are different for container '${containerName}'. "
                         + "The hostPort will be ignored.")
                 }
                 ports.add([name: name, containerPort: mapping.containerPort])
