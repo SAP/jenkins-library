@@ -76,7 +76,7 @@ class Telemetry implements Serializable{
     }
     
     @NonCPS
-    private String getPayloadString(Map payload){
+    private static String getPayloadString(Map payload){
         return payload
             .collect { entry -> return "${entry.key}=${URLEncoder.encode(entry.value.toString(), "UTF-8")}" }
             .join('&')
