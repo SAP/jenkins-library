@@ -143,7 +143,7 @@ class TelemetryTest extends BasePiperTest {
         ])
         // asserts
         assertThat(httpParams, is(not(null)))
-        assertThat(httpParams?.url.toString(), allOf(
+        assertThat(httpParams.url.toString(), allOf(
             startsWith('https://webanalytics.cfapps.eu10.hana.ondemand.com/tracker/log?'),
             containsString('action_name=Piper+Library+OS'),
             containsString('event_type=library-os'),
