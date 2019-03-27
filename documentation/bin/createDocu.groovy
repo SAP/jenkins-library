@@ -1,4 +1,5 @@
 import groovy.io.FileType
+import groovy.json.JsonOutput
 import org.yaml.snakeyaml.Yaml
 import org.codehaus.groovy.control.CompilerConfiguration
 import com.sap.piper.GenerateDocumentation
@@ -423,6 +424,10 @@ if(exceptionCaught) {
     System.err << "[ERROR] Exception caught during generating documentation. Check earlier log for details.\n"
     System.exit(1)
 }
+
+File docuMetaData = new File('target/docuMetaData.json')
+if(docuMetaData.exists()) docuMetaData.delete()
+docuMetaData << new JsonOutput().toJson(stepDescriptors)
 
 System.err << "[INFO] done.\n"
 
