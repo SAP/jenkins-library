@@ -389,6 +389,7 @@ private def triggerWhitesourceScanWithUserKey(script, config, utils, descriptorU
 
                     if (config.whitesource.jreDownloadUrl) {
                         sh "rm -rf ./bin ./conf ./legal ./lib ./man"
+                        sh "rm -f jvm.tar.gz"
                     }
 
                     // archive whitesource result files
