@@ -397,6 +397,9 @@ private def triggerWhitesourceScanWithUserKey(script, config, utils, descriptorU
                 break
         }
 
+        // archive whitesource debug files, if available
+        archiveArtifacts artifacts: "**/ws-l*", allowEmptyArchive: true
+
         if (config.reporting) {
             analyseWhitesourceResults(config, repository)
         }
