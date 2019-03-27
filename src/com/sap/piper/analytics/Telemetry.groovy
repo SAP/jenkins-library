@@ -74,7 +74,7 @@ class Telemetry implements Serializable{
             steps.echo "[${payload.step}] Telemetry Report with listener failed: timeout"
         }
     }
-    
+
     @NonCPS
     private static String getPayloadString(Map payload){
         return payload
