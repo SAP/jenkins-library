@@ -90,6 +90,7 @@ class LibraryLoadingTestExecutionListener extends AbstractTestExecutionListener 
     @Override
     void beforeTestClass(TestContext testContext) throws Exception {
         super.beforeTestClass(testContext)
+        StepTracker.before(testContext.testClass.getSimpleName())
         def helper = LibraryLoadingTestExecutionListener.getSingletonInstance()
         registerDefaultAllowedMethods(helper)
         LibraryLoadingTestExecutionListener.START_CLASS_TRACKING = true
@@ -98,6 +99,7 @@ class LibraryLoadingTestExecutionListener extends AbstractTestExecutionListener 
     @Override
     void afterTestClass(TestContext testContext) throws Exception {
         super.afterTestClass(testContext)
+        StepTracker.after()
         PipelineTestHelper helper = LibraryLoadingTestExecutionListener.getSingletonInstance()
         helper.clearAllowedMethodCallbacks(LibraryLoadingTestExecutionListener.TRACKED_ON_CLASS)
         LibraryLoadingTestExecutionListener.TRACKED_ON_CLASS.clear()
@@ -123,6 +125,7 @@ class LibraryLoadingTestExecutionListener extends AbstractTestExecutionListener 
     void beforeTestMethod(TestContext testContext) throws Exception {
         super.beforeTestMethod(testContext)
         def testInstance = testContext.getTestInstance()
+        StepTracker.before(testInstance.getClass().getSimpleName())
         testInstance.binding.setVariable('currentBuild', [result: 'SUCCESS', currentResult: 'SUCCESS'])
         PipelineTestHelper helper = LibraryLoadingTestExecutionListener.getSingletonInstance()
         LibraryLoadingTestExecutionListener.START_METHOD_TRACKING = true
@@ -132,6 +135,7 @@ class LibraryLoadingTestExecutionListener extends AbstractTestExecutionListener 
     void afterTestMethod(TestContext testContext) throws Exception {
         super.afterTestMethod(testContext)
         def testInstance = testContext.getTestInstance()
+        StepTracker.after()
         PipelineTestHelper helper = LibraryLoadingTestExecutionListener.getSingletonInstance()
 
         helper.clearCallStack()
@@ -192,6 +196,7 @@ class LibraryLoadingTestExecutionListener extends AbstractTestExecutionListener 
 
     static class PipelineTestHelperHook {
         def helper = new PipelineTestHelper() {
+
             def clearAllowedMethodCallbacks(Collection c = []) {
                 List itemsToRemove = []
                 c.each {
