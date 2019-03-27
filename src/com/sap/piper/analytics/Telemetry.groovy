@@ -62,21 +62,24 @@ class Telemetry implements Serializable{
             if (payload["stepParam${key}"] != null) swaPayload.put("custom1${key}", payload["stepParam${key}"])
         }
 
-        def payloadString = swaPayload
-            .collect { entry -> return "&${entry.key}=${URLEncoder.encode(entry.value.toString(), "UTF-8")}" }
-            .join('')
-            .replaceFirst('&','?')
-
         try {
             steps.timeout(
                 time: 20,
                 unit: 'SECONDS'
             ){
-                steps.httpRequest(url: "${swaEndpoiont}${payloadString}", timeout: 5, quiet: true)
+                steps.httpRequest(url: "${swaEndpoiont}${getPayloadString(swaPayload)}", timeout: 5, quiet: true)
             }
         } catch (FlowInterruptedException ignore){
             // telemetry reporting timed out. This should not break anything though.
             steps.echo "[${payload.step}] Telemetry Report with listener failed: timeout"
         }
+    }
+    
+    @NonCPS
+    private String getPayloadString(Map payload){
+        return payload
+            .collect { entry -> return "&${entry.key}=${URLEncoder.encode(entry.value.toString(), "UTF-8")}" }
+            .join('')
+            .replaceFirst('&','?')
     }
 }
