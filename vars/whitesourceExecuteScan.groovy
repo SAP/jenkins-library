@@ -392,7 +392,7 @@ private def triggerWhitesourceScanWithUserKey(script, config, utils, descriptorU
                         sh "rm -f jvm.tar.gz"
                     }
 
-                    // archive whitesource result files
+                    // archive whitesource result files for UA
                     archiveArtifacts artifacts: "whitesource/*.*", allowEmptyArchive: true
 
                     // archive whitesource debug files, if available
