@@ -21,7 +21,7 @@ Please follow [this link to our extended library documentation][piper-library-pa
 ## What you get
 
 The shared library contains all the necessary steps to run our best practice
-[Jenkins pipelines][piper-library-pages] described in the Scenarios section or 
+[Jenkins pipelines][piper-library-pages] described in the Scenarios section or
 to run a [pipeline as step][piper-library-scenario].
 
 The best practice pipelines are based on the general concepts of [Jenkins 2.0
