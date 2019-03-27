@@ -64,7 +64,7 @@ class Telemetry implements Serializable{
 
         try {
             steps.timeout(
-                time: 20,
+                time: 10,
                 unit: 'SECONDS'
             ){
                 steps.httpRequest(url: "${swaEndpoint}?${getPayloadString(swaPayload)}", timeout: 5, quiet: true)
