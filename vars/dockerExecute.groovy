@@ -123,6 +123,15 @@ void call(Map parameters = [:], body) {
             .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName?:env.STAGE_NAME, STEP_CONFIG_KEYS)
             .mixin(parameters, PARAMETER_KEYS)
             .use()
+
+        new Utils().pushToSWA([
+            step: STEP_NAME,
+            stepParamKey1: 'scriptMissing',
+            stepParam1: parameters?.script == null,
+            stepParamKey2: 'kubernetes',
+            stepParam2: isKubernetes()
+        ], config)
+
         if (isKubernetes() && config.dockerImage) {
             if (env.POD_NAME && isContainerDefined(config)) {
                 container(getContainerDefined(config)) {
