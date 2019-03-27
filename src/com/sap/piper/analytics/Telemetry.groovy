@@ -46,7 +46,7 @@ class Telemetry implements Serializable{
     }
 
     protected static void piperOsDefaultReporting(Script steps, Map payload) {
-        def swaEndpoiont = 'https://webanalytics.cfapps.eu10.hana.ondemand.com/tracker/log'
+        def swaEndpoint = 'https://webanalytics.cfapps.eu10.hana.ondemand.com/tracker/log'
         Map swaPayload = [
             'idsite': '827e8025-1e21-ae84-c3a3-3f62b70b0130',
             'url': 'https://github.com/SAP/jenkins-library',
@@ -67,7 +67,7 @@ class Telemetry implements Serializable{
                 time: 20,
                 unit: 'SECONDS'
             ){
-                steps.httpRequest(url: "${swaEndpoiont}${getPayloadString(swaPayload)}", timeout: 5, quiet: true)
+                steps.httpRequest(url: "${swaEndpoint}?${getPayloadString(swaPayload)}", timeout: 5, quiet: true)
             }
         } catch (FlowInterruptedException ignore){
             // telemetry reporting timed out. This should not break anything though.
@@ -78,8 +78,7 @@ class Telemetry implements Serializable{
     @NonCPS
     private String getPayloadString(Map payload){
         return payload
-            .collect { entry -> return "&${entry.key}=${URLEncoder.encode(entry.value.toString(), "UTF-8")}" }
-            .join('')
-            .replaceFirst('&','?')
+            .collect { entry -> return "${entry.key}=${URLEncoder.encode(entry.value.toString(), "UTF-8")}" }
+            .join('&')
     }
 }
