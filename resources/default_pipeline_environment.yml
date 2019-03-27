@@ -16,6 +16,18 @@ general:
       from: 'origin/master'
       to: 'HEAD'
       format: '%b'
+    solman:
+      docker:
+        image: 'ppiper/cm-client'
+        options: []
+        envVars: {}
+        pullImage: true
+    cts:
+      docker:
+        image: 'ppiper/cm-client'
+        options: []
+        envVars: {}
+        pullImage: true
     rfc:
       docker:
         image: 'rfc'
@@ -207,6 +219,10 @@ steps:
       languageRunner: 'js'
       runCommand: 'gauge run'
       testOptions: 'specs'
+  handlePipelineStepErrors:
+    echoDetails: true
+    libraryDocumentationUrl: 'https://sap.github.io/jenkins-library/'
+    libraryRepositoryUrl: 'https://github.com/SAP/jenkins-library/'
   healthExecuteCheck:
     healthEndpoint: ''
   influxWriteData:
