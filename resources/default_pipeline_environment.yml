@@ -361,11 +361,11 @@ steps:
   pipelineStashFilesBeforeBuild:
     runCheckmarx: false
     stashIncludes:
-      buildDescriptor: '**/pom.xml, **/.mvn/**, **/assembly.xml, **/.swagger-codegen-ignore, **/package.json, **/requirements.txt, **/setup.py, **/whitesource_config.py, **/mta*.y*ml, **/.npmrc, **/whitesource.*.json, **/whitesource-fs-agent.config, Dockerfile, **/VERSION, **/version.txt, **/Gopkg.*, **/build.sbt, **/sbtDescriptor.json, **/project/*'
+      buildDescriptor: '**/pom.xml, **/.mvn/**, **/assembly.xml, **/.swagger-codegen-ignore, **/package.json, **/requirements.txt, **/setup.py, **/mta*.y*ml, **/.npmrc, Dockerfile, **/VERSION, **/version.txt, **/Gopkg.*, **/build.sbt, **/sbtDescriptor.json, **/project/*'
       deployDescriptor: '**/manifest*.y*ml, **/*.mtaext.y*ml, **/*.mtaext, **/xs-app.json, helm/**, *.y*ml'
       git: '**/gitmetadata/**'
       opa5: '**/*.*'
-      opensourceConfiguration: '**/srcclr.yml, **/vulas-custom.properties, **/.nsprc, **/.retireignore, **/.retireignore.json, **/.snyk'
+      opensourceConfiguration: '**/srcclr.yml, **/vulas-custom.properties, **/.nsprc, **/.retireignore, **/.retireignore.json, **/.snyk, **/wss-unified-agent.config, **/vendor/**/*'
       pipelineConfigAndTests: '.pipeline/**'
       securityDescriptor: '**/xs-security.json'
       tests: '**/pom.xml, **/*.json, **/*.xml, **/src/**, **/node_modules/**, **/specs/**, **/env/**, **/*.js, **/tests/**'
