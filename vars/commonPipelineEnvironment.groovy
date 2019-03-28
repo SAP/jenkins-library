@@ -1,6 +1,19 @@
+import com.sap.piper.GenerateDocumentation
 import com.sap.piper.ConfigurationLoader
 import com.sap.piper.ConfigurationMerger
 
+@Field String STEP_NAME = getClass().getName()
+
+@Field Set GENERAL_CONFIG_KEYS = []
+
+@Field Set STEP_CONFIG_KEYS = []
+
+@Field Set PARAMETER_KEYS = []
+
+/**
+ * Provides project specific settings.
+ */
+@GenerateDocumentation
 class commonPipelineEnvironment implements Serializable {
 
     //stores version of the artifact which is build during pipeline run
@@ -77,6 +90,11 @@ class commonPipelineEnvironment implements Serializable {
         influxCustomData[field] = value
     }
     // goes into measurement jenkins_data
+    /**
+     * Returns the Influx custom data which can be collected during pipeline run.
+     *
+     * @return A `Map` containing the data collected.
+     */
     def getInfluxCustomData() {
         return influxCustomData
     }
@@ -97,6 +115,15 @@ class commonPipelineEnvironment implements Serializable {
         }
         influxCustomDataMap[measurement][field] = value
     }
+
+    /**
+     * Returns the Influx custom data map which can be collected during pipeline run.
+     * It is used for example by step [`influxWriteData`](../steps/influxWriteData.md).
+     * The data map is a map of maps, like `[pipeline_data: [:], my_measurement: [:]]`
+     * Each map inside the map represents a dedicated measurement in the InfluxDB.
+     *
+     * @return A `Map` containing a `Map`s with data collected.
+     */
     def getInfluxCustomDataMap() {
         return influxCustomDataMap
     }
@@ -122,9 +149,21 @@ class commonPipelineEnvironment implements Serializable {
         setInfluxCustomDataMapEntry('pipeline_data', key, value)
     }
 
+    /**
+     * **This is an internal function!**
+     * Sets the value of a specific pipeline measurement.
+     * Please use the step [`durationMeasure`](../steps/durationMeasure.md) in a pipeline, instead.
+     */
     def setPipelineMeasurement(key, value){
         setInfluxPipelineData(key, value)
     }
+
+    /**
+     * Returns the value of a specific pipeline measurement.
+     * The measurements are collected with step [`durationMeasure`](../steps/durationMeasure.md)
+     *
+     * @return The value of the measurement
+     */
     def getPipelineMeasurement(key) {
         return influxCustomDataMap.pipeline_data[key]
     }
