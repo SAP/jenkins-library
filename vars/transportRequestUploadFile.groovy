@@ -17,25 +17,33 @@ import static com.sap.piper.cm.StepHelpers.getBackendTypeAndLogInfoIfCMIntegrati
 @Field def STEP_NAME = getClass().getName()
 
 @Field Set GENERAL_CONFIG_KEYS = [
+    /** @see transportRequestCreate */
     'changeManagement'
   ]
 
 @Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS.plus([
         'applicationName', // RFC
+        /** The id of the application. Only for `SOLMAN`.*/
         'applicationId', // SOLMAN
         'applicationDescription',
+        /** The path of the file to upload.*/
         'filePath', // SOLMAN, CTS
         'applicationUrl', // RFC
         'abapPackage',
         'codePage', //RFC
         'acceptUnixStyleLineEndings', // RFC
+        /** @see transportRequestCreate */
         'verbose', // RFC
     ])
 
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS.plus([
+    /** @see transportRequestCreate */
     'changeDocumentId',
+    /** The id of the transport request to upload the file.*/
     'transportRequestId'])
 
+/** Uploads a file to a Transport Request. */
+@GenerateDocumentation
 void call(parameters = [:]) {
 
     handlePipelineStepErrors (stepName: STEP_NAME, stepParameters: parameters) {
@@ -59,19 +67,31 @@ void call(parameters = [:]) {
 
         configHelper
             .collectValidationFailures()
+            /** A pattern used for identifying lines holding the transport request id.*/
+            .withOptionalProperty('changeManagement/transportRequestLabel')
+            /** @see checkChangeInDevelopment */
             .withMandatoryProperty('changeManagement/changeDocumentLabel')
+            /** @see checkChangeInDevelopment */
             .withMandatoryProperty('changeManagement/clientOpts')
+            /** @see checkChangeInDevelopment */
             .withMandatoryProperty('changeManagement/credentialsId')
+            /** @see checkChangeInDevelopment */
             .withMandatoryProperty('changeManagement/endpoint')
+            /** @see checkChangeInDevelopment */
             .withMandatoryProperty('changeManagement/type')
+            /** @see checkChangeInDevelopment */
             .withMandatoryProperty('changeManagement/git/from')
+            /** @see checkChangeInDevelopment */
             .withMandatoryProperty('changeManagement/git/to')
+            /** @see checkChangeInDevelopment */
             .withMandatoryProperty('changeManagement/git/format')
             .withMandatoryProperty('filePath', null, { backendType in [BackendType.SOLMAN, BackendType.CTS] })
             .withMandatoryProperty('applicationUrl', null, { backendType == BackendType.RFC })
             .withMandatoryProperty('codePage', null, { backendType == BackendType.RFC })
             .withMandatoryProperty('acceptUnixStyleLineEndings', null, { backendType == BackendType.RFC })
+            /** @see transportRequestCreate */
             .withMandatoryProperty('changeManagement/rfc/developmentInstance', null, { backendType == BackendType.RFC })
+            /** @see transportRequestCreate */
             .withMandatoryProperty('changeManagement/rfc/developmentClient', null, { backendType == BackendType.RFC })
             .withMandatoryProperty('changeManagement/rfc/docker/image', null, {backendType == BackendType.RFC})
             .withMandatoryProperty('changeManagement/rfc/docker/options', null, {backendType == BackendType.RFC})
