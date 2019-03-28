@@ -2,6 +2,7 @@ import com.sap.piper.JenkinsUtils
 
 import static com.sap.piper.Prerequisites.checkScript
 
+import com.sap.piper.GenerateDocumentation
 import com.sap.piper.Utils
 import com.sap.piper.ConfigurationHelper
 import com.sap.piper.CfManifestUtils
@@ -14,22 +15,109 @@ import groovy.transform.Field
 
 @Field Set STEP_CONFIG_KEYS = [
     'cloudFoundry',
-    'deployUser',
+        /**
+         * Cloud Foundry API endpoint.
+         * @parentConfigKey cloudFoundry
+         */
+        'apiEndpoint',
+        /**
+         * Defines the name of the application to be deployed to the Cloud Foundry space.
+         * @parentConfigKey cloudFoundry
+         */
+        'appName',
+        /**
+         * Credentials to be used for deployment.
+         * @parentConfigKey cloudFoundry
+         */
+        'credentialsId',
+        /**
+         * Defines the manifest to be used for deployment to Cloud Foundry.
+         * @parentConfigKey cloudFoundry
+         */
+        'manifest',
+        /**
+         * Cloud Foundry target organization.
+         * @parentConfigKey cloudFoundry
+         */
+        'org',
+        /**
+         * Cloud Foundry target space.
+         * @parentConfigKey cloudFoundry
+         */
+        'space',
+    /**
+     * Defines the tool which should be used for deployment.
+     * @possibleValues 'cf_native', 'mtaDeployPlugin'
+     */
     'deployTool',
+    /**
+     * Defines the type of deployment, either `standard` deployment which results in a system downtime or a zero-downtime `blue-green` deployment.
+     * @possibleValues 'standard', 'blue-green'
+     */
     'deployType',
+    /**
+     * In case of a `blue-green` deployment the old instance will be deleted by default. If this option is set to true the old instance will remain stopped in the Cloud Foundry space.
+     * @possibleValues true, false
+     */
     'keepOldInstance',
+    /** @see dockerExecute */
     'dockerImage',
+    /** @see dockerExecute */
     'dockerWorkspace',
+    /** @see dockerExecute */
+    'stashContent',
+    /**
+     * Defines additional parameters passed to mta for deployment with the mtaDeployPlugin.
+     */
     'mtaDeployParameters',
+    /**
+     * Defines additional extension descriptor file for deployment with the mtaDeployPlugin.
+     */
     'mtaExtensionDescriptor',
+    /**
+     * Defines the path to *.mtar for deployment with the mtaDeployPlugin.
+     */
     'mtaPath',
+    /**
+     * Allows to specify a script which performs a check during blue-green deployment. The script gets the FQDN as parameter and returns `exit code 0` in case check returned `smokeTestStatusCode`.
+     * More details can be found [here](https://github.com/bluemixgaragelondon/cf-blue-green-deploy#how-to-use) <br /> Currently this option is only considered for deployTool `cf_native`.
+     */
     'smokeTestScript',
-    'smokeTestStatusCode',
-    'stashContent']
+    /**
+     * Expected status code returned by the check.
+     */
+    'smokeTestStatusCode'
+]
+
 @Field Map CONFIG_KEY_COMPATIBILITY = [cloudFoundry: [apiEndpoint: 'cfApiEndpoint', appName:'cfAppName', credentialsId: 'cfCredentialsId', manifest: 'cfManifest', org: 'cfOrg', space: 'cfSpace']]
 
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
 
+/**
+ * Deploys an application to a test or production space within Cloud Foundry.
+ * Deployment can be done
+ *
+ * * in a standard way
+ * * in a zero downtime manner (using a [blue-green deployment approach](https://martinfowler.com/bliki/BlueGreenDeployment.html))
+ *
+ * !!! note "Deployment supports multiple deployment tools"
+ *     Currently the following are supported:
+ *
+ *     * Standard `cf push` and [Bluemix blue-green plugin](https://github.com/bluemixgaragelondon/cf-blue-green-deploy#how-to-use)
+ *     * [MTA CF CLI Plugin](https://github.com/cloudfoundry-incubator/multiapps-cli-plugin)
+ *
+ * !!! note
+ * Due to [an incompatible change](https://github.com/cloudfoundry/cli/issues/1445) in the Cloud Foundry CLI, multiple buildpacks are not supported by this step.
+ * If your `application` contains a list of `buildpacks` instead a single `buildpack`, this will be automatically re-written by the step when blue-green deployment is used.
+ *
+ * !!! note
+ * Cloud Foundry supports the deployment of multiple applications using a single manifest file.
+ * This option is supported with Piper.
+ *
+ * In this case define `appName: ''` since the app name for the individual applications have to be defined via the manifest.
+ * You can find details in the [Cloud Foundry Documentation](https://docs.cloudfoundry.org/devguide/deploy-apps/manifest.html#multi-apps)
+ */
+@GenerateDocumentation
 void call(Map parameters = [:]) {
 
     handlePipelineStepErrors (stepName: STEP_NAME, stepParameters: parameters) {
@@ -62,7 +150,7 @@ void call(Map parameters = [:]) {
             stepParam3: parameters?.script == null
         ], config)
 
-        echo "[${STEP_NAME}] General parameters: deployTool=${config.deployTool}, deployType=${config.deployType}, cfApiEndpoint=${config.cloudFoundry.apiEndpoint}, cfOrg=${config.cloudFoundry.org}, cfSpace=${config.cloudFoundry.space}, cfCredentialsId=${config.cloudFoundry.credentialsId}, deployUser=${config.deployUser}"
+        echo "[${STEP_NAME}] General parameters: deployTool=${config.deployTool}, deployType=${config.deployType}, cfApiEndpoint=${config.cloudFoundry.apiEndpoint}, cfOrg=${config.cloudFoundry.org}, cfSpace=${config.cloudFoundry.space}, cfCredentialsId=${config.cloudFoundry.credentialsId}"
 
         //make sure that all relevant descriptors, are available in workspace
         utils.unstashAll(config.stashContent)
