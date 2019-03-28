@@ -3,6 +3,7 @@ import static com.sap.piper.Prerequisites.checkScript
 import com.sap.piper.Utils
 import groovy.transform.Field
 
+import com.sap.piper.GenerateDocumentation
 import com.sap.piper.ConfigurationHelper
 import com.sap.piper.cm.BackendType
 import com.sap.piper.cm.ChangeManagement
@@ -18,16 +19,54 @@ import hudson.AbortException
 @Field GENERAL_CONFIG_KEYS = STEP_CONFIG_KEYS
 
 @Field Set STEP_CONFIG_KEYS = [
+    /**
+    * Defines the change managment system.
+    */
     'changeManagement',
-    'description',          // CTS
-    'developmentSystemId',  // SOLMAN
-    'targetSystem',         // CTS
-    'transportType',        // CTS
-    'verbose',              // RFC
+    /**
+    * The logical system id for which the transport request is created.
+    * The format is `<SID>~<TYPE>(/<CLIENT>)?`. For ABAP Systems the `developmentSystemId`
+    * looks like `DEV~ABAP/100`. For non-ABAP systems the `developmentSystemId` looks like
+    * e.g. `L21~EXT_SRV` or `J01~JAVA`. In case the system type is not known (in the examples
+    * provided here: `EXT_SRV` or `JAVA`) the information can be retrieved from the Solution Manager instance.
+    * Only for `SOLMAN`.
+    */
+    'developmentSystemId',
+    /**
+    * The description of the transport request. Only for `CTS`.
+    */
+    'description',
+    /**
+    * The system receiving the transport request. Only for `CTS`.
+    */
+    'targetSystem',
+    /**
+    * Typically `W` (workbench) or `C` customizing. Only for `CTS`.
+    */
+    'transportType',
+    /**
+    * Provides additional details.
+    */
+    'verbose',
   ]
 
-@Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS.plus(['changeDocumentId'])
+@Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS.plus([
+    /** The id of the change document to that the transport request is bound to.
+    *   Typically this value is provided via commit message in the commit history.
+    *   Only for `SOLMAN`.
+    */
+    'changeDocumentId'
+  ])
 
+/**
+* Creates
+* 
+* * a Transport Request for a Change Document on the Solution Manager (type `SOLMAN`) or
+* * a Transport Request inside an ABAP system (type`CTS`)
+* 
+* The id of the transport request is availabe via [commonPipelineEnvironment.getTransportRequestId()](commonPipelineEnvironment.md)
+*/
+@GenerateDocumentation
 void call(parameters = [:]) {
 
     def transportRequestId
@@ -53,16 +92,33 @@ void call(parameters = [:]) {
         if(backendType == BackendType.NONE) return
 
         configHelper
+            /** @see checkChangeInDevelopment */
+            .withOptionalProperty('changeManagement/changeDocumentLabel')
+             /** Where/how the transport request is created (via SAP Solution Manager, ABAP).
+             * @possibleValues `SOLMAN`, `CTS`
+             */
+            .withOptionalProperty('changeManagement/type')
+            /** @see checkChangeInDevelopment */
             .withMandatoryProperty('changeManagement/clientOpts')
+            /** @see checkChangeInDevelopment */
             .withMandatoryProperty('changeManagement/credentialsId')
+            /** @see checkChangeInDevelopment */
             .withMandatoryProperty('changeManagement/endpoint')
+            /** @see checkChangeInDevelopment */
             .withMandatoryProperty('changeManagement/git/from')
+            /** @see checkChangeInDevelopment */
             .withMandatoryProperty('changeManagement/git/to')
+            /** @see checkChangeInDevelopment */
             .withMandatoryProperty('changeManagement/git/format')
+            /** Typically `W` (workbench) or `C` customizing. Only for `CTS`.*/
             .withMandatoryProperty('transportType', null, { backendType == BackendType.CTS})
+            /** The system receiving the transport request. Only for `CTS`.*/
             .withMandatoryProperty('targetSystem', null, { backendType == BackendType.CTS})
+            /** The description of the transport request. Only for `CTS`.*/
             .withMandatoryProperty('description', null, { backendType == BackendType.CTS})
+            /** */
             .withMandatoryProperty('changeManagement/rfc/developmentInstance', null, {backendType == BackendType.RFC})
+            /** */
             .withMandatoryProperty('changeManagement/rfc/developmentClient', null, {backendType == BackendType.RFC})
             .withMandatoryProperty('verbose', null, {backendType == BackendType.RFC})
 
