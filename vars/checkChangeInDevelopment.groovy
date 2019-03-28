@@ -63,7 +63,7 @@ void call(parameters = [:]) {
               */
             .withMandatoryProperty('changeManagement/changeDocumentLabel')
             /**
-              * Additional options for cm command line client, e.g. like JAVA_OPTS.
+              * Additional options for cm command line client, e.g. JAVA_OPTS.
               */
             .withMandatoryProperty('changeManagement/clientOpts')
             /**
@@ -86,7 +86,7 @@ void call(parameters = [:]) {
             .withMandatoryProperty('failIfStatusIsNotInDevelopment')
             // for the following parameters we expect a value provided from outside
             /**
-              * The address of the Solution Manager.
+              * The service endpoint, e.g. Solution Manager, ABAP System.
               */
             .withMandatoryProperty('changeManagement/endpoint')
 
