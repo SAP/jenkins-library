@@ -19,15 +19,21 @@ import static com.sap.piper.cm.StepHelpers.getBackendTypeAndLogInfoIfCMIntegrati
 @Field Set GENERAL_CONFIG_KEYS = STEP_CONFIG_KEYS
 
 @Field Set STEP_CONFIG_KEYS = [
+    /** @see transportRequestCreate */
     'changeManagement'
   ]
 
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS.plus([
+    /** @see transportRequestCreate */
     'changeDocumentId',
+    /** The id of the transport request to release. */
     'transportRequestId',
+    /** @see transportRequestCreate */
     'verbose',
   ])
 
+/** Releases a Transport Request. */
+@GenerateDocumentation
 void call(parameters = [:]) {
 
     handlePipelineStepErrors (stepName: STEP_NAME, stepParameters: parameters) {
@@ -51,13 +57,21 @@ void call(parameters = [:]) {
 
         configHelper
             .collectValidationFailures()
+            /** @see checkChangeInDevelopment */
             .withMandatoryProperty('changeManagement/clientOpts')
+            /** @see checkChangeInDevelopment */
             .withMandatoryProperty('changeManagement/credentialsId')
+            /** @see checkChangeInDevelopment */
             .withMandatoryProperty('changeManagement/endpoint')
+            /** @see checkChangeInDevelopment */
             .withMandatoryProperty('changeManagement/git/to')
+            /** @see checkChangeInDevelopment */
             .withMandatoryProperty('changeManagement/git/from')
+            /** @see checkChangeInDevelopment */
             .withMandatoryProperty('changeManagement/git/format')
+            /** @see transportRequestCreate */
             .withMandatoryProperty('changeManagement/rfc/developmentInstance', null, { backendType == BackendType.RFC})
+            /** @see transportRequestCreate */
             .withMandatoryProperty('changeManagement/rfc/developmentClient', null, { backendType == BackendType.RFC})
             .withMandatoryProperty('verbose', null, { backendType == BackendType.RFC})
 
