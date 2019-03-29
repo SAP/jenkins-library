@@ -12,7 +12,6 @@ import org.junit.Test
 import org.junit.rules.ExpectedException
 import org.junit.rules.RuleChain
 import org.springframework.beans.factory.annotation.Autowired
-import org.yaml.snakeyaml.Yaml
 import util.*
 
 import static org.hamcrest.Matchers.*

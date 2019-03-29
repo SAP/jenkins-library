@@ -13,20 +13,22 @@ def version = Pattern.compile("(.*)version=['\"](.*?)['\"](.*)", Pattern.DOTALL)
 @Field
 def method = Pattern.compile("(.*)\\(\\)", Pattern.DOTALL)
 
-def getMavenGAV(fileName) {
+@NonCPS
+def getMavenGAV(file = 'pom.xml') {
     def result = [:]
-    def descriptor = readMavenPom(file: fileName)
+    def descriptor = readMavenPom(file: file)
     def group = descriptor.getGroupId()
     def artifact = descriptor.getArtifactId()
     def version = descriptor.getVersion()
     result['packaging'] = descriptor.getPackaging()
-    result['group'] = (null != group && group.length() > 0) ? group : sh(returnStdout: true, script: "mvn -f ${fileName} help:evaluate -Dexpression=project.groupId | grep -Ev '(^\\s*\\[|Download|Java\\w+:)'").trim()
-    result['artifact'] = (null != artifact && artifact.length() > 0) ? artifact : sh(returnStdout: true, script: "mvn -f ${fileName} help:evaluate -Dexpression=project.artifactId | grep -Ev '(^\\s*\\[|Download|Java\\w+:)'").trim()
-    result['version'] = (null != version && version.length() > 0) ? version : sh(returnStdout: true, script: "mvn -f ${fileName} help:evaluate -Dexpression=project.version | grep ^[0-9].*").trim()
-    echo "loaded ${result} from ${fileName}"
+    result['group'] = (null != group && group.length() > 0) ? group : sh(returnStdout: true, script: "mvn -f ${file} help:evaluate -Dexpression=project.groupId | grep -Ev '(^\\s*\\[|Download|Java\\w+:)'").trim()
+    result['artifact'] = (null != artifact && artifact.length() > 0) ? artifact : sh(returnStdout: true, script: "mvn -f ${file} help:evaluate -Dexpression=project.artifactId | grep -Ev '(^\\s*\\[|Download|Java\\w+:)'").trim()
+    result['version'] = (null != version && version.length() > 0) ? version : sh(returnStdout: true, script: "mvn -f ${file} help:evaluate -Dexpression=project.version | grep ^[0-9].*").trim()
+    echo "loaded ${result} from ${file}"
     return result
 }
 
+@NonCPS
 def getNpmGAV(file = 'package.json') {
     def result = [:]
     def descriptor = readJSON(file: file)
@@ -46,6 +48,7 @@ def getNpmGAV(file = 'package.json') {
     return result
 }
 
+@NonCPS
 def getDlangGAV(file = 'dub.json') {
     def result = [:]
     def descriptor = readJSON(file: file)
@@ -58,6 +61,7 @@ def getDlangGAV(file = 'dub.json') {
     return result
 }
 
+@NonCPS
 def getSbtGAV(file = 'sbtDescriptor.json') {
     def result = [:]
     def descriptor = readJSON(file: file)
@@ -70,6 +74,7 @@ def getSbtGAV(file = 'sbtDescriptor.json') {
     return result
 }
 
+@NonCPS
 def getPipGAV(file = 'setup.py') {
     def result = [:]
     def descriptor = readFile(file: file)
@@ -88,7 +93,8 @@ def getPipGAV(file = 'setup.py') {
     return result
 }
 
-def getGoGAV(file = './Gopkg.toml', URI repoUrl) {
+@NonCPS
+def getGoGAV(file = 'Gopkg.toml', URI repoUrl) {
     def name = "${repoUrl.getHost()}${repoUrl.getPath().replaceAll(/\.git/, '')}"
     def path = file.substring(0, file.lastIndexOf('/') + 1)
     def module = path?.replaceAll(/\./, '')?.replaceAll('/', '')
@@ -109,6 +115,7 @@ def getGoGAV(file = './Gopkg.toml', URI repoUrl) {
     return result
 }
 
+@NonCPS
 private getVersionFromFile(file) {
     try {
         def versionString = readFile(file: file)

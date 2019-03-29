@@ -11,6 +11,7 @@ import util.JenkinsErrorRule
 import util.JenkinsLoggingRule
 import util.JenkinsSetupRule
 import util.LibraryLoadingTestExecutionListener
+import util.Rules
 
 import static org.hamcrest.Matchers.is
 import static org.junit.Assert.assertEquals
@@ -29,10 +30,7 @@ class DescriptorUtilsTest extends BasePiperTest {
     public JenkinsLoggingRule loggingRule = new JenkinsLoggingRule(this)
 
     @Rule
-    public RuleChain ruleChain =
-        RuleChain.outerRule(setUpRule)
-            .around(errorRule)
-            .around(environmentRule)
+    public RuleChain ruleChain = Rules.getCommonRules(this)
             .around(loggingRule)
 
     DescriptorUtils descriptorUtils
