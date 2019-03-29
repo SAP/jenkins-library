@@ -142,7 +142,7 @@ class WhitesourceRepository implements Serializable {
         ]
 
         //fetchFileFromWhiteSource(reportName, requestContent)
-        httpWhitesource(requestContent, 'APPLICATION_PDF', headers, reportName)
+        httpWhitesource(requestContent, 'APPLICATION_OCTETSTREAM', headers, reportName)
     }
 
     def fetchProductLicenseAlerts() {

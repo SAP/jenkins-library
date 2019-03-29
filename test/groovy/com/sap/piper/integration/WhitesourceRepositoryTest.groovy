@@ -352,7 +352,7 @@ class WhitesourceRepositoryTest extends BasePiperTest {
             [
                 url           : repository.config.whitesource.serviceUrl,
                 httpMode      : 'POST',
-                acceptType    : 'APPLICATION_PDF',
+                acceptType    : 'APPLICATION_OCTETSTREAM',
                 contentType   : 'APPLICATION_JSON',
                 requestBody   : requestBody,
                 quiet         : false,
