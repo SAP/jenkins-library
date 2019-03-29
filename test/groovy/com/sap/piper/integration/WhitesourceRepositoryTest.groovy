@@ -350,15 +350,16 @@ class WhitesourceRepositoryTest extends BasePiperTest {
 
         assertThat(requestParams, is(
             [
-                url        : repository.config.whitesource.serviceUrl,
-                httpMode   : 'POST',
-                acceptType : 'APPLICATION_PDF',
-                contentType: 'APPLICATION_JSON',
-                requestBody: requestBody,
-                quiet      : false,
-                userKey    : repository.config.whitesource.userKey,
-                httpProxy  : "http://test.sap.com:8080",
-                outputFile : "test.file"
+                url           : repository.config.whitesource.serviceUrl,
+                httpMode      : 'POST',
+                acceptType    : 'APPLICATION_PDF',
+                contentType   : 'APPLICATION_JSON',
+                requestBody   : requestBody,
+                quiet         : false,
+                userKey       : repository.config.whitesource.userKey,
+                httpProxy     : "http://test.sap.com:8080",
+                outputFile    : "test.file",
+                customHeaders : [[name: 'Cache-Control', value: 'no-cache, no-store, must-revalidate'], [name: 'Pragma', value: 'no-cache']]
             ]
         ))
 
