@@ -20,31 +20,26 @@ class WhitesourceRepository implements Serializable {
         def fetchedVulnerabilities = []
         if (config.whitesource.projectNames) {
             for (int i = 0; i < whitesourceProjectsMetaInformation.size(); i++) {
-                def metaInfo = whitesourceProjectsMetaInformation[i]
-
-                def requestBody = [
-                    requestType : "getProjectAlertsByType",
-                    alertType : "SECURITY_VULNERABILITY",
-                    projectToken: metaInfo.token
-                ]
-
-                def response = fetchWhitesourceResource(requestBody)
-                fetchedVulnerabilities.addAll(response.alerts)
+                fetchSecurityAlertsPerItem(whitesourceProjectsMetaInformation[i].token, "getProjectAlertsByType", fetchedVulnerabilities)
             }
         } else {
-            def requestBody = [
-                requestType : "getProductAlertsByType",
-                alertType : "SECURITY_VULNERABILITY",
-                productToken: config.whitesource.productToken,
-            ]
-
-            def response = fetchWhitesourceResource(requestBody)
-            fetchedVulnerabilities.addAll(response.alerts)
+            fetchSecurityAlertsPerItem(config.whitesource.productToken, "getProductAlertsByType", fetchedVulnerabilities)
         }
 
         sortVulnerabilitiesByScore(fetchedVulnerabilities)
 
         return fetchedVulnerabilities
+    }
+
+    private fetchSecurityAlertsPerItem(token, type, List<Object> fetchedVulnerabilities) {
+        def requestBody = [
+            requestType : type,
+            alertType   : "SECURITY_VULNERABILITY",
+            projectToken: token
+        ]
+
+        def response = fetchWhitesourceResource(requestBody)
+        fetchedVulnerabilities.addAll(response.alerts)
     }
 
     protected def fetchWhitesourceResource(Map requestBody) {
@@ -206,7 +201,7 @@ class WhitesourceRepository implements Serializable {
         if(config.verbose)
             script.echo "Sending curl request with parameters ${params}"
 
-        script.sh "${config.verbose ? '' : '#!/bin/sh -e\n'}curl -o ${fileName} -X POST ${config.whitesource.serviceUrl} -H 'Content-Type: application/json' -d \'${serializedContent}\'"
+        script.sh "${config.verbose ? '' : '#!/bin/sh -e\n'}curl --fail -o ${fileName} -X POST ${config.whitesource.serviceUrl} -H 'Content-Type: application/json' -d \'${serializedContent}\'"
     }
 
     @NonCPS
