@@ -137,10 +137,8 @@ private deploy(script, utils, Map configuration, NeoCommandHelper neoCommandHelp
         }
     }
     catch (Exception ex) {
-        if (dockerImage) {
-            echo "Error while deploying to SAP Cloud Platform. Here are the neo.sh logs:"
-            sh "cat logs/neo/*"
-        }
+        echo "Error while deploying to SAP Cloud Platform. Here are the neo.sh logs:"
+        sh "cat logs/neo/*"
         throw ex
     }
 }
