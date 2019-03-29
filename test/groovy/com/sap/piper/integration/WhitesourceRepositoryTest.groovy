@@ -329,7 +329,6 @@ class WhitesourceRepositoryTest extends BasePiperTest {
         exception.expectMessage("[WhiteSource] Request failed with error message 'User is not allowed to perform this action' (5001)")
         
         helper.registerAllowedMethod('httpRequest', [Map], { p ->
-            requestParams = p
             return [content: responseBody]
         })
 
@@ -339,22 +338,31 @@ class WhitesourceRepositoryTest extends BasePiperTest {
 
     @Test
     void testFetchReportForProduct() {
-        repository.config.putAll([whitesource: [serviceUrl: "http://mo-323123123.sap.corp/some", productToken: "4711"], verbose: true])
-        def command
-        helper.registerAllowedMethod('sh', [String], { cmd ->
-            command = cmd
+        repository.config.putAll([whitesource: [serviceUrl: "http://mo-323123123.sap.corp/some", productToken: "4712", userKey: "4711"], verbose: true])
+        def requestBody = "{ \"requestType\": \"getProductRiskReport\", \"productToken\": \"${repository.config.whitesource.productToken}\" }"
+
+        def requestParams
+        helper.registerAllowedMethod('httpRequest', [Map], { p ->
+            requestParams = p
         })
 
         repository.fetchReportForProduct("test.file")
 
-        assertThat(command, equals('''#!/bin/sh -e
-curl -o test.file -X POST http://some.host.whitesource.com/api/ -H 'Content-Type: application/json' -d '{
-    "requestType": "getProductRiskReport",
-    "productToken": "4711"
-}'''
+        assertThat(requestParams, is(
+            [
+                url        : repository.config.whitesource.serviceUrl,
+                httpMode   : 'POST',
+                acceptType : 'APPLICATION_PDF',
+                contentType: 'APPLICATION_JSON',
+                requestBody: requestBody,
+                quiet      : false,
+                userKey    : repository.config.whitesource.userKey,
+                httpProxy  : "http://test.sap.com:8080",
+                outputFile : "test.file"
+            ]
         ))
 
-        assertThat(jlr.log, containsString("Sending curl request with parameters [requestType:getProductRiskReport, productToken:4711]"))
+        assertThat(jlr.log, containsString("Sending http request with parameters [requestType:getProductRiskReport, productToken:4711]"))
     }
 
     @Test

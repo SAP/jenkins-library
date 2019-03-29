@@ -140,7 +140,8 @@ class WhitesourceRepository implements Serializable {
             productToken: config.whitesource.productToken
         ]
 
-        fetchFileFromWhiteSource(reportName, requestContent)
+        //fetchFileFromWhiteSource(reportName, requestContent)
+        httpWhitesource(requestContent, 'APPLICATION_PDF', reportName)
     }
 
     def fetchProductLicenseAlerts() {
@@ -166,18 +167,21 @@ class WhitesourceRepository implements Serializable {
     }
 
     @NonCPS
-    protected def httpWhitesource(requestBody) {
+    protected def httpWhitesource(requestBody, acceptType = 'APPLICATION_JSON', outputFile = null) {
         handleAdditionalRequestParameters(requestBody)
         def serializedBody = new JsonUtils().groovyObjectToPrettyJsonString(requestBody)
         def params = [
             url        : config.whitesource.serviceUrl,
             httpMode   : 'POST',
-            acceptType : 'APPLICATION_JSON',
+            acceptType : acceptType,
             contentType: 'APPLICATION_JSON',
             requestBody: serializedBody,
             quiet      : !config.verbose,
             timeout    : config.whitesource.timeout
         ]
+
+        if (outputFile)
+            params["outputFile"] = outputFile
 
         if (script.env.HTTP_PROXY)
             params["httpProxy"] = script.env.HTTP_PROXY
