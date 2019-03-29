@@ -135,13 +135,14 @@ class WhitesourceRepository implements Serializable {
     }
 
     void fetchReportForProduct(reportName) {
+        def headers = [[name: 'Cache-Control', value: 'no-cache, no-store, must-revalidate'], [name: 'Pragma', value: 'no-cache']]
         def requestContent = [
             requestType: "getProductRiskReport",
             productToken: config.whitesource.productToken
         ]
 
         //fetchFileFromWhiteSource(reportName, requestContent)
-        httpWhitesource(requestContent, 'APPLICATION_PDF', reportName)
+        httpWhitesource(requestContent, 'APPLICATION_PDF', headers, reportName)
     }
 
     def fetchProductLicenseAlerts() {
@@ -167,7 +168,7 @@ class WhitesourceRepository implements Serializable {
     }
 
     @NonCPS
-    protected def httpWhitesource(requestBody, acceptType = 'APPLICATION_JSON', outputFile = null) {
+    protected def httpWhitesource(requestBody, acceptType = 'APPLICATION_JSON', customHeaders = null, outputFile = null) {
         handleAdditionalRequestParameters(requestBody)
         def serializedBody = new JsonUtils().groovyObjectToPrettyJsonString(requestBody)
         def params = [
@@ -180,11 +181,11 @@ class WhitesourceRepository implements Serializable {
             timeout    : config.whitesource.timeout
         ]
 
-        if (outputFile)
-            params["outputFile"] = outputFile
+        if(customHeaders) params["customHeaders"] = customHeaders
 
-        if (script.env.HTTP_PROXY)
-            params["httpProxy"] = script.env.HTTP_PROXY
+        if (outputFile) params["outputFile"] = outputFile
+
+        if (script.env.HTTP_PROXY) params["httpProxy"] = script.env.HTTP_PROXY
 
         if(config.verbose)
             script.echo "Sending http request with parameters ${params}"
@@ -195,17 +196,6 @@ class WhitesourceRepository implements Serializable {
             script.echo "Received response ${response}"
 
         return response
-    }
-
-    @NonCPS
-    protected void fetchFileFromWhiteSource(String fileName, Map params) {
-        handleAdditionalRequestParameters(params)
-        def serializedContent = new JsonUtils().groovyObjectToPrettyJsonString(params)
-
-        if(config.verbose)
-            script.echo "Sending curl request with parameters ${params}"
-
-        script.sh "${config.verbose ? '' : '#!/bin/sh -e\n'}curl --fail -o ${fileName} -X POST ${config.whitesource.serviceUrl} -H 'Content-Type: application/json' -d \'${serializedContent}\'"
     }
 
     @NonCPS
