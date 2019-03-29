@@ -36,7 +36,8 @@ class WhitesourceConfigurationHelper implements Serializable {
             [name: 'forceUpdate', value: true, force: true],
             [name: 'offline', value: false, force: true],
             [name: 'ignoreSourceFiles', value: true, force: true],
-            [name: 'resolveAllDependencies', value: false, force: true]
+            [name: 'resolveAllDependencies', value: false, force: true],
+            [name: 'failErrorLevel', value: 'ALL', force: true]
         ]
 
         // To be removed once all scenarios are fully supported
