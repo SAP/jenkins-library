@@ -3,8 +3,6 @@ import static com.sap.piper.Prerequisites.checkScript
 import com.sap.piper.ConfigurationHelper
 import com.sap.piper.MtaUtils
 import com.sap.piper.Utils
-import com.sap.piper.tools.JavaArchiveDescriptor
-import com.sap.piper.tools.ToolDescriptor
 
 import groovy.transform.Field
 
@@ -43,8 +41,6 @@ void call(Map parameters = [:]) {
         ], configuration)
 
         dockerExecute(script: script, dockerImage: configuration.dockerImage, dockerOptions: configuration.dockerOptions) {
-            def java = new ToolDescriptor('Java', 'JAVA_HOME', '', '/bin/', 'java', '1.8.0', '-version 2>&1')
-            def mta = new JavaArchiveDescriptor('SAP Multitarget Application Archive Builder', 'MTA_JAR_LOCATION', 'mtaJarLocation', '1.0.6', '-v', java)
 
             def mtaYamlName = "mta.yaml"
             def applicationName = configuration.applicationName
@@ -72,7 +68,9 @@ void call(Map parameters = [:]) {
             }
 
             def mtarFileName = "${id}.mtar"
-            def mtaJar = mta.getCall(this, configuration)
+            // If it is not configured, it is expected on the PATH
+            def mtaJar = 'java -jar '
+            mtaJar += configuration.mtaJarLocation ?: 'mta.jar'
             def buildTarget = configuration.buildTarget
 
             def mtaCall = "${mtaJar} --mtar ${mtarFileName} --build-target=${buildTarget}"
