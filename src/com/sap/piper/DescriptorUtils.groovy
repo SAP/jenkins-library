@@ -13,7 +13,6 @@ def version = Pattern.compile("(.*)version=['\"](.*?)['\"](.*)", Pattern.DOTALL)
 @Field
 def method = Pattern.compile("(.*)\\(\\)", Pattern.DOTALL)
 
-@NonCPS
 def getMavenGAV(file = 'pom.xml') {
     def result = [:]
     def descriptor = readMavenPom(file: file)
@@ -28,7 +27,6 @@ def getMavenGAV(file = 'pom.xml') {
     return result
 }
 
-@NonCPS
 def getNpmGAV(file = 'package.json') {
     def result = [:]
     def descriptor = readJSON(file: file)
@@ -48,7 +46,6 @@ def getNpmGAV(file = 'package.json') {
     return result
 }
 
-@NonCPS
 def getDlangGAV(file = 'dub.json') {
     def result = [:]
     def descriptor = readJSON(file: file)
@@ -61,7 +58,6 @@ def getDlangGAV(file = 'dub.json') {
     return result
 }
 
-@NonCPS
 def getSbtGAV(file = 'sbtDescriptor.json') {
     def result = [:]
     def descriptor = readJSON(file: file)
@@ -74,7 +70,6 @@ def getSbtGAV(file = 'sbtDescriptor.json') {
     return result
 }
 
-@NonCPS
 def getPipGAV(file = 'setup.py') {
     def result = [:]
     def descriptor = readFile(file: file)
@@ -93,7 +88,6 @@ def getPipGAV(file = 'setup.py') {
     return result
 }
 
-@NonCPS
 def getGoGAV(file = 'Gopkg.toml', URI repoUrl) {
     def name = "${repoUrl.getHost()}${repoUrl.getPath().replaceAll(/\.git/, '')}"
     def path = file.substring(0, file.lastIndexOf('/') + 1)
@@ -115,7 +109,6 @@ def getGoGAV(file = 'Gopkg.toml', URI repoUrl) {
     return result
 }
 
-@NonCPS
 private getVersionFromFile(file) {
     try {
         def versionString = readFile(file: file)
