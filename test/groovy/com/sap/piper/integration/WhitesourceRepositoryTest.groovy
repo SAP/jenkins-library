@@ -51,15 +51,9 @@ class WhitesourceRepositoryTest extends BasePiperTest {
 
     @Test
     void testMissingConfig() {
-        def errorCaught = false
-        try {
-            new WhitesourceRepository(nullScript, [:])
-        } catch (e) {
-            errorCaught = true
-            assertThat(e, isA(AbortException.class))
-            assertThat(e.getMessage(), is("Parameter 'whitesource.serviceUrl' must be provided as part of the configuration."))
-        }
-        assertThat(errorCaught, is(true))
+        exception.expect(AbortException)
+        exception.expectMessage("Parameter 'whitesource.serviceUrl' must be provided as part of the configuration.")
+        new WhitesourceRepository(nullScript, [:])
     }
 
     @Test
