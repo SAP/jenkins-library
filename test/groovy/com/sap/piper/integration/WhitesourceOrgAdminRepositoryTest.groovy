@@ -5,6 +5,7 @@ import org.junit.After
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
+import org.junit.rules.ExpectedException
 import org.junit.rules.RuleChain
 import util.BasePiperTest
 import util.JenkinsEnvironmentRule
@@ -20,6 +21,7 @@ import static org.hamcrest.Matchers.isA
 
 class WhitesourceOrgAdminRepositoryTest extends BasePiperTest {
 
+    private ExpectedException expectedException = ExpectedException.none()
     private JenkinsErrorRule thrown = new JenkinsErrorRule(this)
     private JenkinsLoggingRule loggingRule = new JenkinsLoggingRule(this)
     private JenkinsEnvironmentRule environmentRule = new JenkinsEnvironmentRule(this)
@@ -27,6 +29,7 @@ class WhitesourceOrgAdminRepositoryTest extends BasePiperTest {
     @Rule
     public RuleChain ruleChain = Rules
         .getCommonRules(this)
+        .around(expectedException)
         .around(thrown)
         .around(loggingRule)
         .around(environmentRule)
@@ -47,15 +50,9 @@ class WhitesourceOrgAdminRepositoryTest extends BasePiperTest {
 
     @Test
     void testMissingConfig() {
-        def errorCaught = false
-        try {
-            new WhitesourceOrgAdminRepository(nullScript, [:])
-        } catch (e) {
-            errorCaught = true
-            assertThat(e, isA(AbortException.class))
-            assertThat(e.getMessage(), is("Parameter 'whitesource.serviceUrl' must be provided as part of the configuration."))
-        }
-        assertThat(errorCaught, is(true))
+        expectedException.expect(AbortException)
+        expectedException.expectMessage("Parameter 'whitesource.serviceUrl' must be provided as part of the configuration.")
+        new WhitesourceOrgAdminRepository(nullScript, [:])
     }
 
     @Test
