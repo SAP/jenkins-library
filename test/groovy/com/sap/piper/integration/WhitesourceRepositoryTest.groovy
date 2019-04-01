@@ -9,13 +9,11 @@ import org.junit.Test
 import org.junit.rules.ExpectedException
 import org.junit.rules.RuleChain
 import util.BasePiperTest
-import util.JenkinsEnvironmentRule
 import util.JenkinsLoggingRule
 import util.LibraryLoadingTestExecutionListener
 import util.Rules
 
 import static org.assertj.core.api.Assertions.assertThat
-import static org.hamcrest.Matchers.containsString
 import static org.hamcrest.Matchers.containsString
 import static org.hamcrest.Matchers.is
 import static org.hamcrest.Matchers.isA
@@ -23,15 +21,13 @@ import static org.hamcrest.Matchers.isA
 class WhitesourceRepositoryTest extends BasePiperTest {
 
     private ExpectedException exception = ExpectedException.none()
-    private JenkinsLoggingRule jlr = new JenkinsLoggingRule(this)
-    private JenkinsEnvironmentRule jer = new JenkinsEnvironmentRule(this)
+    private JenkinsLoggingRule loggingRule = new JenkinsLoggingRule(this)
 
     @Rule
     public RuleChain ruleChain = Rules
         .getCommonRules(this)
         .around(exception)
-        .around(jlr)
-        .around(jer)
+        .around(loggingRule)
 
     WhitesourceRepository repository
 
@@ -357,7 +353,7 @@ class WhitesourceRepositoryTest extends BasePiperTest {
             ]
         ))
 
-        assertThat(jlr.log, containsString("Sending http request with parameters [requestType:getProductRiskReport, productToken:4711]"))
+        assertThat(loggingRule.log, containsString("Sending http request with parameters [requestType:getProductRiskReport, productToken:4711]"))
     }
 
     @Test

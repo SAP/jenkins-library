@@ -25,13 +25,10 @@ class WhitesourceExecuteScanTest extends BasePiperTest {
     private JenkinsLoggingRule loggingRule = new JenkinsLoggingRule(this)
     private JenkinsWriteFileRule writeFileRule = new JenkinsWriteFileRule(this)
     private JenkinsStepRule stepRule = new JenkinsStepRule(this)
-    private JenkinsErrorRule errorRule = new JenkinsErrorRule(this)
-    private JenkinsEnvironmentRule environmentRule = new JenkinsEnvironmentRule(this)
 
     @Rule
     public RuleChain ruleChain = Rules
         .getCommonRules(this)
-        .around(environmentRule)
         .around(new JenkinsReadYamlRule(this))
         .around(thrown)
         .around(dockerExecuteRule)
@@ -39,7 +36,6 @@ class WhitesourceExecuteScanTest extends BasePiperTest {
         .around(loggingRule)
         .around(writeFileRule)
         .around(stepRule)
-        .around(errorRule)
 
     def whitesourceOrgAdminRepositoryStub
     def whitesourceStub
