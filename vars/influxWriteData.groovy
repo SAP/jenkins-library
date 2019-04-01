@@ -1,5 +1,6 @@
 import static com.sap.piper.Prerequisites.checkScript
 
+import com.sap.piper.GenerateDocumentation
 import com.sap.piper.ConfigurationHelper
 import com.sap.piper.JsonUtils
 import com.sap.piper.Utils
@@ -11,17 +12,61 @@ import groovy.transform.Field
 
 @Field Set GENERAL_CONFIG_KEYS = []
 @Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS.plus([
+    /**
+     * Defines the version of the current artifact. Defaults to `commonPipelineEnvironment.getArtifactVersion()`
+     */
     'artifactVersion',
+    /**
+     * Defines custom data (map of key-value pairs) to be written to Influx into measurement `jenkins_custom_data`. Defaults to `commonPipelineEnvironment.getInfluxCustomData()`
+     */
     'customData',
+    /**
+     * Defines tags (map of key-value pairs) to be written to Influx into measurement `jenkins_custom_data`. Defaults to `commonPipelineEnvironment.getInfluxCustomDataTags()`
+     */
     'customDataTags',
+    /**
+     * Defines a map of measurement names containing custom data (map of key-value pairs) to be written to Influx. Defaults to `commonPipelineEnvironment.getInfluxCustomDataMap()`
+     */
     'customDataMap',
+    /**
+     * Defines a map of measurement names containing tags (map of key-value pairs) to be written to Influx. Defaults to `commonPipelineEnvironment.getInfluxCustomDataTags()`
+     */
     'customDataMapTags',
+    /**
+     * Defines the name of the Influx server as configured in Jenkins global configuration.
+     */
     'influxServer',
+    /**
+     * Defines a custom prefix.
+     * For example in multi branch pipelines, where every build is named after the branch built and thus you have different builds called 'master' that report different metrics.
+     */
     'influxPrefix',
+    /**
+     * Defines if a dedicated node/executor should be created in the pipeline run.
+     * This is especially relevant when running the step in a declarative `POST` stage where by default no executor is available.
+     */
     'wrapInNode'
 ])
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
 
+/**
+ * Since your Continuous Delivery Pipeline in Jenkins provides your productive development and delivery infrastructure you should monitor the pipeline to ensure it runs as expected. How to setup this monitoring is described in the following.
+ *
+ * You basically need three components:
+ *
+ * - The [InfluxDB Jenkins plugin](https://wiki.jenkins-ci.org/display/JENKINS/InfluxDB+Plugin) which allows you to send build metrics to InfluxDB servers
+ * - The [InfluxDB](https://www.influxdata.com/time-series-platform/influxdb/) to store this data (Docker available)
+ * - A [Grafana](http://grafana.org/) dashboard to visualize the data stored in InfluxDB (Docker available)
+ *
+ * !!! note "no InfluxDB available?"
+ *     If you don't have an InfluxDB available yet this step will still provide you some benefit.
+ *
+ *     It will create following files for you and archive them into your build:
+ *
+ *     * `jenkins_data.json`: This file gives you build-specific information, like e.g. build result, stage where the build failed
+ *     * `influx_data.json`: This file gives you detailed information about your pipeline, e.g. stage durations, steps executed, ...
+ */
+@GenerateDocumentation
 void call(Map parameters = [:]) {
     handlePipelineStepErrors (stepName: STEP_NAME, stepParameters: parameters, allowBuildFailure: true) {
 
