@@ -85,9 +85,9 @@ influxDBServer=jenkins
 | ----------|-----------|---------|-----------------|
 |script|yes|||
 |artifactVersion|no|`commonPipelineEnvironment.getArtifactVersion()`||
-|customData|no|`commonPipelineEnvironment.getInfluxCustomData()`||
+|customData|no|`InfluxData.getInstance().getFields().jenkins_custom_data`||
 |customDataMap|no|`InfluxData.getInstance().getFields()`||
-|customDataMapTags|no|`commonPipelineEnvironment.getInfluxCustomDataTags()`||
+|customDataMapTags|no|`InfluxData.getInstance().getTags().jenkins_custom_data`||
 |customDataTags|no|`InfluxData.getInstance().getTags()`||
 |influxPrefix|no|||
 |influxServer|no|`''`||

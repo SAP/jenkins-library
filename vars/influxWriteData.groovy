@@ -42,10 +42,10 @@ void call(Map parameters = [:]) {
                     : null
             ])
             .mixin(parameters, PARAMETER_KEYS)
-            .addIfNull('customData', script.commonPipelineEnvironment.getInfluxCustomData())
-            .addIfNull('customDataTags', script.commonPipelineEnvironment.getInfluxCustomDataTags())
-            .addIfNull('customDataMap', InfluxData.getInstance().getFields())
-            .addIfNull('customDataMapTags', InfluxData.getInstance().getTags())
+            .addIfNull('customData', InfluxData.getInstance().getFields().jenkins_custom_data)
+            .addIfNull('customDataTags', InfluxData.getInstance().getTags().jenkins_custom_data)
+            .addIfNull('customDataMap', InfluxData.getInstance().getFields().dropWhile{ it.key == 'jenkins_custom_data' })
+            .addIfNull('customDataMapTags', InfluxData.getInstance().getTags().dropWhile{ it.key == 'jenkins_custom_data' })
             .use()
 
         new Utils().pushToSWA([

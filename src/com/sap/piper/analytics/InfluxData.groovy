@@ -6,10 +6,10 @@ class InfluxData implements Serializable{
 
     // each Map in influxCustomDataMap represents a measurement in Influx.
     // Additional measurements can be added as a new Map entry of influxCustomDataMap
-    protected Map fields = [pipeline_data: [:], step_data: [:]]
+    protected Map fields = [jenkins_custom_data: [:], pipeline_data: [:], step_data: [:]]
     // each Map in influxCustomDataMapTags represents tags for certain measurement in Influx.
     // Tags are required in Influx for easier querying data
-    protected Map tags = [pipeline_data: [:], step_data: [:]]
+    protected Map tags = [jenkins_custom_data: [:], pipeline_data: [:], step_data: [:]]
 
     public Map getFields(){ return fields }
     public Map getTags(){ return tags }

@@ -147,7 +147,7 @@ class InfluxWriteDataTest extends BasePiperTest {
     void testInfluxCustomDataFromCPE() {
         nullScript.commonPipelineEnvironment.reset()
         nullScript.commonPipelineEnvironment.setArtifactVersion('1.2.3')
-        nullScript.commonPipelineEnvironment.setInfluxCustomDataTagsEntry('tag1', 'testTag1')
+        InfluxData.addTag('jenkins_custom_data', 'tag1', 'testTag1')
         InfluxData.addField('test_data', 'key1', 'keyValue1')
         InfluxData.addTag('test_data', 'tag1', 'tagValue1')
         stepRule.step.influxWriteData(

@@ -26,11 +26,6 @@ class commonPipelineEnvironment implements Serializable {
     Map configuration = [:]
     Map defaultConfiguration = [:]
 
-    //influxCustomData represents measurement jenkins_custom_data in Influx. Metrics can be written into this map
-    private Map influxCustomData = [:]
-    //influxCustomDataTags represents tags in Influx. Tags are required in Influx for easier querying data
-    private Map influxCustomDataTags = [:]
-
     String mtarFilePath
 
     String transportRequestId
@@ -50,13 +45,12 @@ class commonPipelineEnvironment implements Serializable {
         githubOrg = null
         githubRepo = null
 
-        influxCustomData = [:]
-        influxCustomDataTags = [:]
-
         mtarFilePath = null
 
         transportRequestId = null
         changeDocumentId = null
+
+        InfluxData.reset()
     }
 
     def setAppContainerProperty(property, value) {
@@ -68,22 +62,23 @@ class commonPipelineEnvironment implements Serializable {
     }
 
     // goes into measurement jenkins_custom_data
-    def setInfluxCustomDataEntry(field, value) {
-        influxCustomData[field] = value
+    def setInfluxCustomDataEntry(key, value) {
+        InfluxData.addField('jenkins_custom_data', key, value)
     }
     // goes into measurement jenkins_custom_data
+    @Deprecated // not used in library
     def getInfluxCustomData() {
-        return influxCustomData
+        return InfluxData.getInstance().getFields().jenkins_custom_data
     }
 
     // goes into measurement jenkins_custom_data
-    def setInfluxCustomDataTagsEntry(tag, value) {
-        influxCustomDataTags[tag] = value
+    def setInfluxCustomDataTagsEntry(key, value) {
+        InfluxData.addTag('jenkins_custom_data', key, value)
     }
-
     // goes into measurement jenkins_custom_data
+    @Deprecated // not used in library
     def getInfluxCustomDataTags() {
-        return influxCustomDataTags
+        return InfluxData.getInstance().getTags().jenkins_custom_data
     }
 
     void setInfluxCustomDataMapEntry(measurement, field, value) {
@@ -101,6 +96,7 @@ class commonPipelineEnvironment implements Serializable {
     def getInfluxCustomDataMapTags() {
         return InfluxData.getInstance().getTags()
     }
+
     @Deprecated // not used in library
     def setInfluxStepData(key, value) {
         InfluxData.addField('step_data', key, value)
@@ -109,6 +105,7 @@ class commonPipelineEnvironment implements Serializable {
     def getInfluxStepData(key) {
         return InfluxData.getInstance().getFields()['step_data'][key]
     }
+
     @Deprecated // not used in library
     def setInfluxPipelineData(key, value) {
         InfluxData.addField('pipeline_data', key, value)
