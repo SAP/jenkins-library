@@ -1,5 +1,6 @@
 import static com.sap.piper.Prerequisites.checkScript
 
+import com.sap.piper.GenerateDocumentation
 import com.sap.piper.ConfigurationHelper
 import com.sap.piper.Utils
 import groovy.transform.Field
@@ -9,12 +10,32 @@ import groovy.transform.Field
 @Field Set GENERAL_CONFIG_KEYS = STEP_CONFIG_KEYS
 
 @Field Set STEP_CONFIG_KEYS = [
+    /** Optionally with `healthEndpoint` the health function is called if endpoint is not the standard url.*/
     'healthEndpoint',
+    /**
+     * Health check function is called providing full qualified `testServerUrl` to the health check.
+     * In case response of the call is different than `HTTP 200 OK` the **health check fails and the pipeline stops**.
+     */
     'testServerUrl'
 ]
 
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
 
+/**
+ * Calls the health endpoint url of the application.
+ *
+ * The intention of the check is to verify that a suitable health endpoint is available. Such a health endpoint is required for operation purposes.
+ *
+ * This check is used as a real-life test for your productive health endpoints.
+ *
+ * !!! note "Check Depth"
+ *     Typically, tools performing simple health checks are not too smart. Therefore it is important to choose an endpoint for checking wisely.
+ *
+ *     This check therefore only checks if the application/service url returns `HTTP 200`.
+ *
+ *     This is in line with health check capabilities of platforms which are used for example in load balancing scenarios. Here you can find an [example for Amazon AWS](http://docs.aws.amazon.com/elasticloadbalancing/latest/classic/elb-healthchecks.html).
+ */
+@GenerateDocumentation
 void call(Map parameters = [:]) {
     handlePipelineStepErrors (stepName: STEP_NAME, stepParameters: parameters) {
         def script = checkScript(this, parameters) ?: this
