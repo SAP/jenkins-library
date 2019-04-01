@@ -1,4 +1,4 @@
-import groovy.json .JsonSlurper
+import groovy.json.JsonSlurper
 
 def steps = new JsonSlurper().parseText(new File('target/trackedCalls.json').text)
 
