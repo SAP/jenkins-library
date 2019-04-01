@@ -3,6 +3,7 @@ import static com.sap.piper.Prerequisites.checkScript
 import com.sap.piper.ConfigurationHelper
 import com.sap.piper.GitUtils
 import com.sap.piper.Utils
+import com.sap.piper.analytics.InfluxData
 import groovy.text.SimpleTemplateEngine
 import groovy.transform.Field
 
@@ -49,7 +50,7 @@ void call(Map parameters = [:]) {
             stepParam1: parameters?.script == null
         ], config)
 
-        script.commonPipelineEnvironment.setInfluxStepData('bats', false)
+        InfluxData.addField('step_data', 'bats', false)
 
         config.stashContent = config.testRepository
             ?[GitUtils.handleTestRepository(this, config)]
@@ -66,7 +67,7 @@ void call(Map parameters = [:]) {
             sh "git clone ${config.repository}"
             try {
                 sh "bats-core/bin/bats --recursive --tap ${config.testPath} > 'TEST-${config.testPackage}.tap'"
-                script.commonPipelineEnvironment.setInfluxStepData('bats', true)
+                InfluxData.addField('step_data', 'bats', true)
             } catch (err) {
                 echo "[${STEP_NAME}] One or more tests failed"
                 if (config.failOnError) throw err

@@ -3,6 +3,7 @@ import static com.sap.piper.Prerequisites.checkScript
 import com.sap.piper.Utils
 import com.sap.piper.ConfigurationHelper
 import com.sap.piper.GitUtils
+import com.sap.piper.analytics.InfluxData
 import groovy.text.SimpleTemplateEngine
 import groovy.transform.Field
 
@@ -31,7 +32,7 @@ void call(Map parameters = [:]) {
         def script = checkScript(this, parameters)  ?: this
         def utils = parameters.juStabUtils ?: new Utils()
 
-        script.commonPipelineEnvironment.setInfluxStepData('gauge', false)
+        InfluxData.addField('step_data', 'gauge', false)
 
         // load default & individual configuration
         Map config = ConfigurationHelper.newInstance(this)
@@ -91,7 +92,7 @@ void call(Map parameters = [:]) {
 
             try {
                 sh "${gaugeScript} ${config.testOptions}"
-                script.commonPipelineEnvironment.setInfluxStepData('gauge', true)
+                InfluxData.addField('step_data', 'gauge', true)
             } catch (err) {
                 echo "[${STEP_NAME}] One or more tests failed"
                 script.currentBuild.result = 'UNSTABLE'

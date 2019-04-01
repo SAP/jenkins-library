@@ -1,10 +1,16 @@
 #!groovy
 
+import com.sap.piper.analytics.InfluxData
+
 import org.junit.Rule
 import org.junit.Test
 import util.BasePiperTest
 
-import static org.junit.Assert.assertTrue
+import static org.hamcrest.Matchers.hasKey
+import static org.hamcrest.Matchers.is
+import static org.hamcrest.Matchers.not
+
+import static org.junit.Assert.assertThat
 import org.junit.rules.RuleChain
 
 import util.Rules
@@ -27,8 +33,12 @@ class DurationMeasureTest extends BasePiperTest {
         stepRule.step.durationMeasure(script: nullScript, measurementName: 'test') {
             bodyExecuted = true
         }
-        assertTrue(nullScript.commonPipelineEnvironment.getPipelineMeasurement('test') != null)
-        assertTrue(bodyExecuted)
+        // doesnt work
+        //assertThat(InfluxData.getInstance().getFields(), hasEntry('pipeline_data', hasEntry('test', is(anything()))))
+        assertThat(InfluxData.getInstance().getFields(), hasKey('pipeline_data'))
+        assertThat(InfluxData.getInstance().getFields().pipeline_data, hasKey('test'))
+        assertThat(InfluxData.getInstance().getFields().pipeline_data.test, is(not(null)))
+        assertThat(bodyExecuted, is(true))
         assertJobStatusSuccess()
     }
 }

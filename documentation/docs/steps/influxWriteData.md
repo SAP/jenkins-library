@@ -86,9 +86,9 @@ influxDBServer=jenkins
 |script|yes|||
 |artifactVersion|no|`commonPipelineEnvironment.getArtifactVersion()`||
 |customData|no|`commonPipelineEnvironment.getInfluxCustomData()`||
-|customDataMap|no|`commonPipelineEnvironment.getInfluxCustomDataMap()`||
+|customDataMap|no|`InfluxData.getInstance().getFields()`||
 |customDataMapTags|no|`commonPipelineEnvironment.getInfluxCustomDataTags()`||
-|customDataTags|no|`commonPipelineEnvironment.getInfluxCustomDataTags()`||
+|customDataTags|no|`InfluxData.getInstance().getTags()`||
 |influxPrefix|no|||
 |influxServer|no|`''`||
 |wrapInNode|no|`false`||
@@ -144,7 +144,7 @@ As a first step you need to add your InfluxDB as Data source to your Grafana:
 The Influx plugin collects following data in the Piper context:
 
 - All data as per default [InfluxDB plugin capabilities](https://wiki.jenkins.io/display/JENKINS/InfluxDB+Plugin)
-- Additional data collected via `commonPipelineEnvironment.setInfluxCustomDataProperty()` and via `commonPipelineEnvironment.setPipelineMeasurement()`
+- Additional data collected via `InfluxData.addField(measurement, key, value)`
 
 !!! note "Add custom information to your InfluxDB"
     You can simply add custom data collected during your pipeline runs via available data objects.
@@ -169,7 +169,7 @@ Measurements are potentially pre-fixed - see parameter `influxPrefix` above.
 | sonarqube_data | <ul><li>blocker_issues</li><li>critical_issues</li><li>info_issues</li><li>major_issues</li><li>minor_issues</li><li>lines_of_code</li><li>...</li></ul> | Details see [InfluxDB plugin documentation](https://wiki.jenkins.io/display/JENKINS/InfluxDB+Plugin) |
 | jenkins_custom_data | Piper fills following colums by default: <br /><ul><li>build_result</li><li>build_result_key</li><li>build_step (->step in case of error)</li><li>build_error (->error message in case of error)</li></ul> | filled by `commonPipelineEnvironment.setInfluxCustomDataProperty()` |
 | pipeline_data | Examples from the Piper templates:<br /><ul><li>build_duration</li><li>opa_duration</li><li>deploy_test_duration</li><li>deploy_test_duration</li><li>fortify_duration</li><li>release_duration</li><li>...</li></ul>| filled by step [`measureDuration`](durationMeasure.md) using parameter `measurementName`|
-| step_data | Considered, e.g.:<br /><ul><li>build_url</li><li>bats</li><li>checkmarx</li><li>fortify</li><li>gauge</li><li>nsp</li><li>snyk</li><li>sonar</li><li>...</li></ul>| filled by `commonPipelineEnvironment.setInfluxStepData()` |
+| step_data | Considered, e.g.:<br /><ul><li>build_url</li><li>bats</li><li>checkmarx</li><li>fortify</li><li>gauge</li><li>nsp</li><li>snyk</li><li>sonar</li><li>...</li></ul>| filled by `InfluxData.addField('step_data', key, value)` |
 
 ### Examples for InfluxDB queries which can be used in Grafana
 
