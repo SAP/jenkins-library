@@ -36,6 +36,9 @@ class WhitesourceExecuteScanTest extends BasePiperTest {
         .around(loggingRule)
         .around(writeFileRule)
         .around(stepRule)
+        .around(new JenkinsCredentialsRule(this)
+            .withCredentials('ID-123456789', 'token-0815')
+            .withCredentials('ID-9876543', 'token-0816'))
 
     def whitesourceOrgAdminRepositoryStub
     def whitesourceStub
@@ -45,52 +48,6 @@ class WhitesourceExecuteScanTest extends BasePiperTest {
 
     @Before
     void init() {
-        def credentialsStore = ['ID-123456789': 'token-0815', 'ID-9876543': 'token-0816', 'ID-abcdefg': ['testUser', 'testPassword']]
-        def withCredentialsBindings
-        helper.registerAllowedMethod('string', [Map], {
-            m ->
-                withCredentialsBindings = ["${m.credentialsId}": "${m.variable}"]
-                return m
-        })
-        helper.registerAllowedMethod('usernamePassword', [Map], {
-            m ->
-                withCredentialsBindings = ["${m.credentialsId}": ["${m.usernameVariable}", "${m.passwordVariable}"]]
-                return m
-        })
-        helper.registerAllowedMethod('withCredentials', [List.class, Closure.class], {
-            l, body ->
-                def index = 0
-                withCredentialsBindings.each {
-                    entry ->
-                        if(entry.value instanceof List) {
-                            entry.value.each {
-                                subEntry ->
-                                    def value = credentialsStore[entry.key]
-                                    getBinding().setProperty(subEntry, value[index])
-                                    index++
-
-                            }
-                        } else {
-                            getBinding().setProperty(entry.value, credentialsStore[entry.key])
-                        }
-                }
-                try {
-                    body()
-                } finally {
-                    withCredentialsBindings.each {
-                        entry ->
-                            if(entry.value instanceof List) {
-                                entry.value.each {
-                                    subEntry ->
-                                        getBinding().setProperty(subEntry, null)
-
-                                }
-                            } else {
-                                getBinding().setProperty(entry.value, null)
-                            }
-                    }
-                }
-        })
         helper.registerAllowedMethod("archiveArtifacts", [Map.class], { m ->
             if (m.artifacts == null) {
                 throw new Exception('artifacts cannot be null')
