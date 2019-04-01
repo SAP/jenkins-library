@@ -22,17 +22,13 @@ import static org.hamcrest.Matchers.isA
 class WhitesourceOrgAdminRepositoryTest extends BasePiperTest {
 
     private ExpectedException expectedException = ExpectedException.none()
-    private JenkinsErrorRule thrown = new JenkinsErrorRule(this)
     private JenkinsLoggingRule loggingRule = new JenkinsLoggingRule(this)
-    private JenkinsEnvironmentRule environmentRule = new JenkinsEnvironmentRule(this)
 
     @Rule
     public RuleChain ruleChain = Rules
         .getCommonRules(this)
         .around(expectedException)
-        .around(thrown)
         .around(loggingRule)
-        .around(environmentRule)
 
     WhitesourceOrgAdminRepository repository
 
