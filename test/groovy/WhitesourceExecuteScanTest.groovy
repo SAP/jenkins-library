@@ -997,24 +997,24 @@ class WhitesourceExecuteScanTest extends BasePiperTest {
                 "\"type\": \"Java\", \"references\": { \"url\": \"http://github.com/FasterXML/jackson\", \"issueUrl\": \"https://github.com/FasterXML/jackson-databind/issues\", \"pomUrl\": \"http://repo.jfrog.org/artifactory/list/repo1/com/fasterxml/jackson/core/jackson-databind/2.8.8/jackson-databind-2.8.8.pom\", \"scmUrl\": \"http://github.com/FasterXML/jackson-databind\" }, \"licenses\": [ { \"name\": \"Apache 2.0\", \"url\": \"http://apache.org/licenses/LICENSE-2.0\", \"profileInfo\": { \"copyrightRiskScore\": \"THREE\", \"patentRiskScore\": \"ONE\", \"copyleft\": \"NO\", \"linking\": \"DYNAMIC\", \"royaltyFree\": \"CONDITIONAL\" } } ] }, \"project\": \"pipeline-test - 0.0.1\", \"projectId\": 302194, \"projectToken\": \"1b8fdc36cb6949f482d0fd936a39dab69d6b34f43fff4dda8a9241f2c6e536c7\", \"directDependency\": false, \"description\": \"High:5,\", \"date\": \"2017-11-15\" } ] }").alerts
         })
 
-        try {
-            stepRule.step.whitesourceExecuteScan([
-                script                           : nullScript,
-                whitesourceRepositoryStub        : whitesourceStub,
-                whitesourceOrgAdminRepositoryStub: whitesourceOrgAdminRepositoryStub,
-                descriptorUtilsStub              : descriptorUtilsStub,
-                scanType                         : 'npm',
-                juStabUtils                      : utils,
-                securityVulnerabilities          : true,
-                orgToken                         : 'testOrgToken',
-                productName                      : 'SHC - Piper',
-                projectNames                     : ['piper-demo - 0.0.1'],
-                cvssSeverityLimit                : 0
-            ])
-        } catch (e) {
-            assertThat(e.getMessage(), containsString('[whitesourceExecuteScan] 1 Open Source Software Security vulnerabilities with CVSS score greater or equal 0 detected. - '))
-            assertThat(writeFileRule.files['piper_whitesource_vulnerability_report.json'], not(isEmptyOrNullString()))
-        }
+        thrown.expect(AbortException)
+        thrown.expectMessage('[whitesourceExecuteScan] 1 Open Source Software Security vulnerabilities with CVSS score greater or equal 0 detected. - ')
+
+        stepRule.step.whitesourceExecuteScan([
+            script                           : nullScript,
+            whitesourceRepositoryStub        : whitesourceStub,
+            whitesourceOrgAdminRepositoryStub: whitesourceOrgAdminRepositoryStub,
+            descriptorUtilsStub              : descriptorUtilsStub,
+            scanType                         : 'npm',
+            juStabUtils                      : utils,
+            securityVulnerabilities          : true,
+            orgToken                         : 'testOrgToken',
+            productName                      : 'SHC - Piper',
+            projectNames                     : ['piper-demo - 0.0.1'],
+            cvssSeverityLimit                : 0
+        ])
+
+        assertThat(writeFileRule.files['piper_whitesource_vulnerability_report.json'], not(isEmptyOrNullString()))
     }
 
     @Test
@@ -1053,132 +1053,75 @@ class WhitesourceExecuteScanTest extends BasePiperTest {
 
     @Test
     void testCheckStatus_0() {
-        def error = false
-        try {
-            stepRule.step.checkStatus(0, [whitesource:[licensingVulnerabilities: true]])
-        } catch (e) {
-            error = true
-        }
-        assertThat(error, is(false))
+        stepRule.step.checkStatus(0, [whitesource:[licensingVulnerabilities: true]])
     }
 
     @Test
     void testCheckStatus_255() {
-        def error = false
-        try {
-            stepRule.step.checkStatus(255, [whitesource:[licensingVulnerabilities: true]])
-        } catch (e) {
-            error = true
-            assertThat(e.getMessage(), is("[whitesourceExecuteScan] The scan resulted in an error"))
-        }
-        assertThat(error, is(true))
+        thrown.expect(AbortException)
+        thrown.expectMessage("[whitesourceExecuteScan] The scan resulted in an error")
+        stepRule.step.checkStatus(255, [whitesource:[licensingVulnerabilities: true]])
     }
 
     @Test
     void testCheckStatus_254() {
-        def error = false
-        try {
-            stepRule.step.checkStatus(254, [whitesource:[licensingVulnerabilities: true]])
-        } catch (e) {
-            error = true
-            assertThat(e.getMessage(), is("[whitesourceExecuteScan] Whitesource found one or multiple policy violations"))
-        }
-        assertThat(error, is(true))
+        thrown.expect(AbortException)
+        thrown.expectMessage("[whitesourceExecuteScan] Whitesource found one or multiple policy violations")
+        stepRule.step.checkStatus(254, [whitesource:[licensingVulnerabilities: true]])
     }
 
     @Test
     void testCheckStatus_253() {
-        def error = false
-        try {
-            stepRule.step.checkStatus(253, [whitesource:[licensingVulnerabilities: true]])
-        } catch (e) {
-            error = true
-            assertThat(e.getMessage(), is("[whitesourceExecuteScan] The local scan client failed to execute the scan"))
-        }
-        assertThat(error, is(true))
+        thrown.expect(AbortException)
+        thrown.expectMessage("[whitesourceExecuteScan] The local scan client failed to execute the scan")
+        stepRule.step.checkStatus(253, [whitesource:[licensingVulnerabilities: true]])
     }
 
     @Test
     void testCheckStatus_252() {
-        def error = false
-        try {
-            stepRule.step.checkStatus(252, [whitesource:[licensingVulnerabilities: true]])
-        } catch (e) {
-            error = true
-            assertThat(e.getMessage(), is("[whitesourceExecuteScan] There was a failure in the connection to the WhiteSource servers"))
-        }
-        assertThat(error, is(true))
+        thrown.expect(AbortException)
+        thrown.expectMessage("[whitesourceExecuteScan] There was a failure in the connection to the WhiteSource servers")
+        stepRule.step.checkStatus(252, [whitesource:[licensingVulnerabilities: true]])
     }
 
     @Test
     void testCheckStatus_251() {
-        def error = false
-        try {
-            stepRule.step.checkStatus(251, [whitesource:[licensingVulnerabilities: true]])
-        } catch (e) {
-            error = true
-            assertThat(e.getMessage(), is("[whitesourceExecuteScan] The server failed to analyze the scan"))
-        }
-        assertThat(error, is(true))
+        thrown.expect(AbortException)
+        thrown.expectMessage("[whitesourceExecuteScan] The server failed to analyze the scan")
+        stepRule.step.checkStatus(251, [whitesource:[licensingVulnerabilities: true]])
     }
 
     @Test
     void testCheckStatus_250() {
-        def error = false
-        try {
-            stepRule.step.checkStatus(250, [whitesource:[licensingVulnerabilities: true]])
-        } catch (e) {
-            error = true
-            assertThat(e.getMessage(), is("[whitesourceExecuteScan] Pre-step failure"))
-        }
-        assertThat(error, is(true))
+        thrown.expect(AbortException)
+        thrown.expectMessage("[whitesourceExecuteScan] Pre-step failure")
+        stepRule.step.checkStatus(250, [whitesource:[licensingVulnerabilities: true]])
     }
 
     @Test
     void testCheckStatus_127() {
-        def error = false
-        try {
-            stepRule.step.checkStatus(127, [whitesource:[licensingVulnerabilities: true]])
-        } catch (e) {
-            error = true
-            assertThat(e.getMessage(), is("[whitesourceExecuteScan] Whitesource scan failed with unknown error code '127'"))
-        }
-        assertThat(error, is(true))
+        thrown.expect(AbortException)
+        thrown.expectMessage("[whitesourceExecuteScan] Whitesource scan failed with unknown error code '127'")
+        stepRule.step.checkStatus(127, [whitesource:[licensingVulnerabilities: true]])
     }
 
     @Test
     void testCheckStatus_vulnerability() {
-        def error = false
-        try {
-            stepRule.step.checkStatus(0, [whitesource:[licensingVulnerabilities: false, securityVulnerabilities: true, severeVulnerabilities: 5, cvssSeverityLimit: 7]])
-        } catch (e) {
-            error = true
-            assertThat(e.getMessage(), is("[whitesourceExecuteScan] 5 Open Source Software Security vulnerabilities with CVSS score greater or equal 7 detected. - "))
-        }
-        assertThat(error, is(true))
+        thrown.expect(AbortException)
+        thrown.expectMessage("[whitesourceExecuteScan] 5 Open Source Software Security vulnerabilities with CVSS score greater or equal 7 detected. - ")
+        stepRule.step.checkStatus(0, [whitesource:[licensingVulnerabilities: false, securityVulnerabilities: true, severeVulnerabilities: 5, cvssSeverityLimit: 7]])
     }
 
     @Test
     void testCheckViolationStatus_0() {
-        def error = false
-        try {
-            stepRule.step.checkViolationStatus(0)
-        } catch (e) {
-            error = true
-        }
-        assertThat(error, is(false))
-        assertThat(loggingRule.log, containsString("[whitesourceExecuteScan] No policy violations found"))
+        stepRule.step.checkViolationStatus(0)
+        assertThat(loggingRule.log, containsString ("[whitesourceExecuteScan] No policy violations found"))
     }
 
     @Test
     void testCheckViolationStatus_5() {
-        def error = false
-        try {
-            stepRule.step.checkViolationStatus(5)
-        } catch (e) {
-            error = true
-            assertThat(e.getMessage(), is("[whitesourceExecuteScan] Whitesource found 5 policy violations for your product"))
-        }
-        assertThat(error, is(true))
+        thrown.expect(AbortException)
+        thrown.expectMessage("[whitesourceExecuteScan] Whitesource found 5 policy violations for your product")
+        stepRule.step.checkViolationStatus(5)
     }
 }
