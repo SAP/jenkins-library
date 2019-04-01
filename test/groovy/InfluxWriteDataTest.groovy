@@ -1,5 +1,7 @@
 #!groovy
 import com.sap.piper.DefaultValueCache
+import com.sap.piper.analytics.InfluxData
+
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
