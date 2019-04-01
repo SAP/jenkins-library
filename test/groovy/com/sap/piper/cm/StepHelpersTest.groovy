@@ -85,7 +85,7 @@ class StepHelpersTest extends BasePiperTest {
 
         // We cache the value. Otherwise we have to retrieve it each time from the
         // commit history.
-        assert nullScript.commonPipelineEnvironment.getCustomProperty('transportRequestId') == '097'
+        assert nullScript.commonPipelineEnvironment.getProperty('transportRequestId') == '097'
     }
 
     public void changeDocumentIdViaCommitHistoryTest() {
@@ -109,7 +109,7 @@ class StepHelpersTest extends BasePiperTest {
     @Test
     public void transportRequestIdViaCommonPipelineEnvironmentTest() {
 
-        nullScript.commonPipelineEnvironment.setCustomProperty('transportRequestId', '098')
+        nullScript.commonPipelineEnvironment.setProperty('transportRequestId', '098')
         def transportRequestId = StepHelpers.getTransportRequestId(cm, nullScript, params)
 
         assert transportRequestId == '098'
@@ -131,7 +131,7 @@ class StepHelpersTest extends BasePiperTest {
         // In case we get the transport request id via parameters we do not cache it
         // Caller knows the transport request id anyway. So the caller can provide it with
         // each call.
-        assert nullScript.commonPipelineEnvironment.getCustomProperty('transportRequestId') == null
+        assert nullScript.commonPipelineEnvironment.getProperty('transportRequestId') == null
 
         // getTransportRequestId gets not called on ChangeManagement util class
         // in this case.

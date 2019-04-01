@@ -35,14 +35,14 @@ class commonPipelineEnvironment implements Serializable {
     private Map influxCustomDataTags = [:]
 
     String mtarFilePath
-    private Map customPropertiesMap = [:]
+    private Map propertyMap = [:]
 
-    def setCustomProperty(property, value) {
-        customPropertiesMap[property] = value
+    def setProperty(property, value) {
+        propertyMap[property] = value
     }
 
-    def getCustomProperty(property) {
-        return customPropertiesMap.get(property)
+    def getProperty(property) {
+        return propertyMap.get(property)
     }
 
     String changeDocumentId
@@ -67,7 +67,7 @@ class commonPipelineEnvironment implements Serializable {
         influxCustomDataMapTags = [pipeline_data: [:]]
 
         mtarFilePath = null
-        customPropertiesMap = [:]
+        propertyMap = [:]
 
         changeDocumentId = null
     }

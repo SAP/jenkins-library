@@ -130,6 +130,6 @@ void call(parameters = [:]) {
 
 
         echo "[INFO] Transport Request '$transportRequestId' has been successfully created."
-        script.commonPipelineEnvironment.setCustomProperty('transportRequestId', "${transportRequestId}")
+        script.commonPipelineEnvironment.setProperty('transportRequestId', "${transportRequestId}")
     }
 }
