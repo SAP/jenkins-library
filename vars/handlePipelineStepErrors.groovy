@@ -64,11 +64,9 @@ private String formatErrorMessage(Map config, error){
 }
 
 private void writeErrorToInfluxData(Map config, error){
-    def script = config?.stepParameters?.script
-
-    if(InfluxData.getInstance().getTags().build_error_message == null){
+    if(InfluxData.getInstance().getFields().pipeline_data?.build_error_message == null){
         InfluxData.addTag('pipeline_data', 'build_error_step', config.stepName)
-        InfluxData.addTag('pipeline_data', 'build_error_stage', script.env?.STAGE_NAME)
+        InfluxData.addTag('pipeline_data', 'build_error_stage', config.stepParameters.script?.env?.STAGE_NAME)
         InfluxData.addField('pipeline_data', 'build_error_message', error.getMessage())
     }
 }
