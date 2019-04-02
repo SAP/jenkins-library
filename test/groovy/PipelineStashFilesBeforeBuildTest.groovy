@@ -26,23 +26,18 @@ class PipelineStashFilesBeforeBuildTest extends BasePiperTest {
 
         stepRule.step.pipelineStashFilesBeforeBuild(script: nullScript, juStabUtils: utils)
 
-        // asserts
-        assertEquals('mkdir -p gitmetadata', shellRule.shell[0])
-        assertEquals('cp -rf .git/* gitmetadata', shellRule.shell[1])
-        assertEquals('chmod -R u+w gitmetadata', shellRule.shell[2])
-
         assertThat(loggingRule.log, containsString('Stash content: buildDescriptor'))
         assertThat(loggingRule.log, containsString('Stash content: deployDescriptor'))
-        assertThat(loggingRule.log, containsString('Stash content: git'))
-        assertFalse(loggingRule.log.contains('Stash content: opa5'))
+        assertThat(loggingRule.log, containsString('Stash content: git (include: .git/**, exclude: , useDefaultExcludes: false'))
+        //assertFalse(loggingRule.log.contains('Stash content: opa5'))
         assertThat(loggingRule.log, containsString('Stash content: opensourceConfiguration'))
-        assertThat(loggingRule.log, containsString('Stash content: pipelineConfigAndTests'))
+        assertThat(loggingRule.log, containsString('Stash content: pipelineConfigAndTests (include: .pipeline/**, exclude: , useDefaultExcludes: true'))
         assertThat(loggingRule.log, containsString('Stash content: securityDescriptor'))
         assertThat(loggingRule.log, containsString('Stash content: tests'))
     }
 
     @Test
-    void testStashBeforeBuildOpa() {
+    void testStashBeforeBuild() {
 
         stepRule.step.pipelineStashFilesBeforeBuild(script: nullScript, juStabUtils: utils, runOpaTests: true)
 
