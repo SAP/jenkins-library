@@ -14,7 +14,7 @@ import groovy.transform.Field
     'healthEndpoint',
     /**
      * Health check function is called providing full qualified `testServerUrl` to the health check.
-     * In case response of the call is different than `HTTP 200 OK` the **health check fails and the pipeline stops**.
+     *
      */
     'testServerUrl'
 ]
