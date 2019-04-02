@@ -135,5 +135,5 @@ def isAppContainer(config){
 }
 
 def getTimestamp(pattern){
-    return sh(returnStdout: true, script: "date --universal +'${pattern}'").trim()
+    return sh(returnStdout: true, script: "date --utc +'${pattern}'").trim()
 }
