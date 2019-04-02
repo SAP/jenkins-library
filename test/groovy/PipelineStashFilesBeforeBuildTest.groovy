@@ -22,27 +22,7 @@ class PipelineStashFilesBeforeBuildTest extends BasePiperTest {
         .around(stepRule)
 
     @Test
-    void testStashBeforeBuildNoOpa() {
-
-        stepRule.step.pipelineStashFilesBeforeBuild(script: nullScript, juStabUtils: utils)
-
-        // asserts
-        assertEquals('mkdir -p gitmetadata', shellRule.shell[0])
-        assertEquals('cp -rf .git/* gitmetadata', shellRule.shell[1])
-        assertEquals('chmod -R u+w gitmetadata', shellRule.shell[2])
-
-        assertThat(loggingRule.log, containsString('Stash content: buildDescriptor'))
-        assertThat(loggingRule.log, containsString('Stash content: deployDescriptor'))
-        assertThat(loggingRule.log, containsString('Stash content: git'))
-        assertFalse(loggingRule.log.contains('Stash content: opa5'))
-        assertThat(loggingRule.log, containsString('Stash content: opensourceConfiguration'))
-        assertThat(loggingRule.log, containsString('Stash content: pipelineConfigAndTests'))
-        assertThat(loggingRule.log, containsString('Stash content: securityDescriptor'))
-        assertThat(loggingRule.log, containsString('Stash content: tests'))
-    }
-
-    @Test
-    void testStashBeforeBuildOpa() {
+    void testStashBeforeBuild() {
 
         stepRule.step.pipelineStashFilesBeforeBuild(script: nullScript, juStabUtils: utils, runOpaTests: true)
 
@@ -55,5 +35,22 @@ class PipelineStashFilesBeforeBuildTest extends BasePiperTest {
         assertThat(loggingRule.log, containsString('Stash content: pipelineConfigAndTests'))
         assertThat(loggingRule.log, containsString('Stash content: securityDescriptor'))
         assertThat(loggingRule.log, containsString('Stash content: tests'))
+    }
+
+    @Test
+    void testStashBeforeBuildCustomConfig() {
+
+        stepRule.step.pipelineStashFilesBeforeBuild(script: nullScript, juStabUtils: utils, runOpaTests: true, stashIncludes: ['myStash': '**.myTest'])
+
+        // asserts
+        assertThat(loggingRule.log, containsString('Stash content: buildDescriptor'))
+        assertThat(loggingRule.log, containsString('Stash content: deployDescriptor'))
+        assertThat(loggingRule.log, containsString('Stash content: git'))
+        assertThat(loggingRule.log, containsString('Stash content: opa5'))
+        assertThat(loggingRule.log, containsString('Stash content: opensourceConfiguration'))
+        assertThat(loggingRule.log, containsString('Stash content: pipelineConfigAndTests'))
+        assertThat(loggingRule.log, containsString('Stash content: securityDescriptor'))
+        assertThat(loggingRule.log, containsString('Stash content: tests'))
+        assertThat(loggingRule.log, containsString('Stash content: myStash'))
     }
 }
