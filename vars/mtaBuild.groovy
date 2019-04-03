@@ -1,5 +1,6 @@
 import static com.sap.piper.Prerequisites.checkScript
 
+import com.sap.piper.GenerateDocumentation
 import com.sap.piper.ConfigurationHelper
 import com.sap.piper.MtaUtils
 import com.sap.piper.Utils
@@ -10,16 +11,32 @@ import groovy.transform.Field
 
 @Field Set GENERAL_CONFIG_KEYS = []
 @Field Set STEP_CONFIG_KEYS = [
+    /** The name of the application which is being built. If the parameter has been provided and no `mta.yaml` exists, the `mta.yaml` will be automatically generated using this parameter and the information (`name` and `version`) from `package.json` before the actual build starts.*/
     'applicationName',
+    /**
+     * The target platform to which the mtar can be deployed.
+     * @possibleValues 'CF', 'NEO', 'XSA'
+     */
     'buildTarget',
+    /** @see dockerExecute */
     'dockerImage',
+    /** The path to the extension descriptor file.*/
     'extension',
+    /**
+     * The location of the SAP Multitarget Application Archive Builder jar file, including file name and extension.
+     * If it is not provided, the SAP Multitarget Application Archive Builder is expected on PATH.
+     */
     'mtaJarLocation'
 ]
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS.plus([
+    /** @see dockerExecute */
     'dockerOptions'
 ])
 
+/**
+ * Executes the SAP Multitarget Application Archive Builder to create an mtar archive of the application.
+ */
+@GenerateDocumentation
 void call(Map parameters = [:]) {
     handlePipelineStepErrors(stepName: STEP_NAME, stepParameters: parameters) {
 
