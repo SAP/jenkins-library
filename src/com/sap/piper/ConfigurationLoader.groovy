@@ -28,10 +28,9 @@ class ConfigurationLoader implements Serializable {
     static Map generalConfiguration(script){
         try {
             return script?.commonPipelineEnvironment?.configuration?.general ?: [:]
-        } catch (err) {
+        } catch (groovy.lang.MissingPropertyException mpe) {
             return [:]
         }
-
     }
 
     @NonCPS
@@ -50,7 +49,7 @@ class ConfigurationLoader implements Serializable {
             case ConfigurationType.CUSTOM_CONFIGURATION:
                 try {
                     return script?.commonPipelineEnvironment?.configuration?.get(type)?.get(entryName) ?: [:]
-                } catch (err) {
+                } catch (groovy.lang.MissingPropertyException mpe) {
                     return [:]
                 }
 
