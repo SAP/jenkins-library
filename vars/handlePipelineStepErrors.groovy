@@ -1,5 +1,6 @@
 import com.cloudbees.groovy.cps.NonCPS
 
+import com.sap.piper.GenerateDocumentation
 import com.sap.piper.ConfigurationHelper
 import com.sap.piper.analytics.InfluxData
 
@@ -11,14 +12,49 @@ import groovy.transform.Field
 @Field Set GENERAL_CONFIG_KEYS = []
 @Field Set STEP_CONFIG_KEYS = []
 @Field Set PARAMETER_KEYS = [
+    /**
+     * If set to true the following will be output to the console:
+     * 1. Step beginning: `--- Begin library step: ${stepName}.groovy ---`
+     * 2. Step end: `--- End library step: ${stepName}.groovy ---`
+     * 3. Step errors:
+     *
+     * ```log
+     * ----------------------------------------------------------
+     * --- An error occurred in the library step: ${stepName}
+     * ----------------------------------------------------------
+     * The following parameters were available to the step:
+     * ***
+     * ${stepParameters}
+     * ***
+     * The error was:
+     * ***
+     * ${err}
+     * ***
+     * Further information:
+     * * Documentation of step ${stepName}: .../${stepName}/
+     * * Pipeline documentation: https://...
+     * * GitHub repository for pipeline steps: https://...
+     * ----------------------------------------------------------
+     * ```
+     * @possibleValues `true`, `false`
+     */
     'echoDetails',
+    /** Defines the url of the library's documentation that will be used to generate the corresponding links to the step documentation.*/
     'libraryDocumentationUrl',
+    /** Defines the url of the library's repository that will be used to generate the corresponding links to the step implementation.*/
     'libraryRepositoryUrl',
+    /** Defines the name of the step executed that will be shown in the console output.*/
     'stepName',
+    /** */
     'stepNameDoc',
+    /** Defines the parameters from the step to be executed. The list of parameters is then shown in the console output.*/
     'stepParameters'
 ]
 
+/**
+ * Used by other steps to make error analysis easier. Lists parameters and other data available to the step in which the error occurs.
+ */
+@GenerateDocumentation
 void call(Map parameters = [:], body) {
     // load default & individual configuration
     Map config = ConfigurationHelper.newInstance(this)
