@@ -1,3 +1,4 @@
+import com.sap.piper.GenerateDocumentation
 import com.sap.piper.Utils
 
 import groovy.transform.Field
@@ -5,12 +6,26 @@ import groovy.transform.Field
 
 @Field STEP_NAME = getClass().getName()
 
+@Field Set PARAMETER_KEYS = [
+    /** The url to the git repository of the pipeline to be loaded.*/
+    'repoUrl',
+    /** The branch of the git repository from which the pipeline should be checked out.*/
+    'branch',
+    /** The path to the Jenkinsfile, inside the repository, to be loaded.*/
+    'path',
+    /** The Jenkins credentials containing user and password needed to access a private git repository.*/
+    'credentialsId'
+]
 
 /**
- * pipelineExecute
- * Load and executes a pipeline from another git repository.
+ * Loads and executes a pipeline from another git repository.
+ * The idea is to set up a pipeline job in Jenkins that loads a minimal pipeline, which
+ * in turn loads the shared library and then uses this step to load the actual pipeline.
  *
+ * A centrally maintained pipeline script (Jenkinsfile) can be re-used by
+ * several projects using `pipelineExecute` as outlined in the example below.
  */
+@GenerateDocumentation
 void call(Map parameters = [:]) {
 
     node() {

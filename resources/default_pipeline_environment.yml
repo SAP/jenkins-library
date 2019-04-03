@@ -349,7 +349,6 @@ steps:
     sendMail: true
     timeoutInSeconds: 900
   pipelineStashFilesAfterBuild:
-    runOpaTests: false
     stashIncludes:
       checkmarx: '**/*.js, **/*.scala, **/*.py, **/*.go, **/*.xml, **/*.html'
       classFiles: '**/target/classes/**/*.class, **/target/test-classes/**/*.class'
@@ -358,12 +357,12 @@ steps:
       checkmarx: '**/*.mockserver.js, node_modules/**/*.js'
       classFiles: ''
       sonar: ''
+    noDefaultExludes: []
   pipelineStashFilesBeforeBuild:
-    runCheckmarx: false
     stashIncludes:
       buildDescriptor: '**/pom.xml, **/.mvn/**, **/assembly.xml, **/.swagger-codegen-ignore, **/package.json, **/requirements.txt, **/setup.py, **/mta*.y*ml, **/.npmrc, Dockerfile, **/VERSION, **/version.txt, **/Gopkg.*, **/build.sbt, **/sbtDescriptor.json, **/project/*'
       deployDescriptor: '**/manifest*.y*ml, **/*.mtaext.y*ml, **/*.mtaext, **/xs-app.json, helm/**, *.y*ml'
-      git: '**/gitmetadata/**'
+      git: '.git/**'
       opa5: '**/*.*'
       opensourceConfiguration: '**/srcclr.yml, **/vulas-custom.properties, **/.nsprc, **/.retireignore, **/.retireignore.json, **/.snyk, **/wss-unified-agent.config, **/vendor/**/*'
       pipelineConfigAndTests: '.pipeline/**'
@@ -378,6 +377,8 @@ steps:
       pipelineConfigAndTests: ''
       securityDescriptor: ''
       tests: ''
+    noDefaultExludes:
+      - 'git'
   seleniumExecuteTests:
     buildTool: 'npm'
     containerPortMappings:
