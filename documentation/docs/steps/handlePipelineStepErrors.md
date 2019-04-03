@@ -1,8 +1,6 @@
-# handlePipelineStepErrors
+# ${docGenStepName}
 
-## Description
-
-Used by other steps to make error analysis easier. Lists parameters and other data available to the step in which the error occurs.
+## ${docGenDescription}
 
 ## Prerequisites
 
