@@ -539,7 +539,7 @@ void checkStatus(int statusCode, config) {
 }
 
 def getReportHtml(config, vulnerabilityList, numSevereVulns) {
-    def now = new Date().format('MMM dd, yyyy - HH:mm:ss')
+    def now = new Date().format('MMM dd, yyyy - HH:mm:ss z', TimeZone.getTimeZone('UTC'))
     def vulnerabilityTable = ''
     if (vulnerabilityList.size() == 0) {
         vulnerabilityTable += '''
