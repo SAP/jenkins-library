@@ -26,7 +26,12 @@ class ConfigurationLoader implements Serializable {
 
     @NonCPS
     static Map generalConfiguration(script){
-        return script?.commonPipelineEnvironment?.configuration?.general ?: [:]
+        try {
+            return script?.commonPipelineEnvironment?.configuration?.general ?: [:]
+        } catch (err) {
+            return [:]
+        }
+
     }
 
     @NonCPS
@@ -43,7 +48,12 @@ class ConfigurationLoader implements Serializable {
     private static Map loadConfiguration(script, String type, String entryName, ConfigurationType configType){
         switch (configType) {
             case ConfigurationType.CUSTOM_CONFIGURATION:
-                return script?.commonPipelineEnvironment?.configuration?.get(type)?.get(entryName) ?: [:]
+                try {
+                    return script?.commonPipelineEnvironment?.configuration?.get(type)?.get(entryName) ?: [:]
+                } catch (err) {
+                    return [:]
+                }
+
             case ConfigurationType.DEFAULT_CONFIGURATION:
                 return DefaultValueCache.getInstance()?.getDefaultValues()?.get(type)?.get(entryName) ?: [:]
             default:
