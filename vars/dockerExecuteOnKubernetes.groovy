@@ -73,6 +73,12 @@ import hudson.AbortException
      */
     'dockerWorkspace',
     /**
+     * Kubernetes Security Context used for the pod.
+     * Can be used to specify uid and fsGroup.
+     * See: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/
+     */
+    'securityContext',
+    /**
      * Specific stashes that should be considered for the step execution.
      */
     'stashContent',
@@ -83,13 +89,7 @@ import hudson.AbortException
     /**
      *
      */
-    'stashIncludes',
-    /**
-     * Kubernetes Security Context used for the pod.
-     * Can be used to specify uid and fsGroup.
-     * See: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/
-     */
-    'securityContext'
+    'stashIncludes'
 ])
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS.minus([
     'stashIncludes',
@@ -277,19 +277,15 @@ private List getContainerList(config) {
         }
 
         if (config.containerPortMappings?.get(imageName)) {
-            def portMapping = { m ->
-                [
-                    name: m.name,
-                    containerPort: m.containerPort,
-                    hostPort: m.hostPort
-                ]
-            }
-
             def ports = []
             def portCounter = 0
             config.containerPortMappings.get(imageName).each {mapping ->
-                mapping.name = "${containerName}${portCounter}".toString()
-                ports.add(portMapping(mapping))
+                def name = "${containerName}${portCounter}".toString()
+                if(mapping.containerPort != mapping.hostPort) {
+                    echo ("[WARNING][${STEP_NAME}]: containerPort and hostPort are different for container '${containerName}'. "
+                        + "The hostPort will be ignored.")
+                }
+                ports.add([name: name, containerPort: mapping.containerPort])
                 portCounter ++
             }
             containerSpec.ports = ports
