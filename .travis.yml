@@ -19,7 +19,7 @@ cache:
 jobs:
   include:
     - stage: Tests
-      if: NOT branch =~ /^it\/.*$/)
+      if: NOT (branch =~ /^it\/.*$/)
       name: Unit Tests
       before_script:
         - curl -L --output cc-test-reporter https://codeclimate.com/downloads/test-reporter/test-reporter-latest-linux-amd64
