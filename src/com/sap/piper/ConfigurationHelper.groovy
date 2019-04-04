@@ -5,14 +5,17 @@ import com.cloudbees.groovy.cps.NonCPS
 @API
 class ConfigurationHelper implements Serializable {
 
+    def static SEPARATOR = '/'
+
     static ConfigurationHelper newInstance(Script step, Map config = [:]) {
         new ConfigurationHelper(step, config)
     }
 
-    ConfigurationHelper loadStepDefaults() {
+    ConfigurationHelper loadStepDefaults(Map compatibleParameters = [:]) {
         this.step.prepareDefaultValues()
         this.config = ConfigurationLoader.defaultGeneralConfiguration()
-        mixin(ConfigurationLoader.defaultStepConfiguration(null, name))
+        mixin(ConfigurationLoader.defaultGeneralConfiguration(), null, compatibleParameters)
+        mixin(ConfigurationLoader.defaultStepConfiguration(null, name), null, compatibleParameters)
     }
 
     private Map config
@@ -33,8 +36,8 @@ class ConfigurationHelper implements Serializable {
     }
 
     ConfigurationHelper mixinGeneralConfig(commonPipelineEnvironment, Set filter = null, Map compatibleParameters = [:]){
-        Map stepConfiguration = ConfigurationLoader.generalConfiguration([commonPipelineEnvironment: commonPipelineEnvironment])
-        return mixin(stepConfiguration, filter, compatibleParameters)
+        Map generalConfiguration = ConfigurationLoader.generalConfiguration([commonPipelineEnvironment: commonPipelineEnvironment])
+        return mixin(generalConfiguration, filter, compatibleParameters)
     }
 
     ConfigurationHelper mixinStageConfig(commonPipelineEnvironment, stageName, Set filter = null, Map compatibleParameters = [:]){
@@ -58,21 +61,24 @@ class ConfigurationHelper implements Serializable {
         return this
     }
 
-    private Map handleCompatibility(Map compatibleParameters, String paramStructure = '', Map configMap ) {
+    private Map handleCompatibility(Map compatibleParameters, String paramStructure = '', Map configMap, Map newConfigMap = [:] ) {
         Map newConfig = [:]
         compatibleParameters.each {entry ->
             if (entry.getValue() instanceof Map) {
-                paramStructure = (paramStructure ? paramStructure + '.' : '') + entry.getKey()
-                newConfig[entry.getKey()] = handleCompatibility(entry.getValue(), paramStructure, configMap)
+                def internalParamStructure = (paramStructure ? paramStructure + '.' : '') + entry.getKey()
+                newConfig[entry.getKey()] = handleCompatibility(entry.getValue(), internalParamStructure, configMap, newConfig)
             } else {
                 def configSubMap = configMap
                 for(String key in paramStructure.tokenize('.')){
                     configSubMap = configSubMap?.get(key)
                 }
                 if (configSubMap == null || (configSubMap != null && configSubMap[entry.getKey()] == null)) {
-                    newConfig[entry.getKey()] = configMap[entry.getValue()]
-                    def paramName = (paramStructure ? paramStructure + '.' : '') + entry.getKey()
-                    if (configMap[entry.getValue()] != null) {
+                    def value = configMap[entry.getValue()]
+                    if(null == value)
+                        value = newConfigMap[entry.getValue()]
+                    if (value != null) {
+                        newConfig[entry.getKey()] = value
+                        def paramName = (paramStructure ? paramStructure + '.' : '') + entry.getKey()
                         this.step.echo ("[INFO] The parameter '${entry.getValue()}' is COMPATIBLE to the parameter '${paramName}'")
                     }
                 }
@@ -84,9 +90,16 @@ class ConfigurationHelper implements Serializable {
     Map dependingOn(dependentKey){
         return [
             mixin: {key ->
+                def parts = tokenizeKey(key)
+                def targetMap = config
+                if(parts.size() > 1) {
+                    key = parts.last()
+                    parts.remove(key)
+                    targetMap = getConfigPropertyNested(config, (parts as Iterable).join(SEPARATOR))
+                }
                 def dependentValue = config[dependentKey]
-                if(config[key] == null && dependentValue && config[dependentValue])
-                    config[key] = config[dependentValue][key]
+                if(targetMap[key] == null && dependentValue && config[dependentValue])
+                    targetMap[key] = config[dependentValue][key]
                 return this
             }
         ]
@@ -123,26 +136,28 @@ class ConfigurationHelper implements Serializable {
 
     /* private */ static getConfigPropertyNested(Map config, key) {
 
-        def separator = '/'
+        List parts = tokenizeKey(key)
 
-        // reason for cast to CharSequence: String#tokenize(./.) causes a deprecation warning.
-        List parts = (key in String) ? (key as CharSequence).tokenize(separator) : ([key] as List)
+        if (config[parts.head()] != null) {
 
-        if(config[parts.head()] != null) {
-
-            if(config[parts.head()] in Map && ! parts.tail().isEmpty()) {
-                return getConfigPropertyNested(config[parts.head()], (parts.tail() as Iterable).join(separator))
+            if (config[parts.head()] in Map && !parts.tail().isEmpty()) {
+                return getConfigPropertyNested(config[parts.head()], (parts.tail() as Iterable).join(SEPARATOR))
             }
 
             if (config[parts.head()].class == String) {
                 return (config[parts.head()] as String).trim()
             }
         }
-
         return config[parts.head()]
     }
 
-     private void existsMandatoryProperty(key, errorMessage) {
+    /* private */  static tokenizeKey(String key) {
+        // reason for cast to CharSequence: String#tokenize(./.) causes a deprecation warning.
+        List parts = (key in String) ? (key as CharSequence).tokenize(SEPARATOR) : ([key] as List)
+        return parts
+    }
+
+    private void existsMandatoryProperty(key, errorMessage) {
 
         def paramValue = getConfigPropertyNested(config, key)
 
