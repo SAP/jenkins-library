@@ -4,6 +4,10 @@ import groovy.transform.Field
 
 @Field STEP_NAME = getClass().getName()
 
+@Field Set GENERAL_CONFIG_KEYS = []
+
+@Field Set STEP_CONFIG_KEYS = []
+
 @Field Set PARAMETER_KEYS = [
     /** Defines the name of the measurement which is written to the Influx database.*/
     'measurementName'
