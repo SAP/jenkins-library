@@ -1,0 +1,60 @@
+body {
+    font-family: Arial, Verdana;
+}
+table {
+    border-collapse: collapse;
+}
+div.code {
+    font-family: "Courier New", "Lucida Console";
+}
+th {
+    border-top: 1px solid #ddd;
+}
+th, td {
+    padding: 12px;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+    border-right: 1px solid #ddd;
+}
+tr:nth-child(even) {
+    background-color: #f2f2f2;
+}
+.bold {
+    font-weight: bold;
+}
+.nobullets {
+    list-style-type:none;
+    padding-left: 0;
+    padding-bottom: 0;
+    margin: 0;
+}
+.notok {
+    background-color: #ffe5e5;
+    padding: 5px
+}
+.warn {
+    background-color: #ffff99;
+    padding: 5px
+}
+.ok {
+    background-color: #e1f5a9;
+    padding: 5px
+}
+.green{
+    color: olivedrab;
+}
+.red{
+    color: orangered;
+}
+.risk-yellow{
+    padding: 5px;
+    color: rgba(255, 255, 0, 0.6);
+}
+.risk-grey{
+    background-color: rgba(212, 212, 212, 0.7);
+    padding: 5px;
+}
+.risk-black{
+    background-color: rgba(0, 0, 0, 0.75);
+    padding: 5px;
+}

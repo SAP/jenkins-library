@@ -2,6 +2,7 @@
 
 package util
 
+import com.sap.piper.DescriptorUtils
 import com.sap.piper.GitUtils
 import com.sap.piper.JenkinsUtils
 import com.sap.piper.Utils
@@ -44,5 +45,12 @@ class BasePiperTestContext {
         def mockJenkinsUtils = new JenkinsUtils()
         LibraryLoadingTestExecutionListener.prepareObjectInterceptors(mockJenkinsUtils)
         return mockJenkinsUtils
+    }
+
+    @Bean
+    DescriptorUtils mockDescriptorUtils() {
+        def mockDescriptorUtils = new DescriptorUtils()
+        LibraryLoadingTestExecutionListener.prepareObjectInterceptors(mockDescriptorUtils)
+        return mockDescriptorUtils
     }
 }
