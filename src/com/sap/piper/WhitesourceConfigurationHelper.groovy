@@ -37,19 +37,12 @@ class WhitesourceConfigurationHelper implements Serializable {
             [name: 'offline', value: false, force: true],
             [name: 'ignoreSourceFiles', value: true, force: true],
             [name: 'resolveAllDependencies', value: false, force: true],
-            [name: 'failErrorLevel', value: 'ALL', force: true]
+            [name: 'failErrorLevel', value: 'ALL', force: true],
+            [name: 'case.sensitive.glob', value: false],
+            [name: 'followSymbolicLinks', value: true]
         ]
 
-        // To be removed once all scenarios are fully supported
-        if(!['pip', 'golang'].contains(config.scanType))
-            script.echo "[Warning][Whitesource] Configuration for scanType: '${config.scanType}' is not yet hardened, please do a quality assessment of your scan results."
-
         switch (config.scanType) {
-            case 'npm':
-                mapping += [
-
-                ]
-                break
             case 'pip':
                 mapping += [
                     [name: 'python.resolveDependencies', value: true, force: true],
@@ -63,14 +56,17 @@ class WhitesourceConfigurationHelper implements Serializable {
                     [name: 'python.pipenvDevDependencies', value: true],
                     [name: 'python.IgnorePipenvInstallErrors', value: false],
                     [name: 'includes', value: '**/*.py **/*.txt'],
-                    [name: 'excludes', value: '**/*sources.jar **/*javadoc.jar'],
-                    [name: 'case.sensitive.glob', value: false],
-                    [name: 'followSymbolicLinks', value: true]
+                    [name: 'excludes', value: '**/*sources.jar **/*javadoc.jar']
                 ]
                 break
             case 'sbt':
                 mapping += [
-
+                    [name: 'sbt.resolveDependencies', value: true, force: true],
+                    [name: 'sbt.ignoreSourceFiles', value: true, force: true],
+                    [name: 'sbt.aggregateModules', value: false, force: true],
+                    [name: 'sbt.runPreStep', value: true],
+                    [name: 'includes', value: '**/*.jar'],
+                    [name: 'excludes', value: '**/*sources.jar **/*javadoc.jar']
                 ]
                 break
             case 'golang':
@@ -80,21 +76,11 @@ class WhitesourceConfigurationHelper implements Serializable {
                     [name: 'go.collectDependenciesAtRuntime', value: false],
                     [name: 'go.dependencyManager', value: 'dep'],
                     [name: 'includes', value: '**/*.lock'],
-                    [name: 'excludes', value: '**/*sources.jar **/*javadoc.jar'],
-                    [name: 'case.sensitive.glob', value: false],
-                    [name: 'followSymbolicLinks', value: true]
+                    [name: 'excludes', value: '**/*sources.jar **/*javadoc.jar']
                 ]
                 break
-            case 'dlang':
-                mapping += [
-
-                ]
-                break
-            case 'maven':
-                mapping += [
-
-                ]
-                break
+            default:
+                script.echo "[Warning][Whitesource] Configuration for scanType: '${config.scanType}' is not yet hardened, please do a quality assessment of your scan results."
         }
 
         rewriteConfiguration(script, utils, config, mapping, suffix, path, inputFile, targetFile, parsingClosure, serializationClosure)

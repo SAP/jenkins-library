@@ -74,9 +74,9 @@ import static com.sap.piper.Prerequisites.checkScript
 ]
 @Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS + [
     /**
-     * Additional install command that can be used to populate the default docker image for some scenarios.
+     * Install command that can be used to populate the default docker image for some scenarios.
      */
-    'additionalInstallCommand',
+    'installCommand',
     /**
      * URL used to download the latest version of the WhiteSource Unified Agent.
      */
@@ -194,7 +194,7 @@ import static com.sap.piper.Prerequisites.checkScript
         timeout                                 : 'timeout',
         vulnerabilityReportFileName             : 'vulnerabilityReportFileName',
         vulnerabilityReportTitle                : 'vulnerabilityReportTitle',
-        additionalInstallCommand                : 'additionalInstallCommand'
+        installCommand                          : 'installCommand'
     ]
 ]
 
@@ -242,14 +242,14 @@ void call(Map parameters = [:]) {
             .dependingOn('scanType').mixin('dockerWorkspace')
             .dependingOn('scanType').mixin('stashContent')
             .dependingOn('scanType').mixin('whitesource/configFilePath')
-            .dependingOn('scanType').mixin('whitesource/additionalInstallCommand')
+            .dependingOn('scanType').mixin('whitesource/installCommand')
             .withMandatoryProperty('whitesource/serviceUrl')
             .withMandatoryProperty('whitesource/orgToken')
             .withMandatoryProperty('whitesource/userTokenCredentialsId')
             .withMandatoryProperty('whitesource/productName')
             .use()
 
-        config.whitesource.cvssSeverityLimit = config.whitesource.cvssSeverityLimit == null ? -1 : Integer.valueOf(config.whitesource.cvssSeverityLimit)
+        config.whitesource.cvssSeverityLimit = config.whitesource.cvssSeverityLimit == null ?: Integer.valueOf(config.whitesource.cvssSeverityLimit)
         config.stashContent = utils.unstashAll(config.stashContent)
         config.whitesource['projectNames'] = (config.whitesource['projectNames'] instanceof List) ? config.whitesource['projectNames'] : config.whitesource['projectNames']?.tokenize(',')
         parameters.whitesource = parameters.whitesource ?: [:]
@@ -373,8 +373,8 @@ private def triggerWhitesourceScanWithUserKey(script, config, utils, descriptorU
                         javaCmd = './bin/java'
                     }
 
-                    if(config.whitesource.additionalInstallCommand)
-                        sh new GStringTemplateEngine().createTemplate(config.whitesource.additionalInstallCommand).make([config: config]).toString()
+                    if(config.whitesource.installCommand)
+                        sh new GStringTemplateEngine().createTemplate(config.whitesource.installCommand).make([config: config]).toString()
 
                     def options = ["-jar ${config.whitesource.agentFileName} -c \'${config.whitesource.configFilePath}\'"]
                     if (config.whitesource.orgToken) options.push("-apiKey '${config.whitesource.orgToken}'")
