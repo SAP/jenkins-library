@@ -78,7 +78,7 @@ class ArtifactSetVersionTest extends BasePiperTest {
             return closure()
         })
 
-        shellRule.setReturnValue("date --universal +'%Y%m%d%H%M%S'", '20180101010203')
+        shellRule.setReturnValue("date --utc +'%Y%m%d%H%M%S'", '20180101010203')
         shellRule.setReturnValue('git diff --quiet HEAD', 0)
 
         helper.registerAllowedMethod('fileExists', [String.class], {true})

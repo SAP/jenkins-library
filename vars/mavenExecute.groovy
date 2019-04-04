@@ -1,5 +1,6 @@
 import static com.sap.piper.Prerequisites.checkScript
 
+import com.sap.piper.GenerateDocumentation
 import com.sap.piper.ConfigurationHelper
 import com.sap.piper.Utils
 
@@ -9,20 +10,37 @@ import groovy.transform.Field
 
 @Field Set GENERAL_CONFIG_KEYS = []
 @Field Set STEP_CONFIG_KEYS = [
+    /** @see dockerExecute */
     'dockerImage',
+    /** Path or url to the mvn settings file that should be used as global settings file.*/
     'globalSettingsFile',
+    /** Path or url to the mvn settings file that should be used as project settings file.*/
     'projectSettingsFile',
+    /** Path to the pom file that should be used.*/
     'pomPath',
+    /** Path to the location of the local repository that should be used.*/
     'm2Path'
 ]
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS.plus([
+    /** @see dockerExecute */
     'dockerOptions',
+    /** Flags to provide when running mvn.*/
     'flags',
+    /** Maven goals that should be executed.*/
     'goals',
+    /** Additional properties.*/
     'defines',
+    /**
+     * Configures maven to log successful downloads. This is set to `false` by default to reduce the noise in build logs.
+     * @possibleValues `true`, `false`
+     */
     'logSuccessfulMavenTransfers'
 ])
 
+/**
+ * Executes a maven command inside a Docker container.
+ */
+@GenerateDocumentation
 void call(Map parameters = [:]) {
     handlePipelineStepErrors(stepName: STEP_NAME, stepParameters: parameters) {
 
