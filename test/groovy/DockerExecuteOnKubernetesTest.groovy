@@ -240,7 +240,7 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
             ],
             containerName: 'mavenexecute',
             containerPortMappings: [
-                'selenium/standalone-chrome': [[containerPort: 4444, hostPort: 4444]]
+                'selenium/standalone-chrome': [[containerPort: 4444]]
             ],
             containerWorkspaces: [
                 'selenium/standalone-chrome': ''
@@ -263,8 +263,7 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
             hasItem('maven:3.5-jdk-8-alpine'),
             hasItem('selenium/standalone-chrome'),
         ))
-        // assertThat(portList, is(null))
-        assertThat(portList, hasItem([[name: 'selenium0', containerPort: 4444, hostPort: 4444]]))
+        assertThat(portList, hasItem([[name: 'selenium0', containerPort: 4444]]))
         assertThat(containerCommands.size(), is(1))
         assertThat(envList, hasItem(hasItem(allOf(hasEntry('name', 'customEnvKey'), hasEntry ('value','customEnvValue')))))
     }
