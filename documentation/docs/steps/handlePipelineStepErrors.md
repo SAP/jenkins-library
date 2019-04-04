@@ -8,13 +8,7 @@ none
 
 ## ${docGenParameters}
 
-## Step configuration
-
-none
-
-## Exceptions
-
-none
+## ${docGenConfiguration}
 
 ## Example
 
@@ -23,7 +17,7 @@ handlePipelineStepErrors (stepName: 'executeHealthCheck', stepParameters: parame
   def url = new Utils().getMandatoryParameter(parameters, 'url', null)
   def statusCode = curl(url)
   if (statusCode != '200')
-    error "Health Check failed: ${statusCode}"
+    error "Health Check failed: \${statusCode}"
 }
 ```
 
@@ -41,14 +35,14 @@ If `echoDetails` is set to true the following information will be output to the 
 ----------------------------------------------------------
 The following parameters were available to the step:
 ***
-${stepParameters}
+\${stepParameters}
 ***
 The error was:
 ***
-${err}
+\${err}
 ***
 Further information:
-* Documentation of step ${stepName}: .../${stepName}/
+* Documentation of step \${stepName}: .../\${stepName}/
 * Pipeline documentation: https://...
 * GitHub repository for pipeline steps: https://...
 ----------------------------------------------------------
