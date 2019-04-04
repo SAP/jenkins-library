@@ -6,16 +6,6 @@
 
 none
 
-## ${docGenParameters}
-
-## Step configuration
-
-none
-
-## Exceptions
-
-none
-
 ## Example
 
 ```groovy
@@ -53,3 +43,7 @@ Further information:
 * GitHub repository for pipeline steps: https://...
 ----------------------------------------------------------
 ```
+
+## ${docGenParameters}
+
+## ${docGenConfiguration}
