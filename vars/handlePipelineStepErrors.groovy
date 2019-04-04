@@ -17,7 +17,12 @@ import hudson.AbortException
      */
     'failOnError',
     /** Defines a list of mandatory steps (step names) which have to be successful (=stop the pipeline), even if `failOnError: false` */
-    'mandatorySteps'
+    'mandatorySteps',
+    /**
+     * Defines a Map containing step name as key and timout in minutes in order to stop an execution after a certain timeout.
+     * This helps to make pipeline runs more resilient with respect to long running steps.
+     * */
+    'stepTimeouts'
 ])
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS.plus([
     /**
@@ -59,14 +64,19 @@ void call(Map parameters = [:], body) {
     try {
         if (config.echoDetails)
             echo "--- Begin library step of: ${config.stepName} ---"
-
-        body()
-    } catch (AbortException ae) {
+        if (!config.failOnError && config.stepTimeouts[config.stepName]) {
+            timeout(time: config.stepTimeouts[config.stepName]) {
+                body()
+            }
+        } else {
+            body()
+        }
+    } catch (AbortException | org.jenkinsci.plugins.workflow.steps.FlowInterruptedException err) {
         if (config.echoDetails)
-            message += formatErrorMessage(config, ae)
-        writeErrorToInfluxData(config, ae)
+            message += formatErrorMessage(config, err)
+        writeErrorToInfluxData(config, err)
         if (config.failOnError || config.stepName in config.mandatorySteps) {
-            throw ae
+            throw err
         }
         if (config.stepParameters?.script) {
             config.stepParameters?.script.currentBuild.result = 'UNSTABLE'
