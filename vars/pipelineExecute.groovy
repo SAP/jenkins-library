@@ -6,6 +6,10 @@ import groovy.transform.Field
 
 @Field STEP_NAME = getClass().getName()
 
+@Field Set GENERAL_CONFIG_KEYS = []
+
+@Field Set STEP_CONFIG_KEYS = []
+
 @Field Set PARAMETER_KEYS = [
     /** The url to the git repository of the pipeline to be loaded.*/
     'repoUrl',
