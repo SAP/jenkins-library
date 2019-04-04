@@ -25,7 +25,7 @@ function notify() {
 }
 
 function cleanup() {
-    [ -z "${notificationThreadPid}" ] || kill -PIPE "${notificationThreadPid}" &>/dev/null
+    [[ -z "${notificationThreadPid}" ]] || kill -PIPE "${notificationThreadPid}" &>/dev/null
 }
 
 trap cleanup EXIT
@@ -33,7 +33,7 @@ trap cleanup EXIT
 #
 # In case the build is performed for a pull request TRAVIS_COMMIT is a merge
 # commit between the base branch and the PR branch HEAD. That commit is actually built.
-# But for notifying about a build status we need the commit which is currenty
+# But for notifying about a build status we need the commit which is currently
 # the HEAD of the PR branch.
 #
 # In case the build is performed for a simple branch (not associated with a PR)
@@ -42,16 +42,16 @@ trap cleanup EXIT
 # TRAVIS_COMMIT itself.
 #
 COMMIT_HASH_FOR_STATUS_NOTIFICATIONS="${TRAVIS_PULL_REQUEST_SHA}"
-[ -z "${COMMIT_HASH_FOR_STATUS_NOTIFICATIONS}" ] && COMMIT_HASH_FOR_STATUS_NOTIFICATIONS="${TRAVIS_COMMIT}"
+[[ -z "${COMMIT_HASH_FOR_STATUS_NOTIFICATIONS}" ]] && COMMIT_HASH_FOR_STATUS_NOTIFICATIONS="${TRAVIS_COMMIT}"
 
 notify "pending" "Integration tests in progress." "${COMMIT_HASH_FOR_STATUS_NOTIFICATIONS}"
 
 WORKSPACES_ROOT=workspaces
-[ -e "${WORKSPACES_ROOT}"  ] && rm -rf ${WORKSPACES_ROOT}
+[[ -e "${WORKSPACES_ROOT}" ]] && rm -rf ${WORKSPACES_ROOT}
 
 TEST_CASES=$(find testCases -name '*.yml')
 
-# This auxiliar thread is needed in order to produce some output while the
+# This auxiliary thread is needed in order to produce some output while the
 # test are running. Otherwise the job will be canceled after 10 minutes without
 # output.
 while true; do sleep 10; echo "[INFO] Integration tests still running."; done &
@@ -65,7 +65,7 @@ do
     area=$(dirname "${f#*/}")
     echo "[INFO] Running test case \"${testCase}\" in area \"${area}\"."
     TEST_CASE_ROOT="${WORKSPACES_ROOT}/${area}/${testCase}"
-    [ -e "${TEST_CASE_ROOT}" ] && rm -rf "${TEST_CASE_ROOT}"
+    [[ -e "${TEST_CASE_ROOT}" ]] && rm -rf "${TEST_CASE_ROOT}"
     mkdir -p "${TEST_CASE_ROOT}" || fail "Cannot create test case root directory for test case \"${testCase}\"." 1
     source ./runTest.sh "${testCase}" "${TEST_CASE_ROOT}" &> "${TEST_CASE_ROOT}/log.txt" &
     pid=$!
@@ -74,7 +74,7 @@ do
     let i=i+1
 done
 
-[ "${i}" == 0 ] && fail "No tests has been executed." 1
+[[ "${i}" == 0 ]] && fail "No tests has been executed." 1
 
 #
 # wait for the test cases and cat the log
@@ -96,6 +96,7 @@ for p in "${processes[@]}"
 do
     area=$(dirname "${p%:*}")
     testCase=$(basename "${p%:*}")
+    TEST_CASE_ROOT="${WORKSPACES_ROOT}/${area}/${testCase}"
     echo "[INFO] === START === Logs for test case \"${testCase}\" ===."
     cat "${TEST_CASE_ROOT}/log.txt"
     echo "[INFO] === END === Logs for test case \"${testCase}\" ===."
@@ -111,7 +112,7 @@ do
     area=$(dirname "${p%:*}")
     testCase=$(basename "${p%:*}")
     TEST_CASE_ROOT="${WORKSPACES_ROOT}/${area}/${testCase}"
-    if [ -f "${TEST_CASE_ROOT}/SUCCESS" ]
+    if [[ -f "${TEST_CASE_ROOT}/SUCCESS" ]]
     then
         status="SUCCESS"
     else
@@ -124,7 +125,7 @@ done
 STATUS_DESCRIPTION="The integration tests failed."
 STATUS_STATE="failure"
 
-if [ "${failure}" == "false" ]
+if [[ "${failure}" == "false" ]]
 then
     STATUS_DESCRIPTION="The integration tests succeeded."
     STATUS_STATE="success"
@@ -132,7 +133,7 @@ fi
 
 notify "${STATUS_STATE}" "${STATUS_DESCRIPTION}" "${COMMIT_HASH_FOR_STATUS_NOTIFICATIONS}"
 
-[ "${failure}" != "false" ] && fail "Integration tests failed." 1
+[[ "${failure}" != "false" ]] && fail "Integration tests failed." 1
 
 echo "[INFO] Integration tests succeeded."
 exit 0

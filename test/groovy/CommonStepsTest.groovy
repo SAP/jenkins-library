@@ -20,6 +20,7 @@ import org.junit.rules.RuleChain
 import groovy.io.FileType
 import hudson.AbortException
 import util.BasePiperTest
+import util.JenkinsReadYamlRule
 import util.JenkinsStepRule
 import util.Rules
 
@@ -30,6 +31,7 @@ public class CommonStepsTest extends BasePiperTest{
 
     @Rule
     public RuleChain ruleChain = Rules.getCommonRules(this)
+        .around(new JenkinsReadYamlRule(this))
 
     /*
      * With that test we ensure the very first action inside a method body of a call method
@@ -49,8 +51,7 @@ public class CommonStepsTest extends BasePiperTest{
                'pipelineExecute',
                'piperPipeline',
                'prepareDefaultValues',
-               'setupCommonPipelineEnvironment',
-               'toolValidate',
+               'setupCommonPipelineEnvironment'
            ]
 
         List steps = getSteps().stream()
@@ -101,7 +102,6 @@ public class CommonStepsTest extends BasePiperTest{
     }
 
     private static fieldRelatedWhitelist = [
-            'toolValidate', // step is intended to be configured by other steps
             'durationMeasure', // only expects parameters via signature
             'prepareDefaultValues', // special step (infrastructure)
             'piperPipeline', // special step (infrastructure)

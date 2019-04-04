@@ -1,15 +1,18 @@
 import com.sap.piper.Utils
 import hudson.AbortException
+
+import static org.hamcrest.Matchers.allOf
+import static org.hamcrest.Matchers.containsString
+import static org.hamcrest.Matchers.not
+
+import org.hamcrest.Matchers
 import org.jenkinsci.plugins.credentialsbinding.impl.CredentialNotFoundException
 import org.junit.Assert
 import org.junit.Before
-import org.junit.BeforeClass
-import org.junit.ClassRule
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.ExpectedException
 import org.junit.rules.RuleChain
-import org.junit.rules.TemporaryFolder
 import util.BasePiperTest
 import util.CommandLineMatcher
 import util.JenkinsCredentialsRule
@@ -21,27 +24,24 @@ import util.JenkinsShellCallRule
 import util.JenkinsShellCallRule.Type
 import util.JenkinsStepRule
 import util.JenkinsWithEnvRule
+import util.JenkinsFileExistsRule
 import util.Rules
 
 class NeoDeployTest extends BasePiperTest {
-
-    def toolJavaValidateCalled = false
-
-    @ClassRule
-    public static TemporaryFolder tmp = new TemporaryFolder()
 
     private ExpectedException thrown = new ExpectedException().none()
     private JenkinsLoggingRule loggingRule = new JenkinsLoggingRule(this)
     private JenkinsShellCallRule shellRule = new JenkinsShellCallRule(this)
     private JenkinsStepRule stepRule = new JenkinsStepRule(this)
     private JenkinsLockRule lockRule = new JenkinsLockRule(this)
+    private JenkinsFileExistsRule fileExistsRule = new JenkinsFileExistsRule(this, ['warArchive.war', 'archive.mtar', 'war.properties'])
 
 
     @Rule
     public RuleChain ruleChain = Rules
         .getCommonRules(this)
         .around(new JenkinsReadYamlRule(this))
-        .around(new JenkinsPropertiesRule(this, propertiesFileName, configProperties))
+        .around(new JenkinsPropertiesRule(this, warPropertiesFileName, warProperties))
         .around(thrown)
         .around(loggingRule)
         .around(shellRule)
@@ -51,53 +51,31 @@ class NeoDeployTest extends BasePiperTest {
         .around(stepRule)
         .around(lockRule)
         .around(new JenkinsWithEnvRule(this))
+        .around(fileExistsRule)
 
 
-    private static workspacePath
-    private static warArchiveName
-    private static propertiesFileName
-    private static archiveName
-    private static configProperties
+    private static warArchiveName = 'warArchive.war'
+    private static warPropertiesFileName = 'war.properties'
+    private static archiveName = 'archive.mtar'
+    private static warProperties
 
-
-    @BeforeClass
-    static void createTestFiles() {
-
-        workspacePath = "${tmp.getRoot()}"
-        warArchiveName = 'warArchive.war'
-        propertiesFileName = 'config.properties'
-        archiveName = 'archive.mtar'
-
-        configProperties = new Properties()
-        configProperties.put('account', 'trialuser123')
-        configProperties.put('host', 'test.deploy.host.com')
-        configProperties.put('application', 'testApp')
-
-        tmp.newFile(warArchiveName) << 'dummy war archive'
-        tmp.newFile(propertiesFileName) << 'dummy properties file'
-        tmp.newFile(archiveName) << 'dummy archive'
-    }
 
     @Before
     void init() {
 
+        warProperties = new Properties()
+        warProperties.put('account', 'trialuser123')
+        warProperties.put('host', 'test.deploy.host.com')
+        warProperties.put('application', 'testApp')
+
         helper.registerAllowedMethod('dockerExecute', [Map, Closure], null)
-        helper.registerAllowedMethod('fileExists', [String], { s -> return new File(workspacePath, s).exists() })
-        helper.registerAllowedMethod('pwd', [], { return workspacePath })
+        helper.registerAllowedMethod('pwd', [], { return './' })
 
         nullScript.commonPipelineEnvironment.configuration = [steps: [neoDeploy: [neo: [host: 'test.deploy.host.com', account: 'trialuser123']]]]
     }
 
     @Test
-    void straightForwardTestConfigViaConfiguration() {
-
-        boolean notifyOldConfigFrameworkUsed = true
-
-        def utils = new Utils() {
-            void pushToSWA(Map parameters, Map config) {
-                notifyOldConfigFrameworkUsed = parameters.stepParam4
-            }
-        }
+    void straightForwardTestConfigViaParameters() {
 
         stepRule.step.neoDeploy(script: nullScript,
             source: archiveName,
@@ -113,21 +91,22 @@ class NeoDeployTest extends BasePiperTest {
                 .hasSingleQuotedOption('user', 'anonymous')
                 .hasSingleQuotedOption('password', '\\*\\*\\*\\*\\*\\*\\*\\*')
                 .hasSingleQuotedOption('source', '.*'))
-
-        assert !notifyOldConfigFrameworkUsed
     }
 
     @Test
-    void straightForwardTestConfigViaConfigurationAndViaConfigProperties() {
+    void straightForwardTestConfigViaConfiguration() {
 
-        nullScript.commonPipelineEnvironment.setConfigProperty('DEPLOY_HOST', 'configProperties.deploy.host.com')
-        nullScript.commonPipelineEnvironment.setConfigProperty('CI_DEPLOY_ACCOUNT', 'configPropsUser123')
-
-        nullScript.commonPipelineEnvironment.configuration = [steps: [neoDeploy: [neo: [host   : 'configuration-frwk.deploy.host.com',
-                                                                                  account: 'configurationFrwkUser123']]]]
+        nullScript.commonPipelineEnvironment.configuration = [steps: [
+            neoDeploy: [
+                neo: [
+                    host: 'configuration-frwk.deploy.host.com',
+                    account: 'configurationFrwkUser123'
+                ],
+                source: archiveName
+            ]
+        ]]
 
         stepRule.step.neoDeploy(script: nullScript,
-            source: archiveName,
             neo:[credentialsId: 'myCredentialsId']
         )
 
@@ -138,12 +117,14 @@ class NeoDeployTest extends BasePiperTest {
                 .hasOption('synchronous', '')
                 .hasSingleQuotedOption('user', 'anonymous')
                 .hasSingleQuotedOption('password', '\\*\\*\\*\\*\\*\\*\\*\\*')
-                .hasSingleQuotedOption('source', '.*'))
+                .hasSingleQuotedOption('source', archiveName))
     }
 
     @Test
     void archivePathFromCPETest() {
+
         nullScript.commonPipelineEnvironment.setMtarFilePath('archive.mtar')
+
         stepRule.step.neoDeploy(script: nullScript)
 
         Assert.assertThat(shellRule.shell,
@@ -153,7 +134,9 @@ class NeoDeployTest extends BasePiperTest {
 
     @Test
     void archivePathFromParamsHasHigherPrecedenceThanCPETest() {
+
         nullScript.commonPipelineEnvironment.setMtarFilePath('archive2.mtar')
+
         stepRule.step.neoDeploy(script: nullScript,
             source: "archive.mtar")
 
@@ -194,16 +177,6 @@ class NeoDeployTest extends BasePiperTest {
     }
 
     @Test
-    void archiveNotProvidedTest() {
-
-        thrown.expect(Exception)
-        thrown.expectMessage('ERROR - NO VALUE AVAILABLE FOR source')
-
-        stepRule.step.neoDeploy(script: nullScript)
-    }
-
-
-    @Test
     void wrongArchivePathProvidedTest() {
 
         thrown.expect(AbortException)
@@ -214,14 +187,55 @@ class NeoDeployTest extends BasePiperTest {
 
 
     @Test
-    void scriptNotProvidedTest() {
+    void sanityChecksDeployModeMTATest() {
 
         thrown.expect(Exception)
-        thrown.expectMessage('ERROR - NO VALUE AVAILABLE FOR host')
+        thrown.expectMessage(
+            allOf(
+                containsString('ERROR - NO VALUE AVAILABLE FOR:'),
+                containsString('neo/host'),
+                containsString('neo/account'),
+                containsString('source')))
 
         nullScript.commonPipelineEnvironment.configuration = [:]
 
-        stepRule.step.neoDeploy(script: nullScript, source: archiveName)
+        // deployMode mta is the default, but for the sake of transparency it is better to repeat it.
+        stepRule.step.neoDeploy(script: nullScript, deployMode: 'mta')
+    }
+
+    @Test
+    public void sanityChecksDeployModeWarPropertiesFileTest() {
+
+        thrown.expect(IllegalArgumentException)
+        // using this deploy mode 'account' and 'host' are provided by the properties file
+        thrown.expectMessage(
+            allOf(
+                containsString('ERROR - NO VALUE AVAILABLE FOR source'),
+                not(containsString('neo/host')),
+                not(containsString('neo/account'))))
+
+        nullScript.commonPipelineEnvironment.configuration = [:]
+
+        stepRule.step.neoDeploy(script: nullScript, deployMode: 'warPropertiesFile')
+    }
+
+    @Test
+    public void sanityChecksDeployModeWarParamsTest() {
+
+        thrown.expect(IllegalArgumentException)
+        thrown.expectMessage(
+            allOf(
+                containsString('ERROR - NO VALUE AVAILABLE FOR:'),
+                containsString('source'),
+                containsString('neo/application'),
+                containsString('neo/runtime'),
+                containsString('neo/runtimeVersion'),
+                containsString('neo/host'),
+                containsString('neo/account')))
+
+        nullScript.commonPipelineEnvironment.configuration = [:]
+
+        stepRule.step.neoDeploy(script: nullScript, deployMode: 'warParams')
     }
 
     @Test
@@ -370,7 +384,7 @@ class NeoDeployTest extends BasePiperTest {
             deployMode: 'warPropertiesFile',
             warAction: 'deploy',
             neo: [
-                propertiesFile: propertiesFileName,
+                propertiesFile: warPropertiesFileName,
                 application: 'testApp',
                 runtime: 'neo-javaee6-wp',
                 runtimeVersion: '2.125',
@@ -380,7 +394,7 @@ class NeoDeployTest extends BasePiperTest {
 
         Assert.assertThat(shellRule.shell,
             new CommandLineMatcher().hasProlog("neo.sh deploy")
-                .hasArgument("config.properties")
+                .hasArgument('war.properties')
                 .hasSingleQuotedOption('user', 'defaultUser')
                 .hasSingleQuotedOption('password', '\\*\\*\\*\\*\\*\\*\\*\\*')
                 .hasSingleQuotedOption('source', '.*\\.war'))
@@ -396,7 +410,7 @@ class NeoDeployTest extends BasePiperTest {
             deployMode: 'warPropertiesFile',
             warAction: 'rolling-update',
             neo: [
-                propertiesFile: propertiesFileName,
+                propertiesFile: warPropertiesFileName,
                 application: 'testApp',
                 runtime: 'neo-javaee6-wp',
                 runtimeVersion: '2.125',
@@ -405,56 +419,10 @@ class NeoDeployTest extends BasePiperTest {
 
         Assert.assertThat(shellRule.shell,
             new CommandLineMatcher().hasProlog("neo.sh rolling-update")
-                .hasArgument('config.properties')
+                .hasArgument('war.properties')
                 .hasSingleQuotedOption('user', 'defaultUser')
                 .hasSingleQuotedOption('password', '\\*\\*\\*\\*\\*\\*\\*\\*')
                 .hasSingleQuotedOption('source', '.*\\.war'))
-    }
-
-    @Test
-    void applicationNameNotProvidedTest() {
-
-        thrown.expect(Exception)
-        thrown.expectMessage('ERROR - NO VALUE AVAILABLE FOR application')
-
-        stepRule.step.neoDeploy(script: nullScript,
-            source: warArchiveName,
-            deployMode: 'warParams',
-            neo: [
-                runtime: 'neo-javaee6-wp',
-                runtimeVersion: '2.125'
-            ]
-        )
-    }
-
-    @Test
-    void runtimeNotProvidedTest() {
-
-        thrown.expect(Exception)
-        thrown.expectMessage('ERROR - NO VALUE AVAILABLE FOR runtime')
-
-        stepRule.step.neoDeploy(script: nullScript,
-            source: warArchiveName,
-            neo: [
-                application: 'testApp',
-                runtimeVersion: '2.125'
-            ],
-            deployMode: 'warParams')
-    }
-
-    @Test
-    void runtimeVersionNotProvidedTest() {
-
-        thrown.expect(Exception)
-        thrown.expectMessage('ERROR - NO VALUE AVAILABLE FOR runtimeVersion')
-
-        stepRule.step.neoDeploy(script: nullScript,
-            source: warArchiveName,
-            neo: [
-                application: 'testApp',
-                runtime: 'neo-javaee6-wp'
-            ],
-            deployMode: 'warParams')
     }
 
     @Test

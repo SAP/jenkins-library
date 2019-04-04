@@ -73,14 +73,6 @@ class FioriOnCloudPlatformPipelineTest extends BasePiperTest {
         JenkinsUtils.metaClass.static.isPluginActive = {def s -> false}
 
         //
-        // Things we validate:
-        shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, '.*echo \\$JAVA_HOME.*', '/opt/sap/java')
-        shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, '.*echo \\$MTA_JAR_LOCATION.*', '/opt/sap')
-        shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, '.*echo \\$NEO_HOME.*', '/opt/sap/neo')
-        shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, ".*bin/java -version.*", '1.8.0') // the java version
-        shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, ".*bin/java -jar .*mta.jar", '1.36.0') // the mta version
-
-        //
         // there is a check for the mta.yaml file and for the deployable test.mtar file
         helper.registerAllowedMethod('fileExists', [String],{
 
@@ -93,6 +85,8 @@ class FioriOnCloudPlatformPipelineTest extends BasePiperTest {
             it == 'test.mtar'
         })
 
+        helper.registerAllowedMethod("deleteDir",[], null)
+
         //
         // the properties below we read out of the yaml file
         readYamlRule.registerYaml('mta.yaml', ('''
@@ -104,6 +98,8 @@ class FioriOnCloudPlatformPipelineTest extends BasePiperTest {
         // we need the path variable since we extend the path in the mtaBuild step. In order
         // to be able to extend the path we have to have some initial value.
         binding.setVariable('PATH', '/usr/bin')
+
+        binding.setVariable('scm', null)
 
         helper.registerAllowedMethod('pwd', [], { return "./" })
     }
@@ -128,7 +124,7 @@ class FioriOnCloudPlatformPipelineTest extends BasePiperTest {
         //
         // the mta build call:
         assertThat(shellRule.shell, hasItem(
-                                allOf(  containsString('java -jar /opt/sap/mta.jar'),
+                                allOf(  containsString('java -jar /opt/sap/mta/lib/mta.jar'),  // default mtaJarLocation
                                         containsString('--mtar test.mtar'),
                                         containsString('--build-target=NEO'),
                                         containsString('build'))))

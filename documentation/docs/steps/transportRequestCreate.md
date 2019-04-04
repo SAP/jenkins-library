@@ -12,6 +12,7 @@ The id of the transport request is availabe via [commonPipelineEnvironment.getTr
 ## Prerequisites
 
 * **[Change Management Client 2.0.0 or compatible version](http://central.maven.org/maven2/com/sap/devops/cmclient/dist.cli/)** - available for download on Maven Central.
+* Solution Manager version `ST720 SP08` or newer.
 
 ## Parameters
 
