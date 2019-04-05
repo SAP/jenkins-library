@@ -45,6 +45,8 @@ general:
     #  fsGroup: 1000
   manualConfirmation: true
   productiveBranch: 'master'
+  whitesource:
+    serviceUrl: 'https://saas.whitesourcesoftware.com/api'
 
 #Steps Specific Configuration
 steps:
@@ -225,6 +227,7 @@ steps:
     libraryDocumentationUrl: 'https://sap.github.io/jenkins-library/'
     libraryRepositoryUrl: 'https://github.com/SAP/jenkins-library/'
     mandatorySteps: []
+    stepTimeouts: {}
   healthExecuteCheck:
     healthEndpoint: ''
   influxWriteData:
@@ -282,6 +285,69 @@ steps:
       - 'tests'
   npmExecute:
     dockerImage: 'node:8-stretch'
+  whitesourceExecuteScan:
+    createProductFromPipeline: true
+    emailAddressesOfInitialProductAdmins: []
+    buildDescriptorExcludeList: []
+    parallelLimit: 15
+    licensingVulnerabilities: true
+    securityVulnerabilities: true
+    cvssSeverityLimit: -1
+    reporting: true
+    vulnerabilityReportFileName: 'piper_whitesource_vulnerability_report'
+    vulnerabilityReportTitle: 'WhiteSource Security Vulnerability Report'
+    projectNames: []
+    jreDownloadUrl: 'https://github.com/SAP/SapMachine/releases/download/sapmachine-11.0.2/sapmachine-jre-11.0.2_linux-x64_bin.tar.gz'
+    agentFileName: 'wss-unified-agent.jar'
+    agentDownloadUrl: 'https://github.com/whitesource/unified-agent-distribution/raw/master/standAlone/${config.agentFileName}'
+    agentParameters: ''
+    configFilePath: './wss-unified-agent.config'
+    mta:
+      stashContent:
+        - 'buildDescriptor'
+        - 'opensourceConfiguration'
+    maven:
+      buildDescriptorFile: './pom.xml'
+      dockerImage: 'maven:3.5-jdk-8'
+      dockerWorkspace: '/home/java'
+      stashContent:
+        - 'buildDescriptor'
+        - 'opensourceConfiguration'
+    npm:
+      buildDescriptorFile: './package.json'
+      dockerImage: 'node:8-stretch'
+      dockerWorkspace: '/home/node'
+      stashContent:
+        - 'buildDescriptor'
+        - 'opensourceConfiguration'
+    pip:
+      buildDescriptorFile: './setup.py'
+      dockerImage: 'python:3.7.2-stretch'
+      dockerWorkspace: '/home/python'
+      stashContent:
+        - 'buildDescriptor'
+        - 'opensourceConfiguration'
+    golang:
+      buildDescriptorFile: './Gopkg.toml'
+      dockerImage: 'golang:1.12-stretch'
+      dockerWorkspace: '/home/dep'
+      stashContent:
+        - 'buildDescriptor'
+        - 'opensourceConfiguration'
+      additionalInstallCommand: >-
+        curl --fail https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
+        && mkdir -p \$GOPATH/src/${config.whitesource.projectName.substring(0, config.whitesource.projectName.lastIndexOf('/'))}
+        && ln -s \$(pwd) \$GOPATH/src/${config.whitesource.projectName}
+        && cd \$GOPATH/src/${config.whitesource.projectName} && dep ensure
+    sbt:
+      buildDescriptorFile: './build.sbt'
+      dockerImage: 'hseeberger/scala-sbt:8u181_2.12.8_1.2.8'
+      dockerWorkspace: '/home/scala'
+      stashContent:
+        - 'buildDescriptor'
+        - 'opensourceConfiguration'
+    verbose: false
+    timeout: 0
   pipelineRestartSteps:
     sendMail: true
     timeoutInSeconds: 900
@@ -297,11 +363,11 @@ steps:
     noDefaultExludes: []
   pipelineStashFilesBeforeBuild:
     stashIncludes:
-      buildDescriptor: '**/pom.xml, **/.mvn/**, **/assembly.xml, **/.swagger-codegen-ignore, **/package.json, **/requirements.txt, **/setup.py, **/whitesource_config.py, **/mta*.y*ml, **/.npmrc, **/whitesource.*.json, **/whitesource-fs-agent.config, Dockerfile, **/VERSION, **/version.txt, **/build.sbt, **/sbtDescriptor.json, **/project/*'
+      buildDescriptor: '**/pom.xml, **/.mvn/**, **/assembly.xml, **/.swagger-codegen-ignore, **/package.json, **/requirements.txt, **/setup.py, **/mta*.y*ml, **/.npmrc, Dockerfile, **/VERSION, **/version.txt, **/Gopkg.*, **/build.sbt, **/sbtDescriptor.json, **/project/*'
       deployDescriptor: '**/manifest*.y*ml, **/*.mtaext.y*ml, **/*.mtaext, **/xs-app.json, helm/**, *.y*ml'
       git: '.git/**'
       opa5: '**/*.*'
-      opensourceConfiguration: '**/srcclr.yml, **/vulas-custom.properties, **/.nsprc, **/.retireignore, **/.retireignore.json, **/.snyk'
+      opensourceConfiguration: '**/srcclr.yml, **/vulas-custom.properties, **/.nsprc, **/.retireignore, **/.retireignore.json, **/.snyk, **/wss-unified-agent.config, **/vendor/**/*'
       pipelineConfigAndTests: '.pipeline/**'
       securityDescriptor: '**/xs-security.json'
       tests: '**/pom.xml, **/*.json, **/*.xml, **/src/**, **/node_modules/**, **/specs/**, **/env/**, **/*.js, **/tests/**'

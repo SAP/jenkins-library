@@ -206,7 +206,7 @@ private String generatePodSpec(Map config) {
     ]
     podSpec.spec.securityContext = getSecurityContext(config)
 
-    return new JsonUtils().getPrettyJsonString(podSpec)
+    return new JsonUtils().groovyObjectToPrettyJsonString(podSpec)
 }
 
 
