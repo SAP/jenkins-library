@@ -7,6 +7,8 @@ import groovy.text.SimpleTemplateEngine
 import groovy.transform.Field
 import hudson.AbortException
 
+import org.jenkinsci.plugins.workflow.steps.FlowInterruptedException
+
 @Field STEP_NAME = getClass().getName()
 
 @Field Set GENERAL_CONFIG_KEYS = []
@@ -71,12 +73,12 @@ void call(Map parameters = [:], body) {
         } else {
             body()
         }
-    } catch (AbortException | org.jenkinsci.plugins.workflow.steps.FlowInterruptedException err) {
+    } catch (AbortException | FlowInterruptedException ex) {
         if (config.echoDetails)
-            message += formatErrorMessage(config, err)
-        writeErrorToInfluxData(config, err)
+            message += formatErrorMessage(config, ex)
+        writeErrorToInfluxData(config, ex)
         if (config.failOnError || config.stepName in config.mandatorySteps) {
-            throw err
+            throw ex
         }
         if (config.stepParameters?.script) {
             config.stepParameters?.script.currentBuild.result = 'UNSTABLE'
