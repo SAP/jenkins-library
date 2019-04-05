@@ -227,6 +227,7 @@ steps:
     libraryDocumentationUrl: 'https://sap.github.io/jenkins-library/'
     libraryRepositoryUrl: 'https://github.com/SAP/jenkins-library/'
     mandatorySteps: []
+    stepTimeouts: {}
   healthExecuteCheck:
     healthEndpoint: ''
   influxWriteData:

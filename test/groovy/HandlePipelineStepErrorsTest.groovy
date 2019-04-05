@@ -141,4 +141,24 @@ class HandlePipelineStepErrorsTest extends BasePiperTest {
         }
         assertThat(errorOccured, is(false))
     }
+
+    @Test
+    void testHandleErrorsTimeout() {
+        def timeout = 0
+        helper.registerAllowedMethod('timeout', [Map.class, Closure.class], {m, body ->
+            timeout = m.time
+            throw new org.jenkinsci.plugins.workflow.steps.FlowInterruptedException(hudson.model.Result.ABORTED, new jenkins.model.CauseOfInterruption.UserInterruption('Test'))
+        })
+
+        stepRule.step.handlePipelineStepErrors([
+            stepName: 'test',
+            stepParameters: [jenkinsUtilsStub: jenkinsUtils, script: nullScript],
+            failOnError: false,
+            stepTimeouts: [test: 10]
+        ]) {
+            //do something
+        }
+        assertThat(timeout, is(10))
+        assertThat(nullScript.currentBuild.result, is('UNSTABLE'))
+    }
 }
