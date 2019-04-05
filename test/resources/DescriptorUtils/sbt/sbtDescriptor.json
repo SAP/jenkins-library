@@ -1,0 +1,6 @@
+{
+    "group": "sap",
+    "artifactId": "hdi-deploy",
+    "version": "2.3.0",
+    "packaging": "test"
+}
