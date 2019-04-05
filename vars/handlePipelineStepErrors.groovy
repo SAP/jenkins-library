@@ -64,7 +64,7 @@ void call(Map parameters = [:], body) {
     try {
         if (config.echoDetails)
             echo "--- Begin library step of: ${config.stepName} ---"
-        if (!config.failOnError && config.stepTimeouts[config.stepName]) {
+        if (!config.failOnError && config.stepTimeouts?."${config.stepName}") {
             timeout(time: config.stepTimeouts[config.stepName]) {
                 body()
             }
