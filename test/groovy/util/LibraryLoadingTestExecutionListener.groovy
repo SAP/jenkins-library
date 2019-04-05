@@ -1,9 +1,7 @@
 package util
 
-import com.lesfurets.jenkins.unit.InterceptingGCL
 import com.lesfurets.jenkins.unit.MethodSignature
 import com.lesfurets.jenkins.unit.PipelineTestHelper
-import org.codehaus.groovy.control.CompilerConfiguration
 import org.springframework.test.context.TestContext
 import org.springframework.test.context.support.AbstractTestExecutionListener
 import org.springframework.test.context.support.DependencyInjectionTestExecutionListener
@@ -13,15 +11,6 @@ import static com.lesfurets.jenkins.unit.MethodSignature.method
 class LibraryLoadingTestExecutionListener extends AbstractTestExecutionListener {
 
     static PipelineTestHelper singletonInstance
-
-    static CompilerConfiguration configuration
-
-    static GroovyClassLoader cLoader
-
-    static {
-        configuration = new CompilerConfiguration()
-        cLoader = new InterceptingGCL(singletonInstance, LibraryLoadingTestExecutionListener.class.getClassLoader(), configuration)
-    }
 
     static List TRACKED_ON_CLASS = []
     static List TRACKED_ON_METHODS = []
