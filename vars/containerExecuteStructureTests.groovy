@@ -1,6 +1,7 @@
 import static com.sap.piper.Prerequisites.checkScript
 
 import com.sap.piper.ConfigurationHelper
+import com.sap.piper.Notify
 import com.sap.piper.Utils
 import groovy.transform.Field
 
@@ -91,7 +92,7 @@ void call(Map parameters = [:]) {
 
         List testConfig = findFiles(glob: config.testConfiguration)?.toList()
         if (testConfig.isEmpty()) {
-            error "[${STEP_NAME}] No test description found with pattern '${config.testConfiguration}'"
+            Notify.error(config, this, "No test description found with pattern '${config.testConfiguration}'.")
         } else {
             echo "[${STEP_NAME}] Found files ${testConfig}"
         }

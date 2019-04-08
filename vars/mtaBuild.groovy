@@ -3,6 +3,7 @@ import static com.sap.piper.Prerequisites.checkScript
 import com.sap.piper.GenerateDocumentation
 import com.sap.piper.ConfigurationHelper
 import com.sap.piper.MtaUtils
+import com.sap.piper.Notify
 import com.sap.piper.Utils
 
 import groovy.transform.Field
@@ -64,7 +65,7 @@ void call(Map parameters = [:]) {
 
             if (!fileExists(mtaYamlName)) {
                 if (!applicationName) {
-                    error "'${mtaYamlName}' not found in project sources and 'applicationName' not provided as parameter - cannot generate '${mtaYamlName}' file."
+                    Notify.error(configuration, this, "'${mtaYamlName}' not found in project sources and 'applicationName' not provided as parameter - cannot generate '${mtaYamlName}' file.")
                 } else {
                     echo "[INFO] '${mtaYamlName}' file not found in project sources, but application name provided as parameter - generating '${mtaYamlName}' file."
                     MtaUtils mtaUtils = new MtaUtils(this)
@@ -81,7 +82,7 @@ void call(Map parameters = [:]) {
 
             def id = mtaYaml.ID
             if (!id) {
-                error "Property 'ID' not found in ${mtaYamlName} file."
+                Notify.error(configuration, this, "Property 'ID' not found in '${mtaYamlName}' file.")
             }
 
             def mtarFileName = "${id}.mtar"

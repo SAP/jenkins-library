@@ -2,6 +2,7 @@ import static com.sap.piper.Prerequisites.checkScript
 
 import com.sap.piper.GenerateDocumentation
 import com.sap.piper.ConfigurationHelper
+import com.sap.piper.Notify
 import com.sap.piper.Utils
 import groovy.transform.Field
 
@@ -60,7 +61,7 @@ void call(Map parameters = [:]) {
 
         def statusCode = curl(checkUrl)
         if (statusCode != '200') {
-            error "Health check failed: ${statusCode}"
+            Notify.error(config, this, "Health check failed: ${statusCode}")
         } else {
             echo "Health check for ${checkUrl} successful"
         }

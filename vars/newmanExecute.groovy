@@ -3,6 +3,7 @@ import static com.sap.piper.Prerequisites.checkScript
 import com.sap.piper.ConfigurationHelper
 import com.sap.piper.GenerateDocumentation
 import com.sap.piper.GitUtils
+import com.sap.piper.Notify
 import com.sap.piper.Utils
 import groovy.text.SimpleTemplateEngine
 import groovy.transform.Field
@@ -95,7 +96,7 @@ void call(Map parameters = [:]) {
 
         List collectionList = findFiles(glob: config.newmanCollection)?.toList()
         if (collectionList.isEmpty()) {
-            error "[${STEP_NAME}] No collection found with pattern '${config.newmanCollection}'"
+            Notify.error(config, this, "No collection found with pattern '${config.newmanCollection}'.")
         } else {
             echo "[${STEP_NAME}] Found files ${collectionList}"
         }

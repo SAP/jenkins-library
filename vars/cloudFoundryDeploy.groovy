@@ -2,9 +2,10 @@ import com.sap.piper.JenkinsUtils
 
 import static com.sap.piper.Prerequisites.checkScript
 
-import com.sap.piper.Utils
-import com.sap.piper.ConfigurationHelper
 import com.sap.piper.CfManifestUtils
+import com.sap.piper.ConfigurationHelper
+import com.sap.piper.Notify
+import com.sap.piper.Utils
 
 import groovy.transform.Field
 
@@ -76,7 +77,7 @@ void call(Map parameters = [:]) {
                 deploy = true
                 // set default mtar path
                 config = ConfigurationHelper.newInstance(this, config)
-                    .addIfEmpty('mtaPath', config.mtaPath?:findMtar())
+                    .addIfEmpty('mtaPath', config.mtaPath?:findMtar(config))
                     .use()
 
                 dockerExecute(script: script, dockerImage: config.dockerImage, dockerWorkspace: config.dockerWorkspace, stashContent: config.stashContent) {
@@ -120,16 +121,16 @@ void call(Map parameters = [:]) {
     }
 }
 
-def findMtar(){
+def findMtar(Map config){
     def mtarFiles = findFiles(glob: '**/*.mtar')
 
     if(mtarFiles.length > 1){
-        error "Found multiple *.mtar files, please specify file via mtaPath parameter! ${mtarFiles}"
+        Notify.error(config, this, "Found multiple *.mtar files, please specify file via mtaPath parameter! ${mtarFiles}")
     }
     if(mtarFiles.length == 1){
         return mtarFiles[0].path
     }
-    error 'No *.mtar file found!'
+    Notify.error(config, this, 'No *.mtar file found!')
 }
 
 def deployCfNative (config) {
@@ -151,15 +152,15 @@ def deployCfNative (config) {
         // check if appName is available
         if (config.cloudFoundry.appName == null || config.cloudFoundry.appName == '') {
             if (config.deployType == 'blue-green') {
-                error "[${STEP_NAME}] ERROR: Blue-green plugin requires app name to be passed (see https://github.com/bluemixgaragelondon/cf-blue-green-deploy/issues/27)"
+                Notify.error(config, this, "Blue-green plugin requires app name to be passed (see https://github.com/bluemixgaragelondon/cf-blue-green-deploy/issues/27).")
             }
             if (fileExists(config.cloudFoundry.manifest)) {
                 def manifest = readYaml file: config.cloudFoundry.manifest
                 if (!manifest || !manifest.applications || !manifest.applications[0].name)
-                    error "[${STEP_NAME}] ERROR: No appName available in manifest ${config.cloudFoundry.manifest}."
+                    Notify.error(config, this, "No appName available in manifest '${config.cloudFoundry.manifest}'.")
 
             } else {
-                error "[${STEP_NAME}] ERROR: No manifest file ${config.cloudFoundry.manifest} found."
+                Notify.error(config, this, "No manifest file '${config.cloudFoundry.manifest}' found.")
             }
         }
 
@@ -204,7 +205,7 @@ private void stopOldAppIfRunning(Map config) {
             String cfStopOutput = readFile(file: cfStopOutputFileName)
 
             if (!cfStopOutput.contains("$oldAppName not found")) {
-                error "Could not stop application $oldAppName. Error: $cfStopOutput"
+                Notify.error(config, this, "Could not stop application '$oldAppName'. Error: $cfStopOutput")
             }
         }
     }

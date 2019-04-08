@@ -1,6 +1,7 @@
 import static com.sap.piper.Prerequisites.checkScript
 import com.sap.piper.GenerateDocumentation
 import com.sap.piper.ConfigurationHelper
+import com.sap.piper.Notify
 import com.sap.piper.Utils
 import groovy.transform.Field
 
@@ -51,7 +52,7 @@ void call(Map parameters = [:], body = null) {
 
         try {
             if (!fileExists('package.json')) {
-                error "[${STEP_NAME}] package.json is not found."
+                Notify.error(config, this, "package.json is not found.")
             }
             dockerExecute(script: script, dockerImage: configuration.dockerImage, dockerOptions: configuration.dockerOptions) {
                 if (configuration.defaultNpmRegistry) {

@@ -1,5 +1,7 @@
 import com.sap.piper.ConfigurationHelper
+import com.sap.piper.Notify
 import com.sap.piper.Utils
+
 import groovy.transform.Field
 
 import static com.sap.piper.Prerequisites.checkScript
@@ -77,7 +79,7 @@ private void checkBuildTool(config) {
             break
     }
     if (buildDescriptorPattern && !findFiles(glob: buildDescriptorPattern)) {
-        error "[${STEP_NAME}] buildTool configuration '${config.buildTool}' does not fit to your project, please set buildTool as genereal setting in your .pipeline/config.yml correctly, see also https://github.wdf.sap.corp/pages/ContinuousDelivery/piper-doc/configuration/"
+        Notify.error(config, this, "The buildTool configuration '${config.buildTool}' does not fit to your project. Please set buildTool as genereal setting in your .pipeline/config.yml correctly (see https://sap.github.io/jenkins-library/configuration/).")
     }
 }
 
