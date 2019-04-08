@@ -26,6 +26,7 @@ function notify() {
 
 function cleanup() {
     [[ -z "${notificationThreadPid}" ]] || kill -PIPE "${notificationThreadPid}" &>/dev/null
+    [[ -z "${logThreadPid}" ]] || kill -PIPE "${logThreadPid}" &>/dev/null
 }
 
 trap cleanup EXIT
@@ -56,6 +57,9 @@ TEST_CASES=$(find testCases -name '*.yml')
 # output.
 while true; do sleep 10; echo "[INFO] Integration tests still running."; done &
 notificationThreadPid=$!
+
+while true; do sleep 40000; echo "[INFO] Here are the preliminary logs:"; ls -laR |grep -i 'log.txt' ;find . -name 'log.txt' |xargs cat; done &
+logThreadPid=$!
 
 declare -a processes
 i=0
@@ -89,6 +93,7 @@ do
 done
 
 kill -PIPE "${notificationThreadPid}" &>/dev/null && notificationThreadPid=""
+kill -PIPE "${logThreadPid}" &> /dev/null && logThreadPid=""
 
 #
 # provide the logs
