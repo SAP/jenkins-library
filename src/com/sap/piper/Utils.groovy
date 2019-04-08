@@ -21,9 +21,19 @@ def getMandatoryParameter(Map map, paramName, defaultValue = null) {
 
 }
 
-def stash(name, include = '**/*.*', exclude = '') {
-    echo "Stash content: ${name} (include: ${include}, exclude: ${exclude})"
-    steps.stash name: name, includes: include, excludes: exclude
+def stash(name, include = '**/*.*', exclude = '', useDefaultExcludes = true) {
+    echo "Stash content: ${name} (include: ${include}, exclude: ${exclude}, useDefaultExcludes: ${useDefaultExcludes})"
+
+    Map stashParams = [
+        name: name,
+        includes: include,
+        excludes: exclude
+    ]
+    //only set the optional parameter if default excludes should not be applied
+    if (!useDefaultExcludes) {
+        stashParams.useDefaultExcludes = useDefaultExcludes
+    }
+    steps.stash stashParams
 }
 
 def stashList(script, List stashes) {
@@ -46,9 +56,9 @@ def stashList(script, List stashes) {
     }
 }
 
-def stashWithMessage(name, msg, include = '**/*.*', exclude = '') {
+def stashWithMessage(name, msg, include = '**/*.*', exclude = '', useDefaultExcludes = true) {
     try {
-        stash(name, include, exclude)
+        stash(name, include, exclude, useDefaultExcludes)
     } catch (e) {
         echo msg + name + " (${e.getMessage()})"
     }
