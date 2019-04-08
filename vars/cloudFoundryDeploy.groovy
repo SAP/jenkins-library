@@ -163,7 +163,7 @@ def deployCfNative (config) {
             }
         }
 
-        sh """#!/bin/bash
+        def returnCode = sh returnStatus: true, script: """#!/bin/bash
             set +x
             set -e
             export HOME=${config.dockerWorkspace}
@@ -171,6 +171,7 @@ def deployCfNative (config) {
             cf plugins
             cf ${deployCommand} ${config.cloudFoundry.appName ?: ''} ${blueGreenDeployOptions} -f '${config.cloudFoundry.manifest}' ${config.smokeTest}
             """
+        if(returnCode != 0) error "[ERROR][${step.STEP_NAME}] The execution of the deploy command failed, see log for details."
         stopOldAppIfRunning(config)
         sh "cf logout"
     }
@@ -228,7 +229,7 @@ def deployMta (config) {
         usernameVariable: 'username'
     )]) {
         echo "[${STEP_NAME}] Deploying MTA (${config.mtaPath}) with following parameters: ${config.mtaExtensionDescriptor} ${config.mtaDeployParameters}"
-        sh """#!/bin/bash
+        def returnCode = sh returnStatus: true, script: """#!/bin/bash
             export HOME=${config.dockerWorkspace}
             set +x
             set -e
@@ -236,6 +237,7 @@ def deployMta (config) {
             cf login -u ${username} -p '${password}' -a ${config.cloudFoundry.apiEndpoint} -o \"${config.cloudFoundry.org}\" -s \"${config.cloudFoundry.space}\"
             cf plugins
             cf ${deployCommand} ${config.mtaPath} ${config.mtaDeployParameters} ${config.mtaExtensionDescriptor}"""
+        if(returnCode != 0) error "[ERROR][${step.STEP_NAME}] The execution of the deploy command failed, see log for details."
         sh "cf logout"
     }
 }
