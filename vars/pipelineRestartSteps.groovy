@@ -12,7 +12,7 @@ import groovy.transform.Field
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
 
 void call(Map parameters = [:], body) {
-    handlePipelineStepErrors (stepName: STEP_NAME, stepParameters: parameters) {
+    handlePipelineStepErrors (stepName: STEP_NAME, stepParameters: parameters, failOnError: true) {
         def script = checkScript(this, parameters) ?: this
         def jenkinsUtils = parameters.jenkinsUtilsStub ?: new JenkinsUtils()
         // load default & individual configuration
