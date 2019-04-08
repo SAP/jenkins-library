@@ -1,4 +1,4 @@
-import com.sap.icd.jenkins.Utils
+import com.sap.piper.Utils
 import com.sap.piper.JenkinsUtils
 
 import groovy.transform.Field
