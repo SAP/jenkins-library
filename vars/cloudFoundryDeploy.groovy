@@ -171,7 +171,7 @@ def deployCfNative (config) {
             cf plugins
             cf ${deployCommand} ${config.cloudFoundry.appName ?: ''} ${blueGreenDeployOptions} -f '${config.cloudFoundry.manifest}' ${config.smokeTest}
             """
-        if(returnCode != 0) error "[ERROR][${step.STEP_NAME}] The execution of the deploy command failed, see log for details."
+        if(returnCode != 0) error "[ERROR][${STEP_NAME}] The execution of the deploy command failed, see log for details."
         stopOldAppIfRunning(config)
         sh "cf logout"
     }
@@ -237,7 +237,7 @@ def deployMta (config) {
             cf login -u ${username} -p '${password}' -a ${config.cloudFoundry.apiEndpoint} -o \"${config.cloudFoundry.org}\" -s \"${config.cloudFoundry.space}\"
             cf plugins
             cf ${deployCommand} ${config.mtaPath} ${config.mtaDeployParameters} ${config.mtaExtensionDescriptor}"""
-        if(returnCode != 0) error "[ERROR][${step.STEP_NAME}] The execution of the deploy command failed, see log for details."
+        if(returnCode != 0) error "[ERROR][${STEP_NAME}] The execution of the deploy command failed, see log for details."
         sh "cf logout"
     }
 }
