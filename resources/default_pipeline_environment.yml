@@ -348,6 +348,10 @@ steps:
         - 'opensourceConfiguration'
     verbose: false
     timeout: 0
+  pipelineExecute:
+    branch: 'master'
+    path: 'Jenkinsfile'
+    credentialsId: ''
   pipelineRestartSteps:
     sendMail: true
     timeoutInSeconds: 900
