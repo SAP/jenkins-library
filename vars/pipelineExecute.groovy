@@ -36,7 +36,7 @@ void call(Map parameters = [:]) {
 
         def path
 
-        handlePipelineStepErrors (stepName: 'pipelineExecute', stepParameters: parameters) {
+        handlePipelineStepErrors (stepName: 'pipelineExecute', stepParameters: parameters, failOnError: true) {
 
             def utils = new Utils()
 
