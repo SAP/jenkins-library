@@ -87,6 +87,10 @@ class Helper {
         prepareDefaultValuesStep.metaClass.readYaml {
             m -> new Yaml().load(m.text)
         }
+        prepareDefaultValuesStep.metaClass.echo {
+            m -> println(m)
+        }
+
 
         prepareDefaultValuesStep
     }
