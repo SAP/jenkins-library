@@ -44,8 +44,8 @@ void call(Map parameters = [:]) {
             .mixin(parameters, PARAMETER_KEYS)
             .addIfNull('customData', InfluxData.getInstance().getFields().jenkins_custom_data)
             .addIfNull('customDataTags', InfluxData.getInstance().getTags().jenkins_custom_data)
-            .addIfNull('customDataMap', InfluxData.getInstance().getFields().dropWhile{ it.key == 'jenkins_custom_data' })
-            .addIfNull('customDataMapTags', InfluxData.getInstance().getTags().dropWhile{ it.key == 'jenkins_custom_data' })
+            .addIfNull('customDataMap', InfluxData.getInstance().getFields().findAll({ it.key != 'jenkins_custom_data' }))
+            .addIfNull('customDataMapTags', InfluxData.getInstance().getTags().findAll({ it.key != 'jenkins_custom_data' }))
             .use()
 
         new Utils().pushToSWA([
