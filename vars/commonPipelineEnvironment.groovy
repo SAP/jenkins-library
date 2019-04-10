@@ -27,8 +27,16 @@ class commonPipelineEnvironment implements Serializable {
     Map defaultConfiguration = [:]
 
     String mtarFilePath
+    private Map valueMap = [:]
 
-    String transportRequestId
+    void setValue(String property, value) {
+        valueMap[property] = value
+    }
+
+    def getValue(String property) {
+        return valueMap.get(property)
+    }
+
     String changeDocumentId
 
     def reset() {
@@ -46,8 +54,8 @@ class commonPipelineEnvironment implements Serializable {
         githubRepo = null
 
         mtarFilePath = null
+        valueMap = [:]
 
-        transportRequestId = null
         changeDocumentId = null
 
         InfluxData.reset()
