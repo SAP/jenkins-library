@@ -125,17 +125,23 @@ private deploy(script, utils, Map configuration, NeoCommandHelper neoCommandHelp
 
                 if (warAction == WarAction.ROLLING_UPDATE) {
                     def returnCodeRoll = sh returnStatus: true, script: neoCommandHelper.rollingUpdateCommand()
-                    if(returnCodeRoll != 0) error "[ERROR][${STEP_NAME}] The execution of the deploy command failed, see log for details."
+                    if(returnCodeRoll != 0){
+                        error "[ERROR][${STEP_NAME}] The execution of the deploy command failed, see the log for details."
+                    }
                 } else {
                     def returnCodeWAR = sh returnStatus: true, script: neoCommandHelper.deployCommand()
-                    if(returnCodeWAR != 0) error "[ERROR][${STEP_NAME}] The execution of the deploy command failed, see log for details."
+                    if(returnCodeWAR != 0){
+                        error "[ERROR][${STEP_NAME}] The execution of the deploy command failed, see the log for details."
+                    }
                     sh neoCommandHelper.restartCommand()
                 }
 
 
             } else if (deployMode == DeployMode.MTA) {
                 def returnCodeMTA = sh returnStatus: true, script: neoCommandHelper.deployMta()
-                if(returnCodeMTA != 0) error "[ERROR][${STEP_NAME}] The execution of the deploy command failed, see log for details."
+                if(returnCodeMTA != 0){
+                    error "[ERROR][${STEP_NAME}] The execution of the deploy command failed, see the log for details."
+                }
             }
         }
     }
