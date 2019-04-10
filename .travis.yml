@@ -45,6 +45,6 @@ jobs:
         skip_cleanup: true
         github_token: ${GITHUB_TOKEN}
         name: 'Travis CI Publisher'
-        local_dir: 'documentation/docs'
+        local_dir: 'documentation/docs-gen'
         keep_history: true
         #verbose: true
