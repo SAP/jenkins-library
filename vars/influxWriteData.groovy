@@ -3,6 +3,7 @@ import static com.sap.piper.Prerequisites.checkScript
 import com.sap.piper.ConfigurationHelper
 import com.sap.piper.JsonUtils
 import com.sap.piper.Utils
+import com.sap.piper.analytics.InfluxData
 
 import groovy.transform.Field
 
@@ -41,10 +42,10 @@ void call(Map parameters = [:]) {
                     : null
             ])
             .mixin(parameters, PARAMETER_KEYS)
-            .addIfNull('customData', script.commonPipelineEnvironment.getInfluxCustomData())
-            .addIfNull('customDataTags', script.commonPipelineEnvironment.getInfluxCustomDataTags())
-            .addIfNull('customDataMap', script.commonPipelineEnvironment.getInfluxCustomDataMap())
-            .addIfNull('customDataMapTags', script.commonPipelineEnvironment.getInfluxCustomDataMapTags())
+            .addIfNull('customData', InfluxData.getInstance().getFields().jenkins_custom_data)
+            .addIfNull('customDataTags', InfluxData.getInstance().getTags().jenkins_custom_data)
+            .addIfNull('customDataMap', InfluxData.getInstance().getFields().findAll({ it.key != 'jenkins_custom_data' }))
+            .addIfNull('customDataMapTags', InfluxData.getInstance().getTags().findAll({ it.key != 'jenkins_custom_data' }))
             .use()
 
         new Utils().pushToSWA([
