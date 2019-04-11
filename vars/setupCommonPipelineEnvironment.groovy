@@ -3,6 +3,8 @@ import static com.sap.piper.Prerequisites.checkScript
 import com.sap.piper.GenerateDocumentation
 import com.sap.piper.ConfigurationHelper
 import com.sap.piper.Utils
+import com.sap.piper.analytics.InfluxData
+
 import groovy.transform.Field
 
 @Field String STEP_NAME = getClass().getName()
@@ -50,8 +52,8 @@ void call(Map parameters = [:]) {
             stepParam4: parameters.customDefaults?'true':'false'
         ], config)
 
-        script.commonPipelineEnvironment.setInfluxStepData('build_url', env.BUILD_URL)
-        script.commonPipelineEnvironment.setInfluxPipelineData('build_url', env.BUILD_URL)
+        InfluxData.addField('step_data', 'build_url', env.BUILD_URL)
+        InfluxData.addField('pipeline_data', 'build_url', env.BUILD_URL)
     }
 }
 
