@@ -2,6 +2,7 @@ import com.cloudbees.groovy.cps.NonCPS
 
 import com.sap.piper.GenerateDocumentation
 import com.sap.piper.ConfigurationHelper
+import com.sap.piper.analytics.InfluxData
 
 import groovy.text.SimpleTemplateEngine
 import groovy.transform.Field
@@ -115,11 +116,9 @@ private String formatErrorMessage(Map config, error){
 }
 
 private void writeErrorToInfluxData(Map config, error){
-    def script = config?.stepParameters?.script
-
-    if(script && script.commonPipelineEnvironment?.getInfluxCustomDataMapTags().build_error_message == null){
-        script.commonPipelineEnvironment?.setInfluxCustomDataMapTagsEntry('pipeline_data', 'build_error_step', config.stepName)
-        script.commonPipelineEnvironment?.setInfluxCustomDataMapTagsEntry('pipeline_data', 'build_error_stage', script.env?.STAGE_NAME)
-        script.commonPipelineEnvironment?.setInfluxCustomDataMapEntry('pipeline_data', 'build_error_message', error.getMessage())
+    if(InfluxData.getInstance().getFields().pipeline_data?.build_error_message == null){
+        InfluxData.addTag('pipeline_data', 'build_error_step', config.stepName)
+        InfluxData.addTag('pipeline_data', 'build_error_stage', config.stepParameters.script?.env?.STAGE_NAME)
+        InfluxData.addField('pipeline_data', 'build_error_message', error.getMessage())
     }
 }

@@ -1,5 +1,6 @@
 import com.sap.piper.ConfigurationHelper
 import com.sap.piper.Utils
+import com.sap.piper.StepAssertions
 import com.sap.piper.tools.neo.DeployMode
 import com.sap.piper.tools.neo.NeoCommandHelper
 import com.sap.piper.tools.neo.WarAction
@@ -88,6 +89,9 @@ void call(parameters = [:]) {
                 dockerEnvVars: configuration.dockerEnvVars,
                 dockerOptions: configuration.dockerOptions
             ) {
+
+                StepAssertions.assertFileExists(this, configuration.source)
+
                 NeoCommandHelper neoCommandHelper = new NeoCommandHelper(
                     this,
                     deployMode,
