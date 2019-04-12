@@ -81,7 +81,12 @@ void call(parameters) {
             }
         }
         post {
-            always {
+            /* https://jenkins.io/doc/book/pipeline/syntax/#post */
+            success {buildSetResult(currentBuild)}
+            aborted {buildSetResult(currentBuild, 'ABORTED')}
+            failure {buildSetResult(currentBuild, 'FAILURE')}
+            unstable {buildSetResult(currentBuild, 'UNSTABLE')}
+            cleanup {
                 influxWriteData script: parameters.script, wrapInNode: true
                 mailSendNotification script: parameters.script, wrapInNode: true
             }
