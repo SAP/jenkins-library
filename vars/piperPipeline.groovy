@@ -82,8 +82,7 @@ void call(parameters) {
         }
         post {
             always {
-                influxWriteData script: parameters.script, wrapInNode: true
-                mailSendNotification script: parameters.script, wrapInNode: true
+                piperPipelineStagePost script: parameters.script
             }
         }
     }
