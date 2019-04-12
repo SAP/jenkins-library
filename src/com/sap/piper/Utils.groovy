@@ -7,19 +7,6 @@ import groovy.text.SimpleTemplateEngine
 import java.nio.charset.StandardCharsets
 import java.security.MessageDigest
 
-@NonCPS
-def getMandatoryParameter(Map map, paramName, defaultValue = null) {
-
-    def paramValue = map[paramName]
-
-    if (paramValue == null)
-        paramValue = defaultValue
-
-    if (paramValue == null)
-        throw new Exception("ERROR - NO VALUE AVAILABLE FOR ${paramName}")
-    return paramValue
-
-}
 
 def stash(name, include = '**/*.*', exclude = '', useDefaultExcludes = true) {
     echo "Stash content: ${name} (include: ${include}, exclude: ${exclude}, useDefaultExcludes: ${useDefaultExcludes})"

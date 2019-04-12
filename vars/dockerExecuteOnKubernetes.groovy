@@ -102,7 +102,7 @@ import hudson.AbortException
  */
 @GenerateDocumentation
 void call(Map parameters = [:], body) {
-    handlePipelineStepErrors(stepName: STEP_NAME, stepParameters: parameters) {
+    handlePipelineStepErrors(stepName: STEP_NAME, stepParameters: parameters, failOnError: true) {
 
         final script = checkScript(this, parameters) ?: this
 
@@ -208,7 +208,7 @@ private String generatePodSpec(Map config) {
     ]
     podSpec.spec.securityContext = getSecurityContext(config)
 
-    return new JsonUtils().getPrettyJsonString(podSpec)
+    return new JsonUtils().groovyObjectToPrettyJsonString(podSpec)
 }
 
 
