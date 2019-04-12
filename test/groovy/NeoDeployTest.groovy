@@ -467,7 +467,7 @@ class NeoDeployTest extends BasePiperTest {
     void dontSwallowExceptionWhenUnableToProvideLogsTest() {
 
         thrown.expect(AbortException)
-        thrown.expectMessage('File archive.mtar cannot be found.')
+        thrown.expectMessage('Something went wrong during neo deployment')
         thrown.expect(new BaseMatcher() {
 
             def expectedException = AbortException
@@ -488,7 +488,18 @@ class NeoDeployTest extends BasePiperTest {
 
         loggingRule.expect('Unable to provide the logs.')
 
-        helper.registerAllowedMethod('fileExists', [String], { false })
+        helper.registerAllowedMethod('fileExists', [String],
+            { f ->
+                f == 'archive.mtar'
+            }
+        )
+        helper.registerAllowedMethod('sh', [Map],
+            { m ->
+                if(m.script.toString().contains('neo.sh deploy-mta'))
+                    throw new AbortException('Something went wrong during neo deployment.')
+            }
+        )
+
         helper.registerAllowedMethod("sh", [String],
             { cmd ->
                 if (cmd == 'cat logs/neo/*')
