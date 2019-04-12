@@ -38,29 +38,7 @@ class UtilsTest extends BasePiperTest {
     void setup() {
 
         parameters = [:]
-    }
 
-    @Test
-    void noValueGetMandatoryParameterTest() {
-
-        thrown.expect(Exception)
-        thrown.expectMessage("ERROR - NO VALUE AVAILABLE FOR test")
-
-        utils.getMandatoryParameter(parameters, 'test', null)
-    }
-
-    @Test
-    void defaultValueGetMandatoryParameterTest() {
-
-        assert  utils.getMandatoryParameter(parameters, 'test', 'default') == 'default'
-    }
-
-    @Test
-    void valueGetmandatoryParameterTest() {
-
-        parameters.put('test', 'value')
-
-        assert utils.getMandatoryParameter(parameters, 'test', null) == 'value'
     }
 
     @Test
@@ -69,5 +47,12 @@ class UtilsTest extends BasePiperTest {
         // asserts
         // generated with "echo -n 'ContinuousDelivery' | sha1sum | sed 's/  -//'"
         assertThat(result, is('0dad6c33b6246702132454f604dee80740f399ad'))
+    }
+
+    @Test
+    void testUnstashAllSkipNull() {
+
+        def stashResult = utils.unstashAll(['a', null, 'b'])
+        assert stashResult == ['a', 'b']
     }
 }

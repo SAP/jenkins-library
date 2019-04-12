@@ -1,6 +1,7 @@
 import static com.sap.piper.Prerequisites.checkScript
 
 import com.sap.piper.ConfigurationHelper
+import com.sap.piper.GenerateDocumentation
 import com.sap.piper.Utils
 import groovy.transform.Field
 import groovy.text.SimpleTemplateEngine
@@ -9,14 +10,44 @@ import groovy.text.SimpleTemplateEngine
 
 @Field Set GENERAL_CONFIG_KEYS = []
 @Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS.plus([
+    /**
+     * Allows overriding the Slack Plugin Integration Base Url specified in the global configuration.
+     */
     'baseUrl',
+    /**
+     * Allows overriding of the default massaging channel from the plugin configuration.
+     */
     'channel',
+    /**
+     * Defines the message color`color` defines the message color.
+     * @possibleValues one of `good`, `warning`, `danger`, or any hex color code (eg. `#439FE0`)
+     */
     'color',
+    /**
+     * The credentials id for the Slack token.
+     * @possibleValues Jenkins credentials id
+     */
     'credentialsId',
+    /**
+     * Send a custom message into the Slack channel.
+     */
     'message'
 ])
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
 
+/**
+ * Sends notifications to the Slack channel about the build status.
+ *
+ * Notification contains:
+ *
+ * * Build status;
+ * * Repo Owner;
+ * * Repo Name;
+ * * Branch Name;
+ * * Jenkins Build Number;
+ * * Jenkins Build URL.
+ */
+@GenerateDocumentation
 void call(Map parameters = [:]) {
     handlePipelineStepErrors (stepName: STEP_NAME, stepParameters: parameters) {
         def utils = parameters.juStabUtils ?: new Utils()

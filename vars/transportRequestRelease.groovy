@@ -3,6 +3,7 @@ import static com.sap.piper.Prerequisites.checkScript
 import com.sap.piper.Utils
 import groovy.transform.Field
 
+import com.sap.piper.GenerateDocumentation
 import com.sap.piper.ConfigurationHelper
 import com.sap.piper.cm.BackendType
 import com.sap.piper.cm.ChangeManagement
@@ -19,14 +20,60 @@ import static com.sap.piper.cm.StepHelpers.getBackendTypeAndLogInfoIfCMIntegrati
 @Field Set GENERAL_CONFIG_KEYS = STEP_CONFIG_KEYS
 
 @Field Set STEP_CONFIG_KEYS = [
-    'changeManagement'
+    'changeManagement',
+        /**
+         * @see checkChangeInDevelopment
+         * @parentConfigKey changeManagement
+         */
+        'clientOpts',
+        /**
+         * @see checkChangeInDevelopment
+         * @parentConfigKey changeManagement
+         */
+        'credentialsId',
+        /**
+         * @see checkChangeInDevelopment
+         * @parentConfigKey changeManagement
+         */
+        'endpoint',
+        /**
+         * @see checkChangeInDevelopment
+         * @parentConfigKey changeManagement
+         */
+        'git/from',
+        /**
+         * @see checkChangeInDevelopment
+         * @parentConfigKey changeManagement
+         */
+        'git/to',
+        /**
+         * @see checkChangeInDevelopment
+         * @parentConfigKey changeManagement
+         */
+        'git/format',
+        /**
+         * @see transportRequestCreate
+         * @parentConfigKey changeManagement
+         */
+        'rfc/developmentInstance',
+        /**
+         * @see transportRequestCreate
+         * @parentConfigKey changeManagement
+         */
+        'rfc/developmentClient',
   ]
 
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS.plus([
+    /** @see transportRequestCreate */
     'changeDocumentId',
+    /** The id of the transport request to release. */
     'transportRequestId',
+    /** @see transportRequestCreate */
+    'verbose',
   ])
 
+/** Releases a Transport Request. */
+@GenerateDocumentation
 void call(parameters = [:]) {
 
     handlePipelineStepErrors (stepName: STEP_NAME, stepParameters: parameters) {
@@ -49,12 +96,16 @@ void call(parameters = [:]) {
         if(backendType == BackendType.NONE) return
 
         configHelper
+            .collectValidationFailures()
             .withMandatoryProperty('changeManagement/clientOpts')
             .withMandatoryProperty('changeManagement/credentialsId')
             .withMandatoryProperty('changeManagement/endpoint')
             .withMandatoryProperty('changeManagement/git/to')
             .withMandatoryProperty('changeManagement/git/from')
             .withMandatoryProperty('changeManagement/git/format')
+            .withMandatoryProperty('changeManagement/rfc/developmentInstance', null, { backendType == BackendType.RFC})
+            .withMandatoryProperty('changeManagement/rfc/developmentClient', null, { backendType == BackendType.RFC})
+            .withMandatoryProperty('verbose', null, { backendType == BackendType.RFC})
 
         configuration = configHelper.use()
 
@@ -89,13 +140,46 @@ void call(parameters = [:]) {
         echo closingMessage.join()
 
             try {
-                cm.releaseTransportRequest(backendType,
-                                           configuration.changeDocumentId,
-                                           configuration.transportRequestId,
-                                           configuration.changeManagement.endpoint,
-                                           configuration.changeManagement.credentialsId,
-                                           configuration.changeManagement.clientOpts)
 
+                switch(backendType) {
+
+                    case BackendType.SOLMAN:
+
+                        cm.releaseTransportRequestSOLMAN(
+                            configuration.changeManagement.solman.docker,
+                            configuration.changeDocumentId,
+                            configuration.transportRequestId,
+                            configuration.changeManagement.endpoint,
+                            configuration.changeManagement.credentialsId,
+                            configuration.changeManagement.clientOpts)
+                        break
+
+                    case BackendType.CTS:
+
+                        cm.releaseTransportRequestCTS(
+                            configuration.changeManagement.cts.docker,
+                            configuration.transportRequestId,
+                            configuration.changeManagement.endpoint,
+                            configuration.changeManagement.credentialsId,
+                            configuration.changeManagement.clientOpts)
+                        break
+
+                    case BackendType.RFC:
+
+                        cm.releaseTransportRequestRFC(
+                            configuration.changeManagement.rfc.docker,
+                            configuration.transportRequestId,
+                            configuration.changeManagement.endpoint,
+                            configuration.changeManagement.rfc.developmentInstance,
+                            configuration.changeManagement.rfc.developmentClient,
+                            configuration.changeManagement.credentialsId,
+                            configuration.verbose)
+                        break
+
+                    default:
+
+                        throw new IllegalArgumentException("Invalid backend type: '${backendType}'.")
+                }
             } catch(ChangeManagementException ex) {
                 throw new AbortException(ex.getMessage())
             }

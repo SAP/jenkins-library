@@ -1,11 +1,17 @@
+import static org.hamcrest.Matchers.allOf
+import static org.hamcrest.Matchers.containsString
+
+import java.util.List
 import java.util.Map
 
+import org.hamcrest.Matchers
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.ExpectedException
 import org.junit.rules.RuleChain
 
+import com.sap.piper.JenkinsUtils
 import com.sap.piper.cm.BackendType
 import com.sap.piper.cm.ChangeManagement
 import com.sap.piper.cm.ChangeManagementException
@@ -15,6 +21,7 @@ import util.JenkinsCredentialsRule
 import util.JenkinsStepRule
 import util.JenkinsLoggingRule
 import util.JenkinsReadYamlRule
+import util.JenkinsDockerExecuteRule
 import util.Rules
 
 import hudson.AbortException
@@ -119,10 +126,11 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
     }
 
     @Test
-    public void uploadFileToTransportRequestFailureTest() {
+    public void uploadFileToTransportRequestSOLMANFailureTest() {
 
         ChangeManagement cm = new ChangeManagement(nullScript) {
-            void uploadFileToTransportRequest(BackendType type,
+            void uploadFileToTransportRequestSOLMAN(
+                                              Map docker,
                                               String changeId,
                                               String transportRequestId,
                                               String applicationId,
@@ -152,19 +160,16 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
         loggingRule.expect("[INFO] File '/path' has been successfully uploaded to transport request '002'.")
 
         ChangeManagement cm = new ChangeManagement(nullScript) {
-            void uploadFileToTransportRequest(BackendType type,
-                                              String changeId,
+            void uploadFileToTransportRequestCTS(
+                                              Map docker,
                                               String transportRequestId,
-                                              String applicationId,
                                               String filePath,
                                               String endpoint,
                                               String credentialsId,
                                               String cmclientOpts) {
 
-                cmUtilReceivedParams.type = type
-                cmUtilReceivedParams.changeId = changeId
+                cmUtilReceivedParams.docker = docker
                 cmUtilReceivedParams.transportRequestId = transportRequestId
-                cmUtilReceivedParams.applicationId = applicationId
                 cmUtilReceivedParams.filePath = filePath
                 cmUtilReceivedParams.endpoint = endpoint
                 cmUtilReceivedParams.credentialsId = credentialsId
@@ -180,15 +185,179 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
 
         assert cmUtilReceivedParams ==
             [
-                type: BackendType.CTS,
-                changeId: null,
+                docker: [
+                    image: 'ppiper/cm-client',
+                    options:[],
+                    envVars:[:],
+                    pullImage:true
+                ],
                 transportRequestId: '002',
-                applicationId: null,
                 filePath: '/path',
                 endpoint: 'https://example.org/cm',
                 credentialsId: 'CM',
                 cmclientOpts: ''
             ]
+
+    }
+
+    @Test
+    public void uploadFileToTransportRequestRFCSanityChecksTest() {
+
+        thrown.expect(IllegalArgumentException)
+        thrown.expectMessage(allOf(
+            containsString('NO VALUE AVAILABLE FOR'),
+            containsString('applicationUrl'),
+            containsString('developmentInstance'),
+            containsString('developmentClient'),
+            containsString('applicationDescription'),
+            containsString('abapPackage'),
+            containsString('applicationName')))
+
+        stepRule.step.transportRequestUploadFile(script: nullScript,
+                 transportRequestId: '123456', //no sanity check, can be read from git history
+                 changeManagement: [type: 'RFC'],
+        )
+    }
+
+    @Test
+    public void uploadFileToTransportRequestRFCSuccessTest() {
+
+        def cmUtilsReceivedParams
+
+        nullScript.commonPipelineEnvironment.configuration =
+        [general:
+            [changeManagement:
+                [
+                 endpoint: 'https://example.org/rfc'
+                ]
+            ]
+        ]
+
+        def cm = new ChangeManagement(nullScript) {
+
+            void uploadFileToTransportRequestRFC(
+                Map docker,
+                String transportRequestId,
+                String applicationId,
+                String applicationURL,
+                String endpoint,
+                String credentialsId,
+                String developmentInstance,
+                String developmentClient,
+                String applicationDescription,
+                String abapPackage,
+                String codePage,
+                boolean acceptUnixStyleLineEndings,
+                boolean failUploadOnWarning,
+                boolean verbose) {
+
+                cmUtilsReceivedParams = [
+                    docker: docker,
+                    transportRequestId: transportRequestId,
+                    applicationName: applicationId,
+                    applicationURL: applicationURL,
+                    endpoint: endpoint,
+                    credentialsId: credentialsId,
+                    developmentInstance: developmentInstance,
+                    developmentClient: developmentClient,
+                    applicationDescription: applicationDescription,
+                    abapPackage: abapPackage,
+                    codePage: codePage,
+                    acceptUnixStyleLineEndings: acceptUnixStyleLineEndings,
+                    failUploadOnWarning: failUploadOnWarning,
+                ]
+            }
+        }
+
+        stepRule.step.transportRequestUploadFile(script: nullScript,
+                 applicationUrl: 'http://example.org/blobstore/xyz.zip',
+                 codePage: 'UTF-9',
+                 acceptUnixStyleLineEndings: true,
+                 transportRequestId: '123456',
+                 changeManagement: [
+                     type: 'RFC',
+                     rfc: [
+                         developmentClient: '002',
+                         developmentInstance: '001'
+                     ]
+                 ],
+                 applicationName: '42',
+                 applicationDescription: 'Lorem ipsum',
+                 abapPackage: 'XYZ',
+                 cmUtils: cm,)
+
+        assert cmUtilsReceivedParams ==
+            [
+                docker: [
+                    image: 'rfc',
+                    options: [],
+                    envVars: [:],
+                    pullImage: true
+                ],
+                transportRequestId: '123456',
+                applicationName: '42',
+                applicationURL: 'http://example.org/blobstore/xyz.zip',
+                endpoint: 'https://example.org/rfc',
+                credentialsId: 'CM',
+                developmentInstance: '001',
+                developmentClient: '002',
+                applicationDescription: 'Lorem ipsum',
+                abapPackage:'XYZ',
+                codePage: 'UTF-9',
+                acceptUnixStyleLineEndings: true,
+                failUploadOnWarning: true,
+            ]
+    }
+
+    @Test
+    public void uploadFileToTransportRequestRFCUploadFailsTest() {
+
+        thrown.expect(AbortException)
+        thrown.expectMessage('upload failed')
+
+        def cm = new ChangeManagement(nullScript) {
+
+            void uploadFileToTransportRequestRFC(
+                Map docker,
+                String transportRequestId,
+                String applicationId,
+                String applicationURL,
+                String endpoint,
+                String credentialsId,
+                String developmentInstance,
+                String developmentClient,
+                String applicationDescription,
+                String abapPackage,
+                String codePage,
+                boolean acceptUnixStyleLineEndings,
+                boolean failOnUploadWarning,
+                boolean verbose) {
+                throw new ChangeManagementException('upload failed')
+            }
+        }
+
+        stepRule.step.transportRequestUploadFile(script: nullScript,
+                 applicationUrl: 'http://example.org/blobstore/xyz.zip',
+                 codePage: 'UTF-9',
+                 acceptUnixStyleLineEndings: true,
+                 transportRequestId: '123456',
+                 changeManagement: [
+                     type: 'RFC',
+                     rfc: [
+                         docker: [
+                             image: 'rfc',
+                             options: [],
+                             envVars: [:],
+                             pullImage: false,
+                         ],
+                         developmentClient: '002',
+                         developmentInstance: '001',
+                         ]
+                     ],
+                 applicationName: '42',
+                 applicationDescription: 'Lorem ipsum',
+                 abapPackage: 'XYZ',
+                 cmUtils: cm,)
     }
 
     @Test
@@ -202,7 +371,8 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
         loggingRule.expect("[INFO] File '/path' has been successfully uploaded to transport request '002' of change document '001'.")
 
         ChangeManagement cm = new ChangeManagement(nullScript) {
-            void uploadFileToTransportRequest(BackendType type,
+            void uploadFileToTransportRequestSOLMAN(
+                                              Map docker,
                                               String changeId,
                                               String transportRequestId,
                                               String applicationId,
@@ -211,7 +381,7 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
                                               String credentialsId,
                                               String cmclientOpts) {
 
-                cmUtilReceivedParams.type = type
+                cmUtilReceivedParams.docker = docker
                 cmUtilReceivedParams.changeId = changeId
                 cmUtilReceivedParams.transportRequestId = transportRequestId
                 cmUtilReceivedParams.applicationId = applicationId
@@ -231,7 +401,12 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
 
         assert cmUtilReceivedParams ==
             [
-                type: BackendType.SOLMAN,
+                docker: [
+                    image: 'ppiper/cm-client',
+                    pullImage: true,
+                    envVars: [:],
+                    options: [],
+                ],
                 changeId: '001',
                 transportRequestId: '002',
                 applicationId: 'app',
@@ -243,14 +418,15 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
     }
 
     @Test
-    public void uploadFileToTransportRequestSuccessApplicationIdFromConfigurationTest() {
+    public void uploadFileToTransportRequestSOLMANSuccessApplicationIdFromConfigurationTest() {
 
         nullScript.commonPipelineEnvironment.configuration.put(['steps',
                                                                    [transportRequestUploadFile:
                                                                        [applicationId: 'AppIdfromConfig']]])
 
         ChangeManagement cm = new ChangeManagement(nullScript) {
-            void uploadFileToTransportRequest(BackendType type,
+            void uploadFileToTransportRequestSOLMAN(
+                                              Map docker,
                                               String changeId,
                                               String transportRequestId,
                                               String applicationId,
@@ -274,13 +450,14 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
     }
 
     @Test
-    public void uploadFileToTransportRequestFilePathFromParameters() {
+    public void uploadFileToTransportRequestSOLMANFilePathFromParameters() {
 
         // this one is not used when file path is provided via signature
         nullScript.commonPipelineEnvironment.setMtarFilePath('/path2')
 
         ChangeManagement cm = new ChangeManagement(nullScript) {
-            void uploadFileToTransportRequest(BackendType type,
+            void uploadFileToTransportRequestSOLMAN(
+                                              Map docker,
                                               String changeId,
                                               String transportRequestId,
                                               String applicationId,
@@ -304,13 +481,14 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
     }
 
     @Test
-    public void uploadFileToTransportRequestFilePathFromCommonPipelineEnvironment() {
+    public void uploadFileToTransportRequestSOLMANFilePathFromCommonPipelineEnvironment() {
 
         // this one is used since there is nothing in the signature
         nullScript.commonPipelineEnvironment.setMtarFilePath('/path2')
 
         ChangeManagement cm = new ChangeManagement(nullScript) {
-            void uploadFileToTransportRequest(BackendType type,
+            void uploadFileToTransportRequestSOLMAN(
+                                              Map docker,
                                               String changeId,
                                               String transportRequestId,
                                               String applicationId,
@@ -333,13 +511,14 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
     }
 
     @Test
-    public void uploadFileToTransportRequestUploadFailureTest() {
+    public void uploadFileToTransportRequestSOLMANUploadFailureTest() {
 
         thrown.expect(AbortException)
         thrown.expectMessage('Upload failure.')
 
         ChangeManagement cm = new ChangeManagement(nullScript) {
-            void uploadFileToTransportRequest(BackendType type,
+            void uploadFileToTransportRequestSOLMAN(
+                                              Map docker,
                                               String changeId,
                                               String transportRequestId,
                                               String applicationId,
@@ -362,7 +541,7 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
     @Test
     public void invalidBackendTypeTest() {
         thrown.expect(AbortException)
-        thrown.expectMessage('Invalid backend type: \'DUMMY\'. Valid values: [SOLMAN, CTS, NONE]. ' +
+        thrown.expectMessage('Invalid backend type: \'DUMMY\'. Valid values: [SOLMAN, CTS, RFC, NONE]. ' +
                              'Configuration: \'changeManagement/type\'.')
 
         stepRule.step.transportRequestUploadFile(script: nullScript,

@@ -14,15 +14,15 @@ Project "Piper" consists of two parts:
 
 * [A shared library][piper-library] containing steps and utilities that are
   required by Jenkins pipelines.
-* A set of [Jenkins pipelines][piper-pipelines] using the piper library to
-  implement best practice processes.
+* A set of [Docker images][devops-docker-images] used in the piper library to implement best practices.
 
 Please follow [this link to our extended library documentation][piper-library-pages].
 
 ## What you get
 
 The shared library contains all the necessary steps to run our best practice
-[Jenkins pipelines][piper-pipelines].
+[Jenkins pipelines][piper-library-pages] described in the Scenarios section or
+to run a [pipeline as step][piper-library-scenario].
 
 The best practice pipelines are based on the general concepts of [Jenkins 2.0
 Pipelines as Code][jenkins-doc-pipelines].  With that you have the power of the
@@ -116,7 +116,8 @@ otherwise in the [LICENSE file][piper-library-license]
 
 [github]: https://github.com
 [piper-library]: https://github.com/SAP/jenkins-library
-[piper-pipelines]: https://github.com/SAP/jenkins-pipelines
+[devops-docker-images]: https://github.com/SAP/devops-docker-images
+[piper-library-scenario]: https://sap.github.io/jenkins-library/scenarios/ui5-sap-cp/Readme/
 [piper-library-pages]: https://sap.github.io/jenkins-library
 [piper-library-pages-plugins]: https://sap.github.io/jenkins-library/jenkins/requiredPlugins
 [piper-library-issues]: https://github.com/SAP/jenkins-library/issues

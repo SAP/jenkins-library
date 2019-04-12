@@ -13,9 +13,9 @@ ${error}
 ***
 
 Further information:
-* Documentation of library step ${stepName}: https://sap.github.io/jenkins-library/steps/${stepName}/
-* Source code of library step ${stepName}: https://github.com/SAP/jenkins-library/blob/master/vars/${stepName}.groovy
-* Library documentation: https://sap.github.io/jenkins-library/
-* Library repository: https://github.com/SAP/jenkins-library
+* Documentation of library step ${stepName}: ${libraryDocumentationUrl}steps/${stepName}/
+* Source code of library step ${stepName}: ${libraryRepositoryUrl}blob/master/vars/${stepName}.groovy
+* Library documentation: ${libraryDocumentationUrl}
+* Library repository: ${libraryRepositoryUrl}
 
 ----------------------------------------------------------

@@ -1,40 +1,14 @@
-import groovy.io.FileType;
+import groovy.io.FileType
 import org.yaml.snakeyaml.Yaml
 import org.codehaus.groovy.control.CompilerConfiguration
 import com.sap.piper.GenerateDocumentation
-import com.sap.piper.DefaultValueCache
 import java.util.regex.Matcher
+import groovy.text.StreamingTemplateEngine
 
 //
-// Collects helper functions for rendering the docu
+// Collects helper functions for rendering the documentation
 //
 class TemplateHelper {
-
-    static replaceParagraph(def textIn, int level, name, replacement) {
-
-        boolean insideParagraph = false
-        def textOut = ''
-
-        textIn.eachLine {
-
-            line ->
-
-            if(insideParagraph && line ==~ "^#{1,${level}} .*\$") {
-                insideParagraph = false
-            }
-
-            if(! insideParagraph) {
-                textOut += "${line}\n"
-            }
-
-            if(line ==~ "^#{${level}} ${name}.*\$") {
-                insideParagraph = true
-                textOut += "${replacement}\n\n"
-            }
-        }
-
-        textOut
-    }
 
     static createParametersTable(Map parameters) {
 
@@ -61,18 +35,22 @@ class TemplateHelper {
         t.trim()
     }
 
+    static createParametersSection(Map parameters) {
+        createParametersTable(parameters) + '\n' + createParameterDescriptionSection(parameters)
+    }
+
     static createStepConfigurationSection(Map parameters) {
 
         def t = '''|We recommend to define values of step parameters via [config.yml file](../configuration.md).
                    |
                    |In following sections of the config.yml the configuration is possible:\n\n'''.stripMargin()
 
-        t += '| parameter | general | step | stage |\n'
-        t += '|-----------|---------|------|-------|\n'
+        t += '| parameter | general | step/stage |\n'
+        t += '|-----------|---------|------------|\n'
 
         parameters.keySet().toSorted().each {
             def props = parameters.get(it)
-            t += "| `${it}` | ${props.GENERAL_CONFIG ? 'X' : ''} | ${props.STEP_CONFIG ? 'X' : ''} | ${props.STAGE_CONFIG ? 'X' : ''} |\n"
+            t += "| `${it}` | ${props.GENERAL_CONFIG ? 'X' : ''} | ${props.STEP_CONFIG ? 'X' : ''} |\n"
         }
 
         t.trim()
@@ -84,15 +62,17 @@ class TemplateHelper {
 //
 class Helper {
 
+    static projectRoot = new File(Helper.class.protectionDomain.codeSource.location.path).getParentFile().getParentFile().getParentFile()
+
     static getConfigHelper(classLoader, roots, script) {
 
         def compilerConfig = new CompilerConfiguration()
             compilerConfig.setClasspathList( roots )
 
         new GroovyClassLoader(classLoader, compilerConfig, true)
-            .parseClass(new File('src/com/sap/piper/ConfigurationHelper.groovy'))
+            .parseClass(new File(projectRoot, 'src/com/sap/piper/ConfigurationHelper.groovy'))
             .newInstance(script, [:]).loadStepDefaults()
-        }
+    }
 
     static getPrepareDefaultValuesStep(def gse) {
 
@@ -102,7 +82,7 @@ class Helper {
             m, c ->  c()
         }
         prepareDefaultValuesStep.metaClass.libraryResource {
-            f ->  new File("resources/${f}").text
+            f ->  new File(projectRoot,"resources/${f}").text
         }
         prepareDefaultValuesStep.metaClass.readYaml {
             m -> new Yaml().load(m.text)
@@ -122,6 +102,7 @@ class Helper {
 
             def prepareDefaultValues() {
                 _prepareDefaultValuesStep()
+
             }
 
             def run() {
@@ -196,9 +177,10 @@ class Helper {
         boolean docu = false,
                 value = false,
                 mandatory = false,
+                parentObject = false,
                 docuEnd = false
 
-        def docuLines = [], valueLines = [], mandatoryLines = []
+        def docuLines = [], valueLines = [], mandatoryLines = [], parentObjectLines = []
 
         f.eachLine  {
             line ->
@@ -219,13 +201,17 @@ class Helper {
                         throw new RuntimeException('Cannot retrieve parameter for a comment')
                     }
 
+                    def _docu = [], _value = [], _mandatory = [], _parentObject = []
+                    docuLines.each { _docu << it  }
+                    valueLines.each { _value << it }
+                    mandatoryLines.each { _mandatory << it }
+                    parentObjectLines.each { _parentObject << it }
+                    _parentObject << param
+                    param = _parentObject*.trim().join('/').trim()
+
                     if(step.parameters[param].docu || step.parameters[param].value)
                         System.err << "[WARNING] There is already some documentation for parameter '${param}. Is this parameter documented twice?'\n"
 
-                    def _docu = [], _value = [], _mandatory = []
-                    docuLines.each { _docu << it  }
-                    valueLines.each { _value << it}
-                    mandatoryLines.each { _mandatory << it}
                     step.parameters[param].docu = _docu*.trim().join(' ').trim()
                     step.parameters[param].value = _value*.trim().join(' ').trim()
                     step.parameters[param].mandatory = _mandatory*.trim().join(' ').trim()
@@ -233,6 +219,7 @@ class Helper {
                 docuLines.clear()
                 valueLines.clear()
                 mandatoryLines.clear()
+                parentObjectLines.clear()
             }
 
             if( line.trim()  ==~ /^\/\*\*.*/ ) {
@@ -249,11 +236,19 @@ class Helper {
                 if(_line ==~ /.*@possibleValues.*/) {
                     mandatory = false // should be something like reset attributes
                     value = true
+                    parentObject = false
                 }
                 // some remark for mandatory e.g. some parameters are only mandatory under certain conditions
                 if(_line ==~ /.*@mandatory.*/) {
                     value = false // should be something like reset attributes ...
                     mandatory = true
+                    parentObject = false
+                }
+                // grouping config properties within a parent object for easier readability
+                if(_line ==~ /.*@parentConfigKey.*/) {
+                    value = false // should be something like reset attributes ...
+                    mandatory = false
+                    parentObject = true
                 }
 
                 if(value) {
@@ -270,7 +265,14 @@ class Helper {
                     }
                 }
 
-                if(! value && ! mandatory) {
+                if(parentObject) {
+                    if(_line) {
+                        _line = (_line =~ /.*@parentConfigKey\s*?(.*)/)[0][1]
+                        parentObjectLines << _line
+                    }
+                }
+
+                if(!value && !mandatory && !parentObject) {
                     docuLines << _line
                 }
             }
@@ -279,6 +281,7 @@ class Helper {
                 docu = false
                 value = false
                 mandatory = false
+                parentObject = false
                 docuEnd = true
             }
         }
@@ -311,12 +314,31 @@ class Helper {
         def params = [] as Set
         f.eachLine  {
             line ->
-            if( line ==~ /.*withMandatoryProperty.*/ ) {
-                def param = (line =~ /.*withMandatoryProperty\('(.*)'/)[0][1]
-                params << param
-            }
+                if (line ==~ /.*withMandatoryProperty.*/) {
+                    def param = (line =~ /.*withMandatoryProperty\('(.*)'/)[0][1]
+                    params << param
+                }
         }
         return params
+    }
+
+    static getParentObjectMappings(File f) {
+        def mappings = [:]
+        def parentObjectKey = ''
+        f.eachLine  {
+            line ->
+                if (line ==~ /.*parentConfigKey.*/ && !parentObjectKey) {
+                    def param = (line =~ /.*parentConfigKey\s*?(.*)/)[0][1]
+                    parentObjectKey = param.trim()
+                } else if (line ==~ /\s*?(.*)[,]{0,1}/ && parentObjectKey) {
+                    def pName = retrieveParameterName(line)
+                    if(pName) {
+                        mappings.put(pName, parentObjectKey)
+                        parentObjectKey = ''
+                    }
+                }
+        }
+        return mappings
     }
 
     static getValue(Map config, def pPath) {
@@ -332,7 +354,7 @@ class Helper {
 
         stepsDir.traverse(type: FileType.FILES, maxDepth: 0) {
             if(it.getName().endsWith('.groovy')) {
-                def scriptName = (it =~  /vars\/(.*)\.groovy/)[0][1]
+                def scriptName = (it =~  /vars\${File.separator}(.*)\.groovy/)[0][1]
                 def stepScript = gse.createScript("${scriptName}.groovy", new Binding())
                 for (def method in stepScript.getClass().getMethods()) {
                     if(method.getName() == 'call' && method.getAnnotation(GenerateDocumentation) != null) {
@@ -347,8 +369,8 @@ class Helper {
 }
 
 roots = [
-    'vars',
-    'src',
+    new File(Helper.projectRoot, "vars").getAbsolutePath(),
+    new File(Helper.projectRoot, "src").getAbsolutePath()
     ]
 
 stepsDir = null
@@ -362,12 +384,12 @@ steps = []
 if(args.length >= 1)
     stepsDir = new File(args[0])
 
-stepsDir = stepsDir ?: new File('vars')
+stepsDir = stepsDir ?: new File(Helper.projectRoot, "vars")
 
 if(args.length >= 2)
     stepsDocuDir = new File(args[1])
 
-stepsDocuDir = stepsDocuDir ?: new File('documentation/docs/steps')
+stepsDocuDir = stepsDocuDir ?: new File(Helper.projectRoot, "documentation/docs/steps")
 
 
 if(args.length >= 3)
@@ -394,7 +416,7 @@ if( !stepsDir.exists() ) {
 // sanity checks
 //
 
-def gse = new GroovyScriptEngine( [ stepsDir.getName()  ] as String[] , getClass().getClassLoader() )
+def gse = new GroovyScriptEngine([ stepsDir.getAbsolutePath()  ] as String[], GenerateDocumentation.class.getClassLoader() )
 
 //
 // find all the steps we have to document (if no step has been provided from outside)
@@ -457,20 +479,15 @@ void renderStep(stepName, stepProperties) {
         return
     }
 
-    def text = theStepDocu.text
-    if(stepProperties.description) {
-        text = TemplateHelper.replaceParagraph(text, 2, 'Description', '\n' + stepProperties.description)
-    }
-    if(stepProperties.parameters) {
+    def binding = [
+        docGenStepName      : stepName,
+        docGenDescription   : 'Description\n\n' + stepProperties.description,
+        docGenParameters    : 'Parameters\n\n' + TemplateHelper.createParametersSection(stepProperties.parameters),
+        docGenConfiguration : 'Step configuration\n\n' + TemplateHelper.createStepConfigurationSection(stepProperties.parameters)
+    ]
+    def template = new StreamingTemplateEngine().createTemplate(theStepDocu.text)
+    String text = template.make(binding)
 
-        text = TemplateHelper.replaceParagraph(text, 2, 'Parameters', '\n' +
-                TemplateHelper.createParametersTable(stepProperties.parameters) + '\n' +
-                TemplateHelper.createParameterDescriptionSection(stepProperties.parameters))
-
-
-        text = TemplateHelper.replaceParagraph(text, 2, 'Step configuration', '\n' +
-                TemplateHelper.createStepConfigurationSection(stepProperties.parameters))
-    }
     theStepDocu.withWriter { w -> w.write text }
 }
 
@@ -529,6 +546,20 @@ def handleStep(stepName, prepareDefaultValuesStep, gse) {
 
     params.addAll(requiredParameters)
 
+    // translate parameter names according to compatibility annotations
+    def parentObjectMappings = Helper.getParentObjectMappings(theStep)
+    def compatibleParams = [] as Set
+    if(parentObjectMappings) {
+        params.each {
+                if (parentObjectMappings[it])
+                    compatibleParams.add(parentObjectMappings[it] + '/' + it)
+                else
+                    compatibleParams.add(it)
+        }
+        if (compatibleParams)
+            params = compatibleParams
+    }
+
     def step = [parameters:[:]]
 
     //
@@ -544,8 +575,7 @@ def handleStep(stepName, prepareDefaultValuesStep, gse) {
                                 required: true,
 
                                 GENERAL_CONFIG: false,
-                                STEP_CONFIG: false,
-                                STAGE_CONFIG: false
+                                STEP_CONFIG: false
                             ]
 
     // END special handling for 'script' parameter
@@ -561,14 +591,14 @@ def handleStep(stepName, prepareDefaultValuesStep, gse) {
                                             required: requiredParameters.contains((it as String)) && defaultValue == null
                                         ]
 
-        step.parameters.put(it, parameterProperties)
+            step.parameters.put(it, parameterProperties)
 
-        // The scope is only defined for the first level of a hierarchical configuration.
-        // If the first part is found, all nested parameters are allowed with that scope.
-        def firstPart = it.split('/').head()
-        scopedParameters.each { key, val ->
-            parameterProperties.put(key, val.contains(firstPart))
-        }
+            // The scope is only defined for the first level of a hierarchical configuration.
+            // If the first part is found, all nested parameters are allowed with that scope.
+            def firstPart = it.split('/').head()
+            scopedParameters.each { key, val ->
+                parameterProperties.put(key, val.contains(firstPart))
+            }
     }
 
     Helper.scanDocu(theStep, step)
