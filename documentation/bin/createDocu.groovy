@@ -95,7 +95,7 @@ class Helper {
         prepareDefaultValuesStep
     }
 
-    static getDummyScript(def prepareDefaultValuesStep, def stepName, Map defaultValueParams) {
+    static getDummyScript(def prepareDefaultValuesStep, def stepName, Map prepareDefaultValuesStepParams) {
 
         def _prepareDefaultValuesStep = prepareDefaultValuesStep
         def _stepName = stepName
@@ -105,7 +105,7 @@ class Helper {
             def STEP_NAME = _stepName
 
             def prepareDefaultValues() {
-                _prepareDefaultValuesStep(defaultValueParams)
+                _prepareDefaultValuesStep(prepareDefaultValuesStepParams)
 
             }
 
@@ -533,13 +533,13 @@ def handleStep(stepName, prepareDefaultValuesStep, gse, customDefaults) {
 
     System.err << "[INFO] Handling step '${stepName}'.\n"
 
-    Map defaultValueParams = [:]
+    Map prepareDefaultValuesStepParams = [:]
     if (customDefaults)
-        defaultValueParams.customDefaults = customDefaults
+        prepareDefaultValuesStepParams.customDefaults = customDefaults
 
     def defaultConfig = Helper.getConfigHelper(getClass().getClassLoader(),
                                                 roots,
-                                                Helper.getDummyScript(prepareDefaultValuesStep, stepName, defaultValueParams)).use()
+                                                Helper.getDummyScript(prepareDefaultValuesStep, stepName, prepareDefaultValuesStepParams)).use()
 
     def params = [] as Set
 
