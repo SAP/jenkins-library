@@ -82,6 +82,7 @@ void call(parameters) {
         }
         post {
             always {
+                piperPublishNotifications script: parameters.script
                 influxWriteData script: parameters.script, wrapInNode: true
                 mailSendNotification script: parameters.script, wrapInNode: true
             }
