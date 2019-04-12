@@ -9,6 +9,7 @@ import org.junit.rules.RuleChain
 import util.BasePiperTest
 import util.JenkinsLoggingRule
 import util.JenkinsReadYamlRule
+import util.JenkinsShellCallRule
 import util.JenkinsStepRule
 import util.PluginMock
 import util.Rules
@@ -23,6 +24,7 @@ class DockerExecuteTest extends BasePiperTest {
     private DockerMock docker
     private JenkinsLoggingRule loggingRule = new JenkinsLoggingRule(this)
     private JenkinsStepRule stepRule = new JenkinsStepRule(this)
+    private JenkinsShellCallRule shellRule = new JenkinsShellCallRule(this)
 
     @Rule
     public RuleChain ruleChain = Rules
@@ -30,8 +32,8 @@ class DockerExecuteTest extends BasePiperTest {
         .around(new JenkinsReadYamlRule(this))
         .around(loggingRule)
         .around(stepRule)
+        .around(shellRule)
 
-    int dockerPsReturnValue = 0
     def bodyExecuted
     def containerName
 
@@ -41,7 +43,7 @@ class DockerExecuteTest extends BasePiperTest {
         docker = new DockerMock()
         JenkinsUtils.metaClass.static.isPluginActive = {def s -> new PluginMock(s).isActive()}
         binding.setVariable('docker', docker)
-        helper.registerAllowedMethod('sh', [Map.class], {return dockerPsReturnValue})
+        shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, "docker .*", 0)
     }
 
     @Test
@@ -201,7 +203,7 @@ class DockerExecuteTest extends BasePiperTest {
 
     @Test
     void testDockerNotInstalledResultsInLocalExecution() throws Exception {
-        dockerPsReturnValue = 1
+        shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, "docker .*", 1)
         stepRule.step.dockerExecute(script: nullScript,
             dockerOptions: '-it') {
             bodyExecuted = true
@@ -242,6 +244,18 @@ class DockerExecuteTest extends BasePiperTest {
     }
 
     @Test
+    void testSidecarHealthCheck(){
+        stepRule.step.dockerExecute(
+            script: nullScript,
+            dockerImage: 'maven:3.5-jdk-8-alpine',
+            sidecarImage: 'selenium/standalone-chrome',
+            sidecarName: 'testAlias',
+            sidecarReadyCommand: "isReady.sh"
+        ) {}
+        assertThat(shellRule.shell, hasItem("docker exec uniqueId isReady.sh"))
+    }
+
+    @Test
     void testSidecarKubernetes(){
         boolean dockerExecuteOnKubernetesCalled = false
         binding.setVariable('env', [ON_K8S: 'true'])
@@ -273,6 +287,33 @@ class DockerExecuteTest extends BasePiperTest {
         }
         assertThat(bodyExecuted, is(true))
         assertThat(dockerExecuteOnKubernetesCalled, is(true))
+    }
+
+    @Test
+    void testSidecarKubernetesHealthCheck(){
+        binding.setVariable('env', [ON_K8S: 'true'])
+
+        helper.registerAllowedMethod('dockerExecuteOnKubernetes', [Map.class, Closure.class], { params, body ->
+            body()
+        })
+
+        def containerCalled = false
+        helper.registerAllowedMethod('container', [Map.class, Closure.class], { params, body ->
+            containerCalled = true
+            assertThat(params.name, is('testAlias'))
+            body()
+        })
+
+        stepRule.step.dockerExecute(
+            script: nullScript,
+            dockerImage: 'maven:3.5-jdk-8-alpine',
+            sidecarImage: 'selenium/standalone-chrome',
+            sidecarName: 'testAlias',
+            sidecarReadyCommand: "isReady.sh"
+        ) {}
+
+        assertThat(containerCalled, is(true))
+        assertThat(shellRule.shell, hasItem("isReady.sh"))
     }
 
     private class DockerMock {
