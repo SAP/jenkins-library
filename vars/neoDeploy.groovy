@@ -1,5 +1,6 @@
 import com.sap.piper.ConfigurationHelper
 import com.sap.piper.Utils
+import com.sap.piper.StepAssertions
 import com.sap.piper.tools.neo.DeployMode
 import com.sap.piper.tools.neo.NeoCommandHelper
 import com.sap.piper.tools.neo.WarAction
@@ -88,6 +89,9 @@ void call(parameters = [:]) {
                 dockerEnvVars: configuration.dockerEnvVars,
                 dockerOptions: configuration.dockerOptions
             ) {
+
+                StepAssertions.assertFileExists(this, configuration.source)
+
                 NeoCommandHelper neoCommandHelper = new NeoCommandHelper(
                     this,
                     deployMode,
@@ -124,15 +128,24 @@ private deploy(script, utils, Map configuration, NeoCommandHelper neoCommandHelp
                 echo "Link to the application dashboard: ${neoCommandHelper.cloudCockpitLink()}"
 
                 if (warAction == WarAction.ROLLING_UPDATE) {
-                    sh neoCommandHelper.rollingUpdateCommand()
+                    def returnCodeRollingUpdate = sh returnStatus: true, script: neoCommandHelper.rollingUpdateCommand()
+                    if(returnCodeRollingUpdate != 0){
+                        error "[ERROR][${STEP_NAME}] The execution of the deploy command failed, see the log for details."
+                    }
                 } else {
-                    sh neoCommandHelper.deployCommand()
+                    def returnCodeDeploy = sh returnStatus: true, script: neoCommandHelper.deployCommand()
+                    if(returnCodeDeploy != 0){
+                        error "[ERROR][${STEP_NAME}] The execution of the deploy command failed, see the log for details."
+                    }
                     sh neoCommandHelper.restartCommand()
                 }
 
 
             } else if (deployMode == DeployMode.MTA) {
-                sh neoCommandHelper.deployMta()
+                def returnCodeMTA = sh returnStatus: true, script: neoCommandHelper.deployMta()
+                if(returnCodeMTA != 0){
+                    error "[ERROR][${STEP_NAME}] The execution of the deploy command failed, see the log for details."
+                }
             }
         }
     }

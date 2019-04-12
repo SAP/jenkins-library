@@ -5,7 +5,7 @@ import com.sap.piper.ConfigurationHelper
 import groovy.transform.Field
 
 @Field String STEP_NAME = getClass().getName()
-@Field Set STEP_CONFIG_KEYS = ['runCheckmarx', 'stashIncludes', 'stashExcludes']
+@Field Set STEP_CONFIG_KEYS = ['noDefaultExludes', 'stashIncludes', 'stashExcludes']
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
 
 void call(Map parameters = [:]) {
@@ -28,9 +28,6 @@ void call(Map parameters = [:]) {
             .mixinGeneralConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS)
             .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS)
             .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName?:env.STAGE_NAME, STEP_CONFIG_KEYS)
-            .mixin([
-                runCheckmarx: (script.commonPipelineEnvironment.configuration?.steps?.executeCheckmarxScan?.checkmarxProject != null && script.commonPipelineEnvironment.configuration.steps.executeCheckmarxScan.checkmarxProject.length()>0)
-            ])
             .mixin(parameters, PARAMETER_KEYS)
             .use()
 
@@ -40,27 +37,9 @@ void call(Map parameters = [:]) {
             stepParam1: parameters?.script == null
         ], config)
 
-        // store files to be checked with checkmarx
-        if (config.runCheckmarx) {
-            utils.stash(
-                'checkmarx',
-                config.stashIncludes.checkmarx,
-                config.stashExcludes.checkmarx
-            )
+        config.stashIncludes.each {stashKey, stashIncludes ->
+            def useDefaultExcludes = !config.noDefaultExludes.contains(stashKey)
+            utils.stashWithMessage(stashKey, "[${STEP_NAME}] no files detected for stash '${stashKey}': ", stashIncludes, config.stashExcludes[stashKey]?:'', useDefaultExcludes)
         }
-
-        utils.stashWithMessage(
-            'classFiles',
-            "[${STEP_NAME}] Failed to stash class files.",
-            config.stashIncludes.classFiles,
-            config.stashExcludes.classFiles
-        )
-
-        utils.stashWithMessage(
-            'sonar',
-            "[${STEP_NAME}] Failed to stash sonar files.",
-            config.stashIncludes.sonar,
-            config.stashExcludes.sonar
-        )
     }
 }
