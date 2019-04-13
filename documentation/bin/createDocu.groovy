@@ -87,11 +87,15 @@ class Helper {
         prepareDefaultValuesStep.metaClass.readYaml {
             m -> new Yaml().load(m.text)
         }
+        prepareDefaultValuesStep.metaClass.echo {
+            m -> println(m)
+        }
+
 
         prepareDefaultValuesStep
     }
 
-    static getDummyScript(def prepareDefaultValuesStep, def stepName) {
+    static getDummyScript(def prepareDefaultValuesStep, def stepName, Map prepareDefaultValuesStepParams) {
 
         def _prepareDefaultValuesStep = prepareDefaultValuesStep
         def _stepName = stepName
@@ -101,7 +105,7 @@ class Helper {
             def STEP_NAME = _stepName
 
             def prepareDefaultValues() {
-                _prepareDefaultValuesStep()
+                _prepareDefaultValuesStep(prepareDefaultValuesStepParams)
 
             }
 
@@ -375,6 +379,7 @@ roots = [
 
 stepsDir = null
 stepsDocuDir = null
+String customDefaults = null
 
 steps = []
 
@@ -391,9 +396,14 @@ if(args.length >= 2)
 
 stepsDocuDir = stepsDocuDir ?: new File(Helper.projectRoot, "documentation/docs/steps")
 
+def argsDrop = 2
+if(args.length >= 3 && args[2].contains('.yml')) {
+    customDefaults = args[2]
+    argsDrop ++
+}
 
 if(args.length >= 3)
-    steps = (args as List).drop(2)  // the first two entries are stepsDir and docuDir
+    steps = (args as List).drop(argsDrop)  // the first two entries are stepsDir and docuDir
                                     // the other parts are considered as step names
 
 
@@ -433,7 +443,7 @@ boolean exceptionCaught = false
 def stepDescriptors = [:]
 for (step in steps) {
     try {
-        stepDescriptors."${step}" = handleStep(step, prepareDefaultValuesStep, gse)
+        stepDescriptors."${step}" = handleStep(step, prepareDefaultValuesStep, gse, customDefaults)
     } catch(Exception e) {
         exceptionCaught = true
         System.err << "${e.getClass().getName()} caught while handling step '${step}': ${e.getMessage()}.\n"
@@ -517,7 +527,7 @@ def fetchPossibleValuesFrom(def step, def parameterName, def steps) {
         return steps[step]?.parameters[parameterName]?.value ?: ''
 }
 
-def handleStep(stepName, prepareDefaultValuesStep, gse) {
+def handleStep(stepName, prepareDefaultValuesStep, gse, customDefaults) {
 
     File theStep = new File(stepsDir, "${stepName}.groovy")
     File theStepDocu = new File(stepsDocuDir, "${stepName}.md")
@@ -529,9 +539,13 @@ def handleStep(stepName, prepareDefaultValuesStep, gse) {
 
     System.err << "[INFO] Handling step '${stepName}'.\n"
 
+    Map prepareDefaultValuesStepParams = [:]
+    if (customDefaults)
+        prepareDefaultValuesStepParams.customDefaults = customDefaults
+
     def defaultConfig = Helper.getConfigHelper(getClass().getClassLoader(),
                                                 roots,
-                                                Helper.getDummyScript(prepareDefaultValuesStep, stepName)).use()
+                                                Helper.getDummyScript(prepareDefaultValuesStep, stepName, prepareDefaultValuesStepParams)).use()
 
     def params = [] as Set
 
