@@ -6,6 +6,8 @@ import static org.hamcrest.Matchers.containsString
 import static org.hamcrest.Matchers.not
 
 import org.hamcrest.Matchers
+import org.hamcrest.BaseMatcher
+import org.hamcrest.Description
 import org.jenkinsci.plugins.credentialsbinding.impl.CredentialNotFoundException
 import org.junit.Assert
 import org.junit.Before
@@ -459,5 +461,58 @@ class NeoDeployTest extends BasePiperTest {
                 runtimeVersion: '2.125',
                 size: 'lite'
             ])
+    }
+
+    @Test
+    void dontSwallowExceptionWhenUnableToProvideLogsTest() {
+
+        thrown.expect(AbortException)
+        thrown.expectMessage('Something went wrong during neo deployment')
+        thrown.expect(new BaseMatcher() {
+
+            def expectedException = AbortException
+            def expectedText = 'Cannot provide logs.'
+
+            boolean matches(def ex) {
+                def suppressed = ex.getSuppressed()
+                return  (suppressed.size() == 1 &&
+                            suppressed[0] in expectedException &&
+                            suppressed[0].message == expectedText)
+
+            }
+
+            void describeTo(Description d) {
+                d.appendText(" a suppressed ${expectedException} with message ${expectedText}.")
+            }
+        })
+
+        loggingRule.expect('Unable to provide the logs.')
+
+        helper.registerAllowedMethod('fileExists', [String],
+            { f ->
+                f == 'archive.mtar'
+            }
+        )
+        helper.registerAllowedMethod('sh', [Map],
+            { m ->
+                if(m.script.toString().contains('neo.sh deploy-mta'))
+                    throw new AbortException('Something went wrong during neo deployment.')
+            }
+        )
+
+        helper.registerAllowedMethod("sh", [String],
+            { cmd ->
+                if (cmd == 'cat logs/neo/*')
+                    throw new AbortException('Cannot provide logs.')
+            }
+        )
+
+        stepRule.step.neoDeploy(script: nullScript,
+
+            source: archiveName,
+            neo:[credentialsId: 'myCredentialsId'],
+            deployMode: 'mta',
+            utils: utils,
+        )
     }
 }
