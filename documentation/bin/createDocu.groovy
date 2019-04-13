@@ -448,6 +448,8 @@ for(step in stepDescriptors) {
                 def otherStep = param.value.docu.replaceAll('@see', '').trim()
                 param.value.docu = fetchTextFrom(otherStep, param.key, stepDescriptors)
                 param.value.mandatory = fetchMandatoryFrom(otherStep, param.key, stepDescriptors)
+                if(! param.value.value)
+                    param.value.value = fetchPossibleValuesFrom(otherStep, param.key, stepDescriptors)
             }
         }
     }
@@ -509,6 +511,10 @@ def fetchMandatoryFrom(def step, def parameterName, def steps) {
         System.err << "[ERROR] Cannot retrieve docu for parameter ${parameterName} from step ${step}.\n"
         throw e
     }
+}
+
+def fetchPossibleValuesFrom(def step, def parameterName, def steps) {
+        return steps[step]?.parameters[parameterName]?.value ?: ''
 }
 
 def handleStep(stepName, prepareDefaultValuesStep, gse) {
