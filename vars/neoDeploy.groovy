@@ -1,3 +1,4 @@
+import com.sap.piper.GenerateDocumentation
 import com.sap.piper.ConfigurationHelper
 import com.sap.piper.Utils
 import com.sap.piper.StepAssertions
@@ -9,22 +10,106 @@ import groovy.transform.Field
 import static com.sap.piper.Prerequisites.checkScript
 
 @Field String STEP_NAME = getClass().getName()
+
 @Field Set GENERAL_CONFIG_KEYS = [
-    'neo'
+    'neo',
+    /**
+     * The SAP Cloud Platform account to deploy to.
+     * @parentConfigKey neo
+     * @mandatory for deployMode=warParams
+     */
+    'account',
+    /**
+     * Name of the application you want to manage, configure, or deploy.
+     * @parentConfigKey neo
+     * @mandatory for deployMode=warParams
+     */
+    'application',
+    /**
+     * The Jenkins credentials containing user and password used for SAP CP deployment.
+     * @parentConfigKey neo
+     */
+    'credentialsId',
+    /**
+     * Map of environment variables in the form of KEY: VALUE.
+     * @parentConfigKey neo
+     */
+    'environment',
+    /**
+     * The SAP Cloud Platform host to deploy to.
+     * @parentConfigKey neo
+     * @mandatory for deployMode=warParams
+     */
+    'host',
+        /**
+     * The path to the .properties file in which all necessary deployment properties for the application are defined.
+     * @parentConfigKey neo
+     * @mandatory for deployMode=warPropertiesFile
+     */
+    'propertiesFile',
+    /**
+     * Name of SAP Cloud Platform application runtime.
+     * @parentConfigKey neo
+     * @mandatory for deployMode=warParams
+     */
+    'runtime',
+    /**
+     * Version of SAP Cloud Platform application runtime.
+     * @parentConfigKey neo
+     * @mandatory for deployMode=warParams
+     */
+    'runtimeVersion',
+        /**
+     * Compute unit (VM) size. Acceptable values: lite, pro, prem, prem-plus.
+     * @parentConfigKey neo
+     */
+    'size',
+        /**
+     * String of VM arguments passed to the JVM.
+     * @parentConfigKey neo
+     */
+    'vmArguments'
 ]
+
 @Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS.plus([
+    /**
+     * @see dockerExecute
+     */
     'dockerEnvVars',
+    /**
+     * @see dockerExecute
+     */
     'dockerImage',
+    /**
+     * @see dockerExecute
+     */
     'dockerOptions',
-    'neoHome',
+    /**
+     * The path to the archive for deployment to SAP CP. If not provided `mtarFilePath` from commom pipeline environment is used instead.
+     */
     'source'
 ])
 
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS.plus([
+    /**
+     * The deployment mode which should be used. Available options are:
+     * *`'mta'` - default,
+     * *`'warParams'` - deploying WAR file and passing all the deployment parameters via the function call,
+     * *`'warPropertiesFile'` - deploying WAR file and putting all the deployment parameters in a .properties file.
+     * @possibleValues 'mta', 'warParams', 'warPropertiesFile'
+     */
     'deployMode',
+    /**
+     * Action mode when using WAR file mode. Available options are `deploy` (default) and `rolling-update` which performs update of an application without downtime in one go.
+     * @possibleValues 'deploy', 'rolling-update'
+     */
     'warAction'
 ])
 
+/**
+ * Deploys an Application to SAP Cloud Platform (SAP CP) using the SAP Cloud Platform Console Client (Neo Java Web SDK).
+ */
+@GenerateDocumentation
 void call(parameters = [:]) {
     handlePipelineStepErrors(stepName: STEP_NAME, stepParameters: parameters) {
 
@@ -150,9 +235,15 @@ private deploy(script, utils, Map configuration, NeoCommandHelper neoCommandHelp
         }
     }
     catch (Exception ex) {
+
         if (dockerImage) {
             echo "Error while deploying to SAP Cloud Platform. Here are the neo.sh logs:"
-            sh "cat logs/neo/*"
+            try {
+                sh "cat logs/neo/*"
+            } catch(Exception e) {
+                echo "Unable to provide the logs."
+                ex.addSuppressed(e)
+            }
         }
         throw ex
     }
