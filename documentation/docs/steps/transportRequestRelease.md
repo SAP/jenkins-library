@@ -1,41 +1,17 @@
-# transportRequestRelease
+# ${docGenStepName}
 
-## Description
-
-Releases a Transport Request.
+## ${docGenDescription}
 
 ## Prerequisites
 
 * **[Change Management Client 2.0.0 or compatible version](http://central.maven.org/maven2/com/sap/devops/cmclient/dist.cli/)** - available for download on Maven Central.
 
-## Parameters
+## ${docGenParameters}
 
-| parameter        | mandatory | default                                                | possible values    |
-| -----------------|-----------|--------------------------------------------------------|--------------------|
-| `script`        | yes       |                                                    |                    |
-| `changeDocumentId`        | `SOLMAN` only       |                                                    |                    |
-| `transportRequestId`| yes   |                                                    |                    |
-| `changeManagement/changeDocumentLabel`        | no        | `ChangeDocument\s?:`                                   | regex pattern      |
-| `changeManagment/transportRequestLabel`        | no        | `TransportRequest\s?:`                                   | regex pattern |
-| `changeManagement/credentialsId`    | yes       |                                                        |                    |
-| `changeManagement/endpoint`         | yes       |                                                        |                    |
-| `changeManagement/git/from`         | no        | `origin/master`                                        |                    |
-| `changeManagement/git/to`           | no        | `HEAD`                                                 |                    |
-| `changeManagement/git/format`        | no        | `%b`                                                   | see `git log --help` |
-| `changeManagement/type`           | no        | `SOLMAN`                                               | `SOLMAN`, `CTS`    |
 
-* `script` - The common script environment of the Jenkinsfile running. Typically the reference to the script calling the pipeline step is provided with the `this` parameter, as in `script: this`. This allows the function to access the [`commonPipelineEnvironment`](commonPipelineEnvironment.md) for retrieving, for example, configuration parameters.
-* `changeDocumentId` - for `SOLMAN` only. The id of the change document related to the transport request to release.
-* `transportRequestId` - The id of the transport request to release.
-* `changeManagement/changeDocumentLabel` - for `SOLMAN` only. A pattern used for identifying lines holding the change document id.
-* `changeManagment/transportRequestLabel` - A pattern used for identifying lines holding the transport request id.
-* `changeManagement/credentialsId` - The credentials to connect to the service endpoint (Solution Manager, ABAP System).
-* `changeManagement/endpoint` - The service endpoint (Solution Manager, ABAP System).
-* `changeManagement/git/from` - The starting point for retrieving the change document id and/or transport request id
-* `changeManagement/git/to` - The end point for retrieving the change document id and/or transport request id
-* `changeManagement/git/format` - Specifies what part of the commit is scanned. By default the body of the commit message is scanned.
+## ${docGenConfiguration}
 
-## Step configuration
+
 
 The step is configured using a customer configuration file provided as
 resource in an custom shared library.

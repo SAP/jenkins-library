@@ -1,12 +1,8 @@
 package com.sap.piper
 
-import groovy.test.GroovyAssert
-
 import static org.hamcrest.Matchers.*
-import static org.junit.Assert.assertEquals
 import static org.junit.Assert.assertThat
 
-import org.hamcrest.Matchers
 import org.junit.Assert
 import org.junit.Rule
 import org.junit.Test
@@ -15,6 +11,8 @@ import org.junit.rules.ExpectedException
 class ConfigurationHelperTest {
 
     Script mockScript = new Script() {
+
+        def prepareDefaultValues() {}
 
         def run() {
             // it never runs
@@ -90,6 +88,97 @@ class ConfigurationHelperTest {
         Assert.assertThat(config, hasEntry('property1', '27'))
         Assert.assertThat(config, hasEntry('property2', '28'))
         Assert.assertThat(config, not(hasKey('property3')))
+    }
+
+    @Test
+    void testConfigurationHelperLoadingStepDefaults() {
+        Set filter = ['property2']
+        Map config = ConfigurationHelper.newInstance(mockScript, [property1: '27'])
+            .loadStepDefaults()
+            .mixinGeneralConfig([configuration:[general: ['general': 'test', 'oldGeneral': 'test2']]], null, [general2: 'oldGeneral'])
+            .mixinStageConfig([configuration:[stages:[testStage:['stage': 'test', 'oldStage': 'test2']]]], 'testStage', null, [stage2: 'oldStage'])
+            .mixinStepConfig([configuration:[steps:[mock: [step: 'test', 'oldStep': 'test2']]]], null, [step2: 'oldStep'])
+            .mixin([property1: '41', property2: '28', property3: '29'], filter)
+            .use()
+        // asserts
+        Assert.assertThat(config, not(hasEntry('property1', '27')))
+        Assert.assertThat(config, hasEntry('property2', '28'))
+        Assert.assertThat(config, hasEntry('general', 'test'))
+        Assert.assertThat(config, hasEntry('general2', 'test2'))
+        Assert.assertThat(config, hasEntry('stage', 'test'))
+        Assert.assertThat(config, hasEntry('stage2', 'test2'))
+        Assert.assertThat(config, hasEntry('step', 'test'))
+        Assert.assertThat(config, hasEntry('step2', 'test2'))
+        Assert.assertThat(config, not(hasKey('property3')))
+    }
+
+    @Test
+    void testConfigurationHelperAddIfEmpty() {
+        Map config = ConfigurationHelper.newInstance(mockScript, [:])
+            .mixin([property1: '41', property2: '28', property3: '29', property4: ''])
+            .addIfEmpty('property3', '30')
+            .addIfEmpty('property4', '40')
+            .addIfEmpty('property5', '50')
+            .use()
+        // asserts
+        Assert.assertThat(config, hasEntry('property1', '41'))
+        Assert.assertThat(config, hasEntry('property2', '28'))
+        Assert.assertThat(config, hasEntry('property3', '29'))
+        Assert.assertThat(config, hasEntry('property4', '40'))
+    }
+
+    @Test
+    void testConfigurationHelperAddIfNull() {
+        Map config = ConfigurationHelper.newInstance(mockScript, [:])
+            .mixin([property1: '29', property2: '', property3: null])
+            .addIfNull('property1', '30')
+            .addIfNull('property2', '30')
+            .addIfNull('property3', '30')
+            .addIfNull('property4', '30')
+            .use()
+        // asserts
+        Assert.assertThat(config, hasEntry('property1', '29'))
+        Assert.assertThat(config, hasEntry('property2', ''))
+        Assert.assertThat(config, hasEntry('property3', '30'))
+        Assert.assertThat(config, hasEntry('property4', '30'))
+    }
+
+    @Test
+    void testConfigurationHelperDependingOn() {
+        Map config = ConfigurationHelper.newInstance(mockScript, [:])
+            .mixin([deep: [deeper: 'test'], scanType: 'maven', maven: [path: 'test2']])
+            .dependingOn('scanType').mixin('deep/path')
+            .use()
+        // asserts
+        Assert.assertThat(config, hasKey('deep'))
+        Assert.assertThat(config.deep, allOf(hasEntry('deeper', 'test'), hasEntry('path', 'test2')))
+        Assert.assertThat(config, hasEntry('scanType', 'maven'))
+        Assert.assertThat(config, hasKey('maven'))
+        Assert.assertThat(config.maven, hasEntry('path', 'test2'))
+    }
+
+    @Test
+    void testConfigurationHelperWithPropertyInValues() {
+        ConfigurationHelper.newInstance(mockScript, [:])
+            .mixin([test: 'allowed'])
+            .withPropertyInValues('test', ['allowed', 'allowed2'] as Set)
+            .use()
+    }
+
+    @Test
+    void testConfigurationHelperWithPropertyInValuesException() {
+        def errorCaught = false
+        try {
+        ConfigurationHelper.newInstance(mockScript, [:])
+            .mixin([test: 'disallowed'])
+            .withPropertyInValues('test', ['allowed', 'allowed2'] as Set)
+            .use()
+        } catch (e) {
+            errorCaught = true
+            assertThat(e, isA(IllegalArgumentException))
+            assertThat(e.getMessage(), is('Invalid test = \'disallowed\'. Valid \'test\' values are: [allowed, allowed2].'))
+        }
+        assertThat(errorCaught, is(true))
     }
 
     @Test
@@ -194,6 +283,17 @@ class ConfigurationHelperTest {
 
         Assert.assertThat(configuration.size(), is(2))
         Assert.assertThat(configuration.newStructure.new1, is(null))
+    }
+
+    @Test
+    void testHandleCompatibilityPremigratedValues() {
+        def configuration = ConfigurationHelper.newInstance(mockScript, [old1: null, test: 'testValue'])
+            .mixin([someValueToMigrate: 'testValue2'], null, [someValueToMigrateSecondTime: 'someValueToMigrate', newStructure: [new1: 'old1', new2: 'someValueToMigrateSecondTime']])
+            .use()
+
+        Assert.assertThat(configuration.size(), is(4))
+        Assert.assertThat(configuration.newStructure.new1, is(null))
+        Assert.assertThat(configuration.newStructure.new2, is('testValue2'))
     }
 
     @Test

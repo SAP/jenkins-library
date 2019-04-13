@@ -51,8 +51,7 @@ public class CommonStepsTest extends BasePiperTest{
                'pipelineExecute',
                'piperPipeline',
                'prepareDefaultValues',
-               'setupCommonPipelineEnvironment',
-               'toolValidate',
+               'setupCommonPipelineEnvironment'
            ]
 
         List steps = getSteps().stream()
@@ -103,7 +102,6 @@ public class CommonStepsTest extends BasePiperTest{
     }
 
     private static fieldRelatedWhitelist = [
-            'toolValidate', // step is intended to be configured by other steps
             'durationMeasure', // only expects parameters via signature
             'prepareDefaultValues', // special step (infrastructure)
             'piperPipeline', // special step (infrastructure)
