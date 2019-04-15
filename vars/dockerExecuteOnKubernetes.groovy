@@ -162,8 +162,10 @@ void executeOnPod(Map config, utils, Closure body) {
      * In case third case, we need to create the 'container' stash to bring the modified content back to the host.
      */
     try {
-        if (config.containerName && config.stashContent.isEmpty()){
-            config.stashContent.add(stashWorkspace(config, 'workspace'))
+
+        def stashContent = config.stashContent
+        if (config.containerName && stashContent.isEmpty()){
+            stashContent = [stashWorkspace(config, 'workspace')]
         }
         podTemplate(getOptions(config)) {
             node(config.uniqueId) {
@@ -175,7 +177,7 @@ void executeOnPod(Map config, utils, Closure body) {
                     echo "ContainerConfig: ${containerParams}"
                     container(containerParams){
                         try {
-                            utils.unstashAll(config.stashContent)
+                            utils.unstashAll(stashContent)
                             body()
                         } finally {
                             stashWorkspace(config, 'container', true)
