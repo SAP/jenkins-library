@@ -1,4 +1,5 @@
 import com.sap.piper.ConfigurationHelper
+import com.sap.piper.GenerateDocumentation
 import com.sap.piper.Utils
 import groovy.transform.Field
 
@@ -10,6 +11,17 @@ import static com.sap.piper.Prerequisites.checkScript
 @Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
 
+/**
+ * In this stage reporting actions like mail notification or telemetry reporting are executed.
+ *
+ * This stage contains following steps:
+ * - [influxWriteData](./influxWriteData.md)
+ * - [mailSendNotification](./mailSendNotification.md)
+ *
+ * !!! note
+ *     This stage is meant to be used in a [post](https://jenkins.io/doc/book/pipeline/syntax/#post) section of a pipeline.
+ */
+@GenerateDocumentation
 void call(Map parameters = [:]) {
     def script = checkScript(this, parameters) ?: this
     def utils = parameters.juStabUtils ?: new Utils()
