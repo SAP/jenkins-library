@@ -109,7 +109,11 @@ class PiperPipelineTest extends BasePiperTest {
 
         helper.registerAllowedMethod('steps', [Closure], null)
         helper.registerAllowedMethod('post', [Closure], null)
-        helper.registerAllowedMethod('always', [Closure], null)
+        helper.registerAllowedMethod('success', [Closure], {c -> c()})
+        helper.registerAllowedMethod('failure', [Closure], {c -> c()})
+        helper.registerAllowedMethod('aborted', [Closure], {c -> c()})
+        helper.registerAllowedMethod('unstable', [Closure], {c -> c()})
+        helper.registerAllowedMethod('cleanup', [Closure], {c -> c()})
 
         helper.registerAllowedMethod('input', [Map], {m -> return null})
 
@@ -155,6 +159,9 @@ class PiperPipelineTest extends BasePiperTest {
         })
         helper.registerAllowedMethod('piperPipelineStageRelease', [Map.class], {m ->
             stepsCalled.add('piperPipelineStageRelease')
+        })
+        helper.registerAllowedMethod('piperPipelineStagePost', [Map.class], {m ->
+            stepsCalled.add('piperPipelineStagePost')
         })
 
         nullScript.prepareDefaultValues(script: nullScript)
@@ -227,7 +234,8 @@ class PiperPipelineTest extends BasePiperTest {
             'piperPipelineStageCompliance',
             'input',
             'piperPipelineStagePromote',
-            'piperPipelineStageRelease'
+            'piperPipelineStageRelease',
+            'piperPipelineStagePost'
         ))
     }
 }
