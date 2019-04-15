@@ -73,6 +73,12 @@ import hudson.AbortException
      */
     'dockerWorkspace',
     /**
+     * Kubernetes Security Context used for the pod.
+     * Can be used to specify uid and fsGroup.
+     * See: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/
+     */
+    'securityContext',
+    /**
      * Specific stashes that should be considered for the step execution.
      */
     'stashContent',
@@ -83,13 +89,7 @@ import hudson.AbortException
     /**
      *
      */
-    'stashIncludes',
-    /**
-     * Kubernetes Security Context used for the pod.
-     * Can be used to specify uid and fsGroup.
-     * See: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/
-     */
-    'securityContext'
+    'stashIncludes'
 ])
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS.minus([
     'stashIncludes',
@@ -102,7 +102,7 @@ import hudson.AbortException
  */
 @GenerateDocumentation
 void call(Map parameters = [:], body) {
-    handlePipelineStepErrors(stepName: STEP_NAME, stepParameters: parameters) {
+    handlePipelineStepErrors(stepName: STEP_NAME, stepParameters: parameters, failOnError: true) {
 
         final script = checkScript(this, parameters) ?: this
 
@@ -120,6 +120,12 @@ void call(Map parameters = [:], body) {
             .mixin(parameters, PARAMETER_KEYS)
             .addIfEmpty('uniqueId', UUID.randomUUID().toString())
         Map config = configHelper.use()
+
+        new Utils().pushToSWA([
+            step: STEP_NAME,
+            stepParamKey1: 'scriptMissing',
+            stepParam1: parameters?.script == null
+        ], config)
 
         if (!parameters.containerMap) {
             configHelper.withMandatoryProperty('dockerImage')
@@ -156,8 +162,10 @@ void executeOnPod(Map config, utils, Closure body) {
      * In case third case, we need to create the 'container' stash to bring the modified content back to the host.
      */
     try {
-        if (config.containerName && config.stashContent.isEmpty()){
-            config.stashContent.add(stashWorkspace(config, 'workspace'))
+
+        def stashContent = config.stashContent
+        if (config.containerName && stashContent.isEmpty()){
+            stashContent = [stashWorkspace(config, 'workspace')]
         }
         podTemplate(getOptions(config)) {
             node(config.uniqueId) {
@@ -169,7 +177,7 @@ void executeOnPod(Map config, utils, Closure body) {
                     echo "ContainerConfig: ${containerParams}"
                     container(containerParams){
                         try {
-                            utils.unstashAll(config.stashContent)
+                            utils.unstashAll(stashContent)
                             body()
                         } finally {
                             stashWorkspace(config, 'container', true)
@@ -200,7 +208,7 @@ private String generatePodSpec(Map config) {
     ]
     podSpec.spec.securityContext = getSecurityContext(config)
 
-    return new JsonUtils().getPrettyJsonString(podSpec)
+    return new JsonUtils().groovyObjectToPrettyJsonString(podSpec)
 }
 
 
@@ -271,19 +279,15 @@ private List getContainerList(config) {
         }
 
         if (config.containerPortMappings?.get(imageName)) {
-            def portMapping = { m ->
-                [
-                    name: m.name,
-                    containerPort: m.containerPort,
-                    hostPort: m.hostPort
-                ]
-            }
-
             def ports = []
             def portCounter = 0
             config.containerPortMappings.get(imageName).each {mapping ->
-                mapping.name = "${containerName}${portCounter}".toString()
-                ports.add(portMapping(mapping))
+                def name = "${containerName}${portCounter}".toString()
+                if(mapping.containerPort != mapping.hostPort) {
+                    echo ("[WARNING][${STEP_NAME}]: containerPort and hostPort are different for container '${containerName}'. "
+                        + "The hostPort will be ignored.")
+                }
+                ports.add([name: name, containerPort: mapping.containerPort])
                 portCounter ++
             }
             containerSpec.ports = ports

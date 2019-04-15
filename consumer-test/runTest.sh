@@ -27,4 +27,4 @@ RC=$?
 
 cd - &> /dev/null || { echo "[ERROR] change directory back into integration test root folder failed."; exit 1; }
 
-[ "${RC}" == 0 ] && touch "${TEST_CASE_ROOT}/SUCCESS"
+[[ "${RC}" == 0 ]] && touch "${TEST_CASE_ROOT}/SUCCESS"

@@ -16,8 +16,8 @@ import static org.junit.Assert.assertNotNull
 
 
 class SetupCommonPipelineEnvironmentTest extends BasePiperTest {
+
     def usedConfigFile
-    def swaOldConfigUsed
 
     private JenkinsStepRule stepRule = new JenkinsStepRule(this)
 
@@ -28,6 +28,7 @@ class SetupCommonPipelineEnvironmentTest extends BasePiperTest {
 
     @Before
     void init() {
+
         def examplePipelineConfig = new File('test/resources/test_pipeline_config.yml').text
 
         helper.registerAllowedMethod("readYaml", [Map], { Map parameters ->
@@ -38,14 +39,6 @@ class SetupCommonPipelineEnvironmentTest extends BasePiperTest {
             usedConfigFile = parameters.file
             return yamlParser.load(examplePipelineConfig)
         })
-        helper.registerAllowedMethod("readProperties", [Map], { Map parameters ->
-            usedConfigFile = parameters.file
-            Properties props = new Properties()
-            props.setProperty('key', 'value')
-            return props
-        })
-
-        swaOldConfigUsed = null
     }
 
     @Test
@@ -55,35 +48,12 @@ class SetupCommonPipelineEnvironmentTest extends BasePiperTest {
             return path.endsWith('.pipeline/config.yml')
         })
 
-        stepRule.step.setupCommonPipelineEnvironment(script: nullScript, utils: getSWAMockedUtils())
+        stepRule.step.setupCommonPipelineEnvironment(script: nullScript)
 
-        assertEquals(Boolean.FALSE.toString(), swaOldConfigUsed)
         assertEquals('.pipeline/config.yml', usedConfigFile)
         assertNotNull(nullScript.commonPipelineEnvironment.configuration)
         assertEquals('develop', nullScript.commonPipelineEnvironment.configuration.general.productiveBranch)
         assertEquals('my-maven-docker', nullScript.commonPipelineEnvironment.configuration.steps.mavenExecute.dockerImage)
     }
-
-    @Test
-    void testIsPropertiesConfigurationAvailable() {
-
-        helper.registerAllowedMethod("fileExists", [String], { String path ->
-            return path.endsWith('.pipeline/config.properties')
-        })
-
-        stepRule.step.setupCommonPipelineEnvironment(script: nullScript, utils: getSWAMockedUtils())
-
-        assertEquals(Boolean.TRUE.toString(), swaOldConfigUsed)
-        assertEquals('.pipeline/config.properties', usedConfigFile)
-        assertNotNull(nullScript.commonPipelineEnvironment.configProperties)
-        assertEquals('value', nullScript.commonPipelineEnvironment.configProperties['key'])
-    }
-
-    private getSWAMockedUtils() {
-        new Utils() {
-            void pushToSWA(Map payload, Map config) {
-                SetupCommonPipelineEnvironmentTest.this.swaOldConfigUsed = payload.stepParam5
-            }
-        }
-    }
 }
+

@@ -1,18 +1,39 @@
 import static com.sap.piper.Prerequisites.checkScript
 
+import com.sap.piper.GenerateDocumentation
 import com.sap.piper.Utils
 import com.sap.piper.ConfigurationHelper
 import groovy.transform.Field
 
 @Field String STEP_NAME = getClass().getName()
-@Field Set STEP_CONFIG_KEYS = ['runOpaTests', 'stashIncludes', 'stashExcludes']
+
+@Field Set GENERAL_CONFIG_KEYS = []
+
+@Field Set STEP_CONFIG_KEYS = [
+    /**
+     * By default certain files are excluded from stashing (e.g. `.git` folder).
+     * Details can be found as per [Pipeline basic step `stash](https://jenkins.io/doc/pipeline/steps/workflow-basic-steps/#stash-stash-some-files-to-be-used-later-in-the-build).
+     * This parameter allows to provide a list of stash names for which the standard exclude behavior should be switched off.
+     * This will allow you to also stash directories like `.git`.
+     */
+    'noDefaultExludes',
+    /** @see pipelineStashFiles */
+    'stashIncludes',
+    /** @see pipelineStashFiles */
+    'stashExcludes'
+]
+
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
 
+/**
+ * This step stashes files that are needed in other build steps (on other nodes).
+ */
+@GenerateDocumentation
 void call(Map parameters = [:]) {
 
     handlePipelineStepErrors (stepName: STEP_NAME, stepParameters: parameters, stepNameDoc: 'stashFiles') {
 
-        def utils = parameters.juStabUtils
+        Utils utils = parameters.juStabUtils
         if (utils == null) {
             utils = new Utils()
         }
@@ -20,9 +41,6 @@ void call(Map parameters = [:]) {
         def script = checkScript(this, parameters)
         if (script == null)
             script = this
-
-        //additional includes via passing e.g. stashIncludes: [opa5: '**/*.include']
-        //additional excludes via passing e.g. stashExcludes: [opa5: '**/*.exclude']
 
         Map config = ConfigurationHelper.newInstance(this)
             .loadStepDefaults()
@@ -38,59 +56,9 @@ void call(Map parameters = [:]) {
             stepParam1: parameters?.script == null
         ], config)
 
-        if (config.runOpaTests){
-            utils.stash('opa5', config.stashIncludes?.get('opa5')?config.stashIncludes.opa5:'**/*.*', config.stashExcludes?.get('opa5')?config.stashExcludes.opa5:'')
+        config.stashIncludes.each {stashKey, stashIncludes ->
+            def useDefaultExcludes = !config.noDefaultExludes.contains(stashKey)
+            utils.stashWithMessage(stashKey, "[${STEP_NAME}] no files detected for stash '${stashKey}': ", stashIncludes, config.stashExcludes[stashKey]?:'', useDefaultExcludes)
         }
-
-        //store build descriptor files depending on technology, e.g. pom.xml, package.json
-        utils.stash(
-            'buildDescriptor',
-            config.stashIncludes.buildDescriptor,
-            config.stashExcludes.buildDescriptor
-        )
-        //store deployment descriptor files depending on technology, e.g. *.mtaext.yml
-        utils.stashWithMessage(
-            'deployDescriptor',
-            "[${STEP_NAME}] no deployment descriptor files provided: ",
-            config.stashIncludes.deployDescriptor,
-            config.stashExcludes.deployDescriptor
-        )
-        //store git metadata for SourceClear agent
-        sh "mkdir -p gitmetadata"
-        sh "cp -rf .git/* gitmetadata"
-        sh "chmod -R u+w gitmetadata"
-        utils.stashWithMessage(
-            'git',
-            "[${STEP_NAME}] no git repo files detected: ",
-            config.stashIncludes.git,
-            config.stashExcludes.git
-        )
-        //store nsp & retire exclusion file for future use
-        utils.stashWithMessage(
-            'opensourceConfiguration',
-            "[${STEP_NAME}] no opensourceConfiguration files provided: ",
-            config.stashIncludes.get('opensourceConfiguration'),
-            config.stashExcludes.get('opensourceConfiguration')
-        )
-        //store pipeline configuration including additional groovy test scripts for future use
-        utils.stashWithMessage(
-            'pipelineConfigAndTests',
-            "[${STEP_NAME}] no pipeline configuration and test files found: ",
-            config.stashIncludes.pipelineConfigAndTests,
-            config.stashExcludes.pipelineConfigAndTests
-        )
-        utils.stashWithMessage(
-            'securityDescriptor',
-            "[${STEP_NAME}] no security descriptor found: ",
-            config.stashIncludes.securityDescriptor,
-            config.stashExcludes.securityDescriptor
-        )
-        //store files required for tests, e.g. Gauge, SUT, ...
-        utils.stashWithMessage(
-            'tests',
-            "[${STEP_NAME}] no files for tests provided: ",
-            config.stashIncludes.tests,
-            config.stashExcludes.tests
-        )
     }
 }
