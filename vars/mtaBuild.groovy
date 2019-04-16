@@ -63,8 +63,8 @@ void call(Map parameters = [:]) {
 
             // Apply maven user-settings (for custom repositories, etc)
             if (configuration.projectSettingsFile) {
-                sh "mkdir -p /home/mta/.m2"
-                sh "cp ${configuration.projectSettingsFile} /home/mta/.m2/settings.xml"
+                sh 'mkdir -p $HOME/.m2'
+                sh "cp ${configuration.projectSettingsFile} \$HOME/.m2/settings.xml"
             }
 
             def mtaYamlName = "mta.yaml"
