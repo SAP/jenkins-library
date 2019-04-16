@@ -67,9 +67,9 @@ void call(Map parameters = [:]) {
             sh "mkdir -p /home/mta/.m2"
             sh "cp ${configuration.projectSettingsFile} /home/mta/.m2/settings.xml"
 
-            if (configuration.globalSettingsFile) {
-                sh "cp ${configuration.globalSettingsFile} /opt/maven/apache-maven-3.6.0/conf/settings.xml"
-            }
+//            if (configuration.globalSettingsFile) {
+//                sh "cp ${configuration.globalSettingsFile} /opt/maven/apache-maven-3.6.0/conf/settings.xml"
+//            }
 
 
             def mtaYamlName = "mta.yaml"
