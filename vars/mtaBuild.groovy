@@ -27,6 +27,8 @@ import groovy.transform.Field
      * If it is not provided, the SAP Multitarget Application Archive Builder is expected on PATH.
      */
     'mtaJarLocation',
+    /** Path or url to the mvn settings file that should be used as global settings file.*/
+    'globalSettingsFile',
     /** Path or url to the mvn settings file that should be used as project settings file.*/
     'projectSettingsFile'
 ]
@@ -61,7 +63,6 @@ void call(Map parameters = [:]) {
 
         dockerExecute(script: script, dockerImage: configuration.dockerImage, dockerOptions: configuration.dockerOptions) {
 
-            // Apply maven user-settings (for custom repositories, etc)
             def projectSettingsFile = configuration.projectSettingsFile
             if (projectSettingsFile?.trim()) {
                 if(projectSettingsFile.trim().startsWith("http")){
@@ -70,6 +71,15 @@ void call(Map parameters = [:]) {
                 }
                 sh 'mkdir -p $HOME/.m2'
                 sh "cp ${projectSettingsFile} \$HOME/.m2/settings.xml"
+            }
+
+            def globalSettingsFile = configuration.globalSettingsFile
+            if (globalSettingsFile?.trim()) {
+                if(globalSettingsFile.trim().startsWith("http")){
+                    downloadSettingsFromUrl(globalSettingsFile)
+                    globalSettingsFile = "settings.xml"
+                }
+                sh "cp ${globalSettingsFile} \$M2_HOME/conf/settings.xml"
             }
 
             def mtaYamlName = "mta.yaml"

@@ -203,6 +203,22 @@ public class MtaBuildTest extends BasePiperTest {
     }
 
     @Test
+    void canConfigureMavenGlobalSettings() {
+
+        stepRule.step.mtaBuild(script: nullScript, globalSettingsFile: 'settings.xml')
+
+        assert shellRule.shell.find(){ c -> c.contains('cp settings.xml $M2_HOME/conf/settings.xml')}
+    }
+
+    @Test
+    void canConfigureMavenGlobalSettingsFromRemoteSource() {
+
+        stepRule.step.mtaBuild(script: nullScript, globalSettingsFile: 'https://some.host/my-settings.xml')
+
+        assert shellRule.shell.find(){ c -> c.contains('cp settings.xml $M2_HOME/conf/settings.xml')}
+    }
+
+    @Test
     void buildTargetFromDefaultStepConfigurationTest() {
 
         nullScript.commonPipelineEnvironment.defaultConfiguration = [steps:[mtaBuild:[buildTarget: 'NEO']]]
