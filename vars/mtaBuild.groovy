@@ -26,7 +26,9 @@ import groovy.transform.Field
      * The location of the SAP Multitarget Application Archive Builder jar file, including file name and extension.
      * If it is not provided, the SAP Multitarget Application Archive Builder is expected on PATH.
      */
-    'mtaJarLocation'
+    'mtaJarLocation',
+    /** Path or url to the mvn settings file that should be used as project settings file.*/
+    'projectSettingsFile'
 ]
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS.plus([
     /** @see dockerExecute */
@@ -58,6 +60,12 @@ void call(Map parameters = [:]) {
         ], configuration)
 
         dockerExecute(script: script, dockerImage: configuration.dockerImage, dockerOptions: configuration.dockerOptions) {
+
+            // Apply maven user-settings (for custom repositories, etc)
+            if (configuration.projectSettingsFile) {
+                sh 'mkdir -p $HOME/.m2'
+                sh "cp ${configuration.projectSettingsFile} \$HOME/.m2/settings.xml"
+            }
 
             def mtaYamlName = "mta.yaml"
             def applicationName = configuration.applicationName
