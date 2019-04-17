@@ -182,6 +182,14 @@ public class MtaBuildTest extends BasePiperTest {
     }
 
     @Test
+    void canConfigureMavenUserSettings() {
+
+        stepRule.step.mtaBuild(script: nullScript, projectSettingsFile: 'settings.xml')
+
+        assert shellRule.shell.find(){ c -> c.contains('cp settings.xml $HOME/.m2/settings.xml')}
+    }
+
+    @Test
     void buildTargetFromDefaultStepConfigurationTest() {
 
         nullScript.commonPipelineEnvironment.defaultConfiguration = [steps:[mtaBuild:[buildTarget: 'NEO']]]
