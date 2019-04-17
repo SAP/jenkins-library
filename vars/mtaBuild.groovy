@@ -62,9 +62,14 @@ void call(Map parameters = [:]) {
         dockerExecute(script: script, dockerImage: configuration.dockerImage, dockerOptions: configuration.dockerOptions) {
 
             // Apply maven user-settings (for custom repositories, etc)
-            if (configuration.projectSettingsFile) {
+            def projectSettingsFile = configuration.projectSettingsFile
+            if (projectSettingsFile?.trim()) {
+                if(projectSettingsFile.trim().startsWith("http")){
+                    downloadSettingsFromUrl(projectSettingsFile)
+                    projectSettingsFile = "settings.xml"
+                }
                 sh 'mkdir -p $HOME/.m2'
-                sh "cp ${configuration.projectSettingsFile} \$HOME/.m2/settings.xml"
+                sh "cp ${projectSettingsFile} \$HOME/.m2/settings.xml"
             }
 
             def mtaYamlName = "mta.yaml"
@@ -113,4 +118,9 @@ void call(Map parameters = [:]) {
             script?.commonPipelineEnvironment?.setMtarFilePath(mtarFileName)
         }
     }
+}
+
+private downloadSettingsFromUrl(String url){
+    def settings = httpRequest url
+    writeFile file: 'settings.xml', text: settings.getContent()
 }
