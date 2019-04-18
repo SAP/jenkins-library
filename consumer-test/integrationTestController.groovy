@@ -2,7 +2,7 @@ import ITUtils
 
 AUXILIARY_SLEEP_MS = 10000
 // Build is killed at 50 min, print log to console at minute 45
-PRINT_BEFORE_BUILD_IS_KILLED_COUNTER = (45 * 60 * 1000) / AUXILIARY_SLEEP_MS
+TERMINATE_AFTER_45_MINUTES = (45 * 60 * 1000) / AUXILIARY_SLEEP_MS
 WORKSPACES_ROOT = 'workspaces'
 TEST_CASES_DIR = 'testCases'
 
@@ -49,7 +49,7 @@ def listTestCaseThreads() {
 }
 
 def waitForTestCases(threadList) {
-    List.metaClass.anyThreadStillAlive = {
+    threadList.metaClass.anyThreadStillAlive = {
         for (thread in delegate) {
             if(thread.isAlive()) {
                 return true
@@ -60,14 +60,34 @@ def waitForTestCases(threadList) {
 
     def auxiliaryThread = Thread.start {
         while (threadList.anyThreadStillAlive()) {
+            printOutputOfThreadsIfOneFailed(threadList)
+
             println "[INFO] Integration tests are still running."
             sleep(AUXILIARY_SLEEP_MS)
-            if (PRINT_BEFORE_BUILD_IS_KILLED_COUNTER--==0) {
+            if (TERMINATE_AFTER_45_MINUTES--==0) {
                 threadList.each { thread ->
-                    thread.printStdOut()
+                    thread.printOutputPrematurely()
                 }
             }
         }
     }
     auxiliaryThread.join()
+}
+
+static def printOutputOfThreadsIfOneFailed(threadList) {
+    def failedThread = threadList.find { thread ->
+        thread.exitCode>0
+    }
+    if (failedThread) {
+        threadList.each { thread ->
+            if (thread.area!=failedThread.area ||
+                thread.testCase!=failedThread.testCase) {
+                thread.printOutputPrematurely()
+                thread.interrupt()
+            }
+        }
+        synchronized (failedThread) {
+            failedThread.notify()
+        }
+    }
 }

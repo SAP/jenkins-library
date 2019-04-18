@@ -2,13 +2,19 @@ import ITUtils
 
 class TestRunnerThread extends Thread {
 
-    public Process currentlyRunningProcess
+    Process currentProcess
+    StringBuilder stdOut
+    StringBuilder stdErr
+    public def exitCode = 0
     def area
     def testCase
     def testCaseRootDir
     def testCaseWorkspace
 
     public TestRunnerThread(testCaseFilePath) {
+        this.stdOut = new StringBuilder()
+        this.stdErr = new StringBuilder()
+
         // Regex pattern expects a folder structure such as '/rootDir/areaDir/testCase.extension'
         def testCaseMatches = (testCaseFilePath.toString() =~
             /^[\w\-]+\\/([\w\-]+)\\/([\w\-]+)\..*\u0024/)
@@ -37,7 +43,8 @@ class TestRunnerThread extends Thread {
             "CASC_JENKINS_CONFIG=/workspace/jenkins.yml -e CX_INFRA_IT_CF_USERNAME -e " +
             "CX_INFRA_IT_CF_PASSWORD -e BRANCH_NAME=${testCase} ppiper/jenkinsfile-runner")
 
-        println "[INFO] Test case '${testCase}' in area '${area}' finished."
+        println "*****[INFO] Test case '${testCase}' in area '${area}' finished successfully.*****"
+        printStdOut()
     }
 
     // Configure path to library-repository under test in Jenkins config
@@ -60,28 +67,68 @@ class TestRunnerThread extends Thread {
     }
 
     private void executeShell(command) {
-        def stdOut = new StringBuilder(), stdErr = new StringBuilder()
-        this.currentlyRunningProcess = command.execute()
-        this.currentlyRunningProcess.waitForProcessOutput(stdOut, stdErr)
-        int exitCode = this.currentlyRunningProcess.exitValue()
-        if (exitCode>0) {
-            println "[${testCase}] Shell exited with code ${exitCode}."
-            println "[${testCase}] Shell command was: '${command}'"
-            println "[${testCase}] Console output: ${stdOut}"
-            println "[${testCase}] Console error: '${stdErr}'"
+        def startOfCommandString = "Shell command: '${command}'\n"
+        this.stdOut << startOfCommandString
+        this.stdErr << startOfCommandString
+
+        this.currentProcess = command.execute()
+        this.currentProcess.waitForProcessOutput(stdOut, stdErr)
+
+        this.exitCode = this.currentProcess.exitValue()
+
+        def endOfCommandString = "*****Command execution finished with exit code ${exitCode}" +
+            ".*****\n\n"
+        this.stdOut << endOfCommandString
+        this.stdErr << endOfCommandString
+
+        this.currentProcess = null
+
+        if (this.exitCode>0) {
+            synchronized (this) {
+                try {
+                    wait() // for other threads to print their log first
+                    printStdOut()
+                    printStdErr()
+                    ITUtils.notifyGithub("failure", "Integration test ${area}:${testCase} failed.")
+                    System.exit(exitCode)
+                } catch (InterruptedException e) {
+                    e.printStackTrace()
+                }
+            }
+
             ITUtils.notifyGithub("failure", "The integration tests failed.")
-            System.exit(exitCode)
         }
-        this.currentlyRunningProcess = null
     }
 
-    public void printStdOut(){
-        if (this.currentlyRunningProcess) {
-            def stdOut = new StringBuffer()
-            this.currentlyRunningProcess.consumeProcessOutputStream(stdOut)
-            println "[${testCase}] Console output: ${stdOut}"
+    public void printOutputPrematurely(){
+        if (this.currentProcess) {
+            this.currentProcess.consumeProcessOutput(stdOut, stdErr)
+            printStdOut()
+            printStdErr()
         } else {
             println "[${testCase}] Warning: Currently no process is running."
+        }
+    }
+
+    private void printStdOut(){
+        if (stdOut) {
+            println "\n[INFO] Standard output from test case ${testCase}:"
+            stdOut.eachLine { line, i ->
+                println "${i} [${testCase}] ${line}"
+            }
+        } else {
+            println "\n[WARNING] No standard output for ${testCase} exists."
+        }
+    }
+
+    private void printStdErr(){
+        if (stdErr) {
+            println "\n[ERROR] Error output from test case ${testCase}:"
+            stdErr.eachLine { line, i ->
+                println "${i} [${testCase}] ${line}"
+            }
+        } else {
+            println "\n[WARNING] No error output for ${testCase} exists."
         }
     }
 }
