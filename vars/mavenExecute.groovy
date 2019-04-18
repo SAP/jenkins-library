@@ -6,6 +6,8 @@ import com.sap.piper.Utils
 
 import groovy.transform.Field
 
+import static com.sap.piper.Utils.*
+
 @Field def STEP_NAME = getClass().getName()
 
 @Field Set GENERAL_CONFIG_KEYS = []
@@ -63,12 +65,9 @@ void call(Map parameters = [:]) {
 
         String command = "mvn"
 
-        def globalSettingsFile = configuration.globalSettingsFile
-        if (globalSettingsFile?.trim()) {
-            if(globalSettingsFile.trim().startsWith("http")){
-                downloadSettingsFromUrl(globalSettingsFile)
-                globalSettingsFile = "settings.xml"
-            }
+        def globalSettingsFile = configuration.globalSettingsFile?.trim()
+        if (globalSettingsFile) {
+            globalSettingsFile = new Utils().downloadMavenSettingsFromUrlIfRequired(this, globalSettingsFile as String)
             command += " --global-settings '${globalSettingsFile}'"
         }
 
@@ -77,12 +76,9 @@ void call(Map parameters = [:]) {
             command += " -Dmaven.repo.local='${m2Path}'"
         }
 
-        def projectSettingsFile = configuration.projectSettingsFile
-        if (projectSettingsFile?.trim()) {
-            if(projectSettingsFile.trim().startsWith("http")){
-                downloadSettingsFromUrl(projectSettingsFile)
-                projectSettingsFile = "settings.xml"
-            }
+        def projectSettingsFile = configuration.projectSettingsFile?.trim()
+        if (projectSettingsFile) {
+            projectSettingsFile = new Utils().downloadMavenSettingsFromUrlIfRequired(this, projectSettingsFile as String)
             command += " --settings '${projectSettingsFile}'"
         }
 
@@ -122,9 +118,3 @@ void call(Map parameters = [:]) {
         }
     }
 }
-
-private downloadSettingsFromUrl(String url){
-    def settings = httpRequest url
-    writeFile file: 'settings.xml', text: settings.getContent()
-}
-

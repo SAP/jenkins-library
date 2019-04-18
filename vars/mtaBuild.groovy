@@ -63,22 +63,16 @@ void call(Map parameters = [:]) {
 
         dockerExecute(script: script, dockerImage: configuration.dockerImage, dockerOptions: configuration.dockerOptions) {
 
-            def projectSettingsFile = configuration.projectSettingsFile
-            if (projectSettingsFile?.trim()) {
-                if(projectSettingsFile.trim().startsWith("http")){
-                    downloadSettingsFromUrl(projectSettingsFile)
-                    projectSettingsFile = "settings.xml"
-                }
+            String projectSettingsFile = configuration.projectSettingsFile?.trim()
+            if (projectSettingsFile) {
+                projectSettingsFile = new Utils().downloadMavenSettingsFromUrlIfRequired(this, projectSettingsFile as String)
                 sh 'mkdir -p $HOME/.m2'
                 sh "cp ${projectSettingsFile} \$HOME/.m2/settings.xml"
             }
 
-            def globalSettingsFile = configuration.globalSettingsFile
-            if (globalSettingsFile?.trim()) {
-                if(globalSettingsFile.trim().startsWith("http")){
-                    downloadSettingsFromUrl(globalSettingsFile)
-                    globalSettingsFile = "settings.xml"
-                }
+            String globalSettingsFile = configuration.globalSettingsFile?.trim()
+            if (globalSettingsFile) {
+                globalSettingsFile = new Utils().downloadMavenSettingsFromUrlIfRequired(this, globalSettingsFile as String)
                 sh "cp ${globalSettingsFile} \$M2_HOME/conf/settings.xml"
             }
 
@@ -128,9 +122,4 @@ void call(Map parameters = [:]) {
             script?.commonPipelineEnvironment?.setMtarFilePath(mtarFileName)
         }
     }
-}
-
-private downloadSettingsFromUrl(String url){
-    def settings = httpRequest url
-    writeFile file: 'settings.xml', text: settings.getContent()
 }

@@ -113,3 +113,16 @@ static String fillTemplate(String templateText, Map binding){
     String result = engine.createTemplate(templateText).make(binding)
     return result
 }
+
+String downloadMavenSettingsFromUrlIfRequired(script, String settingsFileLocator) {
+    if (settingsFileLocator.startsWith("http")) {
+        downloadSettingsFromUrl(script, settingsFileLocator)
+        settingsFileLocator = "settings.xml"
+    }
+    return settingsFileLocator
+}
+
+private downloadSettingsFromUrl(script, String url){
+    def settings = script.httpRequest url
+    script.writeFile file: 'settings.xml', text: settings.getContent()
+}
