@@ -13,8 +13,8 @@ nav:
         - dockerExecute: steps/dockerExecute.md
         - dockerExecuteOnKubernetes: steps/dockerExecuteOnKubernetes.md
         - durationMeasure: steps/durationMeasure.md
-        - githubPublishRelease: steps/githubPublishRelease.md
         - gaugeExecuteTests: steps/gaugeExecuteTests.md
+        - githubPublishRelease: steps/githubPublishRelease.md
         - handlePipelineStepErrors: steps/handlePipelineStepErrors.md
         - healthExecuteCheck: steps/healthExecuteCheck.md
         - influxWriteData: steps/influxWriteData.md
@@ -22,12 +22,15 @@ nav:
         - mailSendNotification: steps/mailSendNotification.md
         - mavenExecute: steps/mavenExecute.md
         - mtaBuild: steps/mtaBuild.md
+        - multicloudDeploy: steps/multicloudDeploy.md
         - neoDeploy: steps/neoDeploy.md
         - newmanExecute: steps/newmanExecute.md
         - npmExecute: steps/npmExecute.md
         - pipelineExecute: steps/pipelineExecute.md
         - pipelineRestartSteps: steps/pipelineRestartSteps.md
         - pipelineStashFiles: steps/pipelineStashFiles.md
+        - pipelineStashFilesAfterBuild: steps/pipelineStashFilesAfterBuild.md
+        - pipelineStashFilesBeforeBuild: steps/pipelineStashFilesBeforeBuild.md
         - prepareDefaultValues: steps/prepareDefaultValues.md
         - seleniumExecuteTests: steps/seleniumExecuteTests.md
         - setupCommonPipelineEnvironment: steps/setupCommonPipelineEnvironment.md
