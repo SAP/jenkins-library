@@ -114,7 +114,7 @@ static String fillTemplate(String templateText, Map binding){
     return result
 }
 
-String downloadMavenSettingsFromUrlIfRequired(script, String settingsFileLocator) {
+static String downloadMavenSettingsFromUrlIfRequired(script, String settingsFileLocator) {
     if (settingsFileLocator.startsWith("http")) {
         downloadSettingsFromUrl(script, settingsFileLocator)
         settingsFileLocator = "settings.xml"
@@ -122,7 +122,7 @@ String downloadMavenSettingsFromUrlIfRequired(script, String settingsFileLocator
     return settingsFileLocator
 }
 
-private downloadSettingsFromUrl(script, String url){
+static private downloadSettingsFromUrl(script, String url){
     def settings = script.httpRequest url
     script.writeFile file: 'settings.xml', text: settings.getContent()
 }

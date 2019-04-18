@@ -6,7 +6,7 @@ import com.sap.piper.Utils
 
 import groovy.transform.Field
 
-import static com.sap.piper.Utils.*
+import static com.sap.piper.Utils.downloadMavenSettingsFromUrlIfRequired
 
 @Field def STEP_NAME = getClass().getName()
 
@@ -67,7 +67,7 @@ void call(Map parameters = [:]) {
 
         def globalSettingsFile = configuration.globalSettingsFile?.trim()
         if (globalSettingsFile) {
-            globalSettingsFile = new Utils().downloadMavenSettingsFromUrlIfRequired(this, globalSettingsFile as String)
+            globalSettingsFile = downloadMavenSettingsFromUrlIfRequired(this, globalSettingsFile as String)
             command += " --global-settings '${globalSettingsFile}'"
         }
 
@@ -78,7 +78,7 @@ void call(Map parameters = [:]) {
 
         def projectSettingsFile = configuration.projectSettingsFile?.trim()
         if (projectSettingsFile) {
-            projectSettingsFile = new Utils().downloadMavenSettingsFromUrlIfRequired(this, projectSettingsFile as String)
+            projectSettingsFile = downloadMavenSettingsFromUrlIfRequired(this, projectSettingsFile as String)
             command += " --settings '${projectSettingsFile}'"
         }
 
