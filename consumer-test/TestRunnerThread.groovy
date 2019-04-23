@@ -29,14 +29,14 @@ class TestRunnerThread extends Thread {
 
         ITUtils.newEmptyDir(testCaseRootDir)
         executeShell("git clone -b ${testCase} https://github.com/sap/cloud-s4-sdk-book " +
-                "${testCaseWorkspace}")
+            "${testCaseWorkspace}")
         addJenkinsYmlToWorkspace()
         manipulateJenkinsfile()
 
         //Commit the changed version because artifactSetVersion expects the git repo not to be dirty
         executeShell(["git", "-C", "${testCaseWorkspace}", "commit", "--all",
-                                    "--author=piper-testing-bot <piper-testing-bot@example.com>",
-                                    "--message=Set piper lib version for test"])
+                      "--author=piper-testing-bot <piper-testing-bot@example.com>",
+                      "--message=Set piper lib version for test"])
 
         executeShell("docker run -v /var/run/docker.sock:/var/run/docker.sock " +
             "-v ${System.getenv('PWD')}/${testCaseWorkspace}:/workspace -v /tmp -e " +
@@ -62,7 +62,7 @@ class TestRunnerThread extends Thread {
         def jenkinsfile = new File("${testCaseWorkspace}/Jenkinsfile")
         def manipulatedText =
             "@Library(\"piper-library-os@${ITUtils.libraryVersionUnderTest}\") _\n" +
-            jenkinsfile.text
+                jenkinsfile.text
         jenkinsfile.write(manipulatedText)
     }
 
@@ -83,7 +83,7 @@ class TestRunnerThread extends Thread {
 
         this.currentProcess = null
 
-        if (this.exitCode>0) {
+        if (this.exitCode > 0) {
             synchronized (this) {
                 try {
                     wait() // for other threads to print their log first
@@ -100,7 +100,7 @@ class TestRunnerThread extends Thread {
         }
     }
 
-    public void printOutputPrematurely(){
+    public void printOutputPrematurely() {
         if (this.currentProcess) {
             this.currentProcess.consumeProcessOutput(stdOut, stdErr)
             printStdOut()
@@ -110,7 +110,7 @@ class TestRunnerThread extends Thread {
         }
     }
 
-    private void printStdOut(){
+    private void printStdOut() {
         if (stdOut) {
             println "\n[INFO] Standard output from test case ${testCase}:"
             stdOut.eachLine { line, i ->
@@ -121,7 +121,7 @@ class TestRunnerThread extends Thread {
         }
     }
 
-    private void printStdErr(){
+    private void printStdErr() {
         if (stdErr) {
             println "\n[ERROR] Error output from test case ${testCase}:"
             stdErr.eachLine { line, i ->

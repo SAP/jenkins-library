@@ -51,7 +51,7 @@ def listTestCaseThreads() {
 def waitForTestCases(threadList) {
     threadList.metaClass.anyThreadStillAlive = {
         for (thread in delegate) {
-            if(thread.isAlive()) {
+            if (thread.isAlive()) {
                 return true
             }
         }
@@ -64,7 +64,7 @@ def waitForTestCases(threadList) {
 
             println "[INFO] Integration tests are still running."
             sleep(AUXILIARY_SLEEP_MS)
-            if (TERMINATE_AFTER_45_MINUTES--==0) {
+            if (TERMINATE_AFTER_45_MINUTES-- == 0) {
                 threadList.each { thread ->
                     thread.printOutputPrematurely()
                 }
@@ -76,12 +76,12 @@ def waitForTestCases(threadList) {
 
 static def printOutputOfThreadsIfOneFailed(threadList) {
     def failedThread = threadList.find { thread ->
-        thread.exitCode>0
+        thread.exitCode > 0
     }
     if (failedThread) {
         threadList.each { thread ->
-            if (thread.area!=failedThread.area ||
-                thread.testCase!=failedThread.testCase) {
+            if (thread.area != failedThread.area ||
+                thread.testCase != failedThread.testCase) {
                 thread.printOutputPrematurely()
                 thread.interrupt()
             }
