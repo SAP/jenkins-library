@@ -1,4 +1,5 @@
-import ITUtils
+import static ConsumerTestUtils.newEmptyDir
+import static ConsumerTestUtils.notifyGithub
 
 class TestRunnerThread extends Thread {
 
@@ -11,7 +12,7 @@ class TestRunnerThread extends Thread {
     def testCaseRootDir
     def testCaseWorkspace
 
-    public TestRunnerThread(testCaseFilePath) {
+    TestRunnerThread(testCaseFilePath) {
         this.stdOut = new StringBuilder()
         this.stdErr = new StringBuilder()
 
@@ -20,14 +21,14 @@ class TestRunnerThread extends Thread {
             /^[\w\-]+\\/([\w\-]+)\\/([\w\-]+)\..*\u0024/)
         this.area = testCaseMatches[0][1]
         this.testCase = testCaseMatches[0][2]
-        this.testCaseRootDir = "${ITUtils.workspacesRootDir}/${area}/${testCase}"
+        this.testCaseRootDir = "${ConsumerTestUtils.workspacesRootDir}/${area}/${testCase}"
         this.testCaseWorkspace = "${testCaseRootDir}/workspace"
     }
 
-    public void run() {
+    void run() {
         println "[INFO] Test case '${testCase}' in area '${area}' launched."
 
-        ITUtils.newEmptyDir(testCaseRootDir)
+        newEmptyDir(testCaseRootDir)
         executeShell("git clone -b ${testCase} https://github.com/sap/cloud-s4-sdk-book " +
             "${testCaseWorkspace}")
         addJenkinsYmlToWorkspace()
@@ -51,7 +52,7 @@ class TestRunnerThread extends Thread {
     private void addJenkinsYmlToWorkspace() {
         def sourceFile = 'jenkins.yml'
         def sourceText = new File(sourceFile).text.replaceAll(
-            '__REPO_SLUG__', ITUtils.repositoryUnderTest)
+            '__REPO_SLUG__', ConsumerTestUtils.repositoryUnderTest)
         def target = new File("${testCaseWorkspace}/${sourceFile}")
         target.write(sourceText)
     }
@@ -61,7 +62,7 @@ class TestRunnerThread extends Thread {
     private void manipulateJenkinsfile() {
         def jenkinsfile = new File("${testCaseWorkspace}/Jenkinsfile")
         def manipulatedText =
-            "@Library(\"piper-library-os@${ITUtils.libraryVersionUnderTest}\") _\n" +
+            "@Library(\"piper-library-os@${ConsumerTestUtils.libraryVersionUnderTest}\") _\n" +
                 jenkinsfile.text
         jenkinsfile.write(manipulatedText)
     }
@@ -89,18 +90,18 @@ class TestRunnerThread extends Thread {
                     wait() // for other threads to print their log first
                     printStdOut()
                     printStdErr()
-                    ITUtils.notifyGithub("failure", "Integration test ${area}:${testCase} failed.")
+                    notifyGithub("failure", "Integration test ${area}:${testCase} failed.")
                     System.exit(exitCode)
                 } catch (InterruptedException e) {
                     e.printStackTrace()
                 }
             }
 
-            ITUtils.notifyGithub("failure", "The integration tests failed.")
+            notifyGithub("failure", "The integration tests failed.")
         }
     }
 
-    public void printOutputPrematurely() {
+    void printOutputPrematurely() {
         if (this.currentProcess) {
             this.currentProcess.consumeProcessOutput(stdOut, stdErr)
             printStdOut()

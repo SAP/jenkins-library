@@ -1,4 +1,6 @@
-import ITUtils
+import static ConsumerTestUtils.notifyGithub
+import static ConsumerTestUtils.newEmptyDir
+import static ConsumerTestUtils.listYamlInDirRecursive
 
 AUXILIARY_SLEEP_MS = 10000
 // Build is killed at 50 min, print log to console at minute 45
@@ -17,14 +19,14 @@ In this case there is no merge commit between any base branch and HEAD of a PR b
 The commit which we need for notifying about a build status is in this case simply
 TRAVIS_COMMIT itself.
 */
-ITUtils.commitHash = System.getenv('TRAVIS_PULL_REQUEST_SHA') ?: System.getenv('TRAVIS_COMMIT')
+ConsumerTestUtils.commitHash = System.getenv('TRAVIS_PULL_REQUEST_SHA') ?: System.getenv('TRAVIS_COMMIT')
 
-ITUtils.notifyGithub("pending", "Integration tests are in progress.")
+notifyGithub("pending", "Integration tests are in progress.")
 
-ITUtils.newEmptyDir(WORKSPACES_ROOT)
-ITUtils.workspacesRootDir = WORKSPACES_ROOT
-ITUtils.libraryVersionUnderTest = "git log --format=%H -n 1".execute().text.trim()
-ITUtils.repositoryUnderTest = System.getenv('TRAVIS_REPO_SLUG') ?: 'SAP/jenkins-library'
+newEmptyDir(WORKSPACES_ROOT)
+ConsumerTestUtils.workspacesRootDir = WORKSPACES_ROOT
+ConsumerTestUtils.libraryVersionUnderTest = "git log --format=%H -n 1".execute().text.trim()
+ConsumerTestUtils.repositoryUnderTest = System.getenv('TRAVIS_REPO_SLUG') ?: 'SAP/jenkins-library'
 
 def testCaseThreads = listTestCaseThreads()
 testCaseThreads.each { it ->
@@ -35,12 +37,12 @@ testCaseThreads.each { it ->
 //Otherwise the job will be canceled after 10 minutes without output.
 waitForTestCases(testCaseThreads)
 
-ITUtils.notifyGithub("success", "The integration tests succeeded.")
+notifyGithub("success", "The integration tests succeeded.")
 
 
 def listTestCaseThreads() {
     //Each dir that includes a yml file is a test case
-    def testCases = ITUtils.listYamlInDirRecursive(TEST_CASES_DIR)
+    def testCases = listYamlInDirRecursive(TEST_CASES_DIR)
     def threads = []
     testCases.each { file ->
         threads << new TestRunnerThread(file.toString())

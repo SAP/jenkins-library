@@ -1,7 +1,7 @@
 import groovy.io.FileType
 import static groovy.json.JsonOutput.toJson
 
-class ITUtils {
+class ConsumerTestUtils {
 
     static def workspacesRootDir
     static def libraryVersionUnderTest
