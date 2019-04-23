@@ -1,8 +1,5 @@
 import groovy.io.FileType
-@Grab(group = 'org.codehaus.groovy.modules.http-builder', module = 'http-builder', version = '0.7')
-import groovyx.net.http.RESTClient
-
-import static groovyx.net.http.ContentType.JSON
+import static groovy.json.JsonOutput.toJson
 
 class ITUtils {
 
@@ -32,10 +29,12 @@ class ITUtils {
     static def notifyGithub(state, description) {
         println "[INFO] Notifying about state '${state}' for commit '${commitHash}'."
 
-        def http = new RESTClient("https://api.github.com/repos/SAP/jenkins-library/statuses/" +
-            "${commitHash}")
-        http.headers['User-Agent'] = 'groovy-script'
-        http.headers['Authorization'] = "token ${System.getenv('INTEGRATION_TEST_VOTING_TOKEN')}"
+        URL url = new URL("https://api.github.com/repos/SAP/jenkins-library/statuses/${commitHash}")
+        HttpURLConnection con = (HttpURLConnection) url.openConnection()
+        con.setRequestMethod('POST')
+        con.setRequestProperty("Content-Type", "application/json; utf-8");
+        con.setRequestProperty('User-Agent', 'groovy-script')
+        con.setRequestProperty('Authorization', "token ${System.getenv('INTEGRATION_TEST_VOTING_TOKEN')}")
 
         def postBody = [
             state      : state,
@@ -44,8 +43,17 @@ class ITUtils {
             context    : "integration-tests"
         ]
 
-        http.post(body: postBody, requestContentType: JSON) { response ->
-            assert response.statusLine.statusCode == 201
+        con.setDoOutput(true)
+        con.getOutputStream().withStream { os ->
+            os.write(toJson(postBody).getBytes("UTF-8"))
+        }
+
+        int responseCode = con.getResponseCode()
+        if (responseCode != HttpURLConnection.HTTP_CREATED) {
+            println "[ERROR] Posting status to github failed. Expected response code " +
+                "'${HttpURLConnection.HTTP_CREATED}', but got '${responseCode}'. " +
+                "Response message: '${con.getResponseMessage()}'"
+            System.exit(34) // Error code taken from curl: CURLE_HTTP_POST_ERROR
         }
     }
 }
