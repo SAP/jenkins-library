@@ -95,10 +95,10 @@ class TestRunnerThread extends Thread {
             synchronized (this) {
                 try {
                     wait() // for other threads to print their log first
+                    // then it is interrupted
+                } catch (InterruptedException e) {
                     printStdOut()
                     printStdErr()
-                } catch (InterruptedException e) {
-                    e.printStackTrace()
                 }
             }
         }
