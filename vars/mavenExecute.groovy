@@ -6,7 +6,7 @@ import com.sap.piper.Utils
 
 import groovy.transform.Field
 
-import static com.sap.piper.Utils.downloadMavenSettingsFromUrlIfRequired
+import static com.sap.piper.Utils.downloadSettingsFromUrl
 
 @Field def STEP_NAME = getClass().getName()
 
@@ -65,29 +65,33 @@ void call(Map parameters = [:]) {
 
         String command = "mvn"
 
-        def globalSettingsFile = configuration.globalSettingsFile?.trim()
+        String globalSettingsFile = configuration.globalSettingsFile?.trim()
         if (globalSettingsFile) {
-            globalSettingsFile = downloadMavenSettingsFromUrlIfRequired(this, globalSettingsFile as String)
+            if (globalSettingsFile.startsWith("http")) {
+                globalSettingsFile = downloadSettingsFromUrl(this, globalSettingsFile)
+            }
             command += " --global-settings '${globalSettingsFile}'"
         }
 
-        def m2Path = configuration.m2Path
+        String m2Path = configuration.m2Path
         if(m2Path?.trim()) {
             command += " -Dmaven.repo.local='${m2Path}'"
         }
 
-        def projectSettingsFile = configuration.projectSettingsFile?.trim()
+        String projectSettingsFile = configuration.projectSettingsFile?.trim()
         if (projectSettingsFile) {
-            projectSettingsFile = downloadMavenSettingsFromUrlIfRequired(this, projectSettingsFile as String)
+            if (projectSettingsFile.startsWith("http")) {
+                projectSettingsFile = downloadSettingsFromUrl(this, projectSettingsFile)
+            }
             command += " --settings '${projectSettingsFile}'"
         }
 
-        def pomPath = configuration.pomPath
+        String pomPath = configuration.pomPath
         if(pomPath?.trim()){
             command += " --file '${pomPath}'"
         }
 
-        def mavenFlags = configuration.flags
+        String mavenFlags = configuration.flags
         if (mavenFlags?.trim()) {
             command += " ${mavenFlags}"
         }

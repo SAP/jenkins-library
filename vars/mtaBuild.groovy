@@ -4,8 +4,9 @@ import com.sap.piper.GenerateDocumentation
 import com.sap.piper.ConfigurationHelper
 import com.sap.piper.MtaUtils
 import com.sap.piper.Utils
-import static com.sap.piper.Utils.downloadMavenSettingsFromUrlIfRequired
 import groovy.transform.Field
+
+import static com.sap.piper.Utils.downloadSettingsFromUrl
 
 @Field def STEP_NAME = getClass().getName()
 
@@ -65,14 +66,18 @@ void call(Map parameters = [:]) {
 
             String projectSettingsFile = configuration.projectSettingsFile?.trim()
             if (projectSettingsFile) {
-                projectSettingsFile = downloadMavenSettingsFromUrlIfRequired(this, projectSettingsFile as String)
+                if (projectSettingsFile.startsWith("http")) {
+                    projectSettingsFile = downloadSettingsFromUrl(this, projectSettingsFile)
+                }
                 sh 'mkdir -p $HOME/.m2'
                 sh "cp ${projectSettingsFile} \$HOME/.m2/settings.xml"
             }
 
             String globalSettingsFile = configuration.globalSettingsFile?.trim()
             if (globalSettingsFile) {
-                globalSettingsFile = downloadMavenSettingsFromUrlIfRequired(this, globalSettingsFile as String)
+                if (globalSettingsFile.startsWith("http")) {
+                    globalSettingsFile = downloadSettingsFromUrl(this, globalSettingsFile)
+                }
                 sh "cp ${globalSettingsFile} \$M2_HOME/conf/settings.xml"
             }
 
