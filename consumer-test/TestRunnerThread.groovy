@@ -1,5 +1,5 @@
-import static ConsumerTestUtils.newEmptyDir
 import static ConsumerTestUtils.exitPrematurely
+import static ConsumerTestUtils.newEmptyDir
 
 class TestRunnerThread extends Thread {
 
@@ -43,13 +43,13 @@ class TestRunnerThread extends Thread {
 
         //Commit the changed version because artifactSetVersion expects the git repo not to be dirty
         executeShell(["git", "-C", "${testCaseWorkspace}", "commit", "--all",
-                      "--author=piper-testing-bot <piper-testing-bot@example.com>",
-                      "--message=Set piper lib version for test"])
+                        "--author=piper-testing-bot <piper-testing-bot@example.com>",
+                        "--message=Set piper lib version for test"])
 
         executeShell("docker run -v /var/run/docker.sock:/var/run/docker.sock " +
-            "-v ${System.getenv('PWD')}/${testCaseWorkspace}:/workspace -v /tmp -e " +
-            "CASC_JENKINS_CONFIG=/workspace/jenkins.yml -e CX_INFRA_IT_CF_USERNAME -e " +
-            "CX_INFRA_IT_CF_PASSWORD -e BRANCH_NAME=${testCase} ppiper/jenkinsfile-runner")
+            "-v ${System.getenv('PWD')}/${testCaseWorkspace}:/workspace -v /tmp " +
+            "-e CASC_JENKINS_CONFIG=/workspace/jenkins.yml -e CX_INFRA_IT_CF_USERNAME " +
+            "-e CX_INFRA_IT_CF_PASSWORD -e BRANCH_NAME=${testCase} ppiper/jenkinsfile-runner")
 
         println "*****[INFO] Test case '${uniqueId}' finished successfully.*****"
         printStdOut()

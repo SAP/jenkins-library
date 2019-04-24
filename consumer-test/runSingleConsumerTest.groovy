@@ -1,5 +1,5 @@
-import static ConsumerTestUtils.newEmptyDir
 import static ConsumerTestUtils.exitPrematurely
+import static ConsumerTestUtils.newEmptyDir
 
 def filePath = args?.find()
 if (!filePath) {

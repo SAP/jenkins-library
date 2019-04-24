@@ -1,4 +1,5 @@
 import groovy.io.FileType
+
 import static groovy.json.JsonOutput.toJson
 
 class ConsumerTestUtils {

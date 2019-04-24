@@ -1,7 +1,7 @@
-import static ConsumerTestUtils.notifyGithub
-import static ConsumerTestUtils.newEmptyDir
-import static ConsumerTestUtils.listYamlInDirRecursive
 import static ConsumerTestUtils.exitPrematurely
+import static ConsumerTestUtils.listYamlInDirRecursive
+import static ConsumerTestUtils.newEmptyDir
+import static ConsumerTestUtils.notifyGithub
 
 AUXILIARY_SLEEP_MS = 10000
 // Build is killed at 50 min, print log to console at minute 45
