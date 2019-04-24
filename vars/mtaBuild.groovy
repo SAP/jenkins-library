@@ -67,7 +67,7 @@ void call(Map parameters = [:]) {
             String projectSettingsFile = configuration.projectSettingsFile?.trim()
             if (projectSettingsFile) {
                 if (projectSettingsFile.startsWith("http")) {
-                    projectSettingsFile = downloadSettingsFromUrl(this, projectSettingsFile)
+                    projectSettingsFile = downloadSettingsFromUrl(this, projectSettingsFile, 'project-settings.xml')
                 }
                 sh 'mkdir -p $HOME/.m2'
                 sh "cp ${projectSettingsFile} \$HOME/.m2/settings.xml"
@@ -76,7 +76,7 @@ void call(Map parameters = [:]) {
             String globalSettingsFile = configuration.globalSettingsFile?.trim()
             if (globalSettingsFile) {
                 if (globalSettingsFile.startsWith("http")) {
-                    globalSettingsFile = downloadSettingsFromUrl(this, globalSettingsFile)
+                    globalSettingsFile = downloadSettingsFromUrl(this, globalSettingsFile, 'global-settings.xml')
                 }
                 sh "cp ${globalSettingsFile} \$M2_HOME/conf/settings.xml"
             }

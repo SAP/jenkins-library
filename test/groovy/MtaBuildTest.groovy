@@ -199,7 +199,7 @@ public class MtaBuildTest extends BasePiperTest {
 
         stepRule.step.mtaBuild(script: nullScript, projectSettingsFile: 'https://some.host/my-settings.xml')
 
-        assert shellRule.shell.find(){ c -> c.contains('cp settings.xml $HOME/.m2/settings.xml')}
+        assert shellRule.shell.find(){ c -> c.contains('cp project-settings.xml $HOME/.m2/settings.xml')}
     }
 
     @Test
@@ -215,7 +215,7 @@ public class MtaBuildTest extends BasePiperTest {
 
         stepRule.step.mtaBuild(script: nullScript, globalSettingsFile: 'https://some.host/my-settings.xml')
 
-        assert shellRule.shell.find(){ c -> c.contains('cp settings.xml $M2_HOME/conf/settings.xml')}
+        assert shellRule.shell.find(){ c -> c.contains('cp global-settings.xml $M2_HOME/conf/settings.xml')}
     }
 
     @Test
