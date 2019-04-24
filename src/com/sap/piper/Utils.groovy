@@ -113,3 +113,13 @@ static String fillTemplate(String templateText, Map binding){
     String result = engine.createTemplate(templateText).make(binding)
     return result
 }
+
+static String downloadSettingsFromUrl(script, String url, String targetFile = 'settings.xml'){
+    if (script.fileExists(targetFile)) {
+        throw new RuntimeException("Trying to download settings file to ${targetFile}, but a file with this name already exists. Please specify a uniqe file name.")
+    }
+
+    def settings = script.httpRequest url
+    script.writeFile file: targetFile, text: settings.getContent()
+    return targetFile
+}
