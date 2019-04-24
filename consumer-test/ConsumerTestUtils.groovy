@@ -56,4 +56,9 @@ class ConsumerTestUtils {
             System.exit(34) // Error code taken from curl: CURLE_HTTP_POST_ERROR
         }
     }
+
+    static void exitPrematurely(int exitCode, message) {
+        println message
+        System.exit(exitCode)
+    }
 }

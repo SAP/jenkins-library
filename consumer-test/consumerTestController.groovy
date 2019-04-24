@@ -1,10 +1,11 @@
 import static ConsumerTestUtils.notifyGithub
 import static ConsumerTestUtils.newEmptyDir
 import static ConsumerTestUtils.listYamlInDirRecursive
+import static ConsumerTestUtils.exitPrematurely
 
 AUXILIARY_SLEEP_MS = 10000
 // Build is killed at 50 min, print log to console at minute 45
-TERMINATE_AFTER_45_MINUTES = (45 * 60 * 1000) / AUXILIARY_SLEEP_MS
+PRINT_LOGS_AFTER_45_MINUTES_COUNTDOWN = (45 * 60 * 1000) / AUXILIARY_SLEEP_MS
 WORKSPACES_ROOT = 'workspaces'
 TEST_CASES_DIR = 'testCases'
 
@@ -21,7 +22,7 @@ TRAVIS_COMMIT itself.
 */
 ConsumerTestUtils.commitHash = System.getenv('TRAVIS_PULL_REQUEST_SHA') ?: System.getenv('TRAVIS_COMMIT')
 
-notifyGithub("pending", "Integration tests are in progress.")
+notifyGithub("pending", "Consumer tests are in progress.")
 
 newEmptyDir(WORKSPACES_ROOT)
 ConsumerTestUtils.workspacesRootDir = WORKSPACES_ROOT
@@ -37,7 +38,7 @@ testCaseThreads.each { it ->
 //Otherwise the job will be canceled after 10 minutes without output.
 waitForTestCases(testCaseThreads)
 
-notifyGithub("success", "The integration tests succeeded.")
+notifyGithub("success", "All consumer tests succeeded.")
 
 
 def listTestCaseThreads() {
@@ -64,9 +65,9 @@ def waitForTestCases(threadList) {
         while (threadList.anyThreadStillAlive()) {
             printOutputOfThreadsIfOneFailed(threadList)
 
-            println "[INFO] Integration tests are still running."
+            println "[INFO] Consumer tests are still running."
             sleep(AUXILIARY_SLEEP_MS)
-            if (TERMINATE_AFTER_45_MINUTES-- == 0) {
+            if (PRINT_LOGS_AFTER_45_MINUTES_COUNTDOWN-- == 0) {
                 threadList.each { thread ->
                     thread.printOutputPrematurely()
                 }
@@ -82,8 +83,7 @@ static def printOutputOfThreadsIfOneFailed(threadList) {
     }
     if (failedThread) {
         threadList.each { thread ->
-            if (thread.area != failedThread.area ||
-                thread.testCase != failedThread.testCase) {
+            if (thread.uniqueId != failedThread.uniqueId) {
                 thread.printOutputPrematurely()
                 thread.interrupt()
             }
@@ -91,5 +91,8 @@ static def printOutputOfThreadsIfOneFailed(threadList) {
         synchronized (failedThread) {
             failedThread.notify()
         }
+        notifyGithub("failure", "Consumer test ${failedThread.uniqueId} failed.")
+        failedThread.interrupt()
+        exitPrematurely(failedThread.exitCode, "Consumer test ${failedThread.uniqueId} failed, aborted!")
     }
 }
