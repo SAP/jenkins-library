@@ -137,7 +137,6 @@ class TestRunnerThread extends Thread {
     }
 
     public void printRunningStdOut() {
-        abortIfSevereErrorOccurred()
         stdOut?.eachLine { line, i ->
             if (i > lastPrintedStdOutLine) {
                 println "${i} [${uniqueId}] ${line}"
@@ -146,7 +145,7 @@ class TestRunnerThread extends Thread {
         }
     }
 
-    private void abortIfSevereErrorOccurred() {
+    public void abortIfSevereErrorOccurred() {
         if (stdErr?.find("SEVERE")) {
             printOutputPrematurely()
             exitPrematurely(1, "SEVERE Error in test case ${uniqueId}, aborted!")
