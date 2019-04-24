@@ -52,7 +52,7 @@ class TestRunnerThread extends Thread {
             "-e CX_INFRA_IT_CF_PASSWORD -e BRANCH_NAME=${testCase} ppiper/jenkinsfile-runner")
 
         println "*****[INFO] Test case '${uniqueId}' finished successfully.*****"
-        printStdOut()
+        printOutput()
     }
 
     // Configure path to library-repository under test in Jenkins config
@@ -97,42 +97,22 @@ class TestRunnerThread extends Thread {
                     wait() // for other threads to print their log first
                     // then it is interrupted
                 } catch (InterruptedException e) {
-                    printStdOut()
-                    printStdErr()
+                    printOutput()
                 }
             }
         }
     }
 
-    void printOutputPrematurely() {
-        if (this.currentProcess) {
-            printStdOut()
-            printStdErr()
-        } else {
-            println "[${testCase}] Warning: Currently no process is running."
+    void printOutput() {
+        println "\n[INFO] Standard output from test case ${uniqueId}:"
+        stdOut?.eachLine { line, i ->
+            println "${i} [${uniqueId}] ${line}"
+            lastPrintedStdOutLine = i
         }
-    }
 
-    private void printStdOut() {
-        if (stdOut) {
-            println "\n[INFO] Standard output from test case ${uniqueId}:"
-            stdOut.eachLine { line, i ->
-                println "${i} [${uniqueId}] ${line}"
-                lastPrintedStdOutLine = i
-            }
-        } else {
-            println "\n[WARNING] No standard output for ${uniqueId} exists."
-        }
-    }
-
-    private void printStdErr() {
-        if (stdErr) {
-            println "\n[ERROR] Error output from test case ${uniqueId}:"
-            stdErr.eachLine { line, i ->
-                println "${i} [${uniqueId}] ${line}"
-            }
-        } else {
-            println "\n[WARNING] No error output for ${uniqueId} exists."
+        println "\n[ERROR] Error output from test case ${uniqueId}:"
+        stdErr?.eachLine { line, i ->
+            println "${i} [${uniqueId}] ${line}"
         }
     }
 
@@ -147,7 +127,7 @@ class TestRunnerThread extends Thread {
 
     public void abortIfSevereErrorOccurred() {
         if (stdErr?.find("SEVERE")) {
-            printOutputPrematurely()
+            printOutput()
             exitPrematurely(1, "SEVERE Error in test case ${uniqueId}, aborted!")
         }
     }

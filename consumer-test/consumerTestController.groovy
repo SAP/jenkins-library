@@ -69,7 +69,7 @@ def waitForTestCases(threadList) {
             sleep(AUXILIARY_SLEEP_MS)
             if (PRINT_LOGS_AFTER_45_MINUTES_COUNTDOWN-- == 0) {
                 threadList.each { thread ->
-                    thread.printOutputPrematurely()
+                    thread.printOutput()
                 }
             }
         }
@@ -84,7 +84,7 @@ static def printOutputOfThreadsIfOneFailed(threadList) {
     if (failedThread) {
         threadList.each { thread ->
             if (thread.uniqueId != failedThread.uniqueId) {
-                thread.printOutputPrematurely()
+                thread.printOutput()
                 thread.interrupt()
             }
         }
