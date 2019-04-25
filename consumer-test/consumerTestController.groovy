@@ -9,6 +9,12 @@ PRINT_LOGS_AFTER_45_MINUTES_COUNTDOWN = (45 * 60 * 1000) / AUXILIARY_SLEEP_MS
 WORKSPACES_ROOT = 'workspaces'
 TEST_CASES_DIR = 'testCases'
 
+EXCLUDED_FROM_CONSUMER_TESTING_REGEXES = [
+    /^documentation\/.*$/,
+    /^.travis.yml$/,
+    /^test\/.*$/
+]
+
 /*
 In case the build is performed for a pull request TRAVIS_COMMIT is a merge
 commit between the base branch and the PR branch HEAD. That commit is actually built.
@@ -28,6 +34,11 @@ newEmptyDir(WORKSPACES_ROOT)
 ConsumerTestUtils.workspacesRootDir = WORKSPACES_ROOT
 ConsumerTestUtils.libraryVersionUnderTest = "git log --format=%H -n 1".execute().text.trim()
 ConsumerTestUtils.repositoryUnderTest = System.getenv('TRAVIS_REPO_SLUG') ?: 'SAP/jenkins-library'
+
+if (changeDoesNotNeedConsumerTesting()) {
+    notifyGithub("success", "No consumer tests necessary.")
+    exitPrematurely(0, 'No consumer tests necessary.')
+}
 
 def testCaseThreads = listTestCaseThreads()
 testCaseThreads.each { it ->
@@ -94,4 +105,20 @@ static def printOutputOfThreadsIfOneFailed(threadList) {
         notifyGithub("failure", "Consumer test ${failedThread.uniqueName} failed.")
         exitPrematurely(failedThread.exitCode, "Consumer test ${failedThread.uniqueName} failed, aborted!")
     }
+}
+
+def changeDoesNotNeedConsumerTesting(){
+    def excludesRegex = '(' + EXCLUDED_FROM_CONSUMER_TESTING_REGEXES.join('|') + ')'
+
+    "git remote add sap https://github.com/SAP/jenkins-library.git".execute().waitFor()
+    "git fetch sap".execute().waitFor()
+    def diff = "git diff --name-only sap/master ${ConsumerTestUtils.libraryVersionUnderTest}".execute().text.trim()
+
+    for (def line : diff.readLines()) {
+        if (!(line ==~ excludesRegex)) {
+            return false
+        }
+    }
+
+    return true
 }
