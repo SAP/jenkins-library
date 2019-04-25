@@ -83,7 +83,7 @@ static def printOutputOfThreadsIfOneFailed(threadList) {
     }
     if (failedThread) {
         threadList.each { thread ->
-            if (thread.uniqueId != failedThread.uniqueId) {
+            if (thread.uniqueName != failedThread.uniqueName) {
                 thread.printOutput()
                 thread.interrupt()
             }
@@ -91,7 +91,7 @@ static def printOutputOfThreadsIfOneFailed(threadList) {
         synchronized (failedThread) {
             failedThread.interrupt()
         }
-        notifyGithub("failure", "Consumer test ${failedThread.uniqueId} failed.")
-        exitPrematurely(failedThread.exitCode, "Consumer test ${failedThread.uniqueId} failed, aborted!")
+        notifyGithub("failure", "Consumer test ${failedThread.uniqueName} failed.")
+        exitPrematurely(failedThread.exitCode, "Consumer test ${failedThread.uniqueName} failed, aborted!")
     }
 }

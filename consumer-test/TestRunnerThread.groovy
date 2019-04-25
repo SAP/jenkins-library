@@ -10,7 +10,7 @@ class TestRunnerThread extends Thread {
     public def exitCode = 0
     def area
     def testCase
-    def uniqueId
+    def uniqueName
     def testCaseRootDir
     def testCaseWorkspace
 
@@ -27,13 +27,13 @@ class TestRunnerThread extends Thread {
             exitPrematurely(2, "Expecting file structure '/rootDir/areaDir/testCase.yml' " +
                 "but got '${testCaseFilePath.toString()}'.")
         }
-        this.uniqueId = "${area}:${testCase}"
+        this.uniqueName = "${area}|${testCase}"
         this.testCaseRootDir = "${ConsumerTestUtils.workspacesRootDir}/${area}/${testCase}"
         this.testCaseWorkspace = "${testCaseRootDir}/workspace"
     }
 
     void run() {
-        println "[INFO] Test case '${uniqueId}' launched."
+        println "[INFO] Test case '${uniqueName}' launched."
 
         newEmptyDir(testCaseRootDir)
         executeShell("git clone -b ${testCase} https://github.com/sap/cloud-s4-sdk-book " +
@@ -51,7 +51,7 @@ class TestRunnerThread extends Thread {
             "-e CASC_JENKINS_CONFIG=/workspace/jenkins.yml -e CX_INFRA_IT_CF_USERNAME " +
             "-e CX_INFRA_IT_CF_PASSWORD -e BRANCH_NAME=${testCase} ppiper/jenkinsfile-runner")
 
-        println "*****[INFO] Test case '${uniqueId}' finished successfully.*****"
+        println "*****[INFO] Test case '${uniqueName}' finished successfully.*****"
         printOutput()
     }
 
@@ -104,22 +104,22 @@ class TestRunnerThread extends Thread {
     }
 
     void printOutput() {
-        println "\n[INFO] Standard output from test case ${uniqueId}:"
+        println "\n[INFO] Standard output from test case ${uniqueName}:"
         stdOut?.eachLine { line, i ->
-            println "${i} [${uniqueId}] ${line}"
+            println "${i} [${uniqueName}] ${line}"
             lastPrintedStdOutLine = i
         }
 
-        println "\n[ERROR] Error output from test case ${uniqueId}:"
+        println "\n[ERROR] Error output from test case ${uniqueName}:"
         stdErr?.eachLine { line, i ->
-            println "${i} [${uniqueId}] ${line}"
+            println "${i} [${uniqueName}] ${line}"
         }
     }
 
     public void printRunningStdOut() {
         stdOut?.eachLine { line, i ->
             if (i > lastPrintedStdOutLine) {
-                println "${i} [${uniqueId}] ${line}"
+                println "${i} [${uniqueName}] ${line}"
                 lastPrintedStdOutLine = i
             }
         }
@@ -128,7 +128,7 @@ class TestRunnerThread extends Thread {
     public void abortIfSevereErrorOccurred() {
         if (stdErr?.find("SEVERE")) {
             printOutput()
-            exitPrematurely(1, "SEVERE Error in test case ${uniqueId}, aborted!")
+            exitPrematurely(1, "SEVERE Error in test case ${uniqueName}, aborted!")
         }
     }
 }
