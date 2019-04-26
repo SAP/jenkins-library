@@ -91,7 +91,7 @@ void call(Map parameters = [:], body) {
         echo "[${STEP_NAME}] Error in step ${config.stepName} - Build result set to 'UNSTABLE'"
 
         // add information about unstable steps to pipeline environment
-        // this helps to bring this information to users iin a consolidated manner inside a pipeline
+        // this helps to bring this information to users in a consolidated manner inside a pipeline
         List unstableSteps = commonPipelineEnvironment.getValue('unstableSteps')
         if (!unstableSteps) {
             commonPipelineEnvironment.setValue('unstableSteps', [config.stepName])
