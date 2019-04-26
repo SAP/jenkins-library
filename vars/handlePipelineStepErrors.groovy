@@ -92,12 +92,12 @@ void call(Map parameters = [:], body) {
 
         // add information about unstable steps to pipeline environment
         // this helps to bring this information to users in a consolidated manner inside a pipeline
-        List unstableSteps = commonPipelineEnvironment.getValue('unstableSteps')
+        List unstableSteps = cpe.getValue('unstableSteps')
         if (!unstableSteps) {
-            commonPipelineEnvironment.setValue('unstableSteps', [config.stepName])
+            cpe.setValue('unstableSteps', [config.stepName])
         } else {
             unstableSteps.add(config.stepName)
-            commonPipelineEnvironment.setValue('unstableSteps', unstableSteps)
+            cpe.setValue('unstableSteps', unstableSteps)
         }
 
     } catch (Throwable error) {
