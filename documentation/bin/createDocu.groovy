@@ -11,7 +11,7 @@ import groovy.text.StreamingTemplateEngine
 //
 class TemplateHelper {
 
-    static createParametersTable(Map parameters) {
+    static createParametersTable(Map parameters, Map dependentConfig, Map defaultConfig) {
 
         def t = ''
         t += '| name | mandatory | default | possible values |\n'
@@ -20,7 +20,32 @@ class TemplateHelper {
         parameters.keySet().toSorted().each {
 
             def props = parameters.get(it)
-            t +=  "| `${it}` | ${props.mandatory ?: props.required ? 'yes' : 'no'} | ${(props.defaultValue ? '`' +  props.defaultValue + '`' : '') } | ${props.value ?: ''} |\n"
+
+            String defaultValue = props.defaultValue ? '`' +  props.defaultValue + '`' : ''
+
+            //create default value incl. dependent config
+            if (dependentConfig(it)) {
+                //iterate over possible values and try to get additional defaults
+                dependentConfig(it).each {dependencyList ->
+                    //only consider first occurence for now
+                    def dependentParameterKey = dependencyList[0]
+                    def dependentValues = parameters.get(dependentParameterKey).value
+                    if (dependentValues) {
+                        def cleanedValues = dependentValues.replaceAll("'", '')
+                        cleanedValues = cleanedValues.replaceAll('"', '')
+                        cleanedValues = cleanedValues.replaceAll("`", '')
+                        cleanedValues = cleanedValues.replaceAll(' ', '')
+                        List possibleValueList = cleanedValues.split(',')
+                        possibleValueList.each {possibleValue ->
+                            //only consider first occurence for now
+                            if (!possibleValue instanceof Boolean && defaultConfig.get(possibleValue))
+                                defaultValue += "<br />${dependencyList[0]}=`${possibleValue}`:${Helper.getValue(defaultConfig.get(possibleValue), dependencyList[0].split('/'))}"
+                        }
+                    }
+                }
+            }
+
+            t +=  "| `${it}` | ${props.mandatory ?: props.required ? 'yes' : 'no'} | ${defaultValue} | ${props.value ?: ''} |\n"
         }
 
         t
@@ -36,8 +61,8 @@ class TemplateHelper {
         t.trim()
     }
 
-    static createParametersSection(Map parameters) {
-        createParametersTable(parameters) + '\n' + createParameterDescriptionSection(parameters)
+    static createParametersSection(Map parameters, Map dependentConfig, Map defaultConfig) {
+        createParametersTable(parameters, dependentConfig, defaultConfig) + '\n' + createParameterDescriptionSection(parameters)
     }
 
     static createStepConfigurationSection(Map parameters) {
@@ -327,6 +352,23 @@ class Helper {
         return params
     }
 
+    static getDependentConfig(File f) {
+        Map dependencyMap = [:]
+        f.eachLine {
+            line ->
+                if (line ==~ /.*dependingOn.*/) {
+                    def dependentConfigKey = (line =~ /.*dependingOn\('(.*)'\).mixin\('(.*)'/)[0][1]
+                    def configKey = (line =~ /.*dependingOn\('(.*)'\).mixin\('(.*)'/)[0][2]
+                    if (!dependencyMap[configKey]) {
+                        dependencyMap[configKey] = [dependentConfigKey]
+                    } else {
+                        dependencyMap[configKey].add(dependentConfigKey)
+                    }
+                }
+        }
+        return dependencyMap
+    }
+
     static getParentObjectMappings(File f) {
         def mappings = [:]
         def parentObjectKey = ''
@@ -499,7 +541,7 @@ void renderStep(stepName, stepProperties) {
     def binding = [
         docGenStepName      : stepName,
         docGenDescription   : 'Description\n\n' + stepProperties.description,
-        docGenParameters    : 'Parameters\n\n' + TemplateHelper.createParametersSection(stepProperties.parameters),
+        docGenParameters    : 'Parameters\n\n' + TemplateHelper.createParametersSection(stepProperties.parameters, stepProperties.dependentConfig, stepProperties.defaultConfig),
         docGenConfiguration : 'Step configuration\n\n' + TemplateHelper.createStepConfigurationSection(stepProperties.parameters)
     ]
     def template = new StreamingTemplateEngine().createTemplate(theStepDocu.text)
@@ -587,6 +629,10 @@ def handleStep(stepName, prepareDefaultValuesStep, gse, customDefaults) {
 
     def step = [parameters:[:]]
 
+    // add dependent config based on dependingOn().mixin()
+    step.dependentConfig = Helper.getDependentConfig(theStep)
+    step.defaultConfig = defaultConfig
+
     //
     // START special handling for 'script' parameter
     // ... would be better if there is no special handling required ...
@@ -609,7 +655,7 @@ def handleStep(stepName, prepareDefaultValuesStep, gse, customDefaults) {
 
         it ->
 
-            def defaultValue = Helper.getValue(defaultConfig, it.split('/'))
+            String defaultValue = Helper.getValue(defaultConfig, it.split('/'))
 
             def parameterProperties =   [
                                             defaultValue: defaultValue,
