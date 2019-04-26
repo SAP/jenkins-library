@@ -23,13 +23,10 @@ class TemplateHelper {
 
             String defaultValue = props.defaultValue ? '`' +  props.defaultValue + '`' : ''
 
-            //ToDo: remove
-            System.err << "[INFO] Dependent Config: ${dependentConfig(it)}\n"
-
             //create default value incl. dependent config
-            if (dependentConfig(it) != null) {
+            if (dependentConfig.get(it)) {
                 //iterate over possible values and try to get additional defaults
-                dependentConfig(it).each {dependencyList ->
+                dependentConfig.get(it).each {dependencyList ->
                     //only consider first occurence for now
                     def dependentParameterKey = dependencyList[0]
                     def dependentValues = parameters.get(dependentParameterKey).value
