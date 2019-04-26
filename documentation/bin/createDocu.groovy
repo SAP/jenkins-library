@@ -23,6 +23,9 @@ class TemplateHelper {
 
             String defaultValue = props.defaultValue ? '`' +  props.defaultValue + '`' : ''
 
+            //ToDo: remove
+            println("Dependent Config: ${dependentConfig(it)}")
+
             //create default value incl. dependent config
             if (dependentConfig(it)) {
                 //iterate over possible values and try to get additional defaults
