@@ -81,10 +81,23 @@ void call(Map parameters = [:], body) {
         if (config.failOnError || config.stepName in config.mandatorySteps) {
             throw ex
         }
+
         if (config.stepParameters?.script) {
             config.stepParameters?.script.currentBuild.result = 'UNSTABLE'
         } else {
             currentBuild.result = 'UNSTABLE'
+        }
+
+        echo "[${STEP_NAME}] Error in step ${config.stepName} - Build result set to 'UNSTABLE'"
+
+        // add information about unstable steps to pipeline environment
+        // this helps to bring this information to users iin a consolidated manner inside a pipeline
+        List unstableSteps = commonPipelineEnvironment.getValue('unstableSteps')
+        if (!unstableSteps) {
+            commonPipelineEnvironment.setValue('unstableSteps', [config.stepName])
+        } else {
+            unstableSteps.add(config.stepName)
+            commonPipelineEnvironment.setValue('unstableSteps', unstableSteps)
         }
 
     } catch (Throwable error) {
