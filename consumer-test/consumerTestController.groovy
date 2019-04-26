@@ -102,8 +102,6 @@ static def printOutputOfThreadsIfOneFailed(threadList) {
         synchronized (failedThread) {
             failedThread.interrupt()
         }
-        notifyGithub("failure", "Consumer test ${failedThread.uniqueName} failed.")
-        exitPrematurely(failedThread.exitCode, "Consumer test ${failedThread.uniqueName} failed, aborted!")
     }
 }
 
