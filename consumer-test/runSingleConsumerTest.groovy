@@ -7,6 +7,10 @@ if (!filePath) {
         'e.g. `groovy runSingleConsumerTest.groovy testCases/s4sdk/consumer-test-neo.yml`')
 }
 
+if (!System.getenv('CX_INFRA_IT_CF_USERNAME') || !System.getenv('CX_INFRA_IT_CF_PASSWORD')) {
+    exitPrematurely(1, 'Environment variables CX_INFRA_IT_CF_USERNAME and CX_INFRA_IT_CF_PASSWORD need to be set.')
+}
+
 AUXILIARY_SLEEP_MS = 1000
 WORKSPACES_ROOT = 'workspaces'
 
