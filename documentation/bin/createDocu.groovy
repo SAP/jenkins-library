@@ -29,7 +29,7 @@ class TemplateHelper {
                 dependentConfig.get(it).each {dependencyList ->
                     //only consider first occurence for now
                     def dependentParameterKey = dependencyList[0]
-                    def dependentValues = parameters.get(dependentParameterKey).value
+                    def dependentValues = parameters.get(dependentParameterKey)?.value
                     if (dependentValues) {
                         def cleanedValues = dependentValues.replaceAll("'", '')
                         cleanedValues = cleanedValues.replaceAll('"', '')
