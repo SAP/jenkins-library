@@ -15,32 +15,49 @@ EXCLUDED_FROM_CONSUMER_TESTING_REGEXES = [
     /^test\/.*$/
 ]
 
-/*
-In case the build is performed for a pull request TRAVIS_COMMIT is a merge
-commit between the base branch and the PR branch HEAD. That commit is actually built.
-But for notifying about a build status we need the commit which is currently
-the HEAD of the PR branch.
-
-In case the build is performed for a simple branch (not associated with a PR)
-In this case there is no merge commit between any base branch and HEAD of a PR branch.
-The commit which we need for notifying about a build status is in this case simply
-TRAVIS_COMMIT itself.
-*/
-ConsumerTestUtils.commitHash = System.getenv('TRAVIS_PULL_REQUEST_SHA') ?: System.getenv('TRAVIS_COMMIT')
-
-notifyGithub("pending", "Consumer tests are in progress.")
-
 newEmptyDir(WORKSPACES_ROOT)
 ConsumerTestUtils.workspacesRootDir = WORKSPACES_ROOT
 ConsumerTestUtils.libraryVersionUnderTest = "git log --format=%H -n 1".execute().text.trim()
 ConsumerTestUtils.repositoryUnderTest = System.getenv('TRAVIS_REPO_SLUG') ?: 'SAP/jenkins-library'
 
-if (changeDoesNotNeedConsumerTesting()) {
-    notifyGithub("success", "No consumer tests necessary.")
-    exitPrematurely(0, 'No consumer tests necessary.')
+def testCaseThreads
+def filePath = args?.find()
+if (filePath) {
+    ConsumerTestUtils.runningLocally = true
+    AUXILIARY_SLEEP_MS = 1000
+
+    if (!System.getenv('CX_INFRA_IT_CF_USERNAME') || !System.getenv('CX_INFRA_IT_CF_PASSWORD')) {
+        exitPrematurely(1, 'Environment variables CX_INFRA_IT_CF_USERNAME and CX_INFRA_IT_CF_PASSWORD need to be set.')
+    }
+
+    testCaseThreads = [new TestRunnerThread(filePath)]
+
+} else {
+    ConsumerTestUtils.runningLocally = false
+
+    if (changeDoesNotNeedConsumerTesting()) {
+        notifyGithub("success", "No consumer tests necessary.")
+        exitPrematurely(0, 'No consumer tests necessary.')
+    }
+
+    /*
+    In case the build is performed for a pull request TRAVIS_COMMIT is a merge
+    commit between the base branch and the PR branch HEAD. That commit is actually built.
+    But for notifying about a build status we need the commit which is currently
+    the HEAD of the PR branch.
+
+    In case the build is performed for a simple branch (not associated with a PR)
+    In this case there is no merge commit between any base branch and HEAD of a PR branch.
+    The commit which we need for notifying about a build status is in this case simply
+    TRAVIS_COMMIT itself.
+    */
+    ConsumerTestUtils.commitHash = System.getenv('TRAVIS_PULL_REQUEST_SHA') ?: System.getenv('TRAVIS_COMMIT')
+
+    notifyGithub("pending", "Consumer tests are in progress.")
+
+    testCaseThreads = listTestCaseThreads()
 }
 
-def testCaseThreads = listTestCaseThreads()
 testCaseThreads.each { it ->
     it.start()
 }
@@ -76,12 +93,17 @@ def waitForTestCases(threadList) {
         while (threadList.anyThreadStillAlive()) {
             printOutputOfThreadsIfOneFailed(threadList)
 
-            println "[INFO] Consumer tests are still running."
             sleep(AUXILIARY_SLEEP_MS)
             if (PRINT_LOGS_AFTER_45_MINUTES_COUNTDOWN-- == 0) {
                 threadList.each { thread ->
                     thread.printOutput()
                 }
+            }
+            if (ConsumerTestUtils.runningLocally) {
+                threadList[0].printRunningStdOut()
+                threadList[0].abortIfSevereErrorOccurred()
+            } else {
+                println "[INFO] Consumer tests are still running."
             }
         }
     }

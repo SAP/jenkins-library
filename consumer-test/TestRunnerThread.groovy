@@ -7,7 +7,7 @@ class TestRunnerThread extends Thread {
     Process currentProcess
     StringBuilder stdOut
     StringBuilder stdErr
-    int lastPrintedStdOutLine
+    int lastPrintedStdOutLine = -1
     public def exitCode = 0
     def area
     def testCase
