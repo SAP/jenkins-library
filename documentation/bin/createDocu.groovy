@@ -29,9 +29,6 @@ class TemplateHelper {
                 //iterate over possible values and try to get additional defaults
                 def dependentParameterKey = dependentConfig.get(it)[0]
 
-                System.err << "[INFO] Parameter dependency '${dependentParameterKey}'.\n"
-                System.err << "[INFO] Value of dependent parameter '${parameters.get(dependentParameterKey)}'.\n"
-
                 def dependentValues = parameters.get(dependentParameterKey)?.value
                 if (dependentValues) {
                     def cleanedValues = dependentValues.replaceAll("'", '')
@@ -40,7 +37,9 @@ class TemplateHelper {
                     cleanedValues = cleanedValues.replaceAll(' ', '')
                     List possibleValueList = cleanedValues.split(',')
                     possibleValueList.each {possibleValue ->
-                        //only consider first occurence for now
+                        System.err << "[INFO] Possible Value '${possibleValue}'.\n"
+                        System.err << "[INFO] Default config '${defaultConfig}'.\n"
+                        System.err << "[INFO] Default Value '${defaultConfig.get(possibleValue)}'.\n"
                         if (!possibleValue instanceof Boolean && defaultConfig.get(possibleValue))
                             defaultValue += "<br />${dependentParameterKey}=`${possibleValue}`:${Helper.getValue(defaultConfig.get(possibleValue), dependentParameterKey.split('/'))}"
                     }
