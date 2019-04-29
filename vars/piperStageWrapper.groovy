@@ -18,7 +18,7 @@ void call(Map parameters = [:], body) {
     // load default & individual configuration
     Map config = ConfigurationHelper.newInstance(this)
         .loadStepDefaults()
-        .mixin(ConfigurationLoader.defaultStageConfiguration(this, stageName))
+        .mixin(ConfigurationLoader.defaultStageConfiguration(script, stageName))
         .mixinGeneralConfig(script.commonPipelineEnvironment)
         .mixinStageConfig(script.commonPipelineEnvironment, stageName)
         .mixin(parameters)
