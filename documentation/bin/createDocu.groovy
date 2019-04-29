@@ -25,28 +25,24 @@ class TemplateHelper {
 
             //create default value incl. dependent config
             if (dependentConfig.get(it)) {
-                System.err << "[INFO] Dependent Config:'${dependentConfig.get(it)}'.\n"
+                //only consider first occurence of dependency for now (no hierarchy)
                 //iterate over possible values and try to get additional defaults
-                dependentConfig.get(it).each {dependencyList ->
-                    //only consider first occurence for now
-                    System.err << "[INFO] DependencyList: '${dependencyList}'.\n"
-                    def dependentParameterKey = dependencyList[0]
+                def dependentParameterKey = dependentConfig.get(it)[0]
 
-                    System.err << "[INFO] Parameter dependency '${dependentParameterKey}'.\n"
-                    System.err << "[INFO] Value of dependent parameter '${parameters.get(dependentParameterKey)}'.\n"
+                System.err << "[INFO] Parameter dependency '${dependentParameterKey}'.\n"
+                System.err << "[INFO] Value of dependent parameter '${parameters.get(dependentParameterKey)}'.\n"
 
-                    def dependentValues = parameters.get(dependentParameterKey)?.value
-                    if (dependentValues) {
-                        def cleanedValues = dependentValues.replaceAll("'", '')
-                        cleanedValues = cleanedValues.replaceAll('"', '')
-                        cleanedValues = cleanedValues.replaceAll("`", '')
-                        cleanedValues = cleanedValues.replaceAll(' ', '')
-                        List possibleValueList = cleanedValues.split(',')
-                        possibleValueList.each {possibleValue ->
-                            //only consider first occurence for now
-                            if (!possibleValue instanceof Boolean && defaultConfig.get(possibleValue))
-                                defaultValue += "<br />${dependencyList[0]}=`${possibleValue}`:${Helper.getValue(defaultConfig.get(possibleValue), dependencyList[0].split('/'))}"
-                        }
+                def dependentValues = parameters.get(dependentParameterKey)?.value
+                if (dependentValues) {
+                    def cleanedValues = dependentValues.replaceAll("'", '')
+                    cleanedValues = cleanedValues.replaceAll('"', '')
+                    cleanedValues = cleanedValues.replaceAll("`", '')
+                    cleanedValues = cleanedValues.replaceAll(' ', '')
+                    List possibleValueList = cleanedValues.split(',')
+                    possibleValueList.each {possibleValue ->
+                        //only consider first occurence for now
+                        if (!possibleValue instanceof Boolean && defaultConfig.get(possibleValue))
+                            defaultValue += "<br />${dependencyList[0]}=`${possibleValue}`:${Helper.getValue(defaultConfig.get(possibleValue), dependencyList[0].split('/'))}"
                     }
                 }
             }
