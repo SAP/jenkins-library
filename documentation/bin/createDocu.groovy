@@ -39,7 +39,7 @@ class TemplateHelper {
                     possibleValueList.each {possibleValue ->
                         if (!possibleValue instanceof Boolean && defaultConfig.get(possibleValue)) {
                             defaultValue += (defaultValue.length()>0) ? '<br />' : ''
-                            defaultValue += "${dependentParameterKey}=`${possibleValue}`:${Helper.getValue(defaultConfig.get(possibleValue), it.split('/'))}"
+                            defaultValue += "${dependentParameterKey}=`${possibleValue}`: `${Helper.getValue(defaultConfig.get(possibleValue), it.split('/'))}`"
                         }
                     }
                 }
