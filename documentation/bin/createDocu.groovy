@@ -42,7 +42,7 @@ class TemplateHelper {
                     possibleValueList.each {possibleValue ->
                         //only consider first occurence for now
                         if (!possibleValue instanceof Boolean && defaultConfig.get(possibleValue))
-                            defaultValue += "<br />${dependencyList[0]}=`${possibleValue}`:${Helper.getValue(defaultConfig.get(possibleValue), dependencyList[0].split('/'))}"
+                            defaultValue += "<br />${dependentParameterKey}=`${possibleValue}`:${Helper.getValue(defaultConfig.get(possibleValue), dependentParameterKey.split('/'))}"
                     }
                 }
             }
