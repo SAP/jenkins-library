@@ -29,6 +29,10 @@ class TemplateHelper {
                 dependentConfig.get(it).each {dependencyList ->
                     //only consider first occurence for now
                     def dependentParameterKey = dependencyList[0]
+
+                    System.err << "[INFO] Parameter dependency '${dependentParameterKey}'.\n"
+                    System.err << "[INFO] Value of dependentt parameter '${parameters.get(dependentParameterKey)}'.\n"
+
                     def dependentValues = parameters.get(dependentParameterKey)?.value
                     if (dependentValues) {
                         def cleanedValues = dependentValues.replaceAll("'", '')
