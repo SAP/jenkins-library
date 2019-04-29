@@ -37,11 +37,12 @@ class TemplateHelper {
                     cleanedValues = cleanedValues.replaceAll(' ', '')
                     List possibleValueList = cleanedValues.split(',')
                     possibleValueList.each {possibleValue ->
+                        System.err << "[INFO] Current parameter '${it}'.\n"
                         System.err << "[INFO] Possible Value '${possibleValue}'.\n"
-                        System.err << "[INFO] Default config '${defaultConfig}'.\n"
+                        //System.err << "[INFO] Default config '${defaultConfig}'.\n"
                         System.err << "[INFO] Default Value '${defaultConfig.get(possibleValue)}'.\n"
                         if (!possibleValue instanceof Boolean && defaultConfig.get(possibleValue))
-                            defaultValue += "<br />${dependentParameterKey}=`${possibleValue}`:${Helper.getValue(defaultConfig.get(possibleValue), dependentParameterKey.split('/'))}"
+                            defaultValue += "<br />${dependentParameterKey}=`${possibleValue}`:${Helper.getValue(defaultConfig.get(possibleValue), it.split('/'))}"
                     }
                 }
             }
