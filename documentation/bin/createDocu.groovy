@@ -25,13 +25,15 @@ class TemplateHelper {
 
             //create default value incl. dependent config
             if (dependentConfig.get(it)) {
+                System.err << "[INFO] Dependent Config:'${dependentConfig.get(it)}'.\n"
                 //iterate over possible values and try to get additional defaults
                 dependentConfig.get(it).each {dependencyList ->
                     //only consider first occurence for now
+                    System.err << "[INFO] DependencyList: '${dependencyList}'.\n"
                     def dependentParameterKey = dependencyList[0]
 
                     System.err << "[INFO] Parameter dependency '${dependentParameterKey}'.\n"
-                    System.err << "[INFO] Value of dependentt parameter '${parameters.get(dependentParameterKey)}'.\n"
+                    System.err << "[INFO] Value of dependent parameter '${parameters.get(dependentParameterKey)}'.\n"
 
                     def dependentValues = parameters.get(dependentParameterKey)?.value
                     if (dependentValues) {
