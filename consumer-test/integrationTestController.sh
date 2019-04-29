@@ -60,7 +60,7 @@ notificationThreadPid=$!
 
 # every 40 minutes (40 x 60 = 2400) we cat the logs we have until this point in time in order to have at least something when the integration
 # tests get stuck.
-while true; do sleep 2400; echo "[INFO] Here are the preliminary logs:"; ls -laR |grep -i 'log.txt' ;find . -name 'log.txt' |xargs cat; done &
+while true; do sleep 2400; echo "[INFO] Here are the preliminary logs:"; find . -name log.txt -exec cat {} +; done &
 logThreadPid=$!
 
 declare -a processes
