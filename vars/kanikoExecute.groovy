@@ -94,22 +94,19 @@ ${config.containerPreparationCommand}"""
             if (config.dockerConfigJsonCredentialsId) {
                 // write proper config.json with credentials
                 withCredentials([file(credentialsId: config.dockerConfigJsonCredentialsId, variable: 'dockerConfigJson')]) {
-                    path = dockerConfigJson
-                    createJsonCall = """whoami
-ls -la
-ls -la ${dockerConfigJson}"""
+                    writeFile file: 'config.json', text: readFile(dockerConfigJson)
                     //createJsonCall = "whoami && ls -la ${dockerConfigJson} && cat ${dockerConfigJson} && cat ${dockerConfigJson} > /kaniko/.docker/config.json"
                     //writeFile file: '/kaniko/.docker/config.json', text: readFile(dockerConfigJson)
                 }
             } else {
                 // empty config.json to allow anonymous authentication
                 createJsonCall = "echo '{\"auths\":{}}' > /kaniko/.docker/config.json"
-                //writeFile file: '/kaniko/.docker/config.json', text: '{"auths":{}}'
+                writeFile file: 'config.json', text: '{"auths":{}}'
             }
 
             // execute Kaniko
             sh """#!${config.containerShell}
-${createJsonCall}
+mv config.json /kaniko/.docker/config.json
 /kaniko/executor --dockerfile ${env.WORKSPACE}/${config.dockerfile} --context ${env.WORKSPACE} ${buildOptions}"""
         }
     }
