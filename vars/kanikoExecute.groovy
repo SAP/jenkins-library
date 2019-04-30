@@ -90,13 +90,11 @@ void call(Map parameters = [:]) {
             sh """#!${config.containerShell}
 ${config.containerPreparationCommand}"""
 
-            def createJsonCall = ''
+            def uuid = UUID.randomUUID().toString()
             if (config.dockerConfigJsonCredentialsId) {
                 // write proper config.json with credentials
                 withCredentials([file(credentialsId: config.dockerConfigJsonCredentialsId, variable: 'dockerConfigJson')]) {
-                    writeFile file: 'config.json', text: readFile(dockerConfigJson)
-                    //createJsonCall = "whoami && ls -la ${dockerConfigJson} && cat ${dockerConfigJson} && cat ${dockerConfigJson} > /kaniko/.docker/config.json"
-                    //writeFile file: '/kaniko/.docker/config.json', text: readFile(dockerConfigJson)
+                    writeFile file: "${uuid}-config.json", text: readFile(dockerConfigJson)
                 }
             } else {
                 // empty config.json to allow anonymous authentication
@@ -106,7 +104,7 @@ ${config.containerPreparationCommand}"""
 
             // execute Kaniko
             sh """#!${config.containerShell}
-mv config.json /kaniko/.docker/config.json
+mv "${uuid}-config.json" /kaniko/.docker/config.json
 /kaniko/executor --dockerfile ${env.WORKSPACE}/${config.dockerfile} --context ${env.WORKSPACE} ${buildOptions}"""
         }
     }
