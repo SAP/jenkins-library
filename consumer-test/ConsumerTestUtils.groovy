@@ -18,16 +18,6 @@ class ConsumerTestUtils {
         dir.mkdirs()
     }
 
-    static def listYamlInDirRecursive(String dirname) {
-        def dir = new File(dirname)
-        def yamlFiles = []
-        dir.eachFileRecurse(FileType.FILES) { file ->
-            if (file.getName().endsWith('.yml'))
-                yamlFiles << file
-        }
-        return yamlFiles
-    }
-
     static def notifyGithub(state, description) {
         if (!runningLocally) {
             println "[INFO] Notifying about state '${state}' for commit '${commitHash}'."

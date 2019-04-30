@@ -1,5 +1,6 @@
+import groovy.io.FileType
+
 import static ConsumerTestUtils.exitPrematurely
-import static ConsumerTestUtils.listYamlInDirRecursive
 import static ConsumerTestUtils.newEmptyDir
 import static ConsumerTestUtils.notifyGithub
 
@@ -69,11 +70,10 @@ waitForTestCases(testCaseThreads)
 notifyGithub("success", "All consumer tests succeeded.")
 
 
-def listTestCaseThreads() {
+def static listTestCaseThreads() {
     //Each dir that includes a yml file is a test case
-    def testCases = listYamlInDirRecursive(TEST_CASES_DIR)
     def threads = []
-    testCases.each { file ->
+    new File(TEST_CASES_DIR).traverse(type: FileType.FILES, nameFilter: ~/^.+\.yml\u0024/) { file ->
         threads << new TestRunnerThread(file.toString())
     }
     return threads
