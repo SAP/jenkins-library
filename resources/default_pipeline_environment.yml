@@ -240,7 +240,7 @@ steps:
   influxWriteData:
     influxServer: ''
   kanikoExecute:
-    containerBuildOptions: '--skip-tls-verify --skip-tls-verify-pull'
+    containerBuildOptions: '--skip-tls-verify-pull'
     containerCommand: '/busybox/tail -f /dev/null'
     containerPreparationCommand: 'rm /kaniko/.docker/config.json'
     containerShell: '/busybox/sh'

@@ -45,6 +45,8 @@ class KanikoExecuteTest extends BasePiperTest {
                 binding.setProperty(fileMap.variable, null)
             }
         })
+
+        UUID.metaClass.static.randomUUID = { -> 1}
     }
 
     @Test
@@ -53,9 +55,17 @@ class KanikoExecuteTest extends BasePiperTest {
             script: nullScript
         )
         assertThat(shellRule.shell, hasItem('#!/busybox/sh rm /kaniko/.docker/config.json'))
-        assertThat(shellRule.shell, hasItem('#!/busybox/sh /kaniko/executor --dockerfile /path/to/current/workspace/Dockerfile --context /path/to/current/workspace --skip-tls-verify --skip-tls-verify-pull --no-push'))
+        assertThat(shellRule.shell, hasItem(allOf(
+            startsWith('#!/busybox/sh'),
+            containsString('mv 1-config.json /kaniko/.docker/config.json'),
+            containsString('/kaniko/executor'),
+            containsString('--dockerfile /path/to/current/workspace/Dockerfile'),
+            containsString('--context /path/to/current/workspace'),
+            containsString('--skip-tls-verify-pull'),
+            containsString('--no-push')
+        )))
 
-        assertThat(writeFileRule.files, hasEntry('/kaniko/.docker/config.json', '{"auths":{}}'))
+        assertThat(writeFileRule.files.values()[0], is('{"auths":{}}'))
 
         assertThat(dockerExecuteRule.dockerParams, allOf(
             hasEntry('containerCommand', '/busybox/tail -f /dev/null'),
@@ -74,7 +84,7 @@ class KanikoExecuteTest extends BasePiperTest {
         )
 
         assertThat(fileMap.credentialsId, is('myDockerConfigJson'))
-        assertThat(writeFileRule.files.get('/kaniko/.docker/config.json'), allOf(
+        assertThat(writeFileRule.files.values()[0], allOf(
             containsString('docker.my.domain.com:4444'),
             containsString('"auth": "myAuth"'),
             containsString('"email": "my.user@domain.com"')
@@ -88,7 +98,15 @@ class KanikoExecuteTest extends BasePiperTest {
             containerImageNameAndTag: 'my.docker.registry/path/myImageName:myTag'
         )
 
-        assertThat(shellRule.shell, hasItem('#!/busybox/sh /kaniko/executor --dockerfile /path/to/current/workspace/Dockerfile --context /path/to/current/workspace --skip-tls-verify --skip-tls-verify-pull --destination my.docker.registry/path/myImageName:myTag'))
+        assertThat(shellRule.shell, hasItem(allOf(
+            startsWith('#!/busybox/sh'),
+            containsString('mv 1-config.json /kaniko/.docker/config.json'),
+            containsString('/kaniko/executor'),
+            containsString('--dockerfile /path/to/current/workspace/Dockerfile'),
+            containsString('--context /path/to/current/workspace'),
+            containsString('--skip-tls-verify-pull'),
+            containsString('--destination my.docker.registry/path/myImageName:myTag')
+        )))
     }
 
     @Test
@@ -98,6 +116,28 @@ class KanikoExecuteTest extends BasePiperTest {
             containerBuildOptions: '--destination my.docker.registry/path/myImageName:myTag'
         )
 
-        assertThat(shellRule.shell, hasItem('#!/busybox/sh /kaniko/executor --dockerfile /path/to/current/workspace/Dockerfile --context /path/to/current/workspace --destination my.docker.registry/path/myImageName:myTag'))
+        assertThat(shellRule.shell, hasItem(allOf(
+            startsWith('#!/busybox/sh'),
+            containsString('mv 1-config.json /kaniko/.docker/config.json'),
+            containsString('/kaniko/executor'),
+            containsString('--dockerfile /path/to/current/workspace/Dockerfile'),
+            containsString('--context /path/to/current/workspace'),
+            containsString('--destination my.docker.registry/path/myImageName:myTag')
+        )))
+    }
+
+    @Test
+    void testCustomCertificates() {
+        stepRule.step.kanikoExecute(
+            script: nullScript,
+            customTlsCertificateLinks: ['http://link.one', 'http://link.two']
+        )
+
+        assertThat(shellRule.shell, hasItem(allOf(
+            startsWith('#!/busybox/sh'),
+            containsString('rm /kaniko/.docker/config.json'),
+            containsString('wget http://link.one -O - >> /kaniko/ssl/certs/ca-certificates.crt'),
+            containsString('wget http://link.two -O - >> /kaniko/ssl/certs/ca-certificates.crt'),
+        )))
     }
 }
