@@ -94,6 +94,7 @@ ${config.containerPreparationCommand}"""
             if (config.dockerConfigJsonCredentialsId) {
                 // write proper config.json with credentials
                 withCredentials([file(credentialsId: config.dockerConfigJsonCredentialsId, variable: 'dockerConfigJson')]) {
+                    echo "Path to Json: ${dockerConfigJson}"
                     createJsonCall = "cat ${dockerConfigJson} > /kaniko/.docker/config.json"
                     //writeFile file: '/kaniko/.docker/config.json', text: readFile(dockerConfigJson)
                 }
