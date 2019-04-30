@@ -51,9 +51,7 @@ if (options.l) {
     ConsumerTestUtils.runningLocally = false
 }
 
-if (ConsumerTestUtils.runningLocally) {
-    AUXILIARY_SLEEP_MS = 1000
-} else {
+if (!ConsumerTestUtils.runningLocally) {
     if (changeDoesNotNeedConsumerTesting()) {
         notifyGithub("success", "No consumer tests necessary.")
         exitPrematurely(0, 'No consumer tests necessary.')

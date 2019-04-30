@@ -5,8 +5,8 @@ import static ConsumerTestUtils.notifyGithub
 class TestRunnerThread extends Thread {
 
     Process currentProcess
-    StringBuilder stdOut
-    StringBuilder stdErr
+    StringBuilder stdOut = new StringBuilder()
+    StringBuilder stdErr = new StringBuilder()
     int lastPrintedStdOutLine = -1
     public def exitCode = 0
     def area
@@ -16,9 +16,6 @@ class TestRunnerThread extends Thread {
     def testCaseWorkspace
 
     TestRunnerThread(testCaseFilePath) {
-        this.stdOut = new StringBuilder()
-        this.stdErr = new StringBuilder()
-
         // Regex pattern expects a folder structure such as '/rootDir/areaDir/testCase.extension'
         def testCaseMatches = (testCaseFilePath.toString() =~
             /^[\w\-]+\\/([\w\-]+)\\/([\w\-]+)\..*\u0024/)
@@ -40,7 +37,7 @@ class TestRunnerThread extends Thread {
         executeShell("git clone -b ${testCase} https://github.com/sap/cloud-s4-sdk-book " +
             "${testCaseWorkspace}")
         addJenkinsYmlToWorkspace()
-        manipulateJenkinsfile()
+        setLibraryVersionInJenkinsfile()
 
         //Commit the changed version because artifactSetVersion expects the git repo not to be dirty
         executeShell(["git", "-C", "${testCaseWorkspace}", "commit", "--all",
@@ -67,7 +64,7 @@ class TestRunnerThread extends Thread {
 
     // Force usage of library version under test by setting it in the Jenkinsfile,
     // which is then the first definition and thus has the highest precedence.
-    private void manipulateJenkinsfile() {
+    private void setLibraryVersionInJenkinsfile() {
         def jenkinsfile = new File("${testCaseWorkspace}/Jenkinsfile")
         def manipulatedText =
             "@Library(\"piper-library-os@${ConsumerTestUtils.libraryVersionUnderTest}\") _\n" +
