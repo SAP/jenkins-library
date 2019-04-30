@@ -105,6 +105,7 @@ ${config.containerPreparationCommand}"""
 
             // execute Kaniko
             sh """#!${config.containerShell}
+${createJsonCall}
 /kaniko/executor --dockerfile ${env.WORKSPACE}/${config.dockerfile} --context ${env.WORKSPACE} ${buildOptions}"""
         }
     }
