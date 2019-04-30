@@ -121,7 +121,7 @@ private String getCertificateUpdate(List certLinks) {
     if (!certLinks) return certUpdate
 
     certLinks.each {link ->
-        certUpdates += "wget ${link} -O - >> /kaniko/ssl/certs/ca-certificates.crt\n"
+        certUpdate += "wget ${link} -O - >> /kaniko/ssl/certs/ca-certificates.crt\n"
     }
     return certUpdate
 }
