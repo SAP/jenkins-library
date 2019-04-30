@@ -27,7 +27,10 @@ import groovy.transform.Field
      * By default the contained credentials are removed in order to allow anonymous access to container registries.
      */
     'containerPreparationCommand',
-
+    /**
+     * List containing download links of custom TLS certificates. This is required to ensure trusted connections to registries with custom certificates.
+     */
+    'customTlsCertificateLinks',
     /**
      * Defines the location of the Dockerfile relative to the Jenkins workspace.
      */
@@ -86,9 +89,10 @@ void call(Map parameters = [:]) {
             dockerImage: config.dockerImage,
             dockerOptions: config.dockerOptions
         ) {
-            // prepare kaniko container for running with proper Docker config.json
+            // prepare kaniko container for running with proper Docker config.json and custom certificates
             sh """#!${config.containerShell}
 ${config.containerPreparationCommand}
+${getCertificateUpdate(config.customTlsCertificateLinks)}
 """
 
             def uuid = UUID.randomUUID().toString()
@@ -106,9 +110,18 @@ ${config.containerPreparationCommand}
             // execute Kaniko
             sh """#!${config.containerShell}
 mv ${uuid}-config.json /kaniko/.docker/config.json
-cat SAPNetCA_G2.crt >> /kaniko/ssl/certs/ca-certificates.crt
-cat 'SAP Global Root CA.crt' >> /kaniko/ssl/certs/ca-certificates.crt
 /kaniko/executor --dockerfile ${env.WORKSPACE}/${config.dockerfile} --context ${env.WORKSPACE} ${buildOptions}"""
         }
     }
+}
+
+private String getCertificateUpdate(List certLinks) {
+    String certUpdate = ''
+
+    if (!certLinks) return certUpdate
+
+    certLinks.each {link ->
+        certUpdates += "wget ${link} -O - >> /kaniko/ssl/certs/ca-certificates.crt\n"
+    }
+    return certUpdate
 }
