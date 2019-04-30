@@ -105,8 +105,7 @@ ${config.containerPreparationCommand}"""
             // execute Kaniko
             sh """#!${config.containerShell}
 mv "${uuid}-config.json" /kaniko/.docker/config.json
-cat /kaniko/.docker/config.json
-/kaniko/executor --dockerfile ${env.WORKSPACE}/${config.dockerfile} --context ${env.WORKSPACE} ${buildOptions}"""
+/kaniko/executor --dockerfile ${env.WORKSPACE}/${config.dockerfile} --context ${env.WORKSPACE} ${buildOptions} --skip-tls-verify-registry docker.wdf.sap.corp:51029"""
         }
     }
 }
