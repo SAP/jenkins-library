@@ -1,3 +1,7 @@
+@Grab('org.yaml:snakeyaml:1.17')
+
+import org.yaml.snakeyaml.Yaml
+
 import static ConsumerTestUtils.exitPrematurely
 import static ConsumerTestUtils.newEmptyDir
 import static ConsumerTestUtils.notifyGithub
@@ -14,6 +18,7 @@ class TestRunnerThread extends Thread {
     def uniqueName
     def testCaseRootDir
     def testCaseWorkspace
+    def testCaseConfig
 
     TestRunnerThread(testCaseFilePath) {
         // Regex pattern expects a folder structure such as '/rootDir/areaDir/testCase.extension'
@@ -28,13 +33,14 @@ class TestRunnerThread extends Thread {
         this.uniqueName = "${area}|${testCase}"
         this.testCaseRootDir = "${ConsumerTestUtils.workspacesRootDir}/${area}/${testCase}"
         this.testCaseWorkspace = "${testCaseRootDir}/workspace"
+        this.testCaseConfig = new Yaml().load((testCaseFilePath as File).text)
     }
 
     void run() {
         println "[INFO] Test case '${uniqueName}' launched."
 
         newEmptyDir(testCaseRootDir)
-        executeShell("git clone -b ${testCase} https://github.com/sap/cloud-s4-sdk-book " +
+        executeShell("git clone -b ${testCase} ${testCaseConfig.referenceAppRepoUrl} " +
             "${testCaseWorkspace}")
         addJenkinsYmlToWorkspace()
         setLibraryVersionInJenkinsfile()
