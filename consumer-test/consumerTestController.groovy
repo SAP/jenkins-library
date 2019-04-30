@@ -16,26 +16,44 @@ EXCLUDED_FROM_CONSUMER_TESTING_REGEXES = [
     /^test\/.*$/
 ]
 
+
+if (!System.getenv('CX_INFRA_IT_CF_USERNAME') || !System.getenv('CX_INFRA_IT_CF_PASSWORD')) {
+    exitPrematurely(1, 'Environment variables CX_INFRA_IT_CF_USERNAME and CX_INFRA_IT_CF_PASSWORD need to be set.')
+}
+
 newEmptyDir(WORKSPACES_ROOT)
 ConsumerTestUtils.workspacesRootDir = WORKSPACES_ROOT
 ConsumerTestUtils.libraryVersionUnderTest = "git log --format=%H -n 1".execute().text.trim()
 ConsumerTestUtils.repositoryUnderTest = System.getenv('TRAVIS_REPO_SLUG') ?: 'SAP/jenkins-library'
 
 def testCaseThreads
-def filePath = args?.find()
-if (filePath) {
+def cli = new CliBuilder(
+    usage: 'groovy consumerTestController.groovy [<options>]',
+    header: 'Options:',
+    footer: 'If no options are set all tests are run centrally.')
+
+cli.with {
+    h longOpt: 'help', 'Print this help text and exit.'
+    l longOpt: 'run-locally', 'Run consumer tests locally.'
+    s(longOpt: 'single-test', args: 1, argName: 'filePath', 'Run single test.')
+}
+
+def options = cli.parse(args)
+
+if (options.h) {
+    cli.usage()
+    System.exit 0
+}
+
+if (options.l) {
     ConsumerTestUtils.runningLocally = true
-    AUXILIARY_SLEEP_MS = 1000
-
-    if (!System.getenv('CX_INFRA_IT_CF_USERNAME') || !System.getenv('CX_INFRA_IT_CF_PASSWORD')) {
-        exitPrematurely(1, 'Environment variables CX_INFRA_IT_CF_USERNAME and CX_INFRA_IT_CF_PASSWORD need to be set.')
-    }
-
-    testCaseThreads = [new TestRunnerThread(filePath)]
-
 } else {
     ConsumerTestUtils.runningLocally = false
+}
 
+if (ConsumerTestUtils.runningLocally) {
+    AUXILIARY_SLEEP_MS = 1000
+} else {
     if (changeDoesNotNeedConsumerTesting()) {
         notifyGithub("success", "No consumer tests necessary.")
         exitPrematurely(0, 'No consumer tests necessary.')
@@ -55,7 +73,11 @@ if (filePath) {
     ConsumerTestUtils.commitHash = System.getenv('TRAVIS_PULL_REQUEST_SHA') ?: System.getenv('TRAVIS_COMMIT')
 
     notifyGithub("pending", "Consumer tests are in progress.")
+}
 
+if (options.s) {
+    testCaseThreads = [new TestRunnerThread(options.s)]
+} else {
     testCaseThreads = listTestCaseThreads()
 }
 
@@ -67,10 +89,12 @@ testCaseThreads.each { it ->
 //Otherwise the job will be canceled after 10 minutes without output.
 waitForTestCases(testCaseThreads)
 
-notifyGithub("success", "All consumer tests succeeded.")
+if (!ConsumerTestUtils.runningLocally) {
+    notifyGithub("success", "All consumer tests succeeded.")
+}
 
 
-def static listTestCaseThreads() {
+def listTestCaseThreads() {
     //Each dir that includes a yml file is a test case
     def threads = []
     new File(TEST_CASES_DIR).traverse(type: FileType.FILES, nameFilter: ~/^.+\.yml\u0024/) { file ->
@@ -90,19 +114,21 @@ def waitForTestCases(threadList) {
     }
 
     def auxiliaryThread = Thread.start {
+        def singleTestCase = threadList.size() == 1
         while (threadList.anyThreadStillAlive()) {
             printOutputOfThreadsIfOneFailed(threadList)
 
             sleep(AUXILIARY_SLEEP_MS)
-            if (ConsumerTestUtils.runningLocally) {
+            if (singleTestCase) {
                 threadList[0].printRunningStdOut()
                 threadList[0].abortIfSevereErrorOccurred()
             } else {
                 println "[INFO] Consumer tests are still running."
-                if (PRINT_LOGS_AFTER_45_MINUTES_COUNTDOWN-- == 0) {
-                    threadList.each { thread ->
-                        thread.printOutput()
-                    }
+            }
+
+            if (!ConsumerTestUtils.runningLocally && PRINT_LOGS_AFTER_45_MINUTES_COUNTDOWN-- == 0) {
+                threadList.each { thread ->
+                    thread.printOutput()
                 }
             }
         }

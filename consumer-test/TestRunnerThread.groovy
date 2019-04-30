@@ -99,7 +99,9 @@ class TestRunnerThread extends Thread {
                     // then it is interrupted
                 } catch (InterruptedException e) {
                     printOutput()
-                    notifyGithub("failure", "Consumer test ${uniqueName} failed.")
+                    if (!ConsumerTestUtils.runningLocally) {
+                        notifyGithub("failure", "Consumer test ${uniqueName} failed.")
+                    }
                     exitPrematurely(exitCode, "Consumer test ${uniqueName} failed, aborted!")
                 }
             }
