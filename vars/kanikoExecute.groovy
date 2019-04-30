@@ -95,7 +95,10 @@ ${config.containerPreparationCommand}"""
                 // write proper config.json with credentials
                 withCredentials([file(credentialsId: config.dockerConfigJsonCredentialsId, variable: 'dockerConfigJson')]) {
                     path = dockerConfigJson
-                    createJsonCall = "whoami && ls -la ${dockerConfigJson} && cat ${dockerConfigJson} && cat ${dockerConfigJson} > /kaniko/.docker/config.json"
+                    createJsonCall = """whoami
+ls -la
+ls -la ${dockerConfigJson}"""
+                    //createJsonCall = "whoami && ls -la ${dockerConfigJson} && cat ${dockerConfigJson} && cat ${dockerConfigJson} > /kaniko/.docker/config.json"
                     //writeFile file: '/kaniko/.docker/config.json', text: readFile(dockerConfigJson)
                 }
             } else {
