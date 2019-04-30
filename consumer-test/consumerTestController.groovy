@@ -94,16 +94,16 @@ def waitForTestCases(threadList) {
             printOutputOfThreadsIfOneFailed(threadList)
 
             sleep(AUXILIARY_SLEEP_MS)
-            if (PRINT_LOGS_AFTER_45_MINUTES_COUNTDOWN-- == 0) {
-                threadList.each { thread ->
-                    thread.printOutput()
-                }
-            }
             if (ConsumerTestUtils.runningLocally) {
                 threadList[0].printRunningStdOut()
                 threadList[0].abortIfSevereErrorOccurred()
             } else {
                 println "[INFO] Consumer tests are still running."
+                if (PRINT_LOGS_AFTER_45_MINUTES_COUNTDOWN-- == 0) {
+                    threadList.each { thread ->
+                        thread.printOutput()
+                    }
+                }
             }
         }
     }
