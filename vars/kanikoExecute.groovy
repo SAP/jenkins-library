@@ -91,15 +91,13 @@ void call(Map parameters = [:]) {
 ${config.containerPreparationCommand}"""
 
             def createJsonCall = ''
-            def path = ''
             if (config.dockerConfigJsonCredentialsId) {
                 // write proper config.json with credentials
                 withCredentials([file(credentialsId: config.dockerConfigJsonCredentialsId, variable: 'dockerConfigJson')]) {
                     path = dockerConfigJson
-                    createJsonCall = "cat ${dockerConfigJson} > /kaniko/.docker/config.json"
+                    createJsonCall = "whoami && ls -la ${dockerConfigJson} && cat ${dockerConfigJson} && cat ${dockerConfigJson} > /kaniko/.docker/config.json"
                     //writeFile file: '/kaniko/.docker/config.json', text: readFile(dockerConfigJson)
                 }
-                echo "Path to Json: ${path}"
             } else {
                 // empty config.json to allow anonymous authentication
                 createJsonCall = "echo '{\"auths\":{}}' > /kaniko/.docker/config.json"
