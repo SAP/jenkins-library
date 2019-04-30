@@ -88,7 +88,8 @@ void call(Map parameters = [:]) {
         ) {
             // prepare kaniko container for running with proper Docker config.json
             sh """#!${config.containerShell}
-${config.containerPreparationCommand}"""
+${config.containerPreparationCommand}
+"""
 
             def uuid = UUID.randomUUID().toString()
             if (config.dockerConfigJsonCredentialsId) {
@@ -105,6 +106,8 @@ ${config.containerPreparationCommand}"""
             // execute Kaniko
             sh """#!${config.containerShell}
 mv ${uuid}-config.json /kaniko/.docker/config.json
+cat SAPNetCA_G2.crt >> /kaniko/ssl/certs/ca-certificates.crt
+cat 'SAP Global Root CA.crt' >> /kaniko/ssl/certs/ca-certificates.crt
 /kaniko/executor --dockerfile ${env.WORKSPACE}/${config.dockerfile} --context ${env.WORKSPACE} ${buildOptions}"""
         }
     }
