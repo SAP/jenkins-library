@@ -13,9 +13,13 @@ class ConsumerTestUtils {
     static def newEmptyDir(String dirName) {
         def dir = new File(dirName)
         if (dir.exists()) {
-            dir.deleteDir()
+            if (!dir.deleteDir()) {
+                throw new RuntimeException("Deletion of dir '${dirName}' failed.")
+            }
         }
-        dir.mkdirs()
+        if (!dir.mkdirs()) {
+            throw new RuntimeException("Creation of dir '${dirName}' failed.")
+        }
     }
 
     static def notifyGithub(state, description) {
