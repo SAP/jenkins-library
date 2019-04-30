@@ -104,9 +104,7 @@ ${config.containerPreparationCommand}"""
 
             // execute Kaniko
             sh """#!${config.containerShell}
-mv "${uuid}-config.json" /kaniko/.docker/config.json
-echo "\"${readFile('SAPNetCA_G2.crt')}\" >> /kaniko/ssl/certs/ca-certificates.crt"
-echo "\"${readFile('SAP Global Root CA.crt')}\" >> /kaniko/ssl/certs/ca-certificates.crt"
+mv ${uuid}-config.json /kaniko/.docker/config.json
 /kaniko/executor --dockerfile ${env.WORKSPACE}/${config.dockerfile} --context ${env.WORKSPACE} ${buildOptions} --skip-tls-verify-registry docker.wdf.sap.corp:51029"""
         }
     }
