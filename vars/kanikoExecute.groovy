@@ -99,7 +99,7 @@ ${config.containerPreparationCommand}"""
             } else {
                 // empty config.json to allow anonymous authentication
                 createJsonCall = "echo '{\"auths\":{}}' > /kaniko/.docker/config.json"
-                writeFile file: 'config.json', text: '{"auths":{}}'
+                writeFile file: "${uuid}-config.json", text: '{"auths":{}}'
             }
 
             // execute Kaniko
