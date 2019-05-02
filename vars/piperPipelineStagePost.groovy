@@ -39,6 +39,7 @@ void call(Map parameters = [:]) {
         // telemetry reporting
         utils.pushToSWA([step: STEP_NAME], config)
 
+        piperPublishNotifications script: script
         influxWriteData script: script
         mailSendNotification script: script
     }
