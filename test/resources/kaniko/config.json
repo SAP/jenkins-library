@@ -1,0 +1,8 @@
+{
+    "auths": {
+        "docker.my.domain.com:4444": {
+            "auth": "myAuth",
+            "email": "my.user@domain.com"
+        }
+    }
+}
