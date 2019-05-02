@@ -160,6 +160,9 @@ class PiperPipelineTest extends BasePiperTest {
         helper.registerAllowedMethod('piperPipelineStageRelease', [Map.class], {m ->
             stepsCalled.add('piperPipelineStageRelease')
         })
+        helper.registerAllowedMethod('piperPipelineStagePost', [Map.class], {m ->
+            stepsCalled.add('piperPipelineStagePost')
+        })
 
         nullScript.prepareDefaultValues(script: nullScript)
 
@@ -231,7 +234,8 @@ class PiperPipelineTest extends BasePiperTest {
             'piperPipelineStageCompliance',
             'input',
             'piperPipelineStagePromote',
-            'piperPipelineStageRelease'
+            'piperPipelineStageRelease',
+            'piperPipelineStagePost'
         ))
     }
 }
