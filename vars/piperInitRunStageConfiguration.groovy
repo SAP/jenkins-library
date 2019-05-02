@@ -72,6 +72,17 @@ void call(Map parameters = [:]) {
                             stepActive = true
                         }
                         break
+                    case 'configKeys':
+                        if (condition.getValue() instanceof List) {
+                            condition.getValue().each {configKey ->
+                                if (script.commonPipelineEnvironment.getStepConfiguration(step.getKey(), currentStage)?.get(configKey)) {
+                                    stepActive = true
+                                }
+                            }
+                        } else if (script.commonPipelineEnvironment.getStepConfiguration(step.getKey(), currentStage)?.get(condition.getValue())) {
+                            stepActive = true
+                        }
+                        break
                     case 'filePatternFromConfig':
                         def conditionValue=script.commonPipelineEnvironment.getStepConfiguration(step.getKey(), currentStage)?.get(condition.getValue())
                         if (conditionValue && findFiles(glob: conditionValue)) {
