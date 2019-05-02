@@ -2,17 +2,18 @@
 
 import org.yaml.snakeyaml.Yaml
 
-import static ConsumerTestUtils.exitPrematurely
-import static ConsumerTestUtils.newEmptyDir
-import static ConsumerTestUtils.notifyGithub
-
 class TestRunnerThread extends Thread {
+
+    static def workspacesRootDir
+    static def libraryVersionUnderTest
+    static def repositoryUnderTest
 
     Process currentProcess
     StringBuilder stdOut = new StringBuilder()
     StringBuilder stdErr = new StringBuilder()
     int lastPrintedStdOutLine = -1
-    public def exitCode = 0
+    public def returnCode = -1
+    public def lastCommand
     def area
     def testCase
     def uniqueName
@@ -27,11 +28,11 @@ class TestRunnerThread extends Thread {
         this.area = testCaseMatches[0][1]
         this.testCase = testCaseMatches[0][2]
         if (!area || !testCase) {
-            exitPrematurely(2, "Expecting file structure '/rootDir/areaDir/testCase.yml' " +
+            throw new RuntimeException("Expecting file structure '/rootDir/areaDir/testCase.yml' " +
                 "but got '${testCaseFilePath.toString()}'.")
         }
         this.uniqueName = "${area}|${testCase}"
-        this.testCaseRootDir = "${ConsumerTestUtils.workspacesRootDir}/${area}/${testCase}"
+        this.testCaseRootDir = new File("${workspacesRootDir}/${area}/${testCase}")
         this.testCaseWorkspace = "${testCaseRootDir}/workspace"
         this.testCaseConfig = new Yaml().load((testCaseFilePath as File).text)
     }
@@ -39,7 +40,9 @@ class TestRunnerThread extends Thread {
     void run() {
         println "[INFO] Test case '${uniqueName}' launched."
 
-        newEmptyDir(testCaseRootDir)
+        if (!testCaseRootDir.mkdirs()) {
+            throw new RuntimeException("Creation of dir '${testCaseRootDir}' failed.")
+        }
         executeShell("git clone -b ${testCase} ${testCaseConfig.referenceAppRepoUrl} " +
             "${testCaseWorkspace}")
         addJenkinsYmlToWorkspace()
@@ -63,7 +66,7 @@ class TestRunnerThread extends Thread {
     private void addJenkinsYmlToWorkspace() {
         def sourceFile = 'jenkins.yml'
         def sourceText = new File(sourceFile).text.replaceAll(
-            '__REPO_SLUG__', ConsumerTestUtils.repositoryUnderTest)
+            '__REPO_SLUG__', repositoryUnderTest)
         def target = new File("${testCaseWorkspace}/${sourceFile}")
         target.write(sourceText)
     }
@@ -73,12 +76,13 @@ class TestRunnerThread extends Thread {
     private void setLibraryVersionInJenkinsfile() {
         def jenkinsfile = new File("${testCaseWorkspace}/Jenkinsfile")
         def manipulatedText =
-            "@Library(\"piper-library-os@${ConsumerTestUtils.libraryVersionUnderTest}\") _\n" +
+            "@Library(\"piper-library-os@${libraryVersionUnderTest}\") _\n" +
                 jenkinsfile.text
         jenkinsfile.write(manipulatedText)
     }
 
     private void executeShell(command) {
+        lastCommand = command
         def startOfCommandString = "Shell command: '${command}'\n"
         stdOut << startOfCommandString
         stdErr << startOfCommandString
@@ -86,39 +90,25 @@ class TestRunnerThread extends Thread {
         currentProcess = command.execute()
         currentProcess.waitForProcessOutput(stdOut, stdErr)
 
-        exitCode = currentProcess.exitValue()
-
-        def endOfCommandString = "*****Command execution finished with exit code ${exitCode}" +
-            ".*****\n\n"
-        stdOut << endOfCommandString
-        stdErr << endOfCommandString
+        returnCode = currentProcess.exitValue()
 
         currentProcess = null
 
-        if (this.exitCode > 0) {
-            synchronized (this) {
-                try {
-                    wait() // for other threads to print their log first
-                    // then it is interrupted
-                } catch (InterruptedException e) {
-                    printOutput()
-                    if (!ConsumerTestUtils.runningLocally) {
-                        notifyGithub("failure", "Consumer test ${uniqueName} failed.")
-                    }
-                    exitPrematurely(exitCode, "Consumer test ${uniqueName} failed, aborted!")
-                }
-            }
+        if (returnCode > 0) {
+            def message = "Test case: [${uniqueName}]; " +
+                "shell command '${command} exited with return code '${returnCode}"
+            throw new ReturnCodeNotZeroException(message)
         }
     }
 
     void printOutput() {
-        println "\n[INFO] Standard output from test case ${uniqueName}:"
+        println "\n[INFO] stdout output from test case ${uniqueName}:"
         stdOut?.eachLine { line, i ->
             println "${i} [${uniqueName}] ${line}"
             lastPrintedStdOutLine = i
         }
 
-        println "\n[ERROR] Error output from test case ${uniqueName}:"
+        println "\n[INFO] stderr output from test case ${uniqueName}:"
         stdErr?.eachLine { line, i ->
             println "${i} [${uniqueName}] ${line}"
         }
@@ -133,10 +123,14 @@ class TestRunnerThread extends Thread {
         }
     }
 
-    public void abortIfSevereErrorOccurred() {
-        if (stdErr?.find("SEVERE")) {
-            printOutput()
-            exitPrematurely(1, "SEVERE Error in test case ${uniqueName}, aborted!")
-        }
+    @Override
+    public String toString() {
+        return uniqueName
+    }
+}
+
+class ReturnCodeNotZeroException extends Exception {
+    ReturnCodeNotZeroException(message) {
+        super(message)
     }
 }

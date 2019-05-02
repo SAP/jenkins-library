@@ -1,14 +1,15 @@
 import groovy.io.FileType
 
-import static ConsumerTestUtils.exitPrematurely
-import static ConsumerTestUtils.newEmptyDir
-import static ConsumerTestUtils.notifyGithub
+import static groovy.json.JsonOutput.toJson
 
+COMMIT_HASH = null
+RUNNING_LOCALLY = false
 AUXILIARY_SLEEP_MS = 10000
 // Build is killed at 50 min, print log to console at minute 45
 PRINT_LOGS_AFTER_45_MINUTES_COUNTDOWN = (45 * 60 * 1000) / AUXILIARY_SLEEP_MS
 WORKSPACES_ROOT = 'workspaces'
 TEST_CASES_DIR = 'testCases'
+LIBRARY_VERSION_UNDER_TEST = null
 
 EXCLUDED_FROM_CONSUMER_TESTING_REGEXES = [
     /^documentation\/.*$/,
@@ -18,13 +19,14 @@ EXCLUDED_FROM_CONSUMER_TESTING_REGEXES = [
 
 
 if (!System.getenv('CX_INFRA_IT_CF_USERNAME') || !System.getenv('CX_INFRA_IT_CF_PASSWORD')) {
-    exitPrematurely(1, 'Environment variables CX_INFRA_IT_CF_USERNAME and CX_INFRA_IT_CF_PASSWORD need to be set.')
+    throw new RuntimeException('Environment variables CX_INFRA_IT_CF_USERNAME and CX_INFRA_IT_CF_PASSWORD need to be set.')
 }
 
 newEmptyDir(WORKSPACES_ROOT)
-ConsumerTestUtils.workspacesRootDir = WORKSPACES_ROOT
-ConsumerTestUtils.libraryVersionUnderTest = "git log --format=%H -n 1".execute().text.trim()
-ConsumerTestUtils.repositoryUnderTest = System.getenv('TRAVIS_REPO_SLUG') ?: 'SAP/jenkins-library'
+TestRunnerThread.workspacesRootDir = WORKSPACES_ROOT
+LIBRARY_VERSION_UNDER_TEST = "git log --format=%H -n 1".execute().text.trim()
+TestRunnerThread.libraryVersionUnderTest = LIBRARY_VERSION_UNDER_TEST
+TestRunnerThread.repositoryUnderTest = System.getenv('TRAVIS_REPO_SLUG') ?: 'SAP/jenkins-library'
 
 def testCaseThreads
 def cli = new CliBuilder(
@@ -46,15 +48,14 @@ if (options.h) {
 }
 
 if (options.l) {
-    ConsumerTestUtils.runningLocally = true
-} else {
-    ConsumerTestUtils.runningLocally = false
+    RUNNING_LOCALLY = true
 }
 
-if (!ConsumerTestUtils.runningLocally) {
+if (!RUNNING_LOCALLY) {
     if (changeDoesNotNeedConsumerTesting()) {
         notifyGithub("success", "No consumer tests necessary.")
-        exitPrematurely(0, 'No consumer tests necessary.')
+        println 'No consumer tests necessary.'
+        System.exit(0)
     }
 
     /*
@@ -68,7 +69,7 @@ if (!ConsumerTestUtils.runningLocally) {
     The commit which we need for notifying about a build status is in this case simply
     TRAVIS_COMMIT itself.
     */
-    ConsumerTestUtils.commitHash = System.getenv('TRAVIS_PULL_REQUEST_SHA') ?: System.getenv('TRAVIS_COMMIT')
+    COMMIT_HASH = System.getenv('TRAVIS_PULL_REQUEST_SHA') ?: System.getenv('TRAVIS_COMMIT')
 
     notifyGithub("pending", "Consumer tests are in progress.")
 }
@@ -83,12 +84,63 @@ testCaseThreads.each { it ->
     it.start()
 }
 
-//This method will print to console while the test cases are running
-//Otherwise the job will be canceled after 10 minutes without output.
-waitForTestCases(testCaseThreads)
+//The thread below will print to console while the test cases are running.
+//Otherwise the job would be canceled after 10 minutes without output.
+def done = false
+Thread.start {
+    def singleTestCase = testCaseThreads.size() == 1
+    for (; ;) {
+        if (singleTestCase) {
+            testCaseThreads[0].printRunningStdOut()
+        } else {
+            println "[INFO] Consumer tests are still running."
+        }
 
-if (!ConsumerTestUtils.runningLocally) {
-    notifyGithub("success", "All consumer tests succeeded.")
+        if (!singleTestCase && PRINT_LOGS_AFTER_45_MINUTES_COUNTDOWN-- == 0) {
+            testCaseThreads.each { thread ->
+                thread.printOutput()
+            }
+        }
+
+        sleep(AUXILIARY_SLEEP_MS)
+        if (done) {
+            break
+        }
+    }
+}
+
+testCaseThreads.each { it ->
+    it.join()
+}
+done = true
+
+def failedThreads = testCaseThreads.findAll { thread ->
+    thread.returnCode != 0
+}
+
+def status
+def statusMessage
+if (failedThreads.size() == 0) {
+    status = "success"
+    statusMessage = "All consumer tests finished successfully. Congratulations!"
+} else {
+    status = "failure"
+    statusMessage "The following consumer test(s) failed: ${failedThreads}"
+    failedThreads.each { failedThread ->
+        println "[ERROR] ${failedThread.uniqueName}: Process execution of command: '${failedThread.lastCommand}' failed. " +
+            "Return code: ${failedThread.returnCode}."
+        failedThread.printOutput()
+    }
+}
+
+if (!RUNNING_LOCALLY) {
+    notifyGithub(status, statusMessage)
+}
+
+println statusMessage
+
+if (status == "failure") {
+    System.exit(1)
 }
 
 
@@ -101,62 +153,43 @@ def listTestCaseThreads() {
     return threads
 }
 
-def waitForTestCases(threadList) {
-    threadList.metaClass.anyThreadStillAlive = {
-        for (thread in delegate) {
-            if (thread.isAlive()) {
-                return true
-            }
-        }
-        return false
+def notifyGithub(state, description) {
+    println "[INFO] Notifying about state '${state}' for commit '${COMMIT_HASH}'."
+
+    URL url = new URL("https://api.github.com/repos/SAP/jenkins-library/statuses/${COMMIT_HASH}")
+    HttpURLConnection con = (HttpURLConnection) url.openConnection()
+    con.setRequestMethod('POST')
+    con.setRequestProperty("Content-Type", "application/json; utf-8");
+    con.setRequestProperty('User-Agent', 'groovy-script')
+    con.setRequestProperty('Authorization', "token ${System.getenv('INTEGRATION_TEST_VOTING_TOKEN')}")
+
+    def postBody = [
+        state      : state,
+        target_url : System.getenv('TRAVIS_BUILD_WEB_URL'),
+        description: description,
+        context    : "integration-tests"
+    ]
+
+    con.setDoOutput(true)
+    con.getOutputStream().withStream { os ->
+        os.write(toJson(postBody).getBytes("UTF-8"))
     }
 
-    def auxiliaryThread = Thread.start {
-        def singleTestCase = threadList.size() == 1
-        while (threadList.anyThreadStillAlive()) {
-            printOutputOfThreadsIfOneFailed(threadList)
-
-            sleep(AUXILIARY_SLEEP_MS)
-            if (singleTestCase) {
-                threadList[0].printRunningStdOut()
-                threadList[0].abortIfSevereErrorOccurred()
-            } else {
-                println "[INFO] Consumer tests are still running."
-            }
-
-            if (!ConsumerTestUtils.runningLocally && PRINT_LOGS_AFTER_45_MINUTES_COUNTDOWN-- == 0) {
-                threadList.each { thread ->
-                    thread.printOutput()
-                }
-            }
-        }
-    }
-    auxiliaryThread.join()
-}
-
-static def printOutputOfThreadsIfOneFailed(threadList) {
-    def failedThread = threadList.find { thread ->
-        thread.exitCode > 0
-    }
-    if (failedThread) {
-        threadList.each { thread ->
-            if (thread.uniqueName != failedThread.uniqueName) {
-                thread.printOutput()
-                thread.interrupt()
-            }
-        }
-        synchronized (failedThread) {
-            failedThread.interrupt()
-        }
+    int responseCode = con.getResponseCode()
+    if (responseCode != HttpURLConnection.HTTP_CREATED) {
+        exitPrematurely(34, // Error code taken from curl: CURLE_HTTP_POST_ERROR
+            "[ERROR] Posting status to github failed. Expected response code " +
+                "'${HttpURLConnection.HTTP_CREATED}', but got '${responseCode}'. " +
+                "Response message: '${con.getResponseMessage()}'")
     }
 }
 
-def changeDoesNotNeedConsumerTesting(){
+def changeDoesNotNeedConsumerTesting() {
     def excludesRegex = '(' + EXCLUDED_FROM_CONSUMER_TESTING_REGEXES.join('|') + ')'
 
     "git remote add sap https://github.com/SAP/jenkins-library.git".execute().waitFor()
     "git fetch sap".execute().waitFor()
-    def diff = "git diff --name-only sap/master ${ConsumerTestUtils.libraryVersionUnderTest}".execute().text.trim()
+    def diff = "git diff --name-only sap/master ${LIBRARY_VERSION_UNDER_TEST}".execute().text.trim()
 
     for (def line : diff.readLines()) {
         if (!(line ==~ excludesRegex)) {
@@ -165,4 +198,16 @@ def changeDoesNotNeedConsumerTesting(){
     }
 
     return true
+}
+
+static def newEmptyDir(String dirName) {
+    def dir = new File(dirName)
+    if (dir.exists()) {
+        if (!dir.deleteDir()) {
+            throw new RuntimeException("Deletion of dir '${dirName}' failed.")
+        }
+    }
+    if (!dir.mkdirs()) {
+        throw new RuntimeException("Creation of dir '${dirName}' failed.")
+    }
 }
