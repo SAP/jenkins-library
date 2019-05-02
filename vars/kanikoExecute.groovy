@@ -90,6 +90,7 @@ void call(Map parameters = [:]) {
             dockerOptions: config.dockerOptions
         ) {
             // prepare kaniko container for running with proper Docker config.json and custom certificates
+            // custom certificates will be downloaded and appended to ca-certificates.crt file used in container
             sh """#!${config.containerShell}
 ${config.containerPreparationCommand}
 ${getCertificateUpdate(config.customTlsCertificateLinks)}
@@ -103,7 +104,6 @@ ${getCertificateUpdate(config.customTlsCertificateLinks)}
                 }
             } else {
                 // empty config.json to allow anonymous authentication
-                createJsonCall = "echo '{\"auths\":{}}' > /kaniko/.docker/config.json"
                 writeFile file: "${uuid}-config.json", text: '{"auths":{}}'
             }
 
