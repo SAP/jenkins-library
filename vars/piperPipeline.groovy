@@ -87,9 +87,7 @@ void call(parameters) {
             failure {buildSetResult(currentBuild, 'FAILURE')}
             unstable {buildSetResult(currentBuild, 'UNSTABLE')}
             cleanup {
-                piperPublishNotifications script: parameters.script
-                influxWriteData script: parameters.script, wrapInNode: true
-                mailSendNotification script: parameters.script, wrapInNode: true
+                piperPipelineStagePost script: parameters.script
             }
         }
     }

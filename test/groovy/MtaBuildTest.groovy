@@ -13,6 +13,7 @@ import util.JenkinsLoggingRule
 import util.JenkinsReadYamlRule
 import util.JenkinsShellCallRule
 import util.JenkinsStepRule
+import util.JenkinsWriteFileRule
 import util.Rules
 
 public class MtaBuildTest extends BasePiperTest {
@@ -23,6 +24,7 @@ public class MtaBuildTest extends BasePiperTest {
     private JenkinsDockerExecuteRule dockerExecuteRule = new JenkinsDockerExecuteRule(this)
     private JenkinsStepRule stepRule = new JenkinsStepRule(this)
     private JenkinsReadYamlRule readYamlRule = new JenkinsReadYamlRule(this).registerYaml('mta.yaml', defaultMtaYaml() )
+    private JenkinsWriteFileRule writeFileRule = new JenkinsWriteFileRule(this)
 
     @Rule
     public RuleChain ruleChain = Rules
@@ -33,11 +35,14 @@ public class MtaBuildTest extends BasePiperTest {
         .around(shellRule)
         .around(dockerExecuteRule)
         .around(stepRule)
+        .around(writeFileRule)
 
     @Before
     void init() {
 
         helper.registerAllowedMethod('fileExists', [String], { s -> s == 'mta.yaml' })
+
+        helper.registerAllowedMethod('httpRequest', [String.class], { s -> new SettingsStub()})
 
         shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, '.*\\$MTA_JAR_LOCATION.*', '')
         shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, '.*\\$JAVA_HOME.*', '')
@@ -182,6 +187,38 @@ public class MtaBuildTest extends BasePiperTest {
     }
 
     @Test
+    void canConfigureMavenUserSettings() {
+
+        stepRule.step.mtaBuild(script: nullScript, projectSettingsFile: 'settings.xml')
+
+        assert shellRule.shell.find(){ c -> c.contains('cp settings.xml $HOME/.m2/settings.xml')}
+    }
+
+    @Test
+    void canConfigureMavenUserSettingsFromRemoteSource() {
+
+        stepRule.step.mtaBuild(script: nullScript, projectSettingsFile: 'https://some.host/my-settings.xml')
+
+        assert shellRule.shell.find(){ c -> c.contains('cp project-settings.xml $HOME/.m2/settings.xml')}
+    }
+
+    @Test
+    void canConfigureMavenGlobalSettings() {
+
+        stepRule.step.mtaBuild(script: nullScript, globalSettingsFile: 'settings.xml')
+
+        assert shellRule.shell.find(){ c -> c.contains('cp settings.xml $M2_HOME/conf/settings.xml')}
+    }
+
+    @Test
+    void canConfigureMavenGlobalSettingsFromRemoteSource() {
+
+        stepRule.step.mtaBuild(script: nullScript, globalSettingsFile: 'https://some.host/my-settings.xml')
+
+        assert shellRule.shell.find(){ c -> c.contains('cp global-settings.xml $M2_HOME/conf/settings.xml')}
+    }
+
+    @Test
     void buildTargetFromDefaultStepConfigurationTest() {
 
         nullScript.commonPipelineEnvironment.defaultConfiguration = [steps:[mtaBuild:[buildTarget: 'NEO']]]
@@ -274,4 +311,9 @@ public class MtaBuildTest extends BasePiperTest {
                 '''
     }
 
+    class SettingsStub {
+        String getContent() {
+            return "<xml>sometext</xml>"
+        }
+    }
 }

@@ -63,7 +63,7 @@ import static com.sap.piper.Prerequisites.checkScript
     'userTokenCredentialsId',
     /**
      * Type of development stack used to implement the solution.
-     * @possibleValues `maven`, `mta`, `npm`, `pip`, `sbt`
+     * @possibleValues `golang`, `maven`, `mta`, `npm`, `pip`, `sbt`
      */
     'scanType',
     /**
