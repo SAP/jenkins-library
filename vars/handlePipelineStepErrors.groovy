@@ -90,18 +90,16 @@ void call(Map parameters = [:], body) {
 
         echo "[${STEP_NAME}] Error in step ${config.stepName} - Build result set to 'UNSTABLE'"
 
-        // ONLY if commonPipelineEnvironment is shared:
+        List unstableSteps = cpe.getValue('unstableSteps')
+        if(!unstableSteps) {
+            unstableSteps = []
+        }
+
         // add information about unstable steps to pipeline environment
         // this helps to bring this information to users in a consolidated manner inside a pipeline
-        if (parameters.stepParameters?.script?.commonPipelineEnvironment) {
-            List unstableSteps = parameters.stepParameters.script.commonPipelineEnvironment.getValue('unstableSteps')
-            if (!unstableSteps) {
-                parameters.stepParameters.script.commonPipelineEnvironment.setValue('unstableSteps', [config.stepName])
-            } else {
-                unstableSteps.add(config.stepName)
-                parameters.stepParameters.script.commonPipelineEnvironment.setValue('unstableSteps', unstableSteps)
-            }
-        }
+        unstableSteps.add(config.stepName)
+        cpe.setValue('unstableSteps', unstableSteps)
+
 
     } catch (Throwable error) {
         if (config.echoDetails)
