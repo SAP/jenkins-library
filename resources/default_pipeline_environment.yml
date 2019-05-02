@@ -221,6 +221,13 @@ steps:
       languageRunner: 'js'
       runCommand: 'gauge run'
       testOptions: 'specs'
+    bundler:
+      dockerImage: 'ruby:2.5.3-stretch'
+      dockerName: 'bundler'
+      dockerWorkspace: ''
+      languageRunner: 'ruby'
+      runCommand: 'bundle install && bundle exec gauge run'
+      testOptions: 'specs'
   handlePipelineStepErrors:
     echoDetails: true
     failOnError: true
@@ -348,6 +355,10 @@ steps:
         - 'opensourceConfiguration'
     verbose: false
     timeout: 0
+  pipelineExecute:
+    branch: 'master'
+    path: 'Jenkinsfile'
+    credentialsId: ''
   pipelineRestartSteps:
     sendMail: true
     timeoutInSeconds: 900
@@ -403,6 +414,10 @@ steps:
       dockerImage: 'node:8-stretch'
       dockerName: 'npm'
       dockerWorkspace: '/home/node'
+    bundler:
+      dockerImage: 'ruby:2.5.3-stretch'
+      dockerName: 'bundler'
+      dockerWorkspace: ''
   slackSendNotification:
     color: "${buildStatus == 'SUCCESS'?'#008000':'#E60000'}"
     defaultMessage: "${buildStatus}: Job ${env.JOB_NAME} <${env.BUILD_URL}|#${env.BUILD_NUMBER}>"

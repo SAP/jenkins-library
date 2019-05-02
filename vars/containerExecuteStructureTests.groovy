@@ -1,5 +1,6 @@
 import static com.sap.piper.Prerequisites.checkScript
 
+import com.sap.piper.GenerateDocumentation
 import com.sap.piper.ConfigurationHelper
 import com.sap.piper.Notify
 import com.sap.piper.Utils
@@ -13,40 +14,39 @@ import groovy.transform.Field
      * @possibleValues `true`, `false`
      */
     'verbose'
-
 ]
 
 @Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS.plus([
     /**
-     * Only for Kubernetes environments: Command which is executed to keep container alive, defaults to '/usr/bin/tail -f /dev/null'
+     * @see dockerExecute
      */
     'containerCommand',
     /**
-     * Only for Kubernetes environments: Shell to be used inside container, defaults to '/bin/sh'
+     * @see dockerExecute
      */
     'containerShell',
     /**
-      * Docker image for code execution.
-      */
+     * @see dockerExecute
+     */
     'dockerImage',
     /**
-     * Options to be passed to Docker image when starting it (only relevant for non-Kubernetes case).
+     * @see dockerExecute
      */
     'dockerOptions',
     /**
-      * Defines the behavior, in case tests fail.
-      * @possibleValues `true`, `false`
-      */
+     * @see dockerExecute
+     */
+    'stashContent',
+    /**
+     * Defines the behavior, in case tests fail.
+     * @possibleValues `true`, `false`
+     */
     'failOnError',
     /**
      * Only relevant for testDriver 'docker'.
      * @possibleValues `true`, `false`
      */
     'pullImage',
-    /**
-      * If specific stashes should be considered for the tests, you can pass this via this parameter.
-      */
-    'stashContent',
     /**
      * Container structure test configuration in yml or json format. You can pass a pattern in order to execute multiple tests.
      */
@@ -56,8 +56,8 @@ import groovy.transform.Field
      */
     'testDriver',
     /**
-    * Image to be tested
-    */
+     * Image to be tested
+     */
     'testImage',
     /**
      * Path and name of the test report which will be generated
@@ -67,6 +67,17 @@ import groovy.transform.Field
 
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
 
+/**
+ * In this step [Container Structure Tests](https://github.com/GoogleContainerTools/container-structure-test) are executed.
+ *
+ * This testing framework allows you to execute different test types against a Docker container, for example:
+ *
+ * * Command tests (only if a Docker Deamon is available)
+ * * File existence tests
+ * * File content tests
+ * * Metadata test
+ */
+@GenerateDocumentation
 void call(Map parameters = [:]) {
     handlePipelineStepErrors(stepName: STEP_NAME, stepParameters: parameters) {
 

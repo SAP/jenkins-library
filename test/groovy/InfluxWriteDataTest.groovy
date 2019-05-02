@@ -1,5 +1,7 @@
 #!groovy
 import com.sap.piper.DefaultValueCache
+import com.sap.piper.analytics.InfluxData
+
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -147,9 +149,9 @@ class InfluxWriteDataTest extends BasePiperTest {
     void testInfluxCustomDataFromCPE() {
         nullScript.commonPipelineEnvironment.reset()
         nullScript.commonPipelineEnvironment.setArtifactVersion('1.2.3')
-        nullScript.commonPipelineEnvironment.setInfluxCustomDataTagsEntry('tag1', 'testTag1')
-        nullScript.commonPipelineEnvironment.setInfluxCustomDataMapEntry('test_data', 'key1', 'keyValue1')
-        nullScript.commonPipelineEnvironment.setInfluxCustomDataMapTagsEntry('test_data', 'tag1', 'tagValue1')
+        InfluxData.addTag('jenkins_custom_data', 'tag1', 'testTag1')
+        InfluxData.addField('test_data', 'key1', 'keyValue1')
+        InfluxData.addTag('test_data', 'tag1', 'tagValue1')
         stepRule.step.influxWriteData(
             //juStabUtils: utils,
             script: nullScript,

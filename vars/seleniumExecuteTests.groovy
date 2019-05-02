@@ -14,7 +14,7 @@ import groovy.text.SimpleTemplateEngine
 @Field Set GENERAL_CONFIG_KEYS = [
     /**
      * Defines the tool which is used for executing the tests
-     * @possibleValues `'maven'`, `'npm'`
+     * @possibleValues `maven`, `npm`, `bundler`
      */
     'buildTool',
     /** @see dockerExecute */
