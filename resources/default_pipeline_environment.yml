@@ -350,6 +350,7 @@ steps:
       stashContent:
         - 'buildDescriptor'
         - 'opensourceConfiguration'
+        - 'checkmarx'
       additionalInstallCommand: >-
         curl --fail https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
         && mkdir -p \$GOPATH/src/${config.whitesource.projectName.substring(0, config.whitesource.projectName.lastIndexOf('/'))}

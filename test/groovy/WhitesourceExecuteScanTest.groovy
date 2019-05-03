@@ -449,9 +449,9 @@ class WhitesourceExecuteScanTest extends BasePiperTest {
 
         assertThat(dockerExecuteRule.dockerParams, hasEntry('dockerImage', 'golang:1.12-stretch'))
         assertThat(dockerExecuteRule.dockerParams, hasEntry('dockerWorkspace', '/home/dep'))
-        assertThat(dockerExecuteRule.dockerParams, hasEntry('stashContent', ['buildDescriptor', 'opensourceConfiguration', 'modified whitesource config 7d1c90ed46c66061fc8ea45dd96e209bf767f038']))
+        assertThat(dockerExecuteRule.dockerParams, hasEntry('stashContent', ['buildDescriptor', 'opensourceConfiguration', 'checkmarx', 'modified whitesource config 7d1c90ed46c66061fc8ea45dd96e209bf767f038']))
 
-        assertThat(shellRule.shell, Matchers.hasItems(
+      assertThat(shellRule.shell, Matchers.hasItems(
             is('curl --location --output wss-unified-agent.jar https://github.com/whitesource/unified-agent-distribution/raw/master/standAlone/wss-unified-agent.jar'),
             is('./bin/java -jar wss-unified-agent.jar -c \'./myProject/wss-unified-agent.config.7d1c90ed46c66061fc8ea45dd96e209bf767f038\' -apiKey \'testOrgToken\' -userKey \'token-0815\' -product \'testProductName\'')
         ))
@@ -506,7 +506,7 @@ class WhitesourceExecuteScanTest extends BasePiperTest {
 
         assertThat(dockerExecuteRule.dockerParams, hasEntry('dockerImage', 'golang:1.12-stretch'))
         assertThat(dockerExecuteRule.dockerParams, hasEntry('dockerWorkspace', '/home/dep'))
-        assertThat(dockerExecuteRule.dockerParams, hasEntry('stashContent', ['buildDescriptor', 'opensourceConfiguration', 'modified whitesource config d3aa80454919391024374ba46b4df082d15ab9a3']))
+        assertThat(dockerExecuteRule.dockerParams, hasEntry('stashContent', ['buildDescriptor', 'opensourceConfiguration', 'checkmarx', 'modified whitesource config d3aa80454919391024374ba46b4df082d15ab9a3']))
 
         assertThat(shellRule.shell, Matchers.hasItems(
             is('curl --location --output wss-unified-agent.jar https://github.com/whitesource/unified-agent-distribution/raw/master/standAlone/wss-unified-agent.jar'),
