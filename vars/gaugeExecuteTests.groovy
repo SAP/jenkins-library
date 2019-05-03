@@ -13,7 +13,10 @@ import groovy.transform.Field
 @Field Set GENERAL_CONFIG_KEYS = []
 
 @Field Set STEP_CONFIG_KEYS = [
-    /** Defines the build tool to be used for the test execution.*/
+    /**
+     * Defines the build tool to be used for the test execution.
+     * @possibleValues `maven`, `npm`, `bundler`
+     */
     'buildTool',
     /** @see dockerExecute*/
     'dockerEnvVars',
@@ -25,7 +28,7 @@ import groovy.transform.Field
     'dockerWorkspace',
     /**
      * Defines the behavior in case tests fail. When this is set to `true` test results cannot be recorded using the `publishTestResults` step afterwards.
-     * @possibleValues true, false
+     * @possibleValues `true`, `false`
      */
     'failOnError',
     /** Defines the command for installing Gauge. In case the `dockerImage` already contains Gauge it can be set to empty: ``.*/
