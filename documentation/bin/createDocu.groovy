@@ -668,10 +668,7 @@ def handleStep(stepName, prepareDefaultValuesStep, gse, customDefaults) {
             if (dependentValues) {
                 def the_defaults = []
                 dependentValues
-                    .replaceAll("'", '')
-                    .replaceAll('"', '')
-                    .replaceAll("`", '')
-                    .replaceAll(' ', '')
+                    .replaceAll('[\'"` ]', '')
                     .split(',').each {possibleValue ->
                     if (!possibleValue instanceof Boolean && defaultConfig.get(possibleValue)) {
                         the_defaults <<
