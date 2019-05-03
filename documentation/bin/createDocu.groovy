@@ -20,10 +20,30 @@ class TemplateHelper {
         parameters.keySet().toSorted().each {
 
             def props = parameters.get(it)
-            t +=  "| `${it}` | ${props.mandatory ?: props.required ? 'yes' : 'no'} | ${(props.defaultValue ? '`' +  props.defaultValue + '`' : '') } | ${props.value ?: ''} |\n"
+
+            def defaultValue = isComplexDefault(props.defaultValue) ? renderComplexDefaultValue(props.defaultValue) : "`${props.defaultValue}`"
+
+            t +=  "| `${it}` | ${props.mandatory ?: props.required ? 'yes' : 'no'} | ${defaultValue} | ${props.value ?: ''} |\n"
         }
 
         t
+    }
+
+    private static boolean isComplexDefault(def _default) {
+        if(! (_default in Collection)) return false
+        if(_default.size() == 0) return false
+        for(def entry in _default) {
+            if(! (entry in Map)) return false
+            if(! entry.dependentParameterKey) return false
+            if(! entry.key) return false
+        }
+        return true
+    }
+
+    private static renderComplexDefaultValue(def _default) {
+        _default
+            .collect { "${it.dependentParameterKey}=`${it.key ?: '<empty>'}`:`${it.value ?: '<empty>'}`" }
+            .join('<br />')
     }
 
     static createParameterDescriptionSection(Map parameters) {
@@ -189,6 +209,15 @@ class Helper {
 
         f.eachLine  {
             line ->
+
+            if(line ==~ /.*dependingOn.*/) {
+                def dependentConfigKey = (line =~ /.*dependingOn\('(.*)'\).mixin\('(.*)'/)[0][1]
+                def configKey = (line =~ /.*dependingOn\('(.*)'\).mixin\('(.*)'/)[0][2]
+                if(! step.dependentConfig[configKey]) {
+                    step.dependentConfig[configKey] = []
+                }
+                step.dependentConfig[configKey] << dependentConfigKey
+            }
 
             if(docuEnd) {
                 docuEnd = false
@@ -585,7 +614,9 @@ def handleStep(stepName, prepareDefaultValuesStep, gse, customDefaults) {
             params = compatibleParams
     }
 
-    def step = [parameters:[:]]
+    // 'dependentConfig' is only present here for internal reasons and that entry is removed at
+    // end of method.
+    def step = [parameters:[:], dependentConfig: [:]]
 
     //
     // START special handling for 'script' parameter
@@ -627,6 +658,35 @@ def handleStep(stepName, prepareDefaultValuesStep, gse, customDefaults) {
     }
 
     Helper.scanDocu(theStep, step)
+
+    step.parameters.each { k, v ->
+        if(step.dependentConfig.get(k)) {
+
+            def dependentParameterKey = step.dependentConfig.get(k)[0]
+            def dependentValues = step.parameters.get(dependentParameterKey)?.value
+
+            if (dependentValues) {
+                def the_defaults = []
+                dependentValues
+                    .replaceAll('[\'"` ]', '')
+                    .split(',').each {possibleValue ->
+                    if (!possibleValue instanceof Boolean && defaultConfig.get(possibleValue)) {
+                        the_defaults <<
+                            [
+                                dependentParameterKey: dependentParameterKey,
+                                key: possibleValue,
+                                value: Helper.getValue(defaultConfig.get(possibleValue), k.split('/'))
+                            ]
+                    }
+                }
+                v.defaultValue = the_defaults
+            }
+        }
+    }
+
+    //
+    // 'dependentConfig' is only present for internal purposes and must not be used outside.
+    step.remove('dependentConfig')
 
     step
 }
