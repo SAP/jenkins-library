@@ -90,7 +90,7 @@ void call(Map parameters = [:], body) {
 
         echo "[${STEP_NAME}] Error in step ${config.stepName} - Build result set to 'UNSTABLE'"
 
-        List unstableSteps = cpe?.getValue('unstableSteps')
+        List unstableSteps = cpe?.getValue('unstableSteps') ?: []
         if(!unstableSteps) {
             unstableSteps = []
         }
