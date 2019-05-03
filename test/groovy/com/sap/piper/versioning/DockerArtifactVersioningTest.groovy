@@ -52,6 +52,12 @@ class DockerArtifactVersioningTest extends BasePiperTest{
     }
 
     @Test
+    void testVersioningFromWithRegistryPort() {
+        DockerArtifactVersioning av = new DockerArtifactVersioning(nullScript, [filePath: 'Dockerfile_registryPort', dockerVersionSource: 'FROM'])
+        assertEquals('1.2.3', av.getVersion())
+    }
+
+    @Test
     void testVersioningEnv() {
         av = new DockerArtifactVersioning(nullScript, [filePath: 'Dockerfile', dockerVersionSource: 'TEST'])
         assertEquals('2.3.4', av.getVersion())
