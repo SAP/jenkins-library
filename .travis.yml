@@ -34,7 +34,7 @@ jobs:
       script: cd consumer-test && chmod +x integrationTestController.sh && ./integrationTestController.sh
 
     - stage: Docs
-      name: Build & Deploy
+      name: Create Documentation
       install: docker pull squidfunk/mkdocs-material:3.0.4
       before_script: documentation/bin/createDocu.sh
       script: docker run --rm -it -v ${TRAVIS_BUILD_DIR}/documentation:/docs squidfunk/mkdocs-material:3.0.4 build --clean --strict
