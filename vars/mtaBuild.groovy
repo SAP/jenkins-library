@@ -4,8 +4,9 @@ import com.sap.piper.GenerateDocumentation
 import com.sap.piper.ConfigurationHelper
 import com.sap.piper.MtaUtils
 import com.sap.piper.Utils
-
 import groovy.transform.Field
+
+import static com.sap.piper.Utils.downloadSettingsFromUrl
 
 @Field def STEP_NAME = getClass().getName()
 
@@ -26,7 +27,11 @@ import groovy.transform.Field
      * The location of the SAP Multitarget Application Archive Builder jar file, including file name and extension.
      * If it is not provided, the SAP Multitarget Application Archive Builder is expected on PATH.
      */
-    'mtaJarLocation'
+    'mtaJarLocation',
+    /** Path or url to the mvn settings file that should be used as global settings file.*/
+    'globalSettingsFile',
+    /** Path or url to the mvn settings file that should be used as project settings file.*/
+    'projectSettingsFile'
 ]
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS.plus([
     /** @see dockerExecute */
@@ -58,6 +63,23 @@ void call(Map parameters = [:]) {
         ], configuration)
 
         dockerExecute(script: script, dockerImage: configuration.dockerImage, dockerOptions: configuration.dockerOptions) {
+
+            String projectSettingsFile = configuration.projectSettingsFile?.trim()
+            if (projectSettingsFile) {
+                if (projectSettingsFile.startsWith("http")) {
+                    projectSettingsFile = downloadSettingsFromUrl(this, projectSettingsFile, 'project-settings.xml')
+                }
+                sh 'mkdir -p $HOME/.m2'
+                sh "cp ${projectSettingsFile} \$HOME/.m2/settings.xml"
+            }
+
+            String globalSettingsFile = configuration.globalSettingsFile?.trim()
+            if (globalSettingsFile) {
+                if (globalSettingsFile.startsWith("http")) {
+                    globalSettingsFile = downloadSettingsFromUrl(this, globalSettingsFile, 'global-settings.xml')
+                }
+                sh "cp ${globalSettingsFile} \$M2_HOME/conf/settings.xml"
+            }
 
             def mtaYamlName = "mta.yaml"
             def applicationName = configuration.applicationName

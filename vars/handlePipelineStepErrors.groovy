@@ -2,6 +2,7 @@ import com.cloudbees.groovy.cps.NonCPS
 
 import com.sap.piper.GenerateDocumentation
 import com.sap.piper.ConfigurationHelper
+import com.sap.piper.analytics.InfluxData
 
 import groovy.text.SimpleTemplateEngine
 import groovy.transform.Field
@@ -50,7 +51,7 @@ import org.jenkinsci.plugins.workflow.steps.FlowInterruptedException
 @GenerateDocumentation
 void call(Map parameters = [:], body) {
     // load default & individual configuration
-    def cpe = parameters.stepParameters?.script?.commonPipelineEnvironment ?: commonPipelineEnvironment
+    def cpe = parameters.stepParameters?.script?.commonPipelineEnvironment ?: null
     Map config = ConfigurationHelper.newInstance(this)
         .loadStepDefaults()
         .mixinGeneralConfig(cpe, GENERAL_CONFIG_KEYS)
@@ -80,11 +81,24 @@ void call(Map parameters = [:], body) {
         if (config.failOnError || config.stepName in config.mandatorySteps) {
             throw ex
         }
+
         if (config.stepParameters?.script) {
             config.stepParameters?.script.currentBuild.result = 'UNSTABLE'
         } else {
             currentBuild.result = 'UNSTABLE'
         }
+
+        echo "[${STEP_NAME}] Error in step ${config.stepName} - Build result set to 'UNSTABLE'"
+
+        List unstableSteps = cpe?.getValue('unstableSteps') ?: []
+        if(!unstableSteps) {
+            unstableSteps = []
+        }
+
+        // add information about unstable steps to pipeline environment
+        // this helps to bring this information to users in a consolidated manner inside a pipeline
+        unstableSteps.add(config.stepName)
+        cpe?.setValue('unstableSteps', unstableSteps)
 
     } catch (Throwable error) {
         if (config.echoDetails)
@@ -115,11 +129,9 @@ private String formatErrorMessage(Map config, error){
 }
 
 private void writeErrorToInfluxData(Map config, error){
-    def script = config?.stepParameters?.script
-
-    if(script && script.commonPipelineEnvironment?.getInfluxCustomDataMapTags().build_error_message == null){
-        script.commonPipelineEnvironment?.setInfluxCustomDataMapTagsEntry('pipeline_data', 'build_error_step', config.stepName)
-        script.commonPipelineEnvironment?.setInfluxCustomDataMapTagsEntry('pipeline_data', 'build_error_stage', script.env?.STAGE_NAME)
-        script.commonPipelineEnvironment?.setInfluxCustomDataMapEntry('pipeline_data', 'build_error_message', error.getMessage())
+    if(InfluxData.getInstance().getFields().pipeline_data?.build_error_message == null){
+        InfluxData.addTag('pipeline_data', 'build_error_step', config.stepName)
+        InfluxData.addTag('pipeline_data', 'build_error_stage', config.stepParameters.script?.env?.STAGE_NAME)
+        InfluxData.addField('pipeline_data', 'build_error_message', error.getMessage())
     }
 }
