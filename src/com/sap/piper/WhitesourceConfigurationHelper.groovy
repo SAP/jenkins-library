@@ -9,7 +9,7 @@ class WhitesourceConfigurationHelper implements Serializable {
         def parsingClosure = { fileReadPath -> return script.readProperties (file: fileReadPath) }
         def serializationClosure = { configuration -> serializeUAConfig(configuration) }
         def inputFile = config.whitesource.configFilePath.replaceFirst('\\./', '')
-        def suffix = utils.generateSha1(config.whitesource.configFilePath)
+        def suffix = utils.generateSha1("${path}${inputFile}")
         def targetFile = "${inputFile}.${suffix}"
         if(config.whitesource.productName.startsWith('DIST - ')) {
             mapping += [
