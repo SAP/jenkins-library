@@ -1,22 +1,12 @@
-# pipelineStashFiles
+# ${docGenStepName}
 
-## Description
-
-This step stashes files that are needed in other build steps (on other nodes).
+## ${docGenDescription}
 
 ## Prerequsites
 
 none
 
-## Parameters
-
-| parameter | mandatory | default | possible values |
-| ----------|-----------|---------|-----------------|
-| script | yes |  |  |
-| runCheckmarx | no | false |  |
-| runOpaTests | no | false |  |
-| stashIncludes | no | see details |  |
-| stashExcludes | no | see details |  |
+## ${docGenParameters}
 
 Details:
 
@@ -42,14 +32,7 @@ The step is stashing files before and after the build. This is due to the fact, 
     * `stashIncludes: [buildDescriptor: '**/mybuild.yml]`
     * `stashExcludes: [tests: '**/NOTRELEVANT.*]`
 
-## Step configuration
-
-The following parameters can also be specified as step parameters using the global configuration file:
-
-* runOpaTests
-* runCheckmarx
-* stashExcludes
-* stashIncludes
+## ${docGenConfiguration}
 
 ## Explanation of pipeline step
 
