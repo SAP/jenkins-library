@@ -5,11 +5,10 @@ import static groovy.json.JsonOutput.toJson
 COMMIT_HASH = null
 RUNNING_LOCALLY = false
 AUXILIARY_SLEEP_MS = 10000
-// Build is killed at 50 min, print log to console at minute 45
-PRINT_LOGS_AFTER_45_MINUTES_COUNTDOWN = (45 * 60 * 1000) / AUXILIARY_SLEEP_MS
+START_TIME_MS = System.currentTimeMillis()
 WORKSPACES_ROOT = 'workspaces'
 TEST_CASES_DIR = 'testCases'
-LIBRARY_VERSION_UNDER_TEST = null
+LIBRARY_VERSION_UNDER_TEST = "git log --format=%H -n 1".execute().text.trim()
 
 EXCLUDED_FROM_CONSUMER_TESTING_REGEXES = [
     /^documentation\/.*$/,
@@ -18,13 +17,8 @@ EXCLUDED_FROM_CONSUMER_TESTING_REGEXES = [
 ]
 
 
-if (!System.getenv('CX_INFRA_IT_CF_USERNAME') || !System.getenv('CX_INFRA_IT_CF_PASSWORD')) {
-    throw new RuntimeException('Environment variables CX_INFRA_IT_CF_USERNAME and CX_INFRA_IT_CF_PASSWORD need to be set.')
-}
-
 newEmptyDir(WORKSPACES_ROOT)
 TestRunnerThread.workspacesRootDir = WORKSPACES_ROOT
-LIBRARY_VERSION_UNDER_TEST = "git log --format=%H -n 1".execute().text.trim()
 TestRunnerThread.libraryVersionUnderTest = LIBRARY_VERSION_UNDER_TEST
 TestRunnerThread.repositoryUnderTest = System.getenv('TRAVIS_REPO_SLUG') ?: 'SAP/jenkins-library'
 
@@ -37,14 +31,14 @@ def cli = new CliBuilder(
 cli.with {
     h longOpt: 'help', 'Print this help text and exit.'
     l longOpt: 'run-locally', 'Run consumer tests locally.'
-    s(longOpt: 'single-test', args: 1, argName: 'filePath', 'Run single test.')
+    s longOpt: 'single-test', args: 1, argName: 'filePath', 'Run single test.'
 }
 
 def options = cli.parse(args)
 
 if (options.h) {
     cli.usage()
-    System.exit 0
+    return
 }
 
 if (options.l) {
@@ -55,7 +49,7 @@ if (!RUNNING_LOCALLY) {
     if (changeDoesNotNeedConsumerTesting()) {
         notifyGithub("success", "No consumer tests necessary.")
         println 'No consumer tests necessary.'
-        System.exit(0)
+        return
     }
 
     /*
@@ -74,8 +68,17 @@ if (!RUNNING_LOCALLY) {
     notifyGithub("pending", "Consumer tests are in progress.")
 }
 
+if (!System.getenv('CX_INFRA_IT_CF_USERNAME') || !System.getenv('CX_INFRA_IT_CF_PASSWORD')) {
+    exitPrematurely(1, 'Environment variables CX_INFRA_IT_CF_USERNAME and CX_INFRA_IT_CF_PASSWORD need to be set.')
+}
+
 if (options.s) {
-    testCaseThreads = [new TestRunnerThread(options.s)]
+    def file = new File(options.s)
+    if (!file.exists()) {
+        exitPrematurely(1, "Test case configuration file '${file}' does not exist. " +
+            "Please provide path to a configuration file of structure '/rootDir/areaDir/testCase.yml'.")
+    }
+    testCaseThreads = [new TestRunnerThread(file)]
 } else {
     testCaseThreads = listTestCaseThreads()
 }
@@ -88,7 +91,11 @@ testCaseThreads.each { it ->
 //Otherwise the job would be canceled after 10 minutes without output.
 def done = false
 Thread.start {
-    def singleTestCase = testCaseThreads.size() == 1
+    def outputWasPrintedPrematurely = false
+    def singleTestCase = (testCaseThreads.size() == 1)
+    if (singleTestCase) {
+        AUXILIARY_SLEEP_MS = 1000 //for a single test case we print the running output every second
+    }
     for (; ;) {
         if (singleTestCase) {
             testCaseThreads[0].printRunningStdOut()
@@ -96,10 +103,13 @@ Thread.start {
             println "[INFO] Consumer tests are still running."
         }
 
-        if (!singleTestCase && PRINT_LOGS_AFTER_45_MINUTES_COUNTDOWN-- == 0) {
+        // Build is killed at 50 min, print log to console at minute 45
+        int MINUTES_SINCE_START = (System.currentTimeMillis() - START_TIME_MS) / (1000 * 60)
+        if (!singleTestCase && MINUTES_SINCE_START > 44 && !outputWasPrintedPrematurely) {
             testCaseThreads.each { thread ->
                 thread.printOutput()
             }
+            outputWasPrintedPrematurely = true
         }
 
         sleep(AUXILIARY_SLEEP_MS)
@@ -124,13 +134,13 @@ if (failedThreads.size() == 0) {
     status = "success"
     statusMessage = "All consumer tests finished successfully. Congratulations!"
 } else {
-    status = "failure"
-    statusMessage "The following consumer test(s) failed: ${failedThreads}"
     failedThreads.each { failedThread ->
         println "[ERROR] ${failedThread.uniqueName}: Process execution of command: '${failedThread.lastCommand}' failed. " +
             "Return code: ${failedThread.returnCode}."
         failedThread.printOutput()
     }
+    status = "failure"
+    statusMessage "The following consumer test(s) failed: ${failedThreads}"
 }
 
 if (!RUNNING_LOCALLY) {
@@ -148,7 +158,7 @@ def listTestCaseThreads() {
     //Each dir that includes a yml file is a test case
     def threads = []
     new File(TEST_CASES_DIR).traverse(type: FileType.FILES, nameFilter: ~/^.+\.yml\u0024/) { file ->
-        threads << new TestRunnerThread(file.toString())
+        threads << new TestRunnerThread(file)
     }
     return threads
 }
@@ -179,8 +189,8 @@ def notifyGithub(state, description) {
     if (responseCode != HttpURLConnection.HTTP_CREATED) {
         exitPrematurely(34, // Error code taken from curl: CURLE_HTTP_POST_ERROR
             "[ERROR] Posting status to github failed. Expected response code " +
-                "'${HttpURLConnection.HTTP_CREATED}', but got '${responseCode}'. " +
-                "Response message: '${con.getResponseMessage()}'")
+            "'${HttpURLConnection.HTTP_CREATED}', but got '${responseCode}'. " +
+            "Response message: '${con.getResponseMessage()}'")
     }
 }
 
@@ -204,10 +214,15 @@ static def newEmptyDir(String dirName) {
     def dir = new File(dirName)
     if (dir.exists()) {
         if (!dir.deleteDir()) {
-            throw new RuntimeException("Deletion of dir '${dirName}' failed.")
+            exitPrematurely(1, "Deletion of dir '${dirName}' failed.")
         }
     }
     if (!dir.mkdirs()) {
-        throw new RuntimeException("Creation of dir '${dirName}' failed.")
+        exitPrematurely(1, "Creation of dir '${dirName}' failed.")
     }
+}
+
+static def exitPrematurely(int returnCode, String message) {
+    println message
+    System.exit(returnCode)
 }

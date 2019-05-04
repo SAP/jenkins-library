@@ -9,8 +9,8 @@ class TestRunnerThread extends Thread {
     static def repositoryUnderTest
 
     Process currentProcess
-    StringBuilder stdOut = new StringBuilder()
-    StringBuilder stdErr = new StringBuilder()
+    final StringBuilder stdOut = new StringBuilder()
+    final StringBuilder stdErr = new StringBuilder()
     int lastPrintedStdOutLine = -1
     public def returnCode = -1
     public def lastCommand
@@ -21,20 +21,20 @@ class TestRunnerThread extends Thread {
     def testCaseWorkspace
     def testCaseConfig
 
-    TestRunnerThread(testCaseFilePath) {
+    TestRunnerThread(File testCaseFile) {
         // Regex pattern expects a folder structure such as '/rootDir/areaDir/testCase.extension'
-        def testCaseMatches = (testCaseFilePath.toString() =~
+        def testCaseMatches = (testCaseFile.toString() =~
             /^[\w\-]+\\/([\w\-]+)\\/([\w\-]+)\..*\u0024/)
         this.area = testCaseMatches[0][1]
         this.testCase = testCaseMatches[0][2]
         if (!area || !testCase) {
             throw new RuntimeException("Expecting file structure '/rootDir/areaDir/testCase.yml' " +
-                "but got '${testCaseFilePath.toString()}'.")
+                "but got '${testCaseFile}'.")
         }
         this.uniqueName = "${area}|${testCase}"
         this.testCaseRootDir = new File("${workspacesRootDir}/${area}/${testCase}")
         this.testCaseWorkspace = "${testCaseRootDir}/workspace"
-        this.testCaseConfig = new Yaml().load((testCaseFilePath as File).text)
+        this.testCaseConfig = new Yaml().load(testCaseFile.text)
     }
 
     void run() {
@@ -95,27 +95,26 @@ class TestRunnerThread extends Thread {
         currentProcess = null
 
         if (returnCode > 0) {
-            def message = "Test case: [${uniqueName}]; " +
-                "shell command '${command} exited with return code '${returnCode}"
-            throw new ReturnCodeNotZeroException(message)
+            throw new ReturnCodeNotZeroException("Test case: [${uniqueName}]; " +
+                "shell command '${command} exited with return code '${returnCode}")
         }
     }
 
     void printOutput() {
         println "\n[INFO] stdout output from test case ${uniqueName}:"
-        stdOut?.eachLine { line, i ->
+        stdOut.eachLine { line, i ->
             println "${i} [${uniqueName}] ${line}"
             lastPrintedStdOutLine = i
         }
 
         println "\n[INFO] stderr output from test case ${uniqueName}:"
-        stdErr?.eachLine { line, i ->
+        stdErr.eachLine { line, i ->
             println "${i} [${uniqueName}] ${line}"
         }
     }
 
     public void printRunningStdOut() {
-        stdOut?.eachLine { line, i ->
+        stdOut.eachLine { line, i ->
             if (i > lastPrintedStdOutLine) {
                 println "${i} [${uniqueName}] ${line}"
                 lastPrintedStdOutLine = i
