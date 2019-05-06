@@ -40,7 +40,7 @@ class TestRunnerThread extends Thread {
     void run() {
         println "[INFO] Test case '${uniqueName}' launched."
 
-        if (!testCaseRootDir.mkdirs()) {
+        if (testCaseRootDir.exists() || !testCaseRootDir.mkdirs()) {
             throw new RuntimeException("Creation of dir '${testCaseRootDir}' failed.")
         }
         executeShell("git clone -b ${testCase} ${testCaseConfig.referenceAppRepoUrl} " +
