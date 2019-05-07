@@ -100,7 +100,7 @@ void call(Map parameters = [:]) {
         //prepare Hub Detect execution using package manager
         switch (config.buildTool) {
             case 'golang':
-               dockerExecute(script: script, dockerImage: config.dockerImage, dockerWorkspace: config.dockerWorkspace, stashContent: config.stashContent) {
+                dockerExecute(script: script, dockerImage: config.dockerImage, dockerWorkspace: config.dockerWorkspace, stashContent: config.stashContent) {
                     sh 'curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh'
                     sh 'ln --symbolic $(pwd) $GOPATH/src/hub'
                     sh 'cd $GOPATH/src/hub && dep ensure'
