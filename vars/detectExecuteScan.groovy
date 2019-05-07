@@ -8,6 +8,7 @@ import static com.sap.piper.Prerequisites.checkScript
 
 @Field String STEP_NAME = getClass().getName()
 @Field Set GENERAL_CONFIG_KEYS = [
+    'detect',
     /**
      * Jenkins 'Secret text' credentials ID containing the API token used to authenticate with the Synopsis Detect (formerly BlackDuck) Server.
      * @parentConfigKey detect
@@ -23,7 +24,6 @@ import static com.sap.piper.Prerequisites.checkScript
      * @possibleValues `golang`, any other build tool
      */
     'buildTool',
-    'detect',
     /**
      * Name of the Synopsis Detect (formerly BlackDuck) project.
      * @parentConfigKey detect
