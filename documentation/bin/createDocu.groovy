@@ -501,7 +501,7 @@ for(step in stepDescriptors) {
         System.err << "[INFO] Step '${step.key}' has been rendered.\n"
     } catch(Exception e) {
         exceptionCaught = true
-        System.err << "${e.getClass().getName()} caught while rendering step '${step}': ${e.getMessage()}.\n"
+        System.err << "${e.getClass().getName()} caught while rendering step '${step}': ${e}.\n"
     }
 }
 
