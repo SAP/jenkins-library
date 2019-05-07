@@ -130,9 +130,9 @@ void call(Map parameters = [:]) {
         )]) {
             def authentication =  "--blackduck.api.token=${detectApiToken}"
             config.detect.scanProperties += [
-                "'--detect.project.name=${config.detect.projectName}'",
-                "'--detect.project.version.name=${config.detect.projectVersion}'",
-                "'--detect.code.location.name=${config.detect.projectName}/${config.detect.projectVersion}'",
+                "--detect.project.name='${config.detect.projectName}'",
+                "--detect.project.version.name='${config.detect.projectVersion}'",
+                "--detect.code.location.name='${config.detect.projectName}/${config.detect.projectVersion}'",
                 "--blackduck.url=${config.detect.serverUrl}",
             ]
 
