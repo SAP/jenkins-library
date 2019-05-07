@@ -4,6 +4,7 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.RuleChain
 import util.BasePiperTest
+import util.JenkinsCredentialsRule
 import util.JenkinsDockerExecuteRule
 import util.JenkinsReadYamlRule
 import util.JenkinsShellCallRule
@@ -32,23 +33,14 @@ class DetectExecuteScanTest extends BasePiperTest {
         .around(shellRule)
         .around(dockerRule)
         .around(stepRule)
+        .around(new JenkinsCredentialsRule(this)
+            .withCredentials('testCredentials', 'testToken')
+        )
 
     @Before
     void init() {
 
         detectProperties = ''
-        helper.registerAllowedMethod('string', [Map.class], { m -> return m })
-        helper.registerAllowedMethod('withCredentials', [List.class, Closure.class], { l, c ->
-            if (l[0].credentialsId == 'testCredentials') {
-                binding.setProperty(l[0].variable, 'testToken')
-            }
-            try {
-                c()
-            } finally {
-                binding.setProperty(l[0].variable, null)
-            }
-        })
-
         helper.registerAllowedMethod('synopsys_detect', [String.class], {s ->
             detectProperties = s
         })
@@ -57,7 +49,7 @@ class DetectExecuteScanTest extends BasePiperTest {
     @Test
     void testDetectDefault() {
         stepRule.step.detectExecuteScan([
-            userTokenCredentialsId: 'testCredentials',
+            apiTokenCredentialsId: 'testCredentials',
             projectName: 'testProject',
             serverUrl: 'https://test.blackducksoftware.com',
             juStabUtils: utils,
@@ -78,10 +70,39 @@ class DetectExecuteScanTest extends BasePiperTest {
     }
 
     @Test
+    void testDetectCustomPaths() {
+        stepRule.step.detectExecuteScan([
+            apiTokenCredentialsId: 'testCredentials',
+            projectName: 'testProject',
+            scanPaths: ['test1/', 'test2/'],
+            serverUrl: 'https://test.blackducksoftware.com',
+            juStabUtils: utils,
+            script: nullScript
+        ])
+
+        assertThat(detectProperties, containsString("--detect.blackduck.signature.scanner.paths=test1/,test2/"))
+    }
+
+    @Test
+    void testDetectSourceScanOnly() {
+        stepRule.step.detectExecuteScan([
+            apiTokenCredentialsId: 'testCredentials',
+            projectName: 'testProject',
+            scanners: ['source'],
+            serverUrl: 'https://test.blackducksoftware.com',
+            juStabUtils: utils,
+            script: nullScript
+        ])
+
+        assertThat(detectProperties, not(containsString("--detect.blackduck.signature.scanner.paths=.")))
+        assertThat(detectProperties, containsString("--detect.source.path=."))
+    }
+
+    @Test
     void testDetectGolang() {
         stepRule.step.detectExecuteScan([
             buildTool: 'golang',
-            userTokenCredentialsId: 'testCredentials',
+            apiTokenCredentialsId: 'testCredentials',
             projectName: 'testProject',
             serverUrl: 'https://test.blackducksoftware.com',
             juStabUtils: utils,
@@ -98,20 +119,25 @@ class DetectExecuteScanTest extends BasePiperTest {
     }
 
     @Test
-    void testOverwriteScanProperty() {
+    void testCustomScanProperties() {
         def detectProps = [
             '--blackduck.signature.scanner.memory=1024'
         ]
         stepRule.step.detectExecuteScan([
-            scanProperties: detectProps,
-            userTokenCredentialsId: 'testCredentials',
+            //scanProperties: detectProps,
+            scanProperties: ['--blackduck.signature.scanner.memory=1024', '--myNewOne'],
+            apiTokenCredentialsId: 'testCredentials',
             projectName: 'testProject',
             serverUrl: 'https://test.blackducksoftware.com',
             juStabUtils: utils,
             script: nullScript
         ])
 
+        assertThat(detectProperties, containsString("--detect.project.name='testProject'"))
+        assertThat(detectProperties, containsString("--detect.project.version.name='1'"))
         assertThat(detectProperties, containsString("--blackduck.signature.scanner.memory=1024"))
         assertThat(detectProperties, not(containsString("--blackduck.signature.scanner.memory=4096")))
+        assertThat(detectProperties, not(containsString("--detect.report.timeout=4800")))
+        assertThat(detectProperties, containsString("--myNewOne"))
     }
 }

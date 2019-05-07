@@ -18,5 +18,3 @@ detectExecuteScan script: this, scanProperties: ['--logging.level.com.synopsys.i
 ## ${docGenParameters}
 
 ## ${docGenConfiguration}
-
-

@@ -180,10 +180,15 @@ steps:
   detectExecuteScan:
     detect:
       projectVersion: '1'
+      scanners:
+        - signature
+      scanPaths:
+        - '.'
       scanProperties:
         - '--blackduck.signature.scanner.memory=4096'
         - '--blackduck.timeout=6000'
         - '--blackduck.trust.cert=true'
+        - '--detect.policy.check.fail.on.severities=BLOCKER,CRITICAL,MAJOR'
         - '--detect.report.timeout=4800'
         - '--logging.level.com.synopsys.integration=DEBUG'
     stashContent:
