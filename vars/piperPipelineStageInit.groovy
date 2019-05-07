@@ -55,6 +55,9 @@ void call(Map parameters = [:]) {
         piperInitRunStageConfiguration script: script, stageConfigResource: config.stageConfigResource
 
         if (env.BRANCH_NAME == config.productiveBranch) {
+            if (parameters.script.commonPipelineEnvironment.configuration.runStep?.postAction?.slackSendNotification)
+                slackSendNotification script: script, message: "STARTED: Job <${env.BUILD_URL}|${URLDecoder.decode(env.JOB_NAME, java.nio.charset.StandardCharsets.UTF_8.name())} ${env.BUILD_DISPLAY_NAME}>", color: 'WARNING'
+
             artifactSetVersion script: script
         }
 
