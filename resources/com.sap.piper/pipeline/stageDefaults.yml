@@ -18,3 +18,7 @@ stages:
   Compliance: {}
   Promote: {}
   Release: {}
+  postAction:
+    stepConditions:
+      slackSendNotification:
+        config: 'channel'
