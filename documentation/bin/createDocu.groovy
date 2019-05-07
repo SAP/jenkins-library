@@ -476,7 +476,7 @@ for (step in steps) {
         stepDescriptors."${step}" = handleStep(step, prepareDefaultValuesStep, gse, customDefaults)
     } catch(Exception e) {
         exceptionCaught = true
-        System.err << "${e.getClass().getName()} caught while handling step '${step}': ${e.getMessage()}.\n"
+        System.err << "${e.getClass().getName()} caught while handling step '${step}': ${e.getMessage()}.\n${e.getStackTrace()}\n"
     }
 }
 
