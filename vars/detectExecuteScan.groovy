@@ -46,6 +46,7 @@ import static com.sap.piper.Prerequisites.checkScript
     'scanProperties',
     /**
      * List of scanners to be used for Synopsis Detect (formerly BlackDuck) scan.
+     * @possibleValues `['signature']`
      * @parentConfigKey detect
      */
     'scanners',
