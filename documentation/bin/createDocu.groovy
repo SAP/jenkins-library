@@ -244,7 +244,7 @@ class Helper {
                     param = _parentObject*.trim().join('/').trim()
 
                     System.err << "[INFO] Handling parameter ${param}"
-                    if(step.parameters[param].docu || step.parameters[param].value)
+                    if(step.parameters[param]?.docu || step.parameters[param]?.value)
                         System.err << "[WARNING] There is already some documentation for parameter '${param}. Is this parameter documented twice?'\n"
 
                     step.parameters[param].docu = _docu*.trim().join(' ').trim()
