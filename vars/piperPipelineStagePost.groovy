@@ -41,9 +41,10 @@ void call(Map parameters = [:]) {
 
         influxWriteData script: script
 
-        if(env.BRANCH_NAME == parameters.script.commonPipelineEnvironment.getStepConfiguration('', '').productiveBranch){
-            if(parameters.script.commonPipelineEnvironment.configuration.runStep?.postAction?.slackSendNotification)
+        if(env.BRANCH_NAME == parameters.script.commonPipelineEnvironment.getStepConfiguration('', '').productiveBranch) {
+            if(parameters.script.commonPipelineEnvironment.configuration.runStep?.postAction?.slackSendNotification) {
                 slackSendNotification script: parameters.script
+            }
         }
         mailSendNotification script: script
     }
