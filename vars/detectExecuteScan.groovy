@@ -17,8 +17,8 @@ import static com.sap.piper.Prerequisites.checkScript
     /**
      * Defines the tool which is used for building the artifact.<br />
      * Currently, it is possible to select two behaviors of the step:
-     *
-     * 1. Golang-specific behavior (`buildTool: golang`). Assumption here is that project uses the dependency management tool _dep_
+     * <br />
+     * 1. Golang-specific behavior (`buildTool: golang`). Assumption here is that project uses the dependency management tool _dep_<br />
      * 2. Custom-specific behavior for all other values of `buildTool`
      *
      * @possibleValues `golang`, any other build tool
@@ -130,9 +130,9 @@ void call(Map parameters = [:]) {
         )]) {
             def authentication =  "--blackduck.api.token=${detectApiToken}"
             config.detect.scanProperties += [
-                "--detect.project.name='${config.detect.projectName}'",
-                "--detect.project.version.name='${config.detect.projectVersion}'",
-                "--detect.code.location.name='${config.detect.projectName}/${config.detect.projectVersion}'",
+                "'--detect.project.name=${config.detect.projectName}'",
+                "'--detect.project.version.name=${config.detect.projectVersion}'",
+                "'--detect.code.location.name=${config.detect.projectName}/${config.detect.projectVersion}'",
                 "--blackduck.url=${config.detect.serverUrl}",
             ]
 
