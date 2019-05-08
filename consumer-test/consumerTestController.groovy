@@ -26,11 +26,11 @@ def testCaseThreads
 def cli = new CliBuilder(
     usage: 'groovy consumerTestController.groovy [<options>]',
     header: 'Options:',
-    footer: 'If no options are set all tests are run centrally.')
+    footer: 'If no options are set, all tests are run centrally, i.e. on travisCI.')
 
 cli.with {
     h longOpt: 'help', 'Print this help text and exit.'
-    l longOpt: 'run-locally', 'Run consumer tests locally.'
+    l longOpt: 'run-locally', 'Run consumer tests locally in Docker, i.e. skip reporting of GitHub status.'
     s longOpt: 'single-test', args: 1, argName: 'filePath', 'Run single test.'
 }
 
@@ -69,13 +69,13 @@ if (!RUNNING_LOCALLY) {
 }
 
 if (!System.getenv('CX_INFRA_IT_CF_USERNAME') || !System.getenv('CX_INFRA_IT_CF_PASSWORD')) {
-    exitPrematurely(1, 'Environment variables CX_INFRA_IT_CF_USERNAME and CX_INFRA_IT_CF_PASSWORD need to be set.')
+    exitPrematurely('Environment variables CX_INFRA_IT_CF_USERNAME and CX_INFRA_IT_CF_PASSWORD need to be set.')
 }
 
 if (options.s) {
     def file = new File(options.s)
     if (!file.exists()) {
-        exitPrematurely(1, "Test case configuration file '${file}' does not exist. " +
+        exitPrematurely("Test case configuration file '${file}' does not exist. " +
             "Please provide path to a configuration file of structure '/rootDir/areaDir/testCase.yml'.")
     }
     testCaseThreads = [new TestRunnerThread(file)]
@@ -187,10 +187,10 @@ def notifyGithub(state, description) {
 
     int responseCode = con.getResponseCode()
     if (responseCode != HttpURLConnection.HTTP_CREATED) {
-        exitPrematurely(34, // Error code taken from curl: CURLE_HTTP_POST_ERROR
-            "[ERROR] Posting status to github failed. Expected response code " +
+        exitPrematurely("[ERROR] Posting status to github failed. Expected response code " +
             "'${HttpURLConnection.HTTP_CREATED}', but got '${responseCode}'. " +
-            "Response message: '${con.getResponseMessage()}'")
+            "Response message: '${con.getResponseMessage()}'",
+            34) // Error code taken from curl: CURLE_HTTP_POST_ERROR
     }
 }
 
@@ -214,15 +214,15 @@ static def newEmptyDir(String dirName) {
     def dir = new File(dirName)
     if (dir.exists()) {
         if (!dir.deleteDir()) {
-            exitPrematurely(1, "Deletion of dir '${dirName}' failed.")
+            exitPrematurely("Deletion of dir '${dirName}' failed.")
         }
     }
     if (!dir.mkdirs()) {
-        exitPrematurely(1, "Creation of dir '${dirName}' failed.")
+        exitPrematurely("Creation of dir '${dirName}' failed.")
     }
 }
 
-static def exitPrematurely(int returnCode, String message) {
+static def exitPrematurely(String message, int returnCode = 1) {
     println message
     System.exit(returnCode)
 }
