@@ -60,31 +60,32 @@ void call(Map parameters = [:]) {
         stage.getValue().stepConditions.each {step ->
             def stepActive = false
             step.getValue().each {condition ->
+                Map stepConfig = script.commonPipelineEnvironment.getStepConfiguration(step.getKey(), currentStage)
                 switch(condition.getKey()) {
                     case 'config':
                         if (condition.getValue() instanceof Map) {
                             condition.getValue().each {configCondition ->
-                                if (script.commonPipelineEnvironment.getStepConfiguration(step.getKey(), currentStage)?.get(configCondition.getKey()) in configCondition.getValue()) {
+                                if (getConfigValue(stepConfig, configCondition.getKey()) in configCondition.getValue()) {
                                     stepActive = true
                                 }
                             }
-                        } else if (script.commonPipelineEnvironment.getStepConfiguration(step.getKey(), currentStage)?.get(condition.getValue())) {
+                        } else if (getConfigValue(stepConfig, condition.getValue())) {
                             stepActive = true
                         }
                         break
                     case 'configKeys':
                         if (condition.getValue() instanceof List) {
                             condition.getValue().each {configKey ->
-                                if (script.commonPipelineEnvironment.getStepConfiguration(step.getKey(), currentStage)?.get(configKey)) {
+                                if (getConfigValue(stepConfig, configKey)) {
                                     stepActive = true
                                 }
                             }
-                        } else if (script.commonPipelineEnvironment.getStepConfiguration(step.getKey(), currentStage)?.get(condition.getValue())) {
+                        } else if (getConfigValue(stepConfig, condition.getValue())) {
                             stepActive = true
                         }
                         break
                     case 'filePatternFromConfig':
-                        def conditionValue=script.commonPipelineEnvironment.getStepConfiguration(step.getKey(), currentStage)?.get(condition.getValue())
+                        def conditionValue=getConfigValue(stepConfig, condition.getValue())
                         if (conditionValue && findFiles(glob: conditionValue)) {
                             stepActive = true
                         }
@@ -107,5 +108,24 @@ void call(Map parameters = [:]) {
     if (config.verbose) {
         echo "[${STEP_NAME}] Debug - Run Stage Configuration: ${script.commonPipelineEnvironment.configuration.runStage}"
         echo "[${STEP_NAME}] Debug - Run Step Configuration: ${script.commonPipelineEnvironment.configuration.runStep}"
+    }
+}
+
+private def getConfigValue(Map stepConfig, def configKey) {
+    if (stepConfig == null) return null
+
+    List configPath
+    if (configKey instanceof String) {
+        configPath = configKey.tokenize('/')
+    } else {
+        configPath = configKey
+    }
+
+    def configValue = stepConfig[configPath.head()]
+    if (configPath.size() == 1) return configValue
+    if (configValue in Map) {
+        return getConfigValue(configValue, configPath.tail())
+    } else {
+        return null
     }
 }
