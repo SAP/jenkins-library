@@ -451,4 +451,27 @@ steps: {}
         assertThat(nullScript.commonPipelineEnvironment.configuration.runStage.Acceptance, is(true))
 
     }
+
+    @Test
+    void testGetConfigValue() {
+
+        def config = [
+            invalidKey: 'invalidValue',
+            stringKey: 'stringValue',
+            listKey: [
+                'listValue1',
+                'listValue2'
+            ],
+            nested: [
+                key: 'nestedValue'
+            ]
+        ]
+
+        assertThat(jsr.step.piperInitRunStageConfiguration.getConfigValue(config, 'stringKey'), is('stringValue'))
+        assertThat(jsr.step.piperInitRunStageConfiguration.getConfigValue(config, 'listKey'), is(['listValue1','listValue2']))
+        assertThat(jsr.step.piperInitRunStageConfiguration.getConfigValue(config, 'nested/key'), is('nestedValue'))
+        assertThat(jsr.step.piperInitRunStageConfiguration.getConfigValue(config, 'invalidKey/key'), is(nullValue()))
+
+        //assertThat(jsr.step.piperInitRunStageConfiguration.getConfigValue(config, 'nested/key'), is('nestedValue'))
+    }
 }
