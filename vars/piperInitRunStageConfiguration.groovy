@@ -85,7 +85,7 @@ void call(Map parameters = [:]) {
                         }
                         break
                     case 'filePatternFromConfig':
-                        def conditionValue=getConfigValue(stepConfig, condition.getValue())
+                        def conditionValue = getConfigValue(stepConfig, condition.getValue())
                         if (conditionValue && findFiles(glob: conditionValue)) {
                             stepActive = true
                         }
@@ -114,18 +114,12 @@ void call(Map parameters = [:]) {
 private def getConfigValue(Map stepConfig, def configKey) {
     if (stepConfig == null) return null
 
-    List configPath
-    if (configKey instanceof String) {
-        configPath = configKey.tokenize('/')
-    } else {
-        configPath = configKey
-    }
+    List configPath = configKey instanceof String ? configKey.tokenize('/') : configKey
 
     def configValue = stepConfig[configPath.head()]
+
     if (configPath.size() == 1) return configValue
-    if (configValue in Map) {
-        return getConfigValue(configValue, configPath.tail())
-    } else {
-        return null
-    }
+    if (configValue in Map) return getConfigValue(configValue, configPath.tail())
+
+    return null
 }
