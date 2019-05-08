@@ -88,7 +88,7 @@ class Helper {
     static getConfigHelper(classLoader, roots, script) {
 
         def compilerConfig = new CompilerConfiguration()
-            compilerConfig.setClasspathList( roots )
+        compilerConfig.setClasspathList( roots )
 
         new GroovyClassLoader(classLoader, compilerConfig, true)
             .parseClass(new File(projectRoot, 'src/com/sap/piper/ConfigurationHelper.groovy'))
@@ -210,114 +210,114 @@ class Helper {
         f.eachLine  {
             line ->
 
-            if(line ==~ /.*dependingOn.*/) {
-                def dependentConfigKey = (line =~ /.*dependingOn\('(.*)'\).mixin\('(.*)'/)[0][1]
-                def configKey = (line =~ /.*dependingOn\('(.*)'\).mixin\('(.*)'/)[0][2]
-                if(! step.dependentConfig[configKey]) {
-                    step.dependentConfig[configKey] = []
+                if(line ==~ /.*dependingOn.*/) {
+                    def dependentConfigKey = (line =~ /.*dependingOn\('(.*)'\).mixin\('(.*)'/)[0][1]
+                    def configKey = (line =~ /.*dependingOn\('(.*)'\).mixin\('(.*)'/)[0][2]
+                    if(! step.dependentConfig[configKey]) {
+                        step.dependentConfig[configKey] = []
+                    }
+                    step.dependentConfig[configKey] << dependentConfigKey
                 }
-                step.dependentConfig[configKey] << dependentConfigKey
-            }
 
-            if(docuEnd) {
-                docuEnd = false
+                if(docuEnd) {
+                    docuEnd = false
 
-                if(isHeader(line)) {
-                    def _docu = []
-                    docuLines.each { _docu << it  }
-                    _docu = Helper.trim(_docu)
-                    step.description = _docu.join('\n')
-                } else {
+                    if(isHeader(line)) {
+                        def _docu = []
+                        docuLines.each { _docu << it  }
+                        _docu = Helper.trim(_docu)
+                        step.description = _docu.join('\n')
+                    } else {
 
-                    def param = retrieveParameterName(line)
+                        def param = retrieveParameterName(line)
 
-                    if(!param) {
-                        throw new RuntimeException('Cannot retrieve parameter for a comment')
+                        if(!param) {
+                            throw new RuntimeException('Cannot retrieve parameter for a comment')
+                        }
+
+                        def _docu = [], _value = [], _mandatory = [], _parentObject = []
+                        docuLines.each { _docu << it  }
+                        valueLines.each { _value << it }
+                        mandatoryLines.each { _mandatory << it }
+                        parentObjectLines.each { _parentObject << it }
+                        _parentObject << param
+                        param = _parentObject*.trim().join('/').trim()
+
+                        if(step.parameters[param].docu || step.parameters[param].value)
+                            System.err << "[WARNING] There is already some documentation for parameter '${param}. Is this parameter documented twice?'\n"
+
+                        step.parameters[param].docu = _docu*.trim().join(' ').trim()
+                        step.parameters[param].value = _value*.trim().join(' ').trim()
+                        step.parameters[param].mandatory = _mandatory*.trim().join(' ').trim()
+                    }
+                    docuLines.clear()
+                    valueLines.clear()
+                    mandatoryLines.clear()
+                    parentObjectLines.clear()
+                }
+
+                if( line.trim()  ==~ /^\/\*\*.*/ ) {
+                    docu = true
+                }
+
+                if(docu) {
+                    def _line = line
+                    _line = _line.replaceAll('^\\s*', '') // leading white spaces
+                    if(_line.startsWith('/**')) _line = _line.replaceAll('^\\/\\*\\*', '') // start comment
+                    if(_line.startsWith('*/') || _line.trim().endsWith('*/')) _line = _line.replaceAll('^\\*/', '').replaceAll('\\*/\\s*$', '') // end comment
+                    if(_line.startsWith('*')) _line = _line.replaceAll('^\\*', '') // continue comment
+                    if(_line.startsWith(' ')) _line = _line.replaceAll('^\\s', '')
+                    if(_line ==~ /.*@possibleValues.*/) {
+                        mandatory = false // should be something like reset attributes
+                        value = true
+                        parentObject = false
+                    }
+                    // some remark for mandatory e.g. some parameters are only mandatory under certain conditions
+                    if(_line ==~ /.*@mandatory.*/) {
+                        value = false // should be something like reset attributes ...
+                        mandatory = true
+                        parentObject = false
+                    }
+                    // grouping config properties within a parent object for easier readability
+                    if(_line ==~ /.*@parentConfigKey.*/) {
+                        value = false // should be something like reset attributes ...
+                        mandatory = false
+                        parentObject = true
                     }
 
-                    def _docu = [], _value = [], _mandatory = [], _parentObject = []
-                    docuLines.each { _docu << it  }
-                    valueLines.each { _value << it }
-                    mandatoryLines.each { _mandatory << it }
-                    parentObjectLines.each { _parentObject << it }
-                    _parentObject << param
-                    param = _parentObject*.trim().join('/').trim()
+                    if(value) {
+                        if(_line) {
+                            _line = (_line =~ /.*@possibleValues\s*?(.*)/)[0][1]
+                            valueLines << _line
+                        }
+                    }
 
-                    if(step.parameters[param].docu || step.parameters[param].value)
-                        System.err << "[WARNING] There is already some documentation for parameter '${param}. Is this parameter documented twice?'\n"
+                    if(mandatory) {
+                        if(_line) {
+                            _line = (_line =~ /.*@mandatory\s*?(.*)/)[0][1]
+                            mandatoryLines << _line
+                        }
+                    }
 
-                    step.parameters[param].docu = _docu*.trim().join(' ').trim()
-                    step.parameters[param].value = _value*.trim().join(' ').trim()
-                    step.parameters[param].mandatory = _mandatory*.trim().join(' ').trim()
+                    if(parentObject) {
+                        if(_line) {
+                            _line = (_line =~ /.*@parentConfigKey\s*?(.*)/)[0][1]
+                            parentObjectLines << _line
+                        }
+                    }
+
+                    if(!value && !mandatory && !parentObject) {
+                        docuLines << _line
+                    }
                 }
-                docuLines.clear()
-                valueLines.clear()
-                mandatoryLines.clear()
-                parentObjectLines.clear()
-            }
 
-            if( line.trim()  ==~ /^\/\*\*.*/ ) {
-                docu = true
-            }
-
-            if(docu) {
-                def _line = line
-                _line = _line.replaceAll('^\\s*', '') // leading white spaces
-                if(_line.startsWith('/**')) _line = _line.replaceAll('^\\/\\*\\*', '') // start comment
-                if(_line.startsWith('*/') || _line.trim().endsWith('*/')) _line = _line.replaceAll('^\\*/', '').replaceAll('\\*/\\s*$', '') // end comment
-                if(_line.startsWith('*')) _line = _line.replaceAll('^\\*', '') // continue comment
-                if(_line.startsWith(' ')) _line = _line.replaceAll('^\\s', '')
-                if(_line ==~ /.*@possibleValues.*/) {
-                    mandatory = false // should be something like reset attributes
-                    value = true
-                    parentObject = false
-                }
-                // some remark for mandatory e.g. some parameters are only mandatory under certain conditions
-                if(_line ==~ /.*@mandatory.*/) {
-                    value = false // should be something like reset attributes ...
-                    mandatory = true
-                    parentObject = false
-                }
-                // grouping config properties within a parent object for easier readability
-                if(_line ==~ /.*@parentConfigKey.*/) {
-                    value = false // should be something like reset attributes ...
+                if(docu && line.trim() ==~ /^.*\*\//) {
+                    docu = false
+                    value = false
                     mandatory = false
-                    parentObject = true
+                    parentObject = false
+                    docuEnd = true
                 }
-
-                if(value) {
-                    if(_line) {
-                        _line = (_line =~ /.*@possibleValues\s*?(.*)/)[0][1]
-                        valueLines << _line
-                    }
-                }
-
-                if(mandatory) {
-                    if(_line) {
-                        _line = (_line =~ /.*@mandatory\s*?(.*)/)[0][1]
-                        mandatoryLines << _line
-                    }
-                }
-
-                if(parentObject) {
-                    if(_line) {
-                        _line = (_line =~ /.*@parentConfigKey\s*?(.*)/)[0][1]
-                        parentObjectLines << _line
-                    }
-                }
-
-                if(!value && !mandatory && !parentObject) {
-                    docuLines << _line
-                }
-            }
-
-            if(docu && line.trim() ==~ /^.*\*\//) {
-                docu = false
-                value = false
-                mandatory = false
-                parentObject = false
-                docuEnd = true
-            }
         }
     }
 
@@ -405,7 +405,7 @@ class Helper {
 roots = [
     new File(Helper.projectRoot, "vars").getAbsolutePath(),
     new File(Helper.projectRoot, "src").getAbsolutePath()
-    ]
+]
 
 stepsDir = null
 stepsDocuDir = null
@@ -434,7 +434,7 @@ if(args.length >= 3 && args[2].contains('.yml')) {
 
 if(args.length >= 3)
     steps = (args as List).drop(argsDrop)  // the first two entries are stepsDir and docuDir
-                                    // the other parts are considered as step names
+// the other parts are considered as step names
 
 
 // assign parameters
@@ -558,7 +558,7 @@ def fetchMandatoryFrom(def step, def parameterName, def steps) {
 }
 
 def fetchPossibleValuesFrom(def step, def parameterName, def steps) {
-        return steps[step]?.parameters[parameterName]?.value ?: ''
+    return steps[step]?.parameters[parameterName]?.value ?: ''
 }
 
 def handleStep(stepName, prepareDefaultValuesStep, gse, customDefaults) {
@@ -578,8 +578,8 @@ def handleStep(stepName, prepareDefaultValuesStep, gse, customDefaults) {
         prepareDefaultValuesStepParams.customDefaults = customDefaults
 
     def defaultConfig = Helper.getConfigHelper(getClass().getClassLoader(),
-                                                roots,
-                                                Helper.getDummyScript(prepareDefaultValuesStep, stepName, prepareDefaultValuesStepParams)).use()
+        roots,
+        Helper.getDummyScript(prepareDefaultValuesStep, stepName, prepareDefaultValuesStepParams)).use()
 
     def params = [] as Set
 
@@ -605,10 +605,10 @@ def handleStep(stepName, prepareDefaultValuesStep, gse, customDefaults) {
     def compatibleParams = [] as Set
     if(parentObjectMappings) {
         params.each {
-                if (parentObjectMappings[it])
-                    compatibleParams.add(parentObjectMappings[it] + '/' + it)
-                else
-                    compatibleParams.add(it)
+            if (parentObjectMappings[it])
+                compatibleParams.add(parentObjectMappings[it] + '/' + it)
+            else
+                compatibleParams.add(it)
         }
         if (compatibleParams)
             params = compatibleParams
@@ -623,16 +623,16 @@ def handleStep(stepName, prepareDefaultValuesStep, gse, customDefaults) {
     // ... would be better if there is no special handling required ...
 
     step.parameters['script'] = [
-                                docu: 'The common script environment of the Jenkinsfile running. ' +
-                                        'Typically the reference to the script calling the pipeline ' +
-                                        'step is provided with the this parameter, as in `script: this`. ' +
-                                        'This allows the function to access the ' +
-                                        'commonPipelineEnvironment for retrieving, for example, configuration parameters.',
-                                required: true,
+        docu: 'The common script environment of the Jenkinsfile running. ' +
+            'Typically the reference to the script calling the pipeline ' +
+            'step is provided with the this parameter, as in `script: this`. ' +
+            'This allows the function to access the ' +
+            'commonPipelineEnvironment for retrieving, for example, configuration parameters.',
+        required: true,
 
-                                GENERAL_CONFIG: false,
-                                STEP_CONFIG: false
-                            ]
+        GENERAL_CONFIG: false,
+        STEP_CONFIG: false
+    ]
 
     // END special handling for 'script' parameter
 
@@ -643,9 +643,9 @@ def handleStep(stepName, prepareDefaultValuesStep, gse, customDefaults) {
             def defaultValue = Helper.getValue(defaultConfig, it.split('/'))
 
             def parameterProperties =   [
-                                            defaultValue: defaultValue,
-                                            required: requiredParameters.contains((it as String)) && defaultValue == null
-                                        ]
+                defaultValue: defaultValue,
+                required: requiredParameters.contains((it as String)) && defaultValue == null
+            ]
 
             step.parameters.put(it, parameterProperties)
 
