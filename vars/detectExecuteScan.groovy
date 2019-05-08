@@ -128,7 +128,7 @@ void call(Map parameters = [:]) {
             credentialsId: config.detect.apiTokenCredentialsId,
             variable: 'detectApiToken'
         )]) {
-            def authentication =  "--blackduck.api.token=${detectApiToken}"
+            def authentication = "--blackduck.api.token=${detectApiToken}"
             config.detect.scanProperties += [
                 "--detect.project.name='${config.detect.projectName}'",
                 "--detect.project.version.name='${config.detect.projectVersion}'",
@@ -146,7 +146,7 @@ void call(Map parameters = [:]) {
 
             def detectProperties = config.detect.scanProperties.join(' ') + " ${authentication}"
 
-                echo "[${STEP_NAME}] Running with following Detect configuration: ${detectProperties}"
+            echo "[${STEP_NAME}] Running with following Detect configuration: ${detectProperties}"
             synopsys_detect detectProperties
             script.commonPipelineEnvironment.setInfluxStepData('detect', true)
         }
