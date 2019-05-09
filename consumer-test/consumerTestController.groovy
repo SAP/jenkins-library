@@ -195,6 +195,10 @@ def notifyGithub(state, description) {
 }
 
 def changeDoesNotNeedConsumerTesting() {
+    if (System.getenv('TRAVIS_BRANCH') == 'master') {
+        return false
+    }
+
     def excludesRegex = '(' + EXCLUDED_FROM_CONSUMER_TESTING_REGEXES.join('|') + ')'
 
     "git remote add sap https://github.com/SAP/jenkins-library.git".execute().waitFor()
