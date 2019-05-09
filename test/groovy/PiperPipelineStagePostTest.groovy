@@ -60,7 +60,7 @@ class PiperPipelineStagePostTest extends BasePiperTest {
 
     @Test
     void testPostWithSlackNotification() {
-        nullScript.commonPipelineEnvironment.configuration = [runStep: [Init: [slackSendNotification: true]]]
+        nullScript.commonPipelineEnvironment.configuration = [runStep: ['Post Actions': [slackSendNotification: true]]]
 
         jsr.step.piperPipelineStagePost(script: nullScript, juStabUtils: utils)
 
