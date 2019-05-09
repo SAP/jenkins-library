@@ -1,8 +1,6 @@
-# checksPublishResults
+# ${docGenStepName}
 
-## Description
-
-This step can publish static check results from various sources.
+## ${docGenDescription}
 
 ## Prerequisites
 
@@ -15,31 +13,7 @@ This step can publish static check results from various sources.
   * [warnings](https://plugins.jenkins.io/warnings)
   * [core](https://plugins.jenkins.io/core)
 
-## Parameters
-
-| parameter      | mandatory | default                           | possible values    |
-| ---------------|-----------|-----------------------------------|--------------------|
-| script | yes | | |
-| aggregation | no | `true` | see below |
-| tasks | no | `false` | see below |
-| pmd | no | `false` | see below |
-| cpd | no | `false` | see below |
-| findbugs | no | `false` | see below |
-| checkstyle | no | `false` | see below |
-| eslint | no | `false` | see below |
-| pylint | no | `false` | see below |
-| archive | no | `false` | `true`, `false` |
-
-* `aggregation` - Publishes .
-* `tasks` - Searches and publishes TODOs in files with the [Task Scanner Plugin](https://wiki.jenkins-ci.org/display/JENKINS/Task+Scanner+Plugin).
-* `pmd` - Publishes PMD findings with the [PMD plugin](https://plugins.jenkins.io/pmd) .
-* `cpd` - Publishes CPD findings with the [DRY plugin](https://plugins.jenkins.io/dry).
-* `findbugs` - Publishes Findbugs findings with the [Findbugs plugin](https://plugins.jenkins.io/findbugs).
-* `checkstyle` - Publishes Checkstyle findings with the [Checkstyle plugin](https://plugins.jenkins.io/checkstyle).
-* `eslint` - Publishes ESLint findings (in [JSLint format](https://eslint.org/docs/user-guide/formatters/)) with the [Warnings plugin](https://plugins.jenkins.io/warnings).
-* `pylint` - Publishes PyLint findings with the [Warnings plugin](https://plugins.jenkins.io/warnings), pylint needs to run with `--output-format=parseable` option.
-
-Each of the parameters `aggregation`, `tasks`, `pmd`, `cpd`, `findbugs`, `checkstyle`, `eslint` and `pylint` can be set to `true` or `false` but also to a map of parameters to hand in different settings for the tools.
+## ${docGenParameters}
 
 ### aggregation
 
@@ -106,19 +80,7 @@ Each of the parameters `aggregation`, `tasks`, `pmd`, `cpd`, `findbugs`, `checks
 | archive | no | `true` | `true`, `false` |
 | thresholds | no | none | see [thresholds](#thresholds) |
 
-## Step configuration
-
-Following parameters can also be specified as step parameters using the global configuration file:
-
-* `aggregation`
-* `tasks`
-* `pmd`
-* `cpd`
-* `findbugs`
-* `checkstyle`
-* `eslint`
-* `pylint`
-* `archive`
+## ${docGenConfiguration}
 
 ### Thresholds
 

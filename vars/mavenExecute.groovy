@@ -1,28 +1,48 @@
 import static com.sap.piper.Prerequisites.checkScript
 
+import com.sap.piper.GenerateDocumentation
 import com.sap.piper.ConfigurationHelper
 import com.sap.piper.Utils
 
 import groovy.transform.Field
 
+import static com.sap.piper.Utils.downloadSettingsFromUrl
+
 @Field def STEP_NAME = getClass().getName()
 
 @Field Set GENERAL_CONFIG_KEYS = []
 @Field Set STEP_CONFIG_KEYS = [
+    /** @see dockerExecute */
     'dockerImage',
+    /** Path or url to the mvn settings file that should be used as global settings file.*/
     'globalSettingsFile',
+    /** Path or url to the mvn settings file that should be used as project settings file.*/
     'projectSettingsFile',
+    /** Path to the pom file that should be used.*/
     'pomPath',
+    /** Path to the location of the local repository that should be used.*/
     'm2Path'
 ]
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS.plus([
+    /** @see dockerExecute */
     'dockerOptions',
+    /** Flags to provide when running mvn.*/
     'flags',
+    /** Maven goals that should be executed.*/
     'goals',
+    /** Additional properties.*/
     'defines',
+    /**
+     * Configures maven to log successful downloads. This is set to `false` by default to reduce the noise in build logs.
+     * @possibleValues `true`, `false`
+     */
     'logSuccessfulMavenTransfers'
 ])
 
+/**
+ * Executes a maven command inside a Docker container.
+ */
+@GenerateDocumentation
 void call(Map parameters = [:]) {
     handlePipelineStepErrors(stepName: STEP_NAME, stepParameters: parameters) {
 
@@ -45,35 +65,33 @@ void call(Map parameters = [:]) {
 
         String command = "mvn"
 
-        def globalSettingsFile = configuration.globalSettingsFile
-        if (globalSettingsFile?.trim()) {
-            if(globalSettingsFile.trim().startsWith("http")){
-                downloadSettingsFromUrl(globalSettingsFile)
-                globalSettingsFile = "settings.xml"
+        String globalSettingsFile = configuration.globalSettingsFile?.trim()
+        if (globalSettingsFile) {
+            if (globalSettingsFile.startsWith("http")) {
+                globalSettingsFile = downloadSettingsFromUrl(this, globalSettingsFile, 'global-settings.xml')
             }
             command += " --global-settings '${globalSettingsFile}'"
         }
 
-        def m2Path = configuration.m2Path
+        String m2Path = configuration.m2Path
         if(m2Path?.trim()) {
             command += " -Dmaven.repo.local='${m2Path}'"
         }
 
-        def projectSettingsFile = configuration.projectSettingsFile
-        if (projectSettingsFile?.trim()) {
-            if(projectSettingsFile.trim().startsWith("http")){
-                downloadSettingsFromUrl(projectSettingsFile)
-                projectSettingsFile = "settings.xml"
+        String projectSettingsFile = configuration.projectSettingsFile?.trim()
+        if (projectSettingsFile) {
+            if (projectSettingsFile.startsWith("http")) {
+                projectSettingsFile = downloadSettingsFromUrl(this, projectSettingsFile, 'project-settings.xml')
             }
             command += " --settings '${projectSettingsFile}'"
         }
 
-        def pomPath = configuration.pomPath
+        String pomPath = configuration.pomPath
         if(pomPath?.trim()){
             command += " --file '${pomPath}'"
         }
 
-        def mavenFlags = configuration.flags
+        String mavenFlags = configuration.flags
         if (mavenFlags?.trim()) {
             command += " ${mavenFlags}"
         }
@@ -104,9 +122,3 @@ void call(Map parameters = [:]) {
         }
     }
 }
-
-private downloadSettingsFromUrl(String url){
-    def settings = httpRequest url
-    writeFile file: 'settings.xml', text: settings.getContent()
-}
-

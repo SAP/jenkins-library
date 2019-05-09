@@ -46,7 +46,7 @@ Code shall contain comments to explain the intention of the code when it is uncl
 
 #### EditorConfig
 
-To ensure a common file format, there is a `.editorConfig` file [in place](.editorconfig). To respect this file, [check](http://editorconfig.org/#download) if your editor does support it natively or you need to download a plugin.
+To ensure a common file format, there is a `.editorConfig` file [in place](../.editorconfig). To respect this file, [check](http://editorconfig.org/#download) if your editor does support it natively or you need to download a plugin.
 
 ### Commit Message Style
 
