@@ -46,12 +46,6 @@ if (options.l) {
 }
 
 if (!RUNNING_LOCALLY) {
-    if (changeDoesNotNeedConsumerTesting()) {
-        notifyGithub("success", "No consumer tests necessary.")
-        println 'No consumer tests necessary.'
-        return
-    }
-
     /*
     In case the build is performed for a pull request TRAVIS_COMMIT is a merge
     commit between the base branch and the PR branch HEAD. That commit is actually built.
@@ -65,7 +59,13 @@ if (!RUNNING_LOCALLY) {
     */
     COMMIT_HASH = System.getenv('TRAVIS_PULL_REQUEST_SHA') ?: System.getenv('TRAVIS_COMMIT')
 
-    notifyGithub("pending", "Consumer tests are in progress.")
+    if (changeDoesNotNeedConsumerTesting()) {
+        println 'No consumer tests necessary.'
+        notifyGithub("success", "No consumer tests necessary.")
+        return
+    } else {
+        notifyGithub("pending", "Consumer tests are in progress.")
+    }
 }
 
 if (!System.getenv('CX_INFRA_IT_CF_USERNAME') || !System.getenv('CX_INFRA_IT_CF_PASSWORD')) {
