@@ -35,7 +35,9 @@ import static com.sap.piper.Utils.downloadSettingsFromUrl
 ]
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS.plus([
     /** @see dockerExecute */
-    'dockerOptions'
+    'dockerOptions',
+    /** Url to the npm registry that should be used for installing npm dependencies.*/
+    'defaultNpmRegistry'
 ])
 
 /**
@@ -79,6 +81,11 @@ void call(Map parameters = [:]) {
                     globalSettingsFile = downloadSettingsFromUrl(this, globalSettingsFile, 'global-settings.xml')
                 }
                 sh "cp ${globalSettingsFile} \$M2_HOME/conf/settings.xml"
+            }
+
+            String defaultNpmRegistry = configuration.defaultNpmRegistry?.trim()
+            if (defaultNpmRegistry) {
+                sh "npm config set registry $defaultNpmRegistry"
             }
 
             def mtaYamlName = "mta.yaml"
