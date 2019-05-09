@@ -106,13 +106,7 @@ class PiperPipelineStageInitTest extends BasePiperTest {
 
     @Test
     void testInitWithSlackNotification() {
-        nullScript.commonPipelineEnvironment.configuration = [
-            runStep: [
-                Init: [
-                    slackSendNotification: true
-                ]
-            ]
-        ]
+        nullScript.commonPipelineEnvironment.configuration = [runStep: [Init: [slackSendNotification: true]]]
 
         jsr.step.piperPipelineStageInit(script: nullScript, juStabUtils: utils, buildTool: 'maven')
 

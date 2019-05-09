@@ -60,9 +60,7 @@ void call(Map parameters = [:]) {
             }
             artifactSetVersion script: script
         }
-
         pipelineStashFilesBeforeBuild script: script
-
     }
 }
 
