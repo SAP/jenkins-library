@@ -184,7 +184,7 @@ class ConfigurationHelper implements Serializable {
 
     ConfigurationHelper withPropertyInValues(String key, Set values){
         withMandatoryProperty(key)
-        def value = config[key]
+        def value = config[key] instanceof GString ? config[key].toString() : config[key]
         if(! (value in values) ) {
             throw new IllegalArgumentException("Invalid ${key} = '${value}'. Valid '${key}' values are: ${values}.")
         }

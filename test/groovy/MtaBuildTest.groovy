@@ -211,6 +211,14 @@ public class MtaBuildTest extends BasePiperTest {
     }
 
     @Test
+    void canConfigureNpmRegistry() {
+
+        stepRule.step.mtaBuild(script: nullScript, defaultNpmRegistry: 'myNpmRegistry.com')
+
+        assert shellRule.shell.find(){ c -> c.contains('npm config set registry myNpmRegistry.com')}
+    }
+
+    @Test
     void canConfigureMavenGlobalSettingsFromRemoteSource() {
 
         stepRule.step.mtaBuild(script: nullScript, globalSettingsFile: 'https://some.host/my-settings.xml')
