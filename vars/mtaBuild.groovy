@@ -1,25 +1,49 @@
 import static com.sap.piper.Prerequisites.checkScript
 
+import com.sap.piper.GenerateDocumentation
 import com.sap.piper.ConfigurationHelper
 import com.sap.piper.MtaUtils
 import com.sap.piper.Utils
-
 import groovy.transform.Field
+
+import static com.sap.piper.Utils.downloadSettingsFromUrl
 
 @Field def STEP_NAME = getClass().getName()
 
 @Field Set GENERAL_CONFIG_KEYS = []
 @Field Set STEP_CONFIG_KEYS = [
+    /** The name of the application which is being built. If the parameter has been provided and no `mta.yaml` exists, the `mta.yaml` will be automatically generated using this parameter and the information (`name` and `version`) from `package.json` before the actual build starts.*/
     'applicationName',
+    /**
+     * The target platform to which the mtar can be deployed.
+     * @possibleValues 'CF', 'NEO', 'XSA'
+     */
     'buildTarget',
+    /** @see dockerExecute */
     'dockerImage',
+    /** The path to the extension descriptor file.*/
     'extension',
-    'mtaJarLocation'
+    /**
+     * The location of the SAP Multitarget Application Archive Builder jar file, including file name and extension.
+     * If it is not provided, the SAP Multitarget Application Archive Builder is expected on PATH.
+     */
+    'mtaJarLocation',
+    /** Path or url to the mvn settings file that should be used as global settings file.*/
+    'globalSettingsFile',
+    /** Path or url to the mvn settings file that should be used as project settings file.*/
+    'projectSettingsFile'
 ]
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS.plus([
-    'dockerOptions'
+    /** @see dockerExecute */
+    'dockerOptions',
+    /** Url to the npm registry that should be used for installing npm dependencies.*/
+    'defaultNpmRegistry'
 ])
 
+/**
+ * Executes the SAP Multitarget Application Archive Builder to create an mtar archive of the application.
+ */
+@GenerateDocumentation
 void call(Map parameters = [:]) {
     handlePipelineStepErrors(stepName: STEP_NAME, stepParameters: parameters) {
 
@@ -41,6 +65,28 @@ void call(Map parameters = [:]) {
         ], configuration)
 
         dockerExecute(script: script, dockerImage: configuration.dockerImage, dockerOptions: configuration.dockerOptions) {
+
+            String projectSettingsFile = configuration.projectSettingsFile?.trim()
+            if (projectSettingsFile) {
+                if (projectSettingsFile.startsWith("http")) {
+                    projectSettingsFile = downloadSettingsFromUrl(this, projectSettingsFile, 'project-settings.xml')
+                }
+                sh 'mkdir -p $HOME/.m2'
+                sh "cp ${projectSettingsFile} \$HOME/.m2/settings.xml"
+            }
+
+            String globalSettingsFile = configuration.globalSettingsFile?.trim()
+            if (globalSettingsFile) {
+                if (globalSettingsFile.startsWith("http")) {
+                    globalSettingsFile = downloadSettingsFromUrl(this, globalSettingsFile, 'global-settings.xml')
+                }
+                sh "cp ${globalSettingsFile} \$M2_HOME/conf/settings.xml"
+            }
+
+            String defaultNpmRegistry = configuration.defaultNpmRegistry?.trim()
+            if (defaultNpmRegistry) {
+                sh "npm config set registry $defaultNpmRegistry"
+            }
 
             def mtaYamlName = "mta.yaml"
             def applicationName = configuration.applicationName

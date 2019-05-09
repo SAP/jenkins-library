@@ -2,6 +2,7 @@ import static com.sap.piper.Prerequisites.checkScript
 
 import com.cloudbees.groovy.cps.NonCPS
 
+import com.sap.piper.GenerateDocumentation
 import com.sap.piper.ConfigurationHelper
 import com.sap.piper.JenkinsUtils
 import com.sap.piper.MapUtils
@@ -9,22 +10,46 @@ import com.sap.piper.Utils
 import groovy.transform.Field
 
 @Field List TOOLS = [
-    'junit','jacoco','cobertura','jmeter'
+    /**
+     * Publishes test results files in JUnit format with the [JUnit Plugin](https://plugins.jenkins.io/junit).
+     * @possibleValues `true`, `false`, `Map`
+     */
+    'junit',
+    /**
+     * Publishes code coverage with the [JaCoCo plugin](https://plugins.jenkins.io/jacoco).
+     * @possibleValues `true`, `false`, `Map`
+     */
+    'jacoco',
+    /**
+     * Publishes code coverage with the [Cobertura plugin](https://plugins.jenkins.io/cobertura).
+     * @possibleValues `true`, `false`, `Map`
+     */
+    'cobertura',
+    /**
+     * Publishes performance test results with the [Performance plugin](https://plugins.jenkins.io/performance).
+     * @possibleValues `true`, `false`, `Map`
+     */
+    'jmeter'
 ]
 
 @Field def STEP_NAME = getClass().getName()
+
 @Field Set GENERAL_CONFIG_KEYS = TOOLS
+
 @Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS.plus([
+    /**
+     * If it is set to `true` the step will fail the build if JUnit detected any failing tests.
+     * @possibleValues `true`, `false`
+     */
     'failOnError'
 ])
+
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
 
 /**
- * testResultsPublish
- *
- * @param script global script environment of the Jenkinsfile run
- * @param others document all parameters
+ * This step can publish test results from various sources.
  */
+@GenerateDocumentation
 void call(Map parameters = [:]) {
     handlePipelineStepErrors (stepName: STEP_NAME, stepParameters: parameters) {
         def script = checkScript(this, parameters) ?: this

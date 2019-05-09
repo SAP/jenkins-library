@@ -210,6 +210,66 @@ steps: {}
     }
 
     @Test
+    void testConditionConfigKeys() {
+        helper.registerAllowedMethod('libraryResource', [String.class], {s ->
+            if(s == 'testDefault.yml') {
+                return '''
+stages:
+  testStage1:
+    stepConditions:
+      firstStep:
+        configKeys: 
+          - myKey1_1
+          - myKey1_2 
+  testStage2: 
+    stepConditions:
+      secondStep:
+        configKeys: 
+          - myKey2_1
+  testStage3:
+    stepConditions:
+      thirdStep:
+        configKeys: 
+          - myKey3_1
+'''
+            } else {
+                return '''
+general: {}
+steps: {}
+'''
+            }
+        })
+
+        nullScript.commonPipelineEnvironment.configuration = [
+            general: [myKey1_1: 'myVal1_1'],
+            stages: [:],
+            steps: [thirdStep: [myKey3_1: 'myVal3_1']]
+        ]
+
+        jsr.step.piperInitRunStageConfiguration(
+            script: nullScript,
+            juStabUtils: utils,
+            stageConfigResource: 'testDefault.yml'
+        )
+
+        assertThat(nullScript.commonPipelineEnvironment.configuration.runStage.keySet(),
+            allOf(
+                containsInAnyOrder(
+                    'testStage1',
+                    'testStage3'
+                ),
+                hasSize(2)
+            )
+        )
+
+        assertThat(nullScript.commonPipelineEnvironment.configuration.runStep.testStage1.firstStep, is(true))
+        assertThat(nullScript.commonPipelineEnvironment.configuration.runStep.testStage2?.secondStep, is(false))
+        assertThat(nullScript.commonPipelineEnvironment.configuration.runStep.testStage3.thirdStep, is(true))
+
+    }
+
+
+    @Test
     void testConditionFilePattern() {
         helper.registerAllowedMethod('libraryResource', [String.class], {s ->
             if(s == 'testDefault.yml') {
@@ -390,5 +450,28 @@ steps: {}
         assertThat(nullScript.commonPipelineEnvironment.configuration.runStep.Acceptance.cloudFoundryDeploy, is(true))
         assertThat(nullScript.commonPipelineEnvironment.configuration.runStage.Acceptance, is(true))
 
+    }
+
+    @Test
+    void testGetConfigValue() {
+
+        def config = [
+            invalidKey: 'invalidValue',
+            stringKey: 'stringValue',
+            listKey: [
+                'listValue1',
+                'listValue2'
+            ],
+            nested: [
+                key: 'nestedValue'
+            ]
+        ]
+
+        assertThat(jsr.step.piperInitRunStageConfiguration.getConfigValue(config, 'stringKey'), is('stringValue'))
+        assertThat(jsr.step.piperInitRunStageConfiguration.getConfigValue(config, 'listKey'), is(['listValue1','listValue2']))
+        assertThat(jsr.step.piperInitRunStageConfiguration.getConfigValue(config, 'nested/key'), is('nestedValue'))
+        assertThat(jsr.step.piperInitRunStageConfiguration.getConfigValue(config, 'invalidKey/key'), is(nullValue()))
+
+        //assertThat(jsr.step.piperInitRunStageConfiguration.getConfigValue(config, 'nested/key'), is('nestedValue'))
     }
 }
