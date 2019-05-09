@@ -507,4 +507,17 @@ class NeoDeployTest extends BasePiperTest {
             utils: utils,
         )
     }
+
+    @Test
+    void deployModeAsGStringTest() {
+
+        Map deployProps = [deployMode: 'warPropertiesFile']
+
+        stepRule.step.neoDeploy(script: nullScript,
+                  utils: utils,
+                  neo: [credentialsId: 'myCredentialsId',
+                        propertiesFile: warPropertiesFileName],
+                  deployMode: "$deployProps.deployMode",
+                  source: archiveName)
+    }
 }
