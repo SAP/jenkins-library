@@ -1,14 +1,19 @@
+import com.sap.piper.StepAssertions
 import com.sap.piper.Utils
+
+import groovy.lang.Script
 import hudson.AbortException
 
 import static org.hamcrest.Matchers.allOf
 import static org.hamcrest.Matchers.containsString
 import static org.hamcrest.Matchers.not
+import static org.junit.Assert.assertThat
 
 import org.hamcrest.Matchers
 import org.hamcrest.BaseMatcher
 import org.hamcrest.Description
 import org.jenkinsci.plugins.credentialsbinding.impl.CredentialNotFoundException
+import org.junit.After
 import org.junit.Assert
 import org.junit.Before
 import org.junit.Rule
@@ -76,6 +81,11 @@ class NeoDeployTest extends BasePiperTest {
         nullScript.commonPipelineEnvironment.configuration = [steps: [neoDeploy: [neo: [host: 'test.deploy.host.com', account: 'trialuser123']]]]
     }
 
+    @After
+    void tearDown() {
+        GroovySystem.metaClassRegistry.removeMetaClass(StepAssertions)
+    }
+
     @Test
     void straightForwardTestConfigViaParameters() {
 
@@ -120,6 +130,107 @@ class NeoDeployTest extends BasePiperTest {
                 .hasSingleQuotedOption('user', 'anonymous')
                 .hasSingleQuotedOption('password', '\\*\\*\\*\\*\\*\\*\\*\\*')
                 .hasSingleQuotedOption('source', archiveName))
+    }
+
+    @Test
+    void extensionsAsStringTest() {
+
+        def checkedExtensionFiles = []
+
+        StepAssertions.metaClass.static.assertFileExists =
+            { Script step, String filePath ->
+                checkedExtensionFiles << filePath
+                if( ! [archiveName, 'myExtension.yml'].contains(filePath) )
+                    step.error("File ${filePath} cannot be found.")
+            }
+
+        stepRule.step.neoDeploy(
+                script: nullScript,
+                source: archiveName,
+                mtaExtensionDescriptors: 'myExtension.yml'
+        )
+
+        assert checkedExtensionFiles.contains('myExtension.yml')
+
+        assertThat(shellRule.shell,
+            new CommandLineMatcher()
+                .hasProlog('neo.sh deploy-mta')
+                .hasSingleQuotedOption('extensions', 'myExtension.yml'))
+    }
+
+    @Test
+    void extensionsAsSetTest() {
+        Set extensions= ['myExtension1.yml' ,'myExtension2.yml']
+        extensionsAsCollectionTest(extensions)
+    }
+
+    @Test
+    void extensionsAsListTest() {
+        List extensions= ['myExtension1.yml' ,'myExtension2.yml']
+        extensionsAsCollectionTest(extensions)
+    }
+    @Test
+    void sameExtensionProvidedTwiceTest() {
+        List extensions= ['myExtension1.yml' ,'myExtension2.yml', 'myExtension1.yml']
+        extensionsAsCollectionTest(extensions)
+    }
+
+    void extensionsAsCollectionTest(def extensions) {
+
+        def checkedExtensionFiles = []
+
+        StepAssertions.metaClass.static.assertFileExists =
+            { Script step, String filePath ->
+                checkedExtensionFiles << filePath
+                if( ! [
+                    archiveName,
+                    'myExtension1.yml',
+                    'myExtension2.yml',
+                    ].contains(filePath) )
+                    step.error("File ${filePath} cannot be found.")
+            }
+
+        stepRule.step.neoDeploy(
+                script: nullScript,
+                source: archiveName,
+                mtaExtensionDescriptors: extensions
+        )
+
+        assert checkedExtensionFiles.contains('myExtension1.yml')
+        assert checkedExtensionFiles.contains('myExtension2.yml')
+
+        assertThat(shellRule.shell,
+            new CommandLineMatcher()
+                .hasProlog('neo.sh deploy-mta')
+                // some kind of creative usage for the single quotation check (... single quotes inside)
+                .hasSingleQuotedOption('extensions', 'myExtension1.yml\',\'myExtension2.yml'))
+
+    }
+
+    @Test
+    void extensionsForWrongDeployModeTest() {
+
+        thrown.expect(AbortException)
+        thrown.expectMessage('Extensions are only supported for deploy mode \'MTA\'')
+
+        StepAssertions.metaClass.static.assertFileExists =
+            { Script step, String filePath ->
+              if( ! [archiveName, 'myExtension.yml'].contains(filePath) )
+                  step.error("File ${filePath} cannot be found.")
+            }
+
+        stepRule.step.neoDeploy(
+            script: nullScript,
+            source: archiveName,
+            deployMode: 'warParams',
+            mtaExtensionDescriptors: 'myExtension.yml',
+            neo:
+                [
+                    application: 'does',
+                    runtime: 'not',
+                    runtimeVersion: 'matter'
+                ],
+        )
     }
 
     @Test
