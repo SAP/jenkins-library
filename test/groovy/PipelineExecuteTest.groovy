@@ -11,6 +11,7 @@ import util.JenkinsReadYamlRule
 import util.JenkinsStepRule
 
 class PipelineExecuteTest extends BasePiperTest {
+
     private ExpectedException thrown = new ExpectedException().none()
     private JenkinsStepRule stepRule = new JenkinsStepRule(this)
 
@@ -27,9 +28,6 @@ class PipelineExecuteTest extends BasePiperTest {
 
     @Before
     void init() {
-        pipelinePath = null
-        checkoutParameters.clear()
-        load = null
 
         helper.registerAllowedMethod('deleteDir', [], null)
         helper.registerAllowedMethod('checkout', [Map], { m ->
@@ -44,17 +42,19 @@ class PipelineExecuteTest extends BasePiperTest {
 
     @Test
     void straightForwardTest() {
+
         stepRule.step.pipelineExecute(repoUrl: "https://test.com/myRepo.git")
+
         assert load == "Jenkinsfile"
         assert checkoutParameters.branch == 'master'
         assert checkoutParameters.repoUrl == "https://test.com/myRepo.git"
         assert checkoutParameters.credentialsId == ''
         assert checkoutParameters.path == 'Jenkinsfile'
-
     }
 
     @Test
     void parameterizeTest() {
+
         stepRule.step.pipelineExecute(repoUrl: "https://test.com/anotherRepo.git",
                              branch: 'feature',
                              path: 'path/to/Jenkinsfile',
@@ -65,11 +65,11 @@ class PipelineExecuteTest extends BasePiperTest {
         assert checkoutParameters.repoUrl == "https://test.com/anotherRepo.git"
         assert checkoutParameters.credentialsId == 'abcd1234'
         assert checkoutParameters.path == 'path/to/Jenkinsfile'
-
     }
 
     @Test
     void noRepoUrlTest() {
+
         thrown.expect(Exception)
         thrown.expectMessage("ERROR - NO VALUE AVAILABLE FOR repoUrl")
 

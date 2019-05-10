@@ -25,13 +25,13 @@ handlePipelineStepErrors (stepName: 'executeHealthCheck', stepParameters: parame
 
 If `echoDetails` is set to true the following information will be output to the console:
 
-1. Step beginning: `--- Begin library step: ${stepName}.groovy ---`
-1. Step end: `--- End library step: ${stepName}.groovy ---`
+1. Step beginning: `--- Begin library step: \${stepName}.groovy ---`
+1. Step end: `--- End library step: \${stepName}.groovy ---`
 1. Step errors:
 
 ```log
 ----------------------------------------------------------
---- An error occurred in the library step: ${stepName}
+--- An error occurred in the library step: \${stepName}
 ----------------------------------------------------------
 The following parameters were available to the step:
 ***

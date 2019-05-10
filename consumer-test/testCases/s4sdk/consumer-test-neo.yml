@@ -1,2 +1,2 @@
-# Empty for the moment.
-# Might contain test configuration in the future.
+# Test case configuration
+referenceAppRepoUrl: "https://github.com/sap/cloud-s4-sdk-book"

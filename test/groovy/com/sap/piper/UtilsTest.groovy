@@ -42,29 +42,6 @@ class UtilsTest extends BasePiperTest {
     }
 
     @Test
-    void noValueGetMandatoryParameterTest() {
-
-        thrown.expect(Exception)
-        thrown.expectMessage("ERROR - NO VALUE AVAILABLE FOR test")
-
-        utils.getMandatoryParameter(parameters, 'test', null)
-    }
-
-    @Test
-    void defaultValueGetMandatoryParameterTest() {
-
-        assert  utils.getMandatoryParameter(parameters, 'test', 'default') == 'default'
-    }
-
-    @Test
-    void valueGetmandatoryParameterTest() {
-
-        parameters.put('test', 'value')
-
-        assert utils.getMandatoryParameter(parameters, 'test', null) == 'value'
-    }
-
-    @Test
     void testGenerateSHA1() {
         def result = utils.generateSha1('ContinuousDelivery')
         // asserts
