@@ -85,9 +85,14 @@ import static com.sap.piper.Prerequisites.checkScript
      */
     'dockerOptions',
     /**
+      * Extension files. Provided to the neo command via parameter `--extensions` (`-e`).
+      */
+    'mtaExtensionDescriptors',
+    /**
      * The path to the archive for deployment to SAP CP. If not provided `mtarFilePath` from commom pipeline environment is used instead.
      */
-    'source'
+    'source',
+
 ])
 
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS.plus([
@@ -150,6 +155,17 @@ void call(parameters = [:]) {
             // since the map did not change, it is not required to replace the previous configuration map.
             .use()
 
+        Set extensionList
+
+        if(configuration.mtaExtensionDescriptors == null) {
+            extensionList = []
+        } else {
+            extensionList = configuration.mtaExtensionDescriptors in Collection ? configuration.mtaExtensionDescriptors : [configuration.mtaExtensionDescriptors]
+        }
+
+        if(deployMode != DeployMode.MTA && ! extensionList.isEmpty())
+            error "Extensions (${extensionList} found for deploy mode ${deployMode}. Extensions are only supported for deploy mode '${DeployMode.MTA}')"
+
         utils.pushToSWA([
             step: STEP_NAME,
             stepParamKey1: 'deployMode',
@@ -177,10 +193,15 @@ void call(parameters = [:]) {
 
                 StepAssertions.assertFileExists(this, configuration.source)
 
+                for(CharSequence extensionFile in extensionList) {
+                    StepAssertions.assertFileExists(this, extensionFile)
+                }
+
                 NeoCommandHelper neoCommandHelper = new NeoCommandHelper(
                     this,
                     deployMode,
                     configuration.neo,
+                    extensionList,
                     NEO_USERNAME,
                     NEO_PASSWORD,
                     configuration.source
