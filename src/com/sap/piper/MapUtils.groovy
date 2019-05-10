@@ -62,4 +62,38 @@ class MapUtils implements Serializable {
         }
         m.putAll(updates)
     }
+
+    static deepCopy(Map original) {
+        Map copy = [:]
+        for (def e : original.entrySet()) {
+            if(e.value == null) {
+                copy.put(e.key, e.value)
+            } else {
+                copy.put(e.key, deepCopy(e.value))
+            }
+        }
+        copy
+    }
+
+    static deepCopy(Set original) {
+        Set copy = []
+        for(def e : original)
+            copy << deepCopy(e)
+        copy
+    }
+
+    static deepCopy(List original) {
+        List copy = []
+        for(def e : original)
+            copy << deepCopy(e)
+        copy
+    }
+
+    /*
+     * In fact not a copy, but a catch all for everything not matching
+     * with the other signatures
+     */
+    static deepCopy(def original) {
+        original
+    }
 }
