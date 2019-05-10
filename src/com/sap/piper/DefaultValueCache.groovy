@@ -3,7 +3,7 @@ package com.sap.piper
 import com.cloudbees.groovy.cps.NonCPS
 
 /*
- * Provides the default values in an immutable form. Maps, Sets, Lists
+ * Provides the default values in an immutable form. Maps and Lists
  * contained nested in the outermost Map are also immutable.
  *
  * java.util.Date instances are refused since they are not immutable.
@@ -45,11 +45,6 @@ class DefaultValueCache implements Serializable {
         instance = null
     }
 
-
-    private static Set immutable(Set s) {
-        immutable(s, (Set)[])
-    }
-
     private static List immutable(List l) {
         immutable(l, (List)[])
     }
@@ -57,9 +52,9 @@ class DefaultValueCache implements Serializable {
     private static def immutable(Collection _in, Collection _out) {
 
         for(def e : _in) {
-            if(e in List || e in Set || e in Map) {
+            if(e in List || e in Map) {
                 _out.add(immutable(e))
-            } else if (e in CharSequence && ! (e in String)) {
+            } else if (e in CharSequence) {
                 _out.add(e.toString())
             } else {
                 typeCheck(e)
@@ -75,11 +70,9 @@ class DefaultValueCache implements Serializable {
 
         for(def e : m.entrySet()) {
 
-            if(e.value in Map) {
+            if (e.value in Map || e.value in List) {
                 result.put(e.key, immutable(e.value))
-            } else if (e.value in List || e.value in Set) {
-                result.put(e.key, immutable(e.value))
-            } else if (e.value in CharSequence && ! (e.value in String)) {
+            } else if (e.value in CharSequence) {
                 result.put(e.key, e.value.toString())
             } else {
                 typeCheck(e.value)
@@ -91,7 +84,6 @@ class DefaultValueCache implements Serializable {
 
         private static void typeCheck(def v) {
             if( ! (
-                v in String ||
                 v in BigDecimal ||
                 v in Integer ||
                 v in Boolean)

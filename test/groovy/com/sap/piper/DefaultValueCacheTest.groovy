@@ -24,7 +24,6 @@ class DefaultValueCacheTest {
             [myConfig:
                 [
                     alphabet: (List)['a', new StringBuilder('b'), 'c', ['ae', 'oe', 'ue', 'sz'], [65: 'A', 66: 'B']],
-                    bees: (Set)['carnica', 'buckfast'],
                     composers: [1685: 'J.S. Bach', 1882: 'Igor Strawinsky'],
                     missionStatment: new StringBuilder('Hello World!')]])
 
@@ -40,7 +39,6 @@ class DefaultValueCacheTest {
             [myConfig:
                 [
                     alphabet: (List)['a', new StringBuilder('b'), 'c', ['ae', 'oe', 'ue', 'sz'], [65: 'A', 66: 'B']],
-                    bees: (Set)['carnica', 'buckfast'],
                     composers: [1685: 'J.S. Bach', 1882: 'Igor Strawinsky'],
                     missionStatment: new StringBuilder().append('Hello World!')]])
 
@@ -93,12 +91,6 @@ class DefaultValueCacheTest {
 
                 if(it in CharSequence && it in StringBuilder)
                     fail "StringBuilder found: ${it}"
-        }
-
-        try {
-            defaultValues.myConfig.bees << 'salmon'
-            fail('We was able to add something to a unmodifiable entity.')
-        } catch(UnsupportedOperationException e) {
         }
 
         try {
