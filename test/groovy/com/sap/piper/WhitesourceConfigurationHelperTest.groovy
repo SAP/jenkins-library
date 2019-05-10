@@ -56,7 +56,7 @@ class WhitesourceConfigurationHelperTest extends BasePiperTest {
     void testExtendConfigurationFileUnifiedAgentConfigDeeper() {
         helper.registerAllowedMethod('readProperties', [Map], { m -> if (!m.file.contains('testModule')) return new Properties() else return null })
         WhitesourceConfigurationHelper.extendUAConfigurationFile(nullScript, utils, [scanType: 'none', whitesource: [configFilePath: './config',serviceUrl: "http://some.host.whitesource.com/api/", orgToken: 'abcd', productName: 'DIST - name1', productToken: '1234', userKey: '0000']], "./testModule/")
-        assertThat(jwfr.files['./testModule/config.847f9aec2f93de9000d5fa4e6eaace2283ae6377'],
+        assertThat(jwfr.files['./testModule/config.13954509c7675edfce373138f51c68464d1abcac'],
             allOf(
                 not(containsString("log.level=debug")),
                 containsString("apiKey=abcd"),

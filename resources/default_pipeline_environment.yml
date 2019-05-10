@@ -177,6 +177,27 @@ steps:
     stashContent:
       - 'tests'
     testReportFilePath: 'cst-report.json'
+  detectExecuteScan:
+    detect:
+      projectVersion: '1'
+      scanners:
+        - signature
+      scanPaths:
+        - '.'
+      scanProperties:
+        - '--blackduck.signature.scanner.memory=4096'
+        - '--blackduck.timeout=6000'
+        - '--blackduck.trust.cert=true'
+        - '--detect.policy.check.fail.on.severities=BLOCKER,CRITICAL,MAJOR'
+        - '--detect.report.timeout=4800'
+        - '--logging.level.com.synopsys.integration=DEBUG'
+    stashContent:
+      - 'buildDescriptor'
+      - 'checkmarx'
+    # buildTool specific settings
+    golang:
+      dockerImage: 'golang:1.12-stretch'
+      dockerWorkspace: ''
   dockerExecute:
     dockerPullImage: true
     sidecarPullImage: true
@@ -221,6 +242,13 @@ steps:
       languageRunner: 'js'
       runCommand: 'gauge run'
       testOptions: 'specs'
+    bundler:
+      dockerImage: 'ruby:2.5.3-stretch'
+      dockerName: 'bundler'
+      dockerWorkspace: ''
+      languageRunner: 'ruby'
+      runCommand: 'bundle install && bundle exec gauge run'
+      testOptions: 'specs'
   handlePipelineStepErrors:
     echoDetails: true
     failOnError: true
@@ -232,6 +260,15 @@ steps:
     healthEndpoint: ''
   influxWriteData:
     influxServer: ''
+  kanikoExecute:
+    containerBuildOptions: '--skip-tls-verify-pull'
+    containerCommand: '/busybox/tail -f /dev/null'
+    containerPreparationCommand: 'rm /kaniko/.docker/config.json'
+    containerShell: '/busybox/sh'
+    customTlsCertificateLinks: []
+    dockerfile: Dockerfile
+    dockerImage: 'gcr.io/kaniko-project/executor:debug'
+    dockerOptions: "-u 0 --entrypoint=''"
   karmaExecuteTests:
     containerPortMappings:
       'node:8-stretch':
@@ -334,6 +371,7 @@ steps:
       stashContent:
         - 'buildDescriptor'
         - 'opensourceConfiguration'
+        - 'checkmarx'
       additionalInstallCommand: >-
         curl --fail https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
         && mkdir -p \$GOPATH/src/${config.whitesource.projectName.substring(0, config.whitesource.projectName.lastIndexOf('/'))}
@@ -348,6 +386,10 @@ steps:
         - 'opensourceConfiguration'
     verbose: false
     timeout: 0
+  pipelineExecute:
+    branch: 'master'
+    path: 'Jenkinsfile'
+    credentialsId: ''
   pipelineRestartSteps:
     sendMail: true
     timeoutInSeconds: 900
@@ -403,6 +445,10 @@ steps:
       dockerImage: 'node:8-stretch'
       dockerName: 'npm'
       dockerWorkspace: '/home/node'
+    bundler:
+      dockerImage: 'ruby:2.5.3-stretch'
+      dockerName: 'bundler'
+      dockerWorkspace: ''
   slackSendNotification:
     color: "${buildStatus == 'SUCCESS'?'#008000':'#E60000'}"
     defaultMessage: "${buildStatus}: Job ${env.JOB_NAME} <${env.BUILD_URL}|#${env.BUILD_NUMBER}>"

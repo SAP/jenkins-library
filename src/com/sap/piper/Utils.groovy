@@ -7,25 +7,12 @@ import groovy.text.SimpleTemplateEngine
 import java.nio.charset.StandardCharsets
 import java.security.MessageDigest
 
-@NonCPS
-def getMandatoryParameter(Map map, paramName, defaultValue = null) {
-
-    def paramValue = map[paramName]
-
-    if (paramValue == null)
-        paramValue = defaultValue
-
-    if (paramValue == null)
-        throw new Exception("ERROR - NO VALUE AVAILABLE FOR ${paramName}")
-    return paramValue
-
-}
 
 def stash(name, include = '**/*.*', exclude = '', useDefaultExcludes = true) {
     echo "Stash content: ${name} (include: ${include}, exclude: ${exclude}, useDefaultExcludes: ${useDefaultExcludes})"
 
     Map stashParams = [
-        name: name,
+        name    : name,
         includes: include,
         excludes: exclude
     ]
@@ -34,6 +21,16 @@ def stash(name, include = '**/*.*', exclude = '', useDefaultExcludes = true) {
         stashParams.useDefaultExcludes = useDefaultExcludes
     }
     steps.stash stashParams
+}
+
+@NonCPS
+def runClosures(Map closures) {
+
+    def closuresToRun = closures.values().asList()
+    Collections.shuffle(closuresToRun) // Shuffle the list so no one tries to rely on the order of execution
+    for (int i = 0; i < closuresToRun.size(); i++) {
+        (closuresToRun[i] as Closure).run()
+    }
 }
 
 def stashList(script, List stashes) {
@@ -81,7 +78,7 @@ def unstashAll(stashContent) {
     def unstashedContent = []
     if (stashContent) {
         for (i = 0; i < stashContent.size(); i++) {
-            if(stashContent[i]) {
+            if (stashContent[i]) {
                 unstashedContent += unstash(stashContent[i])
             }
         }
@@ -101,7 +98,7 @@ void pushToSWA(Map parameters, Map config) {
     try {
         parameters.actionName = parameters.get('actionName') ?: 'Piper Library OS'
         parameters.eventType = parameters.get('eventType') ?: 'library-os'
-        parameters.jobUrlSha1 =  generateSha1(env.JOB_URL)
+        parameters.jobUrlSha1 = generateSha1(env.JOB_URL)
         parameters.buildUrlSha1 = generateSha1(env.BUILD_URL)
 
         Telemetry.notify(this, config, parameters)
@@ -111,8 +108,18 @@ void pushToSWA(Map parameters, Map config) {
 }
 
 @NonCPS
-static String fillTemplate(String templateText, Map binding){
+static String fillTemplate(String templateText, Map binding) {
     def engine = new SimpleTemplateEngine()
     String result = engine.createTemplate(templateText).make(binding)
     return result
+}
+
+static String downloadSettingsFromUrl(script, String url, String targetFile = 'settings.xml') {
+    if (script.fileExists(targetFile)) {
+        throw new RuntimeException("Trying to download settings file to ${targetFile}, but a file with this name already exists. Please specify a unique file name.")
+    }
+
+    def settings = script.httpRequest(url)
+    script.writeFile(file: targetFile, text: settings.getContent())
+    return targetFile
 }

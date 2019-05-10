@@ -1,5 +1,7 @@
 import com.sap.piper.GenerateDocumentation
 import static com.sap.piper.Prerequisites.checkScript
+import com.sap.piper.analytics.InfluxData
+
 import groovy.transform.Field
 
 @Field STEP_NAME = getClass().getName()
@@ -36,8 +38,7 @@ def call(Map parameters = [:], body) {
     //record measurement
     def duration = System.currentTimeMillis() - start
 
-    if (script != null)
-        script.commonPipelineEnvironment.setPipelineMeasurement(measurementName, duration)
+    InfluxData.addField('pipeline_data', measurementName, duration)
 
     return duration
 }
