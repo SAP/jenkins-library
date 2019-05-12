@@ -28,20 +28,19 @@ class Telemetry implements Serializable{
         getInstance().listenerList.add(listener)
     }
 
-    static notify(Script steps, Map config, Map payload){
+    static notify(Script steps, Boolean collectTelemetryData, Map payload){
         //allow opt-out via configuration
-        if (!config?.collectTelemetryData) {
-            steps.echo "[${payload.step}] Sending telemetry data is disabled."
-            return
-        }
-
-        getInstance().listenerList.each { listener ->
-            try {
-                listener(steps, payload)
-            } catch (ignore) {
-                // some error occured in telemetry reporting. This should not break anything though.
-                steps.echo "[${payload.step}] Telemetry Report with listener failed: ${ignore.getMessage()}"
+        if (collectTelemetryData) {
+            getInstance().listenerList.each { listener ->
+                try {
+                    listener(steps, payload)
+                } catch (ignore) {
+                    // some error occured in telemetry reporting. This should not break anything though.
+                    steps.echo "[${payload.step}] Telemetry Report with listener failed: ${ignore.getMessage()}"
+                }
             }
+        } else {
+            steps.echo "[${payload.step}] Telemetry Report disabled."
         }
     }
 

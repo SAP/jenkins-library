@@ -56,6 +56,7 @@ class TelemetryTest extends BasePiperTest {
     @Test
     void testRegisterListenerAndNotify() {
         // prepare
+        Boolean collectTelemetryData = true
         Map notificationPayload = [:]
         Telemetry.instance = new Telemetry()
         assumeThat(Telemetry.getInstance().listenerList, is(empty()))
@@ -64,7 +65,7 @@ class TelemetryTest extends BasePiperTest {
             notificationPayload = payload
         })
         // test
-        Telemetry.notify(nullScript, [collectTelemetryData: true], [step: 'anyStep', anything: 'something'])
+        Telemetry.notify(nullScript, collectTelemetryData, [step: 'anyStep', anything: 'something'])
         // asserts
         assertThat(Telemetry.getInstance().listenerList, is(not(empty())))
         assertThat(notificationPayload, is([step: 'anyStep', anything: 'something']))
@@ -73,6 +74,7 @@ class TelemetryTest extends BasePiperTest {
     @Test
     void testNotifyWithOptOut() {
         // prepare
+        Boolean collectTelemetryData = false
         Map notificationPayload = [:]
         Telemetry.instance = new Telemetry()
         assumeThat(Telemetry.getInstance().listenerList, is(empty()))
@@ -80,27 +82,10 @@ class TelemetryTest extends BasePiperTest {
             notificationPayload = payload
         })
         // test
-        Telemetry.notify(nullScript, [collectTelemetryData: false], [step: 'anyStep', anything: 'something'])
+        Telemetry.notify(nullScript, collectTelemetryData, [step: 'anyStep', anything: 'something'])
         // asserts
         assertThat(Telemetry.getInstance().listenerList, is(not(empty())))
-        assertThat(jlr.log, containsString("[anyStep] Sending telemetry data is disabled."))
-        assertThat(notificationPayload.keySet(), is(empty()))
-    }
-
-    @Test
-    void testNotifyWithOptOutWithEmptyConfig() {
-        // prepare
-        Map notificationPayload = [:]
-        Telemetry.instance = new Telemetry()
-        assumeThat(Telemetry.getInstance().listenerList, is(empty()))
-        Telemetry.registerListener({ steps, payload ->
-            notificationPayload = payload
-        })
-        // test
-        Telemetry.notify(nullScript, [:], [step: 'anyStep', anything: 'something'])
-        // asserts
-        assertThat(Telemetry.getInstance().listenerList, is(not(empty())))
-        assertThat(jlr.log, containsString("[anyStep] Sending telemetry data is disabled."))
+        assertThat(jlr.log, containsString("[anyStep] Telemetry Report disabled."))
         assertThat(notificationPayload.keySet(), is(empty()))
     }
 
@@ -117,12 +102,13 @@ class TelemetryTest extends BasePiperTest {
         Telemetry.notify(nullScript, null, [step: 'anyStep', anything: 'something'])
         // asserts
         assertThat(Telemetry.getInstance().listenerList, is(not(empty())))
-        assertThat(jlr.log, containsString("[anyStep] Sending telemetry data is disabled."))
+        assertThat(jlr.log, containsString("[anyStep] Telemetry Report disabled."))
         assertThat(notificationPayload.keySet(), is(empty()))
     }
 
     @Test
     void testReportingToSWA() {
+        Boolean collectTelemetryData = true
         def httpParams = null
         helper.registerAllowedMethod('httpRequest', [Map.class], {m ->
             httpParams = m
@@ -133,7 +119,7 @@ class TelemetryTest extends BasePiperTest {
         // prepare
         assumeThat(Telemetry.getInstance().listenerList, is(not(empty())))
         // test
-        Telemetry.notify(nullScript, [collectTelemetryData: true], [
+        Telemetry.notify(nullScript, collectTelemetryData, [
             actionName: 'Piper Library OS',
             eventType: 'library-os',
             jobUrlSha1: '1234',

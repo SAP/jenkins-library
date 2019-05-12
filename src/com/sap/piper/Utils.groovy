@@ -101,7 +101,7 @@ void pushToSWA(Map parameters, Map config) {
         parameters.jobUrlSha1 = generateSha1(env.JOB_URL)
         parameters.buildUrlSha1 = generateSha1(env.BUILD_URL)
 
-        Telemetry.notify(this, config, parameters)
+        Telemetry.notify(this, config?.collectTelemetryData, parameters)
     } catch (ignore) {
         // some error occured in telemetry reporting. This should not break anything though.
     }
