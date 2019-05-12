@@ -1,9 +1,9 @@
 package com.sap.piper
 
 class Notify implements Serializable {
-    private static enum Severity { ERROR, WARNING }
-    private final static String LIBRARY_NAME = 'piper-lib-os'
+    protected static enum Severity { ERROR, WARNING }
 
+    protected final static String LIBRARY_NAME = 'piper-lib-os'
     protected static Utils utils = null
 
     protected static Utils getUtilsInstance(){
