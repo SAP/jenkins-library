@@ -27,7 +27,7 @@ class Telemetry implements Serializable{
     static void registerListener(Closure listener){
         getInstance().listenerList.add(listener)
     }
-    
+
     static notify(Script steps, Map config, Map payload){
         notify(steps, config?.collectTelemetryData, payload)
     }
