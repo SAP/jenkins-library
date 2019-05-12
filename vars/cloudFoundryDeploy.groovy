@@ -165,7 +165,7 @@ void call(Map parameters = [:]) {
                 deploy = true
                 // set default mtar path
                 config = ConfigurationHelper.newInstance(this, config)
-                    .addIfEmpty('mtaPath', config.mtaPath?:findMtar(config))
+                    .addIfEmpty('mtaPath', config.mtaPath?:findMtar(config.collectTelemetryData))
                     .use()
 
                 dockerExecute(script: script, dockerImage: config.dockerImage, dockerWorkspace: config.dockerWorkspace, stashContent: config.stashContent) {
@@ -209,16 +209,16 @@ void call(Map parameters = [:]) {
     }
 }
 
-def findMtar(Map config){
+def findMtar(Boolean) collectTelemetryData){
     def mtarFiles = findFiles(glob: '**/*.mtar')
 
     if(mtarFiles.length > 1){
-        Notify.error(config, this, "Found multiple *.mtar files, please specify file via mtaPath parameter! ${mtarFiles}")
+        Notify.error(collectTelemetryData, this, "Found multiple *.mtar files, please specify file via mtaPath parameter! ${mtarFiles}")
     }
     if(mtarFiles.length == 1){
         return mtarFiles[0].path
     }
-    Notify.error(config, this, 'No *.mtar file found!')
+    Notify.error(collectTelemetryData, this, 'No *.mtar file found!')
 }
 
 def deployCfNative (config) {
@@ -240,15 +240,15 @@ def deployCfNative (config) {
         // check if appName is available
         if (config.cloudFoundry.appName == null || config.cloudFoundry.appName == '') {
             if (config.deployType == 'blue-green') {
-                Notify.error(config, this, "Blue-green plugin requires app name to be passed (see https://github.com/bluemixgaragelondon/cf-blue-green-deploy/issues/27).")
+                Notify.error(config.collectTelemetryData, this, "Blue-green plugin requires app name to be passed (see https://github.com/bluemixgaragelondon/cf-blue-green-deploy/issues/27).")
             }
             if (fileExists(config.cloudFoundry.manifest)) {
                 def manifest = readYaml file: config.cloudFoundry.manifest
                 if (!manifest || !manifest.applications || !manifest.applications[0].name)
-                    Notify.error(config, this, "No appName available in manifest '${config.cloudFoundry.manifest}'.")
+                    Notify.error(config.collectTelemetryData, this, "No appName available in manifest '${config.cloudFoundry.manifest}'.")
 
             } else {
-                Notify.error(config, this, "No manifest file '${config.cloudFoundry.manifest}' found.")
+                Notify.error(config.collectTelemetryData, this, "No manifest file '${config.cloudFoundry.manifest}' found.")
             }
         }
 
@@ -296,7 +296,7 @@ private void stopOldAppIfRunning(Map config) {
             String cfStopOutput = readFile(file: cfStopOutputFileName)
 
             if (!cfStopOutput.contains("$oldAppName not found")) {
-                Notify.error(config, this, "Could not stop application '$oldAppName'. Error: $cfStopOutput")
+                Notify.error(config.collectTelemetryData, this, "Could not stop application '$oldAppName'. Error: $cfStopOutput")
             }
         }
     }

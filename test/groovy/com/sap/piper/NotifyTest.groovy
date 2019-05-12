@@ -22,7 +22,7 @@ class NotifyTest extends BasePiperTest {
     private JenkinsLoggingRule jlr = new JenkinsLoggingRule(this)
     private JenkinsShellCallRule jscr = new JenkinsShellCallRule(this)
 
-    private Map config
+    private Boolean collectTelemetryData
 
     @Rule
     public RuleChain rules = Rules
@@ -34,7 +34,7 @@ class NotifyTest extends BasePiperTest {
     @Before
     void init() throws Exception {
         // prepare
-        config = [collectTelemetryData: true]
+        collectTelemetryData = true
         nullScript.STEP_NAME = 'anyStep'
         utils.env.JOB_NAME = 'testJob'
         Notify.instance = utils
@@ -43,7 +43,7 @@ class NotifyTest extends BasePiperTest {
     @Test
     void testWarning() {
         // execute test
-        Notify.warning(config, nullScript, "test message")
+        Notify.warning(collectTelemetryData, nullScript, "test message")
         // asserts
         assertThat(jlr.log, containsString('[WARNING] test message (piper-lib-os/anyStep)'))
         assertThat(jscr.shell, hasItem(containsString('curl -G -v "https://webanalytics.cfapps.eu10.hana.ondemand.com/tracker/log"')))
@@ -56,7 +56,7 @@ class NotifyTest extends BasePiperTest {
         thrown.expectMessage('[ERROR] test message (piper-lib-os/anyOtherStep)')
         // execute test
         try{
-            Notify.error(config, nullScript, "test message", "anyOtherStep")
+            Notify.error(collectTelemetryData, nullScript, "test message", "anyOtherStep")
         }finally{
             // asserts
             assertThat(jscr.shell, hasItem(containsString('curl -G -v "https://webanalytics.cfapps.eu10.hana.ondemand.com/tracker/log"')))

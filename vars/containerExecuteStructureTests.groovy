@@ -103,7 +103,7 @@ void call(Map parameters = [:]) {
 
         List testConfig = findFiles(glob: config.testConfiguration)?.toList()
         if (testConfig.isEmpty()) {
-            Notify.error(config, this, "No test description found with pattern '${config.testConfiguration}'.")
+            Notify.error(config.collectTelemetryData, this, "No test description found with pattern '${config.testConfiguration}'.")
         } else {
             echo "[${STEP_NAME}] Found files ${testConfig}"
         }

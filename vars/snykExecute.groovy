@@ -139,7 +139,7 @@ void call(Map parameters = [:]) {
                 }
                 break
             default:
-                Notify.error(config, this, "The scanType '${config.scanType}' not supported!")
+                Notify.error(config.collectTelemetryData, this, "The scanType '${config.scanType}' not supported!")
         }
     }
 }

@@ -52,7 +52,7 @@ void call(Map parameters = [:], body = null) {
 
         try {
             if (!fileExists('package.json')) {
-                Notify.error(config, this, "package.json is not found.")
+                Notify.error(config.collectTelemetryData, this, "package.json is not found.")
             }
             dockerExecute(script: script, dockerImage: configuration.dockerImage, dockerOptions: configuration.dockerOptions) {
                 if (configuration.defaultNpmRegistry) {

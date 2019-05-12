@@ -87,7 +87,7 @@ void call(Map parameters = [:]) {
 
             if (!fileExists(mtaYamlName)) {
                 if (!applicationName) {
-                    Notify.error(configuration, this, "'${mtaYamlName}' not found in project sources and 'applicationName' not provided as parameter - cannot generate '${mtaYamlName}' file.")
+                    Notify.error(configuration.collectTelemetryData, this, "'${mtaYamlName}' not found in project sources and 'applicationName' not provided as parameter - cannot generate '${mtaYamlName}' file.")
                 } else {
                     echo "[INFO] '${mtaYamlName}' file not found in project sources, but application name provided as parameter - generating '${mtaYamlName}' file."
                     MtaUtils mtaUtils = new MtaUtils(this)
@@ -104,7 +104,7 @@ void call(Map parameters = [:]) {
 
             def id = mtaYaml.ID
             if (!id) {
-                Notify.error(configuration, this, "Property 'ID' not found in '${mtaYamlName}' file.")
+                Notify.error(configuration.collectTelemetryData, this, "Property 'ID' not found in '${mtaYamlName}' file.")
             }
 
             def mtarFileName = "${id}.mtar"

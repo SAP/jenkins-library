@@ -79,7 +79,7 @@ private void checkBuildTool(config) {
             break
     }
     if (buildDescriptorPattern && !findFiles(glob: buildDescriptorPattern)) {
-        Notify.error(config, this, "The buildTool configuration '${config.buildTool}' does not fit to your project. Please set buildTool as genereal setting in your .pipeline/config.yml correctly (see https://sap.github.io/jenkins-library/configuration/).")
+        Notify.error(config.collectTelemetryData, this, "The buildTool configuration '${config.buildTool}' does not fit to your project. Please set buildTool as genereal setting in your .pipeline/config.yml correctly (see https://sap.github.io/jenkins-library/configuration/).")
     }
 }
 

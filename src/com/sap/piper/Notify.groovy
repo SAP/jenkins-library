@@ -13,18 +13,18 @@ class Notify implements Serializable {
         return this.utils
     }
 
-    static void warning(Map config, Script step, String message, String stepName = null){
-        notify(config, step, message, stepName, Severity.WARNING)
+    static void warning(Boolean collectTelemetryData, Script step, String message, String stepName = null){
+        notify(collectTelemetryData, step, message, stepName, Severity.WARNING)
     }
 
-    static void error(Map config, Script step, String message, String stepName = null) {
-        notify(config, step, message, stepName, Severity.ERROR)
+    static void error(Boolean collectTelemetryData, Script step, String message, String stepName = null) {
+        notify(collectTelemetryData, step, message, stepName, Severity.ERROR)
     }
 
-    private static void notify(Map config, Script step, String message, String stepName, Severity severity){
+    private static void notify(Boolean collectTelemetryData, Script step, String message, String stepName, Severity severity){
         stepName = stepName ?: step.STEP_NAME
 
-        Telemetry.notify(step, config, [
+        Telemetry.notify(step, collectTelemetryData, [
             folder: '',
             repository: '',
             step: 'Notify',

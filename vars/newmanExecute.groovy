@@ -96,7 +96,7 @@ void call(Map parameters = [:]) {
 
         List collectionList = findFiles(glob: config.newmanCollection)?.toList()
         if (collectionList.isEmpty()) {
-            Notify.error(config, this, "No collection found with pattern '${config.newmanCollection}'.")
+            Notify.error(config.collectTelemetryData, this, "No collection found with pattern '${config.newmanCollection}'.")
         } else {
             echo "[${STEP_NAME}] Found files ${collectionList}"
         }

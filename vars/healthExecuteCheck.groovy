@@ -61,7 +61,7 @@ void call(Map parameters = [:]) {
 
         def statusCode = curl(checkUrl)
         if (statusCode != '200') {
-            Notify.error(config, this, "Health check failed: ${statusCode}")
+            Notify.error(config.collectTelemetryData, this, "Health check failed: ${statusCode}")
         } else {
             echo "Health check for ${checkUrl} successful"
         }
