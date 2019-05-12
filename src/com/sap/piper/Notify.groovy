@@ -1,5 +1,7 @@
 package com.sap.piper
 
+import com.sap.piper.analytics.Telemetry
+
 class Notify implements Serializable {
     protected static enum Severity { ERROR, WARNING }
 
@@ -21,22 +23,27 @@ class Notify implements Serializable {
 
     private static void log(Map config, Script step, String message, String stepName, Severity severity){
         stepName = stepName ?: step.STEP_NAME
-        getUtilsInstance().pushToSWA([
+
+        Telemetry.notify(step, config, [
             folder: '',
             repository: '',
             step: 'Notify',
+            actionName: 'Piper Library OS',
             eventType: 'notification',
+            jobUrlSha1: Utils.generateSha1(env.JOB_URL),
+            buildUrlSha1: Utils.generateSha1(env.BUILD_URL),
             stepParam1: LIBRARY_NAME,
             stepParam2: stepName,
             stepParam3: message,
             stepParam4: severity
-        ], config)
+        ])
 
         def notification = "[${severity}] ${message} (${LIBRARY_NAME}/${stepName})"
 
         if (severity == Severity.ERROR){
             step.error(notification)
+        } else{
+            step.echo(notification)
         }
-        step.echo(notification)
     }
 }
