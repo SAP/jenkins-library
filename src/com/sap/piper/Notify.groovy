@@ -12,14 +12,14 @@ class Notify implements Serializable {
     }
 
     static void warning(Map config, Script step, String message, String stepName = null){
-        log(config, step, message, stepName)
+        log(config, step, message, stepName, Severity.WARNING)
     }
 
     static void error(Map config, Script step, String message, String stepName = null) {
         log(config, step, message, stepName, Severity.ERROR)
     }
 
-    private static void log(Map config, Script step, String message, String stepName, Severity severity = Severity.WARNING){
+    private static void log(Map config, Script step, String message, String stepName, Severity severity){
         stepName = stepName ?: step.STEP_NAME
         getUtilsInstance().pushToSWA([
             folder: '',
