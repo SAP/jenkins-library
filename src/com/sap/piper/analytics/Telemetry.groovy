@@ -28,7 +28,7 @@ class Telemetry implements Serializable{
         getInstance().listenerList.add(listener)
     }
 
-    static notify(Script steps, Boolean collectTelemetryData, Map payload){
+    static void notify(Script steps, Boolean collectTelemetryData, Map payload){
         //allow opt-out via configuration
         if (collectTelemetryData) {
             getInstance().listenerList.each { listener ->
