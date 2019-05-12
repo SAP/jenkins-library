@@ -4,11 +4,11 @@ class Notify implements Serializable {
     private static enum Severity { ERROR, WARNING }
     private final static String LIBRARY_NAME = 'piper-lib-os'
 
-    protected static Utils instance = null
+    protected static Utils utils = null
 
     protected static Utils getUtilsInstance(){
-        instance = instance ?: new Utils()
-        return instance
+        this.utils = this.utils ?: new Utils()
+        return this.utils
     }
 
     static void warning(Map config, Script step, String message, String stepName = null){
