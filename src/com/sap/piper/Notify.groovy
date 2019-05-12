@@ -28,7 +28,7 @@ class Notify implements Serializable {
             eventType: 'notification',
             stepParam1: LIBRARY_NAME,
             stepParam2: stepName,
-            stepParam3: msg,
+            stepParam3: message,
             stepParam4: severity
         ], config)
 
