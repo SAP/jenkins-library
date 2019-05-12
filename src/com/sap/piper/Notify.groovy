@@ -1,11 +1,8 @@
 package com.sap.piper
 
-import groovy.text.SimpleTemplateEngine
-
 class Notify implements Serializable {
     private static enum Severity { ERROR, WARNING }
     private final static String LIBRARY_NAME = 'piper-lib-os'
-    private final static String MESSAGE_PATTERN = '[${severity}] ${message} (${libName}/${stepName})'
 
     protected static Utils instance = null
 
@@ -14,15 +11,15 @@ class Notify implements Serializable {
         return instance
     }
 
-    static void warning(Map config, Script step, String msg, String stepName = null){
-        log(config, step, msg, stepName)
+    static void warning(Map config, Script step, String message, String stepName = null){
+        log(config, step, message, stepName)
     }
 
-    static void error(Map config, Script step, String msg, String stepName = null) {
-        log(config, step, msg, stepName, Severity.ERROR)
+    static void error(Map config, Script step, String message, String stepName = null) {
+        log(config, step, message, stepName, Severity.ERROR)
     }
 
-    private static void log(Map config, Script step, String msg, String stepName, Severity severity = Severity.WARNING){
+    private static void log(Map config, Script step, String message, String stepName, Severity severity = Severity.WARNING){
         stepName = stepName ?: step.STEP_NAME
         getUtilsInstance().pushToSWA([
             folder: '',
@@ -34,18 +31,12 @@ class Notify implements Serializable {
             stepParam3: msg,
             stepParam4: severity
         ], config)
-        def logEntry = SimpleTemplateEngine.newInstance().createTemplate(
-            MESSAGE_PATTERN
-        ).make([
-            libName: LIBRARY_NAME,
-            stepName: stepName,
-            message: msg,
-            severity: severity
-        ]).toString()
+
+        def notification = "[${severity}] ${message} (${LIBRARY_NAME}/${stepName})"
 
         if (severity == Severity.ERROR){
-            step.error(logEntry)
+            step.error(notification)
         }
-        step.echo(logEntry)
+        step.echo(notification)
     }
 }
