@@ -375,11 +375,12 @@ class Helper {
         return mappings
     }
 
-    static getValue(Map config, def pPath) {
-        def p =config[pPath.head()]
+    static getValue(Map config, List pPath) {
+        def p = config[pPath.head()]
         if(pPath.size() == 1) return p // there is no tail
         if(p in Map) getValue(p, pPath.tail())
-        else return p
+        return null // there is a remaining path which could not be resolved.
+                    // the value we are looking for does not exist.
     }
 
     static resolveDocuRelevantSteps(GroovyScriptEngine gse, File stepsDir) {
@@ -640,7 +641,7 @@ def handleStep(stepName, prepareDefaultValuesStep, gse, customDefaults) {
 
         it ->
 
-            def defaultValue = Helper.getValue(defaultConfig, it.split('/'))
+            def defaultValue = Helper.getValue(defaultConfig, it.tokenize('/'))
 
             def parameterProperties =   [
                 defaultValue: defaultValue,
@@ -675,7 +676,7 @@ def handleStep(stepName, prepareDefaultValuesStep, gse, customDefaults) {
                             [
                                 dependentParameterKey: dependentParameterKey,
                                 key: possibleValue,
-                                value: Helper.getValue(defaultConfig.get(possibleValue), k.split('/'))
+                                value: Helper.getValue(defaultConfig.get(possibleValue), k.tokenize('/'))
                             ]
                     }
                 }
