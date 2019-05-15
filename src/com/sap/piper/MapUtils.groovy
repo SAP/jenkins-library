@@ -63,6 +63,17 @@ class MapUtils implements Serializable {
         m.putAll(updates)
     }
 
+    static private def getByPath(Map m, def key) {
+        List path = key in CharSequence ? key.tokenize('/') : key
+
+        def value = m.get(path.head())
+
+        if (path.size() == 1) return value
+        if (value in Map) return getByPath(value, path.tail())
+
+        return null
+    }
+
     /*
      * Provides a new map with the same content like the original map.
      * Nested Collections and Maps are copied. Values with are not
