@@ -77,6 +77,40 @@ class TemplateHelper {
 
         t.trim()
     }
+
+    static createStageContentSection(Map stageSteps) {
+        def t = 'This stage comprises following steps which are activated depending on your use-case/configuration:\n\n'
+
+        t += '| step | step description |'
+        t += '| ---- | ---------------- |'
+        t += '| | |'
+
+        return t.trim()
+    }
+
+    static createStageActivationSection() {
+        def t = '''This stage will be active if any one of the following conditions is met:
+
+* Stage configuration in [config.yml file](../configuration.md) contains entries for this stage. 
+* Any of the conditions are met which are explained in the section [Step Activation](#step-activation).
+'''
+        return t.trim()
+    }
+
+    static createStepActivationSection(Map stageConditions) {
+        def t = 'Certain steps will be activated automatically depending on following conditions:\n\n'
+
+
+        t += '| step | config key | config value | file pattern |'
+        t += '| ---- | ---------- | ------------ | ------------ |'
+        t += '| | | | |'
+
+        return t.trim()
+    }
+
+    static createStageConfigurationSection() {
+        return 'The stage parameters need to be defined in the section `stages` of [config.yml file](../configuration.md).'
+    }
 }
 
 //
@@ -350,6 +384,10 @@ class Helper {
         return params
     }
 
+    static getStageStepKeys(def script) {
+        return script.STAGE_STEP_KEYS ?: []
+    }
+
     static getRequiredParameters(File f) {
         def params = [] as Set
         f.eachLine  {
@@ -494,22 +532,12 @@ if( ! steps) {
     System.err << "[INFO] Generating docu only for step ${steps.size > 1 ? 's' : ''} ${steps}.\n"
 }
 
-System.err << "[INFO] Docu relevant steps: ${steps}\n"
-
-// find all the stages we have to document
+// find all the stages that we have to document
 Map stages = Helper.resolveDocuRelevantStages(gse, stepsDir)
-System.err << "[INFO] Docu relevant stages: ${stages}\n"
-
 
 // retrieve default conditions for steps
 //ToDo: allow passing config file name via parameter
 Map stageConfig = Helper.getYamlResource('piper-stage-config.yml')
-
-//ToDo: generate stage docs
-stages.each {key, value ->
-    def configConditions = stageConfig.stages.get(value)
-}
-
 
 def prepareDefaultValuesStep = Helper.getPrepareDefaultValuesStep(gse)
 
@@ -540,8 +568,25 @@ for(step in stepDescriptors) {
     }
 }
 
-//update stepDescriptors
-//remove steps from parameter list, ...
+//update stepDescriptors: remove stages and put into separate stageDescriptors map
+def stageDescriptors = [:]
+stages.each {key, value ->
+    stageDescriptors."${key}" = [:] << stepDescriptors."${key}"
+    stepDescriptors.remove(key)
+
+    //add additional information to stageDescriptors
+    stageDescriptors."${key}".name = value
+    stageDescriptors."${key}".configConditions = stageConfig.stages.get(value)?.stepConditions
+
+    // prepare step descriptions and remove step keys from parameters
+    stageDescriptors."${key}".stepDescriptions = [:]
+    stageDescriptors."${key}".parameters.each {paramKey, paramValue ->
+        if (paramKey in stageDescriptors."${key}".stageStepKeys) {
+            stageDescriptors."${key}".stepDescriptions = "${paramValue.docu ?: ''}\n"
+            stageDescriptors."${key}".parameters.remove(key)
+        }
+    }
+}
 
 for(step in stepDescriptors) {
     try {
@@ -550,6 +595,16 @@ for(step in stepDescriptors) {
     } catch(Exception e) {
         exceptionCaught = true
         System.err << "${e.getClass().getName()} caught while rendering step '${step}': ${e.getMessage()}.\n"
+    }
+}
+
+for (stage in stageDescriptors) {
+    try {
+        renderStage(stage.key, stage.value)
+        System.err << "[INFO] Stage '${stage.key}' has been rendered.\n"
+    } catch(Exception e) {
+        exceptionCaught = true
+        System.err << "${e.getClass().getName()} caught while rendering stage '${stage}': ${e.getMessage()}.\n"
     }
 }
 
@@ -568,12 +623,6 @@ void renderStep(stepName, stepProperties) {
 
     File theStepDocu = new File(stepsDocuDir, "${stepName}.md")
 
-    if (!theStepDocu.exists() && stepName.indexOf('Stage' != -1)) {
-        //try to get a corresponding stage documentation
-        def stageName = stepName.split('Stage')[1].toLowerCase()
-        theStepDocu = new File(stagesDocuDir,"${stageName}.md" )
-    }
-
     if(!theStepDocu.exists()) {
         System.err << "[WARNING] step docu input file for step '${stepName}' is missing.\n"
         return
@@ -589,6 +638,31 @@ void renderStep(stepName, stepProperties) {
     String text = template.make(binding)
 
     theStepDocu.withWriter { w -> w.write text }
+}
+
+void renderStage(stageName, stageProperties) {
+
+    def stageFileName = stageName.indexOf('Stage') != -1 ? stageName.split('Stage')[1].toLowerCase() : stageFileName
+    File theStageDocu = new File(stagesDocuDir, "${stageFileName}.md")
+
+    if(!theStageDocu.exists()) {
+        System.err << "[WARNING] stage docu input file for stage '${stageName}' is missing.\n"
+        return
+    }
+
+    def binding = [
+        docGenStageName     : stageProperties.name,
+        docGenDescription   : stageProperties.description,
+        docGenStageContent  : 'Stage Content\n\n' + TemplateHelper.createStageContentSection(stageProperties.stepDescriptions),
+        docGenStageActivation: 'Stage Activation\n\n' + TemplateHelper.createStageActivationSection(),
+        docGenStepActivation: 'Step Activation\n\n' + TemplateHelper.createStepActivationSection(stageProperties.configConditions),
+        docGenStageParameters    : 'Additional Stage Parameters\n\n' + TemplateHelper.createParametersSection(stageProperties.parameters),
+        docGenStageConfiguration : 'Configuration of Additional Stage Parameters\n\n' + TemplateHelper.createStageConfigurationSection()
+    ]
+    def template = new StreamingTemplateEngine().createTemplate(theStageDocu.text)
+    String text = template.make(binding)
+
+    theStageDocu.withWriter { w -> w.write text }
 }
 
 def fetchTextFrom(def step, def parameterName, def steps) {
@@ -620,7 +694,7 @@ def handleStep(stepName, prepareDefaultValuesStep, gse, customDefaults) {
     File theStep = new File(stepsDir, "${stepName}.groovy")
     File theStepDocu = new File(stepsDocuDir, "${stepName}.md")
 
-    if (!theStepDocu.exists() && stepName.indexOf('Stage' != -1)) {
+    if (!theStepDocu.exists() && stepName.indexOf('Stage') != -1) {
         //try to get a corresponding stage documentation
         def stageName = stepName.split('Stage')[1].toLowerCase()
         theStepDocu = new File(stagesDocuDir,"${stageName}.md" )
@@ -678,6 +752,12 @@ def handleStep(stepName, prepareDefaultValuesStep, gse, customDefaults) {
     // end of method.
     def step = [parameters:[:], dependentConfig: [:]]
 
+    //handling of step keys in stages
+    def stageStepKeys = Helper.getStageStepKeys(gse.createScript( "${stepName}.groovy", new Binding() ))
+
+    if (stageStepKeys.size() > 0) {
+        step.stageStepKeys = stageStepKeys
+    }
     //
     // START special handling for 'script' parameter
     // ... would be better if there is no special handling required ...
