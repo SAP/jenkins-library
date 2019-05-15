@@ -127,8 +127,10 @@ class ConfigurationHelper implements Serializable {
         handleValidationFailures()
         MapUtils.traverse(config, { v -> (v instanceof GString) ? v.toString() : v })
         if(config.verbose) step.echo "[${name}] Configuration: ${config}"
-        return config
+        return MapUtils.deepCopy(config)
     }
+
+
 
     /* private */ def getConfigPropertyNested(key) {
         return getConfigPropertyNested(config, key)
