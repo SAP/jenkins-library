@@ -22,7 +22,7 @@ class TemplateHelper {
 
             def props = parameters.get(it)
 
-            def defaultValue = isComplexDefault(props.defaultValue) ? renderComplexDefaultValue(props.defaultValue) : "`${props.defaultValue}`"
+            def defaultValue = isComplexDefault(props.defaultValue) ? renderComplexDefaultValue(props.defaultValue) : "${props.defaultValue ? ('`' + props.defaultValue + '`') : ''}"
 
             t +=  "| `${it}` | ${props.mandatory ?: props.required ? 'yes' : 'no'} | ${defaultValue} | ${props.value ?: ''} |\n"
         }
@@ -113,12 +113,13 @@ class TemplateHelper {
             t += "| ${renderValueList(mapToValueList(conditions?.config))} "
 
             List filePatterns = []
-            filePatterns.add(conditions?.filePattern ?: [])
-            filePatterns.add(conditions?.filePatternFromConfig ?: [])
+            if (conditions?.filePattern) filePatterns.add(conditions?.filePattern)
+            if (conditions?.filePatternFromConfig) filePatterns.add(conditions?.filePatternFromConfig)
             t += "| ${renderValueList(filePatterns)} |\n"
         }
 
-        t += '''!!! info "Step condition details"
+        t += '''
+!!! info "Step condition details"
     There are currently several conditions which can be checked.<br /> This is done in the [Init stage](init.md) of the pipeline shortly after checkout of the source code repository.<br/ >
     **Important: It will be sufficient that any one condition per step is met.**
     
@@ -151,7 +152,7 @@ For details about the configuration options, please see [Configuration of Piper]
     }
 
     private static mapToValueList(Map map) {
-        def valueList = []
+        List valueList = []
         map?.each {key, value ->
             if (value instanceof List) {
                 value.each {listItem ->
