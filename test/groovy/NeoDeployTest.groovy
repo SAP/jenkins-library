@@ -386,11 +386,7 @@ class NeoDeployTest extends BasePiperTest {
             deployMode: 'warPropertiesFile',
             warAction: 'deploy',
             neo: [
-                propertiesFile: warPropertiesFileName,
-                application: 'testApp',
-                runtime: 'neo-javaee6-wp',
-                runtimeVersion: '2.125',
-                size: 'lite'
+                propertiesFile: warPropertiesFileName
             ]
         )
 
@@ -412,11 +408,7 @@ class NeoDeployTest extends BasePiperTest {
             deployMode: 'warPropertiesFile',
             warAction: 'rolling-update',
             neo: [
-                propertiesFile: warPropertiesFileName,
-                application: 'testApp',
-                runtime: 'neo-javaee6-wp',
-                runtimeVersion: '2.125',
-                size: 'lite'
+                propertiesFile: warPropertiesFileName
             ])
 
         Assert.assertThat(shellRule.shell,
