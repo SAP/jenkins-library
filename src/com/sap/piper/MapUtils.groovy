@@ -75,4 +75,45 @@ class MapUtils implements Serializable {
 
         return null
     }
+  
+    /*
+     * Provides a new map with the same content like the original map.
+     * Nested Collections and Maps are copied. Values with are not
+     * Collections/Maps are not copied/cloned.
+     * &lt;paranoia&gt;&/ltThe keys are also not copied/cloned, even if they are
+     * Maps or Collections;paranoia&gt;
+     */
+    static deepCopy(Map original) {
+        Map copy = [:]
+        for (def e : original.entrySet()) {
+            if(e.value == null) {
+                copy.put(e.key, e.value)
+            } else {
+                copy.put(e.key, deepCopy(e.value))
+            }
+        }
+        copy
+    }
+
+    /* private */ static deepCopy(Set original) {
+        Set copy = []
+        for(def e : original)
+            copy << deepCopy(e)
+        copy
+    }
+
+    /* private */ static deepCopy(List original) {
+        List copy = []
+        for(def e : original)
+            copy << deepCopy(e)
+        copy
+    }
+
+    /*
+     * In fact not a copy, but a catch all for everything not matching
+     * with the other signatures
+     */
+    /* private */ static deepCopy(def original) {
+        original
+    }
 }
