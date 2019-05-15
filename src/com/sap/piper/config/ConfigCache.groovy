@@ -15,7 +15,6 @@ class ConfigCache {
 
     //final Map projectConfig = [:] // .pipeline/config.yml immutable
 
-    @NonCPS
     private ConfigCache(Map piperDefaults /*, Set customDefaults */ /*, String projectConfig = '.pipeline/config.yml' */) {
 
         if(steps == null) throw new NullPointerException('Steps not available.')
