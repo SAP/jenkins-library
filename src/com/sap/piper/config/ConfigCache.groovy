@@ -30,7 +30,7 @@ class ConfigCache {
 
         if(INSTANCE == null) {
             
-            piperDefaults = pruneNulls(steps.readYaml(text: steps.libraryResource(PIPER_OS_DEFAULTS)))
+            def piperDefaults = pruneNulls(steps.readYaml(text: steps.libraryResource(PIPER_OS_DEFAULTS)))
 
             steps.echo "Loading configuration file '${PIPER_OS_DEFAULTS}'"
             
