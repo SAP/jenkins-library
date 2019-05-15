@@ -16,8 +16,6 @@ class ConfigCache {
     //final Map projectConfig = [:] // .pipeline/config.yml immutable
 
     private ConfigCache(Map piperDefaults /*, Set customDefaults */ /*, String projectConfig = '.pipeline/config.yml' */) {
-
-        if(steps == null) throw new NullPointerException('Steps not available.')
         // next step: make immutable
         this.piperDefaults = piperDefaults
         // next step: read customConfig
@@ -28,6 +26,7 @@ class ConfigCache {
     static synchronized ConfigCache getInstance(Script steps) {
 
         if(INSTANCE == null) {
+            if(steps == null) throw new NullPointerException('Steps not available.')
             
             def piperDefaults = pruneNulls(steps.readYaml(text: steps.libraryResource(PIPER_OS_DEFAULTS)))
 
