@@ -86,7 +86,7 @@ void call(Map parameters = [:]) {
                         }
                         break
                     case 'filePatternFromConfig':
-                        def conditionValue = MapUtils.gegetByPatht(stepConfig, condition.getValue())
+                        def conditionValue = MapUtils.getByPath(stepConfig, condition.getValue())
                         if (conditionValue && findFiles(glob: conditionValue)) {
                             stepActive = true
                         }
