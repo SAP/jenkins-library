@@ -3,6 +3,9 @@ package com.sap.piper
 import org.junit.Assert
 import org.junit.Test
 
+import static org.hamcrest.Matchers.is
+import static org.junit.Assert.assertThat
+
 class MapUtilsTest {
 
     @Test
@@ -49,5 +52,14 @@ class MapUtilsTest {
         Map m = [a: 'x1', m:[b: 'x2', c: 'otherString']]
         MapUtils.traverse(m, { s -> (s.startsWith('x')) ? "replaced" : s})
         assert m == [a: 'replaced', m: [b: 'replaced', c: 'otherString']]
+    }
+
+    @Test
+    void testGetByPath() {
+        Map m = [trees: [oak: 5, beech :1], flowers:[rose: 23]]
+
+        assertThat(MapUtils.getByPath(m, 'flowers'), is([rose: 23]))
+        assertThat(MapUtils.getByPath(m, 'trees/oak'), is(5))
+        assertThat(MapUtils.getByPath(m, 'trees/palm'), is(null))
     }
 }

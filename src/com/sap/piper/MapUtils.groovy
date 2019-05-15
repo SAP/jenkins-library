@@ -62,4 +62,17 @@ class MapUtils implements Serializable {
         }
         m.putAll(updates)
     }
+
+    static private def getByPath(Map m, def key) {
+        if (m == null) return null
+
+        List path = key instanceof String ? key.tokenize('/') : key
+
+        def value = m[path.head()]
+
+        if (path.size() == 1) return value
+        if (value in Map) return getByPath(value, path.tail())
+
+        return null
+    }
 }
