@@ -3,6 +3,7 @@ import groovy.json.JsonOutput
 import org.yaml.snakeyaml.Yaml
 import org.codehaus.groovy.control.CompilerConfiguration
 import com.sap.piper.GenerateDocumentation
+import com.sap.piper.GenerateStageDocumentation
 import java.util.regex.Matcher
 import groovy.text.StreamingTemplateEngine
 
@@ -114,6 +115,11 @@ class Helper {
 
 
         prepareDefaultValuesStep
+    }
+
+    static Map getYamlResource(String resource) {
+        def ymlContent = new File(projectRoot,"resources/${resource}").text
+        return new Yaml().load(ymlContent)
     }
 
     static getDummyScript(def prepareDefaultValuesStep, def stepName, Map prepareDefaultValuesStepParams) {
@@ -391,7 +397,7 @@ class Helper {
                 def scriptName = (it =~  /vars\${File.separator}(.*)\.groovy/)[0][1]
                 def stepScript = gse.createScript("${scriptName}.groovy", new Binding())
                 for (def method in stepScript.getClass().getMethods()) {
-                    if(method.getName() == 'call' && method.getAnnotation(GenerateDocumentation) != null) {
+                    if(method.getName() == 'call' && (method.getAnnotation(GenerateDocumentation) != null || method.getAnnotation(GenerateStageDocumentation) != null)) {
                         docuRelevantSteps << scriptName
                         break
                     }
@@ -399,6 +405,26 @@ class Helper {
             }
         }
         docuRelevantSteps
+    }
+
+    static resolveDocuRelevantStages(GroovyScriptEngine gse, File stepsDir) {
+
+        def docuRelevantStages = [:]
+
+        stepsDir.traverse(type: FileType.FILES, maxDepth: 0) {
+            if(it.getName().endsWith('.groovy')) {
+                def scriptName = (it =~  /vars\${File.separator}(.*)\.groovy/)[0][1]
+                def stepScript = gse.createScript("${scriptName}.groovy", new Binding())
+                for (def method in stepScript.getClass().getMethods()) {
+                    GenerateStageDocumentation stageDocsAnnotation = method.getAnnotation(GenerateStageDocumentation)
+                    if(method.getName() == 'call' && stageDocsAnnotation != null) {
+                        docuRelevantStages[scriptName] = stageDocsAnnotation.defaultStageName()
+                        break
+                    }
+                }
+            }
+        }
+        docuRelevantStages
     }
 }
 
@@ -410,6 +436,8 @@ roots = [
 stepsDir = null
 stepsDocuDir = null
 String customDefaults = null
+
+stagesDocuDir = new File(Helper.projectRoot, "docs/stages")
 
 steps = []
 
@@ -466,6 +494,23 @@ if( ! steps) {
     System.err << "[INFO] Generating docu only for step ${steps.size > 1 ? 's' : ''} ${steps}.\n"
 }
 
+System.err << "[INFO] Docu relevant steps: ${steps}\n"
+
+// find all the stages we have to document
+Map stages = Helper.resolveDocuRelevantStages(gse, stepsDir)
+System.err << "[INFO] Docu relevant stages: ${stages}\n"
+
+
+// retrieve default conditions for steps
+//ToDo: allow passing config file name via parameter
+Map stageConfig = Helper.getYamlResource('piper-stage-config.yml')
+
+//ToDo: generate stage docs
+stages.each {key, value ->
+    def configConditions = stageConfig.stages.get(value)
+}
+
+
 def prepareDefaultValuesStep = Helper.getPrepareDefaultValuesStep(gse)
 
 boolean exceptionCaught = false
@@ -495,6 +540,9 @@ for(step in stepDescriptors) {
     }
 }
 
+//update stepDescriptors
+//remove steps from parameter list, ...
+
 for(step in stepDescriptors) {
     try {
         renderStep(step.key, step.value)
@@ -519,6 +567,12 @@ System.err << "[INFO] done.\n"
 void renderStep(stepName, stepProperties) {
 
     File theStepDocu = new File(stepsDocuDir, "${stepName}.md")
+
+    if (!theStepDocu.exists() && stepName.indexOf('Stage' != -1)) {
+        //try to get a corresponding stage documentation
+        def stageName = stepName.split('Stage')[1].toLowerCase()
+        theStepDocu = new File(stagesDocuDir,"${stageName}.md" )
+    }
 
     if(!theStepDocu.exists()) {
         System.err << "[WARNING] step docu input file for step '${stepName}' is missing.\n"
@@ -565,6 +619,12 @@ def handleStep(stepName, prepareDefaultValuesStep, gse, customDefaults) {
 
     File theStep = new File(stepsDir, "${stepName}.groovy")
     File theStepDocu = new File(stepsDocuDir, "${stepName}.md")
+
+    if (!theStepDocu.exists() && stepName.indexOf('Stage' != -1)) {
+        //try to get a corresponding stage documentation
+        def stageName = stepName.split('Stage')[1].toLowerCase()
+        theStepDocu = new File(stagesDocuDir,"${stageName}.md" )
+    }
 
     if(!theStepDocu.exists()) {
         System.err << "[WARNING] step docu input file for step '${stepName}' is missing.\n"
