@@ -110,14 +110,6 @@ public class PrepareDefaultValuesTest extends BasePiperTest {
     }
 
     @Test
-    public void testAssertNoLogMessageInCaseOfNoAdditionalConfigFiles() {
-
-        stepRule.step.prepareDefaultValues(script: nullScript)
-
-        assert ! loggingRule.log.contains("Loading configuration file 'default_pipeline_environment.yml'")
-    }
-
-    @Test
     public void testAssertLogMessageInCaseOfMoreThanOneConfigFile() {
 
         stepRule.step.prepareDefaultValues(script: nullScript, customDefaults: ['custom.yml'])
