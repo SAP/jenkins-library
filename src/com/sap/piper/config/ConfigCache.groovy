@@ -1,5 +1,7 @@
 package com.sap.piper.config
 
+import com.cloudbees.groovy.cps.NonCPS
+
 import static com.sap.piper.MapUtils.pruneNulls
 
 class ConfigCache {
@@ -13,23 +15,26 @@ class ConfigCache {
 
     //final Map projectConfig = [:] // .pipeline/config.yml immutable
 
-    private ConfigCache(Script steps /*, Set customDefaults */ /*, String projectConfig = '.pipeline/config.yml' */) {
+    private ConfigCache(Map piperDefaults /*, Set customDefaults */ /*, String projectConfig = '.pipeline/config.yml' */) {
 
         if(steps == null) throw new NullPointerException('Steps not available.')
         // next step: make immutable
-        piperDefaults = pruneNulls(steps.readYaml(text: steps.libraryResource(PIPER_OS_DEFAULTS)))
-
-        steps.echo "Loading configuration file '${PIPER_OS_DEFAULTS}'"
-
+        this.piperDefaults = piperDefaults
         // next step: read customConfig
 
         // next step: read projec config
     }
 
+    @NonCPS
     static synchronized ConfigCache getInstance(Script steps) {
 
         if(INSTANCE == null) {
-            INSTANCE = new ConfigCache(steps)
+            
+            piperDefaults = pruneNulls(steps.readYaml(text: steps.libraryResource(PIPER_OS_DEFAULTS)))
+
+            steps.echo "Loading configuration file '${PIPER_OS_DEFAULTS}'"
+            
+            INSTANCE = new ConfigCache(piperDefaults)
         }
         INSTANCE
     }
