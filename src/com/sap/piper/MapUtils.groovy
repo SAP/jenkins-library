@@ -75,7 +75,7 @@ class MapUtils implements Serializable {
 
         return null
     }
-  
+
     /*
      * Provides a new map with the same content like the original map.
      * Nested Collections and Maps are copied. Values with are not
