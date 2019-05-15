@@ -22,7 +22,7 @@ class TemplateHelper {
             def props = parameters.get(it)
 
             def defaultValue = isComplexDefault(props.defaultValue) ? renderComplexDefaultValue(props.defaultValue) :
-                                props.defaultValue ? "`${props.defaultValue}`" : ''
+                                props.defaultValue != null ? "`${props.defaultValue}`" : ''
 
             t +=  "| `${it}` | ${props.mandatory ?: props.required ? 'yes' : 'no'} | ${defaultValue} | ${props.value ?: ''} |\n"
         }
