@@ -66,7 +66,7 @@ class MapUtils implements Serializable {
     static private def getByPath(Map m, def key) {
         if (m == null) return null
 
-        List path = key instanceof String ? key.tokenize('/') : key
+        List path = key in CharSequence ? key.tokenize('/') : key
 
         def value = m[path.head()]
 
