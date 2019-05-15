@@ -86,6 +86,7 @@ class DefaultValueCache implements Serializable {
             if( ! (
                 v in BigDecimal ||
                 v in Integer ||
+                v in Double ||
                 v in Boolean)
 
             ) throw new IllegalStateException("Unexpected type found: ${v}, type ${v.getClass().getName()}")
