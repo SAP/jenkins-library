@@ -1,4 +1,4 @@
-package com.sap.piper
+package com.sap.piper.config
 
 import org.junit.Rule
 import org.junit.Test
