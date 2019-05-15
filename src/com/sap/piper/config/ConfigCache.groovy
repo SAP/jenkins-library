@@ -27,11 +27,11 @@ class ConfigCache {
 
         if(INSTANCE == null) {
             if(steps == null) throw new NullPointerException('Steps not available.')
-            
+
             def piperDefaults = pruneNulls(steps.readYaml(text: steps.libraryResource(PIPER_OS_DEFAULTS)))
 
             steps.echo "Loading configuration file '${PIPER_OS_DEFAULTS}'"
-            
+
             INSTANCE = new ConfigCache(piperDefaults)
         }
         INSTANCE
