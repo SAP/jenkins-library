@@ -78,12 +78,15 @@ class TemplateHelper {
         t.trim()
     }
 
-    static createStageContentSection(Map stageSteps) {
+    static createStageContentSection(Map stepDescriptions) {
         def t = 'This stage comprises following steps which are activated depending on your use-case/configuration:\n\n'
 
-        t += '| step | step description |'
-        t += '| ---- | ---------------- |'
-        t += '| | |'
+        t += '| step | step description |\n'
+        t += '| ---- | ---------------- |\n'
+
+        stepDescriptions.each {step, description ->
+            t += "| [${step}](../steps/${step}.md) | ${description.trim()} |\n"
+        }
 
         return t.trim()
     }
@@ -97,15 +100,68 @@ class TemplateHelper {
         return t.trim()
     }
 
-    static createStepActivationSection(Map stageConditions) {
+    static createStepActivationSection(Map configConditions) {
         def t = 'Certain steps will be activated automatically depending on following conditions:\n\n'
 
 
-        t += '| step | config key | config value | file pattern |'
-        t += '| ---- | ---------- | ------------ | ------------ |'
-        t += '| | | | |'
+        t += '| step | config key | config value | file pattern |\n'
+        t += '| ---- | ---------- | ------------ | ------------ |\n'
+
+        configConditions?.each {stepName, conditions ->
+            t += "| ${stepName} "
+            t += "| ${renderValueList(conditions?.configKeys)} "
+            t += "| ${renderValueList(mapToValueList(conditions?.config))} "
+
+            List filePatterns = []
+            filePatterns.add(conditions?.filePattern ?: [])
+            filePatterns.add(conditions?.filePatternFromConfig ?: [])
+            t += "| ${renderValueList(filePatterns)} |\n"
+        }
+
+        t += '''!!! info "Step condition details"
+    There are currently several conditions which can be checked.<br /> This is done in the [Init stage](init.md) of the pipeline shortly after checkout of the source code repository.<br/ >
+    **Important: It will be sufficient that any one condition per step is met.**
+    
+    * `config key`: Checks if a defined configuration parameter is set.
+    * `config value`: Checks if a configuration parameter has a defined value.
+    * `file pattern`: Checks if files according a defined pattern exist in the project. Either the pattern is speficified direcly or it is retrieved from a configuration parameter. 
+    
+
+!!! note "Overruling step activation conditions"
+    It is possible to overrule the automatically detected step activation status.<br />
+    Just add to your stage configuration `<stepName>: false`, for example `deployToKubernetes: false`.
+
+For details about the configuration options, please see [Configuration of Piper](../configuration.md).
+'''
 
         return t.trim()
+    }
+
+    private static renderValueList(List valueList) {
+        if (!valueList) return ''
+        if (valueList.size() > 1) {
+            List quotedList = []
+            valueList.each {listItem ->
+                quotedList.add("-`${listItem}`")
+            }
+            return quotedList.join('<br />')
+        } else {
+            return "`${valueList[0]}`"
+        }
+    }
+
+    private static mapToValueList(Map map) {
+        def valueList = []
+        map?.each {key, value ->
+            if (value instanceof List) {
+                value.each {listItem ->
+                    valueList.add("${key}: ${listItem}")
+                }
+            } else {
+                valueList.add("${key}: ${value}")
+            }
+        }
+        return valueList
     }
 
     static createStageConfigurationSection() {
@@ -574,18 +630,32 @@ stages.each {key, value ->
     stageDescriptors."${key}" = [:] << stepDescriptors."${key}"
     stepDescriptors.remove(key)
 
-    //add additional information to stageDescriptors
+    //add stage name to stageDescriptors
     stageDescriptors."${key}".name = value
+
+    //add stepCondition informmation to stageDescriptors
     stageDescriptors."${key}".configConditions = stageConfig.stages.get(value)?.stepConditions
 
-    // prepare step descriptions and remove step keys from parameters
+    //identify step keys in stages
+    def stageStepKeys = Helper.getStageStepKeys(gse.createScript( "${key}.groovy", new Binding() ))
+
+    //System.err << "[INFO] Stage Step Keys: '${stageStepKeys}'.\n"
+
+    // prepare step descriptions
     stageDescriptors."${key}".stepDescriptions = [:]
     stageDescriptors."${key}".parameters.each {paramKey, paramValue ->
-        if (paramKey in stageDescriptors."${key}".stageStepKeys) {
-            stageDescriptors."${key}".stepDescriptions = "${paramValue.docu ?: ''}\n"
-            stageDescriptors."${key}".parameters.remove(key)
+
+        if (paramKey in stageStepKeys) {
+            stageDescriptors."${key}".stepDescriptions."${paramKey}" = "${paramValue.docu ?: ''}\n"
         }
     }
+
+    //remove details from parameter map
+    stageStepKeys.each {stepKey ->
+        stageDescriptors."${key}".parameters.remove(stepKey)
+    }
+
+
 }
 
 for(step in stepDescriptors) {
@@ -752,12 +822,6 @@ def handleStep(stepName, prepareDefaultValuesStep, gse, customDefaults) {
     // end of method.
     def step = [parameters:[:], dependentConfig: [:]]
 
-    //handling of step keys in stages
-    def stageStepKeys = Helper.getStageStepKeys(gse.createScript( "${stepName}.groovy", new Binding() ))
-
-    if (stageStepKeys.size() > 0) {
-        step.stageStepKeys = stageStepKeys
-    }
     //
     // START special handling for 'script' parameter
     // ... would be better if there is no special handling required ...
