@@ -3,6 +3,7 @@ import com.sap.piper.ConfigurationLoader
 import static com.sap.piper.Prerequisites.checkScript
 
 import com.sap.piper.ConfigurationHelper
+import com.sap.piper.MapUtils
 import groovy.transform.Field
 
 @Field String STEP_NAME = getClass().getName()
@@ -60,31 +61,32 @@ void call(Map parameters = [:]) {
         stage.getValue().stepConditions.each {step ->
             def stepActive = false
             step.getValue().each {condition ->
+                Map stepConfig = script.commonPipelineEnvironment.getStepConfiguration(step.getKey(), currentStage)
                 switch(condition.getKey()) {
                     case 'config':
                         if (condition.getValue() instanceof Map) {
                             condition.getValue().each {configCondition ->
-                                if (script.commonPipelineEnvironment.getStepConfiguration(step.getKey(), currentStage)?.get(configCondition.getKey()) in configCondition.getValue()) {
+                                if (MapUtils.getByPath(stepConfig, configCondition.getKey()) in configCondition.getValue()) {
                                     stepActive = true
                                 }
                             }
-                        } else if (script.commonPipelineEnvironment.getStepConfiguration(step.getKey(), currentStage)?.get(condition.getValue())) {
+                        } else if (MapUtils.getByPath(stepConfig, condition.getValue())) {
                             stepActive = true
                         }
                         break
                     case 'configKeys':
                         if (condition.getValue() instanceof List) {
                             condition.getValue().each {configKey ->
-                                if (script.commonPipelineEnvironment.getStepConfiguration(step.getKey(), currentStage)?.get(configKey)) {
+                                if (MapUtils.getByPath(stepConfig, configKey)) {
                                     stepActive = true
                                 }
                             }
-                        } else if (script.commonPipelineEnvironment.getStepConfiguration(step.getKey(), currentStage)?.get(condition.getValue())) {
+                        } else if (MapUtils.getByPath(stepConfig, condition.getValue())) {
                             stepActive = true
                         }
                         break
                     case 'filePatternFromConfig':
-                        def conditionValue=script.commonPipelineEnvironment.getStepConfiguration(step.getKey(), currentStage)?.get(condition.getValue())
+                        def conditionValue = MapUtils.getByPath(stepConfig, condition.getValue())
                         if (conditionValue && findFiles(glob: conditionValue)) {
                             stepActive = true
                         }

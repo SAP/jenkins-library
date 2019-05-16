@@ -420,4 +420,34 @@ class ConfigurationHelperTest {
                                    .use()
     }
 
+    @Test
+    public void testWithPropertyInValuesString() {
+        Map config = ['key1':'value1']
+        Set possibleValues = ['value1', 'value2', 'value3']
+
+        ConfigurationHelper.newInstance(mockScript, config).collectValidationFailures()
+                                   .withPropertyInValues('key1', possibleValues)
+                                   .use()
+    }
+
+    @Test
+    public void testWithPropertyInValuesGString() {
+        String value = 'value1'
+        Map config = ['key1':"$value"]
+        Set possibleValues = ['value1', 'value2', 'value3']
+
+        ConfigurationHelper.newInstance(mockScript, config).collectValidationFailures()
+                                   .withPropertyInValues('key1', possibleValues)
+                                   .use()
+    }
+
+    @Test
+    public void testWithPropertyInValuesInt() {
+        Map config = ['key1':3]
+        Set possibleValues = [1, 2, 3]
+
+        ConfigurationHelper.newInstance(mockScript, config).collectValidationFailures()
+                                   .withPropertyInValues('key1', possibleValues)
+                                   .use()
+    }
 }
