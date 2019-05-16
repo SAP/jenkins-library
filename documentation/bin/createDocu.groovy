@@ -6,6 +6,8 @@ import com.sap.piper.GenerateDocumentation
 import java.util.regex.Matcher
 import groovy.text.StreamingTemplateEngine
 
+import com.sap.piper.MapUtils
+
 //
 // Collects helper functions for rendering the documentation
 //
@@ -21,7 +23,8 @@ class TemplateHelper {
 
             def props = parameters.get(it)
 
-            def defaultValue = isComplexDefault(props.defaultValue) ? renderComplexDefaultValue(props.defaultValue) : "`${props.defaultValue}`"
+            def defaultValue = isComplexDefault(props.defaultValue) ? renderComplexDefaultValue(props.defaultValue) :
+                                props.defaultValue != null ? "`${props.defaultValue}`" : ''
 
             t +=  "| `${it}` | ${props.mandatory ?: props.required ? 'yes' : 'no'} | ${defaultValue} | ${props.value ?: ''} |\n"
         }
@@ -375,14 +378,6 @@ class Helper {
         return mappings
     }
 
-    static getValue(Map config, List pPath) {
-        def p = config[pPath.head()]
-        if(pPath.size() == 1) return p // there is no tail
-        if(p in Map) getValue(p, pPath.tail())
-        return null // there is a remaining path which could not be resolved.
-                    // the value we are looking for does not exist.
-    }
-
     static resolveDocuRelevantSteps(GroovyScriptEngine gse, File stepsDir) {
 
         def docuRelevantSteps = []
@@ -641,7 +636,7 @@ def handleStep(stepName, prepareDefaultValuesStep, gse, customDefaults) {
 
         it ->
 
-            def defaultValue = Helper.getValue(defaultConfig, it.tokenize('/'))
+            def defaultValue = MapUtils.getByPath(defaultConfig, it)
 
             def parameterProperties =   [
                 defaultValue: defaultValue,
@@ -676,7 +671,7 @@ def handleStep(stepName, prepareDefaultValuesStep, gse, customDefaults) {
                             [
                                 dependentParameterKey: dependentParameterKey,
                                 key: possibleValue,
-                                value: Helper.getValue(defaultConfig.get(possibleValue), k.tokenize('/'))
+                                value: MapUtils.getByPath(defaultConfig.get(possibleValue), k)
                             ]
                     }
                 }
