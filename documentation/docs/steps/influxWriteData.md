@@ -15,8 +15,8 @@ Very basic setup can be done like that (with user "admin" and password "adminPwd
 
 For more advanced setup please reach out to the respective documentation:
 
-- https://hub.docker.com/_/influxdb/ (and https://github.com/docker-library/docs/tree/master/influxdb)
-- https://hub.docker.com/r/grafana/grafana/ (and https://github.com/grafana/grafana-docker)
+- InfluxDB ([Docker Hub](https://hub.docker.com/_/influxdb/) [GitHub](https://github.com/docker-library/docs/tree/master/influxdb))
+- Grafana ([Docker Hub](https://hub.docker.com/r/grafana/grafana/) [GitHub](https://github.com/grafana/grafana-docker))
 
 After you have started your InfluxDB docker you need to create a database:
 
