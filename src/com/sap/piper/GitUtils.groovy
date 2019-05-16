@@ -33,7 +33,12 @@ String getGitCommitId() {
     return sh(returnStdout: true, script: 'git rev-parse HEAD').trim()
 }
 
-String[] extractLogLines(String filter = '', String from = 'origin/master', String to = 'HEAD', String format = '%b') {
+String[] extractLogLines(
+    String filter = '',
+    String from = 'origin/master',
+    String to = 'HEAD',
+    String format = '%b'
+) {
 
     // Checks below: there was an value provided from outside, but the value was null.
     // Throwing an exception is more transparent than making a fallback to the defaults
