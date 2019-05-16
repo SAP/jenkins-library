@@ -6,6 +6,8 @@ import com.sap.piper.GenerateDocumentation
 import java.util.regex.Matcher
 import groovy.text.StreamingTemplateEngine
 
+import com.sap.piper.MapUtils
+
 //
 // Collects helper functions for rendering the documentation
 //
@@ -375,13 +377,6 @@ class Helper {
         return mappings
     }
 
-    static getValue(Map config, def pPath) {
-        def p =config[pPath.head()]
-        if(pPath.size() == 1) return p // there is no tail
-        if(p in Map) getValue(p, pPath.tail())
-        else return p
-    }
-
     static resolveDocuRelevantSteps(GroovyScriptEngine gse, File stepsDir) {
 
         def docuRelevantSteps = []
@@ -640,7 +635,7 @@ def handleStep(stepName, prepareDefaultValuesStep, gse, customDefaults) {
 
         it ->
 
-            def defaultValue = Helper.getValue(defaultConfig, it.split('/'))
+            def defaultValue = MapUtils.getByPath(defaultConfig, it)
 
             def parameterProperties =   [
                 defaultValue: defaultValue,
@@ -675,7 +670,7 @@ def handleStep(stepName, prepareDefaultValuesStep, gse, customDefaults) {
                             [
                                 dependentParameterKey: dependentParameterKey,
                                 key: possibleValue,
-                                value: Helper.getValue(defaultConfig.get(possibleValue), k.split('/'))
+                                value: MapUtils.getByPath(defaultConfig.get(possibleValue), k)
                             ]
                     }
                 }
