@@ -628,6 +628,7 @@ for(step in stepDescriptors) {
 //update stepDescriptors: remove stages and put into separate stageDescriptors map
 def stageDescriptors = [:]
 stages.each {key, value ->
+    System.err << "[INFO] Processing stage '${key}' ...\n"
     stageDescriptors."${key}" = [:] << stepDescriptors."${key}"
     stepDescriptors.remove(key)
 
