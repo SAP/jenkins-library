@@ -42,4 +42,3 @@ def call(Map parameters = [:], body) {
 
     return duration
 }
-

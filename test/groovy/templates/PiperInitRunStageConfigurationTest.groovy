@@ -99,7 +99,7 @@ stages:
     stepConditions:
       firstStep:
         config: testGeneral
-  testStage2: 
+  testStage2:
     stepConditions:
       secondStep:
         config: testStage
@@ -107,7 +107,7 @@ stages:
     stepConditions:
       thirdStep:
         config: testStep
-   
+
 '''
             } else {
                 return '''
@@ -155,23 +155,23 @@ stages:
   testStage1:
     stepConditions:
       firstStep:
-        config: 
+        config:
           testGeneral:
             - myValx
-            - myVal1 
-  testStage2: 
+            - myVal1
+  testStage2:
     stepConditions:
       secondStep:
-        config: 
-          testStage: 
+        config:
+          testStage:
             - maValXyz
   testStage3:
     stepConditions:
       thirdStep:
-        config: 
+        config:
           testStep:
             - myVal3
-   
+
 '''
             } else {
                 return '''
@@ -218,18 +218,18 @@ stages:
   testStage1:
     stepConditions:
       firstStep:
-        configKeys: 
+        configKeys:
           - myKey1_1
-          - myKey1_2 
-  testStage2: 
+          - myKey1_2
+  testStage2:
     stepConditions:
       secondStep:
-        configKeys: 
+        configKeys:
           - myKey2_1
   testStage3:
     stepConditions:
       thirdStep:
-        configKeys: 
+        configKeys:
           - myKey3_1
 '''
             } else {

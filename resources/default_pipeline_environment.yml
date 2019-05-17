@@ -177,6 +177,27 @@ steps:
     stashContent:
       - 'tests'
     testReportFilePath: 'cst-report.json'
+  detectExecuteScan:
+    detect:
+      projectVersion: '1'
+      scanners:
+        - signature
+      scanPaths:
+        - '.'
+      scanProperties:
+        - '--blackduck.signature.scanner.memory=4096'
+        - '--blackduck.timeout=6000'
+        - '--blackduck.trust.cert=true'
+        - '--detect.policy.check.fail.on.severities=BLOCKER,CRITICAL,MAJOR'
+        - '--detect.report.timeout=4800'
+        - '--logging.level.com.synopsys.integration=DEBUG'
+    stashContent:
+      - 'buildDescriptor'
+      - 'checkmarx'
+    # buildTool specific settings
+    golang:
+      dockerImage: 'golang:1.12-stretch'
+      dockerWorkspace: ''
   dockerExecute:
     dockerPullImage: true
     sidecarPullImage: true
@@ -442,6 +463,12 @@ steps:
       - 'opensourceConfiguration'
     toJson: false
     toHtml: false
+  sonarExecuteScan:
+    dockerImage: 'maven:3.5-jdk-8'
+    instance: 'SonarCloud'
+    options: []
+    pullRequestProvider: 'github'
+    sonarScannerDownloadUrl: 'https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-3.3.0.1492-linux.zip'
   testsPublishResults:
     failOnError: false
     junit:
