@@ -108,6 +108,7 @@ class TemplateHelper {
     }
 
     static createStepActivationSection(Map configConditions) {
+        if (!configConditions) return 'For this stage no conditions are assigned to steps.'
         def t = 'Certain steps will be activated automatically depending on following conditions:\n\n'
 
 
