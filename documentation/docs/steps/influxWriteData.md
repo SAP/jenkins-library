@@ -1,22 +1,6 @@
-# influxWriteData
+# ${docGenStepName}
 
-## Description
-
-Since your Continuous Delivery Pipeline in Jenkins provides your productive development and delivery infrastructure you should monitor the pipeline to ensure it runs as expected. How to setup this monitoring is described in the following.
-
-You basically need three components:
-
-- The [InfluxDB Jenkins plugin](https://wiki.jenkins-ci.org/display/JENKINS/InfluxDB+Plugin) which allows you to send build metrics to InfluxDB servers
-- The [InfluxDB](https://www.influxdata.com/time-series-platform/influxdb/) to store this data (Docker available)
-- A [Grafana](http://grafana.org/) dashboard to visualize the data stored in InfluxDB (Docker available)
-
-!!! note "no InfluxDB available?"
-    If you don't have an InfluxDB available yet this step will still provide you some benefit.
-
-    It will create following files for you and archive them into your build:
-
-    * `jenkins_data.json`: This file gives you build-specific information, like e.g. build result, stage where the build failed
-    * `influx_data.json`: This file gives you detailed information about your pipeline, e.g. stage durations, steps executed, ...
+## ${docGenDescription}
 
 ## Prerequisites
 
@@ -31,8 +15,8 @@ Very basic setup can be done like that (with user "admin" and password "adminPwd
 
 For more advanced setup please reach out to the respective documentation:
 
-- https://hub.docker.com/_/influxdb/ (and https://github.com/docker-library/docs/tree/master/influxdb)
-- https://hub.docker.com/r/grafana/grafana/ (and https://github.com/grafana/grafana-docker)
+- InfluxDB ([Docker Hub](https://hub.docker.com/_/influxdb/) [GitHub](https://github.com/docker-library/docs/tree/master/influxdb))
+- Grafana ([Docker Hub](https://hub.docker.com/r/grafana/grafana/) [GitHub](https://github.com/grafana/grafana-docker))
 
 After you have started your InfluxDB docker you need to create a database:
 
@@ -79,37 +63,9 @@ You need to define the influxDB server in your pipeline as it is defined in the 
 influxDBServer=jenkins
 ```
 
-## Parameters
+## ${docGenParameters}
 
-| parameter | mandatory | default | possible values |
-| ----------|-----------|---------|-----------------|
-|script|yes|||
-|artifactVersion|no|`commonPipelineEnvironment.getArtifactVersion()`||
-|customData|no|`InfluxData.getInstance().getFields().jenkins_custom_data`||
-|customDataMap|no|`InfluxData.getInstance().getFields()`||
-|customDataMapTags|no|`InfluxData.getInstance().getTags()`||
-|customDataTags|no|`InfluxData.getInstance().getTags().jenkins_custom_data`||
-|influxPrefix|no|||
-|influxServer|no|`''`||
-|wrapInNode|no|`false`||
-
-## Step configuration
-
-We recommend to define values of step parameters via [config.yml file](../configuration.md).
-
-In following sections the configuration is possible:
-
-| parameter | general | step | stage |
-| ----------|-----------|---------|-----------------|
-|script||||
-|artifactVersion||X|X|
-|customData||X|X|
-|customDataMap||X|X|
-|customDataMapTags||X|X|
-|customDataTags||X|X|
-|influxPrefix||X|X|
-|influxServer||X|X|
-|wrapInNode||X|X|
+## ${docGenConfiguration}
 
 ## Example
 

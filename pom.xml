@@ -17,10 +17,10 @@
     <url>https://sap.github.io/jenkins-library/</url>
 
     <licenses>
-      <license>
-        <name>Apache License 2.0</name>
-        <comments>https://github.com/SAP/jenkins-library/blob/master/LICENSE</comments>
-      </license>
+        <license>
+            <name>Apache License 2.0</name>
+            <comments>https://github.com/SAP/jenkins-library/blob/master/LICENSE</comments>
+        </license>
     </licenses>
 
     <repositories>
