@@ -43,7 +43,7 @@ Once you have started both docker containers and Influx and Grafana are running 
 To setup your Jenkins you need to do two configuration steps:
 
 1. Configure Jenkins (via Manage Jenkins)
-2. Adapt pipeline configuration
+1. Adapt pipeline configuration
 
 ### Configure Jenkins
 
