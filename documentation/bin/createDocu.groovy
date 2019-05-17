@@ -22,7 +22,7 @@ class TemplateHelper {
 
             def props = parameters.get(it)
 
-            def defaultValue = isComplexDefault(props.defaultValue) ? renderComplexDefaultValue(props.defaultValue) : "${props.defaultValue ? ('`' + props.defaultValue + '`') : ''}"
+            def defaultValue = isComplexDefault(props.defaultValue) ? renderComplexDefaultValue(props.defaultValue) : renderSimpleDefaultValue(props.defaultValue)
 
             t +=  "| `${it}` | ${props.mandatory ?: props.required ? 'yes' : 'no'} | ${defaultValue} | ${props.value ?: ''} |\n"
         }
@@ -45,6 +45,11 @@ class TemplateHelper {
         _default
             .collect { "${it.dependentParameterKey}=`${it.key ?: '<empty>'}`:`${it.value ?: '<empty>'}`" }
             .join('<br />')
+    }
+
+    private static renderSimpleDefaultValue(def _default) {
+        if (_default == null) return ''
+        return "`${props.defaultValue}`"
     }
 
     static createParameterDescriptionSection(Map parameters) {
