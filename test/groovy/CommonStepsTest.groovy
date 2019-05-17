@@ -46,14 +46,14 @@ public class CommonStepsTest extends BasePiperTest{
 
         // all steps not adopting the usual pattern of working with the script.
         def whitelistScriptReference = [
-               'commonPipelineEnvironment',
-               'handlePipelineStepErrors',
-               'pipelineExecute',
-               'piperPipeline',
-               'prepareDefaultValues',
-               'setupCommonPipelineEnvironment',
-               'toolValidate',
-           ]
+            'commonPipelineEnvironment',
+            'handlePipelineStepErrors',
+            'pipelineExecute',
+            'piperPipeline',
+            'prepareDefaultValues',
+            'setupCommonPipelineEnvironment',
+            'buildSetResult'
+        ]
 
         List steps = getSteps().stream()
             .filter {! whitelistScriptReference.contains(it)}
@@ -103,18 +103,18 @@ public class CommonStepsTest extends BasePiperTest{
     }
 
     private static fieldRelatedWhitelist = [
-            'toolValidate', // step is intended to be configured by other steps
-            'durationMeasure', // only expects parameters via signature
-            'prepareDefaultValues', // special step (infrastructure)
-            'piperPipeline', // special step (infrastructure)
-            'pipelineStashFilesAfterBuild', // intended to be called from pipelineStashFiles
-            'pipelineStashFilesBeforeBuild', // intended to be called from pipelineStashFiles
-            'pipelineStashFiles', // only forwards to before/after step
-            'pipelineExecute', // special step (infrastructure)
-            'commonPipelineEnvironment', // special step (infrastructure)
-            'handlePipelineStepErrors', // special step (infrastructure)
-            'piperStageWrapper' //intended to be called from within stages
-            ]
+        'durationMeasure', // only expects parameters via signature
+        'prepareDefaultValues', // special step (infrastructure)
+        'piperPipeline', // special step (infrastructure)
+        'pipelineStashFilesAfterBuild', // intended to be called from pipelineStashFiles
+        'pipelineStashFilesBeforeBuild', // intended to be called from pipelineStashFiles
+        'pipelineStashFiles', // only forwards to before/after step
+        'pipelineExecute', // special step (infrastructure)
+        'commonPipelineEnvironment', // special step (infrastructure)
+        'handlePipelineStepErrors', // special step (infrastructure)
+        'piperStageWrapper', //intended to be called from within stages
+        'buildSetResult'
+    ]
 
     @Test
     public void generalConfigKeysSetPresentTest() {
@@ -172,7 +172,8 @@ public class CommonStepsTest extends BasePiperTest{
 
         def whitelist = [
             'commonPipelineEnvironment',
-            'piperPipeline'
+            'piperPipeline',
+            'buildSetResult'
         ]
 
         def stepsWithWrongStepName = []
