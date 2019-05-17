@@ -3,28 +3,32 @@
 mvn clean test
 groovy steps.groovy
 
+WS_OUT="$(pwd)/jenkins_workspace"
+WS_IN=/workspace
 
-[ -d jenkins_home ] && rm -rf jenkins_home
-cp -r jenkins_home_init jenkins_home
+REL_CALLS=calls.json
+REL_RESULT=result.json
 
-CALLS="$(pwd)/jenkins_home/piper/calls.json"
+CALLS="${WS_OUT}/${REL_CALLS}"
+RESULT="${WS_OUT}/${REL_RESULT}"
 
-mkdir -p $(dirname "${CALLS}")
+for f in ${CALLS} ${RESULT}
+do
+    [ -e "${f}" ] && rm -rf "${f}"
+done
 
-mv target/performedCalls.json "${CALLS}"
+cp target/performedCalls.json "${CALLS}"
 
 [ -f "${CALLS}" ] || { echo "File \"${CALLS}\" does not exist." ; exit 1; }
 
-cID="$(docker run -d -v `pwd`/jenkins_home:/var/jenkins_home --env calls=/var/jenkins_home/piper/calls.json --env result=/var/jenkins_home/piper/result.json  ppiper/jenkins-master)"
-echo "ContainerId: ${cID}"
-while true
-do
-    [ -f jenkins_home/piper/result.json ] && { docker rm -f "${cID}"; break; } # normal ...
-    [ -f jenkins_home/piper/FAILURE ] && { docker rm -f "${cID}"; break; }     # executing of our init script failed
-    docker ps --no-trunc |grep -q "${cID}"|| break                            # docker container does not run anymore
-    echo "[INFO] waiting for results"
-    sleep 10
-done
+docker run \
+    -w "${WS_IN}" \
+    --env calls="${WS_IN}/${REL_CALLS}" \
+    --env result="${WS_IN}/${REL_RESULT}" \
+    -v "${WS_OUT}:${WS_IN}"  \
+    ppiper/jenkinsfile-runner \
+        -ns \
+        -f Jenkinsfile \
+        --runWorkspace /workspace
 
-RESULT="$(pwd)/jenkins_home/piper/result.json"
-[ -f "${RESULT}" ] && cat jenkins_home/piper/result.json
+[ -f "${RESULT}" ] && cat "${RESULT}"

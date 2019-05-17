@@ -3,6 +3,18 @@ import groovy.json.JsonSlurper
 
 import jenkins.model.Jenkins
 
+node() {
+    stage('Resolve Plugins') {
+        try {
+            resolvePlugins()
+        } catch(Exception e) {
+            def result = System.getenv()['result']
+            new File(new File(result).getParentFile(), 'FAILURE').text = "${e.getMessage()}"
+            throw e
+        }
+    }
+}
+
 def resolvePlugins() {
     def stepCallMapping = new JsonSlurper().parseText(new File(System.getenv()['calls']).text)
 
@@ -42,12 +54,4 @@ def resolvePlugin(call) {
             return  pd.real.plugin?.shortName
     }
     return null
-}
-
-try {
-    resolvePlugins()
-} catch(Exception e) {
-    def result = System.getenv()['result']
-    new File(new File(result).getParentFile(), 'FAILURE').text = ''
-    throw e
 }
