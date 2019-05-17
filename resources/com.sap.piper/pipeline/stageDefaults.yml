@@ -1,4 +1,8 @@
 stages:
+  Init:
+    stepConditions:
+      slackSendNotification:
+        config: 'channel'
   'Pull-Request Voting': {}
   Build: {}
   'Additional Unit Tests': {}
@@ -18,3 +22,7 @@ stages:
   Compliance: {}
   Promote: {}
   Release: {}
+  'Post Actions':
+    stepConditions:
+      slackSendNotification:
+        config: 'channel'

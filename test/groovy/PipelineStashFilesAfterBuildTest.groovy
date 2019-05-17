@@ -24,22 +24,6 @@ class PipelineStashFilesAfterBuildTest extends BasePiperTest {
     void testStashAfterBuild() {
         helper.registerAllowedMethod("fileExists", [String.class], {
             searchTerm ->
-                return false
-        })
-        stepRule.step.pipelineStashFilesAfterBuild(
-            script: nullScript,
-            juStabUtils: utils
-        )
-        // asserts
-        assertFalse(loggingRule.log.contains('Stash content: checkmarx'))
-        assertThat(loggingRule.log, containsString('Stash content: classFiles'))
-        assertThat(loggingRule.log, containsString('Stash content: sonar'))
-    }
-
-    @Test
-    void testStashAfterBuildWithCheckmarx() {
-        helper.registerAllowedMethod("fileExists", [String.class], {
-            searchTerm ->
                 return true
         })
         stepRule.step.pipelineStashFilesAfterBuild(
@@ -52,21 +36,4 @@ class PipelineStashFilesAfterBuildTest extends BasePiperTest {
         assertThat(loggingRule.log, containsString('Stash content: classFiles'))
         assertThat(loggingRule.log, containsString('Stash content: sonar'))
     }
-
-    @Test
-    void testStashAfterBuildWithCheckmarxConfig() {
-        helper.registerAllowedMethod("fileExists", [String.class], {
-            searchTerm ->
-                return true
-        })
-        stepRule.step.pipelineStashFilesAfterBuild(
-            script: [commonPipelineEnvironment: [configuration: [steps: [executeCheckmarxScan: [checkmarxProject: 'TestProject']]]]],
-            juStabUtils: utils,
-        )
-        // asserts
-        assertThat(loggingRule.log, containsString('Stash content: checkmarx'))
-        assertThat(loggingRule.log, containsString('Stash content: classFiles'))
-        assertThat(loggingRule.log, containsString('Stash content: sonar'))
-    }
-
 }

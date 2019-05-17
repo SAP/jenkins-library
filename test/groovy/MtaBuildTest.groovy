@@ -13,12 +13,10 @@ import util.JenkinsLoggingRule
 import util.JenkinsReadYamlRule
 import util.JenkinsShellCallRule
 import util.JenkinsStepRule
+import util.JenkinsWriteFileRule
 import util.Rules
 
 public class MtaBuildTest extends BasePiperTest {
-
-    def toolMtaValidateCalled = false
-    def toolJavaValidateCalled = false
 
     private ExpectedException thrown = new ExpectedException()
     private JenkinsLoggingRule loggingRule = new JenkinsLoggingRule(this)
@@ -26,6 +24,7 @@ public class MtaBuildTest extends BasePiperTest {
     private JenkinsDockerExecuteRule dockerExecuteRule = new JenkinsDockerExecuteRule(this)
     private JenkinsStepRule stepRule = new JenkinsStepRule(this)
     private JenkinsReadYamlRule readYamlRule = new JenkinsReadYamlRule(this).registerYaml('mta.yaml', defaultMtaYaml() )
+    private JenkinsWriteFileRule writeFileRule = new JenkinsWriteFileRule(this)
 
     @Rule
     public RuleChain ruleChain = Rules
@@ -36,11 +35,14 @@ public class MtaBuildTest extends BasePiperTest {
         .around(shellRule)
         .around(dockerExecuteRule)
         .around(stepRule)
+        .around(writeFileRule)
 
     @Before
     void init() {
 
         helper.registerAllowedMethod('fileExists', [String], { s -> s == 'mta.yaml' })
+
+        helper.registerAllowedMethod('httpRequest', [String.class], { s -> new SettingsStub()})
 
         shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, '.*\\$MTA_JAR_LOCATION.*', '')
         shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, '.*\\$JAVA_HOME.*', '')
@@ -89,9 +91,6 @@ public class MtaBuildTest extends BasePiperTest {
         stepRule.step.mtaBuild(script: nullScript, mtaJarLocation: '/mylocation/mta/mta.jar', buildTarget: 'NEO')
 
         assert shellRule.shell.find { c -> c.contains('-jar /mylocation/mta/mta.jar --mtar')}
-
-        assert loggingRule.log.contains("SAP Multitarget Application Archive Builder file '/mylocation/mta/mta.jar' retrieved from configuration.")
-        assert loggingRule.log.contains("Using SAP Multitarget Application Archive Builder '/mylocation/mta/mta.jar'.")
     }
 
 
@@ -131,19 +130,6 @@ public class MtaBuildTest extends BasePiperTest {
 
 
     @Test
-    void mtaJarLocationFromEnvironmentTest() {
-
-        shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, '.*\\$MTA_JAR_LOCATION.*', '/env/mta/mta.jar')
-
-        stepRule.step.mtaBuild(script: nullScript, buildTarget: 'NEO')
-
-        assert shellRule.shell.find { c -> c.contains("-jar /env/mta/mta.jar --mtar")}
-        assert loggingRule.log.contains("SAP Multitarget Application Archive Builder file '/env/mta/mta.jar' retrieved from environment.")
-        assert loggingRule.log.contains("Using SAP Multitarget Application Archive Builder '/env/mta/mta.jar'.")
-    }
-
-
-    @Test
     void mtaJarLocationFromCustomStepConfigurationTest() {
 
         nullScript.commonPipelineEnvironment.configuration = [steps:[mtaBuild:[mtaJarLocation: '/config/mta/mta.jar']]]
@@ -151,9 +137,7 @@ public class MtaBuildTest extends BasePiperTest {
         stepRule.step.mtaBuild(script: nullScript,
                       buildTarget: 'NEO')
 
-        assert shellRule.shell.find(){ c -> c.contains("-jar /config/mta/mta.jar --mtar")}
-        assert loggingRule.log.contains("SAP Multitarget Application Archive Builder file '/config/mta/mta.jar' retrieved from configuration.")
-        assert loggingRule.log.contains("Using SAP Multitarget Application Archive Builder '/config/mta/mta.jar'.")
+        assert shellRule.shell.find(){ c -> c.contains('java -jar /config/mta/mta.jar --mtar')}
     }
 
 
@@ -163,9 +147,7 @@ public class MtaBuildTest extends BasePiperTest {
         stepRule.step.mtaBuild(script: nullScript,
                       buildTarget: 'NEO')
 
-        assert shellRule.shell.find(){ c -> c.contains("-jar /opt/sap/mta/lib/mta.jar --mtar")}
-        assert loggingRule.log.contains("SAP Multitarget Application Archive Builder file '/opt/sap/mta/lib/mta.jar' retrieved from configuration.")
-        assert loggingRule.log.contains("Using SAP Multitarget Application Archive Builder '/opt/sap/mta/lib/mta.jar'.")
+        assert shellRule.shell.find(){ c -> c.contains('java -jar /opt/sap/mta/lib/mta.jar --mtar')}
     }
 
 
@@ -202,6 +184,46 @@ public class MtaBuildTest extends BasePiperTest {
         stepRule.step.mtaBuild(script: nullScript, dockerOptions: 'something')
 
         assert 'something' == dockerExecuteRule.dockerParams.dockerOptions
+    }
+
+    @Test
+    void canConfigureMavenUserSettings() {
+
+        stepRule.step.mtaBuild(script: nullScript, projectSettingsFile: 'settings.xml')
+
+        assert shellRule.shell.find(){ c -> c.contains('cp settings.xml $HOME/.m2/settings.xml')}
+    }
+
+    @Test
+    void canConfigureMavenUserSettingsFromRemoteSource() {
+
+        stepRule.step.mtaBuild(script: nullScript, projectSettingsFile: 'https://some.host/my-settings.xml')
+
+        assert shellRule.shell.find(){ c -> c.contains('cp project-settings.xml $HOME/.m2/settings.xml')}
+    }
+
+    @Test
+    void canConfigureMavenGlobalSettings() {
+
+        stepRule.step.mtaBuild(script: nullScript, globalSettingsFile: 'settings.xml')
+
+        assert shellRule.shell.find(){ c -> c.contains('cp settings.xml $M2_HOME/conf/settings.xml')}
+    }
+
+    @Test
+    void canConfigureNpmRegistry() {
+
+        stepRule.step.mtaBuild(script: nullScript, defaultNpmRegistry: 'myNpmRegistry.com')
+
+        assert shellRule.shell.find(){ c -> c.contains('npm config set registry myNpmRegistry.com')}
+    }
+
+    @Test
+    void canConfigureMavenGlobalSettingsFromRemoteSource() {
+
+        stepRule.step.mtaBuild(script: nullScript, globalSettingsFile: 'https://some.host/my-settings.xml')
+
+        assert shellRule.shell.find(){ c -> c.contains('cp global-settings.xml $M2_HOME/conf/settings.xml')}
     }
 
     @Test
@@ -297,4 +319,9 @@ public class MtaBuildTest extends BasePiperTest {
                 '''
     }
 
+    class SettingsStub {
+        String getContent() {
+            return "<xml>sometext</xml>"
+        }
+    }
 }

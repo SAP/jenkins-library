@@ -3,6 +3,7 @@ import static com.sap.piper.Prerequisites.checkScript
 import com.sap.piper.Utils
 import groovy.transform.Field
 
+import com.sap.piper.GenerateDocumentation
 import com.sap.piper.ConfigurationHelper
 import com.sap.piper.cm.BackendType
 import com.sap.piper.cm.ChangeManagement
@@ -19,15 +20,60 @@ import static com.sap.piper.cm.StepHelpers.getBackendTypeAndLogInfoIfCMIntegrati
 @Field Set GENERAL_CONFIG_KEYS = STEP_CONFIG_KEYS
 
 @Field Set STEP_CONFIG_KEYS = [
-    'changeManagement'
+    'changeManagement',
+        /**
+         * @see checkChangeInDevelopment
+         * @parentConfigKey changeManagement
+         */
+        'clientOpts',
+        /**
+         * @see checkChangeInDevelopment
+         * @parentConfigKey changeManagement
+         */
+        'credentialsId',
+        /**
+         * @see checkChangeInDevelopment
+         * @parentConfigKey changeManagement
+         */
+        'endpoint',
+        /**
+         * @see checkChangeInDevelopment
+         * @parentConfigKey changeManagement
+         */
+        'git/from',
+        /**
+         * @see checkChangeInDevelopment
+         * @parentConfigKey changeManagement
+         */
+        'git/to',
+        /**
+         * @see checkChangeInDevelopment
+         * @parentConfigKey changeManagement
+         */
+        'git/format',
+        /**
+         * @see transportRequestCreate
+         * @parentConfigKey changeManagement
+         */
+        'rfc/developmentInstance',
+        /**
+         * @see transportRequestCreate
+         * @parentConfigKey changeManagement
+         */
+        'rfc/developmentClient',
   ]
 
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS.plus([
+    /** @see transportRequestCreate */
     'changeDocumentId',
+    /** The id of the transport request to release. */
     'transportRequestId',
+    /** @see transportRequestCreate */
     'verbose',
-  ])
+])
 
+/** Releases a Transport Request. */
+@GenerateDocumentation
 void call(parameters = [:]) {
 
     handlePipelineStepErrors (stepName: STEP_NAME, stepParameters: parameters) {
