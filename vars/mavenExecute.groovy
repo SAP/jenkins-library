@@ -6,6 +6,8 @@ import com.sap.piper.Utils
 
 import groovy.transform.Field
 
+import static com.sap.piper.Utils.downloadSettingsFromUrl
+
 @Field def STEP_NAME = getClass().getName()
 
 @Field Set GENERAL_CONFIG_KEYS = []
@@ -63,35 +65,33 @@ void call(Map parameters = [:]) {
 
         String command = "mvn"
 
-        def globalSettingsFile = configuration.globalSettingsFile
-        if (globalSettingsFile?.trim()) {
-            if(globalSettingsFile.trim().startsWith("http")){
-                downloadSettingsFromUrl(globalSettingsFile)
-                globalSettingsFile = "settings.xml"
+        String globalSettingsFile = configuration.globalSettingsFile?.trim()
+        if (globalSettingsFile) {
+            if (globalSettingsFile.startsWith("http")) {
+                globalSettingsFile = downloadSettingsFromUrl(this, globalSettingsFile, 'global-settings.xml')
             }
             command += " --global-settings '${globalSettingsFile}'"
         }
 
-        def m2Path = configuration.m2Path
+        String m2Path = configuration.m2Path
         if(m2Path?.trim()) {
             command += " -Dmaven.repo.local='${m2Path}'"
         }
 
-        def projectSettingsFile = configuration.projectSettingsFile
-        if (projectSettingsFile?.trim()) {
-            if(projectSettingsFile.trim().startsWith("http")){
-                downloadSettingsFromUrl(projectSettingsFile)
-                projectSettingsFile = "settings.xml"
+        String projectSettingsFile = configuration.projectSettingsFile?.trim()
+        if (projectSettingsFile) {
+            if (projectSettingsFile.startsWith("http")) {
+                projectSettingsFile = downloadSettingsFromUrl(this, projectSettingsFile, 'project-settings.xml')
             }
             command += " --settings '${projectSettingsFile}'"
         }
 
-        def pomPath = configuration.pomPath
+        String pomPath = configuration.pomPath
         if(pomPath?.trim()){
             command += " --file '${pomPath}'"
         }
 
-        def mavenFlags = configuration.flags
+        String mavenFlags = configuration.flags
         if (mavenFlags?.trim()) {
             command += " ${mavenFlags}"
         }
@@ -122,9 +122,3 @@ void call(Map parameters = [:]) {
         }
     }
 }
-
-private downloadSettingsFromUrl(String url){
-    def settings = httpRequest url
-    writeFile file: 'settings.xml', text: settings.getContent()
-}
-

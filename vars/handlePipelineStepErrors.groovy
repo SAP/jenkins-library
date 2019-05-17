@@ -51,7 +51,7 @@ import org.jenkinsci.plugins.workflow.steps.FlowInterruptedException
 @GenerateDocumentation
 void call(Map parameters = [:], body) {
     // load default & individual configuration
-    def cpe = parameters.stepParameters?.script?.commonPipelineEnvironment ?: commonPipelineEnvironment
+    def cpe = parameters.stepParameters?.script?.commonPipelineEnvironment ?: null
     Map config = ConfigurationHelper.newInstance(this)
         .loadStepDefaults()
         .mixinGeneralConfig(cpe, GENERAL_CONFIG_KEYS)
@@ -81,11 +81,24 @@ void call(Map parameters = [:], body) {
         if (config.failOnError || config.stepName in config.mandatorySteps) {
             throw ex
         }
+
         if (config.stepParameters?.script) {
             config.stepParameters?.script.currentBuild.result = 'UNSTABLE'
         } else {
             currentBuild.result = 'UNSTABLE'
         }
+
+        echo "[${STEP_NAME}] Error in step ${config.stepName} - Build result set to 'UNSTABLE'"
+
+        List unstableSteps = cpe?.getValue('unstableSteps') ?: []
+        if(!unstableSteps) {
+            unstableSteps = []
+        }
+
+        // add information about unstable steps to pipeline environment
+        // this helps to bring this information to users in a consolidated manner inside a pipeline
+        unstableSteps.add(config.stepName)
+        cpe?.setValue('unstableSteps', unstableSteps)
 
     } catch (Throwable error) {
         if (config.echoDetails)

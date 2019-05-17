@@ -74,8 +74,7 @@ To setup the shared library, you need to perform the following steps:
 1. Scroll down to section *Global Pipeline Libraries* and add a new Library by
    clicking the *Add* button.
     1. set *Library Name* to `piper-lib-os`
-    1. set *Default Version* to the branch or tag you want to consume (e.g.
-       `master` or `v0.1`)
+    1. set *Default Version* to the branch or tag you want to consume (e.g. `master` or `v0.1`)
     1. set *Retrieval Method* to `Modern SCM`
     1. set *Source Code Management* to `Git`
     1. set *Project Repository* to `https://github.com/SAP/jenkins-library`
