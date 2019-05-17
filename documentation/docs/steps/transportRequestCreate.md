@@ -23,8 +23,7 @@ resource in an custom shared library.
 
 // inside the shared lib denoted by 'foo' the additional configuration file
 // needs to be located under 'resources' ('resoures/myConfig.yml')
-prepareDefaultValues script: this,
-                             customDefaults: 'myConfig.yml'
+prepareDefaultValues script: this, customDefaults: 'myConfig.yml'
 ```
 
 Example content of `'resources/myConfig.yml'` in branch `'master'` of the repository denoted by

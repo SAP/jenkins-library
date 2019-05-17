@@ -11,10 +11,10 @@ Your configuration inherits from the default configuration located at [https://g
 Configuration of the Piper steps as well the Piper templates can be done in a hierarchical manner.
 
 1. Directly passed step parameters will always take precedence over other configuration values and defaults
-2. Stage configuration parameters define a Jenkins pipeline stage dependent set of parameters (e.g. deployment options for the `Acceptance` stage)
-3. Step configuration defines how steps behave in general (e.g. step `cloudFoundryDeploy`)
-4. General configuration parameters define parameters which are available across step boundaries
-5. Default configuration comes with the Piper library and is always available
+1. Stage configuration parameters define a Jenkins pipeline stage dependent set of parameters (e.g. deployment options for the `Acceptance` stage)
+1. Step configuration defines how steps behave in general (e.g. step `cloudFoundryDeploy`)
+1. General configuration parameters define parameters which are available across step boundaries
+1. Default configuration comes with the Piper library and is always available
 
 ![Piper Configuration](images/piper_config.png)
 
