@@ -39,7 +39,7 @@ def resolvePlugin(call) {
 
     for(def pd in pDescs) {
         if(pd.getSymbol() == call)
-          return  pd.real.plugin?.shortName
+            return  pd.real.plugin?.shortName
     }
     return null
 }

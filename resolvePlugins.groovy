@@ -7,15 +7,15 @@ def stepPluginMapping = [:]
 println "[INFO] Resolving plugins ..."
 
 for(def step in stepCallMapping) {
-  def resolvedPlugins = [:]
-  for(def call in step.value) {
-     def resolvedPlugin = resolvePlugin(call)
-     if (! resolvedPlugin) resolvedPlugin = 'UNIDENTIFIED'
-     if(resolvedPlugins[resolvedPlugin] == null)
-         resolvedPlugins[resolvedPlugin] = (Set)[]
-     resolvedPlugins[resolvedPlugin] << call
-     stepPluginMapping.put(step.key,resolvedPlugins)
-  }
+    def resolvedPlugins = [:]
+    for(def call in step.value) {
+        def resolvedPlugin = resolvePlugin(call)
+        if (! resolvedPlugin) resolvedPlugin = 'UNIDENTIFIED'
+        if(resolvedPlugins[resolvedPlugin] == null)
+            resolvedPlugins[resolvedPlugin] = (Set)[]
+            resolvedPlugins[resolvedPlugin] << call
+            stepPluginMapping.put(step.key,resolvedPlugins)
+    }
 }
 
 def result = System.getenv()['result']
@@ -35,8 +35,7 @@ def resolvePlugin(call) {
 
     for(def pd in pDescs) {
         if(pd.getSymbol() == call)
-          return  pd.real.plugin?.shortName
+            return  pd.real.plugin?.shortName
     }
     return null
 }
-
