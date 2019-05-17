@@ -1,8 +1,6 @@
-# testsPublishResults
+# ${docGenStepName}
 
-## Description
-
-This step can publish test results from various sources.
+## ${docGenDescription}
 
 ## Prerequsites
 
@@ -28,29 +26,7 @@ testsPublishResults(
 )
 ```
 
-Available parameters:
-
-| parameter | mandatory | default | possible values |
-| ----------|-----------|---------|-----------------|
-| script | yes | | |
-| `failOnError` | no | `false` | `true`, `false` |
-| junit | no | `false` | true, false |
-| jacoco | no | `false` | true, false |
-| cobertura | no | `false` | true, false |
-| jmeter | no | `false` | true, false |
-
-* `script` - The common script environment of the Jenkinsfile running.
-    Typically the reference to the script calling the pipeline step is provided
-    with the `this` parameter, as in `script: this`.
-    This allows the function to access the [`commonPipelineEnvironment`](commonPipelineEnvironment.md)
-    for retrieving, for example, configuration parameters.
-* `failOnError` - If `failOnError` it set to `true` the step will fail the build if JUnit detected any failing tests.
-* `junit` - Publishes test results files in JUnit format with the [JUnit Plugin](https://plugins.jenkins.io/junit).
-* `jacoco` - Publishes code coverage with the [JaCoCo plugin](https://plugins.jenkins.io/jacoco) .
-* `cobertura` - Publishes code coverage with the [Cobertura plugin](https://plugins.jenkins.io/cobertura).
-* `jmeter` - Publishes performance test results with the [Performance plugin](https://plugins.jenkins.io/performance).
-
-Each of the parameters `junit`, `jacoco`, `cobertura` and `jmeter` can be set to `true` or `false` but also to a map of parameters to hand in different settings for the tools.
+## ${docGenParameters}
 
 ### junit
 
@@ -101,14 +77,7 @@ Each of the parameters `junit`, `jacoco`, `cobertura` and `jmeter` can be set to
 | archive | no | `false` | true, false |
 | allowEmptyResults | no | `true` | true, false |
 
-## Step configuration
-
-Following parameters can also be specified as step parameters using the global configuration file:
-
-* `junit`
-* `jacoco`
-* `cobertura`
-* `jmeter`
+## ${docGenConfiguration}
 
 ## Side effects
 

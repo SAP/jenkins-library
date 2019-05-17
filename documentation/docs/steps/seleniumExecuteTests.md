@@ -18,7 +18,7 @@ seleniumExecuteTests (script: this) {
 
 ### Example test using WebdriverIO
 
-Example based on http://webdriver.io/guide/getstarted/modes.html and http://webdriver.io/guide.html
+Example based on <http://webdriver.io/guide/getstarted/modes.html> and <http://webdriver.io/guide.html>
 
 #### Configuration for Local Docker Environment
 

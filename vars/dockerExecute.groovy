@@ -110,7 +110,7 @@ import groovy.transform.Field
  */
 @GenerateDocumentation
 void call(Map parameters = [:], body) {
-    handlePipelineStepErrors(stepName: STEP_NAME, stepParameters: parameters) {
+    handlePipelineStepErrors(stepName: STEP_NAME, stepParameters: parameters, failOnError: true) {
 
         final script = checkScript(this, parameters) ?: this
 
