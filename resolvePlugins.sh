@@ -31,4 +31,6 @@ docker run \
         -f Jenkinsfile \
         --runWorkspace /workspace
 
-[ -f "${RESULT}" ] && cat "${RESULT}"
+[ -f "${RESULT}" ] || { echo "Result file containing step to plugin mapping not found (${RESULT})."; exit 1;  }
+
+which -s jq && jq  'keys[] as $k | .[$k] | keys as $v | $k, [$v]' "${RESULT}"
