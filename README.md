@@ -71,8 +71,7 @@ To setup the shared library, you need to perform the following steps:
 
 1. Login to your Jenkins instance with administration privileges.
 1. Open the system configuration page (*Manage Jenkins > Configure System*).
-1. Scroll down to section *Global Pipeline Libraries* and add a new Library by
-   clicking the *Add* button.
+1. Scroll down to section *Global Pipeline Libraries* and add a new Library by clicking the *Add* button.
     1. set *Library Name* to `piper-lib-os`
     1. set *Default Version* to the branch or tag you want to consume (e.g. `master` or `v0.1`)
     1. set *Retrieval Method* to `Modern SCM`
@@ -102,6 +101,7 @@ Feel free to open new issues for feature requests, bugs or general feedback on
 the [GitHub issues page of this project][piper-library-issues].
 
 Register to our [google group][google-group] in order to get updates or for asking questions.
+
 # Contributing
 
 Read and understand our [contribution guidelines][piper-library-contribution]

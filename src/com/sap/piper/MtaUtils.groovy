@@ -37,4 +37,3 @@ class MtaUtils {
         if (!script.fileExists(targetMtaDescriptor)) throw new AbortException("'${targetMtaDescriptor}' has not been generated.")
     }
 }
-
