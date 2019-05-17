@@ -51,7 +51,7 @@ class TemplateHelper {
 
     private static renderSimpleDefaultValue(def _default) {
         if (_default == null) return ''
-        return "`${props.defaultValue}`"
+        return "`${_default}`"
     }
 
     static createParameterDescriptionSection(Map parameters) {
