@@ -18,7 +18,7 @@ _calls = null
 // Remove selfs
 calls.each { c ->
     c.value.remove(c.key)
-} 
+}
 
 int counter=0
 
@@ -42,7 +42,11 @@ while(counter < 1600) {
 
         for (def calledStep in calledSteps) {
 
-            if (calledStep in Map) {
+            if(calledStep in Map) {
+                // After some time not working on this I have acually forgotten
+                // what needs to be done here ... In order not to forget that
+                // here is maybe something missing we emit a log message.
+                System.err << "[DEBUG] This is not handled yet.(${calledStep})\n"
             } else {
                 if(calledStep in piperSteps) {
                     toBeReplaced = calledStep
@@ -50,7 +54,7 @@ while(counter < 1600) {
                     break
                 }
             }
-        } 
+        }
         if(toBeReplaced) {
             def replacement = [:]
             replacement[toBeReplaced] = calls[toBeReplaced] as Set
