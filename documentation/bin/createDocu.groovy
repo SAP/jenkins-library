@@ -13,6 +13,12 @@ import com.sap.piper.MapUtils
 //
 class TemplateHelper {
 
+    static createDependencyList() {
+        def t = ''
+        t += 'The step depends on the following Jenkins plugins'
+        return t
+    }
+
     static createParametersTable(Map parameters) {
 
         def t = ''
@@ -525,7 +531,8 @@ void renderStep(stepName, stepProperties) {
         docGenStepName      : stepName,
         docGenDescription   : 'Description\n\n' + stepProperties.description,
         docGenParameters    : 'Parameters\n\n' + TemplateHelper.createParametersSection(stepProperties.parameters),
-        docGenConfiguration : 'Step configuration\n\n' + TemplateHelper.createStepConfigurationSection(stepProperties.parameters)
+        docGenConfiguration : 'Step configuration\n\n' + TemplateHelper.createStepConfigurationSection(stepProperties.parameters),
+        docDependencies     : 'Dependencies\n\n' + TemplateHelper.createDependencyList()
     ]
     def template = new StreamingTemplateEngine().createTemplate(theStepDocu.text)
     String text = template.make(binding)
