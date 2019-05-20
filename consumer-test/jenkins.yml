@@ -27,3 +27,9 @@ credentials:
               username: ${CX_INFRA_IT_CF_USERNAME}
               password: ${CX_INFRA_IT_CF_PASSWORD}
               description: "SAP CP Trail account for test deployment"
+          - usernamePassword:
+              scope: GLOBAL
+              id: "neo_deploy"
+              username: ${NEO_DEPLOY}
+              password: ${NEO_DEPLOY}
+              description: "SAP CP NEO Trail account for test deployment"
