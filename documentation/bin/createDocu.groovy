@@ -18,7 +18,15 @@ class TemplateHelper {
         System.err << "[DEBUG] rendering dependencies ${deps}\n"
         def t = ''
         t += 'The step depends on the following Jenkins plugins\n\n'
-        deps.each { dep -> t += "* ${dep}\n" }
+        def filteredDeps = deps.findAll { dep -> dep != 'UNIDENTIFIED' }
+        if(filteredDeps.isEmpty()) {
+            t += '* &lt;none&gt;\n'
+        } else {
+            filteredDeps
+                .sort()
+                .each { dep -> t += "* ${dep}\n" }
+        }
+        t += '\nTransitive dependencies are omitted.\n\nThis is a beta feature. The list might be incomplete.'
         return t
     }
 
@@ -537,7 +545,7 @@ void renderStep(stepName, stepProperties) {
         docGenDescription   : 'Description\n\n' + stepProperties.description,
         docGenParameters    : 'Parameters\n\n' + TemplateHelper.createParametersSection(stepProperties.parameters),
         docGenConfiguration : 'Step configuration\n\n' + TemplateHelper.createStepConfigurationSection(stepProperties.parameters),
-        docDependencies     : 'Dependencies\n\n' + TemplateHelper.createDependencyList(stepProperties.dependencies)
+        docDependencies     : 'Dependencies (beta)\n\n' + TemplateHelper.createDependencyList(stepProperties.dependencies)
     ]
 
     System.err << "DEPS in BINDING ${binding.docDependencies} \n"
