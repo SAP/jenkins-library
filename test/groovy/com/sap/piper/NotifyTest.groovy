@@ -31,7 +31,6 @@ class NotifyTest extends BasePiperTest {
         // prepare
         nullScript.STEP_NAME = 'anyStep'
         utils.env.JOB_NAME = 'testJob'
-        Notify.instance = utils
     }
 
     @Test
