@@ -43,7 +43,7 @@ class TestRunnerThread extends Thread {
         if (testCaseRootDir.exists() || !testCaseRootDir.mkdirs()) {
             throw new RuntimeException("Creation of dir '${testCaseRootDir}' failed.")
         }
-        executeShell("git clone -b ${testCase} ${testCaseConfig.referenceAppRepoUrl} " +
+        executeShell("git clone -b ${testCaseConfig.referenceAppRepoBranch} ${testCaseConfig.referenceAppRepoUrl} " +
             "${testCaseWorkspace}")
         addJenkinsYmlToWorkspace()
         setLibraryVersionInJenkinsfile()

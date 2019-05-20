@@ -1,2 +1,3 @@
 # Test case configuration
 referenceAppRepoUrl: "https://github.com/piper-validation/openui5-sample-app.git"
+referenceAppRepoBranch: "piper-test-ui5-neo"

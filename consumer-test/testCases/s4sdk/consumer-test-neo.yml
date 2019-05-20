@@ -1,2 +1,3 @@
 # Test case configuration
 referenceAppRepoUrl: "https://github.com/piper-validation/cloud-s4-sdk-book"
+referenceAppRepoBranch: "consumer-test-neo"
