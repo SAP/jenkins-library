@@ -15,7 +15,6 @@ import com.sap.piper.MapUtils
 class TemplateHelper {
 
     static createDependencyList(Set deps) {
-        System.err << "[DEBUG] rendering dependencies ${deps}\n"
         def t = ''
         t += 'The step depends on the following Jenkins plugins\n\n'
         def filteredDeps = deps.findAll { dep -> dep != 'UNIDENTIFIED' }
@@ -538,8 +537,6 @@ void renderStep(stepName, stepProperties) {
         return
     }
 
-    System.err << "DEPS CLASS: ${stepProperties.dependencies}/${stepProperties.dependencies.class.name}\n"
-
     def binding = [
         docGenStepName      : stepName,
         docGenDescription   : 'Description\n\n' + stepProperties.description,
@@ -547,8 +544,6 @@ void renderStep(stepName, stepProperties) {
         docGenConfiguration : 'Step configuration\n\n' + TemplateHelper.createStepConfigurationSection(stepProperties.parameters),
         docDependencies     : 'Dependencies (beta)\n\n' + TemplateHelper.createDependencyList(stepProperties.dependencies)
     ]
-
-    System.err << "DEPS in BINDING ${binding.docDependencies} \n"
 
     def template = new StreamingTemplateEngine().createTemplate(theStepDocu.text)
     String text = template.make(binding)
@@ -642,16 +637,12 @@ def handleStep(stepName, prepareDefaultValuesStep, gse, customDefaults) {
                 dependentConfig: [:]
         ]
 
-    // WWWWWWW
+    //
+    // provide dependencies to Jenkins plugins
     if(theStepDeps.exists()) {
         def deps = new JsonSlurper().parse(theStepDeps)
-        System.err << "[DEBUG] Dependencies (${theStepDeps})  parsed.\n"
         step.dependencies.addAll(deps[stepName].collect { k, v -> k })
         def _deps = deps[stepName].collect { k, v -> k }
-        System.err << "[DEBUG] DEPS: $step.dependencies}\n"
-        System.err << "[DEBUG] _DEPS: ${_deps}"
-    } else {
-        System.err << "[DEBUG] Dependencies (${theStepDeps}) not found.\n"
     }
 
     //
