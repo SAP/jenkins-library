@@ -44,6 +44,7 @@ general:
     #  runAsUser: 1000
     #  fsGroup: 1000
   manualConfirmation: true
+  manualConfirmationTimeout: 720 # 1 month
   productiveBranch: 'master'
   whitesource:
     serviceUrl: 'https://saas.whitesourcesoftware.com/api'
