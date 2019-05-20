@@ -1,5 +1,6 @@
 import groovy.io.FileType
 import groovy.json.JsonOutput
+import groovy.json.JsonSlurper
 import org.yaml.snakeyaml.Yaml
 import org.codehaus.groovy.control.CompilerConfiguration
 import com.sap.piper.GenerateDocumentation
@@ -13,9 +14,11 @@ import com.sap.piper.MapUtils
 //
 class TemplateHelper {
 
-    static createDependencyList() {
+    static createDependencyList(Set deps) {
+        System.err << "[DEBUG] rendering dependencies ${deps}\n"
         def t = ''
-        t += 'The step depends on the following Jenkins plugins'
+        t += 'The step depends on the following Jenkins plugins\n\n'
+        deps.each { dep -> t += "* ${dep}\n" }
         return t
     }
 
@@ -527,13 +530,18 @@ void renderStep(stepName, stepProperties) {
         return
     }
 
+    System.err << "DEPS CLASS: ${stepProperties.dependencies}/${stepProperties.dependencies.class.name}\n"
+
     def binding = [
         docGenStepName      : stepName,
         docGenDescription   : 'Description\n\n' + stepProperties.description,
         docGenParameters    : 'Parameters\n\n' + TemplateHelper.createParametersSection(stepProperties.parameters),
         docGenConfiguration : 'Step configuration\n\n' + TemplateHelper.createStepConfigurationSection(stepProperties.parameters),
-        docDependencies     : 'Dependencies\n\n' + TemplateHelper.createDependencyList()
+        docDependencies     : 'Dependencies\n\n' + TemplateHelper.createDependencyList(stepProperties.dependencies)
     ]
+
+    System.err << "DEPS in BINDING ${binding.docDependencies} \n"
+
     def template = new StreamingTemplateEngine().createTemplate(theStepDocu.text)
     String text = template.make(binding)
 
@@ -568,6 +576,7 @@ def handleStep(stepName, prepareDefaultValuesStep, gse, customDefaults) {
 
     File theStep = new File(stepsDir, "${stepName}.groovy")
     File theStepDocu = new File(stepsDocuDir, "${stepName}.md")
+    File theStepDeps = new File('jenkins_workspace/result.json')
 
     if(!theStepDocu.exists()) {
         System.err << "[WARNING] step docu input file for step '${stepName}' is missing.\n"
@@ -619,7 +628,23 @@ def handleStep(stepName, prepareDefaultValuesStep, gse, customDefaults) {
 
     // 'dependentConfig' is only present here for internal reasons and that entry is removed at
     // end of method.
-    def step = [parameters:[:], dependentConfig: [:]]
+    def step = [
+                parameters:[:],
+                dependencies: (Set)[],
+                dependentConfig: [:]
+        ]
+
+    // WWWWWWW
+    if(theStepDeps.exists()) {
+        def deps = new JsonSlurper().parse(theStepDeps)
+        System.err << "[DEBUG] Dependencies (${theStepDeps})  parsed.\n"
+        step.dependencies.addAll(deps[stepName].collect { k, v -> k })
+        def _deps = deps[stepName].collect { k, v -> k }
+        System.err << "[DEBUG] DEPS: $step.dependencies}\n"
+        System.err << "[DEBUG] _DEPS: ${_deps}"
+    } else {
+        System.err << "[DEBUG] Dependencies (${theStepDeps}) not found.\n"
+    }
 
     //
     // START special handling for 'script' parameter
