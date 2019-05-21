@@ -127,8 +127,10 @@ class ConfigurationHelper implements Serializable {
         handleValidationFailures()
         MapUtils.traverse(config, { v -> (v instanceof GString) ? v.toString() : v })
         if(config.verbose) step.echo "[${name}] Configuration: ${config}"
-        return config
+        return MapUtils.deepCopy(config)
     }
+
+
 
     /* private */ def getConfigPropertyNested(key) {
         return getConfigPropertyNested(config, key)
@@ -184,7 +186,7 @@ class ConfigurationHelper implements Serializable {
 
     ConfigurationHelper withPropertyInValues(String key, Set values){
         withMandatoryProperty(key)
-        def value = config[key]
+        def value = config[key] instanceof GString ? config[key].toString() : config[key]
         if(! (value in values) ) {
             throw new IllegalArgumentException("Invalid ${key} = '${value}'. Valid '${key}' values are: ${values}.")
         }

@@ -35,9 +35,6 @@ class NeoDeployTest extends BasePiperTest {
     private JenkinsLoggingRule loggingRule = new JenkinsLoggingRule(this)
     private JenkinsShellCallRule shellRule = new JenkinsShellCallRule(this)
     private JenkinsStepRule stepRule = new JenkinsStepRule(this)
-    private JenkinsLockRule lockRule = new JenkinsLockRule(this)
-    private JenkinsFileExistsRule fileExistsRule = new JenkinsFileExistsRule(this, ['warArchive.war', 'archive.mtar', 'war.properties'])
-
 
     @Rule
     public RuleChain ruleChain = Rules
@@ -51,9 +48,9 @@ class NeoDeployTest extends BasePiperTest {
         .withCredentials('myCredentialsId', 'anonymous', '********')
         .withCredentials('CI_CREDENTIALS_ID', 'defaultUser', '********'))
         .around(stepRule)
-        .around(lockRule)
+        .around(new JenkinsLockRule(this))
         .around(new JenkinsWithEnvRule(this))
-        .around(fileExistsRule)
+        .around(new JenkinsFileExistsRule(this, ['warArchive.war', 'archive.mtar', 'war.properties']))
 
 
     private static warArchiveName = 'warArchive.war'
@@ -386,11 +383,7 @@ class NeoDeployTest extends BasePiperTest {
             deployMode: 'warPropertiesFile',
             warAction: 'deploy',
             neo: [
-                propertiesFile: warPropertiesFileName,
-                application: 'testApp',
-                runtime: 'neo-javaee6-wp',
-                runtimeVersion: '2.125',
-                size: 'lite'
+                propertiesFile: warPropertiesFileName
             ]
         )
 
@@ -412,11 +405,7 @@ class NeoDeployTest extends BasePiperTest {
             deployMode: 'warPropertiesFile',
             warAction: 'rolling-update',
             neo: [
-                propertiesFile: warPropertiesFileName,
-                application: 'testApp',
-                runtime: 'neo-javaee6-wp',
-                runtimeVersion: '2.125',
-                size: 'lite'
+                propertiesFile: warPropertiesFileName
             ])
 
         Assert.assertThat(shellRule.shell,
@@ -514,5 +503,18 @@ class NeoDeployTest extends BasePiperTest {
             deployMode: 'mta',
             utils: utils,
         )
+    }
+
+    @Test
+    void deployModeAsGStringTest() {
+
+        Map deployProps = [deployMode: 'warPropertiesFile']
+
+        stepRule.step.neoDeploy(script: nullScript,
+                  utils: utils,
+                  neo: [credentialsId: 'myCredentialsId',
+                        propertiesFile: warPropertiesFileName],
+                  deployMode: "$deployProps.deployMode",
+                  source: archiveName)
     }
 }

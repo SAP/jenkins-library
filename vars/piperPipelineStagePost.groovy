@@ -41,6 +41,12 @@ void call(Map parameters = [:]) {
 
         piperPublishNotifications script: script
         influxWriteData script: script
+
+        if(env.BRANCH_NAME == parameters.script.commonPipelineEnvironment.getStepConfiguration('', '').productiveBranch) {
+            if(parameters.script.commonPipelineEnvironment.configuration.runStep?.get('Post Actions')?.slackSendNotification) {
+                slackSendNotification script: parameters.script
+            }
+        }
         mailSendNotification script: script
     }
 }
