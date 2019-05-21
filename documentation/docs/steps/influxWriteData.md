@@ -4,6 +4,8 @@
 
 ## Prerequisites
 
+## ${docDependencies}
+
 ### Setting up InfluxDB with Grafana
 
 The easiest way to start with is using the available official docker images.

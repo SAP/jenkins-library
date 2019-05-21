@@ -9,6 +9,8 @@
 
     ![Jenkins credentials configuration](../images/cf_credentials.png)
 
+## ${docDependencies}
+
 ## ${docGenParameters}
 
 ## ${docGenConfiguration}

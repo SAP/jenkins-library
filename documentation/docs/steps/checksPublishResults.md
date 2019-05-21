@@ -13,6 +13,8 @@
   * [warnings](https://plugins.jenkins.io/warnings)
   * [core](https://plugins.jenkins.io/core)
 
+## ${docDependencies}
+
 ## ${docGenParameters}
 
 ### aggregation

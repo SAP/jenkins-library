@@ -7,6 +7,8 @@
 * **Snyk account** - have an account on snyk.io
 * **Snyk token** - have a Snyk user token
 
+## ${docDependencies}
+
 ## ${docGenParameters}
 
 ## ${docGenConfiguration}

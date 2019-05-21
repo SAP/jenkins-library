@@ -16,6 +16,8 @@ via _Jenkins_ -> _Credentials_ -> _System_ -> _Global credentials (unrestricted)
 * File: upload your `config.json` file
 * ID: specify id which you then use for the configuration of `dockerConfigJsonCredentialsId` (see below)
 
+## ${docDependencies}
+
 ## Example
 
 ```groovy

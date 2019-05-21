@@ -6,6 +6,8 @@
 
 * prepared Postman with a test collection
 
+## ${docDependencies}
+
 ## ${docGenParameters}
 
 ## ${docGenConfiguration}

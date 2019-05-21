@@ -2,6 +2,8 @@
 
 ## ${docGenDescription}
 
+## ${docDependencies}
+
 ## ${docGenParameters}
 
 ## Kubernetes support
