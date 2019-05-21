@@ -39,7 +39,6 @@ void call(Map parameters = [:]) {
         // telemetry reporting
         utils.pushToSWA([step: STEP_NAME], config)
 
-        piperPublishNotifications script: script
         influxWriteData script: script
 
         if(env.BRANCH_NAME == parameters.script.commonPipelineEnvironment.getStepConfiguration('', '').productiveBranch) {
@@ -48,5 +47,6 @@ void call(Map parameters = [:]) {
             }
         }
         mailSendNotification script: script
+        piperPublishNotifications script: script
     }
 }
