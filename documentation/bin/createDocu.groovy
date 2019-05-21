@@ -23,7 +23,7 @@ class TemplateHelper {
         } else {
             filteredDeps
                 .sort()
-                .each { dep -> t += "* ${dep}\n" }
+                .each { dep -> t += "* [${dep}](https://plugins.jenkins.io/${dep})\n" }
         }
         t += '\nTransitive dependencies are omitted.\n\nThis is a beta feature. The list might be incomplete.'
         return t
