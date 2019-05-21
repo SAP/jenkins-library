@@ -1,7 +1,7 @@
 #!/bin/bash
 
 mvn clean test
-groovy steps.groovy
+groovy steps.groovy -in target/trackedCalls.json --out target/performedCalls.json
 
 WS_OUT="$(pwd)/jenkins_workspace"
 WS_IN=/workspace
