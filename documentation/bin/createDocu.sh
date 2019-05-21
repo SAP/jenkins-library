@@ -27,7 +27,7 @@ mvn clean test dependency:build-classpath -Dmdep.outputFile=${CLASSPATH_FILE} > 
 # are performed by other pipeline steps. E.g.: each step includes basically a call to
 # handlePipelineStepErrors. The Plugin calls issues by handlePipelineStepErrors are also
 # reported for the step calling that auxiliar step).
-groovy  "${d}steps" -in target/trackedCalls.json --out "${CALLS}"
+groovy  "${d}resolveTransitiveCalls" -in target/trackedCalls.json --out "${CALLS}"
 
 [ -f "${CALLS}" ] || { echo "File \"${CALLS}\" does not exist." ; exit 1; }
 
