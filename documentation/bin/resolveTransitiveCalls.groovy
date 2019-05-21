@@ -119,6 +119,27 @@ for(def entry : calls.entrySet()) {
     piperStepCallMappings.put(entry.key, performedCalls)
 }
 
+//
+// special handling since since changeManagement util class
+// is separated from the steps itself
+//
+// should be improved in the future in order not to have
+// that bells and whistles here.
+
+def cm = piperStepCallMappings.get('changeManagement')
+
+for (cmStepName in [
+    'checkChangeInDevelopment',
+    'transportRequestCreate',
+    'transportRequestUploadFile',
+    'transportRequestRelease',
+]) {
+    piperStepCallMappings.get(cmStepName).addAll(cm)
+}
+
+// end of special handling
+//
+
 File performedCalls = new File(options.o)
 if (performedCalls.exists()) performedCalls.delete()
 performedCalls << groovy.json.JsonOutput.toJson(piperStepCallMappings)
