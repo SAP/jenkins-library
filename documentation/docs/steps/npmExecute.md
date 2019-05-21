@@ -3,6 +3,8 @@
 
 ## ${docGenDescription}
 
+## ${docDependencies}
+
 ## ${docGenParameters}
 
 ## ${docGenConfiguration}
