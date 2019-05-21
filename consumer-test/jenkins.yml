@@ -30,6 +30,6 @@ credentials:
           - usernamePassword:
               scope: GLOBAL
               id: "neo_deploy"
-              username: ${NEO_DEPLOY}
-              password: ${NEO_DEPLOY}
+              username: ${NEO_DEPLOY_USERNAME}
+              password: ${NEO_DEPLOY_PASSWORD}
               description: "SAP CP NEO Trail account for test deployment"

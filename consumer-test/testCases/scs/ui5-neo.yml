@@ -1,3 +1,7 @@
 # Test case configuration
-referenceAppRepoUrl: "https://github.com/piper-validation/openui5-sample-app.git"
-referenceAppRepoBranch: "piper-test-ui5-neo"
+referenceAppRepo:
+  url: "https://github.com/piper-validation/openui5-sample-app.git"
+  branch: "piper-test-ui5-neo"
+deployCredentialEnv:
+  username: "NEO_DEPLOY_USERNAME"
+  password: "NEO_DEPLOY_PASSWORD"

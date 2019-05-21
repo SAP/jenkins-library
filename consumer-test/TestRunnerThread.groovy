@@ -22,6 +22,11 @@ class TestRunnerThread extends Thread {
     def testCaseConfig
 
     TestRunnerThread(File testCaseFile) {
+        this.testCaseConfig = new Yaml().load(testCaseFile.text)
+        if (!System.getenv(testCaseConfig.deployCredentialEnv.username) ||
+            !System.getenv(testCaseConfig.deployCredentialEnv.password)) {
+            throw new RuntimeException("Environment variables '${testCaseConfig.deployCredentialEnv.username}' and '${testCaseConfig.deployCredentialEnv.password}' need to be set.")
+        }
         // Regex pattern expects a folder structure such as '/rootDir/areaDir/testCase.extension'
         def testCaseMatches = (testCaseFile.toString() =~
             /^[\w\-]+\\/([\w\-]+)\\/([\w\-]+)\..*\u0024/)
@@ -34,7 +39,6 @@ class TestRunnerThread extends Thread {
         this.uniqueName = "${area}|${testCase}"
         this.testCaseRootDir = new File("${workspacesRootDir}/${area}/${testCase}")
         this.testCaseWorkspace = "${testCaseRootDir}/workspace"
-        this.testCaseConfig = new Yaml().load(testCaseFile.text)
     }
 
     void run() {
@@ -43,8 +47,10 @@ class TestRunnerThread extends Thread {
         if (testCaseRootDir.exists() || !testCaseRootDir.mkdirs()) {
             throw new RuntimeException("Creation of dir '${testCaseRootDir}' failed.")
         }
-        executeShell("git clone -b ${testCaseConfig.referenceAppRepoBranch} ${testCaseConfig.referenceAppRepoUrl} " +
-            "${testCaseWorkspace}")
+
+        executeShell("git clone -b ${testCaseConfig.referenceAppRepo.branch} " +
+            "${testCaseConfig.referenceAppRepo.url} ${testCaseWorkspace}")
+
         addJenkinsYmlToWorkspace()
         setLibraryVersionInJenkinsfile()
 
@@ -55,8 +61,10 @@ class TestRunnerThread extends Thread {
 
         executeShell("docker run --rm -v /var/run/docker.sock:/var/run/docker.sock " +
             "-v ${System.getenv('PWD')}/${testCaseWorkspace}:/workspace -v /tmp " +
-            "-e CASC_JENKINS_CONFIG=/workspace/jenkins.yml -e CX_INFRA_IT_CF_USERNAME " +
-            "-e CX_INFRA_IT_CF_PASSWORD -e BRANCH_NAME=${testCase} ppiper/jenkinsfile-runner")
+            "-e CASC_JENKINS_CONFIG=/workspace/jenkins.yml " +
+            "-e ${testCaseConfig.deployCredentialEnv.username} " +
+            "-e ${testCaseConfig.deployCredentialEnv.password} " +
+            "-e BRANCH_NAME=${testCaseConfig.referenceAppRepo.branch} ppiper/jenkinsfile-runner")
 
         println "*****[INFO] Test case '${uniqueName}' finished successfully.*****"
         printOutput()
