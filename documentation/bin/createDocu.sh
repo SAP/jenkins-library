@@ -6,13 +6,13 @@ d=$(dirname "$0")
 WS_OUT="$(pwd)/documentation/jenkins_workspace"
 WS_IN=/workspace
 
-REL_CALLS=calls.json
-REL_RESULT=result.json
+STEP_CALL_MAPPING_FILE_NAME=step_calls_mapping.json
+PLUGIN_MAPPING_FILE_NAME=plugin_mapping.json
 
-CALLS="${WS_OUT}/${REL_CALLS}"
-RESULT="${WS_OUT}/${REL_RESULT}"
+CALLS="${WS_OUT}/${STEP_CALL_MAPPING_FILE_NAME}"
+PLUGIN_MAPPING="${WS_OUT}/${PLUGIN_MAPPING_FILE_NAME}"
 
-for f in ${CALLS} ${RESULT}
+for f in ${CALLS} ${PLUGIN_MAPPING}
 do
     [ -e "${f}" ] && rm -rf "${f}"
 done
@@ -33,14 +33,14 @@ groovy  "${d}steps" -in target/trackedCalls.json --out "${CALLS}"
 
 docker run \
     -w "${WS_IN}" \
-    --env calls="${WS_IN}/${REL_CALLS}" \
-    --env result="${WS_IN}/${REL_RESULT}" \
+    --env calls="${WS_IN}/${STEP_CALL_MAPPING_FILE_NAME}" \
+    --env result="${WS_IN}/${PLUGIN_MAPPING_FILE_NAME}" \
     -v "${WS_OUT}:${WS_IN}"  \
     ppiper/jenkinsfile-runner \
         -ns \
         -f Jenkinsfile \
         --runWorkspace /workspace
 
-[ -f "${RESULT}" ] || { echo "Result file containing step to plugin mapping not found (${RESULT})."; exit 1;  }
+[ -f "${PLUGIN_MAPPING}" ] || { echo "Result file containing step to plugin mapping not found (${PLUGIN_MAPPING})."; exit 1;  }
 
 groovy -cp "target/classes:$(cat $CLASSPATH_FILE)" "${d}createDocu" "${@}"
