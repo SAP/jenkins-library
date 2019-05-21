@@ -33,77 +33,109 @@ If you would like to customize the Jenkins, [the operations guide](https://githu
 
 # Creating your first Pipeline
 
-1. Copy the following examples into your repository and name it `Jenkinsfile`
+1. Provide a repository on GitHub. For the first time, we recommend to use a sample application SAP provides on [github.com][github]. The repository [cloud-cf-helloworld-nodejs][cloud-cf-helloworld-nodejs] contains a simple `nodejs` application we are going to enrich with a pipeline building with MTA means and deploying into the cloud foundry. Optionally, you can use any repository you want, but be aware that the following code snippets might not match your application.
 
-        @Library('piper-lib-os') _
-        node() {
-          stage('prepare') {
-              checkout scm
-              setupCommonPipelineEnvironment script:this
-          }
-        }
-   The sample will simply sync your repository. 
-    
-   For more information about Pipeline and what a Jenkinsfile is, refer to the respective Pipeline and [Using a Jenkinsfile][jenkins-io-jenkinsfile] sections of the Jenkins User Handbook.
+   Fork [cloud-cf-helloworld-nodejs][cloud-cf-helloworld-nodejs] into your GitHub organisation. 
+   
+   
+1. Create a pipeline. Select the branch `1_REST_persist_in_Memory` of your [cloud-cf-helloworld-nodejs] fork and create a new file named `Jenkinsfile`. Enter the following code and submit it.
+   
+    @Library('piper-lib-os') _
+    node() {
+    stage('prepare') {
+      checkout scm
+      setupCommonPipelineEnvironment script:this
+      }
+    }
+   This pipeline code will simply sync the repository. 
+   
+   For more information about Pipeline and what a Jenkinsfile is, refer to [Using a Jenkinsfile][jenkins-io-jenkinsfile] sections of the Jenkins User Handbook.
+   
+   
+1. Setup a Jenkins Job for your repository. 
+   
+   Open the Jenkins UI `http://<jenkins-server-address>:<http-port>` and Click the `New Item` menu. Per default the `cx-server` will start Jenkins on HTTP port `80`. If you are not familiar with Jenkins, refer to the [Jenkins User Documentation][jenkins-io-documentation].
 
-
-1. Open the Jenkins UI and Click the New Item menu. Per default the `cx-server` will start Jenkins on HTTP port `80` 
-
+   <p align="center">
    ![Clicke New Item](../images/JenkinsHomeMenu-1.png "Jenkins Home Menu")
+   </p>  
+   Provide a name for your new item (e.g. My First Pipeline) and select `Pipeline`
 
-1. Provide a name for your new item (e.g. My First Pipeline) and select `Pipeline`
-
+   <p align="center">
    ![Create Pipeline Job](../images/JenkinsNewItemPipeline-1.png "Jenkins New Item")
+   </p>  
 
-Scroll to the Pipeline options and choose `Pipeline script from SCM`. Choose `Git` as SCM and edit the URL of your Git repository. `Save` the changes.
+   Scroll to the Pipeline options and choose `Pipeline script from SCM`. Choose `Git` as SCM and edit the URL of your Git repository, like `https://github.com/<your-org>/cloud-cf-helloworld-nodejs`. `Save` the changes. 
 
-# Running your Pipeline
+   <p align="center">
+   ![Create Pipeline Job](../images/JenkinsNewItemPipeline-1.png "Jenkins New Item")
+   </p>  
+   
+   If your repository is protected you may have to provide credentials.
+
+1. Run your Pipeline. From the Job UI click `Build Now`.
 
 # Add a build step
 
-Add the following snippet to your Jenkinsfile. 
+1. Add the following snippet to your Jenkinsfile. 
 
-          stage('build') {
-              mtaBuild script: this
-          }
+    stage('build') {
+      mtaBuild script: this
+    }
 
-The `mtaBuild`  step will call the MTA build tool to build a multi-target application. If you are not familiar with MTAs please visit [sap.com][sap]. 
+   The `mtaBuild`  step will call the MTA build tool to build a multi-target application. If you are not familiar with MTAs please visit [sap.com][sap]. 
 
-To configure the step to build a MTA for the Cloud Foundry, open/create `.pipeline/config.yml` in your repository and add the following content. 
+1. Configure `mtaBuild`. To configure the step to build a MTA for the Cloud Foundry, open/create `.pipeline/config.yml` in your repository and add the following content. 
 
-          general:
-          steps:
-            mtaBuild:
-              buildTarget: 'CF'
+    general:
+    steps:
+      mtaBuild:
+        buildTarget: 'CF'
 
-For additional information about the configuration  refer to the [common configuration guide][resources-configuration] and the [MTA build step documentation][resources-step-mtabuild].
+For additional information about the configuration refer to the [common configuration guide][resources-configuration] and the [MTA build step documentation][resources-step-mtabuild].
 
-# Pipeline Configuration
+1. Commit the changes.
 
-# Running your Pipeline
+1. Run your Pipeline. From the Job UI click `Build Now`.
 
-# Additional
-## Transport
-          stage('prepare') {
-              checkout scm
-              setupCommonPipelineEnvironment script:this
-              checkChangeInDevelopment script: this
-          }
+# Add a deploy step
+
+1. Add the following snippet to your Jenkinsfile. 
+
+    stage('deploy') {
+      cloudFoundryDeploy( script: this, mtaPath: 'com.sap.piper.node.hello.world.mtar')
+    }
+
+   The `cloudFoundryDeploy`  step will call the cloud foundry command line client to deploy into the SAP Cloud Platform. with MTAs please visit [sap.com][sap]. 
+
+1. Configure `cloudFoundryDeploy`. To configure the step to deploy into the Cloud Foundry, open/create `.pipeline/config.yml` in your repository and add the following content. 
+
+    cloudFoundryDeploy:
+      deployTool: 'mtaDeployPlugin'
+      deployType: 'standard'
+      cloudFoundry:
+        org: 'D046169trial_trial'
+        space: 'dev'
+        credentialsId: 'CF_CREDENTIALSID'
+
+For additional information about the configuration refer to the [common configuration guide][resources-configuration] and the [Cloud Foundry deploy step documentation][resources-step-cloudFoundryDeploy].
+
+1. Commit the changes.
+
+1. Run your Pipeline. From the Job UI click `Build Now`.
 
 
-# Quick Start Examples
-
-
-test
-
-[guidedtour-my-own-jenkins]:   myownjenkins.md
-[resources-configuration]:     configuration.md
-[resources-step-mtabuild]:     steps/mtaBuild.md
-[devops-docker-images]:        https://github.com/SAP/devops-docker-images
-[devops-docker-images-issues]: https://github.com/SAP/devops-docker-images/issues
+[guidedtour-my-own-jenkins]:         myownjenkins.md
+[resources-configuration]:           configuration.md
+[resources-step-mtabuild]:           steps/mtaBuild.md
+[resources-step-cloudFoundryDeploy]: steps/cloudFoundryDeploy.md
+[devops-docker-images]:              https://github.com/SAP/devops-docker-images
+[devops-docker-images-issues]:       https://github.com/SAP/devops-docker-images/issues
+[cloud-cf-helloworld-nodejs]:  [https://github.com/SAP/cloud-cf-helloworld-nodejs]
 [license]:                     LICENSE
 [contribution]:                CONTRIBUTING.md
 [sap]:                         https://www.sap.com
 [github]:                      https://github.com
+[jenkins-io-documentation]:    https://jenkins.io/doc/
 [jenkins-io-jenkinsfile]:      https://jenkins.io/doc/book/pipeline/jenkinsfile
 
