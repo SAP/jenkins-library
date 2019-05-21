@@ -54,12 +54,22 @@ int counter=0
 
 def alreadyHandled = []
 
-while(counter < 1600) {
+//
+// in case we exceed the value we assume some cyclic call
+// between plugin steps.
+int MAX_LOOP = 1600
+
+boolean done = false
+
+while(counter < MAX_LOOP) {
 
     def hereWeNeedToReplace = null
     def toBeReplaced = null
 
-    if(alreadyHandled.size() == calls.size()) break
+    if(alreadyHandled.size() == calls.size()) {
+        done = true
+        break
+    }
 
     for (def call in calls.entrySet()) {
 
@@ -73,10 +83,10 @@ while(counter < 1600) {
         for (def calledStep in calledSteps) {
 
             if(calledStep in Map) {
-                // After some time not working on this I have acually forgotten
-                // what needs to be done here ... In order not to forget that
-                // here is maybe something missing we emit a log message.
-                System.err << "[DEBUG] This is not handled yet.(${calledStep})\n"
+                 // After some time not working on this I have acually forgotten
+                 // what needs to be done here ... In order not to forget that
+                 // here is maybe something missing we emit a log message.
+                 System.err << "[DEBUG] This is not handled yet.(${calledStep})\n"
             } else {
                 if(calledStep in piperSteps) {
                     toBeReplaced = calledStep
@@ -98,6 +108,9 @@ while(counter < 1600) {
     }
 }
 
+if(! done) {
+    throw new Exception('Unable to resolve transitive plugin calls.')
+}
 
 piperStepCallMappings = [:]
 
