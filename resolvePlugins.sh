@@ -34,3 +34,6 @@ docker run \
 [ -f "${RESULT}" ] || { echo "Result file containing step to plugin mapping not found (${RESULT})."; exit 1;  }
 
 which -s jq && jq  'keys[] as $k | .[$k] | keys as $v | $k, [$v]' "${RESULT}"
+
+documentation/bin/createDocu.sh $*
+docker run --rm -it -v `pwd`:/docs -w /docs/documentation squidfunk/mkdocs-material:3.0.4 build --clean --verbose --strict
