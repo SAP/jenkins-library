@@ -56,8 +56,8 @@ def alreadyHandled = []
 
 while(counter < 1600) {
 
-    def hereWeNeedToReplace
-    def toBeReplaced
+    def hereWeNeedToReplace = null
+    def toBeReplaced = null
 
     if(alreadyHandled.size() == calls.size()) break
 
