@@ -13,7 +13,10 @@ import static com.sap.piper.Prerequisites.checkScript
      */
     'manualConfirmation',
     /** Defines how many hours a manual confirmation is possible for a dedicated pipeline. */
+    'manualConfirmationMessage',
+    /** Defines how many hours a manual confirmation is possible for a dedicated pipeline. */
     'manualConfirmationTimeout'
+
 ]
 @Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
@@ -69,7 +72,7 @@ void call(Map parameters = [:]) {
             echo "Reason:\n-------------\n${userInput.reason}"
             echo "Acknowledged:\n-------------\n${userInput.acknowledgement}"
         } else {
-            input message: 'Shall we proceed to Promote & Deploy?'
+            input message: 'Shall we proceed to Promote & Release?'
         }
 
     }

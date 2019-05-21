@@ -48,7 +48,7 @@ class PiperPipelineStageConfirmTest extends BasePiperTest {
         )
         assertThat(timeoutSettings.unit, is('HOURS'))
         assertThat(timeoutSettings.time, is(720))
-        assertThat(inputSettings.message, is('Shall we proceed to Promote & Deploy?'))
+        assertThat(inputSettings.message, is('Shall we proceed to Promote & Release?'))
     }
 
     @Test
