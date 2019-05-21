@@ -579,7 +579,7 @@ def handleStep(stepName, prepareDefaultValuesStep, gse, customDefaults) {
 
     File theStep = new File(stepsDir, "${stepName}.groovy")
     File theStepDocu = new File(stepsDocuDir, "${stepName}.md")
-    File theStepDeps = new File('documentation/jenkins_workspace/result.json')
+    File theStepDeps = new File('documentation/jenkins_workspace/plugin_mapping.json')
 
     if(!theStepDocu.exists()) {
         System.err << "[WARNING] step docu input file for step '${stepName}' is missing.\n"
