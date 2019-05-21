@@ -25,6 +25,11 @@ class TemplateHelper {
                 .sort()
                 .each { dep -> t += "* [${dep}](https://plugins.jenkins.io/${dep})\n" }
         }
+
+        if(filteredDeps.contains('kubernetes')) {
+            t += "\nThe kubernetes plugin is only used if running in a kubernetes environment."
+        }
+
         t += '\nTransitive dependencies are omitted.\n\nThis is a beta feature. The list might be incomplete.'
         return t
     }
