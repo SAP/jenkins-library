@@ -3,6 +3,17 @@ import groovy.json.JsonSlurper
 
 import jenkins.model.Jenkins
 
+unresolvableCalls = [
+    podTemplate:'kubernetes',
+    container: 'kubernetes',
+
+    docker: 'docker-plugin',
+
+    usernamePassword: 'credentials-binding',
+    string: 'credentials-binding',
+    file: 'credentials-binding',
+]
+
 node() {
     stage('Resolve Plugins') {
         try {
@@ -26,7 +37,10 @@ def resolvePlugins() {
         def resolvedPlugins = [:]
         for(def call in step.value) {
             def resolvedPlugin = resolvePlugin(call)
-            if (! resolvedPlugin) resolvedPlugin = 'UNIDENTIFIED'
+            if (! resolvedPlugin) {
+                resolvedPlugin = unresolvableCalls[call]
+                if(! resolvedPlugin) resolvedPlugin = 'UNIDENTIFIED'
+            }
             if(resolvedPlugins[resolvedPlugin] == null)
                 resolvedPlugins[resolvedPlugin] = (Set)[]
             resolvedPlugins[resolvedPlugin] << call
