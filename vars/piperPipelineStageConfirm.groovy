@@ -12,7 +12,7 @@ import static com.sap.piper.Prerequisites.checkScript
      * @possibleValues `true`, `false`
      */
     'manualConfirmation',
-    /** Defines how many hours a manual confirmation is possible for a dedicated pipeline. */
+    /** Defines message displayed as default manual confirmation. Please note: only used in case pipeline is in state __SUCCESSFUL__ */
     'manualConfirmationMessage',
     /** Defines how many hours a manual confirmation is possible for a dedicated pipeline. */
     'manualConfirmationTimeout'
