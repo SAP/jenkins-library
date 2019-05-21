@@ -623,7 +623,7 @@ def handleStep(stepName, prepareDefaultValuesStep, gse, customDefaults) {
             'Typically the reference to the script calling the pipeline ' +
             'step is provided with the `this` parameter, as in `script: this`. ' +
             'This allows the function to access the ' +
-            '`commonPipelineEnvironment` for retrieving, e.g., configuration parameters.',
+            '`commonPipelineEnvironment` for retrieving, e.g. configuration parameters.',
         required: true,
 
         GENERAL_CONFIG: false,
