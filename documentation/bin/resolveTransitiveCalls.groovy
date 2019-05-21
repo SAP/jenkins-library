@@ -82,12 +82,12 @@ while(counter < MAX_LOOP) {
 
         for (def calledStep in calledSteps) {
 
-            if(calledStep in Map) {
-                 // After some time not working on this I have acually forgotten
-                 // what needs to be done here ... In order not to forget that
-                 // here is maybe something missing we emit a log message.
-                 System.err << "[DEBUG] This is not handled yet.(${calledStep})\n"
-            } else {
+            if(! ( calledStep in Map)) {
+
+                // in case the calledStep is a map the map
+                // was introduced in an earlier loop.
+                // This means this entry is already handled.
+
                 if(calledStep in piperSteps) {
                     toBeReplaced = calledStep
                     hereWeNeedToReplace = calledSteps
