@@ -7,7 +7,7 @@ export CLASSPATH_FILE='target/cp.txt'
 mvn clean test dependency:build-classpath -Dmdep.outputFile=${CLASSPATH_FILE} > /dev/null 2>&1
 groovy  "${d}steps" -in target/trackedCalls.json --out target/performedCalls.json
 
-WS_OUT="$(pwd)/jenkins_workspace"
+WS_OUT="$(pwd)/documentation/jenkins_workspace"
 WS_IN=/workspace
 
 REL_CALLS=calls.json
