@@ -1,6 +1,36 @@
 import groovy.json.JsonSlurper
 
-def steps = new JsonSlurper().parseText(new File('target/trackedCalls.json').text)
+def cli = new CliBuilder(
+    usage: 'groovy createDocu [<options>]',
+    header: 'Options:',
+    footer: 'Copyright: SAP SE')
+
+cli.with {
+    i longOpt: 'in', args: 1, argName: 'file', 'The file containing the mapping as created by the unit tests..'
+    o longOpt: 'out', args: 1, argName: 'file', 'The file containing the condenced mappings.'
+    h longOpt: 'help', 'Prints this help.'
+}
+
+def options = cli.parse(args)
+
+if(options.h) {
+    System.err << "Printing help.\n"
+    cli.usage()
+    return
+}
+
+if(! options.i) {
+    System.err << "No input file"
+    cli.usage()
+    return
+}
+if(! options.o) {
+    System.err << "No output file"
+    cli.usage()
+    return
+}
+
+def steps = new JsonSlurper().parseText(new File(options.i).text)
 
 def piperSteps = steps.piperSteps
 def calls = steps.calls
@@ -76,7 +106,7 @@ for(def entry : calls.entrySet()) {
     piperStepCallMappings.put(entry.key, performedCalls)
 }
 
-File performedCalls = new File('target/performedCalls.json')
+File performedCalls = new File(options.o)
 if (performedCalls.exists()) performedCalls.delete()
 performedCalls << groovy.json.JsonOutput.toJson(piperStepCallMappings)
 
