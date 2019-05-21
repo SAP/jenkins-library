@@ -5,6 +5,14 @@ d=$(dirname "$0")
 
 export CLASSPATH_FILE='target/cp.txt'
 mvn clean test dependency:build-classpath -Dmdep.outputFile=${CLASSPATH_FILE} > /dev/null 2>&1
+
+# --in: is created by the unit tests. It contains a mapping between the test case (name is
+# already adjusted).
+# --out: Contains a transformed version. The calls to other pipeline steps are resolved in a
+# transitive manner. This allows us to report all Jenkins plugin calls (also the calls which
+# are performed by other pipeline steps. E.g.: each step includes basically a call to
+# handlePipelineStepErrors. The Plugin calls issues by handlePipelineStepErrors are also
+# reported for the step calling that auxiliar step).
 groovy  "${d}steps" -in target/trackedCalls.json --out target/performedCalls.json
 
 WS_OUT="$(pwd)/documentation/jenkins_workspace"
