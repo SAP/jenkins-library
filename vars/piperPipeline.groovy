@@ -62,9 +62,9 @@ void call(parameters) {
             }
             stage('Confirm') {
                 agent none
-                when {allOf {branch parameters.script.commonPipelineEnvironment.getStepConfiguration('', '').productiveBranch; expression {return parameters.script.commonPipelineEnvironment.getStepConfiguration('piperInitRunStageConfiguration', env.STAGE_NAME).manualConfirmation}}}
+                when {allOf {expression { env.BRANCH_NAME ==~ parameters.script.commonPipelineEnvironment.getStepConfiguration('', '').productiveBranch }; anyOf {expression {return (currentBuild.result == 'UNSTABLE')}; expression {return parameters.script.commonPipelineEnvironment.getStepConfiguration('piperInitRunStageConfiguration', env.STAGE_NAME).manualConfirmation}}}}
                 steps {
-                    input message: 'Shall we proceed to promotion & release?'
+                    piperPipelineStageConfirm script: parameters.script
                 }
             }
             stage('Promote') {
