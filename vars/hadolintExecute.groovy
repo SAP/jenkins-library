@@ -32,7 +32,7 @@ import groovy.transform.Field
 ]
 /**
  * Executes the Haskell Dockerfile Linter which is a smarter Dockerfile linter that helps you build [best practice](https://docs.docker.com/develop/develop-images/dockerfile_best-practices/) Docker images.
- * Our step applies the best practice configuration provided by SAP Global Security. For more details, please refer to their [WIKI](https://wiki.wdf.sap.corp/wiki/display/itsec/How+to+develop+a+secure+Container+Application).
+ * The linter is parsing the Dockerfile into an abstract syntax tree (AST) and performs rules on top of the AST.
  */
 @GenerateDocumentation
 void call(Map parameters = [:]) {
