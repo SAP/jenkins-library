@@ -32,8 +32,7 @@ resource in an custom shared library.
 
 // inside the shared lib denoted by 'foo' the additional configuration file
 // needs to be located under 'resources' ('resoures/myConfig.yml')
-prepareDefaultValues script: this,
-                             customDefaults: 'myConfig.yml'
+prepareDefaultValues script: this, customDefaults: 'myConfig.yml'
 ```
 
 Example content of `'resources/myConfig.yml'` in branch `'master'` of the repository denoted by
@@ -79,11 +78,13 @@ The parameters can also be provided when the step is invoked:
     // explict endpoint provided, we search for changeDocumentId
     // starting at the previous commit (HEAD~1) rather than on
     // 'origin/master' (the default).
-    checkChangeInDevelopment script:this
-                             changeManagement: [
-                               endpoint: 'https:example.org/cm'
-                               git: [
-                                 from: 'HEAD~1'
-                               ]
-                             ]
+    checkChangeInDevelopment(
+      script: this
+      changeManagement: [
+        endpoint: 'https:example.org/cm'
+        git: [
+          from: 'HEAD~1'
+        ]
+      ]
+    )
 ```
