@@ -50,9 +50,7 @@ If you would like to customize the Jenkins, [the operations guide](https://githu
       }
     }
    ```
-   This pipeline code will simply sync the repository. 
-   
-   For more information about Pipeline and what a Jenkinsfile is, refer to [Using a Jenkinsfile][jenkins-io-jenkinsfile] sections of the Jenkins User Handbook.
+   This pipeline code will simply sync the repository.<br/><br/>For more information about Pipeline and what a Jenkinsfile is, refer to [Using a Jenkinsfile][jenkins-io-jenkinsfile] sections of the Jenkins User Handbook.
    
    
 1. Setup a Jenkins Job for your repository. 
