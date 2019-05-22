@@ -529,11 +529,10 @@ roots = [
     new File(Helper.projectRoot, "src").getAbsolutePath()
 ]
 
-stepsDir = null
-stepsDocuDir = null
+String stepsDir = null
+String stepsDocuDir = null
+String stagesDocuDir = null
 String customDefaults = null
-
-stagesDocuDir = new File(Helper.projectRoot, "docs/stages")
 
 steps = []
 
@@ -549,7 +548,9 @@ def cli = new CliBuilder(
 cli.with {
     s longOpt: 'stepsDir', args: 1, argName: 'dir', 'The directory containing the steps. Defaults to \'vars\'.'
     d longOpt: 'docuDir', args: 1, argName: 'dir', 'The directory containing the docu stubs. Defaults to \'documentation/docs/steps\'.'
+    p longOpt: 'docuDirStages', args: 1, argName: 'dir', 'The directory containing the docu stubs for pipeline stages. Defaults to \'documentation/docs/stages\'.'
     c longOpt: 'customDefaults', args: 1, argName: 'file', 'Additional custom default configuration'
+    i longOpt: 'stageInitFile', args: 1, argName: 'file', 'The file containing initialization data for step piperInitRunStageConfiguration'
     h longOpt: 'help', 'Prints this help.'
 }
 
@@ -570,6 +571,11 @@ if(options.d)
     stepsDocuDir = new File(Helper.projectRoot, options.d)
 
 stepsDocuDir = stepsDocuDir ?: new File(Helper.projectRoot, "documentation/docs/steps")
+
+if(options.p)
+    stagesDocuDir = new File(Helper.projectRoot, options.p)
+
+stagesDocuDir = stagesDocuDir ?: new File(Helper.projectRoot, "documentation/docs/stages")
 
 if(options.c) {
     customDefaults = options.c
@@ -611,7 +617,10 @@ Map stages = Helper.resolveDocuRelevantStages(gse, stepsDir)
 
 // retrieve default conditions for steps
 //ToDo: allow passing config file name via parameter
-Map stageConfig = Helper.getYamlResource('piper-stage-config.yml')
+Map stageConfig
+if (options.s) {
+    stageConfig = Helper.getYamlResource(options.s)
+}
 
 def prepareDefaultValuesStep = Helper.getPrepareDefaultValuesStep(gse)
 
@@ -653,12 +662,10 @@ stages.each {key, value ->
     stageDescriptors."${key}".name = value
 
     //add stepCondition informmation to stageDescriptors
-    stageDescriptors."${key}".configConditions = stageConfig.stages.get(value)?.stepConditions
+    stageDescriptors."${key}".configConditions = stageConfig?.stages?.get(value)?.stepConditions
 
     //identify step keys in stages
     def stageStepKeys = Helper.getStageStepKeys(gse.createScript( "${key}.groovy", new Binding() ))
-
-    //System.err << "[INFO] Stage Step Keys: '${stageStepKeys}'.\n"
 
     // prepare step descriptions
     stageDescriptors."${key}".stepDescriptions = [:]
