@@ -254,7 +254,7 @@ steps:
   hadolintExecute:
     dockerImage: 'hadolint/hadolint:latest-debian'
     configurationFile: '.hadolint.yaml'
-    configurationUrl: 'https://github.wdf.sap.corp/raw/SGS/Hadolint-Dockerfile/master/.hadolint.yaml'
+    configurationUrl: ''
     resultFile: 'hadolint.xml'
     stashContent:
       - 'buildDescriptor'

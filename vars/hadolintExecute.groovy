@@ -16,7 +16,7 @@ import groovy.transform.Field
      */
     'configurationFile',
     /**
-     * URL of exclude configuration to be used for the linting
+     * URL pointing to the .hadolint.yaml exclude configuration to be used for linting
      */
     'configurationUrl',
     /**
