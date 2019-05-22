@@ -3,6 +3,9 @@ package com.sap.piper
 import org.junit.Assert
 import org.junit.Test
 
+import static org.hamcrest.Matchers.is
+import static org.junit.Assert.assertThat
+
 class MapUtilsTest {
 
     @Test
@@ -49,5 +52,45 @@ class MapUtilsTest {
         Map m = [a: 'x1', m:[b: 'x2', c: 'otherString']]
         MapUtils.traverse(m, { s -> (s.startsWith('x')) ? "replaced" : s})
         assert m == [a: 'replaced', m: [b: 'replaced', c: 'otherString']]
+    }
+
+    @Test
+    void testGetByPath() {
+        Map m = [trees: [oak: 5, beech :1], flowers:[rose: 23]]
+
+        assertThat(MapUtils.getByPath(m, 'flowers'), is([rose: 23]))
+        assertThat(MapUtils.getByPath(m, 'trees/oak'), is(5))
+        assertThat(MapUtils.getByPath(m, 'trees/palm'), is(null))
+    }
+
+    @Test
+    void testDeepCopy() {
+
+        List l = ['a', 'b', 'c']
+
+        def original = [
+                list: l,
+                set: (Set)['1', '2'],
+                nextLevel: [
+                    list: ['x', 'y'],
+                    duplicate: l,
+                    set: (Set)[9, 8, 7]
+                ]
+            ]
+
+        def copy = MapUtils.deepCopy(original)
+
+        assert ! copy.is(original)
+        assert ! copy.list.is(original.list)
+        assert ! copy.set.is(original.set)
+        assert ! copy.nextLevel.list.is(original.nextLevel.list)
+        assert ! copy.nextLevel.set.is(original.nextLevel.set)
+        assert ! copy.nextLevel.duplicate.is(original.nextLevel.duplicate)
+
+        // Within the original identical list is used twice, but the
+        // assuption is that there are different lists in the copy.
+        assert ! copy.nextLevel.duplicate.is(copy.list)
+
+        assert copy == original
     }
 }

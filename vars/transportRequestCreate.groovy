@@ -184,30 +184,33 @@ void call(parameters = [:]) {
         try {
                 if(backendType == BackendType.SOLMAN) {
                     transportRequestId = cm.createTransportRequestSOLMAN(
-                                                                configuration.changeManagement.solman.docker,
-                                                               configuration.changeDocumentId,
-                                                               configuration.developmentSystemId,
-                                                               configuration.changeManagement.endpoint,
-                                                               configuration.changeManagement.credentialsId,
-                                                               configuration.changeManagement.clientOpts)
+                        configuration.changeManagement.solman.docker,
+                        configuration.changeDocumentId,
+                        configuration.developmentSystemId,
+                        configuration.changeManagement.endpoint,
+                        configuration.changeManagement.credentialsId,
+                        configuration.changeManagement.clientOpts
+                    )
                 } else if(backendType == BackendType.CTS) {
                     transportRequestId = cm.createTransportRequestCTS(
-                                                                configuration.changeManagement.cts.docker,
-                                                               configuration.transportType,
-                                                               configuration.targetSystem,
-                                                               configuration.description,
-                                                               configuration.changeManagement.endpoint,
-                                                               configuration.changeManagement.credentialsId,
-                                                               configuration.changeManagement.clientOpts)
+                        configuration.changeManagement.cts.docker,
+                        configuration.transportType,
+                        configuration.targetSystem,
+                        configuration.description,
+                        configuration.changeManagement.endpoint,
+                        configuration.changeManagement.credentialsId,
+                        configuration.changeManagement.clientOpts
+                    )
                 } else if (backendType == BackendType.RFC) {
                     transportRequestId = cm.createTransportRequestRFC(
-                                                                configuration.changeManagement.rfc.docker,
-                                                                configuration.changeManagement.endpoint,
-                                                                configuration.changeManagement.rfc.developmentInstance,
-                                                                configuration.changeManagement.rfc.developmentClient,
-                                                                configuration.changeManagement.credentialsId,
-                                                                configuration.description,
-                                                                configuration.verbose)
+                        configuration.changeManagement.rfc.docker,
+                        configuration.changeManagement.endpoint,
+                        configuration.changeManagement.rfc.developmentInstance,
+                        configuration.changeManagement.rfc.developmentClient,
+                        configuration.changeManagement.credentialsId,
+                        configuration.description,
+                        configuration.verbose
+                    )
                 } else {
                   throw new IllegalArgumentException("Invalid backend type: '${backendType}'.")
                 }

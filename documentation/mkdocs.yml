@@ -38,6 +38,7 @@ nav:
         - setupCommonPipelineEnvironment: steps/setupCommonPipelineEnvironment.md
         - slackSendNotification: steps/slackSendNotification.md
         - snykExecute: steps/snykExecute.md
+        - sonarExecuteScan: steps/sonarExecuteScan.md
         - testsPublishResults: steps/testsPublishResults.md
         - transportRequestCreate: steps/transportRequestCreate.md
         - transportRequestRelease:  steps/transportRequestRelease.md
