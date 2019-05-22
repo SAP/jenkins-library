@@ -213,12 +213,6 @@ class NeoDeployTest extends BasePiperTest {
         thrown.expect(AbortException)
         thrown.expectMessage('Extensions are only supported for deploy mode \'MTA\'')
 
-        StepAssertions.metaClass.static.assertFileExists =
-            { Script step, String filePath ->
-              if( ! [archiveName, 'myExtension.yml'].contains(filePath) )
-                  step.error("File ${filePath} cannot be found.")
-            }
-
         stepRule.step.neoDeploy(
             script: nullScript,
             source: archiveName,
