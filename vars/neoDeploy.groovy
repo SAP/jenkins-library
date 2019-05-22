@@ -85,7 +85,7 @@ import static com.sap.piper.Prerequisites.checkScript
      */
     'dockerOptions',
     /**
-      * Extension files. Provided to the neo command via parameter `--extensions` (`-e`).
+      * Extension files. Provided to the neo command via parameter `--extensions` (`-e`). Only valid for deploy mode `mta`.
       */
     'mtaExtensionDescriptors',
     /**
