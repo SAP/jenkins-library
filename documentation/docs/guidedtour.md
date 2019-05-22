@@ -169,7 +169,7 @@ This Guided Tour introduced you to the basics of using `Project Piper`. By the c
 
 The configuration pattern fosters simple pipelines which can be re-used by multiple applications. Read the documentation of the [configuration][resources-configuration] to understand its principle of inheritance and customization.
  
-The `Project Piper`s [Steps][resources-steps] implement the SAP flavors. Have a look into the increasing list of features and visit the different [scenarios][resources-scenarios] to understand how to integrate SAP systems into your pipeline. 
+The `Project Pipers` [steps][resources-steps] implement the SAP flavors. Have a look into the increasing list of features and visit the different [scenarios][resources-scenarios] to understand how to integrate SAP systems into your pipeline. 
 
 
 [guidedtour-my-own-jenkins]:         myownjenkins.md
