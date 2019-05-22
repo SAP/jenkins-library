@@ -7,7 +7,7 @@
 * Jenkins - Jenkins version 2.60.3 or higher. We recommend to use the CX-Server toolkit.  
 * Access to [github.com][github] - The piper library will be downloaded from [github.com].
 * Git Repository - The pipeline you are going to setup will process sources from a Git repository you have to specify. 
-* SAP Cloud Platform Space - Get access to SAP Cloud Platform Cloud Foundry. If you haven't an account yet, request a SAP CP CF Trial account. After login an organization and space are targeted. The application will be deployed in this organization and space.
+* SAP Cloud Platform Space - Get access to [SAP Cloud Platform][SAP Cloud Platform] Cloud Foundry. If you haven't an account yet, request a [SAP CP CF Trial][SAP Cloud Platform Trial] account. After login an organization and space are targeted. The application will be deployed in this organization and space.
 
 ## Jenkins
 
@@ -126,8 +126,7 @@ For additional information about the configuration refer to the [common configur
    ```
    stage('deploy') {
      def mtarFilePath = commonPipelineEnvironment.getMtarFilePath()
-   
-    cloudFoundryDeploy( script: this, mtaPath: mtarFilePath)
+     cloudFoundryDeploy( script: this, mtaPath: mtarFilePath)
    }
    ```
    
@@ -144,7 +143,12 @@ For additional information about the configuration refer to the [common configur
         space: '<your-space>'
         credentialsId: 'CF_CREDENTIALSID'
    ```
-
+   The key `CF_CREDENTIALSID` refers to a user-password credential you have to create in Jenkins. From the main menu click `Credentials` and add a `Username with Password` entry.
+   
+   <p align="center">
+   ![Add Credentials](../images/JenkinsCredentials-1.png "Add Credentials")
+   </p>  
+   
    For additional information about the configuration refer to the [common configuration guide][resources-configuration] and the [Cloud Foundry deploy step documentation][resources-step-cloudFoundryDeploy].
 
 1. Commit the changes.
@@ -177,13 +181,14 @@ The `Project Piper`s [Steps][resources-steps] implement the SAP flavors. Have a 
 [resources-step-mtabuild]:           steps/mtaBuild.md
 [resources-step-cloudFoundryDeploy]: steps/cloudFoundryDeploy.md
 [resources-scenarios]:               scenarios
+
+[SAP Cloud Platform]:                [https://account.hana.ondemand.com]
+[SAP Cloud Platform Trial]:          [https://account.hanatrial.ondemand.com]
 [devops-docker-images]:              https://github.com/SAP/devops-docker-images
 [devops-docker-images-issues]:       https://github.com/SAP/devops-docker-images/issues
-[cloud-cf-helloworld-nodejs]:  [https://github.com/SAP/cloud-cf-helloworld-nodejs]
-[license]:                     LICENSE
-[contribution]:                CONTRIBUTING.md
-[sap]:                         https://www.sap.com
-[github]:                      https://github.com
-[jenkins-io-documentation]:    https://jenkins.io/doc/
-[jenkins-io-jenkinsfile]:      https://jenkins.io/doc/book/pipeline/jenkinsfile
+[cloud-cf-helloworld-nodejs]:        https://github.com/SAP/cloud-cf-helloworld-nodejs
+[sap]:                               https://www.sap.com
+[github]:                            https://github.com
+[jenkins-io-documentation]:          https://jenkins.io/doc/
+[jenkins-io-jenkinsfile]:            https://jenkins.io/doc/book/pipeline/jenkinsfile
 
