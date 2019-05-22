@@ -24,22 +24,22 @@ class JenkinsShellCallRule implements TestRule {
         }
 
         @Override
-        public int hashCode() {
+        int hashCode() {
             return type.hashCode() * script.hashCode()
         }
 
         @Override
-        public boolean equals(Object obj) {
+        boolean equals(Object obj) {
 
-            if (obj == null || !obj instanceof Command) return false;
-            Command other = (Command) obj;
+            if (obj == null || !obj instanceof Command) return false
+            Command other = (Command) obj
             return type == other.type && script == other.script
         }
     }
 
     final BasePipelineTest testInstance
 
-    List shell = []
+    List<String> shell = []
 
     Map<Command, String> returnValues = [:]
     List<Command> failingCommands = []
@@ -79,10 +79,8 @@ class JenkinsShellCallRule implements TestRule {
                         for (Command failingCommand: failingCommands){
                             if(failingCommand.type == Type.REGEX && unifiedScript =~ failingCommand.script) {
                                 throw new Exception("Script execution failed!")
-                                break
                             } else if(failingCommand.type == Type.PLAIN && unifiedScript.equals(failingCommand.script)) {
                                 throw new Exception("Script execution failed!")
-                                break
                             }
                         }
                 })
@@ -95,10 +93,8 @@ class JenkinsShellCallRule implements TestRule {
                         for (Command failingCommand: failingCommands){
                             if(failingCommand.type == Type.REGEX && unifiedScript =~ failingCommand.script) {
                                 throw new Exception("Script execution failed!")
-                                break
                             } else if(failingCommand.type == Type.PLAIN && unifiedScript.equals(failingCommand.script)) {
                                 throw new Exception("Script execution failed!")
-                                break
                             }
                         }
 

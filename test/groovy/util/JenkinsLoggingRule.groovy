@@ -2,21 +2,18 @@ package util
 
 import com.lesfurets.jenkins.unit.BasePipelineTest
 
-import org.junit.Assert
 import org.junit.rules.TestRule
 import org.junit.runner.Description
 import org.junit.runners.model.Statement
 
 import static org.hamcrest.Matchers.containsString
-import static org.junit.Assert.assertThat;
-
-import org.hamcrest.Matchers
+import static org.junit.Assert.assertThat
 
 class JenkinsLoggingRule implements TestRule {
 
     final BasePipelineTest testInstance
 
-    def expected = []
+    List<String> expected = []
 
     String log = ""
 
@@ -24,7 +21,7 @@ class JenkinsLoggingRule implements TestRule {
         this.testInstance = testInstance
     }
 
-    public void expect(String substring) {
+    void expect(String substring) {
         expected.add(substring)
     }
 
@@ -38,12 +35,12 @@ class JenkinsLoggingRule implements TestRule {
             @Override
             void evaluate() throws Throwable {
 
-                testInstance.helper.registerAllowedMethod("echo", [String.class], {
+                testInstance.helper.registerAllowedMethod("echo", [String], {
                     echoInput ->
                         log += "$echoInput \n"
                 })
 
-                Throwable caught
+                Throwable caught = null
 
                 try {
                     base.evaluate()

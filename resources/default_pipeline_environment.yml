@@ -249,6 +249,13 @@ steps:
       languageRunner: 'ruby'
       runCommand: 'bundle install && bundle exec gauge run'
       testOptions: 'specs'
+  hadolintExecute:
+    dockerImage: 'hadolint/hadolint:latest-debian'
+    configurationFile: '.hadolint.yaml'
+    configurationUrl: 'https://github.wdf.sap.corp/raw/SGS/Hadolint-Dockerfile/master/.hadolint.yaml'
+    resultFile: 'hadolint.xml'
+    stashContent:
+      - 'buildDescriptor'
   handlePipelineStepErrors:
     echoDetails: true
     failOnError: true
