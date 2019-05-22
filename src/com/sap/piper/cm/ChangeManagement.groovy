@@ -421,16 +421,16 @@ public class ChangeManagement implements Serializable {
                             String clientOpts = '') {
         String cmCommandLine = '#!/bin/bash'
         if(clientOpts) {
-            cmCommandLine +=  """
-                             export CMCLIENT_OPTS="${clientOpts}" """
+            cmCommandLine += """
+                export CMCLIENT_OPTS="${clientOpts}" """
         }
         cmCommandLine += """
-                        cmclient -e '$endpoint' \
-                           -u '$username' \
-                           -p '$password' \
-                           -t ${type} \
-                          ${command} ${(args as Iterable).join(' ')}
-                    """
+            cmclient -e '$endpoint' \
+                -u '$username' \
+                -p '$password' \
+                -t ${type} \
+                ${command} ${(args as Iterable).join(' ')}
+        """
         return cmCommandLine
     }
 }
