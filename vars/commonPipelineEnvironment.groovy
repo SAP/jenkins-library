@@ -12,6 +12,7 @@ class commonPipelineEnvironment implements Serializable {
 
     //stores the gitCommitId as well as additional git information for the build during pipeline run
     String gitCommitId
+    String gitCommitMessage
     String gitSshUrl
     String gitHttpsUrl
     String gitBranch
@@ -46,6 +47,7 @@ class commonPipelineEnvironment implements Serializable {
         configuration = [:]
 
         gitCommitId = null
+        gitCommitMessage = null
         gitSshUrl = null
         gitHttpsUrl = null
         gitBranch = null
