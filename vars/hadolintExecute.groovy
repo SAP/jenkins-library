@@ -23,7 +23,7 @@ import groovy.transform.Field
     /**
      * Name of the result file used locally within the step.
      */
-    'resultFile'
+    'reportFile'
 ])
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS + [
     /**
@@ -58,7 +58,7 @@ void call(Map parameters = [:]) {
 
         configuration.stashContent = utils.unstashAll(configuration.stashContent)
 
-        if (!fileExists('Dockerfile')) {
+        if (!fileExists(configuration.dockerfile)) {
             error "[${STEP_NAME}] Dockerfile is not found."
         }
 
@@ -77,9 +77,13 @@ void call(Map parameters = [:]) {
             dockerOptions: configuration.dockerOptions,
             stashContent: configuration.stashContent
         ) {
-            sh "hadolint Dockerfile --config ${configuration.configurationFile} -f checkstyle > ${configuration.resultFile} || exit 0"
-            recordIssues blameDisabled: true, enabledForFailure: true, tools: [checkStyle(pattern: configuration.resultFile)]
-            archiveArtifacts configuration.resultFile
+            sh "hadolint ${configuration.dockerfile} --config ${configuration.configurationFile} --format checkstyle > ${configuration.reportFile} || exit 0"
+
+            recordIssues(
+                tools: [checkStyle(name: configuration.reportName, pattern: configuration.reportFile)],
+                enabledForFailure: true
+            )
+            archiveArtifacts configuration.reportFile
         }
     }
 }

@@ -45,8 +45,8 @@ class HadolintExecuteTest extends BasePiperTest {
         assertThat(loggingRule.log, containsString("Unstash content: buildDescriptor"))
         assertThat(shellRule.shell,
             hasItems(
-                "curl -L -o .hadolint.yaml https://github.wdf.sap.corp/raw/SGS/Hadolint-Dockerfile/master/.hadolint.yaml",
-                "hadolint Dockerfile --config .hadolint.yaml -f checkstyle > hadolint.xml || exit 0"
+                "curl --location --output .hadolint.yaml https://github.wdf.sap.corp/raw/SGS/Hadolint-Dockerfile/master/.hadolint.yaml",
+                "hadolint Dockerfile --config .hadolint.yaml -format checkstyle > hadolint.xml || exit 0"
             )
         )
     }
