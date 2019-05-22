@@ -72,7 +72,7 @@ void call(Map parameters = [:]) {
             echo "Reason:\n-------------\n${userInput.reason}"
             echo "Acknowledged:\n-------------\n${userInput.acknowledgement}"
         } else {
-            input message: 'Shall we proceed to Promote & Release?'
+            input message: config.manualConfirmationMessage
         }
 
     }
