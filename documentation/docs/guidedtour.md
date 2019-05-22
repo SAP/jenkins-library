@@ -1,47 +1,48 @@
-# Getting Started with the Guided Tour
+# Getting Started with Project "Piper"
+
+Follow this guided tour to become familiar with the basics of using project "Piper". 
+
 
 ## Prerequisites
 
-* Linux - A Linux System with at least 4GB memory. All our samples were tested on Ubuntu 16.04. On Microsoft Windows you might face issues.
-* Docker - All tests were made on Docker 18.09.6. Install the newest version from [docker.com](https://docs.docker.com/install/)
-* Jenkins - Jenkins version 2.60.3 or higher. We recommend to use the CX-Server toolkit.  
-* Access to [github.com][github] - The piper library will be downloaded from [github.com].
-* Git Repository - The pipeline you are going to setup will process sources from a Git repository you have to specify. 
-* SAP Cloud Platform Space - Get access to [SAP Cloud Platform][SAP Cloud Platform] Cloud Foundry. If you haven't an account yet, request a [SAP CP CF Trial][SAP Cloud Platform Trial] account. After login an organization and space are targeted. The application will be deployed in this organization and space.
+* You have installed a Linux system with at least 4 GB memory. **Note:** We have tested our samples on Ubuntu 16.04. On Microsoft Windows, you might face some issues.
+* You have installed the newest version of Docker. See [Docker Community Edition](https://docs.docker.com/install/). **Note:** we have tested on Docker 18.09.6.
+* You have installed Jenkins 2.60.3 or higher. **Recommendation:** We recommend to use the `cx-server` toolkit. See **(Optional) Install the `cx-server` Toolkit for Jenkins**.
+* You have a GitHub account. See [Signing up for a new GitHub account](https://help.github.com/en/articles/signing-up-for-a-new-github-account).
+* You have access to a repository on GitHub. See [Creating a repository on GitHub](https://help.github.com/en/articles/creating-a-repository-on-github).
+* You have an account and space in the Cloud Foundry environment on SAP Cloud Platform. See [Get Started with a Trial Account: Workflow in the Cloud Foundry Environment](https://help.sap.com/viewer/65de2977205c403bbc107264b8eccf4b/Cloud/en-US/e50ab7b423f04a8db301d7678946626e.html).
 
-## Jenkins
+## (Optional) Install the `cx-server` Toolkit for Jenkins
 
-We offer the life-cycle management toolkit around Jenkins named `cx-server` to ease its usage and configuration. Based on docker images, you will get a preconfigured Jenkins and a Nexus based cache. 
-Optionally, you can still use your [own Jenkins installation][guidedtour-my-own-jenkins].
+`cx-server`is a lifecycle management toolkit that provides Docker images with a preconfigured Jenkins and a Nexus-based cache to facilitate the configuration and usage of Jenkins.
 
-### Jenkins by CX-Server
-
-The `cx-server` is a toolkit that is developed to manage the lifecycle of the Jenkins server.
-In order to use the toolkit, get the script `cx-server` and its configuration file `server.cfg` by the docker command
+To use the toolkit, get the `cx-server` script and its configuration file `server.cfg` by using the following command:
 
 ```sh
 docker run -it --rm -u $(id -u):$(id -g) -v "${PWD}":/cx-server/mount/ ppiper/cx-server-companion:latest init-cx-server
 ```
 
-Once the files are downloaded into the current directory, you can launch the below command to start the Jenkins server.
+When the files are downloaded into the current directory, launch the Jenkins server by using the following command:
+
 
 ```sh
 ./cx-server start
 ```
 
-If you would like to customize the Jenkins, [the operations guide](https://github.com/SAP/devops-docker-images/blob/master/docs/operations/cx-server-operations-guide.md) will provide more information on this along with the lifecycle management of the Jenkins. 
+For more information on the Jenkins lifecycle management and how to customize your Jenkins, have a look at the [Operations Guide for Cx Server](https://github.com/SAP/devops-docker-images/blob/master/docs/operations/cx-server-operations-guide.md). 
 
 
-## Creating your first Pipeline
+## Create Your First Pipeline
 
-1. Provide a repository on GitHub. For the first time, we recommend to use a sample application SAP provides on [github.com][github]. The repository [cloud-cf-helloworld-nodejs][cloud-cf-helloworld-nodejs] contains a simple `nodejs` application we are going to enrich with a pipeline building with MTA means and deploying into the cloud foundry. Optionally, you can use any repository you want, but be aware that the following code snippets might not match your application.
-   
-   Fork [cloud-cf-helloworld-nodejs][cloud-cf-helloworld-nodejs] into your GitHub organisation. 
-   
-   
-1. Create a pipeline. Select the branch `1_REST_persist_in_Memory` of your [cloud-cf-helloworld-nodejs] fork and create a new file named `Jenkinsfile`. Enter the following code and submit it.
-   
-   ```
+For the beginning, we recommend using an SAP sample application. The repository [cloud-cf-helloworld-nodejs][cloud-cf-helloworld-nodejs] contains a simple `nodejs` application that can be enriched with a pipeline built with MTA and deployed into the Cloud Foundry environment.
+
+1. Fork the [cloud-cf-helloworld-nodejs][cloud-cf-helloworld-nodejs] repository into your GitHub organization.
+
+2. Select the `1_REST_persist_in_Memory` branch of your [cloud-cf-helloworld-nodejs] fork and in it, create a new file with the name `Jenkinsfile`.
+
+3. To synchronize the repository, enter the following code lines into your `Jenkinsfile`: 
+
+ ```
    @Library('piper-lib-os') _
     node() {
     stage('prepare') {
@@ -50,35 +51,38 @@ If you would like to customize the Jenkins, [the operations guide](https://githu
       }
     }
    ```
-   This pipeline code will simply sync the repository.<br/><br/>For more information about Pipeline and what a Jenkinsfile is, refer to [Using a Jenkinsfile][jenkins-io-jenkinsfile] sections of the Jenkins User Handbook.
+   For more information about Jenkinsfiles and pipelines, see [Using a Jenkinsfile][jenkins-io-jenkinsfile].
    
-   
-1. Setup a Jenkins Job for your repository. 
-   
-   Open the Jenkins UI `http://<jenkins-server-address>:<http-port>` and Click the `New Item` menu. Per default the `cx-server` will start Jenkins on HTTP port `80`. If you are not familiar with Jenkins, refer to the [Jenkins User Documentation][jenkins-io-documentation].
+4. To set up a Jenkins job for your repository, open the Jenkins UI under `http://<jenkins-server-address>:<http-port>` and choose **New Item**. Per default, the `cx-server` starts Jenkins on HTTP port `80`. For more information, see the [Jenkins User Documentation][jenkins-io-documentation].
 
    <p align="center">
    ![Clicke New Item](../images/JenkinsHomeMenu-1.png "Jenkins Home Menu")
    </p>  
-   Provide a name for your new item (e.g. My First Pipeline) and select `Pipeline`
+
+5. Provide a name for your new item (for example, *My First Pipeline*) and select **Pipeline**.
 
    <p align="center">
    ![Create Pipeline Job](../images/JenkinsNewItemPipeline-1.png "Jenkins New Item")
    </p>  
 
-   Scroll to the Pipeline options and choose `Pipeline script from SCM`. Choose `Git` as SCM and edit the URL of your Git repository, like `https://github.com/<your-org>/cloud-cf-helloworld-nodejs`. `Save` the changes. 
+6. For **Definition** in the **Pipeline** options, choose **Pipeline script from SCM**. 
+
+7. For **SCM**, choose **Git**.
+
+8. For **Repository URL** in the **Repositories** section, enter the URL of your Git repository, for example `https://github.com/<your-org>/cloud-cf-helloworld-nodejs`. **Note:** If your repository is protected, you must provide your credentials in the **Credentials** section.
 
    <p align="center">
    ![Create Pipeline Job](../images/JenkinsNewItemPipeline-2.png "Jenkins New Item")
    </p>  
-   
-   If your repository is protected you may have to provide credentials.
 
-1. Run your Pipeline. From the Job UI click `Build Now`.
+8. Choose **Save**. 
 
-## Add a build step
+9. To run your pipeline, choose **Build Now** in the job UI.
 
-1. Add the following snippet to your Jenkinsfile. 
+
+## Add a Build Step
+
+1. In your `Jenkinsfile`, add the following code snippet: 
    
    ```
     stage('build') {
@@ -86,9 +90,10 @@ If you would like to customize the Jenkins, [the operations guide](https://githu
     }
    ```
    
-   The `mtaBuild`  step will call a build tool to build a multi-target application (MTA). The tool consumes a MTA descriptor containing the metadata of all entities comprising an application or used by it during deployment or runtime, and the dependencies between them. If you are not familiar with MTAs please visit [sap.com][sap]. 
+   **Result:** The `mtaBuild` step calls a build tool to build a multi-target application (MTA). The tool consumes an MTA descriptor that contains the metadata of all entities which comprise an application or are used by one during deployment or runtime, and the dependencies between them. For more information about MTAs, see [sap.com][sap]. 
    
-1. Create the MTA descriptor `mta.yaml` with the following content.
+2. Create an MTA descriptor with the name `mta.yaml`, which contains the following code:
+
    
    ```
     _schema-version: 2.1.0
@@ -102,7 +107,7 @@ If you would like to customize the Jenkins, [the operations guide](https://githu
         path: .
    ```
    
-1. Configure `mtaBuild`. To configure the step to build a MTA for the Cloud Foundry, open/create `.pipeline/config.yml` in your repository and add the following content. 
+3. To configure the step to build an MTA for the Cloud Foundry environment, in your repository, open or create the `.pipeline/config.yml` and add the following content: 
    
    ```
     general:
@@ -111,15 +116,15 @@ If you would like to customize the Jenkins, [the operations guide](https://githu
         buildTarget: 'CF'
    ```
 
-   For additional information about the configuration refer to the [common configuration guide][resources-configuration] and the [MTA build step documentation][resources-step-mtabuild].
+   For additional information about the configuration, have a look at the [Common Configuration Guide][resources-configuration] and the [MTA build step documentation][resources-step-mtabuild].
 
-1. Commit the changes.
+4. Commit your changes.
 
-1. Run your Pipeline. From the Job UI click `Build Now`.
+5. To run your pipeline, choose **Build Now** in the job UI.
 
-## Add a deploy step
+## Add a Deploy Step
 
-1. Add the following snippet to your Jenkinsfile. 
+1.  In your `Jenkinsfile`, add the following code snippet:
    
    ```
    stage('deploy') {
@@ -128,9 +133,9 @@ If you would like to customize the Jenkins, [the operations guide](https://githu
    }
    ```
    
-   The `cloudFoundryDeploy`  step will call the cloud foundry command line client to deploy into the SAP Cloud Platform. with MTAs please visit [sap.com][sap]. 
+   **Result:** The `cloudFoundryDeploy`  step calls the Cloud Foundry command line client to deploy into SAP Cloud Platform.
 
-1. Configure `cloudFoundryDeploy`. To configure the step to deploy into the Cloud Foundry, open/create `.pipeline/config.yml` in your repository and add the following content. 
+2. To configure the step to deploy into the Cloud Foundry environment, in your repository, open or create the `.pipeline/config.yml` and add the following content:
 
    ```
     cloudFoundryDeploy:
@@ -141,34 +146,36 @@ If you would like to customize the Jenkins, [the operations guide](https://githu
         space: '<your-space>'
         credentialsId: 'CF_CREDENTIALSID'
    ```
-   The key `CF_CREDENTIALSID` refers to a user-password credential you have to create in Jenkins. From the main menu click `Credentials` and add a `Username with Password` entry.
+   The key `CF_CREDENTIALSID` refers to a user-password credential you must create in Jenkins: In Jenkins, choose **Credentials** from the main menu and add a **Username with Password** entry.
    
    <p align="center">
    ![Add Credentials](../images/JenkinsCredentials-1.png "Add Credentials")
    </p>  
    
-   For additional information about the configuration refer to the [common configuration guide][resources-configuration] and the [Cloud Foundry deploy step documentation][resources-step-cloudFoundryDeploy].
+   For more information about the configuration, see the [Common Configuration Guide][resources-configuration] and [cloudFoundryDeploy][resources-step-cloudFoundryDeploy].
 
-1. Commit the changes.
+3. Commit your changes.
 
-1. Run your Pipeline. From the Job UI click `Build Now`.
+4. To run your pipeline, choose **Build Now** in the job UI.
 
-## Complete Tour  
-Your application has been deployed into your SAP CP CF Space. Login and verify the status of the application.
+## Complete the Guided Tour  
+
+Your application has been deployed into your space in the Cloud Foundry space on SAP Cloud Platform. Logon to SAP Cloud Platform and verify the status of your application.
+   
    <p align="center">
    ![Deployed Application](../images/SCPDeployApp-1.png "SAP Cloud Platform")
    </p>  
-Click the application name to see the URL of the application. Open the `Route` and add `/users` to the URL. The application will return data.  
+   
+To view the URL of your application, choose the application name. Open the **Route** and add `/users` to the URL. **Result:** The application returns data.  
 
-If your pipeline fails compare to the final [Jenkinsfile][guidedtour-sample.jenkins], the [config.yml][guidedtour-sample.config] and the [mta.yaml][guidedtour-sample.mta]
+If your pipeline fails, compare it to the final [Jenkinsfile][guidedtour-sample.jenkins], the [config.yml][guidedtour-sample.config], and the [mta.yaml][guidedtour-sample.mta].
 
 ## What's Next
-This Guided Tour introduced you to the basics of using `Project Piper`. By the concept of Pipeline as Code, Piper respectively Jenkins Pipelines are extremely powerful. While Jenkins Pipelines offer a full set of common programming features, Piper adds SAP specific flavors.
 
-The configuration pattern fosters simple pipelines which can be re-used by multiple applications. Read the documentation of the [configuration][resources-configuration] to understand its principle of inheritance and customization.
+You are now familiar with the basics of using project "Piper". Through the concept of pipeline as code, project "Piper" and Jenkins pipelines are extremely powerful. While Jenkins pipelines offer a full set of common programming features, project "Piper" adds SAP-specific flavors. Have a look at the increasing list of features you can implement through the project "Piper" [steps][resources-steps] and see the different [scenarios][resources-scenarios] to understand how to integrate SAP systems into your pipeline.
+
+The configuration pattern supports simple pipelines that can be reused by multiple applications. To understand the principles of inheritance and customization, have a look at the the [configuration][resources-configuration] documentation.
  
-The `Project Pipers` [steps][resources-steps] implement the SAP flavors. Have a look into the increasing list of features and visit the different [scenarios][resources-scenarios] to understand how to integrate SAP systems into your pipeline. 
-
 
 [guidedtour-my-own-jenkins]:         myownjenkins.md
 [guidedtour-sample.config]:          samples/cloud-cf-helloworld-nodejs/.pipeline/config.yml
