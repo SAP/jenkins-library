@@ -5,12 +5,13 @@ import com.sap.piper.Utils
 import groovy.transform.Field
 
 @Field def STEP_NAME = getClass().getName()
-@Field Set GENERAL_CONFIG_KEYS = []
-@Field Set STEP_CONFIG_KEYS = [
+@Field Set GENERAL_CONFIG_KEYS = [
     /**
      * Name of the docker image that should be used, in which node should be installed and configured. Default value is 'hadolint/hadolint:latest-debian'.
      */
-    'dockerImage',
+    'dockerImage'
+]
+@Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS.plus([
     /**
      * Name of the configuration file used locally within the step.
      */
@@ -23,7 +24,7 @@ import groovy.transform.Field
      * Name of the result file used locally within the step.
      */
     'resultFile'
-]
+])
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS + [
     /**
      * Docker options to be set when starting the container.
@@ -71,7 +72,12 @@ void call(Map parameters = [:]) {
             }
         }
 
-        dockerExecute(script: script, dockerImage: configuration.dockerImage, dockerOptions: configuration.dockerOptions, stashContent: configuration.stashContent) {
+        dockerExecute(
+            script: script,
+            dockerImage: configuration.dockerImage,
+            dockerOptions: configuration.dockerOptions,
+            stashContent: configuration.stashContent
+        ) {
             sh "hadolint Dockerfile --config ${configuration.configurationFile} -f checkstyle > ${configuration.resultFile} || exit 0"
             recordIssues blameDisabled: true, enabledForFailure: true, tools: [checkStyle(pattern: configuration.resultFile)]
             archiveArtifacts configuration.resultFile
