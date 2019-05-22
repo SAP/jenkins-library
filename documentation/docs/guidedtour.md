@@ -1,19 +1,20 @@
 # Getting Started with the Guided Tour
 
-##Prerequisites
+## Prerequisites
 
 * Linux - A Linux System with at least 4GB memory. All our samples were tested on Ubuntu 16.04. On Microsoft Windows you might face issues.
 * Docker - All tests were made on Docker 18.09.6. Install the newest version from [docker.com](https://docs.docker.com/install/)
 * Jenkins - Jenkins version 2.60.3 or higher. We recommend to use the CX-Server toolkit.  
 * Access to [github.com][github] - The piper library will be downloaded from [github.com].
 * Git Repository - The pipeline you are going to setup will process sources from a Git repository you have to specify. 
+* SAP Cloud Platform Space - Get access to SAP Cloud Platform Cloud Foundry. If you haven't an account yet, request a SAP CP CF Trial account. After login an organization and space are targeted. The application will be deployed in this organization and space.
 
-##Jenkins
+## Jenkins
 
 We offer the life-cycle management toolkit around Jenkins named `cx-server` to ease its usage and configuration. Based on docker images, you will get a preconfigured Jenkins and a Nexus based cache. 
 Optionally, you can still use your [own Jenkins installation][guidedtour-my-own-jenkins].
 
-###Jenkins by CX-Server
+### Jenkins by CX-Server
 
 The `cx-server` is a toolkit that is developed to manage the lifecycle of the Jenkins server.
 In order to use the toolkit, get the script `cx-server` and its configuration file `server.cfg` by the docker command
@@ -70,7 +71,7 @@ If you would like to customize the Jenkins, [the operations guide](https://githu
    Scroll to the Pipeline options and choose `Pipeline script from SCM`. Choose `Git` as SCM and edit the URL of your Git repository, like `https://github.com/<your-org>/cloud-cf-helloworld-nodejs`. `Save` the changes. 
 
    <p align="center">
-   ![Create Pipeline Job](../images/JenkinsNewItemPipeline-1.png "Jenkins New Item")
+   ![Create Pipeline Job](../images/JenkinsNewItemPipeline-2.png "Jenkins New Item")
    </p>  
    
    If your repository is protected you may have to provide credentials.
@@ -123,8 +124,8 @@ For additional information about the configuration refer to the [common configur
       deployTool: 'mtaDeployPlugin'
       deployType: 'standard'
       cloudFoundry:
-        org: 'D046169trial_trial'
-        space: 'dev'
+        org: '<your-organisation>'
+        space: '<your-space>'
         credentialsId: 'CF_CREDENTIALSID'
    ```
 
@@ -134,6 +135,15 @@ For additional information about the configuration refer to the [common configur
 
 1. Run your Pipeline. From the Job UI click `Build Now`.
 
+## Check  
+SAP CP CF Space
+Login into SCP
+Navigate to space
+Check application status
+Call Application
+
+## Summary
+you learned
 
 [guidedtour-my-own-jenkins]:         myownjenkins.md
 [resources-configuration]:           configuration.md
