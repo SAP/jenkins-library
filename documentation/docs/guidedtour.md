@@ -81,17 +81,17 @@ If you would like to customize the Jenkins, [the operations guide](https://githu
 ## Add a build step
 
 1. Add the following snippet to your Jenkinsfile. 
-
+   
    ```
     stage('build') {
       mtaBuild script: this
     }
    ```
-
+   
    The `mtaBuild`  step will call the MTA build tool to build a multi-target application. If you are not familiar with MTAs please visit [sap.com][sap]. 
 
 1. Configure `mtaBuild`. To configure the step to build a MTA for the Cloud Foundry, open/create `.pipeline/config.yml` in your repository and add the following content. 
-
+   
    ```
     general:
     steps:
@@ -108,15 +108,15 @@ For additional information about the configuration refer to the [common configur
 ## Add a deploy step
 
 1. Add the following snippet to your Jenkinsfile. 
-
+   
    ```
-stage('deploy') {
-  def mtarFilePath = commonPipelineEnvironment.getMtarFilePath()
-
-  cloudFoundryDeploy( script: this, mtaPath: mtarFilePath)
-}
+   stage('deploy') {
+     def mtarFilePath = commonPipelineEnvironment.getMtarFilePath()
+   
+    cloudFoundryDeploy( script: this, mtaPath: mtarFilePath)
+   }
    ```
-
+   
    The `cloudFoundryDeploy`  step will call the cloud foundry command line client to deploy into the SAP Cloud Platform. with MTAs please visit [sap.com][sap]. 
 
 1. Configure `cloudFoundryDeploy`. To configure the step to deploy into the Cloud Foundry, open/create `.pipeline/config.yml` in your repository and add the following content. 
@@ -137,15 +137,12 @@ stage('deploy') {
 
 1. Run your Pipeline. From the Job UI click `Build Now`.
 
-## Check  
-SAP CP CF Space
-Login into SCP
-Navigate to space
-Check application status
-Call Application
-
-## Summary
-you learned
+## Complete Tour  
+Your application has been deployed into your SAP CP CF Space. Login and verify the status of the application.
+   <p align="center">
+   ![Deployed Application](../images/SCPDeployApp-1.png "SAP Cloud Platform")
+   </p>  
+Click the application name to see the URL of the application. Open the `Route` and add `/users` to the URL. The application will return data.  
 
 [guidedtour-my-own-jenkins]:         myownjenkins.md
 [resources-configuration]:           configuration.md
