@@ -1,6 +1,4 @@
-
 # ${docGenStepName}
-
 
 ## ${docGenDescription}
 
