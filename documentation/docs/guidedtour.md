@@ -113,7 +113,7 @@ If you would like to customize the Jenkins, [the operations guide](https://githu
         buildTarget: 'CF'
    ```
 
-For additional information about the configuration refer to the [common configuration guide][resources-configuration] and the [MTA build step documentation][resources-step-mtabuild].
+   For additional information about the configuration refer to the [common configuration guide][resources-configuration] and the [MTA build step documentation][resources-step-mtabuild].
 
 1. Commit the changes.
 
