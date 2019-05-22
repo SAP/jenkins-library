@@ -11,11 +11,11 @@ import groovy.transform.Field
 
 @Field Set STEP_CONFIG_KEYS = [
     /**
-     * If it is set to true` the step `mailSendNotification` will be triggered in case of an error.
+     * If it is set to `true` the step `mailSendNotification` will be triggered in case of an error.
      */
     'sendMail',
     /**
-     * Defines the time period where the job waits for input. Default is 15 minutes. Once this time is passed the job enters state FAILED.
+     * Defines the time period where the job waits for input. Default is 15 minutes. Once this time is passed the job enters state `FAILED`.
      */
     'timeoutInSeconds'
 ]
