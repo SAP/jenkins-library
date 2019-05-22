@@ -138,11 +138,7 @@ class NeoDeployTest extends BasePiperTest {
         def checkedExtensionFiles = []
 
         StepAssertions.metaClass.static.assertFileExists =
-            { Script step, String filePath ->
-                checkedExtensionFiles << filePath
-                if( ! [archiveName, 'myExtension.yml'].contains(filePath) )
-                    step.error("File ${filePath} cannot be found.")
-            }
+            getFileExistsCheck(checkedExtensionFiles, [archiveName, 'myExtension.yml'])
 
         stepRule.step.neoDeploy(
                 script: nullScript,
@@ -180,15 +176,7 @@ class NeoDeployTest extends BasePiperTest {
         def checkedExtensionFiles = []
 
         StepAssertions.metaClass.static.assertFileExists =
-            { Script step, String filePath ->
-                checkedExtensionFiles << filePath
-                if( ! [
-                    archiveName,
-                    'myExtension1.yml',
-                    'myExtension2.yml',
-                    ].contains(filePath) )
-                    step.error("File ${filePath} cannot be found.")
-            }
+            getFileExistsCheck(checkedExtensionFiles, [archiveName, 'myExtension1.yml', 'myExtension2.yml'])
 
         stepRule.step.neoDeploy(
                 script: nullScript,
@@ -205,6 +193,15 @@ class NeoDeployTest extends BasePiperTest {
                 // some kind of creative usage for the single quotation check (... single quotes inside)
                 .hasSingleQuotedOption('extensions', 'myExtension1.yml\',\'myExtension2.yml'))
 
+    }
+
+    private static getFileExistsCheck(def checkedExtensionFiles, def fileNames) {
+
+        { Script step, String filePath ->
+            checkedExtensionFiles << filePath
+            if( ! fileNames.contains(filePath) )
+                step.error("File ${filePath} cannot be found.")
+        }
     }
 
     @Test
