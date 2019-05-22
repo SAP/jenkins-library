@@ -412,26 +412,42 @@ steps = []
 //
 // assign parameters
 
-if(args.length >= 1)
-    stepsDir = new File(args[0])
+
+def cli = new CliBuilder(
+    usage: 'groovy createDocu [<options>]',
+    header: 'Options:',
+    footer: 'Copyright: SAP SE')
+
+cli.with {
+    s longOpt: 'stepsDir', args: 1, argName: 'dir', 'The directory containing the steps. Defaults to \'vars\'.'
+    d longOpt: 'docuDir', args: 1, argName: 'dir', 'The directory containing the docu stubs. Defaults to \'documentation/docs/steps\'.'
+    c longOpt: 'customDefaults', args: 1, argName: 'file', 'Additional custom default configuration'
+    h longOpt: 'help', 'Prints this help.'
+}
+
+def options = cli.parse(args)
+
+if(options.h) {
+    System.err << "Printing help.\n"
+    cli.usage()
+    return
+}
+
+if(options.s)
+    stepsDir = new File(Helper.projectRoot, options.s)
 
 stepsDir = stepsDir ?: new File(Helper.projectRoot, "vars")
 
-if(args.length >= 2)
-    stepsDocuDir = new File(args[1])
+if(options.d)
+    stepsDocuDir = new File(Helper.projectRoot, options.d)
 
 stepsDocuDir = stepsDocuDir ?: new File(Helper.projectRoot, "documentation/docs/steps")
 
-def argsDrop = 2
-if(args.length >= 3 && args[2].contains('.yml')) {
-    customDefaults = args[2]
-    argsDrop ++
+if(options.c) {
+    customDefaults = options.c
 }
 
-if(args.length >= 3)
-    steps = (args as List).drop(argsDrop)  // the first two entries are stepsDir and docuDir
-// the other parts are considered as step names
-
+steps.addAll(options.arguments())
 
 // assign parameters
 //
@@ -621,9 +637,9 @@ def handleStep(stepName, prepareDefaultValuesStep, gse, customDefaults) {
     step.parameters['script'] = [
         docu: 'The common script environment of the Jenkinsfile running. ' +
             'Typically the reference to the script calling the pipeline ' +
-            'step is provided with the this parameter, as in `script: this`. ' +
+            'step is provided with the `this` parameter, as in `script: this`. ' +
             'This allows the function to access the ' +
-            'commonPipelineEnvironment for retrieving, for example, configuration parameters.',
+            '`commonPipelineEnvironment` for retrieving, e.g. configuration parameters.',
         required: true,
 
         GENERAL_CONFIG: false,
