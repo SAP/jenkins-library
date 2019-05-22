@@ -38,7 +38,6 @@ import groovy.transform.Field
 @GenerateDocumentation
 void call(Map parameters = [:]) {
     handlePipelineStepErrors(stepName: STEP_NAME, stepParameters: parameters) {
-
         final script = checkScript(this, parameters) ?: this
         final utils = parameters.juStabUtils ?: new Utils()
 
@@ -64,7 +63,7 @@ void call(Map parameters = [:]) {
         }
 
         if(!fileExists(configuration.configurationFile) && configuration.configurationUrl) {
-            sh "curl -L -o ${configuration.configurationFile} ${configuration.configurationUrl}"
+            sh "curl --location --output ${configuration.configurationFile} ${configuration.configurationUrl}"
             if(configuration.stashContent) {
                 def stashName = 'hadolintConfiguration'
                 stash name: stashName, includes: configuration.configurationFile
