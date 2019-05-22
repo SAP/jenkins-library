@@ -110,9 +110,11 @@ For additional information about the configuration refer to the [common configur
 1. Add the following snippet to your Jenkinsfile. 
 
    ```
-    stage('deploy') {
-      cloudFoundryDeploy( script: this, mtaPath: 'com.sap.piper.node.hello.world.mtar')
-    }
+stage('deploy') {
+  def mtarFilePath = commonPipelineEnvironment.getMtarFilePath()
+
+  cloudFoundryDeploy( script: this, mtaPath: mtarFilePath)
+}
    ```
 
    The `cloudFoundryDeploy`  step will call the cloud foundry command line client to deploy into the SAP Cloud Platform. with MTAs please visit [sap.com][sap]. 
