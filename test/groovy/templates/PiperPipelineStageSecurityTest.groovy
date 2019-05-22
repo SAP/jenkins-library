@@ -1,4 +1,3 @@
-#!groovy
 package templates
 
 import org.junit.Before

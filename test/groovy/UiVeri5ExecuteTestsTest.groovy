@@ -1,5 +1,3 @@
-#!groovy
-
 import static org.hamcrest.Matchers.*
 
 import org.junit.Before
