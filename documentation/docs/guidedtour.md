@@ -38,10 +38,9 @@ For the beginning, we recommend using an SAP sample application. The repository 
 
 1. Fork the [cloud-cf-helloworld-nodejs][cloud-cf-helloworld-nodejs] repository into your GitHub organization.
 
-2. Select the `1_REST_persist_in_Memory` branch of your [cloud-cf-helloworld-nodejs] fork and in it, create a new file with the name `Jenkinsfile`.
+1. Select the `1_REST_persist_in_Memory` branch of your [cloud-cf-helloworld-nodejs] fork and in it, create a new file with the name `Jenkinsfile`.
 
-3. To synchronize the repository, enter the following code lines into your `Jenkinsfile`: 
-
+1. To synchronize the repository, enter the following code lines into your `Jenkinsfile`: 
    ```
    @Library('piper-lib-os') _
     node() {
@@ -53,29 +52,28 @@ For the beginning, we recommend using an SAP sample application. The repository 
    ```
    For more information about Jenkinsfiles and pipelines, see [Using a Jenkinsfile][jenkins-io-jenkinsfile].
    
-4. To set up a Jenkins job for your repository, open the Jenkins UI under `http://<jenkins-server-address>:<http-port>` and choose **New Item**. Per default, the `cx-server` starts Jenkins on HTTP port `80`. For more information, see the [Jenkins User Documentation][jenkins-io-documentation].
+1. To set up a Jenkins job for your repository, open the Jenkins UI under `http://<jenkins-server-address>:<http-port>` and choose **New Item**. Per default, the `cx-server` starts Jenkins on HTTP port `80`. For more information, see the [Jenkins User Documentation][jenkins-io-documentation].
    <p align="center">
    ![Clicke New Item](../images/JenkinsHomeMenu-1.png "Jenkins Home Menu")
-   </p>  
-5. Provide a name for your new item (for example, *My First Pipeline*) and select **Pipeline**.
-
+   </p> 
+   
+1. Provide a name for your new item (for example, *My First Pipeline*) and select **Pipeline**.
    <p align="center">
    ![Create Pipeline Job](../images/JenkinsNewItemPipeline-1.png "Jenkins New Item")
    </p>  
 
-6. For **Definition** in the **Pipeline** options, choose **Pipeline script from SCM**. 
+1. For **Definition** in the **Pipeline** options, choose **Pipeline script from SCM**. 
 
-7. For **SCM**, choose **Git**.
+1. For **SCM**, choose **Git**.
 
-8. For **Repository URL** in the **Repositories** section, enter the URL of your Git repository, for example `https://github.com/<your-org>/cloud-cf-helloworld-nodejs`. **Note:** If your repository is protected, you must provide your credentials in the **Credentials** section.
-
+1. For **Repository URL** in the **Repositories** section, enter the URL of your Git repository, for example `https://github.com/<your-org>/cloud-cf-helloworld-nodejs`. **Note:** If your repository is protected, you must provide your credentials in the **Credentials** section.
    <p align="center">
    ![Create Pipeline Job](../images/JenkinsNewItemPipeline-2.png "Jenkins New Item")
    </p>  
 
-8. Choose **Save**. 
+1. Choose **Save**. 
 
-9. To run your pipeline, choose **Build Now** in the job UI.
+1. To run your pipeline, choose **Build Now** in the job UI.
 
 
 ## Add a Build Step
@@ -89,8 +87,6 @@ For the beginning, we recommend using an SAP sample application. The repository 
    **Result:** The `mtaBuild` step calls a build tool to build a multi-target application (MTA). The tool consumes an MTA descriptor that contains the metadata of all entities which comprise an application or are used by one during deployment or runtime, and the dependencies between them. For more information about MTAs, see [sap.com][sap]. 
    
 2. Create an MTA descriptor with the name `mta.yaml`, which contains the following code:
-
-   
    ```
     _schema-version: 2.1.0
     ID: com.sap.piper.node.hello.world
@@ -104,14 +100,12 @@ For the beginning, we recommend using an SAP sample application. The repository 
    ```
    
 3. To configure the step to build an MTA for the Cloud Foundry environment, in your repository, open or create the `.pipeline/config.yml` and add the following content: 
-   
    ```
     general:
     steps:
       mtaBuild:
         buildTarget: 'CF'
    ```
-
    For additional information about the configuration, have a look at the [Common Configuration Guide][resources-configuration] and the [MTA build step documentation][resources-step-mtabuild].
 
 4. Commit your changes.
@@ -121,18 +115,15 @@ For the beginning, we recommend using an SAP sample application. The repository 
 ## Add a Deploy Step
 
 1.  In your `Jenkinsfile`, add the following code snippet:
-   
    ```
    stage('deploy') {
      def mtarFilePath = commonPipelineEnvironment.getMtarFilePath()
      cloudFoundryDeploy( script: this, mtaPath: mtarFilePath)
    }
    ```
-   
    **Result:** The `cloudFoundryDeploy`  step calls the Cloud Foundry command line client to deploy into SAP Cloud Platform.
 
 2. To configure the step to deploy into the Cloud Foundry environment, in your repository, open or create the `.pipeline/config.yml` and add the following content:
-
    ```
     cloudFoundryDeploy:
       deployTool: 'mtaDeployPlugin'
@@ -143,11 +134,9 @@ For the beginning, we recommend using an SAP sample application. The repository 
         credentialsId: 'CF_CREDENTIALSID'
    ```
    The key `CF_CREDENTIALSID` refers to a user-password credential you must create in Jenkins: In Jenkins, choose **Credentials** from the main menu and add a **Username with Password** entry.
-   
    <p align="center">
    ![Add Credentials](../images/JenkinsCredentials-1.png "Add Credentials")
    </p>  
-   
    For more information about the configuration, see the [Common Configuration Guide][resources-configuration] and [cloudFoundryDeploy][resources-step-cloudFoundryDeploy].
 
 3. Commit your changes.
@@ -157,7 +146,6 @@ For the beginning, we recommend using an SAP sample application. The repository 
 ## Complete the Guided Tour  
 
 Your application has been deployed into your space in the Cloud Foundry space on SAP Cloud Platform. Logon to SAP Cloud Platform and verify the status of your application.
-   
    <p align="center">
    ![Deployed Application](../images/SCPDeployApp-1.png "SAP Cloud Platform")
    </p>  
