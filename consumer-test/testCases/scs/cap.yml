@@ -1,0 +1,7 @@
+# Test case configuration
+referenceAppRepo:
+  url: "https://github.com/piper-validation/cloud-samples-itelo.git"
+  branch: "piper-test-cap"
+deployCredentialEnv:
+  username: "CX_INFRA_IT_CF_USERNAME"
+  password: "CX_INFRA_IT_CF_PASSWORD"
