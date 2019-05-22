@@ -88,8 +88,22 @@ If you would like to customize the Jenkins, [the operations guide](https://githu
     }
    ```
    
-   The `mtaBuild`  step will call the MTA build tool to build a multi-target application. If you are not familiar with MTAs please visit [sap.com][sap]. 
-
+   The `mtaBuild`  step will call a build tool to build a multi-target application (MTA). The tool consumes a MTA descriptor containing the metadata of all entities comprising an application or used by it during deployment or runtime, and the dependencies between them. If you are not familiar with MTAs please visit [sap.com][sap]. 
+   
+1. Create the MTA descriptor `mta.yaml` with the following content.
+   
+   ```
+    _schema-version: 2.1.0
+    ID: com.sap.piper.node.hello.world
+    version: 1.0.0
+    description: A Hello World sample application
+    provider: SAP Sample generator
+    modules:
+      - name: piper.node.hello.world
+        type: nodejs
+        path: .
+   ```
+   
 1. Configure `mtaBuild`. To configure the step to build a MTA for the Cloud Foundry, open/create `.pipeline/config.yml` in your repository and add the following content. 
    
    ```
@@ -144,10 +158,25 @@ Your application has been deployed into your SAP CP CF Space. Login and verify t
    </p>  
 Click the application name to see the URL of the application. Open the `Route` and add `/users` to the URL. The application will return data.  
 
+If your pipeline fails compare to the final [Jenkinsfile][guidedtour-sample.jenkins], the [config.yml][guidedtour-sample.config] and the [mta.yaml][guidedtour-sample.mta]
+
+## What's Next
+This Guided Tour introduced you to the basics of using `Project Piper`. By the concept of Pipeline as Code, Piper respectively Jenkins Pipelines are extremely powerful. While Jenkins Pipelines offer a full set of common programming features, Piper adds SAP specific flavors.
+
+The configuration pattern fosters simple pipelines which can be re-used by multiple applications. Read the documentation of the [configuration][resources-configuration] to understand its principle of inheritance and customization.
+ 
+The `Project Piper`s [Steps][resources-steps] implement the SAP flavors. Have a look into the increasing list of features and visit the different [scenarios][resources-scenarios] to understand how to integrate SAP systems into your pipeline. 
+
+
 [guidedtour-my-own-jenkins]:         myownjenkins.md
+[guidedtour-sample.config]:          samples/cloud-cf-helloworld-nodejs/.pipeline/config.yml
+[guidedtour-sample.jenkins]:         samples/cloud-cf-helloworld-nodejs/Jenkinsfile
+[guidedtour-sample.mta]:             samples/cloud-cf-helloworld-nodejs/mta.yaml
 [resources-configuration]:           configuration.md
+[resources-steps]:                   steps
 [resources-step-mtabuild]:           steps/mtaBuild.md
 [resources-step-cloudFoundryDeploy]: steps/cloudFoundryDeploy.md
+[resources-scenarios]:               scenarios
 [devops-docker-images]:              https://github.com/SAP/devops-docker-images
 [devops-docker-images-issues]:       https://github.com/SAP/devops-docker-images/issues
 [cloud-cf-helloworld-nodejs]:  [https://github.com/SAP/cloud-cf-helloworld-nodejs]
