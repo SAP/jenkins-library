@@ -62,7 +62,7 @@ void call(Map parameters = [:]) {
             error "[${STEP_NAME}] Dockerfile is not found."
         }
 
-        if(configuration.configurationUrl) {
+        if(!fileExists(configuration.configurationFile) && configuration.configurationUrl) {
             sh "curl -L -o ${configuration.configurationFile} ${configuration.configurationUrl}"
             if(configuration.stashContent) {
                 def stashName = 'hadolintConfiguration'
@@ -72,7 +72,7 @@ void call(Map parameters = [:]) {
         }
 
         dockerExecute(script: script, dockerImage: configuration.dockerImage, dockerOptions: configuration.dockerOptions, stashContent: configuration.stashContent) {
-            sh "hadolint Dockerfile -f checkstyle > ${configuration.resultFile} || exit 0"
+            sh "hadolint Dockerfile --config ${configuration.configurationFile} -f checkstyle > ${configuration.resultFile} || exit 0"
             recordIssues blameDisabled: true, enabledForFailure: true, tools: [checkStyle(pattern: configuration.resultFile)]
             archiveArtifacts configuration.resultFile
         }

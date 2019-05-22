@@ -40,13 +40,13 @@ class HadolintExecuteTest extends BasePiperTest {
 
     @Test
     void testHadolintExecute() {
-        stepRule.step.hadolintExecute(script: nullScript, juStabUtils: utils, dockerImage: 'hadolint/hadolint:latest-debian')
+        stepRule.step.hadolintExecute(script: nullScript, juStabUtils: utils, dockerImage: 'hadolint/hadolint:latest-debian', configurationUrl: 'https://github.wdf.sap.corp/raw/SGS/Hadolint-Dockerfile/master/.hadolint.yaml')
         assertThat(dockerExecuteRule.dockerParams.dockerImage, is('hadolint/hadolint:latest-debian'))
         assertThat(loggingRule.log, containsString("Unstash content: buildDescriptor"))
         assertThat(shellRule.shell,
             hasItems(
                 "curl -L -o .hadolint.yaml https://github.wdf.sap.corp/raw/SGS/Hadolint-Dockerfile/master/.hadolint.yaml",
-                "hadolint Dockerfile -f checkstyle > hadolint.xml || exit 0"
+                "hadolint Dockerfile --config .hadolint.yaml -f checkstyle > hadolint.xml || exit 0"
             )
         )
     }
