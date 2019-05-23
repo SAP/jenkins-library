@@ -6,6 +6,8 @@ import com.sap.piper.GenerateDocumentation
 import java.util.regex.Matcher
 import groovy.text.StreamingTemplateEngine
 
+import com.sap.piper.MapUtils
+
 //
 // Collects helper functions for rendering the documentation
 //
@@ -21,7 +23,8 @@ class TemplateHelper {
 
             def props = parameters.get(it)
 
-            def defaultValue = isComplexDefault(props.defaultValue) ? renderComplexDefaultValue(props.defaultValue) : "`${props.defaultValue}`"
+            def defaultValue = isComplexDefault(props.defaultValue) ? renderComplexDefaultValue(props.defaultValue) :
+                                props.defaultValue != null ? "`${props.defaultValue}`" : ''
 
             t +=  "| `${it}` | ${props.mandatory ?: props.required ? 'yes' : 'no'} | ${defaultValue} | ${props.value ?: ''} |\n"
         }
@@ -375,13 +378,6 @@ class Helper {
         return mappings
     }
 
-    static getValue(Map config, def pPath) {
-        def p =config[pPath.head()]
-        if(pPath.size() == 1) return p // there is no tail
-        if(p in Map) getValue(p, pPath.tail())
-        else return p
-    }
-
     static resolveDocuRelevantSteps(GroovyScriptEngine gse, File stepsDir) {
 
         def docuRelevantSteps = []
@@ -416,26 +412,42 @@ steps = []
 //
 // assign parameters
 
-if(args.length >= 1)
-    stepsDir = new File(args[0])
+
+def cli = new CliBuilder(
+    usage: 'groovy createDocu [<options>]',
+    header: 'Options:',
+    footer: 'Copyright: SAP SE')
+
+cli.with {
+    s longOpt: 'stepsDir', args: 1, argName: 'dir', 'The directory containing the steps. Defaults to \'vars\'.'
+    d longOpt: 'docuDir', args: 1, argName: 'dir', 'The directory containing the docu stubs. Defaults to \'documentation/docs/steps\'.'
+    c longOpt: 'customDefaults', args: 1, argName: 'file', 'Additional custom default configuration'
+    h longOpt: 'help', 'Prints this help.'
+}
+
+def options = cli.parse(args)
+
+if(options.h) {
+    System.err << "Printing help.\n"
+    cli.usage()
+    return
+}
+
+if(options.s)
+    stepsDir = new File(Helper.projectRoot, options.s)
 
 stepsDir = stepsDir ?: new File(Helper.projectRoot, "vars")
 
-if(args.length >= 2)
-    stepsDocuDir = new File(args[1])
+if(options.d)
+    stepsDocuDir = new File(Helper.projectRoot, options.d)
 
 stepsDocuDir = stepsDocuDir ?: new File(Helper.projectRoot, "documentation/docs/steps")
 
-def argsDrop = 2
-if(args.length >= 3 && args[2].contains('.yml')) {
-    customDefaults = args[2]
-    argsDrop ++
+if(options.c) {
+    customDefaults = options.c
 }
 
-if(args.length >= 3)
-    steps = (args as List).drop(argsDrop)  // the first two entries are stepsDir and docuDir
-// the other parts are considered as step names
-
+steps.addAll(options.arguments())
 
 // assign parameters
 //
@@ -625,9 +637,9 @@ def handleStep(stepName, prepareDefaultValuesStep, gse, customDefaults) {
     step.parameters['script'] = [
         docu: 'The common script environment of the Jenkinsfile running. ' +
             'Typically the reference to the script calling the pipeline ' +
-            'step is provided with the this parameter, as in `script: this`. ' +
+            'step is provided with the `this` parameter, as in `script: this`. ' +
             'This allows the function to access the ' +
-            'commonPipelineEnvironment for retrieving, for example, configuration parameters.',
+            '`commonPipelineEnvironment` for retrieving, e.g. configuration parameters.',
         required: true,
 
         GENERAL_CONFIG: false,
@@ -640,7 +652,7 @@ def handleStep(stepName, prepareDefaultValuesStep, gse, customDefaults) {
 
         it ->
 
-            def defaultValue = Helper.getValue(defaultConfig, it.split('/'))
+            def defaultValue = MapUtils.getByPath(defaultConfig, it)
 
             def parameterProperties =   [
                 defaultValue: defaultValue,
@@ -675,7 +687,7 @@ def handleStep(stepName, prepareDefaultValuesStep, gse, customDefaults) {
                             [
                                 dependentParameterKey: dependentParameterKey,
                                 key: possibleValue,
-                                value: Helper.getValue(defaultConfig.get(possibleValue), k.split('/'))
+                                value: MapUtils.getByPath(defaultConfig.get(possibleValue), k)
                             ]
                     }
                 }

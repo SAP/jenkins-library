@@ -17,6 +17,7 @@ Feel free to open new issues for feature requests, bugs or general feedback on
 the [GitHub issues page of this project][piper-library-issues].
 
 Register to our [google group][google-group] in order to get updates or for asking questions.
+
 # Contributing
 
 Read and understand our [contribution guidelines][piper-library-contribution]

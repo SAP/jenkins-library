@@ -17,32 +17,32 @@ public class ChangeManagement implements Serializable {
     }
 
     String getChangeDocumentId(
-                              String from = 'origin/master',
-                              String to = 'HEAD',
-                              String label = 'ChangeDocument\\s?:',
-                              String format = '%b'
-                            ) {
+        String from = 'origin/master',
+        String to = 'HEAD',
+        String label = 'ChangeDocument\\s?:',
+        String format = '%b'
+    ) {
 
         return getLabeledItem('ChangeDocumentId', from, to, label, format)
     }
 
     String getTransportRequestId(
-                              String from = 'origin/master',
-                              String to = 'HEAD',
-                              String label = 'TransportRequest\\s?:',
-                              String format = '%b'
-                            ) {
+        String from = 'origin/master',
+        String to = 'HEAD',
+        String label = 'TransportRequest\\s?:',
+        String format = '%b'
+    ) {
 
         return getLabeledItem('TransportRequestId', from, to, label, format)
     }
 
     private String getLabeledItem(
-                              String name,
-                              String from,
-                              String to,
-                              String label,
-                              String format
-                            ) {
+        String name,
+        String from,
+        String to,
+        String label,
+        String format
+    ) {
 
         if( ! gitUtils.insideWorkTree() ) {
             throw new ChangeManagementException("Cannot retrieve ${name}. Not in a git work tree. ${name} is extracted from git commit messages.")
@@ -421,16 +421,16 @@ public class ChangeManagement implements Serializable {
                             String clientOpts = '') {
         String cmCommandLine = '#!/bin/bash'
         if(clientOpts) {
-            cmCommandLine +=  """
-                             export CMCLIENT_OPTS="${clientOpts}" """
+            cmCommandLine += """
+                export CMCLIENT_OPTS="${clientOpts}" """
         }
         cmCommandLine += """
-                        cmclient -e '$endpoint' \
-                           -u '$username' \
-                           -p '$password' \
-                           -t ${type} \
-                          ${command} ${(args as Iterable).join(' ')}
-                    """
+            cmclient -e '$endpoint' \
+                -u '$username' \
+                -p '$password' \
+                -t ${type} \
+                ${command} ${(args as Iterable).join(' ')}
+        """
         return cmCommandLine
     }
 }

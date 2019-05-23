@@ -54,15 +54,19 @@ void call(Map parameters = [:]) {
 
             deleteDir()
 
-            checkout([$class: 'GitSCM', branches: [[name: config.branch]],
-                        doGenerateSubmoduleConfigurations: false,
-                        extensions: [[$class: 'SparseCheckoutPaths',
-                                    sparseCheckoutPaths: [[path: config.path]]
-                                   ]],
-                        submoduleCfg: [],
-                        userRemoteConfigs: [[credentialsId: config.credentialsId,
-                                            url: config.repoUrl
-                                          ]]
+            checkout([
+                $class: 'GitSCM',
+                branches: [[name: config.branch]],
+                doGenerateSubmoduleConfigurations: false,
+                extensions: [[
+                    $class: 'SparseCheckoutPaths',
+                    sparseCheckoutPaths: [[path: config.path]]
+                ]],
+                submoduleCfg: [],
+                userRemoteConfigs: [[
+                    credentialsId: config.credentialsId,
+                    url: config.repoUrl
+                ]]
             ])
 
         }
