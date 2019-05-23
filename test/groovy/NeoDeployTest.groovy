@@ -220,7 +220,7 @@ class NeoDeployTest extends BasePiperTest {
                     application: 'does',
                     runtime: 'not',
                     runtimeVersion: 'matter'
-                ],
+                ]
         )
     }
 
