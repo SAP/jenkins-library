@@ -123,7 +123,7 @@ class NeoCommandHelper {
             def environment = deploymentConfiguration.environment
 
             if (!(environment in Map)) {
-                step.error("The environment variables for the deployment to Neo have to be defined as a map.");
+                step.error("The environment variables for the deployment to Neo have to be defined as a map.")
             }
 
             def keys = environment.keySet()
