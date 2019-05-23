@@ -651,6 +651,7 @@ for (step in steps) {
 
 // replace @see tag in docu by docu from referenced step.
 for(step in stepDescriptors) {
+    System.err << "[INFO] Resolving @see information for step '${step.getKey()}' ...\n"
     if(step.value.parameters) {
         for(param in step.value.parameters) {
             if( param?.value?.docu?.contains('@see')) {
