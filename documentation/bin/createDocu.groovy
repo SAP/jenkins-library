@@ -585,6 +585,7 @@ if(options.p) {
 stagesDocuDir = stagesDocuDir ?: new File(Helper.projectRoot, "documentation/docs/stages")
 
 if(options.c) {
+    System.err << "[INFO] Using custom defaults: ${options.c}.\n"
     customDefaults = options.c
 }
 
