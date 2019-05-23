@@ -450,7 +450,12 @@ class Helper {
     }
 
     static getStageStepKeys(def script) {
-        return script.STAGE_STEP_KEYS ?: []
+        try {
+            return script.STAGE_STEP_KEYS ?: []
+        } catch (groovy.lang.MissingPropertyException ex) {
+            System.err << "[INFO] STAGE_STEP_KEYS not set for: ${script.STEP_NAME}.\n"
+            return []
+        }
     }
 
     static getRequiredParameters(File f) {
