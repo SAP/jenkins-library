@@ -23,7 +23,6 @@ def stash(name, include = '**/*.*', exclude = '', useDefaultExcludes = true) {
     steps.stash stashParams
 }
 
-@NonCPS
 def runClosures(Map closures) {
 
     def closuresToRun = closures.values().asList()
