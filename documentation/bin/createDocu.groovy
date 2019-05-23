@@ -85,17 +85,17 @@ class TemplateHelper {
         t.trim()
     }
 
-    static createStageContentSection(Map stepDescriptions) {
+    static createStageContentSection(Map stageDescriptions) {
         def t = 'This stage comprises following steps which are activated depending on your use-case/configuration:\n\n'
 
         t += '| step | step description |\n'
         t += '| ---- | ---------------- |\n'
 
-        stepDescriptions.each {step, description ->
+        stageDescriptions.each {step, description ->
             t += "| [${step}](../steps/${step}.md) | ${description.trim()} |\n"
         }
 
-        return t.trim()
+        return t
     }
 
     static createStageActivationSection() {
@@ -143,7 +143,7 @@ class TemplateHelper {
 For details about the configuration options, please see [Configuration of Piper](../configuration.md).
 '''
 
-        return t.trim()
+        return t
     }
 
     private static renderValueList(List valueList) {
