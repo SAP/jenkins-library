@@ -23,7 +23,7 @@ class NeoCommandHelper {
         this.user = user
         this.password = password
         this.source = source
-        this.extensions = extensions ?: (Set)[]
+        this.extensions = extensions ?: []
     }
 
     private String prolog() {
