@@ -529,10 +529,10 @@ roots = [
     new File(Helper.projectRoot, "src").getAbsolutePath()
 ]
 
-String stepsDir = null
-String stepsDocuDir = null
-String stagesDocuDir = null
-String customDefaults = null
+stepsDir = null
+stepsDocuDir = null
+stagesDocuDir = null
+customDefaults = null
 
 steps = []
 
@@ -562,18 +562,25 @@ if(options.h) {
     return
 }
 
-if(options.s)
+if(options.s){
+    System.err << "[INFO] Using custom step root: ${options.s}.\n"
     stepsDir = new File(Helper.projectRoot, options.s)
+}
+
 
 stepsDir = stepsDir ?: new File(Helper.projectRoot, "vars")
 
-if(options.d)
+if(options.d) {
+    System.err << "[INFO] Using custom doc dir for steps: ${options.d}.\n"
     stepsDocuDir = new File(Helper.projectRoot, options.d)
+}
 
 stepsDocuDir = stepsDocuDir ?: new File(Helper.projectRoot, "documentation/docs/steps")
 
-if(options.p)
+if(options.p) {
+    System.err << "[INFO] Using custom doc dir for stages: ${options.p}.\n"
     stagesDocuDir = new File(Helper.projectRoot, options.p)
+}
 
 stagesDocuDir = stagesDocuDir ?: new File(Helper.projectRoot, "documentation/docs/stages")
 
