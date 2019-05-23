@@ -130,11 +130,11 @@ class TemplateHelper {
 !!! info "Step condition details"
     There are currently several conditions which can be checked.<br /> This is done in the [Init stage](init.md) of the pipeline shortly after checkout of the source code repository.<br/ >
     **Important: It will be sufficient that any one condition per step is met.**
-    
+
     * `config key`: Checks if a defined configuration parameter is set.
     * `config value`: Checks if a configuration parameter has a defined value.
     * `file pattern`: Checks if files according a defined pattern exist in the project. Either the pattern is speficified direcly or it is retrieved from a configuration parameter. 
-    
+
 
 !!! note "Overruling step activation conditions"
     It is possible to overrule the automatically detected step activation status.<br />
@@ -651,7 +651,6 @@ for (step in steps) {
 
 // replace @see tag in docu by docu from referenced step.
 for(step in stepDescriptors) {
-    System.err << "[INFO] Resolving @see information for step '${step.getKey()}' ...\n"
     if(step.value.parameters) {
         for(param in step.value.parameters) {
             if( param?.value?.docu?.contains('@see')) {
