@@ -1,5 +1,3 @@
-#!groovy
-
 import com.sap.piper.analytics.InfluxData
 
 import org.junit.Rule
