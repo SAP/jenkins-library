@@ -1,8 +1,8 @@
-#My own Jenkins
+# My own Jenkins
 
-**Note:** This guide is not sufficient yet, to setup a Jenkins for project "Piper". 
+**Note:** This guide is not sufficient yet, to setup a Jenkins for project "Piper".
 
-# Requirements
+## Requirements
 
 * Java Runtime Environment 8
 * Installation of Jenkins v 2.60.3 or higher running on Linux. We tested with debian-stretch.
@@ -10,7 +10,7 @@
 * A Jenkins user with administration privileges.
 * The Jenkins instance has access to [github.com][github].
 
-# Download and Installation
+## Download and Installation
 
 To setup the shared library, you need to perform the following steps:
 
