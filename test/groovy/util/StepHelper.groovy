@@ -1,6 +1,6 @@
-package util;
+package util
 
-import java.util.List;
+import java.util.List
 
 import groovy.io.FileType
 
