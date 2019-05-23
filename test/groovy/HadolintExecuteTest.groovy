@@ -46,7 +46,7 @@ class HadolintExecuteTest extends BasePiperTest {
         assertThat(shellRule.shell,
             hasItems(
                 "curl --location --output .hadolint.yaml https://github.wdf.sap.corp/raw/SGS/Hadolint-Dockerfile/master/.hadolint.yaml",
-                "hadolint Dockerfile --config .hadolint.yaml -format checkstyle > hadolint.xml || exit 0"
+                "hadolint Dockerfile --config .hadolint.yaml --format checkstyle > hadolint.xml"
             )
         )
     }

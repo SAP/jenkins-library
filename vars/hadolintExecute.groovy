@@ -71,13 +71,18 @@ void call(Map parameters = [:]) {
             }
         }
 
+        def options = [
+            "--config ${configuration.configurationFile}",
+            "--format checkstyle > ${configuration.reportFile}"
+        ]
+
         dockerExecute(
             script: script,
             dockerImage: configuration.dockerImage,
             dockerOptions: configuration.dockerOptions,
             stashContent: configuration.stashContent
         ) {
-            sh "hadolint ${configuration.dockerfile} --config ${configuration.configurationFile} --format checkstyle > ${configuration.reportFile} || exit 0"
+            def ignored = sh returnStatus: true, script: "hadolint ${configuration.dockerfile} ${options.join(' ')}"
 
             recordIssues(
                 tools: [checkStyle(name: configuration.reportName, pattern: configuration.reportFile)],
