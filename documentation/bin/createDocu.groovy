@@ -101,7 +101,7 @@ class TemplateHelper {
     static createStageActivationSection() {
         def t = '''This stage will be active if any one of the following conditions is met:
 
-* Stage configuration in [config.yml file](../configuration.md) contains entries for this stage. 
+* Stage configuration in [config.yml file](../configuration.md) contains entries for this stage.
 * Any of the conditions are met which are explained in the section [Step Activation](#step-activation).
 '''
         return t.trim()
@@ -133,7 +133,7 @@ class TemplateHelper {
 
     * `config key`: Checks if a defined configuration parameter is set.
     * `config value`: Checks if a configuration parameter has a defined value.
-    * `file pattern`: Checks if files according a defined pattern exist in the project. Either the pattern is speficified direcly or it is retrieved from a configuration parameter. 
+    * `file pattern`: Checks if files according a defined pattern exist in the project. Either the pattern is speficified direcly or it is retrieved from a configuration parameter.
 
 
 !!! note "Overruling step activation conditions"
