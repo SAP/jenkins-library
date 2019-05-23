@@ -143,7 +143,7 @@ class NeoDeployTest extends BasePiperTest {
         stepRule.step.neoDeploy(
                 script: nullScript,
                 source: archiveName,
-                mtaExtensionDescriptors: 'myExtension.yml'
+                extensions: 'myExtension.yml'
         )
 
         assert checkedExtensionFiles.contains('myExtension.yml')
@@ -181,7 +181,7 @@ class NeoDeployTest extends BasePiperTest {
         stepRule.step.neoDeploy(
                 script: nullScript,
                 source: archiveName,
-                mtaExtensionDescriptors: extensions
+                extensions: extensions
         )
 
         assert checkedExtensionFiles.contains('myExtension1.yml')
@@ -214,7 +214,7 @@ class NeoDeployTest extends BasePiperTest {
             script: nullScript,
             source: archiveName,
             deployMode: 'warParams',
-            mtaExtensionDescriptors: 'myExtension.yml',
+            extensions: 'myExtension.yml',
             neo:
                 [
                     application: 'does',
