@@ -155,16 +155,16 @@ void call(parameters = [:]) {
             // since the map did not change, it is not required to replace the previous configuration map.
             .use()
 
-        Set extensionList
+        Set extensionFileNames
 
         if(configuration.extensions == null) {
-            extensionList = []
+            extensionFileNames = []
         } else {
-            extensionList = configuration.extensions in Collection ? configuration.extensions : [configuration.extensions]
+            extensionFileNames = configuration.extensions in Collection ? configuration.extensions : [configuration.extensions]
         }
 
-        if(deployMode != DeployMode.MTA && ! extensionList.isEmpty())
-            error "Extensions (${extensionList} found for deploy mode ${deployMode}. Extensions are only supported for deploy mode '${DeployMode.MTA}')"
+        if(deployMode != DeployMode.MTA && ! extensionFileNames.isEmpty())
+            error "Extensions (${extensionFileNames} found for deploy mode ${deployMode}. Extensions are only supported for deploy mode '${DeployMode.MTA}')"
 
         utils.pushToSWA([
             step: STEP_NAME,
@@ -193,7 +193,7 @@ void call(parameters = [:]) {
 
                 StepAssertions.assertFileExists(this, configuration.source)
 
-                for(CharSequence extensionFile in extensionList) {
+                for(CharSequence extensionFile in extensionFileNames) {
                     StepAssertions.assertFileExists(this, extensionFile)
                 }
 
@@ -201,7 +201,7 @@ void call(parameters = [:]) {
                     this,
                     deployMode,
                     configuration.neo,
-                    extensionList,
+                    extensionFileNames,
                     NEO_USERNAME,
                     NEO_PASSWORD,
                     configuration.source
