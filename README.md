@@ -3,9 +3,9 @@
 [![Test Coverage](https://api.codeclimate.com/v1/badges/0e6a23344616e29b4ed0/test_coverage)](https://codeclimate.com/github/SAP/jenkins-library/test_coverage)
 
 # Project Piper Library Repository
-Welcome to the Repository of the extended Library of Project Piper. 
+Project "Piper" provides this "Shared Library" to extend the Jenkins Pipeline with SAP specific patterns.
 
-# User Documentation  
+# User Documentation
 If you want to view the User Documentation of Project Piper please follow this [GitHub Pages Link][pages-user-doc].
 
 # Known Issues

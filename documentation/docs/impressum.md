@@ -19,4 +19,3 @@ Please note that Docker images can contain other software which may be licensed 
 [piper-library-issues]: https://github.com/SAP/jenkins-library/issues
 [license]: LICENSE
 [piper-library-contribution]: .github/CONTRIBUTING.md
-

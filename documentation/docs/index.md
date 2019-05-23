@@ -1,13 +1,12 @@
 # Project "Piper" User Documentation
 
-
 An efficient software development process is vital for success in building
 business applications on SAP Cloud Platform or SAP on-premise platforms. SAP
 addresses this need for efficiency with project "Piper". The goal of project
 "Piper" is to substantially ease setting up continuous delivery processes for
 the most important SAP technologies by means of Jenkins pipelines.
 
-# What you get
+## What you get
 
 Project "Piper" consists of two parts:
 
@@ -49,7 +48,6 @@ All the classes / groovy-scripts contained in the `src` folder are by default no
 the API and are subjected to change without prior notice. Types and methods annotated with
 `@API` are considered to be API, used e.g. from other shared libraries. Changes to those
 methods/types needs to be announced, discussed and agreed.
-
 
 [github]: https://github.com
 [piper-library]: https://github.com/SAP/jenkins-library
