@@ -1,4 +1,3 @@
-#!groovy
 import com.sap.piper.DescriptorUtils
 import com.sap.piper.JsonUtils
 import com.sap.piper.integration.WhitesourceOrgAdminRepository

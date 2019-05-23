@@ -1,4 +1,3 @@
-#!groovy
 package stages
 
 import org.junit.Before
