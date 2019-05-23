@@ -177,9 +177,9 @@ void call(parameters = [:]) {
                     "Change document id not provided (parameter: \'changeDocumentId\' or via commit history).")
         }
         configuration = configHelper
-                            .withMandatoryProperty('transportRequestId',
-                               "Transport request id not provided (parameter: \'transportRequestId\' or via commit history).")
-                           .use()
+            .withMandatoryProperty('transportRequestId',
+                "Transport request id not provided (parameter: \'transportRequestId\' or via commit history).")
+            .use()
 
         def uploadingMessage = ['[INFO] Uploading file ' +
             "'${backendType == BackendType.RFC ? configuration.applicationUrl : configuration.filePath}' " +
