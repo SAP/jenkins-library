@@ -87,7 +87,7 @@ import static com.sap.piper.Prerequisites.checkScript
     /**
       * Extension files. Provided to the neo command via parameter `--extensions` (`-e`). Only valid for deploy mode `mta`.
       */
-    'mtaExtensionDescriptors',
+    'extensions',
     /**
      * The path to the archive for deployment to SAP CP. If not provided `mtarFilePath` from commom pipeline environment is used instead.
      */
@@ -157,10 +157,10 @@ void call(parameters = [:]) {
 
         Set extensionList
 
-        if(configuration.mtaExtensionDescriptors == null) {
+        if(configuration.extensions == null) {
             extensionList = []
         } else {
-            extensionList = configuration.mtaExtensionDescriptors in Collection ? configuration.mtaExtensionDescriptors : [configuration.mtaExtensionDescriptors]
+            extensionList = configuration.extensions in Collection ? configuration.extensions : [configuration.extensions]
         }
 
         if(deployMode != DeployMode.MTA && ! extensionList.isEmpty())
