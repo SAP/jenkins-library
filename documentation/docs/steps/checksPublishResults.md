@@ -13,8 +13,6 @@
   * [warnings](https://plugins.jenkins.io/warnings)
   * [core](https://plugins.jenkins.io/core)
 
-## ${docDependencies}
-
 ## ${docGenParameters}
 
 ### aggregation
@@ -83,6 +81,8 @@
 | thresholds | no | none | see [thresholds](#thresholds) |
 
 ## ${docGenConfiguration}
+
+## ${docDependencies}
 
 ### Thresholds
 

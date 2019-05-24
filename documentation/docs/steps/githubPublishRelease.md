@@ -1,7 +1,5 @@
 # ${docGenStepName}
 
-## ${docGenDescription}
-
 ## Prerequisites
 
 You need to create a personal access token within GitHub and add this to the Jenkins credentials store.
@@ -13,6 +11,8 @@ Please see [GitHub documentation for details about creating the personal access 
 ## ${docGenParameters}
 
 ## ${docGenConfiguration}
+
+## ${docGenDescription}
 
 ## Example
 

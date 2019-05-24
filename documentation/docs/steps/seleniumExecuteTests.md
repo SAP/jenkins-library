@@ -6,8 +6,6 @@
 
 none
 
-## ${docDependencies}
-
 ## Example
 
 ```groovy
@@ -69,6 +67,8 @@ webdriverio
 ## ${docGenParameters}
 
 ## ${docGenConfiguration}
+
+## ${docDependencies}
 
 ## Side effects
 

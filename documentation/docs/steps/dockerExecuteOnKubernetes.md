@@ -9,11 +9,11 @@
 
 ![Jenkins environment variable configuration](../images/k8s_env.png)
 
-## ${docDependencies}
-
 ## ${docGenParameters}
 
 ## ${docGenConfiguration}
+
+## ${docDependencies}
 
 ## Side effects
 

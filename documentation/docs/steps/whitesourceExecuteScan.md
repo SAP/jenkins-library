@@ -8,11 +8,11 @@ Your company has registered an account with WhiteSource and you have enabled the
 access to your organization in WhiteSource via dedicated privileges. Scanning your products without adequate user level
 access protection imposed on the WhiteSource backend would simply allow access based on the organization token.
 
-## ${docDependencies}
-
 ## ${docGenParameters}
 
 ## ${docGenConfiguration}
+
+## ${docDependencies}
 
 ## Exceptions
 

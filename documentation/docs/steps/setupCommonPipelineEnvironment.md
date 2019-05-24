@@ -6,11 +6,11 @@
 
 * A **configuration file** with properties. The property values are used as default values in many pipeline steps.
 
-## ${docDependencies}
-
 ## ${docGenParameters}
 
 ## ${docGenConfiguration}
+
+## ${docDependencies}
 
 ## Side effects
 

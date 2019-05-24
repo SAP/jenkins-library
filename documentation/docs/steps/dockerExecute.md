@@ -2,8 +2,6 @@
 
 ## ${docGenDescription}
 
-## ${docDependencies}
-
 ## ${docGenParameters}
 
 ## Kubernetes support
@@ -11,6 +9,8 @@
 If the Jenkins is setup on a Kubernetes cluster, then you can execute the closure inside a container of a pod by setting an environment variable `ON_K8S` to `true`. However, it will ignore `containerPortMappings`, `dockerOptions` and `dockerVolumeBind` values.
 
 ## ${docGenConfiguration}
+
+## ${docDependencies}
 
 ## Side effects
 

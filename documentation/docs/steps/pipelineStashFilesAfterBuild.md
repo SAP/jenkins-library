@@ -1,7 +1,5 @@
 # ${docGenStepName}
 
-## ${docGenDescription}
-
 ## Prerequsites
 
 none
@@ -11,3 +9,6 @@ none
 ## ${docGenParameters}
 
 ## ${docGenConfiguration}
+
+## ${docDependencies}
+

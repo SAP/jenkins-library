@@ -6,8 +6,6 @@
 
 * prepared Postman with a test collection
 
-## ${docDependencies}
-
 ## ${docGenParameters}
 
 ## ${docGenConfiguration}
@@ -15,6 +13,8 @@
 ## Side effects
 
 Step uses `dockerExecute` inside.
+
+## ${docDependencies}
 
 ## Exceptions
 

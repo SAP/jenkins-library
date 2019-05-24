@@ -1,12 +1,12 @@
 # ${docGenStepName}
 
-## ${docGenDescription}
-
 ## ${docDependencies}
 
 ## ${docGenParameters}
 
 ## ${docGenConfiguration}
+
+## ${docDependencies}
 
 ## Examples
 
