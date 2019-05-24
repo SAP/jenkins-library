@@ -11,7 +11,7 @@
 
 ## ${docGenConfiguration}
 
-## ${docDependencies}
+## ${docJenkinsPluginDependencies}
 
 ## Exceptions
 

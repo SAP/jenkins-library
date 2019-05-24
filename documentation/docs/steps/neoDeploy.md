@@ -18,7 +18,7 @@
 
 ## ${docGenConfiguration}
 
-## ${docDependencies}
+## ${docJenkinsPluginDependencies}
 
 ## Side effects
 

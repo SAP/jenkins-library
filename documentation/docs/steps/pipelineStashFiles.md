@@ -34,7 +34,7 @@ The step is stashing files before and after the build. This is due to the fact, 
 
 ## ${docGenConfiguration}
 
-## ${docDependencies}
+## ${docJenkinsPluginDependencies}
 
 ## Explanation of pipeline step
 

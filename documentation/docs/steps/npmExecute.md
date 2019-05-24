@@ -1,13 +1,13 @@
 
 # ${docGenStepName}
 
-## ${docDependencies}
+## ${docJenkinsPluginDependencies}
 
 ## ${docGenParameters}
 
 ## ${docGenConfiguration}
 
-## ${docDependencies}
+## ${docJenkinsPluginDependencies}
 
 ## Exceptions
 

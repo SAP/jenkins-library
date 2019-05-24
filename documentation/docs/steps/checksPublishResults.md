@@ -82,7 +82,7 @@
 
 ## ${docGenConfiguration}
 
-## ${docDependencies}
+## ${docJenkinsPluginDependencies}
 
 ### Thresholds
 

@@ -10,7 +10,7 @@
 
 ## ${docGenConfiguration}
 
-## ${docDependencies}
+## ${docJenkinsPluginDependencies}
 
 The step is configured using a customer configuration file provided as
 resource in an custom shared library.

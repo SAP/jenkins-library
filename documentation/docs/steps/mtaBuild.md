@@ -14,7 +14,7 @@ While using a custom docker file, ensure that the following tools are installed:
 
 ## ${docGenConfiguration}
 
-## ${docDependencies}
+## ${docJenkinsPluginDependencies}
 
 ## Side effects
 

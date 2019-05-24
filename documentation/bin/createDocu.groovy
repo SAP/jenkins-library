@@ -572,7 +572,7 @@ void renderStep(stepName, stepProperties) {
         docGenDescription   : 'Description\n\n' + stepProperties.description,
         docGenParameters    : 'Parameters\n\n' + TemplateHelper.createParametersSection(stepProperties.parameters),
         docGenConfiguration : 'Step configuration\n\n' + TemplateHelper.createStepConfigurationSection(stepProperties.parameters),
-        docDependencies     : 'Dependencies (beta)\n\n' + TemplateHelper.createDependencyList(stepProperties.dependencies)
+        docJenkinsPluginDependencies     : 'Dependencies (beta)\n\n' + TemplateHelper.createDependencyList(stepProperties.dependencies)
     ]
 
     def template = new StreamingTemplateEngine().createTemplate(theStepDocu.text)

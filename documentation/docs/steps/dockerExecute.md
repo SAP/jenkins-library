@@ -10,7 +10,7 @@ If the Jenkins is setup on a Kubernetes cluster, then you can execute the closur
 
 ## ${docGenConfiguration}
 
-## ${docDependencies}
+## ${docJenkinsPluginDependencies}
 
 ## Side effects
 

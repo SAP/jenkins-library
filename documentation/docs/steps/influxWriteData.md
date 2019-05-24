@@ -67,7 +67,7 @@ influxDBServer=jenkins
 
 ## ${docGenConfiguration}
 
-## ${docDependencies}
+## ${docJenkinsPluginDependencies}
 
 ## Example
 

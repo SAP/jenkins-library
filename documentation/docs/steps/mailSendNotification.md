@@ -18,7 +18,7 @@ mailSendNotification script: this
 
 ## ${docGenConfiguration}
 
-## ${docDependencies}
+## ${docJenkinsPluginDependencies}
 
 ## Side effects
 

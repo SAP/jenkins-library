@@ -12,7 +12,7 @@ none
 
 We recommend to define values of step parameters via [config.yml file](../configuration.md).
 
-## ${docDependencies}
+## ${docJenkinsPluginDependencies}
 
 ## Example
 
