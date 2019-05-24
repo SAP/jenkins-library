@@ -31,6 +31,8 @@ pipelineRestartSteps (script: this) {
 
 none
 
+## ${docJenkinsPluginDependencies}
+
 ## Exceptions
 
 none

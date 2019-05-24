@@ -18,6 +18,8 @@ mailSendNotification script: this
 
 ## ${docGenConfiguration}
 
+## ${docJenkinsPluginDependencies}
+
 ## Side effects
 
 none

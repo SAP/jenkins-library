@@ -1,5 +1,6 @@
 import groovy.io.FileType
 import groovy.json.JsonOutput
+import groovy.json.JsonSlurper
 import org.yaml.snakeyaml.Yaml
 import org.codehaus.groovy.control.CompilerConfiguration
 import com.sap.piper.GenerateDocumentation
@@ -13,6 +14,42 @@ import com.sap.piper.MapUtils
 // Collects helper functions for rendering the documentation
 //
 class TemplateHelper {
+
+    static createDependencyList(Set deps) {
+        def t = ''
+        t += 'The step depends on the following Jenkins plugins\n\n'
+        def filteredDeps = deps.findAll { dep -> dep != 'UNIDENTIFIED' }
+
+        if(filteredDeps.contains('kubernetes')) {
+            // The docker plugin is not detected by the tests since it is not
+            // handled via step call, but it is added to the environment.
+            // Hovever kubernetes plugin and docker plugin are closely related,
+            // hence adding docker if kubernetes is present.
+            filteredDeps.add('docker')
+        }
+
+        if(filteredDeps.isEmpty()) {
+            t += '* &lt;none&gt;\n'
+        } else {
+            filteredDeps
+                .sort()
+                .each { dep -> t += "* [${dep}](https://plugins.jenkins.io/${dep})\n" }
+        }
+
+        if(filteredDeps.contains('kubernetes')) {
+            t += "\nThe kubernetes plugin is only used if running in a kubernetes environment."
+        }
+
+        t += '''|
+                |Transitive dependencies are omitted.
+                |
+                |The list might be incomplete.
+                |
+                |Consider using the [ppiper/jenkins-master](https://cloud.docker.com/u/ppiper/repository/docker/ppiper/jenkins-master)
+                |docker image. This images comes with preinstalled plugins.
+                |'''.stripMargin()
+        return t
+    }
 
     static createParametersTable(Map parameters) {
 
@@ -741,8 +778,10 @@ void renderStep(stepName, stepProperties) {
         docGenStepName      : stepName,
         docGenDescription   : 'Description\n\n' + stepProperties.description,
         docGenParameters    : 'Parameters\n\n' + TemplateHelper.createParametersSection(stepProperties.parameters),
-        docGenConfiguration : 'Step configuration\n\n' + TemplateHelper.createStepConfigurationSection(stepProperties.parameters)
+        docGenConfiguration : 'Step configuration\n\n' + TemplateHelper.createStepConfigurationSection(stepProperties.parameters),
+        docJenkinsPluginDependencies     : 'Dependencies\n\n' + TemplateHelper.createDependencyList(stepProperties.dependencies)
     ]
+
     def template = new StreamingTemplateEngine().createTemplate(theStepDocu.text)
     String text = template.make(binding)
 
@@ -802,6 +841,7 @@ def handleStep(stepName, prepareDefaultValuesStep, gse, customDefaults) {
 
     File theStep = new File(stepsDir, "${stepName}.groovy")
     File theStepDocu = new File(stepsDocuDir, "${stepName}.md")
+    File theStepDeps = new File('documentation/jenkins_workspace/plugin_mapping.json')
 
     if (!theStepDocu.exists() && stepName.indexOf('Stage') != -1) {
         //try to get a corresponding stage documentation
@@ -859,7 +899,18 @@ def handleStep(stepName, prepareDefaultValuesStep, gse, customDefaults) {
 
     // 'dependentConfig' is only present here for internal reasons and that entry is removed at
     // end of method.
-    def step = [parameters:[:], dependentConfig: [:]]
+    def step = [
+        parameters:[:],
+        dependencies: (Set)[],
+        dependentConfig: [:]
+    ]
+
+    //
+    // provide dependencies to Jenkins plugins
+    if(theStepDeps.exists()) {
+        def pluginDependencies = new JsonSlurper().parse(theStepDeps)
+        step.dependencies.addAll(pluginDependencies[stepName].collect { k, v -> k })
+    }
 
     //
     // START special handling for 'script' parameter
