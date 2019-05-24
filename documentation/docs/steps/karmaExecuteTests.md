@@ -7,7 +7,7 @@
 * **running Karma tests** - have a NPM module with running tests executed with Karma
 * **configured WebDriver** - have the [`karma-webdriver-launcher`](https://github.com/karma-runner/karma-webdriver-launcher) package installed and a custom, WebDriver-based browser configured in Karma
 
-## ${docDependencies}
+## ${docJenkinsPluginDependencies}
 
 ## ${docGenParameters}
 

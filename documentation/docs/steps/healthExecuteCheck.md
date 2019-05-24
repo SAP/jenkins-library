@@ -16,7 +16,7 @@ Endpoint for health check is configured.
 
 ## ${docGenConfiguration}
 
-## ${docDependencies}
+## ${docJenkinsPluginDependencies}
 
 ## Example
 

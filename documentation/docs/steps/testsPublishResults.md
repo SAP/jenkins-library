@@ -79,7 +79,7 @@ testsPublishResults(
 
 ## ${docGenConfiguration}
 
-## ${docDependencies}
+## ${docJenkinsPluginDependencies}
 
 ## Side effects
 

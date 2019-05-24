@@ -14,7 +14,7 @@
 
 Step uses `dockerExecute` inside.
 
-## ${docDependencies}
+## ${docJenkinsPluginDependencies}
 
 ## Exceptions
 

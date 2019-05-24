@@ -12,7 +12,7 @@ access protection imposed on the WhiteSource backend would simply allow access b
 
 ## ${docGenConfiguration}
 
-## ${docDependencies}
+## ${docJenkinsPluginDependencies}
 
 ## Exceptions
 

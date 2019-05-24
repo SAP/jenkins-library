@@ -4,11 +4,11 @@
 
 none
 
-## ${docDependencies}
+## ${docJenkinsPluginDependencies}
 
 ## ${docGenParameters}
 
 ## ${docGenConfiguration}
 
-## ${docDependencies}
+## ${docJenkinsPluginDependencies}
 
