@@ -92,7 +92,6 @@ import static com.sap.piper.Prerequisites.checkScript
      * The path to the archive for deployment to SAP CP. If not provided `mtarFilePath` from commom pipeline environment is used instead.
      */
     'source'
-
 ])
 
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS.plus([
