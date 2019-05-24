@@ -17,7 +17,7 @@ class NeoCommandHelperTest extends BasePiperTest {
         .getCommonRules(this)
         .around(fileExistsRule)
 
-    NeoCommandHelper getTestFixture(DeployMode deployMode) {
+    NeoCommandHelper getTestFixture(DeployMode deployMode, Set extensions = []) {
 
         Map deploymentConfiguration = [
             host          : 'host_value',
@@ -41,6 +41,7 @@ class NeoCommandHelperTest extends BasePiperTest {
             nullScript,
             deployMode,
             deploymentConfiguration,
+            extensions,
             username,
             password,
             source
@@ -121,9 +122,9 @@ class NeoCommandHelperTest extends BasePiperTest {
 
     @Test
     void deployMta() {
-        String actual = getTestFixture(DeployMode.MTA).deployMta()
+        String actual = getTestFixture(DeployMode.MTA, (Set)['myExtension1.yml', 'myExtension2.yml']).deployMta()
         String expected = "neo.sh deploy-mta --synchronous --host 'host_value' --account 'account_value' " +
-            "--user 'username' --password 'password' --source 'file.mta'"
+            "--user 'username' --password 'password' --extensions 'myExtension1.yml','myExtension2.yml' --source 'file.mta'"
         Assert.assertEquals(expected, actual)
     }
 }
