@@ -1,4 +1,3 @@
-#!groovy
 import com.sap.piper.JenkinsUtils
 import org.junit.Before
 import org.junit.Rule
