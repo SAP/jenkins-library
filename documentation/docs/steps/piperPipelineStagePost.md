@@ -2,8 +2,8 @@
 
 ## ${docGenDescription}
 
-## ${docDependencies}
-
 ## ${docGenParameters}
 
 ## ${docGenConfiguration}
+
+## ${docDependencies}

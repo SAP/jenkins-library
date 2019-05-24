@@ -10,11 +10,11 @@ While using a custom docker file, ensure that the following tools are installed:
 * **Java 8 or compatible version** - necessary to run the *MTA Archive Builder* itself and to build Java modules.
 * **NodeJS installed** - the MTA Builder uses `npm` to download node module dependencies such as `grunt`.
 
-## ${docDependencies}
-
 ## ${docGenParameters}
 
 ## ${docGenConfiguration}
+
+## ${docDependencies}
 
 ## Side effects
 

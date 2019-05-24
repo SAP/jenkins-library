@@ -6,8 +6,6 @@
 
 none
 
-## ${docDependencies}
-
 ## ${docGenParameters}
 
 ## ${docGenConfiguration}
@@ -32,6 +30,8 @@ pipelineRestartSteps (script: this) {
 ## Side effects
 
 none
+
+## ${docDependencies}
 
 ## Exceptions
 

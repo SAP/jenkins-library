@@ -6,8 +6,6 @@
 
 none
 
-## ${docDependencies}
-
 ## Example
 
 Usage of pipeline step:
@@ -19,6 +17,8 @@ mailSendNotification script: this
 ## ${docGenParameters}
 
 ## ${docGenConfiguration}
+
+## ${docDependencies}
 
 ## Side effects
 

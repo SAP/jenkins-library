@@ -2,8 +2,6 @@
 
 ## ${docGenDescription}
 
-## ${docDependencies}
-
 ## ${docGenParameters}
 
 ## ${docGenConfiguration}
@@ -11,6 +9,8 @@
 ## Exceptions
 
 None
+
+## ${docDependencies}
 
 ## Example
 

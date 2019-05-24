@@ -4,11 +4,11 @@
 
 ## Prerequisites
 
-## ${docDependencies}
-
 ## ${docGenParameters}
 
 ## ${docGenConfiguration}
+
+## ${docDependencies}
 
 ## Exceptions
 

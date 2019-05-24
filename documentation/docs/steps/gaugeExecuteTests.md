@@ -6,13 +6,13 @@
 
 none
 
-## ${docDependencies}
-
 ## ${docGenParameters}
 
 ## ${docGenConfiguration}
 
 We recommend to define values of step parameters via [config.yml file](../configuration.md).
+
+## ${docDependencies}
 
 ## Example
 

@@ -11,8 +11,6 @@
   * [cobertura](https://plugins.jenkins.io/cobertura)
   * [performance](https://plugins.jenkins.io/performance)
 
-## ${docDependencies}
-
 ## Pipeline configuration
 
 none
@@ -80,6 +78,8 @@ testsPublishResults(
 | allowEmptyResults | no | `true` | true, false |
 
 ## ${docGenConfiguration}
+
+## ${docDependencies}
 
 ## Side effects
 

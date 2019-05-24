@@ -6,11 +6,11 @@
 
 Test configuration is available.
 
-## ${docDependencies}
-
 ## ${docGenParameters}
 
 ## ${docGenConfiguration}
+
+## ${docDependencies}
 
 ## Example
 

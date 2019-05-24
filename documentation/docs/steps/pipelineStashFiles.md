@@ -6,8 +6,6 @@
 
 none
 
-## ${docDependencies}
-
 ## ${docGenParameters}
 
 Details:
@@ -35,6 +33,8 @@ The step is stashing files before and after the build. This is due to the fact, 
     * `stashExcludes: [tests: '**/NOTRELEVANT.*]`
 
 ## ${docGenConfiguration}
+
+## ${docDependencies}
 
 ## Explanation of pipeline step
 

@@ -6,11 +6,11 @@
 
 none
 
-## ${docDependencies}
-
 ## ${docGenParameters}
 
 ## ${docGenConfiguration}
+
+## ${docDependencies}
 
 ## Side effects
 

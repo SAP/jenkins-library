@@ -8,11 +8,11 @@
 * *secret text* Jenkins credentials with the Slack token
 * Installed and configured [Jenkins Slack plugin](https://github.com/jenkinsci/slack-plugin#install-instructions-for-slack).
 
-## ${docDependencies}
-
 ## ${docGenParameters}
 
 ## ${docGenConfiguration}
+
+## ${docDependencies}
 
 ## Example
 

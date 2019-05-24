@@ -6,11 +6,11 @@
 
 You need to have a Bats test file. By default you would put this into directory `src/test` within your source code repository.
 
-## ${docDependencies}
-
 ## ${docGenParameters}
 
 ## ${docGenConfiguration}
+
+## ${docDependencies}
 
 ## Example
 

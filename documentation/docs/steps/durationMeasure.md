@@ -2,11 +2,11 @@
 
 ## ${docGenDescription}
 
-## ${docDependencies}
-
 ## ${docGenParameters}
 
 ## ${docGenConfiguration}
+
+## ${docDependencies}
 
 ## Example
 
