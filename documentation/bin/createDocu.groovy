@@ -39,7 +39,7 @@ class TemplateHelper {
             t += "\nThe kubernetes plugin is only used if running in a kubernetes environment."
         }
 
-        t += '\nTransitive dependencies are omitted.\n\nThis is a beta feature. The list might be incomplete.'
+        t += '\nTransitive dependencies are omitted.\n\nThe list might be incomplete.'
         return t
     }
 
@@ -572,7 +572,7 @@ void renderStep(stepName, stepProperties) {
         docGenDescription   : 'Description\n\n' + stepProperties.description,
         docGenParameters    : 'Parameters\n\n' + TemplateHelper.createParametersSection(stepProperties.parameters),
         docGenConfiguration : 'Step configuration\n\n' + TemplateHelper.createStepConfigurationSection(stepProperties.parameters),
-        docJenkinsPluginDependencies     : 'Dependencies (beta)\n\n' + TemplateHelper.createDependencyList(stepProperties.dependencies)
+        docJenkinsPluginDependencies     : 'Dependencies\n\n' + TemplateHelper.createDependencyList(stepProperties.dependencies)
     ]
 
     def template = new StreamingTemplateEngine().createTemplate(theStepDocu.text)
