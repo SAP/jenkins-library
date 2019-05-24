@@ -39,7 +39,14 @@ class TemplateHelper {
             t += "\nThe kubernetes plugin is only used if running in a kubernetes environment."
         }
 
-        t += '\nTransitive dependencies are omitted.\n\nThe list might be incomplete.'
+        t += '''|
+                |Transitive dependencies are omitted.
+                |
+                |The list might be incomplete.
+                |
+                |Consider using the [ppiper/jenkins-master](https://cloud.docker.com/u/ppiper/repository/docker/ppiper/jenkins-master)
+                |docker image. This images comes with preinstalled plugins.
+                |'''.stripMargin()
         return t
     }
 
