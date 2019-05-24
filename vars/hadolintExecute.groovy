@@ -86,7 +86,8 @@ void call(Map parameters = [:]) {
 
             recordIssues(
                 tools: [checkStyle(name: configuration.reportName, pattern: configuration.reportFile)],
-                enabledForFailure: true
+                enabledForFailure: true,
+                blameDisabled: true
             )
             archiveArtifacts configuration.reportFile
         }
