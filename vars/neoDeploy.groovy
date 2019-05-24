@@ -162,6 +162,9 @@ void call(parameters = [:]) {
             extensionFileNames = configuration.extensions in Collection ? configuration.extensions : [configuration.extensions]
         }
 
+        if( ! extensionFileNames.findAll { it == null || it.isEmpty() }.isEmpty() )
+            error "At least one extension file name was null or empty: ${extensionFileNames}."
+
         if(deployMode != DeployMode.MTA && ! extensionFileNames.isEmpty())
             error "Extensions (${extensionFileNames} found for deploy mode ${deployMode}. Extensions are only supported for deploy mode '${DeployMode.MTA}')"
 

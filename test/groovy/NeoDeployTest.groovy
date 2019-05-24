@@ -155,9 +155,68 @@ class NeoDeployTest extends BasePiperTest {
     }
 
     @Test
+    void extensionsAsEmptyString() {
+
+        thrown.expect(AbortException)
+        thrown.expectMessage('extension file name was null or empty')
+
+        stepRule.step.neoDeploy(
+            script: nullScript,
+            source: archiveName,
+            extensions: ''
+        )
+    }
+
+    @Test
     void extensionsAsSetTest() {
         Set extensions= ['myExtension1.yml' ,'myExtension2.yml']
         extensionsAsCollectionTest(extensions)
+    }
+
+    @Test
+    void extensionsAsCollectionWithEmptyStringTest() {
+
+        thrown.expect(AbortException)
+        thrown.expectMessage('extension file name was null or empty')
+
+        stepRule.step.neoDeploy(
+            script: nullScript,
+            source: archiveName,
+            extensions: ['myExtension1.yml' ,''])
+    }
+
+    @Test
+    void extensionsNullTest() {
+
+                stepRule.step.neoDeploy(
+                script: nullScript,
+                source: archiveName,
+                extensions: null)
+
+                assert shellRule.shell.find { c -> c.startsWith('neo.sh deploy-mta') && ! c.contains('--extensions')  }
+    }
+
+    @Test
+    void extensionsAsEmptyCollectionTest() {
+
+                stepRule.step.neoDeploy(
+                script: nullScript,
+                source: archiveName,
+                extensions: [])
+
+                assert shellRule.shell.find { c -> c.startsWith('neo.sh deploy-mta') && ! c.contains('--extensions')  }
+    }
+
+    @Test
+    void extensionsAsCollectionsWithNullEntrySetTest() {
+
+        thrown.expect(AbortException)
+        thrown.expectMessage('extension file name was null or empty')
+
+        stepRule.step.neoDeploy(
+            script: nullScript,
+            source: archiveName,
+            extensions: [null])
     }
 
     @Test
@@ -165,6 +224,7 @@ class NeoDeployTest extends BasePiperTest {
         List extensions= ['myExtension1.yml' ,'myExtension2.yml']
         extensionsAsCollectionTest(extensions)
     }
+
     @Test
     void sameExtensionProvidedTwiceTest() {
         List extensions= ['myExtension1.yml' ,'myExtension2.yml', 'myExtension1.yml']

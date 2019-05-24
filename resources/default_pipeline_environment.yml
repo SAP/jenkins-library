@@ -305,7 +305,6 @@ steps:
   neoDeploy:
     dockerImage: 's4sdk/docker-neo-cli'
     deployMode: 'mta'
-    extensions: []
     warAction: 'deploy'
     neo:
       size: 'lite'
