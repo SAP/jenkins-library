@@ -900,17 +900,16 @@ def handleStep(stepName, prepareDefaultValuesStep, gse, customDefaults) {
     // 'dependentConfig' is only present here for internal reasons and that entry is removed at
     // end of method.
     def step = [
-                parameters:[:],
-                dependencies: (Set)[],
-                dependentConfig: [:]
-        ]
+        parameters:[:],
+        dependencies: (Set)[],
+        dependentConfig: [:]
+    ]
 
     //
     // provide dependencies to Jenkins plugins
     if(theStepDeps.exists()) {
-        def deps = new JsonSlurper().parse(theStepDeps)
-        step.dependencies.addAll(deps[stepName].collect { k, v -> k })
-        def _deps = deps[stepName].collect { k, v -> k }
+        def pluginDependencies = new JsonSlurper().parse(theStepDeps)
+        step.dependencies.addAll(pluginDependencies[stepName].collect { k, v -> k })
     }
 
     //
