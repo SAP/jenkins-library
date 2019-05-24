@@ -1,7 +1,5 @@
 # ${docGenStepName}
 
-## ${docJenkinsPluginDependencies}
-
 ## ${docGenParameters}
 
 ## ${docGenConfiguration}

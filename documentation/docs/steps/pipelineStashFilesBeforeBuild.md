@@ -11,4 +11,3 @@ none
 ## ${docGenConfiguration}
 
 ## ${docJenkinsPluginDependencies}
-
