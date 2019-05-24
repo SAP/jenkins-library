@@ -35,15 +35,17 @@ def steps = new JsonSlurper().parseText(new File(options.i).text)
 def piperSteps = steps.piperSteps
 def calls = steps.calls
 
-def _calls = [:]
+// only temporary in order to avoid manipulating the map during
+// iterating over it.
+def tmpCalls = [:]
 
 // Adjust naming
 calls.each { c ->
-    _calls.put(retrieveStepName(c.key), c.value as Set)
+    tmpCalls.put(retrieveStepName(c.key), c.value as Set)
 }
 
-calls = _calls
-_calls = null
+calls = tmpCalls
+tmpCalls = null
 
 // Remove selfs
 calls.each { c ->
