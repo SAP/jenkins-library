@@ -18,6 +18,15 @@ class TemplateHelper {
         def t = ''
         t += 'The step depends on the following Jenkins plugins\n\n'
         def filteredDeps = deps.findAll { dep -> dep != 'UNIDENTIFIED' }
+
+        if(filteredDeps.contains('kubernetes')) {
+            // The docker plugin is not detected by the tests since it is not
+            // handled via step call, but it is added to the environment.
+            // Hovever kubernetes plugin and docker plugin are closely related,
+            // hence adding docker if kubernetes is present.
+            filteredDeps.add('docker')
+        }
+
         if(filteredDeps.isEmpty()) {
             t += '* &lt;none&gt;\n'
         } else {
