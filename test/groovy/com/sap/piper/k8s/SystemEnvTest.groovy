@@ -8,7 +8,7 @@ import static org.junit.Assert.assertEquals
 import static org.junit.Assert.assertNotNull
 
 class SystemEnvTest {
-    SystemEnv env = null;
+    SystemEnv env = null
     Map systemEnvironmentMock = [:]
     @Before
     void setUp() {

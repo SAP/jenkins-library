@@ -1,14 +1,19 @@
+import com.sap.piper.StepAssertions
 import com.sap.piper.Utils
+
+import groovy.lang.Script
 import hudson.AbortException
 
 import static org.hamcrest.Matchers.allOf
 import static org.hamcrest.Matchers.containsString
 import static org.hamcrest.Matchers.not
+import static org.junit.Assert.assertThat
 
 import org.hamcrest.Matchers
 import org.hamcrest.BaseMatcher
 import org.hamcrest.Description
 import org.jenkinsci.plugins.credentialsbinding.impl.CredentialNotFoundException
+import org.junit.After
 import org.junit.Assert
 import org.junit.Before
 import org.junit.Rule
@@ -73,6 +78,11 @@ class NeoDeployTest extends BasePiperTest {
         nullScript.commonPipelineEnvironment.configuration = [steps: [neoDeploy: [neo: [host: 'test.deploy.host.com', account: 'trialuser123']]]]
     }
 
+    @After
+    void tearDown() {
+        GroovySystem.metaClassRegistry.removeMetaClass(StepAssertions)
+    }
+
     @Test
     void straightForwardTestConfigViaParameters() {
 
@@ -117,6 +127,158 @@ class NeoDeployTest extends BasePiperTest {
                 .hasSingleQuotedOption('user', 'anonymous')
                 .hasSingleQuotedOption('password', '\\*\\*\\*\\*\\*\\*\\*\\*')
                 .hasSingleQuotedOption('source', archiveName))
+    }
+
+    @Test
+    void extensionsAsStringTest() {
+
+        def checkedExtensionFiles = []
+
+        StepAssertions.metaClass.static.assertFileExists =
+            getFileExistsCheck(checkedExtensionFiles, [archiveName, 'myExtension.yml'])
+
+        stepRule.step.neoDeploy(
+                script: nullScript,
+                source: archiveName,
+                extensions: 'myExtension.yml'
+        )
+
+        assert checkedExtensionFiles.contains('myExtension.yml')
+
+        assertThat(shellRule.shell,
+            new CommandLineMatcher()
+                .hasProlog('neo.sh deploy-mta')
+                .hasSingleQuotedOption('extensions', 'myExtension.yml'))
+    }
+
+    @Test
+    void extensionsAsEmptyString() {
+
+        thrown.expect(AbortException)
+        thrown.expectMessage('extension file name was null or empty')
+
+        stepRule.step.neoDeploy(
+            script: nullScript,
+            source: archiveName,
+            extensions: ''
+        )
+    }
+
+    @Test
+    void extensionsAsSetTest() {
+        Set extensions= ['myExtension1.yml' ,'myExtension2.yml']
+        extensionsAsCollectionTest(extensions)
+    }
+
+    @Test
+    void extensionsAsCollectionWithEmptyStringTest() {
+
+        thrown.expect(AbortException)
+        thrown.expectMessage('extension file name was null or empty')
+
+        stepRule.step.neoDeploy(
+            script: nullScript,
+            source: archiveName,
+            extensions: ['myExtension1.yml' ,''])
+    }
+
+    @Test
+    void extensionsNullTest() {
+
+                stepRule.step.neoDeploy(
+                script: nullScript,
+                source: archiveName,
+                extensions: null)
+
+                assert shellRule.shell.find { c -> c.startsWith('neo.sh deploy-mta') && ! c.contains('--extensions')  }
+    }
+
+    @Test
+    void extensionsAsEmptyCollectionTest() {
+
+                stepRule.step.neoDeploy(
+                script: nullScript,
+                source: archiveName,
+                extensions: [])
+
+                assert shellRule.shell.find { c -> c.startsWith('neo.sh deploy-mta') && ! c.contains('--extensions')  }
+    }
+
+    @Test
+    void extensionsAsCollectionsWithNullEntrySetTest() {
+
+        thrown.expect(AbortException)
+        thrown.expectMessage('extension file name was null or empty')
+
+        stepRule.step.neoDeploy(
+            script: nullScript,
+            source: archiveName,
+            extensions: [null])
+    }
+
+    @Test
+    void extensionsAsListTest() {
+        List extensions= ['myExtension1.yml' ,'myExtension2.yml']
+        extensionsAsCollectionTest(extensions)
+    }
+
+    @Test
+    void sameExtensionProvidedTwiceTest() {
+        List extensions= ['myExtension1.yml' ,'myExtension2.yml', 'myExtension1.yml']
+        extensionsAsCollectionTest(extensions)
+    }
+
+    void extensionsAsCollectionTest(def extensions) {
+
+        def checkedExtensionFiles = []
+
+        StepAssertions.metaClass.static.assertFileExists =
+            getFileExistsCheck(checkedExtensionFiles, [archiveName, 'myExtension1.yml', 'myExtension2.yml'])
+
+        stepRule.step.neoDeploy(
+                script: nullScript,
+                source: archiveName,
+                extensions: extensions
+        )
+
+        assert checkedExtensionFiles.contains('myExtension1.yml')
+        assert checkedExtensionFiles.contains('myExtension2.yml')
+
+        assertThat(shellRule.shell,
+            new CommandLineMatcher()
+                .hasProlog('neo.sh deploy-mta')
+                // some kind of creative usage for the single quotation check (... single quotes inside)
+                .hasSingleQuotedOption('extensions', 'myExtension1.yml\',\'myExtension2.yml'))
+
+    }
+
+    private static getFileExistsCheck(def checkedExtensionFiles, def fileNames) {
+
+        { Script step, String filePath ->
+            checkedExtensionFiles << filePath
+            if( ! fileNames.contains(filePath) )
+                step.error("File ${filePath} cannot be found.")
+        }
+    }
+
+    @Test
+    void extensionsForWrongDeployModeTest() {
+
+        thrown.expect(AbortException)
+        thrown.expectMessage('Extensions are only supported for deploy mode \'MTA\'')
+
+        stepRule.step.neoDeploy(
+            script: nullScript,
+            source: archiveName,
+            deployMode: 'warParams',
+            extensions: 'myExtension.yml',
+            neo:
+                [
+                    application: 'does',
+                    runtime: 'not',
+                    runtimeVersion: 'matter'
+                ]
+        )
     }
 
     @Test

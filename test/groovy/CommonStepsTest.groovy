@@ -6,7 +6,7 @@ import static org.junit.Assert.assertThat
 import static org.junit.Assert.fail
 import static util.StepHelper.getSteps
 
-import java.io.File;
+import java.io.File
 import java.util.stream.Collectors
 import java.lang.reflect.Field
 
@@ -193,7 +193,7 @@ public class CommonStepsTest extends BasePiperTest{
                 continue
             }
 
-            boolean notAccessible = false;
+            boolean notAccessible = false
             def fieldName
 
             if(!stepNameField.isAccessible()) {
