@@ -40,9 +40,6 @@ class NeoDeployTest extends BasePiperTest {
     private JenkinsLoggingRule loggingRule = new JenkinsLoggingRule(this)
     private JenkinsShellCallRule shellRule = new JenkinsShellCallRule(this)
     private JenkinsStepRule stepRule = new JenkinsStepRule(this)
-    private JenkinsLockRule lockRule = new JenkinsLockRule(this)
-    private JenkinsFileExistsRule fileExistsRule = new JenkinsFileExistsRule(this, ['warArchive.war', 'archive.mtar', 'war.properties'])
-
 
     @Rule
     public RuleChain ruleChain = Rules
@@ -56,9 +53,9 @@ class NeoDeployTest extends BasePiperTest {
         .withCredentials('myCredentialsId', 'anonymous', '********')
         .withCredentials('CI_CREDENTIALS_ID', 'defaultUser', '********'))
         .around(stepRule)
-        .around(lockRule)
+        .around(new JenkinsLockRule(this))
         .around(new JenkinsWithEnvRule(this))
-        .around(fileExistsRule)
+        .around(new JenkinsFileExistsRule(this, ['warArchive.war', 'archive.mtar', 'war.properties']))
 
 
     private static warArchiveName = 'warArchive.war'

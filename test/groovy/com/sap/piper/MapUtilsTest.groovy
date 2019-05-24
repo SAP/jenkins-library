@@ -22,7 +22,7 @@ class MapUtilsTest {
                  c: [d: '1',
                      e: '2']],
              b = [b: '2',
-                  c: [d: 'x']];
+                  c: [d: 'x']]
 
         Map merged = MapUtils.merge(a, b)
 
