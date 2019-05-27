@@ -1,4 +1,4 @@
-package com.sap.piper.cm;
+package com.sap.piper.cm
 
 import com.cloudbees.groovy.cps.NonCPS
 

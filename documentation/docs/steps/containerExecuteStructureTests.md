@@ -10,6 +10,8 @@ Test configuration is available.
 
 ## ${docGenConfiguration}
 
+## ${docJenkinsPluginDependencies}
+
 ## Example
 
 ```

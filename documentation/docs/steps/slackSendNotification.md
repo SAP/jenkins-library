@@ -6,11 +6,13 @@
 
 * Installed and configured [Slack JenkinsCI integration](https://my.slack.com/services/new/jenkins-ci)
 * *secret text* Jenkins credentials with the Slack token
-* Installed and configured [Jenkins Slack plugin](https://github.com/jenkinsci/slack-plugin#install-instructions-for-slack).
+* Installed and configured [Jenkins Slack plugin](https://github.com/jenkinsci/slack-plugin#install-instructions-for-slack)
 
 ## ${docGenParameters}
 
 ## ${docGenConfiguration}
+
+## ${docJenkinsPluginDependencies}
 
 ## Example
 

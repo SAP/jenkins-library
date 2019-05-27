@@ -47,7 +47,7 @@ node(){
 
 ```yaml
 steps:
-  mtaBuild
+  mtaBuild:
     buildTarget: 'CF'
   cloudFoundryDeploy:
     cloudFoundry:

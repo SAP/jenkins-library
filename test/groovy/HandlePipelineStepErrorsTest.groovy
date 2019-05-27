@@ -1,4 +1,3 @@
-#!groovy
 import hudson.AbortException
 
 import static org.hamcrest.Matchers.is

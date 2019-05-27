@@ -9,3 +9,5 @@ none
 ## ${docGenParameters}
 
 ## ${docGenConfiguration}
+
+## ${docJenkinsPluginDependencies}

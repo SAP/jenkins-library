@@ -67,6 +67,8 @@ influxDBServer=jenkins
 
 ## ${docGenConfiguration}
 
+## ${docJenkinsPluginDependencies}
+
 ## Example
 
 ```groovy

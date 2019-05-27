@@ -25,7 +25,7 @@ class MtaUtilsTest extends BasePiperTest {
     private File badJson
     private mtaUtils
 
-    private ExpectedException thrown= ExpectedException.none();
+    private ExpectedException thrown= ExpectedException.none()
 
     @ClassRule
     public static TemporaryFolder tmp = new TemporaryFolder()
