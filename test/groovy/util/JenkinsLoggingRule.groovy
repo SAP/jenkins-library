@@ -8,7 +8,7 @@ import org.junit.runner.Description
 import org.junit.runners.model.Statement
 
 import static org.hamcrest.Matchers.containsString
-import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertThat
 
 import org.hamcrest.Matchers
 

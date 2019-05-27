@@ -79,6 +79,8 @@ testsPublishResults(
 
 ## ${docGenConfiguration}
 
+## ${docJenkinsPluginDependencies}
+
 ## Side effects
 
 none

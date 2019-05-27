@@ -5,3 +5,5 @@
 ## ${docGenParameters}
 
 ## ${docGenConfiguration}
+
+## ${docJenkinsPluginDependencies}

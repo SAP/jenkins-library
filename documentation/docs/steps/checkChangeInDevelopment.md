@@ -10,6 +10,8 @@
 
 ## ${docGenConfiguration}
 
+## ${docJenkinsPluginDependencies}
+
 ## Exceptions
 
 * `AbortException`:

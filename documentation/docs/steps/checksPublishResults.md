@@ -82,6 +82,8 @@
 
 ## ${docGenConfiguration}
 
+## ${docJenkinsPluginDependencies}
+
 ### Thresholds
 
 It is possible to define thresholds to fail the build on a certain count of findings. To achive this, just define your thresholds a followed for the specific check tool:

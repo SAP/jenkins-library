@@ -1,10 +1,10 @@
 # ${docGenStepName}
 
-## ${docGenDescription}
-
 ## ${docGenParameters}
 
 ## ${docGenConfiguration}
+
+## ${docJenkinsPluginDependencies}
 
 ## Examples
 

@@ -8,6 +8,8 @@
 
 ## ${docGenConfiguration}
 
+## ${docJenkinsPluginDependencies}
+
 ## Exceptions
 
 If you see an error like `fatal: Not a git repository (or any parent up to mount point /home/jenkins)` it is likely that your test description cannot be found.<br />

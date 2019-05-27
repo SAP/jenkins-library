@@ -160,7 +160,7 @@ void call(Map parameters = [:]) {
                     switch(config.pullRequestProvider){
                         case 'github':
                             config.options.add("sonar.pullrequest.github.repository=${config.githubOrg}/${config.githubRepo}")
-                            break;
+                            break
                         default: error "Pull-Request provider '${config.pullRequestProvider}' is not supported!"
                     }
                     workerForGithubAuth(config)
