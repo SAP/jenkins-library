@@ -317,6 +317,7 @@ steps:
     dockerImage: 's4sdk/docker-neo-cli'
     deployMode: 'mta'
     warAction: 'deploy'
+    extensions: []
     neo:
       size: 'lite'
       credentialsId: 'CI_CREDENTIALS_ID'

@@ -12,6 +12,8 @@ none
 
 We recommend to define values of step parameters via [config.yml file](../configuration.md).
 
+## ${docJenkinsPluginDependencies}
+
 ## Example
 
 Pipeline step:

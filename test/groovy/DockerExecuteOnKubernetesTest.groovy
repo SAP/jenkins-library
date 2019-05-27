@@ -207,7 +207,7 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
 
     @Test
     void testDockerExecuteOnKubernetesEmptyContainerMapNoDockerImage() throws Exception {
-        exception.expect(IllegalArgumentException.class);
+        exception.expect(IllegalArgumentException.class)
             stepRule.step.dockerExecuteOnKubernetes(
                 script: nullScript,
                 juStabUtils: utils,

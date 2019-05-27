@@ -1,5 +1,3 @@
-#!groovy
-
 package util
 
 import com.sap.piper.DescriptorUtils
