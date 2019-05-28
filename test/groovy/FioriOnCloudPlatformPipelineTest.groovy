@@ -94,6 +94,14 @@ class FioriOnCloudPlatformPipelineTest extends BasePiperTest {
                                        |PATH : "."
                                        |''' as CharSequence).stripMargin())
 
+        readYamlRule.registerYaml('.pipeline/config.yml', ('''
+                                        |steps:
+                                        |  neoDeploy:
+                                        |    neo:
+                                        |      host: 'hana.example.com'
+                                        |      account: 'myTestAccount'
+                                        |''' as CharSequence).stripMargin())
+
         //
         // we need the path variable since we extend the path in the mtaBuild step. In order
         // to be able to extend the path we have to have some initial value.
@@ -107,17 +115,6 @@ class FioriOnCloudPlatformPipelineTest extends BasePiperTest {
     @Test
     void straightForwardTest() {
 
-        nullScript
-            .commonPipelineEnvironment
-                .configuration =  [steps:
-                                    [neoDeploy:
-                                         [neo:
-                                              [ host: 'hana.example.com',
-                                                account: 'myTestAccount',
-                                              ]
-                                         ]
-                                    ]
-                                ]
 
         stepRule.step.fioriOnCloudPlatformPipeline(script: nullScript)
 

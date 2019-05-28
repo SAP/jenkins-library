@@ -2,6 +2,7 @@ import static com.sap.piper.Prerequisites.checkScript
 
 import com.sap.piper.GenerateDocumentation
 import com.sap.piper.ConfigurationHelper
+import com.sap.piper.DefaultValueCache
 import com.sap.piper.Utils
 import com.sap.piper.analytics.InfluxData
 
@@ -37,9 +38,7 @@ void call(Map parameters = [:]) {
 
         prepareDefaultValues script: script, customDefaults: parameters.customDefaults
 
-        String configFile = parameters.get('configFile')
-
-        loadConfigurationFromFile(script, configFile)
+        script.commonPipelineEnvironment.configuration = DefaultValueCache.getInstance().getProjectConfig()
 
         Map config = ConfigurationHelper.newInstance(this)
             .loadStepDefaults()
@@ -54,16 +53,5 @@ void call(Map parameters = [:]) {
 
         InfluxData.addField('step_data', 'build_url', env.BUILD_URL)
         InfluxData.addField('pipeline_data', 'build_url', env.BUILD_URL)
-    }
-}
-
-private loadConfigurationFromFile(script, String configFile) {
-
-    String defaultYmlConfigFile = '.pipeline/config.yml'
-
-    if (configFile) {
-        script.commonPipelineEnvironment.configuration = readYaml(file: configFile)
-    } else if (fileExists(defaultYmlConfigFile)) {
-        script.commonPipelineEnvironment.configuration = readYaml(file: defaultYmlConfigFile)
     }
 }
