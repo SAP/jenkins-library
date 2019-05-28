@@ -6,7 +6,7 @@ The public sample application [cloud-cf-helloworld-nodejs][cloud-cf-helloworld-n
 
 **Recommendation:** We recommend to clone the sample application [cloud-cf-helloworld-nodejs][cloud-cf-helloworld-nodejs] and execute the instructions on your own repository. See **(Optional) Sample Application**. 
 
-The stated instructions assume the use of this application. If you use a different application the mig 
+The stated instructions assume the use of this application.
 
 ## Prerequisites
 
@@ -37,7 +37,7 @@ For more information on the Jenkins lifecycle management and how to customize yo
 
 ## (Optional) Sample Application
 
-Copy the sources of the application into your own Git repository. While we will ask you to fork the application's repository into a public GitHub space, you can use any version control system based on Git. **Note: A public GitHub repository is visible to the public. The configuration files may contain data you don't want to expose.**
+Copy the sources of the application into your own Git repository. While we will ask you to fork the application's repository into a public GitHub space, you can use any version control system based on Git. **Note:** A public GitHub repository is visible to the public. The configuration files may contain data you don't want to expose.
 
 1. Create an organization on GitHub, if you haven't any yet. See [Creating a new organization][github-create-org]. 
 1. Fork the repository [cloud-cf-helloworld-nodejs][cloud-cf-helloworld-nodejs] into your GitHub organization. See [Fork a repo][github-fork-repo]
@@ -45,8 +45,6 @@ Copy the sources of the application into your own Git repository. While we will 
 1. Select the `1_REST_persist_in_Memory` branch of your [cloud-cf-helloworld-nodejs] fork. Other branches might work as well, but this one is tested.
 
 ## Create Your First Pipeline
-
-For the beginning, we recommend using an SAP sample application. The repository [cloud-cf-helloworld-nodejs][cloud-cf-helloworld-nodejs] contains a simple `nodejs` application that can be enriched with a pipeline built with MTA and deployed into the Cloud Foundry environment.
 
 1. Get your application repository in place.
 1. Create a new file with the name `Jenkinsfile` in the root level of your repository and enter the following code:
@@ -86,7 +84,7 @@ For the beginning, we recommend using an SAP sample application. The repository 
 
 1. Choose **Save**.
 
-1. To run your pipeline, choose **Build Now** in the job UI.
+1. To run your pipeline, choose **Build Now** in the job UI. **Result:** The pipeline processed the single stage "prepare". 
 
 
 ## Add a Build Step
@@ -123,7 +121,7 @@ For the beginning, we recommend using an SAP sample application. The repository 
 
 1. Save your changes to your remote repository.
 
-1. To run your pipeline, choose **Build Now** in the job UI. 
+1. To run your pipeline, choose **Build Now** in the job UI. **Result:** The pipeline processed two stages, the "prepare" and the "build". 
 
 ## Add a Deploy Step
 
@@ -145,21 +143,22 @@ For the beginning, we recommend using an SAP sample application. The repository 
          space: '<your-space>'
          credentialsId: 'CF_CREDENTIALSID'
    ```
-   Look after the indentation of a step. The key `CF_CREDENTIALSID` refers to a user-password credential you must create in Jenkins: In Jenkins, choose **Credentials** from the main menu and add a **Username with Password** entry.
+   **Note:** look after the indentation of the step within the YAML. Specify the `organisation` and `space` properties. For more information about the configuration, see the [Common Configuration Guide][resources-configuration] and [cloudFoundryDeploy][resources-step-cloudFoundryDeploy].
+1. The key `CF_CREDENTIALSID` refers to a user-password credential you must create in Jenkins: In Jenkins, choose **Credentials** from the main menu and add a **Username with Password** entry.
    <p align="center">
    ![Add Credentials](images/JenkinsCredentials-1.png "Add Credentials")
    </p>
-   For more information about the configuration, see the [Common Configuration Guide][resources-configuration] and [cloudFoundryDeploy][resources-step-cloudFoundryDeploy].
+   
 1. Save the Credential
 
 1. Save your changes to your remote repository.
 
-1. To run your pipeline, choose **Build Now** in the job UI. **Result:** The pipeline processed the 3 stages. 
+1. To run your pipeline, choose **Build Now** in the job UI. **Result:** The pipeline processed the three stages "prepare", "build" and "deploy".  
    <p align="center">
    ![Build Now](images/JenkinsPipelineJob.png "Stage View")
    </p>
    
-If your pipeline fails, compare its files to the final [Jenkinsfile][guidedtour-sample.jenkins], the [config.yml][guidedtour-sample.config], and the [mta.yaml][guidedtour-sample.mta]. **Note: Yaml files are surprisingly sensitive regarding indentation.**
+If your pipeline fails, compare its files to the final [Jenkinsfile][guidedtour-sample.jenkins], the [config.yml][guidedtour-sample.config], and the [mta.yaml][guidedtour-sample.mta]. **Note**: YAML files are surprisingly sensitive regarding indentation.
 
 
 ## Open Application
