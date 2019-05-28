@@ -52,6 +52,8 @@ methods/types needs to be announced, discussed and agreed.
 [github]: https://github.com
 [piper-library]: https://github.com/SAP/jenkins-library
 [devops-docker-images]: https://github.com/SAP/devops-docker-images
+[devops-docker-images-issues]:       https://github.com/SAP/devops-docker-images/issues
+[devops-docker-images-cxs-guide]:     https://github.com/SAP/devops-docker-images/blob/master/docs/operations/cx-server-operations-guide.md
 [piper-library-scenario]: https://sap.github.io/jenkins-library/scenarios/ui5-sap-cp/Readme/
 [piper-library-pages]: https://sap.github.io/jenkins-library
 [piper-library-pages-plugins]: https://sap.github.io/jenkins-library/jenkins/requiredPlugins
