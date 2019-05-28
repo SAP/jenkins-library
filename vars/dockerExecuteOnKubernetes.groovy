@@ -14,7 +14,12 @@ import hudson.AbortException
 @Field def PLUGIN_ID_KUBERNETES = 'kubernetes'
 
 @Field Set GENERAL_CONFIG_KEYS = [
-    'jenkinsKubernetes'
+    'jenkinsKubernetes',
+    /**
+     * Print more detailed information into the log.
+     * @possibleValues `true`, `false`
+     */
+    'verbose'
 ]
 @Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS.plus([
     /**
@@ -142,6 +147,7 @@ def getOptions(config) {
     def options = [
         name      : 'dynamic-agent-' + config.uniqueId,
         label     : config.uniqueId,
+        showRawYaml : config.verbose ?: false,
         yaml      : generatePodSpec(config)
     ]
     if (namespace) {
