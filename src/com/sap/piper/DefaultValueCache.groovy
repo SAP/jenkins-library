@@ -9,9 +9,11 @@ class DefaultValueCache implements Serializable {
     private static DefaultValueCache instance
 
     private Map defaultValues
+    private Map projectConfig
 
-    private DefaultValueCache(Map defaultValues){
+    private DefaultValueCache(Map defaultValues, Map projectConfig){
         this.defaultValues = defaultValues
+        this.projectConfig = projectConfig
     }
 
     @NonCPS
@@ -19,13 +21,18 @@ class DefaultValueCache implements Serializable {
         return instance
     }
 
-    static createInstance(Map defaultValues){
-        instance = new DefaultValueCache(defaultValues)
+    static createInstance(Map defaultValues, Map projectConfig){
+        instance = new DefaultValueCache(defaultValues, projectConfig)
     }
 
     @NonCPS
     Map getDefaultValues(){
         return defaultValues
+    }
+
+    @NonCPS
+    Map getProjectConfig() {
+        return projectConfig
     }
 
     static reset(){
@@ -50,7 +57,7 @@ class DefaultValueCache implements Serializable {
                         MapUtils.pruneNulls(defaultValues),
                         MapUtils.pruneNulls(configuration))
             }
-            DefaultValueCache.createInstance(defaultValues)
+            DefaultValueCache.createInstance(defaultValues, [:])
         }
     }
 }

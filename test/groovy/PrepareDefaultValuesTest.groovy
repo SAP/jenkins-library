@@ -52,7 +52,7 @@ public class PrepareDefaultValuesTest extends BasePiperTest {
     @Test
     public void testReInitializeOnCustomConfig() {
 
-        def instance = DefaultValueCache.createInstance([key:'value'])
+        def instance = DefaultValueCache.createInstance([key:'value'], [:])
 
         // existing instance is dropped in case a custom config is provided.
         stepRule.step.prepareDefaultValues(script: nullScript, customDefaults: 'custom.yml')
@@ -70,7 +70,7 @@ public class PrepareDefaultValuesTest extends BasePiperTest {
     @Test
     public void testNoReInitializeWithoutCustomConfig() {
 
-        def instance = DefaultValueCache.createInstance([key:'value'])
+        def instance = DefaultValueCache.createInstance([key:'value'], [:])
 
         stepRule.step.prepareDefaultValues(script: nullScript)
 
