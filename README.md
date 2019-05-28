@@ -3,12 +3,15 @@
 [![Test Coverage](https://api.codeclimate.com/v1/badges/0e6a23344616e29b4ed0/test_coverage)](https://codeclimate.com/github/SAP/jenkins-library/test_coverage)
 
 # Project Piper Repository
+
 The Project "Piper" provides a "Shared Library" to extend the Jenkins Pipeline with SAP specific patterns. A set of clients connect SAP systems. Default pipelines offer standard processes to get your software to your customers. 
 
 # User Documentation
+
 If you want to view the User Documentation of Project Piper please follow this [Piper Pages Link][piper-library-user-doc].
 
 # Known Issues
+
 A list of known issues is available on the [GitHub issues page of this project][piper-library-issues].
 
 # How to obtain support
