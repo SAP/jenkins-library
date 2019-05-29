@@ -94,8 +94,10 @@ void call(Map parameters = [:]) {
             )
             archiveArtifacts configuration.reportFile
 
-            if (configuration.failOnError && result) {
-                error "[${STEP_NAME}] Detected style issues in Dockerfile '${configuration.dockerFile}'"
+            if (result == 0) {
+                echo "[${STEP_NAME}] HaDoLint detected no style issues in Dockerfile '${configuration.dockerFile}'"
+            } else {
+                error "[${STEP_NAME}] HaDoLint detected style issues in Dockerfile '${configuration.dockerFile}'"
             }
         }
     }
