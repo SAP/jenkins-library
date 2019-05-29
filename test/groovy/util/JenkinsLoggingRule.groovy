@@ -2,6 +2,7 @@ package util
 
 import com.lesfurets.jenkins.unit.BasePipelineTest
 
+import org.junit.Assert
 import org.junit.rules.TestRule
 import org.junit.runner.Description
 import org.junit.runners.model.Statement
@@ -15,7 +16,7 @@ class JenkinsLoggingRule implements TestRule {
 
     final BasePipelineTest testInstance
 
-    Set<String> expected = []
+    def expected = []
 
     String log = ""
 
@@ -23,7 +24,7 @@ class JenkinsLoggingRule implements TestRule {
         this.testInstance = testInstance
     }
 
-    void expect(String substring) {
+    public void expect(String substring) {
         expected.add(substring)
     }
 
@@ -37,12 +38,12 @@ class JenkinsLoggingRule implements TestRule {
             @Override
             void evaluate() throws Throwable {
 
-                testInstance.helper.registerAllowedMethod("echo", [String], {
+                testInstance.helper.registerAllowedMethod("echo", [String.class], {
                     echoInput ->
                         log += "$echoInput \n"
                 })
 
-                Throwable caught = null
+                Throwable caught
 
                 try {
                     base.evaluate()

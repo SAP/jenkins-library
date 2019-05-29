@@ -24,12 +24,12 @@ class JenkinsShellCallRule implements TestRule {
         }
 
         @Override
-        int hashCode() {
+        public int hashCode() {
             return type.hashCode() * script.hashCode()
         }
 
         @Override
-        boolean equals(Object obj) {
+        public boolean equals(Object obj) {
 
             if (obj == null || !obj instanceof Command) return false
             Command other = (Command) obj
@@ -39,7 +39,7 @@ class JenkinsShellCallRule implements TestRule {
 
     final BasePipelineTest testInstance
 
-    List<String> shell = []
+    List shell = []
 
     Map<Command, String> returnValues = [:]
     List<Command> failingCommands = []
@@ -79,8 +79,10 @@ class JenkinsShellCallRule implements TestRule {
                         for (Command failingCommand: failingCommands){
                             if(failingCommand.type == Type.REGEX && unifiedScript =~ failingCommand.script) {
                                 throw new Exception("Script execution failed!")
+                                break
                             } else if(failingCommand.type == Type.PLAIN && unifiedScript.equals(failingCommand.script)) {
                                 throw new Exception("Script execution failed!")
+                                break
                             }
                         }
                 })
@@ -93,8 +95,10 @@ class JenkinsShellCallRule implements TestRule {
                         for (Command failingCommand: failingCommands){
                             if(failingCommand.type == Type.REGEX && unifiedScript =~ failingCommand.script) {
                                 throw new Exception("Script execution failed!")
+                                break
                             } else if(failingCommand.type == Type.PLAIN && unifiedScript.equals(failingCommand.script)) {
                                 throw new Exception("Script execution failed!")
+                                break
                             }
                         }
 
