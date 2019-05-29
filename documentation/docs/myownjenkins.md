@@ -24,7 +24,7 @@ To setup the shared library, you need to perform the following steps:
     1. set *Project Repository* to `https://github.com/SAP/jenkins-library`
 1. Save changes
 
-![Library Setup](./documentation/docs/images/setupInJenkins.png)
+![Library Setup](images/setupInJenkins.png)
 
 Now the library is available as `piper-lib-os` and can be used in any
 `Jenkinsfile` by adding this line:

@@ -174,7 +174,7 @@ You are now familiar with the basics of using project "Piper". Through the conce
 The **Configuration** pattern supports simple pipelines that can be reused by multiple applications. To understand the principles of inheritance and customization, have a look at the the [configuration][resources-configuration] documentation.
 
 [guidedtour-my-own-jenkins]:         myownjenkins.md
-[guidedtour-sample.config]:          samples/cloud-cf-helloworld-nodejs/.pipeline/config.yml
+[guidedtour-sample.config]:          samples/cloud-cf-helloworld-nodejs/pipeline/config.yml
 [guidedtour-sample.jenkins]:         samples/cloud-cf-helloworld-nodejs/Jenkinsfile
 [guidedtour-sample.mta]:             samples/cloud-cf-helloworld-nodejs/mta.yaml
 [resources-configuration]:           configuration.md
