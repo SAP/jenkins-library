@@ -147,11 +147,13 @@ def getOptions(config) {
     def options = [
         name      : 'dynamic-agent-' + config.uniqueId,
         label     : config.uniqueId,
-        showRawYaml : false,
         yaml      : generatePodSpec(config)
     ]
     if (namespace) {
         options.namespace = namespace
+    }
+    if (!config.verbose) {
+        options.showRawYaml = false
     }
     return options
 }
