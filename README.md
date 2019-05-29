@@ -4,7 +4,7 @@
 
 # Project Piper Repository
 
-The Project "Piper" provides a "Shared Library" to extend the Jenkins Pipeline with SAP specific patterns. A set of clients connect SAP systems. Default pipelines offer standard processes to get your software to your customers. 
+The Project "Piper" provides a "Shared Library" to extend the Jenkins Pipeline with SAP specific patterns. A set of clients connect SAP systems. Default pipelines offer standard processes to get your software to your customers.
 
 # User Documentation
 
