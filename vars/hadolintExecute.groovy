@@ -21,7 +21,7 @@ import groovy.transform.Field
      */
     'configurationFile',
     /**
-     * URL pointing to the .hadolint.yaml exclude configuration to be used for linting
+     * URL pointing to the .hadolint.yaml exclude configuration to be used for linting. Also have a look at `configurationFile` which could avoid central configuration download in case the file is part of your repository.
      */
     'configurationUrl',
     /**
