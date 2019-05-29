@@ -15,7 +15,7 @@ class JenkinsLoggingRule implements TestRule {
 
     final BasePipelineTest testInstance
 
-    List<String> expected = []
+    Set<String> expected = []
 
     String log = ""
 
