@@ -59,7 +59,7 @@ void call(Map parameters = [:]) {
             stepParam1: parameters?.script == null
         ], configuration)
 
-        configuration.stashContent = utils.unstashAll(configuration.stashContent)
+        def existingStashes = utils.unstashAll(configuration.stashContent)
 
         if (!fileExists(configuration.dockerFile)) {
             error "[${STEP_NAME}] Dockerfile '${configuration.dockerFile}' is not found."
@@ -67,10 +67,10 @@ void call(Map parameters = [:]) {
 
         if(!fileExists(configuration.configurationFile) && configuration.configurationUrl) {
             sh "curl --fail --location --output ${configuration.configurationFile} ${configuration.configurationUrl}"
-            if(configuration.stashContent) {
+            if(existingStashes) {
                 def stashName = 'hadolintConfiguration'
                 stash name: stashName, includes: configuration.configurationFile
-                configuration.stashContent += stashName
+                existingStashes += stashName
             }
         }
 
@@ -83,7 +83,7 @@ void call(Map parameters = [:]) {
             script: script,
             dockerImage: configuration.dockerImage,
             dockerOptions: configuration.dockerOptions,
-            stashContent: configuration.stashContent
+            stashContent: existingStashes
         ) {
             def result = sh returnStatus: true, script: "hadolint ${configuration.dockerFile} ${options.join(' ')}"
 
