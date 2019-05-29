@@ -11,7 +11,6 @@ import static org.junit.Assert.assertThat
 
 import org.hamcrest.Matchers
 
-
 class JenkinsLoggingRule implements TestRule {
 
     final BasePipelineTest testInstance

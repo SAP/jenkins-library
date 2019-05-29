@@ -62,11 +62,11 @@ void call(Map parameters = [:]) {
         configuration.stashContent = utils.unstashAll(configuration.stashContent)
 
         if (!fileExists(configuration.dockerFile)) {
-            error "[${STEP_NAME}] Dockerfile is not found."
+            error "[${STEP_NAME}] Dockerfile '${configuration.dockerFile}' is not found."
         }
 
         if(!fileExists(configuration.configurationFile) && configuration.configurationUrl) {
-            sh "curl --location --output ${configuration.configurationFile} ${configuration.configurationUrl}"
+            sh "curl --fail --location --output ${configuration.configurationFile} ${configuration.configurationUrl}"
             if(configuration.stashContent) {
                 def stashName = 'hadolintConfiguration'
                 stash name: stashName, includes: configuration.configurationFile
@@ -85,7 +85,7 @@ void call(Map parameters = [:]) {
             dockerOptions: configuration.dockerOptions,
             stashContent: configuration.stashContent
         ) {
-            def ignored = sh returnStatus: true, script: "hadolint ${configuration.dockerFile} ${options.join(' ')}"
+            def result = sh returnStatus: true, script: "hadolint ${configuration.dockerFile} ${options.join(' ')}"
 
             recordIssues(
                 tools: [checkStyle(name: configuration.reportName, pattern: configuration.reportFile)],
@@ -93,6 +93,10 @@ void call(Map parameters = [:]) {
                 blameDisabled: true
             )
             archiveArtifacts configuration.reportFile
+
+            if (configuration.failOnError && result) {
+                error "[${STEP_NAME}] Detected style issues in Dockerfile '${configuration.dockerFile}'"
+            }
         }
     }
 }
