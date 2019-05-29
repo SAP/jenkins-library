@@ -254,7 +254,7 @@ steps:
   hadolintExecute:
     configurationFile: '.hadolint.yaml'
     configurationUrl: ''
-    dockerfile: Dockerfile
+    dockerFile: './Dockerfile'
     dockerImage: 'hadolint/hadolint:latest-debian'
     reportFile: 'hadolint.xml'
     reportName: 'HaDoLint'

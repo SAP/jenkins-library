@@ -7,13 +7,17 @@ import groovy.transform.Field
 @Field def STEP_NAME = getClass().getName()
 @Field Set GENERAL_CONFIG_KEYS = [
     /**
+     * Dockerfile to be used for the assessment.
+     */
+    'dockerFile',
+    /**
      * Name of the docker image that should be used, in which node should be installed and configured. Default value is 'hadolint/hadolint:latest-debian'.
      */
     'dockerImage'
 ]
 @Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS.plus([
     /**
-     * Name of the configuration file used locally within the step.
+     * Name of the configuration file used locally within the step. If a file with this name is detected as part of your repo downloading the central configuration via `configurationUrl` will be skipped. If you change the file's name make sure your stashing configuration also reflects this.
      */
     'configurationFile',
     /**
@@ -21,16 +25,15 @@ import groovy.transform.Field
      */
     'configurationUrl',
     /**
+     * Docker options to be set when starting the container.
+     */
+    'dockerOptions',
+    /**
      * Name of the result file used locally within the step.
      */
     'reportFile'
 ])
-@Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS + [
-    /**
-     * Docker options to be set when starting the container.
-     */
-    'dockerOptions'
-]
+@Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
 /**
  * Executes the Haskell Dockerfile Linter which is a smarter Dockerfile linter that helps you build [best practice](https://docs.docker.com/develop/develop-images/dockerfile_best-practices/) Docker images.
  * The linter is parsing the Dockerfile into an abstract syntax tree (AST) and performs rules on top of the AST.
@@ -58,7 +61,7 @@ void call(Map parameters = [:]) {
 
         configuration.stashContent = utils.unstashAll(configuration.stashContent)
 
-        if (!fileExists(configuration.dockerfile)) {
+        if (!fileExists(configuration.dockerFile)) {
             error "[${STEP_NAME}] Dockerfile is not found."
         }
 
@@ -82,7 +85,7 @@ void call(Map parameters = [:]) {
             dockerOptions: configuration.dockerOptions,
             stashContent: configuration.stashContent
         ) {
-            def ignored = sh returnStatus: true, script: "hadolint ${configuration.dockerfile} ${options.join(' ')}"
+            def ignored = sh returnStatus: true, script: "hadolint ${configuration.dockerFile} ${options.join(' ')}"
 
             recordIssues(
                 tools: [checkStyle(name: configuration.reportName, pattern: configuration.reportFile)],
