@@ -7,12 +7,11 @@ import org.junit.Assert
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.ExpectedException
+import org.yaml.snakeyaml.Yaml
 
 class ConfigurationHelperTest {
 
     Script mockScript = new Script() {
-
-        def prepareDefaultValues() {}
 
         def run() {
             // it never runs
@@ -20,7 +19,16 @@ class ConfigurationHelperTest {
         }
 
         def STEP_NAME = 'mock'
+
         def echo(message) {
+        }
+
+        def libraryResource(String r) {
+            'key: value' // just a stupid default
+        }
+
+        def readYaml(Map m) {
+           new Yaml().load(m.text)
         }
     }
 
