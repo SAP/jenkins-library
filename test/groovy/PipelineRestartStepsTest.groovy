@@ -17,6 +17,7 @@ class PipelineRestartStepsTest extends BasePiperTest {
     @Rule
     public RuleChain chain = Rules.getCommonRules(this)
         .around(new JenkinsReadYamlRule(this))
+        .around(new JenkinsFileExistsRule(this))
         .around(errorRule)
         .around(loggingRule)
         .around(stepRule)

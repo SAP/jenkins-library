@@ -1,13 +1,17 @@
 import org.junit.Before
+import org.junit.Ignore
 import org.junit.Rule
 import org.junit.Test
+import org.junit.rules.ExpectedException
 import org.junit.rules.RuleChain
 import org.yaml.snakeyaml.Yaml
 
 import com.sap.piper.Utils
 import com.sap.piper.DefaultValueCache
 
+import hudson.AbortException
 import util.BasePiperTest
+import util.JenkinsFileExistsRule
 import util.Rules
 import util.JenkinsReadYamlRule
 import util.JenkinsStepRule
@@ -22,6 +26,8 @@ class SetupCommonPipelineEnvironmentTest extends BasePiperTest {
 
     private JenkinsStepRule stepRule = new JenkinsStepRule(this)
 
+    private ExpectedException thrown = ExpectedException.none()
+
     @Rule
     public RuleChain rules = Rules
         .getCommonRules(this)
@@ -30,7 +36,6 @@ class SetupCommonPipelineEnvironmentTest extends BasePiperTest {
         .around(new JenkinsReadYamlRule(this).registerYaml('.pipeline/config.yml', 'to_be_asserted: this_we_assert'))
         .around(new JenkinsFileExistsRule(this))
 
-        def examplePipelineConfig = new File('test/resources/test_pipeline_config.yml').text
 
     @Test
     void testIsYamlConfigurationAvailable() throws Exception {

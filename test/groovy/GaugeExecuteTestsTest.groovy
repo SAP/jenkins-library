@@ -19,6 +19,7 @@ class GaugeExecuteTestsTest extends BasePiperTest {
     public RuleChain rules = Rules
         .getCommonRules(this)
         .around(new JenkinsReadYamlRule(this))
+        .around(new JenkinsFileExistsRule(this))
         .around(shellRule)
         .around(loggingRule)
         .around(environmentRule)

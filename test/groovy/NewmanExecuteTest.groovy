@@ -17,6 +17,7 @@ import util.JenkinsLoggingRule
 import util.JenkinsReadYamlRule
 import util.JenkinsShellCallRule
 import util.JenkinsDockerExecuteRule
+import util.JenkinsFileExistsRule
 import util.Rules
 import org.junit.rules.ExpectedException
 
@@ -31,6 +32,7 @@ class NewmanExecuteTest extends BasePiperTest {
     public RuleChain rules = Rules
         .getCommonRules(this)
         .around(new JenkinsReadYamlRule(this))
+        .around(new JenkinsFileExistsRule(this))
         .around(thrown)
         .around(dockerExecuteRule)
         .around(shellRule)

@@ -21,6 +21,7 @@ import com.sap.piper.JenkinsUtils
 
 import util.BasePiperTest
 import util.JenkinsCredentialsRule
+import util.JenkinsFileExistsRule
 import util.JenkinsReadYamlRule
 import util.JenkinsShellCallRule
 import util.JenkinsStepRule
@@ -52,6 +53,18 @@ class FioriOnCloudPlatformPipelineTest extends BasePiperTest {
 
     JenkinsStepRule stepRule = new JenkinsStepRule(this)
     JenkinsReadYamlRule readYamlRule = new JenkinsReadYamlRule(this)
+        .registerYaml('mta.yaml', ('''|
+                                        |ID : "test"
+                                        |PATH : "."
+                                        |''' as CharSequence).stripMargin())
+        .registerYaml('.pipeline/config.yml', ('''
+                                        |steps:
+                                        |  neoDeploy:
+                                        |    neo:
+                                        |      host: 'hana.example.com'
+                                        |      account: 'myTestAccount'
+                                        |''' as CharSequence).stripMargin())
+
     JenkinsShellCallRule shellRule = new JenkinsShellCallRule(this)
     private JenkinsLockRule jlr = new JenkinsLockRule(this)
 
@@ -65,6 +78,14 @@ class FioriOnCloudPlatformPipelineTest extends BasePiperTest {
         .around(new JenkinsWithEnvRule(this))
         .around(new JenkinsCredentialsRule(this)
         .withCredentials('CI_CREDENTIALS_ID', 'foo', 'terceSpot'))
+        .around(new JenkinsFileExistsRule(this, [
+
+            // called inside mtaBuild, this file contains build config
+            'mta.yaml',
+
+            // called inside neo deploy, this file gets deployed
+            'test.mtar',
+            ]))
 
     @Before
     void setup() {
@@ -72,35 +93,7 @@ class FioriOnCloudPlatformPipelineTest extends BasePiperTest {
         // needed since we have dockerExecute inside mtaBuild
         JenkinsUtils.metaClass.static.isPluginActive = {def s -> false}
 
-        //
-        // there is a check for the mta.yaml file and for the deployable test.mtar file
-        helper.registerAllowedMethod('fileExists', [String],{
-
-            it ->
-
-            // called inside mtaBuild, this file contains build config
-            it == 'mta.yaml' ||
-
-            // called inside neo deploy, this file gets deployed
-            it == 'test.mtar'
-        })
-
         helper.registerAllowedMethod("deleteDir",[], null)
-
-        //
-        // the properties below we read out of the yaml file
-        readYamlRule.registerYaml('mta.yaml', ('''
-                                       |ID : "test"
-                                       |PATH : "."
-                                       |''' as CharSequence).stripMargin())
-
-        readYamlRule.registerYaml('.pipeline/config.yml', ('''
-                                        |steps:
-                                        |  neoDeploy:
-                                        |    neo:
-                                        |      host: 'hana.example.com'
-                                        |      account: 'myTestAccount'
-                                        |''' as CharSequence).stripMargin())
 
         //
         // we need the path variable since we extend the path in the mtaBuild step. In order

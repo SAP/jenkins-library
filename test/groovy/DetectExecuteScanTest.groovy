@@ -5,6 +5,7 @@ import org.junit.rules.RuleChain
 import util.BasePiperTest
 import util.JenkinsCredentialsRule
 import util.JenkinsDockerExecuteRule
+import util.JenkinsFileExistsRule
 import util.JenkinsReadYamlRule
 import util.JenkinsShellCallRule
 import util.JenkinsStepRule
@@ -29,12 +30,12 @@ class DetectExecuteScanTest extends BasePiperTest {
     public RuleChain rules = Rules
         .getCommonRules(this)
         .around(new JenkinsReadYamlRule(this))
+        .around(new JenkinsFileExistsRule(this))
         .around(shellRule)
         .around(dockerRule)
         .around(stepRule)
         .around(new JenkinsCredentialsRule(this)
-            .withCredentials('testCredentials', 'testToken')
-        )
+            .withCredentials('testCredentials', 'testToken'))
 
     @Before
     void init() {

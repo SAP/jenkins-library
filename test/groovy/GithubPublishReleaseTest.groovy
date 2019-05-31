@@ -6,6 +6,7 @@ import org.junit.rules.ExpectedException
 import org.junit.rules.RuleChain
 import util.BasePiperTest
 import util.JenkinsCredentialsRule
+import util.JenkinsFileExistsRule
 import util.JenkinsLoggingRule
 import util.JenkinsReadJsonRule
 import util.JenkinsReadYamlRule
@@ -25,6 +26,7 @@ class GithubPublishReleaseTest extends BasePiperTest {
     public RuleChain rules = Rules
         .getCommonRules(this)
         .around(new JenkinsReadYamlRule(this))
+        .around(new JenkinsFileExistsRule(this))
         .around(loggingRule)
         .around(readJsonRule)
         .around(stepRule)

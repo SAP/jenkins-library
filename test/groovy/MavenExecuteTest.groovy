@@ -4,6 +4,7 @@ import org.junit.rules.RuleChain
 
 import util.BasePiperTest
 import util.JenkinsDockerExecuteRule
+import util.JenkinsFileExistsRule
 import util.JenkinsReadYamlRule
 import util.JenkinsShellCallRule
 import util.JenkinsStepRule
@@ -29,6 +30,7 @@ class MavenExecuteTest extends BasePiperTest {
     public RuleChain ruleChain = Rules
         .getCommonRules(this)
         .around(new JenkinsReadYamlRule(this))
+        .around(new JenkinsFileExistsRule(this))
         .around(dockerExecuteRule)
         .around(shellRule)
         .around(stepRule)

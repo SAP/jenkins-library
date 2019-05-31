@@ -29,6 +29,7 @@ class WhitesourceExecuteScanTest extends BasePiperTest {
     public RuleChain ruleChain = Rules
         .getCommonRules(this)
         .around(new JenkinsReadYamlRule(this))
+        .around(new JenkinsFileExistsRule(this))
         .around(thrown)
         .around(dockerExecuteRule)
         .around(shellRule)

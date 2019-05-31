@@ -10,6 +10,7 @@ import static org.junit.Assert.assertThat
 
 import util.BasePiperTest
 import util.JenkinsDockerExecuteRule
+import util.JenkinsFileExistsRule
 import util.JenkinsLoggingRule
 import util.JenkinsReadYamlRule
 import util.JenkinsStepRule
@@ -26,6 +27,7 @@ class UiVeri5ExecuteTestsTest extends BasePiperTest {
         .getCommonRules(this)
         .around(thrown)
         .around(new JenkinsReadYamlRule(this))
+        .around(new JenkinsFileExistsRule(this))
         .around(dockerRule)
         .around(loggingRule)
         .around(stepRule)

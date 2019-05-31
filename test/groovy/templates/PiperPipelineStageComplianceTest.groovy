@@ -17,6 +17,7 @@ class PiperPipelineStageComplianceTest extends BasePiperTest {
     public RuleChain rules = Rules
         .getCommonRules(this)
         .around(new JenkinsReadYamlRule(this))
+        .around(new JenkinsFileExistsRule(this))
         .around(jlr)
         .around(jsr)
 

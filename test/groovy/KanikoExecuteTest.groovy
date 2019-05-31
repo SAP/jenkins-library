@@ -19,6 +19,7 @@ class KanikoExecuteTest extends BasePiperTest {
     public RuleChain rules = Rules
         .getCommonRules(this)
         .around(new JenkinsReadYamlRule(this))
+        .around(new JenkinsFileExistsRule(this))
         .around(shellRule)
         .around(readFileRule)
         .around(writeFileRule)

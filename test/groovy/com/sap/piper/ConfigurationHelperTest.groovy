@@ -9,6 +9,8 @@ import org.junit.Test
 import org.junit.rules.ExpectedException
 import org.yaml.snakeyaml.Yaml
 
+import util.JenkinsFileExistsRule
+
 class ConfigurationHelperTest {
 
     Script mockScript = new Script() {
@@ -28,7 +30,12 @@ class ConfigurationHelperTest {
         }
 
         def readYaml(Map m) {
+           if(m.text == null) return null
            new Yaml().load(m.text)
+        }
+
+        boolean fileExists(String f) {
+            return true
         }
     }
 

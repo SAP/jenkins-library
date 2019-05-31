@@ -25,6 +25,7 @@ class PiperPipelineStageInitTest extends BasePiperTest {
         .around(thrown)
         .around(jlr)
         .around(jsr)
+        .around(new JenkinsFileExistsRule(this))
 
     private List stepsCalled = []
 

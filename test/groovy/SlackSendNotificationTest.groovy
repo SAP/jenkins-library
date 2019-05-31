@@ -3,6 +3,7 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.RuleChain
 import util.BasePiperTest
+import util.JenkinsFileExistsRule
 import util.JenkinsLoggingRule
 import util.JenkinsReadYamlRule
 import util.JenkinsStepRule
@@ -20,6 +21,7 @@ class SlackSendNotificationTest extends BasePiperTest {
     public RuleChain ruleChain = Rules
         .getCommonRules(this)
         .around(new JenkinsReadYamlRule(this))
+        .around(new JenkinsFileExistsRule(this))
         .around(loggingRule)
         .around(stepRule)
 

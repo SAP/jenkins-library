@@ -11,6 +11,7 @@ import org.junit.rules.RuleChain
 import static org.junit.Assert.assertThat
 
 import util.BasePiperTest
+import util.JenkinsFileExistsRule
 import util.JenkinsLoggingRule
 import util.JenkinsReadYamlRule
 import util.JenkinsStepRule
@@ -25,6 +26,7 @@ class HandlePipelineStepErrorsTest extends BasePiperTest {
     public RuleChain rules = Rules
         .getCommonRules(this)
         .around(new JenkinsReadYamlRule(this))
+        .around(new JenkinsFileExistsRule(this))
         .around(loggingRule)
         .around(stepRule)
         .around(thrown)

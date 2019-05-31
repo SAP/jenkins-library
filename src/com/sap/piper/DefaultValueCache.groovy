@@ -8,6 +8,8 @@ import com.cloudbees.groovy.cps.NonCPS
 class DefaultValueCache implements Serializable {
     private static DefaultValueCache instance
 
+    private static String DEFAULT_PROJECT_CONFIG_FILE_PATH = '.pipeline/config.yml'
+
     private Map defaultValues
     private Map projectConfig
 
@@ -57,7 +59,21 @@ class DefaultValueCache implements Serializable {
                         MapUtils.pruneNulls(defaultValues),
                         MapUtils.pruneNulls(configuration))
             }
-            DefaultValueCache.createInstance(defaultValues, [:])
+
+            def projectConfigFileName = parameters.projectConfig ?: DEFAULT_PROJECT_CONFIG_FILE_PATH
+            boolean projectConfigFileExists = steps.fileExists projectConfigFileName
+
+            def projectConfig
+
+            if(projectConfigFileExists) {
+                projectConfig = steps.readYaml file: projectConfigFileName
+            } else {
+                if(projectConfigFileName != DEFAULT_PROJECT_CONFIG_FILE_PATH)
+                    steps.error("Explicitly configured project config file '${projectConfigFileName}' does not exist.")
+                projectConfig = [:]
+            }
+
+            DefaultValueCache.createInstance(defaultValues, projectConfig)
         }
     }
 }

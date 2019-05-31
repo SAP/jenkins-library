@@ -10,6 +10,7 @@ import org.junit.rules.RuleChain
 import groovy.json.JsonSlurper
 import util.BasePiperTest
 import util.JenkinsDockerExecuteRule
+import util.JenkinsFileExistsRule
 import util.JenkinsLoggingRule
 import util.JenkinsReadYamlRule
 import util.JenkinsShellCallRule
@@ -34,6 +35,7 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
     public RuleChain ruleChain = Rules
         .getCommonRules(this)
         .around(new JenkinsReadYamlRule(this))
+        .around(new JenkinsFileExistsRule(this))
         .around(exception)
         .around(dockerExecuteRule)
         .around(shellRule)

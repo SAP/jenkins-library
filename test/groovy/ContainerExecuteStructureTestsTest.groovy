@@ -19,6 +19,7 @@ class ContainerExecuteStructureTestsTest extends BasePiperTest {
     public RuleChain rules = Rules
         .getCommonRules(this)
         .around(new JenkinsReadYamlRule(this))
+        .around(new JenkinsFileExistsRule(this))
         .around(thrown)
         .around(jedr)
         .around(jscr)

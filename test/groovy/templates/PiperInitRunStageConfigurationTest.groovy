@@ -6,6 +6,7 @@ import org.junit.Test
 import org.junit.rules.ExpectedException
 import org.junit.rules.RuleChain
 import util.BasePiperTest
+import util.JenkinsFileExistsRule
 import util.JenkinsLoggingRule
 import util.JenkinsReadYamlRule
 import util.JenkinsStepRule
@@ -27,6 +28,7 @@ class PiperInitRunStageConfigurationTest extends BasePiperTest {
         .around(thrown)
         .around(jlr)
         .around(jsr)
+        .around(new JenkinsFileExistsRule(this))
 
     @Before
     void init()  {

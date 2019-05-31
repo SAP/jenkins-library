@@ -30,6 +30,7 @@ class MulticloudDeployTest extends BasePiperTest {
     public RuleChain ruleChain = Rules
         .getCommonRules(this)
         .around(new JenkinsReadYamlRule(this))
+        .around(new JenkinsFileExistsRule(this))
         .around(thrown)
         .around(stepRule)
         .around(neoDeployRule)

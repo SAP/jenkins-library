@@ -21,6 +21,7 @@ import org.junit.rules.RuleChain
 import groovy.io.FileType
 import hudson.AbortException
 import util.BasePiperTest
+import util.JenkinsFileExistsRule
 import util.JenkinsReadYamlRule
 import util.JenkinsStepRule
 import util.Rules
@@ -33,6 +34,7 @@ public class CommonStepsTest extends BasePiperTest{
     @Rule
     public RuleChain ruleChain = Rules.getCommonRules(this)
         .around(new JenkinsReadYamlRule(this))
+        .around(new JenkinsFileExistsRule(this))
 
     /*
      * With that test we ensure the very first action inside a method body of a call method

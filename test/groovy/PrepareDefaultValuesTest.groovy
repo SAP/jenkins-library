@@ -6,6 +6,7 @@ import org.junit.rules.RuleChain
 import com.sap.piper.DefaultValueCache
 
 import util.BasePiperTest
+import util.JenkinsFileExistsRule
 import util.JenkinsLoggingRule
 import util.JenkinsReadYamlRule
 import util.JenkinsShellCallRule
@@ -23,6 +24,7 @@ public class PrepareDefaultValuesTest extends BasePiperTest {
     public RuleChain ruleChain = Rules
         .getCommonRules(this)
         .around(new JenkinsReadYamlRule(this))
+        .around(new JenkinsFileExistsRule(this))
         .around(thrown)
         .around(stepRule)
         .around(loggingRule)

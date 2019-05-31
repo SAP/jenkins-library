@@ -32,11 +32,11 @@ import groovy.transform.Field
 @GenerateDocumentation
 void call(Map parameters = [:]) {
 
-    handlePipelineStepErrors (stepName: STEP_NAME, stepParameters: parameters) {
+//    handlePipelineStepErrors (stepName: STEP_NAME, stepParameters: parameters) {
 
         def script = checkScript(this, parameters)
 
-        prepareDefaultValues script: script, customDefaults: parameters.customDefaults
+        prepareDefaultValues script: script, customDefaults: parameters.customDefaults, projectConfig: parameters.projectConfig
 
         script.commonPipelineEnvironment.configuration = DefaultValueCache.getInstance().getProjectConfig()
 
@@ -53,5 +53,5 @@ void call(Map parameters = [:]) {
 
         InfluxData.addField('step_data', 'build_url', env.BUILD_URL)
         InfluxData.addField('pipeline_data', 'build_url', env.BUILD_URL)
-    }
+//    }
 }

@@ -258,6 +258,10 @@ class Helper {
                 new Yaml().load(m.text)
             }
 
+            boolean fileExists(def s) {
+                new File(s).exists()
+            }
+
             void echo(m) {
                 println(m)
             }

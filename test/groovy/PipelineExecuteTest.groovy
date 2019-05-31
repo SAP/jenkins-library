@@ -1,4 +1,5 @@
 import util.BasePiperTest
+import util.JenkinsFileExistsRule
 import util.Rules
 
 import org.junit.Before
@@ -19,6 +20,7 @@ class PipelineExecuteTest extends BasePiperTest {
     public RuleChain ruleChain = Rules
         .getCommonRules(this)
         .around(new JenkinsReadYamlRule(this))
+        .around(new JenkinsFileExistsRule(this))
         .around(thrown)
         .around(stepRule)
 

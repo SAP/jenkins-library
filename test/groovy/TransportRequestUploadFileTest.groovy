@@ -22,6 +22,7 @@ import util.JenkinsStepRule
 import util.JenkinsLoggingRule
 import util.JenkinsReadYamlRule
 import util.JenkinsDockerExecuteRule
+import util.JenkinsFileExistsRule
 import util.Rules
 
 import hudson.AbortException
@@ -36,6 +37,7 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
     public RuleChain ruleChain = Rules.getCommonRules(this)
         .around(thrown)
         .around(new JenkinsReadYamlRule(this))
+        .around(new JenkinsFileExistsRule(this))
         .around(stepRule)
         .around(loggingRule)
         .around(new JenkinsCredentialsRule(this)

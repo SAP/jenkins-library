@@ -17,6 +17,7 @@ import com.sap.piper.cm.ChangeManagementException
 
 import util.BasePiperTest
 import util.JenkinsCredentialsRule
+import util.JenkinsFileExistsRule
 import util.JenkinsStepRule
 import util.JenkinsLoggingRule
 import util.JenkinsReadYamlRule
@@ -33,6 +34,7 @@ public class TransportRequestCreateTest extends BasePiperTest {
     @Rule
     public RuleChain ruleChain = Rules.getCommonRules(this)
         .around(new JenkinsReadYamlRule(this))
+        .around(new JenkinsFileExistsRule(this))
         .around(thrown)
         .around(stepRule)
         .around(loggingRule)

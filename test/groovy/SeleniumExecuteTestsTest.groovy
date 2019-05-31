@@ -20,6 +20,7 @@ class SeleniumExecuteTestsTest extends BasePiperTest {
     public RuleChain rules = Rules
         .getCommonRules(this)
         .around(new JenkinsReadYamlRule(this))
+        .around(new JenkinsFileExistsRule(this))
         .around(thrown)
         .around(dockerExecuteRule)
         .around(stepRule) // needs to be activated after dockerExecuteRule, otherwise executeDocker is not mocked

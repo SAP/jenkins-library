@@ -8,6 +8,7 @@ import org.junit.rules.RuleChain
 import util.BasePiperTest
 import util.JenkinsCredentialsRule
 import util.JenkinsEnvironmentRule
+import util.JenkinsFileExistsRule
 import util.JenkinsDockerExecuteRule
 import util.JenkinsLoggingRule
 import util.JenkinsReadFileRule
@@ -60,6 +61,7 @@ class CloudFoundryDeployTest extends BasePiperTest {
         .around(environmentRule)
         .around(new JenkinsCredentialsRule(this).withCredentials('test_cfCredentialsId', 'test_cf', '********'))
         .around(stepRule) // needs to be activated after dockerExecuteRule, otherwise executeDocker is not mocked
+        .around(new JenkinsFileExistsRule(this))
 
     @Before
     void init() {

@@ -1,6 +1,9 @@
 package util
 
 import com.lesfurets.jenkins.unit.BasePipelineTest
+
+import groovy.json.internal.CharacterSource
+
 import org.junit.rules.TestRule
 import org.junit.runner.Description
 import org.junit.runners.model.Statement
@@ -8,11 +11,11 @@ import org.junit.runners.model.Statement
 class JenkinsFileExistsRule implements TestRule {
 
     final BasePipelineTest testInstance
-    final List existingFiles
+    final Set existingFiles = ['.pipeline/config.yml']
 
-    JenkinsFileExistsRule(BasePipelineTest testInstance, List existingFiles) {
+    JenkinsFileExistsRule(BasePipelineTest testInstance, List existingFiles = []) {
         this.testInstance = testInstance
-        this.existingFiles = existingFiles
+        this.existingFiles.addAll(existingFiles ?: [])
     }
 
     @Override
@@ -25,7 +28,10 @@ class JenkinsFileExistsRule implements TestRule {
             @Override
             void evaluate() throws Throwable {
 
-                testInstance.helper.registerAllowedMethod('fileExists', [String.class], {s -> return s in existingFiles})
+                testInstance.helper.registerAllowedMethod('fileExists', [String],
+                    {s ->
+                        return s in existingFiles
+                    })
 
                 base.evaluate()
             }

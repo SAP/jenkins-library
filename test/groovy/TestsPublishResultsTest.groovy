@@ -6,6 +6,7 @@ import org.junit.rules.RuleChain
 import org.junit.rules.ExpectedException
 
 import util.BasePiperTest
+import util.JenkinsFileExistsRule
 import util.JenkinsReadYamlRule
 import util.JenkinsStepRule
 import static org.junit.Assert.assertEquals
@@ -24,6 +25,7 @@ class TestsPublishResultsTest extends BasePiperTest {
     public RuleChain ruleChain = Rules
         .getCommonRules(this)
         .around(new JenkinsReadYamlRule(this))
+        .around(new JenkinsFileExistsRule(this))
         .around(thrown)
         .around(stepRule)
 
