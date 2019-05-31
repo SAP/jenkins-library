@@ -11,7 +11,7 @@ import static org.junit.Assert.assertThat
 class KanikoExecuteTest extends BasePiperTest {
     private JenkinsStepRule stepRule = new JenkinsStepRule(this)
     private JenkinsShellCallRule shellRule = new JenkinsShellCallRule(this)
-    private JenkinsReadFileRule readFileRule = new JenkinsReadFileRule(this, 'test/resources/kaniko/')
+    private JenkinsReadFileRule readFileRule = new JenkinsReadFileRule(this)
     private JenkinsWriteFileRule writeFileRule = new JenkinsWriteFileRule(this)
     private JenkinsDockerExecuteRule dockerExecuteRule = new JenkinsDockerExecuteRule(this)
 
@@ -26,6 +26,16 @@ class KanikoExecuteTest extends BasePiperTest {
         .around(stepRule)
 
     def fileMap = [:]
+
+    static config = ('''|{
+                     |    "auths": {
+                     |        "docker.my.domain.com:4444": {
+                     |            "auth": "myAuth",
+                     |            "email": "my.user@domain.com"
+                     |        }
+                     |    }
+                     |}
+                 ''' as CharSequence).stripMargin()
 
     @Before
     void init() {
@@ -44,6 +54,7 @@ class KanikoExecuteTest extends BasePiperTest {
                 binding.setProperty(fileMap.variable, null)
             }
         })
+        readFileRule.add('config.json', config)
 
         UUID.metaClass.static.randomUUID = { -> 1}
     }

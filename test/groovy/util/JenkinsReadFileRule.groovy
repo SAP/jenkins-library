@@ -8,11 +8,14 @@ import org.junit.runners.model.Statement
 class JenkinsReadFileRule implements TestRule {
 
     final BasePipelineTest testInstance
-    final String testRoot
+    
+    // key: file name
+    // value: content
+    final Map mappings = [:]
 
-    JenkinsReadFileRule(BasePipelineTest testInstance, String testRoot) {
+    JenkinsReadFileRule(BasePipelineTest testInstance, Map mappings = [:]) {
         this.testInstance = testInstance
-        this.testRoot = testRoot
+        this.mappings << mappings
     }
 
     @Override
@@ -25,13 +28,31 @@ class JenkinsReadFileRule implements TestRule {
             @Override
             void evaluate() throws Throwable {
 
-                testInstance.helper.registerAllowedMethod( 'readFile', [String.class], {s -> return (loadFile("${testRoot}/${s}")).getText('UTF-8')} )
+                testInstance.helper.registerAllowedMethod( 'readFile', [String.class], {
+                    s ->
+                    def content = mappings[s]
+                    if(content) return content
+                    throw new FileNotFoundException(s)
+                })
 
-                testInstance.helper.registerAllowedMethod( 'readFile', [Map.class], {m -> return (loadFile("${testRoot}/${m.file}")).getText(m.encoding?m.encoding:'UTF-8')} )
+                testInstance.helper.registerAllowedMethod( 'readFile', [Map.class], {
+                    m ->
+                    def content = mappings[m.file]
+                    if(content) return content
+                    throw new FileNotFoundException(m.file)
+                })
 
                 base.evaluate()
             }
         }
+    }
+
+    public add(String file, String content) {
+        mappings.put(file, content)
+    }
+
+    public remove(String file) {
+        mappings.remove(file)
     }
 
     File loadFile(String path){

@@ -17,14 +17,12 @@ import static org.hamcrest.Matchers.allOf
 import static org.junit.Assert.assertThat
 
 class WhitesourceConfigurationHelperTest extends BasePiperTest {
-    JenkinsReadFileRule jrfr = new JenkinsReadFileRule(this, 'test/resources/utilsTest/')
     JenkinsWriteFileRule jwfr = new JenkinsWriteFileRule(this)
     JenkinsLoggingRule jlr = new JenkinsLoggingRule(this)
 
     @Rule
     public RuleChain ruleChain = Rules
         .getCommonRules(this)
-        .around(jrfr)
         .around(jwfr)
         .around(jlr)
 

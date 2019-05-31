@@ -28,12 +28,11 @@ import static org.hamcrest.Matchers.containsString
 
 class CloudFoundryDeployTest extends BasePiperTest {
 
-    private File tmpDir = File.createTempDir()
     private ExpectedException thrown = ExpectedException.none()
     private JenkinsLoggingRule loggingRule = new JenkinsLoggingRule(this)
     private JenkinsShellCallRule shellRule = new JenkinsShellCallRule(this)
     private JenkinsWriteFileRule writeFileRule = new JenkinsWriteFileRule(this)
-    private JenkinsReadFileRule readFileRule = new JenkinsReadFileRule(this, tmpDir.getAbsolutePath())
+    private JenkinsReadFileRule readFileRule = new JenkinsReadFileRule(this)
     private JenkinsDockerExecuteRule dockerExecuteRule = new JenkinsDockerExecuteRule(this)
     private JenkinsStepRule stepRule = new JenkinsStepRule(this)
     private JenkinsEnvironmentRule environmentRule = new JenkinsEnvironmentRule(this)
@@ -344,7 +343,7 @@ class CloudFoundryDeployTest extends BasePiperTest {
         // the name of the file which will be written contains a dynamically generated UUID
         // we force randomUUID() to return 1 that we can use this file in the test
         UUID.metaClass.static.randomUUID = { -> 1}
-        new File(tmpDir, '1-cfStopOutput.txt').write('any error message')
+        readFileRule.add('1-cfStopOutput.txt', 'any error message')
 
         shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, '^cf stop testAppName-old &> .*$', 1)
 
@@ -366,6 +365,8 @@ class CloudFoundryDeployTest extends BasePiperTest {
             cfAppName: 'testAppName',
             cfManifest: 'test.yml'
         ])
+
+        readFileRule.remove('1-cfStopOutput.txt')
 
         assertThat(dockerExecuteRule.dockerParams, hasEntry('dockerImage', 's4sdk/docker-cf-cli'))
         assertThat(dockerExecuteRule.dockerParams, hasEntry('dockerWorkspace', '/home/piper'))

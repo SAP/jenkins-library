@@ -12,7 +12,8 @@ import static org.junit.Assert.assertEquals
 
 class PipArtifactVersioningTest extends BasePiperTest{
 
-    JenkinsReadFileRule readFileRule = new JenkinsReadFileRule(this, 'test/resources/versioning/PipArtifactVersioning/')
+    JenkinsReadFileRule readFileRule = new JenkinsReadFileRule(this,
+        ['version.txt': '1.2.3\n'])
     JenkinsWriteFileRule writeFileRule = new JenkinsWriteFileRule(this)
 
     @Rule

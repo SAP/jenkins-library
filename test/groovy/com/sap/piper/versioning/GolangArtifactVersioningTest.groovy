@@ -12,7 +12,8 @@ import static org.junit.Assert.assertEquals
 
 class GolangArtifactVersioningTest extends BasePiperTest{
 
-    JenkinsReadFileRule readFileRule = new JenkinsReadFileRule(this, 'test/resources/versioning/GolangArtifactVersioning/')
+    JenkinsReadFileRule readFileRule = new JenkinsReadFileRule(this,
+        ['VERSION':'1.2.3\n'])
     JenkinsWriteFileRule writeFileRule = new JenkinsWriteFileRule(this)
 
     @Rule
