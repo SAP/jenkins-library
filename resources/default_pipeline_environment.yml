@@ -256,7 +256,7 @@ steps:
     configurationUrl: ''
     dockerFile: './Dockerfile'
     dockerImage: 'hadolint/hadolint:latest-debian'
-    qualityGates: 
+    qualityGates:
       - threshold: 1
         type: 'TOTAL_ERROR'
         unstable: false
