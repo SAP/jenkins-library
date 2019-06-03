@@ -368,6 +368,23 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
         assertThat(securityContext, is(equalTo(expectedSecurityContext)))
     }
 
+    @Test
+    void testDockerExecuteOnKubernetesWorkspaceStashing() {
+
+        Map stashMap
+        helper.registerAllowedMethod('stash', [Map.class], {m ->
+            stashMap = m
+        })
+
+        stepRule.step.dockerExecuteOnKubernetes(
+            script: nullScript,
+            juStabUtils: utils,
+            dockerImage: 'maven:3.5-jdk-8-alpine',
+        ) { bodyExecuted = true }
+        assertTrue(bodyExecuted)
+        assertThat(stashMap.useDefaultExcludes, is(false))
+    }
+
 
     private container(options, body) {
         containerName = options.name
