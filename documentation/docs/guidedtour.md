@@ -33,6 +33,8 @@ When the files are downloaded into the current directory, launch the Jenkins ser
 
 For more information on the Jenkins lifecycle management and how to customize your Jenkins, have a look at the [Operations Guide for Cx Server][devops-docker-images-cxs-guide].
 
+Please also consult the [S/4HANA Cloud SDK Blog Series][sap-blog-s4-sdk-first-steps] and in particular the post on setting up [Continuous Delivery for S/4HANA extensions][sap-blog-ci-cd].
+
 ## (Optional) Sample Application
 
 Copy the sources of the application into your own Git repository. While we will ask you to fork the application's repository into a public GitHub space, you can use any version control system based on Git. **Note:** A public GitHub repository is visible to the public. The configuration files may contain data you don't want to expose.
@@ -181,14 +183,18 @@ The **Configuration** pattern supports simple pipelines that can be reused by mu
 [resources-step-mtabuild]:           steps/mtaBuild.md
 [resources-step-cloudFoundryDeploy]: steps/cloudFoundryDeploy.md
 
+[sap]:                               https://www.sap.com
 [sap-cp-trial]:                      https://account.hanatrial.ondemand.com
-[devops-docker-images-cxs-guide]:     https://github.com/SAP/devops-docker-images/blob/master/docs/operations/cx-server-operations-guide.md
+[sap-blog-s4-sdk-first-steps]:       https://blogs.sap.com/2017/05/10/first-steps-with-sap-s4hana-cloud-sdk/
+[sap-blog-ci-cd]:                    https://blogs.sap.com/2017/09/20/continuous-integration-and-delivery/
+
+[devops-docker-images-cxs-guide]:    https://github.com/SAP/devops-docker-images/blob/master/docs/operations/cx-server-operations-guide.md
 
 [cloud-cf-helloworld-nodejs]:        https://github.com/SAP/cloud-cf-helloworld-nodejs
-[sap]:                               https://www.sap.com
 [github]:                            https://github.com
 [jenkins-io-documentation]:          https://jenkins.io/doc/
 [jenkins-io-jenkinsfile]:            https://jenkins.io/doc/book/pipeline/jenkinsfile
 
 [github-fork-repo]:                  https://help.github.com/en/articles/fork-a-repo
 [github-create-org]:                 https://help.github.com/en/articles/creating-a-new-organization-from-scratch
+
