@@ -29,6 +29,10 @@ import groovy.transform.Field
      */
     'dockerOptions',
     /**
+     * Quality Gates to fail the build, see [warnings-ng plugin documentation](https://github.com/jenkinsci/warnings-plugin/blob/master/doc/Documentation.md#quality-gate-configuration).
+     */
+    'qualityGates',
+    /**
      * Name of the result file used locally within the step.
      */
     'reportFile'
@@ -85,20 +89,16 @@ void call(Map parameters = [:]) {
             dockerOptions: configuration.dockerOptions,
             stashContent: existingStashes
         ) {
-            def result = sh returnStatus: true, script: "hadolint ${configuration.dockerFile} ${options.join(' ')}"
+            // HaDoLint status code is ignore, results will be handled by recordIssues / archiveArtifacts
+            def ignore = sh returnStatus: true, script: "hadolint ${configuration.dockerFile} ${options.join(' ')}"
 
+            archiveArtifacts configuration.reportFile
             recordIssues(
                 tools: [checkStyle(name: configuration.reportName, pattern: configuration.reportFile)],
+                qualityGates: configuration.qualityGates,
                 enabledForFailure: true,
                 blameDisabled: true
             )
-            archiveArtifacts configuration.reportFile
-
-            if (result == 0) {
-                echo "[${STEP_NAME}] HaDoLint detected no style issues in Dockerfile '${configuration.dockerFile}'"
-            } else {
-                error "[${STEP_NAME}] HaDoLint detected style issues in Dockerfile '${configuration.dockerFile}'"
-            }
         }
     }
 }
