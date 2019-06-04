@@ -5,6 +5,7 @@ import org.junit.rules.RuleChain
 import org.yaml.snakeyaml.Yaml
 
 import com.sap.piper.Utils
+import com.sap.piper.DefaultValueCache
 
 import util.BasePiperTest
 import util.Rules
@@ -25,35 +26,27 @@ class SetupCommonPipelineEnvironmentTest extends BasePiperTest {
     public RuleChain rules = Rules
         .getCommonRules(this)
         .around(stepRule)
-
-    @Before
-    void init() {
+        .around(thrown)
+        .around(new JenkinsReadYamlRule(this).registerYaml('.pipeline/config.yml', 'to_be_asserted: this_we_assert'))
+        .around(new JenkinsFileExistsRule(this))
 
         def examplePipelineConfig = new File('test/resources/test_pipeline_config.yml').text
-
-        helper.registerAllowedMethod("readYaml", [Map], { Map parameters ->
-            Yaml yamlParser = new Yaml()
-            if(parameters.text) {
-                return yamlParser.load(parameters.text)
-            }
-            usedConfigFile = parameters.file
-            return yamlParser.load(examplePipelineConfig)
-        })
-    }
 
     @Test
     void testIsYamlConfigurationAvailable() throws Exception {
 
-        helper.registerAllowedMethod("fileExists", [String], { String path ->
-            return path.endsWith('.pipeline/config.yml')
-        })
-
         stepRule.step.setupCommonPipelineEnvironment(script: nullScript)
 
-        assertEquals('.pipeline/config.yml', usedConfigFile)
         assertNotNull(nullScript.commonPipelineEnvironment.configuration)
-        assertEquals('develop', nullScript.commonPipelineEnvironment.configuration.general.productiveBranch)
-        assertEquals('my-maven-docker', nullScript.commonPipelineEnvironment.configuration.steps.mavenExecute.dockerImage)
+        assertEquals('this_we_assert', nullScript.commonPipelineEnvironment.configuration.to_be_asserted)
+    }
+
+    @Test
+    void testCustomProjectConfigDoesNotExist() {
+        thrown.expect(AbortException)
+        thrown.expectMessage('Explicitly configured project config file \'.pipeline/myConfig.yml\' does not exist')
+
+        stepRule.step.setupCommonPipelineEnvironment(script: nullScript, projectConfig: '.pipeline/myConfig.yml')
     }
 }
 
