@@ -57,6 +57,7 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
     def pullImageMap = [:]
     def namespace
     def securityContext
+    Map stashMap
 
     @Before
     void init() {
@@ -92,6 +93,10 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
             }
             body()
         })
+        helper.registerAllowedMethod('stash', [Map.class], {m ->
+            stashMap = m
+        })
+
     }
 
     @Test
@@ -370,11 +375,6 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
 
     @Test
     void testDockerExecuteOnKubernetesWorkspaceStashing() {
-
-        Map stashMap
-        helper.registerAllowedMethod('stash', [Map.class], {m ->
-            stashMap = m
-        })
 
         stepRule.step.dockerExecuteOnKubernetes(
             script: nullScript,
