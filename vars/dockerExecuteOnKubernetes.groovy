@@ -225,7 +225,8 @@ chown -R ${runAsUser}:${fsGroup} ."""
         stash(
             name: stashName,
             includes: config.stashIncludes.workspace,
-            excludes: config.stashExcludes.workspace
+            excludes: config.stashExcludes.workspace,
+            useDefaultExcludes: false
         )
         return stashName
     } catch (AbortException | IOException e) {
