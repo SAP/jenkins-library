@@ -24,7 +24,6 @@ class commonPipelineEnvironment implements Serializable {
     //stores properties for a pipeline which build an artifact and then bundles it into a container
     private Map appContainerProperties = [:]
 
-    Map configuration = [:]
     Map defaultConfiguration = [:]
 
     String mtarFilePath
@@ -43,8 +42,6 @@ class commonPipelineEnvironment implements Serializable {
     def reset() {
         appContainerProperties = [:]
         artifactVersion = null
-
-        configuration = [:]
 
         gitCommitId = null
         gitCommitMessage = null

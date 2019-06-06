@@ -48,7 +48,7 @@ class ConfigurationLoader implements Serializable {
         switch (configType) {
             case ConfigurationType.CUSTOM_CONFIGURATION:
                 try {
-                    return script?.commonPipelineEnvironment?.configuration?.get(type)?.get(entryName) ?: [:]
+                    return DefaultValueCache.getInstance()?.getProjectConfig()?.get(type)?.get(entryName) ?: [:]
                 } catch (groovy.lang.MissingPropertyException mpe) {
                     return [:]
                 }

@@ -1,3 +1,4 @@
+import com.sap.piper.DefaultValueCache
 import com.sap.piper.StepAssertions
 import com.sap.piper.Utils
 
@@ -20,6 +21,8 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.ExpectedException
 import org.junit.rules.RuleChain
+import org.yaml.snakeyaml.Yaml
+
 import util.BasePiperTest
 import util.CommandLineMatcher
 import util.JenkinsCredentialsRule
@@ -63,6 +66,9 @@ class NeoDeployTest extends BasePiperTest {
     private static archiveName = 'archive.mtar'
     private static warProperties
 
+    static loadDefaultPipelineEnvironment() {
+        new Yaml().load(new File('resources/default_pipeline_environment.yml').text)
+    }
 
     @Before
     void init() {
@@ -75,7 +81,17 @@ class NeoDeployTest extends BasePiperTest {
         helper.registerAllowedMethod('dockerExecute', [Map, Closure], null)
         helper.registerAllowedMethod('pwd', [], { return './' })
 
-        nullScript.commonPipelineEnvironment.configuration = [steps: [neoDeploy: [neo: [host: 'test.deploy.host.com', account: 'trialuser123']]]]
+        DefaultValueCache.createInstance(loadDefaultPipelineEnvironment(),
+            [steps:
+                [neoDeploy:
+                    [neo:
+                        [
+                            host: 'test.deploy.host.com',
+                            account: 'trialuser123'
+                        ]
+                    ]
+                ]
+            ])
     }
 
     @After
@@ -105,7 +121,8 @@ class NeoDeployTest extends BasePiperTest {
     @Test
     void straightForwardTestConfigViaConfiguration() {
 
-        nullScript.commonPipelineEnvironment.configuration = [steps: [
+        DefaultValueCache.createInstance(loadDefaultPipelineEnvironment(),
+        [steps: [
             neoDeploy: [
                 neo: [
                     host: 'configuration-frwk.deploy.host.com',
@@ -113,7 +130,7 @@ class NeoDeployTest extends BasePiperTest {
                 ],
                 source: archiveName
             ]
-        ]]
+        ]])
 
         stepRule.step.neoDeploy(script: nullScript,
             neo:[credentialsId: 'myCredentialsId']
@@ -260,7 +277,6 @@ class NeoDeployTest extends BasePiperTest {
                 step.error("File ${filePath} cannot be found.")
         }
     }
-
     @Test
     void extensionsForWrongDeployModeTest() {
 
@@ -358,7 +374,7 @@ class NeoDeployTest extends BasePiperTest {
                 containsString('neo/account'),
                 containsString('source')))
 
-        nullScript.commonPipelineEnvironment.configuration = [:]
+        DefaultValueCache.reset()
 
         // deployMode mta is the default, but for the sake of transparency it is better to repeat it.
         stepRule.step.neoDeploy(script: nullScript, deployMode: 'mta')
@@ -375,7 +391,7 @@ class NeoDeployTest extends BasePiperTest {
                 not(containsString('neo/host')),
                 not(containsString('neo/account'))))
 
-        nullScript.commonPipelineEnvironment.configuration = [:]
+        DefaultValueCache.reset()
 
         stepRule.step.neoDeploy(script: nullScript, deployMode: 'warPropertiesFile')
     }
@@ -394,7 +410,7 @@ class NeoDeployTest extends BasePiperTest {
                 containsString('neo/host'),
                 containsString('neo/account')))
 
-        nullScript.commonPipelineEnvironment.configuration = [:]
+        DefaultValueCache.reset()
 
         stepRule.step.neoDeploy(script: nullScript, deployMode: 'warParams')
     }
