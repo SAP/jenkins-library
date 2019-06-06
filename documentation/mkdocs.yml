@@ -16,6 +16,7 @@ nav:
         - durationMeasure: steps/durationMeasure.md
         - gaugeExecuteTests: steps/gaugeExecuteTests.md
         - githubPublishRelease: steps/githubPublishRelease.md
+        - hadolintExecute: steps/hadolintExecute.md
         - handlePipelineStepErrors: steps/handlePipelineStepErrors.md
         - healthExecuteCheck: steps/healthExecuteCheck.md
         - influxWriteData: steps/influxWriteData.md

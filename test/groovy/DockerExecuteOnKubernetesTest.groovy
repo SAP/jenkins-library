@@ -57,6 +57,7 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
     def pullImageMap = [:]
     def namespace
     def securityContext
+    Map stashMap
 
     @Before
     void init() {
@@ -92,6 +93,10 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
             }
             body()
         })
+        helper.registerAllowedMethod('stash', [Map.class], {m ->
+            stashMap = m
+        })
+
     }
 
     @Test
@@ -366,6 +371,18 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
                 ) { bodyExecuted = true }
         assertTrue(bodyExecuted)
         assertThat(securityContext, is(equalTo(expectedSecurityContext)))
+    }
+
+    @Test
+    void testDockerExecuteOnKubernetesWorkspaceStashing() {
+
+        stepRule.step.dockerExecuteOnKubernetes(
+            script: nullScript,
+            juStabUtils: utils,
+            dockerImage: 'maven:3.5-jdk-8-alpine',
+        ) { bodyExecuted = true }
+        assertTrue(bodyExecuted)
+        assertThat(stashMap.useDefaultExcludes, is(false))
     }
 
 
