@@ -175,6 +175,7 @@ import static com.sap.piper.Prerequisites.checkScript
         productName                             : 'productName',
         productToken                            : 'productToken',
         projectNames                            : 'projectNames',
+        productVersion                          : 'productVersion',
         serviceUrl                              : 'serviceUrl',
         configFilePath                          : 'configFilePath',
         userTokenCredentialsId                  : 'userTokenCredentialsId',
