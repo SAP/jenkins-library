@@ -555,3 +555,14 @@ steps:
     nodeLabel: ''
     stashContent:
       - 'pipelineConfigAndTests'
+  xsDeploy:
+    credentialsId: 'XS'
+    deployIdLogPattern: '^.*"xs bg-deploy -i (.*) -a .*".*$'
+    loginOpts: ''
+    deployOpts: ''
+    docker:
+      dockerImage: ''
+      dockerPullImage: false
+    mode: 'DEPLOY'
+    action: 'NONE'
+    xsSessionFile: '.xsconfig'
