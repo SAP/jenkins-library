@@ -33,14 +33,12 @@ When the files are downloaded into the current directory, launch the Jenkins ser
 
 For more information on the Jenkins lifecycle management and how to customize your Jenkins, have a look at the [Operations Guide for Cx Server][devops-docker-images-cxs-guide].
 
-Please also consult the [S/4HANA Cloud SDK Blog Series][sap-blog-s4-sdk-first-steps] and in particular the post on setting up [Continuous Delivery for S/4HANA extensions][sap-blog-ci-cd].
-
 ## (Optional) Sample Application
 
-Copy the sources of the application into your own Git repository. While we will ask you to fork the application's repository into a public GitHub space, you can use any version control system based on Git. **Note:** A public GitHub repository is visible to the public. The configuration files may contain data you don't want to expose.
+Copy the sources of the application into your own Git repository. While we will ask you to fork the application's repository into a **GitHub** space, you can use any version control system based on Git like **GitLab** or **plain git**. **Note:** A `public` GitHub repository is visible to the public. The configuration files may contain data you don't want to expose, so use a `private` repository.
 
 1. Create an organization on GitHub, if you haven't any yet. See [Creating a new organization][github-create-org].
-1. Fork the repository [cloud-cf-helloworld-nodejs][cloud-cf-helloworld-nodejs] into your GitHub organization. See [Fork a repo][github-fork-repo]
+1. [Duplicate][github-duplicate-repo] the repository [cloud-cf-helloworld-nodejs][cloud-cf-helloworld-nodejs] into your GitHub organization. [Make this repository private][github-set-repo-visible]. **Note:** Forked public repositories cannot be made private.
 1. Get an account and space in the Cloud Foundry environment. For the deployment of the application you need access to a space on the Cloud Foundry environment of the SAP Cloud Platform. If you haven't any yet, get a [Trial Account][sap-cp-trial].
 1. Select the `1_REST_persist_in_Memory` branch of your [cloud-cf-helloworld-nodejs] fork. Other branches might work as well, but this one is tested.
 
@@ -175,6 +173,9 @@ You are now familiar with the basics of using project "Piper". Through the conce
 
 The **Configuration** pattern supports simple pipelines that can be reused by multiple applications. To understand the principles of inheritance and customization, have a look at the the [configuration][resources-configuration] documentation.
 
+Please also consult the blog post on setting up [Continuous Delivery for S/4HANA extensions][sap-blog-ci-cd] and get tons of informations around the application development with the [S/4HANA Cloud SDK][sap-blog-s4-sdk-first-steps].
+
+
 [guidedtour-my-own-jenkins]:         myownjenkins.md
 [guidedtour-sample.config]:          samples/cloud-cf-helloworld-nodejs/pipeline/config.yml
 [guidedtour-sample.jenkins]:         samples/cloud-cf-helloworld-nodejs/Jenkinsfile
@@ -195,6 +196,6 @@ The **Configuration** pattern supports simple pipelines that can be reused by mu
 [jenkins-io-documentation]:          https://jenkins.io/doc/
 [jenkins-io-jenkinsfile]:            https://jenkins.io/doc/book/pipeline/jenkinsfile
 
-[github-fork-repo]:                  https://help.github.com/en/articles/fork-a-repo
 [github-create-org]:                 https://help.github.com/en/articles/creating-a-new-organization-from-scratch
-
+[github-duplicate-repo]:             [https://help.github.com/en/articles/duplicating-a-repository]
+[github-set-repo-visible]:           [https://help.github.com/en/articles/setting-repository-visibility]
