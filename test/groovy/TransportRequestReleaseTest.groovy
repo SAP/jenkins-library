@@ -8,6 +8,7 @@ import org.junit.Test
 import org.junit.rules.ExpectedException
 import org.junit.rules.RuleChain
 
+import com.sap.piper.DefaultValueCache
 import com.sap.piper.cm.BackendType
 import com.sap.piper.cm.ChangeManagement
 import com.sap.piper.cm.ChangeManagementException
@@ -43,7 +44,8 @@ public class TransportRequestReleaseTest extends BasePiperTest {
     @Before
     public void setup() {
 
-        nullScript.commonPipelineEnvironment.configuration = [general:
+        DefaultValueCache.createInstance(loadDefaultPipelineEnvironment(),
+                                 [general:
                                      [changeManagement:
                                          [
                                           credentialsId: 'CM',
@@ -51,7 +53,7 @@ public class TransportRequestReleaseTest extends BasePiperTest {
                                           endpoint: 'https://example.org/cm'
                                          ]
                                      ]
-                                 ]
+                                 ])
     }
 
     @Test
@@ -119,9 +121,7 @@ public class TransportRequestReleaseTest extends BasePiperTest {
         thrown.expect(AbortException)
         thrown.expectMessage("Something went wrong")
 
-        nullScript
-            .commonPipelineEnvironment
-                .configuration
+        DefaultValueCache.getInstance().getProjectConfig()
                     .general
                         .changeManagement
                             .type = 'CTS'
@@ -150,9 +150,7 @@ public class TransportRequestReleaseTest extends BasePiperTest {
 
         def receivedParameters
 
-        nullScript
-            .commonPipelineEnvironment
-                .configuration
+        DefaultValueCache.getInstance().getProjectConfig()
                     .general
                         .changeManagement =
                             [
@@ -220,9 +218,7 @@ public class TransportRequestReleaseTest extends BasePiperTest {
 
         def receivedParameters
 
-        nullScript
-            .commonPipelineEnvironment
-                .configuration
+        DefaultValueCache.getInstance().getProjectConfig()
                     .general
                         .changeManagement =
                             [
@@ -274,9 +270,7 @@ public class TransportRequestReleaseTest extends BasePiperTest {
         thrown.expect(AbortException)
         thrown.expectMessage('Failed releasing transport request.')
 
-        nullScript
-            .commonPipelineEnvironment
-                .configuration
+        DefaultValueCache.getInstance().getProjectConfig()
                     .general
                         .changeManagement =
                             [
@@ -325,9 +319,7 @@ public class TransportRequestReleaseTest extends BasePiperTest {
         // by the sanity checks here since they are looked up from
         // commit history in case they are not provided.
 
-        nullScript
-            .commonPipelineEnvironment
-                .configuration = null
+        DefaultValueCache.createInstance(loadDefaultPipelineEnvironment(), null)
 
         stepRule.step.transportRequestRelease(
             script: nullScript,
@@ -343,9 +335,7 @@ public class TransportRequestReleaseTest extends BasePiperTest {
             containsString('ERROR - NO VALUE AVAILABLE FOR'),
             containsString('changeManagement/endpoint')))
 
-        nullScript
-            .commonPipelineEnvironment
-                .configuration = null
+        DefaultValueCache.createInstance(loadDefaultPipelineEnvironment(),  null)
 
         stepRule.step.transportRequestRelease(
             script: nullScript,
@@ -362,9 +352,7 @@ public class TransportRequestReleaseTest extends BasePiperTest {
             containsString('changeManagement/endpoint'),
             containsString('developmentClient')))
 
-        nullScript
-            .commonPipelineEnvironment
-                .configuration = null
+        DefaultValueCache.createInstance(loadDefaultPipelineEnvironment(),  null)
 
         stepRule.step.transportRequestRelease(
             script: nullScript,

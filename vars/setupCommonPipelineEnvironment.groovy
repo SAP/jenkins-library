@@ -36,8 +36,6 @@ void call(Map parameters = [:]) {
 
         prepareDefaultValues script: script, customDefaults: parameters.customDefaults, projectConfig: parameters.projectConfig
 
-        script.commonPipelineEnvironment.configuration = DefaultValueCache.getInstance().getProjectConfig()
-
         Map config = ConfigurationHelper.newInstance(this)
             .loadStepDefaults()
             .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS)

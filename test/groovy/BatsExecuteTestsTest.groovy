@@ -3,12 +3,17 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.ExpectedException
 import org.junit.rules.RuleChain
+
+import com.sap.piper.DefaultValueCache
+
 import util.*
 
 import static org.hamcrest.Matchers.hasItem
 import static org.hamcrest.Matchers.is
 import static org.hamcrest.Matchers.startsWith
 import static org.junit.Assert.assertThat
+
+import org.apache.xalan.xsltc.dom.LoadDocument
 
 class BatsExecuteTestsTest extends BasePiperTest {
 
@@ -43,7 +48,8 @@ class BatsExecuteTestsTest extends BasePiperTest {
 
     @Test
     void testDefault() {
-        nullScript.commonPipelineEnvironment.configuration = [general: [container: 'test-container']]
+        DefaultValueCache.createInstance(loadDefaultPipelineEnvironment(),
+            [general: [container: 'test-container']])
         stepRule.step.batsExecuteTests(
             script: nullScript,
             juStabUtils: utils,

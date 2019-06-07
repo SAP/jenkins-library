@@ -11,6 +11,7 @@ import org.junit.Test
 import org.junit.rules.ExpectedException
 import org.junit.rules.RuleChain
 
+import com.sap.piper.DefaultValueCache
 import com.sap.piper.cm.BackendType
 import com.sap.piper.cm.ChangeManagement
 import com.sap.piper.cm.ChangeManagementException
@@ -44,10 +45,8 @@ public class TransportRequestCreateTest extends BasePiperTest {
     @Before
     public void setup() {
 
-
-        nullScript.commonPipelineEnvironment.configuration = [general:
+        DefaultValueCache.createInstance(loadDefaultPipelineEnvironment(), [general:
                                      [changeManagement:
-
                                          [
                                           credentialsId: 'CM',
                                           type: 'SOLMAN',
@@ -59,7 +58,7 @@ public class TransportRequestCreateTest extends BasePiperTest {
                                                 format: '%b']
                                          ]
                                      ]
-                                 ]
+                                 ])
     }
 
     @Test

@@ -45,6 +45,8 @@ public class PrepareDefaultValuesTest extends BasePiperTest {
     @Test
     public void testDefaultPipelineEnvironmentOnly() {
 
+        DefaultValueCache.createInstance([default:'config'], [:])
+
         stepRule.step.prepareDefaultValues(script: nullScript)
 
         assert DefaultValueCache.getInstance().getDefaultValues().size() == 1

@@ -1,9 +1,15 @@
 package com.sap.piper
 
 import org.junit.Assert
+import org.junit.Before
 import org.junit.Test
 
 class ConfigurationLoaderTest {
+
+    @Before
+    public void init() {
+        getScript()
+    }
 
     private static getScript() {
         Map configuration = [:]
@@ -18,7 +24,7 @@ class ConfigurationLoaderTest {
         defaultConfiguration.stages = [staticCodeChecks: [pmdExcludes: '*.java']]
 
         def pipelineEnvironment = [configuration: configuration]
-        DefaultValueCache.createInstance(defaultConfiguration, [:])
+        DefaultValueCache.createInstance(defaultConfiguration, configuration)
         return [commonPipelineEnvironment: pipelineEnvironment]
     }
 

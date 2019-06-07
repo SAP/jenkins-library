@@ -1,5 +1,6 @@
 import static com.sap.piper.Prerequisites.checkScript
 
+import com.sap.piper.DefaultValueCache
 import com.sap.piper.GenerateDocumentation
 import com.sap.piper.ConfigurationHelper
 import com.sap.piper.GitUtils
@@ -82,7 +83,7 @@ void call(Map parameters = [:]) {
         //resolve commonPipelineEnvironment references in envVars
         config.envVarList = []
         config.envVars.each {e ->
-            def envValue = SimpleTemplateEngine.newInstance().createTemplate(e.getValue()).make(commonPipelineEnvironment: script.commonPipelineEnvironment).toString()
+            def envValue = SimpleTemplateEngine.newInstance().createTemplate(e.getValue()).make(commonPipelineEnvironment: [configuration: DefaultValueCache.getInstance().getProjectConfig()]).toString()
             config.envVarList.add("${e.getKey()}=${envValue}")
         }
 

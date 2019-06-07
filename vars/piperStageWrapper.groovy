@@ -1,3 +1,4 @@
+import com.sap.piper.DefaultValueCache
 import com.sap.piper.Utils
 import com.sap.piper.ConfigurationHelper
 import com.sap.piper.ConfigurationLoader
@@ -60,7 +61,7 @@ private void executeStage(script, originalStage, stageName, config, utils) {
 
     try {
         //Add general stage stashes to config.stashContent
-        config.stashContent += script.commonPipelineEnvironment.configuration.stageStashes?.get(stageName)?.unstash ?: []
+        config.stashContent += DefaultValueCache.getInstance().getProjectConfig().stageStashes?.get(stageName)?.unstash ?: []
 
         utils.unstashAll(config.stashContent)
 
@@ -97,7 +98,7 @@ private void executeStage(script, originalStage, stageName, config, utils) {
 
     } finally {
         //Perform stashing of selected files in workspace
-        utils.stashList(script, script.commonPipelineEnvironment.configuration.stageStashes?.get(stageName)?.stashes ?: [])
+        utils.stashList(script, DefaultValueCache.getInstance().getProjectConfig().stageStashes?.get(stageName)?.stashes ?: [])
         deleteDir()
 
         def duration = System.currentTimeMillis() - startTime

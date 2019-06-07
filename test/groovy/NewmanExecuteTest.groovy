@@ -3,6 +3,8 @@ import org.junit.Test
 import org.junit.Rule
 import org.junit.rules.RuleChain
 
+import com.sap.piper.DefaultValueCache
+
 import static org.hamcrest.Matchers.hasItem
 import static org.hamcrest.Matchers.is
 import static org.hamcrest.Matchers.containsString
@@ -43,6 +45,9 @@ class NewmanExecuteTest extends BasePiperTest {
 
     @Before
     void init() throws Exception {
+
+        DefaultValueCache.createInstance(loadDefaultPipelineEnvironment(), [:])
+
         helper.registerAllowedMethod('stash', [String.class], null)
         helper.registerAllowedMethod('git', [Map.class], {m ->
             gitMap = m

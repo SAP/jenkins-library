@@ -2,6 +2,9 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.RuleChain
+
+import com.sap.piper.DefaultValueCache
+
 import util.BasePiperTest
 import util.JenkinsCredentialsRule
 import util.JenkinsDockerExecuteRule
@@ -40,6 +43,7 @@ class DetectExecuteScanTest extends BasePiperTest {
     @Before
     void init() {
 
+        DefaultValueCache.createInstance(loadDefaultPipelineEnvironment(), [:])
         detectProperties = ''
         helper.registerAllowedMethod('synopsys_detect', [String.class], {s ->
             detectProperties = s

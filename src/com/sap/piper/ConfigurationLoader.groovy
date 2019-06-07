@@ -6,22 +6,22 @@ import com.cloudbees.groovy.cps.NonCPS
 class ConfigurationLoader implements Serializable {
     @NonCPS
     static Map stepConfiguration(script, String stepName) {
-        return loadConfiguration(script, 'steps', stepName, ConfigurationType.CUSTOM_CONFIGURATION)
+        return loadConfiguration('steps', stepName, ConfigurationType.CUSTOM_CONFIGURATION)
     }
 
     @NonCPS
     static Map stageConfiguration(script, String stageName) {
-        return loadConfiguration(script, 'stages', stageName, ConfigurationType.CUSTOM_CONFIGURATION)
+        return loadConfiguration('stages', stageName, ConfigurationType.CUSTOM_CONFIGURATION)
     }
 
     @NonCPS
     static Map defaultStepConfiguration(script, String stepName) {
-        return loadConfiguration(script, 'steps', stepName, ConfigurationType.DEFAULT_CONFIGURATION)
+        return loadConfiguration('steps', stepName, ConfigurationType.DEFAULT_CONFIGURATION)
     }
 
     @NonCPS
     static Map defaultStageConfiguration(script, String stageName) {
-        return loadConfiguration(script, 'stages', stageName, ConfigurationType.DEFAULT_CONFIGURATION)
+        return loadConfiguration('stages', stageName, ConfigurationType.DEFAULT_CONFIGURATION)
     }
 
     @NonCPS
@@ -40,11 +40,11 @@ class ConfigurationLoader implements Serializable {
 
     @NonCPS
     static Map postActionConfiguration(script, String actionName){
-        return loadConfiguration(script, 'postActions', actionName, ConfigurationType.CUSTOM_CONFIGURATION)
+        return loadConfiguration('postActions', actionName, ConfigurationType.CUSTOM_CONFIGURATION)
     }
 
     @NonCPS
-    private static Map loadConfiguration(script, String type, String entryName, ConfigurationType configType){
+    private static Map loadConfiguration(String type, String entryName, ConfigurationType configType){
         switch (configType) {
             case ConfigurationType.CUSTOM_CONFIGURATION:
                 try {

@@ -387,6 +387,7 @@ class NeoDeployTest extends BasePiperTest {
                 not(containsString('neo/account'))))
 
         DefaultValueCache.reset()
+        DefaultValueCache.createInstance(loadDefaultPipelineEnvironment(), [:])
 
         stepRule.step.neoDeploy(script: nullScript, deployMode: 'warPropertiesFile')
     }

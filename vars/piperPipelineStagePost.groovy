@@ -1,4 +1,5 @@
 import com.sap.piper.ConfigurationHelper
+import com.sap.piper.DefaultValueCache
 import com.sap.piper.GenerateDocumentation
 import com.sap.piper.Utils
 import groovy.transform.Field
@@ -42,7 +43,7 @@ void call(Map parameters = [:]) {
         influxWriteData script: script
 
         if(env.BRANCH_NAME == parameters.script.commonPipelineEnvironment.getStepConfiguration('', '').productiveBranch) {
-            if(parameters.script.commonPipelineEnvironment.configuration.runStep?.get('Post Actions')?.slackSendNotification) {
+            if(DefaultValueCache.getInstance().getProjectConfig().runStep?.get('Post Actions')?.slackSendNotification) {
                 slackSendNotification script: parameters.script
             }
         }

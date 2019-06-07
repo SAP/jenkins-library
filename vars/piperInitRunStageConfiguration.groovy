@@ -3,6 +3,7 @@ import com.sap.piper.ConfigurationLoader
 import static com.sap.piper.Prerequisites.checkScript
 
 import com.sap.piper.ConfigurationHelper
+import com.sap.piper.DefaultValueCache
 import com.sap.piper.MapUtils
 import groovy.transform.Field
 
@@ -31,8 +32,8 @@ void call(Map parameters = [:]) {
     def script = checkScript(this, parameters) ?: this
     def stageName = parameters.stageName?:env.STAGE_NAME
 
-    script.commonPipelineEnvironment.configuration.runStage = [:]
-    script.commonPipelineEnvironment.configuration.runStep = [:]
+    DefaultValueCache.getInstance().getProjectConfig().runStage = [:]
+    DefaultValueCache.getInstance().getProjectConfig().runStep = [:]
 
     // load default & individual configuration
     Map config = ConfigurationHelper.newInstance(this)
@@ -52,11 +53,11 @@ void call(Map parameters = [:]) {
 
         //activate stage if stage configuration is available
         if (ConfigurationLoader.stageConfiguration(script, stage.getKey())) {
-            script.commonPipelineEnvironment.configuration.runStage[stage.getKey()] = true
+            DefaultValueCache.getInstance().getProjectConfig().runStage[stage.getKey()] = true
         }
         //-------------------------------------------------------------------------------
         //detailed handling of step and stage activation based on conditions
-        script.commonPipelineEnvironment.configuration.runStep[stage.getKey()] = [:]
+        DefaultValueCache.getInstance().getProjectConfig().runStep[stage.getKey()] = [:]
         def currentStage = stage.getKey()
         stage.getValue().stepConditions.each {step ->
             def stepActive = false
@@ -98,16 +99,16 @@ void call(Map parameters = [:]) {
                         break
                 }
             }
-            script.commonPipelineEnvironment.configuration.runStep."${stage.getKey()}"."${step.getKey()}" = stepActive
+            DefaultValueCache.getInstance().getProjectConfig().runStep."${stage.getKey()}"."${step.getKey()}" = stepActive
 
             //make sure that also related stage is activated if steps are active
-            if (stepActive) script.commonPipelineEnvironment.configuration.runStage[stage.getKey()] = true
+            if (stepActive) DefaultValueCache.getInstance().getProjectConfig().runStage[stage.getKey()] = true
 
         }
     }
 
     if (config.verbose) {
-        echo "[${STEP_NAME}] Debug - Run Stage Configuration: ${script.commonPipelineEnvironment.configuration.runStage}"
-        echo "[${STEP_NAME}] Debug - Run Step Configuration: ${script.commonPipelineEnvironment.configuration.runStep}"
+        echo "[${STEP_NAME}] Debug - Run Stage Configuration: ${DefaultValueCache.getInstance().getProjectConfig().runStage}"
+        echo "[${STEP_NAME}] Debug - Run Step Configuration: ${DefaultValueCache.getInstance().getProjectConfig().runStep}"
     }
 }

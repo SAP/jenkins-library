@@ -1,10 +1,15 @@
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.RuleChain
+
+import com.sap.piper.DefaultValueCache
+
 import util.*
 
 import static org.hamcrest.Matchers.containsString
 import static org.junit.Assert.*
+
+import org.junit.Before
 
 class PipelineStashFilesBeforeBuildTest extends BasePiperTest {
     JenkinsStepRule stepRule = new JenkinsStepRule(this)
@@ -21,6 +26,11 @@ class PipelineStashFilesBeforeBuildTest extends BasePiperTest {
         .around(loggingRule)
         .around(shellRule)
         .around(stepRule)
+
+    @Before
+    void init() {
+        DefaultValueCache.createInstance(loadDefaultPipelineEnvironment(), [:])
+    }
 
     @Test
     void testStashBeforeBuild() {

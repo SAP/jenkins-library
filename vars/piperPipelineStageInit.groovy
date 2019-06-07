@@ -1,4 +1,5 @@
 import com.sap.piper.ConfigurationHelper
+import com.sap.piper.DefaultValueCache
 import com.sap.piper.Utils
 import groovy.transform.Field
 
@@ -55,7 +56,7 @@ void call(Map parameters = [:]) {
         piperInitRunStageConfiguration script: script, stageConfigResource: config.stageConfigResource
 
         if (env.BRANCH_NAME == config.productiveBranch) {
-            if (parameters.script.commonPipelineEnvironment.configuration.runStep?.get('Init')?.slackSendNotification) {
+            if (DefaultValueCache.getInstance().getProjectConfig().runStep?.get('Init')?.slackSendNotification) {
                 slackSendNotification script: script, message: "STARTED: Job <${env.BUILD_URL}|${URLDecoder.decode(env.JOB_NAME, java.nio.charset.StandardCharsets.UTF_8.name())} ${env.BUILD_DISPLAY_NAME}>", color: 'WARNING'
             }
             artifactSetVersion script: script
@@ -85,7 +86,7 @@ private void checkBuildTool(config) {
 private void initStashConfiguration (script, config) {
     Map stashConfiguration = readYaml(text: libraryResource(config.stashSettings))
     echo "Stash config: stashConfiguration"
-    script.commonPipelineEnvironment.configuration.stageStashes = stashConfiguration
+    DefaultValueCache.getInstance().getProjectConfig().stageStashes = stashConfiguration
 }
 
 private void setScmInfoOnCommonPipelineEnvironment(script, scmInfo) {

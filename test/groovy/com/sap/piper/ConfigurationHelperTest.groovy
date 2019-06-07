@@ -105,14 +105,26 @@ class ConfigurationHelperTest {
         Assert.assertThat(config, not(hasKey('property3')))
     }
 
+    static loadDefaultPipelineEnvironment() {
+        new Yaml().load(new File('resources/default_pipeline_environment.yml').text)
+    }
+
     @Test
     void testConfigurationHelperLoadingStepDefaults() {
+
+       DefaultValueCache.createInstance([:],
+            [
+                general: ['general': 'test', 'oldGeneral': 'test2'],
+                stages:  [testStage:['stage': 'test', 'oldStage': 'test2']],
+                steps:   [mock: [step: 'test', 'oldStep': 'test2']]
+            ])
+
         Set filter = ['property2']
         Map config = ConfigurationHelper.newInstance(mockScript, [property1: '27'])
             .loadStepDefaults()
-            .mixinGeneralConfig([configuration:[general: ['general': 'test', 'oldGeneral': 'test2']]], null, [general2: 'oldGeneral'])
-            .mixinStageConfig([configuration:[stages:[testStage:['stage': 'test', 'oldStage': 'test2']]]], 'testStage', null, [stage2: 'oldStage'])
-            .mixinStepConfig([configuration:[steps:[mock: [step: 'test', 'oldStep': 'test2']]]], null, [step2: 'oldStep'])
+            .mixinGeneralConfig([configuration:[:]], null, [general2: 'oldGeneral'])
+            .mixinStageConfig([configuration:[:]], 'testStage', null, [stage2: 'oldStage'])
+            .mixinStepConfig([configuration:[:]], null, [step2: 'oldStep'])
             .mixin([property1: '41', property2: '28', property3: '29'], filter)
             .use()
         // asserts

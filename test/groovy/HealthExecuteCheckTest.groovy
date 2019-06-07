@@ -3,6 +3,9 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.ExpectedException
 import org.junit.rules.RuleChain
+
+import com.sap.piper.DefaultValueCache
+
 import util.BasePiperTest
 import util.JenkinsFileExistsRule
 import util.JenkinsLoggingRule
@@ -30,6 +33,7 @@ class HealthExecuteCheckTest extends BasePiperTest {
 
     @Before
     void init() throws Exception {
+        DefaultValueCache.createInstance(loadDefaultPipelineEnvironment(), [:])
         // register Jenkins commands with mock values
         def command1 = "curl -so /dev/null -w '%{response_code}' http://testserver"
         def command2 = "curl -so /dev/null -w '%{response_code}' http://testserver/endpoint"

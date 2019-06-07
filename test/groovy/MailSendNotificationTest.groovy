@@ -2,6 +2,9 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.RuleChain
+
+import com.sap.piper.DefaultValueCache
+
 import util.*
 
 import static org.hamcrest.Matchers.*
@@ -27,10 +30,17 @@ class MailSendNotificationTest extends BasePiperTest {
         helper.registerAllowedMethod("deleteDir", [], null)
         helper.registerAllowedMethod("sshagent", [Map.class, Closure.class], null)
 
-        nullScript.commonPipelineEnvironment.configuration = nullScript.commonPipelineEnvironment.configuration ?: [:]
-        nullScript.commonPipelineEnvironment.configuration['general'] = nullScript.commonPipelineEnvironment.configuration['general'] ?: [:]
-        nullScript.commonPipelineEnvironment.configuration['steps'] = nullScript.commonPipelineEnvironment.configuration['steps'] ?: [:]
-        nullScript.commonPipelineEnvironment.configuration['steps']['mailSendNotification'] = nullScript.commonPipelineEnvironment.configuration['steps']['mailSendNotification'] ?: [:]
+        DefaultValueCache.createInstance(loadDefaultPipelineEnvironment(),
+            [
+                //general: [
+                //    gitSshKeyCredentialsId: 'myCredentialsId'
+                //],
+                steps: [
+                    mailSendNotification:
+                    [
+                        notificationRecipients: 'piper@domain.com']
+                    ],
+                ])
 
         helper.registerAllowedMethod('requestor', [], { -> return [$class: 'RequesterRecipientProvider']})
     }
@@ -157,7 +167,6 @@ user3@domain.com noreply+github@domain.com'''
             }
         ]
         nullScript.currentBuild = buildMock
-        nullScript.commonPipelineEnvironment.configuration['steps']['mailSendNotification']['notificationRecipients'] = 'piper@domain.com'
         helper.registerAllowedMethod('emailext', [Map.class], { map ->
             emailParameters = map
             return ''
@@ -187,7 +196,9 @@ user3@domain.com noreply+github@domain.com'''
             getChangeSets: { return null },
             getPreviousBuild: { return null }
         ]
-        nullScript.commonPipelineEnvironment.configuration['general']['gitSshKeyCredentialsId'] = 'myCredentialsId'
+        def projectConfig = DefaultValueCache.getInstance().getProjectConfig()
+        projectConfig.general = [gitSshKeyCredentialsId: 'myCredentialsId']
+        DefaultValueCache.createInstance(loadDefaultPipelineEnvironment(), projectConfig)
         helper.registerAllowedMethod('emailext', [Map.class], null)
         helper.registerAllowedMethod("sshagent", [Map.class, Closure.class], { map, closure ->
             credentials = map.credentials

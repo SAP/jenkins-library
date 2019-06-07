@@ -11,6 +11,7 @@ import org.junit.Test
 import org.junit.rules.ExpectedException
 import org.junit.rules.RuleChain
 
+import com.sap.piper.DefaultValueCache
 import com.sap.piper.JenkinsUtils
 import com.sap.piper.cm.BackendType
 import com.sap.piper.cm.ChangeManagement
@@ -50,7 +51,8 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
 
         cmUtilReceivedParams.clear()
 
-        nullScript.commonPipelineEnvironment.configuration = [general:
+        DefaultValueCache.createInstance(loadDefaultPipelineEnvironment(),
+                                 [general:
                                      [changeManagement:
                                          [
                                           credentialsId: 'CM',
@@ -58,7 +60,7 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
                                           endpoint: 'https://example.org/cm'
                                          ]
                                      ]
-                                 ]
+                                 ])
     }
 
     @Test
@@ -226,14 +228,14 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
 
         def cmUtilsReceivedParams
 
-        nullScript.commonPipelineEnvironment.configuration =
+        DefaultValueCache.createInstance(loadDefaultPipelineEnvironment(),
         [general:
             [changeManagement:
                 [
                  endpoint: 'https://example.org/rfc'
                 ]
             ]
-        ]
+        ])
 
         def cm = new ChangeManagement(nullScript) {
 
@@ -422,7 +424,7 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
     @Test
     public void uploadFileToTransportRequestSOLMANSuccessApplicationIdFromConfigurationTest() {
 
-        nullScript.commonPipelineEnvironment.configuration.put(['steps',
+        DefaultValueCache.getInstance().getProjectConfig().put(['steps',
                                                                    [transportRequestUploadFile:
                                                                        [applicationId: 'AppIdfromConfig']]])
 

@@ -45,17 +45,21 @@ class InfluxWriteDataTest extends BasePiperTest {
         // for all the tests. Depending on the test order we fail.
         // As long as this status remains we need:
         DefaultValueCache.reset()
+        DefaultValueCache.createInstance(loadDefaultPipelineEnvironment(),
+            [
+                general:
+                    [productiveBranch: 'develop'],
+                steps:
+                    [influxWriteData: [
+                        influxServer: 'testInflux'
+                        ]
+                    ]
+            ])
         //reset stepMap
         stepMap = [:]
         //reset fileMap
         fileMap = [:]
 
-        helper.registerAllowedMethod('readYaml', [Map.class], { map ->
-            return [
-                general: [productiveBranch: 'develop'],
-                steps : [influxWriteData: [influxServer: 'testInflux']]
-            ]
-        })
         helper.registerAllowedMethod('writeFile', [Map.class],{m -> fileMap[m.file] = m.text})
         helper.registerAllowedMethod('step', [Map.class],{m -> stepMap = m})
     }

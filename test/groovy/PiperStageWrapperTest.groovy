@@ -2,6 +2,9 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.RuleChain
+
+import com.sap.piper.DefaultValueCache
+
 import util.BasePiperTest
 import util.JenkinsLoggingRule
 import util.JenkinsReadYamlRule
@@ -30,6 +33,8 @@ class PiperStageWrapperTest extends BasePiperTest {
 
     @Before
     void init() throws Exception {
+
+        DefaultValueCache.createInstance(loadDefaultPipelineEnvironment(), [:])
 
         helper.registerAllowedMethod('deleteDir', [], {return null})
         helper.registerAllowedMethod('lock', [Map.class, Closure.class], {m, body ->

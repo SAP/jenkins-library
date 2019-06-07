@@ -8,7 +8,12 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.ExpectedException
 import org.junit.rules.RuleChain
+
+import com.sap.piper.DefaultValueCache
+
 import static org.junit.Assert.assertThat
+
+import org.junit.Before
 
 import util.BasePiperTest
 import util.JenkinsFileExistsRule
@@ -30,6 +35,11 @@ class HandlePipelineStepErrorsTest extends BasePiperTest {
         .around(loggingRule)
         .around(stepRule)
         .around(thrown)
+
+    @Before
+    void init() {
+        DefaultValueCache.createInstance(loadDefaultPipelineEnvironment(), [:])
+    }
 
     @Test
     void testBeginAndEndMessage() {
@@ -108,9 +118,15 @@ class HandlePipelineStepErrorsTest extends BasePiperTest {
         def errorOccured = false
 
         //define blacklist in defaults
-        helper.registerAllowedMethod("readYaml", [Map], { Map m ->
-            return [steps: [handlePipelineStepErrors: [mandatorySteps: ['step1', 'test']]]]
-        })
+        DefaultValueCache.createInstance(loadDefaultPipelineEnvironment(),
+            [steps:
+                [handlePipelineStepErrors:
+                    [
+                        mandatorySteps: ['step1', 'test']
+                    ]
+                ]
+            ]
+        )
 
         try {
             stepRule.step.handlePipelineStepErrors([

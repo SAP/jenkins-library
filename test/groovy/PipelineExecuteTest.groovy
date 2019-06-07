@@ -8,6 +8,8 @@ import org.junit.Test
 import org.junit.rules.ExpectedException
 import org.junit.rules.RuleChain
 
+import com.sap.piper.DefaultValueCache
+
 import util.JenkinsReadYamlRule
 import util.JenkinsStepRule
 
@@ -31,6 +33,7 @@ class PipelineExecuteTest extends BasePiperTest {
     @Before
     void init() {
 
+        DefaultValueCache.createInstance(loadDefaultPipelineEnvironment(), [:])
         helper.registerAllowedMethod('deleteDir', [], null)
         helper.registerAllowedMethod('checkout', [Map], { m ->
             checkoutParameters.branch = m.branches[0].name

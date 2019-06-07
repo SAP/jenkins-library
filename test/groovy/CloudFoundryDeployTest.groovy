@@ -1,3 +1,4 @@
+import com.sap.piper.DefaultValueCache
 import com.sap.piper.JenkinsUtils
 import org.junit.Before
 import org.junit.Rule
@@ -72,7 +73,8 @@ class CloudFoundryDeployTest extends BasePiperTest {
 
     @Test
     void testNoTool() throws Exception {
-        nullScript.commonPipelineEnvironment.configuration = [
+        DefaultValueCache.createInstance(loadDefaultPipelineEnvironment(),
+        [
             general: [
                 camSystemRole: 'testRole',
                 cfCredentialsId: 'myCreds'
@@ -87,7 +89,7 @@ class CloudFoundryDeployTest extends BasePiperTest {
             steps: [
                 cloudFoundryDeploy: []
             ]
-        ]
+        ])
 
         stepRule.step.cloudFoundryDeploy([
             script: nullScript,
@@ -102,7 +104,9 @@ class CloudFoundryDeployTest extends BasePiperTest {
 
     @Test
     void testNotAvailableTool() throws Exception {
-        nullScript.commonPipelineEnvironment.configuration = [
+
+        DefaultValueCache.createInstance(loadDefaultPipelineEnvironment(),
+        [
             general: [
                 cfCredentialsId: 'myCreds'
             ],
@@ -116,7 +120,7 @@ class CloudFoundryDeployTest extends BasePiperTest {
             steps: [
                 cloudFoundryDeploy: []
             ]
-        ]
+        ])
 
         stepRule.step.cloudFoundryDeploy([
             script: nullScript,

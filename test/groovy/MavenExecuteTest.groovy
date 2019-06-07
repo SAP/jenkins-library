@@ -2,6 +2,8 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.RuleChain
 
+import com.sap.piper.DefaultValueCache
+
 import util.BasePiperTest
 import util.JenkinsDockerExecuteRule
 import util.JenkinsFileExistsRule
@@ -17,6 +19,8 @@ import static org.hamcrest.Matchers.not
 import static org.junit.Assert.assertEquals
 import static org.junit.Assert.assertThat
 import static org.junit.Assert.assertTrue
+
+import org.junit.Before
 
 class MavenExecuteTest extends BasePiperTest {
 
@@ -34,6 +38,11 @@ class MavenExecuteTest extends BasePiperTest {
         .around(dockerExecuteRule)
         .around(shellRule)
         .around(stepRule)
+
+    @Before
+    void init() {
+        DefaultValueCache.createInstance(loadDefaultPipelineEnvironment(), [:])
+    }
 
     @Test
     void testExecuteBasicMavenCommand() throws Exception {

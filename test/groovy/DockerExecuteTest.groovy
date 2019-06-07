@@ -1,4 +1,5 @@
 import com.sap.piper.k8s.ContainerMap
+import com.sap.piper.DefaultValueCache
 import com.sap.piper.JenkinsUtils
 
 import org.junit.Before
@@ -143,7 +144,7 @@ class DockerExecuteTest extends BasePiperTest {
 
     @Test
     void testSkipDockerImagePull() throws Exception {
-        nullScript.commonPipelineEnvironment.configuration = [steps:[dockerExecute:[dockerPullImage: false]]]
+        DefaultValueCache.createInstance(loadDefaultPipelineEnvironment(),[steps:[dockerExecute:[dockerPullImage: false]]])
         stepRule.step.dockerExecute(
             script: nullScript,
             dockerImage: 'maven:3.5-jdk-8-alpine'

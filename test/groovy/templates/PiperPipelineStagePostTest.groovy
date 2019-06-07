@@ -5,6 +5,9 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.ExpectedException
 import org.junit.rules.RuleChain
+
+import com.sap.piper.DefaultValueCache
+
 import util.BasePiperTest
 import util.JenkinsFileExistsRule
 import util.JenkinsReadYamlRule
@@ -30,6 +33,9 @@ class PiperPipelineStagePostTest extends BasePiperTest {
 
     @Before
     void init()  {
+
+        DefaultValueCache.createInstance(loadDefaultPipelineEnvironment(), [:])
+
         binding.variables.env.STAGE_NAME = 'Release'
 
         helper.registerAllowedMethod('piperStageWrapper', [Map.class, Closure.class], {m, body ->
@@ -61,7 +67,7 @@ class PiperPipelineStagePostTest extends BasePiperTest {
 
     @Test
     void testPostWithSlackNotification() {
-        nullScript.commonPipelineEnvironment.configuration = [runStep: ['Post Actions': [slackSendNotification: true]]]
+        DefaultValueCache.getInstance().getProjectConfig().runStep = ['Post Actions': [slackSendNotification: true]]
 
         jsr.step.piperPipelineStagePost(script: nullScript, juStabUtils: utils)
 

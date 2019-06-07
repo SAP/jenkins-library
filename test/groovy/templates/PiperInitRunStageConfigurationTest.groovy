@@ -5,6 +5,9 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.ExpectedException
 import org.junit.rules.RuleChain
+
+import com.sap.piper.DefaultValueCache
+
 import util.BasePiperTest
 import util.JenkinsFileExistsRule
 import util.JenkinsLoggingRule
@@ -32,6 +35,8 @@ class PiperInitRunStageConfigurationTest extends BasePiperTest {
 
     @Before
     void init()  {
+
+        DefaultValueCache.createInstance(loadDefaultPipelineEnvironment(), [:])
 
         binding.variables.env.STAGE_NAME = 'Test'
 
@@ -65,12 +70,13 @@ steps: {}
             }
         })
 
-        nullScript.commonPipelineEnvironment.configuration = [
+        DefaultValueCache.createInstance(loadDefaultPipelineEnvironment(),
+        [
             stages: [
                 testStage2: [testStage: 'myVal2'],
                 testStage3: [testStage: 'myVal3']
             ]
-        ]
+        ])
 
         jsr.step.piperInitRunStageConfiguration(
             script: nullScript,
@@ -78,7 +84,7 @@ steps: {}
             stageConfigResource: 'testDefault.yml'
         )
 
-        assertThat(nullScript.commonPipelineEnvironment.configuration.runStage.keySet(),
+        assertThat(DefaultValueCache.getInstance().getProjectConfig().runStage.keySet(),
             allOf(
                 containsInAnyOrder(
                     'testStage2',
@@ -118,11 +124,11 @@ steps: {}
             }
         })
 
-        nullScript.commonPipelineEnvironment.configuration = [
+        DefaultValueCache.createInstance(loadDefaultPipelineEnvironment(), [
             general: [testGeneral: 'myVal1'],
             stages: [testStage2: [testStage: 'myVal2']],
             steps: [thirdStep: [testStep: 'myVal3']]
-        ]
+        ])
 
         jsr.step.piperInitRunStageConfiguration(
             script: nullScript,
@@ -130,7 +136,7 @@ steps: {}
             stageConfigResource: 'testDefault.yml'
         )
 
-        assertThat(nullScript.commonPipelineEnvironment.configuration.runStage.keySet(),
+        assertThat(DefaultValueCache.getInstance().getProjectConfig().runStage.keySet(),
             allOf(
                 containsInAnyOrder(
                     'testStage1',
@@ -141,9 +147,9 @@ steps: {}
             )
         )
 
-        assertThat(nullScript.commonPipelineEnvironment.configuration.runStep.testStage1.firstStep, is(true))
-        assertThat(nullScript.commonPipelineEnvironment.configuration.runStep.testStage2.secondStep, is(true))
-        assertThat(nullScript.commonPipelineEnvironment.configuration.runStep.testStage3.thirdStep, is(true))
+        assertThat(DefaultValueCache.getInstance().getProjectConfig().runStep.testStage1.firstStep, is(true))
+        assertThat(DefaultValueCache.getInstance().getProjectConfig().runStep.testStage2.secondStep, is(true))
+        assertThat(DefaultValueCache.getInstance().getProjectConfig().runStep.testStage3.thirdStep, is(true))
 
     }
 
@@ -182,11 +188,11 @@ steps: {}
             }
         })
 
-        nullScript.commonPipelineEnvironment.configuration = [
+        DefaultValueCache.createInstance(loadDefaultPipelineEnvironment(), [
             general: [testGeneral: 'myVal1'],
             stages: [:],
             steps: [thirdStep: [testStep: 'myVal3']]
-        ]
+        ])
 
         jsr.step.piperInitRunStageConfiguration(
             script: nullScript,
@@ -194,7 +200,7 @@ steps: {}
             stageConfigResource: 'testDefault.yml'
         )
 
-        assertThat(nullScript.commonPipelineEnvironment.configuration.runStage.keySet(),
+        assertThat(DefaultValueCache.getInstance().getProjectConfig().runStage.keySet(),
             allOf(
                 containsInAnyOrder(
                     'testStage1',
@@ -204,9 +210,9 @@ steps: {}
             )
         )
 
-        assertThat(nullScript.commonPipelineEnvironment.configuration.runStep.testStage1.firstStep, is(true))
-        assertThat(nullScript.commonPipelineEnvironment.configuration.runStep.testStage2?.secondStep, is(false))
-        assertThat(nullScript.commonPipelineEnvironment.configuration.runStep.testStage3.thirdStep, is(true))
+        assertThat(DefaultValueCache.getInstance().getProjectConfig().runStep.testStage1.firstStep, is(true))
+        assertThat(DefaultValueCache.getInstance().getProjectConfig().runStep.testStage2?.secondStep, is(false))
+        assertThat(DefaultValueCache.getInstance().getProjectConfig().runStep.testStage3.thirdStep, is(true))
 
     }
 
@@ -241,11 +247,11 @@ steps: {}
             }
         })
 
-        nullScript.commonPipelineEnvironment.configuration = [
+        DefaultValueCache.createInstance(loadDefaultPipelineEnvironment(), [
             general: [myKey1_1: 'myVal1_1'],
             stages: [:],
             steps: [thirdStep: [myKey3_1: 'myVal3_1']]
-        ]
+        ])
 
         jsr.step.piperInitRunStageConfiguration(
             script: nullScript,
@@ -253,7 +259,7 @@ steps: {}
             stageConfigResource: 'testDefault.yml'
         )
 
-        assertThat(nullScript.commonPipelineEnvironment.configuration.runStage.keySet(),
+        assertThat(DefaultValueCache.getInstance().getProjectConfig().runStage.keySet(),
             allOf(
                 containsInAnyOrder(
                     'testStage1',
@@ -263,9 +269,9 @@ steps: {}
             )
         )
 
-        assertThat(nullScript.commonPipelineEnvironment.configuration.runStep.testStage1.firstStep, is(true))
-        assertThat(nullScript.commonPipelineEnvironment.configuration.runStep.testStage2?.secondStep, is(false))
-        assertThat(nullScript.commonPipelineEnvironment.configuration.runStep.testStage3.thirdStep, is(true))
+        assertThat(DefaultValueCache.getInstance().getProjectConfig().runStep.testStage1.firstStep, is(true))
+        assertThat(DefaultValueCache.getInstance().getProjectConfig().runStep.testStage2?.secondStep, is(false))
+        assertThat(DefaultValueCache.getInstance().getProjectConfig().runStep.testStage3.thirdStep, is(true))
 
     }
 
@@ -298,15 +304,15 @@ steps: {}
             stageConfigResource: 'testDefault.yml'
         )
 
-        assertThat(nullScript.commonPipelineEnvironment.configuration.runStage.keySet(),
+        assertThat(DefaultValueCache.getInstance().getProjectConfig().runStage.keySet(),
             allOf(
                 contains('testStage1'),
                 hasSize(1)
             )
         )
 
-        assertThat(nullScript.commonPipelineEnvironment.configuration.runStep.testStage1.firstStep, is(true))
-        assertThat(nullScript.commonPipelineEnvironment.configuration.runStep.testStage1.secondStep, is(false))
+        assertThat(DefaultValueCache.getInstance().getProjectConfig().runStep.testStage1.firstStep, is(true))
+        assertThat(DefaultValueCache.getInstance().getProjectConfig().runStep.testStage1.secondStep, is(false))
 
     }
 
@@ -332,10 +338,11 @@ steps: {}
             }
         })
 
-        nullScript.commonPipelineEnvironment.configuration = [
+        DefaultValueCache.createInstance(loadDefaultPipelineEnvironment(),
+        [
             general: [:],
             stages: [testStage1: [myVal1: '**/conf.js']]
-        ]
+        ])
 
         jsr.step.piperInitRunStageConfiguration(
             script: nullScript,
@@ -343,20 +350,21 @@ steps: {}
             stageConfigResource: 'testDefault.yml'
         )
 
-        assertThat(nullScript.commonPipelineEnvironment.configuration.runStage.keySet(),
+        assertThat(DefaultValueCache.getInstance().getProjectConfig().runStage.keySet(),
             allOf(
                 contains('testStage1'),
                 hasSize(1)
             )
         )
 
-        assertThat(nullScript.commonPipelineEnvironment.configuration.runStep.testStage1.firstStep, is(true))
-        assertThat(nullScript.commonPipelineEnvironment.configuration.runStep.testStage1.secondStep, is(false))
+        assertThat(DefaultValueCache.getInstance().getProjectConfig().runStep.testStage1.firstStep, is(true))
+        assertThat(DefaultValueCache.getInstance().getProjectConfig().runStep.testStage1.secondStep, is(false))
     }
 
     @Test
     void testVerboseOption() {
-        nullScript.commonPipelineEnvironment.configuration = [
+        DefaultValueCache.createInstance(loadDefaultPipelineEnvironment(),
+        [
             general: [verbose: true],
             steps: [:],
             stages: [
@@ -364,7 +372,7 @@ steps: {}
                 Integration: [test: 'test'],
                 Acceptance: [test: 'test']
             ]
-        ]
+        ])
 
         jsr.step.piperInitRunStageConfiguration(
             script: nullScript,
@@ -383,7 +391,8 @@ steps: {}
 
         helper.registerAllowedMethod("findFiles", [Map.class], { map -> [].toArray() })
 
-        nullScript.commonPipelineEnvironment.configuration = [
+        DefaultValueCache.createInstance(loadDefaultPipelineEnvironment(),
+        [
             general: [:],
             steps: [:],
             stages: [
@@ -391,7 +400,7 @@ steps: {}
                 Integration: [test: 'test'],
                 Acceptance: [test: 'test']
             ]
-        ]
+        ])
 
         jsr.step.piperInitRunStageConfiguration(
             script: nullScript,
@@ -399,7 +408,7 @@ steps: {}
             stageConfigResource: 'com.sap.piper/pipeline/stageDefaults.yml'
         )
 
-        assertThat(nullScript.commonPipelineEnvironment.configuration.runStage.keySet(),
+        assertThat(DefaultValueCache.getInstance().getProjectConfig().runStage.keySet(),
             allOf(
                 containsInAnyOrder(
                     'Acceptance',
@@ -414,14 +423,14 @@ steps: {}
     @Test
     void testPiperStepActivation() {
 
-        nullScript.commonPipelineEnvironment.configuration = [
+        DefaultValueCache.createInstance(loadDefaultPipelineEnvironment(), [
             general: [:],
             steps: [
                 cloudFoundryDeploy: [cfSpace: 'myTestSpace'],
                 newmanExecute: [newmanCollection: 'myCollection.json']
             ],
             stages: [:]
-        ]
+        ])
 
         jsr.step.piperInitRunStageConfiguration(
             script: nullScript,
@@ -429,27 +438,27 @@ steps: {}
             stageConfigResource: 'com.sap.piper/pipeline/stageDefaults.yml'
         )
 
-        assertThat(nullScript.commonPipelineEnvironment.configuration.runStep.Acceptance.cloudFoundryDeploy, is(true))
-        assertThat(nullScript.commonPipelineEnvironment.configuration.runStep.Acceptance.newmanExecute, is(true))
-        assertThat(nullScript.commonPipelineEnvironment.configuration.runStep.Acceptance.newmanExecute, is(true))
+        assertThat(DefaultValueCache.getInstance().getProjectConfig().runStep.Acceptance.cloudFoundryDeploy, is(true))
+        assertThat(DefaultValueCache.getInstance().getProjectConfig().runStep.Acceptance.newmanExecute, is(true))
+        assertThat(DefaultValueCache.getInstance().getProjectConfig().runStep.Acceptance.newmanExecute, is(true))
     }
 
     @Test
     void testPiperStepActivationWithStage() {
 
-        nullScript.commonPipelineEnvironment.configuration = [
+        DefaultValueCache.createInstance(loadDefaultPipelineEnvironment(), [
             general: [:],
             steps: [:],
             stages: [Acceptance: [cfSpace: 'test']]
-        ]
+        ])
 
         jsr.step.piperInitRunStageConfiguration(
             script: nullScript,
             juStabUtils: utils,
             stageConfigResource: 'com.sap.piper/pipeline/stageDefaults.yml'
         )
-        assertThat(nullScript.commonPipelineEnvironment.configuration.runStep.Acceptance.cloudFoundryDeploy, is(true))
-        assertThat(nullScript.commonPipelineEnvironment.configuration.runStage.Acceptance, is(true))
+        assertThat(DefaultValueCache.getInstance().getProjectConfig().runStep.Acceptance.cloudFoundryDeploy, is(true))
+        assertThat(DefaultValueCache.getInstance().getProjectConfig().runStage.Acceptance, is(true))
 
     }
 }

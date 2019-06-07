@@ -1,5 +1,6 @@
 import com.sap.piper.GenerateDocumentation
 import com.sap.piper.CloudPlatform
+import com.sap.piper.DefaultValueCache
 import com.sap.piper.DeploymentType
 import com.sap.piper.k8s.ContainerMap
 import com.sap.piper.ConfigurationHelper
@@ -71,7 +72,7 @@ void call(parameters = [:]) {
         if (config.cfTargets) {
 
             deploymentType = DeploymentType.selectFor(CloudPlatform.CLOUD_FOUNDRY, enableZeroDowntimeDeployment).toString()
-            deployTool = script.commonPipelineEnvironment.configuration.isMta ? 'mtaDeployPlugin' : 'cf_native'
+            deployTool = DefaultValueCache.getInstance().getProjectConfig().isMta ? 'mtaDeployPlugin' : 'cf_native'
 
             for (int i = 0; i < config.cfTargets.size(); i++) {
 

@@ -6,6 +6,9 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.RuleChain
+
+import com.sap.piper.DefaultValueCache
+
 import org.junit.rules.ExpectedException
 import static org.junit.Assert.assertThat
 
@@ -42,13 +45,15 @@ class SnykExecuteTest extends BasePiperTest {
     @Before
     void init() {
         archiveStepPatterns = []
-        nullScript.commonPipelineEnvironment.configuration = [
+
+        DefaultValueCache.createInstance(loadDefaultPipelineEnvironment(), [
             steps: [
                 snykExecute: [
                     snykCredentialsId: 'myPassword'
                 ]
             ]
-        ]
+        ])
+
         helper.registerAllowedMethod('string', [Map], { m -> withCredentialsParameters = m
             return m })
         helper.registerAllowedMethod('withCredentials', [List, Closure], { l, c ->

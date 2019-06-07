@@ -6,6 +6,8 @@ import org.junit.rules.ExpectedException
 import org.junit.rules.RuleChain
 import org.yaml.snakeyaml.parser.ParserException
 
+import com.sap.piper.DefaultValueCache
+
 import hudson.AbortException
 import util.BasePiperTest
 import util.JenkinsDockerExecuteRule
@@ -39,6 +41,8 @@ public class MtaBuildTest extends BasePiperTest {
 
     @Before
     void init() {
+
+        DefaultValueCache.createInstance(loadDefaultPipelineEnvironment(), [:])
 
         helper.registerAllowedMethod('fileExists', [String], { s -> s == 'mta.yaml' })
 
@@ -131,7 +135,12 @@ public class MtaBuildTest extends BasePiperTest {
     @Test
     void mtaJarLocationFromCustomStepConfigurationTest() {
 
-        nullScript.commonPipelineEnvironment.configuration = [steps:[mtaBuild:[mtaJarLocation: '/config/mta/mta.jar']]]
+        DefaultValueCache.createInstance(loadDefaultPipelineEnvironment(),
+            [steps:
+                [mtaBuild:
+                    [mtaJarLocation: '/config/mta/mta.jar']
+                ]
+            ])
 
         stepRule.step.mtaBuild(script: nullScript,
                       buildTarget: 'NEO')
@@ -162,7 +171,12 @@ public class MtaBuildTest extends BasePiperTest {
     @Test
     void buildTargetFromCustomStepConfigurationTest() {
 
-        nullScript.commonPipelineEnvironment.configuration = [steps:[mtaBuild:[buildTarget: 'NEO']]]
+        DefaultValueCache.createInstance(loadDefaultPipelineEnvironment(),
+            [steps:
+                [mtaBuild:
+                    [buildTarget: 'NEO']
+                ]
+            ])
 
         stepRule.step.mtaBuild(script: nullScript)
 
@@ -248,7 +262,12 @@ public class MtaBuildTest extends BasePiperTest {
     @Test
     void extensionFromCustomStepConfigurationTest() {
 
-        nullScript.commonPipelineEnvironment.configuration = [steps:[mtaBuild:[buildTarget: 'NEO', extension: 'config_extension']]]
+        DefaultValueCache.createInstance(loadDefaultPipelineEnvironment(),
+            [steps:
+                [mtaBuild:
+                    [buildTarget: 'NEO', extension: 'config_extension']
+                ]
+            ])
 
         stepRule.step.mtaBuild(script: nullScript)
 

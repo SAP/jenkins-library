@@ -4,6 +4,9 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.RuleChain
+
+import com.sap.piper.DefaultValueCache
+
 import util.BasePiperTest
 import util.JenkinsFileExistsRule
 import util.JenkinsReadYamlRule
@@ -200,7 +203,7 @@ class PiperPipelineTest extends BasePiperTest {
 
         binding.variables.env.BRANCH_NAME = 'PR-*'
 
-        nullScript.commonPipelineEnvironment.configuration = [runStage:[Integration:[test: 'test']]]
+        DefaultValueCache.createInstance(loadDefaultPipelineEnvironment(),[runStage:[Integration:[test: 'test']]])
         jsr.step.piperPipeline(script: nullScript)
 
         assertThat(skipDefaultCheckout, is(true))
@@ -214,11 +217,11 @@ class PiperPipelineTest extends BasePiperTest {
 
     @Test
     void testConfirmUnstable() {
-        nullScript.commonPipelineEnvironment.configuration = [
+        DefaultValueCache.createInstance(loadDefaultPipelineEnvironment(), [
             general: [
                 manualConfirmation: false
             ]
-        ]
+        ])
         binding.setVariable('currentBuild', [result: 'UNSTABLE'])
 
         jsr.step.piperPipeline(script: nullScript)
@@ -229,11 +232,12 @@ class PiperPipelineTest extends BasePiperTest {
 
     @Test
     void testNoConfirm() {
-        nullScript.commonPipelineEnvironment.configuration = [
+        DefaultValueCache.createInstance(loadDefaultPipelineEnvironment(),
+        [
             general: [
                 manualConfirmation: false
             ]
-        ]
+        ])
         jsr.step.piperPipeline(script: nullScript)
 
         assertThat(stepsCalled, not(hasItem('piperPipelineStageConfirm')))
@@ -242,7 +246,7 @@ class PiperPipelineTest extends BasePiperTest {
     @Test
     void testMasterPipelineAllOn() {
 
-        nullScript.commonPipelineEnvironment.configuration.runStage = [
+        DefaultValueCache.createInstance(loadDefaultPipelineEnvironment(), [runStage: [
             Build: true,
             'Additional Unit Tests': true,
             Integration: true,
@@ -252,7 +256,7 @@ class PiperPipelineTest extends BasePiperTest {
             Compliance: true,
             Promote: true,
             Release: true
-        ]
+        ]])
         jsr.step.piperPipeline(script: nullScript)
 
         assertThat(stepsCalled, hasItems(

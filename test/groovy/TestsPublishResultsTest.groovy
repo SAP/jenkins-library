@@ -3,6 +3,9 @@ import org.junit.Ignore
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.RuleChain
+
+import com.sap.piper.DefaultValueCache
+
 import org.junit.rules.ExpectedException
 
 import util.BasePiperTest
@@ -31,6 +34,9 @@ class TestsPublishResultsTest extends BasePiperTest {
 
     @Before
     void init() {
+
+        DefaultValueCache.createInstance(loadDefaultPipelineEnvironment(), [:])
+
         publisherStepOptions = [:]
         archiveStepPatterns = []
         // prepare checkResultsPublish step

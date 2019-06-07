@@ -42,8 +42,8 @@ class SetupCommonPipelineEnvironmentTest extends BasePiperTest {
 
         stepRule.step.setupCommonPipelineEnvironment(script: nullScript)
 
-        assertNotNull(nullScript.commonPipelineEnvironment.configuration)
-        assertEquals('this_we_assert', nullScript.commonPipelineEnvironment.configuration.to_be_asserted)
+        assertNotNull(DefaultValueCache.getInstance().getProjectConfig())
+        assertEquals('this_we_assert', DefaultValueCache.getInstance().getProjectConfig().to_be_asserted)
     }
 
     @Test

@@ -1,3 +1,4 @@
+import com.sap.piper.DefaultValueCache
 import com.sap.piper.JenkinsUtils
 import com.sap.piper.Utils
 
@@ -71,7 +72,8 @@ class MulticloudDeployTest extends BasePiperTest {
                             credentialsId: 'cfCredentialsId2'
                         ]
 
-        nullScript.commonPipelineEnvironment.configuration = [
+        DefaultValueCache.createInstance(loadDefaultPipelineEnvironment(),
+        [
             general: [
                 neoTargets: [
                     neo1, neo2
@@ -98,14 +100,14 @@ class MulticloudDeployTest extends BasePiperTest {
                     ]
                 ]
             ]
-        ]
+        ])
     }
 
     @Test
     void errorNoTargetsDefined() {
 
-        nullScript.commonPipelineEnvironment.configuration.general.neoTargets = []
-        nullScript.commonPipelineEnvironment.configuration.general.cfTargets = []
+        DefaultValueCache.getInstance().getProjectConfig().general.neoTargets = []
+        DefaultValueCache.getInstance().getProjectConfig().general.cfTargets = []
 
         thrown.expect(Exception)
         thrown.expectMessage('Deployment skipped because no targets defined!')
@@ -119,8 +121,8 @@ class MulticloudDeployTest extends BasePiperTest {
     @Test
     void errorNoSourceForNeoDeploymentTest() {
 
-        nullScript.commonPipelineEnvironment.configuration.general.neoTargets = [neo1]
-        nullScript.commonPipelineEnvironment.configuration.general.cfTargets = []
+        DefaultValueCache.getInstance().getProjectConfig().general.neoTargets = [neo1]
+        DefaultValueCache.getInstance().getProjectConfig().general.cfTargets = []
 
         thrown.expect(Exception)
         thrown.expectMessage('ERROR - NO VALUE AVAILABLE FOR source')
@@ -134,8 +136,8 @@ class MulticloudDeployTest extends BasePiperTest {
     @Test
     void neoDeploymentTest() {
 
-        nullScript.commonPipelineEnvironment.configuration.general.neoTargets = [neo1]
-        nullScript.commonPipelineEnvironment.configuration.general.cfTargets = []
+        DefaultValueCache.getInstance().getProjectConfig().general.neoTargets = [neo1]
+        DefaultValueCache.getInstance().getProjectConfig().general.cfTargets = []
 
         stepRule.step.multicloudDeploy(
             script: nullScript,
@@ -152,8 +154,8 @@ class MulticloudDeployTest extends BasePiperTest {
     @Test
     void neoRollingUpdateTest() {
 
-        nullScript.commonPipelineEnvironment.configuration.general.neoTargets = []
-        nullScript.commonPipelineEnvironment.configuration.general.cfTargets = []
+        DefaultValueCache.getInstance().getProjectConfig().general.neoTargets = []
+        DefaultValueCache.getInstance().getProjectConfig().general.cfTargets = []
 
         def neoParam = [
                     host: 'test.param.deploy.host.com',
@@ -178,8 +180,8 @@ class MulticloudDeployTest extends BasePiperTest {
     @Test
     void cfDeploymentTest() {
 
-        nullScript.commonPipelineEnvironment.configuration.general.neoTargets = []
-        nullScript.commonPipelineEnvironment.configuration.general.cfTargets = []
+        DefaultValueCache.getInstance().getProjectConfig().general.neoTargets = []
+        DefaultValueCache.getInstance().getProjectConfig().general.cfTargets = []
 
         def cloudFoundry = [
                     appName:'paramTestAppName',
@@ -205,8 +207,8 @@ class MulticloudDeployTest extends BasePiperTest {
     @Test
     void cfBlueGreenDeploymentTest() {
 
-        nullScript.commonPipelineEnvironment.configuration.general.neoTargets = []
-        nullScript.commonPipelineEnvironment.configuration.general.cfTargets = [cloudFoundry1]
+        DefaultValueCache.getInstance().getProjectConfig().general.neoTargets = []
+        DefaultValueCache.getInstance().getProjectConfig().general.cfTargets = [cloudFoundry1]
 
         stepRule.step.multicloudDeploy([
             script: nullScript,

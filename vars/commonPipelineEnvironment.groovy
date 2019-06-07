@@ -1,5 +1,6 @@
 import com.sap.piper.ConfigurationLoader
 import com.sap.piper.ConfigurationMerger
+import com.sap.piper.DefaultValueCache
 import com.sap.piper.analytics.InfluxData
 
 class commonPipelineEnvironment implements Serializable {
@@ -133,9 +134,10 @@ class commonPipelineEnvironment implements Serializable {
             defaults = ConfigurationMerger.merge(ConfigurationLoader.defaultStepConfiguration(null, stepName), null, defaults)
             defaults = ConfigurationMerger.merge(ConfigurationLoader.defaultStageConfiguration(null, stageName), null, defaults)
         }
-        Map config = ConfigurationMerger.merge(configuration.get('general') ?: [:], null, defaults)
-        config = ConfigurationMerger.merge(configuration.get('steps')?.get(stepName) ?: [:], null, config)
-        config = ConfigurationMerger.merge(configuration.get('stages')?.get(stageName) ?: [:], null, config)
+        Map projectConfig = DefaultValueCache.getInstance().getProjectConfig()
+        Map config = ConfigurationMerger.merge(projectConfig.get('general') ?: [:], null, defaults)
+        config = ConfigurationMerger.merge(projectConfig.get('steps')?.get(stepName) ?: [:], null, config)
+        config = ConfigurationMerger.merge(projectConfig.get('stages')?.get(stageName) ?: [:], null, config)
         return config
     }
 }

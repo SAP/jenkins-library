@@ -3,6 +3,9 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.ExpectedException
 import org.junit.rules.RuleChain
+
+import com.sap.piper.DefaultValueCache
+
 import util.*
 
 import static org.hamcrest.Matchers.*
@@ -31,6 +34,9 @@ class GaugeExecuteTestsTest extends BasePiperTest {
 
     @Before
     void init() throws Exception {
+
+        DefaultValueCache.createInstance(loadDefaultPipelineEnvironment(), [:])
+
         helper.registerAllowedMethod("git", [Map.class], { map -> gitParams = map })
         helper.registerAllowedMethod("unstash", [String.class], { s -> return [s]})
 
