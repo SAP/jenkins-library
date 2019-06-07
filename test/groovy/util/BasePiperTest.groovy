@@ -10,6 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.test.context.ContextConfiguration
 import org.springframework.test.context.TestExecutionListeners
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner
+import org.yaml.snakeyaml.Yaml
 
 @RunWith(SpringJUnit4ClassRunner)
 @ContextConfiguration(classes = [BasePiperTestContext.class])
@@ -48,5 +49,9 @@ abstract class BasePiperTest extends BasePipelineTest {
     @Deprecated
     void prepareObjectInterceptors(Object object) {
         LibraryLoadingTestExecutionListener.prepareObjectInterceptors(object)
+    }
+
+    static loadDefaultPipelineEnvironment() {
+        new Yaml().load(new File('resources/default_pipeline_environment.yml').text)
     }
 }

@@ -13,7 +13,6 @@ import org.junit.rules.ExpectedException
 import org.junit.rules.RuleChain
 import org.springframework.beans.factory.annotation.Autowired
 import util.*
-import org.yaml.snakeyaml.Yaml
 
 import static org.hamcrest.Matchers.*
 import static org.junit.Assert.assertThat
@@ -112,9 +111,6 @@ class WhitesourceExecuteScanTest extends BasePiperTest {
         DefaultValueCache.createInstance(loadDefaultPipelineEnvironment(), projectConfig)
     }
 
-    static loadDefaultPipelineEnvironment() {
-        new Yaml().load(new File('resources/default_pipeline_environment.yml').text)
-    }
     @Test
     void testMaven() {
         helper.registerAllowedMethod("readProperties", [Map], {

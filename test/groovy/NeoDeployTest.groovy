@@ -21,7 +21,6 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.ExpectedException
 import org.junit.rules.RuleChain
-import org.yaml.snakeyaml.Yaml
 
 import util.BasePiperTest
 import util.CommandLineMatcher
@@ -65,10 +64,6 @@ class NeoDeployTest extends BasePiperTest {
     private static warPropertiesFileName = 'war.properties'
     private static archiveName = 'archive.mtar'
     private static warProperties
-
-    static loadDefaultPipelineEnvironment() {
-        new Yaml().load(new File('resources/default_pipeline_environment.yml').text)
-    }
 
     @Before
     void init() {
