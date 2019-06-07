@@ -27,7 +27,7 @@ class ConfigurationLoader implements Serializable {
     @NonCPS
     static Map generalConfiguration(script){
         try {
-            return script?.commonPipelineEnvironment?.configuration?.general ?: [:]
+            return DefaultValueCache.getInstance().getProjectConfig()?.general ?: [:]
         } catch (groovy.lang.MissingPropertyException mpe) {
             return [:]
         }

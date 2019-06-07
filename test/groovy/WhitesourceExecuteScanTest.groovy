@@ -1,3 +1,4 @@
+import com.sap.piper.DefaultValueCache
 import com.sap.piper.DescriptorUtils
 import com.sap.piper.JsonUtils
 import com.sap.piper.integration.WhitesourceOrgAdminRepository
@@ -12,6 +13,7 @@ import org.junit.rules.ExpectedException
 import org.junit.rules.RuleChain
 import org.springframework.beans.factory.annotation.Autowired
 import util.*
+import org.yaml.snakeyaml.Yaml
 
 import static org.hamcrest.Matchers.*
 import static org.junit.Assert.assertThat
@@ -48,6 +50,7 @@ class WhitesourceExecuteScanTest extends BasePiperTest {
 
     @Before
     void init() {
+
         helper.registerAllowedMethod("archiveArtifacts", [Map.class], { m ->
             if (m.artifacts == null) {
                 throw new Exception('artifacts cannot be null')
@@ -90,16 +93,28 @@ class WhitesourceExecuteScanTest extends BasePiperTest {
         helper.registerAllowedMethod( "getPipGAV", [String], {return [artifact: 'test-python', version: '1.2.3']})
         helper.registerAllowedMethod( "getMavenGAV", [String], {return [group: 'com.sap.maven', artifact: 'test-java', version: '1.2.3']})
 
-        nullScript.commonPipelineEnvironment.configuration = nullScript.commonPipelineEnvironment.configuration ?: [:]
-        nullScript.commonPipelineEnvironment.configuration['steps'] = nullScript.commonPipelineEnvironment.configuration['steps'] ?: [:]
-        nullScript.commonPipelineEnvironment.configuration['steps']['whitesourceExecuteScan'] = nullScript.commonPipelineEnvironment.configuration['steps']['whitesourceExecuteScan'] ?: [:]
-        nullScript.commonPipelineEnvironment.configuration['general'] = nullScript.commonPipelineEnvironment.configuration['general'] ?: [:]
-        nullScript.commonPipelineEnvironment.configuration['general']['whitesource'] = nullScript.commonPipelineEnvironment.configuration['general']['whitesource'] ?: [:]
-        nullScript.commonPipelineEnvironment.configuration['general']['whitesource']['serviceUrl'] = "http://some.host.whitesource.com/api/"
-        nullScript.commonPipelineEnvironment.configuration['general']['whitesource']['userTokenCredentialsId'] = 'ID-123456789'
-        nullScript.commonPipelineEnvironment.configuration['steps']['whitesourceExecuteScan']['userTokenCredentialsId'] = 'ID-123456789'
+        def projectConfig =
+            [
+                general:
+                    [whitesource:
+                        [
+                            serviceUrl: 'http://some.host.whitesource.com/api/',
+                            userTokenCredentialsId: 'ID-123456789',
+                        ],
+                    ],
+                steps:
+                    [whitesourceExecuteScan:
+                        [
+                            userTokenCredentialsId: 'ID-123456789',
+                        ],
+                    ],
+            ]
+        DefaultValueCache.createInstance(loadDefaultPipelineEnvironment(), projectConfig)
     }
 
+    static loadDefaultPipelineEnvironment() {
+        new Yaml().load(new File('resources/default_pipeline_environment.yml').text)
+    }
     @Test
     void testMaven() {
         helper.registerAllowedMethod("readProperties", [Map], {

@@ -44,6 +44,7 @@ class DefaultValueCache implements Serializable {
     static void prepare(Script steps, Map parameters = [:]) {
         if(parameters == null) parameters = [:]
         if(!DefaultValueCache.getInstance() || parameters.customDefaults) {
+
             def defaultValues = [:]
             def configFileList = ['default_pipeline_environment.yml']
             def customDefaults = parameters.customDefaults
