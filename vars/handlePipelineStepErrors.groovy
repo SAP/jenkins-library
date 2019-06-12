@@ -54,9 +54,9 @@ void call(Map parameters = [:], body) {
     def cpe = parameters.stepParameters?.script?.commonPipelineEnvironment ?: null
     Map config = ConfigurationHelper.newInstance(this)
         .loadStepDefaults()
-        .mixinGeneralConfig(cpe, GENERAL_CONFIG_KEYS)
-        .mixinStepConfig(cpe, STEP_CONFIG_KEYS)
-        .mixinStageConfig(cpe, parameters.stepParameters?.stageName?:env.STAGE_NAME, STEP_CONFIG_KEYS)
+        .mixinGeneralConfig(GENERAL_CONFIG_KEYS)
+        .mixinStepConfig(STEP_CONFIG_KEYS)
+        .mixinStageConfig(parameters.stepParameters?.stageName?:env.STAGE_NAME, STEP_CONFIG_KEYS)
         .mixin(parameters, PARAMETER_KEYS)
         .withMandatoryProperty('stepParameters')
         .withMandatoryProperty('stepName')

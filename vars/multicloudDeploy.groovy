@@ -48,7 +48,7 @@ void call(parameters = [:]) {
 
         ConfigurationHelper configHelper = ConfigurationHelper.newInstance(this)
             .loadStepDefaults()
-            .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS)
+            .mixinGeneralConfig(GENERAL_CONFIG_KEYS)
             .mixin(parameters, PARAMETER_KEYS)
 
         Map config = configHelper.use()

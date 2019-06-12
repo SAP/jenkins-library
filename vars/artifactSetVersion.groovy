@@ -112,9 +112,9 @@ void call(Map parameters = [:], Closure body = null) {
         // load default & individual configuration
         ConfigurationHelper configHelper = ConfigurationHelper.newInstance(this)
             .loadStepDefaults()
-            .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS, CONFIG_KEY_COMPATIBILITY)
-            .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS, CONFIG_KEY_COMPATIBILITY)
-            .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName?:env.STAGE_NAME, STEP_CONFIG_KEYS, CONFIG_KEY_COMPATIBILITY)
+            .mixinGeneralConfig(GENERAL_CONFIG_KEYS, CONFIG_KEY_COMPATIBILITY)
+            .mixinStepConfig(STEP_CONFIG_KEYS, CONFIG_KEY_COMPATIBILITY)
+            .mixinStageConfig(parameters.stageName?:env.STAGE_NAME, STEP_CONFIG_KEYS, CONFIG_KEY_COMPATIBILITY)
             .mixin(gitCommitId: gitUtils.getGitCommitIdOrNull())
             .mixin(parameters, PARAMETER_KEYS, CONFIG_KEY_COMPATIBILITY)
             .withMandatoryProperty('buildTool')

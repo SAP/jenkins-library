@@ -19,8 +19,8 @@ void call(Map parameters = [:]) {
 
     Map config = ConfigurationHelper.newInstance(this)
         .loadStepDefaults()
-        .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS)
-        .mixinStageConfig(script.commonPipelineEnvironment, stageName, STEP_CONFIG_KEYS)
+        .mixinGeneralConfig(GENERAL_CONFIG_KEYS)
+        .mixinStageConfig(stageName, STEP_CONFIG_KEYS)
         .mixin(parameters, PARAMETER_KEYS)
         .use()
 

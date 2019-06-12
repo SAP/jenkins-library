@@ -38,7 +38,7 @@ void call(Map parameters = [:]) {
 
         Map config = ConfigurationHelper.newInstance(this)
             .loadStepDefaults()
-            .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS)
+            .mixinGeneralConfig(GENERAL_CONFIG_KEYS)
             .use()
 
         (parameters.utils ?: new Utils()).pushToSWA([

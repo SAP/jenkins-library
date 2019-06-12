@@ -35,17 +35,17 @@ class ConfigurationHelper implements Serializable {
         return this
     }
 
-    ConfigurationHelper mixinGeneralConfig(commonPipelineEnvironment, Set filter = null, Map compatibleParameters = [:]){
+    ConfigurationHelper mixinGeneralConfig(Set filter = null, Map compatibleParameters = [:]){
         Map generalConfiguration = ConfigurationLoader.generalConfiguration()
         return mixin(generalConfiguration, filter, compatibleParameters)
     }
 
-    ConfigurationHelper mixinStageConfig(commonPipelineEnvironment, stageName, Set filter = null, Map compatibleParameters = [:]){
+    ConfigurationHelper mixinStageConfig(stageName, Set filter = null, Map compatibleParameters = [:]){
         Map stageConfiguration = ConfigurationLoader.stageConfiguration(stageName)
         return mixin(stageConfiguration, filter, compatibleParameters)
     }
 
-    ConfigurationHelper mixinStepConfig(commonPipelineEnvironment, Set filter = null, Map compatibleParameters = [:]){
+    ConfigurationHelper mixinStepConfig(Set filter = null, Map compatibleParameters = [:]){
         Map stepConfiguration = ConfigurationLoader.stepConfiguration(name)
         return mixin(stepConfiguration, filter, compatibleParameters)
     }
