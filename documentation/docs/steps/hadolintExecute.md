@@ -6,4 +6,12 @@
 
 ## ${docGenConfiguration}
 
-## ${docJenkinsPluginDependencies}
+## Exceptions
+
+None
+
+## Examples
+
+```groovy
+hadolintExecute script: this
+```

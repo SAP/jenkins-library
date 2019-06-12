@@ -68,6 +68,8 @@ webdriverio
 
 ## ${docGenConfiguration}
 
+## ${docJenkinsPluginDependencies}
+
 ## Side effects
 
 none

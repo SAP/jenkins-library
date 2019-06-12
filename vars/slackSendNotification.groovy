@@ -40,12 +40,12 @@ import groovy.text.SimpleTemplateEngine
  *
  * Notification contains:
  *
- * * Build status;
- * * Repo Owner;
- * * Repo Name;
- * * Branch Name;
- * * Jenkins Build Number;
- * * Jenkins Build URL.
+ * * Build status
+ * * Repo Owner
+ * * Repo Name
+ * * Branch Name
+ * * Jenkins Build Number
+ * * Jenkins Build URL
  */
 @GenerateDocumentation
 void call(Map parameters = [:]) {

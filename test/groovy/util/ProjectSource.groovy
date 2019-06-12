@@ -1,4 +1,3 @@
-#!groovy
 package util
 
 import com.lesfurets.jenkins.unit.global.lib.SourceRetriever

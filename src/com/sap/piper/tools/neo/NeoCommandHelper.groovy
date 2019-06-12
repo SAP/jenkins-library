@@ -8,12 +8,14 @@ class NeoCommandHelper {
     private Script step
     private DeployMode deployMode
     private Map deploymentConfiguration
+    private Set extensions
     private String user
     private String password
     private String source
 
     //Warning: Commands generated with this class can contain passwords and should only be used within the step withCredentials
     NeoCommandHelper(Script step, DeployMode deployMode, Map deploymentConfiguration,
+                    Set extensions,
                     String user, String password, String source) {
         this.step = step
         this.deployMode = deployMode
@@ -21,6 +23,7 @@ class NeoCommandHelper {
         this.user = user
         this.password = password
         this.source = source
+        this.extensions = extensions ?: []
     }
 
     private String prolog() {
@@ -47,7 +50,7 @@ class NeoCommandHelper {
     }
 
     String deployMta() {
-        return "${prolog()} deploy-mta --synchronous ${mainArgs()} ${source()}"
+        return "${prolog()} deploy-mta --synchronous ${mainArgs()}${extensions()} ${source()}"
     }
 
     String cloudCockpitLink() {
@@ -87,6 +90,11 @@ class NeoCommandHelper {
         return "--source ${BashUtils.quoteAndEscape(source)}"
     }
 
+    private String extensions() {
+        if(! this.extensions) return ''
+        ' --extensions ' + ((Iterable)this.extensions.collect({ "'${it}'" })).join(',')
+    }
+
     private String mainArgs() {
         String usernamePassword = "--user ${BashUtils.quoteAndEscape(user)} --password ${BashUtils.quoteAndEscape(password)}"
 
@@ -123,7 +131,7 @@ class NeoCommandHelper {
             def environment = deploymentConfiguration.environment
 
             if (!(environment in Map)) {
-                step.error("The environment variables for the deployment to Neo have to be defined as a map.");
+                step.error("The environment variables for the deployment to Neo have to be defined as a map.")
             }
 
             def keys = environment.keySet()
