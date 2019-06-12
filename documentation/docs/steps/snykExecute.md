@@ -11,6 +11,8 @@
 
 ## ${docGenConfiguration}
 
+## ${docJenkinsPluginDependencies}
+
 ## Side effects
 
 Step uses `dockerExecute` inside.

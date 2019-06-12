@@ -57,6 +57,7 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
     def pullImageMap = [:]
     def namespace
     def securityContext
+    Map stashMap
 
     @Before
     void init() {
@@ -92,6 +93,10 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
             }
             body()
         })
+        helper.registerAllowedMethod('stash', [Map.class], {m ->
+            stashMap = m
+        })
+
     }
 
     @Test
@@ -207,7 +212,7 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
 
     @Test
     void testDockerExecuteOnKubernetesEmptyContainerMapNoDockerImage() throws Exception {
-        exception.expect(IllegalArgumentException.class);
+        exception.expect(IllegalArgumentException.class)
             stepRule.step.dockerExecuteOnKubernetes(
                 script: nullScript,
                 juStabUtils: utils,
@@ -367,6 +372,21 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
         assertTrue(bodyExecuted)
         assertThat(securityContext, is(equalTo(expectedSecurityContext)))
     }
+
+    /*
+    Due to negative side-effect of full git stashing
+    @Test
+    void testDockerExecuteOnKubernetesWorkspaceStashing() {
+
+        stepRule.step.dockerExecuteOnKubernetes(
+            script: nullScript,
+            juStabUtils: utils,
+            dockerImage: 'maven:3.5-jdk-8-alpine',
+        ) { bodyExecuted = true }
+        assertTrue(bodyExecuted)
+        assertThat(stashMap.useDefaultExcludes, is(false))
+    }
+    */
 
 
     private container(options, body) {
