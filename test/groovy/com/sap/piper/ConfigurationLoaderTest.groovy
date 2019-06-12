@@ -19,7 +19,6 @@ class ConfigurationLoaderTest {
         defaultConfiguration.steps = [executeGradle: [dockerImage: 'gradle:4.0.1-jdk8']]
         defaultConfiguration.stages = [staticCodeChecks: [pmdExcludes: '*.java']]
 
-        def pipelineEnvironment = [configuration: configuration]
         DefaultValueCache.createInstance(defaultConfiguration, configuration)
     }
 
