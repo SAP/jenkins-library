@@ -8,10 +8,6 @@ class ConfigurationLoaderTest {
 
     @Before
     public void init() {
-        getScript()
-    }
-
-    private static getScript() {
         Map configuration = [:]
         configuration.general = [productiveBranch: 'master']
         configuration.steps = [executeMaven: [dockerImage: 'maven:3.2-jdk-8-onbuild']]
@@ -25,48 +21,47 @@ class ConfigurationLoaderTest {
 
         def pipelineEnvironment = [configuration: configuration]
         DefaultValueCache.createInstance(defaultConfiguration, configuration)
-        return [commonPipelineEnvironment: pipelineEnvironment]
     }
 
     @Test
     void testLoadStepConfiguration() {
-        Map config = ConfigurationLoader.stepConfiguration(getScript(), 'executeMaven')
+        Map config = ConfigurationLoader.stepConfiguration('executeMaven')
         Assert.assertEquals('maven:3.2-jdk-8-onbuild', config.dockerImage)
     }
 
     @Test
     void testLoadStageConfiguration() {
-        Map config = ConfigurationLoader.stageConfiguration(getScript(), 'staticCodeChecks')
+        Map config = ConfigurationLoader.stageConfiguration('staticCodeChecks')
         Assert.assertEquals('**', config.pmdExcludes)
     }
 
     @Test
     void testLoadGeneralConfiguration() {
-        Map config = ConfigurationLoader.generalConfiguration(getScript())
+        Map config = ConfigurationLoader.generalConfiguration()
         Assert.assertEquals('master', config.productiveBranch)
     }
 
     @Test
     void testLoadDefaultStepConfiguration() {
-        Map config = ConfigurationLoader.defaultStepConfiguration(getScript(), 'executeGradle')
+        Map config = ConfigurationLoader.defaultStepConfiguration('executeGradle')
         Assert.assertEquals('gradle:4.0.1-jdk8', config.dockerImage)
     }
 
     @Test
     void testLoadDefaultStageConfiguration() {
-        Map config = ConfigurationLoader.defaultStageConfiguration(getScript(), 'staticCodeChecks')
+        Map config = ConfigurationLoader.defaultStageConfiguration('staticCodeChecks')
         Assert.assertEquals('*.java', config.pmdExcludes)
     }
 
     @Test
     void testLoadDefaultGeneralConfiguration() {
-        Map config = ConfigurationLoader.defaultGeneralConfiguration(getScript())
+        Map config = ConfigurationLoader.defaultGeneralConfiguration()
         Assert.assertEquals('develop', config.productiveBranch)
     }
 
     @Test
     void testLoadPostActionConfiguration(){
-        Map config = ConfigurationLoader.postActionConfiguration(getScript(), 'sendEmail')
+        Map config = ConfigurationLoader.postActionConfiguration('sendEmail')
         Assert.assertEquals('myEmail', config.recipients)
     }
 }

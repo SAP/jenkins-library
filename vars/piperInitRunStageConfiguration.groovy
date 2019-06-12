@@ -52,7 +52,7 @@ void call(Map parameters = [:]) {
     config.stages.each {stage ->
 
         //activate stage if stage configuration is available
-        if (ConfigurationLoader.stageConfiguration(script, stage.getKey())) {
+        if (ConfigurationLoader.stageConfiguration(stage.getKey())) {
             DefaultValueCache.getInstance().getProjectConfig().runStage[stage.getKey()] = true
         }
         //-------------------------------------------------------------------------------

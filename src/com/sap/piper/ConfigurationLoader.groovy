@@ -5,27 +5,27 @@ import com.cloudbees.groovy.cps.NonCPS
 @API(deprecated = true)
 class ConfigurationLoader implements Serializable {
     @NonCPS
-    static Map stepConfiguration(script, String stepName) {
+    static Map stepConfiguration(String stepName) {
         return loadConfiguration('steps', stepName, ConfigurationType.CUSTOM_CONFIGURATION)
     }
 
     @NonCPS
-    static Map stageConfiguration(script, String stageName) {
+    static Map stageConfiguration(String stageName) {
         return loadConfiguration('stages', stageName, ConfigurationType.CUSTOM_CONFIGURATION)
     }
 
     @NonCPS
-    static Map defaultStepConfiguration(script, String stepName) {
+    static Map defaultStepConfiguration(String stepName) {
         return loadConfiguration('steps', stepName, ConfigurationType.DEFAULT_CONFIGURATION)
     }
 
     @NonCPS
-    static Map defaultStageConfiguration(script, String stageName) {
+    static Map defaultStageConfiguration(String stageName) {
         return loadConfiguration('stages', stageName, ConfigurationType.DEFAULT_CONFIGURATION)
     }
 
     @NonCPS
-    static Map generalConfiguration(script){
+    static Map generalConfiguration(){
         try {
             return DefaultValueCache.getInstance().getProjectConfig()?.general ?: [:]
         } catch (groovy.lang.MissingPropertyException mpe) {
@@ -34,12 +34,12 @@ class ConfigurationLoader implements Serializable {
     }
 
     @NonCPS
-    static Map defaultGeneralConfiguration(script){
+    static Map defaultGeneralConfiguration(){
         return DefaultValueCache.getInstance()?.getDefaultValues()?.general ?: [:]
     }
 
     @NonCPS
-    static Map postActionConfiguration(script, String actionName){
+    static Map postActionConfiguration(String actionName){
         return loadConfiguration('postActions', actionName, ConfigurationType.CUSTOM_CONFIGURATION)
     }
 
