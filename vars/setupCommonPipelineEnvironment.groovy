@@ -1,12 +1,34 @@
 import static com.sap.piper.Prerequisites.checkScript
 
+import com.sap.piper.GenerateDocumentation
 import com.sap.piper.ConfigurationHelper
 import com.sap.piper.Utils
+import com.sap.piper.analytics.InfluxData
+
 import groovy.transform.Field
 
 @Field String STEP_NAME = getClass().getName()
-@Field Set GENERAL_CONFIG_KEYS = ['collectTelemetryData']
 
+@Field Set GENERAL_CONFIG_KEYS = [
+    /** */
+    'collectTelemetryData'
+]
+
+@Field Set STEP_CONFIG_KEYS = []
+
+@Field Set PARAMETER_KEYS = [
+    /** Property file defining project specific settings.*/
+    'configFile'
+]
+
+/**
+ * Initializes the [`commonPipelineEnvironment`](commonPipelineEnvironment.md), which is used throughout the complete pipeline.
+ *
+ * !!! tip
+ *    This step needs to run at the beginning of a pipeline right after the SCM checkout.
+ *    Then subsequent pipeline steps consume the information from `commonPipelineEnvironment`; it does not need to be passed to pipeline steps explicitly.
+ */
+@GenerateDocumentation
 void call(Map parameters = [:]) {
 
     handlePipelineStepErrors (stepName: STEP_NAME, stepParameters: parameters) {
@@ -27,35 +49,19 @@ void call(Map parameters = [:]) {
         (parameters.utils ?: new Utils()).pushToSWA([
             step: STEP_NAME,
             stepParamKey4: 'customDefaults',
-            stepParam4: parameters.customDefaults?'true':'false',
-            stepParamKey5: 'legacyConfig',
-            stepParam5: Boolean.toString( ! (script?.commonPipelineEnvironment?.getConfigProperties() ?: [:]).isEmpty())
+            stepParam4: parameters.customDefaults?'true':'false'
         ], config)
+
+        InfluxData.addField('step_data', 'build_url', env.BUILD_URL)
+        InfluxData.addField('pipeline_data', 'build_url', env.BUILD_URL)
     }
-}
-
-private boolean isYaml(String fileName) {
-    return fileName.endsWith(".yml") || fileName.endsWith(".yaml")
-}
-
-private boolean isProperties(String fileName) {
-    return fileName.endsWith(".properties")
 }
 
 private loadConfigurationFromFile(script, String configFile) {
 
-    String defaultPropertiesConfigFile = '.pipeline/config.properties'
     String defaultYmlConfigFile = '.pipeline/config.yml'
 
-    if (configFile?.trim()?.length() > 0 && isProperties(configFile)) {
-        Map configMap = readProperties(file: configFile)
-        script.commonPipelineEnvironment.setConfigProperties(configMap)
-    } else if (fileExists(defaultPropertiesConfigFile)) {
-        Map configMap = readProperties(file: defaultPropertiesConfigFile)
-        script.commonPipelineEnvironment.setConfigProperties(configMap)
-    }
-
-    if (configFile?.trim()?.length() > 0 && isYaml(configFile)) {
+    if (configFile) {
         script.commonPipelineEnvironment.configuration = readYaml(file: configFile)
     } else if (fileExists(defaultYmlConfigFile)) {
         script.commonPipelineEnvironment.configuration = readYaml(file: defaultYmlConfigFile)

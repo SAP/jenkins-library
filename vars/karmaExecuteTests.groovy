@@ -1,6 +1,7 @@
 import static com.sap.piper.Prerequisites.checkScript
 
 import com.sap.piper.ConfigurationHelper
+import com.sap.piper.GenerateDocumentation
 import com.sap.piper.GitUtils
 import com.sap.piper.Utils
 
@@ -9,34 +10,67 @@ import groovy.transform.Field
 
 @Field String STEP_NAME = getClass().getName()
 @Field Set GENERAL_CONFIG_KEYS = [
-    /** port mappings required for containers. This will only take effect inside a Kubernetes pod, format [[containerPort: 1111, hostPort: 1111]] */
+    /**
+     * Map which defines per docker image the port mappings, e.g. `containerPortMappings: ['selenium/standalone-chrome': [[name: 'selPort', containerPort: 4444, hostPort: 4444]]]`.
+     */
     'containerPortMappings',
-    /** envVars to be set in the execution container if required */
+    /** A map of environment variables to set in the container, e.g. [http_proxy:'proxy:8080']. */
     'dockerEnvVars',
-    /** Docker image for code execution */
+    /** The name of the docker image that should be used. If empty, Docker is not used and the command is executed directly on the Jenkins system. */
     'dockerImage',
-    /** name of the Docker container. If not on Kubernetes pod, this will define the network-alias to the NPM container and is thus required for accessing the server, example http://karma:9876 (default). */
+    /**
+     * Kubernetes only:
+     * Name of the container launching `dockerImage`.
+     * SideCar only:
+     * Name of the container in local network.
+     */
     'dockerName',
-    /** user home directory for Docker execution. This will only take effect inside a Kubernetes pod. */
+    /**
+     * Kubernetes only:
+     * Specifies a dedicated user home directory for the container which will be passed as value for environment variable `HOME`.
+     */
     'dockerWorkspace',
+    /**
+     * With `failOnError` the behavior in case tests fail can be defined.
+     * @possibleValues `true`, `false`
+     */
     'failOnError',
+    /** The command that is executed to install the test tool. */
     'installCommand',
+    /** Define the paths of the modules to execute tests on. */
     'modules',
+    /** The command that is executed to start the tests. */
     'runCommand',
-    /** envVars to be set in Selenium container if required */
+    /** A map of environment variables to set in the sidecar container, similar to `dockerEnvVars`. */
     'sidecarEnvVars',
-    /** image for Selenium execution which runs as sidecar to dockerImage */
+    /** The name of the docker image of the sidecar container. If empty, no sidecar container is started. */
     'sidecarImage',
-    /** name of the Selenium container. If not on Kubernetes pod, this will define the network-alias to the Selenium container and is thus required for accessing the server, example http://selenium:4444 (default) */
+    /**
+     * as `dockerName` for the sidecar container
+     */
     'sidecarName',
-    /** volume bind. This will not take effect in Kubernetes pod. */
+    /** Volumes that should be mounted into the sidecar container. */
     'sidecarVolumeBind',
-    /** list of stash names which are required to be unstashed before test run */
+    /** If specific stashes should be considered for the tests, their names need to be passed via the parameter `stashContent`. */
     'stashContent'
 ]
 @Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
 
+/**
+ * In this step the ([Karma test runner](http://karma-runner.github.io)) is executed.
+ *
+ * The step is using the `seleniumExecuteTest` step to spin up two containers in a Docker network:
+ *
+ * * a Selenium/Chrome container (`selenium/standalone-chrome`)
+ * * a NodeJS container (`node:8-stretch`)
+ *
+ * In the Docker network, the containers can be referenced by the values provided in `dockerName` and `sidecarName`, the default values are `karma` and `selenium`. These values must be used in the `hostname` properties of the test configuration ([Karma](https://karma-runner.github.io/1.0/config/configuration-file.html) and [WebDriver](https://github.com/karma-runner/karma-webdriver-launcher#usage)).
+ *
+ * !!! note
+ *     In a Kubernetes environment, the containers both need to be referenced with `localhost`.
+ */
+@GenerateDocumentation
 void call(Map parameters = [:]) {
     handlePipelineStepErrors(stepName: STEP_NAME, stepParameters: parameters) {
         final script = checkScript(this, parameters) ?: this

@@ -24,6 +24,9 @@ Generally speaking, you should fork this repository, make changes in your own fo
 
 All pipeline library coding _must_ come with automated unit tests.
 
+Besides that, we have an integration test suite, which is not triggered during normal pull request builds. However, integration tests are mandatory before a change can be merged. It is the duty of a team member of the SAP/jenkins-library project to execute these tests.
+To trigger the integration test suite, the `HEAD` commit of the branch associated with the pull request must be pushed under the branch pattern `it/.*` (recommended naming convention: `it/<Number of the pull request>`). As a result, the status `integration-tests` is updated in the pull request.
+
 ### Documentation
 
 The contract of functionality exposed by a library functionality needs to be documented, so it can be properly used.
@@ -43,7 +46,7 @@ Code shall contain comments to explain the intention of the code when it is uncl
 
 #### EditorConfig
 
-To ensure a common file format, there is a `.editorConfig` file [in place](.editorconfig). To respect this file, [check](http://editorconfig.org/#download) if your editor does support it natively or you need to download a plugin.
+To ensure a common file format, there is a `.editorConfig` file [in place](../.editorconfig). To respect this file, [check](http://editorconfig.org/#download) if your editor does support it natively or you need to download a plugin.
 
 ### Commit Message Style
 

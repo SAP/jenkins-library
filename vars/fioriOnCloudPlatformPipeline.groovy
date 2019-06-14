@@ -31,6 +31,8 @@ void call(parameters = [:]) {
 
         stage('prepare') {
 
+            deleteDir()
+            checkout scm
             setupCommonPipelineEnvironment(parameters)
         }
 

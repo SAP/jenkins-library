@@ -1,4 +1,3 @@
-#!groovy
 package templates
 
 import org.junit.Before
@@ -54,17 +53,41 @@ class PiperPipelineTest extends BasePiperTest {
 
             helper.registerAllowedMethod('when', [Closure.class], {cWhen ->
 
-                helper.registerAllowedMethod('allOf', [Closure.class], null)
+                helper.registerAllowedMethod('allOf', [Closure.class], {cAllOf ->
+                    def branchResult = false
+                    helper.registerAllowedMethod('branch', [String.class], {branchName  ->
+                        if (!branchResult)
+                            branchResult = (branchName == env.BRANCH_NAME)
+                        if( !branchResult) {
+                            throw new PipelineWhenException("Stage '${stageName}' skipped - expression: '${branchResult}'")
+                        }
+                    })
+                    helper.registerAllowedMethod('expression', [Closure.class], { Closure cExp ->
+                        def result = cExp()
+                        if(!result) {
+                            throw new PipelineWhenException("Stage '${stageName}' skipped - expression: '${result}'")
+                        }
+                        return result
+                    })
+                    return cAllOf()
+                })
 
                 helper.registerAllowedMethod('anyOf', [Closure.class], {cAnyOf ->
                     def result = false
                     helper.registerAllowedMethod('branch', [String.class], {branchName  ->
                         if (!result)
                             result = (branchName == env.BRANCH_NAME)
-                        if( !result) {
-                            throw new PipelineWhenException("Stage '${stageName}' skipped - expression: '${result}'")
-                        }
+                        return result
                     })
+                    helper.registerAllowedMethod('expression', [Closure.class], { Closure cExp ->
+                        if (!result)
+                            result = cExp()
+                        return result
+                    })
+                    cAnyOf()
+                    if(!result) {
+                        throw new PipelineWhenException("Stage '${stageName}' skipped - anyOf: '${result}'")
+                    }
                     return cAnyOf()
                 })
 
@@ -108,8 +131,12 @@ class PiperPipelineTest extends BasePiperTest {
         })
 
         helper.registerAllowedMethod('steps', [Closure], null)
-        helper.registerAllowedMethod('post', [Closure], null)
-        helper.registerAllowedMethod('always', [Closure], null)
+        helper.registerAllowedMethod('post', [Closure], {c -> c()})
+        helper.registerAllowedMethod('success', [Closure], {c -> c()})
+        helper.registerAllowedMethod('failure', [Closure], {c -> c()})
+        helper.registerAllowedMethod('aborted', [Closure], {c -> c()})
+        helper.registerAllowedMethod('unstable', [Closure], {c -> c()})
+        helper.registerAllowedMethod('cleanup', [Closure], {c -> c()})
 
         helper.registerAllowedMethod('input', [Map], {m -> return null})
 
@@ -147,14 +174,17 @@ class PiperPipelineTest extends BasePiperTest {
         helper.registerAllowedMethod('piperPipelineStageCompliance', [Map.class], {m ->
             stepsCalled.add('piperPipelineStageCompliance')
         })
-        helper.registerAllowedMethod('input', [Map.class], {m ->
-            stepsCalled.add('input')
+        helper.registerAllowedMethod('piperPipelineStageConfirm', [Map.class], {m ->
+            stepsCalled.add('piperPipelineStageConfirm')
         })
         helper.registerAllowedMethod('piperPipelineStagePromote', [Map.class], {m ->
             stepsCalled.add('piperPipelineStagePromote')
         })
         helper.registerAllowedMethod('piperPipelineStageRelease', [Map.class], {m ->
             stepsCalled.add('piperPipelineStageRelease')
+        })
+        helper.registerAllowedMethod('piperPipelineStagePost', [Map.class], {m ->
+            stepsCalled.add('piperPipelineStagePost')
         })
 
         nullScript.prepareDefaultValues(script: nullScript)
@@ -181,10 +211,17 @@ class PiperPipelineTest extends BasePiperTest {
     }
 
     @Test
-    void testConfirm() {
+    void testConfirmUnstable() {
+        nullScript.commonPipelineEnvironment.configuration = [
+            general: [
+                manualConfirmation: false
+            ]
+        ]
+        binding.setVariable('currentBuild', [result: 'UNSTABLE'])
+
         jsr.step.piperPipeline(script: nullScript)
 
-        assertThat(stepsCalled, hasItem('input'))
+        assertThat(stepsCalled, hasItem('piperPipelineStageConfirm'))
 
     }
 
@@ -197,7 +234,7 @@ class PiperPipelineTest extends BasePiperTest {
         ]
         jsr.step.piperPipeline(script: nullScript)
 
-        assertThat(stepsCalled, not(hasItem('input')))
+        assertThat(stepsCalled, not(hasItem('piperPipelineStageConfirm')))
     }
 
     @Test
@@ -225,9 +262,10 @@ class PiperPipelineTest extends BasePiperTest {
             'piperPipelineStageSecurity',
             'piperPipelineStagePerformance',
             'piperPipelineStageCompliance',
-            'input',
+            'piperPipelineStageConfirm',
             'piperPipelineStagePromote',
-            'piperPipelineStageRelease'
+            'piperPipelineStageRelease',
+            'piperPipelineStagePost'
         ))
     }
 }

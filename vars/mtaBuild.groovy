@@ -1,27 +1,49 @@
 import static com.sap.piper.Prerequisites.checkScript
 
+import com.sap.piper.GenerateDocumentation
 import com.sap.piper.ConfigurationHelper
 import com.sap.piper.MtaUtils
 import com.sap.piper.Utils
-import com.sap.piper.tools.JavaArchiveDescriptor
-import com.sap.piper.tools.ToolDescriptor
-
 import groovy.transform.Field
+
+import static com.sap.piper.Utils.downloadSettingsFromUrl
 
 @Field def STEP_NAME = getClass().getName()
 
 @Field Set GENERAL_CONFIG_KEYS = []
 @Field Set STEP_CONFIG_KEYS = [
+    /** The name of the application which is being built. If the parameter has been provided and no `mta.yaml` exists, the `mta.yaml` will be automatically generated using this parameter and the information (`name` and `version`) from `package.json` before the actual build starts.*/
     'applicationName',
+    /**
+     * The target platform to which the mtar can be deployed.
+     * @possibleValues 'CF', 'NEO', 'XSA'
+     */
     'buildTarget',
+    /** @see dockerExecute */
     'dockerImage',
+    /** The path to the extension descriptor file.*/
     'extension',
-    'mtaJarLocation'
+    /**
+     * The location of the SAP Multitarget Application Archive Builder jar file, including file name and extension.
+     * If it is not provided, the SAP Multitarget Application Archive Builder is expected on PATH.
+     */
+    'mtaJarLocation',
+    /** Path or url to the mvn settings file that should be used as global settings file.*/
+    'globalSettingsFile',
+    /** Path or url to the mvn settings file that should be used as project settings file.*/
+    'projectSettingsFile'
 ]
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS.plus([
-    'dockerOptions'
+    /** @see dockerExecute */
+    'dockerOptions',
+    /** Url to the npm registry that should be used for installing npm dependencies.*/
+    'defaultNpmRegistry'
 ])
 
+/**
+ * Executes the SAP Multitarget Application Archive Builder to create an mtar archive of the application.
+ */
+@GenerateDocumentation
 void call(Map parameters = [:]) {
     handlePipelineStepErrors(stepName: STEP_NAME, stepParameters: parameters) {
 
@@ -43,8 +65,28 @@ void call(Map parameters = [:]) {
         ], configuration)
 
         dockerExecute(script: script, dockerImage: configuration.dockerImage, dockerOptions: configuration.dockerOptions) {
-            def java = new ToolDescriptor('Java', 'JAVA_HOME', '', '/bin/', 'java', '1.8.0', '-version 2>&1')
-            def mta = new JavaArchiveDescriptor('SAP Multitarget Application Archive Builder', 'MTA_JAR_LOCATION', 'mtaJarLocation', '1.0.6', '-v', java)
+
+            String projectSettingsFile = configuration.projectSettingsFile?.trim()
+            if (projectSettingsFile) {
+                if (projectSettingsFile.startsWith("http")) {
+                    projectSettingsFile = downloadSettingsFromUrl(this, projectSettingsFile, 'project-settings.xml')
+                }
+                sh 'mkdir -p $HOME/.m2'
+                sh "cp ${projectSettingsFile} \$HOME/.m2/settings.xml"
+            }
+
+            String globalSettingsFile = configuration.globalSettingsFile?.trim()
+            if (globalSettingsFile) {
+                if (globalSettingsFile.startsWith("http")) {
+                    globalSettingsFile = downloadSettingsFromUrl(this, globalSettingsFile, 'global-settings.xml')
+                }
+                sh "cp ${globalSettingsFile} \$M2_HOME/conf/settings.xml"
+            }
+
+            String defaultNpmRegistry = configuration.defaultNpmRegistry?.trim()
+            if (defaultNpmRegistry) {
+                sh "npm config set registry $defaultNpmRegistry"
+            }
 
             def mtaYamlName = "mta.yaml"
             def applicationName = configuration.applicationName
@@ -72,7 +114,9 @@ void call(Map parameters = [:]) {
             }
 
             def mtarFileName = "${id}.mtar"
-            def mtaJar = mta.getCall(this, configuration)
+            // If it is not configured, it is expected on the PATH
+            def mtaJar = 'java -jar '
+            mtaJar += configuration.mtaJarLocation ?: 'mta.jar'
             def buildTarget = configuration.buildTarget
 
             def mtaCall = "${mtaJar} --mtar ${mtarFileName} --build-target=${buildTarget}"
@@ -82,8 +126,10 @@ void call(Map parameters = [:]) {
 
             echo "[INFO] Executing mta build call: '${mtaCall}'."
 
+            //[Q]: Why extending the path? [A]: To be sure e.g. grunt can be found
+            //[Q]: Why escaping \$PATH ? [A]: We want to extend the PATH variable in e.g. the container and not substituting it with the Jenkins environment when using ${PATH}
             sh """#!/bin/bash
-            export PATH=./node_modules/.bin:${PATH}
+            export PATH=./node_modules/.bin:\$PATH
             $mtaCall
             """
 

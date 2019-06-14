@@ -1,4 +1,3 @@
-#!groovy
 import groovy.json.JsonSlurperClassic
 import org.junit.Before
 import org.junit.Rule

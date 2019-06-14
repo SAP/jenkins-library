@@ -15,7 +15,8 @@ Set up an agile development process with Jenkins CI, which automatically feeds c
 
 In many SAP development scenarios, it is vital to synchronize both backend and frontend deliveries. These deliveries are typically an SAP UI5 application and an ABAP backend from which it is served. The SAP UI5 parts are often developed using agile practices and use Continuous Integration pipelines that automatically build, test, and deploy the application.
 
-**Note:** This scenario description is an example. You can apply the process to other scenarios and component sets, as well.
+!!! note
+    This scenario description is an example. You can apply the process to other scenarios and component sets, as well.
 
 In this scenario, we want to show how an agile development process with Jenkins CI can automatically feed changes into SAP Solution Manager. In SAP Solution Manager, all parts of the application stack come together and can be subject to classic change and transport management.
 
@@ -32,10 +33,10 @@ The basic workflow is as follows:
 
     **Note:** The blank line between message header and message description is mandatory.
 
-2. To communicate with SAP Solution Manager, the pipeline uses credentials that must be stored on Jenkins using the credential ID `CM`. For more information, see [checkChangeInDevelopment](https://sap.github.io/jenkins-library/steps/checkChangeInDevelopment/).
-3. The required transport request is created on the fly. **Note:** The change document can contain various components (for example, UI and backend components).
-4. The changes of your development team trigger the Jenkins pipeline. It builds and validates the changes and attaches them to the respective transport request.
-5. As soon as the development process is completed, the change document in SAP Solution Manager can be set to status `to be tested` and all components can be transported to the test system.
+1. To communicate with SAP Solution Manager, the pipeline uses credentials that must be stored on Jenkins using the credential ID `CM`. For more information, see [checkChangeInDevelopment](https://sap.github.io/jenkins-library/steps/checkChangeInDevelopment/).
+1. The required transport request is created on the fly. **Note:** The change document can contain various components (for example, UI and backend components).
+1. The changes of your development team trigger the Jenkins pipeline. It builds and validates the changes and attaches them to the respective transport request.
+1. As soon as the development process is completed, the change document in SAP Solution Manager can be set to status `to be tested` and all components can be transported to the test system.
 
 ![Hybrid Application Development Workflow](../images/Scenario_SolMan.png "Hybrid Application Development Workflow")
 ###### Hybrid Application Development Workflow

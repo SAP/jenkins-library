@@ -73,14 +73,6 @@ class FioriOnCloudPlatformPipelineTest extends BasePiperTest {
         JenkinsUtils.metaClass.static.isPluginActive = {def s -> false}
 
         //
-        // Things we validate:
-        shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, '.*echo \\$JAVA_HOME.*', '/opt/sap/java')
-        shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, '.*echo \\$MTA_JAR_LOCATION.*', '/opt/sap')
-        shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, '.*echo \\$NEO_HOME.*', '/opt/sap/neo')
-        shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, ".*bin/java -version.*", '1.8.0') // the java version
-        shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, ".*bin/java -jar .*mta.jar", '1.36.0') // the mta version
-
-        //
         // there is a check for the mta.yaml file and for the deployable test.mtar file
         helper.registerAllowedMethod('fileExists', [String],{
 
@@ -92,6 +84,8 @@ class FioriOnCloudPlatformPipelineTest extends BasePiperTest {
             // called inside neo deploy, this file gets deployed
             it == 'test.mtar'
         })
+
+        helper.registerAllowedMethod("deleteDir",[], null)
 
         //
         // the properties below we read out of the yaml file
@@ -105,6 +99,8 @@ class FioriOnCloudPlatformPipelineTest extends BasePiperTest {
         // to be able to extend the path we have to have some initial value.
         binding.setVariable('PATH', '/usr/bin')
 
+        binding.setVariable('scm', null)
+
         helper.registerAllowedMethod('pwd', [], { return "./" })
     }
 
@@ -115,9 +111,11 @@ class FioriOnCloudPlatformPipelineTest extends BasePiperTest {
             .commonPipelineEnvironment
                 .configuration =  [steps:
                                     [neoDeploy:
-                                        [ host: 'hana.example.com',
-                                          account: 'myTestAccount',
-                                        ]
+                                         [neo:
+                                              [ host: 'hana.example.com',
+                                                account: 'myTestAccount',
+                                              ]
+                                         ]
                                     ]
                                 ]
 
@@ -126,7 +124,7 @@ class FioriOnCloudPlatformPipelineTest extends BasePiperTest {
         //
         // the mta build call:
         assertThat(shellRule.shell, hasItem(
-                                allOf(  containsString('java -jar /opt/sap/mta.jar'),
+                                allOf(  containsString('java -jar /opt/sap/mta/lib/mta.jar'),  // default mtaJarLocation
                                         containsString('--mtar test.mtar'),
                                         containsString('--build-target=NEO'),
                                         containsString('build'))))
@@ -139,7 +137,7 @@ class FioriOnCloudPlatformPipelineTest extends BasePiperTest {
         // the neo deploy call:
         Assert.assertThat(shellRule.shell,
             new CommandLineMatcher()
-                .hasProlog("\"/opt/sap/neo/tools/neo.sh\" deploy-mta")
+                .hasProlog("neo.sh deploy-mta")
                 .hasSingleQuotedOption('host', 'hana\\.example\\.com')
                 .hasSingleQuotedOption('account', 'myTestAccount')
                 .hasSingleQuotedOption('password', 'terceSpot')

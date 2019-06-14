@@ -1,6 +1,7 @@
 site_name: Jenkins 2.0 Pipelines
 nav:
     - Home: index.md
+    - 'Guided Tour' : guidedtour.md
     - Configuration: configuration.md
     - 'Library steps':
         - artifactSetVersion: steps/artifactSetVersion.md
@@ -10,11 +11,13 @@ nav:
         - cloudFoundryDeploy: steps/cloudFoundryDeploy.md
         - commonPipelineEnvironment: steps/commonPipelineEnvironment.md
         - containerExecuteStructureTests: steps/containerExecuteStructureTests.md
+        - detectExecuteScan: steps/detectExecuteScan.md
         - dockerExecute: steps/dockerExecute.md
         - dockerExecuteOnKubernetes: steps/dockerExecuteOnKubernetes.md
         - durationMeasure: steps/durationMeasure.md
-        - githubPublishRelease: steps/githubPublishRelease.md
         - gaugeExecuteTests: steps/gaugeExecuteTests.md
+        - githubPublishRelease: steps/githubPublishRelease.md
+        - hadolintExecute: steps/hadolintExecute.md
         - handlePipelineStepErrors: steps/handlePipelineStepErrors.md
         - healthExecuteCheck: steps/healthExecuteCheck.md
         - influxWriteData: steps/influxWriteData.md
@@ -22,26 +25,33 @@ nav:
         - mailSendNotification: steps/mailSendNotification.md
         - mavenExecute: steps/mavenExecute.md
         - mtaBuild: steps/mtaBuild.md
+        - multicloudDeploy: steps/multicloudDeploy.md
         - neoDeploy: steps/neoDeploy.md
         - newmanExecute: steps/newmanExecute.md
+        - npmExecute: steps/npmExecute.md
         - pipelineExecute: steps/pipelineExecute.md
         - pipelineRestartSteps: steps/pipelineRestartSteps.md
         - pipelineStashFiles: steps/pipelineStashFiles.md
+        - pipelineStashFilesAfterBuild: steps/pipelineStashFilesAfterBuild.md
+        - pipelineStashFilesBeforeBuild: steps/pipelineStashFilesBeforeBuild.md
         - prepareDefaultValues: steps/prepareDefaultValues.md
         - seleniumExecuteTests: steps/seleniumExecuteTests.md
         - setupCommonPipelineEnvironment: steps/setupCommonPipelineEnvironment.md
         - slackSendNotification: steps/slackSendNotification.md
+        - snykExecute: steps/snykExecute.md
+        - sonarExecuteScan: steps/sonarExecuteScan.md
         - testsPublishResults: steps/testsPublishResults.md
-        - toolValidate: steps/toolValidate.md
         - transportRequestCreate: steps/transportRequestCreate.md
         - transportRequestRelease:  steps/transportRequestRelease.md
         - transportRequestUploadFile: steps/transportRequestUploadFile.md
         - uiVeri5ExecuteTests: steps/uiVeri5ExecuteTests.md
+        - whitesourceExecuteScan: steps/whitesourceExecuteScan.md
     - 'Scenarios':
         - 'Build and Deploy Hybrid Applications with Jenkins and SAP Solution Manager': scenarios/changeManagement.md
         - 'Build and Deploy SAP UI5 or SAP Fiori Applications on SAP Cloud Platform with Jenkins': scenarios/ui5-sap-cp/Readme.md
         - 'Build and Deploy Applications with Jenkins and the SAP Cloud Application Programming Model': scenarios/CAP_Scenario.md
-    - 'Required Plugins': jenkins/requiredPlugins.md
+    - Resources:
+        - 'Required Plugins': jenkins/requiredPlugins.md
 
 theme:
     name: 'material'
@@ -63,6 +73,5 @@ markdown_extensions:
 extra_css:
     - 'css/extra.css'
 edit_uri: edit/master/documentation/docs
-docs_dir: docs-tmp
 site_dir: docs-gen
 repo_url: https://github.com/SAP/jenkins-library

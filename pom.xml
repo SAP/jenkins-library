@@ -1,7 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project
+    xmlns="http://maven.apache.org/POM/4.0.0"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
         <groupId>org.jenkins-ci.plugins</groupId>
         <artifactId>plugin</artifactId>
@@ -10,17 +12,17 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.sap.cp.jenkins</groupId>
     <artifactId>jenkins-library</artifactId>
-    <version>0.9</version>
+    <version>0.11</version>
 
     <name>SAP CP Piper Library</name>
     <description>Shared library containing steps and utilities to set up continuous deployment processes for SAP technologies.</description>
     <url>https://sap.github.io/jenkins-library/</url>
 
     <licenses>
-      <license>
-        <name>Apache License 2.0</name>
-        <comments>https://github.com/SAP/jenkins-library/blob/master/LICENSE</comments>
-      </license>
+        <license>
+            <name>Apache License 2.0</name>
+            <comments>https://github.com/SAP/jenkins-library/blob/master/LICENSE</comments>
+        </license>
     </licenses>
 
     <repositories>

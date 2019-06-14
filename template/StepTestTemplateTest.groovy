@@ -1,4 +1,3 @@
-#!groovy
 import com.lesfurets.jenkins.unit.BasePipelineTest
 
 import static org.junit.Assert.assertEquals

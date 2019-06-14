@@ -1,4 +1,4 @@
-package com.sap.piper.cm;
+package com.sap.piper.cm
 
 import com.cloudbees.groovy.cps.NonCPS
 
@@ -15,7 +15,7 @@ public class StepHelpers {
 
         }
 
-        transportRequestId = script.commonPipelineEnvironment.getTransportRequestId()
+        transportRequestId = script.commonPipelineEnvironment.getValue('transportRequestId')
 
         if(transportRequestId?.trim()) {
             script.echo "[INFO] Transport request id '${transportRequestId}' retrieved from common pipeline environment."
@@ -23,7 +23,7 @@ public class StepHelpers {
         }
 
         script.echo "[INFO] Retrieving transport request id from commit history [from: ${configuration.changeManagement.git.from}, to: ${configuration.changeManagement.git.to}]." +
-                    " Searching for pattern '${configuration.changeManagement.transportRequestLabel}'. Searching with format '${configuration.changeManagement.git.format}'."
+            " Searching for pattern '${configuration.changeManagement.transportRequestLabel}'. Searching with format '${configuration.changeManagement.git.format}'."
 
         try {
             transportRequestId = cm.getTransportRequestId(
@@ -33,7 +33,7 @@ public class StepHelpers {
                                                             configuration.changeManagement.git.format
                                                         )
 
-            script.commonPipelineEnvironment.setTransportRequestId(transportRequestId)
+            script.commonPipelineEnvironment.setValue('transportRequestId', "${transportRequestId}")
             script.echo "[INFO] Transport request id '${transportRequestId}' retrieved from commit history"
 
         } catch(ChangeManagementException ex) {
@@ -62,7 +62,7 @@ public class StepHelpers {
         }
 
         script.echo "[INFO] Retrieving ChangeDocumentId from commit history [from: ${configuration.changeManagement.git.from}, to: ${configuration.changeManagement.git.to}]." +
-                    "Searching for pattern '${configuration.changeManagement.changeDocumentLabel}'. Searching with format '${configuration.changeManagement.git.format}'."
+            "Searching for pattern '${configuration.changeManagement.changeDocumentLabel}'. Searching with format '${configuration.changeManagement.git.format}'."
 
         try {
             changeDocumentId = cm.getChangeDocumentId(
@@ -91,15 +91,15 @@ public class StepHelpers {
             backendType = configuration.changeManagement.type as BackendType
         } catch(IllegalArgumentException e) {
             script.error "Invalid backend type: '${configuration.changeManagement.type}'. " +
-                  "Valid values: [${BackendType.values().join(', ')}]. " +
-                  "Configuration: 'changeManagement/type'."
+                "Valid values: [${BackendType.values().join(', ')}]. " +
+                "Configuration: 'changeManagement/type'."
         }
 
         if (backendType == BackendType.NONE) {
             script.echo "[INFO] Change management integration intentionally switched off. " +
-                 "In order to enable it provide 'changeManagement/type with one of " +
-                 "[${BackendType.values().minus(BackendType.NONE).join(', ')}] and maintain " +
-                 "other required properties like 'endpoint', 'credentialsId'."
+                "In order to enable it provide 'changeManagement/type with one of " +
+                "[${BackendType.values().minus(BackendType.NONE).join(', ')}] and maintain " +
+                "other required properties like 'endpoint', 'credentialsId'."
         }
 
         return backendType

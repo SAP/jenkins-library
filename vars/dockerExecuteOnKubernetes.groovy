@@ -5,6 +5,8 @@ import com.sap.piper.GenerateDocumentation
 import com.sap.piper.JenkinsUtils
 import com.sap.piper.Utils
 import com.sap.piper.k8s.SystemEnv
+import com.sap.piper.JsonUtils
+
 import groovy.transform.Field
 import hudson.AbortException
 
@@ -71,6 +73,12 @@ import hudson.AbortException
      */
     'dockerWorkspace',
     /**
+     * Kubernetes Security Context used for the pod.
+     * Can be used to specify uid and fsGroup.
+     * See: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/
+     */
+    'securityContext',
+    /**
      * Specific stashes that should be considered for the step execution.
      */
     'stashContent',
@@ -94,7 +102,7 @@ import hudson.AbortException
  */
 @GenerateDocumentation
 void call(Map parameters = [:], body) {
-    handlePipelineStepErrors(stepName: STEP_NAME, stepParameters: parameters) {
+    handlePipelineStepErrors(stepName: STEP_NAME, stepParameters: parameters, failOnError: true) {
 
         final script = checkScript(this, parameters) ?: this
 
@@ -113,6 +121,12 @@ void call(Map parameters = [:], body) {
             .addIfEmpty('uniqueId', UUID.randomUUID().toString())
         Map config = configHelper.use()
 
+        new Utils().pushToSWA([
+            step: STEP_NAME,
+            stepParamKey1: 'scriptMissing',
+            stepParam1: parameters?.script == null
+        ], config)
+
         if (!parameters.containerMap) {
             configHelper.withMandatoryProperty('dockerImage')
             config.containerName = 'container-exec'
@@ -124,9 +138,16 @@ void call(Map parameters = [:], body) {
 }
 
 def getOptions(config) {
-    return [name      : 'dynamic-agent-' + config.uniqueId,
-            label     : config.uniqueId,
-            containers: getContainerList(config)]
+    def namespace = config.jenkinsKubernetes.namespace
+    def options = [
+        name      : 'dynamic-agent-' + config.uniqueId,
+        label     : config.uniqueId,
+        yaml      : generatePodSpec(config)
+    ]
+    if (namespace) {
+        options.namespace = namespace
+    }
+    return options
 }
 
 void executeOnPod(Map config, utils, Closure body) {
@@ -141,8 +162,10 @@ void executeOnPod(Map config, utils, Closure body) {
      * In case third case, we need to create the 'container' stash to bring the modified content back to the host.
      */
     try {
-        if (config.containerName && config.stashContent.isEmpty()){
-            config.stashContent.add(stashWorkspace(config, 'workspace'))
+
+        def stashContent = config.stashContent
+        if (config.containerName && stashContent.isEmpty()){
+            stashContent = [stashWorkspace(config, 'workspace')]
         }
         podTemplate(getOptions(config)) {
             node(config.uniqueId) {
@@ -154,7 +177,7 @@ void executeOnPod(Map config, utils, Closure body) {
                     echo "ContainerConfig: ${containerParams}"
                     container(containerParams){
                         try {
-                            utils.unstashAll(config.stashContent)
+                            utils.unstashAll(stashContent)
                             body()
                         } finally {
                             stashWorkspace(config, 'container', true)
@@ -171,24 +194,50 @@ void executeOnPod(Map config, utils, Closure body) {
     }
 }
 
+private String generatePodSpec(Map config) {
+    def containers = getContainerList(config)
+    def podSpec = [
+        apiVersion: "v1",
+        kind: "Pod",
+        metadata: [
+            lables: config.uniqueId
+        ],
+        spec: [
+            containers: containers
+        ]
+    ]
+    podSpec.spec.securityContext = getSecurityContext(config)
+
+    return new JsonUtils().groovyObjectToPrettyJsonString(podSpec)
+}
+
+
 private String stashWorkspace(config, prefix, boolean chown = false) {
     def stashName = "${prefix}-${config.uniqueId}"
     try {
-        // Every dockerImage used in the dockerExecuteOnKubernetes should have user id 1000
         if (chown)  {
+            def securityContext = getSecurityContext(config)
+            def runAsUser = securityContext?.runAsUser ?: 1000
+            def fsGroup = securityContext?.fsGroup ?: 1000
             sh """#!${config.containerShell?:'/bin/sh'}
-chown -R 1000:1000 ."""
+chown -R ${runAsUser}:${fsGroup} ."""
         }
         stash(
             name: stashName,
             includes: config.stashIncludes.workspace,
-            excludes: config.stashExcludes.workspace
+            excludes: config.stashExcludes.workspace,
+            //inactive due to negative side-effects, we may require a dedicated git stash to be used
+            //useDefaultExcludes: false
         )
         return stashName
     } catch (AbortException | IOException e) {
         echo "${e.getMessage()}"
     }
     return null
+}
+
+private Map getSecurityContext(Map config) {
+    return config.securityContext ?: config.jenkinsKubernetes.securityContext ?: [:]
 }
 
 private void unstashWorkspace(config, prefix) {
@@ -200,35 +249,52 @@ private void unstashWorkspace(config, prefix) {
 }
 
 private List getContainerList(config) {
-    result = []
-    result.push(containerTemplate(
+    def result = [[
         name: 'jnlp',
         image: config.jenkinsKubernetes.jnlpAgent
-    ))
+    ]]
     config.containerMap.each { imageName, containerName ->
         def containerPullImage = config.containerPullImageFlags?.get(imageName)
-        def templateParameters = [
+        def containerSpec = [
             name: containerName.toLowerCase(),
             image: imageName,
-            alwaysPullImage: containerPullImage != null ? containerPullImage : config.dockerPullImage,
-            envVars: getContainerEnvs(config, imageName)
+            imagePullPolicy: containerPullImage ? "Always" : "IfNotPresent",
+            env: getContainerEnvs(config, imageName)
         ]
 
-        if (!config.containerCommands?.get(imageName)?.isEmpty()) {
-            templateParameters.command = config.containerCommands?.get(imageName)?: '/usr/bin/tail -f /dev/null'
+        def configuredCommand = config.containerCommands?.get(imageName)
+        def shell = config.containerShell ?: '/bin/sh'
+        if (configuredCommand == null) {
+            containerSpec['command'] = [
+                '/usr/bin/tail',
+                '-f',
+                '/dev/null'
+            ]
+        } else if(configuredCommand != "") {
+            // apparently "" is used as a flag for not settings container commands !?
+            containerSpec['command'] =
+                    (configuredCommand in List) ? configuredCommand : [
+                        shell,
+                        '-c',
+                        configuredCommand
+                    ]
         }
 
         if (config.containerPortMappings?.get(imageName)) {
             def ports = []
             def portCounter = 0
             config.containerPortMappings.get(imageName).each {mapping ->
-                mapping.name = "${containerName}${portCounter}".toString()
-                ports.add(portMapping(mapping))
+                def name = "${containerName}${portCounter}".toString()
+                if(mapping.containerPort != mapping.hostPort) {
+                    echo ("[WARNING][${STEP_NAME}]: containerPort and hostPort are different for container '${containerName}'. "
+                        + "The hostPort will be ignored.")
+                }
+                ports.add([name: name, containerPort: mapping.containerPort])
                 portCounter ++
             }
-            templateParameters.ports = ports
+            containerSpec.ports = ports
         }
-        result.push(containerTemplate(templateParameters))
+        result.push(containerSpec)
     }
     return result
 }
@@ -244,6 +310,10 @@ private List getContainerEnvs(config, imageName) {
     def dockerEnvVars = config.containerEnvVars?.get(imageName) ?: config.dockerEnvVars ?: [:]
     def dockerWorkspace = config.containerWorkspaces?.get(imageName) != null ? config.containerWorkspaces?.get(imageName) : config.dockerWorkspace ?: ''
 
+    def envVar = { e ->
+        [ name: e.key, value: e.value ]
+    }
+
     if (dockerEnvVars) {
         for (String k : dockerEnvVars.keySet()) {
             containerEnv << envVar(key: k, value: dockerEnvVars[k].toString())
@@ -258,11 +328,6 @@ private List getContainerEnvs(config, imageName) {
     SystemEnv systemEnv = new SystemEnv()
     for (String env : systemEnv.getEnv().keySet()) {
         containerEnv << envVar(key: env, value: systemEnv.get(env))
-    }
-
-    // ContainerEnv array can't be empty. Using a stub to avoid failure.
-    if (!containerEnv) {
-        containerEnv << envVar(key: "EMPTY_VAR", value: " ")
     }
 
     return containerEnv
