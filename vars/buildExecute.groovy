@@ -69,7 +69,7 @@ void call(Map parameters = [:]) {
             echo "[${STEP_NAME}] no Docker deamon available, thus switching to Kaniko build"
         }
 
-        // report to SWA
+        // telemetry reporting
         utils.pushToSWA([stepParam1: config.buildTool, 'buildTool': config.buildTool], config)
 
         switch(config.buildTool){
