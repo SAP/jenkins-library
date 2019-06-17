@@ -233,7 +233,9 @@ chown -R ${runAsUser}:${fsGroup} ."""
         stash(
             name: stashName,
             includes: config.stashIncludes.workspace,
-            excludes: config.stashExcludes.workspace
+            excludes: config.stashExcludes.workspace,
+            //inactive due to negative side-effects, we may require a dedicated git stash to be used
+            //useDefaultExcludes: false
         )
         return stashName
     } catch (AbortException | IOException e) {

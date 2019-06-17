@@ -746,6 +746,50 @@ class WhitesourceExecuteScanTest extends BasePiperTest {
     }
 
     @Test
+    void testPassProjectNamesToCPE() {
+        helper.registerAllowedMethod("findFiles", [Map.class], { map ->
+            if (map.glob == "**${File.separator}pom.xml") {
+                return [new File('maven1/pom.xml'), new File('maven2/pom.xml')].toArray()
+            }
+            if (map.glob == "**${File.separator}package.json") {
+                return [new File('npm1/package.json'), new File('npm2/package.json'), new File('npm3/package.json'), new File('npm4/package.json')].toArray()
+            }
+            return [].toArray()
+        })
+
+        helper.registerAllowedMethod("parallel", [Map.class], { map ->
+            map.each {m ->
+                if (m.key != 'failFast') {
+                    m.value()
+                }
+            }
+        })
+
+        helper.registerAllowedMethod("readProperties", [Map], {
+            def result = new Properties()
+            return result
+        })
+
+        //need to use call due to mock above
+        stepRule.step.call([
+            script                           : nullScript,
+            descriptorUtilsStub              : descriptorUtilsStub,
+            whitesourceRepositoryStub        : whitesourceStub,
+            whitesourceOrgAdminRepositoryStub: whitesourceOrgAdminRepositoryStub,
+            scanType                         : 'mta',
+            productName                      : 'SHC - Piper',
+            buildDescriptorExcludeList       : ["maven2${File.separator}pom.xml".toString()],
+            juStabUtils                      : utils,
+            orgToken                         : 'b39d1328-52e2-42e3-98f0-932709daf3f0'
+        ])
+
+        assertThat(nullScript.commonPipelineEnvironment.getValue('whitesourceProjectNames'), hasItem('com.sap.maven.test-java - 1'))
+        assertThat(nullScript.commonPipelineEnvironment.getValue('whitesourceProjectNames'), hasItem('com.sap.node.test-node - 1'))
+
+
+    }
+
+        @Test
     void testNPMStatusCheckScanException() {
         thrown.expect(AbortException.class)
         stepRule.step.checkStatus(-1 & 0xFF, [whitesource:[licensingVulnerabilities: true]])

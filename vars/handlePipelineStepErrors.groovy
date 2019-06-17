@@ -19,6 +19,10 @@ import org.jenkinsci.plugins.workflow.steps.FlowInterruptedException
      * @possibleValues `true`, `false`
      */
     'failOnError',
+    /** Defines the url of the library's documentation that will be used to generate the corresponding links to the step documentation.*/
+    'libraryDocumentationUrl',
+    /** Defines the url of the library's repository that will be used to generate the corresponding links to the step implementation.*/
+    'libraryRepositoryUrl',
     /** Defines a list of mandatory steps (step names) which have to be successful (=stop the pipeline), even if `failOnError: false` */
     'mandatorySteps',
     /**
@@ -33,10 +37,6 @@ import org.jenkinsci.plugins.workflow.steps.FlowInterruptedException
      * @possibleValues `true`, `false`
      */
     'echoDetails',
-    /** Defines the url of the library's documentation that will be used to generate the corresponding links to the step documentation.*/
-    'libraryDocumentationUrl',
-    /** Defines the url of the library's repository that will be used to generate the corresponding links to the step implementation.*/
-    'libraryRepositoryUrl',
     /** Defines the name of the step for which the error handling is active. It will be shown in the console log.*/
     'stepName',
     /** Defines the documented step, in case the documentation reference should point to a different step. */

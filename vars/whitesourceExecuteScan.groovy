@@ -175,6 +175,7 @@ import static com.sap.piper.Prerequisites.checkScript
         productName                             : 'productName',
         productToken                            : 'productToken',
         projectNames                            : 'projectNames',
+        productVersion                          : 'productVersion',
         serviceUrl                              : 'serviceUrl',
         configFilePath                          : 'configFilePath',
         userTokenCredentialsId                  : 'userTokenCredentialsId',
@@ -226,6 +227,11 @@ void call(Map parameters = [:]) {
         def utils = parameters.juStabUtils ?: new Utils()
         def descriptorUtils = parameters.descriptorUtilsStub ?: new DescriptorUtils()
         def statusCode = 1
+
+        //initialize CPE for passing whiteSourceProjects
+        if(script.commonPipelineEnvironment.getValue('whitesourceProjectNames') == null) {
+            script.commonPipelineEnvironment.setValue('whitesourceProjectNames', [])
+        }
 
         // load default & individual configuration
         Map config = ConfigurationHelper.newInstance(this)
@@ -357,6 +363,10 @@ private def triggerWhitesourceScanWithUserKey(script, config, utils, descriptorU
                 def projectName = "${config.whitesource.projectName}${config.whitesource.productVersion?' - ':''}${config.whitesource.productVersion?:''}".toString()
                 if(!config.whitesource['projectNames'].contains(projectName))
                     config.whitesource['projectNames'].add(projectName)
+
+                //share projectNames with other steps
+                if(!script.commonPipelineEnvironment.getValue('whitesourceProjectNames').contains(projectName))
+                    script.commonPipelineEnvironment.getValue('whitesourceProjectNames').add(projectName)
 
                 WhitesourceConfigurationHelper.extendUAConfigurationFile(script, utils, config, path)
                 dockerExecute(script: script, dockerImage: config.dockerImage, dockerWorkspace: config.dockerWorkspace, stashContent: config.stashContent) {
