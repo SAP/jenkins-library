@@ -147,4 +147,26 @@ class PiperPipelineStageInitTest extends BasePiperTest {
             assertThat(nullScript.commonPipelineEnvironment.getGitHttpsUrl(), is(scmInfoTest.expectedHttp))
         }
     }
+
+    @Test
+    void testPullRequestStageStepActivation() {
+
+        nullScript.commonPipelineEnvironment.configuration = [
+            runStep: [:]
+        ]
+        def config = [
+            pullRequestStageName: 'Pull-Request Voting',
+            stepMappings: [
+                karma: 'karmaExecuteTests',
+                whitesource: 'whitesourceExecuteScan'
+            ],
+            labelPrefix: 'pr_'
+        ]
+
+        def actions = ['karma', 'pr_whitesource']
+        jsr.step.piperPipelineStageInit.setPullRequestStageStepActivation(nullScript, config, actions)
+
+        assertThat(nullScript.commonPipelineEnvironment.configuration.runStep."Pull-Request Voting".karmaExecuteTests, is(true))
+        assertThat(nullScript.commonPipelineEnvironment.configuration.runStep."Pull-Request Voting".whitesourceExecuteScan, is(true))
+    }
 }

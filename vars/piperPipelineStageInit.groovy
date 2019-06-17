@@ -1,4 +1,5 @@
 import com.sap.piper.ConfigurationHelper
+import com.sap.piper.JenkinsUtils
 import com.sap.piper.Utils
 import groovy.transform.Field
 
@@ -53,6 +54,26 @@ void call(Map parameters = [:]) {
         checkBuildTool(config)
 
         piperInitRunStageConfiguration script: script, stageConfigResource: config.stageConfigResource
+
+        // CHANGE_ID is set only for pull requests
+        if (env.CHANGE_ID) {
+            List prActions = []
+
+            //get trigger action from comment like /piper action
+            def jenkinsUtils = new JenkinsUtils()
+            def commentTriggerAction = jenkinsUtils.getIssueCommentTriggerAction()
+
+            if (commentTriggerAction != null) prActions.add(commentTriggerAction)
+
+            try {
+                prActions.addAll(pullRequest.getLabels().asList())
+            } catch (ex) {
+                echo "[${STEP_NAME}] GitHub labels could not be retrieved from Pull Request, please make sure that credentials are maintained on multi-branch job."
+            }
+
+
+            setPullRequestStageStepActivation(script, config, prActions)
+        }
 
         if (env.BRANCH_NAME == config.productiveBranch) {
             if (parameters.script.commonPipelineEnvironment.configuration.runStep?.get('Init')?.slackSendNotification) {
@@ -109,5 +130,23 @@ private void setScmInfoOnCommonPipelineEnvironment(script, scmInfo) {
     else if (gitUrl.indexOf('@') > 0) {
         script.commonPipelineEnvironment.setGitSshUrl(gitUrl)
         script.commonPipelineEnvironment.setGitHttpsUrl("https://${(gitUrl.split('@')[1]).replace(':', '/')}")
+    }
+}
+
+private void setPullRequestStageStepActivation(script, config, List actions) {
+
+    if (script.commonPipelineEnvironment.configuration.runStep == null)
+        script.commonPipelineEnvironment.configuration.runStep = [:]
+    if (script.commonPipelineEnvironment.configuration.runStep[config.pullRequestStageName] == null)
+        script.commonPipelineEnvironment.configuration.runStep[config.pullRequestStageName] = [:]
+
+    actions.each {action ->
+        if (action.startsWith(config.labelPrefix))
+            action = action.minus(config.labelPrefix)
+
+        def stepName = config.stepMappings[action]
+        if (stepName) {
+            script.commonPipelineEnvironment.configuration.runStep."${config.pullRequestStageName}"."${stepName}" = true
+        }
     }
 }

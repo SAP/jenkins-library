@@ -77,6 +77,8 @@ void call(Map parameters = [:]) {
         .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS)
         .mixinStageConfig(script.commonPipelineEnvironment, stageName, STEP_CONFIG_KEYS)
         .mixin(parameters, PARAMETER_KEYS)
+        .addIfEmpty('karmaExecuteTests', script.commonPipelineEnvironment.configuration.runStep?.get(stageName)?.karmaExecuteTests)
+        .addIfEmpty('whitesourceExecuteScan', script.commonPipelineEnvironment.configuration.runStep?.get(stageName)?.whitesourceExecuteScan)
         .use()
 
     piperStageWrapper (script: script, stageName: stageName) {
