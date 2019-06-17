@@ -32,9 +32,7 @@ class DockerUtils implements Serializable {
         def targetDockerRegistry = target.registryUrl ? "${getRegistryFromUrl(target.registryUrl)}/" : ''
         def targetImageFullName = targetDockerRegistry + target.image
 
-        if (withDockerDeamon()) {
-            //not yet implemented here - available directly via pushToDockerRegistry
-        } else {
+        if (!withDockerDeamon()) {
             script.withCredentials([script.usernamePassword(
                 credentialsId: target.credentialsId,
                 passwordVariable: 'password',
@@ -43,6 +41,8 @@ class DockerUtils implements Serializable {
                 skopeoMoveImage(sourceImageFullName, targetImageFullName, script.userid, script.password)
             }
         }
+        //else not yet implemented here - available directly via pushToDockerRegistry
+
     }
 
     private void skopeoMoveImage(sourceImageFullName, targetImageFullName, targetUserId, targetPassword) {

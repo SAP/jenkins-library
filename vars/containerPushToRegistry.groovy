@@ -114,16 +114,15 @@ void call(Map parameters = [:]) {
                 script: script,
                 dockerImage: 'docker.wdf.sap.corp:50000/piper/skopeo'
             ) {
-                //since no Docker deamon is available we can only push from a Docker tar archive or move from one registry to another
-                if (config.dockerArchive) {
-                    //to be implemented later - not relevant yet
-                } else {
+
+                if (!config.dockerArchive) {
                     dockerUtils.moveImage([image: config.sourceImage, registryUrl: config.sourceRegistryUrl], [image: config.dockerImage, registryUrl: config.dockerRegistryUrl, credentialsId: config.dockerCredentialsId])
                     if (config.tagLatest) {
                         def latestImage = "${config.dockerImage.split(':')[0]}:latest"
                         dockerUtils.moveImage([image: config.sourceImage, registryUrl: config.sourceRegistryUrl], [image: latestImage, registryUrl: config.dockerRegistryUrl, credentialsId: config.dockerCredentialsId])
                     }
                 }
+                //else not implemented: since no Docker deamon is available we can only push from a Docker tar archive or move from one registry to another
             }
         }
     }

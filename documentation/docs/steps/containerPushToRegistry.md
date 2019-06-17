@@ -2,8 +2,8 @@
 
 ## ${docGenDescription}
 
-
 ## Prerequisites
+
 You need to have a valid user with write permissions in the target docker registry.
 
 Credentials for the target docker registry have been configured in Jenkins with a dedicated Id.
@@ -19,6 +19,7 @@ via _Jenkins_ -> _Credentials_ -> _System_ -> _Global credentials (unrestricted)
 Usage of pipeline step:
 
 **OPTION A:** To pull a Docker image from an existing docker registry and push to a different docker registry:
+
 ```groovy
 containerPushToRegistry script: this,
                         dockerCredentialsId: 'myTargetRegistryCredentials',
@@ -26,6 +27,7 @@ containerPushToRegistry script: this,
                         sourceImage: 'path/to/mySourceImageWith:tag',
                         dockerRegistryUrl: 'https://my.target.docker.registry:50000'
 ```
+
 **OPTION B:** To push a locally build docker image into the target registry (only possible when a Docker deamon is available on your Jenkins node):
 
 ```groovy
