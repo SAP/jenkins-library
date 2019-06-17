@@ -4,12 +4,12 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.RuleChain
-import util.*
+import util.BasePiperTest
+import util.JenkinsLoggingRule
+import util.JenkinsReadYamlRule
+import util.JenkinsStepRule
+import util.Rules
 
-import static org.hamcrest.Matchers.containsString
-import static org.hamcrest.Matchers.hasItem
-import static org.hamcrest.Matchers.hasItems
-import static org.hamcrest.Matchers.hasItems
 import static org.hamcrest.Matchers.hasItems
 import static org.hamcrest.Matchers.is
 import static org.hamcrest.Matchers.not
