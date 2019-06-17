@@ -193,6 +193,25 @@ class ContainerPushToRegistryTest extends BasePiperTest {
     }
 
     @Test
+    void testKubernetesMoveTagLatest() {
+        binding.setVariable('docker', null)
+        shellCallRule.setReturnValue('docker ps -q > /dev/null', 1)
+
+        stepRule.step.containerPushToRegistry(
+            script: nullScript,
+            dockerCredentialsId: 'testCredentialsId',
+            dockerImage: 'testImage:tag',
+            dockerRegistryUrl: 'https://my.registry:55555',
+            sourceImage: 'sourceImage:sourceTag',
+            sourceRegistryUrl: 'https://my.source.registry:44444',
+            tagLatest: true
+        )
+
+        assertThat(shellCallRule.shell, hasItem('skopeo copy --src-tls-verify=false --dest-tls-verify=false --dest-creds=\'registryUser\':\'********\' docker://my.source.registry:44444/sourceImage:sourceTag docker://my.registry:55555/testImage:tag'))
+        assertThat(shellCallRule.shell, hasItem('skopeo copy --src-tls-verify=false --dest-tls-verify=false --dest-creds=\'registryUser\':\'********\' docker://my.source.registry:44444/sourceImage:sourceTag docker://my.registry:55555/testImage:latest'))
+    }
+
+    @Test
     void testKubernetesSourceOnly() {
         binding.setVariable('docker', null)
         shellCallRule.setReturnValue('docker ps -q > /dev/null', 1)

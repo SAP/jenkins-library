@@ -1,3 +1,4 @@
+import com.sap.piper.GenerateDocumentation
 import com.sap.piper.Utils
 import com.sap.piper.ConfigurationHelper
 import com.sap.piper.DockerUtils
@@ -42,6 +43,15 @@ import static com.sap.piper.Prerequisites.checkScript
 ])
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
 
+/**
+ * This step allows you to push a Docker image into a dedicated Container registry.
+ *
+ * By default an image available via the local Docker deamon will be pushed.
+ *
+ * In case you want to pull an existing image from a remote container registry, a source image and source registry needs to be specified.<br />
+ * This makes it possible to move an image from one registry to another.
+ */
+@GenerateDocumentation
 void call(Map parameters = [:]) {
     handlePipelineStepErrors (stepName: STEP_NAME, stepParameters: parameters) {
         final script = checkScript(this, parameters) ?: this
@@ -109,6 +119,10 @@ void call(Map parameters = [:]) {
                     //to be implemented later - not relevant yet
                 } else {
                     dockerUtils.moveImage([image: config.sourceImage, registryUrl: config.sourceRegistryUrl], [image: config.dockerImage, registryUrl: config.dockerRegistryUrl, credentialsId: config.dockerCredentialsId])
+                    if (config.tagLatest) {
+                        def latestImage = "${config.dockerImage.split(':')[0]}:latest"
+                        dockerUtils.moveImage([image: config.sourceImage, registryUrl: config.sourceRegistryUrl], [image: latestImage, registryUrl: config.dockerRegistryUrl, credentialsId: config.dockerCredentialsId])
+                    }
                 }
             }
         }

@@ -1,7 +1,7 @@
 import com.sap.piper.DockerUtils
+import com.sap.piper.GenerateDocumentation
 import com.sap.piper.Utils
 import com.sap.piper.ConfigurationHelper
-//import com.sap.piper.Notify
 
 import groovy.text.SimpleTemplateEngine
 import groovy.transform.Field
@@ -10,7 +10,10 @@ import static com.sap.piper.Prerequisites.checkScript
 
 @Field String STEP_NAME = getClass().getName()
 @Field Set GENERAL_CONFIG_KEYS = [
-    /** Defines the tool used for the build. */
+    /**
+     * Defines the tool used for the build.
+     * @possibleValues `docker`, `kaniko`, `maven`, `mta`, `npm`
+     */
     'buildTool',
     /** For Docker builds only (mandatory): name of the image to be built. */
     'dockerImageName',
@@ -30,7 +33,22 @@ import static com.sap.piper.Prerequisites.checkScript
 ])
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
 
-void call(Map parameters = [:], body = '') {
+/**
+ * This step serves as generic entry point in pipelines for building artifacts.
+ *
+ * You can use pre-defined `buildTool`s.
+ *
+ * Alternatively you can define a command via `dockerCommand` which should be executed in `dockerImage`.<br />
+ * This allows you to trigger any build tool using a defined Docker container which provides the required build infrastructure.
+ *
+ * When using `buildTool: docker` or `buildTool: kaniko` the created container image is uploaded to a container registry.<br />
+ * You need to make sure that the required credentials are provided to the step.
+ *
+ * For all other `buildTool`s the artifact will just be stored in the workspace and could then be `stash`ed for later use.
+ *
+ */
+@GenerateDocumentation
+void call(Map parameters = [:]) {
     handlePipelineStepErrors (stepName: STEP_NAME, stepParameters: parameters) {
         final script = checkScript(this, parameters) ?: this
         def utils = parameters.juStabUtils ?: new Utils()
