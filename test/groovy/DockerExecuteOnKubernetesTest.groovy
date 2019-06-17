@@ -373,6 +373,8 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
         assertThat(securityContext, is(equalTo(expectedSecurityContext)))
     }
 
+    /*
+    Due to negative side-effect of full git stashing
     @Test
     void testDockerExecuteOnKubernetesWorkspaceStashing() {
 
@@ -384,6 +386,7 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
         assertTrue(bodyExecuted)
         assertThat(stashMap.useDefaultExcludes, is(false))
     }
+    */
 
 
     private container(options, body) {
