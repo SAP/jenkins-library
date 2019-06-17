@@ -14,6 +14,7 @@ import util.Rules
 import static org.hamcrest.CoreMatchers.containsString
 import static org.hamcrest.CoreMatchers.hasItem
 import static org.hamcrest.CoreMatchers.is
+import static org.hamcrest.CoreMatchers.nullValue
 import static org.junit.Assert.assertThat
 
 class BuildExecuteTest extends BasePiperTest {
@@ -149,6 +150,26 @@ class BuildExecuteTest extends BasePiperTest {
     }
 
     @Test
+    void testDockerNoPush() {
+        binding.setVariable('docker', new DockerMock('test'))
+        def pushParams= [:]
+        helper.registerAllowedMethod('containerPushToRegistry', [Map.class], {m ->
+            pushParams = m
+            return
+        })
+        stepRule.step.buildExecute(
+            script: nullScript,
+            buildTool: 'docker',
+            dockerImageName: 'path/to/myImage',
+            dockerImageTag: 'myTag',
+            dockerRegistryUrl: ''
+        )
+
+        assertThat(pushParams.dockerBuildImage, nullValue())
+        assertThat(pushParams.dockerRegistryUrl, nullValue())
+    }
+
+    @Test
     void testKaniko() {
         def kanikoParams = [:]
         helper.registerAllowedMethod('kanikoExecute', [Map.class], {m ->
@@ -165,6 +186,25 @@ class BuildExecuteTest extends BasePiperTest {
         )
 
         assertThat(kanikoParams.containerImageNameAndTag.toString(), is('my.registry:55555/path/to/myImage:myTag'))
+    }
+
+    @Test
+    void testKanikoNoPush() {
+        def kanikoParams = [:]
+        helper.registerAllowedMethod('kanikoExecute', [Map.class], {m ->
+            kanikoParams = m
+            return
+        })
+
+        stepRule.step.buildExecute(
+            script: nullScript,
+            buildTool: 'kaniko',
+            dockerImageName: 'path/to/myImage',
+            dockerImageTag: 'myTag',
+            dockerRegistryUrl: ''
+        )
+
+        assertThat(kanikoParams.containerImageNameAndTag, is(''))
     }
 
     @Test

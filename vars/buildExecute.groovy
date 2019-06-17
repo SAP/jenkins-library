@@ -17,7 +17,7 @@ import static com.sap.piper.Prerequisites.checkScript
     'buildTool',
     /** For Docker builds only (mandatory): name of the image to be built. */
     'dockerImageName',
-    /** For Docker builds only (mandatory): Defines the registry url where the image should be pushed to, incl. the protocol like `https://my.registry.com`*/
+    /** For Docker builds only: Defines the registry url where the image should be pushed to, incl. the protocol like `https://my.registry.com`. If it is not defined, image will not be pushed to a registry.*/
     'dockerRegistryUrl',
 ]
 @Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS.plus([
@@ -86,17 +86,20 @@ void call(Map parameters = [:]) {
                 ConfigurationHelper.newInstance(this, config)
                     .withMandatoryProperty('dockerImageName')
                     .withMandatoryProperty('dockerImageTag')
-                    .withMandatoryProperty('dockerRegistryUrl')
 
                 def dockerImageNameAndTag = "${config.dockerImageName}:${config.dockerImageTag}"
 
                 if (config.buildTool == 'kaniko') {
-                    kanikoExecute script: script, containerImageNameAndTag: "${dockerUtils.getRegistryFromUrl(config.dockerRegistryUrl)}/${dockerImageNameAndTag}"
+                    def containerImageNameAndTag = config.dockerRegistryUrl ? "${dockerUtils.getRegistryFromUrl(config.dockerRegistryUrl)}/${dockerImageNameAndTag}" : ''
+                    kanikoExecute script: script, containerImageNameAndTag: containerImageNameAndTag
                 } else {
                     def dockerBuildImage = docker.build(dockerImageNameAndTag, "${config.containerBuildOptions} .")
-                    containerPushToRegistry script: this, dockerBuildImage: dockerBuildImage, dockerRegistryUrl: config.dockerRegistryUrl
+                    //only push if registry is defined
+                    if (config.dockerRegistryUrl) {
+                        containerPushToRegistry script: this, dockerBuildImage: dockerBuildImage, dockerRegistryUrl: config.dockerRegistryUrl
+                    }
                 }
-                commonPipelineEnvironment.setValue('containerImage', dockerImageNameAndTag)
+                script.commonPipelineEnvironment.setValue('containerImage', dockerImageNameAndTag)
                 break
             default:
                 if (config.dockerImage && config.dockerCommand) {
