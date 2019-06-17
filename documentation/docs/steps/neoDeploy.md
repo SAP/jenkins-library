@@ -18,6 +18,8 @@
 
 ## ${docGenConfiguration}
 
+## ${docJenkinsPluginDependencies}
+
 ## Side effects
 
 none

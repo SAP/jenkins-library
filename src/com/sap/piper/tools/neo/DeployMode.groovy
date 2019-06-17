@@ -24,6 +24,6 @@ enum DeployMode {
             throw new IllegalArgumentException("${value} is not in the list of possible values ${stringValues()}")
         }
 
-        return enumValue;
+        return enumValue
     }
 }

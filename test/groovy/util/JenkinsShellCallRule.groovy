@@ -31,8 +31,8 @@ class JenkinsShellCallRule implements TestRule {
         @Override
         public boolean equals(Object obj) {
 
-            if (obj == null || !obj instanceof Command) return false;
-            Command other = (Command) obj;
+            if (obj == null || !obj instanceof Command) return false
+            Command other = (Command) obj
             return type == other.type && script == other.script
         }
     }
