@@ -1,6 +1,7 @@
 site_name: Jenkins 2.0 Pipelines
 nav:
     - Home: index.md
+    - 'Guided Tour' : guidedtour.md
     - Configuration: configuration.md
     - 'Library steps':
         - artifactSetVersion: steps/artifactSetVersion.md
@@ -49,7 +50,8 @@ nav:
         - 'Build and Deploy Hybrid Applications with Jenkins and SAP Solution Manager': scenarios/changeManagement.md
         - 'Build and Deploy SAP UI5 or SAP Fiori Applications on SAP Cloud Platform with Jenkins': scenarios/ui5-sap-cp/Readme.md
         - 'Build and Deploy Applications with Jenkins and the SAP Cloud Application Programming Model': scenarios/CAP_Scenario.md
-    - 'Required Plugins': jenkins/requiredPlugins.md
+    - Resources:
+        - 'Required Plugins': jenkins/requiredPlugins.md
 
 theme:
     name: 'material'
