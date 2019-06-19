@@ -29,8 +29,8 @@ While using a custom docker file, ensure that the following tools are installed:
 ## Example
 
 ```groovy
-def mtarFileName
 dir('/path/to/FioriApp'){
-  mtarFileName = mtaBuild script:this, buildTarget: 'NEO'
+  mtaBuild script:this, buildTarget: 'NEO'
 }
+def mtarFilePath = commonPipelineEnvironment.getMtarFilePath()
 ```
