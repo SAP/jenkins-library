@@ -93,11 +93,6 @@
             <version>2.2</version>
         </dependency>
 
-        <!-- depenency test -->
-
-
-        <!-- depenency test -->
-
         <!--LesFurets Jenkins Pipeline Unit testing framework: https://github.com/lesfurets/JenkinsPipelineUnit-->
         <dependency>
             <groupId>com.lesfurets</groupId>
