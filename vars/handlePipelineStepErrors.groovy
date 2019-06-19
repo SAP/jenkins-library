@@ -119,7 +119,7 @@ private String formatErrorMessage(Map config, error){
         libraryDocumentationUrl: config.libraryDocumentationUrl,
         libraryRepositoryUrl: config.libraryRepositoryUrl,
         stepName: config.stepName,
-        stepParameters: (config.stepParameters?.verbose == true) ? config.stepParameters?.toString() : '*** to show step parameters, set verbose:true in general pipeline configuration ***/n*** WARNING: this may reveal sensitive information. ***'
+        stepParameters: (config.stepParameters?.verbose == true) ? config.stepParameters?.toString() : '*** to show step parameters, set verbose:true in general pipeline configuration\n*** WARNING: this may reveal sensitive information. ***'
     ]
     return SimpleTemplateEngine
         .newInstance()
