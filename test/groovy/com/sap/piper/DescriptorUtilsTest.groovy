@@ -111,15 +111,15 @@ class DescriptorUtilsTest extends BasePiperTest {
     }
 
     @Test
-    void testGetDlangGAV() {
+    void testGetDubGAV() {
 
         helper.registerAllowedMethod("readJSON", [Map.class], {
             searchConfig ->
-                def packageJsonFile = new File("test/resources/DescriptorUtils/dlang/${searchConfig.file}")
+                def packageJsonFile = new File("test/resources/DescriptorUtils/dub/${searchConfig.file}")
                 return new JsonUtils().jsonStringToGroovyObject(packageJsonFile.text)
         })
 
-        def gav = descriptorUtils.getDlangGAV('dub.json')
+        def gav = descriptorUtils.getDubGAV('dub.json')
 
         assertEquals(gav.group, 'com.sap.dlang')
         assertEquals(gav.artifact, 'hdi-deploy')
