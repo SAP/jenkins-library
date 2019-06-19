@@ -47,6 +47,7 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
     def dockerWorkspace
     def podName = ''
     def podLabel = ''
+    def podNodeSelector = ''
     def containersList = []
     def imageList = []
     def containerName = ''
@@ -57,6 +58,7 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
     def pullImageMap = [:]
     def namespace
     def securityContext
+    Map stashMap
 
     @Before
     void init() {
@@ -74,6 +76,7 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
             podName = options.name
             podLabel = options.label
             namespace = options.namespace
+            podNodeSelector = options.nodeSelector
             def podSpec = new JsonSlurper().parseText(options.yaml)  // this yaml is actually json
             def containers = podSpec.spec.containers
             securityContext = podSpec.spec.securityContext
@@ -92,6 +95,10 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
             }
             body()
         })
+        helper.registerAllowedMethod('stash', [Map.class], {m ->
+            stashMap = m
+        })
+
     }
 
     @Test
@@ -207,7 +214,7 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
 
     @Test
     void testDockerExecuteOnKubernetesEmptyContainerMapNoDockerImage() throws Exception {
-        exception.expect(IllegalArgumentException.class);
+        exception.expect(IllegalArgumentException.class)
             stepRule.step.dockerExecuteOnKubernetes(
                 script: nullScript,
                 juStabUtils: utils,
@@ -366,6 +373,19 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
                 ) { bodyExecuted = true }
         assertTrue(bodyExecuted)
         assertThat(securityContext, is(equalTo(expectedSecurityContext)))
+    }
+
+    @Test
+    void testDockerExecuteOnKubernetesCustomNode() {
+
+        stepRule.step.dockerExecuteOnKubernetes(
+            script: nullScript,
+            juStabUtils: utils,
+            dockerImage: 'maven:3.5-jdk-8-alpine',
+            nodeSelector: 'size:big'
+        ) { bodyExecuted = true }
+        assertTrue(bodyExecuted)
+        assertThat(podNodeSelector, is('size:big'))
     }
 
 

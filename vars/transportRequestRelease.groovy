@@ -70,7 +70,7 @@ import static com.sap.piper.cm.StepHelpers.getBackendTypeAndLogInfoIfCMIntegrati
     'transportRequestId',
     /** @see transportRequestCreate */
     'verbose',
-  ])
+])
 
 /** Releases a Transport Request. */
 @GenerateDocumentation

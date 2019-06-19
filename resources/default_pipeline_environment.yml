@@ -44,6 +44,8 @@ general:
     #  runAsUser: 1000
     #  fsGroup: 1000
   manualConfirmation: true
+  manualConfirmationMessage: 'Shall we proceed to Promote & Release?'
+  manualConfirmationTimeout: 720 # 1 month
   productiveBranch: 'master'
   whitesource:
     serviceUrl: 'https://saas.whitesourcesoftware.com/api'
@@ -249,6 +251,19 @@ steps:
       languageRunner: 'ruby'
       runCommand: 'bundle install && bundle exec gauge run'
       testOptions: 'specs'
+  hadolintExecute:
+    configurationFile: '.hadolint.yaml'
+    configurationUrl: ''
+    dockerFile: './Dockerfile'
+    dockerImage: 'hadolint/hadolint:latest-debian'
+    qualityGates:
+      - threshold: 1
+        type: 'TOTAL_ERROR'
+        unstable: false
+    reportFile: 'hadolint.xml'
+    reportName: 'HaDoLint'
+    stashContent:
+      - 'buildDescriptor'
   handlePipelineStepErrors:
     echoDetails: true
     failOnError: true
@@ -306,6 +321,7 @@ steps:
     dockerImage: 's4sdk/docker-neo-cli'
     deployMode: 'mta'
     warAction: 'deploy'
+    extensions: []
     neo:
       size: 'lite'
       credentialsId: 'CI_CREDENTIALS_ID'
@@ -405,7 +421,7 @@ steps:
     noDefaultExludes: []
   pipelineStashFilesBeforeBuild:
     stashIncludes:
-      buildDescriptor: '**/pom.xml, **/.mvn/**, **/assembly.xml, **/.swagger-codegen-ignore, **/package.json, **/requirements.txt, **/setup.py, **/mta*.y*ml, **/.npmrc, Dockerfile, **/VERSION, **/version.txt, **/Gopkg.*, **/build.sbt, **/sbtDescriptor.json, **/project/*'
+      buildDescriptor: '**/pom.xml, **/.mvn/**, **/assembly.xml, **/.swagger-codegen-ignore, **/package.json, **/requirements.txt, **/setup.py, **/mta*.y*ml, **/.npmrc, Dockerfile, .hadolint.yaml, **/VERSION, **/version.txt, **/Gopkg.*, **/build.sbt, **/sbtDescriptor.json, **/project/*'
       deployDescriptor: '**/manifest*.y*ml, **/*.mtaext.y*ml, **/*.mtaext, **/xs-app.json, helm/**, *.y*ml'
       git: '.git/**'
       opa5: '**/*.*'
@@ -463,6 +479,12 @@ steps:
       - 'opensourceConfiguration'
     toJson: false
     toHtml: false
+  sonarExecuteScan:
+    dockerImage: 'maven:3.5-jdk-8'
+    instance: 'SonarCloud'
+    options: []
+    pullRequestProvider: 'github'
+    sonarScannerDownloadUrl: 'https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-3.3.0.1492-linux.zip'
   testsPublishResults:
     failOnError: false
     junit:

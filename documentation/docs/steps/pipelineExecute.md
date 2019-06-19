@@ -10,6 +10,8 @@ none
 
 ## ${docGenConfiguration}
 
+## ${docJenkinsPluginDependencies}
+
 ## Side effects
 
 none

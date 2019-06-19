@@ -16,6 +16,8 @@ Endpoint for health check is configured.
 
 ## ${docGenConfiguration}
 
+## ${docJenkinsPluginDependencies}
+
 ## Example
 
 Pipeline step:

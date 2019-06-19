@@ -1,15 +1,55 @@
 import groovy.io.FileType
 import groovy.json.JsonOutput
+import groovy.json.JsonSlurper
 import org.yaml.snakeyaml.Yaml
 import org.codehaus.groovy.control.CompilerConfiguration
 import com.sap.piper.GenerateDocumentation
+import com.sap.piper.GenerateStageDocumentation
 import java.util.regex.Matcher
 import groovy.text.StreamingTemplateEngine
+
+import com.sap.piper.MapUtils
 
 //
 // Collects helper functions for rendering the documentation
 //
 class TemplateHelper {
+
+    static createDependencyList(Set deps) {
+        def t = ''
+        t += 'The step depends on the following Jenkins plugins\n\n'
+        def filteredDeps = deps.findAll { dep -> dep != 'UNIDENTIFIED' }
+
+        if(filteredDeps.contains('kubernetes')) {
+            // The docker plugin is not detected by the tests since it is not
+            // handled via step call, but it is added to the environment.
+            // Hovever kubernetes plugin and docker plugin are closely related,
+            // hence adding docker if kubernetes is present.
+            filteredDeps.add('docker')
+        }
+
+        if(filteredDeps.isEmpty()) {
+            t += '* &lt;none&gt;\n'
+        } else {
+            filteredDeps
+                .sort()
+                .each { dep -> t += "* [${dep}](https://plugins.jenkins.io/${dep})\n" }
+        }
+
+        if(filteredDeps.contains('kubernetes')) {
+            t += "\nThe kubernetes plugin is only used if running in a kubernetes environment."
+        }
+
+        t += '''|
+                |Transitive dependencies are omitted.
+                |
+                |The list might be incomplete.
+                |
+                |Consider using the [ppiper/jenkins-master](https://cloud.docker.com/u/ppiper/repository/docker/ppiper/jenkins-master)
+                |docker image. This images comes with preinstalled plugins.
+                |'''.stripMargin()
+        return t
+    }
 
     static createParametersTable(Map parameters) {
 
@@ -21,7 +61,7 @@ class TemplateHelper {
 
             def props = parameters.get(it)
 
-            def defaultValue = isComplexDefault(props.defaultValue) ? renderComplexDefaultValue(props.defaultValue) : "`${props.defaultValue}`"
+            def defaultValue = isComplexDefault(props.defaultValue) ? renderComplexDefaultValue(props.defaultValue) : renderSimpleDefaultValue(props.defaultValue)
 
             t +=  "| `${it}` | ${props.mandatory ?: props.required ? 'yes' : 'no'} | ${defaultValue} | ${props.value ?: ''} |\n"
         }
@@ -44,6 +84,11 @@ class TemplateHelper {
         _default
             .collect { "${it.dependentParameterKey}=`${it.key ?: '<empty>'}`:`${it.value ?: '<empty>'}`" }
             .join('<br />')
+    }
+
+    private static renderSimpleDefaultValue(def _default) {
+        if (_default == null) return ''
+        return "`${_default}`"
     }
 
     static createParameterDescriptionSection(Map parameters) {
@@ -75,6 +120,98 @@ class TemplateHelper {
         }
 
         t.trim()
+    }
+
+    static createStageContentSection(Map stageDescriptions) {
+        def t = 'This stage comprises following steps which are activated depending on your use-case/configuration:\n\n'
+
+        t += '| step | step description |\n'
+        t += '| ---- | ---------------- |\n'
+
+        stageDescriptions.each {step, description ->
+            t += "| [${step}](../steps/${step}.md) | ${description.trim()} |\n"
+        }
+
+        return t
+    }
+
+    static createStageActivationSection() {
+        def t = '''This stage will be active if any one of the following conditions is met:
+
+* Stage configuration in [config.yml file](../configuration.md) contains entries for this stage.
+* Any of the conditions are met which are explained in the section [Step Activation](#step-activation).
+'''
+        return t.trim()
+    }
+
+    static createStepActivationSection(Map configConditions) {
+        if (!configConditions) return 'For this stage no conditions are assigned to steps.'
+        def t = 'Certain steps will be activated automatically depending on following conditions:\n\n'
+
+
+        t += '| step | config key | config value | file pattern |\n'
+        t += '| ---- | ---------- | ------------ | ------------ |\n'
+
+        configConditions?.each {stepName, conditions ->
+            t += "| ${stepName} "
+            t += "| ${renderValueList(conditions?.configKeys)} "
+            t += "| ${renderValueList(mapToValueList(conditions?.config))} "
+
+            List filePatterns = []
+            if (conditions?.filePattern) filePatterns.add(conditions?.filePattern)
+            if (conditions?.filePatternFromConfig) filePatterns.add(conditions?.filePatternFromConfig)
+            t += "| ${renderValueList(filePatterns)} |\n"
+        }
+
+        t += '''
+!!! info "Step condition details"
+    There are currently several conditions which can be checked.<br /> This is done in the [Init stage](init.md) of the pipeline shortly after checkout of the source code repository.<br/ >
+    **Important: It will be sufficient that any one condition per step is met.**
+
+    * `config key`: Checks if a defined configuration parameter is set.
+    * `config value`: Checks if a configuration parameter has a defined value.
+    * `file pattern`: Checks if files according a defined pattern exist in the project. Either the pattern is speficified direcly or it is retrieved from a configuration parameter.
+
+
+!!! note "Overruling step activation conditions"
+    It is possible to overrule the automatically detected step activation status.<br />
+    Just add to your stage configuration `<stepName>: false`, for example `deployToKubernetes: false`.
+
+For details about the configuration options, please see [Configuration of Piper](../configuration.md).
+'''
+
+        return t
+    }
+
+    private static renderValueList(List valueList) {
+        if (!valueList) return ''
+        if (valueList.size() > 1) {
+            List quotedList = []
+            valueList.each {listItem ->
+                quotedList.add("-`${listItem}`")
+            }
+            return quotedList.join('<br />')
+        } else {
+            return "`${valueList[0]}`"
+        }
+    }
+
+    private static mapToValueList(Map map) {
+        List valueList = []
+        map?.each {key, value ->
+            if (value instanceof List) {
+                value.each {listItem ->
+                    valueList.add("${key}: ${listItem}")
+                }
+            } else {
+                valueList.add("${key}: ${value}")
+            }
+        }
+        return valueList
+    }
+
+    static createStageConfigurationSection() {
+        return 'The stage parameters need to be defined in the section `stages` of [config.yml file](../configuration.md).'
     }
 }
 
@@ -114,6 +251,11 @@ class Helper {
 
 
         prepareDefaultValuesStep
+    }
+
+    static Map getYamlResource(String resource) {
+        def ymlContent = new File(projectRoot,"resources/${resource}").text
+        return new Yaml().load(ymlContent)
     }
 
     static getDummyScript(def prepareDefaultValuesStep, def stepName, Map prepareDefaultValuesStepParams) {
@@ -344,6 +486,15 @@ class Helper {
         return params
     }
 
+    static getStageStepKeys(def script) {
+        try {
+            return script.STAGE_STEP_KEYS ?: []
+        } catch (groovy.lang.MissingPropertyException ex) {
+            System.err << "[INFO] STAGE_STEP_KEYS not set for: ${script.STEP_NAME}.\n"
+            return []
+        }
+    }
+
     static getRequiredParameters(File f) {
         def params = [] as Set
         f.eachLine  {
@@ -375,13 +526,6 @@ class Helper {
         return mappings
     }
 
-    static getValue(Map config, def pPath) {
-        def p =config[pPath.head()]
-        if(pPath.size() == 1) return p // there is no tail
-        if(p in Map) getValue(p, pPath.tail())
-        else return p
-    }
-
     static resolveDocuRelevantSteps(GroovyScriptEngine gse, File stepsDir) {
 
         def docuRelevantSteps = []
@@ -391,7 +535,7 @@ class Helper {
                 def scriptName = (it =~  /vars\${File.separator}(.*)\.groovy/)[0][1]
                 def stepScript = gse.createScript("${scriptName}.groovy", new Binding())
                 for (def method in stepScript.getClass().getMethods()) {
-                    if(method.getName() == 'call' && method.getAnnotation(GenerateDocumentation) != null) {
+                    if(method.getName() == 'call' && (method.getAnnotation(GenerateDocumentation) != null || method.getAnnotation(GenerateStageDocumentation) != null)) {
                         docuRelevantSteps << scriptName
                         break
                     }
@@ -399,6 +543,26 @@ class Helper {
             }
         }
         docuRelevantSteps
+    }
+
+    static resolveDocuRelevantStages(GroovyScriptEngine gse, File stepsDir) {
+
+        def docuRelevantStages = [:]
+
+        stepsDir.traverse(type: FileType.FILES, maxDepth: 0) {
+            if(it.getName().endsWith('.groovy')) {
+                def scriptName = (it =~  /vars\${File.separator}(.*)\.groovy/)[0][1]
+                def stepScript = gse.createScript("${scriptName}.groovy", new Binding())
+                for (def method in stepScript.getClass().getMethods()) {
+                    GenerateStageDocumentation stageDocsAnnotation = method.getAnnotation(GenerateStageDocumentation)
+                    if(method.getName() == 'call' && stageDocsAnnotation != null) {
+                        docuRelevantStages[scriptName] = stageDocsAnnotation.defaultStageName()
+                        break
+                    }
+                }
+            }
+        }
+        docuRelevantStages
     }
 }
 
@@ -409,33 +573,73 @@ roots = [
 
 stepsDir = null
 stepsDocuDir = null
-String customDefaults = null
+stagesDocuDir = null
+customDefaults = null
 
 steps = []
 
 //
 // assign parameters
 
-if(args.length >= 1)
-    stepsDir = new File(args[0])
+
+def cli = new CliBuilder(
+    usage: 'groovy createDocu [<options>]',
+    header: 'Options:',
+    footer: 'Copyright: SAP SE')
+
+cli.with {
+    s longOpt: 'stepsDir', args: 1, argName: 'dir', 'The directory containing the steps. Defaults to \'vars\'.'
+    d longOpt: 'docuDir', args: 1, argName: 'dir', 'The directory containing the docu stubs. Defaults to \'documentation/docs/steps\'.'
+    p longOpt: 'docuDirStages', args: 1, argName: 'dir', 'The directory containing the docu stubs for pipeline stages. Defaults to \'documentation/docs/stages\'.'
+    c longOpt: 'customDefaults', args: 1, argName: 'file', 'Additional custom default configuration'
+    i longOpt: 'stageInitFile', args: 1, argName: 'file', 'The file containing initialization data for step piperInitRunStageConfiguration'
+    h longOpt: 'help', 'Prints this help.'
+}
+
+def options = cli.parse(args)
+
+if(options.h) {
+    System.err << "Printing help.\n"
+    cli.usage()
+    return
+}
+
+if(options.s){
+    System.err << "[INFO] Using custom step root: ${options.s}.\n"
+    stepsDir = new File(Helper.projectRoot, options.s)
+}
+
 
 stepsDir = stepsDir ?: new File(Helper.projectRoot, "vars")
 
-if(args.length >= 2)
-    stepsDocuDir = new File(args[1])
+if(options.d) {
+    System.err << "[INFO] Using custom doc dir for steps: ${options.d}.\n"
+    stepsDocuDir = new File(Helper.projectRoot, options.d)
+}
 
 stepsDocuDir = stepsDocuDir ?: new File(Helper.projectRoot, "documentation/docs/steps")
 
-def argsDrop = 2
-if(args.length >= 3 && args[2].contains('.yml')) {
-    customDefaults = args[2]
-    argsDrop ++
+if(options.p) {
+    System.err << "[INFO] Using custom doc dir for stages: ${options.p}.\n"
+    stagesDocuDir = new File(Helper.projectRoot, options.p)
 }
 
-if(args.length >= 3)
-    steps = (args as List).drop(argsDrop)  // the first two entries are stepsDir and docuDir
-// the other parts are considered as step names
+stagesDocuDir = stagesDocuDir ?: new File(Helper.projectRoot, "documentation/docs/stages")
 
+if(options.c) {
+    System.err << "[INFO] Using custom defaults: ${options.c}.\n"
+    customDefaults = options.c
+}
+
+// retrieve default conditions for steps
+Map stageConfig
+if (options.i) {
+    System.err << "[INFO] Using stageInitFile ${options.i}.\n"
+    stageConfig = Helper.getYamlResource(options.i)
+    System.err << "[INFO] Default stage configuration: ${stageConfig}.\n"
+}
+
+steps.addAll(options.arguments())
 
 // assign parameters
 //
@@ -466,6 +670,9 @@ if( ! steps) {
     System.err << "[INFO] Generating docu only for step ${steps.size > 1 ? 's' : ''} ${steps}.\n"
 }
 
+// find all the stages that we have to document
+Map stages = Helper.resolveDocuRelevantStages(gse, stepsDir)
+
 def prepareDefaultValuesStep = Helper.getPrepareDefaultValuesStep(gse)
 
 boolean exceptionCaught = false
@@ -495,6 +702,39 @@ for(step in stepDescriptors) {
     }
 }
 
+//update stepDescriptors: remove stages and put into separate stageDescriptors map
+def stageDescriptors = [:]
+stages.each {key, value ->
+    System.err << "[INFO] Processing stage '${key}' ...\n"
+    stageDescriptors."${key}" = [:] << stepDescriptors."${key}"
+    stepDescriptors.remove(key)
+
+    //add stage name to stageDescriptors
+    stageDescriptors."${key}".name = value
+
+    //add stepCondition informmation to stageDescriptors
+    stageDescriptors."${key}".configConditions = stageConfig?.stages?.get(value)?.stepConditions
+
+    //identify step keys in stages
+    def stageStepKeys = Helper.getStageStepKeys(gse.createScript( "${key}.groovy", new Binding() ))
+
+    // prepare step descriptions
+    stageDescriptors."${key}".stepDescriptions = [:]
+    stageDescriptors."${key}".parameters.each {paramKey, paramValue ->
+
+        if (paramKey in stageStepKeys) {
+            stageDescriptors."${key}".stepDescriptions."${paramKey}" = "${paramValue.docu ?: ''}\n"
+        }
+    }
+
+    //remove details from parameter map
+    stageStepKeys.each {stepKey ->
+        stageDescriptors."${key}".parameters.remove(stepKey)
+    }
+
+
+}
+
 for(step in stepDescriptors) {
     try {
         renderStep(step.key, step.value)
@@ -502,6 +742,16 @@ for(step in stepDescriptors) {
     } catch(Exception e) {
         exceptionCaught = true
         System.err << "${e.getClass().getName()} caught while rendering step '${step}': ${e.getMessage()}.\n"
+    }
+}
+
+for (stage in stageDescriptors) {
+    try {
+        renderStage(stage.key, stage.value)
+        System.err << "[INFO] Stage '${stage.key}' has been rendered.\n"
+    } catch(Exception e) {
+        exceptionCaught = true
+        System.err << "${e.getClass().getName()} caught while rendering stage '${stage}': ${e.getMessage()}.\n"
     }
 }
 
@@ -529,12 +779,39 @@ void renderStep(stepName, stepProperties) {
         docGenStepName      : stepName,
         docGenDescription   : 'Description\n\n' + stepProperties.description,
         docGenParameters    : 'Parameters\n\n' + TemplateHelper.createParametersSection(stepProperties.parameters),
-        docGenConfiguration : 'Step configuration\n\n' + TemplateHelper.createStepConfigurationSection(stepProperties.parameters)
+        docGenConfiguration : 'Step configuration\n\n' + TemplateHelper.createStepConfigurationSection(stepProperties.parameters),
+        docJenkinsPluginDependencies     : 'Dependencies\n\n' + TemplateHelper.createDependencyList(stepProperties.dependencies)
     ]
+
     def template = new StreamingTemplateEngine().createTemplate(theStepDocu.text)
     String text = template.make(binding)
 
     theStepDocu.withWriter { w -> w.write text }
+}
+
+void renderStage(stageName, stageProperties) {
+
+    def stageFileName = stageName.indexOf('Stage') != -1 ? stageName.split('Stage')[1].toLowerCase() : stageFileName
+    File theStageDocu = new File(stagesDocuDir, "${stageFileName}.md")
+
+    if(!theStageDocu.exists()) {
+        System.err << "[WARNING] stage docu input file for stage '${stageName}' is missing.\n"
+        return
+    }
+
+    def binding = [
+        docGenStageName     : stageProperties.name,
+        docGenDescription   : stageProperties.description,
+        docGenStageContent  : 'Stage Content\n\n' + TemplateHelper.createStageContentSection(stageProperties.stepDescriptions),
+        docGenStageActivation: 'Stage Activation\n\n' + TemplateHelper.createStageActivationSection(),
+        docGenStepActivation: 'Step Activation\n\n' + TemplateHelper.createStepActivationSection(stageProperties.configConditions),
+        docGenStageParameters    : 'Additional Stage Parameters\n\n' + TemplateHelper.createParametersSection(stageProperties.parameters),
+        docGenStageConfiguration : 'Configuration of Additional Stage Parameters\n\n' + TemplateHelper.createStageConfigurationSection()
+    ]
+    def template = new StreamingTemplateEngine().createTemplate(theStageDocu.text)
+    String text = template.make(binding)
+
+    theStageDocu.withWriter { w -> w.write text }
 }
 
 def fetchTextFrom(def step, def parameterName, def steps) {
@@ -565,6 +842,13 @@ def handleStep(stepName, prepareDefaultValuesStep, gse, customDefaults) {
 
     File theStep = new File(stepsDir, "${stepName}.groovy")
     File theStepDocu = new File(stepsDocuDir, "${stepName}.md")
+    File theStepDeps = new File('documentation/jenkins_workspace/plugin_mapping.json')
+
+    if (!theStepDocu.exists() && stepName.indexOf('Stage') != -1) {
+        //try to get a corresponding stage documentation
+        def stageName = stepName.split('Stage')[1].toLowerCase()
+        theStepDocu = new File(stagesDocuDir,"${stageName}.md" )
+    }
 
     if(!theStepDocu.exists()) {
         System.err << "[WARNING] step docu input file for step '${stepName}' is missing.\n"
@@ -616,7 +900,18 @@ def handleStep(stepName, prepareDefaultValuesStep, gse, customDefaults) {
 
     // 'dependentConfig' is only present here for internal reasons and that entry is removed at
     // end of method.
-    def step = [parameters:[:], dependentConfig: [:]]
+    def step = [
+        parameters:[:],
+        dependencies: (Set)[],
+        dependentConfig: [:]
+    ]
+
+    //
+    // provide dependencies to Jenkins plugins
+    if(theStepDeps.exists()) {
+        def pluginDependencies = new JsonSlurper().parse(theStepDeps)
+        step.dependencies.addAll(pluginDependencies[stepName].collect { k, v -> k })
+    }
 
     //
     // START special handling for 'script' parameter
@@ -625,9 +920,9 @@ def handleStep(stepName, prepareDefaultValuesStep, gse, customDefaults) {
     step.parameters['script'] = [
         docu: 'The common script environment of the Jenkinsfile running. ' +
             'Typically the reference to the script calling the pipeline ' +
-            'step is provided with the this parameter, as in `script: this`. ' +
+            'step is provided with the `this` parameter, as in `script: this`. ' +
             'This allows the function to access the ' +
-            'commonPipelineEnvironment for retrieving, for example, configuration parameters.',
+            '`commonPipelineEnvironment` for retrieving, e.g. configuration parameters.',
         required: true,
 
         GENERAL_CONFIG: false,
@@ -640,7 +935,7 @@ def handleStep(stepName, prepareDefaultValuesStep, gse, customDefaults) {
 
         it ->
 
-            def defaultValue = Helper.getValue(defaultConfig, it.split('/'))
+            def defaultValue = MapUtils.getByPath(defaultConfig, it)
 
             def parameterProperties =   [
                 defaultValue: defaultValue,
@@ -675,7 +970,7 @@ def handleStep(stepName, prepareDefaultValuesStep, gse, customDefaults) {
                             [
                                 dependentParameterKey: dependentParameterKey,
                                 key: possibleValue,
-                                value: Helper.getValue(defaultConfig.get(possibleValue), k.split('/'))
+                                value: MapUtils.getByPath(defaultConfig.get(possibleValue), k)
                             ]
                     }
                 }
