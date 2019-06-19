@@ -50,7 +50,7 @@ class DubExecuteTest extends BasePiperTest {
     void testNoDubJson() {
         helper.registerAllowedMethod 'fileExists', [String], { false }
         thrown.expect AbortException
-        thrown.expectMessage '[dubExecute] dub.json nor dub.sdl was found.'
+        thrown.expectMessage '[dubExecute] Neither dub.json nor dub.sdl was found.'
         stepRule.step.dubExecute(script: nullScript, dockerImage: 'dlang2/dmd-ubuntu:latest', dubCommand: 'build')
     }
 }
