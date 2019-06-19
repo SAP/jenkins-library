@@ -22,6 +22,7 @@ nav:
         - handlePipelineStepErrors: steps/handlePipelineStepErrors.md
         - healthExecuteCheck: steps/healthExecuteCheck.md
         - influxWriteData: steps/influxWriteData.md
+        - kanikoExecute: steps/kanikoExecute.md
         - karmaExecuteTests: steps/karmaExecuteTests.md
         - mailSendNotification: steps/mailSendNotification.md
         - mavenExecute: steps/mavenExecute.md
