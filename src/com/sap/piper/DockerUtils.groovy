@@ -8,7 +8,7 @@ class DockerUtils implements Serializable {
         this.script = script
     }
 
-    public boolean withDockerDeamon() {
+    public boolean withDockerDaemon() {
         def returnCode = script.sh script: 'docker ps -q > /dev/null', returnStatus: true
         return (returnCode == 0)
     }
@@ -32,7 +32,7 @@ class DockerUtils implements Serializable {
         def targetDockerRegistry = target.registryUrl ? "${getRegistryFromUrl(target.registryUrl)}/" : ''
         def targetImageFullName = targetDockerRegistry + target.image
 
-        if (!withDockerDeamon()) {
+        if (!withDockerDaemon()) {
             script.withCredentials([script.usernamePassword(
                 credentialsId: target.credentialsId,
                 passwordVariable: 'password',

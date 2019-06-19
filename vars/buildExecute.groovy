@@ -64,9 +64,9 @@ void call(Map parameters = [:]) {
             .use()
 
         DockerUtils dockerUtils = new DockerUtils(script)
-        if (config.buildTool == 'docker' && !dockerUtils.withDockerDeamon()) {
+        if (config.buildTool == 'docker' && !dockerUtils.withDockerDaemon()) {
             config.buildTool = 'kaniko'
-            echo "[${STEP_NAME}] no Docker deamon available, thus switching to Kaniko build"
+            echo "[${STEP_NAME}] no Docker daemon available, thus switching to Kaniko build"
         }
 
         // telemetry reporting

@@ -42,16 +42,16 @@ class DockerUtilsTest extends BasePiperTest {
     }
 
     @Test
-    void testWithDockerDeamon() {
+    void testWithDockerDaemon() {
         DockerUtils dockerUtils = new DockerUtils(nullScript)
-        assertThat(dockerUtils.withDockerDeamon(), is(true))
+        assertThat(dockerUtils.withDockerDaemon(), is(true))
     }
 
     @Test
-    void testWithoutDockerDeamon() {
+    void testWithoutDockerDaemon() {
         shellCallRule.setReturnValue('docker ps -q > /dev/null', 1)
         DockerUtils dockerUtils = new DockerUtils(nullScript)
-        assertThat(dockerUtils.withDockerDeamon(), is(false))
+        assertThat(dockerUtils.withDockerDaemon(), is(false))
     }
 
     @Test

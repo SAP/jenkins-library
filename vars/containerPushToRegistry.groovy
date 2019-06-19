@@ -23,7 +23,7 @@ import static com.sap.piper.Prerequisites.checkScript
     /** Defines the name (incl. tag) of the target image*/
     'dockerImage',
     /**
-     * Only if no Docker deamon available: Docker image to be used for [Skopeo](https://github.com/containers/skopeo) calls
+     * Only if no Docker daemon available on your Jenkins image: Docker image to be used for [Skopeo](https://github.com/containers/skopeo) calls
      * Unfortunately no proper image known to be available.
      * Simple custom Dockerfile could look as follows: <br>
      * ```
@@ -46,7 +46,7 @@ import static com.sap.piper.Prerequisites.checkScript
 /**
  * This step allows you to push a Docker image into a dedicated Container registry.
  *
- * By default an image available via the local Docker deamon will be pushed.
+ * By default an image available via the local Docker daemon will be pushed.
  *
  * In case you want to pull an existing image from a remote container registry, a source image and source registry needs to be specified.<br />
  * This makes it possible to move an image from one registry to another.
@@ -83,7 +83,7 @@ void call(Map parameters = [:]) {
         if (!config.dockerImage)
             config.dockerImage = config.sourceImage
 
-        if (dockerUtils.withDockerDeamon()) {
+        if (dockerUtils.withDockerDaemon()) {
 
             //Prevent NullPointerException in case no dockerImage nor dockerBuildImage is provided
             if (!config.dockerImage && !config.dockerBuildImage) {
@@ -112,7 +112,7 @@ void call(Map parameters = [:]) {
             //handling for Kubernetes case
             dockerExecute(
                 script: script,
-                dockerImage: 'docker.wdf.sap.corp:50000/piper/skopeo'
+                dockerImage: config.skopeoImage
             ) {
 
                 if (!config.dockerArchive) {
@@ -122,7 +122,7 @@ void call(Map parameters = [:]) {
                         dockerUtils.moveImage([image: config.sourceImage, registryUrl: config.sourceRegistryUrl], [image: latestImage, registryUrl: config.dockerRegistryUrl, credentialsId: config.dockerCredentialsId])
                     }
                 }
-                //else not implemented: since no Docker deamon is available we can only push from a Docker tar archive or move from one registry to another
+                //else not implemented: since no Docker daemon is available we can only push from a Docker tar archive or move from one registry to another
             }
         }
     }
