@@ -47,7 +47,7 @@ class DockerArtifactVersioning extends ArtifactVersioning {
                 break
             }
         }
-        script.echo("Version from Docker environment variable ${envVarName}: ${version}")
+        echo("Version from Docker environment variable ${envVarName}: ${version}")
         return version.trim()
     }
 
@@ -59,12 +59,12 @@ class DockerArtifactVersioning extends ArtifactVersioning {
                 def imageParts = lines[i].split(':')
                 version = imageParts[imageParts.size()-1]
                 if (version.contains('/')) {
-                    script.error "[${getClass().getName()}] FROM statement does not contain an explicit image version: ${lines[i]} "
+                    script.error "[${getClass().getSimpleName()}] FROM statement does not contain an explicit image version: ${lines[i]} "
                 }
                 break
             }
         }
-        script.echo("Version from Docker base image tag: ${version}")
+        echo("Version from Docker base image tag: ${version}")
         return version.trim()
     }
 }
