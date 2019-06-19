@@ -58,6 +58,7 @@ class DockerArtifactVersioning extends ArtifactVersioning {
             if (lines[i].startsWith('FROM') && lines[i].indexOf(':') > 0) {
                 def imageParts = lines[i].split(':')
                 version = imageParts[imageParts.size()-1]
+                break
             }
         }
         echo("Version from Docker base image tag: ${version}")
