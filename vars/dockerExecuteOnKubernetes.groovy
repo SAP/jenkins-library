@@ -255,10 +255,17 @@ private void unstashWorkspace(config, prefix) {
 }
 
 private List getContainerList(config) {
-    def result = [[
-        name: 'jnlp',
-        image: config.jenkinsKubernetes.jnlpAgent
-    ]]
+
+    //If no custom jnlp agent provided us default jnlp agent (jenkins/jnlp-slave) as defined in the plugin, see https://github.com/jenkinsci/kubernetes-plugin#pipeline-support
+    def result = []
+
+    //allow definition of jnlp image via environment variable JENKINS_JNLP_IMAGE in the Kubernetes landscape or via config as fallback
+    if (env.JENKINS_JNLP_IMAGE || config.jenkinsKubernetes.jnlpAgent) {
+        result.push([
+            name: 'jnlp',
+            image: env.JENKINS_JNLP_IMAGE ?: config.jenkinsKubernetes.jnlpAgent
+        ])
+    }
     config.containerMap.each { imageName, containerName ->
         def containerPullImage = config.containerPullImageFlags?.get(imageName)
         def containerSpec = [
