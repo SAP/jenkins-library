@@ -44,6 +44,7 @@
         <jenkins.version>2.32.3</jenkins.version>
         <pipeline.version>2.5</pipeline.version>
         <cps.global.lib.version>2.6</cps.global.lib.version>
+        <java.level>8</java.level>
     </properties>
 
 
@@ -91,6 +92,11 @@
             <artifactId>pipeline-github</artifactId>
             <version>2.2</version>
         </dependency>
+
+        <!-- depenency test -->
+
+
+        <!-- depenency test -->
 
         <!--LesFurets Jenkins Pipeline Unit testing framework: https://github.com/lesfurets/JenkinsPipelineUnit-->
         <dependency>
