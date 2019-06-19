@@ -47,6 +47,7 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
     def dockerWorkspace
     def podName = ''
     def podLabel = ''
+    def podNodeSelector = ''
     def containersList = []
     def imageList = []
     def containerName = ''
@@ -75,6 +76,7 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
             podName = options.name
             podLabel = options.label
             namespace = options.namespace
+            podNodeSelector = options.nodeSelector
             def podSpec = new JsonSlurper().parseText(options.yaml)  // this yaml is actually json
             def containers = podSpec.spec.containers
             securityContext = podSpec.spec.securityContext
@@ -373,20 +375,18 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
         assertThat(securityContext, is(equalTo(expectedSecurityContext)))
     }
 
-    /*
-    Due to negative side-effect of full git stashing
     @Test
-    void testDockerExecuteOnKubernetesWorkspaceStashing() {
+    void testDockerExecuteOnKubernetesCustomNode() {
 
         stepRule.step.dockerExecuteOnKubernetes(
             script: nullScript,
             juStabUtils: utils,
             dockerImage: 'maven:3.5-jdk-8-alpine',
+            nodeSelector: 'size:big'
         ) { bodyExecuted = true }
         assertTrue(bodyExecuted)
-        assertThat(stashMap.useDefaultExcludes, is(false))
+        assertThat(podNodeSelector, is('size:big'))
     }
-    */
 
 
     private container(options, body) {
