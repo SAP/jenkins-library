@@ -32,7 +32,6 @@ void call(Map parameters = [:]) {
         .mixinStageConfig(script.commonPipelineEnvironment, stageName, STEP_CONFIG_KEYS)
         .mixin(parameters, PARAMETER_KEYS)
         .addIfEmpty('containerPushToRegistry', script.commonPipelineEnvironment.configuration.runStep?.get(stageName)?.containerPushToRegistry)
-
         .use()
 
     piperStageWrapper (script: script, stageName: stageName) {
