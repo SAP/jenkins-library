@@ -34,7 +34,6 @@ class PiperPipelineStageReleaseTest extends BasePiperTest {
         binding.variables.env.STAGE_NAME = 'Release'
         helper.registerAllowedMethod('piperStageWrapper', [Map.class, Closure.class], {m, body ->
             assertThat(m.stageName, is('Release'))
-
             return body()
         })
 
@@ -67,7 +66,6 @@ class PiperPipelineStageReleaseTest extends BasePiperTest {
             juStabUtils: utils
         )
         assertThat(stepsCalled, not(hasItems('cloudFoundryDeploy', 'neoDeploy', 'healthExecuteCheck', 'githubPublishRelease')))
-
     }
 
     @Test
