@@ -64,52 +64,50 @@ void call(Map parameters = [:]) {
         utils.pushToSWA([step: STEP_NAME], config)
 
 
-        durationMeasure(script: script, measurementName: 'build_duration') {
-            if (config.cloudFoundryDeploy) {
-                durationMeasure(script: script, measurementName: 'deploy_test_duration') {
-                    cloudFoundryDeploy script: script
-                }
+        if (config.cloudFoundryDeploy) {
+            durationMeasure(script: script, measurementName: 'deploy_test_duration') {
+                cloudFoundryDeploy script: script
             }
+        }
 
-            if (config.neoDeploy) {
-                durationMeasure(script: script, measurementName: 'deploy_test_duration') {
-                    neoDeploy script: script
-                }
+        if (config.neoDeploy) {
+            durationMeasure(script: script, measurementName: 'deploy_test_duration') {
+                neoDeploy script: script
             }
+        }
 
-            if (config.healthExecuteCheck) {
-                healthExecuteCheck script: script
+        if (config.healthExecuteCheck) {
+            healthExecuteCheck script: script
+        }
+
+
+        def publishMap = [script: script]
+        def publishResults = false
+
+        if (config.gaugeExecuteTests) {
+            durationMeasure(script: script, measurementName: 'gauge_duration') {
+                publishResults = true
+                gaugeExecuteTests script: script
+                publishMap += [gauge: [archive: true]]
             }
+        }
 
-
-            def publishMap = [script: script]
-            def publishResults = false
-
-            if (config.gaugeExecuteTests) {
-                durationMeasure(script: script, measurementName: 'gauge_duration') {
-                    publishResults = true
-                    gaugeExecuteTests script: script
-                    publishMap += [gauge: [archive: true]]
-                }
+        if (config.newmanExecute) {
+            durationMeasure(script: script, measurementName: 'newman_duration') {
+                publishResults = true
+                newmanExecute script: script
             }
+        }
 
-            if (config.newmanExecute) {
-                durationMeasure(script: script, measurementName: 'newman_duration') {
-                    publishResults = true
-                    newmanExecute script: script
-                }
+        if (config.uiVeri5ExecuteTests) {
+            durationMeasure(script: script, measurementName: 'uiveri5_duration') {
+                publishResults = true
+                uiVeri5ExecuteTests script: script
             }
+        }
 
-            if (config.uiVeri5ExecuteTests) {
-                durationMeasure(script: script, measurementName: 'uiveri5_duration') {
-                    publishResults = true
-                    uiVeri5ExecuteTests script: script
-                }
-            }
-
-            if (publishResults) {
-                testsPublishResults publishMap
-            }
+        if (publishResults) {
+            testsPublishResults publishMap
         }
     }
 }

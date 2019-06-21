@@ -72,24 +72,24 @@ class PiperPipelineStageAcceptanceTest extends BasePiperTest {
     }
 
     @Test
-    void testStageDefault() {
+    void testAcceptanceStageDefault() {
 
         jsr.step.piperPipelineStageAcceptance(
             script: nullScript,
-            juStabUtils: utils,
+            juStabUtils: utils
         )
         assertThat(stepsCalled, not(hasItems('cloudFoundryDeploy', 'neoDeploy', 'healthExecuteCheck', 'newmanExecute', 'uiVeri5ExecuteTests', 'gaugeExecuteTests')))
 
     }
 
     @Test
-    void testStageCF() {
+    void testAcceptanceStageCF() {
 
         jsr.step.piperPipelineStageAcceptance(
             script: nullScript,
             juStabUtils: utils,
             cloudFoundryDeploy: true,
-            healthExecuteCheck: true,
+            healthExecuteCheck: true
         )
 
         assertThat(stepsCalled, hasItems('cloudFoundryDeploy', 'healthExecuteCheck'))
@@ -97,19 +97,19 @@ class PiperPipelineStageAcceptanceTest extends BasePiperTest {
     }
 
     @Test
-    void testStageNeo() {
+    void testAcceptanceStageNeo() {
 
         jsr.step.piperPipelineStageAcceptance(
             script: nullScript,
             juStabUtils: utils,
-            neoDeploy: true,
+            neoDeploy: true
         )
         assertThat(stepsCalled, hasItem('neoDeploy'))
         assertThat(stepsCalled, not(hasItem('testsPublishResults')))
     }
 
     @Test
-    void testStageGauge() {
+    void testAcceptanceStageGauge() {
 
         jsr.step.piperPipelineStageAcceptance(
             script: nullScript,
@@ -121,23 +121,23 @@ class PiperPipelineStageAcceptanceTest extends BasePiperTest {
     }
 
     @Test
-    void testStageNewman() {
+    void testAcceptanceStageNewman() {
 
         jsr.step.piperPipelineStageAcceptance(
             script: nullScript,
             juStabUtils: utils,
-            newmanExecute: true,
+            newmanExecute: true
         )
         assertThat(stepsCalled, hasItems('newmanExecute', 'testsPublishResults'))
     }
 
     @Test
-    void testStageUiVeri5() {
+    void testAcceptanceStageUiVeri5() {
 
         jsr.step.piperPipelineStageAcceptance(
             script: nullScript,
             juStabUtils: utils,
-            uiVeri5ExecuteTests: true,
+            uiVeri5ExecuteTests: true
         )
         assertThat(stepsCalled, hasItems('uiVeri5ExecuteTests', 'testsPublishResults'))
     }
