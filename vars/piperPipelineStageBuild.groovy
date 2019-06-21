@@ -11,7 +11,12 @@ import static com.sap.piper.Prerequisites.checkScript
 @Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS.plus([
     /** Starts build execution. This is always being executed.*/
     'buildExecute',
-    /** Executes stashing of files after build execution. Relevant for files which are only created in the build run, e.g. `*.js` files when using TypeScript.*/
+    /**
+     * Executes stashing of files after build execution.<br /
+     * Build results are stashed with stash name `buildResult`.
+     *
+     * **Note: Please make sure that your build artifacts are contained here since this stash is the foundation for subsequent tests and checks, e.g. deployment to a test landscape.**
+     **/
     'pipelineStashFilesAfterBuild',
     /** Publishes test results to Jenkins. It will always be active. */
     'testsPublishResults',
