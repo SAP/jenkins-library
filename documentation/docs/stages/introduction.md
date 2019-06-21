@@ -66,6 +66,7 @@ general:
     The credentials are for example required to push automatic versioning information to your GitHub repository.
 
 ### Subsequent steps: Configure individual stages
+
 The stages of the pipeline can be configured individually.
 As a general rule of thumb, only stages with an existing configuration are executed.
 
@@ -88,11 +89,13 @@ It will for example:
 You find details about this stage on  [**Init Stage** Details](init.md)
 
 #### Pull-Request Voting
+
 This stage is responsible for validating pull-requests, see also above.
 
 You find further details about this stage on the page [**Pull-Request Voting**](prvoting.md).
 
 ### Build
+
 In this stage the build of the software artifact is performed.
 The build artifact will be `stash`ed for use in subsequent stages. For `Docker` builds the build result will be uploaded to a container registry (as per your configuration).
 
@@ -101,6 +104,7 @@ Afterwards the results of static checks & unit tests are published on the Jenkin
 You find details about this stage on the page [**Central Build**](centralbuild.md).
 
 ### Additional Unit Tests
+
 In this stage additional unit-like tests are executed which should not run during the central build.
 
 Currently, this stage holds the execution of a Karma runner which allows for
@@ -111,44 +115,49 @@ Currently, this stage holds the execution of a Karma runner which allows for
 You find details about this stage on the page [**Additional Unit Tests**](additionalunittests.md).
 
 ### Integration
+
 In the [Integration stage](integration.md) a custom integration test script can be executed.
 
 ### Acceptance
+
 Default implementation will come soon ...
 
 Currently custom logic can be added using the [stage extension mechanism](../extensibility.md).
 
 ### Security
+
 Default implementation will come soon ...
 
 Currently custom logic can be added using the [stage extension mechanism](../extensibility.md).
 
 
 ### Performance
+
 Default implementation will come soon ...
 
 Currently custom logic can be added using the [stage extension mechanism](../extensibility.md).
 
 
 ### Compliance
+
 Default implementation will come soon ...
 
 Currently custom logic can be added using the [stage extension mechanism](../extensibility.md).
 
 
 ### Confirm
+
 The [Confirm stage](confirm.md), if executed, stops the pipeline execution and asks for manual confirmation before proceeding to the stages _Promote_ and _Release_.
 
 ### Promote
+
 Default implementation will come soon ...
 
 Currently custom logic can be added using the [stage extension mechanism](../extensibility.md).
 
 
 ### Release
+
 Default implementation will come soon ...
 
 Currently custom logic can be added using the [stage extension mechanism](../extensibility.md).
-
-
-
