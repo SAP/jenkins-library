@@ -1,4 +1,5 @@
 import com.sap.piper.ConfigurationHelper
+import com.sap.piper.GenerateStageDocumentation
 import com.sap.piper.JenkinsUtils
 import com.sap.piper.Utils
 import groovy.transform.Field
@@ -8,14 +9,35 @@ import static com.sap.piper.Prerequisites.checkScript
 @Field String STEP_NAME = getClass().getName()
 
 @Field Set GENERAL_CONFIG_KEYS = [
+    /**
+     * Defines the build tool used.
+     * @possibleValues `docker`, `kaniko`, `maven`, `mta, ``npm`
+     */
     'buildTool',
+    /**
+     * Defines the main branch for your pipeline. **Typically this is the `master` branch, which does not need to be set explicitly.** Only change this in exceptional cases
+     */
     'productiveBranch',
+    /**
+     * Defines the library resource containing the stash settings to be performed before and after each stage. **Caution: changing the default will break the standard behavior of the pipeline - thus only relevant when including `Init` stage into custom pipelines!**
+     */
     'stashSettings',
+    /**
+     * Whether verbose output should be produced.
+     * @possibleValues `true`, `false`
+     */
+
     'verbose'
 ]
 @Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
 
+/**
+ * This stage initializes the pipeline run and prepares further execution.
+ *
+ * It will check out your repository and perform some steps to initialize your pipeline run.
+ */
+@GenerateStageDocumentation(defaultStageName = 'Init')
 void call(Map parameters = [:]) {
 
     def script = checkScript(this, parameters) ?: this
