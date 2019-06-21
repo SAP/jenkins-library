@@ -12,3 +12,7 @@ Init:
 'Build':
   unstash: ['source']
   stashes: []
+
+'Acceptance':
+  unstash: ['buildResult']
+  stashes: []

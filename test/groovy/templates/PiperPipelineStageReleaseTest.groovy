@@ -31,7 +31,7 @@ class PiperPipelineStageReleaseTest extends BasePiperTest {
     @Test
     void testStageDefault() {
 
-        jsr.step.piperPipelineStageIntegration(
+        jsr.step.piperPipelineStageRelease(
             script: nullScript,
             juStabUtils: utils,
         )

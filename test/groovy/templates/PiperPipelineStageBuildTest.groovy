@@ -57,7 +57,7 @@ class PiperPipelineStageBuildTest extends BasePiperTest {
     }
 
     @Test
-    void testPRVotingDefault() {
+    void testBuildDefault() {
 
         jsr.step.piperPipelineStageBuild(script: nullScript, juStabUtils: utils)
 

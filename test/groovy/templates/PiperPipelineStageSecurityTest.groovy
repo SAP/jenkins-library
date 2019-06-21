@@ -31,7 +31,7 @@ class PiperPipelineStageSecurityTest extends BasePiperTest {
     @Test
     void testStageDefault() {
 
-        jsr.step.piperPipelineStageIntegration(
+        jsr.step.piperPipelineStageSecurity(
             script: nullScript,
             juStabUtils: utils,
         )

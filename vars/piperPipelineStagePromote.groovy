@@ -1,4 +1,5 @@
 import com.sap.piper.ConfigurationHelper
+import com.sap.piper.GenerateStageDocumentation
 import com.sap.piper.Utils
 import groovy.transform.Field
 
@@ -10,6 +11,12 @@ import static com.sap.piper.Prerequisites.checkScript
 @Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS.plus([])
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
 
+/**
+ * This stage is responsible to promote build artifacts to an artifact  repository / container registry where they can be used from in production deployments.<br />
+ *
+ * Currently, there is no default implementation of the stage. This you can expect soon ...
+ */
+@GenerateStageDocumentation(defaultStageName = 'Promote')
 void call(Map parameters = [:]) {
 
     def script = checkScript(this, parameters) ?: this

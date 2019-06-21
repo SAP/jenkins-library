@@ -31,7 +31,7 @@ class PiperPipelineStagePromoteTest extends BasePiperTest {
     @Test
     void testStageDefault() {
 
-        jsr.step.piperPipelineStageIntegration(
+        jsr.step.piperPipelineStagePromote(
             script: nullScript,
             juStabUtils: utils,
         )
