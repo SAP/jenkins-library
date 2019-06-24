@@ -85,6 +85,10 @@ import static com.sap.piper.Prerequisites.checkScript
      */
     'dockerOptions',
     /**
+      * Extension files. Provided to the neo command via parameter `--extensions` (`-e`). Only valid for deploy mode `mta`.
+      */
+    'extensions',
+    /**
      * The path to the archive for deployment to SAP CP. If not provided `mtarFilePath` from commom pipeline environment is used instead.
      */
     'source'
@@ -150,6 +154,20 @@ void call(parameters = [:]) {
             // since the map did not change, it is not required to replace the previous configuration map.
             .use()
 
+        Set extensionFileNames
+
+        if(configuration.extensions == null) {
+            extensionFileNames = []
+        } else {
+            extensionFileNames = configuration.extensions in Collection ? configuration.extensions : [configuration.extensions]
+        }
+
+        if( ! extensionFileNames.findAll { it == null || it.isEmpty() }.isEmpty() )
+            error "At least one extension file name was null or empty: ${extensionFileNames}."
+
+        if(deployMode != DeployMode.MTA && ! extensionFileNames.isEmpty())
+            error "Extensions (${extensionFileNames} found for deploy mode ${deployMode}. Extensions are only supported for deploy mode '${DeployMode.MTA}')"
+
         utils.pushToSWA([
             step: STEP_NAME,
             stepParamKey1: 'deployMode',
@@ -177,10 +195,15 @@ void call(parameters = [:]) {
 
                 StepAssertions.assertFileExists(this, configuration.source)
 
+                for(CharSequence extensionFile in extensionFileNames) {
+                    StepAssertions.assertFileExists(this, extensionFile)
+                }
+
                 NeoCommandHelper neoCommandHelper = new NeoCommandHelper(
                     this,
                     deployMode,
                     configuration.neo,
+                    extensionFileNames,
                     NEO_USERNAME,
                     NEO_PASSWORD,
                     configuration.source
@@ -196,9 +219,11 @@ void call(parameters = [:]) {
 
 private deploy(script, utils, Map configuration, NeoCommandHelper neoCommandHelper, dockerImage, DeployMode deployMode) {
 
+    String logFolder = 'logs/neo'
+
     try {
-        sh "mkdir -p logs/neo"
-        withEnv(["neo_logging_location=${pwd()}/logs/neo"]) {
+        sh "mkdir -p ${logFolder}"
+        withEnv(["neo_logging_location=${pwd()}/${logFolder}"]) {
             if (deployMode.isWarDeployment()) {
                 ConfigurationHelper.newInstance(this, configuration).withPropertyInValues('warAction', WarAction.stringValues())
                 WarAction warAction = WarAction.fromString(configuration.warAction)
@@ -238,7 +263,7 @@ private deploy(script, utils, Map configuration, NeoCommandHelper neoCommandHelp
 
         echo "Error while deploying to SAP Cloud Platform. Here are the neo.sh logs:"
         try {
-            sh "cat logs/neo/*"
+            sh "cat ${logFolder}/*"
         } catch(Exception e) {
             echo "Unable to provide the logs."
             ex.addSuppressed(e)

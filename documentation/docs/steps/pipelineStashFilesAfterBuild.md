@@ -1,7 +1,5 @@
 # ${docGenStepName}
 
-## ${docGenDescription}
-
 ## Prerequsites
 
 none
@@ -9,3 +7,5 @@ none
 ## ${docGenParameters}
 
 ## ${docGenConfiguration}
+
+## ${docJenkinsPluginDependencies}

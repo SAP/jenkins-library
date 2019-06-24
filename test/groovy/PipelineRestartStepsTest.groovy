@@ -1,4 +1,3 @@
-#!groovy
 import org.jenkinsci.plugins.workflow.steps.FlowInterruptedException
 import org.junit.Rule
 import org.junit.Test
