@@ -211,6 +211,8 @@ steps:
       workspace: '**/*'
     stashExcludes:
       workspace: 'nohup.out'
+  dubExecute:
+    dockerImage: 'dlang2/dmd-ubuntu:latest'
   githubPublishRelease:
     addClosedIssues: false
     addDeltaToLastRelease: false
