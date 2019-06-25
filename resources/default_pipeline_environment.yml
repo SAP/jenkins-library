@@ -211,6 +211,8 @@ steps:
       workspace: '**/*'
     stashExcludes:
       workspace: 'nohup.out'
+  dubExecute:
+    dockerImage: 'dlang2/dmd-ubuntu:latest'
   githubPublishRelease:
     addClosedIssues: false
     addDeltaToLastRelease: false
@@ -251,6 +253,19 @@ steps:
       languageRunner: 'ruby'
       runCommand: 'bundle install && bundle exec gauge run'
       testOptions: 'specs'
+  hadolintExecute:
+    configurationFile: '.hadolint.yaml'
+    configurationUrl: ''
+    dockerFile: './Dockerfile'
+    dockerImage: 'hadolint/hadolint:latest-debian'
+    qualityGates:
+      - threshold: 1
+        type: 'TOTAL_ERROR'
+        unstable: false
+    reportFile: 'hadolint.xml'
+    reportName: 'HaDoLint'
+    stashContent:
+      - 'buildDescriptor'
   handlePipelineStepErrors:
     echoDetails: true
     failOnError: true
@@ -408,7 +423,7 @@ steps:
     noDefaultExludes: []
   pipelineStashFilesBeforeBuild:
     stashIncludes:
-      buildDescriptor: '**/pom.xml, **/.mvn/**, **/assembly.xml, **/.swagger-codegen-ignore, **/package.json, **/requirements.txt, **/setup.py, **/mta*.y*ml, **/.npmrc, Dockerfile, **/VERSION, **/version.txt, **/Gopkg.*, **/build.sbt, **/sbtDescriptor.json, **/project/*'
+      buildDescriptor: '**/pom.xml, **/.mvn/**, **/assembly.xml, **/.swagger-codegen-ignore, **/package.json, **/requirements.txt, **/setup.py, **/mta*.y*ml, **/.npmrc, Dockerfile, .hadolint.yaml, **/VERSION, **/version.txt, **/Gopkg.*, **/build.sbt, **/sbtDescriptor.json, **/project/*'
       deployDescriptor: '**/manifest*.y*ml, **/*.mtaext.y*ml, **/*.mtaext, **/xs-app.json, helm/**, *.y*ml'
       git: '.git/**'
       opa5: '**/*.*'

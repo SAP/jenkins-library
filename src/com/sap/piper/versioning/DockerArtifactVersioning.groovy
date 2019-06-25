@@ -56,7 +56,11 @@ class DockerArtifactVersioning extends ArtifactVersioning {
         def version = null
         for (def i = 0; i < lines.size(); i++) {
             if (lines[i].startsWith('FROM') && lines[i].indexOf(':') > 0) {
-                version = lines[i].split(':')[1]
+                def imageParts = lines[i].split(':')
+                version = imageParts[imageParts.size()-1]
+                if (version.contains('/')) {
+                    script.error "[${getClass().getSimpleName()}] FROM statement does not contain an explicit image version: ${lines[i]} "
+                }
                 break
             }
         }

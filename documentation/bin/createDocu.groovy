@@ -621,6 +621,14 @@ if(options.c) {
     customDefaults = options.c
 }
 
+// retrieve default conditions for steps
+Map stageConfig
+if (options.i) {
+    System.err << "[INFO] Using stageInitFile ${options.i}.\n"
+    stageConfig = Helper.getYamlResource(options.i)
+    System.err << "[INFO] Default stage configuration: ${stageConfig}.\n"
+}
+
 steps.addAll(options.arguments())
 
 // assign parameters
@@ -654,13 +662,6 @@ if( ! steps) {
 
 // find all the stages that we have to document
 Map stages = Helper.resolveDocuRelevantStages(gse, stepsDir)
-
-// retrieve default conditions for steps
-//ToDo: allow passing config file name via parameter
-Map stageConfig
-if (options.s) {
-    stageConfig = Helper.getYamlResource(options.s)
-}
 
 boolean exceptionCaught = false
 
