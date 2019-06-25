@@ -121,8 +121,6 @@ void call(parameters = [:]) {
 
         def utils = parameters.utils ?: new Utils()
 
-        prepareDefaultValues script: script
-
         // load default & individual configuration
         ConfigurationHelper configHelper = ConfigurationHelper.newInstance(this)
             .loadStepDefaults()
