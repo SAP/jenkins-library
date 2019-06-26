@@ -103,10 +103,11 @@ void call(Map parameters = [:]) {
             stashContent: config.stashContent
         ]
         for(String path : config.modules){
-            testJobs["Karma - ${path}"] = {
+            String modulePath = path
+            testJobs["Karma - ${modulePath}"] = {
                 seleniumExecuteTests(options){
-                    sh "cd '${path}' && ${config.installCommand}"
-                    sh "cd '${path}' && ${config.runCommand}"
+                    sh "cd '${modulePath}' && ${config.installCommand}"
+                    sh "cd '${modulePath}' && ${config.runCommand}"
                 }
             }
         }
