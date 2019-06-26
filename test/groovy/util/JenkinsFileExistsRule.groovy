@@ -26,6 +26,7 @@ class JenkinsFileExistsRule implements TestRule {
             void evaluate() throws Throwable {
 
                 testInstance.helper.registerAllowedMethod('fileExists', [String.class], {s -> return s in existingFiles})
+                testInstance.helper.registerAllowedMethod('fileExists', [Map.class], {m -> return m.file in existingFiles})
 
                 base.evaluate()
             }
