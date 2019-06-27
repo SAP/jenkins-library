@@ -63,7 +63,6 @@ class XsDeployTest extends BasePiperTest {
                 containsString('apiUrl'),
                 containsString('org'),
                 containsString('space'),
-                containsString('credentialsId'),
                 containsString('mtaPath')))
 
         stepRule.step.xsDeploy(script: nullScript)
