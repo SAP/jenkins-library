@@ -115,14 +115,15 @@ void call(Map parameters = [:]) {
                 dockerImage: config.skopeoImage
             ) {
 
-                if (!config.dockerArchive) {
+                if (!config.dockerArchive && !config.dockerBuildImage) {
                     dockerUtils.moveImage([image: config.sourceImage, registryUrl: config.sourceRegistryUrl], [image: config.dockerImage, registryUrl: config.dockerRegistryUrl, credentialsId: config.dockerCredentialsId])
                     if (config.tagLatest) {
                         def latestImage = "${config.dockerImage.split(':')[0]}:latest"
                         dockerUtils.moveImage([image: config.sourceImage, registryUrl: config.sourceRegistryUrl], [image: latestImage, registryUrl: config.dockerRegistryUrl, credentialsId: config.dockerCredentialsId])
                     }
+                } else {
+                    error "[${STEP_NAME}] Running on Kubernetes: Only moving images from one registry to another supported."
                 }
-                //else not implemented: since no Docker daemon is available we can only push from a Docker tar archive or move from one registry to another
             }
         }
     }

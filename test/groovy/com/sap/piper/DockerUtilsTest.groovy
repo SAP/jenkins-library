@@ -85,6 +85,7 @@ class DockerUtilsTest extends BasePiperTest {
         DockerUtils dockerUtils = new DockerUtils(nullScript)
         assertThat(dockerUtils.getRegistryFromUrl('https://my.registry.com:55555'), is('my.registry.com:55555'))
         assertThat(dockerUtils.getRegistryFromUrl('http://my.registry.com:55555'), is('my.registry.com:55555'))
+        assertThat(dockerUtils.getRegistryFromUrl('https://my.registry.com'), is('my.registry.com'))
     }
 
     @Test

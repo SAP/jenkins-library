@@ -18,11 +18,15 @@ class DockerUtils implements Serializable {
     }
 
     public String getRegistryFromUrl(dockerRegistryUrl) {
-        return dockerRegistryUrl.split(/^https?:\/\//)[1]
+        URL url = new URL(dockerRegistryUrl)
+        return "${url.getHost()}${(url.getPort() != -1) ? ':' + url.getPort() : ''}"
     }
 
     public String getProtocolFromUrl(dockerRegistryUrl) {
-        return dockerRegistryUrl.split(/:\/\//)[0]
+        URL url = new URL(dockerRegistryUrl)
+        return url.getProtocol()
+
+        //return dockerRegistryUrl.split(/:\/\//)[0]
     }
 
     public void moveImage(Map source, Map target) {

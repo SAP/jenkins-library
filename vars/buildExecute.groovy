@@ -63,12 +63,6 @@ void call(Map parameters = [:]) {
             .addIfEmpty('dockerImageTag', script.commonPipelineEnvironment.getArtifactVersion())
             .use()
 
-        DockerUtils dockerUtils = new DockerUtils(script)
-        if (config.buildTool == 'docker' && !dockerUtils.withDockerDaemon()) {
-            config.buildTool = 'kaniko'
-            echo "[${STEP_NAME}] no Docker daemon available, thus switching to Kaniko build"
-        }
-
         // telemetry reporting
         utils.pushToSWA([stepParam1: config.buildTool, 'buildTool': config.buildTool], config)
 
@@ -83,6 +77,12 @@ void call(Map parameters = [:]) {
                 npmExecute script: script
                 break
             case ['docker', 'kaniko']:
+                DockerUtils dockerUtils = new DockerUtils(script)
+                if (config.buildTool == 'docker' && !dockerUtils.withDockerDaemon()) {
+                    config.buildTool = 'kaniko'
+                    echo "[${STEP_NAME}] No Docker daemon available, thus switching to Kaniko build"
+                }
+
                 ConfigurationHelper.newInstance(this, config)
                     .withMandatoryProperty('dockerImageName')
                     .withMandatoryProperty('dockerImageTag')

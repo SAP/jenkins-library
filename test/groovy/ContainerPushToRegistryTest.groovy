@@ -185,11 +185,13 @@ class ContainerPushToRegistryTest extends BasePiperTest {
             dockerCredentialsId: 'testCredentialsId',
             dockerImage: 'testImage:tag',
             dockerRegistryUrl: 'https://my.registry:55555',
+            skopeoImage: 'skopeo:latest',
             sourceImage: 'sourceImage:sourceTag',
             sourceRegistryUrl: 'https://my.source.registry:44444'
         )
 
         assertThat(shellCallRule.shell, hasItem('skopeo copy --src-tls-verify=false --dest-tls-verify=false --dest-creds=\'registryUser\':\'********\' docker://my.source.registry:44444/sourceImage:sourceTag docker://my.registry:55555/testImage:tag'))
+        assertThat(dockerRule.dockerParams.dockerImage, is('skopeo:latest'))
     }
 
     @Test
@@ -243,5 +245,20 @@ class ContainerPushToRegistryTest extends BasePiperTest {
         )
 
         assertThat(shellCallRule.shell, hasItem('skopeo copy --src-tls-verify=false --dest-tls-verify=false --dest-creds=\'registryUser\':\'********\' docker://my.source.registry:44444/sourceImage:sourceTag docker://my.registry:55555/sourceImage:sourceTag'))
+    }
+
+    @Test
+    void testKubernetesPushTar() {
+        binding.setVariable('docker', null)
+        shellCallRule.setReturnValue('docker ps -q > /dev/null', 1)
+
+        exception.expectMessage('Only moving images')
+        stepRule.step.containerPushToRegistry(
+            script: nullScript,
+            dockerCredentialsId: 'testCredentialsId',
+            dockerArchive: 'myImage.tar',
+            dockerImage: 'testImage:tag',
+            dockerRegistryUrl: 'https://my.registry:55555',
+        )
     }
 }
