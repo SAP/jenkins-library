@@ -40,7 +40,7 @@ enum DeployMode {
     NONE
 
     String toString() {
-       name().toLowerCase(Locale.ENGLISH).replaceAll('_', '-')
+        name().toLowerCase(Locale.ENGLISH).replaceAll('_', '-')
     }
 }
 
@@ -51,7 +51,7 @@ enum Action {
     NONE
 
     String toString() {
-       name().toLowerCase(Locale.ENGLISH)
+        name().toLowerCase(Locale.ENGLISH)
     }
 }
 
@@ -116,11 +116,11 @@ void call(Map parameters = [:]) {
               * @possibleValues DEPLOY, BG_DEPLOY
               */
             .withMandatoryProperty('mode')
-             /** The endpoint */
+            /** The endpoint */
             .withMandatoryProperty('apiUrl')
-             /** The organization */
+            /** The organization */
             .withMandatoryProperty('org')
-             /** The space */
+            /** The space */
             .withMandatoryProperty('space')
             /** Additional options appended to the login command. Only needed for sophisticated cases.
               * When provided it is the duty of the provider to ensure proper quoting / escaping.
@@ -130,7 +130,7 @@ void call(Map parameters = [:]) {
               * When provided it is the duty of the provider to ensure proper quoting / escaping.
               */
             .withMandatoryProperty('deployOpts')
-             /** The credentialsId */
+            /** The credentialsId */
             .withMandatoryProperty('credentialsId')
             /** The path to the deployable. If not provided explicitly it is retrieved from the common pipeline environment
               * (Parameter `mtarFilePath`).
@@ -138,7 +138,7 @@ void call(Map parameters = [:]) {
             .withMandatoryProperty('mtaPath', null, {action == Action.NONE})
             .withMandatoryProperty('deploymentId',
                 'No deployment id provided, neither via parameters nor via common pipeline environment. Was there a deployment before?',
-                 {action in [Action.RESUME, Action.ABORT, Action.RETRY]})
+                {action in [Action.RESUME, Action.ABORT, Action.RETRY]})
             .use()
 
         utils.pushToSWA([
@@ -161,7 +161,7 @@ void call(Map parameters = [:]) {
         }
 
         if (performLogout || failures) {
-            logout(script, config, failures)     
+            logout(script, config, failures)
 
         } else {
             echo "Skipping logout in order to be able to resume or abort later."
@@ -199,7 +199,7 @@ void login(Script script, Map config) {
 }
 
 void deploy(Script script, DeployMode mode, Map config, def failures) {
-            
+
     def deploymentLog
 
     try {
@@ -239,7 +239,7 @@ void deploy(Script script, DeployMode mode, Map config, def failures) {
             }
         }
     }
-} 
+}
 
 void complete(Script script, DeployMode mode, Action action, Map config, def failures) {
 
