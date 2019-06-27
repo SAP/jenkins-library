@@ -326,4 +326,3 @@ def executeXSCommand(Map dockerOptions, List commands, boolean returnStdout = fa
     }
     r
 }
-
