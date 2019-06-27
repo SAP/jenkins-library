@@ -110,7 +110,7 @@ void call(Map parameters = [:]) {
                         sh "${config.dockerCommand}"
                     }
                 } else {
-                    error("[${STEP_NAME}] buildTool not set and no dockerImage & dockerCommand provided")
+                    error "[${STEP_NAME}] buildTool not set and no dockerImage & dockerCommand provided." 
                 }
         }
     }
