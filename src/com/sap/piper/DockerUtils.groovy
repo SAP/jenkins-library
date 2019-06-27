@@ -45,7 +45,7 @@ class DockerUtils implements Serializable {
                 skopeoMoveImage(sourceImageFullName, targetImageFullName, script.userid, script.password)
             }
         }
-        //else not yet implemented here - available directly via pushToDockerRegistry
+        //else not yet implemented here - available directly via containerPushToRegistry
 
     }
 
