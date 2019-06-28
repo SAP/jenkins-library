@@ -30,6 +30,17 @@ class commonPipelineEnvironment implements Serializable {
     String mtarFilePath
     private Map valueMap = [:]
 
+    /*
+     * Should only be used by tests
+     */
+    void setConfiguration(Map configuration) {
+        DefaultValueCache.createInstance(DefaultValueCache.getInstance()?.getDefaultValues() ?: [:], configuration)
+    }
+
+    def getConfiguration() {
+        DefaultValueCache.getInstance().getProjectConfig()
+    }
+
     void setValue(String property, value) {
         valueMap[property] = value
     }
