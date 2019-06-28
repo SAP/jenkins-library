@@ -72,6 +72,10 @@ class PiperPipelineStageInitTest extends BasePiperTest {
             stepsCalled.add('pipelineStashFilesBeforeBuild')
         })
 
+        helper.registerAllowedMethod('slackSendNotification', [Map.class], {m ->
+            stepsCalled.add('slackSendNotification')
+        })
+
     }
 
     @Test
@@ -110,11 +114,12 @@ class PiperPipelineStageInitTest extends BasePiperTest {
         )
 
         assertThat(stepsCalled, hasItems('checkout', 'setupCommonPipelineEnvironment', 'piperInitRunStageConfiguration', 'artifactSetVersion', 'pipelineStashFilesBeforeBuild'))
+        assertThat(stepsCalled, not(hasItems('slackSendNotification')))
 
     }
 
     @Test
-    void testInitOverwriteDefault() {
+    void testInitNotOnProductiveBranch() {
 
         binding.variables.env.BRANCH_NAME = 'testBranch'
 
@@ -168,5 +173,20 @@ class PiperPipelineStageInitTest extends BasePiperTest {
 
         assertThat(nullScript.commonPipelineEnvironment.configuration.runStep."Pull-Request Voting".karmaExecuteTests, is(true))
         assertThat(nullScript.commonPipelineEnvironment.configuration.runStep."Pull-Request Voting".whitesourceExecuteScan, is(true))
+
+    @Test
+    void testInitWithSlackNotification() {
+        nullScript.commonPipelineEnvironment.configuration = [runStep: [Init: [slackSendNotification: true]]]
+
+        jsr.step.piperPipelineStageInit(script: nullScript, juStabUtils: utils, buildTool: 'maven')
+
+        assertThat(stepsCalled, hasItems(
+            'checkout',
+            'setupCommonPipelineEnvironment',
+            'piperInitRunStageConfiguration',
+            'artifactSetVersion',
+            'slackSendNotification',
+            'pipelineStashFilesBeforeBuild'
+        ))
     }
 }
