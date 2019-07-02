@@ -57,8 +57,6 @@ void call(Map parameters = [:]) {
 
         def utils = parameters.juStabUtils ?: new Utils()
 
-        def script = checkScript(this, parameters) ?: this
-
         Map config = ConfigurationHelper.newInstance(this)
             .loadStepDefaults()
             .mixinGeneralConfig(GENERAL_CONFIG_KEYS)
@@ -70,8 +68,6 @@ void call(Map parameters = [:]) {
         // report to SWA
         utils.pushToSWA([
             step: STEP_NAME,
-            stepParamKey1: 'scriptMissing',
-            stepParam1: parameters?.script == null
         ], config)
 
         InfluxData.addField('step_data', 'bats', false)
@@ -98,7 +94,7 @@ void call(Map parameters = [:]) {
             } finally {
                 sh "cat 'TEST-${config.testPackage}.tap'"
                 if (config.outputFormat == 'junit') {
-                    dockerExecute(script: script, dockerImage: config.dockerImage, dockerWorkspace: config.dockerWorkspace, stashContent: config.stashContent) {
+                    dockerExecute(dockerImage: config.dockerImage, dockerWorkspace: config.dockerWorkspace, stashContent: config.stashContent) {
                         sh "npm install tap-xunit -g"
                         sh "cat 'TEST-${config.testPackage}.tap' | tap-xunit --package='${config.testPackage}' > TEST-${config.testPackage}.xml"
                     }
