@@ -1,3 +1,4 @@
+import com.sap.piper.DefaultValueCache
 import com.sap.piper.GenerateDocumentation
 import com.sap.piper.Utils
 import com.sap.piper.ConfigurationHelper
@@ -84,7 +85,6 @@ import static com.sap.piper.Prerequisites.checkScript
 @GenerateDocumentation
 void call(Map parameters = [:]) {
     handlePipelineStepErrors (stepName: STEP_NAME, stepParameters: parameters) {
-        def script = checkScript(this, parameters) ?: this
         def utils = parameters.juStabUtils ?: new Utils()
         // load default & individual configuration
         Map config = ConfigurationHelper.newInstance(this)
@@ -102,7 +102,7 @@ void call(Map parameters = [:]) {
 
         config.stashContent = utils.unstashAll(config.stashContent)
 
-        script.commonPipelineEnvironment.setInfluxStepData('detect', false)
+        this.commonPipelineEnvironment.setInfluxStepData('detect', false)
 
         utils.pushToSWA([
             step: STEP_NAME,
@@ -113,7 +113,7 @@ void call(Map parameters = [:]) {
         //prepare Hub Detect execution using package manager
         switch (config.buildTool) {
             case 'golang':
-                dockerExecute(script: script, dockerImage: config.dockerImage, dockerWorkspace: config.dockerWorkspace, stashContent: config.stashContent) {
+                dockerExecute(dockerImage: config.dockerImage, dockerWorkspace: config.dockerWorkspace, stashContent: config.stashContent) {
                     sh 'curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh'
                     sh 'ln --symbolic $(pwd) $GOPATH/src/hub'
                     sh 'cd $GOPATH/src/hub && dep ensure'
@@ -148,7 +148,7 @@ void call(Map parameters = [:]) {
 
             echo "[${STEP_NAME}] Running with following Detect configuration: ${detectProperties}"
             synopsys_detect detectProperties
-            script.commonPipelineEnvironment.setInfluxStepData('detect', true)
+            DefaultValueCache.commonPipelineEnvironment.setInfluxStepData('detect', true)
         }
     }
 }
