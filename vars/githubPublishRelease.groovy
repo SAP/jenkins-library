@@ -1,5 +1,6 @@
 import static com.sap.piper.Prerequisites.checkScript
 
+import com.sap.piper.DefaultValueCache
 import com.sap.piper.GenerateDocumentation
 import com.sap.piper.Utils
 import com.sap.piper.ConfigurationHelper
@@ -63,7 +64,6 @@ import groovy.transform.Field
 @GenerateDocumentation
 void call(Map parameters = [:]) {
     handlePipelineStepErrors(stepName: STEP_NAME, stepParameters: parameters) {
-        def script = checkScript(this, parameters) ?: this
 
         // load default & individual configuration
         Map config = ConfigurationHelper.newInstance(this)
@@ -72,9 +72,9 @@ void call(Map parameters = [:]) {
             .mixinStepConfig(STEP_CONFIG_KEYS)
             .mixinStageConfig(parameters.stageName?:env.STAGE_NAME, STEP_CONFIG_KEYS)
             .mixin(parameters, PARAMETER_KEYS)
-            .addIfEmpty('githubOrg', script.commonPipelineEnvironment.getGithubOrg())
-            .addIfEmpty('githubRepo', script.commonPipelineEnvironment.getGithubRepo())
-            .addIfEmpty('version', script.commonPipelineEnvironment.getArtifactVersion())
+            .addIfEmpty('githubOrg', DefaultValueCache.commonPipelineEnvironment.getGithubOrg())
+            .addIfEmpty('githubRepo', DefaultValueCache.commonPipelineEnvironment.getGithubRepo())
+            .addIfEmpty('version', DefaultValueCache.commonPipelineEnvironment.getArtifactVersion())
             .withMandatoryProperty('githubOrg')
             .withMandatoryProperty('githubRepo')
             .withMandatoryProperty('githubTokenCredentialsId')
