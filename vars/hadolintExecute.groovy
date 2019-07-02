@@ -45,7 +45,6 @@ import groovy.transform.Field
 @GenerateDocumentation
 void call(Map parameters = [:]) {
     handlePipelineStepErrors(stepName: STEP_NAME, stepParameters: parameters) {
-        final script = checkScript(this, parameters) ?: this
         final utils = parameters.juStabUtils ?: new Utils()
 
         // load default & individual configuration
@@ -59,8 +58,6 @@ void call(Map parameters = [:]) {
 
         new Utils().pushToSWA([
             step: STEP_NAME,
-            stepParamKey1: 'scriptMissing',
-            stepParam1: parameters?.script == null
         ], configuration)
 
         def existingStashes = utils.unstashAll(configuration.stashContent)
@@ -84,7 +81,6 @@ void call(Map parameters = [:]) {
         ]
 
         dockerExecute(
-            script: script,
             dockerImage: configuration.dockerImage,
             dockerOptions: configuration.dockerOptions,
             stashContent: existingStashes
