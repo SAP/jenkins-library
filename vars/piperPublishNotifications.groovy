@@ -8,7 +8,7 @@ import static com.sap.piper.Prerequisites.checkScript
 @Field def STEP_NAME = getClass().getName()
 
 void call(Map parameters = [:]) {
-    handleStepErrors (stepName: STEP_NAME, stepParameters: parameters, allowBuildFailure: true) {
+    handlePipelineStepErrors (stepName: STEP_NAME, stepParameters: parameters, allowBuildFailure: true) {
         def script = checkScript(this, parameters) ?: this
         def utils = parameters.juStabUtils ?: new Utils()
         // report to SWA
