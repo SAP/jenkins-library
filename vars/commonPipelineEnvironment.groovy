@@ -5,11 +5,6 @@ import com.sap.piper.analytics.InfluxData
 
 class commonPipelineEnvironment implements Serializable {
 
-    //stores properties for a pipeline which build an artifact and then bundles it into a container
-    private Map appContainerProperties = [:]
-
-    Map defaultConfiguration = [:]
-
     //
     // We forward to cpe declared on DefaultValueCache
     def methodMissing(String name, def args) {
@@ -37,16 +32,8 @@ class commonPipelineEnvironment implements Serializable {
         DefaultValueCache.getInstance().getProjectConfig()
     }
 
-    void setValue(String property, value) {
-        DefaultValueCache.commonPipelineEnvironment.setValue(property, value)
-    }
-
-    def getValue(String property) {
-        DefaultValueCache.commonPipelineEnvironment.getValue(property)
-    }
-
     def reset() {
-        appContainerProperties = [:]
+        DefaultValueCache.commonPipelineEnvironment.appContainerProperties = [:]
         artifactVersion = null
 
         gitCommitId = null
@@ -64,72 +51,6 @@ class commonPipelineEnvironment implements Serializable {
         changeDocumentId = null
 
         InfluxData.reset()
-    }
-
-    def setAppContainerProperty(property, value) {
-        appContainerProperties[property] = value
-    }
-
-    def getAppContainerProperty(property) {
-        return appContainerProperties[property]
-    }
-
-    // goes into measurement jenkins_custom_data
-    def setInfluxCustomDataEntry(key, value) {
-        InfluxData.addField('jenkins_custom_data', key, value)
-    }
-    // goes into measurement jenkins_custom_data
-    @Deprecated // not used in library
-    def getInfluxCustomData() {
-        return InfluxData.getInstance().getFields().jenkins_custom_data
-    }
-
-    // goes into measurement jenkins_custom_data
-    def setInfluxCustomDataTagsEntry(key, value) {
-        InfluxData.addTag('jenkins_custom_data', key, value)
-    }
-    // goes into measurement jenkins_custom_data
-    @Deprecated // not used in library
-    def getInfluxCustomDataTags() {
-        return InfluxData.getInstance().getTags().jenkins_custom_data
-    }
-
-    void setInfluxCustomDataMapEntry(measurement, field, value) {
-        InfluxData.addField(measurement, field, value)
-    }
-    @Deprecated // not used in library
-    def getInfluxCustomDataMap() {
-        return InfluxData.getInstance().getFields()
-    }
-
-    def setInfluxCustomDataMapTagsEntry(measurement, tag, value) {
-        InfluxData.addTag(measurement, tag, value)
-    }
-    @Deprecated // not used in library
-    def getInfluxCustomDataMapTags() {
-        return InfluxData.getInstance().getTags()
-    }
-
-    @Deprecated // not used in library
-    def setInfluxStepData(key, value) {
-        InfluxData.addField('step_data', key, value)
-    }
-    @Deprecated // not used in library
-    def getInfluxStepData(key) {
-        return InfluxData.getInstance().getFields()['step_data'][key]
-    }
-
-    @Deprecated // not used in library
-    def setInfluxPipelineData(key, value) {
-        InfluxData.addField('pipeline_data', key, value)
-    }
-    @Deprecated // not used in library
-    def setPipelineMeasurement(key, value){
-        setInfluxPipelineData(key, value)
-    }
-    @Deprecated // not used in library
-    def getPipelineMeasurement(key) {
-        return InfluxData.getInstance().getFields()['pipeline_data'][key]
     }
 
     Map getStepConfiguration(stepName, stageName = env.STAGE_NAME, includeDefaults = true) {
