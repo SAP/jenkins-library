@@ -1,5 +1,5 @@
-import com.sap.piper.Utils
 import com.sap.piper.JenkinsUtils
+import com.sap.piper.Utils
 
 import groovy.transform.Field
 
@@ -10,13 +10,12 @@ import static com.sap.piper.Prerequisites.checkScript
 void call(Map parameters = [:]) {
     handlePipelineStepErrors (stepName: STEP_NAME, stepParameters: parameters, allowBuildFailure: true) {
         def script = checkScript(this, parameters) ?: this
-        def utils = parameters.juStabUtils ?: new Utils()
         // report to SWA
-        utils.pushToSWA([
-            folder: script.commonPipelineEnvironment.getGithubOrg(),
-            repository: script.commonPipelineEnvironment.getGithubRepo(),
-            step: STEP_NAME
-        ])
+        new Utils().pushToSWA([
+            step: STEP_NAME,
+            stepParamKey1: 'scriptMissing',
+            stepParam1: parameters?.script == null
+        ], configuration)
 
         Map piperNotificationsSettings = [
             parserName: 'Piper Notifications Parser',
