@@ -76,7 +76,6 @@ import groovy.text.SimpleTemplateEngine
 @GenerateDocumentation
 void call(Map parameters = [:], Closure body) {
     handlePipelineStepErrors(stepName: STEP_NAME, stepParameters: parameters) {
-        def script = checkScript(this, parameters) ?: this
         def utils = parameters?.juStabUtils ?: new Utils()
 
         // load default & individual configuration
@@ -93,12 +92,9 @@ void call(Map parameters = [:], Closure body) {
 
         utils.pushToSWA([
             step: STEP_NAME,
-            stepParamKey1: 'scriptMissing',
-            stepParam1: parameters?.script == null
         ], config)
 
         dockerExecute(
-                script: script,
                 containerPortMappings: config.containerPortMappings,
                 dockerEnvVars: config.dockerEnvVars,
                 dockerImage: config.dockerImage,
