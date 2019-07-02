@@ -16,18 +16,15 @@ import groovy.transform.Field
   *   @Library('your-additional-lib') __ // optional
   *
   *   // parameter 'customDefaults' below is optional
-  *   fioriOnCloudPlatformPipeline(script: this, customDefaults: '<configFile>')
+  *   fioriOnCloudPlatformPipeline(customDefaults: '<configFile>')
   * ```
   */
 void call(parameters = [:]) {
-
-    checkScript(this, parameters)
 
     node(parameters.label) {
 
         //
         // Cut and paste lines below in order to create a pipeline from this scenario
-        // In this case `parameters` needs to be replaced by `script: this`.
 
         stage('prepare') {
 
