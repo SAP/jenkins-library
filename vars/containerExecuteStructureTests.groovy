@@ -80,8 +80,6 @@ import groovy.transform.Field
 void call(Map parameters = [:]) {
     handlePipelineStepErrors(stepName: STEP_NAME, stepParameters: parameters) {
 
-        def script = checkScript(this, parameters) ?: this
-
         def utils = parameters?.juStabUtils ?: new Utils()
 
         // load default & individual configuration
@@ -91,8 +89,8 @@ void call(Map parameters = [:]) {
             .mixinStepConfig(STEP_CONFIG_KEYS)
             .mixinStageConfig(parameters.stageName?:env.STAGE_NAME, STEP_CONFIG_KEYS)
             .mixin(parameters, PARAMETER_KEYS)
-            .addIfEmpty('testDriver', Boolean.valueOf(script.env.ON_K8S) ? 'tar' : 'docker')
-            .addIfNull('pullImage', !Boolean.valueOf(script.env.ON_K8S))
+            .addIfEmpty('testDriver', Boolean.valueOf(env.ON_K8S) ? 'tar' : 'docker')
+            .addIfNull('pullImage', !Boolean.valueOf(env.ON_K8S))
             .withMandatoryProperty('dockerImage')
             .use()
 
@@ -120,7 +118,6 @@ void call(Map parameters = [:]) {
 
         try {
             dockerExecute(
-                script: script,
                 containerCommand: config.containerCommand,
                 containerShell: config.containerShell,
                 dockerImage: config.dockerImage,
@@ -132,7 +129,7 @@ container-structure-test test ${testConfigArgs} --driver ${config.testDriver} --
             }
         } catch (err) {
             echo "[${STEP_NAME}] Test execution failed"
-            script.currentBuild.result = 'UNSTABLE'
+            currentBuild.result = 'UNSTABLE'
             if (config.failOnError) throw err
         } finally {
             echo "${readFile(config.testReportFilePath)}"

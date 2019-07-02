@@ -75,8 +75,8 @@ class ContainerExecuteStructureTestsTest extends BasePiperTest {
 
     @Test
     void testExecuteContainterStructureTestsK8S() throws Exception {
-        def envDefault = nullScript.env
-        nullScript.env = [ON_K8S: 'true']
+        def envDefault = binding['env']
+        binding['env'] = [ON_K8S: 'true']
         jsr.step.containerExecuteStructureTests(
             script: nullScript,
             juStabUtils: utils,
@@ -86,7 +86,7 @@ class ContainerExecuteStructureTestsTest extends BasePiperTest {
             testConfiguration: 'cst/*.yml',
             testImage: 'myRegistry/myImage:myTag'
         )
-        nullScript.env = envDefault
+        binding['env'] = envDefault
         // asserts
         assertThat(jscr.shell, hasItem(allOf(
             stringContainsInOrder(['#!/bin/sh', 'container-structure-test', '--config']),
