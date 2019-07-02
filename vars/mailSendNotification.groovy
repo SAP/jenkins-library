@@ -1,5 +1,6 @@
 import static com.sap.piper.Prerequisites.checkScript
 
+import com.sap.piper.DefaultValueCache
 import com.sap.piper.ConfigurationHelper
 import com.sap.piper.GenerateDocumentation
 import com.sap.piper.Utils
@@ -77,7 +78,6 @@ import groovy.transform.Field
 @GenerateDocumentation
 void call(Map parameters = [:]) {
     handlePipelineStepErrors (stepName: STEP_NAME, stepParameters: parameters, allowBuildFailure: true) {
-        def script = checkScript(this, parameters) ?: this
 
         // load default & individual configuration
         Map config = ConfigurationHelper.newInstance(this)
@@ -86,11 +86,11 @@ void call(Map parameters = [:]) {
             .mixinStepConfig(STEP_CONFIG_KEYS)
             .mixinStageConfig(parameters.stageName?:env.STAGE_NAME, STEP_CONFIG_KEYS)
             .mixin(
-                projectName: script.currentBuild.fullProjectName,
-                displayName: script.currentBuild.displayName,
-                buildResult: script.currentBuild.result,
-                gitUrl: script.commonPipelineEnvironment.getGitSshUrl(),
-                gitCommitId: script.commonPipelineEnvironment.getGitCommitId()
+                projectName: currentBuild.fullProjectName,
+                displayName: currentBuild.displayName,
+                buildResult: currentBuild.result,
+                gitUrl: DefaultValueCache.commonPipelineEnvironment.getGitSshUrl(),
+                gitCommitId: DefaultValueCache.commonPipelineEnvironment.getGitCommitId()
             )
             .mixin(parameters, PARAMETER_KEYS)
             .use()
@@ -98,15 +98,15 @@ void call(Map parameters = [:]) {
         new Utils().pushToSWA([step: STEP_NAME], config)
 
         //this takes care that terminated builds due to milestone-locking do not cause an error
-        if (script.commonPipelineEnvironment.getBuildResult() == 'ABORTED') return
+        if (DefaultValueCache.commonPipelineEnvironment.getBuildResult() == 'ABORTED') return
 
         def subject = "${config.buildResult}: Build ${config.projectName} ${config.displayName}"
         def log = ''
         def mailTemplate
         if (config.buildResult == 'UNSTABLE' || config.buildResult == 'FAILURE'){
             mailTemplate = 'com.sap.piper/templates/mailFailure.html'
-            log = script.currentBuild.rawBuild.getLog(config.numLogLinesInBody).join('\n')
-        }else if(hasRecovered(config.buildResult, script.currentBuild)){
+            log = currentBuild.rawBuild.getLog(config.numLogLinesInBody).join('\n')
+        }else if(hasRecovered(config.buildResult, currentBuild)){
             mailTemplate = 'com.sap.piper/templates/mailRecover.html'
             subject += ' is back to normal'
         }
@@ -118,7 +118,7 @@ void call(Map parameters = [:]) {
                     echo "[${STEP_NAME}] no gitUrl available, -> exiting without sending mails"
                     return
                 }
-                recipientList += getCulpritCommitters(config, script.currentBuild)
+                recipientList += getCulpritCommitters(config, currentBuild)
             }
             if(config.notificationRecipients)
                 recipientList +=  " ${config.notificationRecipients}"
