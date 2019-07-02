@@ -56,8 +56,6 @@ import groovy.transform.Field
 void call(Map parameters = [:]) {
     handlePipelineStepErrors(stepName: STEP_NAME, stepParameters: parameters) {
 
-        final script = checkScript(this, parameters) ?: this
-
         // load default & individual configuration
         Map config = ConfigurationHelper.newInstance(this)
             .loadStepDefaults()
@@ -82,7 +80,6 @@ void call(Map parameters = [:]) {
         }
 
         dockerExecute(
-            script: script,
             containerCommand: config.containerCommand,
             containerShell: config.containerShell,
             dockerEnvVars: config.dockerEnvVars,
