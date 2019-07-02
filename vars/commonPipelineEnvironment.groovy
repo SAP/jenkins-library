@@ -5,30 +5,26 @@ import com.sap.piper.analytics.InfluxData
 
 class commonPipelineEnvironment implements Serializable {
 
-    //stores version of the artifact which is build during pipeline run
-    def artifactVersion
-
-    //Stores the current buildResult
-    String buildResult = 'SUCCESS'
-
-    //stores the gitCommitId as well as additional git information for the build during pipeline run
-    String gitCommitId
-    String gitCommitMessage
-    String gitSshUrl
-    String gitHttpsUrl
-    String gitBranch
-
-    //GiutHub specific information
-    String githubOrg
-    String githubRepo
-
     //stores properties for a pipeline which build an artifact and then bundles it into a container
     private Map appContainerProperties = [:]
 
     Map defaultConfiguration = [:]
 
-    String mtarFilePath
-    private Map valueMap = [:]
+    //
+    // We forward to cpe declared on DefaultValueCache
+    def methodMissing(String name, def args) {
+        DefaultValueCache.commonPipelineEnvironment.invokeMethod(name, args)
+    }
+
+    def propertyMissing(def name) {
+       DefaultValueCache.commonPipelineEnvironment[name]
+    }
+
+    def propertyMissing(def name, def value) {
+       DefaultValueCache.commonPipelineEnvironment[name] = value
+    }
+    // End forwarding to DefaultValueCache
+    //
 
     /*
      * Should only be used by tests
@@ -42,14 +38,12 @@ class commonPipelineEnvironment implements Serializable {
     }
 
     void setValue(String property, value) {
-        valueMap[property] = value
+        DefaultValueCache.commonPipelineEnvironment.setValue(property, value)
     }
 
     def getValue(String property) {
-        return valueMap.get(property)
+        DefaultValueCache.commonPipelineEnvironment.getValue(property)
     }
-
-    String changeDocumentId
 
     def reset() {
         appContainerProperties = [:]

@@ -4,11 +4,15 @@ import com.sap.piper.MapUtils
 
 import com.cloudbees.groovy.cps.NonCPS
 
+import com.sap.piper.CommonPipelineEnvironment
+
 @API
 class DefaultValueCache implements Serializable {
     private static DefaultValueCache instance
 
     private static String DEFAULT_PROJECT_CONFIG_FILE_PATH = '.pipeline/config.yml'
+
+    static CommonPipelineEnvironment commonPipelineEnvironment = new CommonPipelineEnvironment()
 
     private Map defaultValues
     private Map projectConfig
