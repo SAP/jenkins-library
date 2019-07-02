@@ -73,7 +73,6 @@ import groovy.transform.Field
 @GenerateDocumentation
 void call(Map parameters = [:]) {
     handlePipelineStepErrors(stepName: STEP_NAME, stepParameters: parameters) {
-        final script = checkScript(this, parameters) ?: this
         def utils = parameters?.juStabUtils ?: new Utils()
 
         // load default & individual configuration
@@ -89,7 +88,6 @@ void call(Map parameters = [:]) {
 
         def testJobs = [:]
         def options = [
-            script: script,
             containerPortMappings: config.containerPortMappings,
             dockerEnvVars: config.dockerEnvVars,
             dockerImage: config.dockerImage,
