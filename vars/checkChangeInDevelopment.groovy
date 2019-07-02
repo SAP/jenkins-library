@@ -83,11 +83,9 @@ void call(parameters = [:]) {
 
     handlePipelineStepErrors (stepName: STEP_NAME, stepParameters: parameters) {
 
-        def script = checkScript(this, parameters) ?: this
-
         GitUtils gitUtils = parameters?.gitUtils ?: new GitUtils()
 
-        ChangeManagement cm = parameters?.cmUtils ?: new ChangeManagement(script, gitUtils)
+        ChangeManagement cm = parameters?.cmUtils ?: new ChangeManagement(this, gitUtils)
 
         ConfigurationHelper configHelper = ConfigurationHelper.newInstance(this)
             .loadStepDefaults()
@@ -115,11 +113,9 @@ void call(parameters = [:]) {
 
         new Utils().pushToSWA([
             step: STEP_NAME,
-            stepParamKey1: 'scriptMissing',
-            stepParam1: parameters?.script == null
         ], configuration)
 
-        def changeId = getChangeDocumentId(cm, script, configuration)
+        def changeId = getChangeDocumentId(cm, this, configuration)
 
         configuration = configHelper.mixin([changeDocumentId: changeId?.trim() ?: null], ['changeDocumentId'] as Set)
                                     .withMandatoryProperty('changeDocumentId',
