@@ -13,8 +13,8 @@ void call(Map parameters = [:]) {
         def utils = parameters.juStabUtils ?: new Utils()
         // report to SWA
         utils.pushToSWA([
-            folder: script.globalPipelineEnvironment.getGithubOrg(),
-            repository: script.globalPipelineEnvironment.getGithubRepo(),
+            folder: script.commonPipelineEnvironment.getGithubOrg(),
+            repository: script.commonPipelineEnvironment.getGithubRepo(),
             step: STEP_NAME
         ])
 
