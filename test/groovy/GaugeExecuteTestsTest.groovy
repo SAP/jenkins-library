@@ -118,7 +118,7 @@ class GaugeExecuteTestsTest extends BasePiperTest {
             assertThat(seleniumParams.dockerWorkspace, is('/home/test'))
             assertThat(seleniumParams.stashContent, hasSize(1))
             assertThat(loggingRule.log, containsString('[gaugeExecuteTests] One or more tests failed'))
-            assertThat(nullScript.currentBuild.result, is('UNSTABLE'))
+            assertThat(binding.currentBuild.result, is('UNSTABLE'))
 
         }
 

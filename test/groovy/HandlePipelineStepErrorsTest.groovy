@@ -110,7 +110,7 @@ class HandlePipelineStepErrorsTest extends BasePiperTest {
             errorOccured = true
         }
         assertThat(errorOccured, is(false))
-        assertThat(nullScript.currentBuild.result, is('UNSTABLE'))
+        assertThat(binding.currentBuild.result, is('UNSTABLE'))
     }
 
     @Test
@@ -176,6 +176,6 @@ class HandlePipelineStepErrorsTest extends BasePiperTest {
             //do something
         }
         assertThat(timeout, is(10))
-        assertThat(nullScript.currentBuild.result, is('UNSTABLE'))
+        assertThat(binding.currentBuild.result, is('UNSTABLE'))
     }
 }

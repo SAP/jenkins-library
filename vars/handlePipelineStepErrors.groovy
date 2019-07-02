@@ -1,5 +1,6 @@
 import com.cloudbees.groovy.cps.NonCPS
 
+import com.sap.piper.DefaultValueCache
 import com.sap.piper.GenerateDocumentation
 import com.sap.piper.ConfigurationHelper
 import com.sap.piper.analytics.InfluxData
@@ -51,7 +52,7 @@ import org.jenkinsci.plugins.workflow.steps.FlowInterruptedException
 @GenerateDocumentation
 void call(Map parameters = [:], body) {
     // load default & individual configuration
-    def cpe = parameters.stepParameters?.script?.commonPipelineEnvironment ?: null
+    def cpe = DefaultValueCache.commonPipelineEnvironment ?: null
     Map config = ConfigurationHelper.newInstance(this)
         .loadStepDefaults()
         .mixinGeneralConfig(GENERAL_CONFIG_KEYS)
@@ -82,11 +83,7 @@ void call(Map parameters = [:], body) {
             throw ex
         }
 
-        if (config.stepParameters?.script) {
-            config.stepParameters?.script.currentBuild.result = 'UNSTABLE'
-        } else {
-            currentBuild.result = 'UNSTABLE'
-        }
+        currentBuild.result = 'UNSTABLE'
 
         echo "[${STEP_NAME}] Error in step ${config.stepName} - Build result set to 'UNSTABLE'"
 
@@ -131,7 +128,7 @@ private String formatErrorMessage(Map config, error){
 private void writeErrorToInfluxData(Map config, error){
     if(InfluxData.getInstance().getFields().pipeline_data?.build_error_message == null){
         InfluxData.addTag('pipeline_data', 'build_error_step', config.stepName)
-        InfluxData.addTag('pipeline_data', 'build_error_stage', config.stepParameters.script?.env?.STAGE_NAME)
+        InfluxData.addTag('pipeline_data', 'build_error_stage', env?.STAGE_NAME)
         InfluxData.addField('pipeline_data', 'build_error_message', error.getMessage())
     }
 }
