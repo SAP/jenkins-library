@@ -26,8 +26,6 @@ import groovy.transform.Field
 @GenerateDocumentation
 def call(Map parameters = [:], body) {
 
-    def script = checkScript(this, parameters)
-
     def measurementName = parameters.get('measurementName', 'test_duration')
 
     //start measurement
