@@ -1,5 +1,6 @@
 import static com.sap.piper.Prerequisites.checkScript
 
+import com.sap.piper.DefaultValueCache
 import com.sap.piper.GenerateDocumentation
 import com.sap.piper.ConfigurationHelper
 import com.sap.piper.JsonUtils
@@ -70,10 +71,6 @@ import groovy.transform.Field
 void call(Map parameters = [:]) {
     handlePipelineStepErrors (stepName: STEP_NAME, stepParameters: parameters, allowBuildFailure: true) {
 
-        def script = checkScript(this, parameters)
-        if (script == null)
-            script = this
-
         // load default & individual configuration
         Map config = ConfigurationHelper.newInstance(this)
             .loadStepDefaults()
@@ -81,9 +78,9 @@ void call(Map parameters = [:]) {
             .mixinStepConfig(STEP_CONFIG_KEYS)
             .mixinStageConfig(parameters.stageName?:env.STAGE_NAME, STEP_CONFIG_KEYS)
             .mixin([
-                artifactVersion: script.commonPipelineEnvironment.getArtifactVersion(),
-                influxPrefix: script.commonPipelineEnvironment.getGithubOrg() && script.commonPipelineEnvironment.getGithubRepo()
-                    ? "${script.commonPipelineEnvironment.getGithubOrg()}_${script.commonPipelineEnvironment.getGithubRepo()}"
+                artifactVersion: DefaultValueCache.commonPipelineEnvironment.getArtifactVersion(),
+                influxPrefix: DefaultValueCache.commonPipelineEnvironment.getGithubOrg() && DefaultValueCache.commonPipelineEnvironment.getGithubRepo()
+                    ? "${DefaultValueCache.commonPipelineEnvironment.getGithubOrg()}_${DefaultValueCache.commonPipelineEnvironment.getGithubRepo()}"
                     : null
             ])
             .mixin(parameters, PARAMETER_KEYS)
@@ -95,8 +92,6 @@ void call(Map parameters = [:]) {
 
         new Utils().pushToSWA([
             step: STEP_NAME,
-            stepParamKey1: 'scriptMissing',
-            stepParam1: parameters?.script == null
         ], config)
 
         if (!config.artifactVersion)  {
@@ -118,18 +113,18 @@ InfluxDB data map tags: ${config.customDataMapTags}
         if(config.wrapInNode){
             node(''){
                 try{
-                    writeToInflux(config, script)
+                    writeToInflux(config)
                 }finally{
                     deleteDir()
                 }
             }
         } else {
-            writeToInflux(config, script)
+            writeToInflux(config)
         }
     }
 }
 
-private void writeToInflux(config, script){
+private void writeToInflux(config){
     if (config.influxServer) {
         try {
             step([

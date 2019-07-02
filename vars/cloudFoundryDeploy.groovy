@@ -2,6 +2,7 @@ import com.sap.piper.JenkinsUtils
 
 import static com.sap.piper.Prerequisites.checkScript
 
+import com.sap.piper.DefaultValueCache
 import com.sap.piper.GenerateDocumentation
 import com.sap.piper.Utils
 import com.sap.piper.ConfigurationHelper
@@ -125,8 +126,6 @@ void call(Map parameters = [:]) {
         def utils = parameters.juStabUtils ?: new Utils()
         def jenkinsUtils = parameters.jenkinsUtilsStub ?: new JenkinsUtils()
 
-        final script = checkScript(this, parameters) ?: this
-
         Map config = ConfigurationHelper.newInstance(this)
             .loadStepDefaults()
             .mixinGeneralConfig(GENERAL_CONFIG_KEYS, CONFIG_KEY_COMPATIBILITY)
@@ -146,8 +145,6 @@ void call(Map parameters = [:]) {
             stepParam1: config.deployTool,
             stepParamKey2: 'deployType',
             stepParam2: config.deployType,
-            stepParamKey3: 'scriptMissing',
-            stepParam3: parameters?.script == null
         ], config)
 
         echo "[${STEP_NAME}] General parameters: deployTool=${config.deployTool}, deployType=${config.deployType}, cfApiEndpoint=${config.cloudFoundry.apiEndpoint}, cfOrg=${config.cloudFoundry.org}, cfSpace=${config.cloudFoundry.space}, cfCredentialsId=${config.cloudFoundry.credentialsId}"
@@ -167,7 +164,7 @@ void call(Map parameters = [:]) {
                     .addIfEmpty('mtaPath', config.mtaPath?:findMtar())
                     .use()
 
-                dockerExecute(script: script, dockerImage: config.dockerImage, dockerWorkspace: config.dockerWorkspace, stashContent: config.stashContent) {
+                dockerExecute(dockerImage: config.dockerImage, dockerWorkspace: config.dockerWorkspace, stashContent: config.stashContent) {
                     deployMta(config)
                 }
             }
@@ -186,7 +183,6 @@ void call(Map parameters = [:]) {
                 echo "[${STEP_NAME}] CF native deployment (${config.deployType}) with cfAppName=${config.cloudFoundry.appName}, cfManifest=${config.cloudFoundry.manifest}, smokeTestScript=${config.smokeTestScript}"
 
                 dockerExecute (
-                    script: script,
                     dockerImage: config.dockerImage,
                     dockerWorkspace: config.dockerWorkspace,
                     stashContent: config.stashContent,
@@ -200,7 +196,7 @@ void call(Map parameters = [:]) {
             throw err
         } finally {
             if (deploy) {
-                reportToInflux(script, config, deploySuccess, jenkinsUtils)
+                reportToInflux(config, deploySuccess, jenkinsUtils)
             }
 
         }
@@ -350,7 +346,7 @@ Transformed manifest file content: $transformedManifest"""
 }
 
 
-private void reportToInflux(script, config, deploySuccess, JenkinsUtils jenkinsUtils) {
+private void reportToInflux(config, deploySuccess, JenkinsUtils jenkinsUtils) {
     def deployUser = ''
     withCredentials([usernamePassword(
         credentialsId: config.cloudFoundry.credentialsId,
@@ -369,12 +365,12 @@ private void reportToInflux(script, config, deploySuccess, JenkinsUtils jenkinsU
         jobTrigger: triggerCause
     ]]
     def deploymentDataTags = [deployment_data: [
-        artifactVersion: script.commonPipelineEnvironment.getArtifactVersion(),
+        artifactVersion: DefaultValueCache.commonPipelineEnvironment.getArtifactVersion(),
         deployUser: deployUser,
         deployResult: deploySuccess?'SUCCESS':'FAILURE',
         cfApiEndpoint: config.cloudFoundry.apiEndpoint,
         cfOrg: config.cloudFoundry.org,
         cfSpace: config.cloudFoundry.space,
     ]]
-    influxWriteData script: script, customData: [:], customDataTags: [:], customDataMap: deploymentData, customDataMapTags: deploymentDataTags
+    influxWriteData customData: [:], customDataTags: [:], customDataMap: deploymentData, customDataMapTags: deploymentDataTags
 }
