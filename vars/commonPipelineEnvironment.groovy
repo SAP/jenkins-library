@@ -141,7 +141,7 @@ class commonPipelineEnvironment implements Serializable {
     Map getStepConfiguration(stepName, stageName = env.STAGE_NAME, includeDefaults = true) {
         Map defaults = [:]
         if (includeDefaults) {
-            defaults = ConfigurationLoader.defaultGeneralConfiguration()
+            defaults = DefaultValueCache.getInstance()?.getDefaultValues()?.general ?: [:]
             defaults = ConfigurationMerger.merge(ConfigurationLoader.defaultStepConfiguration(stepName), null, defaults)
             defaults = ConfigurationMerger.merge(ConfigurationLoader.defaultStageConfiguration(stageName), null, defaults)
         }
