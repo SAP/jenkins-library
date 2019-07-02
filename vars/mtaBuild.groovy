@@ -1,5 +1,6 @@
 import static com.sap.piper.Prerequisites.checkScript
 
+import com.sap.piper.DefaultValueCache
 import com.sap.piper.GenerateDocumentation
 import com.sap.piper.ConfigurationHelper
 import com.sap.piper.MtaUtils
@@ -47,8 +48,6 @@ import static com.sap.piper.Utils.downloadSettingsFromUrl
 void call(Map parameters = [:]) {
     handlePipelineStepErrors(stepName: STEP_NAME, stepParameters: parameters) {
 
-        final script = checkScript(this, parameters) ?: this
-
         // load default & individual configuration
         Map configuration = ConfigurationHelper.newInstance(this)
             .loadStepDefaults()
@@ -60,11 +59,9 @@ void call(Map parameters = [:]) {
 
         new Utils().pushToSWA([
             step: STEP_NAME,
-            stepParamKey1: 'scriptMissing',
-            stepParam1: parameters?.script == null
         ], configuration)
 
-        dockerExecute(script: script, dockerImage: configuration.dockerImage, dockerOptions: configuration.dockerOptions) {
+        dockerExecute(dockerImage: configuration.dockerImage, dockerOptions: configuration.dockerOptions) {
 
             String projectSettingsFile = configuration.projectSettingsFile?.trim()
             if (projectSettingsFile) {
@@ -133,7 +130,7 @@ void call(Map parameters = [:]) {
             $mtaCall
             """
 
-            script?.commonPipelineEnvironment?.setMtarFilePath(mtarFileName)
+            DefaultValueCache.commonPipelineEnvironment?.setMtarFilePath(mtarFileName)
         }
     }
 }

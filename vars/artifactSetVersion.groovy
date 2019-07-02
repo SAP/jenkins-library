@@ -1,5 +1,6 @@
 import static com.sap.piper.Prerequisites.checkScript
 
+import com.sap.piper.DefaultValueCache
 import com.sap.piper.GenerateDocumentation
 import com.sap.piper.ConfigurationHelper
 import com.sap.piper.GitUtils
@@ -100,15 +101,11 @@ void call(Map parameters = [:], Closure body = null) {
 
     handlePipelineStepErrors (stepName: STEP_NAME, stepParameters: parameters) {
 
-        def script = checkScript(this, parameters)
-
         def gitUtils = parameters.juStabGitUtils ?: new GitUtils()
 
         if (gitUtils.isWorkTreeDirty()) {
                 error "[${STEP_NAME}] Files in the workspace have been changed previously - aborting ${STEP_NAME}"
         }
-        if (script == null)
-            script = this
         // load default & individual configuration
         ConfigurationHelper configHelper = ConfigurationHelper.newInstance(this)
             .loadStepDefaults()
@@ -132,11 +129,9 @@ void call(Map parameters = [:], Closure body = null) {
             stepParam1: config.buildTool,
             stepParamKey2: 'artifactType',
             stepParam2: config.artifactType,
-            stepParamKey3: 'scriptMissing',
-            stepParam3: parameters?.script == null
         ], config)
 
-        def artifactVersioning = ArtifactVersioning.getArtifactVersioning(config.buildTool, script, config)
+        def artifactVersioning = ArtifactVersioning.getArtifactVersioning(config.buildTool, this, config)
         def currentVersion = artifactVersioning.getVersion()
 
         def newVersion
@@ -156,8 +151,8 @@ void call(Map parameters = [:], Closure body = null) {
         if (config.commitVersion) {
             config = ConfigurationHelper.newInstance(this, config)
                 .addIfEmpty('gitSshUrl', isAppContainer(config)
-                            ?script.commonPipelineEnvironment.getAppContainerProperty('gitSshUrl')
-                            :script.commonPipelineEnvironment.getGitSshUrl())
+                            ?DefaultValueCache.commonPipelineEnvironment.getAppContainerProperty('gitSshUrl')
+                            :DefaultValueCache.commonPipelineEnvironment.getGitSshUrl())
                 .withMandatoryProperty('gitSshUrl')
                 .use()
 
@@ -183,12 +178,12 @@ void call(Map parameters = [:], Closure body = null) {
         }
 
         if (isAppContainer(config)) {
-            script.commonPipelineEnvironment.setAppContainerProperty('artifactVersion', newVersion)
-            script.commonPipelineEnvironment.setAppContainerProperty('gitCommitId', config.gitCommitId)
+            DefaultValueCache.commonPipelineEnvironment.setAppContainerProperty('artifactVersion', newVersion)
+            DefaultValueCache.commonPipelineEnvironment.setAppContainerProperty('gitCommitId', config.gitCommitId)
         } else {
             //standard case
-            script.commonPipelineEnvironment.setArtifactVersion(newVersion)
-            script.commonPipelineEnvironment.setGitCommitId(config.gitCommitId)
+            DefaultValueCache.commonPipelineEnvironment.setArtifactVersion(newVersion)
+            DefaultValueCache.commonPipelineEnvironment.setGitCommitId(config.gitCommitId)
         }
 
         echo "[${STEP_NAME}]New version: ${newVersion}"

@@ -112,8 +112,6 @@ import groovy.transform.Field
 void call(Map parameters = [:], body) {
     handlePipelineStepErrors(stepName: STEP_NAME, stepParameters: parameters, failOnError: true) {
 
-        final script = checkScript(this, parameters) ?: this
-
         def utils = parameters?.juStabUtils ?: new Utils()
 
         Map config = ConfigurationHelper.newInstance(this)
@@ -126,10 +124,8 @@ void call(Map parameters = [:], body) {
 
         new Utils().pushToSWA([
             step: STEP_NAME,
-            stepParamKey1: 'scriptMissing',
-            stepParam1: parameters?.script == null,
-            stepParamKey2: 'kubernetes',
-            stepParam2: isKubernetes()
+            stepParamKey1: 'kubernetes',
+            stepParam1: isKubernetes()
         ], config)
 
         if (isKubernetes() && config.dockerImage) {
@@ -142,7 +138,6 @@ void call(Map parameters = [:], body) {
             } else {
                 if (!config.sidecarImage) {
                     dockerExecuteOnKubernetes(
-                        script: script,
                         containerCommand: config.containerCommand,
                         containerShell: config.containerShell,
                         dockerImage: config.dockerImage,
@@ -160,7 +155,6 @@ void call(Map parameters = [:], body) {
                     }
 
                     Map paramMap = [
-                        script: script,
                         containerCommands: [:],
                         containerEnvVars: [:],
                         containerPullImageFlags: [:],
