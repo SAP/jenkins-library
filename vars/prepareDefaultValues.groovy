@@ -16,22 +16,5 @@ import groovy.transform.Field
  */
 @GenerateDocumentation
 void call(Map parameters = [:]) {
-    if(!DefaultValueCache.getInstance() || parameters.customDefaults) {
-        def defaultValues = [:]
-        def configFileList = ['default_pipeline_environment.yml']
-        def customDefaults = parameters.customDefaults
-
-        if(customDefaults in String)
-            customDefaults = [customDefaults]
-        if(customDefaults in List)
-            configFileList += customDefaults
-        for (def configFileName : configFileList){
-            if(configFileList.size() > 1) echo "Loading configuration file '${configFileName}'"
-            def configuration = readYaml text: libraryResource(configFileName)
-            defaultValues = MapUtils.merge(
-                    MapUtils.pruneNulls(defaultValues),
-                    MapUtils.pruneNulls(configuration))
-        }
-        DefaultValueCache.createInstance(defaultValues)
-    }
+    DefaultValueCache.prepare(this, parameters)
 }
