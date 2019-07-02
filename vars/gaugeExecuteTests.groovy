@@ -87,7 +87,6 @@ import groovy.transform.Field
 @GenerateDocumentation
 void call(Map parameters = [:]) {
     handlePipelineStepErrors (stepName: STEP_NAME, stepParameters: parameters) {
-        def script = checkScript(this, parameters)  ?: this
         def utils = parameters.juStabUtils ?: new Utils()
 
         InfluxData.addField('step_data', 'gauge', false)
@@ -125,7 +124,6 @@ void call(Map parameters = [:]) {
         }
 
         seleniumExecuteTests (
-            script: script,
             buildTool: config.buildTool,
             dockerEnvVars: config.dockerEnvVars,
             dockerImage: config.dockerImage,
@@ -153,7 +151,7 @@ void call(Map parameters = [:]) {
                 InfluxData.addField('step_data', 'gauge', true)
             } catch (err) {
                 echo "[${STEP_NAME}] One or more tests failed"
-                script.currentBuild.result = 'UNSTABLE'
+                currentBuild.result = 'UNSTABLE'
                 if (config.failOnError) throw err
             }
         }
