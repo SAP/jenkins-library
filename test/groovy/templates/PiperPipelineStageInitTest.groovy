@@ -161,11 +161,11 @@ class PiperPipelineStageInitTest extends BasePiperTest {
         ]
         def config = [
             pullRequestStageName: 'Pull-Request Voting',
-            stepMappings: [
-                karma: 'karmaExecuteTests',
+            stepMappings        : [
+                karma      : 'karmaExecuteTests',
                 whitesource: 'whitesourceExecuteScan'
             ],
-            labelPrefix: 'pr_'
+            labelPrefix         : 'pr_'
         ]
 
         def actions = ['karma', 'pr_whitesource']
@@ -173,6 +173,7 @@ class PiperPipelineStageInitTest extends BasePiperTest {
 
         assertThat(nullScript.commonPipelineEnvironment.configuration.runStep."Pull-Request Voting".karmaExecuteTests, is(true))
         assertThat(nullScript.commonPipelineEnvironment.configuration.runStep."Pull-Request Voting".whitesourceExecuteScan, is(true))
+    }
 
     @Test
     void testInitWithSlackNotification() {
