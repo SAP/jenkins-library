@@ -32,8 +32,6 @@ import groovy.transform.Field
 void call(Map parameters = [:], body = null) {
     handlePipelineStepErrors(stepName: STEP_NAME, stepParameters: parameters) {
 
-        final script = checkScript(this, parameters) ?: this
-
         // load default & individual configuration
         Map configuration = ConfigurationHelper.newInstance(this)
             .loadStepDefaults()
@@ -45,14 +43,12 @@ void call(Map parameters = [:], body = null) {
 
         new Utils().pushToSWA([
             step: STEP_NAME,
-            stepParamKey1: 'scriptMissing',
-            stepParam1: parameters?.script == null
         ], configuration)
 
         if (!fileExists('dub.json') && !fileExists('dub.sdl')) {
             error "[${STEP_NAME}] Neither dub.json nor dub.sdl was found."
         }
-        dockerExecute(script: script, dockerImage: configuration.dockerImage, dockerOptions: configuration.dockerOptions) {
+        dockerExecute(dockerImage: configuration.dockerImage, dockerOptions: configuration.dockerOptions) {
             if (configuration.defaultDubRegistry) {
                 sh """
                     mkdir ~/.dub
