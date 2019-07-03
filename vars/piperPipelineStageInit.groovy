@@ -127,7 +127,7 @@ private void checkBuildTool(config) {
 
 private void initStashConfiguration (script, config) {
     Map stashConfiguration = readYaml(text: libraryResource(config.stashSettings))
-    echo "Stash config: stashConfiguration"
+    if (config.verbose) echo "Stash config: ${stashConfiguration}"
     script.commonPipelineEnvironment.configuration.stageStashes = stashConfiguration
 }
 

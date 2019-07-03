@@ -61,6 +61,7 @@ private void executeStage(script, originalStage, stageName, config, utils) {
     try {
         //Add general stage stashes to config.stashContent
         config.stashContent += script.commonPipelineEnvironment.configuration.stageStashes?.get(stageName)?.unstash ?: []
+        echo "[${STAGE_NAME}] StashContent: ${config.stashContent}"
 
         utils.unstashAll(config.stashContent)
 
