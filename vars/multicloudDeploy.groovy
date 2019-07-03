@@ -1,3 +1,4 @@
+impport com.sap.piper.DefaultValueCache
 import com.sap.piper.GenerateDocumentation
 import com.sap.piper.CloudPlatform
 import com.sap.piper.DefaultValueCache
@@ -42,7 +43,6 @@ void call(parameters = [:]) {
         def stageName = parameters.stage ?: env.STAGE_NAME
         def enableZeroDowntimeDeployment = parameters.enableZeroDowntimeDeployment ?: false
 
-        def script = checkScript(this, parameters) ?: this
         def utils = parameters.utils ?: new Utils()
         def jenkinsUtils = parameters.jenkinsUtils ?: new JenkinsUtils()
 
@@ -81,17 +81,16 @@ void call(parameters = [:]) {
                 Closure deployment = {
 
                     cloudFoundryDeploy(
-                        script: script,
                         juStabUtils: utils,
                         jenkinsUtilsStub: jenkinsUtils,
                         deployType: deploymentType,
                         cloudFoundry: target,
-                        mtaPath: script.commonPipelineEnvironment.mtarFilePath,
+                        mtaPath: DefaultValueCache.commonPipelineEnvironment.mtarFilePath,
                         deployTool: deployTool
                     )
 
                 }
-                setDeployment(deployments, deployment, index, script, stageName)
+                setDeployment(deployments, deployment, index, stageName)
                 index++
             }
             utils.runClosures(deployments)
@@ -108,14 +107,13 @@ void call(parameters = [:]) {
                 Closure deployment = {
 
                     neoDeploy (
-                        script: script,
                         warAction: deploymentType.toString(),
                         source: config.source,
                         neo: target
                     )
 
                 }
-                setDeployment(deployments, deployment, index, script, stageName)
+                setDeployment(deployments, deployment, index, stageName)
                 index++
             }
             utils.runClosures(deployments)
@@ -127,10 +125,10 @@ void call(parameters = [:]) {
     }
 }
 
-void setDeployment(deployments, deployment, index, script, stageName) {
+void setDeployment(deployments, deployment, index, stageName) {
     deployments["Deployment ${index > 1 ? index : ''}"] = {
         if (env.POD_NAME) {
-            dockerExecuteOnKubernetes(script: script, containerMap: ContainerMap.instance.getMap().get(stageName) ?: [:]) {
+            dockerExecuteOnKubernetes(containerMap: ContainerMap.instance.getMap().get(stageName) ?: [:]) {
                 deployment.run()
             }
         } else {
