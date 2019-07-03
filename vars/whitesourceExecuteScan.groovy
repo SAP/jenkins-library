@@ -435,7 +435,7 @@ private resolveProjectIdentifiers(script, descriptorUtils, config) {
             case 'golang':
                 gav = descriptorUtils.getGoGAV(config.buildDescriptorFile, new URI(script.commonPipelineEnvironment.getGitHttpsUrl()))
                 break
-            case 'dlang':
+            case 'dub':
                 break
             case 'maven':
                 gav = descriptorUtils.getMavenGAV(config.buildDescriptorFile)

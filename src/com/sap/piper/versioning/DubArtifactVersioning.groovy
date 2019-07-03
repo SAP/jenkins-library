@@ -1,7 +1,7 @@
 package com.sap.piper.versioning
 
-class DlangArtifactVersioning extends ArtifactVersioning {
-    protected DlangArtifactVersioning(script, configuration) {
+class DubArtifactVersioning extends ArtifactVersioning {
+    protected DubArtifactVersioning(script, configuration) {
         super(script, configuration)
     }
 
