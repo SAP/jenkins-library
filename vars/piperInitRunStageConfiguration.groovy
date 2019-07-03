@@ -62,7 +62,7 @@ void call(Map parameters = [:]) {
         stage.getValue().stepConditions.each {step ->
             def stepActive = false
             step.getValue().each {condition ->
-                Map stepConfig = DefaultValueCache.commonPipelineEnvironment.getStepConfiguration(step.getKey(), currentStage)
+                Map stepConfig = DefaultValueCache.getInstance().commonPipelineEnvironment.getStepConfiguration(step.getKey(), currentStage)
                 switch(condition.getKey()) {
                     case 'config':
                         if (condition.getValue() instanceof Map) {
