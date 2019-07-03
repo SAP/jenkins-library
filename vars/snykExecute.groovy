@@ -61,8 +61,6 @@ void call(Map parameters = [:]) {
     handlePipelineStepErrors(stepName: STEP_NAME, stepParameters: parameters) {
         def utils = parameters.juStabUtils ?: new Utils()
 
-        def script = checkScript(this, parameters) ?: this
-
         Map config = ConfigurationHelper.newInstance(this)
             .loadStepDefaults()
             .mixinGeneralConfig(GENERAL_CONFIG_KEYS)
@@ -76,8 +74,6 @@ void call(Map parameters = [:]) {
 
         new Utils().pushToSWA([
             step: STEP_NAME,
-            stepParamKey1: 'scriptMissing',
-            stepParam1: parameters?.script == null
         ], config)
 
         utils.unstashAll(config.stashContent)
@@ -101,7 +97,6 @@ void call(Map parameters = [:]) {
                         variable: 'token'
                     )]) {
                         dockerExecute(
-                            script: script,
                             dockerImage: config.dockerImage,
                             stashContent: config.stashContent,
                             dockerEnvVars: ['SNYK_TOKEN': token]
