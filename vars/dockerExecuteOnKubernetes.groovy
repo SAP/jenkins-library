@@ -327,8 +327,6 @@ private List getContainerEnvs(config, imageName) {
         [ name: e.key, value: e.value ]
     }
 
-    containerEnv << envVar(key: "ON_K8S", value: "$ON_K8S")
-
     if (dockerEnvVars) {
         for (String k : dockerEnvVars.keySet()) {
             containerEnv << envVar(key: k, value: dockerEnvVars[k].toString())
