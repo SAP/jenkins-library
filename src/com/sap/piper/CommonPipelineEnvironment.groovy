@@ -105,4 +105,18 @@ public class CommonPipelineEnvironment {
     def getPipelineMeasurement(key) {
         return InfluxData.getInstance().getFields()['pipeline_data'][key]
     }
+
+    Map getStepConfiguration(stepName, stageName = env.STAGE_NAME, includeDefaults = true) {
+        Map defaults = [:]
+        if (includeDefaults) {
+            defaults = DefaultValueCache.getInstance()?.getDefaultValues()?.general ?: [:]
+            defaults = ConfigurationMerger.merge(ConfigurationLoader.defaultStepConfiguration(stepName), null, defaults)
+            defaults = ConfigurationMerger.merge(ConfigurationLoader.defaultStageConfiguration(stageName), null, defaults)
+        }
+        Map projectConfig = DefaultValueCache.getInstance().getProjectConfig()
+        Map config = ConfigurationMerger.merge(projectConfig.get('general') ?: [:], null, defaults)
+        config = ConfigurationMerger.merge(projectConfig.get('steps')?.get(stepName) ?: [:], null, config)
+        config = ConfigurationMerger.merge(projectConfig.get('stages')?.get(stageName) ?: [:], null, config)
+        return config
+    }
 }
