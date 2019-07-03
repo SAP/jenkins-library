@@ -29,7 +29,8 @@ import static com.sap.piper.Prerequisites.checkScript
 
     'verbose'
 ]
-@Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS
+@Field STAGE_STEP_KEYS = []
+@Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS.plus(STAGE_STEP_KEYS)
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
 
 /**

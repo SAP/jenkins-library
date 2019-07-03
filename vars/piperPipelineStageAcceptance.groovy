@@ -8,7 +8,7 @@ import static com.sap.piper.Prerequisites.checkScript
 @Field String STEP_NAME = getClass().getName()
 
 @Field Set GENERAL_CONFIG_KEYS = []
-@Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS.plus([
+@Field STAGE_STEP_KEYS = [
     /** For Cloud Foundry use-cases: Performs deployment to Cloud Foundry space/org. */
     'cloudFoundryDeploy',
     /** Performs behavior-driven tests using Gauge test framework against the deployed application/service. */
@@ -26,7 +26,8 @@ import static com.sap.piper.Prerequisites.checkScript
     'testsPublishResults',
     /** Performs end-to-end UI testing using UIVeri5 test framework against the deployed application/service. */
     'uiVeri5ExecuteTests'
-])
+]
+@Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS.plus(STAGE_STEP_KEYS)
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
 
 /**

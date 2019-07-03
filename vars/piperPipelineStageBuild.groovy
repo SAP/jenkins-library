@@ -8,7 +8,7 @@ import static com.sap.piper.Prerequisites.checkScript
 @Field String STEP_NAME = getClass().getName()
 
 @Field Set GENERAL_CONFIG_KEYS = []
-@Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS.plus([
+@Field STAGE_STEP_KEYS = [
     /** Starts build execution. This is always being executed.*/
     'buildExecute',
     /**
@@ -22,7 +22,8 @@ import static com.sap.piper.Prerequisites.checkScript
     'testsPublishResults',
     /** Publishes check results to Jenkins. It will always be active. */
     'checksPublishResults'
-])
+]
+@Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS.plus(STAGE_STEP_KEYS)
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
 
 /**

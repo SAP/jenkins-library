@@ -8,12 +8,13 @@ import static com.sap.piper.Prerequisites.checkScript
 @Field String STEP_NAME = getClass().getName()
 
 @Field Set GENERAL_CONFIG_KEYS = []
-@Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS.plus([
+@Field STAGE_STEP_KEYS = [
     /** Executes karma tests which is for example suitable for OPA5 testing as well as QUnit testing of SAP UI5 apps.*/
     'karmaExecuteTests',
     /** Publishes test results to Jenkins. It will automatically be active in cases tests are executed. */
     'testsPublishResults'
-])
+]
+@Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS.plus(STAGE_STEP_KEYS)
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
 
 /**

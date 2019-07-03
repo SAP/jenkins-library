@@ -695,8 +695,12 @@ for(step in stepDescriptors) {
 def stageDescriptors = [:]
 stages.each {key, value ->
     System.err << "[INFO] Processing stage '${key}' ...\n"
-    stageDescriptors."${key}" = [:] << stepDescriptors."${key}"
-    stepDescriptors.remove(key)
+    if (stepDescriptors."${key}") {
+        stageDescriptors."${key}" = [:] << stepDescriptors."${key}"
+        stepDescriptors.remove(key)
+    } else {
+        stageDescriptors."${key}" = [:]
+    }
 
     //add stage name to stageDescriptors
     stageDescriptors."${key}".name = value
