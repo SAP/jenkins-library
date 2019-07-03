@@ -149,6 +149,12 @@ void call(Map parameters = [:]) {
             step: STEP_NAME,
         ], config)
 
+        if(action == Action.NONE) {
+            boolean deployableExists = fileExists file: config.mtaPath
+            if(! deployableExists)
+                error "Deployable '${config.mtaPath}' does not exist."
+        }
+
         if(performLogin) {
             login(script, config)
         }

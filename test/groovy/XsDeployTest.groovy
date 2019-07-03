@@ -33,7 +33,10 @@ class XsDeployTest extends BasePiperTest {
 
     private ExpectedException thrown = ExpectedException.none()
 
-    private List existingFiles =  ['.xsconfig']
+    private List existingFiles =  [
+        '.xsconfig',
+        'myApp.mta'
+    ]
 
     private JenkinsStepRule stepRule = new JenkinsStepRule(this)
     private JenkinsShellCallRule shellRule = new JenkinsShellCallRule(this)
@@ -154,6 +157,32 @@ class XsDeployTest extends BasePiperTest {
 
         assertThat(logRule.log, containsString('Deployment skipped intentionally.'))
         assertThat(shellRule.shell, hasSize(0))
+    }
+
+    @Test
+    public void testDeploymentFailsWhenDeployableIsNotPresent() {
+
+        thrown.expect(AbortException)
+        thrown.expectMessage('Deployable \'myApp.mta\' does not exist.')
+
+        existingFiles.remove('myApp.mta')
+
+        try {
+            stepRule.step.xsDeploy(
+                script: nullScript,
+                apiUrl: 'https://example.org/xs',
+                org: 'myOrg',
+                space: 'mySpace',
+                credentialsId: 'myCreds',
+                mtaPath: 'myApp.mta'
+            )
+        } catch(AbortException e) {
+
+            // no shell operation happened in this case.
+            assertThat(shellRule.shell.size(), is(0))
+
+            throw e
+        }
     }
 
     @Test
