@@ -51,7 +51,6 @@ import groovy.text.SimpleTemplateEngine
 void call(Map parameters = [:]) {
     handlePipelineStepErrors (stepName: STEP_NAME, stepParameters: parameters) {
         def utils = parameters.juStabUtils ?: new Utils()
-        def script = checkScript(this, parameters) ?: this
         // load default & individual configuration
         Map config = ConfigurationHelper.newInstance(this)
             .loadStepDefaults()
@@ -63,7 +62,7 @@ void call(Map parameters = [:]) {
 
         new Utils().pushToSWA([step: STEP_NAME], config)
 
-        def buildStatus = script.currentBuild.result
+        def buildStatus = currentBuild.result
         // resolve templates
         config.color = SimpleTemplateEngine.newInstance().createTemplate(config.color).make([buildStatus: buildStatus]).toString()
         if (!config?.message){
