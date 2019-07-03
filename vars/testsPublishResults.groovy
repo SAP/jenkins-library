@@ -52,7 +52,6 @@ import groovy.transform.Field
 @GenerateDocumentation
 void call(Map parameters = [:]) {
     handlePipelineStepErrors (stepName: STEP_NAME, stepParameters: parameters) {
-        def script = checkScript(this, parameters) ?: this
 
         prepare(parameters)
 
@@ -67,8 +66,6 @@ void call(Map parameters = [:]) {
 
         new Utils().pushToSWA([
             step: STEP_NAME,
-            stepParamKey1: 'scriptMissing',
-            stepParam1: parameters?.script == null
         ], configuration)
 
         publishJUnitReport(configuration.get('junit'))
@@ -76,8 +73,8 @@ void call(Map parameters = [:]) {
         publishCoberturaReport(configuration.get('cobertura'))
         publishJMeterReport(configuration.get('jmeter'))
 
-        if (configuration.failOnError && JenkinsUtils.hasTestFailures(script.currentBuild)) {
-            script.currentBuild.result = 'FAILURE'
+        if (configuration.failOnError && JenkinsUtils.hasTestFailures(currentBuild)) {
+            currentBuild.result = 'FAILURE'
             error "[${STEP_NAME}] Some tests failed!"
         }
     }
