@@ -138,7 +138,7 @@ private void initStashConfiguration (script, config) {
 private void initStageOrdinalConfiguration (script, config) {
     Map stageOrdinals = readYaml(text: libraryResource(config.stageOrdinals))
     if (config.verbose) echo "Stage ordinals: ${stageOrdinals}"
-    script.commonPipelineEnvironment.configuration.general = stageOrdinals
+    script.commonPipelineEnvironment.configuration.general += stageOrdinals
 }
 
 private void setScmInfoOnCommonPipelineEnvironment(script, scmInfo) {
