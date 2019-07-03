@@ -1,3 +1,4 @@
+import com.sap.piper.DefaultValueCache
 import com.sap.piper.ConfigurationHelper
 import com.sap.piper.GenerateDocumentation
 import com.sap.piper.Utils
@@ -88,7 +89,6 @@ import groovy.text.SimpleTemplateEngine
 void call(Map parameters = [:]) {
     handlePipelineStepErrors(stepName: STEP_NAME, stepParameters: parameters) {
         def utils = parameters.juStabUtils ?: new Utils()
-        def script = checkScript(this, parameters) ?: this
         // load default & individual configuration
         Map configuration = ConfigurationHelper.newInstance(this)
             .loadStepDefaults()
@@ -96,9 +96,9 @@ void call(Map parameters = [:]) {
             .mixinStepConfig(STEP_CONFIG_KEYS)
             .mixinStageConfig(parameters.stageName?:env.STAGE_NAME, GENERAL_CONFIG_KEYS)
             .mixin(parameters, PARAMETER_KEYS)
-            .addIfEmpty('projectVersion', script.commonPipelineEnvironment.getArtifactVersion()?.tokenize('.')?.get(0))
-            .addIfEmpty('githubOrg', script.commonPipelineEnvironment.getGithubOrg())
-            .addIfEmpty('githubRepo', script.commonPipelineEnvironment.getGithubRepo())
+            .addIfEmpty('projectVersion', DefaultValueCache.getInstance().commonPipelineEnvironment.getArtifactVersion()?.tokenize('.')?.get(0))
+            .addIfEmpty('githubOrg', DefaultValueCache.getInstance().commonPipelineEnvironment.getGithubOrg())
+            .addIfEmpty('githubRepo', DefaultValueCache.getInstance().commonPipelineEnvironment.getGithubRepo())
             // check mandatory parameters
             .withMandatoryProperty('githubTokenCredentialsId', null, { config -> config.legacyPRHandling && isPullRequest() })
             .withMandatoryProperty('githubOrg', null, { isPullRequest() })
@@ -169,7 +169,6 @@ void call(Map parameters = [:]) {
         }
 
         dockerExecute(
-            script: script,
             dockerImage: configuration.dockerImage
         ){
             worker(configuration)
