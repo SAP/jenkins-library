@@ -7,9 +7,14 @@ import static com.sap.piper.Prerequisites.checkScript
 @Field String STEP_NAME = getClass().getName()
 
 @Field Set GENERAL_CONFIG_KEYS = []
-@Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS.plus([])
+@Field STAGE_STEP_KEYS = []
+@Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS.plus(STAGE_STEP_KEYS)
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
 
+/**
+ * The stage allows to execute project-specific integration tests.<br />
+ * Typically, integration tests are very project-specific, thus they can be defined here using the [stage extension mechanism](../extensibility.md).
+ */
 void call(Map parameters = [:]) {
 
     def script = checkScript(this, parameters) ?: this
@@ -29,8 +34,7 @@ void call(Map parameters = [:]) {
         // telemetry reporting
         utils.pushToSWA([step: STEP_NAME], config)
 
-        //ToDO: provide stage implementation
-        echo "${STEP_NAME}: Stage implementation is not provided yet. You can extend the stage using the provided stage extension mechanism."
+        echo "${STEP_NAME}: No default stage implementation is provided for this stage. You can extend the stage using the provided stage extension mechanism."
 
     }
 }

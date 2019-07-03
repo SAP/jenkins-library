@@ -1,6 +1,9 @@
 void call(parameters) {
     pipeline {
         agent none
+        triggers {
+            issueCommentTrigger('.*/piper ([a-z]*).*')
+        }
         options {
             skipDefaultCheckout()
             timestamps()
