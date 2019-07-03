@@ -1,3 +1,4 @@
+import com.sap.piper.DefaultValueCache
 import com.sap.piper.ConfigurationLoader
 
 import static com.sap.piper.Prerequisites.checkScript
@@ -29,7 +30,6 @@ import groovy.transform.Field
 
 void call(Map parameters = [:]) {
 
-    def script = checkScript(this, parameters) ?: this
     def stageName = parameters.stageName?:env.STAGE_NAME
 
     DefaultValueCache.getInstance().getProjectConfig().runStage = [:]
@@ -62,7 +62,7 @@ void call(Map parameters = [:]) {
         stage.getValue().stepConditions.each {step ->
             def stepActive = false
             step.getValue().each {condition ->
-                Map stepConfig = script.commonPipelineEnvironment.getStepConfiguration(step.getKey(), currentStage)
+                Map stepConfig = DefaultValueCache.commonPipelineEnvironment.getStepConfiguration(step.getKey(), currentStage)
                 switch(condition.getKey()) {
                     case 'config':
                         if (condition.getValue() instanceof Map) {
