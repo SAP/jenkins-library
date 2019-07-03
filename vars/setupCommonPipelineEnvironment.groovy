@@ -32,9 +32,7 @@ import groovy.transform.Field
 @GenerateDocumentation
 void call(Map parameters = [:]) {
 
-        def script = checkScript(this, parameters)
-
-        prepareDefaultValues script: script, customDefaults: parameters.customDefaults, projectConfig: parameters.projectConfig
+        prepareDefaultValues customDefaults: parameters.customDefaults, projectConfig: parameters.projectConfig
 
         Map config = ConfigurationHelper.newInstance(this)
             .loadStepDefaults()
