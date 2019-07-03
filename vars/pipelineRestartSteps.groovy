@@ -40,7 +40,6 @@ import groovy.transform.Field
 @GenerateDocumentation
 void call(Map parameters = [:], body) {
     handlePipelineStepErrors (stepName: STEP_NAME, stepParameters: parameters, failOnError: true) {
-        def script = checkScript(this, parameters) ?: this
         def jenkinsUtils = parameters.jenkinsUtilsStub ?: new JenkinsUtils()
         // load default & individual configuration
         Map config = ConfigurationHelper.newInstance(this)
@@ -60,10 +59,10 @@ void call(Map parameters = [:], body) {
                 echo "ERROR occured: ${err}"
                 if (config.sendMail)
                     if (jenkinsUtils.nodeAvailable()) {
-                        mailSendNotification script: script, buildResult: 'UNSTABLE'
+                        mailSendNotification buildResult: 'UNSTABLE'
                     } else {
                         node {
-                            mailSendNotification script: script, buildResult: 'UNSTABLE'
+                            mailSendNotification buildResult: 'UNSTABLE'
                         }
                     }
 
