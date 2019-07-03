@@ -3,6 +3,7 @@ nav:
     - Home: index.md
     - 'Guided Tour' : guidedtour.md
     - Configuration: configuration.md
+    - Extensibility: extensibility.md
     - 'Library steps':
         - artifactSetVersion: steps/artifactSetVersion.md
         - batsExecuteTests: steps/batsExecuteTests.md
@@ -48,6 +49,23 @@ nav:
         - transportRequestUploadFile: steps/transportRequestUploadFile.md
         - uiVeri5ExecuteTests: steps/uiVeri5ExecuteTests.md
         - whitesourceExecuteScan: steps/whitesourceExecuteScan.md
+    - 'Pipelines':
+        - 'General purpose pipeline':
+            - 'Introduction': stages/introduction.md
+            - 'Examples': stages/examples.md
+            - 'Stages':
+                - 'Init Stage': stages/init.md
+                - 'Pull-Request Voting Stage': stages/prvoting.md
+                - 'Central Build Stage': stages/build.md
+                - 'Additional Unit Test Stage': stages/additionalunittests.md
+                - 'Integration Stage': stages/integration.md
+                - 'Acceptance Stage': stages/acceptance.md
+                - 'Security Stage': stages/security.md
+                - 'Performance Stage': stages/performance.md
+                - 'Compliance': stages/compliance.md
+                - 'Confirm Stage': stages/confirm.md
+                - 'Promote Stage': stages/promote.md
+                - 'Release Stage': stages/release.md
     - 'Scenarios':
         - 'Build and Deploy Hybrid Applications with Jenkins and SAP Solution Manager': scenarios/changeManagement.md
         - 'Build and Deploy SAP UI5 or SAP Fiori Applications on SAP Cloud Platform with Jenkins': scenarios/ui5-sap-cp/Readme.md
