@@ -326,7 +326,7 @@ private List getContainerEnvs(config, imageName) {
     def envVar = { e ->
         [ name: e.key, value: e.value ]
     }
-    
+
     containerEnv << envVar(key: "ON_K8S", value: "$ON_K8S")
 
     if (dockerEnvVars) {
