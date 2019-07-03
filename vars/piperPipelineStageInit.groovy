@@ -26,7 +26,6 @@ import static com.sap.piper.Prerequisites.checkScript
      * Whether verbose output should be produced.
      * @possibleValues `true`, `false`
      */
-
     'verbose'
 ]
 @Field STAGE_STEP_KEYS = []
