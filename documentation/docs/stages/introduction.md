@@ -101,11 +101,11 @@ The build artifact will be `stash`ed for use in subsequent stages. For `Docker` 
 
 Afterwards the results of static checks & unit tests are published on the Jenkins.
 
-You find details about this stage on the page [**Central Build**](centralbuild.md).
+You find details about this stage on the page [**Build**](build.md).
 
 ### Additional Unit Tests
 
-In this stage additional unit-like tests are executed which should not run during the central build.
+In this stage additional unit-like tests are executed which should not run during the build.
 
 Currently, this stage holds the execution of a Karma runner which allows for
 

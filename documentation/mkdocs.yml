@@ -3,6 +3,7 @@ nav:
     - Home: index.md
     - 'Guided Tour' : guidedtour.md
     - Configuration: configuration.md
+    - Extensibility: extensibility.md
     - 'Library steps':
         - artifactSetVersion: steps/artifactSetVersion.md
         - batsExecuteTests: steps/batsExecuteTests.md
