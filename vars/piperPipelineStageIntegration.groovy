@@ -1,4 +1,5 @@
 import com.sap.piper.ConfigurationHelper
+import com.sap.piper.GenerateStageDocumentation
 import com.sap.piper.Utils
 import groovy.transform.Field
 
@@ -15,6 +16,7 @@ import static com.sap.piper.Prerequisites.checkScript
  * The stage allows to execute project-specific integration tests.<br />
  * Typically, integration tests are very project-specific, thus they can be defined here using the [stage extension mechanism](../extensibility.md).
  */
+@GenerateStageDocumentation(defaultStageName = 'Integration')
 void call(Map parameters = [:]) {
 
     def script = checkScript(this, parameters) ?: this
