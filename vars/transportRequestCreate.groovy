@@ -3,6 +3,7 @@ import static com.sap.piper.Prerequisites.checkScript
 import com.sap.piper.Utils
 import groovy.transform.Field
 
+import com.sap.piper.DefaultValueCache
 import com.sap.piper.GenerateDocumentation
 import com.sap.piper.ConfigurationHelper
 import com.sap.piper.cm.BackendType
@@ -121,9 +122,7 @@ void call(parameters = [:]) {
 
     handlePipelineStepErrors (stepName: STEP_NAME, stepParameters: parameters) {
 
-        def script = checkScript(this, parameters) ?: this
-
-        ChangeManagement cm = parameters.cmUtils ?: new ChangeManagement(script)
+        ChangeManagement cm = parameters.cmUtils ?: new ChangeManagement(this)
 
         ConfigurationHelper configHelper = ConfigurationHelper.newInstance(this)
             .collectValidationFailures()
@@ -157,13 +156,11 @@ void call(parameters = [:]) {
 
         new Utils().pushToSWA([
             step: STEP_NAME,
-            stepParamKey1: 'scriptMissing',
-            stepParam1: parameters?.script == null
         ], configuration)
 
         if(backendType == BackendType.SOLMAN) {
 
-            changeDocumentId = getChangeDocumentId(cm, script, configuration)
+            changeDocumentId = getChangeDocumentId(cm, this, configuration)
 
             configHelper.mixin([changeDocumentId: changeDocumentId?.trim() ?: null], ['changeDocumentId'] as Set)
                         .withMandatoryProperty('developmentSystemId')
@@ -220,6 +217,6 @@ void call(parameters = [:]) {
 
 
         echo "[INFO] Transport Request '$transportRequestId' has been successfully created."
-        script.commonPipelineEnvironment.setValue('transportRequestId', "${transportRequestId}")
+        DefaultValueCache.getInstance().commonPipelineEnvironment.setValue('transportRequestId', "${transportRequestId}")
     }
 }

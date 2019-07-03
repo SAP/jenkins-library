@@ -1,5 +1,7 @@
 package com.sap.piper.cm
 
+import com.sap.piper.DefaultValueCache
+
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -32,6 +34,7 @@ class StepHelpersTest extends BasePiperTest {
     public void setup() {
         getChangeDocumentIdReceivedParameters.clear()
         getTransportRequestIdReceivedParameters.clear()
+        DefaultValueCache.createInstance(loadDefaultPipelineEnvironment(), [:])
     }
 
     JenkinsLoggingRule loggingRule = new JenkinsLoggingRule(this)

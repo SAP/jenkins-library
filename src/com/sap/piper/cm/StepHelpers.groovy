@@ -1,5 +1,6 @@
 package com.sap.piper.cm
 
+import com.sap.piper.DefaultValueCache
 import com.cloudbees.groovy.cps.NonCPS
 
 public class StepHelpers {
@@ -15,7 +16,7 @@ public class StepHelpers {
 
         }
 
-        transportRequestId = script.commonPipelineEnvironment.getValue('transportRequestId')
+        transportRequestId = DefaultValueCache.getInstance().commonPipelineEnvironment.getValue('transportRequestId')
 
         if(transportRequestId?.trim()) {
             script.echo "[INFO] Transport request id '${transportRequestId}' retrieved from common pipeline environment."
@@ -33,7 +34,7 @@ public class StepHelpers {
                                                             configuration.changeManagement.git.format
                                                         )
 
-            script.commonPipelineEnvironment.setValue('transportRequestId', "${transportRequestId}")
+            DefaultValueCache.getInstance().commonPipelineEnvironment.setValue('transportRequestId', "${transportRequestId}")
             script.echo "[INFO] Transport request id '${transportRequestId}' retrieved from commit history"
 
         } catch(ChangeManagementException ex) {
@@ -53,7 +54,7 @@ public class StepHelpers {
             return changeDocumentId
         }
 
-        changeDocumentId = script.commonPipelineEnvironment.getChangeDocumentId()
+        changeDocumentId = DefaultValueCache.getInstance().commonPipelineEnvironment.getChangeDocumentId()
 
         if(changeDocumentId?.trim()) {
 
@@ -73,7 +74,7 @@ public class StepHelpers {
                                                     )
 
             script.echo "[INFO] ChangeDocumentId '${changeDocumentId}' retrieved from commit history"
-            script.commonPipelineEnvironment.setChangeDocumentId(changeDocumentId)
+            DefaultValueCache.getInstance().commonPipelineEnvironment.setChangeDocumentId(changeDocumentId)
 
         } catch(ChangeManagementException ex) {
             script.echo "[WARN] Cannot retrieve changeDocumentId from commit history: ${ex.getMessage()}."
