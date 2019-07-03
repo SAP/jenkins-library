@@ -37,10 +37,6 @@ void call(Map parameters = [:]) {
             utils = new Utils()
         }
 
-        def script = checkScript(this, parameters)
-        if (script == null)
-            script = this
-
         //additional includes via passing e.g. stashIncludes: [opa5: '**/*.include']
         //additional excludes via passing e.g. stashExcludes: [opa5: '**/*.exclude']
 
@@ -54,8 +50,6 @@ void call(Map parameters = [:]) {
 
         new Utils().pushToSWA([
             step: STEP_NAME,
-            stepParamKey1: 'scriptMissing',
-            stepParam1: parameters?.script == null
         ], config)
 
         config.stashIncludes.each {stashKey, stashIncludes ->
