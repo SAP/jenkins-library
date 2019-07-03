@@ -57,3 +57,20 @@ def isJobStartedByCause(Class cause) {
     }
     return startedByGivenCause
 }
+
+@NonCPS
+String getIssueCommentTriggerAction() {
+    try {
+        def triggerCause = getRawBuild().getCause(org.jenkinsci.plugins.pipeline.github.trigger.IssueCommentCause)
+        if (triggerCause) {
+            //triggerPattern e.g. like '.* /piper ([a-z]*) .*'
+            def matcher = triggerCause.comment =~ triggerCause.triggerPattern
+            if (matcher) {
+                return matcher[0][1]
+            }
+        }
+        return null
+    } catch (err) {
+        return null
+    }
+}

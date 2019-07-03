@@ -56,7 +56,7 @@ steps:
     timestampTemplate: '%Y%m%d%H%M%S'
     tagPrefix: 'build_'
     commitVersion: true
-    dlang:
+    dub:
       filePath: 'dub.json'
       versioningTemplate: '${version}-${timestamp}${commitId?"+"+commitId:""}'
     docker:
@@ -413,10 +413,12 @@ steps:
     timeoutInSeconds: 900
   pipelineStashFilesAfterBuild:
     stashIncludes:
+      buildResult: '**/target/*.jar, **/*.mtar'
       checkmarx: '**/*.js, **/*.scala, **/*.py, **/*.go, **/*.xml, **/*.html'
       classFiles: '**/target/classes/**/*.class, **/target/test-classes/**/*.class'
       sonar: '**/jacoco*.exec, **/sonar-project.properties'
     stashExcludes:
+      buildResult: ''
       checkmarx: '**/*.mockserver.js, node_modules/**/*.js'
       classFiles: ''
       sonar: ''
