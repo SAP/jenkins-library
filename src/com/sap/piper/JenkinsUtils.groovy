@@ -44,6 +44,15 @@ static boolean addWarningsParser(Map parserSettings){
     return false
 }
 
+@NonCPS
+static String getFullBuildLog(currentBuild) {
+    Reader reader = currentBuild.getRawBuild().getLogReader()
+    String logContent = org.apache.commons.io.IOUtils.toString(reader);
+    reader.close();
+    reader = null
+    return logContent
+}
+
 def nodeAvailable() {
     try {
         sh "echo 'Node is available!'"
