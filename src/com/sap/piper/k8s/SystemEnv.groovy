@@ -1,4 +1,5 @@
 package com.sap.piper.k8s
+
 import com.cloudbees.groovy.cps.NonCPS
 
 class SystemEnv implements Serializable {
@@ -12,7 +13,8 @@ class SystemEnv implements Serializable {
         'NO_PROXY',
         'http_proxy',
         'https_proxy',
-        'no_proxy'
+        'no_proxy',
+        'ON_K8S'
     ]
 
     SystemEnv() {
