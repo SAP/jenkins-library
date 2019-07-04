@@ -55,5 +55,20 @@ class SetupCommonPipelineEnvironmentTest extends BasePiperTest {
         assertEquals('develop', nullScript.commonPipelineEnvironment.configuration.general.productiveBranch)
         assertEquals('my-maven-docker', nullScript.commonPipelineEnvironment.configuration.steps.mavenExecute.dockerImage)
     }
+
+    @Test
+    void testWorksAlsoWithYamlFileEnding() throws Exception {
+
+        helper.registerAllowedMethod("fileExists", [String], { String path ->
+            return path.endsWith('.pipeline/config.yaml')
+        })
+
+        stepRule.step.setupCommonPipelineEnvironment(script: nullScript)
+
+        assertEquals('.pipeline/config.yaml', usedConfigFile)
+        assertNotNull(nullScript.commonPipelineEnvironment.configuration)
+        assertEquals('develop', nullScript.commonPipelineEnvironment.configuration.general.productiveBranch)
+        assertEquals('my-maven-docker', nullScript.commonPipelineEnvironment.configuration.steps.mavenExecute.dockerImage)
+    }
 }
 
