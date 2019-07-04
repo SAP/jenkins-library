@@ -1,7 +1,7 @@
 #!groovy
 package steps
 
-import com.sap.piper.internal.JenkinsUtils
+import com.sap.piper.JenkinsUtils
 
 import static org.hamcrest.Matchers.containsString
 import static org.hamcrest.Matchers.hasItem
@@ -54,7 +54,7 @@ class PiperPublishNotificationsTest extends BasePiperTest {
 
     @Test
     void testPublishNotifications() throws Exception {
-        jsr.step.sapPiperPublishNotifications(script: nullScript)
+        jsr.step.piperPublishNotifications(script: nullScript)
         // asserts
         assertThat(jlr.log, containsString('[piperPublishNotifications] New Warnings plugin parser \'Piper Notifications Parser\' configuration added.'))
         assertThat(warningsParserSettings, hasEntry('parserName', 'Piper Notifications Parser'))
