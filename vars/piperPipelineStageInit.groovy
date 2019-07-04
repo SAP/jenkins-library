@@ -56,8 +56,8 @@ void call(Map parameters = [:]) {
             .mixinStageConfig(script.commonPipelineEnvironment, stageName, STEP_CONFIG_KEYS)
             .mixin(parameters, PARAMETER_KEYS)
             .addIfEmpty('stageConfigResource', 'com.sap.piper/pipeline/stageDefaults.yml')
-            .addIfEmpty('stageOrdinals', 'com.sap.piper/pipeline/stageOrdinals.yml')
-            //.addIfEmpty('stashSettings', 'com.sap.piper/pipeline/stashSettings.yml')
+            //.addIfEmpty('stageOrdinals', 'com.sap.piper/pipeline/stageOrdinals.yml')
+            .addIfEmpty('stashSettings', 'com.sap.piper/pipeline/stashSettings.yml')
             .withMandatoryProperty('buildTool')
             .use()
 
