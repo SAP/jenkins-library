@@ -90,7 +90,6 @@
             <groupId>org.jvnet.hudson.plugins</groupId>
             <artifactId>warnings</artifactId>
             <version>4.68</version>
-            <scope>test</scope>
         </dependency>
 
         <!--LesFurets Jenkins Pipeline Unit testing framework: https://github.com/lesfurets/JenkinsPipelineUnit-->
