@@ -56,16 +56,12 @@ void call(Map parameters = [:]) {
             .mixinStageConfig(script.commonPipelineEnvironment, stageName, STEP_CONFIG_KEYS)
             .mixin(parameters, PARAMETER_KEYS)
             .addIfEmpty('stageConfigResource', 'com.sap.piper/pipeline/stageDefaults.yml')
-            //.addIfEmpty('stageOrdinals', 'com.sap.piper/pipeline/stageOrdinals.yml')
             .addIfEmpty('stashSettings', 'com.sap.piper/pipeline/stashSettings.yml')
             .withMandatoryProperty('buildTool')
             .use()
 
         //perform stashing based on libray resource piper-stash-settings.yml if not configured otherwise
         initStashConfiguration(script, config)
-
-        //provide the correct ordinals for stage locking in piperStageWrapper
-       // initStageOrdinalConfiguration (script, config)
 
         setScmInfoOnCommonPipelineEnvironment(script, scmInfo)
         script.commonPipelineEnvironment.setGitCommitId(scmInfo.GIT_COMMIT)
@@ -133,13 +129,6 @@ private void initStashConfiguration (script, config) {
     Map stashConfiguration = readYaml(text: libraryResource(config.stashSettings))
     if (config.verbose) echo "Stash config: ${stashConfiguration}"
     script.commonPipelineEnvironment.configuration.stageStashes = stashConfiguration
-}
-
-private void initStageOrdinalConfiguration (script, config) {
-    Map stageOrdinals = readYaml(text: libraryResource(config.stageOrdinals))
-    if (config.verbose) echo "Stage ordinals: ${stageOrdinals}"
-    if (script.commonPipelineEnvironment.configuration.general == null) script.commonPipelineEnvironment.configuration.general = [:]
-    script.commonPipelineEnvironment.configuration.general += stageOrdinals
 }
 
 private void setScmInfoOnCommonPipelineEnvironment(script, scmInfo) {
