@@ -17,15 +17,17 @@ import static org.junit.Assert.assertThat
 import util.BasePiperTest
 import util.Rules
 import util.JenkinsLoggingRule
+import util.JenkinsReadYamlRule
 import util.JenkinsStepRule
 import util.JenkinsShellCallRule
 
 import static com.lesfurets.jenkins.unit.MethodSignature.method
 
 class PiperPublishNotificationsTest extends BasePiperTest {
-    private JenkinsLoggingRule jlr = new JenkinsLoggingRule(this)
-    private JenkinsStepRule jsr = new JenkinsStepRule(this)
-    private JenkinsShellCallRule jscr = new JenkinsShellCallRule(this)
+    private JenkinsStepRule stepRule = new JenkinsStepRule(this)
+    private JenkinsLoggingRule loggingRule = new JenkinsLoggingRule(this)
+    private JenkinsShellCallRule shellRule = new JenkinsShellCallRule(this)
+
 
     def warningsParserSettings
     def warningsPluginOptions
@@ -33,9 +35,10 @@ class PiperPublishNotificationsTest extends BasePiperTest {
     @Rule
     public RuleChain ruleChain = Rules
         .getCommonRules(this)
-        .around(jlr)
-        .around(jscr)
-        .around(jsr)
+        .around(new JenkinsReadYamlRule(this))
+        .around(loggingRule)
+        .around(shellRule)
+        .around(stepRule)
 
     @Before
     void init() throws Exception {
@@ -54,9 +57,9 @@ class PiperPublishNotificationsTest extends BasePiperTest {
 
     @Test
     void testPublishNotifications() throws Exception {
-        jsr.step.piperPublishNotifications(script: nullScript)
+        stepRule.step.piperPublishNotifications(script: nullScript)
         // asserts
-        assertThat(jlr.log, containsString('[piperPublishNotifications] New Warnings plugin parser \'Piper Notifications Parser\' configuration added.'))
+        assertThat(loggingRule.log, containsString('[piperPublishNotifications] New Warnings plugin parser \'Piper Notifications Parser\' configuration added.'))
         assertThat(warningsParserSettings, hasEntry('parserName', 'Piper Notifications Parser'))
         assertThat(warningsParserSettings, hasEntry('parserRegexp', '\\[(INFO|WARNING|ERROR)\\] (.*) \\(([^) ]*)\\/([^) ]*)\\)'))
         assertThat(warningsPluginOptions, hasEntry('canRunOnFailed', true))
