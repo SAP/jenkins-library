@@ -12,7 +12,7 @@ void call(parameters) {
             stage('Init') {
                 steps {
                     library 'piper-lib-os'
-                    piperPipelineStageInit script: parameters.script, customDefaults: ['com.sap.piper/pipeline/stageOrdinals.yml'].plus(parameters.customDefaults)
+                    piperPipelineStageInit script: parameters.script, customDefaults: ['com.sap.piper/pipeline/stageOrdinals.yml'].plus(parameters.customDefaults ?: [])
                 }
             }
             stage('Pull-Request Voting') {
