@@ -27,19 +27,13 @@ static boolean hasWarningsNGParser(String parserId){
 }
 
 @NonCPS
-static boolean addWarningsNGParser(Map parserSettings){
-    if(hasWarningsNGParser(parserSettings.parserId)){
+static boolean addWarningsNGParser(String id, String name, String regex, String script, String example = ''){
+    if(hasWarningsNGParser(id)){
         return false
     }else{
         io.jenkins.plugins.analysis.warnings.groovy.ParserConfiguration.getInstance().setParsers(
             io.jenkins.plugins.analysis.warnings.groovy.ParserConfiguration.getInstance().getParsers().add(
-                new io.jenkins.plugins.analysis.warnings.groovy.GroovyParser(
-                    parserSettings.parserId,
-                    parserSettings.parserName,
-                    parserSettings.parserRegexp,
-                    parserSettings.parserScript,
-                    parserSettings.parserExample
-                )
+                new io.jenkins.plugins.analysis.warnings.groovy.GroovyParser(id, name, regex, script, example)
             )
         )
         return true
