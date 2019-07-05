@@ -6,13 +6,12 @@ stages:
           - 'channel'
   'Pull-Request Voting': {}
   Build: {}
-  'Additional Unit Tests': {
+  'Additional Unit Tests':
     stepConditions:
       batsExecuteTests:
         filePattern: '**/*.bats'
       karmaExecuteTests:
         filePattern: '**/karma.conf.js'
-  }
   Integration: {}
   Acceptance:
     stepConditions:
@@ -33,23 +32,21 @@ stages:
         filePattern: '**/conf.js'
         configKeys:
           - 'testRepository'
-  Security: {
+  Security:
     stepConditions:
       whitesourceExecuteScan:
         configKeys:
           - 'userTokenCredentialsId'
           - 'whitesource/userTokenCredentialsId'
           - 'whitesourceUserTokenCredentialsId'
-  }
   Performance: {}
   Compliance: {}
-  Promote: {
+  Promote:
     stepConditions:
       containerPushToRegistry:
         configKeys:
           - 'dockerRegistryUrl'
-  }
-  Release: {
+  Release:
     stepConditions:
       cloudFoundryDeploy:
         configKeys:
@@ -64,7 +61,6 @@ stages:
       githubPublishRelease:
         configKeys:
           - 'githubTokenCredentialsId'
-  }
   'Post Actions':
     stepConditions:
       slackSendNotification:
