@@ -41,7 +41,7 @@ void call(Map parameters = [:]) {
         if(JenkinsUtils.addWarningsNGParser(
             configuration.parserId,
             configuration.parserName,
-            configuration.parserRegex,
+            configuration.parserPattern,
             configuration.parserScript
         )){
             echo "[${STEP_NAME}] New Warnings-NG plugin parser '${configuration.parserName}' configuration added."
