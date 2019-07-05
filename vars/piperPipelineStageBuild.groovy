@@ -32,7 +32,7 @@ import static com.sap.piper.Prerequisites.checkScript
  * They type of build is defined using the configuration `buildTool`, see also step [buildExecute](../steps/buildExecute.md)
  *
  */
-@GenerateStageDocumentation(defaultStageName = 'Central Build')
+@GenerateStageDocumentation(defaultStageName = 'Build')
 void call(Map parameters = [:]) {
 
     def script = checkScript(this, parameters) ?: this
