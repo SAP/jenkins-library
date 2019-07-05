@@ -21,7 +21,7 @@ static boolean hasTestFailures(build){
 
 static boolean addWarningsNGParser(String id, String name, String regex, String script, String example = ''){
     def classLoader = this.getClass().getClassLoader()
-    config = classLoader.loadClass('io.jenkins.plugins.analysis.warnings.groovy.ParserConfiguration', true, false)?.getInstance()
+    def config = classLoader.loadClass('io.jenkins.plugins.analysis.warnings.groovy.ParserConfiguration', true, false)?.getInstance()
 
     if(config.contains(id)){
         return false
