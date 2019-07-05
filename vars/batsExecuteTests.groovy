@@ -98,8 +98,8 @@ void call(Map parameters = [:]) {
                 sh "cat 'TEST-${config.testPackage}.tap'"
                 if (config.outputFormat == 'junit') {
                     dockerExecute(script: script, dockerImage: config.dockerImage, dockerWorkspace: config.dockerWorkspace, stashContent: config.stashContent) {
-                        sh "npm install tap-xunit -g"
-                        sh "cat 'TEST-${config.testPackage}.tap' | tap-xunit --package='${config.testPackage}' > TEST-${config.testPackage}.xml"
+                        sh "NPM_CONFIG_PREFIX=~/.npm-global npm install tap-xunit -g"
+                        sh "cat 'TEST-${config.testPackage}.tap' | PATH=\$PATH:~/.npm-global/bin tap-xunit --package='${config.testPackage}' > TEST-${config.testPackage}.xml"
                     }
                 }
             }
