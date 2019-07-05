@@ -19,16 +19,8 @@ static boolean hasTestFailures(build){
     return action && action.getFailCount() != 0
 }
 
-static boolean hasWarningsNGParser(String parserId){
-    for(io.jenkins.plugins.analysis.warnings.groovy.GroovyParser parser : io.jenkins.plugins.analysis.warnings.groovy.ParserConfiguration.getInstance().getParsers()){
-        if (parser.getId() == parserId) return true
-    }
-    return false
-}
-
-@NonCPS
 static boolean addWarningsNGParser(String id, String name, String regex, String script, String example = ''){
-    if(hasWarningsNGParser(id)){
+    if(io.jenkins.plugins.analysis.warnings.groovy.ParserConfiguration.getInstance().contains(id)){
         return false
     }else{
         io.jenkins.plugins.analysis.warnings.groovy.ParserConfiguration.getInstance().setParsers(
