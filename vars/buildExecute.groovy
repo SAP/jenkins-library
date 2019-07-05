@@ -93,10 +93,10 @@ void call(Map parameters = [:]) {
                     def containerImageNameAndTag = config.dockerRegistryUrl ? "${dockerUtils.getRegistryFromUrl(config.dockerRegistryUrl)}/${dockerImageNameAndTag}" : ''
                     kanikoExecute script: script, containerImageNameAndTag: containerImageNameAndTag
                 } else {
-                    def dockerBuildImage = docker.build(dockerImageNameAndTag, "${config.containerBuildOptions} .")
+                    def dockerBuildImage = docker.build(dockerImageNameAndTag, "${config.containerBuildOptions ?: ''} .")
                     //only push if registry is defined
                     if (config.dockerRegistryUrl) {
-                        containerPushToRegistry script: this, dockerBuildImage: dockerBuildImage, dockerRegistryUrl: config.dockerRegistryUrl
+                        containerPushToRegistry script: script, dockerBuildImage: dockerBuildImage, dockerRegistryUrl: config.dockerRegistryUrl
                     }
                 }
                 script.commonPipelineEnvironment.setValue('containerImage', dockerImageNameAndTag)

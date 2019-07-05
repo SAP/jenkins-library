@@ -56,7 +56,7 @@ nav:
             - 'Stages':
                 - 'Init Stage': stages/init.md
                 - 'Pull-Request Voting Stage': stages/prvoting.md
-                - 'Central Build Stage': stages/build.md
+                - 'Build Stage': stages/build.md
                 - 'Additional Unit Test Stage': stages/additionalunittests.md
                 - 'Integration Stage': stages/integration.md
                 - 'Acceptance Stage': stages/acceptance.md
