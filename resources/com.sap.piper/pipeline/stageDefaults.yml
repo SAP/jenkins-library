@@ -52,9 +52,6 @@ stages:
       healthExecuteCheck:
         configKeys:
           - 'testServerUrl'
-      neoDeploy:
-        configKeys:
-          - 'neo/credentialsId'
       githubPublishRelease:
         configKeys:
           - 'githubTokenCredentialsId'
