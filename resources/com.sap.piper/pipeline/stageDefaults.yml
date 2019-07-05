@@ -21,9 +21,6 @@ stages:
       healthExecuteCheck:
         configKeys:
           - 'testServerUrl'
-      neoDeploy:
-        configKeys:
-          - 'neo/credentialsId'
       newmanExecute:
         filePatternFromConfig: 'newmanCollection'
         configKeys:
