@@ -9,7 +9,12 @@ import static com.sap.piper.Prerequisites.checkScript
 @Field def STEP_NAME = getClass().getName()
 
 @Field Set GENERAL_CONFIG_KEYS = []
-@Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS.plus([])
+@Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS.plus([
+    'parserId',
+    'parserName',
+    'parserPattern',
+    'parserScript'
+])
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS.plus([])
 
 void call(Map parameters = [:]) {
@@ -32,39 +37,28 @@ void call(Map parameters = [:]) {
             stepParam1: parameters?.script == null
         ], configuration)
 
-        Map piperNotificationsSettings = [
-            parserName: 'Piper Notifications Parser',
-            parserLinkName: 'Piper Notifications',
-            parserTrendName: 'Piper Notifications',
-            parserRegexp: '\\[(INFO|WARNING|ERROR)\\] (.*) \\(([^) ]*)\\/([^) ]*)\\)',
-            parserExample: ''
-        ]
-        piperNotificationsSettings.parserScript = '''import hudson.plugins.warnings.parser.Warning
-        import hudson.plugins.analysis.util.model.Priority
-
-        Priority priority = Priority.LOW
-        String message = matcher.group(2)
-        String libraryName = matcher.group(3)
-        String stepName = matcher.group(4)
-        String fileName = 'Jenkinsfile'
-
-        switch(matcher.group(1)){
-            case 'WARNING': priority = Priority.NORMAL; break;
-            case 'ERROR': priority = Priority.HIGH; break;
-        }
-
-        return new Warning(fileName, 0, libraryName, stepName, message, priority);
-        '''
-
         // add Piper Notifications parser to config if missing
-        if(JenkinsUtils.addWarningsParser(piperNotificationsSettings)){
-            echo "[${STEP_NAME}] New Warnings plugin parser '${piperNotificationsSettings.parserName}' configuration added."
+        if(JenkinsUtils.addWarningsNGParser(
+            configuration.parserId,
+            configuration.parserName,
+            configuration.parserRegex,
+            configuration.parserScript
+        )){
+            echo "[${STEP_NAME}] New Warnings-NG plugin parser '${configuration.parserName}' configuration added."
         }
 
         node(){
             try{
+                writeFile file: 'buildlog', text: JenkinsUtils.getFullBuildLog(script.currentBuild)
                 // parse log for Piper Notifications
-                warnings(canRunOnFailed: true, consoleParsers: [[ parserName: piperNotificationsSettings.parserName ]])
+                recordIssues(
+                    blameDisabled: true,
+                    enabledForFailure: true,
+                    tools: [groovyScript(
+                        parserId: configuration.parserId,
+                        pattern: 'buildlog'
+                    )]
+                )
             }finally{
                 deleteDir()
             }
