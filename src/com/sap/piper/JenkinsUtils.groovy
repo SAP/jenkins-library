@@ -47,31 +47,6 @@ static boolean addWarningsNGParser(Map parserSettings){
 }
 
 @NonCPS
-static boolean addWarningsParser(Map parserSettings){
-    def isMissing = true
-    def warningsSettings = Jenkins.instance.getExtensionList(hudson.plugins.warnings.WarningsDescriptor.class)[0]
-
-    warningsSettings.getParsers().each{ parser ->
-        if (parser.getName() == parserSettings.parserName) isMissing = false
-    }
-
-    if(isMissing){
-        warningsSettings.addGroovyParser(
-            new hudson.plugins.warnings.GroovyParser(
-                parserSettings.parserName,
-                parserSettings.parserRegexp,
-                parserSettings.parserScript,
-                parserSettings.parserExample,
-                parserSettings.parserLinkName,
-                parserSettings.parserTrendName
-            )
-        )
-        return true
-    }
-    return false
-}
-
-@NonCPS
 static String getFullBuildLog(currentBuild) {
     Reader reader = currentBuild.getRawBuild().getLogReader()
     String logContent = org.apache.commons.io.IOUtils.toString(reader);
