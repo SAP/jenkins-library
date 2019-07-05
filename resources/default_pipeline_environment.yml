@@ -427,7 +427,7 @@ steps:
   piperPublishNotifications:
     parserId: piper
     parserName: Piper
-    parserPattern: '\\[(INFO|WARNING|ERROR)\\] (.*) \\(([^) ]*)\\/([^) ]*)\\)'
+    parserPattern: '\[(INFO|WARNING|ERROR)\] (.*) \(([^) ]*)\/([^) ]*)\)'
     parserScript: 'return builder.setFileName("Jenkinsfile").guessSeverity(matcher.group(1)).setMessage(matcher.group(2)).setOrigin(matcher.group(3) + "/" + matcher.group(4)).buildOptional()'
   seleniumExecuteTests:
     buildTool: 'npm'
