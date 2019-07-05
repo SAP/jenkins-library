@@ -25,7 +25,7 @@ import groovy.transform.Field
     'failOnError',
     /**
      * Defines the format of the test result output. `junit` would be the standard for automated build environments but you could use also the option `tap`.
-     * @possibleValues `tap`
+     * @possibleValues `junit`, `tap`
      */
     'outputFormat',
     /**

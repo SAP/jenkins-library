@@ -2,27 +2,71 @@ stages:
   Init:
     stepConditions:
       slackSendNotification:
-        config: 'channel'
+        configKeys:
+          - 'channel'
   'Pull-Request Voting': {}
   Build: {}
-  'Additional Unit Tests': {}
+  'Additional Unit Tests': {
+    stepConditions:
+      batsExecuteTests:
+        filePattern: '**/*.bats'
+      karmaExecuteTests:
+        filePattern: '**/karma.conf.js'
+  }
   Integration: {}
   Acceptance:
     stepConditions:
       cloudFoundryDeploy:
-        config: 'cfSpace'
+        configKeys:
+          - 'cfSpace'
+      healthExecuteCheck:
+        configKeys:
+          - 'testServerUrl'
+      neoDeploy:
+        configKeys:
+          - 'neo/credentialsId'
       newmanExecute:
         filePatternFromConfig: 'newmanCollection'
-        config: 'testRepository'
+        configKeys:
+          - 'testRepository'
       uiVeri5ExecuteTests:
         filePattern: '**/conf.js'
-        config: 'testRepository'
-  Security: {}
+        configKeys:
+          - 'testRepository'
+  Security: {
+    stepConditions:
+      whitesourceExecuteScan:
+        configKeys:
+          - 'userTokenCredentialsId'
+          - 'whitesource/userTokenCredentialsId'
+          - 'whitesourceUserTokenCredentialsId'
+  }
   Performance: {}
   Compliance: {}
-  Promote: {}
-  Release: {}
+  Promote: {
+    stepConditions:
+      containerPushToRegistry:
+        configKeys:
+          - 'dockerRegistryUrl'
+  }
+  Release: {
+    stepConditions:
+      cloudFoundryDeploy:
+        configKeys:
+          - 'cfSpace'
+          - 'cloudFoundry/space'
+      healthExecuteCheck:
+        configKeys:
+          - 'testServerUrl'
+      neoDeploy:
+        configKeys:
+          - 'neo/credentialsId'
+      githubPublishRelease:
+        configKeys:
+          - 'githubTokenCredentialsId'
+  }
   'Post Actions':
     stepConditions:
       slackSendNotification:
-        config: 'channel'
+        configKeys:
+          - 'channel'
