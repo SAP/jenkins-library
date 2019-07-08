@@ -1,12 +1,9 @@
 import com.sap.piper.ConfigurationHelper
 import com.sap.piper.GenerateDocumentation
-import com.sap.piper.Utils
 import com.sap.piper.JsonUtils
+import com.sap.piper.Utils
 import com.sap.piper.integration.TransportManagementService
-
-import groovy.text.SimpleTemplateEngine
 import groovy.transform.Field
-
 
 import static com.sap.piper.Prerequisites.checkScript
 
@@ -18,7 +15,7 @@ import static com.sap.piper.Prerequisites.checkScript
      * @possibleValues `true`, `false`
      */
     'verbose'
-    
+
 ]
 @Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS.plus([
     /**
@@ -26,8 +23,8 @@ import static com.sap.piper.Prerequisites.checkScript
      * @possibleValues `true`, `false`
      */
     'failOnError',
-    /** 
-     *If specific stashes should be considered, their names need to be passed via the parameter `stashContent`. 
+    /**
+     * If specific stashes should be considered, their names need to be passed via the parameter `stashContent`.
      */
     'stashContent',
     /**
@@ -46,7 +43,7 @@ import static com.sap.piper.Prerequisites.checkScript
      * Can extend the default description of a transport request. (Default: Corresponding Git Commit-ID)
      */
     'customDescription'
-    
+
 ])
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
 
@@ -62,7 +59,7 @@ import static com.sap.piper.Prerequisites.checkScript
  */
 @GenerateDocumentation
 void call(Map parameters = [:]) {
-    handlePipelineStepErrors (stepName: STEP_NAME, stepParameters: parameters) {
+    handlePipelineStepErrors(stepName: STEP_NAME, stepParameters: parameters) {
 
         def script = checkScript(this, parameters) ?: this
         def utils = parameters.juStabUtils ?: new Utils()
@@ -72,15 +69,15 @@ void call(Map parameters = [:]) {
             .loadStepDefaults()
             .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS)
             .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS)
-            .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName?:env.STAGE_NAME, STEP_CONFIG_KEYS)
+            .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName ?: env.STAGE_NAME, STEP_CONFIG_KEYS)
             .mixin(parameters, PARAMETER_KEYS)
             .use()
 
         // telemetry reporting
         new Utils().pushToSWA([
-            step: STEP_NAME,
+            step         : STEP_NAME,
             stepParamKey1: 'scriptMissing',
-            stepParam1: parameters?.script == null
+            stepParam1   : parameters?.script == null
         ], config)
 
         def jsonUtilsObject = new JsonUtils()
@@ -98,7 +95,7 @@ void call(Map parameters = [:]) {
         def nodeName = config.nodeName
         def mtaPath = config.mtaPath
 
-        if(config.verbose){
+        if (config.verbose) {
 
             echo "[TransportManagementService] CredentialsId: ${config.credentialsId}"
             echo "[TransportManagementService] Node Name: ${nodeName}"
@@ -112,13 +109,13 @@ void call(Map parameters = [:]) {
         withCredentials([string(credentialsId: config.credentialsId, variable: 'tmsServiceKeyJSON')]) {
 
             def tmsServiceKey = jsonUtilsObject.jsonStringToGroovyObject(tmsServiceKeyJSON)
-            
+
             def clientId = tmsServiceKey.uaa.clientid
             def clientSecret = tmsServiceKey.uaa.clientsecret
             def uaaUrl = tmsServiceKey.uaa.url
             def uri = tmsServiceKey.uri
 
-            if(config.verbose){
+            if (config.verbose) {
 
                 echo "[TransportManagementService] UAA URL: ${uaaUrl}"
                 echo "[TransportManagementService] TMS URL: ${uri}"
@@ -131,21 +128,21 @@ void call(Map parameters = [:]) {
             def fileUploadResponse = tms.uploadFileToTMS(uri, token, "${workspace}/${mtaPath}", namedUser)
 
             def uploadFileToNodeResponse = tms.uploadFileToNode(uri, token, nodeName, fileUploadResponse.fileId, description, namedUser)
-        
+
             echo "[TransportManagementService] File '${fileUploadResponse.fileName}' successfully uploaded to Node '${uploadFileToNodeResponse.queueEntries.nodeName}' (Id: '${uploadFileToNodeResponse.queueEntries.nodeId}')."
             echo "[TransportManagementService] Corresponding Transport Request: '${uploadFileToNodeResponse.transportRequestDescription} (Id: ${uploadFileToNodeResponse.transportRequestId})'"
 
         }
-        
+
     }
 }
 
-def getUser(){
+def getUser() {
     def userId
     echo "${currentBuild.getRawBuild().getCauses().size()}"
-    for(hudson.model.Cause cause : currentBuild.getRawBuild().getCauses()){
+    for (hudson.model.Cause cause : currentBuild.getRawBuild().getCauses()) {
         echo "Class ${cause.class}"
-        if(cause.class == hudson.model.Cause$UserIdCause){
+        if (cause.class == hudson.model.Cause$UserIdCause) {
             echo "${cause.getUserId()}"
             userId = cause.getUserId()
         }
