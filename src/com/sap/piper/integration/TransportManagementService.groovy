@@ -35,7 +35,7 @@ class TransportManagementService implements Serializable {
 
         if (httpResponse.toInteger() < 200 || httpResponse.toInteger() >= 300) {
 
-            script.error "[TransportManagementService] Retrieval of OAuth-Token failed. HTTP-Status: '${httpResponse}' \n [ERROR] Response: '${response}'"
+            script.error "[TransportManagementService] Retrieval of OAuth-Token failed. HTTP-Status: ${httpResponse} \n [ERROR] Response: '${response}'"
 
         }
 
@@ -56,7 +56,7 @@ class TransportManagementService implements Serializable {
 
     def uploadFileToTMS(String url, String token, String file, String namedUser) {
 
-        script.echo "[TransportManagementService] Fileupload started."
+        script.echo "[TransportManagementService] File upload started."
 
         if (config.verbose) {
 
@@ -73,7 +73,7 @@ class TransportManagementService implements Serializable {
 
         if (httpResponse.toInteger() < 200 || httpResponse.toInteger() >= 300) {
 
-            script.error "[TransportManagementService] Fileupload failed. HTTP-Status: '${httpResponse}' \n [ERROR] Response: '${response}'"
+            script.error "[TransportManagementService] File upload failed. HTTP-Status: ${httpResponse} \n [ERROR] Response: '${response}'"
 
         }
 
@@ -85,7 +85,7 @@ class TransportManagementService implements Serializable {
 
         def fileUploadDetails = jsonUtils.jsonStringToGroovyObject(response)
 
-        script.echo "[TransportManagementService] Fileupload successful."
+        script.echo "[TransportManagementService] File upload successful."
 
         return fileUploadDetails
 
@@ -94,11 +94,11 @@ class TransportManagementService implements Serializable {
 
     def uploadFileToNode(String url, String token, String nodeName, int fileId, String description, String namedUser) {
 
-        script.echo "[TransportManagementService] Nodeupload started."
+        script.echo "[TransportManagementService] Node upload started."
 
         if (config.verbose) {
 
-            script.echo "[TransportManagementService] URL: '${url}', Nodename: '${nodeName}', FileId: '${fileId}'"
+            script.echo "[TransportManagementService] URL: '${url}', NodeName: '${nodeName}', FileId: '${fileId}'"
 
         }
 
@@ -115,7 +115,7 @@ class TransportManagementService implements Serializable {
 
         if (httpResponse.toInteger() < 200 || httpResponse.toInteger() >= 300) {
 
-            script.error "[TransportManagementService] Nodeupload failed. HTTP-Status: ${httpResponse} \n [ERROR] Response: ${response}"
+            script.error "[TransportManagementService] Node upload failed. HTTP-Status: ${httpResponse} \n [ERROR] Response: ${response}"
 
         }
 
@@ -127,7 +127,7 @@ class TransportManagementService implements Serializable {
 
         def nodeUploadDetails = jsonUtils.jsonStringToGroovyObject(response)
 
-        script.echo "[TransportManagementService] Nodeupload successful."
+        script.echo "[TransportManagementService] Node upload successful."
 
         return nodeUploadDetails
 
