@@ -101,14 +101,14 @@ void call(Map parameters = [:]) {
 
         if (config.verbose) {
 
-            echo "[TransportManagementService] CredentialsId: ${config.credentialsId}"
-            echo "[TransportManagementService] Node Name: ${nodeName}"
-            echo "[TransportManagementService] MTA PATH: ${mtaPath}"
-            echo "[TransportManagementService] Named User: ${namedUser}"
+            echo "[TransportManagementService] CredentialsId: '${config.credentialsId}'"
+            echo "[TransportManagementService] Node name: '${nodeName}'"
+            echo "[TransportManagementService] MTA path: '${mtaPath}'"
+            echo "[TransportManagementService] Named user: '${namedUser}'"
 
         }
 
-        def tms = new TransportManagementService(script, config)
+        def tms = parameters.transportManagementService ?: new TransportManagementService(script, config)
 
         withCredentials([string(credentialsId: config.credentialsId, variable: 'tmsServiceKeyJSON')]) {
 
@@ -121,9 +121,9 @@ void call(Map parameters = [:]) {
 
             if (config.verbose) {
 
-                echo "[TransportManagementService] UAA URL: ${uaaUrl}"
-                echo "[TransportManagementService] TMS URL: ${uri}"
-                echo "[TransportManagementService] ClientID: ${clientId}"
+                echo "[TransportManagementService] UAA URL: '${uaaUrl}'"
+                echo "[TransportManagementService] TMS URL: '${uri}'"
+                echo "[TransportManagementService] ClientId: '${clientId}'"
 
             }
 
@@ -134,7 +134,7 @@ void call(Map parameters = [:]) {
             def uploadFileToNodeResponse = tms.uploadFileToNode(uri, token, nodeName, fileUploadResponse.fileId, description, namedUser)
 
             echo "[TransportManagementService] File '${fileUploadResponse.fileName}' successfully uploaded to Node '${uploadFileToNodeResponse.queueEntries.nodeName}' (Id: '${uploadFileToNodeResponse.queueEntries.nodeId}')."
-            echo "[TransportManagementService] Corresponding Transport Request: '${uploadFileToNodeResponse.transportRequestDescription} (Id: ${uploadFileToNodeResponse.transportRequestId})'"
+            echo "[TransportManagementService] Corresponding Transport Request: '${uploadFileToNodeResponse.transportRequestDescription}' (Id: '${uploadFileToNodeResponse.transportRequestId}')"
 
         }
 
@@ -143,11 +143,8 @@ void call(Map parameters = [:]) {
 
 def getUser() {
     def userId
-    echo "${currentBuild.getRawBuild().getCauses().size()}"
     for (hudson.model.Cause cause : currentBuild.getRawBuild().getCauses()) {
-        echo "Class ${cause.class}"
         if (cause.class == hudson.model.Cause$UserIdCause) {
-            echo "${cause.getUserId()}"
             userId = cause.getUserId()
         }
     }
