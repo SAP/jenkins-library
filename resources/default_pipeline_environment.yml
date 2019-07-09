@@ -354,7 +354,7 @@ steps:
     projectNames: []
     jreDownloadUrl: 'https://github.com/SAP/SapMachine/releases/download/sapmachine-11.0.2/sapmachine-jre-11.0.2_linux-x64_bin.tar.gz'
     agentFileName: 'wss-unified-agent.jar'
-    agentDownloadUrl: 'https://github.com/whitesource/unified-agent-distribution/raw/master/standAlone/${config.agentFileName}'
+    agentDownloadUrl: 'https://github.com/whitesource/unified-agent-distribution/releases/latest/download/{config.agentFileName}'
     agentParameters: ''
     configFilePath: './wss-unified-agent.config'
     mta:
