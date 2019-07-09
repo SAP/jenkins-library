@@ -91,8 +91,8 @@ void call(Map parameters = [:]) {
         // make sure that for further execution whole workspace, e.g. also downloaded artifacts are considered
         config.stashContent = []
 
-        def customDescription = config.customDescription ?: ''
-        def description = "${customDescription} Git CommitId: ${script.commonPipelineEnvironment.getGitCommitId()}"
+        def customDescription = config.customDescription ? "${config.customDescription} " : ''
+        def description = customDescription + "Git CommitId: ${script.commonPipelineEnvironment.getGitCommitId()}"
 
         def namedUser = getUser() ?: config.namedUser
 
