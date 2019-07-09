@@ -177,8 +177,36 @@ void call(Map parameters = [:], Closure body = null) {
                 error "[${STEP_NAME}]git commit and tag failed: ${e}"
             }
 
-            sshagent([config.gitSshKeyCredentialsId]) {
-                sh "git push ${config.gitSshUrl} ${config.tagPrefix}${newVersion}"
+            if(config.gitSshUrl) {
+                sshagent([config.gitSshKeyCredentialsId]) {
+                    sh "git push ${config.gitSshUrl} ${config.tagPrefix}${newVersion}"
+                }
+            } else if(config.gitHttpsUrl) {
+                 withCredentials([usernamePassword(
+                     credentialsId: config.gitCredentialsId,
+                     passwordVariable: 'PASSWORD',
+                     usernameVariable: 'USERNAME')]) {
+
+                     // Problem: when we encode the username it is not replaced by stars
+                     // in the log by surrounding withCredentials. For the user name that
+                     // might be just well enough. But we need the same for the password.
+                     // And for passwords that is a no-go.
+                     def USERNAME_ENCODED = URLEncoder.encode(USERNAME, 'UTF-8')
+
+                     def prefix = 'https://'
+                     def gitUrlWithCredentials = "${prefix}${USERNAME_ENCODED}:${PASSWORD}@${config.gitHttpsUrl}
+
+                     gitConfig = []
+                     if(config.gitHttpProxy) {
+                         gitConfig.add("-c http.proxy=\"${config.gitHttpProxy}\"")
+                     }
+
+                     gitConfig = gitConfig.join(' ')
+
+                     sh script: "git ${gitConfig} push ${gitUrlWithCredentials} ${config.tagPrefix}${newVersion}"
+                 }
+            } else {
+                error "Neither ssh nor https url provided. Cannot push tag to remote."
             }
         }
 
