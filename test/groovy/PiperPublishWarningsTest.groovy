@@ -79,6 +79,6 @@ class PiperPublishWarningsTest extends BasePiperTest {
         assertThat(warningsPluginOptions, hasKey('tools'))
 
         assertThat(groovyScriptParserSettings, hasEntry('parserId', 'piper'))
-        assertThat(groovyScriptParserSettings, hasEntry('pattern', 'buildlog'))
+        assertThat(groovyScriptParserSettings, hasEntry('pattern', 'build.log'))
     }
 }
