@@ -53,21 +53,15 @@ void call(Map parameters = [:]) {
             echo "[${STEP_NAME}] New Warnings-NG plugin parser '${configuration.parserName}' configuration added."
         }
 
-        node(){
-            try{
-                writeFile file: 'buildlog', text: JenkinsUtils.getFullBuildLog(script.currentBuild)
-                // parse log for Piper Notifications
-                recordIssues(
-                    configuration.recordIssuesSettings.plus([
-                        tools: [groovyScript(
-                            parserId: configuration.parserId,
-                            pattern: 'buildlog'
-                        )]
-                    ])
-                )
-            }finally{
-                deleteDir()
-            }
-        }
+        writeFile file: 'buildlog', text: JenkinsUtils.getFullBuildLog(script.currentBuild)
+        // parse log for Piper Notifications
+        recordIssues(
+            configuration.recordIssuesSettings.plus([
+                tools: [groovyScript(
+                    parserId: configuration.parserId,
+                    pattern: 'buildlog'
+                )]
+            ])
+        )
     }
 }
