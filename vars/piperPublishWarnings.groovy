@@ -44,7 +44,7 @@ void call(Map parameters = [:]) {
         ], configuration)
 
         // add Piper Notifications parser to config if missing
-        if(JenkinsUtils.addWarningsNGParser(
+        if(new JenkinsUtils().addWarningsNGParser(
             configuration.parserId,
             configuration.parserName,
             configuration.parserPattern,
