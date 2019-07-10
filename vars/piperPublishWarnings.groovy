@@ -40,9 +40,9 @@ import groovy.transform.Field
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS.plus([])
 
 /**
- * This step scans the current build log for messages produces by the Piper library steps and published them on the Jenkins job run as *Piper warnings*.
+ * This step scans the current build log for messages produces by the Piper library steps and publishes them on the Jenkins job run as *Piper warnings* via the warnings-ng plugin.
  *
- * The default parser detects log entries with the following pattern: `[<SEVERITY>] <MSG> (<LIBRARY>/<STEP>)`
+ * The default parser detects log entries with the following pattern: `[<SEVERITY>] <MESSAGE> (<LIBRARY>/<STEP>)`
  */
 @GenerateDocumentation
 void call(Map parameters = [:]) {
