@@ -489,6 +489,10 @@ steps:
     options: []
     pullRequestProvider: 'github'
     sonarScannerDownloadUrl: 'https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-3.3.0.1492-linux.zip'
+  spinnakerTriggerPipeline:
+    certFileCredentialsId: 'spinnaker-client-certificate'
+    keyFileCredentialsId: 'spinnaker-client-key'
+    timeout: 60
   testsPublishResults:
     failOnError: false
     junit:
