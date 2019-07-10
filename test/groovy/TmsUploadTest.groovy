@@ -1,3 +1,4 @@
+import com.sap.piper.JenkinsUtils
 import com.sap.piper.integration.TransportManagementService
 import org.junit.After
 import org.junit.Before
@@ -20,6 +21,7 @@ public class TmsUploadTest extends BasePiperTest {
     private JenkinsEnvironmentRule envRule = new JenkinsEnvironmentRule(this)
 
     def tmsStub
+    def jenkinsUtilsStub
     def calledTmsMethodsWithArgs = []
     def uri = "https://dummy-url.com"
     def uaaUrl = "https://oauth.com"
@@ -35,6 +37,17 @@ public class TmsUploadTest extends BasePiperTest {
                                }
                              """
 
+    class JenkinsUtilsMock extends JenkinsUtils {
+        def userId
+
+        JenkinsUtilsMock(userId) {
+            this.userId = userId
+        }
+
+        def getUserId(){
+            return this.userId
+        }
+    }
 
     @Rule
     public RuleChain ruleChain = Rules.getCommonRules(this)
@@ -59,21 +72,14 @@ public class TmsUploadTest extends BasePiperTest {
 
     @Test
     public void minimalConfig__isSuccessful() {
-        def userIdCause = new hudson.model.Cause.UserIdCause()
-        userIdCause.metaClass.getUserId =  {
-            return "Test User"
-        }
-        binding.currentBuild.getRawBuild = {
-            return [getCauses: {
-                return [userIdCause]
-            }]
-        }
+        jenkinsUtilsStub = new JenkinsUtilsMock("Test User")
         binding.workspace = "."
         envRule.env.gitCommitId = "testCommitId"
 
         stepRule.step.tmsUpload(
             script: nullScript,
             juStabUtils: utils,
+            jenkinsUtilsStub: jenkinsUtilsStub,
             transportManagementService: tmsStub,
             mtaPath: 'dummy.mtar',
             nodeName: 'myNode',
@@ -91,21 +97,14 @@ public class TmsUploadTest extends BasePiperTest {
 
     @Test
     public void verboseMode__yieldsMoreEchos() {
-        def userIdCause = new hudson.model.Cause.UserIdCause()
-        userIdCause.metaClass.getUserId =  {
-            return "Test User"
-        }
-        binding.currentBuild.getRawBuild = {
-            return [getCauses: {
-                return [userIdCause]
-            }]
-        }
+        jenkinsUtilsStub = new JenkinsUtilsMock("Test User")
         binding.workspace = "."
         envRule.env.gitCommitId = "testCommitId"
 
         stepRule.step.tmsUpload(
             script: nullScript,
             juStabUtils: utils,
+            jenkinsUtilsStub: jenkinsUtilsStub,
             transportManagementService: tmsStub,
             mtaPath: 'dummy.mtar',
             nodeName: 'myNode',
@@ -124,17 +123,14 @@ public class TmsUploadTest extends BasePiperTest {
 
     @Test
     public void noUserAvailableInCurrentBuild__usesDefaultUser() {
-        binding.currentBuild.getRawBuild = {
-            return [getCauses: {
-                return []
-            }]
-        }
+        jenkinsUtilsStub = new JenkinsUtilsMock(null)
         binding.workspace = "."
         envRule.env.gitCommitId = "testCommitId"
 
         stepRule.step.tmsUpload(
             script: nullScript,
             juStabUtils: utils,
+            jenkinsUtilsStub: jenkinsUtilsStub,
             transportManagementService: tmsStub,
             mtaPath: 'dummy.mtar',
             nodeName: 'myNode',
@@ -146,21 +142,14 @@ public class TmsUploadTest extends BasePiperTest {
 
     @Test
     public void addCustomDescription__descriptionChanged() {
-        def userIdCause = new hudson.model.Cause.UserIdCause()
-        userIdCause.metaClass.getUserId =  {
-            return "Test User"
-        }
-        binding.currentBuild.getRawBuild = {
-            return [getCauses: {
-                return [userIdCause]
-            }]
-        }
+        jenkinsUtilsStub = new JenkinsUtilsMock("Test User")
         binding.workspace = "."
         envRule.env.gitCommitId = "testCommitId"
 
         stepRule.step.tmsUpload(
             script: nullScript,
             juStabUtils: utils,
+            jenkinsUtilsStub: jenkinsUtilsStub,
             transportManagementService: tmsStub,
             mtaPath: 'dummy.mtar',
             nodeName: 'myNode',

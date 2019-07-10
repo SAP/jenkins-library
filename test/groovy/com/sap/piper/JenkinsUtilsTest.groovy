@@ -1,6 +1,7 @@
 package com.sap.piper
 
 import org.jenkinsci.plugins.workflow.steps.MissingContextVariableException
+import org.junit.After
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -33,6 +34,8 @@ class JenkinsUtilsTest extends BasePiperTest {
 
     Map triggerCause
 
+    String userId
+
 
     @Before
     void init() throws Exception {
@@ -60,7 +63,15 @@ class JenkinsUtilsTest extends BasePiperTest {
                 return parentMock
             }
             def getCause(type) {
-                return triggerCause
+                if (type == hudson.model.Cause.UserIdCause.class){
+                    def userIdCause = new hudson.model.Cause.UserIdCause()
+                    userIdCause.metaClass.getUserId =  {
+                        return userId
+                    }
+                    return userIdCause
+                } else {
+                    return triggerCause
+                }
             }
 
         }
@@ -108,5 +119,17 @@ class JenkinsUtilsTest extends BasePiperTest {
             triggerPattern: '.*/piper ([a-z]*).*'
         ]
         assertThat(jenkinsUtils.getIssueCommentTriggerAction(), isEmptyOrNullString())
+    }
+
+    @Test
+    void testGetUserId() {
+        userId = 'Test User'
+        assertThat(jenkinsUtils.getUserId(), is('Test User'))
+    }
+
+    @Test
+    void testGetUserIdNoUser() {
+        userId = null
+        assertThat(jenkinsUtils.getUserId(), isEmptyOrNullString())
     }
 }
