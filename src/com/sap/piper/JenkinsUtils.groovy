@@ -74,3 +74,7 @@ String getIssueCommentTriggerAction() {
         return null
     }
 }
+
+def getUserId() {
+    return getRawBuild().getCause(hudson.model.Cause.UserIdCause.class)?.getUserId()
+}

@@ -1,5 +1,6 @@
 import com.sap.piper.ConfigurationHelper
 import com.sap.piper.GenerateDocumentation
+import com.sap.piper.JenkinsUtils
 import com.sap.piper.JsonUtils
 import com.sap.piper.Utils
 import com.sap.piper.integration.TransportManagementService
@@ -63,6 +64,7 @@ void call(Map parameters = [:]) {
 
         def script = checkScript(this, parameters) ?: this
         def utils = parameters.juStabUtils ?: new Utils()
+        def jenkinsUtils = parameters.jenkinsUtilsStub ?: new JenkinsUtils()
 
         // load default & individual configuration
         Map config = ConfigurationHelper.newInstance(this)
@@ -94,7 +96,7 @@ void call(Map parameters = [:]) {
         def customDescription = config.customDescription ? "${config.customDescription} " : ''
         def description = customDescription + "Git CommitId: ${script.commonPipelineEnvironment.getGitCommitId()}"
 
-        def namedUser = getUser() ?: config.namedUser
+        def namedUser = jenkinsUtils.getUserId() ?: config.namedUser
 
         def nodeName = config.nodeName
         def mtaPath = config.mtaPath
@@ -139,14 +141,4 @@ void call(Map parameters = [:]) {
         }
 
     }
-}
-
-def getUser() {
-    def userId
-    for (hudson.model.Cause cause : currentBuild.getRawBuild().getCauses()) {
-        if (cause.class == hudson.model.Cause$UserIdCause) {
-            userId = cause.getUserId()
-        }
-    }
-    return userId
 }
