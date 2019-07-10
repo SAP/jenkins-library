@@ -197,7 +197,7 @@ def getCulprits(config, branch, numberOfCommits) {
                 ignoreMissing: true
             ) {
                 def pullRequestID = branch.replaceAll('PR-', '')
-                def localBranchName = "pr" + pullRequestID;
+                def localBranchName = "pr" + pullRequestID
                 sh """git init
     git fetch ${config.gitUrl} pull/${pullRequestID}/head:${localBranchName} > /dev/null 2>&1
     git checkout -f ${localBranchName} > /dev/null 2>&1

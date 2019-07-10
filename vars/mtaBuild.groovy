@@ -126,8 +126,10 @@ void call(Map parameters = [:]) {
 
             echo "[INFO] Executing mta build call: '${mtaCall}'."
 
+            //[Q]: Why extending the path? [A]: To be sure e.g. grunt can be found
+            //[Q]: Why escaping \$PATH ? [A]: We want to extend the PATH variable in e.g. the container and not substituting it with the Jenkins environment when using ${PATH}
             sh """#!/bin/bash
-            export PATH=./node_modules/.bin:${PATH}
+            export PATH=./node_modules/.bin:\$PATH
             $mtaCall
             """
 

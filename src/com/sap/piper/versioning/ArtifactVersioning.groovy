@@ -12,8 +12,8 @@ abstract class ArtifactVersioning implements Serializable {
 
     public static getArtifactVersioning(buildTool, script, configuration) {
         switch (buildTool) {
-            case 'dlang':
-                return new DlangArtifactVersioning(script, configuration)
+            case 'dub':
+                return new DubArtifactVersioning(script, configuration)
             case 'docker':
                 return new DockerArtifactVersioning(script, configuration)
             case 'golang':

@@ -14,7 +14,12 @@ import hudson.AbortException
 @Field def PLUGIN_ID_KUBERNETES = 'kubernetes'
 
 @Field Set GENERAL_CONFIG_KEYS = [
-    'jenkinsKubernetes'
+    'jenkinsKubernetes',
+    /**
+     * Print more detailed information into the log.
+     * @possibleValues `true`, `false`
+     */
+    'verbose'
 ]
 @Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS.plus([
     /**
@@ -72,6 +77,8 @@ import hudson.AbortException
      * Specifies a dedicated user home directory for the container which will be passed as value for environment variable `HOME`.
      */
     'dockerWorkspace',
+    /** Defines the Kubernetes nodeSelector as per [https://github.com/jenkinsci/kubernetes-plugin](https://github.com/jenkinsci/kubernetes-plugin).*/
+    'nodeSelector',
     /**
      * Kubernetes Security Context used for the pod.
      * Can be used to specify uid and fsGroup.
@@ -146,6 +153,12 @@ def getOptions(config) {
     ]
     if (namespace) {
         options.namespace = namespace
+    }
+    if (config.nodeSelector) {
+        options.nodeSelector = config.nodeSelector
+    }
+    if (!config.verbose) {
+        options.showRawYaml = false
     }
     return options
 }
@@ -225,7 +238,9 @@ chown -R ${runAsUser}:${fsGroup} ."""
         stash(
             name: stashName,
             includes: config.stashIncludes.workspace,
-            excludes: config.stashExcludes.workspace
+            excludes: config.stashExcludes.workspace,
+            //inactive due to negative side-effects, we may require a dedicated git stash to be used
+            //useDefaultExcludes: false
         )
         return stashName
     } catch (AbortException | IOException e) {

@@ -11,9 +11,9 @@ import util.Rules
 import static org.junit.Assert.assertEquals
 import static org.junit.Assert.assertTrue
 
-class DlangArtifactVersioningTest extends BasePiperTest{
+class DubArtifactVersioningTest extends BasePiperTest{
 
-    JenkinsReadJsonRule readJsonRule = new JenkinsReadJsonRule(this, 'test/resources/versioning/DlangArtifactVersioning/')
+    JenkinsReadJsonRule readJsonRule = new JenkinsReadJsonRule(this, 'test/resources/versioning/DubArtifactVersioning/')
     JenkinsWriteJsonRule writeJsonRule = new JenkinsWriteJsonRule(this)
 
     @Rule
@@ -24,7 +24,7 @@ class DlangArtifactVersioningTest extends BasePiperTest{
 
     @Test
     void testVersioning() {
-        DlangArtifactVersioning av = new DlangArtifactVersioning(nullScript, [filePath: 'dub.json'])
+        DubArtifactVersioning av = new DubArtifactVersioning(nullScript, [filePath: 'dub.json'])
         assertEquals('1.2.3', av.getVersion())
         av.setVersion('1.2.3-20180101')
         assertTrue(writeJsonRule.files['dub.json'].contains('1.2.3-20180101'))

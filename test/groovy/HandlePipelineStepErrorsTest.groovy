@@ -1,4 +1,3 @@
-#!groovy
 import hudson.AbortException
 
 import static org.hamcrest.Matchers.is
@@ -80,7 +79,7 @@ class HandlePipelineStepErrorsTest extends BasePiperTest {
             // asserts
             assertThat(isReported, is(true))
             assertThat(loggingRule.log, containsString('--- An error occurred in the library step: testStep'))
-            assertThat(loggingRule.log, containsString('[something:anything]'))
+            assertThat(loggingRule.log, containsString('to show step parameters, set verbose:true'))
         }
     }
     

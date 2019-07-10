@@ -13,6 +13,8 @@
 
 ## ${docGenConfiguration}
 
+## ${docJenkinsPluginDependencies}
+
 ## Example
 
 ```groovy
