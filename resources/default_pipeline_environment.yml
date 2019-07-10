@@ -444,7 +444,7 @@ steps:
       tests: ''
     noDefaultExludes:
       - 'git'
-  piperPublishNotifications:
+  piperPublishWarnings:
     parserId: piper
     parserName: Piper
     parserPattern: '\[(INFO|WARNING|ERROR)\] (.*) \(([^) ]*)\/([^) ]*)\)'

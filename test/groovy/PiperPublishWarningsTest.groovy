@@ -23,7 +23,7 @@ import util.JenkinsShellCallRule
 
 import static com.lesfurets.jenkins.unit.MethodSignature.method
 
-class PiperPublishNotificationsTest extends BasePiperTest {
+class PiperPublishWarningsTest extends BasePiperTest {
     private JenkinsStepRule stepRule = new JenkinsStepRule(this)
     private JenkinsLoggingRule loggingRule = new JenkinsLoggingRule(this)
     private JenkinsShellCallRule shellRule = new JenkinsShellCallRule(this)
@@ -57,9 +57,9 @@ class PiperPublishNotificationsTest extends BasePiperTest {
 
     @Test
     void testPublishNotifications() throws Exception {
-        stepRule.step.piperPublishNotifications(script: nullScript)
+        stepRule.step.piperPublishWarnings(script: nullScript)
         // asserts
-        assertThat(loggingRule.log, containsString('[piperPublishNotifications] New Warnings plugin parser \'Piper Notifications Parser\' configuration added.'))
+        assertThat(loggingRule.log, containsString('[piperPublishWarnings] New Warnings plugin parser \'Piper Notifications Parser\' configuration added.'))
         assertThat(warningsParserSettings, hasEntry('parserName', 'Piper Notifications Parser'))
         assertThat(warningsParserSettings, hasEntry('parserRegexp', '\\[(INFO|WARNING|ERROR)\\] (.*) \\(([^) ]*)\\/([^) ]*)\\)'))
         assertThat(warningsPluginOptions, hasEntry('canRunOnFailed', true))
