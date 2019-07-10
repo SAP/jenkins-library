@@ -140,7 +140,7 @@ if (failedThreads.size() == 0) {
         failedThread.printOutput()
     }
     status = "failure"
-    statusMessage "The following consumer test(s) failed: ${failedThreads}"
+    statusMessage = "The following consumer test(s) failed: ${failedThreads}"
 }
 
 if (!RUNNING_LOCALLY) {
