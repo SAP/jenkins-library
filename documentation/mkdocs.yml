@@ -37,6 +37,7 @@ nav:
         - pipelineStashFiles: steps/pipelineStashFiles.md
         - pipelineStashFilesAfterBuild: steps/pipelineStashFilesAfterBuild.md
         - pipelineStashFilesBeforeBuild: steps/pipelineStashFilesBeforeBuild.md
+        - piperPublishWarnings: steps/piperPublishWarnings.md
         - prepareDefaultValues: steps/prepareDefaultValues.md
         - seleniumExecuteTests: steps/seleniumExecuteTests.md
         - setupCommonPipelineEnvironment: steps/setupCommonPipelineEnvironment.md
