@@ -50,7 +50,7 @@ void call(Map parameters = [:]) {
             configuration.parserPattern,
             configuration.parserScript
         )){
-            echo "[${STEP_NAME}] New Warnings-NG plugin parser '${configuration.parserName}' configuration added."
+            echo "[${STEP_NAME}] Added warnings-ng plugin parser '${configuration.parserName}' configuration."
         }
 
         writeFile file: 'buildlog', text: JenkinsUtils.getFullBuildLog(script.currentBuild)

@@ -3,6 +3,8 @@ package steps
 
 import com.sap.piper.JenkinsUtils
 
+import static org.hamcrest.Matchers.allOf
+import static org.hamcrest.Matchers.any
 import static org.hamcrest.Matchers.containsString
 import static org.hamcrest.Matchers.hasItem
 import static org.hamcrest.Matchers.hasEntry
@@ -28,8 +30,8 @@ class PiperPublishWarningsTest extends BasePiperTest {
     private JenkinsLoggingRule loggingRule = new JenkinsLoggingRule(this)
     private JenkinsShellCallRule shellRule = new JenkinsShellCallRule(this)
 
-
     def warningsParserSettings
+    def groovyScriptParserSettings
     def warningsPluginOptions
 
     @Rule
@@ -43,27 +45,40 @@ class PiperPublishWarningsTest extends BasePiperTest {
     @Before
     void init() throws Exception {
         warningsParserSettings = [:]
+        groovyScriptParserSettings = [:]
         warningsPluginOptions = [:]
+
         // add handler for generic step call
-        helper.registerAllowedMethod("warnings", [Map.class], {
+        helper.registerAllowedMethod("writeFile", [Map.class], null)
+        helper.registerAllowedMethod("recordIssues", [Map.class], {
             parameters -> warningsPluginOptions = parameters
         })
-        JenkinsUtils.metaClass.static.addWarningsParser = { Map m ->
-            warningsParserSettings = m
+        helper.registerAllowedMethod("groovyScript", [Map.class], {
+            parameters -> groovyScriptParserSettings = parameters
+        })
+        JenkinsUtils.metaClass.addWarningsNGParser = { String s1, String s2, String s3, String s4 ->
+            warningsParserSettings = [id: s1, name: s2, regex: s3, script: s4]
             return true
         }
-        helper.registerAllowedMethod( "deleteDir", [], null )
+        JenkinsUtils.metaClass.static.getFullBuildLog = { def currentBuild -> return ""}
     }
 
     @Test
-    void testPublishNotifications() throws Exception {
+    void testPublishWarnings() throws Exception {
         stepRule.step.piperPublishWarnings(script: nullScript)
         // asserts
-        assertThat(loggingRule.log, containsString('[piperPublishWarnings] New Warnings plugin parser \'Piper Notifications Parser\' configuration added.'))
-        assertThat(warningsParserSettings, hasEntry('parserName', 'Piper Notifications Parser'))
-        assertThat(warningsParserSettings, hasEntry('parserRegexp', '\\[(INFO|WARNING|ERROR)\\] (.*) \\(([^) ]*)\\/([^) ]*)\\)'))
-        assertThat(warningsPluginOptions, hasEntry('canRunOnFailed', true))
-        assertThat(warningsPluginOptions, hasKey('consoleParsers'))
-        assertThat(warningsPluginOptions.consoleParsers, hasItem(hasEntry('parserName', 'Piper Notifications Parser')))
+        assertThat(loggingRule.log, containsString('[piperPublishWarnings] Added warnings-ng plugin parser \'Piper\' configuration.'))
+        assertThat(warningsParserSettings, hasEntry('id', 'piper'))
+        assertThat(warningsParserSettings, hasEntry('name', 'Piper'))
+        assertThat(warningsParserSettings, hasEntry('regex', '\\[(INFO|WARNING|ERROR)\\] (.*) \\(([^) ]*)\\/([^) ]*)\\)'))
+        assertThat(warningsParserSettings, hasKey('script'))
+        assertThat(warningsPluginOptions, allOf(
+            hasEntry('enabledForFailure', true),
+            hasEntry('blameDisabled', true)
+        ))
+        assertThat(warningsPluginOptions, hasKey('tools'))
+
+        assertThat(groovyScriptParserSettings, hasEntry('parserId', 'piper'))
+        assertThat(groovyScriptParserSettings, hasEntry('pattern', 'buildlog'))
     }
 }
