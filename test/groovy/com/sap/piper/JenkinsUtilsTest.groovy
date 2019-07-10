@@ -1,11 +1,9 @@
 package com.sap.piper
 
 import org.jenkinsci.plugins.workflow.steps.MissingContextVariableException
-import org.junit.After
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
-import org.junit.rules.ExpectedException
 import org.junit.rules.RuleChain
 import util.BasePiperTest
 import util.JenkinsLoggingRule
@@ -124,12 +122,12 @@ class JenkinsUtilsTest extends BasePiperTest {
     @Test
     void testGetUserId() {
         userId = 'Test User'
-        assertThat(jenkinsUtils.getUserId(), is('Test User'))
+        assertThat(jenkinsUtils.getJobStartedByUserId(), is('Test User'))
     }
 
     @Test
     void testGetUserIdNoUser() {
         userId = null
-        assertThat(jenkinsUtils.getUserId(), isEmptyOrNullString())
+        assertThat(jenkinsUtils.getJobStartedByUserId(), isEmptyOrNullString())
     }
 }

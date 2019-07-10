@@ -44,7 +44,7 @@ public class TmsUploadTest extends BasePiperTest {
             this.userId = userId
         }
 
-        def getUserId(){
+        def getJobStartedByUserId(){
             return this.userId
         }
     }

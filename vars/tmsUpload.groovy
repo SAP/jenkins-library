@@ -96,7 +96,7 @@ void call(Map parameters = [:]) {
         def customDescription = config.customDescription ? "${config.customDescription} " : ''
         def description = customDescription + "Git CommitId: ${script.commonPipelineEnvironment.getGitCommitId()}"
 
-        def namedUser = jenkinsUtils.getUserId() ?: config.namedUser
+        def namedUser = jenkinsUtils.getJobStartedByUserId() ?: config.namedUser
 
         def nodeName = config.nodeName
         def mtaPath = config.mtaPath
