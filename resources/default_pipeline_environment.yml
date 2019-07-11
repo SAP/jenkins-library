@@ -56,6 +56,7 @@ steps:
     timestampTemplate: '%Y%m%d%H%M%S'
     tagPrefix: 'build_'
     commitVersion: true
+    gitPushMode: 'SSH'
     dub:
       filePath: 'dub.json'
       versioningTemplate: '${version}-${timestamp}${commitId?"+"+commitId:""}'
