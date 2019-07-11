@@ -252,7 +252,7 @@ void call(Map parameters = [:], Closure body = null) {
                          gitConfig.add('http.sslVerify false')
                      }
 
-                     if(encodedVersionDiffers) {
+                     if(encodedVersionsDiffers) {
                          hashbangFlag = '-e'
                          streamhandling ='&>/dev/null'
                          gitPushFlags.add('--quiet')
