@@ -9,6 +9,8 @@ import com.sap.piper.versioning.ArtifactVersioning
 import groovy.transform.Field
 import groovy.text.SimpleTemplateEngine
 
+enum GitPushMode {NONE, HTTPS, SSH}
+
 @Field String STEP_NAME = getClass().getName()
 @Field Map CONFIG_KEY_COMPATIBILITY = [gitSshKeyCredentialsId: 'gitCredentialsId']
 
@@ -47,6 +49,8 @@ import groovy.text.SimpleTemplateEngine
      * Defines the ssh git credentials to be used for writing the tag.
      */
     'gitSshKeyCredentialsId',
+     /** */
+    'gitCredentialsId','
     /**
      * Allows to overwrite the global git setting 'user.email' available on your Jenkins server.
      */
@@ -56,9 +60,17 @@ import groovy.text.SimpleTemplateEngine
      */
     'gitUserName',
     /**
-     * Defines the git ssh url to the source code repository.
+     * Defines the git ssh url to the source code repository. Used in conjunction with 'GitPushMode.SSH'.
      */
     'gitSshUrl',
+    /**
+      * Defines the git https url to the source code repository. Used in conjunction with 'GitPushMode.HTTPS'.
+      */
+    'gitHttpsUrl',
+    /**
+      * Disables the ssl verification for git push. Intended to be used only for troubleshooting. Productive usage is not recommanded.
+      */
+     'gitDisableSSLVerification',
     /**
      * Defines the prefix which is used for the git tag which is written during the versioning run.
      */
@@ -70,7 +82,13 @@ import groovy.text.SimpleTemplateEngine
     /** Defines the template for the timestamp which will be part of the created version. */
     'timestampTemplate',
     /** Defines the template for the automatic version which will be created. */
-    'versioningTemplate'
+    'versioningTemplate',
+    /** Controls which protocol is used for performing push operation to remote repo.
+      * Required credentials needs to be configured ('gitSshKeyCredentialsId'/'TBD').
+      * Push is only performed in case 'commitVersion' is set to 'true'.
+      * @possibleValues 'SSH', 'HTTPS', 'NONE'
+      */
+    'gitPushMode',
 ]
 
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS.plus(
@@ -123,6 +141,8 @@ void call(Map parameters = [:], Closure body = null) {
 
         Map config = configHelper.use()
 
+        GitPushMode gitPushMode = config.gitPushMode
+
         config = configHelper.addIfEmpty('timestamp', getTimestamp(config.timestampTemplate))
                              .use()
 
@@ -154,12 +174,6 @@ void call(Map parameters = [:], Closure body = null) {
         }
 
         if (config.commitVersion) {
-            config = ConfigurationHelper.newInstance(this, config)
-                .addIfEmpty('gitSshUrl', isAppContainer(config)
-                            ?script.commonPipelineEnvironment.getAppContainerProperty('gitSshUrl')
-                            :script.commonPipelineEnvironment.getGitSshUrl())
-                .withMandatoryProperty('gitSshUrl')
-                .use()
 
             def gitConfig = []
 
@@ -177,36 +191,82 @@ void call(Map parameters = [:], Closure body = null) {
                 error "[${STEP_NAME}]git commit and tag failed: ${e}"
             }
 
-            if(config.gitSshUrl) {
+            if(gitPushMode == GitPushMode.SSH) {
+
+                config = ConfigurationHelper.newInstance(this, config)
+                    .addIfEmpty('gitSshUrl', isAppContainer(config)
+                                ?script.commonPipelineEnvironment.getAppContainerProperty('gitSshUrl')
+                                :script.commonPipelineEnvironment.getGitSshUrl())
+                    .withMandatoryProperty('gitSshUrl')
+                    .use()
+
                 sshagent([config.gitSshKeyCredentialsId]) {
                     sh "git push ${config.gitSshUrl} ${config.tagPrefix}${newVersion}"
                 }
-            } else if(config.gitHttpsUrl) {
-                 withCredentials([usernamePassword(
+
+            } else if(gitPushMode == GitPushMode.HTTPS) {
+
+                config = ConfigurationHelper.newInstance(this, config)
+                    .addIfEmpty('gitSshUrl', isAppContainer(config)
+                                ?script.commonPipelineEnvironment.getAppContainerProperty('gitHttpsUrl')
+                                :script.commonPipelineEnvironment.getGitHttpsUrl())
+                    .withMandatoryProperty('gitHttpsUrl')
+                    .use()
+
+                withCredentials([usernamePassword(
                      credentialsId: config.gitCredentialsId,
                      passwordVariable: 'PASSWORD',
                      usernameVariable: 'USERNAME')]) {
 
-                     // Problem: when we encode the username it is not replaced by stars
-                     // in the log by surrounding withCredentials. For the user name that
-                     // might be just well enough. But we need the same for the password.
-                     // And for passwords that is a no-go.
-                     def USERNAME_ENCODED = URLEncoder.encode(USERNAME, 'UTF-8')
+                     // Problem: when username/password is encoded and in case the encoded version differs from
+                     // the non-encoded version  (e.g. '@'  gets replaced by '%40' the encoded version
+                     // it is not replaced by stars in the log by surrounding withCredentials.
+                     // In order to avoid having the secrets in the log we take the following actions in case
+                     // the encoded version(s) differs from the non-encoded versions
+                     //
+                     // 1.) we switch off '-x' in the hashbang
+                     // 2.) we tell git push to be silent
+                     // 3.) we send stderr to /dev/null
+                     //
+                     // Disadvantage: In this case we don't see any output for troubleshooting.
+
+                     def USERNAME_ENCODED = URLEncoder.encode(USERNAME, 'UTF-8'),
+                         PASSWORD_ENCODED = URLEncoder.encode(PASSWORD, 'UTF-8')
+
+                     boolean encodedVersionsDiffers = USERNAME_ENCODED != USERNAME || PASSWORD_ENCODED != PASSWORD
 
                      def prefix = 'https://'
-                     def gitUrlWithCredentials = "${prefix}${USERNAME_ENCODED}:${PASSWORD}@${config.gitHttpsUrl}
+                     def gitUrlWithCredentials = config.gitHttpsUrl.replaceAll("^${prefix}", "${prefix}${USERNAME_ENCODED}:${PASSWORD_ENCODED}@")
 
+                     def hashbangFlags = '-xe'
+                     def gitPushFlags = []
+                     def streamhandling = ''
                      gitConfig = []
+
                      if(config.gitHttpProxy) {
                          gitConfig.add("-c http.proxy=\"${config.gitHttpProxy}\"")
                      }
 
-                     gitConfig = gitConfig.join(' ')
+                     if(config.gitDisableSSLVerification) {
+                         echo 'git ssl verification is switched off. This setting is not recommanded in productive environments.'
+                         gitConfig.add('http.sslVerify false')
+                     }
 
-                     sh script: "git ${gitConfig} push ${gitUrlWithCredentials} ${config.tagPrefix}${newVersion}"
+                     if(encodedVersionDiffers) {
+                         hashbangFlag = '-e'
+                         streamhandling ='&>/dev/null'
+                         gitPushFlags.add('--quiet')
+                         echo 'Performing git push in quit mode.'
+                     }
+
+                     gitConfig = gitConfig.join(' ')
+                     gitPushFlags = gitPushFlags.join(' ')
+
+                     sh script: """|#!/bin/bash ${hashbangFlags}
+                                   |git ${gitConfig} push ${gitPushFlags} ${gitUrlWithCredentials} ${config.tagPrefix}${newVersion} ${streamhandling}""".stripMargin()
                  }
             } else {
-                error "Neither ssh nor https url provided. Cannot push tag to remote."
+                echo "Git push mode: ${gitPushMode.toString()}. Git push to remote has been skipped."
             }
         }
 
