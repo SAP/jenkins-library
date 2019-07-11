@@ -436,7 +436,7 @@ class WhitesourceExecuteScanTest extends BasePiperTest {
         assertThat(loggingRule.log, containsString('Unstash content: checkmarx'))
 
         assertThat(shellRule.shell, Matchers.hasItems(
-            is('curl --location --output wss-unified-agent.jar https://github.com/whitesource/unified-agent-distribution/raw/master/standAlone/wss-unified-agent.jar'),
+            is('curl --location --output wss-unified-agent.jar https://github.com/whitesource/unified-agent-distribution/releases/latest/download/wss-unified-agent.jar'),
             is('./bin/java -jar wss-unified-agent.jar -c \'./wss-unified-agent.config.d3aa80454919391024374ba46b4df082d15ab9a3\' -apiKey \'testOrgToken\' -userKey \'token-0815\' -product \'testProductName\'')
         ))
 
