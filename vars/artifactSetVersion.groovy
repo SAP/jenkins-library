@@ -253,10 +253,10 @@ void call(Map parameters = [:], Closure body = null) {
                      }
 
                      if(encodedVersionsDiffers) {
-                         hashbangFlag = '-e'
+                         hashbangFlags = '-e'
                          streamhandling ='&>/dev/null'
                          gitPushFlags.add('--quiet')
-                         echo 'Performing git push in quit mode.'
+                         echo 'Performing git push in quiet mode.'
                      }
 
                      gitConfig = gitConfig.join(' ')

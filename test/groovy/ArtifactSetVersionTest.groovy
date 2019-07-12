@@ -8,6 +8,7 @@ import com.sap.piper.GitUtils
 
 import hudson.AbortException
 import util.BasePiperTest
+import util.JenkinsCredentialsRule
 import util.JenkinsDockerExecuteRule
 import util.JenkinsEnvironmentRule
 import util.JenkinsLoggingRule
@@ -50,6 +51,7 @@ class ArtifactSetVersionTest extends BasePiperTest {
     private JenkinsWriteFileRule writeFileRule = new JenkinsWriteFileRule(this)
     private JenkinsStepRule stepRule = new JenkinsStepRule(this)
     private JenkinsEnvironmentRule environmentRule = new JenkinsEnvironmentRule(this)
+    private JenkinsCredentialsRule jenkinsCredentialsRule = new JenkinsCredentialsRule(this)
 
     @Rule
     public RuleChain ruleChain = Rules
@@ -62,6 +64,7 @@ class ArtifactSetVersionTest extends BasePiperTest {
         .around(writeFileRule)
         .around(dockerExecuteRule)
         .around(stepRule)
+        .around(jenkinsCredentialsRule)
         .around(environmentRule)
 
     @Before
@@ -83,7 +86,7 @@ class ArtifactSetVersionTest extends BasePiperTest {
     }
 
     @Test
-    void testVersioning() {
+    void testVersioningPushViaSSH() {
         stepRule.step.artifactSetVersion(script: stepRule.step, juStabGitUtils: gitUtils, buildTool: 'maven', gitSshUrl: 'myGitSshUrl')
 
         assertEquals('1.2.3-20180101010203_testCommitId', environmentRule.env.getArtifactVersion())
@@ -95,6 +98,63 @@ class ArtifactSetVersionTest extends BasePiperTest {
                                             "git commit -m 'update version 1.2.3-20180101010203_testCommitId'",
                                             'git tag build_1.2.3-20180101010203_testCommitId',
                                             'git push myGitSshUrl build_1.2.3-20180101010203_testCommitId',
+                                            ]
+                                        ))
+    }
+
+    @Test
+    void testVersioningPushViaHTTPS() {
+
+        jenkinsCredentialsRule.withCredentials('myGitRepoCredentials', 'me', 'topSecret')
+
+        stepRule.step.artifactSetVersion(
+            script: stepRule.step,
+            juStabGitUtils: gitUtils,
+            buildTool: 'maven',
+            gitCredentialsId: 'myGitRepoCredentials',
+            gitHttpsUrl: 'https://example.org/myGitRepo',
+            gitPushMode: 'HTTPS')
+
+        // closer version checks already performed in test 'testVersioningPushViaSSH', focusing on
+        // GIT related assertions here
+
+        assertThat(shellRule.shell, hasItem("mvn --file 'pom.xml' --batch-mode -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn versions:set -DnewVersion=1.2.3-20180101010203_testCommitId -DgenerateBackupPoms=false"))
+        assertThat(((Iterable)shellRule.shell).join(), stringContainsInOrder([
+                                            "git add .",
+                                            "git commit -m 'update version 1.2.3-20180101010203_testCommitId'",
+                                            'git tag build_1.2.3-20180101010203_testCommitId',
+                                            'git push https://me:topSecret@example.org/myGitRepo build_1.2.3-20180101010203_testCommitId',
+                                            ]
+                                        ))
+    }
+
+    @Test
+    void testVersioningPushViaHTTPSEncodingDoesNotRevealSecrets() {
+
+        // Credentials needs to be url encoded. In case that changes the secrets the credentials plugin
+        // doesn't hide the secrets anymore in the log. Hence we have to take care that the command is silent.
+        // Check for more details how that is handled in the step.
+
+        loggingRule.expect('Performing git push in quiet mode')
+
+        jenkinsCredentialsRule.withCredentials('myGitRepoCredentials', 'me', 'top@Secret')
+
+        stepRule.step.artifactSetVersion(
+            script: stepRule.step,
+            juStabGitUtils: gitUtils,
+            buildTool: 'maven',
+            gitCredentialsId: 'myGitRepoCredentials',
+            gitHttpsUrl: 'https://example.org/myGitRepo',
+            gitPushMode: 'HTTPS')
+
+        // closer version checks already performed in test 'testVersioningPushViaSSH', focusing on
+        // GIT related assertions here
+
+        assertThat(((Iterable)shellRule.shell).join(), stringContainsInOrder([
+                                            "git add .",
+                                            "git commit -m 'update version 1.2.3-20180101010203_testCommitId'",
+                                            'git tag build_1.2.3-20180101010203_testCommitId',
+                                            '#!/bin/bash -e git push --quiet https://me:top%40Secret@example.org/myGitRepo build_1.2.3-20180101010203_testCommitId &>/dev/null',
                                             ]
                                         ))
     }
