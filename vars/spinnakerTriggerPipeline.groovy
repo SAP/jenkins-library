@@ -150,7 +150,7 @@ void call(Map parameters = [:]) {
                 sleep 10
                 withCredentials([
                     file(credentialsId: 'spinnaker-client-key', variable: 'clientKey'),
-                     file(credentialsId: 'spinnaker-client-certificate', variable: 'clientCertificate')
+                    file(credentialsId: 'spinnaker-client-certificate', variable: 'clientCertificate')
                 ]) {
                     pipelineStatusResponse = sh returnStdout: true, script: "curl -X GET ${config.spinnaker.gateUrl}${pipelineTriggerResponseObj.ref} -sk  --cert \$clientCertificate --key \$clientKey"
                 }
