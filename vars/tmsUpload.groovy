@@ -16,14 +16,8 @@ import static com.sap.piper.Prerequisites.checkScript
      * @possibleValues `true`, `false`
      */
     'verbose'
-
 ]
 @Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS.plus([
-    /**
-     * With `failOnError` the behavior in case tests fail can be defined.
-     * @possibleValues `true`, `false`
-     */
-    'failOnError',
     /**
      * If specific stashes should be considered, their names need to be passed via the parameter `stashContent`.
      */
@@ -41,10 +35,9 @@ import static com.sap.piper.Prerequisites.checkScript
      */
     'credentialsId',
     /**
-     * Can extend the default description of a transport request. (Default: Corresponding Git Commit-ID)
+     * Can be used as the description of a transport request. Will overwrite the default. (Default: Corresponding Git Commit-ID)
      */
     'customDescription'
-
 ])
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
 
@@ -93,8 +86,8 @@ void call(Map parameters = [:]) {
         // make sure that for further execution whole workspace, e.g. also downloaded artifacts are considered
         config.stashContent = []
 
-        def customDescription = config.customDescription ? "${config.customDescription} " : ''
-        def description = customDescription + "Git CommitId: ${script.commonPipelineEnvironment.getGitCommitId()}"
+        def customDescription = config.customDescription ? "${config.customDescription}" : "Git CommitId: ${script.commonPipelineEnvironment.getGitCommitId()}"
+        def description = customDescription
 
         def namedUser = jenkinsUtils.getJobStartedByUserId() ?: config.namedUser
 
@@ -102,12 +95,10 @@ void call(Map parameters = [:]) {
         def mtaPath = config.mtaPath
 
         if (config.verbose) {
-
             echo "[TransportManagementService] CredentialsId: '${config.credentialsId}'"
             echo "[TransportManagementService] Node name: '${nodeName}'"
             echo "[TransportManagementService] MTA path: '${mtaPath}'"
             echo "[TransportManagementService] Named user: '${namedUser}'"
-
         }
 
         def tms = parameters.transportManagementService ?: new TransportManagementService(script, config)
@@ -122,17 +113,13 @@ void call(Map parameters = [:]) {
             def uri = tmsServiceKey.uri
 
             if (config.verbose) {
-
                 echo "[TransportManagementService] UAA URL: '${uaaUrl}'"
                 echo "[TransportManagementService] TMS URL: '${uri}'"
                 echo "[TransportManagementService] ClientId: '${clientId}'"
-
             }
 
             def token = tms.authentication(uaaUrl, clientId, clientSecret)
-
-            def fileUploadResponse = tms.uploadFileToTMS(uri, token, "${workspace}/${mtaPath}", namedUser)
-
+            def fileUploadResponse = tms.uploadFile(uri, token, "${workspace}/${mtaPath}", namedUser)
             def uploadFileToNodeResponse = tms.uploadFileToNode(uri, token, nodeName, fileUploadResponse.fileId, description, namedUser)
 
             echo "[TransportManagementService] File '${fileUploadResponse.fileName}' successfully uploaded to Node '${uploadFileToNodeResponse.queueEntries.nodeName}' (Id: '${uploadFileToNodeResponse.queueEntries.nodeId}')."

@@ -1,6 +1,7 @@
 package com.sap.piper.integration
-
 import com.sap.piper.JsonUtils
+
+import com.cloudbees.groovy.cps.NonCPS
 
 class TransportManagementService implements Serializable {
 
@@ -10,127 +11,131 @@ class TransportManagementService implements Serializable {
     def jsonUtils = new JsonUtils()
 
     TransportManagementService(Script script, Map config) {
-
         this.script = script
         this.config = config
+    }
+
+    def authentication(String uaaUrl, String oauthClientId, String oauthClientSecret){
+        echo("OAuth Token retrieval started.")
+
+        if(config.verbose){
+            echo ("UAA-URL: '${uaaUrl}', ClientId: '${oauthClientId}''")
+        }
+
+        def encodedUsernameColonPassword = "${oauthClientId}:${oauthClientSecret}".bytes.encodeBase64().toString()
+        def urlEncodedFormData = "grant_type=password&"+"username=${urlEncodeAndReplaceSpace(oauthClientId)}&"+"password=${urlEncodeAndReplaceSpace(oauthClientSecret)}"
+
+        def parameters = [
+            url          : "${uaaUrl}/oauth/token/?grant_type=client_credentials&response_type=token",
+            httpMode     : "POST",
+            requestBody  : urlEncodedFormData,
+            customHeaders: [
+                [
+                    maskValue: false,
+                    name     : 'Content-Type',
+                    value    : 'application/x-www-form-urlencoded'
+                ],
+                [
+                    maskValue: true,
+                    name     : 'authorization',
+                    value    : "Basic ${encodedUsernameColonPassword}"
+                ]
+            ]
+        ]
+
+        def response = sendApiRequest(parameters)
+        echo ("OAuth Token retrieved successfully.")
+
+        return jsonUtils.jsonStringToGroovyObject(response).access_token
 
     }
 
-    def authentication(String uaaUrl, String oauthClientId, String oauthClientSecret) {
 
-        script.echo "[TransportManagementService] OAuth Token retrieval started."
 
-        if (config.verbose) {
+    def uploadFile(String url, String token, String file, String namedUser){
 
-            script.echo "[TransportManagementService] UAA-URL: '${uaaUrl}', ClientId: '${oauthClientId}'"
+        echo("Fileupload started.")
 
+        if(config.verbose){
+            echo("URL: '${url}', File: '${file}'")
         }
 
         def httpResponse = script.sh returnStdout: true,
             script: """#!/bin/sh -e
-                        curl -XPOST -u '${oauthClientId}':'${oauthClientSecret}' -o responseAuth.txt --write-out '%{http_code}' '${uaaUrl}/oauth/token/?grant_type=client_credentials&response_type=token'
+                        curl -H 'Authorization: Bearer ${token}' -F 'file=@${file}' -F 'namedUser=${namedUser}' -o responseFileUpload.txt --write-out '%{http_code}' --fail '${url}/v2/files/upload'
                     """
 
-        def response = script.readFile("responseAuth.txt")
-
-        if (httpResponse.toInteger() < 200 || httpResponse.toInteger() >= 300) {
-
-            script.error "[TransportManagementService] Retrieval of OAuth-Token failed. HTTP-Status: ${httpResponse} \n [ERROR] Response: '${response}'"
-
+        if(httpResponse.toInteger()  < 200 || httpResponse.toInteger() >= 300){
+            script.error "[TransportManagementService] Fileupload failed. HTTP-Status: '${httpResponse}'"
         }
 
-        if (config.verbose) {
+        def responseContent = script.readFile("responseFileUpload.txt")
 
-            script.echo response
-
+        if(config.verbose){
+            echo("${responseContent}")
         }
 
-        def oAuthToken = jsonUtils.jsonStringToGroovyObject(response).access_token
+        echo("Fileupload successful.")
 
-        script.echo "[TransportManagementService] OAuth Token retrieved successfully."
-
-        return oAuthToken
+        return jsonUtils.jsonStringToGroovyObject(responseContent)
 
     }
 
 
-    def uploadFileToTMS(String url, String token, String file, String namedUser) {
+    def uploadFileToNode(String url, String token, String nodeName, int fileId, String description, String namedUser){
 
-        script.echo "[TransportManagementService] File upload started."
+        echo("Nodeupload started.")
 
-        if (config.verbose) {
-
-            script.echo "[TransportManagementService] URL: '${url}', File: '${file}'"
-
-        }
-
-        def httpResponse = script.sh returnStdout: true,
-            script: """#!/bin/sh -e
-                        curl -XPOST -H 'Authorization: Bearer ${token}' -F 'file=@${file}' -F 'namedUser=${namedUser}' -o responseFileUpload.txt --write-out '%{http_code}' '${url}/v2/files/upload'
-                    """
-
-        def response = script.readFile("responseFileUpload.txt")
-
-        if (httpResponse.toInteger() < 200 || httpResponse.toInteger() >= 300) {
-
-            script.error "[TransportManagementService] File upload failed. HTTP-Status: ${httpResponse} \n [ERROR] Response: '${response}'"
-
-        }
-
-        if (config.verbose) {
-
-            script.echo response
-
-        }
-
-        def fileUploadDetails = jsonUtils.jsonStringToGroovyObject(response)
-
-        script.echo "[TransportManagementService] File upload successful."
-
-        return fileUploadDetails
-
-    }
-
-
-    def uploadFileToNode(String url, String token, String nodeName, int fileId, String description, String namedUser) {
-
-        script.echo "[TransportManagementService] Node upload started."
-
-        if (config.verbose) {
-
-            script.echo "[TransportManagementService] URL: '${url}', NodeName: '${nodeName}', FileId: '${fileId}'"
-
+        if(config.verbose){
+            echo("URL: '${url}', Nodename: '${nodeName}', FileId: '${fileId}''")
         }
 
         def bodyMap = [nodeName: nodeName, contentType: 'MTA', description: description, storageType: 'FILE', namedUser: namedUser, entries: [[uri: fileId]]]
 
-        def body = jsonUtils.groovyObjectToPrettyJsonString(bodyMap)
+        def parameters = [
+            url          : "${url}/v2/nodes/upload",
+            httpMode     : "POST",
+            contentType  : 'APPLICATION_JSON',
+            requestBody  : jsonUtils.groovyObjectToPrettyJsonString(bodyMap),
+            customHeaders: [
+                [
+                    maskValue: true,
+                    name     : 'authorization',
+                    value    : "Bearer ${token}"
+                ]
+            ]
+        ]
 
-        def httpResponse = script.sh returnStdout: true,
-            script: """#!/bin/sh -e
-                        curl -XPOST -H 'Authorization: Bearer ${token}' -H 'Content-Type: application/json' -d '${body}' -o responseNodeUpload.txt --write-out '%{http_code}' '${url}/v2/nodes/upload'
-                    """
+        def response = sendApiRequest(parameters)
+        echo("Nodeupload successful.")
 
-        def response = script.readFile("responseNodeUpload.txt")
-
-        if (httpResponse.toInteger() < 200 || httpResponse.toInteger() >= 300) {
-
-            script.error "[TransportManagementService] Node upload failed. HTTP-Status: ${httpResponse} \n [ERROR] Response: ${response}"
-
-        }
-
-        if (config.verbose) {
-
-            script.echo response
-
-        }
-
-        def nodeUploadDetails = jsonUtils.jsonStringToGroovyObject(response)
-
-        script.echo "[TransportManagementService] Node upload successful."
-
-        return nodeUploadDetails
+        return jsonUtils.jsonStringToGroovyObject(response)
 
     }
 
+    private sendApiRequest(parameters) {
+        def defaultParameters = [
+            acceptType            : 'APPLICATION_JSON',
+            quiet                 : !config.verbose,
+            consoleLogResponseBody: !config.verbose,
+            ignoreSslErrors       : true,
+            validResponseCodes    : "100:399"
+        ]
+
+        def response = script.httpRequest(defaultParameters + parameters)
+
+        if (config.verbose){
+            echo("Received response " + "'${response.content}' with status ${response.status}.")
+        }
+
+        return response.content
+    }
+
+    private echo(message){
+        script.echo "[${getClass().getSimpleName()}] ${message}"
+    }
+
+    private static String urlEncodeAndReplaceSpace(String data) {
+        return URLEncoder.encode(data, "UTF-8").replace('%20', '+')
+    }
 }
