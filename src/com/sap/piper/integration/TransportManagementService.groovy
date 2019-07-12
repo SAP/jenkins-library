@@ -1,7 +1,6 @@
 package com.sap.piper.integration
-import com.sap.piper.JsonUtils
 
-import com.cloudbees.groovy.cps.NonCPS
+import com.sap.piper.JsonUtils
 
 class TransportManagementService implements Serializable {
 
@@ -15,15 +14,17 @@ class TransportManagementService implements Serializable {
         this.config = config
     }
 
-    def authentication(String uaaUrl, String oauthClientId, String oauthClientSecret){
+    def authentication(String uaaUrl, String oauthClientId, String oauthClientSecret) {
         echo("OAuth Token retrieval started.")
 
-        if(config.verbose){
-            echo ("UAA-URL: '${uaaUrl}', ClientId: '${oauthClientId}''")
+        if (config.verbose) {
+            echo("UAA-URL: '${uaaUrl}', ClientId: '${oauthClientId}''")
         }
 
         def encodedUsernameColonPassword = "${oauthClientId}:${oauthClientSecret}".bytes.encodeBase64().toString()
-        def urlEncodedFormData = "grant_type=password&"+"username=${urlEncodeAndReplaceSpace(oauthClientId)}&"+"password=${urlEncodeAndReplaceSpace(oauthClientSecret)}"
+        def urlEncodedFormData = "grant_type=password&" +
+            "username=${urlEncodeAndReplaceSpace(oauthClientId)}&" +
+            "password=${urlEncodeAndReplaceSpace(oauthClientSecret)}"
 
         def parameters = [
             url          : "${uaaUrl}/oauth/token/?grant_type=client_credentials&response_type=token",
@@ -44,19 +45,18 @@ class TransportManagementService implements Serializable {
         ]
 
         def response = sendApiRequest(parameters)
-        echo ("OAuth Token retrieved successfully.")
+        echo("OAuth Token retrieved successfully.")
 
         return jsonUtils.jsonStringToGroovyObject(response).access_token
 
     }
 
 
+    def uploadFile(String url, String token, String file, String namedUser) {
 
-    def uploadFile(String url, String token, String file, String namedUser){
+        echo("File upload started.")
 
-        echo("Fileupload started.")
-
-        if(config.verbose){
+        if (config.verbose) {
             echo("URL: '${url}', File: '${file}'")
         }
 
@@ -65,29 +65,29 @@ class TransportManagementService implements Serializable {
                         curl -H 'Authorization: Bearer ${token}' -F 'file=@${file}' -F 'namedUser=${namedUser}' -o responseFileUpload.txt --write-out '%{http_code}' --fail '${url}/v2/files/upload'
                     """
 
-        if(httpResponse.toInteger()  < 200 || httpResponse.toInteger() >= 300){
-            script.error "[TransportManagementService] Fileupload failed. HTTP-Status: '${httpResponse}'"
+        if (httpResponse.toInteger() < 200 || httpResponse.toInteger() >= 300) {
+            script.error "[TransportManagementService] File upload failed. HTTP-Status: ${httpResponse}"
         }
 
         def responseContent = script.readFile("responseFileUpload.txt")
 
-        if(config.verbose){
+        if (config.verbose) {
             echo("${responseContent}")
         }
 
-        echo("Fileupload successful.")
+        echo("File upload successful.")
 
         return jsonUtils.jsonStringToGroovyObject(responseContent)
 
     }
 
 
-    def uploadFileToNode(String url, String token, String nodeName, int fileId, String description, String namedUser){
+    def uploadFileToNode(String url, String token, String nodeName, int fileId, String description, String namedUser) {
 
-        echo("Nodeupload started.")
+        echo("Node upload started.")
 
-        if(config.verbose){
-            echo("URL: '${url}', Nodename: '${nodeName}', FileId: '${fileId}''")
+        if (config.verbose) {
+            echo("URL: '${url}', NodeName: '${nodeName}', FileId: '${fileId}''")
         }
 
         def bodyMap = [nodeName: nodeName, contentType: 'MTA', description: description, storageType: 'FILE', namedUser: namedUser, entries: [[uri: fileId]]]
@@ -107,7 +107,7 @@ class TransportManagementService implements Serializable {
         ]
 
         def response = sendApiRequest(parameters)
-        echo("Nodeupload successful.")
+        echo("Node upload successful.")
 
         return jsonUtils.jsonStringToGroovyObject(response)
 
@@ -124,14 +124,14 @@ class TransportManagementService implements Serializable {
 
         def response = script.httpRequest(defaultParameters + parameters)
 
-        if (config.verbose){
-            echo("Received response " + "'${response.content}' with status ${response.status}.")
+        if (config.verbose) {
+            echo("Received response '${response.content}' with status ${response.status}.")
         }
 
         return response.content
     }
 
-    private echo(message){
+    private echo(message) {
         script.echo "[${getClass().getSimpleName()}] ${message}"
     }
 
