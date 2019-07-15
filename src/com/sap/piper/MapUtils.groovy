@@ -63,6 +63,7 @@ class MapUtils implements Serializable {
         m.putAll(updates)
     }
 
+    @NonCPS
     static private def getByPath(Map m, def key) {
         List path = key in CharSequence ? key.tokenize('/') : key
 
@@ -81,6 +82,7 @@ class MapUtils implements Serializable {
      * &lt;paranoia&gt;&/ltThe keys are also not copied/cloned, even if they are
      * Maps or Collections;paranoia&gt;
      */
+    @NonCPS
     static deepCopy(Map original) {
         Map copy = [:]
         for (def e : original.entrySet()) {
@@ -93,6 +95,7 @@ class MapUtils implements Serializable {
         copy
     }
 
+    @NonCPS
     /* private */ static deepCopy(Set original) {
         Set copy = []
         for(def e : original)
@@ -100,6 +103,7 @@ class MapUtils implements Serializable {
         copy
     }
 
+    @NonCPS
     /* private */ static deepCopy(List original) {
         List copy = []
         for(def e : original)
@@ -111,6 +115,7 @@ class MapUtils implements Serializable {
      * In fact not a copy, but a catch all for everything not matching
      * with the other signatures
      */
+    @NonCPS
     /* private */ static deepCopy(def original) {
         original
     }
