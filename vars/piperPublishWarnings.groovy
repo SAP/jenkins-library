@@ -8,6 +8,7 @@ import com.sap.piper.Utils
 import groovy.transform.Field
 
 @Field String STEP_NAME = getClass().getName()
+@Field List PLUGIN_ID_LIST = ['warnings-ng']
 
 @Field Set GENERAL_CONFIG_KEYS = []
 @Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS.plus([
@@ -48,9 +49,13 @@ import groovy.transform.Field
 void call(Map parameters = [:]) {
     handlePipelineStepErrors (stepName: STEP_NAME, stepParameters: parameters, allowBuildFailure: true) {
 
-        //TODO: ensure warnings-ng plugin is installed.
-
         final script = checkScript(this, parameters) ?: this
+
+        for(String id : PLUGIN_ID_LIST){
+            if (!JenkinsUtils.isPluginActive(id)) {
+                error("[ERROR][${STEP_NAME}] The step requires the plugin '${id}' to be installed and activated in the Jenkins.")
+            }
+        }
 
         // load default & individual configuration
         Map configuration = ConfigurationHelper.newInstance(this)

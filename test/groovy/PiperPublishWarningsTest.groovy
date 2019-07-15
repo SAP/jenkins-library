@@ -61,6 +61,7 @@ class PiperPublishWarningsTest extends BasePiperTest {
             return true
         }
         JenkinsUtils.metaClass.static.getFullBuildLog = { def currentBuild -> return ""}
+        JenkinsUtils.metaClass.static.isPluginActive = { id -> return true}
     }
 
     @Test
