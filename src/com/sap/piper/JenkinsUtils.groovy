@@ -25,6 +25,7 @@ static boolean hasTestFailures(build){
 
 boolean addWarningsNGParser(String id, String name, String regex, String script, String example = ''){
     def classLoader = this.getClass().getClassLoader()
+    // usage of class loader to avoid plugin dependency for other use cases of JenkinsUtils class
     def parserConfig = classLoader.loadClass('io.jenkins.plugins.analysis.warnings.groovy.ParserConfiguration', true)?.getInstance()
 
     if(parserConfig.contains(id)){
