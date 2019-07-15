@@ -1,9 +1,13 @@
 package com.sap.piper
 
 import com.cloudbees.groovy.cps.NonCPS
-import jenkins.model.Jenkins
-import org.jenkinsci.plugins.workflow.steps.MissingContextVariableException
+
 import hudson.tasks.junit.TestResultAction
+
+import jenkins.model.Jenkins
+
+import org.apache.commons.io.IOUtils
+import org.jenkinsci.plugins.workflow.steps.MissingContextVariableException
 
 @API
 @NonCPS
@@ -38,7 +42,7 @@ boolean addWarningsNGParser(String id, String name, String regex, String script,
 @NonCPS
 static String getFullBuildLog(currentBuild) {
     Reader reader = currentBuild.getRawBuild().getLogReader()
-    String logContent = org.apache.commons.io.IOUtils.toString(reader);
+    String logContent = IOUtils.toString(reader);
     reader.close();
     reader = null
     return logContent
