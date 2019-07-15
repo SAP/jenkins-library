@@ -35,21 +35,26 @@ class ConfigurationHelper implements Serializable {
         return this
     }
 
+    
+    @NonCPS
     ConfigurationHelper mixinGeneralConfig(commonPipelineEnvironment, Set filter = null, Map compatibleParameters = [:]){
         Map generalConfiguration = ConfigurationLoader.generalConfiguration([commonPipelineEnvironment: commonPipelineEnvironment])
         return mixin(generalConfiguration, filter, compatibleParameters)
     }
 
+    @NonCPS
     ConfigurationHelper mixinStageConfig(commonPipelineEnvironment, stageName, Set filter = null, Map compatibleParameters = [:]){
         Map stageConfiguration = ConfigurationLoader.stageConfiguration([commonPipelineEnvironment: commonPipelineEnvironment], stageName)
         return mixin(stageConfiguration, filter, compatibleParameters)
     }
 
+    @NonCPS
     ConfigurationHelper mixinStepConfig(commonPipelineEnvironment, Set filter = null, Map compatibleParameters = [:]){
         Map stepConfiguration = ConfigurationLoader.stepConfiguration([commonPipelineEnvironment: commonPipelineEnvironment], name)
         return mixin(stepConfiguration, filter, compatibleParameters)
     }
 
+    @NonCPS
     final ConfigurationHelper mixin(Map parameters, Set filter = null, Map compatibleParameters = [:]){
         if (parameters.size() > 0 && compatibleParameters.size() > 0) {
             parameters = ConfigurationMerger.merge(handleCompatibility(compatibleParameters, parameters), null, parameters)
@@ -61,6 +66,7 @@ class ConfigurationHelper implements Serializable {
         return this
     }
 
+    @NonCPS
     private Map handleCompatibility(Map compatibleParameters, String paramStructure = '', Map configMap, Map newConfigMap = [:] ) {
         Map newConfig = [:]
         compatibleParameters.each {entry ->
@@ -87,6 +93,7 @@ class ConfigurationHelper implements Serializable {
         return newConfig
     }
 
+    @NonCPS
     Map dependingOn(dependentKey){
         return [
             mixin: {key ->
@@ -105,6 +112,7 @@ class ConfigurationHelper implements Serializable {
         ]
     }
 
+    @NonCPS
     ConfigurationHelper addIfEmpty(key, value){
         if (config[key] instanceof Boolean) {
             return this
@@ -114,6 +122,7 @@ class ConfigurationHelper implements Serializable {
         return this
     }
 
+    @NonCPS
     ConfigurationHelper addIfNull(key, value){
         if (config[key] == null){
             config[key] = value
@@ -132,10 +141,12 @@ class ConfigurationHelper implements Serializable {
 
 
 
+    @NonCPS
     /* private */ def getConfigPropertyNested(key) {
         return getConfigPropertyNested(config, key)
     }
 
+    @NonCPS
     /* private */ static getConfigPropertyNested(Map config, key) {
 
         List parts = tokenizeKey(key)
@@ -153,12 +164,14 @@ class ConfigurationHelper implements Serializable {
         return config[parts.head()]
     }
 
+    @NonCPS
     /* private */  static tokenizeKey(String key) {
         // reason for cast to CharSequence: String#tokenize(./.) causes a deprecation warning.
         List parts = (key in String) ? (key as CharSequence).tokenize(SEPARATOR) : ([key] as List)
         return parts
     }
 
+    @NonCPS
     private void existsMandatoryProperty(key, errorMessage) {
 
         def paramValue = getConfigPropertyNested(config, key)
@@ -174,6 +187,7 @@ class ConfigurationHelper implements Serializable {
         }
     }
 
+    @NonCPS
     ConfigurationHelper withMandatoryProperty(key, errorMessage = null, condition = null){
         if(condition){
             if(condition(this.config))
@@ -184,6 +198,7 @@ class ConfigurationHelper implements Serializable {
         return this
     }
 
+    @NonCPS
     ConfigurationHelper withPropertyInValues(String key, Set values){
         withMandatoryProperty(key)
         def value = config[key] instanceof GString ? config[key].toString() : config[key]
