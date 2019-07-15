@@ -678,7 +678,7 @@ for (step in steps) {
 
 // replace @see tag in docu by docu from referenced step.
 for(step in stepDescriptors) {
-    if(step.value.parameters) {
+    if(step.value?.parameters) {
         for(param in step.value.parameters) {
             if( param?.value?.docu?.contains('@see')) {
                 def otherStep = param.value.docu.replaceAll('@see', '').trim()
@@ -695,8 +695,12 @@ for(step in stepDescriptors) {
 def stageDescriptors = [:]
 stages.each {key, value ->
     System.err << "[INFO] Processing stage '${key}' ...\n"
-    stageDescriptors."${key}" = [:] << stepDescriptors."${key}"
-    stepDescriptors.remove(key)
+    if (stepDescriptors."${key}") {
+        stageDescriptors."${key}" = [:] << stepDescriptors."${key}"
+        stepDescriptors.remove(key)
+    } else {
+        stageDescriptors."${key}" = [:]
+    }
 
     //add stage name to stageDescriptors
     stageDescriptors."${key}".name = value

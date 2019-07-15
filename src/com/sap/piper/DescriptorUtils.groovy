@@ -46,7 +46,7 @@ def getNpmGAV(file = 'package.json') {
     return result
 }
 
-def getDlangGAV(file = 'dub.json') {
+def getDubGAV(file = 'dub.json') {
     def result = [:]
     def descriptor = readJSON(file: file)
 

@@ -55,7 +55,7 @@ steps:
     timestampTemplate: '%Y%m%d%H%M%S'
     tagPrefix: 'build_'
     commitVersion: true
-    dlang:
+    dub:
       filePath: 'dub.json'
       versioningTemplate: '${version}-${timestamp}${commitId?"+"+commitId:""}'
     docker:
@@ -353,7 +353,7 @@ steps:
     projectNames: []
     jreDownloadUrl: 'https://github.com/SAP/SapMachine/releases/download/sapmachine-11.0.2/sapmachine-jre-11.0.2_linux-x64_bin.tar.gz'
     agentFileName: 'wss-unified-agent.jar'
-    agentDownloadUrl: 'https://github.com/whitesource/unified-agent-distribution/raw/master/standAlone/${config.agentFileName}'
+    agentDownloadUrl: 'https://github.com/whitesource/unified-agent-distribution/releases/latest/download/${config.agentFileName}'
     agentParameters: ''
     configFilePath: './wss-unified-agent.config'
     mta:
@@ -412,17 +412,19 @@ steps:
     timeoutInSeconds: 900
   pipelineStashFilesAfterBuild:
     stashIncludes:
-      checkmarx: '**/*.js, **/*.scala, **/*.py, **/*.go, **/*.xml, **/*.html'
+      buildResult: '**/target/*.jar, **/*.mtar'
+      checkmarx: '**/*.js, **/*.scala, **/*.py, **/*.go, **/*.d, **/*.di, **/*.xml, **/*.html'
       classFiles: '**/target/classes/**/*.class, **/target/test-classes/**/*.class'
       sonar: '**/jacoco*.exec, **/sonar-project.properties'
     stashExcludes:
+      buildResult: ''
       checkmarx: '**/*.mockserver.js, node_modules/**/*.js'
       classFiles: ''
       sonar: ''
     noDefaultExludes: []
   pipelineStashFilesBeforeBuild:
     stashIncludes:
-      buildDescriptor: '**/pom.xml, **/.mvn/**, **/assembly.xml, **/.swagger-codegen-ignore, **/package.json, **/requirements.txt, **/setup.py, **/mta*.y*ml, **/.npmrc, Dockerfile, .hadolint.yaml, **/VERSION, **/version.txt, **/Gopkg.*, **/build.sbt, **/sbtDescriptor.json, **/project/*'
+      buildDescriptor: '**/pom.xml, **/.mvn/**, **/assembly.xml, **/.swagger-codegen-ignore, **/package.json, **/requirements.txt, **/setup.py, **/mta*.y*ml, **/.npmrc, Dockerfile, .hadolint.yaml, **/VERSION, **/version.txt, **/Gopkg.*, **/dub.json, **/dub.sdl, **/build.sbt, **/sbtDescriptor.json, **/project/*'
       deployDescriptor: '**/manifest*.y*ml, **/*.mtaext.y*ml, **/*.mtaext, **/xs-app.json, helm/**, *.y*ml'
       git: '.git/**'
       opa5: '**/*.*'
