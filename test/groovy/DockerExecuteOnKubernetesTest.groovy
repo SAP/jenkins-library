@@ -266,7 +266,7 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
             hasItem('selenium'),
         ))
         assertThat(imageList, allOf(
-            hasItem('jenkinsci/jnlp-slave'),
+            hasItem('jenkinsci/jnlp-slave:3.29-1-alpine'),
             hasItem('maven:3.5-jdk-8-alpine'),
             hasItem('selenium/standalone-chrome'),
         ))
