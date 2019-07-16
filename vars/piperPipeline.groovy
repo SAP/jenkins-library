@@ -1,6 +1,9 @@
 void call(parameters) {
     pipeline {
         agent none
+        triggers {
+            issueCommentTrigger('.*/piper ([a-z]*).*')
+        }
         options {
             skipDefaultCheckout()
             timestamps()
@@ -9,7 +12,7 @@ void call(parameters) {
             stage('Init') {
                 steps {
                     library 'piper-lib-os'
-                    piperPipelineStageInit script: parameters.script, customDefaults: parameters.customDefaults
+                    piperPipelineStageInit script: parameters.script, customDefaults: ['com.sap.piper/pipeline/stageOrdinals.yml'].plus(parameters.customDefaults ?: [])
                 }
             }
             stage('Pull-Request Voting') {
