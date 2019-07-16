@@ -129,7 +129,7 @@ class ArtifactSetVersionTest extends BasePiperTest {
             script: stepRule.step,
             juStabGitUtils: gitUtils,
             buildTool: 'maven',
-            gitCredentialsId: 'myGitRepoCredentials',
+            gitHttpsCredentialsId: 'myGitRepoCredentials',
             gitHttpsUrl: 'https://example.org/myGitRepo',
             gitPushMode: 'HTTPS')
 
@@ -155,10 +155,10 @@ class ArtifactSetVersionTest extends BasePiperTest {
             script: stepRule.step,
             juStabGitUtils: gitUtils,
             buildTool: 'maven',
-            gitCredentialsId: 'myGitRepoCredentials',
+            gitHttpsCredentialsId: 'myGitRepoCredentials',
             gitHttpsUrl: 'https://example.org/myGitRepo',
             gitPushMode: 'HTTPS',
-            gitDisableSSLVerification: true)
+            gitDisableSslVerification: true)
 
         // closer version checks already performed in test 'testVersioningPushViaSSH', focusing on
         // GIT related assertions here
@@ -167,7 +167,7 @@ class ArtifactSetVersionTest extends BasePiperTest {
     }
 
     @Test
-    void testVersioningPushViaHTTPDebugMode() {
+    void testVersioningPushViaHTTPVerboseMode() {
 
         jenkinsCredentialsRule.withCredentials('myGitRepoCredentials', 'me', 'topSecret')
 
@@ -175,10 +175,10 @@ class ArtifactSetVersionTest extends BasePiperTest {
             script: stepRule.step,
             juStabGitUtils: gitUtils,
             buildTool: 'maven',
-            gitCredentialsId: 'myGitRepoCredentials',
+            gitHttpsCredentialsId: 'myGitRepoCredentials',
             gitHttpsUrl: 'https://example.org/myGitRepo',
             gitPushMode: 'HTTPS',
-            debug: true)
+            verbose: true)
 
         // closer version checks already performed in test 'testVersioningPushViaSSH', focusing on
         // GIT related assertions here
@@ -193,7 +193,7 @@ class ArtifactSetVersionTest extends BasePiperTest {
     @Test
     void testVersioningPushViaHTTPSInDebugModeEncodingDoesNotRevealSecrets() {
 
-        loggingRule.expect('Debug flag set, but encoded username/password differs from unencoded version. Cannot provide debug output in this case.')
+        loggingRule.expect('Verbose flag set, but encoded username/password differs from unencoded version. Cannot provide verbose output in this case.')
         loggingRule.expect('Performing git push in quiet mode')
 
         jenkinsCredentialsRule.withCredentials('myGitRepoCredentials', 'me', 'top@Secret')
@@ -202,10 +202,10 @@ class ArtifactSetVersionTest extends BasePiperTest {
             script: stepRule.step,
             juStabGitUtils: gitUtils,
             buildTool: 'maven',
-            gitCredentialsId: 'myGitRepoCredentials',
+            gitHttpsCredentialsId: 'myGitRepoCredentials',
             gitHttpsUrl: 'https://example.org/myGitRepo',
             gitPushMode: 'HTTPS',
-            debug: true)
+            verbose: true)
 
         // closer version checks already performed in test 'testVersioningPushViaSSH', focusing on
         // GIT related assertions here
@@ -235,7 +235,7 @@ class ArtifactSetVersionTest extends BasePiperTest {
             script: stepRule.step,
             juStabGitUtils: gitUtils,
             buildTool: 'maven',
-            gitCredentialsId: 'myGitRepoCredentials',
+            gitHttpsCredentialsId: 'myGitRepoCredentials',
             gitHttpsUrl: 'https://example.org/myGitRepo',
             gitPushMode: 'HTTPS')
 

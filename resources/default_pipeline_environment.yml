@@ -57,7 +57,7 @@ steps:
     tagPrefix: 'build_'
     commitVersion: true
     gitPushMode: 'SSH'
-    debug: false
+    verbose: false
     gitHttpsCredentialsId: 'git'
     gitDisableSslVerification: false
     dub:
