@@ -34,6 +34,13 @@ enum GitPushMode {NONE, HTTPS, SSH}
      */
     'commitVersion',
     /**
+      * Prints some more information for troubleshooting. May reveal security relevant information. Usage is recommanded for troubleshooting only. Productive usage
+      * is not recommanded.
+     * @possibleValues `true`, `false`
+      */
+    'debug',
+    ,
+    /**
      * Specifies the source to be used for the main version which is used for generating the automatic version.
      * * This can either be the version of the base image - as retrieved from the `FROM` statement within the Dockerfile, e.g. `FROM jenkins:2.46.2`
      * * Alternatively the name of an environment variable defined in the Docker image can be used which contains the version number, e.g. `ENV MY_VERSION 1.2.3`
@@ -241,6 +248,7 @@ void call(Map parameters = [:], Closure body = null) {
                      def hashbangFlags = '-xe'
                      def gitPushFlags = []
                      def streamhandling = ''
+                     def gitDebug = ''
                      gitConfig = []
 
                      if(config.gitHttpProxy) {
@@ -252,7 +260,13 @@ void call(Map parameters = [:], Closure body = null) {
                          gitConfig.add('http.sslVerify false')
                      }
 
-                     if(encodedVersionsDiffers) {
+                     if(config.debug) { // known issue: in case somebody provides the stringish 'false' we get the boolean value 'true' here.
+                         echo 'Debug mode enabled. This is not recommanded for productive usage. This might reveal security sensitive information.'
+                         gitDebug = 'GIT_CURL_VERBOSE=1 GIT_TRACE=1 '
+                         gitPushFlags.add(--verbose)
+                     }
+
+                     if(encodedVersionsDiffers && ! config.debug) {
                          hashbangFlags = '-e'
                          streamhandling ='&>/dev/null'
                          gitPushFlags.add('--quiet')
@@ -263,7 +277,7 @@ void call(Map parameters = [:], Closure body = null) {
                      gitPushFlags = gitPushFlags.join(' ')
 
                      sh script: """|#!/bin/bash ${hashbangFlags}
-                                   |git ${gitConfig} push ${gitPushFlags} ${gitUrlWithCredentials} ${config.tagPrefix}${newVersion} ${streamhandling}""".stripMargin()
+                                   |${gitDebug}git ${gitConfig} push ${gitPushFlags} ${gitUrlWithCredentials} ${config.tagPrefix}${newVersion} ${streamhandling}""".stripMargin()
                  }
             } else {
                 echo "Git push mode: ${gitPushMode.toString()}. Git push to remote has been skipped."
