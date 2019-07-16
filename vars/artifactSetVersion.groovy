@@ -57,7 +57,7 @@ enum GitPushMode {NONE, HTTPS, SSH}
      */
     'gitSshKeyCredentialsId',
     /** */
-    'gitCredentialsId',
+    'gitHttpsCredentialsId',
     /**
      * Allows to overwrite the global git setting 'user.email' available on your Jenkins server.
      */
@@ -221,7 +221,7 @@ void call(Map parameters = [:], Closure body = null) {
                     .use()
 
                 withCredentials([usernamePassword(
-                    credentialsId: config.gitCredentialsId,
+                    credentialsId: config.gitHttpsCredentialsId,
                     passwordVariable: 'PASSWORD',
                     usernameVariable: 'USERNAME')]) {
 

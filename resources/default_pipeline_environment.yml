@@ -57,6 +57,9 @@ steps:
     tagPrefix: 'build_'
     commitVersion: true
     gitPushMode: 'SSH'
+    debug: false
+    gitHttpsCredentialsId: 'git'
+    gitDisableSslVerification: false
     dub:
       filePath: 'dub.json'
       versioningTemplate: '${version}-${timestamp}${commitId?"+"+commitId:""}'
