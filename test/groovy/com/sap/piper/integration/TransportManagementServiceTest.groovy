@@ -87,7 +87,7 @@ class TransportManagementServiceTest extends BasePiperTest {
         assertThat(loggingRule.log, containsString("[TransportManagementService] File upload started."))
         assertThat(loggingRule.log, containsString("[TransportManagementService] File upload successful."))
         assertThat(oAuthShellCall, startsWith("#!/bin/sh -e"))
-        assertThat(oAuthShellCall, endsWith("curl -H 'Authorization: Bearer ${token}' -F 'file=@${file}' -F 'namedUser=${namedUser}' -o responseFileUpload.txt --write-out '%{http_code}' --fail '${url}/v2/files/upload'"))
+        assertThat(oAuthShellCall, endsWith("curl -H 'Authorization: Bearer ${token}' -F 'file=@${file}' -F 'namedUser=${namedUser}' -o responseFileUpload.txt --fail '${url}/v2/files/upload'"))
         assertThat(responseDetails, hasEntry("fileId", 1234))
     }
 
