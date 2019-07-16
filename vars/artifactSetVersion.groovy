@@ -38,7 +38,7 @@ enum GitPushMode {NONE, HTTPS, SSH}
       * is not recommanded.
      * @possibleValues `true`, `false`
       */
-    'debug',
+    'verbose',
     ,
     /**
      * Specifies the source to be used for the main version which is used for generating the automatic version.
@@ -261,17 +261,17 @@ void call(Map parameters = [:], Closure body = null) {
                     }
 
                     if(encodedVersionsDiffers) {
-                        if(config.debug) { // known issue: in case somebody provides the stringish 'false' we get the boolean value 'true' here.
-                            echo 'Debug flag set, but encoded username/password differs from unencoded version. Cannot provide debug output in this case. ' +
-                                    'In order to enable debug output switch to a username/password which is not altered by url encoding.'
+                        if(config.verbose) { // known issue: in case somebody provides the stringish 'false' we get the boolean value 'true' here.
+                            echo 'Verbose flag set, but encoded username/password differs from unencoded version. Cannot provide verbose output in this case. ' +
+                                    'In order to enable verbose output switch to a username/password which is not altered by url encoding.'
                         }
                         hashbangFlags = '-e'
                         streamhandling ='&>/dev/null'
                         gitPushFlags.add('--quiet')
                         echo 'Performing git push in quiet mode.'
                     } else {
-                        if(config.debug) { // known issue: in case somebody provides the stringish 'false' we get the boolean value 'true' here.
-                            echo 'Debug mode enabled. This is not recommanded for productive usage. This might reveal security sensitive information.'
+                        if(config.verbose) { // known issue: in case somebody provides the stringish 'false' we get the boolean value 'true' here.
+                            echo 'Verbose mode enabled. This is not recommanded for productive usage. This might reveal security sensitive information.'
                             gitDebug ='git config --list; env |grep proxy; GIT_CURL_VERBOSE=1 GIT_TRACE=1 '
                             gitPushFlags.add('--verbose')
                         }
