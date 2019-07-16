@@ -60,14 +60,9 @@ class TransportManagementService implements Serializable {
             echo("URL: '${url}', File: '${file}'")
         }
 
-        def httpResponse = script.sh returnStdout: true,
-            script: """#!/bin/sh -e
-                        curl -H 'Authorization: Bearer ${token}' -F 'file=@${file}' -F 'namedUser=${namedUser}' -o responseFileUpload.txt --write-out '%{http_code}' --fail '${url}/v2/files/upload'
-                    """
-
-        if(httpResponse.toInteger()  < 200 || httpResponse.toInteger() >= 300){
-            script.error "[TransportManagementService] Fileupload failed. HTTP-Status: '${httpResponse}'"
-        }
+        script.sh """#!/bin/sh -e
+                curl -H 'Authorization: Bearer ${token}' -F 'file=@${file}' -F 'namedUser=${namedUser}' -o responseFileUpload.txt  --fail '${url}/v2/files/upload'
+            """
 
         def responseContent = script.readFile("responseFileUpload.txt")
 
@@ -138,4 +133,5 @@ class TransportManagementService implements Serializable {
     private static String urlEncodeAndReplaceSpace(String data) {
         return URLEncoder.encode(data, "UTF-8").replace('%20', '+')
     }
+
 }
