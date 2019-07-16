@@ -35,8 +35,8 @@ enum GitPushMode {NONE, HTTPS, SSH}
     'commitVersion',
     /**
       * Prints some more information for troubleshooting. May reveal security relevant information. Usage is recommanded for troubleshooting only. Productive usage
-      * is not recommanded.
-     * @possibleValues `true`, `false`
+      * is not recommended.
+      * @possibleValues `true`, `false`
       */
     'verbose',
     ,
