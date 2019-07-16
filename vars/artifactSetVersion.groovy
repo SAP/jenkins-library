@@ -95,7 +95,7 @@ enum GitPushMode {NONE, HTTPS, SSH}
       * Push is only performed in case 'commitVersion' is set to 'true'.
       * @possibleValues 'SSH', 'HTTPS', 'NONE'
       */
-    'gitPushMode',
+    'gitPushMode'
 ]
 
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS.plus(
