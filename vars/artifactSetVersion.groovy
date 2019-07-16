@@ -262,7 +262,7 @@ void call(Map parameters = [:], Closure body = null) {
 
                      if(config.debug) { // known issue: in case somebody provides the stringish 'false' we get the boolean value 'true' here.
                          echo 'Debug mode enabled. This is not recommanded for productive usage. This might reveal security sensitive information.'
-                         gitDebug ='env |grep proxy; GIT_CURL_VERBOSE=1 GIT_TRACE=1 '
+                         gitDebug ='git config --list; env |grep proxy; GIT_CURL_VERBOSE=1 GIT_TRACE=1 '
                          gitPushFlags.add('--verbose')
                      }
 
