@@ -228,7 +228,7 @@ void call(Map parameters = [:], Closure body = null) {
                     usernameVariable: 'USERNAME')]) {
 
                     // Problem: when username/password is encoded and in case the encoded version differs from
-                    // the non-encoded version  (e.g. '@'  gets replaced by '%40' the encoded version
+                    // the non-encoded version  (e.g. '@'  gets replaced by '%40') the encoded version
                     // it is not replaced by stars in the log by surrounding withCredentials.
                     // In order to avoid having the secrets in the log we take the following actions in case
                     // the encoded version(s) differs from the non-encoded versions
