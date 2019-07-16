@@ -68,16 +68,17 @@ enum GitPushMode {NONE, HTTPS, SSH}
     'gitUserName',
     /**
      * Defines the git ssh url to the source code repository. Used in conjunction with 'GitPushMode.SSH'.
+     * @mandatory for `gitPushMode` `SSH`
      */
     'gitSshUrl',
     /**
-      * Defines the git https url to the source code repository. Used in conjunction with 'GitPushMode.HTTPS'.
-      * @mandatory for `gitPushMode` `HTTPS`
-      */
+     * Defines the git https url to the source code repository. Used in conjunction with 'GitPushMode.HTTPS'.
+     * @mandatory for `gitPushMode` `HTTPS`
+     */
     'gitHttpsUrl',
     /**
-      * Disables the ssl verification for git push. Intended to be used only for troubleshooting. Productive usage is not recommanded.
-      */
+     * Disables the ssl verification for git push. Intended to be used only for troubleshooting. Productive usage is not recommanded.
+     */
     'gitDisableSslVerification',
     /**
      * Defines the prefix which is used for the git tag which is written during the versioning run.
