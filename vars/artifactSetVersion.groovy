@@ -277,6 +277,8 @@ void call(Map parameters = [:], Closure body = null) {
                      gitPushFlags = gitPushFlags.join(' ')
 
                      sh script: """|#!/bin/bash ${hashbangFlags}
+                                   |unset https_proxy
+                                   |unset http_proxy
                                    |${gitDebug}git ${gitConfig} push ${gitPushFlags} ${gitUrlWithCredentials} ${config.tagPrefix}${newVersion} ${streamhandling}""".stripMargin()
                  }
             } else {
