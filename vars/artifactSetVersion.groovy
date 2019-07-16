@@ -263,7 +263,7 @@ void call(Map parameters = [:], Closure body = null) {
                     if(encodedVersionsDiffers) {
                         if(config.debug) { // known issue: in case somebody provides the stringish 'false' we get the boolean value 'true' here.
                             echo 'Debug flag set, but encoded username/password differs from unencoded version. Cannot provide debug output in this case. ' +
-                                   'In order to enable debug output switch to a username/password which is not altered by url encoding.'
+                                    'In order to enable debug output switch to a username/password which is not altered by url encoding.'
                         }
                         hashbangFlags = '-e'
                         streamhandling ='&>/dev/null'
@@ -280,8 +280,8 @@ void call(Map parameters = [:], Closure body = null) {
                     gitConfig = gitConfig.join(' ')
                     gitPushFlags = gitPushFlags.join(' ')
 
-                    sh script: """|#!/bin/bash ${hashbangFlags}
-                                  |${gitDebug}git ${gitConfig} push ${gitPushFlags} ${gitUrlWithCredentials} ${config.tagPrefix}${newVersion} ${streamhandling}""".stripMargin()
+                    sh script:   """|#!/bin/bash ${hashbangFlags}
+                                    |${gitDebug}git ${gitConfig} push ${gitPushFlags} ${gitUrlWithCredentials} ${config.tagPrefix}${newVersion} ${streamhandling}""".stripMargin()
                 }
             } else {
                 echo "Git push mode: ${gitPushMode.toString()}. Git push to remote has been skipped."
