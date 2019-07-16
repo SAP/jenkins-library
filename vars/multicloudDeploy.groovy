@@ -1,3 +1,5 @@
+import com.cloudbees.groovy.cps.NonCPS
+
 import com.sap.piper.GenerateDocumentation
 import com.sap.piper.CloudPlatform
 import com.sap.piper.DeploymentType
@@ -126,6 +128,7 @@ void call(parameters = [:]) {
     }
 }
 
+@NonCPS
 void setDeployment(deployments, deployment, index, script, stageName) {
     deployments["Deployment ${index > 1 ? index : ''}"] = {
         if (env.POD_NAME) {
