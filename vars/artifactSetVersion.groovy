@@ -72,6 +72,7 @@ enum GitPushMode {NONE, HTTPS, SSH}
     'gitSshUrl',
     /**
       * Defines the git https url to the source code repository. Used in conjunction with 'GitPushMode.HTTPS'.
+      * @mandatory for `gitPushMode` `HTTPS`
       */
     'gitHttpsUrl',
     /**
