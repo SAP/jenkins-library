@@ -26,6 +26,7 @@ import static org.hamcrest.Matchers.notNullValue
 import static org.hamcrest.Matchers.stringContainsInOrder
 import static org.hamcrest.Matchers.allOf
 import static org.hamcrest.Matchers.containsString
+import static org.hamcrest.Matchers.emptyIterable
 import static org.junit.Assert.assertThat
 
 import org.hamcrest.Matchers
@@ -105,6 +106,20 @@ class ArtifactSetVersionTest extends BasePiperTest {
                                         ))
     }
 
+
+    @Test
+    void testVersioningNoPush() {
+
+        stepRule.step.artifactSetVersion(
+            script: stepRule.step,
+            juStabGitUtils: gitUtils,
+            buildTool: 'maven',
+            gitPushMode: 'NONE')
+
+            assertThat(loggingRule.log, containsString('Git push to remote has been skipped.'))
+            assertThat(((Iterable)shellRule.shell).join(), not(containsString('push')))
+    }
+
     @Test
     void testVersioningPushViaHTTPS() {
 
@@ -175,6 +190,36 @@ class ArtifactSetVersionTest extends BasePiperTest {
             not(containsString('&>/dev/null'))))
     }
 
+    @Test
+    void testVersioningPushViaHTTPSInDebugModeEncodingDoesNotRevealSecrets() {
+
+        loggingRule.expect('Debug flag set, but encoded username/password differs from unencoded version. Cannot provide debug output in this case.')
+        loggingRule.expect('Performing git push in quiet mode')
+
+        jenkinsCredentialsRule.withCredentials('myGitRepoCredentials', 'me', 'top@Secret')
+
+        stepRule.step.artifactSetVersion(
+            script: stepRule.step,
+            juStabGitUtils: gitUtils,
+            buildTool: 'maven',
+            gitCredentialsId: 'myGitRepoCredentials',
+            gitHttpsUrl: 'https://example.org/myGitRepo',
+            gitPushMode: 'HTTPS',
+            debug: true)
+
+        // closer version checks already performed in test 'testVersioningPushViaSSH', focusing on
+        // GIT related assertions here
+
+        assertThat(((Iterable)shellRule.shell).join(), stringContainsInOrder([
+                                            "git add .",
+                                            "git commit -m 'update version 1.2.3-20180101010203_testCommitId'",
+                                            'git tag build_1.2.3-20180101010203_testCommitId',
+                                            '#!/bin/bash -e git push --quiet https://me:top%40Secret@example.org/myGitRepo build_1.2.3-20180101010203_testCommitId &>/dev/null',
+                                            ]
+                                        ))
+    }
+
+    
     @Test
     void testVersioningPushViaHTTPSEncodingDoesNotRevealSecrets() {
 
