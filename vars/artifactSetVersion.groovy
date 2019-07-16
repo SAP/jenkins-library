@@ -56,7 +56,7 @@ enum GitPushMode {NONE, HTTPS, SSH}
      * Defines the ssh git credentials to be used for writing the tag.
      */
     'gitSshKeyCredentialsId',
-     /** */
+    /** */
     'gitCredentialsId',
     /**
      * Allows to overwrite the global git setting 'user.email' available on your Jenkins server.
@@ -77,7 +77,7 @@ enum GitPushMode {NONE, HTTPS, SSH}
     /**
       * Disables the ssl verification for git push. Intended to be used only for troubleshooting. Productive usage is not recommanded.
       */
-     'gitDisableSSLVerification',
+    'gitDisableSslVerification',
     /**
      * Defines the prefix which is used for the git tag which is written during the versioning run.
      */
@@ -221,68 +221,68 @@ void call(Map parameters = [:], Closure body = null) {
                     .use()
 
                 withCredentials([usernamePassword(
-                     credentialsId: config.gitCredentialsId,
-                     passwordVariable: 'PASSWORD',
-                     usernameVariable: 'USERNAME')]) {
+                    credentialsId: config.gitCredentialsId,
+                    passwordVariable: 'PASSWORD',
+                    usernameVariable: 'USERNAME')]) {
 
-                     // Problem: when username/password is encoded and in case the encoded version differs from
-                     // the non-encoded version  (e.g. '@'  gets replaced by '%40' the encoded version
-                     // it is not replaced by stars in the log by surrounding withCredentials.
-                     // In order to avoid having the secrets in the log we take the following actions in case
-                     // the encoded version(s) differs from the non-encoded versions
-                     //
-                     // 1.) we switch off '-x' in the hashbang
-                     // 2.) we tell git push to be silent
-                     // 3.) we send stderr to /dev/null
-                     //
-                     // Disadvantage: In this case we don't see any output for troubleshooting.
+                    // Problem: when username/password is encoded and in case the encoded version differs from
+                    // the non-encoded version  (e.g. '@'  gets replaced by '%40' the encoded version
+                    // it is not replaced by stars in the log by surrounding withCredentials.
+                    // In order to avoid having the secrets in the log we take the following actions in case
+                    // the encoded version(s) differs from the non-encoded versions
+                    //
+                    // 1.) we switch off '-x' in the hashbang
+                    // 2.) we tell git push to be silent
+                    // 3.) we send stderr to /dev/null
+                    //
+                    // Disadvantage: In this case we don't see any output for troubleshooting.
 
-                     def USERNAME_ENCODED = URLEncoder.encode(USERNAME, 'UTF-8'),
-                         PASSWORD_ENCODED = URLEncoder.encode(PASSWORD, 'UTF-8')
+                    def USERNAME_ENCODED = URLEncoder.encode(USERNAME, 'UTF-8'),
+                        PASSWORD_ENCODED = URLEncoder.encode(PASSWORD, 'UTF-8')
 
-                     boolean encodedVersionsDiffers = USERNAME_ENCODED != USERNAME || PASSWORD_ENCODED != PASSWORD
+                    boolean encodedVersionsDiffers = USERNAME_ENCODED != USERNAME || PASSWORD_ENCODED != PASSWORD
 
-                     def prefix = 'https://'
-                     def gitUrlWithCredentials = config.gitHttpsUrl.replaceAll("^${prefix}", "${prefix}${USERNAME_ENCODED}:${PASSWORD_ENCODED}@")
+                    def prefix = 'https://'
+                    def gitUrlWithCredentials = config.gitHttpsUrl.replaceAll("^${prefix}", "${prefix}${USERNAME_ENCODED}:${PASSWORD_ENCODED}@")
 
-                     def hashbangFlags = '-xe'
-                     def gitPushFlags = []
-                     def streamhandling = ''
-                     def gitDebug = ''
-                     gitConfig = []
+                    def hashbangFlags = '-xe'
+                    def gitPushFlags = []
+                    def streamhandling = ''
+                    def gitDebug = ''
+                    gitConfig = []
 
-                     if(config.gitHttpProxy) {
-                         gitConfig.add("-c http.proxy=\"${config.gitHttpProxy}\"")
-                     }
+                    if(config.gitHttpProxy) {
+                        gitConfig.add("-c http.proxy=\"${config.gitHttpProxy}\"")
+                    }
 
-                     if(config.gitDisableSSLVerification) {
-                         echo 'git ssl verification is switched off. This setting is not recommanded in productive environments.'
-                         gitConfig.add('-c http.sslVerify=false')
-                     }
+                    if(config.gitDisableSslVerification) {
+                        echo 'git ssl verification is switched off. This setting is not recommanded in productive environments.'
+                        gitConfig.add('-c http.sslVerify=false')
+                    }
 
-                     if(encodedVersionsDiffers) {
-                         if(config.debug) { // known issue: in case somebody provides the stringish 'false' we get the boolean value 'true' here.
-                             echo 'Debug flag set, but encoded username/password differs from unencoded version. Cannot provide debug output in this case. ' +
-                                    'In order to enable debug output switch to a username/password which is not altered by url encoding.'
-                         }
-                         hashbangFlags = '-e'
-                         streamhandling ='&>/dev/null'
-                         gitPushFlags.add('--quiet')
-                         echo 'Performing git push in quiet mode.'
-                     } else {
-                         if(config.debug) { // known issue: in case somebody provides the stringish 'false' we get the boolean value 'true' here.
-                             echo 'Debug mode enabled. This is not recommanded for productive usage. This might reveal security sensitive information.'
-                             gitDebug ='git config --list; env |grep proxy; GIT_CURL_VERBOSE=1 GIT_TRACE=1 '
-                             gitPushFlags.add('--verbose')
-                         }
-                     }
+                    if(encodedVersionsDiffers) {
+                        if(config.debug) { // known issue: in case somebody provides the stringish 'false' we get the boolean value 'true' here.
+                            echo 'Debug flag set, but encoded username/password differs from unencoded version. Cannot provide debug output in this case. ' +
+                                   'In order to enable debug output switch to a username/password which is not altered by url encoding.'
+                        }
+                        hashbangFlags = '-e'
+                        streamhandling ='&>/dev/null'
+                        gitPushFlags.add('--quiet')
+                        echo 'Performing git push in quiet mode.'
+                    } else {
+                        if(config.debug) { // known issue: in case somebody provides the stringish 'false' we get the boolean value 'true' here.
+                            echo 'Debug mode enabled. This is not recommanded for productive usage. This might reveal security sensitive information.'
+                            gitDebug ='git config --list; env |grep proxy; GIT_CURL_VERBOSE=1 GIT_TRACE=1 '
+                            gitPushFlags.add('--verbose')
+                        }
+                    }
 
-                     gitConfig = gitConfig.join(' ')
-                     gitPushFlags = gitPushFlags.join(' ')
+                    gitConfig = gitConfig.join(' ')
+                    gitPushFlags = gitPushFlags.join(' ')
 
-                     sh script: """|#!/bin/bash ${hashbangFlags}
-                                   |${gitDebug}git ${gitConfig} push ${gitPushFlags} ${gitUrlWithCredentials} ${config.tagPrefix}${newVersion} ${streamhandling}""".stripMargin()
-                 }
+                    sh script: """|#!/bin/bash ${hashbangFlags}
+                                  |${gitDebug}git ${gitConfig} push ${gitPushFlags} ${gitUrlWithCredentials} ${config.tagPrefix}${newVersion} ${streamhandling}""".stripMargin()
+                }
             } else {
                 echo "Git push mode: ${gitPushMode.toString()}. Git push to remote has been skipped."
             }
