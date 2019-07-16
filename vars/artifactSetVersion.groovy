@@ -257,7 +257,7 @@ void call(Map parameters = [:], Closure body = null) {
 
                      if(config.gitDisableSSLVerification) {
                          echo 'git ssl verification is switched off. This setting is not recommanded in productive environments.'
-                         gitConfig.add('-c http.sslVerify false')
+                         gitConfig.add('-c http.sslVerify=false')
                      }
 
                      if(config.debug) { // known issue: in case somebody provides the stringish 'false' we get the boolean value 'true' here.
