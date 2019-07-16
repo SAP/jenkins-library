@@ -87,7 +87,7 @@ public class TmsUploadTest extends BasePiperTest {
         )
 
         assertThat(calledTmsMethodsWithArgs[0], is("authentication('${uaaUrl}', '${oauthClientId}', '${oauthClientSecret}')"))
-        assertThat(calledTmsMethodsWithArgs[1], is("uploadFileToTMS('${uri}', 'myToken', './dummy.mtar', 'Test User')"))
+        assertThat(calledTmsMethodsWithArgs[1], is("uploadFile('${uri}', 'myToken', './dummy.mtar', 'Test User')"))
         assertThat(calledTmsMethodsWithArgs[2], is("uploadFileToNode('${uri}', 'myToken', 'myNode', '1234', 'Git CommitId: testCommitId')"))
         assertThat(loggingRule.log, containsString("[TransportManagementService] File './dummy.mtar' successfully uploaded to Node 'myNode' (Id: '1000')."))
         assertThat(loggingRule.log, containsString("[TransportManagementService] Corresponding Transport Request: 'Git CommitId: testCommitId' (Id: '2000')"))
@@ -137,7 +137,7 @@ public class TmsUploadTest extends BasePiperTest {
             credentialsId: 'TMS_ServiceKey'
         )
 
-        assertThat(calledTmsMethodsWithArgs[1], is("uploadFileToTMS('${uri}', 'myToken', './dummy.mtar', 'Piper-Pipeline')"))
+        assertThat(calledTmsMethodsWithArgs[1], is("uploadFile('${uri}', 'myToken', './dummy.mtar', 'Piper-Pipeline')"))
     }
 
     @Test
@@ -157,8 +157,8 @@ public class TmsUploadTest extends BasePiperTest {
             customDescription: 'My custom description for testing.'
         )
 
-        assertThat(calledTmsMethodsWithArgs[2], is("uploadFileToNode('${uri}', 'myToken', 'myNode', '1234', 'My custom description for testing. Git CommitId: testCommitId')"))
-        assertThat(loggingRule.log, containsString("[TransportManagementService] Corresponding Transport Request: 'My custom description for testing. Git CommitId: testCommitId' (Id: '2000')"))
+        assertThat(calledTmsMethodsWithArgs[2], is("uploadFileToNode('${uri}', 'myToken', 'myNode', '1234', 'My custom description for testing.')"))
+        assertThat(loggingRule.log, containsString("[TransportManagementService] Corresponding Transport Request: 'My custom description for testing.' (Id: '2000')"))
     }
 
     def mockTransportManagementService() {
@@ -168,8 +168,8 @@ public class TmsUploadTest extends BasePiperTest {
                 return "myToken"
             }
 
-            def uploadFileToTMS(String url, String token, String file, String namedUser) {
-                calledTmsMethodsWithArgs << "uploadFileToTMS('${url}', '${token}', '${file}', '${namedUser}')"
+            def uploadFile(String url, String token, String file, String namedUser) {
+                calledTmsMethodsWithArgs << "uploadFile('${url}', '${token}', '${file}', '${namedUser}')"
                 return [fileId: 1234, fileName: file]
             }
 
