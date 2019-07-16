@@ -24,8 +24,11 @@ import static org.hamcrest.Matchers.hasItems
 import static org.hamcrest.Matchers.not
 import static org.hamcrest.Matchers.notNullValue
 import static org.hamcrest.Matchers.stringContainsInOrder
+import static org.hamcrest.Matchers.allOf
 import static org.hamcrest.Matchers.containsString
 import static org.junit.Assert.assertThat
+
+import org.hamcrest.Matchers
 
 import static org.junit.Assert.assertEquals
 
@@ -126,6 +129,50 @@ class ArtifactSetVersionTest extends BasePiperTest {
                                             'git push https://me:topSecret@example.org/myGitRepo build_1.2.3-20180101010203_testCommitId',
                                             ]
                                         ))
+    }
+
+    @Test
+    void testVersioningPushViaHTTPDisableSSLCheck() {
+
+        jenkinsCredentialsRule.withCredentials('myGitRepoCredentials', 'me', 'topSecret')
+
+        stepRule.step.artifactSetVersion(
+            script: stepRule.step,
+            juStabGitUtils: gitUtils,
+            buildTool: 'maven',
+            gitCredentialsId: 'myGitRepoCredentials',
+            gitHttpsUrl: 'https://example.org/myGitRepo',
+            gitPushMode: 'HTTPS',
+            gitDisableSSLVerification: true)
+
+        // closer version checks already performed in test 'testVersioningPushViaSSH', focusing on
+        // GIT related assertions here
+
+        assertThat(((Iterable)shellRule.shell).join(), containsString('-c http.sslVerify=false'))
+    }
+
+    @Test
+    void testVersioningPushViaHTTPDebugMode() {
+
+        jenkinsCredentialsRule.withCredentials('myGitRepoCredentials', 'me', 'topSecret')
+
+        stepRule.step.artifactSetVersion(
+            script: stepRule.step,
+            juStabGitUtils: gitUtils,
+            buildTool: 'maven',
+            gitCredentialsId: 'myGitRepoCredentials',
+            gitHttpsUrl: 'https://example.org/myGitRepo',
+            gitPushMode: 'HTTPS',
+            debug: true)
+
+        // closer version checks already performed in test 'testVersioningPushViaSSH', focusing on
+        // GIT related assertions here
+
+        assertThat(((Iterable)shellRule.shell).join(), allOf(
+            containsString('GIT_CURL_VERBOSE=1'),
+            containsString('GIT_TRACE=1'),
+            containsString('--verbose'),
+            not(containsString('&>/dev/null'))))
     }
 
     @Test
