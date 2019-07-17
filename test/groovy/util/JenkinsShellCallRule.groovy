@@ -102,23 +102,25 @@ class JenkinsShellCallRule implements TestRule {
                             }
                         }
 
-                        if (m.returnStdout || m.returnStatus) {
-                            def result = null
 
-                            for(def e : returnValues.entrySet()) {
-                                if(e.key.type == Type.REGEX && unifiedScript =~ e.key.script) {
-                                    result =  e.value
-                                    break
-                                } else if(e.key.type == Type.PLAIN && unifiedScript.equals(e.key.script)) {
-                                    result = e.value
-                                    break
-                                }
+                        def result = null
+
+                        for(def e : returnValues.entrySet()) {
+                            if(e.key.type == Type.REGEX && unifiedScript =~ e.key.script) {
+                                result =  e.value
+                                break
+                        } else if(e.key.type == Type.PLAIN && unifiedScript.equals(e.key.script)) {
+                                result = e.value
+                                break
                             }
-                            if(result instanceof Closure) result = result()
-                            if (!result && m.returnStatus) result = 0
-                            return result
                         }
-                })
+                        if(result instanceof Closure) result = result()
+                        if (!result && m.returnStatus) result = 0
+
+                        if(! m.returnStdout && ! m.returnStatus) return
+                        return result
+                    }
+                )
 
                 base.evaluate()
             }
