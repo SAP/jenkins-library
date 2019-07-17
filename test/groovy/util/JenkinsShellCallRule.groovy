@@ -79,10 +79,8 @@ class JenkinsShellCallRule implements TestRule {
                         for (Command failingCommand: failingCommands){
                             if(failingCommand.type == Type.REGEX && unifiedScript =~ failingCommand.script) {
                                 throw new Exception("Script execution failed!")
-                                break
                             } else if(failingCommand.type == Type.PLAIN && unifiedScript.equals(failingCommand.script)) {
                                 throw new Exception("Script execution failed!")
-                                break
                             }
                         }
                 })
@@ -96,10 +94,8 @@ class JenkinsShellCallRule implements TestRule {
                         for (Command failingCommand: failingCommands){
                             if(failingCommand.type == Type.REGEX && unifiedScript =~ failingCommand.script) {
                                 throw new Exception("Script execution failed!")
-                                break
                             } else if(failingCommand.type == Type.PLAIN && unifiedScript.equals(failingCommand.script)) {
                                 throw new Exception("Script execution failed!")
-                                break
                             }
                         }
 
