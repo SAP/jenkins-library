@@ -397,6 +397,8 @@ steps:
         && cd \$GOPATH/src/${config.whitesource.projectName} && dep ensure
     dub:
       buildDescriptorFile: './dub.json'
+      dockerImage: 'buildpack-deps:stretch-curl'
+      dockerWorkspace: '/home/dub'
       stashContent:
         - 'buildDescriptor'
         - 'checkmarx'
