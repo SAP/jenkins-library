@@ -119,7 +119,7 @@ void call(Map parameters = [:]) {
 
         //ToDO: support userId/pwd authentication or token authentication!
 
-        def curlVerbosity =  config.verbose ? '--verbose ' : ''
+        def curlVerbosity =  (config.verbose==true) ? '--verbose ' : '--silent '
 
         withCredentials([
             file(credentialsId: config.spinnaker.keyFileCredentialsId, variable: 'clientKey'),
