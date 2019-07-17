@@ -97,7 +97,6 @@ class TransportManagementServiceTest extends BasePiperTest {
         shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, ".* curl .*", '400')
 
         thrown.expect(AbortException.class)
-        thrown.expectMessage("[TransportManagementService] File upload failed. HTTP-Status: 400")
 
         def tms = new TransportManagementService(nullScript, [:])
         tms.uploadFile("", "", "", "")
