@@ -98,7 +98,7 @@ void call(Map parameters = [:]) {
 Map getLastRelease(config, TOKEN){
     def result = [:]
 
-    def response = httpRequest "${config.githubApiUrl}/repos/${config.githubOrg}/${config.githubRepo}/releases/latest?access_token=${TOKEN}"
+    def response = httpRequest url: "${config.githubApiUrl}/repos/${config.githubOrg}/${config.githubRepo}/releases/latest?access_token=${TOKEN}", validResponseCodes: '100:500'
     if (response.status == 200) {
         result = readJSON text: response.content
     } else {
