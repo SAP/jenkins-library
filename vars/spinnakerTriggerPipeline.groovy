@@ -106,7 +106,6 @@ void call(Map parameters = [:]) {
 
         String paramsString = ""
         if (config.spinnaker.pipelineParameters) {
-            //Does this need to be parameters: ????
             def pipelineParameters = [parameters: config.spinnaker.pipelineParameters]
 
             paramsString = "-d '${new GStringTemplateEngine().createTemplate(JsonOutput.toJson(pipelineParameters)).make([config: config, env: env]).toString()}'"
@@ -118,7 +117,7 @@ void call(Map parameters = [:]) {
 
         def pipelineTriggerResponse
 
-        //ToDO: support userId/pwd authentication!
+        //ToDO: support userId/pwd authentication or token authentication!
 
         withCredentials([
             file(credentialsId: config.spinnaker.keyFileCredentialsId, variable: 'clientKey'),
