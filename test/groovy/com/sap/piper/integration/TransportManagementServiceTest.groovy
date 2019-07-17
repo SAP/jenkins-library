@@ -97,7 +97,7 @@ class TransportManagementServiceTest extends BasePiperTest {
         def file = 'myFile.mtar'
         def namedUser = 'myUser'
 
-        shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, ".* curl .*", '{throw new AbortException()}')
+        shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, ".* curl .*", {throw new AbortException()})
 
         thrown.expect(AbortException.class)
 
