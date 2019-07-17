@@ -119,12 +119,14 @@ void call(Map parameters = [:]) {
 
         //ToDO: support userId/pwd authentication or token authentication!
 
+        def curlVerbosity =  config.verbose ? '--verbose ' : ''
+
         withCredentials([
             file(credentialsId: config.spinnaker.keyFileCredentialsId, variable: 'clientKey'),
             file(credentialsId: config.spinnaker.certFileCredentialsId, variable: 'clientCertificate')
         ]) {
             // Trigger a pipeline execution by calling invokePipelineConfigUsingPOST1 (see https://www.spinnaker.io/reference/api/docs.html)
-            pipelineTriggerResponse = sh(returnStdout: true, script: "curl -H 'Content-Type: application/json' -X POST ${paramsString} -vk --cert \$clientCertificate --key \$clientKey ${config.spinnaker.gateUrl}/pipelines/${config.spinnaker.application}/${config.spinnaker.pipelineNameOrId}").trim()
+            pipelineTriggerResponse = sh(returnStdout: true, script: "curl -H 'Content-Type: application/json' -X POST ${paramsString} ${curlVerbosity}--insecure --cert \$clientCertificate --key \$clientKey ${config.spinnaker.gateUrl}/pipelines/${config.spinnaker.application}/${config.spinnaker.pipelineNameOrId}").trim()
         }
         if (config.verbose) {
             echo "[${STEP_NAME}] Spinnaker pipeline trigger response = ${pipelineTriggerResponse}"
@@ -151,7 +153,7 @@ void call(Map parameters = [:]) {
                     file(credentialsId: config.spinnaker.keyFileCredentialsId, variable: 'clientKey'),
                     file(credentialsId: config.spinnaker.certFileCredentialsId, variable: 'clientCertificate')
                 ]) {
-                    pipelineStatusResponse = sh returnStdout: true, script: "curl -X GET ${config.spinnaker.gateUrl}${pipelineTriggerResponseObj.ref} -sk  --cert \$clientCertificate --key \$clientKey"
+                    pipelineStatusResponse = sh returnStdout: true, script: "curl -X GET ${config.spinnaker.gateUrl}${pipelineTriggerResponseObj.ref} ${curlVerbosity}--insecure --cert \$clientCertificate --key \$clientKey"
                 }
                 pipelineStatusResponseObj = readJSON text: pipelineStatusResponse
                 echo "[${STEP_NAME}] Spinnaker pipeline ${pipelineTriggerResponseObj.ref} status: ${pipelineStatusResponseObj.status}"
