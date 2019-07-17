@@ -77,8 +77,6 @@ class TransportManagementServiceTest extends BasePiperTest {
         def file = 'myFile.mtar'
         def namedUser = 'myUser'
 
-        shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, ".* curl .*", '200')
-
         def tms = new TransportManagementService(nullScript, [:])
         def responseDetails = tms.uploadFile(url, token, file, namedUser)
 
@@ -86,7 +84,7 @@ class TransportManagementServiceTest extends BasePiperTest {
 
         assertThat(loggingRule.log, containsString("[TransportManagementService] File upload started."))
         assertThat(loggingRule.log, containsString("[TransportManagementService] File upload successful."))
-        assertThat(oAuthShellCall, startsWith("#!/bin/sh -e"))
+        assertThat(oAuthShellCall, startsWith("#!/bin/sh -e "))
         assertThat(oAuthShellCall, endsWith("curl -H 'Authorization: Bearer ${token}' -F 'file=@${file}' -F 'namedUser=${namedUser}' -o responseFileUpload.txt --fail '${url}/v2/files/upload'"))
         assertThat(responseDetails, hasEntry("fileId", 1234))
     }
@@ -94,12 +92,17 @@ class TransportManagementServiceTest extends BasePiperTest {
     @Test
     void uploadFile__withHttpErrorResponse__throwsError() {
 
-        shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, ".* curl .*", '400')
+        def url = 'http://dummy.com/oauth'
+        def token = 'myWrongToken'
+        def file = 'myFile.mtar'
+        def namedUser = 'myUser'
+
+        shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, ".* curl .*", '{throw new AbortException()}')
 
         thrown.expect(AbortException.class)
 
         def tms = new TransportManagementService(nullScript, [:])
-        tms.uploadFile("", "", "", "")
+        tms.uploadFile(url, token, file, namedUser)
 
     }
 
