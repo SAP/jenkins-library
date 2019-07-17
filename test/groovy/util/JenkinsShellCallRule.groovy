@@ -42,7 +42,6 @@ class JenkinsShellCallRule implements TestRule {
     List shell = []
 
     Map<Command, String> returnValues = [:]
-    List<Command> failingCommands = []
 
     JenkinsShellCallRule(BasePipelineTest testInstance) {
         this.testInstance = testInstance
@@ -54,10 +53,6 @@ class JenkinsShellCallRule implements TestRule {
 
     def setReturnValue(type, script, value) {
         returnValues[new Command(type, script)] = value
-    }
-
-    def failExecution(type, script) {
-        failingCommands.add(new Command(type, script))
     }
 
     @Override
@@ -75,16 +70,6 @@ class JenkinsShellCallRule implements TestRule {
                         def unifiedScript = unify(command)
 
                         shell.add(unifiedScript)
-
-                        for (Command failingCommand: failingCommands){
-                            if(failingCommand.type == Type.REGEX && unifiedScript =~ failingCommand.script) {
-                                throw new Exception("Script execution failed!")
-                                break
-                            } else if(failingCommand.type == Type.PLAIN && unifiedScript.equals(failingCommand.script)) {
-                                throw new Exception("Script execution failed!")
-                                break
-                            }
-                        }
                 })
 
                 testInstance.helper.registerAllowedMethod("sh", [Map.class], {
@@ -92,15 +77,6 @@ class JenkinsShellCallRule implements TestRule {
                         shell.add(m.script.replaceAll(/\s+/," ").trim())
 
                         def unifiedScript = unify(m.script)
-                        for (Command failingCommand: failingCommands){
-                            if(failingCommand.type == Type.REGEX && unifiedScript =~ failingCommand.script) {
-                                throw new Exception("Script execution failed!")
-                                break
-                            } else if(failingCommand.type == Type.PLAIN && unifiedScript.equals(failingCommand.script)) {
-                                throw new Exception("Script execution failed!")
-                                break
-                            }
-                        }
 
                         if (m.returnStdout || m.returnStatus) {
                             def result = null
