@@ -8,7 +8,6 @@ class MapUtils implements Serializable {
         return object in Map
     }
 
-    @NonCPS
     static Map pruneNulls(Map m) {
 
         Map result = [:]
@@ -24,7 +23,6 @@ class MapUtils implements Serializable {
     }
 
 
-    @NonCPS
     static Map merge(Map base, Map overlay) {
 
         Map result = [:]
