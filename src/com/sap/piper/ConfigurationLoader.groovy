@@ -1,15 +1,11 @@
 package com.sap.piper
 
-import com.cloudbees.groovy.cps.NonCPS
-
 @API(deprecated = true)
 class ConfigurationLoader implements Serializable {
-    @NonCPS
     static Map stepConfiguration(script, String stepName) {
         return loadConfiguration(script, 'steps', stepName, ConfigurationType.CUSTOM_CONFIGURATION)
     }
 
-    @NonCPS
     static Map stageConfiguration(script, String stageName) {
         return loadConfiguration(script, 'stages', stageName, ConfigurationType.CUSTOM_CONFIGURATION)
     }
@@ -18,12 +14,10 @@ class ConfigurationLoader implements Serializable {
         return loadConfiguration(script, 'steps', stepName, ConfigurationType.DEFAULT_CONFIGURATION)
     }
 
-    @NonCPS
     static Map defaultStageConfiguration(script, String stageName) {
         return loadConfiguration(script, 'stages', stageName, ConfigurationType.DEFAULT_CONFIGURATION)
     }
 
-    @NonCPS
     static Map generalConfiguration(script){
         try {
             return script?.commonPipelineEnvironment?.configuration?.general ?: [:]
@@ -36,7 +30,6 @@ class ConfigurationLoader implements Serializable {
         return DefaultValueCache.getInstance()?.getDefaultValues()?.general ?: [:]
     }
 
-    @NonCPS
     static Map postActionConfiguration(script, String actionName){
         return loadConfiguration(script, 'postActions', actionName, ConfigurationType.CUSTOM_CONFIGURATION)
     }
