@@ -14,7 +14,6 @@ class ConfigurationLoader implements Serializable {
         return loadConfiguration(script, 'stages', stageName, ConfigurationType.CUSTOM_CONFIGURATION)
     }
 
-    @NonCPS
     static Map defaultStepConfiguration(script, String stepName) {
         return loadConfiguration(script, 'steps', stepName, ConfigurationType.DEFAULT_CONFIGURATION)
     }
