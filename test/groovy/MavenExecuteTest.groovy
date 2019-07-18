@@ -11,10 +11,8 @@ import util.JenkinsShellCallRule
 import util.JenkinsStepRule
 import util.Rules
 
-import java.nio.file.Paths
 
 import static org.hamcrest.Matchers.allOf
-import static org.hamcrest.Matchers.containsString
 import static org.hamcrest.Matchers.containsString
 import static org.hamcrest.Matchers.not
 import static org.junit.Assert.assertEquals
@@ -95,15 +93,10 @@ class MavenExecuteTest extends BasePiperTest {
             goals: 'clean install'
         )
 
-        String workspace = Paths.get('/workspace', 'globalSettingsFile.xml').normalize()
-
-        String mvnCommand = "mvn " +
-            "--global-settings '${Paths.get('/workspace', 'globalSettingsFile.xml').normalize()}' " +
-            "-Dmaven.repo.local='${Paths.get('/workspace', 'm2Path').normalize()}' " +
-            "--settings '${Paths.get('/workspace','projectSettingsFile.xml')}' " +
-            "--file '${Paths.get('/workspace','pom.xml')}' " +
-            "--batch-mode -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn clean install"
-        assertTrue(shellRule.shell.contains(mvnCommand))
+        assert shellRule.shell.find { c -> c.contains("--global-settings '/workspace/globalSettingsFile.xml'") }
+        assert shellRule.shell.find { c -> c.contains("-Dmaven.repo.local='/workspace/m2Path'") }
+        assert shellRule.shell.find { c -> c.contains("--settings '/workspace/projectSettingsFile.xml") }
+        assert shellRule.shell.find { c -> c.contains("--file '/workspace/pom.xml'") }
     }
 
     @Test

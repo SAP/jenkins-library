@@ -22,6 +22,6 @@ class PathUtilsTest extends BasePiperTest {
 
         String result = PathUtils.convertToAbsolutePath(nullScript, 'test')
 
-        assertEquals(Paths.get('/workspace/test').toString(), result)
+        assertEquals('/workspace/test', result)
     }
 }

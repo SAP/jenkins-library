@@ -50,7 +50,7 @@ import static com.sap.piper.Utils.downloadSettingsFromUrl
 void call(Map parameters = [:]) {
     handlePipelineStepErrors(stepName: STEP_NAME, stepParameters: parameters) {
 
-        def script = checkScript(this, parameters) ?: this
+        final script = checkScript(this, parameters) ?: this
 
         // load default & individual configuration
         Map configuration = ConfigurationHelper.newInstance(this)

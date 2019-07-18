@@ -52,7 +52,7 @@ class ConfigurationHelper implements Serializable {
 
     ConfigurationHelper convertToAbsolutePaths(Set pathConfigurationKeys){
         if(pathConfigurationKeys){
-            //Copy configuration to to persist any changes done below
+            //Copy configuration to not persist any changes done below
             this.config = MapUtils.deepCopy(this.config)
 
             for(int i=0; i<pathConfigurationKeys.size(); i++){
