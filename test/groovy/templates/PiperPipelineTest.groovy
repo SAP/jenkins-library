@@ -43,6 +43,11 @@ class PiperPipelineTest extends BasePiperTest {
         helper.registerAllowedMethod('skipDefaultCheckout', [], {skipDefaultCheckout = true})
         helper.registerAllowedMethod('timestamps', [], {timestamps = true})
 
+        helper.registerAllowedMethod('triggers', [Closure.class], null)
+        helper.registerAllowedMethod('issueCommentTrigger', [String.class], { s ->
+            assertThat(s, is('.*/piper ([a-z]*).*'))
+        })
+
         helper.registerAllowedMethod('stages', [Closure.class], null)
 
         helper.registerAllowedMethod('stage', [String.class, Closure.class], {stageName, body ->

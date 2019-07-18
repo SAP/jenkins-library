@@ -22,7 +22,7 @@ import groovy.text.SimpleTemplateEngine
     'artifactType',
     /**
      * Defines the tool which is used for building the artifact.
-     * @possibleValues `dlang`, `docker`, `golang`, `maven`, `mta`, `npm`, `pip`, `sbt`
+     * @possibleValues `dub`, `docker`, `golang`, `maven`, `mta`, `npm`, `pip`, `sbt`
      */
     'buildTool',
     /**

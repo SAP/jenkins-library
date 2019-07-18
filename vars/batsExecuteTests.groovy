@@ -25,7 +25,7 @@ import groovy.transform.Field
     'failOnError',
     /**
      * Defines the format of the test result output. `junit` would be the standard for automated build environments but you could use also the option `tap`.
-     * @possibleValues `tap`
+     * @possibleValues `junit`, `tap`
      */
     'outputFormat',
     /**
@@ -98,8 +98,8 @@ void call(Map parameters = [:]) {
                 sh "cat 'TEST-${config.testPackage}.tap'"
                 if (config.outputFormat == 'junit') {
                     dockerExecute(script: script, dockerImage: config.dockerImage, dockerWorkspace: config.dockerWorkspace, stashContent: config.stashContent) {
-                        sh "npm install tap-xunit -g"
-                        sh "cat 'TEST-${config.testPackage}.tap' | tap-xunit --package='${config.testPackage}' > TEST-${config.testPackage}.xml"
+                        sh "NPM_CONFIG_PREFIX=~/.npm-global npm install tap-xunit -g"
+                        sh "cat 'TEST-${config.testPackage}.tap' | PATH=\$PATH:~/.npm-global/bin tap-xunit --package='${config.testPackage}' > TEST-${config.testPackage}.xml"
                     }
                 }
             }
