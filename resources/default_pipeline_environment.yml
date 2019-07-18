@@ -535,6 +535,10 @@ steps:
       active: false
   checkChangeInDevelopment:
       failIfStatusIsNotInDevelopment: true
+  tmsUpload:
+    namedUser: 'Piper-Pipeline'
+    stashContent:
+      - 'buildResult'
   transportRequestCreate:
       developmentSystemId: null
       verbose: false
