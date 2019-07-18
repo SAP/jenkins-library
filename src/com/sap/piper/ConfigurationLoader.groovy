@@ -41,7 +41,6 @@ class ConfigurationLoader implements Serializable {
         return loadConfiguration(script, 'postActions', actionName, ConfigurationType.CUSTOM_CONFIGURATION)
     }
 
-    @NonCPS
     private static Map loadConfiguration(script, String type, String entryName, ConfigurationType configType){
         switch (configType) {
             case ConfigurationType.CUSTOM_CONFIGURATION:
