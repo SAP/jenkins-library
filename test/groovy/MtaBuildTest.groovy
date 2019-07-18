@@ -244,6 +244,26 @@ public class MtaBuildTest extends BasePiperTest {
         assert shellRule.shell.find { c -> c.contains('java -jar /opt/sap/mta/lib/mta.jar --mtar com.mycompany.northwind.mtar --build-target=NEO --extension=param_extension build')}
     }
 
+    @Test
+    void configureWithAbsolutePathTemplate() {
+
+        nullScript.env.WORKSPACE = '/workspace'
+
+        stepRule.step.mtaBuild(
+            script: nullScript,
+            buildTarget: 'NEO',
+            extension: '${workspaceRoot}/param_extension',
+            mtaJarLocation: '${workspaceRoot}/mta.jar',
+            globalSettingsFile: '${workspaceRoot}/global-settings.xml',
+            projectSettingsFile: '${workspaceRoot}/project-settings.xml.xml'
+        )
+
+        assert shellRule.shell.find { c -> c.contains('--extension=/workspace/param_extension')}
+        assert shellRule.shell.find { c -> c.contains('/workspace/mta.jar')}
+        assert shellRule.shell.find { c -> c.contains('cp /workspace/global-settings.xml')}
+        assert shellRule.shell.find { c -> c.contains('cp /workspace/project-settings.xml')}
+    }
+
 
     @Test
     void extensionFromCustomStepConfigurationTest() {

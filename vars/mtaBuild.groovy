@@ -1,3 +1,5 @@
+import com.sap.piper.PathUtils
+
 import static com.sap.piper.Prerequisites.checkScript
 
 import com.sap.piper.GenerateDocumentation
@@ -40,6 +42,10 @@ import static com.sap.piper.Utils.downloadSettingsFromUrl
     'defaultNpmRegistry'
 ])
 
+@Field Set PATH_CONFIGURATION_KEYS = [
+    'globalSettingsFile', 'projectSettingsFile', 'mtaJarLocation', 'extension', 'mtaJarLocation'
+]
+
 /**
  * Executes the SAP Multitarget Application Archive Builder to create an mtar archive of the application.
  */
@@ -57,6 +63,8 @@ void call(Map parameters = [:]) {
             .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName ?: env.STAGE_NAME, STEP_CONFIG_KEYS)
             .mixin(parameters, PARAMETER_KEYS)
             .use()
+
+        configuration = PathUtils.replacePathInConfiguration(script, configuration, PATH_CONFIGURATION_KEYS)
 
         new Utils().pushToSWA([
             step: STEP_NAME,

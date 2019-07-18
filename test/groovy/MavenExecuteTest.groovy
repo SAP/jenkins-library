@@ -70,6 +70,22 @@ class MavenExecuteTest extends BasePiperTest {
     }
 
     @Test
+    void testExecuteMavenCommandWithAbsolutePathTemplate() throws Exception {
+        nullScript.env.WORKSPACE = '/workspace'
+
+        stepRule.step.mavenExecute(
+            script: nullScript,
+            goals: 'clean install',
+            globalSettingsFile: '${workspaceRoot}/globalSettingsFile.xml',
+            projectSettingsFile: '${workspaceRoot}/projectSettingsFile.xml',
+            m2Path: '${workspaceRoot}/m2Path',
+            pomPath: '${workspaceRoot}/pom.xml'
+        )
+        String mvnCommand = "mvn --global-settings '/workspace/globalSettingsFile.xml' -Dmaven.repo.local='/workspace/m2Path' --settings '/workspace/projectSettingsFile.xml' --file '/workspace/pom.xml' --batch-mode -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn clean install"
+        assertTrue(shellRule.shell.contains(mvnCommand))
+    }
+
+    @Test
     void testMavenCommandForwardsDockerOptions() throws Exception {
         stepRule.step.mavenExecute(script: nullScript, goals: 'clean install')
         assertEquals('maven:3.5-jdk-7', dockerExecuteRule.dockerParams.dockerImage)

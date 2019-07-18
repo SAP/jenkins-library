@@ -1,3 +1,5 @@
+import com.sap.piper.PathUtils
+
 import static com.sap.piper.Prerequisites.checkScript
 
 import com.sap.piper.GenerateDocumentation
@@ -39,6 +41,10 @@ import static com.sap.piper.Utils.downloadSettingsFromUrl
     'logSuccessfulMavenTransfers'
 ])
 
+@Field Set PATH_CONFIGURATION_KEYS = [
+    'globalSettingsFile', 'projectSettingsFile', 'pomPath', 'm2Path'
+]
+
 /**
  * Executes a maven command inside a Docker container.
  */
@@ -46,7 +52,7 @@ import static com.sap.piper.Utils.downloadSettingsFromUrl
 void call(Map parameters = [:]) {
     handlePipelineStepErrors(stepName: STEP_NAME, stepParameters: parameters) {
 
-        final script = checkScript(this, parameters) ?: this
+        def script = checkScript(this, parameters) ?: this
 
         // load default & individual configuration
         Map configuration = ConfigurationHelper.newInstance(this)
@@ -56,6 +62,8 @@ void call(Map parameters = [:]) {
             .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName?:env.STAGE_NAME, STEP_CONFIG_KEYS)
             .mixin(parameters, PARAMETER_KEYS)
             .use()
+
+        configuration = PathUtils.replacePathInConfiguration(script, configuration, PATH_CONFIGURATION_KEYS)
 
         new Utils().pushToSWA([
             step: STEP_NAME,
