@@ -52,7 +52,6 @@ public class MtaBuildTest extends BasePiperTest {
                     OpenJDK 64-Bit Server VM (build 25.121-b13, mixed mode)''')
         shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, '.*mta\\.jar -v.*', '1.0.6')
 
-        binding.setVariable('PATH', '/usr/bin')
     }
 
 
@@ -61,7 +60,7 @@ public class MtaBuildTest extends BasePiperTest {
 
         stepRule.step.mtaBuild(script: nullScript, buildTarget: 'NEO')
 
-        assert shellRule.shell.find { c -> c.contains('PATH=./node_modules/.bin:/usr/bin')}
+        assert shellRule.shell.find { c -> c.contains('PATH=./node_modules/.bin:$PATH')}
     }
 
 

@@ -31,6 +31,11 @@ class CommandLineMatcher extends BaseMatcher {
         return this
     }
 
+    CommandLineMatcher hasSnippet(String snippet) {
+        this.args.add(snippet)
+        return this
+    }
+
     CommandLineMatcher hasArgument(String arg) {
         this.args.add(arg)
         return this
@@ -58,7 +63,7 @@ class CommandLineMatcher extends BaseMatcher {
 
             for (String arg : args) {
                 if (!cmd.matches(/.*[\s]*${arg}[\s]*.*/)) {
-                    hint = "A command line having argument '${arg}'."
+                    hint = "A command line having argument/snippet '${arg}'."
                     matches = false
                 }
             }

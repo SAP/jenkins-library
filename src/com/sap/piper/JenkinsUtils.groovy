@@ -1,9 +1,13 @@
 package com.sap.piper
 
 import com.cloudbees.groovy.cps.NonCPS
-import jenkins.model.Jenkins
-import org.jenkinsci.plugins.workflow.steps.MissingContextVariableException
+
 import hudson.tasks.junit.TestResultAction
+
+import jenkins.model.Jenkins
+
+import org.apache.commons.io.IOUtils
+import org.jenkinsci.plugins.workflow.steps.MissingContextVariableException
 
 @API
 @NonCPS
@@ -17,6 +21,32 @@ static boolean hasTestFailures(build){
     //getAction: http://www.hudson-ci.org/javadoc/hudson/tasks/junit/TestResultAction.html
     def action = build?.getRawBuild()?.getAction(TestResultAction.class)
     return action && action.getFailCount() != 0
+}
+
+boolean addWarningsNGParser(String id, String name, String regex, String script, String example = ''){
+    def classLoader = this.getClass().getClassLoader()
+    // usage of class loader to avoid plugin dependency for other use cases of JenkinsUtils class
+    def parserConfig = classLoader.loadClass('io.jenkins.plugins.analysis.warnings.groovy.ParserConfiguration', true)?.getInstance()
+
+    if(parserConfig.contains(id)){
+        return false
+    }else{
+        parserConfig.setParsers(
+            parserConfig.getParsers().plus(
+                classLoader.loadClass('io.jenkins.plugins.analysis.warnings.groovy.GroovyParser', true)?.newInstance(id, name, regex, script, example)
+            )
+        )
+        return true
+    }
+}
+
+@NonCPS
+static String getFullBuildLog(currentBuild) {
+    Reader reader = currentBuild.getRawBuild().getLogReader()
+    String logContent = IOUtils.toString(reader);
+    reader.close();
+    reader = null
+    return logContent
 }
 
 def nodeAvailable() {
@@ -56,4 +86,25 @@ def isJobStartedByCause(Class cause) {
         echo "Found build cause ${detectedCause}"
     }
     return startedByGivenCause
+}
+
+@NonCPS
+String getIssueCommentTriggerAction() {
+    try {
+        def triggerCause = getRawBuild().getCause(org.jenkinsci.plugins.pipeline.github.trigger.IssueCommentCause)
+        if (triggerCause) {
+            //triggerPattern e.g. like '.* /piper ([a-z]*) .*'
+            def matcher = triggerCause.comment =~ triggerCause.triggerPattern
+            if (matcher) {
+                return matcher[0][1]
+            }
+        }
+        return null
+    } catch (err) {
+        return null
+    }
+}
+
+def getJobStartedByUserId() {
+    return getRawBuild().getCause(hudson.model.Cause.UserIdCause.class)?.getUserId()
 }

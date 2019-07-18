@@ -113,8 +113,8 @@ class WhitesourceConfigurationHelperTest extends BasePiperTest {
     }
 
     @Test
-    void testExtendConfigurationFileUnifiedAgentDlang() {
-        WhitesourceConfigurationHelper.extendUAConfigurationFile(nullScript, utils, [scanType: 'dlang', whitesource: [configFilePath: './config',serviceUrl: "http://some.host.whitesource.com/api/", orgToken: 'abcd', productName: 'DIST - name1', productToken: '1234', userKey: '0000']], "./")
+    void testExtendConfigurationFileUnifiedAgentDub() {
+        WhitesourceConfigurationHelper.extendUAConfigurationFile(nullScript, utils, [scanType: 'dub', whitesource: [configFilePath: './config',serviceUrl: "http://some.host.whitesource.com/api/", orgToken: 'abcd', productName: 'DIST - name1', productToken: '1234', userKey: '0000']], "./")
         assertThat(jwfr.files['./config.847f9aec2f93de9000d5fa4e6eaace2283ae6377'],
             allOf(
                 containsString("apiKey=abcd"),
@@ -124,7 +124,7 @@ class WhitesourceConfigurationHelperTest extends BasePiperTest {
             )
         )
 
-        assertThat(jlr.log, containsString("[Whitesource] Configuration for scanType: 'dlang' is not yet hardened, please do a quality assessment of your scan results."))
+        assertThat(jlr.log, containsString("[Whitesource] Configuration for scanType: 'dub' is not yet hardened, please do a quality assessment of your scan results."))
     }
 
     @Test

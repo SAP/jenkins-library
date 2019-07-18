@@ -52,4 +52,22 @@ class KarmaExecuteTestsTest extends BasePiperTest {
         assertThat(seleniumParams.dockerWorkspace, is('/home/node'))
         assertJobStatusSuccess()
     }
+
+    @Test
+    void testMultiModules() throws Exception {
+        stepRule.step.karmaExecuteTests(
+            script: nullScript,
+            juStabUtils: utils,
+            modules: ['./ui-trade', './ui-traderequest']
+        )
+        assertThat(shellRule.shell, hasItems(
+            containsString("cd './ui-trade' && npm run karma"),
+            containsString("cd './ui-trade' && npm install --quiet")
+        ))
+        assertThat(shellRule.shell, hasItems(
+            containsString("cd './ui-traderequest' && npm run karma"),
+            containsString("cd './ui-traderequest' && npm install --quiet")
+        ))
+        assertJobStatusSuccess()
+    }
 }

@@ -67,6 +67,7 @@ void call(Map parameters = [:]) {
             .mixin(parameters, PARAMETER_KEYS)
             .use()
 
+        // telemetry reporting
         new Utils().pushToSWA([
             step: STEP_NAME
         ], config)

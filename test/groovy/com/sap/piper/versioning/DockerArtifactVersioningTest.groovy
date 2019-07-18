@@ -26,7 +26,17 @@ class DockerArtifactVersioningTest extends BasePiperTest{
                            |USER root
                            |
                            |ENV TEST 2.3.4
-                           |''' as CharSequence).stripMargin()
+                           |''' as CharSequence).stripMargin(),
+         Dockerfile_registryPort : ('''|FROM registry:4444/path/image:1.2.3
+                    |
+                    |USER root
+                    |
+                    ||ENV TEST 2.3.4''' as CharSequence).stripMargin(),
+         Dockerfile_registryPortNoTag :('''|FROM registry:4444/path/image
+                                           |
+                                           |USER root
+                                           |
+                                           |ENV TEST 2.3.4''' as CharSequence).stripMargin()
         ])
     JenkinsWriteFileRule writeFileRule = new JenkinsWriteFileRule(this)
     JenkinsLoggingRule loggingRule = new JenkinsLoggingRule(this)
@@ -56,6 +66,18 @@ class DockerArtifactVersioningTest extends BasePiperTest{
         av.setVersion('1.2.3-20180101')
         assertEquals('1.2.3-20180101', writeFileRule.files['VERSION'])
         assertTrue(loggingRule.log.contains('[DockerArtifactVersioning] Version from Docker base image tag: 1.2.3'))
+    }
+
+    @Test
+    void testVersioningFromWithRegistryPort() {
+        DockerArtifactVersioning av = new DockerArtifactVersioning(nullScript, [filePath: 'Dockerfile_registryPort', dockerVersionSource: 'FROM'])
+        assertEquals('1.2.3', av.getVersion())
+    }
+
+    @Test
+    void testVersioningFromWithMissingTag() {
+        thrown.expectMessage('FROM statement does not contain an explicit image version')
+        new DockerArtifactVersioning(nullScript, [filePath: 'Dockerfile_registryPortNoTag', dockerVersionSource: 'FROM']).getVersion()
     }
 
     @Test
