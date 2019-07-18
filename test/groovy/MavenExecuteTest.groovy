@@ -1,13 +1,17 @@
+import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.RuleChain
 
 import util.BasePiperTest
 import util.JenkinsDockerExecuteRule
+import util.JenkinsEnvironmentRule
 import util.JenkinsReadYamlRule
 import util.JenkinsShellCallRule
 import util.JenkinsStepRule
 import util.Rules
+
+import java.nio.file.Paths
 
 import static org.hamcrest.Matchers.allOf
 import static org.hamcrest.Matchers.containsString
@@ -32,6 +36,13 @@ class MavenExecuteTest extends BasePiperTest {
         .around(dockerExecuteRule)
         .around(shellRule)
         .around(stepRule)
+        .around(new JenkinsEnvironmentRule(this))
+
+
+    @Before
+    void init() throws Exception {
+        this.binding.setVariable('env', [WORKSPACE: '/workspace'])
+    }
 
     @Test
     void testExecuteBasicMavenCommand() throws Exception {
@@ -70,18 +81,28 @@ class MavenExecuteTest extends BasePiperTest {
     }
 
     @Test
-    void testExecuteMavenCommandWithAbsolutePathTemplate() throws Exception {
-        nullScript.env.WORKSPACE = '/workspace'
+    void testExecuteMavenCommandWithAbsolutePaths() throws Exception {
+
+        nullScript.commonPipelineEnvironment.configuration = [ steps: [mavenExecute: [
+            globalSettingsFile: 'globalSettingsFile.xml',
+            projectSettingsFile: 'projectSettingsFile.xml',
+            m2Path: 'm2Path',
+            pomPath: 'pom.xml'
+        ] ] ]
 
         stepRule.step.mavenExecute(
             script: nullScript,
-            goals: 'clean install',
-            globalSettingsFile: '${workspaceRoot}/globalSettingsFile.xml',
-            projectSettingsFile: '${workspaceRoot}/projectSettingsFile.xml',
-            m2Path: '${workspaceRoot}/m2Path',
-            pomPath: '${workspaceRoot}/pom.xml'
+            goals: 'clean install'
         )
-        String mvnCommand = "mvn --global-settings '/workspace/globalSettingsFile.xml' -Dmaven.repo.local='/workspace/m2Path' --settings '/workspace/projectSettingsFile.xml' --file '/workspace/pom.xml' --batch-mode -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn clean install"
+
+        String workspace = Paths.get('/workspace', 'globalSettingsFile.xml').normalize()
+
+        String mvnCommand = "mvn " +
+            "--global-settings '${Paths.get('/workspace', 'globalSettingsFile.xml').normalize()}' " +
+            "-Dmaven.repo.local='${Paths.get('/workspace', 'm2Path').normalize()}' " +
+            "--settings '${Paths.get('/workspace','projectSettingsFile.xml')}' " +
+            "--file '${Paths.get('/workspace','pom.xml')}' " +
+            "--batch-mode -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn clean install"
         assertTrue(shellRule.shell.contains(mvnCommand))
     }
 

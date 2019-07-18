@@ -1,5 +1,3 @@
-import com.sap.piper.PathUtils
-
 import static com.sap.piper.Prerequisites.checkScript
 
 import com.sap.piper.GenerateDocumentation
@@ -60,10 +58,9 @@ void call(Map parameters = [:]) {
             .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS)
             .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS)
             .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName?:env.STAGE_NAME, STEP_CONFIG_KEYS)
+            .convertToAbsolutePaths(PATH_CONFIGURATION_KEYS)
             .mixin(parameters, PARAMETER_KEYS)
             .use()
-
-        configuration = PathUtils.replacePathInConfiguration(script, configuration, PATH_CONFIGURATION_KEYS)
 
         new Utils().pushToSWA([
             step: STEP_NAME,

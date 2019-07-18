@@ -16,6 +16,8 @@ import util.JenkinsStepRule
 import util.JenkinsWriteFileRule
 import util.Rules
 
+import java.nio.file.Paths
+
 public class MtaBuildTest extends BasePiperTest {
 
     private ExpectedException thrown = new ExpectedException()
@@ -52,6 +54,7 @@ public class MtaBuildTest extends BasePiperTest {
                     OpenJDK 64-Bit Server VM (build 25.121-b13, mixed mode)''')
         shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, '.*mta\\.jar -v.*', '1.0.6')
 
+        this.binding.setVariable('env', [WORKSPACE: '/workspace'])
     }
 
 
@@ -247,21 +250,22 @@ public class MtaBuildTest extends BasePiperTest {
     @Test
     void configureWithAbsolutePathTemplate() {
 
-        nullScript.env.WORKSPACE = '/workspace'
+        nullScript.commonPipelineEnvironment.configuration = [ steps: [mtaBuild: [
+            extension: 'param_extension',
+            mtaJarLocation: 'mta.jar',
+            globalSettingsFile: 'global-settings.xml',
+            projectSettingsFile: 'project-settings.xml.xml'
+        ] ] ]
 
         stepRule.step.mtaBuild(
             script: nullScript,
             buildTarget: 'NEO',
-            extension: '${workspaceRoot}/param_extension',
-            mtaJarLocation: '${workspaceRoot}/mta.jar',
-            globalSettingsFile: '${workspaceRoot}/global-settings.xml',
-            projectSettingsFile: '${workspaceRoot}/project-settings.xml.xml'
         )
 
-        assert shellRule.shell.find { c -> c.contains('--extension=/workspace/param_extension')}
-        assert shellRule.shell.find { c -> c.contains('/workspace/mta.jar')}
-        assert shellRule.shell.find { c -> c.contains('cp /workspace/global-settings.xml')}
-        assert shellRule.shell.find { c -> c.contains('cp /workspace/project-settings.xml')}
+        assert shellRule.shell.find { c -> c.contains("--extension=/workspace/param_extension") }
+        assert shellRule.shell.find { c -> c.contains("-jar /workspace/mta.jar") }
+        assert shellRule.shell.find { c -> c.contains("cp /workspace/global-settings.xml") }
+        assert shellRule.shell.find { c -> c.contains("cp /workspace/project-settings.xml") }
     }
 
 
@@ -272,7 +276,7 @@ public class MtaBuildTest extends BasePiperTest {
 
         stepRule.step.mtaBuild(script: nullScript)
 
-        assert shellRule.shell.find(){ c -> c.contains('java -jar /opt/sap/mta/lib/mta.jar --mtar com.mycompany.northwind.mtar --build-target=NEO --extension=config_extension build')}
+        assert shellRule.shell.find(){ c -> c.contains('java -jar /opt/sap/mta/lib/mta.jar --mtar com.mycompany.northwind.mtar --build-target=NEO --extension=/workspace/config_extension build')}
     }
 
 

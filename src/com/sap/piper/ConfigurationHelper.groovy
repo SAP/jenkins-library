@@ -50,6 +50,20 @@ class ConfigurationHelper implements Serializable {
         return mixin(stepConfiguration, filter, compatibleParameters)
     }
 
+    ConfigurationHelper convertToAbsolutePaths(Set pathConfigurationKeys){
+        if(pathConfigurationKeys){
+            //Copy configuration to to persist any changes done below
+            this.config = MapUtils.deepCopy(this.config)
+
+            for(int i=0; i<pathConfigurationKeys.size(); i++){
+                String key = pathConfigurationKeys.getAt(i)
+                this.config[key] = PathUtils.convertToAbsolutePath(this.step, this.config[key])
+            }
+        }
+
+        return this
+    }
+
     final ConfigurationHelper mixin(Map parameters, Set filter = null, Map compatibleParameters = [:]){
         if (parameters.size() > 0 && compatibleParameters.size() > 0) {
             parameters = ConfigurationMerger.merge(handleCompatibility(compatibleParameters, parameters), null, parameters)
