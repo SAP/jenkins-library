@@ -1,4 +1,4 @@
-package stages
+package templates
 
 import org.junit.Before
 import org.junit.Rule

@@ -31,7 +31,7 @@ class PiperPipelineStageComplianceTest extends BasePiperTest {
     @Test
     void testStageDefault() {
 
-        jsr.step.piperPipelineStageIntegration(
+        jsr.step.piperPipelineStageCompliance(
             script: nullScript,
             juStabUtils: utils,
         )
