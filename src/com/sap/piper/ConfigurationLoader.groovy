@@ -33,7 +33,6 @@ class ConfigurationLoader implements Serializable {
         }
     }
 
-    @NonCPS
     static Map defaultGeneralConfiguration(script){
         return DefaultValueCache.getInstance()?.getDefaultValues()?.general ?: [:]
     }
