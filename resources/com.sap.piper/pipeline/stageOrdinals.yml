@@ -1,0 +1,23 @@
+stages:
+  Init:
+    ordinal: 1
+  'Pull-Request Voting':
+    ordinal: 5
+  Build:
+    ordinal: 10
+  'Additional Unit Tests':
+    ordinal: 20
+  Integration:
+    ordinal: 30
+  Acceptance:
+    ordinal: 40
+  Security:
+    ordinal: 50
+  Performance:
+    ordinal: 60
+  Compliance:
+    ordinal: 70
+  Promote:
+    ordinal: 80
+  Release:
+    ordinal: 90

@@ -3,8 +3,7 @@ import com.cloudbees.groovy.cps.NonCPS
 import com.sap.piper.GenerateDocumentation
 import com.sap.piper.ConfigurationHelper
 import com.sap.piper.analytics.InfluxData
-
-import groovy.text.SimpleTemplateEngine
+import groovy.text.GStringTemplateEngine
 import groovy.transform.Field
 import hudson.AbortException
 
@@ -121,7 +120,7 @@ private String formatErrorMessage(Map config, error){
         stepName: config.stepName,
         stepParameters: (config.stepParameters?.verbose == true) ? config.stepParameters?.toString() : '*** to show step parameters, set verbose:true in general pipeline configuration\n*** WARNING: this may reveal sensitive information. ***'
     ]
-    return SimpleTemplateEngine
+    return GStringTemplateEngine
         .newInstance()
         .createTemplate(libraryResource('com.sap.piper/templates/error.log'))
         .make(binding)
