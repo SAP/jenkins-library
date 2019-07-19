@@ -11,6 +11,6 @@ class PathUtils implements Serializable {
     }
 
     static isAbsolutePath(String path){
-        return path.charAt(0) == '/'
+        return path && path.charAt(0) == '/'
     }
 }
