@@ -38,7 +38,6 @@ general:
   githubServerUrl: 'https://github.com'
   gitSshKeyCredentialsId: '' #needed to allow sshagent to run with local ssh key
   jenkinsKubernetes:
-    jnlpAgent: 's4sdk/jenkins-agent-k8s:latest'
     securityContext:
     # Setting security context globally is currently not working with jaas
     #  runAsUser: 1000
@@ -56,7 +55,7 @@ steps:
     timestampTemplate: '%Y%m%d%H%M%S'
     tagPrefix: 'build_'
     commitVersion: true
-    dlang:
+    dub:
       filePath: 'dub.json'
       versioningTemplate: '${version}-${timestamp}${commitId?"+"+commitId:""}'
     docker:
@@ -354,7 +353,7 @@ steps:
     projectNames: []
     jreDownloadUrl: 'https://github.com/SAP/SapMachine/releases/download/sapmachine-11.0.2/sapmachine-jre-11.0.2_linux-x64_bin.tar.gz'
     agentFileName: 'wss-unified-agent.jar'
-    agentDownloadUrl: 'https://github.com/whitesource/unified-agent-distribution/raw/master/standAlone/${config.agentFileName}'
+    agentDownloadUrl: 'https://github.com/whitesource/unified-agent-distribution/releases/latest/download/${config.agentFileName}'
     agentParameters: ''
     configFilePath: './wss-unified-agent.config'
     mta:
@@ -395,6 +394,13 @@ steps:
         && mkdir -p \$GOPATH/src/${config.whitesource.projectName.substring(0, config.whitesource.projectName.lastIndexOf('/'))}
         && ln -s \$(pwd) \$GOPATH/src/${config.whitesource.projectName}
         && cd \$GOPATH/src/${config.whitesource.projectName} && dep ensure
+    dub:
+      buildDescriptorFile: './dub.json'
+      dockerImage: 'buildpack-deps:stretch-curl'
+      dockerWorkspace: '/home/dub'
+      stashContent:
+        - 'buildDescriptor'
+        - 'checkmarx'
     sbt:
       buildDescriptorFile: './build.sbt'
       dockerImage: 'hseeberger/scala-sbt:8u181_2.12.8_1.2.8'
@@ -413,17 +419,19 @@ steps:
     timeoutInSeconds: 900
   pipelineStashFilesAfterBuild:
     stashIncludes:
-      checkmarx: '**/*.js, **/*.scala, **/*.py, **/*.go, **/*.xml, **/*.html'
+      buildResult: '**/target/*.jar, **/*.mtar'
+      checkmarx: '**/*.js, **/*.scala, **/*.py, **/*.go, **/*.d, **/*.di, **/*.xml, **/*.html'
       classFiles: '**/target/classes/**/*.class, **/target/test-classes/**/*.class'
       sonar: '**/jacoco*.exec, **/sonar-project.properties'
     stashExcludes:
+      buildResult: ''
       checkmarx: '**/*.mockserver.js, node_modules/**/*.js'
       classFiles: ''
       sonar: ''
     noDefaultExludes: []
   pipelineStashFilesBeforeBuild:
     stashIncludes:
-      buildDescriptor: '**/pom.xml, **/.mvn/**, **/assembly.xml, **/.swagger-codegen-ignore, **/package.json, **/requirements.txt, **/setup.py, **/mta*.y*ml, **/.npmrc, Dockerfile, .hadolint.yaml, **/VERSION, **/version.txt, **/Gopkg.*, **/build.sbt, **/sbtDescriptor.json, **/project/*'
+      buildDescriptor: '**/pom.xml, **/.mvn/**, **/assembly.xml, **/.swagger-codegen-ignore, **/package.json, **/requirements.txt, **/setup.py, **/mta*.y*ml, **/.npmrc, Dockerfile, .hadolint.yaml, **/VERSION, **/version.txt, **/Gopkg.*, **/dub.json, **/dub.sdl, **/build.sbt, **/sbtDescriptor.json, **/project/*'
       deployDescriptor: '**/manifest*.y*ml, **/*.mtaext.y*ml, **/*.mtaext, **/xs-app.json, helm/**, *.y*ml'
       git: '.git/**'
       opa5: '**/*.*'
@@ -442,6 +450,14 @@ steps:
       tests: ''
     noDefaultExludes:
       - 'git'
+  piperPublishWarnings:
+    parserId: piper
+    parserName: Piper
+    parserPattern: '\[(INFO|WARNING|ERROR)\] (.*) \(([^) ]*)\/([^) ]*)\)'
+    parserScript: 'return builder.guessSeverity(matcher.group(1)).setMessage(matcher.group(2)).setModuleName(matcher.group(3)).setType(matcher.group(4)).buildOptional()'
+    recordIssuesSettings:
+      blameDisabled: true
+      enabledForFailure: true
   seleniumExecuteTests:
     buildTool: 'npm'
     containerPortMappings:
@@ -526,6 +542,10 @@ steps:
       active: false
   checkChangeInDevelopment:
       failIfStatusIsNotInDevelopment: true
+  tmsUpload:
+    namedUser: 'Piper-Pipeline'
+    stashContent:
+      - 'buildResult'
   transportRequestCreate:
       developmentSystemId: null
       verbose: false
