@@ -261,12 +261,10 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
         assertThat(containerName, is('mavenexecute'))
 
         assertThat(containersList, allOf(
-            hasItem('jnlp'),
             hasItem('mavenexecute'),
             hasItem('selenium'),
         ))
         assertThat(imageList, allOf(
-            hasItem('s4sdk/jenkins-agent-k8s:latest'),
             hasItem('maven:3.5-jdk-8-alpine'),
             hasItem('selenium/standalone-chrome'),
         ))
@@ -386,6 +384,54 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
         ) { bodyExecuted = true }
         assertTrue(bodyExecuted)
         assertThat(podNodeSelector, is('size:big'))
+    }
+
+    @Test
+    void testDockerExecuteOnKubernetesCustomJnlpViaEnv() {
+
+        nullScript.configuration = [
+            general: [jenkinsKubernetes: [jnlpAgent: 'config/jnlp:latest']]
+        ]
+        binding.variables.env.JENKINS_JNLP_IMAGE = 'env/jnlp:latest'
+        stepRule.step.dockerExecuteOnKubernetes(
+            script: nullScript,
+            juStabUtils: utils,
+            dockerImage: 'maven:3.5-jdk-8-alpine',
+        ) { bodyExecuted = true }
+        assertTrue(bodyExecuted)
+
+        assertThat(containersList, allOf(
+            hasItem('jnlp'),
+            hasItem('container-exec')
+        ))
+        assertThat(imageList, allOf(
+            hasItem('env/jnlp:latest'),
+            hasItem('maven:3.5-jdk-8-alpine'),
+        ))
+    }
+
+    @Test
+    void testDockerExecuteOnKubernetesCustomJnlpViaConfig() {
+
+        nullScript.configuration = [
+            general: [jenkinsKubernetes: [jnlpAgent: 'config/jnlp:latest']]
+        ]
+        binding.variables.env.JENKINS_JNLP_IMAGE = 'config/jnlp:latest'
+        stepRule.step.dockerExecuteOnKubernetes(
+            script: nullScript,
+            juStabUtils: utils,
+            dockerImage: 'maven:3.5-jdk-8-alpine',
+        ) { bodyExecuted = true }
+        assertTrue(bodyExecuted)
+
+        assertThat(containersList, allOf(
+            hasItem('jnlp'),
+            hasItem('container-exec')
+        ))
+        assertThat(imageList, allOf(
+            hasItem('config/jnlp:latest'),
+            hasItem('maven:3.5-jdk-8-alpine'),
+        ))
     }
 
 
