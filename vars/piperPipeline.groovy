@@ -1,6 +1,9 @@
 void call(parameters) {
     pipeline {
         agent none
+        triggers {
+            issueCommentTrigger('.*/piper ([a-z]*).*')
+        }
         options {
             skipDefaultCheckout()
             timestamps()
@@ -9,7 +12,7 @@ void call(parameters) {
             stage('Init') {
                 steps {
                     library 'piper-lib-os'
-                    piperPipelineStageInit script: parameters.script, customDefaults: parameters.customDefaults
+                    piperPipelineStageInit script: parameters.script, customDefaults: ['com.sap.piper/pipeline/stageOrdinals.yml'].plus(parameters.customDefaults ?: [])
                 }
             }
             stage('Pull-Request Voting') {
@@ -62,9 +65,9 @@ void call(parameters) {
             }
             stage('Confirm') {
                 agent none
-                when {allOf {branch parameters.script.commonPipelineEnvironment.getStepConfiguration('', '').productiveBranch; expression {return parameters.script.commonPipelineEnvironment.getStepConfiguration('piperInitRunStageConfiguration', env.STAGE_NAME).manualConfirmation}}}
+                when {allOf {expression { env.BRANCH_NAME ==~ parameters.script.commonPipelineEnvironment.getStepConfiguration('', '').productiveBranch }; anyOf {expression {return (currentBuild.result == 'UNSTABLE')}; expression {return parameters.script.commonPipelineEnvironment.getStepConfiguration('piperInitRunStageConfiguration', env.STAGE_NAME).manualConfirmation}}}}
                 steps {
-                    input message: 'Shall we proceed to promotion & release?'
+                    piperPipelineStageConfirm script: parameters.script
                 }
             }
             stage('Promote') {
@@ -81,9 +84,13 @@ void call(parameters) {
             }
         }
         post {
-            always {
-                influxWriteData script: parameters.script, wrapInNode: true
-                mailSendNotification script: parameters.script, wrapInNode: true
+            /* https://jenkins.io/doc/book/pipeline/syntax/#post */
+            success {buildSetResult(currentBuild)}
+            aborted {buildSetResult(currentBuild, 'ABORTED')}
+            failure {buildSetResult(currentBuild, 'FAILURE')}
+            unstable {buildSetResult(currentBuild, 'UNSTABLE')}
+            cleanup {
+                piperPipelineStagePost script: parameters.script
             }
         }
     }

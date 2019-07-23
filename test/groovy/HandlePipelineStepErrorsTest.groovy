@@ -1,4 +1,3 @@
-#!groovy
 import hudson.AbortException
 
 import static org.hamcrest.Matchers.is
@@ -80,7 +79,7 @@ class HandlePipelineStepErrorsTest extends BasePiperTest {
             // asserts
             assertThat(isReported, is(true))
             assertThat(loggingRule.log, containsString('--- An error occurred in the library step: testStep'))
-            assertThat(loggingRule.log, containsString('[something:anything]'))
+            assertThat(loggingRule.log, containsString('to show step parameters, set verbose:true'))
         }
     }
     
@@ -140,5 +139,25 @@ class HandlePipelineStepErrorsTest extends BasePiperTest {
             errorOccured = true
         }
         assertThat(errorOccured, is(false))
+    }
+
+    @Test
+    void testHandleErrorsTimeout() {
+        def timeout = 0
+        helper.registerAllowedMethod('timeout', [Map.class, Closure.class], {m, body ->
+            timeout = m.time
+            throw new org.jenkinsci.plugins.workflow.steps.FlowInterruptedException(hudson.model.Result.ABORTED, new jenkins.model.CauseOfInterruption.UserInterruption('Test'))
+        })
+
+        stepRule.step.handlePipelineStepErrors([
+            stepName: 'test',
+            stepParameters: [jenkinsUtilsStub: jenkinsUtils, script: nullScript],
+            failOnError: false,
+            stepTimeouts: [test: 10]
+        ]) {
+            //do something
+        }
+        assertThat(timeout, is(10))
+        assertThat(nullScript.currentBuild.result, is('UNSTABLE'))
     }
 }

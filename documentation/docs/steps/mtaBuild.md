@@ -14,6 +14,8 @@ While using a custom docker file, ensure that the following tools are installed:
 
 ## ${docGenConfiguration}
 
+## ${docJenkinsPluginDependencies}
+
 ## Side effects
 
 1. The file name of the resulting archive is written to the `commonPipelineEnvironment` with variable name `mtarFileName`.
@@ -27,8 +29,8 @@ While using a custom docker file, ensure that the following tools are installed:
 ## Example
 
 ```groovy
-def mtarFileName
 dir('/path/to/FioriApp'){
-  mtarFileName = mtaBuild script:this, buildTarget: 'NEO'
+  mtaBuild script:this, buildTarget: 'NEO'
 }
+def mtarFilePath = commonPipelineEnvironment.getMtarFilePath()
 ```

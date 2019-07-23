@@ -14,7 +14,12 @@ import hudson.AbortException
 @Field def PLUGIN_ID_KUBERNETES = 'kubernetes'
 
 @Field Set GENERAL_CONFIG_KEYS = [
-    'jenkinsKubernetes'
+    'jenkinsKubernetes',
+    /**
+     * Print more detailed information into the log.
+     * @possibleValues `true`, `false`
+     */
+    'verbose'
 ]
 @Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS.plus([
     /**
@@ -72,6 +77,8 @@ import hudson.AbortException
      * Specifies a dedicated user home directory for the container which will be passed as value for environment variable `HOME`.
      */
     'dockerWorkspace',
+    /** Defines the Kubernetes nodeSelector as per [https://github.com/jenkinsci/kubernetes-plugin](https://github.com/jenkinsci/kubernetes-plugin).*/
+    'nodeSelector',
     /**
      * Kubernetes Security Context used for the pod.
      * Can be used to specify uid and fsGroup.
@@ -99,10 +106,19 @@ import hudson.AbortException
 /**
  * Executes a closure inside a container in a kubernetes pod.
  * Proxy environment variables defined on the Jenkins machine are also available in the container.
+ *
+ * By default jnlp agent defined for kubernetes-plugin will be used (see https://github.com/jenkinsci/kubernetes-plugin#pipeline-support).
+ *
+ * It is possible to define a custom jnlp agent image by
+ *
+ * 1. Defining the jnlp image via environment variable JENKINS_JNLP_IMAGE in the Kubernetes landscape
+ * 2. Defining the image via config (`jenkinsKubernetes.jnlpAgent`)
+ *
+ * Option 1 will take precedence over option 2.
  */
 @GenerateDocumentation
 void call(Map parameters = [:], body) {
-    handlePipelineStepErrors(stepName: STEP_NAME, stepParameters: parameters) {
+    handlePipelineStepErrors(stepName: STEP_NAME, stepParameters: parameters, failOnError: true) {
 
         final script = checkScript(this, parameters) ?: this
 
@@ -147,6 +163,12 @@ def getOptions(config) {
     if (namespace) {
         options.namespace = namespace
     }
+    if (config.nodeSelector) {
+        options.nodeSelector = config.nodeSelector
+    }
+    if (!config.verbose) {
+        options.showRawYaml = false
+    }
     return options
 }
 
@@ -162,8 +184,10 @@ void executeOnPod(Map config, utils, Closure body) {
      * In case third case, we need to create the 'container' stash to bring the modified content back to the host.
      */
     try {
-        if (config.containerName && config.stashContent.isEmpty()){
-            config.stashContent.add(stashWorkspace(config, 'workspace'))
+
+        def stashContent = config.stashContent
+        if (config.containerName && stashContent.isEmpty()){
+            stashContent = [stashWorkspace(config, 'workspace')]
         }
         podTemplate(getOptions(config)) {
             node(config.uniqueId) {
@@ -175,7 +199,7 @@ void executeOnPod(Map config, utils, Closure body) {
                     echo "ContainerConfig: ${containerParams}"
                     container(containerParams){
                         try {
-                            utils.unstashAll(config.stashContent)
+                            utils.unstashAll(stashContent)
                             body()
                         } finally {
                             stashWorkspace(config, 'container', true)
@@ -206,7 +230,7 @@ private String generatePodSpec(Map config) {
     ]
     podSpec.spec.securityContext = getSecurityContext(config)
 
-    return new JsonUtils().getPrettyJsonString(podSpec)
+    return new JsonUtils().groovyObjectToPrettyJsonString(podSpec)
 }
 
 
@@ -223,7 +247,9 @@ chown -R ${runAsUser}:${fsGroup} ."""
         stash(
             name: stashName,
             includes: config.stashIncludes.workspace,
-            excludes: config.stashExcludes.workspace
+            excludes: config.stashExcludes.workspace,
+            //inactive due to negative side-effects, we may require a dedicated git stash to be used
+            //useDefaultExcludes: false
         )
         return stashName
     } catch (AbortException | IOException e) {
@@ -245,10 +271,17 @@ private void unstashWorkspace(config, prefix) {
 }
 
 private List getContainerList(config) {
-    def result = [[
-        name: 'jnlp',
-        image: config.jenkinsKubernetes.jnlpAgent
-    ]]
+
+    //If no custom jnlp agent provided as default jnlp agent (jenkins/jnlp-slave) as defined in the plugin, see https://github.com/jenkinsci/kubernetes-plugin#pipeline-support
+    def result = []
+
+    //allow definition of jnlp image via environment variable JENKINS_JNLP_IMAGE in the Kubernetes landscape or via config as fallback
+    if (env.JENKINS_JNLP_IMAGE || config.jenkinsKubernetes.jnlpAgent) {
+        result.push([
+            name: 'jnlp',
+            image: env.JENKINS_JNLP_IMAGE ?: config.jenkinsKubernetes.jnlpAgent
+        ])
+    }
     config.containerMap.each { imageName, containerName ->
         def containerPullImage = config.containerPullImageFlags?.get(imageName)
         def containerSpec = [

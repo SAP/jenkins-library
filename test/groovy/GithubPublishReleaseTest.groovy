@@ -1,4 +1,3 @@
-#!groovy
 import groovy.json.JsonSlurperClassic
 import org.junit.Before
 import org.junit.Rule
@@ -34,8 +33,13 @@ class GithubPublishReleaseTest extends BasePiperTest {
     def data
     def requestList = []
 
+    def responseStatusLatestRelease
+
     @Before
     void init() throws Exception {
+
+        responseStatusLatestRelease = 200
+
         // register Jenkins commands with mock values
         helper.registerAllowedMethod( "deleteDir", [], null )
         helper.registerAllowedMethod("httpRequest", [], null)
@@ -58,12 +62,9 @@ class GithubPublishReleaseTest extends BasePiperTest {
         def responseRelease = '{"url":"https://api.github.com/SAP/jenkins-library/releases/27149","assets_url":"https://api.github.com/SAP/jenkins-library/releases/27149/assets","upload_url":"https://github.com/api/uploads/repos/ContinuousDelivery/piper-library/releases/27149/assets{?name,label}","html_url":"https://github.com/ContinuousDelivery/piper-library/releases/tag/test","id":27149,"tag_name":"test","target_commitish":"master","name":"v1.0.0","draft":false,"author":{"login":"XTEST2","id":6991,"avatar_url":"https://github.com/avatars/u/6991?","gravatar_id":"","url":"https://api.github.com/users/XTEST2","html_url":"https://github.com/XTEST2","followers_url":"https://api.github.com/users/XTEST2/followers","following_url":"https://api.github.com/users/XTEST2/following{/other_user}","gists_url":"https://api.github.com/users/XTEST2/gists{/gist_id}","starred_url":"https://api.github.com/users/XTEST2/starred{/owner}{/repo}","subscriptions_url":"https://api.github.com/users/XTEST2/subscriptions","organizations_url":"https://api.github.com/users/XTEST2/orgs","repos_url":"https://api.github.com/users/XTEST2/repos","events_url":"https://api.github.com/users/XTEST2/events{/privacy}","received_events_url":"https://api.github.com/users/XTEST2/received_events","type":"User","site_admin":false},"prerelease":false,"created_at":"2018-04-18T11:00:17Z","published_at":"2018-04-18T11:32:34Z","assets":[],"tarball_url":"https://api.github.com/SAP/jenkins-library/tarball/test","zipball_url":"https://api.github.com/SAP/jenkins-library/zipball/test","body":"Description of the release"}'
 
         helper.registerAllowedMethod("httpRequest", [String.class], { s ->
-            def result = [status: 404]
+            def result = [:]
             requestList.push(s.toString())
-            if(s.contains('/releases/latest?')) {
-                result.content = responseLatestRelease
-                result.status = 200
-            } else if(s.contains('/issues?')) {
+            if(s.contains('/issues?')) {
                 result.content = responseIssues
                 result.status = 200
             }
@@ -71,12 +72,16 @@ class GithubPublishReleaseTest extends BasePiperTest {
         })
         helper.registerAllowedMethod("httpRequest", [Map.class], { m ->
             def result = ''
+            def status = 200
             requestList.push(m?.url?.toString())
             if(m?.url?.contains('/releases?')){
                 data = new JsonSlurperClassic().parseText(m?.requestBody?.toString())
                 result = responseRelease
+            } else if(m.url.contains('/releases/latest?')) {
+                result = responseLatestRelease
+                status = responseStatusLatestRelease
             }
-            return [content: result]
+            return [content: result, status: status]
         })
     }
 
@@ -145,6 +150,21 @@ class GithubPublishReleaseTest extends BasePiperTest {
         assertThat(data.draft, is(false))
         assertThat(data.prerelease, is(false))
         assertJobStatusSuccess()
+    }
+
+    @Test
+    void testNoReleaseYet() {
+        responseStatusLatestRelease = 404
+
+        stepRule.step.githubPublishRelease(
+            script: nullScript,
+            githubOrg: 'TestOrg',
+            githubRepo: 'TestRepo',
+            githubTokenCredentialsId: 'TestCredentials',
+            version: '1.2.3'
+        )
+
+        assertThat(loggingRule.log, containsString('This is the first release - no previous releases available'))
     }
 
     @Test

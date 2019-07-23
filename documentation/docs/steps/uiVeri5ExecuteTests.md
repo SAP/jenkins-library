@@ -8,6 +8,8 @@
 
 ## ${docGenConfiguration}
 
+## ${docJenkinsPluginDependencies}
+
 ## Exceptions
 
 If you see an error like `fatal: Not a git repository (or any parent up to mount point /home/jenkins)` it is likely that your test description cannot be found.<br />
@@ -36,14 +38,14 @@ const specs = path.relative(process.cwd(), path.join(__dirname, '*.spec.js'));
 // export UIVeri5 config
 exports.config = {
     profile: 'integration',
-    baseUrl: '${params.url}',
+    baseUrl: '\${params.url}',
     specs: specs,
     params: defaultParams, // can be overridden via cli `--params.<key>=<value>`
     auth: {
         // set up authorization for CF XSUAA
         'sapcloud-form': {
-            user: '${params.user}',
-            pass: '${params.pass}',
+            user: '\${params.user}',
+            pass: '\${params.pass}',
             userFieldSelector: 'input[name="username"]',
             passFieldSelector: 'input[name="password"]',
             logonButtonSelector: 'input[type="submit"]',
@@ -63,7 +65,7 @@ withCredentials([usernamePassword(
     passwordVariable: 'password',
     usernameVariable: 'username'
 )]) {
-    uiVeri5ExecuteTests script: this, testOptions: "./uiveri5/conf.js --params.user=${username} --params.pass=${password}"
+    uiVeri5ExecuteTests script: this, testOptions: "./uiveri5/conf.js --params.user=\${username} --params.pass=\${password}"
 }
 ```
 
@@ -78,7 +80,7 @@ void call(Map params) {
         usernameVariable: 'username'
     )]) {
         // store the result in the environment variables for executeUIVeri5Test
-        withEnv(["TEST_USER=${username}", "TEST_PASS=${password}"]) {
+        withEnv(["TEST_USER=\${username}", "TEST_PASS=\${password}"]) {
             //execute original stage as defined in the template
             params.originalStage()
         }

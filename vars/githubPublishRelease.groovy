@@ -1,27 +1,66 @@
 import static com.sap.piper.Prerequisites.checkScript
 
+import com.sap.piper.GenerateDocumentation
 import com.sap.piper.Utils
 import com.sap.piper.ConfigurationHelper
 
 import groovy.transform.Field
 
 @Field String STEP_NAME = getClass().getName()
-@Field Set GENERAL_CONFIG_KEYS = ['githubApiUrl', 'githubTokenCredentialsId', 'githubServerUrl']
-@Field Set STEP_CONFIG_KEYS = [
-    'addClosedIssues',
-    'addDeltaToLastRelease',
-    'customFilterExtension',
-    'excludeLabels',
+
+@Field Set GENERAL_CONFIG_KEYS = [
+    /** Allows to overwrite the GitHub API url.*/
     'githubApiUrl',
+    /**
+     * Allows to overwrite the GitHub token credentials id.
+     * @possibleValues Jenkins credential id
+     */
     'githubTokenCredentialsId',
-    'githubOrg',
-    'githubRepo',
-    'githubServerUrl',
-    'releaseBodyHeader',
-    'version'
+    /** Allows to overwrite the GitHub url.*/
+    'githubServerUrl'
 ]
+
+@Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS.plus([
+    /**
+     * If it is set to `true`, a list of all closed issues and merged pull-requests since the last release will added below the `releaseBodyHeader`.
+     * @possibleValues `true`, `false`
+     */
+    'addClosedIssues',
+    /**
+     * If you set `addDeltaToLastRelease` to `true`, a link will be added to the relese information that brings up all commits since the last release.
+     * @possibleValues `true`, `false`
+     */
+    'addDeltaToLastRelease',
+    /** Allows to pass additional filter criteria for retrieving closed issues since the last release. Additional criteria could be for example specific `label`, or `filter` according to [GitHub API documentation](https://developer.github.com/v3/issues/).*/
+    'customFilterExtension',
+    /** Allows to exclude issues with dedicated labels. Usage is like `excludeLabels: ['label1', 'label2']`.*/
+    'excludeLabels',
+    /** Allows to overwrite the GitHub organitation.*/
+    'githubOrg',
+    /** Allows to overwrite the GitHub repository.*/
+    'githubRepo',
+    /** Allows to specify the content which will appear for the release.*/
+    'releaseBodyHeader',
+    /** Defines the version number which will be written as tag as well as release name.*/
+    'version'
+])
+
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
 
+/**
+ * This step creates a tag in your GitHub repository together with a release.
+ *
+ * The release can be filled with text plus additional information like:
+ *
+ * * Closed pull request since last release
+ * * Closed issues since last release
+ * * link to delta information showing all commits since last release
+ *
+ * The result looks like
+ *
+ * ![Example release](../images/githubRelease.png)
+ */
+@GenerateDocumentation
 void call(Map parameters = [:]) {
     handlePipelineStepErrors(stepName: STEP_NAME, stepParameters: parameters) {
         def script = checkScript(this, parameters) ?: this
@@ -59,7 +98,7 @@ void call(Map parameters = [:]) {
 Map getLastRelease(config, TOKEN){
     def result = [:]
 
-    def response = httpRequest "${config.githubApiUrl}/repos/${config.githubOrg}/${config.githubRepo}/releases/latest?access_token=${TOKEN}"
+    def response = httpRequest url: "${config.githubApiUrl}/repos/${config.githubOrg}/${config.githubRepo}/releases/latest?access_token=${TOKEN}", validResponseCodes: '100:500'
     if (response.status == 200) {
         result = readJSON text: response.content
     } else {

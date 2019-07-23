@@ -1,22 +1,12 @@
-# pipelineStashFiles
+# ${docGenStepName}
 
-## Description
-
-This step stashes files that are needed in other build steps (on other nodes).
+## ${docGenDescription}
 
 ## Prerequsites
 
 none
 
-## Parameters
-
-| parameter | mandatory | default | possible values |
-| ----------|-----------|---------|-----------------|
-| script | yes |  |  |
-| runCheckmarx | no | false |  |
-| runOpaTests | no | false |  |
-| stashIncludes | no | see details |  |
-| stashExcludes | no | see details |  |
+## ${docGenParameters}
 
 Details:
 
@@ -24,8 +14,8 @@ The step is stashing files before and after the build. This is due to the fact, 
 
 | stash name | mandatory | prerequisite | pattern |
 |---|---|---|---|
-|buildDescriptor|no| |includes: `**/pom.xml, **/.mvn/**, **/assembly.xml, **/.swagger-codegen-ignore, **/package.json, **/requirements.txt, **/setup.py, **/whitesource_config.py, **/mta*.y*ml, **/.npmrc, **/whitesource.*.json, **/whitesource-fs-agent.config, Dockerfile, **/VERSION, **/version.txt, **/build.sbt, **/sbtDescriptor.json, **/project/*`<br /> excludes: `**/node_modules/**/package.json`|
-|checkmarx|no|Checkmarx is enabled|includes: `**/*.js, **/*.scala, **/*.go`<br /> excludes: `**/*.mockserver.js, node_modules/**/*.js`|
+|buildDescriptor|no| |includes: `**/pom.xml, **/.mvn/**, **/assembly.xml, **/.swagger-codegen-ignore, **/package.json, **/requirements.txt, **/setup.py, **/whitesource_config.py, **/mta*.y*ml, **/.npmrc, **/whitesource.*.json, **/whitesource-fs-agent.config, Dockerfile, **/VERSION, **/version.txt, **/Gopkg.*, **/dub.json, **/dub.sdl, **/build.sbt, **/sbtDescriptor.json, **/project/*`<br /> excludes: `**/node_modules/**/package.json`|
+|checkmarx|no|Checkmarx is enabled|includes: `**/*.js, **/*.scala, **/*.go, **/*.d, **/*.di`<br /> excludes: `**/*.mockserver.js, node_modules/**/*.js`|
 |classFiles|no| |includes: `**/target/classes/**/*.class, **/target/test-classes/**/*.class` <br />excludes: `''`|
 |deployDescriptor|no| |includes: `**/manifest*.y*ml, **/*.mtaext.y*ml, **/*.mtaext, **/xs-app.json, helm/**, *.y*ml`<br />exclude: `''`|
 |git|no| |includes: `**/gitmetadata/**`<br />exludes: `''`|
@@ -42,14 +32,9 @@ The step is stashing files before and after the build. This is due to the fact, 
     * `stashIncludes: [buildDescriptor: '**/mybuild.yml]`
     * `stashExcludes: [tests: '**/NOTRELEVANT.*]`
 
-## Step configuration
+## ${docGenConfiguration}
 
-The following parameters can also be specified as step parameters using the global configuration file:
-
-* runOpaTests
-* runCheckmarx
-* stashExcludes
-* stashIncludes
+## ${docJenkinsPluginDependencies}
 
 ## Explanation of pipeline step
 

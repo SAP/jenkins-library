@@ -1,22 +1,6 @@
-# influxWriteData
+# ${docGenStepName}
 
-## Description
-
-Since your Continuous Delivery Pipeline in Jenkins provides your productive development and delivery infrastructure you should monitor the pipeline to ensure it runs as expected. How to setup this monitoring is described in the following.
-
-You basically need three components:
-
-- The [InfluxDB Jenkins plugin](https://wiki.jenkins-ci.org/display/JENKINS/InfluxDB+Plugin) which allows you to send build metrics to InfluxDB servers
-- The [InfluxDB](https://www.influxdata.com/time-series-platform/influxdb/) to store this data (Docker available)
-- A [Grafana](http://grafana.org/) dashboard to visualize the data stored in InfluxDB (Docker available)
-
-!!! note "no InfluxDB available?"
-    If you don't have an InfluxDB available yet this step will still provide you some benefit.
-
-    It will create following files for you and archive them into your build:
-
-    * `jenkins_data.json`: This file gives you build-specific information, like e.g. build result, stage where the build failed
-    * `influx_data.json`: This file gives you detailed information about your pipeline, e.g. stage durations, steps executed, ...
+## ${docGenDescription}
 
 ## Prerequisites
 
@@ -31,8 +15,8 @@ Very basic setup can be done like that (with user "admin" and password "adminPwd
 
 For more advanced setup please reach out to the respective documentation:
 
-- https://hub.docker.com/_/influxdb/ (and https://github.com/docker-library/docs/tree/master/influxdb)
-- https://hub.docker.com/r/grafana/grafana/ (and https://github.com/grafana/grafana-docker)
+- InfluxDB ([Docker Hub](https://hub.docker.com/_/influxdb/) [GitHub](https://github.com/docker-library/docs/tree/master/influxdb))
+- Grafana ([Docker Hub](https://hub.docker.com/r/grafana/grafana/) [GitHub](https://github.com/grafana/grafana-docker))
 
 After you have started your InfluxDB docker you need to create a database:
 
@@ -59,7 +43,7 @@ Once you have started both docker containers and Influx and Grafana are running 
 To setup your Jenkins you need to do two configuration steps:
 
 1. Configure Jenkins (via Manage Jenkins)
-2. Adapt pipeline configuration
+1. Adapt pipeline configuration
 
 ### Configure Jenkins
 
@@ -79,37 +63,11 @@ You need to define the influxDB server in your pipeline as it is defined in the 
 influxDBServer=jenkins
 ```
 
-## Parameters
+## ${docGenParameters}
 
-| parameter | mandatory | default | possible values |
-| ----------|-----------|---------|-----------------|
-|script|yes|||
-|artifactVersion|no|`commonPipelineEnvironment.getArtifactVersion()`||
-|customData|no|`commonPipelineEnvironment.getInfluxCustomData()`||
-|customDataMap|no|`commonPipelineEnvironment.getInfluxCustomDataMap()`||
-|customDataMapTags|no|`commonPipelineEnvironment.getInfluxCustomDataTags()`||
-|customDataTags|no|`commonPipelineEnvironment.getInfluxCustomDataTags()`||
-|influxPrefix|no|||
-|influxServer|no|`''`||
-|wrapInNode|no|`false`||
+## ${docGenConfiguration}
 
-## Step configuration
-
-We recommend to define values of step parameters via [config.yml file](../configuration.md).
-
-In following sections the configuration is possible:
-
-| parameter | general | step | stage |
-| ----------|-----------|---------|-----------------|
-|script||||
-|artifactVersion||X|X|
-|customData||X|X|
-|customDataMap||X|X|
-|customDataMapTags||X|X|
-|customDataTags||X|X|
-|influxPrefix||X|X|
-|influxServer||X|X|
-|wrapInNode||X|X|
+## ${docJenkinsPluginDependencies}
 
 ## Example
 
@@ -144,7 +102,7 @@ As a first step you need to add your InfluxDB as Data source to your Grafana:
 The Influx plugin collects following data in the Piper context:
 
 - All data as per default [InfluxDB plugin capabilities](https://wiki.jenkins.io/display/JENKINS/InfluxDB+Plugin)
-- Additional data collected via `commonPipelineEnvironment.setInfluxCustomDataProperty()` and via `commonPipelineEnvironment.setPipelineMeasurement()`
+- Additional data collected via `InfluxData.addField(measurement, key, value)`
 
 !!! note "Add custom information to your InfluxDB"
     You can simply add custom data collected during your pipeline runs via available data objects.
@@ -169,7 +127,7 @@ Measurements are potentially pre-fixed - see parameter `influxPrefix` above.
 | sonarqube_data | <ul><li>blocker_issues</li><li>critical_issues</li><li>info_issues</li><li>major_issues</li><li>minor_issues</li><li>lines_of_code</li><li>...</li></ul> | Details see [InfluxDB plugin documentation](https://wiki.jenkins.io/display/JENKINS/InfluxDB+Plugin) |
 | jenkins_custom_data | Piper fills following colums by default: <br /><ul><li>build_result</li><li>build_result_key</li><li>build_step (->step in case of error)</li><li>build_error (->error message in case of error)</li></ul> | filled by `commonPipelineEnvironment.setInfluxCustomDataProperty()` |
 | pipeline_data | Examples from the Piper templates:<br /><ul><li>build_duration</li><li>opa_duration</li><li>deploy_test_duration</li><li>deploy_test_duration</li><li>fortify_duration</li><li>release_duration</li><li>...</li></ul>| filled by step [`measureDuration`](durationMeasure.md) using parameter `measurementName`|
-| step_data | Considered, e.g.:<br /><ul><li>build_url</li><li>bats</li><li>checkmarx</li><li>fortify</li><li>gauge</li><li>nsp</li><li>snyk</li><li>sonar</li><li>...</li></ul>| filled by `commonPipelineEnvironment.setInfluxStepData()` |
+| step_data | Considered, e.g.:<br /><ul><li>build_url</li><li>bats</li><li>checkmarx</li><li>fortify</li><li>gauge</li><li>nsp</li><li>snyk</li><li>sonar</li><li>...</li></ul>| filled by `InfluxData.addField('step_data', key, value)` |
 
 ### Examples for InfluxDB queries which can be used in Grafana
 

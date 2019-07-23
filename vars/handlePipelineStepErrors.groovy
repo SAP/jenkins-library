@@ -2,10 +2,12 @@ import com.cloudbees.groovy.cps.NonCPS
 
 import com.sap.piper.GenerateDocumentation
 import com.sap.piper.ConfigurationHelper
-
-import groovy.text.SimpleTemplateEngine
+import com.sap.piper.analytics.InfluxData
+import groovy.text.GStringTemplateEngine
 import groovy.transform.Field
 import hudson.AbortException
+
+import org.jenkinsci.plugins.workflow.steps.FlowInterruptedException
 
 @Field STEP_NAME = getClass().getName()
 
@@ -16,8 +18,17 @@ import hudson.AbortException
      * @possibleValues `true`, `false`
      */
     'failOnError',
+    /** Defines the url of the library's documentation that will be used to generate the corresponding links to the step documentation.*/
+    'libraryDocumentationUrl',
+    /** Defines the url of the library's repository that will be used to generate the corresponding links to the step implementation.*/
+    'libraryRepositoryUrl',
     /** Defines a list of mandatory steps (step names) which have to be successful (=stop the pipeline), even if `failOnError: false` */
-    'mandatorySteps'
+    'mandatorySteps',
+    /**
+     * Defines a Map containing step name as key and timout in minutes in order to stop an execution after a certain timeout.
+     * This helps to make pipeline runs more resilient with respect to long running steps.
+     * */
+    'stepTimeouts'
 ])
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS.plus([
     /**
@@ -25,10 +36,6 @@ import hudson.AbortException
      * @possibleValues `true`, `false`
      */
     'echoDetails',
-    /** Defines the url of the library's documentation that will be used to generate the corresponding links to the step documentation.*/
-    'libraryDocumentationUrl',
-    /** Defines the url of the library's repository that will be used to generate the corresponding links to the step implementation.*/
-    'libraryRepositoryUrl',
     /** Defines the name of the step for which the error handling is active. It will be shown in the console log.*/
     'stepName',
     /** Defines the documented step, in case the documentation reference should point to a different step. */
@@ -43,7 +50,7 @@ import hudson.AbortException
 @GenerateDocumentation
 void call(Map parameters = [:], body) {
     // load default & individual configuration
-    def cpe = parameters.stepParameters?.script?.commonPipelineEnvironment ?: commonPipelineEnvironment
+    def cpe = parameters.stepParameters?.script?.commonPipelineEnvironment ?: null
     Map config = ConfigurationHelper.newInstance(this)
         .loadStepDefaults()
         .mixinGeneralConfig(cpe, GENERAL_CONFIG_KEYS)
@@ -59,20 +66,38 @@ void call(Map parameters = [:], body) {
     try {
         if (config.echoDetails)
             echo "--- Begin library step of: ${config.stepName} ---"
-
-        body()
-    } catch (AbortException ae) {
-        if (config.echoDetails)
-            message += formatErrorMessage(config, ae)
-        writeErrorToInfluxData(config, ae)
-        if (config.failOnError || config.stepName in config.mandatorySteps) {
-            throw ae
+        if (!config.failOnError && config.stepTimeouts?.get(config.stepName)) {
+            timeout(time: config.stepTimeouts[config.stepName]) {
+                body()
+            }
+        } else {
+            body()
         }
+    } catch (AbortException | FlowInterruptedException ex) {
+        if (config.echoDetails)
+            message += formatErrorMessage(config, ex)
+        writeErrorToInfluxData(config, ex)
+        if (config.failOnError || config.stepName in config.mandatorySteps) {
+            throw ex
+        }
+
         if (config.stepParameters?.script) {
             config.stepParameters?.script.currentBuild.result = 'UNSTABLE'
         } else {
             currentBuild.result = 'UNSTABLE'
         }
+
+        echo "[${STEP_NAME}] Error in step ${config.stepName} - Build result set to 'UNSTABLE'"
+
+        List unstableSteps = cpe?.getValue('unstableSteps') ?: []
+        if(!unstableSteps) {
+            unstableSteps = []
+        }
+
+        // add information about unstable steps to pipeline environment
+        // this helps to bring this information to users in a consolidated manner inside a pipeline
+        unstableSteps.add(config.stepName)
+        cpe?.setValue('unstableSteps', unstableSteps)
 
     } catch (Throwable error) {
         if (config.echoDetails)
@@ -93,9 +118,9 @@ private String formatErrorMessage(Map config, error){
         libraryDocumentationUrl: config.libraryDocumentationUrl,
         libraryRepositoryUrl: config.libraryRepositoryUrl,
         stepName: config.stepName,
-        stepParameters: config.stepParameters?.toString()
+        stepParameters: (config.stepParameters?.verbose == true) ? config.stepParameters?.toString() : '*** to show step parameters, set verbose:true in general pipeline configuration\n*** WARNING: this may reveal sensitive information. ***'
     ]
-    return SimpleTemplateEngine
+    return GStringTemplateEngine
         .newInstance()
         .createTemplate(libraryResource('com.sap.piper/templates/error.log'))
         .make(binding)
@@ -103,11 +128,9 @@ private String formatErrorMessage(Map config, error){
 }
 
 private void writeErrorToInfluxData(Map config, error){
-    def script = config?.stepParameters?.script
-
-    if(script && script.commonPipelineEnvironment?.getInfluxCustomDataMapTags().build_error_message == null){
-        script.commonPipelineEnvironment?.setInfluxCustomDataMapTagsEntry('pipeline_data', 'build_error_step', config.stepName)
-        script.commonPipelineEnvironment?.setInfluxCustomDataMapTagsEntry('pipeline_data', 'build_error_stage', script.env?.STAGE_NAME)
-        script.commonPipelineEnvironment?.setInfluxCustomDataMapEntry('pipeline_data', 'build_error_message', error.getMessage())
+    if(InfluxData.getInstance().getFields().pipeline_data?.build_error_message == null){
+        InfluxData.addTag('pipeline_data', 'build_error_step', config.stepName)
+        InfluxData.addTag('pipeline_data', 'build_error_stage', config.stepParameters.script?.env?.STAGE_NAME)
+        InfluxData.addField('pipeline_data', 'build_error_message', error.getMessage())
     }
 }

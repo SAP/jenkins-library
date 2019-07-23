@@ -1,5 +1,6 @@
 import static com.sap.piper.Prerequisites.checkScript
 
+import com.sap.piper.GenerateDocumentation
 import com.sap.piper.ConfigurationHelper
 import com.sap.piper.GitUtils
 import com.sap.piper.Utils
@@ -14,23 +15,87 @@ import groovy.text.SimpleTemplateEngine
 @Field Set GENERAL_CONFIG_KEYS = STEP_CONFIG_KEYS
 
 @Field Set STEP_CONFIG_KEYS = [
+    /**
+     * Defines the type of the artifact.
+     * @possibleValues `appContainer`
+     */
     'artifactType',
+    /**
+     * Defines the tool which is used for building the artifact.
+     * @possibleValues `dub`, `docker`, `golang`, `maven`, `mta`, `npm`, `pip`, `sbt`
+     */
     'buildTool',
+    /**
+     * Controls if the changed version is committed and pushed to the git repository.
+     * If this is enabled (which is the default), you need to provide `gitCredentialsId` and `gitSshUrl`.
+     * @possibleValues `true`, `false`
+     */
     'commitVersion',
+    /**
+     * Specifies the source to be used for the main version which is used for generating the automatic version.
+     * * This can either be the version of the base image - as retrieved from the `FROM` statement within the Dockerfile, e.g. `FROM jenkins:2.46.2`
+     * * Alternatively the name of an environment variable defined in the Docker image can be used which contains the version number, e.g. `ENV MY_VERSION 1.2.3`
+     * * The third option `appVersion` applies only to the artifactType `appContainer`. Here the version of the app which is packaged into the container will be used as version for the container itself.
+     * @possibleValues FROM, (ENV name),appVersion
+     */
     'dockerVersionSource',
+    /**
+     * Defines a custom path to the descriptor file.
+     */
     'filePath',
+    /**
+     * Defines the ssh git credentials to be used for writing the tag.
+     */
     'gitSshKeyCredentialsId',
+    /**
+     * Allows to overwrite the global git setting 'user.email' available on your Jenkins server.
+     */
     'gitUserEMail',
+    /**
+     * Allows to overwrite the global git setting 'user.name' available on your Jenkins server.
+     */
     'gitUserName',
+    /**
+     * Defines the git ssh url to the source code repository.
+     */
     'gitSshUrl',
+    /**
+     * Defines the prefix which is used for the git tag which is written during the versioning run.
+     */
     'tagPrefix',
+    /**
+     * Defines the timestamp to be used in the automatic version string. You could overwrite the default behavior by explicitly setting this string.
+     */
     'timestamp',
+    /** Defines the template for the timestamp which will be part of the created version. */
     'timestampTemplate',
+    /** Defines the template for the automatic version which will be created. */
     'versioningTemplate'
 ]
 
-@Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS.plus('gitCommitId')
+@Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS.plus(
+    /**
+     * Defines the version prefix of the automatically generated version. By default it will take the long commitId hash.
+     * You could pass any other string (e.g. the short commitId hash) to be used. In case you don't want to have the gitCommitId added to the automatic versioning string you could set the value to an empty string: `''`.
+     */
+    'gitCommitId'
+)
 
+/**
+ * The continuous delivery process requires that each build is done with a unique version number.
+ *
+ * The version generated using this step will contain:
+ *
+ * * Version (major.minor.patch) from descriptor file in master repository is preserved. Developers should be able to autonomously decide on increasing either part of this version number.
+ * * Timestamp
+ * * CommitId (by default the long version of the hash)
+ *
+ * Optionally, but enabled by default, the new version is pushed as a new tag into the source code repository (e.g. GitHub).
+ * If this option is chosen, git credentials and the repository URL needs to be provided.
+ * Since you might not want to configure the git credentials in Jenkins, committing and pushing can be disabled using the `commitVersion` parameter as described below.
+ * If you require strict reproducibility of your builds, this should be used.
+ */
+@GenerateDocumentation
 void call(Map parameters = [:], Closure body = null) {
 
     handlePipelineStepErrors (stepName: STEP_NAME, stepParameters: parameters) {
@@ -104,9 +169,9 @@ void call(Map parameters = [:], Closure body = null) {
 
             try {
                 sh """#!/bin/bash
-                      git add .
-                      git ${gitConfig} commit -m 'update version ${newVersion}'
-                      git tag ${config.tagPrefix}${newVersion}"""
+                    git add .
+                    git ${gitConfig} commit -m 'update version ${newVersion}'
+                    git tag ${config.tagPrefix}${newVersion}"""
                 config.gitCommitId = gitUtils.getGitCommitIdOrNull()
             } catch (e) {
                 error "[${STEP_NAME}]git commit and tag failed: ${e}"

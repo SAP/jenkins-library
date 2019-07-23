@@ -1,12 +1,19 @@
+import com.sap.piper.StepAssertions
 import com.sap.piper.Utils
+
+import groovy.lang.Script
 import hudson.AbortException
 
 import static org.hamcrest.Matchers.allOf
 import static org.hamcrest.Matchers.containsString
 import static org.hamcrest.Matchers.not
+import static org.junit.Assert.assertThat
 
 import org.hamcrest.Matchers
+import org.hamcrest.BaseMatcher
+import org.hamcrest.Description
 import org.jenkinsci.plugins.credentialsbinding.impl.CredentialNotFoundException
+import org.junit.After
 import org.junit.Assert
 import org.junit.Before
 import org.junit.Rule
@@ -33,9 +40,6 @@ class NeoDeployTest extends BasePiperTest {
     private JenkinsLoggingRule loggingRule = new JenkinsLoggingRule(this)
     private JenkinsShellCallRule shellRule = new JenkinsShellCallRule(this)
     private JenkinsStepRule stepRule = new JenkinsStepRule(this)
-    private JenkinsLockRule lockRule = new JenkinsLockRule(this)
-    private JenkinsFileExistsRule fileExistsRule = new JenkinsFileExistsRule(this, ['warArchive.war', 'archive.mtar', 'war.properties'])
-
 
     @Rule
     public RuleChain ruleChain = Rules
@@ -49,9 +53,9 @@ class NeoDeployTest extends BasePiperTest {
         .withCredentials('myCredentialsId', 'anonymous', '********')
         .withCredentials('CI_CREDENTIALS_ID', 'defaultUser', '********'))
         .around(stepRule)
-        .around(lockRule)
+        .around(new JenkinsLockRule(this))
         .around(new JenkinsWithEnvRule(this))
-        .around(fileExistsRule)
+        .around(new JenkinsFileExistsRule(this, ['warArchive.war', 'archive.mtar', 'war.properties']))
 
 
     private static warArchiveName = 'warArchive.war'
@@ -72,6 +76,11 @@ class NeoDeployTest extends BasePiperTest {
         helper.registerAllowedMethod('pwd', [], { return './' })
 
         nullScript.commonPipelineEnvironment.configuration = [steps: [neoDeploy: [neo: [host: 'test.deploy.host.com', account: 'trialuser123']]]]
+    }
+
+    @After
+    void tearDown() {
+        GroovySystem.metaClassRegistry.removeMetaClass(StepAssertions)
     }
 
     @Test
@@ -118,6 +127,158 @@ class NeoDeployTest extends BasePiperTest {
                 .hasSingleQuotedOption('user', 'anonymous')
                 .hasSingleQuotedOption('password', '\\*\\*\\*\\*\\*\\*\\*\\*')
                 .hasSingleQuotedOption('source', archiveName))
+    }
+
+    @Test
+    void extensionsAsStringTest() {
+
+        def checkedExtensionFiles = []
+
+        StepAssertions.metaClass.static.assertFileExists =
+            getFileExistsCheck(checkedExtensionFiles, [archiveName, 'myExtension.yml'])
+
+        stepRule.step.neoDeploy(
+                script: nullScript,
+                source: archiveName,
+                extensions: 'myExtension.yml'
+        )
+
+        assert checkedExtensionFiles.contains('myExtension.yml')
+
+        assertThat(shellRule.shell,
+            new CommandLineMatcher()
+                .hasProlog('neo.sh deploy-mta')
+                .hasSingleQuotedOption('extensions', 'myExtension.yml'))
+    }
+
+    @Test
+    void extensionsAsEmptyString() {
+
+        thrown.expect(AbortException)
+        thrown.expectMessage('extension file name was null or empty')
+
+        stepRule.step.neoDeploy(
+            script: nullScript,
+            source: archiveName,
+            extensions: ''
+        )
+    }
+
+    @Test
+    void extensionsAsSetTest() {
+        Set extensions= ['myExtension1.yml' ,'myExtension2.yml']
+        extensionsAsCollectionTest(extensions)
+    }
+
+    @Test
+    void extensionsAsCollectionWithEmptyStringTest() {
+
+        thrown.expect(AbortException)
+        thrown.expectMessage('extension file name was null or empty')
+
+        stepRule.step.neoDeploy(
+            script: nullScript,
+            source: archiveName,
+            extensions: ['myExtension1.yml' ,''])
+    }
+
+    @Test
+    void extensionsNullTest() {
+
+                stepRule.step.neoDeploy(
+                script: nullScript,
+                source: archiveName,
+                extensions: null)
+
+                assert shellRule.shell.find { c -> c.startsWith('neo.sh deploy-mta') && ! c.contains('--extensions')  }
+    }
+
+    @Test
+    void extensionsAsEmptyCollectionTest() {
+
+                stepRule.step.neoDeploy(
+                script: nullScript,
+                source: archiveName,
+                extensions: [])
+
+                assert shellRule.shell.find { c -> c.startsWith('neo.sh deploy-mta') && ! c.contains('--extensions')  }
+    }
+
+    @Test
+    void extensionsAsCollectionsWithNullEntrySetTest() {
+
+        thrown.expect(AbortException)
+        thrown.expectMessage('extension file name was null or empty')
+
+        stepRule.step.neoDeploy(
+            script: nullScript,
+            source: archiveName,
+            extensions: [null])
+    }
+
+    @Test
+    void extensionsAsListTest() {
+        List extensions= ['myExtension1.yml' ,'myExtension2.yml']
+        extensionsAsCollectionTest(extensions)
+    }
+
+    @Test
+    void sameExtensionProvidedTwiceTest() {
+        List extensions= ['myExtension1.yml' ,'myExtension2.yml', 'myExtension1.yml']
+        extensionsAsCollectionTest(extensions)
+    }
+
+    void extensionsAsCollectionTest(def extensions) {
+
+        def checkedExtensionFiles = []
+
+        StepAssertions.metaClass.static.assertFileExists =
+            getFileExistsCheck(checkedExtensionFiles, [archiveName, 'myExtension1.yml', 'myExtension2.yml'])
+
+        stepRule.step.neoDeploy(
+                script: nullScript,
+                source: archiveName,
+                extensions: extensions
+        )
+
+        assert checkedExtensionFiles.contains('myExtension1.yml')
+        assert checkedExtensionFiles.contains('myExtension2.yml')
+
+        assertThat(shellRule.shell,
+            new CommandLineMatcher()
+                .hasProlog('neo.sh deploy-mta')
+                // some kind of creative usage for the single quotation check (... single quotes inside)
+                .hasSingleQuotedOption('extensions', 'myExtension1.yml\',\'myExtension2.yml'))
+
+    }
+
+    private static getFileExistsCheck(def checkedExtensionFiles, def fileNames) {
+
+        { Script step, String filePath ->
+            checkedExtensionFiles << filePath
+            if( ! fileNames.contains(filePath) )
+                step.error("File ${filePath} cannot be found.")
+        }
+    }
+
+    @Test
+    void extensionsForWrongDeployModeTest() {
+
+        thrown.expect(AbortException)
+        thrown.expectMessage('Extensions are only supported for deploy mode \'MTA\'')
+
+        stepRule.step.neoDeploy(
+            script: nullScript,
+            source: archiveName,
+            deployMode: 'warParams',
+            extensions: 'myExtension.yml',
+            neo:
+                [
+                    application: 'does',
+                    runtime: 'not',
+                    runtimeVersion: 'matter'
+                ]
+        )
     }
 
     @Test
@@ -384,11 +545,7 @@ class NeoDeployTest extends BasePiperTest {
             deployMode: 'warPropertiesFile',
             warAction: 'deploy',
             neo: [
-                propertiesFile: warPropertiesFileName,
-                application: 'testApp',
-                runtime: 'neo-javaee6-wp',
-                runtimeVersion: '2.125',
-                size: 'lite'
+                propertiesFile: warPropertiesFileName
             ]
         )
 
@@ -410,11 +567,7 @@ class NeoDeployTest extends BasePiperTest {
             deployMode: 'warPropertiesFile',
             warAction: 'rolling-update',
             neo: [
-                propertiesFile: warPropertiesFileName,
-                application: 'testApp',
-                runtime: 'neo-javaee6-wp',
-                runtimeVersion: '2.125',
-                size: 'lite'
+                propertiesFile: warPropertiesFileName
             ])
 
         Assert.assertThat(shellRule.shell,
@@ -459,5 +612,71 @@ class NeoDeployTest extends BasePiperTest {
                 runtimeVersion: '2.125',
                 size: 'lite'
             ])
+    }
+
+    @Test
+    void dontSwallowExceptionWhenUnableToProvideLogsTest() {
+
+        thrown.expect(AbortException)
+        thrown.expectMessage('Something went wrong during neo deployment')
+        thrown.expect(new BaseMatcher() {
+
+            def expectedException = AbortException
+            def expectedText = 'Cannot provide logs.'
+
+            boolean matches(def ex) {
+                def suppressed = ex.getSuppressed()
+                return  (suppressed.size() == 1 &&
+                            suppressed[0] in expectedException &&
+                            suppressed[0].message == expectedText)
+
+            }
+
+            void describeTo(Description d) {
+                d.appendText(" a suppressed ${expectedException} with message ${expectedText}.")
+            }
+        })
+
+        loggingRule.expect('Unable to provide the logs.')
+
+        helper.registerAllowedMethod('fileExists', [String],
+            { f ->
+                f == 'archive.mtar'
+            }
+        )
+        helper.registerAllowedMethod('sh', [Map],
+            { m ->
+                if(m.script.toString().contains('neo.sh deploy-mta'))
+                    throw new AbortException('Something went wrong during neo deployment.')
+            }
+        )
+
+        helper.registerAllowedMethod("sh", [String],
+            { cmd ->
+                if (cmd == 'cat logs/neo/*')
+                    throw new AbortException('Cannot provide logs.')
+            }
+        )
+
+        stepRule.step.neoDeploy(script: nullScript,
+
+            source: archiveName,
+            neo:[credentialsId: 'myCredentialsId'],
+            deployMode: 'mta',
+            utils: utils,
+        )
+    }
+
+    @Test
+    void deployModeAsGStringTest() {
+
+        Map deployProps = [deployMode: 'warPropertiesFile']
+
+        stepRule.step.neoDeploy(script: nullScript,
+                  utils: utils,
+                  neo: [credentialsId: 'myCredentialsId',
+                        propertiesFile: warPropertiesFileName],
+                  deployMode: "$deployProps.deployMode",
+                  source: archiveName)
     }
 }

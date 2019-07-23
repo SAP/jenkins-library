@@ -1,4 +1,3 @@
-#!groovy
 package templates
 
 import org.junit.Before
@@ -99,7 +98,7 @@ stages:
     stepConditions:
       firstStep:
         config: testGeneral
-  testStage2: 
+  testStage2:
     stepConditions:
       secondStep:
         config: testStage
@@ -107,7 +106,7 @@ stages:
     stepConditions:
       thirdStep:
         config: testStep
-   
+
 '''
             } else {
                 return '''
@@ -155,23 +154,23 @@ stages:
   testStage1:
     stepConditions:
       firstStep:
-        config: 
+        config:
           testGeneral:
             - myValx
-            - myVal1 
-  testStage2: 
+            - myVal1
+  testStage2:
     stepConditions:
       secondStep:
-        config: 
-          testStage: 
+        config:
+          testStage:
             - maValXyz
   testStage3:
     stepConditions:
       thirdStep:
-        config: 
+        config:
           testStep:
             - myVal3
-   
+
 '''
             } else {
                 return '''
@@ -208,6 +207,66 @@ steps: {}
         assertThat(nullScript.commonPipelineEnvironment.configuration.runStep.testStage3.thirdStep, is(true))
 
     }
+
+    @Test
+    void testConditionConfigKeys() {
+        helper.registerAllowedMethod('libraryResource', [String.class], {s ->
+            if(s == 'testDefault.yml') {
+                return '''
+stages:
+  testStage1:
+    stepConditions:
+      firstStep:
+        configKeys:
+          - myKey1_1
+          - myKey1_2
+  testStage2:
+    stepConditions:
+      secondStep:
+        configKeys:
+          - myKey2_1
+  testStage3:
+    stepConditions:
+      thirdStep:
+        configKeys:
+          - myKey3_1
+'''
+            } else {
+                return '''
+general: {}
+steps: {}
+'''
+            }
+        })
+
+        nullScript.commonPipelineEnvironment.configuration = [
+            general: [myKey1_1: 'myVal1_1'],
+            stages: [:],
+            steps: [thirdStep: [myKey3_1: 'myVal3_1']]
+        ]
+
+        jsr.step.piperInitRunStageConfiguration(
+            script: nullScript,
+            juStabUtils: utils,
+            stageConfigResource: 'testDefault.yml'
+        )
+
+        assertThat(nullScript.commonPipelineEnvironment.configuration.runStage.keySet(),
+            allOf(
+                containsInAnyOrder(
+                    'testStage1',
+                    'testStage3'
+                ),
+                hasSize(2)
+            )
+        )
+
+        assertThat(nullScript.commonPipelineEnvironment.configuration.runStep.testStage1.firstStep, is(true))
+        assertThat(nullScript.commonPipelineEnvironment.configuration.runStep.testStage2?.secondStep, is(false))
+        assertThat(nullScript.commonPipelineEnvironment.configuration.runStep.testStage3.thirdStep, is(true))
+
+    }
+
 
     @Test
     void testConditionFilePattern() {
