@@ -88,7 +88,7 @@ class ConfigurationHelper implements Serializable {
         return newConfig
     }
 
-    protected mixin(String key){
+    ConfigurationHelper mixin(String key){
         def parts = tokenizeKey(key)
         def targetMap = config
         if(parts.size() > 1) {
@@ -107,26 +107,6 @@ class ConfigurationHelper implements Serializable {
     ConfigurationHelper dependingOn(dependentKey){
         dependingOn = dependentKey
         return this
-//        def helper = this
-//        return new Object(){
-//        }
-
-        //return [
-        //    mixin: { return this }
-            /*{ key ->
-                def parts = [] //tokenizeKey(key)
-                def targetMap = config
-                if(parts.size() > 1) {
-                    key = parts.last()
-                    parts.remove(key)
-                    targetMap = getConfigPropertyNested(config, parts.join(SEPARATOR))
-                }
-                def dependentValue = config[dependentKey]
-                if(targetMap[key] == null && dependentValue && config[dependentValue])
-                    targetMap[key] = config[dependentValue][key]
-                return this
-            }*/
-        //]
     }
 
     ConfigurationHelper addIfEmpty(key, value){
