@@ -1,29 +1,25 @@
 package com.sap.piper
 
-import com.cloudbees.groovy.cps.NonCPS
-
 class MapUtils implements Serializable {
     static boolean isMap(object){
         return object in Map
     }
 
-    @NonCPS
     static Map pruneNulls(Map m) {
 
         Map result = [:]
 
         m = m ?: [:]
 
-        for(def e : m.entrySet())
-            if(isMap(e.value))
-                result[e.key] = pruneNulls(e.value)
-            else if(e.value != null)
-                result[e.key] = e.value
+        m.each { key, value ->
+            if(isMap(value))
+                result[key] = pruneNulls(value)
+            else if(value != null)
+                result[key] = value
+        }
         return result
     }
 
-
-    @NonCPS
     static Map merge(Map base, Map overlay) {
 
         Map result = [:]
@@ -32,9 +28,9 @@ class MapUtils implements Serializable {
 
         result.putAll(base)
 
-        for(def e : overlay.entrySet())
-            result[e.key] = isMap(e.value) ? merge(base[e.key], e.value) : e.value
-
+        overlay.each { key, value ->
+            result[key] = isMap(value) ? merge(base[key], value) : value
+        }
         return result
     }
 
