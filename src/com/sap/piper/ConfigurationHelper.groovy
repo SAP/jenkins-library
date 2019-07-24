@@ -87,13 +87,16 @@ class ConfigurationHelper implements Serializable {
         return newConfig
     }
 
+    protected mixin(key){
+        return this
+    }
+
     Map dependingOn(dependentKey){
-        def helper = this
-        return new Object(){
-            def mixin(key){
-                return helper
-            }
-        }
+
+        return this
+//        def helper = this
+//        return new Object(){
+//        }
 
         //return [
         //    mixin: { return this }
