@@ -89,7 +89,7 @@ class ConfigurationHelper implements Serializable {
 
     Map dependingOn(dependentKey){
         return [
-            mixin: test
+            mixin: this.test
             /*{ key ->
                 def parts = [] //tokenizeKey(key)
                 def targetMap = config
