@@ -99,10 +99,12 @@ class ConfigurationHelper implements Serializable {
         def dependentValue = config[dependingOn]
         if(targetMap[key] == null && dependentValue && config[dependentValue])
             targetMap[key] = config[dependentValue][key]
+
+        dependingOn = null
         return this
     }
 
-    Map dependingOn(dependentKey){
+    ConfigurationHelper dependingOn(dependentKey){
         dependingOn = dependentKey
         return this
 //        def helper = this
