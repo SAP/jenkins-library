@@ -3,7 +3,6 @@ package com.sap.piper
 import com.cloudbees.groovy.cps.NonCPS
 
 class MapUtils implements Serializable {
-    @NonCPS
     static boolean isMap(object){
         return object in Map
     }
@@ -46,18 +45,16 @@ class MapUtils implements Serializable {
      *        in <code>m</code> in a recursive manner.
      * @param strategy Strategy applied to all non-map entries
      */
-    @NonCPS
     static void traverse(Map m, Closure strategy) {
 
         def updates = [:]
-        for(def e : m.entrySet()) {
-            if(isMap(e.value)) {
-                traverse(e.getValue(), strategy)
-            }
-            else {
+        m.each { key, value ->
+            if(isMap(value)) {
+                traverse(value, strategy)
+            } else {
                 // do not update the map while it is traversed. Depending
                 // on the map implementation the behavior is undefined.
-                updates.put(e.getKey(), strategy(e.getValue()))
+                updates.put(key, strategy(value))
             }
         }
         m.putAll(updates)

@@ -1,7 +1,5 @@
 package com.sap.piper
 
-import com.cloudbees.groovy.cps.NonCPS
-
 @API
 class ConfigurationHelper implements Serializable {
 
@@ -123,17 +121,10 @@ class ConfigurationHelper implements Serializable {
 
     Map use(){
         handleValidationFailures()
-        traverse()
+        MapUtils.traverse(config, { v -> (v instanceof GString) ? v.toString() : v })
         if(config.verbose) step.echo "[${name}] Configuration: ${config}"
         return MapUtils.deepCopy(config)
     }
-
-    @NonCPS
-    traverse(){
-        MapUtils.traverse(config, { v -> (v instanceof GString) ? v.toString() : v })
-    }
-
-
 
     /* private */ def getConfigPropertyNested(key) {
         return getConfigPropertyNested(config, key)
