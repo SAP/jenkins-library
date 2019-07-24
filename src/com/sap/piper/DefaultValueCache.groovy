@@ -2,8 +2,6 @@ package com.sap.piper
 
 import com.sap.piper.MapUtils
 
-import com.cloudbees.groovy.cps.NonCPS
-
 @API
 class DefaultValueCache implements Serializable {
     private static DefaultValueCache instance
@@ -14,7 +12,6 @@ class DefaultValueCache implements Serializable {
         this.defaultValues = defaultValues
     }
 
-    @NonCPS
     static getInstance(){
         return instance
     }
@@ -23,7 +20,6 @@ class DefaultValueCache implements Serializable {
         instance = new DefaultValueCache(defaultValues)
     }
 
-    @NonCPS
     Map getDefaultValues(){
         return defaultValues
     }
@@ -45,7 +41,7 @@ class DefaultValueCache implements Serializable {
                 configFileList += customDefaults
             for (def configFileName : configFileList){
                 if(configFileList.size() > 1) steps.echo "Loading configuration file '${configFileName}'"
-                def configuration = steps.readYaml text: steps.libraryResource(configFileName)
+                def configuration = steps.y text: steps.libraryResource(configFileName)
                 defaultValues = MapUtils.merge(
                         MapUtils.pruneNulls(defaultValues),
                         MapUtils.pruneNulls(configuration))
