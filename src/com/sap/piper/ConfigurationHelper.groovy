@@ -121,13 +121,16 @@ class ConfigurationHelper implements Serializable {
         return this
     }
 
-    @NonCPS // required because we have a closure in the
-            // method body that cannot be CPS transformed
     Map use(){
         handleValidationFailures()
-        MapUtils.traverse(config, { v -> (v instanceof GString) ? v.toString() : v })
+        traverse()
         if(config.verbose) step.echo "[${name}] Configuration: ${config}"
         return MapUtils.deepCopy(config)
+    }
+
+    @NonCPS
+    traverse(){
+        MapUtils.traverse(config, { v -> (v instanceof GString) ? v.toString() : v })
     }
 
 
@@ -193,15 +196,12 @@ class ConfigurationHelper implements Serializable {
         return this
     }
 
-    @NonCPS
     private handleValidationFailures() {
         if(! validationResults) return
         if(validationResults.size() == 1) throw validationResults.values().first()
-        String msg = 'ERROR - NO VALUE AVAILABLE FOR: ' +
-            (validationResults.keySet().stream().collect() as Iterable).join(', ')
+        String msg = 'ERROR - NO VALUE AVAILABLE FOR: ' + validationResults.keySet().join(', ')
         IllegalArgumentException iae = new IllegalArgumentException(msg)
         validationResults.each { e -> iae.addSuppressed(e.value) }
         throw iae
     }
-
 }
