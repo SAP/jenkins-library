@@ -88,9 +88,10 @@ class ConfigurationHelper implements Serializable {
     }
 
     Map dependingOn(dependentKey){
+        def helper = this
         return new Object(){
             def mixin(key){
-                return this
+                return helper
             }
         }
 
