@@ -41,7 +41,7 @@ class DefaultValueCache implements Serializable {
                 configFileList += customDefaults
             for (def configFileName : configFileList){
                 if(configFileList.size() > 1) steps.echo "Loading configuration file '${configFileName}'"
-                def configuration = steps.y text: steps.libraryResource(configFileName)
+                def configuration = steps.readYaml text: steps.libraryResource(configFileName)
                 defaultValues = MapUtils.merge(
                         MapUtils.pruneNulls(defaultValues),
                         MapUtils.pruneNulls(configuration))
