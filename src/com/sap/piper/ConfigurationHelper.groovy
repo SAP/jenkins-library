@@ -87,7 +87,7 @@ class ConfigurationHelper implements Serializable {
         return newConfig
     }
 
-    protected mixin(key){
+    protected mixin(String key){
         return this
     }
 
