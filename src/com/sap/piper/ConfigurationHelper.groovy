@@ -90,7 +90,7 @@ class ConfigurationHelper implements Serializable {
     Map dependingOn(dependentKey){
         return [
             mixin: { key ->
-                def parts = tokenizeKey(key)
+                def parts = [] //tokenizeKey(key)
                 def targetMap = config
                 if(parts.size() > 1) {
                     key = parts.last()
@@ -149,7 +149,6 @@ class ConfigurationHelper implements Serializable {
         return config[parts.head()]
     }
 
-    @NonCPS
     /* private */  static tokenizeKey(String key) {
         // reason for cast to CharSequence: String#tokenize(./.) causes a deprecation warning.
         List parts = (key in String) ? (key as CharSequence).tokenize(SEPARATOR) : ([key] as List)
