@@ -22,6 +22,7 @@ class ConfigurationHelper implements Serializable {
     private Script step
     private String name
     private Map validationResults = null
+    private String dependingOn
 
     private ConfigurationHelper(Script step, Map config){
         this.config = config ?: [:]
@@ -88,11 +89,21 @@ class ConfigurationHelper implements Serializable {
     }
 
     protected mixin(String key){
+        def parts = tokenizeKey(key)
+        def targetMap = config
+        if(parts.size() > 1) {
+            key = parts.last()
+            parts.remove(key)
+            targetMap = getConfigPropertyNested(config, parts.join(SEPARATOR))
+        }
+        def dependentValue = config[dependingOn]
+        if(targetMap[key] == null && dependentValue && config[dependentValue])
+            targetMap[key] = config[dependentValue][key]
         return this
     }
 
     Map dependingOn(dependentKey){
-
+        dependingOn = dependentKey
         return this
 //        def helper = this
 //        return new Object(){
