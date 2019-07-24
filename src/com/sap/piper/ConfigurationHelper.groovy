@@ -93,7 +93,7 @@ class ConfigurationHelper implements Serializable {
                 if(parts.size() > 1) {
                     key = parts.last()
                     parts.remove(key)
-                    targetMap = getConfigPropertyNested(config, (parts as Iterable).join(SEPARATOR))
+                    targetMap = getConfigPropertyNested(config, parts.join(SEPARATOR))
                 }
                 def dependentValue = config[dependentKey]
                 if(targetMap[key] == null && dependentValue && config[dependentValue])
@@ -137,7 +137,7 @@ class ConfigurationHelper implements Serializable {
         if (config[parts.head()] != null) {
 
             if (config[parts.head()] in Map && !parts.tail().isEmpty()) {
-                return getConfigPropertyNested(config[parts.head()], (parts.tail() as Iterable).join(SEPARATOR))
+                return getConfigPropertyNested(config[parts.head()], parts.tail().join(SEPARATOR))
             }
 
             if (config[parts.head()].class == String) {
