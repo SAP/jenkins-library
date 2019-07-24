@@ -21,7 +21,7 @@ void call(Map parameters = [:], body) {
 //        .mixin(ConfigurationLoader.defaultStageConfiguration(this, stageName))
 //        .mixinGeneralConfig(script.commonPipelineEnvironment)
 //        .mixinStageConfig(script.commonPipelineEnvironment, stageName)
-//        .mixin(parameters)
+        .mixin(parameters)
 //        .addIfEmpty('stageName', stageName)
 //        .dependingOn('stageName').mixin('ordinal')
         .use()
