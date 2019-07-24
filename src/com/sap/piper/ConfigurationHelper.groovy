@@ -89,7 +89,7 @@ class ConfigurationHelper implements Serializable {
 
     Map dependingOn(dependentKey){
         return [
-            mixin: this.test
+            mixin: { return this }
             /*{ key ->
                 def parts = [] //tokenizeKey(key)
                 def targetMap = config
@@ -104,10 +104,6 @@ class ConfigurationHelper implements Serializable {
                 return this
             }*/
         ]
-    }
-
-    ConfigurationHelper test(key){
-        return this
     }
 
     ConfigurationHelper addIfEmpty(key, value){
