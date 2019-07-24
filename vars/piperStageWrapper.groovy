@@ -18,12 +18,12 @@ void call(Map parameters = [:], body) {
     // load default & individual configuration
     Map config = ConfigurationHelper.newInstance(this)
         .loadStepDefaults()
-//        .mixin(ConfigurationLoader.defaultStageConfiguration(this, stageName))
-//        .mixinGeneralConfig(script.commonPipelineEnvironment)
-//        .mixinStageConfig(script.commonPipelineEnvironment, stageName)
+        .mixin(ConfigurationLoader.defaultStageConfiguration(this, stageName))
+        .mixinGeneralConfig(script.commonPipelineEnvironment)
+        .mixinStageConfig(script.commonPipelineEnvironment, stageName)
         .mixin(parameters)
-//        .addIfEmpty('stageName', stageName)
-        .dependingOn('stageName').mixin('ordinal')
+        .addIfEmpty('stageName', stageName)
+//        .dependingOn('stageName').mixin('ordinal')
         .use()
 
     stageLocking(config) {
