@@ -12,6 +12,7 @@ class GaugeExecuteTestsTest extends BasePiperTest {
     private JenkinsStepRule stepRule = new JenkinsStepRule(this)
     private JenkinsLoggingRule loggingRule = new JenkinsLoggingRule(this)
     private JenkinsShellCallRule shellRule = new JenkinsShellCallRule(this)
+    private JenkinsDockerExecuteRule dockerExecuteRule = new JenkinsDockerExecuteRule(this)
     private JenkinsEnvironmentRule environmentRule = new JenkinsEnvironmentRule(this)
     private ExpectedException thrown = ExpectedException.none()
 
@@ -21,6 +22,7 @@ class GaugeExecuteTestsTest extends BasePiperTest {
         .around(new JenkinsReadYamlRule(this))
         .around(shellRule)
         .around(loggingRule)
+        .around(dockerExecuteRule)
         .around(environmentRule)
         .around(stepRule)
         .around(thrown)
@@ -65,6 +67,32 @@ class GaugeExecuteTestsTest extends BasePiperTest {
         assertThat(seleniumParams.stashContent, hasSize(2))
         assertThat(seleniumParams.stashContent, allOf(hasItem('buildDescriptor'), hasItem('tests')))
         assertJobStatusSuccess()
+    }
+
+    @Test
+    void testDockerFromCustomStepConfiguration() {
+
+        def expectedImage = 'image:test'
+        def expectedEnvVars = ['HUB':'', 'HUB_URL':'', 'env1': 'value1', 'env2': 'value2']
+        def expectedOptions = '--opt1=val1 --opt2=val2 --opt3'
+        def expectedWorkspace = '/path/to/workspace'
+        
+        nullScript.commonPipelineEnvironment.configuration = [steps:[gaugeExecuteTests:[
+            dockerImage: expectedImage, 
+            dockerOptions: expectedOptions,
+            dockerEnvVars: expectedEnvVars,
+            dockerWorkspace: expectedWorkspace
+            ]]]
+
+        stepRule.step.gaugeExecuteTests(
+            script: nullScript,
+            juStabUtils: utils
+        )
+        
+        assert expectedImage == seleniumParams.dockerImage
+        assert expectedOptions == seleniumParams.dockerOptions
+        assert expectedEnvVars.equals(seleniumParams.dockerEnvVars)
+        assert expectedWorkspace == seleniumParams.dockerWorkspace
     }
 
     @Test
