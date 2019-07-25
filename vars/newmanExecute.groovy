@@ -14,6 +14,12 @@ import groovy.transform.Field
 @Field Set STEP_CONFIG_KEYS = [
     /** @see dockerExecute */
     'dockerImage',
+    /** @see dockerExecute*/
+    'dockerEnvVars',
+    /** @see dockerExecute */
+    'dockerOptions',
+    /** @see dockerExecute*/
+    'dockerWorkspace',
     /**
      * Defines the behavior, in case tests fail.
      * @possibleValues `true`, `false`
@@ -103,6 +109,9 @@ void call(Map parameters = [:]) {
         dockerExecute(
             script: script,
             dockerImage: config.dockerImage,
+            dockerEnvVars: config.dockerEnvVars,
+            dockerOptions: config.dockerOptions,
+            dockerWorkspace: config.dockerWorkspace,
             stashContent: config.stashContent
         ) {
             sh "NPM_CONFIG_PREFIX=~/.npm-global ${config.newmanInstallCommand}"

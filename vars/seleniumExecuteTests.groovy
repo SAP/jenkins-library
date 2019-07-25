@@ -26,6 +26,8 @@ import groovy.text.SimpleTemplateEngine
     /** @see dockerExecute */
     'dockerName',
     /** @see dockerExecute */
+    'dockerOptions',
+    /** @see dockerExecute */
     'dockerWorkspace',
     /**
      * With `failOnError` the behavior in case tests fail can be defined.
@@ -103,6 +105,7 @@ void call(Map parameters = [:], Closure body) {
                 dockerEnvVars: config.dockerEnvVars,
                 dockerImage: config.dockerImage,
                 dockerName: config.dockerName,
+                dockerOptions: config.dockerOptions,
                 dockerWorkspace: config.dockerWorkspace,
                 sidecarEnvVars: config.sidecarEnvVars,
                 sidecarImage: config.sidecarImage,
