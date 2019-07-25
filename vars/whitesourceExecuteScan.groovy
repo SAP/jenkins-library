@@ -376,7 +376,7 @@ private def triggerWhitesourceScanWithUserKey(script, config, utils, descriptorU
 
                 WhitesourceConfigurationHelper.extendUAConfigurationFile(script, utils, config, path)
                 dockerExecute(
-                    script: script, 
+                    script: script,
                     dockerImage: config.dockerImage,
                     dockerEnvVars: config.dockerEnvVars,
                     dockerOptions: config.dockerOptions,
