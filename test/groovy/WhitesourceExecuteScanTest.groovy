@@ -88,6 +88,7 @@ class WhitesourceExecuteScanTest extends BasePiperTest {
         helper.registerAllowedMethod( "getSbtGAV", [String], {return [group: 'com.sap.sbt', artifact: 'test-scala', version: '1.2.3']})
         helper.registerAllowedMethod( "getPipGAV", [String], {return [artifact: 'test-python', version: '1.2.3']})
         helper.registerAllowedMethod( "getMavenGAV", [String], {return [group: 'com.sap.maven', artifact: 'test-java', version: '1.2.3']})
+        helper.registerAllowedMethod( "getDubGAV", [String], {return [group: 'com.sap.dlang', artifact: 'test-dub', version: '1.2.3']})
 
         nullScript.commonPipelineEnvironment.configuration = nullScript.commonPipelineEnvironment.configuration ?: [:]
         nullScript.commonPipelineEnvironment.configuration['steps'] = nullScript.commonPipelineEnvironment.configuration['steps'] ?: [:]
@@ -402,6 +403,46 @@ class WhitesourceExecuteScanTest extends BasePiperTest {
         assertThat(writeFileRule.files['./wss-unified-agent.config.d3aa80454919391024374ba46b4df082d15ab9a3'], containsString('userKey=token-0815'))
         assertThat(writeFileRule.files['./wss-unified-agent.config.d3aa80454919391024374ba46b4df082d15ab9a3'], containsString('productVersion=1'))
         assertThat(writeFileRule.files['./wss-unified-agent.config.d3aa80454919391024374ba46b4df082d15ab9a3'], containsString('projectName=com.sap.sbt.test-scala'))
+    }
+
+    @Test
+    void testDub() {
+
+        helper.registerAllowedMethod("readProperties", [Map], {
+            def result = new Properties()
+            result.putAll([
+                "apiKey": "b39d1328-52e2-42e3-98f0-932709daf3f0",
+                "productName": "SHC - Piper",
+                "checkPolicies": "true",
+                "projectName": "python-test",
+                "projectVersion": "2.0.0"
+            ])
+            return result
+        })
+
+        stepRule.step.whitesourceExecuteScan([
+            script                               : nullScript,
+            whitesourceRepositoryStub            : whitesourceStub,
+            whitesourceOrgAdminRepositoryStub    : whitesourceOrgAdminRepositoryStub,
+            descriptorUtilsStub                  : descriptorUtilsStub,
+            scanType                             : 'dub',
+            juStabUtils                          : utils,
+            productName                          : 'testProductName',
+            orgToken                             : 'testOrgToken',
+            reporting                            : false
+        ])
+
+        assertThat(loggingRule.log, containsString('Unstash content: buildDescriptor'))
+        assertThat(loggingRule.log, containsString('Unstash content: checkmarx'))
+
+        assertThat(shellRule.shell, Matchers.hasItems(
+            is('curl --location --output wss-unified-agent.jar https://github.com/whitesource/unified-agent-distribution/releases/latest/download/wss-unified-agent.jar'),
+            is('./bin/java -jar wss-unified-agent.jar -c \'./wss-unified-agent.config.d3aa80454919391024374ba46b4df082d15ab9a3\' -apiKey \'testOrgToken\' -userKey \'token-0815\' -product \'testProductName\'')
+        ))
+
+        assertThat(writeFileRule.files['./wss-unified-agent.config.d3aa80454919391024374ba46b4df082d15ab9a3'], containsString('apiKey=testOrgToken'))
+        assertThat(writeFileRule.files['./wss-unified-agent.config.d3aa80454919391024374ba46b4df082d15ab9a3'], containsString('productName=testProductName'))
+        assertThat(writeFileRule.files['./wss-unified-agent.config.d3aa80454919391024374ba46b4df082d15ab9a3'], containsString('userKey=token-0815'))
     }
 
     @Test

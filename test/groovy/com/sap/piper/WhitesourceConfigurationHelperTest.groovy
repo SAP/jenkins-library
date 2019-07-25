@@ -122,11 +122,10 @@ class WhitesourceConfigurationHelperTest extends BasePiperTest {
                 containsString("apiKey=abcd"),
                 containsString("productName=DIST - name1"),
                 containsString("productToken=1234"),
-                containsString("userKey=0000")
+                containsString("userKey=0000"),
+                containsString("includes=**/*.d **/*.di")
             )
         )
-
-        assertThat(jlr.log, containsString("[Whitesource] Configuration for scanType: 'dub' is not yet hardened, please do a quality assessment of your scan results."))
     }
 
     @Test
