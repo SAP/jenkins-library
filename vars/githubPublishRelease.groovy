@@ -1,3 +1,5 @@
+import com.sap.piper.JsonUtils
+
 import static com.sap.piper.Prerequisites.checkScript
 
 import com.sap.piper.GenerateDocumentation
@@ -146,9 +148,15 @@ String addDeltaToLastRelease(config, latestTag){
 }
 
 void postNewRelease(config, TOKEN, releaseBody){
-    releaseBody = releaseBody.replace('"', '\\"')
-    //write release information
-    def data = "{\"tag_name\": \"${config.version}\",\"target_commitish\": \"master\",\"name\": \"${config.version}\",\"body\": \"${releaseBody}\",\"draft\": false,\"prerelease\": false}"
+    Map messageBody = [
+        tag_name: "${config.version}",
+        target_commitish: 'master',
+        name: "${config.version}",
+        body: releaseBody,
+        draft: false,
+        prerelease: false
+    ]
+    def data =  new JsonUtils().groovyObjectToJsonString(messageBody)
     try {
         httpRequest httpMode: 'POST', requestBody: data, url: "${config.githubApiUrl}/repos/${config.githubOrg}/${config.githubRepo}/releases?access_token=${TOKEN}"
     } catch (e) {
