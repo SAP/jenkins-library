@@ -90,11 +90,21 @@ import hudson.AbortException
      */
     'stashContent',
     /**
+     * In the Kubernetes case the workspace is only available to the respective Jenkins slave but not to the containers running inside the pod.<br />
+     * This configuration defines exclude pattern for stashing from Jenkins workspace to working directory in container and back.
+     * Following excludes can be set:
      *
+     * * `workspace`: Pattern for stashing towards container
+     * * `stashBack`: Pattern for bringing data from container back to Jenkins workspace. If not set: defaults to setting for `workspace`.
      */
     'stashExcludes',
     /**
+     * In the Kubernetes case the workspace is only available to the respective Jenkins slave but not to the containers running inside the pod.<br />
+     * This configuration defines include pattern for stashing from Jenkins workspace to working directory in container and back.
+     * Following includes can be set:
      *
+     * * `workspace`: Pattern for stashing towards container
+     * * `stashBack`: Pattern for bringing data from container back to Jenkins workspace. If not set: defaults to setting for `workspace`.
      */
     'stashIncludes'
 ])
@@ -202,7 +212,7 @@ void executeOnPod(Map config, utils, Closure body) {
                             utils.unstashAll(stashContent)
                             body()
                         } finally {
-                            stashWorkspace(config, 'container', true)
+                            stashWorkspace(config, 'container', true, true)
                         }
                     }
                 } else {
@@ -234,7 +244,7 @@ private String generatePodSpec(Map config) {
 }
 
 
-private String stashWorkspace(config, prefix, boolean chown = false) {
+private String stashWorkspace(config, prefix, boolean chown = false, boolean stashBack = false) {
     def stashName = "${prefix}-${config.uniqueId}"
     try {
         if (chown)  {
@@ -244,13 +254,24 @@ private String stashWorkspace(config, prefix, boolean chown = false) {
             sh """#!${config.containerShell?:'/bin/sh'}
 chown -R ${runAsUser}:${fsGroup} ."""
         }
-        stash(
-            name: stashName,
-            includes: config.stashIncludes.workspace,
-            excludes: config.stashExcludes.workspace,
-            //inactive due to negative side-effects, we may require a dedicated git stash to be used
-            //useDefaultExcludes: false
-        )
+
+        if (stashBack) {
+            stash(
+                name: stashName,
+                includes: config.stashIncludes.stashBack ?: config.stashIncludes.workspace,
+                excludes: config.stashExcludes.stashBack ?: config.stashExcludes.workspace,
+                //inactive due to negative side-effects, we may require a dedicated git stash to be used
+                //useDefaultExcludes: false
+            )
+        } else {
+            stash(
+                name: stashName,
+                includes: config.stashIncludes.workspace,
+                excludes: config.stashExcludes.workspace,
+                //inactive due to negative side-effects, we may require a dedicated git stash to be used
+                //useDefaultExcludes: false
+            )
+        }
         return stashName
     } catch (AbortException | IOException e) {
         echo "${e.getMessage()}"
