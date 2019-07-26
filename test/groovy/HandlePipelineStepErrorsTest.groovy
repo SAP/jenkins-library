@@ -86,6 +86,9 @@ class HandlePipelineStepErrorsTest extends BasePiperTest {
     @Test
     void testHandleErrorsIgnoreFailure() {
         def errorOccured = false
+        helper.registerAllowedMethod('unstable', [String.class], {s ->
+            nullScript.currentBuild.result = 'UNSTABLE'
+        })
         try {
             stepRule.step.handlePipelineStepErrors([
                 stepName: 'test',
@@ -127,6 +130,10 @@ class HandlePipelineStepErrorsTest extends BasePiperTest {
     @Test
     void testHandleErrorsIgnoreFailureNoScript() {
         def errorOccured = false
+        helper.registerAllowedMethod('unstable', [String.class], {s ->
+            //test behavior in case plugina are not yet up to date
+            throw new java.lang.NoSuchMethodError('No such DSL method \'unstable\' found')
+        })
         try {
             stepRule.step.handlePipelineStepErrors([
                 stepName: 'test',
@@ -148,6 +155,11 @@ class HandlePipelineStepErrorsTest extends BasePiperTest {
             timeout = m.time
             throw new org.jenkinsci.plugins.workflow.steps.FlowInterruptedException(hudson.model.Result.ABORTED, new jenkins.model.CauseOfInterruption.UserInterruption('Test'))
         })
+        String errorMsg
+        helper.registerAllowedMethod('unstable', [String.class], {s ->
+            nullScript.currentBuild.result = 'UNSTABLE'
+            errorMsg = s
+        })
 
         stepRule.step.handlePipelineStepErrors([
             stepName: 'test',
@@ -159,5 +171,6 @@ class HandlePipelineStepErrorsTest extends BasePiperTest {
         }
         assertThat(timeout, is(10))
         assertThat(nullScript.currentBuild.result, is('UNSTABLE'))
+        assertThat(errorMsg, is('[handlePipelineStepErrors] Error in step test - Build result set to \'UNSTABLE\''))
     }
 }
