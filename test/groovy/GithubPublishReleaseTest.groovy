@@ -213,4 +213,5 @@ class GithubPublishReleaseTest extends BasePiperTest {
         assertThat(stepRule.step.isExcluded(item, ['won\'t fix']), is(false))
         assertJobStatusSuccess()
     }
+
 }
