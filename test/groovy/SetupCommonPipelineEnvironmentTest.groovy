@@ -3,17 +3,12 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.RuleChain
 import org.yaml.snakeyaml.Yaml
-
-import com.sap.piper.Utils
-
 import util.BasePiperTest
-import util.Rules
-import util.JenkinsReadYamlRule
 import util.JenkinsStepRule
+import util.Rules
 
 import static org.junit.Assert.assertEquals
 import static org.junit.Assert.assertNotNull
-
 
 class SetupCommonPipelineEnvironmentTest extends BasePiperTest {
 
@@ -33,7 +28,7 @@ class SetupCommonPipelineEnvironmentTest extends BasePiperTest {
 
         helper.registerAllowedMethod("readYaml", [Map], { Map parameters ->
             Yaml yamlParser = new Yaml()
-            if(parameters.text) {
+            if (parameters.text) {
                 return yamlParser.load(parameters.text)
             }
             usedConfigFile = parameters.file
