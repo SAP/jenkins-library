@@ -672,7 +672,9 @@ for (step in steps) {
         stepDescriptors."${step}" = handleStep(step, gse)
     } catch(Exception e) {
         exceptionCaught = true
-        System.err << "${e.getClass().getName()} caught while handling step '${step}': ${e.getMessage()}.\n"
+        def writer = new StringWriter()
+        e.printStackTrace(new PrintWriter(writer))
+        System.err << "${e.getClass().getName()} caught while handling step '${step}': ${e.getMessage()}.\n${writer.toString()}\n"
     }
 }
 
