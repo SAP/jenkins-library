@@ -81,13 +81,18 @@ void call(Map parameters = [:], body) {
             throw ex
         }
 
-        if (config.stepParameters?.script) {
-            config.stepParameters?.script.currentBuild.result = 'UNSTABLE'
-        } else {
-            currentBuild.result = 'UNSTABLE'
+        def failureMessage = "[${STEP_NAME}] Error in step ${config.stepName} - Build result set to 'UNSTABLE'"
+        try {
+            //use new unstable feature if available: see https://jenkins.io/blog/2019/07/05/jenkins-pipeline-stage-result-visualization-improvements/
+            unstable(failureMessage)
+        } catch (java.lang.NoSuchMethodError nmEx) {
+            if (config.stepParameters?.script) {
+                config.stepParameters?.script.currentBuild.result = 'UNSTABLE'
+            } else {
+                currentBuild.result = 'UNSTABLE'
+            }
+            echo failureMessage
         }
-
-        echo "[${STEP_NAME}] Error in step ${config.stepName} - Build result set to 'UNSTABLE'"
 
         List unstableSteps = cpe?.getValue('unstableSteps') ?: []
         if(!unstableSteps) {

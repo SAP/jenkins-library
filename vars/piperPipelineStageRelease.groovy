@@ -15,6 +15,8 @@ import static com.sap.piper.Prerequisites.checkScript
     'healthExecuteCheck',
     /** For Neo use-cases: Performs deployment to Neo landscape. */
     'neoDeploy',
+    /** For TMS use-cases: Performs upload to Transport Management Service node*/
+    'tmsUpload',
     /** Publishes release information to GitHub. */
     'githubPublishRelease',
 ]
@@ -57,6 +59,12 @@ void call(Map parameters = [:]) {
         if (config.neoDeploy) {
             durationMeasure(script: script, measurementName: 'deploy_release_neo_duration') {
                 neoDeploy script: script
+            }
+        }
+
+        if (config.tmsUpload) {
+            durationMeasure(script: script, measurementName: 'upload_release_tms_duration') {
+                tmsUpload script: script
             }
         }
 

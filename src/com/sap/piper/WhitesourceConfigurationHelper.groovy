@@ -79,6 +79,11 @@ class WhitesourceConfigurationHelper implements Serializable {
                     [name: 'excludes', value: '**/*sources.jar **/*javadoc.jar']
                 ]
                 break
+            case 'dub':
+                mapping += [
+                    [name: 'includes', value: '**/*.d **/*.di']
+                ]
+                break
             default:
                 script.echo "[Warning][Whitesource] Configuration for scanType: '${config.scanType}' is not yet hardened, please do a quality assessment of your scan results."
         }

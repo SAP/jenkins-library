@@ -1,10 +1,8 @@
 package com.sap.piper
 
-import com.cloudbees.groovy.cps.NonCPS
 
 @API(deprecated = true)
 class ConfigurationMerger {
-    @NonCPS
     static Map merge(Map configs, Set configKeys, Map defaults) {
         Map filteredConfig = configKeys?configs.subMap(configKeys):configs
 
@@ -12,7 +10,6 @@ class ConfigurationMerger {
                               MapUtils.pruneNulls(filteredConfig))
     }
 
-    @NonCPS
     static Map merge(
         Map parameters, Set parameterKeys,
         Map configuration, Set configurationKeys,
