@@ -5,7 +5,6 @@ import org.yaml.snakeyaml.Yaml
 import org.codehaus.groovy.control.CompilerConfiguration
 import com.sap.piper.GenerateDocumentation
 import com.sap.piper.GenerateStageDocumentation
-import com.sap.piper.DefaultValueCache
 import java.util.regex.Matcher
 import groovy.text.StreamingTemplateEngine
 
@@ -233,18 +232,45 @@ class Helper {
             .newInstance(script, [:]).loadStepDefaults()
     }
 
+    static getPrepareDefaultValuesStep(def gse) {
+
+        def prepareDefaultValuesStep = gse.createScript('prepareDefaultValues.groovy', new Binding())
+
+        prepareDefaultValuesStep.metaClass.handlePipelineStepErrors {
+            m, c ->  c()
+        }
+        prepareDefaultValuesStep.metaClass.libraryResource {
+            f ->  new File(projectRoot,"resources/${f}").text
+        }
+        prepareDefaultValuesStep.metaClass.readYaml {
+            m -> new Yaml().load(m.text)
+        }
+        prepareDefaultValuesStep.metaClass.echo {
+            m -> println(m)
+        }
+
+
+        prepareDefaultValuesStep
+    }
+
     static Map getYamlResource(String resource) {
         def ymlContent = new File(projectRoot,"resources/${resource}").text
         return new Yaml().load(ymlContent)
     }
 
-    static getDummyScript(def stepName) {
+    static getDummyScript(def prepareDefaultValuesStep, def stepName, Map prepareDefaultValuesStepParams) {
 
+        def _prepareDefaultValuesStep = prepareDefaultValuesStep
         def _stepName = stepName
 
         return  new Script() {
 
             def STEP_NAME = _stepName
+
+            def prepareDefaultValues() {
+                _prepareDefaultValuesStep(prepareDefaultValuesStepParams)
+
+            }
 
             def handlePipelineStepErrors(def m, Closure c) {
                 c()
@@ -663,13 +689,15 @@ if( ! steps) {
 // find all the stages that we have to document
 Map stages = Helper.resolveDocuRelevantStages(gse, stepsDir)
 
+def prepareDefaultValuesStep = Helper.getPrepareDefaultValuesStep(gse)
+
 boolean exceptionCaught = false
 
 def stepDescriptors = [:]
-DefaultValueCache.prepare(Helper.getDummyScript('noop'),  customDefaults)
+
 for (step in steps) {
     try {
-        stepDescriptors."${step}" = handleStep(step, gse)
+        stepDescriptors."${step}" = handleStep(step, prepareDefaultValuesStep, gse, customDefaults)
     } catch(Exception e) {
         exceptionCaught = true
         def writer = new StringWriter()
@@ -833,7 +861,7 @@ def fetchPossibleValuesFrom(def step, def parameterName, def steps) {
     return steps[step]?.parameters[parameterName]?.value ?: ''
 }
 
-def handleStep(stepName, gse) {
+def handleStep(stepName, prepareDefaultValuesStep, gse, customDefaults) {
 
     File theStep = new File(stepsDir, "${stepName}.groovy")
     File theStepDocu = new File(stepsDocuDir, "${stepName}.md")
@@ -852,9 +880,13 @@ def handleStep(stepName, gse) {
 
     System.err << "[INFO] Handling step '${stepName}'.\n"
 
+    Map prepareDefaultValuesStepParams = [:]
+    if (customDefaults)
+        prepareDefaultValuesStepParams.customDefaults = customDefaults
+
     def defaultConfig = Helper.getConfigHelper(getClass().getClassLoader(),
         roots,
-        Helper.getDummyScript(stepName)).use()
+        Helper.getDummyScript(prepareDefaultValuesStep, stepName, prepareDefaultValuesStepParams)).use()
 
     def params = [] as Set
 
