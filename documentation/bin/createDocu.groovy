@@ -752,7 +752,8 @@ stages.each {key, value ->
 
     //remove details from parameter map
     stageStepKeys.each {stepKey ->
-        stageDescriptors."${key}".parameters.remove(stepKey)
+        if (stageDescriptors."${key}"?.parameters)
+            stageDescriptors."${key}".parameters.remove(stepKey)
     }
 
 
