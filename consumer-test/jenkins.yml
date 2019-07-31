@@ -38,4 +38,4 @@ credentials:
               id: "cf_deploy"
               username: ${CX_INFRA_IT_CF_USERNAME}
               password: ${CX_INFRA_IT_CF_PASSWORD}
-              description: "SAP CP CF Trail account for test deployment"
+              description: "SAP CP CF Trial account for test deployment"
