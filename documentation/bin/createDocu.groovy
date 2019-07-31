@@ -489,7 +489,7 @@ class Helper {
         def params = [] as Set
         f.eachLine  {
             line ->
-                if (line ==~ /.*withMandatoryProperty.*/) {
+                if (line ==~ /.*withMandatoryProperty\(.*/) {
                     def param = (line =~ /.*withMandatoryProperty\('(.*)'/)[0][1]
                     params << param
                 }
