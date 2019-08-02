@@ -259,7 +259,7 @@ class Helper {
         return new Yaml().load(ymlContent)
     }
 
-    static getDummyScript(def prepareDefaultValuesStep, def stepName, Map prepareDefaultValuesStepParams) {
+    static getDummyScript(def prepareDefaultValuesStep, def stepName, Map prepareDefaultValuesStepParams = [:]) {
 
         def _prepareDefaultValuesStep = prepareDefaultValuesStep
         def _stepName = stepName
@@ -695,7 +695,7 @@ def prepareDefaultValuesStep = Helper.getPrepareDefaultValuesStep(gse)
 boolean exceptionCaught = false
 
 def stepDescriptors = [:]
-DefaultValueCache.prepare(Helper.getDummyScript('noop'),  customDefaults)
+DefaultValueCache.prepare(Helper.getDummyScript(prepareDefaultValuesStep,'noop'),  customDefaults)
 
 for (step in steps) {
     try {
