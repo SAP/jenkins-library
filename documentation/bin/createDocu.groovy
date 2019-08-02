@@ -695,7 +695,7 @@ def prepareDefaultValuesStep = Helper.getPrepareDefaultValuesStep(gse)
 boolean exceptionCaught = false
 
 def stepDescriptors = [:]
-DefaultValueCache.prepare(Helper.getDummyScript(prepareDefaultValuesStep,'noop'),  customDefaults)
+//DefaultValueCache.prepare(Helper.getDummyScript(prepareDefaultValuesStep,'noop'),  customDefaults)
 
 for (step in steps) {
     try {
