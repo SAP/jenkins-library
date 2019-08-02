@@ -259,7 +259,7 @@ class Helper {
         return new Yaml().load(ymlContent)
     }
 
-    static getDummyScript(def prepareDefaultValuesStep, def stepName, Map prepareDefaultValuesStepParams = [:]) {
+    static Script getDummyScript(def prepareDefaultValuesStep, def stepName, Map prepareDefaultValuesStepParams = [:]) {
 
         def _prepareDefaultValuesStep = prepareDefaultValuesStep
         def _stepName = stepName
