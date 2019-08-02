@@ -63,7 +63,7 @@ import static com.sap.piper.Prerequisites.checkScript
     'userTokenCredentialsId',
     /**
      * Type of development stack used to implement the solution.
-     * @possibleValues `golang`, `maven`, `mta`, `npm`, `pip`, `sbt`
+     * @possibleValues `golang`, `maven`, `mta`, `npm`, `pip`, `sbt`, `dub`
      */
     'scanType',
     /**
@@ -436,6 +436,7 @@ private resolveProjectIdentifiers(script, descriptorUtils, config) {
                 gav = descriptorUtils.getGoGAV(config.buildDescriptorFile, new URI(script.commonPipelineEnvironment.getGitHttpsUrl()))
                 break
             case 'dub':
+                gav = descriptorUtils.getDubGAV(config.buildDescriptorFile)
                 break
             case 'maven':
                 gav = descriptorUtils.getMavenGAV(config.buildDescriptorFile)

@@ -2,8 +2,6 @@ package com.sap.piper
 
 import com.sap.piper.MapUtils
 
-import com.cloudbees.groovy.cps.NonCPS
-
 @API
 class DefaultValueCache implements Serializable {
     private static DefaultValueCache instance
@@ -14,7 +12,6 @@ class DefaultValueCache implements Serializable {
         this.defaultValues = defaultValues
     }
 
-    @NonCPS
     static getInstance(){
         return instance
     }
@@ -23,7 +20,6 @@ class DefaultValueCache implements Serializable {
         instance = new DefaultValueCache(defaultValues)
     }
 
-    @NonCPS
     Map getDefaultValues(){
         return defaultValues
     }
