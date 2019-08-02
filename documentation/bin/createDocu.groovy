@@ -5,6 +5,7 @@ import org.yaml.snakeyaml.Yaml
 import org.codehaus.groovy.control.CompilerConfiguration
 import com.sap.piper.GenerateDocumentation
 import com.sap.piper.GenerateStageDocumentation
+import com.sap.piper.DefaultValueCache
 import java.util.regex.Matcher
 import groovy.text.StreamingTemplateEngine
 
@@ -694,6 +695,7 @@ def prepareDefaultValuesStep = Helper.getPrepareDefaultValuesStep(gse)
 boolean exceptionCaught = false
 
 def stepDescriptors = [:]
+DefaultValueCache.prepare(Helper.getDummyScript('noop'),  customDefaults)
 
 for (step in steps) {
     try {
