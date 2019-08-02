@@ -60,6 +60,39 @@ class JenkinsShellCallRule implements TestRule {
         failingCommands.add(new Command(type, script))
     }
 
+    def handleShellCall(Map parameters) {
+
+        def unifiedScript = unify(parameters.script)
+
+        shell.add(unifiedScript)
+
+        for (Command failingCommand: failingCommands){
+            if(failingCommand.type == Type.REGEX && unifiedScript =~ failingCommand.script) {
+                throw new Exception("Script execution failed!")
+            } else if(failingCommand.type == Type.PLAIN && unifiedScript.equals(failingCommand.script)) {
+                throw new Exception("Script execution failed!")
+            }
+        }
+
+
+        def result = null
+
+        for(def e : returnValues.entrySet()) {
+            if(e.key.type == Type.REGEX && unifiedScript =~ e.key.script) {
+                result =  e.value
+                break
+        } else if(e.key.type == Type.PLAIN && unifiedScript.equals(e.key.script)) {
+                result = e.value
+                break
+            }
+        }
+        if(result instanceof Closure) result = result()
+        if (!result && parameters.returnStatus) result = 0
+
+        if(! parameters.returnStdout && ! parameters.returnStatus) return
+        return result
+    }
+
     @Override
     Statement apply(Statement base, Description description) {
         return statement(base)
@@ -71,53 +104,15 @@ class JenkinsShellCallRule implements TestRule {
             void evaluate() throws Throwable {
 
                 testInstance.helper.registerAllowedMethod("sh", [String.class], {
-                    command ->
-                        def unifiedScript = unify(command)
-
-                        shell.add(unifiedScript)
-
-                        for (Command failingCommand: failingCommands){
-                            if(failingCommand.type == Type.REGEX && unifiedScript =~ failingCommand.script) {
-                                throw new Exception("Script execution failed!")
-                                break
-                            } else if(failingCommand.type == Type.PLAIN && unifiedScript.equals(failingCommand.script)) {
-                                throw new Exception("Script execution failed!")
-                                break
-                            }
-                        }
+                    command -> handleShellCall([
+                        script: command,
+                        returnStdout: false,
+                        returnStatus: false
+                    ])
                 })
 
                 testInstance.helper.registerAllowedMethod("sh", [Map.class], {
-                    m ->
-                        shell.add(m.script.replaceAll(/\s+/," ").trim())
-
-                        def unifiedScript = unify(m.script)
-                        for (Command failingCommand: failingCommands){
-                            if(failingCommand.type == Type.REGEX && unifiedScript =~ failingCommand.script) {
-                                throw new Exception("Script execution failed!")
-                                break
-                            } else if(failingCommand.type == Type.PLAIN && unifiedScript.equals(failingCommand.script)) {
-                                throw new Exception("Script execution failed!")
-                                break
-                            }
-                        }
-
-                        if (m.returnStdout || m.returnStatus) {
-                            def result = null
-
-                            for(def e : returnValues.entrySet()) {
-                                if(e.key.type == Type.REGEX && unifiedScript =~ e.key.script) {
-                                    result =  e.value
-                                    break
-                                } else if(e.key.type == Type.PLAIN && unifiedScript.equals(e.key.script)) {
-                                    result = e.value
-                                    break
-                                }
-                            }
-                            if(result instanceof Closure) result = result()
-                            if (!result && m.returnStatus) result = 0
-                            return result
-                        }
+                    m -> handleShellCall(m)
                 })
 
                 base.evaluate()
