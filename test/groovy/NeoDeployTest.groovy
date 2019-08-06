@@ -519,8 +519,8 @@ class NeoDeployTest extends BasePiperTest {
     @Test
     void showLogsOnFailingDeployment() {
 
-        thrown.expect(Exception)
-        shellRule.failExecution(Type.REGEX, '.* deploy .*')
+        thrown.expect(AbortException)
+        shellRule.setReturnValue(Type.REGEX, '.* deploy .*', {throw new AbortException()})
 
         stepRule.step.neoDeploy(script: nullScript,
             source: warArchiveName,

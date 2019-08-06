@@ -42,7 +42,6 @@ class JenkinsShellCallRule implements TestRule {
     List shell = []
 
     Map<Command, String> returnValues = [:]
-    List<Command> failingCommands = []
 
     JenkinsShellCallRule(BasePipelineTest testInstance) {
         this.testInstance = testInstance
@@ -56,24 +55,11 @@ class JenkinsShellCallRule implements TestRule {
         returnValues[new Command(type, script)] = value
     }
 
-    def failExecution(type, script) {
-        failingCommands.add(new Command(type, script))
-    }
-
     def handleShellCall(Map parameters) {
 
         def unifiedScript = unify(parameters.script)
 
         shell.add(unifiedScript)
-
-        for (Command failingCommand: failingCommands){
-            if(failingCommand.type == Type.REGEX && unifiedScript =~ failingCommand.script) {
-                throw new Exception("Script execution failed!")
-            } else if(failingCommand.type == Type.PLAIN && unifiedScript.equals(failingCommand.script)) {
-                throw new Exception("Script execution failed!")
-            }
-        }
-
 
         def result = null
 
