@@ -27,16 +27,16 @@ class DockerArtifactVersioningTest extends BasePiperTest{
                            |
                            |ENV TEST 2.3.4
                            |''' as CharSequence).stripMargin(),
-         Dockerfile_registryPort : ('''|FROM registry:4444/path/image:1.2.3
-                    |
-                    |USER root
-                    |
-                    ||ENV TEST 2.3.4''' as CharSequence).stripMargin(),
-         Dockerfile_registryPortNoTag :('''|FROM registry:4444/path/image
-                                           |
-                                           |USER root
-                                           |
-                                           |ENV TEST 2.3.4''' as CharSequence).stripMargin()
+         'Dockerfile_registryPort' : ('''|FROM registry:4444/path/image:1.2.3
+                                         |
+                                         |USER root
+                                         |
+                                         |ENV TEST 2.3.4''' as CharSequence).stripMargin(),
+         'Dockerfile_registryPortNoTag' :('''|FROM registry:4444/path/image
+                                             |
+                                             |USER root
+                                             |
+                                             |ENV TEST 2.3.4''' as CharSequence).stripMargin()
         ])
     JenkinsWriteFileRule writeFileRule = new JenkinsWriteFileRule(this)
     JenkinsLoggingRule loggingRule = new JenkinsLoggingRule(this)
