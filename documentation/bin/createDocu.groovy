@@ -489,7 +489,7 @@ class Helper {
         def params = [] as Set
         f.eachLine  {
             line ->
-                if (line ==~ /.*withMandatoryProperty.*/) {
+                if (line ==~ /.*withMandatoryProperty\(.*/) {
                     def param = (line =~ /.*withMandatoryProperty\('(.*)'/)[0][1]
                     params << param
                 }
@@ -672,7 +672,9 @@ for (step in steps) {
         stepDescriptors."${step}" = handleStep(step, gse)
     } catch(Exception e) {
         exceptionCaught = true
-        System.err << "${e.getClass().getName()} caught while handling step '${step}': ${e.getMessage()}.\n"
+        def writer = new StringWriter()
+        e.printStackTrace(new PrintWriter(writer))
+        System.err << "${e.getClass().getName()} caught while handling step '${step}': ${e.getMessage()}.\n${writer.toString()}\n"
     }
 }
 
