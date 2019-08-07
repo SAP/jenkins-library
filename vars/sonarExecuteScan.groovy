@@ -40,6 +40,11 @@ import groovy.text.SimpleTemplateEngine
      * @possibleValues Jenkins credential id
      */
     'sonarTokenCredentialsId',
+    /**
+     * Print more detailed information into the log.
+     * @possibleValues `true`, `false`
+     */
+    'verbose'
 ]
 @Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS.plus([
     /**
