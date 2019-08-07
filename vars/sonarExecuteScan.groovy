@@ -225,7 +225,7 @@ private void loadCertificates(Map config) {
             def filename = new File(url).getName()
             filename = URLDecoder.decode(filename, java.nio.charset.StandardCharsets.UTF_8.name())
             sh "wget ${wgetOptions.join(' ')} ${url}"
-            sh "keytool ${keytoolOptions.join(' ')} -alias ${filename} -file ${certificateFolder}${filename}"
+            sh "keytool ${keytoolOptions.join(' ')} -alias '${filename}' -file '${certificateFolder}${filename}'"
         }
     }
 }
