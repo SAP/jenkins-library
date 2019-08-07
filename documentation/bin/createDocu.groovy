@@ -724,7 +724,10 @@ stages.each {key, value ->
 
     //remove details from parameter map
     stageStepKeys.each {stepKey ->
-        stageDescriptors."${key}".parameters.remove(stepKey)
+        if(stageDescriptors."${key}".parameters)
+            stageDescriptors."${key}".parameters.remove(stepKey)
+        else
+            System.err << "[Warning] Parameter \"${stepKey}\" not found in parameter map for stage \"${stageDescriptors[key].name}\"\n"
     }
 
 
