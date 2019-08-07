@@ -43,6 +43,10 @@ import groovy.text.SimpleTemplateEngine
 ]
 @Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS.plus([
     /**
+     * List containing download links of custom TLS certificates. This is required to ensure trusted connections to instances with custom certificates.
+     */
+    'customTlsCertificateLinks',
+    /**
      * Pull-Request voting only:
      * Disables the pull-request decoration with inline comments.
      * deprecated: only supported in LTS / < 7.2
@@ -111,6 +115,8 @@ void call(Map parameters = [:]) {
         def worker = { config ->
             withSonarQubeEnv(config.instance) {
                 loadSonarScanner(config)
+
+                loadCertificates(config)
 
                 if(config.organization) config.options.add("sonar.organization=${config.organization}")
                 if(config.projectVersion) config.options.add("sonar.projectVersion=${config.projectVersion}")
@@ -190,4 +196,31 @@ private void loadSonarScanner(config){
         unzip -q ${filename}
         mv ${foldername} .sonar-scanner
     """
+}
+
+private void loadCertificates(Map config) {
+    String certificateFolder = '.certificates/'
+    List wgetOptions = [
+        "--directory-prefix ${certificateFolder}"
+    ]
+    List keytoolOptions = [
+        '-import',
+        '-noprompt',
+        '-storepass changeit',
+        '-keystore .sonar-scanner/jre/lib/security/cacerts'
+    ]
+    if (config.customTlsCertificateLinks){
+        echo "LOADING CERTIFICATES"
+        if(config.verbose){
+            wgetOptions.push('--verbose')
+            keytoolOptions.push('-v')
+        }
+        config.customTlsCertificateLinks.each { url ->
+            echo "cert ${url}"
+            def filename = new File(url).getName()
+            filename = URLDecoder.decode(filename, java.nio.charset.StandardCharsets.UTF_8.name())
+            sh "wget ${wgetOptions.join(' ')} ${url}"
+            sh "keytool ${keytoolOptions.join(' ')} -alias ${filename} -file ${certificateFolder}${filename}"
+        }
+    }
 }
