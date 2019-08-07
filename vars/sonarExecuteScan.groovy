@@ -119,16 +119,20 @@ void call(Map parameters = [:]) {
 
         def worker = { config ->
             withSonarQubeEnv(config.instance) {
-                loadSonarScanner(config)
+                try{
+                    loadSonarScanner(config)
 
-                loadCertificates(config)
+                    loadCertificates(config)
 
-                if(config.organization) config.options.add("sonar.organization=${config.organization}")
-                if(config.projectVersion) config.options.add("sonar.projectVersion=${config.projectVersion}")
-                // prefix options
-                config.options = config.options.collect { it.startsWith('-D') ? it : "-D${it}" }
+                    if(config.organization) config.options.add("sonar.organization=${config.organization}")
+                    if(config.projectVersion) config.options.add("sonar.projectVersion=${config.projectVersion}")
+                    // prefix options
+                    config.options = config.options.collect { it.startsWith('-D') ? it : "-D${it}" }
 
-                sh "PATH=\$PATH:${env.WORKSPACE}/.sonar-scanner/bin sonar-scanner ${config.options.join(' ')}"
+                    sh "PATH=\$PATH:${env.WORKSPACE}/.sonar-scanner/bin sonar-scanner ${config.options.join(' ')}"
+                }finally{
+                    def ignore = sh script: "rm -rf .sonar-scanner .certificates .scannerwork", returnStatus: true
+                }
             }
         }
 
@@ -215,13 +219,11 @@ private void loadCertificates(Map config) {
         '-keystore .sonar-scanner/jre/lib/security/cacerts'
     ]
     if (config.customTlsCertificateLinks){
-        echo "LOADING CERTIFICATES"
         if(config.verbose){
             wgetOptions.push('--verbose')
             keytoolOptions.push('-v')
         }
         config.customTlsCertificateLinks.each { url ->
-            echo "cert ${url}"
             def filename = new File(url).getName()
             filename = URLDecoder.decode(filename, java.nio.charset.StandardCharsets.UTF_8.name())
             sh "wget ${wgetOptions.join(' ')} ${url}"
