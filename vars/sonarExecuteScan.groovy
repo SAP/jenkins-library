@@ -222,6 +222,8 @@ private void loadCertificates(Map config) {
         if(config.verbose){
             wgetOptions.push('--verbose')
             keytoolOptions.push('-v')
+        }else{
+            wgetOptions.push('--no-verbose')
         }
         config.customTlsCertificateLinks.each { url ->
             def filename = new File(url).getName()
