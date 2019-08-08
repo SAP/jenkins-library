@@ -234,4 +234,21 @@ class SonarExecuteScanTest extends BasePiperTest {
         assertThat(jscr.shell, hasItem(containsString('-Dsonar.organization=TestOrg-github')))
         assertJobStatusSuccess()
     }
+
+    @Test
+    void testWithCustomTlsCertificates() throws Exception {
+        jsr.step.sonarExecuteScan(
+            script: nullScript,
+            juStabUtils: utils,
+            customTlsCertificateLinks: [
+                'http://url.to/my.cert'
+            ]
+        )
+        // asserts
+        assertThat(jscr.shell, allOf(
+            hasItem(containsString('wget --directory-prefix .certificates/ --no-verbose http://url.to/my.cert')),
+            hasItem(containsString('keytool -import -noprompt -storepass changeit -keystore .sonar-scanner/jre/lib/security/cacerts -alias \'my.cert\' -file \'.certificates/my.cert\''))
+        ))
+        assertJobStatusSuccess()
+    }
 }
