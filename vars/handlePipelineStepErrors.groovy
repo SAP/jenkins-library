@@ -1,5 +1,6 @@
 import com.cloudbees.groovy.cps.NonCPS
 
+import com.sap.piper.CommonPipelineEnvironment
 import com.sap.piper.GenerateDocumentation
 import com.sap.piper.ConfigurationHelper
 import com.sap.piper.analytics.InfluxData
@@ -50,12 +51,11 @@ import org.jenkinsci.plugins.workflow.steps.FlowInterruptedException
 @GenerateDocumentation
 void call(Map parameters = [:], body) {
     // load default & individual configuration
-    def cpe = parameters.stepParameters?.script?.commonPipelineEnvironment ?: null
     Map config = ConfigurationHelper.newInstance(this)
         .loadStepDefaults()
-        .mixinGeneralConfig(cpe, GENERAL_CONFIG_KEYS)
-        .mixinStepConfig(cpe, STEP_CONFIG_KEYS)
-        .mixinStageConfig(cpe, parameters.stepParameters?.stageName?:env.STAGE_NAME, STEP_CONFIG_KEYS)
+        .mixinGeneralConfig(GENERAL_CONFIG_KEYS)
+        .mixinStepConfig(STEP_CONFIG_KEYS)
+        .mixinStageConfig(parameters.stepParameters?.stageName?:env.STAGE_NAME, STEP_CONFIG_KEYS)
         .mixin(parameters, PARAMETER_KEYS)
         .withMandatoryProperty('stepParameters')
         .withMandatoryProperty('stepName')
@@ -94,7 +94,7 @@ void call(Map parameters = [:], body) {
             echo failureMessage
         }
 
-        List unstableSteps = cpe?.getValue('unstableSteps') ?: []
+        List unstableSteps = CommonPipelineEnvironment.getInstance()?.getValue('unstableSteps') ?: []
         if(!unstableSteps) {
             unstableSteps = []
         }
@@ -102,7 +102,7 @@ void call(Map parameters = [:], body) {
         // add information about unstable steps to pipeline environment
         // this helps to bring this information to users in a consolidated manner inside a pipeline
         unstableSteps.add(config.stepName)
-        cpe?.setValue('unstableSteps', unstableSteps)
+        CommonPipelineEnvironment.getInstance()?.setValue('unstableSteps', unstableSteps)
 
     } catch (Throwable error) {
         if (config.echoDetails)
