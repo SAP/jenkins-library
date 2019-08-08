@@ -1,5 +1,6 @@
 import com.sap.piper.GenerateDocumentation
 import com.sap.piper.ConfigurationHelper
+import com.sap.piper.CommonPipelineEnvironment
 import com.sap.piper.Utils
 import com.sap.piper.StepAssertions
 import com.sap.piper.tools.neo.DeployMode
@@ -117,17 +118,15 @@ import static com.sap.piper.Prerequisites.checkScript
 void call(parameters = [:]) {
     handlePipelineStepErrors(stepName: STEP_NAME, stepParameters: parameters) {
 
-        def script = checkScript(this, parameters) ?: this
-
         def utils = parameters.utils ?: new Utils()
 
         // load default & individual configuration
         ConfigurationHelper configHelper = ConfigurationHelper.newInstance(this)
             .loadStepDefaults()
-            .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS)
-            .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS)
-            .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName ?: env.STAGE_NAME, STEP_CONFIG_KEYS)
-            .addIfEmpty('source', script.commonPipelineEnvironment.getMtarFilePath())
+            .mixinGeneralConfig(GENERAL_CONFIG_KEYS)
+            .mixinStepConfig(STEP_CONFIG_KEYS)
+            .mixinStageConfig(parameters.stageName ?: env.STAGE_NAME, STEP_CONFIG_KEYS)
+            .addIfEmpty('source', CommonPipelineEnvironment.getInstance().getMtarFilePath())
             .mixin(parameters, PARAMETER_KEYS)
             .collectValidationFailures()
             .withPropertyInValues('deployMode', DeployMode.stringValues())
@@ -172,8 +171,6 @@ void call(parameters = [:]) {
             stepParam1: configuration.deployMode == 'mta'?'mta':'war', // ['mta', 'warParams', 'warPropertiesFile']
             stepParamKey2: 'warAction',
             stepParam2: configuration.warAction == 'rolling-update'?'blue-green':'standard', // ['deploy', 'deploy-mta', 'rolling-update']
-            stepParamKey3: 'scriptMissing',
-            stepParam3: parameters?.script == null,
         ], configuration)
 
 
@@ -185,7 +182,6 @@ void call(parameters = [:]) {
             assertPasswordRules(NEO_PASSWORD)
 
             dockerExecute(
-                script: script,
                 dockerImage: configuration.dockerImage,
                 dockerEnvVars: configuration.dockerEnvVars,
                 dockerOptions: configuration.dockerOptions
@@ -208,14 +204,14 @@ void call(parameters = [:]) {
                 )
 
                 lock("$STEP_NAME :${neoCommandHelper.resourceLock()}") {
-                    deploy(script, utils, configuration, neoCommandHelper, configuration.dockerImage, deployMode)
+                    deploy(utils, configuration, neoCommandHelper, configuration.dockerImage, deployMode)
                 }
             }
         }
     }
 }
 
-private deploy(script, utils, Map configuration, NeoCommandHelper neoCommandHelper, dockerImage, DeployMode deployMode) {
+private deploy(utils, Map configuration, NeoCommandHelper neoCommandHelper, dockerImage, DeployMode deployMode) {
 
     String logFolder = 'logs/neo'
 
