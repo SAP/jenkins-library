@@ -7,6 +7,8 @@ import static com.sap.piper.Prerequisites.checkScript
 import groovy.transform.Field
 import groovy.text.SimpleTemplateEngine
 
+import java.nio.charset.StandardCharsets
+
 @Field String STEP_NAME = getClass().getName()
 
 @Field Set GENERAL_CONFIG_KEYS = [
@@ -227,7 +229,7 @@ private void loadCertificates(Map config) {
         }
         config.customTlsCertificateLinks.each { url ->
             def filename = new File(url).getName()
-            filename = URLDecoder.decode(filename, java.nio.charset.StandardCharsets.UTF_8.name())
+            filename = URLDecoder.decode(filename, StandardCharsets.UTF_8.name())
             sh "wget ${wgetOptions.join(' ')} ${url}"
             sh "keytool ${keytoolOptions.join(' ')} -alias '${filename}' -file '${certificateFolder}${filename}'"
         }
