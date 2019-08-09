@@ -86,11 +86,7 @@ void call(Map parameters = [:], body) {
             //use new unstable feature if available: see https://jenkins.io/blog/2019/07/05/jenkins-pipeline-stage-result-visualization-improvements/
             unstable(failureMessage)
         } catch (java.lang.NoSuchMethodError nmEx) {
-            if (config.stepParameters?.script) {
-                config.stepParameters?.script.currentBuild.result = 'UNSTABLE'
-            } else {
-                currentBuild.result = 'UNSTABLE'
-            }
+            currentBuild.result = 'UNSTABLE'
             echo failureMessage
         }
 
@@ -135,7 +131,7 @@ private String formatErrorMessage(Map config, error){
 private void writeErrorToInfluxData(Map config, error){
     if(InfluxData.getInstance().getFields().pipeline_data?.build_error_message == null){
         InfluxData.addTag('pipeline_data', 'build_error_step', config.stepName)
-        InfluxData.addTag('pipeline_data', 'build_error_stage', config.stepParameters.script?.env?.STAGE_NAME)
+        InfluxData.addTag('pipeline_data', 'build_error_stage', env?.STAGE_NAME)
         InfluxData.addField('pipeline_data', 'build_error_message', error.getMessage())
     }
 }
