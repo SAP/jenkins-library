@@ -86,13 +86,14 @@ class HandlePipelineStepErrorsTest extends BasePiperTest {
     @Test
     void testHandleErrorsIgnoreFailure() {
         def errorOccured = false
+        def result
         helper.registerAllowedMethod('unstable', [String.class], {s ->
-            nullScript.currentBuild.result = 'UNSTABLE'
+            result = 'UNSTABLE'
         })
         try {
             stepRule.step.handlePipelineStepErrors([
                 stepName: 'test',
-                stepParameters: [jenkinsUtilsStub: jenkinsUtils, script: nullScript],
+                stepParameters: [jenkinsUtilsStub: jenkinsUtils],
                 failOnError: false
             ]) {
                 throw new AbortException('TestError')
@@ -101,7 +102,7 @@ class HandlePipelineStepErrorsTest extends BasePiperTest {
             errorOccured = true
         }
         assertThat(errorOccured, is(false))
-        assertThat(nullScript.currentBuild.result, is('UNSTABLE'))
+        assertThat(result, is('UNSTABLE'))
     }
 
     @Test
@@ -116,7 +117,7 @@ class HandlePipelineStepErrorsTest extends BasePiperTest {
         try {
             stepRule.step.handlePipelineStepErrors([
                 stepName: 'test',
-                stepParameters: [jenkinsUtilsStub: jenkinsUtils, script: nullScript],
+                stepParameters: [jenkinsUtilsStub: jenkinsUtils],
                 failOnError: false
             ]) {
                 throw new AbortException('TestError')
@@ -156,21 +157,22 @@ class HandlePipelineStepErrorsTest extends BasePiperTest {
             throw new org.jenkinsci.plugins.workflow.steps.FlowInterruptedException(hudson.model.Result.ABORTED, new jenkins.model.CauseOfInterruption.UserInterruption('Test'))
         })
         String errorMsg
+        String result
         helper.registerAllowedMethod('unstable', [String.class], {s ->
-            nullScript.currentBuild.result = 'UNSTABLE'
+            result = 'UNSTABLE'
             errorMsg = s
         })
 
         stepRule.step.handlePipelineStepErrors([
             stepName: 'test',
-            stepParameters: [jenkinsUtilsStub: jenkinsUtils, script: nullScript],
+            stepParameters: [jenkinsUtilsStub: jenkinsUtils],
             failOnError: false,
             stepTimeouts: [test: 10]
         ]) {
             //do something
         }
         assertThat(timeout, is(10))
-        assertThat(nullScript.currentBuild.result, is('UNSTABLE'))
+        assertThat(result, is('UNSTABLE'))
         assertThat(errorMsg, is('[handlePipelineStepErrors] Error in step test - Build result set to \'UNSTABLE\''))
     }
 }
