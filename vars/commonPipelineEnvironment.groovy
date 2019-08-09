@@ -7,9 +7,6 @@ class commonPipelineEnvironment implements Serializable {
     //stores version of the artifact which is build during pipeline run
     def artifactVersion
 
-    //Stores the current buildResult
-    String buildResult = 'SUCCESS'
-
     //stores the gitCommitId as well as additional git information for the build during pipeline run
     String gitCommitId
     String gitCommitMessage

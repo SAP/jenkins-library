@@ -97,9 +97,6 @@ void call(Map parameters = [:]) {
 
         new Utils().pushToSWA([step: STEP_NAME], config)
 
-        //this takes care that terminated builds due to milestone-locking do not cause an error
-        if (script.commonPipelineEnvironment.getBuildResult() == 'ABORTED') return
-
         def subject = "${config.buildResult}: Build ${config.projectName} ${config.displayName}"
         def log = ''
         def mailTemplate
