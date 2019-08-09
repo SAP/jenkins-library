@@ -666,7 +666,7 @@ Map stages = Helper.resolveDocuRelevantStages(gse, stepsDir)
 boolean exceptionCaught = false
 
 def stepDescriptors = [:]
-DefaultValueCache.prepare(Helper.getDummyScript('noop'),  customDefaults)
+DefaultValueCache.prepare(Helper.getDummyScript('noop'), [customDefaults: customDefaults])
 for (step in steps) {
     try {
         stepDescriptors."${step}" = handleStep(step, gse)
