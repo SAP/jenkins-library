@@ -22,6 +22,7 @@ class ConfigurationHelper implements Serializable {
     private Script step
     private String name
     private Map validationResults = null
+    private String dependingOn
 
     private ConfigurationHelper(Script step, Map config){
         this.config = config ?: [:]
@@ -87,22 +88,25 @@ class ConfigurationHelper implements Serializable {
         return newConfig
     }
 
-    Map dependingOn(dependentKey){
-        return [
-            mixin: {key ->
-                def parts = tokenizeKey(key)
-                def targetMap = config
-                if(parts.size() > 1) {
-                    key = parts.last()
-                    parts.remove(key)
-                    targetMap = getConfigPropertyNested(config, (parts as Iterable).join(SEPARATOR))
-                }
-                def dependentValue = config[dependentKey]
-                if(targetMap[key] == null && dependentValue && config[dependentValue])
-                    targetMap[key] = config[dependentValue][key]
-                return this
-            }
-        ]
+    ConfigurationHelper mixin(String key){
+        def parts = tokenizeKey(key)
+        def targetMap = config
+        if(parts.size() > 1) {
+            key = parts.last()
+            parts.remove(key)
+            targetMap = getConfigPropertyNested(config, parts.join(SEPARATOR))
+        }
+        def dependentValue = config[dependingOn]
+        if(targetMap[key] == null && dependentValue && config[dependentValue])
+            targetMap[key] = config[dependentValue][key]
+
+        dependingOn = null
+        return this
+    }
+
+    ConfigurationHelper dependingOn(dependentKey){
+        dependingOn = dependentKey
+        return this
     }
 
     ConfigurationHelper addIfEmpty(key, value){
@@ -121,16 +125,12 @@ class ConfigurationHelper implements Serializable {
         return this
     }
 
-    @NonCPS // required because we have a closure in the
-            // method body that cannot be CPS transformed
     Map use(){
         handleValidationFailures()
         MapUtils.traverse(config, { v -> (v instanceof GString) ? v.toString() : v })
         if(config.verbose) step.echo "[${name}] Configuration: ${config}"
         return MapUtils.deepCopy(config)
     }
-
-
 
     /* private */ def getConfigPropertyNested(key) {
         return getConfigPropertyNested(config, key)
@@ -143,7 +143,7 @@ class ConfigurationHelper implements Serializable {
         if (config[parts.head()] != null) {
 
             if (config[parts.head()] in Map && !parts.tail().isEmpty()) {
-                return getConfigPropertyNested(config[parts.head()], (parts.tail() as Iterable).join(SEPARATOR))
+                return getConfigPropertyNested(config[parts.head()], parts.tail().join(SEPARATOR))
             }
 
             if (config[parts.head()].class == String) {
@@ -193,15 +193,12 @@ class ConfigurationHelper implements Serializable {
         return this
     }
 
-    @NonCPS
     private handleValidationFailures() {
         if(! validationResults) return
         if(validationResults.size() == 1) throw validationResults.values().first()
-        String msg = 'ERROR - NO VALUE AVAILABLE FOR: ' +
-            (validationResults.keySet().stream().collect() as Iterable).join(', ')
+        String msg = 'ERROR - NO VALUE AVAILABLE FOR: ' + validationResults.keySet().join(', ')
         IllegalArgumentException iae = new IllegalArgumentException(msg)
         validationResults.each { e -> iae.addSuppressed(e.value) }
         throw iae
     }
-
 }

@@ -394,6 +394,13 @@ steps:
         && mkdir -p \$GOPATH/src/${config.whitesource.projectName.substring(0, config.whitesource.projectName.lastIndexOf('/'))}
         && ln -s \$(pwd) \$GOPATH/src/${config.whitesource.projectName}
         && cd \$GOPATH/src/${config.whitesource.projectName} && dep ensure
+    dub:
+      buildDescriptorFile: './dub.json'
+      dockerImage: 'buildpack-deps:stretch-curl'
+      dockerWorkspace: '/home/dub'
+      stashContent:
+        - 'buildDescriptor'
+        - 'checkmarx'
     sbt:
       buildDescriptorFile: './build.sbt'
       dockerImage: 'hseeberger/scala-sbt:8u181_2.12.8_1.2.8'
@@ -443,6 +450,14 @@ steps:
       tests: ''
     noDefaultExludes:
       - 'git'
+  piperPublishWarnings:
+    parserId: piper
+    parserName: Piper
+    parserPattern: '\[(INFO|WARNING|ERROR)\] (.*) \(([^) ]*)\/([^) ]*)\)'
+    parserScript: 'return builder.guessSeverity(matcher.group(1)).setMessage(matcher.group(2)).setModuleName(matcher.group(3)).setType(matcher.group(4)).buildOptional()'
+    recordIssuesSettings:
+      blameDisabled: true
+      enabledForFailure: true
   seleniumExecuteTests:
     buildTool: 'npm'
     containerPortMappings:
@@ -531,6 +546,10 @@ steps:
       active: false
   checkChangeInDevelopment:
       failIfStatusIsNotInDevelopment: true
+  tmsUpload:
+    namedUser: 'Piper-Pipeline'
+    stashContent:
+      - 'buildResult'
   transportRequestCreate:
       developmentSystemId: null
       verbose: false
