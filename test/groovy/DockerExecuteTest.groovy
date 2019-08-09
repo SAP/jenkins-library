@@ -1,4 +1,5 @@
 import com.sap.piper.k8s.ContainerMap
+import com.sap.piper.CommonPipelineEnvironment
 import com.sap.piper.JenkinsUtils
 
 import org.junit.Before
@@ -54,7 +55,7 @@ class DockerExecuteTest extends BasePiperTest {
         })
         binding.setVariable('env', [POD_NAME: 'testpod', ON_K8S: 'true'])
         ContainerMap.instance.setMap(['testpod': ['maven:3.5-jdk-8-alpine': 'mavenexec']])
-        stepRule.step.dockerExecute(script: nullScript,
+        stepRule.step.dockerExecute(
             dockerImage: 'maven:3.5-jdk-8-alpine',
             dockerEnvVars: ['http_proxy': 'http://proxy:8000']) {
             bodyExecuted = true
@@ -69,7 +70,7 @@ class DockerExecuteTest extends BasePiperTest {
         helper.registerAllowedMethod('dockerExecuteOnKubernetes', [Map.class, Closure.class], { Map config, Closure body -> body() })
         binding.setVariable('env', [ON_K8S: 'true'])
         ContainerMap.instance.setMap(['testpod': ['maven:3.5-jdk-8-alpine': 'mavenexec']])
-        stepRule.step.dockerExecute(script: nullScript,
+        stepRule.step.dockerExecute(
             dockerImage: 'maven:3.5-jdk-8-alpine',
             dockerEnvVars: ['http_proxy': 'http://proxy:8000']) {
             bodyExecuted = true
@@ -83,7 +84,7 @@ class DockerExecuteTest extends BasePiperTest {
         helper.registerAllowedMethod('dockerExecuteOnKubernetes', [Map.class, Closure.class], { Map config, Closure body -> body() })
         binding.setVariable('env', [POD_NAME: 'testpod', ON_K8S: 'true'])
         ContainerMap.instance.setMap([:])
-        stepRule.step.dockerExecute(script: nullScript,
+        stepRule.step.dockerExecute(
             dockerImage: 'maven:3.5-jdk-8-alpine',
             dockerEnvVars: ['http_proxy': 'http://proxy:8000']) {
             bodyExecuted = true
@@ -97,7 +98,7 @@ class DockerExecuteTest extends BasePiperTest {
         helper.registerAllowedMethod('dockerExecuteOnKubernetes', [Map.class, Closure.class], { Map config, Closure body -> body() })
         binding.setVariable('env', [POD_NAME: 'testpod', ON_K8S: 'true'])
         ContainerMap.instance.setMap(['testpod':[:]])
-        stepRule.step.dockerExecute(script: nullScript,
+        stepRule.step.dockerExecute(
             dockerImage: 'maven:3.5-jdk-8-alpine',
             dockerEnvVars: ['http_proxy': 'http://proxy:8000']) {
             bodyExecuted = true
@@ -115,7 +116,6 @@ class DockerExecuteTest extends BasePiperTest {
         })
         binding.setVariable('env', [ON_K8S: 'true'])
         stepRule.step.dockerExecute(
-            script: nullScript,
             containerCommand: '/busybox/tail -f /dev/null',
             containerShell: '/busybox/sh',
             dockerImage: 'maven:3.5-jdk-8-alpine'
@@ -130,7 +130,7 @@ class DockerExecuteTest extends BasePiperTest {
 
     @Test
     void testExecuteInsideDockerContainer() throws Exception {
-        stepRule.step.dockerExecute(script: nullScript, dockerImage: 'maven:3.5-jdk-8-alpine') {
+        stepRule.step.dockerExecute(dockerImage: 'maven:3.5-jdk-8-alpine') {
             bodyExecuted = true
         }
         assertEquals('maven:3.5-jdk-8-alpine', docker.getImageName())
@@ -141,9 +141,8 @@ class DockerExecuteTest extends BasePiperTest {
 
     @Test
     void testSkipDockerImagePull() throws Exception {
-        nullScript.commonPipelineEnvironment.configuration = [steps:[dockerExecute:[dockerPullImage: false]]]
+        CommonPipelineEnvironment.getInstance().configuration = [steps:[dockerExecute:[dockerPullImage: false]]]
         stepRule.step.dockerExecute(
-            script: nullScript,
             dockerImage: 'maven:3.5-jdk-8-alpine'
         ) {
             bodyExecuted = true
@@ -155,7 +154,6 @@ class DockerExecuteTest extends BasePiperTest {
     @Test
     void testSkipSidecarImagePull() throws Exception {
         stepRule.step.dockerExecute(
-            script: nullScript,
             dockerName: 'maven',
             dockerImage: 'maven:3.5-jdk-8-alpine',
             sidecarEnvVars: ['testEnv':'testVal'],
@@ -173,7 +171,7 @@ class DockerExecuteTest extends BasePiperTest {
 
     @Test
     void testExecuteInsideDockerContainerWithParameters() throws Exception {
-        stepRule.step.dockerExecute(script: nullScript,
+        stepRule.step.dockerExecute(
                       dockerImage: 'maven:3.5-jdk-8-alpine',
                       dockerOptions: '-description=lorem ipsum',
                       dockerVolumeBind: ['my_vol': '/my_vol'],
@@ -189,7 +187,7 @@ class DockerExecuteTest extends BasePiperTest {
 
     @Test
     void testExecuteInsideDockerContainerWithDockerOptionsList() throws Exception {
-        stepRule.step.dockerExecute(script: nullScript,
+        stepRule.step.dockerExecute(
             dockerImage: 'maven:3.5-jdk-8-alpine',
             dockerOptions: ['-it', '--network=my-network', 'description=lorem ipsum'],
             dockerEnvVars: ['http_proxy': 'http://proxy:8000']) {
@@ -204,7 +202,7 @@ class DockerExecuteTest extends BasePiperTest {
     @Test
     void testDockerNotInstalledResultsInLocalExecution() throws Exception {
         shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, "docker .*", 1)
-        stepRule.step.dockerExecute(script: nullScript,
+        stepRule.step.dockerExecute(
             dockerOptions: '-it') {
             bodyExecuted = true
         }
@@ -217,7 +215,6 @@ class DockerExecuteTest extends BasePiperTest {
     @Test
     void testSidecarDefault(){
         stepRule.step.dockerExecute(
-            script: nullScript,
             dockerName: 'maven',
             dockerImage: 'maven:3.5-jdk-8-alpine',
             sidecarEnvVars: ['testEnv':'testVal'],
@@ -246,7 +243,6 @@ class DockerExecuteTest extends BasePiperTest {
     @Test
     void testSidecarHealthCheck(){
         stepRule.step.dockerExecute(
-            script: nullScript,
             dockerImage: 'maven:3.5-jdk-8-alpine',
             sidecarImage: 'selenium/standalone-chrome',
             sidecarName: 'testAlias',
@@ -271,7 +267,6 @@ class DockerExecuteTest extends BasePiperTest {
             body()
         })
         stepRule.step.dockerExecute(
-            script: nullScript,
             containerPortMappings: [
                 'selenium/standalone-chrome': [[name: 'selPort', containerPort: 4444, hostPort: 4444]]
             ],
@@ -305,7 +300,6 @@ class DockerExecuteTest extends BasePiperTest {
         })
 
         stepRule.step.dockerExecute(
-            script: nullScript,
             dockerImage: 'maven:3.5-jdk-8-alpine',
             sidecarImage: 'selenium/standalone-chrome',
             sidecarName: 'testAlias',
