@@ -255,23 +255,24 @@ private String stashWorkspace(config, prefix, boolean chown = false, boolean sta
 chown -R ${runAsUser}:${fsGroup} ."""
         }
 
-        if (stashBack) {
-            stash(
-                name: stashName,
-                includes: config.stashIncludes.stashBack ?: config.stashIncludes.workspace,
-                excludes: config.stashExcludes.stashBack ?: config.stashExcludes.workspace,
-                //inactive due to negative side-effects, we may require a dedicated git stash to be used
-                //useDefaultExcludes: false
-            )
+        def includes, excludes
+
+        if(stashBack) {
+            includes = config.stashIncludes.stashBack ?: config.stashIncludes.workspace
+            excludes = config.stashExcludes.stashBack ?: config.stashExcludes.workspace
         } else {
-            stash(
-                name: stashName,
-                includes: config.stashIncludes.workspace,
-                excludes: config.stashExcludes.workspace,
-                //inactive due to negative side-effects, we may require a dedicated git stash to be used
-                //useDefaultExcludes: false
-            )
+            includes = config.stashIncludes.workspace
+            excludes = config.stashExcludes.workspace
         }
+
+        stash(
+            name: stashName,
+            includes: includes,
+            excludes: excludes
+        )
+        //inactive due to negative side-effects, we may require a dedicated git stash to be used
+        //useDefaultExcludes: false)
+
         return stashName
     } catch (AbortException | IOException e) {
         echo "${e.getMessage()}"
