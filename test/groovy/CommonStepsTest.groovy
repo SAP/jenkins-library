@@ -51,6 +51,7 @@ public class CommonStepsTest extends BasePiperTest{
             'dockerExecute',
             'dockerExecuteOnKubernetes',
             'handlePipelineStepErrors',
+            'mtaBuild',
             'pipelineExecute',
             'piperPipeline',
             'prepareDefaultValues',
