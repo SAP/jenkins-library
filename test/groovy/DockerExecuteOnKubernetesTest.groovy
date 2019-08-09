@@ -1,3 +1,4 @@
+import com.sap.piper.CommonPipelineEnvironment
 import com.sap.piper.JenkinsUtils
 
 import org.junit.Before
@@ -104,7 +105,6 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
     @Test
     void testRunOnPodNoContainerMapOnlyDockerImage() throws Exception {
         stepRule.step.dockerExecuteOnKubernetes(
-            script: nullScript,
             juStabUtils: utils,
             dockerImage: 'maven:3.5-jdk-8-alpine',
             dockerOptions: '-it',
@@ -124,7 +124,7 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
 
     @Test
     void testDockerExecuteOnKubernetesWithCustomContainerMap() throws Exception {
-        stepRule.step.dockerExecuteOnKubernetes(script: nullScript,
+        stepRule.step.dockerExecuteOnKubernetes(
             containerMap: ['maven:3.5-jdk-8-alpine': 'mavenexecute']) {
             container(name: 'mavenexecute') {
                 bodyExecuted = true
@@ -139,8 +139,8 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
 
     @Test
     void testDockerExecuteOnKubernetesWithCustomJnlpWithContainerMap() throws Exception {
-        nullScript.commonPipelineEnvironment.configuration = ['general': ['jenkinsKubernetes': ['jnlpAgent': 'myJnalpAgent']]]
-        stepRule.step.dockerExecuteOnKubernetes(script: nullScript,
+        CommonPipelineEnvironment.getInstance().configuration = ['general': ['jenkinsKubernetes': ['jnlpAgent': 'myJnalpAgent']]]
+        stepRule.step.dockerExecuteOnKubernetes(
             containerMap: ['maven:3.5-jdk-8-alpine': 'mavenexecute']) {
             container(name: 'mavenexecute') {
                 bodyExecuted = true
@@ -156,9 +156,8 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
 
     @Test
     void testDockerExecuteOnKubernetesWithCustomJnlpWithDockerImage() throws Exception {
-        nullScript.commonPipelineEnvironment.configuration = ['general': ['jenkinsKubernetes': ['jnlpAgent': 'myJnalpAgent']]]
+        CommonPipelineEnvironment.getInstance().configuration = ['general': ['jenkinsKubernetes': ['jnlpAgent': 'myJnalpAgent']]]
         stepRule.step.dockerExecuteOnKubernetes(
-            script: nullScript,
             juStabUtils: utils,
             dockerImage: 'maven:3.5-jdk-8-alpine') {
             bodyExecuted = true
@@ -173,7 +172,7 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
 
     @Test
     void testDockerExecuteOnKubernetesWithCustomWorkspace() throws Exception {
-        stepRule.step.dockerExecuteOnKubernetes(script: nullScript,
+        stepRule.step.dockerExecuteOnKubernetes(
             containerMap: ['maven:3.5-jdk-8-alpine': 'mavenexecute'],
             dockerWorkspace: '/home/piper') {
             container(name: 'mavenexecute') {
@@ -186,7 +185,7 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
 
     @Test
     void testDockerExecuteOnKubernetesWithCustomEnv() throws Exception {
-        stepRule.step.dockerExecuteOnKubernetes(script: nullScript,
+        stepRule.step.dockerExecuteOnKubernetes(
             containerMap: ['maven:3.5-jdk-8-alpine': 'mavenexecute'],
             dockerEnvVars: ['customEnvKey': 'customEnvValue']) {
             container(name: 'mavenexecute') {
@@ -199,7 +198,7 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
 
     @Test
     void testDockerExecuteOnKubernetesUpperCaseContainerName() throws Exception {
-        stepRule.step.dockerExecuteOnKubernetes(script: nullScript,
+        stepRule.step.dockerExecuteOnKubernetes(
             containerMap: ['maven:3.5-jdk-8-alpine': 'MAVENEXECUTE'],
             dockerEnvVars: ['customEnvKey': 'customEnvValue']) {
             container(name: 'mavenexecute') {
@@ -216,7 +215,6 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
     void testDockerExecuteOnKubernetesEmptyContainerMapNoDockerImage() throws Exception {
         exception.expect(IllegalArgumentException.class)
             stepRule.step.dockerExecuteOnKubernetes(
-                script: nullScript,
                 juStabUtils: utils,
                 containerMap: [:],
                 dockerEnvVars: ['customEnvKey': 'customEnvValue']) {
@@ -235,7 +233,6 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
             return m
         })
         stepRule.step.dockerExecuteOnKubernetes(
-            script: nullScript,
             juStabUtils: utils,
             containerCommands: ['selenium/standalone-chrome': ''],
             containerEnvVars: [
@@ -276,7 +273,6 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
     @Test
     void testDockerExecuteOnKubernetesWithCustomShell() {
         stepRule.step.dockerExecuteOnKubernetes(
-            script: nullScript,
             juStabUtils: utils,
             dockerImage: 'maven:3.5-jdk-8-alpine',
             containerShell: '/busybox/sh'
@@ -289,7 +285,6 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
     @Test
     void testDockerExecuteOnKubernetesWithCustomContainerCommand() {
         stepRule.step.dockerExecuteOnKubernetes(
-            script: nullScript,
             juStabUtils: utils,
             dockerImage: 'maven:3.5-jdk-8-alpine',
             containerCommand: '/busybox/tail -f /dev/null'
@@ -302,7 +297,6 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
     @Test
     void testSkipDockerImagePull() throws Exception {
         stepRule.step.dockerExecuteOnKubernetes(
-            script: nullScript,
             dockerPullImage: false,
             containerMap: ['maven:3.5-jdk-8-alpine': 'mavenexecute']
         ) {
@@ -317,7 +311,6 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
     @Test
     void testSkipSidecarImagePull() throws Exception {
         stepRule.step.dockerExecuteOnKubernetes(
-            script: nullScript,
             juStabUtils: utils,
             containerCommands: ['selenium/standalone-chrome': ''],
             containerEnvVars: [
@@ -347,10 +340,9 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
     @Test
     void testDockerExecuteOnKubernetesWithCustomNamespace() {
         def expectedNamespace = "sandbox"
-        nullScript.commonPipelineEnvironment.configuration = [general: [jenkinsKubernetes: [namespace: expectedNamespace]]]
+        CommonPipelineEnvironment.getInstance().configuration = [general: [jenkinsKubernetes: [namespace: expectedNamespace]]]
 
         stepRule.step.dockerExecuteOnKubernetes(
-                script: nullScript,
                 juStabUtils: utils,
                 dockerImage: 'maven:3.5-jdk-8-alpine',
                 ) { bodyExecuted = true }
@@ -361,11 +353,10 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
     @Test
     void testDockerExecuteOnKubernetesWithSecurityContext() {
         def expectedSecurityContext = [ runAsUser: 1000, fsGroup: 1000 ]
-        nullScript.commonPipelineEnvironment.configuration = [general: [jenkinsKubernetes: [
+        CommonPipelineEnvironment.getInstance().configuration = [general: [jenkinsKubernetes: [
                     securityContext: expectedSecurityContext]]]
 
         stepRule.step.dockerExecuteOnKubernetes(
-                script: nullScript,
                 juStabUtils: utils,
                 dockerImage: 'maven:3.5-jdk-8-alpine',
                 ) { bodyExecuted = true }
@@ -377,7 +368,6 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
     void testDockerExecuteOnKubernetesCustomNode() {
 
         stepRule.step.dockerExecuteOnKubernetes(
-            script: nullScript,
             juStabUtils: utils,
             dockerImage: 'maven:3.5-jdk-8-alpine',
             nodeSelector: 'size:big'
@@ -389,12 +379,11 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
     @Test
     void testDockerExecuteOnKubernetesCustomJnlpViaEnv() {
 
-        nullScript.configuration = [
+        CommonPipelineEnvironment.getInstance().configuration = [
             general: [jenkinsKubernetes: [jnlpAgent: 'config/jnlp:latest']]
         ]
         binding.variables.env.JENKINS_JNLP_IMAGE = 'env/jnlp:latest'
         stepRule.step.dockerExecuteOnKubernetes(
-            script: nullScript,
             juStabUtils: utils,
             dockerImage: 'maven:3.5-jdk-8-alpine',
         ) { bodyExecuted = true }
@@ -413,12 +402,11 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
     @Test
     void testDockerExecuteOnKubernetesCustomJnlpViaConfig() {
 
-        nullScript.configuration = [
+        CommonPipelineEnvironment.getInstance().configuration = [
             general: [jenkinsKubernetes: [jnlpAgent: 'config/jnlp:latest']]
         ]
         binding.variables.env.JENKINS_JNLP_IMAGE = 'config/jnlp:latest'
         stepRule.step.dockerExecuteOnKubernetes(
-            script: nullScript,
             juStabUtils: utils,
             dockerImage: 'maven:3.5-jdk-8-alpine',
         ) { bodyExecuted = true }

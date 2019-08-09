@@ -48,6 +48,7 @@ public class CommonStepsTest extends BasePiperTest{
         // all steps not adopting the usual pattern of working with the script.
         def whitelistScriptReference = [
             'commonPipelineEnvironment',
+            'dockerExecuteOnKubernetes',
             'handlePipelineStepErrors',
             'pipelineExecute',
             'piperPipeline',

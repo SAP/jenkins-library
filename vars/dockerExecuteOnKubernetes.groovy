@@ -120,8 +120,6 @@ import hudson.AbortException
 void call(Map parameters = [:], body) {
     handlePipelineStepErrors(stepName: STEP_NAME, stepParameters: parameters, failOnError: true) {
 
-        final script = checkScript(this, parameters) ?: this
-
         if (!JenkinsUtils.isPluginActive(PLUGIN_ID_KUBERNETES)) {
             error("[ERROR][${STEP_NAME}] not supported. Plugin '${PLUGIN_ID_KUBERNETES}' is not installed or not active.")
         }
@@ -130,17 +128,15 @@ void call(Map parameters = [:], body) {
 
         ConfigurationHelper configHelper = ConfigurationHelper.newInstance(this)
             .loadStepDefaults()
-            .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS)
-            .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS)
-            .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName ?: env.STAGE_NAME, STEP_CONFIG_KEYS)
+            .mixinGeneralConfig(GENERAL_CONFIG_KEYS)
+            .mixinStepConfig(STEP_CONFIG_KEYS)
+            .mixinStageConfig(parameters.stageName ?: env.STAGE_NAME, STEP_CONFIG_KEYS)
             .mixin(parameters, PARAMETER_KEYS)
             .addIfEmpty('uniqueId', UUID.randomUUID().toString())
         Map config = configHelper.use()
 
         new Utils().pushToSWA([
             step: STEP_NAME,
-            stepParamKey1: 'scriptMissing',
-            stepParam1: parameters?.script == null
         ], config)
 
         if (!parameters.containerMap) {
