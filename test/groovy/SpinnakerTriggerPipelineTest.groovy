@@ -75,16 +75,16 @@ class SpinnakerTriggerPipelineTest extends BasePiperTest {
             while (!body()) {
                 //take another round with a different response status
                 responseStatus.each {status ->
-                    shellRule.setReturnValue('curl -X GET https://spinnakerTest.url/testRef --silent --insecure --cert $clientCertificate --key $clientKey', "{\"status\": \"${status}\"}")
-                    shellRule.setReturnValue('curl -X GET https://spinnakerTest.url/testRef --verbose --insecure --cert $clientCertificate --key $clientKey', "{\"status\": \"${status}\"}")
+                    shellRule.setReturnValue('curl -X GET https://spinnakerTest.url/testRef --silent --cert $clientCertificate --key $clientKey', "{\"status\": \"${status}\"}")
+                    shellRule.setReturnValue('curl -X GET https://spinnakerTest.url/testRef --verbose --cert $clientCertificate --key $clientKey', "{\"status\": \"${status}\"}")
                 }
             }
         })
 
-        shellRule.setReturnValue('curl -H \'Content-Type: application/json\' -X POST -d \'{"parameters":{"param1":"val1"}}\' --silent --insecure --cert $clientCertificate --key $clientKey https://spinnakerTest.url/pipelines/spinnakerTestApp/spinnakerTestPipeline', '{"ref": "/testRef"}')
-        shellRule.setReturnValue('curl -H \'Content-Type: application/json\' -X POST -d \'{"parameters":{"param1":"val1"}}\' --verbose --insecure --cert $clientCertificate --key $clientKey https://spinnakerTest.url/pipelines/spinnakerTestApp/spinnakerTestPipeline', '{"ref": "/testRef"}')
-        shellRule.setReturnValue('curl -X GET https://spinnakerTest.url/testRef --silent --insecure --cert $clientCertificate --key $clientKey', '{"status": "SUCCEEDED"}')
-        shellRule.setReturnValue('curl -X GET https://spinnakerTest.url/testRef --verbose --insecure --cert $clientCertificate --key $clientKey', '{"status": "SUCCEEDED"}')
+        shellRule.setReturnValue('curl -H \'Content-Type: application/json\' -X POST -d \'{"parameters":{"param1":"val1"}}\' --silent --cert $clientCertificate --key $clientKey https://spinnakerTest.url/pipelines/spinnakerTestApp/spinnakerTestPipeline', '{"ref": "/testRef"}')
+        shellRule.setReturnValue('curl -H \'Content-Type: application/json\' -X POST -d \'{"parameters":{"param1":"val1"}}\' --verbose --cert $clientCertificate --key $clientKey https://spinnakerTest.url/pipelines/spinnakerTestApp/spinnakerTestPipeline', '{"ref": "/testRef"}')
+        shellRule.setReturnValue('curl -X GET https://spinnakerTest.url/testRef --silent --cert $clientCertificate --key $clientKey', '{"status": "SUCCEEDED"}')
+        shellRule.setReturnValue('curl -X GET https://spinnakerTest.url/testRef --verbose --cert $clientCertificate --key $clientKey', '{"status": "SUCCEEDED"}')
     }
 
     @Test
@@ -168,7 +168,7 @@ class SpinnakerTriggerPipelineTest extends BasePiperTest {
             ]
         ]
 
-        shellRule.setReturnValue('curl -H \'Content-Type: application/json\' -X POST --silent --insecure --cert $clientCertificate --key $clientKey https://spinnakerTest.url/pipelines/spinnakerTestApp/spinnakerTestPipeline', '{}')
+        shellRule.setReturnValue('curl -H \'Content-Type: application/json\' -X POST --silent --cert $clientCertificate --key $clientKey https://spinnakerTest.url/pipelines/spinnakerTestApp/spinnakerTestPipeline', '{}')
 
         exception.expectMessage('Failed to trigger Spinnaker pipeline')
         stepRule.step.spinnakerTriggerPipeline(
@@ -192,7 +192,7 @@ class SpinnakerTriggerPipelineTest extends BasePiperTest {
             ]
         ]
 
-        shellRule.setReturnValue('curl -X GET https://spinnakerTest.url/testRef --silent --insecure --cert $clientCertificate --key $clientKey', '{"status": "FAILED"}')
+        shellRule.setReturnValue('curl -X GET https://spinnakerTest.url/testRef --silent --cert $clientCertificate --key $clientKey', '{"status": "FAILED"}')
 
         exception.expectMessage('Spinnaker pipeline failed with FAILED')
         stepRule.step.spinnakerTriggerPipeline(

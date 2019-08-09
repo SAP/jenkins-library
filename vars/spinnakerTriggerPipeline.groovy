@@ -102,8 +102,6 @@ void call(Map parameters = [:]) {
             step: STEP_NAME
         ], config)
 
-        int timeoutMinutes = parameters.timeout ?: 60
-
         String paramsString = ""
         if (config.spinnaker.pipelineParameters) {
             def pipelineParameters = [parameters: config.spinnaker.pipelineParameters]
@@ -119,14 +117,14 @@ void call(Map parameters = [:]) {
 
         //ToDO: support userId/pwd authentication or token authentication!
 
-        def curlVerbosity =  (config.verbose==true) ? '--verbose ' : '--silent '
+        def curlVerbosity =  (config.verbose) ? '--verbose ' : '--silent '
 
         withCredentials([
             file(credentialsId: config.spinnaker.keyFileCredentialsId, variable: 'clientKey'),
             file(credentialsId: config.spinnaker.certFileCredentialsId, variable: 'clientCertificate')
         ]) {
             // Trigger a pipeline execution by calling invokePipelineConfigUsingPOST1 (see https://www.spinnaker.io/reference/api/docs.html)
-            pipelineTriggerResponse = sh(returnStdout: true, script: "curl -H 'Content-Type: application/json' -X POST ${paramsString} ${curlVerbosity}--insecure --cert \$clientCertificate --key \$clientKey ${config.spinnaker.gateUrl}/pipelines/${config.spinnaker.application}/${config.spinnaker.pipelineNameOrId}").trim()
+            pipelineTriggerResponse = sh(returnStdout: true, script: "curl -H 'Content-Type: application/json' -X POST ${paramsString} ${curlVerbosity} --cert \$clientCertificate --key \$clientKey ${config.spinnaker.gateUrl}/pipelines/${config.spinnaker.application}/${config.spinnaker.pipelineNameOrId}").trim()
         }
         if (config.verbose) {
             echo "[${STEP_NAME}] Spinnaker pipeline trigger response = ${pipelineTriggerResponse}"
@@ -145,15 +143,15 @@ void call(Map parameters = [:]) {
         echo "[${STEP_NAME}] Spinnaker pipeline ${pipelineTriggerResponseObj.ref} triggered, waiting for the pipeline to finish"
 
         def pipelineStatusResponseObj
-        def pipelineStatusResponse
-        timeout(timeoutMinutes) {
+        timeout(config.timeout) {
             waitUntil {
+                def pipelineStatusResponse
                 sleep 10
                 withCredentials([
                     file(credentialsId: config.spinnaker.keyFileCredentialsId, variable: 'clientKey'),
                     file(credentialsId: config.spinnaker.certFileCredentialsId, variable: 'clientCertificate')
                 ]) {
-                    pipelineStatusResponse = sh returnStdout: true, script: "curl -X GET ${config.spinnaker.gateUrl}${pipelineTriggerResponseObj.ref} ${curlVerbosity}--insecure --cert \$clientCertificate --key \$clientKey"
+                    pipelineStatusResponse = sh returnStdout: true, script: "curl -X GET ${config.spinnaker.gateUrl}${pipelineTriggerResponseObj.ref} ${curlVerbosity} --cert \$clientCertificate --key \$clientKey"
                 }
                 pipelineStatusResponseObj = readJSON text: pipelineStatusResponse
                 echo "[${STEP_NAME}] Spinnaker pipeline ${pipelineTriggerResponseObj.ref} status: ${pipelineStatusResponseObj.status}"
