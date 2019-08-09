@@ -86,11 +86,7 @@ void call(Map parameters = [:], body) {
             //use new unstable feature if available: see https://jenkins.io/blog/2019/07/05/jenkins-pipeline-stage-result-visualization-improvements/
             unstable(failureMessage)
         } catch (java.lang.NoSuchMethodError nmEx) {
-            if (config.stepParameters?.script) {
-                config.stepParameters?.script.currentBuild.result = 'UNSTABLE'
-            } else {
-                currentBuild.result = 'UNSTABLE'
-            }
+            currentBuild.result = 'UNSTABLE'
             echo failureMessage
         }
 
