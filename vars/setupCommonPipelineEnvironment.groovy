@@ -1,5 +1,7 @@
 import static com.sap.piper.Prerequisites.checkScript
 
+import com.sap.piper.CommonPipelineEnvironment
+import com.sap.piper.DefaultValueCache
 import com.sap.piper.GenerateDocumentation
 import com.sap.piper.ConfigurationHelper
 import com.sap.piper.Utils
@@ -33,17 +35,15 @@ void call(Map parameters = [:]) {
 
     handlePipelineStepErrors (stepName: STEP_NAME, stepParameters: parameters) {
 
-        def script = checkScript(this, parameters)
-
-        prepareDefaultValues script: script, customDefaults: parameters.customDefaults
+        DefaultValueCache.prepare(this, [customDefaults: parameters.customDefaults])
 
         String configFile = parameters.get('configFile')
 
-        loadConfigurationFromFile(script, configFile)
+        loadConfigurationFromFile(configFile)
 
         Map config = ConfigurationHelper.newInstance(this)
             .loadStepDefaults()
-            .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS)
+            .mixinGeneralConfig(GENERAL_CONFIG_KEYS)
             .use()
 
         (parameters.utils ?: new Utils()).pushToSWA([
@@ -57,16 +57,16 @@ void call(Map parameters = [:]) {
     }
 }
 
-private loadConfigurationFromFile(script, String configFile) {
+private loadConfigurationFromFile(String configFile) {
 
     String defaultYmlConfigFile = '.pipeline/config.yml'
     String defaultYamlConfigFile = '.pipeline/config.yaml'
 
     if (configFile) {
-        script.commonPipelineEnvironment.configuration = readYaml(file: configFile)
+        CommonPipelineEnvironment.getInstance().configuration = readYaml(file: configFile)
     } else if (fileExists(defaultYmlConfigFile)) {
-        script.commonPipelineEnvironment.configuration = readYaml(file: defaultYmlConfigFile)
+        CommonPipelineEnvironment.getInstance().configuration = readYaml(file: defaultYmlConfigFile)
     } else if (fileExists(defaultYamlConfigFile)) {
-        script.commonPipelineEnvironment.configuration = readYaml(file: defaultYamlConfigFile)
+        CommonPipelineEnvironment.getInstance().configuration = readYaml(file: defaultYamlConfigFile)
     }
 }
