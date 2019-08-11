@@ -175,7 +175,7 @@ void call(Map parameters = [:]) {
                     config.options.add("sonar.pullrequest.branch=${env.BRANCH_NAME}")
                     config.options.add("sonar.pullrequest.provider=${config.pullRequestProvider}")
                     switch(config.pullRequestProvider){
-                        case 'github':
+                        case 'GitHub':
                             config.options.add("sonar.pullrequest.github.repository=${config.githubOrg}/${config.githubRepo}")
                             break
                         default: error "Pull-Request provider '${config.pullRequestProvider}' is not supported!"
