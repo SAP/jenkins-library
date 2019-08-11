@@ -146,7 +146,7 @@ class SonarExecuteScanTest extends BasePiperTest {
             containsString('-Dsonar.pullrequest.key=42'),
             containsString('-Dsonar.pullrequest.base=master'),
             containsString('-Dsonar.pullrequest.branch=feature/anything'),
-            containsString('-Dsonar.pullrequest.provider=github'),
+            containsString('-Dsonar.pullrequest.provider=GitHub'),
             containsString('-Dsonar.pullrequest.github.repository=testOrg/testRepo')
         )))
         assertJobStatusSuccess()
