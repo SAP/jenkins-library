@@ -1,5 +1,6 @@
 import static com.sap.piper.Prerequisites.checkScript
 
+import com.sap.piper.CommonPipelineEnvironment
 import com.sap.piper.GenerateDocumentation
 import com.sap.piper.ConfigurationHelper
 import com.sap.piper.GitUtils
@@ -56,21 +57,17 @@ void call(Map parameters = [:]) {
 
         def utils = parameters.juStabUtils ?: new Utils()
 
-        def script = checkScript(this, parameters) ?: this
-
         Map config = ConfigurationHelper.newInstance(this)
             .loadStepDefaults()
-            .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS)
-            .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS)
-            .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName?:env.STAGE_NAME, STEP_CONFIG_KEYS)
+            .mixinGeneralConfig(GENERAL_CONFIG_KEYS)
+            .mixinStepConfig(STEP_CONFIG_KEYS)
+            .mixinStageConfig(parameters.stageName?:env.STAGE_NAME, STEP_CONFIG_KEYS)
             .mixin(parameters, PARAMETER_KEYS)
             .use()
 
         // report to SWA
         utils.pushToSWA([
             step: STEP_NAME,
-            stepParamKey1: 'scriptMissing',
-            stepParam1: parameters?.script == null
         ], config)
 
         InfluxData.addField('step_data', 'bats', false)
@@ -82,7 +79,7 @@ void call(Map parameters = [:]) {
         //resolve commonPipelineEnvironment references in envVars
         config.envVarList = []
         config.envVars.each {e ->
-            def envValue = SimpleTemplateEngine.newInstance().createTemplate(e.getValue()).make(commonPipelineEnvironment: script.commonPipelineEnvironment).toString()
+            def envValue = SimpleTemplateEngine.newInstance().createTemplate(e.getValue()).make(commonPipelineEnvironment: CommonPipelineEnvironment.getInstance()).toString()
             config.envVarList.add("${e.getKey()}=${envValue}")
         }
 
@@ -97,7 +94,7 @@ void call(Map parameters = [:]) {
             } finally {
                 sh "cat 'TEST-${config.testPackage}.tap'"
                 if (config.outputFormat == 'junit') {
-                    dockerExecute(script: script, dockerImage: config.dockerImage, dockerWorkspace: config.dockerWorkspace, stashContent: config.stashContent) {
+                    dockerExecute(dockerImage: config.dockerImage, dockerWorkspace: config.dockerWorkspace, stashContent: config.stashContent) {
                         sh "NPM_CONFIG_PREFIX=~/.npm-global npm install tap-xunit -g"
                         sh "cat 'TEST-${config.testPackage}.tap' | PATH=\$PATH:~/.npm-global/bin tap-xunit --package='${config.testPackage}' > TEST-${config.testPackage}.xml"
                     }

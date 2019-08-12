@@ -10,6 +10,8 @@ import static org.hamcrest.Matchers.is
 import static org.hamcrest.Matchers.startsWith
 import static org.junit.Assert.assertThat
 
+import com.sap.piper.CommonPipelineEnvironment
+
 class BatsExecuteTestsTest extends BasePiperTest {
 
     private ExpectedException thrown = ExpectedException.none()
@@ -42,9 +44,8 @@ class BatsExecuteTestsTest extends BasePiperTest {
 
     @Test
     void testDefault() {
-        nullScript.commonPipelineEnvironment.configuration = [general: [container: 'test-container']]
+        CommonPipelineEnvironment.getInstance().configuration = [general: [container: 'test-container']]
         stepRule.step.batsExecuteTests(
-            script: nullScript,
             juStabUtils: utils,
             dockerContainerName: 'test-container',
             dockerImageNameAndTag: 'test/image',
@@ -73,7 +74,6 @@ class BatsExecuteTestsTest extends BasePiperTest {
     @Test
     void testTap() {
         stepRule.step.batsExecuteTests(
-            script: nullScript,
             juStabUtils: utils,
             outputFormat: 'tap'
         )
@@ -91,7 +91,6 @@ class BatsExecuteTestsTest extends BasePiperTest {
         })
         thrown.expectMessage('Shell call failed')
         stepRule.step.batsExecuteTests(
-            script: nullScript,
             juStabUtils: utils,
             failOnError: true,
         )
@@ -109,7 +108,6 @@ class BatsExecuteTestsTest extends BasePiperTest {
         })
 
         stepRule.step.batsExecuteTests(
-            script: nullScript,
             juStabUtils: utils,
             testRepository: 'testRepo',
         )
@@ -130,7 +128,6 @@ class BatsExecuteTestsTest extends BasePiperTest {
         })
 
         stepRule.step.batsExecuteTests(
-            script: nullScript,
             juStabUtils: utils,
             gitBranch: 'test',
             gitSshKeyCredentialsId: 'testCredentials',
