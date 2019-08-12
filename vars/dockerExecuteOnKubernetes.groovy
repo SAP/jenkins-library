@@ -146,8 +146,8 @@ void call(Map parameters = [:], body) {
         if (!parameters.containerMap) {
             configHelper.withMandatoryProperty('dockerImage')
             config.containerName = 'container-exec'
-            config.containerMap = ["${config.get('dockerImage')}".toString(): config.containerName]
-            config.containerCommands = config.containerCommand ? ["${config.get('dockerImage')}".toString(): config.containerCommand] : null
+            config.containerMap = [(config.get('dockerImage')): config.containerName]
+            config.containerCommands = config.containerCommand ? [(config.get('dockerImage')): config.containerCommand] : null
         }
         executeOnPod(config, utils, body)
     }
