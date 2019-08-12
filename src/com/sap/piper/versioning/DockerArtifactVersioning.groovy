@@ -1,5 +1,7 @@
 package com.sap.piper.versioning
 
+import com.sap.piper.CommonPipelineEnvironment
+
 class DockerArtifactVersioning extends ArtifactVersioning {
     protected DockerArtifactVersioning(script, configuration) {
         super(script, configuration)
@@ -8,8 +10,8 @@ class DockerArtifactVersioning extends ArtifactVersioning {
     def getVersion() {
         if(configuration.artifactType == 'appContainer' && configuration.dockerVersionSource == 'appVersion'){
             //replace + sign if available since + is not allowed in a Docker tag
-            if (script.commonPipelineEnvironment.getArtifactVersion()){
-                return script.commonPipelineEnvironment.getArtifactVersion().replace('+', '_')
+            if (CommonPipelineEnvironment.getInstance().getArtifactVersion()){
+                return CommonPipelineEnvironment.getInstance().getArtifactVersion().replace('+', '_')
             }else{
                 throw new IllegalArgumentException("No artifact version available for 'dockerVersionSource: appVersion' -> executeBuild needs to run for the application artifact first to set the appVersion attribute.'")
             }

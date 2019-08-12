@@ -1,5 +1,6 @@
 import static com.sap.piper.Prerequisites.checkScript
 
+import com.sap.piper.CommonPipelineEnvironment
 import com.sap.piper.GenerateDocumentation
 import com.sap.piper.ConfigurationHelper
 import com.sap.piper.GitUtils
@@ -100,21 +101,17 @@ void call(Map parameters = [:], Closure body = null) {
 
     handlePipelineStepErrors (stepName: STEP_NAME, stepParameters: parameters) {
 
-        def script = checkScript(this, parameters)
-
         def gitUtils = parameters.juStabGitUtils ?: new GitUtils()
 
         if (gitUtils.isWorkTreeDirty()) {
                 error "[${STEP_NAME}] Files in the workspace have been changed previously - aborting ${STEP_NAME}"
         }
-        if (script == null)
-            script = this
         // load default & individual configuration
         ConfigurationHelper configHelper = ConfigurationHelper.newInstance(this)
             .loadStepDefaults()
-            .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS, CONFIG_KEY_COMPATIBILITY)
-            .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS, CONFIG_KEY_COMPATIBILITY)
-            .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName?:env.STAGE_NAME, STEP_CONFIG_KEYS, CONFIG_KEY_COMPATIBILITY)
+            .mixinGeneralConfig(GENERAL_CONFIG_KEYS, CONFIG_KEY_COMPATIBILITY)
+            .mixinStepConfig(STEP_CONFIG_KEYS, CONFIG_KEY_COMPATIBILITY)
+            .mixinStageConfig(parameters.stageName?:env.STAGE_NAME, STEP_CONFIG_KEYS, CONFIG_KEY_COMPATIBILITY)
             .mixin(gitCommitId: gitUtils.getGitCommitIdOrNull())
             .mixin(parameters, PARAMETER_KEYS, CONFIG_KEY_COMPATIBILITY)
             .withMandatoryProperty('buildTool')
@@ -132,11 +129,9 @@ void call(Map parameters = [:], Closure body = null) {
             stepParam1: config.buildTool,
             stepParamKey2: 'artifactType',
             stepParam2: config.artifactType,
-            stepParamKey3: 'scriptMissing',
-            stepParam3: parameters?.script == null
         ], config)
 
-        def artifactVersioning = ArtifactVersioning.getArtifactVersioning(config.buildTool, script, config)
+        def artifactVersioning = ArtifactVersioning.getArtifactVersioning(config.buildTool, this, config)
         def currentVersion = artifactVersioning.getVersion()
 
         def newVersion
@@ -156,8 +151,8 @@ void call(Map parameters = [:], Closure body = null) {
         if (config.commitVersion) {
             config = ConfigurationHelper.newInstance(this, config)
                 .addIfEmpty('gitSshUrl', isAppContainer(config)
-                            ?script.commonPipelineEnvironment.getAppContainerProperty('gitSshUrl')
-                            :script.commonPipelineEnvironment.getGitSshUrl())
+                            ?CommonPipelineEnvironment.getInstance().getAppContainerProperty('gitSshUrl')
+                            :CommonPipelineEnvironment.getInstance().getGitSshUrl())
                 .withMandatoryProperty('gitSshUrl')
                 .use()
 
@@ -183,12 +178,12 @@ void call(Map parameters = [:], Closure body = null) {
         }
 
         if (isAppContainer(config)) {
-            script.commonPipelineEnvironment.setAppContainerProperty('artifactVersion', newVersion)
-            script.commonPipelineEnvironment.setAppContainerProperty('gitCommitId', config.gitCommitId)
+            CommonPipelineEnvironment.getInstance().setAppContainerProperty('artifactVersion', newVersion)
+            CommonPipelineEnvironment.getInstance().setAppContainerProperty('gitCommitId', config.gitCommitId)
         } else {
             //standard case
-            script.commonPipelineEnvironment.setArtifactVersion(newVersion)
-            script.commonPipelineEnvironment.setGitCommitId(config.gitCommitId)
+            CommonPipelineEnvironment.getInstance().setArtifactVersion(newVersion)
+            CommonPipelineEnvironment.getInstance().setGitCommitId(config.gitCommitId)
         }
 
         echo "[${STEP_NAME}]New version: ${newVersion}"
