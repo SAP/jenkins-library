@@ -143,7 +143,7 @@ void call(Map parameters = [:], body) {
             stepParam1: parameters?.script == null
         ], config)
 
-        if (!parameters.containerMap) {
+        if (!config.containerMap) {
             configHelper.withMandatoryProperty('dockerImage')
             config.containerName = 'container-exec'
             config.containerMap = ["${config.get('dockerImage')}": config.containerName]
