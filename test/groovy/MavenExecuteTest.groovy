@@ -36,7 +36,7 @@ class MavenExecuteTest extends BasePiperTest {
     @Test
     void testExecuteBasicMavenCommand() throws Exception {
 
-        stepRule.step.mavenExecute(script: nullScript, goals: 'clean install')
+        stepRule.step.mavenExecute(goals: 'clean install')
         assertEquals('maven:3.5-jdk-7', dockerExecuteRule.dockerParams.dockerImage)
 
         assert shellRule.shell[0] == 'mvn --batch-mode -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn clean install'
@@ -45,7 +45,7 @@ class MavenExecuteTest extends BasePiperTest {
     @Test
     void testExecuteBasicMavenCommandWithDownloadLogsEnabled() throws Exception {
 
-        stepRule.step.mavenExecute(script: nullScript, goals: 'clean install', logSuccessfulMavenTransfers: true)
+        stepRule.step.mavenExecute(goals: 'clean install', logSuccessfulMavenTransfers: true)
         assertEquals('maven:3.5-jdk-7', dockerExecuteRule.dockerParams.dockerImage)
 
         assert shellRule.shell[0] == 'mvn --batch-mode clean install'
@@ -55,7 +55,6 @@ class MavenExecuteTest extends BasePiperTest {
     void testExecuteMavenCommandWithParameter() throws Exception {
 
         stepRule.step.mavenExecute(
-            script: nullScript,
             dockerImage: 'maven:3.5-jdk-8-alpine',
             goals: 'clean install',
             globalSettingsFile: 'globalSettingsFile.xml',
@@ -71,7 +70,7 @@ class MavenExecuteTest extends BasePiperTest {
 
     @Test
     void testMavenCommandForwardsDockerOptions() throws Exception {
-        stepRule.step.mavenExecute(script: nullScript, goals: 'clean install')
+        stepRule.step.mavenExecute(goals: 'clean install')
         assertEquals('maven:3.5-jdk-7', dockerExecuteRule.dockerParams.dockerImage)
 
         assertEquals('mvn --batch-mode -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn clean install', shellRule.shell[0])
@@ -79,7 +78,7 @@ class MavenExecuteTest extends BasePiperTest {
 
     @Test
     void testMavenCommandWithShortBatchModeFlag() throws Exception {
-        stepRule.step.mavenExecute(script: nullScript, goals: 'clean install', flags: '-B')
+        stepRule.step.mavenExecute(goals: 'clean install', flags: '-B')
         assertEquals('maven:3.5-jdk-7', dockerExecuteRule.dockerParams.dockerImage)
 
         assertEquals('mvn -B -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn clean install', shellRule.shell[0])
@@ -87,7 +86,7 @@ class MavenExecuteTest extends BasePiperTest {
 
     @Test
     void testMavenCommandWithFalsePositiveMinusBFlag() throws Exception {
-        stepRule.step.mavenExecute(script: nullScript, goals: 'clean install', flags: '-Blah')
+        stepRule.step.mavenExecute(goals: 'clean install', flags: '-Blah')
         assertEquals('maven:3.5-jdk-7', dockerExecuteRule.dockerParams.dockerImage)
 
         assertThat(shellRule.shell[0],
@@ -97,7 +96,7 @@ class MavenExecuteTest extends BasePiperTest {
 
     @Test
     void testMavenCommandWithBatchModeMultiline() throws Exception {
-        stepRule.step.mavenExecute(script: nullScript, goals: 'clean install', flags: ('''-B\\
+        stepRule.step.mavenExecute(goals: 'clean install', flags: ('''-B\\
                                                                                     |--show-version''' as CharSequence).stripMargin())
         assertThat(shellRule.shell[0], not(containsString('--batch-mode')))
     }
