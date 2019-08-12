@@ -1,0 +1,10 @@
+{
+    "name": "<name of the package>",
+    "version": "<version of the package>",
+    "description": "<description of the package>",
+    "private": true,
+    "devDependencies": {
+        "grunt": "1.0.1",
+        "@sap/grunt-sapui5-bestpractice-build": "1.3.17"
+    }
+}

@@ -1,0 +1,96 @@
+# Build and Deploy SAPUI5 or SAP Fiori Applications on SAP Cloud Platform with Jenkins
+
+Build an application based on SAPUI5 or SAP Fiori with Jenkins and deploy the build result into an SAP Cloud Platform account in the Neo environment.
+
+## Prerequisites
+
+* You have installed the Java Runtime Environment 8.
+* You have installed Jenkins 2.60.3 or higher.
+* You have set up Project “Piper”. See [README](https://github.com/SAP/jenkins-library/blob/master/README.md).
+* You have installed the Multi-Target Application (MTA) Archive Builder 1.0.6 or newer. See [SAP Development Tools](https://tools.hana.ondemand.com/#cloud). TODO: maybe we should refer to the docker image
+* You have installed Node.js including node and npm. See [Node.js](https://nodejs.org/en/download/). TODO: docker ?
+
+### Project Prerequisites
+
+This scenario requires additional files in your project and in the execution environment on your Jenkins instance.
+
+On the project level, provide and adjust the following template:
+
+| File Name | Description | Position |
+|-----|-----|-----|
+| [`.npmrc`](https://github.com/SAP/jenkins-library/blob/master/documentation/docs/scenarios/ui5-sap-cp/files/.npmrc) | This file contains a reference to the SAP NPM registry (`@sap:registry https://npm.sap.com`), which is required to fetch the dependencies required to build the application. | Place the `.npmrc` file in the root directory of your project. |
+| [`mta.yaml`](https://github.com/SAP/jenkins-library/blob/master/documentation/docs/scenarios/ui5-sap-cp/files/mta.yaml) | This file controls the behavior of the MTA toolset. | Place the `mta.yaml` file in your application root folder and adjust the values in brackets with your data. |
+| [`package.json`](https://github.com/SAP/jenkins-library/blob/master/documentation/docs/scenarios/ui5-sap-cp/files/package.json) | This file lists the required development dependencies for the build. | Add the content of the `package.json` file to your existing `package.json` file. |
+| [`Gruntfile.js`](https://github.com/SAP/jenkins-library/blob/master/documentation/docs/scenarios/ui5-sap-cp/files/Gruntfile.js) | This file controls the grunt build. By default the tasks `clean`, `build`, and `lint` are executed. | Place the `Gruntfile.js` in the root directory of your project. |
+
+## Context
+
+This scenario combines various different steps to create a complete pipeline.
+
+In this scenario, we want to show how to build an application based on SAPUI5 or SAP Fiori by using the multi-target application (MTA) concept and how to deploy the build result into an SAP Cloud Platform account in the Neo environment. This document comprises the [mtaBuild](https://sap.github.io/jenkins-library/steps/mtaBuild/) and the [neoDeploy](https://sap.github.io/jenkins-library/steps/neoDeploy/) steps.
+
+![This pipeline in Jenkins Blue Ocean](images/pipeline.jpg)
+###### Screenshot: Build and Deploy Process in Jenkins
+
+## Example
+
+### Jenkinsfile
+
+Following the convention for pipeline definitions, use a `Jenkinsfile` which resides in the root directory of your development sources.
+
+```groovy
+@Library('piper-lib-os') _
+
+node() {
+    stage('prepare') {
+        deleteDir
+        checkout scm
+        setupCommonPipelineEnvironment script: this
+    } 
+    stage('build') {
+        mtaBuild: script: this // mode XSA should be provided in .pipeline/config.yml
+    }
+
+    stage('deploy') {
+        xsDeploy scipt: this
+    }
+}
+```
+
+### Configuration (`.pipeline/config.yml`)
+
+This is a basic configuration example, which is also located in the sources of the project.
+
+```yaml
+steps:
+  mtaBuild:
+    buildTarget: 'XSA'
+    mtaJarLocation: '/opt/sap/mta.jar' // not sure if this is needed (docker)
+  xsDeploy:
+    credentialsId: 'xsa'
+    mode: 'DEPLOY'
+    org: 'myOrg'
+    space: 'mySpace'
+```
+
+#### Configuration for the MTA Build
+
+| Parameter        | Description    |
+| -----------------|----------------|
+| `buildTarget`    | The target platform to which the mtar can be deployed. In this case we need  `XSA` |
+
+#### Configuration for the Deployment to XSA 
+
+| Parameter          | Description |
+| -------------------|-------------|
+| `credentialsId` | The Jenkins credentials that contain the user and password which are used for the deployment on SAP Cloud Platform.|
+| `mode`          | DeployMode. TODO: we need to provide the details here
+| `org`           |  The org TODO: we need to provide the details here |
+| `space`           | The space TODO: we need to provide the details here |
+
+### Parameters
+
+For the detailed description of the relevant parameters, see:
+
+* [mtaBuild](https://sap.github.io/jenkins-library/steps/mtaBuild/)
+* [xsDeploy](https://sap.github.io/jenkins-library/steps/xsDeploy/)
