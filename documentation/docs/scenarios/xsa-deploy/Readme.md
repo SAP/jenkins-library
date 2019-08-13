@@ -36,6 +36,8 @@ In this scenario, we want to show how to build a Multitarget Application (MTA) a
 
 Following the convention for pipeline definitions, use a `Jenkinsfile` which resides in the root directory of your development sources.
 
+TODO: here we describe the straight-forward case. There is also a blue-green mode. How should we handle this
+
 ```groovy
 @Library('piper-library-os') _
 
