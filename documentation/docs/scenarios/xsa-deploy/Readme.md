@@ -4,11 +4,12 @@ Build an application based on SAPUI5 or SAP Fiori with Jenkins and deploy the bu
 
 ## Prerequisites
 
-* You have installed the Java Runtime Environment 8.
-* You have installed Jenkins 2.60.3 or higher.
-* You have set up Project “Piper”. See [README](https://github.com/SAP/jenkins-library/blob/master/README.md).
-* You have installed the Multi-Target Application (MTA) Archive Builder 1.0.6 or newer. See [SAP Development Tools](https://tools.hana.ondemand.com/#cloud). TODO: maybe we should refer to the docker image
-* You have installed Node.js including node and npm. See [Node.js](https://nodejs.org/en/download/). TODO: docker ?
+* TODO: do we have a general description how to setup docker. Doesn't make sense to describe such general setups on the level of each scenario.
+* You have installed the Java Runtime Environment 8. TODO: depends on docker setup.
+* You have installed Jenkins 2.60.3 or higher. TODO: not required in case CX Jenkins is used
+* You have set up Project “Piper”. See [README](https://github.com/SAP/jenkins-library/blob/master/README.md). TODO: not needed when CX Jenkins is used. Required for plain Jenkins use cases.
+* You have installed the Multi-Target Application (MTA) Archive Builder 1.0.6 or newer. See [SAP Development Tools](https://tools.hana.ondemand.com/#cloud). TODO: Obsolete with docker
+* You have installed Node.js including node and npm. See [Node.js](https://nodejs.org/en/download/). TODO: obsolete when using docker
 
 ### Project Prerequisites
 
