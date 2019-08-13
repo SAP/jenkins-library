@@ -56,14 +56,12 @@ import groovy.transform.Field
 void call(Map parameters = [:]) {
     handlePipelineStepErrors(stepName: STEP_NAME, stepParameters: parameters) {
 
-        final script = checkScript(this, parameters) ?: this
-
         // load default & individual configuration
         Map config = ConfigurationHelper.newInstance(this)
             .loadStepDefaults()
-            .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS)
-            .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS)
-            .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName?:env.STAGE_NAME, STEP_CONFIG_KEYS)
+            .mixinGeneralConfig(GENERAL_CONFIG_KEYS)
+            .mixinStepConfig(STEP_CONFIG_KEYS)
+            .mixinStageConfig(parameters.stageName?:env.STAGE_NAME, STEP_CONFIG_KEYS)
             .mixin(parameters, PARAMETER_KEYS)
             .use()
 
@@ -83,7 +81,6 @@ void call(Map parameters = [:]) {
         }
 
         dockerExecute(
-            script: script,
             containerCommand: config.containerCommand,
             containerShell: config.containerShell,
             dockerEnvVars: config.dockerEnvVars,

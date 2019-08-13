@@ -50,9 +50,7 @@ class KanikoExecuteTest extends BasePiperTest {
 
     @Test
     void testDefaults() {
-        stepRule.step.kanikoExecute(
-            script: nullScript
-        )
+        stepRule.step.kanikoExecute()
         assertThat(shellRule.shell, hasItem('#!/busybox/sh rm /kaniko/.docker/config.json'))
         assertThat(shellRule.shell, hasItem(allOf(
             startsWith('#!/busybox/sh'),
@@ -78,7 +76,6 @@ class KanikoExecuteTest extends BasePiperTest {
     @Test
     void testCustomDockerCredentials() {
         stepRule.step.kanikoExecute(
-            script: nullScript,
             dockerConfigJsonCredentialsId: 'myDockerConfigJson'
         )
 
@@ -93,7 +90,6 @@ class KanikoExecuteTest extends BasePiperTest {
     @Test
     void testCustomImage() {
         stepRule.step.kanikoExecute(
-            script: nullScript,
             containerImageNameAndTag: 'my.docker.registry/path/myImageName:myTag'
         )
 
@@ -111,7 +107,6 @@ class KanikoExecuteTest extends BasePiperTest {
     @Test
     void testPreserveDestination() {
         stepRule.step.kanikoExecute(
-            script: nullScript,
             containerBuildOptions: '--destination my.docker.registry/path/myImageName:myTag'
         )
 
@@ -128,7 +123,6 @@ class KanikoExecuteTest extends BasePiperTest {
     @Test
     void testCustomCertificates() {
         stepRule.step.kanikoExecute(
-            script: nullScript,
             customTlsCertificateLinks: ['http://link.one', 'http://link.two']
         )
 
