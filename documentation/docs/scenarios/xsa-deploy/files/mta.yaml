@@ -1,6 +1,6 @@
 ID: <ID of your MTA>
 _schema-version: '2.1'
-description: Hello World Database
+description: <the description>
 version: <version number of your application>
 
 modules:
