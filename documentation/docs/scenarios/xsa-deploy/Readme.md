@@ -48,7 +48,7 @@ node() {
         setupCommonPipelineEnvironment script: this
     } 
     stage('build') {
-        mtaBuild: script: this // mode XSA should be provided in .pipeline/config.yml
+        mtaBuild: script: this // mtaBuild.buildTarget should be set to "XSA" in .pipeline/config.yml
     }
 
     stage('deploy') {
