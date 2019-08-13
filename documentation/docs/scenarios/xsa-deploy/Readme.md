@@ -18,10 +18,7 @@ On the project level, provide and adjust the following template:
 
 | File Name | Description | Position |
 |-----|-----|-----|
-| [`.npmrc`](https://github.com/SAP/jenkins-library/blob/master/documentation/docs/scenarios/ui5-sap-cp/files/.npmrc) | This file contains a reference to the SAP NPM registry (`@sap:registry https://npm.sap.com`), which is required to fetch the dependencies required to build the application. | Place the `.npmrc` file in the root directory of your project. |
-| [`mta.yaml`](https://github.com/SAP/jenkins-library/blob/master/documentation/docs/scenarios/ui5-sap-cp/files/mta.yaml) | This file controls the behavior of the MTA toolset. | Place the `mta.yaml` file in your application root folder and adjust the values in brackets with your data. |
-| [`package.json`](https://github.com/SAP/jenkins-library/blob/master/documentation/docs/scenarios/ui5-sap-cp/files/package.json) | This file lists the required development dependencies for the build. | Add the content of the `package.json` file to your existing `package.json` file. |
-| [`Gruntfile.js`](https://github.com/SAP/jenkins-library/blob/master/documentation/docs/scenarios/ui5-sap-cp/files/Gruntfile.js) | This file controls the grunt build. By default the tasks `clean`, `build`, and `lint` are executed. | Place the `Gruntfile.js` in the root directory of your project. |
+| [`mta.yaml`](https://github.com/SAP/jenkins-library/blob/master/documentation/docs/scenarios/xsa-deploy/files/mta.yaml) | This file controls the behavior of the MTA toolset. | Place the `mta.yaml` file in your application root folder and adjust the values in brackets with your data. |
 
 ## Context
 
@@ -39,20 +36,30 @@ In this scenario, we want to show how to build a Multitarget Application (MTA) a
 Following the convention for pipeline definitions, use a `Jenkinsfile` which resides in the root directory of your development sources.
 
 ```groovy
-@Library('piper-lib-os') _
+@Library('piper-library-os') _
 
-node() {
-    stage('prepare') {
-        deleteDir
-        checkout scm
-        setupCommonPipelineEnvironment script: this
-    } 
-    stage('build') {
-        mtaBuild: script: this // mtaBuild.buildTarget should be set to "XSA" in .pipeline/config.yml
-    }
+pipeline {
 
-    stage('deploy') {
-        xsDeploy scipt: this
+    agent any
+
+    stages {
+        stage("prepare") {
+            steps {
+                deleteDir()
+                checkout scm
+                setupCommonPipelineEnvironment script: this
+            }
+        }
+        stage('build') {
+            steps {
+                mtaBuild script: this
+            }
+        }
+        stage('deploy') {
+            steps {
+                xsDeploy script: this
+            }
+        }
     }
 }
 ```
@@ -65,12 +72,16 @@ This is a basic configuration example, which is also located in the sources of t
 steps:
   mtaBuild:
     buildTarget: 'XSA'
-    mtaJarLocation: '/opt/sap/mta.jar' // not sure if this is needed (docker)
   xsDeploy:
-    credentialsId: 'xsa'
-    mode: 'DEPLOY'
-    org: 'myOrg'
-    space: 'mySpace'
+    apiUrl: '<API_URL>' # e.g. 'https://example.org:30030'
+    # credentialsId: 'XS' omitted, 'XS' is the default
+    docker:
+      dockerImage: '<ID_OF_THE_DOCKER_IMAGE' # for legal reasons no docker image is provided.
+      # dockerPullImage: true # default: 'false'. Needs to be set to 'true' in case the image is served from a docker registry
+    loginOpts: '' # during setup for non-productive builds we might set here. '--skip-ssl-validation'
+    org: '<ORG_NAME>'
+    space: '<SPACE>'
+
 ```
 
 #### Configuration for the MTA Build
