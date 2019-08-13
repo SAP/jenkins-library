@@ -1,16 +1,17 @@
-_schema-version: "2.0.0"
-ID: "<Id of your MTA>"
+ID: <ID of your MTA>
+_schema-version: '2.1'
+description: Hello World Database
 version: <version number of your application>
 
-parameters:
-  hcp-deployer-version: "1.0.0"
-
 modules:
-  - name: "<Name of your Fiori application>"
-    type: html5
-    path: .
-    parameters:
-      version: <version number of your application>-${timestamp}
-    build-parameters:
-      builder: grunt
-      build-result: dist
+ - name: <name of your application>
+   type: hdb
+   path: <path to your application>
+   requires:
+    - name: hdi_db
+
+resources:
+ - name: hdi_db
+   properties:
+      hdi-container-name: ${service-name}
+   type: com.sap.xs.hdi-container
