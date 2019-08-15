@@ -214,4 +214,18 @@ class GithubPublishReleaseTest extends BasePiperTest {
         assertJobStatusSuccess()
     }
 
+    @Test
+    void testTemplating() {
+        nullScript.commonPipelineEnvironment.setArtifactVersion('1.2.3')
+        stepRule.step.githubPublishRelease(
+            script: nullScript,
+            githubOrg: 'TestOrg',
+            githubRepo: 'TestRepo',
+            githubTokenCredentialsId: 'TestCredentials',
+            releaseBodyHeader: 'This is my release header with version: ${commonPipelineEnvironment.getArtifactVersion()} for githubOrg: ${config.githubOrg}'
+        )
+
+        assertThat('the list of closed PR is not present', data.body, containsString('This is my release header with version: 1.2.3 for githubOrg: TestOrg<br />'))
+    }
+
 }
