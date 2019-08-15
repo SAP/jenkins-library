@@ -133,13 +133,13 @@ private void initStashConfiguration (script, config) {
 
 private void setGitUrlsOnCommonPipelineEnvironment(script, String gitUrl) {
 
-    def urlMatcher = gitUrl =~ /^((http|https|git|ssh):\/\/)?((.*)@)?([^:\/]+):?([\d]*)?\/?(.*)$/
+    def urlMatcher = gitUrl =~ /^((http|https|git|ssh):\/\/)?((.*)@)?([^:\/]+)(:([\d]*))?\/?(.*)$/
 
     def protocol = urlMatcher[0][2]
     def auth = urlMatcher[0][4]
     def host = urlMatcher[0][5]
-    def port = urlMatcher[0][6]
-    def path = urlMatcher[0][7]
+    def port = urlMatcher[0][7]
+    def path = urlMatcher[0][8]
 
     if (protocol in ['http', 'https']) {
         script.commonPipelineEnvironment.setGitSshUrl("git@${host}:${path}")
