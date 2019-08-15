@@ -133,11 +133,17 @@ void call(Map parameters = [:], body) {
         ], config)
 
         if (isKubernetes() && config.dockerImage) {
+            List dockerEnvVars = []
+            config.dockerEnvVars.each { key, value ->
+                dockerEnvVars << "$key=$value"
+            }
             if (env.POD_NAME && isContainerDefined(config)) {
                 container(getContainerDefined(config)) {
-                    echo "[INFO][${STEP_NAME}] Executing inside a Kubernetes Container."
-                    body()
-                    sh "chown -R 1000:1000 ."
+                    withEnv(dockerEnvVars) {
+                        echo "[INFO][${STEP_NAME}] Executing inside a Kubernetes Container."
+                        body()
+                        sh "chown -R 1000:1000 ."
+                    }
                 }
             } else {
                 if (!config.sidecarImage) {
