@@ -149,19 +149,19 @@ private void setGitUrlsOnCommonPipelineEnvironment(script, String gitUrl) {
         script.commonPipelineEnvironment.setGitHttpsUrl("https://${host}/${path}")
     }
 
-    List gitPathParts = path.split('/')
+    List gitPathParts = path.replaceAll('.git', '').split('/')
     def gitFolder = 'N/A'
     def gitRepo = 'N/A'
     switch (gitPathParts.size()) {
         case 1:
-            gitRepo = gitPathParts[0].replaceAll('.git', '')
+            gitRepo = gitPathParts[0]
             break
         case 2:
             gitFolder = gitPathParts[0]
-            gitRepo = gitPathParts[1].replaceAll('.git', '')
+            gitRepo = gitPathParts[1]
             break
         case { it > 3 }:
-            gitRepo = gitPathParts[gitPathParts.size()-1].replaceAll('.git', '')
+            gitRepo = gitPathParts[gitPathParts.size()-1]
             gitPathParts.remove(gitPathParts.size()-1)
             gitFolder = gitPathParts.join('/')
             break
