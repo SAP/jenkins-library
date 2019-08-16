@@ -58,7 +58,7 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
     def pullImageMap = [:]
     def namespace
     def securityContext
-    Map stashMap
+    List stashList = []
 
     @Before
     void init() {
@@ -96,7 +96,7 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
             body()
         })
         helper.registerAllowedMethod('stash', [Map.class], {m ->
-            stashMap = m
+            stashList.add(m)
         })
 
     }
@@ -389,7 +389,7 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
     @Test
     void testDockerExecuteOnKubernetesCustomJnlpViaEnv() {
 
-        nullScript.configuration = [
+        nullScript.commonPipelineEnvironment.configuration = [
             general: [jenkinsKubernetes: [jnlpAgent: 'config/jnlp:latest']]
         ]
         binding.variables.env.JENKINS_JNLP_IMAGE = 'env/jnlp:latest'
@@ -413,10 +413,10 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
     @Test
     void testDockerExecuteOnKubernetesCustomJnlpViaConfig() {
 
-        nullScript.configuration = [
+        nullScript.commonPipelineEnvironment.configuration = [
             general: [jenkinsKubernetes: [jnlpAgent: 'config/jnlp:latest']]
         ]
-        binding.variables.env.JENKINS_JNLP_IMAGE = 'config/jnlp:latest'
+        //binding.variables.env.JENKINS_JNLP_IMAGE = 'config/jnlp:latest'
         stepRule.step.dockerExecuteOnKubernetes(
             script: nullScript,
             juStabUtils: utils,
@@ -432,6 +432,33 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
             hasItem('config/jnlp:latest'),
             hasItem('maven:3.5-jdk-8-alpine'),
         ))
+    }
+
+    @Test
+    void tastStashIncludesAndExcludes() {
+        nullScript.commonPipelineEnvironment.configuration = [
+            steps: [
+                dockerExecuteOnKubernetes: [
+                    stashExcludes: [
+                        workspace: 'workspace/exclude.test',
+                        stashBack: 'container/exclude.test'
+                    ],
+                    stashIncludes: [
+                        workspace: 'workspace/include.test',
+                        stashBack: 'container/include.test'
+                    ]
+                ]
+            ]
+        ]
+        stepRule.step.dockerExecuteOnKubernetes(
+            script: nullScript,
+            juStabUtils: utils,
+            dockerImage: 'maven:3.5-jdk-8-alpine',
+        ) {
+            bodyExecuted = true
+        }
+        assertThat(stashList[0], allOf(hasEntry('includes','workspace/include.test'), hasEntry('excludes','workspace/exclude.test')))
+        assertThat(stashList[1], allOf(hasEntry('includes','container/include.test'), hasEntry('excludes','container/exclude.test')))
     }
 
 
