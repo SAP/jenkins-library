@@ -134,7 +134,7 @@ void call(Map parameters = [:], body) {
 
         if (isKubernetes() && config.dockerImage) {
             List dockerEnvVars = []
-            config?.dockerEnvVars?.each { key, value ->
+            config.dockerEnvVars?.each { key, value ->
                 dockerEnvVars << "$key=$value"
             }
             if (env.POD_NAME && isContainerDefined(config)) {
