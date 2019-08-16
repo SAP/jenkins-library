@@ -1,7 +1,5 @@
 package com.sap.piper
 
-import com.cloudbees.groovy.cps.NonCPS
-
 @API
 class ConfigurationHelper implements Serializable {
 
@@ -51,7 +49,7 @@ class ConfigurationHelper implements Serializable {
         return mixin(stepConfiguration, filter, compatibleParameters)
     }
 
-    final ConfigurationHelper mixin(Map parameters, Set filter = null, Map compatibleParameters = [:]){
+    ConfigurationHelper mixin(Map parameters, Set filter = null, Map compatibleParameters = [:]){
         if (parameters.size() > 0 && compatibleParameters.size() > 0) {
             parameters = ConfigurationMerger.merge(handleCompatibility(compatibleParameters, parameters), null, parameters)
         }
