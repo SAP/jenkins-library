@@ -4,9 +4,10 @@ Build an application based on SAPUI5 or SAP Fiori with Jenkins and deploy the bu
 
 ## Prerequisites
 
-* TODO: do we have a general description how to setup docker. Doesn't make sense to describe such general setups on the level of each scenario.
-* TODO: Prerequisite is that the artifacts we compile agaist are available either on Service Market Place (next TODO: explain how they can be imported into the build env), or via public maven repo
+* [Docker environment](https://docs.docker.com/get-started/)
+* All artifacts refereneced during the build are available either on Service Market Place or via public repositories
 * You have set up Project “Piper”. See [guided tour](https://sap.github.io/jenkins-library/guidedtour/).
+
 ### Project Prerequisites
 
 This scenario requires additional files in your project and in the execution environment on your Jenkins instance.
@@ -31,8 +32,6 @@ In this scenario, we want to show how to build a Multitarget Application (MTA) a
 ### Jenkinsfile
 
 Following the convention for pipeline definitions, use a `Jenkinsfile`, which resides in the root directory of your development sources.
-
-TODO: here we describe the straight-forward case. There is also a blue-green mode. How should we handle this
 
 ```groovy
 @Library('piper-lib-os') _
