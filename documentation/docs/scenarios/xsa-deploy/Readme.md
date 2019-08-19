@@ -6,7 +6,7 @@ Build an application based on SAPUI5 or SAP Fiori with Jenkins and deploy the bu
 
 * TODO: do we have a general description how to setup docker. Doesn't make sense to describe such general setups on the level of each scenario.
 * TOOD: Prerequisite is that the artifacts we compile agaist are available either on Service Market Place (next TODO: explain how they can be imported into the build env), or via public maven repo
-
+* You have set up Project “Piper”. See [guided tour](https://sap.github.io/jenkins-library/guidedtour/).
 ### Project Prerequisites
 
 This scenario requires additional files in your project and in the execution environment on your Jenkins instance.
