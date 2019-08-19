@@ -1,4 +1,4 @@
-# Build and Deploy SAPUI5 or SAP Fiori Applications on HANA XS with Jenkins
+# Build and Deploy SAP Fiori Applications on SAP HANA XS Advanced
 
 Build an application based on SAPUI5 or SAP Fiori with Jenkins and deploy the build result into an SAP Cloud Platform account in the Neo environment.
 
