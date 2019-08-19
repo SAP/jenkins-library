@@ -98,7 +98,7 @@ steps:
 
 | Parameter          | Description |
 | -------------------|-------------|
-| `credentialsId` | The Jenkins credentials that contain the user and password which are used for the deployment on SAP Cloud Platform.|
+| `credentialsId` | The Jenkins credentials that contain user and password required for the deployment on SAP Cloud Platform.|
 | `mode`          | DeployMode. TODO: we need to provide the details here
 | `org`           |  The org TODO: we need to provide the details here |
 | `space`           | The space TODO: we need to provide the details here |
