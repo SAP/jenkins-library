@@ -92,7 +92,7 @@ steps:
 
 | Parameter        | Description    |
 | -----------------|----------------|
-| `buildTarget`    | The target platform to which the mtar can be deployed. In this case we need  `XSA` |
+| `buildTarget`    | The target platform to which the mtar can be deployed. In this case, the target platform is  `XSA`. |
 
 #### Configuration for the Deployment to XSA 
 
