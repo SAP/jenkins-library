@@ -1,15 +1,12 @@
 import com.sap.piper.ConfigurationHelper
 import com.sap.piper.GenerateDocumentation
 import com.sap.piper.variablesubstitution.ExecutionContext
+import com.sap.piper.variablesubstitution.Logger
 import groovy.transform.Field
 
 import static com.sap.piper.Prerequisites.checkScript
 
-private void debug(String message) {
-    // Enable this for debugging.
-    // println(message)
-}
-
+@Field Logger logger = new Logger()
 @Field String STEP_NAME = getClass().getName()
 @Field Set GENERAL_CONFIG_KEYS = []
 @Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS + [
@@ -62,6 +59,8 @@ void call(Map<String, String> arguments) {
         String variablesFilePath = config.variablesFile ?: "manifest-variables.yml"
         String outputFilePath = config.outputManifestFile ?: manifestFilePath
 
+        logger.setConfig(config)
+
         // Parameter for tests only. No public API.
         // This is to skip manifest file deletion in tests, which
         // would be a nuisance, as it alters the sources repository.
@@ -88,9 +87,9 @@ void call(Map<String, String> arguments) {
             echo "[YamlSubstituteVariables] Loaded manifest at ${manifestFilePath}!"
         }
         catch(Exception ex) {
-            debug("Exception: ${ex}")
-            error "[YamlSubstituteVariables] Could not load manifest file at ${manifestFilePath}."
-            error "[YamlSubstituteVariables] Exception was: ${ex}"
+            logger.debug("Exception: ${ex}")
+            echo "[YamlSubstituteVariables] Could not load manifest file at ${manifestFilePath}. Exception was: ${ex}"
+            throw ex
         }
 
         def variablesData = null
@@ -101,9 +100,9 @@ void call(Map<String, String> arguments) {
             echo "[YamlSubstituteVariables] Loaded variables file at ${variablesFilePath}!"
         }
         catch(Exception ex) {
-            debug("Exception: ${ex}")
-            error "[YamlSubstituteVariables] Could not load manifest variables file at ${variablesFilePath}."
-            error "[YamlSubstituteVariables] Exception was: ${ex}"
+            logger.debug("Exception: ${ex}")
+            echo "[YamlSubstituteVariables] Could not load manifest variables file at ${variablesFilePath}. Exception was: ${ex}"
+            throw ex
         }
 
         // substitute all variables.
@@ -123,9 +122,9 @@ void call(Map<String, String> arguments) {
         echo "[YamlSubstituteVariables] Replaced variables in ${manifestFilePath} with variables from ${variablesFilePath}."
         echo "[YamlSubstituteVariables] Wrote output file (with variables replaced) at ${outputFilePath}."
 
-        debug("Loaded Manifest: ${manifestData}")
-        debug("Loaded Variables: ${variablesData}")
-        debug("Result: ${result}")
+        logger.debug("Loaded Manifest: ${manifestData}")
+        logger.debug("Loaded Variables: ${variablesData}")
+        logger.debug("Result: ${result}")
     }
 }
 
@@ -173,7 +172,7 @@ private Object substitute(Object manifestNode, Object variablesData, ExecutionCo
             echo "Replacing: ${referenceToReplace} with ${substitute}"
 
             if(isSingleVariableReference(stringNode)) {
-                debug("Node ${stringNode} is SINGLE variable reference. Substitute type is: ${substitute.getClass().getName()}")
+                logger.debug("Node ${stringNode} is SINGLE variable reference. Substitute type is: ${substitute.getClass().getName()}")
                 // if the string node we need to do replacements for is
                 // a reference to a single variable, i.e. should be replaced
                 // entirely with the variable value, we replace the entire node
@@ -181,7 +180,7 @@ private Object substitute(Object manifestNode, Object variablesData, ExecutionCo
                 complexResult = substitute
             }
             else {
-                debug("Node ${stringNode} is multi-variable reference or contains additional string constants. Substitute type is: ${substitute.getClass().getName()}")
+                logger.debug("Node ${stringNode} is multi-variable reference or contains additional string constants. Substitute type is: ${substitute.getClass().getName()}")
                 // if the string node we need to do replacements for contains various
                 // variable references or a variable reference and constant string additions
                 // we do a string replacement of the variables inside the node.
@@ -215,7 +214,7 @@ private Object substitute(Object manifestNode, Object variablesData, ExecutionCo
         return copy
     }
     else {
-        debug("[YamlSubstituteVariables] Found data type ${manifestNode.getClass().getName()} that needs no substitute. Value: ${manifestNode}")
+        logger.debug("[YamlSubstituteVariables] Found data type ${manifestNode.getClass().getName()} that needs no substitute. Value: ${manifestNode}")
         return manifestNode
     }
 }

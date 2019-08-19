@@ -11,9 +11,11 @@ import org.junit.runners.model.Statement
 class JenkinsWriteYamlRule implements TestRule {
 
     final BasePipelineTest testInstance
-    static final String YAML_DUMP = "YAML_DUMP" // key in files map to retrieve the string of an actual Yaml() dump.
+    static final String DATA = "DATA" // key in files map to retrieve Yaml object graph data..
+    static final String CHARSET = "CHARSET" // key in files map to retrieve the charset of the serialized Yaml.
+    static final String SERIALIZED_YAML = "SERIALIZED_YAML" // key in files map to retrieve serialized Yaml.
 
-    Map files = [:]
+    Map<String, Map<String, Object>> files = new HashMap<>()
 
     JenkinsWriteYamlRule(BasePipelineTest testInstance) {
         this.testInstance = testInstance
@@ -32,6 +34,7 @@ class JenkinsWriteYamlRule implements TestRule {
                 testInstance.helper.registerAllowedMethod( 'writeYaml', [Map], { parameterMap ->
                     assertNotNull(parameterMap.file)
                     assertNotNull(parameterMap.data)
+                    // charset is optional.
 
                     Yaml yaml = new Yaml()
                     StringWriter writer = new StringWriter()
@@ -41,9 +44,12 @@ class JenkinsWriteYamlRule implements TestRule {
                     // yaml.dump(parameterMap.data, new FileWriter(parameterMap.file))
                     // yaml.dump(parameterMap.data, new FileWriter("test/resources/variableSubstitution/manifest_out.yml"))
 
-                    files[parameterMap.file] = parameterMap.data
-                    files[parameterMap.charset] = parameterMap.charset
-                    files[YAML_DUMP] = writer.toString()
+                    Map<String, Object> details = new HashMap<>()
+                    details.put(DATA, parameterMap.data)
+                    details.put(CHARSET, parameterMap.charset ?: "UTF-8")
+                    details.put(SERIALIZED_YAML, writer.toString())
+
+                    files[parameterMap.file] = details
                 })
 
                 base.evaluate()
