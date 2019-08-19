@@ -40,7 +40,7 @@ Following the convention for pipeline definitions, use a `Jenkinsfile`, which re
 TODO: here we describe the straight-forward case. There is also a blue-green mode. How should we handle this
 
 ```groovy
-@Library('piper-library-os') _
+@Library('piper-lib-os') _
 
 pipeline {
 
