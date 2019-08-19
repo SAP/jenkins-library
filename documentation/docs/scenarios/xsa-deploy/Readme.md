@@ -94,9 +94,9 @@ steps:
 | Parameter          | Description |
 | -------------------|-------------|
 | `credentialsId` | The Jenkins credentials that contain user and password required for the deployment on SAP Cloud Platform.|
-| `mode`          | DeployMode. TODO: we need to provide the details here
-| `org`           |  The org TODO: we need to provide the details here |
-| `space`           | The space TODO: we need to provide the details here |
+| `mode`          | DeployMode. TODO: I suggest to insert  link here to the parameter docu from the step when the step itself is merged
+| `org`           |  The org TODO: I suggest to insert  link here to the parameter docu from the step when the step itself is merged |
+| `space`           | The space TODO: I suggest to insert  link here to the parameter docu from the step when the step itself is merged |
 
 ### Parameters
 
