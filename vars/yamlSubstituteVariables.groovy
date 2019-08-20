@@ -11,40 +11,44 @@ import static com.sap.piper.Prerequisites.checkScript
 @Field Set GENERAL_CONFIG_KEYS = []
 @Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS + [
     /**
-     * The `String` path of the Yaml file to replace variables in. <br>
-     * Defaults to "manifest.yml" if not specified otherwise.
+     * The input Yaml data as `Object`.
      */
-    'manifestFile',
+    'inputYaml',
     /**
-     * The `String` path of the Yaml file to produce as output.
-     * If not specified this will default to `manifestFile and overwrite it.
+     * The variables Yaml data as `Object`.
+     * Can be a `List<Map<String, Object>>` or a `Map<String, Object>` and should contain
+     * variables names and values to replace variable references contained in `inputYaml`.
      */
-    'outputManifestFile',
+    'variablesYaml',
     /**
-     * The `String path of the Yaml file containing the variables' values to use as a replace in the manifest file. <br>
-     * Defaults to "manifest-variables.yml" if not specified otherwise
+     *  An `com.sap.piper.variablesubstitution.ExecutionContext` that can be used to query
+     *  whether the script actually replaced any variables.
      */
-    'variablesFile'
+    'executionContext'
 ]
 
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
 
 /**
  * Step that substitutes variables in a given YAML file with those specified in a another. The format to reference a variable
- * in the YAML file is to use double parentheses {@code ((} and {@code ))}, e.g. {@code ((variableName))}.<br>
+ * in the YAML file is to use double parentheses `((` and `))`, e.g. `((variableName))`.<br>
  * A declaration of a variable and assignment of its value is simply done as a property in the variables YAML file.
  * <p>
  * The format follows <a href="https://docs.cloudfoundry.org/devguide/deploy-apps/manifest-attributes.html#variable-substitution">Cloud Foundry standards</a>.
  * <p>
- * The step is activated by the presence of both a {@code manifest.yml} and a variables file. Names of both files are configurable.
+ * The step is activated by the presence of both a `manifest.yml` and a variables file. Names of both files are configurable.
  * <p>
  * Usage: yamlSubstituteVariables manifestFile: "manifest.yml", variablesFile: "manifest-variables.yml"
  *
  * @param arguments - the map of arguments.
+ * @return a copy of the input Yaml with replaced variables.
  */
 @GenerateDocumentation
-void call(Map<String, String> arguments) {
-    handlePipelineStepErrors (stepName: STEP_NAME, stepParameters: arguments) {
+Object call(Map<String, String> arguments) {
+    // Note: we rely on the closure of handlePipelineStepErrors to be synchronous!
+    // Otherwise this implementation will return wrong data.
+    Object result
+    handlePipelineStepErrors (stepName: STEP_NAME, stepParameters: arguments) { // synchronous closure call!
         def script = checkScript(this, arguments)  ?: this
 
         // load default & individual configuration
@@ -55,72 +59,22 @@ void call(Map<String, String> arguments) {
                                         .mixin(arguments, PARAMETER_KEYS)
                                         .use()
 
-        String manifestFilePath = config.manifestFile ?: "manifest.yml"
-        String variablesFilePath = config.variablesFile ?: "manifest-variables.yml"
-        String outputFilePath = config.outputManifestFile ?: manifestFilePath
+        Object inputYaml = config?.inputYaml
+        Object variablesYaml = config?.variablesYaml
 
         logger.setConfig(config)
 
-        File manifestFile = new File(manifestFilePath)
-        File variablesFile = new File(variablesFilePath)
-
-        if (!manifestFile.exists()) {
-            echo "[YamlSubstituteVariables] Could not find YAML file at ${manifestFilePath}. Skipping variable substitution."
-            return
+        if(!inputYaml) {
+            error "[YamlSubstituteVariables] Input Yaml data must not be null or empty."
         }
 
-        if (!variablesFile.exists()) {
-            echo "[YamlSubstituteVariables] Could not find variable substitution file at ${variablesFilePath}. Skipping variable substitution."
-            return
+        if(!variablesYaml) {
+            error "[YamlSubstituteVariables] Variables Yaml data must not be null or empty."
         }
 
-        def manifestData = null;
-        try {
-            // may return a List<Object>  (in case more YAML segments are in the file)
-            // or a Map<String, Object> in case there is just one segment.
-            manifestData = readYaml file: manifestFilePath
-            echo "[YamlSubstituteVariables] Loaded manifest at ${manifestFilePath}!"
-        }
-        catch(Exception ex) {
-            logger.debug("Exception: ${ex}")
-            echo "[YamlSubstituteVariables] Could not load manifest file at ${manifestFilePath}. Exception was: ${ex}"
-            throw ex
-        }
-
-        def variablesData = null
-        try {
-            // may return a List<Object>  (in case more YAML segments are in the file)
-            // or a Map<String, Object> in case there is just one segment.
-            variablesData = readYaml file: variablesFilePath
-            echo "[YamlSubstituteVariables] Loaded variables file at ${variablesFilePath}!"
-        }
-        catch(Exception ex) {
-            logger.debug("Exception: ${ex}")
-            echo "[YamlSubstituteVariables] Could not load manifest variables file at ${variablesFilePath}. Exception was: ${ex}"
-            throw ex
-        }
-
-        // substitute all variables.
-        ExecutionContext context = new ExecutionContext()
-        def result = substitute(manifestData, variablesData, context)
-
-        if (context.noVariablesReplaced) {
-            echo "[YamlSubstituteVariables] No variables were found or could be replaced in ${manifestFilePath}. Skipping variable substitution."
-            return
-        }
-
-        // writeYaml won't overwrite the file. You need to delete it first.
-        deleteFile path: outputFilePath, script: script
-
-        writeYaml file: outputFilePath, data: result
-
-        echo "[YamlSubstituteVariables] Replaced variables in ${manifestFilePath} with variables from ${variablesFilePath}."
-        echo "[YamlSubstituteVariables] Wrote output file (with variables replaced) at ${outputFilePath}."
-
-        logger.debug("Loaded Manifest: ${manifestData}")
-        logger.debug("Loaded Variables: ${variablesData}")
-        logger.debug("Result: ${result}")
+        result = substitute(inputYaml, variablesYaml, config?.executionContext)
     }
+    return result
 }
 
 /**
@@ -169,7 +123,7 @@ private Object substitute(Object manifestNode, Object variablesData, ExecutionCo
                 stringNode = stringNode.replaceAll(regex, substitute as String)
             }
         }
-        context.noVariablesReplaced = false  // remember that variables were found in the YAML file that have been replaced.
+        context?.noVariablesReplaced = false  // remember that variables were found in the YAML file that have been replaced.
         return complexResult ?: stringNode
     }
     else if (manifestNode instanceof List) {

@@ -1,28 +1,15 @@
-import com.sap.piper.variablesubstitution.ExecutionContext
 import org.junit.Before
-import util.JenkinsDeleteFileRule
-
-import static org.junit.Assert.*
-import static util.JenkinsWriteYamlRule.*
 import org.junit.Rule
 import org.junit.Test
-import org.junit.rules.ExpectedException;
-import org.junit.rules.RuleChain;
-import util.BasePiperTest
-import util.JenkinsEnvironmentRule
-import util.JenkinsErrorRule
-import util.JenkinsLoggingRule
-import util.JenkinsReadYamlRule
-import util.JenkinsStepRule
-import util.JenkinsWriteYamlRule
-import util.Rules
+import org.junit.rules.ExpectedException
+import org.junit.rules.RuleChain
+import util.*
 
-import static util.JenkinsWriteYamlRule.DATA
+import static org.junit.Assert.*
 import static util.JenkinsWriteYamlRule.DATA
 import static util.JenkinsWriteYamlRule.SERIALIZED_YAML
-import static util.JenkinsWriteYamlRule.SERIALIZED_YAML;
 
-public class YamlSubstituteVariablesTest extends BasePiperTest {
+public class CfManifestSubstituteVariablesTest extends BasePiperTest {
 
     private JenkinsStepRule script = new JenkinsStepRule(this)
     private JenkinsReadYamlRule readYamlRule = new JenkinsReadYamlRule(this)
@@ -59,30 +46,43 @@ public class YamlSubstituteVariablesTest extends BasePiperTest {
     }
 
     @Test
-    public void substituteVariables_Fails_If_InputYamlIsNullOrEmpty() throws Exception {
+    public void substituteVariables_SkipsExecution_If_ManifestNotPresent() throws Exception {
+        String manifestFileName = "nonexistent/manifest.yml"
+        String variablesFileName = "nonexistent/manifest-variables.yml"
 
-        expectedExceptionRule.expect(hudson.AbortException)
-        expectedExceptionRule.expectMessage("[YamlSubstituteVariables] Input Yaml data must not be null or empty.")
+        // check that a proper log is written.
+        loggingRule.expect("[CFManifestSubstituteVariables] Could not find YAML file at ${manifestFileName}. Skipping variable substitution.")
 
         // execute step
-        script.step.yamlSubstituteVariables inputYaml: null, variablesYaml: null, script: nullScript
+        script.step.cfManifestSubstituteVariables manifestFile: manifestFileName, variablesFile: variablesFileName, script: nullScript
+
+        //Check that nothing was written
+        assertNull(writeYamlRule.files[manifestFileName])
+
+        // check that the step was marked as a success (even if it did do nothing).
+        assertJobStatusSuccess()
     }
 
     @Test
-    public void substituteVariables_Fails_If_VariablesYamlIsNullOrEmpty() throws Exception {
+    public void substituteVariables_SkipsExecution_If_VariablesFileNotPresent() throws Exception {
         String manifestFileName = "test/resources/variableSubstitution/manifest.yml"
+        String variablesFileName = "nonexistent/manifest-variables.yml"
 
-        expectedExceptionRule.expect(hudson.AbortException)
-        expectedExceptionRule.expectMessage("[YamlSubstituteVariables] Variables Yaml data must not be null or empty.")
-
-        Object input = script.step.readYaml file: manifestFileName
+        // check that a proper log is written.
+        loggingRule.expect("[CFManifestSubstituteVariables] Could not find variable substitution file at ${variablesFileName}. Skipping variable substitution.")
 
         // execute step
-        script.step.yamlSubstituteVariables inputYaml: input, variablesYaml: null, script: nullScript
+        script.step.cfManifestSubstituteVariables manifestFile: manifestFileName, variablesFile: variablesFileName, script: nullScript
+
+        //Check that nothing was written
+        assertNull(writeYamlRule.files[manifestFileName])
+
+        // check that the step was marked as a success (even if it did do nothing).
+        assertJobStatusSuccess()
     }
 
     @Test
-    public void substituteVariables_Throws_If_InputYamlIsInvalid() throws Exception {
+    public void substituteVariables_Throws_If_manifestInvalid() throws Exception {
         String manifestFileName = "test/resources/variableSubstitution/invalid_manifest.yml"
         String variablesFileName = "test/resources/variableSubstitution/invalid_manifest.yml"
 
@@ -90,15 +90,20 @@ public class YamlSubstituteVariablesTest extends BasePiperTest {
         expectedExceptionRule.expect(org.yaml.snakeyaml.scanner.ScannerException)
         expectedExceptionRule.expectMessage("found character '%' that cannot start any token. (Do not use % for indentation)")
 
-        Object input = script.step.readYaml file: manifestFileName
-        Object variables = script.step.readYaml file: variablesFileName
+        loggingRule.expect("[CFManifestSubstituteVariables] Could not load manifest file at ${manifestFileName}.")
 
         // execute step
-        script.step.yamlSubstituteVariables inputYaml: input, variablesYaml: variables, script: nullScript
+        script.step.cfManifestSubstituteVariables manifestFile: manifestFileName, variablesFile: variablesFileName, script: nullScript
+
+        //Check that nothing was written
+        assertNull(writeYamlRule.files[manifestFileName])
+
+        // check that the step was marked as a success (even if it did do nothing).
+        assertJobStatusSuccess()
     }
 
     @Test
-    public void substituteVariables_Throws_If_VariablesYamlInvalid() throws Exception {
+    public void substituteVariables_Throws_If_manifestVariablesInvalid() throws Exception {
         String manifestFileName = "test/resources/variableSubstitution/manifest.yml"
         String variablesFileName = "test/resources/variableSubstitution/invalid_manifest.yml"
 
@@ -106,11 +111,59 @@ public class YamlSubstituteVariablesTest extends BasePiperTest {
         expectedExceptionRule.expect(org.yaml.snakeyaml.scanner.ScannerException)
         expectedExceptionRule.expectMessage("found character '%' that cannot start any token. (Do not use % for indentation)")
 
-        Object input = script.step.readYaml file: manifestFileName
-        Object variables = script.step.readYaml file: variablesFileName
+        loggingRule.expect("[CFManifestSubstituteVariables] Could not load manifest variables file at ${variablesFileName}")
 
         // execute step
-        script.step.yamlSubstituteVariables inputYaml: input, variablesYaml: variables, script: nullScript
+        script.step.cfManifestSubstituteVariables manifestFile: manifestFileName, variablesFile: variablesFileName, script: nullScript
+
+        //Check that nothing was written
+        assertNull(writeYamlRule.files[manifestFileName])
+
+        // check that the step was marked as a success (even if it did do nothing).
+        assertJobStatusSuccess()
+    }
+
+    @Test
+    public void substituteVariables_UsesDefaultFileName_If_NoManifestSpecified() throws Exception {
+        // In this test, we check that the implementation will resort to the default manifest file name.
+        // Since the file is not present, the implementation should stop, but the log should indicate that the
+        // the default file name was used.
+
+        String manifestFileName = "manifest.yml" // default name should be chosen.
+
+        // check that a proper log is written.
+        loggingRule.expect("[CFManifestSubstituteVariables] Could not find YAML file at ${manifestFileName}. Skipping variable substitution.")
+
+        // execute step
+        script.step.cfManifestSubstituteVariables script: nullScript, skipDeletion: true
+
+        //Check that nothing was written
+        assertNull(writeYamlRule.files[manifestFileName])
+
+        // check that the step was marked as a success (even if it did do nothing).
+        assertJobStatusSuccess()
+    }
+
+    @Test
+    public void substituteVariables_UsesDefaultFileName_If_NoVariablesFileSpecified() throws Exception {
+        // In this test, we check that the implementation will resort to the default manifest _variables_ file name.
+        // Since the file is not present, the implementation should stop, but the log should indicate that the
+        // the default file name was used.
+
+        String manifestFileName = "test/resources/variableSubstitution/manifest.yml"
+        String variablesFileName = "manifest-variables.yml" // default file name that should be chosen.
+
+        // check that a proper log is written.
+        loggingRule.expect("[CFManifestSubstituteVariables] Could not find variable substitution file at ${variablesFileName}. Skipping variable substitution.")
+
+        // execute step
+        script.step.cfManifestSubstituteVariables manifestFile: manifestFileName, script: nullScript
+
+        //Check that nothing was written
+        assertNull(writeYamlRule.files[manifestFileName])
+
+        // check that the step was marked as a success (even if it did do nothing).
+        assertJobStatusSuccess()
     }
 
     @Test
@@ -118,14 +171,24 @@ public class YamlSubstituteVariablesTest extends BasePiperTest {
         String manifestFileName = "test/resources/variableSubstitution/manifest.yml"
         String variablesFileName = "test/resources/variableSubstitution/manifest-variables.yml"
 
-        Object input = script.step.readYaml file: manifestFileName
-        Object variables = script.step.readYaml file: variablesFileName
+        // check that a proper log is written.
+        loggingRule.expect("[CFManifestSubstituteVariables] Loaded manifest at ${manifestFileName}!")
+                   .expect("[CFManifestSubstituteVariables] Loaded variables file at ${variablesFileName}!")
+                   .expect("[CFManifestSubstituteVariables] Replaced variables in ${manifestFileName} with variables from ${variablesFileName}.")
+                   .expect("[CFManifestSubstituteVariables] Wrote output file (with variables replaced) at ${manifestFileName}.")
 
         // execute step
-        Map<String, Object> manifestDataAfterReplacement = script.step.yamlSubstituteVariables inputYaml: input, variablesYaml: variables, script: nullScript
+        script.step.cfManifestSubstituteVariables manifestFile: manifestFileName, variablesFile: variablesFileName, script: nullScript
+
+
+        String yamlStringAfterReplacement = writeYamlRule.files[manifestFileName].get(SERIALIZED_YAML) as String
+        Map<String, Object> manifestDataAfterReplacement = writeYamlRule.files[manifestFileName].get(DATA)
 
         //Check that something was written
         assertNotNull(manifestDataAfterReplacement)
+
+        // check that there are no unresolved variables left.
+        assertAllVariablesReplaced(yamlStringAfterReplacement)
 
         // check that resolved variables have expected values
         assertCorrectVariableResolution(manifestDataAfterReplacement)
@@ -149,18 +212,28 @@ public class YamlSubstituteVariablesTest extends BasePiperTest {
     }
 
     @Test
-    public void substituteVariables_ReplacesVariablesProperly_InMultiYamlData() throws Exception {
+    public void substituteVariables_ReplacesVariablesProperly_InMultiYamlFiles() throws Exception {
         String manifestFileName = "test/resources/variableSubstitution/multi_manifest.yml"
         String variablesFileName = "test/resources/variableSubstitution/manifest-variables.yml"
 
-        Object input = script.step.readYaml file: manifestFileName
-        Object variables = script.step.readYaml file: variablesFileName
+        // check that a proper log is written.
+        loggingRule.expect("[CFManifestSubstituteVariables] Loaded manifest at ${manifestFileName}!")
+                   .expect("[CFManifestSubstituteVariables] Loaded variables file at ${variablesFileName}!")
+                   .expect("[CFManifestSubstituteVariables] Replaced variables in ${manifestFileName} with variables from ${variablesFileName}.")
+                   .expect("[CFManifestSubstituteVariables] Wrote output file (with variables replaced) at ${manifestFileName}.")
 
         // execute step
-        List<Object> manifestDataAfterReplacement = script.step.yamlSubstituteVariables inputYaml: input, variablesYaml: variables, script: nullScript
+        script.step.cfManifestSubstituteVariables manifestFile: manifestFileName, variablesFile: variablesFileName, script: nullScript
+
+
+        String yamlStringAfterReplacement = writeYamlRule.files[manifestFileName].get(SERIALIZED_YAML) as String
+        List<Object> manifestDataAfterReplacement = writeYamlRule.files[manifestFileName].get(DATA)
 
         //Check that something was written
         assertNotNull(manifestDataAfterReplacement)
+
+        // check that there are no unresolved variables left.
+        assertAllVariablesReplaced(yamlStringAfterReplacement)
 
         //check that result still is a multi-YAML file.
         assertEquals("Dumped YAML after replacement should still be a multi-YAML file.",2, manifestDataAfterReplacement.size())
@@ -175,7 +248,7 @@ public class YamlSubstituteVariablesTest extends BasePiperTest {
     }
 
     @Test
-    public void substituteVariables_ReturnsOriginalIfNoVariablesPresent() throws Exception {
+    public void substituteVariables_SkipsExecution_If_NoVariablesInManifest() throws Exception {
         // This test makes sure that, if no variables are found in a manifest that need
         // to be replaced, the execution is eventually skipped and the manifest remains
         // untouched.
@@ -183,16 +256,16 @@ public class YamlSubstituteVariablesTest extends BasePiperTest {
         String manifestFileName = "test/resources/variableSubstitution/novars_manifest.yml"
         String variablesFileName = "test/resources/variableSubstitution/manifest-variables.yml"
 
-        Object input = script.step.readYaml file: manifestFileName
-        Object variables = script.step.readYaml file: variablesFileName
+        // check that a proper log is written.
+        loggingRule.expect("[CFManifestSubstituteVariables] Loaded manifest at ${manifestFileName}!")
+                   .expect("[CFManifestSubstituteVariables] Loaded variables file at ${variablesFileName}!")
+                   .expect("[CFManifestSubstituteVariables] No variables were found or could be replaced in ${manifestFileName}. Skipping variable substitution.")
 
         // execute step
-        ExecutionContext context = new ExecutionContext()
-        Object result = script.step.yamlSubstituteVariables inputYaml: input, variablesYaml: variables, executionContext: context, script: nullScript
+        script.step.cfManifestSubstituteVariables manifestFile: manifestFileName, variablesFile: variablesFileName, script: nullScript
 
         //Check that nothing was written
-        assertNotNull(result)
-        assertTrue(context.noVariablesReplaced)
+        assertNull(writeYamlRule.files[manifestFileName])
 
         // check that the step was marked as a success (even if it did do nothing).
         assertJobStatusSuccess()
@@ -211,16 +284,20 @@ public class YamlSubstituteVariablesTest extends BasePiperTest {
         String manifestFileName = "test/resources/variableSubstitution/datatypes_manifest.yml"
         String variablesFileName = "test/resources/variableSubstitution/datatypes_manifest-variables.yml"
 
-        Object input = script.step.readYaml file: manifestFileName
-        Object variables = script.step.readYaml file: variablesFileName
+        // check that a proper log is written.
+        loggingRule.expect("[CFManifestSubstituteVariables] Loaded manifest at ${manifestFileName}!")
+            .expect("[CFManifestSubstituteVariables] Loaded variables file at ${variablesFileName}!")
 
         // execute step
-        ExecutionContext context = new ExecutionContext()
-        Map<String, Object> manifestDataAfterReplacement = script.step.yamlSubstituteVariables inputYaml: input, variablesYaml: variables, executionContext: context, script: nullScript
+        script.step.cfManifestSubstituteVariables manifestFile: manifestFileName, variablesFile: variablesFileName, script: nullScript
+
+        String yamlStringAfterReplacement = writeYamlRule.files[manifestFileName].get(SERIALIZED_YAML) as String
+        Map<String, Object> manifestDataAfterReplacement = writeYamlRule.files[manifestFileName].get(DATA)
 
         //Check that something was written
         assertNotNull(manifestDataAfterReplacement)
 
+        assertAllVariablesReplaced(yamlStringAfterReplacement)
         assertCorrectVariableResolution(manifestDataAfterReplacement)
 
         assertDataTypeAndSubstitutionCorrectness(manifestDataAfterReplacement)
