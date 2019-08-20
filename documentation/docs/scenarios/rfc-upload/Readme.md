@@ -27,6 +27,17 @@ This scenario combines various different steps to create a complete pipeline.
 
 In this scenario, we want to show how to build an application based on SAPUI5 or SAP Fiori by using the multi-target application (MTA) concept and how to attach the build result to a tranpsort reuqest inside an ABAP system. This document comprises the [mtaBuild](https://sap.github.io/jenkins-library/steps/mtaBuild/) and the [transportRequestUploadFile](https://sap.github.io/jenkins-library/steps/transportRequestUploadFile/) steps.
 
+The binary is not streamed to the endpoint. Instead the endpoint expects an URL pointing to the binary. Hence the binary must be published first. This can happen by uploading the binary to a blob store or by archiving the artifact on Jenkins. The corresponding URL needs to be provided when the artifact is attached to the transport request. The transport reuqest can be created on the fly (see [transportRequestCreate](https://sap.github.io/jenkins-library/steps/transportRequestCreate/)) or we can use an already existing transport request. In this case the transport request Id needs to be provided in the git commit history (see example below) or the transport request id needs to be provided inside the job (e.g. as a job parameter).
+
+A git commit message containing the transportRequestId:
+
+```
+The headline
+
+The body. The blank line above is mandatory (git standard).
+TransportRequest: <YOUR TRANSPORT REQUEST ID>
+```
+
 ![This pipeline in Jenkins Blue Ocean](images/pipeline.png)
 ###### Screenshot: Build and Deploy Process in Jenkins
 
