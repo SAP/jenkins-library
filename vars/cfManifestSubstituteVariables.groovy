@@ -102,7 +102,9 @@ void call(Map<String, String> arguments) {
 
         // substitute all variables.
         ExecutionContext context = new ExecutionContext()
-        def result = yamlSubstituteVariables inputYaml: manifestData, variablesYaml: variablesData, executionContext: context, script: script
+        yamlSubstituteVariables inputYaml: manifestData, variablesYaml: variablesData, executionContext: context, script: script
+
+        def result = script.commonPipelineEnvironment.getValue('yamlSubstituteVariablesResult')
 
         if (context.noVariablesReplaced) {
             echo "[CFManifestSubstituteVariables] No variables were found or could be replaced in ${manifestFilePath}. Skipping variable substitution."

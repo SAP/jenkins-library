@@ -33,20 +33,17 @@ import static com.sap.piper.Prerequisites.checkScript
  * Step that substitutes variables in a given YAML input data object. The format to reference a variable
  * in YAML data is to use double parentheses `((` and `))`, e.g. `((variableName))`. Variables will be replaced by
  * values that are read from another Yaml object. The script returns a deep copy of the input YAML with all occurrences
- * of variables replaced (if they were found in the YAML of variables).
+ * of variables replaced (if they were found in the YAML of variables). The result will be written into the `commonPipelineEnvironment`
+ * by the name `yamlSubstituteVariablesResult` and will be of type `Object`.
  * <p>
  * The format follows <a href="https://docs.cloudfoundry.org/devguide/deploy-apps/manifest-attributes.html#variable-substitution">Cloud Foundry standards</a>.
  * <p>
  * Usage: `yamlSubstituteVariables inputYaml: <yamlDataObject>, variablesYaml: <yamlDataObject> [, executionContext: context]`
  *
  * @param arguments - the map of arguments.
- * @return a copy of the input Yaml with replaced variables.
  */
 @GenerateDocumentation
-Object call(Map<String, String> arguments) {
-    // Note: we rely on the closure of handlePipelineStepErrors to be synchronous!
-    // Otherwise this implementation will return wrong data.
-    Object result
+void call(Map<String, String> arguments) {
     handlePipelineStepErrors (stepName: STEP_NAME, stepParameters: arguments) { // synchronous closure call!
         def script = checkScript(this, arguments)  ?: this
 
@@ -71,9 +68,10 @@ Object call(Map<String, String> arguments) {
             error "[YamlSubstituteVariables] Variables Yaml data must not be null or empty."
         }
 
-        result = substitute(inputYaml, variablesYaml, config?.executionContext)
+        def result = substitute(inputYaml, variablesYaml, config?.executionContext)
+
+        script.commonPipelineEnvironment.setValue('yamlSubstituteVariablesResult', result)
     }
-    return result
 }
 
 /**

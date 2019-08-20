@@ -122,7 +122,8 @@ public class YamlSubstituteVariablesTest extends BasePiperTest {
         Object variables = script.step.readYaml file: variablesFileName
 
         // execute step
-        Map<String, Object> manifestDataAfterReplacement = script.step.yamlSubstituteVariables inputYaml: input, variablesYaml: variables, script: nullScript
+        script.step.yamlSubstituteVariables inputYaml: input, variablesYaml: variables, script: nullScript
+        Map<String, Object> manifestDataAfterReplacement = environmentRule.env.getValue('yamlSubstituteVariablesResult')
 
         //Check that something was written
         assertNotNull(manifestDataAfterReplacement)
@@ -157,7 +158,8 @@ public class YamlSubstituteVariablesTest extends BasePiperTest {
         Object variables = script.step.readYaml file: variablesFileName
 
         // execute step
-        List<Object> manifestDataAfterReplacement = script.step.yamlSubstituteVariables inputYaml: input, variablesYaml: variables, script: nullScript
+        script.step.yamlSubstituteVariables inputYaml: input, variablesYaml: variables, script: nullScript
+        List<Object> manifestDataAfterReplacement = environmentRule.env.getValue('yamlSubstituteVariablesResult')
 
         //Check that something was written
         assertNotNull(manifestDataAfterReplacement)
@@ -188,7 +190,8 @@ public class YamlSubstituteVariablesTest extends BasePiperTest {
 
         // execute step
         ExecutionContext context = new ExecutionContext()
-        Object result = script.step.yamlSubstituteVariables inputYaml: input, variablesYaml: variables, executionContext: context, script: nullScript
+        script.step.yamlSubstituteVariables inputYaml: input, variablesYaml: variables, executionContext: context, script: nullScript
+        Object result = environmentRule.env.getValue('yamlSubstituteVariablesResult')
 
         //Check that nothing was written
         assertNotNull(result)
@@ -216,7 +219,8 @@ public class YamlSubstituteVariablesTest extends BasePiperTest {
 
         // execute step
         ExecutionContext context = new ExecutionContext()
-        Map<String, Object> manifestDataAfterReplacement = script.step.yamlSubstituteVariables inputYaml: input, variablesYaml: variables, executionContext: context, script: nullScript
+        script.step.yamlSubstituteVariables inputYaml: input, variablesYaml: variables, executionContext: context, script: nullScript
+        Map<String, Object> manifestDataAfterReplacement = environmentRule.env.getValue('yamlSubstituteVariablesResult')
 
         //Check that something was written
         assertNotNull(manifestDataAfterReplacement)
