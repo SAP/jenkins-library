@@ -1,4 +1,5 @@
 import org.junit.Before
+import util.JenkinsDeleteFileRule
 
 import static org.junit.Assert.*
 import static util.JenkinsWriteYamlRule.*
@@ -29,6 +30,7 @@ public class YamlSubstituteVariablesTest extends BasePiperTest {
     private JenkinsEnvironmentRule environmentRule = new JenkinsEnvironmentRule(this)
     private JenkinsLoggingRule loggingRule = new JenkinsLoggingRule(this)
     private ExpectedException expectedExceptionRule = ExpectedException.none()
+    private JenkinsDeleteFileRule deleteFileRule = new JenkinsDeleteFileRule(this).skipDeletion(true)
 
     @Rule
     public RuleChain rules = Rules
@@ -39,6 +41,7 @@ public class YamlSubstituteVariablesTest extends BasePiperTest {
         .around(environmentRule)
         .around(loggingRule)
         .around(script)
+        .around(deleteFileRule)
         .around(expectedExceptionRule)
 
     @Before
