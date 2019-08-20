@@ -30,15 +30,14 @@ import static com.sap.piper.Prerequisites.checkScript
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
 
 /**
- * Step that substitutes variables in a given YAML file with those specified in a another. The format to reference a variable
- * in the YAML file is to use double parentheses `((` and `))`, e.g. `((variableName))`.<br>
- * A declaration of a variable and assignment of its value is simply done as a property in the variables YAML file.
+ * Step that substitutes variables in a given YAML input data object. The format to reference a variable
+ * in YAML data is to use double parentheses `((` and `))`, e.g. `((variableName))`. Variables will be replaced by
+ * values that are read from another Yaml object. The script returns a deep copy of the input YAML with all occurrences
+ * of variables replaced (if they were found in the YAML of variables).
  * <p>
  * The format follows <a href="https://docs.cloudfoundry.org/devguide/deploy-apps/manifest-attributes.html#variable-substitution">Cloud Foundry standards</a>.
  * <p>
- * The step is activated by the presence of both a `manifest.yml` and a variables file. Names of both files are configurable.
- * <p>
- * Usage: yamlSubstituteVariables manifestFile: "manifest.yml", variablesFile: "manifest-variables.yml"
+ * Usage: `yamlSubstituteVariables inputYaml: <yamlDataObject>, variablesYaml: <yamlDataObject> [, executionContext: context]`
  *
  * @param arguments - the map of arguments.
  * @return a copy of the input Yaml with replaced variables.
@@ -98,8 +97,8 @@ private Object substitute(Object manifestNode, Object variablesData, ExecutionCo
             Object substitute = variableSubstitutes.get(referenceName)
 
             if (null == substitute) {
-                echo  "[YamlSubstituteVariables] ERROR - Found variable reference ${referenceToReplace} in manifest but no variable value to replace it with."
-                echo  "[YamlSubstituteVariables] ERROR - Leaving it unresolved. Check your manifest variables file and make sure the variable is properly declared."
+                echo  "[YamlSubstituteVariables] ERROR - Found variable reference ${referenceToReplace} in input Yaml but no variable value to replace it with."
+                echo  "[YamlSubstituteVariables] ERROR - Leaving it unresolved. Check your variables Yaml data and make sure the variable is properly declared."
                 echo  "[YamlSubstituteVariables] ERROR - Unresolved variables may lead to follow-up problems (e.g. during a CF deployment). Failing this build."
                 error "[YamlSubstituteVariables] Not all variables could be resolved."
             }
@@ -154,35 +153,36 @@ private Object substitute(Object manifestNode, Object variablesData, ExecutionCo
     }
 }
 /**
- * Turns the parsed data from a manifest-variables.yml file into a
- * single map. Takes care of multiple YAML sections (separated by ---) if they are found in the manifest-variables.yml.
- * @param variablesFileData - the data parsed frm the manifest-variables.yml file.
+ * Turns the parsed variables Yaml data into a
+ * single map. Takes care of multiple YAML sections (separated by ---) if they are found and flattens them into a single
+ * map if necessary.
+ * @param variablesYamlData - the variables data as a Yaml object.
  * @return the `Map` of variable names mapped to their substitute values.
  */
-private Map<String, Object> getVariableSubstitutes(Object variablesFileData) {
+private Map<String, Object> getVariableSubstitutes(Object variablesYamlData) {
 
-    if(variablesFileData instanceof List) {
-        return flattenVariablesFileData(variablesFileData as List)
+    if(variablesYamlData instanceof List) {
+        return flattenVariablesFileData(variablesYamlData as List)
     }
-    else if (variablesFileData instanceof Map) {
-        return variablesFileData as Map<String, Object>
+    else if (variablesYamlData instanceof Map) {
+        return variablesYamlData as Map<String, Object>
     }
     else {
         // should never happen (hopefully...)
-        error "[YamlSubstituteVariables] Found unsupported data type of variables file after parsing YAML. Expected either List or Map. Got: ${variablesFileData.getClass().getName()}."
+        error "[YamlSubstituteVariables] Found unsupported data type of variables file after parsing YAML. Expected either List or Map. Got: ${variablesYamlData.getClass().getName()}."
     }
 }
 
 /**
- * Flattens a list of YAML files (which are deemed to be key-value mappings of variable names and values)
- * to a single map. In case multiple YAML files contain the same key, values will be overridden and the result
+ * Flattens a list of Yaml sections (which are deemed to be key-value mappings of variable names and values)
+ * to a single map. In case multiple Yaml sections contain the same key, values will be overridden and the result
  * will be undefined.
- * @param variablesFileData - the `List` of YAML objects that have been parsed from a (multi-YAML) manifest-variables.yml.
+ * @param variablesYamlData - the `List` of Yaml objects of the different sections.
  * @return the `Map` of variable substitute mappings.
  */
-private Map<String, Object> flattenVariablesFileData(List<Map<String, Object>> variablesFileData) {
+private Map<String, Object> flattenVariablesFileData(List<Map<String, Object>> variablesYamlData) {
     Map<String, Object> substitutes = new HashMap<>()
-    variablesFileData.each { map ->
+    variablesYamlData.each { map ->
         map.entrySet().each { entry ->
             substitutes.put(entry.key, entry.value)
         }
@@ -191,7 +191,7 @@ private Map<String, Object> flattenVariablesFileData(List<Map<String, Object>> v
 }
 /**
  * Returns true, if the given object node contains variable references.
- * @param node the object-typed value to check for variable references.
+ * @param node - the object-typed value to check for variable references.
  * @return `true`, if this node references at least one variable, `false` otherwise.
  */
 private boolean containsVariableReferences(Object node) {
@@ -208,7 +208,7 @@ private boolean containsVariableReferences(Object node) {
  * is a variable reference. Returns false if the node references multiple
  * variables or if the node embeds the variable reference inside of a constant
  * string surrounding, e.g. `This-text-has-((numberOfWords))-words`.
- * @param node the node to check.
+ * @param node - the node to check.
  * @return `true` if the node is a single variable reference. `false` otherwise.
  */
 private boolean isSingleVariableReference(String node) {
