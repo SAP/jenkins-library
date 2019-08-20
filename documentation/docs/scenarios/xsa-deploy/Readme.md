@@ -7,7 +7,7 @@ Build an application based on SAPUI5 or SAP Fiori with Jenkins and deploy the bu
 * [Docker environment](https://docs.docker.com/get-started/)
 * All artifacts refereneced during the build are available either on Service Market Place or via public repositories
 * You have set up Project “Piper”. See [guided tour](https://sap.github.io/jenkins-library/guidedtour/).
-
+* Docker image for xs deployment available. Due to legal reasons there is no pre-build docker image. How to create the docker image is explained [here](https://github.com/SAP/devops-docker-images/tree/master/xs-cli).
 ### Project Prerequisites
 
 This scenario requires additional files in your project and in the execution environment on your Jenkins instance.
