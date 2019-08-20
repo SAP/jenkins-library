@@ -16,7 +16,7 @@ class JenkinsDeleteFileRule implements TestRule {
      */
     List<String> deletedFiles = new ArrayList<>()
 
-    private Boolean skip
+    private Boolean mockDeletion = true
 
     JenkinsDeleteFileRule(BasePipelineTest testInstance) {
         this.testInstance = testInstance
@@ -27,8 +27,8 @@ class JenkinsDeleteFileRule implements TestRule {
      * @param skip - if `true` will skip the actual deletion.
      * @return this rule.
      */
-    JenkinsDeleteFileRule skipDeletion(Boolean skip) {
-        this.skip = skip
+    JenkinsDeleteFileRule mockDeletion(Boolean mockDeletion) {
+        this.mockDeletion = mockDeletion
         return this
     }
 
@@ -48,7 +48,7 @@ class JenkinsDeleteFileRule implements TestRule {
                     }
 
                     deletedFiles.add(path)
-                    deleteFile(path, skip)
+                    deleteFile(path, mockDeletion)
                 })
 
                 base.evaluate()
@@ -59,13 +59,13 @@ class JenkinsDeleteFileRule implements TestRule {
     /**
      * Deleting the file, skipping deletion if specified.
      * @param filePath - the path of the file to delete.
-     * @param skipDeletion - if `true` will skip actual deletion.
+     * @param mockDeletion - if `true` will skip actual deletion.
      */
-    private void deleteFile(String filePath, Boolean skipDeletion) {
+    private void deleteFile(String filePath, Boolean mockDeletion) {
         File originalFile = new File(filePath)
         if (originalFile.exists()) {
 
-            if(skipDeletion) {
+            if(mockDeletion) {
                 return
             }
 

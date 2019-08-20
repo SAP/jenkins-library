@@ -31,7 +31,7 @@ public class YamlSubstituteVariablesTest extends BasePiperTest {
     private JenkinsEnvironmentRule environmentRule = new JenkinsEnvironmentRule(this)
     private JenkinsLoggingRule loggingRule = new JenkinsLoggingRule(this)
     private ExpectedException expectedExceptionRule = ExpectedException.none()
-    private JenkinsDeleteFileRule deleteFileRule = new JenkinsDeleteFileRule(this).skipDeletion(true)
+    private JenkinsDeleteFileRule deleteFileRule = new JenkinsDeleteFileRule(this)
 
     @Rule
     public RuleChain rules = Rules
