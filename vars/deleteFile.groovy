@@ -43,11 +43,12 @@ void call(Map<String, String> arguments) {
  * @param filePath the path to the file to remove.
  */
 private void deleteFileIfPresent(String filePath) {
-    File file = new File(filePath)
-    if (file.exists()) {
-        echo "[DeleteFile] File ${filePath} already exists. Attempting deletion to overwrite it."
-        boolean deleted = file.delete()
-        if (deleted) {
+
+    Boolean fileExists = fileExists file: filePath
+    if(fileExists) {
+        Boolean returnStatus = null
+        Boolean failure = sh script: "rm ${filePath}", returnStatus: returnStatus
+        if(!failure) {
             echo "[DeleteFile] Successfully deleted file ${filePath}."
         }
         else {
