@@ -19,10 +19,12 @@ public class CfManifestSubstituteVariablesTest extends BasePiperTest {
     private JenkinsLoggingRule loggingRule = new JenkinsLoggingRule(this)
     private ExpectedException expectedExceptionRule = ExpectedException.none()
     private JenkinsDeleteFileRule deleteFileRule = new JenkinsDeleteFileRule(this)
+    private JenkinsFileExistsRule fileExistsRule = new JenkinsFileExistsRule(this, [])
 
     @Rule
     public RuleChain rules = Rules
         .getCommonRules(this)
+        .around(fileExistsRule)
         .around(readYamlRule)
         .around(writeYamlRule)
         .around(errorRule)
@@ -68,6 +70,8 @@ public class CfManifestSubstituteVariablesTest extends BasePiperTest {
         String manifestFileName = "test/resources/variableSubstitution/manifest.yml"
         String variablesFileName = "nonexistent/manifest-variables.yml"
 
+        fileExistsRule.registerExistingFile(manifestFileName)
+
         // check that a proper log is written.
         loggingRule.expect("[CFManifestSubstituteVariables] Could not find variable substitution file at ${variablesFileName}. Skipping variable substitution.")
 
@@ -85,6 +89,9 @@ public class CfManifestSubstituteVariablesTest extends BasePiperTest {
     public void substituteVariables_Throws_If_manifestInvalid() throws Exception {
         String manifestFileName = "test/resources/variableSubstitution/invalid_manifest.yml"
         String variablesFileName = "test/resources/variableSubstitution/invalid_manifest.yml"
+
+        fileExistsRule.registerExistingFile(manifestFileName)
+        fileExistsRule.registerExistingFile(variablesFileName)
 
         //check that exception is thrown and that it has the correct message.
         expectedExceptionRule.expect(org.yaml.snakeyaml.scanner.ScannerException)
@@ -106,6 +113,9 @@ public class CfManifestSubstituteVariablesTest extends BasePiperTest {
     public void substituteVariables_Throws_If_manifestVariablesInvalid() throws Exception {
         String manifestFileName = "test/resources/variableSubstitution/manifest.yml"
         String variablesFileName = "test/resources/variableSubstitution/invalid_manifest.yml"
+
+        fileExistsRule.registerExistingFile(manifestFileName)
+        fileExistsRule.registerExistingFile(variablesFileName)
 
         //check that exception is thrown and that it has the correct message.
         expectedExceptionRule.expect(org.yaml.snakeyaml.scanner.ScannerException)
@@ -153,6 +163,8 @@ public class CfManifestSubstituteVariablesTest extends BasePiperTest {
         String manifestFileName = "test/resources/variableSubstitution/manifest.yml"
         String variablesFileName = "manifest-variables.yml" // default file name that should be chosen.
 
+        fileExistsRule.registerExistingFile(manifestFileName)
+
         // check that a proper log is written.
         loggingRule.expect("[CFManifestSubstituteVariables] Could not find variable substitution file at ${variablesFileName}. Skipping variable substitution.")
 
@@ -170,6 +182,9 @@ public class CfManifestSubstituteVariablesTest extends BasePiperTest {
     public void substituteVariables_ReplacesVariablesProperly_InSingleYamlFiles() throws Exception {
         String manifestFileName = "test/resources/variableSubstitution/manifest.yml"
         String variablesFileName = "test/resources/variableSubstitution/manifest-variables.yml"
+
+        fileExistsRule.registerExistingFile(manifestFileName)
+        fileExistsRule.registerExistingFile(variablesFileName)
 
         // check that a proper log is written.
         loggingRule.expect("[CFManifestSubstituteVariables] Loaded manifest at ${manifestFileName}!")
@@ -216,6 +231,9 @@ public class CfManifestSubstituteVariablesTest extends BasePiperTest {
         String manifestFileName = "test/resources/variableSubstitution/multi_manifest.yml"
         String variablesFileName = "test/resources/variableSubstitution/manifest-variables.yml"
 
+        fileExistsRule.registerExistingFile(manifestFileName)
+        fileExistsRule.registerExistingFile(variablesFileName)
+
         // check that a proper log is written.
         loggingRule.expect("[CFManifestSubstituteVariables] Loaded manifest at ${manifestFileName}!")
                    .expect("[CFManifestSubstituteVariables] Loaded variables file at ${variablesFileName}!")
@@ -256,6 +274,9 @@ public class CfManifestSubstituteVariablesTest extends BasePiperTest {
         String manifestFileName = "test/resources/variableSubstitution/novars_manifest.yml"
         String variablesFileName = "test/resources/variableSubstitution/manifest-variables.yml"
 
+        fileExistsRule.registerExistingFile(manifestFileName)
+        fileExistsRule.registerExistingFile(variablesFileName)
+
         // check that a proper log is written.
         loggingRule.expect("[CFManifestSubstituteVariables] Loaded manifest at ${manifestFileName}!")
                    .expect("[CFManifestSubstituteVariables] Loaded variables file at ${variablesFileName}!")
@@ -283,6 +304,9 @@ public class CfManifestSubstituteVariablesTest extends BasePiperTest {
 
         String manifestFileName = "test/resources/variableSubstitution/datatypes_manifest.yml"
         String variablesFileName = "test/resources/variableSubstitution/datatypes_manifest-variables.yml"
+
+        fileExistsRule.registerExistingFile(manifestFileName)
+        fileExistsRule.registerExistingFile(variablesFileName)
 
         // check that a proper log is written.
         loggingRule.expect("[CFManifestSubstituteVariables] Loaded manifest at ${manifestFileName}!")

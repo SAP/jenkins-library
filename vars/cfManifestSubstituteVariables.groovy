@@ -60,16 +60,15 @@ void call(Map<String, String> arguments) {
         String outputFilePath = config.outputManifestFile ?: manifestFilePath
 
         debugHelper.setConfig(config)
+        Boolean manifestExists = fileExists manifestFilePath
+        Boolean variablesFileExists = fileExists variablesFilePath
 
-        File manifestFile = new File(manifestFilePath)
-        File variablesFile = new File(variablesFilePath)
-
-        if (!manifestFile.exists()) {
+        if (!manifestExists) {
             echo "[CFManifestSubstituteVariables] Could not find YAML file at ${manifestFilePath}. Skipping variable substitution."
             return
         }
 
-        if (!variablesFile.exists()) {
+        if (!variablesFileExists) {
             echo "[CFManifestSubstituteVariables] Could not find variable substitution file at ${variablesFilePath}. Skipping variable substitution."
             return
         }
