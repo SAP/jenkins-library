@@ -501,7 +501,7 @@ steps:
     dockerImage: 'maven:3.5-jdk-8'
     instance: 'SonarCloud'
     options: []
-    pullRequestProvider: 'github'
+    pullRequestProvider: 'GitHub'
     sonarScannerDownloadUrl: 'https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-3.3.0.1492-linux.zip'
   testsPublishResults:
     failOnError: false

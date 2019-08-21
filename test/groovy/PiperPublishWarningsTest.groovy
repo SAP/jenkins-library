@@ -1,6 +1,3 @@
-#!groovy
-package steps
-
 import com.sap.piper.JenkinsUtils
 
 import static org.hamcrest.Matchers.allOf
