@@ -1,12 +1,12 @@
 import com.sap.piper.ConfigurationHelper
 import com.sap.piper.GenerateDocumentation
 import com.sap.piper.variablesubstitution.ExecutionContext
-import com.sap.piper.variablesubstitution.Logger
+import com.sap.piper.variablesubstitution.DebugHelper
 import groovy.transform.Field
 
 import static com.sap.piper.Prerequisites.checkScript
 
-@Field Logger logger = new Logger()
+@Field DebugHelper logger = new DebugHelper()
 @Field String STEP_NAME = getClass().getName()
 @Field Set GENERAL_CONFIG_KEYS = []
 @Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS + [

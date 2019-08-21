@@ -1,12 +1,12 @@
 import com.sap.piper.ConfigurationHelper
 import com.sap.piper.GenerateDocumentation
 import com.sap.piper.variablesubstitution.ExecutionContext
-import com.sap.piper.variablesubstitution.Logger
+import com.sap.piper.variablesubstitution.DebugHelper
 import groovy.transform.Field
 
 import static com.sap.piper.Prerequisites.checkScript
 
-@Field Logger logger = new Logger()
+@Field DebugHelper debugHelper = new DebugHelper()
 @Field String STEP_NAME = getClass().getName()
 @Field Set GENERAL_CONFIG_KEYS = []
 @Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS + [
@@ -59,7 +59,7 @@ void call(Map<String, String> arguments) {
         String variablesFilePath = config.variablesFile ?: "manifest-variables.yml"
         String outputFilePath = config.outputManifestFile ?: manifestFilePath
 
-        logger.setConfig(config)
+        debugHelper.setConfig(config)
 
         File manifestFile = new File(manifestFilePath)
         File variablesFile = new File(variablesFilePath)
@@ -82,7 +82,7 @@ void call(Map<String, String> arguments) {
             echo "[CFManifestSubstituteVariables] Loaded manifest at ${manifestFilePath}!"
         }
         catch(Exception ex) {
-            logger.debug("Exception: ${ex}")
+            debugHelper.debug("Exception: ${ex}")
             echo "[CFManifestSubstituteVariables] Could not load manifest file at ${manifestFilePath}. Exception was: ${ex}"
             throw ex
         }
@@ -95,7 +95,7 @@ void call(Map<String, String> arguments) {
             echo "[CFManifestSubstituteVariables] Loaded variables file at ${variablesFilePath}!"
         }
         catch(Exception ex) {
-            logger.debug("Exception: ${ex}")
+            debugHelper.debug("Exception: ${ex}")
             echo "[CFManifestSubstituteVariables] Could not load manifest variables file at ${variablesFilePath}. Exception was: ${ex}"
             throw ex
         }
@@ -119,8 +119,8 @@ void call(Map<String, String> arguments) {
         echo "[CFManifestSubstituteVariables] Replaced variables in ${manifestFilePath} with variables from ${variablesFilePath}."
         echo "[CFManifestSubstituteVariables] Wrote output file (with variables replaced) at ${outputFilePath}."
 
-        logger.debug("Loaded Manifest: ${manifestData}")
-        logger.debug("Loaded Variables: ${variablesData}")
-        logger.debug("Result: ${result}")
+        debugHelper.debug("Loaded Manifest: ${manifestData}")
+        debugHelper.debug("Loaded Variables: ${variablesData}")
+        debugHelper.debug("Result: ${result}")
     }
 }

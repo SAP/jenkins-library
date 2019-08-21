@@ -34,7 +34,7 @@ void call(Map<String, String> arguments) {
             error "[DeleteFile] File path must not be null or empty."
         }
 
-        deleteOutputFileIfPresent(path)
+        deleteFileIfPresent(path)
     }
 }
 
@@ -42,11 +42,11 @@ void call(Map<String, String> arguments) {
  * Removes the given file, if it exists.
  * @param filePath the path to the file to remove.
  */
-private void deleteOutputFileIfPresent(String filePath) {
-    File originalFile = new File(filePath)
-    if (originalFile.exists()) {
+private void deleteFileIfPresent(String filePath) {
+    File file = new File(filePath)
+    if (file.exists()) {
         echo "[DeleteFile] File ${filePath} already exists. Attempting deletion to overwrite it."
-        boolean deleted = originalFile.delete()
+        boolean deleted = file.delete()
         if (deleted) {
             echo "[DeleteFile] Successfully deleted file ${filePath}."
         }
