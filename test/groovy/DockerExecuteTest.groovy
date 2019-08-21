@@ -48,8 +48,13 @@ class DockerExecuteTest extends BasePiperTest {
 
     @Test
     void testExecuteInsideContainerOfExistingPod() throws Exception {
+        List usedDockerEnvVars
         helper.registerAllowedMethod('container', [String.class, Closure.class], { String container, Closure body ->
             containerName = container
+            body()
+        })
+        helper.registerAllowedMethod('withEnv',[List.class, Closure.class], { List envVars, Closure body ->
+            usedDockerEnvVars = envVars
             body()
         })
         binding.setVariable('env', [POD_NAME: 'testpod', ON_K8S: 'true'])
@@ -61,6 +66,7 @@ class DockerExecuteTest extends BasePiperTest {
         }
         assertTrue(loggingRule.log.contains('Executing inside a Kubernetes Container'))
         assertEquals('mavenexec', containerName)
+        assertEquals(usedDockerEnvVars[0].toString(), "http_proxy=http://proxy:8000")
         assertTrue(bodyExecuted)
      }
 
