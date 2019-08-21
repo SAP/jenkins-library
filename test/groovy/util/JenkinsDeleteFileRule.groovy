@@ -4,7 +4,6 @@ import com.lesfurets.jenkins.unit.BasePipelineTest
 import org.junit.rules.TestRule
 import org.junit.runner.Description
 import org.junit.runners.model.Statement
-import org.yaml.snakeyaml.Yaml
 
 class JenkinsDeleteFileRule implements TestRule {
 
@@ -44,7 +43,7 @@ class JenkinsDeleteFileRule implements TestRule {
                 testInstance.helper.registerAllowedMethod("deleteFile", [Map], { Map m ->
                     String path = m?.path
                     if(!path) {
-                        error "[DeleteFile] File path must not be null or empty."
+                        throw new hudson.AbortException("[DeleteFile] File path must not be null or empty.")
                     }
 
                     deletedFiles.add(path)
@@ -62,16 +61,16 @@ class JenkinsDeleteFileRule implements TestRule {
      * @param mockDeletion - if `true` will skip actual deletion.
      */
     private void deleteFile(String filePath, Boolean mockDeletion) {
-        File originalFile = new File(filePath)
-        if (originalFile.exists()) {
+        File file = new File(filePath)
+        if (file.exists()) {
 
             if(mockDeletion) {
                 return
             }
 
-            boolean deleted = originalFile.delete()
+            boolean deleted = file.delete()
             if (!deleted) {
-                throw new RuntimeException("Could not delete file at ${filePath}!")
+                throw new hudson.AbortException("[DeleteFile] Could not delete file ${filePath}. Check file permissions.")
             }
         }
     }
