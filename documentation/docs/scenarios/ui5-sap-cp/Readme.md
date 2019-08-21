@@ -49,7 +49,7 @@ fioriOnCloudPlatformPipeline script:this
 
 ### Configuration (`.pipeline/config.yml`)
 
-This is a basic configuration example, which is also located in the sources of the project. The configuration refences to the steps wrapped in `fioriOnCloudPlatformPipeline`.
+This is a basic configuration example, which is also located in the sources of the project. The configuration corresponds to the steps wrapped in `fioriOnCloudPlatformPipeline`.
 
 ```yaml
 steps:
