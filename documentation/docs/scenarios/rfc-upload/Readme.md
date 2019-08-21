@@ -7,7 +7,7 @@ Build an application based on SAPUI5 or SAP Fiori with Jenkins and attaches the 
 * [Docker environment](https://docs.docker.com/get-started/)
 * You have set up Project “Piper”. See [guided tour](https://sap.github.io/jenkins-library/guidedtour/)
 * A transport request
-* Docker image for attaching binaries available. Due to legal reasons there is no pre-build docker image. How to create the docker image is explained [here](https://github.com/SAP/devops-docker-images/tree/master/node-rfc)
+* Docker image for attaching binaries to transport requests via RFC available. Due to legal reasons there is no pre-build docker image. How to create the docker image is explained [here](https://github.com/SAP/devops-docker-images/tree/master/node-rfc)
 
 ### Project Prerequisites
 
