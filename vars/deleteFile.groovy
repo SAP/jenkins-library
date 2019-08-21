@@ -46,8 +46,7 @@ private void deleteFileIfPresent(String filePath) {
 
     Boolean fileExists = fileExists file: filePath
     if(fileExists) {
-        Boolean returnStatus = null
-        Boolean failure = sh script: "rm ${filePath}", returnStatus: returnStatus
+        Boolean failure = sh script: "rm ${filePath}", returnStatus: true
         if(!failure) {
             echo "[DeleteFile] Successfully deleted file ${filePath}."
         }
