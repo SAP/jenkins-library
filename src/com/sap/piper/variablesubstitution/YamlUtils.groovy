@@ -65,7 +65,7 @@ class YamlUtils implements Serializable {
                     throw new AbortException("[YamlUtils] Found variable reference ${referenceToReplace} in input Yaml but no variable value to replace it with Leaving it unresolved. Check your variables Yaml data and make sure the variable is properly declared.")
                 }
 
-                logger.debug("[YamlUtils] Replacing: ${referenceToReplace} with ${substitute}")
+                println("[YamlUtils] Replacing: ${referenceToReplace} with ${substitute}")
 
                 if(isSingleVariableReference(stringNode)) {
                     logger.debug("[YamlUtils] Node ${stringNode} is SINGLE variable reference. Substitute type is: ${substitute.getClass().getName()}")
