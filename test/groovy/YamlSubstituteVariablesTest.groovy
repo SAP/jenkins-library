@@ -61,7 +61,7 @@ public class YamlSubstituteVariablesTest extends BasePiperTest {
     @Test
     public void substituteVariables_Fails_If_InputYamlIsNullOrEmpty() throws Exception {
 
-        expectedExceptionRule.expect(hudson.AbortException)
+        expectedExceptionRule.expect(IllegalArgumentException)
         expectedExceptionRule.expectMessage("[YamlSubstituteVariables] Input Yaml data must not be null or empty.")
 
         // execute step
@@ -72,7 +72,7 @@ public class YamlSubstituteVariablesTest extends BasePiperTest {
     public void substituteVariables_Fails_If_VariablesYamlIsNullOrEmpty() throws Exception {
         String manifestFileName = "test/resources/variableSubstitution/manifest.yml"
 
-        expectedExceptionRule.expect(hudson.AbortException)
+        expectedExceptionRule.expect(IllegalArgumentException)
         expectedExceptionRule.expectMessage("[YamlSubstituteVariables] Variables Yaml data must not be null or empty.")
 
         Object input = script.step.readYaml file: manifestFileName

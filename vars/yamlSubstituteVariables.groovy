@@ -53,20 +53,14 @@ void call(Map<String, String> arguments) {
                                         .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS)
                                         .mixinStageConfig(script.commonPipelineEnvironment, arguments.stageName ?: env.STAGE_NAME, STEP_CONFIG_KEYS)
                                         .mixin(arguments, PARAMETER_KEYS)
+                                        .withMandatoryProperty("inputYaml", "[YamlSubstituteVariables] Input Yaml data must not be null or empty.")
+                                        .withMandatoryProperty("variablesYaml", "[YamlSubstituteVariables] Variables Yaml data must not be null or empty.")
                                         .use()
 
-        Object inputYaml = config?.inputYaml
-        Object variablesYaml = config?.variablesYaml
+        Object inputYaml = config.inputYaml
+        Object variablesYaml = config.variablesYaml
 
         logger.setConfig(config)
-
-        if(!inputYaml) {
-            error "[YamlSubstituteVariables] Input Yaml data must not be null or empty."
-        }
-
-        if(!variablesYaml) {
-            error "[YamlSubstituteVariables] Variables Yaml data must not be null or empty."
-        }
 
         def result = substitute(inputYaml, variablesYaml, config?.executionContext)
 
