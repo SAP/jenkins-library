@@ -1,4 +1,4 @@
-# Build SAPUI5 or SAP Fiori Applications and attaches it to a transport request on an ABAP system via RFC with Jenkins
+# Build an SAP Fiori Application and attach it to a transport request on an ABAP system via RFC with Jenkins
 
 Build an application based on SAPUI5 or SAP Fiori with Jenkins and attaches the build result to a transport request in an ABAP system.
 
