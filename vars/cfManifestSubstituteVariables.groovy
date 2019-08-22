@@ -103,18 +103,18 @@ void call(Map<String, String> arguments) {
         }
 
         // substitute all variables.
-        ExecutionContext context = new ExecutionContext()
-        def result = yamlUtils.substituteVariables(manifestData, variablesData, context)
-
-        if (context.noVariablesReplaced) {
-            echo "[CFManifestSubstituteVariables] No variables were found or could be replaced in ${manifestFilePath}. Skipping variable substitution."
-            return
-        }
-
-        // writeYaml won't overwrite the file. You need to delete it first.
-        deleteFile path: outputFilePath, script: script
-
-        writeYaml file: outputFilePath, data: result
+//        ExecutionContext context = new ExecutionContext()
+//        def result = yamlUtils.substituteVariables(manifestData, variablesData, context)
+//
+//        if (context.noVariablesReplaced) {
+//            echo "[CFManifestSubstituteVariables] No variables were found or could be replaced in ${manifestFilePath}. Skipping variable substitution."
+//            return
+//        }
+//
+//        // writeYaml won't overwrite the file. You need to delete it first.
+//        deleteFile path: outputFilePath, script: script
+//
+//        writeYaml file: outputFilePath, data: result
 
         echo "[CFManifestSubstituteVariables] Replaced variables in ${manifestFilePath} with variables from ${variablesFilePath}."
         echo "[CFManifestSubstituteVariables] Wrote output file (with variables replaced) at ${outputFilePath}."
