@@ -60,8 +60,8 @@ void call(Map<String, String> arguments) {
         String variablesFilePath = config.variablesFile ?: "manifest-variables.yml"
         String outputFilePath = config.outputManifestFile ?: manifestFilePath
 
-        //YamlUtils yamlUtils = new YamlUtils(script, config)
-        debugHelper.setup(script, config)
+        YamlUtils yamlUtils = new YamlUtils(script as Script, config)
+        debugHelper.setup(script as Script, config)
 
         Boolean manifestExists = fileExists manifestFilePath
         Boolean variablesFileExists = fileExists variablesFilePath
@@ -103,24 +103,24 @@ void call(Map<String, String> arguments) {
         }
 
         // substitute all variables.
-//        ExecutionContext context = new ExecutionContext()
-//        def result = yamlUtils.substituteVariables(manifestData, variablesData, context)
-//
-//        if (context.noVariablesReplaced) {
-//            echo "[CFManifestSubstituteVariables] No variables were found or could be replaced in ${manifestFilePath}. Skipping variable substitution."
-//            return
-//        }
-//
-//        // writeYaml won't overwrite the file. You need to delete it first.
-//        deleteFile path: outputFilePath, script: script
-//
-//        writeYaml file: outputFilePath, data: result
+        ExecutionContext context = new ExecutionContext()
+        def result = yamlUtils.substituteVariables(manifestData, variablesData, context)
+
+        if (context.noVariablesReplaced) {
+            echo "[CFManifestSubstituteVariables] No variables were found or could be replaced in ${manifestFilePath}. Skipping variable substitution."
+            return
+        }
+
+        // writeYaml won't overwrite the file. You need to delete it first.
+        deleteFile path: outputFilePath, script: script
+
+        writeYaml file: outputFilePath, data: result
 
         echo "[CFManifestSubstituteVariables] Replaced variables in ${manifestFilePath} with variables from ${variablesFilePath}."
         echo "[CFManifestSubstituteVariables] Wrote output file (with variables replaced) at ${outputFilePath}."
 
         debugHelper.debug("Loaded Manifest: ${manifestData}")
         debugHelper.debug("Loaded Variables: ${variablesData}")
-//        debugHelper.debug("Result: ${result}")
+        debugHelper.debug("Result: ${result}")
     }
 }
