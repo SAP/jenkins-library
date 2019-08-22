@@ -60,7 +60,7 @@ void call(Map<String, String> arguments) {
         String variablesFilePath = config.variablesFile ?: "manifest-variables.yml"
         String outputFilePath = config.outputManifestFile ?: manifestFilePath
 
-        //YamlUtils yamlUtils = new YamlUtils(script, config)
+        YamlUtils yamlUtils = new YamlUtils(script, config)
         debugHelper.setup(script, config)
 
         Boolean manifestExists = fileExists manifestFilePath
@@ -121,6 +121,6 @@ void call(Map<String, String> arguments) {
 
         debugHelper.debug("Loaded Manifest: ${manifestData}")
         debugHelper.debug("Loaded Variables: ${variablesData}")
-        debugHelper.debug("Result: ${result}")
+//        debugHelper.debug("Result: ${result}")
     }
 }
