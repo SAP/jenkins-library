@@ -1,4 +1,5 @@
-import com.sap.piper.variablesubstitution.ExecutionContext
+package com.sap.piper.variablesubstitution
+
 import org.junit.Before
 import util.JenkinsDeleteFileRule
 
@@ -17,14 +18,8 @@ import util.JenkinsStepRule
 import util.JenkinsWriteYamlRule
 import util.Rules
 
-import static util.JenkinsWriteYamlRule.DATA
-import static util.JenkinsWriteYamlRule.DATA
-import static util.JenkinsWriteYamlRule.SERIALIZED_YAML
-import static util.JenkinsWriteYamlRule.SERIALIZED_YAML;
+class YamlUtilsTest extends BasePiperTest {
 
-public class YamlSubstituteVariablesTest extends BasePiperTest {
-
-    private JenkinsStepRule script = new JenkinsStepRule(this)
     private JenkinsReadYamlRule readYamlRule = new JenkinsReadYamlRule(this)
     private JenkinsWriteYamlRule writeYamlRule = new JenkinsWriteYamlRule(this)
     private JenkinsErrorRule errorRule = new JenkinsErrorRule(this)
@@ -32,6 +27,8 @@ public class YamlSubstituteVariablesTest extends BasePiperTest {
     private JenkinsLoggingRule loggingRule = new JenkinsLoggingRule(this)
     private ExpectedException expectedExceptionRule = ExpectedException.none()
     private JenkinsDeleteFileRule deleteFileRule = new JenkinsDeleteFileRule(this)
+
+    private YamlUtils yamlUtils = new YamlUtils()
 
     @Rule
     public RuleChain rules = Rules
@@ -41,7 +38,6 @@ public class YamlSubstituteVariablesTest extends BasePiperTest {
         .around(errorRule)
         .around(environmentRule)
         .around(loggingRule)
-        .around(script)
         .around(deleteFileRule)
         .around(expectedExceptionRule)
 
@@ -62,10 +58,9 @@ public class YamlSubstituteVariablesTest extends BasePiperTest {
     public void substituteVariables_Fails_If_InputYamlIsNullOrEmpty() throws Exception {
 
         expectedExceptionRule.expect(IllegalArgumentException)
-        expectedExceptionRule.expectMessage("[YamlSubstituteVariables] Input Yaml data must not be null or empty.")
+        expectedExceptionRule.expectMessage("[YamlUtils] Input Yaml data must not be null or empty.")
 
-        // execute step
-        script.step.yamlSubstituteVariables inputYaml: null, variablesYaml: null, script: nullScript
+        yamlUtils.substituteVariables(null, null)
     }
 
     @Test
@@ -73,12 +68,12 @@ public class YamlSubstituteVariablesTest extends BasePiperTest {
         String manifestFileName = "test/resources/variableSubstitution/manifest.yml"
 
         expectedExceptionRule.expect(IllegalArgumentException)
-        expectedExceptionRule.expectMessage("[YamlSubstituteVariables] Variables Yaml data must not be null or empty.")
+        expectedExceptionRule.expectMessage("[YamlUtils] Variables Yaml data must not be null or empty.")
 
-        Object input = script.step.readYaml file: manifestFileName
+        Object input = nullScript.readYaml file: manifestFileName
 
         // execute step
-        script.step.yamlSubstituteVariables inputYaml: input, variablesYaml: null, script: nullScript
+        yamlUtils.substituteVariables(input, null)
     }
 
     @Test
@@ -90,11 +85,11 @@ public class YamlSubstituteVariablesTest extends BasePiperTest {
         expectedExceptionRule.expect(org.yaml.snakeyaml.scanner.ScannerException)
         expectedExceptionRule.expectMessage("found character '%' that cannot start any token. (Do not use % for indentation)")
 
-        Object input = script.step.readYaml file: manifestFileName
-        Object variables = script.step.readYaml file: variablesFileName
+        Object input = nullScript.readYaml file: manifestFileName
+        Object variables = nullScript.readYaml file: variablesFileName
 
         // execute step
-        script.step.yamlSubstituteVariables inputYaml: input, variablesYaml: variables, script: nullScript
+        yamlUtils.substituteVariables(input, variables)
     }
 
     @Test
@@ -106,11 +101,11 @@ public class YamlSubstituteVariablesTest extends BasePiperTest {
         expectedExceptionRule.expect(org.yaml.snakeyaml.scanner.ScannerException)
         expectedExceptionRule.expectMessage("found character '%' that cannot start any token. (Do not use % for indentation)")
 
-        Object input = script.step.readYaml file: manifestFileName
-        Object variables = script.step.readYaml file: variablesFileName
+        Object input = nullScript.readYaml file: manifestFileName
+        Object variables = nullScript.readYaml file: variablesFileName
 
         // execute step
-        script.step.yamlSubstituteVariables inputYaml: input, variablesYaml: variables, script: nullScript
+        yamlUtils.substituteVariables(input, variables)
     }
 
     @Test
@@ -118,12 +113,11 @@ public class YamlSubstituteVariablesTest extends BasePiperTest {
         String manifestFileName = "test/resources/variableSubstitution/manifest.yml"
         String variablesFileName = "test/resources/variableSubstitution/manifest-variables.yml"
 
-        Object input = script.step.readYaml file: manifestFileName
-        Object variables = script.step.readYaml file: variablesFileName
+        Object input = nullScript.readYaml file: manifestFileName
+        Object variables = nullScript.readYaml file: variablesFileName
 
         // execute step
-        script.step.yamlSubstituteVariables inputYaml: input, variablesYaml: variables, script: nullScript
-        Map<String, Object> manifestDataAfterReplacement = environmentRule.env.getValue('yamlSubstituteVariablesResult')
+        Map<String, Object> manifestDataAfterReplacement = yamlUtils.substituteVariables(input, variables)
 
         //Check that something was written
         assertNotNull(manifestDataAfterReplacement)
@@ -154,12 +148,11 @@ public class YamlSubstituteVariablesTest extends BasePiperTest {
         String manifestFileName = "test/resources/variableSubstitution/multi_manifest.yml"
         String variablesFileName = "test/resources/variableSubstitution/manifest-variables.yml"
 
-        Object input = script.step.readYaml file: manifestFileName
-        Object variables = script.step.readYaml file: variablesFileName
+        Object input = nullScript.readYaml file: manifestFileName
+        Object variables = nullScript.readYaml file: variablesFileName
 
         // execute step
-        script.step.yamlSubstituteVariables inputYaml: input, variablesYaml: variables, script: nullScript
-        List<Object> manifestDataAfterReplacement = environmentRule.env.getValue('yamlSubstituteVariablesResult')
+        List<Object> manifestDataAfterReplacement = yamlUtils.substituteVariables(input, variables)
 
         //Check that something was written
         assertNotNull(manifestDataAfterReplacement)
@@ -185,13 +178,12 @@ public class YamlSubstituteVariablesTest extends BasePiperTest {
         String manifestFileName = "test/resources/variableSubstitution/novars_manifest.yml"
         String variablesFileName = "test/resources/variableSubstitution/manifest-variables.yml"
 
-        Object input = script.step.readYaml file: manifestFileName
-        Object variables = script.step.readYaml file: variablesFileName
+        Object input = nullScript.readYaml file: manifestFileName
+        Object variables = nullScript.readYaml file: variablesFileName
 
         // execute step
         ExecutionContext context = new ExecutionContext()
-        script.step.yamlSubstituteVariables inputYaml: input, variablesYaml: variables, executionContext: context, script: nullScript
-        Object result = environmentRule.env.getValue('yamlSubstituteVariablesResult')
+        Object result = yamlUtils.substituteVariables(input, variables, context)
 
         //Check that nothing was written
         assertNotNull(result)
@@ -214,13 +206,12 @@ public class YamlSubstituteVariablesTest extends BasePiperTest {
         String manifestFileName = "test/resources/variableSubstitution/datatypes_manifest.yml"
         String variablesFileName = "test/resources/variableSubstitution/datatypes_manifest-variables.yml"
 
-        Object input = script.step.readYaml file: manifestFileName
-        Object variables = script.step.readYaml file: variablesFileName
+        Object input = nullScript.readYaml file: manifestFileName
+        Object variables = nullScript.readYaml file: variablesFileName
 
         // execute step
         ExecutionContext context = new ExecutionContext()
-        script.step.yamlSubstituteVariables inputYaml: input, variablesYaml: variables, executionContext: context, script: nullScript
-        Map<String, Object> manifestDataAfterReplacement = environmentRule.env.getValue('yamlSubstituteVariablesResult')
+        Map<String, Object> manifestDataAfterReplacement = yamlUtils.substituteVariables(input, variables, context)
 
         //Check that something was written
         assertNotNull(manifestDataAfterReplacement)
@@ -265,12 +256,11 @@ public class YamlSubstituteVariablesTest extends BasePiperTest {
         String manifestFileName = "test/resources/variableSubstitution/manifest.yml"
         String variablesFileName = "test/resources/variableSubstitution/manifest-variables.yml"
 
-        Object input = script.step.readYaml file: manifestFileName
-        Object variables = script.step.readYaml file: variablesFileName
+        Object input = nullScript.readYaml file: manifestFileName
+        Object variables = nullScript.readYaml file: variablesFileName
 
         // execute step
-        script.step.yamlSubstituteVariables inputYaml: input, variablesYaml: variables, executionContext: null, script: nullScript
-        Map<String, Object> manifestDataAfterReplacement = environmentRule.env.getValue('yamlSubstituteVariablesResult')
+        Map<String, Object> manifestDataAfterReplacement = yamlUtils.substituteVariables(input, variables, null)
 
         //Check that something was written
         assertNotNull(manifestDataAfterReplacement)

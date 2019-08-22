@@ -2,11 +2,13 @@ import com.sap.piper.ConfigurationHelper
 import com.sap.piper.GenerateDocumentation
 import com.sap.piper.variablesubstitution.ExecutionContext
 import com.sap.piper.variablesubstitution.DebugHelper
+import com.sap.piper.variablesubstitution.YamlUtils
 import groovy.transform.Field
 
 import static com.sap.piper.Prerequisites.checkScript
 
 @Field DebugHelper debugHelper = new DebugHelper()
+@Field YamlUtils yamlUtils = new YamlUtils()
 @Field String STEP_NAME = getClass().getName()
 @Field Set GENERAL_CONFIG_KEYS = []
 @Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS + [
@@ -59,7 +61,9 @@ void call(Map<String, String> arguments) {
         String variablesFilePath = config.variablesFile ?: "manifest-variables.yml"
         String outputFilePath = config.outputManifestFile ?: manifestFilePath
 
-        debugHelper.setConfig(config)
+        debugHelper.setVerbose(config?.verbose)
+        yamlUtils.enableDebugLog(config?.verbose)
+
         Boolean manifestExists = fileExists manifestFilePath
         Boolean variablesFileExists = fileExists variablesFilePath
 
@@ -101,9 +105,7 @@ void call(Map<String, String> arguments) {
 
         // substitute all variables.
         ExecutionContext context = new ExecutionContext()
-        yamlSubstituteVariables inputYaml: manifestData, variablesYaml: variablesData, executionContext: context, script: script
-
-        def result = script.commonPipelineEnvironment.getValue('yamlSubstituteVariablesResult')
+        def result = yamlUtils.substituteVariables(manifestData, variablesData, context)
 
         if (context.noVariablesReplaced) {
             echo "[CFManifestSubstituteVariables] No variables were found or could be replaced in ${manifestFilePath}. Skipping variable substitution."

@@ -10,12 +10,11 @@ package com.sap.piper.variablesubstitution
  */
 class DebugHelper {
     /**
-     * The configuration to check for
-     * logging. Make sure to set this
-     * configuration with `config.verbose`
-     * set to `true` to log anything.
+     * Flag to control if the log written by
+     * `debug()` should be verbose. If set to false,
+     * `debug()` will not log anything.
      */
-    Map config
+    Boolean verbose = false
 
     /**
      * Creates a new instance.
@@ -29,7 +28,7 @@ class DebugHelper {
      * @param message
      */
     void debug(String message) {
-        if(config?.verbose) {
+        if(verbose) {
             println(message)
         }
     }
