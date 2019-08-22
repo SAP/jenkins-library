@@ -19,7 +19,7 @@ On the project level, provide and adjust the following template:
 |-----|-----|-----|
 | [`mta.yaml`](https://github.com/SAP/jenkins-library/blob/master/documentation/docs/scenarios/rfc-upload/files/mta.yaml) | This file controls the behavior of the MTA toolset. | Place the `mta.yaml` file in your application root folder and adjust the values in brackets with your data. |
 
-Depending on your setup more files are needed (e.g. for node builds `Gruntfile.js`, `package.json`)
+Depending on the modules in your MTA, additional configuration files are required, e.g. `pom.xml`  or `package.json`.
 
 ## Context
 
