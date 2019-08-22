@@ -20,19 +20,24 @@ class DebugHelper {
     private Map config
 
     /**
-     * Creates a new instance.
+     * Creates a new instance using the given script to issue `echo` commands.
+     * The given config's `verbose` flag will decide if a message will be logged or not.
+     * @param script
+     * @param config
      */
-    DebugHelper() {}
+    DebugHelper(Script script, Map config) {
+        if(!script) {
+            throw new IllegalArgumentException("[DebugHelper] Script parameter must not be null.")
+        }
 
-    /**
-     * Sets up the debug helper with the given script and config.
-     * @param script - the script to use to issue echo statements.
-     * @param config - the config whose `verbose` flag will be inspected before echoing messages.
-     */
-    void setup(Script script, Map config) {
+        if(!config) {
+            throw new IllegalArgumentException("[DebugHelper] Config map parameter must not be null.")
+        }
+
         this.script = script
         this.config = config
     }
+
     /**
      * log a debug message if a configuration
      * indicates that the `verbose` flag
@@ -40,7 +45,7 @@ class DebugHelper {
      * @param message
      */
     void debug(String message) {
-        if(script != null && config?.verbose != null) {
+        if(config.verbose) {
             script.echo message
         }
     }

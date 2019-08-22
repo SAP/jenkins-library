@@ -8,14 +8,20 @@ import hudson.AbortException
  */
 class YamlUtils implements Serializable {
 
-    private static final DebugHelper logger = new DebugHelper()
-
+    private final DebugHelper logger
     private final Script script
-    private final Map config
 
-    YamlUtils(Script script, Map config) {
+    /**
+     * Creates a new utils instance for the given script.
+     * @param script - the script which will be used to call pipeline steps.
+     * @param logger - an optional debug helper to print debug messages.
+     */
+    YamlUtils(Script script, DebugHelper logger = null) {
+        if(!script) {
+            throw new IllegalArgumentException("[YamlUtils] Script must not be null.")
+        }
         this.script = script
-        this.config = config
+        this.logger = logger
     }
 
     /**
@@ -30,11 +36,11 @@ class YamlUtils implements Serializable {
      * @return
      */
     Object substituteVariables(Object inputYaml, Object variablesYaml, ExecutionContext context = null) {
-        if(!inputYaml) {
+        if (!inputYaml) {
             throw new IllegalArgumentException("[YamlUtils] Input Yaml data must not be null or empty.")
         }
 
-        if(!variablesYaml) {
+        if (!variablesYaml) {
             throw new IllegalArgumentException("[YamlUtils] Variables Yaml data must not be null or empty.")
         }
 
@@ -68,7 +74,7 @@ class YamlUtils implements Serializable {
                 script.echo "[YamlUtils] Replacing: ${referenceToReplace} with ${substitute}"
 
                 if(isSingleVariableReference(stringNode)) {
-                    logger.debug("[YamlUtils] Node ${stringNode} is SINGLE variable reference. Substitute type is: ${substitute.getClass().getName()}")
+                    logger?.debug("[YamlUtils] Node ${stringNode} is SINGLE variable reference. Substitute type is: ${substitute.getClass().getName()}")
                     // if the string node we need to do replacements for is
                     // a reference to a single variable, i.e. should be replaced
                     // entirely with the variable value, we replace the entire node
@@ -76,7 +82,7 @@ class YamlUtils implements Serializable {
                     complexResult = substitute
                 }
                 else {
-                    logger.debug("[YamlUtils] Node ${stringNode} is multi-variable reference or contains additional string constants. Substitute type is: ${substitute.getClass().getName()}")
+                    logger?.debug("[YamlUtils] Node ${stringNode} is multi-variable reference or contains additional string constants. Substitute type is: ${substitute.getClass().getName()}")
                     // if the string node we need to do replacements for contains various
                     // variable references or a variable reference and constant string additions
                     // we do a string replacement of the variables inside the node.
@@ -114,7 +120,7 @@ class YamlUtils implements Serializable {
             return copy
         }
         else {
-            logger.debug("[YamlUtils] Found data type ${manifestNode.getClass().getName()} that needs no substitute. Value: ${manifestNode}")
+            logger?.debug("[YamlUtils] Found data type ${manifestNode.getClass().getName()} that needs no substitute. Value: ${manifestNode}")
             return manifestNode
         }
     }

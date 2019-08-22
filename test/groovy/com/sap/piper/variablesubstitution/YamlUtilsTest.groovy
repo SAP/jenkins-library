@@ -43,7 +43,7 @@ class YamlUtilsTest extends BasePiperTest {
 
     @Before
     public void setup() {
-        yamlUtils = new YamlUtils(nullScript, null)
+        yamlUtils = new YamlUtils(nullScript)
 
         readYamlRule.registerYaml("manifest.yml", new FileInputStream(new File("test/resources/variableSubstitution/manifest.yml")))
                     .registerYaml("manifest-variables.yml", new FileInputStream(new File("test/resources/variableSubstitution/manifest-variables.yml")))
