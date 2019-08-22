@@ -114,7 +114,11 @@ private Object substitute(Object manifestNode, Object variablesData, ExecutionCo
                 stringNode = stringNode.replaceAll(regex, substitute as String)
             }
         }
-        context?.noVariablesReplaced = false  // remember that variables were found in the YAML file that have been replaced.
+
+        if (context) {
+            context.noVariablesReplaced = false // remember that variables were found in the YAML file that have been replaced.
+        }
+
         return complexResult ?: stringNode
     }
     else if (manifestNode instanceof List) {

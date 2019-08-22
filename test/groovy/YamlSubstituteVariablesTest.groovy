@@ -259,4 +259,26 @@ public class YamlSubstituteVariablesTest extends BasePiperTest {
         assertTrue(manifestDataAfterReplacement.get("applications").get(0).get("env").get("single-var-with-string-constants").equals("true-with-some-more-text"))
         assertTrue(manifestDataAfterReplacement.get("applications").get(0).get("env").get("single-var-with-string-constants") instanceof String)
     }
+
+    @Test
+    public void substituteVariables_DoesNotFail_If_ExecutionContextIsNull() throws Exception {
+        String manifestFileName = "test/resources/variableSubstitution/manifest.yml"
+        String variablesFileName = "test/resources/variableSubstitution/manifest-variables.yml"
+
+        Object input = script.step.readYaml file: manifestFileName
+        Object variables = script.step.readYaml file: variablesFileName
+
+        // execute step
+        script.step.yamlSubstituteVariables inputYaml: input, variablesYaml: variables, executionContext: null, script: nullScript
+        Map<String, Object> manifestDataAfterReplacement = environmentRule.env.getValue('yamlSubstituteVariablesResult')
+
+        //Check that something was written
+        assertNotNull(manifestDataAfterReplacement)
+
+        // check that resolved variables have expected values
+        assertCorrectVariableResolution(manifestDataAfterReplacement)
+
+        // check that the step was marked as a success (even if it did do nothing).
+        assertJobStatusSuccess()
+    }
 }
