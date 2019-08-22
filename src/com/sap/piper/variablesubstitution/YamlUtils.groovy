@@ -10,6 +10,15 @@ class YamlUtils implements Serializable {
 
     private static final DebugHelper logger = new DebugHelper()
 
+    private final Script script
+    private final Map config
+
+    YamlUtils(Script script, Map config) {
+        this.script = script
+        this.config = config
+        logger.setup(script, config)
+    }
+
     /**
      * Substitutes variables references in a given input Yaml object with values that are read from the
      * passed variables Yaml object. Variables may be of primitive or complex types.
@@ -31,14 +40,6 @@ class YamlUtils implements Serializable {
         }
 
         return substitute(inputYaml, variablesYaml, context)
-    }
-
-    /**
-     * Enables / disables debug logging.
-     * @param enabled - if `true`, debug logs will be written.
-     */
-    void enableDebugLog(Boolean enabled) {
-        logger.setVerbose(enabled)
     }
 
     /**
@@ -65,7 +66,7 @@ class YamlUtils implements Serializable {
                     throw new AbortException("[YamlUtils] Found variable reference ${referenceToReplace} in input Yaml but no variable value to replace it with Leaving it unresolved. Check your variables Yaml data and make sure the variable is properly declared.")
                 }
 
-                println("[YamlUtils] Replacing: ${referenceToReplace} with ${substitute}")
+                script.echo "[YamlUtils] Replacing: ${referenceToReplace} with ${substitute}"
 
                 if(isSingleVariableReference(stringNode)) {
                     logger.debug("[YamlUtils] Node ${stringNode} is SINGLE variable reference. Substitute type is: ${substitute.getClass().getName()}")

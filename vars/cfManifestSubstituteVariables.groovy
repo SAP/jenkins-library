@@ -8,7 +8,6 @@ import groovy.transform.Field
 import static com.sap.piper.Prerequisites.checkScript
 
 @Field DebugHelper debugHelper = new DebugHelper()
-@Field YamlUtils yamlUtils = new YamlUtils()
 @Field String STEP_NAME = getClass().getName()
 @Field Set GENERAL_CONFIG_KEYS = []
 @Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS + [
@@ -61,8 +60,8 @@ void call(Map<String, String> arguments) {
         String variablesFilePath = config.variablesFile ?: "manifest-variables.yml"
         String outputFilePath = config.outputManifestFile ?: manifestFilePath
 
-        debugHelper.setVerbose(config?.verbose)
-        yamlUtils.enableDebugLog(config?.verbose)
+        YamlUtils yamlUtils = new YamlUtils(script, config)
+        debugHelper.setup(script, config)
 
         Boolean manifestExists = fileExists manifestFilePath
         Boolean variablesFileExists = fileExists variablesFilePath

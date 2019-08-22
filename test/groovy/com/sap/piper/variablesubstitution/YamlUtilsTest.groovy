@@ -28,7 +28,7 @@ class YamlUtilsTest extends BasePiperTest {
     private ExpectedException expectedExceptionRule = ExpectedException.none()
     private JenkinsDeleteFileRule deleteFileRule = new JenkinsDeleteFileRule(this)
 
-    private YamlUtils yamlUtils = new YamlUtils()
+    private YamlUtils yamlUtils
 
     @Rule
     public RuleChain rules = Rules
@@ -43,6 +43,8 @@ class YamlUtilsTest extends BasePiperTest {
 
     @Before
     public void setup() {
+        yamlUtils = new YamlUtils(nullScript, null)
+
         readYamlRule.registerYaml("manifest.yml", new FileInputStream(new File("test/resources/variableSubstitution/manifest.yml")))
                     .registerYaml("manifest-variables.yml", new FileInputStream(new File("test/resources/variableSubstitution/manifest-variables.yml")))
                     .registerYaml("test/resources/variableSubstitution/manifest.yml", new FileInputStream(new File("test/resources/variableSubstitution/manifest.yml")))

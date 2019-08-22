@@ -10,11 +10,14 @@ package com.sap.piper.variablesubstitution
  */
 class DebugHelper {
     /**
-     * Flag to control if the log written by
-     * `debug()` should be verbose. If set to false,
-     * `debug()` will not log anything.
+     * The script which will be used to echo debug messages.
      */
-    Boolean verbose = false
+    private Script script
+    /**
+     * The configuration which will be scanned for a `verbose` flag.
+     * Only if this is true, will debug messages be written.
+     */
+    private Map config
 
     /**
      * Creates a new instance.
@@ -22,14 +25,23 @@ class DebugHelper {
     DebugHelper() {}
 
     /**
+     * Sets up the debug helper with the given script and config.
+     * @param script - the script to use to issue echo statements.
+     * @param config - the config whose `verbose` flag will be inspected before echoing messages.
+     */
+    void setup(Script script, Map config) {
+        this.script = script
+        this.config = config
+    }
+    /**
      * log a debug message if a configuration
      * indicates that the `verbose` flag
      * is set to `true`
      * @param message
      */
     void debug(String message) {
-        if(verbose) {
-            println(message)
+        if(script && config?.verbose) {
+            script.echo message
         }
     }
 }
