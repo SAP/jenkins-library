@@ -70,7 +70,7 @@ class JenkinsDeleteFileRule implements TestRule {
 
             boolean deleted = file.delete()
             if (!deleted) {
-                throw new hudson.AbortException("[DeleteFile] Could not delete file ${filePath}. Check file permissions.")
+                throw new hudson.AbortException("[DeleteFile] Could not delete file '${filePath}'. Check file permissions.")
             }
         }
     }

@@ -44,12 +44,12 @@ public class DeleteFileTest extends BasePiperTest {
     @Test
     public void deleteFile() throws Exception {
         String filePath = "test.file"
-        String command = "rm ${filePath}"
+        String command = "rm '${filePath}'"
         Integer statusSuccess = 0
 
         fileExistsRule.registerExistingFile(filePath)
         shellCallRule.setReturnValue(command, statusSuccess)
-        loggingRule.expect("[DeleteFile] Successfully deleted file ${filePath}.")
+        loggingRule.expect("[DeleteFile] Successfully deleted file '${filePath}'.")
 
         // execute step
         script.step.deleteFile path: filePath, script: nullScript
@@ -91,14 +91,14 @@ public class DeleteFileTest extends BasePiperTest {
     @Test
     public void deleteFile_Throws_IfFileExistsButCouldNotBeDeleted() throws Exception {
         String filePath = "test.file"
-        String command = "rm ${filePath}"
+        String command = "rm '${filePath}'"
         Integer statusError = 1
 
         fileExistsRule.registerExistingFile(filePath)
         shellCallRule.setReturnValue(command, statusError)
 
         expectedExceptionRule.expect(hudson.AbortException)
-        expectedExceptionRule.expectMessage("[DeleteFile] Could not delete file ${filePath}. Check file permissions.")
+        expectedExceptionRule.expectMessage("[DeleteFile] Could not delete file '${filePath}'. Check file permissions.")
 
         // execute step
         script.step.deleteFile path: filePath, script: nullScript
