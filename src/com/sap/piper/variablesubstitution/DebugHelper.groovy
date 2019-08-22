@@ -40,7 +40,7 @@ class DebugHelper {
      * @param message
      */
     void debug(String message) {
-        if(script && config?.verbose) {
+        if(script != null && config?.verbose != null) {
             script.echo message
         }
     }

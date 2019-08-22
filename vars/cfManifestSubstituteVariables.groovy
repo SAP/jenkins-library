@@ -60,8 +60,8 @@ void call(Map<String, String> arguments) {
         String variablesFilePath = config.variablesFile ?: "manifest-variables.yml"
         String outputFilePath = config.outputManifestFile ?: manifestFilePath
 
-        YamlUtils yamlUtils = new YamlUtils(script as Script, config)
-        debugHelper.setup(script as Script, config)
+        YamlUtils yamlUtils = new YamlUtils(script, config)
+        debugHelper.setup(script, config)
 
         Boolean manifestExists = fileExists manifestFilePath
         Boolean variablesFileExists = fileExists variablesFilePath

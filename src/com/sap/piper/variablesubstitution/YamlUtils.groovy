@@ -16,7 +16,6 @@ class YamlUtils implements Serializable {
     YamlUtils(Script script, Map config) {
         this.script = script
         this.config = config
-        logger.setup(script, config)
     }
 
     /**
