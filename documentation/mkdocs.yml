@@ -7,6 +7,7 @@ nav:
     - 'Library steps':
         - artifactSetVersion: steps/artifactSetVersion.md
         - batsExecuteTests: steps/batsExecuteTests.md
+        - buildExecute: steps/buildExecute.md
         - checkChangeInDevelopment: steps/checkChangeInDevelopment.md
         - checksPublishResults: steps/checksPublishResults.md
         - cloudFoundryDeploy: steps/cloudFoundryDeploy.md
