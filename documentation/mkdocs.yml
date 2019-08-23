@@ -74,6 +74,7 @@ nav:
         - 'Build and Deploy Applications with Jenkins and the SAP Cloud Application Programming Model': scenarios/CAP_Scenario.md
     - Resources:
         - 'Required Plugins': jenkins/requiredPlugins.md
+        - 'My Own Jenkins': myownjenkins.md
 
 theme:
     name: 'material'
