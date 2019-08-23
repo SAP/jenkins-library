@@ -22,11 +22,9 @@ If you prefer to generate a separate output file, use the step's `outputManifest
 
 ## Exceptions
 
-`org.yaml.snakeyaml.scanner.ScannerException`
-* in case any of the loaded input files contains malformed Yaml and cannot be parsed.
+* `org.yaml.snakeyaml.scanner.ScannerException` - in case any of the loaded input files contains malformed Yaml and cannot be parsed.
 
-`hudson.AbortException`
-* In case of internal errors and when not all variables could be replaced due to missing replacement values.
+* `hudson.AbortException` - in case of internal errors and when not all variables could be replaced due to missing replacement values.
 
 ## Example
 
