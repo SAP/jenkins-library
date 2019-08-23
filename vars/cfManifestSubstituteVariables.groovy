@@ -11,18 +11,18 @@ import static com.sap.piper.Prerequisites.checkScript
 @Field Set GENERAL_CONFIG_KEYS = []
 @Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS + [
     /**
-     * The `String` path of the Yaml file to replace variables in. <br>
+     * The `String` path of the Yaml file to replace variables in.
      * Defaults to "manifest.yml" if not specified otherwise.
      */
     'manifestFile',
     /**
      * The `String` path of the Yaml file to produce as output.
-     * If not specified this will default to `manifestFile and overwrite it.
+     * If not specified this will default to `manifestFile` and overwrite it.
      */
     'outputManifestFile',
     /**
-     * The `String path of the Yaml file containing the variables' values to use as a replace in the manifest file. <br>
-     * Defaults to "manifest-variables.yml" if not specified otherwise
+     * The `String` path of the Yaml file containing the variables' values to use as a replacement in the manifest file.
+     * Defaults to `manifest-variables.yml` if not specified otherwise.
      */
     'variablesFile'
 ]
@@ -31,14 +31,15 @@ import static com.sap.piper.Prerequisites.checkScript
 
 /**
  * Step that substitutes variables in a given YAML file with those specified in a another. The format to reference a variable
- * in the YAML file is to use double parentheses `((` and `))`, e.g. `((variableName))`.<br>
+ * in the YAML file is to use double parentheses `((` and `))`, e.g. `((variableName))`.
  * A declaration of a variable and assignment of its value is simply done as a property in the variables YAML file.
- * <p>
+ *
  * The format follows <a href="https://docs.cloudfoundry.org/devguide/deploy-apps/manifest-attributes.html#variable-substitution">Cloud Foundry standards</a>.
- * <p>
+ *
  * The step is activated by the presence of both a `manifest.yml` and a variables file. Names of both files are configurable.
- * <p>
- * Usage: cfManifestSubstituteVariables manifestFile: "manifest.yml", variablesFile: "manifest-variables.yml"
+ *
+ * Usage: `cfManifestSubstituteVariables manifestFile: "path/to/manifest.yml", variablesFile:"path/to/manifest-variables.yml"`
+ * e.g. `cfManifestSubstituteVariables manifestFile: "${WORKSPACE}/manifest.yml", variablesFile:"${WORKSPACE}/manifest-variables.yml"`
  *
  * @param arguments - the map of arguments.
  */
