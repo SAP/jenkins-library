@@ -38,8 +38,8 @@ import static com.sap.piper.Prerequisites.checkScript
  *
  * The step is activated by the presence of both a `manifest.yml` and a variables file. Names of both files are configurable.
  *
- * Usage: `cfManifestSubstituteVariables manifestFile: "path/to/manifest.yml", variablesFile:"path/to/manifest-variables.yml"`
- * e.g. `cfManifestSubstituteVariables manifestFile: "${WORKSPACE}/manifest.yml", variablesFile:"${WORKSPACE}/manifest-variables.yml"`
+ * Usage: `cfManifestSubstituteVariables manifestFile: "path/to/manifest.yml", variablesFile:"path/to/manifest-variables.yml", script: this`
+ * e.g. `cfManifestSubstituteVariables manifestFile: "${WORKSPACE}/manifest.yml", variablesFile:"${WORKSPACE}/manifest-variables.yml", script: this`
  *
  * @param arguments - the map of arguments.
  */

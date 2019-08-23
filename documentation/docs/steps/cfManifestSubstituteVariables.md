@@ -32,25 +32,25 @@ If you prefer to generate a separate output file, use the step's `outputManifest
 Usage of pipeline step:
 
 ```groovy
-cfManifestSubstituteVariables manifestFile: "path/to/manifest.yml", variablesFile:"path/to/manifest-variables.yml"
+cfManifestSubstituteVariables manifestFile: "path/to/manifest.yml", variablesFile:"path/to/manifest-variables.yml", script: this
 ```
 
 For example, you can refer to the parameters using relative paths:
 
 ```groovy
-cfManifestSubstituteVariables manifestFile: "manifest.yml", variablesFile:"manifest-variables.yml"
+cfManifestSubstituteVariables manifestFile: "manifest.yml", variablesFile:"manifest-variables.yml", script: this
 ```
 
 You can also refer to parameters using absolute paths, like this:
 
 ```groovy
-cfManifestSubstituteVariables manifestFile: "${WORKSPACE}/manifest.yml", variablesFile:"${WORKSPACE}/manifest-variables.yml"
+cfManifestSubstituteVariables manifestFile: "${WORKSPACE}/manifest.yml", variablesFile:"${WORKSPACE}/manifest-variables.yml", script: this
 ```
 
 If you are using the Cloud Foundry [Create-Service-Push](https://github.com/dawu415/CF-CLI-Create-Service-Push-Plugin) CLI plugin you will most likely also have a `services-manifest.yml` file. 
 Also in this file you can specify variable references, that can be resolved from the same variables file, e.g. like this:
 
 ```groovy
-cfManifestSubstituteVariables manifestFile: "manifest.yml", variablesFile:"manifest-variables.yml" // resolve variables in manifest.yml
-cfManifestSubstituteVariables manifestFile: "services-manifest.yml", variablesFile:"manifest-variables.yml" // resolve variables in services-manifest.yml from same file.
+cfManifestSubstituteVariables manifestFile: "manifest.yml", variablesFile:"manifest-variables.yml", script: this // resolve variables in manifest.yml
+cfManifestSubstituteVariables manifestFile: "services-manifest.yml", variablesFile:"manifest-variables.yml", script: this // resolve variables in services-manifest.yml from same file.
 ```
