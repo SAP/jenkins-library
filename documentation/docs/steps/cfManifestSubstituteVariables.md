@@ -7,7 +7,7 @@
 This step is only relevant if both a `manifest.yml` and a corresponding variables Yaml file are found at the specified paths in the current source tree.
 The step will activate itself in this case, and tries to replace any variable references found in `manifest.yml` with the values found in the variables file.
 
-**Note:** It is possible to use one variables files for more than one `manifest.yml`. 
+**Note:** It is possible to use one variables file for more than one `manifest.yml`. 
 
 ## ${docGenParameters}
 
@@ -22,10 +22,11 @@ If you prefer to generate a separate output file, use the step's `outputManifest
 
 ## Exceptions
 
-* `org.yaml.snakeyaml.scanner.ScannerException`
-  * in case any of the loaded input files contains malformed Yaml and cannot be parsed.
-* `hudson.AbortException`
-  * In case of internal errors and when not all variables could be replaced due to missing replacement values.
+`org.yaml.snakeyaml.scanner.ScannerException`
+* in case any of the loaded input files contains malformed Yaml and cannot be parsed.
+
+`hudson.AbortException`
+* In case of internal errors and when not all variables could be replaced due to missing replacement values.
 
 ## Example
 
