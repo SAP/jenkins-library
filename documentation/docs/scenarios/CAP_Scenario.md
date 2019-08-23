@@ -1,6 +1,6 @@
 # Build and Deploy Applications with Jenkins and the SAP Cloud Application Programming Model
 
-Set up a basic continuous delivery process for developing applications according to the SAP Cloud Application Programming Model.
+Set up a basic continuous delivery process for developing applications according to the SAP Cloud Application Programming Model. For the  SAP S/4HANA SDK Pipeline, provided in the [SAP Cloud SDK](https://developers.sap.com/topics/cloud-sdk.html), please consult the [SAP Cloud SDK for Continuous Delivery documentation](https://github.com/SAP/cloud-s4-sdk-pipeline). The Cloud SDK pipeline is based on project "Piper" as well.
 
 ## Prerequisites
 
