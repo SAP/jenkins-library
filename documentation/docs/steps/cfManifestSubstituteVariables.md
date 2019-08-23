@@ -17,7 +17,7 @@ The step will activate itself in this case, and tries to replace any variable re
 
 ## Side effects
 
-Unless configured otherwise, this step will *replace* the input `manifest.yml` with a version that has all variable references replaced. This alters the source tree in your Jenkins workspace.  
+Unless configured otherwise, this step will *replace* the input `manifest.yml` with a version that has all variable references replaced. This alters the source tree in your Jenkins workspace.
 If you prefer to generate a separate output file, use the step's `outputManifestFile` parameter. Keep in mind, however, that your Cloud Foundry deployment step should then also reference this output file - otherwise CF deployment will fail with unresolved variable reference errors.
 
 ## Exceptions
@@ -43,7 +43,7 @@ cfManifestSubstituteVariables manifestFile: "manifest.yml", variablesFile:"manif
 You can also refer to parameters using absolute paths, like this:
 
 ```groovy
-cfManifestSubstituteVariables manifestFile: "${WORKSPACE}/manifest.yml", variablesFile:"${WORKSPACE}/manifest-variables.yml", script: this
+cfManifestSubstituteVariables manifestFile: "\$\{WORKSPACE\}/manifest.yml", variablesFile:"\$\{WORKSPACE\}/manifest-variables.yml", script: this
 ```
 
 If you are using the Cloud Foundry [Create-Service-Push](https://github.com/dawu415/CF-CLI-Create-Service-Push-Plugin) CLI plugin you will most likely also have a `services-manifest.yml` file.
