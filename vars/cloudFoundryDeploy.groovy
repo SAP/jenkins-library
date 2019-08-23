@@ -251,19 +251,40 @@ def deployCfNative (config) {
             }
         }
 
-        def returnCode = sh returnStatus: true, script: """#!/bin/bash
-            set +x
-            set -e
-            export HOME=${config.dockerWorkspace}
-            cf login -u \"${username}\" -p '${password}' -a ${config.cloudFoundry.apiEndpoint} -o \"${config.cloudFoundry.org}\" -s \"${config.cloudFoundry.space}\"
-            cf plugins
-            cf ${deployCommand} ${config.cloudFoundry.appName ?: ''} ${blueGreenDeployOptions} -f '${config.cloudFoundry.manifest}' ${config.smokeTest}
+        Exception exceptionFromDeploy, exceptionFromPostDeploy
+
+        try {
+            sh script: """#!/bin/bash
+                set +x
+                set -e
+                export HOME=${config.dockerWorkspace}
+                cf login -u \"${username}\" -p '${password}' -a ${config.cloudFoundry.apiEndpoint} -o \"${config.cloudFoundry.org}\" -s \"${config.cloudFoundry.space}\"
+                cf plugins
+                cf ${deployCommand} ${config.cloudFoundry.appName ?: ''} ${blueGreenDeployOptions} -f '${config.cloudFoundry.manifest}' ${config.smokeTest}
             """
-        if(returnCode != 0){
-            error "[ERROR][${STEP_NAME}] The execution of the deploy command failed, see the log for details."
+        } catch(Exception e) {
+            exceptionFromDeploy = e
+        } finally {
+            try {
+                stopOldAppIfRunning(config)
+                sh "cf logout"
+            } catch(Exception e) {
+                exceptionFromPostDeploy = e
+            }
         }
-        stopOldAppIfRunning(config)
-        sh "cf logout"
+        if(exceptionFromDeploy) {
+            if(exceptionFromPostDeploy) {
+                // [Q] What is the reason for the echo statement below?
+                // [A] In case the exceptionFromDeploy is a hudson.AbortException we only see the message from the exception in the log - no stacktrace.
+                //     Hence the suppressed exception - which has been in fact added to the hudson.AbortException is not visible.
+                echo "Got an exception from the deployment step and another exception from the cleanup. The exception from cleanup was: '${exceptionFromPostDeploy}'."
+                exceptionFromDeploy.addSuppressed(exceptionFromPostDeploy)
+            }
+            throw exceptionFromDeploy
+        }
+        if(exceptionFromPostDeploy) {
+            throw exceptionFromPostDeploy
+        }
     }
 }
 
@@ -319,18 +340,39 @@ def deployMta (config) {
         usernameVariable: 'username'
     )]) {
         echo "[${STEP_NAME}] Deploying MTA (${config.mtaPath}) with following parameters: ${config.mtaExtensionDescriptor} ${config.mtaDeployParameters}"
-        def returnCode = sh returnStatus: true, script: """#!/bin/bash
-            export HOME=${config.dockerWorkspace}
-            set +x
-            set -e
-            cf api ${config.cloudFoundry.apiEndpoint}
-            cf login -u ${username} -p '${password}' -a ${config.cloudFoundry.apiEndpoint} -o \"${config.cloudFoundry.org}\" -s \"${config.cloudFoundry.space}\"
-            cf plugins
-            cf ${deployCommand} ${config.mtaPath} ${config.mtaDeployParameters} ${config.mtaExtensionDescriptor}"""
-        if(returnCode != 0){
-            error "[ERROR][${STEP_NAME}] The execution of the deploy command failed, see the log for details."
+
+        Exception exceptionFromDeploy, exceptionFromPostDeploy
+
+        try {
+            sh returnStatus: true, script: """#!/bin/bash
+                export HOME=${config.dockerWorkspace}
+                set +x
+                set -e
+                cf api ${config.cloudFoundry.apiEndpoint}
+                cf login -u ${username} -p '${password}' -a ${config.cloudFoundry.apiEndpoint} -o \"${config.cloudFoundry.org}\" -s \"${config.cloudFoundry.space}\"
+                cf plugins
+                cf ${deployCommand} ${config.mtaPath} ${config.mtaDeployParameters} ${config.mtaExtensionDescriptor}"""
+        } catch(Exception e) {
+            exceptionFromDeploy = e
+        } finally {
+            try {
+                sh "cf logout"
+            } catch(Exception e) {
+                exceptionFromPostDeploy
+            }
         }
-        sh "cf logout"
+
+        if(exceptionFromDeploy) {
+            if(exceptionFromPostDeploy) {
+                echo "Exception caught during post deploy action: ${exceptionFromPostDeploy}"
+                exceptionFromDeploy.addSuppressed(exceptionFromPostDeploy)
+            }
+            throw exceptionFromDeploy
+        }
+
+        if(exceptionFromPostDeploy) {
+            throw exceptionFromPostDeploy
+        }
     }
 }
 
