@@ -7,7 +7,7 @@
 This step is only relevant if both a `manifest.yml` and a corresponding variables Yaml file are found at the specified paths in the current source tree.
 The step will activate itself in this case, and tries to replace any variable references found in `manifest.yml` with the values found in the variables file.
 
-**Note:** It is possible to use one variables file for more than one `manifest.yml`. 
+**Note:** It is possible to use one variables file for more than one `manifest.yml`.
 
 ## ${docGenParameters}
 
@@ -46,7 +46,7 @@ You can also refer to parameters using absolute paths, like this:
 cfManifestSubstituteVariables manifestFile: "${WORKSPACE}/manifest.yml", variablesFile:"${WORKSPACE}/manifest-variables.yml", script: this
 ```
 
-If you are using the Cloud Foundry [Create-Service-Push](https://github.com/dawu415/CF-CLI-Create-Service-Push-Plugin) CLI plugin you will most likely also have a `services-manifest.yml` file. 
+If you are using the Cloud Foundry [Create-Service-Push](https://github.com/dawu415/CF-CLI-Create-Service-Push-Plugin) CLI plugin you will most likely also have a `services-manifest.yml` file.
 Also in this file you can specify variable references, that can be resolved from the same variables file, e.g. like this:
 
 ```groovy
