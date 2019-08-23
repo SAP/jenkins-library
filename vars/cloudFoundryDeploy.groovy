@@ -36,6 +36,14 @@ import groovy.transform.Field
          */
         'manifest',
         /**
+         * Defines the manifest variables Yaml file to be used to replace variable references in manifest. This file
+         * is optional. Its presence in combination with the manifest being present will trigger the
+         * `cfManifestSubstituteVariables` step before deployment. The format of variable references follows the
+         * [Cloud Foundry standard](https://docs.cloudfoundry.org/devguide/deploy-apps/manifest-attributes.html#variable-substitution).
+         * @parentConfigKey cloudFoundry
+         */
+        'manifestVariables',
+        /**
          * Cloud Foundry target organization.
          * @parentConfigKey cloudFoundry
          */
@@ -89,7 +97,7 @@ import groovy.transform.Field
     'smokeTestStatusCode'
 ]
 
-@Field Map CONFIG_KEY_COMPATIBILITY = [cloudFoundry: [apiEndpoint: 'cfApiEndpoint', appName:'cfAppName', credentialsId: 'cfCredentialsId', manifest: 'cfManifest', org: 'cfOrg', space: 'cfSpace']]
+@Field Map CONFIG_KEY_COMPATIBILITY = [cloudFoundry: [apiEndpoint: 'cfApiEndpoint', appName:'cfAppName', credentialsId: 'cfCredentialsId', manifest: 'cfManifest', manifestVariables: 'cfManifestVariables', org: 'cfOrg', space: 'cfSpace']]
 
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
 
@@ -157,54 +165,65 @@ void call(Map parameters = [:]) {
         //make sure that for further execution whole workspace, e.g. also downloaded artifacts are considered
         config.stashContent = []
 
-        boolean deploy = false
+        boolean deployTriggered = false
         boolean deploySuccess = true
         try {
             if (config.deployTool == 'mtaDeployPlugin') {
-                deploy = true
-                // set default mtar path
-                config = ConfigurationHelper.newInstance(this, config)
-                    .addIfEmpty('mtaPath', config.mtaPath?:findMtar())
-                    .use()
-
-                dockerExecute(script: script, dockerImage: config.dockerImage, dockerWorkspace: config.dockerWorkspace, stashContent: config.stashContent) {
-                    deployMta(config)
-                }
+                deployTriggered = true
+                handleMTADeployment(config, script)
             }
-
-            if (config.deployTool == 'cf_native') {
-                deploy = true
-                config.smokeTest = ''
-
-                if (config.smokeTestScript == 'blueGreenCheckScript.sh') {
-                    writeFile file: config.smokeTestScript, text: libraryResource(config.smokeTestScript)
-                }
-
-                config.smokeTest = '--smoke-test $(pwd)/' + config.smokeTestScript
-                sh "chmod +x ${config.smokeTestScript}"
-
-                echo "[${STEP_NAME}] CF native deployment (${config.deployType}) with cfAppName=${config.cloudFoundry.appName}, cfManifest=${config.cloudFoundry.manifest}, smokeTestScript=${config.smokeTestScript}"
-
-                dockerExecute (
-                    script: script,
-                    dockerImage: config.dockerImage,
-                    dockerWorkspace: config.dockerWorkspace,
-                    stashContent: config.stashContent,
-                    dockerEnvVars: [CF_HOME:"${config.dockerWorkspace}", CF_PLUGIN_HOME:"${config.dockerWorkspace}", STATUS_CODE: "${config.smokeTestStatusCode}"]
-                ) {
-                    deployCfNative(config)
-                }
+            else if (config.deployTool == 'cf_native') {
+                deployTriggered = true
+                handleCFNativeDeployment(config, script)
+            }
+            else {
+                deployTriggered = false
+                echo "[${STEP_NAME}] WARNING! Found unsupported deployTool. Skipping deployment."
             }
         } catch (err) {
             deploySuccess = false
             throw err
         } finally {
-            if (deploy) {
+            if (deployTriggered) {
                 reportToInflux(script, config, deploySuccess, jenkinsUtils)
             }
-
         }
+    }
+}
 
+private void handleMTADeployment(Map config, script) {
+    // set default mtar path
+    config = ConfigurationHelper.newInstance(this, config)
+        .addIfEmpty('mtaPath', config.mtaPath ?: findMtar())
+        .use()
+
+    dockerExecute(script: script, dockerImage: config.dockerImage, dockerWorkspace: config.dockerWorkspace, stashContent: config.stashContent) {
+        deployMta(config)
+    }
+}
+
+private void handleCFNativeDeployment(Map config, script) {
+    config.smokeTest = ''
+
+    if (config.smokeTestScript == 'blueGreenCheckScript.sh') {
+        writeFile file: config.smokeTestScript, text: libraryResource(config.smokeTestScript)
+    }
+
+    config.smokeTest = '--smoke-test $(pwd)/' + config.smokeTestScript
+    sh "chmod +x ${config.smokeTestScript}"
+
+    echo "[${STEP_NAME}] CF native deployment (${config.deployType}) with cfAppName=${config.cloudFoundry.appName}, cfManifest=${config.cloudFoundry.manifest}, cfManifestVariables=${config.cloudFoundry.manifestVariables?:'none'}, smokeTestScript=${config.smokeTestScript}"
+
+    cfManifestSubstituteVariables script: script, manifestFile: config.cloudFoundry.manifest, variablesFile: config.cloudFoundry.manifestVariables
+
+    dockerExecute(
+        script: script,
+        dockerImage: config.dockerImage,
+        dockerWorkspace: config.dockerWorkspace,
+        stashContent: config.stashContent,
+        dockerEnvVars: [CF_HOME: "${config.dockerWorkspace}", CF_PLUGIN_HOME: "${config.dockerWorkspace}", STATUS_CODE: "${config.smokeTestStatusCode}"]
+    ) {
+        deployCfNative(config)
     }
 }
 
@@ -243,9 +262,9 @@ def deployCfNative (config) {
             }
             if (fileExists(config.cloudFoundry.manifest)) {
                 def manifest = readYaml file: config.cloudFoundry.manifest
-                if (!manifest || !manifest.applications || !manifest.applications[0].name)
+                if (!manifest || !manifest.applications || !manifest.applications[0].name) {
                     error "[${STEP_NAME}] ERROR: No appName available in manifest ${config.cloudFoundry.manifest}."
-
+                }
             } else {
                 error "[${STEP_NAME}] ERROR: No manifest file ${config.cloudFoundry.manifest} found."
             }
