@@ -6,7 +6,6 @@ import org.junit.rules.ExpectedException
 import org.junit.rules.RuleChain
 
 import util.BasePiperTest
-import util.JenkinsCfManifestSubstituteVariablesRule
 import util.JenkinsCredentialsRule
 import util.JenkinsEnvironmentRule
 import util.JenkinsDockerExecuteRule
@@ -17,10 +16,8 @@ import util.JenkinsShellCallRule
 import util.JenkinsStepRule
 import util.JenkinsWriteFileRule
 import util.JenkinsReadYamlRule
-import util.JenkinsWriteYamlRule
 import util.Rules
 
-import static org.hamcrest.Matchers.notNullValue
 import static org.hamcrest.Matchers.stringContainsInOrder
 import static org.junit.Assert.*
 
