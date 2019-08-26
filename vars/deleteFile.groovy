@@ -15,7 +15,6 @@ import static com.sap.piper.Prerequisites.checkScript
 /**
  * Deletes a file at a given path, if it exists, or silently ignores the call, if if does not.
  * If the file exists but cannot be deleted, the script will fail the build with an according error.
- * @param arguments - the `Map` of arguments specifying what to delete.
  */
 void call(Map<String, String> arguments) {
     handlePipelineStepErrors (stepName: STEP_NAME, stepParameters: arguments) {
