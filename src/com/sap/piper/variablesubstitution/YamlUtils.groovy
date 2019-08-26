@@ -27,7 +27,7 @@ class YamlUtils implements Serializable {
     /**
      * Substitutes variables references in a given input Yaml object with values that are read from the
      * passed variables Yaml object. Variables may be of primitive or complex types.
-     * The format of variable references follows <a href="https://docs.cloudfoundry.org/devguide/deploy-apps/manifest-attributes.html#variable-substitution">Cloud Foundry standards</a>.
+     * The format of variable references follows [Cloud Foundry standards](https://docs.cloudfoundry.org/devguide/deploy-apps/manifest-attributes.html#variable-substitution)
      *
      * @param inputYaml - the input Yaml data as `Object`. Can be either of type `Map` or `List`.
      * @param variablesYaml - the variables Yaml data as `Object`. Can be either of type `Map` or `List` and should

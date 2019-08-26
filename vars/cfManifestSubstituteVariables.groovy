@@ -34,11 +34,9 @@ import static com.sap.piper.Prerequisites.checkScript
  * in the YAML file is to use double parentheses `((` and `))`, e.g. `((variableName))`.
  * A declaration of a variable and assignment of its value is simply done as a property in the variables YAML file.
  *
- * The format follows <a href="https://docs.cloudfoundry.org/devguide/deploy-apps/manifest-attributes.html#variable-substitution">Cloud Foundry standards</a>.
+ * The format follows [Cloud Foundry standards](https://docs.cloudfoundry.org/devguide/deploy-apps/manifest-attributes.html#variable-substitution)
  *
  * The step is activated by the presence of both a `manifest.yml` and a variables file. Names of both files are configurable.
- *
- * Usage: `cfManifestSubstituteVariables manifestFile: "path/to/manifest.yml", variablesFile:"path/to/manifest-variables.yml", script: this`
  *
  * @param arguments - the map of arguments.
  */
