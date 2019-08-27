@@ -55,4 +55,24 @@ class UtilsTest extends BasePiperTest {
         def stashResult = utils.unstashAll(['a', null, 'b'])
         assert stashResult == ['a', 'b']
     }
+
+    @Test
+    void runActionWithPostActionFailureInActionAndPostAction() {
+
+        Utils.metaClass.static.echo = { m -> }
+
+        Exception ex
+        try {
+            Utils.runWithPostAction(nullScript,
+                {throw new hudson.AbortException('from ACTION')},
+                {throw new hudson.AbortException('from POST ACTION')})
+        } catch(Exception e) {
+            ex = e
+        }
+
+        assert ex.message == 'from ACTION'
+        assert ex.getSuppressed()[0].message == 'from POST ACTION'
+        assert ex.getSuppressed().length == 1
+    }
+
 }

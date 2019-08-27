@@ -251,9 +251,8 @@ def deployCfNative (config) {
             }
         }
 
-        Exception exceptionFromDeploy, exceptionFromPostDeploy
-
-        try {
+        Utils.runWithPostAction(this,
+        {
             sh script: """#!/bin/bash
                 set +x
                 set -e
@@ -262,29 +261,12 @@ def deployCfNative (config) {
                 cf plugins
                 cf ${deployCommand} ${config.cloudFoundry.appName ?: ''} ${blueGreenDeployOptions} -f '${config.cloudFoundry.manifest}' ${config.smokeTest}
             """
-        } catch(Exception e) {
-            exceptionFromDeploy = e
-        } finally {
-            try {
-                stopOldAppIfRunning(config)
-                sh "cf logout"
-            } catch(Exception e) {
-                exceptionFromPostDeploy = e
-            }
+        },
+        {
+            stopOldAppIfRunning(config)
+            sh "cf logout"
         }
-        if(exceptionFromDeploy) {
-            if(exceptionFromPostDeploy) {
-                // [Q] What is the reason for the echo statement below?
-                // [A] In case the exceptionFromDeploy is a hudson.AbortException we only see the message from the exception in the log - no stacktrace.
-                //     Hence the suppressed exception - which has been in fact added to the hudson.AbortException is not visible.
-                echo "Got an exception from the deployment step and another exception from the cleanup. The exception from cleanup was: '${exceptionFromPostDeploy}'."
-                exceptionFromDeploy.addSuppressed(exceptionFromPostDeploy)
-            }
-            throw exceptionFromDeploy
-        }
-        if(exceptionFromPostDeploy) {
-            throw exceptionFromPostDeploy
-        }
+        )
     }
 }
 
@@ -341,9 +323,8 @@ def deployMta (config) {
     )]) {
         echo "[${STEP_NAME}] Deploying MTA (${config.mtaPath}) with following parameters: ${config.mtaExtensionDescriptor} ${config.mtaDeployParameters}"
 
-        Exception exceptionFromDeploy, exceptionFromPostDeploy
-
-        try {
+        Utils.runWithPostAction(this,
+        {
             sh returnStatus: true, script: """#!/bin/bash
                 export HOME=${config.dockerWorkspace}
                 set +x
@@ -352,27 +333,11 @@ def deployMta (config) {
                 cf login -u ${username} -p '${password}' -a ${config.cloudFoundry.apiEndpoint} -o \"${config.cloudFoundry.org}\" -s \"${config.cloudFoundry.space}\"
                 cf plugins
                 cf ${deployCommand} ${config.mtaPath} ${config.mtaDeployParameters} ${config.mtaExtensionDescriptor}"""
-        } catch(Exception e) {
-            exceptionFromDeploy = e
-        } finally {
-            try {
+        },
+        {
                 sh "cf logout"
-            } catch(Exception e) {
-                exceptionFromPostDeploy
-            }
-        }
+        })
 
-        if(exceptionFromDeploy) {
-            if(exceptionFromPostDeploy) {
-                echo "Exception caught during post deploy action: ${exceptionFromPostDeploy}"
-                exceptionFromDeploy.addSuppressed(exceptionFromPostDeploy)
-            }
-            throw exceptionFromDeploy
-        }
-
-        if(exceptionFromPostDeploy) {
-            throw exceptionFromPostDeploy
-        }
     }
 }
 

@@ -3,6 +3,7 @@ package com.sap.piper
 import com.cloudbees.groovy.cps.NonCPS
 import com.sap.piper.analytics.Telemetry
 import groovy.text.SimpleTemplateEngine
+import hudson.AbortException
 
 import java.nio.charset.StandardCharsets
 import java.security.MessageDigest
@@ -31,6 +32,44 @@ def runClosures(Map closures) {
     for (int i = 0; i < closuresToRun.size(); i++) {
         (closuresToRun[i] as Closure).run()
     }
+}
+
+static runWithPostAction(Script context, Closure action, Closure postAction = null) {
+
+    Exception exAction, exPostAction
+
+    def result
+
+    try {
+        result = action()
+    } catch(Exception e) {
+        exAction = e
+    } finally {
+        try {
+            if(postAction)
+                postAction()
+        } catch(Exception e) {
+            exPostAction = e
+        }
+    }
+    if(exAction) {
+        if(exPostAction) {
+            // [Q] What is the reason for the echo statement below?
+            // [A] In case the exception raised by the action is a hudson.AbortException we only see the message from that exception in the log - no stacktrace.
+            //     Hence the suppressed exception - which has been in fact added to that hudson.AbortException is not visible.
+            if(exAction instanceof AbortException ) {
+                context.echo "Got an '${exAction.class.name}' from the action and an '${exPostAction.class.name}' from the post action. " +
+                "The exception from the post action was: '${exPostAction}'."
+            }
+            exAction.addSuppressed(exPostAction)
+        }
+        throw exAction
+    }
+    if(exPostAction) {
+        throw exPostAction
+    }
+
+    result
 }
 
 def stashList(script, List stashes) {
