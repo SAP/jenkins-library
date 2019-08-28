@@ -228,7 +228,7 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
     }
 
     @Test
-    void testSidecarDefault() {
+    void testSidecarDefaultWithContainerMap() {
         List portMapping = []
         helper.registerAllowedMethod('portMapping', [Map.class], {m ->
             portMapping.add(m)
@@ -271,6 +271,36 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
         assertThat(portList, hasItem([[name: 'selenium0', containerPort: 4444]]))
         assertThat(containerCommands.size(), is(1))
         assertThat(envList, hasItem(hasItem(allOf(hasEntry('name', 'customEnvKey'), hasEntry ('value','customEnvValue')))))
+    }
+
+    @Test
+    void testSidecarDefaultWithParameters() {
+        List portMapping = []
+        helper.registerAllowedMethod('portMapping', [Map.class], {m ->
+            portMapping.add(m)
+            return m
+        })
+        stepRule.step.dockerExecuteOnKubernetes(
+            script: nullScript,
+            juStabUtils: utils,
+            containerMap: ['maven:3.5-jdk-8-alpine': 'mavenexecute'],
+            containerName: 'mavenexecute',
+            dockerOptions: '-it',
+            dockerVolumeBind: ['my_vol': '/my_vol'],
+            dockerEnvVars: ['http_proxy': 'http://proxy:8000'],
+            dockerWorkspace: '/home/piper',
+            sidecarEnvVars: ['testEnv': 'testVal'],
+            sidecarImage: 'postgres',
+            sidecarName: 'postgres',
+            sidecarReadyCommand: 'pg_isready'
+        ) {
+            bodyExecuted = true
+        }
+
+        assertThat(bodyExecuted, is(true))
+
+        assertThat(containersList, allOf(hasItem('postgres'), hasItem('mavenexecute')))
+        assertThat(imageList, allOf(hasItem('maven:3.5-jdk-8-alpine'), hasItem('postgres'),))
     }
 
     @Test
