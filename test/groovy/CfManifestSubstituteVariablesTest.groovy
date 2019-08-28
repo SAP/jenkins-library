@@ -18,7 +18,6 @@ public class CfManifestSubstituteVariablesTest extends BasePiperTest {
     private JenkinsEnvironmentRule environmentRule = new JenkinsEnvironmentRule(this)
     private JenkinsLoggingRule loggingRule = new JenkinsLoggingRule(this)
     private ExpectedException expectedExceptionRule = ExpectedException.none()
-    private JenkinsDeleteFileRule deleteFileRule = new JenkinsDeleteFileRule(this)
     private JenkinsFileExistsRule fileExistsRule = new JenkinsFileExistsRule(this, [])
 
     @Rule
@@ -31,7 +30,6 @@ public class CfManifestSubstituteVariablesTest extends BasePiperTest {
         .around(environmentRule)
         .around(loggingRule)
         .around(script)
-        .around(deleteFileRule)
         .around(expectedExceptionRule)
 
     @Before

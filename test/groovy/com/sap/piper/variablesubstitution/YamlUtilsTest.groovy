@@ -1,10 +1,8 @@
 package com.sap.piper.variablesubstitution
 
 import org.junit.Before
-import util.JenkinsDeleteFileRule
 
 import static org.junit.Assert.*
-import static util.JenkinsWriteYamlRule.*
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.ExpectedException;
@@ -14,7 +12,6 @@ import util.JenkinsEnvironmentRule
 import util.JenkinsErrorRule
 import util.JenkinsLoggingRule
 import util.JenkinsReadYamlRule
-import util.JenkinsStepRule
 import util.JenkinsWriteYamlRule
 import util.Rules
 
@@ -26,7 +23,6 @@ class YamlUtilsTest extends BasePiperTest {
     private JenkinsEnvironmentRule environmentRule = new JenkinsEnvironmentRule(this)
     private JenkinsLoggingRule loggingRule = new JenkinsLoggingRule(this)
     private ExpectedException expectedExceptionRule = ExpectedException.none()
-    private JenkinsDeleteFileRule deleteFileRule = new JenkinsDeleteFileRule(this)
 
     private YamlUtils yamlUtils
 
@@ -38,7 +34,6 @@ class YamlUtilsTest extends BasePiperTest {
         .around(errorRule)
         .around(environmentRule)
         .around(loggingRule)
-        .around(deleteFileRule)
         .around(expectedExceptionRule)
 
     @Before

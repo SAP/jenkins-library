@@ -107,7 +107,7 @@ void call(Map<String, String> arguments) {
         }
 
         // writeYaml won't overwrite the file. You need to delete it first.
-        deleteFile path: outputFilePath, script: script
+        deleteFile(outputFilePath)
 
         writeYaml file: outputFilePath, data: result
 
@@ -117,5 +117,23 @@ void call(Map<String, String> arguments) {
         debugHelper.debug("Loaded Manifest: ${manifestData}")
         debugHelper.debug("Loaded Variables: ${variablesData}")
         debugHelper.debug("Result: ${result}")
+    }
+}
+
+/**
+ * Removes the given file, if it exists.
+ * @param filePath the path to the file to remove.
+ */
+private void deleteFile(String filePath) {
+
+    Boolean fileExists = fileExists file: filePath
+    if(fileExists) {
+        Boolean failure = sh script: "rm '${filePath}'", returnStatus: true
+        if(!failure) {
+            echo "[CFManifestSubstituteVariables] Successfully deleted file '${filePath}'."
+        }
+        else {
+            error "[CFManifestSubstituteVariables] Could not delete file '${filePath}'. Check file permissions."
+        }
     }
 }
