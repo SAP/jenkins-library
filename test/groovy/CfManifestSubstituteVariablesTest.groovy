@@ -354,4 +354,80 @@ public class CfManifestSubstituteVariablesTest extends BasePiperTest {
         assertTrue(manifestDataAfterReplacement.get("applications").get(0).get("env").get("single-var-with-string-constants").equals("true-with-some-more-text"))
         assertTrue(manifestDataAfterReplacement.get("applications").get(0).get("env").get("single-var-with-string-constants") instanceof String)
     }
+
+    @Test
+    public void substituteVariables_replacesManifestIfNoOutputGiven() throws Exception {
+        // Test that makes sure that the original input manifest file is replaced with
+        // a version that has variables replaced (by deleting the original file and
+        // dumping a new one with the same name).
+
+        String manifestFileName = "test/resources/variableSubstitution/datatypes_manifest.yml"
+        String variablesFileName = "test/resources/variableSubstitution/datatypes_manifest-variables.yml"
+
+        fileExistsRule.registerExistingFile(manifestFileName)
+        fileExistsRule.registerExistingFile(variablesFileName)
+
+        // check that a proper log is written.
+        loggingRule.expect("[CFManifestSubstituteVariables] Loaded manifest at ${manifestFileName}!")
+                   .expect("[CFManifestSubstituteVariables] Loaded variables file at ${variablesFileName}!")
+                   .expect("[CFManifestSubstituteVariables] Successfully deleted file '${manifestFileName}'.")
+                   .expect("[CFManifestSubstituteVariables] Replaced variables in ${manifestFileName} with variables from ${variablesFileName}.")
+                   .expect("[CFManifestSubstituteVariables] Wrote output file (with variables replaced) at ${manifestFileName}.")
+
+        // execute step
+        script.step.cfManifestSubstituteVariables manifestFile: manifestFileName, variablesFile: variablesFileName, script: nullScript
+
+        String yamlStringAfterReplacement = writeYamlRule.files[manifestFileName].get(SERIALIZED_YAML) as String
+        Map<String, Object> manifestDataAfterReplacement = writeYamlRule.files[manifestFileName].get(DATA)
+
+        //Check that something was written
+        assertNotNull(manifestDataAfterReplacement)
+
+        assertAllVariablesReplaced(yamlStringAfterReplacement)
+        assertCorrectVariableResolution(manifestDataAfterReplacement)
+
+        assertDataTypeAndSubstitutionCorrectness(manifestDataAfterReplacement)
+
+        // check that the step was marked as a success (even if it did do nothing).
+        assertJobStatusSuccess()
+    }
+
+    @Test
+    public void substituteVariables_writesToOutputFileIfGiven() throws Exception {
+        // Test that makes sure that the output is written to the specified file and that the original input manifest
+        // file is NOT deleted / replaced.
+
+        String manifestFileName = "test/resources/variableSubstitution/datatypes_manifest.yml"
+        String variablesFileName = "test/resources/variableSubstitution/datatypes_manifest-variables.yml"
+        String outputFileName = "output.yml"
+
+        fileExistsRule.registerExistingFile(manifestFileName)
+        fileExistsRule.registerExistingFile(variablesFileName)
+
+        // check that a proper log is written.
+        loggingRule.expect("[CFManifestSubstituteVariables] Loaded manifest at ${manifestFileName}!")
+            .expect("[CFManifestSubstituteVariables] Loaded variables file at ${variablesFileName}!")
+            .expect("[CFManifestSubstituteVariables] Replaced variables in ${manifestFileName} with variables from ${variablesFileName}.")
+            .expect("[CFManifestSubstituteVariables] Wrote output file (with variables replaced) at ${outputFileName}.")
+
+        // execute step
+        script.step.cfManifestSubstituteVariables manifestFile: manifestFileName, variablesFile: variablesFileName, outputManifestFile: outputFileName,  script: nullScript
+
+        String yamlStringAfterReplacement = writeYamlRule.files[outputFileName].get(SERIALIZED_YAML) as String
+        Map<String, Object> manifestDataAfterReplacement = writeYamlRule.files[outputFileName].get(DATA)
+
+        //Check that something was written
+        assertNotNull(manifestDataAfterReplacement)
+
+        // make sure the input file was NOT deleted.
+        assertFalse(loggingRule.expected.contains("[CFManifestSubstituteVariables] Successfully deleted file '${manifestFileName}'."))
+
+        assertAllVariablesReplaced(yamlStringAfterReplacement)
+        assertCorrectVariableResolution(manifestDataAfterReplacement)
+
+        assertDataTypeAndSubstitutionCorrectness(manifestDataAfterReplacement)
+
+        // check that the step was marked as a success (even if it did do nothing).
+        assertJobStatusSuccess()
+    }
 }
