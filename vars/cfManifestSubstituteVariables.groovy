@@ -4,7 +4,6 @@ import com.sap.piper.variablesubstitution.ExecutionContext
 import com.sap.piper.variablesubstitution.DebugHelper
 import com.sap.piper.variablesubstitution.YamlUtils
 import groovy.transform.Field
-import org.apache.tools.ant.taskdefs.Exec
 
 import static com.sap.piper.Prerequisites.checkScript
 
@@ -57,6 +56,7 @@ import static com.sap.piper.Prerequisites.checkScript
  * The format follows [Cloud Foundry standards](https://docs.cloudfoundry.org/devguide/deploy-apps/manifest-attributes.html#variable-substitution)
  *
  * The step is activated by the presence of both a `manifest.yml` and a variables file. Names of both files are configurable.
+ * @param arguments - the arguments of this step.
  */
 @GenerateDocumentation
 void call(Map<String, String> arguments) {

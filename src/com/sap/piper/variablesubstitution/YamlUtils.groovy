@@ -33,8 +33,7 @@ class YamlUtils implements Serializable {
      * @param variablesYaml - the variables Yaml data as `Object`. Can be either of type `Map` or `List` and should
      *  contain variables names and values to replace variable references contained in `inputYaml`.
      * @param context - an `ExecutionContext` that can be used to query whether the script actually replaced any variables.
-     * @param verbose - indicates if debug logs should be verbose.
-     * @return
+     * @return the YAML object graph of substituted data.
      */
     Object substituteVariables(Object inputYaml, Object variablesYaml, ExecutionContext context = null) {
         if (!inputYaml) {
@@ -126,6 +125,7 @@ class YamlUtils implements Serializable {
             return manifestNode
         }
     }
+
     /**
      * Turns the parsed variables Yaml data into a
      * single map. Takes care of multiple YAML sections (separated by ---) if they are found and flattens them into a single
@@ -163,6 +163,7 @@ class YamlUtils implements Serializable {
         }
         return substitutes
     }
+
     /**
      * Returns true, if the given object node contains variable references.
      * @param node - the object-typed value to check for variable references.
@@ -177,6 +178,7 @@ class YamlUtils implements Serializable {
         String stringNode = node as String
         return stringNode.contains("((") && stringNode.contains("))")
     }
+
     /**
      * Returns true, if and only if the entire node passed in as a parameter
      * is a variable reference. Returns false if the node references multiple
