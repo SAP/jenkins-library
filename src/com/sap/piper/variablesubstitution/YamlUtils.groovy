@@ -69,7 +69,8 @@ class YamlUtils implements Serializable {
                 Object substitute = variableSubstitutes.get(referenceName)
 
                 if (null == substitute) {
-                    throw new AbortException("[YamlUtils] Found variable reference ${referenceToReplace} in input Yaml but no variable value to replace it with Leaving it unresolved. Check your variables Yaml data and make sure the variable is properly declared.")
+                    logger?.debug("[YamlUtils] WARNING - Found variable reference ${referenceToReplace} in input Yaml but no variable value to replace it with Leaving it unresolved. Check your variables Yaml data and make sure the variable is properly declared.")
+                    return manifestNode
                 }
 
                 script.echo "[YamlUtils] Replacing: ${referenceToReplace} with ${substitute}"
@@ -93,7 +94,7 @@ class YamlUtils implements Serializable {
             }
 
             if (context) {
-                context.noVariablesReplaced = false // remember that variables were found in the YAML file that have been replaced.
+                context.variablesReplaced = true // remember that variables were found in the YAML file that have been replaced.
             }
 
             return complexResult ?: stringNode
