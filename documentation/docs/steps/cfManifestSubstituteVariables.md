@@ -26,9 +26,9 @@ Usage of pipeline step:
 ```groovy
 cfManifestSubstituteVariables (
   script: this,
-  manifestFile: "path/to/manifest.yml",                    //optional, default: manifest.yml
-  manifestVariablesFiles:"path/to/manifest-variables.yml"  //optional, default: manifest-variables.yml
-  manifestVariables: [[key : value], [key : value]]        //optional, default: []
+  manifestFile: "path/to/manifest.yml",                      //optional, default: manifest.yml
+  manifestVariablesFiles: ["path/to/manifest-variables.yml"] //optional, default: ['manifest-variables.yml']
+  manifestVariables: [[key : value], [key : value]]          //optional, default: []
 )
 ```
 
@@ -38,7 +38,7 @@ For example, you can refer to the parameters using relative paths (similar to `c
 cfManifestSubstituteVariables (
   script: this,
   manifestFile: "manifest.yml",
-  manifestVariablesFiles:"manifest-variables.yml"
+  manifestVariablesFiles: ["manifest-variables.yml"]
 )
 ```
 
@@ -48,7 +48,7 @@ Furthermore, you can also specify variables and their values directly (similar t
 cfManifestSubstituteVariables (
   script: this,
   manifestFile: "manifest.yml",
-  manifestVariablesFiles: "manifest-variables.yml",
+  manifestVariablesFiles: ["manifest-variables.yml"],
   manifestVariables: [[key1 : value1], [key2 : value2]]
 )
 ```
@@ -58,14 +58,16 @@ Also in this file you can specify variable references, that can be resolved from
 
 ```groovy
 // resolve variables in manifest.yml
-cfManifestSubstituteVariables
+cfManifestSubstituteVariables (
   script: this,
   manifestFile: "manifest.yml",
-  manifestVariablesFiles:"manifest-variables.yml"
+  manifestVariablesFiles: ["manifest-variables.yml"]
+)
 
 // resolve variables in services-manifest.yml from same file.
-cfManifestSubstituteVariables
+cfManifestSubstituteVariables (
   script: this,
   manifestFile: "services-manifest.yml",
-  manifestVariablesFiles:"manifest-variables.yml"
+  manifestVariablesFiles: ["manifest-variables.yml"]
+)
 ```
