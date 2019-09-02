@@ -534,13 +534,58 @@ class CloudFoundryDeployTest extends BasePiperTest {
             cfCredentialsId: 'test_cfCredentialsId',
             cfAppName: 'testAppName',
             cfManifest: 'test.yml',
-            cfManifestVariables: 'vars.yml'
+            cfManifestVariablesFiles: ['vars.yml']
         ])
 
         // asserts
         assertTrue(testYamlWritten)
         assertNotNull(testYamlData)
         assertThat(testYamlData.get("applications").get(0).get(0).get("name"), is("testApplication"))
+
+        assertThat(dockerExecuteRule.dockerParams, hasEntry('dockerImage', 's4sdk/docker-cf-cli'))
+        assertThat(dockerExecuteRule.dockerParams, hasEntry('dockerWorkspace', '/home/piper'))
+        assertThat(dockerExecuteRule.dockerParams.dockerEnvVars, hasEntry('STATUS_CODE', "${200}"))
+        assertThat(shellRule.shell, hasItem(containsString('cf login -u "test_cf" -p \'********\' -a https://api.cf.eu10.hana.ondemand.com -o "testOrg" -s "testSpace"')))
+        assertThat(shellRule.shell, hasItem(containsString("cf push testAppName -f 'test.yml'")))
+        assertThat(shellRule.shell, hasItem(containsString("cf logout")))
+    }
+
+    @Test
+    void testCfPushDeploymentWithVariableSubstitutionFromVarsList() {
+        readYamlRule.registerYaml('test.yml', "applications: [[name: '((appName))']]")
+        readYamlRule.registerYaml('vars.yml', "[appName: 'testApplication']")
+        List varsList = [["appName" : "testApplicationFromVarsList"]]
+
+        fileExistsRule.registerExistingFile("test.yml")
+        fileExistsRule.registerExistingFile("vars.yml")
+
+        boolean testYamlWritten = false
+        def testYamlData = null
+        helper.registerAllowedMethod('writeYaml', [Map], { Map m ->
+            if (m.file.equals("test.yml")) {
+                testYamlWritten = true
+                testYamlData = m.data
+            }
+        })
+
+        stepRule.step.cloudFoundryDeploy([
+            script: nullScript,
+            juStabUtils: utils,
+            jenkinsUtilsStub: new JenkinsUtilsMock(),
+            deployTool: 'cf_native',
+            cfOrg: 'testOrg',
+            cfSpace: 'testSpace',
+            cfCredentialsId: 'test_cfCredentialsId',
+            cfAppName: 'testAppName',
+            cfManifest: 'test.yml',
+            cfManifestVariablesFiles: ['vars.yml'],
+            cfManifestVariables: varsList
+        ])
+
+        // asserts
+        assertTrue(testYamlWritten)
+        assertNotNull(testYamlData)
+        assertThat(testYamlData.get("applications").get(0).get(0).get("name"), is("testApplicationFromVarsList"))
 
         assertThat(dockerExecuteRule.dockerParams, hasEntry('dockerImage', 's4sdk/docker-cf-cli'))
         assertThat(dockerExecuteRule.dockerParams, hasEntry('dockerWorkspace', '/home/piper'))
@@ -577,7 +622,7 @@ class CloudFoundryDeployTest extends BasePiperTest {
             cfCredentialsId: 'test_cfCredentialsId',
             cfAppName: 'testAppName',
             cfManifest: 'test.yml',
-            cfManifestVariables: 'vars.yml'
+            cfManifestVariablesFiles: ['vars.yml']
         ])
 
         // asserts
@@ -622,13 +667,59 @@ class CloudFoundryDeployTest extends BasePiperTest {
             cfCredentialsId: 'test_cfCredentialsId',
             cfAppName: 'testAppName',
             cfManifest: 'test.yml',
-            cfManifestVariables: 'vars.yml'
+            cfManifestVariablesFiles: ['vars.yml']
         ])
 
         // asserts
         assertTrue(testYamlWritten)
         assertNotNull(testYamlData)
         assertThat(testYamlData.get("applications").get(0).get(0).get("name"), is("testApplication"))
+
+        assertThat(dockerExecuteRule.dockerParams, hasEntry('dockerImage', 's4sdk/docker-cf-cli'))
+        assertThat(dockerExecuteRule.dockerParams, hasEntry('dockerWorkspace', '/home/piper'))
+        assertThat(dockerExecuteRule.dockerParams.dockerEnvVars, hasEntry('STATUS_CODE', "${200}"))
+        assertThat(shellRule.shell, hasItem(containsString('cf login -u "test_cf" -p \'********\' -a https://api.cf.eu10.hana.ondemand.com -o "testOrg" -s "testSpace"')))
+        assertThat(shellRule.shell, hasItem(containsString("cf blue-green-deploy testAppName --delete-old-apps -f 'test.yml'")))
+        assertThat(shellRule.shell, hasItem(containsString("cf logout")))
+    }
+
+    @Test
+    void testCfBlueGreenDeploymentWithVariableSubstitutionFromVarsList() {
+        readYamlRule.registerYaml('test.yml', "applications: [[name: '((appName))']]")
+        readYamlRule.registerYaml('vars.yml', "[appName: 'testApplication']")
+        List varsList = [["appName" : "testApplicationFromVarsList"]]
+
+        fileExistsRule.registerExistingFile("test.yml")
+        fileExistsRule.registerExistingFile("vars.yml")
+
+        boolean testYamlWritten = false
+        def testYamlData = null
+        helper.registerAllowedMethod('writeYaml', [Map], { Map m ->
+            if (m.file.equals("test.yml")) {
+                testYamlWritten = true
+                testYamlData = m.data
+            }
+        })
+
+        stepRule.step.cloudFoundryDeploy([
+            script: nullScript,
+            juStabUtils: utils,
+            jenkinsUtilsStub: new JenkinsUtilsMock(),
+            deployTool: 'cf_native',
+            deployType: 'blue-green',
+            cfOrg: 'testOrg',
+            cfSpace: 'testSpace',
+            cfCredentialsId: 'test_cfCredentialsId',
+            cfAppName: 'testAppName',
+            cfManifest: 'test.yml',
+            cfManifestVariablesFiles: ['vars.yml'],
+            cfManifestVariables: varsList
+        ])
+
+        // asserts
+        assertTrue(testYamlWritten)
+        assertNotNull(testYamlData)
+        assertThat(testYamlData.get("applications").get(0).get(0).get("name"), is("testApplicationFromVarsList"))
 
         assertThat(dockerExecuteRule.dockerParams, hasEntry('dockerImage', 's4sdk/docker-cf-cli'))
         assertThat(dockerExecuteRule.dockerParams, hasEntry('dockerWorkspace', '/home/piper'))

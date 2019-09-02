@@ -36,11 +36,32 @@ import groovy.transform.Field
          */
         'manifest',
         /**
-         * Defines the manifest variables Yaml file to be used to replace variable references in manifest. This file
-         * is optional. Its presence in combination with the manifest being present will trigger the
-         * `cfManifestSubstituteVariables` step before deployment. The format of variable references follows the
+         * Defines the manifest variables Yaml files to be used to replace variable references in manifest. This parameter
+         * is optional and will default to `["manifest-variables.yml"]`. This can be used to set variable files like it
+         * is provided by `cf push --vars-file <file>`.
+         *
+         * If the manifest is present and so are all variable files, a variable substitution will be triggered that uses
+         * the `cfManifestSubstituteVariables` step before deployment. The format of variable references follows the
          * [Cloud Foundry standard](https://docs.cloudfoundry.org/devguide/deploy-apps/manifest-attributes.html#variable-substitution).
          * @parentConfigKey cloudFoundry
+         */
+        'manifestVariablesFiles',
+        /**
+         * Defines a `List` of variables as key-value `Map` objects used for variable substitution within the file given by `manifest`.
+         * Defaults to an empty list, if not specified otherwise. This can be used to set variables like it is provided
+         * by `cf push --var key=value`.
+         *
+         * The order of the maps of variables given in the list is relevant in case there are conflicting variable names and values
+         * between maps contained within the list. In case of conflicts, the last specified map in the list will win.
+         *
+         * Though each map entry in the list can contain more than one key-value pair for variable substitution, it is recommended
+         * to stick to one entry per map, and rather declare more maps within the list. The reason is that
+         * if a map in the list contains more than one key-value entry, and the entries are conflicting, the
+         * conflict resolution behavior is undefined (since map entries have no sequence).
+         *
+         * Note: variables defined via `manifestVariables` always win over conflicting variables defined via any file given
+         * by `manifestVariablesFiles` - no matter what is declared before. This is the same behavior as can be
+         * observed when using `cf push --var` in combination with `cf push --vars-file`.
          */
         'manifestVariables',
         /**
@@ -97,7 +118,7 @@ import groovy.transform.Field
     'smokeTestStatusCode'
 ]
 
-@Field Map CONFIG_KEY_COMPATIBILITY = [cloudFoundry: [apiEndpoint: 'cfApiEndpoint', appName:'cfAppName', credentialsId: 'cfCredentialsId', manifest: 'cfManifest', manifestVariables: 'cfManifestVariables', org: 'cfOrg', space: 'cfSpace']]
+@Field Map CONFIG_KEY_COMPATIBILITY = [cloudFoundry: [apiEndpoint: 'cfApiEndpoint', appName:'cfAppName', credentialsId: 'cfCredentialsId', manifest: 'cfManifest', manifestVariablesFiles: 'cfManifestVariablesFiles', manifestVariables: 'cfManifestVariables',  org: 'cfOrg', space: 'cfSpace']]
 
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
 
@@ -214,7 +235,12 @@ private void handleCFNativeDeployment(Map config, script) {
 
     echo "[${STEP_NAME}] CF native deployment (${config.deployType}) with cfAppName=${config.cloudFoundry.appName}, cfManifest=${config.cloudFoundry.manifest}, cfManifestVariables=${config.cloudFoundry.manifestVariables?:'none'}, smokeTestScript=${config.smokeTestScript}"
 
-    cfManifestSubstituteVariables script: script, manifestFile: config.cloudFoundry.manifest, variablesFile: config.cloudFoundry.manifestVariables
+    cfManifestSubstituteVariables(
+        script: script,
+        manifestFile: config.cloudFoundry.manifest,
+        manifestVariablesFiles: config.cloudFoundry.manifestVariablesFiles,
+        manifestVariables: config.cloudFoundry.manifestVariables
+    )
 
     dockerExecute(
         script: script,
