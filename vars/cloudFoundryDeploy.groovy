@@ -267,7 +267,9 @@ def deployCfNative (config) {
         if(config.verbose || returnCode != 0) {
             if(fileExists(file: cfTraceFile)) {
                 echo  '### START OF CF CLI TRACE OUTPUT ###'
-                echo(message: readFile(file: cfTraceFile))
+                // Would be nice to inline the two next lines, but that is not understood by the test framework
+                def cfTrace =  readFile(file: cfTraceFile)
+                echo cfTrace
                 echo '### END OF CF CLI TRACE OUTPUT ###'
             } else {
                 echo "No trace file found at '${cfTraceFile}'"
@@ -347,7 +349,9 @@ def deployMta (config) {
         if(config.verbose || returnCode != 0) {
             if(fileExists(file: cfTraceFile)) {
                 echo  '### START OF CF CLI TRACE OUTPUT ###'
-                echo(message: readFile(file: cfTraceFile))
+                // Would be nice to inline the two next lines, but that is not understood by the test framework
+                def cfTrace =  readFile(file: cfTraceFile)
+                echo cfTrace
                 echo '### END OF CF CLI TRACE OUTPUT ###'
             } else {
                 echo "No trace file found at '${cfTraceFile}'"

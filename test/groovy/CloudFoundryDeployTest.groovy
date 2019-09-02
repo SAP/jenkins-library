@@ -8,6 +8,7 @@ import org.junit.rules.RuleChain
 import util.BasePiperTest
 import util.JenkinsCredentialsRule
 import util.JenkinsEnvironmentRule
+import util.JenkinsFileExistsRule
 import util.JenkinsDockerExecuteRule
 import util.JenkinsLoggingRule
 import util.JenkinsReadFileRule
@@ -24,6 +25,7 @@ import static org.hamcrest.Matchers.hasItem
 import static org.hamcrest.Matchers.is
 import static org.hamcrest.Matchers.not
 import static org.hamcrest.Matchers.hasEntry
+import static org.hamcrest.Matchers.allOf
 import static org.hamcrest.Matchers.containsString
 
 class CloudFoundryDeployTest extends BasePiperTest {
@@ -33,6 +35,7 @@ class CloudFoundryDeployTest extends BasePiperTest {
     private JenkinsLoggingRule loggingRule = new JenkinsLoggingRule(this)
     private JenkinsShellCallRule shellRule = new JenkinsShellCallRule(this)
     private JenkinsWriteFileRule writeFileRule = new JenkinsWriteFileRule(this)
+    private JenkinsFileExistsRule fileExistsRule = new JenkinsFileExistsRule(this, [])
     private JenkinsReadFileRule readFileRule = new JenkinsReadFileRule(this, tmpDir.getAbsolutePath())
     private JenkinsDockerExecuteRule dockerExecuteRule = new JenkinsDockerExecuteRule(this)
     private JenkinsStepRule stepRule = new JenkinsStepRule(this)
@@ -56,6 +59,7 @@ class CloudFoundryDeployTest extends BasePiperTest {
         .around(shellRule)
         .around(writeFileRule)
         .around(readFileRule)
+        .around(fileExistsRule)
         .around(dockerExecuteRule)
         .around(environmentRule)
         .around(new JenkinsCredentialsRule(this).withCredentials('test_cfCredentialsId', 'test_cf', '********'))
@@ -488,6 +492,60 @@ class CloudFoundryDeployTest extends BasePiperTest {
         assertThat(writeInfluxMap.customDataMapTags.deployment_data.cfApiEndpoint, is('https://api.cf.eu10.hana.ondemand.com'))
         assertThat(writeInfluxMap.customDataMapTags.deployment_data.cfOrg, is('testOrg'))
         assertThat(writeInfluxMap.customDataMapTags.deployment_data.cfSpace, is('testSpace'))
+    }
+
+    @Test
+    void testTraceOutputOnVerbose() {
+
+        fileExistsRule.existingFiles.addAll(
+            'test.yml',
+            'cf.log'
+        )
+
+        new File(tmpDir, 'cf.log') << 'Hello SAP'
+
+        readYamlRule.registerYaml('test.yml', "applications: [[name: 'manifestAppName']]")
+        stepRule.step.cloudFoundryDeploy([
+            script: nullScript,
+            juStabUtils: utils,
+            jenkinsUtilsStub: new JenkinsUtilsMock(),
+            cloudFoundry: [
+                org: 'testOrg',
+                space: 'testSpace',
+                manifest: 'test.yml',
+                ],
+            cfCredentialsId: 'test_cfCredentialsId',
+            verbose: true
+        ])
+
+        assertThat(loggingRule.log, allOf(
+            containsString('### START OF CF CLI TRACE OUTPUT ###'),
+            containsString('Hello SAP'),
+            containsString('### END OF CF CLI TRACE OUTPUT ###')))
+    }
+
+    @Test
+    void testTraceNoTraceFileWritten() {
+
+        fileExistsRule.existingFiles.addAll(
+            'test.yml',
+        )
+
+        readYamlRule.registerYaml('test.yml', "applications: [[name: 'manifestAppName']]")
+        stepRule.step.cloudFoundryDeploy([
+            script: nullScript,
+            juStabUtils: utils,
+            jenkinsUtilsStub: new JenkinsUtilsMock(),
+            cloudFoundry: [
+                org: 'testOrg',
+                space: 'testSpace',
+                manifest: 'test.yml',
+                ],
+            cfCredentialsId: 'test_cfCredentialsId',
+            verbose: true
+        ])
+
+        assertThat(loggingRule.log, containsString('No trace file found'))
     }
 
 }
