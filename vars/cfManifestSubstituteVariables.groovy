@@ -49,17 +49,27 @@ import static com.sap.piper.Prerequisites.checkScript
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
 
 /**
- * Step that substitutes variables in a given YAML file with those specified in a another. The format to reference a variable
- * in the YAML file is to use double parentheses `((` and `))`, e.g. `((variableName))`.
- * A declaration of a variable and assignment of its value is simply done as a property in the variables YAML file.
+ * Step to substitute variables in a given YAML file with those specified in one or more variables files given by the
+ * `manifestVariablesFiles` parameter. This follows the behavior of `cf push --vars-file`, and can be
+ * used as a pre-deployment step if commands other than `cf push` are used for deployment (e.g. `cf blue-green-deploy`).
  *
- * The format follows [Cloud Foundry standards](https://docs.cloudfoundry.org/devguide/deploy-apps/manifest-attributes.html#variable-substitution)
+ * The format to reference a variable in the manifest YAML file is to use double parentheses `((` and `))`, e.g. `((variableName))`.
  *
- * The step is activated by the presence of both a `manifest.yml` and a variables file. Names of both files are configurable.
- * @param arguments - the arguments of this step.
+ * You can declare variable assignments as key value-pairs inside a YAML variables file following the
+ * [Cloud Foundry standards](https://docs.cloudfoundry.org/devguide/deploy-apps/manifest-attributes.html#variable-substitution) format.
+ *
+ * Optionally, you can also specify a direct list of key-value mappings for variables using the `manifestVariables` parameter.
+ * Variables given in the `manifestVariables` list will take precedence over those found in variables files. This follows
+ * the behavior of `cf push --var`, and works in combination with `manifestVariablesFiles`.
+ *
+ * The step is activated by the presence of the file specified by the `manifestFile` parameter and all variables files
+ * specified by the `manifestVariablesFiles` parameter, or if variables are passed in directly via `manifestVariables`.
+ *
+ * In case no `manifestVariablesFiles` were explicitly specified, a default named `manifest-variables.yml` will be looked
+ * for and if present will activate this step also. This is to support convention over configuration.
  */
 @GenerateDocumentation
-void call(Map<String, String> arguments) {
+void call(Map arguments = [:]) {
     handlePipelineStepErrors (stepName: STEP_NAME, stepParameters: arguments) {
         def script = checkScript(this, arguments)  ?: this
 

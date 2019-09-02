@@ -2,13 +2,6 @@
 
 ## ${docGenDescription}
 
-## Prerequisites
-
-This step is only relevant if both a `manifest.yml` and a corresponding variables Yaml file are found at the specified paths in the current source tree.
-The step will activate itself in this case, and tries to replace any variable references found in `manifest.yml` with the values found in the variables file.
-
-**Note:** It is possible to use one variables file for more than one `manifest.yml`.
-
 ## ${docGenParameters}
 
 ## ${docGenConfiguration}
@@ -31,44 +24,58 @@ If you prefer to generate a separate output file, use the step's `outputManifest
 Usage of pipeline step:
 
 ```groovy
-cfManifestSubstituteVariables
+cfManifestSubstituteVariables (
   script: this,
-  manifestFile: "path/to/manifest.yml",
-  variablesFile:"path/to/manifest-variables.yml"
+  manifestFile: "path/to/manifest.yml",                    //optional, default: manifest.yml
+  manifestVariablesFiles:"path/to/manifest-variables.yml"  //optional, default: manifest-variables.yml
+  manifestVariables: [[key : value], [key : value]]        //optional, default: []
+)
 ```
 
-For example, you can refer to the parameters using relative paths:
+For example, you can refer to the parameters using relative paths (similar to `cf push --vars-file`):
 
 ```groovy
-cfManifestSubstituteVariables
+cfManifestSubstituteVariables (
   script: this,
   manifestFile: "manifest.yml",
-  variablesFile:"manifest-variables.yml"
+  manifestVariablesFiles:"manifest-variables.yml"
+)
 ```
 
 You can also refer to parameters using absolute paths, like this:
 
 ```groovy
-cfManifestSubstituteVariables
+cfManifestSubstituteVariables (
   script: this,
   manifestFile: "\$\{WORKSPACE\}/manifest.yml",
-  variablesFile:"\$\{WORKSPACE\}/manifest-variables.yml",
+  manifestVariablesFiles:"\$\{WORKSPACE\}/manifest-variables.yml",
+)
+```
+
+Furthermore, you can also specify variables and their values directly (similar to `cf push --var`):
+
+```groovy
+cfManifestSubstituteVariables (
+  script: this,
+  manifestFile: "manifest.yml",
+  manifestVariablesFiles: "manifest-variables.yml",
+  manifestVariables: [[key1 : value1], [key2 : value2]]
+)
 ```
 
 If you are using the Cloud Foundry [Create-Service-Push](https://github.com/dawu415/CF-CLI-Create-Service-Push-Plugin) CLI plugin you will most likely also have a `services-manifest.yml` file.
 Also in this file you can specify variable references, that can be resolved from the same variables file, e.g. like this:
 
 ```groovy
-
 // resolve variables in manifest.yml
 cfManifestSubstituteVariables
   script: this,
   manifestFile: "manifest.yml",
-  variablesFile:"manifest-variables.yml"
+  manifestVariablesFiles:"manifest-variables.yml"
 
 // resolve variables in services-manifest.yml from same file.
 cfManifestSubstituteVariables
   script: this,
   manifestFile: "services-manifest.yml",
-  variablesFile:"manifest-variables.yml"
+  manifestVariablesFiles:"manifest-variables.yml"
 ```
