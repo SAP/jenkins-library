@@ -42,16 +42,6 @@ cfManifestSubstituteVariables (
 )
 ```
 
-You can also refer to parameters using absolute paths, like this:
-
-```groovy
-cfManifestSubstituteVariables (
-  script: this,
-  manifestFile: "\$\{WORKSPACE\}/manifest.yml",
-  manifestVariablesFiles:"\$\{WORKSPACE\}/manifest-variables.yml",
-)
-```
-
 Furthermore, you can also specify variables and their values directly (similar to `cf push --var`):
 
 ```groovy
