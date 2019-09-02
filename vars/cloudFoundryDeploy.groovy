@@ -266,7 +266,9 @@ def deployCfNative (config) {
 
         if(config.verbose || returnCode != 0) {
             if(fileExists(file: cfTraceFile)) {
+                echo  '### START OF CF CLI TRACE OUTPUT ###'
                 echo(message: readFile(file: cfTraceFile))
+                echo '### END OF CF CLI TRACE OUTPUT ###'
             } else {
                 echo "No trace file found at '${cfTraceFile}'"
             }
@@ -344,7 +346,9 @@ def deployMta (config) {
             cf ${deployCommand} ${config.mtaPath} ${config.mtaDeployParameters} ${config.mtaExtensionDescriptor}"""
         if(config.verbose || returnCode != 0) {
             if(fileExists(file: cfTraceFile)) {
+                echo  '### START OF CF CLI TRACE OUTPUT ###'
                 echo(message: readFile(file: cfTraceFile))
+                echo '### END OF CF CLI TRACE OUTPUT ###'
             } else {
                 echo "No trace file found at '${cfTraceFile}'"
             }
