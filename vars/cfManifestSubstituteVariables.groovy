@@ -140,6 +140,7 @@ void call(Map<String, String> arguments) {
  * @param manifestFilePath - the path to the manifest file to replace variables in.
  * @param manifestVariablesFiles - the paths to variables substitution files.
  * @param manifestVariablesList - the list of variables data to replace variables with.
+ * @param yamlUtils - the `YamlUtils` used for variable substitution.
  * @param context - an `ExecutionContext` to examine if any variables have been replaced and should be written.
  * @param debugHelper - a debug output helper.
  * @return an Object graph of Yaml data with variables substituted (if any were found and could be replaced).
