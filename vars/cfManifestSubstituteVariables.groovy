@@ -48,7 +48,7 @@ import static com.sap.piper.Prerequisites.checkScript
 
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
 
-/**
+/*
  * Step to substitute variables in a given YAML file with those specified in one or more variables files given by the
  * `manifestVariablesFiles` parameter. This follows the behavior of `cf push --vars-file`, and can be
  * used as a pre-deployment step if commands other than `cf push` are used for deployment (e.g. `cf blue-green-deploy`).
