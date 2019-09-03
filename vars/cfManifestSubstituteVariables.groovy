@@ -145,7 +145,7 @@ void call(Map arguments = [:]) {
     }
 }
 
-/**
+/*
  * Substitutes variables specified in files and as lists in a given manifest file.
  * @param manifestFilePath - the path to the manifest file to replace variables in.
  * @param manifestVariablesFiles - the paths to variables substitution files.
@@ -183,7 +183,7 @@ private Object substitute(String manifestFilePath, List<String> manifestVariable
     return result
 }
 
-/**
+/*
  * Loads the contents of a manifest.yml file by parsing Yaml and returning the
  * object graph. May return a `List<Object>`  (in case more YAML segments are in the file)
  * or a `Map<String, Object>` in case there is just one segment.
@@ -206,7 +206,7 @@ private Object loadManifestData(String manifestFilePath, DebugHelper debugHelper
     }
 }
 
-/**
+/*
  * Loads the contents of a manifest variables file by parsing Yaml and returning the
  * object graph. May return a `List<Object>`  (in case more YAML segments are in the file)
  * or a `Map<String, Object>` in case there is just one segment.
@@ -229,7 +229,7 @@ private Object loadManifestVariableFileData(String variablesFilePath, DebugHelpe
     }
 }
 
-/**
+/*
  * Checks if all file paths given in the list exist as files.
  * @param manifestVariablesFiles - the list of file paths pointing to manifest variables files.
  * @return `true`, if all given files exist, `false` otherwise.
@@ -245,7 +245,7 @@ private boolean allManifestVariableFilesExist(List<String> manifestVariablesFile
     return true
 }
 
-/**
+/*
  * Removes the given file, if it exists.
  * @param filePath - the path to the file to remove.
  */
