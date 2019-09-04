@@ -300,7 +300,7 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
         assertThat(bodyExecuted, is(true))
 
         assertThat(containersList, allOf(hasItem('postgres'), hasItem('mavenexecute')))
-        assertThat(imageList, allOf(hasItem('maven:3.5-jdk-8-alpine'), hasItem('postgres'),))
+        assertThat(imageList, allOf(hasItem('maven:3.5-jdk-8-alpine'), hasItem('postgres')))
     }
 
     @Test
