@@ -1,6 +1,6 @@
 import com.sap.piper.k8s.ContainerMap
 import com.sap.piper.JenkinsUtils
-import com.sap.piper.k8s.SidecarUtils
+import com.sap.piper.SidecarUtils
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test

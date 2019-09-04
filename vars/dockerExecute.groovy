@@ -1,4 +1,4 @@
-import com.sap.piper.k8s.SidecarUtils
+import com.sap.piper.SidecarUtils
 
 import static com.sap.piper.Prerequisites.checkScript
 
@@ -126,6 +126,8 @@ void call(Map parameters = [:], body) {
             .mixin(parameters, PARAMETER_KEYS)
             .use()
 
+        SidecarUtils sidecarUtils = new SidecarUtils(script)
+
         new Utils().pushToSWA([
             step         : STEP_NAME,
             stepParamKey1: 'scriptMissing',
@@ -222,7 +224,7 @@ void call(Map parameters = [:], body) {
                                 config.dockerOptions.add("--network-alias ${config.dockerName}")
                             config.dockerOptions.add("--network ${networkName}")
                             if (config.sidecarReadyCommand) {
-                                SidecarUtils.waitForSidecarReadyOnDocker(container.id, config.sidecarReadyCommand, script)
+                                sidecarUtils.waitForSidecarReadyOnDocker(container.id, config.sidecarReadyCommand)
                             }
                             image.inside(getDockerOptions(config.dockerEnvVars, config.dockerVolumeBind, config.dockerOptions)) {
                                 echo "[INFO][${STEP_NAME}] Running with sidecar container."

@@ -1,4 +1,4 @@
-import com.sap.piper.k8s.SidecarUtils
+import com.sap.piper.SidecarUtils
 
 import static com.sap.piper.Prerequisites.checkScript
 
@@ -230,7 +230,7 @@ void executeOnPod(Map config, utils, Closure body, Script script) {
      * In case third case, we need to create the 'container' stash to bring the modified content back to the host.
      */
     try {
-
+        SidecarUtils sidecarUtils = new SidecarUtils(script)
         def stashContent = config.stashContent
         if (config.containerName && stashContent.isEmpty()) {
             stashContent = [stashWorkspace(config, 'workspace')]
@@ -238,7 +238,7 @@ void executeOnPod(Map config, utils, Closure body, Script script) {
         podTemplate(getOptions(config)) {
             node(config.uniqueId) {
                 if (config.sidecarReadyCommand) {
-                    SidecarUtils.waitForSidecarReadyOnKubernetes(config.sidecarName, config.sidecarReadyCommand, script)
+                    sidecarUtils.waitForSidecarReadyOnKubernetes(config.sidecarName, config.sidecarReadyCommand)
                 }
                 if (config.containerName) {
                     Map containerParams = [name: config.containerName]
