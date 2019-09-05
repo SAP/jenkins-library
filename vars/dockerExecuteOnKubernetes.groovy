@@ -343,10 +343,11 @@ private List getContainerList(config) {
     }
     config.containerMap.each { imageName, containerName ->
         def containerPullImage = config.containerPullImageFlags?.get(imageName)
+        boolean pullImage = containerPullImage != null ? containerPullImage : config.dockerPullImage // dockerPullImage is per default set to true
         def containerSpec = [
             name           : containerName.toLowerCase(),
             image          : imageName,
-            imagePullPolicy: config.dockerPullImage || containerPullImage ? "Always" : "IfNotPresent",
+            imagePullPolicy: pullImage ? "Always" : "IfNotPresent",
             env            : getContainerEnvs(config, imageName)
         ]
 
