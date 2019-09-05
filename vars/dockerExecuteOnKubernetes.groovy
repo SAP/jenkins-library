@@ -346,7 +346,7 @@ private List getContainerList(config) {
         def containerSpec = [
             name           : containerName.toLowerCase(),
             image          : imageName,
-            imagePullPolicy: containerPullImage ? "Always" : "IfNotPresent",
+            imagePullPolicy: config.dockerPullImage || containerPullImage ? "Always" : "IfNotPresent",
             env            : getContainerEnvs(config, imageName)
         ]
 

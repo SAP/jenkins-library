@@ -129,11 +129,11 @@ void call(Map parameters = [:], body) {
         SidecarUtils sidecarUtils = new SidecarUtils(script)
 
         new Utils().pushToSWA([
-            step         : STEP_NAME,
+            step: STEP_NAME,
             stepParamKey1: 'scriptMissing',
-            stepParam1   : parameters?.script == null,
+            stepParam1: parameters?.script == null,
             stepParamKey2: 'kubernetes',
-            stepParam2   : isKubernetes()
+            stepParam2: isKubernetes()
         ], config)
 
         if (isKubernetes() && config.dockerImage) {
@@ -155,16 +155,16 @@ void call(Map parameters = [:], body) {
                 }
 
                 Map paramMap = [
-                    script                 : script,
-                    containerCommands      : [:],
-                    containerShell         : [:],
-                    containerEnvVars       : [:],
+                    script: script,
+                    containerCommands: [:],
+                    containerShell: [:],
+                    containerEnvVars: [:],
                     containerPullImageFlags: [:],
-                    containerMap           : [:],
-                    containerName          : config.dockerName,
-                    containerPortMappings  : [:],
-                    containerWorkspaces    : [:],
-                    stashContent           : config.stashContent
+                    containerMap: [:],
+                    containerName: config.dockerName,
+                    containerPortMappings: [:],
+                    containerWorkspaces: [:],
+                    stashContent: config.stashContent
                 ]
 
                 paramMap.containerEnvVars[config.dockerImage] = config.dockerEnvVars
@@ -182,7 +182,7 @@ void call(Map parameters = [:], body) {
                 paramMap.sidecarEnvVars = parameters.sidecarEnvVars
 
                 dockerExecuteOnKubernetes(paramMap) {
-                    echo "[INFO][${STEP_NAME}] Executing inside a Kubernetes Pod with sidecar container"
+                    echo "[INFO][${STEP_NAME}] Executing inside a Kubernetes Pod"
                     body()
                 }
             }
