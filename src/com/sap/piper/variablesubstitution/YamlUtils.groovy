@@ -33,8 +33,7 @@ class YamlUtils implements Serializable {
      * @param variablesYaml - the variables Yaml data as `Object`. Can be either of type `Map` or `List` and should
      *  contain variables names and values to replace variable references contained in `inputYaml`.
      * @param context - an `ExecutionContext` that can be used to query whether the script actually replaced any variables.
-     * @param verbose - indicates if debug logs should be verbose.
-     * @return
+     * @return the YAML object graph of substituted data.
      */
     Object substituteVariables(Object inputYaml, Object variablesYaml, ExecutionContext context = null) {
         if (!inputYaml) {
@@ -69,7 +68,8 @@ class YamlUtils implements Serializable {
                 Object substitute = variableSubstitutes.get(referenceName)
 
                 if (null == substitute) {
-                    throw new AbortException("[YamlUtils] Found variable reference ${referenceToReplace} in input Yaml but no variable value to replace it with Leaving it unresolved. Check your variables Yaml data and make sure the variable is properly declared.")
+                    logger?.debug("[YamlUtils] WARNING - Found variable reference ${referenceToReplace} in input Yaml but no variable value to replace it with Leaving it unresolved. Check your variables Yaml data and make sure the variable is properly declared.")
+                    return manifestNode
                 }
 
                 script.echo "[YamlUtils] Replacing: ${referenceToReplace} with ${substitute}"
@@ -93,7 +93,7 @@ class YamlUtils implements Serializable {
             }
 
             if (context) {
-                context.noVariablesReplaced = false // remember that variables were found in the YAML file that have been replaced.
+                context.variablesReplaced = true // remember that variables were found in the YAML file that have been replaced.
             }
 
             return complexResult ?: stringNode
@@ -125,6 +125,7 @@ class YamlUtils implements Serializable {
             return manifestNode
         }
     }
+
     /**
      * Turns the parsed variables Yaml data into a
      * single map. Takes care of multiple YAML sections (separated by ---) if they are found and flattens them into a single
@@ -162,6 +163,7 @@ class YamlUtils implements Serializable {
         }
         return substitutes
     }
+
     /**
      * Returns true, if the given object node contains variable references.
      * @param node - the object-typed value to check for variable references.
@@ -176,6 +178,7 @@ class YamlUtils implements Serializable {
         String stringNode = node as String
         return stringNode.contains("((") && stringNode.contains("))")
     }
+
     /**
      * Returns true, if and only if the entire node passed in as a parameter
      * is a variable reference. Returns false if the node references multiple

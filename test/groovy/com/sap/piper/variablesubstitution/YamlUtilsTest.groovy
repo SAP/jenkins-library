@@ -184,7 +184,7 @@ class YamlUtilsTest extends BasePiperTest {
 
         //Check that nothing was written
         assertNotNull(result)
-        assertTrue(context.noVariablesReplaced)
+        assertFalse(context.variablesReplaced)
 
         // check that the step was marked as a success (even if it did do nothing).
         assertJobStatusSuccess()
