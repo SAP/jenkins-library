@@ -312,7 +312,7 @@ def deployCfNative (config, script) {
             cf ${deployCommand} ${config.cloudFoundry.appName ?: ''} ${deployOptions} -f '${config.cloudFoundry.manifest}' ${config.smokeTest}
             """
         if(returnCode != 0){
-            error "[ERROR][${STEP_NAME}] The execution of the deploy command failed, see the log for details."
+            error "[${STEP_NAME}] ERROR: The execution of the deploy command failed, see the log for details."
         }
         stopOldAppIfRunning(config)
         sh "cf logout"
@@ -323,11 +323,11 @@ private varOptions(Map config) {
     String varPart = ''
     if (config.cloudFoundry.manifestVariables) {
         if (!(config.cloudFoundry.manifestVariables in List)) {
-            error "parameter config.cloudFoundry.manifestVariables is not a List!"
+            error "[${STEP_NAME}] ERROR: Parameter config.cloudFoundry.manifestVariables is not a List!"
         }
         config.cloudFoundry.manifestVariables.each {
             if (!(it in Map)) {
-                error "parameter config.cloudFoundry.manifestVariables.$it is not a Map!"
+                error "[${STEP_NAME}] ERROR: Parameter config.cloudFoundry.manifestVariables.$it is not a Map!"
             }
             it.keySet().each { varKey ->
                 String varValue=BashUtils.quoteAndEscape(it.get(varKey).toString())
@@ -344,13 +344,13 @@ private String varFileOptions(Map config) {
     String varFilePart = ''
     if (config.cloudFoundry.manifestVariablesFiles) {
         if (!(config.cloudFoundry.manifestVariablesFiles in List)) {
-            error "parameter config.cloudFoundry.manifestVariablesFiles is not a List!"
+            error "[${STEP_NAME}] ERROR: Parameter config.cloudFoundry.manifestVariablesFiles is not a List!"
         }
         config.cloudFoundry.manifestVariablesFiles.each {
             if (fileExists(it)) {
                 varFilePart += " --vars-file ${BashUtils.quoteAndEscape(it)}"
             } else {
-                echo "We skip adding none existing file '$it' as a vars-file to the cf create-service-push call"
+                echo "[WARNING] We skip adding not-existing file '$it' as a vars-file to the cf create-service-push call"
             }
         }
     }
@@ -369,7 +369,7 @@ private void stopOldAppIfRunning(Map config) {
             String cfStopOutput = readFile(file: cfStopOutputFileName)
 
             if (!cfStopOutput.contains("$oldAppName not found")) {
-                error "Could not stop application $oldAppName. Error: $cfStopOutput"
+                error "[${STEP_NAME}] ERROR: Could not stop application $oldAppName. Error: $cfStopOutput"
             }
         }
     }
@@ -402,7 +402,7 @@ def deployMta (config) {
             cf plugins
             cf ${deployCommand} ${config.mtaPath} ${config.mtaDeployParameters} ${config.mtaExtensionDescriptor}"""
         if(returnCode != 0){
-            error "[ERROR][${STEP_NAME}] The execution of the deploy command failed, see the log for details."
+            error "[${STEP_NAME}] ERROR: The execution of the deploy command failed, see the log for details."
         }
         sh "cf logout"
     }

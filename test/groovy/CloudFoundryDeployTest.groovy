@@ -356,7 +356,7 @@ class CloudFoundryDeployTest extends BasePiperTest {
         readYamlRule.registerYaml('test.yml', "applications: [[]]")
 
         thrown.expect(hudson.AbortException)
-        thrown.expectMessage("Could not stop application testAppName-old. Error: any error message")
+        thrown.expectMessage("[cloudFoundryDeploy] ERROR: Could not stop application testAppName-old. Error: any error message")
 
         stepRule.step.cloudFoundryDeploy([
             script: nullScript,
@@ -497,7 +497,7 @@ class CloudFoundryDeployTest extends BasePiperTest {
     }
 
     @Test
-    void testCfPushDeploymentWithVariableSubstitution() {
+    void testCfPushDeploymentWithVariableSubstitutionFromFile() {
         readYamlRule.registerYaml('test.yml', "applications: [[name: '((appName))']]")
         fileExistsRule.registerExistingFile('test.yml')
         fileExistsRule.registerExistingFile('vars.yml')
@@ -527,6 +527,29 @@ class CloudFoundryDeployTest extends BasePiperTest {
     }
 
     @Test
+    void testCfPushDeploymentWithVariableSubstitutionFromNotExistingFilePrintsWarning() {
+        readYamlRule.registerYaml('test.yml', "applications: [[name: '((appName))']]")
+        fileExistsRule.registerExistingFile('test.yml')        
+
+        stepRule.step.cloudFoundryDeploy([
+            script: nullScript,
+            juStabUtils: utils,
+            jenkinsUtilsStub: new JenkinsUtilsMock(),
+            deployTool: 'cf_native',
+            cfOrg: 'testOrg',
+            cfSpace: 'testSpace',
+            cfCredentialsId: 'test_cfCredentialsId',
+            cfAppName: 'testAppName',
+            cfManifest: 'test.yml',
+            cfManifestVariablesFiles: ['vars.yml']
+        ])
+
+        // asserts
+        assertThat(shellRule.shell, hasItem(containsString("cf push testAppName -f 'test.yml'")))       
+        assertThat(loggingRule.log, containsString("[WARNING] We skip adding not-existing file 'vars.yml' as a vars-file to the cf create-service-push call"))
+    }
+
+    @Test
     void testCfPushDeploymentWithVariableSubstitutionFromVarsList() {
         readYamlRule.registerYaml('test.yml', "applications: [[name: '((appName))']]")
         List varsList = [["appName" : "testApplicationFromVarsList"]]                
@@ -545,7 +568,6 @@ class CloudFoundryDeployTest extends BasePiperTest {
         ])
 
         // asserts
-
         assertThat(dockerExecuteRule.dockerParams, hasEntry('dockerImage', 's4sdk/docker-cf-cli'))
         assertThat(dockerExecuteRule.dockerParams, hasEntry('dockerWorkspace', '/home/piper'))
         assertThat(dockerExecuteRule.dockerParams.dockerEnvVars, hasEntry('STATUS_CODE', "${200}"))
@@ -553,6 +575,31 @@ class CloudFoundryDeployTest extends BasePiperTest {
         assertThat(shellRule.shell, hasItem(containsString("cf push testAppName --var appName='testApplicationFromVarsList' -f 'test.yml'")))
         assertThat(shellRule.shell, hasItem(containsString("cf logout")))
     }
+
+    @Test
+    void testCfPushDeploymentWithVariableSubstitutionFromVarsListNotAList() {
+        readYamlRule.registerYaml('test.yml', "applications: [[name: '((appName))']]")        
+        
+        thrown.expect(hudson.AbortException)
+        thrown.expectMessage('[cloudFoundryDeploy] ERROR: Parameter config.cloudFoundry.manifestVariables is not a List!')
+
+
+        stepRule.step.cloudFoundryDeploy([
+            script: nullScript,
+            juStabUtils: utils,
+            jenkinsUtilsStub: new JenkinsUtilsMock(),
+            deployTool: 'cf_native',
+            cfOrg: 'testOrg',
+            cfSpace: 'testSpace',
+            cfCredentialsId: 'test_cfCredentialsId',
+            cfAppName: 'testAppName',
+            cfManifest: 'test.yml',
+            cfManifestVariables: 'notAList'
+        ])
+       
+    }
+
+
 
     @Test
     void testCfPushDeploymentWithVariableSubstitutionFromVarsListAndVarsFile() {
