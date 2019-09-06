@@ -300,6 +300,7 @@ class DockerExecuteTest extends BasePiperTest {
         binding.setVariable('env', [ON_K8S: 'true'])
 
         helper.registerAllowedMethod('dockerExecuteOnKubernetes', [Map.class, Closure.class], { params, body ->
+            body()
             SidecarUtils sidecarUtils = new SidecarUtils(nullScript)
             sidecarUtils.waitForSidecarReadyOnKubernetes(params.sidecarName, params.sidecarReadyCommand)
         })
