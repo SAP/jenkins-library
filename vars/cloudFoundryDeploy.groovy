@@ -235,7 +235,12 @@ private void handleCFNativeDeployment(Map config, script) {
     config.smokeTest = '--smoke-test $(pwd)/' + config.smokeTestScript
     sh "chmod +x ${config.smokeTestScript}"
 
-    echo "[${STEP_NAME}] CF native deployment (${config.deployType}) with cfAppName=${config.cloudFoundry.appName}, cfManifest=${config.cloudFoundry.manifest}, cfManifestVariables=${config.cloudFoundry.manifestVariables?:'none'}, smokeTestScript=${config.smokeTestScript}"
+    echo "[${STEP_NAME}] CF native deployment (${config.deployType}) with:"
+    echo "[${STEP_NAME}] - cfAppName=${config.cloudFoundry.appName}"
+    echo "[${STEP_NAME}] - cfManifest=${config.cloudFoundry.manifest}"
+    echo "[${STEP_NAME}] - cfManifestVariables=${config.cloudFoundry.manifestVariables?:'none specified'}"
+    echo "[${STEP_NAME}] - cfManifestVariablesFiles=${config.cloudFoundry.manifestVariablesFiles?:'none specified'}"
+    echo "[${STEP_NAME}] - smokeTestScript=${config.smokeTestScript}"
 
     dockerExecute(
         script: script,
