@@ -129,8 +129,8 @@ class DockerExecuteTest extends BasePiperTest {
             bodyExecuted = true
         }
         assertTrue(loggingRule.log.contains('Executing inside a Kubernetes Pod'))
-        assertThat(kubernetesConfig.containerCommands['maven:3.5-jdk-8-alpine'], is('/busybox/tail -f /dev/null'))
-        assertThat(kubernetesConfig.containerShell['maven:3.5-jdk-8-alpine'], is('/busybox/sh'))
+        assertThat(kubernetesConfig.containerCommand, is('/busybox/tail -f /dev/null'))
+        assertThat(kubernetesConfig.containerShell, is('/busybox/sh'))
         assertTrue(bodyExecuted)
     }
 
@@ -267,13 +267,14 @@ class DockerExecuteTest extends BasePiperTest {
         binding.setVariable('env', [ON_K8S: 'true'])
         helper.registerAllowedMethod('dockerExecuteOnKubernetes', [Map.class, Closure.class], { params, body ->
             dockerExecuteOnKubernetesCalled = true
-            assertThat(params.containerMap, allOf(hasEntry('maven:3.5-jdk-8-alpine', 'maven')))
-            assertThat(params.containerEnvVars, allOf(hasEntry('maven:3.5-jdk-8-alpine', null)))
+            assertThat(params.dockerImage, is('maven:3.5-jdk-8-alpine'))
+            assertThat(params.containerName, is('maven'))
             assertThat(params.sidecarEnvVars, is(['testEnv': 'testVal']))
             assertThat(params.sidecarName, is('selenium'))
+            assertThat(params.sidecarImage, is('selenium/standalone-chrome'))
             assertThat(params.containerName, is('maven'))
             assertThat(params.containerPortMappings['selenium/standalone-chrome'], hasItem(allOf(hasEntry('containerPort', 4444), hasEntry('hostPort', 4444))))
-            assertThat(params.containerWorkspaces['maven:3.5-jdk-8-alpine'], is('/home/piper'))
+            assertThat(params.dockerWorkspace, is('/home/piper'))
             body()
         })
         stepRule.step.dockerExecute(

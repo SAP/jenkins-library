@@ -153,37 +153,42 @@ void call(Map parameters = [:], body) {
                 if (!config.dockerName) {
                     config.dockerName = UUID.randomUUID().toString()
                 }
-
-                Map paramMap = [
-                    script: script,
-                    containerCommands: [:],
-                    containerShell: [:],
-                    containerEnvVars: [:],
-                    containerPullImageFlags: [:],
-                    containerMap: [:],
-                    containerName: config.dockerName,
-                    containerPortMappings: [:],
-                    containerWorkspaces: [:],
-                    stashContent: config.stashContent
-                ]
-
-                paramMap.containerEnvVars[config.dockerImage] = config.dockerEnvVars
-                paramMap.containerPullImageFlags[config.dockerImage] = config.dockerPullImage
-                paramMap.containerMap[config.dockerImage] = config.dockerName
-                paramMap.containerPortMappings = config.containerPortMappings
-                paramMap.containerWorkspaces[config.dockerImage] = config.dockerWorkspace
-                paramMap.containerCommands[config.dockerImage] = config.containerCommand
-                paramMap.containerShell[config.dockerImage] = config.containerShell
-
-                paramMap.sidecarName = parameters.sidecarName
-                paramMap.sidecarImage = parameters.sidecarImage
-                paramMap.sidecarPullImage = parameters.sidecarPullImage
-                paramMap.sidecarReadyCommand = parameters.sidecarReadyCommand
-                paramMap.sidecarEnvVars = parameters.sidecarEnvVars
-
-                dockerExecuteOnKubernetes(paramMap) {
-                    echo "[INFO][${STEP_NAME}] Executing inside a Kubernetes Pod"
-                    body()
+                if (!config.sidecarImage) {
+                    dockerExecuteOnKubernetes(
+                        script: script,
+                        containerName: config.dockerName,
+                        containerCommand: config.containerCommand,
+                        containerShell: config.containerShell,
+                        dockerImage: config.dockerImage,
+                        dockerPullImage: config.dockerPullImage,
+                        dockerEnvVars: config.dockerEnvVars,
+                        dockerWorkspace: config.dockerWorkspace,
+                        stashContent: config.stashContent
+                    ){
+                        echo "[INFO][${STEP_NAME}] Executing inside a Kubernetes Pod"
+                        body()
+                    }
+                } else {
+                    dockerExecuteOnKubernetes(
+                        script: script,
+                        containerName: config.dockerName,
+                        containerCommand: config.containerCommand,
+                        containerShell: config.containerShell,
+                        dockerImage: config.dockerImage,
+                        dockerPullImage: config.dockerPullImage,
+                        dockerEnvVars: config.dockerEnvVars,
+                        dockerWorkspace: config.dockerWorkspace,
+                        stashContent: config.stashContent,
+                        containerPortMappings: config.containerPortMappings,
+                        sidecarName: parameters.sidecarName,
+                        sidecarImage: parameters.sidecarImage,
+                        sidecarPullImage: parameters.sidecarPullImage,
+                        sidecarReadyCommand: parameters.sidecarReadyCommand,
+                        sidecarEnvVars: parameters.sidecarEnvVars
+                    ) {
+                        echo "[INFO][${STEP_NAME}] Executing inside a Kubernetes Pod"
+                        body()
+                    }
                 }
             }
         } else {
