@@ -6,6 +6,7 @@ import com.sap.piper.GenerateDocumentation
 import com.sap.piper.Utils
 import com.sap.piper.ConfigurationHelper
 
+import groovy.text.GStringTemplateEngine
 import groovy.transform.Field
 
 @Field String STEP_NAME = getClass().getName()
@@ -41,7 +42,10 @@ import groovy.transform.Field
     'githubOrg',
     /** Allows to overwrite the GitHub repository.*/
     'githubRepo',
-    /** Allows to specify the content which will appear for the release.*/
+    /** Allows to specify the content which will appear for the release.
+     * It is possible to define it as Groovy template as well in order to bring in dynamic information.
+     * Following information can be used: everything contained in `config` as well as information from `commonPipelineEnvironment`.
+     */
     'releaseBodyHeader',
     /** Defines the version number which will be written as tag as well as release name.*/
     'version'
@@ -86,7 +90,18 @@ void call(Map parameters = [:]) {
         new Utils().pushToSWA([step: STEP_NAME], config)
 
         withCredentials([string(credentialsId: config.githubTokenCredentialsId, variable: 'TOKEN')]) {
-            def releaseBody = config.releaseBodyHeader?"${config.releaseBodyHeader}<br />":''
+
+            def releaseBodyHeader = ''
+            if (config.releaseBodyHeader) {
+                releaseBodyHeader = GStringTemplateEngine.newInstance()
+                    .createTemplate(config.releaseBodyHeader)
+                    .make([
+                        config: config,
+                        commonPipelineEnvironment: script.commonPipelineEnvironment
+                    ]).toString()
+                releaseBodyHeader += '<br />'
+            }
+            def releaseBody = releaseBodyHeader
             def content = getLastRelease(config, TOKEN)
             if (config.addClosedIssues)
                 releaseBody += addClosedIssue(config, TOKEN, content.published_at)
