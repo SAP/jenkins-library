@@ -61,5 +61,5 @@ steps:
 
 For the detailed description of the relevant parameters, see:
 
-* [mtaBuild](https://sap.github.io/jenkins-library/steps/mtaBuild/)
-* [cloudFoundryDeploy](https://sap.github.io/jenkins-library/steps/cloudFoundryDeploy/)
+* [mtaBuild](../../../steps/mtaBuild/)
+* [cloudFoundryDeploy](../../../steps/cloudFoundryDeploy/)

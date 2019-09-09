@@ -28,7 +28,7 @@ On the project level, provide and adjust the following template:
 
 This scenario combines various different steps to create a complete pipeline.
 
-In this scenario, we want to show how to build an application based on SAPUI5 or SAP Fiori by using the multi-target application (MTA) concept and how to deploy the build result into an SAP Cloud Platform account in the Neo environment. This document comprises the [mtaBuild](https://sap.github.io/jenkins-library/steps/mtaBuild/) and the [neoDeploy](https://sap.github.io/jenkins-library/steps/neoDeploy/) steps.
+In this scenario, we want to show how to build an application based on SAPUI5 or SAP Fiori by using the multi-target application (MTA) concept and how to deploy the build result into an SAP Cloud Platform account in the Neo environment. This document comprises the [mtaBuild](../../../steps/mtaBuild/) and the [neoDeploy](../../../steps/neoDeploy/) steps.
 
 ![This pipeline in Jenkins Blue Ocean](images/pipeline.jpg)
 ###### Screenshot: Build and Deploy Process in Jenkins
@@ -82,5 +82,5 @@ steps:
 
 For the detailed description of the relevant parameters, see:
 
-* [mtaBuild](https://sap.github.io/jenkins-library/steps/mtaBuild/)
-* [neoDeploy](https://sap.github.io/jenkins-library/steps/neoDeploy/)
+* [mtaBuild](../../../steps/mtaBuild/)
+* [neoDeploy](../../../steps/neoDeploy/)
