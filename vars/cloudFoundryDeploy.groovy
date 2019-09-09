@@ -21,6 +21,19 @@ import groovy.transform.Field
          */
         'apiEndpoint',
         /**
+         * Addition command line options for cf login command.
+         * No escaping/quoting is performed. Not recommanded for productive environments.
+         * @parentConfigKey cloudFoundry
+         */
+        'loginOpts',
+        /**
+         *
+         * Additional comand line options for cf deploy command.
+         * No escaping/quoting is performed. Not recommanded for productive environments.
+         * @parentConfigKey cloudFoundry
+         */
+        'deployOpts',
+        /**
          * Defines the name of the application to be deployed to the Cloud Foundry space.
          * @parentConfigKey cloudFoundry
          */
@@ -255,9 +268,9 @@ def deployCfNative (config) {
             set +x
             set -e
             export HOME=${config.dockerWorkspace}
-            cf login -u \"${username}\" -p '${password}' -a ${config.cloudFoundry.apiEndpoint} -o \"${config.cloudFoundry.org}\" -s \"${config.cloudFoundry.space}\"
+            cf login -u \"${username}\" -p '${password}' -a ${config.cloudFoundry.apiEndpoint} -o \"${config.cloudFoundry.org}\" -s \"${config.cloudFoundry.space}\" ${config.cloudFoundry.loginOpts}
             cf plugins
-            cf ${deployCommand} ${config.cloudFoundry.appName ?: ''} ${blueGreenDeployOptions} -f '${config.cloudFoundry.manifest}' ${config.smokeTest}
+            cf ${deployCommand} ${config.cloudFoundry.appName ?: ''} ${blueGreenDeployOptions} -f '${config.cloudFoundry.manifest}' ${config.smokeTest} ${config.cloudFoundry.deployOpts}
             """
         if(returnCode != 0){
             error "[ERROR][${STEP_NAME}] The execution of the deploy command failed, see the log for details."
@@ -324,9 +337,9 @@ def deployMta (config) {
             set +x
             set -e
             cf api ${config.cloudFoundry.apiEndpoint}
-            cf login -u ${username} -p '${password}' -a ${config.cloudFoundry.apiEndpoint} -o \"${config.cloudFoundry.org}\" -s \"${config.cloudFoundry.space}\"
+            cf login -u ${username} -p '${password}' -a ${config.cloudFoundry.apiEndpoint} -o \"${config.cloudFoundry.org}\" -s \"${config.cloudFoundry.space}\" ${config.cloudFoundry.loginOpts}
             cf plugins
-            cf ${deployCommand} ${config.mtaPath} ${config.mtaDeployParameters} ${config.mtaExtensionDescriptor}"""
+            cf ${deployCommand} ${config.mtaPath} ${config.mtaDeployParameters} ${config.mtaExtensionDescriptor} ${config.cloudFoundry.deployOpts}"""
         if(returnCode != 0){
             error "[ERROR][${STEP_NAME}] The execution of the deploy command failed, see the log for details."
         }

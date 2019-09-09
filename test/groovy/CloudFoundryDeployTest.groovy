@@ -490,4 +490,29 @@ class CloudFoundryDeployTest extends BasePiperTest {
         assertThat(writeInfluxMap.customDataMapTags.deployment_data.cfSpace, is('testSpace'))
     }
 
+    @Test
+    void testAdditionOpts() {
+
+        stepRule.step.cloudFoundryDeploy([
+            script: nullScript,
+            juStabUtils: utils,
+            jenkinsUtilsStub: new JenkinsUtilsMock(),
+            cloudFoundry: [
+                org: 'testOrg',
+                space: 'testSpace',
+                loginOpts: '--some-login-opt value',
+                deployOpts: '--some-deploy-opt value'
+            ],
+            cfCredentialsId: 'test_cfCredentialsId',
+            deployTool: 'mtaDeployPlugin',
+            deployType: 'blue-green',
+            mtaPath: 'target/test.mtar'
+        ])
+
+        assertThat(shellRule.shell, hasItem(
+            stringContainsInOrder([
+                'cf login ', '--some-login-opt value',
+                'cf bg-deploy', '--some-deploy-opt value'])))
+
+    }
 }
