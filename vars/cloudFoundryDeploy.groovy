@@ -228,15 +228,16 @@ private void handleMTADeployment(Map config, script) {
 private void handleCFNativeDeployment(Map config, script) {
     config.smokeTest = ''
 
-    if (config.smokeTestScript == 'blueGreenCheckScript.sh') {
-        writeFile file: config.smokeTestScript, text: libraryResource(config.smokeTestScript)
+    if (config.deployType == 'blue-green') {
+        prepareBlueGreenCfNativeDeploy(config,script)
+    } else {
+        config.deployCommand = 'push'
+        config.deployOptions = "${varOptions(config)}${varFileOptions(config)}"        
     }
-
-    config.smokeTest = '--smoke-test $(pwd)/' + config.smokeTestScript
-    sh "chmod +x ${config.smokeTestScript}"
 
     echo "[${STEP_NAME}] CF native deployment (${config.deployType}) with cfAppName=${config.cloudFoundry.appName}, cfManifest=${config.cloudFoundry.manifest}, cfManifestVariables=${config.cloudFoundry.manifestVariables?:'none'}, smokeTestScript=${config.smokeTestScript}"
 
+    checkIfAppNameIsAvailable(config)  
     dockerExecute(
         script: script,
         dockerImage: config.dockerImage,
@@ -266,42 +267,7 @@ def deployCfNative (config, script) {
         passwordVariable: 'password',
         usernameVariable: 'username'
     )]) {
-        def deployCommand = ''
-        def deployOptions = ''
-
-        if (config.deployType == 'blue-green') {
-            deployCommand = 'blue-green-deploy'
-            cfManifestSubstituteVariables(
-                script: script,
-                manifestFile: config.cloudFoundry.manifest,
-                manifestVariablesFiles: config.cloudFoundry.manifestVariablesFiles,
-                manifestVariables: config.cloudFoundry.manifestVariables
-            )
-            handleLegacyCfManifest(config)
-
-            if (!config.keepOldInstance) {
-                deployOptions = '--delete-old-apps'
-            }
-        } else {
-            deployCommand = 'push'
-            deployOptions = "${varOptions(config)}${varFileOptions(config)}"
-            config.smokeTest = ''
-        }
-
-        // check if appName is available
-        if (config.cloudFoundry.appName == null || config.cloudFoundry.appName == '') {
-            if (config.deployType == 'blue-green') {
-                error "[${STEP_NAME}] ERROR: Blue-green plugin requires app name to be passed (see https://github.com/bluemixgaragelondon/cf-blue-green-deploy/issues/27)"
-            }
-            if (fileExists(config.cloudFoundry.manifest)) {
-                def manifest = readYaml file: config.cloudFoundry.manifest
-                if (!manifest || !manifest.applications || !manifest.applications[0].name) {
-                    error "[${STEP_NAME}] ERROR: No appName available in manifest ${config.cloudFoundry.manifest}."
-                }
-            } else {
-                error "[${STEP_NAME}] ERROR: No manifest file ${config.cloudFoundry.manifest} found."
-            }
-        }
+        
 
         def returnCode = sh returnStatus: true, script: """#!/bin/bash
             set +x
@@ -309,13 +275,53 @@ def deployCfNative (config, script) {
             export HOME=${config.dockerWorkspace}
             cf login -u \"${username}\" -p '${password}' -a ${config.cloudFoundry.apiEndpoint} -o \"${config.cloudFoundry.org}\" -s \"${config.cloudFoundry.space}\"
             cf plugins
-            cf ${deployCommand} ${config.cloudFoundry.appName ?: ''} ${deployOptions} -f '${config.cloudFoundry.manifest}' ${config.smokeTest}
+            cf ${config.deployCommand} ${config.cloudFoundry.appName ?: ''} ${config.deployOptions?:''} -f '${config.cloudFoundry.manifest}' ${config.smokeTest}
             """
+
         if(returnCode != 0){
             error "[${STEP_NAME}] ERROR: The execution of the deploy command failed, see the log for details."
         }
         stopOldAppIfRunning(config)
         sh "cf logout"
+    }
+}
+
+private prepareBlueGreenCfNativeDeploy(config,script) {
+
+    if (config.smokeTestScript == 'blueGreenCheckScript.sh') {
+        writeFile file: config.smokeTestScript, text: libraryResource(config.smokeTestScript)
+    }
+
+    config.smokeTest = '--smoke-test $(pwd)/' + config.smokeTestScript
+    sh "chmod +x ${config.smokeTestScript}"
+
+    config.deployCommand = 'blue-green-deploy'
+    cfManifestSubstituteVariables(
+        script: script,
+        manifestFile: config.cloudFoundry.manifest,
+        manifestVariablesFiles: config.cloudFoundry.manifestVariablesFiles,
+        manifestVariables: config.cloudFoundry.manifestVariables
+    )
+    handleLegacyCfManifest(config)
+    if (!config.keepOldInstance) {
+        config.deployOptions = '--delete-old-apps'
+    }
+}
+
+
+private checkIfAppNameIsAvailable(config) {
+    if (config.cloudFoundry.appName == null || config.cloudFoundry.appName == '') {
+        if (config.deployType == 'blue-green') {
+            error "[${STEP_NAME}] ERROR: Blue-green plugin requires app name to be passed (see https://github.com/bluemixgaragelondon/cf-blue-green-deploy/issues/27)"
+        }
+        if (fileExists(config.cloudFoundry.manifest)) {
+            def manifest = readYaml file: config.cloudFoundry.manifest
+            if (!manifest || !manifest.applications || !manifest.applications[0].name) {
+                error "[${STEP_NAME}] ERROR: No appName available in manifest ${config.cloudFoundry.manifest}."
+            }
+        } else {
+            error "[${STEP_NAME}] ERROR: No manifest file ${config.cloudFoundry.manifest} found."
+        }
     }
 }
 
@@ -335,7 +341,7 @@ private varOptions(Map config) {
             }
         }
     }
-    echo "We will add the following string to the cf create-service-push call: $varPart !"
+    if (varPart) echo "We will add the following string to the cf push call:$varPart !"
     return varPart
 }
 
@@ -354,7 +360,7 @@ private String varFileOptions(Map config) {
             }
         }
     }
-    echo "We will add the following string to the cf create-service-push call: $varFilePart !"
+    if (varFilePart) echo "We will add the following string to the cf push call:$varFilePart !"
     return varFilePart
 }
 
