@@ -500,6 +500,7 @@ class CloudFoundryDeployTest extends BasePiperTest {
             cloudFoundry: [
                 org: 'testOrg',
                 space: 'testSpace',
+                apiOpts: '--some-api-opt value',
                 loginOpts: '--some-login-opt value',
                 deployOpts: '--some-deploy-opt value'
             ],
@@ -511,6 +512,7 @@ class CloudFoundryDeployTest extends BasePiperTest {
 
         assertThat(shellRule.shell, hasItem(
             stringContainsInOrder([
+                'cf api', '--some-api-opt value',
                 'cf login ', '--some-login-opt value',
                 'cf bg-deploy', '--some-deploy-opt value'])))
 

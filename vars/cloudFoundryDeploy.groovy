@@ -21,6 +21,12 @@ import groovy.transform.Field
          */
         'apiEndpoint',
         /**
+         * Addition command line options for cf api command.
+         * No escaping/quoting is performed. Not recommanded for productive environments.
+         * @parentConfigKey cloudFoundry
+         */
+        'apiOpts',
+        /**
          * Addition command line options for cf login command.
          * No escaping/quoting is performed. Not recommanded for productive environments.
          * @parentConfigKey cloudFoundry
@@ -336,7 +342,7 @@ def deployMta (config) {
             export HOME=${config.dockerWorkspace}
             set +x
             set -e
-            cf api ${config.cloudFoundry.apiEndpoint}
+            cf api ${config.cloudFoundry.apiEndpoint} ${config.cloudFoundry.apiOpts}
             cf login -u ${username} -p '${password}' -a ${config.cloudFoundry.apiEndpoint} -o \"${config.cloudFoundry.org}\" -s \"${config.cloudFoundry.space}\" ${config.cloudFoundry.loginOpts}
             cf plugins
             cf ${deployCommand} ${config.mtaPath} ${config.mtaDeployParameters} ${config.mtaExtensionDescriptor} ${config.cloudFoundry.deployOpts}"""
