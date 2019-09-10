@@ -15,7 +15,7 @@ Project "Piper" consists of two parts:
 * A set of [Docker images][devops-docker-images] used in the piper library to implement best practices.
 
 The shared library contains all the necessary steps to run our best practice
-[Jenkins pipelines][piper-library-pages] described in the Scenarios section or
+Jenkins pipelines described in the Scenarios section or
 to run a [pipeline as step][piper-library-scenario].
 
 The best practice pipelines are based on the general concepts of [Jenkins 2.0
@@ -54,9 +54,8 @@ methods/types needs to be announced, discussed and agreed.
 [devops-docker-images]: https://github.com/SAP/devops-docker-images
 [devops-docker-images-issues]:       https://github.com/SAP/devops-docker-images/issues
 [devops-docker-images-cxs-guide]:     https://github.com/SAP/devops-docker-images/blob/master/docs/operations/cx-server-operations-guide.md
-[piper-library-scenario]: https://sap.github.io/jenkins-library/scenarios/ui5-sap-cp/Readme/
-[piper-library-pages]: https://sap.github.io/jenkins-library
-[piper-library-pages-plugins]: https://sap.github.io/jenkins-library/jenkins/requiredPlugins
+[piper-library-scenario]: scenarios/ui5-sap-cp/Readme/
+[piper-library-pages-plugins]: requiredPlugins
 [piper-library-issues]: https://github.com/SAP/jenkins-library/issues
 [piper-library-license]: ./LICENSE
 [piper-library-contribution]: .github/CONTRIBUTING.md
