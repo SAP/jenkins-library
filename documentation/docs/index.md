@@ -6,6 +6,8 @@ addresses this need for efficiency with project "Piper". The goal of project
 "Piper" is to substantially ease setting up continuous delivery processes for
 the most important SAP technologies by means of Jenkins pipelines.
 
+this is a test
+
 ## What you get
 
 Project "Piper" consists of two parts:
