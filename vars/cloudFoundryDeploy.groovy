@@ -105,7 +105,12 @@ import groovy.transform.Field
     /**
      * Expected status code returned by the check.
      */
-    'smokeTestStatusCode'
+    'smokeTestStatusCode',
+    /**
+      * Provides more output. May reveal sensitive information.
+      * @possibleValues true, false
+      */
+    'verbose',
 ]
 
 @Field Map CONFIG_KEY_COMPATIBILITY = [cloudFoundry: [apiEndpoint: 'cfApiEndpoint', appName:'cfAppName', credentialsId: 'cfCredentialsId', manifest: 'cfManifest', org: 'cfOrg', space: 'cfSpace']]
@@ -270,7 +275,7 @@ def deployCfNative (config) {
             }
         }
 
-        def returnCode = sh returnStatus: true, script: """#!/bin/bash
+        def deployScript = """#!/bin/bash
             set +x
             set -e
             export HOME=${config.dockerWorkspace}
@@ -278,6 +283,12 @@ def deployCfNative (config) {
             cf plugins
             cf ${deployCommand} ${config.cloudFoundry.appName ?: ''} ${blueGreenDeployOptions} -f '${config.cloudFoundry.manifest}' ${config.smokeTest} ${config.cloudFoundry.deployOpts}
             """
+
+        if(config.verbose) {
+            // Password contained in output below is hidden by withCredentials
+            echo "[INFO][${STEP_NAME}] Executing command: '${deployScript}'."
+        }
+        def returnCode = sh returnStatus: true, script: deployScript
         if(returnCode != 0){
             error "[ERROR][${STEP_NAME}] The execution of the deploy command failed, see the log for details."
         }
@@ -338,7 +349,8 @@ def deployMta (config) {
         usernameVariable: 'username'
     )]) {
         echo "[${STEP_NAME}] Deploying MTA (${config.mtaPath}) with following parameters: ${config.mtaExtensionDescriptor} ${config.mtaDeployParameters}"
-        def returnCode = sh returnStatus: true, script: """#!/bin/bash
+
+        def deployScript = """#!/bin/bash
             export HOME=${config.dockerWorkspace}
             set +x
             set -e
@@ -346,6 +358,14 @@ def deployMta (config) {
             cf login -u ${username} -p '${password}' -a ${config.cloudFoundry.apiEndpoint} -o \"${config.cloudFoundry.org}\" -s \"${config.cloudFoundry.space}\" ${config.cloudFoundry.loginOpts}
             cf plugins
             cf ${deployCommand} ${config.mtaPath} ${config.mtaDeployParameters} ${config.mtaExtensionDescriptor} ${config.cloudFoundry.deployOpts}"""
+
+        if(config.verbose) {
+            // Password contained in output below is hidden by withCredentials
+            echo "[INFO][$STEP_NAME] Executing deploy command '${deployScript}'"
+        }
+
+        def returnCode = sh returnStatus: true, script: deployScript
+
         if(returnCode != 0){
             error "[ERROR][${STEP_NAME}] The execution of the deploy command failed, see the log for details."
         }
