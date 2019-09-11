@@ -211,7 +211,6 @@ class CloudFoundryDeployTest extends BasePiperTest {
 
     @Test
     void testCfNativeAppNameFromManifest() {
-        //helper.registerAllowedMethod('fileExists', [String.class], { s -> return true })
         fileExistsRule.registerExistingFile('test.yml')
         readYamlRule.registerYaml('test.yml', "applications: [[name: 'manifestAppName']]")
         helper.registerAllowedMethod('writeYaml', [Map], { Map parameters ->
@@ -237,7 +236,6 @@ class CloudFoundryDeployTest extends BasePiperTest {
 
     @Test
     void testCfNativeWithoutAppName() {
-        //helper.registerAllowedMethod('fileExists', [String.class], { s -> return true })
         fileExistsRule.registerExistingFile('test.yml')
         readYamlRule.registerYaml('test.yml', "applications: [[]]")
         helper.registerAllowedMethod('writeYaml', [Map], { Map parameters ->
@@ -405,7 +403,6 @@ class CloudFoundryDeployTest extends BasePiperTest {
     @Test
     void testCfNativeWithoutAppNameBlueGreen() {
 
-        //helper.registerAllowedMethod('fileExists', [String.class], { s -> return true })
         fileExistsRule.registerExistingFile('test.yml')
         readYamlRule.registerYaml('test.yml', "applications: [[]]")
 
