@@ -16,8 +16,7 @@ class JenkinsFileExistsRule implements TestRule {
     final List queriedFiles = []
 
     JenkinsFileExistsRule(BasePipelineTest testInstance) {
-        this.testInstance = testInstance
-        existingFiles = []
+        this(testInstance,[])
     }
 
     JenkinsFileExistsRule(BasePipelineTest testInstance, List existingFiles) {
