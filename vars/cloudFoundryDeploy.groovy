@@ -350,7 +350,6 @@ private varOptions(Map config) {
     return varPart
 }
 
-
 private String varFileOptions(Map config) {
     String varFilePart = ''
     if (config.cloudFoundry.manifestVariablesFiles) {
