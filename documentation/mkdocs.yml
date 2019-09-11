@@ -52,6 +52,7 @@ nav:
         - transportRequestUploadFile: steps/transportRequestUploadFile.md
         - uiVeri5ExecuteTests: steps/uiVeri5ExecuteTests.md
         - whitesourceExecuteScan: steps/whitesourceExecuteScan.md
+        - xsDeploy: steps/xsDeploy.md
     - 'Pipelines':
         - 'General purpose pipeline':
             - 'Introduction': stages/introduction.md
