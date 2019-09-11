@@ -232,7 +232,7 @@ private void handleCFNativeDeployment(Map config, script) {
         prepareBlueGreenCfNativeDeploy(config,script)
     } else {
         config.deployCommand = 'push'
-        config.deployOptions = "${varOptions(config)}${varFileOptions(config)}"        
+        config.deployOptions = "${varOptions(config)}${varFileOptions(config)}"
     }
 
     echo "[${STEP_NAME}] CF native deployment (${config.deployType}) with:"
@@ -242,7 +242,7 @@ private void handleCFNativeDeployment(Map config, script) {
     echo "[${STEP_NAME}] - cfManifestVariablesFiles=${config.cloudFoundry.manifestVariablesFiles?:'none specified'}"
     echo "[${STEP_NAME}] - smokeTestScript=${config.smokeTestScript}"
 
-    checkIfAppNameIsAvailable(config)  
+    checkIfAppNameIsAvailable(config)
     dockerExecute(
         script: script,
         dockerImage: config.dockerImage,
@@ -272,7 +272,6 @@ def deployCfNative (config, script) {
         passwordVariable: 'password',
         usernameVariable: 'username'
     )]) {
-        
 
         def returnCode = sh returnStatus: true, script: """#!/bin/bash
             set +x
