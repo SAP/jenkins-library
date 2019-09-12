@@ -6,6 +6,9 @@ There are several possibilities for extensibility besides the **[very powerful c
 
   You have to create a file like `<StageName>.groovy` for example `Acceptance.groovy` and store it in folder `.pipeline/extensions/` in your source code repository.
 
+!!! note "Cloud SDK Pipeline"
+    If you're using Cloud SDK Pipeline, the folder is named `pipeline/extensions/` (without the dot). Refer to [the Cloud SDK Pipeline documentation](https://github.com/SAP/cloud-s4-sdk-pipeline/blob/master/doc/pipeline/extensibility.md) for details.
+
   The pipeline template will check if such a file exists and executes it if present.
   A parameter is passed to the extension containing following keys:
 
