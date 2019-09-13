@@ -15,28 +15,12 @@ class ConfigurationLoader implements Serializable {
         return loadConfiguration('steps', stepName, ConfigurationType.CUSTOM_CONFIGURATION)
     }
 
-    /*
-     * By default this methods does nothing. With this method we are able to ensure that we do not call the
-     * deprecated methods. Might be usefull during local development.
-     */
-    private static handleDeprecation(script, String methodName) {
-        if(script != null) {
-            def msg = "ConfigurationLoader.${methodName} was called with a script reference." +
-                'This method is deprecated. Use the same method without the script reference'
-            if(Boolean.getBoolean('com.sap.piper.failOnScriptReferenceInConfigurationLoader'))
-                throw new RuntimeException(msg)
-            if(Boolean.getBoolean('com.sap.piper.emitWarningOnScriptReferenceInConfigurationLoader') &&
-                script instanceof Script) script.echo("[WARNING] ${msg}")
-        }
-    }
-
     static Map stageConfiguration(String stageName) {
         stageConfiguration(null, stageName)
     }
     @Deprecated
     /** Use stageConfiguration(stageName) instead */
     static Map stageConfiguration(script, String stageName) {
-        handleDeprecation(script, 'stageConfiguration')
         return loadConfiguration('stages', stageName, ConfigurationType.CUSTOM_CONFIGURATION)
     }
 
@@ -46,7 +30,6 @@ class ConfigurationLoader implements Serializable {
     @Deprecated
     /** Use defaultStepConfiguration(stepName) instead */
     static Map defaultStepConfiguration(script, String stepName) {
-        handleDeprecation(script, 'defaultStepConfiguration')
         return loadConfiguration('steps', stepName, ConfigurationType.DEFAULT_CONFIGURATION)
     }
 
@@ -56,7 +39,6 @@ class ConfigurationLoader implements Serializable {
     @Deprecated
     /** Use defaultStageConfiguration(stepName) instead */
     static Map defaultStageConfiguration(script, String stageName) {
-        handleDeprecation(script, 'defaultStageConfiguration')
         return loadConfiguration('stages', stageName, ConfigurationType.DEFAULT_CONFIGURATION)
     }
 
@@ -66,7 +48,6 @@ class ConfigurationLoader implements Serializable {
     @Deprecated
     /** Use generalConfiguration() instead */
     static Map generalConfiguration(script){
-        handleDeprecation(script, 'generalConfiguration')
         try {
             return CommonPipelineEnvironment.getInstance()?.configuration?.general ?: [:]
         } catch (groovy.lang.MissingPropertyException mpe) {
@@ -80,7 +61,6 @@ class ConfigurationLoader implements Serializable {
     @Deprecated
     /** Use defaultGeneralConfiguration() instead */
     static Map defaultGeneralConfiguration(script){
-        handleDeprecation(script, 'defaultGeneralConfiguration')
         return DefaultValueCache.getInstance()?.getDefaultValues()?.general ?: [:]
     }
 
@@ -90,7 +70,6 @@ class ConfigurationLoader implements Serializable {
     @Deprecated
     /** Use postActionConfiguration() instead */
     static Map postActionConfiguration(script, String actionName){
-        handleDeprecation(script, 'postActionConfiguration')
         return loadConfiguration('postActions', actionName, ConfigurationType.CUSTOM_CONFIGURATION)
     }
 
