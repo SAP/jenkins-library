@@ -7,70 +7,70 @@ package com.sap.piper
 class ConfigurationLoader implements Serializable {
 
     static Map stepConfiguration(String stepName) {
-        return stepConfiguration(null, stepName)
+        return loadConfiguration('steps', stepName, ConfigurationType.CUSTOM_CONFIGURATION)
     }
     @Deprecated
     /** Use stepConfiguration(stepName) instead */
     static Map stepConfiguration(script, String stepName) {
-        return loadConfiguration('steps', stepName, ConfigurationType.CUSTOM_CONFIGURATION)
+        return stepConfiguration(stepName)
     }
 
     static Map stageConfiguration(String stageName) {
-        stageConfiguration(null, stageName)
+        return loadConfiguration('stages', stageName, ConfigurationType.CUSTOM_CONFIGURATION)
     }
     @Deprecated
     /** Use stageConfiguration(stageName) instead */
     static Map stageConfiguration(script, String stageName) {
-        return loadConfiguration('stages', stageName, ConfigurationType.CUSTOM_CONFIGURATION)
+        return stageConfiguration(stageName)
     }
 
     static Map defaultStepConfiguration(String stepName) {
-        defaultStepConfiguration(null, stepName)
+        return loadConfiguration('steps', stepName, ConfigurationType.DEFAULT_CONFIGURATION)
     }
     @Deprecated
     /** Use defaultStepConfiguration(stepName) instead */
     static Map defaultStepConfiguration(script, String stepName) {
-        return loadConfiguration('steps', stepName, ConfigurationType.DEFAULT_CONFIGURATION)
+        return defaultStepConfiguration(stepName)
     }
 
     static Map defaultStageConfiguration(String stageName) {
-        defaultStageConfiguration(null, stageName)
+        return loadConfiguration('stages', stageName, ConfigurationType.DEFAULT_CONFIGURATION)
     }
     @Deprecated
     /** Use defaultStageConfiguration(stepName) instead */
     static Map defaultStageConfiguration(script, String stageName) {
-        return loadConfiguration('stages', stageName, ConfigurationType.DEFAULT_CONFIGURATION)
+        return defaultStageConfiguration(stageName)
     }
 
     static Map generalConfiguration(){
-        generalConfiguration(null)
-    }
-    @Deprecated
-    /** Use generalConfiguration() instead */
-    static Map generalConfiguration(script){
         try {
             return CommonPipelineEnvironment.getInstance()?.configuration?.general ?: [:]
         } catch (groovy.lang.MissingPropertyException mpe) {
             return [:]
         }
     }
+    @Deprecated
+    /** Use generalConfiguration() instead */
+    static Map generalConfiguration(script){
+        return generalConfiguration()
+    }
 
     static Map defaultGeneralConfiguration(){
-        defaultGeneralConfiguration(null)
+        return DefaultValueCache.getInstance()?.getDefaultValues()?.general ?: [:]
     }
     @Deprecated
     /** Use defaultGeneralConfiguration() instead */
     static Map defaultGeneralConfiguration(script){
-        return DefaultValueCache.getInstance()?.getDefaultValues()?.general ?: [:]
+        return defaultGeneralConfiguration()
     }
 
     static Map postActionConfiguration(String actionName){
-        postActionConfiguration(null, actionName)
+        return loadConfiguration('postActions', actionName, ConfigurationType.CUSTOM_CONFIGURATION)
     }
     @Deprecated
     /** Use postActionConfiguration() instead */
     static Map postActionConfiguration(script, String actionName){
-        return loadConfiguration('postActions', actionName, ConfigurationType.CUSTOM_CONFIGURATION)
+        return postActionConfiguration(actionName)
     }
 
     private static Map loadConfiguration(String type, String entryName, ConfigurationType configType){
