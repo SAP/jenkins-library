@@ -6,8 +6,6 @@ import com.sap.piper.MapUtils
 class DefaultValueCache implements Serializable {
     private static DefaultValueCache instance
 
-    //static CommonPipelineEnvironment commonPipelineEnvironment = new CommonPipelineEnvironment()
-
     private Map defaultValues
 
     private DefaultValueCache(Map defaultValues){
