@@ -364,7 +364,7 @@ class Helper {
                         def param = retrieveParameterName(line)
 
                         if(!param) {
-                            throw new RuntimeException('Cannot retrieve parameter for a comment')
+                            throw new RuntimeException("Cannot retrieve parameter for a comment. Affected line was: '${line}'")
                         }
 
                         def _docu = [], _value = [], _mandatory = [], _parentObject = []

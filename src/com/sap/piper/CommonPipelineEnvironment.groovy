@@ -41,6 +41,8 @@ public class CommonPipelineEnvironment {
 
     String changeDocumentId
 
+    String xsDeploymentId
+
     void setValue(String property, value) {
         valueMap[property] = value
     }

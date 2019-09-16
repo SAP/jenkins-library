@@ -22,7 +22,7 @@ In this scenario, we want to show how an agile development process with Jenkins 
 
 The basic workflow is as follows:
 
-1. The pipeline scans the Git commit messages for a line like `ChangeDocument : <changeDocumentId>`, and validates that the change is in the correct status `in development`. For more information, see [checkChangeInDevelopment](https://sap.github.io/jenkins-library/steps/checkChangeInDevelopment/). An example for the commit message looks as follows:
+1. The pipeline scans the Git commit messages for a line like `ChangeDocument : <changeDocumentId>`, and validates that the change is in the correct status `in development`. For more information, see [checkChangeInDevelopment](../../steps/checkChangeInDevelopment/). An example for the commit message looks as follows:
 
     ```
     Fix terminology in documentation
@@ -33,7 +33,7 @@ The basic workflow is as follows:
 
     **Note:** The blank line between message header and message description is mandatory.
 
-1. To communicate with SAP Solution Manager, the pipeline uses credentials that must be stored on Jenkins using the credential ID `CM`. For more information, see [checkChangeInDevelopment](https://sap.github.io/jenkins-library/steps/checkChangeInDevelopment/).
+1. To communicate with SAP Solution Manager, the pipeline uses credentials that must be stored on Jenkins using the credential ID `CM`. For more information, see [checkChangeInDevelopment](../../steps/checkChangeInDevelopment/).
 1. The required transport request is created on the fly. **Note:** The change document can contain various components (for example, UI and backend components).
 1. The changes of your development team trigger the Jenkins pipeline. It builds and validates the changes and attaches them to the respective transport request.
 1. As soon as the development process is completed, the change document in SAP Solution Manager can be set to status `to be tested` and all components can be transported to the test system.
@@ -91,8 +91,8 @@ steps:
 
 For the detailed description of the relevant parameters, see:
 
-* [checkChangeInDevelopment](https://sap.github.io/jenkins-library/steps/checkChangeInDevelopment/)
-* [mtaBuild](https://sap.github.io/jenkins-library/steps/mtaBuild/)
-* [transportRequestCreate](https://sap.github.io/jenkins-library/steps/transportRequestCreate/)
-* [transportRequestUploadFile](https://sap.github.io/jenkins-library/steps/transportRequestUploadFile/)
-* [transportRequestRelease](https://sap.github.io/jenkins-library/steps/transportRequestRelease/)
+* [checkChangeInDevelopment](../../steps/checkChangeInDevelopment/)
+* [mtaBuild](../../steps/mtaBuild/)
+* [transportRequestCreate](../../steps/transportRequestCreate/)
+* [transportRequestUploadFile](../../steps/transportRequestUploadFile/)
+* [transportRequestRelease](../../steps/transportRequestRelease/)
