@@ -1,4 +1,4 @@
-# SAP Cloud SDK Extension Pipeline
+# SAP Cloud SDK Pipeline
 
 <img src="https://help.sap.com/doc/6c02295dfa8f47cf9c08a19f2e172901/1.0/en-US/logo-for-cd.svg" alt="SAP Cloud SDK for Continuous Delivery Logo" height="122.92" width="226.773" align="right"/></a>
 
