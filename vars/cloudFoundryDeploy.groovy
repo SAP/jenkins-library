@@ -21,25 +21,6 @@ import groovy.transform.Field
          */
         'apiEndpoint',
         /**
-         * Addition command line options for cf api command.
-         * No escaping/quoting is performed. Not recommanded for productive environments.
-         * @parentConfigKey cloudFoundry
-         */
-        'apiOpts',
-        /**
-         * Addition command line options for cf login command.
-         * No escaping/quoting is performed. Not recommanded for productive environments.
-         * @parentConfigKey cloudFoundry
-         */
-        'loginOpts',
-        /**
-         *
-         * Additional comand line options for cf deploy command.
-         * No escaping/quoting is performed. Not recommanded for productive environments.
-         * @parentConfigKey cloudFoundry
-         */
-        'deployOpts',
-        /**
          * Defines the name of the application to be deployed to the Cloud Foundry space.
          * @parentConfigKey cloudFoundry
          */
@@ -85,6 +66,18 @@ import groovy.transform.Field
     'dockerWorkspace',
     /** @see dockerExecute */
     'stashContent',
+    /**
+     * Addition command line options for cf api command.
+     * No escaping/quoting is performed. Not recommanded for productive environments.
+     * @parentConfigKey cloudFoundry
+     */
+    'mtaApiParameters',
+    /**
+     * Addition command line options for cf login command.
+     * No escaping/quoting is performed. Not recommanded for productive environments.
+     * @parentConfigKey cloudFoundry
+     */
+    'mtaLoginParameters',
     /**
      * Defines additional parameters passed to mta for deployment with the mtaDeployPlugin.
      */
@@ -279,9 +272,9 @@ def deployCfNative (config) {
             set +x
             set -e
             export HOME=${config.dockerWorkspace}
-            cf login -u \"${username}\" -p '${password}' -a ${config.cloudFoundry.apiEndpoint} -o \"${config.cloudFoundry.org}\" -s \"${config.cloudFoundry.space}\" ${config.cloudFoundry.loginOpts}
+            cf login -u \"${username}\" -p '${password}' -a ${config.cloudFoundry.apiEndpoint} -o \"${config.cloudFoundry.org}\" -s \"${config.cloudFoundry.space}\" ${config.mtaLoginParameters}
             cf plugins
-            cf ${deployCommand} ${config.cloudFoundry.appName ?: ''} ${blueGreenDeployOptions} -f '${config.cloudFoundry.manifest}' ${config.smokeTest} ${config.cloudFoundry.deployOpts}
+            cf ${deployCommand} ${config.cloudFoundry.appName ?: ''} ${blueGreenDeployOptions} -f '${config.cloudFoundry.manifest}' ${config.smokeTest} ${config.mtaDeployParameters}
             """
 
         if(config.verbose) {
@@ -354,10 +347,10 @@ def deployMta (config) {
             export HOME=${config.dockerWorkspace}
             set +x
             set -e
-            cf api ${config.cloudFoundry.apiEndpoint} ${config.cloudFoundry.apiOpts}
-            cf login -u ${username} -p '${password}' -a ${config.cloudFoundry.apiEndpoint} -o \"${config.cloudFoundry.org}\" -s \"${config.cloudFoundry.space}\" ${config.cloudFoundry.loginOpts}
+            cf api ${config.cloudFoundry.apiEndpoint} ${config.mtaApiParameters}
+            cf login -u ${username} -p '${password}' -a ${config.cloudFoundry.apiEndpoint} -o \"${config.cloudFoundry.org}\" -s \"${config.cloudFoundry.space}\" ${config.mtaLoginParameters}
             cf plugins
-            cf ${deployCommand} ${config.mtaPath} ${config.mtaDeployParameters} ${config.mtaExtensionDescriptor} ${config.cloudFoundry.deployOpts}"""
+            cf ${deployCommand} ${config.mtaPath} ${config.mtaDeployParameters} ${config.mtaExtensionDescriptor}"""
 
         if(config.verbose) {
             // Password contained in output below is hidden by withCredentials

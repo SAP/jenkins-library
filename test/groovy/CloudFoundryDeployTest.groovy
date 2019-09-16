@@ -500,10 +500,10 @@ class CloudFoundryDeployTest extends BasePiperTest {
             cloudFoundry: [
                 org: 'testOrg',
                 space: 'testSpace',
-                apiOpts: '--some-api-opt value',
-                loginOpts: '--some-login-opt value',
-                deployOpts: '--some-deploy-opt value'
             ],
+            mtaApiParameters: '--some-api-opt value',
+            mtaLoginParameters: '--some-login-opt value',
+            mtaDeployParameters: '--some-deploy-opt value',
             cfCredentialsId: 'test_cfCredentialsId',
             deployTool: 'mtaDeployPlugin',
             deployType: 'blue-green',
