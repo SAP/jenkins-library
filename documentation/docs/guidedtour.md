@@ -18,7 +18,7 @@ The stated instructions assume the use of this application.
 
 Cx Server is a life-cycle management tool to bootstrap a pre-configured Jenkins instance within minutes.
 All required plugins and shared libraries are included automatically.
-It is based on Docker images provided by project "piper".
+It is based on Docker images provided by project "Piper".
 
 To get started, initialize Cx Server by using this `docker run` command:
 
