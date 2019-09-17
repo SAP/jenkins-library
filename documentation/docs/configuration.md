@@ -1,6 +1,6 @@
 # Configuration
 
-Configuration is done via a yml-file, located at `.pipeline/config.yml` in the **master branch** of your source code repository.
+Configure your project through a yml-file, which is located at `.pipeline/config.yml` in the **master branch** of your source code repository.
 
 !!! note "Cloud SDK Pipeline"
     Configuration for Cloud SDK Pipeline is done in a file called `pipeline_config.yml`. It is documented [here](https://github.com/SAP/cloud-s4-sdk-pipeline/blob/master/configuration.md).
