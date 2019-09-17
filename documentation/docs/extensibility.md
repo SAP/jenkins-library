@@ -7,10 +7,10 @@ There are several possibilities for extensibility besides the **[very powerful c
   You have to create a file like `<StageName>.groovy` for example `Acceptance.groovy` and store it in folder `.pipeline/extensions/` in your source code repository.
 
 !!! note "Cloud SDK Pipeline"
-    If you're using Cloud SDK Pipeline, the folder is named `pipeline/extensions/` (without the dot). Refer to [the Cloud SDK Pipeline documentation](https://github.com/SAP/cloud-s4-sdk-pipeline/blob/master/doc/pipeline/extensibility.md) for details.
+    If you use the Cloud SDK Pipeline, the folder is named `pipeline/extensions/` (without the dot). For more information, please refer to [the Cloud SDK Pipeline documentation](https://github.com/SAP/cloud-s4-sdk-pipeline/blob/master/doc/pipeline/extensibility.md).
 
-  The pipeline template will check if such a file exists and executes it if present.
-  A parameter is passed to the extension containing following keys:
+  The pipeline template checks if such a file exists and executes it, if present.
+  A parameter that contains the following keys is passed to the extension:
 
   * `script`: defines the global script environment of the Jenkinsfile run. This makes sure that the correct configuration environment can be passed to project "Piper" steps and also allows access to for example the `commonPipelineEnvironment`.
   * `originalStage`: this will allow you to execute the "original" stage at any place in your script. If omitting a call to `originalStage()` only your code will be executed instead.

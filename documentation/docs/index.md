@@ -12,8 +12,8 @@ To get you started quickly, project "Piper" offers you the following artifacts:
 * A set of ready-made Continuous Delivery pipelines for direct use in your project
     * [General Purpose Pipeline](stages/introduction/)
     * [SAP Cloud SDK Pipeline][cloud-sdk-pipeline]
-* [A shared library][piper-library] of reusable step implementations, enabling you to customize our ready-made pipelines, or to even build your own customized pipeline
-* A set of [Docker images][devops-docker-images] to setup a ci/cd environment in minutes using sophisticated life-cycle management
+* [A shared library][piper-library] that contains reusable step implementations, which enable you to customize our preconfigured pipelines, or to even build your own customized ones
+* A set of [Docker images][devops-docker-images] to setup a CI/CD environment in minutes using sophisticated life-cycle management
 
 To find out which offering is right for you, we recommend to look at the ready-made pipelines first.
 In many cases, they should satisfy your requirements, and if this is the case, you don't need to build your own pipeline.
@@ -21,7 +21,7 @@ In many cases, they should satisfy your requirements, and if this is the case, y
 ### The best-practice way: Ready-made pipelines
 
 **Are you building a standalone SAP Cloud Platform application?<br>**
-Then continue reading about our [general purpose pipeline](stages/introduction/) which supports various technologies and programming languages.
+Then continue reading about our [general purpose pipeline](stages/introduction/), which supports various technologies and programming languages.
 
 **Are you building an application with the SAP Cloud SDK and/or SAP Cloud Application Programming Model?<br>**
 Then we can offer you a [pipeline specifically tailored to SAP Cloud SDK and SAP Cloud Application Programming Model applications][cloud-sdk-pipeline]

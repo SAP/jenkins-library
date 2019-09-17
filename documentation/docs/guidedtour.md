@@ -14,35 +14,35 @@ The stated instructions assume the use of this application.
 * You have installed the newest version of Docker. See [Docker Community Edition](https://docs.docker.com/install/). **Note:** we have tested on Docker 18.09.6.
 * Your system has access to [GitHub.com][github].
 
-## Recommended: Install the Cx Server Life-cycle Management for Jenkins
+## **Recommended:** Install the Cx Server Life-cycle Management for Jenkins
 
 Cx Server is a life-cycle management tool to bootstrap a pre-configured Jenkins instance within minutes.
 All required plugins and shared libraries are included automatically.
 It is based on Docker images provided by project "piper".
 
-To get started, initialize Cx Server using this `docker run` command:
+To get started, initialize Cx Server by using this `docker run` command:
 
 ```sh
 docker run -it --rm -u $(id -u):$(id -g) -v "${PWD}":/cx-server/mount/ ppiper/cx-server-companion:latest init-cx-server
 ```
 
-This will create a few files in your current working directory.
+This creates a few files in your current working directory.
 The shell script `cx-server` and the configuration file `server.cfg` are of special interest.
 
-Now you can start the Jenkins server by using the following command:
+Now, you can start the Jenkins server by using the following command:
 
 ```sh
 chmod +x ./cx-server
 ./cx-server start
 ```
 
-For more information on Cx Server and how to customize your Jenkins, have a look at the [Operations Guide for Cx Server][devops-docker-images-cxs-guide].
+For more information on the Cx Server and how to customize your Jenkins, have a look at the [Operations Guide for Cx Server][devops-docker-images-cxs-guide].
 
 ### On your own: Custom Jenkins Setup
 
-If you use your own Jenkins installation you need to care for "Piper" specific configuration.
-This option should only be considered if you know why you need it, otherwise using Cx Server life-cycle management will make your life much easier.
-Follow [my own Jenkins installation][guidedtour-my-own-jenkins] for some hints, if you chose to go this path.
+If you use your own Jenkins installation, you need to care for the configuration that is specific to project "Piper".
+This option should only be considered if you know why you need it, otherwise using the Cx Server life-cycle management makes your life much easier.
+If you choose to go this path, follow [my own Jenkins installation][guidedtour-my-own-jenkins] for some hints.
 
 ## (Optional) Sample Application
 
