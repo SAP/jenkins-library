@@ -35,3 +35,7 @@ The pipeline supports the following types of projects:
 * SAP Cloud Application Programming Model (CAP) projects based on the _SAP Cloud Platform Business Application_ WebIDE Template.
 
 You can find more details about the supported project types and build tools in the [project documentation](https://github.com/SAP/cloud-s4-sdk-pipeline/blob/master/doc/pipeline/build-tools.md).
+
+## Legal Notes
+
+Note: This license of this repository does not apply to the SAP Cloud SDK for Continuous Delivery Logo referenced in this page

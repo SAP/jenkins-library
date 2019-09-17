@@ -44,6 +44,8 @@ If you use your own Jenkins installation, you need to care for the configuration
 This option should only be considered if you know why you need it, otherwise using the Cx Server life-cycle management makes your life much easier.
 If you choose to go this path, follow [my own Jenkins installation][guidedtour-my-own-jenkins] for some hints.
 
+**Note:** This option is not supported for SAP Cloud SDK projects.
+
 ## (Optional) Sample Application
 
 !!! info "Choosing the best sample application"
