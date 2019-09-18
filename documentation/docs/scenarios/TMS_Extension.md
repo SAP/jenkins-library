@@ -4,7 +4,7 @@ Extend your CI/CD pipeline with SAP Cloud Platform Transport Management to add a
 
 ## Context
 
-This procedure explains how to upload a [multitartget application](https://www.sap.com/documents/2016/06/e2f618e4-757c-0010-82c7-eda71af511fa.html) published on SAP site out of a CI/CD pipeline to SAP Cloud Platform Transport Management and then import it into its target environment.
+This procedure explains how to upload a [multitartget application](https://www.sap.com/documents/2016/06/e2f618e4-757c-0010-82c7-eda71af511fa.html) from a CI/CD pipeline to SAP Cloud Platform Transport Management and then import it into its target environment.
 
 SAP Cloud Platform Transport Management allows you to manage the transport of development artifacts and application-specific content between different SAP Cloud Platform accounts. It adds transparency to the audit trail of changes so that you get information about who performed which changes in your production accounts and when they did it. At the same time, the Transport Management service enables a separation of concerns: For example, a developer of an application or SAP Cloud Platform content artifacts can trigger the propagation of changes, while the resulting transport is handled by a central operations team. For more information, see [SAP Cloud Platform Transport Management](https://help.sap.com/viewer/product/TRANSPORT_MANAGEMENT_SERVICE/Cloud/en-US).
 
@@ -22,7 +22,7 @@ The following graphic provides an overview about the interplay between continuou
 
 ## Procedure
 
-This procedure belongs to the Extend Your Pipeline category, which means that you can use it to extend any CI process that meets the prerequisites, for example, the one described in [Build and Deploy SAPUI5 or SAP Fiori Applications on SAP Cloud Platform with Jenkins](https://sap.github.io/jenkins-library/scenarios/ui5-sap-cp/Readme/).
+You can use this scenario to extend any CI process that meets the prerequisites, for example, the one described in [Build and Deploy SAPUI5 or SAP Fiori Applications on SAP Cloud Platform with Jenkins](https://sap.github.io/jenkins-library/scenarios/ui5-sap-cp/Readme/).
 
 The following graphic shows an example of the detailed procedure when combining continuous integration and SAP Cloud Platform Transport Management:
 
@@ -40,7 +40,7 @@ The process flow contains the following steps:
 
 ### Jenkinsfile
 
-Following the convention for pipeline definitions, use a Jenkinsfile which resides in the root directory of your development sources.
+Following the convention for pipeline definitions, use a Jenkinsfile, which resides in the root directory of your development sources.
 
 ```groovy
 @Library('piper-lib-os') _
@@ -65,11 +65,11 @@ steps:
 
 | Parameter          | Description |
 | -------------------|-------------|
-| `credentialsId` |Credentials to be used for the file and node uploads to the Transport Management Service.|
-| `nodeName`|Defines the name of the node to which the *.mtar file should be uploaded.|
+| `credentialsId` |Credentials that are used for the file and node uploads to the Transport Management Service.|
+| `nodeName`|Defines the name of the node to which the *.mtar file is uploaded.|
 | `mtaPath`|Defines the path to *.mtar for the upload to the Transport Management Service.|
-| `customDescription`| Can be used as the description of a transport request. Will overwrite the default. (Default: Corresponding Git Commit-ID)|
+| `customDescription`| Can be used as description of a transport request. Overwrites the default (Default: Corresponding Git Commit-ID).|
 
 ### Parameters
 
-For the detailed description of the relevant parameters, see [tmsUpload](../../../steps/tmsUpload/)
+For a detailed description of the relevant parameters, see [tmsUpload](../../../steps/tmsUpload/).
