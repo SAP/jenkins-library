@@ -40,6 +40,8 @@ The process flow contains the following steps:
 
 ### Jenkinsfile
 
+If you use the pipeline of the following code snippet, you only have to configure it in the .pipeline/config.yml.
+
 Following the convention for pipeline definitions, use a Jenkinsfile, which resides in the root directory of your development sources.
 
 ```groovy
@@ -61,7 +63,7 @@ steps:
     customDescription: Custom-Transport-Description
 ```
 
-#### Configration for the upload to Transport Management
+#### Configration for the Upload to Transport Management
 
 | Parameter          | Description |
 | -------------------|-------------|
