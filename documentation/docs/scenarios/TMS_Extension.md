@@ -58,7 +58,7 @@ This is a basic configuration example, which is also located in the sources of t
 steps:
   tmsUpload:
     credentialsId: tms-secret-key
-    nodeName: a_piper_node
+    nodeName: tms_target_node
     mtaPath: com.piper.example.tms.mtar
     customDescription: Custom-Transport-Description
 ```
