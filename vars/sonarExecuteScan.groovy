@@ -120,21 +120,22 @@ void call(Map parameters = [:]) {
             configuration.options = [].plus(configuration.options)
 
         def worker = { config ->
-            withSonarQubeEnv(config.instance) {
-                try{
-                    loadSonarScanner(config)
+            try {
+                withSonarQubeEnv(config.instance) {
 
-                    loadCertificates(config)
+                        loadSonarScanner(config)
 
-                    if(config.organization) config.options.add("sonar.organization=${config.organization}")
-                    if(config.projectVersion) config.options.add("sonar.projectVersion=${config.projectVersion}")
-                    // prefix options
-                    config.options = config.options.collect { it.startsWith('-D') ? it : "-D${it}" }
+                        loadCertificates(config)
 
-                    sh "PATH=\$PATH:${env.WORKSPACE}/.sonar-scanner/bin sonar-scanner ${config.options.join(' ')}"
-                }finally{
-                    sh 'rm -rf .sonar-scanner .certificates .scannerwork'
+                        if(config.organization) config.options.add("sonar.organization=${config.organization}")
+                        if(config.projectVersion) config.options.add("sonar.projectVersion=${config.projectVersion}")
+                        // prefix options
+                        config.options = config.options.collect { it.startsWith('-D') ? it : "-D${it}" }
+
+                        sh "PATH=\$PATH:${env.WORKSPACE}/.sonar-scanner/bin sonar-scanner ${config.options.join(' ')}"
                 }
+            } finally {
+                sh 'rm -rf .sonar-scanner .certificates .scannerwork'
             }
         }
 
