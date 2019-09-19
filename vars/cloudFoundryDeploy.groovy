@@ -245,10 +245,9 @@ private void handleCFNativeDeployment(Map config, script) {
     config.smokeTest = ''
 
     if (config.deployType == 'blue-green') {
-        prepareBlueGreenCfNativeDeploy(config,script)
+        prepareBlueGreenCfNativeDeploy(config)
     } else {
-        config.deployCommand = 'push'
-        config.deployOptions = ''
+        prepareCfPushCfNativeDeploy(config)
     }
 
     echo "[${STEP_NAME}] CF native deployment (${config.deployType}) with:"
@@ -264,11 +263,11 @@ private void handleCFNativeDeployment(Map config, script) {
         stashContent: config.stashContent,
         dockerEnvVars: [CF_HOME: "${config.dockerWorkspace}", CF_PLUGIN_HOME: "${config.dockerWorkspace}", STATUS_CODE: "${config.smokeTestStatusCode}"]
     ) {
-        deployCfNative(config, script)
+        deployCfNative(config)
     }
 }
 
-private prepareBlueGreenCfNativeDeploy(config,script) {
+private prepareBlueGreenCfNativeDeploy(config) {
     if (config.smokeTestScript == 'blueGreenCheckScript.sh') {
         writeFile file: config.smokeTestScript, text: libraryResource(config.smokeTestScript)
     }
@@ -298,6 +297,11 @@ Transformed manifest file content: $transformedManifest"""
     }
 }
 
+private prepareCfPushCfNativeDeploy(config) {
+    config.deployCommand = 'push'
+    config.deployOptions = ''
+}
+
 private checkIfAppNameIsAvailable(config) {
     if (config.cloudFoundry.appName == null || config.cloudFoundry.appName == '') {
         if (config.deployType == 'blue-green') {
@@ -314,7 +318,7 @@ private checkIfAppNameIsAvailable(config) {
     }
 }
 
-def deployCfNative (config, script) {
+def deployCfNative (config) {
     withCredentials([usernamePassword(
         credentialsId: config.cloudFoundry.credentialsId,
         passwordVariable: 'password',
