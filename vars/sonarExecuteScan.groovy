@@ -62,7 +62,7 @@ import java.nio.charset.StandardCharsets
     'disableInlineComments',
     /**
      * Name of the docker image that should be used. If empty, Docker is not used and the command is executed directly on the Jenkins system.
-     * see [dockerExecute](dockerExecute)
+     * see [dockerExecute](dockerExecute.md)
      */
     'dockerImage',
     /**
