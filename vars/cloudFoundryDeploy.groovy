@@ -211,6 +211,7 @@ void call(Map parameters = [:]) {
             }
 
         }
+
     }
 }
 
@@ -225,35 +226,6 @@ private void handleMTADeployment(Map config, script) {
     }
 }
 
-private void handleCFNativeDeployment(Map config, script) {
-    config.smokeTest = ''
-
-    if (config.deployType == 'blue-green') {
-        prepareBlueGreenCfNativeDeploy(config,script)
-    } else {
-        config.deployCommand = 'push'
-        config.deployOptions = "${varOptions(config)}${varFileOptions(config)}"
-    }
-
-    echo "[${STEP_NAME}] CF native deployment (${config.deployType}) with:"
-    echo "[${STEP_NAME}] - cfAppName=${config.cloudFoundry.appName}"
-    echo "[${STEP_NAME}] - cfManifest=${config.cloudFoundry.manifest}"
-    echo "[${STEP_NAME}] - cfManifestVariables=${config.cloudFoundry.manifestVariables?:'none specified'}"
-    echo "[${STEP_NAME}] - cfManifestVariablesFiles=${config.cloudFoundry.manifestVariablesFiles?:'none specified'}"
-    echo "[${STEP_NAME}] - smokeTestScript=${config.smokeTestScript}"
-
-    checkIfAppNameIsAvailable(config)
-    dockerExecute(
-        script: script,
-        dockerImage: config.dockerImage,
-        dockerWorkspace: config.dockerWorkspace,
-        stashContent: config.stashContent,
-        dockerEnvVars: [CF_HOME: "${config.dockerWorkspace}", CF_PLUGIN_HOME: "${config.dockerWorkspace}", STATUS_CODE: "${config.smokeTestStatusCode}"]
-    ) {
-        deployCfNative(config, script)
-    }
-}
-
 def findMtar(){
     def mtarFiles = findFiles(glob: '**/*.mtar')
 
@@ -264,124 +236,6 @@ def findMtar(){
         return mtarFiles[0].path
     }
     error 'No *.mtar file found!'
-}
-
-def deployCfNative (config, script) {
-    withCredentials([usernamePassword(
-        credentialsId: config.cloudFoundry.credentialsId,
-        passwordVariable: 'password',
-        usernameVariable: 'username'
-    )]) {
-
-        def returnCode = sh returnStatus: true, script: """#!/bin/bash
-            set +x
-            set -e
-            export HOME=${config.dockerWorkspace}
-            cf login -u \"${username}\" -p '${password}' -a ${config.cloudFoundry.apiEndpoint} -o \"${config.cloudFoundry.org}\" -s \"${config.cloudFoundry.space}\"
-            cf plugins
-            cf ${config.deployCommand} ${config.cloudFoundry.appName ?: ''} ${config.deployOptions?:''} -f '${config.cloudFoundry.manifest}' ${config.smokeTest}
-            """
-
-        if(returnCode != 0){
-            error "[${STEP_NAME}] ERROR: The execution of the deploy command failed, see the log for details."
-        }
-        stopOldAppIfRunning(config)
-        sh "cf logout"
-    }
-}
-
-private prepareBlueGreenCfNativeDeploy(config,script) {
-
-    if (config.smokeTestScript == 'blueGreenCheckScript.sh') {
-        writeFile file: config.smokeTestScript, text: libraryResource(config.smokeTestScript)
-    }
-
-    config.smokeTest = '--smoke-test $(pwd)/' + config.smokeTestScript
-    sh "chmod +x ${config.smokeTestScript}"
-
-    config.deployCommand = 'blue-green-deploy'
-    cfManifestSubstituteVariables(
-        script: script,
-        manifestFile: config.cloudFoundry.manifest,
-        manifestVariablesFiles: config.cloudFoundry.manifestVariablesFiles,
-        manifestVariables: config.cloudFoundry.manifestVariables
-    )
-    handleLegacyCfManifest(config)
-    if (!config.keepOldInstance) {
-        config.deployOptions = '--delete-old-apps'
-    }
-}
-
-
-private checkIfAppNameIsAvailable(config) {
-    if (config.cloudFoundry.appName == null || config.cloudFoundry.appName == '') {
-        if (config.deployType == 'blue-green') {
-            error "[${STEP_NAME}] ERROR: Blue-green plugin requires app name to be passed (see https://github.com/bluemixgaragelondon/cf-blue-green-deploy/issues/27)"
-        }
-        if (fileExists(config.cloudFoundry.manifest)) {
-            def manifest = readYaml file: config.cloudFoundry.manifest
-            if (!manifest || !manifest.applications || !manifest.applications[0].name) {
-                error "[${STEP_NAME}] ERROR: No appName available in manifest ${config.cloudFoundry.manifest}."
-            }
-        } else {
-            error "[${STEP_NAME}] ERROR: No manifest file ${config.cloudFoundry.manifest} found."
-        }
-    }
-}
-
-private varOptions(Map config) {
-    String varPart = ''
-    if (config.cloudFoundry.manifestVariables) {
-        if (!(config.cloudFoundry.manifestVariables in List)) {
-            error "[${STEP_NAME}] ERROR: Parameter config.cloudFoundry.manifestVariables is not a List!"
-        }
-        config.cloudFoundry.manifestVariables.each {
-            if (!(it in Map)) {
-                error "[${STEP_NAME}] ERROR: Parameter config.cloudFoundry.manifestVariables.$it is not a Map!"
-            }
-            it.keySet().each { varKey ->
-                String varValue=BashUtils.quoteAndEscape(it.get(varKey).toString())
-                varPart += " --var $varKey=$varValue"
-            }
-        }
-    }
-    if (varPart) echo "We will add the following string to the cf push call:$varPart !"
-    return varPart
-}
-
-private String varFileOptions(Map config) {
-    String varFilePart = ''
-    if (config.cloudFoundry.manifestVariablesFiles) {
-        if (!(config.cloudFoundry.manifestVariablesFiles in List)) {
-            error "[${STEP_NAME}] ERROR: Parameter config.cloudFoundry.manifestVariablesFiles is not a List!"
-        }
-        config.cloudFoundry.manifestVariablesFiles.each {
-            if (fileExists(it)) {
-                varFilePart += " --vars-file ${BashUtils.quoteAndEscape(it)}"
-            } else {
-                echo "[WARNING] We skip adding not-existing file '$it' as a vars-file to the cf create-service-push call"
-            }
-        }
-    }
-    if (varFilePart) echo "We will add the following string to the cf push call:$varFilePart !"
-    return varFilePart
-}
-
-private void stopOldAppIfRunning(Map config) {
-    String oldAppName = "${config.cloudFoundry.appName}-old"
-    String cfStopOutputFileName = "${UUID.randomUUID()}-cfStopOutput.txt"
-
-    if (config.keepOldInstance && config.deployType == 'blue-green') {
-        int cfStopReturncode = sh (returnStatus: true, script: "cf stop $oldAppName  &> $cfStopOutputFileName")
-
-        if (cfStopReturncode > 0) {
-            String cfStopOutput = readFile(file: cfStopOutputFileName)
-
-            if (!cfStopOutput.contains("$oldAppName not found")) {
-                error "[${STEP_NAME}] ERROR: Could not stop application $oldAppName. Error: $cfStopOutput"
-            }
-        }
-    }
 }
 
 def deployMta (config) {
@@ -417,6 +271,55 @@ def deployMta (config) {
     }
 }
 
+private void handleCFNativeDeployment(Map config, script) {
+    config.smokeTest = ''
+
+    if (config.deployType == 'blue-green') {
+        prepareBlueGreenCfNativeDeploy(config,script)
+    } else {
+        prepareCfPushCfNativeDeploy(config)
+    }
+
+    echo "[${STEP_NAME}] CF native deployment (${config.deployType}) with:"
+    echo "[${STEP_NAME}] - cfAppName=${config.cloudFoundry.appName}"
+    echo "[${STEP_NAME}] - cfManifest=${config.cloudFoundry.manifest}"
+    echo "[${STEP_NAME}] - cfManifestVariables=${config.cloudFoundry.manifestVariables?:'none specified'}"
+    echo "[${STEP_NAME}] - cfManifestVariablesFiles=${config.cloudFoundry.manifestVariablesFiles?:'none specified'}"
+    echo "[${STEP_NAME}] - smokeTestScript=${config.smokeTestScript}"
+
+    checkIfAppNameIsAvailable(config)
+    dockerExecute(
+        script: script,
+        dockerImage: config.dockerImage,
+        dockerWorkspace: config.dockerWorkspace,
+        stashContent: config.stashContent,
+        dockerEnvVars: [CF_HOME: "${config.dockerWorkspace}", CF_PLUGIN_HOME: "${config.dockerWorkspace}", STATUS_CODE: "${config.smokeTestStatusCode}"]
+    ) {
+        deployCfNative(config)
+    }
+}
+
+private prepareBlueGreenCfNativeDeploy(config,script) {
+    if (config.smokeTestScript == 'blueGreenCheckScript.sh') {
+        writeFile file: config.smokeTestScript, text: libraryResource(config.smokeTestScript)
+    }
+
+    config.smokeTest = '--smoke-test $(pwd)/' + config.smokeTestScript
+    sh "chmod +x ${config.smokeTestScript}"
+
+    config.deployCommand = 'blue-green-deploy'
+    cfManifestSubstituteVariables(
+        script: script,
+        manifestFile: config.cloudFoundry.manifest,
+        manifestVariablesFiles: config.cloudFoundry.manifestVariablesFiles,
+        manifestVariables: config.cloudFoundry.manifestVariables
+    )    
+    handleLegacyCfManifest(config)
+    if (!config.keepOldInstance) {
+        config.deployOptions = '--delete-old-apps'
+    }
+}
+
 def handleLegacyCfManifest(config) {
     def manifest = readYaml file: config.cloudFoundry.manifest
     String originalManifest = manifest.toString()
@@ -432,6 +335,104 @@ Transformed manifest file content: $transformedManifest"""
     }
 }
 
+private prepareCfPushCfNativeDeploy(config) {
+    config.deployCommand = 'push'
+    config.deployOptions = "${varOptions(config)}${varFileOptions(config)}"
+}
+
+private varOptions(Map config) {
+    String varPart = ''
+    if (config.cloudFoundry.manifestVariables) {
+        if (!(config.cloudFoundry.manifestVariables in List)) {
+            error "[${STEP_NAME}] ERROR: Parameter config.cloudFoundry.manifestVariables is not a List!"
+        }
+        config.cloudFoundry.manifestVariables.each {
+            if (!(it in Map)) {
+                error "[${STEP_NAME}] ERROR: Parameter config.cloudFoundry.manifestVariables.$it is not a Map!"
+            }
+            it.keySet().each { varKey ->
+                String varValue=BashUtils.quoteAndEscape(it.get(varKey).toString())
+                varPart += " --var $varKey=$varValue"
+            }
+        }
+    }
+    if (varPart) echo "We will add the following string to the cf push call:$varPart !"
+    return varPart
+}
+
+private String varFileOptions(Map config) {
+    String varFilePart = ''
+    if (config.cloudFoundry.manifestVariablesFiles) {
+        if (!(config.cloudFoundry.manifestVariablesFiles in List)) {
+            error "[${STEP_NAME}] ERROR: Parameter config.cloudFoundry.manifestVariablesFiles is not a List!"
+        }
+        config.cloudFoundry.manifestVariablesFiles.each {
+            if (fileExists(it)) {
+                varFilePart += " --vars-file ${BashUtils.quoteAndEscape(it)}"
+            } else {
+                echo "[${STEP_NAME}] [WARNING] We skip adding not-existing file '$it' as a vars-file to the cf create-service-push call"
+            }
+        }
+    }
+    if (varFilePart) echo "We will add the following string to the cf push call:$varFilePart !"
+    return varFilePart
+}
+
+private checkIfAppNameIsAvailable(config) {
+    if (config.cloudFoundry.appName == null || config.cloudFoundry.appName == '') {
+        if (config.deployType == 'blue-green') {
+            error "[${STEP_NAME}] ERROR: Blue-green plugin requires app name to be passed (see https://github.com/bluemixgaragelondon/cf-blue-green-deploy/issues/27)"
+        }
+        if (fileExists(config.cloudFoundry.manifest)) {
+            def manifest = readYaml file: config.cloudFoundry.manifest
+            if (!manifest || !manifest.applications || !manifest.applications[0].name) {
+                error "[${STEP_NAME}] ERROR: No appName available in manifest ${config.cloudFoundry.manifest}."
+            }
+        } else {
+            error "[${STEP_NAME}] ERROR: No manifest file ${config.cloudFoundry.manifest} found."
+        }
+    }
+}
+
+def deployCfNative (config) {
+    withCredentials([usernamePassword(
+        credentialsId: config.cloudFoundry.credentialsId,
+        passwordVariable: 'password',
+        usernameVariable: 'username'
+    )]) {
+        def returnCode = sh returnStatus: true, script: """#!/bin/bash
+            set +x
+            set -e
+            export HOME=${config.dockerWorkspace}
+            cf login -u \"${username}\" -p '${password}' -a ${config.cloudFoundry.apiEndpoint} -o \"${config.cloudFoundry.org}\" -s \"${config.cloudFoundry.space}\"
+            cf plugins
+            cf ${config.deployCommand} ${config.cloudFoundry.appName ?: ''} ${config.deployOptions?:''} -f '${config.cloudFoundry.manifest}' ${config.smokeTest}
+            """
+
+        if(returnCode != 0){
+            error "[${STEP_NAME}] ERROR: The execution of the deploy command failed, see the log for details."
+        }
+        stopOldAppIfRunning(config)
+        sh "cf logout"
+    }
+}
+
+private void stopOldAppIfRunning(Map config) {
+    String oldAppName = "${config.cloudFoundry.appName}-old"
+    String cfStopOutputFileName = "${UUID.randomUUID()}-cfStopOutput.txt"
+
+    if (config.keepOldInstance && config.deployType == 'blue-green') {
+        int cfStopReturncode = sh (returnStatus: true, script: "cf stop $oldAppName  &> $cfStopOutputFileName")
+
+        if (cfStopReturncode > 0) {
+            String cfStopOutput = readFile(file: cfStopOutputFileName)
+
+            if (!cfStopOutput.contains("$oldAppName not found")) {
+                error "[${STEP_NAME}] ERROR: Could not stop application $oldAppName. Error: $cfStopOutput"
+            }
+        }
+    }
+}
 
 private void reportToInflux(script, config, deploySuccess, JenkinsUtils jenkinsUtils) {
     def deployUser = ''

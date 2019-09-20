@@ -99,6 +99,7 @@ class CloudFoundryDeployTest extends BasePiperTest {
         ])
         // asserts
         assertThat(loggingRule.log, containsString('[cloudFoundryDeploy] General parameters: deployTool=, deployType=standard, cfApiEndpoint=https://api.cf.eu10.hana.ondemand.com, cfOrg=testOrg, cfSpace=testSpace, cfCredentialsId=myCreds'))
+        assertThat(loggingRule.log, containsString('[cloudFoundryDeploy] WARNING! Found unsupported deployTool. Skipping deployment.'))
     }
 
     @Test
@@ -128,6 +129,7 @@ class CloudFoundryDeployTest extends BasePiperTest {
         ])
         // asserts
         assertThat(loggingRule.log, containsString('[cloudFoundryDeploy] General parameters: deployTool=notAvailable, deployType=standard, cfApiEndpoint=https://api.cf.eu10.hana.ondemand.com, cfOrg=testOrg, cfSpace=testSpace, cfCredentialsId=myCreds'))
+        assertThat(loggingRule.log, containsString('[cloudFoundryDeploy] WARNING! Found unsupported deployTool. Skipping deployment.'))
     }
 
     @Test
@@ -422,6 +424,36 @@ class CloudFoundryDeployTest extends BasePiperTest {
         ])
     }
 
+    @Test
+    void testCfNativeFailureInShellCall() {
+        readYamlRule.registerYaml('test.yml', "applications: [[name: 'manifestAppName']]")
+        helper.registerAllowedMethod('writeYaml', [Map], { Map parameters ->
+            generatedFile = parameters.file
+            data = parameters.data
+        })
+        shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX,/(cf login -u "test_cf")/,1)
+
+        thrown.expect(hudson.AbortException)
+        thrown.expectMessage('[cloudFoundryDeploy] ERROR: The execution of the deploy command failed, see the log for details.')
+
+
+        stepRule.step.cloudFoundryDeploy([
+            script: nullScript,
+            juStabUtils: utils,
+            jenkinsUtilsStub: new JenkinsUtilsMock(),
+            deployTool: 'cf_native',
+            cfOrg: 'testOrg',
+            cfSpace: 'testSpace',
+            cfCredentialsId: 'test_cfCredentialsId',
+            cfAppName: 'testAppName',
+            cfManifest: 'test.yml'
+        ])
+
+        assertThat(shellRule.shell, hasItem(containsString('cf login -u "test_cf" -p \'********\' -a https://api.cf.eu10.hana.ondemand.com -o "testOrg" -s "testSpace"')))
+        assertThat(shellRule.shell, hasItem(containsString("cf push testAppName -f 'test.yml'")))
+        assertThat(shellRule.shell, hasItem(containsString("cf logout")))
+    }
+
 
     @Test
     void testMta() {
@@ -512,9 +544,6 @@ class CloudFoundryDeployTest extends BasePiperTest {
             cfManifestVariablesFiles: ['vars.yml']
         ])
 
-        // asserts
-
-
         assertThat(dockerExecuteRule.dockerParams, hasEntry('dockerImage', 's4sdk/docker-cf-cli'))
         assertThat(dockerExecuteRule.dockerParams, hasEntry('dockerWorkspace', '/home/piper'))
         assertThat(dockerExecuteRule.dockerParams.dockerEnvVars, hasEntry('STATUS_CODE', "${200}"))
@@ -584,7 +613,6 @@ class CloudFoundryDeployTest extends BasePiperTest {
         thrown.expect(hudson.AbortException)
         thrown.expectMessage('[cloudFoundryDeploy] ERROR: Parameter config.cloudFoundry.manifestVariables is not a List!')
 
-
         stepRule.step.cloudFoundryDeploy([
             script: nullScript,
             juStabUtils: utils,
@@ -599,8 +627,6 @@ class CloudFoundryDeployTest extends BasePiperTest {
         ])
        
     }
-
-
 
     @Test
     void testCfPushDeploymentWithVariableSubstitutionFromVarsListAndVarsFile() {
@@ -623,7 +649,6 @@ class CloudFoundryDeployTest extends BasePiperTest {
         ])
 
         // asserts
-
         assertThat(dockerExecuteRule.dockerParams, hasEntry('dockerImage', 's4sdk/docker-cf-cli'))
         assertThat(dockerExecuteRule.dockerParams, hasEntry('dockerWorkspace', '/home/piper'))
         assertThat(dockerExecuteRule.dockerParams.dockerEnvVars, hasEntry('STATUS_CODE', "${200}"))
@@ -648,8 +673,7 @@ class CloudFoundryDeployTest extends BasePiperTest {
             cfManifest: 'test.yml'
         ])
 
-        // asserts
-        
+        // asserts        
         assertThat(dockerExecuteRule.dockerParams, hasEntry('dockerImage', 's4sdk/docker-cf-cli'))
         assertThat(dockerExecuteRule.dockerParams, hasEntry('dockerWorkspace', '/home/piper'))
         assertThat(dockerExecuteRule.dockerParams.dockerEnvVars, hasEntry('STATUS_CODE', "${200}"))
