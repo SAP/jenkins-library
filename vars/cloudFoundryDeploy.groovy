@@ -157,54 +157,42 @@ void call(Map parameters = [:]) {
         //make sure that for further execution whole workspace, e.g. also downloaded artifacts are considered
         config.stashContent = []
 
-        boolean deploy = false
+        boolean deployTriggered = false
         boolean deploySuccess = true
         try {
             if (config.deployTool == 'mtaDeployPlugin') {
-                deploy = true
-                // set default mtar path
-                config = ConfigurationHelper.newInstance(this, config)
-                    .addIfEmpty('mtaPath', config.mtaPath?:findMtar())
-                    .use()
-
-                dockerExecute(script: script, dockerImage: config.dockerImage, dockerWorkspace: config.dockerWorkspace, stashContent: config.stashContent) {
-                    deployMta(config)
-                }
+                deployTriggered = true
+                handleMTADeployment(config, script)
             }
-
-            if (config.deployTool == 'cf_native') {
-                deploy = true
-                config.smokeTest = ''
-
-                if (config.smokeTestScript == 'blueGreenCheckScript.sh') {
-                    writeFile file: config.smokeTestScript, text: libraryResource(config.smokeTestScript)
-                }
-
-                config.smokeTest = '--smoke-test $(pwd)/' + config.smokeTestScript
-                sh "chmod +x ${config.smokeTestScript}"
-
-                echo "[${STEP_NAME}] CF native deployment (${config.deployType}) with cfAppName=${config.cloudFoundry.appName}, cfManifest=${config.cloudFoundry.manifest}, smokeTestScript=${config.smokeTestScript}"
-
-                dockerExecute (
-                    script: script,
-                    dockerImage: config.dockerImage,
-                    dockerWorkspace: config.dockerWorkspace,
-                    stashContent: config.stashContent,
-                    dockerEnvVars: [CF_HOME:"${config.dockerWorkspace}", CF_PLUGIN_HOME:"${config.dockerWorkspace}", STATUS_CODE: "${config.smokeTestStatusCode}"]
-                ) {
-                    deployCfNative(config)
-                }
+            else if (config.deployTool == 'cf_native') {
+                deployTriggered = true
+                handleCFNativeDeployment(config, script)
+            }
+            else {
+                deployTriggered = false
+                echo "[${STEP_NAME}] WARNING! Found unsupported deployTool. Skipping deployment."
             }
         } catch (err) {
             deploySuccess = false
             throw err
         } finally {
-            if (deploy) {
+            if (deployTriggered) {
                 reportToInflux(script, config, deploySuccess, jenkinsUtils)
             }
 
         }
 
+    }
+}
+
+private void handleMTADeployment(Map config, script) {
+    // set default mtar path
+    config = ConfigurationHelper.newInstance(this, config)
+        .addIfEmpty('mtaPath', config.mtaPath ?: findMtar())
+        .use()
+
+    dockerExecute(script: script, dockerImage: config.dockerImage, dockerWorkspace: config.dockerWorkspace, stashContent: config.stashContent) {
+        deployMta(config)
     }
 }
 
@@ -218,87 +206,6 @@ def findMtar(){
         return mtarFiles[0].path
     }
     error 'No *.mtar file found!'
-}
-
-def deployCfNative (config) {
-    withCredentials([usernamePassword(
-        credentialsId: config.cloudFoundry.credentialsId,
-        passwordVariable: 'password',
-        usernameVariable: 'username'
-    )]) {
-        def deployCommand = selectCfDeployCommandForDeployType(config)
-
-        if (config.deployType == 'blue-green') {
-            handleLegacyCfManifest(config)
-        } else {
-            config.smokeTest = ''
-        }
-
-        def blueGreenDeployOptions = deleteOptionIfRequired(config)
-
-        // check if appName is available
-        if (config.cloudFoundry.appName == null || config.cloudFoundry.appName == '') {
-            if (config.deployType == 'blue-green') {
-                error "[${STEP_NAME}] ERROR: Blue-green plugin requires app name to be passed (see https://github.com/bluemixgaragelondon/cf-blue-green-deploy/issues/27)"
-            }
-            if (fileExists(config.cloudFoundry.manifest)) {
-                def manifest = readYaml file: config.cloudFoundry.manifest
-                if (!manifest || !manifest.applications || !manifest.applications[0].name)
-                    error "[${STEP_NAME}] ERROR: No appName available in manifest ${config.cloudFoundry.manifest}."
-
-            } else {
-                error "[${STEP_NAME}] ERROR: No manifest file ${config.cloudFoundry.manifest} found."
-            }
-        }
-
-        def returnCode = sh returnStatus: true, script: """#!/bin/bash
-            set +x
-            set -e
-            export HOME=${config.dockerWorkspace}
-            cf login -u \"${username}\" -p '${password}' -a ${config.cloudFoundry.apiEndpoint} -o \"${config.cloudFoundry.org}\" -s \"${config.cloudFoundry.space}\"
-            cf plugins
-            cf ${deployCommand} ${config.cloudFoundry.appName ?: ''} ${blueGreenDeployOptions} -f '${config.cloudFoundry.manifest}' ${config.smokeTest}
-            """
-        if(returnCode != 0){
-            error "[ERROR][${STEP_NAME}] The execution of the deploy command failed, see the log for details."
-        }
-        stopOldAppIfRunning(config)
-        sh "cf logout"
-    }
-}
-
-private String selectCfDeployCommandForDeployType(Map config) {
-    if (config.deployType == 'blue-green') {
-        return 'blue-green-deploy'
-    } else {
-        return 'push'
-    }
-}
-
-private String deleteOptionIfRequired(Map config) {
-    boolean deleteOldInstance = !config.keepOldInstance
-    if (deleteOldInstance && config.deployType == 'blue-green') {
-        return '--delete-old-apps'
-    } else {
-        return ''
-    }
-}
-
-private void stopOldAppIfRunning(Map config) {
-    String oldAppName = "${config.cloudFoundry.appName}-old"
-    String cfStopOutputFileName = "${UUID.randomUUID()}-cfStopOutput.txt"
-
-    if (config.keepOldInstance && config.deployType == 'blue-green') {
-        int cfStopReturncode = sh (returnStatus: true, script: "cf stop $oldAppName  &> $cfStopOutputFileName")
-
-        if (cfStopReturncode > 0) {
-            String cfStopOutput = readFile(file: cfStopOutputFileName)
-
-            if (!cfStopOutput.contains("$oldAppName not found")) {
-                error "Could not stop application $oldAppName. Error: $cfStopOutput"
-            }
-        }
-    }
 }
 
 def deployMta (config) {
@@ -328,9 +235,50 @@ def deployMta (config) {
             cf plugins
             cf ${deployCommand} ${config.mtaPath} ${config.mtaDeployParameters} ${config.mtaExtensionDescriptor}"""
         if(returnCode != 0){
-            error "[ERROR][${STEP_NAME}] The execution of the deploy command failed, see the log for details."
+            error "[${STEP_NAME}] ERROR: The execution of the deploy command failed, see the log for details."
         }
         sh "cf logout"
+    }
+}
+
+private void handleCFNativeDeployment(Map config, script) {
+    config.smokeTest = ''
+
+    if (config.deployType == 'blue-green') {
+        prepareBlueGreenCfNativeDeploy(config)
+    } else {
+        prepareCfPushCfNativeDeploy(config)
+    }
+
+    echo "[${STEP_NAME}] CF native deployment (${config.deployType}) with:"
+    echo "[${STEP_NAME}] - cfAppName=${config.cloudFoundry.appName}"
+    echo "[${STEP_NAME}] - cfManifest=${config.cloudFoundry.manifest}"
+    echo "[${STEP_NAME}] - smokeTestScript=${config.smokeTestScript}"
+
+    checkIfAppNameIsAvailable(config)
+    dockerExecute(
+        script: script,
+        dockerImage: config.dockerImage,
+        dockerWorkspace: config.dockerWorkspace,
+        stashContent: config.stashContent,
+        dockerEnvVars: [CF_HOME: "${config.dockerWorkspace}", CF_PLUGIN_HOME: "${config.dockerWorkspace}", STATUS_CODE: "${config.smokeTestStatusCode}"]
+    ) {
+        deployCfNative(config)
+    }
+}
+
+private prepareBlueGreenCfNativeDeploy(config) {
+    if (config.smokeTestScript == 'blueGreenCheckScript.sh') {
+        writeFile file: config.smokeTestScript, text: libraryResource(config.smokeTestScript)
+    }
+
+    config.smokeTest = '--smoke-test $(pwd)/' + config.smokeTestScript
+    sh "chmod +x ${config.smokeTestScript}"
+
+    config.deployCommand = 'blue-green-deploy'
+    handleLegacyCfManifest(config)
+    if (!config.keepOldInstance) {
+        config.deployOptions = '--delete-old-apps'
     }
 }
 
@@ -349,6 +297,66 @@ Transformed manifest file content: $transformedManifest"""
     }
 }
 
+private prepareCfPushCfNativeDeploy(config) {
+    config.deployCommand = 'push'
+    config.deployOptions = ''
+}
+
+private checkIfAppNameIsAvailable(config) {
+    if (config.cloudFoundry.appName == null || config.cloudFoundry.appName == '') {
+        if (config.deployType == 'blue-green') {
+            error "[${STEP_NAME}] ERROR: Blue-green plugin requires app name to be passed (see https://github.com/bluemixgaragelondon/cf-blue-green-deploy/issues/27)"
+        }
+        if (fileExists(config.cloudFoundry.manifest)) {
+            def manifest = readYaml file: config.cloudFoundry.manifest
+            if (!manifest || !manifest.applications || !manifest.applications[0].name) {
+                error "[${STEP_NAME}] ERROR: No appName available in manifest ${config.cloudFoundry.manifest}."
+            }
+        } else {
+            error "[${STEP_NAME}] ERROR: No manifest file ${config.cloudFoundry.manifest} found."
+        }
+    }
+}
+
+def deployCfNative (config) {
+    withCredentials([usernamePassword(
+        credentialsId: config.cloudFoundry.credentialsId,
+        passwordVariable: 'password',
+        usernameVariable: 'username'
+    )]) {
+        def returnCode = sh returnStatus: true, script: """#!/bin/bash
+            set +x
+            set -e
+            export HOME=${config.dockerWorkspace}
+            cf login -u \"${username}\" -p '${password}' -a ${config.cloudFoundry.apiEndpoint} -o \"${config.cloudFoundry.org}\" -s \"${config.cloudFoundry.space}\"
+            cf plugins
+            cf ${config.deployCommand} ${config.cloudFoundry.appName ?: ''} ${config.deployOptions?:''} -f '${config.cloudFoundry.manifest}' ${config.smokeTest}
+            """
+
+        if(returnCode != 0){
+            error "[${STEP_NAME}] ERROR: The execution of the deploy command failed, see the log for details."
+        }
+        stopOldAppIfRunning(config)
+        sh "cf logout"
+    }
+}
+
+private void stopOldAppIfRunning(Map config) {
+    String oldAppName = "${config.cloudFoundry.appName}-old"
+    String cfStopOutputFileName = "${UUID.randomUUID()}-cfStopOutput.txt"
+
+    if (config.keepOldInstance && config.deployType == 'blue-green') {
+        int cfStopReturncode = sh (returnStatus: true, script: "cf stop $oldAppName  &> $cfStopOutputFileName")
+
+        if (cfStopReturncode > 0) {
+            String cfStopOutput = readFile(file: cfStopOutputFileName)
+
+            if (!cfStopOutput.contains("$oldAppName not found")) {
+                error "[${STEP_NAME}] ERROR: Could not stop application $oldAppName. Error: $cfStopOutput"
+            }
+        }
+    }
+}
 
 private void reportToInflux(script, config, deploySuccess, JenkinsUtils jenkinsUtils) {
     def deployUser = ''
