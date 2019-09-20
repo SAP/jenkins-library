@@ -14,7 +14,7 @@ import java.nio.charset.StandardCharsets
 @Field Set GENERAL_CONFIG_KEYS = [
     /**
      * Pull-Request voting only:
-     * The URL to the Github API. see https://docs.sonarqube.org/display/PLUG/GitHub+Plugin#GitHubPlugin-Usage
+     * The URL to the Github API. see [https://docs.sonarqube.org/display/PLUG/GitHub+Plugin#GitHubPlugin-Usage](https://docs.sonarqube.org/display/PLUG/GitHub+Plugin#GitHubPlugin-Usage)
      * deprecated: only supported in LTS / < 7.2
      */
     'githubApiUrl',
@@ -38,7 +38,7 @@ import java.nio.charset.StandardCharsets
      */
     'githubTokenCredentialsId',
     /**
-     * The Jenkins credentialsId for a SonarQube token. It is needed for non-anonymous analysis runs. see https://sonarcloud.io/account/security
+     * The Jenkins credentialsId for a SonarQube token. It is needed for non-anonymous analysis runs. see [https://sonarcloud.io/account/security](https://sonarcloud.io/account/security)
      * @possibleValues Jenkins credential id
      */
     'sonarTokenCredentialsId',
@@ -62,7 +62,7 @@ import java.nio.charset.StandardCharsets
     'disableInlineComments',
     /**
      * Name of the docker image that should be used. If empty, Docker is not used and the command is executed directly on the Jenkins system.
-     * see dockerExecute
+     * see [dockerExecute](dockerExecute)
      */
     'dockerImage',
     /**
