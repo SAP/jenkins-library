@@ -313,7 +313,7 @@ private prepareBlueGreenCfNativeDeploy(config,script) {
         manifestFile: config.cloudFoundry.manifest,
         manifestVariablesFiles: config.cloudFoundry.manifestVariablesFiles,
         manifestVariables: config.cloudFoundry.manifestVariables
-    )    
+    )
     handleLegacyCfManifest(config)
     if (!config.keepOldInstance) {
         config.deployOptions = '--delete-old-apps'
