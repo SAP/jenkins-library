@@ -6,6 +6,7 @@ import com.sap.piper.GenerateDocumentation
 import com.sap.piper.Utils
 import com.sap.piper.ConfigurationHelper
 import com.sap.piper.CfManifestUtils
+import com.sap.piper.BashUtils
 
 import groovy.transform.Field
 
@@ -35,6 +36,35 @@ import groovy.transform.Field
          * @parentConfigKey cloudFoundry
          */
         'manifest',
+        /**
+         * Defines the manifest variables Yaml files to be used to replace variable references in manifest. This parameter
+         * is optional and will default to `["manifest-variables.yml"]`. This can be used to set variable files like it
+         * is provided by `cf push --vars-file <file>`.
+         *
+         * If the manifest is present and so are all variable files, a variable substitution will be triggered that uses
+         * the `cfManifestSubstituteVariables` step before deployment. The format of variable references follows the
+         * [Cloud Foundry standard](https://docs.cloudfoundry.org/devguide/deploy-apps/manifest-attributes.html#variable-substitution).
+         * @parentConfigKey cloudFoundry
+         */
+        'manifestVariablesFiles',
+        /**
+         * Defines a `List` of variables as key-value `Map` objects used for variable substitution within the file given by `manifest`.
+         * Defaults to an empty list, if not specified otherwise. This can be used to set variables like it is provided
+         * by `cf push --var key=value`.
+         *
+         * The order of the maps of variables given in the list is relevant in case there are conflicting variable names and values
+         * between maps contained within the list. In case of conflicts, the last specified map in the list will win.
+         *
+         * Though each map entry in the list can contain more than one key-value pair for variable substitution, it is recommended
+         * to stick to one entry per map, and rather declare more maps within the list. The reason is that
+         * if a map in the list contains more than one key-value entry, and the entries are conflicting, the
+         * conflict resolution behavior is undefined (since map entries have no sequence).
+         *
+         * Note: variables defined via `manifestVariables` always win over conflicting variables defined via any file given
+         * by `manifestVariablesFiles` - no matter what is declared before. This is the same behavior as can be
+         * observed when using `cf push --var` in combination with `cf push --vars-file`.
+         */
+        'manifestVariables',
         /**
          * Cloud Foundry target organization.
          * @parentConfigKey cloudFoundry
@@ -89,7 +119,7 @@ import groovy.transform.Field
     'smokeTestStatusCode'
 ]
 
-@Field Map CONFIG_KEY_COMPATIBILITY = [cloudFoundry: [apiEndpoint: 'cfApiEndpoint', appName:'cfAppName', credentialsId: 'cfCredentialsId', manifest: 'cfManifest', org: 'cfOrg', space: 'cfSpace']]
+@Field Map CONFIG_KEY_COMPATIBILITY = [cloudFoundry: [apiEndpoint: 'cfApiEndpoint', appName:'cfAppName', credentialsId: 'cfCredentialsId', manifest: 'cfManifest', manifestVariablesFiles: 'cfManifestVariablesFiles', manifestVariables: 'cfManifestVariables',  org: 'cfOrg', space: 'cfSpace']]
 
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
 
@@ -245,7 +275,7 @@ private void handleCFNativeDeployment(Map config, script) {
     config.smokeTest = ''
 
     if (config.deployType == 'blue-green') {
-        prepareBlueGreenCfNativeDeploy(config)
+        prepareBlueGreenCfNativeDeploy(config,script)
     } else {
         prepareCfPushCfNativeDeploy(config)
     }
@@ -253,6 +283,8 @@ private void handleCFNativeDeployment(Map config, script) {
     echo "[${STEP_NAME}] CF native deployment (${config.deployType}) with:"
     echo "[${STEP_NAME}] - cfAppName=${config.cloudFoundry.appName}"
     echo "[${STEP_NAME}] - cfManifest=${config.cloudFoundry.manifest}"
+    echo "[${STEP_NAME}] - cfManifestVariables=${config.cloudFoundry.manifestVariables?:'none specified'}"
+    echo "[${STEP_NAME}] - cfManifestVariablesFiles=${config.cloudFoundry.manifestVariablesFiles?:'none specified'}"
     echo "[${STEP_NAME}] - smokeTestScript=${config.smokeTestScript}"
 
     checkIfAppNameIsAvailable(config)
@@ -267,7 +299,7 @@ private void handleCFNativeDeployment(Map config, script) {
     }
 }
 
-private prepareBlueGreenCfNativeDeploy(config) {
+private prepareBlueGreenCfNativeDeploy(config,script) {
     if (config.smokeTestScript == 'blueGreenCheckScript.sh') {
         writeFile file: config.smokeTestScript, text: libraryResource(config.smokeTestScript)
     }
@@ -276,6 +308,12 @@ private prepareBlueGreenCfNativeDeploy(config) {
     sh "chmod +x ${config.smokeTestScript}"
 
     config.deployCommand = 'blue-green-deploy'
+    cfManifestSubstituteVariables(
+        script: script,
+        manifestFile: config.cloudFoundry.manifest,
+        manifestVariablesFiles: config.cloudFoundry.manifestVariablesFiles,
+        manifestVariables: config.cloudFoundry.manifestVariables
+    )
     handleLegacyCfManifest(config)
     if (!config.keepOldInstance) {
         config.deployOptions = '--delete-old-apps'
@@ -299,7 +337,45 @@ Transformed manifest file content: $transformedManifest"""
 
 private prepareCfPushCfNativeDeploy(config) {
     config.deployCommand = 'push'
-    config.deployOptions = ''
+    config.deployOptions = "${varOptions(config)}${varFileOptions(config)}"
+}
+
+private varOptions(Map config) {
+    String varPart = ''
+    if (config.cloudFoundry.manifestVariables) {
+        if (!(config.cloudFoundry.manifestVariables in List)) {
+            error "[${STEP_NAME}] ERROR: Parameter config.cloudFoundry.manifestVariables is not a List!"
+        }
+        config.cloudFoundry.manifestVariables.each {
+            if (!(it in Map)) {
+                error "[${STEP_NAME}] ERROR: Parameter config.cloudFoundry.manifestVariables.$it is not a Map!"
+            }
+            it.keySet().each { varKey ->
+                String varValue=BashUtils.quoteAndEscape(it.get(varKey).toString())
+                varPart += " --var $varKey=$varValue"
+            }
+        }
+    }
+    if (varPart) echo "We will add the following string to the cf push call:$varPart !"
+    return varPart
+}
+
+private String varFileOptions(Map config) {
+    String varFilePart = ''
+    if (config.cloudFoundry.manifestVariablesFiles) {
+        if (!(config.cloudFoundry.manifestVariablesFiles in List)) {
+            error "[${STEP_NAME}] ERROR: Parameter config.cloudFoundry.manifestVariablesFiles is not a List!"
+        }
+        config.cloudFoundry.manifestVariablesFiles.each {
+            if (fileExists(it)) {
+                varFilePart += " --vars-file ${BashUtils.quoteAndEscape(it)}"
+            } else {
+                echo "[${STEP_NAME}] [WARNING] We skip adding not-existing file '$it' as a vars-file to the cf create-service-push call"
+            }
+        }
+    }
+    if (varFilePart) echo "We will add the following string to the cf push call:$varFilePart !"
+    return varFilePart
 }
 
 private checkIfAppNameIsAvailable(config) {
