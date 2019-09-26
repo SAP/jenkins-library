@@ -223,7 +223,7 @@ def getCulprits(config, branch, numberOfCommits) {
             }
         }
 
-        def recipients = sh(returnStdout: true, script: "git log -${numberOfCommits} --pretty=format:'%ae %ce'")
+        def recipients = sh(returnStdout: true, script: "git log -${numberOfCommits} --first-parent --pretty=format:'%ae %ce'")
         return getDistinctRecipients(recipients)
     } catch(err) {
         echo "[${STEP_NAME}] Culprit retrieval from git failed with '${err.getMessage()}'. Please make sure to configure gitSshKeyCredentialsId. So far, only fixed list of recipients is used."
