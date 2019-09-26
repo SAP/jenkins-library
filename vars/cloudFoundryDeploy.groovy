@@ -71,13 +71,13 @@ import groovy.transform.Field
      * No escaping/quoting is performed. Not recommanded for productive environments.
      * @parentConfigKey cloudFoundry
      */
-    'mtaApiParameters',
+    'apiParameters',
     /**
      * Addition command line options for cf login command.
      * No escaping/quoting is performed. Not recommanded for productive environments.
      * @parentConfigKey cloudFoundry
      */
-    'mtaLoginParameters',
+    'loginParameters',
     /**
      * Defines additional parameters passed to mta for deployment with the mtaDeployPlugin.
      */
@@ -272,7 +272,7 @@ def deployCfNative (config) {
             set +x
             set -e
             export HOME=${config.dockerWorkspace}
-            cf login -u \"${username}\" -p '${password}' -a ${config.cloudFoundry.apiEndpoint} -o \"${config.cloudFoundry.org}\" -s \"${config.cloudFoundry.space}\" ${config.mtaLoginParameters}
+            cf login -u \"${username}\" -p '${password}' -a ${config.cloudFoundry.apiEndpoint} -o \"${config.cloudFoundry.org}\" -s \"${config.cloudFoundry.space}\" ${config.loginParameters}
             cf plugins
             cf ${deployCommand} ${config.cloudFoundry.appName ?: ''} ${blueGreenDeployOptions} -f '${config.cloudFoundry.manifest}' ${config.smokeTest} ${config.mtaDeployParameters}
             """
@@ -347,8 +347,8 @@ def deployMta (config) {
             export HOME=${config.dockerWorkspace}
             set +x
             set -e
-            cf api ${config.cloudFoundry.apiEndpoint} ${config.mtaApiParameters}
-            cf login -u ${username} -p '${password}' -a ${config.cloudFoundry.apiEndpoint} -o \"${config.cloudFoundry.org}\" -s \"${config.cloudFoundry.space}\" ${config.mtaLoginParameters}
+            cf api ${config.cloudFoundry.apiEndpoint} ${config.apiParameters}
+            cf login -u ${username} -p '${password}' -a ${config.cloudFoundry.apiEndpoint} -o \"${config.cloudFoundry.org}\" -s \"${config.cloudFoundry.space}\" ${config.loginParameters}
             cf plugins
             cf ${deployCommand} ${config.mtaPath} ${config.mtaDeployParameters} ${config.mtaExtensionDescriptor}"""
 
