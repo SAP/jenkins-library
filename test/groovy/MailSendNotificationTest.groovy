@@ -58,10 +58,10 @@ user3@domain.com noreply+github@domain.com'''
 
     @Test
     void testCulpritsFromGitCommit() throws Exception {
-        def gitCommand = "git log -2 --pretty=format:'%ae %ce'"
+        def gitCommand = "git log -2 --first-parent --pretty=format:'%ae %ce'"
         def expected = "user2@domain.com user3@domain.com"
 
-        shellRule.setReturnValue("git log -2 --pretty=format:'%ae %ce'", 'user2@domain.com user3@domain.com')
+        shellRule.setReturnValue("git log -2 --first-parent --pretty=format:'%ae %ce'", 'user2@domain.com user3@domain.com')
 
         def result = stepRule.step.getCulprits(
             [
