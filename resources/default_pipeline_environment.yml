@@ -183,7 +183,7 @@ steps:
       apiEndpoint: 'https://api.cf.eu10.hana.ondemand.com'
       serviceManifest: 'service-manifest.yml'
     dockerImage: 's4sdk/docker-cf-cli'
-    dockerWorkspace: '/home/piper'   
+    dockerWorkspace: '/home/piper'
   detectExecuteScan:
     detect:
       projectVersion: '1'
