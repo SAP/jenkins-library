@@ -153,7 +153,7 @@ void call(parameters = [:]) {
             .withMandatoryProperty('changeManagement/solman/docker/image', null, { backendType == BackendType.SOLMAN})
              /**
               * The docker image containing the cm client. Needs to be set to the empty string if the
-              * cm client is installed locally. Only taken into account for backend type `CTS`.
+              * CM client is installed locally. Only taken into account for backend type `CTS`.
               */
             .withMandatoryProperty('changeManagement/cts/docker/image', null, { backendType == BackendType.CTS})
             .withMandatoryProperty('transportType', null, { backendType == BackendType.CTS})
