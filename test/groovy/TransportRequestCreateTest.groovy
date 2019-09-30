@@ -188,7 +188,7 @@ public class TransportRequestCreateTest extends BasePiperTest {
                         transportType: 'W',
                         targetSystem: 'XYZ',
                         description: 'desc',
-                        changeManagement: [type: 'CTS'],
+                        changeManagement: [type: 'CTS', docker: [image: 'myImage']],
                         cmUtils: cm)
 
         assert nullScript.commonPipelineEnvironment.getValue('transportRequestId') == '001'

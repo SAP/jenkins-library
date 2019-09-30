@@ -104,6 +104,11 @@ void call(parameters = [:]) {
         configHelper
             // for the following parameters we expect defaults
             .withMandatoryProperty('changeManagement/changeDocumentLabel')
+            /**
+              * The docker image containing the cm client. Needs to be set to the empty string in case the
+              * docker client is installed locally.
+              */
+            .withMandatoryProperty('changeManagement/solman/docker/image', null, { backendType == BackendType.SOLMAN})
             .withMandatoryProperty('changeManagement/clientOpts')
             .withMandatoryProperty('changeManagement/credentialsId')
             .withMandatoryProperty('changeManagement/git/from')

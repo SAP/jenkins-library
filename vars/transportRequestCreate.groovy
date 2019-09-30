@@ -146,6 +146,16 @@ void call(parameters = [:]) {
             .withMandatoryProperty('changeManagement/git/from')
             .withMandatoryProperty('changeManagement/git/to')
             .withMandatoryProperty('changeManagement/git/format')
+             /**
+              * The docker image containing the cm client. Needs to be set to the empty string in case the
+              * cm client is installed locally. Only taken into account for backend type `SOLMAN`.
+              */
+            .withMandatoryProperty('changeManagement/solman/docker/image', null, { backendType == BackendType.SOLMAN})
+             /**
+              * The docker image containing the cm client. Needs to be set to the empty string in case the
+              * cm client is installed locally. Only taken into account for backend type `CTS`.
+              */
+            .withMandatoryProperty('changeManagement/cts/docker/image', null, { backendType == BackendType.CTS})
             .withMandatoryProperty('transportType', null, { backendType == BackendType.CTS})
             .withMandatoryProperty('targetSystem', null, { backendType == BackendType.CTS})
             .withMandatoryProperty('description', null, { backendType == BackendType.CTS})
