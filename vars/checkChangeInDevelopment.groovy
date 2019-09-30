@@ -105,7 +105,7 @@ void call(parameters = [:]) {
             // for the following parameters we expect defaults
             .withMandatoryProperty('changeManagement/changeDocumentLabel')
             /**
-              * The docker image containing the cm client. Needs to be set to the empty string in case the
+              * The docker image containing the CM client. Needs to be set to the empty string if the
               * docker client is installed locally.
               */
             .withMandatoryProperty('changeManagement/solman/docker/image', null, { backendType == BackendType.SOLMAN})
