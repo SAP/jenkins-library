@@ -116,7 +116,8 @@ import groovy.transform.Field
     /**
      * Expected status code returned by the check.
      */
-    'smokeTestStatusCode'
+    'smokeTestStatusCode',
+    'verbose',
 ]
 
 @Field Map CONFIG_KEY_COMPATIBILITY = [cloudFoundry: [apiEndpoint: 'cfApiEndpoint', appName:'cfAppName', credentialsId: 'cfCredentialsId', manifest: 'cfManifest', manifestVariablesFiles: 'cfManifestVariablesFiles', manifestVariables: 'cfManifestVariables',  org: 'cfOrg', space: 'cfSpace']]
@@ -256,14 +257,27 @@ def deployMta (config) {
         usernameVariable: 'username'
     )]) {
         echo "[${STEP_NAME}] Deploying MTA (${config.mtaPath}) with following parameters: ${config.mtaExtensionDescriptor} ${config.mtaDeployParameters}"
+        def cfTraceFile = 'cf.log'
         def returnCode = sh returnStatus: true, script: """#!/bin/bash
             export HOME=${config.dockerWorkspace}
+            export CF_TRACE="${cfTraceFile}"
             set +x
             set -e
             cf api ${config.cloudFoundry.apiEndpoint}
             cf login -u ${username} -p '${password}' -a ${config.cloudFoundry.apiEndpoint} -o \"${config.cloudFoundry.org}\" -s \"${config.cloudFoundry.space}\"
             cf plugins
             cf ${deployCommand} ${config.mtaPath} ${config.mtaDeployParameters} ${config.mtaExtensionDescriptor}"""
+        if(config.verbose || returnCode != 0) {
+            if(fileExists(file: cfTraceFile)) {
+                echo  '### START OF CF CLI TRACE OUTPUT ###'
+                // Would be nice to inline the two next lines, but that is not understood by the test framework
+                def cfTrace =  readFile(file: cfTraceFile)
+                echo cfTrace
+                echo '### END OF CF CLI TRACE OUTPUT ###'
+            } else {
+                echo "No trace file found at '${cfTraceFile}'"
+            }
+        }
         if(returnCode != 0){
             error "[${STEP_NAME}] ERROR: The execution of the deploy command failed, see the log for details."
         }
@@ -400,14 +414,30 @@ def deployCfNative (config) {
         passwordVariable: 'password',
         usernameVariable: 'username'
     )]) {
+
+        def cfTraceFile = 'cf.log'
+
         def returnCode = sh returnStatus: true, script: """#!/bin/bash
             set +x
             set -e
             export HOME=${config.dockerWorkspace}
+            export CF_TRACE=${cfTraceFile}
             cf login -u \"${username}\" -p '${password}' -a ${config.cloudFoundry.apiEndpoint} -o \"${config.cloudFoundry.org}\" -s \"${config.cloudFoundry.space}\"
             cf plugins
             cf ${config.deployCommand} ${config.cloudFoundry.appName ?: ''} ${config.deployOptions?:''} -f '${config.cloudFoundry.manifest}' ${config.smokeTest}
             """
+
+        if(config.verbose || returnCode != 0) {
+            if(fileExists(file: cfTraceFile)) {
+                echo  '### START OF CF CLI TRACE OUTPUT ###'
+                // Would be nice to inline the two next lines, but that is not understood by the test framework
+                def cfTrace =  readFile(file: cfTraceFile)
+                echo cfTrace
+                echo '### END OF CF CLI TRACE OUTPUT ###'
+            } else {
+                echo "No trace file found at '${cfTraceFile}'"
+            }
+        }
 
         if(returnCode != 0){
             error "[${STEP_NAME}] ERROR: The execution of the deploy command failed, see the log for details."
