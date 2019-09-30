@@ -8,7 +8,7 @@ Set up an agile development process with Jenkins CI, which automatically feeds c
 * You have installed Jenkins 2.60.3 or higher.
 * You have set up Project “Piper”. See [README](https://github.com/SAP/jenkins-library/blob/master/README.md).
 * You have installed SAP Solution Manager 7.2 SP6. See [README](https://github.com/SAP/devops-cm-client/blob/master/README.md).
-* You have installed the Multi-Target Application (MTA) Archive Builder 1.0.6 or newer. See [SAP Development Tools](https://tools.hana.ondemand.com/#cloud). This is only required in case there is no docker based environment.
+* You have installed the Multi-Target Application (MTA) Archive Builder 1.0.6 or newer. See [SAP Development Tools](https://tools.hana.ondemand.com/#cloud). **Note:** This is only required if you don't use a Docker-based environment.
 * You have installed Node.js including node and npm. See [Node.js](https://nodejs.org/en/download/). This is only required in cse there is not docker based environment.
 
 ## Context
