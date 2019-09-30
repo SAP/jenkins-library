@@ -136,7 +136,7 @@ void call(parameters = [:]) {
             .withMandatoryProperty('changeManagement/git/format')
              /**
               * The docker image containing the cm client. Needs to be set to the empty string in case the
-              * cm client is installed locally. Only taken into account for backend type `SOLMAN`.
+              * CM client is installed locally. Only taken into account for backend type `SOLMAN`.
               */
             .withMandatoryProperty('changeManagement/solman/docker/image', null, { backendType == BackendType.SOLMAN})
              /**
