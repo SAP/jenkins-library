@@ -27,7 +27,7 @@ import static org.hamcrest.Matchers.not
 import static org.hamcrest.Matchers.hasEntry
 import static org.hamcrest.Matchers.containsString
 
-class CreateServicePushCloudFoundryEnvironmentManageTest extends BasePiperTest {
+class CloudFoundryServiceCreateTest extends BasePiperTest {
 
     private File tmpDir = File.createTempDir()
     private ExpectedException thrown = ExpectedException.none()
@@ -72,9 +72,9 @@ class CreateServicePushCloudFoundryEnvironmentManageTest extends BasePiperTest {
     @Test
     void testVarsListNotAList() {               
         thrown.expect(hudson.AbortException)
-        thrown.expectMessage('[createServicePushCloudFoundryEnvironmentManage] ERROR: Parameter config.cloudFoundry.manifestVariables is not a List!')
+        thrown.expectMessage('[cloudFoundryServiceCreate] ERROR: Parameter config.cloudFoundry.manifestVariables is not a List!')
 
-        stepRule.step.createServicePushCloudFoundryEnvironmentManage([
+        stepRule.step.cloudFoundryServiceCreate([
             script: nullScript,
             juStabUtils: utils,
             jenkinsUtilsStub: new JenkinsUtilsMock(),
@@ -90,9 +90,9 @@ class CreateServicePushCloudFoundryEnvironmentManageTest extends BasePiperTest {
     @Test
     void testVarsListEntryIsNotAMap() {
         thrown.expect(hudson.AbortException)
-        thrown.expectMessage('[createServicePushCloudFoundryEnvironmentManage] ERROR: Parameter config.cloudFoundry.manifestVariables.notAMap is not a Map!')
+        thrown.expectMessage('[cloudFoundryServiceCreate] ERROR: Parameter config.cloudFoundry.manifestVariables.notAMap is not a Map!')
 
-        stepRule.step.createServicePushCloudFoundryEnvironmentManage([
+        stepRule.step.cloudFoundryServiceCreate([
             script: nullScript,
             juStabUtils: utils,
             jenkinsUtilsStub: new JenkinsUtilsMock(),
@@ -108,9 +108,9 @@ class CreateServicePushCloudFoundryEnvironmentManageTest extends BasePiperTest {
     @Test
     void testVarsFilesListIsNotAList() {
         thrown.expect(hudson.AbortException)
-        thrown.expectMessage('[createServicePushCloudFoundryEnvironmentManage] ERROR: Parameter config.cloudFoundry.manifestVariablesFiles is not a List!')
+        thrown.expectMessage('[cloudFoundryServiceCreate] ERROR: Parameter config.cloudFoundry.manifestVariablesFiles is not a List!')
 
-        stepRule.step.createServicePushCloudFoundryEnvironmentManage([
+        stepRule.step.cloudFoundryServiceCreate([
             script: nullScript,
             juStabUtils: utils,
             jenkinsUtilsStub: new JenkinsUtilsMock(),
@@ -125,7 +125,7 @@ class CreateServicePushCloudFoundryEnvironmentManageTest extends BasePiperTest {
 
     @Test
     void testRunCreateServicePushPlugin() {
-        stepRule.step.createServicePushCloudFoundryEnvironmentManage([
+        stepRule.step.cloudFoundryServiceCreate([
             script: nullScript,
             juStabUtils: utils,
             jenkinsUtilsStub: new JenkinsUtilsMock(),
@@ -149,7 +149,7 @@ class CreateServicePushCloudFoundryEnvironmentManageTest extends BasePiperTest {
         fileExistsRule.registerExistingFile(varsFileName)
         List varsList = [["appName" : "testApplicationFromVarsList"]]
 
-        stepRule.step.createServicePushCloudFoundryEnvironmentManage([
+        stepRule.step.cloudFoundryServiceCreate([
             script: nullScript,
             juStabUtils: utils,
             jenkinsUtilsStub: new JenkinsUtilsMock(),
@@ -173,7 +173,7 @@ class CreateServicePushCloudFoundryEnvironmentManageTest extends BasePiperTest {
     void testEscapesUsernameAndPasswordInShellCall() {
         credentialsRule.credentials.put('escape_cfCredentialsId',[user:"aUserWithA'",passwd:"passHasA'"])
 
-        stepRule.step.createServicePushCloudFoundryEnvironmentManage([
+        stepRule.step.cloudFoundryServiceCreate([
             script: nullScript,
             juStabUtils: utils,
             jenkinsUtilsStub: new JenkinsUtilsMock(),
@@ -189,7 +189,7 @@ class CreateServicePushCloudFoundryEnvironmentManageTest extends BasePiperTest {
 
     @Test
     void testEscapesSpaceNameInShellCall() {
-        stepRule.step.createServicePushCloudFoundryEnvironmentManage([
+        stepRule.step.cloudFoundryServiceCreate([
             script: nullScript,
             juStabUtils: utils,
             jenkinsUtilsStub: new JenkinsUtilsMock(),
@@ -204,7 +204,7 @@ class CreateServicePushCloudFoundryEnvironmentManageTest extends BasePiperTest {
 
     @Test
     void testEscapesOrgNameInShellCall() {
-        stepRule.step.createServicePushCloudFoundryEnvironmentManage([
+        stepRule.step.cloudFoundryServiceCreate([
             script: nullScript,
             juStabUtils: utils,
             jenkinsUtilsStub: new JenkinsUtilsMock(),
@@ -221,7 +221,7 @@ class CreateServicePushCloudFoundryEnvironmentManageTest extends BasePiperTest {
     void testWithVariableSubstitutionFromVarsListGetsEscaped() {
         List varsList = [["appName" : "testApplicationFromVarsListWith'"]]
 
-        stepRule.step.createServicePushCloudFoundryEnvironmentManage([
+        stepRule.step.cloudFoundryServiceCreate([
             script: nullScript,
             juStabUtils: utils,
             jenkinsUtilsStub: new JenkinsUtilsMock(),
@@ -241,7 +241,7 @@ class CreateServicePushCloudFoundryEnvironmentManageTest extends BasePiperTest {
         String varsFileName="varsWith'.yml"
         fileExistsRule.registerExistingFile(varsFileName)
 
-        stepRule.step.createServicePushCloudFoundryEnvironmentManage([
+        stepRule.step.cloudFoundryServiceCreate([
             script: nullScript,
             juStabUtils: utils,
             jenkinsUtilsStub: new JenkinsUtilsMock(),

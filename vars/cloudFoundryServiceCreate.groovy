@@ -8,7 +8,7 @@ import groovy.transform.Field
 
 import static com.sap.piper.Prerequisites.checkScript
 
-@Field String STEP_NAME = 'createServicePushCloudFoundryEnvironmentManage'
+@Field String STEP_NAME = 'cloudFoundryServiceCreate'
 
 @Field Set STEP_CONFIG_KEYS = [
     'cloudFoundry',
@@ -75,13 +75,14 @@ import static com.sap.piper.Prerequisites.checkScript
 ]
 
 @Field Map CONFIG_KEY_COMPATIBILITY = [cloudFoundry: [apiEndpoint: 'cfApiEndpoint', appName:'cfAppName', credentialsId: 'cfCredentialsId', serviceManifest: 'cfServiceManifest', manifestVariablesFiles: 'cfManifestVariablesFiles', manifestVariables: 'cfManifestVariables',  org: 'cfOrg', space: 'cfSpace']]
-@Field Set GENERAL_CONFIG_KEYS = STEP_CONFIG_KEYS 
+@Field Set GENERAL_CONFIG_KEYS = STEP_CONFIG_KEYS
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
 
 /**
- * Uses the Create-Service-Push plugin to create services in a Cloud Foundry space.  
+ * Uses the Create-Service-Push plugin to create services in a Cloud Foundry space.
+ *
  * For details how to specify the services see the [github page of the plugin](https://github.com/dawu415/CF-CLI-Create-Service-Push-Plugin).
- * 
+ *
  * The `--no-push` options is always used with the plugin. To deploy the application make use of the cloudFoundryDeploy step!
  */
 @GenerateDocumentation
@@ -173,4 +174,3 @@ private String varFileOptions(Map config) {
     if (varFilePart) echo "We will add the following string to the cf push call:$varFilePart !"
     return varFilePart
 }
-
