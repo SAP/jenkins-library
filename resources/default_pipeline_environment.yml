@@ -182,7 +182,7 @@ steps:
     cloudFoundry:
       apiEndpoint: 'https://api.cf.eu10.hana.ondemand.com'
       serviceManifest: 'service-manifest.yml'
-    dockerImage: 's4sdk/docker-cf-cli'
+    dockerImage: 'ppiper/cf-cli'
     dockerWorkspace: '/home/piper'
   detectExecuteScan:
     detect:
