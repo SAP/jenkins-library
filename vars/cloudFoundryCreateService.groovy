@@ -86,7 +86,7 @@ import static com.sap.piper.Prerequisites.checkScript
  * The `--no-push` options is always used with the plugin. To deploy the application make use of the cloudFoundryDeploy step!
  */
 @GenerateDocumentation
-def call(Map parameters = [:]) {
+void call(Map parameters = [:]) {
     handlePipelineStepErrors (stepName: STEP_NAME, stepParameters: parameters) {
         def script = checkScript(this, parameters) ?: this
         def utils = parameters.juStabUtils ?: new Utils()
