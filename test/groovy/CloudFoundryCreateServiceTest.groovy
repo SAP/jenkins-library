@@ -27,7 +27,7 @@ import static org.hamcrest.Matchers.not
 import static org.hamcrest.Matchers.hasEntry
 import static org.hamcrest.Matchers.containsString
 
-class CloudFoundryServiceCreateTest extends BasePiperTest {
+class CloudFoundryCreateServiceTest extends BasePiperTest {
 
     private File tmpDir = File.createTempDir()
     private ExpectedException thrown = ExpectedException.none()
@@ -72,9 +72,9 @@ class CloudFoundryServiceCreateTest extends BasePiperTest {
     @Test
     void testVarsListNotAList() {               
         thrown.expect(hudson.AbortException)
-        thrown.expectMessage('[cloudFoundryServiceCreate] ERROR: Parameter config.cloudFoundry.manifestVariables is not a List!')
+        thrown.expectMessage('[cloudFoundryCreateService] ERROR: Parameter config.cloudFoundry.manifestVariables is not a List!')
 
-        stepRule.step.cloudFoundryServiceCreate([
+        stepRule.step.cloudFoundryCreateService([
             script: nullScript,
             juStabUtils: utils,
             jenkinsUtilsStub: new JenkinsUtilsMock(),
@@ -90,9 +90,9 @@ class CloudFoundryServiceCreateTest extends BasePiperTest {
     @Test
     void testVarsListEntryIsNotAMap() {
         thrown.expect(hudson.AbortException)
-        thrown.expectMessage('[cloudFoundryServiceCreate] ERROR: Parameter config.cloudFoundry.manifestVariables.notAMap is not a Map!')
+        thrown.expectMessage('[cloudFoundryCreateService] ERROR: Parameter config.cloudFoundry.manifestVariables.notAMap is not a Map!')
 
-        stepRule.step.cloudFoundryServiceCreate([
+        stepRule.step.cloudFoundryCreateService([
             script: nullScript,
             juStabUtils: utils,
             jenkinsUtilsStub: new JenkinsUtilsMock(),
@@ -108,9 +108,9 @@ class CloudFoundryServiceCreateTest extends BasePiperTest {
     @Test
     void testVarsFilesListIsNotAList() {
         thrown.expect(hudson.AbortException)
-        thrown.expectMessage('[cloudFoundryServiceCreate] ERROR: Parameter config.cloudFoundry.manifestVariablesFiles is not a List!')
+        thrown.expectMessage('[cloudFoundryCreateService] ERROR: Parameter config.cloudFoundry.manifestVariablesFiles is not a List!')
 
-        stepRule.step.cloudFoundryServiceCreate([
+        stepRule.step.cloudFoundryCreateService([
             script: nullScript,
             juStabUtils: utils,
             jenkinsUtilsStub: new JenkinsUtilsMock(),
@@ -125,7 +125,7 @@ class CloudFoundryServiceCreateTest extends BasePiperTest {
 
     @Test
     void testRunCreateServicePushPlugin() {
-        stepRule.step.cloudFoundryServiceCreate([
+        stepRule.step.cloudFoundryCreateService([
             script: nullScript,
             juStabUtils: utils,
             jenkinsUtilsStub: new JenkinsUtilsMock(),
@@ -136,7 +136,7 @@ class CloudFoundryServiceCreateTest extends BasePiperTest {
             cfServiceManifest: 'test.yml'
         ]) 
 
-        assertThat(dockerExecuteRule.dockerParams, hasEntry('dockerImage', 's4sdk/docker-cf-cli'))
+        assertThat(dockerExecuteRule.dockerParams, hasEntry('dockerImage', 'ppiper/cf-cli'))
         assertThat(dockerExecuteRule.dockerParams, hasEntry('dockerWorkspace', '/home/piper'))        
         assertThat(shellRule.shell, hasItem(containsString("cf login -u 'test_cf' -p '********' -a https://api.cf.eu10.hana.ondemand.com -o 'testOrg' -s 'testSpace'")))
         assertThat(shellRule.shell, hasItem(containsString(" cf create-service-push --no-push -f 'test.yml'")))
@@ -149,7 +149,7 @@ class CloudFoundryServiceCreateTest extends BasePiperTest {
         fileExistsRule.registerExistingFile(varsFileName)
         List varsList = [["appName" : "testApplicationFromVarsList"]]
 
-        stepRule.step.cloudFoundryServiceCreate([
+        stepRule.step.cloudFoundryCreateService([
             script: nullScript,
             juStabUtils: utils,
             jenkinsUtilsStub: new JenkinsUtilsMock(),
@@ -162,7 +162,7 @@ class CloudFoundryServiceCreateTest extends BasePiperTest {
             cfManifestVariables: varsList
         ]) 
 
-        assertThat(dockerExecuteRule.dockerParams, hasEntry('dockerImage', 's4sdk/docker-cf-cli'))
+        assertThat(dockerExecuteRule.dockerParams, hasEntry('dockerImage', 'ppiper/cf-cli'))
         assertThat(dockerExecuteRule.dockerParams, hasEntry('dockerWorkspace', '/home/piper'))        
         assertThat(shellRule.shell, hasItem(containsString("cf login -u 'test_cf' -p '********' -a https://api.cf.eu10.hana.ondemand.com -o 'testOrg' -s 'testSpace'")))
         assertThat(shellRule.shell, hasItem(containsString("cf create-service-push --no-push -f 'test.yml' --var appName='testApplicationFromVarsList' --vars-file 'vars.yml'")))
@@ -173,7 +173,7 @@ class CloudFoundryServiceCreateTest extends BasePiperTest {
     void testEscapesUsernameAndPasswordInShellCall() {
         credentialsRule.credentials.put('escape_cfCredentialsId',[user:"aUserWithA'",passwd:"passHasA'"])
 
-        stepRule.step.cloudFoundryServiceCreate([
+        stepRule.step.cloudFoundryCreateService([
             script: nullScript,
             juStabUtils: utils,
             jenkinsUtilsStub: new JenkinsUtilsMock(),
@@ -189,7 +189,7 @@ class CloudFoundryServiceCreateTest extends BasePiperTest {
 
     @Test
     void testEscapesSpaceNameInShellCall() {
-        stepRule.step.cloudFoundryServiceCreate([
+        stepRule.step.cloudFoundryCreateService([
             script: nullScript,
             juStabUtils: utils,
             jenkinsUtilsStub: new JenkinsUtilsMock(),
@@ -204,7 +204,7 @@ class CloudFoundryServiceCreateTest extends BasePiperTest {
 
     @Test
     void testEscapesOrgNameInShellCall() {
-        stepRule.step.cloudFoundryServiceCreate([
+        stepRule.step.cloudFoundryCreateService([
             script: nullScript,
             juStabUtils: utils,
             jenkinsUtilsStub: new JenkinsUtilsMock(),
@@ -221,7 +221,7 @@ class CloudFoundryServiceCreateTest extends BasePiperTest {
     void testWithVariableSubstitutionFromVarsListGetsEscaped() {
         List varsList = [["appName" : "testApplicationFromVarsListWith'"]]
 
-        stepRule.step.cloudFoundryServiceCreate([
+        stepRule.step.cloudFoundryCreateService([
             script: nullScript,
             juStabUtils: utils,
             jenkinsUtilsStub: new JenkinsUtilsMock(),
@@ -241,7 +241,7 @@ class CloudFoundryServiceCreateTest extends BasePiperTest {
         String varsFileName="varsWith'.yml"
         fileExistsRule.registerExistingFile(varsFileName)
 
-        stepRule.step.cloudFoundryServiceCreate([
+        stepRule.step.cloudFoundryCreateService([
             script: nullScript,
             juStabUtils: utils,
             jenkinsUtilsStub: new JenkinsUtilsMock(),

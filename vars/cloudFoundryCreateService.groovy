@@ -8,7 +8,7 @@ import groovy.transform.Field
 
 import static com.sap.piper.Prerequisites.checkScript
 
-@Field String STEP_NAME = 'cloudFoundryServiceCreate'
+@Field String STEP_NAME = 'cloudFoundryCreateService'
 
 @Field Set STEP_CONFIG_KEYS = [
     'cloudFoundry',

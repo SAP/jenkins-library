@@ -178,7 +178,7 @@ steps:
     stashContent:
       - 'tests'
     testReportFilePath: 'cst-report.json'
-  createServicePushCloudFoundryEnvironmentManage:
+  cloudFoundryCreateService:
     cloudFoundry:
       apiEndpoint: 'https://api.cf.eu10.hana.ondemand.com'
       serviceManifest: 'service-manifest.yml'
