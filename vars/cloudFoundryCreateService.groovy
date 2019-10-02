@@ -130,7 +130,7 @@ private def executeCreateServicePush(script, Map config) {
             set -e
             export HOME=${config.dockerWorkspace}
             cf login -u ${BashUtils.quoteAndEscape(CF_USERNAME)} -p ${BashUtils.quoteAndEscape(CF_PASSWORD)} -a ${config.cloudFoundry.apiEndpoint} -o ${BashUtils.quoteAndEscape(config.cloudFoundry.org)} -s ${BashUtils.quoteAndEscape(config.cloudFoundry.space)};
-            cf create-service-push --no-push -f ${BashUtils.quoteAndEscape(config.cloudFoundry.serviceManifest)}${varPart}${varFilePart}            
+            cf create-service-push --no-push -f ${BashUtils.quoteAndEscape(config.cloudFoundry.serviceManifest)}${varPart}${varFilePart}
             """
             sh "cf logout"
             if (returnCode!=0)  {
