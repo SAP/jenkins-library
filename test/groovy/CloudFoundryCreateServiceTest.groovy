@@ -255,4 +255,30 @@ class CloudFoundryCreateServiceTest extends BasePiperTest {
 
         assertThat(shellRule.shell, hasItem(containsString("""cf create-service-push --no-push -f 'test.yml' --vars-file 'varsWith'"'"'.yml'""")))
     }
+
+    @Test
+    void testCfLogoutHappensEvenWhenCreateServiceFails() {
+
+        thrown.expect(hudson.AbortException)
+        thrown.expectMessage('[cloudFoundryCreateService] ERROR: The execution of the create-service-push plugin failed, see the logs above for more details.')
+
+        shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX,/(create-service-push)/,128)
+
+        stepRule.step.cloudFoundryCreateService([
+            script: nullScript,
+            juStabUtils: utils,
+            jenkinsUtilsStub: new JenkinsUtilsMock(),
+            deployTool: 'cf_native',
+            cfOrg: 'testOrg',
+            cfSpace: 'testSpace',
+            cfCredentialsId: 'test_cfCredentialsId',           
+            cfServiceManifest: 'test.yml'
+        ]) 
+
+        assertThat(dockerExecuteRule.dockerParams, hasEntry('dockerImage', 'ppiper/cf-cli'))
+        assertThat(dockerExecuteRule.dockerParams, hasEntry('dockerWorkspace', '/home/piper'))        
+        assertThat(shellRule.shell, hasItem(containsString("cf login -u 'test_cf' -p '********' -a https://api.cf.eu10.hana.ondemand.com -o 'testOrg' -s 'testSpace'")))
+        assertThat(shellRule.shell, hasItem(containsString(" cf create-service-push --no-push -f 'test.yml'")))
+        assertThat(shellRule.shell, hasItem(containsString("cf logout")))
+    } 
 }
