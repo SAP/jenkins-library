@@ -829,7 +829,37 @@ class CloudFoundryDeployTest extends BasePiperTest {
     }
 
     @Test
-    void testAdditionOpts() {
+    void testAdditionCfNativeOpts() {
+
+        readYamlRule.registerYaml('test.yml', "applications: [[name: 'manifestAppName']]")
+        helper.registerAllowedMethod('writeYaml', [Map], { Map parameters ->
+            generatedFile = parameters.file
+            data = parameters.data
+        })
+        nullScript.commonPipelineEnvironment.setArtifactVersion('1.2.3')
+        stepRule.step.cloudFoundryDeploy([
+            script: nullScript,
+            juStabUtils: utils,
+            jenkinsUtilsStub: new JenkinsUtilsMock(),
+            deployTool: 'cf_native',
+            cfOrg: 'testOrg',
+            cfSpace: 'testSpace',
+            loginParameters: '--some-login-opt value',
+            cfNativeDeployParameters: '--some-deploy-opt cf-value',
+            cfCredentialsId: 'test_cfCredentialsId',
+            cfAppName: 'testAppName',
+            cfManifest: 'test.yml'
+        ])
+
+        assertThat(shellRule.shell, hasItem(
+            stringContainsInOrder([
+                'cf login ', '--some-login-opt value',
+                'cf push', '--some-deploy-opt cf-value'])))
+
+    }
+
+    @Test
+    void testAdditionMtaOpts() {
 
         stepRule.step.cloudFoundryDeploy([
             script: nullScript,
@@ -841,7 +871,7 @@ class CloudFoundryDeployTest extends BasePiperTest {
             ],
             apiParameters: '--some-api-opt value',
             loginParameters: '--some-login-opt value',
-            mtaDeployParameters: '--some-deploy-opt value',
+            mtaDeployParameters: '--some-deploy-opt mta-value',
             cfCredentialsId: 'test_cfCredentialsId',
             deployTool: 'mtaDeployPlugin',
             deployType: 'blue-green',
@@ -852,7 +882,7 @@ class CloudFoundryDeployTest extends BasePiperTest {
             stringContainsInOrder([
                 'cf api', '--some-api-opt value',
                 'cf login ', '--some-login-opt value',
-                'cf bg-deploy', '--some-deploy-opt value'])))
+                'cf bg-deploy', '--some-deploy-opt mta-value'])))
 
     }
 

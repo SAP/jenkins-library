@@ -97,6 +97,10 @@ import groovy.transform.Field
     /** @see dockerExecute */
     'stashContent',
     /**
+     * Additional parameters passed to cf native deployment command.
+     */
+    'cfNativeDeployParameters',
+    /**
      * Addition command line options for cf api command.
      * No escaping/quoting is performed. Not recommanded for productive environments.
      * @parentConfigKey cloudFoundry
@@ -109,7 +113,7 @@ import groovy.transform.Field
      */
     'loginParameters',
     /**
-     * Defines additional parameters passed to mta for deployment with the mtaDeployPlugin.
+     * Additional parameters passed to mta deployment command.
      */
     'mtaDeployParameters',
     /**
@@ -448,7 +452,7 @@ def deployCfNative (config) {
             export CF_TRACE=${cfTraceFile}
             cf login -u \"${username}\" -p '${password}' -a ${config.cloudFoundry.apiEndpoint} -o \"${config.cloudFoundry.org}\" -s \"${config.cloudFoundry.space}\" ${config.loginParameters}
             cf plugins
-            cf ${config.deployCommand} ${config.cloudFoundry.appName ?: ''} ${config.deployOptions?:''} -f '${config.cloudFoundry.manifest}' ${config.smokeTest} ${config.mtaDeployParameters}
+            cf ${config.deployCommand} ${config.cloudFoundry.appName ?: ''} ${config.deployOptions?:''} -f '${config.cloudFoundry.manifest}' ${config.smokeTest} ${config.cfNativeDeployParameters}
             """
 
         if(config.verbose) {
