@@ -103,13 +103,11 @@ import groovy.transform.Field
     /**
      * Addition command line options for cf api command.
      * No escaping/quoting is performed. Not recommanded for productive environments.
-     * @parentConfigKey cloudFoundry
      */
     'apiParameters',
     /**
      * Addition command line options for cf login command.
      * No escaping/quoting is performed. Not recommanded for productive environments.
-     * @parentConfigKey cloudFoundry
      */
     'loginParameters',
     /**
