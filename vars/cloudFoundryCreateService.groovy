@@ -156,7 +156,7 @@ private varOptions(Map config) {
             }
         }
     }
-    if (varPart) echo "We will add the following string to the cf push call:$varPart !"
+    if (varPart) echo "We will add the following string to the cf push call: '$varPart'"
     return varPart
 }
 
@@ -174,6 +174,6 @@ private String varFileOptions(Map config) {
             }
         }
     }
-    if (varFilePart) echo "We will add the following string to the cf push call:$varFilePart !"
+    if (varFilePart) echo "We will add the following string to the cf push call: '$varFilePart'"
     return varFilePart
 }
