@@ -471,7 +471,7 @@ class CloudFoundryDeployTest extends BasePiperTest {
         // asserts
         assertThat(dockerExecuteRule.dockerParams, hasEntry('dockerImage', 's4sdk/docker-cf-cli'))
         assertThat(dockerExecuteRule.dockerParams, hasEntry('dockerWorkspace', '/home/piper'))
-        assertThat(shellRule.shell, hasItem(containsString('cf login -u test_cf -p \'********\' -a https://api.cf.eu10.hana.ondemand.com -o "testOrg" -s "testSpace"')))
+        assertThat(shellRule.shell, hasItem(containsString('cf login -u "test_cf" -p \'********\' -a https://api.cf.eu10.hana.ondemand.com -o "testOrg" -s "testSpace"')))
         assertThat(shellRule.shell, hasItem(containsString('cf deploy target/test.mtar -f')))
         assertThat(shellRule.shell, hasItem(containsString('cf logout')))
     }
@@ -491,7 +491,7 @@ class CloudFoundryDeployTest extends BasePiperTest {
             mtaPath: 'target/test.mtar'
         ])
 
-        assertThat(shellRule.shell, hasItem(stringContainsInOrder(["cf login -u test_cf", 'cf bg-deploy', '-f', '--no-confirm'])))
+        assertThat(shellRule.shell, hasItem(stringContainsInOrder(["cf login -u \"test_cf\"", 'cf bg-deploy', '-f', '--no-confirm'])))
     }
 
     @Test

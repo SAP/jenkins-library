@@ -269,46 +269,11 @@ def deployMta (config) {
         }
     }
 
-    withCredentials([usernamePassword(
-        credentialsId: config.cloudFoundry.credentialsId,
-        passwordVariable: 'password',
-        usernameVariable: 'username'
-    )]) {
-        echo "[${STEP_NAME}] Deploying MTA (${config.mtaPath}) with following parameters: ${config.mtaExtensionDescriptor} ${config.mtaDeployParameters}"
-        def cfTraceFile = 'cf.log'
-        def deployScript = """#!/bin/bash
-            export HOME=${config.dockerWorkspace}
-            export CF_TRACE="${cfTraceFile}"
-            set +x
-            set -e
-            cf api ${config.cloudFoundry.apiEndpoint} ${config.apiParameters}
-            cf login -u ${username} -p '${password}' -a ${config.cloudFoundry.apiEndpoint} -o \"${config.cloudFoundry.org}\" -s \"${config.cloudFoundry.space}\" ${config.loginParameters}
-            cf plugins
-            cf ${deployCommand} ${config.mtaPath} ${config.mtaDeployParameters} ${config.mtaExtensionDescriptor}"""
+    def deployStatement = "cf ${deployCommand} ${config.mtaPath} ${config.mtaDeployParameters} ${config.mtaExtensionDescriptor}"
+    def apiStatement = "cf api ${config.cloudFoundry.apiEndpoint} ${config.apiParameters}"
 
-        if(config.verbose) {
-            // Password contained in output below is hidden by withCredentials
-            echo "[INFO][$STEP_NAME] Executing deploy command '${deployScript}'"
-        }
-
-        def returnCode = sh returnStatus: true, script: deployScript
-
-        if(config.verbose || returnCode != 0) {
-            if(fileExists(file: cfTraceFile)) {
-                echo  '### START OF CF CLI TRACE OUTPUT ###'
-                // Would be nice to inline the two next lines, but that is not understood by the test framework
-                def cfTrace =  readFile(file: cfTraceFile)
-                echo cfTrace
-                echo '### END OF CF CLI TRACE OUTPUT ###'
-            } else {
-                echo "No trace file found at '${cfTraceFile}'"
-            }
-        }
-        if(returnCode != 0){
-            error "[${STEP_NAME}] ERROR: The execution of the deploy command failed, see the log for details."
-        }
-        sh "cf logout"
-    }
+    echo "[${STEP_NAME}] Deploying MTA (${config.mtaPath}) with following parameters: ${config.mtaExtensionDescriptor} ${config.mtaDeployParameters}"
+    deploy(apiStatement, deployStatement, config, null)
 }
 
 private void handleCFNativeDeployment(Map config, script) {
@@ -435,6 +400,12 @@ private checkIfAppNameIsAvailable(config) {
 }
 
 def deployCfNative (config) {
+    def deployStatement = "cf ${config.deployCommand} ${config.cloudFoundry.appName ?: ''} ${config.deployOptions?:''} -f '${config.cloudFoundry.manifest}' ${config.smokeTest} ${config.cfNativeDeployParameters}"
+    deploy(null, deployStatement, config,  { c -> stopOldAppIfRunning(c) })
+}
+
+private deploy(def cfApiStatement, def cfDeployStatement, def config, Closure logoutAction) {
+
     withCredentials([usernamePassword(
         credentialsId: config.cloudFoundry.credentialsId,
         passwordVariable: 'password',
@@ -448,16 +419,19 @@ def deployCfNative (config) {
             set -e
             export HOME=${config.dockerWorkspace}
             export CF_TRACE=${cfTraceFile}
+            ${cfApiStatement ?: ''}
             cf login -u \"${username}\" -p '${password}' -a ${config.cloudFoundry.apiEndpoint} -o \"${config.cloudFoundry.org}\" -s \"${config.cloudFoundry.space}\" ${config.loginParameters}
             cf plugins
-            cf ${config.deployCommand} ${config.cloudFoundry.appName ?: ''} ${config.deployOptions?:''} -f '${config.cloudFoundry.manifest}' ${config.smokeTest} ${config.cfNativeDeployParameters}
+            ${cfDeployStatement}
             """
 
         if(config.verbose) {
             // Password contained in output below is hidden by withCredentials
             echo "[INFO][${STEP_NAME}] Executing command: '${deployScript}'."
         }
+
         def returnCode = sh returnStatus: true, script: deployScript
+
         if(config.verbose || returnCode != 0) {
             if(fileExists(file: cfTraceFile)) {
                 echo  '### START OF CF CLI TRACE OUTPUT ###'
@@ -473,7 +447,9 @@ def deployCfNative (config) {
         if(returnCode != 0){
             error "[${STEP_NAME}] ERROR: The execution of the deploy command failed, see the log for details."
         }
-        stopOldAppIfRunning(config)
+
+        if(logoutAction) logoutAction(config)
+
         sh "cf logout"
     }
 }
