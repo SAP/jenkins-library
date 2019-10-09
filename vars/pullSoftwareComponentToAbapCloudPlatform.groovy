@@ -126,9 +126,9 @@ def Map getTokenAndCookie(URL url, String authToken) {
     connection.setRequestMethod("GET")
     connection.connect()
     token =  connection.getHeaderField("x-csrf-token")
-    cookie1 = connection.getHeaderField(1).split("")[0] 
-    cookie2 = connection.getHeaderField(2).split("")[0] 
-    cookie = cookie1 + " " + cookie2 
+    cookie1 = connection.getHeaderField(1).split(";")[0] 
+    cookie2 = connection.getHeaderField(2).split(";")[0] 
+    cookie = cookie1 + "; " + cookie2 
     connection.disconnect()
     connection = null
 
