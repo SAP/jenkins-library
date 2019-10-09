@@ -56,6 +56,7 @@ void call(Map parameters = [:]) {
         Map tokenAndCookie = getTokenAndCookie(url, authToken)
         String token = tokenAndCookie.token
         String cookie = tokenAndCookie.cookie
+        echo token
 
         HttpURLConnection connection = createPostConnection(url, token, cookie, authToken)
         connection.connect()
@@ -118,10 +119,9 @@ void call(Map parameters = [:]) {
 
 
 def Map getTokenAndCookie(URL url, String authToken) {
+
     HttpURLConnection connection = createDefaultConnection(url, authToken)
     connection.setRequestProperty("x-csrf-token", "fetch")
-
-    System.setProperty("https.protocols", "TLSv1,TLSv1.1,TLSv1.2")
 
     connection.setRequestMethod("GET")
     connection.connect()
@@ -140,6 +140,7 @@ def Map getTokenAndCookie(URL url, String authToken) {
 }
 
 def HttpURLConnection createDefaultConnection(URL url, String authToken) {
+
     HttpURLConnection connection = (HttpURLConnection) url.openConnection()
     connection.setRequestProperty("Authorization", "Basic " + authToken)
     connection.setRequestProperty("Content-Type", "application/json")
