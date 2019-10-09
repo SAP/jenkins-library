@@ -12,7 +12,7 @@ import hudson.AbortException
 import groovy.json.JsonSlurper;
 
 @Field def STEP_NAME = getClass().getName()
-Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS.plus([
+@Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS.plus([
     /**
      * Specifies the host address
      */
@@ -34,7 +34,8 @@ Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS.plus([
  *
  * Prerequisite: the Communication Arrangement for the Communication Scenario SAP_COM_0510 has to be set up, including a Communication System and Communication Arrangement
  */
-def call(Map parameters = [:]) {
+@GenerateDocumentation
+void call(Map parameters = [:]) {
     handlePipelineStepErrors(stepName: STEP_NAME, stepParameters: parameters, failOnError: true) {
 
         String host = parameters.host;
