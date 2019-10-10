@@ -116,7 +116,7 @@ void call(Map parameters = [:]) {
                         }
 
                     }()) continue
-                    echoe "loop ended"
+                    echo "loop ended"
                     return true
                 }
             } catch(err) {
