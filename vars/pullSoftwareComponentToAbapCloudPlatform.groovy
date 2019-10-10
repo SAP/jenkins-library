@@ -60,11 +60,7 @@ void call(Map parameters = [:]) {
 
         Map object = triggerPull(configuration, urlString, authToken)
 
-        String pollUri = object.d."__metadata"."uri"
-        echo "[${STEP_NAME}] Pull Entity: ${pollUri}"
-        echo "[${STEP_NAME}] Pull Status: ${object.d."status_descr"}"
-
-        def pollUrl = new URL(pollUri)
+        def pollUrl = new URL(object.d."__metadata"."uri")
         Map responseObject = pollPullStatus(object, pollUrl, authToken)
 
         echo "[${STEP_NAME}] Pull Status: ${responseObject.d."status_descr"}"
@@ -138,6 +134,10 @@ private Map triggerPull(Map configuration, String urlString, String authToken) {
     JsonSlurper slurper = new JsonSlurper()
     Map object = slurper.parseText(connection.content.text)
     connection.disconnect()
+
+    echo "[${STEP_NAME}] Pull Entity: ${object.d."__metadata"."uri"}"
+    echo "[${STEP_NAME}] Pull Status: ${object.d."status_descr"}"
+
     return object
 
 }
