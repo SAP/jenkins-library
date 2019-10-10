@@ -58,24 +58,7 @@ void call(Map parameters = [:]) {
         String urlString = configuration.host + ':443/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY/Pull'
         echo "[${STEP_NAME}] General Parameters: URL = \"${urlString}\", repositoryName = \"${configuration.repositoryName}\""
 
-        def url = new URL(urlString)
-        Map tokenAndCookie = getXCsrfTokenAndCookie(url, authToken)
-        HttpURLConnection connection = createPostConnection(url, tokenAndCookie.token, tokenAndCookie.cookie, authToken)
-        connection.connect()
-        OutputStream outputStream = connection.getOutputStream()
-        String input = '{ "sc_name" : "' + configuration.repositoryName + '" }'
-        outputStream.write(input.getBytes())
-        outputStream.flush()
-
-        if (!(connection.responseCode == 200 || connection.responseCode == 201)) {
-            error "[${STEP_NAME}] Error: ${connection.getErrorStream().text}"
-            connection.disconnect()
-            throw new Exception("HTTPS Connection Failed")
-        }
-
-        JsonSlurper slurper = new JsonSlurper()
-        Map object = slurper.parseText(connection.content.text)
-        connection.disconnect()
+        Map object = triggerPull(configuration, urlString, authToken)
 
         String pollUri = object.d."__metadata"."uri"
         echo "[${STEP_NAME}] Pull Entity: ${pollUri}"
@@ -132,6 +115,30 @@ private HttpURLConnection createPostConnection(URL url, String token, String coo
     connection.setDoOutput(true)
     connection.setDoInput(true)
     return connection
+
+}
+
+private Map triggerPull(Map configuration, URL url, String authToken) {
+
+    def url = new URL(urlString)
+    Map tokenAndCookie = getXCsrfTokenAndCookie(url, authToken)
+    HttpURLConnection connection = createPostConnection(url, tokenAndCookie.token, tokenAndCookie.cookie, authToken)
+    connection.connect()
+    OutputStream outputStream = connection.getOutputStream()
+    String input = '{ "sc_name" : "' + configuration.repositoryName + '" }'
+    outputStream.write(input.getBytes())
+    outputStream.flush()
+
+    if (!(connection.responseCode == 200 || connection.responseCode == 201)) {
+        error "[${STEP_NAME}] Error: ${connection.getErrorStream().text}"
+        connection.disconnect()
+        throw new Exception("HTTPS Connection Failed")
+    }
+
+    JsonSlurper slurper = new JsonSlurper()
+    Map object = slurper.parseText(connection.content.text)
+    connection.disconnect()
+    return object
 
 }
 
