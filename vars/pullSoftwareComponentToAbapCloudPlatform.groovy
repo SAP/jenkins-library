@@ -102,10 +102,10 @@ void call(Map parameters = [:]) {
                                 true
                             } else {
                                 echo "[${STEP_NAME}] Pull Status: ${pollStatusText}"
+                                pollConnection.disconnect()
                                 if (pollStatus != 'S') {
                                     throw new Exception("Pull Failed")
                                 }
-                                pollConnection.disconnect()
                                 false
                             }
                         } else {
