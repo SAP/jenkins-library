@@ -51,8 +51,6 @@ void call(Map parameters = [:]) {
             .withMandatoryProperty('username')
             .withMandatoryProperty('password')
 
-        echo configuration
-
         String host = parameters.host
         String repositoryName = parameters.repositoryName
         String username = parameters.username
