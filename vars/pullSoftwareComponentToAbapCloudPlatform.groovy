@@ -35,7 +35,7 @@ import org.jenkinsci.plugins.workflow.steps.FlowInterruptedException
  */
 @GenerateDocumentation
 void call(Map parameters = [:]) {
-    
+
     handlePipelineStepErrors(stepName: STEP_NAME, stepParameters: parameters, failOnError: true) {
 
         def script = checkScript(this, parameters) ?: this
@@ -55,18 +55,13 @@ void call(Map parameters = [:]) {
 
         String usernameColonPassword = configuration.username + ":" + configuration.password
         String authToken = usernameColonPassword.bytes.encodeBase64().toString()
-        String port = ':443'
-        String service = '/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY'
-        String entity = '/Pull'
-        String urlString = configuration.host + port + service + entity
+        String urlString = configuration.host + ':443/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY/Pull'
         echo "[${STEP_NAME}] General Parameters: host = \"${configuration.host}\2, ODataService = \"${service}\", repositoryName = \"${configuration.repositoryName}\""
 
         def url = new URL(urlString)
-        Map tokenAndCookie = getTokenAndCookie(url, authToken)
-        String token = tokenAndCookie.token
-        String cookie = tokenAndCookie.cookie
+        Map tokenAndCookie = getXCsrfTokenAndCookie(url, authToken)
 
-        HttpURLConnection connection = createPostConnection(url, token, cookie, authToken)
+        HttpURLConnection connection = createPostConnection(url, tokenAndCookie.token, tokenAndCookie.cookie, authToken)
         connection.connect()
         OutputStream outputStream = connection.getOutputStream()
         String input = '{ "sc_name" : "' + configuration.repositoryName + '" }'
@@ -118,7 +113,7 @@ void call(Map parameters = [:]) {
 }
 
 
-def Map getTokenAndCookie(URL url, String authToken) {
+def Map getXCsrfTokenAndCookie(URL url, String authToken) {
 
     HttpURLConnection connection = createDefaultConnection(url, authToken)
     connection.setRequestProperty("x-csrf-token", "fetch")
