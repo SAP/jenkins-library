@@ -110,16 +110,14 @@ void call(Map parameters = [:]) {
                         } else {
                             error "[${STEP_NAME}] Error: ${pollConnection.getErrorStream().text}"
                             pollConnection.disconnect()
-                            httpError = new Exception("HTTPS Connection Failed")
-                            httpError.initCause()
-                            throw httpError
+                            throw new Exception("HTTPS Connection Failed")
                             false
                         }
 
                     }()) continue
                 }
             } catch(err) {
-                echo err.toString()
+                throw err
             }
             
         } else {
