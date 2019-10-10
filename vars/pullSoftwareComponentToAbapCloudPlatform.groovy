@@ -4,6 +4,8 @@ import com.sap.piper.GenerateDocumentation
 import com.sap.piper.JenkinsUtils
 import com.sap.piper.Utils
 import groovy.json.JsonSlurper
+import hudson.AbortException
+import groovy.transform.Field
 
 @Field def STEP_NAME = getClass().getName()
 @Field Set GENERAL_CONFIG_KEYS = []
