@@ -83,7 +83,7 @@ void call(Map parameters = [:]) {
 
         String body = connection.content.text
         JsonSlurper slurper = new JsonSlurper()
-        Map object = JsonUtils.jsonStringToGroovyObject(body)
+        Map object = JsonUtils.jsonStringToGroovyObject(body.toString())
         connection.disconnect()
         String pollUri = object.d."__metadata"."uri"
         echo "[${STEP_NAME}] Pull Entity: ${pollUri}"
