@@ -86,7 +86,7 @@ void call(Map parameters = [:]) {
             def pollUrl = new URL(pollUri)
 
             try {
-                timeout(time: 20, unit: 'MINUTES') {
+                // timeout(time: 20, unit: 'MINUTES') {
                     while({
                         Thread.sleep(5000)
                         HttpURLConnection pollConnection = createDefaultConnection(pollUrl, authToken)
@@ -102,7 +102,6 @@ void call(Map parameters = [:]) {
                                 true
                             } else {
                                 echo "[${STEP_NAME}] Pull Status: ${pollStatusText}"
-                                pollConnection.disconnect()
                                 if (pollStatus != 'S') {
                                     throw new Exception("Pull Failed")
                                 }
@@ -117,7 +116,7 @@ void call(Map parameters = [:]) {
 
                     }()) continue
                     return true
-                }
+                // }
             } catch(err) {
                 println err.toString()
             }
