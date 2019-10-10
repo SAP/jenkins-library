@@ -105,7 +105,6 @@ void call(Map parameters = [:]) {
                                 if (pollStatus != 'S') {
                                     throw new Exception("Pull Failed")
                                 }
-                                echo "false"
                                 false
                             }
                         } else {
@@ -116,11 +115,10 @@ void call(Map parameters = [:]) {
                         }
 
                     }()) continue
-                    echo "loop ended"
                     return true
                 }
             } catch(err) {
-                echo "ERROR"
+                echo err.getStackTrace()
             }
             
         } else {
