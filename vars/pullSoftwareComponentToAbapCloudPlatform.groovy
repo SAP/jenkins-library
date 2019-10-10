@@ -118,7 +118,7 @@ void call(Map parameters = [:]) {
                     return true
                 }
             } catch(err) {
-                echo err.getStackTrace()
+                println err.getStackTrace()
             }
             
         } else {
