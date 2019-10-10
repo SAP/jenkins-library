@@ -84,32 +84,10 @@ void call(Map parameters = [:]) {
         echo "[${STEP_NAME}] Pull Entity: ${pollUri}"
         echo "[${STEP_NAME}] Pull Status: ${object.d."status_descr"}"
 
-        String status = object.d."status"
-        String statusText = object.d."status_descr"
+        Map responseObject = pollPullStatus(object, pollUrl, authToken)
 
-        while(status == 'R') {
-
-            Thread.sleep(5000)
-            HttpURLConnection pollConnection = createDefaultConnection(pollUrl, authToken)
-            pollConnection.connect()
-
-            if (pollConnection.responseCode == 200 || pollConnection.responseCode == 201) {
-
-                Map pollObject = slurper.parseText(pollConnection.content.text)
-                statusText = pollObject.d."status_descr"
-                status = pollObject.d."status"
-                pollConnection.disconnect()
-
-            } else {
-
-                error "[${STEP_NAME}] Error: ${pollConnection.getErrorStream().text}"
-                pollConnection.disconnect()
-                throw new Exception("HTTPS Connection Failed")
-            }
-        }
-
-        echo "[${STEP_NAME}] Pull Status: ${statusText}"
-        if (status != 'S') {
+        echo "[${STEP_NAME}] Pull Status: ${responseObject.d."status_descr"}"
+        if (responseObject.d."status" != 'S') {
             throw new Exception("Pull Failed")
         }  
     }
@@ -157,4 +135,30 @@ def HttpURLConnection createPostConnection(URL url, String token, String cookie,
     connection.setDoInput(true)
     return connection
 
+}
+
+def Map pollPullStatus(Map responseObject, URL url, String authToken) {
+
+    String status = responseObject.d."status"
+    Map returnObject = null
+    while(status == 'R') {
+
+        Thread.sleep(5000)
+        HttpURLConnection pollConnection = createDefaultConnection(pollUrl, authToken)
+        pollConnection.connect()
+
+        if (pollConnection.responseCode == 200 || pollConnection.responseCode == 201) {
+
+            returnObject = slurper.parseText(pollConnection.content.text)
+            status = returnObject.d."status"
+            pollConnection.disconnect()
+
+        } else {
+
+            error "[${STEP_NAME}] Error: ${pollConnection.getErrorStream().text}"
+            pollConnection.disconnect()
+            throw new Exception("HTTPS Connection Failed")
+        }
+    }
+    return returnObject
 }
