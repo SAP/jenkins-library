@@ -133,7 +133,7 @@ void call(Map parameters = [:]) {
 
                     sh "PATH=\$PATH:${env.WORKSPACE}/.sonar-scanner/bin sonar-scanner ${config.options.join(' ')}"
                 }finally{
-                    sh 'rm -rf .sonar-scanner .certificates .scannerwork'
+                    sh 'rm -rf .certificates'
                 }
             }
         }
