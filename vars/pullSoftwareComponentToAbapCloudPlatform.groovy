@@ -12,7 +12,7 @@ import groovy.json.JsonSlurper
     /**
      * Specifies the name of the Software Component
      */
-    'name',
+    'repositoryName',
     /**
      * Specifies the communication user of the communication scenario SAP_COM_0510
      */
@@ -21,6 +21,7 @@ import groovy.json.JsonSlurper
      * Specifies the password of the communication user
      */
     'password'])
+@Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
 /**
  * Pulls a Software Component to a SAP Cloud Platform ABAP Environment System.
  *
@@ -29,6 +30,23 @@ import groovy.json.JsonSlurper
 @GenerateDocumentation
 void call(Map parameters = [:]) {
     handlePipelineStepErrors(stepName: STEP_NAME, stepParameters: parameters, failOnError: true) {
+
+        def script = checkScript(this, parameters) ?: this
+
+        ConfigurationHelper configHelper = ConfigurationHelper.newInstance(this)
+        .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS)
+        .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS)
+        .mixin(parameters, PARAMETER_KEYS)
+
+        Map configuration = configHelper.use()
+
+        configHelper
+            .withMandatoryProperty('host')
+            .withMandatoryProperty('repositoryName')
+            .withMandatoryProperty('username')
+            .withMandatoryProperty('password')
+
+        echo configuration
 
         String host = parameters.host
         String repositoryName = parameters.repositoryName
