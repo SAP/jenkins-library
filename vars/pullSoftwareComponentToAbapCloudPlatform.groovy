@@ -118,7 +118,7 @@ void call(Map parameters = [:]) {
                     return true
                 }
             } catch(err) {
-                println err.getStackTrace()
+                println err.toString()
             }
             
         } else {
