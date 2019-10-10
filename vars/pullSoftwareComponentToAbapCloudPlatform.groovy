@@ -73,56 +73,56 @@ void call(Map parameters = [:]) {
 
         int statusCode = connection.responseCode
 
-        if (statusCode == 200 || statusCode == 201) {
-
-            String body = connection.content.text
-
-            JsonSlurper slurper = new JsonSlurper()
-            Map object = slurper.parseText(body)
-            connection.disconnect()
-            String pollUri = object.d."__metadata"."uri"
-            echo "[${STEP_NAME}] Pull Entity: ${pollUri}"
-            echo "[${STEP_NAME}] Pull Status: ${object.d."status_descr"}"
-            def pollUrl = new URL(pollUri)
-
-            try {
-                timeout(time: 20, unit: 'MINUTES') {
-                    String status = object.d."status"
-                    String statusText = object.d."status_descr"
-                    while(status == 'R') {
-                        Thread.sleep(5000)
-                        HttpURLConnection pollConnection = createDefaultConnection(pollUrl, authToken)
-                        pollConnection.connect()
-                        int pollStatusCode = pollConnection.responseCode
-                        if (pollStatusCode == 200 || pollStatusCode == 201) {
-                            String pollBody = pollConnection.content.text
-                            Map pollObject = slurper.parseText(pollBody)
-                            statusText = pollObject.d."status_descr"
-                            status = pollObject.d."status"
-                            pollConnection.disconnect()
-                        } else {
-                            error "[${STEP_NAME}] Error: ${pollConnection.getErrorStream().text}"
-                            throw new Exception("HTTPS Connection Failed")
-                            pollConnection.disconnect()
-                            status = 'E'
-                        }
-                    }
-                    echo "[${STEP_NAME}] Pull Status: ${statusText}"
-                    if (status != 'S') {
-                        throw new Exception("Pull Failed")
-                    }
-                }
-            } catch(err) {
-                def user = err.getCause()[0].getUser()
-                echo user.toString()
-                throw new Exception("An Error occurred")
-            }
-            
-        } else {
+        if (!(statusCode == 200 || statusCode == 201)) {
             error "[${STEP_NAME}] Error: ${connection.getErrorStream().text}"
             connection.disconnect()
             throw new Exception("HTTPS Connection Failed")
         }
+
+
+        String body = connection.content.text
+
+        JsonSlurper slurper = new JsonSlurper()
+        Map object = slurper.parseText(body)
+        connection.disconnect()
+        String pollUri = object.d."__metadata"."uri"
+        echo "[${STEP_NAME}] Pull Entity: ${pollUri}"
+        echo "[${STEP_NAME}] Pull Status: ${object.d."status_descr"}"
+        def pollUrl = new URL(pollUri)
+
+        try {
+            timeout(time: 20, unit: 'MINUTES') {
+                String status = object.d."status"
+                String statusText = object.d."status_descr"
+                while(status == 'R') {
+                    Thread.sleep(5000)
+                    HttpURLConnection pollConnection = createDefaultConnection(pollUrl, authToken)
+                    pollConnection.connect()
+                    int pollStatusCode = pollConnection.responseCode
+                    if (pollStatusCode == 200 || pollStatusCode == 201) {
+                        String pollBody = pollConnection.content.text
+                        Map pollObject = slurper.parseText(pollBody)
+                        statusText = pollObject.d."status_descr"
+                        status = pollObject.d."status"
+                        pollConnection.disconnect()
+                    } else {
+                        error "[${STEP_NAME}] Error: ${pollConnection.getErrorStream().text}"
+                        throw new Exception("HTTPS Connection Failed")
+                        pollConnection.disconnect()
+                        status = 'E'
+                    }
+                }
+                echo "[${STEP_NAME}] Pull Status: ${statusText}"
+                if (status != 'S') {
+                    throw new Exception("Pull Failed")
+                }
+            }
+        } catch(err) {
+            // throw new Exception("An Error occurred")
+            echo "ERROR"
+        }
+        
+        
     }
 }
 
