@@ -119,7 +119,7 @@ void call(Map parameters = [:]) {
                     }()) continue
                 }
             } catch(err) {
-                echo "ERROR"
+                echo err.getCause()
             }
             
         } else {
