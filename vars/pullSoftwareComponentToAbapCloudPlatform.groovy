@@ -3,7 +3,6 @@ import com.sap.piper.ConfigurationHelper
 import com.sap.piper.GenerateDocumentation
 import com.sap.piper.JenkinsUtils
 import com.sap.piper.Utils
-import com.sap.piper.JsonUtils
 import groovy.json.JsonSlurper
 import hudson.AbortException
 import groovy.transform.Field
@@ -90,39 +89,30 @@ void call(Map parameters = [:]) {
         echo "[${STEP_NAME}] Pull Status: ${object.d."status_descr"}"
         def pollUrl = new URL(pollUri)
 
-        try {
-            timeout(time: 20, unit: 'MINUTES') {
-                String status = object.d."status"
-                String statusText = object.d."status_descr"
-                while(status == 'R') {
-                    Thread.sleep(5000)
-                    HttpURLConnection pollConnection = createDefaultConnection(pollUrl, authToken)
-                    pollConnection.connect()
-                    int pollStatusCode = pollConnection.responseCode
-                    if (pollStatusCode == 200 || pollStatusCode == 201) {
-                        String pollBody = pollConnection.content.text
-                        Map pollObject = slurper.parseText(pollBody)
-                        statusText = pollObject.d."status_descr"
-                        status = pollObject.d."status"
-                        pollConnection.disconnect()
-                    } else {
-                        error "[${STEP_NAME}] Error: ${pollConnection.getErrorStream().text}"
-                        throw new Exception("HTTPS Connection Failed")
-                        pollConnection.disconnect()
-                        status = 'E'
-                    }
-                }
-                echo "[${STEP_NAME}] Pull Status: ${statusText}"
-                if (status != 'S') {
-                    throw new Exception("Pull Failed")
-                }
+        String status = object.d."status"
+        String statusText = object.d."status_descr"
+        while(status == 'R') {
+            Thread.sleep(5000)
+            HttpURLConnection pollConnection = createDefaultConnection(pollUrl, authToken)
+            pollConnection.connect()
+            int pollStatusCode = pollConnection.responseCode
+            if (pollStatusCode == 200 || pollStatusCode == 201) {
+                String pollBody = pollConnection.content.text
+                Map pollObject = slurper.parseText(pollBody)
+                statusText = pollObject.d."status_descr"
+                status = pollObject.d."status"
+                pollConnection.disconnect()
+            } else {
+                error "[${STEP_NAME}] Error: ${pollConnection.getErrorStream().text}"
+                throw new Exception("HTTPS Connection Failed")
+                pollConnection.disconnect()
+                status = 'E'
             }
-        } catch(FlowInterruptedException err) {
-            // throw new Exception("An Error occurred")
-            echo "ERROR"
         }
-        
-        
+        echo "[${STEP_NAME}] Pull Status: ${statusText}"
+        if (status != 'S') {
+            throw new Exception("Pull Failed")
+        }  
     }
 }
 
