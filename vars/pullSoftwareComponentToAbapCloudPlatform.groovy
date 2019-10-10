@@ -6,6 +6,7 @@ import com.sap.piper.Utils
 import groovy.json.JsonSlurper
 import hudson.AbortException
 import groovy.transform.Field
+import org.jenkinsci.plugins.workflow.steps.FlowInterruptedException
 
 @Field def STEP_NAME = getClass().getName()
 @Field Set GENERAL_CONFIG_KEYS = []
@@ -79,9 +80,7 @@ void call(Map parameters = [:]) {
             throw new Exception("HTTPS Connection Failed")
         }
 
-
         String body = connection.content.text
-
         JsonSlurper slurper = new JsonSlurper()
         Map object = slurper.parseText(body)
         connection.disconnect()
@@ -117,7 +116,7 @@ void call(Map parameters = [:]) {
                     throw new Exception("Pull Failed")
                 }
             }
-        } catch(err) {
+        } catch(FlowInterruptedException err) {
             // throw new Exception("An Error occurred")
             echo "ERROR"
         }
