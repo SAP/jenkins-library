@@ -115,6 +115,7 @@ void call(Map parameters = [:]) {
                         }
 
                     }()) continue
+                    true
                 }
             } catch(err) {
                 throw err
