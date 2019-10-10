@@ -3,6 +3,7 @@ import com.sap.piper.ConfigurationHelper
 import com.sap.piper.GenerateDocumentation
 import com.sap.piper.JenkinsUtils
 import com.sap.piper.Utils
+import com.sap.piper.JsonUtils
 import groovy.json.JsonSlurper
 import hudson.AbortException
 import groovy.transform.Field
@@ -82,7 +83,7 @@ void call(Map parameters = [:]) {
 
         String body = connection.content.text
         JsonSlurper slurper = new JsonSlurper()
-        Map object = slurper.parseText(body)
+        Map object = JsonUtils.jsonStringToGroovyObject(body)
         connection.disconnect()
         String pollUri = object.d."__metadata"."uri"
         echo "[${STEP_NAME}] Pull Entity: ${pollUri}"
