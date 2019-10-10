@@ -105,6 +105,7 @@ void call(Map parameters = [:]) {
                                 if (pollStatus != 'S') {
                                     throw new Exception("Pull Failed")
                                 }
+                                echo "false"
                                 false
                             }
                         } else {
