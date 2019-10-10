@@ -57,19 +57,17 @@ void call(Map parameters = [:]) {
         String service = '/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY'
         String entity = '/Pull'
         String urlString = configuration.host + port + service + entity
-        println "API: " + urlString
+        echo "[${STEP_NAME}] General Parameters: host=${configuration.host}, ODataService=${service} repositoryName=${configuration.repositoryName}"
 
         def url = new URL(urlString)
         Map tokenAndCookie = getTokenAndCookie(url, authToken)
         String token = tokenAndCookie.token
         String cookie = tokenAndCookie.cookie
-        echo token
 
         HttpURLConnection connection = createPostConnection(url, token, cookie, authToken)
         connection.connect()
         OutputStream outputStream = connection.getOutputStream()
         String input = '{ "sc_name" : "' + configuration.repositoryName + '" }'
-        println input
         outputStream.write(input.getBytes())
         outputStream.flush()
 
@@ -82,9 +80,9 @@ void call(Map parameters = [:]) {
             JsonSlurper slurper = new JsonSlurper()
             Map object = slurper.parseText(body)
             connection.disconnect()
-            println object.d."status_descr"
+            echo "[${STEP_NAME}] Pull Status: ${object.d."status_descr"}"
             String pollUri = object.d."__metadata"."uri"
-            println pollUri
+            echo "[${STEP_NAME}] Pull Entity: ${pollUri}"
             def pollUrl = new URL(pollUri)
 
             while({
@@ -101,14 +99,14 @@ void call(Map parameters = [:]) {
                     if (pollStatus == 'R') {
                         true
                     } else {
-                        println pollStatusText
+                        echo "[${STEP_NAME}] Pull Status: ${pollStatusText}"
                         if (pollStatus != 'S') {
                             throw new Exception("Pull Failed")
                         }
                         false
                     }
                 } else {
-                    println pollConnection.getErrorStream().text
+                    error "[${STEP_NAME}] Error: ${pollConnection.getErrorStream().text}"
                     pollConnection.disconnect()
                     throw new Exception("HTTPS Connection Failed")
                     false
@@ -117,7 +115,7 @@ void call(Map parameters = [:]) {
             }()) continue
             
         } else {
-            println connection.getErrorStream().text
+            error "[${STEP_NAME}] Error: ${connection.getErrorStream().text}"
             connection.disconnect()
             throw new Exception("HTTPS Connection Failed")
         }
