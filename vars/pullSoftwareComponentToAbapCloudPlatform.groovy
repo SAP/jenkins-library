@@ -108,7 +108,7 @@ void call(Map parameters = [:]) {
                         }
                     }
                     echo "[${STEP_NAME}] Pull Status: ${statusText}"
-                    if (pollStatus != 'S') {
+                    if (status != 'S') {
                         throw new Exception("Pull Failed")
                     }
                 }
