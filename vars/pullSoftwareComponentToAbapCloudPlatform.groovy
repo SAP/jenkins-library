@@ -82,7 +82,7 @@ void call(Map parameters = [:]) {
 
         String body = connection.content.text
         JsonSlurper slurper = new JsonSlurper()
-        Map object = slurper(body)
+        Map object = slurper.parseText(body)
         connection.disconnect()
         String pollUri = object.d."__metadata"."uri"
         echo "[${STEP_NAME}] Pull Entity: ${pollUri}"
