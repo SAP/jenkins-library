@@ -9,8 +9,7 @@ import groovy.transform.Field
 import org.jenkinsci.plugins.workflow.steps.FlowInterruptedException
 
 @Field def STEP_NAME = getClass().getName()
-@Field Set GENERAL_CONFIG_KEYS = []
-@Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS.plus([
+@Field Set GENERAL_CONFIG_KEYS = [
     /**
      * Specifies the host address
      */
@@ -26,7 +25,8 @@ import org.jenkinsci.plugins.workflow.steps.FlowInterruptedException
     /**
      * Specifies the password of the communication user
      */
-    'password'])
+    'password']
+@Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
 /**
  * Pulls a Software Component to a SAP Cloud Platform ABAP Environment System.
@@ -41,9 +41,9 @@ void call(Map parameters = [:]) {
         def script = checkScript(this, parameters) ?: this
 
         ConfigurationHelper configHelper = ConfigurationHelper.newInstance(this)
-        .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS)
-        .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS)
-        .mixin(parameters, PARAMETER_KEYS)
+            .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS)
+            .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS)
+            .mixin(parameters, PARAMETER_KEYS)
 
         Map configuration = configHelper.use()
 
@@ -107,6 +107,7 @@ void call(Map parameters = [:]) {
                 throw new Exception("HTTPS Connection Failed")
             }
         }
+
         echo "[${STEP_NAME}] Pull Status: ${statusText}"
         if (status != 'S') {
             throw new Exception("Pull Failed")
