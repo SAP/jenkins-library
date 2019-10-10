@@ -104,9 +104,9 @@ void call(Map parameters = [:]) {
                 pollConnection.disconnect()
             } else {
                 error "[${STEP_NAME}] Error: ${pollConnection.getErrorStream().text}"
-                throw new Exception("HTTPS Connection Failed")
                 pollConnection.disconnect()
                 status = 'E'
+                throw new Exception("HTTPS Connection Failed")
             }
         }
         echo "[${STEP_NAME}] Pull Status: ${statusText}"
