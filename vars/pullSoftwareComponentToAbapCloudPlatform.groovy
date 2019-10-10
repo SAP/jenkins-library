@@ -118,7 +118,7 @@ private HttpURLConnection createPostConnection(URL url, String token, String coo
 
 }
 
-private Map triggerPull(Map configuration, URL url, String authToken) {
+private Map triggerPull(Map configuration, String urlString, String authToken) {
 
     def url = new URL(urlString)
     Map tokenAndCookie = getXCsrfTokenAndCookie(url, authToken)
