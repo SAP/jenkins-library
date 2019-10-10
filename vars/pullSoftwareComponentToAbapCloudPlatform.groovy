@@ -57,7 +57,7 @@ void call(Map parameters = [:]) {
         String service = '/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY'
         String entity = '/Pull'
         String urlString = configuration.host + port + service + entity
-        echo "[${STEP_NAME}] General Parameters: host=${configuration.host}, ODataService=${service} repositoryName=${configuration.repositoryName}"
+        echo "[${STEP_NAME}] General Parameters: host = \"${configuration.host}\2, ODataService = \"${service}\", repositoryName = \"${configuration.repositoryName}\""
 
         def url = new URL(urlString)
         Map tokenAndCookie = getTokenAndCookie(url, authToken)
@@ -80,9 +80,9 @@ void call(Map parameters = [:]) {
             JsonSlurper slurper = new JsonSlurper()
             Map object = slurper.parseText(body)
             connection.disconnect()
-            echo "[${STEP_NAME}] Pull Status: ${object.d."status_descr"}"
             String pollUri = object.d."__metadata"."uri"
             echo "[${STEP_NAME}] Pull Entity: ${pollUri}"
+            echo "[${STEP_NAME}] Pull Status: ${object.d."status_descr"}"
             def pollUrl = new URL(pollUri)
 
             while({
