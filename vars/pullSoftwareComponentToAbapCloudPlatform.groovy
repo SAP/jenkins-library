@@ -94,7 +94,7 @@ void call(Map parameters = [:]) {
 }
 
 
-def Map getXCsrfTokenAndCookie(URL url, String authToken) {
+private Map getXCsrfTokenAndCookie(URL url, String authToken) {
 
     HttpURLConnection connection = createDefaultConnection(url, authToken)
     connection.setRequestProperty("x-csrf-token", "fetch")
@@ -115,7 +115,7 @@ def Map getXCsrfTokenAndCookie(URL url, String authToken) {
 
 }
 
-def HttpURLConnection createDefaultConnection(URL url, String authToken) {
+private HttpURLConnection createDefaultConnection(URL url, String authToken) {
 
     HttpURLConnection connection = (HttpURLConnection) url.openConnection()
     connection.setRequestProperty("Authorization", "Basic " + authToken)
@@ -125,7 +125,7 @@ def HttpURLConnection createDefaultConnection(URL url, String authToken) {
 
 }
 
-def HttpURLConnection createPostConnection(URL url, String token, String cookie, String authToken) {
+private HttpURLConnection createPostConnection(URL url, String token, String cookie, String authToken) {
 
     HttpURLConnection connection = createDefaultConnection(url, authToken)
     connection.setRequestProperty("cookie", cookie)
@@ -137,7 +137,7 @@ def HttpURLConnection createPostConnection(URL url, String token, String cookie,
 
 }
 
-def Map pollPullStatus(Map responseObject, URL pollUrl, String authToken) {
+private Map pollPullStatus(Map responseObject, URL pollUrl, String authToken) {
 
     String status = responseObject.d."status"
     Map returnObject = null
