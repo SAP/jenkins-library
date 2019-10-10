@@ -87,7 +87,8 @@ void call(Map parameters = [:]) {
 
             try {
                 // timeout(time: 20, unit: 'MINUTES') {
-                    String status = object.d."status";
+                    String status = object.d."status"
+                    String statusText = object.d."status_descr"
                     while(status == 'R') {
                         Thread.sleep(5000)
                         HttpURLConnection pollConnection = createDefaultConnection(pollUrl, authToken)
@@ -96,7 +97,7 @@ void call(Map parameters = [:]) {
                         if (pollStatusCode == 200 || pollStatusCode == 201) {
                             String pollBody = pollConnection.content.text
                             Map pollObject = slurper.parseText(pollBody)
-                            String pollStatusText = pollObject.d."status_descr"
+                            statusText = pollObject.d."status_descr"
                             status = pollObject.d."status"
                             pollConnection.disconnect()
                         } else {
