@@ -60,7 +60,6 @@ void call(Map parameters = [:]) {
 
         def url = new URL(urlString)
         Map tokenAndCookie = getXCsrfTokenAndCookie(url, authToken)
-
         HttpURLConnection connection = createPostConnection(url, tokenAndCookie.token, tokenAndCookie.cookie, authToken)
         connection.connect()
         OutputStream outputStream = connection.getOutputStream()
@@ -76,32 +75,35 @@ void call(Map parameters = [:]) {
             throw new Exception("HTTPS Connection Failed")
         }
 
-        String body = connection.content.text
         JsonSlurper slurper = new JsonSlurper()
-        Map object = slurper.parseText(body)
+        Map object = slurper.parseText(connection.content.text)
         connection.disconnect()
         String pollUri = object.d."__metadata"."uri"
+        def pollUrl = new URL(pollUri)
+
         echo "[${STEP_NAME}] Pull Entity: ${pollUri}"
         echo "[${STEP_NAME}] Pull Status: ${object.d."status_descr"}"
-        def pollUrl = new URL(pollUri)
 
         String status = object.d."status"
         String statusText = object.d."status_descr"
+
         while(status == 'R') {
+
             Thread.sleep(5000)
             HttpURLConnection pollConnection = createDefaultConnection(pollUrl, authToken)
             pollConnection.connect()
-            int pollStatusCode = pollConnection.responseCode
-            if (pollStatusCode == 200 || pollStatusCode == 201) {
-                String pollBody = pollConnection.content.text
-                Map pollObject = slurper.parseText(pollBody)
+
+            if (pollConnection.responseCode == 200 || pollConnection.responseCode == 201) {
+
+                Map pollObject = slurper.parseText(pollConnection.content.text)
                 statusText = pollObject.d."status_descr"
                 status = pollObject.d."status"
                 pollConnection.disconnect()
+
             } else {
+
                 error "[${STEP_NAME}] Error: ${pollConnection.getErrorStream().text}"
                 pollConnection.disconnect()
-                status = 'E'
                 throw new Exception("HTTPS Connection Failed")
             }
         }
