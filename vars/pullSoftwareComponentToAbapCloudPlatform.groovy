@@ -148,14 +148,11 @@ private Map pollPullStatus(Map responseObject, URL pollUrl, String authToken) {
         pollConnection.connect()
 
         if (pollConnection.responseCode == 200 || pollConnection.responseCode == 201) {
-
             JsonSlurper slurper = new JsonSlurper()
             returnObject = slurper.parseText(pollConnection.content.text)
             status = returnObject.d."status"
             pollConnection.disconnect()
-
         } else {
-
             error "[${STEP_NAME}] Error: ${pollConnection.getErrorStream().text}"
             pollConnection.disconnect()
             throw new Exception("HTTPS Connection Failed")
