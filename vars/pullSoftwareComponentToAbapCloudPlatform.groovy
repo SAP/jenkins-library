@@ -149,6 +149,7 @@ def Map pollPullStatus(Map responseObject, URL pollUrl, String authToken) {
 
         if (pollConnection.responseCode == 200 || pollConnection.responseCode == 201) {
 
+            JsonSlurper slurper = new JsonSlurper()
             returnObject = slurper.parseText(pollConnection.content.text)
             status = returnObject.d."status"
             pollConnection.disconnect()
