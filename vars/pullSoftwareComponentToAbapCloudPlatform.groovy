@@ -85,7 +85,7 @@ void call(Map parameters = [:]) {
             echo "[${STEP_NAME}] Pull Status: ${object.d."status_descr"}"
             def pollUrl = new URL(pollUri)
 
-            timeout(time: 20, unit: 'minutes') {
+            timeout(time: 20, unit: 'MINUTES') {
                 while({
                     Thread.sleep(5000)
                     HttpURLConnection pollConnection = createDefaultConnection(pollUrl, authToken)
