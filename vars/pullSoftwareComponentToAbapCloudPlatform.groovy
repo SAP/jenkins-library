@@ -51,22 +51,12 @@ void call(Map parameters = [:]) {
             .withMandatoryProperty('username')
             .withMandatoryProperty('password')
 
-        echo configuration.host
-        echo configuration.repositoryName
-        echo configuration.username
-        echo configuration.password
-
-        String host = parameters.host
-        String repositoryName = parameters.repositoryName
-        String username = parameters.username
-        String password = parameters.password
-
-        String usernameColonPassword = username + ":" + password
+        String usernameColonPassword = configuration.username + ":" + configuration.password
         String authToken = usernameColonPassword.bytes.encodeBase64().toString()
         String port = ':443'
         String service = '/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY'
         String entity = '/Pull'
-        String urlString = host + port + service + entity
+        String urlString = configuration.host + port + service + entity
         println "API: " + urlString
 
         def url = new URL(urlString)
@@ -78,7 +68,7 @@ void call(Map parameters = [:]) {
         HttpURLConnection connection = createPostConnection(url, token, cookie, authToken)
         connection.connect()
         OutputStream outputStream = connection.getOutputStream()
-        String input = '{ "sc_name" : "' + repositoryName + '" }'
+        String input = '{ "sc_name" : "' + configuration.repositoryName + '" }'
         println input
         outputStream.write(input.getBytes())
         outputStream.flush()
