@@ -1,14 +1,5 @@
-import com.sap.piper.SidecarUtils
-
-
 import com.sap.piper.ConfigurationHelper
 import com.sap.piper.GenerateDocumentation
-import com.sap.piper.JenkinsUtils
-import com.sap.piper.Utils
-import com.sap.piper.JsonUtils
-
-import groovy.transform.Field
-import hudson.AbortException
 import groovy.json.JsonSlurper
 
 @Field def STEP_NAME = getClass().getName()
