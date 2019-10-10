@@ -35,6 +35,7 @@ import org.jenkinsci.plugins.workflow.steps.FlowInterruptedException
  */
 @GenerateDocumentation
 void call(Map parameters = [:]) {
+    
     handlePipelineStepErrors(stepName: STEP_NAME, stepParameters: parameters, failOnError: true) {
 
         def script = checkScript(this, parameters) ?: this
