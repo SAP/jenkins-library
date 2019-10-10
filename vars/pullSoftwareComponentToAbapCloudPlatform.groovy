@@ -137,7 +137,7 @@ def HttpURLConnection createPostConnection(URL url, String token, String cookie,
 
 }
 
-def Map pollPullStatus(Map responseObject, URL url, String authToken) {
+def Map pollPullStatus(Map responseObject, URL pollUrl, String authToken) {
 
     String status = responseObject.d."status"
     Map returnObject = null
