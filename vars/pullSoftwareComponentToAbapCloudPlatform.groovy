@@ -67,9 +67,7 @@ void call(Map parameters = [:]) {
         outputStream.write(input.getBytes())
         outputStream.flush()
 
-        int statusCode = connection.responseCode
-
-        if (!(statusCode == 200 || statusCode == 201)) {
+        if (!(connection.responseCode == 200 || connection.responseCode == 201)) {
             error "[${STEP_NAME}] Error: ${connection.getErrorStream().text}"
             connection.disconnect()
             throw new Exception("HTTPS Connection Failed")
@@ -78,12 +76,12 @@ void call(Map parameters = [:]) {
         JsonSlurper slurper = new JsonSlurper()
         Map object = slurper.parseText(connection.content.text)
         connection.disconnect()
-        String pollUri = object.d."__metadata"."uri"
-        def pollUrl = new URL(pollUri)
 
+        String pollUri = object.d."__metadata"."uri"
         echo "[${STEP_NAME}] Pull Entity: ${pollUri}"
         echo "[${STEP_NAME}] Pull Status: ${object.d."status_descr"}"
 
+        def pollUrl = new URL(pollUri)
         Map responseObject = pollPullStatus(object, pollUrl, authToken)
 
         echo "[${STEP_NAME}] Pull Status: ${responseObject.d."status_descr"}"
