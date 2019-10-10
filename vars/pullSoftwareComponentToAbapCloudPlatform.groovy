@@ -170,7 +170,6 @@ def HttpURLConnection createPostConnection(URL url, String token, String cookie,
 
     HttpURLConnection connection = createDefaultConnection(url, authToken)
     connection.setRequestProperty("cookie", cookie)
-    echo token
     connection.setRequestProperty("x-csrf-token", token)
     connection.setRequestMethod("POST")
     connection.setDoOutput(true)
