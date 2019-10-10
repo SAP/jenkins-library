@@ -113,7 +113,7 @@ void call(Map parameters = [:]) {
                     }
                 }
             } catch(err) {
-                def user = err.getCauses()[0].getUser()
+                def user = err.getCause()[0].getUser()
                 echo user.toString()
                 throw new Exception("An Error occurred")
             }
