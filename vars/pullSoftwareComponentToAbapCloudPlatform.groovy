@@ -56,7 +56,7 @@ void call(Map parameters = [:]) {
         String usernameColonPassword = configuration.username + ":" + configuration.password
         String authToken = usernameColonPassword.bytes.encodeBase64().toString()
         String urlString = configuration.host + ':443/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY/Pull'
-        echo "[${STEP_NAME}] General Parameters: host = \"${configuration.host}\2, ODataService = \"${service}\", repositoryName = \"${configuration.repositoryName}\""
+        echo "[${STEP_NAME}] General Parameters: URL = \"${urlString}\", repositoryName = \"${configuration.repositoryName}\""
 
         def url = new URL(urlString)
         Map tokenAndCookie = getXCsrfTokenAndCookie(url, authToken)
