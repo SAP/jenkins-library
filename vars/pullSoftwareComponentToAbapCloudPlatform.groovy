@@ -85,34 +85,36 @@ void call(Map parameters = [:]) {
             echo "[${STEP_NAME}] Pull Status: ${object.d."status_descr"}"
             def pollUrl = new URL(pollUri)
 
-            while({
-                Thread.sleep(5000)
-                HttpURLConnection pollConnection = createDefaultConnection(pollUrl, authToken)
-                pollConnection.connect()
-                int pollStatusCode = pollConnection.responseCode
-                if (pollStatusCode == 200 || pollStatusCode == 201) {
-                    String pollBody = pollConnection.content.text
-                    Map pollObject = slurper.parseText(pollBody)
-                    String pollStatus = pollObject.d."status"
-                    String pollStatusText = pollObject.d."status_descr"
-                    pollConnection.disconnect()
-                    if (pollStatus == 'R') {
-                        true
-                    } else {
-                        echo "[${STEP_NAME}] Pull Status: ${pollStatusText}"
-                        if (pollStatus != 'S') {
-                            throw new Exception("Pull Failed")
+            timeout(time: 20, unit: 'minutes') {
+                while({
+                    Thread.sleep(5000)
+                    HttpURLConnection pollConnection = createDefaultConnection(pollUrl, authToken)
+                    pollConnection.connect()
+                    int pollStatusCode = pollConnection.responseCode
+                    if (pollStatusCode == 200 || pollStatusCode == 201) {
+                        String pollBody = pollConnection.content.text
+                        Map pollObject = slurper.parseText(pollBody)
+                        String pollStatus = pollObject.d."status"
+                        String pollStatusText = pollObject.d."status_descr"
+                        pollConnection.disconnect()
+                        if (pollStatus == 'R') {
+                            true
+                        } else {
+                            echo "[${STEP_NAME}] Pull Status: ${pollStatusText}"
+                            if (pollStatus != 'S') {
+                                throw new Exception("Pull Failed")
+                            }
+                            false
                         }
+                    } else {
+                        error "[${STEP_NAME}] Error: ${pollConnection.getErrorStream().text}"
+                        pollConnection.disconnect()
+                        throw new Exception("HTTPS Connection Failed")
                         false
                     }
-                } else {
-                    error "[${STEP_NAME}] Error: ${pollConnection.getErrorStream().text}"
-                    pollConnection.disconnect()
-                    throw new Exception("HTTPS Connection Failed")
-                    false
-                }
 
-            }()) continue
+                }()) continue
+            }
             
         } else {
             error "[${STEP_NAME}] Error: ${connection.getErrorStream().text}"
