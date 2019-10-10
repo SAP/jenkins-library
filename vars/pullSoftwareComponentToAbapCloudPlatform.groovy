@@ -118,7 +118,7 @@ void call(Map parameters = [:]) {
                     true
                 }
             } catch(err) {
-                throw err
+                echo "ERROR"
             }
             
         } else {
