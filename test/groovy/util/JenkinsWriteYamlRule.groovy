@@ -11,9 +11,9 @@ import org.junit.runners.model.Statement
 class JenkinsWriteYamlRule implements TestRule {
 
     final BasePipelineTest testInstance
-    static final String DATA = "DATA" // key in files map to retrieve Yaml object graph data..
-    static final String CHARSET = "CHARSET" // key in files map to retrieve the charset of the serialized Yaml.
-    static final String SERIALIZED_YAML = "SERIALIZED_YAML" // key in files map to retrieve serialized Yaml.
+    public static final String DATA = "DATA" // key in files map to retrieve Yaml object graph data..
+    public static final String CHARSET = "CHARSET" // key in files map to retrieve the charset of the serialized Yaml.
+    public static final String SERIALIZED_YAML = "SERIALIZED_YAML" // key in files map to retrieve serialized Yaml.
 
     Map<String, Map<String, Object>> files = new HashMap<>()
 
