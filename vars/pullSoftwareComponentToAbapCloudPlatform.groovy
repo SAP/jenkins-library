@@ -17,7 +17,9 @@ import org.jenkinsci.plugins.workflow.steps.FlowInterruptedException
     /**
      * Specifies the name of the Software Component
      */
-    'repositoryName',
+    'repositoryName'
+]
+@Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS.plus([
     /**
      * Specifies the communication user of the communication scenario SAP_COM_0510
      */
@@ -25,8 +27,8 @@ import org.jenkinsci.plugins.workflow.steps.FlowInterruptedException
     /**
      * Specifies the password of the communication user
      */
-    'password']
-@Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS
+    'password'
+])
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
 /**
  * Pulls a Software Component to a SAP Cloud Platform ABAP Environment System.
