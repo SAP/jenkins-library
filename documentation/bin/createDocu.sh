@@ -17,6 +17,7 @@ do
     [ -e "${f}" ] && rm -rf "${f}"
 done
 
+groovy -version
 export CLASSPATH_FILE='target/cp.txt'
 mvn clean test dependency:build-classpath -Dmdep.outputFile=${CLASSPATH_FILE} > /dev/null 2>&1
 
@@ -27,6 +28,7 @@ mvn clean test dependency:build-classpath -Dmdep.outputFile=${CLASSPATH_FILE} > 
 # are performed by other pipeline steps. E.g.: each step includes basically a call to
 # handlePipelineStepErrors. The Plugin calls issues by handlePipelineStepErrors are also
 # reported for the step calling that auxiliar step).
+echo "before first groovy call"
 groovy  "${d}resolveTransitiveCalls" -in target/trackedCalls.json --out "${CALLS}"
 
 [ -f "${CALLS}" ] || { echo "File \"${CALLS}\" does not exist." ; exit 1; }
