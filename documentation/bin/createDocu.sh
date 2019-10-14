@@ -17,11 +17,11 @@ do
     [ -e "${f}" ] && rm -rf "${f}"
 done
 
+# local installation of groovy to run the 2 scripts below. If Travis CI installation is updated this can be removed
 export GROOVY_VERSION=2.4.16
 mkdir -p tmp
 curl -sL https://bintray.com/artifact/download/groovy/maven/apache-groovy-binary-${GROOVY_VERSION}.zip -o tmp/groovy.zip
 unzip -qq tmp/groovy.zip -d tmp
-sed -i "1s/sh/bash/" tmp/groovy-${GROOVY_VERSION}/bin/*
 PATH=$(pwd)/tmp/groovy-${GROOVY_VERSION}/bin:$PATH
 export PATH
 
@@ -35,7 +35,6 @@ mvn clean test dependency:build-classpath -Dmdep.outputFile=${CLASSPATH_FILE} > 
 # are performed by other pipeline steps. E.g.: each step includes basically a call to
 # handlePipelineStepErrors. The Plugin calls issues by handlePipelineStepErrors are also
 # reported for the step calling that auxiliar step).
-echo "before first groovy call"
 groovy  "${d}resolveTransitiveCalls" -in target/trackedCalls.json --out "${CALLS}"
 
 [ -f "${CALLS}" ] || { echo "File \"${CALLS}\" does not exist." ; exit 1; }
