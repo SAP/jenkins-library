@@ -20,10 +20,10 @@ done
 export GROOVY_VERSION=2.4.16
 mkdir -p tmp
 curl -sL https://bintray.com/artifact/download/groovy/maven/apache-groovy-binary-${GROOVY_VERSION}.zip -o tmp/groovy.zip
-unzip tmp/groovy.zip -d tmp
+unzip -qq tmp/groovy.zip -d tmp
 sed -i "1s/sh/bash/" tmp/groovy-${GROOVY_VERSION}/bin/*
 PATH=$(pwd)/tmp/groovy-${GROOVY_VERSION}/bin:$PATH
-#export PATH=$(pwd)/tmp/groovy-${GROOVY_VERSION}/bin:$PATH
+export PATH
 
 export CLASSPATH_FILE='target/cp.txt'
 mvn clean test dependency:build-classpath -Dmdep.outputFile=${CLASSPATH_FILE} > /dev/null 2>&1
