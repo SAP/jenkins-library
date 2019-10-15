@@ -23,7 +23,10 @@ class WhitesourceConfigurationHelper implements Serializable {
             ]
         }
         if(config.verbose)
-            mapping += [name: 'log.level', value: 'debug']
+            mapping += [
+                [name: 'log.level', value: 'debug'],
+                [name: 'log.files.level', value: 'debug']
+            ]
 
         mapping += [
             [name: 'apiKey', value: config.whitesource.orgToken, force: true],
