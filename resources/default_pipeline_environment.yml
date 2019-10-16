@@ -152,9 +152,12 @@ steps:
   cloudFoundryDeploy:
     cloudFoundry:
       apiEndpoint: 'https://api.cf.eu10.hana.ondemand.com'
+    apiParameters: ''
+    loginParameters: ''
     deployTool: 'cf_native'
     deployType: 'standard'
     keepOldInstance: false
+    cfNativeDeployParameters: ''
     mtaDeployParameters: '-f'
     mtaExtensionDescriptor: ''
     mtaPath: ''

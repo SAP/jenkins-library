@@ -407,6 +407,9 @@ private def triggerWhitesourceScanWithUserKey(script, config, utils, descriptorU
 
                     // archive whitesource debug files, if available
                     archiveArtifacts artifacts: "**/ws-l*", allowEmptyArchive: true
+
+                    // archive UA log file
+                    archiveArtifacts artifacts: "/var/log/UA/*", allowEmptyArchive: true
                 }
                 break
         }

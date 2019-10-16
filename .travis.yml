@@ -3,6 +3,8 @@ branches:
   - master
   - /^it\/.*$/
 language: groovy
+jdk:
+  - openjdk8
 sudo: required
 services:
   - docker

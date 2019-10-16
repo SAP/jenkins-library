@@ -25,6 +25,7 @@ import static org.hamcrest.Matchers.hasItem
 import static org.hamcrest.Matchers.is
 import static org.hamcrest.Matchers.not
 import static org.hamcrest.Matchers.hasEntry
+import static org.hamcrest.Matchers.allOf
 import static org.hamcrest.Matchers.containsString
 
 class CloudFoundryDeployTest extends BasePiperTest {
@@ -39,7 +40,7 @@ class CloudFoundryDeployTest extends BasePiperTest {
     private JenkinsStepRule stepRule = new JenkinsStepRule(this)
     private JenkinsEnvironmentRule environmentRule = new JenkinsEnvironmentRule(this)
     private JenkinsReadYamlRule readYamlRule = new JenkinsReadYamlRule(this)
-    private JenkinsFileExistsRule fileExistsRule = new JenkinsFileExistsRule(this)
+    private JenkinsFileExistsRule fileExistsRule = new JenkinsFileExistsRule(this, [])
 
     private writeInfluxMap = [:]
 
@@ -772,4 +773,117 @@ class CloudFoundryDeployTest extends BasePiperTest {
         assertThat(shellRule.shell, hasItem(containsString("cf blue-green-deploy testAppName --delete-old-apps -f 'test.yml'")))
         assertThat(shellRule.shell, hasItem(containsString("cf logout")))
     }
+
+    @Test
+    void testTraceOutputOnVerbose() {
+
+        fileExistsRule.existingFiles.addAll(
+            'test.yml',
+            'cf.log'
+        )
+
+        new File(tmpDir, 'cf.log') << 'Hello SAP'
+
+        readYamlRule.registerYaml('test.yml', "applications: [[name: 'manifestAppName']]")
+        stepRule.step.cloudFoundryDeploy([
+            script: nullScript,
+            juStabUtils: utils,
+            jenkinsUtilsStub: new JenkinsUtilsMock(),
+            cloudFoundry: [
+                org: 'testOrg',
+                space: 'testSpace',
+                manifest: 'test.yml',
+                ],
+            cfCredentialsId: 'test_cfCredentialsId',
+            verbose: true
+        ])
+
+        assertThat(loggingRule.log, allOf(
+            containsString('### START OF CF CLI TRACE OUTPUT ###'),
+            containsString('Hello SAP'),
+            containsString('### END OF CF CLI TRACE OUTPUT ###')))
+    }
+
+    @Test
+    void testTraceNoTraceFileWritten() {
+
+        fileExistsRule.existingFiles.addAll(
+            'test.yml',
+        )
+
+        readYamlRule.registerYaml('test.yml', "applications: [[name: 'manifestAppName']]")
+        stepRule.step.cloudFoundryDeploy([
+            script: nullScript,
+            juStabUtils: utils,
+            jenkinsUtilsStub: new JenkinsUtilsMock(),
+            cloudFoundry: [
+                org: 'testOrg',
+                space: 'testSpace',
+                manifest: 'test.yml',
+                ],
+            cfCredentialsId: 'test_cfCredentialsId',
+            verbose: true
+        ])
+
+        assertThat(loggingRule.log, containsString('No trace file found'))
+    }
+
+    @Test
+    void testAdditionCfNativeOpts() {
+
+        readYamlRule.registerYaml('test.yml', "applications: [[name: 'manifestAppName']]")
+        helper.registerAllowedMethod('writeYaml', [Map], { Map parameters ->
+            generatedFile = parameters.file
+            data = parameters.data
+        })
+        nullScript.commonPipelineEnvironment.setArtifactVersion('1.2.3')
+        stepRule.step.cloudFoundryDeploy([
+            script: nullScript,
+            juStabUtils: utils,
+            jenkinsUtilsStub: new JenkinsUtilsMock(),
+            deployTool: 'cf_native',
+            cfOrg: 'testOrg',
+            cfSpace: 'testSpace',
+            loginParameters: '--some-login-opt value',
+            cfNativeDeployParameters: '--some-deploy-opt cf-value',
+            cfCredentialsId: 'test_cfCredentialsId',
+            cfAppName: 'testAppName',
+            cfManifest: 'test.yml'
+        ])
+
+        assertThat(shellRule.shell, hasItem(
+            stringContainsInOrder([
+                'cf login ', '--some-login-opt value',
+                'cf push', '--some-deploy-opt cf-value'])))
+
+    }
+
+    @Test
+    void testAdditionMtaOpts() {
+
+        stepRule.step.cloudFoundryDeploy([
+            script: nullScript,
+            juStabUtils: utils,
+            jenkinsUtilsStub: new JenkinsUtilsMock(),
+            cloudFoundry: [
+                org: 'testOrg',
+                space: 'testSpace',
+            ],
+            apiParameters: '--some-api-opt value',
+            loginParameters: '--some-login-opt value',
+            mtaDeployParameters: '--some-deploy-opt mta-value',
+            cfCredentialsId: 'test_cfCredentialsId',
+            deployTool: 'mtaDeployPlugin',
+            deployType: 'blue-green',
+            mtaPath: 'target/test.mtar'
+        ])
+
+        assertThat(shellRule.shell, hasItem(
+            stringContainsInOrder([
+                'cf api', '--some-api-opt value',
+                'cf login ', '--some-login-opt value',
+                'cf bg-deploy', '--some-deploy-opt mta-value'])))
+
+    }
+
 }
