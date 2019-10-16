@@ -49,4 +49,3 @@ func TestReadPipelineDefaults(t *testing.T) {
 		}
 	})
 }
-
