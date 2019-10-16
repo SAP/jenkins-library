@@ -37,12 +37,12 @@ There is an excellent resource which teaches Go using a test-driven approach: [L
 
 ### Checkout your fork
 
-The project uses [Go modules](https://blog.golang.org/using-go-modules). Thus please make sure to **NOT** checkout the project into your [`GOPATH`](https://github.com/golang/go/wiki/SettingGOPATH). 
+The project uses [Go modules](https://blog.golang.org/using-go-modules). Thus please make sure to **NOT** checkout the project into your [`GOPATH`](https://github.com/golang/go/wiki/SettingGOPATH).
 
 To check out this repository:
 
 1. Create your own
-   [fork of this repo](https://help.github.com/articles/fork-a-repo/)
+    [fork of this repo](https://help.github.com/articles/fork-a-repo/)
 1. Clone it to your machine, for example like:
 
 ```shell
@@ -69,7 +69,7 @@ you need to do the following in addition:
 
 ### Jenkins pipelines
 
-The Jenkins related parts depend on 
+The Jenkins related parts depend on
 
 * [Jenkins Pipelines as Code](https://jenkins.io/doc/book/pipeline-as-code/)
 * [Jenkins Shared Libraries](https://jenkins.io/doc/book/pipeline/shared-libraries/)
@@ -122,7 +122,7 @@ In order to better understand the root cause of errors that occur we wrap errors
     f, err := os.Open(path)
     if err != nil {
         return errors.Wrapf(err, "open failed for %v", path)
-    } 
+    }
     defer f.Close()
 ```
 
