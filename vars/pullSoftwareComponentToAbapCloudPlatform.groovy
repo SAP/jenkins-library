@@ -50,8 +50,8 @@ void call(Map parameters = [:]) {
         Map configuration = configHelper.use()
 
         configHelper
-            .withMandatoryProperty('host')
-            .withMandatoryProperty('repositoryName')
+            .withMandatoryProperty('host', 'Host not provided')
+            .withMandatoryProperty('repositoryName', 'Repository / Software Component not provided')
             .withMandatoryProperty('username')
             .withMandatoryProperty('password')
 
