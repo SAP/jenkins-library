@@ -38,11 +38,6 @@ public class PullSoftwareComponentToAbapCloudPlatformTest extends BasePiperTest 
 
     @Test
     public void test() {
-        // thrown.expect(Exception)
-        // error Exception
-
-        // stepRule.step.pullSoftwareComponentToAbapCloudPlatform(script: nullScript, host: 'https://www.example.com', repositoryName: 'REPO', username: 'user', password: 'password')
-        // assert loggingRule.log.contains("[pullSoftwareComponentToAbapCloudPlatform] General Parameters: URL = \"https://www.example.com:443/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY/Pull\", repositoryName = \"REPO\"")
 
     }
 
