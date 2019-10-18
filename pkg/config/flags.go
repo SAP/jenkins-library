@@ -1,6 +1,9 @@
 package config
 
 import (
+	"fmt"
+	"os"
+
 	"github.com/spf13/cobra"
 	flag "github.com/spf13/pflag"
 )
@@ -11,7 +14,18 @@ func AvailableFlagValues(cmd *cobra.Command, filters *StepFilters) map[string]in
 	flags := cmd.Flags()
 	//only check flags where value has been set
 	flags.Visit(func(pflag *flag.Flag) {
-		flagValues[pflag.Name] = pflag.Value
+
+		switch pflag.Value.Type() {
+		case "string":
+			flagValues[pflag.Name] = pflag.Value.String()
+		case "stringSlice":
+			flagValues[pflag.Name], _ = flags.GetStringSlice(pflag.Name)
+		case "bool":
+			flagValues[pflag.Name], _ = flags.GetBool(pflag.Name)
+		default:
+			fmt.Printf("Meta data type not set or not known: '%v'\n", pflag.Value.Type())
+			os.Exit(1)
+		}
 		filters.Parameters = append(filters.Parameters, pflag.Name)
 	})
 	return flagValues

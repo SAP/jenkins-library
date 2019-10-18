@@ -17,7 +17,6 @@
 1. Optional: [Get Jenkins related environment](#jenkins-environment)
 1. Optional: [Get familiar with Jenkins Pipelines as Code](#jenkins-pipelines)
 
-
 ### Ramp up
 
 First you need to set up an appropriate development environment:
@@ -78,7 +77,7 @@ You should get familiar with these concepts for contributing to the Jenkins-spec
 
 ## Build the project
 
-### Build the executable suitable for the CI/CD Linux target environments:
+### Build the executable suitable for the CI/CD Linux target environments
 
 Use Docker:
 
@@ -101,8 +100,9 @@ docker rm piper
 The steps are generated based on the yaml files in `resources/metadata/` with the following command
 `go run pkg/generator/step-metadata.go`.
 
-The yaml format is kept pretty close to Tekton's [task format](https://github.com/tektoncd/pipeline/blob/master/docs/tasks.md).<br />
-Where the Tekton format was not sufficient some extenstions have been made.<br />
+The yaml format is kept pretty close to Tekton's [task format](https://github.com/tektoncd/pipeline/blob/master/docs/tasks.md).
+Where the Tekton format was not sufficient some extenstions have been made.
+
 Examples are:
 
 * matadata - longDescription
@@ -127,3 +127,9 @@ In order to better understand the root cause of errors that occur we wrap errors
 ```
 
 We use [github.com/pkg/errors](https://github.com/pkg/errors) for that.
+
+## Testing
+
+Unit tests are done using basic `golang` means.
+
+Additionally we encourage you to use [github.com/stretchr/testify/assert](https://github.com/stretchr/testify/assert) in order to have slimmer assertions if you like.
