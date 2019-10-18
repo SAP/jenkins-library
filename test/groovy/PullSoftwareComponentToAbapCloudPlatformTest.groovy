@@ -38,7 +38,7 @@ public class PullSoftwareComponentToAbapCloudPlatformTest extends BasePiperTest 
 
     @Test
     public void test() {
-        //
+         
     }
 
     @Test
