@@ -38,7 +38,6 @@ public class PullSoftwareComponentToAbapCloudPlatformTest extends BasePiperTest 
 
     @Test
     public void test() {
-         pullSoftwareComponentToAbapCloudPlatform(script: nullScript, host: 'https://17c334ca-66f2-4476-9757-5c5b0a515fdb.abap.stagingaws.hanavlab.ondemand.co', repositoryName: 'Z_DEMO_DM', username: 'CC_USER', password: 'xPJnSftVVs9XkTMcXMD(aPXZXDggceXqlmUDaDRa')
     }
 
     @Test
