@@ -61,7 +61,7 @@ func TestMarkFlagsWithValue(t *testing.T) {
 
 	MarkFlagsWithValue(c, s)
 
-	assert.Equal(t, false, c.Flags().Changed("test0"))
-	assert.Equal(t, false, c.Flags().Changed("test1"))
-	assert.Equal(t, true, c.Flags().Changed("test2"))
+	assert.Equal(t, true, c.Flags().Changed("test0"), "default not considered")
+	assert.Equal(t, false, c.Flags().Changed("test1"), "no value: considered as set")
+	assert.Equal(t, true, c.Flags().Changed("test2"), "config not considered")
 }

@@ -35,7 +35,8 @@ func AvailableFlagValues(cmd *cobra.Command, filters *StepFilters) map[string]in
 func MarkFlagsWithValue(cmd *cobra.Command, stepConfig StepConfig) {
 	flags := cmd.Flags()
 	flags.VisitAll(func(pflag *flag.Flag) {
-		if stepConfig.Config[pflag.Name] != nil {
+		//mark as available in case default is available or config is available
+		if len(pflag.Value.String()) > 0 || stepConfig.Config[pflag.Name] != nil {
 			pflag.Changed = true
 		}
 	})
