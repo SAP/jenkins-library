@@ -42,11 +42,37 @@ class JenkinsReadYamlRule implements TestRule {
                     } else {
                         throw new IllegalArgumentException("Key 'text' and 'file' are both missing in map ${m}.")
                     }
-                    return new Yaml().load(yml)
+
+
+                    return readYaml(yml)
                 })
 
                 base.evaluate()
             }
         }
+    }
+
+    /**
+     * Mimicking code of the original library (link below).
+     * <p>
+     * Yaml files may contain several YAML sections, separated by ---.
+     * This loads them all and returns a {@code List} of entries in case multiple sections were found or just
+     * a single {@code Object}, if only one section was read.
+     * @see https://github.com/jenkinsci/pipeline-utility-steps-plugin/blob/master/src/main/java/org/jenkinsci/plugins/pipeline/utility/steps/conf/ReadYamlStep.java
+     */
+    private def readYaml(def yml) {
+        Iterable<Object> yaml = new Yaml().loadAll(yml)
+
+        List<Object> result = new LinkedList<Object>()
+        for (Object data : yaml) {
+            result.add(data)
+        }
+
+        // If only one YAML document, return it directly
+        if (result.size() == 1) {
+            return result.get(0);
+        }
+
+        return result;
     }
 }
