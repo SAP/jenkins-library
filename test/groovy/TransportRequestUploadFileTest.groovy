@@ -284,6 +284,7 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
                  applicationName: '42',
                  applicationDescription: 'Lorem ipsum',
                  abapPackage: 'XYZ',
+                 failOnWarning: false, // we use the non-default here in order to check if that gets forwarded.
                  cmUtils: cm,)
 
         assert cmUtilsReceivedParams ==
@@ -305,7 +306,7 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
                 abapPackage:'XYZ',
                 codePage: 'UTF-9',
                 acceptUnixStyleLineEndings: true,
-                failUploadOnWarning: true,
+                failUploadOnWarning: false,
             ]
     }
 
