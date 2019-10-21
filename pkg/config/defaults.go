@@ -1,6 +1,7 @@
 package config
 
 import (
+	"fmt"
 	"io"
 	"io/ioutil"
 
@@ -30,7 +31,7 @@ func (d *PipelineDefaults) ReadPipelineDefaults(defaultSources []io.ReadCloser) 
 
 		err = yaml.Unmarshal(content, &c)
 		if err != nil {
-			return errors.Wrapf(err, "error unmarshalling: %v", string(content))
+			return NewParseError(fmt.Sprintf("error unmarshalling %q: %v", content, err))
 		}
 
 		d.Defaults = append(d.Defaults, c)

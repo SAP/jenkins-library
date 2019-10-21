@@ -7,6 +7,8 @@ import (
 	"io/ioutil"
 	"strings"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 type errReadCloser int
@@ -61,7 +63,9 @@ func TestReadConfig(t *testing.T) {
 
 func TestGetStepConfig(t *testing.T) {
 
-	testConfig := `general:
+	t.Run("Success case", func(t *testing.T) {
+
+		testConfig := `general:
   p3: p3_general
   px3: px3_general
   p4: p4_general
@@ -76,15 +80,15 @@ stages:
     px5: px5_stage
     p6: p6_stage
 `
-	filters := StepFilters{
-		General:    []string{"p0", "p1", "p2", "p3", "p4"},
-		Steps:      []string{"p0", "p1", "p2", "p3", "p4", "p5"},
-		Stages:     []string{"p0", "p1", "p2", "p3", "p4", "p5", "p6"},
-		Parameters: []string{"p0", "p1", "p2", "p3", "p4", "p5", "p6", "p7"},
-		Env:        []string{"p0", "p1", "p2", "p3", "p4", "p5"},
-	}
+		filters := StepFilters{
+			General:    []string{"p0", "p1", "p2", "p3", "p4"},
+			Steps:      []string{"p0", "p1", "p2", "p3", "p4", "p5"},
+			Stages:     []string{"p0", "p1", "p2", "p3", "p4", "p5", "p6"},
+			Parameters: []string{"p0", "p1", "p2", "p3", "p4", "p5", "p6", "p7"},
+			Env:        []string{"p0", "p1", "p2", "p3", "p4", "p5"},
+		}
 
-	defaults1 := `general:
+		defaults1 := `general:
   p0: p0_general_default
   px0: px0_general_default
   p1: p1_general_default
@@ -95,50 +99,68 @@ steps:
     p2: p2_step_default
 `
 
-	defaults2 := `general:
+		defaults2 := `general:
   p2: p2_general_default
   px2: px2_general_default
   p3: p3_general_default 
 `
-	paramJSON := `{"p6":"p6_param","p7":"p7_param"}`
+		paramJSON := `{"p6":"p6_param","p7":"p7_param"}`
 
-	flags := map[string]interface{}{"p7": "p7_flag"}
+		flags := map[string]interface{}{"p7": "p7_flag"}
 
-	var c Config
-	defaults := []io.ReadCloser{ioutil.NopCloser(strings.NewReader(defaults1)), ioutil.NopCloser(strings.NewReader(defaults2))}
+		var c Config
+		defaults := []io.ReadCloser{ioutil.NopCloser(strings.NewReader(defaults1)), ioutil.NopCloser(strings.NewReader(defaults2))}
 
-	myConfig := ioutil.NopCloser(strings.NewReader(testConfig))
-	stepConfig := c.GetStepConfig(flags, paramJSON, myConfig, defaults, filters, "stage1", "step1")
+		myConfig := ioutil.NopCloser(strings.NewReader(testConfig))
+		stepConfig, err := c.GetStepConfig(flags, paramJSON, myConfig, defaults, filters, "stage1", "step1")
 
-	t.Run("Config", func(t *testing.T) {
-		expected := map[string]string{
-			"p0": "p0_general_default",
-			"p1": "p1_step_default",
-			"p2": "p2_general_default",
-			"p3": "p3_general",
-			"p4": "p4_step",
-			"p5": "p5_stage",
-			"p6": "p6_param",
-			"p7": "p7_flag",
-		}
-		for k, v := range expected {
-			t.Run(k, func(t *testing.T) {
-				if stepConfig.Config[k] != v {
-					t.Errorf("got: %v, expected: %v", stepConfig.Config[k], v)
-				}
-			})
-		}
+		assert.Equal(t, nil, err, "error occured but none expected")
+
+		t.Run("Config", func(t *testing.T) {
+			expected := map[string]string{
+				"p0": "p0_general_default",
+				"p1": "p1_step_default",
+				"p2": "p2_general_default",
+				"p3": "p3_general",
+				"p4": "p4_step",
+				"p5": "p5_stage",
+				"p6": "p6_param",
+				"p7": "p7_flag",
+			}
+			for k, v := range expected {
+				t.Run(k, func(t *testing.T) {
+					if stepConfig.Config[k] != v {
+						t.Errorf("got: %v, expected: %v", stepConfig.Config[k], v)
+					}
+				})
+			}
+		})
+
+		t.Run("Config not expected", func(t *testing.T) {
+			notExpectedKeys := []string{"px0", "px1", "px2", "px3", "px4", "px5"}
+			for _, p := range notExpectedKeys {
+				t.Run(p, func(t *testing.T) {
+					if stepConfig.Config[p] != nil {
+						t.Errorf("unexpected: %v", p)
+					}
+				})
+			}
+		})
 	})
 
-	t.Run("Config not expected", func(t *testing.T) {
-		notExpectedKeys := []string{"px0", "px1", "px2", "px3", "px4", "px5"}
-		for _, p := range notExpectedKeys {
-			t.Run(p, func(t *testing.T) {
-				if stepConfig.Config[p] != nil {
-					t.Errorf("unexpected: %v", p)
-				}
-			})
-		}
+	t.Run("Failure case config", func(t *testing.T) {
+		var c Config
+		myConfig := ioutil.NopCloser(strings.NewReader("invalid config"))
+		_, err := c.GetStepConfig(nil, "", myConfig, nil, StepFilters{}, "stage1", "step1")
+		assert.EqualError(t, err, "failed to parse custom pipeline configuration: error unmarshalling \"invalid config\": error unmarshaling JSON: json: cannot unmarshal string into Go value of type config.Config", "default error expected")
+	})
+
+	t.Run("Failure case defaults", func(t *testing.T) {
+		var c Config
+		myConfig := ioutil.NopCloser(strings.NewReader(""))
+		myDefaults := []io.ReadCloser{ioutil.NopCloser(strings.NewReader("invalid defaults"))}
+		_, err := c.GetStepConfig(nil, "", myConfig, myDefaults, StepFilters{}, "stage1", "step1")
+		assert.EqualError(t, err, "failed to parse pipeline default configuration: error unmarshalling \"invalid defaults\": error unmarshaling JSON: json: cannot unmarshal string into Go value of type config.Config", "default error expected")
 	})
 
 	//ToDo: test merging of env and parameters/flags

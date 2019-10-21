@@ -2,6 +2,7 @@ package config
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"os"
@@ -33,21 +34,33 @@ func (c *Config) ReadConfig(configuration io.ReadCloser) error {
 
 	err = yaml.Unmarshal(content, &c)
 	if err != nil {
-		return errors.Wrapf(err, "error unmarshalling %v", content)
+		return NewParseError(fmt.Sprintf("error unmarshalling %q: %v", content, err))
 	}
 	return nil
 }
 
 // GetStepConfig provides merged step configuration using defaults, config, if available
-func (c *Config) GetStepConfig(flagValues map[string]interface{}, paramJSON string, configuration io.ReadCloser, defaults []io.ReadCloser, filters StepFilters, stageName, stepName string) StepConfig {
+func (c *Config) GetStepConfig(flagValues map[string]interface{}, paramJSON string, configuration io.ReadCloser, defaults []io.ReadCloser, filters StepFilters, stageName, stepName string) (StepConfig, error) {
 	var stepConfig StepConfig
 	var d PipelineDefaults
 
-	// ignoring errors with custom configuration
-	c.ReadConfig(configuration)
+	if err := c.ReadConfig(configuration); err != nil {
+		switch err.(type) {
+		case *ParseError:
+			return StepConfig{}, errors.Wrap(err, "failed to parse custom pipeline configuration")
+		default:
+			//ignoring unavailability of config file since considered optional
+		}
+	}
 
-	// ignoring errors with default configuration
-	d.ReadPipelineDefaults(defaults)
+	if err := d.ReadPipelineDefaults(defaults); err != nil {
+		switch err.(type) {
+		case *ParseError:
+			return StepConfig{}, errors.Wrap(err, "failed to parse pipeline default configuration")
+		default:
+			//ignoring unavailability of defaults since considered optional
+		}
+	}
 
 	// first: read defaults & merge general -> steps (-> general -> steps ...)
 	for _, def := range d.Defaults {
@@ -75,7 +88,7 @@ func (c *Config) GetStepConfig(flagValues map[string]interface{}, paramJSON stri
 		stepConfig.mixIn(flagValues, filters.Parameters)
 	}
 
-	return stepConfig
+	return stepConfig, nil
 }
 
 // GetStepConfigWithJSON provides merged step configuration using a provided stepConfigJSON with additional flags provided

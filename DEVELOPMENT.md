@@ -91,10 +91,6 @@ docker cp piper:/piper .
 docker rm piper
 ```
 
-### Build the executable suitable for your local environment (e.g. Windows)
-
-`go build -o piper.exe`
-
 ## Generating step framework
 
 The steps are generated based on the yaml files in `resources/metadata/` with the following command
