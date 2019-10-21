@@ -152,9 +152,12 @@ steps:
   cloudFoundryDeploy:
     cloudFoundry:
       apiEndpoint: 'https://api.cf.eu10.hana.ondemand.com'
+    apiParameters: ''
+    loginParameters: ''
     deployTool: 'cf_native'
     deployType: 'standard'
     keepOldInstance: false
+    cfNativeDeployParameters: ''
     mtaDeployParameters: '-f'
     mtaExtensionDescriptor: ''
     mtaPath: ''
@@ -501,7 +504,7 @@ steps:
     dockerImage: 'maven:3.5-jdk-8'
     instance: 'SonarCloud'
     options: []
-    pullRequestProvider: 'github'
+    pullRequestProvider: 'GitHub'
     sonarScannerDownloadUrl: 'https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-3.3.0.1492-linux.zip'
   spinnakerTriggerPipeline:
     certFileCredentialsId: 'spinnaker-client-certificate'
@@ -579,3 +582,14 @@ steps:
     nodeLabel: ''
     stashContent:
       - 'pipelineConfigAndTests'
+  xsDeploy:
+    credentialsId: 'XS'
+    deployIdLogPattern: '^.*"xs bg-deploy -i (.*) -a .*".*$'
+    loginOpts: ''
+    deployOpts: ''
+    docker:
+      dockerImage: ''
+      dockerPullImage: false
+    mode: 'DEPLOY'
+    action: 'NONE'
+    xsSessionFile: '.xsconfig'
