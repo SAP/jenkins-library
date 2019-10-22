@@ -7,7 +7,6 @@ import (
 	"io/ioutil"
 	"strings"
 	"testing"
-	"reflect"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -248,9 +247,7 @@ func TestMerge(t *testing.T) {
 		t.Run(fmt.Sprintf("Merging %v into %v", row.MergeData, row.Source), func(t *testing.T) {
 			stepConfig := StepConfig{Config: row.Source}
 			stepConfig.mixIn(row.MergeData, row.Filter)
-			if ! reflect.DeepEqual(stepConfig.Config, row.ExpectedOutput) {
-				t.Errorf("Mixin  was incorrect, got: %v, expected: %v", stepConfig.Config, row.ExpectedOutput)
-			}
+			assert.Equal(t, row.ExpectedOutput, stepConfig.Config, "Mixin  was incorrect")
 		})
 	}
 }
