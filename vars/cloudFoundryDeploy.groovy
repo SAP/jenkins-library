@@ -404,7 +404,7 @@ def deployCfNative (config) {
     deploy(null, deployStatement, config,  { c -> stopOldAppIfRunning(c) })
 }
 
-private deploy(def cfApiStatement, def cfDeployStatement, def config, Closure logoutAction) {
+private deploy(def cfApiStatement, def cfDeployStatement, def config, Closure postDeployAction) {
 
     withCredentials([usernamePassword(
         credentialsId: config.cloudFoundry.credentialsId,
@@ -448,7 +448,7 @@ private deploy(def cfApiStatement, def cfDeployStatement, def config, Closure lo
             error "[${STEP_NAME}] ERROR: The execution of the deploy command failed, see the log for details."
         }
 
-        if(logoutAction) logoutAction(config)
+        if(postDeployAction) postDeployAction(config)
 
         sh "cf logout"
     }
