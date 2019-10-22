@@ -65,7 +65,7 @@ void call(Map parameters = [:]) {
         if (urlPullEntity != null) {
             String finalStatus = pollPullStatus(urlPullEntity, authToken)
             if (finalStatus != 'S') {
-                throw new Exception("Pull Failed")
+                error "[${STEP_NAME}] Pull Failed"
             }
         }
     }
@@ -108,13 +108,13 @@ private String triggerPull(Map configuration, String url, String authToken) {
             entityUri = responseJson.d.__metadata.uri.toString()
             echo "[${STEP_NAME}] Pull Status: ${responseJson.d.status_descr.toString()}"
         } else {
-            error "[${STEP_NAME}] Error: \n ${responseJson.error.message.toString()}"
+            error "[${STEP_NAME}] ${responseJson.error.message.toString()}"
         }
 
     } else {
-        throw new Exception("Authentification Failed")
+        error "[${STEP_NAME}] Authentification Failed"
     }
-
+    echo "[${STEP_NAME}] Entity URI: ${entityUri}"
     return entityUri
 
 }
@@ -141,8 +141,7 @@ private String pollPullStatus(String url, String authToken) {
         if (pollResponseJson.d != null) {
             status = pollResponseJson.d.status.toString()
         } else {
-            error "[${STEP_NAME}] Error: \n ${pollResponseJson.error.message.toString()}"
-            throw new Exception("HTTPS Connection Failed")
+            error "[${STEP_NAME}] ${pollResponseJson.error.message.toString()}"
         }
         echo "[${STEP_NAME}] Pull Status: ${pollResponseJson.d.status_descr.toString()}"
     }
