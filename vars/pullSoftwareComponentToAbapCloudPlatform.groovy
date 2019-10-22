@@ -101,7 +101,7 @@ private String triggerPull(Map configuration, String url, String authToken) {
         def response = sh (
             script : scriptPull,
             returnStdout: true )
-        echo response
+
         JsonSlurper slurper = new JsonSlurper()
         Map responseJson = slurper.parseText(response)
         if (responseJson.d != null) {
@@ -135,7 +135,6 @@ private String pollPullStatus(String url, String authToken) {
             script : pollScript,
             returnStdout: true )
 
-        echo pollResponse
         JsonSlurper slurper = new JsonSlurper()
         Map pollResponseJson = slurper.parseText(pollResponse)
         if (pollResponseJson.d != null) {
