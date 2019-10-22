@@ -11,7 +11,7 @@ import (
 	"github.wdf.sap.corp/ContinuousDelivery/piper-library/pkg/config"
 )
 
-type PiperGetConfigOptions struct {
+type configCommandOptions struct {
 	output         string //output format, so far only JSON
 	parametersJSON string //parameters to be considered in JSON format
 	stepMetadata   string //metadata to be considered, can be filePath or ENV containing JSON in format 'ENV:MY_ENV_VAR'
@@ -19,14 +19,14 @@ type PiperGetConfigOptions struct {
 	contextConfig  bool
 }
 
-var configOptions PiperGetConfigOptions
+var configOptions configCommandOptions
 var stepConfig config.StepConfig
 
 // OpenFile defines the function to open files locally and remotely
 var OpenFile = openPiperFile
 
 // GetConfig is the entry command for loading the configuration of a pipeline step
-func PiperGetConfig() *cobra.Command {
+func ConfigCommand() *cobra.Command {
 	var createConfigCmd = &cobra.Command{
 		Use:   "getConfig",
 		Short: "Loads the project 'Piper' configuration respecting defaults and parameters.",
