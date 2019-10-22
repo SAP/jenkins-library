@@ -21,14 +21,16 @@ func TestReadPipelineDefaults(t *testing.T) {
 		}
 
 		t.Run("Defaults 0", func(t *testing.T) {
-			if d.Defaults[0].General["testStepKey1"] != "testStepValue1" {
-				t.Errorf("got: %v, expected: %v", d.Defaults[0].General["testStepKey1"], "testStepValue1")
+			expected := "testStepValue1"
+			if d.Defaults[0].General["testStepKey1"] != expected {
+				t.Errorf("got: %v, expected: %v", d.Defaults[0].General["testStepKey1"], expected)
 			}
 		})
 
 		t.Run("Defaults 1", func(t *testing.T) {
-			if d.Defaults[1].General["testStepKey2"] != "testStepValue2" {
-				t.Errorf("got: %v, expected: %v", d.Defaults[1].General["testStepKey2"], "testStepValue2")
+			expected := "testStepValue2"
+			if d.Defaults[1].General["testStepKey2"] != expected {
+				t.Errorf("got: %v, expected: %v", d.Defaults[1].General["testStepKey2"], expected)
 			}
 		})
 	})
