@@ -1,5 +1,8 @@
 import com.sap.piper.JenkinsUtils
 import com.sap.piper.integration.TransportManagementService
+
+import hudson.AbortException
+
 import org.junit.After
 import org.junit.Before
 import org.junit.Rule
@@ -19,6 +22,7 @@ public class TmsUploadTest extends BasePiperTest {
     private JenkinsStepRule stepRule = new JenkinsStepRule(this)
     private JenkinsLoggingRule loggingRule = new JenkinsLoggingRule(this)
     private JenkinsEnvironmentRule envRule = new JenkinsEnvironmentRule(this)
+    private JenkinsFileExistsRule fileExistsRules = new JenkinsFileExistsRule(this, ['dummy.mtar'])
 
     def tmsStub
     def jenkinsUtilsStub
@@ -56,6 +60,7 @@ public class TmsUploadTest extends BasePiperTest {
         .around(stepRule)
         .around(loggingRule)
         .around(envRule)
+        .around(fileExistsRules)
         .around(new JenkinsCredentialsRule(this)
             .withCredentials('TMS_ServiceKey', serviceKeyContent))
 
@@ -159,6 +164,27 @@ public class TmsUploadTest extends BasePiperTest {
 
         assertThat(calledTmsMethodsWithArgs[2], is("uploadFileToNode('${uri}', 'myToken', 'myNode', '1234', 'My custom description for testing.')"))
         assertThat(loggingRule.log, containsString("[TransportManagementService] Corresponding Transport Request: 'My custom description for testing.' (Id: '2000')"))
+    }
+
+    @Test
+    public void failOnMissingMtaFile() {
+
+        thrown.expect(AbortException)
+        thrown.expectMessage('Mta file \'dummy.mtar\' does not exist.')
+
+        fileExistsRules.existingFiles.remove('dummy.mtar')
+        jenkinsUtilsStub = new JenkinsUtilsMock("Test User")
+
+        stepRule.step.tmsUpload(
+            script: nullScript,
+            juStabUtils: utils,
+            jenkinsUtilsStub: jenkinsUtilsStub,
+            transportManagementService: tmsStub,
+            mtaPath: 'dummy.mtar',
+            nodeName: 'myNode',
+            credentialsId: 'TMS_ServiceKey',
+            customDescription: 'My custom description for testing.'
+        )
     }
 
     def mockTransportManagementService() {
