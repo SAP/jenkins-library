@@ -19,7 +19,7 @@ func (d *PipelineDefaults) ReadPipelineDefaults(defaultSources []io.ReadCloser) 
 
 	for _, def := range defaultSources {
 
-		def.Close()
+		defer def.Close()
 
 		var c Config
 		var err error
