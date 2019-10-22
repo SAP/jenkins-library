@@ -101,14 +101,14 @@ private String triggerPull(Map configuration, String url, String authToken) {
         def response = sh (
             script : scriptPull,
             returnStdout: true )
-
+        echo response
         JsonSlurper slurper = new JsonSlurper()
         Map responseJson = slurper.parseText(response)
         if (responseJson.d != null) {
             entityUri = responseJson.d.__metadata.uri.toString()
             echo "[${STEP_NAME}] Pull Status: ${responseJson.d.status_descr.toString()}"
         } else {
-            error "[${STEP_NAME}] Error: \n ${pollResponse}"
+            error "[${STEP_NAME}] Error: \n ${responseJson.error.message.toString()}"
         }
 
     } else {
@@ -141,7 +141,7 @@ private String pollPullStatus(String url, String authToken) {
         if (pollResponseJson.d != null) {
             status = pollResponseJson.d.status.toString()
         } else {
-            error "[${STEP_NAME}] Error: \n ${pollResponse}"
+            error "[${STEP_NAME}] Error: \n ${pollResponseJson.error.message.toString()}"
             throw new Exception("HTTPS Connection Failed")
         }
         echo "[${STEP_NAME}] Pull Status: ${pollResponseJson.d.status_descr.toString()}"
