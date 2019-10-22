@@ -105,8 +105,8 @@ func (m *StepData) ReadPipelineStepData(metadata io.ReadCloser) error {
 func (m *StepData) GetParameterFilters() StepFilters {
 	var filters StepFilters
 	for _, param := range m.Spec.Inputs.Parameters {
+		filters.All = append(filters.All, param.Name)
 		for _, scope := range param.Scope {
-			filters.All = append(filters.All, param.Name)
 			switch scope {
 			case "GENERAL":
 				filters.General = append(filters.General, param.Name)
