@@ -17,3 +17,5 @@ targets/
 documentation/docs-gen
 
 consumer-test/**/workspace
+
+*.code-workspace
