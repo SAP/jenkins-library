@@ -57,113 +57,94 @@ void call(Map parameters = [:]) {
 
         String usernameColonPassword = configuration.username + ":" + configuration.password
         String authToken = usernameColonPassword.bytes.encodeBase64().toString()
-        String urlString = configuration.host + ':443/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY/Pull'
+        String urlString = configuration.host + '/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY/Pull'
         echo "[${STEP_NAME}] General Parameters: URL = \"${urlString}\", repositoryName = \"${configuration.repositoryName}\""
 
-        Map object = triggerPull(configuration, urlString, authToken)
+        String urlPullEntity = triggerPull(configuration, urlString, authToken)
 
-        def pollUrl = new URL(object.d."__metadata"."uri")
-        Map responseObject = pollPullStatus(object, pollUrl, authToken)
-
-        echo "[${STEP_NAME}] Pull Status: ${responseObject.d."status_descr"}"
-        if (responseObject.d."status" != 'S') {
-            throw new Exception("Pull Failed")
-        }  
+        if (urlPullEntity != null) {
+            String finalStatus = pollPullStatus(urlPullEntity, authToken)
+            if (finalStatus != 'S') {
+                throw new Exception("Pull Failed")
+            }  
+        } 
     }
 }
 
+private String triggerPull(Map configuration, String url, String authToken) {
+    
+    String entityUri = null
 
-private Map getXCsrfTokenAndCookie(URL url, String authToken) {
+    def xCsrfTokenScript = """#!/bin/bash
+        curl -I -X GET ${url} \
+        -H 'Authorization: Basic ${authToken}' \
+        -H 'Accept: application/json' \
+        -H 'x-csrf-token: fetch' \
+        --cookie-jar cookieJar.txt \
+        | awk 'BEGIN {FS=": "}/^x-csrf-token/{print \$2}'
+    """
 
-    HttpURLConnection connection = createDefaultConnection(url, authToken)
-    connection.setRequestProperty("x-csrf-token", "fetch")
+    def xCsrfToken = sh (
+        script : xCsrfTokenScript,
+        returnStdout: true )
+    if (xCsrfToken != null) {
 
-    connection.setRequestMethod("GET")
-    connection.connect()
-    token =  connection.getHeaderField("x-csrf-token")
-    cookie1 = connection.getHeaderField(1).split(";")[0] 
-    cookie2 = connection.getHeaderField(2).split(";")[0] 
-    cookie = cookie1 + "; " + cookie2 
-    connection.disconnect()
-    connection = null
+        def scriptPull = """#!/bin/bash
+            curl -X POST \"${url}\" \
+            -H 'Authorization: Basic ${authToken}' \
+            -H 'Accept: application/json' \
+            -H 'Content-Type: application/json' \
+            -H 'x-csrf-token: ${xCsrfToken.trim()}' \
+            --cookie cookieJar.txt \
+            -d '{ \"sc_name\": \"${configuration.repositoryName}\" }'
+        """
+        def response = sh (
+            script : scriptPull,
+            returnStdout: true )
 
-    Map result = [:]
-    result.cookie = cookie
-    result.token = token
-    return result
+        JsonSlurper slurper = new JsonSlurper()
+        Map responseJson = slurper.parseText(response)
+        if (responseJson.d != null) {
+            entityUri = responseJson.d.__metadata.uri.toString()
+            echo "[${STEP_NAME}] Pull Status: ${responseJson.d.status_descr.toString()}"
+        } else {
+            error "[${STEP_NAME}] Error: \n ${pollResponse}"
+        }
 
-}
-
-private HttpURLConnection createDefaultConnection(URL url, String authToken) {
-
-    HttpURLConnection connection = (HttpURLConnection) url.openConnection()
-    connection.setRequestProperty("Authorization", "Basic " + authToken)
-    connection.setRequestProperty("Content-Type", "application/json")
-    connection.setRequestProperty("Accept", "application/json")
-    return connection
-
-}
-
-private HttpURLConnection createPostConnection(URL url, String token, String cookie, String authToken) {
-
-    HttpURLConnection connection = createDefaultConnection(url, authToken)
-    connection.setRequestProperty("cookie", cookie)
-    connection.setRequestProperty("x-csrf-token", token)
-    connection.setRequestMethod("POST")
-    connection.setDoOutput(true)
-    connection.setDoInput(true)
-    return connection
-
-}
-
-private Map triggerPull(Map configuration, String urlString, String authToken) {
-
-    def url = new URL(urlString)
-    Map tokenAndCookie = getXCsrfTokenAndCookie(url, authToken)
-    HttpURLConnection connection = createPostConnection(url, tokenAndCookie.token, tokenAndCookie.cookie, authToken)
-    connection.connect()
-    OutputStream outputStream = connection.getOutputStream()
-    String input = '{ "sc_name" : "' + configuration.repositoryName + '" }'
-    outputStream.write(input.getBytes())
-    outputStream.flush()
-
-    if (!(connection.responseCode == 200 || connection.responseCode == 201)) {
-        error "[${STEP_NAME}] Error: ${connection.getErrorStream().text}"
-        connection.disconnect()
-        throw new Exception("HTTPS Connection Failed")
+    } else {
+        throw new Exception("Authentification Failed")
     }
 
-    JsonSlurper slurper = new JsonSlurper()
-    Map object = slurper.parseText(connection.content.text)
-    connection.disconnect()
-
-    echo "[${STEP_NAME}] Pull Entity: ${object.d."__metadata"."uri"}"
-    echo "[${STEP_NAME}] Pull Status: ${object.d."status_descr"}"
-
-    return object
+    return entityUri
 
 }
 
-private Map pollPullStatus(Map responseObject, URL pollUrl, String authToken) {
+private String pollPullStatus(String url, String authToken) {
 
-    String status = responseObject.d."status"
-    Map returnObject = null
-    while(status == 'R') {
+    String status = "R";
+    while(status == "R") {
 
         Thread.sleep(5000)
-        HttpURLConnection pollConnection = createDefaultConnection(pollUrl, authToken)
-        pollConnection.connect()
 
-        if (pollConnection.responseCode == 200 || pollConnection.responseCode == 201) {
-            JsonSlurper slurper = new JsonSlurper()
-            returnObject = slurper.parseText(pollConnection.content.text)
-            status = returnObject.d."status"
-            pollConnection.disconnect()
+        def pollScript = """#!/bin/bash
+            curl -X GET "${url}" \
+            -H 'Authorization: Basic ${authToken}' \
+            -H 'Accept: application/json' \
+        """
+        def pollResponse = sh (
+            script : pollScript,
+            returnStdout: true )
+    
+        echo pollResponse
+        JsonSlurper slurper = new JsonSlurper()
+        Map pollResponseJson = slurper.parseText(pollResponse)
+        if (pollResponseJson.d != null) {
+            status = pollResponseJson.d.status.toString()
         } else {
-            error "[${STEP_NAME}] Error: ${pollConnection.getErrorStream().text}"
-            pollConnection.disconnect()
+            error "[${STEP_NAME}] Error: \n ${pollResponse}"
             throw new Exception("HTTPS Connection Failed")
         }
+        echo "[${STEP_NAME}] Pull Status: ${pollResponseJson.d.status_descr.toString()}"
     }
-    return returnObject
+    return status
 }
