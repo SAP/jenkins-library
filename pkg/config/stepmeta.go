@@ -1,6 +1,8 @@
 package config
 
 import (
+	"bytes"
+	"fmt"
 	"io"
 	"io/ioutil"
 
@@ -25,8 +27,8 @@ type StepMetadata struct {
 type StepSpec struct {
 	Inputs StepInputs `json:"inputs"`
 	//	Outputs string `json:"description,omitempty"`
-	Containers []StepContainers `json:"containers,omitempty"`
-	Sidecars   []StepSidecars   `json:"sidecars,omitempty"`
+	Containers []Container `json:"containers,omitempty"`
+	Sidecars   []Container `json:"sidecars,omitempty"`
 }
 
 // StepInputs defines the spec details for a step, like step inputs, containers, sidecars, ...
@@ -66,14 +68,23 @@ type StepSecrets struct {
 //	Name          string `json:"name"`
 //}
 
-// StepContainers defines the containers required for a step
-type StepContainers struct {
-	Containers map[string]interface{} `json:"containers"`
+// Container defines an execution container
+type Container struct {
+	//ToDo: check dockerOptions, dockerVolumeBind, containerPortMappings, sidecarOptions, sidecarVolumeBind
+	Command         []string `json:"command"`
+	EnvVars         []EnvVar `json:"env"`
+	Image           string   `json:"image"`
+	ImagePullPolicy string   `json:"imagePullPolicy"`
+	Name            string   `json:"name"`
+	ReadyCommand    string   `json:"readyCommand"`
+	Shell           string   `json:"shell"`
+	WorkingDir      string   `json:"workingDir"`
 }
 
-// StepSidecars defines any sidears required for a step
-type StepSidecars struct {
-	Sidecars map[string]interface{} `json:"sidecars"`
+// EnvVar defines an environment variable
+type EnvVar struct {
+	Name  string `json:"name"`
+	Value string `json:"value"`
 }
 
 // StepFilters defines the filter parameters for the different sections
@@ -135,5 +146,87 @@ func (m *StepData) GetContextParameterFilters() StepFilters {
 		filters.Parameters = append(filters.Parameters, secret.Name)
 		filters.Env = append(filters.Env, secret.Name)
 	}
+
+	containerFilters := []string{}
+	if len(m.Spec.Containers) > 0 {
+		containerFilters = append(containerFilters, []string{"containerCommand", "containerShell", "dockerEnvVars", "dockerImage", "dockerOptions", "dockerPullImage", "dockerVolumeBind", "dockerWorkspace"}...)
+	}
+	if len(m.Spec.Sidecars) > 0 {
+		//ToDo: support fallback for "dockerName" configuration property -> via aliasing?
+		containerFilters = append(containerFilters, []string{"containerName", "containerPortMappings", "dockerName", "sidecarEnvVars", "sidecarImage", "sidecarName", "sidecarOptions", "sidecarPullImage", "sidecarReadyCommand", "sidecarVolumeBind", "sidecarWorkspace"}...)
+	}
+	if len(containerFilters) > 0 {
+		filters.All = append(filters.All, containerFilters...)
+		filters.Steps = append(filters.Steps, containerFilters...)
+		filters.Stages = append(filters.Stages, containerFilters...)
+		filters.Parameters = append(filters.Parameters, containerFilters...)
+	}
 	return filters
+}
+
+// GetContextDefaults retrieves context defaults like container image, name, env vars, ...
+// It only supports scenarios with one container and optionally one sidecar
+func (m *StepData) GetContextDefaults(stepName string) (io.ReadCloser, error) {
+
+	p := map[string]interface{}{}
+
+	//ToDo error handling empty Containers/Sidecars
+	//ToDo handle empty Command
+
+	if len(m.Spec.Containers) > 0 {
+		if len(m.Spec.Containers[0].Command) > 0 {
+			p["containerCommand"] = m.Spec.Containers[0].Command[0]
+		}
+		p["containerName"] = m.Spec.Containers[0].Name
+		p["containerShell"] = m.Spec.Containers[0].Shell
+		p["dockerEnvVars"] = envVarsAsStringSlice(m.Spec.Containers[0].EnvVars)
+		p["dockerImage"] = m.Spec.Containers[0].Image
+		p["dockerName"] = m.Spec.Containers[0].Name
+		p["dockerPullImage"] = m.Spec.Containers[0].ImagePullPolicy != "Never"
+		p["dockerWorkspace"] = m.Spec.Containers[0].WorkingDir
+
+		// Ready command not relevant for main runtime container so far
+		//p[] = m.Spec.Containers[0].ReadyCommand
+	}
+
+	if len(m.Spec.Sidecars) > 0 {
+		if len(m.Spec.Sidecars[0].Command) > 0 {
+			p["sidecarCommand"] = m.Spec.Sidecars[0].Command[0]
+		}
+		p["sidecarEnvVars"] = envVarsAsStringSlice(m.Spec.Sidecars[0].EnvVars)
+		p["sidecarImage"] = m.Spec.Sidecars[0].Image
+		p["sidecarName"] = m.Spec.Sidecars[0].Name
+		p["sidecarPullImage"] = m.Spec.Sidecars[0].ImagePullPolicy != "Never"
+		p["sidecarReadyCommand"] = m.Spec.Sidecars[0].ReadyCommand
+		p["sidecarWorkspace"] = m.Spec.Sidecars[0].WorkingDir
+	}
+
+	// not filled for now since this is not relevant in Kubernetes case
+	//p["dockerOptions"] = m.Spec.Containers[0].
+	//p["dockerVolumeBind"] = m.Spec.Containers[0].
+	//p["containerPortMappings"] = m.Spec.Sidecars[0].
+	//p["sidecarOptions"] = m.Spec.Sidecars[0].
+	//p["sidecarVolumeBind"] = m.Spec.Sidecars[0].
+
+	c := Config{
+		Steps: map[string]map[string]interface{}{
+			stepName: p,
+		},
+	}
+
+	JSON, err := yaml.Marshal(c)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to create context defaults")
+	}
+
+	r := ioutil.NopCloser(bytes.NewReader(JSON))
+	return r, nil
+}
+
+func envVarsAsStringSlice(envVars []EnvVar) []string {
+	e := []string{}
+	for _, v := range envVars {
+		e = append(e, fmt.Sprintf("%v=%v", v.Name, v.Value))
+	}
+	return e
 }

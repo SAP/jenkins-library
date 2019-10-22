@@ -6,9 +6,9 @@ import (
 	"os"
 	"strings"
 
+	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
-	"github.wdf.sap.corp/ContinuousDelivery/piper-library/pkg/config"
 )
 
 type configCommandOptions struct {
@@ -17,16 +17,15 @@ type configCommandOptions struct {
 	stepMetadata   string //metadata to be considered, can be filePath or ENV containing JSON in format 'ENV:MY_ENV_VAR'
 	stepName       string
 	contextConfig  bool
+	openFile       func(s string) (io.ReadCloser, error)
 }
 
 var configOptions configCommandOptions
-var stepConfig config.StepConfig
 
-// OpenFile defines the function to open files locally and remotely
-var OpenFile = openPiperFile
-
-// GetConfig is the entry command for loading the configuration of a pipeline step
+// ConfigCommand is the entry command for loading the configuration of a pipeline step
 func ConfigCommand() *cobra.Command {
+
+	configOptions.openFile = openPiperFile
 	var createConfigCmd = &cobra.Command{
 		Use:   "getConfig",
 		Short: "Loads the project 'Piper' configuration respecting defaults and parameters.",
@@ -42,9 +41,10 @@ func ConfigCommand() *cobra.Command {
 func generateConfig() error {
 
 	var myConfig config.Config
+	var stepConfig config.StepConfig
 
 	var metadata config.StepData
-	metadataFile, err := OpenFile(configOptions.stepMetadata)
+	metadataFile, err := configOptions.openFile(configOptions.stepMetadata)
 	if err != nil {
 		return errors.Wrap(err, "metadata: open failed")
 	}
@@ -54,7 +54,7 @@ func generateConfig() error {
 		return errors.Wrap(err, "metadata: read failed")
 	}
 
-	customConfig, err := OpenFile(generalConfig.customConfig)
+	customConfig, err := configOptions.openFile(generalConfig.customConfig)
 	if err != nil {
 		return errors.Wrap(err, "config: open failed")
 	}
@@ -65,7 +65,7 @@ func generateConfig() error {
 	}
 
 	for _, f := range generalConfig.defaultConfig {
-		fc, err := OpenFile(f)
+		fc, err := configOptions.openFile(f)
 		if err != nil {
 			return errors.Wrapf(err, "config: getting defaults failed: '%v'", f)
 		}
@@ -74,7 +74,10 @@ func generateConfig() error {
 
 	var flags map[string]interface{}
 
-	stepConfig = myConfig.GetStepConfig(flags, generalConfig.parametersJSON, customConfig, defaultConfig, paramFilter, generalConfig.stageName, configOptions.stepName)
+	stepConfig, err = myConfig.GetStepConfig(flags, generalConfig.parametersJSON, customConfig, defaultConfig, paramFilter, generalConfig.stageName, configOptions.stepName)
+	if err != nil {
+		return errors.Wrap(err, "getting step config failed")
+	}
 
 	//ToDo: Check for mandatory parameters
 

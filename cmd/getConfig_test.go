@@ -6,10 +6,10 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/spf13/cobra"
 	flag "github.com/spf13/pflag"
 	"github.com/stretchr/testify/assert"
-	"github.wdf.sap.corp/ContinuousDelivery/piper-library/pkg/config"
 )
 
 func openFileMock(name string) (io.ReadCloser, error) {
@@ -25,8 +25,8 @@ func openFileMock(name string) (io.ReadCloser, error) {
 	return ioutil.NopCloser(strings.NewReader(r)), nil
 }
 
-func TestGetConfig(t *testing.T) {
-	cmd := GetConfig()
+func TestConfigCommand(t *testing.T) {
+	cmd := ConfigCommand()
 
 	gotReq := []string{}
 	gotOpt := []string{}
@@ -52,8 +52,7 @@ func TestGetConfig(t *testing.T) {
 
 	t.Run("Run", func(t *testing.T) {
 		t.Run("Success case", func(t *testing.T) {
-			OpenFile = openFileMock
-			defer func() { OpenFile = openPiperFile }()
+			configOptions.openFile = openFileMock
 			err := cmd.RunE(cmd, []string{})
 			assert.NoError(t, err, "error occured but none expected")
 		})

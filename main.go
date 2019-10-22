@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.wdf.sap.corp/ContinuousDelivery/piper-library/cmd"
+	"github.com/SAP/jenkins-library/cmd"
 )
 
 func main() {
