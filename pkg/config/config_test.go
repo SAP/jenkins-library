@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"strings"
 	"testing"
+	"reflect"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -218,6 +219,12 @@ func TestMerge(t *testing.T) {
 		ExpectedOutput map[string]interface{}
 	}{
 		{
+			Source:         map[string]interface{}{"key1": "baseValue"},
+			Filter:         []string{},
+			MergeData:      map[string]interface{}{"key1": "overwrittenValue"},
+			ExpectedOutput: map[string]interface{}{"key1": "overwrittenValue"},
+		},
+		{
 			Source:         map[string]interface{}{"key1": "value1"},
 			Filter:         []string{},
 			MergeData:      map[string]interface{}{"key2": "value2"},
@@ -227,7 +234,7 @@ func TestMerge(t *testing.T) {
 			Source:         map[string]interface{}{"key1": "value1"},
 			Filter:         []string{"key1"},
 			MergeData:      map[string]interface{}{"key2": "value2"},
-			ExpectedOutput: map[string]interface{}{"key2": "value2"},
+			ExpectedOutput: map[string]interface{}{"key1": "value1"},
 		},
 		{
 			Source:         map[string]interface{}{"key1": map[string]interface{}{"key1_1": "value1"}},
@@ -241,7 +248,7 @@ func TestMerge(t *testing.T) {
 		t.Run(fmt.Sprintf("Merging %v into %v", row.MergeData, row.Source), func(t *testing.T) {
 			stepConfig := StepConfig{Config: row.Source}
 			stepConfig.mixIn(row.MergeData, row.Filter)
-			if len(stepConfig.Config) != len(row.ExpectedOutput) {
+			if ! reflect.DeepEqual(stepConfig.Config, row.ExpectedOutput) {
 				t.Errorf("Mixin  was incorrect, got: %v, expected: %v", stepConfig.Config, row.ExpectedOutput)
 			}
 		})
