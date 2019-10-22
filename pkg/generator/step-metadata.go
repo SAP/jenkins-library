@@ -50,9 +50,7 @@ type stepInfo struct {
 const stepGoTemplate = `package cmd
 
 import (
-	"encoding/json"
-	"io"
-	"os"
+	//"os"
 
 	"github.com/spf13/cobra"
 	"github.com/SAP/jenkins-library/pkg/config"
@@ -72,36 +70,9 @@ func {{.CobraCmdFuncName}}() *cobra.Command {
 		Use:   "{{.StepName}}",
 		Short: "{{.Short}}",
 		Long:   {{ $tick := "` + "`" + `" }}{{ $tick }}{{.Long | longName }}{{ $tick }},
-		PreRun: func(cmd *cobra.Command, args []string) {
+		PreRunE: func(cmd *cobra.Command, args []string) error {
 			metadata := {{ .StepName }}Metadata()
-			filters := metadata.GetParameterFilters()
-
-			flagValues := config.AvailableFlagValues(cmd, &filters)
-
-			var myConfig config.Config
-			var stepConfig config.StepConfig
-			if len(generalConfig.stepConfigJSON) != 0 {
-				// ignore config & defaults in favor of passed stepConfigJSON
-				stepConfig = config.GetStepConfigWithJSON(flagValues, generalConfig.stepConfigJSON, filters)
-			} else {
-				// use config & defaults
-				
-				//accept that config file and defaults cannot be loaded since both are not mandatory here
-				customConfig, _ := os.Open(generalConfig.customConfig)
-				var defaultConfig []io.ReadCloser
-				for _, f := range generalConfig.defaultConfig {
-					//ToDo: support also https as source
-					fc, _ := os.Open(f)
-					defaultConfig = append(defaultConfig, fc)
-				}
-
-				stepConfig = myConfig.GetStepConfig(flagValues, generalConfig.parametersJSON, customConfig, defaultConfig, filters, generalConfig.stageName, "{{ .StepName }}")
-			}
-
-			confJSON, _ := json.Marshal(stepConfig.Config)
-			json.Unmarshal(confJSON, &my{{ .StepName | title}}Options)
-
-			config.MarkFlagsWithValue(cmd, stepConfig)
+			return prepareConfig(cmd, &metadata, "{{ .StepName }}", &my{{ .StepName | title}}Options)
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return {{.StepName}}(my{{ .StepName | title }}Options)
@@ -219,11 +190,21 @@ func main() {
 			stepData.Spec.Inputs.Parameters[k] = param
 		}
 
-		step := stepTemplate(stepData.Metadata.Name, stepData)
+		myStepInfo := stepInfo{
+			StepName:         stepData.Metadata.Name,
+			CobraCmdFuncName: fmt.Sprintf("%vCommand", strings.Title(stepData.Metadata.Name)),
+			CreateCmdVar:     fmt.Sprintf("create%vCmd", strings.Title(stepData.Metadata.Name)),
+			Short:            stepData.Metadata.Description,
+			Long:             stepData.Metadata.LongDescription,
+			Metadata:         stepData.Spec.Inputs.Parameters,
+			FlagsFunc:        fmt.Sprintf("Add%vFlags", strings.Title(stepData.Metadata.Name)),
+		}
+
+		step := stepTemplate(myStepInfo)
 		err = ioutil.WriteFile(fmt.Sprintf("cmd/%v_generated.go", stepData.Metadata.Name), step, 0644)
 		checkError(err)
 
-		test := stepTestTemplate(stepData.Metadata.Name, stepData)
+		test := stepTestTemplate(myStepInfo)
 		err = ioutil.WriteFile(fmt.Sprintf("cmd/%v_generated_test.go", stepData.Metadata.Name), test, 0644)
 		checkError(err)
 	}
@@ -253,17 +234,7 @@ func metadataFiles(sourceDirectory string) ([]string, error) {
 	return metadataFiles, nil
 }
 
-func stepTemplate(stepName string, stepData config.StepData) []byte {
-
-	myStepInfo := stepInfo{
-		StepName:         stepName,
-		CobraCmdFuncName: fmt.Sprintf("%vCommand", strings.Title(stepName)),
-		CreateCmdVar:     fmt.Sprintf("create%vCmd", strings.Title(stepName)),
-		Short:            stepData.Metadata.Description,
-		Long:             stepData.Metadata.LongDescription,
-		Metadata:         stepData.Spec.Inputs.Parameters,
-		FlagsFunc:        fmt.Sprintf("Add%vFlags", strings.Title(stepName)),
-	}
+func stepTemplate(myStepInfo stepInfo) []byte {
 
 	funcMap := template.FuncMap{
 		"flagType":   flagType,
@@ -282,17 +253,7 @@ func stepTemplate(stepName string, stepData config.StepData) []byte {
 	return generatedCode.Bytes()
 }
 
-func stepTestTemplate(stepName string, stepData config.StepData) []byte {
-
-	myStepInfo := stepInfo{
-		StepName:         stepName,
-		CobraCmdFuncName: fmt.Sprintf("%vCommand", strings.Title(stepName)),
-		CreateCmdVar:     fmt.Sprintf("create%vCmd", strings.Title(stepName)),
-		Short:            stepData.Metadata.Description,
-		Long:             stepData.Metadata.LongDescription,
-		Metadata:         stepData.Spec.Inputs.Parameters,
-		FlagsFunc:        fmt.Sprintf("Add%vFlags", strings.Title(stepName)),
-	}
+func stepTestTemplate(myStepInfo stepInfo) []byte {
 
 	funcMap := template.FuncMap{
 		"flagType":   flagType,

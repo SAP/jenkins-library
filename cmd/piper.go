@@ -1,10 +1,14 @@
 package cmd
 
 import (
+	"encoding/json"
 	"fmt"
+	"io"
 	"os"
 
 	"github.com/spf13/cobra"
+	"github.com/pkg/errors"
+	"github.com/SAP/jenkins-library/pkg/config"
 )
 
 type generalConfigOptions struct {
@@ -44,4 +48,43 @@ func Execute() {
 		fmt.Println(err)
 		os.Exit(1)
 	}
+}
+
+func prepareConfig(cmd *cobra.Command, metadata *config.StepData, stepName string, options interface{}) error {
+
+	filters := metadata.GetParameterFilters()
+
+	flagValues := config.AvailableFlagValues(cmd, &filters)
+
+	var myConfig config.Config
+	var stepConfig config.StepConfig
+
+	if len(generalConfig.stepConfigJSON) != 0 {
+		// ignore config & defaults in favor of passed stepConfigJSON
+		stepConfig = config.GetStepConfigWithJSON(flagValues, generalConfig.stepConfigJSON, filters)
+	} else {
+		// use config & defaults
+		
+		//accept that config file and defaults cannot be loaded since both are not mandatory here
+		customConfig, _ := os.Open(generalConfig.customConfig)
+		var defaultConfig []io.ReadCloser
+		for _, f := range generalConfig.defaultConfig {
+			//ToDo: support also https as source
+			fc, _ := os.Open(f)
+			defaultConfig = append(defaultConfig, fc)
+		}
+
+		var err error
+		stepConfig, err = myConfig.GetStepConfig(flagValues, generalConfig.parametersJSON, customConfig, defaultConfig, filters, generalConfig.stageName, stepName)
+		if err != nil {
+			return errors.Wrap(err, "retrieving step configuration failed")
+		}
+	}
+
+	confJSON, _ := json.Marshal(stepConfig.Config)
+	json.Unmarshal(confJSON, &options)
+
+	config.MarkFlagsWithValue(cmd, stepConfig)	
+	
+	return nil
 }
