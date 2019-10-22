@@ -229,13 +229,13 @@ func TestMerge(t *testing.T) {
 			Filter:         []string{},
 			MergeData:      map[string]interface{}{"key2": "value2"},
 			ExpectedOutput: map[string]interface{}{"key1": "value1", "key2": "value2"},
-		}, /*
+		},
 		{
 			Source:         map[string]interface{}{"key1": "value1"},
 			Filter:         []string{"key1"},
 			MergeData:      map[string]interface{}{"key2": "value2"},
-			ExpectedOutput: map[string]interface{}{"key2": "value2"},
-		}, */
+			ExpectedOutput: map[string]interface{}{"key1": "value1"},
+		},
 		{
 			Source:         map[string]interface{}{"key1": map[string]interface{}{"key1_1": "value1"}},
 			Filter:         []string{},
