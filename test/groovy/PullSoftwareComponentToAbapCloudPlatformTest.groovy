@@ -1,7 +1,9 @@
 import java.util.Map
+import static org.hamcrest.Matchers.hasItem
+import static org.junit.Assert.assertThat
 
 import org.hamcrest.Matchers
-import org.hamcrest.core.StringContains
+import static org.hamcrest.Matchers.containsString
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -13,6 +15,7 @@ import util.JenkinsCredentialsRule
 import util.JenkinsStepRule
 import util.JenkinsLoggingRule
 import util.JenkinsReadYamlRule
+import util.JenkinsShellCallRule
 import util.Rules
 
 import hudson.AbortException
@@ -22,6 +25,7 @@ public class PullSoftwareComponentToAbapCloudPlatformTest extends BasePiperTest 
     private ExpectedException thrown = new ExpectedException()
     private JenkinsStepRule stepRule = new JenkinsStepRule(this)
     private JenkinsLoggingRule loggingRule = new JenkinsLoggingRule(this)
+    private JenkinsShellCallRule shellRule = new JenkinsShellCallRule(this)
 
     @Rule
     public RuleChain ruleChain = Rules.getCommonRules(this)
@@ -29,15 +33,24 @@ public class PullSoftwareComponentToAbapCloudPlatformTest extends BasePiperTest 
         .around(thrown)
         .around(stepRule)
         .around(loggingRule)
-        .around(new JenkinsCredentialsRule(this)
-            .withCredentials('CM', 'anonymous', '********'))
+        .around(shellRule)
 
     @Before
     public void setup() {
     }
 
     @Test
-    public void test() {
+    public void pullSuccessful() {
+        shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, /.*x-csrf-token: fetch.*/, "TOKEN")
+        shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, /.*POST.*/, /{"d" : { "__metadata" : { "uri" : "https:\/\/example.com\/URI" } , "status" : "R", "status_descr" : "Running" }}/)
+        shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, /.*https:\/\/example\.com.*/, /{"d" : { "__metadata" : { "uri" : "https:\/\/example.com\/URI" } , "status" : "S", "status_descr" : "Success" }}/)
+
+        stepRule.step.pullSoftwareComponentToAbapCloudPlatform(script: nullScript, host: 'https://example.com', repositoryName: 'Z_DEMO_DM', username: 'user', password: 'password')
+
+        assertThat(shellRule.shell[0], containsString(/#!\/bin\/bash curl -I -X GET https:\/\/example.com\/sap\/opu\/odata\/sap\/MANAGE_GIT_REPOSITORY\/Pull -H 'Authorization: Basic dXNlcjpwYXNzd29yZA==' -H 'Accept: application\/json' -H 'x-csrf-token: fetch' --cookie-jar cookieJar.txt | awk 'BEGIN {FS=": "}\/^x-csrf-token\/{print $2}'/))
+        assertThat(shellRule.shell[1], containsString(/#!\/bin\/bash curl -X POST "https:\/\/example.com\/sap\/opu\/odata\/sap\/MANAGE_GIT_REPOSITORY\/Pull" -H 'Authorization: Basic dXNlcjpwYXNzd29yZA==' -H 'Accept: application\/json' -H 'Content-Type: application\/json' -H 'x-csrf-token: TOKEN' --cookie cookieJar.txt -d '{ "sc_name": "Z_DEMO_DM" }'/))
+        assertThat(shellRule.shell[2], containsString(/#!\/bin\/bash curl -X GET "https:\/\/example.com\/URI" -H 'Authorization: Basic dXNlcjpwYXNzd29yZA==' -H 'Accept: application\/json'/))
+
     }
 
     @Test
