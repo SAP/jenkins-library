@@ -1,0 +1,122 @@
+package cmd
+
+import (
+	"encoding/json"
+	"io"
+	"os"
+
+	"github.com/SAP/jenkins-library/pkg/config"
+	"github.com/spf13/cobra"
+)
+
+type karmaExecuteTestsOptions struct {
+	InstallCommand string `json:"installCommand,omitempty"`
+	ModulePath     string `json:"modulePath,omitempty"`
+	RunCommand     string `json:"runCommand,omitempty"`
+}
+
+var myKarmaExecuteTestsOptions karmaExecuteTestsOptions
+var karmaExecuteTestsStepConfigJSON string
+
+// KarmaExecuteTestsCommand Executes the Karma test runner
+func KarmaExecuteTestsCommand() *cobra.Command {
+	var createKarmaExecuteTestsCmd = &cobra.Command{
+		Use:   "karmaExecuteTests",
+		Short: "Executes the Karma test runner",
+		Long: `In this step the ([Karma test runner](http://karma-runner.github.io)) is executed.
+
+The step is using the ` + "`" + `seleniumExecuteTest` + "`" + ` step to spin up two containers in a Docker network:
+
+* a Selenium/Chrome container (` + "`" + `selenium/standalone-chrome` + "`" + `)
+* a NodeJS container (` + "`" + `node:8-stretch` + "`" + `)
+
+In the Docker network, the containers can be referenced by the values provided in ` + "`" + `dockerName` + "`" + ` and ` + "`" + `sidecarName` + "`" + `, the default values are ` + "`" + `karma` + "`" + ` and ` + "`" + `selenium` + "`" + `. These values must be used in the ` + "`" + `hostname` + "`" + ` properties of the test configuration ([Karma](https://karma-runner.github.io/1.0/config/configuration-file.html) and [WebDriver](https://github.com/karma-runner/karma-webdriver-launcher#usage)).
+
+!!! note
+    In a Kubernetes environment, the containers both need to be referenced with ` + "`" + `localhost` + "`" + `.
+`,
+		PreRun: func(cmd *cobra.Command, args []string) {
+			metadata := karmaExecuteTestsMetadata()
+			filters := metadata.GetParameterFilters()
+
+			flagValues := config.AvailableFlagValues(cmd, &filters)
+
+			var myConfig config.Config
+			var stepConfig config.StepConfig
+			if len(generalConfig.stepConfigJSON) != 0 {
+				// ignore config & defaults in favor of passed stepConfigJSON
+				stepConfig = config.GetStepConfigWithJSON(flagValues, generalConfig.stepConfigJSON, filters)
+			} else {
+				// use config & defaults
+
+				//accept that config file and defaults cannot be loaded since both are not mandatory here
+				customConfig, _ := os.Open(generalConfig.customConfig)
+				var defaultConfig []io.ReadCloser
+				for _, f := range generalConfig.defaultConfig {
+					//ToDo: support also https as source
+					fc, _ := os.Open(f)
+					defaultConfig = append(defaultConfig, fc)
+				}
+
+				//ToDo: add error handling?
+				stepConfig, _ = myConfig.GetStepConfig(flagValues, generalConfig.parametersJSON, customConfig, defaultConfig, filters, generalConfig.stageName, "karmaExecuteTests")
+			}
+
+			confJSON, _ := json.Marshal(stepConfig.Config)
+			json.Unmarshal(confJSON, &myKarmaExecuteTestsOptions)
+
+			config.MarkFlagsWithValue(cmd, stepConfig)
+		},
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return karmaExecuteTests(myKarmaExecuteTestsOptions)
+		},
+	}
+
+	AddKarmaExecuteTestsFlags(createKarmaExecuteTestsCmd)
+	return createKarmaExecuteTestsCmd
+}
+
+// AddKarmaExecuteTestsFlags defines the flags for the karmaExecuteTests command
+func AddKarmaExecuteTestsFlags(cmd *cobra.Command) {
+
+	cmd.Flags().StringVar(&myKarmaExecuteTestsOptions.InstallCommand, "installCommand", "npm install --quiet", "The command that is executed to install the test tool.")
+	cmd.Flags().StringVar(&myKarmaExecuteTestsOptions.ModulePath, "modulePath", ".", "Define the path of the module to execute tests on.")
+	cmd.Flags().StringVar(&myKarmaExecuteTestsOptions.RunCommand, "runCommand", "npm run karma", "The command that is executed to start the tests.")
+
+	cmd.MarkFlagRequired("installCommand")
+	cmd.MarkFlagRequired("modulePath")
+	cmd.MarkFlagRequired("runCommand")
+
+}
+
+// retrieve step metadata
+func karmaExecuteTestsMetadata() config.StepData {
+	var theMetaData = config.StepData{
+		Spec: config.StepSpec{
+			Inputs: config.StepInputs{
+				Parameters: []config.StepParameters{
+
+					{
+						Name:      "installCommand",
+						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:      "string",
+						Mandatory: true,
+					},
+					{
+						Name:      "modulePath",
+						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:      "string",
+						Mandatory: true,
+					},
+					{
+						Name:      "runCommand",
+						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:      "string",
+						Mandatory: true,
+					},
+				},
+			},
+		},
+	}
+	return theMetaData
+}
