@@ -66,13 +66,13 @@ void call(Map parameters = [:]) {
             String finalStatus = pollPullStatus(urlPullEntity, authToken)
             if (finalStatus != 'S') {
                 throw new Exception("Pull Failed")
-            }  
-        } 
+            }
+        }
     }
 }
 
 private String triggerPull(Map configuration, String url, String authToken) {
-    
+
     String entityUri = null
 
     def xCsrfTokenScript = """#!/bin/bash
@@ -134,7 +134,7 @@ private String pollPullStatus(String url, String authToken) {
         def pollResponse = sh (
             script : pollScript,
             returnStdout: true )
-    
+
         echo pollResponse
         JsonSlurper slurper = new JsonSlurper()
         Map pollResponseJson = slurper.parseText(pollResponse)
