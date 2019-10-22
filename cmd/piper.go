@@ -33,7 +33,7 @@ var generalConfig generalConfigOptions
 // Execute is the starting point of the piper command line tool
 func Execute() {
 
-	rootCmd.AddCommand(GetConfig())
+	rootCmd.AddCommand(PiperGetConfig())
 	rootCmd.PersistentFlags().StringVar(&generalConfig.customConfig, "customConfig", ".pipeline/config.yml", "Path to the pipeline configuration file")
 	rootCmd.PersistentFlags().StringSliceVar(&generalConfig.defaultConfig, "defaultConfig", nil, "Default configurations, passed as path to yaml file")
 	rootCmd.PersistentFlags().StringVar(&generalConfig.parametersJSON, "parametersJSON", os.Getenv("PIPER_parametersJSON"), "Parameters to be considered in JSON format")
