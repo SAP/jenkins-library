@@ -18,6 +18,12 @@ plugins:
       strings:
       - TODO
       - FIXME
+  gofmt:
+    enabled: true
+  golint:
+    enabled: true
+  govet:
+    enabled: true
   markdownlint:
     enabled: true
     checks:
