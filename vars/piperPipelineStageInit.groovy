@@ -63,7 +63,7 @@ void call(Map parameters = [:]) {
         //perform stashing based on libray resource piper-stash-settings.yml if not configured otherwise
         initStashConfiguration(script, config)
 
-        setScmInfoOnCommonPipelineEnvironment(script, scmInfo)
+        setGitUrlsOnCommonPipelineEnvironment(script, scmInfo.GIT_URL)
         script.commonPipelineEnvironment.setGitCommitId(scmInfo.GIT_COMMIT)
 
         if (config.verbose) {
@@ -131,9 +131,7 @@ private void initStashConfiguration (script, config) {
     script.commonPipelineEnvironment.configuration.stageStashes = stashConfiguration
 }
 
-private void setScmInfoOnCommonPipelineEnvironment(script, scmInfo) {
-
-    def gitUrl = scmInfo.GIT_URL
+private void setGitUrlsOnCommonPipelineEnvironment(script, String gitUrl) {
 
     def gitPath = ''
     if (gitUrl.startsWith('http')) {
