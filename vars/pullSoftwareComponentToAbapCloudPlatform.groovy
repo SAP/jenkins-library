@@ -84,11 +84,11 @@ private String triggerPull(Map configuration, String url, String authToken) {
         --cookie-jar cookieJar.txt '
     """
 
-    def response = sh (
+    def responseScript = sh (
         script : xCsrfTokenScript,
         returnStdout: true )
-    echo response
-    
+    echo responseScript
+
     String responseHeader = readFile('responseHeader.txt')
     def token = responseHeader =~ /(?<=x-csrf-token:\s).*/
 
@@ -100,7 +100,7 @@ private String triggerPull(Map configuration, String url, String authToken) {
             -H 'Accept: application/json' \
             -H 'Content-Type: application/json' \
             -H 'x-csrf-token: ${token}' \
-            --cookie cookieJar.txt \
+            --cookie responseHeader.txt \
             -d '{ \"sc_name\": \"${configuration.repositoryName}\" }'
         """
         def response = sh (
