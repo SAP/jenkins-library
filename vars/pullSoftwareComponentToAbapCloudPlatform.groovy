@@ -81,7 +81,7 @@ private String triggerPull(Map configuration, String url, String authToken) {
         -H 'Authorization: Basic ${authToken}' \
         -H 'Accept: application/json' \
         -H 'x-csrf-token: fetch' \
-        --cookie-jar cookieJar.txt '
+        --cookie-jar cookieJar.txt
     """
 
     def responseScript = sh (
@@ -92,15 +92,16 @@ private String triggerPull(Map configuration, String url, String authToken) {
     String responseHeader = readFile('responseHeader.txt')
     def regex = responseHeader =~ /(?<=x-csrf-token:\s).*/
     def token = regex[0]
+    echo token
 
     if (token != null) {
+            // -H 'x-csrf-token: ${token}' \
 
         def scriptPull = """#!/bin/bash
             curl -X POST \"${url}\" \
             -H 'Authorization: Basic ${authToken}' \
             -H 'Accept: application/json' \
             -H 'Content-Type: application/json' \
-            -H 'x-csrf-token: ${token}' \
             --cookie responseHeader.txt \
             -d '{ \"sc_name\": \"${configuration.repositoryName}\" }'
         """
