@@ -18,6 +18,7 @@ var karmaExecuteTestsStepConfigJSON string
 
 // KarmaExecuteTestsCommand Executes the Karma test runner
 func KarmaExecuteTestsCommand() *cobra.Command {
+	metadata := karmaExecuteTestsMetadata()
 	var createKarmaExecuteTestsCmd = &cobra.Command{
 		Use:   "karmaExecuteTests",
 		Short: "Executes the Karma test runner",
@@ -34,7 +35,7 @@ In the Docker network, the containers can be referenced by the values provided i
     In a Kubernetes environment, the containers both need to be referenced with ` + "`" + `localhost` + "`" + `.
 `,
 		PreRunE: func(cmd *cobra.Command, args []string) error {
-			metadata := karmaExecuteTestsMetadata()
+
 			return PrepareConfig(cmd, &metadata, "karmaExecuteTests", &myKarmaExecuteTestsOptions, openPiperFile)
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {

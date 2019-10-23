@@ -21,6 +21,8 @@ func openFileMock(name string) (io.ReadCloser, error) {
 	switch name {
 	case "testDefaults.yml":
 		r = "general:\n  testParam: testValue"
+	case "testDefaultsInvalid.yml":
+		r = "invalid yaml"
 	default:
 		r = ""
 	}
@@ -33,6 +35,24 @@ func TestPrepareConfig(t *testing.T) {
 	defer func() { generalConfig.defaultConfig = defaultsBak }()
 
 	t.Run("using stepConfigJSON", func(t *testing.T) {
+		stepConfigJSONBak := generalConfig.stepConfigJSON
+		generalConfig.stepConfigJSON = `{"testParam": "testValueJSON"}`
+		defer func() { generalConfig.stepConfigJSON = stepConfigJSONBak }()
+		testOptions := stepOptions{}
+		var testCmd = &cobra.Command{Use: "test", Short: "This is just a test"}
+		testCmd.Flags().StringVar(&testOptions.TestParam, "testParam", "", "test usage")
+		metadata := config.StepData{
+			Spec: config.StepSpec{
+				Inputs: config.StepInputs{
+					Parameters: []config.StepParameters{
+						{Name: "testParam", Scope: []string{"GENERAL"}},
+					},
+				},
+			},
+		}
+
+		PrepareConfig(testCmd, &metadata, "testStep", &testOptions, openFileMock)
+		assert.Equal(t, "testValueJSON", testOptions.TestParam, "wrong value retrieved from config")
 	})
 
 	t.Run("using config files", func(t *testing.T) {
@@ -65,7 +85,13 @@ func TestPrepareConfig(t *testing.T) {
 		})
 
 		t.Run("error case", func(t *testing.T) {
+			generalConfig.defaultConfig = []string{"testDefaultsInvalid.yml"}
+			testOptions := stepOptions{}
+			var testCmd = &cobra.Command{Use: "test", Short: "This is just a test"}
+			metadata := config.StepData{}
 
+			err := PrepareConfig(testCmd, &metadata, "testStep", &testOptions, openFileMock)
+			assert.Error(t, err, "error expected but none occured")
 		})
 	})
 }

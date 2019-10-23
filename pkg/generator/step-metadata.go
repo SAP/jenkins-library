@@ -66,12 +66,12 @@ var {{ .StepName }}StepConfigJSON string
 
 // {{.CobraCmdFuncName}} {{.Short}}
 func {{.CobraCmdFuncName}}() *cobra.Command {
+	metadata := {{ .StepName }}Metadata()
 	var {{.CreateCmdVar}} = &cobra.Command{
 		Use:   "{{.StepName}}",
 		Short: "{{.Short}}",
 		Long:   {{ $tick := "` + "`" + `" }}{{ $tick }}{{.Long | longName }}{{ $tick }},
 		PreRunE: func(cmd *cobra.Command, args []string) error {
-			metadata := {{ .StepName }}Metadata()
 			return PrepareConfig(cmd, &metadata, "{{ .StepName }}", &my{{ .StepName | title}}Options, openPiperFile)
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
