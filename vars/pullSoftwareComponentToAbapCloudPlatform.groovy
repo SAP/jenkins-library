@@ -108,6 +108,11 @@ private String triggerPull(Map configuration, String url, String authToken) {
 
     checkRequestStatus(headerFilePost)
 
+    if (response.startsWith("<")) {
+        echo response
+        error "[${STEP_NAME}] Could not resolve the response. Please check your host."
+    }
+
     JsonSlurper slurper = new JsonSlurper()
     Map responseJson = slurper.parseText(response)
     if (responseJson.d != null) {
