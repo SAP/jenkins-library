@@ -5,7 +5,7 @@ import com.sap.piper.Utils
 import static com.sap.piper.Prerequisites.checkScript
 
 import groovy.transform.Field
-import groovy.text.SimpleTemplateEngine
+import groovy.text.GStringTemplateEngine
 
 import java.nio.charset.StandardCharsets
 
