@@ -85,41 +85,37 @@ private String triggerPull(Map configuration, String url, String authToken) {
         | awk 'BEGIN {FS=": "}/^x-csrf-token/{print \$2}'
     """
 
-    String headerString = readFile(headerFile)
-    HttpHeader httpHeader = new HttpHeader(headerString)
-
     def xCsrfToken = sh (
         script : xCsrfTokenScript,
         returnStdout: true )
 
-    if (httpHeader.statusCode.toInteger() <= 201) {
+    checkRequestStatus(headerFile)
 
-        def scriptPull = """#!/bin/bash
-            curl -X POST \"${url}\" \
-            -H 'Authorization: Basic ${authToken}' \
-            -H 'Accept: application/json' \
-            -H 'Content-Type: application/json' \
-            -H 'x-csrf-token: ${xCsrfToken.trim()}' \
-            --cookie ${headerFile} \
-            -d '{ \"sc_name\": \"${configuration.repositoryName}\" }'
-        """
-        def response = sh (
-            script : scriptPull,
-            returnStdout: true )
+    def scriptPull = """#!/bin/bash
+        curl -X POST \"${url}\" \
+        -H 'Authorization: Basic ${authToken}' \
+        -H 'Accept: application/json' \
+        -H 'Content-Type: application/json' \
+        -H 'x-csrf-token: ${xCsrfToken.trim()}' \
+        -D ${headerFile}
+        --cookie ${headerFile} \
+        -d '{ \"sc_name\": \"${configuration.repositoryName}\" }'
+    """
+    def response = sh (
+        script : scriptPull,
+        returnStdout: true )
 
-        JsonSlurper slurper = new JsonSlurper()
-        Map responseJson = slurper.parseText(response)
-        if (responseJson.d != null) {
-            entityUri = responseJson.d.__metadata.uri.toString()
-            echo "[${STEP_NAME}] Pull Status: ${responseJson.d.status_descr.toString()}"
-        } else {
-            error "[${STEP_NAME}] ${responseJson.error.message.value.toString()}"
-        }
+    checkRequestStatus(headerFile)
 
+    JsonSlurper slurper = new JsonSlurper()
+    Map responseJson = slurper.parseText(response)
+    if (responseJson.d != null) {
+        entityUri = responseJson.d.__metadata.uri.toString()
+        echo "[${STEP_NAME}] Pull Status: ${responseJson.d.status_descr.toString()}"
     } else {
-        echo readFile(headerFile)
-        error "[${STEP_NAME}] Connection Failed: ${httpHeader.statusCode} ${httpHeader.statusMessage}"
+        error "[${STEP_NAME}] ${responseJson.error.message.value.toString()}"
     }
+
     echo "[${STEP_NAME}] Entity URI: ${entityUri}"
     return entityUri
 
@@ -127,6 +123,7 @@ private String triggerPull(Map configuration, String url, String authToken) {
 
 private String pollPullStatus(String url, String authToken) {
 
+    String headerFile = "header.txt"
     String status = "R";
     while(status == "R") {
 
@@ -136,10 +133,13 @@ private String pollPullStatus(String url, String authToken) {
             curl -X GET "${url}" \
             -H 'Authorization: Basic ${authToken}' \
             -H 'Accept: application/json' \
+            -D ${headerFile}
         """
         def pollResponse = sh (
             script : pollScript,
             returnStdout: true )
+
+        checkRequestStatus(headerFile)
 
         JsonSlurper slurper = new JsonSlurper()
         Map pollResponseJson = slurper.parseText(pollResponse)
@@ -153,15 +153,24 @@ private String pollPullStatus(String url, String authToken) {
     return status
 }
 
+private void checkRequestStatus(String headerFile) {
+    String headerString = readFile(headerFile)
+    HttpHeader httpHeader = new HttpHeader(headerString)
+
+    if (httpHeader.statusCode > 201) {
+        echo readFile(headerFile)
+        error "[${STEP_NAME}] Connection Failed: ${httpHeader.statusCode} ${httpHeader.statusMessage}"
+    }
+}
+
 public class HttpHeader{
-    String statusCode
+    Integer statusCode
     String statusMessage
-    String token
 
     HttpHeader(String header) {
         def statusCodeRegex = header =~ /(?<=HTTP\/1.1\s)[0-9]{3}(?=\s)/
         if (statusCodeRegex.find()) {
-            statusCode = statusCodeRegex[0]
+            statusCode = statusCodeRegex[0].toInteger()
         }
         def statusMessageRegex = header =~ /(?<=HTTP\/1.1\s[0-9]{3}\s).*/
         if (statusMessageRegex.find()) {

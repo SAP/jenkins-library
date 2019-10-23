@@ -4,6 +4,7 @@ import static org.junit.Assert.assertThat
 
 import org.hamcrest.Matchers
 import static org.hamcrest.Matchers.containsString
+import static org.hamcrest.Matchers.equalTo
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -45,13 +46,10 @@ public class PullSoftwareComponentToAbapCloudPlatformTest extends BasePiperTest 
         shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, /.*POST.*/, /{"d" : { "__metadata" : { "uri" : "https:\/\/example.com\/URI" } , "status" : "R", "status_descr" : "RUNNING" }}/)
         shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, /.*https:\/\/example\.com.*/, /{"d" : { "__metadata" : { "uri" : "https:\/\/example.com\/URI" } , "status" : "S", "status_descr" : "SUCCESS" }}/)
 
-        helper.registerAllowedMethod("readFile", [String.class], {
+        helper.registerAllowedMethod("readFile", [String.class], { 
             /HTTP\/1.1 200 OK
             set-cookie: sap-usercontext=sap-client=100; path=\/
-            content-type: application\/json; charset=utf-8
-            content-length: 9321
-            sap-system: Y11
-            x-csrf-token: TOKEN/
+            content-type: application\/json; charset=utf-8/
         })
 
         loggingRule.expect("[pullSoftwareComponentToAbapCloudPlatform] Pull Status: RUNNING")
@@ -61,8 +59,8 @@ public class PullSoftwareComponentToAbapCloudPlatformTest extends BasePiperTest 
         stepRule.step.pullSoftwareComponentToAbapCloudPlatform(script: nullScript, host: 'https://example.com', repositoryName: 'Z_DEMO_DM', username: 'user', password: 'password')
 
         assertThat(shellRule.shell[0], containsString(/#!\/bin\/bash curl -I -X GET https:\/\/example.com\/sap\/opu\/odata\/sap\/MANAGE_GIT_REPOSITORY\/Pull -H 'Authorization: Basic dXNlcjpwYXNzd29yZA==' -H 'Accept: application\/json' -H 'x-csrf-token: fetch' -D header.txt | awk 'BEGIN {FS=": "}\/^x-csrf-token\/{print $2}'/))
-        assertThat(shellRule.shell[1], containsString(/#!\/bin\/bash curl -X POST "https:\/\/example.com\/sap\/opu\/odata\/sap\/MANAGE_GIT_REPOSITORY\/Pull" -H 'Authorization: Basic dXNlcjpwYXNzd29yZA==' -H 'Accept: application\/json' -H 'Content-Type: application\/json' -H 'x-csrf-token: TOKEN' --cookie header.txt -d '{ "sc_name": "Z_DEMO_DM" }'/))
-        assertThat(shellRule.shell[2], containsString(/#!\/bin\/bash curl -X GET "https:\/\/example.com\/URI" -H 'Authorization: Basic dXNlcjpwYXNzd29yZA==' -H 'Accept: application\/json'/))
+        assertThat(shellRule.shell[1], containsString(/#!\/bin\/bash curl -X POST "https:\/\/example.com\/sap\/opu\/odata\/sap\/MANAGE_GIT_REPOSITORY\/Pull" -H 'Authorization: Basic dXNlcjpwYXNzd29yZA==' -H 'Accept: application\/json' -H 'Content-Type: application\/json' -H 'x-csrf-token: TOKEN' -D header.txt --cookie header.txt -d '{ "sc_name": "Z_DEMO_DM" }'/))
+        assertThat(shellRule.shell[2], containsString(/#!\/bin\/bash curl -X GET "https:\/\/example.com\/URI" -H 'Authorization: Basic dXNlcjpwYXNzd29yZA==' -H 'Accept: application\/json' -D header.txt/))
     }
 
     @Test
@@ -74,10 +72,7 @@ public class PullSoftwareComponentToAbapCloudPlatformTest extends BasePiperTest 
         helper.registerAllowedMethod("readFile", [String.class], {
             /HTTP\/1.1 200 OK
             set-cookie: sap-usercontext=sap-client=100; path=\/
-            content-type: application\/json; charset=utf-8
-            content-length: 9321
-            sap-system: Y11
-            x-csrf-token: TOKEN/
+            content-type: application\/json; charset=utf-8/
         })
 
         loggingRule.expect("[pullSoftwareComponentToAbapCloudPlatform] Pull Status: RUNNING")
@@ -88,9 +83,6 @@ public class PullSoftwareComponentToAbapCloudPlatformTest extends BasePiperTest 
 
         stepRule.step.pullSoftwareComponentToAbapCloudPlatform(script: nullScript, host: 'https://example.com', repositoryName: 'Z_DEMO_DM', username: 'user', password: 'password')
 
-        assertThat(shellRule.shell[0], containsString(/#!\/bin\/bash curl -I -X GET https:\/\/example.com\/sap\/opu\/odata\/sap\/MANAGE_GIT_REPOSITORY\/Pull -H 'Authorization: Basic dXNlcjpwYXNzd29yZA==' -H 'Accept: application\/json' -H 'x-csrf-token: fetch' -D header.txt | awk 'BEGIN {FS=": "}\/^x-csrf-token\/{print $2}'/))
-        assertThat(shellRule.shell[1], containsString(/#!\/bin\/bash curl -X POST "https:\/\/example.com\/sap\/opu\/odata\/sap\/MANAGE_GIT_REPOSITORY\/Pull" -H 'Authorization: Basic dXNlcjpwYXNzd29yZA==' -H 'Accept: application\/json' -H 'Content-Type: application\/json' -H 'x-csrf-token: TOKEN' --cookie header.txt -d '{ "sc_name": "Z_DEMO_DM" }'/))
-        assertThat(shellRule.shell[2], containsString(/#!\/bin\/bash curl -X GET "https:\/\/example.com\/URI" -H 'Authorization: Basic dXNlcjpwYXNzd29yZA==' -H 'Accept: application\/json'/))
     }
 
     @Test
@@ -102,10 +94,7 @@ public class PullSoftwareComponentToAbapCloudPlatformTest extends BasePiperTest 
         helper.registerAllowedMethod("readFile", [String.class], {
             /HTTP\/1.1 200 OK
             set-cookie: sap-usercontext=sap-client=100; path=\/
-            content-type: application\/json; charset=utf-8
-            content-length: 9321
-            sap-system: Y11
-            x-csrf-token: TOKEN/
+            content-type: application\/json; charset=utf-8/
         })
 
         loggingRule.expect("[pullSoftwareComponentToAbapCloudPlatform] Pull Status: ERROR")
@@ -115,23 +104,17 @@ public class PullSoftwareComponentToAbapCloudPlatformTest extends BasePiperTest 
 
         stepRule.step.pullSoftwareComponentToAbapCloudPlatform(script: nullScript, host: 'https://example.com', repositoryName: 'Z_DEMO_DM', username: 'user', password: 'password')
 
-        assertThat(shellRule.shell[0], containsString(/#!\/bin\/bash curl -I -X GET https:\/\/example.com\/sap\/opu\/odata\/sap\/MANAGE_GIT_REPOSITORY\/Pull -H 'Authorization: Basic dXNlcjpwYXNzd29yZA==' -H 'Accept: application\/json' -H 'x-csrf-token: fetch' -D header.txt | awk 'BEGIN {FS=": "}\/^x-csrf-token\/{print $2}'/))
-        assertThat(shellRule.shell[1], containsString(/#!\/bin\/bash curl -X POST "https:\/\/example.com\/sap\/opu\/odata\/sap\/MANAGE_GIT_REPOSITORY\/Pull" -H 'Authorization: Basic dXNlcjpwYXNzd29yZA==' -H 'Accept: application\/json' -H 'Content-Type: application\/json' -H 'x-csrf-token: TOKEN' --cookie header.txt -d '{ "sc_name": "Z_DEMO_DM" }'/))
-        assertThat(shellRule.shell[2], containsString(/#!\/bin\/bash curl -X GET "https:\/\/example.com\/URI" -H 'Authorization: Basic dXNlcjpwYXNzd29yZA==' -H 'Accept: application\/json'/))
     }
 
     @Test
-    public void pullWithHttpError() {
+    public void pullWithErrorResponse() {
         shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, /.*x-csrf-token: fetch.*/, "TOKEN")
         shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, /.*POST.*/, /{"error" : { "message" : { "lang" : "en", "value": "text" } }}/)
         
         helper.registerAllowedMethod("readFile", [String.class], {
             /HTTP\/1.1 200 OK
             set-cookie: sap-usercontext=sap-client=100; path=\/
-            content-type: application\/json; charset=utf-8
-            content-length: 9321
-            sap-system: Y11
-            x-csrf-token: TOKEN/
+            content-type: application\/json; charset=utf-8/
         })
 
         thrown.expect(Exception)
@@ -139,8 +122,6 @@ public class PullSoftwareComponentToAbapCloudPlatformTest extends BasePiperTest 
 
         stepRule.step.pullSoftwareComponentToAbapCloudPlatform(script: nullScript, host: 'https://example.com', repositoryName: 'Z_DEMO_DM', username: 'user', password: 'password')
 
-        assertThat(shellRule.shell[0], containsString(/#!\/bin\/bash curl -I -X GET https:\/\/example.com\/sap\/opu\/odata\/sap\/MANAGE_GIT_REPOSITORY\/Pull -H 'Authorization: Basic dXNlcjpwYXNzd29yZA==' -H 'Accept: application\/json' -H 'x-csrf-token: fetch' -D header.txt | awk 'BEGIN {FS=": "}\/^x-csrf-token\/{print $2}'/))
-        assertThat(shellRule.shell[1], containsString(/#!\/bin\/bash curl -X POST "https:\/\/example.com\/sap\/opu\/odata\/sap\/MANAGE_GIT_REPOSITORY\/Pull" -H 'Authorization: Basic dXNlcjpwYXNzd29yZA==' -H 'Accept: application\/json' -H 'Content-Type: application\/json' -H 'x-csrf-token: TOKEN' --cookie header.txt -d '{ "sc_name": "Z_DEMO_DM" }'/))
     }
 
     @Test
@@ -150,9 +131,7 @@ public class PullSoftwareComponentToAbapCloudPlatformTest extends BasePiperTest 
         helper.registerAllowedMethod("readFile", [String.class], {
             /HTTP\/1.1 401 Unauthorized
             set-cookie: sap-usercontext=sap-client=100; path=\/
-            content-type: application\/json; charset=utf-8
-            content-length: 9321
-            sap-system: Y11/
+            content-type: application\/json; charset=utf-8/
         })
 
         thrown.expect(Exception)
@@ -160,7 +139,6 @@ public class PullSoftwareComponentToAbapCloudPlatformTest extends BasePiperTest 
 
         stepRule.step.pullSoftwareComponentToAbapCloudPlatform(script: nullScript, host: 'https://example.com', repositoryName: 'Z_DEMO_DM', username: 'user', password: 'password')
 
-        assertThat(shellRule.shell[0], containsString(/#!\/bin\/bash curl -I -X GET https:\/\/example.com\/sap\/opu\/odata\/sap\/MANAGE_GIT_REPOSITORY\/Pull -H 'Authorization: Basic dXNlcjpwYXNzd29yZA==' -H 'Accept: application\/json' -H 'x-csrf-token: fetch' -D header.txt | awk 'BEGIN {FS=": "}\/^x-csrf-token\/{print $2}'/))
     }
 
     @Test
@@ -191,7 +169,7 @@ public class PullSoftwareComponentToAbapCloudPlatformTest extends BasePiperTest 
             sap-perf-fesrec: 72927.000000/
 
         HttpHeader httpHeader = new HttpHeader(header)
-        assertThat(httpHeader.statusCode, containsString("401"))
+        assertThat(httpHeader.statusCode, equalTo(401))
         assertThat(httpHeader.statusMessage, containsString("Unauthorized"))
     }
 }
