@@ -17,7 +17,7 @@ On the project level, provide and adjust the following template:
 
 | File Name | Description | Position |
 |-----|-----|-----|
-| [`mta.yaml`](https://github.com/SAP/jenkins-library/blob/master/documentation/docs/scenarios/xsa-deploy/files/mta.yaml) | This file controls the behavior of the MTA toolset. | Place the `mta.yaml` file in your application root folder and adjust the values in brackets with your data. |
+| [`mta.yaml`](files/mta.yaml) | This file controls the behavior of the MTA toolset. | Place the `mta.yaml` file in your application root folder and adjust the values in brackets with your data. |
 
 ## Context
 
