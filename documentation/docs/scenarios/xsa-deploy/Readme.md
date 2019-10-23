@@ -88,14 +88,14 @@ steps:
 | -----------------|----------------|
 | `buildTarget`    | The target platform to which the mtar can be deployed. In this case, the target platform is  `XSA`. |
 
-#### Configuration for the Deployment to XSA 
+#### Configuration for the Deployment to XSA
 
 | Parameter          | Description |
 | -------------------|-------------|
 | `credentialsId` | The Jenkins credentials that contain user and password required for the deployment on SAP Cloud Platform.|
-| `mode`          | DeployMode. TODO: I suggest to insert  link here to the parameter docu from the step when the step itself is merged
-| `org`           |  The org TODO: I suggest to insert  link here to the parameter docu from the step when the step itself is merged |
-| `space`           | The space TODO: I suggest to insert  link here to the parameter docu from the step when the step itself is merged |
+| `mode`          | DeployMode. See [stepDocu](../../../steps/xsDeploy) for more details. |
+| `org`           | The org. See [stepDocu](../../../steps/xsDeploy) for more details. |
+| `space`         | The space. See [stepDocu](../../../steps/xsDeploy) for more details. |
 
 ### Parameters
 
