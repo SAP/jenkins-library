@@ -75,34 +75,32 @@ private String triggerPull(Map configuration, String url, String authToken) {
 
     String entityUri = null
 
+    String headerFile = "header.txt"
+
     def xCsrfTokenScript = """#!/bin/bash
         curl -I -X GET ${url} \
-        -D responseHeader.txt \
+        -D ${headerFile} \
         -H 'Authorization: Basic ${authToken}' \
         -H 'Accept: application/json' \
         -H 'x-csrf-token: fetch' \
-        --cookie-jar cookieJar.txt
     """
 
     def responseScript = sh (
         script : xCsrfTokenScript,
         returnStdout: true )
-    echo responseScript
 
-    String responseHeader = readFile('responseHeader.txt')
-    def regex = responseHeader =~ /(?<=x-csrf-token:\s).*/
-    def token = regex[0]
-    echo token
+    String responseHeader = readFile(headerFile)
+    Map regex = responseHeader =~ /(?<=x-csrf-token:\s).*/
+    String token = regex[0]
 
     if (token != null) {
-            // -H 'x-csrf-token: ${token}' \
 
         def scriptPull = """#!/bin/bash
             curl -X POST \"${url}\" \
             -H 'Authorization: Basic ${authToken}' \
             -H 'Accept: application/json' \
             -H 'Content-Type: application/json' \
-            --cookie responseHeader.txt \
+            --cookie ${headerFile} \
             -d '{ \"sc_name\": \"${configuration.repositoryName}\" }'
         """
         def response = sh (
@@ -119,6 +117,7 @@ private String triggerPull(Map configuration, String url, String authToken) {
         }
 
     } else {
+        echo responseHeader
         error "[${STEP_NAME}] Connection Failed"
     }
     echo "[${STEP_NAME}] Entity URI: ${entityUri}"
