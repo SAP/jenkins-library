@@ -105,7 +105,7 @@ private String triggerPull(Map configuration, String url, String authToken) {
             returnStdout: true )
 
         // When using a wrong host adress, a html page is returned
-        if response.startsWith("{") {
+        if (response.startsWith("{")) {
             JsonSlurper slurper = new JsonSlurper()
             Map responseJson = slurper.parseText(response)
             if (responseJson.d != null) {
