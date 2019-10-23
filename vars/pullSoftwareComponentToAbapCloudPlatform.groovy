@@ -7,6 +7,7 @@ import groovy.json.JsonSlurper
 import hudson.AbortException
 import groovy.transform.Field
 import org.jenkinsci.plugins.workflow.steps.FlowInterruptedException
+import java.util.regex.Matcher
 
 @Field def STEP_NAME = getClass().getName()
 @Field Set GENERAL_CONFIG_KEYS = [
@@ -90,8 +91,9 @@ private String triggerPull(Map configuration, String url, String authToken) {
         returnStdout: true )
 
     String responseHeader = readFile(headerFile)
-    String token = (responseHeader =~ /(?<=x-csrf-token:\s).*/)[0]
-
+    Matcher regex = responseHeader =~ /(?<=x-csrf-token:\s).*/)
+    token = regex[0
+    ]
     if (token != null) {
 
         def scriptPull = """#!/bin/bash
