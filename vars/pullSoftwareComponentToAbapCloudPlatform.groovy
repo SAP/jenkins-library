@@ -74,7 +74,7 @@ void call(Map parameters = [:]) {
 private String triggerPull(Map configuration, String url, String authToken) {
 
     String entityUri = null
-    String headerFile = "header.txt"
+    String headerFile = "headerAuth.txt"
 
     def xCsrfTokenScript = """#!/bin/bash
         curl -I -X GET ${url} \
@@ -91,6 +91,7 @@ private String triggerPull(Map configuration, String url, String authToken) {
 
     checkRequestStatus(headerFile)
 
+    String headerFilePost = "headerPost.txt"
     def scriptPull = """#!/bin/bash
         curl -X POST \"${url}\" \
         -H 'Authorization: Basic ${authToken}' \
@@ -98,14 +99,14 @@ private String triggerPull(Map configuration, String url, String authToken) {
         -H 'Content-Type: application/json' \
         -H 'x-csrf-token: ${xCsrfToken.trim()}' \
         --cookie ${headerFile} \
-        -D ${headerFile} \
+        -D ${headerFilePost} \
         -d '{ \"sc_name\": \"${configuration.repositoryName}\" }'
     """
     def response = sh (
         script : scriptPull,
         returnStdout: true )
 
-    checkRequestStatus(headerFile)
+    checkRequestStatus(headerFilePost)
 
     JsonSlurper slurper = new JsonSlurper()
     Map responseJson = slurper.parseText(response)
@@ -123,7 +124,7 @@ private String triggerPull(Map configuration, String url, String authToken) {
 
 private String pollPullStatus(String url, String authToken) {
 
-    String headerFile = "header.txt"
+    String headerFile = "headerPoll.txt"
     String status = "R";
     while(status == "R") {
 
