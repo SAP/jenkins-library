@@ -74,19 +74,21 @@ void call(Map parameters = [:]) {
 private String triggerPull(Map configuration, String url, String authToken) {
 
     String entityUri = null
+    String headerFile = "header.txt"
 
     def xCsrfTokenScript = """#!/bin/bash
         curl -I -X GET ${url} \
         -H 'Authorization: Basic ${authToken}' \
         -H 'Accept: application/json' \
         -H 'x-csrf-token: fetch' \
-        --cookie-jar cookieJar.txt \
+        -D ${headerFile} \
         | awk 'BEGIN {FS=": "}/^x-csrf-token/{print \$2}'
     """
 
     def xCsrfToken = sh (
         script : xCsrfTokenScript,
         returnStdout: true )
+
     if (xCsrfToken != null) {
 
         def scriptPull = """#!/bin/bash
@@ -94,8 +96,7 @@ private String triggerPull(Map configuration, String url, String authToken) {
             -H 'Authorization: Basic ${authToken}' \
             -H 'Accept: application/json' \
             -H 'Content-Type: application/json' \
-            -H 'x-csrf-token: ${xCsrfToken.trim()}' \
-            --cookie cookieJar.txt \
+            --cookie ${headerFile} \
             -d '{ \"sc_name\": \"${configuration.repositoryName}\" }'
         """
         def response = sh (
@@ -112,7 +113,8 @@ private String triggerPull(Map configuration, String url, String authToken) {
         }
 
     } else {
-        error "[${STEP_NAME}] Authentification Failed"
+        echo readFile(headerFile)
+        error "[${STEP_NAME}] Connection Failed"
     }
     echo "[${STEP_NAME}] Entity URI: ${entityUri}"
     return entityUri
