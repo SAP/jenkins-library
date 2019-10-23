@@ -50,7 +50,7 @@ func Execute() {
 	}
 }
 
-func prepareConfig(cmd *cobra.Command, metadata *config.StepData, stepName string, options interface{}) error {
+func PrepareConfig(cmd *cobra.Command, metadata *config.StepData, stepName string, options interface{}) error {
 
 	filters := metadata.GetParameterFilters()
 
