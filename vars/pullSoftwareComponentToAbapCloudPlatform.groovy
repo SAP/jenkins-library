@@ -89,7 +89,7 @@ private String triggerPull(Map configuration, String url, String authToken) {
         script : xCsrfTokenScript,
         returnStdout: true )
 
-    String responseHeader = new File('responseHeader.txt').text
+    String responseHeader = readFile('responseHeader.txt')
     def xCsrfToken = (responseHeader =~ /(?<=.*x-csrf-token: )(.*)(?=\/n.*)/)
 
     if (xCsrfToken != null) {
