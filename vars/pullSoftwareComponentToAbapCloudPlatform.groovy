@@ -104,13 +104,19 @@ private String triggerPull(Map configuration, String url, String authToken) {
             script : scriptPull,
             returnStdout: true )
 
-        JsonSlurper slurper = new JsonSlurper()
-        Map responseJson = slurper.parseText(response)
-        if (responseJson.d != null) {
-            entityUri = responseJson.d.__metadata.uri.toString()
-            echo "[${STEP_NAME}] Pull Status: ${responseJson.d.status_descr.toString()}"
+        // When using a wrong host adress, a html page is returned
+        if response.startsWith("{") {
+            JsonSlurper slurper = new JsonSlurper()
+            Map responseJson = slurper.parseText(response)
+            if (responseJson.d != null) {
+                entityUri = responseJson.d.__metadata.uri.toString()
+                echo "[${STEP_NAME}] Pull Status: ${responseJson.d.status_descr.toString()}"
+            } else {
+                error "[${STEP_NAME}] ${responseJson.error.message.value.toString()}"
+            }
         } else {
-            error "[${STEP_NAME}] ${responseJson.error.message.value.toString()}"
+            echo readFile(headerFile)
+            error "[${STEP_NAME}] Connection Failed"
         }
 
     } else {
