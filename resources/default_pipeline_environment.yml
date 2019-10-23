@@ -152,9 +152,12 @@ steps:
   cloudFoundryDeploy:
     cloudFoundry:
       apiEndpoint: 'https://api.cf.eu10.hana.ondemand.com'
+    apiParameters: ''
+    loginParameters: ''
     deployTool: 'cf_native'
     deployType: 'standard'
     keepOldInstance: false
+    cfNativeDeployParameters: ''
     mtaDeployParameters: '-f'
     mtaExtensionDescriptor: ''
     mtaPath: ''
@@ -178,6 +181,12 @@ steps:
     stashContent:
       - 'tests'
     testReportFilePath: 'cst-report.json'
+  cloudFoundryCreateService:
+    cloudFoundry:
+      apiEndpoint: 'https://api.cf.eu10.hana.ondemand.com'
+      serviceManifest: 'service-manifest.yml'
+    dockerImage: 'ppiper/cf-cli'
+    dockerWorkspace: '/home/piper'
   detectExecuteScan:
     detect:
       projectVersion: '1'
@@ -575,3 +584,14 @@ steps:
     nodeLabel: ''
     stashContent:
       - 'pipelineConfigAndTests'
+  xsDeploy:
+    credentialsId: 'XS'
+    deployIdLogPattern: '^.*"xs bg-deploy -i (.*) -a .*".*$'
+    loginOpts: ''
+    deployOpts: ''
+    docker:
+      dockerImage: ''
+      dockerPullImage: false
+    mode: 'DEPLOY'
+    action: 'NONE'
+    xsSessionFile: '.xsconfig'

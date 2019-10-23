@@ -407,6 +407,14 @@ private def triggerWhitesourceScanWithUserKey(script, config, utils, descriptorU
 
                     // archive whitesource debug files, if available
                     archiveArtifacts artifacts: "**/ws-l*", allowEmptyArchive: true
+
+                    try {
+                        // archive UA log file
+                        sh "cp -Rf --parents /var/log/UA/* ."
+                        archiveArtifacts artifacts: "**/var/log/UA/**/*.log", allowEmptyArchive: true
+                    } catch (e) {
+                        echo "Failed archiving WhiteSource UA logs"
+                    }
                 }
                 break
         }
