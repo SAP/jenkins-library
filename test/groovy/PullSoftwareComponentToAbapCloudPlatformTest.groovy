@@ -193,6 +193,5 @@ public class PullSoftwareComponentToAbapCloudPlatformTest extends BasePiperTest 
         HttpHeader httpHeader = new HttpHeader(header)
         assertThat(httpHeader.statusCode, containsString("401"))
         assertThat(httpHeader.statusMessage, containsString("Unauthorized"))
-        assertThat(httpHeader.token, containsString("TOKEN"))
     }
 }

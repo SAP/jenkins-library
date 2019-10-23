@@ -77,7 +77,6 @@ private String triggerPull(Map configuration, String url, String authToken) {
     String headerFile = "header.txt"
 
     def xCsrfTokenScript = """#!/bin/bash
-        rm ${headerFile}
         curl -I -X GET ${url} \
         -H 'Authorization: Basic ${authToken}' \
         -H 'Accept: application/json' \
@@ -93,8 +92,6 @@ private String triggerPull(Map configuration, String url, String authToken) {
         script : xCsrfTokenScript,
         returnStdout: true )
 
-    echo httpHeader.token.trim()
-    echo xCsrfToken.trim()
     if (httpHeader.statusCode.toInteger() <= 201) {
 
         def scriptPull = """#!/bin/bash
@@ -102,7 +99,7 @@ private String triggerPull(Map configuration, String url, String authToken) {
             -H 'Authorization: Basic ${authToken}' \
             -H 'Accept: application/json' \
             -H 'Content-Type: application/json' \
-            -H 'x-csrf-token: ${httpHeader.token.trim()}' \
+            -H 'x-csrf-token: ${xCsrfToken.trim()}' \
             --cookie ${headerFile} \
             -d '{ \"sc_name\": \"${configuration.repositoryName}\" }'
         """
@@ -169,10 +166,6 @@ public class HttpHeader{
         def statusMessageRegex = header =~ /(?<=HTTP\/1.1\s[0-9]{3}\s).*/
         if (statusMessageRegex.find()) {
             statusMessage = statusMessageRegex[0]
-        }
-        def tokenRegex = header =~/(?<=x-csrf-token:\s).*/
-        if (tokenRegex.find()) {
-            token = tokenRegex[0]
         }
     }
 
