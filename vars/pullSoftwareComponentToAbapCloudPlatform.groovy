@@ -90,8 +90,7 @@ private String triggerPull(Map configuration, String url, String authToken) {
         returnStdout: true )
 
     String responseHeader = readFile(headerFile)
-    def regex = responseHeader =~ /(?<=x-csrf-token:\s).*/
-    String token = regex[0]
+    String token = (responseHeader =~ /(?<=x-csrf-token:\s).*/)[0]
 
     if (token != null) {
 
