@@ -93,7 +93,7 @@ private String triggerPull(Map configuration, String url, String authToken) {
         returnStdout: true )
 
     echo httpHeader.token.trim()
-    echo xCsrfToken
+    echo xCsrfToken.trim()
     if (httpHeader.statusCode.toInteger() <= 201) {
 
         def scriptPull = """#!/bin/bash
