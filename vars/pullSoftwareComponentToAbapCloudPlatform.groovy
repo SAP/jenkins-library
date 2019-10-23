@@ -77,6 +77,7 @@ private String triggerPull(Map configuration, String url, String authToken) {
 
     def xCsrfTokenScript = """#!/bin/bash
         curl -I -X GET ${url} \
+        -D responseHeader.txt \
         -H 'Authorization: Basic ${authToken}' \
         -H 'Accept: application/json' \
         -H 'x-csrf-token: fetch' \
@@ -87,6 +88,7 @@ private String triggerPull(Map configuration, String url, String authToken) {
     def xCsrfToken = sh (
         script : xCsrfTokenScript,
         returnStdout: true )
+
     if (xCsrfToken != null) {
 
         def scriptPull = """#!/bin/bash
@@ -112,7 +114,7 @@ private String triggerPull(Map configuration, String url, String authToken) {
         }
 
     } else {
-        error "[${STEP_NAME}] Authentification Failed"
+        error "[${STEP_NAME}] Connection Failed"
     }
     echo "[${STEP_NAME}] Entity URI: ${entityUri}"
     return entityUri
