@@ -12,12 +12,7 @@ Build an application based on SAPUI5 or SAP Fiori with Jenkins and deploy the bu
 ### Project Prerequisites
 
 This scenario requires additional files in your project and in the execution environment on your Jenkins instance.
-
-On the project level, provide and adjust the following template:
-
-| File Name | Description | Position |
-|-----|-----|-----|
-| [`mta.yaml`](files/mta.yaml) | This file controls the behavior of the MTA toolset. | Place the `mta.yaml` file in your application root folder and adjust the values in brackets with your data. |
+For details see: [XSA developer quick start guide](https://help.sap.com/viewer/400066065a1b46cf91df0ab436404ddc/2.0.04/en-US/7f681c32c2a34735ad85e4ab403f8c26.html).
 
 ## Context
 
