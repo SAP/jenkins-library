@@ -151,7 +151,7 @@ void call(parameters = [:]) {
             .withMandatoryProperty('changeManagement/rfc/developmentInstance', null, { backendType == BackendType.RFC })
             .withMandatoryProperty('changeManagement/rfc/developmentClient', null, { backendType == BackendType.RFC })
             /**
-              * The docker image containing the rfc client. Needs to be set to the empty string in case the
+              * The docker image containing the RFC client. Needs to be set to the empty string if the
               * rfc client is installed locally. Only taken into account for backend type `RFC`.
               */
             .withMandatoryProperty('changeManagement/rfc/docker/image', null, {backendType == BackendType.RFC})
