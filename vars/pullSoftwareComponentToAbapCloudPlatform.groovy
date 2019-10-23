@@ -97,7 +97,7 @@ private String triggerPull(Map configuration, String url, String authToken) {
         -H 'Accept: application/json' \
         -H 'Content-Type: application/json' \
         -H 'x-csrf-token: ${xCsrfToken.trim()}' \
-        -D ${headerFile}
+        -D ${headerFile} \
         --cookie ${headerFile} \
         -d '{ \"sc_name\": \"${configuration.repositoryName}\" }'
     """
