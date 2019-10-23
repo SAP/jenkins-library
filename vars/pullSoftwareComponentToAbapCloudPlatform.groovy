@@ -110,7 +110,7 @@ private String triggerPull(Map configuration, String url, String authToken) {
             entityUri = responseJson.d.__metadata.uri.toString()
             echo "[${STEP_NAME}] Pull Status: ${responseJson.d.status_descr.toString()}"
         } else {
-            error "[${STEP_NAME}] ${responseJson.error.message.toString()}"
+            error "[${STEP_NAME}] ${responseJson.error.message.value.toString()}"
         }
 
     } else {
@@ -143,7 +143,7 @@ private String pollPullStatus(String url, String authToken) {
         if (pollResponseJson.d != null) {
             status = pollResponseJson.d.status.toString()
         } else {
-            error "[${STEP_NAME}] ${pollResponseJson.error.message.toString()}"
+            error "[${STEP_NAME}] ${pollResponseJson.error.message.value.toString()}"
         }
         echo "[${STEP_NAME}] Pull Status: ${pollResponseJson.d.status_descr.toString()}"
     }

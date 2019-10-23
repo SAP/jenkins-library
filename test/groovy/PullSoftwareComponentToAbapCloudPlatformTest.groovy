@@ -96,7 +96,7 @@ public class PullSoftwareComponentToAbapCloudPlatformTest extends BasePiperTest 
     @Test
     public void pullWithHttpError() {
         shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, /.*x-csrf-token: fetch.*/, "TOKEN")
-        shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, /.*POST.*/, /{"error" : { "message" : "text" }}/)
+        shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, /.*POST.*/, /{"error" : { "message" : { "lang" : "en", "value": "text" } }}/)
         
         thrown.expect(Exception)
         thrown.expectMessage("[pullSoftwareComponentToAbapCloudPlatform] text")
