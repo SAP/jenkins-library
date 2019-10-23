@@ -85,18 +85,21 @@ private String triggerPull(Map configuration, String url, String authToken) {
         | awk 'BEGIN {FS=": "}/^x-csrf-token/{print \$2}'
     """
 
+    String headerString = readFile(headerFile)
+    HttpHeader httpHeader = new HttpHeader(headerString)
+
     def xCsrfToken = sh (
         script : xCsrfTokenScript,
         returnStdout: true )
 
-    if (xCsrfToken != null) {
+    if (httpHeader.statusCode.toInteger() <= 201) {
 
         def scriptPull = """#!/bin/bash
             curl -X POST \"${url}\" \
             -H 'Authorization: Basic ${authToken}' \
             -H 'Accept: application/json' \
             -H 'Content-Type: application/json' \
-            -H 'x-csrf-token: ${xCsrfToken.trim()}' \
+            -H 'x-csrf-token: ${httpHeader.token}' \
             --cookie ${headerFile} \
             -d '{ \"sc_name\": \"${configuration.repositoryName}\" }'
         """
@@ -104,24 +107,18 @@ private String triggerPull(Map configuration, String url, String authToken) {
             script : scriptPull,
             returnStdout: true )
 
-        // When using a wrong host adress, a html page is returned
-        if (response.startsWith("{")) {
-            JsonSlurper slurper = new JsonSlurper()
-            Map responseJson = slurper.parseText(response)
-            if (responseJson.d != null) {
-                entityUri = responseJson.d.__metadata.uri.toString()
-                echo "[${STEP_NAME}] Pull Status: ${responseJson.d.status_descr.toString()}"
-            } else {
-                error "[${STEP_NAME}] ${responseJson.error.message.value.toString()}"
-            }
+        JsonSlurper slurper = new JsonSlurper()
+        Map responseJson = slurper.parseText(response)
+        if (responseJson.d != null) {
+            entityUri = responseJson.d.__metadata.uri.toString()
+            echo "[${STEP_NAME}] Pull Status: ${responseJson.d.status_descr.toString()}"
         } else {
-            echo readFile(headerFile)
-            error "[${STEP_NAME}] Connection Failed"
+            error "[${STEP_NAME}] ${responseJson.error.message.value.toString()}"
         }
 
     } else {
         echo readFile(headerFile)
-        error "[${STEP_NAME}] Connection Failed"
+        error "[${STEP_NAME}] Connection Failed: ${httpHeader.statusCode} ${httpHeader.statusMessage}"
     }
     echo "[${STEP_NAME}] Entity URI: ${entityUri}"
     return entityUri
@@ -154,4 +151,26 @@ private String pollPullStatus(String url, String authToken) {
         echo "[${STEP_NAME}] Pull Status: ${pollResponseJson.d.status_descr.toString()}"
     }
     return status
+}
+
+public class HttpHeader{
+    String statusCode
+    String statusMessage
+    String token
+
+    HttpHeader(String header) {
+        def statusCodeRegex = header =~ /(?<=HTTP\/1.1\s)[0-9]{3}(?=\s)/
+        if (statusCodeRegex.find()) {
+            statusCode = statusCodeRegex[0]
+        }
+        def statusMessageRegex = header =~ /(?<=HTTP\/1.1\s[0-9]{3}\s).*/
+        if (statusMessageRegex.find()) {
+            statusMessage = statusMessageRegex[0]
+        }
+        def tokenRegex = header =~/(?<=x-csrf-token:\s).*/
+        if (tokenRegex.find()) {
+            token = tokenRegex[0]
+        }
+    }
+
 }

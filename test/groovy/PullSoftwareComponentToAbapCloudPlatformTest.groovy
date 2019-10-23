@@ -45,6 +45,15 @@ public class PullSoftwareComponentToAbapCloudPlatformTest extends BasePiperTest 
         shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, /.*POST.*/, /{"d" : { "__metadata" : { "uri" : "https:\/\/example.com\/URI" } , "status" : "R", "status_descr" : "RUNNING" }}/)
         shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, /.*https:\/\/example\.com.*/, /{"d" : { "__metadata" : { "uri" : "https:\/\/example.com\/URI" } , "status" : "S", "status_descr" : "SUCCESS" }}/)
 
+        helper.registerAllowedMethod("readFile", [String.class], {
+            /HTTP\/1.1 200 OK
+            set-cookie: sap-usercontext=sap-client=100; path=\/
+            content-type: application\/json; charset=utf-8
+            content-length: 9321
+            sap-system: Y11
+            x-csrf-token: TOKEN/
+        })
+
         loggingRule.expect("[pullSoftwareComponentToAbapCloudPlatform] Pull Status: RUNNING")
         loggingRule.expect("[pullSoftwareComponentToAbapCloudPlatform] Entity URI: https://example.com/URI")
         loggingRule.expect("[pullSoftwareComponentToAbapCloudPlatform] Pull Status: SUCCESS")
@@ -62,6 +71,15 @@ public class PullSoftwareComponentToAbapCloudPlatformTest extends BasePiperTest 
         shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, /.*POST.*/, /{"d" : { "__metadata" : { "uri" : "https:\/\/example.com\/URI" } , "status" : "R", "status_descr" : "RUNNING" }}/)
         shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, /.*https:\/\/example\.com.*/, /{"d" : { "__metadata" : { "uri" : "https:\/\/example.com\/URI" } , "status" : "E", "status_descr" : "ERROR" }}/)
         
+        helper.registerAllowedMethod("readFile", [String.class], {
+            /HTTP\/1.1 200 OK
+            set-cookie: sap-usercontext=sap-client=100; path=\/
+            content-type: application\/json; charset=utf-8
+            content-length: 9321
+            sap-system: Y11
+            x-csrf-token: TOKEN/
+        })
+
         loggingRule.expect("[pullSoftwareComponentToAbapCloudPlatform] Pull Status: RUNNING")
         loggingRule.expect("[pullSoftwareComponentToAbapCloudPlatform] Pull Status: ERROR")
 
@@ -81,6 +99,15 @@ public class PullSoftwareComponentToAbapCloudPlatformTest extends BasePiperTest 
         shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, /.*POST.*/, /{"d" : { "__metadata" : { "uri" : "https:\/\/example.com\/URI" } , "status" : "E", "status_descr" : "ERROR" }}/)
         shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, /.*https:\/\/example\.com.*/, /{"d" : { "__metadata" : { "uri" : "https:\/\/example.com\/URI" } , "status" : "E", "status_descr" : "ERROR" }}/)
         
+        helper.registerAllowedMethod("readFile", [String.class], {
+            /HTTP\/1.1 200 OK
+            set-cookie: sap-usercontext=sap-client=100; path=\/
+            content-type: application\/json; charset=utf-8
+            content-length: 9321
+            sap-system: Y11
+            x-csrf-token: TOKEN/
+        })
+
         loggingRule.expect("[pullSoftwareComponentToAbapCloudPlatform] Pull Status: ERROR")
 
         thrown.expect(Exception)
@@ -98,6 +125,15 @@ public class PullSoftwareComponentToAbapCloudPlatformTest extends BasePiperTest 
         shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, /.*x-csrf-token: fetch.*/, "TOKEN")
         shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, /.*POST.*/, /{"error" : { "message" : { "lang" : "en", "value": "text" } }}/)
         
+        helper.registerAllowedMethod("readFile", [String.class], {
+            /HTTP\/1.1 200 OK
+            set-cookie: sap-usercontext=sap-client=100; path=\/
+            content-type: application\/json; charset=utf-8
+            content-length: 9321
+            sap-system: Y11
+            x-csrf-token: TOKEN/
+        })
+
         thrown.expect(Exception)
         thrown.expectMessage("[pullSoftwareComponentToAbapCloudPlatform] text")
 
@@ -111,8 +147,16 @@ public class PullSoftwareComponentToAbapCloudPlatformTest extends BasePiperTest 
     public void connectionFails() {
         shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, /.*x-csrf-token: fetch.*/, null)
 
+        helper.registerAllowedMethod("readFile", [String.class], {
+            /HTTP\/1.1 401 Unauthorized
+            set-cookie: sap-usercontext=sap-client=100; path=\/
+            content-type: application\/json; charset=utf-8
+            content-length: 9321
+            sap-system: Y11/
+        })
+
         thrown.expect(Exception)
-        thrown.expectMessage("[pullSoftwareComponentToAbapCloudPlatform] Connection Failed")
+        thrown.expectMessage("[pullSoftwareComponentToAbapCloudPlatform] Connection Failed: 401 Unauthorized")
 
         stepRule.step.pullSoftwareComponentToAbapCloudPlatform(script: nullScript, host: 'https://example.com', repositoryName: 'Z_DEMO_DM', username: 'user', password: 'password')
 
@@ -126,11 +170,29 @@ public class PullSoftwareComponentToAbapCloudPlatformTest extends BasePiperTest 
        stepRule.step.pullSoftwareComponentToAbapCloudPlatform(script: nullScript, host: 'https://www.example.com', username: 'user', password: 'password')
     }
 
-
     @Test
     public void checkHostProvided() {
        thrown.expect(IllegalArgumentException)
        thrown.expectMessage("Host not provided")
        stepRule.step.pullSoftwareComponentToAbapCloudPlatform(script: nullScript, repositoryName: 'REPO', username: 'user', password: 'password')
+    }
+
+    @Test
+    public void testHttpHeader() {
+
+        String header = /HTTP\/1.1 401 Unauthorized
+            set-cookie: sap-usercontext=sap-client=100; path=\/
+            content-type: text\/html; charset=utf-8
+            content-length: 9321
+            sap-system: Y11
+            x-csrf-token: TOKEN
+            www-authenticate: Basic realm="SAP NetWeaver Application Server [Y11\/100][alias]"
+            sap-server: true
+            sap-perf-fesrec: 72927.000000/
+
+        HttpHeader httpHeader = new HttpHeader(header)
+        assertThat(httpHeader.statusCode, containsString("401"))
+        assertThat(httpHeader.statusMessage, containsString("Unauthorized"))
+        assertThat(httpHeader.token, containsString("TOKEN"))
     }
 }
