@@ -40,6 +40,20 @@ public class PullSoftwareComponentToAbapCloudPlatformTest extends BasePiperTest 
     }
 
     @Test
+    public void test() {
+        def str = "something \nx-csrf-token: TOKEN\n ELSE" =~ /(?<=x-csrf-token:\s).*/
+        System.out.println("XXXXXXXXXXXXXXXXXXXXXXXX")
+        System.out.println(str[0])
+        // String pattern = /(?<=x-csrf-token:\s).*/
+        // Pattern r = Pattern.compile(pattern)
+        // result = r.match(str)
+        // String xCsrfToken = (str =~ /(?<=x-csrf-token:\s).*/)
+        System.out.println("XXXXXXXXXXXXXXXXXXXXXXXX")
+        // System.out.println(result)
+        System.out.println("XXXXXXXXXXXXXXXXXXXXXXXX")
+    }
+
+    @Test
     public void pullSuccessful() {
         shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, /.*x-csrf-token: fetch.*/, "TOKEN")
         shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, /.*POST.*/, /{"d" : { "__metadata" : { "uri" : "https:\/\/example.com\/URI" } , "status" : "R", "status_descr" : "RUNNING" }}/)
