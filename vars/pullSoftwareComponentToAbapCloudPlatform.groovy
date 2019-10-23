@@ -77,6 +77,7 @@ private String triggerPull(Map configuration, String url, String authToken) {
     String headerFile = "header.txt"
 
     def xCsrfTokenScript = """#!/bin/bash
+        rm ${headerFile}
         curl -I -X GET ${url} \
         -H 'Authorization: Basic ${authToken}' \
         -H 'Accept: application/json' \
