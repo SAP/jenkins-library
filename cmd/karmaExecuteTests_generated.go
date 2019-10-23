@@ -3,15 +3,14 @@ package cmd
 import (
 	//"os"
 
-	"github.com/spf13/cobra"
 	"github.com/SAP/jenkins-library/pkg/config"
+	"github.com/spf13/cobra"
 )
 
 type karmaExecuteTestsOptions struct {
-	
 	InstallCommand string `json:"installCommand,omitempty"`
-	ModulePath string `json:"modulePath,omitempty"`
-	RunCommand string `json:"runCommand,omitempty"`
+	ModulePath     string `json:"modulePath,omitempty"`
+	RunCommand     string `json:"runCommand,omitempty"`
 }
 
 var myKarmaExecuteTestsOptions karmaExecuteTestsOptions
@@ -22,7 +21,7 @@ func KarmaExecuteTestsCommand() *cobra.Command {
 	var createKarmaExecuteTestsCmd = &cobra.Command{
 		Use:   "karmaExecuteTests",
 		Short: "Executes the Karma test runner",
-		Long:   `In this step the ([Karma test runner](http://karma-runner.github.io)) is executed.
+		Long: `In this step the ([Karma test runner](http://karma-runner.github.io)) is executed.
 
 The step is using the ` + "`" + `seleniumExecuteTest` + "`" + ` step to spin up two containers in a Docker network:
 
@@ -36,7 +35,7 @@ In the Docker network, the containers can be referenced by the values provided i
 `,
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			metadata := karmaExecuteTestsMetadata()
-			return prepareConfig(cmd, &metadata, "karmaExecuteTests", &myKarmaExecuteTestsOptions)
+			return PrepareConfig(cmd, &metadata, "karmaExecuteTests", &myKarmaExecuteTestsOptions, openPiperFile)
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return karmaExecuteTests(myKarmaExecuteTestsOptions)
@@ -49,7 +48,7 @@ In the Docker network, the containers can be referenced by the values provided i
 
 // AddKarmaExecuteTestsFlags defines the flags for the karmaExecuteTests command
 func AddKarmaExecuteTestsFlags(cmd *cobra.Command) {
-	
+
 	cmd.Flags().StringVar(&myKarmaExecuteTestsOptions.InstallCommand, "installCommand", "npm install --quiet", "The command that is executed to install the test tool.")
 	cmd.Flags().StringVar(&myKarmaExecuteTestsOptions.ModulePath, "modulePath", ".", "Define the path of the module to execute tests on.")
 	cmd.Flags().StringVar(&myKarmaExecuteTestsOptions.RunCommand, "runCommand", "npm run karma", "The command that is executed to start the tests.")
@@ -57,7 +56,7 @@ func AddKarmaExecuteTestsFlags(cmd *cobra.Command) {
 	cmd.MarkFlagRequired("installCommand")
 	cmd.MarkFlagRequired("modulePath")
 	cmd.MarkFlagRequired("runCommand")
-	
+
 }
 
 // retrieve step metadata
@@ -66,23 +65,23 @@ func karmaExecuteTestsMetadata() config.StepData {
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
 				Parameters: []config.StepParameters{
-					
+
 					{
-						Name: "installCommand",
-						Scope: []string{"GENERAL","PARAMETERS","STAGES","STEPS",},
-						Type: "string",
+						Name:      "installCommand",
+						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:      "string",
 						Mandatory: true,
 					},
 					{
-						Name: "modulePath",
-						Scope: []string{"PARAMETERS","STAGES","STEPS",},
-						Type: "string",
+						Name:      "modulePath",
+						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:      "string",
 						Mandatory: true,
 					},
 					{
-						Name: "runCommand",
-						Scope: []string{"GENERAL","PARAMETERS","STAGES","STEPS",},
-						Type: "string",
+						Name:      "runCommand",
+						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:      "string",
 						Mandatory: true,
 					},
 				},

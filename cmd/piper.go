@@ -5,10 +5,11 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strings"
 
-	"github.com/spf13/cobra"
-	"github.com/pkg/errors"
 	"github.com/SAP/jenkins-library/pkg/config"
+	"github.com/pkg/errors"
+	"github.com/spf13/cobra"
 )
 
 type generalConfigOptions struct {
@@ -50,7 +51,8 @@ func Execute() {
 	}
 }
 
-func PrepareConfig(cmd *cobra.Command, metadata *config.StepData, stepName string, options interface{}) error {
+// PrepareConfig reads step configuration from various sources and merges it (defaults, config file, flags, ...)
+func PrepareConfig(cmd *cobra.Command, metadata *config.StepData, stepName string, options interface{}, openFile func(s string) (io.ReadCloser, error)) error {
 
 	filters := metadata.GetParameterFilters()
 
@@ -64,13 +66,13 @@ func PrepareConfig(cmd *cobra.Command, metadata *config.StepData, stepName strin
 		stepConfig = config.GetStepConfigWithJSON(flagValues, generalConfig.stepConfigJSON, filters)
 	} else {
 		// use config & defaults
-		
+
 		//accept that config file and defaults cannot be loaded since both are not mandatory here
-		customConfig, _ := os.Open(generalConfig.customConfig)
+		customConfig, _ := openFile(generalConfig.customConfig)
 		var defaultConfig []io.ReadCloser
 		for _, f := range generalConfig.defaultConfig {
 			//ToDo: support also https as source
-			fc, _ := os.Open(f)
+			fc, _ := openFile(f)
 			defaultConfig = append(defaultConfig, fc)
 		}
 
@@ -84,7 +86,15 @@ func PrepareConfig(cmd *cobra.Command, metadata *config.StepData, stepName strin
 	confJSON, _ := json.Marshal(stepConfig.Config)
 	json.Unmarshal(confJSON, &options)
 
-	config.MarkFlagsWithValue(cmd, stepConfig)	
-	
+	config.MarkFlagsWithValue(cmd, stepConfig)
+
 	return nil
+}
+
+func openPiperFile(name string) (io.ReadCloser, error) {
+	//ToDo: support also https as source
+	if !strings.HasPrefix(name, "http") {
+		return os.Open(name)
+	}
+	return nil, fmt.Errorf("file location not yet supported for '%v'", name)
 }
