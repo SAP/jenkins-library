@@ -183,5 +183,4 @@ public class HttpHeader{
             statusMessage = statusMessageRegex[0]
         }
     }
-
 }
