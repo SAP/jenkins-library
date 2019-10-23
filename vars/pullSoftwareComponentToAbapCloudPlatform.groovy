@@ -7,7 +7,6 @@ import groovy.json.JsonSlurper
 import hudson.AbortException
 import groovy.transform.Field
 import org.jenkinsci.plugins.workflow.steps.FlowInterruptedException
-import java.util.regex.Matcher
 
 @Field def STEP_NAME = getClass().getName()
 @Field Set GENERAL_CONFIG_KEYS = [
@@ -76,32 +75,27 @@ private String triggerPull(Map configuration, String url, String authToken) {
 
     String entityUri = null
 
-    String headerFile = "header.txt"
-
     def xCsrfTokenScript = """#!/bin/bash
         curl -I -X GET ${url} \
-        -D ${headerFile} \
         -H 'Authorization: Basic ${authToken}' \
         -H 'Accept: application/json' \
         -H 'x-csrf-token: fetch' \
+        --cookie-jar cookieJar.txt \
+        | awk 'BEGIN {FS=": "}/^x-csrf-token/{print \$2}'
     """
 
-    def responseScript = sh (
+    def xCsrfToken = sh (
         script : xCsrfTokenScript,
         returnStdout: true )
-
-    String responseHeader = readFile(headerFile)
-    Matcher regex = responseHeader =~ /(?<=x-csrf-token:\s).*/)
-    token = regex[0
-    ]
-    if (token != null) {
+    if (xCsrfToken != null) {
 
         def scriptPull = """#!/bin/bash
             curl -X POST \"${url}\" \
             -H 'Authorization: Basic ${authToken}' \
             -H 'Accept: application/json' \
             -H 'Content-Type: application/json' \
-            --cookie ${headerFile} \
+            -H 'x-csrf-token: ${xCsrfToken.trim()}' \
+            --cookie cookieJar.txt \
             -d '{ \"sc_name\": \"${configuration.repositoryName}\" }'
         """
         def response = sh (
@@ -118,8 +112,7 @@ private String triggerPull(Map configuration, String url, String authToken) {
         }
 
     } else {
-        echo responseHeader
-        error "[${STEP_NAME}] Connection Failed"
+        error "[${STEP_NAME}] Authentification Failed"
     }
     echo "[${STEP_NAME}] Entity URI: ${entityUri}"
     return entityUri
