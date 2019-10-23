@@ -72,7 +72,7 @@ func {{.CobraCmdFuncName}}() *cobra.Command {
 		Long:   {{ $tick := "` + "`" + `" }}{{ $tick }}{{.Long | longName }}{{ $tick }},
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			metadata := {{ .StepName }}Metadata()
-			return PrepareConfig(cmd, &metadata, "{{ .StepName }}", &my{{ .StepName | title}}Options)
+			return PrepareConfig(cmd, &metadata, "{{ .StepName }}", &my{{ .StepName | title}}Options, openPiperFile)
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return {{.StepName}}(my{{ .StepName | title }}Options)
