@@ -85,9 +85,12 @@ private String triggerPull(Map configuration, String url, String authToken) {
         | awk 'BEGIN {FS=": "}/^x-csrf-token/{print \$2}'
     """
 
-    def xCsrfToken = sh (
+    def returnValue = sh (
         script : xCsrfTokenScript,
         returnStdout: true )
+
+    String responseHeader = new File('responseHeader.txt').text
+    def xCsrfToken = (responseHeader =~ /(?<=.*x-csrf-token: )(.*)(?=\/n.*)/)
 
     if (xCsrfToken != null) {
 
