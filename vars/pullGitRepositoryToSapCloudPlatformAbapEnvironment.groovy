@@ -15,7 +15,7 @@ import org.jenkinsci.plugins.workflow.steps.FlowInterruptedException
      */
     'host',
     /**
-     * Specifies the name of the Software Component
+     * Specifies the name of the Repository / Software Component
      */
     'repositoryName'
 ]
@@ -31,7 +31,7 @@ import org.jenkinsci.plugins.workflow.steps.FlowInterruptedException
 ])
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
 /**
- * Pulls a Software Component to a SAP Cloud Platform ABAP Environment System.
+ * Pulls a Repository / Software Component to a SAP Cloud Platform ABAP Environment System.
  *
  * Prerequisite: the Communication Arrangement for the Communication Scenario SAP_COM_0510 has to be set up, including a Communication System and Communication Arrangement
  */

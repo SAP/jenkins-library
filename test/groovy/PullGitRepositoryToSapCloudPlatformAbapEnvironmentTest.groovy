@@ -21,7 +21,7 @@ import util.Rules
 
 import hudson.AbortException
 
-public class PullSoftwareComponentToAbapCloudPlatformTest extends BasePiperTest {
+public class PullGitRepositoryToSapCloudPlatformAbapEnvironment extends BasePiperTest {
 
     private ExpectedException thrown = new ExpectedException()
     private JenkinsStepRule stepRule = new JenkinsStepRule(this)
@@ -52,11 +52,11 @@ public class PullSoftwareComponentToAbapCloudPlatformTest extends BasePiperTest 
             content-type: application\/json; charset=utf-8/
         })
 
-        loggingRule.expect("[pullSoftwareComponentToAbapCloudPlatform] Pull Status: RUNNING")
-        loggingRule.expect("[pullSoftwareComponentToAbapCloudPlatform] Entity URI: https://example.com/URI")
-        loggingRule.expect("[pullSoftwareComponentToAbapCloudPlatform] Pull Status: SUCCESS")
+        loggingRule.expect("[pullGitRepositoryToSapCloudPlatformAbapEnvironment] Pull Status: RUNNING")
+        loggingRule.expect("[pullGitRepositoryToSapCloudPlatformAbapEnvironment] Entity URI: https://example.com/URI")
+        loggingRule.expect("[pullGitRepositoryToSapCloudPlatformAbapEnvironment] Pull Status: SUCCESS")
 
-        stepRule.step.pullSoftwareComponentToAbapCloudPlatform(script: nullScript, host: 'https://example.com', repositoryName: 'Z_DEMO_DM', username: 'user', password: 'password')
+        stepRule.step.pullGitRepositoryToSapCloudPlatformAbapEnvironment(script: nullScript, host: 'https://example.com', repositoryName: 'Z_DEMO_DM', username: 'user', password: 'password')
 
         assertThat(shellRule.shell[0], containsString(/#!\/bin\/bash curl -I -X GET https:\/\/example.com\/sap\/opu\/odata\/sap\/MANAGE_GIT_REPOSITORY\/Pull -H 'Authorization: Basic dXNlcjpwYXNzd29yZA==' -H 'Accept: application\/json' -H 'x-csrf-token: fetch' -D headerAuth.txt | awk 'BEGIN {FS=": "}\/^x-csrf-token\/{print $2}'/))
         assertThat(shellRule.shell[1], containsString(/#!\/bin\/bash curl -X POST "https:\/\/example.com\/sap\/opu\/odata\/sap\/MANAGE_GIT_REPOSITORY\/Pull" -H 'Authorization: Basic dXNlcjpwYXNzd29yZA==' -H 'Accept: application\/json' -H 'Content-Type: application\/json' -H 'x-csrf-token: TOKEN' --cookie headerAuth.txt -D headerPost.txt -d '{ "sc_name": "Z_DEMO_DM" }'/))
@@ -75,13 +75,13 @@ public class PullSoftwareComponentToAbapCloudPlatformTest extends BasePiperTest 
             content-type: application\/json; charset=utf-8/
         })
 
-        loggingRule.expect("[pullSoftwareComponentToAbapCloudPlatform] Pull Status: RUNNING")
-        loggingRule.expect("[pullSoftwareComponentToAbapCloudPlatform] Pull Status: ERROR")
+        loggingRule.expect("[pullGitRepositoryToSapCloudPlatformAbapEnvironment] Pull Status: RUNNING")
+        loggingRule.expect("[pullGitRepositoryToSapCloudPlatformAbapEnvironment] Pull Status: ERROR")
 
         thrown.expect(Exception)
-        thrown.expectMessage("[pullSoftwareComponentToAbapCloudPlatform] Pull Failed")
+        thrown.expectMessage("[pullGitRepositoryToSapCloudPlatformAbapEnvironment] Pull Failed")
 
-        stepRule.step.pullSoftwareComponentToAbapCloudPlatform(script: nullScript, host: 'https://example.com', repositoryName: 'Z_DEMO_DM', username: 'user', password: 'password')
+        stepRule.step.pullGitRepositoryToSapCloudPlatformAbapEnvironment(script: nullScript, host: 'https://example.com', repositoryName: 'Z_DEMO_DM', username: 'user', password: 'password')
 
     }
 
@@ -97,12 +97,12 @@ public class PullSoftwareComponentToAbapCloudPlatformTest extends BasePiperTest 
             content-type: application\/json; charset=utf-8/
         })
 
-        loggingRule.expect("[pullSoftwareComponentToAbapCloudPlatform] Pull Status: ERROR")
+        loggingRule.expect("[pullGitRepositoryToSapCloudPlatformAbapEnvironment] Pull Status: ERROR")
 
         thrown.expect(Exception)
-        thrown.expectMessage("[pullSoftwareComponentToAbapCloudPlatform] Pull Failed")
+        thrown.expectMessage("[pullGitRepositoryToSapCloudPlatformAbapEnvironment] Pull Failed")
 
-        stepRule.step.pullSoftwareComponentToAbapCloudPlatform(script: nullScript, host: 'https://example.com', repositoryName: 'Z_DEMO_DM', username: 'user', password: 'password')
+        stepRule.step.pullGitRepositoryToSapCloudPlatformAbapEnvironment(script: nullScript, host: 'https://example.com', repositoryName: 'Z_DEMO_DM', username: 'user', password: 'password')
 
     }
 
@@ -118,9 +118,9 @@ public class PullSoftwareComponentToAbapCloudPlatformTest extends BasePiperTest 
         })
 
         thrown.expect(Exception)
-        thrown.expectMessage("[pullSoftwareComponentToAbapCloudPlatform] text")
+        thrown.expectMessage("[pullGitRepositoryToSapCloudPlatformAbapEnvironment] text")
 
-        stepRule.step.pullSoftwareComponentToAbapCloudPlatform(script: nullScript, host: 'https://example.com', repositoryName: 'Z_DEMO_DM', username: 'user', password: 'password')
+        stepRule.step.pullGitRepositoryToSapCloudPlatformAbapEnvironment(script: nullScript, host: 'https://example.com', repositoryName: 'Z_DEMO_DM', username: 'user', password: 'password')
 
     }
 
@@ -135,9 +135,9 @@ public class PullSoftwareComponentToAbapCloudPlatformTest extends BasePiperTest 
         })
 
         thrown.expect(Exception)
-        thrown.expectMessage("[pullSoftwareComponentToAbapCloudPlatform] Connection Failed: 401 Unauthorized")
+        thrown.expectMessage("[pullGitRepositoryToSapCloudPlatformAbapEnvironment] Connection Failed: 401 Unauthorized")
 
-        stepRule.step.pullSoftwareComponentToAbapCloudPlatform(script: nullScript, host: 'https://example.com', repositoryName: 'Z_DEMO_DM', username: 'user', password: 'password')
+        stepRule.step.pullGitRepositoryToSapCloudPlatformAbapEnvironment(script: nullScript, host: 'https://example.com', repositoryName: 'Z_DEMO_DM', username: 'user', password: 'password')
 
     }
 
@@ -145,14 +145,14 @@ public class PullSoftwareComponentToAbapCloudPlatformTest extends BasePiperTest 
     public void checkRepositoryProvided() {
        thrown.expect(IllegalArgumentException)
        thrown.expectMessage("Repository / Software Component not provided")
-       stepRule.step.pullSoftwareComponentToAbapCloudPlatform(script: nullScript, host: 'https://www.example.com', username: 'user', password: 'password')
+       stepRule.step.pullGitRepositoryToSapCloudPlatformAbapEnvironment(script: nullScript, host: 'https://www.example.com', username: 'user', password: 'password')
     }
 
     @Test
     public void checkHostProvided() {
        thrown.expect(IllegalArgumentException)
        thrown.expectMessage("Host not provided")
-       stepRule.step.pullSoftwareComponentToAbapCloudPlatform(script: nullScript, repositoryName: 'REPO', username: 'user', password: 'password')
+       stepRule.step.pullGitRepositoryToSapCloudPlatformAbapEnvironment(script: nullScript, repositoryName: 'REPO', username: 'user', password: 'password')
     }
 
     @Test
