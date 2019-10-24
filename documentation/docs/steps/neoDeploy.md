@@ -4,7 +4,7 @@
 
 ## Prerequisites
 
-* **SAP CP account** - the account to where the application is deployed. To deploy MTA (`deployMode: MTA`) an over existing _Java_ application, free _Java Quota_ of at least 1 is required, which means that this will not work on trial accounts.
+* **SAP CP account** - the account to where the application is deployed. To deploy MTA (`deployMode: mta`) an over existing _Java_ application, free _Java Quota_ of at least 1 is required, which means that this will not work on trial accounts.
 * **SAP CP user for deployment** - a user with deployment permissions in the given account.
 * **Jenkins credentials for deployment** - must be configured in Jenkins credentials with a dedicated Id.
 
