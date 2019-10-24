@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -116,77 +117,110 @@ func main() {
 	metadataFiles, err := metadataFiles(metadataPath)
 	checkError(err)
 
+	err = processMetaFiles(metadataFiles, openMetaFile, fileWriter)
+	checkError(err)
+
+}
+
+func processMetaFiles(metadataFiles []string, openFile func(s string) (io.ReadCloser, error), writeFile func(filename string, data []byte, perm os.FileMode) error) error {
 	for key := range metadataFiles {
 
 		var stepData config.StepData
 
 		configFilePath := metadataFiles[key]
 
-		metadataFile, err := os.Open(configFilePath)
+		metadataFile, err := openFile(configFilePath)
 		checkError(err)
 		defer metadataFile.Close()
 
 		fmt.Printf("Reading file %v\n", configFilePath)
-		//configFile := filepath.Base(configFilePath)
 
 		err = stepData.ReadPipelineStepData(metadataFile)
 		checkError(err)
 
 		fmt.Printf("Step name: %v\n", stepData.Metadata.Name)
 
-		//ToDo: custom function for default handling, support all parameter types
-		for k, param := range stepData.Spec.Inputs.Parameters {
+		err = setDefaultParameters(&stepData)
+		checkError(err)
 
-			if param.Default == nil {
-				switch param.Type {
-				case "string":
-					param.Default = fmt.Sprintf("os.Getenv(\"PIPER_%v\")", param.Name)
-				case "bool":
-					param.Default = false
-					//ToDo: custom function
-					//currentParameter.Default = fmt.Sprintf("strconv.ParseBool(os.Getenv(\"PIPER_%v\"))", k)
-				case "[]string":
-					param.Default = "[]string{}"
-				default:
-					fmt.Printf("Meta data type not set or not known: '%v'\n", param.Type)
-					os.Exit(1)
-				}
-			} else {
-				switch param.Type {
-				case "string":
-					param.Default = fmt.Sprintf("\"%v\"", param.Default)
-				case "bool":
-					param.Default = param.Default
-				case "[]string":
-					//ToDo: generate proper default by looping over value
-				default:
-					fmt.Printf("Meta data type not set or not known: '%v'\n", param.Type)
-					os.Exit(1)
-				}
-			}
-
-			stepData.Spec.Inputs.Parameters[k] = param
-		}
-
-		myStepInfo := stepInfo{
-			StepName:         stepData.Metadata.Name,
-			CobraCmdFuncName: fmt.Sprintf("%vCommand", strings.Title(stepData.Metadata.Name)),
-			CreateCmdVar:     fmt.Sprintf("create%vCmd", strings.Title(stepData.Metadata.Name)),
-			Short:            stepData.Metadata.Description,
-			Long:             stepData.Metadata.LongDescription,
-			Metadata:         stepData.Spec.Inputs.Parameters,
-			FlagsFunc:        fmt.Sprintf("Add%vFlags", strings.Title(stepData.Metadata.Name)),
-		}
+		myStepInfo := getStepInfo(&stepData)
 
 		step := stepTemplate(myStepInfo)
-		err = ioutil.WriteFile(fmt.Sprintf("cmd/%v_generated.go", stepData.Metadata.Name), step, 0644)
+		err = writeFile(fmt.Sprintf("cmd/%v_generated.go", stepData.Metadata.Name), step, 0644)
 		checkError(err)
 
 		test := stepTestTemplate(myStepInfo)
-		err = ioutil.WriteFile(fmt.Sprintf("cmd/%v_generated_test.go", stepData.Metadata.Name), test, 0644)
+		err = writeFile(fmt.Sprintf("cmd/%v_generated_test.go", stepData.Metadata.Name), test, 0644)
 		checkError(err)
 	}
+	return nil
+}
 
+func openMetaFile(name string) (io.ReadCloser, error) {
+	return os.Open(name)
+}
+
+func fileWriter(filename string, data []byte, perm os.FileMode) error {
+	return ioutil.WriteFile(filename, data, perm)
+}
+
+func setDefaultParameters(stepData *config.StepData) error {
+	//ToDo: custom function for default handling, support all relevant parameter types
+	for k, param := range stepData.Spec.Inputs.Parameters {
+
+		if param.Default == nil {
+			switch param.Type {
+			case "string":
+				param.Default = fmt.Sprintf("os.Getenv(\"PIPER_%v\")", param.Name)
+			case "bool":
+				// ToDo: Check if default should be read from env
+				param.Default = "false"
+			case "[]string":
+				// ToDo: Check if default should be read from env
+				param.Default = "[]string{}"
+			default:
+				return fmt.Errorf("Meta data type not set or not known: '%v'", param.Type)
+			}
+		} else {
+			switch param.Type {
+			case "string":
+				param.Default = fmt.Sprintf("\"%v\"", param.Default)
+			case "bool":
+				boolVal := "false"
+				if param.Default.(bool) == true {
+					boolVal = "true"
+				}
+				param.Default = boolVal
+			case "[]string":
+				param.Default = fmt.Sprintf("[]string{\"%v\"}", strings.Join(param.Default.([]string), "\", \""))
+			default:
+				return fmt.Errorf("Meta data type not set or not known: '%v'", param.Type)
+			}
+		}
+
+		stepData.Spec.Inputs.Parameters[k] = param
+	}
+	return nil
+}
+
+func getStepInfo(stepData *config.StepData) stepInfo {
+	return stepInfo{
+		StepName:         stepData.Metadata.Name,
+		CobraCmdFuncName: fmt.Sprintf("%vCommand", strings.Title(stepData.Metadata.Name)),
+		CreateCmdVar:     fmt.Sprintf("create%vCmd", strings.Title(stepData.Metadata.Name)),
+		Short:            stepData.Metadata.Description,
+		Long:             stepData.Metadata.LongDescription,
+		Metadata:         stepData.Spec.Inputs.Parameters,
+		FlagsFunc:        fmt.Sprintf("add%vFlags", strings.Title(stepData.Metadata.Name)),
+	}
+}
+
+func generateStepFile() error {
+	return nil
+}
+
+func generateTestFile() error {
+	return nil
 }
 
 func checkError(err error) {

@@ -40,15 +40,14 @@ func Execute() {
 
 	rootCmd.AddCommand(ConfigCommand())
 
-	AddRootFlags(rootCmd)
+	addRootFlags(rootCmd)
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	}
 }
 
-// AddRootFlags adds the flags for the piper root command
-func AddRootFlags(rootCmd *cobra.Command) {
+func addRootFlags(rootCmd *cobra.Command) {
 
 	rootCmd.PersistentFlags().StringVar(&generalConfig.customConfig, "customConfig", ".pipeline/config.yml", "Path to the pipeline configuration file")
 	rootCmd.PersistentFlags().StringSliceVar(&generalConfig.defaultConfig, "defaultConfig", nil, "Default configurations, passed as path to yaml file")

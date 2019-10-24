@@ -31,7 +31,7 @@ func openFileMock(name string) (io.ReadCloser, error) {
 
 func TestAddRootFlags(t *testing.T) {
 	var testRootCmd = &cobra.Command{Use: "test", Short: "This is just a test"}
-	AddRootFlags(testRootCmd)
+	addRootFlags(testRootCmd)
 
 	assert.NotNil(t, testRootCmd.Flag("customConfig"), "expected flag not available")
 	assert.NotNil(t, testRootCmd.Flag("defaultConfig"), "expected flag not available")
