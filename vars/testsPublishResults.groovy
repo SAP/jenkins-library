@@ -1,7 +1,5 @@
 import static com.sap.piper.Prerequisites.checkScript
 
-import com.cloudbees.groovy.cps.NonCPS
-
 import com.sap.piper.GenerateDocumentation
 import com.sap.piper.ConfigurationHelper
 import com.sap.piper.JenkinsUtils
@@ -173,7 +171,6 @@ def archiveResults(archive, pattern, allowEmpty) {
     }
 }
 
-@NonCPS
 def prepare(parameters){
     // ensure tool maps are initialized correctly
     for(String tool : TOOLS){
@@ -182,7 +179,6 @@ def prepare(parameters){
     return parameters
 }
 
-@NonCPS
 def toMap(parameters){
     if(MapUtils.isMap(parameters))
         parameters.put('active', parameters.active == null?true:parameters.active)

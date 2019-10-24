@@ -364,7 +364,7 @@ class Helper {
                         def param = retrieveParameterName(line)
 
                         if(!param) {
-                            throw new RuntimeException('Cannot retrieve parameter for a comment')
+                            throw new RuntimeException("Cannot retrieve parameter for a comment. Affected line was: '${line}'")
                         }
 
                         def _docu = [], _value = [], _mandatory = [], _parentObject = []
@@ -489,7 +489,7 @@ class Helper {
         def params = [] as Set
         f.eachLine  {
             line ->
-                if (line ==~ /.*withMandatoryProperty.*/) {
+                if (line ==~ /.*withMandatoryProperty\(.*/) {
                     def param = (line =~ /.*withMandatoryProperty\('(.*)'/)[0][1]
                     params << param
                 }
@@ -666,13 +666,15 @@ Map stages = Helper.resolveDocuRelevantStages(gse, stepsDir)
 boolean exceptionCaught = false
 
 def stepDescriptors = [:]
-DefaultValueCache.prepare(Helper.getDummyScript('noop'),  customDefaults)
+DefaultValueCache.prepare(Helper.getDummyScript('noop'), [customDefaults: customDefaults])
 for (step in steps) {
     try {
         stepDescriptors."${step}" = handleStep(step, gse)
     } catch(Exception e) {
         exceptionCaught = true
-        System.err << "${e.getClass().getName()} caught while handling step '${step}': ${e.getMessage()}.\n"
+        def writer = new StringWriter()
+        e.printStackTrace(new PrintWriter(writer))
+        System.err << "${e.getClass().getName()} caught while handling step '${step}': ${e.getMessage()}.\n${writer.toString()}\n"
     }
 }
 
