@@ -109,6 +109,8 @@ private String triggerPull(Map configuration, String url, String authToken) {
     checkRequestStatus(headerFilePost)
 
     if (response.startsWith("<")) {
+        // Even though the response code is <=201, an http error may occur.
+        // In this case a html page is returned instead of a json response.
         echo response
         error "[${STEP_NAME}] Could not resolve the response. Please check your host."
     }
