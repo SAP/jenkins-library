@@ -11,56 +11,52 @@ import (
 	"github.com/pkg/errors"
 )
 
-// Shell defines the information required for executing a shell call
-type Shell struct {
-	Dir    string
-	Shell  string
-	Script string
+// Executable defines the information required for executing a call to any executable
+type Command struct {
+	dir    string
 	Stdout io.Writer
 	Stderr io.Writer
 }
 
-// Executable defines the information required for executing a call to any executable
-type Executable struct {
-	Dir        string
-	Executable string
-	Parameters []string
-	Stdout     io.Writer
-	Stderr     io.Writer
+// Dir sets the working directory for the execution
+func (c *Command) Dir(d string) {
+	c.dir = d
 }
 
 // ExecCommand defines how to execute os commands
 var ExecCommand = exec.Command
 
 // Run the specified command on the shell
-func (s *Shell) Run() error {
+func (c *Command) RunShell(shell, script string) error {
 
-	_out, _err := prepareOut(s.Stdout, s.Stderr)
+	_out, _err := prepareOut(c.Stdout, c.Stderr)
 
-	cmd := ExecCommand(s.Shell)
+	cmd := ExecCommand(shell)
 
-	cmd.Dir = s.Dir
+	cmd.Dir = c.dir
 	in := bytes.Buffer{}
-	in.Write([]byte(s.Script))
+	in.Write([]byte(script))
 	cmd.Stdin = &in
 
 	if err := runCmd(cmd, _out, _err); err != nil {
-		return errors.Wrapf(err, "running shell script failed with %v", s.Shell)
+		return errors.Wrapf(err, "running shell script failed with %v", shell)
 	}
 	return nil
 }
 
 // Run the specified executable with parameters
-func (e *Executable) Run() error {
+func (c *Command) RunExecutable(executable string, params ...string) error {
 
-	_out, _err := prepareOut(e.Stdout, e.Stderr)
+	_out, _err := prepareOut(c.Stdout, c.Stderr)
 
-	cmd := ExecCommand(e.Executable, e.Parameters...)
+	cmd := ExecCommand(executable, params...)
 
-	cmd.Dir = e.Dir
+	if len(c.dir) > 0 {
+		cmd.Dir = c.dir
+	}
 
 	if err := runCmd(cmd, _out, _err); err != nil {
-		return errors.Wrapf(err, "running command '%v' failed", e.Executable)
+		return errors.Wrapf(err, "running command '%v' failed", executable)
 	}
 	return nil
 }

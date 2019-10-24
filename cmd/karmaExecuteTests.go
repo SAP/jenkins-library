@@ -3,30 +3,31 @@ package cmd
 import (
 	"strings"
 
-	"github.com/pkg/errors"
 	"github.com/SAP/jenkins-library/pkg/command"
+	"github.com/pkg/errors"
 )
 
-func karmaExecuteTests(myKarmaExecuteTestsOptions karmaExecuteTestsOptions) error {
+type execRunner interface {
+	RunExecutable(e string, p ...string) error
+	Dir(d string)
+}
 
+func karmaExecuteTests(myKarmaExecuteTestsOptions karmaExecuteTestsOptions) error {
+	c := command.Command{}
+	return runKarma(myKarmaExecuteTestsOptions, &c)
+}
+
+func runKarma(myKarmaExecuteTestsOptions karmaExecuteTestsOptions, command execRunner) error {
 	installCommandTokens := tokenize(myKarmaExecuteTestsOptions.InstallCommand)
-	s := command.Executable{
-		Dir:        myKarmaExecuteTestsOptions.ModulePath,
-		Executable: installCommandTokens[0],
-		Parameters: installCommandTokens[1:],
-	}
-	err := s.Run()
+	command.Dir(myKarmaExecuteTestsOptions.ModulePath)
+	err := command.RunExecutable(installCommandTokens[0], installCommandTokens[1:]...)
 	if err != nil {
 		return errors.Wrapf(err, "failed to execute install command '%v'", myKarmaExecuteTestsOptions.InstallCommand)
 	}
 
 	runCommandTokens := tokenize(myKarmaExecuteTestsOptions.RunCommand)
-	s = command.Executable{
-		Dir:        myKarmaExecuteTestsOptions.ModulePath,
-		Executable: runCommandTokens[0],
-		Parameters: runCommandTokens[1:],
-	}
-	err = s.Run()
+	command.Dir(myKarmaExecuteTestsOptions.ModulePath)
+	err = command.RunExecutable(runCommandTokens[0], runCommandTokens[1:]...)
 	if err != nil {
 		return errors.Wrapf(err, "failed to execute run command '%v'", myKarmaExecuteTestsOptions.RunCommand)
 	}
@@ -37,5 +38,3 @@ func karmaExecuteTests(myKarmaExecuteTestsOptions karmaExecuteTestsOptions) erro
 func tokenize(command string) []string {
 	return strings.Split(command, " ")
 }
-
-
