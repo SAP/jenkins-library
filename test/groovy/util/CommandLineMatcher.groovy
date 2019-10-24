@@ -55,7 +55,7 @@ class CommandLineMatcher extends BaseMatcher {
             }
 
             for (MapEntry opt : opts) {
-                if (!cmd.matches(/.*[\s]*--${opt.key}[\s]*${opt.value}.*/)) {
+                if (!cmd.matches(/.*[\s]*-${opt.key}[\s]*${opt.value}.*/)) {
                     hint = "A command line containing option \'${opt.key}\' with value \'${opt.value}\'"
                     matches = false
                 }

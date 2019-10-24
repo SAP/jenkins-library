@@ -5,7 +5,9 @@ import com.sap.piper.Utils
 import static com.sap.piper.Prerequisites.checkScript
 
 import groovy.transform.Field
-import groovy.text.SimpleTemplateEngine
+import groovy.text.GStringTemplateEngine
+
+import java.nio.charset.StandardCharsets
 
 @Field String STEP_NAME = getClass().getName()
 
@@ -40,8 +42,17 @@ import groovy.text.SimpleTemplateEngine
      * @possibleValues Jenkins credential id
      */
     'sonarTokenCredentialsId',
+    /**
+     * Print more detailed information into the log.
+     * @possibleValues `true`, `false`
+     */
+    'verbose'
 ]
 @Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS.plus([
+    /**
+     * List containing download links of custom TLS certificates. This is required to ensure trusted connections to instances with custom certificates.
+     */
+    'customTlsCertificateLinks',
     /**
      * Pull-Request voting only:
      * Disables the pull-request decoration with inline comments.
@@ -110,14 +121,20 @@ void call(Map parameters = [:]) {
 
         def worker = { config ->
             withSonarQubeEnv(config.instance) {
-                loadSonarScanner(config)
+                try{
+                    loadSonarScanner(config)
 
-                if(config.organization) config.options.add("sonar.organization=${config.organization}")
-                if(config.projectVersion) config.options.add("sonar.projectVersion=${config.projectVersion}")
-                // prefix options
-                config.options = config.options.collect { it.startsWith('-D') ? it : "-D${it}" }
+                    loadCertificates(config)
 
-                sh "PATH=\$PATH:${env.WORKSPACE}/.sonar-scanner/bin sonar-scanner ${config.options.join(' ')}"
+                    if(config.organization) config.options.add("sonar.organization=${config.organization}")
+                    if(config.projectVersion) config.options.add("sonar.projectVersion=${config.projectVersion}")
+                    // prefix options
+                    config.options = config.options.collect { it.startsWith('-D') ? it : "-D${it}" }
+
+                    sh "PATH=\$PATH:${env.WORKSPACE}/.sonar-scanner/bin sonar-scanner ${config.options.join(' ')}"
+                }finally{
+                    sh 'rm -rf .sonar-scanner .certificates .scannerwork'
+                }
             }
         }
 
@@ -158,7 +175,7 @@ void call(Map parameters = [:]) {
                     config.options.add("sonar.pullrequest.branch=${env.BRANCH_NAME}")
                     config.options.add("sonar.pullrequest.provider=${config.pullRequestProvider}")
                     switch(config.pullRequestProvider){
-                        case 'github':
+                        case 'GitHub':
                             config.options.add("sonar.pullrequest.github.repository=${config.githubOrg}/${config.githubRepo}")
                             break
                         default: error "Pull-Request provider '${config.pullRequestProvider}' is not supported!"
@@ -190,4 +207,31 @@ private void loadSonarScanner(config){
         unzip -q ${filename}
         mv ${foldername} .sonar-scanner
     """
+}
+
+private void loadCertificates(Map config) {
+    String certificateFolder = '.certificates/'
+    List wgetOptions = [
+        "--directory-prefix ${certificateFolder}"
+    ]
+    List keytoolOptions = [
+        '-import',
+        '-noprompt',
+        '-storepass changeit',
+        '-keystore .sonar-scanner/jre/lib/security/cacerts'
+    ]
+    if (config.customTlsCertificateLinks){
+        if(config.verbose){
+            wgetOptions.push('--verbose')
+            keytoolOptions.push('-v')
+        }else{
+            wgetOptions.push('--no-verbose')
+        }
+        config.customTlsCertificateLinks.each { url ->
+            def filename = new File(url).getName()
+            filename = URLDecoder.decode(filename, StandardCharsets.UTF_8.name())
+            sh "wget ${wgetOptions.join(' ')} ${url}"
+            sh "keytool ${keytoolOptions.join(' ')} -alias '${filename}' -file '${certificateFolder}${filename}'"
+        }
+    }
 }

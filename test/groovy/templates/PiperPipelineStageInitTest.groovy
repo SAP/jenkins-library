@@ -149,8 +149,7 @@ class PiperPipelineStageInitTest extends BasePiperTest {
         ]
 
         scmInfoTestList.each {scmInfoTest ->
-            jsr.step.piperPipelineStageInit.setScmInfoOnCommonPipelineEnvironment(nullScript, scmInfoTest)
-            println(scmInfoTest.GIT_URL)
+            jsr.step.piperPipelineStageInit.setGitUrlsOnCommonPipelineEnvironment(nullScript, scmInfoTest.GIT_URL)
             assertThat(nullScript.commonPipelineEnvironment.getGitSshUrl(), is(scmInfoTest.expectedSsh))
             assertThat(nullScript.commonPipelineEnvironment.getGitHttpsUrl(), is(scmInfoTest.expectedHttp))
             assertThat(nullScript.commonPipelineEnvironment.getGithubOrg(), is(scmInfoTest.expectedOrg))

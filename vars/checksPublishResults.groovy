@@ -181,7 +181,6 @@ def createCommonOptionsMap(publisherName, settings){
     return result
 }
 
-@NonCPS
 def prepare(parameters){
     // ensure tool maps are initialized correctly
     for(String tool : TOOLS){
@@ -190,7 +189,6 @@ def prepare(parameters){
     return parameters
 }
 
-@NonCPS
 def toMap(parameter){
     if(MapUtils.isMap(parameter))
         parameter.put('active', parameter.active == null?true:parameter.active)
