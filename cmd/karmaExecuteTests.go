@@ -7,11 +7,6 @@ import (
 	"github.com/pkg/errors"
 )
 
-type execRunner interface {
-	RunExecutable(e string, p ...string) error
-	Dir(d string)
-}
-
 func karmaExecuteTests(myKarmaExecuteTestsOptions karmaExecuteTestsOptions) error {
 	c := command.Command{}
 	return runKarma(myKarmaExecuteTestsOptions, &c)

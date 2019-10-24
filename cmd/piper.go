@@ -38,6 +38,16 @@ var generalConfig generalConfigOptions
 // Execute is the starting point of the piper command line tool
 func Execute() {
 
+	AddRootFlags(rootCmd)
+	if err := rootCmd.Execute(); err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+}
+
+// AddRootFlags adds the flags for the piper root command
+func AddRootFlags(rootCmd *cobra.Command) {
+
 	rootCmd.PersistentFlags().StringVar(&generalConfig.customConfig, "customConfig", ".pipeline/config.yml", "Path to the pipeline configuration file")
 	rootCmd.PersistentFlags().StringSliceVar(&generalConfig.defaultConfig, "defaultConfig", nil, "Default configurations, passed as path to yaml file")
 	rootCmd.PersistentFlags().StringVar(&generalConfig.parametersJSON, "parametersJSON", os.Getenv("PIPER_parametersJSON"), "Parameters to be considered in JSON format")
@@ -45,10 +55,6 @@ func Execute() {
 	rootCmd.PersistentFlags().StringVar(&generalConfig.stepConfigJSON, "stepConfigJSON", os.Getenv("PIPER_stepConfigJSON"), "Step configuration in JSON format")
 	rootCmd.PersistentFlags().BoolVarP(&generalConfig.verbose, "verbose", "v", false, "verbose output")
 
-	if err := rootCmd.Execute(); err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
 }
 
 // PrepareConfig reads step configuration from various sources and merges it (defaults, config file, flags, ...)

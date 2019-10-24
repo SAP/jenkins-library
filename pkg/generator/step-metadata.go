@@ -12,28 +12,6 @@ import (
 	"github.com/SAP/jenkins-library/pkg/config"
 )
 
-/*
-//StepParameterDefinition defines one configuration parameter of a step
-type StepParameterDefinition struct {
-	Short     string      `json:"description"`
-	Long      string      `json:"longDescription"`
-	Markdown  string      `json:"markdownDescription"`
-	Mandatory bool        `json:"mandatory"`
-	Scope     []string    `json:"scope"`
-	Type      string      `json:"type"`
-	Default   interface{} `json:"default"`
-}
-
-//StepMetaData defines configuration options of the step
-type StepMetaData struct {
-	Long         string                             `json:"longDescription"`
-	Short        string                             `json:"description"`
-	Markdown     string                             `json:"markdownDescription"`
-	OSImport bool                               `json:"osDependency,omitempty"`
-	Metadata     map[string]StepParameterDefinition `json:"parameters"`
-}
-*/
-
 type stepInfo struct {
 	CobraCmdFuncName string
 	CreateCmdVar     string
@@ -117,6 +95,8 @@ const stepTestGoTemplate = `package cmd
 
 import (
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func Test{{.CobraCmdFuncName}}(t *testing.T) {
@@ -124,9 +104,7 @@ func Test{{.CobraCmdFuncName}}(t *testing.T) {
 	testCmd := {{.CobraCmdFuncName}}()
 
 	// only high level testing performed - details are tested in step generation procudure
-	if testCmd.Use != "{{.StepName}}" {
-		t.Errorf("Expected command name to be '{{.StepName}}' but was '%v'", testCmd.Use)
-	}
+	assert.Equal(t, "karmaExecuteTests", testCmd.Use, "command name incorrect")
 
 }
 `

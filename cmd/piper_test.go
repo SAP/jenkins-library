@@ -29,6 +29,19 @@ func openFileMock(name string) (io.ReadCloser, error) {
 	return ioutil.NopCloser(strings.NewReader(r)), nil
 }
 
+func TestAddRootFlags(t *testing.T) {
+	var testRootCmd = &cobra.Command{Use: "test", Short: "This is just a test"}
+	AddRootFlags(testRootCmd)
+
+	assert.NotNil(t, testRootCmd.Flag("customConfig"), "expected flag not available")
+	assert.NotNil(t, testRootCmd.Flag("defaultConfig"), "expected flag not available")
+	assert.NotNil(t, testRootCmd.Flag("parametersJSON"), "expected flag not available")
+	assert.NotNil(t, testRootCmd.Flag("stageName"), "expected flag not available")
+	assert.NotNil(t, testRootCmd.Flag("stepConfigJSON"), "expected flag not available")
+	assert.NotNil(t, testRootCmd.Flag("verbose"), "expected flag not available")
+
+}
+
 func TestPrepareConfig(t *testing.T) {
 	defaultsBak := generalConfig.defaultConfig
 	generalConfig.defaultConfig = []string{"testDefaults.yml"}
