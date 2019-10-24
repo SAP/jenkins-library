@@ -21,7 +21,7 @@ import util.Rules
 
 import hudson.AbortException
 
-public class PullGitRepositoryToSapCloudPlatformAbapEnvironment extends BasePiperTest {
+public class PullGitRepositoryToSapCloudPlatformAbapEnvironmentTest extends BasePiperTest {
 
     private ExpectedException thrown = new ExpectedException()
     private JenkinsStepRule stepRule = new JenkinsStepRule(this)
