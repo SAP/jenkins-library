@@ -2,7 +2,9 @@ package cmd
 
 import (
 	"fmt"
+	"io"
 	"os"
+	"strings"
 
 	"github.com/spf13/cobra"
 )
@@ -45,4 +47,12 @@ func Execute() {
 		fmt.Println(err)
 		os.Exit(1)
 	}
+}
+
+func openPiperFile(name string) (io.ReadCloser, error) {
+	//ToDo: support also https as source
+	if !strings.HasPrefix(name, "http") {
+		return os.Open(name)
+	}
+	return nil, fmt.Errorf("file location not yet supported for '%v'", name)
 }

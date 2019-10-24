@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"strings"
 
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/pkg/errors"
@@ -101,14 +100,6 @@ func addConfigFlags(cmd *cobra.Command) {
 	cmd.MarkFlagRequired("stepMetadata")
 	cmd.MarkFlagRequired("stepName")
 
-}
-
-func openPiperFile(name string) (io.ReadCloser, error) {
-	//ToDo: support also https as source
-	if !strings.HasPrefix(name, "http") {
-		return os.Open(name)
-	}
-	return nil, fmt.Errorf("file location not yet supported for '%v'", name)
 }
 
 func defaultsAndFilters(metadata *config.StepData) ([]io.ReadCloser, config.StepFilters, error) {
