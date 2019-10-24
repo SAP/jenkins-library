@@ -372,6 +372,104 @@ func TestGetContextDefaults(t *testing.T) {
 
 			//no assert since we just want to make sure that no panic occurs
 		})
+	})
+}
+
+func TestGetContextDefaults(t *testing.T) {
+
+	t.Run("Positive case", func(t *testing.T) {
+		metadata := StepData{
+			Spec: StepSpec{
+				Containers: []Container{
+					{
+						Command: []string{"test/command"},
+						EnvVars: []EnvVar{
+							{Name: "env1", Value: "val1"},
+							{Name: "env2", Value: "val2"},
+						},
+						Name:       "testcontainer",
+						Image:      "testImage:tag",
+						Shell:      "/bin/bash",
+						WorkingDir: "/test/dir",
+					},
+				},
+				Sidecars: []Container{
+					{
+						Command: []string{"/sidecar/command"},
+						EnvVars: []EnvVar{
+							{Name: "env3", Value: "val3"},
+							{Name: "env4", Value: "val4"},
+						},
+						Name:            "testsidecar",
+						Image:           "testSidecarImage:tag",
+						ImagePullPolicy: "Never",
+						ReadyCommand:    "/sidecar/command",
+						WorkingDir:      "/sidecar/dir",
+					},
+				},
+			},
+		}
+
+		cd, err := metadata.GetContextDefaults("testStep")
+
+		t.Run("No error", func(t *testing.T) {
+			if err != nil {
+				t.Errorf("No error expected but got error '%v'", err)
+			}
+		})
+
+		var d PipelineDefaults
+		d.ReadPipelineDefaults([]io.ReadCloser{cd})
+
+		assert.Equal(t, "test/command", d.Defaults[0].Steps["testStep"]["containerCommand"], "containerCommand default not available")
+		assert.Equal(t, "testcontainer", d.Defaults[0].Steps["testStep"]["containerName"], "containerName default not available")
+		assert.Equal(t, "/bin/bash", d.Defaults[0].Steps["testStep"]["containerShell"], "containerShell default not available")
+		assert.Equal(t, []interface{}{"env1=val1", "env2=val2"}, d.Defaults[0].Steps["testStep"]["dockerEnvVars"], "dockerEnvVars default not available")
+		assert.Equal(t, "testImage:tag", d.Defaults[0].Steps["testStep"]["dockerImage"], "dockerImage default not available")
+		assert.Equal(t, "testcontainer", d.Defaults[0].Steps["testStep"]["dockerName"], "dockerName default not available")
+		assert.Equal(t, true, d.Defaults[0].Steps["testStep"]["dockerPullImage"], "dockerPullImage default not available")
+		assert.Equal(t, "/test/dir", d.Defaults[0].Steps["testStep"]["dockerWorkspace"], "dockerWorkspace default not available")
+
+		assert.Equal(t, "/sidecar/command", d.Defaults[0].Steps["testStep"]["sidecarCommand"], "sidecarCommand default not available")
+		assert.Equal(t, []interface{}{"env3=val3", "env4=val4"}, d.Defaults[0].Steps["testStep"]["sidecarEnvVars"], "sidecarEnvVars default not available")
+		assert.Equal(t, "testSidecarImage:tag", d.Defaults[0].Steps["testStep"]["sidecarImage"], "sidecarImage default not available")
+		assert.Equal(t, "testsidecar", d.Defaults[0].Steps["testStep"]["sidecarName"], "sidecarName default not available")
+		assert.Equal(t, false, d.Defaults[0].Steps["testStep"]["sidecarPullImage"], "sidecarPullImage default not available")
+		assert.Equal(t, "/sidecar/command", d.Defaults[0].Steps["testStep"]["sidecarReadyCommand"], "sidecarReadyCommand default not available")
+		assert.Equal(t, "/sidecar/dir", d.Defaults[0].Steps["testStep"]["sidecarWorkspace"], "sidecarWorkspace default not available")
+	})
+
+	t.Run("Negative case", func(t *testing.T) {
+		metadataErr := []StepData{
+			StepData{},
+			StepData{
+				Spec: StepSpec{},
+			},
+			StepData{
+				Spec: StepSpec{
+					Containers: []Container{},
+					Sidecars:   []Container{},
+				},
+			},
+		}
+
+		t.Run("No containers/sidecars", func(t *testing.T) {
+			cd, _ := metadataErr[0].GetContextDefaults("testStep")
+
+			var d PipelineDefaults
+			d.ReadPipelineDefaults([]io.ReadCloser{cd})
+
+			//no assert since we just want to make sure that no panic occurs
+		})
+
+		t.Run("No command", func(t *testing.T) {
+			cd, _ := metadataErr[1].GetContextDefaults("testStep")
+
+			var d PipelineDefaults
+			d.ReadPipelineDefaults([]io.ReadCloser{cd})
+
+			//no assert since we just want to make sure that no panic occurs
+		})
 
 	})
 }

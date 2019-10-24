@@ -38,6 +38,8 @@ var generalConfig generalConfigOptions
 // Execute is the starting point of the piper command line tool
 func Execute() {
 
+  rootCmd.AddCommand(ConfigCommand())
+  
 	AddRootFlags(rootCmd)
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Println(err)
@@ -48,7 +50,7 @@ func Execute() {
 // AddRootFlags adds the flags for the piper root command
 func AddRootFlags(rootCmd *cobra.Command) {
 
-	rootCmd.PersistentFlags().StringVar(&generalConfig.customConfig, "customConfig", ".pipeline/config.yml", "Path to the pipeline configuration file")
+  rootCmd.PersistentFlags().StringVar(&generalConfig.customConfig, "customConfig", ".pipeline/config.yml", "Path to the pipeline configuration file")
 	rootCmd.PersistentFlags().StringSliceVar(&generalConfig.defaultConfig, "defaultConfig", nil, "Default configurations, passed as path to yaml file")
 	rootCmd.PersistentFlags().StringVar(&generalConfig.parametersJSON, "parametersJSON", os.Getenv("PIPER_parametersJSON"), "Parameters to be considered in JSON format")
 	rootCmd.PersistentFlags().StringVar(&generalConfig.stageName, "stageName", os.Getenv("STAGE_NAME"), "Name of the stage for which configuration should be included")
