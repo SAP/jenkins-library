@@ -76,7 +76,7 @@ func {{ .StepName }}Metadata() config.StepData {
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
 				Parameters: []config.StepParameters{
-					{{range $key, $value := .Metadata }}
+					{{- range $key, $value := .Metadata }}
 					{
 						Name: "{{ $value.Name }}",
 						Scope: []string{{ "{" }}{{ range $notused, $scope := $value.Scope }}"{{ $scope }}",{{ end }}{{ "}" }},
@@ -277,6 +277,7 @@ func stepTestTemplate(myStepInfo stepInfo) []byte {
 
 func longName(long string) string {
 	l := strings.ReplaceAll(long, "`", "` + \"`\" + `")
+	l = strings.TrimSpace(l)
 	return l
 }
 
