@@ -22,8 +22,7 @@ func TestStepCommand() *cobra.Command {
 	var createTestStepCmd = &cobra.Command{
 		Use:   "testStep",
 		Short: "Test description",
-		Long:   `Long Test description
-`,
+		Long:   `Long Test description`,
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			return PrepareConfig(cmd, &metadata, "testStep", &myTestStepOptions, openPiperFile)
 		},
@@ -51,7 +50,6 @@ func testStepMetadata() config.StepData {
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
 				Parameters: []config.StepParameters{
-					
 					{
 						Name: "param0",
 						Scope: []string{"GENERAL","PARAMETERS",},

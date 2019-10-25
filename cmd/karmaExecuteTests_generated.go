@@ -32,8 +32,7 @@ The step is using the ` + "`" + `seleniumExecuteTest` + "`" + ` step to spin up 
 In the Docker network, the containers can be referenced by the values provided in ` + "`" + `dockerName` + "`" + ` and ` + "`" + `sidecarName` + "`" + `, the default values are ` + "`" + `karma` + "`" + ` and ` + "`" + `selenium` + "`" + `. These values must be used in the ` + "`" + `hostname` + "`" + ` properties of the test configuration ([Karma](https://karma-runner.github.io/1.0/config/configuration-file.html) and [WebDriver](https://github.com/karma-runner/karma-webdriver-launcher#usage)).
 
 !!! note
-    In a Kubernetes environment, the containers both need to be referenced with ` + "`" + `localhost` + "`" + `.
-`,
+    In a Kubernetes environment, the containers both need to be referenced with ` + "`" + `localhost` + "`" + `.`,
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			return PrepareConfig(cmd, &metadata, "karmaExecuteTests", &myKarmaExecuteTestsOptions, openPiperFile)
 		},
@@ -62,7 +61,6 @@ func karmaExecuteTestsMetadata() config.StepData {
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
 				Parameters: []config.StepParameters{
-					
 					{
 						Name: "installCommand",
 						Scope: []string{"GENERAL","PARAMETERS","STAGES","STEPS",},
