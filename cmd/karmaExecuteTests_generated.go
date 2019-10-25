@@ -54,7 +54,6 @@ func addKarmaExecuteTestsFlags(cmd *cobra.Command) {
 	cmd.MarkFlagRequired("installCommand")
 	cmd.MarkFlagRequired("modulePath")
 	cmd.MarkFlagRequired("runCommand")
-	
 }
 
 // retrieve step metadata

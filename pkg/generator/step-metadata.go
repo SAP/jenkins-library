@@ -65,8 +65,9 @@ func {{.CobraCmdFuncName}}() *cobra.Command {
 func {{.FlagsFunc}}(cmd *cobra.Command) {
 	{{- range $key, $value := .Metadata }}
 	cmd.Flags().{{ $value.Type | flagType }}(&my{{ $.StepName | title }}Options.{{ $value.Name | golangName }}, "{{ $value.Name }}", {{ $value.Default }}, "{{ $value.Description }}"){{ end }}
-
-	{{ range $key, $value := .Metadata }}{{ if $value.Mandatory }}cmd.MarkFlagRequired("{{ $value.Name }}"){{ printf "\n\t" }}{{ end }}{{ end }}
+	{{- printf "\n" }}
+	{{- range $key, $value := .Metadata }}{{ if $value.Mandatory }}
+	cmd.MarkFlagRequired("{{ $value.Name }}"){{ end }}{{ end }}
 }
 
 // retrieve step metadata

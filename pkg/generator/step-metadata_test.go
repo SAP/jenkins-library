@@ -36,6 +36,12 @@ spec:
         description: param1 description
         scope:
         - PARAMETERS
+      - name: param2
+        type: string
+        description: param1 description
+        scope:
+        - PARAMETERS
+        mandatory: true
 `
 	var r string
 	switch name {
