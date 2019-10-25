@@ -46,7 +46,7 @@ export ON_K8S=true"
 ```
 
 ```groovy
-dockerExecuteOnKubernetes(script: script, containerMap: ['maven:3.5-jdk-8-alpine': 'maven', 's4sdk/docker-cf-cli': 'cfcli']){
+dockerExecuteOnKubernetes(script: script, containerMap: ['maven:3.5-jdk-8-alpine': 'maven', 'ppiper/cf-cli': 'cfcli']){
     container('maven'){
         sh "mvn clean install"
     }
