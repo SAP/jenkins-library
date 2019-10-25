@@ -372,6 +372,5 @@ func TestGetContextDefaults(t *testing.T) {
 
 			//no assert since we just want to make sure that no panic occurs
 		})
-
 	})
 }
