@@ -9,8 +9,8 @@ import (
 
 type karmaExecuteTestsOptions struct {
 	InstallCommand string `json:"installCommand,omitempty"`
-	ModulePath string `json:"modulePath,omitempty"`
-	RunCommand string `json:"runCommand,omitempty"`
+	ModulePath     string `json:"modulePath,omitempty"`
+	RunCommand     string `json:"runCommand,omitempty"`
 }
 
 var myKarmaExecuteTestsOptions karmaExecuteTestsOptions
@@ -63,19 +63,19 @@ func karmaExecuteTestsMetadata() config.StepData {
 				Parameters: []config.StepParameters{
 					{
 						Name:      "installCommand",
-						Scope:     []string{"GENERAL","PARAMETERS","STAGES","STEPS",},
+						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: true,
 					},
 					{
 						Name:      "modulePath",
-						Scope:     []string{"PARAMETERS","STAGES","STEPS",},
+						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: true,
 					},
 					{
 						Name:      "runCommand",
-						Scope:     []string{"GENERAL","PARAMETERS","STAGES","STEPS",},
+						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: true,
 					},

@@ -6,6 +6,7 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"text/template"
@@ -118,6 +119,10 @@ func main() {
 	checkError(err)
 
 	err = processMetaFiles(metadataFiles, openMetaFile, fileWriter)
+	checkError(err)
+
+	cmd := exec.Command("go", "fmt", "./cmd")
+	err = cmd.Run()
 	checkError(err)
 
 }
