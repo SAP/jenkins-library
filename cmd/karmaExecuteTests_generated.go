@@ -8,7 +8,6 @@ import (
 )
 
 type karmaExecuteTestsOptions struct {
-	
 	InstallCommand string `json:"installCommand,omitempty"`
 	ModulePath string `json:"modulePath,omitempty"`
 	RunCommand string `json:"runCommand,omitempty"`

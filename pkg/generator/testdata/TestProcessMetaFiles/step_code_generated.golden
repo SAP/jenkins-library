@@ -8,7 +8,6 @@ import (
 )
 
 type testStepOptions struct {
-	
 	Param0 string `json:"param0,omitempty"`
 	Param1 string `json:"param1,omitempty"`
 }

@@ -36,7 +36,7 @@ import (
 )
 
 type {{ .StepName }}Options struct {
-	{{range $key, $value := .Metadata }}
+	{{- range $key, $value := .Metadata }}
 	{{ $value.Name | golangName }} {{ $value.Type }} ` + "`json:\"{{$value.Name}},omitempty\"`" + `{{end}}
 }
 
