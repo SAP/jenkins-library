@@ -11,7 +11,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-// Executable defines the information required for executing a call to any executable
+// Command defines the information required for executing a call to any executable
 type Command struct {
 	dir    string
 	Stdout io.Writer
@@ -26,7 +26,7 @@ func (c *Command) Dir(d string) {
 // ExecCommand defines how to execute os commands
 var ExecCommand = exec.Command
 
-// Run the specified command on the shell
+// RunShell runs the specified command on the shell
 func (c *Command) RunShell(shell, script string) error {
 
 	_out, _err := prepareOut(c.Stdout, c.Stderr)
@@ -44,7 +44,7 @@ func (c *Command) RunShell(shell, script string) error {
 	return nil
 }
 
-// Run the specified executable with parameters
+// RunExecutable runs the specified executable with parameters
 func (c *Command) RunExecutable(executable string, params ...string) error {
 
 	_out, _err := prepareOut(c.Stdout, c.Stderr)
