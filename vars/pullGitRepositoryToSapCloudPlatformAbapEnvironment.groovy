@@ -164,7 +164,7 @@ private String pollPullStatus(String url, String authToken) {
 private void checkRequestStatus(String headerFile) {
     String headerString = readFile(headerFile)
     HttpHeader httpHeader = new HttpHeader(headerString)
-
+    echo httpHeader.statusCode
     if (httpHeader.statusCode > 201) {
         echo readFile(headerFile)
         error "[${STEP_NAME}] Connection Failed: ${httpHeader.statusCode} ${httpHeader.statusMessage}"
