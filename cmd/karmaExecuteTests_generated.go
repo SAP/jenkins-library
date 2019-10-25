@@ -47,7 +47,6 @@ In the Docker network, the containers can be referenced by the values provided i
 }
 
 func addKarmaExecuteTestsFlags(cmd *cobra.Command) {
-	
 	cmd.Flags().StringVar(&myKarmaExecuteTestsOptions.InstallCommand, "installCommand", "npm install --quiet", "The command that is executed to install the test tool.")
 	cmd.Flags().StringVar(&myKarmaExecuteTestsOptions.ModulePath, "modulePath", ".", "Define the path of the module to execute tests on.")
 	cmd.Flags().StringVar(&myKarmaExecuteTestsOptions.RunCommand, "runCommand", "npm run karma", "The command that is executed to start the tests.")
