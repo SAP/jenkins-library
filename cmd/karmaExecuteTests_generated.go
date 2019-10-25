@@ -43,12 +43,11 @@ In the Docker network, the containers can be referenced by the values provided i
 		},
 	}
 
-	AddKarmaExecuteTestsFlags(createKarmaExecuteTestsCmd)
+	addKarmaExecuteTestsFlags(createKarmaExecuteTestsCmd)
 	return createKarmaExecuteTestsCmd
 }
 
-// AddKarmaExecuteTestsFlags defines the flags for the karmaExecuteTests command
-func AddKarmaExecuteTestsFlags(cmd *cobra.Command) {
+func addKarmaExecuteTestsFlags(cmd *cobra.Command) {
 	
 	cmd.Flags().StringVar(&myKarmaExecuteTestsOptions.InstallCommand, "installCommand", "npm install --quiet", "The command that is executed to install the test tool.")
 	cmd.Flags().StringVar(&myKarmaExecuteTestsOptions.ModulePath, "modulePath", ".", "Define the path of the module to execute tests on.")

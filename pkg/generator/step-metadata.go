@@ -62,7 +62,6 @@ func {{.CobraCmdFuncName}}() *cobra.Command {
 	return {{.CreateCmdVar}}
 }
 
-// {{.FlagsFunc}} defines the flags for the {{.StepName}} command
 func {{.FlagsFunc}}(cmd *cobra.Command) {
 	{{ range $key, $value := .Metadata }}
 	cmd.Flags().{{ $value.Type | flagType }}(&my{{ $.StepName | title }}Options.{{ $value.Name | golangName }}, "{{ $value.Name }}", {{ $value.Default }}, "{{ $value.Description }}"){{ end }}
@@ -105,7 +104,7 @@ func Test{{.CobraCmdFuncName}}(t *testing.T) {
 	testCmd := {{.CobraCmdFuncName}}()
 
 	// only high level testing performed - details are tested in step generation procudure
-	assert.Equal(t, "karmaExecuteTests", testCmd.Use, "command name incorrect")
+	assert.Equal(t, "{{.StepName}}", testCmd.Use, "command name incorrect")
 
 }
 `
@@ -213,14 +212,6 @@ func getStepInfo(stepData *config.StepData) stepInfo {
 		Metadata:         stepData.Spec.Inputs.Parameters,
 		FlagsFunc:        fmt.Sprintf("add%vFlags", strings.Title(stepData.Metadata.Name)),
 	}
-}
-
-func generateStepFile() error {
-	return nil
-}
-
-func generateTestFile() error {
-	return nil
 }
 
 func checkError(err error) {

@@ -6,6 +6,7 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -19,21 +20,22 @@ func configOpenFileMock(name string) (io.ReadCloser, error) {
   description: Test description
   longDescription: |
     Long Test description
-  spec:
+spec:
+  inputs:
     params:
-    - name: param0
-      type: string
-      description: param0 description
-      default: val0
-      scope:
-      - GENERAL
-      - PARAMETERS
-      mandatory: true
-    - name: param1
-      type: string
-      description: param1 description
-      scope:
-      - PARAMETERS
+      - name: param0
+        type: string
+        description: param0 description
+        default: val0
+        scope:
+        - GENERAL
+        - PARAMETERS
+        mandatory: true
+      - name: param1
+        type: string
+        description: param1 description
+        scope:
+        - PARAMETERS
 `
 	var r string
 	switch name {
@@ -45,14 +47,37 @@ func configOpenFileMock(name string) (io.ReadCloser, error) {
 	return ioutil.NopCloser(strings.NewReader(r)), nil
 }
 
+var files map[string][]byte
+
 func writeFileMock(filename string, data []byte, perm os.FileMode) error {
+	if files == nil {
+		files = make(map[string][]byte)
+	}
+	files[filename] = data
 	return nil
 }
 
 func TestProcessMetaFiles(t *testing.T) {
+
 	processMetaFiles([]string{"test.yaml"}, configOpenFileMock, writeFileMock)
 
-	//ToDo: asserts!
+	t.Run("step code", func(t *testing.T) {
+		goldenFilePath := filepath.Join("testdata", t.Name()+"_generated.golden")
+		expected, err := ioutil.ReadFile(goldenFilePath)
+		if err != nil {
+			t.Fatalf("failed reading %v", goldenFilePath)
+		}
+		assert.Equal(t, expected, files["cmd/testStep_generated.go"])
+	})
+
+	t.Run("test code", func(t *testing.T) {
+		goldenFilePath := filepath.Join("testdata", t.Name()+"_generated.golden")
+		expected, err := ioutil.ReadFile(goldenFilePath)
+		if err != nil {
+			t.Fatalf("failed reading %v", goldenFilePath)
+		}
+		assert.Equal(t, expected, files["cmd/testStep_generated_test.go"])
+	})
 }
 
 func TestSetDefaultParameters(t *testing.T) {
@@ -149,15 +174,48 @@ func TestGetStepInfo(t *testing.T) {
 
 }
 
-/*
-func TestStepGeneration(t *testing.T) {
-	var b bytes.Buffer
-	g, err := ioutil.ReadFile(filepath.Join("testdata", t.Name()+".golden"))
-	if err != nil {
-		t.Fatalf("failed reading .golden: %s", err)
+func TestLongName(t *testing.T) {
+	tt := []struct {
+		input    string
+		expected string
+	}{
+		{input: "my long name with no ticks", expected: "my long name with no ticks"},
+		{input: "my long name with `ticks`", expected: "my long name with ` + \"`\" + `ticks` + \"`\" + `"},
 	}
-	if !bytes.Equal(b.Bytes(), g) {
-		t.Errorf("written json does not match .golden file")
+
+	for k, v := range tt {
+		assert.Equal(t, v.expected, longName(v.input), fmt.Sprintf("wrong long name for run %v", k))
 	}
 }
-*/
+
+func TestGolangName(t *testing.T) {
+	tt := []struct {
+		input    string
+		expected string
+	}{
+		{input: "testApi", expected: "TestAPI"},
+		{input: "testUrl", expected: "TestURL"},
+		{input: "testId", expected: "TestID"},
+		{input: "testJson", expected: "TestJSON"},
+		{input: "jsonTest", expected: "JSONTest"},
+	}
+
+	for k, v := range tt {
+		assert.Equal(t, v.expected, golangName(v.input), fmt.Sprintf("wrong golang name for run %v", k))
+	}
+}
+
+func TestFlagType(t *testing.T) {
+	tt := []struct {
+		input    string
+		expected string
+	}{
+		{input: "bool", expected: "BoolVar"},
+		{input: "string", expected: "StringVar"},
+		{input: "[]string", expected: "StringSliceVar"},
+	}
+
+	for k, v := range tt {
+		assert.Equal(t, v.expected, flagType(v.input), fmt.Sprintf("wrong flag type for run %v", k))
+	}
+}
