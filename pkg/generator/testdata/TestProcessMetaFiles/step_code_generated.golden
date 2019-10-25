@@ -3,8 +3,8 @@ package cmd
 import (
 	//"os"
 
-	"github.com/spf13/cobra"
 	"github.com/SAP/jenkins-library/pkg/config"
+	"github.com/spf13/cobra"
 )
 
 type testStepOptions struct {
@@ -22,7 +22,7 @@ func TestStepCommand() *cobra.Command {
 	var createTestStepCmd = &cobra.Command{
 		Use:   "testStep",
 		Short: "Test description",
-		Long:   `Long Test description`,
+		Long: `Long Test description`,
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			return PrepareConfig(cmd, &metadata, "testStep", &myTestStepOptions, openPiperFile)
 		},
@@ -51,21 +51,21 @@ func testStepMetadata() config.StepData {
 			Inputs: config.StepInputs{
 				Parameters: []config.StepParameters{
 					{
-						Name: "param0",
-						Scope: []string{"GENERAL","PARAMETERS",},
-						Type: "string",
+						Name:      "param0",
+						Scope:     []string{"GENERAL","PARAMETERS",},
+						Type:      "string",
 						Mandatory: true,
 					},
 					{
-						Name: "param1",
-						Scope: []string{"PARAMETERS",},
-						Type: "string",
+						Name:      "param1",
+						Scope:     []string{"PARAMETERS",},
+						Type:      "string",
 						Mandatory: false,
 					},
 					{
-						Name: "param2",
-						Scope: []string{"PARAMETERS",},
-						Type: "string",
+						Name:      "param2",
+						Scope:     []string{"PARAMETERS",},
+						Type:      "string",
 						Mandatory: true,
 					},
 				},

@@ -31,8 +31,8 @@ const stepGoTemplate = `package cmd
 import (
 	//"os"
 
-	"github.com/spf13/cobra"
 	"github.com/SAP/jenkins-library/pkg/config"
+	"github.com/spf13/cobra"
 )
 
 type {{ .StepName }}Options struct {
@@ -49,7 +49,7 @@ func {{.CobraCmdFuncName}}() *cobra.Command {
 	var {{.CreateCmdVar}} = &cobra.Command{
 		Use:   "{{.StepName}}",
 		Short: "{{.Short}}",
-		Long:   {{ $tick := "` + "`" + `" }}{{ $tick }}{{.Long | longName }}{{ $tick }},
+		Long: {{ $tick := "` + "`" + `" }}{{ $tick }}{{.Long | longName }}{{ $tick }},
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			return PrepareConfig(cmd, &metadata, "{{ .StepName }}", &my{{ .StepName | title}}Options, openPiperFile)
 		},
@@ -78,9 +78,9 @@ func {{ .StepName }}Metadata() config.StepData {
 				Parameters: []config.StepParameters{
 					{{- range $key, $value := .Metadata }}
 					{
-						Name: "{{ $value.Name }}",
-						Scope: []string{{ "{" }}{{ range $notused, $scope := $value.Scope }}"{{ $scope }}",{{ end }}{{ "}" }},
-						Type: "{{ $value.Type }}",
+						Name:      "{{ $value.Name }}",
+						Scope:     []string{{ "{" }}{{ range $notused, $scope := $value.Scope }}"{{ $scope }}",{{ end }}{{ "}" }},
+						Type:      "{{ $value.Type }}",
 						Mandatory: {{ $value.Mandatory }},
 					},{{ end }}
 				},

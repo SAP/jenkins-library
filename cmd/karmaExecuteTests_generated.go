@@ -3,8 +3,8 @@ package cmd
 import (
 	//"os"
 
-	"github.com/spf13/cobra"
 	"github.com/SAP/jenkins-library/pkg/config"
+	"github.com/spf13/cobra"
 )
 
 type karmaExecuteTestsOptions struct {
@@ -22,7 +22,7 @@ func KarmaExecuteTestsCommand() *cobra.Command {
 	var createKarmaExecuteTestsCmd = &cobra.Command{
 		Use:   "karmaExecuteTests",
 		Short: "Executes the Karma test runner",
-		Long:   `In this step the ([Karma test runner](http://karma-runner.github.io)) is executed.
+		Long: `In this step the ([Karma test runner](http://karma-runner.github.io)) is executed.
 
 The step is using the ` + "`" + `seleniumExecuteTest` + "`" + ` step to spin up two containers in a Docker network:
 
@@ -62,21 +62,21 @@ func karmaExecuteTestsMetadata() config.StepData {
 			Inputs: config.StepInputs{
 				Parameters: []config.StepParameters{
 					{
-						Name: "installCommand",
-						Scope: []string{"GENERAL","PARAMETERS","STAGES","STEPS",},
-						Type: "string",
+						Name:      "installCommand",
+						Scope:     []string{"GENERAL","PARAMETERS","STAGES","STEPS",},
+						Type:      "string",
 						Mandatory: true,
 					},
 					{
-						Name: "modulePath",
-						Scope: []string{"PARAMETERS","STAGES","STEPS",},
-						Type: "string",
+						Name:      "modulePath",
+						Scope:     []string{"PARAMETERS","STAGES","STEPS",},
+						Type:      "string",
 						Mandatory: true,
 					},
 					{
-						Name: "runCommand",
-						Scope: []string{"GENERAL","PARAMETERS","STAGES","STEPS",},
-						Type: "string",
+						Name:      "runCommand",
+						Scope:     []string{"GENERAL","PARAMETERS","STAGES","STEPS",},
+						Type:      "string",
 						Mandatory: true,
 					},
 				},
