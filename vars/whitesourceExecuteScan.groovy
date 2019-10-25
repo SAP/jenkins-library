@@ -9,7 +9,7 @@ import com.sap.piper.WhitesourceConfigurationHelper
 import com.sap.piper.mta.MtaMultiplexer
 import groovy.text.GStringTemplateEngine
 import groovy.transform.Field
-import groovy.text.SimpleTemplateEngine
+import groovy.text.GStringTemplateEngine
 
 import static com.sap.piper.Prerequisites.checkScript
 
@@ -588,7 +588,7 @@ def getReportHtml(config, vulnerabilityList, numSevereVulns) {
         }
     }
 
-    return SimpleTemplateEngine.newInstance().createTemplate(libraryResource('com.sap.piper/templates/whitesourceVulnerabilities.html')).make(
+    return GStringTemplateEngine.newInstance().createTemplate(libraryResource('com.sap.piper/templates/whitesourceVulnerabilities.html')).make(
         [
             now                         : now,
             reportTitle                 : config.whitesource.vulnerabilityReportTitle,
