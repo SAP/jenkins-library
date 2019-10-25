@@ -166,7 +166,7 @@ private void checkRequestStatus(String headerFile) {
     HttpHeader httpHeader = new HttpHeader(headerString)
     echo httpHeader.statusCode
     if (httpHeader.statusCode > 201) {
-        echo readFile(headerFile)
+        echo readFile(headerFile).toString()
         error "[${STEP_NAME}] Connection Failed: ${httpHeader.statusCode} ${httpHeader.statusMessage}"
     }
 }
