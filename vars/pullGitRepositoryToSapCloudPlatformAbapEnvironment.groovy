@@ -108,13 +108,6 @@ private String triggerPull(Map configuration, String url, String authToken) {
 
     checkRequestStatus(headerFilePost)
 
-    if (response.startsWith("<")) {
-        // Even though the response code is <=201, an http error may occur.
-        // In this case a html page is returned instead of a json response.
-        echo response
-        error "[${STEP_NAME}] Could not resolve the response. Please check your host."
-    }
-
     JsonSlurper slurper = new JsonSlurper()
     Map responseJson = slurper.parseText(response)
     if (responseJson.d != null) {
@@ -164,7 +157,9 @@ private String pollPullStatus(String url, String authToken) {
 private void checkRequestStatus(String headerFile) {
     String headerString = readFile(headerFile)
     HttpHeader httpHeader = new HttpHeader(headerString)
-    echo httpHeader.statusCode
+    if (httpHeader.statusCode == null) {
+        error "[${STEP_NAME}] Connection Failed: 503 Service Unavailable"
+    }
     if (httpHeader.statusCode > 201) {
         echo readFile(headerFile).toString()
         error "[${STEP_NAME}] Connection Failed: ${httpHeader.statusCode} ${httpHeader.statusMessage}"
