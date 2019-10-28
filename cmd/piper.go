@@ -23,6 +23,32 @@ type generalConfigOptions struct {
 	verbose        bool
 }
 
+// GitCommit ...
+var GitCommit string
+
+// GitTag ...
+var GitTag string
+
+var versionCmd = &cobra.Command{
+  Use:   "version",
+  Short: "Print the version",
+  Long:  `Prints the version to stdout and exits with return code "0"`,
+  Run: func(cmd *cobra.Command, args []string) {
+
+       gitCommit, gitTag := "<n/a>", "<n/a>"
+
+       if len(GitCommit) > 0 {
+               gitCommit = GitCommit
+       }
+
+       if len(GitTag) > 0 {
+               gitTag = GitTag
+       }
+
+       fmt.Printf("piper-version:\n    commit: \"%s\"\n    tag: \"%s\"\n", gitCommit, gitTag)
+  },
+}
+
 var rootCmd = &cobra.Command{
 	Use:   "piper",
 	Short: "Executes CI/CD steps from project 'Piper' ",
@@ -39,6 +65,7 @@ var generalConfig generalConfigOptions
 func Execute() {
 
 	rootCmd.AddCommand(ConfigCommand())
+        rootCmd.AddCommand(versionCmd)
 
 	addRootFlags(rootCmd)
 	if err := rootCmd.Execute(); err != nil {
