@@ -208,8 +208,8 @@ boolean isInProperBranch(itemTitel, contentPR){
     def result = false
     for (def item : contentPr) {
         if (itemTitel == item.title) {
-          result = true
-          break
+            result = true
+            break
         }
     }
     return result
