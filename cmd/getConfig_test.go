@@ -12,7 +12,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func openFileMock(name string) (io.ReadCloser, error) {
+func configOpenFileMock(name string) (io.ReadCloser, error) {
 	var r string
 	switch name {
 	case "TestAddCustomDefaults_default1":
@@ -52,7 +52,7 @@ func TestConfigCommand(t *testing.T) {
 
 	t.Run("Run", func(t *testing.T) {
 		t.Run("Success case", func(t *testing.T) {
-			configOptions.openFile = openFileMock
+			configOptions.openFile = configOpenFileMock
 			err := cmd.RunE(cmd, []string{})
 			assert.NoError(t, err, "error occured but none expected")
 		})
