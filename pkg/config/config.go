@@ -70,12 +70,10 @@ func getDeepAliasValue(configMap map[string]interface{}, key string) interface{}
 	if len(parts) > 1 {
 		if configMap[parts[0]] == nil {
 			return nil
-		} else {
-			return getDeepAliasValue(configMap[parts[0]].(map[string]interface{}), strings.Join(parts[1:], "."))
 		}
-	} else {
-		return configMap[key]
+		return getDeepAliasValue(configMap[parts[0]].(map[string]interface{}), strings.Join(parts[1:], "."))
 	}
+	return configMap[key]
 }
 
 // GetStepConfig provides merged step configuration using defaults, config, if available
