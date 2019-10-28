@@ -39,7 +39,7 @@ import groovy.transform.Field
     /** Allows to exclude issues with dedicated labels. Usage is like `excludeLabels: ['label1', 'label2']`.*/
     'excludeLabels',
     /** Allows to filter pulls by branch name.*/
-    'gitBranch',    
+    'gitBranch',
     /** Allows to overwrite the GitHub organitation.*/
     'githubOrg',
     /** Allows to overwrite the GitHub repository.*/
@@ -207,10 +207,10 @@ boolean isExcluded(item, excludeLabels){
 boolean isInProperBranch(itemTitel, contentPR){
     def result = false
     for (def item : contentPr) {
-      if (itemTitel == item.title) {
-        result = true
-        break
-      }
+        if (itemTitel == item.title) {
+          result = true
+          break
+        }
     }
     return result
 }
