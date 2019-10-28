@@ -14,7 +14,7 @@ import java.nio.charset.StandardCharsets
 @Field Set GENERAL_CONFIG_KEYS = [
     /**
      * Pull-Request voting only:
-     * The URL to the Github API. see [https://docs.sonarqube.org/display/PLUG/GitHub+Plugin#GitHubPlugin-Usage](https://docs.sonarqube.org/display/PLUG/GitHub+Plugin#GitHubPlugin-Usage)
+     * The URL to the Github API. see [GitHub plugin docs](https://docs.sonarqube.org/display/PLUG/GitHub+Plugin#GitHubPlugin-Usage)
      * deprecated: only supported in LTS / < 7.2
      */
     'githubApiUrl',
