@@ -73,7 +73,12 @@ func generateConfig() error {
 
 	var flags map[string]interface{}
 
-	stepConfig, err = myConfig.GetStepConfig(flags, generalConfig.parametersJSON, customConfig, defaultConfig, paramFilter, generalConfig.stageName, configOptions.stepName)
+	params := []config.StepParameters{}
+	if !configOptions.contextConfig {
+		params = metadata.Spec.Inputs.Parameters
+	}
+
+	stepConfig, err = myConfig.GetStepConfig(flags, generalConfig.parametersJSON, customConfig, defaultConfig, paramFilter, params, generalConfig.stageName, configOptions.stepName)
 	if err != nil {
 		return errors.Wrap(err, "getting step config failed")
 	}

@@ -47,6 +47,13 @@ type StepParameters struct {
 	Type            string      `json:"type"`
 	Mandatory       bool        `json:"mandatory,omitempty"`
 	Default         interface{} `json:"default,omitempty"`
+	Aliases         []Alias     `json:"aliases,omitempty"`
+}
+
+// Alias defines a step input parameter alias
+type Alias struct {
+	Name       string `json:"name,omitempty"`
+	Deprecated bool   `json:"deprecated,omitempty"`
 }
 
 // StepResources defines the resources to be provided by the step context, e.g. Jenkins pipeline
