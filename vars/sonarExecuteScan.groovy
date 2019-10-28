@@ -38,7 +38,7 @@ import java.nio.charset.StandardCharsets
      */
     'githubTokenCredentialsId',
     /**
-     * The Jenkins credentialsId for a SonarQube token. It is needed for non-anonymous analysis runs. see [https://sonarcloud.io/account/security](https://sonarcloud.io/account/security)
+     * The Jenkins credentialsId for a SonarQube token. It is needed for non-anonymous analysis runs. see [SonarQube docs](https://docs.sonarqube.org/latest/user-guide/user-token/)
      * @possibleValues Jenkins credential id
      */
     'sonarTokenCredentialsId',
