@@ -4,7 +4,7 @@ import com.sap.piper.ConfigurationHelper
 import com.sap.piper.GenerateDocumentation
 import com.sap.piper.GitUtils
 import com.sap.piper.Utils
-import groovy.text.SimpleTemplateEngine
+import groovy.text.GStringTemplateEngine
 import groovy.transform.Field
 
 @Field String STEP_NAME = getClass().getName()
@@ -109,7 +109,7 @@ void call(Map parameters = [:]) {
             for(String collection : collectionList){
                 def collectionDisplayName = collection.toString().replace(File.separatorChar,(char)'_').tokenize('.').first()
                 // resolve templates
-                def command = SimpleTemplateEngine.newInstance()
+                def command = GStringTemplateEngine.newInstance()
                     .createTemplate(config.newmanRunCommand)
                     .make([
                         config: config.plus([newmanCollection: collection]),
