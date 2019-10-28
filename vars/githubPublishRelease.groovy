@@ -38,6 +38,8 @@ import groovy.transform.Field
     'customFilterExtension',
     /** Allows to exclude issues with dedicated labels. Usage is like `excludeLabels: ['label1', 'label2']`.*/
     'excludeLabels',
+    /** Allows to filter pulls by branch name.*/
+    'gitBranch',    
     /** Allows to overwrite the GitHub organitation.*/
     'githubOrg',
     /** Allows to overwrite the GitHub repository.*/
@@ -78,6 +80,7 @@ void call(Map parameters = [:]) {
             .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS)
             .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName?:env.STAGE_NAME, STEP_CONFIG_KEYS)
             .mixin(parameters, PARAMETER_KEYS)
+            .addIfEmpty('gitBranch', script.commonPipelineEnvironment.getGitBranch())
             .addIfEmpty('githubOrg', script.commonPipelineEnvironment.getGithubOrg())
             .addIfEmpty('githubRepo', script.commonPipelineEnvironment.getGithubRepo())
             .addIfEmpty('version', script.commonPipelineEnvironment.getArtifactVersion())
@@ -137,10 +140,14 @@ String addClosedIssue(config, TOKEN, publishedAt){
 
     content = readJSON text: response.content
 
+    // Determine PRs in a given Branch
+    response = httpRequest "${config.githubApiUrl}/repos/${config.githubOrg}/${config.githubRepo}/pulls?access_token=${TOKEN}&per_page=100&state=closed&base=${config.gitBranch}&direction=desc"
+    contentPr = readJSON text: response.content
+
     //list closed pull-requests
     result += '<br />**List of closed pull-requests since last release**<br />'
     for (def item : content) {
-        if (item.pull_request && !isExcluded(item, config.excludeLabels)) {
+        if (item.pull_request && !isExcluded(item, config.excludeLabels) && isInProperBranch(item.title, contentPr)) {
             result += "[#${item.number}](${item.html_url}): ${item.title}<br />"
         }
     }
@@ -193,6 +200,17 @@ boolean isExcluded(item, excludeLabels){
                 result = true
             }
         }
+    }
+    return result
+}
+
+boolean isInProperBranch(itemTitel, contentPR){
+    def result = false
+    for (def item : contentPr) {
+      if (itemTitel == item.title) {
+        result = true
+        break
+      }
     }
     return result
 }
