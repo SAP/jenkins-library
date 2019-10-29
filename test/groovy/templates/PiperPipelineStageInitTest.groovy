@@ -93,7 +93,7 @@ class PiperPipelineStageInitTest extends BasePiperTest {
     @Test
     void testInitBuildToolDoesNotMatchProject() {
 
-        thrown.expectMessage('[piperPipelineStageInit] buildTool configuration \'npm\' does not fit to your project, please set buildTool as genereal setting in your .pipeline/config.yml correctly, see also https://github.com/pages/ContinuousDelivery/piper-doc/configuration/')
+        thrown.expectMessage('[piperPipelineStageInit] buildTool configuration \'npm\' does not fit to your project, please set buildTool as genereal setting in your .pipeline/config.yml correctly, see also https://sap.github.io/jenkins-library/configuration/')
         jsr.step.piperPipelineStageInit(
             script: nullScript,
             juStabUtils: utils,
