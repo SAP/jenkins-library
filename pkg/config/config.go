@@ -66,12 +66,12 @@ func setParamValueFromAlias(configMap map[string]interface{}, filter []string, p
 }
 
 func getDeepAliasValue(configMap map[string]interface{}, key string) interface{} {
-	parts := strings.Split(key, ".")
+	parts := strings.Split(key, "/")
 	if len(parts) > 1 {
 		if configMap[parts[0]] == nil {
 			return nil
 		}
-		return getDeepAliasValue(configMap[parts[0]].(map[string]interface{}), strings.Join(parts[1:], "."))
+		return getDeepAliasValue(configMap[parts[0]].(map[string]interface{}), strings.Join(parts[1:], "/"))
 	}
 	return configMap[key]
 }

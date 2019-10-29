@@ -204,7 +204,7 @@ func TestApplyAliasConfig(t *testing.T) {
 		{
 			Name: "p2",
 			Aliases: []Alias{
-				{Name: "p2_alias.deep.test"},
+				{Name: "p2_alias/deep/test"},
 			},
 		},
 		{
@@ -302,8 +302,8 @@ func TestGetDeepAliasValue(t *testing.T) {
 	}{
 		{key: "p0", expected: "p0_val"},
 		{key: "p1", expected: 11},
-		{key: "p2.p2_0", expected: "p2_0_val"},
-		{key: "p2.p2_1.p2_1_0", expected: "p2_1_0_val"},
+		{key: "p2/p2_0", expected: "p2_0_val"},
+		{key: "p2/p2_1/p2_1_0", expected: "p2_1_0_val"},
 	}
 
 	for k, v := range tt {
