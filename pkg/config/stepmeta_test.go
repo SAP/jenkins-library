@@ -282,6 +282,22 @@ func TestGetContextDefaults(t *testing.T) {
 	t.Run("Positive case", func(t *testing.T) {
 		metadata := StepData{
 			Spec: StepSpec{
+				Inputs: StepInputs{
+					Resources: []StepResources{
+						{
+							Name: "buildDescriptor",
+							Type: "stash",
+						},
+						{
+							Name: "source",
+							Type: "stash",
+						},
+						{
+							Name: "test",
+							Type: "nonce",
+						},
+					},
+				},
 				Containers: []Container{
 					{
 						Command: []string{"test/command"},
@@ -323,6 +339,7 @@ func TestGetContextDefaults(t *testing.T) {
 		var d PipelineDefaults
 		d.ReadPipelineDefaults([]io.ReadCloser{cd})
 
+		assert.Equal(t, []interface{}{"buildDescriptor", "source"}, d.Defaults[0].Steps["testStep"]["stashContent"], "stashContent default not available")
 		assert.Equal(t, "test/command", d.Defaults[0].Steps["testStep"]["containerCommand"], "containerCommand default not available")
 		assert.Equal(t, "testcontainer", d.Defaults[0].Steps["testStep"]["containerName"], "containerName default not available")
 		assert.Equal(t, "/bin/bash", d.Defaults[0].Steps["testStep"]["containerShell"], "containerShell default not available")
