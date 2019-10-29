@@ -58,5 +58,3 @@ class PiperGoUtils implements Serializable {
         return false
     }
 }
-
-
