@@ -447,7 +447,7 @@ class WhitesourceExecuteScanTest extends BasePiperTest {
 
     @Test
     void testGo() {
-        nullScript.commonPipelineEnvironment.gitHttpsUrl = 'https://github.wdf.sap.corp/test/golang'
+        nullScript.commonPipelineEnvironment.gitHttpsUrl = 'https://github.com/test/golang'
 
         helper.registerAllowedMethod("readFile", [Map.class], {
             map ->
@@ -500,12 +500,12 @@ class WhitesourceExecuteScanTest extends BasePiperTest {
         assertThat(writeFileRule.files['./myProject/wss-unified-agent.config.7d1c90ed46c66061fc8ea45dd96e209bf767f038'], containsString('productName=testProductName'))
         assertThat(writeFileRule.files['./myProject/wss-unified-agent.config.7d1c90ed46c66061fc8ea45dd96e209bf767f038'], containsString('userKey=token-0815'))
         assertThat(writeFileRule.files['./myProject/wss-unified-agent.config.7d1c90ed46c66061fc8ea45dd96e209bf767f038'], containsString('productVersion=1'))
-        assertThat(writeFileRule.files['./myProject/wss-unified-agent.config.7d1c90ed46c66061fc8ea45dd96e209bf767f038'], containsString('projectName=github.wdf.sap.corp/test/golang.myProject'))
+        assertThat(writeFileRule.files['./myProject/wss-unified-agent.config.7d1c90ed46c66061fc8ea45dd96e209bf767f038'], containsString('projectName=github.com/test/golang.myProject'))
     }
 
     @Test
     void testGoDefaults() {
-        nullScript.commonPipelineEnvironment.gitHttpsUrl = 'https://github.wdf.sap.corp/test/golang'
+        nullScript.commonPipelineEnvironment.gitHttpsUrl = 'https://github.com/test/golang'
 
         helper.registerAllowedMethod("readFile", [Map.class], {
             map ->
@@ -557,7 +557,7 @@ class WhitesourceExecuteScanTest extends BasePiperTest {
         assertThat(writeFileRule.files['./wss-unified-agent.config.d3aa80454919391024374ba46b4df082d15ab9a3'], containsString('productName=testProductName'))
         assertThat(writeFileRule.files['./wss-unified-agent.config.d3aa80454919391024374ba46b4df082d15ab9a3'], containsString('userKey=token-0815'))
         assertThat(writeFileRule.files['./wss-unified-agent.config.d3aa80454919391024374ba46b4df082d15ab9a3'], containsString('productVersion=1'))
-        assertThat(writeFileRule.files['./wss-unified-agent.config.d3aa80454919391024374ba46b4df082d15ab9a3'], containsString('projectName=github.wdf.sap.corp/test/golang'))
+        assertThat(writeFileRule.files['./wss-unified-agent.config.d3aa80454919391024374ba46b4df082d15ab9a3'], containsString('projectName=github.com/test/golang'))
     }
 
 
