@@ -11,11 +11,11 @@ import org.jenkinsci.plugins.workflow.steps.FlowInterruptedException
 @Field def STEP_NAME = getClass().getName()
 @Field Set GENERAL_CONFIG_KEYS = [
     /**
-     * Specifies the host address
+     * Specifies the host address of the SAP Cloud Platform ABAP Environment system
      */
     'host',
     /**
-     * Specifies the name of the Repository / Software Component
+     * Specifies the name of the Repository (Software Component) on the SAP Cloud Platform ABAP Environment system
      */
     'repositoryName'
 ]
@@ -31,9 +31,11 @@ import org.jenkinsci.plugins.workflow.steps.FlowInterruptedException
 ])
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
 /**
- * Pulls a Repository / Software Component to a SAP Cloud Platform ABAP Environment System.
+ * Pulls a Repository (Software Component) to a SAP Cloud Platform ABAP Environment system.
  *
- * Prerequisite: the Communication Arrangement for the Communication Scenario SAP_COM_0510 has to be set up, including a Communication System and Communication Arrangement
+ * !!! note "Git Repository and Software Component"
+ *       In SAP Cloud Platform ABAP Environment Git repositories are wrapped in Software Components (which are managed in the App "Manage Software Components")
+ *       Currently, those two names are used synonymous.
  */
 @GenerateDocumentation
 void call(Map parameters = [:]) {
