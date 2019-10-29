@@ -17,6 +17,8 @@ import (
 type execMockRunner struct {
 	dir   []string
 	calls []execCall
+	stdout io.Writer
+	stderr io.Writer
 }
 
 type execCall struct {
@@ -27,6 +29,8 @@ type execCall struct {
 type shellMockRunner struct {
 	dir   string
 	calls []string
+	stdout io.Writer
+	stderr io.Writer
 }
 
 func (m *execMockRunner) Dir(d string) {
@@ -42,13 +46,32 @@ func (m *execMockRunner) RunExecutable(e string, p ...string) error {
 	return nil
 }
 
+func (m * execMockRunner) Stdout(out io.Writer) {
+	m.stdout = out
+}
+
+
+func (m * execMockRunner) Stderr(err io.Writer) {
+	m.stderr = err
+}
+
 func(m *shellMockRunner) Dir(d string) {
 	m.dir = d
 }
 
 func(m *shellMockRunner) RunShell(s string, c string) error {
+
 	m.calls = append(m.calls, c)
 	return nil
+}
+
+func (m * shellMockRunner) Stdout(out io.Writer) {
+	m.stdout = out
+}
+
+
+func (m * shellMockRunner) Stderr(err io.Writer) {
+	m.stderr = err
 }
 
 type stepOptions struct {
