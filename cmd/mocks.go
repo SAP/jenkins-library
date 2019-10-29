@@ -14,6 +14,11 @@ type execCall struct {
 	params []string
 }
 
+type shellMockRunner struct {
+	dir   string
+	calls []string
+}
+
 func (m *execMockRunner) Dir(d string) {
 	m.dir = append(m.dir, d)
 }
@@ -26,3 +31,13 @@ func (m *execMockRunner) RunExecutable(e string, p ...string) error {
 	m.calls = append(m.calls, exec)
 	return nil
 }
+
+func(m *shellMockRunner) Dir(d string) {
+	m.dir = d
+}
+
+func(m *shellMockRunner) RunShell(s string, c string) error {
+	m.calls = append(m.calls, c)
+	return nil
+}
+
