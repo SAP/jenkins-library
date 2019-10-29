@@ -10,7 +10,7 @@ func TestRunKarma(t *testing.T) {
 	t.Run("success case", func(t *testing.T) {
 		opts := karmaExecuteTestsOptions{ModulePath: "./test", InstallCommand: "npm install test", RunCommand: "npm run test"}
 
-		e := mockRunner{}
+		e := execMockRunner{}
 		err := runKarma(opts, &e)
 
 		assert.NoError(t, err, "error occured but no error expected")
@@ -26,7 +26,7 @@ func TestRunKarma(t *testing.T) {
 	t.Run("error case install command", func(t *testing.T) {
 		opts := karmaExecuteTestsOptions{ModulePath: "./test", InstallCommand: "fail install test", RunCommand: "npm run test"}
 
-		e := mockRunner{}
+		e := execMockRunner{}
 		err := runKarma(opts, &e)
 		assert.Error(t, err, "error expected but none occcured")
 	})
@@ -34,7 +34,7 @@ func TestRunKarma(t *testing.T) {
 	t.Run("error case run command", func(t *testing.T) {
 		opts := karmaExecuteTestsOptions{ModulePath: "./test", InstallCommand: "npm install test", RunCommand: "fail run test"}
 
-		e := mockRunner{}
+		e := execMockRunner{}
 		err := runKarma(opts, &e)
 		assert.Error(t, err, "error expected but none occcured")
 	})

@@ -4,7 +4,7 @@ import (
 	"fmt"
 )
 
-type mockRunner struct {
+type execMockRunner struct {
 	dir   []string
 	calls []execCall
 }
@@ -14,11 +14,11 @@ type execCall struct {
 	params []string
 }
 
-func (m *mockRunner) Dir(d string) {
+func (m *execMockRunner) Dir(d string) {
 	m.dir = append(m.dir, d)
 }
 
-func (m *mockRunner) RunExecutable(e string, p ...string) error {
+func (m *execMockRunner) RunExecutable(e string, p ...string) error {
 	if e == "fail" {
 		return fmt.Errorf("error case")
 	}
