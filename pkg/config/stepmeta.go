@@ -171,7 +171,7 @@ func (m *StepData) GetContextParameterFilters() StepFilters {
 	return filters
 }
 
-// GetContextDefaults retrieves context defaults like container image, name, env vars, ...
+// GetContextDefaults retrieves context defaults like container image, name, env vars, resources, ...
 // It only supports scenarios with one container and optionally one sidecar
 func (m *StepData) GetContextDefaults(stepName string) (io.ReadCloser, error) {
 
@@ -214,6 +214,16 @@ func (m *StepData) GetContextDefaults(stepName string) (io.ReadCloser, error) {
 	//p["containerPortMappings"] = m.Spec.Sidecars[0].
 	//p["sidecarOptions"] = m.Spec.Sidecars[0].
 	//p["sidecarVolumeBind"] = m.Spec.Sidecars[0].
+
+	if len(m.Spec.Inputs.Resources) > 0 {
+		var resources []string
+		for _, resource := range m.Spec.Inputs.Resources {
+			if resource.Type == "stash" {
+				resources = append(resources, resource.Name)
+			}
+		}
+		p["stashContent"] = resources
+	}
 
 	c := Config{
 		Steps: map[string]map[string]interface{}{
