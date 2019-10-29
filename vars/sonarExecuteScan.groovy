@@ -5,7 +5,7 @@ import com.sap.piper.Utils
 import static com.sap.piper.Prerequisites.checkScript
 
 import groovy.transform.Field
-import groovy.text.SimpleTemplateEngine
+import groovy.text.GStringTemplateEngine
 
 import java.nio.charset.StandardCharsets
 
@@ -14,7 +14,7 @@ import java.nio.charset.StandardCharsets
 @Field Set GENERAL_CONFIG_KEYS = [
     /**
      * Pull-Request voting only:
-     * The URL to the Github API. see https://docs.sonarqube.org/display/PLUG/GitHub+Plugin#GitHubPlugin-Usage
+     * The URL to the Github API. see [GitHub plugin docs](https://docs.sonarqube.org/display/PLUG/GitHub+Plugin#GitHubPlugin-Usage)
      * deprecated: only supported in LTS / < 7.2
      */
     'githubApiUrl',
@@ -38,7 +38,7 @@ import java.nio.charset.StandardCharsets
      */
     'githubTokenCredentialsId',
     /**
-     * The Jenkins credentialsId for a SonarQube token. It is needed for non-anonymous analysis runs. see https://sonarcloud.io/account/security
+     * The Jenkins credentialsId for a SonarQube token. It is needed for non-anonymous analysis runs. see [SonarQube docs](https://docs.sonarqube.org/latest/user-guide/user-token/)
      * @possibleValues Jenkins credential id
      */
     'sonarTokenCredentialsId',
@@ -62,7 +62,7 @@ import java.nio.charset.StandardCharsets
     'disableInlineComments',
     /**
      * Name of the docker image that should be used. If empty, Docker is not used and the command is executed directly on the Jenkins system.
-     * see dockerExecute
+     * see [dockerExecute](dockerExecute.md)
      */
     'dockerImage',
     /**
@@ -120,21 +120,22 @@ void call(Map parameters = [:]) {
             configuration.options = [].plus(configuration.options)
 
         def worker = { config ->
-            withSonarQubeEnv(config.instance) {
-                try{
-                    loadSonarScanner(config)
+            try {
+                withSonarQubeEnv(config.instance) {
 
-                    loadCertificates(config)
+                        loadSonarScanner(config)
 
-                    if(config.organization) config.options.add("sonar.organization=${config.organization}")
-                    if(config.projectVersion) config.options.add("sonar.projectVersion=${config.projectVersion}")
-                    // prefix options
-                    config.options = config.options.collect { it.startsWith('-D') ? it : "-D${it}" }
+                        loadCertificates(config)
 
-                    sh "PATH=\$PATH:${env.WORKSPACE}/.sonar-scanner/bin sonar-scanner ${config.options.join(' ')}"
-                }finally{
-                    sh 'rm -rf .sonar-scanner .certificates .scannerwork'
+                        if(config.organization) config.options.add("sonar.organization=${config.organization}")
+                        if(config.projectVersion) config.options.add("sonar.projectVersion=${config.projectVersion}")
+                        // prefix options
+                        config.options = config.options.collect { it.startsWith('-D') ? it : "-D${it}" }
+
+                        sh "PATH=\$PATH:${env.WORKSPACE}/.sonar-scanner/bin sonar-scanner ${config.options.join(' ')}"
                 }
+            } finally {
+                sh 'rm -rf .sonar-scanner .certificates .scannerwork'
             }
         }
 
