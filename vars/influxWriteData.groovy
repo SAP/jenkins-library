@@ -45,7 +45,12 @@ import groovy.transform.Field
      * Defines if a dedicated node/executor should be created in the pipeline run.
      * This is especially relevant when running the step in a declarative `POST` stage where by default no executor is available.
      */
-    'wrapInNode'
+    'wrapInNode',
+    /**
+     * Defines the class to be used for the selected target.
+     * This is especially relevant for jenkins instances using InfluxDB plugin 2.0.2+ .
+     */
+    'influxDbPluginClass'
 ])
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
 
@@ -84,7 +89,8 @@ void call(Map parameters = [:]) {
                 artifactVersion: script.commonPipelineEnvironment.getArtifactVersion(),
                 influxPrefix: script.commonPipelineEnvironment.getGithubOrg() && script.commonPipelineEnvironment.getGithubRepo()
                     ? "${script.commonPipelineEnvironment.getGithubOrg()}_${script.commonPipelineEnvironment.getGithubRepo()}"
-                    : null
+                    : null,
+                influxDbPluginClass: 'InfluxDbPublisher'
             ])
             .mixin(parameters, PARAMETER_KEYS)
             .addIfNull('customData', InfluxData.getInstance().getFields().jenkins_custom_data)
@@ -108,6 +114,7 @@ void call(Map parameters = [:]) {
         echo """[${STEP_NAME}]----------------------------------------------------------
 Artifact version: ${config.artifactVersion}
 Influx server: ${config.influxServer}
+influxDbPluginClass: ${config.influxDbPluginClass}
 Influx prefix: ${config.influxPrefix}
 InfluxDB data: ${config.customData}
 InfluxDB data tags: ${config.customDataTags}
@@ -133,7 +140,7 @@ private void writeToInflux(config, script){
     if (config.influxServer) {
         try {
             step([
-                $class: 'InfluxDbPublisher',
+                $class: config.influxDbPluginClass,
                 selectedTarget: config.influxServer,
                 customPrefix: config.influxPrefix,
                 customData: config.customData.size()>0 ? config.customData : null,
