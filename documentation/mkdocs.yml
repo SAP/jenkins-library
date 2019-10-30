@@ -65,7 +65,7 @@ nav:
         - pipelineStashFilesBeforeBuild: steps/pipelineStashFilesBeforeBuild.md
         - piperPublishWarnings: steps/piperPublishWarnings.md
         - prepareDefaultValues: steps/prepareDefaultValues.md
-        - pullGitRepositoryToAbapInSapCloudPlatform: steps/pullGitRepositoryToAbapInSapCloudPlatform.md
+        - pullGitRepositoryToSapCloudPlatformAbapEnvironment: steps/pullGitRepositoryToSapCloudPlatformAbapEnvironment.md
         - seleniumExecuteTests: steps/seleniumExecuteTests.md
         - setupCommonPipelineEnvironment: steps/setupCommonPipelineEnvironment.md
         - slackSendNotification: steps/slackSendNotification.md
