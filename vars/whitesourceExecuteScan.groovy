@@ -9,7 +9,7 @@ import com.sap.piper.WhitesourceConfigurationHelper
 import com.sap.piper.mta.MtaMultiplexer
 import groovy.text.GStringTemplateEngine
 import groovy.transform.Field
-import groovy.text.SimpleTemplateEngine
+import groovy.text.GStringTemplateEngine
 
 import static com.sap.piper.Prerequisites.checkScript
 
@@ -408,8 +408,13 @@ private def triggerWhitesourceScanWithUserKey(script, config, utils, descriptorU
                     // archive whitesource debug files, if available
                     archiveArtifacts artifacts: "**/ws-l*", allowEmptyArchive: true
 
-                    // archive UA log file
-                    archiveArtifacts artifacts: "/var/log/UA/**/*.log", allowEmptyArchive: true
+                    try {
+                        // archive UA log file
+                        sh "cp -Rf --parents /var/log/UA/* ."
+                        archiveArtifacts artifacts: "**/var/log/UA/**/*.log", allowEmptyArchive: true
+                    } catch (e) {
+                        echo "Failed archiving WhiteSource UA logs"
+                    }
                 }
                 break
         }
@@ -583,7 +588,7 @@ def getReportHtml(config, vulnerabilityList, numSevereVulns) {
         }
     }
 
-    return SimpleTemplateEngine.newInstance().createTemplate(libraryResource('com.sap.piper/templates/whitesourceVulnerabilities.html')).make(
+    return GStringTemplateEngine.newInstance().createTemplate(libraryResource('com.sap.piper/templates/whitesourceVulnerabilities.html')).make(
         [
             now                         : now,
             reportTitle                 : config.whitesource.vulnerabilityReportTitle,

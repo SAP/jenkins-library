@@ -167,10 +167,10 @@ steps:
       - 'deployDescriptor'
       - 'pipelineConfigAndTests'
     cf_native:
-      dockerImage: 's4sdk/docker-cf-cli'
+      dockerImage: 'ppiper/cf-cli'
       dockerWorkspace: '/home/piper'
     mtaDeployPlugin:
-      dockerImage: 's4sdk/docker-cf-cli'
+      dockerImage: 'ppiper/cf-cli'
       dockerWorkspace: '/home/piper'
   containerExecuteStructureTests:
     containerCommand: '/busybox/tail -f /dev/null'
@@ -181,6 +181,12 @@ steps:
     stashContent:
       - 'tests'
     testReportFilePath: 'cst-report.json'
+  cloudFoundryCreateService:
+    cloudFoundry:
+      apiEndpoint: 'https://api.cf.eu10.hana.ondemand.com'
+      serviceManifest: 'service-manifest.yml'
+    dockerImage: 'ppiper/cf-cli'
+    dockerWorkspace: '/home/piper'
   detectExecuteScan:
     detect:
       projectVersion: '1'
@@ -322,7 +328,7 @@ steps:
     mtaJarLocation: '/opt/sap/mta/lib/mta.jar'
     dockerImage: 'ppiper/mta-archive-builder'
   neoDeploy:
-    dockerImage: 's4sdk/docker-neo-cli'
+    dockerImage: 'ppiper/neo-cli'
     deployMode: 'mta'
     warAction: 'deploy'
     extensions: []

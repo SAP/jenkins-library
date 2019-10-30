@@ -27,7 +27,9 @@ jobs:
         - curl -L --output cc-test-reporter https://codeclimate.com/downloads/test-reporter/test-reporter-latest-linux-amd64
         - chmod +x ./cc-test-reporter
         - ./cc-test-reporter before-build
-      script: mvn package --batch-mode
+      script:
+        - docker build -t piper:latest . 
+        - mvn package --batch-mode
       after_script:
         - JACOCO_SOURCE_PATH="src vars test" ./cc-test-reporter format-coverage target/site/jacoco/jacoco.xml --input-type jacoco
         - ./cc-test-reporter upload-coverage
