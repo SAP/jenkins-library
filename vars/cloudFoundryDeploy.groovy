@@ -136,6 +136,26 @@ import groovy.transform.Field
       * @possibleValues true, false
       */
     'verbose',
+    /**
+      * Enables monitoring of appliation from Dynatrace, creates user provided service and binds it to the application being deployed
+      * @possibleValues true, false
+      */
+    'dynatraceMonitoring',
+    /**
+      * Defines the Environment ID value required for creation of 'user provided service'
+      * Obtained while setting up PAAS integration in Dynatrace 
+      */
+    'cfEnvID',
+    /**
+      * Defines the API URL value required for creation of 'user provided service'
+      * Obtained while setting up PAAS integration in Dynatrace 
+      */
+    'cfAPIURL',
+    /**
+      * Defines the API Token value required for creation of 'user provided service'
+      * Obtained while setting up PAAS integration in Dynatrace 
+      */
+    'cfAPIToken'
 ]
 
 @Field Map CONFIG_KEY_COMPATIBILITY = [cloudFoundry: [apiEndpoint: 'cfApiEndpoint', appName:'cfAppName', credentialsId: 'cfCredentialsId', manifest: 'cfManifest', manifestVariablesFiles: 'cfManifestVariablesFiles', manifestVariables: 'cfManifestVariables',  org: 'cfOrg', space: 'cfSpace']]
@@ -173,7 +193,7 @@ void call(Map parameters = [:]) {
 
         def utils = parameters.juStabUtils ?: new Utils()
         def jenkinsUtils = parameters.jenkinsUtilsStub ?: new JenkinsUtils()
-
+        def stageName = parameters.stageName?:env.STAGE_NAME
         final script = checkScript(this, parameters) ?: this
 
         Map config = ConfigurationHelper.newInstance(this)
@@ -187,6 +207,10 @@ void call(Map parameters = [:]) {
             .withMandatoryProperty('cloudFoundry/org')
             .withMandatoryProperty('cloudFoundry/space')
             .withMandatoryProperty('cloudFoundry/credentialsId')
+            .addIfEmpty('dynatraceMonitoring', script.commonPipelineEnvironment.configuration.runStep?.get(stageName)?.dynatraceMonitoring)
+            .addIfEmpty('cfEnvID', script.commonPipelineEnvironment.configuration.runStep?.get(stageName)?.cfEnvID)
+            .addIfEmpty('cfAPIURL', script.commonPipelineEnvironment.configuration.runStep?.get(stageName)?.cfAPIURL)
+            .addIfEmpty('cfAPIToken', script.commonPipelineEnvironment.configuration.runStep?.get(stageName)?.cfAPIToken)
             .use()
 
         utils.pushToSWA([
@@ -209,6 +233,12 @@ void call(Map parameters = [:]) {
         boolean deployTriggered = false
         boolean deploySuccess = true
         try {
+            if(config.dynatraceMonitoring){
+                   executeDocker(script: this, dockerImage:'docker.wdf.sap.corp:50000/piper/cf-cli', dockerWorkspace: '/home/piper',  dockerEnvVars: ["CF_HOME": '/home/piper', "CF_PLUGIN_HOME": '/home/piper'])
+                      {
+                         createUPSDynatrace(config)  
+                      }
+             }
             if (config.deployTool == 'mtaDeployPlugin') {
                 deployTriggered = true
                 handleMTADeployment(config, script)
@@ -498,4 +528,47 @@ private void reportToInflux(script, config, deploySuccess, JenkinsUtils jenkinsU
         cfSpace: config.cloudFoundry.space,
     ]]
     influxWriteData script: script, customData: [:], customDataTags: [:], customDataMap: deploymentData, customDataMapTags: deploymentDataTags
+}
+
+private void createUPSDynatrace (config) {
+    
+    withCredentials([usernamePassword(
+        credentialsId: config.cloudFoundry.credentialsId,
+        passwordVariable: 'password',
+        usernameVariable: 'username'
+    )]) {
+        def cfTraceFile = 'cf.log'
+
+        def deployScript = """#!/bin/bash
+            set +x
+            export HOME=${config.dockerWorkspace}
+            export CF_TRACE=${cfTraceFile}
+            cf login -u \"${username}\" -p '${password}' -a ${config.cloudFoundry.apiEndpoint} -o \"${config.cloudFoundry.org}\" -s \"${config.cloudFoundry.space}\" ${config.loginParameters}
+            cf unbind-service '${config.cloudFoundry.appName}' dynatrace-service
+            cf delete-service dynatrace-service -f            
+            cf cups dynatrace-service -p "{\"apitoken\":\"${config.cfAPIToken}\",\"apiurl\":\"${config.cfAPIURL}\",\"environmentid\":\"${config.cfEnvID}\"}" """
+        
+        if(config.verbose) {
+            // Password contained in output below is hidden by withCredentials
+            echo "[INFO][${STEP_NAME}] Executing command: '${deployScript}'."
+        }
+        
+        def returnCode = sh returnStatus: true, script: deployScript
+        if(config.verbose || returnCode != 0) {
+            if(fileExists(file: cfTraceFile)) {
+                echo  '### START OF CF CLI TRACE OUTPUT ###'
+                // Would be nice to inline the two next lines, but that is not understood by the test framework
+                def cfTrace =  readFile(file: cfTraceFile)
+                echo cfTrace
+                echo '### END OF CF CLI TRACE OUTPUT ###'
+            } else {
+                echo "No trace file found at '${cfTraceFile}'"
+            }
+        }
+
+        if(returnCode != 0){
+            error "[${STEP_NAME}] ERROR: The execution of the cups command failed, see the log for details."
+        }
+        sh "cf logout"
+    }
 }
