@@ -60,13 +60,19 @@ void call(Map parameters = [:]) {
         String urlString = configuration.host + '/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY/Pull'
         echo "[${STEP_NAME}] General Parameters: URL = \"${urlString}\", repositoryName = \"${configuration.repositoryName}\""
 
-        String urlPullEntity = triggerPull(configuration, urlString, authToken)
 
-        if (urlPullEntity != null) {
-            String finalStatus = pollPullStatus(urlPullEntity, authToken)
-            if (finalStatus != 'S') {
-                error "[${STEP_NAME}] Pull Failed"
+        try {
+            String urlPullEntity = triggerPull(configuration, urlString, authToken)
+            if (urlPullEntity != null) {
+                String finalStatus = pollPullStatus(urlPullEntity, authToken)
+                if (finalStatus != 'S') {
+                    error "[${STEP_NAME}] Pull Failed"
+                }
             }
+            workspaceCleanup()
+        } catch (err) {
+            workspaceCleanup()
+            throw err
         }
     }
 }
@@ -74,39 +80,35 @@ void call(Map parameters = [:]) {
 private String triggerPull(Map configuration, String url, String authToken) {
 
     String entityUri = null
-    String headerFile = "headerAuth.txt"
 
     def xCsrfTokenScript = """#!/bin/bash
         curl -I -X GET ${url} \
         -H 'Authorization: Basic ${authToken}' \
         -H 'Accept: application/json' \
         -H 'x-csrf-token: fetch' \
-        -D ${headerFile} \
+        -D ${HeaderFiles.authFile} \
     """
 
     sh ( script : xCsrfTokenScript, returnStdout: true )
 
-    HttpHeaderProperties headerProperties = new HttpHeaderProperties(readFile(headerFile))
+    HttpHeaderProperties headerProperties = new HttpHeaderProperties(readFile(HeaderFiles.authFile))
     checkRequestStatus(headerProperties)
 
-    String headerFilePost = "headerPost.txt"
     def scriptPull = """#!/bin/bash
         curl -X POST \"${url}\" \
         -H 'Authorization: Basic ${authToken}' \
         -H 'Accept: application/json' \
         -H 'Content-Type: application/json' \
         -H 'x-csrf-token: ${headerProperties.xCsrfToken}' \
-        --cookie ${headerFile} \
-        -D ${headerFilePost} \
+        --cookie ${HeaderFiles.authFile} \
+        -D ${HeaderFiles.postFile} \
         -d '{ \"sc_name\": \"${configuration.repositoryName}\" }'
     """
     def response = sh (
         script : scriptPull,
         returnStdout: true )
 
-    checkRequestStatus(new HttpHeaderProperties(readFile(headerFilePost)))
-    removeFile(headerFile)
-    removeFile(headerFilePost)
+    checkRequestStatus(new HttpHeaderProperties(readFile(HeaderFiles.postFile)))
 
     JsonSlurper slurper = new JsonSlurper()
     Map responseJson = slurper.parseText(response)
@@ -134,14 +136,13 @@ private String pollPullStatus(String url, String authToken) {
             curl -X GET "${url}" \
             -H 'Authorization: Basic ${authToken}' \
             -H 'Accept: application/json' \
-            -D ${headerFile}
+            -D ${HeaderFiles.pollFile}
         """
         def pollResponse = sh (
             script : pollScript,
             returnStdout: true )
 
-        checkRequestStatus(new HttpHeaderProperties(readFile(headerFile)))
-        removeFile(headerFile)
+        checkRequestStatus(new HttpHeaderProperties(readFile(HeaderFiles.pollFile)))
 
         JsonSlurper slurper = new JsonSlurper()
         Map pollResponseJson = slurper.parseText(pollResponse)
@@ -164,12 +165,13 @@ private void checkRequestStatus(HttpHeaderProperties httpHeader) {
     }
 }
 
-private void removeFile(String file) {
-    returnCode = sh ( returnStdout : true,
-        script : """#!/bin/bash
-        rm ${file}
+private void workspaceCleanup() {
+    String cleanupScript = """#!/bin/bash
+            rm -f ${HeaderFiles.authFile}
+            rm -f ${HeaderFiles.postFile}
+            rm -f ${HeaderFiles.pollFile}
         """
-    )
+    sh ( script : cleanupScript, returnStdout : true )
 }
 
 public class HttpHeaderProperties{
@@ -191,4 +193,11 @@ public class HttpHeaderProperties{
             xCsrfToken = xCsrfTokenRegex[0]
         }
     }
+}
+
+public class HeaderFiles{
+    
+    static final String authFile = "headerFileAuth.txt"
+    static final String postFile = "headerFilePost.txt"
+    static final String pollFile = "headerFilePoll.txt"
 }
