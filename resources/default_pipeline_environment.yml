@@ -157,6 +157,7 @@ steps:
     deployTool: 'cf_native'
     deployType: 'standard'
     keepOldInstance: false
+    dynatracemonitoring: false
     cfNativeDeployParameters: ''
     mtaDeployParameters: '-f'
     mtaExtensionDescriptor: ''
