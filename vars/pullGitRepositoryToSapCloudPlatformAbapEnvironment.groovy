@@ -69,6 +69,7 @@ void call(Map parameters = [:]) {
                 if (finalStatus != 'S') {
                     error "[${STEP_NAME}] Pull Failed"
                 }
+
             }
             workspaceCleanup(headerFiles)
         } catch (err) {
