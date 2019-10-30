@@ -21,8 +21,8 @@ withCredentials([usernamePassword(credentialsId: 'myCredentialsId', usernameVari
     pullGitRepositoryToSapCloudPlatformAbapEnvironment(
         host : 'https://host.com', 
         repositoryName : '/DMO/GIT_REPOSITORY',
-        username : "$USER",
-        password : "$PASSWORD",
+        username : "\$USER",
+        password : "\$PASSWORD",
         script : this
     ) 
 }
