@@ -52,7 +52,7 @@ void call(Map parameters = [:]) {
             .withMandatoryProperty('repositoryName', 'Repository / Software Component not provided')
             .withMandatoryProperty('username')
             .withMandatoryProperty('password')
-            collectValodationFailures()
+            .collectValidationFailures()
             .use()
 
         String usernameColonPassword = configuration.username + ":" + configuration.password
@@ -82,14 +82,12 @@ private String triggerPull(Map configuration, String url, String authToken) {
         -H 'Accept: application/json' \
         -H 'x-csrf-token: fetch' \
         -D ${headerFile} \
-        | awk 'BEGIN {FS=": "}/^x-csrf-token/{print \$2}'
     """
 
-    def xCsrfToken = sh (
-        script : xCsrfTokenScript,
-        returnStdout: true )
+    sh ( script : xCsrfTokenScript, returnStdout: true )
 
-    checkRequestStatus(headerFile)
+    HttpHeaderProperties headerProperties = new HttpHeaderProperties(readFile(headerFile))
+    checkRequestStatus(headerProperties)
 
     String headerFilePost = "headerPost.txt"
     def scriptPull = """#!/bin/bash
@@ -97,7 +95,7 @@ private String triggerPull(Map configuration, String url, String authToken) {
         -H 'Authorization: Basic ${authToken}' \
         -H 'Accept: application/json' \
         -H 'Content-Type: application/json' \
-        -H 'x-csrf-token: ${xCsrfToken.trim()}' \
+        -H 'x-csrf-token: ${headerProperties.xCsrfToken}' \
         --cookie ${headerFile} \
         -D ${headerFilePost} \
         -d '{ \"sc_name\": \"${configuration.repositoryName}\" }'
@@ -106,7 +104,7 @@ private String triggerPull(Map configuration, String url, String authToken) {
         script : scriptPull,
         returnStdout: true )
 
-    checkRequestStatus(headerFilePost)
+    checkRequestStatus(new HttpHeaderProperties(readFile(headerFilePost)))
 
     JsonSlurper slurper = new JsonSlurper()
     Map responseJson = slurper.parseText(response)
@@ -140,7 +138,7 @@ private String pollPullStatus(String url, String authToken) {
             script : pollScript,
             returnStdout: true )
 
-        checkRequestStatus(headerFile)
+        checkRequestStatus(new HttpHeaderProperties(readFile(headerFile)))
 
         JsonSlurper slurper = new JsonSlurper()
         Map pollResponseJson = slurper.parseText(pollResponse)
@@ -154,23 +152,29 @@ private String pollPullStatus(String url, String authToken) {
     return status
 }
 
-private void checkRequestStatus(String headerFile) {
-    String headerString = readFile(headerFile)
-    HttpHeader httpHeader = new HttpHeader(headerString)
+private void checkRequestStatus(HttpHeaderProperties httpHeader) {
     if (httpHeader.statusCode == null) {
         error "[${STEP_NAME}] Connection Failed: 503 Service Unavailable"
     }
     if (httpHeader.statusCode > 201) {
-        echo readFile(headerFile).toString()
         error "[${STEP_NAME}] Connection Failed: ${httpHeader.statusCode} ${httpHeader.statusMessage}"
     }
 }
 
-public class HttpHeader{
+private void removeFile(String file) {
+    returnCode = sh ( returnStdout : true,
+        script : """#!/bin/bash
+        rm ${file}
+        """
+    )
+}
+
+public class HttpHeaderProperties{
     Integer statusCode
     String statusMessage
+    String xCsrfToken
 
-    HttpHeader(String header) {
+    HttpHeaderProperties(String header) {
         def statusCodeRegex = header =~ /(?<=HTTP\/1.1\s)[0-9]{3}(?=\s)/
         if (statusCodeRegex.find()) {
             statusCode = statusCodeRegex[0].toInteger()
@@ -178,6 +182,10 @@ public class HttpHeader{
         def statusMessageRegex = header =~ /(?<=HTTP\/1.1\s[0-9]{3}\s).*/
         if (statusMessageRegex.find()) {
             statusMessage = statusMessageRegex[0]
+        }
+        def xCsrfTokenRegex = header =~ /(?<=x-csrf-token:\s).*/
+        if (xCsrfTokenRegex.find()) {
+            xCsrfToken = xCsrfTokenRegex[0]
         }
     }
 }

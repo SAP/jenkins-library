@@ -42,14 +42,15 @@ public class PullGitRepositoryToSapCloudPlatformAbapEnvironmentTest extends Base
 
     @Test
     public void pullSuccessful() {
-        shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, /.*x-csrf-token: fetch.*/, "TOKEN")
+        shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, /.*x-csrf-token: fetch.*/, null )
         shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, /.*POST.*/, /{"d" : { "__metadata" : { "uri" : "https:\/\/example.com\/URI" } , "status" : "R", "status_descr" : "RUNNING" }}/)
         shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, /.*https:\/\/example\.com.*/, /{"d" : { "__metadata" : { "uri" : "https:\/\/example.com\/URI" } , "status" : "S", "status_descr" : "SUCCESS" }}/)
 
         helper.registerAllowedMethod("readFile", [String.class], { 
             /HTTP\/1.1 200 OK
             set-cookie: sap-usercontext=sap-client=100; path=\/
-            content-type: application\/json; charset=utf-8/
+            content-type: application\/json; charset=utf-8
+            x-csrf-token: TOKEN/
         })
 
         loggingRule.expect("[pullGitRepositoryToSapCloudPlatformAbapEnvironment] Pull Status: RUNNING")
@@ -58,7 +59,7 @@ public class PullGitRepositoryToSapCloudPlatformAbapEnvironmentTest extends Base
 
         stepRule.step.pullGitRepositoryToSapCloudPlatformAbapEnvironment(script: nullScript, host: 'https://example.com', repositoryName: 'Z_DEMO_DM', username: 'user', password: 'password')
 
-        assertThat(shellRule.shell[0], containsString(/#!\/bin\/bash curl -I -X GET https:\/\/example.com\/sap\/opu\/odata\/sap\/MANAGE_GIT_REPOSITORY\/Pull -H 'Authorization: Basic dXNlcjpwYXNzd29yZA==' -H 'Accept: application\/json' -H 'x-csrf-token: fetch' -D headerAuth.txt | awk 'BEGIN {FS=": "}\/^x-csrf-token\/{print $2}'/))
+        assertThat(shellRule.shell[0], containsString(/#!\/bin\/bash curl -I -X GET https:\/\/example.com\/sap\/opu\/odata\/sap\/MANAGE_GIT_REPOSITORY\/Pull -H 'Authorization: Basic dXNlcjpwYXNzd29yZA==' -H 'Accept: application\/json' -H 'x-csrf-token: fetch' -D headerAuth.txt/))
         assertThat(shellRule.shell[1], containsString(/#!\/bin\/bash curl -X POST "https:\/\/example.com\/sap\/opu\/odata\/sap\/MANAGE_GIT_REPOSITORY\/Pull" -H 'Authorization: Basic dXNlcjpwYXNzd29yZA==' -H 'Accept: application\/json' -H 'Content-Type: application\/json' -H 'x-csrf-token: TOKEN' --cookie headerAuth.txt -D headerPost.txt -d '{ "sc_name": "Z_DEMO_DM" }'/))
         assertThat(shellRule.shell[2], containsString(/#!\/bin\/bash curl -X GET "https:\/\/example.com\/URI" -H 'Authorization: Basic dXNlcjpwYXNzd29yZA==' -H 'Accept: application\/json' -D headerPoll.txt/))
     }
@@ -168,8 +169,9 @@ public class PullGitRepositoryToSapCloudPlatformAbapEnvironmentTest extends Base
             sap-server: true
             sap-perf-fesrec: 72927.000000/
 
-        HttpHeader httpHeader = new HttpHeader(header)
+        HttpHeaderProperties httpHeader = new HttpHeaderProperties(header)
         assertThat(httpHeader.statusCode, equalTo(401))
         assertThat(httpHeader.statusMessage, containsString("Unauthorized"))
+        assertThat(httpHeader.xCsrfToken, containsString("TOKEN"))
     }
 }
