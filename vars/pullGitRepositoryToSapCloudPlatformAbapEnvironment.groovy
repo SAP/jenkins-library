@@ -44,18 +44,16 @@ void call(Map parameters = [:]) {
 
         def script = checkScript(this, parameters) ?: this
 
-        ConfigurationHelper configHelper = ConfigurationHelper.newInstance(this)
+        Map configuration = ConfigurationHelper.newInstance(this)
             .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS)
             .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS)
             .mixin(parameters, PARAMETER_KEYS)
-
-        Map configuration = configHelper.use()
-
-        configHelper
             .withMandatoryProperty('host', 'Host not provided')
             .withMandatoryProperty('repositoryName', 'Repository / Software Component not provided')
             .withMandatoryProperty('username')
             .withMandatoryProperty('password')
+            collectValodationFailures()
+            .use()
 
         String usernameColonPassword = configuration.username + ":" + configuration.password
         String authToken = usernameColonPassword.bytes.encodeBase64().toString()
