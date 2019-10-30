@@ -144,7 +144,7 @@ private String pollPullStatus(String url, String authToken) {
 
         checkRequestStatus(new HttpHeaderProperties(readFile(headerFile)))
         removeFile(headerFile)
-
+        echo pollResponse
         pollResponseJson = slurper.parseText(pollResponse)
         if (pollResponseJson.d != null) {
             status = pollResponseJson.d.status.toString()
