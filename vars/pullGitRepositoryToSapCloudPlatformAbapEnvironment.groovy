@@ -7,6 +7,7 @@ import groovy.json.JsonSlurper
 import hudson.AbortException
 import groovy.transform.Field
 import org.jenkinsci.plugins.workflow.steps.FlowInterruptedException
+import java.util.UUID
 
 @Field def STEP_NAME = getClass().getName()
 @Field Set GENERAL_CONFIG_KEYS = [
@@ -59,25 +60,25 @@ void call(Map parameters = [:]) {
         String authToken = usernameColonPassword.bytes.encodeBase64().toString()
         String urlString = configuration.host + '/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY/Pull'
         echo "[${STEP_NAME}] General Parameters: URL = \"${urlString}\", repositoryName = \"${configuration.repositoryName}\""
-
+        HeaderFiles headerFiles = new HeaderFiles()
 
         try {
-            String urlPullEntity = triggerPull(configuration, urlString, authToken)
+            String urlPullEntity = triggerPull(configuration, urlString, authToken, headerFiles)
             if (urlPullEntity != null) {
-                String finalStatus = pollPullStatus(urlPullEntity, authToken)
+                String finalStatus = pollPullStatus(urlPullEntity, authToken, headerFiles)
                 if (finalStatus != 'S') {
                     error "[${STEP_NAME}] Pull Failed"
                 }
             }
-            workspaceCleanup()
+            workspaceCleanup(headerFiles)
         } catch (err) {
-            workspaceCleanup()
+            workspaceCleanup(headerFiles)
             throw err
         }
     }
 }
 
-private String triggerPull(Map configuration, String url, String authToken) {
+private String triggerPull(Map configuration, String url, String authToken, HeaderFiles headerFiles) {
 
     String entityUri = null
 
@@ -86,12 +87,12 @@ private String triggerPull(Map configuration, String url, String authToken) {
         -H 'Authorization: Basic ${authToken}' \
         -H 'Accept: application/json' \
         -H 'x-csrf-token: fetch' \
-        -D ${HeaderFiles.authFile} \
+        -D ${headerFiles.authFile} \
     """
 
     sh ( script : xCsrfTokenScript, returnStdout: true )
 
-    HttpHeaderProperties headerProperties = new HttpHeaderProperties(readFile(HeaderFiles.authFile))
+    HttpHeaderProperties headerProperties = new HttpHeaderProperties(readFile(headerFiles.authFile))
     checkRequestStatus(headerProperties)
 
     def scriptPull = """#!/bin/bash
@@ -100,15 +101,15 @@ private String triggerPull(Map configuration, String url, String authToken) {
         -H 'Accept: application/json' \
         -H 'Content-Type: application/json' \
         -H 'x-csrf-token: ${headerProperties.xCsrfToken}' \
-        --cookie ${HeaderFiles.authFile} \
-        -D ${HeaderFiles.postFile} \
+        --cookie ${headerFiles.authFile} \
+        -D ${headerFiles.postFile} \
         -d '{ \"sc_name\": \"${configuration.repositoryName}\" }'
     """
     def response = sh (
         script : scriptPull,
         returnStdout: true )
 
-    checkRequestStatus(new HttpHeaderProperties(readFile(HeaderFiles.postFile)))
+    checkRequestStatus(new HttpHeaderProperties(readFile(headerFiles.postFile)))
 
     JsonSlurper slurper = new JsonSlurper()
     Map responseJson = slurper.parseText(response)
@@ -124,7 +125,7 @@ private String triggerPull(Map configuration, String url, String authToken) {
 
 }
 
-private String pollPullStatus(String url, String authToken) {
+private String pollPullStatus(String url, String authToken, HeaderFiles headerFiles) {
 
     String headerFile = "headerPoll.txt"
     String status = "R";
@@ -136,13 +137,13 @@ private String pollPullStatus(String url, String authToken) {
             curl -X GET "${url}" \
             -H 'Authorization: Basic ${authToken}' \
             -H 'Accept: application/json' \
-            -D ${HeaderFiles.pollFile}
+            -D ${headerFiles.pollFile}
         """
         def pollResponse = sh (
             script : pollScript,
             returnStdout: true )
 
-        checkRequestStatus(new HttpHeaderProperties(readFile(HeaderFiles.pollFile)))
+        checkRequestStatus(new HttpHeaderProperties(readFile(headerFiles.pollFile)))
 
         JsonSlurper slurper = new JsonSlurper()
         Map pollResponseJson = slurper.parseText(pollResponse)
@@ -162,11 +163,9 @@ private void checkRequestStatus(HttpHeaderProperties httpHeader) {
     }
 }
 
-private void workspaceCleanup() {
+private void workspaceCleanup(HeaderFiles headerFiles) {
     String cleanupScript = """#!/bin/bash
-            rm -f ${HeaderFiles.authFile}
-            rm -f ${HeaderFiles.postFile}
-            rm -f ${HeaderFiles.pollFile}
+            rm -f ${headerFiles.authFile} ${headerFiles.postFile} ${headerFiles.pollFile}
         """
     sh ( script : cleanupScript, returnStdout : true )
 }
@@ -193,7 +192,15 @@ public class HttpHeaderProperties{
 }
 
 public class HeaderFiles{
-    static final String authFile = "headerFileAuth.txt"
-    static final String postFile = "headerFilePost.txt"
-    static final String pollFile = "headerFilePoll.txt"
+
+    String authFile
+    String postFile
+    String pollFile
+
+    HeaderFiles() {
+        String uuid = UUID.randomUUID().toString()
+        this.authFile = "headerFileAuth-${uuid}.txt"
+        this.postFile = "headerFilePost-${uuid}.txt"
+        this.pollFile = "headerFilePoll-${uuid}.txt"
+    }
 }
