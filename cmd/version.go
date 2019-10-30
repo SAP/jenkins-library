@@ -22,7 +22,7 @@ func version(myVersionOptions versionOptions) error {
 		gitTag = GitTag
 	}
 
-	fmt.Printf("piper-version:\n    commit: \"%s\"\n    tag: \"%s\"\n", gitCommit, gitTag)
+	_, err := fmt.Printf("piper-version:\n    commit: \"%s\"\n    tag: \"%s\"\n", gitCommit, gitTag)
 
-	return nil
+	return err
 }
