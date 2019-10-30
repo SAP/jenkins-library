@@ -196,7 +196,6 @@ public class HttpHeaderProperties{
 }
 
 public class HeaderFiles{
-    
     static final String authFile = "headerFileAuth.txt"
     static final String postFile = "headerFilePost.txt"
     static final String pollFile = "headerFilePoll.txt"
