@@ -105,6 +105,8 @@ private String triggerPull(Map configuration, String url, String authToken) {
         returnStdout: true )
 
     checkRequestStatus(new HttpHeaderProperties(readFile(headerFilePost)))
+    removeFile(headerFile)
+    removeFile(headerFilePost)
 
     JsonSlurper slurper = new JsonSlurper()
     Map responseJson = slurper.parseText(response)
@@ -139,6 +141,7 @@ private String pollPullStatus(String url, String authToken) {
             returnStdout: true )
 
         checkRequestStatus(new HttpHeaderProperties(readFile(headerFile)))
+        removeFile(headerFile)
 
         JsonSlurper slurper = new JsonSlurper()
         Map pollResponseJson = slurper.parseText(pollResponse)
