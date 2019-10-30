@@ -126,7 +126,6 @@ private String pollPullStatus(String url, String authToken) {
 
     String headerFile = "headerPoll.txt"
     String status = "R";
-    Map pollResponseJson = null 
     while(status == "R") {
 
         Thread.sleep(5000)
@@ -143,9 +142,9 @@ private String pollPullStatus(String url, String authToken) {
 
         checkRequestStatus(new HttpHeaderProperties(readFile(headerFile)))
         removeFile(headerFile)
-        
+
         JsonSlurper slurper = new JsonSlurper()
-        pollResponseJson = slurper.parseText(pollResponse)
+        Map pollResponseJson = slurper.parseText(pollResponse)
         if (pollResponseJson.d != null) {
             status = pollResponseJson.d.status.toString()
         } else {
