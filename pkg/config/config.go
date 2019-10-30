@@ -6,6 +6,7 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
+	"strings"
 
 	"github.com/ghodss/yaml"
 	"github.com/pkg/errors"
@@ -39,8 +40,44 @@ func (c *Config) ReadConfig(configuration io.ReadCloser) error {
 	return nil
 }
 
+// ApplyAliasConfig adds configuration values available on aliases to primary configuration parameters
+func (c *Config) ApplyAliasConfig(parameters []StepParameters, filters StepFilters, stageName, stepName string) {
+	for _, p := range parameters {
+		c.General = setParamValueFromAlias(c.General, filters.General, p)
+		if c.Stages[stageName] != nil {
+			c.Stages[stageName] = setParamValueFromAlias(c.Stages[stageName], filters.Stages, p)
+		}
+		if c.Steps[stepName] != nil {
+			c.Steps[stepName] = setParamValueFromAlias(c.Steps[stepName], filters.Steps, p)
+		}
+	}
+}
+
+func setParamValueFromAlias(configMap map[string]interface{}, filter []string, p StepParameters) map[string]interface{} {
+	if configMap[p.Name] == nil && sliceContains(filter, p.Name) {
+		for _, a := range p.Aliases {
+			configMap[p.Name] = getDeepAliasValue(configMap, a.Name)
+			if configMap[p.Name] != nil {
+				return configMap
+			}
+		}
+	}
+	return configMap
+}
+
+func getDeepAliasValue(configMap map[string]interface{}, key string) interface{} {
+	parts := strings.Split(key, "/")
+	if len(parts) > 1 {
+		if configMap[parts[0]] == nil {
+			return nil
+		}
+		return getDeepAliasValue(configMap[parts[0]].(map[string]interface{}), strings.Join(parts[1:], "/"))
+	}
+	return configMap[key]
+}
+
 // GetStepConfig provides merged step configuration using defaults, config, if available
-func (c *Config) GetStepConfig(flagValues map[string]interface{}, paramJSON string, configuration io.ReadCloser, defaults []io.ReadCloser, filters StepFilters, stageName, stepName string) (StepConfig, error) {
+func (c *Config) GetStepConfig(flagValues map[string]interface{}, paramJSON string, configuration io.ReadCloser, defaults []io.ReadCloser, filters StepFilters, parameters []StepParameters, stageName, stepName string) (StepConfig, error) {
 	var stepConfig StepConfig
 	var d PipelineDefaults
 
@@ -52,6 +89,7 @@ func (c *Config) GetStepConfig(flagValues map[string]interface{}, paramJSON stri
 			//ignoring unavailability of config file since considered optional
 		}
 	}
+	c.ApplyAliasConfig(parameters, filters, stageName, stepName)
 
 	if err := d.ReadPipelineDefaults(defaults); err != nil {
 		switch err.(type) {
@@ -64,6 +102,7 @@ func (c *Config) GetStepConfig(flagValues map[string]interface{}, paramJSON stri
 
 	// first: read defaults & merge general -> steps (-> general -> steps ...)
 	for _, def := range d.Defaults {
+		def.ApplyAliasConfig(parameters, filters, stageName, stepName)
 		stepConfig.mixIn(def.General, filters.General)
 		stepConfig.mixIn(def.Steps[stepName], filters.Steps)
 	}
@@ -80,6 +119,12 @@ func (c *Config) GetStepConfig(flagValues map[string]interface{}, paramJSON stri
 	if len(paramJSON) != 0 {
 		var params map[string]interface{}
 		json.Unmarshal([]byte(paramJSON), &params)
+
+		//apply aliases
+		for _, p := range parameters {
+			params = setParamValueFromAlias(params, filters.Parameters, p)
+		}
+
 		stepConfig.mixIn(params, filters.Parameters)
 	}
 

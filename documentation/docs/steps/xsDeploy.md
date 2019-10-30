@@ -21,7 +21,7 @@ xsDeploy
     credentialsId: 'my-credentials-id',
     apiUrl: 'https://example.org/xs',
     space: 'mySpace',
-    org:: 'myOrg'
+    org: 'myOrg'
 ```
 
 Example configuration:
@@ -30,12 +30,11 @@ Example configuration:
 steps:
   <...>
   xsDeploy:
-    script: this,
     mtaPath: path/to/archiveFile.mtar
     credentialsId: my-credentials-id
     apiUrl: https://example.org/xs
     space: mySpace
-    org:: myOrg
+    org: myOrg
 ```
 
 [dockerExecute]: ../dockerExecute
