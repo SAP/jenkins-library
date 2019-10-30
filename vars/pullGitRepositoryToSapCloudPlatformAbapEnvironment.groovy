@@ -116,7 +116,7 @@ private String triggerPull(Map configuration, String url, String authToken) {
         entityUri = responseJson.d.__metadata.uri.toString()
         echo "[${STEP_NAME}] Pull Status: ${responseJson.d.status_descr.toString()}"
     } else {
-        error "[${STEP_NAME}] ${responseJson.error.message.value.toString()}"
+        error "[${STEP_NAME}] ${responseJson?.error?.message?.value?.toString()?:"No message available}"
     }
 
     echo "[${STEP_NAME}] Entity URI: ${entityUri}"
@@ -149,7 +149,7 @@ private String pollPullStatus(String url, String authToken) {
         if (pollResponseJson.d != null) {
             status = pollResponseJson.d.status.toString()
         } else {
-            error "[${STEP_NAME}] ${pollResponseJson.error.message.value.toString()}"
+            error "[${STEP_NAME}] ${pollResponseJson?.error?.message?.value?.toString()?:"No message available"}"
         }
         echo "[${STEP_NAME}] Pull Status: ${pollResponseJson.d.status_descr.toString()}"
     }
@@ -157,9 +157,6 @@ private String pollPullStatus(String url, String authToken) {
 }
 
 private void checkRequestStatus(HttpHeaderProperties httpHeader) {
-    if (httpHeader.statusCode == null) {
-        error "[${STEP_NAME}] Connection Failed: 503 Service Unavailable"
-    }
     if (httpHeader.statusCode > 201) {
         error "[${STEP_NAME}] Connection Failed: ${httpHeader.statusCode} ${httpHeader.statusMessage}"
     }
@@ -180,11 +177,11 @@ public class HttpHeaderProperties{
     String xCsrfToken
 
     HttpHeaderProperties(String header) {
-        def statusCodeRegex = header =~ /(?<=HTTP\/1.1\s)[0-9]{3}(?=\s)/
+        def statusCodeRegex = header =~ /(?<=HTTP\/1.[0-9]\s)[0-9]{3}(?=\s)/
         if (statusCodeRegex.find()) {
             statusCode = statusCodeRegex[0].toInteger()
         }
-        def statusMessageRegex = header =~ /(?<=HTTP\/1.1\s[0-9]{3}\s).*/
+        def statusMessageRegex = header =~ /(?<=HTTP\/1.[0-9]\s[0-9]{3}\s).*/
         if (statusMessageRegex.find()) {
             statusMessage = statusMessageRegex[0]
         }
