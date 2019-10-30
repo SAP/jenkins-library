@@ -112,7 +112,7 @@ steps:
 		defaults := []io.ReadCloser{ioutil.NopCloser(strings.NewReader(defaults1)), ioutil.NopCloser(strings.NewReader(defaults2))}
 
 		myConfig := ioutil.NopCloser(strings.NewReader(testConfig))
-		stepConfig, err := c.GetStepConfig(flags, paramJSON, myConfig, defaults, filters, "stage1", "step1")
+		stepConfig, err := c.GetStepConfig(flags, paramJSON, myConfig, defaults, filters, []StepParameters{}, "stage1", "step1")
 
 		assert.Equal(t, nil, err, "error occured but none expected")
 
@@ -151,7 +151,7 @@ steps:
 	t.Run("Failure case config", func(t *testing.T) {
 		var c Config
 		myConfig := ioutil.NopCloser(strings.NewReader("invalid config"))
-		_, err := c.GetStepConfig(nil, "", myConfig, nil, StepFilters{}, "stage1", "step1")
+		_, err := c.GetStepConfig(nil, "", myConfig, nil, StepFilters{}, []StepParameters{}, "stage1", "step1")
 		assert.EqualError(t, err, "failed to parse custom pipeline configuration: error unmarshalling \"invalid config\": error unmarshaling JSON: json: cannot unmarshal string into Go value of type config.Config", "default error expected")
 	})
 
@@ -159,7 +159,7 @@ steps:
 		var c Config
 		myConfig := ioutil.NopCloser(strings.NewReader(""))
 		myDefaults := []io.ReadCloser{ioutil.NopCloser(strings.NewReader("invalid defaults"))}
-		_, err := c.GetStepConfig(nil, "", myConfig, myDefaults, StepFilters{}, "stage1", "step1")
+		_, err := c.GetStepConfig(nil, "", myConfig, myDefaults, StepFilters{}, []StepParameters{}, "stage1", "step1")
 		assert.EqualError(t, err, "failed to parse pipeline default configuration: error unmarshalling \"invalid defaults\": error unmarshaling JSON: json: cannot unmarshal string into Go value of type config.Config", "default error expected")
 	})
 
@@ -185,6 +185,130 @@ func TestGetStepConfigWithJSON(t *testing.T) {
 			t.Errorf("got: %v, expected: %v", sc.Config["key1"], "flagVal1")
 		}
 	})
+}
+
+func TestApplyAliasConfig(t *testing.T) {
+	p := []StepParameters{
+		{
+			Name: "p0",
+			Aliases: []Alias{
+				{Name: "p0_notused"},
+			},
+		},
+		{
+			Name: "p1",
+			Aliases: []Alias{
+				{Name: "p1_alias"},
+			},
+		},
+		{
+			Name: "p2",
+			Aliases: []Alias{
+				{Name: "p2_alias/deep/test"},
+			},
+		},
+		{
+			Name: "p3",
+			Aliases: []Alias{
+				{Name: "p3_notused"},
+			},
+		},
+		{
+			Name: "p4",
+			Aliases: []Alias{
+				{Name: "p4_alias"},
+				{Name: "p4_2nd_alias"},
+			},
+		},
+		{
+			Name: "p5",
+			Aliases: []Alias{
+				{Name: "p5_notused"},
+			},
+		},
+		{
+			Name: "p6",
+			Aliases: []Alias{
+				{Name: "p6_1st_alias"},
+				{Name: "p6_alias"},
+			},
+		},
+	}
+
+	filters := StepFilters{
+		General: []string{"p1", "p2"},
+		Stages:  []string{"p4"},
+		Steps:   []string{"p6"},
+	}
+
+	c := Config{
+		General: map[string]interface{}{
+			"p0_notused": "p0_general",
+			"p1_alias":   "p1_general",
+			"p2_alias": map[string]interface{}{
+				"deep": map[string]interface{}{
+					"test": "p2_general",
+				},
+			},
+		},
+		Stages: map[string]map[string]interface{}{
+			"stage1": map[string]interface{}{
+				"p3_notused": "p3_stage",
+				"p4_alias":   "p4_stage",
+			},
+		},
+		Steps: map[string]map[string]interface{}{
+			"step1": map[string]interface{}{
+				"p5_notused": "p5_step",
+				"p6_alias":   "p6_step",
+			},
+		},
+	}
+
+	c.ApplyAliasConfig(p, filters, "stage1", "step1")
+
+	t.Run("Global", func(t *testing.T) {
+		assert.Nil(t, c.General["p0"])
+		assert.Equal(t, "p1_general", c.General["p1"])
+		assert.Equal(t, "p2_general", c.General["p2"])
+	})
+
+	t.Run("Stage", func(t *testing.T) {
+		assert.Nil(t, c.General["p3"])
+		assert.Equal(t, "p4_stage", c.Stages["stage1"]["p4"])
+	})
+
+	t.Run("Stage", func(t *testing.T) {
+		assert.Nil(t, c.General["p5"])
+		assert.Equal(t, "p6_step", c.Steps["step1"]["p6"])
+	})
+
+}
+
+func TestGetDeepAliasValue(t *testing.T) {
+	c := map[string]interface{}{
+		"p0": "p0_val",
+		"p1": 11,
+		"p2": map[string]interface{}{
+			"p2_0": "p2_0_val",
+			"p2_1": map[string]interface{}{
+				"p2_1_0": "p2_1_0_val",
+			},
+		},
+	}
+	tt := []struct {
+		key      string
+		expected interface{}
+	}{
+		{key: "p0", expected: "p0_val"},
+		{key: "p1", expected: 11},
+		{key: "p2/p2_0", expected: "p2_0_val"},
+		{key: "p2/p2_1/p2_1_0", expected: "p2_1_0_val"},
+	}
+
+	for k, v := range tt {
+		assert.Equal(t, v.expected, getDeepAliasValue(c, v.key), fmt.Sprintf("wrong return value for run %v", k+1))
+	}
 }
 
 func TestGetJSON(t *testing.T) {

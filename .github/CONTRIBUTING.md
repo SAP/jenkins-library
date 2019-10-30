@@ -1,5 +1,13 @@
 # Guidance on how to contribute
 
+**Table of contents:**
+
+1. [Using the issue tracker](#using-the-issue-tracker)
+1. [Changing the code-base](#changing-the-code-base)
+1. [Jenkins credential handling](#jenkins-credentials)
+1. [Code Style](#code-style)
+1. [References](#references)
+
 There are two primary ways to help:
 
 * Using the issue tracker, and
@@ -36,14 +44,6 @@ Implementation of a functionality and its documentation shall happen within the 
 
 Pipeline steps must not make use of return values. The pattern for sharing parameters between pipeline steps or between a pipeline step and a pipeline script is sharing values via the [`commonPipelineEnvironment`](../vars/commonPipelineEnvironment.groovy). Since there is no return value from a pipeline step the return value of a pipeline step is already `void` rather than `def`.
 
-### Code Style
-
-The code should follow any stylistic and architectural guidelines prescribed by the project. In the absence of guidelines, mimic the styles and patterns in the existing code-base.
-
-Variables, methods, types and so on shall have meaningful self describing names. Doing so makes understanding code easier and requires less commenting. It helps people who did not write the code to understand it better.
-
-Code shall contain comments to explain the intention of the code when it is unclear what the intention of the author was. In such cases, comments should describe the "why" and not the "what" (that is in the code already).
-
 #### EditorConfig
 
 To ensure a common file format, there is a `.editorConfig` file [in place](../.editorconfig). To respect this file, [check](http://editorconfig.org/#download) if your editor does support it natively or you need to download a plugin.
@@ -54,7 +54,24 @@ Write [meaningful commit messages](http://who-t.blogspot.de/2009/12/on-commit-me
 
 Good commit messages speed up the review process and help to keep this project maintainable in the long term.
 
+## Jenkins credential handling
+
+References to Jenkins credentials should have meaningful names.
+
+We are using the following approach for naming Jenkins credentials:
+
+For username/password credentials:
+`<tool>CredentialsId` like e.g. `neoCredentialsId`
+
+For other cases we add further information to the name like:
+
+* `gitSshCredentialsId` for ssh credentials
+* `githubTokenCredentialsId`for token/string credentials
+* `gcpFileCredentialsId` for file credentials
+
 ## Code Style
+
+Generally, the code should follow any stylistic and architectural guidelines prescribed by the project. In the absence of guidelines, mimic the styles and patterns in the existing code-base.
 
 The intention of this section is to describe the code style for this project. As reference document, the [Groovy's style guide](http://groovy-lang.org/style-guide.html) was taken. For further reading about Groovy's syntax and examples, please refer to this guide.
 
@@ -63,6 +80,12 @@ This project is intended to run in Jenkins [[2]](https://jenkins.io/doc/book/get
 Some Groovy's syntax is not yet supported by Jenkins. It is also the intention of this section to remark which Groovy's syntax is not yet supported by Jenkins.
 
 As Groovy supports 99% of Java’s syntax [[1]](http://groovy-lang.org/style-guide.html), many Java developers tend to write Groovy code using Java's syntax. Such a developer should also consider the following code style for this project.
+
+### General remarks
+
+Variables, methods, types and so on shall have meaningful self describing names. Doing so makes understanding code easier and requires less commenting. It helps people who did not write the code to understand it better.
+
+Code shall contain comments to explain the intention of the code when it is unclear what the intention of the author was. In such cases, comments should describe the "why" and not the "what" (that is in the code already).
 
 ### Omit semicolons
 
@@ -177,7 +200,7 @@ If the type of the exception thrown inside a try block is not important, catch a
 
 To check parameters, return values, and more, use the assert statement.
 
-## Reference
+## References
 
 [1] Groovy's syntax: [http://groovy-lang.org/style-guide.html](http://groovy-lang.org/style-guide.html)
 
