@@ -40,6 +40,7 @@ func Execute() {
 
 	rootCmd.AddCommand(ConfigCommand())
 	rootCmd.AddCommand(VersionCommand())
+	rootCmd.AddCommand(KarmaExecuteTestsCommand())
 
 	addRootFlags(rootCmd)
 	if err := rootCmd.Execute(); err != nil {
@@ -85,7 +86,7 @@ func PrepareConfig(cmd *cobra.Command, metadata *config.StepData, stepName strin
 		}
 
 		var err error
-		stepConfig, err = myConfig.GetStepConfig(flagValues, generalConfig.parametersJSON, customConfig, defaultConfig, filters, generalConfig.stageName, stepName)
+		stepConfig, err = myConfig.GetStepConfig(flagValues, generalConfig.parametersJSON, customConfig, defaultConfig, filters, metadata.Spec.Inputs.Parameters, generalConfig.stageName, stepName)
 		if err != nil {
 			return errors.Wrap(err, "retrieving step configuration failed")
 		}
