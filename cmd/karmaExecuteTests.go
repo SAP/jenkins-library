@@ -11,12 +11,10 @@ import (
 )
 
 func karmaExecuteTests(myKarmaExecuteTestsOptions karmaExecuteTestsOptions) error {
-	karmaLogger := log.Logger().WithField("stepName", "karmaExecuteTests")
-
 	c := command.Command{}
 	// reroute command output to loging framework
-	c.Stdout = karmaLogger.Writer()
-	c.Stderr = karmaLogger.WriterLevel(logrus.ErrorLevel)
+	c.Stdout = log.Logger().Writer()
+	c.Stderr = log.Logger().WriterLevel(logrus.ErrorLevel)
 	return runKarma(myKarmaExecuteTestsOptions, &c)
 }
 
@@ -27,7 +25,6 @@ func runKarma(myKarmaExecuteTestsOptions karmaExecuteTestsOptions, command execR
 	if err != nil {
 		log.Logger().
 			WithError(err).
-			WithField("stepName", "karmaExecuteTests").
 			WithField("command", myKarmaExecuteTestsOptions.InstallCommand).
 			Fatal("failed to execute install command")
 	}
@@ -38,7 +35,6 @@ func runKarma(myKarmaExecuteTestsOptions karmaExecuteTestsOptions, command execR
 	if err != nil {
 		log.Logger().
 			WithError(err).
-			WithField("stepName", "karmaExecuteTests").
 			WithField("command", myKarmaExecuteTestsOptions.RunCommand).
 			Fatal("failed to execute run command")
 	}
