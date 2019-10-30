@@ -4,11 +4,19 @@ import (
 	"strings"
 
 	"github.com/SAP/jenkins-library/pkg/command"
-	"github.com/pkg/errors"
+	"github.com/SAP/jenkins-library/pkg/log"
+
+	// TODO move dependency to pkg/log
+	"github.com/sirupsen/logrus"
 )
 
 func karmaExecuteTests(myKarmaExecuteTestsOptions karmaExecuteTestsOptions) error {
+	karmaLogger := log.Logger().WithField("stepName", "karmaExecuteTests")
+
 	c := command.Command{}
+	// reroute command output to loging framework
+	c.Stdout = karmaLogger.Writer()
+	c.Stderr = karmaLogger.WriterLevel(logrus.ErrorLevel)
 	return runKarma(myKarmaExecuteTestsOptions, &c)
 }
 
@@ -17,14 +25,22 @@ func runKarma(myKarmaExecuteTestsOptions karmaExecuteTestsOptions, command execR
 	command.Dir(myKarmaExecuteTestsOptions.ModulePath)
 	err := command.RunExecutable(installCommandTokens[0], installCommandTokens[1:]...)
 	if err != nil {
-		return errors.Wrapf(err, "failed to execute install command '%v'", myKarmaExecuteTestsOptions.InstallCommand)
+		log.Logger().
+			WithError(err).
+			WithField("stepName", "karmaExecuteTests").
+			WithField("command", myKarmaExecuteTestsOptions.InstallCommand).
+			Fatal("failed to execute install command")
 	}
 
 	runCommandTokens := tokenize(myKarmaExecuteTestsOptions.RunCommand)
 	command.Dir(myKarmaExecuteTestsOptions.ModulePath)
 	err = command.RunExecutable(runCommandTokens[0], runCommandTokens[1:]...)
 	if err != nil {
-		return errors.Wrapf(err, "failed to execute run command '%v'", myKarmaExecuteTestsOptions.RunCommand)
+		log.Logger().
+			WithError(err).
+			WithField("stepName", "karmaExecuteTests").
+			WithField("command", myKarmaExecuteTestsOptions.RunCommand).
+			Fatal("failed to execute run command")
 	}
 
 	return nil
