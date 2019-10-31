@@ -1,6 +1,8 @@
 package log
 
 import (
+	"io"
+
 	"github.com/sirupsen/logrus"
 )
 
@@ -30,4 +32,9 @@ func InitLogger(stepName string, verbose bool) error {
 	}
 	logger = logger.WithField("stepName", stepName)
 	return nil
+}
+
+// WriterWithErrorLevel returns a writer that logs with ERROR level.
+func WriterWithErrorLevel() *io.PipeWriter {
+	return Logger().WriterLevel(logrus.ErrorLevel)
 }

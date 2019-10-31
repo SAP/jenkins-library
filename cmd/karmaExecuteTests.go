@@ -5,16 +5,13 @@ import (
 
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/log"
-
-	// TODO move dependency to pkg/log
-	"github.com/sirupsen/logrus"
 )
 
 func karmaExecuteTests(myKarmaExecuteTestsOptions karmaExecuteTestsOptions) error {
 	c := command.Command{}
 	// reroute command output to loging framework
 	c.Stdout = log.Logger().Writer()
-	c.Stderr = log.Logger().WriterLevel(logrus.ErrorLevel)
+	c.Stderr = log.WriterWithErrorLevel()
 	return runKarma(myKarmaExecuteTestsOptions, &c)
 }
 
