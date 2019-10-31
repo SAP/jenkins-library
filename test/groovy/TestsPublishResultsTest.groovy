@@ -12,6 +12,7 @@ import static org.junit.Assert.assertEquals
 import static org.junit.Assert.assertTrue
 
 import util.Rules
+import minimatch.Minimatch
 
 class TestsPublishResultsTest extends BasePiperTest {
     Map publisherStepOptions
@@ -90,14 +91,17 @@ class TestsPublishResultsTest extends BasePiperTest {
         stepRule.step.testsPublishResults(script: nullScript, jacoco: true, cobertura: true)
 
         assertTrue('JaCoCo options are empty', publisherStepOptions.jacoco != null)
-        assertTrue('Cobertura options are empty', publisherStepOptions.cobertura != null)
         assertEquals('JaCoCo default pattern not set correct',
             '**/target/*.exec', publisherStepOptions.jacoco.execPattern)
-        assertEquals('Cobertura default pattern not set correct',
-            '**/target/coverage/cobertura-coverage.xml', publisherStepOptions.cobertura.coberturaReportFile)
         // ensure nothing else is published
         assertTrue('JUnit options are not empty', publisherStepOptions.junit == null)
         assertTrue('JMeter options are not empty', publisherStepOptions.jmeter == null)
+
+        assertTrue('Cobertura options are empty', publisherStepOptions.cobertura != null)
+        assertTrue('Cobertura default pattern is empty', publisherStepOptions.cobertura.coberturaReportFile != null)
+        String sampleCoberturaPathForJava = 'my/workspace/my/project/target/coverage/cobertura-coverage.xml'
+        assertTrue('Cobertura default pattern does not match files at target/coverage/cobertura-coverage.xml for Java projects',
+            Minimatch.minimatch(sampleCoberturaPathForJava, publisherStepOptions.cobertura.coberturaReportFile))
     }
 
     @Test
@@ -145,7 +149,7 @@ class TestsPublishResultsTest extends BasePiperTest {
                 }]
             }]
         }
-        
+
         stepRule.step.testsPublishResults(script: nullScript)
         assertJobStatusSuccess()
     }
