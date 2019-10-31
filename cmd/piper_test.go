@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"fmt"
 	"io"
 	"io/ioutil"
 	"strings"
@@ -13,10 +12,10 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-
 type execMockRunner struct {
 	dir   []string
 	calls []execCall
+	shouldFailWith error
 }
 
 type execCall struct {
@@ -27,6 +26,7 @@ type execCall struct {
 type shellMockRunner struct {
 	dir   string
 	calls []string
+	shouldFailWith error
 }
 
 func (m *execMockRunner) Dir(d string) {
@@ -34,19 +34,24 @@ func (m *execMockRunner) Dir(d string) {
 }
 
 func (m *execMockRunner) RunExecutable(e string, p ...string) error {
-	if e == "fail" {
-		return fmt.Errorf("error case")
+	if m.shouldFailWith != nil {
+		return m.shouldFailWith
 	}
 	exec := execCall{exec: e, params: p}
 	m.calls = append(m.calls, exec)
 	return nil
 }
 
-func(m *shellMockRunner) Dir(d string) {
+func (m *shellMockRunner) Dir(d string) {
 	m.dir = d
 }
 
-func(m *shellMockRunner) RunShell(s string, c string) error {
+func (m *shellMockRunner) RunShell(s string, c string) error {
+
+	if m.shouldFailWith != nil {
+		return m.shouldFailWith
+	}
+
 	m.calls = append(m.calls, c)
 	return nil
 }

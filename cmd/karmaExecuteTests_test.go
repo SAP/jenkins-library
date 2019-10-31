@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -24,17 +25,17 @@ func TestRunKarma(t *testing.T) {
 	})
 
 	t.Run("error case install command", func(t *testing.T) {
-		opts := karmaExecuteTestsOptions{ModulePath: "./test", InstallCommand: "fail install test", RunCommand: "npm run test"}
+		opts := karmaExecuteTestsOptions{ModulePath: "./test", InstallCommand: "npm install test", RunCommand: "npm run test"}
 
-		e := execMockRunner{}
+		e := execMockRunner{shouldFailWith: errors.New("error case")}
 		err := runKarma(opts, &e)
 		assert.Error(t, err, "error expected but none occcured")
 	})
 
 	t.Run("error case run command", func(t *testing.T) {
-		opts := karmaExecuteTestsOptions{ModulePath: "./test", InstallCommand: "npm install test", RunCommand: "fail run test"}
+		opts := karmaExecuteTestsOptions{ModulePath: "./test", InstallCommand: "npm install test", RunCommand: "npm run test"}
 
-		e := execMockRunner{}
+		e := execMockRunner{shouldFailWith: errors.New("error case")}
 		err := runKarma(opts, &e)
 		assert.Error(t, err, "error expected but none occcured")
 	})
