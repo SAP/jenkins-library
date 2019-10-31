@@ -8,15 +8,15 @@ import (
 
 var logger *logrus.Entry
 
-// Logger returns the logger entry or creates one if none is present.
-func Logger() *logrus.Entry {
-	if err := initLogger(); err != nil {
+// Entry returns the logger entry or creates one if none is present.
+func Entry() *logrus.Entry {
+	if err := initializeLogger(); err != nil {
 		logrus.Warnf("error initializing logrus %v", err)
 	}
 	return logger
 }
 
-func initLogger() error {
+func initializeLogger() error {
 	if logger == nil {
 		logger = logrus.WithField("library", "piper-lib-os")
 	}
@@ -25,16 +25,15 @@ func initLogger() error {
 
 // InitLogger sets the stepName field and sets log level with respect to verbose flag.
 func InitLogger(stepName string, verbose bool) error {
-	initLogger()
 	if verbose {
 		//Logger().Debugf("logging set to level: %s", level)
 		logrus.SetLevel(logrus.DebugLevel)
 	}
-	logger = logger.WithField("stepName", stepName)
+	logger = Entry().WithField("stepName", stepName)
 	return nil
 }
 
 // WriterWithErrorLevel returns a writer that logs with ERROR level.
 func WriterWithErrorLevel() *io.PipeWriter {
-	return Logger().WriterLevel(logrus.ErrorLevel)
+	return Entry().WriterLevel(logrus.ErrorLevel)
 }
