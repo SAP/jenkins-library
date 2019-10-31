@@ -114,7 +114,6 @@ func TestPrepareOut(t *testing.T) {
 }
 
 func TestCmdPipes(t *testing.T) {
-	//cmd := helperCommand(t, "echo", "foo bar", "baz")
 	cmd := helperCommand("echo", "foo bar", "baz")
 	defer func() { ExecCommand = exec.Command }()
 
