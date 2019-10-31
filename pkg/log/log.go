@@ -6,6 +6,7 @@ import (
 
 var logger *logrus.Entry
 
+// Logger returns the logger entry or creates one if none is present.
 func Logger() *logrus.Entry {
 	if err := initLogger(); err != nil {
 		logrus.Warnf("error initializing logrus %v", err)
@@ -20,6 +21,7 @@ func initLogger() error {
 	return nil
 }
 
+// InitLogger sets the stepName field and sets log level with respect to verbose flag.
 func InitLogger(stepName string, verbose bool) error {
 	initLogger()
 	if verbose {
