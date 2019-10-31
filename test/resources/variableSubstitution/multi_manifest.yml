@@ -1,0 +1,43 @@
+---
+applications:
+- name: ((unique-prefix))-catalog-service-odatav2-0.0.1
+  memory: 1024M
+  disk_quota: 512M
+  instances: 1
+  buildpacks:
+    - java_buildpack
+  path: ./srv/target/srv-backend-0.0.1-SNAPSHOT.jar
+
+  routes:
+  - route: ((unique-prefix))-catalog-service-odatav2-001.cfapps.eu10.hana.ondemand.com
+
+  services:
+  - ((xsuaa-instance-name)) # requires an instance of xsuaa instantiated with xs-security.json of this project. See services-manifest.yml.
+  - ((hana-instance-name))  # requires an instance of hana service with plan hdi-shared. See services-manifest.yml.
+
+  env:
+    spring.profiles.active: cloud # activate the spring profile named 'cloud'.
+    xsuaa-instance-name: ((xsuaa-instance-name))
+    db_service_instance_name: ((hana-instance-name))
+
+---
+applications:
+  - name: ((unique-prefix))-catalog-service-odatav2-0.0.1
+    memory: 1024M
+    disk_quota: 512M
+    instances: 1
+    buildpacks:
+      - java_buildpack
+    path: ./srv/target/srv-backend-0.0.1-SNAPSHOT.jar
+
+    routes:
+      - route: ((unique-prefix))-catalog-service-odatav2-001.cfapps.eu10.hana.ondemand.com
+
+    services:
+      - ((xsuaa-instance-name)) # requires an instance of xsuaa instantiated with xs-security.json of this project. See services-manifest.yml.
+      - ((hana-instance-name))  # requires an instance of hana service with plan hdi-shared. See services-manifest.yml.
+
+    env:
+      spring.profiles.active: cloud # activate the spring profile named 'cloud'.
+      xsuaa-instance-name: ((xsuaa-instance-name))
+      db_service_instance_name: ((hana-instance-name))

@@ -1,3 +1,5 @@
+import com.sap.piper.SidecarUtils
+
 import static com.sap.piper.Prerequisites.checkScript
 
 import com.sap.piper.ConfigurationHelper
@@ -37,7 +39,7 @@ import hudson.AbortException
     'containerEnvVars',
     /**
      * A map of docker image to the name of the container. The pod will be created with all the images from this map and they are labled based on the value field of each map entry.
-     * Example: `['maven:3.5-jdk-8-alpine': 'mavenExecute', 'selenium/standalone-chrome': 'selenium', 'famiko/jmeter-base': 'checkJMeter', 's4sdk/docker-cf-cli': 'cloudfoundry']`
+     * Example: `['maven:3.5-jdk-8-alpine': 'mavenExecute', 'selenium/standalone-chrome': 'selenium', 'famiko/jmeter-base': 'checkJMeter', 'ppiper/cf-cli': 'cloudfoundry']`
      */
     'containerMap',
     /**
@@ -77,6 +79,40 @@ import hudson.AbortException
      * Specifies a dedicated user home directory for the container which will be passed as value for environment variable `HOME`.
      */
     'dockerWorkspace',
+    /**
+     * as `dockerImage` for the sidecar container
+     */
+    'sidecarImage',
+    /**
+     * SideCar only:
+     * Name of the container in local network.
+     */
+    'sidecarName',
+    /**
+     * Set this to 'false' to bypass a docker image pull.
+     * Usefull during development process. Allows testing of images which are available in the local registry only.
+     */
+    'sidecarPullImage',
+    /**
+     * Command executed inside the container which returns exit code 0 when the container is ready to be used.
+     */
+    'sidecarReadyCommand',
+    /**
+     * as `dockerEnvVars` for the sidecar container
+     */
+    'sidecarEnvVars',
+    /**
+     * as `dockerWorkspace` for the sidecar container
+     */
+    'sidecarWorkspace',
+    /**
+     * as `dockerVolumeBind` for the sidecar container
+     */
+    'sidecarVolumeBind',
+    /**
+     * as `dockerOptions` for the sidecar container
+     */
+    'sidecarOptions',
     /** Defines the Kubernetes nodeSelector as per [https://github.com/jenkinsci/kubernetes-plugin](https://github.com/jenkinsci/kubernetes-plugin).*/
     'nodeSelector',
     /**
@@ -148,27 +184,27 @@ void call(Map parameters = [:], body) {
         Map config = configHelper.use()
 
         new Utils().pushToSWA([
-            step: STEP_NAME,
+            step         : STEP_NAME,
             stepParamKey1: 'scriptMissing',
-            stepParam1: parameters?.script == null
+            stepParam1   : parameters?.script == null
         ], config)
 
-        if (!parameters.containerMap) {
+        if (!config.containerMap) {
             configHelper.withMandatoryProperty('dockerImage')
             config.containerName = 'container-exec'
-            config.containerMap = ["${config.get('dockerImage')}": config.containerName]
-            config.containerCommands = config.containerCommand ? ["${config.get('dockerImage')}": config.containerCommand] : null
+            config.containerMap = [(config.get('dockerImage')): config.containerName]
+            config.containerCommands = config.containerCommand ? [(config.get('dockerImage')): config.containerCommand] : null
         }
-        executeOnPod(config, utils, body)
+        executeOnPod(config, utils, body, script)
     }
 }
 
 def getOptions(config) {
     def namespace = config.jenkinsKubernetes.namespace
     def options = [
-        name      : 'dynamic-agent-' + config.uniqueId,
-        label     : config.uniqueId,
-        yaml      : generatePodSpec(config)
+        name : 'dynamic-agent-' + config.uniqueId,
+        label: config.uniqueId,
+        yaml : generatePodSpec(config)
     ]
     if (namespace) {
         options.namespace = namespace
@@ -182,7 +218,7 @@ def getOptions(config) {
     return options
 }
 
-void executeOnPod(Map config, utils, Closure body) {
+void executeOnPod(Map config, utils, Closure body, Script script) {
     /*
      * There could be exceptions thrown by
         - The podTemplate
@@ -194,20 +230,23 @@ void executeOnPod(Map config, utils, Closure body) {
      * In case third case, we need to create the 'container' stash to bring the modified content back to the host.
      */
     try {
-
+        SidecarUtils sidecarUtils = new SidecarUtils(script)
         def stashContent = config.stashContent
-        if (config.containerName && stashContent.isEmpty()){
+        if (config.containerName && stashContent.isEmpty()) {
             stashContent = [stashWorkspace(config, 'workspace')]
         }
         podTemplate(getOptions(config)) {
             node(config.uniqueId) {
+                if (config.sidecarReadyCommand) {
+                    sidecarUtils.waitForSidecarReadyOnKubernetes(config.sidecarName, config.sidecarReadyCommand)
+                }
                 if (config.containerName) {
                     Map containerParams = [name: config.containerName]
                     if (config.containerShell) {
                         containerParams.shell = config.containerShell
                     }
                     echo "ContainerConfig: ${containerParams}"
-                    container(containerParams){
+                    container(containerParams) {
                         try {
                             utils.unstashAll(stashContent)
                             body()
@@ -230,11 +269,11 @@ private String generatePodSpec(Map config) {
     def containers = getContainerList(config)
     def podSpec = [
         apiVersion: "v1",
-        kind: "Pod",
-        metadata: [
+        kind      : "Pod",
+        metadata  : [
             lables: config.uniqueId
         ],
-        spec: [
+        spec      : [
             containers: containers
         ]
     ]
@@ -247,17 +286,17 @@ private String generatePodSpec(Map config) {
 private String stashWorkspace(config, prefix, boolean chown = false, boolean stashBack = false) {
     def stashName = "${prefix}-${config.uniqueId}"
     try {
-        if (chown)  {
+        if (chown) {
             def securityContext = getSecurityContext(config)
             def runAsUser = securityContext?.runAsUser ?: 1000
             def fsGroup = securityContext?.fsGroup ?: 1000
-            sh """#!${config.containerShell?:'/bin/sh'}
+            sh """#!${config.containerShell ?: '/bin/sh'}
 chown -R ${runAsUser}:${fsGroup} ."""
         }
 
         def includes, excludes
 
-        if(stashBack) {
+        if (stashBack) {
             includes = config.stashIncludes.stashBack ?: config.stashIncludes.workspace
             excludes = config.stashExcludes.stashBack ?: config.stashExcludes.workspace
         } else {
@@ -272,7 +311,6 @@ chown -R ${runAsUser}:${fsGroup} ."""
         )
         //inactive due to negative side-effects, we may require a dedicated git stash to be used
         //useDefaultExcludes: false)
-
         return stashName
     } catch (AbortException | IOException e) {
         echo "${e.getMessage()}"
@@ -296,21 +334,21 @@ private List getContainerList(config) {
 
     //If no custom jnlp agent provided as default jnlp agent (jenkins/jnlp-slave) as defined in the plugin, see https://github.com/jenkinsci/kubernetes-plugin#pipeline-support
     def result = []
-
     //allow definition of jnlp image via environment variable JENKINS_JNLP_IMAGE in the Kubernetes landscape or via config as fallback
     if (env.JENKINS_JNLP_IMAGE || config.jenkinsKubernetes.jnlpAgent) {
         result.push([
-            name: 'jnlp',
+            name : 'jnlp',
             image: env.JENKINS_JNLP_IMAGE ?: config.jenkinsKubernetes.jnlpAgent
         ])
     }
     config.containerMap.each { imageName, containerName ->
         def containerPullImage = config.containerPullImageFlags?.get(imageName)
+        boolean pullImage = containerPullImage != null ? containerPullImage : config.dockerPullImage
         def containerSpec = [
-            name: containerName.toLowerCase(),
-            image: imageName,
-            imagePullPolicy: containerPullImage ? "Always" : "IfNotPresent",
-            env: getContainerEnvs(config, imageName)
+            name           : containerName.toLowerCase(),
+            image          : imageName,
+            imagePullPolicy: pullImage ? "Always" : "IfNotPresent",
+            env            : getContainerEnvs(config, imageName)
         ]
 
         def configuredCommand = config.containerCommands?.get(imageName)
@@ -321,30 +359,41 @@ private List getContainerList(config) {
                 '-f',
                 '/dev/null'
             ]
-        } else if(configuredCommand != "") {
+        } else if (configuredCommand != "") {
             // apparently "" is used as a flag for not settings container commands !?
             containerSpec['command'] =
-                    (configuredCommand in List) ? configuredCommand : [
-                        shell,
-                        '-c',
-                        configuredCommand
-                    ]
+                (configuredCommand in List) ? configuredCommand : [
+                    shell,
+                    '-c',
+                    configuredCommand
+                ]
         }
 
         if (config.containerPortMappings?.get(imageName)) {
             def ports = []
             def portCounter = 0
-            config.containerPortMappings.get(imageName).each {mapping ->
+            config.containerPortMappings.get(imageName).each { mapping ->
                 def name = "${containerName}${portCounter}".toString()
-                if(mapping.containerPort != mapping.hostPort) {
-                    echo ("[WARNING][${STEP_NAME}]: containerPort and hostPort are different for container '${containerName}'. "
+                if (mapping.containerPort != mapping.hostPort) {
+                    echo("[WARNING][${STEP_NAME}]: containerPort and hostPort are different for container '${containerName}'. "
                         + "The hostPort will be ignored.")
                 }
                 ports.add([name: name, containerPort: mapping.containerPort])
-                portCounter ++
+                portCounter++
             }
             containerSpec.ports = ports
         }
+        result.push(containerSpec)
+    }
+    if (config.sidecarImage) {
+        def containerSpec = [
+            name           : config.sidecarName.toLowerCase(),
+            image          : config.sidecarImage,
+            imagePullPolicy: config.sidecarPullImage ? "Always" : "IfNotPresent",
+            env            : getContainerEnvs(config, config.sidecarImage),
+            command        : []
+        ]
+
         result.push(containerSpec)
     }
     return result
@@ -356,13 +405,14 @@ private List getContainerList(config) {
  * (Kubernetes-Plugin only!)
  * @param config Map with configurations
  */
+
 private List getContainerEnvs(config, imageName) {
     def containerEnv = []
     def dockerEnvVars = config.containerEnvVars?.get(imageName) ?: config.dockerEnvVars ?: [:]
     def dockerWorkspace = config.containerWorkspaces?.get(imageName) != null ? config.containerWorkspaces?.get(imageName) : config.dockerWorkspace ?: ''
 
     def envVar = { e ->
-        [ name: e.key, value: e.value ]
+        [name: e.key, value: e.value]
     }
 
     if (dockerEnvVars) {
