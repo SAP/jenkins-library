@@ -102,6 +102,9 @@ class TestsPublishResultsTest extends BasePiperTest {
         String sampleCoberturaPathForJava = 'my/workspace/my/project/target/coverage/cobertura-coverage.xml'
         assertTrue('Cobertura default pattern does not match files at target/coverage/cobertura-coverage.xml for Java projects',
             Minimatch.minimatch(sampleCoberturaPathForJava, publisherStepOptions.cobertura.coberturaReportFile))
+        String sampleCoberturaPathForKarma = 'my/workspace/my/project/target/coverage/Chrome 78.0.3904 (Mac OS X 10.14.6)/cobertura-coverage.xml'
+        assertTrue('Cobertura default pattern does not match files at target/coverage/<browser>/cobertura-coverage.xml for UI5 projects',
+            Minimatch.minimatch(sampleCoberturaPathForKarma, publisherStepOptions.cobertura.coberturaReportFile))
     }
 
     @Test
