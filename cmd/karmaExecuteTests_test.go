@@ -24,7 +24,7 @@ func TestRunKarma(t *testing.T) {
 
 	t.Run("error case install command", func(t *testing.T) {
 		var hasFailed bool
-		log.Entry().Logger.ExitFunc = func(code int) { hasFailed = true }
+		log.Entry().Logger.ExitFunc = func(int) { hasFailed = true }
 
 		opts := karmaExecuteTestsOptions{ModulePath: "./test", InstallCommand: "fail install test", RunCommand: "npm run test"}
 
@@ -35,7 +35,7 @@ func TestRunKarma(t *testing.T) {
 
 	t.Run("error case run command", func(t *testing.T) {
 		var hasFailed bool
-		log.Entry().Logger.ExitFunc = func(code int) { hasFailed = true }
+		log.Entry().Logger.ExitFunc = func(int) { hasFailed = true }
 
 		opts := karmaExecuteTestsOptions{ModulePath: "./test", InstallCommand: "npm install test", RunCommand: "fail run test"}
 
