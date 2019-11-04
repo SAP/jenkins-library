@@ -12,28 +12,45 @@ The stated instructions assume the use of this application.
 
 * You have installed a Linux system with at least 4 GB memory. **Note:** We have tested our samples on Ubuntu 16.04. On Microsoft Windows, you might face some issues.
 * You have installed the newest version of Docker. See [Docker Community Edition](https://docs.docker.com/install/). **Note:** we have tested on Docker 18.09.6.
-* You have installed Jenkins 2.60.3 or higher. **Recommendation:** We recommend to use the `cx-server` toolkit. See **(Optional) Install the `cx-server` Toolkit for Jenkins**. **Note:** If you use your **own Jenkins installation** you need to care for "Piper" specific configuration. Follow [my own Jenkins installation][guidedtour-my-own-jenkins].
 * Your system has access to [GitHub.com][github].
 
-## (Optional) Install the `cx-server` Toolkit for Jenkins
+## **Recommended:** Install the Cx Server Life-cycle Management for Jenkins
 
-`cx-server`is a lifecycle management toolkit that provides Docker images with a preconfigured Jenkins and a Nexus-based cache to facilitate the configuration and usage of Jenkins.
+Cx Server is a life-cycle management tool to bootstrap a pre-configured Jenkins instance within minutes.
+All required plugins and shared libraries are included automatically.
+It is based on Docker images provided by project "Piper".
 
-To use the toolkit, get the `cx-server` script and its configuration file `server.cfg` by using the following command:
+To get started, initialize Cx Server by using this `docker run` command:
 
 ```sh
 docker run -it --rm -u $(id -u):$(id -g) -v "${PWD}":/cx-server/mount/ ppiper/cx-server-companion:latest init-cx-server
 ```
 
-When the files are downloaded into the current directory, launch the Jenkins server by using the following command:
+This creates a few files in your current working directory.
+The shell script `cx-server` and the configuration file `server.cfg` are of special interest.
+
+Now, you can start the Jenkins server by using the following command:
 
 ```sh
+chmod +x ./cx-server
 ./cx-server start
 ```
 
-For more information on the Jenkins lifecycle management and how to customize your Jenkins, have a look at the [Operations Guide for Cx Server][devops-docker-images-cxs-guide].
+For more information on the Cx Server and how to customize your Jenkins, have a look at the [Operations Guide for Cx Server][devops-docker-images-cxs-guide].
+
+### On your own: Custom Jenkins Setup
+
+If you use your own Jenkins installation, you need to care for the configuration that is specific to project "Piper".
+This option should only be considered if you know why you need it, otherwise using the Cx Server life-cycle management makes your life much easier.
+If you choose to go this path, follow [my own Jenkins installation][guidedtour-my-own-jenkins] for some hints.
+
+**Note:** This option is not supported for SAP Cloud SDK projects.
 
 ## (Optional) Sample Application
+
+!!! info "Choosing the best sample application"
+    Depending on the type of project you're interested in, different sample applications might be interesting.
+    For SAP Cloud SDK, please have a look at the [Address Manager](https://github.com/sap/cloud-s4-sdk-book) example application.
 
 Copy the sources of the application into your own Git repository. While we will ask you to fork the application's repository into a **GitHub** space, you can use any version control system based on Git like **GitLab** or **plain git**. **Note:** A `public` GitHub repository is visible to the public. The configuration files may contain data you don't want to expose, so use a `private` repository.
 
@@ -189,7 +206,7 @@ Please also consult the blog post on setting up [Continuous Delivery for S/4HANA
 [sap-blog-s4-sdk-first-steps]:       https://blogs.sap.com/2017/05/10/first-steps-with-sap-s4hana-cloud-sdk/
 [sap-blog-ci-cd]:                    https://blogs.sap.com/2017/09/20/continuous-integration-and-delivery/
 
-[devops-docker-images-cxs-guide]:    https://github.com/SAP/devops-docker-images/blob/master/docs/operations/cx-server-operations-guide.md
+[devops-docker-images-cxs-guide]:    https://github.com/SAP/devops-docker-cx-server/blob/master/docs/operations/cx-server-operations-guide.md
 
 [cloud-cf-helloworld-nodejs]:        https://github.com/SAP/cloud-cf-helloworld-nodejs
 [github]:                            https://github.com

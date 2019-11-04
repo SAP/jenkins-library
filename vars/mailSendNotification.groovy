@@ -3,7 +3,7 @@ import static com.sap.piper.Prerequisites.checkScript
 import com.sap.piper.ConfigurationHelper
 import com.sap.piper.GenerateDocumentation
 import com.sap.piper.Utils
-import groovy.text.SimpleTemplateEngine
+import groovy.text.GStringTemplateEngine
 import groovy.transform.Field
 
 @Field String STEP_NAME = getClass().getName()
@@ -111,7 +111,7 @@ void call(Map parameters = [:]) {
             subject += ' is back to normal'
         }
         if(mailTemplate){
-            def mailContent = SimpleTemplateEngine.newInstance().createTemplate(libraryResource(mailTemplate)).make([env: env, log: log]).toString()
+            def mailContent = GStringTemplateEngine.newInstance().createTemplate(libraryResource(mailTemplate)).make([env: env, log: log]).toString()
             def recipientList = ''
             if(config.notifyCulprits){
                 if (!config.gitUrl) {
@@ -223,7 +223,7 @@ def getCulprits(config, branch, numberOfCommits) {
             }
         }
 
-        def recipients = sh(returnStdout: true, script: "git log -${numberOfCommits} --pretty=format:'%ae %ce'")
+        def recipients = sh(returnStdout: true, script: "git log -${numberOfCommits} --first-parent --pretty=format:'%ae %ce'")
         return getDistinctRecipients(recipients)
     } catch(err) {
         echo "[${STEP_NAME}] Culprit retrieval from git failed with '${err.getMessage()}'. Please make sure to configure gitSshKeyCredentialsId. So far, only fixed list of recipients is used."

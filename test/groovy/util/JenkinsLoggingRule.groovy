@@ -24,8 +24,9 @@ class JenkinsLoggingRule implements TestRule {
         this.testInstance = testInstance
     }
 
-    public void expect(String substring) {
+    public JenkinsLoggingRule expect(String substring) {
         expected.add(substring)
+        return this
     }
 
     @Override
