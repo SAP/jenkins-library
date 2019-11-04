@@ -1,8 +1,6 @@
 package log
 
 import (
-	"io"
-
 	"github.com/sirupsen/logrus"
 )
 
@@ -27,9 +25,4 @@ func SetVerbose(verbose bool) {
 // SetStepName sets the stepName field.
 func SetStepName(stepName string) {
 	logger = Entry().WithField("stepName", stepName)
-}
-
-// WriterWithErrorLevel returns a writer that logs with ERROR level.
-func WriterWithErrorLevel() *io.PipeWriter {
-	return Entry().WriterLevel(logrus.ErrorLevel)
 }
