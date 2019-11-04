@@ -39,7 +39,7 @@ import java.util.UUID
  *       Currently, those two names are used synonymous.
  * !!! note "User and Password"
  *        In the future, we want to support the user / password creation via the create-service-key funcion of cloud foundry.
- *        For this case, it is not possible to use the usual pattern with Jenkins Credentials. 
+ *        For this case, it is not possible to use the usual pattern with Jenkins Credentials.
  */
 @GenerateDocumentation
 void call(Map parameters = [:]) {
@@ -48,8 +48,8 @@ void call(Map parameters = [:]) {
 
         def script = checkScript(this, parameters) ?: this
 
-        // In the future, we want to support the user / password creation via the create-service-key funcion of cloud foundry. 
-        // For this case, it is not possible to use the usual pattern with Jenkins Credentials. 
+        // In the future, we want to support the user / password creation via the create-service-key funcion of cloud foundry.
+        // For this case, it is not possible to use the usual pattern with Jenkins Credentials.
         Map configuration = ConfigurationHelper.newInstance(this)
             .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS)
             .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS)
@@ -72,7 +72,6 @@ void call(Map parameters = [:]) {
         echo "[${STEP_NAME}] General Parameters: URL = \"${urlString}\", repositoryName = \"${configuration.repositoryName}\""
         HeaderFiles headerFiles = new HeaderFiles()
 
-        
         try {
             String urlPullEntity = triggerPull(configuration, urlString, authToken, headerFiles)
             if (urlPullEntity != null) {
