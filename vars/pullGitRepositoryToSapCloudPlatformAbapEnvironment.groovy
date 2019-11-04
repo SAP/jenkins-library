@@ -37,6 +37,9 @@ import java.util.UUID
  * !!! note "Git Repository and Software Component"
  *       In SAP Cloud Platform ABAP Environment Git repositories are wrapped in Software Components (which are managed in the App "Manage Software Components")
  *       Currently, those two names are used synonymous.
+ * !!! note "User and Password"
+ *        In the future, we want to support the user / password creation via the create-service-key funcion of cloud foundry.
+ *        For this case, it is not possible to use the usual pattern with Jenkins Credentials. 
  */
 @GenerateDocumentation
 void call(Map parameters = [:]) {
@@ -45,6 +48,8 @@ void call(Map parameters = [:]) {
 
         def script = checkScript(this, parameters) ?: this
 
+        // In the future, we want to support the user / password creation via the create-service-key funcion of cloud foundry. 
+        // For this case, it is not possible to use the usual pattern with Jenkins Credentials. 
         Map configuration = ConfigurationHelper.newInstance(this)
             .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS)
             .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS)
@@ -56,12 +61,18 @@ void call(Map parameters = [:]) {
             .collectValidationFailures()
             .use()
 
+        def urlMatcher = configuration.host =~ /^(https:\/\/)(.*)/
+        if (!urlMatcher.find()) {
+            error "[${STEP_NAME}] URL Validation Failed: HTTPS must be used"
+        }
+
         String usernameColonPassword = configuration.username + ":" + configuration.password
         String authToken = usernameColonPassword.bytes.encodeBase64().toString()
         String urlString = configuration.host + '/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY/Pull'
         echo "[${STEP_NAME}] General Parameters: URL = \"${urlString}\", repositoryName = \"${configuration.repositoryName}\""
         HeaderFiles headerFiles = new HeaderFiles()
 
+        
         try {
             String urlPullEntity = triggerPull(configuration, urlString, authToken, headerFiles)
             if (urlPullEntity != null) {
@@ -69,12 +80,9 @@ void call(Map parameters = [:]) {
                 if (finalStatus != 'S') {
                     error "[${STEP_NAME}] Pull Failed"
                 }
-
             }
+        } finally {
             workspaceCleanup(headerFiles)
-        } catch (err) {
-            workspaceCleanup(headerFiles)
-            throw err
         }
     }
 }
@@ -168,7 +176,7 @@ private void workspaceCleanup(HeaderFiles headerFiles) {
     String cleanupScript = """#!/bin/bash
             rm -f ${headerFiles.authFile} ${headerFiles.postFile} ${headerFiles.pollFile}
         """
-    sh ( script : cleanupScript, returnStdout : true )
+    sh ( script : cleanupScript )
 }
 
 public class HttpHeaderProperties{
