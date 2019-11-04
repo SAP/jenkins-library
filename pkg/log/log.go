@@ -10,17 +10,10 @@ var logger *logrus.Entry
 
 // Entry returns the logger entry or creates one if none is present.
 func Entry() *logrus.Entry {
-	if err := initializeLogger(); err != nil {
-		logrus.Warnf("error initializing logrus %v", err)
-	}
-	return logger
-}
-
-func initializeLogger() error {
 	if logger == nil {
 		logger = logrus.WithField("library", "piper-lib-os")
 	}
-	return nil
+	return logger
 }
 
 // InitLogger sets the stepName field and sets log level with respect to verbose flag.
