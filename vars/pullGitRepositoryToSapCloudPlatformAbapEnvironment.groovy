@@ -61,8 +61,7 @@ void call(Map parameters = [:]) {
             .collectValidationFailures()
             .use()
 
-        def urlMatcher = configuration.host =~ /^(https:\/\/)(.*)/
-        if (!urlMatcher.find()) {
+        if (!(configuration.host =~ /^(https:\/\/)(.*)/).find()) {
             error "[${STEP_NAME}] URL Validation Failed: HTTPS must be used"
         }
 
