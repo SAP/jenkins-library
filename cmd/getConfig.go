@@ -83,8 +83,6 @@ func generateConfig() error {
 		return errors.Wrap(err, "getting step config failed")
 	}
 
-	//ToDo: Check for mandatory parameters
-
 	myConfigJSON, _ := config.GetJSON(stepConfig.Config)
 
 	fmt.Println(myConfigJSON)
