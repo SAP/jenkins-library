@@ -25,7 +25,8 @@ func TestStepCommand() *cobra.Command {
 		Short: "Test description",
 		Long: `Long Test description`,
 		PreRunE: func(cmd *cobra.Command, args []string) error {
-			log.InitLogger("testStep", generalConfig.verbose)
+			log.SetStepName("testStep")
+			log.SetVerbose(generalConfig.verbose)
 			return PrepareConfig(cmd, &metadata, "testStep", &myTestStepOptions, openPiperFile)
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {

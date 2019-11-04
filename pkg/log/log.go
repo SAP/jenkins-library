@@ -16,14 +16,17 @@ func Entry() *logrus.Entry {
 	return logger
 }
 
-// InitLogger sets the stepName field and sets log level with respect to verbose flag.
-func InitLogger(stepName string, verbose bool) error {
+// SetVerbose sets the log level with respect to verbose flag.
+func SetVerbose(verbose bool) {
 	if verbose {
 		//Logger().Debugf("logging set to level: %s", level)
 		logrus.SetLevel(logrus.DebugLevel)
 	}
+}
+
+// SetStepName sets the stepName field.
+func SetStepName(stepName string) {
 	logger = Entry().WithField("stepName", stepName)
-	return nil
 }
 
 // WriterWithErrorLevel returns a writer that logs with ERROR level.

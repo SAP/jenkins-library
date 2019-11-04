@@ -53,7 +53,8 @@ func {{.CobraCmdFuncName}}() *cobra.Command {
 		Short: "{{.Short}}",
 		Long: {{ $tick := "` + "`" + `" }}{{ $tick }}{{.Long | longName }}{{ $tick }},
 		PreRunE: func(cmd *cobra.Command, args []string) error {
-			log.InitLogger("{{ .StepName }}", generalConfig.verbose)
+			log.SetStepName("{{ .StepName }}")
+			log.SetVerbose(generalConfig.verbose)
 			return PrepareConfig(cmd, &metadata, "{{ .StepName }}", &my{{ .StepName | title}}Options, openPiperFile)
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
