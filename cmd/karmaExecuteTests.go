@@ -13,10 +13,11 @@ func karmaExecuteTests(myKarmaExecuteTestsOptions karmaExecuteTestsOptions) erro
 	// also log stdout as Karma reports into it
 	c.Stdout = log.Entry().Writer()
 	c.Stderr = log.Entry().Writer()
-	return runKarma(myKarmaExecuteTestsOptions, &c)
+	runKarma(myKarmaExecuteTestsOptions, &c)
+	return nil
 }
 
-func runKarma(myKarmaExecuteTestsOptions karmaExecuteTestsOptions, command execRunner) error {
+func runKarma(myKarmaExecuteTestsOptions karmaExecuteTestsOptions, command execRunner) {
 	installCommandTokens := tokenize(myKarmaExecuteTestsOptions.InstallCommand)
 	command.Dir(myKarmaExecuteTestsOptions.ModulePath)
 	err := command.RunExecutable(installCommandTokens[0], installCommandTokens[1:]...)
@@ -36,8 +37,6 @@ func runKarma(myKarmaExecuteTestsOptions karmaExecuteTestsOptions, command execR
 			WithField("command", myKarmaExecuteTestsOptions.RunCommand).
 			Fatal("failed to execute run command")
 	}
-
-	return nil
 }
 
 func tokenize(command string) []string {
