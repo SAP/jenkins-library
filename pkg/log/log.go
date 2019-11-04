@@ -9,7 +9,7 @@ var logger *logrus.Entry
 // Entry returns the logger entry or creates one if none is present.
 func Entry() *logrus.Entry {
 	if logger == nil {
-		logger = logrus.WithField("library", "piper-lib-os")
+		logger = logrus.WithField("library", "sap/jenkins-library")
 	}
 	return logger
 }
