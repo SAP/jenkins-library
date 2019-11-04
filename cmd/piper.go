@@ -39,6 +39,7 @@ var generalConfig generalConfigOptions
 func Execute() {
 
 	rootCmd.AddCommand(ConfigCommand())
+	rootCmd.AddCommand(VersionCommand())
 	rootCmd.AddCommand(KarmaExecuteTestsCommand())
 	rootCmd.AddCommand(GithubPublishReleaseCommand())
 
