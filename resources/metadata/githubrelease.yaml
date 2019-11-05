@@ -57,7 +57,9 @@ spec:
       - STAGES
       - STEPS
       type: '[]string'
-    - name: githubApiUrl
+    - name: apiUrl
+      aliases:
+        - name: githubApiUrl
       description: Set the GitHub API url.
       scope:
       - GENERAL
@@ -67,7 +69,9 @@ spec:
       type: string
       default: https://api.github.com
       mandatory: true
-    - name: githubOrg
+    - name: owner
+      aliases:
+        - name: githubOrg
       description: 'Set the GitHub organization.'
       scope:
       - PARAMETERS
@@ -75,7 +79,9 @@ spec:
       - STEPS
       type: string
       mandatory: true
-    - name: githubRepo
+    - name: repository
+      aliases:
+        - name: githubRepo
       description: 'Set the GitHub repository.'
       scope:
       - PARAMETERS
@@ -83,7 +89,9 @@ spec:
       - STEPS
       type: string
       mandatory: true
-    - name: githubServerUrl
+    - name: serverUrl
+      aliases: 
+        - name: githubServerUrl
       description: 'GitHub server url for end-user access.'
       scope:
       - PARAMETERS
@@ -92,7 +100,9 @@ spec:
       type: string
       default: https://github.com
       mandatory: true
-    - name: githubToken
+    - name: token
+      aliases:
+        - name: githubToken
       description: 'GitHub personal access token as per https://help.github.com/en/github/authenticating-to-github/creating-a-personal-access-token-for-the-command-line'
       scope:
       - GENERAL
@@ -101,7 +111,9 @@ spec:
       - STEPS
       type: string
       mandatory: true
-    - name: githubUploadUrl
+    - name: uploadUrl
+      aliases:
+        - name: githubUploadUrl
       description: Set the GitHub API url.
       scope:
       - GENERAL

@@ -101,9 +101,9 @@ func TestRunGithubPublishRelease(t *testing.T) {
 		myGithubPublishReleaseOptions := githubPublishReleaseOptions{
 			AddDeltaToLastRelease: true,
 			Commitish:             "master",
-			GithubOrg:             "TEST",
-			GithubRepo:            "test",
-			GithubServerURL:       "https://github.com",
+			Owner:                 "TEST",
+			Repository:            "test",
+			ServerURL:             "https://github.com",
 			ReleaseBodyHeader:     "Header",
 			Version:               "1.0",
 		}
@@ -141,9 +141,9 @@ func TestRunGithubPublishRelease(t *testing.T) {
 			AddClosedIssues:       true,
 			AddDeltaToLastRelease: true,
 			Commitish:             "master",
-			GithubOrg:             "TEST",
-			GithubRepo:            "test",
-			GithubServerURL:       "https://github.com",
+			Owner:                 "TEST",
+			Repository:            "test",
+			ServerURL:             "https://github.com",
 			ReleaseBodyHeader:     "Header",
 			Version:               "1.1",
 		}
@@ -245,8 +245,8 @@ func TestGetClosedIssuesText(t *testing.T) {
 		}
 
 		myGithubPublishReleaseOptions := githubPublishReleaseOptions{
-			GithubOrg:  "TEST",
-			GithubRepo: "test",
+			Owner:      "TEST",
+			Repository: "test",
 		}
 
 		res := getClosedIssuesText(ctx, publishedAt, &myGithubPublishReleaseOptions, &ghIssueClient)
@@ -263,10 +263,10 @@ func TestGetClosedIssuesText(t *testing.T) {
 
 func TestGetReleaseDeltaText(t *testing.T) {
 	myGithubPublishReleaseOptions := githubPublishReleaseOptions{
-		GithubOrg:       "TEST",
-		GithubRepo:      "test",
-		GithubServerURL: "https://github.com",
-		Version:         "1.1",
+		Owner:      "TEST",
+		Repository: "test",
+		ServerURL:  "https://github.com",
+		Version:    "1.1",
 	}
 	lastTag := "1.0"
 	lastRelease := github.RepositoryRelease{
@@ -295,8 +295,8 @@ func TestUploadReleaseAsset(t *testing.T) {
 		}
 
 		myGithubPublishReleaseOptions := githubPublishReleaseOptions{
-			GithubOrg:  "TEST",
-			GithubRepo: "test",
+			Owner:      "TEST",
+			Repository: "test",
 			AssetPath:  filepath.Join("testdata", t.Name()+"_test.txt"),
 		}
 
@@ -332,8 +332,8 @@ func TestUploadReleaseAsset(t *testing.T) {
 		}
 
 		myGithubPublishReleaseOptions := githubPublishReleaseOptions{
-			GithubOrg:  "TEST",
-			GithubRepo: "test",
+			Owner:      "TEST",
+			Repository: "test",
 			AssetPath:  filepath.Join("testdata", t.Name()+"_test.txt"),
 		}
 
