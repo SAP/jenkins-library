@@ -14,12 +14,12 @@ type githubPublishReleaseOptions struct {
 	AssetPath             string   `json:"assetPath,omitempty"`
 	Commitish             string   `json:"commitish,omitempty"`
 	ExcludeLabels         []string `json:"excludeLabels,omitempty"`
-	GithubAPIURL          string   `json:"githubApiUrl,omitempty"`
-	GithubOrg             string   `json:"githubOrg,omitempty"`
-	GithubRepo            string   `json:"githubRepo,omitempty"`
-	GithubServerURL       string   `json:"githubServerUrl,omitempty"`
-	GithubToken           string   `json:"githubToken,omitempty"`
-	GithubUploadURL       string   `json:"githubUploadUrl,omitempty"`
+	ApiURL                string   `json:"apiUrl,omitempty"`
+	Owner                 string   `json:"owner,omitempty"`
+	Repository            string   `json:"repository,omitempty"`
+	ServerURL             string   `json:"serverUrl,omitempty"`
+	Token                 string   `json:"token,omitempty"`
+	UploadURL             string   `json:"uploadUrl,omitempty"`
 	Labels                []string `json:"labels,omitempty"`
 	ReleaseBodyHeader     string   `json:"releaseBodyHeader,omitempty"`
 	UpdateAsset           bool     `json:"updateAsset,omitempty"`
@@ -65,23 +65,23 @@ func addGithubPublishReleaseFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVar(&myGithubPublishReleaseOptions.AssetPath, "assetPath", os.Getenv("PIPER_assetPath"), "Path to a release asset which should be uploaded to the list of release assets.")
 	cmd.Flags().StringVar(&myGithubPublishReleaseOptions.Commitish, "commitish", "master", "Target git commitish for the release")
 	cmd.Flags().StringSliceVar(&myGithubPublishReleaseOptions.ExcludeLabels, "excludeLabels", []string{}, "Allows to exclude issues with dedicated list of labels.")
-	cmd.Flags().StringVar(&myGithubPublishReleaseOptions.GithubAPIURL, "githubApiUrl", "https://api.github.com", "Set the GitHub API url.")
-	cmd.Flags().StringVar(&myGithubPublishReleaseOptions.GithubOrg, "githubOrg", os.Getenv("PIPER_githubOrg"), "Set the GitHub organization.")
-	cmd.Flags().StringVar(&myGithubPublishReleaseOptions.GithubRepo, "githubRepo", os.Getenv("PIPER_githubRepo"), "Set the GitHub repository.")
-	cmd.Flags().StringVar(&myGithubPublishReleaseOptions.GithubServerURL, "githubServerUrl", "https://github.com", "GitHub server url for end-user access.")
-	cmd.Flags().StringVar(&myGithubPublishReleaseOptions.GithubToken, "githubToken", os.Getenv("PIPER_githubToken"), "GitHub personal access token as per https://help.github.com/en/github/authenticating-to-github/creating-a-personal-access-token-for-the-command-line")
-	cmd.Flags().StringVar(&myGithubPublishReleaseOptions.GithubUploadURL, "githubUploadUrl", "https://uploads.github.com", "Set the GitHub API url.")
+	cmd.Flags().StringVar(&myGithubPublishReleaseOptions.ApiURL, "apiUrl", "https://api.github.com", "Set the GitHub API url.")
+	cmd.Flags().StringVar(&myGithubPublishReleaseOptions.Owner, "owner", os.Getenv("PIPER_owner"), "Set the GitHub organization.")
+	cmd.Flags().StringVar(&myGithubPublishReleaseOptions.Repository, "repository", os.Getenv("PIPER_repository"), "Set the GitHub repository.")
+	cmd.Flags().StringVar(&myGithubPublishReleaseOptions.ServerURL, "serverUrl", "https://github.com", "GitHub server url for end-user access.")
+	cmd.Flags().StringVar(&myGithubPublishReleaseOptions.Token, "token", os.Getenv("PIPER_token"), "GitHub personal access token as per https://help.github.com/en/github/authenticating-to-github/creating-a-personal-access-token-for-the-command-line")
+	cmd.Flags().StringVar(&myGithubPublishReleaseOptions.UploadURL, "uploadUrl", "https://uploads.github.com", "Set the GitHub API url.")
 	cmd.Flags().StringSliceVar(&myGithubPublishReleaseOptions.Labels, "labels", []string{}, "Labels to include in issue search.")
 	cmd.Flags().StringVar(&myGithubPublishReleaseOptions.ReleaseBodyHeader, "releaseBodyHeader", os.Getenv("PIPER_releaseBodyHeader"), "Content which will appear for the release.")
 	cmd.Flags().BoolVar(&myGithubPublishReleaseOptions.UpdateAsset, "updateAsset", false, "Specify if a release asset should be updated only.")
 	cmd.Flags().StringVar(&myGithubPublishReleaseOptions.Version, "version", os.Getenv("PIPER_version"), "Define the version number which will be written as tag as well as release name.")
 
-	cmd.MarkFlagRequired("githubApiUrl")
-	cmd.MarkFlagRequired("githubOrg")
-	cmd.MarkFlagRequired("githubRepo")
-	cmd.MarkFlagRequired("githubServerUrl")
-	cmd.MarkFlagRequired("githubToken")
-	cmd.MarkFlagRequired("githubUploadUrl")
+	cmd.MarkFlagRequired("apiUrl")
+	cmd.MarkFlagRequired("owner")
+	cmd.MarkFlagRequired("repository")
+	cmd.MarkFlagRequired("serverUrl")
+	cmd.MarkFlagRequired("token")
+	cmd.MarkFlagRequired("uploadUrl")
 	cmd.MarkFlagRequired("version")
 }
 
@@ -122,37 +122,37 @@ func githubPublishReleaseMetadata() config.StepData {
 						Mandatory: false,
 					},
 					{
-						Name:      "githubApiUrl",
+						Name:      "apiUrl",
 						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: true,
 					},
 					{
-						Name:      "githubOrg",
+						Name:      "owner",
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: true,
 					},
 					{
-						Name:      "githubRepo",
+						Name:      "repository",
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: true,
 					},
 					{
-						Name:      "githubServerUrl",
+						Name:      "serverUrl",
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: true,
 					},
 					{
-						Name:      "githubToken",
+						Name:      "token",
 						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: true,
 					},
 					{
-						Name:      "githubUploadUrl",
+						Name:      "uploadUrl",
 						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: true,

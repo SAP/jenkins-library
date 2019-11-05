@@ -28,7 +28,7 @@ type githubIssueClient interface {
 }
 
 func githubPublishRelease(myGithubPublishReleaseOptions githubPublishReleaseOptions) error {
-	ctx, client, err := piperGithub.NewClient(myGithubPublishReleaseOptions.GithubToken, myGithubPublishReleaseOptions.GithubAPIURL, myGithubPublishReleaseOptions.GithubUploadURL)
+	ctx, client, err := piperGithub.NewClient(myGithubPublishReleaseOptions.Token, myGithubPublishReleaseOptions.ApiURL, myGithubPublishReleaseOptions.UploadURL)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("Failed to get GitHub client.")
 	}
@@ -45,7 +45,7 @@ func runGithubPublishRelease(ctx context.Context, myGithubPublishReleaseOptions 
 
 	var publishedAt github.Timestamp
 
-	lastRelease, resp, err := ghRepoClient.GetLatestRelease(ctx, myGithubPublishReleaseOptions.GithubOrg, myGithubPublishReleaseOptions.GithubRepo)
+	lastRelease, resp, err := ghRepoClient.GetLatestRelease(ctx, myGithubPublishReleaseOptions.Owner, myGithubPublishReleaseOptions.Repository)
 	if err != nil {
 		if resp.StatusCode == 404 {
 			//no previous release found -> first release
@@ -83,11 +83,11 @@ func runGithubPublishRelease(ctx context.Context, myGithubPublishReleaseOptions 
 		Body:            &releaseBody,
 	}
 
-	createdRelease, _, err := ghRepoClient.CreateRelease(ctx, myGithubPublishReleaseOptions.GithubOrg, myGithubPublishReleaseOptions.GithubRepo, &release)
+	createdRelease, _, err := ghRepoClient.CreateRelease(ctx, myGithubPublishReleaseOptions.Owner, myGithubPublishReleaseOptions.Repository, &release)
 	if err != nil {
 		return errors.Wrapf(err, "Creation of release '%v' failed", *release.TagName)
 	}
-	log.Entry().Infof("Release %v created on %v/%v", *createdRelease.TagName, myGithubPublishReleaseOptions.GithubOrg, myGithubPublishReleaseOptions.GithubRepo)
+	log.Entry().Infof("Release %v created on %v/%v", *createdRelease.TagName, myGithubPublishReleaseOptions.Owner, myGithubPublishReleaseOptions.Repository)
 
 	if len(myGithubPublishReleaseOptions.AssetPath) > 0 {
 		return uploadReleaseAsset(ctx, createdRelease.GetID(), myGithubPublishReleaseOptions, ghRepoClient)
@@ -107,7 +107,7 @@ func getClosedIssuesText(ctx context.Context, publishedAt github.Timestamp, myGi
 	if len(myGithubPublishReleaseOptions.Labels) > 0 {
 		options.Labels = myGithubPublishReleaseOptions.Labels
 	}
-	ghIssues, _, err := ghIssueClient.ListByRepo(ctx, myGithubPublishReleaseOptions.GithubOrg, myGithubPublishReleaseOptions.GithubRepo, &options)
+	ghIssues, _, err := ghIssueClient.ListByRepo(ctx, myGithubPublishReleaseOptions.Owner, myGithubPublishReleaseOptions.Repository, &options)
 	if err != nil {
 		log.Entry().WithError(err).Error("Failed to get GitHub issues.")
 	}
@@ -144,9 +144,9 @@ func getReleaseDeltaText(myGithubPublishReleaseOptions *githubPublishReleaseOpti
 		"[%v...%v](%v/%v/%v/compare/%v...%v)\n",
 		lastRelease.GetTagName(),
 		myGithubPublishReleaseOptions.Version,
-		myGithubPublishReleaseOptions.GithubServerURL,
-		myGithubPublishReleaseOptions.GithubOrg,
-		myGithubPublishReleaseOptions.GithubRepo,
+		myGithubPublishReleaseOptions.ServerURL,
+		myGithubPublishReleaseOptions.Owner,
+		myGithubPublishReleaseOptions.Repository,
 		lastRelease.GetTagName(), myGithubPublishReleaseOptions.Version,
 	)
 
@@ -155,7 +155,7 @@ func getReleaseDeltaText(myGithubPublishReleaseOptions *githubPublishReleaseOpti
 
 func uploadReleaseAsset(ctx context.Context, releaseID int64, myGithubPublishReleaseOptions *githubPublishReleaseOptions, ghRepoClient githubRepoClient) error {
 
-	assets, _, err := ghRepoClient.ListReleaseAssets(ctx, myGithubPublishReleaseOptions.GithubOrg, myGithubPublishReleaseOptions.GithubRepo, releaseID, &github.ListOptions{})
+	assets, _, err := ghRepoClient.ListReleaseAssets(ctx, myGithubPublishReleaseOptions.Owner, myGithubPublishReleaseOptions.Repository, releaseID, &github.ListOptions{})
 	if err != nil {
 		return errors.Wrap(err, "Failed to get list of release assets.")
 	}
@@ -168,7 +168,7 @@ func uploadReleaseAsset(ctx context.Context, releaseID int64, myGithubPublishRel
 	}
 	if assetID != 0 {
 		//asset needs to be deleted first since API does not allow for replacement
-		_, err := ghRepoClient.DeleteReleaseAsset(ctx, myGithubPublishReleaseOptions.GithubOrg, myGithubPublishReleaseOptions.GithubRepo, assetID)
+		_, err := ghRepoClient.DeleteReleaseAsset(ctx, myGithubPublishReleaseOptions.Owner, myGithubPublishReleaseOptions.Repository, assetID)
 		if err != nil {
 			return errors.Wrap(err, "Failed to delete release asset.")
 		}
@@ -194,7 +194,7 @@ func uploadReleaseAsset(ctx context.Context, releaseID int64, myGithubPublishRel
 	}
 
 	log.Entry().Info("Starting to upload release asset.")
-	asset, _, err := ghRepoClient.UploadReleaseAsset(ctx, myGithubPublishReleaseOptions.GithubOrg, myGithubPublishReleaseOptions.GithubRepo, releaseID, &opts, file)
+	asset, _, err := ghRepoClient.UploadReleaseAsset(ctx, myGithubPublishReleaseOptions.Owner, myGithubPublishReleaseOptions.Repository, releaseID, &opts, file)
 	if err != nil {
 		return errors.Wrap(err, "Failed to upload release asset.")
 	}
