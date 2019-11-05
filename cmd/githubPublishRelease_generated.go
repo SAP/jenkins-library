@@ -4,6 +4,7 @@ import (
 	"os"
 
 	"github.com/SAP/jenkins-library/pkg/config"
+	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/spf13/cobra"
 )
 
@@ -18,9 +19,10 @@ type githubPublishReleaseOptions struct {
 	GithubRepo            string   `json:"githubRepo,omitempty"`
 	GithubServerURL       string   `json:"githubServerUrl,omitempty"`
 	GithubToken           string   `json:"githubToken,omitempty"`
+	GithubUploadURL       string   `json:"githubUploadUrl,omitempty"`
 	Labels                []string `json:"labels,omitempty"`
 	ReleaseBodyHeader     string   `json:"releaseBodyHeader,omitempty"`
-	Update                bool     `json:"update,omitempty"`
+	UpdateAsset           bool     `json:"updateAsset,omitempty"`
 	Version               string   `json:"version,omitempty"`
 }
 
@@ -44,6 +46,8 @@ The result looks like
 
 ![Example release](../images/githubRelease.png)`,
 		PreRunE: func(cmd *cobra.Command, args []string) error {
+			log.SetStepName("githubPublishRelease")
+			log.SetVerbose(generalConfig.verbose)
 			return PrepareConfig(cmd, &metadata, "githubPublishRelease", &myGithubPublishReleaseOptions, openPiperFile)
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -66,9 +70,10 @@ func addGithubPublishReleaseFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVar(&myGithubPublishReleaseOptions.GithubRepo, "githubRepo", os.Getenv("PIPER_githubRepo"), "Set the GitHub repository.")
 	cmd.Flags().StringVar(&myGithubPublishReleaseOptions.GithubServerURL, "githubServerUrl", "https://github.com", "GitHub server url for end-user access.")
 	cmd.Flags().StringVar(&myGithubPublishReleaseOptions.GithubToken, "githubToken", os.Getenv("PIPER_githubToken"), "GitHub personal access token as per https://help.github.com/en/github/authenticating-to-github/creating-a-personal-access-token-for-the-command-line")
+	cmd.Flags().StringVar(&myGithubPublishReleaseOptions.GithubUploadURL, "githubUploadUrl", "https://uploads.github.com", "Set the GitHub API url.")
 	cmd.Flags().StringSliceVar(&myGithubPublishReleaseOptions.Labels, "labels", []string{}, "Labels to include in issue search.")
 	cmd.Flags().StringVar(&myGithubPublishReleaseOptions.ReleaseBodyHeader, "releaseBodyHeader", os.Getenv("PIPER_releaseBodyHeader"), "Content which will appear for the release.")
-	cmd.Flags().BoolVar(&myGithubPublishReleaseOptions.Update, "update", false, "Specify if the release should be updated in case it already exists")
+	cmd.Flags().BoolVar(&myGithubPublishReleaseOptions.UpdateAsset, "updateAsset", false, "Specify if a release asset should be updated only.")
 	cmd.Flags().StringVar(&myGithubPublishReleaseOptions.Version, "version", os.Getenv("PIPER_version"), "Define the version number which will be written as tag as well as release name.")
 
 	cmd.MarkFlagRequired("githubApiUrl")
@@ -76,6 +81,7 @@ func addGithubPublishReleaseFlags(cmd *cobra.Command) {
 	cmd.MarkFlagRequired("githubRepo")
 	cmd.MarkFlagRequired("githubServerUrl")
 	cmd.MarkFlagRequired("githubToken")
+	cmd.MarkFlagRequired("githubUploadUrl")
 	cmd.MarkFlagRequired("version")
 }
 
@@ -146,6 +152,12 @@ func githubPublishReleaseMetadata() config.StepData {
 						Mandatory: true,
 					},
 					{
+						Name:      "githubUploadUrl",
+						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:      "string",
+						Mandatory: true,
+					},
+					{
 						Name:      "labels",
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:      "[]string",
@@ -158,7 +170,7 @@ func githubPublishReleaseMetadata() config.StepData {
 						Mandatory: false,
 					},
 					{
-						Name:      "update",
+						Name:      "updateAsset",
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:      "bool",
 						Mandatory: false,
