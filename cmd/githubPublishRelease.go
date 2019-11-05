@@ -112,8 +112,8 @@ func getClosedIssuesText(ctx context.Context, publishedAt github.Timestamp, myGi
 		log.Entry().WithError(err).Error("Failed to get GitHub issues.")
 	}
 
-	prTexts := []string{"\n**List of closed pull-requests since last release**"}
-	issueTexts := []string{"\n**List of closed issues since last release**"}
+	prTexts := []string{"**List of closed pull-requests since last release**"}
+	issueTexts := []string{"**List of closed issues since last release**"}
 
 	for _, issue := range ghIssues {
 		if issue.IsPullRequest() && !isExcluded(issue, myGithubPublishReleaseOptions.ExcludeLabels) {
@@ -126,11 +126,11 @@ func getClosedIssuesText(ctx context.Context, publishedAt github.Timestamp, myGi
 	}
 
 	if len(prTexts) > 1 {
-		closedIssuesText += strings.Join(prTexts, "\n") + "\n"
+		closedIssuesText += "\n" + strings.Join(prTexts, "\n") + "\n"
 	}
 
 	if len(issueTexts) > 1 {
-		closedIssuesText += strings.Join(issueTexts, "\n") + "\n"
+		closedIssuesText += "\n" + strings.Join(issueTexts, "\n") + "\n"
 	}
 	return closedIssuesText
 }
