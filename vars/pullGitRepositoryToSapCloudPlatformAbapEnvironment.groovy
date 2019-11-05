@@ -124,7 +124,7 @@ private String triggerPull(Map configuration, String url, String authToken, Head
         entityUri = responseJson.d.__metadata.uri.toString()
         echo "[${STEP_NAME}] Pull Status: ${responseJson.d.status_descr.toString()}"
     } else {
-        error "[${STEP_NAME}] ${responseJson?.error?.message?.value?.toString()?:'No message available'}"
+        error "[${STEP_NAME}] Error: ${responseJson?.error?.message?.value?.toString()?:'No message available'}"
     }
 
     echo "[${STEP_NAME}] Entity URI: ${entityUri}"
@@ -157,7 +157,7 @@ private String pollPullStatus(String url, String authToken, HeaderFiles headerFi
         if (pollResponseJson.d != null) {
             status = pollResponseJson.d.status.toString()
         } else {
-            error "[${STEP_NAME}] ${pollResponseJson?.error?.message?.value?.toString()?:'No message available'}"
+            error "[${STEP_NAME}] Error: ${pollResponseJson?.error?.message?.value?.toString()?:'No message available'}"
         }
         echo "[${STEP_NAME}] Pull Status: ${pollResponseJson.d.status_descr.toString()}"
     }
@@ -166,9 +166,9 @@ private String pollPullStatus(String url, String authToken, HeaderFiles headerFi
 
 private void checkRequestStatus(HttpHeaderProperties httpHeader) {
     if (httpHeader.statusCode == 400) {
-        echo "[${STEP_NAME}] Connection Failed: ${httpHeader.statusCode} ${httpHeader.statusMessage}"
+        echo "[${STEP_NAME}] Info: ${httpHeader.statusCode} ${httpHeader.statusMessage}"
     } else if (httpHeader.statusCode > 201) {
-        error "[${STEP_NAME}] Connection Failed: ${httpHeader.statusCode} ${httpHeader.statusMessage}"
+        error "[${STEP_NAME}] Error: ${httpHeader.statusCode} ${httpHeader.statusMessage}"
     }
 }
 

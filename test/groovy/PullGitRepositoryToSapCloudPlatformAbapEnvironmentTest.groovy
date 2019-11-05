@@ -120,7 +120,7 @@ public class PullGitRepositoryToSapCloudPlatformAbapEnvironmentTest extends Base
         })
 
         thrown.expect(Exception)
-        thrown.expectMessage("[pullGitRepositoryToSapCloudPlatformAbapEnvironment] text")
+        thrown.expectMessage("[pullGitRepositoryToSapCloudPlatformAbapEnvironment] Error: text")
 
         stepRule.step.pullGitRepositoryToSapCloudPlatformAbapEnvironment(script: nullScript, host: 'https://example.com', repositoryName: 'Z_DEMO_DM', username: 'user', password: 'password')
 
@@ -137,7 +137,7 @@ public class PullGitRepositoryToSapCloudPlatformAbapEnvironmentTest extends Base
         })
 
         thrown.expect(Exception)
-        thrown.expectMessage("[pullGitRepositoryToSapCloudPlatformAbapEnvironment] Connection Failed: 401 Unauthorized")
+        thrown.expectMessage("[pullGitRepositoryToSapCloudPlatformAbapEnvironment] Error: 401 Unauthorized")
 
         stepRule.step.pullGitRepositoryToSapCloudPlatformAbapEnvironment(script: nullScript, host: 'https://example.com', repositoryName: 'Z_DEMO_DM', username: 'user', password: 'password')
 
