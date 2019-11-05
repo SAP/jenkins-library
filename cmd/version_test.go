@@ -1,11 +1,11 @@
 package cmd
 
 import (
-	"testing"
-	"os"
 	"bytes"
-	"io"
 	"github.com/stretchr/testify/assert"
+	"io"
+	"os"
+	"testing"
 )
 
 func TestVersion(t *testing.T) {
@@ -16,7 +16,6 @@ func TestVersion(t *testing.T) {
 		assert.Contains(t, result, "commit: \"<n/a>\"")
 		assert.Contains(t, result, "tag: \"<n/a>\"")
 	})
-
 
 	t.Run("versionAndTagSet", func(t *testing.T) {
 
@@ -29,9 +28,9 @@ func TestVersion(t *testing.T) {
 func runVersionCommand(t *testing.T, commitID, tag string) string {
 
 	orig := os.Stdout
-	defer func() {os.Stdout = orig}()
+	defer func() { os.Stdout = orig }()
 
-	r,w,e := os.Pipe()
+	r, w, e := os.Pipe()
 	if e != nil {
 		t.Error("Cannot setup pipes.")
 	}
@@ -41,8 +40,12 @@ func runVersionCommand(t *testing.T, commitID, tag string) string {
 	//
 	// needs to be set in the free wild by the build process:
 	// go build -ldflags "-X github.com/SAP/jenkins-library/cmd.GitCommit=${GIT_COMMIT} -X github.com/SAP/jenkins-library/cmd.GitTag=${GIT_TAG}"
-	if len(commitID) > 0 { GitCommit = commitID; }
-	if len(tag) > 0 { GitTag = tag }
+	if len(commitID) > 0 {
+		GitCommit = commitID
+	}
+	if len(tag) > 0 {
+		GitTag = tag
+	}
 	defer func() { GitCommit = ""; GitTag = "" }()
 	//
 	//
