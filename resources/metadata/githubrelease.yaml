@@ -101,6 +101,16 @@ spec:
       - STEPS
       type: string
       mandatory: true
+    - name: githubUploadUrl
+      description: Set the GitHub API url.
+      scope:
+      - GENERAL
+      - PARAMETERS
+      - STAGES
+      - STEPS
+      type: string
+      default: https://uploads.github.com
+      mandatory: true
     - name: labels
       description: 'Labels to include in issue search.'
       scope:
@@ -115,8 +125,8 @@ spec:
       - STAGES
       - STEPS
       type: string
-    - name: update
-      description: Specify if the release should be updated in case it already exists
+    - name: updateAsset
+      description: Specify if a release asset should be updated only.
       scope:
       - PARAMETERS
       - STAGES
