@@ -165,7 +165,7 @@ private String pollPullStatus(String url, String authToken, HeaderFiles headerFi
 }
 
 private void checkRequestStatus(HttpHeaderProperties httpHeader) {
-    if (httpHeader.statusCode = 400) {
+    if (httpHeader.statusCode == 400) {
         JsonSlurper slurper = new JsonSlurper()
         Map responseJson = slurper.parseText(response)
         try {
