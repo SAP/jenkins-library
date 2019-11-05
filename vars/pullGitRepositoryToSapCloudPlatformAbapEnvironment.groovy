@@ -165,7 +165,15 @@ private String pollPullStatus(String url, String authToken, HeaderFiles headerFi
 }
 
 private void checkRequestStatus(HttpHeaderProperties httpHeader) {
-    if (httpHeader.statusCode > 201) {
+    if (httpHeader.statusCode = 400) {
+        JsonSlurper slurper = new JsonSlurper()
+        Map responseJson = slurper.parseText(response)
+        try {
+            echo "[${STEP_NAME}] ${responseJson?.error?.message?.value?.toString()?:'No message available'}"
+        } finally {
+            error "[${STEP_NAME}] Connection Failed: ${httpHeader.statusCode} ${httpHeader.statusMessage}"
+        }
+    } else if (httpHeader.statusCode > 201) {
         error "[${STEP_NAME}] Connection Failed: ${httpHeader.statusCode} ${httpHeader.statusMessage}"
     }
 }
