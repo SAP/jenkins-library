@@ -161,7 +161,7 @@ public class PullGitRepositoryToSapCloudPlatformAbapEnvironmentTest extends Base
     public void checkHostProtocolIsHttps() {
        thrown.expect(Exception)
        thrown.expectMessage("[pullGitRepositoryToSapCloudPlatformAbapEnvironment] URL Validation Failed: HTTPS must be used")
-       stepRule.step.pullGitRepositoryToSapCloudPlatformAbapEnvironment(script: nullScript, host: "http://www.exampke.com", repositoryName: 'REPO', username: 'user', password: 'password')
+       stepRule.step.pullGitRepositoryToSapCloudPlatformAbapEnvironment(script: nullScript, host: "http://www.example.com", repositoryName: 'REPO', username: 'user', password: 'password')
     }
 
     @Test

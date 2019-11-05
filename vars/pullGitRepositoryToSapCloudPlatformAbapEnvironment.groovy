@@ -53,6 +53,7 @@ void call(Map parameters = [:]) {
         Map configuration = ConfigurationHelper.newInstance(this)
             .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS)
             .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS)
+            .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName ?: env.STAGE_NAME, STEP_CONFIG_KEYS)
             .mixin(parameters, PARAMETER_KEYS)
             .withMandatoryProperty('host', 'Host not provided')
             .withMandatoryProperty('repositoryName', 'Repository / Software Component not provided')
@@ -78,6 +79,8 @@ void call(Map parameters = [:]) {
                 if (finalStatus != 'S') {
                     error "[${STEP_NAME}] Pull Failed"
                 }
+            } else {
+                error "[${STEP_NAME}] Pull Failed"
             }
         } finally {
             workspaceCleanup(headerFiles)
