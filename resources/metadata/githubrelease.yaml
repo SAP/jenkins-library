@@ -4,13 +4,13 @@ metadata:
   longDescription: |
     This step creates a tag in your GitHub repository together with a release.
     The release can be filled with text plus additional information like:
- 
+
     * Closed pull request since last release
     * Closed issues since last release
     * Link to delta information showing all commits since last release
- 
+
     The result looks like
- 
+
     ![Example release](../images/githubRelease.png)
 spec:
   inputs:
