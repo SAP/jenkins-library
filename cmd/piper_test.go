@@ -13,7 +13,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-
 type execMockRunner struct {
 	dir   []string
 	calls []execCall
@@ -42,11 +41,11 @@ func (m *execMockRunner) RunExecutable(e string, p ...string) error {
 	return nil
 }
 
-func(m *shellMockRunner) Dir(d string) {
+func (m *shellMockRunner) Dir(d string) {
 	m.dir = d
 }
 
-func(m *shellMockRunner) RunShell(s string, c string) error {
+func (m *shellMockRunner) RunShell(s string, c string) error {
 	m.calls = append(m.calls, c)
 	return nil
 }
