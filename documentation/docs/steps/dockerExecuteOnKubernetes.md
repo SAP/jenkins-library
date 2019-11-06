@@ -1,8 +1,6 @@
-# dockerExecuteOnKubernetes
+# ${docGenStepName}
 
-## Description
-
-Content here is generated from corresponnding step, see `vars`.
+## ${docGenDescription}
 
 ## Prerequisites
 
@@ -11,13 +9,11 @@ Content here is generated from corresponnding step, see `vars`.
 
 ![Jenkins environment variable configuration](../images/k8s_env.png)
 
-## Parameters
+## ${docGenParameters}
 
-Content here is generated from corresponnding step, see `vars`.
+## ${docGenConfiguration}
 
-## Step configuration
-
-Content here is generated from corresponnding step, see `vars`.
+## ${docJenkinsPluginDependencies}
 
 ## Side effects
 
@@ -50,7 +46,7 @@ export ON_K8S=true"
 ```
 
 ```groovy
-dockerExecuteOnKubernetes(script: script, containerMap: ['maven:3.5-jdk-8-alpine': 'maven', 's4sdk/docker-cf-cli': 'cfcli']){
+dockerExecuteOnKubernetes(script: script, containerMap: ['maven:3.5-jdk-8-alpine': 'maven', 'ppiper/cf-cli': 'cfcli']){
     container('maven'){
         sh "mvn clean install"
     }

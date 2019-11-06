@@ -8,7 +8,7 @@ import org.junit.runner.Description
 import org.junit.runners.model.Statement
 
 import static org.hamcrest.Matchers.containsString
-import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertThat
 
 import org.hamcrest.Matchers
 
@@ -24,8 +24,9 @@ class JenkinsLoggingRule implements TestRule {
         this.testInstance = testInstance
     }
 
-    public void expect(String substring) {
+    public JenkinsLoggingRule expect(String substring) {
         expected.add(substring)
+        return this
     }
 
     @Override

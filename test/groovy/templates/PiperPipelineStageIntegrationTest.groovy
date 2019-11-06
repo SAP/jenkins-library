@@ -1,4 +1,3 @@
-#!groovy
 package templates
 
 import org.junit.Before
@@ -36,7 +35,7 @@ class PiperPipelineStageIntegrationTest extends BasePiperTest {
             script: nullScript,
             juStabUtils: utils,
         )
-        assertThat(jlr.log, containsString('Stage implementation is not provided yet.'))
+        assertThat(jlr.log, containsString('No default stage implementation is provided for this stage.'))
 
     }
 }

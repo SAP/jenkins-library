@@ -1,6 +1,6 @@
-# Build and Deploy SAP UI5 or SAP Fiori Applications on SAP Cloud Platform with Jenkins
+# Build and Deploy SAPUI5 or SAP Fiori Applications on SAP Cloud Platform with Jenkins
 
-Build an application based on SAP UI5 or SAP Fiori with Jenkins and deploy the build result into an SAP Cloud Platform account in the Neo environment.
+Build an application based on SAPUI5 or SAP Fiori with Jenkins and deploy the build result into an SAP Cloud Platform account in the Neo environment.
 
 ## Prerequisites
 
@@ -11,11 +11,9 @@ Build an application based on SAP UI5 or SAP Fiori with Jenkins and deploy the b
 * You have installed Node.js including node and npm. See [Node.js](https://nodejs.org/en/download/).
 * You have installed the SAP Cloud Platform Neo Environment SDK. See [SAP Development Tools](https://tools.hana.ondemand.com/#cloud).
 
-
 ### Project Prerequisites
 
 This scenario requires additional files in your project and in the execution environment on your Jenkins instance.
-
 
 On the project level, provide and adjust the following template:
 
@@ -26,13 +24,11 @@ On the project level, provide and adjust the following template:
 | [`package.json`](https://github.com/SAP/jenkins-library/blob/master/documentation/docs/scenarios/ui5-sap-cp/files/package.json) | This file lists the required development dependencies for the build. | Add the content of the `package.json` file to your existing `package.json` file. |
 | [`Gruntfile.js`](https://github.com/SAP/jenkins-library/blob/master/documentation/docs/scenarios/ui5-sap-cp/files/Gruntfile.js) | This file controls the grunt build. By default the tasks `clean`, `build`, and `lint` are executed. | Place the `Gruntfile.js` in the root directory of your project. |
 
-
 ## Context
 
 This scenario combines various different steps to create a complete pipeline.
 
-
-In this scenario, we want to show how to build an application based on SAP UI5 or SAP Fiori by using the multi-target application (MTA) concept and how to deploy the build result into an SAP Cloud Platform account in the Neo environment. This document comprises the [mtaBuild](https://sap.github.io/jenkins-library/steps/mtaBuild/) and the [neoDeploy](https://sap.github.io/jenkins-library/steps/neoDeploy/) steps.
+In this scenario, we want to show how to build an application based on SAPUI5 or SAP Fiori by using the multi-target application (MTA) concept and how to deploy the build result into an SAP Cloud Platform account in the Neo environment. This document comprises the [mtaBuild](../../../steps/mtaBuild/) and the [neoDeploy](../../../steps/neoDeploy/) steps.
 
 ![This pipeline in Jenkins Blue Ocean](images/pipeline.jpg)
 ###### Screenshot: Build and Deploy Process in Jenkins
@@ -59,10 +55,11 @@ steps:
     buildTarget: 'NEO'
     mtaJarLocation: '/opt/sap/mta.jar'
   neoDeploy:
-    neoCredentialsId: 'NEO_DEPLOY'
     neoHome: '/opt/sap/neo-sdk/'
-    account: 'your-account-id'
-    host: 'hana.ondemand.com'
+    neo:
+      credentialsId: 'NEO_DEPLOY'
+      account: 'your-account-id'
+      host: 'hana.ondemand.com'
 ```
 
 #### Configuration for the MTA Build
@@ -72,20 +69,18 @@ steps:
 | `buildTarget`    | The target platform to which the mtar can be deployed. Possible values are: `CF`, `NEO`, `XSA` |
 | `mtaJarLocation` | The location of the multi-target application archive builder jar file, including file name and extension. |
 
-
 #### Configuration for the Deployment to SAP Cloud Platform
 
 | Parameter          | Description |
 | -------------------|-------------|
 | `account`           | The SAP Cloud Platform account to deploy to. |
+| `credentialsId` | The Jenkins credentials that contain the user and password which are used for the deployment on SAP Cloud Platform.|
 | `host`           |  The SAP Cloud Platform host to deploy to. |
-| `neoCredentialsId` | The Jenkins credentials that contain the user and password which are used for the deployment on SAP Cloud Platform. |
 | `neoHome`           | The path to the `neo-java-web-sdk` tool that is used for the deployment. |
-
 
 ### Parameters
 
 For the detailed description of the relevant parameters, see:
 
-* [mtaBuild](https://sap.github.io/jenkins-library/steps/mtaBuild/)
-* [neoDeploy](https://sap.github.io/jenkins-library/steps/neoDeploy/)
+* [mtaBuild](../../../steps/mtaBuild/)
+* [neoDeploy](../../../steps/neoDeploy/)

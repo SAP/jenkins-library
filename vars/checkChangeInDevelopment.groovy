@@ -16,14 +16,60 @@ import static com.sap.piper.cm.StepHelpers.getBackendTypeAndLogInfoIfCMIntegrati
 
 @Field def STEP_NAME = getClass().getName()
 
-@Field Set GENERAL_CONFIG_KEYS = ['changeManagement']
+@Field Set GENERAL_CONFIG_KEYS = [
+    'changeManagement',
+        /**
+         * A pattern used for identifying lines holding the change document id.
+         * @possibleValues regex pattern
+         * @parentConfigKey changeManagement
+         */
+        'changeDocumentLabel',
+        /**
+         * Additional options for cm command line client, e.g. JAVA_OPTS.
+         * @parentConfigKey changeManagement
+         */
+        'clientOpts',
+        /**
+         * The id of the credentials to connect to the Solution Manager. The credentials needs to be maintained on Jenkins.
+         * @parentConfigKey changeManagement
+         */
+        'credentialsId',
+        /**
+         * The service endpoint, e.g. Solution Manager, ABAP System.
+         * @parentConfigKey changeManagement
+         */
+        'endpoint',
+        /**
+         * The starting point for retrieving the change document id.
+         * @parentConfigKey changeManagement
+         */
+        'git/from',
+        /**
+         * The end point for retrieving the change document id.
+         * @parentConfigKey changeManagement
+         */
+        'git/to',
+        /**
+         * Specifies what part of the commit is scanned. By default the body of the commit message is scanned.
+         * @possibleValues see `git log --help`
+         * @parentConfigKey changeManagement
+         */
+        'git/format'
+]
+
 @Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS.plus(
     /**
-      * When set to `false` the step will not fail in case the step is not in status 'in development'.
-      * @possibleValues `true`, `false`
-      */
+     * When set to `false` the step will not fail in case the step is not in status 'in development'.
+     * @possibleValues `true`, `false`
+     */
     'failIfStatusIsNotInDevelopment')
-@Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS.plus('changeDocumentId')
+
+@Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS.plus(
+    /**
+     * The id of the change document to transport. If not provided, it is retrieved from the git commit history.
+     */
+    'changeDocumentId'
+)
 
 /**
  * Checks if a Change Document in SAP Solution Manager is in status 'in development'. The change document id is retrieved from the git commit history. The change document id
@@ -57,37 +103,14 @@ void call(parameters = [:]) {
 
         configHelper
             // for the following parameters we expect defaults
-            /**
-              * A pattern used for identifying lines holding the change document id.
-              * @possibleValues regex pattern
-              */
             .withMandatoryProperty('changeManagement/changeDocumentLabel')
-            /**
-              * Additional options for cm command line client, e.g. like JAVA_OPTS.
-              */
             .withMandatoryProperty('changeManagement/clientOpts')
-            /**
-              * The id of the credentials to connect to the Solution Manager. The credentials needs to be maintained on Jenkins.
-              */
             .withMandatoryProperty('changeManagement/credentialsId')
-            /**
-              * The starting point for retrieving the change document id
-              */
             .withMandatoryProperty('changeManagement/git/from')
-            /**
-              *  The end point for retrieving the change document id
-              */
             .withMandatoryProperty('changeManagement/git/to')
-            /**
-              * Specifies what part of the commit is scanned. By default the body of the commit message is scanned.
-              * @possibleValues see `git log --help`
-              */
             .withMandatoryProperty('changeManagement/git/format')
             .withMandatoryProperty('failIfStatusIsNotInDevelopment')
             // for the following parameters we expect a value provided from outside
-            /**
-              * The address of the Solution Manager.
-              */
             .withMandatoryProperty('changeManagement/endpoint')
 
         new Utils().pushToSWA([
@@ -99,10 +122,6 @@ void call(parameters = [:]) {
         def changeId = getChangeDocumentId(cm, script, configuration)
 
         configuration = configHelper.mixin([changeDocumentId: changeId?.trim() ?: null], ['changeDocumentId'] as Set)
-
-                                    /**
-                                      * The id of the change document to transport. If not provided, it is retrieved from the git commit history.
-                                      */
                                     .withMandatoryProperty('changeDocumentId',
                                         "No changeDocumentId provided. Neither via parameter 'changeDocumentId' " +
                                         "nor via label '${configuration.changeManagement.changeDocumentLabel}' in commit range " +
@@ -115,7 +134,9 @@ void call(parameters = [:]) {
 
         try {
 
-            isInDevelopment = cm.isChangeInDevelopment(configuration.changeDocumentId,
+            isInDevelopment = cm.isChangeInDevelopment(
+                configuration.changeManagement.solman.docker,
+                configuration.changeDocumentId,
                 configuration.changeManagement.endpoint,
                 configuration.changeManagement.credentialsId,
                 configuration.changeManagement.clientOpts)

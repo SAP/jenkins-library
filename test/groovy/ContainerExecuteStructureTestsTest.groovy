@@ -1,3 +1,4 @@
+import org.junit.After
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -41,6 +42,11 @@ class ContainerExecuteStructureTestsTest extends BasePiperTest {
                 files = [new File(map.glob)]
             return files.toArray()
         })
+    }
+
+    @After
+    void cleanup() {
+        nullScript.env = [ON_K8S: null]
     }
 
     @Test

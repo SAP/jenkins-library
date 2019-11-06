@@ -1,6 +1,6 @@
 import com.sap.piper.k8s.ContainerMap
 import com.sap.piper.JenkinsUtils
-
+import com.sap.piper.SidecarUtils
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -9,6 +9,7 @@ import org.junit.rules.RuleChain
 import util.BasePiperTest
 import util.JenkinsLoggingRule
 import util.JenkinsReadYamlRule
+import util.JenkinsShellCallRule
 import util.JenkinsStepRule
 import util.PluginMock
 import util.Rules
@@ -23,6 +24,7 @@ class DockerExecuteTest extends BasePiperTest {
     private DockerMock docker
     private JenkinsLoggingRule loggingRule = new JenkinsLoggingRule(this)
     private JenkinsStepRule stepRule = new JenkinsStepRule(this)
+    private JenkinsShellCallRule shellRule = new JenkinsShellCallRule(this)
 
     @Rule
     public RuleChain ruleChain = Rules
@@ -30,8 +32,8 @@ class DockerExecuteTest extends BasePiperTest {
         .around(new JenkinsReadYamlRule(this))
         .around(loggingRule)
         .around(stepRule)
+        .around(shellRule)
 
-    int dockerPsReturnValue = 0
     def bodyExecuted
     def containerName
 
@@ -39,15 +41,20 @@ class DockerExecuteTest extends BasePiperTest {
     void init() {
         bodyExecuted = false
         docker = new DockerMock()
-        JenkinsUtils.metaClass.static.isPluginActive = {def s -> new PluginMock(s).isActive()}
+        JenkinsUtils.metaClass.static.isPluginActive = { def s -> new PluginMock(s).isActive() }
         binding.setVariable('docker', docker)
-        helper.registerAllowedMethod('sh', [Map.class], {return dockerPsReturnValue})
+        shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, "docker .*", 0)
     }
 
     @Test
     void testExecuteInsideContainerOfExistingPod() throws Exception {
+        List usedDockerEnvVars
         helper.registerAllowedMethod('container', [String.class, Closure.class], { String container, Closure body ->
             containerName = container
+            body()
+        })
+        helper.registerAllowedMethod('withEnv', [List.class, Closure.class], { List envVars, Closure body ->
+            usedDockerEnvVars = envVars
             body()
         })
         binding.setVariable('env', [POD_NAME: 'testpod', ON_K8S: 'true'])
@@ -59,8 +66,9 @@ class DockerExecuteTest extends BasePiperTest {
         }
         assertTrue(loggingRule.log.contains('Executing inside a Kubernetes Container'))
         assertEquals('mavenexec', containerName)
+        assertEquals(usedDockerEnvVars[0].toString(), "http_proxy=http://proxy:8000")
         assertTrue(bodyExecuted)
-     }
+    }
 
     @Test
     void testExecuteInsideNewlyCreatedPod() throws Exception {
@@ -94,7 +102,7 @@ class DockerExecuteTest extends BasePiperTest {
     void testExecuteInsidePodWithStageKeyEmptyValue() throws Exception {
         helper.registerAllowedMethod('dockerExecuteOnKubernetes', [Map.class, Closure.class], { Map config, Closure body -> body() })
         binding.setVariable('env', [POD_NAME: 'testpod', ON_K8S: 'true'])
-        ContainerMap.instance.setMap(['testpod':[:]])
+        ContainerMap.instance.setMap(['testpod': [:]])
         stepRule.step.dockerExecute(script: nullScript,
             dockerImage: 'maven:3.5-jdk-8-alpine',
             dockerEnvVars: ['http_proxy': 'http://proxy:8000']) {
@@ -107,7 +115,7 @@ class DockerExecuteTest extends BasePiperTest {
     @Test
     void testExecuteInsidePodWithCustomCommandAndShell() throws Exception {
         Map kubernetesConfig = [:]
-        helper.registerAllowedMethod('dockerExecuteOnKubernetes', [Map.class, Closure.class], {Map config, Closure body ->
+        helper.registerAllowedMethod('dockerExecuteOnKubernetes', [Map.class, Closure.class], { Map config, Closure body ->
             kubernetesConfig = config
             return body()
         })
@@ -117,7 +125,7 @@ class DockerExecuteTest extends BasePiperTest {
             containerCommand: '/busybox/tail -f /dev/null',
             containerShell: '/busybox/sh',
             dockerImage: 'maven:3.5-jdk-8-alpine'
-        ){
+        ) {
             bodyExecuted = true
         }
         assertTrue(loggingRule.log.contains('Executing inside a Kubernetes Pod'))
@@ -139,7 +147,7 @@ class DockerExecuteTest extends BasePiperTest {
 
     @Test
     void testSkipDockerImagePull() throws Exception {
-        nullScript.commonPipelineEnvironment.configuration = [steps:[dockerExecute:[dockerPullImage: false]]]
+        nullScript.commonPipelineEnvironment.configuration = [steps: [dockerExecute: [dockerPullImage: false]]]
         stepRule.step.dockerExecute(
             script: nullScript,
             dockerImage: 'maven:3.5-jdk-8-alpine'
@@ -156,11 +164,11 @@ class DockerExecuteTest extends BasePiperTest {
             script: nullScript,
             dockerName: 'maven',
             dockerImage: 'maven:3.5-jdk-8-alpine',
-            sidecarEnvVars: ['testEnv':'testVal'],
+            sidecarEnvVars: ['testEnv': 'testVal'],
             sidecarImage: 'selenium/standalone-chrome',
-            sidecarVolumeBind: ['/dev/shm':'/dev/shm'],
+            sidecarVolumeBind: ['/dev/shm': '/dev/shm'],
             sidecarName: 'testAlias',
-            sidecarPorts: ['4444':'4444', '1111':'1111'],
+            sidecarPorts: ['4444': '4444', '1111': '1111'],
             sidecarPullImage: false
         ) {
             bodyExecuted = true
@@ -172,10 +180,10 @@ class DockerExecuteTest extends BasePiperTest {
     @Test
     void testExecuteInsideDockerContainerWithParameters() throws Exception {
         stepRule.step.dockerExecute(script: nullScript,
-                      dockerImage: 'maven:3.5-jdk-8-alpine',
-                      dockerOptions: '-description=lorem ipsum',
-                      dockerVolumeBind: ['my_vol': '/my_vol'],
-                      dockerEnvVars: ['http_proxy': 'http://proxy:8000']) {
+            dockerImage: 'maven:3.5-jdk-8-alpine',
+            dockerOptions: '-description=lorem ipsum',
+            dockerVolumeBind: ['my_vol': '/my_vol'],
+            dockerEnvVars: ['http_proxy': 'http://proxy:8000']) {
             bodyExecuted = true
         }
         assertTrue(docker.getParameters().contains('--env https_proxy '))
@@ -201,7 +209,7 @@ class DockerExecuteTest extends BasePiperTest {
 
     @Test
     void testDockerNotInstalledResultsInLocalExecution() throws Exception {
-        dockerPsReturnValue = 1
+        shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, "docker .*", 1)
         stepRule.step.dockerExecute(script: nullScript,
             dockerOptions: '-it') {
             bodyExecuted = true
@@ -213,16 +221,16 @@ class DockerExecuteTest extends BasePiperTest {
     }
 
     @Test
-    void testSidecarDefault(){
+    void testSidecarDefault() {
         stepRule.step.dockerExecute(
             script: nullScript,
             dockerName: 'maven',
             dockerImage: 'maven:3.5-jdk-8-alpine',
-            sidecarEnvVars: ['testEnv':'testVal'],
+            sidecarEnvVars: ['testEnv': 'testVal'],
             sidecarImage: 'selenium/standalone-chrome',
-            sidecarVolumeBind: ['/dev/shm':'/dev/shm'],
+            sidecarVolumeBind: ['/dev/shm': '/dev/shm'],
             sidecarName: 'testAlias',
-            sidecarPorts: ['4444':'4444', '1111':'1111']
+            sidecarPorts: ['4444': '4444', '1111': '1111']
         ) {
             bodyExecuted = true
         }
@@ -242,18 +250,31 @@ class DockerExecuteTest extends BasePiperTest {
     }
 
     @Test
-    void testSidecarKubernetes(){
+    void testSidecarHealthCheck() {
+        stepRule.step.dockerExecute(
+            script: nullScript,
+            dockerImage: 'maven:3.5-jdk-8-alpine',
+            sidecarImage: 'selenium/standalone-chrome',
+            sidecarName: 'testAlias',
+            sidecarReadyCommand: "isReady.sh"
+        ) {}
+        assertThat(shellRule.shell, hasItem("docker exec uniqueId isReady.sh"))
+    }
+
+    @Test
+    void testSidecarKubernetes() {
         boolean dockerExecuteOnKubernetesCalled = false
         binding.setVariable('env', [ON_K8S: 'true'])
         helper.registerAllowedMethod('dockerExecuteOnKubernetes', [Map.class, Closure.class], { params, body ->
             dockerExecuteOnKubernetesCalled = true
-            assertThat(params.containerCommands['selenium/standalone-chrome'], is(''))
-            assertThat(params.containerEnvVars, allOf(hasEntry('selenium/standalone-chrome', ['testEnv': 'testVal']),hasEntry('maven:3.5-jdk-8-alpine', null)))
-            assertThat(params.containerMap, allOf(hasEntry('maven:3.5-jdk-8-alpine', 'maven'), hasEntry('selenium/standalone-chrome', 'selenium')))
+            assertThat(params.dockerImage, is('maven:3.5-jdk-8-alpine'))
+            assertThat(params.containerName, is('maven'))
+            assertThat(params.sidecarEnvVars, is(['testEnv': 'testVal']))
+            assertThat(params.sidecarName, is('selenium'))
+            assertThat(params.sidecarImage, is('selenium/standalone-chrome'))
             assertThat(params.containerName, is('maven'))
             assertThat(params.containerPortMappings['selenium/standalone-chrome'], hasItem(allOf(hasEntry('containerPort', 4444), hasEntry('hostPort', 4444))))
-            assertThat(params.containerWorkspaces['maven:3.5-jdk-8-alpine'], is('/home/piper'))
-            assertThat(params.containerWorkspaces['selenium/standalone-chrome'], is(''))
+            assertThat(params.dockerWorkspace, is('/home/piper'))
             body()
         })
         stepRule.step.dockerExecute(
@@ -264,15 +285,44 @@ class DockerExecuteTest extends BasePiperTest {
             dockerImage: 'maven:3.5-jdk-8-alpine',
             dockerName: 'maven',
             dockerWorkspace: '/home/piper',
-            sidecarEnvVars: ['testEnv':'testVal'],
+            sidecarEnvVars: ['testEnv': 'testVal'],
             sidecarImage: 'selenium/standalone-chrome',
             sidecarName: 'selenium',
-            sidecarVolumeBind: ['/dev/shm':'/dev/shm']
+            sidecarVolumeBind: ['/dev/shm': '/dev/shm']
         ) {
             bodyExecuted = true
         }
         assertThat(bodyExecuted, is(true))
         assertThat(dockerExecuteOnKubernetesCalled, is(true))
+    }
+
+    @Test
+    void testSidecarKubernetesHealthCheck() {
+        binding.setVariable('env', [ON_K8S: 'true'])
+
+        helper.registerAllowedMethod('dockerExecuteOnKubernetes', [Map.class, Closure.class], { params, body ->
+            body()
+            SidecarUtils sidecarUtils = new SidecarUtils(nullScript)
+            sidecarUtils.waitForSidecarReadyOnKubernetes(params.sidecarName, params.sidecarReadyCommand)
+        })
+
+        def containerCalled = false
+        helper.registerAllowedMethod('container', [Map.class, Closure.class], { params, body ->
+            containerCalled = true
+            assertThat(params.name, is('testAlias'))
+            body()
+        })
+
+        stepRule.step.dockerExecute(
+            script: nullScript,
+            dockerImage: 'maven:3.5-jdk-8-alpine',
+            sidecarImage: 'selenium/standalone-chrome',
+            sidecarName: 'testAlias',
+            sidecarReadyCommand: "isReady.sh"
+        ) {}
+
+        assertThat(containerCalled, is(true))
+        assertThat(shellRule.shell, hasItem("isReady.sh"))
     }
 
     private class DockerMock {

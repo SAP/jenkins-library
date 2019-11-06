@@ -1,30 +1,16 @@
-# setupCommonPipelineEnvironment
+# ${docGenStepName}
 
-## Description
-
-Initializes the [`commonPipelineEnvironment`](commonPipelineEnvironment.md), which is used throughout the complete pipeline.
-
-!!! tip
-    This step needs to run at the beginning of a pipeline right after the SCM checkout.
-    Then subsequent pipeline steps consume the information from `commonPipelineEnvironment`; it does not need to be passed to pipeline steps explicitly.
+## ${docGenDescription}
 
 ## Prerequisites
 
-* A **configuration file** with properties (default location: `.pipeline/config.properties`). The property values are used as default values in many pipeline steps.
+* A **configuration file** with properties. The property values are used as default values in many pipeline steps.
 
-## Parameters
+## ${docGenParameters}
 
-| parameter    | mandatory | default                       | possible values |
-| ------------ |-----------|-------------------------------|-----------------|
-| `script`     | yes       | -                             |                 |
-| `configFile` | no        | `.pipeline/config.properties` |                 |
+## ${docGenConfiguration}
 
-* `script` - The reference to the pipeline script (Jenkinsfile). Normally `this` needs to be provided.
-* `configFile` - Property file defining project specific settings.
-
-## Step configuration
-
-none
+## ${docJenkinsPluginDependencies}
 
 ## Side effects
 

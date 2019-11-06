@@ -1,46 +1,16 @@
-# transportRequestUploadFile
+# ${docGenStepName}
 
-## Description
-
-Uploads a file to a Transport Request.
+## ${docGenDescription}
 
 ## Prerequisites
 
-* **[Change Management Client 2.0.0 or compatible version](http://central.maven.org/maven2/com/sap/devops/cmclient/dist.cli/)** - available for download on Maven Central.
+* **[Change Management Client 2.0.0 or compatible version](http://central.maven.org/maven2/com/sap/devops/cmclient/dist.cli/)** - available for download on Maven Central. **Note:** This is only required if you don't use a Docker-based environment.
 
-## Parameters
+## ${docGenParameters}
 
-| parameter        | mandatory | default                                                | possible values    |
-| -----------------|-----------|--------------------------------------------------------|--------------------|
-| `script`        | yes       |                                                    |                    |
-| `changeDocumentId`        | `SOLMAN` only |                                                    |                    |
-| `transportRequestId`| yes   |                                                    |                    |
-| `applicationId`  | `SOLMAN` only       |                                                    |                    |
-| `filePath`        | yes       |                                                    |                    |
-| `changeManagement/credentialsId`  | yes       |                                                    |                    |
-| `changeManagement/endpoint`        | yes       |                                                    |                    |
-| `changeManagement/git/from`         | no        | `origin/master`                                        |                    |
-| `changeManagement/git/to`           | no        | `HEAD`                                                 |                    |
-| `changeManagement/changeDocumentLabel`        | no        | `ChangeDocument\s?:`                                   | regex pattern      |
-| `changeManagement/transportRequestLabel`        | no        | `TransportRequest\s?:`                                   | regex pattern      |
-| `changeManagement/git/format`        | no        | `%b`                                                   | see `git log --help` |
-| `changeManagement/type`           | no        | `SOLMAN`                                               | `SOLMAN`, `CTS`    |
+## ${docGenConfiguration}
 
-* `script` - The common script environment of the Jenkinsfile running. Typically the reference to the script calling the pipeline step is provided with the `this` parameter, as in `script: this`. This allows the function to access the [`commonPipelineEnvironment`](commonPipelineEnvironment.md) for retrieving, for example, configuration parameters.
-* `changeDocumentId` - For type `SOLMAN` only. The id of the change document related to the transport request to release. Typically provided via commit history.
-* `transportRequestId` - The id of the transport request to release. Typically provided via commit history.
-* `applicationId` - For type `SOLMAN` only. The id of the application.
-* `filePath` - The path of the file to upload.
-* `changeManagement/credentialsId` - The credentials to connect to the service endpoint (Solution Manager, ABAP System).
-* `changeManagement/endpoint` - The service endpoint (Solution Manager, ABAP System).
-* `changeManagement/git/from` - The starting point for retrieving the change document id and/or transport request id
-* `changeManagement/git/to` - The end point for retrieving the change document id and/or transport request id
-* `changeManagement/changeDocumentLabel` - For type `SOLMAN` only. A pattern used for identifying lines holding the change document id.
-* `changeManagement/transportRequestLabel` - A pattern used for identifying lines holding the transport request id.
-* `changeManagement/type` Where/how the transport request is created (via SAP Solution Manager, ABAP).
-* `changeManagement/git/format` - Specifies what part of the commit is scanned. By default the body of the commit message is scanned.
-
-## Step configuration
+## ${docJenkinsPluginDependencies}
 
 The step is configured using a customer configuration file provided as
 resource in an custom shared library.
@@ -106,21 +76,25 @@ The parameters can also be provided when the step is invoked. For examples see b
 
 ```groovy
 // SOLMAN
-transportRequestUploadFile script:this,
-                           changeDocumentId: '001',   // typically provided via git commit history
-                           transportRequestId: '001', // typically provided via git commit history
-                           applicationId: '001',
-                           filePath: '/path',
-                           changeManagement:[
-                             type: 'SOLMAN'
-                             endpoint: 'https://example.org/cm'
-                           ]
+transportRequestUploadFile(
+  script: this,
+  changeDocumentId: '001',   // typically provided via git commit history
+  transportRequestId: '001', // typically provided via git commit history
+  applicationId: '001',
+  filePath: '/path',
+  changeManagement: [
+    type: 'SOLMAN'
+    endpoint: 'https://example.org/cm'
+  ]
+)
 // CTS
-transportRequestUploadFile script:this,
-                           transportRequestId: '001', // typically provided via git commit history
-                           filePath: '/path',
-                           changeManagement:[
-                             type: 'CTS'
-                             endpoint: 'https://example.org/cm'
-                           ]
+transportRequestUploadFile(
+  script: this,
+  transportRequestId: '001', // typically provided via git commit history
+  filePath: '/path',
+  changeManagement: [
+    type: 'CTS'
+    endpoint: 'https://example.org/cm'
+  ]
+)
 ```

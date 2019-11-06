@@ -7,6 +7,7 @@ import org.junit.rules.ExpectedException
 import org.junit.rules.RuleChain
 
 
+import groovy.json.JsonSlurper
 import util.BasePiperTest
 import util.JenkinsDockerExecuteRule
 import util.JenkinsLoggingRule
@@ -46,6 +47,7 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
     def dockerWorkspace
     def podName = ''
     def podLabel = ''
+    def podNodeSelector = ''
     def containersList = []
     def imageList = []
     def containerName = ''
@@ -54,7 +56,9 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
     def portList = []
     def containerCommands = []
     def pullImageMap = [:]
-
+    def namespace
+    def securityContext
+    List stashList = []
 
     @Before
     void init() {
@@ -71,21 +75,30 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
         helper.registerAllowedMethod('podTemplate', [Map.class, Closure.class], { Map options, Closure body ->
             podName = options.name
             podLabel = options.label
-            options.containers.each { option ->
-                containersList.add(option.name)
-                imageList.add(option.image.toString())
-                envList.add(option.envVars)
-                portList.add(option.ports)
-                if (option.command) {
-                    containerCommands.add(option.command)
+            namespace = options.namespace
+            podNodeSelector = options.nodeSelector
+            def podSpec = new JsonSlurper().parseText(options.yaml)  // this yaml is actually json
+            def containers = podSpec.spec.containers
+            securityContext = podSpec.spec.securityContext
+
+            containers.each { container ->
+                containersList.add(container.name)
+                imageList.add(container.image.toString())
+                envList.add(container.env)
+                if(container.ports) {
+                    portList.add(container.ports)
                 }
-                pullImageMap.put(option.image.toString(), option.alwaysPullImage)
+                if (container.command) {
+                    containerCommands.add(container.command)
+                }
+                pullImageMap.put(container.image.toString(), container.imagePullPolicy == "Always")
             }
             body()
         })
-        helper.registerAllowedMethod('node', [String.class, Closure.class], { String nodeName, Closure body -> body() })
-        helper.registerAllowedMethod('envVar', [Map.class], { Map option -> return option })
-        helper.registerAllowedMethod('containerTemplate', [Map.class], { Map option -> return option })
+        helper.registerAllowedMethod('stash', [Map.class], {m ->
+            stashList.add(m)
+        })
+
     }
 
     @Test
@@ -201,7 +214,7 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
 
     @Test
     void testDockerExecuteOnKubernetesEmptyContainerMapNoDockerImage() throws Exception {
-        exception.expect(IllegalArgumentException.class);
+        exception.expect(IllegalArgumentException.class)
             stepRule.step.dockerExecuteOnKubernetes(
                 script: nullScript,
                 juStabUtils: utils,
@@ -215,7 +228,7 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
     }
 
     @Test
-    void testSidecarDefault() {
+    void testSidecarDefaultWithContainerMap() {
         List portMapping = []
         helper.registerAllowedMethod('portMapping', [Map.class], {m ->
             portMapping.add(m)
@@ -234,7 +247,7 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
             ],
             containerName: 'mavenexecute',
             containerPortMappings: [
-                'selenium/standalone-chrome': [[containerPort: 4444, hostPort: 4444]]
+                'selenium/standalone-chrome': [[containerPort: 4444]]
             ],
             containerWorkspaces: [
                 'selenium/standalone-chrome': ''
@@ -248,19 +261,46 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
         assertThat(containerName, is('mavenexecute'))
 
         assertThat(containersList, allOf(
-            hasItem('jnlp'),
             hasItem('mavenexecute'),
             hasItem('selenium'),
         ))
         assertThat(imageList, allOf(
-            hasItem('s4sdk/jenkins-agent-k8s:latest'),
             hasItem('maven:3.5-jdk-8-alpine'),
             hasItem('selenium/standalone-chrome'),
         ))
-        assertThat(portList, hasItem(hasItem([name: 'selenium0', containerPort: 4444, hostPort: 4444])))
-        assertThat(portMapping, hasItem([name: 'selenium0', containerPort: 4444, hostPort: 4444]))
+        assertThat(portList, hasItem([[name: 'selenium0', containerPort: 4444]]))
         assertThat(containerCommands.size(), is(1))
-        assertThat(envList, hasItem(hasItem(allOf(hasEntry('key', 'customEnvKey'), hasEntry ('value','customEnvValue')))))
+        assertThat(envList, hasItem(hasItem(allOf(hasEntry('name', 'customEnvKey'), hasEntry ('value','customEnvValue')))))
+    }
+
+    @Test
+    void testSidecarDefaultWithParameters() {
+        List portMapping = []
+        helper.registerAllowedMethod('portMapping', [Map.class], {m ->
+            portMapping.add(m)
+            return m
+        })
+        stepRule.step.dockerExecuteOnKubernetes(
+            script: nullScript,
+            juStabUtils: utils,
+            containerMap: ['maven:3.5-jdk-8-alpine': 'mavenexecute'],
+            containerName: 'mavenexecute',
+            dockerOptions: '-it',
+            dockerVolumeBind: ['my_vol': '/my_vol'],
+            dockerEnvVars: ['http_proxy': 'http://proxy:8000'],
+            dockerWorkspace: '/home/piper',
+            sidecarEnvVars: ['testEnv': 'testVal'],
+            sidecarImage: 'postgres',
+            sidecarName: 'postgres',
+            sidecarReadyCommand: 'pg_isready'
+        ) {
+            bodyExecuted = true
+        }
+
+        assertThat(bodyExecuted, is(true))
+
+        assertThat(containersList, allOf(hasItem('postgres'), hasItem('mavenexecute')))
+        assertThat(imageList, allOf(hasItem('maven:3.5-jdk-8-alpine'), hasItem('postgres')))
     }
 
     @Test
@@ -286,7 +326,7 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
         ) {
             //nothing to exeute
         }
-        assertThat(containerCommands, hasItem('/busybox/tail -f /dev/null'))
+        assertThat(containerCommands, hasItem(['/bin/sh', '-c', '/busybox/tail -f /dev/null']))
     }
 
     @Test
@@ -333,6 +373,124 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
         assertEquals(false, pullImageMap.get('selenium/standalone-chrome'))
         assertTrue(bodyExecuted)
     }
+
+    @Test
+    void testDockerExecuteOnKubernetesWithCustomNamespace() {
+        def expectedNamespace = "sandbox"
+        nullScript.commonPipelineEnvironment.configuration = [general: [jenkinsKubernetes: [namespace: expectedNamespace]]]
+
+        stepRule.step.dockerExecuteOnKubernetes(
+                script: nullScript,
+                juStabUtils: utils,
+                dockerImage: 'maven:3.5-jdk-8-alpine',
+                ) { bodyExecuted = true }
+        assertTrue(bodyExecuted)
+        assertThat(namespace, is(equalTo(expectedNamespace)))
+    }
+
+    @Test
+    void testDockerExecuteOnKubernetesWithSecurityContext() {
+        def expectedSecurityContext = [ runAsUser: 1000, fsGroup: 1000 ]
+        nullScript.commonPipelineEnvironment.configuration = [general: [jenkinsKubernetes: [
+                    securityContext: expectedSecurityContext]]]
+
+        stepRule.step.dockerExecuteOnKubernetes(
+                script: nullScript,
+                juStabUtils: utils,
+                dockerImage: 'maven:3.5-jdk-8-alpine',
+                ) { bodyExecuted = true }
+        assertTrue(bodyExecuted)
+        assertThat(securityContext, is(equalTo(expectedSecurityContext)))
+    }
+
+    @Test
+    void testDockerExecuteOnKubernetesCustomNode() {
+
+        stepRule.step.dockerExecuteOnKubernetes(
+            script: nullScript,
+            juStabUtils: utils,
+            dockerImage: 'maven:3.5-jdk-8-alpine',
+            nodeSelector: 'size:big'
+        ) { bodyExecuted = true }
+        assertTrue(bodyExecuted)
+        assertThat(podNodeSelector, is('size:big'))
+    }
+
+    @Test
+    void testDockerExecuteOnKubernetesCustomJnlpViaEnv() {
+
+        nullScript.commonPipelineEnvironment.configuration = [
+            general: [jenkinsKubernetes: [jnlpAgent: 'config/jnlp:latest']]
+        ]
+        binding.variables.env.JENKINS_JNLP_IMAGE = 'env/jnlp:latest'
+        stepRule.step.dockerExecuteOnKubernetes(
+            script: nullScript,
+            juStabUtils: utils,
+            dockerImage: 'maven:3.5-jdk-8-alpine',
+        ) { bodyExecuted = true }
+        assertTrue(bodyExecuted)
+
+        assertThat(containersList, allOf(
+            hasItem('jnlp'),
+            hasItem('container-exec')
+        ))
+        assertThat(imageList, allOf(
+            hasItem('env/jnlp:latest'),
+            hasItem('maven:3.5-jdk-8-alpine'),
+        ))
+    }
+
+    @Test
+    void testDockerExecuteOnKubernetesCustomJnlpViaConfig() {
+
+        nullScript.commonPipelineEnvironment.configuration = [
+            general: [jenkinsKubernetes: [jnlpAgent: 'config/jnlp:latest']]
+        ]
+        //binding.variables.env.JENKINS_JNLP_IMAGE = 'config/jnlp:latest'
+        stepRule.step.dockerExecuteOnKubernetes(
+            script: nullScript,
+            juStabUtils: utils,
+            dockerImage: 'maven:3.5-jdk-8-alpine',
+        ) { bodyExecuted = true }
+        assertTrue(bodyExecuted)
+
+        assertThat(containersList, allOf(
+            hasItem('jnlp'),
+            hasItem('container-exec')
+        ))
+        assertThat(imageList, allOf(
+            hasItem('config/jnlp:latest'),
+            hasItem('maven:3.5-jdk-8-alpine'),
+        ))
+    }
+
+    @Test
+    void tastStashIncludesAndExcludes() {
+        nullScript.commonPipelineEnvironment.configuration = [
+            steps: [
+                dockerExecuteOnKubernetes: [
+                    stashExcludes: [
+                        workspace: 'workspace/exclude.test',
+                        stashBack: 'container/exclude.test'
+                    ],
+                    stashIncludes: [
+                        workspace: 'workspace/include.test',
+                        stashBack: 'container/include.test'
+                    ]
+                ]
+            ]
+        ]
+        stepRule.step.dockerExecuteOnKubernetes(
+            script: nullScript,
+            juStabUtils: utils,
+            dockerImage: 'maven:3.5-jdk-8-alpine',
+        ) {
+            bodyExecuted = true
+        }
+        assertThat(stashList[0], allOf(hasEntry('includes','workspace/include.test'), hasEntry('excludes','workspace/exclude.test')))
+        assertThat(stashList[1], allOf(hasEntry('includes','container/include.test'), hasEntry('excludes','container/exclude.test')))
+    }
+
 
     private container(options, body) {
         containerName = options.name

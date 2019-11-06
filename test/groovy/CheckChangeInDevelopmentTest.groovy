@@ -4,7 +4,7 @@ import org.junit.Test
 import org.junit.rules.ExpectedException
 import org.junit.rules.RuleChain
 
-import com.sap.piper.GitUtils
+import com.sap.piper.cm.BackendType
 import com.sap.piper.cm.ChangeManagement
 import com.sap.piper.cm.ChangeManagementException
 
@@ -52,6 +52,12 @@ class CheckChangeInDevelopmentTest extends BasePiperTest {
             failIfStatusIsNotInDevelopment: true)
 
         assert cmUtilReceivedParams == [
+            docker: [
+                image: 'ppiper/cm-client',
+                options:[],
+                envVars:[:],
+                pullImage:true,
+            ],
             changeId: '001',
             endpoint: 'https://example.org/cm',
             credentialsId: 'CM',
@@ -155,6 +161,23 @@ class CheckChangeInDevelopmentTest extends BasePiperTest {
 
     }
 
+    @Test
+    public void stageConfigIsNotConsideredWithParamKeysTest() {
+
+        nullScript.commonPipelineEnvironment.configuration = [stages:[foo:[changeDocumentId:'12345']]]
+        ChangeManagement cm = getChangeManagementUtils(true, '')
+
+        thrown.expect(IllegalArgumentException)
+        thrown.expectMessage('No changeDocumentId provided.')
+
+        stepRule.step.checkChangeInDevelopment(
+            script: nullScript,
+            cmUtils: cm,
+            changeManagement: [type: BackendType.SOLMAN,
+                               endpoint: 'https://example.org/cm'],
+            stageName: 'foo')
+    }
+
     private ChangeManagement getChangeManagementUtils(boolean inDevelopment, String changeDocumentId = '001') {
 
         return new ChangeManagement(nullScript, null) {
@@ -167,7 +190,8 @@ class CheckChangeInDevelopmentTest extends BasePiperTest {
                 return changeDocumentId
             }
 
-            boolean isChangeInDevelopment(String changeId, String endpoint, String credentialsId, String cmclientOpts) {
+            boolean isChangeInDevelopment(Map docker, String changeId, String endpoint, String credentialsId, String cmclientOpts) {
+                cmUtilReceivedParams.docker = docker
                 cmUtilReceivedParams.changeId = changeId
                 cmUtilReceivedParams.endpoint = endpoint
                 cmUtilReceivedParams.credentialsId = credentialsId

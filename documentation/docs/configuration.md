@@ -1,6 +1,9 @@
 # Configuration
 
-Configuration is done via a yml-file, located at `.pipeline/config.yml` in the **master branch** of your source code repository.
+Configure your project through a yml-file, which is located at `.pipeline/config.yml` in the **master branch** of your source code repository.
+
+!!! note "Cloud SDK Pipeline"
+    Cloud SDK Pipelines are configured in a file called `pipeline_config.yml`. See [SAP Cloud SDK Pipeline Configuration Docs](https://github.com/SAP/cloud-s4-sdk-pipeline/blob/master/configuration.md).
 
 Your configuration inherits from the default configuration located at [https://github.com/SAP/jenkins-library/blob/master/resources/default_pipeline_environment.yml](https://github.com/SAP/jenkins-library/blob/master/resources/default_pipeline_environment.yml).
 
@@ -11,10 +14,10 @@ Your configuration inherits from the default configuration located at [https://g
 Configuration of the Piper steps as well the Piper templates can be done in a hierarchical manner.
 
 1. Directly passed step parameters will always take precedence over other configuration values and defaults
-2. Stage configuration parameters define a Jenkins pipeline stage dependent set of parameters (e.g. deployment options for the `Acceptance` stage)
-3. Step configuration defines how steps behave in general (e.g. step `cloudFoundryDeploy`)
-4. General configuration parameters define parameters which are available across step boundaries
-5. Default configuration comes with the Piper library and is always available
+1. Stage configuration parameters define a Jenkins pipeline stage dependent set of parameters (e.g. deployment options for the `Acceptance` stage)
+1. Step configuration defines how steps behave in general (e.g. step `cloudFoundryDeploy`)
+1. General configuration parameters define parameters which are available across step boundaries
+1. Default configuration comes with the Piper library and is always available
 
 ![Piper Configuration](images/piper_config.png)
 

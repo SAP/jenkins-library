@@ -1,3 +1,5 @@
+import com.sap.piper.SidecarUtils
+
 import static com.sap.piper.Prerequisites.checkScript
 
 import com.cloudbees.groovy.cps.NonCPS
@@ -93,6 +95,10 @@ import groovy.transform.Field
      */
     'sidecarWorkspace',
     /**
+     * Command executed inside the container which returns exit code 0 when the container is ready to be used.
+     */
+    'sidecarReadyCommand',
+    /**
      * Specific stashes that should be considered for the step execution.
      */
     'stashContent'
@@ -106,7 +112,7 @@ import groovy.transform.Field
  */
 @GenerateDocumentation
 void call(Map parameters = [:], body) {
-    handlePipelineStepErrors(stepName: STEP_NAME, stepParameters: parameters) {
+    handlePipelineStepErrors(stepName: STEP_NAME, stepParameters: parameters, failOnError: true) {
 
         final script = checkScript(this, parameters) ?: this
 
@@ -116,20 +122,41 @@ void call(Map parameters = [:], body) {
             .loadStepDefaults()
             .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS)
             .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS)
-            .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName?:env.STAGE_NAME, STEP_CONFIG_KEYS)
+            .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName ?: env.STAGE_NAME, STEP_CONFIG_KEYS)
             .mixin(parameters, PARAMETER_KEYS)
             .use()
+
+        SidecarUtils sidecarUtils = new SidecarUtils(script)
+
+        new Utils().pushToSWA([
+            step: STEP_NAME,
+            stepParamKey1: 'scriptMissing',
+            stepParam1: parameters?.script == null,
+            stepParamKey2: 'kubernetes',
+            stepParam2: isKubernetes()
+        ], config)
+
         if (isKubernetes() && config.dockerImage) {
+            List dockerEnvVars = []
+            config.dockerEnvVars?.each { key, value ->
+                dockerEnvVars << "$key=$value"
+            }
             if (env.POD_NAME && isContainerDefined(config)) {
                 container(getContainerDefined(config)) {
-                    echo "[INFO][${STEP_NAME}] Executing inside a Kubernetes Container."
-                    body()
-                    sh "chown -R 1000:1000 ."
+                    withEnv(dockerEnvVars) {
+                        echo "[INFO][${STEP_NAME}] Executing inside a Kubernetes Container."
+                        body()
+                        sh "chown -R 1000:1000 ."
+                    }
                 }
             } else {
+                if (!config.dockerName) {
+                    config.dockerName = UUID.randomUUID().toString()
+                }
                 if (!config.sidecarImage) {
                     dockerExecuteOnKubernetes(
                         script: script,
+                        containerName: config.dockerName,
                         containerCommand: config.containerCommand,
                         containerShell: config.containerShell,
                         dockerImage: config.dockerImage,
@@ -142,35 +169,24 @@ void call(Map parameters = [:], body) {
                         body()
                     }
                 } else {
-                    Map paramMap = [
+                    dockerExecuteOnKubernetes(
                         script: script,
-                        containerCommands: [:],
-                        containerEnvVars: [:],
-                        containerPullImageFlags: [:],
-                        containerMap: [:],
                         containerName: config.dockerName,
-                        containerPortMappings: [:],
-                        containerWorkspaces: [:],
-                        stashContent: config.stashContent
-                    ]
-                    paramMap.containerCommands[config.sidecarImage] = ''
-
-                    paramMap.containerEnvVars[config.dockerImage] = config.dockerEnvVars
-                    paramMap.containerEnvVars[config.sidecarImage] = config.sidecarEnvVars
-
-                    paramMap.containerPullImageFlags[config.dockerImage] = config.dockerPullImage
-                    paramMap.containerPullImageFlags[config.sidecarImage] = config.sidecarPullImage
-
-                    paramMap.containerMap[config.dockerImage] = config.dockerName
-                    paramMap.containerMap[config.sidecarImage] = config.sidecarName
-
-                    paramMap.containerPortMappings = config.containerPortMappings
-
-                    paramMap.containerWorkspaces[config.dockerImage] = config.dockerWorkspace
-                    paramMap.containerWorkspaces[config.sidecarImage] = ''
-
-                    dockerExecuteOnKubernetes(paramMap){
-                        echo "[INFO][${STEP_NAME}] Executing inside a Kubernetes Pod with sidecar container"
+                        containerCommand: config.containerCommand,
+                        containerShell: config.containerShell,
+                        dockerImage: config.dockerImage,
+                        dockerPullImage: config.dockerPullImage,
+                        dockerEnvVars: config.dockerEnvVars,
+                        dockerWorkspace: config.dockerWorkspace,
+                        stashContent: config.stashContent,
+                        containerPortMappings: config.containerPortMappings,
+                        sidecarName: parameters.sidecarName,
+                        sidecarImage: parameters.sidecarImage,
+                        sidecarPullImage: parameters.sidecarPullImage,
+                        sidecarReadyCommand: parameters.sidecarReadyCommand,
+                        sidecarEnvVars: parameters.sidecarEnvVars
+                    ) {
+                        echo "[INFO][${STEP_NAME}] Executing inside a Kubernetes Pod"
                         body()
                     }
                 }
@@ -191,7 +207,7 @@ void call(Map parameters = [:], body) {
                 utils.unstashAll(config.stashContent)
                 def image = docker.image(config.dockerImage)
                 if (config.dockerPullImage) image.pull()
-                else echo"[INFO][$STEP_NAME] Skipped pull of image '${config.dockerImage}'."
+                else echo "[INFO][$STEP_NAME] Skipped pull of image '${config.dockerImage}'."
                 if (!config.sidecarImage) {
                     image.inside(getDockerOptions(config.dockerEnvVars, config.dockerVolumeBind, config.dockerOptions)) {
                         body()
@@ -199,25 +215,28 @@ void call(Map parameters = [:], body) {
                 } else {
                     def networkName = "sidecar-${UUID.randomUUID()}"
                     sh "docker network create ${networkName}"
-                    try{
+                    try {
                         def sidecarImage = docker.image(config.sidecarImage)
                         if (config.sidecarPullImage) sidecarImage.pull()
-                        else echo"[INFO][$STEP_NAME] Skipped pull of image '${config.sidecarImage}'."
-                        config.sidecarOptions = config.sidecarOptions?:[]
+                        else echo "[INFO][$STEP_NAME] Skipped pull of image '${config.sidecarImage}'."
+                        config.sidecarOptions = config.sidecarOptions ?: []
                         if (config.sidecarName)
                             config.sidecarOptions.add("--network-alias ${config.sidecarName}")
                         config.sidecarOptions.add("--network ${networkName}")
-                        sidecarImage.withRun(getDockerOptions(config.sidecarEnvVars, config.sidecarVolumeBind, config.sidecarOptions)) { c ->
-                            config.dockerOptions = config.dockerOptions?:[]
+                        sidecarImage.withRun(getDockerOptions(config.sidecarEnvVars, config.sidecarVolumeBind, config.sidecarOptions)) { container ->
+                            config.dockerOptions = config.dockerOptions ?: []
                             if (config.dockerName)
                                 config.dockerOptions.add("--network-alias ${config.dockerName}")
                             config.dockerOptions.add("--network ${networkName}")
+                            if (config.sidecarReadyCommand) {
+                                sidecarUtils.waitForSidecarReadyOnDocker(container.id, config.sidecarReadyCommand)
+                            }
                             image.inside(getDockerOptions(config.dockerEnvVars, config.dockerVolumeBind, config.dockerOptions)) {
                                 echo "[INFO][${STEP_NAME}] Running with sidecar container."
                                 body()
                             }
                         }
-                    }finally{
+                    } finally {
                         sh "docker network remove ${networkName}"
                     }
                 }
@@ -229,14 +248,13 @@ void call(Map parameters = [:], body) {
     }
 }
 
-
-
 /*
  * Returns a string with docker options containing
  * environment variables (if set).
  * Possible to extend with further options.
  * @param dockerEnvVars Map with environment variables
  */
+
 @NonCPS
 private getDockerOptions(Map dockerEnvVars, Map dockerVolumeBind, def dockerOptions) {
     def specialEnvironments = [
@@ -307,14 +325,15 @@ boolean isKubernetes() {
  * E.g. <code>description=Lorem ipsum</code> is
  * changed to <code>description=Lorem\ ipsum</code>.
  */
+
 @NonCPS
 def escapeBlanks(def s) {
 
-    def EQ='='
-    def parts=s.split(EQ)
+    def EQ = '='
+    def parts = s.split(EQ)
 
-    if(parts.length == 2) {
-        parts[1]=parts[1].replaceAll(' ', '\\\\ ')
+    if (parts.length == 2) {
+        parts[1] = parts[1].replaceAll(' ', '\\\\ ')
         s = parts.join(EQ)
     }
 

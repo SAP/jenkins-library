@@ -16,13 +16,38 @@ general:
       from: 'origin/master'
       to: 'HEAD'
       format: '%b'
+    solman:
+      docker:
+        image: 'ppiper/cm-client'
+        options: []
+        envVars: {}
+        pullImage: true
+    cts:
+      docker:
+        image: 'ppiper/cm-client'
+        options: []
+        envVars: {}
+        pullImage: true
+    rfc:
+      docker:
+        image: 'rfc'
+        options: []
+        envVars: {}
+        pullImage: true
   githubApiUrl: 'https://api.github.com'
   githubServerUrl: 'https://github.com'
   gitSshKeyCredentialsId: '' #needed to allow sshagent to run with local ssh key
   jenkinsKubernetes:
-    jnlpAgent: 's4sdk/jenkins-agent-k8s:latest'
+    securityContext:
+    # Setting security context globally is currently not working with jaas
+    #  runAsUser: 1000
+    #  fsGroup: 1000
   manualConfirmation: true
+  manualConfirmationMessage: 'Shall we proceed to Promote & Release?'
+  manualConfirmationTimeout: 720 # 1 month
   productiveBranch: 'master'
+  whitesource:
+    serviceUrl: 'https://saas.whitesourcesoftware.com/api'
 
 #Steps Specific Configuration
 steps:
@@ -30,7 +55,7 @@ steps:
     timestampTemplate: '%Y%m%d%H%M%S'
     tagPrefix: 'build_'
     commitVersion: true
-    dlang:
+    dub:
       filePath: 'dub.json'
       versioningTemplate: '${version}-${timestamp}${commitId?"+"+commitId:""}'
     docker:
@@ -127,9 +152,12 @@ steps:
   cloudFoundryDeploy:
     cloudFoundry:
       apiEndpoint: 'https://api.cf.eu10.hana.ondemand.com'
+    apiParameters: ''
+    loginParameters: ''
     deployTool: 'cf_native'
     deployType: 'standard'
     keepOldInstance: false
+    cfNativeDeployParameters: ''
     mtaDeployParameters: '-f'
     mtaExtensionDescriptor: ''
     mtaPath: ''
@@ -139,10 +167,10 @@ steps:
       - 'deployDescriptor'
       - 'pipelineConfigAndTests'
     cf_native:
-      dockerImage: 's4sdk/docker-cf-cli'
+      dockerImage: 'ppiper/cf-cli'
       dockerWorkspace: '/home/piper'
     mtaDeployPlugin:
-      dockerImage: 's4sdk/docker-cf-cli'
+      dockerImage: 'ppiper/cf-cli'
       dockerWorkspace: '/home/piper'
   containerExecuteStructureTests:
     containerCommand: '/busybox/tail -f /dev/null'
@@ -153,6 +181,33 @@ steps:
     stashContent:
       - 'tests'
     testReportFilePath: 'cst-report.json'
+  cloudFoundryCreateService:
+    cloudFoundry:
+      apiEndpoint: 'https://api.cf.eu10.hana.ondemand.com'
+      serviceManifest: 'service-manifest.yml'
+    dockerImage: 'ppiper/cf-cli'
+    dockerWorkspace: '/home/piper'
+  detectExecuteScan:
+    detect:
+      projectVersion: '1'
+      scanners:
+        - signature
+      scanPaths:
+        - '.'
+      scanProperties:
+        - '--blackduck.signature.scanner.memory=4096'
+        - '--blackduck.timeout=6000'
+        - '--blackduck.trust.cert=true'
+        - '--detect.policy.check.fail.on.severities=BLOCKER,CRITICAL,MAJOR'
+        - '--detect.report.timeout=4800'
+        - '--logging.level.com.synopsys.integration=DEBUG'
+    stashContent:
+      - 'buildDescriptor'
+      - 'checkmarx'
+    # buildTool specific settings
+    golang:
+      dockerImage: 'golang:1.12-stretch'
+      dockerWorkspace: ''
   dockerExecute:
     dockerPullImage: true
     sidecarPullImage: true
@@ -164,6 +219,8 @@ steps:
       workspace: '**/*'
     stashExcludes:
       workspace: 'nohup.out'
+  dubExecute:
+    dockerImage: 'dlang2/dmd-ubuntu:latest'
   githubPublishRelease:
     addClosedIssues: false
     addDeltaToLastRelease: false
@@ -197,10 +254,46 @@ steps:
       languageRunner: 'js'
       runCommand: 'gauge run'
       testOptions: 'specs'
+    bundler:
+      dockerImage: 'ruby:2.5.3-stretch'
+      dockerName: 'bundler'
+      dockerWorkspace: ''
+      languageRunner: 'ruby'
+      runCommand: 'bundle install && bundle exec gauge run'
+      testOptions: 'specs'
+  hadolintExecute:
+    configurationFile: '.hadolint.yaml'
+    configurationUrl: ''
+    dockerFile: './Dockerfile'
+    dockerImage: 'hadolint/hadolint:latest-debian'
+    qualityGates:
+      - threshold: 1
+        type: 'TOTAL_ERROR'
+        unstable: false
+    reportFile: 'hadolint.xml'
+    reportName: 'HaDoLint'
+    stashContent:
+      - 'buildDescriptor'
+  handlePipelineStepErrors:
+    echoDetails: true
+    failOnError: true
+    libraryDocumentationUrl: 'https://sap.github.io/jenkins-library/'
+    libraryRepositoryUrl: 'https://github.com/SAP/jenkins-library/'
+    mandatorySteps: []
+    stepTimeouts: {}
   healthExecuteCheck:
     healthEndpoint: ''
   influxWriteData:
     influxServer: ''
+  kanikoExecute:
+    containerBuildOptions: '--skip-tls-verify-pull'
+    containerCommand: '/busybox/tail -f /dev/null'
+    containerPreparationCommand: 'rm /kaniko/.docker/config.json'
+    containerShell: '/busybox/sh'
+    customTlsCertificateLinks: []
+    dockerfile: Dockerfile
+    dockerImage: 'gcr.io/kaniko-project/executor:debug'
+    dockerOptions: "-u 0 --entrypoint=''"
   karmaExecuteTests:
     containerPortMappings:
       'node:8-stretch':
@@ -232,11 +325,13 @@ steps:
     logSuccessfulMavenTransfers: false
   mtaBuild:
     buildTarget: 'NEO'
-    mtaJarLocation: 'mta.jar'
+    mtaJarLocation: '/opt/sap/mta/lib/mta.jar'
+    dockerImage: 'ppiper/mta-archive-builder'
   neoDeploy:
-    dockerImage: 's4sdk/docker-neo-cli'
+    dockerImage: 'ppiper/neo-cli'
     deployMode: 'mta'
     warAction: 'deploy'
+    extensions: []
     neo:
       size: 'lite'
       credentialsId: 'CI_CREDENTIALS_ID'
@@ -251,30 +346,108 @@ steps:
     newmanRunCommand: "run '${config.newmanCollection}' --environment '${config.newmanEnvironment}' --globals '${config.newmanGlobals}' --reporters junit,html --reporter-junit-export 'target/newman/TEST-${collectionDisplayName}.xml' --reporter-html-export 'target/newman/TEST-${collectionDisplayName}.html'"
     stashContent:
       - 'tests'
+  npmExecute:
+    dockerImage: 'node:8-stretch'
+  whitesourceExecuteScan:
+    createProductFromPipeline: true
+    emailAddressesOfInitialProductAdmins: []
+    buildDescriptorExcludeList: []
+    parallelLimit: 15
+    licensingVulnerabilities: true
+    securityVulnerabilities: true
+    cvssSeverityLimit: -1
+    reporting: true
+    vulnerabilityReportFileName: 'piper_whitesource_vulnerability_report'
+    vulnerabilityReportTitle: 'WhiteSource Security Vulnerability Report'
+    projectNames: []
+    jreDownloadUrl: 'https://github.com/SAP/SapMachine/releases/download/sapmachine-11.0.2/sapmachine-jre-11.0.2_linux-x64_bin.tar.gz'
+    agentFileName: 'wss-unified-agent.jar'
+    agentDownloadUrl: 'https://github.com/whitesource/unified-agent-distribution/releases/latest/download/${config.agentFileName}'
+    agentParameters: ''
+    configFilePath: './wss-unified-agent.config'
+    mta:
+      stashContent:
+        - 'buildDescriptor'
+        - 'opensourceConfiguration'
+    maven:
+      buildDescriptorFile: './pom.xml'
+      dockerImage: 'maven:3.5-jdk-8'
+      dockerWorkspace: '/home/java'
+      stashContent:
+        - 'buildDescriptor'
+        - 'opensourceConfiguration'
+    npm:
+      buildDescriptorFile: './package.json'
+      dockerImage: 'node:8-stretch'
+      dockerWorkspace: '/home/node'
+      stashContent:
+        - 'buildDescriptor'
+        - 'opensourceConfiguration'
+    pip:
+      buildDescriptorFile: './setup.py'
+      dockerImage: 'python:3.7.2-stretch'
+      dockerWorkspace: '/home/python'
+      stashContent:
+        - 'buildDescriptor'
+        - 'opensourceConfiguration'
+    golang:
+      buildDescriptorFile: './Gopkg.toml'
+      dockerImage: 'golang:1.12-stretch'
+      dockerWorkspace: '/home/dep'
+      stashContent:
+        - 'buildDescriptor'
+        - 'opensourceConfiguration'
+        - 'checkmarx'
+      additionalInstallCommand: >-
+        curl --fail https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
+        && mkdir -p \$GOPATH/src/${config.whitesource.projectName.substring(0, config.whitesource.projectName.lastIndexOf('/'))}
+        && ln -s \$(pwd) \$GOPATH/src/${config.whitesource.projectName}
+        && cd \$GOPATH/src/${config.whitesource.projectName} && dep ensure
+    dub:
+      buildDescriptorFile: './dub.json'
+      dockerImage: 'buildpack-deps:stretch-curl'
+      dockerWorkspace: '/home/dub'
+      stashContent:
+        - 'buildDescriptor'
+        - 'checkmarx'
+    sbt:
+      buildDescriptorFile: './build.sbt'
+      dockerImage: 'hseeberger/scala-sbt:8u181_2.12.8_1.2.8'
+      dockerWorkspace: '/home/scala'
+      stashContent:
+        - 'buildDescriptor'
+        - 'opensourceConfiguration'
+    verbose: false
+    timeout: 0
+  pipelineExecute:
+    branch: 'master'
+    path: 'Jenkinsfile'
+    credentialsId: ''
   pipelineRestartSteps:
     sendMail: true
     timeoutInSeconds: 900
   pipelineStashFilesAfterBuild:
-    runOpaTests: false
     stashIncludes:
-      checkmarx: '**/*.js, **/*.scala, **/*.py, **/*.go, **/*.xml, **/*.html'
+      buildResult: '**/target/*.jar, **/*.mtar'
+      checkmarx: '**/*.js, **/*.scala, **/*.py, **/*.go, **/*.d, **/*.di, **/*.xml, **/*.html'
       classFiles: '**/target/classes/**/*.class, **/target/test-classes/**/*.class'
       sonar: '**/jacoco*.exec, **/sonar-project.properties'
     stashExcludes:
+      buildResult: ''
       checkmarx: '**/*.mockserver.js, node_modules/**/*.js'
       classFiles: ''
       sonar: ''
+    noDefaultExludes: []
   pipelineStashFilesBeforeBuild:
-    runCheckmarx: false
     stashIncludes:
-      buildDescriptor: '**/pom.xml, **/.mvn/**, **/assembly.xml, **/.swagger-codegen-ignore, **/package.json, **/requirements.txt, **/setup.py, **/whitesource_config.py, **/mta*.y*ml, **/.npmrc, **/whitesource.*.json, **/whitesource-fs-agent.config, Dockerfile, **/VERSION, **/version.txt, **/build.sbt, **/sbtDescriptor.json, **/project/*'
+      buildDescriptor: '**/pom.xml, **/.mvn/**, **/assembly.xml, **/.swagger-codegen-ignore, **/package.json, **/requirements.txt, **/setup.py, **/mta*.y*ml, **/.npmrc, Dockerfile, .hadolint.yaml, **/VERSION, **/version.txt, **/Gopkg.*, **/dub.json, **/dub.sdl, **/build.sbt, **/sbtDescriptor.json, **/project/*, **/ui5.yaml, **/ui5.yml'
       deployDescriptor: '**/manifest*.y*ml, **/*.mtaext.y*ml, **/*.mtaext, **/xs-app.json, helm/**, *.y*ml'
-      git: '**/gitmetadata/**'
+      git: '.git/**'
       opa5: '**/*.*'
-      opensourceConfiguration: '**/srcclr.yml, **/vulas-custom.properties, **/.nsprc, **/.retireignore, **/.retireignore.json, **/.snyk'
+      opensourceConfiguration: '**/srcclr.yml, **/vulas-custom.properties, **/.nsprc, **/.retireignore, **/.retireignore.json, **/.snyk, **/wss-unified-agent.config, **/vendor/**/*'
       pipelineConfigAndTests: '.pipeline/**'
       securityDescriptor: '**/xs-security.json'
-      tests: '**/pom.xml, **/*.json, **/*.xml, **/src/**, **/node_modules/**, **/specs/**, **/env/**, **/*.js, **/tests/**'
+      tests: '**/pom.xml, **/*.json, **/*.xml, **/src/**, **/node_modules/**, **/specs/**, **/env/**, **/*.js, **/tests/**, **/*.html, **/*.css, **/*.properties'
     stashExcludes:
       buildDescriptor: '**/node_modules/**/package.json'
       deployDescriptor: ''
@@ -284,6 +457,16 @@ steps:
       pipelineConfigAndTests: ''
       securityDescriptor: ''
       tests: ''
+    noDefaultExludes:
+      - 'git'
+  piperPublishWarnings:
+    parserId: piper
+    parserName: Piper
+    parserPattern: '\[(INFO|WARNING|ERROR)\] (.*) \(([^) ]*)\/([^) ]*)\)'
+    parserScript: 'return builder.guessSeverity(matcher.group(1)).setMessage(matcher.group(2)).setModuleName(matcher.group(3)).setType(matcher.group(4)).buildOptional()'
+    recordIssuesSettings:
+      blameDisabled: true
+      enabledForFailure: true
   seleniumExecuteTests:
     buildTool: 'npm'
     containerPortMappings:
@@ -305,6 +488,10 @@ steps:
       dockerImage: 'node:8-stretch'
       dockerName: 'npm'
       dockerWorkspace: '/home/node'
+    bundler:
+      dockerImage: 'ruby:2.5.3-stretch'
+      dockerName: 'bundler'
+      dockerWorkspace: ''
   slackSendNotification:
     color: "${buildStatus == 'SUCCESS'?'#008000':'#E60000'}"
     defaultMessage: "${buildStatus}: Job ${env.JOB_NAME} <${env.BUILD_URL}|#${env.BUILD_NUMBER}>"
@@ -319,6 +506,12 @@ steps:
       - 'opensourceConfiguration'
     toJson: false
     toHtml: false
+  sonarExecuteScan:
+    dockerImage: 'maven:3.5-jdk-8'
+    instance: 'SonarCloud'
+    options: []
+    pullRequestProvider: 'GitHub'
+    sonarScannerDownloadUrl: 'https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-3.3.0.1492-linux.zip'
   testsPublishResults:
     failOnError: false
     junit:
@@ -333,7 +526,7 @@ steps:
       archive: false
       active: false
     cobertura:
-      pattern: '**/target/coverage/cobertura-coverage.xml'
+      pattern: '**/target/coverage/**/cobertura-coverage.xml'
       onlyStableBuilds: true
       allowEmptyResults: true
       archive: false
@@ -358,10 +551,20 @@ steps:
       active: false
   checkChangeInDevelopment:
       failIfStatusIsNotInDevelopment: true
+  tmsUpload:
+    namedUser: 'Piper-Pipeline'
+    stashContent:
+      - 'buildResult'
   transportRequestCreate:
       developmentSystemId: null
+      verbose: false
   transportRequestUploadFile:
+      acceptUnixStyleLineEndings: true
+      codePage: 'UTF-8'
+      failOnWarning: true
+      verbose: false
   transportRequestRelease:
+      verbose: false
   uiVeri5ExecuteTests:
     failOnError: false
     dockerEnvVars: {}
@@ -381,3 +584,14 @@ steps:
     nodeLabel: ''
     stashContent:
       - 'pipelineConfigAndTests'
+  xsDeploy:
+    credentialsId: 'XS'
+    deployIdLogPattern: '^.*"xs bg-deploy -i (.*) -a .*".*$'
+    loginOpts: ''
+    deployOpts: ''
+    docker:
+      dockerImage: ''
+      dockerPullImage: false
+    mode: 'DEPLOY'
+    action: 'NONE'
+    xsSessionFile: '.xsconfig'

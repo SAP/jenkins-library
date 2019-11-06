@@ -1,6 +1,7 @@
 import static com.sap.piper.Prerequisites.checkScript
 
 import com.sap.piper.ConfigurationHelper
+import com.sap.piper.GenerateDocumentation
 import com.sap.piper.Utils
 import com.sap.piper.mta.MtaMultiplexer
 
@@ -8,19 +9,54 @@ import groovy.transform.Field
 
 @Field def STEP_NAME = getClass().getName()
 
-@Field Set GENERAL_CONFIG_KEYS = ['snykCredentialsId']
+@Field Set GENERAL_CONFIG_KEYS = [
+    /**
+     * Credentials for accessing the Snyk API.
+     * @possibleValues Jenkins credentials id
+     */
+    'snykCredentialsId'
+]
 @Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS.plus([
+    /**
+     * The path to the build descriptor file, e.g. `./package.json`.
+     */
     'buildDescriptorFile',
+    /** @see dockerExecute */
     'dockerImage',
+    /**
+     * Only scanType 'mta': Exclude modules from MTA projects.
+     */
     'exclude',
+    /**
+     * Monitor the application's dependencies for new vulnerabilities.
+     */
     'monitor',
+    //TODO: move to general
+    /**
+     * The type of project that should be scanned.
+     * @possibleValues `npm`, `mta`
+     */
     'scanType',
+    /**
+     * Only needed for `monitor: true`: The organisation ID to determine the organisation to report to.
+     */
     'snykOrg',
+    /**
+     * Generate and archive a JSON report.
+     */
     'toJson',
+    /**
+     * Generate and archive a HTML report.
+     */
     'toHtml'
 ])
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
 
+//https://snyk.io/docs/continuous-integration/
+/**
+ * This step performs an open source vulnerability scan on a *Node project* or *Node module inside an MTA project* through snyk.io.
+ */
+@GenerateDocumentation
 void call(Map parameters = [:]) {
     handlePipelineStepErrors(stepName: STEP_NAME, stepParameters: parameters) {
         def utils = parameters.juStabUtils ?: new Utils()

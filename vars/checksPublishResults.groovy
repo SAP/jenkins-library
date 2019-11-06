@@ -2,6 +2,7 @@ import static com.sap.piper.Prerequisites.checkScript
 
 import com.cloudbees.groovy.cps.NonCPS
 
+import com.sap.piper.GenerateDocumentation
 import com.sap.piper.ConfigurationHelper
 import com.sap.piper.MapUtils
 import com.sap.piper.Utils
@@ -11,7 +12,46 @@ import groovy.transform.Field
 @Field def STEP_NAME = getClass().getName()
 
 @Field Set TOOLS = [
-    'aggregation', 'tasks', 'pmd', 'cpd', 'findbugs', 'checkstyle', 'eslint', 'pylint'
+    /**
+     * Allows to publish the check results.
+     * @possibleValues `true`, `false`, `Map`
+     */
+    'aggregation',
+    /**
+     * Searches and publishes TODOs in files with the [Task Scanner Plugin](https://wiki.jenkins-ci.org/display/JENKINS/Task+Scanner+Plugin).
+     * @possibleValues `true`, `false`, `Map`
+     */
+    'tasks',
+    /**
+     * Publishes PMD findings with the [PMD plugin](https://plugins.jenkins.io/pmd).
+     * @possibleValues `true`, `false`, `Map`
+     */
+    'pmd',
+    /**
+     * Publishes CPD findings with the [DRY plugin](https://plugins.jenkins.io/dry).
+     * @possibleValues `true`, `false`, `Map`
+     */
+    'cpd',
+    /**
+     * Publishes Findbugs findings with the [Findbugs plugin](https://plugins.jenkins.io/findbugs).
+     * @possibleValues `true`, `false`, `Map`
+     */
+    'findbugs',
+    /**
+     * Publishes Checkstyle findings with the [Checkstyle plugin](https://plugins.jenkins.io/checkstyle).
+     * @possibleValues `true`, `false`, `Map`
+     */
+    'checkstyle',
+    /**
+     * Publishes ESLint findings (in [JSLint format](https://eslint.org/docs/user-guide/formatters/)) with the [Warnings plugin](https://plugins.jenkins.io/warnings).
+     * @possibleValues `true`, `false`, `Map`
+     */
+    'eslint',
+    /**
+     * Publishes PyLint findings with the [Warnings plugin](https://plugins.jenkins.io/warnings), pylint needs to run with `--output-format=parseable` option.
+     * @possibleValues `true`, `false`, `Map`
+     */
+    'pylint'
 ]
 
 @Field Set GENERAL_CONFIG_KEYS = []
@@ -19,10 +59,9 @@ import groovy.transform.Field
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
 
 /**
- * checksPublishResults
- *
- * @param others document all parameters
+ * This step can publish static check results from various sources.
  */
+@GenerateDocumentation
 void call(Map parameters = [:]) {
     handlePipelineStepErrors (stepName: STEP_NAME, stepParameters: parameters) {
 
@@ -142,7 +181,6 @@ def createCommonOptionsMap(publisherName, settings){
     return result
 }
 
-@NonCPS
 def prepare(parameters){
     // ensure tool maps are initialized correctly
     for(String tool : TOOLS){
@@ -151,7 +189,6 @@ def prepare(parameters){
     return parameters
 }
 
-@NonCPS
 def toMap(parameter){
     if(MapUtils.isMap(parameter))
         parameter.put('active', parameter.active == null?true:parameter.active)

@@ -1,26 +1,80 @@
 import static com.sap.piper.Prerequisites.checkScript
 
 import com.sap.piper.ConfigurationHelper
+import com.sap.piper.GenerateDocumentation
 import com.sap.piper.Utils
-import groovy.text.SimpleTemplateEngine
+import groovy.text.GStringTemplateEngine
 import groovy.transform.Field
 
 @Field String STEP_NAME = getClass().getName()
-@Field Set GENERAL_CONFIG_KEYS = ['gitSshKeyCredentialsId']
-@Field Set STEP_CONFIG_KEYS = [
-    'projectName',
-    'buildResult',
-    'gitUrl',
-    'gitCommitId',
-    'gitSshKeyCredentialsId',
-    'wrapInNode',
-    'notifyCulprits',
-    'notificationAttachment',
-    'notificationRecipients',
-    'numLogLinesInBody'
+@Field Set GENERAL_CONFIG_KEYS = [
+    /**
+     * Only if `notifyCulprits` is set:
+     * Credentials if the repository is protected.
+     * @possibleValues Jenkins credentials id
+     */
+    'gitSshKeyCredentialsId'
 ]
+@Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS.plus([
+    /**
+     * Set the build result used to determine the mail template.
+     * default `currentBuild.result`
+     */
+    'buildResult',
+    /**
+     * Only if `notifyCulprits` is set:
+     * Defines a dedicated git commitId for culprit retrieval.
+     * default `commonPipelineEnvironment.getGitCommitId()`
+     */
+    'gitCommitId',
+    /**
+     * Only if `notifyCulprits` is set:
+     * Repository url used to retrieve culprit information.
+     * default `commonPipelineEnvironment.getGitSshUrl()`
+     */
+    'gitUrl',
+    /**
+     * defines if the console log file should be attached to the notification mail.
+     * @possibleValues `true`, `false`
+     */
+    'notificationAttachment',
+    /**
+     * A space-separated list of recipients that always get the notification.
+     */
+    'notificationRecipients',
+    /**
+     * Notify all committers since the last successful build.
+     * @possibleValues `true`, `false`
+     */
+    'notifyCulprits',
+    /**
+     * Number of log line which are included in the email body.
+     */
+    'numLogLinesInBody',
+    /**
+     * The project name used in the email subject.
+     * default `currentBuild.fullProjectName`
+     */
+    'projectName',
+    /**
+     * Needs to be set to `true` if step is used outside of a node context, e.g. post actions in a declarative pipeline script.
+     * default `false`
+     * @possibleValues `true`, `false`
+     */
+    'wrapInNode'
+])
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
 
+/**
+ * Sends notifications to all potential culprits of a current or previous build failure and to fixed list of recipients.
+ * It will attach the current build log to the email.
+ *
+ * Notifications are sent in following cases:
+ *
+ * * current build failed or is unstable
+ * * current build is successful and previous build failed or was unstable
+ */
+@GenerateDocumentation
 void call(Map parameters = [:]) {
     handlePipelineStepErrors (stepName: STEP_NAME, stepParameters: parameters, allowBuildFailure: true) {
         def script = checkScript(this, parameters) ?: this
@@ -57,7 +111,7 @@ void call(Map parameters = [:]) {
             subject += ' is back to normal'
         }
         if(mailTemplate){
-            def mailContent = SimpleTemplateEngine.newInstance().createTemplate(libraryResource(mailTemplate)).make([env: env, log: log]).toString()
+            def mailContent = GStringTemplateEngine.newInstance().createTemplate(libraryResource(mailTemplate)).make([env: env, log: log]).toString()
             def recipientList = ''
             if(config.notifyCulprits){
                 if (!config.gitUrl) {
@@ -143,7 +197,7 @@ def getCulprits(config, branch, numberOfCommits) {
                 ignoreMissing: true
             ) {
                 def pullRequestID = branch.replaceAll('PR-', '')
-                def localBranchName = "pr" + pullRequestID;
+                def localBranchName = "pr" + pullRequestID
                 sh """git init
     git fetch ${config.gitUrl} pull/${pullRequestID}/head:${localBranchName} > /dev/null 2>&1
     git checkout -f ${localBranchName} > /dev/null 2>&1
@@ -169,7 +223,7 @@ def getCulprits(config, branch, numberOfCommits) {
             }
         }
 
-        def recipients = sh(returnStdout: true, script: "git log -${numberOfCommits} --pretty=format:'%ae %ce'")
+        def recipients = sh(returnStdout: true, script: "git log -${numberOfCommits} --first-parent --pretty=format:'%ae %ce'")
         return getDistinctRecipients(recipients)
     } catch(err) {
         echo "[${STEP_NAME}] Culprit retrieval from git failed with '${err.getMessage()}'. Please make sure to configure gitSshKeyCredentialsId. So far, only fixed list of recipients is used."
