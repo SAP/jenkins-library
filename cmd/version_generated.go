@@ -22,7 +22,7 @@ func VersionCommand() *cobra.Command {
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			log.SetStepName("version")
 			log.SetVerbose(GeneralConfig.Verbose)
-			return PrepareConfig(cmd, &metadata, "version", &myVersionOptions, openPiperFile)
+			return PrepareConfig(cmd, &metadata, "version", &myVersionOptions, OpenPiperFile)
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return version(myVersionOptions)

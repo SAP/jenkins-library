@@ -55,7 +55,7 @@ func {{.CobraCmdFuncName}}() *cobra.Command {
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			log.SetStepName("{{ .StepName }}")
 			log.SetVerbose(GeneralConfig.Verbose)
-			return PrepareConfig(cmd, &metadata, "{{ .StepName }}", &my{{ .StepName | title}}Options, openPiperFile)
+			return PrepareConfig(cmd, &metadata, "{{ .StepName }}", &my{{ .StepName | title}}Options, OpenPiperFile)
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return {{.StepName}}(my{{ .StepName | title }}Options)
