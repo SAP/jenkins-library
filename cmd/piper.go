@@ -12,6 +12,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// GeneralConfigOptions contains all global configuration options for piper binary
 type GeneralConfigOptions struct {
 	CustomConfig   string
 	DefaultConfig  []string //ordered list of Piper default configurations. Can be filePath or ENV containing JSON in format 'ENV:MY_ENV_VAR'
