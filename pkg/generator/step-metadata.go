@@ -17,6 +17,7 @@ import (
 type stepInfo struct {
 	CobraCmdFuncName string
 	CreateCmdVar     string
+	ExportPrefix     string
 	FlagsFunc        string
 	Long             string
 	Metadata         []config.StepParameters
@@ -32,6 +33,7 @@ const stepGoTemplate = `package cmd
 import (
 	{{if .OSImport}}"os"{{end}}
 
+	{{if .ExportPrefix}}{{ .ExportPrefix }} "github.com/SAP/jenkins-library/cmd"{{end}}
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/spf13/cobra"
@@ -54,8 +56,8 @@ func {{.CobraCmdFuncName}}() *cobra.Command {
 		Long: {{ $tick := "` + "`" + `" }}{{ $tick }}{{.Long | longName }}{{ $tick }},
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			log.SetStepName("{{ .StepName }}")
-			log.SetVerbose(GeneralConfig.Verbose)
-			return PrepareConfig(cmd, &metadata, "{{ .StepName }}", &my{{ .StepName | title}}Options, OpenPiperFile)
+			log.SetVerbose({{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.Verbose)
+			return PrepareConfig(cmd, &metadata, "{{ .StepName }}", &my{{ .StepName | title}}Options, {{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}OpenPiperFile)
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return {{.StepName}}(my{{ .StepName | title }}Options)
@@ -118,10 +120,10 @@ func main() {
 
 	metadataPath := "./resources/metadata"
 
-	metadataFiles, err := metadataFiles(metadataPath)
+	metadataFiles, err := MetadataFiles(metadataPath)
 	checkError(err)
 
-	err = processMetaFiles(metadataFiles, openMetaFile, fileWriter)
+	err = ProcessMetaFiles(metadataFiles, openMetaFile, fileWriter, "")
 	checkError(err)
 
 	cmd := exec.Command("go", "fmt", "./cmd")
@@ -130,7 +132,8 @@ func main() {
 
 }
 
-func processMetaFiles(metadataFiles []string, openFile func(s string) (io.ReadCloser, error), writeFile func(filename string, data []byte, perm os.FileMode) error) error {
+// ProcessMetaFiles generates step coding based on step configuration provided in yaml files
+func ProcessMetaFiles(metadataFiles []string, openFile func(s string) (io.ReadCloser, error), writeFile func(filename string, data []byte, perm os.FileMode) error, exportPrefix string) error {
 	for key := range metadataFiles {
 
 		var stepData config.StepData
@@ -152,7 +155,7 @@ func processMetaFiles(metadataFiles []string, openFile func(s string) (io.ReadCl
 		osImport, err = setDefaultParameters(&stepData)
 		checkError(err)
 
-		myStepInfo := getStepInfo(&stepData, osImport)
+		myStepInfo := getStepInfo(&stepData, osImport, exportPrefix)
 
 		step := stepTemplate(myStepInfo)
 		err = writeFile(fmt.Sprintf("cmd/%v_generated.go", stepData.Metadata.Name), step, 0644)
@@ -214,7 +217,7 @@ func setDefaultParameters(stepData *config.StepData) (bool, error) {
 	return osImportRequired, nil
 }
 
-func getStepInfo(stepData *config.StepData, osImport bool) stepInfo {
+func getStepInfo(stepData *config.StepData, osImport bool, exportPrefix string) stepInfo {
 	return stepInfo{
 		StepName:         stepData.Metadata.Name,
 		CobraCmdFuncName: fmt.Sprintf("%vCommand", strings.Title(stepData.Metadata.Name)),
@@ -224,6 +227,7 @@ func getStepInfo(stepData *config.StepData, osImport bool) stepInfo {
 		Metadata:         stepData.Spec.Inputs.Parameters,
 		FlagsFunc:        fmt.Sprintf("add%vFlags", strings.Title(stepData.Metadata.Name)),
 		OSImport:         osImport,
+		ExportPrefix:     exportPrefix,
 	}
 }
 
@@ -234,7 +238,7 @@ func checkError(err error) {
 	}
 }
 
-func metadataFiles(sourceDirectory string) ([]string, error) {
+func MetadataFiles(sourceDirectory string) ([]string, error) {
 
 	var metadataFiles []string
 
