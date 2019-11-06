@@ -203,6 +203,7 @@ func TestGolangName(t *testing.T) {
 		expected string
 	}{
 		{input: "testApi", expected: "TestAPI"},
+		{input: "apiTest", expected: "APITest"},
 		{input: "testUrl", expected: "TestURL"},
 		{input: "testId", expected: "TestID"},
 		{input: "testJson", expected: "TestJSON"},
