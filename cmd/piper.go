@@ -33,7 +33,8 @@ It contains many steps which can be used within CI/CD systems as well as directl
 	//ToDo: respect stageName to also come from parametersJSON -> first env.STAGE_NAME, second: parametersJSON, third: flag
 }
 
-var generalConfig generalConfigOptions
+// GeneralConfig contains global configuration flags for piper binary
+var GeneralConfig generalConfigOptions
 
 // Execute is the starting point of the piper command line tool
 func Execute() {
@@ -41,6 +42,7 @@ func Execute() {
 	rootCmd.AddCommand(ConfigCommand())
 	rootCmd.AddCommand(VersionCommand())
 	rootCmd.AddCommand(KarmaExecuteTestsCommand())
+	rootCmd.AddCommand(GithubPublishReleaseCommand())
 
 	addRootFlags(rootCmd)
 	if err := rootCmd.Execute(); err != nil {
@@ -51,12 +53,12 @@ func Execute() {
 
 func addRootFlags(rootCmd *cobra.Command) {
 
-	rootCmd.PersistentFlags().StringVar(&generalConfig.customConfig, "customConfig", ".pipeline/config.yml", "Path to the pipeline configuration file")
-	rootCmd.PersistentFlags().StringSliceVar(&generalConfig.defaultConfig, "defaultConfig", nil, "Default configurations, passed as path to yaml file")
-	rootCmd.PersistentFlags().StringVar(&generalConfig.parametersJSON, "parametersJSON", os.Getenv("PIPER_parametersJSON"), "Parameters to be considered in JSON format")
-	rootCmd.PersistentFlags().StringVar(&generalConfig.stageName, "stageName", os.Getenv("STAGE_NAME"), "Name of the stage for which configuration should be included")
-	rootCmd.PersistentFlags().StringVar(&generalConfig.stepConfigJSON, "stepConfigJSON", os.Getenv("PIPER_stepConfigJSON"), "Step configuration in JSON format")
-	rootCmd.PersistentFlags().BoolVarP(&generalConfig.verbose, "verbose", "v", false, "verbose output")
+	rootCmd.PersistentFlags().StringVar(&GeneralConfig.customConfig, "customConfig", ".pipeline/config.yml", "Path to the pipeline configuration file")
+	rootCmd.PersistentFlags().StringSliceVar(&GeneralConfig.defaultConfig, "defaultConfig", nil, "Default configurations, passed as path to yaml file")
+	rootCmd.PersistentFlags().StringVar(&GeneralConfig.parametersJSON, "parametersJSON", os.Getenv("PIPER_parametersJSON"), "Parameters to be considered in JSON format")
+	rootCmd.PersistentFlags().StringVar(&GeneralConfig.stageName, "stageName", os.Getenv("STAGE_NAME"), "Name of the stage for which configuration should be included")
+	rootCmd.PersistentFlags().StringVar(&GeneralConfig.stepConfigJSON, "stepConfigJSON", os.Getenv("PIPER_stepConfigJSON"), "Step configuration in JSON format")
+	rootCmd.PersistentFlags().BoolVarP(&GeneralConfig.verbose, "verbose", "v", false, "verbose output")
 
 }
 
@@ -70,23 +72,23 @@ func PrepareConfig(cmd *cobra.Command, metadata *config.StepData, stepName strin
 	var myConfig config.Config
 	var stepConfig config.StepConfig
 
-	if len(generalConfig.stepConfigJSON) != 0 {
+	if len(GeneralConfig.stepConfigJSON) != 0 {
 		// ignore config & defaults in favor of passed stepConfigJSON
-		stepConfig = config.GetStepConfigWithJSON(flagValues, generalConfig.stepConfigJSON, filters)
+		stepConfig = config.GetStepConfigWithJSON(flagValues, GeneralConfig.stepConfigJSON, filters)
 	} else {
 		// use config & defaults
 
 		//accept that config file and defaults cannot be loaded since both are not mandatory here
-		customConfig, _ := openFile(generalConfig.customConfig)
+		customConfig, _ := openFile(GeneralConfig.customConfig)
 		var defaultConfig []io.ReadCloser
-		for _, f := range generalConfig.defaultConfig {
+		for _, f := range GeneralConfig.defaultConfig {
 			//ToDo: support also https as source
 			fc, _ := openFile(f)
 			defaultConfig = append(defaultConfig, fc)
 		}
 
 		var err error
-		stepConfig, err = myConfig.GetStepConfig(flagValues, generalConfig.parametersJSON, customConfig, defaultConfig, filters, metadata.Spec.Inputs.Parameters, generalConfig.stageName, stepName)
+		stepConfig, err = myConfig.GetStepConfig(flagValues, GeneralConfig.parametersJSON, customConfig, defaultConfig, filters, metadata.Spec.Inputs.Parameters, GeneralConfig.stageName, stepName)
 		if err != nil {
 			return errors.Wrap(err, "retrieving step configuration failed")
 		}

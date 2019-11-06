@@ -161,7 +161,7 @@ private Object substitute(String manifestFilePath, List<String> manifestVariable
     def manifestData = loadManifestData(manifestFilePath, debugHelper)
 
     // replace variables from list first.
-    List<Map<String>> reversedManifestVariablesList = manifestVariablesList.reverse() // to make sure last one wins.
+    List<Map<String,Object>> reversedManifestVariablesList = manifestVariablesList.reverse() // to make sure last one wins.
 
     def result = manifestData
     for (Map<String, Object> manifestVariableData : reversedManifestVariablesList) {
