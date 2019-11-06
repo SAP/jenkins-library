@@ -7,7 +7,7 @@ import com.sap.piper.Utils
 import com.sap.piper.versioning.ArtifactVersioning
 
 import groovy.transform.Field
-import groovy.text.SimpleTemplateEngine
+import groovy.text.GStringTemplateEngine
 
 @Field String STEP_NAME = getClass().getName()
 @Field Map CONFIG_KEY_COMPATIBILITY = [gitSshKeyCredentialsId: 'gitCredentialsId']
@@ -144,7 +144,7 @@ void call(Map parameters = [:], Closure body = null) {
             newVersion = currentVersion
         } else {
             def binding = [version: currentVersion, timestamp: config.timestamp, commitId: config.gitCommitId]
-            newVersion = new SimpleTemplateEngine().createTemplate(config.versioningTemplate).make(binding).toString()
+            newVersion = new GStringTemplateEngine().createTemplate(config.versioningTemplate).make(binding).toString()
         }
 
         artifactVersioning.setVersion(newVersion)
