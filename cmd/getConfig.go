@@ -53,9 +53,12 @@ func generateConfig() error {
 		return errors.Wrap(err, "metadata: read failed")
 	}
 
-	customConfig, err := configOptions.openFile(generalConfig.customConfig)
-	if err != nil {
-		return errors.Wrap(err, "config: open failed")
+	var customConfig io.ReadCloser
+	if fileExists(generalConfig.customConfig) {
+		customConfig, err = configOptions.openFile(generalConfig.customConfig)
+		if err != nil {
+			return errors.Wrap(err, "config: open failed")
+		}
 	}
 
 	defaultConfig, paramFilter, err := defaultsAndFilters(&metadata)
@@ -82,8 +85,6 @@ func generateConfig() error {
 	if err != nil {
 		return errors.Wrap(err, "getting step config failed")
 	}
-
-	//ToDo: Check for mandatory parameters
 
 	myConfigJSON, _ := config.GetJSON(stepConfig.Config)
 
@@ -117,4 +118,12 @@ func defaultsAndFilters(metadata *config.StepData) ([]io.ReadCloser, config.Step
 	}
 	//ToDo: retrieve default values from metadata
 	return nil, metadata.GetParameterFilters(), nil
+}
+
+func fileExists(filename string) bool {
+	info, err := os.Stat(filename)
+	if os.IsNotExist(err) {
+		return false
+	}
+	return !info.IsDir()
 }

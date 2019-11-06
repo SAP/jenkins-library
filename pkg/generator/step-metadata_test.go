@@ -112,9 +112,11 @@ func TestSetDefaultParameters(t *testing.T) {
 			"[]string{}",
 		}
 
-		err := setDefaultParameters(&stepData)
+		osImport, err := setDefaultParameters(&stepData)
 
 		assert.NoError(t, err, "error occured but none expected")
+
+		assert.Equal(t, true, osImport, "import of os package required")
 
 		for k, v := range expected {
 			assert.Equal(t, v, stepData.Spec.Inputs.Parameters[k].Default, fmt.Sprintf("default not correct for parameter %v", k))
@@ -145,7 +147,7 @@ func TestSetDefaultParameters(t *testing.T) {
 		}
 
 		for k, v := range stepData {
-			err := setDefaultParameters(&v)
+			_, err := setDefaultParameters(&v)
 			assert.Error(t, err, fmt.Sprintf("error expected but none occured for parameter %v", k))
 		}
 	})
@@ -168,7 +170,7 @@ func TestGetStepInfo(t *testing.T) {
 		},
 	}
 
-	myStepInfo := getStepInfo(&stepData)
+	myStepInfo := getStepInfo(&stepData, true)
 
 	assert.Equal(t, "testStep", myStepInfo.StepName, "StepName incorrect")
 	assert.Equal(t, "TestStepCommand", myStepInfo.CobraCmdFuncName, "CobraCmdFuncName incorrect")
@@ -176,6 +178,7 @@ func TestGetStepInfo(t *testing.T) {
 	assert.Equal(t, "Test description", myStepInfo.Short, "Short incorrect")
 	assert.Equal(t, "Long Test description", myStepInfo.Long, "Long incorrect")
 	assert.Equal(t, stepData.Spec.Inputs.Parameters, myStepInfo.Metadata, "Metadata incorrect")
+	assert.Equal(t, "addTestStepFlags", myStepInfo.FlagsFunc, "FlagsFunc incorrect")
 	assert.Equal(t, "addTestStepFlags", myStepInfo.FlagsFunc, "FlagsFunc incorrect")
 
 }
@@ -200,6 +203,7 @@ func TestGolangName(t *testing.T) {
 		expected string
 	}{
 		{input: "testApi", expected: "TestAPI"},
+		{input: "apiTest", expected: "APITest"},
 		{input: "testUrl", expected: "TestURL"},
 		{input: "testId", expected: "TestID"},
 		{input: "testJson", expected: "TestJSON"},
