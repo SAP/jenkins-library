@@ -81,14 +81,14 @@ func TestAddRootFlags(t *testing.T) {
 }
 
 func TestPrepareConfig(t *testing.T) {
-	defaultsBak := GeneralConfig.defaultConfig
-	GeneralConfig.defaultConfig = []string{"testDefaults.yml"}
-	defer func() { GeneralConfig.defaultConfig = defaultsBak }()
+	defaultsBak := GeneralConfig.DefaultConfig
+	GeneralConfig.DefaultConfig = []string{"testDefaults.yml"}
+	defer func() { GeneralConfig.DefaultConfig = defaultsBak }()
 
 	t.Run("using stepConfigJSON", func(t *testing.T) {
-		stepConfigJSONBak := GeneralConfig.stepConfigJSON
-		GeneralConfig.stepConfigJSON = `{"testParam": "testValueJSON"}`
-		defer func() { GeneralConfig.stepConfigJSON = stepConfigJSONBak }()
+		stepConfigJSONBak := GeneralConfig.StepConfigJSON
+		GeneralConfig.StepConfigJSON = `{"testParam": "testValueJSON"}`
+		defer func() { GeneralConfig.StepConfigJSON = stepConfigJSONBak }()
 		testOptions := stepOptions{}
 		var testCmd = &cobra.Command{Use: "test", Short: "This is just a test"}
 		testCmd.Flags().StringVar(&testOptions.TestParam, "testParam", "", "test usage")
@@ -136,7 +136,7 @@ func TestPrepareConfig(t *testing.T) {
 		})
 
 		t.Run("error case", func(t *testing.T) {
-			GeneralConfig.defaultConfig = []string{"testDefaultsInvalid.yml"}
+			GeneralConfig.DefaultConfig = []string{"testDefaultsInvalid.yml"}
 			testOptions := stepOptions{}
 			var testCmd = &cobra.Command{Use: "test", Short: "This is just a test"}
 			metadata := config.StepData{}

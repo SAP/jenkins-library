@@ -47,7 +47,7 @@ The result looks like
 ![Example release](../images/githubRelease.png)`,
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			log.SetStepName("githubPublishRelease")
-			log.SetVerbose(GeneralConfig.verbose)
+			log.SetVerbose(GeneralConfig.Verbose)
 			return PrepareConfig(cmd, &metadata, "githubPublishRelease", &myGithubPublishReleaseOptions, openPiperFile)
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {

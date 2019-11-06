@@ -21,7 +21,7 @@ func VersionCommand() *cobra.Command {
 		Long:  `Writes the commit hash and the tag (if any) to stdout and exits with 0.`,
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			log.SetStepName("version")
-			log.SetVerbose(GeneralConfig.verbose)
+			log.SetVerbose(GeneralConfig.Verbose)
 			return PrepareConfig(cmd, &metadata, "version", &myVersionOptions, openPiperFile)
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {

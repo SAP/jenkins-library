@@ -12,15 +12,15 @@ import (
 	"github.com/spf13/cobra"
 )
 
-type generalConfigOptions struct {
-	customConfig   string
-	defaultConfig  []string //ordered list of Piper default configurations. Can be filePath or ENV containing JSON in format 'ENV:MY_ENV_VAR'
-	parametersJSON string
-	stageName      string
-	stepConfigJSON string
-	stepMetadata   string //metadata to be considered, can be filePath or ENV containing JSON in format 'ENV:MY_ENV_VAR'
-	stepName       string
-	verbose        bool
+type GeneralConfigOptions struct {
+	CustomConfig   string
+	DefaultConfig  []string //ordered list of Piper default configurations. Can be filePath or ENV containing JSON in format 'ENV:MY_ENV_VAR'
+	ParametersJSON string
+	StageName      string
+	StepConfigJSON string
+	StepMetadata   string //metadata to be considered, can be filePath or ENV containing JSON in format 'ENV:MY_ENV_VAR'
+	StepName       string
+	Verbose        bool
 }
 
 var rootCmd = &cobra.Command{
@@ -34,7 +34,7 @@ It contains many steps which can be used within CI/CD systems as well as directl
 }
 
 // GeneralConfig contains global configuration flags for piper binary
-var GeneralConfig generalConfigOptions
+var GeneralConfig GeneralConfigOptions
 
 // Execute is the starting point of the piper command line tool
 func Execute() {
@@ -53,12 +53,12 @@ func Execute() {
 
 func addRootFlags(rootCmd *cobra.Command) {
 
-	rootCmd.PersistentFlags().StringVar(&GeneralConfig.customConfig, "customConfig", ".pipeline/config.yml", "Path to the pipeline configuration file")
-	rootCmd.PersistentFlags().StringSliceVar(&GeneralConfig.defaultConfig, "defaultConfig", nil, "Default configurations, passed as path to yaml file")
-	rootCmd.PersistentFlags().StringVar(&GeneralConfig.parametersJSON, "parametersJSON", os.Getenv("PIPER_parametersJSON"), "Parameters to be considered in JSON format")
-	rootCmd.PersistentFlags().StringVar(&GeneralConfig.stageName, "stageName", os.Getenv("STAGE_NAME"), "Name of the stage for which configuration should be included")
-	rootCmd.PersistentFlags().StringVar(&GeneralConfig.stepConfigJSON, "stepConfigJSON", os.Getenv("PIPER_stepConfigJSON"), "Step configuration in JSON format")
-	rootCmd.PersistentFlags().BoolVarP(&GeneralConfig.verbose, "verbose", "v", false, "verbose output")
+	rootCmd.PersistentFlags().StringVar(&GeneralConfig.CustomConfig, "customConfig", ".pipeline/config.yml", "Path to the pipeline configuration file")
+	rootCmd.PersistentFlags().StringSliceVar(&GeneralConfig.DefaultConfig, "defaultConfig", nil, "Default configurations, passed as path to yaml file")
+	rootCmd.PersistentFlags().StringVar(&GeneralConfig.ParametersJSON, "parametersJSON", os.Getenv("PIPER_parametersJSON"), "Parameters to be considered in JSON format")
+	rootCmd.PersistentFlags().StringVar(&GeneralConfig.StageName, "stageName", os.Getenv("STAGE_NAME"), "Name of the stage for which configuration should be included")
+	rootCmd.PersistentFlags().StringVar(&GeneralConfig.StepConfigJSON, "stepConfigJSON", os.Getenv("PIPER_stepConfigJSON"), "Step configuration in JSON format")
+	rootCmd.PersistentFlags().BoolVarP(&GeneralConfig.Verbose, "verbose", "v", false, "verbose output")
 
 }
 
@@ -72,23 +72,23 @@ func PrepareConfig(cmd *cobra.Command, metadata *config.StepData, stepName strin
 	var myConfig config.Config
 	var stepConfig config.StepConfig
 
-	if len(GeneralConfig.stepConfigJSON) != 0 {
+	if len(GeneralConfig.StepConfigJSON) != 0 {
 		// ignore config & defaults in favor of passed stepConfigJSON
-		stepConfig = config.GetStepConfigWithJSON(flagValues, GeneralConfig.stepConfigJSON, filters)
+		stepConfig = config.GetStepConfigWithJSON(flagValues, GeneralConfig.StepConfigJSON, filters)
 	} else {
 		// use config & defaults
 
 		//accept that config file and defaults cannot be loaded since both are not mandatory here
-		customConfig, _ := openFile(GeneralConfig.customConfig)
+		customConfig, _ := openFile(GeneralConfig.CustomConfig)
 		var defaultConfig []io.ReadCloser
-		for _, f := range GeneralConfig.defaultConfig {
+		for _, f := range GeneralConfig.DefaultConfig {
 			//ToDo: support also https as source
 			fc, _ := openFile(f)
 			defaultConfig = append(defaultConfig, fc)
 		}
 
 		var err error
-		stepConfig, err = myConfig.GetStepConfig(flagValues, GeneralConfig.parametersJSON, customConfig, defaultConfig, filters, metadata.Spec.Inputs.Parameters, GeneralConfig.stageName, stepName)
+		stepConfig, err = myConfig.GetStepConfig(flagValues, GeneralConfig.ParametersJSON, customConfig, defaultConfig, filters, metadata.Spec.Inputs.Parameters, GeneralConfig.StageName, stepName)
 		if err != nil {
 			return errors.Wrap(err, "retrieving step configuration failed")
 		}
