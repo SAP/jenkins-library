@@ -238,6 +238,7 @@ func checkError(err error) {
 	}
 }
 
+// MetadataFiles provides a list of all step metadata files
 func MetadataFiles(sourceDirectory string) ([]string, error) {
 
 	var metadataFiles []string
