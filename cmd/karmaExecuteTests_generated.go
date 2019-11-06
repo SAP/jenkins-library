@@ -1,8 +1,6 @@
 package cmd
 
 import (
-	//"os"
-
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/spf13/cobra"
