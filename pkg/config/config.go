@@ -81,12 +81,9 @@ func (c *Config) GetStepConfig(flagValues map[string]interface{}, paramJSON stri
 	var stepConfig StepConfig
 	var d PipelineDefaults
 
-	if err := c.ReadConfig(configuration); err != nil {
-		switch err.(type) {
-		case *ParseError:
+	if configuration != nil {
+		if err := c.ReadConfig(configuration); err != nil {
 			return StepConfig{}, errors.Wrap(err, "failed to parse custom pipeline configuration")
-		default:
-			//ignoring unavailability of config file since considered optional
 		}
 	}
 	c.ApplyAliasConfig(parameters, filters, stageName, stepName)
