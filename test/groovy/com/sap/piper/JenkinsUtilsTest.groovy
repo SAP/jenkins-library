@@ -71,6 +71,16 @@ class JenkinsUtilsTest extends BasePiperTest {
                     return triggerCause
                 }
             }
+            def getAction(type) {
+                return new Object() {
+                    def getLibraries() {
+                        return [
+                            [name: 'lib1', version: '1', trusted: true],
+                            [name: 'lib2', version: '2', trusted: false],
+                        ]
+                    }
+                }
+            }
 
         }
         LibraryLoadingTestExecutionListener.prepareObjectInterceptors(rawBuildMock)
@@ -129,5 +139,13 @@ class JenkinsUtilsTest extends BasePiperTest {
     void testGetUserIdNoUser() {
         userId = null
         assertThat(jenkinsUtils.getJobStartedByUserId(), isEmptyOrNullString())
+    }
+
+    @Test
+    void testGetLibrariesInfo() {
+        def libs
+        libs = jenkinsUtils.getLibrariesInfo()
+        assertThat(libs[0], is([name: 'lib1', version: '1', trusted: true]))
+        assertThat(libs[1], is([name: 'lib2', version: '2', trusted: false]))
     }
 }
