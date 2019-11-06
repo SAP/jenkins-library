@@ -24,7 +24,7 @@ var configOptions configCommandOptions
 // ConfigCommand is the entry command for loading the configuration of a pipeline step
 func ConfigCommand() *cobra.Command {
 
-	configOptions.openFile = openPiperFile
+	configOptions.openFile = OpenPiperFile
 	var createConfigCmd = &cobra.Command{
 		Use:   "getConfig",
 		Short: "Loads the project 'Piper' configuration respecting defaults and parameters.",
@@ -54,8 +54,8 @@ func generateConfig() error {
 	}
 
 	var customConfig io.ReadCloser
-	if fileExists(GeneralConfig.customConfig) {
-		customConfig, err = configOptions.openFile(GeneralConfig.customConfig)
+	if fileExists(GeneralConfig.CustomConfig) {
+		customConfig, err = configOptions.openFile(GeneralConfig.CustomConfig)
 		if err != nil {
 			return errors.Wrap(err, "config: open failed")
 		}
@@ -66,7 +66,7 @@ func generateConfig() error {
 		return errors.Wrap(err, "defaults: retrieving step defaults failed")
 	}
 
-	for _, f := range GeneralConfig.defaultConfig {
+	for _, f := range GeneralConfig.DefaultConfig {
 		fc, err := configOptions.openFile(f)
 		if err != nil {
 			return errors.Wrapf(err, "config: getting defaults failed: '%v'", f)
@@ -81,7 +81,7 @@ func generateConfig() error {
 		params = metadata.Spec.Inputs.Parameters
 	}
 
-	stepConfig, err = myConfig.GetStepConfig(flags, GeneralConfig.parametersJSON, customConfig, defaultConfig, paramFilter, params, GeneralConfig.stageName, configOptions.stepName)
+	stepConfig, err = myConfig.GetStepConfig(flags, GeneralConfig.ParametersJSON, customConfig, defaultConfig, paramFilter, params, GeneralConfig.StageName, configOptions.stepName)
 	if err != nil {
 		return errors.Wrap(err, "getting step config failed")
 	}
