@@ -48,6 +48,7 @@ type StepParameters struct {
 	Mandatory       bool        `json:"mandatory,omitempty"`
 	Default         interface{} `json:"default,omitempty"`
 	Aliases         []Alias     `json:"aliases,omitempty"`
+	Conditions      []Condition `json:"conditions,omitempty"`
 }
 
 // Alias defines a step input parameter alias
@@ -58,9 +59,10 @@ type Alias struct {
 
 // StepResources defines the resources to be provided by the step context, e.g. Jenkins pipeline
 type StepResources struct {
-	Name        string `json:"name"`
-	Description string `json:"description,omitempty"`
-	Type        string `json:"type,omitempty"`
+	Name        string      `json:"name"`
+	Description string      `json:"description,omitempty"`
+	Type        string      `json:"type,omitempty"`
+	Conditions  []Condition `json:"conditions,omitempty"`
 }
 
 // StepSecrets defines the secrets to be provided by the step context, e.g. Jenkins pipeline
@@ -78,18 +80,31 @@ type StepSecrets struct {
 // Container defines an execution container
 type Container struct {
 	//ToDo: check dockerOptions, dockerVolumeBind, containerPortMappings, sidecarOptions, sidecarVolumeBind
-	Command         []string `json:"command"`
-	EnvVars         []EnvVar `json:"env"`
-	Image           string   `json:"image"`
-	ImagePullPolicy string   `json:"imagePullPolicy"`
-	Name            string   `json:"name"`
-	ReadyCommand    string   `json:"readyCommand"`
-	Shell           string   `json:"shell"`
-	WorkingDir      string   `json:"workingDir"`
+	Command         []string    `json:"command"`
+	EnvVars         []EnvVar    `json:"env"`
+	Image           string      `json:"image"`
+	ImagePullPolicy string      `json:"imagePullPolicy"`
+	Name            string      `json:"name"`
+	ReadyCommand    string      `json:"readyCommand"`
+	Shell           string      `json:"shell"`
+	WorkingDir      string      `json:"workingDir"`
+	Conditions      []Condition `json:"conditions,omitempty"`
 }
 
 // EnvVar defines an environment variable
 type EnvVar struct {
+	Name  string `json:"name"`
+	Value string `json:"value"`
+}
+
+// Condition defines an condition which decides when the parameter, resource or container is valid
+type Condition struct {
+	ConditionRef string  `json:"conditionRef"`
+	Params       []Param `json:"params"`
+}
+
+// Param defines the parameters serving as inputs to the condition
+type Param struct {
 	Name  string `json:"name"`
 	Value string `json:"value"`
 }
@@ -123,19 +138,25 @@ func (m *StepData) ReadPipelineStepData(metadata io.ReadCloser) error {
 func (m *StepData) GetParameterFilters() StepFilters {
 	var filters StepFilters
 	for _, param := range m.Spec.Inputs.Parameters {
-		filters.All = append(filters.All, param.Name)
+		parameterKeys := []string{param.Name}
+		for _, condition := range param.Conditions {
+			for _, dependentParam := range condition.Params {
+				parameterKeys = append(parameterKeys, dependentParam.Value)
+			}
+		}
+		filters.All = append(filters.All, parameterKeys...)
 		for _, scope := range param.Scope {
 			switch scope {
 			case "GENERAL":
-				filters.General = append(filters.General, param.Name)
+				filters.General = append(filters.General, parameterKeys...)
 			case "STEPS":
-				filters.Steps = append(filters.Steps, param.Name)
+				filters.Steps = append(filters.Steps, parameterKeys...)
 			case "STAGES":
-				filters.Stages = append(filters.Stages, param.Name)
+				filters.Stages = append(filters.Stages, parameterKeys...)
 			case "PARAMETERS":
-				filters.Parameters = append(filters.Parameters, param.Name)
+				filters.Parameters = append(filters.Parameters, parameterKeys...)
 			case "ENV":
-				filters.Env = append(filters.Env, param.Name)
+				filters.Env = append(filters.Env, parameterKeys...)
 			}
 		}
 	}
@@ -156,7 +177,15 @@ func (m *StepData) GetContextParameterFilters() StepFilters {
 
 	containerFilters := []string{}
 	if len(m.Spec.Containers) > 0 {
-		containerFilters = append(containerFilters, []string{"containerCommand", "containerShell", "dockerEnvVars", "dockerImage", "dockerOptions", "dockerPullImage", "dockerVolumeBind", "dockerWorkspace"}...)
+		parameterKeys := []string{"containerCommand", "containerShell", "dockerEnvVars", "dockerImage", "dockerOptions", "dockerPullImage", "dockerVolumeBind", "dockerWorkspace"}
+		for _, container := range m.Spec.Containers {
+			for _, condition := range container.Conditions {
+				for _, dependentParam := range condition.Params {
+					parameterKeys = append(parameterKeys, dependentParam.Value)
+				}
+			}
+		}
+		containerFilters = append(containerFilters, parameterKeys...)
 	}
 	if len(m.Spec.Sidecars) > 0 {
 		//ToDo: support fallback for "dockerName" configuration property -> via aliasing?
@@ -175,59 +204,93 @@ func (m *StepData) GetContextParameterFilters() StepFilters {
 // It only supports scenarios with one container and optionally one sidecar
 func (m *StepData) GetContextDefaults(stepName string) (io.ReadCloser, error) {
 
-	p := map[string]interface{}{}
-
 	//ToDo error handling empty Containers/Sidecars
 	//ToDo handle empty Command
-
+	root := map[string]interface{}{}
 	if len(m.Spec.Containers) > 0 {
-		if len(m.Spec.Containers[0].Command) > 0 {
-			p["containerCommand"] = m.Spec.Containers[0].Command[0]
-		}
-		p["containerName"] = m.Spec.Containers[0].Name
-		p["containerShell"] = m.Spec.Containers[0].Shell
-		p["dockerEnvVars"] = envVarsAsStringSlice(m.Spec.Containers[0].EnvVars)
-		p["dockerImage"] = m.Spec.Containers[0].Image
-		p["dockerName"] = m.Spec.Containers[0].Name
-		p["dockerPullImage"] = m.Spec.Containers[0].ImagePullPolicy != "Never"
-		p["dockerWorkspace"] = m.Spec.Containers[0].WorkingDir
+		for _, container := range m.Spec.Containers {
+			key := ""
+			if len(container.Conditions) > 0 {
+				key = container.Conditions[0].Params[0].Value
+			}
+			p := map[string]interface{}{}
+			if key != "" {
+				root[key] = p
+			} else {
+				p = root
+			}
+			if len(container.Command) > 0 {
+				p["containerCommand"] = container.Command[0]
+			}
+			p["containerName"] = container.Name
+			p["containerShell"] = container.Shell
+			p["dockerEnvVars"] = envVarsAsStringSlice(container.EnvVars)
+			p["dockerImage"] = container.Image
+			p["dockerName"] = container.Name
+			p["dockerPullImage"] = container.ImagePullPolicy != "Never"
+			p["dockerWorkspace"] = container.WorkingDir
 
-		// Ready command not relevant for main runtime container so far
-		//p[] = m.Spec.Containers[0].ReadyCommand
+			// Ready command not relevant for main runtime container so far
+			//p[] = container.ReadyCommand
+		}
+
 	}
 
 	if len(m.Spec.Sidecars) > 0 {
 		if len(m.Spec.Sidecars[0].Command) > 0 {
-			p["sidecarCommand"] = m.Spec.Sidecars[0].Command[0]
+			root["sidecarCommand"] = m.Spec.Sidecars[0].Command[0]
 		}
-		p["sidecarEnvVars"] = envVarsAsStringSlice(m.Spec.Sidecars[0].EnvVars)
-		p["sidecarImage"] = m.Spec.Sidecars[0].Image
-		p["sidecarName"] = m.Spec.Sidecars[0].Name
-		p["sidecarPullImage"] = m.Spec.Sidecars[0].ImagePullPolicy != "Never"
-		p["sidecarReadyCommand"] = m.Spec.Sidecars[0].ReadyCommand
-		p["sidecarWorkspace"] = m.Spec.Sidecars[0].WorkingDir
+		root["sidecarEnvVars"] = envVarsAsStringSlice(m.Spec.Sidecars[0].EnvVars)
+		root["sidecarImage"] = m.Spec.Sidecars[0].Image
+		root["sidecarName"] = m.Spec.Sidecars[0].Name
+		root["sidecarPullImage"] = m.Spec.Sidecars[0].ImagePullPolicy != "Never"
+		root["sidecarReadyCommand"] = m.Spec.Sidecars[0].ReadyCommand
+		root["sidecarWorkspace"] = m.Spec.Sidecars[0].WorkingDir
 	}
 
 	// not filled for now since this is not relevant in Kubernetes case
-	//p["dockerOptions"] = m.Spec.Containers[0].
-	//p["dockerVolumeBind"] = m.Spec.Containers[0].
-	//p["containerPortMappings"] = m.Spec.Sidecars[0].
-	//p["sidecarOptions"] = m.Spec.Sidecars[0].
-	//p["sidecarVolumeBind"] = m.Spec.Sidecars[0].
+	//p["dockerOptions"] = container.
+	//p["dockerVolumeBind"] = container.
+	//root["containerPortMappings"] = m.Spec.Sidecars[0].
+	//root["sidecarOptions"] = m.Spec.Sidecars[0].
+	//root["sidecarVolumeBind"] = m.Spec.Sidecars[0].
 
 	if len(m.Spec.Inputs.Resources) > 0 {
-		var resources []string
+		keys := []string{}
+		resources := map[string][]string{}
 		for _, resource := range m.Spec.Inputs.Resources {
 			if resource.Type == "stash" {
-				resources = append(resources, resource.Name)
+				key := ""
+				if len(resource.Conditions) > 0 {
+					key = resource.Conditions[0].Params[0].Value
+				}
+				if resources[key] == nil {
+					keys = append(keys, key)
+					resources[key] = []string{}
+				}
+				resources[key] = append(resources[key], resource.Name)
 			}
 		}
-		p["stashContent"] = resources
+
+		for _, key := range keys {
+			if key == "" {
+				root["stashContent"] = resources[""]
+			} else {
+				if root[key] == nil {
+					root[key] = map[string]interface{}{
+						"stashContent": resources[key],
+					}
+				} else {
+					p := root[key].(map[string]interface{})
+					p["stashContent"] = resources[key]
+				}
+			}
+		}
 	}
 
 	c := Config{
 		Steps: map[string]map[string]interface{}{
-			stepName: p,
+			stepName: root,
 		},
 	}
 
