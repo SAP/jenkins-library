@@ -5,8 +5,6 @@ class PiperGoUtils implements Serializable {
     private static Script steps
     private static Utils utils
 
-    private static String DELIMITER = '-DeLiMiTeR-'
-
     PiperGoUtils(Script steps) {
         this.steps = steps
         this.utils = new Utils()
@@ -37,7 +35,13 @@ class PiperGoUtils implements Serializable {
             //Inform that no Piper binary is available for used library branch
             steps.echo ("Not able to download go binary of Piper for version ${version}")
             //Fallback to master version & throw error in case this fails
-            if (!downloadGoBinary(fallbackUrl)) steps.error("Download of Piper go binary failed.")
+            steps.retry(5) {
+                if (!downloadGoBinary(fallbackUrl)) {
+                    steps.sleep(2)
+                    steps.error("Download of Piper go binary failed.")
+                }
+            }
+
         }
         utils.stashWithMessage('piper-bin', 'failed to stash piper binary', 'piper')
     }
@@ -48,10 +52,9 @@ class PiperGoUtils implements Serializable {
 
     private boolean downloadGoBinary(url) {
 
-        def response = steps.sh(returnStdout: true, script: "curl --insecure --silent --location --write-out '${DELIMITER}status=%{http_code}' --output ./piper '${url}'")
+        def httpStatus = steps.sh(returnStdout: true, script: "curl --insecure --silent --location --write-out '%{http_code}' --output ./piper '${url}'")
 
-        def parts = response.split(DELIMITER)
-        if (parts.size() > 1 && parts[1] == 'status=200') {
+        if (httpStatus == '200') {
             steps.sh(script: 'chmod +x ./piper')
             return true
         }

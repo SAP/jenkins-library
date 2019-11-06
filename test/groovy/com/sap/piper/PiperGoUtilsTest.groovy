@@ -28,6 +28,7 @@ class PiperGoUtilsTest extends BasePiperTest {
 
     @Before
     void init() {
+        helper.registerAllowedMethod("retry", [Integer, Closure], null)
     }
 
     @Test
@@ -60,11 +61,11 @@ class PiperGoUtilsTest extends BasePiperTest {
             return []
         })
 
-        shellCallRule.setReturnValue('curl --insecure --silent --location --write-out \'-DeLiMiTeR-status=%{http_code}\' --output ./piper \'https://github.com/SAP/jenkins-library/releases/latest/download/piper_master\'', 'this is some return -DeLiMiTeR-status=200')
+        shellCallRule.setReturnValue('curl --insecure --silent --location --write-out \'%{http_code}\' --output ./piper \'https://github.com/SAP/jenkins-library/releases/latest/download/piper_master\'', '200')
 
         piperGoUtils.unstashPiperBin()
         assertThat(shellCallRule.shell.size(), is(2))
-        assertThat(shellCallRule.shell[0].toString(), is('curl --insecure --silent --location --write-out \'-DeLiMiTeR-status=%{http_code}\' --output ./piper \'https://github.com/SAP/jenkins-library/releases/latest/download/piper_master\''))
+        assertThat(shellCallRule.shell[0].toString(), is('curl --insecure --silent --location --write-out \'%{http_code}\' --output ./piper \'https://github.com/SAP/jenkins-library/releases/latest/download/piper_master\''))
         assertThat(shellCallRule.shell[1].toString(), is('chmod +x ./piper'))
     }
 
@@ -79,11 +80,11 @@ class PiperGoUtilsTest extends BasePiperTest {
             return []
         })
 
-        shellCallRule.setReturnValue('curl --insecure --silent --location --write-out \'-DeLiMiTeR-status=%{http_code}\' --output ./piper \'https://github.com/SAP/jenkins-library/releases/tag/testTag\'', 'this is some return -DeLiMiTeR-status=200')
+        shellCallRule.setReturnValue('curl --insecure --silent --location --write-out \'%{http_code}\' --output ./piper \'https://github.com/SAP/jenkins-library/releases/tag/testTag\'', '200')
 
         piperGoUtils.unstashPiperBin()
         assertThat(shellCallRule.shell.size(), is(2))
-        assertThat(shellCallRule.shell[0].toString(), is('curl --insecure --silent --location --write-out \'-DeLiMiTeR-status=%{http_code}\' --output ./piper \'https://github.com/SAP/jenkins-library/releases/tag/testTag\''))
+        assertThat(shellCallRule.shell[0].toString(), is('curl --insecure --silent --location --write-out \'%{http_code}\' --output ./piper \'https://github.com/SAP/jenkins-library/releases/tag/testTag\''))
         assertThat(shellCallRule.shell[1].toString(), is('chmod +x ./piper'))
     }
 
@@ -93,8 +94,8 @@ class PiperGoUtilsTest extends BasePiperTest {
         def piperGoUtils = new PiperGoUtils(nullScript, utils)
         piperGoUtils.metaClass.getLibrariesInfo = {-> return [[name: 'piper-lib-os', version: 'notAvailable']]}
 
-        shellCallRule.setReturnValue('curl --insecure --silent --location --write-out \'-DeLiMiTeR-status=%{http_code}\' --output ./piper \'https://github.com/SAP/jenkins-library/releases/tag/notAvailable\'', 'this is some return -DeLiMiTeR-status=404')
-        shellCallRule.setReturnValue('curl --insecure --silent --location --write-out \'-DeLiMiTeR-status=%{http_code}\' --output ./piper \'https://github.com/SAP/jenkins-library/releases/latest/download/piper_master\'', 'this is some return -DeLiMiTeR-status=200')
+        shellCallRule.setReturnValue('curl --insecure --silent --location --write-out \'%{http_code}\' --output ./piper \'https://github.com/SAP/jenkins-library/releases/tag/notAvailable\'', '404')
+        shellCallRule.setReturnValue('curl --insecure --silent --location --write-out \'%{http_code}\' --output ./piper \'https://github.com/SAP/jenkins-library/releases/latest/download/piper_master\'', '200')
 
         // this mocks utils.unstash - mimic stash not existing
         helper.registerAllowedMethod("unstash", [String.class], { stashFileName ->
@@ -103,8 +104,8 @@ class PiperGoUtilsTest extends BasePiperTest {
 
         piperGoUtils.unstashPiperBin()
         assertThat(shellCallRule.shell.size(), is(3))
-        assertThat(shellCallRule.shell[0].toString(), is('curl --insecure --silent --location --write-out \'-DeLiMiTeR-status=%{http_code}\' --output ./piper \'https://github.com/SAP/jenkins-library/releases/tag/notAvailable\''))
-        assertThat(shellCallRule.shell[1].toString(), is('curl --insecure --silent --location --write-out \'-DeLiMiTeR-status=%{http_code}\' --output ./piper \'https://github.com/SAP/jenkins-library/releases/latest/download/piper_master\''))
+        assertThat(shellCallRule.shell[0].toString(), is('curl --insecure --silent --location --write-out \'%{http_code}\' --output ./piper \'https://github.com/SAP/jenkins-library/releases/tag/notAvailable\''))
+        assertThat(shellCallRule.shell[1].toString(), is('curl --insecure --silent --location --write-out \'%{http_code}\' --output ./piper \'https://github.com/SAP/jenkins-library/releases/latest/download/piper_master\''))
         assertThat(shellCallRule.shell[2].toString(), is('chmod +x ./piper'))
     }
 
@@ -113,8 +114,8 @@ class PiperGoUtilsTest extends BasePiperTest {
         def piperGoUtils = new PiperGoUtils(nullScript, utils)
         piperGoUtils.metaClass.getLibrariesInfo = {-> return [[name: 'piper-lib-os', version: 'notAvailable']]}
 
-        shellCallRule.setReturnValue('curl --insecure --silent --location --write-out \'-DeLiMiTeR-status=%{http_code}\' --output ./piper \'https://github.com/SAP/jenkins-library/releases/tag/notAvailable\'', 'this is some return -DeLiMiTeR-status=404')
-        shellCallRule.setReturnValue('curl --insecure --silent --location --write-out \'-DeLiMiTeR-status=%{http_code}\' --output ./piper \'https://github.com/SAP/jenkins-library/releases/latest/download/piper_master\'', 'this is some return -DeLiMiTeR-status=500')
+        shellCallRule.setReturnValue('curl --insecure --silent --location --write-out \'%{http_code}\' --output ./piper \'https://github.com/SAP/jenkins-library/releases/tag/notAvailable\'', '404')
+        shellCallRule.setReturnValue('curl --insecure --silent --location --write-out \'%{http_code}\' --output ./piper \'https://github.com/SAP/jenkins-library/releases/latest/download/piper_master\'', '500')
 
         helper.registerAllowedMethod("unstash", [String.class], { stashFileName ->
             return []
