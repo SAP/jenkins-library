@@ -28,7 +28,7 @@ type githubIssueClient interface {
 }
 
 func githubPublishRelease(myGithubPublishReleaseOptions githubPublishReleaseOptions) error {
-	ctx, client, err := piperGithub.NewClient(myGithubPublishReleaseOptions.Token, myGithubPublishReleaseOptions.ApiURL, myGithubPublishReleaseOptions.UploadURL)
+	ctx, client, err := piperGithub.NewClient(myGithubPublishReleaseOptions.Token, myGithubPublishReleaseOptions.APIURL, myGithubPublishReleaseOptions.UploadURL)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("Failed to get GitHub client.")
 	}

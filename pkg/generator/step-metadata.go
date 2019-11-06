@@ -295,6 +295,7 @@ func longName(long string) string {
 
 func golangName(name string) string {
 	properName := strings.Replace(name, "Api", "API", -1)
+	properName = strings.Replace(name, "api", "API", -1)
 	properName = strings.Replace(properName, "Url", "URL", -1)
 	properName = strings.Replace(properName, "Id", "ID", -1)
 	properName = strings.Replace(properName, "Json", "JSON", -1)
