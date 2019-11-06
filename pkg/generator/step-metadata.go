@@ -54,8 +54,8 @@ func {{.CobraCmdFuncName}}() *cobra.Command {
 		Long: {{ $tick := "` + "`" + `" }}{{ $tick }}{{.Long | longName }}{{ $tick }},
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			log.SetStepName("{{ .StepName }}")
-			log.SetVerbose(GeneralConfig.verbose)
-			return PrepareConfig(cmd, &metadata, "{{ .StepName }}", &my{{ .StepName | title}}Options, openPiperFile)
+			log.SetVerbose(GeneralConfig.Verbose)
+			return PrepareConfig(cmd, &metadata, "{{ .StepName }}", &my{{ .StepName | title}}Options, OpenPiperFile)
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return {{.StepName}}(my{{ .StepName | title }}Options)
