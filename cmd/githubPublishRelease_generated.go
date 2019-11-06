@@ -14,7 +14,7 @@ type githubPublishReleaseOptions struct {
 	AssetPath             string   `json:"assetPath,omitempty"`
 	Commitish             string   `json:"commitish,omitempty"`
 	ExcludeLabels         []string `json:"excludeLabels,omitempty"`
-	ApiURL                string   `json:"apiUrl,omitempty"`
+	APIURL                string   `json:"apiUrl,omitempty"`
 	Owner                 string   `json:"owner,omitempty"`
 	Repository            string   `json:"repository,omitempty"`
 	ServerURL             string   `json:"serverUrl,omitempty"`
@@ -65,7 +65,7 @@ func addGithubPublishReleaseFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVar(&myGithubPublishReleaseOptions.AssetPath, "assetPath", os.Getenv("PIPER_assetPath"), "Path to a release asset which should be uploaded to the list of release assets.")
 	cmd.Flags().StringVar(&myGithubPublishReleaseOptions.Commitish, "commitish", "master", "Target git commitish for the release")
 	cmd.Flags().StringSliceVar(&myGithubPublishReleaseOptions.ExcludeLabels, "excludeLabels", []string{}, "Allows to exclude issues with dedicated list of labels.")
-	cmd.Flags().StringVar(&myGithubPublishReleaseOptions.ApiURL, "apiUrl", "https://api.github.com", "Set the GitHub API url.")
+	cmd.Flags().StringVar(&myGithubPublishReleaseOptions.APIURL, "apiUrl", "https://api.github.com", "Set the GitHub API url.")
 	cmd.Flags().StringVar(&myGithubPublishReleaseOptions.Owner, "owner", os.Getenv("PIPER_owner"), "Set the GitHub organization.")
 	cmd.Flags().StringVar(&myGithubPublishReleaseOptions.Repository, "repository", os.Getenv("PIPER_repository"), "Set the GitHub repository.")
 	cmd.Flags().StringVar(&myGithubPublishReleaseOptions.ServerURL, "serverUrl", "https://github.com", "GitHub server url for end-user access.")
