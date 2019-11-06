@@ -33,6 +33,7 @@ import (
 	//"os"
 
 	"github.com/SAP/jenkins-library/pkg/config"
+	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/spf13/cobra"
 )
 
@@ -52,6 +53,8 @@ func {{.CobraCmdFuncName}}() *cobra.Command {
 		Short: "{{.Short}}",
 		Long: {{ $tick := "` + "`" + `" }}{{ $tick }}{{.Long | longName }}{{ $tick }},
 		PreRunE: func(cmd *cobra.Command, args []string) error {
+			log.SetStepName("{{ .StepName }}")
+			log.SetVerbose(generalConfig.verbose)
 			return PrepareConfig(cmd, &metadata, "{{ .StepName }}", &my{{ .StepName | title}}Options, openPiperFile)
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
