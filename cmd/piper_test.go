@@ -13,7 +13,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-
 type execMockRunner struct {
 	dir   []string
 	calls []execCall
@@ -42,11 +41,11 @@ func (m *execMockRunner) RunExecutable(e string, p ...string) error {
 	return nil
 }
 
-func(m *shellMockRunner) Dir(d string) {
+func (m *shellMockRunner) Dir(d string) {
 	m.dir = d
 }
 
-func(m *shellMockRunner) RunShell(s string, c string) error {
+func (m *shellMockRunner) RunShell(s string, c string) error {
 	m.calls = append(m.calls, c)
 	return nil
 }
@@ -82,14 +81,14 @@ func TestAddRootFlags(t *testing.T) {
 }
 
 func TestPrepareConfig(t *testing.T) {
-	defaultsBak := generalConfig.defaultConfig
-	generalConfig.defaultConfig = []string{"testDefaults.yml"}
-	defer func() { generalConfig.defaultConfig = defaultsBak }()
+	defaultsBak := GeneralConfig.defaultConfig
+	GeneralConfig.defaultConfig = []string{"testDefaults.yml"}
+	defer func() { GeneralConfig.defaultConfig = defaultsBak }()
 
 	t.Run("using stepConfigJSON", func(t *testing.T) {
-		stepConfigJSONBak := generalConfig.stepConfigJSON
-		generalConfig.stepConfigJSON = `{"testParam": "testValueJSON"}`
-		defer func() { generalConfig.stepConfigJSON = stepConfigJSONBak }()
+		stepConfigJSONBak := GeneralConfig.stepConfigJSON
+		GeneralConfig.stepConfigJSON = `{"testParam": "testValueJSON"}`
+		defer func() { GeneralConfig.stepConfigJSON = stepConfigJSONBak }()
 		testOptions := stepOptions{}
 		var testCmd = &cobra.Command{Use: "test", Short: "This is just a test"}
 		testCmd.Flags().StringVar(&testOptions.TestParam, "testParam", "", "test usage")
@@ -137,7 +136,7 @@ func TestPrepareConfig(t *testing.T) {
 		})
 
 		t.Run("error case", func(t *testing.T) {
-			generalConfig.defaultConfig = []string{"testDefaultsInvalid.yml"}
+			GeneralConfig.defaultConfig = []string{"testDefaultsInvalid.yml"}
 			testOptions := stepOptions{}
 			var testCmd = &cobra.Command{Use: "test", Short: "This is just a test"}
 			metadata := config.StepData{}
