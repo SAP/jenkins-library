@@ -54,8 +54,8 @@ func generateConfig() error {
 	}
 
 	var customConfig io.ReadCloser
-	if fileExists(generalConfig.customConfig) {
-		customConfig, err = configOptions.openFile(generalConfig.customConfig)
+	if fileExists(GeneralConfig.customConfig) {
+		customConfig, err = configOptions.openFile(GeneralConfig.customConfig)
 		if err != nil {
 			return errors.Wrap(err, "config: open failed")
 		}
@@ -66,7 +66,7 @@ func generateConfig() error {
 		return errors.Wrap(err, "defaults: retrieving step defaults failed")
 	}
 
-	for _, f := range generalConfig.defaultConfig {
+	for _, f := range GeneralConfig.defaultConfig {
 		fc, err := configOptions.openFile(f)
 		if err != nil {
 			return errors.Wrapf(err, "config: getting defaults failed: '%v'", f)
@@ -81,7 +81,7 @@ func generateConfig() error {
 		params = metadata.Spec.Inputs.Parameters
 	}
 
-	stepConfig, err = myConfig.GetStepConfig(flags, generalConfig.parametersJSON, customConfig, defaultConfig, paramFilter, params, generalConfig.stageName, configOptions.stepName)
+	stepConfig, err = myConfig.GetStepConfig(flags, GeneralConfig.parametersJSON, customConfig, defaultConfig, paramFilter, params, GeneralConfig.stageName, configOptions.stepName)
 	if err != nil {
 		return errors.Wrap(err, "getting step config failed")
 	}
