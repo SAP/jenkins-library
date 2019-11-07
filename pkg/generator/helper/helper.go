@@ -6,7 +6,6 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 	"text/template"
@@ -115,22 +114,6 @@ func Test{{.CobraCmdFuncName}}(t *testing.T) {
 
 }
 `
-
-func main() {
-
-	metadataPath := "./resources/metadata"
-
-	metadataFiles, err := MetadataFiles(metadataPath)
-	checkError(err)
-
-	err = ProcessMetaFiles(metadataFiles, openMetaFile, fileWriter, "")
-	checkError(err)
-
-	cmd := exec.Command("go", "fmt", "./cmd")
-	err = cmd.Run()
-	checkError(err)
-
-}
 
 // ProcessMetaFiles generates step coding based on step configuration provided in yaml files
 func ProcessMetaFiles(metadataFiles []string, openFile func(s string) (io.ReadCloser, error), writeFile func(filename string, data []byte, perm os.FileMode) error, exportPrefix string) error {
