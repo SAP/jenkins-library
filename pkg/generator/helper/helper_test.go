@@ -1,7 +1,6 @@
 package helper
 
 import (
-	//"bytes"
 	"fmt"
 	"io"
 	"io/ioutil"
