@@ -8,6 +8,8 @@ import (
 	"strings"
 
 	"github.com/SAP/jenkins-library/pkg/config"
+	"github.com/SAP/jenkins-library/pkg/piperutils"
+	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 )
@@ -78,9 +80,18 @@ func PrepareConfig(cmd *cobra.Command, metadata *config.StepData, stepName strin
 		stepConfig = config.GetStepConfigWithJSON(flagValues, GeneralConfig.StepConfigJSON, filters)
 	} else {
 		// use config & defaults
-
+		var customConfig io.ReadCloser
+		var err error
 		//accept that config file and defaults cannot be loaded since both are not mandatory here
-		customConfig, _ := openFile(GeneralConfig.CustomConfig)
+		if piperutils.FileExists(GeneralConfig.CustomConfig) {
+			if customConfig, err = openFile(GeneralConfig.CustomConfig); err != nil {
+				errors.Wrapf(err, "Cannot read '%s'", GeneralConfig.CustomConfig)
+			}
+		} else {
+			log.Entry().Debugf("Project config file '%s' does not exist. No project configuration available.", GeneralConfig.CustomConfig)
+			customConfig = nil
+		}
+
 		var defaultConfig []io.ReadCloser
 		for _, f := range GeneralConfig.DefaultConfig {
 			//ToDo: support also https as source
@@ -88,7 +99,6 @@ func PrepareConfig(cmd *cobra.Command, metadata *config.StepData, stepName strin
 			defaultConfig = append(defaultConfig, fc)
 		}
 
-		var err error
 		stepConfig, err = myConfig.GetStepConfig(flagValues, GeneralConfig.ParametersJSON, customConfig, defaultConfig, filters, metadata.Spec.Inputs.Parameters, GeneralConfig.StageName, stepName)
 		if err != nil {
 			return errors.Wrap(err, "retrieving step configuration failed")
