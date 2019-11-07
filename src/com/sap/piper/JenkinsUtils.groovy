@@ -7,6 +7,7 @@ import hudson.tasks.junit.TestResultAction
 import jenkins.model.Jenkins
 
 import org.apache.commons.io.IOUtils
+import org.jenkinsci.plugins.workflow.libs.LibrariesAction
 import org.jenkinsci.plugins.workflow.steps.MissingContextVariableException
 
 @API
@@ -107,4 +108,22 @@ String getIssueCommentTriggerAction() {
 
 def getJobStartedByUserId() {
     return getRawBuild().getCause(hudson.model.Cause.UserIdCause.class)?.getUserId()
+}
+
+@NonCPS
+def getLibrariesInfo() {
+    def libraries = []
+    def build = getRawBuild()
+    def libs = build.getAction(LibrariesAction.class).getLibraries()
+
+    for (def i = 0; i < libs.size(); i++) {
+        Map lib = [:]
+
+        lib['name'] = libs[i].name
+        lib['version'] = libs[i].version
+        lib['trusted'] = libs[i].trusted
+        libraries.add(lib)
+    }
+
+    return libraries
 }
