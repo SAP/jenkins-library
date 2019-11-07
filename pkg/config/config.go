@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/ghodss/yaml"
+	"github.com/google/go-cmp/cmp"
 	"github.com/pkg/errors"
 )
 
@@ -81,12 +82,9 @@ func (c *Config) GetStepConfig(flagValues map[string]interface{}, paramJSON stri
 	var stepConfig StepConfig
 	var d PipelineDefaults
 
-	if err := c.ReadConfig(configuration); err != nil {
-		switch err.(type) {
-		case *ParseError:
+	if configuration != nil {
+		if err := c.ReadConfig(configuration); err != nil {
 			return StepConfig{}, errors.Wrap(err, "failed to parse custom pipeline configuration")
-		default:
-			//ignoring unavailability of config file since considered optional
 		}
 	}
 	c.ApplyAliasConfig(parameters, filters, stageName, stepName)
@@ -131,6 +129,22 @@ func (c *Config) GetStepConfig(flagValues map[string]interface{}, paramJSON stri
 	// fifth: merge command line flags
 	if flagValues != nil {
 		stepConfig.mixIn(flagValues, filters.Parameters)
+	}
+
+	// finally do the condition evaluation post processing
+	for _, p := range parameters {
+		if len(p.Conditions) > 0 {
+			cp := p.Conditions[0].Params[0]
+			dependentValue := stepConfig.Config[cp.Name]
+			if cmp.Equal(dependentValue, cp.Value) && stepConfig.Config[p.Name] == nil {
+				subMapValue := stepConfig.Config[dependentValue.(string)].(map[string]interface{})[p.Name]
+				if subMapValue != nil {
+					stepConfig.Config[p.Name] = subMapValue
+				} else {
+					stepConfig.Config[p.Name] = p.Default
+				}
+			}
+		}
 	}
 
 	return stepConfig, nil
@@ -180,7 +194,7 @@ func (s *StepConfig) mixIn(mergeData map[string]interface{}, filter []string) {
 		s.Config = map[string]interface{}{}
 	}
 
-	s.Config = filterMap(merge(s.Config, mergeData), filter)
+	s.Config = merge(s.Config, filterMap(mergeData, filter))
 }
 
 func filterMap(data map[string]interface{}, filter []string) map[string]interface{} {
