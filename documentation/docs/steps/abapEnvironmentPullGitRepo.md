@@ -18,7 +18,7 @@
 
 ```groovy
 withCredentials([usernamePassword(credentialsId: 'myCredentialsId', usernameVariable: 'USER', passwordVariable: 'PASSWORD')]) {
-    pullGitRepositoryToSapCloudPlatformAbapEnvironment(
+    abapEnvironmentPullGitRepo(
         host : 'https://host.com',
         repositoryName : '/DMO/GIT_REPOSITORY',
         username : "\$USER",

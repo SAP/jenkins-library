@@ -28,6 +28,7 @@ nav:
         - 'Integrate SAP Cloud Platform Transport Management Into Your CI/CD Pipeline': scenarios/TMS_Extension.md
     - Extensibility: extensibility.md
     - 'Library steps':
+        - abapEnvironmentPullGitRepo: steps/abapEnvironmentPullGitRepo.md
         - artifactSetVersion: steps/artifactSetVersion.md
         - batsExecuteTests: steps/batsExecuteTests.md
         - buildExecute: steps/buildExecute.md
@@ -65,7 +66,6 @@ nav:
         - pipelineStashFilesBeforeBuild: steps/pipelineStashFilesBeforeBuild.md
         - piperPublishWarnings: steps/piperPublishWarnings.md
         - prepareDefaultValues: steps/prepareDefaultValues.md
-        - pullGitRepositoryToSapCloudPlatformAbapEnvironment: steps/pullGitRepositoryToSapCloudPlatformAbapEnvironment.md
         - seleniumExecuteTests: steps/seleniumExecuteTests.md
         - setupCommonPipelineEnvironment: steps/setupCommonPipelineEnvironment.md
         - slackSendNotification: steps/slackSendNotification.md
