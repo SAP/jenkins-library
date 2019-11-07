@@ -13,8 +13,8 @@ import (
 )
 
 type execMockRunner struct {
-	dir   []string
-	calls []execCall
+	dir            []string
+	calls          []execCall
 	shouldFailWith error
 }
 
@@ -24,8 +24,8 @@ type execCall struct {
 }
 
 type shellMockRunner struct {
-	dir   string
-	calls []string
+	dir            string
+	calls          []string
 	shouldFailWith error
 }
 
