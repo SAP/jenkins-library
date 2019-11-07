@@ -65,7 +65,7 @@ func writeFileMock(filename string, data []byte, perm os.FileMode) error {
 
 func TestProcessMetaFiles(t *testing.T) {
 
-	processMetaFiles([]string{"test.yaml"}, configOpenFileMock, writeFileMock)
+	ProcessMetaFiles([]string{"test.yaml"}, configOpenFileMock, writeFileMock, "")
 
 	t.Run("step code", func(t *testing.T) {
 		goldenFilePath := filepath.Join("testdata", t.Name()+"_generated.golden")
@@ -170,7 +170,7 @@ func TestGetStepInfo(t *testing.T) {
 		},
 	}
 
-	myStepInfo := getStepInfo(&stepData, true)
+	myStepInfo := getStepInfo(&stepData, true, "")
 
 	assert.Equal(t, "testStep", myStepInfo.StepName, "StepName incorrect")
 	assert.Equal(t, "TestStepCommand", myStepInfo.CobraCmdFuncName, "CobraCmdFuncName incorrect")
