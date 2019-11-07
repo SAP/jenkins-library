@@ -19,7 +19,7 @@
 ```groovy
 withCredentials([usernamePassword(credentialsId: 'myCredentialsId', usernameVariable: 'USER', passwordVariable: 'PASSWORD')]) {
     abapEnvironmentPullGitRepo(
-        host : 'https://host.com',
+        host : ' 1234-abcd-5678-efgh-ijk.abap.eu10.hana.ondemand.com',
         repositoryName : '/DMO/GIT_REPOSITORY',
         username : "\$USER",
         password : "\$PASSWORD",

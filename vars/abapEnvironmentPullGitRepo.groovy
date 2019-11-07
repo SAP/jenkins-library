@@ -62,13 +62,9 @@ void call(Map parameters = [:]) {
             .withMandatoryProperty('password')
             .use()
 
-        if (!(configuration.host =~ /^(https:\/\/)(.*)/).find()) {
-            error "[${STEP_NAME}] URL Validation Failed: HTTPS must be used"
-        }
-
         String usernameColonPassword = configuration.username + ":" + configuration.password
         String authToken = usernameColonPassword.bytes.encodeBase64().toString()
-        String urlString = configuration.host + '/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY/Pull'
+        String urlString = 'https://' + configuration.host + '/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY/Pull'
         echo "[${STEP_NAME}] General Parameters: URL = \"${urlString}\", repositoryName = \"${configuration.repositoryName}\""
         HeaderFiles headerFiles = new HeaderFiles()
 
