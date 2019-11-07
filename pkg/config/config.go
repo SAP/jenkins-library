@@ -6,8 +6,10 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
+	"strings"
 
 	"github.com/ghodss/yaml"
+	"github.com/google/go-cmp/cmp"
 	"github.com/pkg/errors"
 )
 
@@ -39,19 +41,53 @@ func (c *Config) ReadConfig(configuration io.ReadCloser) error {
 	return nil
 }
 
+// ApplyAliasConfig adds configuration values available on aliases to primary configuration parameters
+func (c *Config) ApplyAliasConfig(parameters []StepParameters, filters StepFilters, stageName, stepName string) {
+	for _, p := range parameters {
+		c.General = setParamValueFromAlias(c.General, filters.General, p)
+		if c.Stages[stageName] != nil {
+			c.Stages[stageName] = setParamValueFromAlias(c.Stages[stageName], filters.Stages, p)
+		}
+		if c.Steps[stepName] != nil {
+			c.Steps[stepName] = setParamValueFromAlias(c.Steps[stepName], filters.Steps, p)
+		}
+	}
+}
+
+func setParamValueFromAlias(configMap map[string]interface{}, filter []string, p StepParameters) map[string]interface{} {
+	if configMap[p.Name] == nil && sliceContains(filter, p.Name) {
+		for _, a := range p.Aliases {
+			configMap[p.Name] = getDeepAliasValue(configMap, a.Name)
+			if configMap[p.Name] != nil {
+				return configMap
+			}
+		}
+	}
+	return configMap
+}
+
+func getDeepAliasValue(configMap map[string]interface{}, key string) interface{} {
+	parts := strings.Split(key, "/")
+	if len(parts) > 1 {
+		if configMap[parts[0]] == nil {
+			return nil
+		}
+		return getDeepAliasValue(configMap[parts[0]].(map[string]interface{}), strings.Join(parts[1:], "/"))
+	}
+	return configMap[key]
+}
+
 // GetStepConfig provides merged step configuration using defaults, config, if available
-func (c *Config) GetStepConfig(flagValues map[string]interface{}, paramJSON string, configuration io.ReadCloser, defaults []io.ReadCloser, filters StepFilters, stageName, stepName string) (StepConfig, error) {
+func (c *Config) GetStepConfig(flagValues map[string]interface{}, paramJSON string, configuration io.ReadCloser, defaults []io.ReadCloser, filters StepFilters, parameters []StepParameters, stageName, stepName string) (StepConfig, error) {
 	var stepConfig StepConfig
 	var d PipelineDefaults
 
-	if err := c.ReadConfig(configuration); err != nil {
-		switch err.(type) {
-		case *ParseError:
+	if configuration != nil {
+		if err := c.ReadConfig(configuration); err != nil {
 			return StepConfig{}, errors.Wrap(err, "failed to parse custom pipeline configuration")
-		default:
-			//ignoring unavailability of config file since considered optional
 		}
 	}
+	c.ApplyAliasConfig(parameters, filters, stageName, stepName)
 
 	if err := d.ReadPipelineDefaults(defaults); err != nil {
 		switch err.(type) {
@@ -64,6 +100,7 @@ func (c *Config) GetStepConfig(flagValues map[string]interface{}, paramJSON stri
 
 	// first: read defaults & merge general -> steps (-> general -> steps ...)
 	for _, def := range d.Defaults {
+		def.ApplyAliasConfig(parameters, filters, stageName, stepName)
 		stepConfig.mixIn(def.General, filters.General)
 		stepConfig.mixIn(def.Steps[stepName], filters.Steps)
 	}
@@ -80,12 +117,34 @@ func (c *Config) GetStepConfig(flagValues map[string]interface{}, paramJSON stri
 	if len(paramJSON) != 0 {
 		var params map[string]interface{}
 		json.Unmarshal([]byte(paramJSON), &params)
+
+		//apply aliases
+		for _, p := range parameters {
+			params = setParamValueFromAlias(params, filters.Parameters, p)
+		}
+
 		stepConfig.mixIn(params, filters.Parameters)
 	}
 
 	// fifth: merge command line flags
 	if flagValues != nil {
 		stepConfig.mixIn(flagValues, filters.Parameters)
+	}
+
+	// finally do the condition evaluation post processing
+	for _, p := range parameters {
+		if len(p.Conditions) > 0 {
+			cp := p.Conditions[0].Params[0]
+			dependentValue := stepConfig.Config[cp.Name]
+			if cmp.Equal(dependentValue, cp.Value) && stepConfig.Config[p.Name] == nil {
+				subMapValue := stepConfig.Config[dependentValue.(string)].(map[string]interface{})[p.Name]
+				if subMapValue != nil {
+					stepConfig.Config[p.Name] = subMapValue
+				} else {
+					stepConfig.Config[p.Name] = p.Default
+				}
+			}
+		}
 	}
 
 	return stepConfig, nil
@@ -135,7 +194,7 @@ func (s *StepConfig) mixIn(mergeData map[string]interface{}, filter []string) {
 		s.Config = map[string]interface{}{}
 	}
 
-	s.Config = filterMap(merge(s.Config, mergeData), filter)
+	s.Config = merge(s.Config, filterMap(mergeData, filter))
 }
 
 func filterMap(data map[string]interface{}, filter []string) map[string]interface{} {
