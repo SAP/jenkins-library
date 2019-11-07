@@ -54,6 +54,32 @@ class KarmaExecuteTestsTest extends BasePiperTest {
     }
 
     @Test
+    void testDockerFromCustomStepConfiguration() {
+
+        def expectedImage = 'image:test'
+        def expectedEnvVars = ['NO_PROXY':'', 'no_proxy':'', 'env1': 'value1', 'env2': 'value2']
+        def expectedOptions = '--opt1=val1 --opt2=val2 --opt3'
+        def expectedWorkspace = '/path/to/workspace'
+        
+        nullScript.commonPipelineEnvironment.configuration = [steps:[karmaExecuteTests:[
+            dockerImage: expectedImage, 
+            dockerOptions: expectedOptions,
+            dockerEnvVars: expectedEnvVars,
+            dockerWorkspace: expectedWorkspace
+            ]]]
+
+        stepRule.step.karmaExecuteTests(
+            script: nullScript,
+            juStabUtils: utils
+        )
+        
+        assert expectedImage == seleniumParams.dockerImage
+        assert expectedOptions == seleniumParams.dockerOptions
+        assert expectedEnvVars.equals(seleniumParams.dockerEnvVars)
+        assert expectedWorkspace == seleniumParams.dockerWorkspace
+    }
+
+    @Test
     void testMultiModules() throws Exception {
         stepRule.step.karmaExecuteTests(
             script: nullScript,
