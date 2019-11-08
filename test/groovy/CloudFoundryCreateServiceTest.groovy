@@ -139,7 +139,7 @@ class CloudFoundryCreateServiceTest extends BasePiperTest {
         assertThat(dockerExecuteRule.dockerParams, hasEntry('dockerImage', 'ppiper/cf-cli'))
         assertThat(dockerExecuteRule.dockerParams, hasEntry('dockerWorkspace', '/home/piper'))        
         assertThat(shellRule.shell, hasItem(containsString("cf login -u 'test_cf' -p '********' -a https://api.cf.eu10.hana.ondemand.com -o 'testOrg' -s 'testSpace'")))
-        assertThat(shellRule.shell, hasItem(containsString(" cf create-service-push --no-push -f 'test.yml'")))
+        assertThat(shellRule.shell, hasItem(containsString(" cf create-service-push --no-push --service-manifest 'test.yml'")))
         assertThat(shellRule.shell, hasItem(containsString("cf logout")))
     }
 
@@ -165,7 +165,7 @@ class CloudFoundryCreateServiceTest extends BasePiperTest {
         assertThat(dockerExecuteRule.dockerParams, hasEntry('dockerImage', 'ppiper/cf-cli'))
         assertThat(dockerExecuteRule.dockerParams, hasEntry('dockerWorkspace', '/home/piper'))        
         assertThat(shellRule.shell, hasItem(containsString("cf login -u 'test_cf' -p '********' -a https://api.cf.eu10.hana.ondemand.com -o 'testOrg' -s 'testSpace'")))
-        assertThat(shellRule.shell, hasItem(containsString("cf create-service-push --no-push -f 'test.yml' --var appName='testApplicationFromVarsList' --vars-file 'vars.yml'")))
+        assertThat(shellRule.shell, hasItem(containsString("cf create-service-push --no-push --service-manifest 'test.yml' --var appName='testApplicationFromVarsList' --vars-file 'vars.yml'")))
         assertThat(shellRule.shell, hasItem(containsString("cf logout")))
     }
 
@@ -233,7 +233,7 @@ class CloudFoundryCreateServiceTest extends BasePiperTest {
             cfManifestVariables: varsList
         ]) 
 
-        assertThat(shellRule.shell, hasItem(containsString("""cf create-service-push --no-push -f 'test.yml' --var appName='testApplicationFromVarsListWith'"'"''""")))
+        assertThat(shellRule.shell, hasItem(containsString("""cf create-service-push --no-push --service-manifest 'test.yml' --var appName='testApplicationFromVarsListWith'"'"''""")))
     }
 
     @Test
@@ -253,7 +253,7 @@ class CloudFoundryCreateServiceTest extends BasePiperTest {
             cfManifestVariablesFiles: [varsFileName]
         ]) 
 
-        assertThat(shellRule.shell, hasItem(containsString("""cf create-service-push --no-push -f 'test.yml' --vars-file 'varsWith'"'"'.yml'""")))
+        assertThat(shellRule.shell, hasItem(containsString("""cf create-service-push --no-push --service-manifest 'test.yml' --vars-file 'varsWith'"'"'.yml'""")))
     }
 
     @Test
@@ -278,7 +278,7 @@ class CloudFoundryCreateServiceTest extends BasePiperTest {
         assertThat(dockerExecuteRule.dockerParams, hasEntry('dockerImage', 'ppiper/cf-cli'))
         assertThat(dockerExecuteRule.dockerParams, hasEntry('dockerWorkspace', '/home/piper'))        
         assertThat(shellRule.shell, hasItem(containsString("cf login -u 'test_cf' -p '********' -a https://api.cf.eu10.hana.ondemand.com -o 'testOrg' -s 'testSpace'")))
-        assertThat(shellRule.shell, hasItem(containsString(" cf create-service-push --no-push -f 'test.yml'")))
+        assertThat(shellRule.shell, hasItem(containsString(" cf create-service-push --no-push --service-manifest 'test.yml'")))
         assertThat(shellRule.shell, hasItem(containsString("cf logout")))
     } 
 }

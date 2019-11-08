@@ -79,9 +79,10 @@ import static com.sap.piper.Prerequisites.checkScript
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
 
 /**
- * Uses the Create-Service-Push plugin to create services in a Cloud Foundry space.
+ * Step that uses the CF Create-Service-Push plugin to create services in a Cloud Foundry space. The information about the services is provided in a yaml file as infrastructure as code. 
+ * It is possible to use variable substitution inside of the yaml file like in a CF-push manifest yaml. 
  *
- * For details how to specify the services see the [github page of the plugin](https://github.com/dawu415/CF-CLI-Create-Service-Push-Plugin).
+ * For more details how to specify the services in the yaml see the [github page of the plugin](https://github.com/dawu415/CF-CLI-Create-Service-Push-Plugin).
  *
  * The `--no-push` options is always used with the plugin. To deploy the application make use of the cloudFoundryDeploy step!
  */
@@ -125,12 +126,13 @@ private def executeCreateServicePush(script, Map config) {
         withCredentials([
             usernamePassword(credentialsId: config.cloudFoundry.credentialsId, passwordVariable: 'CF_PASSWORD', usernameVariable: 'CF_USERNAME')
         ]) {
+            echo "cf create-service-push --no-push -f ${BashUtils.quoteAndEscape(config.cloudFoundry.serviceManifest)}${varPart}${varFilePart}"
             def returnCode = sh returnStatus: true, script: """#!/bin/bash
             set +x
             set -e
             export HOME=${config.dockerWorkspace}
             cf login -u ${BashUtils.quoteAndEscape(CF_USERNAME)} -p ${BashUtils.quoteAndEscape(CF_PASSWORD)} -a ${config.cloudFoundry.apiEndpoint} -o ${BashUtils.quoteAndEscape(config.cloudFoundry.org)} -s ${BashUtils.quoteAndEscape(config.cloudFoundry.space)};
-            cf create-service-push --no-push -f ${BashUtils.quoteAndEscape(config.cloudFoundry.serviceManifest)}${varPart}${varFilePart}
+            cf create-service-push --no-push --service-manifest ${BashUtils.quoteAndEscape(config.cloudFoundry.serviceManifest)}${varPart}${varFilePart}
             """
             sh "cf logout"
             if (returnCode!=0)  {
