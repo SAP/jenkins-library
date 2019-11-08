@@ -1,8 +1,9 @@
 package cmd
 
 import (
-	//"os"
+	"os"
 
+	
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/spf13/cobra"
@@ -26,8 +27,8 @@ func TestStepCommand() *cobra.Command {
 		Long: `Long Test description`,
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			log.SetStepName("testStep")
-			log.SetVerbose(generalConfig.verbose)
-			return PrepareConfig(cmd, &metadata, "testStep", &myTestStepOptions, openPiperFile)
+			log.SetVerbose(GeneralConfig.Verbose)
+			return PrepareConfig(cmd, &metadata, "testStep", &myTestStepOptions, OpenPiperFile)
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return testStep(myTestStepOptions)

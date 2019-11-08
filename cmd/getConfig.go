@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"github.com/SAP/jenkins-library/pkg/config"
+	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 )
@@ -24,7 +25,7 @@ var configOptions configCommandOptions
 // ConfigCommand is the entry command for loading the configuration of a pipeline step
 func ConfigCommand() *cobra.Command {
 
-	configOptions.openFile = openPiperFile
+	configOptions.openFile = OpenPiperFile
 	var createConfigCmd = &cobra.Command{
 		Use:   "getConfig",
 		Short: "Loads the project 'Piper' configuration respecting defaults and parameters.",
@@ -53,9 +54,12 @@ func generateConfig() error {
 		return errors.Wrap(err, "metadata: read failed")
 	}
 
-	customConfig, err := configOptions.openFile(generalConfig.customConfig)
-	if err != nil {
-		return errors.Wrap(err, "config: open failed")
+	var customConfig io.ReadCloser
+	if piperutils.FileExists(GeneralConfig.CustomConfig) {
+		customConfig, err = configOptions.openFile(GeneralConfig.CustomConfig)
+		if err != nil {
+			return errors.Wrap(err, "config: open failed")
+		}
 	}
 
 	defaultConfig, paramFilter, err := defaultsAndFilters(&metadata)
@@ -63,7 +67,7 @@ func generateConfig() error {
 		return errors.Wrap(err, "defaults: retrieving step defaults failed")
 	}
 
-	for _, f := range generalConfig.defaultConfig {
+	for _, f := range GeneralConfig.DefaultConfig {
 		fc, err := configOptions.openFile(f)
 		if err != nil {
 			return errors.Wrapf(err, "config: getting defaults failed: '%v'", f)
@@ -78,7 +82,7 @@ func generateConfig() error {
 		params = metadata.Spec.Inputs.Parameters
 	}
 
-	stepConfig, err = myConfig.GetStepConfig(flags, generalConfig.parametersJSON, customConfig, defaultConfig, paramFilter, params, generalConfig.stageName, configOptions.stepName)
+	stepConfig, err = myConfig.GetStepConfig(flags, GeneralConfig.ParametersJSON, customConfig, defaultConfig, paramFilter, params, GeneralConfig.StageName, configOptions.stepName)
 	if err != nil {
 		return errors.Wrap(err, "getting step config failed")
 	}
