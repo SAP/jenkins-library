@@ -66,13 +66,16 @@ void call(Map parameters = [:]) {
 
         String authToken;
         if (configuration.credentialsId != null) {
-            withCredentials([usernamePassword(credentialsId: 'myCredentialsId', usernameVariable: 'USER', passwordVariable: 'PASSWORD')]) {
+            withCredentials([usernamePassword(credentialsId: configuration.credentialsId, usernameVariable: 'USER', passwordVariable: 'PASSWORD')]) {
                 String userColonPassword = "${USER}:${PASSWORD}"
                 authToken = unserColonPassword.bytes.encodeBase64().toString()
             }
-        } else {
+        } else if (configuration.username != null && configuration.password != null) {
             String usernameColonPassword = configuration.username + ":" + configuration.password
             authToken = usernameColonPassword.bytes.encodeBase64().toString()
+        }
+        if (authToken == null) {
+            error "[${STEP_NAME}] Error: No valid authentication provided"
         }
 
         String urlString = 'https://' + configuration.host + '/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY/Pull'
