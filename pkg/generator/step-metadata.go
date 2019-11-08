@@ -17,6 +17,7 @@ import (
 type stepInfo struct {
 	CobraCmdFuncName string
 	CreateCmdVar     string
+	ExportPrefix     string
 	FlagsFunc        string
 	Long             string
 	Metadata         []config.StepParameters
@@ -30,8 +31,9 @@ type stepInfo struct {
 const stepGoTemplate = `package cmd
 
 import (
-	//"os"
+	{{if .OSImport}}"os"{{end}}
 
+	{{if .ExportPrefix}}{{ .ExportPrefix }} "github.com/SAP/jenkins-library/cmd"{{end}}
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/spf13/cobra"
@@ -54,8 +56,8 @@ func {{.CobraCmdFuncName}}() *cobra.Command {
 		Long: {{ $tick := "` + "`" + `" }}{{ $tick }}{{.Long | longName }}{{ $tick }},
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			log.SetStepName("{{ .StepName }}")
-			log.SetVerbose(generalConfig.verbose)
-			return PrepareConfig(cmd, &metadata, "{{ .StepName }}", &my{{ .StepName | title}}Options, openPiperFile)
+			log.SetVerbose({{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.Verbose)
+			return PrepareConfig(cmd, &metadata, "{{ .StepName }}", &my{{ .StepName | title}}Options, {{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}OpenPiperFile)
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return {{.StepName}}(my{{ .StepName | title }}Options)
@@ -118,10 +120,10 @@ func main() {
 
 	metadataPath := "./resources/metadata"
 
-	metadataFiles, err := metadataFiles(metadataPath)
+	metadataFiles, err := MetadataFiles(metadataPath)
 	checkError(err)
 
-	err = processMetaFiles(metadataFiles, openMetaFile, fileWriter)
+	err = ProcessMetaFiles(metadataFiles, openMetaFile, fileWriter, "")
 	checkError(err)
 
 	cmd := exec.Command("go", "fmt", "./cmd")
@@ -130,7 +132,8 @@ func main() {
 
 }
 
-func processMetaFiles(metadataFiles []string, openFile func(s string) (io.ReadCloser, error), writeFile func(filename string, data []byte, perm os.FileMode) error) error {
+// ProcessMetaFiles generates step coding based on step configuration provided in yaml files
+func ProcessMetaFiles(metadataFiles []string, openFile func(s string) (io.ReadCloser, error), writeFile func(filename string, data []byte, perm os.FileMode) error, exportPrefix string) error {
 	for key := range metadataFiles {
 
 		var stepData config.StepData
@@ -148,10 +151,11 @@ func processMetaFiles(metadataFiles []string, openFile func(s string) (io.ReadCl
 
 		fmt.Printf("Step name: %v\n", stepData.Metadata.Name)
 
-		err = setDefaultParameters(&stepData)
+		osImport := false
+		osImport, err = setDefaultParameters(&stepData)
 		checkError(err)
 
-		myStepInfo := getStepInfo(&stepData)
+		myStepInfo := getStepInfo(&stepData, osImport, exportPrefix)
 
 		step := stepTemplate(myStepInfo)
 		err = writeFile(fmt.Sprintf("cmd/%v_generated.go", stepData.Metadata.Name), step, 0644)
@@ -172,14 +176,16 @@ func fileWriter(filename string, data []byte, perm os.FileMode) error {
 	return ioutil.WriteFile(filename, data, perm)
 }
 
-func setDefaultParameters(stepData *config.StepData) error {
+func setDefaultParameters(stepData *config.StepData) (bool, error) {
 	//ToDo: custom function for default handling, support all relevant parameter types
+	osImportRequired := false
 	for k, param := range stepData.Spec.Inputs.Parameters {
 
 		if param.Default == nil {
 			switch param.Type {
 			case "string":
 				param.Default = fmt.Sprintf("os.Getenv(\"PIPER_%v\")", param.Name)
+				osImportRequired = true
 			case "bool":
 				// ToDo: Check if default should be read from env
 				param.Default = "false"
@@ -187,7 +193,7 @@ func setDefaultParameters(stepData *config.StepData) error {
 				// ToDo: Check if default should be read from env
 				param.Default = "[]string{}"
 			default:
-				return fmt.Errorf("Meta data type not set or not known: '%v'", param.Type)
+				return false, fmt.Errorf("Meta data type not set or not known: '%v'", param.Type)
 			}
 		} else {
 			switch param.Type {
@@ -202,16 +208,16 @@ func setDefaultParameters(stepData *config.StepData) error {
 			case "[]string":
 				param.Default = fmt.Sprintf("[]string{\"%v\"}", strings.Join(param.Default.([]string), "\", \""))
 			default:
-				return fmt.Errorf("Meta data type not set or not known: '%v'", param.Type)
+				return false, fmt.Errorf("Meta data type not set or not known: '%v'", param.Type)
 			}
 		}
 
 		stepData.Spec.Inputs.Parameters[k] = param
 	}
-	return nil
+	return osImportRequired, nil
 }
 
-func getStepInfo(stepData *config.StepData) stepInfo {
+func getStepInfo(stepData *config.StepData, osImport bool, exportPrefix string) stepInfo {
 	return stepInfo{
 		StepName:         stepData.Metadata.Name,
 		CobraCmdFuncName: fmt.Sprintf("%vCommand", strings.Title(stepData.Metadata.Name)),
@@ -220,6 +226,8 @@ func getStepInfo(stepData *config.StepData) stepInfo {
 		Long:             stepData.Metadata.LongDescription,
 		Metadata:         stepData.Spec.Inputs.Parameters,
 		FlagsFunc:        fmt.Sprintf("add%vFlags", strings.Title(stepData.Metadata.Name)),
+		OSImport:         osImport,
+		ExportPrefix:     exportPrefix,
 	}
 }
 
@@ -230,7 +238,8 @@ func checkError(err error) {
 	}
 }
 
-func metadataFiles(sourceDirectory string) ([]string, error) {
+// MetadataFiles provides a list of all step metadata files
+func MetadataFiles(sourceDirectory string) ([]string, error) {
 
 	var metadataFiles []string
 
@@ -291,6 +300,7 @@ func longName(long string) string {
 
 func golangName(name string) string {
 	properName := strings.Replace(name, "Api", "API", -1)
+	properName = strings.Replace(properName, "api", "API", -1)
 	properName = strings.Replace(properName, "Url", "URL", -1)
 	properName = strings.Replace(properName, "Id", "ID", -1)
 	properName = strings.Replace(properName, "Json", "JSON", -1)
