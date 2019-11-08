@@ -28,7 +28,11 @@ import java.util.UUID
     /**
      * Specifies the password of the communication user
      */
-    'password'
+    'password',
+    /**
+     * Jenkins Credentials Id
+     */
+    'credentialsId'
 ])
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
 /**
@@ -62,8 +66,17 @@ void call(Map parameters = [:]) {
             .withMandatoryProperty('password')
             .use()
 
-        String usernameColonPassword = configuration.username + ":" + configuration.password
-        String authToken = usernameColonPassword.bytes.encodeBase64().toString()
+        String authToken;
+        if (configuration.credentialsId != null) {
+            withCredentials([usernamePassword(credentialsId: 'myCredentialsId', usernameVariable: 'USER', passwordVariable: 'PASSWORD')]) {
+                String userColonPassword = "${USER}:${PASSWORD}"
+                authToken = unserColonPassword.bytes.encodeBase64().toString()
+            }
+        } else {
+            String usernameColonPassword = configuration.username + ":" + configuration.password
+            authToken = usernameColonPassword.bytes.encodeBase64().toString()
+        }
+
         String urlString = 'https://' + configuration.host + '/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY/Pull'
         echo "[${STEP_NAME}] General Parameters: URL = \"${urlString}\", repositoryName = \"${configuration.repositoryName}\""
         HeaderFiles headerFiles = new HeaderFiles()
@@ -133,7 +146,6 @@ private String triggerPull(Map configuration, String url, String authToken, Head
 
 private String pollPullStatus(String url, String authToken, HeaderFiles headerFiles) {
 
-    String headerFile = "headerPoll.txt"
     String status = "R";
     while(status == "R") {
 
