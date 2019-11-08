@@ -62,8 +62,6 @@ void call(Map parameters = [:]) {
             .collectValidationFailures()
             .withMandatoryProperty('host', 'Host not provided')
             .withMandatoryProperty('repositoryName', 'Repository / Software Component not provided')
-            .withMandatoryProperty('username')
-            .withMandatoryProperty('password')
             .use()
 
         String authToken;
