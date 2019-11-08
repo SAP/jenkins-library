@@ -68,7 +68,7 @@ void call(Map parameters = [:]) {
         if (configuration.credentialsId != null) {
             withCredentials([usernamePassword(credentialsId: configuration.credentialsId, usernameVariable: 'USER', passwordVariable: 'PASSWORD')]) {
                 String userColonPassword = "${USER}:${PASSWORD}"
-                authToken = unserColonPassword.bytes.encodeBase64().toString()
+                authToken = userColonPassword.bytes.encodeBase64().toString()
             }
         } else if (configuration.username != null && configuration.password != null) {
             String usernameColonPassword = configuration.username + ":" + configuration.password
