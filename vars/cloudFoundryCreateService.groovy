@@ -125,8 +125,7 @@ private def executeCreateServicePush(script, Map config) {
 
         withCredentials([
             usernamePassword(credentialsId: config.cloudFoundry.credentialsId, passwordVariable: 'CF_PASSWORD', usernameVariable: 'CF_USERNAME')
-        ]) {
-            echo "cf create-service-push --no-push -f ${BashUtils.quoteAndEscape(config.cloudFoundry.serviceManifest)}${varPart}${varFilePart}"
+        ]) {          
             def returnCode = sh returnStatus: true, script: """#!/bin/bash
             set +x
             set -e
