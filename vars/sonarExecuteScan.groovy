@@ -190,6 +190,7 @@ void call(Map parameters = [:]) {
             script: script,
             dockerImage: configuration.dockerImage
         ){
+            unstash 'git'
             worker(configuration)
         }
     }
