@@ -1,9 +1,8 @@
 package cmd
 
 import (
-	//"os"
-
 	"github.com/SAP/jenkins-library/pkg/config"
+	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/spf13/cobra"
 )
 
@@ -34,7 +33,9 @@ In the Docker network, the containers can be referenced by the values provided i
 !!! note
     In a Kubernetes environment, the containers both need to be referenced with ` + "`" + `localhost` + "`" + `.`,
 		PreRunE: func(cmd *cobra.Command, args []string) error {
-			return PrepareConfig(cmd, &metadata, "karmaExecuteTests", &myKarmaExecuteTestsOptions, openPiperFile)
+			log.SetStepName("karmaExecuteTests")
+			log.SetVerbose(GeneralConfig.Verbose)
+			return PrepareConfig(cmd, &metadata, "karmaExecuteTests", &myKarmaExecuteTestsOptions, OpenPiperFile)
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return karmaExecuteTests(myKarmaExecuteTestsOptions)
