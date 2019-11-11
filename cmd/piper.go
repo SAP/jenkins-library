@@ -88,7 +88,7 @@ func PrepareConfig(cmd *cobra.Command, metadata *config.StepData, stepName strin
 				errors.Wrapf(err, "Cannot read '%s'", GeneralConfig.CustomConfig)
 			}
 		} else {
-			log.Entry().Debugf("Project config file '%s' does not exist. No project configuration available.", GeneralConfig.CustomConfig)
+			log.Entry().Infof("Project config file '%s' does not exist. No project configuration available.", GeneralConfig.CustomConfig)
 			customConfig = nil
 		}
 
