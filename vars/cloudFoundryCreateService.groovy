@@ -79,8 +79,8 @@ import static com.sap.piper.Prerequisites.checkScript
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
 
 /**
- * Step that uses the CF Create-Service-Push plugin to create services in a Cloud Foundry space. The information about the services is provided in a yaml file as infrastructure as code. 
- * It is possible to use variable substitution inside of the yaml file like in a CF-push manifest yaml. 
+ * Step that uses the CF Create-Service-Push plugin to create services in a Cloud Foundry space. The information about the services is provided in a yaml file as infrastructure as code.
+ * It is possible to use variable substitution inside of the yaml file like in a CF-push manifest yaml.
  *
  * For more details how to specify the services in the yaml see the [github page of the plugin](https://github.com/dawu415/CF-CLI-Create-Service-Push-Plugin).
  *

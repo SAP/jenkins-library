@@ -156,11 +156,11 @@ class CloudFoundryCreateServiceTest extends BasePiperTest {
             deployTool: 'cf_native',
             cfOrg: 'testOrg',
             cfSpace: 'testSpace',
-            cfCredentialsId: 'test_cfCredentialsId',           
+            cfCredentialsId: 'test_cfCredentialsId',
             cfServiceManifest: 'test.yml',
             cfManifestVariablesFiles: [varsFileName],
             cfManifestVariables: varsList
-        ]) 
+        ])
 
         assertThat(dockerExecuteRule.dockerParams, hasEntry('dockerImage', 'ppiper/cf-cli'))
         assertThat(dockerExecuteRule.dockerParams, hasEntry('dockerWorkspace', '/home/piper'))        
@@ -180,9 +180,9 @@ class CloudFoundryCreateServiceTest extends BasePiperTest {
             deployTool: 'cf_native',
             cfOrg: 'testOrg',
             cfSpace: 'testSpace',
-            cfCredentialsId: 'escape_cfCredentialsId',           
+            cfCredentialsId: 'escape_cfCredentialsId',
             cfServiceManifest: 'test.yml'
-        ]) 
+        ])
 
         assertThat(shellRule.shell, hasItem(containsString("""cf login -u 'aUserWithA'"'"'' -p 'passHasA'"'"'' -a https://api.cf.eu10.hana.ondemand.com -o 'testOrg' -s 'testSpace'""")))
     }
@@ -196,9 +196,9 @@ class CloudFoundryCreateServiceTest extends BasePiperTest {
             deployTool: 'cf_native',
             cfOrg: 'testOrg',
             cfSpace: "testSpaceWith'",
-            cfCredentialsId: 'test_cfCredentialsId',           
+            cfCredentialsId: 'test_cfCredentialsId',
             cfServiceManifest: 'test.yml'
-        ]) 
+        ])
         assertThat(shellRule.shell, hasItem(containsString("""cf login -u 'test_cf' -p '********' -a https://api.cf.eu10.hana.ondemand.com -o 'testOrg' -s 'testSpaceWith'"'"''""")))
     }
 
@@ -211,9 +211,9 @@ class CloudFoundryCreateServiceTest extends BasePiperTest {
             deployTool: 'cf_native',
             cfOrg: "testOrgWith'",
             cfSpace: "testSpace",
-            cfCredentialsId: 'test_cfCredentialsId',           
+            cfCredentialsId: 'test_cfCredentialsId',
             cfServiceManifest: 'test.yml'
-        ]) 
+        ])
         assertThat(shellRule.shell, hasItem(containsString("""cf login -u 'test_cf' -p '********' -a https://api.cf.eu10.hana.ondemand.com -o 'testOrgWith'"'"'' -s 'testSpace'""")))
     }
 
@@ -228,10 +228,10 @@ class CloudFoundryCreateServiceTest extends BasePiperTest {
             deployTool: 'cf_native',
             cfOrg: 'testOrg',
             cfSpace: 'testSpace',
-            cfCredentialsId: 'test_cfCredentialsId',           
+            cfCredentialsId: 'test_cfCredentialsId',
             cfServiceManifest: 'test.yml',
             cfManifestVariables: varsList
-        ]) 
+        ])
 
         assertThat(shellRule.shell, hasItem(containsString("""cf create-service-push --no-push --service-manifest 'test.yml' --var appName='testApplicationFromVarsListWith'"'"''""")))
     }
@@ -248,10 +248,10 @@ class CloudFoundryCreateServiceTest extends BasePiperTest {
             deployTool: 'cf_native',
             cfOrg: 'testOrg',
             cfSpace: 'testSpace',
-            cfCredentialsId: 'test_cfCredentialsId',           
+            cfCredentialsId: 'test_cfCredentialsId',
             cfServiceManifest: 'test.yml',
             cfManifestVariablesFiles: [varsFileName]
-        ]) 
+        ])
 
         assertThat(shellRule.shell, hasItem(containsString("""cf create-service-push --no-push --service-manifest 'test.yml' --vars-file 'varsWith'"'"'.yml'""")))
     }
@@ -271,12 +271,12 @@ class CloudFoundryCreateServiceTest extends BasePiperTest {
             deployTool: 'cf_native',
             cfOrg: 'testOrg',
             cfSpace: 'testSpace',
-            cfCredentialsId: 'test_cfCredentialsId',           
+            cfCredentialsId: 'test_cfCredentialsId',
             cfServiceManifest: 'test.yml'
-        ]) 
+        ])
 
         assertThat(dockerExecuteRule.dockerParams, hasEntry('dockerImage', 'ppiper/cf-cli'))
-        assertThat(dockerExecuteRule.dockerParams, hasEntry('dockerWorkspace', '/home/piper'))        
+        assertThat(dockerExecuteRule.dockerParams, hasEntry('dockerWorkspace', '/home/piper'))
         assertThat(shellRule.shell, hasItem(containsString("cf login -u 'test_cf' -p '********' -a https://api.cf.eu10.hana.ondemand.com -o 'testOrg' -s 'testSpace'")))
         assertThat(shellRule.shell, hasItem(containsString(" cf create-service-push --no-push --service-manifest 'test.yml'")))
         assertThat(shellRule.shell, hasItem(containsString("cf logout")))
