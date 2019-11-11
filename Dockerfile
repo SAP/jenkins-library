@@ -11,8 +11,9 @@ RUN go test ./... -cover
 RUN export GIT_COMMIT=$(git rev-parse HEAD) && \
     export GIT_REPOSITORY=$(git config --get remote.origin.url) && \
     go build \
-        -ldflags "-X github.com/SAP/jenkins-library/cmd.GitCommit=${GIT_COMMIT}" \
-        -ldflags "-X github.com/SAP/jenkins-library/pkg/log.LibraryRepository=${GIT_REPOSITORY}" \
+        -ldflags \
+            "-X github.com/SAP/jenkins-library/cmd.GitCommit=${GIT_COMMIT} \
+            -X github.com/SAP/jenkins-library/pkg/log.LibraryRepository=${GIT_REPOSITORY}" \
         -o piper
 
 # FROM gcr.io/distroless/base:latest
