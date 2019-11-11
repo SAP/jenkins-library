@@ -4,14 +4,14 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// LibraryRepository ...
+// LibraryRepository that is passed into with -ldflags
 var LibraryRepository string
 var logger *logrus.Entry
 
 // Entry returns the logger entry or creates one if none is present.
 func Entry() *logrus.Entry {
 	if logger == nil {
-		logger = logrus.WithField("library", LibraryRepository) //"sap/jenkins-library")
+		logger = logrus.WithField("library", LibraryRepository)
 	}
 	return logger
 }
