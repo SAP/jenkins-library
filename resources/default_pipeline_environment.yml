@@ -187,6 +187,8 @@ steps:
       serviceManifest: 'service-manifest.yml'
     dockerImage: 'ppiper/cf-cli'
     dockerWorkspace: '/home/piper'
+    stashContent:
+      - 'deployDescriptor'
   detectExecuteScan:
     detect:
       projectVersion: '1'
