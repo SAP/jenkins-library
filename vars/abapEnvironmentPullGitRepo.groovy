@@ -22,7 +22,7 @@ import java.util.UUID
 ]
 @Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS.plus([
     /**
-     * Jenkins Credentials Id containing the communication user and password of the communciation scenario SAP_COM_0510
+     * Jenkins CredentialsId containing the communication user and password of the communciation scenario SAP_COM_0510
      */
     'credentialsId'
 ])
