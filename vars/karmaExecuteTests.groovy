@@ -5,7 +5,7 @@ import com.sap.piper.GenerateDocumentation
 import com.sap.piper.GitUtils
 import com.sap.piper.Utils
 
-import groovy.text.SimpleTemplateEngine
+import groovy.text.GStringTemplateEngine
 import groovy.transform.Field
 
 @Field String STEP_NAME = getClass().getName()
@@ -30,6 +30,8 @@ import groovy.transform.Field
      * Specifies a dedicated user home directory for the container which will be passed as value for environment variable `HOME`.
      */
     'dockerWorkspace',
+    /** @see dockerExecute */
+    'dockerOptions',
     /**
      * With `failOnError` the behavior in case tests fail can be defined.
      * @possibleValues `true`, `false`
@@ -95,6 +97,7 @@ void call(Map parameters = [:]) {
             dockerImage: config.dockerImage,
             dockerName: config.dockerName,
             dockerWorkspace: config.dockerWorkspace,
+            dockerOptions: config.dockerOptions,
             failOnError: config.failOnError,
             sidecarEnvVars: config.sidecarEnvVars,
             sidecarImage: config.sidecarImage,

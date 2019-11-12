@@ -220,10 +220,10 @@ class DescriptorUtilsTest extends BasePiperTest {
                     return null
         })
 
-        def gav = descriptorUtils.getGoGAV('./myProject/Gopkg.toml', new URI('https://github.wdf.sap.corp/test/golang'))
+        def gav = descriptorUtils.getGoGAV('./myProject/Gopkg.toml', new URI('https://github.com/test/golang'))
 
         assertEquals('', gav.group)
-        assertEquals('github.wdf.sap.corp/test/golang.myProject', gav.artifact)
+        assertEquals('github.com/test/golang.myProject', gav.artifact)
         assertEquals('1.2.3', gav.version)
     }
 }

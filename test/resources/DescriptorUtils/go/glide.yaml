@@ -1,7 +1,7 @@
-package: github.wdf.sap.corp/TestOrg/GolangTest
+package: github.com/TestOrg/GolangTest
 import:
 - package: github.com/julienschmidt/httprouter
   version: ^1.1.0
 - package: github.com/tebeka/go2xunit
   version: ^1.4.4
-- package: github.wdf.sap.corp/dtxmake-acceptance/golang-sample
+- package: github.com/dtxmake-acceptance/golang-sample

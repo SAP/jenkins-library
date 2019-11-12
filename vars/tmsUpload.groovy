@@ -94,6 +94,10 @@ void call(Map parameters = [:]) {
         def nodeName = config.nodeName
         def mtaPath = config.mtaPath
 
+        if(!fileExists(mtaPath)) {
+            error("Mta file '${mtaPath}' does not exist.")
+        }
+
         if (config.verbose) {
             echo "[TransportManagementService] CredentialsId: '${config.credentialsId}'"
             echo "[TransportManagementService] Node name: '${nodeName}'"
