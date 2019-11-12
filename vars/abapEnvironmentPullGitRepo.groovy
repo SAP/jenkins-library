@@ -12,9 +12,9 @@ import java.util.UUID
 @Field def STEP_NAME = getClass().getName()
 @Field Set GENERAL_CONFIG_KEYS = [
     /**
-     * Specifies the host address of the SAP Cloud Platform ABAP Environment system
+     * Specifies the URL of the MANAGE_SOFTWARE_COMPONENT API of the communication scenario SAP_COM_0510
      */
-    'host',
+    'url',
     /**
      * Specifies the name of the Repository (Software Component) on the SAP Cloud Platform ABAP Environment system
      */
@@ -56,7 +56,7 @@ void call(Map parameters = [:]) {
             .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName ?: env.STAGE_NAME, STEP_CONFIG_KEYS)
             .mixin(parameters, PARAMETER_KEYS)
             .collectValidationFailures()
-            .withMandatoryProperty('host', 'Host not provided')
+            .withMandatoryProperty('url', 'URL not provided')
             .withMandatoryProperty('repositoryName', 'Repository / Software Component not provided')
             .withMandatoryProperty('username')
             .withMandatoryProperty('password')
@@ -64,7 +64,12 @@ void call(Map parameters = [:]) {
 
         String usernameColonPassword = configuration.username + ":" + configuration.password
         String authToken = usernameColonPassword.bytes.encodeBase64().toString()
-        String urlString = 'https://' + configuration.host + '/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY/Pull'
+        String urlString = configuration.url + '/Pull'
+        def urlRegex = urlString =~ /https:\/\/.*\/sap\/opu\/odata\/sap\/MANAGE_GIT_REPOSITORY\/Pull/
+        if (!urlRegex.find()) {
+            error "[${STEP_NAME}] Error: Please provide a valid URL"
+        }
+
         echo "[${STEP_NAME}] General Parameters: URL = \"${urlString}\", repositoryName = \"${configuration.repositoryName}\""
         HeaderFiles headerFiles = new HeaderFiles()
 
