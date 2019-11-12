@@ -33,11 +33,11 @@ type ContextDefaultParameters struct {
 }
 
 // ReadPipelineContextDefaultData loads step definition in yaml format
-func (m *ContextDefaultData) readPipelineContextDefaultData(metadata io.ReadCloser) {
+func (c *ContextDefaultData) readPipelineContextDefaultData(metadata io.ReadCloser) {
 	defer metadata.Close()
 	content, err := ioutil.ReadAll(metadata)
 	checkError(err)
-	err = yaml.Unmarshal(content, &m)
+	err = yaml.Unmarshal(content, &c)
 	checkError(err)
 }
 

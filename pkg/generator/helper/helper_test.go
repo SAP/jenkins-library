@@ -64,7 +64,7 @@ func writeFileMock(filename string, data []byte, perm os.FileMode) error {
 
 func TestProcessMetaFiles(t *testing.T) {
 
-	ProcessMetaFiles([]string{"test.yaml"}, configOpenFileMock, writeFileMock, "")
+	ProcessMetaFiles([]string{"test.yaml"}, configOpenFileMock, writeFileMock, "", false, "placeholder")
 
 	t.Run("step code", func(t *testing.T) {
 		goldenFilePath := filepath.Join("testdata", t.Name()+"_generated.golden")
