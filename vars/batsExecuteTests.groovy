@@ -5,7 +5,7 @@ import com.sap.piper.ConfigurationHelper
 import com.sap.piper.GitUtils
 import com.sap.piper.Utils
 import com.sap.piper.analytics.InfluxData
-import groovy.text.SimpleTemplateEngine
+import groovy.text.GStringTemplateEngine
 import groovy.transform.Field
 
 @Field String STEP_NAME = getClass().getName()
@@ -15,6 +15,10 @@ import groovy.transform.Field
 @Field Set STEP_CONFIG_KEYS = [
     /** @see dockerExecute */
     'dockerImage',
+    /** @see dockerExecute */
+    'dockerEnvVars',
+    /** @see dockerExecute */
+    'dockerOptions',
     /** @see dockerExecute */
     'dockerWorkspace',
     /** @see dockerExecute */
@@ -82,7 +86,7 @@ void call(Map parameters = [:]) {
         //resolve commonPipelineEnvironment references in envVars
         config.envVarList = []
         config.envVars.each {e ->
-            def envValue = SimpleTemplateEngine.newInstance().createTemplate(e.getValue()).make(commonPipelineEnvironment: script.commonPipelineEnvironment).toString()
+            def envValue = GStringTemplateEngine.newInstance().createTemplate(e.getValue()).make(commonPipelineEnvironment: script.commonPipelineEnvironment).toString()
             config.envVarList.add("${e.getKey()}=${envValue}")
         }
 
@@ -97,7 +101,14 @@ void call(Map parameters = [:]) {
             } finally {
                 sh "cat 'TEST-${config.testPackage}.tap'"
                 if (config.outputFormat == 'junit') {
-                    dockerExecute(script: script, dockerImage: config.dockerImage, dockerWorkspace: config.dockerWorkspace, stashContent: config.stashContent) {
+                    dockerExecute(
+                        script: script,
+                        dockerImage: config.dockerImage,
+                        dockerEnvVars: config.dockerEnvVars,
+                        dockerOptions: config.dockerOptions,
+                        dockerWorkspace: config.dockerWorkspace,
+                        stashContent: config.stashContent
+                    ) {
                         sh "NPM_CONFIG_PREFIX=~/.npm-global npm install tap-xunit -g"
                         sh "cat 'TEST-${config.testPackage}.tap' | PATH=\$PATH:~/.npm-global/bin tap-xunit --package='${config.testPackage}' > TEST-${config.testPackage}.xml"
                     }

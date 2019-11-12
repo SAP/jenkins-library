@@ -170,6 +170,29 @@ public class MtaBuildTest extends BasePiperTest {
     }
 
     @Test
+    void dockerFromCustomStepConfigurationTest() {
+
+        def expectedImage = 'image:test'
+        def expectedEnvVars = ['env1': 'value1', 'env2': 'value2']
+        def expectedOptions = '--opt1=val1 --opt2=val2 --opt3'
+        def expectedWorkspace = '-w /path/to/workspace'
+        
+        nullScript.commonPipelineEnvironment.configuration = [steps:[mtaBuild:[
+            dockerImage: expectedImage, 
+            dockerOptions: expectedOptions,
+            dockerEnvVars: expectedEnvVars,
+            dockerWorkspace: expectedWorkspace
+            ]]]
+
+        stepRule.step.mtaBuild(script: nullScript)
+
+        assert expectedImage == dockerExecuteRule.dockerParams.dockerImage
+        assert expectedOptions == dockerExecuteRule.dockerParams.dockerOptions
+        assert expectedEnvVars.equals(dockerExecuteRule.dockerParams.dockerEnvVars)
+        assert expectedWorkspace == dockerExecuteRule.dockerParams.dockerWorkspace
+    }
+    
+    @Test
     void canConfigureDockerImage() {
 
         stepRule.step.mtaBuild(script: nullScript, dockerImage: 'mta-docker-image:latest')

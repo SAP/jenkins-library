@@ -6,7 +6,7 @@ import com.sap.piper.GitUtils
 import com.sap.piper.Utils
 import com.sap.piper.k8s.ContainerMap
 import groovy.transform.Field
-import groovy.text.SimpleTemplateEngine
+import groovy.text.GStringTemplateEngine
 
 @Field String STEP_NAME = getClass().getName()
 
@@ -25,6 +25,8 @@ import groovy.text.SimpleTemplateEngine
     'dockerImage',
     /** @see dockerExecute */
     'dockerName',
+    /** @see dockerExecute */
+    'dockerOptions',
     /** @see dockerExecute */
     'dockerWorkspace',
     /**
@@ -103,6 +105,7 @@ void call(Map parameters = [:], Closure body) {
                 dockerEnvVars: config.dockerEnvVars,
                 dockerImage: config.dockerImage,
                 dockerName: config.dockerName,
+                dockerOptions: config.dockerOptions,
                 dockerWorkspace: config.dockerWorkspace,
                 sidecarEnvVars: config.sidecarEnvVars,
                 sidecarImage: config.sidecarImage,

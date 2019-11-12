@@ -5,7 +5,7 @@ import com.sap.piper.Utils
 import com.sap.piper.ConfigurationHelper
 import com.sap.piper.GitUtils
 import com.sap.piper.analytics.InfluxData
-import groovy.text.SimpleTemplateEngine
+import groovy.text.GStringTemplateEngine
 import groovy.transform.Field
 
 @Field String STEP_NAME = getClass().getName()
@@ -24,6 +24,8 @@ import groovy.transform.Field
     'dockerImage',
     /** @see dockerExecute*/
     'dockerName',
+    /** @see dockerExecute */
+    'dockerOptions',
     /** @see dockerExecute*/
     'dockerWorkspace',
     /**
@@ -100,6 +102,8 @@ void call(Map parameters = [:]) {
             .mixin(parameters, PARAMETER_KEYS)
             .dependingOn('buildTool').mixin('dockerImage')
             .dependingOn('buildTool').mixin('dockerName')
+            .dependingOn('buildTool').mixin('dockerOptions')
+            .dependingOn('buildTool').mixin('dockerEnvVars')
             .dependingOn('buildTool').mixin('dockerWorkspace')
             .dependingOn('buildTool').mixin('languageRunner')
             .dependingOn('buildTool').mixin('runCommand')
@@ -127,9 +131,10 @@ void call(Map parameters = [:]) {
         seleniumExecuteTests (
             script: script,
             buildTool: config.buildTool,
-            dockerEnvVars: config.dockerEnvVars,
             dockerImage: config.dockerImage,
             dockerName: config.dockerName,
+            dockerEnvVars: config.dockerEnvVars,
+            dockerOptions: config.dockerOptions,
             dockerWorkspace: config.dockerWorkspace,
             stashContent: config.stashContent
         ) {
