@@ -7,7 +7,6 @@ RUN go test ./... -cover
 
 ## ONLY tests so far, building to be added later
 # execute build
-# RUN go build -o piper
 RUN export GIT_COMMIT=$(git rev-parse HEAD) && \
     export GIT_REPOSITORY=$(git config --get remote.origin.url) && \
     go build \
