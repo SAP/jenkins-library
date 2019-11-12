@@ -29,22 +29,6 @@ class ConfigurationHelper implements Serializable {
         if(!this.name) throw new IllegalArgumentException('Step has no public name property!')
     }
 
-    /*
-     * By default this methods does nothing. With this method we are able to ensure that we do not call the
-     * deprecated methods. Might be usefull during local development.
-     */
-    private static handleDeprecation(script, String methodName) {
-        if(script != null) {
-            def msg = "ConfigurationHelper.${methodName} was called with a script reference." +
-                'This method is deprecated. Use the same method without the script reference'
-            if(Boolean.getBoolean('com.sap.piper.failOnScriptReferenceInConfigurationHelper'))
-                throw new RuntimeException(msg)
-            if(Boolean.getBoolean('com.sap.piper.emitWarningOnScriptReferenceInConfigurationHelper') &&
-                script instanceof Script) script.echo("[WARNING] ${msg}")
-        }
-    }
-
-
     ConfigurationHelper collectValidationFailures() {
         validationResults = validationResults ?: [:]
         return this
@@ -56,7 +40,6 @@ class ConfigurationHelper implements Serializable {
     @Deprecated
     /** Use  mixinGeneralConfig without commonPipelineEnvironment*/
     ConfigurationHelper mixinGeneralConfig(commonPipelineEnvironment, Set filter = null, Map compatibleParameters = [:]){
-        handleDeprecation(commonPipelineEnvironment, 'mixinGeneralConfig')
         Map generalConfiguration = ConfigurationLoader.generalConfiguration()
         return mixin(generalConfiguration, filter, compatibleParameters)
     }
@@ -66,7 +49,6 @@ class ConfigurationHelper implements Serializable {
     }
     @Deprecated
     ConfigurationHelper mixinStageConfig(commonPipelineEnvironment, stageName, Set filter = null, Map compatibleParameters = [:]){
-        handleDeprecation(commonPipelineEnvironment, 'mixinStageConfig')
         Map stageConfiguration = ConfigurationLoader.stageConfiguration(stageName)
         return mixin(stageConfiguration, filter, compatibleParameters)
     }
@@ -76,7 +58,6 @@ class ConfigurationHelper implements Serializable {
     }
     @Deprecated
     ConfigurationHelper mixinStepConfig(commonPipelineEnvironment, Set filter = null, Map compatibleParameters = [:]){
-        handleDeprecation(commonPipelineEnvironment, 'mixinStepConfig')
         Map stepConfiguration = ConfigurationLoader.stepConfiguration(name)
         return mixin(stepConfiguration, filter, compatibleParameters)
     }
