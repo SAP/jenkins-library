@@ -22,13 +22,26 @@ cache:
 jobs:
   include:
     - stage: Tests
-      name: Unit Tests
+      name: Golang Build
+      if: type = pull_request
+      script:
+        - docker build -t piper:${TRAVIS_BRANCH} .
+    - name: Golang Build & Publish
+      if: repo = "SAP/jenkins-library" && branch = master
+      script:
+        - docker build -t piper:${TRAVIS_BRANCH} .
+        - docker create --name piper piper:${TRAVIS_BRANCH}
+        - docker cp piper:/piper .
+        - docker rm piper
+        - cp ./piper ./piper_master
+        - chmod +x ./piper
+        - ./piper githubPublishRelease --token ${GITHUB_TOKEN} --version latest --updateAsset --assetPath ./piper_master
+    - name: Groovy Unit Tests
       before_script:
         - curl -L --output cc-test-reporter https://codeclimate.com/downloads/test-reporter/test-reporter-latest-linux-amd64
         - chmod +x ./cc-test-reporter
         - ./cc-test-reporter before-build
       script:
-        - docker build -t piper:latest . 
         - mvn package --batch-mode
       after_script:
         - JACOCO_SOURCE_PATH="src vars test" ./cc-test-reporter format-coverage target/site/jacoco/jacoco.xml --input-type jacoco
