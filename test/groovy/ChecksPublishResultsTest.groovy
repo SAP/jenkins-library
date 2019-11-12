@@ -4,7 +4,6 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.RuleChain
 
-import com.sap.piper.DefaultValueCache
 import com.sap.piper.CommonPipelineEnvironment
 
 import org.junit.Ignore
