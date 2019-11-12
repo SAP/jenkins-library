@@ -114,7 +114,7 @@ void call(Map parameters = [:]) {
         echo """[${STEP_NAME}]----------------------------------------------------------
 Artifact version: ${config.artifactVersion}
 Influx server: ${config.influxServer}
-influxDbPluginClass: ${config.influxDbPluginClass}
+Influx plugin class: ${config.influxDbPluginClass}
 Influx prefix: ${config.influxPrefix}
 InfluxDB data: ${config.customData}
 InfluxDB data tags: ${config.customDataTags}
