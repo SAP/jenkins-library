@@ -10,7 +10,7 @@ none
 
 ```groovy
 seleniumExecuteTests (script: this) {
-    git url: 'https://github.wdf.sap.corp/xxxxx/WebDriverIOTest.git'
+    git url: 'https://github.com/xxxxx/WebDriverIOTest.git'
     sh '''npm install
         node index.js'''
 }
