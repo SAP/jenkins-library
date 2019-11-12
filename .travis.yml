@@ -27,7 +27,7 @@ jobs:
       script:
         - docker build -t piper:${TRAVIS_BRANCH} .
     - name: Golang Build & Publish
-      if: repo = "SAP/jenkins-library" AND branch = master
+      if: type != pull_request && repo = "SAP/jenkins-library" && branch = "master"
       script:
         - docker build -t piper:${TRAVIS_BRANCH} .
         - docker create --name piper piper:${TRAVIS_BRANCH}
