@@ -109,9 +109,9 @@ class ConfigurationHelperTest {
 
         Map config = ConfigurationHelper.newInstance(mockScript, [property1: '27'])
             .loadStepDefaults()
-            .mixinGeneralConfig(null, null, [general2: 'oldGeneral'])
-            .mixinStageConfig(null, 'testStage', null, [stage2: 'oldStage'])
-            .mixinStepConfig(null, null, [step2: 'oldStep'])
+            .mixinGeneralConfig(null, [general2: 'oldGeneral'])
+            .mixinStageConfig('testStage', null, [stage2: 'oldStage'])
+            .mixinStepConfig(null, [step2: 'oldStep'])
             .mixin([property1: '41', property2: '28', property3: '29'], filter)
             .use()
         // asserts
