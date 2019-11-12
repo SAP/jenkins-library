@@ -30,9 +30,9 @@ jobs:
       if: type != pull_request && repo = "SAP/jenkins-library" && branch = "master"
       script:
         - docker build -t piper:${TRAVIS_BRANCH} .
-        - docker create --name piper piper:${TRAVIS_BRANCH}
-        - docker cp piper:/piper .
-        - docker rm piper
+        - docker create --name piper_${TRAVIS_BRANCH} piper:${TRAVIS_BRANCH}
+        - docker cp piper_${TRAVIS_BRANCH}:/build/piper .
+        - docker rm piper_${TRAVIS_BRANCH}
         - cp ./piper ./piper_master
         - chmod +x ./piper
         - ./piper githubPublishRelease --token ${GITHUB_TOKEN} --version latest --updateAsset --assetPath ./piper_master
