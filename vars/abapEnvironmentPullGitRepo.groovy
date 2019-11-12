@@ -22,15 +22,7 @@ import java.util.UUID
 ]
 @Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS.plus([
     /**
-     * Specifies the communication user of the communication scenario SAP_COM_0510
-     */
-    'username',
-    /**
-     * Specifies the password of the communication user
-     */
-    'password',
-    /**
-     * Jenkins Credentials Id
+     * Jenkins Credentials Id containing the communication user and password of the communciation scenario SAP_COM_0510
      */
     'credentialsId'
 ])
@@ -62,20 +54,13 @@ void call(Map parameters = [:]) {
             .collectValidationFailures()
             .withMandatoryProperty('host', 'Host not provided')
             .withMandatoryProperty('repositoryName', 'Repository / Software Component not provided')
+            .withMandatoryProperty('credentialsId')
             .use()
 
-        String authToken;
-        if (configuration.credentialsId != null) {
-            withCredentials([usernamePassword(credentialsId: configuration.credentialsId, usernameVariable: 'USER', passwordVariable: 'PASSWORD')]) {
-                String userColonPassword = "${USER}:${PASSWORD}"
-                authToken = userColonPassword.bytes.encodeBase64().toString()
-            }
-        } else if (configuration.username != null && configuration.password != null) {
-            String usernameColonPassword = configuration.username + ":" + configuration.password
-            authToken = usernameColonPassword.bytes.encodeBase64().toString()
-        }
-        if (authToken == null) {
-            error "[${STEP_NAME}] Error: No valid authentication provided"
+        String authToken
+        withCredentials([usernamePassword(credentialsId: configuration.credentialsId, usernameVariable: 'USER', passwordVariable: 'PASSWORD')]) {
+            String userColonPassword = "${USER}:${PASSWORD}"
+            authToken = userColonPassword.bytes.encodeBase64().toString()
         }
 
         String urlString = 'https://' + configuration.host + '/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY/Pull'
