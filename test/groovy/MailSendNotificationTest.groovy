@@ -58,15 +58,15 @@ user3@domain.com noreply+github@domain.com'''
 
     @Test
     void testCulpritsFromGitCommit() throws Exception {
-        def gitCommand = "git log -2 --pretty=format:'%ae %ce'"
+        def gitCommand = "git log -2 --first-parent --pretty=format:'%ae %ce'"
         def expected = "user2@domain.com user3@domain.com"
 
-        shellRule.setReturnValue("git log -2 --pretty=format:'%ae %ce'", 'user2@domain.com user3@domain.com')
+        shellRule.setReturnValue("git log -2 --first-parent --pretty=format:'%ae %ce'", 'user2@domain.com user3@domain.com')
 
         def result = stepRule.step.getCulprits(
             [
                 gitSSHCredentialsId: '',
-                gitUrl: 'git@github.wdf.domain.com:IndustryCloudFoundation/pipeline-test-node.git',
+                gitUrl: 'git@github.domain.com:IndustryCloudFoundation/pipeline-test-node.git',
                 gitCommitId: 'f0973368a35a2b973612acb86f932c61f2635f6e'
             ],
             'master',
@@ -84,7 +84,7 @@ user3@domain.com noreply+github@domain.com'''
         stepRule.step.getCulprits(
             [
                 gitSSHCredentialsId: '',
-                gitUrl: 'git@github.wdf.domain.com:IndustryCloudFoundation/pipeline-test-node.git',
+                gitUrl: 'git@github.domain.com:IndustryCloudFoundation/pipeline-test-node.git',
                 gitCommitId: ''
             ],
             'master',
@@ -101,7 +101,7 @@ user3@domain.com noreply+github@domain.com'''
         stepRule.step.getCulprits(
             [
                 gitSSHCredentialsId: '',
-                gitUrl: 'git@github.wdf.domain.com:IndustryCloudFoundation/pipeline-test-node.git',
+                gitUrl: 'git@github.domain.com:IndustryCloudFoundation/pipeline-test-node.git',
                 gitCommitId: null
             ],
             'master',
@@ -118,7 +118,7 @@ user3@domain.com noreply+github@domain.com'''
         stepRule.step.getCulprits(
             [
                 gitSSHCredentialsId: '',
-                gitUrl: 'git@github.wdf.domain.com:IndustryCloudFoundation/pipeline-test-node.git',
+                gitUrl: 'git@github.domain.com:IndustryCloudFoundation/pipeline-test-node.git',
                 gitCommitId: ''
             ],
             null,
@@ -135,7 +135,7 @@ user3@domain.com noreply+github@domain.com'''
             displayName: 'testDisplayName',
             result: 'FAILURE',
             rawBuild: [
-                getLog: { cnt -> return ['Setting http proxy: proxy.wdf.domain.com:8080',
+                getLog: { cnt -> return ['Setting http proxy: proxy.domain.com:8080',
 ' > git fetch --no-tags --progress https://github.com/SAP/jenkins-library.git +refs/heads/*:refs/remotes/origin/*',
 'Checking out Revision myUniqueCommitId (master)',
 ' > git config core.sparsecheckout # timeout=10',
@@ -165,7 +165,7 @@ user3@domain.com noreply+github@domain.com'''
         stepRule.step.mailSendNotification(
             script: nullScript,
             notifyCulprits: false,
-            gitUrl: 'git@github.wdf.domain.com:IndustryCloudFoundation/pipeline-test-node.git'
+            gitUrl: 'git@github.domain.com:IndustryCloudFoundation/pipeline-test-node.git'
         )
         // asserts
         assertThat(emailParameters.to, is('piper@domain.com'))
@@ -199,7 +199,7 @@ user3@domain.com noreply+github@domain.com'''
             script: nullScript,
             gitCommitId: 'abcd1234',
             //notifyCulprits: true,
-            gitUrl: 'git@github.wdf.domain.com:IndustryCloudFoundation/pipeline-test-node.git'
+            gitUrl: 'git@github.domain.com:IndustryCloudFoundation/pipeline-test-node.git'
         )
         // asserts
         assertThat(credentials, hasItem('myCredentialsId'))
@@ -228,7 +228,7 @@ user3@domain.com noreply+github@domain.com'''
         stepRule.step.mailSendNotification(
             script: nullScript,
             gitCommitId: 'abcd1234',
-            gitUrl: 'git@github.wdf.domain.com:IndustryCloudFoundation/pipeline-test-node.git'
+            gitUrl: 'git@github.domain.com:IndustryCloudFoundation/pipeline-test-node.git'
         )
         // asserts
         assertThat(credentials, hasItem(''))

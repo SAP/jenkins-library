@@ -364,7 +364,7 @@ class Helper {
                         def param = retrieveParameterName(line)
 
                         if(!param) {
-                            throw new RuntimeException('Cannot retrieve parameter for a comment')
+                            throw new RuntimeException("Cannot retrieve parameter for a comment. Affected line was: '${line}'")
                         }
 
                         def _docu = [], _value = [], _mandatory = [], _parentObject = []
@@ -839,7 +839,8 @@ def handleStep(stepName, gse) {
     File theStepDocu = new File(stepsDocuDir, "${stepName}.md")
     File theStepDeps = new File('documentation/jenkins_workspace/plugin_mapping.json')
 
-    if (!theStepDocu.exists() && stepName.indexOf('Stage') != -1) {
+    def stageNameFields = stepName.split('Stage')
+    if (!theStepDocu.exists() && stepName.indexOf('Stage') != -1 && stageNameFields.size() > 1) {
         //try to get a corresponding stage documentation
         def stageName = stepName.split('Stage')[1].toLowerCase()
         theStepDocu = new File(stagesDocuDir,"${stageName}.md" )

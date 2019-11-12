@@ -9,7 +9,7 @@ import com.sap.piper.WhitesourceConfigurationHelper
 import com.sap.piper.mta.MtaMultiplexer
 import groovy.text.GStringTemplateEngine
 import groovy.transform.Field
-import groovy.text.SimpleTemplateEngine
+import groovy.text.GStringTemplateEngine
 
 import static com.sap.piper.Prerequisites.checkScript
 
@@ -117,6 +117,10 @@ import static com.sap.piper.Prerequisites.checkScript
      * Docker workspace to be used for scanning.
      */
     'dockerWorkspace',
+    /** @see dockerExecute*/
+    'dockerEnvVars',
+    /** @see dockerExecute */
+    'dockerOptions',
     /**
      * Whether license compliance is considered and reported as part of the assessment.
      * @possibleValues `true`, `false`
@@ -246,6 +250,8 @@ void call(Map parameters = [:]) {
             .dependingOn('scanType').mixin('buildDescriptorFile')
             .dependingOn('scanType').mixin('dockerImage')
             .dependingOn('scanType').mixin('dockerWorkspace')
+            .dependingOn('scanType').mixin('dockerOptions')
+            .dependingOn('scanType').mixin('dockerEnvVars')
             .dependingOn('scanType').mixin('stashContent')
             .dependingOn('scanType').mixin('whitesource/configFilePath')
             .dependingOn('scanType').mixin('whitesource/installCommand')
@@ -369,7 +375,14 @@ private def triggerWhitesourceScanWithUserKey(script, config, utils, descriptorU
                     script.commonPipelineEnvironment.getValue('whitesourceProjectNames').add(projectName)
 
                 WhitesourceConfigurationHelper.extendUAConfigurationFile(script, utils, config, path)
-                dockerExecute(script: script, dockerImage: config.dockerImage, dockerWorkspace: config.dockerWorkspace, stashContent: config.stashContent) {
+                dockerExecute(
+                    script: script,
+                    dockerImage: config.dockerImage,
+                    dockerEnvVars: config.dockerEnvVars,
+                    dockerOptions: config.dockerOptions,
+                    dockerWorkspace: config.dockerWorkspace,
+                    stashContent: config.stashContent
+                ) {
                     if (config.whitesource.agentDownloadUrl) {
                         def agentDownloadUrl = new GStringTemplateEngine().createTemplate(config.whitesource.agentDownloadUrl).make([config: config]).toString()
                         //if agentDownloadUrl empty, rely on dockerImage to contain unifiedAgent correctly set up and available
@@ -407,6 +420,14 @@ private def triggerWhitesourceScanWithUserKey(script, config, utils, descriptorU
 
                     // archive whitesource debug files, if available
                     archiveArtifacts artifacts: "**/ws-l*", allowEmptyArchive: true
+
+                    try {
+                        // archive UA log file
+                        sh "cp -Rf --parents /var/log/UA/* ."
+                        archiveArtifacts artifacts: "**/var/log/UA/**/*.log", allowEmptyArchive: true
+                    } catch (e) {
+                        echo "Failed archiving WhiteSource UA logs"
+                    }
                 }
                 break
         }
@@ -580,7 +601,7 @@ def getReportHtml(config, vulnerabilityList, numSevereVulns) {
         }
     }
 
-    return SimpleTemplateEngine.newInstance().createTemplate(libraryResource('com.sap.piper/templates/whitesourceVulnerabilities.html')).make(
+    return GStringTemplateEngine.newInstance().createTemplate(libraryResource('com.sap.piper/templates/whitesourceVulnerabilities.html')).make(
         [
             now                         : now,
             reportTitle                 : config.whitesource.vulnerabilityReportTitle,

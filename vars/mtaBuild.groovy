@@ -21,6 +21,12 @@ import static com.sap.piper.Utils.downloadSettingsFromUrl
     'buildTarget',
     /** @see dockerExecute */
     'dockerImage',
+    /** @see dockerExecute */
+    'dockerEnvVars',
+    /** @see dockerExecute */
+    'dockerOptions',
+    /** @see dockerExecute */
+    'dockerWorkspace',
     /** The path to the extension descriptor file.*/
     'extension',
     /**
@@ -34,8 +40,6 @@ import static com.sap.piper.Utils.downloadSettingsFromUrl
     'projectSettingsFile'
 ]
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS.plus([
-    /** @see dockerExecute */
-    'dockerOptions',
     /** Url to the npm registry that should be used for installing npm dependencies.*/
     'defaultNpmRegistry'
 ])
@@ -64,7 +68,13 @@ void call(Map parameters = [:]) {
             stepParam1: parameters?.script == null
         ], configuration)
 
-        dockerExecute(script: script, dockerImage: configuration.dockerImage, dockerOptions: configuration.dockerOptions) {
+        dockerExecute(
+            script: script,
+            dockerImage: configuration.dockerImage,
+            dockerEnvVars: configuration.dockerEnvVars,
+            dockerOptions: configuration.dockerOptions,
+            dockerWorkspace: configuration.dockerWorkspace
+        ) {
 
             String projectSettingsFile = configuration.projectSettingsFile?.trim()
             if (projectSettingsFile) {

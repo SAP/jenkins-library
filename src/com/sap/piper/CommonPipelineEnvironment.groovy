@@ -41,6 +41,8 @@ public class CommonPipelineEnvironment {
 
     String changeDocumentId
 
+    String xsDeploymentId
+
     void setValue(String property, value) {
         valueMap[property] = value
     }
@@ -128,6 +130,8 @@ public class CommonPipelineEnvironment {
 
         githubOrg = null
         githubRepo = null
+
+        xsDeploymentId = null
 
         mtarFilePath = null
         valueMap = [:]
