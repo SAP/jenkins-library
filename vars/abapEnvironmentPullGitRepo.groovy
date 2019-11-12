@@ -64,11 +64,11 @@ void call(Map parameters = [:]) {
 
         String usernameColonPassword = configuration.username + ":" + configuration.password
         String authToken = usernameColonPassword.bytes.encodeBase64().toString()
-        String urlString = configuration.url + '/Pull'
-        def urlRegex = urlString =~ /https:\/\/.*\/sap\/opu\/odata\/sap\/MANAGE_GIT_REPOSITORY\/Pull/
+        def urlRegex = configuration.url =~ /https:\/\/.*\/sap\/opu\/odata\/sap\/MANAGE_GIT_REPOSITORY/
         if (!urlRegex.find()) {
             error "[${STEP_NAME}] Error: Please provide a valid URL"
         }
+        String urlString = configuration.url + '/Pull'
 
         echo "[${STEP_NAME}] General Parameters: URL = \"${urlString}\", repositoryName = \"${configuration.repositoryName}\""
         HeaderFiles headerFiles = new HeaderFiles()
