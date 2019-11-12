@@ -1,0 +1,38 @@
+metadata:
+  name: context defaults
+  description: These default descriptions will be used for the docu generation of the pipelin steps.
+  longDescription: |-
+    These default descriptions will be used for the docu generation of the pipelin steps for the context defaults.
+params:
+- name: containerCommand
+  description: 'Kubernetes only: Allows to specify start command for container created with dockerImage parameter to overwrite Piper default (/usr/bin/tail -f /dev/null).'
+- name: containerName
+  description: Optional configuration in combination with containerMap to define the container where the commands should be executed in.
+- name: containerShell
+  description: Allows to specify the shell to be executed for container with containerName.
+- name: dockerEnvVars
+  description: 'Environment variables to set in the container, e.g. [http_proxy: "proxy:8080"].'
+- name: dockerName
+  description: 'Kubernetes only: Name of the container launching dockerImage. SideCar only: Name of the container in local network.'
+- name: dockerPullImage
+  description: Set this to 'false' to bypass a docker image pull. Usefull during development process. Allows testing of images which are available in the local registry only.
+- name: dockerImage
+  description: Name of the docker image that should be used. If empty, Docker is not used and the command is executed directly on the Jenkins system.
+- name: dockerWorkspace
+  description: 'Kubernetes only: Specifies a dedicated user home directory for the container which will be passed as value for environment variable HOME.'
+- name: sidecarCommand
+  description:
+- name: sidecarEnvVars
+  description: A map of environment variables to set in the sidecar container, similar to dockerEnvVars.
+- name: sidecarImage
+  description: The name of the docker image of the sidecar container. If empty, no sidecar container is started.
+- name: sidecarName
+  description: as dockerName for the sidecar container
+- name: sidecarPullImage
+  description: Set this to 'false' to bypass a docker image pull. Usefull during development process. Allows testing of images which are available in the local registry only.
+- name: sidecarReadyCommand
+  description: Command executed inside the container which returns exit code 0 when the container is ready to be used.
+- name: sidecarWorkspace
+  description: as dockerWorkspace for the sidecar container
+- name: stashContent
+  description: Specific stashes that should be considered for the step execution.
