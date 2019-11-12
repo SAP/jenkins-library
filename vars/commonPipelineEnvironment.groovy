@@ -1,7 +1,6 @@
 import com.sap.piper.CommonPipelineEnvironment
 import com.sap.piper.ConfigurationLoader
 import com.sap.piper.ConfigurationMerger
-import com.sap.piper.CommonPipelineEnvironment
 import com.sap.piper.analytics.InfluxData
 
 class commonPipelineEnvironment implements Serializable {
