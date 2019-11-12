@@ -13,26 +13,26 @@ import (
 	"github.com/ghodss/yaml"
 )
 
-// StepData defines the metadata for a step, like step descriptions, parameters, ...
+// ContextDefaultData defines the metadata for a step, like step descriptions, parameters, ...
 type ContextDefaultData struct {
 	Metadata   ContextDefaultMetadata     `json:"metadata"`
 	Parameters []ContextDefaultParameters `json:"params"`
 }
 
-// StepMetadata defines the metadata for a step, like step descriptions, parameters, ...
+// ContextDefaultMetadata defines the metadata for a step, like step descriptions, parameters, ...
 type ContextDefaultMetadata struct {
 	Name            string `json:"name"`
 	Description     string `json:"description"`
 	LongDescription string `json:"longDescription,omitempty"`
 }
 
-// StepParameters defines the parameters for a step
+// ContextDefaultParameters defines the parameters for a step
 type ContextDefaultParameters struct {
 	Name        string `json:"name"`
 	Description string `json:"description"`
 }
 
-// ReadPipelineStepData loads step definition in yaml format
+// ReadPipelineContextDefaultData loads step definition in yaml format
 func (m *ContextDefaultData) readPipelineContextDefaultData(metadata io.ReadCloser) {
 	defer metadata.Close()
 	content, err := ioutil.ReadAll(metadata)
@@ -41,6 +41,7 @@ func (m *ContextDefaultData) readPipelineContextDefaultData(metadata io.ReadClos
 	checkError(err)
 }
 
+// ReadContextDefaultMap maps the default descriptions into a map
 func (c *ContextDefaultData) readContextDefaultMap() map[string]string {
 	var m map[string]string = make(map[string]string)
 
