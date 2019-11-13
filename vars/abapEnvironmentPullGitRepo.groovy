@@ -64,8 +64,7 @@ void call(Map parameters = [:]) {
             authToken = userColonPassword.bytes.encodeBase64().toString()
         }
 
-        def urlRegex = configuration.url =~ /^https:\/\/.*\/sap\/opu\/odata\/sap\/MANAGE_GIT_REPOSITORY$/
-        if (!urlRegex.find()) {
+        if (!(configuration.url =~ /^https:\/\/.*\/sap\/opu\/odata\/sap\/MANAGE_GIT_REPOSITORY$/).find()) {
             error "[${STEP_NAME}] Error: Please provide a valid URL"
         }
         String urlString = configuration.url + '/Pull'
