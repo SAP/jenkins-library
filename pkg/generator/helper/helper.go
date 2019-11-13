@@ -26,6 +26,11 @@ type stepInfo struct {
 	StepName         string
 }
 
+type enumInfo struct {
+	Name   string
+	Values []string
+}
+
 //StepGoTemplate ...
 const stepGoTemplate = `package cmd
 
@@ -40,7 +45,7 @@ import (
 
 type {{ .StepName }}Options struct {
 	{{- range $key, $value := .Metadata }}
-	{{ $value.Name | golangName }} {{ $value.Type }} ` + "`json:\"{{$value.Name}},omitempty\"`" + `{{end}}
+	{{if eq $value.Type "enum"}}{{ $value.Name}} string{{else}}{{ $value.Name | golangName }} {{ $value.Type }} {{end}}` + "`json:\"{{$value.Name}},omitempty\"`" + `{{end}}
 }
 
 var my{{ .StepName | title}}Options {{.StepName}}Options
@@ -115,6 +120,39 @@ func Test{{.CobraCmdFuncName}}(t *testing.T) {
 }
 `
 
+const enumGoTemplate = `package cmd
+
+import (
+	"fmt"
+	"errors"
+)
+type {{.Name}} int
+
+const (
+	{{$enumName := .Name}}
+	UNKNOWN_{{$enumName | toUpperCase}} {{$enumName}} = iota -1
+	{{- range $value := .Values}}
+	{{$value}} {{$enumName}} = iota{{end}}
+)
+
+func (w {{.Name}}) String() string {
+	return [...]string{
+		"UNKNOWN_{{.Name | toUpperCase}}",
+		{{- range $value := .Values}}
+		"{{$value}}",{{end}}
+	}[w]
+}
+
+func ValueOf(str string) ({{.Name}}, error) {
+	switch str {
+		case "UNKNOWN_{{.Name | toUpperCase}}": return UNKNOWN_{{.Name | toUpperCase}}, nil
+		{{- range $value := .Values}}
+		case "{{$value}}": return {{$value}}, nil{{end}}
+		default : return UNKNOWN_{{.Name | toUpperCase}}, errors.New(fmt.Sprintf("Unknown {{.Name}}: '%s'", str))
+	}
+}
+`
+
 // ProcessMetaFiles generates step coding based on step configuration provided in yaml files
 func ProcessMetaFiles(metadataFiles []string, openFile func(s string) (io.ReadCloser, error), writeFile func(filename string, data []byte, perm os.FileMode) error, exportPrefix string) error {
 	for key := range metadataFiles {
@@ -151,6 +189,18 @@ func ProcessMetaFiles(metadataFiles []string, openFile func(s string) (io.ReadCl
 	return nil
 }
 
+func processEnum(name string, values []string, writeFile func(filename string, data []byte, perm os.FileMode) error) {
+
+	enumInfo := getEnumInfo(name, values)
+	enum := enumTemplate(enumInfo)
+	err := writeFile(fmt.Sprintf("cmd/%v_enum_generated.go", firstCharToLowerCase(enumInfo.Name)), enum, 0644)
+	checkError(err)
+}
+
+func firstCharToLowerCase(s string) string {
+	return strings.ToLower(string(s[0])) + s[1:]
+}
+
 func openMetaFile(name string) (io.ReadCloser, error) {
 	return os.Open(name)
 }
@@ -164,6 +214,9 @@ func setDefaultParameters(stepData *config.StepData) (bool, error) {
 	osImportRequired := false
 	for k, param := range stepData.Spec.Inputs.Parameters {
 
+		if param.Type == "enum" {
+			processEnum(param.Name, param.Values, fileWriter)
+		}
 		if param.Default == nil {
 			switch param.Type {
 			case "string":
@@ -175,6 +228,9 @@ func setDefaultParameters(stepData *config.StepData) (bool, error) {
 			case "[]string":
 				// ToDo: Check if default should be read from env
 				param.Default = "[]string{}"
+			case "enum":
+				param.Default = fmt.Sprintf("\"UNKNOWN_%v\"", param.Name)
+
 			default:
 				return false, fmt.Errorf("Meta data type not set or not known: '%v'", param.Type)
 			}
@@ -190,6 +246,8 @@ func setDefaultParameters(stepData *config.StepData) (bool, error) {
 				param.Default = boolVal
 			case "[]string":
 				param.Default = fmt.Sprintf("[]string{\"%v\"}", strings.Join(param.Default.([]string), "\", \""))
+			case "enum":
+				param.Default = fmt.Sprintf("\"%v\"", param.Default)
 			default:
 				return false, fmt.Errorf("Meta data type not set or not known: '%v'", param.Type)
 			}
@@ -211,6 +269,13 @@ func getStepInfo(stepData *config.StepData, osImport bool, exportPrefix string) 
 		FlagsFunc:        fmt.Sprintf("add%vFlags", strings.Title(stepData.Metadata.Name)),
 		OSImport:         osImport,
 		ExportPrefix:     exportPrefix,
+	}
+}
+
+func getEnumInfo(name string, values []string) enumInfo {
+	return enumInfo{
+		Name:   name,
+		Values: values,
 	}
 }
 
@@ -275,6 +340,25 @@ func stepTestTemplate(myStepInfo stepInfo) []byte {
 	return generatedCode.Bytes()
 }
 
+func enumTemplate(enumInfo enumInfo) []byte {
+
+	funcMap := template.FuncMap{
+		"name":        flagType,
+		"golangName":  golangName,
+		"title":       strings.Title,
+		"toUpperCase": strings.ToUpper,
+	}
+
+	tmpl, err := template.New("enum").Funcs(funcMap).Parse(enumGoTemplate)
+	checkError(err)
+
+	var generatedCode bytes.Buffer
+	err = tmpl.Execute(&generatedCode, enumInfo)
+	checkError(err)
+
+	return generatedCode.Bytes()
+}
+
 func longName(long string) string {
 	l := strings.ReplaceAll(long, "`", "` + \"`\" + `")
 	l = strings.TrimSpace(l)
@@ -300,6 +384,8 @@ func flagType(paramType string) string {
 		theFlagType = "StringVar"
 	case "[]string":
 		theFlagType = "StringSliceVar"
+	case "enum":
+		theFlagType = "StringVar"
 	default:
 		fmt.Printf("Meta data type not set or not known: '%v'\n", paramType)
 		os.Exit(1)
