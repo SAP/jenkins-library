@@ -27,6 +27,7 @@ public class AbapEnvironmentPullGitRepoTest extends BasePiperTest {
     private JenkinsStepRule stepRule = new JenkinsStepRule(this)
     private JenkinsLoggingRule loggingRule = new JenkinsLoggingRule(this)
     private JenkinsShellCallRule shellRule = new JenkinsShellCallRule(this)
+    private JenkinsCredentialsRule credentialsRule = new JenkinsCredentialsRule(this).withCredentials('test_credentialsId', 'user', 'password')
 
     @Rule
     public RuleChain ruleChain = Rules.getCommonRules(this)
@@ -34,6 +35,7 @@ public class AbapEnvironmentPullGitRepoTest extends BasePiperTest {
         .around(thrown)
         .around(stepRule)
         .around(loggingRule)
+        .around(credentialsRule)
         .around(shellRule)
 
     @Before
@@ -57,10 +59,10 @@ public class AbapEnvironmentPullGitRepoTest extends BasePiperTest {
         loggingRule.expect("[abapEnvironmentPullGitRepo] Entity URI: https://1234-abcd-5678-efgh-ijk.abap.eu10.hana.ondemand.com/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY/Pull/URI")
         loggingRule.expect("[abapEnvironmentPullGitRepo] Pull Status: SUCCESS")
 
-        stepRule.step.abapEnvironmentPullGitRepo(script: nullScript, url: 'https://1234-abcd-5678-efgh-ijk.abap.eu10.hana.ondemand.com/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY', repositoryName: 'Z_DEMO_DM', username: 'user', password: 'password')
+        stepRule.step.abapEnvironmentPullGitRepo(script: nullScript, url: 'https://1234-abcd-5678-efgh-ijk.abap.eu10.hana.ondemand.com/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY', repositoryName: '/DMO/REPO', credentialsId: 'test_credentialsId')
 
         assertThat(shellRule.shell[0], containsString(/#!\/bin\/bash curl -I -X GET https:\/\/1234-abcd-5678-efgh-ijk.abap.eu10.hana.ondemand.com\/sap\/opu\/odata\/sap\/MANAGE_GIT_REPOSITORY\/Pull -H 'Authorization: Basic dXNlcjpwYXNzd29yZA==' -H 'Accept: application\/json' -H 'x-csrf-token: fetch' -D headerFileAuth-1.txt/))
-        assertThat(shellRule.shell[1], containsString(/#!\/bin\/bash curl -X POST "https:\/\/1234-abcd-5678-efgh-ijk.abap.eu10.hana.ondemand.com\/sap\/opu\/odata\/sap\/MANAGE_GIT_REPOSITORY\/Pull" -H 'Authorization: Basic dXNlcjpwYXNzd29yZA==' -H 'Accept: application\/json' -H 'Content-Type: application\/json' -H 'x-csrf-token: TOKEN' --cookie headerFileAuth-1.txt -D headerFilePost-1.txt -d '{ "sc_name": "Z_DEMO_DM" }'/))
+        assertThat(shellRule.shell[1], containsString(/#!\/bin\/bash curl -X POST "https:\/\/1234-abcd-5678-efgh-ijk.abap.eu10.hana.ondemand.com\/sap\/opu\/odata\/sap\/MANAGE_GIT_REPOSITORY\/Pull" -H 'Authorization: Basic dXNlcjpwYXNzd29yZA==' -H 'Accept: application\/json' -H 'Content-Type: application\/json' -H 'x-csrf-token: TOKEN' --cookie headerFileAuth-1.txt -D headerFilePost-1.txt -d '{ "sc_name": "\/DMO\/REPO" }'/))
         assertThat(shellRule.shell[2], containsString(/#!\/bin\/bash curl -X GET "https:\/\/1234-abcd-5678-efgh-ijk.abap.eu10.hana.ondemand.com\/sap\/opu\/odata\/sap\/MANAGE_GIT_REPOSITORY\/Pull\/URI" -H 'Authorization: Basic dXNlcjpwYXNzd29yZA==' -H 'Accept: application\/json' -D headerFilePoll-1.txt/))
         assertThat(shellRule.shell[3], containsString(/#!\/bin\/bash rm -f headerFileAuth-1.txt headerFilePost-1.txt headerFilePoll-1.txt/))
     }
@@ -83,7 +85,7 @@ public class AbapEnvironmentPullGitRepoTest extends BasePiperTest {
         thrown.expect(Exception)
         thrown.expectMessage("[abapEnvironmentPullGitRepo] Pull Failed")
 
-        stepRule.step.abapEnvironmentPullGitRepo(script: nullScript, url: 'https://1234-abcd-5678-efgh-ijk.abap.eu10.hana.ondemand.com/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY', repositoryName: 'Z_DEMO_DM', username: 'user', password: 'password')
+        stepRule.step.abapEnvironmentPullGitRepo(script: nullScript, url: 'https://1234-abcd-5678-efgh-ijk.abap.eu10.hana.ondemand.com/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY', repositoryName: '/DMO/REPO', credentialsId: 'test_credentialsId')
 
     }
 
@@ -104,7 +106,7 @@ public class AbapEnvironmentPullGitRepoTest extends BasePiperTest {
         thrown.expect(Exception)
         thrown.expectMessage("[abapEnvironmentPullGitRepo] Pull Failed")
 
-        stepRule.step.abapEnvironmentPullGitRepo(script: nullScript, url: 'https://1234-abcd-5678-efgh-ijk.abap.eu10.hana.ondemand.com/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY', repositoryName: 'Z_DEMO_DM', username: 'user', password: 'password')
+        stepRule.step.abapEnvironmentPullGitRepo(script: nullScript, url: 'https://1234-abcd-5678-efgh-ijk.abap.eu10.hana.ondemand.com/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY', repositoryName: '/DMO/REPO', credentialsId: 'test_credentialsId')
 
     }
 
@@ -122,7 +124,7 @@ public class AbapEnvironmentPullGitRepoTest extends BasePiperTest {
         thrown.expect(Exception)
         thrown.expectMessage("[abapEnvironmentPullGitRepo] Error: text")
 
-        stepRule.step.abapEnvironmentPullGitRepo(script: nullScript, url: 'https://1234-abcd-5678-efgh-ijk.abap.eu10.hana.ondemand.com/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY', repositoryName: 'Z_DEMO_DM', username: 'user', password: 'password')
+        stepRule.step.abapEnvironmentPullGitRepo(script: nullScript, url: 'https://1234-abcd-5678-efgh-ijk.abap.eu10.hana.ondemand.com/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY', repositoryName: '/DMO/REPO', credentialsId: 'test_credentialsId')
 
     }
 
@@ -139,7 +141,7 @@ public class AbapEnvironmentPullGitRepoTest extends BasePiperTest {
         thrown.expect(Exception)
         thrown.expectMessage("[abapEnvironmentPullGitRepo] Error: 401 Unauthorized")
 
-        stepRule.step.abapEnvironmentPullGitRepo(script: nullScript, url: 'https://1234-abcd-5678-efgh-ijk.abap.eu10.hana.ondemand.com/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY', repositoryName: 'Z_DEMO_DM', username: 'user', password: 'password')
+        stepRule.step.abapEnvironmentPullGitRepo(script: nullScript, url: 'https://1234-abcd-5678-efgh-ijk.abap.eu10.hana.ondemand.com/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY', repositoryName: '/DMO/REPO', credentialsId: 'test_credentialsId')
 
     }
 
@@ -147,14 +149,27 @@ public class AbapEnvironmentPullGitRepoTest extends BasePiperTest {
     public void checkRepositoryProvided() {
        thrown.expect(IllegalArgumentException)
        thrown.expectMessage("Repository / Software Component not provided")
-       stepRule.step.abapEnvironmentPullGitRepo(script: nullScript, url: 'https://1234-abcd-5678-efgh-ijk.abap.eu10.hana.ondemand.com/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY', username: 'user', password: 'password')
+       stepRule.step.abapEnvironmentPullGitRepo(script: nullScript, url: 'https://1234-abcd-5678-efgh-ijk.abap.eu10.hana.ondemand.com/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY', credentialsId: 'test_credentialsId')
     }
 
     @Test
     public void checkUrlProvided() {
        thrown.expect(IllegalArgumentException)
        thrown.expectMessage("URL not provided")
-       stepRule.step.abapEnvironmentPullGitRepo(script: nullScript, repositoryName: 'REPO', username: 'user', password: 'password')
+       stepRule.step.abapEnvironmentPullGitRepo(script: nullScript, repositoryName: 'REPO', credentialsId: 'test_credentialsId')
+    }
+
+    @Test
+    public void rejectHttpUrl() {
+        thrown.expect(Exception)
+        thrown.expectMessage("[abapEnvironmentPullGitRepo] Error: Please provide a valid URL")
+        stepRule.step.abapEnvironmentPullGitRepo(script: nullScript, url: 'http://1234-abcd-5678-efgh-ijk.abap.eu10.hana.ondemand.com/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY', repositoryName: '/DMO/REPO', credentialsId: 'test_credentialsId')
+    }
+    @Test
+    public void rejectUrlWithSlash() {
+        thrown.expect(Exception)
+        thrown.expectMessage("[abapEnvironmentPullGitRepo] Error: Please provide a valid URL")
+        stepRule.step.abapEnvironmentPullGitRepo(script: nullScript, url: 'https://1234-abcd-5678-efgh-ijk.abap.eu10.hana.ondemand.com/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY/', repositoryName: '/DMO/REPO', credentialsId: 'test_credentialsId')
     }
 
     @Test

@@ -22,13 +22,9 @@ import java.util.UUID
 ]
 @Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS.plus([
     /**
-     * Specifies the communication user of the communication scenario SAP_COM_0510
+     * Jenkins CredentialsId containing the communication user and password of the communciation scenario SAP_COM_0510
      */
-    'username',
-    /**
-     * Specifies the password of the communication user
-     */
-    'password'
+    'credentialsId'
 ])
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
 /**
@@ -58,18 +54,21 @@ void call(Map parameters = [:]) {
             .collectValidationFailures()
             .withMandatoryProperty('url', 'URL not provided')
             .withMandatoryProperty('repositoryName', 'Repository / Software Component not provided')
-            .withMandatoryProperty('username')
-            .withMandatoryProperty('password')
+            .withMandatoryProperty('credentialsId')
             .use()
 
-        String usernameColonPassword = configuration.username + ":" + configuration.password
-        String authToken = usernameColonPassword.bytes.encodeBase64().toString()
-        def urlRegex = configuration.url =~ /https:\/\/.*\/sap\/opu\/odata\/sap\/MANAGE_GIT_REPOSITORY/
+
+        String authToken
+        withCredentials([usernamePassword(credentialsId: configuration.credentialsId, usernameVariable: 'USER', passwordVariable: 'PASSWORD')]) {
+            String userColonPassword = "${USER}:${PASSWORD}"
+            authToken = userColonPassword.bytes.encodeBase64().toString()
+        }
+
+        def urlRegex = configuration.url =~ /^https:\/\/.*\/sap\/opu\/odata\/sap\/MANAGE_GIT_REPOSITORY$/
         if (!urlRegex.find()) {
             error "[${STEP_NAME}] Error: Please provide a valid URL"
         }
         String urlString = configuration.url + '/Pull'
-
         echo "[${STEP_NAME}] General Parameters: URL = \"${urlString}\", repositoryName = \"${configuration.repositoryName}\""
         HeaderFiles headerFiles = new HeaderFiles()
 
@@ -138,7 +137,6 @@ private String triggerPull(Map configuration, String url, String authToken, Head
 
 private String pollPullStatus(String url, String authToken, HeaderFiles headerFiles) {
 
-    String headerFile = "headerPoll.txt"
     String status = "R";
     while(status == "R") {
 
