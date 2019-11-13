@@ -34,18 +34,31 @@ class ConfigurationHelper implements Serializable {
         return this
     }
 
+    ConfigurationHelper mixinGeneralConfig(Set filter = null, Map compatibleParameters = [:]){
+        mixinGeneralConfig(null, filter, compatibleParameters)
+    }
+    @Deprecated
+    /** Use  mixinGeneralConfig without commonPipelineEnvironment*/
     ConfigurationHelper mixinGeneralConfig(commonPipelineEnvironment, Set filter = null, Map compatibleParameters = [:]){
-        Map generalConfiguration = ConfigurationLoader.generalConfiguration([commonPipelineEnvironment: commonPipelineEnvironment])
+        Map generalConfiguration = ConfigurationLoader.generalConfiguration()
         return mixin(generalConfiguration, filter, compatibleParameters)
     }
 
+    ConfigurationHelper mixinStageConfig(stageName, Set filter = null, Map compatibleParameters = [:]){
+        mixinStageConfig(null, stageName, filter, compatibleParameters)
+    }
+    @Deprecated
     ConfigurationHelper mixinStageConfig(commonPipelineEnvironment, stageName, Set filter = null, Map compatibleParameters = [:]){
-        Map stageConfiguration = ConfigurationLoader.stageConfiguration([commonPipelineEnvironment: commonPipelineEnvironment], stageName)
+        Map stageConfiguration = ConfigurationLoader.stageConfiguration(stageName)
         return mixin(stageConfiguration, filter, compatibleParameters)
     }
 
+    ConfigurationHelper mixinStepConfig(Set filter = null, Map compatibleParameters = [:]){
+        mixinStepConfig(null, filter, compatibleParameters)
+    }
+    @Deprecated
     ConfigurationHelper mixinStepConfig(commonPipelineEnvironment, Set filter = null, Map compatibleParameters = [:]){
-        Map stepConfiguration = ConfigurationLoader.stepConfiguration([commonPipelineEnvironment: commonPipelineEnvironment], name)
+        Map stepConfiguration = ConfigurationLoader.stepConfiguration(name)
         return mixin(stepConfiguration, filter, compatibleParameters)
     }
 
