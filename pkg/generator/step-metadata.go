@@ -25,8 +25,8 @@ func main() {
 
 	metadataFiles, err := helper.MetadataFiles(metadataPath)
 	checkError(err)
-
-	err = helper.ProcessMetaFiles(metadataFiles, openMetaFile, fileWriter, "", isGenerateDocu, docTemplatePath)
+	docuHelperData := helper.DocuHelperData{isGenerateDocu, docTemplatePath, openDocTemplate, docFileWriter}
+	err = helper.ProcessMetaFiles(metadataFiles, openMetaFile, fileWriter, "", docuHelperData)
 	checkError(err)
 
 	cmd := exec.Command("go", "fmt", "./cmd")
@@ -47,4 +47,19 @@ func checkError(err error) {
 		fmt.Printf("Error occured: %v\n", err)
 		os.Exit(1)
 	}
+}
+
+func openDocTemplate(docTemplateFilePath string) (io.ReadCloser, error) {
+
+	//check if template exists otherwise print No Template found
+	if _, err := os.Stat(docTemplateFilePath); os.IsNotExist(err) {
+		err := fmt.Errorf("No Template found: %v \n", docTemplateFilePath)
+		return nil, err
+	}
+
+	return os.Open(docTemplateFilePath)
+}
+
+func docFileWriter(filename string, data []byte, perm os.FileMode) error {
+	return ioutil.WriteFile(filename, data, perm)
 }

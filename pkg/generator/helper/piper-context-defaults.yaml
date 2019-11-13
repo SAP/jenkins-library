@@ -21,7 +21,7 @@ params:
 - name: dockerWorkspace
   description: 'Kubernetes only: Specifies a dedicated user home directory for the container which will be passed as value for environment variable HOME.'
 - name: sidecarCommand
-  description:
+  description: Allows to specify a start command for the sidecar container. This parameter is similar to containerCommand
 - name: sidecarEnvVars
   description: A map of environment variables to set in the sidecar container, similar to dockerEnvVars.
 - name: sidecarImage

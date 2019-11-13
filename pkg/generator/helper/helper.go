@@ -116,7 +116,7 @@ func Test{{.CobraCmdFuncName}}(t *testing.T) {
 `
 
 // ProcessMetaFiles generates step coding based on step configuration provided in yaml files
-func ProcessMetaFiles(metadataFiles []string, openFile func(s string) (io.ReadCloser, error), writeFile func(filename string, data []byte, perm os.FileMode) error, exportPrefix string, isGenDocu bool, docTemplateFilePath string) error {
+func ProcessMetaFiles(metadataFiles []string, openFile func(s string) (io.ReadCloser, error), writeFile func(filename string, data []byte, perm os.FileMode) error, exportPrefix string, docuHelperData DocuHelperData) error {
 	for key := range metadataFiles {
 
 		var stepData config.StepData
@@ -135,7 +135,7 @@ func ProcessMetaFiles(metadataFiles []string, openFile func(s string) (io.ReadCl
 		fmt.Printf("Step name: %v\n", stepData.Metadata.Name)
 
 		//Switch Docu or Step Files
-		if !isGenDocu {
+		if !docuHelperData.IsGenerateDocu {
 			osImport := false
 			osImport, err = setDefaultParameters(&stepData)
 			checkError(err)
@@ -150,8 +150,7 @@ func ProcessMetaFiles(metadataFiles []string, openFile func(s string) (io.ReadCl
 			err = writeFile(fmt.Sprintf("cmd/%v_generated_test.go", stepData.Metadata.Name), test, 0644)
 			checkError(err)
 		} else {
-			fmt.Printf("Generate docu for: %v\n", stepData.Metadata.Name)
-			generateStepDocumentation(stepData, docTemplateFilePath)
+			generateStepDocumentation(stepData, docuHelperData)
 		}
 	}
 	return nil
