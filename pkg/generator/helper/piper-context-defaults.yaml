@@ -36,4 +36,3 @@ params:
   description: as dockerWorkspace for the sidecar container
 - name: stashContent
   description: Specific stashes that should be considered for the step execution.
-  

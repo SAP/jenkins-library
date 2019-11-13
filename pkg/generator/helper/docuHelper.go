@@ -75,7 +75,7 @@ func readContextDefaultDescription(contextDefaultPath string) map[string]string 
 
 // generates the step documentation and replaces the template with the generated documentation
 //func generateStepDocumentation(stepData config.StepData, docTemplateFilePath string, docTemplate io.ReadCloser, docFileWriter func(f string, d []byte, p os.FileMode) error) {
-func generateStepDocumentation(stepData config.StepData, docuHelperData DocuHelperData) error{
+func generateStepDocumentation(stepData config.StepData, docuHelperData DocuHelperData) error {
 
 	fmt.Printf("Generate docu for: %v\n", stepData.Metadata.Name)
 	//create the file path for the template and open it.
@@ -85,13 +85,12 @@ func generateStepDocumentation(stepData config.StepData, docuHelperData DocuHelp
 
 	//check if there is an error during opening the template (true : skip docu generation for this meta data file)
 	if err != nil {
-		return fmt.Errorf("Error occured: %v\n", err)
+		return fmt.Errorf("error occured: %v", err)
 	}
 
 	content := readAndAdjustTemplate(docTemplate)
 	if len(content) <= 0 {
-		fmt.Printf("Error occured: No content inside of the template\n")
-		return fmt.Errorf("Error occured: No content inside of the template\n")
+		return fmt.Errorf("error occured: no content inside of the template")
 	}
 
 	// binding of functions and placeholder
