@@ -12,7 +12,7 @@ import java.util.UUID
 @Field def STEP_NAME = getClass().getName()
 @Field Set GENERAL_CONFIG_KEYS = [
     /**
-     * Specifies the URL of the MANAGE_SOFTWARE_COMPONENT API of the communication scenario SAP_COM_0510
+     * Specifies the URL of the MANAGE_SOFTWARE_COMPONENT API of the communication scenario SAP_COM_0510 in the SAP Cloud Platform ABAP Environment system
      */
     'url',
     /**
