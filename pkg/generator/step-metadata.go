@@ -53,7 +53,7 @@ func openDocTemplate(docTemplateFilePath string) (io.ReadCloser, error) {
 
 	//check if template exists otherwise print No Template found
 	if _, err := os.Stat(docTemplateFilePath); os.IsNotExist(err) {
-		err := fmt.Errorf("No Template found: %v \n", docTemplateFilePath)
+		err := fmt.Errorf("no template found: %v", docTemplateFilePath)
 		return nil, err
 	}
 

@@ -106,7 +106,7 @@ func TestGenerateStepDocumentationSuccess(t *testing.T) {
 	contentMetaData, _ := configMetaDataMock("test.yaml")
 	stepData.ReadPipelineStepData(contentMetaData)
 
-	generateStepDocumentation(stepData,DocuHelperData{true, "" ,configOpenDocTemplateFileMock , docFileWriterMock})
+	generateStepDocumentation(stepData, DocuHelperData{true, "", configOpenDocTemplateFileMock, docFileWriterMock})
 
 	t.Run("Docu Generation Success", func(t *testing.T) {
 		assert.Equal(t, expectedResultDocument, resultDocumentContent)
@@ -118,7 +118,7 @@ func TestGenerateStepDocumentationError(t *testing.T) {
 	contentMetaData, _ := configMetaDataMock("test.yaml")
 	stepData.ReadPipelineStepData(contentMetaData)
 
-	err := generateStepDocumentation(stepData, DocuHelperData{true, "Dummy" ,configOpenDocTemplateFileMock , docFileWriterMock})
+	err := generateStepDocumentation(stepData, DocuHelperData{true, "Dummy", configOpenDocTemplateFileMock, docFileWriterMock})
 
 	t.Run("Docu Generation Success", func(t *testing.T) {
 		assert.Error(t, err, fmt.Sprintf("Error occured: %v\n", err))
