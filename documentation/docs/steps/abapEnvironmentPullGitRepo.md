@@ -17,7 +17,7 @@
 
 ```groovy
 abapEnvironmentPullGitRepo (
-    host : 'https://1234-abcd-5678-efgh-ijk.abap.eu10.hana.ondemand.com/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY',
+    url : 'https://1234-abcd-5678-efgh-ijk.abap.eu10.hana.ondemand.com/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY',
     repositoryName : '/DMO/GIT_REPOSITORY',
     credentialsId : "myCredentialsId",
     script : this
