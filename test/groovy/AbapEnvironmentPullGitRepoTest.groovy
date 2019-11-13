@@ -27,6 +27,7 @@ public class AbapEnvironmentPullGitRepoTest extends BasePiperTest {
     private JenkinsStepRule stepRule = new JenkinsStepRule(this)
     private JenkinsLoggingRule loggingRule = new JenkinsLoggingRule(this)
     private JenkinsShellCallRule shellRule = new JenkinsShellCallRule(this)
+    private JenkinsCredentialsRule credentialsRule = new JenkinsCredentialsRule(this).withCredentials('test_credentialsId', 'user', 'password')
 
     @Rule
     public RuleChain ruleChain = Rules.getCommonRules(this)
@@ -34,6 +35,7 @@ public class AbapEnvironmentPullGitRepoTest extends BasePiperTest {
         .around(thrown)
         .around(stepRule)
         .around(loggingRule)
+        .around(credentialsRule)
         .around(shellRule)
 
     @Before
@@ -57,7 +59,7 @@ public class AbapEnvironmentPullGitRepoTest extends BasePiperTest {
         loggingRule.expect("[abapEnvironmentPullGitRepo] Entity URI: https://example.com/URI")
         loggingRule.expect("[abapEnvironmentPullGitRepo] Pull Status: SUCCESS")
 
-        stepRule.step.abapEnvironmentPullGitRepo(script: nullScript, host: 'example.com', repositoryName: 'Z_DEMO_DM', username: 'user', password: 'password')
+        stepRule.step.abapEnvironmentPullGitRepo(script: nullScript, host: 'example.com', repositoryName: 'Z_DEMO_DM', credentialsId: 'test_credentialsId')
 
         assertThat(shellRule.shell[0], containsString(/#!\/bin\/bash curl -I -X GET https:\/\/example.com\/sap\/opu\/odata\/sap\/MANAGE_GIT_REPOSITORY\/Pull -H 'Authorization: Basic dXNlcjpwYXNzd29yZA==' -H 'Accept: application\/json' -H 'x-csrf-token: fetch' -D headerFileAuth-1.txt/))
         assertThat(shellRule.shell[1], containsString(/#!\/bin\/bash curl -X POST "https:\/\/example.com\/sap\/opu\/odata\/sap\/MANAGE_GIT_REPOSITORY\/Pull" -H 'Authorization: Basic dXNlcjpwYXNzd29yZA==' -H 'Accept: application\/json' -H 'Content-Type: application\/json' -H 'x-csrf-token: TOKEN' --cookie headerFileAuth-1.txt -D headerFilePost-1.txt -d '{ "sc_name": "Z_DEMO_DM" }'/))
@@ -83,7 +85,7 @@ public class AbapEnvironmentPullGitRepoTest extends BasePiperTest {
         thrown.expect(Exception)
         thrown.expectMessage("[abapEnvironmentPullGitRepo] Pull Failed")
 
-        stepRule.step.abapEnvironmentPullGitRepo(script: nullScript, host: 'example.com', repositoryName: 'Z_DEMO_DM', username: 'user', password: 'password')
+        stepRule.step.abapEnvironmentPullGitRepo(script: nullScript, host: 'example.com', repositoryName: 'Z_DEMO_DM', credentialsId: 'test_credentialsId')
 
     }
 
@@ -104,7 +106,7 @@ public class AbapEnvironmentPullGitRepoTest extends BasePiperTest {
         thrown.expect(Exception)
         thrown.expectMessage("[abapEnvironmentPullGitRepo] Pull Failed")
 
-        stepRule.step.abapEnvironmentPullGitRepo(script: nullScript, host: 'example.com', repositoryName: 'Z_DEMO_DM', username: 'user', password: 'password')
+        stepRule.step.abapEnvironmentPullGitRepo(script: nullScript, host: 'example.com', repositoryName: 'Z_DEMO_DM', credentialsId: 'test_credentialsId')
 
     }
 
@@ -122,7 +124,7 @@ public class AbapEnvironmentPullGitRepoTest extends BasePiperTest {
         thrown.expect(Exception)
         thrown.expectMessage("[abapEnvironmentPullGitRepo] Error: text")
 
-        stepRule.step.abapEnvironmentPullGitRepo(script: nullScript, host: 'example.com', repositoryName: 'Z_DEMO_DM', username: 'user', password: 'password')
+        stepRule.step.abapEnvironmentPullGitRepo(script: nullScript, host: 'example.com', repositoryName: 'Z_DEMO_DM', credentialsId: 'test_credentialsId')
 
     }
 
@@ -139,7 +141,7 @@ public class AbapEnvironmentPullGitRepoTest extends BasePiperTest {
         thrown.expect(Exception)
         thrown.expectMessage("[abapEnvironmentPullGitRepo] Error: 401 Unauthorized")
 
-        stepRule.step.abapEnvironmentPullGitRepo(script: nullScript, host: 'example.com', repositoryName: 'Z_DEMO_DM', username: 'user', password: 'password')
+        stepRule.step.abapEnvironmentPullGitRepo(script: nullScript, host: 'example.com', repositoryName: 'Z_DEMO_DM', credentialsId: 'test_credentialsId')
 
     }
 
@@ -147,14 +149,14 @@ public class AbapEnvironmentPullGitRepoTest extends BasePiperTest {
     public void checkRepositoryProvided() {
        thrown.expect(IllegalArgumentException)
        thrown.expectMessage("Repository / Software Component not provided")
-       stepRule.step.abapEnvironmentPullGitRepo(script: nullScript, host: 'example.com', username: 'user', password: 'password')
+       stepRule.step.abapEnvironmentPullGitRepo(script: nullScript, host: 'example.com', credentialsId: 'test_credentialsId')
     }
 
     @Test
     public void checkHostProvided() {
        thrown.expect(IllegalArgumentException)
        thrown.expectMessage("Host not provided")
-       stepRule.step.abapEnvironmentPullGitRepo(script: nullScript, repositoryName: 'REPO', username: 'user', password: 'password')
+       stepRule.step.abapEnvironmentPullGitRepo(script: nullScript, repositoryName: 'REPO', credentialsId: 'test_credentialsId')
     }
 
     @Test
