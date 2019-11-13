@@ -1,14 +1,12 @@
+import com.sap.piper.BashUtils
+import com.sap.piper.CfManifestUtils
+import com.sap.piper.ConfigurationHelper
+import com.sap.piper.GenerateDocumentation
 import com.sap.piper.JenkinsUtils
+import com.sap.piper.Utils
+import groovy.transform.Field
 
 import static com.sap.piper.Prerequisites.checkScript
-
-import com.sap.piper.GenerateDocumentation
-import com.sap.piper.Utils
-import com.sap.piper.ConfigurationHelper
-import com.sap.piper.CfManifestUtils
-import com.sap.piper.BashUtils
-
-import groovy.transform.Field
 
 @Field String STEP_NAME = getClass().getName()
 
@@ -75,6 +73,22 @@ import groovy.transform.Field
          * @parentConfigKey cloudFoundry
          */
         'space',
+        /**
+        *  Defines a Docker image instead to be deployed. The specified name of the image is passed to the `--docker-image`
+        *  parameter of the cf CLI and must adhere it's naming pattern (e.g. REPO/IMAGE:TAG). See (cf CLI documentation)[https://docs.cloudfoundry.org/devguide/deploy-apps/push-docker.html]
+        *  for details.
+        *
+        * Note: The used Docker registry must be visible for the targeted Cloud Foundry instance.
+        * @parentConfigKey cloudFoundry
+        */
+        'deployDockerImage',
+        /**
+         * If the specified image in `deployDockerImage` is contained in a Docker registry, which requires authorization
+         * this defines the credentials to be used.
+         * @parentConfigKey cloudFoundry
+         */
+        'deployDockerCredentialsId',
+
     /**
      * Defines the tool which should be used for deployment.
      * @possibleValues 'cf_native', 'mtaDeployPlugin'
@@ -240,8 +254,14 @@ private void handleMTADeployment(Map config, script) {
         .addIfEmpty('mtaPath', config.mtaPath ?: findMtar())
         .use()
 
-    dockerExecute(script: script, dockerImage: config.dockerImage, dockerWorkspace: config.dockerWorkspace, stashContent: config.stashContent) {
-        deployMta(config)
+    withCredentials([usernamePassword(
+        credentialsId: config.cloudFoundry.credentialsId,
+        passwordVariable: 'password',
+        usernameVariable: 'username'
+    )]) {
+        dockerExecute(script: script, dockerImage: config.dockerImage, dockerWorkspace: config.dockerWorkspace, stashContent: config.stashContent) {
+            deployMta(config)
+        }
     }
 }
 
@@ -257,7 +277,7 @@ def findMtar(){
     error 'No *.mtar file found!'
 }
 
-def deployMta (config) {
+def deployMta(config) {
     if (config.mtaExtensionDescriptor == null) config.mtaExtensionDescriptor = ''
     if (!config.mtaExtensionDescriptor.isEmpty() && !config.mtaExtensionDescriptor.startsWith('-e ')) config.mtaExtensionDescriptor = "-e ${config.mtaExtensionDescriptor}"
 
@@ -290,17 +310,41 @@ private void handleCFNativeDeployment(Map config, script) {
     echo "[${STEP_NAME}] - cfManifest=${config.cloudFoundry.manifest}"
     echo "[${STEP_NAME}] - cfManifestVariables=${config.cloudFoundry.manifestVariables?:'none specified'}"
     echo "[${STEP_NAME}] - cfManifestVariablesFiles=${config.cloudFoundry.manifestVariablesFiles?:'none specified'}"
+    echo "[${STEP_NAME}] - cfdeployDockerImage=${config.cloudFoundry.deployDockerImage ?: 'none specified'}"
+    echo "[${STEP_NAME}] - cfdockerCredentialsId=${config.cloudFoundry.dockerCredentialsId ?: 'none specified'}"
     echo "[${STEP_NAME}] - smokeTestScript=${config.smokeTestScript}"
 
     checkIfAppNameIsAvailable(config)
-    dockerExecute(
-        script: script,
-        dockerImage: config.dockerImage,
-        dockerWorkspace: config.dockerWorkspace,
-        stashContent: config.stashContent,
-        dockerEnvVars: [CF_HOME: "${config.dockerWorkspace}", CF_PLUGIN_HOME: "${config.dockerWorkspace}", STATUS_CODE: "${config.smokeTestStatusCode}"]
-    ) {
-        deployCfNative(config)
+
+    def dockerCredentials = []
+    if (config.cloudFoundry.dockerCredentialsId != null && config.cloudFoundry.dockerCredentialsId != "") {
+        dockerCredentials.add(usernamePassword(
+            credentialsId: config.cloudFoundry.dockerCredentialsId,
+            passwordVariable: 'dockerPassword',
+            usernameVariable: 'dockerUsername'
+        ))
+    }
+
+    withCredentials([usernamePassword(
+        credentialsId: config.cloudFoundry.credentialsId,
+        passwordVariable: 'password',
+        usernameVariable: 'username'
+    )] + dockerCredentials) {
+        dockerExecute(
+            script: script,
+            dockerImage: config.dockerImage,
+            dockerWorkspace: config.dockerWorkspace,
+            stashContent: config.stashContent,
+            dockerEnvVars: [
+                CF_HOME           : "${config.dockerWorkspace}",
+                CF_PLUGIN_HOME    : "${config.dockerWorkspace}",
+                // if the Docker registry requires authentication the DOCKER_PASSWORD env variable must be set
+                CF_DOCKER_PASSWORD: "${binding.hasVariable("dockerPassword") ? dockerPassword : ""}",
+                STATUS_CODE       : "${config.smokeTestStatusCode}"
+            ]
+        ) {
+            deployCfNative(config)
+        }
     }
 }
 
@@ -399,59 +443,61 @@ private checkIfAppNameIsAvailable(config) {
     }
 }
 
-def deployCfNative (config) {
-    def deployStatement = "cf ${config.deployCommand} ${config.cloudFoundry.appName ?: ''} ${config.deployOptions?:''} -f '${config.cloudFoundry.manifest}' ${config.smokeTest} ${config.cfNativeDeployParameters}"
-    deploy(null, deployStatement, config,  { c -> stopOldAppIfRunning(c) })
+def deployCfNative(config) {
+    def manifestOrDockerImage
+    if (config.cloudFoundry.deployDockerImage != null && config.cloudFoundry.deployDockerImage != "") {
+        // if the Docker registry requires authentication the --docker-username parameter must be set
+        def usernameParameter = binding.hasVariable("dockerUsername") ? "--docker-username ${dockerUsername}}" : ''
+        manifestOrDockerImage = "--docker-image ${config.cloudFoundry.deployDockerImage} ${usernameParameter}"
+    } else {
+        manifestOrDockerImage = "-f '${config.cloudFoundry.manifest}'"
+    }
+    def deployStatement = "cf ${config.deployCommand} ${config.cloudFoundry.appName ?: ''} ${config.deployOptions ?: ''} ${manifestOrDockerImage} ${config.smokeTest} ${config.cfNativeDeployParameters}"
+
+    deploy(null, deployStatement, config, { c -> stopOldAppIfRunning(c) })
 }
 
-private deploy(def cfApiStatement, def cfDeployStatement, def config, Closure postDeployAction) {
-
-    withCredentials([usernamePassword(
-        credentialsId: config.cloudFoundry.credentialsId,
-        passwordVariable: 'password',
-        usernameVariable: 'username'
-    )]) {
-
-        def cfTraceFile = 'cf.log'
-
-        def deployScript = """#!/bin/bash
+private deploy(String cfApiStatement, String cfDeployStatement, config, Closure postDeployAction) {
+    def cfTraceFile = 'cf.log'
+    def deployScript = """#!/bin/bash
             set +x
             set -e
             export HOME=${config.dockerWorkspace}
             export CF_TRACE=${cfTraceFile}
             ${cfApiStatement ?: ''}
-            cf login -u \"${username}\" -p '${password}' -a ${config.cloudFoundry.apiEndpoint} -o \"${config.cloudFoundry.org}\" -s \"${config.cloudFoundry.space}\" ${config.loginParameters}
+            cf login -u \"${username}\" -p '${password}' -a ${config.cloudFoundry.apiEndpoint} -o \"${
+        config.cloudFoundry.org
+    }\" -s \"${config.cloudFoundry.space}\" ${config.loginParameters}
             cf plugins
             ${cfDeployStatement}
             """
 
-        if(config.verbose) {
-            // Password contained in output below is hidden by withCredentials
-            echo "[INFO][${STEP_NAME}] Executing command: '${deployScript}'."
-        }
-
-        def returnCode = sh returnStatus: true, script: deployScript
-
-        if(config.verbose || returnCode != 0) {
-            if(fileExists(file: cfTraceFile)) {
-                echo  '### START OF CF CLI TRACE OUTPUT ###'
-                // Would be nice to inline the two next lines, but that is not understood by the test framework
-                def cfTrace =  readFile(file: cfTraceFile)
-                echo cfTrace
-                echo '### END OF CF CLI TRACE OUTPUT ###'
-            } else {
-                echo "No trace file found at '${cfTraceFile}'"
-            }
-        }
-
-        if(returnCode != 0){
-            error "[${STEP_NAME}] ERROR: The execution of the deploy command failed, see the log for details."
-        }
-
-        if(postDeployAction) postDeployAction(config)
-
-        sh "cf logout"
+    if (config.verbose) {
+        // Password contained in output below is hidden by withCredentials
+        echo "[INFO][${STEP_NAME}] Executing command: '${deployScript}'."
     }
+
+    def returnCode = sh returnStatus: true, script: deployScript
+
+    if (config.verbose || returnCode != 0) {
+        if (fileExists(file: cfTraceFile)) {
+            echo '### START OF CF CLI TRACE OUTPUT ###'
+            // Would be nice to inline the two next lines, but that is not understood by the test framework
+            def cfTrace = readFile(file: cfTraceFile)
+            echo cfTrace
+            echo '### END OF CF CLI TRACE OUTPUT ###'
+        } else {
+            echo "No trace file found at '${cfTraceFile}'"
+        }
+    }
+
+    if (returnCode != 0) {
+        error "[${STEP_NAME}] ERROR: The execution of the deploy command failed, see the log for details."
+    }
+
+    if (postDeployAction) postDeployAction(config)
+
+    sh "cf logout"
 }
 
 private void stopOldAppIfRunning(Map config) {

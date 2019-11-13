@@ -1,32 +1,34 @@
 import com.sap.piper.JenkinsUtils
+import org.junit.After
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.ExpectedException
 import org.junit.rules.RuleChain
-
 import util.BasePiperTest
 import util.JenkinsCredentialsRule
-import util.JenkinsEnvironmentRule
 import util.JenkinsDockerExecuteRule
+import util.JenkinsEnvironmentRule
 import util.JenkinsFileExistsRule
 import util.JenkinsLoggingRule
 import util.JenkinsReadFileRule
+import util.JenkinsReadYamlRule
 import util.JenkinsShellCallRule
 import util.JenkinsStepRule
 import util.JenkinsWriteFileRule
-import util.JenkinsReadYamlRule
 import util.Rules
 
-import static org.hamcrest.Matchers.stringContainsInOrder
-import static org.junit.Assert.*
-
+import static org.hamcrest.Matchers.allOf
+import static org.hamcrest.Matchers.containsString
+import static org.hamcrest.Matchers.equalTo
+import static org.hamcrest.Matchers.hasEntry
 import static org.hamcrest.Matchers.hasItem
 import static org.hamcrest.Matchers.is
 import static org.hamcrest.Matchers.not
-import static org.hamcrest.Matchers.hasEntry
-import static org.hamcrest.Matchers.allOf
-import static org.hamcrest.Matchers.containsString
+import static org.hamcrest.Matchers.stringContainsInOrder
+import static org.junit.Assert.assertNotNull
+import static org.junit.Assert.assertThat
+import static org.junit.Assert.assertTrue
 
 class CloudFoundryDeployTest extends BasePiperTest {
 
@@ -41,6 +43,8 @@ class CloudFoundryDeployTest extends BasePiperTest {
     private JenkinsEnvironmentRule environmentRule = new JenkinsEnvironmentRule(this)
     private JenkinsReadYamlRule readYamlRule = new JenkinsReadYamlRule(this)
     private JenkinsFileExistsRule fileExistsRule = new JenkinsFileExistsRule(this, [])
+    private JenkinsCredentialsRule credentialsRule = new JenkinsCredentialsRule(this)
+        .withCredentials('test_cfCredentialsId', 'test_cf', '********')
 
     private writeInfluxMap = [:]
 
@@ -62,14 +66,22 @@ class CloudFoundryDeployTest extends BasePiperTest {
         .around(fileExistsRule)
         .around(dockerExecuteRule)
         .around(environmentRule)
-        .around(new JenkinsCredentialsRule(this).withCredentials('test_cfCredentialsId', 'test_cf', '********'))
+        .around(credentialsRule)
         .around(stepRule) // needs to be activated after dockerExecuteRule, otherwise executeDocker is not mocked
 
     @Before
     void init() {
+        rules =
         helper.registerAllowedMethod('influxWriteData', [Map.class], {m ->
             writeInfluxMap = m
         })
+    }
+
+    @After
+    void cleanUp() {
+        // cleaning up credentials in case a test has modified
+        credentialsRule = new JenkinsCredentialsRule(this)
+            .withCredentials('test_cfCredentialsId', 'test_cf', '********')
     }
 
     @Test
@@ -133,8 +145,10 @@ class CloudFoundryDeployTest extends BasePiperTest {
         assertThat(loggingRule.log, containsString('[cloudFoundryDeploy] WARNING! Found unsupported deployTool. Skipping deployment.'))
     }
 
+
+
     @Test
-    void testCfNativeWithAppName() {
+    void testCfNativeDockerDeploy() {
         readYamlRule.registerYaml('test.yml', "applications: [[name: 'manifestAppName']]")
         helper.registerAllowedMethod('writeYaml', [Map], { Map parameters ->
             generatedFile = parameters.file
@@ -210,6 +224,63 @@ class CloudFoundryDeployTest extends BasePiperTest {
         assertThat(shellRule.shell, hasItem(containsString('cf login -u "test_cf" -p \'********\' -a https://api.cf.eu10.hana.ondemand.com -o "testOrg" -s "testSpace"')))
         assertThat(shellRule.shell, hasItem(containsString("cf push testAppName -f 'test.yml'")))
         assertThat(shellRule.shell, hasItem(containsString("cf logout")))
+    }
+
+    @Test
+    void testCfNativeWithDockerImage() {
+        // adding additional credentials for Docker registry authorization
+        credentialsRule.withCredentials('test_cfDockerCredentialsId', 'test_cf_docker', '********')
+        readYamlRule.registerYaml('test.yml', "applications: [[name: 'manifestAppName']]")
+        helper.registerAllowedMethod('writeYaml', [Map], { Map parameters ->
+            generatedFile = parameters.file
+            data = parameters.data
+        })
+        stepRule.step.cloudFoundryDeploy([
+            script: nullScript,
+            juStabUtils: utils,
+            jenkinsUtilsStub: new JenkinsUtilsMock(),
+            deployTool: 'cf_native',
+            cloudFoundry: [
+                org: 'testOrg',
+                space: 'testSpace',
+                credentialsId: 'test_cfCredentialsId',
+                appName: 'testAppName',
+                deployDockerImage: 'repo/image:tag'
+            ]
+        ])
+
+        assertThat(shellRule.shell, hasItem(containsString('cf login -u "test_cf" -p \'********\' -a https://api.cf.eu10.hana.ondemand.com -o "testOrg" -s "testSpace"')))
+        assertThat(shellRule.shell, hasItem(containsString('cf push testAppName --docker-image repo/image:tag')))
+        assertThat(shellRule.shell, hasItem(containsString('cf logout')))
+    }
+
+    @Test
+    void testCfNativeWithDockerImageWithCredentials() {
+        // adding additional credentials for Docker registry authorization
+        credentialsRule.withCredentials('test_cfDockerCredentialsId', 'test_cf_docker', '********')
+        readYamlRule.registerYaml('test.yml', "applications: [[name: 'manifestAppName']]")
+        helper.registerAllowedMethod('writeYaml', [Map], { Map parameters ->
+            generatedFile = parameters.file
+            data = parameters.data
+        })
+        stepRule.step.cloudFoundryDeploy([
+            script: nullScript,
+            juStabUtils: utils,
+            jenkinsUtilsStub: new JenkinsUtilsMock(),
+            deployTool: 'cf_native',
+            cloudFoundry: [
+                org: 'testOrg',
+                space: 'testSpace',
+                credentialsId: 'test_cfCredentialsId',
+                appName: 'testAppName',
+                deployDockerImage: 'repo/image:tag',
+                dockerCredentialsId: 'test_cfDockerCredentialsId'
+            ]
+        ])
+        assertThat(dockerExecuteRule.dockerParams.dockerEnvVars, hasEntry(equalTo('CF_DOCKER_PASSWORD'), equalTo("${'********'}")))
+        assertThat(shellRule.shell, hasItem(containsString('cf login -u "test_cf" -p \'********\' -a https://api.cf.eu10.hana.ondemand.com -o "testOrg" -s "testSpace"')))
+        assertThat(shellRule.shell, hasItem(containsString('cf push testAppName --docker-image repo/image:tag --docker-username test_cf_docker')))
+        assertThat(shellRule.shell, hasItem(containsString('cf logout')))
     }
 
     @Test
