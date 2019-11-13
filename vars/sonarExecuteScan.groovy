@@ -190,7 +190,9 @@ void call(Map parameters = [:]) {
             script: script,
             dockerImage: configuration.dockerImage
         ){
-            unstash 'git'
+            if(script.fileExists('.git/index')) {
+                utils.unstash('git')
+            }
             worker(configuration)
         }
     }
