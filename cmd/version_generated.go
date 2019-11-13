@@ -1,8 +1,6 @@
 package cmd
 
 import (
-	//"os"
-
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/spf13/cobra"
@@ -23,8 +21,8 @@ func VersionCommand() *cobra.Command {
 		Long:  `Writes the commit hash and the tag (if any) to stdout and exits with 0.`,
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			log.SetStepName("version")
-			log.SetVerbose(generalConfig.verbose)
-			return PrepareConfig(cmd, &metadata, "version", &myVersionOptions, openPiperFile)
+			log.SetVerbose(GeneralConfig.Verbose)
+			return PrepareConfig(cmd, &metadata, "version", &myVersionOptions, OpenPiperFile)
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return version(myVersionOptions)
