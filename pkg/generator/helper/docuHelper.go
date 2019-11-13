@@ -1,6 +1,7 @@
 package helper
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -13,20 +14,28 @@ import (
 	"github.com/ghodss/yaml"
 )
 
-// ContextDefaultData defines the metadata for a step, like step descriptions, parameters, ...
+// DocuHelperData is used to transport the needed parameters and functions from the step generator to the docu generation.
+type DocuHelperData struct {
+	IsGenerateDocu      bool
+	DocTemplatePath     string
+	OpenDocTemplateFile func(d string) (io.ReadCloser, error)
+	DocFileWriter       func(f string, d []byte, p os.FileMode) error
+}
+
+// ContextDefaultData holds the meta data and the default data for the context default parameter descriptions
 type ContextDefaultData struct {
 	Metadata   ContextDefaultMetadata     `json:"metadata"`
 	Parameters []ContextDefaultParameters `json:"params"`
 }
 
-// ContextDefaultMetadata defines the metadata for a step, like step descriptions, parameters, ...
+// ContextDefaultMetadata holds meta data for the context default parameter descripten (name, description, long description)
 type ContextDefaultMetadata struct {
 	Name            string `json:"name"`
 	Description     string `json:"description"`
 	LongDescription string `json:"longDescription,omitempty"`
 }
 
-// ContextDefaultParameters defines the parameters for a step
+// ContextDefaultParameters holds the description for the context default parameters
 type ContextDefaultParameters struct {
 	Name        string `json:"name"`
 	Description string `json:"description"`
@@ -65,44 +74,52 @@ func readContextDefaultDescription(contextDefaultPath string) map[string]string 
 }
 
 // generates the step documentation and replaces the template with the generated documentation
-func generateStepDocumentation(stepData config.StepData, docTemplatePath string) {
+//func generateStepDocumentation(stepData config.StepData, docTemplateFilePath string, docTemplate io.ReadCloser, docFileWriter func(f string, d []byte, p os.FileMode) error) {
+func generateStepDocumentation(stepData config.StepData, docuHelperData DocuHelperData) error{
 
-	docTemplateFilePath := fmt.Sprintf("%v%v.md", docTemplatePath, stepData.Metadata.Name)
+	fmt.Printf("Generate docu for: %v\n", stepData.Metadata.Name)
+	//create the file path for the template and open it.
+	docTemplateFilePath := fmt.Sprintf("%v%v.md", docuHelperData.DocTemplatePath, stepData.Metadata.Name)
+	docTemplate, err := docuHelperData.OpenDocTemplateFile(docTemplateFilePath)
+	defer docTemplate.Close()
 
-	//check if template exists otherwise print No Template found
-	if _, err := os.Stat(docTemplateFilePath); os.IsNotExist(err) {
-		fmt.Printf("No Template found for Step: %v \n", stepData.Metadata.Name)
-		return
+	//check if there is an error during opening the template (true : skip docu generation for this meta data file)
+	if err != nil {
+		return fmt.Errorf("Error occured: %v\n", err)
 	}
 
-	setDefaultStepParameters(&stepData)
-
-	content := readAndAdjustTemplate(docTemplateFilePath)
+	content := readAndAdjustTemplate(docTemplate)
+	if len(content) <= 0 {
+		fmt.Printf("Error occured: No content inside of the template\n")
+		return fmt.Errorf("Error occured: No content inside of the template\n")
+	}
 
 	// binding of functions and placeholder
 	funcMap := template.FuncMap{
-		"docGenDescription":            docGenDescription,
-		"docGenStepName":               docGenStepName,
-		"docGenParameters":             docGenParameters,
-		"docGenConfiguration":          docGenConfiguration,
-		"docJenkinsPluginDependencies": docJenkinsPluginDependencies,
+		"docGenDescription":   docGenDescription,
+		"docGenStepName":      docGenStepName,
+		"docGenParameters":    docGenParameters,
+		"docGenConfiguration": docGenConfiguration,
 	}
 	tmpl, err := template.New("doc").Funcs(funcMap).Parse(content)
 	checkError(err)
 
+	setDefaultStepParameters(&stepData)
 	// add secrets, context defaults to the step parameters
 	handleStepParameters(&stepData)
 
-	//overwrite existing file
-	docFile, err := os.OpenFile(docTemplateFilePath, os.O_WRONLY, 0644)
-	defer docFile.Close()
+	//write executed template data to the previously opened file
+	var docContent bytes.Buffer
+	err = tmpl.Execute(&docContent, stepData)
 	checkError(err)
 
-	//write executed template data to the previously opened file
-	err = tmpl.Execute(docFile, stepData)
+	//overwrite existing file
+	err = docuHelperData.DocFileWriter(docTemplateFilePath, docContent.Bytes(), 644)
 	checkError(err)
 
 	fmt.Printf("Documentation generation complete for: %v\n", stepData.Metadata.Name)
+
+	return nil
 }
 
 func setDefaultStepParameters(stepData *config.StepData) {
@@ -116,13 +133,8 @@ func setDefaultStepParameters(stepData *config.StepData) {
 		} else {
 			switch param.Type {
 			case "string":
-				param.Default = fmt.Sprintf("\"%v\"", param.Default)
 			case "bool":
-				boolVal := "false"
-				if param.Default.(bool) == true {
-					boolVal = "true"
-				}
-				param.Default = boolVal
+				param.Default = fmt.Sprintf("\"%v\"", param.Default)
 			}
 		}
 
@@ -130,12 +142,7 @@ func setDefaultStepParameters(stepData *config.StepData) {
 	}
 }
 
-func readAndAdjustTemplate(docTemplateFilePath string) string {
-	fmt.Printf("Open template: %v\n", docTemplateFilePath)
-	docFile, err := os.Open(docTemplateFilePath)
-	defer docFile.Close()
-	checkError(err)
-
+func readAndAdjustTemplate(docFile io.ReadCloser) string {
 	//read template content
 	content, err := ioutil.ReadAll(docFile)
 	checkError(err)
@@ -146,7 +153,7 @@ func readAndAdjustTemplate(docTemplateFilePath string) string {
 	contentStr = strings.ReplaceAll(contentStr, "${docGenConfiguration}", "{{docGenConfiguration .}}")
 	contentStr = strings.ReplaceAll(contentStr, "${docGenParameters}", "{{docGenParameters .}}")
 	contentStr = strings.ReplaceAll(contentStr, "${docGenDescription}", "{{docGenDescription .}}")
-	contentStr = strings.ReplaceAll(contentStr, "${docJenkinsPluginDependencies}", "{{docJenkinsPluginDependencies .}}")
+	contentStr = strings.ReplaceAll(contentStr, "## ${docJenkinsPluginDependencies}", "")
 
 	return contentStr
 }
@@ -188,20 +195,6 @@ func docGenConfiguration(stepData config.StepData) string {
 	return conf
 }
 
-// Replaces the docGenConfiguration placeholder with default content
-func docJenkinsPluginDependencies(stepData config.StepData) string {
-	t := "Dependencies \n\n"
-	t += "The step depends on the following Jenkins plugins \n\n"
-	t += "* &lt;none&gt; \n\n"
-	t += "Transitive dependencies are omitted. \n"
-	t += " \n"
-	t += "The list might be incomplete. \n"
-	t += " \n"
-	t += "Consider using the [ppiper/jenkins-master](https://cloud.docker.com/u/ppiper/repository/docker/ppiper/jenkins-master) \n"
-	t += "docker image. This images comes with preinstalled plugins. \n\n"
-	return t
-}
-
 func createParametersTable(parameters []config.StepParameters) string {
 
 	var table = "| name | mandatory | default |\n"
@@ -240,34 +233,40 @@ func combineEqualParametersTogether(parameters []config.StepParameters) map[stri
 	var m map[string]string = make(map[string]string)
 
 	for _, param := range parameters {
-		if _, ok := m[param.Name]; ok {
-			if param.Conditions != nil {
-				for _, con := range param.Conditions {
-					if con.Params != nil {
-						for _, p := range con.Params {
-							m[param.Name] = fmt.Sprintf("%v <br> %v=%v:%v ", m[param.Name], p.Name, p.Value, param.Default)
-						}
-					}
-				}
-			}
+		m[param.Name] = fmt.Sprintf("%v", param.Default)
 
+		if _, ok := m[param.Name]; ok {
+			addExistingParameterWithCondition(param, m)
 		} else {
-			if param.Conditions != nil {
-				m[param.Name] = ""
-				for _, con := range param.Conditions {
-					if con.Params != nil {
-						for _, p := range con.Params {
-							m[param.Name] += fmt.Sprintf("%v=%v:%v", p.Name, p.Value, param.Default)
-						}
-					}
+			addNewParameterWithCondition(param, m)
+		}
+	}
+	return m
+}
+
+func addExistingParameterWithCondition(param config.StepParameters, m map[string]string) {
+	if param.Conditions != nil {
+		for _, con := range param.Conditions {
+			if con.Params != nil {
+				for _, p := range con.Params {
+					m[param.Name] = fmt.Sprintf("%v <br> %v=%v:%v ", m[param.Name], p.Name, p.Value, param.Default)
 				}
-			} else {
-				m[param.Name] = fmt.Sprintf("%v", param.Default)
 			}
 		}
 	}
+}
 
-	return m
+func addNewParameterWithCondition(param config.StepParameters, m map[string]string) {
+	if param.Conditions != nil {
+		m[param.Name] = ""
+		for _, con := range param.Conditions {
+			if con.Params != nil {
+				for _, p := range con.Params {
+					m[param.Name] += fmt.Sprintf("%v=%v:%v", p.Name, p.Value, param.Default)
+				}
+			}
+		}
+	}
 }
 
 func createConfigurationTable(parameters []config.StepParameters) string {
