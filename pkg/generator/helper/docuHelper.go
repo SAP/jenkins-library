@@ -81,8 +81,10 @@ func generateStepDocumentation(stepData config.StepData, docuHelperData DocuHelp
 	//create the file path for the template and open it.
 	docTemplateFilePath := fmt.Sprintf("%v%v.md", docuHelperData.DocTemplatePath, stepData.Metadata.Name)
 	docTemplate, err := docuHelperData.OpenDocTemplateFile(docTemplateFilePath)
-	defer docTemplate.Close()
 
+	if docTemplate != nil {
+		defer docTemplate.Close()
+	}
 	//check if there is an error during opening the template (true : skip docu generation for this meta data file)
 	if err != nil {
 		return fmt.Errorf("error occured: %v", err)
@@ -316,34 +318,58 @@ func appendSecretsToParameters(stepData *config.StepData) {
 	}
 }
 
-func getDocuContextDefaults(m *config.StepData) map[string]string {
+func getDocuContextDefaults(step *config.StepData) map[string]string {
 
 	var result map[string]string = make(map[string]string)
 
 	//creates the context defaults for containers
+	addContainerContent(step, result)
+	//creates the context defaults for sidecars
+	addSidecarContent(step, result)
+	//creates the context defaults for resources
+	addStashContent(step, result)
+
+	return result
+}
+
+func addContainerContent(m *config.StepData, result map[string]string) {
+	//creates the context defaults for containers
 	if len(m.Spec.Containers) > 0 {
 		keys := []string{}
 		resources := map[string][]string{}
+		bEmptyKey := true
 		for _, container := range m.Spec.Containers {
+
 			key := ""
 			if len(container.Conditions) > 0 {
 				key = fmt.Sprintf("%v=%v", container.Conditions[0].Params[0].Name, container.Conditions[0].Params[0].Value)
 			}
-			if len(container.Command) > 0 {
-				keys = append(keys, key+"_containerCommand")
+
+			if bEmptyKey || len(key) > 0 {
+
+				if len(container.Command) > 0 {
+					keys = append(keys, key+"_containerCommand")
+				}
+				if m.Metadata.Name == "dockerExecuteOnKubernetes" {
+					keys = append(keys, key+"_containerName")
+				}
+				keys = append(keys, key+"_containerShell")
+				keys = append(keys, key+"_dockerEnvVars")
+				keys = append(keys, key+"_dockerImage")
+				keys = append(keys, key+"_dockerName")
+				keys = append(keys, key+"_dockerPullImage")
+				keys = append(keys, key+"_dockerWorkspace")
+
 			}
-			if m.Metadata.Name == "dockerExecuteOnKubernetes" {
-				keys = append(keys, key+"_containerName")
+
+			if len(container.Conditions) == 0 {
+				bEmptyKey = false
 			}
-			keys = append(keys, key+"_containerShell")
-			keys = append(keys, key+"_dockerEnvVars")
-			keys = append(keys, key+"_dockerImage")
-			keys = append(keys, key+"_dockerName")
-			keys = append(keys, key+"_dockerPullImage")
-			keys = append(keys, key+"_dockerWorkspace")
 
 			workingDir := ifThenElse(len(container.WorkingDir) > 0, container.WorkingDir, "\\<empty\\>")
-			resources[key+"_containerShell"] = append(resources[key+"_containerShell"], container.Shell)
+			if len(container.Shell) > 0 {
+				resources[key+"_containerShell"] = append(resources[key+"_containerShell"], container.Shell)
+			}
 			resources[key+"_dockerName"] = append(resources[key+"_dockerName"], container.Name)
 
 			//Only for Step: dockerExecuteOnKubernetes
@@ -358,7 +384,6 @@ func getDocuContextDefaults(m *config.StepData) map[string]string {
 			if len(container.ImagePullPolicy) > 0 {
 				resources[key+"_dockerPullImage"] = []string{fmt.Sprintf("%v", container.ImagePullPolicy != "Never")}
 			}
-
 			//Different when key is set (Param.Name + Param.Value)
 			if len(key) > 0 {
 				resources[key+"_dockerEnvVars"] = append(resources[key+"_dockerEnvVars"], fmt.Sprintf("%v:\\[%v\\]", key, strings.Join(envVarsAsStringSlice(container.EnvVars), "")))
@@ -369,8 +394,6 @@ func getDocuContextDefaults(m *config.StepData) map[string]string {
 				resources[key+"_dockerImage"] = append(resources[key+"_dockerImage"], container.Image)
 				resources[key+"_dockerWorkspace"] = append(resources[key+"_dockerWorkspace"], workingDir)
 			}
-			// Ready command not relevant for main runtime container so far
-			//p[] = container.ReadyCommand
 		}
 
 		for _, key := range keys {
@@ -384,7 +407,8 @@ func getDocuContextDefaults(m *config.StepData) map[string]string {
 			}
 		}
 	}
-
+}
+func addSidecarContent(m *config.StepData, result map[string]string) {
 	//creates the context defaults for sidecars
 	if len(m.Spec.Sidecars) > 0 {
 		if len(m.Spec.Sidecars[0].Command) > 0 {
@@ -400,12 +424,9 @@ func getDocuContextDefaults(m *config.StepData) map[string]string {
 		result["sidecarWorkspace"] = m.Spec.Sidecars[0].WorkingDir
 	}
 
-	// not filled for now since this is not relevant in Kubernetes case
-	//p["dockerOptions"] = container.
-	//p["dockerVolumeBind"] = container.
-	//root["containerPortMappings"] = m.Spec.Sidecars[0].
-	//root["sidecarOptions"] = m.Spec.Sidecars[0].
-	//root["sidecarVolumeBind"] = m.Spec.Sidecars[0].
+}
+
+func addStashContent(m *config.StepData, result map[string]string) {
 
 	//creates the context defaults for resources
 	if len(m.Spec.Inputs.Resources) > 0 {
@@ -437,8 +458,6 @@ func getDocuContextDefaults(m *config.StepData) map[string]string {
 			}
 		}
 	}
-
-	return result
 }
 
 func envVarsAsStringSlice(envVars []config.EnvVar) []string {

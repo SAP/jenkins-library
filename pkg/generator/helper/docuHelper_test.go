@@ -88,6 +88,63 @@ func configOpenDocTemplateFileMock(docTemplateFilePath string) (io.ReadCloser, e
 	}
 }
 
+var stepData config.StepData = config.StepData{
+	Spec: config.StepSpec{
+		Inputs: config.StepInputs{
+			Parameters: []config.StepParameters{
+				{Name: "param0", Scope: []string{"GENERAL"}, Type: "string", Default: "val0"},
+			},
+			Resources: []config.StepResources{
+				{Name: "resource0", Type: "stash", Description: "val0"},
+				{Name: "resource1", Type: "stash", Description: "val1"},
+				{Name: "resource2", Type: "stash", Description: "val2"},
+			},
+		},
+		Containers: []config.Container{
+			{Name: "container0", Image: "image", WorkingDir: "workingdir", Shell: "shell",
+				EnvVars: []config.EnvVar{
+					{"envar.name0", "envar.value0"},
+				},
+			},
+			{Name: "container1", Image: "image", WorkingDir: "workingdir",
+				EnvVars: []config.EnvVar{
+					{"envar.name1", "envar.value1"},
+				},
+			},
+			{Name: "container2a", Command: []string{"command"}, ImagePullPolicy: "pullpolicy", Image: "image", WorkingDir: "workingdir",
+				EnvVars: []config.EnvVar{
+					{"envar.name2a", "envar.value2a"}},
+				Conditions: []config.Condition{
+					{Params: []config.Param{
+						{"param.name2a", "param.value2a"},
+					}},
+				},
+			},
+			{Name: "container2b", Image: "image", WorkingDir: "workingdir",
+				EnvVars: []config.EnvVar{
+					{"envar.name2b", "envar.value2b"},
+				},
+				Conditions: []config.Condition{
+					{Params: []config.Param{
+						{"param.name2b", "param.value2b"},
+					}},
+				},
+			},
+		},
+		Sidecars: []config.Container{
+			{Name: "sidecar0", Command: []string{"command"}, ImagePullPolicy: "pullpolicy", Image: "image", WorkingDir: "workingdir", ReadyCommand: "readycommand",
+				EnvVars: []config.EnvVar{
+					{"envar.name3", "envar.value3"}},
+				Conditions: []config.Condition{
+					{Params: []config.Param{
+						{"param.name0", "param.value0"},
+					}},
+				},
+			},
+		},
+	},
+}
+
 var resultDocumentContent string
 
 func docFileWriterMock(docTemplateFilePath string, data []byte, perm os.FileMode) error {
@@ -122,5 +179,140 @@ func TestGenerateStepDocumentationError(t *testing.T) {
 
 	t.Run("Docu Generation Success", func(t *testing.T) {
 		assert.Error(t, err, fmt.Sprintf("Error occured: %v\n", err))
+	})
+}
+
+func TestReadAndAdjustTemplate(t *testing.T) {
+
+	t.Run("Success Case", func(t *testing.T) {
+
+		tmpl, _ := configOpenDocTemplateFileMock("testStep.md")
+		content := readAndAdjustTemplate(tmpl)
+
+		cases := []struct {
+			x, y string
+		}{
+			{"{{docGenStepName .}}", "${docGenStepName}"},
+			{"{{docGenConfiguration .}}", "${docGenConfiguration}"},
+			{"{{docGenParameters .}}", "${docGenParameters}"},
+			{"{{docGenDescription .}}", "${docGenDescription}"},
+			{"", "${docJenkinsPluginDependencies}"},
+		}
+		for _, c := range cases {
+			if len(c.x) > 0 {
+				assert.Contains(t, content, c.x)
+			}
+			if len(c.y) > 0 {
+				assert.NotContains(t, content, c.y)
+			}
+		}
+	})
+}
+
+func TestAddContainerContent(t *testing.T) {
+
+	t.Run("Success Case", func(t *testing.T) {
+
+		var m map[string]string = make(map[string]string)
+		addContainerContent(&stepData, m)
+		assert.Equal(t, 7, len(m))
+
+		cases := []struct {
+			x, want string
+		}{
+			{"containerCommand", "command"},
+			{"containerShell", "shell"},
+			{"dockerEnvVars", "envar.name0=envar.value0, envar.name1=envar.value1 <br>param.name2a=param.value2a:\\[envar.name2a=envar.value2a\\] <br>param.name2b=param.value2b:\\[envar.name2b=envar.value2b\\]"},
+			{"dockerImage", "image, image <br>param.name2a=param.value2a:image <br>param.name2b=param.value2b:image"},
+			{"dockerName", "container0, container1 <br>container2a <br>container2b <br>"},
+			{"dockerPullImage", "true"},
+			{"dockerWorkspace", "workingdir, workingdir <br>param.name2a=param.value2a:workingdir <br>param.name2b=param.value2b:workingdir"},
+		}
+		for _, c := range cases {
+			assert.Contains(t, m, c.x)
+			assert.True(t, len(m[c.x]) > 0)
+			assert.True(t, strings.Contains(m[c.x], c.want), fmt.Sprintf("%v:%v", c.x, m[c.x]))
+		}
+	})
+}
+func TestAddSidecarContent(t *testing.T) {
+
+	t.Run("Success Case", func(t *testing.T) {
+
+		var m map[string]string = make(map[string]string)
+		addSidecarContent(&stepData, m)
+		assert.Equal(t, 7, len(m))
+
+		cases := []struct {
+			x, want string
+		}{
+			{"sidecarCommand", "command"},
+			{"sidecarEnvVars", "envar.name3=envar.value3"},
+			{"sidecarImage", "image"},
+			{"sidecarName", "sidecar0"},
+			{"sidecarPullImage", "true"},
+			{"sidecarReadyCommand", "readycommand"},
+			{"sidecarWorkspace", "workingdir"},
+		}
+		for _, c := range cases {
+			assert.Contains(t, m, c.x)
+			assert.True(t, len(m[c.x]) > 0)
+			assert.Equal(t, c.want, m[c.x], fmt.Sprintf("%v:%v", c.x, m[c.x]))
+		}
+	})
+}
+
+func TestAddStashContent(t *testing.T) {
+
+	t.Run("Success Case", func(t *testing.T) {
+
+		var m map[string]string = make(map[string]string)
+		addStashContent(&stepData, m)
+		assert.Equal(t, 1, len(m))
+
+		cases := []struct {
+			x, want string
+		}{
+			{"stashContent", "resource0, resource1, resource2"},
+		}
+		for _, c := range cases {
+			assert.Contains(t, m, c.x)
+			assert.True(t, len(m[c.x]) > 0)
+			assert.True(t, strings.Contains(m[c.x], c.want), fmt.Sprintf("%v:%v", c.x, m[c.x]))
+		}
+	})
+}
+
+func TestGetDocuContextDefaults(t *testing.T) {
+
+	t.Run("Success Case", func(t *testing.T) {
+
+		m := getDocuContextDefaults(&stepData)
+		assert.Equal(t, 15, len(m))
+
+		cases := []struct {
+			x, want string
+		}{
+			{"stashContent", "resource0, resource1, resource2"},
+			{"sidecarCommand", "command"},
+			{"sidecarEnvVars", "envar.name3=envar.value3"},
+			{"sidecarImage", "image"},
+			{"sidecarName", "sidecar0"},
+			{"sidecarPullImage", "true"},
+			{"sidecarReadyCommand", "readycommand"},
+			{"sidecarWorkspace", "workingdir"},
+			{"containerCommand", "command"},
+			{"containerShell", "shell"},
+			{"dockerEnvVars", "envar.name0=envar.value0, envar.name1=envar.value1 <br>param.name2a=param.value2a:\\[envar.name2a=envar.value2a\\] <br>param.name2b=param.value2b:\\[envar.name2b=envar.value2b\\]"},
+			{"dockerImage", "image, image <br>param.name2a=param.value2a:image <br>param.name2b=param.value2b:image"},
+			{"dockerName", "container0, container1 <br>container2a <br>container2b <br>"},
+			{"dockerPullImage", "true"},
+			{"dockerWorkspace", "workingdir, workingdir <br>param.name2a=param.value2a:workingdir <br>param.name2b=param.value2b:workingdir"},
+		}
+		for _, c := range cases {
+			assert.Contains(t, m, c.x)
+			assert.True(t, len(m[c.x]) > 0)
+			assert.True(t, strings.Contains(m[c.x], c.want), fmt.Sprintf("%v:%v", c.x, m[c.x]))
+		}
 	})
 }
