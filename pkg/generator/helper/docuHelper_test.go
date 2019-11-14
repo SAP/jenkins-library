@@ -92,7 +92,28 @@ var stepData config.StepData = config.StepData{
 	Spec: config.StepSpec{
 		Inputs: config.StepInputs{
 			Parameters: []config.StepParameters{
-				{Name: "param0", Scope: []string{"GENERAL"}, Type: "string", Default: "val0"},
+				{Name: "param0", Scope: []string{"GENERAL"}, Type: "string", Default: "default0",
+					Conditions: []config.Condition{
+						{Params: []config.Param{
+							{"name0a", "val0a"},
+							{"name0b", "val0b"},
+						},
+						}},
+				},
+				{Name: "param1", Scope: []string{"GENERAL"}, Type: "string", Default: "default1",
+					Conditions: []config.Condition{
+						{Params: []config.Param{
+							{"name1a", "val1a"},
+						},
+						}},
+				},
+				{Name: "param1", Scope: []string{"GENERAL"}, Type: "string", Default: "default1",
+					Conditions: []config.Condition{
+						{Params: []config.Param{
+							{"name1b", "val1b"},
+						},
+						}},
+				},
 			},
 			Resources: []config.StepResources{
 				{Name: "resource0", Type: "stash", Description: "val0"},
@@ -313,6 +334,51 @@ func TestGetDocuContextDefaults(t *testing.T) {
 			assert.Contains(t, m, c.x)
 			assert.True(t, len(m[c.x]) > 0)
 			assert.True(t, strings.Contains(m[c.x], c.want), fmt.Sprintf("%v:%v", c.x, m[c.x]))
+		}
+	})
+}
+
+func TestAddNewParameterWithCondition(t *testing.T) {
+
+	t.Run("Success Case", func(t *testing.T) {
+
+		var m map[string]string = make(map[string]string)
+
+		cases := []struct {
+			x, want string
+			i       int
+		}{
+			{"param0", "name0a=val0a:default0 name0b=val0b:default0", 0},
+			{"param1", "name1a=val1a:default1", 1},
+		}
+		for _, c := range cases {
+
+			addNewParameterWithCondition(stepData.Spec.Inputs.Parameters[c.i], m)
+			assert.Contains(t, m, c.x)
+			assert.True(t, len(m[c.x]) > 0)
+			assert.True(t, strings.Contains(m[c.x], c.want), fmt.Sprintf("%v", m[c.x]))
+		}
+	})
+}
+
+func TestAddExistingParameterWithCondition(t *testing.T) {
+
+	t.Run("Success Case", func(t *testing.T) {
+
+		var m map[string]string = make(map[string]string)
+		addNewParameterWithCondition(stepData.Spec.Inputs.Parameters[1], m)
+
+		cases := []struct {
+			x, want string
+		}{
+			{"param1", "name1a=val1a:default1  <br> name1b=val1b:default1"},
+		}
+		for _, c := range cases {
+
+			addExistingParameterWithCondition(stepData.Spec.Inputs.Parameters[2], m)
+			assert.Contains(t, m, c.x)
+			assert.True(t, len(m[c.x]) > 0)
+			assert.True(t, strings.Contains(m[c.x], c.want), fmt.Sprintf("%v", m[c.x]))
 		}
 	})
 }
