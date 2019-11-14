@@ -65,7 +65,7 @@ void call(Map parameters = [:]) {
         }
 
         if (!(configuration.url =~ /^https:\/\/.*\/sap\/opu\/odata\/sap\/MANAGE_GIT_REPOSITORY$/).find()) {
-            error "[${STEP_NAME}] Error: Please provide a valid URL"
+            error "[${STEP_NAME}] Error: Please provide a valid URL matching to: ^https://.*/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY\$"
         }
         String urlString = configuration.url + '/Pull'
         echo "[${STEP_NAME}] General Parameters: URL = \"${urlString}\", repositoryName = \"${configuration.repositoryName}\""

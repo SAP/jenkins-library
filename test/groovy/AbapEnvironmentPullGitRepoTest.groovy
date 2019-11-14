@@ -162,13 +162,13 @@ public class AbapEnvironmentPullGitRepoTest extends BasePiperTest {
     @Test
     public void rejectHttpUrl() {
         thrown.expect(Exception)
-        thrown.expectMessage("[abapEnvironmentPullGitRepo] Error: Please provide a valid URL")
+        thrown.expectMessage("[abapEnvironmentPullGitRepo] Error: Please provide a valid URL matching to: ^https://.*/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY\$")
         stepRule.step.abapEnvironmentPullGitRepo(script: nullScript, url: 'http://1234-abcd-5678-efgh-ijk.abap.eu10.hana.ondemand.com/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY', repositoryName: '/DMO/REPO', credentialsId: 'test_credentialsId')
     }
     @Test
     public void rejectUrlWithSlash() {
         thrown.expect(Exception)
-        thrown.expectMessage("[abapEnvironmentPullGitRepo] Error: Please provide a valid URL")
+        thrown.expectMessage("[abapEnvironmentPullGitRepo] Error: Please provide a valid URL matching to: ^https://.*/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY\$")
         stepRule.step.abapEnvironmentPullGitRepo(script: nullScript, url: 'https://1234-abcd-5678-efgh-ijk.abap.eu10.hana.ondemand.com/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY/', repositoryName: '/DMO/REPO', credentialsId: 'test_credentialsId')
     }
 
