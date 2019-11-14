@@ -38,7 +38,6 @@ general:
   githubServerUrl: 'https://github.com'
   gitSshKeyCredentialsId: '' #needed to allow sshagent to run with local ssh key
   jenkinsKubernetes:
-    jnlpAgent: 's4sdk/jenkins-agent-k8s:latest'
     securityContext:
     # Setting security context globally is currently not working with jaas
     #  runAsUser: 1000
@@ -157,9 +156,12 @@ steps:
   cloudFoundryDeploy:
     cloudFoundry:
       apiEndpoint: 'https://api.cf.eu10.hana.ondemand.com'
+    apiParameters: ''
+    loginParameters: ''
     deployTool: 'cf_native'
     deployType: 'standard'
     keepOldInstance: false
+    cfNativeDeployParameters: ''
     mtaDeployParameters: '-f'
     mtaExtensionDescriptor: ''
     mtaPath: ''
@@ -169,10 +171,10 @@ steps:
       - 'deployDescriptor'
       - 'pipelineConfigAndTests'
     cf_native:
-      dockerImage: 's4sdk/docker-cf-cli'
+      dockerImage: 'ppiper/cf-cli'
       dockerWorkspace: '/home/piper'
     mtaDeployPlugin:
-      dockerImage: 's4sdk/docker-cf-cli'
+      dockerImage: 'ppiper/cf-cli'
       dockerWorkspace: '/home/piper'
   containerExecuteStructureTests:
     containerCommand: '/busybox/tail -f /dev/null'
@@ -183,6 +185,14 @@ steps:
     stashContent:
       - 'tests'
     testReportFilePath: 'cst-report.json'
+  cloudFoundryCreateService:
+    cloudFoundry:
+      apiEndpoint: 'https://api.cf.eu10.hana.ondemand.com'
+      serviceManifest: 'service-manifest.yml'
+    dockerImage: 'ppiper/cf-cli'
+    dockerWorkspace: '/home/piper'
+    stashContent:
+      - 'deployDescriptor'
   detectExecuteScan:
     detect:
       projectVersion: '1'
@@ -324,7 +334,7 @@ steps:
     mtaJarLocation: '/opt/sap/mta/lib/mta.jar'
     dockerImage: 'ppiper/mta-archive-builder'
   neoDeploy:
-    dockerImage: 's4sdk/docker-neo-cli'
+    dockerImage: 'ppiper/neo-cli'
     deployMode: 'mta'
     warAction: 'deploy'
     extensions: []
@@ -399,6 +409,13 @@ steps:
         && mkdir -p \$GOPATH/src/${config.whitesource.projectName.substring(0, config.whitesource.projectName.lastIndexOf('/'))}
         && ln -s \$(pwd) \$GOPATH/src/${config.whitesource.projectName}
         && cd \$GOPATH/src/${config.whitesource.projectName} && dep ensure
+    dub:
+      buildDescriptorFile: './dub.json'
+      dockerImage: 'buildpack-deps:stretch-curl'
+      dockerWorkspace: '/home/dub'
+      stashContent:
+        - 'buildDescriptor'
+        - 'checkmarx'
     sbt:
       buildDescriptorFile: './build.sbt'
       dockerImage: 'hseeberger/scala-sbt:8u181_2.12.8_1.2.8'
@@ -429,25 +446,31 @@ steps:
     noDefaultExludes: []
   pipelineStashFilesBeforeBuild:
     stashIncludes:
-      buildDescriptor: '**/pom.xml, **/.mvn/**, **/assembly.xml, **/.swagger-codegen-ignore, **/package.json, **/requirements.txt, **/setup.py, **/mta*.y*ml, **/.npmrc, Dockerfile, .hadolint.yaml, **/VERSION, **/version.txt, **/Gopkg.*, **/dub.json, **/dub.sdl, **/build.sbt, **/sbtDescriptor.json, **/project/*'
+      buildDescriptor: '**/pom.xml, **/.mvn/**, **/assembly.xml, **/.swagger-codegen-ignore, **/package.json, **/requirements.txt, **/setup.py, **/mta*.y*ml, **/.npmrc, Dockerfile, .hadolint.yaml, **/VERSION, **/version.txt, **/Gopkg.*, **/dub.json, **/dub.sdl, **/build.sbt, **/sbtDescriptor.json, **/project/*, **/ui5.yaml, **/ui5.yml'
       deployDescriptor: '**/manifest*.y*ml, **/*.mtaext.y*ml, **/*.mtaext, **/xs-app.json, helm/**, *.y*ml'
       git: '.git/**'
-      opa5: '**/*.*'
       opensourceConfiguration: '**/srcclr.yml, **/vulas-custom.properties, **/.nsprc, **/.retireignore, **/.retireignore.json, **/.snyk, **/wss-unified-agent.config, **/vendor/**/*'
       pipelineConfigAndTests: '.pipeline/**'
       securityDescriptor: '**/xs-security.json'
-      tests: '**/pom.xml, **/*.json, **/*.xml, **/src/**, **/node_modules/**, **/specs/**, **/env/**, **/*.js, **/tests/**'
+      tests: '**/pom.xml, **/*.json, **/*.xml, **/src/**, **/node_modules/**, **/specs/**, **/env/**, **/*.js, **/tests/**, **/*.html, **/*.css, **/*.properties'
     stashExcludes:
       buildDescriptor: '**/node_modules/**/package.json'
       deployDescriptor: ''
       git: ''
-      opa5: ''
       opensourceConfiguration: ''
       pipelineConfigAndTests: ''
       securityDescriptor: ''
       tests: ''
     noDefaultExludes:
       - 'git'
+  piperPublishWarnings:
+    parserId: piper
+    parserName: Piper
+    parserPattern: '\[(INFO|WARNING|ERROR)\] (.*) \(([^) ]*)\/([^) ]*)\)'
+    parserScript: 'return builder.guessSeverity(matcher.group(1)).setMessage(matcher.group(2)).setModuleName(matcher.group(3)).setType(matcher.group(4)).buildOptional()'
+    recordIssuesSettings:
+      blameDisabled: true
+      enabledForFailure: true
   seleniumExecuteTests:
     buildTool: 'npm'
     containerPortMappings:
@@ -491,8 +514,12 @@ steps:
     dockerImage: 'maven:3.5-jdk-8'
     instance: 'SonarCloud'
     options: []
-    pullRequestProvider: 'github'
-    sonarScannerDownloadUrl: 'https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-3.3.0.1492-linux.zip'
+    pullRequestProvider: 'GitHub'
+    sonarScannerDownloadUrl: 'https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.2.0.1873-linux.zip'
+  spinnakerTriggerPipeline:
+    certFileCredentialsId: 'spinnaker-client-certificate'
+    keyFileCredentialsId: 'spinnaker-client-key'
+    timeout: 60
   testsPublishResults:
     failOnError: false
     junit:
@@ -507,7 +534,7 @@ steps:
       archive: false
       active: false
     cobertura:
-      pattern: '**/target/coverage/cobertura-coverage.xml'
+      pattern: '**/target/coverage/**/cobertura-coverage.xml'
       onlyStableBuilds: true
       allowEmptyResults: true
       archive: false
@@ -532,6 +559,10 @@ steps:
       active: false
   checkChangeInDevelopment:
       failIfStatusIsNotInDevelopment: true
+  tmsUpload:
+    namedUser: 'Piper-Pipeline'
+    stashContent:
+      - 'buildResult'
   transportRequestCreate:
       developmentSystemId: null
       verbose: false
@@ -561,3 +592,14 @@ steps:
     nodeLabel: ''
     stashContent:
       - 'pipelineConfigAndTests'
+  xsDeploy:
+    credentialsId: 'XS'
+    deployIdLogPattern: '^.*"xs bg-deploy -i (.*) -a .*".*$'
+    loginOpts: ''
+    deployOpts: ''
+    docker:
+      dockerImage: ''
+      dockerPullImage: false
+    mode: 'DEPLOY'
+    action: 'NONE'
+    xsSessionFile: '.xsconfig'

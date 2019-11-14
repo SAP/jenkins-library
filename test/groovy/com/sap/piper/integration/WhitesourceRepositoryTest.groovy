@@ -33,7 +33,7 @@ class WhitesourceRepositoryTest extends BasePiperTest {
 
     @Before
     void init() throws Exception {
-        nullScript.env['HTTP_PROXY'] = "http://proxy.wdf.sap.corp:8080"
+        nullScript.env['HTTP_PROXY'] = "http://proxy.org:8080"
 
         repository = new WhitesourceRepository(nullScript, [whitesource: [serviceUrl: "http://some.host.whitesource.com/api/"]])
         LibraryLoadingTestExecutionListener.prepareObjectInterceptors(repository)
@@ -253,7 +253,7 @@ class WhitesourceRepositoryTest extends BasePiperTest {
                 contentType: 'APPLICATION_JSON',
                 requestBody: requestBody,
                 quiet      : false,
-                proxy      : "http://proxy.wdf.sap.corp:8080"
+                proxy      : "http://proxy.org:8080"
             ]
         ))
     }
@@ -278,7 +278,7 @@ class WhitesourceRepositoryTest extends BasePiperTest {
                 contentType: 'APPLICATION_JSON',
                 requestBody: requestBody,
                 quiet      : false,
-                proxy      : "http://proxy.wdf.sap.corp:8080",
+                proxy      : "http://proxy.org:8080",
                 userKey    : "4711"
             ]
         ))
@@ -286,7 +286,7 @@ class WhitesourceRepositoryTest extends BasePiperTest {
 
     @Test
     void testHttpWhitesourceInternalCallUserKey() {
-        def config = [whitesource: [serviceUrl: "http://mo-323123123.sap.corp/some", userKey: "4711"], verbose: false]
+        def config = [whitesource: [serviceUrl: "http://test.org/some", userKey: "4711"], verbose: false]
         def requestBody = "{ \"someJson\" : { \"someObject\" : \"abcdef\" } }"
 
         def requestParams
@@ -328,7 +328,7 @@ class WhitesourceRepositoryTest extends BasePiperTest {
 
     @Test
     void testFetchReportForProduct() {
-        repository.config.putAll([whitesource: [serviceUrl: "http://mo-323123123.sap.corp/some", productToken: "4712", userKey: "4711"], verbose: true])
+        repository.config.putAll([whitesource: [serviceUrl: "http://test.org/some", productToken: "4712", userKey: "4711"], verbose: true])
         def requestBody = "{ \"requestType\": \"getProductRiskReport\", \"productToken\": \"${repository.config.whitesource.productToken}\" }"
 
         def requestParams

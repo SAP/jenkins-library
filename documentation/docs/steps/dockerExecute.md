@@ -55,7 +55,7 @@ dockerExecute(
         sidecarImage: 'selenium/standalone-chrome',
         sidecarName: 'selenium',
 ) {
-    git url: 'https://github.wdf.sap.corp/XXXXX/WebDriverIOTest.git'
+    git url: 'https://github.com/XXXXX/WebDriverIOTest.git'
     sh '''npm install
           node index.js
     '''

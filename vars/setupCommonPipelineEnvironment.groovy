@@ -60,10 +60,13 @@ void call(Map parameters = [:]) {
 private loadConfigurationFromFile(script, String configFile) {
 
     String defaultYmlConfigFile = '.pipeline/config.yml'
+    String defaultYamlConfigFile = '.pipeline/config.yaml'
 
     if (configFile) {
         script.commonPipelineEnvironment.configuration = readYaml(file: configFile)
     } else if (fileExists(defaultYmlConfigFile)) {
         script.commonPipelineEnvironment.configuration = readYaml(file: defaultYmlConfigFile)
+    } else if (fileExists(defaultYamlConfigFile)) {
+        script.commonPipelineEnvironment.configuration = readYaml(file: defaultYamlConfigFile)
     }
 }

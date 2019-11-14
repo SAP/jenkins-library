@@ -8,6 +8,11 @@ String groovyObjectToPrettyJsonString(object) {
 }
 
 @NonCPS
+String groovyObjectToJsonString(object) {
+    return groovy.json.JsonOutput.toJson(object)
+}
+
+@NonCPS
 def jsonStringToGroovyObject(text) {
     return new groovy.json.JsonSlurperClassic().parseText(text)
 }

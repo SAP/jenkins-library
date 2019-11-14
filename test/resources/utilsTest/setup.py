@@ -6,7 +6,7 @@ setup(
 
     description='This is a python package to handle some ci-connect payload parts',
 
-    url='https://github.wdf.sap.corp/sap-production/py_connect',
+    url='https://github.com/sap-production/py_connect',
 
     # Author details
     author='Some Author',

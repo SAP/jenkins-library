@@ -4,7 +4,7 @@ import com.sap.piper.ConfigurationHelper
 import com.sap.piper.GenerateDocumentation
 import com.sap.piper.GitUtils
 import com.sap.piper.Utils
-import groovy.text.SimpleTemplateEngine
+import groovy.text.GStringTemplateEngine
 import groovy.transform.Field
 
 @Field String STEP_NAME = getClass().getName()
@@ -14,6 +14,12 @@ import groovy.transform.Field
 @Field Set STEP_CONFIG_KEYS = [
     /** @see dockerExecute */
     'dockerImage',
+    /** @see dockerExecute*/
+    'dockerEnvVars',
+    /** @see dockerExecute */
+    'dockerOptions',
+    /** @see dockerExecute*/
+    'dockerWorkspace',
     /**
      * Defines the behavior, in case tests fail.
      * @possibleValues `true`, `false`
@@ -103,13 +109,16 @@ void call(Map parameters = [:]) {
         dockerExecute(
             script: script,
             dockerImage: config.dockerImage,
+            dockerEnvVars: config.dockerEnvVars,
+            dockerOptions: config.dockerOptions,
+            dockerWorkspace: config.dockerWorkspace,
             stashContent: config.stashContent
         ) {
             sh "NPM_CONFIG_PREFIX=~/.npm-global ${config.newmanInstallCommand}"
             for(String collection : collectionList){
                 def collectionDisplayName = collection.toString().replace(File.separatorChar,(char)'_').tokenize('.').first()
                 // resolve templates
-                def command = SimpleTemplateEngine.newInstance()
+                def command = GStringTemplateEngine.newInstance()
                     .createTemplate(config.newmanRunCommand)
                     .make([
                         config: config.plus([newmanCollection: collection]),

@@ -1,9 +1,12 @@
+import com.sap.piper.JsonUtils
+
 import static com.sap.piper.Prerequisites.checkScript
 
 import com.sap.piper.GenerateDocumentation
 import com.sap.piper.Utils
 import com.sap.piper.ConfigurationHelper
 
+import groovy.text.GStringTemplateEngine
 import groovy.transform.Field
 
 @Field String STEP_NAME = getClass().getName()
@@ -39,7 +42,10 @@ import groovy.transform.Field
     'githubOrg',
     /** Allows to overwrite the GitHub repository.*/
     'githubRepo',
-    /** Allows to specify the content which will appear for the release.*/
+    /** Allows to specify the content which will appear for the release.
+     * It is possible to define it as Groovy template as well in order to bring in dynamic information.
+     * Following information can be used: everything contained in `config` as well as information from `commonPipelineEnvironment`.
+     */
     'releaseBodyHeader',
     /** Defines the version number which will be written as tag as well as release name.*/
     'version'
@@ -84,7 +90,18 @@ void call(Map parameters = [:]) {
         new Utils().pushToSWA([step: STEP_NAME], config)
 
         withCredentials([string(credentialsId: config.githubTokenCredentialsId, variable: 'TOKEN')]) {
-            def releaseBody = config.releaseBodyHeader?"${config.releaseBodyHeader}<br />":''
+
+            def releaseBodyHeader = ''
+            if (config.releaseBodyHeader) {
+                releaseBodyHeader = GStringTemplateEngine.newInstance()
+                    .createTemplate(config.releaseBodyHeader)
+                    .make([
+                        config: config,
+                        commonPipelineEnvironment: script.commonPipelineEnvironment
+                    ]).toString()
+                releaseBodyHeader += '<br />'
+            }
+            def releaseBody = releaseBodyHeader
             def content = getLastRelease(config, TOKEN)
             if (config.addClosedIssues)
                 releaseBody += addClosedIssue(config, TOKEN, content.published_at)
@@ -98,7 +115,7 @@ void call(Map parameters = [:]) {
 Map getLastRelease(config, TOKEN){
     def result = [:]
 
-    def response = httpRequest "${config.githubApiUrl}/repos/${config.githubOrg}/${config.githubRepo}/releases/latest?access_token=${TOKEN}"
+    def response = httpRequest url: "${config.githubApiUrl}/repos/${config.githubOrg}/${config.githubRepo}/releases/latest?access_token=${TOKEN}", validResponseCodes: '100:500'
     if (response.status == 200) {
         result = readJSON text: response.content
     } else {
@@ -146,9 +163,15 @@ String addDeltaToLastRelease(config, latestTag){
 }
 
 void postNewRelease(config, TOKEN, releaseBody){
-    releaseBody = releaseBody.replace('"', '\\"')
-    //write release information
-    def data = "{\"tag_name\": \"${config.version}\",\"target_commitish\": \"master\",\"name\": \"${config.version}\",\"body\": \"${releaseBody}\",\"draft\": false,\"prerelease\": false}"
+    Map messageBody = [
+        tag_name: "${config.version}",
+        target_commitish: 'master',
+        name: "${config.version}",
+        body: releaseBody,
+        draft: false,
+        prerelease: false
+    ]
+    def data =  new JsonUtils().groovyObjectToJsonString(messageBody)
     try {
         httpRequest httpMode: 'POST', requestBody: data, url: "${config.githubApiUrl}/repos/${config.githubOrg}/${config.githubRepo}/releases?access_token=${TOKEN}"
     } catch (e) {

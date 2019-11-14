@@ -92,7 +92,7 @@ class MulticloudDeployTest extends BasePiperTest {
                     deployType: 'blue-green',
                     keepOldInstance: true,
                     cf_native: [
-                        dockerImage: 's4sdk/docker-cf-cli',
+                        dockerImage: 'ppiper/cf-cli',
                         dockerWorkspace: '/home/piper'
                     ]
                 ]

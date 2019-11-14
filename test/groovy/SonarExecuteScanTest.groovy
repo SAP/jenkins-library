@@ -130,7 +130,7 @@ class SonarExecuteScanTest extends BasePiperTest {
         binding.setVariable('env', [
             'CHANGE_ID': '42',
             'CHANGE_TARGET': 'master',
-            'BRANCH_NAME': 'feature/anything'
+            'CHANGE_BRANCH': 'feature/anything'
         ])
         nullScript.commonPipelineEnvironment.setGithubOrg('testOrg')
         //nullScript.commonPipelineEnvironment.setGithubRepo('testRepo')
@@ -146,7 +146,7 @@ class SonarExecuteScanTest extends BasePiperTest {
             containsString('-Dsonar.pullrequest.key=42'),
             containsString('-Dsonar.pullrequest.base=master'),
             containsString('-Dsonar.pullrequest.branch=feature/anything'),
-            containsString('-Dsonar.pullrequest.provider=github'),
+            containsString('-Dsonar.pullrequest.provider=GitHub'),
             containsString('-Dsonar.pullrequest.github.repository=testOrg/testRepo')
         )))
         assertJobStatusSuccess()
@@ -232,6 +232,23 @@ class SonarExecuteScanTest extends BasePiperTest {
 
         // asserts
         assertThat(jscr.shell, hasItem(containsString('-Dsonar.organization=TestOrg-github')))
+        assertJobStatusSuccess()
+    }
+
+    @Test
+    void testWithCustomTlsCertificates() throws Exception {
+        jsr.step.sonarExecuteScan(
+            script: nullScript,
+            juStabUtils: utils,
+            customTlsCertificateLinks: [
+                'http://url.to/my.cert'
+            ]
+        )
+        // asserts
+        assertThat(jscr.shell, allOf(
+            hasItem(containsString('wget --directory-prefix .certificates/ --no-verbose http://url.to/my.cert')),
+            hasItem(containsString('keytool -import -noprompt -storepass changeit -keystore .sonar-scanner/jre/lib/security/cacerts -alias \'my.cert\' -file \'.certificates/my.cert\''))
+        ))
         assertJobStatusSuccess()
     }
 }
