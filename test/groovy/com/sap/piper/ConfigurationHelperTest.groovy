@@ -101,11 +101,17 @@ class ConfigurationHelperTest {
     @Test
     void testConfigurationHelperLoadingStepDefaults() {
         Set filter = ['property2']
+        CommonPipelineEnvironment.getInstance().configuration = [
+                general: ['general': 'test', 'oldGeneral': 'test2'],
+                stages:  [testStage:['stage': 'test', 'oldStage': 'test2']],
+                steps:   [mock: [step: 'test', 'oldStep': 'test2']]
+            ]
+
         Map config = ConfigurationHelper.newInstance(mockScript, [property1: '27'])
             .loadStepDefaults()
-            .mixinGeneralConfig([configuration:[general: ['general': 'test', 'oldGeneral': 'test2']]], null, [general2: 'oldGeneral'])
-            .mixinStageConfig([configuration:[stages:[testStage:['stage': 'test', 'oldStage': 'test2']]]], 'testStage', null, [stage2: 'oldStage'])
-            .mixinStepConfig([configuration:[steps:[mock: [step: 'test', 'oldStep': 'test2']]]], null, [step2: 'oldStep'])
+            .mixinGeneralConfig(null, [general2: 'oldGeneral'])
+            .mixinStageConfig('testStage', null, [stage2: 'oldStage'])
+            .mixinStepConfig(null, [step2: 'oldStep'])
             .mixin([property1: '41', property2: '28', property3: '29'], filter)
             .use()
         // asserts

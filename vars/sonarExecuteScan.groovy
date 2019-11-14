@@ -173,7 +173,7 @@ void call(Map parameters = [:]) {
                     // see https://sonarcloud.io/documentation/analysis/pull-request/
                     config.options.add("sonar.pullrequest.key=${env.CHANGE_ID}")
                     config.options.add("sonar.pullrequest.base=${env.CHANGE_TARGET}")
-                    config.options.add("sonar.pullrequest.branch=${env.BRANCH_NAME}")
+                    config.options.add("sonar.pullrequest.branch=${env.CHANGE_BRANCH}")
                     config.options.add("sonar.pullrequest.provider=${config.pullRequestProvider}")
                     switch(config.pullRequestProvider){
                         case 'GitHub':
@@ -190,6 +190,9 @@ void call(Map parameters = [:]) {
             script: script,
             dockerImage: configuration.dockerImage
         ){
+            if(!script.fileExists('.git')) {
+                utils.unstash('git')
+            }
             worker(configuration)
         }
     }

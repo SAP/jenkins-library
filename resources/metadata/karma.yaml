@@ -52,8 +52,14 @@ spec:
         mandatory: true
   #outputs:
   containers:
-    - name: maven
-      image: maven:3.5-jdk-8
+    - name: karma
+      image: node:8-stretch
+      env:
+      - name: no_proxy
+        value: localhost,selenium,$no_proxy
+      - name: NO_PROXY
+        value: localhost,selenium,$NO_PROXY
+      workingDir: /home/node
       volumeMounts:
       - mountPath: /dev/shm
         name: dev-shm

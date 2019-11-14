@@ -121,7 +121,7 @@ private void checkBuildTool(config) {
             break
     }
     if (buildDescriptorPattern && !findFiles(glob: buildDescriptorPattern)) {
-        error "[${STEP_NAME}] buildTool configuration '${config.buildTool}' does not fit to your project, please set buildTool as genereal setting in your .pipeline/config.yml correctly, see also https://github.wdf.sap.corp/pages/ContinuousDelivery/piper-doc/configuration/"
+        error "[${STEP_NAME}] buildTool configuration '${config.buildTool}' does not fit to your project, please set buildTool as genereal setting in your .pipeline/config.yml correctly, see also https://sap.github.io/jenkins-library/configuration/"
     }
 }
 
@@ -133,42 +133,35 @@ private void initStashConfiguration (script, config) {
 
 private void setGitUrlsOnCommonPipelineEnvironment(script, String gitUrl) {
 
-    def gitPath = ''
-    if (gitUrl.startsWith('http')) {
-        def httpPattern = /(https?):\/\/([^:\/]+)(?:[:\d\/]*)(.*)/
-        def gitMatcher = gitUrl =~ httpPattern
-        if (!gitMatcher.hasGroup() && gitMatcher.groupCount() != 3) return
-        script.commonPipelineEnvironment.setGitSshUrl("git@${gitMatcher[0][2]}:${gitMatcher[0][3]}")
-        gitPath = gitMatcher[0][3]
+    def urlMatcher = gitUrl =~ /^((http|https|git|ssh):\/\/)?((.*)@)?([^:\/]+)(:([\d]*))?(\/?(.*))$/
+
+    def protocol = urlMatcher[0][2]
+    def auth = urlMatcher[0][4]
+    def host = urlMatcher[0][5]
+    def port = urlMatcher[0][7]
+    def path = urlMatcher[0][9]
+
+    if (protocol in ['http', 'https']) {
+        script.commonPipelineEnvironment.setGitSshUrl("git@${host}:${path}")
         script.commonPipelineEnvironment.setGitHttpsUrl(gitUrl)
-    } else if (gitUrl.startsWith('ssh')) {
-        //(.*)@([^:\/]*)(?:[:\d\/]*)(.*)
-        def httpPattern = /(.*)@([^:\/]*)(?:[:\d\/]*)(.*)/
-        def gitMatcher = gitUrl =~ httpPattern
-        if (!gitMatcher.hasGroup() && gitMatcher.groupCount() != 3) return
+    } else if (protocol in [ null, 'ssh', 'git']) {
         script.commonPipelineEnvironment.setGitSshUrl(gitUrl)
-        script.commonPipelineEnvironment.setGitHttpsUrl("https://${gitMatcher[0][2]}/${gitMatcher[0][3]}")
-        gitPath = gitMatcher[0][3]
-    }
-    else if (gitUrl.indexOf('@') > 0) {
-        script.commonPipelineEnvironment.setGitSshUrl(gitUrl)
-        gitPath = gitUrl.split(':')[1]
-        script.commonPipelineEnvironment.setGitHttpsUrl("https://${(gitUrl.split('@')[1]).replace(':', '/')}")
+        script.commonPipelineEnvironment.setGitHttpsUrl("https://${host}/${path}")
     }
 
-    List gitPathParts = gitPath.split('/')
+    List gitPathParts = path.replaceAll('.git', '').split('/')
     def gitFolder = 'N/A'
     def gitRepo = 'N/A'
     switch (gitPathParts.size()) {
         case 1:
-            gitRepo = gitPathParts[0].replaceAll('.git', '')
+            gitRepo = gitPathParts[0]
             break
         case 2:
             gitFolder = gitPathParts[0]
-            gitRepo = gitPathParts[1].replaceAll('.git', '')
+            gitRepo = gitPathParts[1]
             break
         case { it > 3 }:
-            gitRepo = gitPathParts[gitPathParts.size()-1].replaceAll('.git', '')
+            gitRepo = gitPathParts[gitPathParts.size()-1]
             gitPathParts.remove(gitPathParts.size()-1)
             gitFolder = gitPathParts.join('/')
             break

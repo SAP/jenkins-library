@@ -3,6 +3,9 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.RuleChain
+
+import com.sap.piper.CommonPipelineEnvironment
+
 import org.junit.Ignore
 
 import util.BasePiperTest
@@ -154,9 +157,10 @@ class ChecksPublishResultsTest extends BasePiperTest {
     @Test
     void testPublishWithChangedStepDefaultSettings() throws Exception {
         // pmd has been set to active: true in step configuration
-        stepRule.step.checksPublishResults(script: [commonPipelineEnvironment: [
-            configuration: [steps: [checksPublishResults: [pmd: [active: true]]]]
-        ]])
+        CommonPipelineEnvironment.getInstance().configuration =
+            [steps: [checksPublishResults: [pmd: [active: true]]]]
+
+        stepRule.step.checksPublishResults([script: nullScript])
 
         assertTrue("AnalysisPublisher options not set", publisherStepOptions['AnalysisPublisher'] != null)
         assertTrue("PmdPublisher options not set", publisherStepOptions['PmdPublisher'] != null)
