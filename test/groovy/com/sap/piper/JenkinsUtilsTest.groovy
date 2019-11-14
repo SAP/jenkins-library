@@ -4,7 +4,6 @@ import org.jenkinsci.plugins.workflow.steps.MissingContextVariableException
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
-import org.junit.rules.ExpectedException
 import org.junit.rules.RuleChain
 import util.BasePiperTest
 import util.JenkinsLoggingRule
@@ -33,6 +32,8 @@ class JenkinsUtilsTest extends BasePiperTest {
 
     Map triggerCause
 
+    String userId
+
 
     @Before
     void init() throws Exception {
@@ -60,7 +61,25 @@ class JenkinsUtilsTest extends BasePiperTest {
                 return parentMock
             }
             def getCause(type) {
-                return triggerCause
+                if (type == hudson.model.Cause.UserIdCause.class){
+                    def userIdCause = new hudson.model.Cause.UserIdCause()
+                    userIdCause.metaClass.getUserId =  {
+                        return userId
+                    }
+                    return userIdCause
+                } else {
+                    return triggerCause
+                }
+            }
+            def getAction(type) {
+                return new Object() {
+                    def getLibraries() {
+                        return [
+                            [name: 'lib1', version: '1', trusted: true],
+                            [name: 'lib2', version: '2', trusted: false],
+                        ]
+                    }
+                }
             }
 
         }
@@ -108,5 +127,25 @@ class JenkinsUtilsTest extends BasePiperTest {
             triggerPattern: '.*/piper ([a-z]*).*'
         ]
         assertThat(jenkinsUtils.getIssueCommentTriggerAction(), isEmptyOrNullString())
+    }
+
+    @Test
+    void testGetUserId() {
+        userId = 'Test User'
+        assertThat(jenkinsUtils.getJobStartedByUserId(), is('Test User'))
+    }
+
+    @Test
+    void testGetUserIdNoUser() {
+        userId = null
+        assertThat(jenkinsUtils.getJobStartedByUserId(), isEmptyOrNullString())
+    }
+
+    @Test
+    void testGetLibrariesInfo() {
+        def libs
+        libs = jenkinsUtils.getLibrariesInfo()
+        assertThat(libs[0], is([name: 'lib1', version: '1', trusted: true]))
+        assertThat(libs[1], is([name: 'lib2', version: '2', trusted: false]))
     }
 }

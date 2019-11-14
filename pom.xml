@@ -12,7 +12,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.sap.cp.jenkins</groupId>
     <artifactId>jenkins-library</artifactId>
-    <version>0.11</version>
+    <version>${revision}</version>
 
     <name>SAP CP Piper Library</name>
     <description>Shared library containing steps and utilities to set up continuous deployment processes for SAP technologies.</description>
@@ -40,13 +40,13 @@
     </pluginRepositories>
 
     <properties>
+        <revision>0-SNAPSHOT</revision>
         <findbugs.skip>true</findbugs.skip>
         <jenkins.version>2.32.3</jenkins.version>
         <pipeline.version>2.5</pipeline.version>
         <cps.global.lib.version>2.6</cps.global.lib.version>
         <java.level>8</java.level>
     </properties>
-
 
     <dependencies>
 
@@ -136,6 +136,13 @@
             <groupId>org.springframework</groupId>
             <artifactId>spring-test</artifactId>
             <version>4.3.5.RELEASE</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>fr.opensagres.js</groupId>
+            <artifactId>minimatch.java</artifactId>
+            <version>1.1.0</version>
             <scope>test</scope>
         </dependency>
 

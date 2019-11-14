@@ -48,5 +48,6 @@ void call(Map parameters = [:]) {
             }
         }
         mailSendNotification script: script
+        piperPublishWarnings script: script
     }
 }

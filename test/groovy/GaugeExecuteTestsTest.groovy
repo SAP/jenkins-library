@@ -68,6 +68,32 @@ class GaugeExecuteTestsTest extends BasePiperTest {
     }
 
     @Test
+    void testDockerFromCustomStepConfiguration() {
+
+        def expectedImage = 'image:test'
+        def expectedEnvVars = ['HUB':'', 'HUB_URL':'', 'env1': 'value1', 'env2': 'value2']
+        def expectedOptions = '--opt1=val1 --opt2=val2 --opt3'
+        def expectedWorkspace = '/path/to/workspace'
+        
+        nullScript.commonPipelineEnvironment.configuration = [steps:[gaugeExecuteTests:[
+            dockerImage: expectedImage, 
+            dockerOptions: expectedOptions,
+            dockerEnvVars: expectedEnvVars,
+            dockerWorkspace: expectedWorkspace
+            ]]]
+
+        stepRule.step.gaugeExecuteTests(
+            script: nullScript,
+            juStabUtils: utils
+        )
+        
+        assert expectedImage == seleniumParams.dockerImage
+        assert expectedOptions == seleniumParams.dockerOptions
+        assert expectedEnvVars.equals(seleniumParams.dockerEnvVars)
+        assert expectedWorkspace == seleniumParams.dockerWorkspace
+    }
+
+    @Test
     void testExecuteGaugeNode() throws Exception {
         stepRule.step.gaugeExecuteTests(
             script: nullScript,

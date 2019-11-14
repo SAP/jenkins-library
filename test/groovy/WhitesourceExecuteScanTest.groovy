@@ -2,6 +2,7 @@ import com.sap.piper.DescriptorUtils
 import com.sap.piper.JsonUtils
 import com.sap.piper.integration.WhitesourceOrgAdminRepository
 import com.sap.piper.integration.WhitesourceRepository
+import com.sap.piper.MapUtils
 import hudson.AbortException
 import org.hamcrest.Matchers
 import org.junit.Assert
@@ -88,6 +89,7 @@ class WhitesourceExecuteScanTest extends BasePiperTest {
         helper.registerAllowedMethod( "getSbtGAV", [String], {return [group: 'com.sap.sbt', artifact: 'test-scala', version: '1.2.3']})
         helper.registerAllowedMethod( "getPipGAV", [String], {return [artifact: 'test-python', version: '1.2.3']})
         helper.registerAllowedMethod( "getMavenGAV", [String], {return [group: 'com.sap.maven', artifact: 'test-java', version: '1.2.3']})
+        helper.registerAllowedMethod( "getDubGAV", [String], {return [group: 'com.sap.dlang', artifact: 'test-dub', version: '1.2.3']})
 
         nullScript.commonPipelineEnvironment.configuration = nullScript.commonPipelineEnvironment.configuration ?: [:]
         nullScript.commonPipelineEnvironment.configuration['steps'] = nullScript.commonPipelineEnvironment.configuration['steps'] ?: [:]
@@ -99,6 +101,53 @@ class WhitesourceExecuteScanTest extends BasePiperTest {
         nullScript.commonPipelineEnvironment.configuration['steps']['whitesourceExecuteScan']['userTokenCredentialsId'] = 'ID-123456789'
     }
 
+    @Test
+    void testDockerFromCustomStepConfiguration() {
+
+        def expectedImage = 'image:test'
+        def expectedEnvVars = ['env1': 'value1', 'env2': 'value2']
+        def expectedOptions = '--opt1=val1 --opt2=val2 --opt3'
+        def expectedWorkspace = '/path/to/workspace'
+        
+        helper.registerAllowedMethod("readProperties", [Map], {
+            def result = new Properties()
+            result.putAll([
+                "apiKey": "b39d1328-52e2-42e3-98f0-932709daf3f0",
+                "productName": "SHC - Piper",
+                "checkPolicies": "true",
+                "projectName": "python-test",
+                "projectVersion": "1.0.0"
+            ])
+            return result
+        })
+        
+        nullScript.commonPipelineEnvironment.configuration =  
+            MapUtils.merge(nullScript.commonPipelineEnvironment.configuration,
+                [steps:[whitesourceExecuteScan:[
+                    dockerImage: expectedImage, 
+                    dockerOptions: expectedOptions,
+                    dockerEnvVars: expectedEnvVars,
+                    dockerWorkspace: expectedWorkspace
+                ]]]
+            )
+
+        stepRule.step.whitesourceExecuteScan([
+            script                               : nullScript,
+            whitesourceRepositoryStub            : whitesourceStub,
+            whitesourceOrgAdminRepositoryStub    : whitesourceOrgAdminRepositoryStub,
+            descriptorUtilsStub                  : descriptorUtilsStub,
+            scanType                             : 'maven',
+            juStabUtils                          : utils,
+            orgToken                             : 'testOrgToken',
+            whitesourceProductName               : 'testProduct'
+        ])
+
+        assert expectedImage == dockerExecuteRule.dockerParams.dockerImage
+        assert expectedOptions == dockerExecuteRule.dockerParams.dockerOptions
+        assert expectedEnvVars.equals(dockerExecuteRule.dockerParams.dockerEnvVars)
+        assert expectedWorkspace == dockerExecuteRule.dockerParams.dockerWorkspace
+    }
+    
     @Test
     void testMaven() {
         helper.registerAllowedMethod("readProperties", [Map], {
@@ -405,8 +454,48 @@ class WhitesourceExecuteScanTest extends BasePiperTest {
     }
 
     @Test
+    void testDub() {
+
+        helper.registerAllowedMethod("readProperties", [Map], {
+            def result = new Properties()
+            result.putAll([
+                "apiKey": "b39d1328-52e2-42e3-98f0-932709daf3f0",
+                "productName": "SHC - Piper",
+                "checkPolicies": "true",
+                "projectName": "python-test",
+                "projectVersion": "2.0.0"
+            ])
+            return result
+        })
+
+        stepRule.step.whitesourceExecuteScan([
+            script                               : nullScript,
+            whitesourceRepositoryStub            : whitesourceStub,
+            whitesourceOrgAdminRepositoryStub    : whitesourceOrgAdminRepositoryStub,
+            descriptorUtilsStub                  : descriptorUtilsStub,
+            scanType                             : 'dub',
+            juStabUtils                          : utils,
+            productName                          : 'testProductName',
+            orgToken                             : 'testOrgToken',
+            reporting                            : false
+        ])
+
+        assertThat(loggingRule.log, containsString('Unstash content: buildDescriptor'))
+        assertThat(loggingRule.log, containsString('Unstash content: checkmarx'))
+
+        assertThat(shellRule.shell, Matchers.hasItems(
+            is('curl --location --output wss-unified-agent.jar https://github.com/whitesource/unified-agent-distribution/releases/latest/download/wss-unified-agent.jar'),
+            is('./bin/java -jar wss-unified-agent.jar -c \'./wss-unified-agent.config.d3aa80454919391024374ba46b4df082d15ab9a3\' -apiKey \'testOrgToken\' -userKey \'token-0815\' -product \'testProductName\'')
+        ))
+
+        assertThat(writeFileRule.files['./wss-unified-agent.config.d3aa80454919391024374ba46b4df082d15ab9a3'], containsString('apiKey=testOrgToken'))
+        assertThat(writeFileRule.files['./wss-unified-agent.config.d3aa80454919391024374ba46b4df082d15ab9a3'], containsString('productName=testProductName'))
+        assertThat(writeFileRule.files['./wss-unified-agent.config.d3aa80454919391024374ba46b4df082d15ab9a3'], containsString('userKey=token-0815'))
+    }
+
+    @Test
     void testGo() {
-        nullScript.commonPipelineEnvironment.gitHttpsUrl = 'https://github.wdf.sap.corp/test/golang'
+        nullScript.commonPipelineEnvironment.gitHttpsUrl = 'https://github.com/test/golang'
 
         helper.registerAllowedMethod("readFile", [Map.class], {
             map ->
@@ -459,12 +548,12 @@ class WhitesourceExecuteScanTest extends BasePiperTest {
         assertThat(writeFileRule.files['./myProject/wss-unified-agent.config.7d1c90ed46c66061fc8ea45dd96e209bf767f038'], containsString('productName=testProductName'))
         assertThat(writeFileRule.files['./myProject/wss-unified-agent.config.7d1c90ed46c66061fc8ea45dd96e209bf767f038'], containsString('userKey=token-0815'))
         assertThat(writeFileRule.files['./myProject/wss-unified-agent.config.7d1c90ed46c66061fc8ea45dd96e209bf767f038'], containsString('productVersion=1'))
-        assertThat(writeFileRule.files['./myProject/wss-unified-agent.config.7d1c90ed46c66061fc8ea45dd96e209bf767f038'], containsString('projectName=github.wdf.sap.corp/test/golang.myProject'))
+        assertThat(writeFileRule.files['./myProject/wss-unified-agent.config.7d1c90ed46c66061fc8ea45dd96e209bf767f038'], containsString('projectName=github.com/test/golang.myProject'))
     }
 
     @Test
     void testGoDefaults() {
-        nullScript.commonPipelineEnvironment.gitHttpsUrl = 'https://github.wdf.sap.corp/test/golang'
+        nullScript.commonPipelineEnvironment.gitHttpsUrl = 'https://github.com/test/golang'
 
         helper.registerAllowedMethod("readFile", [Map.class], {
             map ->
@@ -516,7 +605,7 @@ class WhitesourceExecuteScanTest extends BasePiperTest {
         assertThat(writeFileRule.files['./wss-unified-agent.config.d3aa80454919391024374ba46b4df082d15ab9a3'], containsString('productName=testProductName'))
         assertThat(writeFileRule.files['./wss-unified-agent.config.d3aa80454919391024374ba46b4df082d15ab9a3'], containsString('userKey=token-0815'))
         assertThat(writeFileRule.files['./wss-unified-agent.config.d3aa80454919391024374ba46b4df082d15ab9a3'], containsString('productVersion=1'))
-        assertThat(writeFileRule.files['./wss-unified-agent.config.d3aa80454919391024374ba46b4df082d15ab9a3'], containsString('projectName=github.wdf.sap.corp/test/golang'))
+        assertThat(writeFileRule.files['./wss-unified-agent.config.d3aa80454919391024374ba46b4df082d15ab9a3'], containsString('projectName=github.com/test/golang'))
     }
 
 
