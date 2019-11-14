@@ -150,7 +150,10 @@ func ProcessMetaFiles(metadataFiles []string, openFile func(s string) (io.ReadCl
 			err = writeFile(fmt.Sprintf("cmd/%v_generated_test.go", stepData.Metadata.Name), test, 0644)
 			checkError(err)
 		} else {
-			generateStepDocumentation(stepData, docuHelperData)
+			err = generateStepDocumentation(stepData, docuHelperData)
+			if err != nil {
+				fmt.Printf("%v\n", err)
+			}
 		}
 	}
 	return nil
