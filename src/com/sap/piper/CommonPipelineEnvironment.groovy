@@ -2,7 +2,9 @@ package com.sap.piper;
 
 import com.sap.piper.analytics.InfluxData
 
-public class CommonPipelineEnvironment {
+public class CommonPipelineEnvironment implements Serializable {
+
+    private static final long serialVersionUID = 1429842L;
 
     private static CommonPipelineEnvironment INSTANCE = new CommonPipelineEnvironment()
 
