@@ -333,7 +333,7 @@ steps:
 
     classic:
       dockerImage: 'ppiper/mta-archive-builder'
-    cloudMBT:
+    cloudMbt:
       dockerImage: 'devxci/mbtci'
   neoDeploy:
     dockerImage: 'ppiper/neo-cli'
