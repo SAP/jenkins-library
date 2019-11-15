@@ -131,6 +131,8 @@ public class CommonPipelineEnvironment {
         githubOrg = null
         githubRepo = null
 
+        xsDeploymentId = null
+
         mtarFilePath = null
         valueMap = [:]
 
