@@ -147,7 +147,7 @@ String addClosedIssue(config, TOKEN, publishedAt){
     //list closed pull-requests
     result += '<br />**List of closed pull-requests since last release**<br />'
     for (def item : content) {
-        if (item.pull_request && !isExcluded(item, config.excludeLabels) && isInProperBranch(item.title, contentPr)) {
+        if (item.pull_request && !isExcluded(item, config.excludeLabels) && isInProperBranch(item.number, contentPr)) {
             result += "[#${item.number}](${item.html_url}): ${item.title}<br />"
         }
     }
@@ -204,10 +204,10 @@ boolean isExcluded(item, excludeLabels){
     return result
 }
 
-boolean isInProperBranch(itemTitel, contentPR){
+boolean isInProperBranch(itemnumber, contentPR){
     def result = false
     for (def item : contentPr) {
-        if (itemTitel == item.title) {
+        if (itemnumber == item.number) {
             result = true
             break
         }
