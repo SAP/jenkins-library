@@ -338,6 +338,10 @@ func TestGetContextDefaults(t *testing.T) {
 						Image:      "testImage:tag",
 						Shell:      "/bin/bash",
 						WorkingDir: "/test/dir",
+						VolumeBind: []VolumeBind{
+							{Name: "vbn1", Value: "vbv1"},
+							{Name: "vbn2", Value: "vbv2"},
+						},
 					},
 				},
 				Sidecars: []Container{
@@ -352,6 +356,10 @@ func TestGetContextDefaults(t *testing.T) {
 						ImagePullPolicy: "Never",
 						ReadyCommand:    "/sidecar/command",
 						WorkingDir:      "/sidecar/dir",
+						VolumeBind: []VolumeBind{
+							{Name: "vbn3", Value: "vbv3"},
+							{Name: "vbn4", Value: "vbv4"},
+						},
 					},
 				},
 			},
@@ -379,6 +387,7 @@ func TestGetContextDefaults(t *testing.T) {
 		assert.Equal(t, "testcontainer", d.Defaults[0].Steps["testStep"]["dockerName"], "dockerName default not available")
 		assert.Equal(t, true, d.Defaults[0].Steps["testStep"]["dockerPullImage"], "dockerPullImage default not available")
 		assert.Equal(t, "/test/dir", d.Defaults[0].Steps["testStep"]["dockerWorkspace"], "dockerWorkspace default not available")
+		assert.Equal(t, []interface{}{"vbn1:vbv1", "vbn2:vbv2"}, d.Defaults[0].Steps["testStep"]["dockerVolumeBind"], "dockerVolumeBind default not available")
 
 		assert.Equal(t, "/sidecar/command", d.Defaults[0].Steps["testStep"]["sidecarCommand"], "sidecarCommand default not available")
 		assert.Equal(t, []interface{}{"env3=val3", "env4=val4"}, d.Defaults[0].Steps["testStep"]["sidecarEnvVars"], "sidecarEnvVars default not available")
@@ -387,6 +396,7 @@ func TestGetContextDefaults(t *testing.T) {
 		assert.Equal(t, false, d.Defaults[0].Steps["testStep"]["sidecarPullImage"], "sidecarPullImage default not available")
 		assert.Equal(t, "/sidecar/command", d.Defaults[0].Steps["testStep"]["sidecarReadyCommand"], "sidecarReadyCommand default not available")
 		assert.Equal(t, "/sidecar/dir", d.Defaults[0].Steps["testStep"]["sidecarWorkspace"], "sidecarWorkspace default not available")
+		assert.Equal(t, []interface{}{"vbn3:vbv3", "vbn4:vbv4"}, d.Defaults[0].Steps["testStep"]["sidecarVolumeBind"], "sidecarVolumeBind default not available")
 	})
 
 	t.Run("Negative case", func(t *testing.T) {
