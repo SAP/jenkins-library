@@ -16,7 +16,7 @@ class MapUtilsTest {
     }
 
     @Test
-    void testMergeMapStraigtForward(){
+    void testMergeMapStraightForward(){
 
         Map a = [a: '1',
                  c: [d: '1',
@@ -29,6 +29,20 @@ class MapUtilsTest {
         assert merged == [a: '1',
                           b: '2',
                           c: [d: 'x', e: '2']]
+    }
+
+    @Test
+    void testMergeMapWithConflict(){
+
+        Map a = [a: '1',
+                 b: [c: 1]],
+            b = [a: '2',
+                 b: [c: 2]]
+
+        Map merged = MapUtils.merge(a, b)
+
+        assert merged == [a: '2',
+                          b: [c: 2]]
     }
 
     @Test
