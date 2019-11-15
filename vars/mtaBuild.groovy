@@ -21,7 +21,7 @@ import static com.sap.piper.Utils.downloadSettingsFromUrl
     'buildTarget',
     /**
      * Tool to use when building the MTA
-     * @possibleValues 'classic', 'cloudMBT'
+     * @possibleValues 'classic', 'cloudMbt'
      */
     'buildTool',
     /** @see dockerExecute */
@@ -42,7 +42,7 @@ import static com.sap.piper.Utils.downloadSettingsFromUrl
     /** Path or url to the mvn settings file that should be used as global settings file.*/
     'globalSettingsFile',
     /**
-     * buildTool cloudMBT only: The target platform to which the mtar can be deployed.
+     * buildTool cloudMbt only: The target platform to which the mtar can be deployed.
      * @possibleValues 'CF', 'NEO', 'XSA'
      */
     'platform',
@@ -142,7 +142,7 @@ void call(Map parameters = [:]) {
                     if (configuration.extension) options.push("--extension=${configuration.extension}")
                     mtaCall = "java -jar ${mtaJar} ${options.join(' ')} build"
                     break
-                case 'cloudMBT':
+                case 'cloudMbt':
                     options.push("--platform ${configuration.platform}")
                     if (configuration.extension) options.push("--extensions=${configuration.extension}")
                     mtaCall = "mbt build ${options.join(' ')}"
