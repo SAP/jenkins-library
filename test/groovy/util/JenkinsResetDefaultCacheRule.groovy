@@ -6,6 +6,7 @@ import org.junit.runners.model.Statement
 
 import com.lesfurets.jenkins.unit.BasePipelineTest
 import com.sap.piper.DefaultValueCache
+import com.sap.piper.CommonPipelineEnvironment
 
 class JenkinsResetDefaultCacheRule implements TestRule {
 
@@ -27,6 +28,7 @@ class JenkinsResetDefaultCacheRule implements TestRule {
             @Override
             void evaluate() throws Throwable {
                 DefaultValueCache.reset()
+                CommonPipelineEnvironment.getInstance().reset()
                 base.evaluate()
             }
         }

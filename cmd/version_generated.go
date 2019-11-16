@@ -1,9 +1,8 @@
 package cmd
 
 import (
-	//"os"
-
 	"github.com/SAP/jenkins-library/pkg/config"
+	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/spf13/cobra"
 )
 
@@ -21,7 +20,9 @@ func VersionCommand() *cobra.Command {
 		Short: "Returns the version of the piper binary",
 		Long:  `Writes the commit hash and the tag (if any) to stdout and exits with 0.`,
 		PreRunE: func(cmd *cobra.Command, args []string) error {
-			return PrepareConfig(cmd, &metadata, "version", &myVersionOptions, openPiperFile)
+			log.SetStepName("version")
+			log.SetVerbose(GeneralConfig.Verbose)
+			return PrepareConfig(cmd, &metadata, "version", &myVersionOptions, OpenPiperFile)
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return version(myVersionOptions)

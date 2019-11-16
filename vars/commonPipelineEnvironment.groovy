@@ -1,36 +1,121 @@
+import com.sap.piper.CommonPipelineEnvironment
 import com.sap.piper.ConfigurationLoader
 import com.sap.piper.ConfigurationMerger
 import com.sap.piper.analytics.InfluxData
 
 class commonPipelineEnvironment implements Serializable {
 
-    //stores version of the artifact which is build during pipeline run
-    def artifactVersion
+    //
+    // Instances of this step does not keep any state. Everything is redirected to
+    // the singleton CommonPipelineEnvironment. Since all instances of this step
+    // share the same state through the singleton CommonPipelineEnvironment all
+    // instances can be used in the same way.
+    //
+    // [Q] Why not simplify this using reflection, e.g. methodMissing/invokeMethod and
+    //     similar? Wouln't this be simpler e.g. wrt. adding new properties? With the
+    //     approach here we have to add the new property here and in the singleton class.
+    //     And in general this look like boiler plate code ...
+    // [A] Does not work with Jenkins since a security manager prohibits this.
+    //
 
-    //Stores the current buildResult
-    String buildResult = 'SUCCESS'
+    void setArtifactVersion(String artifactVersion) {
+        CommonPipelineEnvironment.getInstance().artifactVersion = artifactVersion
+    }
+    String getArtifactVersion() {
+        CommonPipelineEnvironment.getInstance().artifactVersion
+    }
 
-    //stores the gitCommitId as well as additional git information for the build during pipeline run
-    String gitCommitId
-    String gitCommitMessage
-    String gitSshUrl
-    String gitHttpsUrl
-    String gitBranch
+    void setBuildResult(String buildResult) {
+        CommonPipelineEnvironment.getInstance().buildResult = buildResult
+    }
+    String getBuildResult() {
+        CommonPipelineEnvironment.getInstance().buildResult
+    }
 
-    String xsDeploymentId
+    void setGitCommitId(String gitCommitId) {
+        CommonPipelineEnvironment.getInstance().gitCommitId = gitCommitId
+    }
+    String getGitCommitId() {
+        CommonPipelineEnvironment.getInstance().gitCommitId
+    }
 
-    //GiutHub specific information
-    String githubOrg
-    String githubRepo
+    void setGitCommitMessage(String gitCommitMessage) {
+        CommonPipelineEnvironment.getInstance().gitCommitMessage = gitCommitMessage
+    }
+    String getGitCommitMessage() {
+        CommonPipelineEnvironment.getInstance().gitCommitMessage
+    }
 
-    //stores properties for a pipeline which build an artifact and then bundles it into a container
-    private Map appContainerProperties = [:]
+    void setGitSshUrl(String gitSshUrl) {
+        CommonPipelineEnvironment.getInstance().gitSshUrl = gitSshUrl
+    }
+    String getGitSshUrl() {
+        CommonPipelineEnvironment.getInstance().gitSshUrl
+    }
 
-    Map configuration = [:]
-    Map defaultConfiguration = [:]
+    void setGitHttpsUrl(String gitHttpsUrl) {
+        CommonPipelineEnvironment.getInstance().gitHttpsUrl = gitHttpsUrl
+    }
+    String getGitHttpsUrl() {
+        CommonPipelineEnvironment.getInstance().gitHttpsUrl
+    }
 
-    String mtarFilePath
-    private Map valueMap = [:]
+    void setGitBranch(String gitBranch) {
+        CommonPipelineEnvironment.getInstance().gitBranch = gitBranch
+    }
+    String getGitBranch() {
+        CommonPipelineEnvironment.getInstance().gitBranch
+    }
+
+    void setXsDeploymentId(String xsDeploymentId) {
+        CommonPipelineEnvironment.getInstance().xsDeploymentId = xsDeploymentId
+    }
+    String getXsDeploymentId() {
+        CommonPipelineEnvironment.getInstance().xsDeploymentId
+    }
+
+    void setGithubOrg(String githubOrg) {
+        CommonPipelineEnvironment.getInstance().githubOrg = githubOrg
+    }
+    String getGithubOrg() {
+        CommonPipelineEnvironment.getInstance().githubOrg
+    }
+
+
+    void setGithubRepo(String githubRepo) {
+        CommonPipelineEnvironment.getInstance().githubRepo = githubRepo
+    }
+    String getGithubRepo() {
+        CommonPipelineEnvironment.getInstance().githubRepo
+    }
+
+    Map getConfiguration() {
+        CommonPipelineEnvironment.getInstance().configuration
+    }
+    void setConfiguration(Map configuration) {
+        CommonPipelineEnvironment.getInstance().configuration = configuration
+    }
+
+    Map getDefaultConfiguration() {
+        CommonPipelineEnvironment.getInstance().defaultConfiguration
+    }
+    void setDefaultConfiguration(Map defaultConfiguration) {
+        CommonPipelineEnvironment.getInstance().defaultConfiguration = defaultConfiguration
+    }
+
+    String getMtarFilePath() {
+        CommonPipelineEnvironment.getInstance().mtarFilePath
+    }
+    void setMtarFilePath(String mtarFilePath) {
+        CommonPipelineEnvironment.getInstance().mtarFilePath = mtarFilePath
+    }
+
+    Map getValueMap() {
+        CommonPipelineEnvironment.getInstance().valueMap
+    }
+    void setValueMap(Map valueMap) {
+        CommonPipelineEnvironment.getInstance().valueMap = valueMap
+    }
 
     void setValue(String property, value) {
         valueMap[property] = value
@@ -40,107 +125,91 @@ class commonPipelineEnvironment implements Serializable {
         return valueMap.get(property)
     }
 
-    String changeDocumentId
+    String getChangeDocumentId() {
+        CommonPipelineEnvironment.getInstance().changeDocumentId
+    }
+    void setChangeDocumentId(String changeDocumentId) {
+        CommonPipelineEnvironment.getInstance().changeDocumentId = changeDocumentId
+    }
 
     def reset() {
-        appContainerProperties = [:]
-        artifactVersion = null
+        CommonPipelineEnvironment.getInstance().reset()
+    }
 
-        configuration = [:]
-
-        gitCommitId = null
-        gitCommitMessage = null
-        gitSshUrl = null
-        gitHttpsUrl = null
-        gitBranch = null
-
-        githubOrg = null
-        githubRepo = null
-
-        mtarFilePath = null
-        valueMap = [:]
-
-        changeDocumentId = null
-
-        InfluxData.reset()
+    Map getAppContainerProperties() {
+        CommonPipelineEnvironment.getInstance().appContainerProperties
+    }
+    void setAppContainerProperties(Map appContainerProperties) {
+        CommonPipelineEnvironment.getInstance().appContainerProperties = appContainerProperties
     }
 
     def setAppContainerProperty(property, value) {
-        appContainerProperties[property] = value
+        getAppContainerProperties()[property] = value
     }
 
     def getAppContainerProperty(property) {
-        return appContainerProperties[property]
+        return getAppContainerProperties()[property]
     }
 
     // goes into measurement jenkins_custom_data
     def setInfluxCustomDataEntry(key, value) {
-        InfluxData.addField('jenkins_custom_data', key, value)
+        CommonPipelineEnvironment.getInstance().setInfluxCustomDataEntry(key, value)
     }
     // goes into measurement jenkins_custom_data
     @Deprecated // not used in library
     def getInfluxCustomData() {
-        return InfluxData.getInstance().getFields().jenkins_custom_data
+        CommonPipelineEnvironment.getInstance().getInfluxCustomData()
     }
 
     // goes into measurement jenkins_custom_data
     def setInfluxCustomDataTagsEntry(key, value) {
-        InfluxData.addTag('jenkins_custom_data', key, value)
+        CommonPipelineEnvironment.getInstance().setInfluxCustomDataTagsEntry(key, value)
     }
     // goes into measurement jenkins_custom_data
     @Deprecated // not used in library
     def getInfluxCustomDataTags() {
-        return InfluxData.getInstance().getTags().jenkins_custom_data
+        CommonPipelineEnvironment.getInstance().getInfluxCustomDataTags()
     }
 
     void setInfluxCustomDataMapEntry(measurement, field, value) {
-        InfluxData.addField(measurement, field, value)
+        CommonPipelineEnvironment.getInstance().setInfluxCustomDataMapEntry(measurement, field, value)
     }
     @Deprecated // not used in library
     def getInfluxCustomDataMap() {
-        return InfluxData.getInstance().getFields()
+        CommonPipelineEnvironment.getInstance().getInfluxCustomDataMap()
     }
 
     def setInfluxCustomDataMapTagsEntry(measurement, tag, value) {
-        InfluxData.addTag(measurement, tag, value)
+        CommonPipelineEnvironment.getInstance().setInfluxCustomDataMapTagsEntry(measurement, tag, value)
     }
     @Deprecated // not used in library
     def getInfluxCustomDataMapTags() {
-        return InfluxData.getInstance().getTags()
+        CommonPipelineEnvironment.getInstance().getInfluxCustomDataMapTags()
     }
 
     @Deprecated // not used in library
     def setInfluxStepData(key, value) {
-        InfluxData.addField('step_data', key, value)
+        CommonPipelineEnvironment.getInstance().setInfluxStepData(key, value)
     }
     @Deprecated // not used in library
     def getInfluxStepData(key) {
-        return InfluxData.getInstance().getFields()['step_data'][key]
+        CommonPipelineEnvironment.getInstance().getInfluxStepData(key)
     }
 
     @Deprecated // not used in library
     def setInfluxPipelineData(key, value) {
-        InfluxData.addField('pipeline_data', key, value)
+        CommonPipelineEnvironment.getInstance().setInfluxPipelineData(key, value)
     }
     @Deprecated // not used in library
     def setPipelineMeasurement(key, value){
-        setInfluxPipelineData(key, value)
+        CommonPipelineEnvironment.getInstance().setPipelineMeasurement(key, value)
     }
     @Deprecated // not used in library
     def getPipelineMeasurement(key) {
-        return InfluxData.getInstance().getFields()['pipeline_data'][key]
+        CommonPipelineEnvironment.getInstance().getPipelineMeasurement(key)
     }
 
     Map getStepConfiguration(stepName, stageName = env.STAGE_NAME, includeDefaults = true) {
-        Map defaults = [:]
-        if (includeDefaults) {
-            defaults = ConfigurationLoader.defaultGeneralConfiguration()
-            defaults = ConfigurationMerger.merge(ConfigurationLoader.defaultStepConfiguration(null, stepName), null, defaults)
-            defaults = ConfigurationMerger.merge(ConfigurationLoader.defaultStageConfiguration(null, stageName), null, defaults)
-        }
-        Map config = ConfigurationMerger.merge(configuration.get('general') ?: [:], null, defaults)
-        config = ConfigurationMerger.merge(configuration.get('steps')?.get(stepName) ?: [:], null, config)
-        config = ConfigurationMerger.merge(configuration.get('stages')?.get(stageName) ?: [:], null, config)
-        return config
+        CommonPipelineEnvironment.getInstance().getStepConfiguration(stepName, stageName, includeDefaults)
     }
 }

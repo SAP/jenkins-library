@@ -130,7 +130,7 @@ class SonarExecuteScanTest extends BasePiperTest {
         binding.setVariable('env', [
             'CHANGE_ID': '42',
             'CHANGE_TARGET': 'master',
-            'BRANCH_NAME': 'feature/anything'
+            'CHANGE_BRANCH': 'feature/anything'
         ])
         nullScript.commonPipelineEnvironment.setGithubOrg('testOrg')
         //nullScript.commonPipelineEnvironment.setGithubRepo('testRepo')

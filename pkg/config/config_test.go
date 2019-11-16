@@ -74,6 +74,7 @@ steps:
     p4: p4_step
     px4: px4_step
     p5: p5_step
+    dependentParameter: dependentValue
 stages:
   stage1:
     p5: p5_stage
@@ -82,7 +83,7 @@ stages:
 `
 		filters := StepFilters{
 			General:    []string{"p0", "p1", "p2", "p3", "p4"},
-			Steps:      []string{"p0", "p1", "p2", "p3", "p4", "p5"},
+			Steps:      []string{"p0", "p1", "p2", "p3", "p4", "p5", "dependentParameter", "pd1", "dependentValue", "pd2"},
 			Stages:     []string{"p0", "p1", "p2", "p3", "p4", "p5", "p6"},
 			Parameters: []string{"p0", "p1", "p2", "p3", "p4", "p5", "p6", "p7"},
 			Env:        []string{"p0", "p1", "p2", "p3", "p4", "p5"},
@@ -97,6 +98,8 @@ steps:
     p1: p1_step_default
     px1: px1_step_default
     p2: p2_step_default
+    dependentValue:
+      pd1: pd1_dependent_default
 `
 
 		defaults2 := `general:
@@ -112,20 +115,49 @@ steps:
 		defaults := []io.ReadCloser{ioutil.NopCloser(strings.NewReader(defaults1)), ioutil.NopCloser(strings.NewReader(defaults2))}
 
 		myConfig := ioutil.NopCloser(strings.NewReader(testConfig))
-		stepConfig, err := c.GetStepConfig(flags, paramJSON, myConfig, defaults, filters, []StepParameters{}, "stage1", "step1")
+
+		parameterMetadata := []StepParameters{
+			{
+				Name:  "pd1",
+				Scope: []string{"STEPS"},
+				Conditions: []Condition{
+					{
+						Params: []Param{
+							{Name: "dependentParameter", Value: "dependentValue"},
+						},
+					},
+				},
+			},
+			{
+				Name:    "pd2",
+				Default: "pd2_metadata_default",
+				Scope:   []string{"STEPS"},
+				Conditions: []Condition{
+					{
+						Params: []Param{
+							{Name: "dependentParameter", Value: "dependentValue"},
+						},
+					},
+				},
+			},
+		}
+
+		stepConfig, err := c.GetStepConfig(flags, paramJSON, myConfig, defaults, filters, parameterMetadata, "stage1", "step1")
 
 		assert.Equal(t, nil, err, "error occured but none expected")
 
 		t.Run("Config", func(t *testing.T) {
 			expected := map[string]string{
-				"p0": "p0_general_default",
-				"p1": "p1_step_default",
-				"p2": "p2_general_default",
-				"p3": "p3_general",
-				"p4": "p4_step",
-				"p5": "p5_stage",
-				"p6": "p6_param",
-				"p7": "p7_flag",
+				"p0":  "p0_general_default",
+				"p1":  "p1_step_default",
+				"p2":  "p2_general_default",
+				"p3":  "p3_general",
+				"p4":  "p4_step",
+				"p5":  "p5_stage",
+				"p6":  "p6_param",
+				"p7":  "p7_flag",
+				"pd1": "pd1_dependent_default",
+				"pd2": "pd2_metadata_default",
 			}
 			for k, v := range expected {
 				t.Run(k, func(t *testing.T) {
