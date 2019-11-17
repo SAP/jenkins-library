@@ -41,6 +41,32 @@ class NpmExecuteTest extends BasePiperTest {
     }
 
     @Test
+    void testDockerFromCustomStepConfiguration() {
+
+        def expectedImage = 'image:test'
+        def expectedEnvVars = ['env1': 'value1', 'env2': 'value2']
+        def expectedOptions = '--opt1=val1 --opt2=val2 --opt3'
+        def expectedWorkspace = '/path/to/workspace'
+        
+        nullScript.commonPipelineEnvironment.configuration = [steps:[npmExecute:[
+            dockerImage: expectedImage, 
+            dockerOptions: expectedOptions,
+            dockerEnvVars: expectedEnvVars,
+            dockerWorkspace: expectedWorkspace
+            ]]]
+
+        stepRule.step.npmExecute(
+            script: nullScript,
+            juStabUtils: utils
+        )
+        
+        assert expectedImage == dockerExecuteRule.dockerParams.dockerImage
+        assert expectedOptions == dockerExecuteRule.dockerParams.dockerOptions
+        assert expectedEnvVars.equals(dockerExecuteRule.dockerParams.dockerEnvVars)
+        assert expectedWorkspace == dockerExecuteRule.dockerParams.dockerWorkspace
+    }
+    
+    @Test
     void testNpmExecuteWithClosure() {
         stepRule.step.npmExecute(script: nullScript, dockerImage: 'node:8-stretch', npmCommand: 'run build') { }
         assert shellRule.shell.find { c -> c.contains('npm run build') }

@@ -21,11 +21,17 @@ import static com.sap.piper.Utils.downloadSettingsFromUrl
     'buildTarget',
     /** @see dockerExecute */
     'dockerImage',
+    /** @see dockerExecute */
+    'dockerEnvVars',
+    /** @see dockerExecute */
+    'dockerOptions',
+    /** @see dockerExecute */
+    'dockerWorkspace',
     /** The path to the extension descriptor file.*/
     'extension',
     /**
      * The location of the SAP Multitarget Application Archive Builder jar file, including file name and extension.
-     * If it is not provided, the SAP Multitarget Application Archive Builder is expected on PATH.
+     * If you run on Docker, this must match the location of the jar file in the container as well.
      */
     'mtaJarLocation',
     /** Path or url to the mvn settings file that should be used as global settings file.*/
@@ -34,8 +40,6 @@ import static com.sap.piper.Utils.downloadSettingsFromUrl
     'projectSettingsFile'
 ]
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS.plus([
-    /** @see dockerExecute */
-    'dockerOptions',
     /** Url to the npm registry that should be used for installing npm dependencies.*/
     'defaultNpmRegistry'
 ])
@@ -64,7 +68,13 @@ void call(Map parameters = [:]) {
             stepParam1: parameters?.script == null
         ], configuration)
 
-        dockerExecute(script: script, dockerImage: configuration.dockerImage, dockerOptions: configuration.dockerOptions) {
+        dockerExecute(
+            script: script,
+            dockerImage: configuration.dockerImage,
+            dockerEnvVars: configuration.dockerEnvVars,
+            dockerOptions: configuration.dockerOptions,
+            dockerWorkspace: configuration.dockerWorkspace
+        ) {
 
             String projectSettingsFile = configuration.projectSettingsFile?.trim()
             if (projectSettingsFile) {
