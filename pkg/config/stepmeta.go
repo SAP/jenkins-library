@@ -80,22 +80,22 @@ type StepSecrets struct {
 // Container defines an execution container
 type Container struct {
 	//ToDo: check dockerOptions, dockerVolumeBind, containerPortMappings, sidecarOptions, sidecarVolumeBind
-	Command         []string     `json:"command"`
-	EnvVars         []EnvVar     `json:"env"`
-	Image           string       `json:"image"`
-	ImagePullPolicy string       `json:"imagePullPolicy"`
-	Name            string       `json:"name"`
-	ReadyCommand    string       `json:"readyCommand"`
-	Shell           string       `json:"shell"`
-	WorkingDir      string       `json:"workingDir"`
-	Conditions      []Condition  `json:"conditions,omitempty"`
-	VolumeBind      []VolumeBind `json:"volumeBind,omitempty"`
+	Command         []string      `json:"command"`
+	EnvVars         []EnvVar      `json:"env"`
+	Image           string        `json:"image"`
+	ImagePullPolicy string        `json:"imagePullPolicy"`
+	Name            string        `json:"name"`
+	ReadyCommand    string        `json:"readyCommand"`
+	Shell           string        `json:"shell"`
+	WorkingDir      string        `json:"workingDir"`
+	Conditions      []Condition   `json:"conditions,omitempty"`
+	VolumeMounts    []VolumeMount `json:"volumeMounts,omitempty"`
 }
 
-// VolumeBind defines an environment variable
-type VolumeBind struct {
-	Name  string `json:"name"`
-	Value string `json:"value"`
+// VolumeMount defines an mount path
+type VolumeMount struct {
+	MountPath string `json:"mountPath"`
+	Name      string `json:"name"`
 }
 
 // EnvVar defines an environment variable
@@ -236,7 +236,7 @@ func (m *StepData) GetContextDefaults(stepName string) (io.ReadCloser, error) {
 			p["dockerName"] = container.Name
 			p["dockerPullImage"] = container.ImagePullPolicy != "Never"
 			p["dockerWorkspace"] = container.WorkingDir
-			p["dockerVolumeBind"] = volumeBindAsStringSlice(container.VolumeBind)
+			p["dockerVolumeBind"] = volumeMountsAsStringSlice(container.VolumeMounts)
 
 			// Ready command not relevant for main runtime container so far
 			//p[] = container.ReadyCommand
@@ -254,7 +254,7 @@ func (m *StepData) GetContextDefaults(stepName string) (io.ReadCloser, error) {
 		root["sidecarPullImage"] = m.Spec.Sidecars[0].ImagePullPolicy != "Never"
 		root["sidecarReadyCommand"] = m.Spec.Sidecars[0].ReadyCommand
 		root["sidecarWorkspace"] = m.Spec.Sidecars[0].WorkingDir
-		root["sidecarVolumeBind"] = volumeBindAsStringSlice(m.Spec.Sidecars[0].VolumeBind)
+		root["sidecarVolumeBind"] = volumeMountsAsStringSlice(m.Spec.Sidecars[0].VolumeMounts)
 	}
 
 	// not filled for now since this is not relevant in Kubernetes case
@@ -318,10 +318,10 @@ func envVarsAsStringSlice(envVars []EnvVar) []string {
 	return e
 }
 
-func volumeBindAsStringSlice(volumeBind []VolumeBind) []string {
+func volumeMountsAsStringSlice(volumeMounts []VolumeMount) []string {
 	e := []string{}
-	for _, v := range volumeBind {
-		e = append(e, fmt.Sprintf("%v:%v", v.Name, v.Value))
+	for _, v := range volumeMounts {
+		e = append(e, fmt.Sprintf("%v:%v", v.MountPath, v.Name))
 	}
 	return e
 }
