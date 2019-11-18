@@ -299,7 +299,10 @@ func handleStepParameters(stepData *config.StepData) {
 		//create StepParemeters items for context defaults
 		for k, v := range context {
 			if len(v) > 0 {
-				stepData.Spec.Inputs.Parameters = append(stepData.Spec.Inputs.Parameters, config.StepParameters{Name: k, Default: v, Mandatory: false, Description: mCD[k]})
+				//containerName only for Step: dockerExecuteOnKubernetes
+				if k != "containerName" || stepData.Metadata.Name == "dockerExecuteOnKubernetes" {
+					stepData.Spec.Inputs.Parameters = append(stepData.Spec.Inputs.Parameters, config.StepParameters{Name: k, Default: v, Mandatory: false, Description: mCD[k]})
+				}
 			}
 		}
 	}
@@ -340,74 +343,89 @@ func addContainerContent(m *config.StepData, result map[string]string) {
 		bEmptyKey := true
 		for _, container := range m.Spec.Containers {
 
-			key := ""
-			if len(container.Conditions) > 0 {
-				key = fmt.Sprintf("%v=%v", container.Conditions[0].Params[0].Name, container.Conditions[0].Params[0].Value)
-			}
-
-			if bEmptyKey || len(key) > 0 {
-
-				if len(container.Command) > 0 {
-					keys = append(keys, key+"_containerCommand")
-				}
-				if m.Metadata.Name == "dockerExecuteOnKubernetes" {
-					keys = append(keys, key+"_containerName")
-				}
-				keys = append(keys, key+"_containerShell")
-				keys = append(keys, key+"_dockerEnvVars")
-				keys = append(keys, key+"_dockerImage")
-				keys = append(keys, key+"_dockerName")
-				keys = append(keys, key+"_dockerPullImage")
-				keys = append(keys, key+"_dockerWorkspace")
-
-			}
-
-			if len(container.Conditions) == 0 {
-				bEmptyKey = false
-			}
-
-			workingDir := ifThenElse(len(container.WorkingDir) > 0, container.WorkingDir, "\\<empty\\>")
-			if len(container.Shell) > 0 {
-				resources[key+"_containerShell"] = append(resources[key+"_containerShell"], container.Shell)
-			}
-			resources[key+"_dockerName"] = append(resources[key+"_dockerName"], container.Name)
-
-			//Only for Step: dockerExecuteOnKubernetes
-			if m.Metadata.Name == "dockerExecuteOnKubernetes" {
-				resources[key+"_containerName"] = append(resources[key+"_containerName"], container.Name)
-			}
-			//ContainerCommand > 0
-			if len(container.Command) > 0 {
-				resources[key+"_containerCommand"] = append(resources[key+"_containerCommand"], container.Command[0])
-			}
-			//ImagePullPolicy > 0
-			if len(container.ImagePullPolicy) > 0 {
-				resources[key+"_dockerPullImage"] = []string{fmt.Sprintf("%v", container.ImagePullPolicy != "Never")}
-			}
-			//Different when key is set (Param.Name + Param.Value)
-			if len(key) > 0 {
-				resources[key+"_dockerEnvVars"] = append(resources[key+"_dockerEnvVars"], fmt.Sprintf("%v:\\[%v\\]", key, strings.Join(envVarsAsStringSlice(container.EnvVars), "")))
-				resources[key+"_dockerImage"] = append(resources[key+"_dockerImage"], fmt.Sprintf("%v:%v", key, container.Image))
-				resources[key+"_dockerWorkspace"] = append(resources[key+"_dockerWorkspace"], fmt.Sprintf("%v:%v", key, workingDir))
-			} else {
-				resources[key+"_dockerEnvVars"] = append(resources[key+"_dockerEnvVars"], fmt.Sprintf("%v", strings.Join(envVarsAsStringSlice(container.EnvVars), "")))
-				resources[key+"_dockerImage"] = append(resources[key+"_dockerImage"], container.Image)
-				resources[key+"_dockerWorkspace"] = append(resources[key+"_dockerWorkspace"], workingDir)
-			}
+			rKeys := addContainerValues(container, bEmptyKey, resources)
+			keys = append(keys, rKeys...)
 		}
 
-		for _, key := range keys {
-			s := strings.Split(key, "_")
-			if len(strings.Join(resources[key], ", ")) > 1 {
-				result[s[1]] += fmt.Sprintf("%v <br>", strings.Join(resources[key], ", "))
-			} else if len(strings.Join(resources[key], ", ")) == 1 {
-				if _, ok := result[s[1]]; !ok {
-					result[s[1]] = fmt.Sprintf("%v", strings.Join(resources[key], ", "))
-				}
+		loopContainerDefaults(keys, resources, result)
+	}
+}
+
+func addContainerValues(container config.Container, bEmptyKey bool, resources map[string][]string) []string {
+	keys := []string{}
+	key := ""
+	if len(container.Conditions) > 0 {
+		key = fmt.Sprintf("%v=%v", container.Conditions[0].Params[0].Name, container.Conditions[0].Params[0].Value)
+	}
+
+	//only add the key ones
+	if bEmptyKey || len(key) > 0 {
+
+		if len(container.Command) > 0 {
+			keys = append(keys, key+"_containerCommand")
+		}
+		keys = append(keys, key+"_containerName")
+		keys = append(keys, key+"_containerShell")
+		keys = append(keys, key+"_dockerEnvVars")
+		keys = append(keys, key+"_dockerImage")
+		keys = append(keys, key+"_dockerName")
+		keys = append(keys, key+"_dockerPullImage")
+		keys = append(keys, key+"_dockerWorkspace")
+	}
+
+	if len(container.Conditions) == 0 {
+		bEmptyKey = false
+	}
+	addValuesToMap(container, key, resources)
+
+	return keys
+}
+
+func addValuesToMap(container config.Container, key string, resources map[string][]string) {
+	resources[key+"_containerName"] = append(resources[key+"_containerName"], container.Name)
+
+	//ContainerShell > 0
+	if len(container.Shell) > 0 {
+		resources[key+"_containerShell"] = append(resources[key+"_containerShell"], container.Shell)
+	}
+	resources[key+"_dockerName"] = append(resources[key+"_dockerName"], container.Name)
+
+	//ContainerCommand > 0
+	if len(container.Command) > 0 {
+		resources[key+"_containerCommand"] = append(resources[key+"_containerCommand"], container.Command[0])
+	}
+	//ImagePullPolicy > 0
+	if len(container.ImagePullPolicy) > 0 {
+		resources[key+"_dockerPullImage"] = []string{fmt.Sprintf("%v", container.ImagePullPolicy != "Never")}
+	}
+	//Different when key is set (Param.Name + Param.Value)
+	workingDir := ifThenElse(len(container.WorkingDir) > 0, container.WorkingDir, "\\<empty\\>")
+	if len(key) > 0 {
+		resources[key+"_dockerEnvVars"] = append(resources[key+"_dockerEnvVars"], fmt.Sprintf("%v:\\[%v\\]", key, strings.Join(envVarsAsStringSlice(container.EnvVars), "")))
+		resources[key+"_dockerImage"] = append(resources[key+"_dockerImage"], fmt.Sprintf("%v:%v", key, container.Image))
+		resources[key+"_dockerVolumeBind"] = append(resources[key+"_dockerVolumeBind"], fmt.Sprintf("%v:\\[%v\\]", key, strings.Join(volumeMountsAsStringSlice(container.VolumeMounts), "")))
+		resources[key+"_dockerWorkspace"] = append(resources[key+"_dockerWorkspace"], fmt.Sprintf("%v:%v", key, workingDir))
+	} else {
+		resources[key+"_dockerEnvVars"] = append(resources[key+"_dockerEnvVars"], fmt.Sprintf("%v", strings.Join(envVarsAsStringSlice(container.EnvVars), "")))
+		resources[key+"_dockerImage"] = append(resources[key+"_dockerImage"], container.Image)
+		resources[key+"_dockerVolumeBind"] = append(resources[key+"_dockerVolumeBind"], fmt.Sprintf("%v", strings.Join(volumeMountsAsStringSlice(container.VolumeMounts), "")))
+		resources[key+"_dockerWorkspace"] = append(resources[key+"_dockerWorkspace"], workingDir)
+	}
+}
+
+func loopContainerDefaults(keys []string, resources map[string][]string, result map[string]string) {
+	for _, key := range keys {
+		s := strings.Split(key, "_")
+		if len(strings.Join(resources[key], ", ")) > 1 {
+			result[s[1]] += fmt.Sprintf("%v <br>", strings.Join(resources[key], ", "))
+		} else if len(strings.Join(resources[key], ", ")) == 1 {
+			if _, ok := result[s[1]]; !ok {
+				result[s[1]] = fmt.Sprintf("%v", strings.Join(resources[key], ", "))
 			}
 		}
 	}
 }
+
 func addSidecarContent(m *config.StepData, result map[string]string) {
 	//creates the context defaults for sidecars
 	if len(m.Spec.Sidecars) > 0 {
@@ -421,6 +439,7 @@ func addSidecarContent(m *config.StepData, result map[string]string) {
 			result["sidecarPullImage"] = fmt.Sprintf("%v", m.Spec.Sidecars[0].ImagePullPolicy != "Never")
 		}
 		result["sidecarReadyCommand"] = m.Spec.Sidecars[0].ReadyCommand
+		result["sidecarVolumeBind"] = strings.Join(volumeMountsAsStringSlice(m.Spec.Sidecars[0].VolumeMounts), "")
 		result["sidecarWorkspace"] = m.Spec.Sidecars[0].WorkingDir
 	}
 
@@ -468,6 +487,19 @@ func envVarsAsStringSlice(envVars []config.EnvVar) []string {
 			e = append(e, fmt.Sprintf("%v=%v, <br>", v.Name, ifThenElse(len(v.Value) > 0, v.Value, "\\<empty\\>")))
 		} else {
 			e = append(e, fmt.Sprintf("%v=%v", v.Name, ifThenElse(len(v.Value) > 0, v.Value, "\\<empty\\>")))
+		}
+	}
+	return e
+}
+
+func volumeMountsAsStringSlice(volumeMonts []config.VolumeMount) []string {
+	e := []string{}
+	c := len(envVars) - 1
+	for k, v := range envVars {
+		if k < c {
+			e = append(e, fmt.Sprintf("%v:%v, <br>", v.Name, ifThenElse(len(v.MountPath) > 0, v.MountPath, "\\<empty\\>")))
+		} else {
+			e = append(e, fmt.Sprintf("%v:%v", v.Name, ifThenElse(len(v.MountPath) > 0, v.MountPath, "\\<empty\\>")))
 		}
 	}
 	return e
