@@ -89,15 +89,25 @@ private def executeCreateServiceKey(script, Map config) {
             usernamePassword(credentialsId: config.cloudFoundry.credentialsId, passwordVariable: 'CF_PASSWORD', usernameVariable: 'CF_USERNAME')
         ]) {
             if (config.cloudFoundry.serviceKeyConfig == null) {
-                config.cloudFoundry.serviceKeyConfig = ''
+                bashScript = 
+                    """#!/bin/bash
+                    set +x
+                    set -e
+                    export HOME=${config.dockerWorkspace}
+                    cf login -u ${BashUtils.quoteAndEscape(CF_USERNAME)} -p ${BashUtils.quoteAndEscape(CF_PASSWORD)} -a ${config.cloudFoundry.apiEndpoint} -o ${BashUtils.quoteAndEscape(config.cloudFoundry.org)} -s ${BashUtils.quoteAndEscape(config.cloudFoundry.space)};
+                    cf create-service-key ${BashUtils.quoteAndEscape(config.cloudFoundry.serviceInstance)} ${BashUtils.quoteAndEscape(config.cloudFoundry.serviceKey)}
+                    """
+            } else {
+                bashScript = 
+                    """#!/bin/bash
+                    set +x
+                    set -e
+                    export HOME=${config.dockerWorkspace}
+                    cf login -u ${BashUtils.quoteAndEscape(CF_USERNAME)} -p ${BashUtils.quoteAndEscape(CF_PASSWORD)} -a ${config.cloudFoundry.apiEndpoint} -o ${BashUtils.quoteAndEscape(config.cloudFoundry.org)} -s ${BashUtils.quoteAndEscape(config.cloudFoundry.space)};
+                    cf create-service-key ${BashUtils.quoteAndEscape(config.cloudFoundry.serviceInstance)} ${BashUtils.quoteAndEscape(config.cloudFoundry.serviceKey)} -c ${BashUtils.quoteAndEscape(config.cloudFoundry.serviceKeyConfig)}
+                    """
             }
-            def returnCode = sh returnStatus: true, script: """#!/bin/bash
-            set +x
-            set -e
-            export HOME=${config.dockerWorkspace}
-            cf login -u ${BashUtils.quoteAndEscape(CF_USERNAME)} -p ${BashUtils.quoteAndEscape(CF_PASSWORD)} -a ${config.cloudFoundry.apiEndpoint} -o ${BashUtils.quoteAndEscape(config.cloudFoundry.org)} -s ${BashUtils.quoteAndEscape(config.cloudFoundry.space)};
-            cf create-service-key ${BashUtils.quoteAndEscape(config.cloudFoundry.serviceInstance)} ${BashUtils.quoteAndEscape(config.cloudFoundry.serviceKey)} -c ${BashUtils.quoteAndEscape(config.cloudFoundry.serviceKeyConfig)}
-            """
+            def returnCode = sh returnStatus: true, script: bashScript
             sh "cf logout"
             if (returnCode!=0)  {
                 error "[${STEP_NAME}] ERROR: The execution of the create-service-key failed, see the logs above for more details."
