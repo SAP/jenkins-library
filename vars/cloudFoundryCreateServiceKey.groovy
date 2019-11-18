@@ -46,7 +46,7 @@ import static com.sap.piper.Prerequisites.checkScript
          * Cloud Foundry service key configuration.
          * @parentConfigKey cloudFoundry
          */
-         'serviceKeyConfig',
+        'serviceKeyConfig',
     /** @see dockerExecute */
     'dockerImage',
     /** @see dockerExecute */
@@ -89,7 +89,7 @@ private def executeCreateServiceKey(script, Map config) {
             usernamePassword(credentialsId: config.cloudFoundry.credentialsId, passwordVariable: 'CF_PASSWORD', usernameVariable: 'CF_USERNAME')
         ]) {
             if (config.cloudFoundry.serviceKeyConfig == null) {
-                bashScript = 
+                bashScript =
                     """#!/bin/bash
                     set +x
                     set -e
@@ -98,7 +98,7 @@ private def executeCreateServiceKey(script, Map config) {
                     cf create-service-key ${BashUtils.quoteAndEscape(config.cloudFoundry.serviceInstance)} ${BashUtils.quoteAndEscape(config.cloudFoundry.serviceKey)}
                     """
             } else {
-                bashScript = 
+                bashScript =
                     """#!/bin/bash
                     set +x
                     set -e
