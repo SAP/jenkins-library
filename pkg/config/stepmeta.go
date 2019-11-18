@@ -321,7 +321,7 @@ func envVarsAsStringSlice(envVars []EnvVar) []string {
 func volumeMountsAsStringSlice(volumeMounts []VolumeMount) []string {
 	e := []string{}
 	for _, v := range volumeMounts {
-		e = append(e, fmt.Sprintf("%v:%v", v.MountPath, v.Name))
+		e = append(e, fmt.Sprintf("%v:%v", v.Name, v.MountPath))
 	}
 	return e
 }
