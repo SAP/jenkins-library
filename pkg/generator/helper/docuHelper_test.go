@@ -150,6 +150,9 @@ var stepData config.StepData = config.StepData{
 						{"param.name2b", "param.value2b"},
 					}},
 				},
+				VolumeMounts: []config.VolumeMount{
+					{"mp.2b", "mn.2b"},
+				},
 			},
 		},
 		Sidecars: []config.Container{
@@ -160,6 +163,9 @@ var stepData config.StepData = config.StepData{
 					{Params: []config.Param{
 						{"param.name0", "param.value0"},
 					}},
+				},
+				VolumeMounts: []config.VolumeMount{
+					{"mp.3b", "mn.3b"},
 				},
 			},
 		},
@@ -236,17 +242,19 @@ func TestAddContainerContent(t *testing.T) {
 
 		var m map[string]string = make(map[string]string)
 		addContainerContent(&stepData, m)
-		assert.Equal(t, 7, len(m))
+		assert.Equal(t, 8, len(m))
 
 		cases := []struct {
 			x, want string
 		}{
 			{"containerCommand", "command"},
+			{"containerName", "container0, container1 <br>container2a <br>container2b <br>"},
 			{"containerShell", "shell"},
 			{"dockerEnvVars", "envar.name0=envar.value0, envar.name1=envar.value1 <br>param.name2a=param.value2a:\\[envar.name2a=envar.value2a\\] <br>param.name2b=param.value2b:\\[envar.name2b=envar.value2b\\]"},
 			{"dockerImage", "image, image <br>param.name2a=param.value2a:image <br>param.name2b=param.value2b:image"},
 			{"dockerName", "container0, container1 <br>container2a <br>container2b <br>"},
 			{"dockerPullImage", "true"},
+			{"dockerVolumeBind", "mp.2b:mn.2b"},
 			{"dockerWorkspace", "workingdir, workingdir <br>param.name2a=param.value2a:workingdir <br>param.name2b=param.value2b:workingdir"},
 		}
 		for _, c := range cases {
@@ -273,6 +281,7 @@ func TestAddSidecarContent(t *testing.T) {
 			{"sidecarName", "sidecar0"},
 			{"sidecarPullImage", "true"},
 			{"sidecarReadyCommand", "readycommand"},
+			{"sidecarVolumeBind", "mp.3b:mn.3b"},
 			{"sidecarWorkspace", "workingdir"},
 		}
 		for _, c := range cases {
@@ -309,7 +318,7 @@ func TestGetDocuContextDefaults(t *testing.T) {
 	t.Run("Success Case", func(t *testing.T) {
 
 		m := getDocuContextDefaults(&stepData)
-		assert.Equal(t, 15, len(m))
+		assert.Equal(t, 16, len(m))
 
 		cases := []struct {
 			x, want string
@@ -323,11 +332,13 @@ func TestGetDocuContextDefaults(t *testing.T) {
 			{"sidecarReadyCommand", "readycommand"},
 			{"sidecarWorkspace", "workingdir"},
 			{"containerCommand", "command"},
+			{"containerName", "container0, container1 <br>container2a <br>container2b <br>"},
 			{"containerShell", "shell"},
 			{"dockerEnvVars", "envar.name0=envar.value0, envar.name1=envar.value1 <br>param.name2a=param.value2a:\\[envar.name2a=envar.value2a\\] <br>param.name2b=param.value2b:\\[envar.name2b=envar.value2b\\]"},
 			{"dockerImage", "image, image <br>param.name2a=param.value2a:image <br>param.name2b=param.value2b:image"},
 			{"dockerName", "container0, container1 <br>container2a <br>container2b <br>"},
 			{"dockerPullImage", "true"},
+			{"dockerVolumeBind", "mp.2b:mn.2b"},
 			{"dockerWorkspace", "workingdir, workingdir <br>param.name2a=param.value2a:workingdir <br>param.name2b=param.value2b:workingdir"},
 		}
 		for _, c := range cases {
