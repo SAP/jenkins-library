@@ -18,7 +18,7 @@ import static com.sap.piper.Prerequisites.checkScript
          */
         'apiEndpoint',
         /**
-         * Credentials to be used for deployment.
+         * Cloud Foundry credentials.
          * @parentConfigKey cloudFoundry
          */
         'credentialsId',
@@ -33,41 +33,37 @@ import static com.sap.piper.Prerequisites.checkScript
          */
         'space',
         /**
-         * Cloud Foundry service, for which the service key will be created.
+         * Cloud Foundry service instance, for which the service key will be created.
          * @parentConfigKey cloudFoundry
          */
-        'service',
+        'serviceInstance',
         /**
-         * Cloud Foundry serviceKey, which will be created.
+         * Cloud Foundry service key, which will be created.
          * @parentConfigKey cloudFoundry
          */
         'serviceKey',
         /**
-         * Service Key Config
+         * Cloud Foundry service key configuration.
          * @parentConfigKey cloudFoundry
          */
          'serviceKeyConfig',
     /** @see dockerExecute */
     'dockerImage',
     /** @see dockerExecute */
-    'dockerWorkspace',
-    /** @see dockerExecute */
-    'stashContent'
+    'dockerWorkspace'
 ]
 
 @Field Set GENERAL_CONFIG_KEYS = STEP_CONFIG_KEYS
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
 
 /**
- * Step that creates a service key on cloud foundry
+ * Step that creates a service key for a service instancve on Cloud Foundry
  */
 @GenerateDocumentation
 void call(Map parameters = [:]) {
     handlePipelineStepErrors (stepName: STEP_NAME, stepParameters: parameters) {
+
         def script = checkScript(this, parameters) ?: this
-        def utils = parameters.juStabUtils ?: new Utils()
-        def jenkinsUtils = parameters.jenkinsUtilsStub ?: new JenkinsUtils()
-        // load default & individual configuration
         Map config = ConfigurationHelper.newInstance(this)
             .loadStepDefaults()
             .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS)
@@ -77,7 +73,7 @@ void call(Map parameters = [:]) {
             .withMandatoryProperty('cloudFoundry/org')
             .withMandatoryProperty('cloudFoundry/space')
             .withMandatoryProperty('cloudFoundry/credentialsId')
-            .withMandatoryProperty('cloudFoundry/service')
+            .withMandatoryProperty('cloudFoundry/serviceInstance')
             .withMandatoryProperty('cloudFoundry/serviceKey')
             .use()
 
@@ -97,27 +93,13 @@ private def executeCreateServiceKey(script, Map config) {
             set -e
             export HOME=${config.dockerWorkspace}
             cf login -u ${BashUtils.quoteAndEscape(CF_USERNAME)} -p ${BashUtils.quoteAndEscape(CF_PASSWORD)} -a ${config.cloudFoundry.apiEndpoint} -o ${BashUtils.quoteAndEscape(config.cloudFoundry.org)} -s ${BashUtils.quoteAndEscape(config.cloudFoundry.space)};
-            cf create-service-key ${BashUtils.quoteAndEscape(config.cloudFoundry.service)} ${BashUtils.quoteAndEscape(config.cloudFoundry.serviceKey)} -c ${BashUtils.quoteAndEscape(config.cloudFoundry.serviceKeyConfig)}
+            cf create-service-key ${BashUtils.quoteAndEscape(config.cloudFoundry.serviceInstance)} ${BashUtils.quoteAndEscape(config.cloudFoundry.serviceKey)} -c ${BashUtils.quoteAndEscape(config.cloudFoundry.serviceKeyConfig)}
             """
             sh "cf logout"
             if (returnCode!=0)  {
                 error "[${STEP_NAME}] ERROR: The execution of the create-service-key failed, see the logs above for more details."
                 echo "Return Code: $returnCode"
             }
-
-            def returnCodeRead = sh returnStatus: true, script: """#!/bin/bash
-            set +x
-            set -e
-            export HOME=${config.dockerWorkspace}
-            cf login -u ${BashUtils.quoteAndEscape(CF_USERNAME)} -p ${BashUtils.quoteAndEscape(CF_PASSWORD)} -a ${config.cloudFoundry.apiEndpoint} -o ${BashUtils.quoteAndEscape(config.cloudFoundry.org)} -s ${BashUtils.quoteAndEscape(config.cloudFoundry.space)};
-            cf service-key ${BashUtils.quoteAndEscape(config.cloudFoundry.service)} ${BashUtils.quoteAndEscape(config.cloudFoundry.serviceKey)}
-            """
-            sh "cf logout"
-            if (returnCodeRead!=0)  {
-                error "[${STEP_NAME}] ERROR: The execution of the create-service-key failed, see the logs above for more details."
-                echo "Return Code: $returnCode"
-            }
-
         }
     }
 }
