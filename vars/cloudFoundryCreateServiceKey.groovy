@@ -42,6 +42,11 @@ import static com.sap.piper.Prerequisites.checkScript
          * @parentConfigKey cloudFoundry
          */
         'serviceKey',
+        /**
+         * Service Key Config
+         * @parentConfigKey cloudFoundry
+         */
+         'serviceKeyConfig',
     /** @see dockerExecute */
     'dockerImage',
     /** @see dockerExecute */
@@ -92,7 +97,7 @@ private def executeCreateServiceKey(script, Map config) {
             set -e
             export HOME=${config.dockerWorkspace}
             cf login -u ${BashUtils.quoteAndEscape(CF_USERNAME)} -p ${BashUtils.quoteAndEscape(CF_PASSWORD)} -a ${config.cloudFoundry.apiEndpoint} -o ${BashUtils.quoteAndEscape(config.cloudFoundry.org)} -s ${BashUtils.quoteAndEscape(config.cloudFoundry.space)};
-            cf create-service-key ${BashUtils.quoteAndEscape(config.cloudFoundry.service)} ${BashUtils.quoteAndEscape(config.cloudFoundry.serviceKey)}
+            cf create-service-key ${BashUtils.quoteAndEscape(config.cloudFoundry.service)} ${BashUtils.quoteAndEscape(config.cloudFoundry.serviceKey)} -c ${BashUtils.quoteAndEscape(config.cloudFoundry.serviceKeyConfig)}
             """
             sh "cf logout"
             if (returnCode!=0)  {
