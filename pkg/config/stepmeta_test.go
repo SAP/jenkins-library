@@ -338,9 +338,9 @@ func TestGetContextDefaults(t *testing.T) {
 						Image:      "testImage:tag",
 						Shell:      "/bin/bash",
 						WorkingDir: "/test/dir",
-						VolumeBind: []VolumeBind{
-							{Name: "vbn1", Value: "vbv1"},
-							{Name: "vbn2", Value: "vbv2"},
+						VolumeMounts: []VolumeMount{
+							{MountPath: "vbn1", Name: "vbv1"},
+							{MountPath: "vbn2", Name: "vbv2"},
 						},
 					},
 				},
@@ -356,9 +356,9 @@ func TestGetContextDefaults(t *testing.T) {
 						ImagePullPolicy: "Never",
 						ReadyCommand:    "/sidecar/command",
 						WorkingDir:      "/sidecar/dir",
-						VolumeBind: []VolumeBind{
-							{Name: "vbn3", Value: "vbv3"},
-							{Name: "vbn4", Value: "vbv4"},
+						VolumeMounts: []VolumeMount{
+							{MountPath: "vbn3", Name: "vbv3"},
+							{MountPath: "vbn4", Name: "vbv4"},
 						},
 					},
 				},
