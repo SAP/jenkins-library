@@ -20,6 +20,12 @@ class MapUtils implements Serializable {
         return result
     }
 
+    /**
+     * Merge two maps with the second one has precedence
+     * @param base First map
+     * @param overlay Second map, takes precedence
+     * @return The merged map
+     */
     static Map merge(Map base, Map overlay) {
 
         Map result = [:]
