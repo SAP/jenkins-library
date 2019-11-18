@@ -97,10 +97,9 @@ private def executeCreateServiceKey(script, Map config) {
             set -e
             export HOME=${config.dockerWorkspace}
             cf login -u ${BashUtils.quoteAndEscape(CF_USERNAME)} -p ${BashUtils.quoteAndEscape(CF_PASSWORD)} -a ${config.cloudFoundry.apiEndpoint} -o ${BashUtils.quoteAndEscape(config.cloudFoundry.org)} -s ${BashUtils.quoteAndEscape(config.cloudFoundry.space)};
-            cf create-service-key ${BashUtils.quoteAndEscape(config.cloudFoundry.service)} ${BashUtils.quoteAndEscape(config.cloudFoundry.serviceKey)} 
+            cf create-service-key ${BashUtils.quoteAndEscape(config.cloudFoundry.service)} ${BashUtils.quoteAndEscape(config.cloudFoundry.serviceKey)} -c ${BashUtils.quoteAndEscape(config.cloudFoundry.serviceKeyConfig)}
             """
             sh "cf logout"
-            // -c ${BashUtils.quoteAndEscape(config.cloudFoundry.serviceKeyConfig)}
             if (returnCode!=0)  {
                 error "[${STEP_NAME}] ERROR: The execution of the create-service-key failed, see the logs above for more details."
                 echo "Return Code: $returnCode"
