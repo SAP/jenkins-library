@@ -88,6 +88,9 @@ private def executeCreateServiceKey(script, Map config) {
         withCredentials([
             usernamePassword(credentialsId: config.cloudFoundry.credentialsId, passwordVariable: 'CF_PASSWORD', usernameVariable: 'CF_USERNAME')
         ]) {
+            if (config.cloudFoundry.serviceKeyConfig == null) {
+                config.cloudFoundry.serviceKeyConfig = ''
+            }
             def returnCode = sh returnStatus: true, script: """#!/bin/bash
             set +x
             set -e
