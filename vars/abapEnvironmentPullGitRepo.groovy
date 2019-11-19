@@ -99,7 +99,7 @@ void call(Map parameters = [:]) {
         } else {
             // try {
                 withCredentials([
-                    usernamePassword(credentialsId: config.cloudFoundry.credentialsId, passwordVariable: 'CF_PASSWORD', usernameVariable: 'CF_USERNAME')
+                    usernamePassword(credentialsId: configuration.cloudFoundry.credentialsId, passwordVariable: 'CF_PASSWORD', usernameVariable: 'CF_USERNAME')
                 ]) {
                     bashScript =
                         """#!/bin/bash
