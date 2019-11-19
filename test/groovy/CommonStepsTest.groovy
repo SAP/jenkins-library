@@ -53,7 +53,8 @@ public class CommonStepsTest extends BasePiperTest{
             'piperPipeline',
             'prepareDefaultValues',
             'setupCommonPipelineEnvironment',
-            'buildSetResult'
+            'buildSetResult',
+            'githubPublishRelease'
         ]
 
         List steps = getSteps().stream()
@@ -114,7 +115,8 @@ public class CommonStepsTest extends BasePiperTest{
         'commonPipelineEnvironment', // special step (infrastructure)
         'handlePipelineStepErrors', // special step (infrastructure)
         'piperStageWrapper', //intended to be called from within stages
-        'buildSetResult'
+        'buildSetResult',
+        'githubPublishRelease' //implementing new golang pattern without fields
     ]
 
     @Test
