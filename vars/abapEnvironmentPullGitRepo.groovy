@@ -87,7 +87,6 @@ void call(Map parameters = [:]) {
             .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName ?: env.STAGE_NAME, STEP_CONFIG_KEYS)
             .mixin(parameters, PARAMETER_KEYS)
             .collectValidationFailures()
-            .withMandatoryProperty('host', 'Host not provided')
             .withMandatoryProperty('repositoryName', 'Repository / Software Component not provided')
             .use()
 
