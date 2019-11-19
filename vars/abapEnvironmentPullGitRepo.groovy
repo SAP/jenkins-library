@@ -121,7 +121,7 @@ void call(Map parameters = [:]) {
                         String responseString = readFile("response.json")
                         echo responseString
                         def p = Pattern.compile(/\{.*\}$/, Pattern.MULTILINE | Pattern.DOTALL)
-                        def m = p.matcher(responseString)
+                        def m = responseString =~ p
                         String jsonString
                         if (m.find()) {
                             jsonString = m[0]
