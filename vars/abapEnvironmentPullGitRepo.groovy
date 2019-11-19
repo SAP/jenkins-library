@@ -91,7 +91,7 @@ void call(Map parameters = [:]) {
             .use()
 
         String authToken
-        if (credentialsId != null) {
+        if (configuration.credentialsId != null) {
             withCredentials([usernamePassword(credentialsId: configuration.credentialsId, usernameVariable: 'USER', passwordVariable: 'PASSWORD')]) {
                 String userColonPassword = "${USER}:${PASSWORD}"
                 authToken = userColonPassword.bytes.encodeBase64().toString()
