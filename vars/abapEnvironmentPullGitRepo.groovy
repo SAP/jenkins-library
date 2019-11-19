@@ -119,8 +119,12 @@ void call(Map parameters = [:]) {
                         echo status.toString()
                         String responseString = readFile("response.json")
                         echo responseString
+                        def jsonRegex = responseString =~ /{.*}$\/s/
+                        if (jsonRegex.find()) {
+                            jsonString = jsonRegex[0]
+                        }
                         JsonSlurper slurper = new JsonSlurper()
-                        Map responseJson = slurper.parseText(responseString)
+                        Map responseJson = slurper.parseText(jsonString)
                         String userColPw = responseJson.abap.username + ":" + responseJson.abap.password
                         authToken = userColPw.bytes.encodeBase64().toString()
                         urlString = responseJson.url + '/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY/Pull'
