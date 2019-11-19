@@ -39,7 +39,10 @@ import groovy.transform.Field
      */
     'dockerEnvVars',
     /**
-     * Name of the docker image that should be used. If empty, Docker is not used and the command is executed directly on the Jenkins system.
+     * Name of the docker image that should be used.
+     * Configure with empty value to execute the command directly on the Jenkins system (not using a container).
+     * Omit to use the default image (cf. [default_pipeline_environment.yml](https://github.com/SAP/jenkins-library/blob/master/resources/default_pipeline_environment.yml))
+     * Overwrite to use custom Docker image.
      */
     'dockerImage',
     /**
