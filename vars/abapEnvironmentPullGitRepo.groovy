@@ -112,11 +112,12 @@ void call(Map parameters = [:]) {
                             set -e
                             export HOME=${configuration.dockerWorkspace}
                             cf login -u ${BashUtils.quoteAndEscape(CF_USERNAME)} -p ${BashUtils.quoteAndEscape(CF_PASSWORD)} -a ${configuration.cloudFoundry.apiEndpoint} -o ${BashUtils.quoteAndEscape(configuration.cloudFoundry.org)} -s ${BashUtils.quoteAndEscape(configuration.cloudFoundry.space)};
-                            cf service-key ${BashUtils.quoteAndEscape(configuration.cloudFoundry.serviceInstance)} ${BashUtils.quoteAndEscape(configuration.cloudFoundry.serviceKey)}
+                            cf service-key ${BashUtils.quoteAndEscape(configuration.cloudFoundry.serviceInstance)} ${BashUtils.quoteAndEscape(configuration.cloudFoundry.serviceKey)} > \"response.json\"
                             """
-                        def responseString = sh returnStatus: true, script: bashScript
+                        def status = sh returnStatus: true, script: bashScript
                         sh "cf logout"
-                        echo responseString
+                        echo status.toString
+                        String responseString = readFile("response.json")
                         JsonSlurper slurper = new JsonSlurper()
                         Map responseJson = slurper.parseText(responseString)
                         String userColPw = responseJson.abap.username + ":" + responseJson.abap.password
