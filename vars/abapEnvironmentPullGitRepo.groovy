@@ -148,8 +148,6 @@ private String getServiceKey(Map configuration) {
     }
 }
 
-private String getAuthToken()
-
 private executeAbapEnvironmentPullGitRepo(Map configuration, String urlString, String authToken) {
     echo "[${STEP_NAME}] General Parameters: URL = \"${urlString}\", repositoryName = \"${configuration.repositoryName}\""
     HeaderFiles headerFiles = new HeaderFiles()
