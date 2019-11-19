@@ -18,6 +18,7 @@ import util.JenkinsLoggingRule
 import util.JenkinsReadYamlRule
 import util.JenkinsShellCallRule
 import util.JenkinsDockerExecuteRule
+import com.sap.piper.JenkinsUtils
 import util.Rules
 
 import hudson.AbortException
@@ -30,6 +31,12 @@ public class CloudFoundryCreateServiceKeyTest extends BasePiperTest {
     private JenkinsShellCallRule shellRule = new JenkinsShellCallRule(this)
     private JenkinsDockerExecuteRule dockerExecuteRule = new JenkinsDockerExecuteRule(this)
     private JenkinsCredentialsRule credentialsRule = new JenkinsCredentialsRule(this).withCredentials('test_credentialsId', 'user', 'password')
+
+    class JenkinsUtilsMock extends JenkinsUtils {
+        def isJobStartedByUser() {
+            return true
+        }
+    }
 
     @Rule
     public RuleChain ruleChain = Rules.getCommonRules(this)
