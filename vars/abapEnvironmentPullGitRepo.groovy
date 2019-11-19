@@ -99,22 +99,24 @@ void call(Map parameters = [:]) {
             }
         } else {
             // try {
-                withCredentials([
-                    usernamePassword(credentialsId: configuration.cloudFoundry.credentialsId, passwordVariable: 'CF_PASSWORD', usernameVariable: 'CF_USERNAME')
-                ]) {
-                    bashScript =
-                        """#!/bin/bash
-                        set +x
-                        set -e
-                        export HOME=${configuration.dockerWorkspace}
-                        cf login -u ${BashUtils.quoteAndEscape(CF_USERNAME)} -p ${BashUtils.quoteAndEscape(CF_PASSWORD)} -a ${configuration.cloudFoundry.apiEndpoint} -o ${BashUtils.quoteAndEscape(configuration.cloudFoundry.org)} -s ${BashUtils.quoteAndEscape(configuration.cloudFoundry.space)};
-                        cf service-key ${BashUtils.quoteAndEscape(configuration.cloudFoundry.serviceInstance)} ${BashUtils.quoteAndEscape(configuration.cloudFoundry.serviceKey)}
-                        """
-                    def responseString = sh script: bashScript
-                    sh "cf logout"
-                    echo responseString
-                    JsonSlurper slurper = new JsonSlurper()
-                    Map responseJson = slurper.parseText(responseString)
+                dockerExecute(script:script,dockerImage: configuration.dockerImage, dockerWorkspace: configuration.dockerWorkspace) {
+                    withCredentials([
+                        usernamePassword(credentialsId: configuration.cloudFoundry.credentialsId, passwordVariable: 'CF_PASSWORD', usernameVariable: 'CF_USERNAME')
+                    ]) {
+                        bashScript =
+                            """#!/bin/bash
+                            set +x
+                            set -e
+                            export HOME=${configuration.dockerWorkspace}
+                            cf login -u ${BashUtils.quoteAndEscape(CF_USERNAME)} -p ${BashUtils.quoteAndEscape(CF_PASSWORD)} -a ${configuration.cloudFoundry.apiEndpoint} -o ${BashUtils.quoteAndEscape(configuration.cloudFoundry.org)} -s ${BashUtils.quoteAndEscape(configuration.cloudFoundry.space)};
+                            cf service-key ${BashUtils.quoteAndEscape(configuration.cloudFoundry.serviceInstance)} ${BashUtils.quoteAndEscape(configuration.cloudFoundry.serviceKey)}
+                            """
+                        def responseString = sh script: bashScript
+                        sh "cf logout"
+                        echo responseString
+                        JsonSlurper slurper = new JsonSlurper()
+                        Map responseJson = slurper.parseText(responseString)
+                    }
                 }
             // } catch (err) {
             //     error "[${STEP_NAME}] Error: Could not get credentials from Cloud Foundry"
