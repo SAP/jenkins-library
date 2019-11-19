@@ -119,7 +119,7 @@ void call(Map parameters = [:]) {
                         echo status.toString()
                         String responseString = readFile("response.json")
                         echo responseString
-                        def jsonRegex = responseString =~ /\\{.*\\}$\/s/
+                        def jsonRegex = responseString =~ /\{.*\}$\/s/
                         if (jsonRegex.find()) {
                             jsonString = jsonRegex[0]
                         }
