@@ -31,7 +31,7 @@ import static com.sap.piper.Utils.downloadSettingsFromUrl
     'extension',
     /**
      * The location of the SAP Multitarget Application Archive Builder jar file, including file name and extension.
-     * If it is not provided, the SAP Multitarget Application Archive Builder is expected on PATH.
+     * If you run on Docker, this must match the location of the jar file in the container as well.
      */
     'mtaJarLocation',
     /** Path or url to the mvn settings file that should be used as global settings file.*/
