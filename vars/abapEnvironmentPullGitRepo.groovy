@@ -89,13 +89,13 @@ void call(Map parameters = [:]) {
         String authToken
         String urlString
         if (configuration.credentialsId != null && configuration.host != null) {
-            error "[${STEP_NAME}] Info: Using configuration: credentialsId: $configuration.credentialsId and host: $configuration.host"
+            echo "[${STEP_NAME}] Info: Using configuration: credentialsId: $configuration.credentialsId and host: $configuration.host"
             withCredentials([usernamePassword(credentialsId: configuration.credentialsId, usernameVariable: 'USER', passwordVariable: 'PASSWORD')]) {
                 userColonPassword = "${USER}:${PASSWORD}"
                 urlString = 'https://' + configuration.host + '/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY/Pull'
             }
         } else {
-            "[${STEP_NAME}] Info: Using Cloud Foundry service key $configuration.cloudFoundry.serviceKey for service instance $configuration.cloudFoundry.serviceInstance"
+            echo "[${STEP_NAME}] Info: Using Cloud Foundry service key $configuration.cloudFoundry.serviceKey for service instance $configuration.cloudFoundry.serviceInstance"
             dockerExecute(script:script,dockerImage: configuration.dockerImage, dockerWorkspace: configuration.dockerWorkspace) {
                     String jsonString = getServiceKey(configuration)
                     Map responseJson = readJSON text: jsonString
@@ -160,7 +160,6 @@ private executeAbapEnvironmentPullGitRepo(Map configuration, String urlString, S
 }
 
 private String triggerPull(Map configuration, String url, String authToken, HeaderFiles headerFiles) {
-
     String entityUri = null
 
     def xCsrfTokenScript = """#!/bin/bash
@@ -203,11 +202,9 @@ private String triggerPull(Map configuration, String url, String authToken, Head
 
     echo "[${STEP_NAME}] Entity URI: ${entityUri}"
     return entityUri
-
 }
 
 private String pollPullStatus(String url, String authToken, HeaderFiles headerFiles) {
-
     String status = "R";
     while(status == "R") {
 
