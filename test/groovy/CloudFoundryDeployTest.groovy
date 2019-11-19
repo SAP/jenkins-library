@@ -255,7 +255,7 @@ class CloudFoundryDeployTest extends BasePiperTest {
     }
 
     @Test
-    void testCfNativeWithDockerImageWithCredentials() {
+    void testCfNativeWithDockerImageAndCredentials() {
         // adding additional credentials for Docker registry authorization
         credentialsRule.withCredentials('test_cfDockerCredentialsId', 'test_cf_docker', '********')
         readYamlRule.registerYaml('test.yml', "applications: [[name: 'manifestAppName']]")
@@ -280,6 +280,38 @@ class CloudFoundryDeployTest extends BasePiperTest {
         assertThat(dockerExecuteRule.dockerParams.dockerEnvVars, hasEntry(equalTo('CF_DOCKER_PASSWORD'), equalTo("${'********'}")))
         assertThat(shellRule.shell, hasItem(containsString('cf login -u "test_cf" -p \'********\' -a https://api.cf.eu10.hana.ondemand.com -o "testOrg" -s "testSpace"')))
         assertThat(shellRule.shell, hasItem(containsString('cf push testAppName --docker-image repo/image:tag --docker-username test_cf_docker')))
+        assertThat(shellRule.shell, hasItem(containsString('cf logout')))
+    }
+
+    @Test
+    void testCfNativeWithManifestAndDockerCredentials() {
+        // Docker image can be done via manifest.yml; if a private Docker registry is used, --docker-username and DOCKER_PASSWORD
+        // must be set; this is checked by this test
+
+        // adding additional credentials for Docker registry authorization
+        credentialsRule.withCredentials('test_cfDockerCredentialsId', 'test_cf_docker', '********')
+        readYamlRule.registerYaml('test.yml', "applications: [[name: 'manifestAppName']]")
+        helper.registerAllowedMethod('writeYaml', [Map], { Map parameters ->
+            generatedFile = parameters.file
+            data = parameters.data
+        })
+        stepRule.step.cloudFoundryDeploy([
+            script: nullScript,
+            juStabUtils: utils,
+            jenkinsUtilsStub: new JenkinsUtilsMock(),
+            deployTool: 'cf_native',
+            cloudFoundry: [
+                org: 'testOrg',
+                space: 'testSpace',
+                credentialsId: 'test_cfCredentialsId',
+                appName: 'testAppName',
+                manifest: 'manifest.yml',
+                dockerCredentialsId: 'test_cfDockerCredentialsId'
+            ]
+        ])
+        assertThat(dockerExecuteRule.dockerParams.dockerEnvVars, hasEntry(equalTo('CF_DOCKER_PASSWORD'), equalTo("${'********'}")))
+        assertThat(shellRule.shell, hasItem(containsString('cf login -u "test_cf" -p \'********\' -a https://api.cf.eu10.hana.ondemand.com -o "testOrg" -s "testSpace"')))
+        assertThat(shellRule.shell, hasItem(containsString("cf push testAppName -f 'manifest.yml' --docker-username test_cf_docker")))
         assertThat(shellRule.shell, hasItem(containsString('cf logout')))
     }
 

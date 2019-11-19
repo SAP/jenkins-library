@@ -6,6 +6,9 @@ import com.sap.piper.JenkinsUtils
 import com.sap.piper.Utils
 import groovy.transform.Field
 
+import java.util.stream.Collectors
+import java.util.stream.Stream
+
 import static com.sap.piper.Prerequisites.checkScript
 
 @Field String STEP_NAME = getClass().getName()
@@ -74,9 +77,10 @@ import static com.sap.piper.Prerequisites.checkScript
          */
         'space',
         /**
-        *  Defines a Docker image instead to be deployed. The specified name of the image is passed to the `--docker-image`
-        *  parameter of the cf CLI and must adhere it's naming pattern (e.g. REPO/IMAGE:TAG). See (cf CLI documentation)[https://docs.cloudfoundry.org/devguide/deploy-apps/push-docker.html]
-        *  for details.
+        * Docker image deployments are supported (via manifest file in general)[https://docs.cloudfoundry.org/devguide/deploy-apps/manifest-attributes.html#docker].
+        * If no manifest is used, this parameter defines the image to be deployed. The specified name of the image is
+        * passed to the `--docker-image` parameter of the cf CLI and must adhere it's naming pattern (e.g. REPO/IMAGE:TAG).
+        * See (cf CLI documentation)[https://docs.cloudfoundry.org/devguide/deploy-apps/push-docker.html] for details.
         *
         * Note: The used Docker registry must be visible for the targeted Cloud Foundry instance.
         * @parentConfigKey cloudFoundry
@@ -317,7 +321,7 @@ private void handleCFNativeDeployment(Map config, script) {
     checkIfAppNameIsAvailable(config)
 
     def dockerCredentials = []
-    if (config.cloudFoundry.dockerCredentialsId != null && config.cloudFoundry.dockerCredentialsId != "") {
+    if (config.cloudFoundry.dockerCredentialsId != null && config.cloudFoundry.dockerCredentialsId != '') {
         dockerCredentials.add(usernamePassword(
             credentialsId: config.cloudFoundry.dockerCredentialsId,
             passwordVariable: 'dockerPassword',
@@ -339,7 +343,7 @@ private void handleCFNativeDeployment(Map config, script) {
                 CF_HOME           : "${config.dockerWorkspace}",
                 CF_PLUGIN_HOME    : "${config.dockerWorkspace}",
                 // if the Docker registry requires authentication the DOCKER_PASSWORD env variable must be set
-                CF_DOCKER_PASSWORD: "${binding.hasVariable("dockerPassword") ? dockerPassword : ""}",
+                CF_DOCKER_PASSWORD: "${binding.hasVariable("dockerPassword") ? dockerPassword : ''}",
                 STATUS_CODE       : "${config.smokeTestStatusCode}"
             ]
         ) {
@@ -444,16 +448,20 @@ private checkIfAppNameIsAvailable(config) {
 }
 
 def deployCfNative(config) {
-    def manifestOrDockerImage
-    if (config.cloudFoundry.deployDockerImage != null && config.cloudFoundry.deployDockerImage != "") {
-        // if the Docker registry requires authentication the --docker-username parameter must be set
-        def usernameParameter = binding.hasVariable("dockerUsername") ? "--docker-username ${dockerUsername}}" : ''
-        manifestOrDockerImage = "--docker-image ${config.cloudFoundry.deployDockerImage} ${usernameParameter}"
-    } else {
-        manifestOrDockerImage = "-f '${config.cloudFoundry.manifest}'"
-    }
-    def deployStatement = "cf ${config.deployCommand} ${config.cloudFoundry.appName ?: ''} ${config.deployOptions ?: ''} ${manifestOrDockerImage} ${config.smokeTest} ${config.cfNativeDeployParameters}"
-
+    // the deployStatement is complex and has lot of options; using Stream.of(...).filter() allows to put each option
+    // as a single Stream element; if a option is not set (= null) this removed by .filter() before every element is joined
+    // via a single whitespace; results in a single line deploy statement
+    def deployStatement = Stream.of(
+        'cf',
+        config.deployCommand,
+        config.cloudFoundry.appName,
+        config.deployOptions,
+        config.cloudFoundry.manifest ? "-f '${config.cloudFoundry.manifest}'" : null,
+        config.cloudFoundry.deployDockerImage ? "--docker-image ${config.cloudFoundry.deployDockerImage}" : null,
+        binding.hasVariable("dockerUsername") ? "--docker-username ${dockerUsername}}" : null,
+        config.smokeTest,
+        config.cfNativeDeployParameters
+    ).filter { s -> s != null && s != '' }.collect(Collectors.joining(' '))
     deploy(null, deployStatement, config, { c -> stopOldAppIfRunning(c) })
 }
 
