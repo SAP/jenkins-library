@@ -97,7 +97,7 @@ void call(Map parameters = [:]) {
                 authToken = userColonPassword.bytes.encodeBase64().toString()
             }
         } else {
-            try {
+            // try {
                 withCredentials([
                     usernamePassword(credentialsId: config.cloudFoundry.credentialsId, passwordVariable: 'CF_PASSWORD', usernameVariable: 'CF_USERNAME')
                 ]) {
@@ -115,9 +115,9 @@ void call(Map parameters = [:]) {
                     JsonSlurper slurper = new JsonSlurper()
                     Map responseJson = slurper.parseText(responseString)
                 }
-            } catch (err) {
-                error "[${STEP_NAME}] Error: Could not get credentials from Cloud Foundry"
-            }
+            // } catch (err) {
+            //     error "[${STEP_NAME}] Error: Could not get credentials from Cloud Foundry"
+            // }
         }
 
         String urlString = 'https://' + configuration.host + '/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY/Pull'
