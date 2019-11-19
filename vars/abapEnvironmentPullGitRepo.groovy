@@ -118,6 +118,7 @@ void call(Map parameters = [:]) {
                         sh "cf logout"
                         echo status.toString()
                         String responseString = readFile("response.json")
+                        echo responseString
                         JsonSlurper slurper = new JsonSlurper()
                         Map responseJson = slurper.parseText(responseString)
                         String userColPw = responseJson.abap.username + ":" + responseJson.abap.password
