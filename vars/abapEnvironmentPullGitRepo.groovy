@@ -121,6 +121,8 @@ void call(Map parameters = [:]) {
                         String userColPw = responseJson.abap.username + ":" + responseJson.abap.password
                         authToken = userColPw.bytes.encodeBase64().toString()
                         urlString = responseJson.url + '/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY/Pull'
+                        echo authToken
+                        echo urlString
                     }
                 }
             // } catch (err) {
