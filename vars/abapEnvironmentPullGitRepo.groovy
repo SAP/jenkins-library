@@ -128,8 +128,7 @@ void call(Map parameters = [:]) {
                         } else {
                             error "No REGEX match"
                         }
-                        JsonSlurper slurper = new JsonSlurper()
-                        Map responseJson = slurper.parseText(jsonString)
+                        Map responseJson = new JsonSlurper().parseText(jsonString)
                         String userColPw = responseJson.abap.username + ":" + responseJson.abap.password
                         authToken = userColPw.bytes.encodeBase64().toString()
                         urlString = responseJson.url + '/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY/Pull'
