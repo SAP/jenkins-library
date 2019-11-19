@@ -120,8 +120,11 @@ void call(Map parameters = [:]) {
                         String responseString = readFile("response.json")
                         echo responseString
                         def jsonRegex = responseString =~ /\{.*\}$\/s/
+                        String jsonString
                         if (jsonRegex.find()) {
                             jsonString = jsonRegex[0]
+                        } else {
+                            error "message"
                         }
                         JsonSlurper slurper = new JsonSlurper()
                         Map responseJson = slurper.parseText(jsonString)
