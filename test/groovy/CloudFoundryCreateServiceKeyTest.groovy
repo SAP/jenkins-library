@@ -17,6 +17,7 @@ import util.JenkinsStepRule
 import util.JenkinsLoggingRule
 import util.JenkinsReadYamlRule
 import util.JenkinsShellCallRule
+import util.JenkinsDockerExecuteRule
 import util.Rules
 
 import hudson.AbortException
