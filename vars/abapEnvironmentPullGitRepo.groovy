@@ -50,11 +50,6 @@ import java.util.UUID
          * @parentConfigKey cloudFoundry
          */
         'serviceKey',
-        /**
-         * Cloud Foundry service key configuration.
-         * @parentConfigKey cloudFoundry
-         */
-        'serviceKeyConfig',
     /** @see dockerExecute */
     'dockerImage',
     /** @see dockerExecute */
