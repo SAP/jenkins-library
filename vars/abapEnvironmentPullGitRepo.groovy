@@ -105,7 +105,7 @@ void call(Map parameters = [:]) {
             // try {
                 dockerExecute(script:script,dockerImage: configuration.dockerImage, dockerWorkspace: configuration.dockerWorkspace) {
                         String jsonString = getServiceKey(configuration)
-                        Map responseJson = new JsonSlurper().parseText(jsonString)
+                        def responseJson = readJSON(jsonString)
                         String userColPw = responseJson.abap.username + ":" + responseJson.abap.password
                         authToken = userColPw.bytes.encodeBase64().toString()
                         urlString = responseJson.url + '/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY/Pull'
@@ -147,6 +147,8 @@ private String getServiceKey(Map configuration) {
         }
     }
 }
+
+private String getAuthToken()
 
 private executeAbapEnvironmentPullGitRepo(Map configuration, String urlString, String authToken) {
     echo "[${STEP_NAME}] General Parameters: URL = \"${urlString}\", repositoryName = \"${configuration.repositoryName}\""
