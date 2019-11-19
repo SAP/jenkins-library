@@ -105,7 +105,7 @@ void call(Map parameters = [:]) {
             // try {
                 dockerExecute(script:script,dockerImage: configuration.dockerImage, dockerWorkspace: configuration.dockerWorkspace) {
                         String jsonString = getServiceKey(configuration)
-                        def responseJson = readJSON(jsonString)
+                        def responseJson = readJSON text: jsonString
                         String userColPw = responseJson.abap.username + ":" + responseJson.abap.password
                         authToken = userColPw.bytes.encodeBase64().toString()
                         urlString = responseJson.url + '/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY/Pull'
