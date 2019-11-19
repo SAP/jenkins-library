@@ -27,6 +27,7 @@ public class CloudFoundryCreateServiceKeyTest extends BasePiperTest {
     private JenkinsStepRule stepRule = new JenkinsStepRule(this)
     private JenkinsLoggingRule loggingRule = new JenkinsLoggingRule(this)
     private JenkinsShellCallRule shellRule = new JenkinsShellCallRule(this)
+    private JenkinsDockerExecuteRule dockerExecuteRule = new JenkinsDockerExecuteRule(this)
     private JenkinsCredentialsRule credentialsRule = new JenkinsCredentialsRule(this).withCredentials('test_credentialsId', 'user', 'password')
 
     @Rule
@@ -36,6 +37,7 @@ public class CloudFoundryCreateServiceKeyTest extends BasePiperTest {
         .around(stepRule)
         .around(loggingRule)
         .around(credentialsRule)
+        .around(dockerExecuteRule)
         .around(shellRule)
 
     @Before

@@ -83,7 +83,7 @@ void call(Map parameters = [:]) {
 }
 
 private def executeCreateServiceKey(script, Map config) {
-    dockerExecute(script:script,dockerImage: config.dockerImage, dockerWorkspace: config.dockerWorkspace) {
+    dockerExecute(script:script, dockerImage: config.dockerImage, dockerWorkspace: config.dockerWorkspace) {
 
         withCredentials([
             usernamePassword(credentialsId: config.cloudFoundry.credentialsId, passwordVariable: 'CF_PASSWORD', usernameVariable: 'CF_USERNAME')
