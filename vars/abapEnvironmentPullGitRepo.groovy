@@ -97,6 +97,7 @@ void call(Map parameters = [:]) {
             withCredentials([usernamePassword(credentialsId: configuration.credentialsId, usernameVariable: 'USER', passwordVariable: 'PASSWORD')]) {
                 String userColonPassword = "${USER}:${PASSWORD}"
                 authToken = userColonPassword.bytes.encodeBase64().toString()
+                executeAbapEnvironmentPullGitRepo(configuration, urlString, authToken)
             }
         urlString = 'https://' + configuration.host + '/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY/Pull'
         } else {
@@ -123,6 +124,7 @@ void call(Map parameters = [:]) {
                         urlString = responseJson.url + '/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY/Pull'
                         echo authToken
                         echo urlString
+                        executeAbapEnvironmentPullGitRepo(configuration, urlString, authToken)
                     }
                 }
             // } catch (err) {
@@ -130,22 +132,25 @@ void call(Map parameters = [:]) {
             // }
         }
 
-        echo "[${STEP_NAME}] General Parameters: URL = \"${urlString}\", repositoryName = \"${configuration.repositoryName}\""
-        HeaderFiles headerFiles = new HeaderFiles()
+        
+    }
+}
 
-        try {
-            String urlPullEntity = triggerPull(configuration, urlString, authToken, headerFiles)
-            if (urlPullEntity != null) {
-                String finalStatus = pollPullStatus(urlPullEntity, authToken, headerFiles)
-                if (finalStatus != 'S') {
-                    error "[${STEP_NAME}] Pull Failed"
-                }
-            } else {
+private executeAbapEnvironmentPullGitRepo(Map configuration, String urlString, String authToken) {
+    echo "[${STEP_NAME}] General Parameters: URL = \"${urlString}\", repositoryName = \"${configuration.repositoryName}\""
+    HeaderFiles headerFiles = new HeaderFiles()
+    try {
+        String urlPullEntity = triggerPull(configuration, urlString, authToken, headerFiles)
+        if (urlPullEntity != null) {
+            String finalStatus = pollPullStatus(urlPullEntity, authToken, headerFiles)
+            if (finalStatus != 'S') {
                 error "[${STEP_NAME}] Pull Failed"
             }
-        } finally {
-            workspaceCleanup(headerFiles)
+        } else {
+            error "[${STEP_NAME}] Pull Failed"
         }
+    } finally {
+        workspaceCleanup(headerFiles)
     }
 }
 
