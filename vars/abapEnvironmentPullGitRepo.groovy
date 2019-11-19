@@ -111,7 +111,7 @@ void call(Map parameters = [:]) {
                             cf login -u ${BashUtils.quoteAndEscape(CF_USERNAME)} -p ${BashUtils.quoteAndEscape(CF_PASSWORD)} -a ${configuration.cloudFoundry.apiEndpoint} -o ${BashUtils.quoteAndEscape(configuration.cloudFoundry.org)} -s ${BashUtils.quoteAndEscape(configuration.cloudFoundry.space)};
                             cf service-key ${BashUtils.quoteAndEscape(configuration.cloudFoundry.serviceInstance)} ${BashUtils.quoteAndEscape(configuration.cloudFoundry.serviceKey)}
                             """
-                        def responseString = sh script: bashScript
+                        def responseString = sh returnStatus: true, script: bashScript
                         sh "cf logout"
                         echo responseString
                         JsonSlurper slurper = new JsonSlurper()
