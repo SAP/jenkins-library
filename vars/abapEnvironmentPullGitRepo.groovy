@@ -70,19 +70,12 @@ import java.util.regex.*
  * !!! note "Git Repository and Software Component"
  *       In SAP Cloud Platform ABAP Environment Git repositories are wrapped in Software Components (which are managed in the App "Manage Software Components")
  *       Currently, those two names are used synonymous.
- * !!! note "User and Password"
- *        In the future, we want to support the user / password creation via the create-service-key funcion of cloud foundry.
- *        For this case, it is not possible to use the usual pattern with Jenkins Credentials.
  */
 @GenerateDocumentation
 void call(Map parameters = [:]) {
-
     handlePipelineStepErrors(stepName: STEP_NAME, stepParameters: parameters, failOnError: true) {
 
         def script = checkScript(this, parameters) ?: this
-
-        // In the future, we want to support the user / password creation via the create-service-key funcion of cloud foundry.
-        // For this case, it is not possible to use the usual pattern with Jenkins Credentials.
         Map configuration = ConfigurationHelper.newInstance(this)
             .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS)
             .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS)
@@ -95,12 +88,14 @@ void call(Map parameters = [:]) {
         String userColonPassword 
         String authToken
         String urlString
-        if (configuration.credentialsId != null) {
+        if (configuration.credentialsId != null && configuration.host != null) {
+            error "[${STEP_NAME}] Info: Using configuration: credentialsId: $configuration.credentialsId and host: $configuration.host"
             withCredentials([usernamePassword(credentialsId: configuration.credentialsId, usernameVariable: 'USER', passwordVariable: 'PASSWORD')]) {
                 userColonPassword = "${USER}:${PASSWORD}"
                 urlString = 'https://' + configuration.host + '/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY/Pull'
             }
         } else {
+            "[${STEP_NAME}] Info: Using Cloud Foundry service key $configuration.cloudFoundry.serviceKey for service instance $configuration.cloudFoundry.serviceInstance"
             dockerExecute(script:script,dockerImage: configuration.dockerImage, dockerWorkspace: configuration.dockerWorkspace) {
                     String jsonString = getServiceKey(configuration)
                     Map responseJson = readJSON text: jsonString
@@ -108,8 +103,12 @@ void call(Map parameters = [:]) {
                     urlString = responseJson.url + '/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY/Pull'
             }
         }
-        authToken = userColonPassword.bytes.encodeBase64().toString()
-        executeAbapEnvironmentPullGitRepo(configuration, urlString, authToken)
+        if (userColonPassword != null && urlString != null) {
+            authToken = userColonPassword.bytes.encodeBase64().toString()
+            executeAbapEnvironmentPullGitRepo(configuration, urlString, authToken)
+        } else {
+            error "[${STEP_NAME}] Error: Necessary parameters not available"
+        }
     }
 }
 
@@ -127,16 +126,17 @@ private String getServiceKey(Map configuration) {
             """
         def status = sh returnStatus: true, script: bashScript
         sh "cf logout"
-        echo status.toString()
+        if (status != 0) {
+            echo "[${STEP_NAME}] Info: Could not get the service key $configuration.cloudFoundry.serviceKey for service instance $configuration.cloudFoundry.serviceInstance"
+        }
         String responseString = readFile("response.json")
-        echo responseString
         def p = Pattern.compile(/\{.*\}$/, Pattern.MULTILINE | Pattern.DOTALL)
         def m = responseString =~ p
         String jsonString
         if (m.find()) {
             return m[0]
         } else {
-            error "No REGEX match"
+            echo "[${STEP_NAME}] Info: Could not parse the service key $configuration.cloudFoundry.serviceKey"
         }
     }
 }
