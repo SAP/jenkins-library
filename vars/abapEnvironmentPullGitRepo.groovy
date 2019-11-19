@@ -9,6 +9,7 @@ import hudson.AbortException
 import groovy.transform.Field
 import org.jenkinsci.plugins.workflow.steps.FlowInterruptedException
 import java.util.UUID
+import java.util.regex
 
 @Field def STEP_NAME = getClass().getName()
 @Field Set GENERAL_CONFIG_KEYS = [
@@ -119,12 +120,13 @@ void call(Map parameters = [:]) {
                         echo status.toString()
                         String responseString = readFile("response.json")
                         echo responseString
-                        def jsonRegex = responseString =~ /\{.*\}$\/s/
+                        Pattern p = Pattern.compile(/\{.*\}$/, Pattern.MULTILINE)
+                        Matcher m = p.matcher(responseString)
                         String jsonString
-                        if (jsonRegex.find()) {
-                            jsonString = jsonRegex[0]
+                        if (m.find()) {
+                            jsonString = m[0]
                         } else {
-                            error "message"
+                            error "No REGEX match"
                         }
                         JsonSlurper slurper = new JsonSlurper()
                         Map responseJson = slurper.parseText(jsonString)
