@@ -110,7 +110,7 @@ private def executeCreateServiceKey(script, Map config) {
             def returnCode = sh returnStatus: true, script: bashScript
             sh "cf logout"
             if (returnCode!=0)  {
-                error "[${STEP_NAME}] ERROR: The execution of create-service-key failed, see the logs above for more details."
+                error "[${STEP_NAME}] Error: The execution of create-service-key failed, see the logs above for more details."
                 echo "Return Code: $returnCode"
             }
         }
