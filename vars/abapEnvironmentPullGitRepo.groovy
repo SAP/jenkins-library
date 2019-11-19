@@ -18,7 +18,47 @@ import java.util.UUID
     /**
      * Specifies the name of the Repository (Software Component) on the SAP Cloud Platform ABAP Environment system
      */
-    'repositoryName'
+    'repositoryName',
+    'cloudFoundry',
+        /**
+         * Cloud Foundry API endpoint.
+         * @parentConfigKey cloudFoundry
+         */
+        'apiEndpoint',
+        /**
+         * Cloud Foundry credentials.
+         * @parentConfigKey cloudFoundry
+         */
+        'credentialsId',
+        /**
+         * Cloud Foundry target organization.
+         * @parentConfigKey cloudFoundry
+         */
+        'org',
+        /**
+         * Cloud Foundry target space.
+         * @parentConfigKey cloudFoundry
+         */
+        'space',
+        /**
+         * Cloud Foundry service instance, for which the service key will be created.
+         * @parentConfigKey cloudFoundry
+         */
+        'serviceInstance',
+        /**
+         * Cloud Foundry service key, which will be created.
+         * @parentConfigKey cloudFoundry
+         */
+        'serviceKey',
+        /**
+         * Cloud Foundry service key configuration.
+         * @parentConfigKey cloudFoundry
+         */
+        'serviceKeyConfig',
+    /** @see dockerExecute */
+    'dockerImage',
+    /** @see dockerExecute */
+    'dockerWorkspace'
 ]
 @Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS.plus([
     /**
@@ -54,13 +94,36 @@ void call(Map parameters = [:]) {
             .collectValidationFailures()
             .withMandatoryProperty('host', 'Host not provided')
             .withMandatoryProperty('repositoryName', 'Repository / Software Component not provided')
-            .withMandatoryProperty('credentialsId')
             .use()
 
         String authToken
-        withCredentials([usernamePassword(credentialsId: configuration.credentialsId, usernameVariable: 'USER', passwordVariable: 'PASSWORD')]) {
-            String userColonPassword = "${USER}:${PASSWORD}"
-            authToken = userColonPassword.bytes.encodeBase64().toString()
+        if (credentialsId != null) {
+            withCredentials([usernamePassword(credentialsId: configuration.credentialsId, usernameVariable: 'USER', passwordVariable: 'PASSWORD')]) {
+                String userColonPassword = "${USER}:${PASSWORD}"
+                authToken = userColonPassword.bytes.encodeBase64().toString()
+            }
+        } else {
+            try {
+                withCredentials([
+                    usernamePassword(credentialsId: config.cloudFoundry.credentialsId, passwordVariable: 'CF_PASSWORD', usernameVariable: 'CF_USERNAME')
+                ]) {
+                    bashScript =
+                        """#!/bin/bash
+                        set +x
+                        set -e
+                        export HOME=${config.dockerWorkspace}
+                        cf login -u ${BashUtils.quoteAndEscape(CF_USERNAME)} -p ${BashUtils.quoteAndEscape(CF_PASSWORD)} -a ${config.cloudFoundry.apiEndpoint} -o ${BashUtils.quoteAndEscape(config.cloudFoundry.org)} -s ${BashUtils.quoteAndEscape(config.cloudFoundry.space)};
+                        cf service-key ${BashUtils.quoteAndEscape(config.cloudFoundry.serviceInstance)} ${BashUtils.quoteAndEscape(config.cloudFoundry.serviceKey)}
+                        """
+                    def responseString = sh script: bashScript
+                    sh "cf logout"
+                    echo responseString
+                    JsonSlurper slurper = new JsonSlurper()
+                    Map responseJson = slurper.parseText(responseString)
+                }
+            } catch (error) {
+                error "[${STEP_NAME}] Error: Could not get credentials from Cloud Foundry"
+            }
         }
 
         String urlString = 'https://' + configuration.host + '/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY/Pull'
