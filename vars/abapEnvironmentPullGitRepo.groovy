@@ -9,7 +9,7 @@ import hudson.AbortException
 import groovy.transform.Field
 import org.jenkinsci.plugins.workflow.steps.FlowInterruptedException
 import java.util.UUID
-import java.util.regex
+import java.util.regex.*
 
 @Field def STEP_NAME = getClass().getName()
 @Field Set GENERAL_CONFIG_KEYS = [
