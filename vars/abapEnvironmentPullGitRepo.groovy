@@ -116,7 +116,7 @@ void call(Map parameters = [:]) {
                             """
                         def status = sh returnStatus: true, script: bashScript
                         sh "cf logout"
-                        echo status.toString
+                        echo status.toString()
                         String responseString = readFile("response.json")
                         JsonSlurper slurper = new JsonSlurper()
                         Map responseJson = slurper.parseText(responseString)
