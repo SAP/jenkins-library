@@ -104,30 +104,7 @@ void call(Map parameters = [:]) {
         } else {
             // try {
                 dockerExecute(script:script,dockerImage: configuration.dockerImage, dockerWorkspace: configuration.dockerWorkspace) {
-                    withCredentials([
-                        usernamePassword(credentialsId: configuration.cloudFoundry.credentialsId, passwordVariable: 'CF_PASSWORD', usernameVariable: 'CF_USERNAME')
-                    ]) {
-                        bashScript =
-                            """#!/bin/bash
-                            set +x
-                            set -e
-                            export HOME=${configuration.dockerWorkspace}
-                            cf login -u ${BashUtils.quoteAndEscape(CF_USERNAME)} -p ${BashUtils.quoteAndEscape(CF_PASSWORD)} -a ${configuration.cloudFoundry.apiEndpoint} -o ${BashUtils.quoteAndEscape(configuration.cloudFoundry.org)} -s ${BashUtils.quoteAndEscape(configuration.cloudFoundry.space)};
-                            cf service-key ${BashUtils.quoteAndEscape(configuration.cloudFoundry.serviceInstance)} ${BashUtils.quoteAndEscape(configuration.cloudFoundry.serviceKey)} > \"response.json\"
-                            """
-                        def status = sh returnStatus: true, script: bashScript
-                        sh "cf logout"
-                        echo status.toString()
-                        String responseString = readFile("response.json")
-                        echo responseString
-                        def p = Pattern.compile(/\{.*\}$/, Pattern.MULTILINE | Pattern.DOTALL)
-                        def m = responseString =~ p
-                        String jsonString
-                        if (m.find()) {
-                            jsonString = m[0]
-                        } else {
-                            error "No REGEX match"
-                        }
+                        String jsonString = getServiceKey(configuration)
                         Map responseJson = new JsonSlurper().parseText(jsonString)
                         String userColPw = responseJson.abap.username + ":" + responseJson.abap.password
                         authToken = userColPw.bytes.encodeBase64().toString()
@@ -135,14 +112,39 @@ void call(Map parameters = [:]) {
                         echo authToken
                         echo urlString
                         executeAbapEnvironmentPullGitRepo(configuration, urlString, authToken)
-                    }
                 }
             // } catch (err) {
             //     error "[${STEP_NAME}] Error: Could not get credentials from Cloud Foundry"
             // }
         }
+    }
+}
 
-        
+private String getServiceKey(Map configuration) {
+    withCredentials([
+        usernamePassword(credentialsId: configuration.cloudFoundry.credentialsId, passwordVariable: 'CF_PASSWORD', usernameVariable: 'CF_USERNAME')
+    ]) {
+        bashScript =
+            """#!/bin/bash
+            set +x
+            set -e
+            export HOME=${configuration.dockerWorkspace}
+            cf login -u ${BashUtils.quoteAndEscape(CF_USERNAME)} -p ${BashUtils.quoteAndEscape(CF_PASSWORD)} -a ${configuration.cloudFoundry.apiEndpoint} -o ${BashUtils.quoteAndEscape(configuration.cloudFoundry.org)} -s ${BashUtils.quoteAndEscape(configuration.cloudFoundry.space)};
+            cf service-key ${BashUtils.quoteAndEscape(configuration.cloudFoundry.serviceInstance)} ${BashUtils.quoteAndEscape(configuration.cloudFoundry.serviceKey)} > \"response.json\"
+            """
+        def status = sh returnStatus: true, script: bashScript
+        sh "cf logout"
+        echo status.toString()
+        String responseString = readFile("response.json")
+        echo responseString
+        def p = Pattern.compile(/\{.*\}$/, Pattern.MULTILINE | Pattern.DOTALL)
+        def m = responseString =~ p
+        String jsonString
+        if (m.find()) {
+            return m[0]
+        } else {
+            error "No REGEX match"
+        }
     }
 }
 
