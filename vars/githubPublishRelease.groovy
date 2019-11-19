@@ -1,198 +1,42 @@
-import com.sap.piper.JsonUtils
+import com.sap.piper.PiperGoUtils
+import com.sap.piper.Utils
+import groovy.transform.Field
 
 import static com.sap.piper.Prerequisites.checkScript
 
-import com.sap.piper.GenerateDocumentation
-import com.sap.piper.Utils
-import com.sap.piper.ConfigurationHelper
-
-import groovy.text.GStringTemplateEngine
-import groovy.transform.Field
-
 @Field String STEP_NAME = getClass().getName()
+@Field String METADATA_FILE = 'metadata/githubrelease.yaml'
 
-@Field Set GENERAL_CONFIG_KEYS = [
-    /** Allows to overwrite the GitHub API url.*/
-    'githubApiUrl',
-    /**
-     * Allows to overwrite the GitHub token credentials id.
-     * @possibleValues Jenkins credential id
-     */
-    'githubTokenCredentialsId',
-    /** Allows to overwrite the GitHub url.*/
-    'githubServerUrl'
-]
+//Metadata maintained in file resources/metadata/githubrelease.yaml
 
-@Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS.plus([
-    /**
-     * If it is set to `true`, a list of all closed issues and merged pull-requests since the last release will added below the `releaseBodyHeader`.
-     * @possibleValues `true`, `false`
-     */
-    'addClosedIssues',
-    /**
-     * If you set `addDeltaToLastRelease` to `true`, a link will be added to the relese information that brings up all commits since the last release.
-     * @possibleValues `true`, `false`
-     */
-    'addDeltaToLastRelease',
-    /** Allows to pass additional filter criteria for retrieving closed issues since the last release. Additional criteria could be for example specific `label`, or `filter` according to [GitHub API documentation](https://developer.github.com/v3/issues/).*/
-    'customFilterExtension',
-    /** Allows to exclude issues with dedicated labels. Usage is like `excludeLabels: ['label1', 'label2']`.*/
-    'excludeLabels',
-    /** Allows to overwrite the GitHub organitation.*/
-    'githubOrg',
-    /** Allows to overwrite the GitHub repository.*/
-    'githubRepo',
-    /** Allows to specify the content which will appear for the release.
-     * It is possible to define it as Groovy template as well in order to bring in dynamic information.
-     * Following information can be used: everything contained in `config` as well as information from `commonPipelineEnvironment`.
-     */
-    'releaseBodyHeader',
-    /** Defines the version number which will be written as tag as well as release name.*/
-    'version'
-])
-
-@Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
-
-/**
- * This step creates a tag in your GitHub repository together with a release.
- *
- * The release can be filled with text plus additional information like:
- *
- * * Closed pull request since last release
- * * Closed issues since last release
- * * link to delta information showing all commits since last release
- *
- * The result looks like
- *
- * ![Example release](../images/githubRelease.png)
- */
-@GenerateDocumentation
 void call(Map parameters = [:]) {
     handlePipelineStepErrors(stepName: STEP_NAME, stepParameters: parameters) {
-        def script = checkScript(this, parameters) ?: this
 
-        // load default & individual configuration
-        Map config = ConfigurationHelper.newInstance(this)
-            .loadStepDefaults()
-            .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS)
-            .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS)
-            .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName?:env.STAGE_NAME, STEP_CONFIG_KEYS)
-            .mixin(parameters, PARAMETER_KEYS)
-            .addIfEmpty('githubOrg', script.commonPipelineEnvironment.getGithubOrg())
-            .addIfEmpty('githubRepo', script.commonPipelineEnvironment.getGithubRepo())
-            .addIfEmpty('version', script.commonPipelineEnvironment.getArtifactVersion())
-            .withMandatoryProperty('githubOrg')
-            .withMandatoryProperty('githubRepo')
-            .withMandatoryProperty('githubTokenCredentialsId')
-            .withMandatoryProperty('version')
-            .use()
+        Map config
+        def utils = parameters.juStabUtils ?: new Utils()
+        parameters.juStabUtils = null
 
-        new Utils().pushToSWA([step: STEP_NAME], config)
+        // telemetry reporting
+        utils.pushToSWA([step: STEP_NAME], config)
 
-        withCredentials([string(credentialsId: config.githubTokenCredentialsId, variable: 'TOKEN')]) {
+        new PiperGoUtils(this, utils).unstashPiperBin()
+        utils.unstash('pipelineConfigAndTests')
 
-            def releaseBodyHeader = ''
-            if (config.releaseBodyHeader) {
-                releaseBodyHeader = GStringTemplateEngine.newInstance()
-                    .createTemplate(config.releaseBodyHeader)
-                    .make([
-                        config: config,
-                        commonPipelineEnvironment: script.commonPipelineEnvironment
-                    ]).toString()
-                releaseBodyHeader += '<br />'
-            }
-            def releaseBody = releaseBodyHeader
-            def content = getLastRelease(config, TOKEN)
-            if (config.addClosedIssues)
-                releaseBody += addClosedIssue(config, TOKEN, content.published_at)
-            if (config.addDeltaToLastRelease)
-                releaseBody += addDeltaToLastRelease(config, content.tag_name)
-            postNewRelease(config, TOKEN, releaseBody)
-        }
-    }
-}
+        writeFile(file: METADATA_FILE, text: libraryResource(METADATA_FILE))
 
-Map getLastRelease(config, TOKEN){
-    def result = [:]
+        withEnv([
+            "PIPER_parametersJSON=${groovy.json.JsonOutput.toJson(parameters)}",
+            "PIPER_owner=${commonPipelineEnvironment.getGithubOrg()?:''}",
+            "PIPER_repository=${commonPipelineEnvironment.getGithubRepo()?:''}",
+            "PIPER_version=${commonPipelineEnvironment.getArtifactVersion()?:''}"
+        ]) {
+            // get context configuration
+            config = readJSON (text: sh(returnStdout: true, script: "./piper getConfig --contextConfig --stepMetadata '${METADATA_FILE}' --stepName ${STEP_NAME}"))
 
-    def response = httpRequest url: "${config.githubApiUrl}/repos/${config.githubOrg}/${config.githubRepo}/releases/latest?access_token=${TOKEN}", validResponseCodes: '100:500'
-    if (response.status == 200) {
-        result = readJSON text: response.content
-    } else {
-        echo "[${STEP_NAME}] This is the first release - no previous releases available"
-        config.addDeltaToLastRelease = false
-    }
-    return result
-}
-
-String addClosedIssue(config, TOKEN, publishedAt){
-    if (config.customFilterExtension) {
-        config.customFilterExtension = "&${config.customFilterExtension}"
-    }
-
-    def publishedAtFilter = publishedAt ? "&since=${publishedAt}": ''
-
-    def response = httpRequest "${config.githubApiUrl}/repos/${config.githubOrg}/${config.githubRepo}/issues?access_token=${TOKEN}&per_page=100&state=closed&direction=asc${publishedAtFilter}${config.customFilterExtension}"
-    def result = ''
-
-    content = readJSON text: response.content
-
-    //list closed pull-requests
-    result += '<br />**List of closed pull-requests since last release**<br />'
-    for (def item : content) {
-        if (item.pull_request && !isExcluded(item, config.excludeLabels)) {
-            result += "[#${item.number}](${item.html_url}): ${item.title}<br />"
-        }
-    }
-    //list closed issues
-    result += '<br />**List of closed issues since last release**<br />'
-    for (def item : content) {
-        if (!item.pull_request && !isExcluded(item, config.excludeLabels)) {
-            result += "[#${item.number}](${item.html_url}): ${item.title}<br />"
-        }
-    }
-    return result
-}
-
-String addDeltaToLastRelease(config, latestTag){
-    def result = ''
-    //add delta link to previous release
-    result += '<br />**Changes**<br />'
-    result += "[${latestTag}...${config.version}](${config.githubServerUrl}/${config.githubOrg}/${config.githubRepo}/compare/${latestTag}...${config.version}) <br />"
-    return result
-}
-
-void postNewRelease(config, TOKEN, releaseBody){
-    Map messageBody = [
-        tag_name: "${config.version}",
-        target_commitish: 'master',
-        name: "${config.version}",
-        body: releaseBody,
-        draft: false,
-        prerelease: false
-    ]
-    def data =  new JsonUtils().groovyObjectToJsonString(messageBody)
-    try {
-        httpRequest httpMode: 'POST', requestBody: data, url: "${config.githubApiUrl}/repos/${config.githubOrg}/${config.githubRepo}/releases?access_token=${TOKEN}"
-    } catch (e) {
-        echo """[${STEP_NAME}] Error occured when writing release information
----------------------------------------------------------------------
-Request body was:
----------------------------------------------------------------------
-${data}
----------------------------------------------------------------------"""
-        throw e
-    }
-}
-
-boolean isExcluded(item, excludeLabels){
-    def result = false
-    excludeLabels.each {labelName ->
-        item.labels.each { label ->
-            if (label.name == labelName) {
-                result = true
+            // execute step
+            withCredentials([string(credentialsId: config.githubTokenCredentialsId, variable: 'TOKEN')]) {
+                sh "./piper githubPublishRelease  --token ${TOKEN}"
             }
         }
     }
-    return result
 }

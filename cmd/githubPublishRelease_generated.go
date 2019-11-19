@@ -22,7 +22,6 @@ type githubPublishReleaseOptions struct {
 	UploadURL             string   `json:"uploadUrl,omitempty"`
 	Labels                []string `json:"labels,omitempty"`
 	ReleaseBodyHeader     string   `json:"releaseBodyHeader,omitempty"`
-	UpdateAsset           bool     `json:"updateAsset,omitempty"`
 	Version               string   `json:"version,omitempty"`
 }
 
@@ -73,7 +72,6 @@ func addGithubPublishReleaseFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVar(&myGithubPublishReleaseOptions.UploadURL, "uploadUrl", "https://uploads.github.com", "Set the GitHub API url.")
 	cmd.Flags().StringSliceVar(&myGithubPublishReleaseOptions.Labels, "labels", []string{}, "Labels to include in issue search.")
 	cmd.Flags().StringVar(&myGithubPublishReleaseOptions.ReleaseBodyHeader, "releaseBodyHeader", os.Getenv("PIPER_releaseBodyHeader"), "Content which will appear for the release.")
-	cmd.Flags().BoolVar(&myGithubPublishReleaseOptions.UpdateAsset, "updateAsset", false, "Specify if a release asset should be updated only.")
 	cmd.Flags().StringVar(&myGithubPublishReleaseOptions.Version, "version", os.Getenv("PIPER_version"), "Define the version number which will be written as tag as well as release name.")
 
 	cmd.MarkFlagRequired("apiUrl")
@@ -167,12 +165,6 @@ func githubPublishReleaseMetadata() config.StepData {
 						Name:      "releaseBodyHeader",
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
-						Mandatory: false,
-					},
-					{
-						Name:      "updateAsset",
-						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:      "bool",
 						Mandatory: false,
 					},
 					{
