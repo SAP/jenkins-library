@@ -92,11 +92,13 @@ void call(Map parameters = [:]) {
             .use()
 
         String authToken
+        String urlString
         if (configuration.credentialsId != null) {
             withCredentials([usernamePassword(credentialsId: configuration.credentialsId, usernameVariable: 'USER', passwordVariable: 'PASSWORD')]) {
                 String userColonPassword = "${USER}:${PASSWORD}"
                 authToken = userColonPassword.bytes.encodeBase64().toString()
             }
+        urlString = 'https://' + configuration.host + '/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY/Pull'
         } else {
             // try {
                 dockerExecute(script:script,dockerImage: configuration.dockerImage, dockerWorkspace: configuration.dockerWorkspace) {
@@ -116,6 +118,9 @@ void call(Map parameters = [:]) {
                         echo responseString
                         JsonSlurper slurper = new JsonSlurper()
                         Map responseJson = slurper.parseText(responseString)
+                        String userColPw = responseJson.abap.username + ":" + responseJson.abap.password
+                        authToken = userColPw.bytes.encodeBase64().toString()
+                        urlString = responseJson.url + '/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY/Pull'
                     }
                 }
             // } catch (err) {
@@ -123,7 +128,6 @@ void call(Map parameters = [:]) {
             // }
         }
 
-        String urlString = 'https://' + configuration.host + '/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY/Pull'
         echo "[${STEP_NAME}] General Parameters: URL = \"${urlString}\", repositoryName = \"${configuration.repositoryName}\""
         HeaderFiles headerFiles = new HeaderFiles()
 
