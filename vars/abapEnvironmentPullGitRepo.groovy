@@ -6,7 +6,6 @@ import com.sap.piper.Utils
 import groovy.json.JsonSlurper
 import hudson.AbortException
 import groovy.transform.Field
-import org.jenkinsci.plugins.workflow.steps.FlowInterruptedException
 import java.util.UUID
 
 @Field def STEP_NAME = getClass().getName()
