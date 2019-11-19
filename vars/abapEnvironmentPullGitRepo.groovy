@@ -91,32 +91,25 @@ void call(Map parameters = [:]) {
             .collectValidationFailures()
             .withMandatoryProperty('repositoryName', 'Repository / Software Component not provided')
             .use()
-
+        
+        String userColonPassword 
         String authToken
         String urlString
         if (configuration.credentialsId != null) {
             withCredentials([usernamePassword(credentialsId: configuration.credentialsId, usernameVariable: 'USER', passwordVariable: 'PASSWORD')]) {
-                String userColonPassword = "${USER}:${PASSWORD}"
-                authToken = userColonPassword.bytes.encodeBase64().toString()
-                executeAbapEnvironmentPullGitRepo(configuration, urlString, authToken)
+                userColonPassword = "${USER}:${PASSWORD}"
+                urlString = 'https://' + configuration.host + '/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY/Pull'
             }
-        urlString = 'https://' + configuration.host + '/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY/Pull'
         } else {
-            // try {
-                dockerExecute(script:script,dockerImage: configuration.dockerImage, dockerWorkspace: configuration.dockerWorkspace) {
-                        String jsonString = getServiceKey(configuration)
-                        def responseJson = readJSON text: jsonString
-                        String userColPw = responseJson.abap.username + ":" + responseJson.abap.password
-                        authToken = userColPw.bytes.encodeBase64().toString()
-                        urlString = responseJson.url + '/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY/Pull'
-                        echo authToken
-                        echo urlString
-                        executeAbapEnvironmentPullGitRepo(configuration, urlString, authToken)
-                }
-            // } catch (err) {
-            //     error "[${STEP_NAME}] Error: Could not get credentials from Cloud Foundry"
-            // }
+            dockerExecute(script:script,dockerImage: configuration.dockerImage, dockerWorkspace: configuration.dockerWorkspace) {
+                    String jsonString = getServiceKey(configuration)
+                    Map responseJson = readJSON text: jsonString
+                    userColonPassword = responseJson.abap.username + ":" + responseJson.abap.password
+                    urlString = responseJson.url + '/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY/Pull'
+            }
         }
+        authToken = userColonPassword.bytes.encodeBase64().toString()
+        executeAbapEnvironmentPullGitRepo(configuration, urlString, authToken)
     }
 }
 
