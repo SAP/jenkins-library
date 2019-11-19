@@ -115,7 +115,7 @@ void call(Map parameters = [:]) {
                     JsonSlurper slurper = new JsonSlurper()
                     Map responseJson = slurper.parseText(responseString)
                 }
-            } catch (error) {
+            } catch (err) {
                 error "[${STEP_NAME}] Error: Could not get credentials from Cloud Foundry"
             }
         }
