@@ -130,15 +130,15 @@ private String getServiceKey(Map configuration) {
             """
         try {
             def status = sh returnStatus: true, script: bashScript
+            if (status != 0) {
+                echo "[${STEP_NAME}] Info: Could not get the service key $configuration.cloudFoundry.serviceKey for service instance $configuration.cloudFoundry.serviceInstance"
+            }
             String responseString = readFile(responseFile)
         } finally {
             sh "cf logout"
             sh script : """#!/bin/bash
                 rm -f ${responseFile}
                 """
-        }
-        if (status != 0) {
-            echo "[${STEP_NAME}] Info: Could not get the service key $configuration.cloudFoundry.serviceKey for service instance $configuration.cloudFoundry.serviceInstance"
         }
         def p = Pattern.compile(/\{.*\}$/, Pattern.MULTILINE | Pattern.DOTALL)
         def m = responseString =~ p
