@@ -217,7 +217,7 @@ class commonPipelineEnvironment implements Serializable {
         CommonPipelineEnvironment.getInstance().pipelineDefaults = pipelineDefaults
     }
     
-    def getPipelineDefaults(pipelineDefaults) {
+    List getPipelineDefaults(pipelineDefaults) {
         return CommonPipelineEnvironment.getInstance().pipelineDefaults
     }
 }
