@@ -12,7 +12,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-var expectedResultDocument string = "# testStep\n\n\t## Description \n\nLong Test description\n\n\t\n\t## Prerequisites\n\t\n\tnone\n\n\t\n\t\n\t## Parameters\n\n| name | mandatory | default |\n| ---- | --------- | ------- |\n | param0 | No | val0 | \n  | param1 | No | <nil> | \n  | param2 | Yes | <nil> | \n ## Details\n * ` param0 ` :  param0 description \n  * ` param1 ` :  param1 description \n  * ` param2 ` :  param1 description \n \n\t\n\t## We recommend to define values of step parameters via [config.yml file](../configuration.md). \n\nIn following sections of the config.yml the configuration is possible:\n\n| parameter | general | step/stage |\n|-----------|---------|------------|\n | param0 | X |  | \n  | param1 |  |  | \n  | param2 |  |  | \n \n\t\n\t## Side effects\n\t\n\tnone\n\t\n\t## Exceptions\n\t\n\tnone\n\t\n\t## Example\n\n\tnone\n"
+var expectedResultDocument string = "# testStep\n\n\t## Description \n\nLong Test description\n\n\t\n\t## Prerequisites\n\t\n\tnone\n\n\t\n\t\n\t## Parameters\n\n| name | mandatory | default | possible values |\n| ------- | --------- | ------- | ------- |\n | param0 | No | val0 |  |\n  | param1 | No | <nil> |  |\n  | param2 | Yes | <nil> |  |\n ## Details\n * ` param0 ` :  param0 description \n  * ` param1 ` :  param1 description \n  * ` param2 ` :  param1 description \n \n\t\n\t## We recommend to define values of step parameters via [config.yml file](../configuration.md). \n\nIn following sections of the config.yml the configuration is possible:\n\n| parameter | general | step/stage |\n|-----------|---------|------------|\n | param0 | X |  | \n  | param1 |  |  | \n  | param2 |  |  | \n \n\t\n\t## Side effects\n\t\n\tnone\n\t\n\t## Exceptions\n\t\n\tnone\n\t\n\t## Example\n\n\tnone\n"
 
 func configMetaDataMock(name string) (io.ReadCloser, error) {
 	meta1 := `metadata:
@@ -248,7 +248,6 @@ func TestAddContainerContent(t *testing.T) {
 
 		var m map[string]string = make(map[string]string)
 		addContainerContent(&stepData, m)
-		assert.Equal(t, 8, len(m))
 
 		cases := []struct {
 			x, want string
@@ -261,9 +260,10 @@ func TestAddContainerContent(t *testing.T) {
 			{"dockerName", "container0, container1 <br>container2a <br>container2b <br>"},
 			{"dockerPullImage", "true"},
 			//{"dockerVolumeBind", "mp.2b:mn.2b"},
-			{"dockerOptions", "option.name2b optnion.value2b"},
+			{"dockerOptions", "option.name2b option.value2b"},
 			{"dockerWorkspace", "workingdir, workingdir <br>param.name2a=param.value2a:workingdir <br>param.name2b=param.value2b:workingdir"},
 		}
+		assert.Equal(t, len(cases), len(m))
 		for _, c := range cases {
 			assert.Contains(t, m, c.x)
 			assert.True(t, len(m[c.x]) > 0)
@@ -277,7 +277,6 @@ func TestAddSidecarContent(t *testing.T) {
 
 		var m map[string]string = make(map[string]string)
 		addSidecarContent(&stepData, m)
-		assert.Equal(t, 7, len(m))
 
 		cases := []struct {
 			x, want string
@@ -288,10 +287,11 @@ func TestAddSidecarContent(t *testing.T) {
 			{"sidecarName", "sidecar0"},
 			{"sidecarPullImage", "true"},
 			{"sidecarReadyCommand", "readycommand"},
-			{"sidecarOptions", "option.name3b optnion.value3b"},
+			{"sidecarOptions", "option.name3b option.value3b"},
 			//{"sidecarVolumeBind", "mp.3b:mn.3b"},
 			{"sidecarWorkspace", "workingdir"},
 		}
+		assert.Equal(t, len(cases), len(m))
 		for _, c := range cases {
 			assert.Contains(t, m, c.x)
 			assert.True(t, len(m[c.x]) > 0)
@@ -306,13 +306,13 @@ func TestAddStashContent(t *testing.T) {
 
 		var m map[string]string = make(map[string]string)
 		addStashContent(&stepData, m)
-		assert.Equal(t, 1, len(m))
 
 		cases := []struct {
 			x, want string
 		}{
 			{"stashContent", "resource0, resource1, resource2"},
 		}
+		assert.Equal(t, len(cases), len(m))
 		for _, c := range cases {
 			assert.Contains(t, m, c.x)
 			assert.True(t, len(m[c.x]) > 0)
@@ -326,7 +326,6 @@ func TestGetDocuContextDefaults(t *testing.T) {
 	t.Run("Success Case", func(t *testing.T) {
 
 		m := getDocuContextDefaults(&stepData)
-		assert.Equal(t, 16, len(m))
 
 		cases := []struct {
 			x, want string
@@ -338,7 +337,7 @@ func TestGetDocuContextDefaults(t *testing.T) {
 			{"sidecarName", "sidecar0"},
 			{"sidecarPullImage", "true"},
 			{"sidecarReadyCommand", "readycommand"},
-			{"sidecarOptions", "option.name3b optnion.value3b"},
+			{"sidecarOptions", "option.name3b option.value3b"},
 			//{"sidecarVolumeBind", "mp.3b:mn.3b"},
 			{"sidecarWorkspace", "workingdir"},
 			{"containerCommand", "command"},
@@ -349,9 +348,10 @@ func TestGetDocuContextDefaults(t *testing.T) {
 			{"dockerName", "container0, container1 <br>container2a <br>container2b <br>"},
 			{"dockerPullImage", "true"},
 			//{"dockerVolumeBind", "mp.2b:mn.2b"},
-			{"dockerOptions", "option.name2b optnion.value2b"},
+			{"dockerOptions", "option.name2b option.value2b"},
 			{"dockerWorkspace", "workingdir, workingdir <br>param.name2a=param.value2a:workingdir <br>param.name2b=param.value2b:workingdir"},
 		}
+		assert.Equal(t, len(cases), len(m))
 		for _, c := range cases {
 			assert.Contains(t, m, c.x)
 			assert.True(t, len(m[c.x]) > 0)

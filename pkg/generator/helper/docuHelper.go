@@ -5,77 +5,14 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"os"
 	"sort"
 	"strings"
 	"text/template"
 
 	"github.com/SAP/jenkins-library/pkg/config"
-	"github.com/ghodss/yaml"
 )
 
-// DocuHelperData is used to transport the needed parameters and functions from the step generator to the docu generation.
-type DocuHelperData struct {
-	IsGenerateDocu      bool
-	DocTemplatePath     string
-	OpenDocTemplateFile func(d string) (io.ReadCloser, error)
-	DocFileWriter       func(f string, d []byte, p os.FileMode) error
-}
-
-// ContextDefaultData holds the meta data and the default data for the context default parameter descriptions
-type ContextDefaultData struct {
-	Metadata   ContextDefaultMetadata     `json:"metadata"`
-	Parameters []ContextDefaultParameters `json:"params"`
-}
-
-// ContextDefaultMetadata holds meta data for the context default parameter descripten (name, description, long description)
-type ContextDefaultMetadata struct {
-	Name            string `json:"name"`
-	Description     string `json:"description"`
-	LongDescription string `json:"longDescription,omitempty"`
-}
-
-// ContextDefaultParameters holds the description for the context default parameters
-type ContextDefaultParameters struct {
-	Name        string `json:"name"`
-	Description string `json:"description"`
-	Scope           []string    `json:"scope"`
-}
-
-// ReadPipelineContextDefaultData loads step definition in yaml format
-func (c *ContextDefaultData) readPipelineContextDefaultData(metadata io.ReadCloser) {
-	defer metadata.Close()
-	content, err := ioutil.ReadAll(metadata)
-	checkError(err)
-	err = yaml.Unmarshal(content, &c)
-	checkError(err)
-}
-
-// ReadContextDefaultMap maps the default descriptions into a map
-func (c *ContextDefaultData) readContextDefaultMap() map[string]interface{} {
-	var m map[string]interface{} = make(map[string]interface{})
-
-	for _, param := range c.Parameters {
-		m[param.Name] = param
-	}
-
-	return m
-}
-
-func readContextDefaultDescription(contextDefaultPath string) map[string]interface{} {
-	//read context default description
-	var ContextDefaultData ContextDefaultData
-
-	contextDefaultFile, err := os.Open(contextDefaultPath)
-	checkError(err)
-	defer contextDefaultFile.Close()
-
-	ContextDefaultData.readPipelineContextDefaultData(contextDefaultFile)
-	return ContextDefaultData.readContextDefaultMap()
-}
-
 // generates the step documentation and replaces the template with the generated documentation
-//func generateStepDocumentation(stepData config.StepData, docTemplateFilePath string, docTemplate io.ReadCloser, docFileWriter func(f string, d []byte, p os.FileMode) error) {
 func generateStepDocumentation(stepData config.StepData, docuHelperData DocuHelperData) error {
 
 	fmt.Printf("Generate docu for: %v\n", stepData.Metadata.Name)
@@ -302,9 +239,8 @@ func handleStepParameters(stepData *config.StepData) {
 			if len(v) > 0 {
 				//containerName only for Step: dockerExecuteOnKubernetes
 				if k != "containerName" || stepData.Metadata.Name == "dockerExecuteOnKubernetes" {
-
-					dcp := mCD[k].(ContextDefaultParameters)
-					stepData.Spec.Inputs.Parameters = append(stepData.Spec.Inputs.Parameters, config.StepParameters{Name: k, Default: v, Mandatory: false, Description: dcp.Description, Scope: dcp.Scope})
+					cdp := mCD[k].(ContextDefaultParameters)
+					stepData.Spec.Inputs.Parameters = append(stepData.Spec.Inputs.Parameters, config.StepParameters{Name: k, Default: v, Mandatory: false, Description: cdp.Description, Scope: cdp.Scope})
 				}
 			}
 		}
@@ -329,16 +265,16 @@ func getDocuContextDefaults(step *config.StepData) map[string]string {
 	var result map[string]string = make(map[string]string)
 
 	//creates the context defaults for containers
-	addContainerContent(step, result)
+	addDefaultContainerContent(step, result)
 	//creates the context defaults for sidecars
-	addSidecarContent(step, result)
+	addDefaultSidecarContent(step, result)
 	//creates the context defaults for resources
 	addStashContent(step, result)
 
 	return result
 }
 
-func addContainerContent(m *config.StepData, result map[string]string) {
+func addDefaultContainerContent(m *config.StepData, result map[string]string) {
 	//creates the context defaults for containers
 	if len(m.Spec.Containers) > 0 {
 		keys := []string{}
@@ -349,12 +285,13 @@ func addContainerContent(m *config.StepData, result map[string]string) {
 			rKeys := addContainerValues(container, bEmptyKey, resources)
 			keys = append(keys, rKeys...)
 		}
-
-		loopContainerDefaults(keys, resources, result)
+		createDefaultContainerEntries(keys, resources, result)
 	}
 }
 
 func addContainerValues(container config.Container, bEmptyKey bool, resources map[string][]string) []string {
+
+	//create keys
 	keys := []string{}
 	key := ""
 	if len(container.Conditions) > 0 {
@@ -381,6 +318,8 @@ func addContainerValues(container config.Container, bEmptyKey bool, resources ma
 	if len(container.Conditions) == 0 {
 		bEmptyKey = false
 	}
+
+	//add values
 	addValuesToMap(container, key, resources)
 
 	return keys
@@ -408,19 +347,17 @@ func addValuesToMap(container config.Container, key string, resources map[string
 	if len(key) > 0 {
 		resources[key+"_dockerEnvVars"] = append(resources[key+"_dockerEnvVars"], fmt.Sprintf("%v:\\[%v\\]", key, strings.Join(envVarsAsStringSlice(container.EnvVars), "")))
 		resources[key+"_dockerImage"] = append(resources[key+"_dockerImage"], fmt.Sprintf("%v:%v", key, container.Image))
-		//resources[key+"_dockerVolumeBind"] = append(resources[key+"_dockerVolumeBind"], fmt.Sprintf("%v:\\[%v\\]", key, strings.Join(volumeMountsAsStringSlice(container.VolumeMounts), "")))
-		resources[key+"_dockerOptions"] = append(resources[key+"_dockerVolumeBind"], fmt.Sprintf("%v:\\[%v\\]", key, strings.Join(volumeMountsAsStringSlice(container.VolumeMounts), "")))
+		resources[key+"_dockerOptions"] = append(resources[key+"_dockerVolumeBind"], fmt.Sprintf("%v:\\[%v\\]", key, strings.Join(optionsAsStringSlice(container.Options), "")))
 		resources[key+"_dockerWorkspace"] = append(resources[key+"_dockerWorkspace"], fmt.Sprintf("%v:%v", key, workingDir))
 	} else {
 		resources[key+"_dockerEnvVars"] = append(resources[key+"_dockerEnvVars"], fmt.Sprintf("%v", strings.Join(envVarsAsStringSlice(container.EnvVars), "")))
 		resources[key+"_dockerImage"] = append(resources[key+"_dockerImage"], container.Image)
-		//resources[key+"_dockerVolumeBind"] = append(resources[key+"_dockerVolumeBind"], fmt.Sprintf("%v", strings.Join(volumeMountsAsStringSlice(container.VolumeMounts), "")))
 		resources[key+"_dockerOptions"] = append(resources[key+"_dockerVolumeBind"], fmt.Sprintf("%v", strings.Join(optionsAsStringSlice(container.Options), "")))
 		resources[key+"_dockerWorkspace"] = append(resources[key+"_dockerWorkspace"], workingDir)
 	}
 }
 
-func loopContainerDefaults(keys []string, resources map[string][]string, result map[string]string) {
+func createDefaultContainerEntries(keys []string, resources map[string][]string, result map[string]string) {
 	for _, key := range keys {
 		s := strings.Split(key, "_")
 		if len(strings.Join(resources[key], ", ")) > 1 {
@@ -433,7 +370,7 @@ func loopContainerDefaults(keys []string, resources map[string][]string, result 
 	}
 }
 
-func addSidecarContent(m *config.StepData, result map[string]string) {
+func addDefaultSidecarContent(m *config.StepData, result map[string]string) {
 	//creates the context defaults for sidecars
 	if len(m.Spec.Sidecars) > 0 {
 		if len(m.Spec.Sidecars[0].Command) > 0 {
@@ -446,7 +383,6 @@ func addSidecarContent(m *config.StepData, result map[string]string) {
 			result["sidecarPullImage"] = fmt.Sprintf("%v", m.Spec.Sidecars[0].ImagePullPolicy != "Never")
 		}
 		result["sidecarReadyCommand"] = m.Spec.Sidecars[0].ReadyCommand
-		//result["sidecarVolumeBind"] = strings.Join(volumeMountsAsStringSlice(m.Spec.Sidecars[0].VolumeMounts), "")
 		result["sidecarOptions"] = strings.Join(optionsAsStringSlice(m.Spec.Sidecars[0].Options), "")
 		result["sidecarWorkspace"] = m.Spec.Sidecars[0].WorkingDir
 	}
@@ -499,19 +435,6 @@ func envVarsAsStringSlice(envVars []config.EnvVar) []string {
 	}
 	return e
 }
-
-//func volumeMountsAsStringSlice(volumeMonts []config.VolumeMount) []string {
-//	e := []string{}
-//	c := len(volumeMonts) - 1
-//	for k, v := range volumeMonts {
-//		if k < c {
-//			e = append(e, fmt.Sprintf("%v:%v, <br>", v.Name, ifThenElse(len(v.MountPath) > 0, v.MountPath, "\\<empty\\>")))
-//		} else {
-//			e = append(e, fmt.Sprintf("%v:%v", v.Name, ifThenElse(len(v.MountPath) > 0, v.MountPath, "\\<empty\\>")))
-//		}
-//	}
-//	return e
-//}
 
 func optionsAsStringSlice(options []config.Option) []string {
 	e := []string{}
