@@ -35,6 +35,7 @@ void call(Map parameters = [:]) {
 
         def script = checkScript(this, parameters)
 
+        script.commonPipelineEnvironment.setPipelineDefaults(parameters.customDefaults)
         prepareDefaultValues script: script, customDefaults: parameters.customDefaults
 
         String configFile = parameters.get('configFile')
