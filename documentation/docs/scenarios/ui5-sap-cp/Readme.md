@@ -45,9 +45,11 @@ Following the convention for pipeline definitions, use a `Jenkinsfile` which res
 fioriOnCloudPlatformPipeline script:this
 ```
 
+`fioriOnCloudPlatform` is a so called _scenario step_ that wraps the [mtaBuild](https://sap.github.io/jenkins-library/steps/mtaBuild/) and the [neoDeploy](https://sap.github.io/jenkins-library/steps/neoDeploy/) steps.
+
 ### Configuration (`.pipeline/config.yml`)
 
-This is a basic configuration example, which is also located in the sources of the project.
+This is a basic configuration example, which is also located in the sources of the project. The configuration corresponds to the steps wrapped in `fioriOnCloudPlatformPipeline`.
 
 ```yaml
 steps:
