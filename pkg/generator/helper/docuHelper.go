@@ -39,6 +39,7 @@ type ContextDefaultMetadata struct {
 type ContextDefaultParameters struct {
 	Name        string `json:"name"`
 	Description string `json:"description"`
+	Scope           []string    `json:"scope"`
 }
 
 // ReadPipelineContextDefaultData loads step definition in yaml format
@@ -51,17 +52,17 @@ func (c *ContextDefaultData) readPipelineContextDefaultData(metadata io.ReadClos
 }
 
 // ReadContextDefaultMap maps the default descriptions into a map
-func (c *ContextDefaultData) readContextDefaultMap() map[string]string {
-	var m map[string]string = make(map[string]string)
+func (c *ContextDefaultData) readContextDefaultMap() map[string]interface{} {
+	var m map[string]interface{} = make(map[string]interface{})
 
 	for _, param := range c.Parameters {
-		m[param.Name] = param.Description
+		m[param.Name] = param
 	}
 
 	return m
 }
 
-func readContextDefaultDescription(contextDefaultPath string) map[string]string {
+func readContextDefaultDescription(contextDefaultPath string) map[string]interface{} {
 	//read context default description
 	var ContextDefaultData ContextDefaultData
 
@@ -198,14 +199,14 @@ func docGenConfiguration(stepData config.StepData) string {
 
 func createParametersTable(parameters []config.StepParameters) string {
 
-	var table = "| name | mandatory | default |\n"
-	table += "| ---- | --------- | ------- |\n"
+	var table = "| name | mandatory | default | possible values |\n"
+	table += "| ------- | --------- | ------- | ------- |\n"
 
 	m := combineEqualParametersTogether(parameters)
 
 	for _, param := range parameters {
 		if v, ok := m[param.Name]; ok {
-			table += fmt.Sprintf(" | %v | %v | %v | \n ", param.Name, ifThenElse(param.Mandatory && param.Default == nil, "Yes", "No"), v)
+			table += fmt.Sprintf(" | %v | %v | %v |  |\n ", param.Name, ifThenElse(param.Mandatory && param.Default == nil, "Yes", "No"), v)
 			delete(m, param.Name)
 		}
 	}
@@ -301,7 +302,9 @@ func handleStepParameters(stepData *config.StepData) {
 			if len(v) > 0 {
 				//containerName only for Step: dockerExecuteOnKubernetes
 				if k != "containerName" || stepData.Metadata.Name == "dockerExecuteOnKubernetes" {
-					stepData.Spec.Inputs.Parameters = append(stepData.Spec.Inputs.Parameters, config.StepParameters{Name: k, Default: v, Mandatory: false, Description: mCD[k]})
+
+					dcp := mCD[k].(ContextDefaultParameters)
+					stepData.Spec.Inputs.Parameters = append(stepData.Spec.Inputs.Parameters, config.StepParameters{Name: k, Default: v, Mandatory: false, Description: dcp.Description, Scope: dcp.Scope})
 				}
 			}
 		}
@@ -371,6 +374,8 @@ func addContainerValues(container config.Container, bEmptyKey bool, resources ma
 		keys = append(keys, key+"_dockerName")
 		keys = append(keys, key+"_dockerPullImage")
 		keys = append(keys, key+"_dockerWorkspace")
+		keys = append(keys, key+"_dockerOptions")
+		keys = append(keys, key+"_dockerVolumeBind")
 	}
 
 	if len(container.Conditions) == 0 {
@@ -403,12 +408,14 @@ func addValuesToMap(container config.Container, key string, resources map[string
 	if len(key) > 0 {
 		resources[key+"_dockerEnvVars"] = append(resources[key+"_dockerEnvVars"], fmt.Sprintf("%v:\\[%v\\]", key, strings.Join(envVarsAsStringSlice(container.EnvVars), "")))
 		resources[key+"_dockerImage"] = append(resources[key+"_dockerImage"], fmt.Sprintf("%v:%v", key, container.Image))
-		resources[key+"_dockerVolumeBind"] = append(resources[key+"_dockerVolumeBind"], fmt.Sprintf("%v:\\[%v\\]", key, strings.Join(volumeMountsAsStringSlice(container.VolumeMounts), "")))
+		//resources[key+"_dockerVolumeBind"] = append(resources[key+"_dockerVolumeBind"], fmt.Sprintf("%v:\\[%v\\]", key, strings.Join(volumeMountsAsStringSlice(container.VolumeMounts), "")))
+		resources[key+"_dockerOptions"] = append(resources[key+"_dockerVolumeBind"], fmt.Sprintf("%v:\\[%v\\]", key, strings.Join(volumeMountsAsStringSlice(container.VolumeMounts), "")))
 		resources[key+"_dockerWorkspace"] = append(resources[key+"_dockerWorkspace"], fmt.Sprintf("%v:%v", key, workingDir))
 	} else {
 		resources[key+"_dockerEnvVars"] = append(resources[key+"_dockerEnvVars"], fmt.Sprintf("%v", strings.Join(envVarsAsStringSlice(container.EnvVars), "")))
 		resources[key+"_dockerImage"] = append(resources[key+"_dockerImage"], container.Image)
-		resources[key+"_dockerVolumeBind"] = append(resources[key+"_dockerVolumeBind"], fmt.Sprintf("%v", strings.Join(volumeMountsAsStringSlice(container.VolumeMounts), "")))
+		//resources[key+"_dockerVolumeBind"] = append(resources[key+"_dockerVolumeBind"], fmt.Sprintf("%v", strings.Join(volumeMountsAsStringSlice(container.VolumeMounts), "")))
+		resources[key+"_dockerOptions"] = append(resources[key+"_dockerVolumeBind"], fmt.Sprintf("%v", strings.Join(optionsAsStringSlice(container.Options), "")))
 		resources[key+"_dockerWorkspace"] = append(resources[key+"_dockerWorkspace"], workingDir)
 	}
 }
@@ -439,7 +446,8 @@ func addSidecarContent(m *config.StepData, result map[string]string) {
 			result["sidecarPullImage"] = fmt.Sprintf("%v", m.Spec.Sidecars[0].ImagePullPolicy != "Never")
 		}
 		result["sidecarReadyCommand"] = m.Spec.Sidecars[0].ReadyCommand
-		result["sidecarVolumeBind"] = strings.Join(volumeMountsAsStringSlice(m.Spec.Sidecars[0].VolumeMounts), "")
+		//result["sidecarVolumeBind"] = strings.Join(volumeMountsAsStringSlice(m.Spec.Sidecars[0].VolumeMounts), "")
+		result["sidecarOptions"] = strings.Join(optionsAsStringSlice(m.Spec.Sidecars[0].Options), "")
 		result["sidecarWorkspace"] = m.Spec.Sidecars[0].WorkingDir
 	}
 
@@ -492,14 +500,27 @@ func envVarsAsStringSlice(envVars []config.EnvVar) []string {
 	return e
 }
 
-func volumeMountsAsStringSlice(volumeMonts []config.VolumeMount) []string {
+//func volumeMountsAsStringSlice(volumeMonts []config.VolumeMount) []string {
+//	e := []string{}
+//	c := len(volumeMonts) - 1
+//	for k, v := range volumeMonts {
+//		if k < c {
+//			e = append(e, fmt.Sprintf("%v:%v, <br>", v.Name, ifThenElse(len(v.MountPath) > 0, v.MountPath, "\\<empty\\>")))
+//		} else {
+//			e = append(e, fmt.Sprintf("%v:%v", v.Name, ifThenElse(len(v.MountPath) > 0, v.MountPath, "\\<empty\\>")))
+//		}
+//	}
+//	return e
+//}
+
+func optionsAsStringSlice(options []config.Option) []string {
 	e := []string{}
-	c := len(envVars) - 1
-	for k, v := range envVars {
+	c := len(options) - 1
+	for k, v := range options {
 		if k < c {
-			e = append(e, fmt.Sprintf("%v:%v, <br>", v.Name, ifThenElse(len(v.MountPath) > 0, v.MountPath, "\\<empty\\>")))
+			e = append(e, fmt.Sprintf("%v %v, <br>", v.Name, ifThenElse(len(v.Value) > 0, v.Value, "\\<empty\\>")))
 		} else {
-			e = append(e, fmt.Sprintf("%v:%v", v.Name, ifThenElse(len(v.MountPath) > 0, v.MountPath, "\\<empty\\>")))
+			e = append(e, fmt.Sprintf("%v %v", v.Name, ifThenElse(len(v.Value) > 0, v.Value, "\\<empty\\>")))
 		}
 	}
 	return e
