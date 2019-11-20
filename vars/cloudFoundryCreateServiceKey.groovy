@@ -63,8 +63,6 @@ import static com.sap.piper.Prerequisites.checkScript
 void call(Map parameters = [:]) {
     handlePipelineStepErrors (stepName: STEP_NAME, stepParameters: parameters) {
 
-        // TODO Step Defaults
-
         def script = checkScript(this, parameters) ?: this
         Map config = ConfigurationHelper.newInstance(this)
             .loadStepDefaults()
