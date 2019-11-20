@@ -16,6 +16,7 @@ import util.JenkinsCredentialsRule
 import util.JenkinsStepRule
 import util.JenkinsLoggingRule
 import util.JenkinsReadYamlRule
+import util.JenkinsDockerExecuteRule
 import util.JenkinsShellCallRule
 import util.Rules
 
@@ -26,6 +27,7 @@ public class AbapEnvironmentPullGitRepoTest extends BasePiperTest {
     private ExpectedException thrown = new ExpectedException()
     private JenkinsStepRule stepRule = new JenkinsStepRule(this)
     private JenkinsLoggingRule loggingRule = new JenkinsLoggingRule(this)
+    private JenkinsDockerExecuteRule dockerExecuteRule = new JenkinsDockerExecuteRule(this)
     private JenkinsShellCallRule shellRule = new JenkinsShellCallRule(this)
     private JenkinsCredentialsRule credentialsRule = new JenkinsCredentialsRule(this).withCredentials('test_credentialsId', 'user', 'password')
 
@@ -33,6 +35,7 @@ public class AbapEnvironmentPullGitRepoTest extends BasePiperTest {
     public RuleChain ruleChain = Rules.getCommonRules(this)
         .around(new JenkinsReadYamlRule(this))
         .around(thrown)
+        .around(dockerExecuteRule)
         .around(stepRule)
         .around(loggingRule)
         .around(credentialsRule)
@@ -72,15 +75,25 @@ public class AbapEnvironmentPullGitRepoTest extends BasePiperTest {
         shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, /.*cf service-key.*/, 0 )
         shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, /.*x-csrf-token: fetch.*/, null )
         shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, /.*POST.*/, /{"d" : { "__metadata" : { "uri" : "https:\/\/example.com\/URI" } , "status" : "R", "status_descr" : "RUNNING" }}/)
-        shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, /.*https:\/\/example\.com.*/, /{"d" : { "__metadata" : { "uri" : "https:\/\/example.com\/URI" } , "status" : "S", "status_descr" : "SUCCESS" }}/)
+        shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, /.*https:\/\/example.com.*/, /{"d" : { "__metadata" : { "uri" : "https:\/\/example.com\/URI" } , "status" : "S", "status_descr" : "SUCCESS" }}/)
 
         helper.registerAllowedMethod("readFile", [String.class], {
             /HTTP\/1.1 200 OK
             set-cookie: sap-usercontext=sap-client=100; path=\/
             content-type: application\/json; charset=utf-8
-            x-csrf-token: TOKEN/
+            x-csrf-token: TOKEN
+            Getting key SK_NAME_4 for service instance D09_TEST as P2001217173...\/
+
+            {
+            "abap": {
+            "password": "password",
+            "username": "user"
+            },
+            "url": "https:\/\/example.com"
+            }/
         })
 
+        loggingRule.expect("[abapEnvironmentPullGitRepo] Info: Using Cloud Foundry service key testKey for service instance testInstance")
         loggingRule.expect("[abapEnvironmentPullGitRepo] Pull Status: RUNNING")
         loggingRule.expect("[abapEnvironmentPullGitRepo] Entity URI: https://example.com/URI")
         loggingRule.expect("[abapEnvironmentPullGitRepo] Pull Status: SUCCESS")
@@ -93,7 +106,7 @@ public class AbapEnvironmentPullGitRepoTest extends BasePiperTest {
                 org : 'testOrg',
                 space : 'testSpace',
                 credentialsId : 'test_credentialsId',
-                serviceInstace : 'testInstance',
+                serviceInstance : 'testInstance',
                 serviceKey : 'testKey'
             ])
 
@@ -186,13 +199,6 @@ public class AbapEnvironmentPullGitRepoTest extends BasePiperTest {
        thrown.expect(IllegalArgumentException)
        thrown.expectMessage("Repository / Software Component not provided")
        stepRule.step.abapEnvironmentPullGitRepo(script: nullScript, host: 'example.com', credentialsId: 'test_credentialsId')
-    }
-
-    @Test
-    public void checkHostProvided() {
-       thrown.expect(IllegalArgumentException)
-       thrown.expectMessage("Host not provided")
-       stepRule.step.abapEnvironmentPullGitRepo(script: nullScript, repositoryName: 'REPO', credentialsId: 'test_credentialsId')
     }
 
     @Test

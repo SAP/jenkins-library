@@ -99,7 +99,7 @@ void call(Map parameters = [:]) {
             echo "[${STEP_NAME}] Info: Using Cloud Foundry service key $configuration.cloudFoundry.serviceKey for service instance $configuration.cloudFoundry.serviceInstance"
             dockerExecute(script:script,dockerImage: configuration.dockerImage, dockerWorkspace: configuration.dockerWorkspace) {
                     String jsonString = getServiceKey(configuration)
-                    Map responseJson = readJSON text: jsonString
+                    Map responseJson = readJson text : jsonString
                     userColonPassword = responseJson.abap.username + ":" + responseJson.abap.password
                     urlString = responseJson.url + '/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY/Pull'
             }
@@ -115,8 +115,7 @@ void call(Map parameters = [:]) {
 
 private String getServiceKey(Map configuration) {
 
-    String uuid = UUID.randomUUID().toString()
-    String responseFile = "response-${uuid}.json"
+    String responseFile = "response-${UUID.randomUUID().toString()}.json"
     withCredentials([
         usernamePassword(credentialsId: configuration.cloudFoundry.credentialsId, passwordVariable: 'CF_PASSWORD', usernameVariable: 'CF_USERNAME')
     ]) {
@@ -148,6 +147,7 @@ private String getServiceKey(Map configuration) {
             return m[0]
         } else {
             echo "[${STEP_NAME}] Info: Could not parse the service key $configuration.cloudFoundry.serviceKey"
+            return null
         }
     }
 }
