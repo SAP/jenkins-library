@@ -55,7 +55,7 @@ func (c *Config) ApplyAliasConfig(parameters []StepParameters, filters StepFilte
 }
 
 func setParamValueFromAlias(configMap map[string]interface{}, filter []string, p StepParameters) map[string]interface{} {
-	if configMap[p.Name] == nil && sliceContains(filter, p.Name) {
+	if configMap != nil && configMap[p.Name] == nil && sliceContains(filter, p.Name) {
 		for _, a := range p.Aliases {
 			configMap[p.Name] = getDeepAliasValue(configMap, a.Name)
 			if configMap[p.Name] != nil {
