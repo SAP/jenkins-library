@@ -5,6 +5,7 @@ import static org.junit.Assert.assertThat
 import org.hamcrest.Matchers
 import static org.hamcrest.Matchers.containsString
 import static org.hamcrest.Matchers.equalTo
+import static org.hamcrest.Matchers.hasEntry
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -55,7 +56,7 @@ public class CloudFoundryCreateServiceKeyTest extends BasePiperTest {
     @Test
     public void success() {
         shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, /.*cf create-service-key.*/, 0 )
-         
+
         stepRule.step.cloudFoundryCreateServiceKey(
             script: nullScript,
             cloudFoundry: [
@@ -65,16 +66,17 @@ public class CloudFoundryCreateServiceKeyTest extends BasePiperTest {
                 space: 'testSpace',
                 serviceInstance : 'myInstance',
                 serviceKey : 'myServiceKey',
-                serviceKeyConfig : '{ "key" : "value" }' 
+                serviceKeyConfig : '{ "key" : "value" }'
                 ]
         )
-
-        assertThat(shellRule.shell, hasItem(containsString("#!/bin/bash set +x set -e export HOME=null cf login -u 'user' -p 'password' -a api.example.com -o 'testOrg' -s 'testSpace'; cf create-service-key 'myInstance' 'myServiceKey' -c '{ \"key\" : \"value\" }'")))
+        assertThat(dockerExecuteRule.dockerParams, hasEntry('dockerImage', 'ppiper/cf-cli'))
+        assertThat(dockerExecuteRule.dockerParams, hasEntry('dockerWorkspace', '/home/piper'))
+        assertThat(shellRule.shell, hasItem(containsString("#!/bin/bash set +x set -e export HOME=/home/piper cf login -u 'user' -p 'password' -a api.example.com -o 'testOrg' -s 'testSpace'; cf create-service-key 'myInstance' 'myServiceKey' -c '{ \"key\" : \"value\" }'")))
     }
 
     public void fail() {
         shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, /.*cf create-service-key.*/, 1 )
-         
+
         stepRule.step.cloudFoundryCreateServiceKey(
             script: nullScript,
             cloudFoundry: [
@@ -84,10 +86,11 @@ public class CloudFoundryCreateServiceKeyTest extends BasePiperTest {
                 space: 'testSpace',
                 serviceInstance : 'myInstance',
                 serviceKey : 'myServiceKey',
-                serviceKeyConfig : '{ "key" : "value" }' 
+                serviceKeyConfig : '{ "key" : "value" }'
                 ]
         )
-
+        assertThat(dockerExecuteRule.dockerParams, hasEntry('dockerImage', 'ppiper/cf-cli'))
+        assertThat(dockerExecuteRule.dockerParams, hasEntry('dockerWorkspace', '/home/piper'))
         assertThat(shellRule.shell, hasItem(containsString("[cloudFoundryCreateServiceKey] ERROR: The execution of the create-service-key failed, see the logs above for more details.")))
     }
 }
