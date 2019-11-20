@@ -240,9 +240,10 @@ func handleStepParameters(stepData *config.StepData) {
 			if len(v) > 0 {
 				//containerName only for Step: dockerExecuteOnKubernetes
 				if k != "containerName" || stepData.Metadata.Name == "dockerExecuteOnKubernetes" {
-					fmt.Printf("ContextDefault Name: %v ##Value: %v\n", k, v)
-					cdp := mCD[k].(ContextDefaultParameters)
-					stepData.Spec.Inputs.Parameters = append(stepData.Spec.Inputs.Parameters, config.StepParameters{Name: k, Default: v, Mandatory: false, Description: cdp.Description, Scope: cdp.Scope})
+					if mCD[k] != nil {
+						cdp := mCD[k].(ContextDefaultParameters)
+						stepData.Spec.Inputs.Parameters = append(stepData.Spec.Inputs.Parameters, config.StepParameters{Name: k, Default: v, Mandatory: false, Description: cdp.Description, Scope: cdp.Scope})
+					}
 				}
 			}
 		}
@@ -371,25 +372,6 @@ func createDefaultContainerEntries(keys map[string][]string, resources map[strin
 				}
 			}
 		}
-	}
-}
-func createDefaultContainerEntriesOld(keys []string, resources map[string][]string, result map[string]string) {
-	for _, key := range keys {
-		fmt.Printf("keys: %v \n", key)
-		s := strings.Split(key, "_")
-		fmt.Printf("Strings Join: %v \n", strings.Join(resources[key], ", "))
-
-		if len(strings.Join(resources[key], ", ")) > 1 {
-			result[s[1]] += fmt.Sprintf("%v <br>", strings.Join(resources[key], ", "))
-		} else if len(strings.Join(resources[key], ", ")) == 1 {
-			if _, ok := result[s[1]]; !ok {
-				result[s[1]] = fmt.Sprintf("%v", strings.Join(resources[key], ", "))
-			} else {
-				result[s[1]] += fmt.Sprintf("%v <br>", strings.Join(resources[key], ", "))
-			}
-		}
-
-		fmt.Printf("%v: %v \n", s[1], result[s[1]])
 	}
 }
 
