@@ -99,7 +99,7 @@ void call(Map parameters = [:]) {
             echo "[${STEP_NAME}] Info: Using Cloud Foundry service key $configuration.cloudFoundry.serviceKey for service instance $configuration.cloudFoundry.serviceInstance"
             dockerExecute(script:script,dockerImage: configuration.dockerImage, dockerWorkspace: configuration.dockerWorkspace) {
                     String jsonString = getServiceKey(configuration)
-                    Map responseJson = readJson text : jsonString
+                    Map responseJson = readJSON text : jsonString
                     userColonPassword = responseJson.abap.username + ":" + responseJson.abap.password
                     urlString = responseJson.url + '/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY/Pull'
             }
