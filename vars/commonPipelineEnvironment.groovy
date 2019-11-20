@@ -212,4 +212,12 @@ class commonPipelineEnvironment implements Serializable {
     Map getStepConfiguration(stepName, stageName = env.STAGE_NAME, includeDefaults = true) {
         CommonPipelineEnvironment.getInstance().getStepConfiguration(stepName, stageName, includeDefaults)
     }
+    
+    void setPipelineDefaults(pipelineDefaults) {
+        CommonPipelineEnvironment.getInstance().pipelineDefaults = pipelineDefaults
+    }
+    
+    def getPipelineDefaults(pipelineDefaults) {
+        return CommonPipelineEnvironment.getInstance().pipelineDefaults
+    }
 }
