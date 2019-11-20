@@ -14,6 +14,7 @@ import org.junit.rules.RuleChain
 import util.BasePiperTest
 import util.JenkinsCredentialsRule
 import util.JenkinsStepRule
+import util.JenkinsReadJsonRule
 import util.JenkinsLoggingRule
 import util.JenkinsReadYamlRule
 import util.JenkinsDockerExecuteRule
@@ -29,6 +30,7 @@ public class AbapEnvironmentPullGitRepoTest extends BasePiperTest {
     private JenkinsLoggingRule loggingRule = new JenkinsLoggingRule(this)
     private JenkinsDockerExecuteRule dockerExecuteRule = new JenkinsDockerExecuteRule(this)
     private JenkinsShellCallRule shellRule = new JenkinsShellCallRule(this)
+    private JenkinsReadJsonRule readJsonRule = new JenkinsReadJsonRule(this)
     private JenkinsCredentialsRule credentialsRule = new JenkinsCredentialsRule(this).withCredentials('test_credentialsId', 'user', 'password')
 
     @Rule
@@ -38,6 +40,7 @@ public class AbapEnvironmentPullGitRepoTest extends BasePiperTest {
         .around(dockerExecuteRule)
         .around(stepRule)
         .around(loggingRule)
+        .around(readJsonRule)
         .around(credentialsRule)
         .around(shellRule)
 
@@ -58,6 +61,7 @@ public class AbapEnvironmentPullGitRepoTest extends BasePiperTest {
             x-csrf-token: TOKEN/
         })
 
+        loggingRule.expect("[abapEnvironmentPullGitRepo] Info: Using configuration: credentialsId: test_credentialsId and host: example.com")
         loggingRule.expect("[abapEnvironmentPullGitRepo] Pull Status: RUNNING")
         loggingRule.expect("[abapEnvironmentPullGitRepo] Entity URI: https://example.com/URI")
         loggingRule.expect("[abapEnvironmentPullGitRepo] Pull Status: SUCCESS")
@@ -77,20 +81,23 @@ public class AbapEnvironmentPullGitRepoTest extends BasePiperTest {
         shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, /.*POST.*/, /{"d" : { "__metadata" : { "uri" : "https:\/\/example.com\/URI" } , "status" : "R", "status_descr" : "RUNNING" }}/)
         shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, /.*https:\/\/example.com.*/, /{"d" : { "__metadata" : { "uri" : "https:\/\/example.com\/URI" } , "status" : "S", "status_descr" : "SUCCESS" }}/)
 
-        helper.registerAllowedMethod("readFile", [String.class], {
-            /HTTP\/1.1 200 OK
-            set-cookie: sap-usercontext=sap-client=100; path=\/
-            content-type: application\/json; charset=utf-8
-            x-csrf-token: TOKEN
-            Getting key SK_NAME_4 for service instance D09_TEST as P2001217173...\/
+        helper.registerAllowedMethod("readFile", [String.class], { input ->
+            if (input.contains("response")) {
+                /Getting key SK_NAME_4 for service instance D09_TEST as P2001217173...\/
 
-            {
-            "abap": {
-            "password": "password",
-            "username": "user"
-            },
-            "url": "https:\/\/example.com"
-            }/
+                {
+                "abap": {
+                "password": "password",
+                "username": "user"
+                },
+                "url": "https:\/\/example.com"
+                }/
+            } else {
+                /HTTP\/1.1 200 OK
+                set-cookie: sap-usercontext=sap-client=100; path=\/
+                content-type: application\/json; charset=utf-8
+                x-csrf-token: TOKEN/
+            }
         })
 
         loggingRule.expect("[abapEnvironmentPullGitRepo] Info: Using Cloud Foundry service key testKey for service instance testInstance")
@@ -110,10 +117,13 @@ public class AbapEnvironmentPullGitRepoTest extends BasePiperTest {
                 serviceKey : 'testKey'
             ])
 
-        assertThat(shellRule.shell[0], containsString(/#!\/bin\/bash curl -I -X GET https:\/\/example.com\/sap\/opu\/odata\/sap\/MANAGE_GIT_REPOSITORY\/Pull -H 'Authorization: Basic dXNlcjpwYXNzd29yZA==' -H 'Accept: application\/json' -H 'x-csrf-token: fetch' -D headerFileAuth-1.txt/))
-        assertThat(shellRule.shell[1], containsString(/#!\/bin\/bash curl -X POST "https:\/\/example.com\/sap\/opu\/odata\/sap\/MANAGE_GIT_REPOSITORY\/Pull" -H 'Authorization: Basic dXNlcjpwYXNzd29yZA==' -H 'Accept: application\/json' -H 'Content-Type: application\/json' -H 'x-csrf-token: TOKEN' --cookie headerFileAuth-1.txt -D headerFilePost-1.txt -d '{ "sc_name": "Z_DEMO_DM" }'/))
-        assertThat(shellRule.shell[2], containsString(/#!\/bin\/bash curl -X GET "https:\/\/example.com\/URI" -H 'Authorization: Basic dXNlcjpwYXNzd29yZA==' -H 'Accept: application\/json' -D headerFilePoll-1.txt/))
-        assertThat(shellRule.shell[3], containsString(/#!\/bin\/bash rm -f headerFileAuth-1.txt headerFilePost-1.txt headerFilePoll-1.txt/))
+        assertThat(shellRule.shell[0], containsString(/#!\/bin\/bash set +x set -e export HOME=\/home\/piper cf login -u 'user' -p 'password' -a api.cloudfoundry.com -o 'testOrg' -s 'testSpace'; cf service-key 'testInstance' 'testKey' > "response-1.txt/))
+        assertThat(shellRule.shell[1], containsString(/cf logout/))
+        assertThat(shellRule.shell[2], containsString(/#!\/bin\/bash rm -f response-1.txt/))
+        assertThat(shellRule.shell[3], containsString(/#!\/bin\/bash curl -I -X GET https:\/\/example.com\/sap\/opu\/odata\/sap\/MANAGE_GIT_REPOSITORY\/Pull -H 'Authorization: Basic dXNlcjpwYXNzd29yZA==' -H 'Accept: application\/json' -H 'x-csrf-token: fetch' -D headerFileAuth-1.txt/))
+        assertThat(shellRule.shell[4], containsString(/#!\/bin\/bash curl -X POST "https:\/\/example.com\/sap\/opu\/odata\/sap\/MANAGE_GIT_REPOSITORY\/Pull" -H 'Authorization: Basic dXNlcjpwYXNzd29yZA==' -H 'Accept: application\/json' -H 'Content-Type: application\/json' -H 'x-csrf-token: TOKEN' --cookie headerFileAuth-1.txt -D headerFilePost-1.txt -d '{ "sc_name": "Z_DEMO_DM" }'/))
+        assertThat(shellRule.shell[5], containsString(/#!\/bin\/bash curl -X GET "https:\/\/example.com\/URI" -H 'Authorization: Basic dXNlcjpwYXNzd29yZA==' -H 'Accept: application\/json' -D headerFilePoll-1.txt/))
+        assertThat(shellRule.shell[6], containsString(/#!\/bin\/bash rm -f headerFileAuth-1.txt headerFilePost-1.txt headerFilePoll-1.txt/))
     }
 
     @Test

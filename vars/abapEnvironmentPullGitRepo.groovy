@@ -87,7 +87,6 @@ void call(Map parameters = [:]) {
             .use()
 
         String userColonPassword
-        String authToken
         String urlString
         if (configuration.credentialsId != null && configuration.host != null) {
             echo "[${STEP_NAME}] Info: Using configuration: credentialsId: $configuration.credentialsId and host: $configuration.host"
@@ -98,14 +97,14 @@ void call(Map parameters = [:]) {
         } else {
             echo "[${STEP_NAME}] Info: Using Cloud Foundry service key $configuration.cloudFoundry.serviceKey for service instance $configuration.cloudFoundry.serviceInstance"
             dockerExecute(script:script,dockerImage: configuration.dockerImage, dockerWorkspace: configuration.dockerWorkspace) {
-                    String jsonString = getServiceKey(configuration)
-                    Map responseJson = readJSON text : jsonString
-                    userColonPassword = responseJson.abap.username + ":" + responseJson.abap.password
-                    urlString = responseJson.url + '/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY/Pull'
+                String jsonString = getServiceKey(configuration)
+                Map responseJson = readJSON(text : jsonString)
+                userColonPassword = responseJson.abap.username + ":" + responseJson.abap.password
+                urlString = responseJson.url + '/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY/Pull'
             }
         }
         if (userColonPassword != null && urlString != null) {
-            authToken = userColonPassword.bytes.encodeBase64().toString()
+            String authToken = userColonPassword.bytes.encodeBase64().toString()
             executeAbapEnvironmentPullGitRepo(configuration, urlString, authToken)
         } else {
             error "[${STEP_NAME}] Error: Necessary parameters not available"
@@ -115,7 +114,7 @@ void call(Map parameters = [:]) {
 
 private String getServiceKey(Map configuration) {
 
-    String responseFile = "response-${UUID.randomUUID().toString()}.json"
+    String responseFile = "response-${UUID.randomUUID().toString()}.txt"
     withCredentials([
         usernamePassword(credentialsId: configuration.cloudFoundry.credentialsId, passwordVariable: 'CF_PASSWORD', usernameVariable: 'CF_USERNAME')
     ]) {
