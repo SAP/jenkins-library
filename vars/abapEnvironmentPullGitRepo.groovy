@@ -77,6 +77,7 @@ void call(Map parameters = [:]) {
 
         def script = checkScript(this, parameters) ?: this
         Map configuration = ConfigurationHelper.newInstance(this)
+            .loadStepDefaults()
             .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS)
             .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS)
             .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName ?: env.STAGE_NAME, STEP_CONFIG_KEYS)
@@ -84,8 +85,8 @@ void call(Map parameters = [:]) {
             .collectValidationFailures()
             .withMandatoryProperty('repositoryName', 'Repository / Software Component not provided')
             .use()
-        
-        String userColonPassword 
+
+        String userColonPassword
         String authToken
         String urlString
         if (configuration.credentialsId != null && configuration.host != null) {
