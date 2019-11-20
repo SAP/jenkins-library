@@ -150,8 +150,11 @@ var stepData config.StepData = config.StepData{
 						{"param.name2b", "param.value2b"},
 					}},
 				},
-				VolumeMounts: []config.VolumeMount{
-					{"mp.2b", "mn.2b"},
+				//VolumeMounts: []config.VolumeMount{
+				//	{"mp.2b", "mn.2b"},
+				//},
+				Options: []config.Option{
+					{"option.name2b", "option.value2b"},
 				},
 			},
 		},
@@ -164,8 +167,11 @@ var stepData config.StepData = config.StepData{
 						{"param.name0", "param.value0"},
 					}},
 				},
-				VolumeMounts: []config.VolumeMount{
-					{"mp.3b", "mn.3b"},
+				//VolumeMounts: []config.VolumeMount{
+				//	{"mp.3b", "mn.3b"},
+				//},
+				Options: []config.Option{
+					{"option.name3b", "option.value3b"},
 				},
 			},
 		},
@@ -254,7 +260,8 @@ func TestAddContainerContent(t *testing.T) {
 			{"dockerImage", "image, image <br>param.name2a=param.value2a:image <br>param.name2b=param.value2b:image"},
 			{"dockerName", "container0, container1 <br>container2a <br>container2b <br>"},
 			{"dockerPullImage", "true"},
-			{"dockerVolumeBind", "mp.2b:mn.2b"},
+			//{"dockerVolumeBind", "mp.2b:mn.2b"},
+			{"dockerOptions", "option.name2b optnion.value2b"},
 			{"dockerWorkspace", "workingdir, workingdir <br>param.name2a=param.value2a:workingdir <br>param.name2b=param.value2b:workingdir"},
 		}
 		for _, c := range cases {
@@ -281,7 +288,8 @@ func TestAddSidecarContent(t *testing.T) {
 			{"sidecarName", "sidecar0"},
 			{"sidecarPullImage", "true"},
 			{"sidecarReadyCommand", "readycommand"},
-			{"sidecarVolumeBind", "mp.3b:mn.3b"},
+			{"sidecarOptions", "option.name3b optnion.value3b"},
+			//{"sidecarVolumeBind", "mp.3b:mn.3b"},
 			{"sidecarWorkspace", "workingdir"},
 		}
 		for _, c := range cases {
@@ -330,6 +338,8 @@ func TestGetDocuContextDefaults(t *testing.T) {
 			{"sidecarName", "sidecar0"},
 			{"sidecarPullImage", "true"},
 			{"sidecarReadyCommand", "readycommand"},
+			{"sidecarOptions", "option.name3b optnion.value3b"},
+			//{"sidecarVolumeBind", "mp.3b:mn.3b"},
 			{"sidecarWorkspace", "workingdir"},
 			{"containerCommand", "command"},
 			{"containerName", "container0, container1 <br>container2a <br>container2b <br>"},
@@ -338,7 +348,8 @@ func TestGetDocuContextDefaults(t *testing.T) {
 			{"dockerImage", "image, image <br>param.name2a=param.value2a:image <br>param.name2b=param.value2b:image"},
 			{"dockerName", "container0, container1 <br>container2a <br>container2b <br>"},
 			{"dockerPullImage", "true"},
-			{"dockerVolumeBind", "mp.2b:mn.2b"},
+			//{"dockerVolumeBind", "mp.2b:mn.2b"},
+			{"dockerOptions", "option.name2b optnion.value2b"},
 			{"dockerWorkspace", "workingdir, workingdir <br>param.name2a=param.value2a:workingdir <br>param.name2b=param.value2b:workingdir"},
 		}
 		for _, c := range cases {
