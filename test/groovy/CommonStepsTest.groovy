@@ -54,7 +54,6 @@ public class CommonStepsTest extends BasePiperTest{
             'prepareDefaultValues',
             'setupCommonPipelineEnvironment',
             'buildSetResult',
-            'githubPublishRelease'
         ]
 
         List steps = getSteps().stream()

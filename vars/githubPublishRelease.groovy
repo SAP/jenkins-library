@@ -7,11 +7,13 @@ import static com.sap.piper.Prerequisites.checkScript
 @Field String STEP_NAME = getClass().getName()
 @Field String METADATA_FILE = 'metadata/githubrelease.yaml'
 
-//Metadata maintained in file resources/metadata/githubrelease.yaml
+//Metadata maintained in file project://resources/metadata/githubrelease.yaml
 
 void call(Map parameters = [:]) {
     handlePipelineStepErrors(stepName: STEP_NAME, stepParameters: parameters) {
 
+        def script = checkScript(this, parameters) ?: this
+        
         Map config
         def utils = parameters.juStabUtils ?: new Utils()
         parameters.juStabUtils = null
@@ -26,9 +28,9 @@ void call(Map parameters = [:]) {
 
         withEnv([
             "PIPER_parametersJSON=${groovy.json.JsonOutput.toJson(parameters)}",
-            "PIPER_owner=${commonPipelineEnvironment.getGithubOrg()?:''}",
-            "PIPER_repository=${commonPipelineEnvironment.getGithubRepo()?:''}",
-            "PIPER_version=${commonPipelineEnvironment.getArtifactVersion()?:''}"
+            "PIPER_owner=${script.commonPipelineEnvironment.getGithubOrg()?:''}",
+            "PIPER_repository=${script.commonPipelineEnvironment.getGithubRepo()?:''}",
+            "PIPER_version=${script.commonPipelineEnvironment.getArtifactVersion()?:''}"
         ]) {
             // get context configuration
             config = readJSON (text: sh(returnStdout: true, script: "./piper getConfig --contextConfig --stepMetadata '${METADATA_FILE}' --stepName ${STEP_NAME}"))

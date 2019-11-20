@@ -52,7 +52,8 @@ class GithubPublishReleaseTest extends BasePiperTest {
     void testGithubPublishReleaseDefault() {
         stepRule.step.githubPublishRelease(
             juStabUtils: utils,
-            testParam: "This is test content"
+            testParam: "This is test content",
+            script: nullScript
         )
         // asserts
         assertThat(writeFileRule.files['metadata/githubrelease.yaml'], containsString('name: githubPublishRelease'))
@@ -71,7 +72,8 @@ class GithubPublishReleaseTest extends BasePiperTest {
         nullScript.commonPipelineEnvironment.setGithubRepo('TestRepo')
 
         stepRule.step.githubPublishRelease(
-            juStabUtils: utils
+            juStabUtils: utils,
+            script: nullScript
         )
         // asserts
         assertThat(withEnvArgs[1], is('PIPER_owner=TestOrg'))
