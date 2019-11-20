@@ -11,8 +11,8 @@ func karmaExecuteTests(myKarmaExecuteTestsOptions karmaExecuteTestsOptions) erro
 	c := command.Command{}
 	// reroute command output to loging framework
 	// also log stdout as Karma reports into it
-	c.Stdout = log.Entry().Writer()
-	c.Stderr = log.Entry().Writer()
+	c.Stdout(log.Entry().Writer())
+	c.Stderr(log.Entry().Writer())
 	runKarma(myKarmaExecuteTestsOptions, &c)
 	return nil
 }
