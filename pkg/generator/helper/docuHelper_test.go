@@ -137,7 +137,7 @@ var stepData config.StepData = config.StepData{
 					{"envar.name2a", "envar.value2a"}},
 				Conditions: []config.Condition{
 					{Params: []config.Param{
-						{"param.name2a", "param.value2a"},
+						{"param_name2a", "param_value2a"},
 					}},
 				},
 			},
@@ -255,13 +255,12 @@ func TestAddDefaultContainerContent(t *testing.T) {
 			{"containerCommand", "command"},
 			{"containerName", "container0, container1 <br>container2a <br>container2b <br>"},
 			{"containerShell", "shell"},
-			{"dockerEnvVars", "envar.name0=envar.value0, envar.name1=envar.value1 <br>param.name2a=param.value2a:\\[envar.name2a=envar.value2a\\] <br>param.name2b=param.value2b:\\[envar.name2b=envar.value2b\\]"},
-			{"dockerImage", "image, image <br>param.name2a=param.value2a:image <br>param.name2b=param.value2b:image"},
+			{"dockerEnvVars", "envar.name0=envar.value0, envar.name1=envar.value1 <br>param_name2a=param_value2a:\\[envar.name2a=envar.value2a\\] <br>param.name2b=param.value2b:\\[envar.name2b=envar.value2b\\]"},
+			{"dockerImage", "image, image <br>param_name2a=param_value2a:image <br>param.name2b=param.value2b:image"},
 			{"dockerName", "container0, container1 <br>container2a <br>container2b <br>"},
 			{"dockerPullImage", "true"},
-			//{"dockerVolumeBind", "mp.2b:mn.2b"},
 			{"dockerOptions", "option.name2b option.value2b"},
-			{"dockerWorkspace", "workingdir, workingdir <br>param.name2a=param.value2a:workingdir <br>param.name2b=param.value2b:workingdir"},
+			{"dockerWorkspace", "workingdir, workingdir <br>param_name2a=param_value2a:workingdir <br>param.name2b=param.value2b:workingdir"},
 		}
 		assert.Equal(t, len(cases), len(m))
 		for _, c := range cases {
@@ -288,7 +287,6 @@ func TestAddDefaultSidecarContent(t *testing.T) {
 			{"sidecarPullImage", "true"},
 			{"sidecarReadyCommand", "readycommand"},
 			{"sidecarOptions", "option.name3b option.value3b"},
-			//{"sidecarVolumeBind", "mp.3b:mn.3b"},
 			{"sidecarWorkspace", "workingdir"},
 		}
 		assert.Equal(t, len(cases), len(m))
@@ -338,18 +336,16 @@ func TestGetDocuContextDefaults(t *testing.T) {
 			{"sidecarPullImage", "true"},
 			{"sidecarReadyCommand", "readycommand"},
 			{"sidecarOptions", "option.name3b option.value3b"},
-			//{"sidecarVolumeBind", "mp.3b:mn.3b"},
 			{"sidecarWorkspace", "workingdir"},
 			{"containerCommand", "command"},
 			{"containerName", "container0, container1 <br>container2a <br>container2b <br>"},
 			{"containerShell", "shell"},
-			{"dockerEnvVars", "envar.name0=envar.value0, envar.name1=envar.value1 <br>param.name2a=param.value2a:\\[envar.name2a=envar.value2a\\] <br>param.name2b=param.value2b:\\[envar.name2b=envar.value2b\\]"},
-			{"dockerImage", "image, image <br>param.name2a=param.value2a:image <br>param.name2b=param.value2b:image"},
+			{"dockerEnvVars", "envar.name0=envar.value0, envar.name1=envar.value1 <br>param_name2a=param_value2a:\\[envar.name2a=envar.value2a\\] <br>param.name2b=param.value2b:\\[envar.name2b=envar.value2b\\]"},
+			{"dockerImage", "image, image <br>param_name2a=param_value2a:image <br>param.name2b=param.value2b:image"},
 			{"dockerName", "container0, container1 <br>container2a <br>container2b <br>"},
 			{"dockerPullImage", "true"},
-			//{"dockerVolumeBind", "mp.2b:mn.2b"},
 			{"dockerOptions", "option.name2b option.value2b"},
-			{"dockerWorkspace", "workingdir, workingdir <br>param.name2a=param.value2a:workingdir <br>param.name2b=param.value2b:workingdir"},
+			{"dockerWorkspace", "workingdir, workingdir <br>param_name2a=param_value2a:workingdir <br>param.name2b=param.value2b:workingdir"},
 		}
 		assert.Equal(t, len(cases), len(m))
 		for _, c := range cases {

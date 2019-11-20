@@ -234,11 +234,13 @@ func handleStepParameters(stepData *config.StepData) {
 	if len(context) > 0 {
 		contextDefaultPath := "pkg/generator/helper/piper-context-defaults.yaml"
 		mCD := readContextDefaultDescription(contextDefaultPath)
+		//fmt.Printf("ContextDefault Map: %v \n", context)
 		//create StepParemeters items for context defaults
 		for k, v := range context {
 			if len(v) > 0 {
 				//containerName only for Step: dockerExecuteOnKubernetes
 				if k != "containerName" || stepData.Metadata.Name == "dockerExecuteOnKubernetes" {
+					fmt.Printf("ContextDefault Name: %v ##Value: %v\n", k, v)
 					cdp := mCD[k].(ContextDefaultParameters)
 					stepData.Spec.Inputs.Parameters = append(stepData.Spec.Inputs.Parameters, config.StepParameters{Name: k, Default: v, Mandatory: false, Description: cdp.Description, Scope: cdp.Scope})
 				}
@@ -277,22 +279,20 @@ func getDocuContextDefaults(step *config.StepData) map[string]string {
 func addDefaultContainerContent(m *config.StepData, result map[string]string) {
 	//creates the context defaults for containers
 	if len(m.Spec.Containers) > 0 {
-		keys := []string{}
+		keys := map[string][]string{}
 		resources := map[string][]string{}
 		bEmptyKey := true
 		for _, container := range m.Spec.Containers {
 
-			rKeys := addContainerValues(container, bEmptyKey, resources)
-			keys = append(keys, rKeys...)
+			addContainerValues(container, bEmptyKey, resources, keys)
 		}
 		createDefaultContainerEntries(keys, resources, result)
 	}
 }
 
-func addContainerValues(container config.Container, bEmptyKey bool, resources map[string][]string) []string {
+func addContainerValues(container config.Container, bEmptyKey bool, resources map[string][]string, m map[string][]string) {
 
 	//create keys
-	keys := []string{}
 	key := ""
 	if len(container.Conditions) > 0 {
 		key = fmt.Sprintf("%v=%v", container.Conditions[0].Params[0].Name, container.Conditions[0].Params[0].Value)
@@ -302,17 +302,16 @@ func addContainerValues(container config.Container, bEmptyKey bool, resources ma
 	if bEmptyKey || len(key) > 0 {
 
 		if len(container.Command) > 0 {
-			keys = append(keys, key+"_containerCommand")
+			m["containerCommand"] = append(m["containerCommand"], key+"_containerCommand")
 		}
-		keys = append(keys, key+"_containerName")
-		keys = append(keys, key+"_containerShell")
-		keys = append(keys, key+"_dockerEnvVars")
-		keys = append(keys, key+"_dockerImage")
-		keys = append(keys, key+"_dockerName")
-		keys = append(keys, key+"_dockerPullImage")
-		keys = append(keys, key+"_dockerWorkspace")
-		keys = append(keys, key+"_dockerOptions")
-		keys = append(keys, key+"_dockerVolumeBind")
+		m["containerName"] = append(m["containerName"], key+"_containerName")
+		m["containerShell"] = append(m["containerShell"], key+"_containerShell")
+		m["dockerEnvVars"] = append(m["dockerEnvVars"], key+"_dockerEnvVars")
+		m["dockerImage"] = append(m["dockerImage"], key+"_dockerImage")
+		m["dockerName"] = append(m["dockerName"], key+"_dockerName")
+		m["dockerPullImage"] = append(m["dockerPullImage"], key+"_dockerPullImage")
+		m["dockerOptions"] = append(m["dockerOptions"], key+"_dockerOptions")
+		m["dockerWorkspace"] = append(m["dockerWorkspace"], key+"_dockerWorkspace")
 	}
 
 	if len(container.Conditions) == 0 {
@@ -321,8 +320,6 @@ func addContainerValues(container config.Container, bEmptyKey bool, resources ma
 
 	//add values
 	addValuesToMap(container, key, resources)
-
-	return keys
 }
 
 func addValuesToMap(container config.Container, key string, resources map[string][]string) {
@@ -347,26 +344,52 @@ func addValuesToMap(container config.Container, key string, resources map[string
 	if len(key) > 0 {
 		resources[key+"_dockerEnvVars"] = append(resources[key+"_dockerEnvVars"], fmt.Sprintf("%v:\\[%v\\]", key, strings.Join(envVarsAsStringSlice(container.EnvVars), "")))
 		resources[key+"_dockerImage"] = append(resources[key+"_dockerImage"], fmt.Sprintf("%v:%v", key, container.Image))
-		resources[key+"_dockerOptions"] = append(resources[key+"_dockerVolumeBind"], fmt.Sprintf("%v:\\[%v\\]", key, strings.Join(optionsAsStringSlice(container.Options), "")))
+		resources[key+"_dockerOptions"] = append(resources[key+"_dockerOptions"], fmt.Sprintf("%v:\\[%v\\]", key, strings.Join(optionsAsStringSlice(container.Options), "")))
 		resources[key+"_dockerWorkspace"] = append(resources[key+"_dockerWorkspace"], fmt.Sprintf("%v:%v", key, workingDir))
 	} else {
 		resources[key+"_dockerEnvVars"] = append(resources[key+"_dockerEnvVars"], fmt.Sprintf("%v", strings.Join(envVarsAsStringSlice(container.EnvVars), "")))
 		resources[key+"_dockerImage"] = append(resources[key+"_dockerImage"], container.Image)
-		resources[key+"_dockerOptions"] = append(resources[key+"_dockerVolumeBind"], fmt.Sprintf("%v", strings.Join(optionsAsStringSlice(container.Options), "")))
+		resources[key+"_dockerOptions"] = append(resources[key+"_dockerOptions"], fmt.Sprintf("%v", strings.Join(optionsAsStringSlice(container.Options), "")))
 		resources[key+"_dockerWorkspace"] = append(resources[key+"_dockerWorkspace"], workingDir)
 	}
 }
 
-func createDefaultContainerEntries(keys []string, resources map[string][]string, result map[string]string) {
+func createDefaultContainerEntries(keys map[string][]string, resources map[string][]string, result map[string]string) {
+	//loop over keys map, key is the description of the parameter for example : dockerEnvVars, ...
+	for k, p := range keys {
+		if p != nil {
+			//loop over key array to get the values from the resources
+			for _, key := range p {
+				if len(strings.Join(resources[key], ", ")) > 1 {
+					result[k] += fmt.Sprintf("%v <br>", strings.Join(resources[key], ", "))
+				} else if len(strings.Join(resources[key], ", ")) == 1 {
+					if _, ok := result[k]; !ok {
+						result[k] = fmt.Sprintf("%v", strings.Join(resources[key], ", "))
+					} else {
+						result[k] += fmt.Sprintf("%v <br>", strings.Join(resources[key], ", "))
+					}
+				}
+			}
+		}
+	}
+}
+func createDefaultContainerEntriesOld(keys []string, resources map[string][]string, result map[string]string) {
 	for _, key := range keys {
+		fmt.Printf("keys: %v \n", key)
 		s := strings.Split(key, "_")
+		fmt.Printf("Strings Join: %v \n", strings.Join(resources[key], ", "))
+
 		if len(strings.Join(resources[key], ", ")) > 1 {
 			result[s[1]] += fmt.Sprintf("%v <br>", strings.Join(resources[key], ", "))
 		} else if len(strings.Join(resources[key], ", ")) == 1 {
 			if _, ok := result[s[1]]; !ok {
 				result[s[1]] = fmt.Sprintf("%v", strings.Join(resources[key], ", "))
+			} else {
+				result[s[1]] += fmt.Sprintf("%v <br>", strings.Join(resources[key], ", "))
 			}
 		}
+
+		fmt.Printf("%v: %v \n", s[1], result[s[1]])
 	}
 }
 
