@@ -89,6 +89,21 @@ type Container struct {
 	Shell           string      `json:"shell"`
 	WorkingDir      string      `json:"workingDir"`
 	Conditions      []Condition `json:"conditions,omitempty"`
+	Options         []Option    `json:"options,omitempt"`
+	//VolumeMounts    []VolumeMount `json:"volumeMounts,omitempty"`
+}
+
+// ToDo: Add the missing Volumes part to enable the volume mount completly
+// VolumeMount defines an mount path
+// type VolumeMount struct {
+//	MountPath string `json:"mountPath"`
+//	Name      string `json:"name"`
+//}
+
+// Option defines an docker option
+type Option struct {
+	Name  string `json:"name"`
+	Value string `json:"value"`
 }
 
 // EnvVar defines an environment variable
@@ -229,6 +244,8 @@ func (m *StepData) GetContextDefaults(stepName string) (io.ReadCloser, error) {
 			p["dockerName"] = container.Name
 			p["dockerPullImage"] = container.ImagePullPolicy != "Never"
 			p["dockerWorkspace"] = container.WorkingDir
+			p["dockerOptions"] = optionsAsStringSlice(container.Options)
+			//p["dockerVolumeBind"] = volumeMountsAsStringSlice(container.VolumeMounts)
 
 			// Ready command not relevant for main runtime container so far
 			//p[] = container.ReadyCommand
@@ -246,14 +263,12 @@ func (m *StepData) GetContextDefaults(stepName string) (io.ReadCloser, error) {
 		root["sidecarPullImage"] = m.Spec.Sidecars[0].ImagePullPolicy != "Never"
 		root["sidecarReadyCommand"] = m.Spec.Sidecars[0].ReadyCommand
 		root["sidecarWorkspace"] = m.Spec.Sidecars[0].WorkingDir
+		root["sidecarOptions"] = optionsAsStringSlice(m.Spec.Sidecars[0].Options)
+		//root["sidecarVolumeBind"] = volumeMountsAsStringSlice(m.Spec.Sidecars[0].VolumeMounts)
 	}
 
 	// not filled for now since this is not relevant in Kubernetes case
-	//p["dockerOptions"] = container.
-	//p["dockerVolumeBind"] = container.
 	//root["containerPortMappings"] = m.Spec.Sidecars[0].
-	//root["sidecarOptions"] = m.Spec.Sidecars[0].
-	//root["sidecarVolumeBind"] = m.Spec.Sidecars[0].
 
 	if len(m.Spec.Inputs.Resources) > 0 {
 		keys := []string{}
@@ -310,3 +325,20 @@ func envVarsAsStringSlice(envVars []EnvVar) []string {
 	}
 	return e
 }
+
+func optionsAsStringSlice(options []Option) []string {
+	e := []string{}
+	for _, v := range options {
+		e = append(e, fmt.Sprintf("%v %v", v.Name, v.Value))
+	}
+	return e
+}
+
+//ToDo: Enable this when the Volumes part is also implemented
+//func volumeMountsAsStringSlice(volumeMounts []VolumeMount) []string {
+//	e := []string{}
+//	for _, v := range volumeMounts {
+//		e = append(e, fmt.Sprintf("%v:%v", v.Name, v.MountPath))
+//	}
+//	return e
+//}
