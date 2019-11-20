@@ -242,12 +242,12 @@ func TestReadAndAdjustTemplate(t *testing.T) {
 	})
 }
 
-func TestAddContainerContent(t *testing.T) {
+func TestAddDefaultContainerContent(t *testing.T) {
 
 	t.Run("Success Case", func(t *testing.T) {
 
 		var m map[string]string = make(map[string]string)
-		addContainerContent(&stepData, m)
+		addDefaultContainerContent(&stepData, m)
 
 		cases := []struct {
 			x, want string
@@ -271,12 +271,12 @@ func TestAddContainerContent(t *testing.T) {
 		}
 	})
 }
-func TestAddSidecarContent(t *testing.T) {
+func TestAddDefaultSidecarContent(t *testing.T) {
 
 	t.Run("Success Case", func(t *testing.T) {
 
 		var m map[string]string = make(map[string]string)
-		addSidecarContent(&stepData, m)
+		addDefaultSidecarContent(&stepData, m)
 
 		cases := []struct {
 			x, want string
