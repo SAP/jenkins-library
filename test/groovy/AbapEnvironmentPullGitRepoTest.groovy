@@ -43,12 +43,12 @@ public class AbapEnvironmentPullGitRepoTest extends BasePiperTest {
     }
 
     @Test
-    public void pullSuccessful() {
+    public void pullSuccessfulCredentialsId() {
         shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, /.*x-csrf-token: fetch.*/, null )
         shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, /.*POST.*/, /{"d" : { "__metadata" : { "uri" : "https:\/\/example.com\/URI" } , "status" : "R", "status_descr" : "RUNNING" }}/)
         shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, /.*https:\/\/example\.com.*/, /{"d" : { "__metadata" : { "uri" : "https:\/\/example.com\/URI" } , "status" : "S", "status_descr" : "SUCCESS" }}/)
 
-        helper.registerAllowedMethod("readFile", [String.class], { 
+        helper.registerAllowedMethod("readFile", [String.class], {
             /HTTP\/1.1 200 OK
             set-cookie: sap-usercontext=sap-client=100; path=\/
             content-type: application\/json; charset=utf-8
@@ -68,11 +68,47 @@ public class AbapEnvironmentPullGitRepoTest extends BasePiperTest {
     }
 
     @Test
+    public void pullSuccessfulCloudFoundry() {
+        shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, /.*cf service-key.*/, 0 )
+        shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, /.*x-csrf-token: fetch.*/, null )
+        shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, /.*POST.*/, /{"d" : { "__metadata" : { "uri" : "https:\/\/example.com\/URI" } , "status" : "R", "status_descr" : "RUNNING" }}/)
+        shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, /.*https:\/\/example\.com.*/, /{"d" : { "__metadata" : { "uri" : "https:\/\/example.com\/URI" } , "status" : "S", "status_descr" : "SUCCESS" }}/)
+
+        helper.registerAllowedMethod("readFile", [String.class], {
+            /HTTP\/1.1 200 OK
+            set-cookie: sap-usercontext=sap-client=100; path=\/
+            content-type: application\/json; charset=utf-8
+            x-csrf-token: TOKEN/
+        })
+
+        loggingRule.expect("[abapEnvironmentPullGitRepo] Pull Status: RUNNING")
+        loggingRule.expect("[abapEnvironmentPullGitRepo] Entity URI: https://example.com/URI")
+        loggingRule.expect("[abapEnvironmentPullGitRepo] Pull Status: SUCCESS")
+
+        stepRule.step.abapEnvironmentPullGitRepo(
+            script: nullScript,
+            repositoryName: 'Z_DEMO_DM',
+            cloudFoundry: [
+                apiEndpoint : 'api.cloudfoundry.com',
+                org : 'testOrg',
+                space : 'testSpace',
+                credentialsId : 'test_credentialsId',
+                serviceInstace : 'testInstance',
+                serviceKey : 'testKey'
+            ])
+
+        assertThat(shellRule.shell[0], containsString(/#!\/bin\/bash curl -I -X GET https:\/\/example.com\/sap\/opu\/odata\/sap\/MANAGE_GIT_REPOSITORY\/Pull -H 'Authorization: Basic dXNlcjpwYXNzd29yZA==' -H 'Accept: application\/json' -H 'x-csrf-token: fetch' -D headerFileAuth-1.txt/))
+        assertThat(shellRule.shell[1], containsString(/#!\/bin\/bash curl -X POST "https:\/\/example.com\/sap\/opu\/odata\/sap\/MANAGE_GIT_REPOSITORY\/Pull" -H 'Authorization: Basic dXNlcjpwYXNzd29yZA==' -H 'Accept: application\/json' -H 'Content-Type: application\/json' -H 'x-csrf-token: TOKEN' --cookie headerFileAuth-1.txt -D headerFilePost-1.txt -d '{ "sc_name": "Z_DEMO_DM" }'/))
+        assertThat(shellRule.shell[2], containsString(/#!\/bin\/bash curl -X GET "https:\/\/example.com\/URI" -H 'Authorization: Basic dXNlcjpwYXNzd29yZA==' -H 'Accept: application\/json' -D headerFilePoll-1.txt/))
+        assertThat(shellRule.shell[3], containsString(/#!\/bin\/bash rm -f headerFileAuth-1.txt headerFilePost-1.txt headerFilePoll-1.txt/))
+    }
+
+    @Test
     public void pullFailsWhilePolling() {
         shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, /.*x-csrf-token: fetch.*/, "TOKEN")
         shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, /.*POST.*/, /{"d" : { "__metadata" : { "uri" : "https:\/\/example.com\/URI" } , "status" : "R", "status_descr" : "RUNNING" }}/)
         shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, /.*https:\/\/example\.com.*/, /{"d" : { "__metadata" : { "uri" : "https:\/\/example.com\/URI" } , "status" : "E", "status_descr" : "ERROR" }}/)
-        
+
         helper.registerAllowedMethod("readFile", [String.class], {
             /HTTP\/1.1 200 OK
             set-cookie: sap-usercontext=sap-client=100; path=\/
@@ -94,7 +130,7 @@ public class AbapEnvironmentPullGitRepoTest extends BasePiperTest {
         shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, /.*x-csrf-token: fetch.*/, "TOKEN")
         shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, /.*POST.*/, /{"d" : { "__metadata" : { "uri" : "https:\/\/example.com\/URI" } , "status" : "E", "status_descr" : "ERROR" }}/)
         shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, /.*https:\/\/example\.com.*/, /{"d" : { "__metadata" : { "uri" : "https:\/\/example.com\/URI" } , "status" : "E", "status_descr" : "ERROR" }}/)
-        
+
         helper.registerAllowedMethod("readFile", [String.class], {
             /HTTP\/1.1 200 OK
             set-cookie: sap-usercontext=sap-client=100; path=\/
@@ -114,7 +150,7 @@ public class AbapEnvironmentPullGitRepoTest extends BasePiperTest {
     public void pullWithErrorResponse() {
         shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, /.*x-csrf-token: fetch.*/, "TOKEN")
         shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, /.*POST.*/, /{"error" : { "message" : { "lang" : "en", "value": "text" } }}/)
-        
+
         helper.registerAllowedMethod("readFile", [String.class], {
             /HTTP\/1.1 200 OK
             set-cookie: sap-usercontext=sap-client=100; path=\/

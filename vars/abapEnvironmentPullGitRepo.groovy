@@ -114,6 +114,9 @@ void call(Map parameters = [:]) {
 }
 
 private String getServiceKey(Map configuration) {
+
+    String uuid = UUID.randomUUID().toString()
+    String responseFile = "response-${uuid}.json"
     withCredentials([
         usernamePassword(credentialsId: configuration.cloudFoundry.credentialsId, passwordVariable: 'CF_PASSWORD', usernameVariable: 'CF_USERNAME')
     ]) {
@@ -123,14 +126,20 @@ private String getServiceKey(Map configuration) {
             set -e
             export HOME=${configuration.dockerWorkspace}
             cf login -u ${BashUtils.quoteAndEscape(CF_USERNAME)} -p ${BashUtils.quoteAndEscape(CF_PASSWORD)} -a ${configuration.cloudFoundry.apiEndpoint} -o ${BashUtils.quoteAndEscape(configuration.cloudFoundry.org)} -s ${BashUtils.quoteAndEscape(configuration.cloudFoundry.space)};
-            cf service-key ${BashUtils.quoteAndEscape(configuration.cloudFoundry.serviceInstance)} ${BashUtils.quoteAndEscape(configuration.cloudFoundry.serviceKey)} > \"response.json\"
+            cf service-key ${BashUtils.quoteAndEscape(configuration.cloudFoundry.serviceInstance)} ${BashUtils.quoteAndEscape(configuration.cloudFoundry.serviceKey)} > \"${responseFile}\"
             """
-        def status = sh returnStatus: true, script: bashScript
-        sh "cf logout"
+        try {
+            def status = sh returnStatus: true, script: bashScript
+            String responseString = readFile(responseFile)
+        } finally {
+            sh "cf logout"
+            sh script : """#!/bin/bash
+                rm -f ${responseFile}
+                """
+        }
         if (status != 0) {
             echo "[${STEP_NAME}] Info: Could not get the service key $configuration.cloudFoundry.serviceKey for service instance $configuration.cloudFoundry.serviceInstance"
         }
-        String responseString = readFile("response.json")
         def p = Pattern.compile(/\{.*\}$/, Pattern.MULTILINE | Pattern.DOTALL)
         def m = responseString =~ p
         String jsonString
