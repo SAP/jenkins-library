@@ -13,7 +13,7 @@ void call(Map parameters = [:]) {
     handlePipelineStepErrors(stepName: STEP_NAME, stepParameters: parameters) {
 
         def script = checkScript(this, parameters) ?: this
-        
+
         Map config
         def utils = parameters.juStabUtils ?: new Utils()
         parameters.juStabUtils = null
