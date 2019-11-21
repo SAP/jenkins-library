@@ -21,6 +21,10 @@ func (errReadCloser) Close() error {
 	return nil
 }
 
+func customDefaultsOpenFileMock(name string) (io.ReadCloser, error) {
+	return ioutil.NopCloser(strings.NewReader("general:\n  p0: p0_custom_default")), nil
+}
+
 func TestReadConfig(t *testing.T) {
 
 	var c Config
@@ -107,6 +111,7 @@ steps:
   px2: px2_general_default
   p3: p3_general_default 
 `
+
 		paramJSON := `{"p6":"p6_param","p7":"p7_param"}`
 
 		flags := map[string]interface{}{"p7": "p7_flag"}
@@ -178,6 +183,19 @@ steps:
 				})
 			}
 		})
+	})
+
+	t.Run("Consider custom defaults from config", func(t *testing.T) {
+		var c Config
+		testConfDefaults := "customDefaults:\n- testDefaults.yaml"
+
+		c.openFile = customDefaultsOpenFileMock
+
+		stepConfig, err := c.GetStepConfig(nil, "", ioutil.NopCloser(strings.NewReader(testConfDefaults)), nil, StepFilters{General: []string{"p0"}}, nil, "stage1", "step1")
+
+		assert.NoError(t, err, "Error occured but no error expected")
+		assert.Equal(t, "p0_custom_default", stepConfig.Config["p0"])
+
 	})
 
 	t.Run("Failure case config", func(t *testing.T) {
