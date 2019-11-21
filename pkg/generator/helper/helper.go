@@ -56,7 +56,7 @@ func {{.CobraCmdFuncName}}() *cobra.Command {
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			log.SetStepName("{{ .StepName }}")
 			log.SetVerbose({{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.Verbose)
-			return {{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}PrepareConfig(cmd, &metadata, "{{ .StepName }}", &my{{ .StepName | title}}Options, {{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}OpenPiperFile)
+			return {{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}PrepareConfig(cmd, &metadata, "{{ .StepName }}", &my{{ .StepName | title}}Options, config.OpenPiperFile)
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return {{.StepName}}(my{{ .StepName | title }}Options)
@@ -87,6 +87,7 @@ func {{ .StepName }}Metadata() config.StepData {
 						Scope:     []string{{ "{" }}{{ range $notused, $scope := $value.Scope }}"{{ $scope }}",{{ end }}{{ "}" }},
 						Type:      "{{ $value.Type }}",
 						Mandatory: {{ $value.Mandatory }},
+						Aliases:   []config.Alias{{ "{" }}{{ range $notused, $alias := $value.Aliases }}{{ "{" }}Name: "{{ $alias.Name }}"{{ "}" }},{{ end }}{{ "}" }},
 					},{{ end }}
 				},
 			},
