@@ -69,7 +69,8 @@ func generateConfig() error {
 
 	for _, f := range GeneralConfig.DefaultConfig {
 		fc, err := configOptions.openFile(f)
-		if err != nil {
+		// only create error for non-default values
+		if err != nil && f != ".pipeline/defaults.yaml" {
 			return errors.Wrapf(err, "config: getting defaults failed: '%v'", f)
 		}
 		defaultConfig = append(defaultConfig, fc)

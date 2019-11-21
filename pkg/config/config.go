@@ -15,9 +15,11 @@ import (
 
 // Config defines the structure of the config files
 type Config struct {
-	General map[string]interface{}            `json:"general"`
-	Stages  map[string]map[string]interface{} `json:"stages"`
-	Steps   map[string]map[string]interface{} `json:"steps"`
+	CustomDefaults []string                          `json:"customDefaults,omitempty"`
+	General        map[string]interface{}            `json:"general"`
+	Stages         map[string]map[string]interface{} `json:"stages"`
+	Steps          map[string]map[string]interface{} `json:"steps"`
+	openFile       func(s string) (io.ReadCloser, error)
 }
 
 // StepConfig defines the structure for merged step configuration
@@ -88,6 +90,17 @@ func (c *Config) GetStepConfig(flagValues map[string]interface{}, paramJSON stri
 		}
 	}
 	c.ApplyAliasConfig(parameters, filters, stageName, stepName)
+
+	// consider custom defaults defined in config.yml
+	if c.CustomDefaults != nil && len(c.CustomDefaults) > 0 {
+		for _, f := range c.CustomDefaults {
+			fc, err := c.openFile(f)
+			if err != nil {
+				return StepConfig{}, errors.Wrapf(err, "getting default '%v' failed", f)
+			}
+			defaults = append(defaults, fc)
+		}
+	}
 
 	if err := d.ReadPipelineDefaults(defaults); err != nil {
 		switch err.(type) {
