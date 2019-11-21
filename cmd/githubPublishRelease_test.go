@@ -169,9 +169,8 @@ func TestRunGithubPublishRelease(t *testing.T) {
 		}
 
 		myGithubPublishReleaseOptions := githubPublishReleaseOptions{
-			UpdateAsset: true,
-			AssetPath:   filepath.Join("testdata", t.Name()+"_test.txt"),
-			Version:     "latest",
+			AssetPath: filepath.Join("testdata", t.Name()+"_test.txt"),
+			Version:   "latest",
 		}
 
 		err := runGithubPublishRelease(ctx, &myGithubPublishReleaseOptions, &ghRepoClient, &ghIssueClient)
