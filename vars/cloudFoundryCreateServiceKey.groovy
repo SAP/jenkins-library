@@ -77,7 +77,7 @@ void call(Map parameters = [:]) {
             .withMandatoryProperty('cloudFoundry/serviceKey')
             .use()
 
-
+        echo config.dockerImage
         executeCreateServiceKey(script, config)
     }
 }
