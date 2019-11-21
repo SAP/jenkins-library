@@ -62,7 +62,7 @@ func generateConfig() error {
 		}
 	}
 
-	defaultConfig, paramFilter, err := defaultsAndFilters(&metadata)
+	defaultConfig, paramFilter, err := defaultsAndFilters(&metadata, metadata.Metadata.Name)
 	if err != nil {
 		return errors.Wrap(err, "defaults: retrieving step defaults failed")
 	}
@@ -82,7 +82,7 @@ func generateConfig() error {
 		params = metadata.Spec.Inputs.Parameters
 	}
 
-	stepConfig, err = myConfig.GetStepConfig(flags, GeneralConfig.ParametersJSON, customConfig, defaultConfig, paramFilter, params, GeneralConfig.StageName, configOptions.stepName)
+	stepConfig, err = myConfig.GetStepConfig(flags, GeneralConfig.ParametersJSON, customConfig, defaultConfig, paramFilter, params, GeneralConfig.StageName, metadata.Metadata.Name)
 	if err != nil {
 		return errors.Wrap(err, "getting step config failed")
 	}
@@ -101,17 +101,15 @@ func addConfigFlags(cmd *cobra.Command) {
 
 	cmd.Flags().StringVar(&configOptions.parametersJSON, "parametersJSON", os.Getenv("PIPER_parametersJSON"), "Parameters to be considered in JSON format")
 	cmd.Flags().StringVar(&configOptions.stepMetadata, "stepMetadata", "", "Step metadata, passed as path to yaml")
-	cmd.Flags().StringVar(&configOptions.stepName, "stepName", "", "Name of the step for which configuration should be included")
 	cmd.Flags().BoolVar(&configOptions.contextConfig, "contextConfig", false, "Defines if step context configuration should be loaded instead of step config")
 
 	cmd.MarkFlagRequired("stepMetadata")
-	cmd.MarkFlagRequired("stepName")
 
 }
 
-func defaultsAndFilters(metadata *config.StepData) ([]io.ReadCloser, config.StepFilters, error) {
+func defaultsAndFilters(metadata *config.StepData, stepName string) ([]io.ReadCloser, config.StepFilters, error) {
 	if configOptions.contextConfig {
-		defaults, err := metadata.GetContextDefaults(configOptions.stepName)
+		defaults, err := metadata.GetContextDefaults(stepName)
 		if err != nil {
 			return nil, config.StepFilters{}, errors.Wrap(err, "metadata: getting context defaults failed")
 		}
