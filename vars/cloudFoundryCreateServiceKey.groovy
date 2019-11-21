@@ -77,7 +77,7 @@ void call(Map parameters = [:]) {
             .withMandatoryProperty('cloudFoundry/serviceKey')
             .use()
 
-        echo config.dockerImage
+        echo "[${STEP_NAME}] Info: docker image: ${config.dockerImage}, docker workspace: ${config.dockerWorkspace}"
         executeCreateServiceKey(script, config)
     }
 }
