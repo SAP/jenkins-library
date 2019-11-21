@@ -35,7 +35,7 @@ In the Docker network, the containers can be referenced by the values provided i
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			log.SetStepName("karmaExecuteTests")
 			log.SetVerbose(GeneralConfig.Verbose)
-			return PrepareConfig(cmd, &metadata, "karmaExecuteTests", &myKarmaExecuteTestsOptions, OpenPiperFile)
+			return PrepareConfig(cmd, &metadata, "karmaExecuteTests", &myKarmaExecuteTestsOptions, config.OpenPiperFile)
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return karmaExecuteTests(myKarmaExecuteTestsOptions)
