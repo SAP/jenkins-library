@@ -1,0 +1,128 @@
+metadata:
+  name: xsDeploy
+  description: Performs xs deployment
+  longDescription: |
+    Performs xs deployment
+
+spec:
+  inputs:
+    resources:
+    params:
+      - name: deployOpts
+        type: string
+        description: Additional deploy options
+        scope:
+        - GENERAL
+        - PARAMETERS
+        - STAGES
+        - STEPS
+        mandatory: false
+        default:
+      - name: mtaPath
+        type: string
+        description: Path to deployable
+        scope:
+        - GENERAL
+        - PARAMETERS
+        - STAGES
+        - STEPS
+        mandatory: true
+      - name: action
+        type: string
+        description: The action
+        default: None
+        scope:
+        - GENERAL
+        - PARAMETERS
+        - STAGES
+        - STEPS
+        mandatory: false
+      - name: mode
+        type: string
+        description: The mode
+        default: Deploy
+        scope:
+        - GENERAL
+        - PARAMETERS
+        - STAGES
+        - STEPS
+        mandatory: true
+      - name: deploymentID
+        type: string
+        description: The deployment ID
+        default:
+        scope:
+        - GENERAL
+        - PARAMETERS
+        - STAGES
+        - STEPS
+        mandatory: false
+      - name: apiUrl
+        type: string
+        description: The api url (e.g. https://example.org:12345
+        scope:
+        - GENERAL
+        - PARAMETERS
+        - STAGES
+        - STEPS
+        mandatory: true
+      - name: user
+        type: string
+        description: User
+        scope:
+        - GENERAL
+        - PARAMETERS
+        - STAGES
+        - STEPS
+        mandatory: true
+      - name: password
+        type: string
+        description: Password
+        scope:
+        - GENERAL
+        - PARAMETERS
+        - STAGES
+        - STEPS
+        mandatory: true
+      - name: org
+        type: string
+        description: The org
+        scope:
+        - GENERAL
+        - PARAMETERS
+        - STAGES
+        - STEPS
+        mandatory: true
+      - name: space
+        type: string
+        description: The space
+        scope:
+        - GENERAL
+        - PARAMETERS
+        - STAGES
+        - STEPS
+        mandatory: true
+      - name: loginOpts
+        type: string
+        description: Additional options for performing xs login.
+        scope:
+        - GENERAL
+        - PARAMETERS
+        - STAGES
+        - STEPS
+        mandatory: true
+      - name: xsSessionFile
+        type: string
+        description: The file keeping the xs session.
+        scope:
+        - GENERAL
+        - PARAMETERS
+        - STAGES
+        - STEPS
+        mandatory: false
+  containers:
+    - name: maven
+      image: maven:3.5-jdk-8
+      volumeMounts:
+      - mountPath: /dev/shm
+        name: dev-shm
