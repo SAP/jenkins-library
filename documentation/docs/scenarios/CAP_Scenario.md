@@ -101,5 +101,5 @@ steps:
 
 For the detailed description of the relevant parameters, see:
 
-* [mtaBuild](../../../steps/mtaBuild/)
-* [cloudFoundryDeploy](../../../steps/cloudFoundryDeploy/)
+* [mtaBuild](../steps/mtaBuild.md)
+* [cloudFoundryDeploy](../steps/cloudFoundryDeploy.md)

@@ -26,7 +26,7 @@ func TestShellRun(t *testing.T) {
 		o := new(bytes.Buffer)
 		e := new(bytes.Buffer)
 
-		s := Command{Stdout: o, Stderr: e}
+		s := Command{stdout: o, stderr: e}
 		s.RunShell("/bin/bash", "myScript")
 
 		t.Run("success case", func(t *testing.T) {
@@ -54,7 +54,7 @@ func TestExecutableRun(t *testing.T) {
 		o := new(bytes.Buffer)
 		e := new(bytes.Buffer)
 
-		ex := Command{Stdout: o, Stderr: e}
+		ex := Command{stdout: o, stderr: e}
 		ex.RunExecutable("echo", []string{"foo bar", "baz"}...)
 
 		t.Run("success case", func(t *testing.T) {
@@ -78,7 +78,7 @@ func TestPrepareOut(t *testing.T) {
 
 	t.Run("os", func(t *testing.T) {
 		s := Command{}
-		_out, _err := prepareOut(s.Stdout, s.Stderr)
+		_out, _err := prepareOut(s.stdout, s.stderr)
 
 		if _out != os.Stdout {
 			t.Errorf("expected out to be os.Stdout")
@@ -92,8 +92,8 @@ func TestPrepareOut(t *testing.T) {
 	t.Run("custom", func(t *testing.T) {
 		o := bytes.NewBufferString("")
 		e := bytes.NewBufferString("")
-		s := Command{Stdout: o, Stderr: e}
-		_out, _err := prepareOut(s.Stdout, s.Stderr)
+		s := Command{stdout: o, stderr: e}
+		_out, _err := prepareOut(s.stdout, s.stderr)
 
 		expectOut := "Test out"
 		expectErr := "Test err"
