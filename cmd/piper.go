@@ -111,12 +111,3 @@ func PrepareConfig(cmd *cobra.Command, metadata *config.StepData, stepName strin
 
 	return nil
 }
-
-// // OpenPiperFile provides functionality to retrieve configuration via file or http
-// func OpenPiperFile(name string) (io.ReadCloser, error) {
-// 	//ToDo: support also https as source
-// 	if !strings.HasPrefix(name, "http") {
-// 		return os.Open(name)
-// 	}
-// 	return nil, fmt.Errorf("file location not yet supported for '%v'", name)
-// }
