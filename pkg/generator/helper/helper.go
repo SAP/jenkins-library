@@ -116,14 +116,14 @@ func Test{{.CobraCmdFuncName}}(t *testing.T) {
 `
 
 // ProcessMetaFiles generates step coding based on step configuration provided in yaml files
-func ProcessMetaFiles(metadataFiles []string, openFile func(s string) (io.ReadCloser, error), writeFile func(filename string, data []byte, perm os.FileMode) error, exportPrefix string, docuHelperData DocuHelperData) error {
+func ProcessMetaFiles(metadataFiles []string, stepHelperData StepHelperData, docuHelperData DocuHelperData) error {
 	for key := range metadataFiles {
 
 		var stepData config.StepData
 
 		configFilePath := metadataFiles[key]
 
-		metadataFile, err := openFile(configFilePath)
+		metadataFile, err := stepHelperData.OpenFile(configFilePath)
 		checkError(err)
 		defer metadataFile.Close()
 
@@ -140,14 +140,14 @@ func ProcessMetaFiles(metadataFiles []string, openFile func(s string) (io.ReadCl
 			osImport, err = setDefaultParameters(&stepData)
 			checkError(err)
 
-			myStepInfo := getStepInfo(&stepData, osImport, exportPrefix)
+			myStepInfo := getStepInfo(&stepData, osImport, stepHelperData.ExportPrefix)
 
 			step := stepTemplate(myStepInfo)
-			err = writeFile(fmt.Sprintf("cmd/%v_generated.go", stepData.Metadata.Name), step, 0644)
+			err = stepHelperData.WriteFile(fmt.Sprintf("cmd/%v_generated.go", stepData.Metadata.Name), step, 0644)
 			checkError(err)
 
 			test := stepTestTemplate(myStepInfo)
-			err = writeFile(fmt.Sprintf("cmd/%v_generated_test.go", stepData.Metadata.Name), test, 0644)
+			err = stepHelperData.WriteFile(fmt.Sprintf("cmd/%v_generated_test.go", stepData.Metadata.Name), test, 0644)
 			checkError(err)
 		} else {
 			err = generateStepDocumentation(stepData, docuHelperData)
