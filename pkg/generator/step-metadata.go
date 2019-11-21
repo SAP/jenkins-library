@@ -26,7 +26,7 @@ func main() {
 	metadataFiles, err := helper.MetadataFiles(metadataPath)
 	checkError(err)
 	docuHelperData := helper.DocuHelperData{isGenerateDocu, docTemplatePath, openDocTemplate, docFileWriter}
-	stepHelperData := helper.StepHelperData{openMetaFile, fileWriter,  ""}
+	stepHelperData := helper.StepHelperData{openMetaFile, fileWriter, ""}
 	err = helper.ProcessMetaFiles(metadataFiles, stepHelperData, docuHelperData)
 	checkError(err)
 
