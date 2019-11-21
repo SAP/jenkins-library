@@ -25,7 +25,7 @@ var configOptions configCommandOptions
 // ConfigCommand is the entry command for loading the configuration of a pipeline step
 func ConfigCommand() *cobra.Command {
 
-	configOptions.openFile = OpenPiperFile
+	configOptions.openFile = config.OpenPiperFile
 	var createConfigCmd = &cobra.Command{
 		Use:   "getConfig",
 		Short: "Loads the project 'Piper' configuration respecting defaults and parameters.",
