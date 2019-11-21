@@ -54,9 +54,9 @@ func generateConfig() error {
 		return errors.Wrap(err, "metadata: read failed")
 	}
 
-	var customConfig io.ReadCloser
-	if piperutils.FileExists(GeneralConfig.CustomConfig) {
-		customConfig, err = configOptions.openFile(GeneralConfig.CustomConfig)
+	var projectConfig io.ReadCloser
+	if piperutils.FileExists(GeneralConfig.ProjectConfig) {
+		projectConfig, err = configOptions.openFile(GeneralConfig.ProjectConfig)
 		if err != nil {
 			return errors.Wrap(err, "config: open failed")
 		}
@@ -82,7 +82,7 @@ func generateConfig() error {
 		params = metadata.Spec.Inputs.Parameters
 	}
 
-	stepConfig, err = myConfig.GetStepConfig(flags, GeneralConfig.ParametersJSON, customConfig, defaultConfig, paramFilter, params, GeneralConfig.StageName, configOptions.stepName)
+	stepConfig, err = myConfig.GetStepConfig(flags, GeneralConfig.ParametersJSON, projectConfig, defaultConfig, paramFilter, params, GeneralConfig.StageName, configOptions.stepName)
 	if err != nil {
 		return errors.Wrap(err, "getting step config failed")
 	}

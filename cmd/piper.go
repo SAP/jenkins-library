@@ -16,7 +16,7 @@ import (
 
 // GeneralConfigOptions contains all global configuration options for piper binary
 type GeneralConfigOptions struct {
-	CustomConfig   string
+	ProjectConfig   string
 	DefaultConfig  []string //ordered list of Piper default configurations. Can be filePath or ENV containing JSON in format 'ENV:MY_ENV_VAR'
 	ParametersJSON string
 	StageName      string
@@ -56,7 +56,7 @@ func Execute() {
 
 func addRootFlags(rootCmd *cobra.Command) {
 
-	rootCmd.PersistentFlags().StringVar(&GeneralConfig.CustomConfig, "customConfig", ".pipeline/config.yml", "Path to the pipeline configuration file")
+	rootCmd.PersistentFlags().StringVar(&GeneralConfig.ProjectConfig, "projectConfig", ".pipeline/config.yml", "Path to the pipeline configuration file")
 	rootCmd.PersistentFlags().StringSliceVar(&GeneralConfig.DefaultConfig, "defaultConfig", nil, "Default configurations, passed as path to yaml file")
 	rootCmd.PersistentFlags().StringVar(&GeneralConfig.ParametersJSON, "parametersJSON", os.Getenv("PIPER_parametersJSON"), "Parameters to be considered in JSON format")
 	rootCmd.PersistentFlags().StringVar(&GeneralConfig.StageName, "stageName", os.Getenv("STAGE_NAME"), "Name of the stage for which configuration should be included")
@@ -80,16 +80,16 @@ func PrepareConfig(cmd *cobra.Command, metadata *config.StepData, stepName strin
 		stepConfig = config.GetStepConfigWithJSON(flagValues, GeneralConfig.StepConfigJSON, filters)
 	} else {
 		// use config & defaults
-		var customConfig io.ReadCloser
+		var projectConfig io.ReadCloser
 		var err error
 		//accept that config file and defaults cannot be loaded since both are not mandatory here
-		if piperutils.FileExists(GeneralConfig.CustomConfig) {
-			if customConfig, err = openFile(GeneralConfig.CustomConfig); err != nil {
-				errors.Wrapf(err, "Cannot read '%s'", GeneralConfig.CustomConfig)
+		if piperutils.FileExists(GeneralConfig.ProjectConfig) {
+			if projectConfig, err = openFile(GeneralConfig.ProjectConfig); err != nil {
+				errors.Wrapf(err, "Cannot read '%s'", GeneralConfig.ProjectConfig)
 			}
 		} else {
-			log.Entry().Infof("Project config file '%s' does not exist. No project configuration available.", GeneralConfig.CustomConfig)
-			customConfig = nil
+			log.Entry().Infof("Project config file '%s' does not exist. No project configuration available.", GeneralConfig.ProjectConfig)
+			projectConfig = nil
 		}
 
 		var defaultConfig []io.ReadCloser
@@ -99,7 +99,7 @@ func PrepareConfig(cmd *cobra.Command, metadata *config.StepData, stepName strin
 			defaultConfig = append(defaultConfig, fc)
 		}
 
-		stepConfig, err = myConfig.GetStepConfig(flagValues, GeneralConfig.ParametersJSON, customConfig, defaultConfig, filters, metadata.Spec.Inputs.Parameters, GeneralConfig.StageName, stepName)
+		stepConfig, err = myConfig.GetStepConfig(flagValues, GeneralConfig.ParametersJSON, projectConfig, defaultConfig, filters, metadata.Spec.Inputs.Parameters, GeneralConfig.StageName, stepName)
 		if err != nil {
 			return errors.Wrap(err, "retrieving step configuration failed")
 		}
