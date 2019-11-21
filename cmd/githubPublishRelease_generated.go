@@ -47,7 +47,7 @@ The result looks like
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			log.SetStepName("githubPublishRelease")
 			log.SetVerbose(GeneralConfig.Verbose)
-			return PrepareConfig(cmd, &metadata, "githubPublishRelease", &myGithubPublishReleaseOptions, OpenPiperFile)
+			return PrepareConfig(cmd, &metadata, "githubPublishRelease", &myGithubPublishReleaseOptions, config.OpenPiperFile)
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return githubPublishRelease(myGithubPublishReleaseOptions)
