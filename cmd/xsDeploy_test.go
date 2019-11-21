@@ -18,8 +18,8 @@ func TestDeploy(t *testing.T) {
 		LoginOpts:     "--skip-ssl-validation",
 		DeployOpts:    "--dummy-deploy-opts",
 		XsSessionFile: ".xs_session",
-		Mode:          "Deploy",
-		Action:        "None",
+		Mode:          "DEPLOY",
+		Action:        "NONE",
 		MtaPath:       "dummy.mtar",
 	}
 
@@ -102,13 +102,13 @@ func TestDeploy(t *testing.T) {
 			s.calls = nil
 		}()
 
-		myXsDeployOptions.Action = "Retry"
+		myXsDeployOptions.Action = "RETRY"
 		defer func() {
-			myXsDeployOptions.Action = "None"
+			myXsDeployOptions.Action = "NONE"
 		}()
 
 		e := runXsDeploy(myXsDeployOptions, &s, fExists, fCopy, fRemove)
-		checkErr(t, e, "Cannot perform action 'Retry' in mode 'Deploy'. Only action 'None' is allowed.")
+		checkErr(t, e, "Cannot perform action 'RETRY' in mode 'DEPLOY'. Only action 'NONE' is allowed.")
 	})
 
 	t.Run("Standard deploy fails, error from underlying process", func(t *testing.T) {
@@ -140,7 +140,7 @@ func TestDeploy(t *testing.T) {
 			myXsDeployOptions.Mode = oldMode
 		}()
 
-		myXsDeployOptions.Mode = "BGDeploy"
+		myXsDeployOptions.Mode = "BG_DEPLOY"
 
 		e := runXsDeploy(myXsDeployOptions, &s, fExists, fCopy, fRemove)
 		checkErr(t, e, "")
@@ -167,8 +167,8 @@ func TestDeploy(t *testing.T) {
 			myXsDeployOptions.DeploymentID = ""
 		}()
 
-		myXsDeployOptions.Mode = "BGDeploy"
-		myXsDeployOptions.Action = "Abort"
+		myXsDeployOptions.Mode = "BG_DEPLOY"
+		myXsDeployOptions.Action = "ABORT"
 		myXsDeployOptions.DeploymentID = "12345"
 
 		e := runXsDeploy(myXsDeployOptions, &s, fExists, fCopy, fRemove)
@@ -195,8 +195,8 @@ func TestDeploy(t *testing.T) {
 			myXsDeployOptions.Action = oldAction
 		}()
 
-		myXsDeployOptions.Mode = "BGDeploy"
-		myXsDeployOptions.Action = "Abort"
+		myXsDeployOptions.Mode = "BG_DEPLOY"
+		myXsDeployOptions.Action = "ABORT"
 
 		e := runXsDeploy(myXsDeployOptions, &s, fExists, fCopy, fRemove)
 		checkErr(t, e, "deploymentID was not provided")

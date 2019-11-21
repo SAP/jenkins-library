@@ -20,8 +20,6 @@ import (
 type DeployMode int
 
 const (
-	//UnknownMode ...
-	UnknownMode = iota
 	// NoDeploy ...
 	NoDeploy DeployMode = iota
 	//Deploy ...
@@ -33,26 +31,23 @@ const (
 //ValueOfMode ...
 func ValueOfMode(str string) (DeployMode, error) {
 	switch str {
-	case "UnknownMode":
-		return UnknownMode, nil
-	case "NoDeploy":
+	case "NONE":
 		return NoDeploy, nil
-	case "Deploy":
+	case "DEPLOY":
 		return Deploy, nil
-	case "BGDeploy":
+	case "BG_DEPLOY":
 		return BGDeploy, nil
 	default:
-		return UnknownMode, errors.New(fmt.Sprintf("Unknown DeployMode: '%s'", str))
+		return NoDeploy, errors.New(fmt.Sprintf("Unknown DeployMode: '%s'", str))
 	}
 }
 
 // String
 func (m DeployMode) String() string {
 	return [...]string{
-		"UnknownMode",
-		"None",
-		"Deploy",
-		"BGDeploy",
+		"NONE",
+		"DEPLOY",
+		"BG_DEPLOY",
 	}[m]
 }
 
@@ -77,13 +72,13 @@ const (
 //ValueOfAction ...
 func ValueOfAction(str string) (Action, error) {
 	switch str {
-	case "None":
+	case "NONE":
 		return None, nil
-	case "Resume":
+	case "RESUME":
 		return Resume, nil
-	case "Abort":
+	case "ABORT":
 		return Abort, nil
-	case "Retry":
+	case "RETRY":
 		return Retry, nil
 
 	default:
@@ -94,10 +89,10 @@ func ValueOfAction(str string) (Action, error) {
 // String
 func (a Action) String() string {
 	return [...]string{
-		"None",
-		"Resume",
-		"Abort",
-		"Retry",
+		"NONE",
+		"RESUME",
+		"ABORT",
+		"RETRY",
 	}[a]
 }
 
