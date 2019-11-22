@@ -61,7 +61,7 @@ func setParamValueFromAlias(configMap map[string]interface{}, filter []string, p
 		for _, a := range p.Aliases {
 			aliasVal := getDeepAliasValue(configMap, a.Name)
 			if aliasVal != nil {
-				configMap[p.Name] = getDeepAliasValue(configMap, a.Name)
+				configMap[p.Name] = aliasVal
 			}
 			if configMap[p.Name] != nil {
 				return configMap
