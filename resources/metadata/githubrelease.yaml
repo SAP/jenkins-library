@@ -90,8 +90,8 @@ spec:
       type: string
       mandatory: true
     - name: serverUrl
-      aliases:
-        - name: githubServerUrl
+#      aliases:
+#        - name: githubServerUrl
       description: 'GitHub server url for end-user access.'
       scope:
       - PARAMETERS
