@@ -147,7 +147,7 @@ func githubPublishReleaseMetadata() config.StepData {
 					},
 					{
 						Name:      "serverUrl",
-						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
+						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: true,
 						Aliases:   []config.Alias{{Name: "githubServerUrl"}},
