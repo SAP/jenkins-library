@@ -15,7 +15,7 @@ import static com.sap.piper.Utils.downloadSettingsFromUrl
     /** The name of the application which is being built. If the parameter has been provided and no `mta.yaml` exists, the `mta.yaml` will be automatically generated using this parameter and the information (`name` and `version`) from `package.json` before the actual build starts.*/
     'applicationName',
     /**
-     * MtaBuildTool classic only: The target platform to which the mtar can be deployed.
+     * mtaBuildTool classic only: The target platform to which the mtar can be deployed.
      * @possibleValues 'CF', 'NEO', 'XSA'
      */
     'buildTarget',
@@ -23,7 +23,7 @@ import static com.sap.piper.Utils.downloadSettingsFromUrl
      * Tool to use when building the MTA
      * @possibleValues 'classic', 'cloudMbt'
      */
-    'MtaBuildTool',
+    'mtaBuildTool',
     /** @see dockerExecute */
     'dockerImage',
     /** @see dockerExecute */
@@ -42,7 +42,7 @@ import static com.sap.piper.Utils.downloadSettingsFromUrl
     /** Path or url to the mvn settings file that should be used as global settings file.*/
     'globalSettingsFile',
     /**
-     * MtaBuildTool cloudMbt only: The target platform to which the mtar can be deployed.
+     * mtaBuildTool cloudMbt only: The target platform to which the mtar can be deployed.
      * @possibleValues 'CF', 'NEO', 'XSA'
      */
     'platform',
@@ -70,7 +70,7 @@ void call(Map parameters = [:]) {
             .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS)
             .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName ?: env.STAGE_NAME, STEP_CONFIG_KEYS)
             .mixin(parameters, PARAMETER_KEYS)
-            .dependingOn('MtaBuildTool').mixin('dockerImage')
+            .dependingOn('mtaBuildTool').mixin('dockerImage')
             .use()
 
         new Utils().pushToSWA([
@@ -134,7 +134,7 @@ void call(Map parameters = [:]) {
             options.push("--mtar ${id}.mtar")
 
 
-            switch(configuration.MtaBuildTool) {
+            switch(configuration.mtaBuildTool) {
                 case 'classic':
                     // If it is not configured, it is expected on the PATH
                     def mtaJar = configuration.mtaJarLocation ?: 'mta.jar'
@@ -148,7 +148,7 @@ void call(Map parameters = [:]) {
                     mtaCall = "mbt build ${options.join(' ')}"
                     break
                 default:
-                    error "[ERROR][${STEP_NAME}] MtaBuildTool '${configuration.MtaBuildTool}' not supported!"
+                    error "[ERROR][${STEP_NAME}] MTA build tool '${configuration.mtaBuildTool}' not supported!"
             }
 
             echo "[INFO] Executing mta build call: '${mtaCall}'."
