@@ -41,7 +41,7 @@ func TestConfigCommand(t *testing.T) {
 	})
 
 	t.Run("Required flags", func(t *testing.T) {
-		exp := []string{"stepMetadata", "stepName"}
+		exp := []string{"stepMetadata"}
 		assert.Equal(t, exp, gotReq, "required flags incorrect")
 	})
 
