@@ -59,7 +59,7 @@ func runGithubPublishRelease(ctx context.Context, myGithubPublishReleaseOptions 
 	log.Entry().Debugf("Previous GitHub release published: '%v'", publishedAt)
 
 	//updating assets only supported on latest release
-	if myGithubPublishReleaseOptions.UpdateAsset && myGithubPublishReleaseOptions.Version == "latest" {
+	if len(myGithubPublishReleaseOptions.AssetPath) > 0 && myGithubPublishReleaseOptions.Version == "latest" {
 		return uploadReleaseAsset(ctx, lastRelease.GetID(), myGithubPublishReleaseOptions, ghRepoClient)
 	}
 
