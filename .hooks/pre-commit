@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 STAGED_GO_FILES=$(git diff --staged --name-only | grep "\.go$")
 
