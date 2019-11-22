@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"os"
 
 	"github.com/SAP/jenkins-library/pkg/config"
@@ -57,7 +58,7 @@ func addRootFlags(rootCmd *cobra.Command) {
 
 	rootCmd.PersistentFlags().StringVar(&GeneralConfig.CustomConfig, "customConfig", ".pipeline/config.yml", "Path to the pipeline configuration file")
 	rootCmd.PersistentFlags().StringSliceVar(&GeneralConfig.DefaultConfig, "defaultConfig", []string{".pipeline/defaults.yaml"}, "Default configurations, passed as path to yaml file")
-	rootCmd.PersistentFlags().StringVar(&GeneralConfig.ParametersJSON, "parametersJSON", os.Getenv("PIPER_parametersJSON"), "Parameters to be considered in JSON format")
+	rootCmd.PersistentFlags().StringVar(&GeneralConfig.ParametersJSON, "parametersJSON", os.Getenv("PIPER_parametersJSON"), "Parameters to be considered in JSON format. If '-' (dash) is provided it is read from standard input")
 	rootCmd.PersistentFlags().StringVar(&GeneralConfig.StageName, "stageName", os.Getenv("STAGE_NAME"), "Name of the stage for which configuration should be included")
 	rootCmd.PersistentFlags().StringVar(&GeneralConfig.StepConfigJSON, "stepConfigJSON", os.Getenv("PIPER_stepConfigJSON"), "Step configuration in JSON format")
 	rootCmd.PersistentFlags().BoolVarP(&GeneralConfig.Verbose, "verbose", "v", false, "verbose output")
@@ -96,6 +97,14 @@ func PrepareConfig(cmd *cobra.Command, metadata *config.StepData, stepName strin
 			//ToDo: support also https as source
 			fc, _ := openFile(f)
 			defaultConfig = append(defaultConfig, fc)
+		}
+
+		if GeneralConfig.ParametersJSON == "-" {
+			if buff, err := ioutil.ReadAll(os.Stdin); err == nil {
+				GeneralConfig.ParametersJSON = string(buff)
+			} else {
+				return err
+			}
 		}
 
 		stepConfig, err = myConfig.GetStepConfig(flagValues, GeneralConfig.ParametersJSON, customConfig, defaultConfig, filters, metadata.Spec.Inputs.Parameters, GeneralConfig.StageName, stepName)
