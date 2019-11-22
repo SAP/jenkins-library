@@ -15,9 +15,11 @@ import (
 
 // Config defines the structure of the config files
 type Config struct {
-	General map[string]interface{}            `json:"general"`
-	Stages  map[string]map[string]interface{} `json:"stages"`
-	Steps   map[string]map[string]interface{} `json:"steps"`
+	CustomDefaults []string                          `json:"customDefaults,omitempty"`
+	General        map[string]interface{}            `json:"general"`
+	Stages         map[string]map[string]interface{} `json:"stages"`
+	Steps          map[string]map[string]interface{} `json:"steps"`
+	openFile       func(s string) (io.ReadCloser, error)
 }
 
 // StepConfig defines the structure for merged step configuration
@@ -55,9 +57,12 @@ func (c *Config) ApplyAliasConfig(parameters []StepParameters, filters StepFilte
 }
 
 func setParamValueFromAlias(configMap map[string]interface{}, filter []string, p StepParameters) map[string]interface{} {
-	if configMap[p.Name] == nil && sliceContains(filter, p.Name) {
+	if configMap != nil && configMap[p.Name] == nil && sliceContains(filter, p.Name) {
 		for _, a := range p.Aliases {
-			configMap[p.Name] = getDeepAliasValue(configMap, a.Name)
+			aliasVal := getDeepAliasValue(configMap, a.Name)
+			if aliasVal != nil {
+				configMap[p.Name] = aliasVal
+			}
 			if configMap[p.Name] != nil {
 				return configMap
 			}
@@ -89,6 +94,20 @@ func (c *Config) GetStepConfig(flagValues map[string]interface{}, paramJSON stri
 	}
 	c.ApplyAliasConfig(parameters, filters, stageName, stepName)
 
+	// consider custom defaults defined in config.yml
+	if c.CustomDefaults != nil && len(c.CustomDefaults) > 0 {
+		if c.openFile == nil {
+			c.openFile = OpenPiperFile
+		}
+		for _, f := range c.CustomDefaults {
+			fc, err := c.openFile(f)
+			if err != nil {
+				return StepConfig{}, errors.Wrapf(err, "getting default '%v' failed", f)
+			}
+			defaults = append(defaults, fc)
+		}
+	}
+
 	if err := d.ReadPipelineDefaults(defaults); err != nil {
 		switch err.(type) {
 		case *ParseError:
@@ -98,22 +117,25 @@ func (c *Config) GetStepConfig(flagValues map[string]interface{}, paramJSON stri
 		}
 	}
 
-	// first: read defaults & merge general -> steps (-> general -> steps ...)
+	// initialize with defaults from step.yaml
+	stepConfig.mixInStepDefaults(parameters)
+
+	// read defaults & merge general -> steps (-> general -> steps ...)
 	for _, def := range d.Defaults {
 		def.ApplyAliasConfig(parameters, filters, stageName, stepName)
 		stepConfig.mixIn(def.General, filters.General)
 		stepConfig.mixIn(def.Steps[stepName], filters.Steps)
 	}
 
-	// second: read config & merge - general -> steps -> stages
+	// read config & merge - general -> steps -> stages
 	stepConfig.mixIn(c.General, filters.General)
 	stepConfig.mixIn(c.Steps[stepName], filters.Steps)
 	stepConfig.mixIn(c.Stages[stageName], filters.Stages)
 
-	// third: merge parameters provided via env vars
+	// merge parameters provided via env vars
 	stepConfig.mixIn(envValues(filters.All), filters.All)
 
-	// fourth: if parameters are provided in JSON format merge them
+	// if parameters are provided in JSON format merge them
 	if len(paramJSON) != 0 {
 		var params map[string]interface{}
 		json.Unmarshal([]byte(paramJSON), &params)
@@ -126,7 +148,7 @@ func (c *Config) GetStepConfig(flagValues map[string]interface{}, paramJSON stri
 		stepConfig.mixIn(params, filters.Parameters)
 	}
 
-	// fifth: merge command line flags
+	// merge command line flags
 	if flagValues != nil {
 		stepConfig.mixIn(flagValues, filters.Parameters)
 	}
@@ -178,6 +200,15 @@ func GetJSON(data interface{}) (string, error) {
 	return string(result), nil
 }
 
+// OpenPiperFile provides functionality to retrieve configuration via file or http
+func OpenPiperFile(name string) (io.ReadCloser, error) {
+	//ToDo: support also https as source
+	if !strings.HasPrefix(name, "http") {
+		return os.Open(name)
+	}
+	return nil, fmt.Errorf("file location not yet supported for '%v'", name)
+}
+
 func envValues(filter []string) map[string]interface{} {
 	vals := map[string]interface{}{}
 	for _, param := range filter {
@@ -195,6 +226,18 @@ func (s *StepConfig) mixIn(mergeData map[string]interface{}, filter []string) {
 	}
 
 	s.Config = merge(s.Config, filterMap(mergeData, filter))
+}
+
+func (s *StepConfig) mixInStepDefaults(stepParams []StepParameters) {
+	if s.Config == nil {
+		s.Config = map[string]interface{}{}
+	}
+
+	for _, p := range stepParams {
+		if p.Default != nil {
+			s.Config[p.Name] = p.Default
+		}
+	}
 }
 
 func filterMap(data map[string]interface{}, filter []string) map[string]interface{} {

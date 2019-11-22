@@ -90,8 +90,8 @@ spec:
       type: string
       mandatory: true
     - name: serverUrl
-      aliases:
-        - name: githubServerUrl
+#      aliases:
+#        - name: githubServerUrl
       description: 'GitHub server url for end-user access.'
       scope:
       - PARAMETERS
@@ -137,13 +137,6 @@ spec:
       - STAGES
       - STEPS
       type: string
-    - name: updateAsset
-      description: Specify if a release asset should be updated only.
-      scope:
-      - PARAMETERS
-      - STAGES
-      - STEPS
-      type: bool
     - name: version
       description: 'Define the version number which will be written as tag as well as release name.'
       scope:
