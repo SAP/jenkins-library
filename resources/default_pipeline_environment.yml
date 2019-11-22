@@ -331,10 +331,9 @@ steps:
     logSuccessfulMavenTransfers: false
   mtaBuild:
     buildTarget: 'NEO'
-    buildTool: classic
+    mtaBuildTool: classic
     platform: 'cf'
     mtaJarLocation: '/opt/sap/mta/lib/mta.jar'
-
     classic:
       dockerImage: 'ppiper/mta-archive-builder'
     cloudMbt:
