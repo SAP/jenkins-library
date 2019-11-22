@@ -117,14 +117,14 @@ func Test{{.CobraCmdFuncName}}(t *testing.T) {
 `
 
 // ProcessMetaFiles generates step coding based on step configuration provided in yaml files
-func ProcessMetaFiles(metadataFiles []string, openFile func(s string) (io.ReadCloser, error), writeFile func(filename string, data []byte, perm os.FileMode) error, exportPrefix string) error {
+func ProcessMetaFiles(metadataFiles []string, stepHelperData StepHelperData, docuHelperData DocuHelperData) error {
 	for key := range metadataFiles {
 
 		var stepData config.StepData
 
 		configFilePath := metadataFiles[key]
 
-		metadataFile, err := openFile(configFilePath)
+		metadataFile, err := stepHelperData.OpenFile(configFilePath)
 		checkError(err)
 		defer metadataFile.Close()
 
@@ -135,19 +135,27 @@ func ProcessMetaFiles(metadataFiles []string, openFile func(s string) (io.ReadCl
 
 		fmt.Printf("Step name: %v\n", stepData.Metadata.Name)
 
-		osImport := false
-		osImport, err = setDefaultParameters(&stepData)
-		checkError(err)
+		//Switch Docu or Step Files
+		if !docuHelperData.IsGenerateDocu {
+			osImport := false
+			osImport, err = setDefaultParameters(&stepData)
+			checkError(err)
 
-		myStepInfo := getStepInfo(&stepData, osImport, exportPrefix)
+			myStepInfo := getStepInfo(&stepData, osImport, stepHelperData.ExportPrefix)
 
-		step := stepTemplate(myStepInfo)
-		err = writeFile(fmt.Sprintf("cmd/%v_generated.go", stepData.Metadata.Name), step, 0644)
-		checkError(err)
+			step := stepTemplate(myStepInfo)
+			err = stepHelperData.WriteFile(fmt.Sprintf("cmd/%v_generated.go", stepData.Metadata.Name), step, 0644)
+			checkError(err)
 
-		test := stepTestTemplate(myStepInfo)
-		err = writeFile(fmt.Sprintf("cmd/%v_generated_test.go", stepData.Metadata.Name), test, 0644)
-		checkError(err)
+			test := stepTestTemplate(myStepInfo)
+			err = stepHelperData.WriteFile(fmt.Sprintf("cmd/%v_generated_test.go", stepData.Metadata.Name), test, 0644)
+			checkError(err)
+		} else {
+			err = generateStepDocumentation(stepData, docuHelperData)
+			if err != nil {
+				fmt.Printf("%v\n", err)
+			}
+		}
 	}
 	return nil
 }
@@ -212,13 +220,6 @@ func getStepInfo(stepData *config.StepData, osImport bool, exportPrefix string) 
 		FlagsFunc:        fmt.Sprintf("add%vFlags", strings.Title(stepData.Metadata.Name)),
 		OSImport:         osImport,
 		ExportPrefix:     exportPrefix,
-	}
-}
-
-func checkError(err error) {
-	if err != nil {
-		fmt.Printf("Error occured: %v\n", err)
-		os.Exit(1)
 	}
 }
 
