@@ -10,6 +10,9 @@ To use this hook, it needs to be linked into the `.git/hooks` directory and made
 
 ```sh
 ln -s -f ../../.hooks/pre-commit ./.git/hooks/pre-commit
+```
+
+```sh
 chmod +x ./.hooks/pre-commit
 ```
 
@@ -25,4 +28,4 @@ Executes `go mod tidy` and stages `go.mod` & `go.sum`.
 
 From [Golang docs](https://github.com/golang/go/wiki/Modules):
 
-> `go mod tidy` — Prune any no-longer-needed dependencies from go.mod and add any dependencies needed for other combinations of OS, architecture, and build tags (details)
+> `go mod tidy` — Prune any no-longer-needed dependencies from `go.mod` and add any dependencies needed for other combinations of OS, architecture, and build tags (details).
