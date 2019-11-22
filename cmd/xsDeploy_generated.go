@@ -36,7 +36,7 @@ func XsDeployCommand() *cobra.Command {
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			log.SetStepName("xsDeploy")
 			log.SetVerbose(GeneralConfig.Verbose)
-			return PrepareConfig(cmd, &metadata, "xsDeploy", &myXsDeployOptions, OpenPiperFile)
+			return PrepareConfig(cmd, &metadata, "xsDeploy", &myXsDeployOptions, config.OpenPiperFile)
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return xsDeploy(myXsDeployOptions)
@@ -82,72 +82,84 @@ func xsDeployMetadata() config.StepData {
 						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: false,
+						Aliases:   []config.Alias{},
 					},
 					{
 						Name:      "mtaPath",
 						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: true,
+						Aliases:   []config.Alias{},
 					},
 					{
 						Name:      "action",
 						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: false,
+						Aliases:   []config.Alias{},
 					},
 					{
 						Name:      "mode",
 						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: true,
+						Aliases:   []config.Alias{},
 					},
 					{
 						Name:      "deploymentID",
 						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: false,
+						Aliases:   []config.Alias{},
 					},
 					{
 						Name:      "apiUrl",
 						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: true,
+						Aliases:   []config.Alias{},
 					},
 					{
 						Name:      "user",
 						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: true,
+						Aliases:   []config.Alias{},
 					},
 					{
 						Name:      "password",
 						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: true,
+						Aliases:   []config.Alias{},
 					},
 					{
 						Name:      "org",
 						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: true,
+						Aliases:   []config.Alias{},
 					},
 					{
 						Name:      "space",
 						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: true,
+						Aliases:   []config.Alias{},
 					},
 					{
 						Name:      "loginOpts",
 						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: true,
+						Aliases:   []config.Alias{},
 					},
 					{
 						Name:      "xsSessionFile",
 						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: false,
+						Aliases:   []config.Alias{},
 					},
 				},
 			},
