@@ -35,7 +35,7 @@ jobs:
         - docker rm piper_${TRAVIS_BRANCH}
         - cp ./piper ./piper_master
         - chmod +x ./piper
-        - ./piper githubPublishRelease --token ${GITHUB_TOKEN} --version latest --updateAsset --assetPath ./piper_master
+        - ./piper githubPublishRelease --token ${GITHUB_TOKEN} --version latest --assetPath ./piper_master
     - name: Groovy Unit Tests
       before_script:
         - curl -L --output cc-test-reporter https://codeclimate.com/downloads/test-reporter/test-reporter-latest-linux-amd64
