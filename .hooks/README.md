@@ -6,7 +6,7 @@ From [Git docs](https://git-scm.com/docs/githooks#_description):
 
 ## Usage
 
-To use this hook, execute this command in the project root directory to link the script into the `.git/hooks` directory:
+To use the hook, execute this command in the project root directory to link the script into the `.git/hooks` directory:
 
 ```sh
 ln -s -f ../../.hooks/pre-commit ./.git/hooks/pre-commit
