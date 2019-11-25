@@ -55,7 +55,7 @@ jobs:
       install: docker pull squidfunk/mkdocs-material:3.0.4
       before_script: 
         - documentation/bin/createDocu.sh
-        - docker run -u `id -u`:`id -g` --rm -it -v ${TRAVIS_BUILD_DIR}:/docu-gen golang sh -c "go run docu-gen/pkg/generator/step-metadata.go --docuDir=docu-gen/documentation/docs/steps --docuGen=true "
+        - docker run -u `id -u`:`id -g` --rm -it -v ${TRAVIS_BUILD_DIR}:/docu-gen golang sh -c "go run /docu-gen/pkg/generator/step-metadata.go --docuDir=/docu-gen/documentation/docs/steps --docuGen=true "
       script:
         - docker run -u `id -u`:`id -g` --rm -it -v ${TRAVIS_BUILD_DIR}/documentation:/docs squidfunk/mkdocs-material:3.0.4 build --clean --strict
       after_script: 
