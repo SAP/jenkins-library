@@ -33,7 +33,7 @@ void call(Map parameters = [:]) {
             "PIPER_version=${script.commonPipelineEnvironment.getArtifactVersion()?:''}"
         ]) {
             // get context configuration
-            config = readJSON (text: sh(returnStdout: true, script: "./piper getConfig --contextConfig --stepMetadata '${METADATA_FILE}' --stepName ${STEP_NAME}"))
+            config = readJSON (text: sh(returnStdout: true, script: "./piper getConfig --contextConfig --stepMetadata '${METADATA_FILE}'"))
 
             // execute step
             withCredentials([string(credentialsId: config.githubTokenCredentialsId, variable: 'TOKEN')]) {

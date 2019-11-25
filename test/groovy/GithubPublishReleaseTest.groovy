@@ -45,7 +45,7 @@ class GithubPublishReleaseTest extends BasePiperTest {
             return closure()
         })
         credentialsRule.withCredentials('githubTokenId', 'thisIsATestToken')
-        shellCallRule.setReturnValue('./piper getConfig --contextConfig --stepMetadata \'metadata/githubrelease.yaml\' --stepName githubPublishRelease', '{"githubTokenCredentialsId":"githubTokenId"}')
+        shellCallRule.setReturnValue('./piper getConfig --contextConfig --stepMetadata \'metadata/githubrelease.yaml\'', '{"githubTokenCredentialsId":"githubTokenId"}')
     }
 
     @Test
