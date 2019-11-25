@@ -14,13 +14,23 @@ import (
 // Command defines the information required for executing a call to any executable
 type Command struct {
 	dir    string
-	Stdout io.Writer
-	Stderr io.Writer
+	stdout io.Writer
+	stderr io.Writer
 }
 
 // Dir sets the working directory for the execution
 func (c *Command) Dir(d string) {
 	c.dir = d
+}
+
+// Stdout ..
+func (c *Command) Stdout(stdout io.Writer) {
+	c.stdout = stdout
+}
+
+// Stderr ..
+func (c *Command) Stderr(stderr io.Writer) {
+	c.stderr = stderr
 }
 
 // ExecCommand defines how to execute os commands
@@ -29,7 +39,7 @@ var ExecCommand = exec.Command
 // RunShell runs the specified command on the shell
 func (c *Command) RunShell(shell, script string) error {
 
-	_out, _err := prepareOut(c.Stdout, c.Stderr)
+	_out, _err := prepareOut(c.stdout, c.stderr)
 
 	cmd := ExecCommand(shell)
 
@@ -47,7 +57,7 @@ func (c *Command) RunShell(shell, script string) error {
 // RunExecutable runs the specified executable with parameters
 func (c *Command) RunExecutable(executable string, params ...string) error {
 
-	_out, _err := prepareOut(c.Stdout, c.Stderr)
+	_out, _err := prepareOut(c.stdout, c.stderr)
 
 	cmd := ExecCommand(executable, params...)
 

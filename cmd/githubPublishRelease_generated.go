@@ -22,7 +22,6 @@ type githubPublishReleaseOptions struct {
 	UploadURL             string   `json:"uploadUrl,omitempty"`
 	Labels                []string `json:"labels,omitempty"`
 	ReleaseBodyHeader     string   `json:"releaseBodyHeader,omitempty"`
-	UpdateAsset           bool     `json:"updateAsset,omitempty"`
 	Version               string   `json:"version,omitempty"`
 }
 
@@ -48,7 +47,7 @@ The result looks like
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			log.SetStepName("githubPublishRelease")
 			log.SetVerbose(GeneralConfig.Verbose)
-			return PrepareConfig(cmd, &metadata, "githubPublishRelease", &myGithubPublishReleaseOptions, OpenPiperFile)
+			return PrepareConfig(cmd, &metadata, "githubPublishRelease", &myGithubPublishReleaseOptions, config.OpenPiperFile)
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return githubPublishRelease(myGithubPublishReleaseOptions)
@@ -73,7 +72,6 @@ func addGithubPublishReleaseFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVar(&myGithubPublishReleaseOptions.UploadURL, "uploadUrl", "https://uploads.github.com", "Set the GitHub API url.")
 	cmd.Flags().StringSliceVar(&myGithubPublishReleaseOptions.Labels, "labels", []string{}, "Labels to include in issue search.")
 	cmd.Flags().StringVar(&myGithubPublishReleaseOptions.ReleaseBodyHeader, "releaseBodyHeader", os.Getenv("PIPER_releaseBodyHeader"), "Content which will appear for the release.")
-	cmd.Flags().BoolVar(&myGithubPublishReleaseOptions.UpdateAsset, "updateAsset", false, "Specify if a release asset should be updated only.")
 	cmd.Flags().StringVar(&myGithubPublishReleaseOptions.Version, "version", os.Getenv("PIPER_version"), "Define the version number which will be written as tag as well as release name.")
 
 	cmd.MarkFlagRequired("apiUrl")
@@ -96,90 +94,98 @@ func githubPublishReleaseMetadata() config.StepData {
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:      "bool",
 						Mandatory: false,
+						Aliases:   []config.Alias{},
 					},
 					{
 						Name:      "addDeltaToLastRelease",
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:      "bool",
 						Mandatory: false,
+						Aliases:   []config.Alias{},
 					},
 					{
 						Name:      "assetPath",
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: false,
+						Aliases:   []config.Alias{},
 					},
 					{
 						Name:      "commitish",
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: false,
+						Aliases:   []config.Alias{},
 					},
 					{
 						Name:      "excludeLabels",
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:      "[]string",
 						Mandatory: false,
+						Aliases:   []config.Alias{},
 					},
 					{
 						Name:      "apiUrl",
 						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: true,
+						Aliases:   []config.Alias{{Name: "githubApiUrl"}},
 					},
 					{
 						Name:      "owner",
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: true,
+						Aliases:   []config.Alias{{Name: "githubOrg"}},
 					},
 					{
 						Name:      "repository",
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: true,
+						Aliases:   []config.Alias{{Name: "githubRepo"}},
 					},
 					{
 						Name:      "serverUrl",
-						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
+						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: true,
+						Aliases:   []config.Alias{{Name: "githubServerUrl"}},
 					},
 					{
 						Name:      "token",
 						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: true,
+						Aliases:   []config.Alias{{Name: "githubToken"}},
 					},
 					{
 						Name:      "uploadUrl",
 						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: true,
+						Aliases:   []config.Alias{{Name: "githubUploadUrl"}},
 					},
 					{
 						Name:      "labels",
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:      "[]string",
 						Mandatory: false,
+						Aliases:   []config.Alias{},
 					},
 					{
 						Name:      "releaseBodyHeader",
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: false,
-					},
-					{
-						Name:      "updateAsset",
-						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:      "bool",
-						Mandatory: false,
+						Aliases:   []config.Alias{},
 					},
 					{
 						Name:      "version",
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: true,
+						Aliases:   []config.Alias{},
 					},
 				},
 			},
