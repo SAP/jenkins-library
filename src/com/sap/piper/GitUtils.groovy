@@ -48,12 +48,21 @@ String[] extractLogLines(
     if(! to?.trim()) throw new IllegalArgumentException('Parameter \'to\' not provided.')
     if(! format?.trim()) throw new IllegalArgumentException('Parameter \'format\' not provided.')
 
-    sh ( returnStdout: true,
+    def gitLogLines = sh ( returnStdout: true,
         script: """#!/bin/bash
             git log --pretty=format:${format} ${from}..${to}
         """
     )?.split('\n')
-    ?.findAll { line -> line ==~ /${filter}/ }
+
+    // spread not supported here (CPS)
+    if(gitLogLines) {
+        def trimmedGitLogLines = []
+        for(def gitLogLine : gitLogLines) {
+            trimmedGitLogLines << gitLogLine.trim()
+        }
+        return trimmedGitLogLines.findAll { line -> line ==~ /${filter}/ }
+    }
+    return new String[0]
 
 }
 
