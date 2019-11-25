@@ -6,11 +6,13 @@ From [Git docs](https://git-scm.com/docs/githooks#_description):
 
 ## Usage
 
-To use this hook, it needs to be linked into the `.git/hooks` directory and made execuable:
+To use this hook, execute this command in the project root directory to link the script into the `.git/hooks` directory:
 
 ```sh
 ln -s -f ../../.hooks/pre-commit ./.git/hooks/pre-commit
 ```
+
+Make sure the file is executable:
 
 ```sh
 chmod +x ./.hooks/pre-commit
