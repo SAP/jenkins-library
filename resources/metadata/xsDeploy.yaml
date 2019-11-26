@@ -30,7 +30,7 @@ spec:
       - name: action
         type: string
         description: The action
-        default: None
+        default: NONE
         scope:
         - GENERAL
         - PARAMETERS
@@ -40,7 +40,7 @@ spec:
       - name: mode
         type: string
         description: The mode
-        default: Deploy
+        default: DEPLOY
         scope:
         - GENERAL
         - PARAMETERS
