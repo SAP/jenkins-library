@@ -74,6 +74,26 @@ public class CloudFoundryCreateServiceKeyTest extends BasePiperTest {
         assertThat(shellRule.shell, hasItem(containsString("#!/bin/bash set +x set -e export HOME=/home/piper cf login -u 'user' -p 'password' -a api.example.com -o 'testOrg' -s 'testSpace'; cf create-service-key 'myInstance' 'myServiceKey' -c '{ \"key\" : \"value\" }'")))
     }
 
+    @Test
+    public void noServiceKeyConfig() {
+        shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, /.*cf create-service-key.*/, 0 )
+
+        stepRule.step.cloudFoundryCreateServiceKey(
+            script: nullScript,
+            cloudFoundry: [
+                apiEndpoint: 'api.example.com',
+                credentialsId: 'test_credentialsId',
+                org: 'testOrg',
+                space: 'testSpace',
+                serviceInstance : 'myInstance',
+                serviceKey : 'myServiceKey'
+                ]
+        )
+        assertThat(dockerExecuteRule.dockerParams, hasEntry('dockerImage', 'ppiper/cf-cli'))
+        assertThat(dockerExecuteRule.dockerParams, hasEntry('dockerWorkspace', '/home/piper'))
+        assertThat(shellRule.shell, hasItem(containsString("#!/bin/bash set +x set -e export HOME=/home/piper cf login -u 'user' -p 'password' -a api.example.com -o 'testOrg' -s 'testSpace'; cf create-service-key 'myInstance' 'myServiceKey'")))
+    }
+
     public void fail() {
         shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, /.*cf create-service-key.*/, 1 )
 
