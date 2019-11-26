@@ -16,7 +16,7 @@ import (
 
 // GeneralConfigOptions contains all global configuration options for piper binary
 type GeneralConfigOptions struct {
-	ProjectConfig   string
+	ProjectConfig  string
 	DefaultConfig  []string //ordered list of Piper default configurations. Can be filePath or ENV containing JSON in format 'ENV:MY_ENV_VAR'
 	ParametersJSON string
 	StageName      string
