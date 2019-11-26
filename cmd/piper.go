@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"strings"
 
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
@@ -57,7 +56,7 @@ func Execute() {
 func addRootFlags(rootCmd *cobra.Command) {
 
 	rootCmd.PersistentFlags().StringVar(&GeneralConfig.ProjectConfig, "projectConfig", ".pipeline/config.yml", "Path to the pipeline configuration file")
-	rootCmd.PersistentFlags().StringSliceVar(&GeneralConfig.DefaultConfig, "defaultConfig", nil, "Default configurations, passed as path to yaml file")
+	rootCmd.PersistentFlags().StringSliceVar(&GeneralConfig.DefaultConfig, "defaultConfig", []string{".pipeline/defaults.yaml"}, "Default configurations, passed as path to yaml file")
 	rootCmd.PersistentFlags().StringVar(&GeneralConfig.ParametersJSON, "parametersJSON", os.Getenv("PIPER_parametersJSON"), "Parameters to be considered in JSON format")
 	rootCmd.PersistentFlags().StringVar(&GeneralConfig.StageName, "stageName", os.Getenv("STAGE_NAME"), "Name of the stage for which configuration should be included")
 	rootCmd.PersistentFlags().StringVar(&GeneralConfig.StepConfigJSON, "stepConfigJSON", os.Getenv("PIPER_stepConfigJSON"), "Step configuration in JSON format")
@@ -111,13 +110,4 @@ func PrepareConfig(cmd *cobra.Command, metadata *config.StepData, stepName strin
 	config.MarkFlagsWithValue(cmd, stepConfig)
 
 	return nil
-}
-
-// OpenPiperFile provides functionality to retrieve configuration via file or http
-func OpenPiperFile(name string) (io.ReadCloser, error) {
-	//ToDo: support also https as source
-	if !strings.HasPrefix(name, "http") {
-		return os.Open(name)
-	}
-	return nil, fmt.Errorf("file location not yet supported for '%v'", name)
 }
