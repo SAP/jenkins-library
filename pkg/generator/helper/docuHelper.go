@@ -119,7 +119,7 @@ func docGenParameters(stepData config.StepData) string {
 	//create parameters detail section
 	parametersDetail := createParametersDetail(stepData.Spec.Inputs.Parameters)
 
-	return "Parameters\n\n" + parametersTable + parametersDetail
+	return "Parameters\n\n" + parametersTable + "\n\n" + parametersDetail
 }
 
 // Replaces the docGenConfiguration placeholder with the content from the yaml
@@ -152,7 +152,7 @@ func createParametersTable(parameters []config.StepParameters) string {
 
 func createParametersDetail(parameters []config.StepParameters) string {
 
-	var detail = "## Details\n"
+	var detail = "## Details\n\n"
 
 	var m map[string]bool = make(map[string]bool)
 	for _, param := range parameters {
