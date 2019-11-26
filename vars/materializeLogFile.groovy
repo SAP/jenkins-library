@@ -34,9 +34,10 @@ void call(Map parameters = [:], body) {
 
 @NonCPS
 def writeLogToFile(logFileName) {
-	def computer = Jenkins.get().getComputer(env['NODE_NAME'])
+	def nodeBame = env['NODE_NAME']
+	def computer = Jenkins.get().getComputer(nodeBame)
 	if (computer == null) {
-		throw new IllegalArgumentException("Jenkins returned null as computer instance")
+		throw new IllegalArgumentException("Jenkins returned null as computer instance in node " + nodeBame)
 	}
 	def channel = computer.getChannel()
 	def logInputStream = currentBuild.rawBuild.getLogInputStream()
@@ -48,9 +49,10 @@ def writeLogToFile(logFileName) {
 
 @NonCPS
 def deleteLogFile(logFileName) {
-	def computer = Jenkins.get().getComputer(env['NODE_NAME'])
+	def nodeBame = env['NODE_NAME']
+	def computer = Jenkins.get().getComputer(nodeBame)
 	if (computer == null) {
-		throw new IllegalArgumentException("Jenkins returned null as computer instance")
+		throw new IllegalArgumentException("Jenkins returned null as computer instance in node " + nodeBame)
 	}
 	def channel = computer.getChannel()
 	def logInputStream = currentBuild.rawBuild.getLogInputStream()
