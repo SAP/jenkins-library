@@ -15,10 +15,15 @@ import static com.sap.piper.Utils.downloadSettingsFromUrl
     /** The name of the application which is being built. If the parameter has been provided and no `mta.yaml` exists, the `mta.yaml` will be automatically generated using this parameter and the information (`name` and `version`) from `package.json` before the actual build starts.*/
     'applicationName',
     /**
-     * The target platform to which the mtar can be deployed.
+     * mtaBuildTool classic only: The target platform to which the mtar can be deployed.
      * @possibleValues 'CF', 'NEO', 'XSA'
      */
     'buildTarget',
+    /**
+     * Tool to use when building the MTA
+     * @possibleValues 'classic', 'cloudMbt'
+     */
+    'mtaBuildTool',
     /** @see dockerExecute */
     'dockerImage',
     /** @see dockerExecute */
@@ -31,11 +36,16 @@ import static com.sap.piper.Utils.downloadSettingsFromUrl
     'extension',
     /**
      * The location of the SAP Multitarget Application Archive Builder jar file, including file name and extension.
-     * If it is not provided, the SAP Multitarget Application Archive Builder is expected on PATH.
+     * If you run on Docker, this must match the location of the jar file in the container as well.
      */
     'mtaJarLocation',
     /** Path or url to the mvn settings file that should be used as global settings file.*/
     'globalSettingsFile',
+    /**
+     * mtaBuildTool cloudMbt only: The target platform to which the mtar can be deployed.
+     * @possibleValues 'CF', 'NEO', 'XSA'
+     */
+    'platform',
     /** Path or url to the mvn settings file that should be used as project settings file.*/
     'projectSettingsFile'
 ]
@@ -60,6 +70,7 @@ void call(Map parameters = [:]) {
             .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS)
             .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName ?: env.STAGE_NAME, STEP_CONFIG_KEYS)
             .mixin(parameters, PARAMETER_KEYS)
+            .dependingOn('mtaBuildTool').mixin('dockerImage')
             .use()
 
         new Utils().pushToSWA([
@@ -113,26 +124,32 @@ void call(Map parameters = [:]) {
                 echo "[INFO] '${mtaYamlName}' file found in project sources."
             }
 
-            def mtaYaml = readYaml file: mtaYamlName
-
             //[Q]: Why not yaml.dump()? [A]: This reformats the whole file.
             sh "sed -ie \"s/\\\${timestamp}/`date +%Y%m%d%H%M%S`/g\" \"${mtaYamlName}\""
 
-            def id = mtaYaml.ID
-            if (!id) {
-                error "Property 'ID' not found in ${mtaYamlName} file."
+            def id = getMtaId(mtaYamlName)
+
+            def mtaCall
+            def options = []
+            options.push("--mtar ${id}.mtar")
+
+
+            switch(configuration.mtaBuildTool) {
+                case 'classic':
+                    // If it is not configured, it is expected on the PATH
+                    def mtaJar = configuration.mtaJarLocation ?: 'mta.jar'
+                    options.push("--build-target=${configuration.buildTarget}")
+                    if (configuration.extension) options.push("--extension=${configuration.extension}")
+                    mtaCall = "java -jar ${mtaJar} ${options.join(' ')} build"
+                    break
+                case 'cloudMbt':
+                    options.push("--platform ${configuration.platform}")
+                    if (configuration.extension) options.push("--extensions=${configuration.extension}")
+                    mtaCall = "mbt build ${options.join(' ')}"
+                    break
+                default:
+                    error "[ERROR][${STEP_NAME}] MTA build tool '${configuration.mtaBuildTool}' not supported!"
             }
-
-            def mtarFileName = "${id}.mtar"
-            // If it is not configured, it is expected on the PATH
-            def mtaJar = 'java -jar '
-            mtaJar += configuration.mtaJarLocation ?: 'mta.jar'
-            def buildTarget = configuration.buildTarget
-
-            def mtaCall = "${mtaJar} --mtar ${mtarFileName} --build-target=${buildTarget}"
-
-            if (configuration.extension) mtaCall += " --extension=$configuration.extension"
-            mtaCall += ' build'
 
             echo "[INFO] Executing mta build call: '${mtaCall}'."
 
@@ -143,7 +160,15 @@ void call(Map parameters = [:]) {
             $mtaCall
             """
 
-            script?.commonPipelineEnvironment?.setMtarFilePath(mtarFileName)
+            script?.commonPipelineEnvironment?.setMtarFilePath("${id}.mtar")
         }
     }
+}
+
+def String getMtaId(String fileName){
+    def mtaYaml = readYaml file: fileName
+    if (!mtaYaml.ID) {
+        error "Property 'ID' not found in ${fileName} file."
+    }
+    return mtaYaml.ID
 }

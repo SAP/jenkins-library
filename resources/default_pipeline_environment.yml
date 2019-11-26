@@ -55,6 +55,10 @@ steps:
     timestampTemplate: '%Y%m%d%H%M%S'
     tagPrefix: 'build_'
     commitVersion: true
+    gitPushMode: 'SSH'
+    verbose: false
+    gitHttpsCredentialsId: 'git'
+    gitDisableSslVerification: false
     dub:
       filePath: 'dub.json'
       versioningTemplate: '${version}-${timestamp}${commitId?"+"+commitId:""}'
@@ -327,8 +331,13 @@ steps:
     logSuccessfulMavenTransfers: false
   mtaBuild:
     buildTarget: 'NEO'
+    mtaBuildTool: classic
+    platform: 'cf'
     mtaJarLocation: '/opt/sap/mta/lib/mta.jar'
-    dockerImage: 'ppiper/mta-archive-builder'
+    classic:
+      dockerImage: 'ppiper/mta-archive-builder'
+    cloudMbt:
+      dockerImage: 'devxci/mbtci:1.0.0'
   neoDeploy:
     dockerImage: 'ppiper/neo-cli'
     deployMode: 'mta'
@@ -511,7 +520,7 @@ steps:
     instance: 'SonarCloud'
     options: []
     pullRequestProvider: 'GitHub'
-    sonarScannerDownloadUrl: 'https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-3.3.0.1492-linux.zip'
+    sonarScannerDownloadUrl: 'https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.2.0.1873-linux.zip'
   spinnakerTriggerPipeline:
     certFileCredentialsId: 'spinnaker-client-certificate'
     keyFileCredentialsId: 'spinnaker-client-key'

@@ -21,6 +21,10 @@ func (errReadCloser) Close() error {
 	return nil
 }
 
+func customDefaultsOpenFileMock(name string) (io.ReadCloser, error) {
+	return ioutil.NopCloser(strings.NewReader("general:\n  p0: p0_custom_default")), nil
+}
+
 func TestReadConfig(t *testing.T) {
 
 	var c Config
@@ -107,6 +111,7 @@ steps:
   px2: px2_general_default
   p3: p3_general_default 
 `
+
 		paramJSON := `{"p6":"p6_param","p7":"p7_param"}`
 
 		flags := map[string]interface{}{"p7": "p7_flag"}
@@ -178,6 +183,32 @@ steps:
 				})
 			}
 		})
+	})
+
+	t.Run("Consider custom defaults from config", func(t *testing.T) {
+		var c Config
+		testConfDefaults := "customDefaults:\n- testDefaults.yaml"
+
+		c.openFile = customDefaultsOpenFileMock
+
+		stepConfig, err := c.GetStepConfig(nil, "", ioutil.NopCloser(strings.NewReader(testConfDefaults)), nil, StepFilters{General: []string{"p0"}}, nil, "stage1", "step1")
+
+		assert.NoError(t, err, "Error occured but no error expected")
+		assert.Equal(t, "p0_custom_default", stepConfig.Config["p0"])
+
+	})
+
+	t.Run("Consider defaults from step config", func(t *testing.T) {
+		var c Config
+
+		stepParams := []StepParameters{StepParameters{Name: "p0", Scope: []string{"GENERAL"}, Type: "string", Default: "p0_step_default", Aliases: []Alias{{Name: "p0_alias"}}}}
+		testConf := "general:\n p1: p1_conf"
+
+		stepConfig, err := c.GetStepConfig(nil, "", ioutil.NopCloser(strings.NewReader(testConf)), nil, StepFilters{General: []string{"p0", "p1"}}, stepParams, "stage1", "step1")
+
+		assert.NoError(t, err, "Error occured but no error expected")
+		assert.Equal(t, "p0_step_default", stepConfig.Config["p0"])
+		assert.Equal(t, "p1_conf", stepConfig.Config["p1"])
 	})
 
 	t.Run("Failure case config", func(t *testing.T) {
@@ -265,6 +296,12 @@ func TestApplyAliasConfig(t *testing.T) {
 				{Name: "p6_alias"},
 			},
 		},
+		{
+			Name: "p7",
+			Aliases: []Alias{
+				{Name: "p7_alias"},
+			},
+		},
 	}
 
 	filters := StepFilters{
@@ -293,6 +330,7 @@ func TestApplyAliasConfig(t *testing.T) {
 			"step1": map[string]interface{}{
 				"p5_notused": "p5_step",
 				"p6_alias":   "p6_step",
+				"p7":         "p7_step",
 			},
 		},
 	}
@@ -313,6 +351,7 @@ func TestApplyAliasConfig(t *testing.T) {
 	t.Run("Stage", func(t *testing.T) {
 		assert.Nil(t, c.General["p5"])
 		assert.Equal(t, "p6_step", c.Steps["step1"]["p6"])
+		assert.Equal(t, "p7_step", c.Steps["step1"]["p7"])
 	})
 
 }
