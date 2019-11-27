@@ -34,32 +34,34 @@ void call(Map parameters = [:], body) {
 
 @NonCPS
 def writeLogToFile(logFileName) {
-	def nodeBame = env['NODE_NAME']
-	def computer = Jenkins.get().getComputer(nodeBame)
-	if (computer == null) {
-		throw new IllegalArgumentException("Jenkins returned null as computer instance in node " + nodeBame)
-	}
-	def channel = computer.getChannel()
 	def logInputStream = currentBuild.rawBuild.getLogInputStream()
-	def fp = new FilePath(channel, logFileName)
-
+	def fp = getFilePath(logFileName)
 	fp.copyFrom(logInputStream)
 	logInputStream.close()
 }
 
 @NonCPS
 def deleteLogFile(logFileName) {
-	def nodeBame = env['NODE_NAME']
-	def computer = Jenkins.get().getComputer(nodeBame)
-	if (computer == null) {
-		throw new IllegalArgumentException("Jenkins returned null as computer instance in node " + nodeBame)
-	}
-	def channel = computer.getChannel()
-	def logInputStream = currentBuild.rawBuild.getLogInputStream()
-	def fp = new FilePath(channel, logFileName)
-
+	def fp = getFilePath(logFileName)
 	if(fp.exists()) {
 		fp.delete()
+	}
+}
+
+def getFilePath(logFileName) {
+	def nodeName = env['NODE_NAME']
+	if (nodeName == null || nodeName.size() == 0) {
+		throw new IllegalArgumentException("Environment variable NODE_NAME is undefined")
+	}
+	if (nodeName.equals("master")) {
+		return new FilePath(logFileName);
+	} else {
+		def computer = Jenkins.get().getComputer(nodeBame)
+		if (computer == null) {
+			throw new IllegalArgumentException("Jenkins returned computer instance null on node " + nodeName)
+		}
+		def channel = computer.getChannel()
+		return new FilePath(channel, logFileName)
 	}
 }
 
