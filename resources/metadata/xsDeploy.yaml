@@ -12,7 +12,6 @@ spec:
         type: string
         description: Additional deploy options
         scope:
-        - GENERAL
         - PARAMETERS
         - STAGES
         - STEPS
@@ -22,7 +21,6 @@ spec:
         type: string
         description: Path to deployable
         scope:
-        - GENERAL
         - PARAMETERS
         - STAGES
         - STEPS
@@ -32,7 +30,6 @@ spec:
         description: The action
         default: NONE
         scope:
-        - GENERAL
         - PARAMETERS
         - STAGES
         - STEPS
@@ -42,7 +39,6 @@ spec:
         description: The mode
         default: DEPLOY
         scope:
-        - GENERAL
         - PARAMETERS
         - STAGES
         - STEPS
@@ -52,7 +48,6 @@ spec:
         description: The deployment ID
         default:
         scope:
-        - GENERAL
         - PARAMETERS
         - STAGES
         - STEPS
@@ -61,7 +56,6 @@ spec:
         type: string
         description: The api url (e.g. https://example.org:12345
         scope:
-        - GENERAL
         - PARAMETERS
         - STAGES
         - STEPS
@@ -70,7 +64,6 @@ spec:
         type: string
         description: User
         scope:
-        - GENERAL
         - PARAMETERS
         - STAGES
         - STEPS
@@ -79,7 +72,6 @@ spec:
         type: string
         description: Password
         scope:
-        - GENERAL
         - PARAMETERS
         - STAGES
         - STEPS
@@ -88,7 +80,6 @@ spec:
         type: string
         description: The org
         scope:
-        - GENERAL
         - PARAMETERS
         - STAGES
         - STEPS
@@ -97,7 +88,6 @@ spec:
         type: string
         description: The space
         scope:
-        - GENERAL
         - PARAMETERS
         - STAGES
         - STEPS
@@ -106,7 +96,6 @@ spec:
         type: string
         description: Additional options for performing xs login.
         scope:
-        - GENERAL
         - PARAMETERS
         - STAGES
         - STEPS
@@ -115,7 +104,6 @@ spec:
         type: string
         description: The file keeping the xs session.
         scope:
-        - GENERAL
         - PARAMETERS
         - STAGES
         - STEPS
