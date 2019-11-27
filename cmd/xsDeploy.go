@@ -8,6 +8,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/pkg/errors"
 	"io"
+	"io/ioutil"
 	"os"
 	"regexp"
 	"strings"
@@ -242,15 +243,8 @@ func runXsDeploy(XsDeployOptions xsDeployOptions, s shellRunner,
 	}
 
 	if err != nil {
-		if _, e := os.Stat(fmt.Sprintf("%s/%s", os.Getenv("HOME"), ".xs_logs")); !os.IsNotExist(e) {
-			s.RunShell("/bin/bash",
-				`#!/bin/bash
-			echo "Here are the logs (cat ${HOME}/.xs_logs/*):" > /dev/stderr
-			cat ${HOME}/.xs_logs/* > /dev/stderr`)
-		} else {
-			s.RunShell("/bin/bash",
-				`#!/bin/bash
-			echo "Cannot provide xs logs. Log directory '${HOME}/.xs_logs' does not exist." > /dev/stderr`)
+		if e :=  handleLog(fmt.Sprintf("%s/%s", os.Getenv("HOME"), ".xs_logs")); e != nil {
+			log.Entry().Warningf("Cannot provide the logs: %s", e.Error())
 		}
 	}
 
@@ -268,6 +262,45 @@ func runXsDeploy(XsDeployOptions xsDeployOptions, s shellRunner,
 	}
 
 	return err
+}
+
+func handleLog(logDir string) error {
+
+	if _, e := os.Stat(logDir); !os.IsNotExist(e) {
+		log.Entry().Warningf(fmt.Sprintf("Here are the logs (%s):", logDir))
+
+		logFiles, e := ioutil.ReadDir(logDir)
+
+		if e != nil {
+			return e
+		}
+
+		if len(logFiles) == 0 {
+			log.Entry().Warningf("Cannot provide xs logs. No log files found inside '%s'.", logDir)
+		}
+
+		for _, logFile := range logFiles {
+			buf := make([]byte, 32*1024)
+			log.Entry().Infof("File: '%s'", logFile.Name())
+			if f, e := os.Open(fmt.Sprintf("%s/%s", logDir, logFile.Name())); e == nil {
+				for {
+					if n, e := f.Read(buf); e != nil {
+						if e == io.EOF {
+							break
+						}
+						return e
+					} else {
+						os.Stderr.WriteString(string(buf[:n]))
+					}
+				}
+			} else {
+				return e
+			}
+		}
+	} else {
+		log.Entry().Warningf("Cannot provide xs logs. Log directory '%s' does not exist.", logDir)
+	}
+	return nil
 }
 
 func retrieveDeploymentID(deployLog string) string {
