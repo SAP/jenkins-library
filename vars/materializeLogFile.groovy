@@ -5,6 +5,7 @@ import hudson.FilePath
 import com.sap.piper.Utils
 import groovy.transform.Field
 import java.util.UUID
+import java.io.File
 import com.cloudbees.groovy.cps.NonCPS
 import jenkins.model.Jenkins
 
@@ -53,15 +54,16 @@ def getFilePath(logFileName) {
 	if (nodeName == null || nodeName.size() == 0) {
 		throw new IllegalArgumentException("Environment variable NODE_NAME is undefined")
 	}
+	def file = new File(logFileName)
 	if (nodeName.equals("master")) {
-		return new FilePath(logFileName);
+		return new FilePath(file);
 	} else {
 		def computer = Jenkins.get().getComputer(nodeBame)
 		if (computer == null) {
 			throw new IllegalArgumentException("Jenkins returned computer instance null on node " + nodeName)
 		}
 		def channel = computer.getChannel()
-		return new FilePath(channel, logFileName)
+		return new FilePath(channel, file)
 	}
 }
 
