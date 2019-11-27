@@ -243,7 +243,7 @@ func runXsDeploy(XsDeployOptions xsDeployOptions, s shellRunner,
 	}
 
 	if err != nil {
-		if e :=  handleLog(fmt.Sprintf("%s/%s", os.Getenv("HOME"), ".xs_logs")); e != nil {
+		if e := handleLog(fmt.Sprintf("%s/%s", os.Getenv("HOME"), ".xs_logs")); e != nil {
 			log.Entry().Warningf("Cannot provide the logs: %s", e.Error())
 		}
 	}
