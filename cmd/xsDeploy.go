@@ -126,8 +126,7 @@ func runXsDeploy(XsDeployOptions xsDeployOptions, s shellRunner,
 
 	mode, err := ValueOfMode(XsDeployOptions.Mode)
 	if err != nil {
-		fmt.Printf("Extracting mode failed: %v\n", err)
-		return err
+		return errors.Wrapf(err, "Extracting mode failed: '%s'", XsDeployOptions.Mode)
 	}
 
 	if mode == NoDeploy {
@@ -137,8 +136,7 @@ func runXsDeploy(XsDeployOptions xsDeployOptions, s shellRunner,
 
 	action, err := ValueOfAction(XsDeployOptions.Action)
 	if err != nil {
-		fmt.Printf("Extracting action failed: %v\n", err)
-		return err
+		return errors.Wrapf(err, "Extracting action failed: '%s'", XsDeployOptions.Action)
 	}
 
 	if mode == Deploy && action != None {
