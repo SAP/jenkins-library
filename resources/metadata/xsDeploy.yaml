@@ -109,8 +109,6 @@ spec:
         - STEPS
         mandatory: false
   containers:
-    - name: maven
-      image: maven:3.5-jdk-8
-      volumeMounts:
-      - mountPath: /dev/shm
-        name: dev-shm
+    - name: xs
+      image: ppiper/xs-cli
+      pullImage: false
