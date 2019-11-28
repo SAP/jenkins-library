@@ -3,10 +3,12 @@ metadata:
   description: Performs xs deployment
   longDescription: |
     Performs xs deployment
-
 spec:
   inputs:
-    resources:
+    secrets:
+      - name: xsDeployUserCredentialsId
+        description: Jenkins username/password credential for accessing xs endpoint.
+        type: jenkins
     params:
       - name: deployOpts
         type: string
