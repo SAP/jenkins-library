@@ -55,11 +55,15 @@ func generateConfig() error {
 	}
 
 	var customConfig io.ReadCloser
-	if piperutils.FileExists(GeneralConfig.CustomConfig) {
-		customConfig, err = configOptions.openFile(GeneralConfig.CustomConfig)
-		if err != nil {
-			return errors.Wrap(err, "config: open failed")
+	if exists, e := piperutils.FileExists(GeneralConfig.CustomConfig); e == nil {
+		if exists {
+			customConfig, err = configOptions.openFile(GeneralConfig.CustomConfig)
+			if err != nil {
+				return errors.Wrap(err, "config: open failed")
+			}
 		}
+	} else {
+		return e
 	}
 
 	defaultConfig, paramFilter, err := defaultsAndFilters(&metadata, metadata.Metadata.Name)
