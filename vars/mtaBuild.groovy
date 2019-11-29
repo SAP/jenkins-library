@@ -133,7 +133,6 @@ void call(Map parameters = [:]) {
             def options = []
             options.push("--mtar ${id}.mtar")
 
-
             switch(configuration.mtaBuildTool) {
                 case 'classic':
                     // If it is not configured, it is expected on the PATH
@@ -144,6 +143,7 @@ void call(Map parameters = [:]) {
                     break
                 case 'cloudMbt':
                     options.push("--platform ${configuration.platform}")
+                    options.push("--target ./")
                     if (configuration.extension) options.push("--extensions=${configuration.extension}")
                     mtaCall = "mbt build ${options.join(' ')}"
                     break
