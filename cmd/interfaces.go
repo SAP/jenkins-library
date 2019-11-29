@@ -24,9 +24,10 @@ type fileUtils interface {
 	// current working directory.
 	FileExists(path string) (bool, error)
 
-	// Copies a file from source to test (files only, currently no folder copy)
-	Copy(source string, dest string) (int64, error)
+	// Copies a file from source to test (currently intended for files only, not folders)
+	CopyFile(source string, dest string) (int64, error)
 
+	RemoveFile(path string) error
 
 	OpenFile(path string) (*os.File, error)
 }
