@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"io"
+	"os"
 )
 
 type execRunner interface {
@@ -26,5 +27,6 @@ type fileUtils interface {
 	// Copies a file from source to test (files only, currently no folder copy)
 	Copy(source string, dest string) (int64, error)
 
-	Remove(path string) error
+
+	OpenFile(path string) (*os.File, error)
 }
