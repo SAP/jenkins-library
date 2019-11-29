@@ -18,7 +18,7 @@ type shellRunner interface {
 	Stderr(err io.Writer)
 }
 
-type fileSystem interface {
+type fileUtils interface {
 	// In case "path" is relative it is evaluated relative to the
 	// current working directory.
 	FileExists(path string) (bool, error)
