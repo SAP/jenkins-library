@@ -28,11 +28,18 @@ enum GitPushMode {NONE, HTTPS, SSH}
      */
     'buildTool',
     /**
-     * Controls if the changed version is committed and pushed to the git repository.
-     * If this is enabled (which is the default), you need to provide `gitCredentialsId` and `gitSshUrl`.
+     * Controls if the changed version is committed.
      * @possibleValues `true`, `false`
      */
     'commitVersion',
+    /**
+     * Controls if a tag is created.
+     */
+    'createTag',
+    /**
+     * Controls if a version is created.
+     */
+    'createVersion',
     /**
       * Prints some more information for troubleshooting. May reveal security relevant information. Usage is recommanded for troubleshooting only. Productive usage
       * is not recommended.
@@ -93,8 +100,7 @@ enum GitPushMode {NONE, HTTPS, SSH}
     /** Defines the template for the automatic version which will be created. */
     'versioningTemplate',
     /** Controls which protocol is used for performing push operation to remote repo.
-      * Required credentials needs to be configured ('gitSshKeyCredentialsId'/'TBD').
-      * Push is only performed in case 'commitVersion' is set to 'true'.
+      * Required credentials needs to be configured ('gitSshKeyCredentialsId'/'config.gitHttpsCredentialsId').
       * @possibleValues 'SSH', 'HTTPS', 'NONE'
       */
     'gitPushMode'
@@ -165,24 +171,49 @@ void call(Map parameters = [:], Closure body = null) {
             stepParam3: parameters?.script == null
         ], config)
 
-        def artifactVersioning = ArtifactVersioning.getArtifactVersioning(config.buildTool, script, config)
-        def currentVersion = artifactVersioning.getVersion()
+        if (config.createVersion) {
 
-        def newVersion
-        if (config.artifactType == 'appContainer' && config.dockerVersionSource == 'appVersion'){
-            newVersion = currentVersion
-        } else {
-            def binding = [version: currentVersion, timestamp: config.timestamp, commitId: config.gitCommitId]
-            newVersion = new GStringTemplateEngine().createTemplate(config.versioningTemplate).make(binding).toString()
-        }
+            def artifactVersioning = ArtifactVersioning.getArtifactVersioning(config.buildTool, script, config)
+            def currentVersion = artifactVersioning.getVersion()
 
-        artifactVersioning.setVersion(newVersion)
+            def newVersion
+            if (config.artifactType == 'appContainer' && config.dockerVersionSource == 'appVersion'){
+                newVersion = currentVersion
+            } else {
+                def binding = [version: currentVersion, timestamp: config.timestamp, commitId: config.gitCommitId]
+                newVersion = new GStringTemplateEngine().createTemplate(config.versioningTemplate).make(binding).toString()
+           }
 
-        if(body != null){
-            body(newVersion)
+            artifactVersioning.setVersion(newVersion)
+
+            if(body != null){
+                body(newVersion)
+            }
+
+            if (isAppContainer(config)) {
+                script.commonPipelineEnvironment.setAppContainerProperty('artifactVersion', newVersion)
+            } else {
+                //standard case
+                script.commonPipelineEnvironment.setArtifactVersion(newVersion)
+            }
+
+            echo "[${STEP_NAME}]New version: ${newVersion}"
         }
 
         if (config.commitVersion) {
+
+            def artifactVersion
+
+            if (isAppContainer(config)) {
+                artifactVersion = script.commonPipelineEnvironment.getAppContainerProperty('artifactVersion')
+            } else {
+                //standard case
+                artifactVersion = script.commonPipelineEnvironment.getArtifactVersion()
+            }
+
+            if(!artifactVersion) {
+                error("Cannot create commit. Artifact version not known. Has a new version set? artifactVersion: '${artifactVersion}'")
+            }
 
             def gitConfig = []
 
@@ -193,113 +224,161 @@ void call(Map parameters = [:], Closure body = null) {
             try {
                 sh """#!/bin/bash
                     git add .
-                    git ${gitConfig} commit -m 'update version ${newVersion}'
-                    git tag ${config.tagPrefix}${newVersion}"""
+                    git ${gitConfig} commit -m 'update version ${artifactVersion}'
+                """
+
                 config.gitCommitId = gitUtils.getGitCommitIdOrNull()
+
+                if (isAppContainer(config)) {
+                    script.commonPipelineEnvironment.setAppContainerProperty('gitCommitId', config.gitCommitId)
+                } else {
+                    //standard case
+                    script.commonPipelineEnvironment.setGitCommitId(config.gitCommitId)
+                }
             } catch (e) {
                 error "[${STEP_NAME}]git commit and tag failed: ${e}"
             }
+        }
 
-            if(gitPushMode == GitPushMode.SSH) {
+        if(config.createTag) {
 
-                config = ConfigurationHelper.newInstance(this, config)
-                    .addIfEmpty('gitSshUrl', isAppContainer(config)
-                                ?script.commonPipelineEnvironment.getAppContainerProperty('gitSshUrl')
-                                :script.commonPipelineEnvironment.getGitSshUrl())
-                    .withMandatoryProperty('gitSshUrl')
-                    .use()
+            def artifactVersion, gitCommitId
 
-                sshagent([config.gitSshKeyCredentialsId]) {
-                    sh "git push ${config.gitSshUrl} ${config.tagPrefix}${newVersion}"
-                }
-
-            } else if(gitPushMode == GitPushMode.HTTPS) {
-
-                config = ConfigurationHelper.newInstance(this, config)
-                    .addIfEmpty('gitSshUrl', isAppContainer(config)
-                                ?script.commonPipelineEnvironment.getAppContainerProperty('gitHttpsUrl')
-                                :script.commonPipelineEnvironment.getGitHttpsUrl())
-                    .withMandatoryProperty('gitHttpsUrl')
-                    .use()
-
-                withCredentials([usernamePassword(
-                    credentialsId: config.gitHttpsCredentialsId,
-                    passwordVariable: 'PASSWORD',
-                    usernameVariable: 'USERNAME')]) {
-
-                    // Problem: when username/password is encoded and in case the encoded version differs from
-                    // the non-encoded version  (e.g. '@'  gets replaced by '%40') the encoded version
-                    // it is not replaced by stars in the log by surrounding withCredentials.
-                    // In order to avoid having the secrets in the log we take the following actions in case
-                    // the encoded version(s) differs from the non-encoded versions
-                    //
-                    // 1.) we switch off '-x' in the hashbang
-                    // 2.) we tell git push to be silent
-                    // 3.) we send stderr to /dev/null
-                    //
-                    // Disadvantage: In this case we don't see any output for troubleshooting.
-
-                    def USERNAME_ENCODED = URLEncoder.encode(USERNAME, 'UTF-8'),
-                        PASSWORD_ENCODED = URLEncoder.encode(PASSWORD, 'UTF-8')
-
-                    boolean encodedVersionsDiffers = USERNAME_ENCODED != USERNAME || PASSWORD_ENCODED != PASSWORD
-
-                    def prefix = 'https://'
-                    def gitUrlWithCredentials = config.gitHttpsUrl.replaceAll("^${prefix}", "${prefix}${USERNAME_ENCODED}:${PASSWORD_ENCODED}@")
-
-                    def hashbangFlags = '-xe'
-                    def gitPushFlags = []
-                    def streamhandling = ''
-                    def gitDebug = ''
-                    gitConfig = []
-
-                    if(config.gitHttpProxy) {
-                        gitConfig.add("-c http.proxy=\"${config.gitHttpProxy}\"")
-                    }
-
-                    if(config.gitDisableSslVerification) {
-                        echo 'git ssl verification is switched off. This setting is not recommanded in productive environments.'
-                        gitConfig.add('-c http.sslVerify=false')
-                    }
-
-                    if(encodedVersionsDiffers) {
-                        if(config.verbose) { // known issue: in case somebody provides the stringish 'false' we get the boolean value 'true' here.
-                            echo 'Verbose flag set, but encoded username/password differs from unencoded version. Cannot provide verbose output in this case. ' +
-                                    'In order to enable verbose output switch to a username/password which is not altered by url encoding.'
-                        }
-                        hashbangFlags = '-e'
-                        streamhandling ='&>/dev/null'
-                        gitPushFlags.add('--quiet')
-                        echo 'Performing git push in quiet mode.'
-                    } else {
-                        if(config.verbose) { // known issue: in case somebody provides the stringish 'false' we get the boolean value 'true' here.
-                            echo 'Verbose mode enabled. This is not recommanded for productive usage. This might reveal security sensitive information.'
-                            gitDebug ='git config --list; env |grep proxy; GIT_CURL_VERBOSE=1 GIT_TRACE=1 '
-                            gitPushFlags.add('--verbose')
-                        }
-                    }
-
-                    gitConfig = gitConfig.join(' ')
-                    gitPushFlags = gitPushFlags.join(' ')
-
-                    sh script:   """|#!/bin/bash ${hashbangFlags}
-                                    |${gitDebug}git ${gitConfig} push ${gitPushFlags} ${gitUrlWithCredentials} ${config.tagPrefix}${newVersion} ${streamhandling}""".stripMargin()
-                }
+            if (isAppContainer(config)) {
+                artifactVersion = script.commonPipelineEnvironment.getAppContainerProperty('artifactVersion')
+                gitCommitId = script.commonPipelineEnvironment.getAppContainerProperty('gitCommitId')
             } else {
-                echo "Git push mode: ${gitPushMode.toString()}. Git push to remote has been skipped."
+                //standard case
+                artifactVersion = script.commonPipelineEnvironment.getArtifactVersion()
+                gitCommitId = script.commonPipelineEnvironment.getGitCommitId()
             }
+
+            if(!artifactVersion) {
+                error("Cannot create tag. Artifact version not known. Has a new version set? artifactVersion: '${artifactVersion}'")
+            }
+
+            if(! gitCommitId) {
+                gitCommitId = gitUtils.getGitCommitIdOrNull()
+            }
+
+            sh """#!/bin/bash
+                git tag ${config.tagPrefix}${artifactVersion} ${gitCommitId}"""
         }
 
-        if (isAppContainer(config)) {
-            script.commonPipelineEnvironment.setAppContainerProperty('artifactVersion', newVersion)
-            script.commonPipelineEnvironment.setAppContainerProperty('gitCommitId', config.gitCommitId)
+        if(gitPushMode == GitPushMode.SSH) {
+
+            def artifactVersion
+ 
+            if (isAppContainer(config)) {
+                artifactVersion = script.commonPipelineEnvironment.getAppContainerProperty('artifactVersion')
+            } else {
+                //standard case
+                artifactVersion = script.commonPipelineEnvironment.getArtifactVersion()
+            }
+
+            if(!artifactVersion) {
+                error("Cannot create commit. Artifact version not known. Has a new version set? artifactVersion: '${artifactVersion}'")
+            }
+
+            config = ConfigurationHelper.newInstance(this, config)
+            .addIfEmpty('gitSshUrl', isAppContainer(config)
+                        ?script.commonPipelineEnvironment.getAppContainerProperty('gitSshUrl')
+                        :script.commonPipelineEnvironment.getGitSshUrl())
+            .withMandatoryProperty('gitSshUrl')
+            .use()
+
+            sshagent([config.gitSshKeyCredentialsId]) {
+                sh "git push ${config.gitSshUrl} ${config.tagPrefix}${artifactVersion}"
+            }
+
+        } else if(gitPushMode == GitPushMode.HTTPS) {
+
+            def artifactVersion
+ 
+            if (isAppContainer(config)) {
+                artifactVersion = script.commonPipelineEnvironment.getAppContainerProperty('artifactVersion')
+            } else {
+                //standard case
+                artifactVersion = script.commonPipelineEnvironment.getArtifactVersion()
+            }
+
+            if(!artifactVersion) {
+                error("Cannot create commit. Artifact version not known. Has a new version set? artifactVersion: '${artifactVersion}'")
+            }
+
+            config = ConfigurationHelper.newInstance(this, config)
+                .addIfEmpty('gitSshUrl', isAppContainer(config)
+                            ?script.commonPipelineEnvironment.getAppContainerProperty('gitHttpsUrl')
+                            :script.commonPipelineEnvironment.getGitHttpsUrl())
+                .withMandatoryProperty('gitHttpsUrl')
+                .use()
+
+            withCredentials([usernamePassword(
+                credentialsId: config.gitHttpsCredentialsId,
+                passwordVariable: 'PASSWORD',
+                usernameVariable: 'USERNAME')]) {
+
+                // Problem: when username/password is encoded and in case the encoded version differs from
+                // the non-encoded version  (e.g. '@'  gets replaced by '%40') the encoded version
+                // it is not replaced by stars in the log by surrounding withCredentials.
+                // In order to avoid having the secrets in the log we take the following actions in case
+                // the encoded version(s) differs from the non-encoded versions
+                //
+                // 1.) we switch off '-x' in the hashbang
+                // 2.) we tell git push to be silent
+                // 3.) we send stderr to /dev/null
+                //
+                // Disadvantage: In this case we don't see any output for troubleshooting.
+
+                def USERNAME_ENCODED = URLEncoder.encode(USERNAME, 'UTF-8'),
+                    PASSWORD_ENCODED = URLEncoder.encode(PASSWORD, 'UTF-8')
+
+                boolean encodedVersionsDiffers = USERNAME_ENCODED != USERNAME || PASSWORD_ENCODED != PASSWORD
+
+                def prefix = 'https://'
+                def gitUrlWithCredentials = config.gitHttpsUrl.replaceAll("^${prefix}", "${prefix}${USERNAME_ENCODED}:${PASSWORD_ENCODED}@")
+
+                def hashbangFlags = '-xe'
+                def gitPushFlags = []
+                def streamhandling = ''
+                def gitDebug = ''
+                gitConfig = []
+
+                if(config.gitHttpProxy) {
+                    gitConfig.add("-c http.proxy=\"${config.gitHttpProxy}\"")
+                }
+
+                if(config.gitDisableSslVerification) {
+                    echo 'git ssl verification is switched off. This setting is not recommanded in productive environments.'
+                    gitConfig.add('-c http.sslVerify=false')
+                }
+
+                if(encodedVersionsDiffers) {
+                    if(config.verbose) { // known issue: in case somebody provides the stringish 'false' we get the boolean value 'true' here.
+                        echo 'Verbose flag set, but encoded username/password differs from unencoded version. Cannot provide verbose output in this case. ' +
+                                'In order to enable verbose output switch to a username/password which is not altered by url encoding.'
+                    }
+                    hashbangFlags = '-e'
+                    streamhandling ='&>/dev/null'
+                    gitPushFlags.add('--quiet')
+                    echo 'Performing git push in quiet mode.'
+                } else {
+                    if(config.verbose) { // known issue: in case somebody provides the stringish 'false' we get the boolean value 'true' here.
+                        echo 'Verbose mode enabled. This is not recommanded for productive usage. This might reveal security sensitive information.'
+                        gitDebug ='git config --list; env |grep proxy; GIT_CURL_VERBOSE=1 GIT_TRACE=1 '
+                        gitPushFlags.add('--verbose')
+                    }
+                }
+
+                gitConfig = gitConfig.join(' ')
+                gitPushFlags = gitPushFlags.join(' ')
+
+                sh script:   """|#!/bin/bash ${hashbangFlags}
+                                |${gitDebug}git ${gitConfig} push ${gitPushFlags} ${gitUrlWithCredentials} ${config.tagPrefix}${artifactVersion} ${streamhandling}""".stripMargin()
+            }
         } else {
-            //standard case
-            script.commonPipelineEnvironment.setArtifactVersion(newVersion)
-            script.commonPipelineEnvironment.setGitCommitId(config.gitCommitId)
+            echo "Git push mode: ${gitPushMode.toString()}. Git push to remote has been skipped."
         }
-
-        echo "[${STEP_NAME}]New version: ${newVersion}"
     }
 }
 

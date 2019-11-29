@@ -55,6 +55,8 @@ steps:
     timestampTemplate: '%Y%m%d%H%M%S'
     tagPrefix: 'build_'
     commitVersion: true
+    createTag: true
+    createVersion: true
     gitPushMode: 'SSH'
     verbose: false
     gitHttpsCredentialsId: 'git'
