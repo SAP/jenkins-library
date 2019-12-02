@@ -94,7 +94,7 @@ func (c *Client) SendRequest(method, url string, body io.Reader, header http.Hea
 	return response, fmt.Errorf("Request to %v returned with HTTP Code %v", url, response.StatusCode)
 }
 
-// SetUsername sets options used for the http client
+// SetOptions sets options used for the http client
 func (c *Client) SetOptions(options ClientOptions) {
 	c.timeout = options.Timeout
 	c.username = options.Username
