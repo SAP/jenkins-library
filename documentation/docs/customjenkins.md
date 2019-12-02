@@ -1,4 +1,4 @@
-# My own Jenkins
+# Custom Jenkins Setup
 
 Although we recommend to use the Cx server, you don't need to. You can run project "Piper" on your own Jenkins installation. However, you have to care for some settings the Cx Server gives you for free. Furthermore, the support of a none Cx Server installations is challenging. 	
 
