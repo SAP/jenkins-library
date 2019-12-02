@@ -176,9 +176,9 @@ public class MtaBuildTest extends BasePiperTest {
         def expectedEnvVars = ['env1': 'value1', 'env2': 'value2']
         def expectedOptions = '--opt1=val1 --opt2=val2 --opt3'
         def expectedWorkspace = '-w /path/to/workspace'
-        
+
         nullScript.commonPipelineEnvironment.configuration = [steps:[mtaBuild:[
-            dockerImage: expectedImage, 
+            dockerImage: expectedImage,
             dockerOptions: expectedOptions,
             dockerEnvVars: expectedEnvVars,
             dockerWorkspace: expectedWorkspace
@@ -191,7 +191,7 @@ public class MtaBuildTest extends BasePiperTest {
         assert expectedEnvVars.equals(dockerExecuteRule.dockerParams.dockerEnvVars)
         assert expectedWorkspace == dockerExecuteRule.dockerParams.dockerWorkspace
     }
-    
+
     @Test
     void canConfigureDockerImage() {
 
@@ -276,6 +276,14 @@ public class MtaBuildTest extends BasePiperTest {
         stepRule.step.mtaBuild(script: nullScript)
 
         assert shellRule.shell.find(){ c -> c.contains('java -jar /opt/sap/mta/lib/mta.jar --mtar com.mycompany.northwind.mtar --build-target=NEO --extension=config_extension build')}
+    }
+
+    @Test
+    void canConfigureMTARName() {
+
+        stepRule.step.mtaBuild(script: nullScript, mtarName: 'custom.name.mtar')
+
+        assert shellRule.shell.find(){ c -> c.contains('--mtar custom.name.mtar')}
     }
 
 
