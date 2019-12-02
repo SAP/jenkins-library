@@ -47,7 +47,9 @@ import static com.sap.piper.Utils.downloadSettingsFromUrl
      */
     'platform',
     /** Path or url to the mvn settings file that should be used as project settings file.*/
-    'projectSettingsFile'
+    'projectSettingsFile',
+    /** Generated mtar file name.*/
+    'mtarName'
 ]
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS.plus([
     /** Url to the npm registry that should be used for installing npm dependencies.*/
@@ -131,7 +133,12 @@ void call(Map parameters = [:]) {
 
             def mtaCall
             def options = []
-            options.push("--mtar ${id}.mtar")
+            
+            String mtarName = configuration.mtarName?.trim()
+            if (!mtarName) {
+                mtarName = id
+            }
+            options.push("--mtar ${mtarName}.mtar")
 
 
             switch(configuration.mtaBuildTool) {
@@ -160,7 +167,7 @@ void call(Map parameters = [:]) {
             $mtaCall
             """
 
-            script?.commonPipelineEnvironment?.setMtarFilePath("${id}.mtar")
+            script?.commonPipelineEnvironment?.setMtarFilePath("${mtarName}.mtar")
         }
     }
 }
