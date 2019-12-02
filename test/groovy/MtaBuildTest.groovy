@@ -176,9 +176,9 @@ public class MtaBuildTest extends BasePiperTest {
         def expectedEnvVars = ['env1': 'value1', 'env2': 'value2']
         def expectedOptions = '--opt1=val1 --opt2=val2 --opt3'
         def expectedWorkspace = '-w /path/to/workspace'
-
+        
         nullScript.commonPipelineEnvironment.configuration = [steps:[mtaBuild:[
-            dockerImage: expectedImage,
+            dockerImage: expectedImage, 
             dockerOptions: expectedOptions,
             dockerEnvVars: expectedEnvVars,
             dockerWorkspace: expectedWorkspace
@@ -191,7 +191,7 @@ public class MtaBuildTest extends BasePiperTest {
         assert expectedEnvVars.equals(dockerExecuteRule.dockerParams.dockerEnvVars)
         assert expectedWorkspace == dockerExecuteRule.dockerParams.dockerWorkspace
     }
-
+    
     @Test
     void canConfigureDockerImage() {
 
