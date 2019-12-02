@@ -133,7 +133,7 @@ void call(Map parameters = [:]) {
 
             def mtaCall
             def options = []
-            
+
             String mtarName = configuration.mtarName?.trim()
             if (!mtarName) {
                 mtarName = id
