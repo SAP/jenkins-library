@@ -277,6 +277,14 @@ public class MtaBuildTest extends BasePiperTest {
 
         assert shellRule.shell.find(){ c -> c.contains('java -jar /opt/sap/mta/lib/mta.jar --mtar com.mycompany.northwind.mtar --build-target=NEO --extension=config_extension build')}
     }
+    
+    @Test
+    void canConfigureMTARName() {
+        
+        stepRule.step.mtaBuild(script: nullScript, mtarName: 'custom.name.mtar')
+        
+        assert shellRule.shell.find(){ c -> c.contains('--mtar custom.name.mtar')}
+    }
 
 
     private static defaultMtaYaml() {
