@@ -48,7 +48,7 @@ import static com.sap.piper.Utils.downloadSettingsFromUrl
     'platform',
     /** Path or url to the mvn settings file that should be used as project settings file.*/
     'projectSettingsFile',
-    /** Generated mtar file name.*/
+    /** The name of the generated mtar file.*/
     'mtarName'
 ]
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS.plus([
