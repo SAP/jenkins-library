@@ -7,7 +7,6 @@ import com.sap.piper.BashUtils
 import groovy.json.JsonSlurper
 import hudson.AbortException
 import groovy.transform.Field
-import org.jenkinsci.plugins.workflow.steps.FlowInterruptedException
 import java.util.UUID
 import java.util.regex.*
 

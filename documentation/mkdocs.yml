@@ -35,6 +35,7 @@ nav:
         - checkChangeInDevelopment: steps/checkChangeInDevelopment.md
         - checksPublishResults: steps/checksPublishResults.md
         - cfManifestSubstituteVariables: steps/cfManifestSubstituteVariables.md
+        - cloudFoundryCreateService: steps/cloudFoundryCreateService.md
         - cloudFoundryCreateServiceKey: steps/cloudFoundryCreateServiceKey.md
         - cloudFoundryDeploy: steps/cloudFoundryDeploy.md
         - commonPipelineEnvironment: steps/commonPipelineEnvironment.md

@@ -35,7 +35,7 @@ jobs:
         - docker rm piper_${TRAVIS_BRANCH}
         - cp ./piper ./piper_master
         - chmod +x ./piper
-        - ./piper githubPublishRelease --token ${GITHUB_TOKEN} --version latest --updateAsset --assetPath ./piper_master
+        - ./piper githubPublishRelease --token ${GITHUB_TOKEN} --version latest --assetPath ./piper_master
     - name: Groovy Unit Tests
       before_script:
         - curl -L --output cc-test-reporter https://codeclimate.com/downloads/test-reporter/test-reporter-latest-linux-amd64
@@ -53,9 +53,12 @@ jobs:
     - stage: Docs
       name: Create Documentation
       install: docker pull squidfunk/mkdocs-material:3.0.4
-      before_script: documentation/bin/createDocu.sh
+      before_script: 
+        - documentation/bin/createDocu.sh
+        - docker run -u `id -u`:`id -g` --rm -it -e GOCACHE=/tmp -v ${TRAVIS_BUILD_DIR}:/docu-gen golang sh -c "cd /docu-gen && go get github.com/SAP/jenkins-library/... && go run /docu-gen/pkg/generator/step-metadata.go --docuDir=/docu-gen/documentation/docs/steps/ --docuGen=true "
       script:
         - docker run -u `id -u`:`id -g` --rm -it -v ${TRAVIS_BUILD_DIR}/documentation:/docs squidfunk/mkdocs-material:3.0.4 build --clean --strict
+      after_script: 
         - mkdir -p documentation/docs-gen/misc
         - cp target/docuMetaData.json documentation/docs-gen/misc
       deploy:

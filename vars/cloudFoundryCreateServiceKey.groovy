@@ -77,40 +77,31 @@ void call(Map parameters = [:]) {
             .withMandatoryProperty('cloudFoundry/serviceKey')
             .use()
 
-
+        echo "[${STEP_NAME}] Info: docker image: ${config.dockerImage}, docker workspace: ${config.dockerWorkspace}"
         executeCreateServiceKey(script, config)
     }
 }
 
 private def executeCreateServiceKey(script, Map config) {
-    dockerExecute(script:script,dockerImage: config.dockerImage, dockerWorkspace: config.dockerWorkspace) {
+    dockerExecute(script:script, dockerImage: config.dockerImage, dockerWorkspace: config.dockerWorkspace) {
 
         withCredentials([
             usernamePassword(credentialsId: config.cloudFoundry.credentialsId, passwordVariable: 'CF_PASSWORD', usernameVariable: 'CF_USERNAME')
         ]) {
-            if (config.cloudFoundry.serviceKeyConfig == null) {
-                bashScript =
-                    """#!/bin/bash
-                    set +x
-                    set -e
-                    export HOME=${config.dockerWorkspace}
-                    cf login -u ${BashUtils.quoteAndEscape(CF_USERNAME)} -p ${BashUtils.quoteAndEscape(CF_PASSWORD)} -a ${config.cloudFoundry.apiEndpoint} -o ${BashUtils.quoteAndEscape(config.cloudFoundry.org)} -s ${BashUtils.quoteAndEscape(config.cloudFoundry.space)};
-                    cf create-service-key ${BashUtils.quoteAndEscape(config.cloudFoundry.serviceInstance)} ${BashUtils.quoteAndEscape(config.cloudFoundry.serviceKey)}
-                    """
-            } else {
-                bashScript =
-                    """#!/bin/bash
-                    set +x
-                    set -e
-                    export HOME=${config.dockerWorkspace}
-                    cf login -u ${BashUtils.quoteAndEscape(CF_USERNAME)} -p ${BashUtils.quoteAndEscape(CF_PASSWORD)} -a ${config.cloudFoundry.apiEndpoint} -o ${BashUtils.quoteAndEscape(config.cloudFoundry.org)} -s ${BashUtils.quoteAndEscape(config.cloudFoundry.space)};
-                    cf create-service-key ${BashUtils.quoteAndEscape(config.cloudFoundry.serviceInstance)} ${BashUtils.quoteAndEscape(config.cloudFoundry.serviceKey)} -c ${BashUtils.quoteAndEscape(config.cloudFoundry.serviceKeyConfig)}
-                    """
-            }
+            String flag = config.cloudFoundry.serviceKeyConfig == null ? "" : "-c"
+            String serviceKeyConfig = config.cloudFoundry.serviceKeyConfig == null ? "" : config.cloudFoundry.serviceKeyConfig
+            bashScript =
+                """#!/bin/bash
+                set +x
+                set -e
+                export HOME=${config.dockerWorkspace}
+                cf login -u ${BashUtils.quoteAndEscape(CF_USERNAME)} -p ${BashUtils.quoteAndEscape(CF_PASSWORD)} -a ${config.cloudFoundry.apiEndpoint} -o ${BashUtils.quoteAndEscape(config.cloudFoundry.org)} -s ${BashUtils.quoteAndEscape(config.cloudFoundry.space)};
+                cf create-service-key ${BashUtils.quoteAndEscape(config.cloudFoundry.serviceInstance)} ${BashUtils.quoteAndEscape(config.cloudFoundry.serviceKey)} ${flag} ${BashUtils.quoteAndEscape(serviceKeyConfig)}
+                """
             def returnCode = sh returnStatus: true, script: bashScript
             sh "cf logout"
             if (returnCode!=0)  {
-                error "[${STEP_NAME}] ERROR: The execution of create-service-key failed, see the logs above for more details."
+                error "[${STEP_NAME}] Error: The execution of create-service-key failed, see the logs above for more details."
                 echo "Return Code: $returnCode"
             }
         }

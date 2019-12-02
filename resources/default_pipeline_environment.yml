@@ -58,6 +58,10 @@ steps:
     timestampTemplate: '%Y%m%d%H%M%S'
     tagPrefix: 'build_'
     commitVersion: true
+    gitPushMode: 'SSH'
+    verbose: false
+    gitHttpsCredentialsId: 'git'
+    gitDisableSslVerification: false
     dub:
       filePath: 'dub.json'
       versioningTemplate: '${version}-${timestamp}${commitId?"+"+commitId:""}'
@@ -192,6 +196,9 @@ steps:
     dockerWorkspace: '/home/piper'
     stashContent:
       - 'deployDescriptor'
+  cloudFoundryCreateServiceKey:
+    dockerImage: 'ppiper/cf-cli'
+    dockerWorkspace: '/home/piper'
   detectExecuteScan:
     detect:
       projectVersion: '1'
@@ -330,8 +337,13 @@ steps:
     logSuccessfulMavenTransfers: false
   mtaBuild:
     buildTarget: 'NEO'
+    mtaBuildTool: classic
+    platform: 'cf'
     mtaJarLocation: '/opt/sap/mta/lib/mta.jar'
-    dockerImage: 'ppiper/mta-archive-builder'
+    classic:
+      dockerImage: 'ppiper/mta-archive-builder'
+    cloudMbt:
+      dockerImage: 'devxci/mbtci:1.0.4'
   neoDeploy:
     dockerImage: 'ppiper/neo-cli'
     deployMode: 'mta'
