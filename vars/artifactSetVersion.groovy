@@ -93,7 +93,7 @@ enum GitPushMode {NONE, HTTPS, SSH}
     /** Defines the template for the automatic version which will be created. */
     'versioningTemplate',
     /** Controls which protocol is used for performing push operation to remote repo.
-      * Required credentials needs to be configured ('gitSshKeyCredentialsId'/'config.gitHttpsCredentialsId').
+      * Required credentials needs to be configured ('gitSshKeyCredentialsId'/'gitHttpsCredentialsId').
       * Push is only performed in case 'commitVersion' is set to 'true'.
       * @possibleValues 'SSH', 'HTTPS', 'NONE'
       */
