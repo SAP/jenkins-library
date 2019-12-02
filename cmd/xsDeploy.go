@@ -420,6 +420,14 @@ func copyFileFromHomeToPwd(xsSessionFile string, fCopy func(string, string) (int
 }
 
 func copyFileFromPwdToHome(xsSessionFile string, fCopy func(string, string) (int64, error)) error {
+
+	//
+	// We rely on running inside a docker container which is discarded after a single use.
+	// In general it is not a good idea to update files in the build users home directory in case
+	// we are on an infrastructure which is used not only for single builds since updates at that level
+	// affects also other builds.
+	//
+
 	if fCopy == nil {
 		fCopy = piperutils.Copy
 	}
