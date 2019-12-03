@@ -37,7 +37,11 @@ import static com.sap.piper.Prerequisites.checkScript
     /**
      * Can be used as the description of a transport request. Will overwrite the default. (Default: Corresponding Git Commit-ID)
      */
-    'customDescription'
+    'customDescription',
+    /**
+     * Proxy which should be used for the communication with the Transport Management Service Backend.
+     */
+    'proxy'
 ])
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
 
