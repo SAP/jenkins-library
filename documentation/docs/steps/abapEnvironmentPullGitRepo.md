@@ -17,9 +17,23 @@
 
 ```groovy
 abapEnvironmentPullGitRepo (
-    host : '1234-abcd-5678-efgh-ijk.abap.eu10.hana.ondemand.com',
-    repositoryName : '/DMO/GIT_REPOSITORY',
-    credentialsId : 'myCredentialsId',
-    script : this
+  host : '1234-abcd-5678-efgh-ijk.abap.eu10.hana.ondemand.com',
+  repositoryName : '/DMO/GIT_REPOSITORY',
+  credentialsId : 'myCredentialsId',
+  script : this
+)
+```
+
+```groovy
+cloudFoundryCreateServiceKey(
+  script: this,
+  cloudFoundry: [
+      apiEndpoint: 'https://test.server.com',
+      credentialsId: 'cfCredentialsId',
+      org: 'cfOrg',
+      space: 'cfSpace',
+      serviceInstance: 'myServiceInstance',
+      serviceKey: 'myServiceKey',
+  ]
 )
 ```
