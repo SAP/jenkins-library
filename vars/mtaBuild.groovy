@@ -41,15 +41,15 @@ import static com.sap.piper.Utils.downloadSettingsFromUrl
     'mtaJarLocation',
     /** Path or url to the mvn settings file that should be used as global settings file.*/
     'globalSettingsFile',
+    /** The name of the generated mtar file. The given value should be without .mtar extension.*/
+    'mtarName',
     /**
      * mtaBuildTool cloudMbt only: The target platform to which the mtar can be deployed.
      * @possibleValues 'CF', 'NEO', 'XSA'
      */
     'platform',
     /** Path or url to the mvn settings file that should be used as project settings file.*/
-    'projectSettingsFile',
-    /** The name of the generated mtar file.*/
-    'mtarName'
+    'projectSettingsFile'
 ]
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS.plus([
     /** Url to the npm registry that should be used for installing npm dependencies.*/
@@ -129,14 +129,12 @@ void call(Map parameters = [:]) {
             //[Q]: Why not yaml.dump()? [A]: This reformats the whole file.
             sh "sed -ie \"s/\\\${timestamp}/`date +%Y%m%d%H%M%S`/g\" \"${mtaYamlName}\""
 
-            def id = getMtaId(mtaYamlName)
-
             def mtaCall
             def options = []
 
             String mtarName = configuration.mtarName?.trim()
             if (!mtarName) {
-                mtarName = id
+                mtarName = getMtaId(mtaYamlName)
             }
             options.push("--mtar ${mtarName}.mtar")
 
