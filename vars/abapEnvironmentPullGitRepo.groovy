@@ -65,6 +65,8 @@ import java.util.regex.*
 /**
  * Pulls a Repository (Software Component) to a SAP Cloud Platform ABAP Environment system.
  *
+ * This is either possible by providing the host and the credentialsId of the communication arrangement or by providing access to a service key for the communication arrangement SAP_COM_0510 on cloud foundry.
+ *
  * !!! note "Git Repository and Software Component"
  *       In SAP Cloud Platform ABAP Environment Git repositories are wrapped in Software Components (which are managed in the App "Manage Software Components")
  *       Currently, those two names are used synonymous.
