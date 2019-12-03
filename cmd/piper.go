@@ -82,13 +82,17 @@ func PrepareConfig(cmd *cobra.Command, metadata *config.StepData, stepName strin
 		var customConfig io.ReadCloser
 		var err error
 		//accept that config file and defaults cannot be loaded since both are not mandatory here
-		if piperutils.FileExists(GeneralConfig.CustomConfig) {
-			if customConfig, err = openFile(GeneralConfig.CustomConfig); err != nil {
-				errors.Wrapf(err, "Cannot read '%s'", GeneralConfig.CustomConfig)
-			}
+		if projectConfigFile, err := getProjectConfigFile(GeneralConfig.CustomConfig); err != nil {
+			return err
 		} else {
-			log.Entry().Infof("Project config file '%s' does not exist. No project configuration available.", GeneralConfig.CustomConfig)
-			customConfig = nil
+			if piperutils.FileExists(projectConfigFile) {
+				if customConfig, err = openFile(projectConfigFile); err != nil {
+					errors.Wrapf(err, "Cannot read '%s'", projectConfigFile)
+				}
+			} else {
+				log.Entry().Infof("Project config file '%s' does not exist. No project configuration available.", projectConfigFile)
+				customConfig = nil
+			}
 		}
 
 		var defaultConfig []io.ReadCloser
@@ -110,4 +114,41 @@ func PrepareConfig(cmd *cobra.Command, metadata *config.StepData, stepName strin
 	config.MarkFlagsWithValue(cmd, stepConfig)
 
 	return nil
+}
+
+func getProjectConfigFile(configured string) (string, error) {
+
+	configFolder := ".pipeline"
+	defaultConfigFiles := []string{fmt.Sprintf("%s/%s", configFolder, "config.yml"), fmt.Sprintf("%s/%s", configFolder, "config.yaml")}
+
+	explicitlyConfigured := ! contains(defaultConfigFiles, configured)
+
+        if( explicitlyConfigured) {
+		return configured, nil
+	}
+
+	ymlExists := piperutils.FileExists(defaultConfigFiles[0])
+	yamlExists := piperutils.FileExists(defaultConfigFiles[1])
+
+	if ymlExists && yamlExists {
+		return "", errors.New(fmt.Sprintf("'%s' and '%s' exists at the same time, can't judge which to use",
+		defaultConfigFiles[0], defaultConfigFiles[1]))
+	}
+
+	if yamlExists {
+		return defaultConfigFiles[1], nil
+	}
+
+	// we return this file also in case it does not exist. Later in the code flow it needs to be checked if
+	// that file exists. Here we derive only which one should be used in general.
+	return defaultConfigFiles[0], nil
+}
+
+func contains(slice []string, value string) bool {
+	for _, v := range slice {
+		if v == value {
+			return true
+		}
+	}
+	return false
 }
