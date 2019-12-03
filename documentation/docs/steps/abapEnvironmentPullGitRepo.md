@@ -19,7 +19,7 @@
 abapEnvironmentPullGitRepo (
     host : '1234-abcd-5678-efgh-ijk.abap.eu10.hana.ondemand.com',
     repositoryName : '/DMO/GIT_REPOSITORY',
-    credentialsId : "myCredentialsId",
+    credentialsId : 'myCredentialsId',
     script : this
 )
 ```

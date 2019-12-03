@@ -17,6 +17,10 @@ import java.util.regex.*
      */
     'host',
     /**
+     * Jenkins CredentialsId containing the communication user and password of the communciation scenario SAP_COM_0510
+     */
+    'credentialsId'.
+    /**
      * Specifies the name of the Repository (Software Component) on the SAP Cloud Platform ABAP Environment system
      */
     'repositoryName',
@@ -56,12 +60,7 @@ import java.util.regex.*
     /** @see dockerExecute */
     'dockerWorkspace'
 ]
-@Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS.plus([
-    /**
-     * Jenkins CredentialsId containing the communication user and password of the communciation scenario SAP_COM_0510
-     */
-    'credentialsId'
-])
+@Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
 /**
  * Pulls a Repository (Software Component) to a SAP Cloud Platform ABAP Environment system.
