@@ -27,6 +27,7 @@ abapEnvironmentPullGitRepo (
 ```groovy
 cloudFoundryCreateServiceKey(
   script: this,
+  repositoryName : '/DMO/GIT_REPOSITORY',
   cloudFoundry: [
       apiEndpoint: 'https://test.server.com',
       credentialsId: 'cfCredentialsId',
