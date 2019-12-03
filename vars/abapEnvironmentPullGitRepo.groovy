@@ -19,7 +19,7 @@ import java.util.regex.*
     /**
      * Jenkins CredentialsId containing the communication user and password of the communciation scenario SAP_COM_0510
      */
-    'credentialsId'.
+    'credentialsId',
     /**
      * Specifies the name of the Repository (Software Component) on the SAP Cloud Platform ABAP Environment system
      */

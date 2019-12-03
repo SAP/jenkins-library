@@ -56,6 +56,7 @@ public class CloudFoundryCreateServiceKeyTest extends BasePiperTest {
     @Test
     public void success() {
         shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, /.*cf create-service-key.*/, 0 )
+
         stepRule.step.cloudFoundryCreateServiceKey(
             script: nullScript,
             cloudFoundry: [
@@ -95,6 +96,7 @@ public class CloudFoundryCreateServiceKeyTest extends BasePiperTest {
 
     public void fail() {
         shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, /.*cf create-service-key.*/, 1 )
+
         stepRule.step.cloudFoundryCreateServiceKey(
             script: nullScript,
             cloudFoundry: [
