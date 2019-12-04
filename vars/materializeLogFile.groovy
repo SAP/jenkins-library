@@ -59,7 +59,7 @@ def getFilePath(logFileName) {
 	if (instance == null) { // fall back
 		return new FilePath(file);
 	} else {
-		def computer = instance.getComputer(nodeBame)
+		def computer = instance.getComputer(nodeName)
 		if (computer == null) {
 			throw new IllegalArgumentException("Jenkins returned computer instance null on node " + nodeName)
 		}
