@@ -55,10 +55,11 @@ def getFilePath(logFileName) {
 		throw new IllegalArgumentException("Environment variable NODE_NAME is undefined")
 	}
 	def file = new File(logFileName)
-	if (nodeName.equals("master")) {
+	def instance = Jenkins.get()
+	if (instance == null) { // fall back
 		return new FilePath(file);
 	} else {
-		def computer = Jenkins.get().getComputer(nodeBame)
+		def computer = instance.getComputer(nodeBame)
 		if (computer == null) {
 			throw new IllegalArgumentException("Jenkins returned computer instance null on node " + nodeName)
 		}
