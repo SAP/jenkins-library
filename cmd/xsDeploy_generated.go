@@ -13,7 +13,7 @@ type xsDeployOptions struct {
 	MtaPath       string `json:"mtaPath,omitempty"`
 	Action        string `json:"action,omitempty"`
 	Mode          string `json:"mode,omitempty"`
-	DeploymentID  string `json:"deploymentID,omitempty"`
+	OperationID   string `json:"operationId,omitempty"`
 	APIURL        string `json:"apiUrl,omitempty"`
 	User          string `json:"user,omitempty"`
 	Password      string `json:"password,omitempty"`
@@ -52,7 +52,7 @@ func addXsDeployFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVar(&myXsDeployOptions.MtaPath, "mtaPath", os.Getenv("PIPER_mtaPath"), "Path to deployable")
 	cmd.Flags().StringVar(&myXsDeployOptions.Action, "action", "NONE", "The action")
 	cmd.Flags().StringVar(&myXsDeployOptions.Mode, "mode", "DEPLOY", "The mode")
-	cmd.Flags().StringVar(&myXsDeployOptions.DeploymentID, "deploymentID", os.Getenv("PIPER_deploymentID"), "The deployment ID")
+	cmd.Flags().StringVar(&myXsDeployOptions.OperationID, "operationId", os.Getenv("PIPER_operationId"), "The operation ID. Used in case of bg-deploy in order to resume or abort a previously started deployment.")
 	cmd.Flags().StringVar(&myXsDeployOptions.APIURL, "apiUrl", os.Getenv("PIPER_apiUrl"), "The api url (e.g. https://example.org:12345")
 	cmd.Flags().StringVar(&myXsDeployOptions.User, "user", os.Getenv("PIPER_user"), "User")
 	cmd.Flags().StringVar(&myXsDeployOptions.Password, "password", os.Getenv("PIPER_password"), "Password")
@@ -106,7 +106,7 @@ func xsDeployMetadata() config.StepData {
 						Aliases:   []config.Alias{},
 					},
 					{
-						Name:      "deploymentID",
+						Name:      "operationId",
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: false,

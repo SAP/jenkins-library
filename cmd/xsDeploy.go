@@ -153,8 +153,8 @@ func runXsDeploy(XsDeployOptions xsDeployOptions, s shellRunner,
 		return errors.New(fmt.Sprintf("Deployable '%s' does not exist", XsDeployOptions.MtaPath))
 	}
 
-	if action != None && len(XsDeployOptions.DeploymentID) == 0 {
-		return errors.New(fmt.Sprintf("deploymentID was not provided. This is required for action '%s'.", action))
+	if action != None && len(XsDeployOptions.OperationID) == 0 {
+		return errors.New(fmt.Sprintf("OperationID was not provided. This is required for action '%s'.", action))
 	}
 
 	prOut, pwOut := io.Pipe()
@@ -208,7 +208,7 @@ func runXsDeploy(XsDeployOptions xsDeployOptions, s shellRunner,
 
 		switch action {
 		case Resume, Abort, Retry:
-			err = complete(mode, action, XsDeployOptions.DeploymentID, s)
+			err = complete(mode, action, XsDeployOptions.OperationID, s)
 		default:
 			err = deploy(mode, XsDeployOptions, s)
 		}
@@ -314,9 +314,9 @@ func retrieveDeploymentID(deployLog string) string {
 	}
 
 	if len(deploymentID) > 0 {
-		log.Entry().Infof("Deployment identifier: '%s'", deploymentID)
+		log.Entry().Infof("Operation identifier: '%s'", deploymentID)
 	} else {
-		log.Entry().Infof("No deployment identifier found in >>>>%s<<<<.", deployLog)
+		log.Entry().Infof("No operation identifier found in >>>>%s<<<<.", deployLog)
 	}
 
 	return deploymentID

@@ -45,9 +45,9 @@ spec:
         - STAGES
         - STEPS
         mandatory: true
-      - name: deploymentID
+      - name: operationId
         type: string
-        description: The deployment ID
+        description: The operation ID. Used in case of bg-deploy in order to resume or abort a previously started deployment.
         default:
         scope:
         - PARAMETERS

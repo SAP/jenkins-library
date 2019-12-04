@@ -164,12 +164,12 @@ func TestDeploy(t *testing.T) {
 		defer func() {
 			myXsDeployOptions.Mode = oldMode
 			myXsDeployOptions.Action = oldAction
-			myXsDeployOptions.DeploymentID = ""
+			myXsDeployOptions.OperationID = ""
 		}()
 
 		myXsDeployOptions.Mode = "BG_DEPLOY"
 		myXsDeployOptions.Action = "ABORT"
-		myXsDeployOptions.DeploymentID = "12345"
+		myXsDeployOptions.OperationID = "12345"
 
 		e := runXsDeploy(myXsDeployOptions, &s, fExists, fCopy, fRemove)
 		checkErr(t, e, "")
@@ -199,7 +199,7 @@ func TestDeploy(t *testing.T) {
 		myXsDeployOptions.Action = "ABORT"
 
 		e := runXsDeploy(myXsDeployOptions, &s, fExists, fCopy, fRemove)
-		checkErr(t, e, "deploymentID was not provided")
+		checkErr(t, e, "OperationID was not provided")
 	})
 }
 
