@@ -179,7 +179,7 @@ func TestDeploy(t *testing.T) {
 		assert.Len(t, s.calls, 2) // There is no login --> we have two calls
 	})
 
-	t.Run("BG deploy abort fails due to missing deploymentID", func(t *testing.T) {
+	t.Run("BG deploy abort fails due to missing operationId", func(t *testing.T) {
 
 		defer func() {
 			copiedFiles = nil
@@ -203,8 +203,8 @@ func TestDeploy(t *testing.T) {
 	})
 }
 
-func TestRetrieveDeploymentID(t *testing.T) {
-	deploymentID := retrieveDeploymentID(`
+func TestRetrieveOperationID(t *testing.T) {
+	operationID := retrieveOperationID(`
 	Uploading 1 files:
         myFolder/dummy.mtar
 	File upload finished
@@ -229,7 +229,7 @@ func TestRetrieveDeploymentID(t *testing.T) {
 	Hint: Use the '--no-confirm' option of the bg-deploy command to skip this phase.
 	`)
 
-	assert.Equal(t, "1234", deploymentID)
+	assert.Equal(t, "1234", operationID)
 }
 
 func checkErr(t *testing.T, e error, message string) {

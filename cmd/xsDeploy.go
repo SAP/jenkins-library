@@ -111,7 +111,7 @@ const deployScript = `#!/bin/bash
 xs {{.Mode}} {{.MtaPath}} {{.DeployOpts}}`
 
 const completeScript = `#!/bin/bash
-xs {{.Mode.GetDeployCommand}} -i {{.DeploymentID}} -a {{.Action.GetAction}}
+xs {{.Mode.GetDeployCommand}} -i {{.OperationID}} -a {{.Action.GetAction}}
 `
 
 func xsDeploy(myXsDeployOptions xsDeployOptions) error {
@@ -252,7 +252,7 @@ func runXsDeploy(XsDeployOptions xsDeployOptions, s shellRunner,
 	wg.Wait()
 
 	if err == nil && (mode == BGDeploy && action == None) {
-		retrieveDeploymentID(o)
+		retrieveOperationID(o)
 	}
 
 	if err != nil {
@@ -301,25 +301,25 @@ func handleLog(logDir string) error {
 	return nil
 }
 
-func retrieveDeploymentID(deployLog string) string {
+func retrieveOperationID(deployLog string) string {
 	re := regexp.MustCompile(`^.*xs bg-deploy -i (.*) -a.*$`)
 	lines := strings.Split(deployLog, "\n")
-	var deploymentID string
+	var operationID string
 	for _, line := range lines {
 		matched := re.FindStringSubmatch(line)
 		if len(matched) >= 1 {
-			deploymentID = matched[1]
+			operationID = matched[1]
 			break
 		}
 	}
 
-	if len(deploymentID) > 0 {
-		log.Entry().Infof("Operation identifier: '%s'", deploymentID)
+	if len(operationID) > 0 {
+		log.Entry().Infof("Operation identifier: '%s'", operationID)
 	} else {
 		log.Entry().Infof("No operation identifier found in >>>>%s<<<<.", deployLog)
 	}
 
-	return deploymentID
+	return operationID
 }
 
 func xsLogin(XsDeployOptions xsDeployOptions, s shellRunner) error {
@@ -371,17 +371,17 @@ func deploy(mode DeployMode, XsDeployOptions xsDeployOptions, s shellRunner) err
 	return nil
 }
 
-func complete(mode DeployMode, action Action, deploymentID string, s shellRunner) error {
+func complete(mode DeployMode, action Action, operationID string, s shellRunner) error {
 	log.Entry().Debugf("Performing xs %s", action)
 
 	type completeProperties struct {
 		xsDeployOptions
-		Mode         DeployMode
-		Action       Action
-		DeploymentID string
+		Mode        DeployMode
+		Action      Action
+		OperationID string
 	}
 
-	CompleteProperties := completeProperties{Mode: mode, Action: action, DeploymentID: deploymentID}
+	CompleteProperties := completeProperties{Mode: mode, Action: action, OperationID: operationID}
 
 	if e := executeCmd("complete", completeScript, CompleteProperties, s); e != nil {
 		return e
