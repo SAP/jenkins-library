@@ -241,7 +241,7 @@ func checkErr(t *testing.T, e error, message string) {
 			t.Error("Expected error not received.")
 		} else {
 			if !strings.Contains(e.Error(), message) {
-				t.Errorf("Unexpected error message received: %s", e.Error())
+				t.Errorf("Unexpected error message received: '%s'. Expected: '%s'.", e.Error(), message)
 			}
 		}
 	} else {
