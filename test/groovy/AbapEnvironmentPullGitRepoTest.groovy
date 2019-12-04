@@ -207,7 +207,7 @@ public class AbapEnvironmentPullGitRepoTest extends BasePiperTest {
     @Test
     public void checkRepositoryProvided() {
        thrown.expect(IllegalArgumentException)
-       thrown.expectMessage("Repository / Software Component not provided")
+       thrown.expectMessage("ERROR - NO VALUE AVAILABLE FOR repositoryName")
        stepRule.step.abapEnvironmentPullGitRepo(script: nullScript, host: 'example.com', credentialsId: 'test_credentialsId')
     }
 
