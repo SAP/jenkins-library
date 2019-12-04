@@ -114,9 +114,9 @@ const completeScript = `#!/bin/bash
 xs {{.Mode.GetDeployCommand}} -i {{.OperationID}} -a {{.Action.GetAction}}
 `
 
-func xsDeploy(myXsDeployOptions xsDeployOptions) error {
+func xsDeploy(XsDeployOptions xsDeployOptions) error {
 	c := command.Command{}
-	return runXsDeploy(myXsDeployOptions, &c, piperutils.FileExists, piperutils.Copy, os.Remove)
+	return runXsDeploy(XsDeployOptions, &c, piperutils.FileExists, piperutils.Copy, os.Remove)
 }
 
 func runXsDeploy(XsDeployOptions xsDeployOptions, s shellRunner,
