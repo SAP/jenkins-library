@@ -121,9 +121,9 @@ func getProjectConfigFile(configured string) (string, error) {
 	configFolder := ".pipeline"
 	defaultConfigFiles := []string{fmt.Sprintf("%s/%s", configFolder, "config.yml"), fmt.Sprintf("%s/%s", configFolder, "config.yaml")}
 
-	explicitlyConfigured := ! contains(defaultConfigFiles, configured)
+	explicitlyConfigured := !contains(defaultConfigFiles, configured)
 
-        if( explicitlyConfigured) {
+	if explicitlyConfigured {
 		return configured, nil
 	}
 
@@ -132,7 +132,7 @@ func getProjectConfigFile(configured string) (string, error) {
 
 	if ymlExists && yamlExists {
 		return "", errors.New(fmt.Sprintf("'%s' and '%s' exists at the same time, can't judge which to use",
-		defaultConfigFiles[0], defaultConfigFiles[1]))
+			defaultConfigFiles[0], defaultConfigFiles[1]))
 	}
 
 	if yamlExists {
