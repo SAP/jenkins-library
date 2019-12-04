@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/log"
@@ -252,14 +253,31 @@ func runXsDeploy(XsDeployOptions xsDeployOptions, s shellRunner,
 	wg.Wait()
 
 	if err == nil && (mode == BGDeploy && action == None) {
-		retrieveOperationID(o)
+		XsDeployOptions.OperationID = retrieveOperationID(o)
 	}
 
 	if err != nil {
 		log.Entry().Errorf("An error occured. Stdout from underlying process: >>%s<<. Stderr from underlying process: >>%s<<", o, e)
 	}
 
+	if e := printStatus(XsDeployOptions); e != nil {
+		if err == nil {
+			err = e
+		}
+	}
+
 	return err
+}
+
+func printStatus(XsDeployOptions xsDeployOptions) error {
+	XsDeployOptionsCopy := XsDeployOptions
+	XsDeployOptionsCopy.Password = ""
+
+	var e error
+	if b, e := json.Marshal(XsDeployOptionsCopy); e == nil {
+		fmt.Println(string(b))
+	}
+	return e
 }
 
 func handleLog(logDir string) error {
