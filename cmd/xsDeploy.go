@@ -253,7 +253,7 @@ func runXsDeploy(XsDeployOptions xsDeployOptions, s shellRunner,
 	wg.Wait()
 
 	if err == nil && (mode == BGDeploy && action == None) {
-		XsDeployOptions.OperationID = retrieveOperationID(o)
+		XsDeployOptions.OperationID = retrieveOperationID(o, XsDeployOptions.OperationIDLogPattern)
 	}
 
 	if err != nil {
@@ -319,8 +319,8 @@ func handleLog(logDir string) error {
 	return nil
 }
 
-func retrieveOperationID(deployLog string) string {
-	re := regexp.MustCompile(`^.*xs bg-deploy -i (.*) -a.*$`)
+func retrieveOperationID(deployLog, pattern string) string {
+	re := regexp.MustCompile(pattern)
 	lines := strings.Split(deployLog, "\n")
 	var operationID string
 	for _, line := range lines {

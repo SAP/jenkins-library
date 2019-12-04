@@ -10,17 +10,18 @@ import (
 
 func TestDeploy(t *testing.T) {
 	myXsDeployOptions := xsDeployOptions{
-		APIURL:        "https://example.org:12345",
-		User:          "me",
-		Password:      "secret",
-		Org:           "myOrg",
-		Space:         "mySpace",
-		LoginOpts:     "--skip-ssl-validation",
-		DeployOpts:    "--dummy-deploy-opts",
-		XsSessionFile: ".xs_session",
-		Mode:          "DEPLOY",
-		Action:        "NONE",
-		MtaPath:       "dummy.mtar",
+		APIURL:                "https://example.org:12345",
+		User:                  "me",
+		Password:              "secret",
+		Org:                   "myOrg",
+		Space:                 "mySpace",
+		LoginOpts:             "--skip-ssl-validation",
+		DeployOpts:            "--dummy-deploy-opts",
+		XsSessionFile:         ".xs_session",
+		Mode:                  "DEPLOY",
+		Action:                "NONE",
+		MtaPath:               "dummy.mtar",
+		OperationIDLogPattern: `^.*xs bg-deploy -i (.*) -a.*$`,
 	}
 
 	s := shellMockRunner{}
@@ -227,7 +228,7 @@ func TestRetrieveOperationID(t *testing.T) {
 	Use "xs bg-deploy -i 1234 -a resume" to resume the process.
 	Use "xs bg-deploy -i 1234 -a abort" to abort the process.
 	Hint: Use the '--no-confirm' option of the bg-deploy command to skip this phase.
-	`)
+	`, `^.*xs bg-deploy -i (.*) -a.*$`)
 
 	assert.Equal(t, "1234", operationID)
 }

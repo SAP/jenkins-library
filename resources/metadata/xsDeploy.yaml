@@ -19,6 +19,17 @@ spec:
         - STEPS
         mandatory: false
         default:
+      - name: operationIdLogPattern
+        type: string
+        description: Regex pattern for retrieving the ID of the operation from the xs log.
+        scope:
+        - PARAMETERS
+        - STAGES
+        - STEPS
+        default: ^.*xs bg-deploy -i (.*) -a.*$
+        mandatory: false
+        aliases:
+          - name: deployIdLogPattern
       - name: mtaPath
         type: string
         description: Path to deployable

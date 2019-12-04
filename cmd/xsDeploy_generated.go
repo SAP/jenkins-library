@@ -9,18 +9,19 @@ import (
 )
 
 type xsDeployOptions struct {
-	DeployOpts    string `json:"deployOpts,omitempty"`
-	MtaPath       string `json:"mtaPath,omitempty"`
-	Action        string `json:"action,omitempty"`
-	Mode          string `json:"mode,omitempty"`
-	OperationID   string `json:"operationId,omitempty"`
-	APIURL        string `json:"apiUrl,omitempty"`
-	User          string `json:"user,omitempty"`
-	Password      string `json:"password,omitempty"`
-	Org           string `json:"org,omitempty"`
-	Space         string `json:"space,omitempty"`
-	LoginOpts     string `json:"loginOpts,omitempty"`
-	XsSessionFile string `json:"xsSessionFile,omitempty"`
+	DeployOpts            string `json:"deployOpts,omitempty"`
+	OperationIDLogPattern string `json:"operationIdLogPattern,omitempty"`
+	MtaPath               string `json:"mtaPath,omitempty"`
+	Action                string `json:"action,omitempty"`
+	Mode                  string `json:"mode,omitempty"`
+	OperationID           string `json:"operationId,omitempty"`
+	APIURL                string `json:"apiUrl,omitempty"`
+	User                  string `json:"user,omitempty"`
+	Password              string `json:"password,omitempty"`
+	Org                   string `json:"org,omitempty"`
+	Space                 string `json:"space,omitempty"`
+	LoginOpts             string `json:"loginOpts,omitempty"`
+	XsSessionFile         string `json:"xsSessionFile,omitempty"`
 }
 
 var myXsDeployOptions xsDeployOptions
@@ -49,6 +50,7 @@ func XsDeployCommand() *cobra.Command {
 
 func addXsDeployFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVar(&myXsDeployOptions.DeployOpts, "deployOpts", os.Getenv("PIPER_deployOpts"), "Additional options appended to the deploy command. Only needed for sophisticated cases. When provided it is the duty of the provider to ensure proper quoting / escaping.")
+	cmd.Flags().StringVar(&myXsDeployOptions.OperationIDLogPattern, "operationIdLogPattern", "^.*xs bg-deploy -i (.*) -a.*$", "Regex pattern for retrieving the ID of the operation from the xs log.")
 	cmd.Flags().StringVar(&myXsDeployOptions.MtaPath, "mtaPath", os.Getenv("PIPER_mtaPath"), "Path to deployable")
 	cmd.Flags().StringVar(&myXsDeployOptions.Action, "action", "NONE", "Used for finalizing the blue-green deployment.")
 	cmd.Flags().StringVar(&myXsDeployOptions.Mode, "mode", "DEPLOY", "Controls if there is a standard deployment or a blue green deployment. Values: 'DEPLOY', 'BG_DEPLOY'")
@@ -83,6 +85,13 @@ func xsDeployMetadata() config.StepData {
 						Type:      "string",
 						Mandatory: false,
 						Aliases:   []config.Alias{},
+					},
+					{
+						Name:      "operationIdLogPattern",
+						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{{Name: "deployIdLogPattern"}},
 					},
 					{
 						Name:      "mtaPath",
