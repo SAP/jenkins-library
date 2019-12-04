@@ -83,6 +83,7 @@ steps:
     sbt:
       filePath: 'sbtDescriptor.json'
       versioningTemplate: '${version}-${timestamp}${commitId?"+"+commitId:""}'
+    tagVersion: true
   batsExecuteTests:
     dockerImage: 'node:8-stretch'
     dockerWorkspace: '/home/node'

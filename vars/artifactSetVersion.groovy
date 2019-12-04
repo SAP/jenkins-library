@@ -28,8 +28,7 @@ enum GitPushMode {NONE, HTTPS, SSH}
      */
     'buildTool',
     /**
-     * Controls if the changed version is committed and pushed to the git repository.
-     * If this is enabled (which is the default), you need to provide `gitCredentialsId` and `gitSshUrl`.
+     * Controls if the changed version is committed.
      * @possibleValues `true`, `false`
      */
     'commitVersion',
@@ -84,6 +83,12 @@ enum GitPushMode {NONE, HTTPS, SSH}
      * Defines the prefix which is used for the git tag which is written during the versioning run.
      */
     'tagPrefix',
+    /**
+     * Controls if a tag is created for the version.
+     * If this is enabled (which is the default), you need to provide `gitCredentialsId` and - in case the push is performd ssh -  `gitSshUrl`.
+     * @possibleValues `true`, `false`
+     */
+    'tagVersion',
     /**
      * Defines the timestamp to be used in the automatic version string. You could overwrite the default behavior by explicitly setting this string.
      */
@@ -197,7 +202,16 @@ void call(Map parameters = [:], Closure body = null) {
                     git tag ${config.tagPrefix}${newVersion}"""
                 config.gitCommitId = gitUtils.getGitCommitIdOrNull()
             } catch (e) {
-                error "[${STEP_NAME}]git commit and tag failed: ${e}"
+                error "[${STEP_NAME}]git commit failed: ${e}"
+            }
+        }
+
+        if (config.tagVersion) {
+            try {
+                sh """#!/bin/bash
+                    git tag ${config.tagPrefix}${newVersion}"""
+            } catch (e) {
+                error "[${STEP_NAME}]git tag failed: ${e}"
             }
 
             if(gitPushMode == GitPushMode.SSH) {
