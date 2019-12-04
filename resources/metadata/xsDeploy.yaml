@@ -12,7 +12,7 @@ spec:
     params:
       - name: deployOpts
         type: string
-        description: Additional deploy options
+        description: Additional options appended to the deploy command. Only needed for sophisticated cases. When provided it is the duty of the provider to ensure proper quoting / escaping.
         scope:
         - PARAMETERS
         - STAGES
@@ -29,7 +29,7 @@ spec:
         mandatory: true
       - name: action
         type: string
-        description: The action
+        description: Used for finalizing the blue-green deployment.
         default: NONE
         scope:
         - PARAMETERS
@@ -38,7 +38,7 @@ spec:
         mandatory: false
       - name: mode
         type: string
-        description: The mode
+        description: "Controls if there is a standard deployment or a blue green deployment. Values: 'DEPLOY', 'BG_DEPLOY'"
         default: DEPLOY
         scope:
         - PARAMETERS
@@ -96,7 +96,7 @@ spec:
         mandatory: true
       - name: loginOpts
         type: string
-        description: Additional options for performing xs login.
+        description: Additional options appended to the login command. Only needed for sophisticated cases. When provided it is the duty of the provider to ensure proper quoting / escaping.
         scope:
         - PARAMETERS
         - STAGES
