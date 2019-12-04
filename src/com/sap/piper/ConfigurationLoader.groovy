@@ -1,83 +1,44 @@
 package com.sap.piper
 
-// script is present in the signatures in order to keep api compatibility.
-// The script referenced is not used inside the method bodies.
-
 @API(deprecated = true)
 class ConfigurationLoader implements Serializable {
-
-    static Map stepConfiguration(String stepName) {
-        return loadConfiguration('steps', stepName, ConfigurationType.CUSTOM_CONFIGURATION)
-    }
-    @Deprecated
-    /** Use stepConfiguration(stepName) instead */
     static Map stepConfiguration(script, String stepName) {
-        return stepConfiguration(stepName)
+        return loadConfiguration(script, 'steps', stepName, ConfigurationType.CUSTOM_CONFIGURATION)
     }
 
-    static Map stageConfiguration(String stageName) {
-        return loadConfiguration('stages', stageName, ConfigurationType.CUSTOM_CONFIGURATION)
-    }
-    @Deprecated
-    /** Use stageConfiguration(stageName) instead */
     static Map stageConfiguration(script, String stageName) {
-        return stageConfiguration(stageName)
+        return loadConfiguration(script, 'stages', stageName, ConfigurationType.CUSTOM_CONFIGURATION)
     }
 
-    static Map defaultStepConfiguration(String stepName) {
-        return loadConfiguration('steps', stepName, ConfigurationType.DEFAULT_CONFIGURATION)
-    }
-    @Deprecated
-    /** Use defaultStepConfiguration(stepName) instead */
     static Map defaultStepConfiguration(script, String stepName) {
-        return defaultStepConfiguration(stepName)
+        return loadConfiguration(script, 'steps', stepName, ConfigurationType.DEFAULT_CONFIGURATION)
     }
 
-    static Map defaultStageConfiguration(String stageName) {
-        return loadConfiguration('stages', stageName, ConfigurationType.DEFAULT_CONFIGURATION)
-    }
-    @Deprecated
-    /** Use defaultStageConfiguration(stepName) instead */
     static Map defaultStageConfiguration(script, String stageName) {
-        return defaultStageConfiguration(stageName)
+        return loadConfiguration(script, 'stages', stageName, ConfigurationType.DEFAULT_CONFIGURATION)
     }
 
-    static Map generalConfiguration(){
+    static Map generalConfiguration(script){
         try {
-            return CommonPipelineEnvironment.getInstance()?.configuration?.general ?: [:]
+            return script?.commonPipelineEnvironment?.configuration?.general ?: [:]
         } catch (groovy.lang.MissingPropertyException mpe) {
             return [:]
         }
     }
-    @Deprecated
-    /** Use generalConfiguration() instead */
-    static Map generalConfiguration(script){
-        return generalConfiguration()
-    }
 
-    static Map defaultGeneralConfiguration(){
+    static Map defaultGeneralConfiguration(script){
         return DefaultValueCache.getInstance()?.getDefaultValues()?.general ?: [:]
     }
-    @Deprecated
-    /** Use defaultGeneralConfiguration() instead */
-    static Map defaultGeneralConfiguration(script){
-        return defaultGeneralConfiguration()
-    }
 
-    static Map postActionConfiguration(String actionName){
-        return loadConfiguration('postActions', actionName, ConfigurationType.CUSTOM_CONFIGURATION)
-    }
-    @Deprecated
-    /** Use postActionConfiguration() instead */
     static Map postActionConfiguration(script, String actionName){
-        return postActionConfiguration(actionName)
+        return loadConfiguration(script, 'postActions', actionName, ConfigurationType.CUSTOM_CONFIGURATION)
     }
 
-    private static Map loadConfiguration(String type, String entryName, ConfigurationType configType){
+    private static Map loadConfiguration(script, String type, String entryName, ConfigurationType configType){
         switch (configType) {
             case ConfigurationType.CUSTOM_CONFIGURATION:
                 try {
-                    return CommonPipelineEnvironment.getInstance()?.configuration?.get(type)?.get(entryName) ?: [:]
+                    return script?.commonPipelineEnvironment?.configuration?.get(type)?.get(entryName) ?: [:]
                 } catch (groovy.lang.MissingPropertyException mpe) {
                     return [:]
                 }
