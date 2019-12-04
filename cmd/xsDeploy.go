@@ -17,8 +17,7 @@ import (
 	"text/template"
 )
 
-//
-// START DeployMode
+// DeployMode ...
 type DeployMode int
 
 const (
@@ -30,7 +29,7 @@ const (
 	BGDeploy DeployMode = iota
 )
 
-//ValueOfMode ...
+// ValueOfMode ...
 func ValueOfMode(str string) (DeployMode, error) {
 	switch str {
 	case "NONE":
@@ -44,7 +43,7 @@ func ValueOfMode(str string) (DeployMode, error) {
 	}
 }
 
-// String
+// String ...
 func (m DeployMode) String() string {
 	return [...]string{
 		"NONE",
@@ -53,11 +52,7 @@ func (m DeployMode) String() string {
 	}[m]
 }
 
-// END DeployMode
-//
-
-//
-// START Action
+// Action ...
 type Action int
 
 const (
@@ -71,7 +66,7 @@ const (
 	Retry Action = iota
 )
 
-//ValueOfAction ...
+// ValueOfAction ...
 func ValueOfAction(str string) (Action, error) {
 	switch str {
 	case "NONE":
@@ -88,7 +83,7 @@ func ValueOfAction(str string) (Action, error) {
 	}
 }
 
-// String
+// String ...
 func (a Action) String() string {
 	return [...]string{
 		"NONE",
@@ -97,9 +92,6 @@ func (a Action) String() string {
 		"RETRY",
 	}[a]
 }
-
-// END Action
-//
 
 const loginScript = `#!/bin/bash
 xs login -a {{.APIURL}} -u {{.User}} -p '{{.Password}}' -o {{.Org}} -s {{.Space}} {{.LoginOpts}}
