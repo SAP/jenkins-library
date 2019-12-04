@@ -44,6 +44,12 @@ class TransportManagementService implements Serializable {
             ]
         ]
 
+        def proxy = config.proxy ? config.proxy : script.env.HTTP_PROXY
+
+        if (proxy){
+            parameters["httpProxy"] = proxy
+        }
+
         def response = sendApiRequest(parameters)
         echo("OAuth Token retrieved successfully.")
 
@@ -60,8 +66,10 @@ class TransportManagementService implements Serializable {
             echo("URL: '${url}', File: '${file}'")
         }
 
+        def proxy = config.proxy ? config.proxy : script.env.HTTP_PROXY
+
         script.sh """#!/bin/sh -e
-                curl -H 'Authorization: Bearer ${token}' -F 'file=@${file}' -F 'namedUser=${namedUser}' -o responseFileUpload.txt  --fail '${url}/v2/files/upload'
+                curl ${proxy ? '--proxy ' + proxy + ' ' : ''} -H 'Authorization: Bearer ${token}' -F 'file=@${file}' -F 'namedUser=${namedUser}' -o responseFileUpload.txt  --fail '${url}/v2/files/upload'
             """
 
         def responseContent = script.readFile("responseFileUpload.txt")
@@ -100,6 +108,12 @@ class TransportManagementService implements Serializable {
                 ]
             ]
         ]
+
+        def proxy = config.proxy ? config.proxy : script.env.HTTP_PROXY
+
+        if (proxy){
+            parameters["httpProxy"] = proxy
+        }
 
         def response = sendApiRequest(parameters)
         echo("Node upload successful.")
