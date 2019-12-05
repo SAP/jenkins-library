@@ -109,13 +109,14 @@ xs {{.Mode.GetDeployCommand}} -i {{.OperationID}} -a {{.Action.GetAction}}
 
 func xsDeploy(XsDeployOptions xsDeployOptions) error {
 	c := command.Command{}
-	return runXsDeploy(XsDeployOptions, &c, piperutils.FileExists, piperutils.Copy, os.Remove)
+	return runXsDeploy(XsDeployOptions, &c, piperutils.FileExists, piperutils.Copy, os.Remove, os.Stdout)
 }
 
 func runXsDeploy(XsDeployOptions xsDeployOptions, s shellRunner,
 	fExists func(string) bool,
 	fCopy func(string, string) (int64, error),
-	fRemove func(string) error) error {
+	fRemove func(string) error,
+	stdout io.Writer) error {
 
 	mode, err := ValueOfMode(XsDeployOptions.Mode)
 	if err != nil {
@@ -252,7 +253,7 @@ func runXsDeploy(XsDeployOptions xsDeployOptions, s shellRunner,
 		log.Entry().Errorf("An error occured. Stdout from underlying process: >>%s<<. Stderr from underlying process: >>%s<<", o, e)
 	}
 
-	if e := printStatus(XsDeployOptions); e != nil {
+	if e := printStatus(XsDeployOptions, stdout); e != nil {
 		if err == nil {
 			err = e
 		}
@@ -261,13 +262,13 @@ func runXsDeploy(XsDeployOptions xsDeployOptions, s shellRunner,
 	return err
 }
 
-func printStatus(XsDeployOptions xsDeployOptions) error {
+func printStatus(XsDeployOptions xsDeployOptions, stdout io.Writer) error {
 	XsDeployOptionsCopy := XsDeployOptions
 	XsDeployOptionsCopy.Password = ""
 
 	var e error
 	if b, e := json.Marshal(XsDeployOptionsCopy); e == nil {
-		fmt.Println(string(b))
+		fmt.Fprintln(stdout, string(b))
 	}
 	return e
 }

@@ -1,10 +1,14 @@
 package cmd
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"github.com/stretchr/testify/assert"
+	"io"
+	"io/ioutil"
 	"strings"
+	"sync"
 	"testing"
 )
 
@@ -12,7 +16,7 @@ func TestDeploy(t *testing.T) {
 	myXsDeployOptions := xsDeployOptions{
 		APIURL:                "https://example.org:12345",
 		User:                  "me",
-		Password:              "secret",
+		Password:              "secretPassword",
 		Org:                   "myOrg",
 		Space:                 "mySpace",
 		LoginOpts:             "--skip-ssl-validation",
@@ -43,35 +47,61 @@ func TestDeploy(t *testing.T) {
 		return nil
 	}
 
+	var stdout string
+
 	t.Run("Standard deploy succeeds", func(t *testing.T) {
 
 		defer func() {
 			copiedFiles = nil
 			removedFiles = nil
 			s.calls = nil
+			stdout = ""
 		}()
 
-		e := runXsDeploy(myXsDeployOptions, &s, fExists, fCopy, fRemove)
+		rStdout, wStdout := io.Pipe()
+
+		var wg sync.WaitGroup
+		wg.Add(1)
+
+		go func() {
+			buf := new(bytes.Buffer)
+			io.Copy(buf, rStdout)
+			stdout = buf.String()
+			wg.Done()
+		}()
+
+		e := runXsDeploy(myXsDeployOptions, &s, fExists, fCopy, fRemove, wStdout)
+
+		wStdout.Close()
+		wg.Wait()
+
 		checkErr(t, e, "")
 
-		// Contains --> we do not check for the shebang
-		assert.Contains(t, s.calls[0], "xs login -a https://example.org:12345 -u me -p 'secret' -o myOrg -s mySpace --skip-ssl-validation")
-		assert.Contains(t, s.calls[1], "xs deploy dummy.mtar --dummy-deploy-opts")
-		assert.Contains(t, s.calls[2], "xs logout")
-		assert.Len(t, s.calls, 3)
+		t.Run("Standard checks", func(t *testing.T) {
+			// Contains --> we do not check for the shebang
+			assert.Contains(t, s.calls[0], "xs login -a https://example.org:12345 -u me -p 'secretPassword' -o myOrg -s mySpace --skip-ssl-validation")
+			assert.Contains(t, s.calls[1], "xs deploy dummy.mtar --dummy-deploy-opts")
+			assert.Contains(t, s.calls[2], "xs logout")
+			assert.Len(t, s.calls, 3)
 
-		// xs session file needs to be removed at end during a normal deployment
-		assert.Len(t, removedFiles, 1)
-		assert.Contains(t, removedFiles, ".xs_session")
+			// xs session file needs to be removed at end during a normal deployment
+			assert.Len(t, removedFiles, 1)
+			assert.Contains(t, removedFiles, ".xs_session")
 
-		assert.Len(t, copiedFiles, 2)
-		// We copy the xs session file to the workspace in order to be able to use the file later.
-		// This happens directly after login
-		// We copy the xs session file from the workspace to the home folder in order to be able to
-		// use that file. This is important in case we rely on a login which happend e
-		assert.Contains(t, copiedFiles[0], "/.xs_session->.xs_session")
-		assert.Contains(t, copiedFiles[1], ".xs_session->")
-		assert.Contains(t, copiedFiles[1], "/.xs_session")
+			assert.Len(t, copiedFiles, 2)
+			// We copy the xs session file to the workspace in order to be able to use the file later.
+			// This happens directly after login
+			// We copy the xs session file from the workspace to the home folder in order to be able to
+			// use that file. This is important in case we rely on a login which happend e
+			assert.Contains(t, copiedFiles[0], "/.xs_session->.xs_session")
+			assert.Contains(t, copiedFiles[1], ".xs_session->")
+			assert.Contains(t, copiedFiles[1], "/.xs_session")
+		})
+
+		t.Run("Password not exposed", func(t *testing.T) {
+			assert.NotEmpty(t, stdout)
+			assert.NotContains(t, stdout, myXsDeployOptions.Password)
+		})
 	})
 
 	t.Run("Standard deploy fails, deployable missing", func(t *testing.T) {
@@ -91,7 +121,7 @@ func TestDeploy(t *testing.T) {
 		// this file is not denoted in the file exists mock
 		myXsDeployOptions.MtaPath = "doesNotExist"
 
-		e := runXsDeploy(myXsDeployOptions, &s, fExists, fCopy, fRemove)
+		e := runXsDeploy(myXsDeployOptions, &s, fExists, fCopy, fRemove, ioutil.Discard)
 		checkErr(t, e, "Deployable 'doesNotExist' does not exist")
 	})
 
@@ -108,7 +138,7 @@ func TestDeploy(t *testing.T) {
 			myXsDeployOptions.Action = "NONE"
 		}()
 
-		e := runXsDeploy(myXsDeployOptions, &s, fExists, fCopy, fRemove)
+		e := runXsDeploy(myXsDeployOptions, &s, fExists, fCopy, fRemove, ioutil.Discard)
 		checkErr(t, e, "Cannot perform action 'RETRY' in mode 'DEPLOY'. Only action 'NONE' is allowed.")
 	})
 
@@ -123,7 +153,7 @@ func TestDeploy(t *testing.T) {
 
 		s.shouldFailWith = errors.New("Error from underlying process")
 
-		e := runXsDeploy(myXsDeployOptions, &s, fExists, fCopy, fRemove)
+		e := runXsDeploy(myXsDeployOptions, &s, fExists, fCopy, fRemove, ioutil.Discard)
 		checkErr(t, e, "Error from underlying process")
 	})
 
@@ -143,7 +173,7 @@ func TestDeploy(t *testing.T) {
 
 		myXsDeployOptions.Mode = "BG_DEPLOY"
 
-		e := runXsDeploy(myXsDeployOptions, &s, fExists, fCopy, fRemove)
+		e := runXsDeploy(myXsDeployOptions, &s, fExists, fCopy, fRemove, ioutil.Discard)
 		checkErr(t, e, "")
 
 		assert.Contains(t, s.calls[0], "xs login")
@@ -172,7 +202,7 @@ func TestDeploy(t *testing.T) {
 		myXsDeployOptions.Action = "ABORT"
 		myXsDeployOptions.OperationID = "12345"
 
-		e := runXsDeploy(myXsDeployOptions, &s, fExists, fCopy, fRemove)
+		e := runXsDeploy(myXsDeployOptions, &s, fExists, fCopy, fRemove, ioutil.Discard)
 		checkErr(t, e, "")
 
 		assert.Contains(t, s.calls[0], "xs bg-deploy -i 12345 -a abort")
@@ -199,7 +229,7 @@ func TestDeploy(t *testing.T) {
 		myXsDeployOptions.Mode = "BG_DEPLOY"
 		myXsDeployOptions.Action = "ABORT"
 
-		e := runXsDeploy(myXsDeployOptions, &s, fExists, fCopy, fRemove)
+		e := runXsDeploy(myXsDeployOptions, &s, fExists, fCopy, fRemove, ioutil.Discard)
 		checkErr(t, e, "OperationID was not provided")
 	})
 }
