@@ -273,7 +273,7 @@ public class MtaBuildTest extends BasePiperTest {
     @Test
     void canConfigureMTARName() {
 
-        stepRule.step.mtaBuild(script: nullScript, mtarName: 'custom.name')
+        stepRule.step.mtaBuild(script: nullScript, mtarName: 'custom.name.mtar')
 
         assert shellRule.shell.find(){ c -> c.contains('--mtar custom.name.mtar')}
     }

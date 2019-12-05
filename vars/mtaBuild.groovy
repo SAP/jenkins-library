@@ -41,7 +41,7 @@ import static com.sap.piper.Utils.downloadSettingsFromUrl
     'mtaJarLocation',
     /** Path or url to the mvn settings file that should be used as global settings file.*/
     'globalSettingsFile',
-    /** The name of the generated mtar file. The extension .mtar is appended to the provided name. */
+    /** The name of the generated mtar file including the mtar extension. */
     'mtarName',
     /**
      * mtaBuildTool cloudMbt only: The target platform to which the mtar can be deployed.
@@ -134,9 +134,10 @@ void call(Map parameters = [:]) {
 
             String mtarName = configuration.mtarName?.trim()
             if (!mtarName) {
-                mtarName = getMtaId(mtaYamlName)
+                def mtaId = getMtaId(mtaYamlName)
+                mtarName = "${mtaId}.mtar"
             }
-            options.push("--mtar ${mtarName}.mtar")
+            options.push("--mtar ${mtarName}")
 
             switch(configuration.mtaBuildTool) {
                 case 'classic':
@@ -165,7 +166,7 @@ void call(Map parameters = [:]) {
             $mtaCall
             """
 
-            script?.commonPipelineEnvironment?.setMtarFilePath("${mtarName}.mtar")
+            script?.commonPipelineEnvironment?.setMtarFilePath("${mtarName}")
         }
     }
 }
