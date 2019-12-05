@@ -127,3 +127,8 @@ def getLibrariesInfo() {
 
     return libraries
 }
+
+def getInstance() {
+	Jenkins.get()
+}
+
