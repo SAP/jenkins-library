@@ -15,7 +15,7 @@ import static com.sap.piper.Utils.downloadSettingsFromUrl
     /** The name of the application which is being built. If the parameter has been provided and no `mta.yaml` exists, the `mta.yaml` will be automatically generated using this parameter and the information (`name` and `version`) from `package.json` before the actual build starts.*/
     'applicationName',
     /**
-     * buildTool classic only: The target platform to which the mtar can be deployed.
+     * mtaBuildTool classic only: The target platform to which the mtar can be deployed.
      * @possibleValues 'CF', 'NEO', 'XSA'
      */
     'buildTarget',
@@ -23,7 +23,7 @@ import static com.sap.piper.Utils.downloadSettingsFromUrl
      * Tool to use when building the MTA
      * @possibleValues 'classic', 'cloudMbt'
      */
-    'buildTool',
+    'mtaBuildTool',
     /** @see dockerExecute */
     'dockerImage',
     /** @see dockerExecute */
@@ -41,8 +41,10 @@ import static com.sap.piper.Utils.downloadSettingsFromUrl
     'mtaJarLocation',
     /** Path or url to the mvn settings file that should be used as global settings file.*/
     'globalSettingsFile',
+    /** The name of the generated mtar file including its extension. */
+    'mtarName',
     /**
-     * buildTool cloudMbt only: The target platform to which the mtar can be deployed.
+     * mtaBuildTool cloudMbt only: The target platform to which the mtar can be deployed.
      * @possibleValues 'CF', 'NEO', 'XSA'
      */
     'platform',
@@ -70,7 +72,7 @@ void call(Map parameters = [:]) {
             .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS)
             .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName ?: env.STAGE_NAME, STEP_CONFIG_KEYS)
             .mixin(parameters, PARAMETER_KEYS)
-            .dependingOn('buildTool').mixin('dockerImage')
+            .dependingOn('mtaBuildTool').mixin('dockerImage')
             .use()
 
         new Utils().pushToSWA([
@@ -127,14 +129,17 @@ void call(Map parameters = [:]) {
             //[Q]: Why not yaml.dump()? [A]: This reformats the whole file.
             sh "sed -ie \"s/\\\${timestamp}/`date +%Y%m%d%H%M%S`/g\" \"${mtaYamlName}\""
 
-            def id = getMtaId(mtaYamlName)
-
             def mtaCall
             def options = []
-            options.push("--mtar ${id}.mtar")
 
+            String mtarName = configuration.mtarName?.trim()
+            if (!mtarName) {
+                def mtaId = getMtaId(mtaYamlName)
+                mtarName = "${mtaId}.mtar"
+            }
+            options.push("--mtar ${mtarName}")
 
-            switch(configuration.buildTool) {
+            switch(configuration.mtaBuildTool) {
                 case 'classic':
                     // If it is not configured, it is expected on the PATH
                     def mtaJar = configuration.mtaJarLocation ?: 'mta.jar'
@@ -144,11 +149,12 @@ void call(Map parameters = [:]) {
                     break
                 case 'cloudMbt':
                     options.push("--platform ${configuration.platform}")
+                    options.push("--target ./")
                     if (configuration.extension) options.push("--extensions=${configuration.extension}")
                     mtaCall = "mbt build ${options.join(' ')}"
                     break
                 default:
-                    error "[ERROR][${STEP_NAME}] BuildTool '${configuration.buildTool}' not supported!"
+                    error "[ERROR][${STEP_NAME}] MTA build tool '${configuration.mtaBuildTool}' not supported!"
             }
 
             echo "[INFO] Executing mta build call: '${mtaCall}'."
@@ -160,7 +166,7 @@ void call(Map parameters = [:]) {
             $mtaCall
             """
 
-            script?.commonPipelineEnvironment?.setMtarFilePath("${id}.mtar")
+            script?.commonPipelineEnvironment?.setMtarFilePath("${mtarName}")
         }
     }
 }
