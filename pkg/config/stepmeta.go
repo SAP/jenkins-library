@@ -192,7 +192,7 @@ func (m *StepData) GetContextParameterFilters() StepFilters {
 
 	containerFilters := []string{}
 	if len(m.Spec.Containers) > 0 {
-		parameterKeys := []string{"containerCommand", "containerShell", "dockerEnvVars", "dockerImage", "dockerOptions", "dockerPullImage", "dockerVolumeBind", "dockerWorkspace"}
+		parameterKeys := []string{"containerCommand", "containerShell", "docker", "dockerEnvVars", "dockerImage", "dockerOptions", "dockerPullImage", "dockerVolumeBind", "dockerWorkspace"}
 		for _, container := range m.Spec.Containers {
 			for _, condition := range container.Conditions {
 				for _, dependentParam := range condition.Params {
@@ -228,6 +228,7 @@ func (m *StepData) GetContextDefaults(stepName string) (io.ReadCloser, error) {
 			if len(container.Conditions) > 0 {
 				key = container.Conditions[0].Params[0].Value
 			}
+
 			p := map[string]interface{}{}
 			if key != "" {
 				root[key] = p
@@ -245,12 +246,20 @@ func (m *StepData) GetContextDefaults(stepName string) (io.ReadCloser, error) {
 			p["dockerPullImage"] = container.ImagePullPolicy != "Never"
 			p["dockerWorkspace"] = container.WorkingDir
 			p["dockerOptions"] = optionsAsStringSlice(container.Options)
+
+			// backward compatibility for steps configuring the docker related properties in a nested map
+			dockerProps := map[string]interface{}{}
+			dockerProps["dockerImage"] = p["dockerImage"]
+			dockerProps["dockerPullImage"] = p["dockerPullImage"]
+			dockerProps["pullImage"] = p["dockerPullImage"]
+			dockerProps["envVars"] = p["dockerEnvVars"]
+			dockerProps["options"] = p["dockerOptions"]
+			p["docker"] = dockerProps
 			//p["dockerVolumeBind"] = volumeMountsAsStringSlice(container.VolumeMounts)
 
 			// Ready command not relevant for main runtime container so far
 			//p[] = container.ReadyCommand
 		}
-
 	}
 
 	if len(m.Spec.Sidecars) > 0 {
