@@ -81,12 +81,10 @@ Copy the sources of the application into your own Git repository. While we will 
    ![Clicke New Item](images/JenkinsHomeMenu-1.png "Jenkins Home Menu")
    </p>
 
-1. Provide a name for your new item (for example, *My First Pipeline*) and select **Pipeline**.
+1. Provide a name for your new item (for example, *My First Pipeline*) and select **Multibranch Pipeline**.
    <p align="center">
    ![Create Pipeline Job](images/JenkinsNewItemPipeline-1.png "Jenkins New Item")
    </p>
-
-1. For **Definition** in the **Pipeline** options, choose **Pipeline script from SCM**.
 
 1. For **SCM**, choose **Git**.
 
