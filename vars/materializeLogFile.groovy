@@ -7,7 +7,7 @@ import groovy.transform.Field
 import java.util.UUID
 import java.io.File
 import com.cloudbees.groovy.cps.NonCPS
-import jenkins.model.Jenkins
+import com.sap.piper.JenkinsUtils
 
 import static com.sap.piper.Prerequisites.checkScript
 
@@ -16,6 +16,7 @@ import static com.sap.piper.Prerequisites.checkScript
 
 @Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
+
 
 /**
  * This step allows you to materialize the Jenkins log file of the running build
@@ -27,41 +28,40 @@ void call(Map parameters = [:], body) {
 		libraryRepositoryUrl: 'https://github.wdf.sap.corp/ContinuousDelivery/piper-library/'
 	)
 	{
+		def jenkinsUtils = parameters.jenkinsUtilsStub ?: new JenkinsUtils()
 		checkScript(this, parameters) ?: this
-		withMaterializedLogFile(body)
+		withMaterializedLogFile(body, jenkinsUtils)
 	}
 }
 
 
 @NonCPS
-def writeLogToFile(logFileName) {
+def writeLogToFile(fp) {
 	def logInputStream = currentBuild.rawBuild.getLogInputStream()
-	def fp = getFilePath(logFileName)
 	fp.copyFrom(logInputStream)
 	logInputStream.close()
 }
 
 @NonCPS
-def deleteLogFile(logFileName) {
-	def fp = getFilePath(logFileName)
+def deleteLogFile(fp) {
 	if(fp.exists()) {
 		fp.delete()
 	}
 }
 
-def getFilePath(logFileName) {
+def getFilePath(logFileName, jenkinsUtils) {
 	def nodeName = env['NODE_NAME']
 	if (nodeName == null || nodeName.size() == 0) {
 		throw new IllegalArgumentException("Environment variable NODE_NAME is undefined")
 	}
 	def file = new File(logFileName)
-	def instance = Jenkins.get()
+	def instance = jenkinsUtils.getInstance()
 	if (instance == null) { // fall back
 		return new FilePath(file);
 	} else {
 		def computer = instance.getComputer(nodeName)
 		if (computer == null) { // fall back
-			println "Jenkins returned computer instance null on node " + nodeName
+			println "Warning: Jenkins returned computer instance null on node " + nodeName
 			return new FilePath(file);
 		}
 		def channel = computer.getChannel()
@@ -71,12 +71,13 @@ def getFilePath(logFileName) {
 
 
 // The method cannot be NonCPS because we call CPS
-def withMaterializedLogFile(body) {
+def withMaterializedLogFile(body, jenkinsUtils) {
 	def tempLogFileName = "${env.WORKSPACE}/log-${UUID.randomUUID().toString()}.txt"
-	writeLogToFile(tempLogFileName)
+	def fp = getFilePath(tempLogFileName, jenkinsUtils)
+	writeLogToFile(fp)
 	try {
 		body(tempLogFileName)
 	} finally {
-		deleteLogFile(tempLogFileName)
+		deleteLogFile(fp)
 	}
 }
