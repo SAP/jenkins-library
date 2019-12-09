@@ -81,13 +81,13 @@ func (c *Client) SendRequest(method, url string, body io.Reader, header http.Hea
 	}
 
 	switch response.StatusCode {
-	case 401:
+	case http.StatusUnauthorized:
 		logger.WithField("HTTP Error", "401 (Unauthorized)").Error("Credentials invalid, please check your user credentials!")
-	case 403:
+	case http.StatusForbidden:
 		logger.WithField("HTTP Error", "403 (Forbidden)").Error("Permission issue, please check your user permissions!")
-	case 404:
+	case http.StatusNotFound:
 		logger.WithField("HTTP Error", "404 (Not Found)").Error("Requested resource could not be found")
-	case 500:
+	case http.StatusInternalServerError:
 		logger.WithField("HTTP Error", "500 (Internal Server Error)").Error("Unknown error occured.")
 	}
 
