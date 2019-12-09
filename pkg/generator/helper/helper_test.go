@@ -230,3 +230,17 @@ func TestFlagType(t *testing.T) {
 		assert.Equal(t, v.expected, flagType(v.input), fmt.Sprintf("wrong flag type for run %v", k))
 	}
 }
+
+func TestGetStringSliceFromInterface(t *testing.T) {
+	tt := []struct {
+		input    interface{}
+		expected []string
+	}{
+		{input: []interface{}{"Test", 2}, expected: []string{"Test", "2"}},
+		{input: "Test", expected: []string{"Test"}},
+	}
+
+	for _, v := range tt {
+		assert.Equal(t, v.expected, getStringSliceFromInterface(v.input), "interface conversion failed")
+	}
+}
