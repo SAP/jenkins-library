@@ -9,7 +9,7 @@ This section describes the adjustments that might be necessary.
 * You have installed Java Runtime Environment 8.
 * You have installed Jenkins v 2.60.3 or higher running on Linux. We've tested with debian-stretch.
 * A Jenkins user with administration rights.
-* The Jenkins instance has access to [github.com][github].
+* Your Jenkins instance has access to [github.com][github].
 
 ## Docker
 
