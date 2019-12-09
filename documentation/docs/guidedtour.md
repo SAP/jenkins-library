@@ -86,14 +86,17 @@ Copy the sources of the application into your own Git repository. While we will 
    ![Create Pipeline Job](images/JenkinsNewItemPipeline-1.png "Jenkins New Item")
    </p>
 
-1. For **SCM**, choose **Git**.
+!!! note
+   Make sure you don't select "Pipeline" by accident, **Multibranch Pipeline** is the correct type.
 
-1. For **Repository URL** in the **Repositories** section, enter the URL of your Git repository, for example `https://github.com/<your-org>/cloud-cf-helloworld-nodejs`. **Note:** If your repository is protected, you must provide your credentials in the **Credentials** section.
+1. For **Branch Sources**, add a **Git** source.
+
+1. For **Project Repository**, enter the URL of your Git repository, for example `https://github.com/<your-org>/cloud-cf-helloworld-nodejs`. **Note:** If your repository is protected, you must provide your credentials in the **Credentials** section.
    <p align="center">
    ![Create Pipeline Job](images/JenkinsNewItemPipeline-2.png "Jenkins New Item")
    </p>
 
-1. For **Branch Specifier** in the **Branches to build** section, enter the branch name `*/1_REST_persist_in_Memory`.
+1. In **Behaviors**, select **Filter by name (with wildcards)**, enter the branch name `*/1_REST_persist_in_Memory` as **Include**.
 
 1. Choose **Save**.
 
