@@ -35,7 +35,7 @@ type Sender interface {
 // SendRequest sends an http request with a defined method
 func (c *Client) SendRequest(method, url string, body io.Reader, header http.Header, cookies []*http.Cookie) (*http.Response, error) {
 
-	logger := log.Entry().WithField("package", "github.wdf.sap.corp/ContinuousDelivery/piper-library/pkg/http")
+	logger := log.Entry().WithField("package", "SAP/jenkins-library/pkg/http")
 
 	c.applyDefaults()
 
