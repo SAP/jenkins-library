@@ -83,22 +83,31 @@ Copy the sources of the application into your own Git repository. While we will 
 
 1. Provide a name for your new item (for example, *My First Pipeline*) and select **Multibranch Pipeline**.
    <p align="center">
-   ![Create Pipeline Job](images/JenkinsNewItemPipeline-1.png "Jenkins New Item")
+   ![Create Pipeline Job](images/JenkinsNewItemPipeline.png "Jenkins New Item")
    </p>
+   **Note:** The ready-made continuous delivery pipelines of project "Piper" must run as **Multibranch Pipeline**.
 
-1. For **SCM**, choose **Git**.
-
-1. For **Repository URL** in the **Repositories** section, enter the URL of your Git repository, for example `https://github.com/<your-org>/cloud-cf-helloworld-nodejs`. **Note:** If your repository is protected, you must provide your credentials in the **Credentials** section.
+1. For **Branch Sources**, choose **Add source**, select **Git** as source repository.
    <p align="center">
-   ![Create Pipeline Job](images/JenkinsNewItemPipeline-2.png "Jenkins New Item")
+   ![Create Pipeline Job](images/JenkinsNewItemPipeline-AddSource.png "Branch Sources - Add source")
    </p>
 
-1. For **Branch Specifier** in the **Branches to build** section, enter the branch name `*/1_REST_persist_in_Memory`.
+1. For **Project Repository** in the **Git** section, enter the URL of your Git repository, for example `https://github.com/<your-org>/cloud-cf-helloworld-nodejs`. **Note:** If your repository is protected, you must provide your credentials in **Credentials**.
 
-1. Choose **Save**.
+1. For **Discover branches**, choose **Add** and **Filter by name (with wildcards)**.
+   <p align="center">
+   ![Create Pipeline Job](images/JenkinsNewItemPipeline-DiscoverBranch.png "Discover branches - Add")
+   </p>
+   A multibranch pipeline can execute different Jenkinsfiles for different branches. In this case, however, configure the pipeline of a single branch only.
 
-1. To run your pipeline, choose **Build Now** in the job UI. **Result:** The pipeline processed the single stage "prepare".
+1. For **Include** in the **Filter by name** section, enter the branch name `1_REST_persist_in_Memory`.
+   <p align="center">
+   ![Create Pipeline Job](images/JenkinsNewItemPipeline-FilterByName.png "Discover Branches - Filter By Name")
+   </p>
 
+1. Choose **Save**. **Result:** Jenkins scans the repository for branches and filters them according to the specified **Includes**. If the branch is detected, it is built.
+
+For additional information about multibranch pipelines, please refer to the [Jenkins documentation][jenkins-io-multibranch].
 
 ## Add a Build Step
 
@@ -184,12 +193,14 @@ Open the application name to get into the `Application Overview`. Open the **App
 
 ## What's Next
 
-You are now familiar with the basics of using project "Piper". Through the concept of pipeline as code, project "Piper" and Jenkins pipelines are extremely powerful. While Jenkins pipelines offer a full set of common programming features, project "Piper" adds SAP-specific flavors. Have a look at the different **Scenarios**  to understand how to easily integrate SAP systems with default pipelines. Browse the steadily increasing list of features you can implement through the project "Piper" **Steps**.
+You are now familiar with the basics of using project "Piper". Through the concept of pipeline as code, project "Piper" and Jenkins pipelines are extremely powerful. While Jenkins pipelines offer a full set of common programming features, project "Piper" adds SAP-specific flavors. Have a look at the different **Scenarios**  to understand how to easily integrate SAP systems with defaults.
+Dive into the ready-made continuous delivery pipelines: the **General Purpose Pipeline**
+and **SAP Cloud SDK Pipeline** help you quickly build and deliver your apps.
+Browse the steadily increasing list of features you can implement through the project "Piper" **Steps**.
 
 The **Configuration** pattern supports simple pipelines that can be reused by multiple applications. To understand the principles of inheritance and customization, have a look at the the [configuration][resources-configuration] documentation.
 
 Please also consult the blog post on setting up [Continuous Delivery for S/4HANA extensions][sap-blog-ci-cd] and get tons of informations around the application development with the [S/4HANA Cloud SDK][sap-blog-s4-sdk-first-steps].
-
 
 [guidedtour-my-own-jenkins]:         myownjenkins.md
 [guidedtour-sample.config]:          samples/cloud-cf-helloworld-nodejs/pipeline/config.yml
@@ -210,6 +221,7 @@ Please also consult the blog post on setting up [Continuous Delivery for S/4HANA
 [github]:                            https://github.com
 [jenkins-io-documentation]:          https://jenkins.io/doc/
 [jenkins-io-jenkinsfile]:            https://jenkins.io/doc/book/pipeline/jenkinsfile
+[jenkins-io-multibranch]:            https://jenkins.io/doc/book/pipeline/multibranch/
 
 [github-create-org]:                 https://help.github.com/en/articles/creating-a-new-organization-from-scratch
 [github-duplicate-repo]:             [https://help.github.com/en/articles/duplicating-a-repository]

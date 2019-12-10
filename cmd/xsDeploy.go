@@ -143,11 +143,14 @@ func runXsDeploy(XsDeployOptions xsDeployOptions, s shellRunner,
 	performLogout := mode == Deploy || (mode == BGDeploy && action != None)
 	log.Entry().Debugf("performLogin: %t, performLogout: %t", performLogin, performLogout)
 
-	if exists, e := fExists(XsDeployOptions.MtaPath); action == None && !exists {
+	{
+		exists, e := fExists(XsDeployOptions.MtaPath)
 		if e != nil {
 			return e
 		}
-		return errors.New(fmt.Sprintf("Deployable '%s' does not exist", XsDeployOptions.MtaPath))
+		if action == None && !exists {
+			return errors.New(fmt.Sprintf("Deployable '%s' does not exist", XsDeployOptions.MtaPath))
+		}
 	}
 
 	if action != None && len(XsDeployOptions.OperationID) == 0 {
@@ -197,11 +200,14 @@ func runXsDeploy(XsDeployOptions xsDeployOptions, s shellRunner,
 
 	if loginErr == nil && err == nil {
 
-		if exists, e := fExists(xsSessionFile); !exists {
+		{
+			exists, e := fExists(xsSessionFile)
 			if e != nil {
 				return e
 			}
-			return fmt.Errorf("xs session file does not exist (%s)", xsSessionFile)
+			if !exists {
+				return fmt.Errorf("xs session file does not exist (%s)", xsSessionFile)
+			}
 		}
 
 		copyFileFromPwdToHome(xsSessionFile, fCopy)
