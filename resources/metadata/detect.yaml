@@ -27,12 +27,6 @@ spec:
         - STEPS
       - name: buildTool
         description: Defines the tool which is used for building the artifact.
-        longDescription: |
-          Defines the tool which is used for building the artifact.<br />
-          Currently, it is possible to select two behaviors of the step:
-          <br />
-          1. Golang-specific behavior (`buildTool: golang`). Assumption here is that project uses the dependency management tool _dep_<br />
-          2. Custom-specific behavior for all other values of `buildTool`
         type: string
         mandatory: true
         scope:
@@ -49,6 +43,8 @@ spec:
         - STEPS
       - name: projectName
         description: Name of the Synopsis Detect (formerly BlackDuck) project.
+        aliases:
+          - name: detect/projectName
         type: string
         mandatory: true
         scope:
@@ -57,6 +53,8 @@ spec:
         - STEPS
       - name: projectVersion
         description: Version of the Synopsis Detect (formerly BlackDuck) project.
+        aliases:
+          - name: detect/projectVersion
         type: string
         mandatory: true
         scope:
@@ -65,6 +63,8 @@ spec:
         - STEPS
       - name: scanners
         description: List of scanners to be used for Synopsis Detect (formerly BlackDuck) scan.
+        aliases:
+          - name: detect/scanners
         type: '[]string'
         mandatory: false
         default:
@@ -77,6 +77,8 @@ spec:
         - STEPS
       - name: scanPaths
         description: List of paths which should be scanned by the Synopsis Detect (formerly BlackDuck) scan.
+        aliases:
+          - name: detect/scanPaths
         type: '[]string'
         mandatory: false
         default:
@@ -87,6 +89,8 @@ spec:
         - STEPS
       - name: scanProperties
         description: Properties passed to the Synopsis Detect (formerly BlackDuck) scan. You can find details in the [Synopsis Detect documentation](https://synopsys.atlassian.net/wiki/spaces/INTDOCS/pages/622846/Using+Synopsys+Detect+Properties)
+        aliases:
+          - name: detect/scanProperties
         type: '[]string'
         mandatory: false
         default:
@@ -102,6 +106,8 @@ spec:
         - STEPS
       - name: serverUrl
         description: Server url to the Synopsis Detect (formerly BlackDuck) Server.
+        aliases:
+          - name: detect/serverUrl
         type: string
         mandatory: false
         scope:
