@@ -129,5 +129,5 @@ def getLibrariesInfo() {
 }
 
 def getInstance() {
-	Jenkins.get()
+    Jenkins.get()
 }
