@@ -23,10 +23,9 @@ import static com.sap.piper.Prerequisites.checkScript
  */
 @GenerateDocumentation
 void call(Map parameters = [:], body) {
-	handlePipelineStepErrors (stepName: STEP_NAME, stepParameters: parameters)
-	{
+	handlePipelineStepErrors (stepName: STEP_NAME, stepParameters: parameters) {
 		def jenkinsUtils = parameters.jenkinsUtilsStub ?: new JenkinsUtils()
-		checkScript(this, parameters) ?: this
+		checkScript(this, parameters)
 		withMaterializedLogFile(body, jenkinsUtils)
 	}
 }
@@ -53,11 +52,13 @@ def getFilePath(logFileName, jenkinsUtils) {
 	}
 	def file = new File(logFileName)
 	def instance = jenkinsUtils.getInstance()
-	if (instance == null) { // fall back
+	if (instance == null) {
+		// fall back
 		return new FilePath(file);
 	} else {
 		def computer = instance.getComputer(nodeName)
-		if (computer == null) { // fall back
+		if (computer == null) {
+			// fall back
 			println "Warning: Jenkins returned computer instance null on node " + nodeName
 			return new FilePath(file);
 		}

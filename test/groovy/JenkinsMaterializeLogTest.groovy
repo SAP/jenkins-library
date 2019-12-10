@@ -21,13 +21,12 @@ import com.sap.piper.JenkinsUtils
 import jenkins.model.Jenkins
 
 class JenkinsMaterializeLogTest extends BasePiperTest {
-	
+
 	private ExpectedException thrown = ExpectedException.none()
 	private JenkinsLoggingRule loggingRule = new JenkinsLoggingRule(this)
 	private JenkinsWriteFileRule writeFileRule = new JenkinsWriteFileRule(this)
 	private JenkinsStepRule stepRule = new JenkinsStepRule(this)
-	private JenkinsEnvironmentRule environmentRule = new JenkinsEnvironmentRule(this)
-	
+
 	class JenkinsUtilsMock extends JenkinsUtils {
 		def getInstance() {
 			def map = [getComputer:{return null}];
@@ -37,27 +36,20 @@ class JenkinsMaterializeLogTest extends BasePiperTest {
 
 	@Rule
 	public RuleChain ruleChain = Rules
-		.getCommonRules(this)
-		.around(new JenkinsReadYamlRule(this))
-		.around(thrown)
-		.around(loggingRule)
-		.around(new JenkinsReadMavenPomRule(this, 'test/resources/versioning/MavenArtifactVersioning'))
-		.around(writeFileRule)
-		.around(stepRule)
-		.around(environmentRule)
+	.getCommonRules(this)
+	.around(new JenkinsReadYamlRule(this))
+	.around(thrown)
+	.around(loggingRule)
+	.around(new JenkinsReadMavenPomRule(this, 'test/resources/versioning/MavenArtifactVersioning'))
+	.around(writeFileRule)
+	.around(stepRule)
 
-    @Before
-    void init() {
-		
-    }
-
-    @Test
-    void testMaterializeLog() {
+	@Test
+	void testMaterializeLog() {
 		def map = [name: "Hugo", script: nullScript, jenkinsUtilsStub: new JenkinsUtilsMock()]
 		def body = { name -> println "log file: " + name }
 		binding.setVariable('currentBuild', [result: 'UNSTABLE', rawBuild: [getLogInputStream: {return new StringBufferInputStream("this is the input")}]])
 		binding.setVariable('env', [NODE_NAME: 'anynode', WORKSPACE: '.'])
 		stepRule.step.jenkinsMaterializeLog(map, body)
-    }
-	
+	}
 }
