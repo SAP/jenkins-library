@@ -12,7 +12,6 @@ type sonarExecuteScanOptions struct {
 	Instance                  string `json:"instance,omitempty"`
 	DisableInlineComments     string `json:"disableInlineComments,omitempty"`
 	GithubOrg                 string `json:"githubOrg,omitempty"`
-	Verbose                   string `json:"verbose,omitempty"`
 	LegacyPRHandling          string `json:"legacyPRHandling,omitempty"`
 	GithubRepo                string `json:"githubRepo,omitempty"`
 	GithubAPIURL              string `json:"githubApiUrl,omitempty"`
@@ -50,17 +49,14 @@ func addSonarExecuteScanFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVar(&mySonarExecuteScanOptions.Instance, "instance", "SonarCloud", "The name of the SonarQube instance defined in the Jenkins settings.")
 	cmd.Flags().StringVar(&mySonarExecuteScanOptions.DisableInlineComments, "disableInlineComments", os.Getenv("PIPER_disableInlineComments"), "Pull-Request voting only: Disables the pull-request decoration with inline comments. deprecated: only supported in < 7.2")
 	cmd.Flags().StringVar(&mySonarExecuteScanOptions.GithubOrg, "githubOrg", os.Getenv("PIPER_githubOrg"), "Pull-Request voting only: The Github organization. @default: `commonPipelineEnvironment.getGithubOrg()`")
-	cmd.Flags().StringVar(&mySonarExecuteScanOptions.Verbose, "verbose", os.Getenv("PIPER_verbose"), "Print more detailed information into the log.")
 	cmd.Flags().StringVar(&mySonarExecuteScanOptions.LegacyPRHandling, "legacyPRHandling", os.Getenv("PIPER_legacyPRHandling"), "Pull-Request voting only: Activates the pull-request handling using the [GitHub Plugin](https://docs.sonarqube.org/display/PLUG/GitHub+Plugin) (deprecated). deprecated: only supported in < 7.2")
 	cmd.Flags().StringVar(&mySonarExecuteScanOptions.GithubRepo, "githubRepo", os.Getenv("PIPER_githubRepo"), "Pull-Request voting only: The Github repository. @default: `commonPipelineEnvironment.getGithubRepo()`")
 	cmd.Flags().StringVar(&mySonarExecuteScanOptions.GithubAPIURL, "githubApiUrl", "https://api.github.com", "Pull-Request voting only: The URL to the Github API. see [GitHub plugin docs](https://docs.sonarqube.org/display/PLUG/GitHub+Plugin#GitHubPlugin-Usage) deprecated: only supported in < 7.2")
 	cmd.Flags().StringVar(&mySonarExecuteScanOptions.Organization, "organization", os.Getenv("PIPER_organization"), "Organization that the project will be assigned to in SonarCloud.io.")
 	cmd.Flags().StringVar(&mySonarExecuteScanOptions.Options, "options", "[]", "A list of options which are passed to the `sonar-scanner`.")
-	cmd.Flags().StringVar(&mySonarExecuteScanOptions.CustomTlsCertificateLinks, "customTlsCertificateLinks", "[]", "List containing download links of custom TLS certificates. This is required to ensure trusted connections to instances with custom certificates.")
+	cmd.Flags().StringVar(&mySonarExecuteScanOptions.CustomTLSCertificateLinks, "customTlsCertificateLinks", "[]", "List containing download links of custom TLS certificates. This is required to ensure trusted connections to instances with custom certificates.")
 	cmd.Flags().StringVar(&mySonarExecuteScanOptions.ProjectVersion, "projectVersion", os.Getenv("PIPER_projectVersion"), "The project version that is reported to SonarQube. @default: major number of `commonPipelineEnvironment.getArtifactVersion()`")
 
-	cmd.MarkFlagRequired("githubOrg")
-	cmd.MarkFlagRequired("githubRepo")
 }
 
 // retrieve step metadata
@@ -87,13 +83,6 @@ func sonarExecuteScanMetadata() config.StepData {
 						Name:      "githubOrg",
 						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
-						Mandatory: true,
-						Aliases:   []config.Alias{},
-					},
-					{
-						Name:      "verbose",
-						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
-						Type:      "string",
 						Mandatory: false,
 						Aliases:   []config.Alias{},
 					},
@@ -108,7 +97,7 @@ func sonarExecuteScanMetadata() config.StepData {
 						Name:      "githubRepo",
 						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
-						Mandatory: true,
+						Mandatory: false,
 						Aliases:   []config.Alias{},
 					},
 					{
