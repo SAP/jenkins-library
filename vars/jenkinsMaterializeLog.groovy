@@ -23,59 +23,59 @@ import static com.sap.piper.Prerequisites.checkScript
  */
 @GenerateDocumentation
 void call(Map parameters = [:], body) {
-	handlePipelineStepErrors (stepName: STEP_NAME, stepParameters: parameters) {
-		def jenkinsUtils = parameters.jenkinsUtilsStub ?: new JenkinsUtils()
-		checkScript(this, parameters)
-		withMaterializedLogFile(body, jenkinsUtils)
-	}
+    handlePipelineStepErrors (stepName: STEP_NAME, stepParameters: parameters) {
+        def jenkinsUtils = parameters.jenkinsUtilsStub ?: new JenkinsUtils()
+        checkScript(this, parameters)
+        withMaterializedLogFile(body, jenkinsUtils)
+    }
 }
 
 
 @NonCPS
 def writeLogToFile(fp) {
-	def logInputStream = currentBuild.rawBuild.getLogInputStream()
-	fp.copyFrom(logInputStream)
-	logInputStream.close()
+    def logInputStream = currentBuild.rawBuild.getLogInputStream()
+    fp.copyFrom(logInputStream)
+    logInputStream.close()
 }
 
 @NonCPS
 def deleteLogFile(fp) {
-	if(fp.exists()) {
-		fp.delete()
-	}
+    if(fp.exists()) {
+        fp.delete()
+    }
 }
 
 def getFilePath(logFileName, jenkinsUtils) {
-	def nodeName = env['NODE_NAME']
-	if (nodeName == null || nodeName.size() == 0) {
-		throw new IllegalArgumentException("Environment variable NODE_NAME is undefined")
-	}
-	def file = new File(logFileName)
-	def instance = jenkinsUtils.getInstance()
-	if (instance == null) {
-		// fall back
-		return new FilePath(file);
-	} else {
-		def computer = instance.getComputer(nodeName)
-		if (computer == null) {
-			// fall back
-			println "Warning: Jenkins returned computer instance null on node " + nodeName
-			return new FilePath(file);
-		}
-		def channel = computer.getChannel()
-		return new FilePath(channel, file)
-	}
+    def nodeName = env['NODE_NAME']
+    if (nodeName == null || nodeName.size() == 0) {
+        throw new IllegalArgumentException("Environment variable NODE_NAME is undefined")
+    }
+    def file = new File(logFileName)
+    def instance = jenkinsUtils.getInstance()
+    if (instance == null) {
+        // fall back
+        return new FilePath(file);
+    } else {
+        def computer = instance.getComputer(nodeName)
+        if (computer == null) {
+            // fall back
+            println "Warning: Jenkins returned computer instance null on node " + nodeName
+            return new FilePath(file);
+        }
+        def channel = computer.getChannel()
+        return new FilePath(channel, file)
+    }
 }
 
 
 // The method cannot be NonCPS because we call CPS
 def withMaterializedLogFile(body, jenkinsUtils) {
-	def tempLogFileName = "${env.WORKSPACE}/log-${UUID.randomUUID().toString()}.txt"
-	def fp = getFilePath(tempLogFileName, jenkinsUtils)
-	writeLogToFile(fp)
-	try {
-		body(tempLogFileName)
-	} finally {
-		deleteLogFile(fp)
-	}
+    def tempLogFileName = "${env.WORKSPACE}/log-${UUID.randomUUID().toString()}.txt"
+    def fp = getFilePath(tempLogFileName, jenkinsUtils)
+    writeLogToFile(fp)
+    try {
+        body(tempLogFileName)
+    } finally {
+        deleteLogFile(fp)
+    }
 }
