@@ -1,0 +1,172 @@
+metadata:
+  name: executeProtecodeScan
+  description: Protecode is an Open Source Vulnerability Scanner that is capable of scanning binaries. It can be used to scan docker images but is supports many other programming languages especially those of the C family. You can find more details on its capabilities in the [OS3 - Open Source Software Security JAM](https://jam4.sapjam.com/groups/XgeUs0CXItfeWyuI4k7lM3/overview_page/aoAsA0k4TbezGFyOkhsXFs). For getting access to Protecode please visit the [guide](https://go.sap.corp/protecode).
+  longDescription: |-
+    Protecode is an Open Source Vulnerability Scanner that is capable of scanning binaries. It can be used to scan docker images but is supports many other programming languages especially those of the C family. You can find more details on its capabilities in the [OS3 - Open Source Software Security JAM](https://jam4.sapjam.com/groups/XgeUs0CXItfeWyuI4k7lM3/overview_page/aoAsA0k4TbezGFyOkhsXFs). For getting access to Protecode please visit the [guide](https://go.sap.corp/protecode).
+
+    !!! info "New: Using executeProtecodeScan for Docker images on JaaS"
+        **This step now also works on "Jenkins as a Service (JaaS)"!**<br />
+        For the JaaS use case where the execution happens in a Kubernetes cluster without access to a Docker daemon [skopeo](https://github.com/containers/skopeo) is now used silently in the background to save a Docker image retrieved from a registry.
+
+
+    !!! hint "Auditing findings (Triaging)"
+        Triaging is now supported by the Protecode backend and also Piper does consider this information during the analysis of the scan results though product versions are not supported by Protecode. Therefore please make sure that the `fileName` you are providing does either contain a stable version or that it does not contain one at all. By ensuring that you are able to triage CVEs globally on the upload file's name without affecting any other artifacts scanned in the same Protecode group and as such triaged vulnerabilities will be considered during the next scan and will not fail the build anymore.
+spec:
+  inputs:
+    params:
+    - name: protecodeExcludeCVEs
+      type: string
+      description: 'DEPRECATED: Do use triaging within the Protecode UI instead'
+      mandatory: false
+      scope:
+      - GENERAL
+      - PARAMETERS
+      - STAGES
+      - STEPS
+      default: []
+    - name: protecodeFailOnSevereVulnerabilities
+      type: bool
+      description: Whether to fail the job on severe vulnerabilties or not
+      mandatory: false
+      scope:
+      - GENERAL
+      - PARAMETERS
+      - STAGES
+      - STEPS
+      default: true
+    - name: dockerRegistryUrl
+      type: string
+      description: The reference to the docker registry to scan with Protecode
+      mandatory: false
+      scope:
+      - GENERAL
+      - PARAMETERS
+      - STAGES
+      - STEPS
+      default: null
+    - name: cleanupMode
+      type: string
+      description: Decides which parts are removed from the Protecode backend after the scan
+      mandatory: false
+      scope:
+      - GENERAL
+      - PARAMETERS
+      - STAGES
+      - STEPS
+      default: binary
+    - name: filePath
+      type: string
+      description: The path to the file from local workspace to scan with Protecode
+      mandatory: false
+      scope:
+      - GENERAL
+      - PARAMETERS
+      - STAGES
+      - STEPS
+      default: null
+    - name: addSideBarLink
+      type: bool
+      description: Whether to create a side bar link pointing to the report produced by Protecode or not
+      mandatory: false
+      scope:
+      - GENERAL
+      - PARAMETERS
+      - STAGES
+      - STEPS
+      default: true
+    - name: verbose
+      type: bool
+      description: Whether to log verbose information or not
+      mandatory: false
+      scope:
+      - GENERAL
+      - PARAMETERS
+      - STAGES
+      - STEPS
+      default: false
+    - name: protecodeTimeoutMinutes
+      type: string
+      description: The timeout to wait for the scan to finish
+      mandatory: false
+      scope:
+      - GENERAL
+      - PARAMETERS
+      - STAGES
+      - STEPS
+      default: 60
+    - name: protecodeServerUrl
+      type: string
+      description: The URL to the Protecode backend
+      mandatory: false
+      scope:
+      - GENERAL
+      - PARAMETERS
+      - STAGES
+      - STEPS
+      default: https://protecode.c.eu-de-2.cloud.sap
+    - name: reportFileName
+      type: string
+      description: The file name of the report to be created
+      mandatory: false
+      scope:
+      - GENERAL
+      - PARAMETERS
+      - STAGES
+      - STEPS
+      default: protecode_report.pdf
+    - name: useCallback
+      type: bool
+      description: Whether to the Protecode backend's callback or poll for results
+      mandatory: false
+      scope:
+      - GENERAL
+      - PARAMETERS
+      - STAGES
+      - STEPS
+      default: false
+    - name: fetchUrl
+      type: string
+      description: The URL to fetch the file to scan with Protecode which must be accessible via public HTTP GET request
+      mandatory: false
+      scope:
+      - GENERAL
+      - PARAMETERS
+      - STAGES
+      - STEPS
+      default: null
+    - name: protecodeGroup
+      type: string
+      description: The Protecode group ID of your team
+      mandatory: true
+      scope:
+      - GENERAL
+      - PARAMETERS
+      - STAGES
+      - STEPS
+      default: null
+    - name: reuseExisting
+      type: bool
+      description: Whether to reuse an existing product instead of creating a new one
+      mandatory: false
+      scope:
+      - GENERAL
+      - PARAMETERS
+      - STAGES
+      - STEPS
+      default: false
+    - name: user
+      type: string
+      description: user which is used for the protecode scan
+    - name: password
+      type: string
+      description: password for the user
+    - name: protecodeCredentialsId
+      type: string
+      description: test
+    secrets:
+    - name: protecodeCredentialsId
+      type: jenkins
+    - name: dockerCredentialsId
+      type: jenkins
+  containers:
+  - image: null
