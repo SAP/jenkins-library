@@ -23,10 +23,7 @@ import static com.sap.piper.Prerequisites.checkScript
  */
 @GenerateDocumentation
 void call(Map parameters = [:], body) {
-	handlePipelineStepErrors (stepName: STEP_NAME, stepParameters: parameters,
-		libraryDocumentationUrl: 'https://github.wdf.sap.corp/pages/ContinuousDelivery/piper-doc/',
-		libraryRepositoryUrl: 'https://github.wdf.sap.corp/ContinuousDelivery/piper-library/'
-	)
+	handlePipelineStepErrors (stepName: STEP_NAME, stepParameters: parameters)
 	{
 		def jenkinsUtils = parameters.jenkinsUtilsStub ?: new JenkinsUtils()
 		checkScript(this, parameters) ?: this
