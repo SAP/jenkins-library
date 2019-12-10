@@ -20,7 +20,7 @@ import util.Rules
 import com.sap.piper.JenkinsUtils
 import jenkins.model.Jenkins
 
-class MaterializeLogFileTest extends BasePiperTest {
+class JenkinsMaterializeLogTest extends BasePiperTest {
 	
 	private ExpectedException thrown = ExpectedException.none()
 	private JenkinsLoggingRule loggingRule = new JenkinsLoggingRule(this)
@@ -57,7 +57,7 @@ class MaterializeLogFileTest extends BasePiperTest {
 		def body = { name -> println "log file: " + name }
 		binding.setVariable('currentBuild', [result: 'UNSTABLE', rawBuild: [getLogInputStream: {return new StringBufferInputStream("this is the input")}]])
 		binding.setVariable('env', [NODE_NAME: 'anynode', WORKSPACE: '.'])
-		stepRule.step.materializeLogFile(map, body)
+		stepRule.step.jenkinsMaterializeLog(map, body)
     }
 	
 }
