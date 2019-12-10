@@ -1,0 +1,46 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "title": "Step Metadata",
+    "description": "",
+    "type": "object",
+    "required": ["metadata", "spec"],
+    "properties": {
+        "metadata": {
+            "description": "",
+            "type": "object",
+            "required": ["name", "description", "longDescription"],
+            "properties": {
+                "name": {
+                    "description": "",
+                    "type": "string"
+                },
+                "description": {
+                    "description": "",
+                    "type": "string"
+                },
+                "longDescription": {
+                    "description": "",
+                    "type": "string"
+                }
+            }
+        },
+        "spec": {
+            "description": "",
+            "type": "object",
+            "properties": {
+                "input": {
+                    "description": "",
+                    "type": "object"
+                },
+                "containers": {
+                    "description": "",
+                    "type": "object"
+                },
+                "secrets": {
+                    "description": "",
+                    "type": "object"
+                }
+            }
+        }
+    }
+}
