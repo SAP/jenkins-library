@@ -1,53 +1,79 @@
 {
     "$schema": "http://json-schema.org/draft-04/schema#",
     "title": "Step Metadata",
-    "description": "",
     "type": "object",
     "required": ["metadata", "spec"],
     "properties": {
         "metadata": {
-            "description": "",
             "type": "object",
             "required": ["name", "description", "longDescription"],
             "properties": {
                 "name": {
-                    "description": "",
                     "type": "string"
                 },
                 "description": {
-                    "description": "",
                     "type": "string"
                 },
                 "longDescription": {
-                    "description": "",
                     "type": "string"
                 }
             }
         },
         "spec": {
-            "description": "",
             "type": "object",
             "properties": {
                 "input": {
-                    "description": "",
                     "type": "object"
+                    "additionalProperties": false,
+                    "properties": {
+                        "params": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#definitions/com.sap.piper.metadata.spec.inputs.params"
+                            }
+                        }
+                    }
                 },
                 "containers": {
-                    "type": "array",
-                    "items" :{
-                        "$ref": "https://raw.githubusercontent.com/kubernetes/kubernetes/master/api/openapi-spec/swagger.json#/definitions/io.k8s.api.core.v1.Container"
-                    }
+                    "$ref": "#definitions/com.sap.piper.metadata.spec.containerList"
                 },
                 "secrets": {
                     "description": "",
                     "type": "object"
                 },
                 "sidecars": {
-                    "type": "array",
-                    "items" :{
-                        "$ref": "https://raw.githubusercontent.com/kubernetes/kubernetes/master/api/openapi-spec/swagger.json#/definitions/io.k8s.api.core.v1.Container"
-                    }
+                    "$ref": "#definitions/com.sap.piper.metadata.spec.containerList"
                 }
+            }
+        }
+    },
+    "definitions": {
+        "com.sap.piper.metadata.spec.inputs.params": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+                "name": { "type": "string" },
+                "type": { "type": "string" },
+                "description": { "type": "string" },
+                "mandatory": { "type": "boolean" },
+                "default": {},
+                "scope": {
+                    "$ref": "#definitions/com.sap.piper.metadata.spec.inputs.params.scope"
+                }
+            },
+            "required": ["name", "type", "scope"]
+        },
+        "com.sap.piper.metadata.spec.inputs.params.scope": {
+            "type": "array",
+            "items": {
+                "type": "string",
+                "enum": ["GENERAL", "PARAMETERS", "STAGES", "STEPS"]
+            }
+        },
+        "com.sap.piper.metadata.spec.containerList": {
+            "type": "array",
+            "items": {
+                "$ref": "https://raw.githubusercontent.com/kubernetes/kubernetes/master/api/openapi-spec/swagger.json#/definitions/io.k8s.api.core.v1.Container"
             }
         }
     }
