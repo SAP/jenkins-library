@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -11,21 +12,21 @@ func TestRunDetect(t *testing.T) {
 
 	t.Run("success case", func(t *testing.T) {
 		s := shellMockRunner{}
-		err := runDetect(detectExecuteScanOptions{}, &s)
+		runDetect(detectExecuteScanOptions{}, &s)
 
-		assert.NoError(t, err, "Error occured but none expected")
-		assert.Equal(t, ".", s.Dir, "Wrong execution directory used")
+		assert.Equal(t, ".", s.dir, "Wrong execution directory used")
 		assert.Equal(t, "/bin/bash", s.shell[0], "Bash shell expected")
-		expectedScript := "bash <(curl -s https://detect.synopsys.com/detect.sh)"
+		expectedScript := "bash <(curl -s https://detect.synopsys.com/detect.sh) --blackduck.url= --blackduck.api.token= --detect.project.name= --detect.project.version.name= --detect.code.location.name="
 		assert.Equal(t, expectedScript, s.calls[0])
 	})
 
 	t.Run("failure case", func(t *testing.T) {
-		s := shellMockRunner{}
-		err := runDetect(detectExecuteScanOptions{}, &s)
-		if err == nil {
-			t.Errorf("expected an error")
-		}
+		var hasFailed bool
+		log.Entry().Logger.ExitFunc = func(int) { hasFailed = true }
+
+		s := shellMockRunner{shouldFailWith: fmt.Errorf("Test Error")}
+		runDetect(detectExecuteScanOptions{}, &s)
+		assert.True(t, hasFailed, "expected command to exit with fatal")
 	})
 }
 

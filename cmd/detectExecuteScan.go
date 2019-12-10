@@ -10,14 +10,14 @@ import (
 
 func detectExecuteScan(myDetectExecuteScanOptions detectExecuteScanOptions) error {
 	c := command.Command{}
-	// reroute command output to loging framework
+	// reroute command output to logging framework
 	c.Stdout(log.Entry().Writer())
 	c.Stderr(log.Entry().Writer())
 	runDetect(myDetectExecuteScanOptions, &c)
 	return nil
 }
 
-func runDetect(myDetectExecuteScanOptions detectExecuteScanOptions, command shellRunner) error {
+func runDetect(myDetectExecuteScanOptions detectExecuteScanOptions, command shellRunner) {
 	// detect execution details, see https://synopsys.atlassian.net/wiki/spaces/INTDOCS/pages/88440888/Sample+Synopsys+Detect+Scan+Configuration+Scenarios+for+Black+Duck
 
 	args := []string{"bash <(curl -s https://detect.synopsys.com/detect.sh)"}
@@ -33,7 +33,6 @@ func runDetect(myDetectExecuteScanOptions detectExecuteScanOptions, command shel
 			WithField("command", myKarmaExecuteTestsOptions.InstallCommand).
 			Fatal("failed to execute detect scan")
 	}
-	return nil
 }
 
 func addDetectArgs(args []string, myDetectExecuteScanOptions detectExecuteScanOptions) []string {
@@ -46,7 +45,7 @@ func addDetectArgs(args []string, myDetectExecuteScanOptions detectExecuteScanOp
 	args = append(args, fmt.Sprintf("--detect.project.name=%v", myDetectExecuteScanOptions.ProjectName))
 	args = append(args, fmt.Sprintf("--detect.project.version.name=%v", myDetectExecuteScanOptions.ProjectVersion))
 	codeLocation := myDetectExecuteScanOptions.CodeLocation
-	if len(codeLocation) == 0 {
+	if len(codeLocation) == 0 && len(myDetectExecuteScanOptions.ProjectName) > 0 {
 		codeLocation = fmt.Sprintf("%v/%v", myDetectExecuteScanOptions.ProjectName, myDetectExecuteScanOptions.ProjectVersion)
 	}
 	args = append(args, fmt.Sprintf("--detect.code.location.name=%v", codeLocation))
