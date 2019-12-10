@@ -87,14 +87,14 @@ Copy the sources of the application into your own Git repository. While we will 
    </p>
    **Note:** The ready-made continuous delivery pipelines of project "Piper" must run as **Multibranch Pipeline**.
 
-1. For **Branch Sources**, choose **Add source**, and select the **Git** as source repository.
+1. For **Branch Sources**, choose **Add source**, select **Git** as source repository.
    <p align="center">
    ![Create Pipeline Job](images/JenkinsNewItemPipeline-AddSource.png "Branch Sources - Add source")
    </p>
 
 1. For **Project Repository** in the **Git** section, enter the URL of your Git repository, for example `https://github.com/<your-org>/cloud-cf-helloworld-nodejs`. **Note:** If your repository is protected, you must provide your credentials in **Credentials**.
 
-1. For **Discover branches**, choose **Add** and select **Filter by name (with wildcards)**.
+1. For **Discover branches**, choose **Add** and **Filter by name (with wildcards)**.
    <p align="center">
    ![Create Pipeline Job](images/JenkinsNewItemPipeline-DiscoverBranch.png "Discover branches - Add")
    </p>
