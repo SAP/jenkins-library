@@ -33,12 +33,20 @@
                     "type": "object"
                 },
                 "containers": {
-                    "description": "",
-                    "type": "object"
+                    "type": "array",
+                    "items" :{
+                        "$ref": "https://raw.githubusercontent.com/kubernetes/kubernetes/master/api/openapi-spec/swagger.json#/definitions/io.k8s.api.core.v1.Container"
+                    }
                 },
                 "secrets": {
                     "description": "",
                     "type": "object"
+                },
+                "sidecars": {
+                    "type": "array",
+                    "items" :{
+                        "$ref": "https://raw.githubusercontent.com/kubernetes/kubernetes/master/api/openapi-spec/swagger.json#/definitions/io.k8s.api.core.v1.Container"
+                    }
                 }
             }
         }
