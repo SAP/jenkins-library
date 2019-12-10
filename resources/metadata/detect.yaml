@@ -67,7 +67,7 @@ spec:
         description: List of scanners to be used for Synopsis Detect (formerly BlackDuck) scan.
         type: '[]string'
         mandatory: false
-        default: 
+        default:
         - signature
         possibleValues:
         - signature
@@ -110,6 +110,6 @@ spec:
         - STEPS
   containers:
     - name: golang
-      # paramRef: buildTool //to be used if multiple options are available    
+      # paramRef: buildTool //to be used if multiple options are available
       image: golang:latest
       workDir: ''
