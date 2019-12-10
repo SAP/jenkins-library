@@ -44,6 +44,7 @@ func Execute() {
 	rootCmd.AddCommand(ConfigCommand())
 	rootCmd.AddCommand(VersionCommand())
 	rootCmd.AddCommand(KarmaExecuteTestsCommand())
+	rootCmd.AddCommand(XsDeployCommand())
 	rootCmd.AddCommand(GithubPublishReleaseCommand())
 
 	addRootFlags(rootCmd)
@@ -82,7 +83,13 @@ func PrepareConfig(cmd *cobra.Command, metadata *config.StepData, stepName strin
 		var customConfig io.ReadCloser
 		var err error
 		//accept that config file and defaults cannot be loaded since both are not mandatory here
-		if exists, e := piperutils.FileExists(GeneralConfig.CustomConfig); e == nil {
+		{
+			exists, e := piperutils.FileExists(GeneralConfig.CustomConfig)
+
+			if e != nil {
+				return e
+			}
+
 			if exists {
 				if customConfig, err = openFile(GeneralConfig.CustomConfig); err != nil {
 					errors.Wrapf(err, "Cannot read '%s'", GeneralConfig.CustomConfig)
@@ -91,8 +98,6 @@ func PrepareConfig(cmd *cobra.Command, metadata *config.StepData, stepName strin
 				log.Entry().Infof("Project config file '%s' does not exist. No project configuration available.", GeneralConfig.CustomConfig)
 				customConfig = nil
 			}
-		} else {
-			return e
 		}
 		var defaultConfig []io.ReadCloser
 		for _, f := range GeneralConfig.DefaultConfig {
