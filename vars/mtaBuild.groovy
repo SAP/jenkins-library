@@ -41,6 +41,8 @@ import static com.sap.piper.Utils.downloadSettingsFromUrl
     'mtaJarLocation',
     /** Path or url to the mvn settings file that should be used as global settings file.*/
     'globalSettingsFile',
+    /** The name of the generated mtar file including its extension. */
+    'mtarName',
     /**
      * mtaBuildTool cloudMbt only: The target platform to which the mtar can be deployed.
      * @possibleValues 'CF', 'NEO', 'XSA'
@@ -127,12 +129,15 @@ void call(Map parameters = [:]) {
             //[Q]: Why not yaml.dump()? [A]: This reformats the whole file.
             sh "sed -ie \"s/\\\${timestamp}/`date +%Y%m%d%H%M%S`/g\" \"${mtaYamlName}\""
 
-            def id = getMtaId(mtaYamlName)
-
             def mtaCall
             def options = []
-            options.push("--mtar ${id}.mtar")
 
+            String mtarName = configuration.mtarName?.trim()
+            if (!mtarName) {
+                def mtaId = getMtaId(mtaYamlName)
+                mtarName = "${mtaId}.mtar"
+            }
+            options.push("--mtar ${mtarName}")
 
             switch(configuration.mtaBuildTool) {
                 case 'classic':
@@ -144,6 +149,7 @@ void call(Map parameters = [:]) {
                     break
                 case 'cloudMbt':
                     options.push("--platform ${configuration.platform}")
+                    options.push("--target ./")
                     if (configuration.extension) options.push("--extensions=${configuration.extension}")
                     mtaCall = "mbt build ${options.join(' ')}"
                     break
@@ -160,7 +166,7 @@ void call(Map parameters = [:]) {
             $mtaCall
             """
 
-            script?.commonPipelineEnvironment?.setMtarFilePath("${id}.mtar")
+            script?.commonPipelineEnvironment?.setMtarFilePath("${mtarName}")
         }
     }
 }
