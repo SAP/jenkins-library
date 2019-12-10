@@ -98,7 +98,7 @@ Copy the sources of the application into your own Git repository. While we will 
    <p align="center">
    ![Create Pipeline Job](images/JenkinsNewItemPipeline-DiscoverBranch.png "Discover branches - Add")
    </p>
-   A multibranch pipeline can execute different Jenkinsfiles for different branches. In this case, however, configure the pipeline of a single branch only. 
+   A multibranch pipeline can execute different Jenkinsfiles for different branches. In this case, however, configure the pipeline of a single branch only.
 
 1. For **Include** in the **Filter by name** section, enter the branch name `1_REST_persist_in_Memory`.
    <p align="center">
@@ -193,7 +193,7 @@ Open the application name to get into the `Application Overview`. Open the **App
 
 ## What's Next
 
-You are now familiar with the basics of using project "Piper". Through the concept of pipeline as code, project "Piper" and Jenkins pipelines are extremely powerful. While Jenkins pipelines offer a full set of common programming features, project "Piper" adds SAP-specific flavors. Have a look at the different **Scenarios**  to understand how to easily integrate SAP systems with defaults. 
+You are now familiar with the basics of using project "Piper". Through the concept of pipeline as code, project "Piper" and Jenkins pipelines are extremely powerful. While Jenkins pipelines offer a full set of common programming features, project "Piper" adds SAP-specific flavors. Have a look at the different **Scenarios**  to understand how to easily integrate SAP systems with defaults.
 Dive into the ready-made continuous delivery pipelines: the **General Purpose Pipeline**
 and **SAP Cloud SDK Pipeline** help you quickly build and deliver your apps.
 Browse the steadily increasing list of features you can implement through the project "Piper" **Steps**.
