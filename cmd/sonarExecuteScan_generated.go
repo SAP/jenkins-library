@@ -17,7 +17,7 @@ type sonarExecuteScanOptions struct {
 	GithubAPIURL              string `json:"githubApiUrl,omitempty"`
 	Organization              string `json:"organization,omitempty"`
 	Options                   string `json:"options,omitempty"`
-	CustomTlsCertificateLinks string `json:"customTlsCertificateLinks,omitempty"`
+	CustomTLSCertificateLinks string `json:"customTlsCertificateLinks,omitempty"`
 	ProjectVersion            string `json:"projectVersion,omitempty"`
 }
 
