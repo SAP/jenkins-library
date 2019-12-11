@@ -11,6 +11,12 @@ import groovy.transform.Field
      * Name of the docker image that should be used, in which node should be installed and configured. Default value is 'dlang2/dmd-ubuntu:latest'.
      */
     'dockerImage',
+    /** @see dockerExecute*/
+    'dockerEnvVars',
+    /** @see dockerExecute */
+    'dockerOptions',
+    /** @see dockerExecute*/
+    'dockerWorkspace',
     /**
      * URL of default DUB registry
      */
@@ -52,7 +58,12 @@ void call(Map parameters = [:], body = null) {
         if (!fileExists('dub.json') && !fileExists('dub.sdl')) {
             error "[${STEP_NAME}] Neither dub.json nor dub.sdl was found."
         }
-        dockerExecute(script: script, dockerImage: configuration.dockerImage, dockerOptions: configuration.dockerOptions) {
+        dockerExecute(script: script,
+            dockerImage: configuration.dockerImage,
+            dockerEnvVars: configuration.dockerEnvVars,
+            dockerOptions: configuration.dockerOptions,
+            dockerWorkspace: configuration.dockerWorkspace
+        ) {
             if (configuration.defaultDubRegistry) {
                 sh """
                     mkdir ~/.dub

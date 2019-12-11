@@ -3,14 +3,13 @@ package config
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/ghodss/yaml"
+	"github.com/google/go-cmp/cmp"
+	"github.com/pkg/errors"
 	"io"
 	"io/ioutil"
 	"os"
 	"strings"
-
-	"github.com/ghodss/yaml"
-	"github.com/google/go-cmp/cmp"
-	"github.com/pkg/errors"
 )
 
 // Config defines the structure of the config files
@@ -168,7 +167,6 @@ func (c *Config) GetStepConfig(flagValues map[string]interface{}, paramJSON stri
 			}
 		}
 	}
-
 	return stepConfig, nil
 }
 
