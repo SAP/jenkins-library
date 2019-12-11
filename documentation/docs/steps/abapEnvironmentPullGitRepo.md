@@ -37,8 +37,8 @@ abapEnvironmentPullGitRepo (
       credentialsId: 'cfCredentialsId',
       org: 'cfOrg',
       space: 'cfSpace',
-      serviceInstance: 'myServiceInstance',
-      serviceKey: 'myServiceKey',
+      serviceInstance: 'cfServiceInstance',
+      serviceKey: 'cfServiceKey',
   ]
 )
 ```
