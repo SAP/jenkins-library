@@ -5,92 +5,133 @@ metadata:
 spec:
   inputs:
     params:
-    - name: instance
-      type: string
-      description: The name of the SonarQube instance defined in the Jenkins settings.
-      scope:
-      - PARAMETERS
-      - STAGES
-      - STEPS
-      default: SonarCloud
-    - name: disableInlineComments
-      type: string
-      description: 'Pull-Request voting only: Disables the pull-request decoration with inline comments. deprecated: only supported in < 7.2'
-      scope:
-      - PARAMETERS
-      - STAGES
-      - STEPS
-    - name: githubOrg
-      type: string
-      description: 'Pull-Request voting only: The Github organization. @default: `commonPipelineEnvironment.getGithubOrg()`'
-      scope:
-      - GENERAL
-      - PARAMETERS
-      - STAGES
-      - STEPS
-    - name: legacyPRHandling
-      type: string
-      description: 'Pull-Request voting only: Activates the pull-request handling
-        using the [GitHub Plugin](https://docs.sonarqube.org/display/PLUG/GitHub+Plugin)
-        (deprecated). deprecated: only supported in < 7.2'
-      scope:
-      - PARAMETERS
-      - STAGES
-      - STEPS
-    - name: githubRepo
-      type: string
-      description: 'Pull-Request voting only: The Github repository. @default: `commonPipelineEnvironment.getGithubRepo()`'
-      scope:
-      - GENERAL
-      - PARAMETERS
-      - STAGES
-      - STEPS
-    - name: githubApiUrl
-      type: string
-      description: 'Pull-Request voting only: The URL to the Github API. see [GitHub
-        plugin docs](https://docs.sonarqube.org/display/PLUG/GitHub+Plugin#GitHubPlugin-Usage)
-        deprecated: only supported in < 7.2'
-      scope:
-      - GENERAL
-      - PARAMETERS
-      - STAGES
-      - STEPS
-      default: https://api.github.com
-    - name: organization
-      type: string
-      description: Organization that the project will be assigned to in SonarCloud.io.
-      scope:
-      - PARAMETERS
-      - STAGES
-      - STEPS
-    - name: options
-      type: string
-      description: A list of options which are passed to the `sonar-scanner`.
-      scope:
-      - PARAMETERS
-      - STAGES
-      - STEPS
-      default: []
-    - name: customTlsCertificateLinks
-      type: string
-      description: List containing download links of custom TLS certificates. This is required to ensure trusted connections to instances with custom certificates.
-      scope:
-      - PARAMETERS
-      - STAGES
-      - STEPS
-      default: []
-    - name: projectVersion
-      type: string
-      description: 'The project version that is reported to SonarQube. @default: major
-        number of `commonPipelineEnvironment.getArtifactVersion()`'
-      scope:
-      - PARAMETERS
-      - STAGES
-      - STEPS
+      - name: host
+        type: string
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: token
+        type: string
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: githubToken
+        type: string
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: changeId
+        type: string
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: disableInlineComments
+        type: bool
+        description: "Pull-Request voting only: Disables the pull-request decoration with inline comments. deprecated: only supported in < 7.2"
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: legacyPRHandling
+        type: bool
+        description:
+          "Pull-Request voting only: Activates the pull-request handling
+          using the [GitHub Plugin](https://docs.sonarqube.org/display/PLUG/GitHub+Plugin)
+          (deprecated). deprecated: only supported in < 7.2"
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: owner
+        type: string
+        description: "Pull-Request voting only: The Github organization. @default: `commonPipelineEnvironment.getGithubOrg()`"
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        aliases:
+          - name: githubOrg
+      - name: repository
+        type: string
+        description: "Pull-Request voting only: The Github repository. @default: `commonPipelineEnvironment.getGithubRepo()`"
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        aliases:
+          - name: githubRepo
+      - name: githubApiUrl
+        type: string
+        description:
+          "Pull-Request voting only: The URL to the Github API. see [GitHub
+          plugin docs](https://docs.sonarqube.org/display/PLUG/GitHub+Plugin#GitHubPlugin-Usage)
+          deprecated: only supported in < 7.2"
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: https://api.github.com
+      - name: organization
+        type: string
+        description: Organization that the project will be assigned to in SonarCloud.io.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: options
+        type: string
+        description: A list of options which are passed to the `sonar-scanner`.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: []
+      - name: customTlsCertificateLinks
+        type: string
+        description: List containing download links of custom TLS certificates. This is required to ensure trusted connections to instances with custom certificates.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: []
+      - name: pullRequestProvider
+        type: string
+        default: GitHub
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: sonarScannerDownloadUrl
+        type: string
+        default: https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.2.0.1873-linux.zip
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: projectVersion
+        type: string
+        description:
+          "The project version that is reported to SonarQube. @default: major
+          number of `commonPipelineEnvironment.getArtifactVersion()`"
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+    resources:
+      - name: instance
+        type: installation
     secrets:
-    - name: sonarTokenCredentialsId
-      type: jenkins
-    - name: githubTokenCredentialsId
-      type: jenkins
+      - name: sonarTokenCredentialsId
+        type: jenkins
+      - name: githubTokenCredentialsId
+        type: jenkins
   containers:
-  - image: maven:3.5-jdk-8
+    - name: sonar
+      image: maven:3.5-jdk-8
