@@ -15,7 +15,7 @@ import java.nio.charset.StandardCharsets
     /**
      * Pull-Request voting only:
      * The URL to the Github API. see [GitHub plugin docs](https://docs.sonarqube.org/display/PLUG/GitHub+Plugin#GitHubPlugin-Usage)
-     * deprecated: only supported in LTS / < 7.2
+     * deprecated: only supported below SonarQube v7.2
      */
     'githubApiUrl',
     /**
@@ -33,7 +33,7 @@ import java.nio.charset.StandardCharsets
     /**
      * Pull-Request voting only:
      * The Jenkins credentialId for a Github token. It is needed to report findings back to the pull-request.
-     * deprecated: only supported in LTS / < 7.2
+     * deprecated: only supported below SonarQube v7.2
      * @possibleValues Jenkins credential id
      */
     'githubTokenCredentialsId',
@@ -56,7 +56,7 @@ import java.nio.charset.StandardCharsets
     /**
      * Pull-Request voting only:
      * Disables the pull-request decoration with inline comments.
-     * deprecated: only supported in LTS / < 7.2
+     * deprecated: only supported below SonarQube v7.2
      * @possibleValues `true`, `false`
      */
     'disableInlineComments',
@@ -72,7 +72,7 @@ import java.nio.charset.StandardCharsets
     /**
      * Pull-Request voting only:
      * Activates the pull-request handling using the [GitHub Plugin](https://docs.sonarqube.org/display/PLUG/GitHub+Plugin) (deprecated).
-     * deprecated: only supported in LTS / < 7.2
+     * deprecated: only supported below SonarQube v7.2
      * @possibleValues `true`, `false`
      */
     'legacyPRHandling',
@@ -173,7 +173,7 @@ void call(Map parameters = [:]) {
                     // see https://sonarcloud.io/documentation/analysis/pull-request/
                     config.options.add("sonar.pullrequest.key=${env.CHANGE_ID}")
                     config.options.add("sonar.pullrequest.base=${env.CHANGE_TARGET}")
-                    config.options.add("sonar.pullrequest.branch=${env.BRANCH_NAME}")
+                    config.options.add("sonar.pullrequest.branch=${env.CHANGE_BRANCH}")
                     config.options.add("sonar.pullrequest.provider=${config.pullRequestProvider}")
                     switch(config.pullRequestProvider){
                         case 'GitHub':
@@ -190,6 +190,9 @@ void call(Map parameters = [:]) {
             script: script,
             dockerImage: configuration.dockerImage
         ){
+            if(!script.fileExists('.git')) {
+                utils.unstash('git')
+            }
             worker(configuration)
         }
     }

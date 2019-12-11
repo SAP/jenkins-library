@@ -68,6 +68,7 @@ func TestGetParameterFilters(t *testing.T) {
 					{Name: "paramFour", Scope: []string{"PARAMETERS", "ENV"}},
 					{Name: "paramFive", Scope: []string{"ENV"}},
 					{Name: "paramSix"},
+					{Name: "paramSeven", Scope: []string{"GENERAL", "STEPS", "STAGES", "PARAMETERS"}, Conditions: []Condition{{Params: []Param{{Name: "buildTool", Value: "mta"}}}}},
 				},
 			},
 		},
@@ -113,17 +114,17 @@ func TestGetParameterFilters(t *testing.T) {
 	}{
 		{
 			Metadata:              metadata1,
-			ExpectedGeneral:       []string{"paramOne"},
-			ExpectedSteps:         []string{"paramOne", "paramTwo"},
-			ExpectedStages:        []string{"paramOne", "paramTwo", "paramThree"},
-			ExpectedParameters:    []string{"paramOne", "paramTwo", "paramThree", "paramFour"},
-			ExpectedEnv:           []string{"paramOne", "paramTwo", "paramThree", "paramFour", "paramFive"},
-			ExpectedAll:           []string{"paramOne", "paramTwo", "paramThree", "paramFour", "paramFive", "paramSix"},
+			ExpectedGeneral:       []string{"paramOne", "paramSeven", "mta"},
+			ExpectedSteps:         []string{"paramOne", "paramTwo", "paramSeven", "mta"},
+			ExpectedStages:        []string{"paramOne", "paramTwo", "paramThree", "paramSeven", "mta"},
+			ExpectedParameters:    []string{"paramOne", "paramTwo", "paramThree", "paramFour", "paramSeven", "mta"},
+			ExpectedEnv:           []string{"paramOne", "paramTwo", "paramThree", "paramFour", "paramFive", "paramSeven", "mta"},
+			ExpectedAll:           []string{"paramOne", "paramTwo", "paramThree", "paramFour", "paramFive", "paramSix", "paramSeven", "mta"},
 			NotExpectedGeneral:    []string{"paramTwo", "paramThree", "paramFour", "paramFive", "paramSix"},
 			NotExpectedSteps:      []string{"paramThree", "paramFour", "paramFive", "paramSix"},
 			NotExpectedStages:     []string{"paramFour", "paramFive", "paramSix"},
 			NotExpectedParameters: []string{"paramFive", "paramSix"},
-			NotExpectedEnv:        []string{"paramSix"},
+			NotExpectedEnv:        []string{"paramSix", "mta"},
 			NotExpectedAll:        []string{},
 		},
 		{
@@ -234,6 +235,11 @@ func TestGetContextParameterFilters(t *testing.T) {
 		Spec: StepSpec{
 			Containers: []Container{
 				{Name: "testcontainer"},
+				{Conditions: []Condition{
+					{Params: []Param{
+						{Name: "scanType", Value: "pip"},
+					}},
+				}},
 			},
 		},
 	}
@@ -258,12 +264,12 @@ func TestGetContextParameterFilters(t *testing.T) {
 
 	t.Run("Containers", func(t *testing.T) {
 		filters := metadata2.GetContextParameterFilters()
-		assert.Equal(t, []string{"containerCommand", "containerShell", "dockerEnvVars", "dockerImage", "dockerOptions", "dockerPullImage", "dockerVolumeBind", "dockerWorkspace"}, filters.All, "incorrect filter All")
-		assert.NotEqual(t, []string{"containerCommand", "containerShell", "dockerEnvVars", "dockerImage", "dockerOptions", "dockerPullImage", "dockerVolumeBind", "dockerWorkspace"}, filters.General, "incorrect filter General")
-		assert.Equal(t, []string{"containerCommand", "containerShell", "dockerEnvVars", "dockerImage", "dockerOptions", "dockerPullImage", "dockerVolumeBind", "dockerWorkspace"}, filters.Steps, "incorrect filter Steps")
-		assert.Equal(t, []string{"containerCommand", "containerShell", "dockerEnvVars", "dockerImage", "dockerOptions", "dockerPullImage", "dockerVolumeBind", "dockerWorkspace"}, filters.Stages, "incorrect filter Stages")
-		assert.Equal(t, []string{"containerCommand", "containerShell", "dockerEnvVars", "dockerImage", "dockerOptions", "dockerPullImage", "dockerVolumeBind", "dockerWorkspace"}, filters.Parameters, "incorrect filter Parameters")
-		assert.NotEqual(t, []string{"containerCommand", "containerShell", "dockerEnvVars", "dockerImage", "dockerOptions", "dockerPullImage", "dockerVolumeBind", "dockerWorkspace"}, filters.Env, "incorrect filter Env")
+		assert.Equal(t, []string{"containerCommand", "containerShell", "dockerEnvVars", "dockerImage", "dockerOptions", "dockerPullImage", "dockerVolumeBind", "dockerWorkspace", "pip"}, filters.All, "incorrect filter All")
+		assert.NotEqual(t, []string{"containerCommand", "containerShell", "dockerEnvVars", "dockerImage", "dockerOptions", "dockerPullImage", "dockerVolumeBind", "dockerWorkspace", "pip"}, filters.General, "incorrect filter General")
+		assert.Equal(t, []string{"containerCommand", "containerShell", "dockerEnvVars", "dockerImage", "dockerOptions", "dockerPullImage", "dockerVolumeBind", "dockerWorkspace", "pip"}, filters.Steps, "incorrect filter Steps")
+		assert.Equal(t, []string{"containerCommand", "containerShell", "dockerEnvVars", "dockerImage", "dockerOptions", "dockerPullImage", "dockerVolumeBind", "dockerWorkspace", "pip"}, filters.Stages, "incorrect filter Stages")
+		assert.Equal(t, []string{"containerCommand", "containerShell", "dockerEnvVars", "dockerImage", "dockerOptions", "dockerPullImage", "dockerVolumeBind", "dockerWorkspace", "pip"}, filters.Parameters, "incorrect filter Parameters")
+		assert.NotEqual(t, []string{"containerCommand", "containerShell", "dockerEnvVars", "dockerImage", "dockerOptions", "dockerPullImage", "dockerVolumeBind", "dockerWorkspace", "pip"}, filters.Env, "incorrect filter Env")
 	})
 
 	t.Run("Sidecars", func(t *testing.T) {
@@ -287,14 +293,37 @@ func TestGetContextDefaults(t *testing.T) {
 						{
 							Name: "buildDescriptor",
 							Type: "stash",
+							Conditions: []Condition{
+								{Params: []Param{
+									{Name: "scanType", Value: "abc"},
+								}},
+							},
 						},
 						{
 							Name: "source",
 							Type: "stash",
+							Conditions: []Condition{
+								{Params: []Param{
+									{Name: "scanType", Value: "abc"},
+								}},
+							},
 						},
 						{
 							Name: "test",
 							Type: "nonce",
+						},
+						{
+							Name: "test2",
+							Type: "stash",
+							Conditions: []Condition{
+								{Params: []Param{
+									{Name: "scanType", Value: "def"},
+								}},
+							},
+						},
+						{
+							Name: "test3",
+							Type: "stash",
 						},
 					},
 				},
@@ -309,6 +338,14 @@ func TestGetContextDefaults(t *testing.T) {
 						Image:      "testImage:tag",
 						Shell:      "/bin/bash",
 						WorkingDir: "/test/dir",
+						Options: []Option{
+							{Name: "opt1", Value: "optValue1"},
+							{Name: "opt2", Value: "optValue2"},
+						},
+						//VolumeMounts: []VolumeMount{
+						//	{MountPath: "mp1", Name: "mn1"},
+						//	{MountPath: "mp2", Name: "mn2"},
+						//},
 					},
 				},
 				Sidecars: []Container{
@@ -323,6 +360,14 @@ func TestGetContextDefaults(t *testing.T) {
 						ImagePullPolicy: "Never",
 						ReadyCommand:    "/sidecar/command",
 						WorkingDir:      "/sidecar/dir",
+						Options: []Option{
+							{Name: "opt3", Value: "optValue3"},
+							{Name: "opt4", Value: "optValue4"},
+						},
+						//VolumeMounts: []VolumeMount{
+						//	{MountPath: "mp3", Name: "mn3"},
+						//	{MountPath: "mp4", Name: "mn4"},
+						//},
 					},
 				},
 			},
@@ -339,7 +384,9 @@ func TestGetContextDefaults(t *testing.T) {
 		var d PipelineDefaults
 		d.ReadPipelineDefaults([]io.ReadCloser{cd})
 
-		assert.Equal(t, []interface{}{"buildDescriptor", "source"}, d.Defaults[0].Steps["testStep"]["stashContent"], "stashContent default not available")
+		assert.Equal(t, []interface{}{"buildDescriptor", "source"}, d.Defaults[0].Steps["testStep"]["abc"].(map[string]interface{})["stashContent"], "stashContent default not available")
+		assert.Equal(t, []interface{}{"test2"}, d.Defaults[0].Steps["testStep"]["def"].(map[string]interface{})["stashContent"], "stashContent default not available")
+		assert.Equal(t, []interface{}{"test3"}, d.Defaults[0].Steps["testStep"]["stashContent"], "stashContent default not available")
 		assert.Equal(t, "test/command", d.Defaults[0].Steps["testStep"]["containerCommand"], "containerCommand default not available")
 		assert.Equal(t, "testcontainer", d.Defaults[0].Steps["testStep"]["containerName"], "containerName default not available")
 		assert.Equal(t, "/bin/bash", d.Defaults[0].Steps["testStep"]["containerShell"], "containerShell default not available")
@@ -348,6 +395,8 @@ func TestGetContextDefaults(t *testing.T) {
 		assert.Equal(t, "testcontainer", d.Defaults[0].Steps["testStep"]["dockerName"], "dockerName default not available")
 		assert.Equal(t, true, d.Defaults[0].Steps["testStep"]["dockerPullImage"], "dockerPullImage default not available")
 		assert.Equal(t, "/test/dir", d.Defaults[0].Steps["testStep"]["dockerWorkspace"], "dockerWorkspace default not available")
+		assert.Equal(t, []interface{}{"opt1 optValue1", "opt2 optValue2"}, d.Defaults[0].Steps["testStep"]["dockerOptions"], "dockerOptions default not available")
+		//assert.Equal(t, []interface{}{"mn1:mp1", "mn2:mp2"}, d.Defaults[0].Steps["testStep"]["dockerVolumeBind"], "dockerVolumeBind default not available")
 
 		assert.Equal(t, "/sidecar/command", d.Defaults[0].Steps["testStep"]["sidecarCommand"], "sidecarCommand default not available")
 		assert.Equal(t, []interface{}{"env3=val3", "env4=val4"}, d.Defaults[0].Steps["testStep"]["sidecarEnvVars"], "sidecarEnvVars default not available")
@@ -356,6 +405,8 @@ func TestGetContextDefaults(t *testing.T) {
 		assert.Equal(t, false, d.Defaults[0].Steps["testStep"]["sidecarPullImage"], "sidecarPullImage default not available")
 		assert.Equal(t, "/sidecar/command", d.Defaults[0].Steps["testStep"]["sidecarReadyCommand"], "sidecarReadyCommand default not available")
 		assert.Equal(t, "/sidecar/dir", d.Defaults[0].Steps["testStep"]["sidecarWorkspace"], "sidecarWorkspace default not available")
+		assert.Equal(t, []interface{}{"opt3 optValue3", "opt4 optValue4"}, d.Defaults[0].Steps["testStep"]["sidecarOptions"], "sidecarOptions default not available")
+		//assert.Equal(t, []interface{}{"mn3:mp3", "mn4:mp4"}, d.Defaults[0].Steps["testStep"]["sidecarVolumeBind"], "sidecarVolumeBind default not available")
 	})
 
 	t.Run("Negative case", func(t *testing.T) {
