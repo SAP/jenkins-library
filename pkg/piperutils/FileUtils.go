@@ -19,7 +19,7 @@ func FileExists(filename string) bool {
 func Copy(src, dst string) (int64, error) {
 
 	if !FileExists(src) {
-		errors.New("Source file '" + src + "' does not exist")
+		return 0, errors.New("Source file '" + src + "' does not exist")
 	}
 
 	source, err := os.Open(src)
