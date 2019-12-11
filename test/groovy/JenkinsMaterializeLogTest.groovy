@@ -40,14 +40,13 @@ class JenkinsMaterializeLogTest extends BasePiperTest {
 	.around(new JenkinsReadYamlRule(this))
 	.around(thrown)
 	.around(loggingRule)
-	.around(new JenkinsReadMavenPomRule(this, 'test/resources/versioning/MavenArtifactVersioning'))
 	.around(writeFileRule)
 	.around(stepRule)
 
 	@Test
 	void testMaterializeLog() {
-		def map = [name: "Hugo", script: nullScript, jenkinsUtilsStub: new JenkinsUtilsMock()]
-		def body = { name -> println "log file: " + name }
+		def map = [script: nullScript, jenkinsUtilsStub: new JenkinsUtilsMock()]
+		def body = { name -> def msg = "hello " + name }
 		binding.setVariable('currentBuild', [result: 'UNSTABLE', rawBuild: [getLogInputStream: {return new StringBufferInputStream("this is the input")}]])
 		binding.setVariable('env', [NODE_NAME: 'anynode', WORKSPACE: '.'])
 		stepRule.step.jenkinsMaterializeLog(map, body)
