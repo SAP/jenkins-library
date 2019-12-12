@@ -167,7 +167,6 @@ func (c *Config) GetStepConfig(flagValues map[string]interface{}, paramJSON stri
 			}
 		}
 	}
-
 	return stepConfig, nil
 }
 

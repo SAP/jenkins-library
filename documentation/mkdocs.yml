@@ -1,7 +1,7 @@
 site_name: 'Project "Piper": Continuous Delivery for the SAP Ecosystem'
 nav:
     - Home: index.md
-    - 'Guided Tour' : guidedtour.md
+    - 'Getting Started With Project "Piper"' : guidedtour.md
     - Configuration: configuration.md
     - 'Pipelines':
         - 'General purpose pipeline':
