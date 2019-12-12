@@ -1,11 +1,7 @@
 package cmd
 
 import (
-	"archive/zip"
-	"fmt"
-	"io"
 	"io/ioutil"
-	"net/http"
 	"os"
 	"path"
 	"path/filepath"
@@ -14,6 +10,7 @@ import (
 
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/log"
+	file "github.com/SAP/jenkins-library/pkg/piperutils"
 )
 
 const toolFolder = ".sonar-scanner"
@@ -98,11 +95,11 @@ func loadSonarScanner(url string) {
 			log.Entry().WithError(err).WithField("tempFolder", tmpFolder).Debug("creation of temp directory failed")
 		}
 		archive := filepath.Join(tmpFolder, path.Base(url))
-		if err := DownloadFile(archive, url); err != nil {
+		if err := file.Download(url, archive); err != nil {
 			log.Entry().WithError(err).WithField("source", url).WithField("target", archive).
 				Fatal("download of Sonar scanner cli failed")
 		}
-		if _, err := UnzipFile(archive, tmpFolder); err != nil {
+		if _, err := file.Unzip(archive, tmpFolder); err != nil {
 			log.Entry().WithError(err).WithField("source", archive).WithField("target", tmpFolder).
 				Fatal("extraction of Sonar scanner cli failed")
 		}
@@ -138,7 +135,7 @@ func loadCertificates(certificateString string, toolFolder string) {
 				WithField("filename", filename).
 				Debug("download of TLS certificate")
 
-			if err := DownloadFile(filepath.Join(certificateFolder, filename), certificate); err != nil {
+			if err := file.Download(certificate, filepath.Join(certificateFolder, filename)); err != nil {
 				log.Entry().
 					WithField("url", certificate).
 					WithError(err).
@@ -179,89 +176,4 @@ func setOption(options *[]string, id, value string) {
 		o := append(*options, "sonar."+id+"="+value)
 		options = &o
 	}
-}
-
-// extract to FileUtils
-// https://golangcode.com/unzip-files-in-go/
-// Unzip will decompress a zip archive, moving all files and folders
-// within the zip file (parameter 1) to an output directory (parameter 2).
-func UnzipFile(src, dest string) ([]string, error) {
-
-	var filenames []string
-
-	r, err := zip.OpenReader(src)
-	if err != nil {
-		return filenames, err
-	}
-	defer r.Close()
-
-	for _, f := range r.File {
-
-		// Store filename/path for returning and using later on
-		fpath := filepath.Join(dest, f.Name)
-
-		// Check for ZipSlip. More Info: http://bit.ly/2MsjAWE
-		if !strings.HasPrefix(fpath, filepath.Clean(dest)+string(os.PathSeparator)) {
-			return filenames, fmt.Errorf("%s: illegal file path", fpath)
-		}
-
-		filenames = append(filenames, fpath)
-
-		if f.FileInfo().IsDir() {
-			// Make Folder
-			os.MkdirAll(fpath, os.ModePerm)
-			continue
-		}
-
-		// Make File
-		if err = os.MkdirAll(filepath.Dir(fpath), os.ModePerm); err != nil {
-			return filenames, err
-		}
-
-		outFile, err := os.OpenFile(fpath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, f.Mode())
-		if err != nil {
-			return filenames, err
-		}
-
-		rc, err := f.Open()
-		if err != nil {
-			return filenames, err
-		}
-
-		_, err = io.Copy(outFile, rc)
-
-		// Close the file without defer to close before next iteration of loop
-		outFile.Close()
-		rc.Close()
-
-		if err != nil {
-			return filenames, err
-		}
-	}
-	return filenames, nil
-}
-
-// extract to FileUtils
-// https://golangcode.com/download-a-file-from-a-url/
-// DownloadFile will download a url to a local file. It's efficient because it will
-// write as it downloads and not load the whole file into memory.
-func DownloadFile(filepath, url string) error {
-
-	// Get the data
-	resp, err := http.Get(url)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-
-	// Create the file
-	out, err := os.Create(filepath)
-	if err != nil {
-		return err
-	}
-	defer out.Close()
-
-	// Write the body to file
-	_, err = io.Copy(out, resp.Body)
-	return err
 }
