@@ -19,7 +19,11 @@ import static com.sap.piper.Prerequisites.checkScript
 
 
 /**
- * This step allows you to materialize the Jenkins log file of the running build
+ * This step allows you to materialize the Jenkins log file of the running build.
+ * 
+ * It acts as a wrapper executing the passed function body.
+ * 
+ * Note: the file that has been created during step execution will be removed automatically.
  */
 @GenerateDocumentation
 void call(Map parameters = [:], body) {

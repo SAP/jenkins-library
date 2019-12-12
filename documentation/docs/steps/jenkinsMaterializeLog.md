@@ -4,7 +4,7 @@
 
 ## Prerequsites
 
-none
+None
 
 ## ${docGenParameters}
 
@@ -14,3 +14,6 @@ none
 
 ## Example
 
+```groovy
+jenkinsMaterializeLog script:this, { name -> println "log file: " + name }
+```
