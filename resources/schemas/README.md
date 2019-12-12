@@ -1,6 +1,6 @@
 # JSON Schema
 
-The `metadata.json` file is a JSON schema for the step metadata located in [resource/metadata](../metadata)
+The `metadata.json` file is a JSON schema for the step metadata located in [resource/metadata](../metadata).
 
 ## Usage
 
