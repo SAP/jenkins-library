@@ -4,7 +4,7 @@
 
 ## Prerequisites
 
-* Cloud Foundry organization, space and user are available
+* Cloud Foundry API endpoint, organization, space, user and service instance are available
 * Credentials have been configured in Jenkins with a dedicated Id
 
 ## ${docGenParameters}
