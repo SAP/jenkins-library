@@ -57,7 +57,7 @@ import static com.sap.piper.Prerequisites.checkScript
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
 
 /**
- * Step that creates a service key for a service instancve on Cloud Foundry
+ * Step that creates a service key for a specified service instance on Cloud Foundry
  */
 @GenerateDocumentation
 void call(Map parameters = [:]) {
@@ -75,6 +75,7 @@ void call(Map parameters = [:]) {
             .withMandatoryProperty('cloudFoundry/credentialsId')
             .withMandatoryProperty('cloudFoundry/serviceInstance')
             .withMandatoryProperty('cloudFoundry/serviceKey')
+            .withMandatoryProperty('cloudFoundry/apiEndpoint')
             .use()
 
         echo "[${STEP_NAME}] Info: docker image: ${config.dockerImage}, docker workspace: ${config.dockerWorkspace}"
