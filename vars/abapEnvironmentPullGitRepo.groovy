@@ -30,10 +30,6 @@ import java.util.regex.*
          * @parentConfigKey cloudFoundry
          */
         'apiEndpoint',
-        /**
-         * Cloud Foundry credentials.
-         * @parentConfigKey cloudFoundry
-         */
         'credentialsId',
         /**
          * Cloud Foundry target organization.
