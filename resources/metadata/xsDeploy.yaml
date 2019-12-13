@@ -6,7 +6,7 @@ metadata:
 spec:
   inputs:
     secrets:
-      - name: xsDeployUserCredentialsId
+      - name: credentialsId
         description: Jenkins username/password credential for accessing xs endpoint.
         type: jenkins
     params:
