@@ -33,8 +33,8 @@ func TestDeploy(t *testing.T) {
 	var copiedFiles []string
 	var removedFiles []string
 
-	fExists := func(path string) bool {
-		return path == "dummy.mtar" || path == ".xs_session"
+	fExists := func(path string) (bool, error) {
+		return path == "dummy.mtar" || path == ".xs_session", nil
 	}
 
 	fCopy := func(src, dest string) (int64, error) {
