@@ -83,7 +83,7 @@ nav:
         - whitesourceExecuteScan: steps/whitesourceExecuteScan.md
         - xsDeploy: steps/xsDeploy.md
     - Resources:
-        - 'Required Plugins': jenkins/requiredPlugins.md
+        - 'Custom Jenkins Setup': customjenkins.md
 
 theme:
     name: 'material'
