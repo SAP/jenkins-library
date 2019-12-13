@@ -83,15 +83,22 @@ func PrepareConfig(cmd *cobra.Command, metadata *config.StepData, stepName strin
 		var customConfig io.ReadCloser
 		var err error
 		//accept that config file and defaults cannot be loaded since both are not mandatory here
-		if piperutils.FileExists(GeneralConfig.CustomConfig) {
-			if customConfig, err = openFile(GeneralConfig.CustomConfig); err != nil {
-				errors.Wrapf(err, "Cannot read '%s'", GeneralConfig.CustomConfig)
-			}
-		} else {
-			log.Entry().Infof("Project config file '%s' does not exist. No project configuration available.", GeneralConfig.CustomConfig)
-			customConfig = nil
-		}
+		{
+			exists, e := piperutils.FileExists(GeneralConfig.CustomConfig)
 
+			if e != nil {
+				return e
+			}
+
+			if exists {
+				if customConfig, err = openFile(GeneralConfig.CustomConfig); err != nil {
+					errors.Wrapf(err, "Cannot read '%s'", GeneralConfig.CustomConfig)
+				}
+			} else {
+				log.Entry().Infof("Project config file '%s' does not exist. No project configuration available.", GeneralConfig.CustomConfig)
+				customConfig = nil
+			}
+		}
 		var defaultConfig []io.ReadCloser
 		for _, f := range GeneralConfig.DefaultConfig {
 			//ToDo: support also https as source
