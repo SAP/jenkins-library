@@ -10,7 +10,6 @@ import (
 
 type detectExecuteScanOptions struct {
 	APIToken       string   `json:"apiToken,omitempty"`
-	BuildTool      string   `json:"buildTool,omitempty"`
 	CodeLocation   string   `json:"codeLocation,omitempty"`
 	ProjectName    string   `json:"projectName,omitempty"`
 	ProjectVersion string   `json:"projectVersion,omitempty"`
@@ -46,7 +45,6 @@ func DetectExecuteScanCommand() *cobra.Command {
 
 func addDetectExecuteScanFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVar(&myDetectExecuteScanOptions.APIToken, "apiToken", os.Getenv("PIPER_apiToken"), "Api token to be used for connectivity with Synopsis Detect server.")
-	cmd.Flags().StringVar(&myDetectExecuteScanOptions.BuildTool, "buildTool", os.Getenv("PIPER_buildTool"), "Defines the tool which is used for building the artifact.")
 	cmd.Flags().StringVar(&myDetectExecuteScanOptions.CodeLocation, "codeLocation", os.Getenv("PIPER_codeLocation"), "An override for the name Detect will use for the scan file it creates.")
 	cmd.Flags().StringVar(&myDetectExecuteScanOptions.ProjectName, "projectName", os.Getenv("PIPER_projectName"), "Name of the Synopsis Detect (formerly BlackDuck) project.")
 	cmd.Flags().StringVar(&myDetectExecuteScanOptions.ProjectVersion, "projectVersion", os.Getenv("PIPER_projectVersion"), "Version of the Synopsis Detect (formerly BlackDuck) project.")
@@ -56,7 +54,6 @@ func addDetectExecuteScanFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVar(&myDetectExecuteScanOptions.ServerURL, "serverUrl", os.Getenv("PIPER_serverUrl"), "Server url to the Synopsis Detect (formerly BlackDuck) Server.")
 
 	cmd.MarkFlagRequired("apiToken")
-	cmd.MarkFlagRequired("buildTool")
 	cmd.MarkFlagRequired("projectName")
 	cmd.MarkFlagRequired("projectVersion")
 }
@@ -73,13 +70,6 @@ func detectExecuteScanMetadata() config.StepData {
 						Type:      "string",
 						Mandatory: true,
 						Aliases:   []config.Alias{{Name: "detect/apiToken"}},
-					},
-					{
-						Name:      "buildTool",
-						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:      "string",
-						Mandatory: true,
-						Aliases:   []config.Alias{},
 					},
 					{
 						Name:      "codeLocation",

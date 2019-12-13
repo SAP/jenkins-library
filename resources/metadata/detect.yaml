@@ -25,14 +25,6 @@ spec:
         - PARAMETERS
         - STAGES
         - STEPS
-      - name: buildTool
-        description: Defines the tool which is used for building the artifact.
-        type: string
-        mandatory: true
-        scope:
-        - PARAMETERS
-        - STAGES
-        - STEPS
       - name: codeLocation
         description: An override for the name Detect will use for the scan file it creates.
         type: string
