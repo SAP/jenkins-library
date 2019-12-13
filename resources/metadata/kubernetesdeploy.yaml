@@ -1,0 +1,211 @@
+metadata:
+  name: kubernetesDeploy
+  description: Deployment to Kubernetes test or production namespace within the specified Kubernetes cluster.
+  longDescription: |-
+    Deployment to Kubernetes test or production namespace within the specified Kubernetes cluster.
+
+    !!! note "Deployment supports multiple deployment tools"
+        Currently the following are supported:
+
+        * [Helm](https://helm.sh/) command line tool and [Helm Charts](https://docs.helm.sh/developing_charts/#charts).
+        * [kubectl](https://kubernetes.io/docs/reference/kubectl/overview/) and `kubectl apply` command.
+spec:
+  inputs:
+    params:
+    - name: containerRegistryUrl
+      aliases:
+        - name: dockerRegistryUrl
+      type: string
+      description: http(s) url of the Container registry.
+      scope:
+      - GENERAL
+      - PARAMETERS
+      - STAGES
+      - STEPS
+    - name: namespace
+      aliases:
+        - name: helmDeploymentNamespace
+      type: string
+      description: Defines the Kubernetes namespace in which the application is deployed.
+      scope:
+      - PARAMETERS
+      - STAGES
+      - STEPS
+    - name: createDockerRegistrySecret
+      type: bool
+      description: Toggle to turn on Regsecret creation with a `deployTool:kubectl` deployment.
+      scope:
+      - PARAMETERS
+      - STAGES
+      - STEPS
+      default: true
+    - name: tillerNamespace
+      aliases:
+        - name: helmTillerNamespace
+      type: string
+      description: Defines optional tiller namespace for deployments using helm.
+      scope:
+      - PARAMETERS
+      - STAGES
+      - STEPS
+    - name: ingressHosts
+      type: string
+      description: List of ingress hosts to be exposed.
+      mandatory: false
+      scope:
+      - PARAMETERS
+      - STAGES
+      - STEPS
+      default: null
+    - name: chartPath
+      aliases:
+        - name: helmChartPath
+      type: string
+      description: Defines the chart path for deployments using helm.
+      mandatory: true
+      scope:
+      - PARAMETERS
+      - STAGES
+      - STEPS
+    - name: helmParameters
+      aliases:
+        - name: helmDeploymentParameters
+      type: string
+      description: Defines additional parameters for `helm install` command.
+      scope:
+      - PARAMETERS
+      - STAGES
+      - STEPS
+      default: --set image.repository=${config.dockerRegistry}/${config.deployImageName},image.tag=${config.deployImageTag},secret.dockerconfigjson=${config.k8sDockerSecret}${config.ingressHostsString}
+    - name: helmInstallCommand
+      type: string
+      description: Command executed when triggering helm installation
+      mandatory: false
+      scope:
+      - PARAMETERS
+      - STAGES
+      - STEPS
+      default: helm upgrade ${config.helmDeploymentName} ${config.helmChartPath} --install --force --namespace ${config.k8sDeploymentNamespace} ${config.helmTillerNamespace?' --tiller-namespace '+config.helmTillerNamespace:''} --wait --timeout ${config.helmDeployWaitSeconds} ${config.helmDeploymentParameters?:''} ${config.kubeContext?'--kube-context ' + config.kubeContext:''}
+    - name: deployImageUrl
+      type: string
+      description: '**This parameter is deprecated** please use `deployImage instad`.'
+      mandatory: false
+      scope:
+      - PARAMETERS
+      - STAGES
+      - STEPS
+      default: null
+    - name: helmDeployWaitSeconds
+      type: string
+      description: Number of seconds before helm deploy returns.
+      mandatory: false
+      scope:
+      - PARAMETERS
+      - STAGES
+      - STEPS
+      default: 300
+    - name: deployTool
+      type: string
+      description: Defines the tool which should be used for deployment.
+      mandatory: true
+      scope:
+      - PARAMETERS
+      - STAGES
+      - STEPS
+      default: null
+    - name: envVars
+      aliases:
+        - name: helmEnvVars
+      type: []string
+      description: Environment variables which should be passed to HELM deployment.
+      scope:
+      - PARAMETERS
+      - STAGES
+      - STEPS
+      default:
+        KUBECONFIG: /home/piper/.kube/config
+        HELM_HOME: /home/piper/.helm
+    - name: k8sAppTemplate
+      type: string
+      description: Defines the filename for the kubernetes app template (e.g. k8s_apptemplate.yaml)
+      mandatory: false
+      scope:
+      - PARAMETERS
+      - STAGES
+      - STEPS
+      default: null
+    - name: helmDeploymentName
+      type: string
+      description: Defines the name of the deployment.
+      mandatory: true
+      scope:
+      - PARAMETERS
+      - STAGES
+      - STEPS
+      default: null
+    - name: k8sDeploymentNamespace
+      type: string
+      description: Kubernetes namespace as target for the deployment.
+      mandatory: false
+      scope:
+      - PARAMETERS
+      - STAGES
+      - STEPS
+      default: null
+    - name: kubeContext
+      type: string
+      description: Defines the context to use from the `kubeconfig` file.
+      mandatory: false
+      scope:
+      - PARAMETERS
+      - STAGES
+      - STEPS
+      default: null
+    - name: apiServer
+      aliases:
+        - name: k8sAPIServer
+      type: string
+      description: Defines the Url of the API Server of the Kubernetes cluster.
+      mandatory: true
+      scope:
+      - GENERAL
+      - PARAMETERS
+      - STAGES
+      - STEPS
+      default: null
+    - name: image
+      aliases:
+        - name: deployImage
+      type: string
+      description: Full name of the image to be deployed.
+      mandatory: true
+      scope:
+      - PARAMETERS
+      - STAGES
+      - STEPS
+      default: null
+    secrets:
+    - name: kubeCredentialsId
+      type: jenkins
+    - name: k8sTokenCredentialsId
+      type: jenkins
+    - name: dockerCredentialsId
+      type: jenkins
+    resources:
+    - name: deployDescriptor
+      type: stash
+  containers:
+  - image: docker.wdf.sap.corp:50000/piper/k8s
+    workingDir: /home/piper
+    conditions:
+    - conditionRef: strings-equal
+      params:
+      - name: deployTool
+        value: helm
+  - image: docker.wdf.sap.corp:50000/piper/k8s
+    workingDir: /home/piper
+    conditions:
+    - conditionRef: strings-equal
+      params:
+      - name: deployTool
+        value: kubectl
