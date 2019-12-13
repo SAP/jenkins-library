@@ -465,7 +465,7 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
     }
 
     @Test
-    void tastStashIncludesAndExcludes() {
+    void testStashIncludesAndExcludes() {
         nullScript.commonPipelineEnvironment.configuration = [
             steps: [
                 dockerExecuteOnKubernetes: [
@@ -487,9 +487,14 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
         ) {
             bodyExecuted = true
         }
-// TODO: correct tests
-//        assertThat(stashList[0], allOf(hasEntry('includes','workspace/include.test'), hasEntry('excludes','workspace/exclude.test')))
-//        assertThat(stashList[1], allOf(hasEntry('includes','container/include.test'), hasEntry('excludes','container/exclude.test')))
+        assertThat(stashList, hasItem(allOf(
+            not(hasEntry('allowEmpty', true)),
+            hasEntry('includes','workspace/include.test'), 
+            hasEntry('excludes','workspace/exclude.test'))))
+        assertThat(stashList, hasItem(allOf(
+            not(hasEntry('allowEmpty', true)),
+            hasEntry('includes','container/include.test'), 
+            hasEntry('excludes','container/exclude.test'))))
     }
 
 
