@@ -58,6 +58,7 @@ import java.util.regex.*
 ]
 @Field Set GENERAL_CONFIG_KEYS = STEP_CONFIG_KEYS
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
+@Field Map CONFIG_KEY_COMPATIBILITY = [cloudFoundry: [apiEndpoint: 'cfApiEndpoint', credentialsId: 'cfCredentialsId', org: 'cfOrg', space: 'cfSpace', serviceInstance: 'cfServiceInstance', serviceKey: 'cfServiceKey']]
 /**
  * Pulls a Repository (Software Component) to a SAP Cloud Platform ABAP Environment system.
  *
@@ -74,10 +75,10 @@ void call(Map parameters = [:]) {
         def script = checkScript(this, parameters) ?: this
         Map configuration = ConfigurationHelper.newInstance(this)
             .loadStepDefaults()
-            .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS)
-            .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS)
-            .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName ?: env.STAGE_NAME, STEP_CONFIG_KEYS)
-            .mixin(parameters, PARAMETER_KEYS)
+            .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS, CONFIG_KEY_COMPATIBILITY)
+            .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS, CONFIG_KEY_COMPATIBILITY)
+            .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName ?: env.STAGE_NAME, STEP_CONFIG_KEYS, CONFIG_KEY_COMPATIBILITY)
+            .mixin(parameters, PARAMETER_KEYS, CONFIG_KEY_COMPATIBILITY)
             .collectValidationFailures()
             .withMandatoryProperty('repositoryName')
             .use()
