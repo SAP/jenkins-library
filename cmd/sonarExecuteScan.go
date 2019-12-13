@@ -79,11 +79,11 @@ func runSonar(options sonarExecuteScanOptions, command execRunner) {
 		}
 	}
 
-	loadSonarScanner(options.SonarScannerDownloadURL)
+	//loadSonarScanner(options.SonarScannerDownloadURL)
 
-	//loadCertificates("", toolFolder)
+	loadCertificates(command, "")
 
-	scan(arguments, command)
+	scan(command, arguments)
 }
 
 func loadSonarScanner(url string) {
@@ -120,29 +120,41 @@ func loadSonarScanner(url string) {
 }
 
 //TODO: extract to Helper?
-func loadCertificates(certificateString string, toolFolder string) {
+func loadCertificates(command execRunner, certificateString string) {
 	if len(certificateString) > 0 {
-		certificateFolder := ".certificates"
+		//certificateFolder := ".certificates"
 
-		//keystore := filepath.Join(toolFolder, "jre", "lib", "security", "cacerts")
-		//keytoolOptions := []string{"-import", "-noprompt", "-storepass changeit", "-keystore " + keystore}
+		// create temp folder to extract archive with CLI
+		tmpFolder, err := ioutil.TempDir(".", "temp-")
+		if err != nil {
+			log.Entry().WithError(err).WithField("tempFolder", tmpFolder).Debug("creation of temp directory failed")
+		}
+
+		keystore := filepath.Join(toolFolder, "jre", "lib", "security", "cacerts")
+		keytoolOptions := []string{"-import", "-noprompt", "-storepass changeit", "-keystore " + keystore}
 		certificateList := strings.Split(certificateString, ",")
 
 		for _, certificate := range certificateList {
 			filename := path.Base(certificate) // decode?
+			target := filepath.Join(tmpFolder, filename)
 
 			log.Entry().
-				WithField("filename", filename).
-				Debug("download of TLS certificate")
-
-			if err := file.Download(certificate, filepath.Join(certificateFolder, filename)); err != nil {
+				WithField("source", certificate).
+				WithField("target", target).
+				Info("download of TLS certificate")
+			// download certificate
+			if err := file.Download(certificate, target); err != nil {
 				log.Entry().
 					WithField("url", certificate).
 					WithError(err).
 					Fatal("download of TLS certificate failed")
 			}
-			// load
-			// add to keytool
+			options := append(keytoolOptions, "-file \""+target+"\"")
+			options = append(options, "-alias \""+filename+"\"")
+			// add certificate to keystore
+			if err := command.RunExecutable("keytool", keytoolOptions...); err != nil {
+				log.Entry().WithError(err).WithField("source", target).Fatal("adding certificate to keystore failed")
+			}
 			// sh "keytool ${keytoolOptions.join(" ")} -alias "${filename}" -file "${certificateFolder}${filename}""
 		}
 	} else {
@@ -152,7 +164,7 @@ func loadCertificates(certificateString string, toolFolder string) {
 	}
 }
 
-func scan(options []string, command execRunner) {
+func scan(command execRunner, options []string) {
 	executable := filepath.Join(toolFolder, "bin", "sonar-scanner")
 	for idx, element := range options {
 		element = strings.TrimSpace(element)
