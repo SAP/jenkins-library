@@ -89,6 +89,11 @@ func TestProcessMetaFiles(t *testing.T) {
 
 func TestSetDefaultParameters(t *testing.T) {
 	t.Run("success case", func(t *testing.T) {
+		sliceVals := []string{"val4_1", "val4_2"}
+		stringSliceDefault := make([]interface{}, len(sliceVals))
+		for i, v := range sliceVals {
+			stringSliceDefault[i] = v
+		}
 		stepData := config.StepData{
 			Spec: config.StepSpec{
 				Inputs: config.StepInputs{
@@ -97,7 +102,7 @@ func TestSetDefaultParameters(t *testing.T) {
 						{Name: "param1", Scope: []string{"STEPS"}, Type: "string"},
 						{Name: "param2", Scope: []string{"STAGES"}, Type: "bool", Default: true},
 						{Name: "param3", Scope: []string{"PARAMETERS"}, Type: "bool"},
-						{Name: "param4", Scope: []string{"ENV"}, Type: "[]string", Default: []string{"val4_1", "val4_2"}},
+						{Name: "param4", Scope: []string{"ENV"}, Type: "[]string", Default: stringSliceDefault},
 						{Name: "param5", Scope: []string{"ENV"}, Type: "[]string"},
 					},
 				},

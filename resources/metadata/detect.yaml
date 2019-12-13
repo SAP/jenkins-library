@@ -114,7 +114,4 @@ spec:
         - PARAMETERS
         - STAGES
         - STEPS
-  containers:
-    - name: detect
-      image: debian:stretch
-      workingDir: '/'
+
