@@ -43,6 +43,7 @@ func Execute() {
 
 	rootCmd.AddCommand(ConfigCommand())
 	rootCmd.AddCommand(VersionCommand())
+	rootCmd.AddCommand(DetectExecuteScanCommand())
 	rootCmd.AddCommand(KarmaExecuteTestsCommand())
 	rootCmd.AddCommand(XsDeployCommand())
 	rootCmd.AddCommand(GithubPublishReleaseCommand())
