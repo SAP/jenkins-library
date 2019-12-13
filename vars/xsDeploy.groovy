@@ -1,38 +1,17 @@
-import com.sap.piper.JenkinsUtils
-
 import static com.sap.piper.Prerequisites.checkScript
 
-import com.sap.piper.BashUtils
-import com.sap.piper.ConfigurationHelper
+import com.sap.piper.JenkinsUtils
+import com.sap.piper.PiperGoUtils
+
+
 import com.sap.piper.GenerateDocumentation
 import com.sap.piper.Utils
 
 import groovy.transform.Field
 
-import hudson.AbortException
-
+@Field String METADATA_FILE = 'metadata/xsDeploy.yaml'
 @Field String STEP_NAME = getClass().getName()
 
-@Field Set GENERAL_CONFIG_KEYS = STEP_CONFIG_KEYS
-
-@Field Set STEP_CONFIG_KEYS = [
-    'action',
-    'apiUrl',
-    'credentialsId',
-    'deploymentId',
-    'deployIdLogPattern',
-    'deployOpts',
-    /** A map containing properties forwarded to dockerExecute. For more details see [here][dockerExecute] */
-    'docker',
-    'loginOpts',
-    'mode',
-    'mtaPath',
-    'org',
-    'space',
-    'xsSessionFile',
-]
-
-@Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
 
 enum DeployMode {
     DEPLOY,
@@ -67,272 +46,120 @@ void call(Map parameters = [:]) {
 
     handlePipelineStepErrors (stepName: STEP_NAME, stepParameters: parameters) {
 
+        final script = checkScript(this, parameters) ?: null
+
+        if(! script) {
+            error "Reference to surrounding pipeline script not provided (script: this)."
+        }
+
         def utils = parameters.juStabUtils ?: new Utils()
+        def piperGoUtils = parameters.piperGoUtils ?: new PiperGoUtils(utils)
 
-        final script = checkScript(this, parameters) ?: this
+        //
+        // The parameters map in provided from outside. That map might be used elsewhere in the pipeline
+        // hence we should not modify it here. So we create a new map based on the parameters map.
+        parameters = [:] << parameters
 
-        ConfigurationHelper configHelper = ConfigurationHelper.newInstance(this)
-            .loadStepDefaults()
-            .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS)
-            .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS)
-            .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName?:env.STAGE_NAME, STEP_CONFIG_KEYS)
-            .addIfEmpty('mtaPath', script.commonPipelineEnvironment.getMtarFilePath())
-            .addIfEmpty('deploymentId', script.commonPipelineEnvironment.xsDeploymentId)
-            .mixin(parameters, PARAMETER_KEYS)
+        // hard to predict how these two parameters looks like in its serialized form. Anyhow it is better
+        // not to have these parameters forwarded somehow to the go layer.
+        parameters.remove('juStabUtils')
+        parameters.remove('piperGoUtils')
+        parameters.remove('script')
 
-        Map config = configHelper.use()
+        //
+        // For now - since the xsDeploy step is not merged and covered by a release - we stash
+        // a locally built version of the piper-go binary in the pipeline script (Jenkinsfile) with
+        // stash name "piper-bin". That stash is used inside method "unstashPiperBin".
+        piperGoUtils.unstashPiperBin()
 
-        DeployMode mode = config.mode
+        //
+        // Printing the piper-go version. Should not be done here, but somewhere during materializing
+        // the piper binary.
+        def piperGoVersion = sh(returnStdout: true, script: "./piper version")
+        echo "PiperGoVersion: ${piperGoVersion}"
 
-        if(mode == DeployMode.NONE) {
-            echo "Deployment skipped intentionally. Deploy mode '${mode.toString()}'."
-            return
-        }
-
-        Action action = config.action
-
-        if(mode == DeployMode.DEPLOY && action != Action.NONE) {
-            error "Cannot perform action '${action.toString()}' in mode '${mode.toString()}'. Only action '${Action.NONE.toString()}' is allowed."
-        }
-
-        boolean performLogin  = ((mode == DeployMode.DEPLOY) || (mode == DeployMode.BG_DEPLOY && !(action in [Action.RESUME, Action.ABORT])))
-        boolean performLogout = ((mode == DeployMode.DEPLOY) || (mode == DeployMode.BG_DEPLOY && action != Action.NONE))
-
-        boolean sessionExists = fileExists file: config.xsSessionFile
-
-        if( (! performLogin) && (! sessionExists) ) {
-            error 'For the current configuration an already existing session is required. But there is no already existing session.'
-        }
-
-        configHelper
-            .collectValidationFailures()
-            /**
-              * Used for finalizing the blue-green deployment.
-              * @possibleValues RESUME, ABORT, RETRY
-              */
-            .withMandatoryProperty('action')
-            /** The file name of the file representing the sesssion after `xs login`. Should not be changed normally. */
-            .withMandatoryProperty('xsSessionFile')
-            /** Regex pattern for retrieving the ID of the deployment. */
-            .withMandatoryProperty('deployIdLogPattern')
-            /**
-              * Controls if there is a standard deployment or a blue green deployment
-              * @possibleValues DEPLOY, BG_DEPLOY
-              */
-            .withMandatoryProperty('mode')
-            /** The endpoint */
-            .withMandatoryProperty('apiUrl')
-            /** The organization */
-            .withMandatoryProperty('org')
-            /** The space */
-            .withMandatoryProperty('space')
-            /** Additional options appended to the login command. Only needed for sophisticated cases.
-              * When provided it is the duty of the provider to ensure proper quoting / escaping.
-              */
-            .withMandatoryProperty('loginOpts')
-            /** Additional options appended to the deploy command. Only needed for sophisticated cases.
-              * When provided it is the duty of the provider to ensure proper quoting / escaping.
-              */
-            .withMandatoryProperty('deployOpts')
-            /** The credentialsId */
-            .withMandatoryProperty('credentialsId')
-            /** The path to the deployable. If not provided explicitly it is retrieved from the common pipeline environment
-              * (Parameter `mtarFilePath`).
-              */
-            .withMandatoryProperty('mtaPath', null, {action == Action.NONE})
-            .withMandatoryProperty('deploymentId',
-                'No deployment id provided, neither via parameters nor via common pipeline environment. Was there a deployment before?',
-                {action in [Action.RESUME, Action.ABORT, Action.RETRY]})
-            .use()
-
+        //
+        // since there is no valid config provided (... null) telemetry is disabled.
         utils.pushToSWA([
             step: STEP_NAME,
-        ], config)
+        ], null)
 
-        if(action == Action.NONE) {
-            boolean deployableExists = fileExists file: config.mtaPath
-            if(! deployableExists)
-                error "Deployable '${config.mtaPath}' does not exist."
-        }
+        writeFile(file: METADATA_FILE, text: libraryResource(METADATA_FILE))
 
-        if(performLogin) {
-            login(script, config)
-        }
 
-        def failures = []
+        withEnv([
+            "PIPER_parametersJSON=${groovy.json.JsonOutput.toJson(parameters)}",
+        ]) {
 
-        if(action in [Action.RESUME, Action.ABORT, Action.RETRY]) {
+            //
+            // context config gives us e.g. the docker image name. --> How does this work for customer maintained images?
+            // There is a name provided in the metadata file. But we do not provide a docker image for that.
+            // The user has to build that for her/his own. How do we expect to configure this?
+            Map contextConfig = readJSON (text: sh(returnStdout: true, script: "./piper getConfig --contextConfig --stepMetadata '${METADATA_FILE}'"))
 
-            complete(script, mode, action, config, failures)
+            Map projectConfig = readJSON (text: sh(returnStdout: true, script: "./piper ${parameters.verbose ? '--verbose' :''} getConfig --stepMetadata '${METADATA_FILE}'"))
 
-        } else {
+            if(parameters.verbose) {
+                echo "[INFO] Context-Config: ${contextConfig}"
+                echo "[INFO] Project-Config: ${projectConfig}"
+            }
 
-            deploy(script, mode, config, failures)
-        }
+            Action action = projectConfig.action
+            DeployMode mode = projectConfig.mode
 
-        if (performLogout || failures) {
-            logout(script, config, failures)
+            // That config map here is only used in the groovy layer. Nothing is handed over to go.
+            Map config = contextConfig <<
+                [
+                    apiUrl: projectConfig.apiUrl, // required on groovy level for acquire the lock
+                    org: projectConfig.org,       // required on groovy level for acquire the lock
+                    space: projectConfig.space,   // required on groovy level for acquire the lock
+                    docker: [
+                        dockerImage: contextConfig.dockerImage,
+                        dockerPullImage: false    // dockerPullImage apparently not provided by context config.
+                    ]
+                ]
 
-        } else {
-            echo "Skipping logout in order to be able to resume or abort later."
-        }
+            if(parameters.verbose) {
+                echo "[INFO] Merged-Config: ${config}"
+            }
 
-        if(failures) {
-            error "Failed command(s): ${failures}. Check earlier log for details."
-        }
-    }
-}
-
-void login(Script script, Map config) {
-
-    withCredentials([usernamePassword(
-        credentialsId: config.credentialsId,
-        passwordVariable: 'password',
-        usernameVariable: 'username'
-    )]) {
-
-        def returnCode = executeXSCommand([script: script].plus(config.docker),
-        [
-            "xs login -a ${config.apiUrl} -u ${username} -p ${BashUtils.quoteAndEscape(password)} -o ${config.org} -s ${config.space} ${config.loginOpts}",
-            'RC=$?',
-            "[ \$RC == 0 ]  && cp \"\${HOME}/${config.xsSessionFile}\" .",
-            'exit $RC'
-        ])
-
-        if(returnCode != 0)
-            error "xs login failed."
-    }
-
-    boolean existsXsSessionFileAfterLogin = fileExists file: config.xsSessionFile
-    if(! existsXsSessionFileAfterLogin)
-        error "Session file ${config.xsSessionFile} not found in current working directory after login."
-}
-
-void deploy(Script script, DeployMode mode, Map config, def failures) {
-
-    def deploymentLog
-
-    try {
-        lock(getLockIdentifier(config)) {
-            deploymentLog = executeXSCommand([script: script].plus(config.docker),
-            [
-                "cp ${config.xsSessionFile} \${HOME}",
-                "xs ${mode.toString()} '${config.mtaPath}' -f ${config.deployOpts}"
-            ], true)
-        }
-
-        echo "Deploy log: ${deploymentLog}"
-
-    } catch(AbortException e) {
-        echo "deployment failed. Message: ${e.getMessage()}, Log: ${deploymentLog}}"
-        failures << "xs ${mode.toString()}"
-    }
-
-    if(mode == DeployMode.BG_DEPLOY) {
-
-        if(! failures.isEmpty()) {
-
-            echo "Retrieval of deploymentId skipped since prior deployment was not successfull."
-
-        } else {
-
-            for (def logLine : deploymentLog.readLines()) {
-                def matcher = logLine =~ config.deployIdLogPattern
-                if(matcher.find()) {
-                    script.commonPipelineEnvironment.xsDeploymentId = matcher[0][1]
-                    echo "DeploymentId: ${script.commonPipelineEnvironment.xsDeploymentId}."
-                    break
+            def operationId
+            if(mode == DeployMode.BG_DEPLOY && action != Action.NONE) {
+                operationId = script.commonPipelineEnvironment.xsDeploymentId
+                if (! operationId) {
+                    throw new IllegalArgumentException('No operationId provided. Was there a deployment before?')
                 }
             }
-            if(script.commonPipelineEnvironment.xsDeploymentId == null) {
-                failures << "Cannot lookup deploymentId. Search pattern was: '${config.deployIdLogPattern}'."
+
+            def xsDeployStdout
+
+            lock(getLockIdentifier(config)) {
+
+                withCredentials([usernamePassword(
+                        credentialsId: config.credentialsId,
+                        passwordVariable: 'PASSWORD',
+                        usernameVariable: 'USERNAME')]) {
+
+                    dockerExecute([script: this].plus(config.docker)) {
+                        xsDeployStdout = sh returnStdout: true, script: """#!/bin/bash
+                        ./piper ${parameters.verbose ? '--verbose' : ''} xsDeploy --user \${USERNAME} --password \${PASSWORD} ${operationId ? "--operationId " + operationId : "" }
+                        """
+                    }
+
+                }
+            }
+
+            if(mode == DeployMode.BG_DEPLOY && action == Action.NONE) {
+                script.commonPipelineEnvironment.xsDeploymentId = readJSON(text: xsDeployStdout).operationId
+                if (!script.commonPipelineEnvironment.xsDeploymentId) {
+                    error "No Operation id returned from xs deploy step. This is required for mode '${mode}' and action '${action}'."
+                }
+                echo "[INFO] OperationId for subsequent resume or abort: '${script.commonPipelineEnvironment.xsDeploymentId}'."
             }
         }
     }
-}
-
-void complete(Script script, DeployMode mode, Action action, Map config, def failures) {
-
-    if(mode != DeployMode.BG_DEPLOY)
-        error "Action '${action.toString()}' can only be performed for mode '${DeployMode.BG_DEPLOY.toString()}'. Current mode is: '${mode.toString()}'."
-
-    def returnCode = 1
-
-    lock(getLockIdentifier(config)) {
-        returnCode = executeXSCommand([script: script].plus(config.docker),
-        [
-            "cp ${config.xsSessionFile} \${HOME}",
-            "xs ${mode.toString()} -i ${config.deploymentId} -a ${action.toString()}"
-        ])
-    }
-
-    if(returnCode != 0) {
-        echo "${mode.toString()} with action '${action.toString()}' failed with return code ${returnCode}."
-        failures << "xs ${mode.toString()} -a ${action.toString()}"
-    }
-}
-
-void logout(Script script, Map config, def failures) {
-
-    def returnCode = executeXSCommand([script: script].plus(config.docker),
-    [
-        "cp ${config.xsSessionFile} \${HOME}",
-        'xs logout'
-    ])
-
-    if(returnCode != 0) {
-        failures << 'xs logout'
-    }
-
-    sh "XSCONFIG=${config.xsSessionFile}; [ -f \${XSCONFIG} ] && rm \${XSCONFIG}"
 }
 
 String getLockIdentifier(Map config) {
     "$STEP_NAME:${config.apiUrl}:${config.org}:${config.space}"
-}
-
-def executeXSCommand(Map dockerOptions, List commands, boolean returnStdout = false) {
-
-    def r
-
-    dockerExecute(dockerOptions) {
-
-        // in case there are credentials contained in the commands we assume
-        // the call is properly wrapped by withCredentials(./.)
-        echo "Executing: '${commands}'."
-
-        List prelude = [
-            '#!/bin/bash'
-        ]
-
-        List script = (prelude + commands)
-
-        params = [
-            script: script.join('\n')
-        ]
-
-        if(returnStdout) {
-            params << [ returnStdout: true ]
-        } else {
-            params << [ returnStatus: true ]
-        }
-
-        r = sh params
-
-        if( (! returnStdout ) && r != 0) {
-
-            try {
-                echo "xs logs:"
-
-                sh 'LOG_FOLDER=${HOME}/.xs_logs; [ -d ${LOG_FOLDER} ]  && cat ${LOG_FOLDER}/*'
-
-            } catch(Exception e) {
-
-                echo "Cannot provide xs logs: ${e.getMessage()}."
-            }
-
-            echo "Executing of commands '${commands}' failed. Check earlier logs for details."
-        }
-    }
-    r
 }
