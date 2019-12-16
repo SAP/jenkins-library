@@ -43,7 +43,11 @@ class PiperGoUtils implements Serializable {
             }
 
         }
+
         utils.stashWithMessage('piper-bin', 'failed to stash piper binary', 'piper')
+
+        def piperGoVersion = steps.sh(returnStdout: true, script: "./piper version")
+        steps.echo "PiperGoVersion: ${piperGoVersion}"
     }
 
     List getLibrariesInfo() {
