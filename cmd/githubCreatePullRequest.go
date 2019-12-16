@@ -19,14 +19,14 @@ type githubIssueService interface {
 }
 
 func githubCreatePullRequest(myGithubCreatePullRequestOptions githubCreatePullRequestOptions) error {
-	ctx, client, err := piperGithub.NewClient(myGithubPublishReleaseOptions.Token, myGithubPublishReleaseOptions.APIURL, myGithubPublishReleaseOptions.UploadURL)
+	ctx, client, err := piperGithub.NewClient(myGithubCreatePullRequestOptions.Token, myGithubCreatePullRequestOptions.APIURL, "")
 	if err != nil {
 		log.Entry().WithError(err).Fatal("Failed to get GitHub client")
 	}
 
 	err = runGithubCreatePullRequest(ctx, &myGithubCreatePullRequestOptions, client.PullRequests, client.Issues)
 	if err != nil {
-		log.Entry().WithError(err).Fatal("Failed to publish GitHub release")
+		log.Entry().WithError(err).Fatal("Failed to create GitHub pull request")
 	}
 
 	return nil
