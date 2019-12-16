@@ -58,7 +58,7 @@ import static com.sap.piper.Prerequisites.checkScript
 @Field Map CONFIG_KEY_COMPATIBILITY = [cloudFoundry: [apiEndpoint: 'cfApiEndpoint', credentialsId: 'cfCredentialsId', org: 'cfOrg', space: 'cfSpace', serviceInstance: 'cfServiceInstance', serviceKey: 'cfServiceKey', serviceKeyConfig: 'cfServiceKeyConfig']]
 
 /**
- * Step that creates a service key for a service instancve on Cloud Foundry
+ * Step that creates a service key for a specified service instance on Cloud Foundry
  */
 @GenerateDocumentation
 void call(Map parameters = [:]) {
@@ -76,6 +76,7 @@ void call(Map parameters = [:]) {
             .withMandatoryProperty('cloudFoundry/credentialsId')
             .withMandatoryProperty('cloudFoundry/serviceInstance')
             .withMandatoryProperty('cloudFoundry/serviceKey')
+            .withMandatoryProperty('cloudFoundry/apiEndpoint')
             .use()
 
         echo "[${STEP_NAME}] Info: docker image: ${config.dockerImage}, docker workspace: ${config.dockerWorkspace}"
