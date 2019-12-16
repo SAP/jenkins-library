@@ -1,5 +1,6 @@
 import static com.sap.piper.Prerequisites.checkScript
 
+import com.sap.piper.DefaultValueCache
 import com.sap.piper.JenkinsUtils
 import com.sap.piper.PiperGoUtils
 
@@ -10,6 +11,7 @@ import com.sap.piper.Utils
 import groovy.transform.Field
 
 @Field String METADATA_FILE = 'metadata/xsDeploy.yaml'
+@Field String PIPER_DEFAULTS = 'default_pipeline_environment.yml'
 @Field String STEP_NAME = getClass().getName()
 
 
@@ -76,8 +78,16 @@ void call(Map parameters = [:]) {
             step: STEP_NAME,
         ], null)
 
-        writeFile(file: METADATA_FILE, text: libraryResource(METADATA_FILE))
 
+        List configs = [PIPER_DEFAULTS]
+        configs.addAll(script.commonPipelineEnvironment.getCustomDefaults())
+        configs = configs.reverse()
+
+        for(def customDefault : configs) {
+            writeFile(file: ".pipeline/additionalConfigs/${customDefault}", text: libraryResource(customDefault))
+        }
+
+        writeFile(file: METADATA_FILE, text: libraryResource(METADATA_FILE))
 
         withEnv([
             "PIPER_parametersJSON=${groovy.json.JsonOutput.toJson(parameters)}",
@@ -87,9 +97,9 @@ void call(Map parameters = [:]) {
             // context config gives us e.g. the docker image name. --> How does this work for customer maintained images?
             // There is a name provided in the metadata file. But we do not provide a docker image for that.
             // The user has to build that for her/his own. How do we expect to configure this?
-            Map contextConfig = readJSON (text: sh(returnStdout: true, script: "./piper getConfig --contextConfig --stepMetadata '${METADATA_FILE}'"))
+            Map contextConfig = readJSON (text: sh(returnStdout: true, script: "./piper ${parameters.verbose ? '--verbose' :''} getConfig --stepMetadata '${METADATA_FILE}' --defaultConfig ${joinAndQuote(configs)} --contextConfig"))
 
-            Map projectConfig = readJSON (text: sh(returnStdout: true, script: "./piper ${parameters.verbose ? '--verbose' :''} getConfig --stepMetadata '${METADATA_FILE}'"))
+            Map projectConfig = readJSON (text: sh(returnStdout: true, script: "./piper ${parameters.verbose ? '--verbose' :''} getConfig --stepMetadata '${METADATA_FILE}' --defaultConfig ${joinAndQuote(configs)}"))
 
             if(parameters.verbose) {
                 echo "[INFO] Context-Config: ${contextConfig}"
@@ -154,4 +164,12 @@ void call(Map parameters = [:]) {
 
 String getLockIdentifier(Map config) {
     "$STEP_NAME:${config.apiUrl}:${config.org}:${config.space}"
+}
+
+String joinAndQuote(List l) {
+    _l = []
+    for(def e : l) {
+        _l << '"' + e + '"'
+    }
+    _l.join(' ')
 }

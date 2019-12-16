@@ -1,5 +1,6 @@
 import static org.hamcrest.Matchers.allOf
 import static org.hamcrest.Matchers.contains
+import static org.hamcrest.Matchers.containsInAnyOrder
 import static org.hamcrest.Matchers.containsString
 import static org.hamcrest.Matchers.equalTo
 import static org.hamcrest.Matchers.is
@@ -63,8 +64,8 @@ class XsDeployTest extends BasePiperTest {
     @Before
     public void init() {
         helper.registerAllowedMethod('withEnv', [List, Closure], {l, c -> env = l;  c()})
-        shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, '.*getConfig --contextConfig --stepMetadata.*', '{"dockerImage": "xs", "credentialsId":"myCreds"}')
-        shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, '.*getConfig --stepMetadata.*', '{"mode": "BG_DEPLOY", "action": "NONE", "apiUrl": "https://example.org/xs", "org": "myOrg", "space": "mySpace"}')
+        shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, '.*getConfig.*--contextConfig.*', '{"dockerImage": "xs", "credentialsId":"myCreds"}')
+        shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, 'getConfig.* (?!--contextConfig)', '{"mode": "BG_DEPLOY", "action": "NONE", "apiUrl": "https://example.org/xs", "org": "myOrg", "space": "mySpace"}')
         nullScript.commonPipelineEnvironment.xsDeploymentId = null
     }
 
@@ -88,7 +89,7 @@ class XsDeployTest extends BasePiperTest {
         thrown.expect(IllegalArgumentException)
         thrown.expectMessage('No enum constant')
 
-        shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, '.*getConfig --stepMetadata.*', '{"mode": "DOES_NOT_EXIST", "action": "NONE", "apiUrl": "https://example.org/xs", "org": "myOrg", "space": "mySpace"}')
+        shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, 'getConfig.* (?!--contextConfig)', '{"mode": "DOES_NOT_EXIST", "action": "NONE", "apiUrl": "https://example.org/xs", "org": "myOrg", "space": "mySpace"}')
 
         stepRule.step.xsDeploy(
             script: nullScript,
@@ -114,7 +115,6 @@ class XsDeployTest extends BasePiperTest {
             piperGoUtils: goUtils
         )
 
-        
         // nota bene: script and piperGoUtils are not contained in the json below.
         assertThat(env*.toString(), contains('PIPER_parametersJSON={"apiUrl":"https://example.org/xs","org":"myOrg","space":"mySpace","credentialsId":"myCreds","deployOpts":"-t 60","mtaPath":"myApp.mta","mode":"DEPLOY","action":"NONE"}'))
     }
@@ -131,7 +131,7 @@ class XsDeployTest extends BasePiperTest {
         boolean unstashCalled
 
         assertThat(nullScript.commonPipelineEnvironment.xsDeploymentId, nullValue())
-        
+
         shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, '.*xsDeploy .*', '{"operationId": "1234"}')
 
         goUtils = new PiperGoUtils(null) {
@@ -148,17 +148,21 @@ class XsDeployTest extends BasePiperTest {
 
         assertThat(nullScript.commonPipelineEnvironment.xsDeploymentId, is('1234'))
 
-        assertThat(writeFileRule.files.keySet(), contains('metadata/xsDeploy.yaml'))
-        
+        assertThat(writeFileRule.files.keySet(), containsInAnyOrder(
+            '.pipeline/additionalConfigs/default_pipeline_environment.yml',
+            'metadata/xsDeploy.yaml',
+            ))
+
         assertThat(dockerRule.dockerParams.dockerImage, equalTo('xs'))
         assertThat(dockerRule.dockerParams.dockerPullImage, equalTo(false))
-        
+
         assertThat(shellRule.shell,
             allOf(
                 new CommandLineMatcher()
                     .hasProlog('./piper version'),
                 new CommandLineMatcher()
-                    .hasProlog('./piper getConfig --contextConfig --stepMetadata \'metadata/xsDeploy.yaml\''),
+                    .hasProlog('./piper getConfig')
+                    .hasArgument('--contextConfig'),
                 new CommandLineMatcher()
                     .hasProlog('./piper getConfig --stepMetadata \'metadata/xsDeploy.yaml\''),
                 new CommandLineMatcher()
@@ -176,7 +180,7 @@ class XsDeployTest extends BasePiperTest {
 
         nullScript.commonPipelineEnvironment.xsDeploymentId = '1234'
 
-        shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, '.*getConfig --stepMetadata.*', '{"mode": "BG_DEPLOY", "action": "RESUME", "apiUrl": "https://example.org/xs", "org": "myOrg", "space": "mySpace"}')
+        shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, 'getConfig.* (?!--contextConfig)', '{"mode": "BG_DEPLOY", "action": "RESUME", "apiUrl": "https://example.org/xs", "org": "myOrg", "space": "mySpace"}')
 
         stepRule.step.xsDeploy(
             script: nullScript,
@@ -202,7 +206,7 @@ class XsDeployTest extends BasePiperTest {
                 containsString('No operationId provided'),
                 containsString('Was there a deployment before?')))
 
-        shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, '.*getConfig --stepMetadata.*', '{"mode": "BG_DEPLOY", "action": "RESUME", "apiUrl": "https://example.org/xs", "org": "myOrg", "space": "mySpace"}')
+        shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, 'getConfig.* (?!--contextConfig)', '{"mode": "BG_DEPLOY", "action": "RESUME", "apiUrl": "https://example.org/xs", "org": "myOrg", "space": "mySpace"}')
 
         assertThat(nullScript.commonPipelineEnvironment.xsDeploymentId, nullValue())
 
@@ -212,4 +216,61 @@ class XsDeployTest extends BasePiperTest {
             failOnError: true,
         )
     }
+
+    @Test
+    public void testAdditionalCustomConfigLayers() {
+
+        def resources = ['a.yml': '- x: y}', 'b.yml' : '- a: b}']
+
+        helper.registerAllowedMethod('libraryResource', [String], {
+
+            r ->
+
+            def resource = resources[r]
+            if(resource) return resource
+
+            File res = new File(new File('resources'), r)
+            if (res.exists()) {
+                return res.getText()
+            }
+
+            throw new RuntimeException("Resource '${r}' not found.")
+        })
+
+        assertThat(nullScript.commonPipelineEnvironment.xsDeploymentId, nullValue())
+
+        shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, '.*xsDeploy .*', '{"operationId": "1234"}')
+
+        nullScript.commonPipelineEnvironment = ['reset': {}, 'getCustomDefaults': {['a.yml', 'b.yml']}]
+
+        goUtils = new PiperGoUtils(null) {
+            void unstashPiperBin() {
+            }
+        }
+        stepRule.step.xsDeploy(
+            script: nullScript,
+            piperGoUtils: goUtils
+        )
+
+        assertThat(nullScript.commonPipelineEnvironment.xsDeploymentId, is('1234'))
+
+        assertThat(writeFileRule.files.keySet(), containsInAnyOrder(
+            '.pipeline/additionalConfigs/a.yml',
+            '.pipeline/additionalConfigs/b.yml',
+            '.pipeline/additionalConfigs/default_pipeline_environment.yml',
+            'metadata/xsDeploy.yaml',
+            ))
+
+        assertThat(shellRule.shell,
+            allOf(
+                new CommandLineMatcher()
+                    .hasProlog('./piper getConfig')
+                    .hasArgument('--contextConfig')
+                    .hasArgument('--defaultConfig "b.yml" "a.yml" "default_pipeline_environment.yml"'),
+                new CommandLineMatcher()
+                    .hasProlog('./piper getConfig --stepMetadata \'metadata/xsDeploy.yaml\''),
+            )
+        )
+    }
+
 }
