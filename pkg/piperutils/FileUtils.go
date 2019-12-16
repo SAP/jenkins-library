@@ -7,18 +7,29 @@ import (
 )
 
 // FileExists ...
-func FileExists(filename string) bool {
+func FileExists(filename string) (bool, error) {
 	info, err := os.Stat(filename)
+
 	if os.IsNotExist(err) {
-		return false
+		return false, nil
 	}
-	return !info.IsDir()
+	if err != nil {
+		return false, err
+	}
+
+	return !info.IsDir(), nil
 }
 
 // Copy ...
 func Copy(src, dst string) (int64, error) {
 
-	if !FileExists(src) {
+	exists, err := FileExists(src)
+
+	if err != nil {
+		return 0, err
+	}
+
+	if !exists {
 		return 0, errors.New("Source file '" + src + "' does not exist")
 	}
 
