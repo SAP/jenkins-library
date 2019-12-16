@@ -47,6 +47,7 @@ func Execute() {
 	rootCmd.AddCommand(KarmaExecuteTestsCommand())
 	rootCmd.AddCommand(XsDeployCommand())
 	rootCmd.AddCommand(GithubPublishReleaseCommand())
+	rootCmd.AddCommand(GithubCreatePullRequestCommand())
 
 	addRootFlags(rootCmd)
 	if err := rootCmd.Execute(); err != nil {
