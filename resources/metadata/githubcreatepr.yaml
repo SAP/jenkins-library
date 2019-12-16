@@ -3,7 +3,7 @@ metadata:
   description: Create a pull request on GitHub
   longDescription: |
     This step allows you to create a pull request on Github.
-    
+
     It can for example be used for GitOps scenarios or for scenarios where you want to have a manual confirmation step which is delegated to a GitHub pull request.
 spec:
   inputs:
