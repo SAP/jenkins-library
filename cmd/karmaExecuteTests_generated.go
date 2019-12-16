@@ -34,8 +34,8 @@ In the Docker network, the containers can be referenced by the values provided i
     In a Kubernetes environment, the containers both need to be referenced with ` + "`" + `localhost` + "`" + `.`,
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			log.SetStepName("karmaExecuteTests")
-			log.SetVerbose(GeneralConfig.verbose)
-			return PrepareConfig(cmd, &metadata, "karmaExecuteTests", &myKarmaExecuteTestsOptions, openPiperFile)
+			log.SetVerbose(GeneralConfig.Verbose)
+			return PrepareConfig(cmd, &metadata, "karmaExecuteTests", &myKarmaExecuteTestsOptions, config.OpenPiperFile)
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return karmaExecuteTests(myKarmaExecuteTestsOptions)
@@ -67,18 +67,21 @@ func karmaExecuteTestsMetadata() config.StepData {
 						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: true,
+						Aliases:   []config.Alias{},
 					},
 					{
 						Name:      "modulePath",
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: true,
+						Aliases:   []config.Alias{},
 					},
 					{
 						Name:      "runCommand",
 						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: true,
+						Aliases:   []config.Alias{},
 					},
 				},
 			},

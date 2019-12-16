@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"fmt"
 	"io"
 	"io/ioutil"
 	"strings"
@@ -14,8 +13,11 @@ import (
 )
 
 type execMockRunner struct {
-	dir   []string
-	calls []execCall
+	dir            []string
+	calls          []execCall
+	stdout         io.Writer
+	stderr         io.Writer
+	shouldFailWith error
 }
 
 type execCall struct {
@@ -24,8 +26,12 @@ type execCall struct {
 }
 
 type shellMockRunner struct {
-	dir   string
-	calls []string
+	dir            string
+	calls          []string
+	shell          []string
+	stdout         io.Writer
+	stderr         io.Writer
+	shouldFailWith error
 }
 
 func (m *execMockRunner) Dir(d string) {
@@ -33,12 +39,20 @@ func (m *execMockRunner) Dir(d string) {
 }
 
 func (m *execMockRunner) RunExecutable(e string, p ...string) error {
-	if e == "fail" {
-		return fmt.Errorf("error case")
+	if m.shouldFailWith != nil {
+		return m.shouldFailWith
 	}
 	exec := execCall{exec: e, params: p}
 	m.calls = append(m.calls, exec)
 	return nil
+}
+
+func (m *execMockRunner) Stdout(out io.Writer) {
+	m.stdout = out
+}
+
+func (m *execMockRunner) Stderr(err io.Writer) {
+	m.stderr = err
 }
 
 func (m *shellMockRunner) Dir(d string) {
@@ -46,8 +60,21 @@ func (m *shellMockRunner) Dir(d string) {
 }
 
 func (m *shellMockRunner) RunShell(s string, c string) error {
+
+	if m.shouldFailWith != nil {
+		return m.shouldFailWith
+	}
+	m.shell = append(m.shell, s)
 	m.calls = append(m.calls, c)
 	return nil
+}
+
+func (m *shellMockRunner) Stdout(out io.Writer) {
+	m.stdout = out
+}
+
+func (m *shellMockRunner) Stderr(err io.Writer) {
+	m.stderr = err
 }
 
 type stepOptions struct {
@@ -81,14 +108,14 @@ func TestAddRootFlags(t *testing.T) {
 }
 
 func TestPrepareConfig(t *testing.T) {
-	defaultsBak := GeneralConfig.defaultConfig
-	GeneralConfig.defaultConfig = []string{"testDefaults.yml"}
-	defer func() { GeneralConfig.defaultConfig = defaultsBak }()
+	defaultsBak := GeneralConfig.DefaultConfig
+	GeneralConfig.DefaultConfig = []string{"testDefaults.yml"}
+	defer func() { GeneralConfig.DefaultConfig = defaultsBak }()
 
 	t.Run("using stepConfigJSON", func(t *testing.T) {
-		stepConfigJSONBak := GeneralConfig.stepConfigJSON
-		GeneralConfig.stepConfigJSON = `{"testParam": "testValueJSON"}`
-		defer func() { GeneralConfig.stepConfigJSON = stepConfigJSONBak }()
+		stepConfigJSONBak := GeneralConfig.StepConfigJSON
+		GeneralConfig.StepConfigJSON = `{"testParam": "testValueJSON"}`
+		defer func() { GeneralConfig.StepConfigJSON = stepConfigJSONBak }()
 		testOptions := stepOptions{}
 		var testCmd = &cobra.Command{Use: "test", Short: "This is just a test"}
 		testCmd.Flags().StringVar(&testOptions.TestParam, "testParam", "", "test usage")
@@ -136,7 +163,7 @@ func TestPrepareConfig(t *testing.T) {
 		})
 
 		t.Run("error case", func(t *testing.T) {
-			GeneralConfig.defaultConfig = []string{"testDefaultsInvalid.yml"}
+			GeneralConfig.DefaultConfig = []string{"testDefaultsInvalid.yml"}
 			testOptions := stepOptions{}
 			var testCmd = &cobra.Command{Use: "test", Short: "This is just a test"}
 			metadata := config.StepData{}

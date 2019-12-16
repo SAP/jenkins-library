@@ -1,0 +1,11 @@
+#!/bin/bash
+
+STAGED_GO_FILES=$(git diff --staged --name-only | grep "\.go$")
+
+if [[ "$STAGED_GO_FILES" = "" ]]; then
+    exit 0
+fi
+
+echo "cleaning GO dependencies"
+go mod tidy
+git add go.mod go.sum

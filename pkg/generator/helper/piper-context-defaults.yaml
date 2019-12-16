@@ -1,0 +1,86 @@
+metadata:
+  name: context defaults
+  description: These default descriptions will be used for the docu generation of the pipelin steps.
+  longDescription: |-
+    These default descriptions will be used for the docu generation of the pipelin steps for the context defaults.
+params:
+- name: containerCommand
+  description: 'Kubernetes only: Allows to specify start command for container created with dockerImage parameter to overwrite Piper default (/usr/bin/tail -f /dev/null).'
+  scope:
+        - STEPS
+- name: containerName
+  description: Optional configuration in combination with containerMap to define the container where the commands should be executed in.
+  scope:
+        - STEPS
+- name: containerShell
+  description: Allows to specify the shell to be executed for container with containerName.
+  scope:
+        - STEPS
+- name: dockerEnvVars
+  description: 'Environment variables to set in the container, e.g. [http_proxy: "proxy:8080"].'
+  scope:
+        - STEPS
+- name: dockerName
+  description: 'Kubernetes only: Name of the container launching dockerImage. SideCar only: Name of the container in local network.'
+  scope:
+        - STEPS
+- name: dockerPullImage
+  description: Set this to 'false' to bypass a docker image pull. Usefull during development process. Allows testing of images which are available in the local registry only.
+  scope:
+        - STEPS
+- name: dockerImage
+  description: Name of the docker image that should be used. If empty, Docker is not used and the command is executed directly on the Jenkins system.
+  scope:
+        - STEPS
+- name: dockerOptions
+  description: Docker options to be set when starting the container.
+  scope:
+        - STEPS
+- name: dockerVolumeBind
+  description: Volumes that should be mounted into the docker container.
+  scope:
+        - STEPS
+- name: dockerWorkspace
+  description: 'Kubernetes only: Specifies a dedicated user home directory for the container which will be passed as value for environment variable HOME.'
+  scope:
+        - STEPS
+- name: sidecarCommand
+  description: Allows to specify a start command for the sidecar container. This parameter is similar to containerCommand
+  scope:
+        - STEPS
+- name: sidecarEnvVars
+  description: A map of environment variables to set in the sidecar container, similar to dockerEnvVars.
+  scope:
+        - STEPS
+- name: sidecarImage
+  description: The name of the docker image of the sidecar container. If empty, no sidecar container is started.
+  scope:
+        - STEPS
+- name: sidecarName
+  description: as dockerName for the sidecar container
+  scope:
+        - STEPS
+- name: sidecarPullImage
+  description: Set this to 'false' to bypass a docker image pull. Usefull during development process. Allows testing of images which are available in the local registry only.
+  scope:
+        - STEPS
+- name: sidecarReadyCommand
+  description: Command executed inside the container which returns exit code 0 when the container is ready to be used.
+  scope:
+        - STEPS
+- name: sidecarOptions
+  description: Options to be set when starting the sidecar container.
+  scope:
+        - STEPS
+- name: sidecarVolumeBind
+  description: Volumes that should be mounted into the sidecar container.
+  scope:
+        - STEPS
+- name: sidecarWorkspace
+  description: as dockerWorkspace for the sidecar container
+  scope:
+        - STEPS
+- name: stashContent
+  description: Specific stashes that should be considered for the step execution.
+  scope:
+        - STEPS
