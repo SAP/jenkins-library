@@ -34,14 +34,6 @@ enum Action {
     }
 }
 
-/**
-  * Performs an XS deployment
-  *
-  * In case of blue-green deployments the step is called for the deployment in the narrower sense
-  * and later again for resuming or aborting. In this case both calls needs to be performed from the
-  * same directory.
-  */
-@GenerateDocumentation
 void call(Map parameters = [:]) {
 
     handlePipelineStepErrors (stepName: STEP_NAME, stepParameters: parameters) {
