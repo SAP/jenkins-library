@@ -67,7 +67,7 @@ class MtaMultiplexerTest extends BasePiperTest {
         // asserts
         assertThat(result.size(), is(2))
         assertThat(result, hasKey('TestJobs - some-other-service'))
-        assertThat(loggingRule.log, containsString('Found 2 maven descriptor files!'))
+        assertThat(loggingRule.log, containsString('Found 2 maven descriptor files: [some-service\\pom.xml, some-other-service\\pom.xml]'))
         assertThat(optionsList.get(0), hasEntry('myParameters', 'value'))
         assertThat(optionsList.get(0), hasEntry('scanType', 'maven'))
         assertThat(optionsList.get(0), hasEntry('buildDescriptorFile', "some-service${File.separator}pom.xml".toString()))
