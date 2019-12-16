@@ -26,6 +26,7 @@ nav:
         - 'Build and Deploy SAP UI5 or SAP Fiori Applications on SAP Cloud Platform with Jenkins': scenarios/ui5-sap-cp/Readme.md
         - 'Build and Deploy Applications with Jenkins and the SAP Cloud Application Programming Model': scenarios/CAP_Scenario.md
         - 'Integrate SAP Cloud Platform Transport Management Into Your CI/CD Pipeline': scenarios/TMS_Extension.md
+        - 'Build and Deploy SAP Fiori Applications on SAP HANA XS Advanced': scenarios/xsa-deploy/Readme.md
     - Extensibility: extensibility.md
     - 'Library steps':
         - abapEnvironmentPullGitRepo: steps/abapEnvironmentPullGitRepo.md
@@ -82,7 +83,7 @@ nav:
         - whitesourceExecuteScan: steps/whitesourceExecuteScan.md
         - xsDeploy: steps/xsDeploy.md
     - Resources:
-        - 'Required Plugins': jenkins/requiredPlugins.md
+        - 'Custom Jenkins Setup': customjenkins.md
 
 theme:
     name: 'material'

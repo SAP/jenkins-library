@@ -42,7 +42,7 @@ For more information on the Cx Server and how to customize your Jenkins, have a 
 
 If you use your own Jenkins installation, you need to care for the configuration that is specific to project "Piper".
 This option should only be considered if you know why you need it, otherwise using the Cx Server life-cycle management makes your life much easier.
-If you choose to go this path, follow [my own Jenkins installation][guidedtour-my-own-jenkins] for some hints.
+If you choose to go this path, follow the [Custom Jenkins Setup guide][resources-custom-jenkins].
 
 **Note:** This option is not supported for SAP Cloud SDK projects.
 
@@ -206,6 +206,7 @@ Please also consult the blog post on setting up [Continuous Delivery for S/4HANA
 [guidedtour-sample.config]:          samples/cloud-cf-helloworld-nodejs/pipeline/config.yml
 [guidedtour-sample.jenkins]:         samples/cloud-cf-helloworld-nodejs/Jenkinsfile
 [guidedtour-sample.mta]:             samples/cloud-cf-helloworld-nodejs/mta.yaml
+[resources-custom-jenkins]:          customjenkins.md
 [resources-configuration]:           configuration.md
 [resources-step-mtabuild]:           steps/mtaBuild.md
 [resources-step-cloudFoundryDeploy]: steps/cloudFoundryDeploy.md
