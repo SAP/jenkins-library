@@ -9,7 +9,7 @@ class MtaMultiplexer implements Serializable {
         // see https://issues.jenkins-ci.org/browse/JENKINS-47730
         filesToScan.addAll(step.findFiles(glob: "**${File.separator}${buildDescriptorFile}")?:[])
         step.echo "Found ${filesToScan?.size()} ${scanType} descriptor files: ${filesToScan}"
-        
+
         filesToScan = removeNodeModuleFiles(step, filesToScan)
         filesToScan = removeExcludedFiles(step, filesToScan, excludeList)
 
@@ -33,7 +33,7 @@ class MtaMultiplexer implements Serializable {
             return true
         })
     }
-    
+
     static def removeExcludedFiles(Script step, filesToScan, List filesToExclude){
         def filteredFiles = []
         for (File file : filesToScan) {
