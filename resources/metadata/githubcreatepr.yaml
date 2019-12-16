@@ -4,7 +4,7 @@ metadata:
   longDescription: |
     This step allows you to create a pull request on Github.
     
-    It can for example be used for GitOps scenarios.
+    It can for example be used for GitOps scenarios or for scenarios where you want to have a manual confirmation step which is delegated to a GitHub pull request.
 spec:
   inputs:
     secrets:
@@ -13,14 +13,14 @@ spec:
       type: jenkins
     params:
     - name: assignees
-      description: 'Logins for Users to assign to this issue.'
+      description: Login names of users to which the PR should be assigned to.
       scope:
       - PARAMETERS
       - STAGES
       - STEPS
       type: '[]string'
     - name: base
-      description: 'The name of the branch you want the changes pulled into.'
+      description: The name of the branch you want the changes pulled into.
       scope:
       - PARAMETERS
       - STAGES
@@ -28,7 +28,7 @@ spec:
       type: string
       mandatory: true
     - name: body
-      description: 'The contents of the pull request.'
+      description: The description text of the pull request in markdown format.
       scope:
       - PARAMETERS
       - STAGES
@@ -48,7 +48,7 @@ spec:
       default: https://api.github.com
       mandatory: true
     - name: head
-      description: 'The name of the branch where your changes are implemented.'
+      description: The name of the branch where your changes are implemented.
       scope:
       - PARAMETERS
       - STAGES
@@ -58,7 +58,7 @@ spec:
     - name: owner
       aliases:
         - name: githubOrg
-      description: 'Set the GitHub organization.'
+      description: Set the GitHub organization.
       scope:
       - PARAMETERS
       - STAGES
@@ -68,7 +68,7 @@ spec:
     - name: repository
       aliases:
         - name: githubRepo
-      description: 'Set the GitHub repository.'
+      description: Set the GitHub repository.
       scope:
       - PARAMETERS
       - STAGES
@@ -78,7 +78,7 @@ spec:
     - name: serverUrl
       aliases:
         - name: githubServerUrl
-      description: 'GitHub server url for end-user access.'
+      description: GitHub server url for end-user access.
       scope:
       - GENERAL
       - PARAMETERS
@@ -88,7 +88,7 @@ spec:
       default: https://github.com
       mandatory: true
     - name: title
-      description: 'Title of the pull request.'
+      description: Title of the pull request.
       scope:
       - PARAMETERS
       - STAGES
@@ -98,7 +98,7 @@ spec:
     - name: token
       aliases:
         - name: githubToken
-      description: 'GitHub personal access token as per https://help.github.com/en/github/authenticating-to-github/creating-a-personal-access-token-for-the-command-line'
+      description: GitHub personal access token as per https://help.github.com/en/github/authenticating-to-github/creating-a-personal-access-token-for-the-command-line
       scope:
       - GENERAL
       - PARAMETERS
@@ -107,7 +107,7 @@ spec:
       type: string
       mandatory: true
     - name: labels
-      description: 'Labels to include in issue search.'
+      description: Labels to be added to the pull request.
       scope:
       - PARAMETERS
       - STAGES

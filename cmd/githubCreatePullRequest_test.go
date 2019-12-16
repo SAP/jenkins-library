@@ -31,12 +31,14 @@ type ghIssueMock struct {
 	issueError   error
 	owner        string
 	repo         string
+	number       int
 }
 
 func (g *ghIssueMock) Edit(ctx context.Context, owner string, repo string, number int, issue *github.IssueRequest) (*github.Issue, *github.Response, error) {
 	g.issueRequest = issue
 	g.owner = owner
 	g.repo = repo
+	g.number = number
 	labels := []github.Label{}
 	for _, l := range *issue.Labels {
 		labels = append(labels, github.Label{Name: &l})
@@ -78,5 +80,11 @@ func TestRunGithubCreatePullRequest(t *testing.T) {
 		assert.Equal(t, myGithubPROptions.Body, ghPRService.pullrequest.GetBody(), "Body not passed correctly")
 		assert.Equal(t, myGithubPROptions.Head, ghPRService.pullrequest.GetHead(), "Head not passed correctly")
 		assert.Equal(t, myGithubPROptions.Base, ghPRService.pullrequest.GetBase(), "Base not passed correctly")
+
+		assert.Equal(t, myGithubPROptions.Owner, ghIssueService.owner, "Owner not passed correctly")
+		assert.Equal(t, myGithubPROptions.Repository, ghIssueService.repo, "Repository not passed correctly")
+		assert.Equal(t, myGithubPROptions.Labels, ghIssueService.issueRequest.GetLabels(), "Labels not passed correctly")
+		assert.Equal(t, myGithubPROptions.Assignees, ghIssueService.issueRequest.GetAssignees(), "Assignees not passed correctly")
+		assert.Equal(t, 1, ghIssueService.number, "PR number not passed correctly")
 	})
 }
