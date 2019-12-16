@@ -47,7 +47,7 @@ class KarmaExecuteTestsTest extends BasePiperTest {
             containsString("cd '.' && npm install --quiet"),
             containsString("cd '.' && npm run karma")
         ))
-        assertThat(seleniumParams.dockerImage, is('node:8-stretch'))
+        assertThat(seleniumParams.dockerImage, is('node:10-stretch'))
         assertThat(seleniumParams.dockerName, is('karma'))
         assertThat(seleniumParams.dockerWorkspace, is('/home/node'))
         assertJobStatusSuccess()

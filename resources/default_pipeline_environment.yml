@@ -84,7 +84,7 @@ steps:
       filePath: 'sbtDescriptor.json'
       versioningTemplate: '${version}-${timestamp}${commitId?"+"+commitId:""}'
   batsExecuteTests:
-    dockerImage: 'node:8-stretch'
+    dockerImage: 'node:10-stretch'
     dockerWorkspace: '/home/node'
     envVars: {}
     outputFormat: 'junit' # tap, junit
@@ -257,7 +257,7 @@ steps:
       runCommand: 'mvn test-compile gauge:execute'
       testOptions: '-DspecsDir=specs'
     npm:
-      dockerImage: 'node:8-stretch'
+      dockerImage: 'node:10-stretch'
       dockerName: 'npm'
       dockerWorkspace: '/home/node'
       languageRunner: 'js'
@@ -305,13 +305,13 @@ steps:
     dockerOptions: "-u 0 --entrypoint=''"
   karmaExecuteTests:
     containerPortMappings:
-      'node:8-stretch':
+      'node:10-stretch':
         - containerPort: 9876
           hostPort: 9876
     dockerEnvVars:
       NO_PROXY: 'localhost,selenium,$NO_PROXY'
       no_proxy: 'localhost,selenium,$no_proxy'
-    dockerImage: 'node:8-stretch'
+    dockerImage: 'node:10-stretch'
     dockerName: 'karma'
     dockerWorkspace: '/home/node'
     installCommand: 'npm install --quiet'
@@ -351,7 +351,7 @@ steps:
       credentialsId: 'CI_CREDENTIALS_ID'
 
   newmanExecute:
-    dockerImage: 'node:8-stretch'
+    dockerImage: 'node:10-stretch'
     failOnError: true
     newmanCollection: '**/*.postman_collection.json'
     newmanEnvironment: ''
@@ -361,7 +361,7 @@ steps:
     stashContent:
       - 'tests'
   npmExecute:
-    dockerImage: 'node:8-stretch'
+    dockerImage: 'node:10-stretch'
   whitesourceExecuteScan:
     createProductFromPipeline: true
     emailAddressesOfInitialProductAdmins: []
@@ -392,7 +392,7 @@ steps:
         - 'opensourceConfiguration'
     npm:
       buildDescriptorFile: './package.json'
-      dockerImage: 'node:8-stretch'
+      dockerImage: 'node:10-stretch'
       dockerWorkspace: '/home/node'
       stashContent:
         - 'buildDescriptor'
@@ -497,7 +497,7 @@ steps:
       dockerName: 'maven'
       dockerWorkspace: ''
     npm:
-      dockerImage: 'node:8-stretch'
+      dockerImage: 'node:10-stretch'
       dockerName: 'npm'
       dockerWorkspace: '/home/node'
     bundler:
@@ -509,7 +509,7 @@ steps:
     defaultMessage: "${buildStatus}: Job ${env.JOB_NAME} <${env.BUILD_URL}|#${env.BUILD_NUMBER}>"
   snykExecute:
     buildDescriptorFile: './package.json'
-    dockerImage: 'node:8-stretch'
+    dockerImage: 'node:10-stretch'
     exclude: []
     monitor: true
     scanType: 'npm'

@@ -61,7 +61,7 @@ class BatsExecuteTestsTest extends BasePiperTest {
         assertThat(shellRule.shell, hasItem('bats-core/bin/bats --recursive --tap src/test > \'TEST-testPackage.tap\''))
         assertThat(shellRule.shell, hasItem('cat \'TEST-testPackage.tap\''))
 
-        assertThat(dockerExecuteRule.dockerParams.dockerImage, is('node:8-stretch'))
+        assertThat(dockerExecuteRule.dockerParams.dockerImage, is('node:10-stretch'))
         assertThat(dockerExecuteRule.dockerParams.dockerWorkspace, is('/home/node'))
 
         assertThat(shellRule.shell, hasItem('NPM_CONFIG_PREFIX=~/.npm-global npm install tap-xunit -g'))
