@@ -14,9 +14,11 @@ import (
 
 type execMockRunner struct {
 	dir            []string
+	env            [][]string
 	calls          []execCall
 	stdout         io.Writer
 	stderr         io.Writer
+	stdoutReturn   map[string]string
 	shouldFailWith error
 }
 
@@ -27,6 +29,7 @@ type execCall struct {
 
 type shellMockRunner struct {
 	dir            string
+	env            [][]string
 	calls          []string
 	shell          []string
 	stdout         io.Writer
@@ -38,11 +41,20 @@ func (m *execMockRunner) Dir(d string) {
 	m.dir = append(m.dir, d)
 }
 
+func (m *execMockRunner) Env(e []string) {
+	m.env = append(m.env, e)
+}
+
 func (m *execMockRunner) RunExecutable(e string, p ...string) error {
 	if m.shouldFailWith != nil {
 		return m.shouldFailWith
 	}
 	exec := execCall{exec: e, params: p}
+
+	if c := strings.Join(append([]string{e}, p...), " "); m.stdoutReturn != nil && len(m.stdoutReturn[c]) > 0 {
+		m.stdout.Write([]byte(m.stdoutReturn[c]))
+	}
+
 	m.calls = append(m.calls, exec)
 	return nil
 }
@@ -57,6 +69,10 @@ func (m *execMockRunner) Stderr(err io.Writer) {
 
 func (m *shellMockRunner) Dir(d string) {
 	m.dir = d
+}
+
+func (m *shellMockRunner) Env(e []string) {
+	m.env = append(m.env, e)
 }
 
 func (m *shellMockRunner) RunShell(s string, c string) error {
