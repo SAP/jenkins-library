@@ -160,9 +160,6 @@ spec:
     - name: password
       type: string
       description: password for the user
-    - name: protecodeCredentialsId
-      type: string
-      description: test
     secrets:
     - name: protecodeCredentialsId
       type: jenkins

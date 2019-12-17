@@ -4,22 +4,26 @@ import (
 	"testing"
 
 	"bytes"
+	"encoding/base64"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"strings"
 
-	//"github.com/SAP/jenkins-library/pkg/http"
+	piperHttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/protecode"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestLoadExistingProductByFilenameSuccess(t *testing.T) {
+func TestLoadExistingProductSuccess(t *testing.T) {
 
 	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 
-		response := protecode.ProteCodeResultData{
-			Result: protecode.ProteCodeResult{ProductId: "test", ReportUrl: "ReportUrl_Test"}}
+		response := protecode.ProteCodeProductData{
+			Products: []protecode.ProteCodeProduct{
+				{ProductId: "test"}},
+		}
 
 		var b bytes.Buffer
 		json.NewEncoder(&b).Encode(&response)
@@ -28,18 +32,59 @@ func TestLoadExistingProductByFilenameSuccess(t *testing.T) {
 	// Close the server when test finishes
 	defer server.Close()
 
-	client := protecode.Client{}
+	client := piperHttp.Client{}
 
 	cases := []struct {
 		protecodeServerURL string
 		filePath           string
 		protecodeGroup     string
-		want               *protecode.ProteCodeResultData
+		reuseExisting      bool
+		want               string
 	}{
-		{server.URL, "filePath", "group", &protecode.ProteCodeResultData{
-			Result: protecode.ProteCodeResult{ProductId: "test", ReportUrl: "ReportUrl_Test"}}},
-		{server.URL, "filePäth!", "group32", &protecode.ProteCodeResultData{
-			Result: protecode.ProteCodeResult{ProductId: "test", ReportUrl: "ReportUrl_Test"}}},
+		{server.URL, "filePath", "group", true, "test"},
+		{server.URL, "filePath", "group32", false, ""},
+	}
+	for _, c := range cases {
+
+		var config executeProtecodeScanOptions = executeProtecodeScanOptions{
+			ProtecodeServerURL: c.protecodeServerURL,
+			FilePath:           c.filePath,
+			ProtecodeGroup:     c.protecodeGroup,
+			ReuseExisting:      c.reuseExisting,
+		}
+
+		got := loadExistingProduct(config, client)
+		assert.Equal(t, c.want, got)
+	}
+}
+func TestLoadExistingProductByFilenameSuccess(t *testing.T) {
+
+	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+
+		response := protecode.ProteCodeProductData{
+			Products: []protecode.ProteCodeProduct{
+				{ProductId: "test"}},
+		}
+
+		var b bytes.Buffer
+		json.NewEncoder(&b).Encode(&response)
+		rw.Write([]byte(b.Bytes()))
+	}))
+	// Close the server when test finishes
+	defer server.Close()
+
+	client := piperHttp.Client{}
+
+	cases := []struct {
+		protecodeServerURL string
+		filePath           string
+		protecodeGroup     string
+		want               *protecode.ProteCodeProductData
+	}{
+		{server.URL, "filePath", "group", &protecode.ProteCodeProductData{
+			Products: []protecode.ProteCodeProduct{{ProductId: "test"}}}},
+		{server.URL, "filePäth!", "group32", &protecode.ProteCodeProductData{
+			Products: []protecode.ProteCodeProduct{{ProductId: "test"}}}},
 	}
 	for _, c := range cases {
 
@@ -79,7 +124,7 @@ func TestPullResultSuccess(t *testing.T) {
 	// Close the server when test finishes
 	defer server.Close()
 
-	client := protecode.Client{}
+	client := piperHttp.Client{}
 
 	cases := []struct {
 		protecodeServerURL string
@@ -121,7 +166,7 @@ func TestLoadReportSuccess(t *testing.T) {
 	// Close the server when test finishes
 	defer server.Close()
 
-	client := protecode.Client{}
+	client := piperHttp.Client{}
 
 	cases := []struct {
 		protecodeServerURL string
@@ -141,7 +186,7 @@ func TestLoadReportSuccess(t *testing.T) {
 		}
 
 		loadReport(config, c.productID, client)
-		assert.Equal(t, c.want, requestURI)
+		assert.Equal(t, requestURI, c.want)
 		assert.Contains(t, passedHeaders, "Outputfile")
 		assert.Contains(t, passedHeaders, "Pragma")
 		assert.Contains(t, passedHeaders, "Cache-Control")
@@ -168,49 +213,50 @@ func TestDeleteScanSuccess(t *testing.T) {
 	// Close the server when test finishes
 	defer server.Close()
 
-	client := protecode.Client{}
+	client := piperHttp.Client{}
 
 	cases := []struct {
-		cleanupMode            string
-		protecodeServerURL     string
-		productID              string
-		protecodeCredentialsID string
-		want                   string
+		cleanupMode        string
+		protecodeServerURL string
+		productID          string
+		want               string
 	}{
-		{"binary", server.URL, "productID1", "credentialsID1", ""},
-		{"complete", server.URL, "productID2", "credentialsID1", "/api/product/productID2/"},
+		{"binary", server.URL, "productID1", ""},
+		{"complete", server.URL, "productID2", "/api/product/productID2/"},
 	}
 	for _, c := range cases {
 
 		var config executeProtecodeScanOptions = executeProtecodeScanOptions{
-			CleanupMode:            c.cleanupMode,
-			ProtecodeServerURL:     c.protecodeServerURL,
-			Verbose:                false,
-			ProtecodeCredentialsID: c.protecodeCredentialsID,
+			CleanupMode:        c.cleanupMode,
+			ProtecodeServerURL: c.protecodeServerURL,
+			Verbose:            false,
 		}
 
 		deleteScan(config, c.productID, client)
-		assert.Equal(t, c.want, requestURI)
+		assert.Equal(t, requestURI, c.want)
 		if c.cleanupMode == "complete" {
-			assert.Contains(t, passedHeaders, "Httpmode")
+			assert.Contains(t, requestURI, c.productID)
 		}
 	}
 }
 
 func TestCmdStringUploadScanFileSuccess(t *testing.T) {
 
+	os.Setenv("PIPER_user", "usr")
+	os.Setenv("PIPER_password", "pwd")
+	sEnc := base64.StdEncoding.EncodeToString([]byte("usr:pwd"))
+
 	cases := []struct {
 		auth         string
-		callback     string
 		group        string
 		deleteBinary string
 		filePath     string
 		serverURL    string
 		Delimiter    string
 		httpCode     string
-		want         string
+		cmd          string
 	}{
-		{"auth", "" /* Callback */, "group", "true", "path", "URL", protecode.DELIMITER, "%{http_code}", "curl --insecure -H 'Authorization: Basic auth'  -H 'Group: group' -H 'Delete-Binary: true' -T path URL/api/upload/ --write-out '-DeLiMiTeR-status=%{http_code}'"},
+		{sEnc, "group", "true", "path", "URL", protecode.DELIMITER, "%{http_code}", "curl --insecure -H"},
 	}
 	for _, c := range cases {
 
@@ -222,24 +268,34 @@ func TestCmdStringUploadScanFileSuccess(t *testing.T) {
 		}
 
 		got := cmdStringUploadScanFile(config)
-		assert.Equal(t, c.want, got)
+		assert.Contains(t, got, c.cmd)
+		assert.Contains(t, got, c.auth)
+		assert.Contains(t, got, c.group)
+		assert.Contains(t, got, c.deleteBinary)
+		assert.Contains(t, got, c.filePath)
+		assert.Contains(t, got, c.serverURL)
+		assert.Contains(t, got, c.Delimiter)
+		assert.Contains(t, got, c.httpCode)
 	}
 }
 
 func TestCmdStringDeclareFetchUrlSuccess(t *testing.T) {
 
+	os.Setenv("PIPER_user", "usr")
+	os.Setenv("PIPER_password", "pwd")
+	sEnc := base64.StdEncoding.EncodeToString([]byte("usr:pwd"))
+
 	cases := []struct {
 		auth         string
-		callback     string
 		group        string
 		deleteBinary string
 		fetchURL     string
 		serverURL    string
 		Delimiter    string
 		httpCode     string
-		want         string
+		cmd          string
 	}{
-		{"auth", "" /* Callback */, "group", "true", "FETCH", "URL", protecode.DELIMITER, "%{http_code}", "curl -X POST -H 'Authorization: Basic auth'  -H 'Group: group' -H 'Delete-Binary: true' -H 'Url:FETCH'  URL/api/fetch/ --write-out '-DeLiMiTeR-status=%{http_code}'"},
+		{sEnc, "group", "true", "FETCH", "URL", protecode.DELIMITER, "%{http_code}", "curl -X POST -H"},
 	}
 	for _, c := range cases {
 
@@ -251,6 +307,60 @@ func TestCmdStringDeclareFetchUrlSuccess(t *testing.T) {
 		}
 
 		got := cmdStringDeclareFetchUrl(config)
+		assert.Contains(t, got, c.cmd)
+		assert.Contains(t, got, c.auth)
+		assert.Contains(t, got, c.group)
+		assert.Contains(t, got, c.deleteBinary)
+		assert.Contains(t, got, c.fetchURL)
+		assert.Contains(t, got, c.serverURL)
+		assert.Contains(t, got, c.Delimiter)
+		assert.Contains(t, got, c.httpCode)
+
+	}
+}
+
+func TestPollForResultSuccess(t *testing.T) {
+
+	requestURI := ""
+	var response protecode.ProteCodeResultData = protecode.ProteCodeResultData{}
+
+	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+
+		requestURI = req.RequestURI
+
+		response = protecode.ProteCodeResultData{Result: protecode.ProteCodeResult{ProductId: "productID1", ReportUrl: requestURI, Status: "D", Components: []protecode.ProteCodeComponent{
+			{Vulns: []protecode.ProteCodeVulnerability{
+				{Triage: "triage"}},
+			}},
+		}}
+
+		var b bytes.Buffer
+		json.NewEncoder(&b).Encode(&response)
+		rw.Write([]byte(b.Bytes()))
+	}))
+	// Close the server when test finishes
+	defer server.Close()
+
+	cases := []struct {
+		protecodeServerURL string
+		productID          string
+		want               protecode.ProteCodeResult
+	}{
+		{server.URL, "productID1", protecode.ProteCodeResult{ProductId: "productID1", ReportUrl: "/api/product/productID1/", Status: "D", Components: []protecode.ProteCodeComponent{
+			{Vulns: []protecode.ProteCodeVulnerability{
+				{Triage: "triage"}},
+			}},
+		}},
+	}
+	client := piperHttp.Client{}
+	for _, c := range cases {
+
+		var config executeProtecodeScanOptions = executeProtecodeScanOptions{
+			ProtecodeServerURL: c.protecodeServerURL,
+		}
+
+		got := pollForResult(config, c.productID, client, 30)
 		assert.Equal(t, c.want, got)
+		assert.Equal(t, "/api/product/"+c.productID+"/", requestURI)
 	}
 }

@@ -2,17 +2,17 @@ package protecode
 
 import (
 	"bytes"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"net/http"
+	"io"
 	"net/url"
 	"os"
-	"os/exec"
 	"strconv"
 	"strings"
 
 	"github.com/SAP/jenkins-library/pkg/command"
-	"github.com/SAP/jenkins-library/pkg/http"
+	piperHttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 )
 
@@ -38,7 +38,7 @@ type ProteCodeResult struct {
 }
 
 type ProteCodeComponent struct {
-	Vulnerability []ProteCodeVulnerability `json:"vulns,omitempty"`
+	Vulns []ProteCodeVulnerability `json:"vulns,omitempty"`
 }
 
 type ProteCodeVulnerability struct {
@@ -55,19 +55,16 @@ type ProteCodeVuln struct {
 
 func CreateUrl(pURL string, path string, pValue string, fParam string) *url.URL {
 
-	// Let's start with a base url
 	protecodeUrl, err := url.Parse(pURL)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("Malformed URL")
 		os.Exit(1)
 	}
 
-	// Add a Path Segment (Path segment is automatically escaped)
 	if len(path) > 0 {
 		protecodeUrl.Path += fmt.Sprintf("%v", path)
 	}
 
-	// Add a Path Segment (Path segment is automatically escaped)
 	if len(pValue) > 0 {
 		protecodeUrl.Path += fmt.Sprintf("%v", pValue)
 	}
@@ -85,9 +82,15 @@ func CreateUrl(pURL string, path string, pValue string, fParam string) *url.URL 
 	return protecodeUrl
 }
 
-func CreateRequestHeader(credentialsId string, verbose bool, customHeaders map[string][]string) map[string][]string {
+func GetBase64UserPassword() string {
+	sEnc := base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("%v:%v", os.Getenv("PIPER_user"), os.Getenv("PIPER_password"))))
+
+	return sEnc
+}
+
+func CreateRequestHeader(verbose bool, auth string, customHeaders map[string][]string) map[string][]string {
 	headers := map[string][]string{
-		"authentication":         []string{credentialsId},
+		"authentication":         []string{fmt.Sprintf("Basic %v", auth)},
 		"quiet":                  []string{fmt.Sprintf("%v", !verbose)},
 		"ignoreSslErrors":        []string{"true"},
 		"consoleLogResponseBody": []string{fmt.Sprintf("%v", verbose)},
@@ -99,16 +102,36 @@ func CreateRequestHeader(credentialsId string, verbose bool, customHeaders map[s
 	return headers
 }
 
-func GetProteCodeResultData(r *http.Response) *ProteCodeResultData {
-	defer r.Body.Close()
+func GetProteCodeResultData(r io.ReadCloser) *ProteCodeResultData {
+	defer r.Close()
 
 	response := new(ProteCodeResultData)
 
-	err := json.NewDecoder(r.Body).Decode(response)
+	buf := new(bytes.Buffer)
+	buf.ReadFrom(r)
+	newStr := buf.String()
+	err := json.Unmarshal([]byte(newStr), response)
 
 	if err != nil {
-		log.Entry().WithError(err).Fatalf("error during decode response: %v", r.Body)
-		//TODO check if this is needed
+		log.Entry().WithError(err).Fatalf("error during decode response: %v", r)
+		os.Exit(1)
+	}
+
+	return response
+}
+
+func GetProteCodeProductData(r io.ReadCloser) *ProteCodeProductData {
+	defer r.Close()
+
+	response := new(ProteCodeProductData)
+
+	buf := new(bytes.Buffer)
+	buf.ReadFrom(r)
+	newStr := buf.String()
+	err := json.Unmarshal([]byte(newStr), response)
+
+	if err != nil {
+		log.Entry().WithError(err).Fatalf("error during decode response: %v", r)
 		os.Exit(1)
 	}
 
@@ -126,7 +149,7 @@ func CmdExecGetProtecodeResult(cmdName string, cmdString string) ProteCodeResult
 
 	script := fmt.Sprintf("%v %v", cmdName, cmdString)
 
-	err := command.RunShell("/bin/bash", script)
+	err := c.RunShell("/bin/bash", script)
 	if err != nil {
 		log.Entry().WithError(err).Fatalf("Failed to exec cmd %v: %v ", cmdName, cmdString)
 	}
@@ -145,7 +168,7 @@ func CmdExecGetProtecodeResult(cmdName string, cmdString string) ProteCodeResult
 	return response
 }
 
-func SendApiRequest(methode string, url string, headers map[string][]string, client Client) *http.Response {
+func SendApiRequest(methode string, url string, headers map[string][]string, client piperHttp.Client) *io.ReadCloser {
 
 	r, err := client.SendRequest(methode, url, nil, headers, nil)
 	if err != nil {
@@ -153,7 +176,7 @@ func SendApiRequest(methode string, url string, headers map[string][]string, cli
 		os.Exit(1)
 	}
 
-	return r
+	return &r.Body
 }
 
 func ParseResultToInflux(result ProteCodeResult, protecodeExcludeCVEs string) map[string]int {
@@ -169,7 +192,7 @@ func ParseResultToInflux(result ProteCodeResult, protecodeExcludeCVEs string) ma
 	m["vulnerabilities"] = 0
 
 	for _, components := range result.Components {
-		for _, vulnerability := range components.Vulnerability {
+		for _, vulnerability := range components.Vulns {
 			if vulnerability.Exact {
 				if isExcluded(vulnerability, protecodeExcludeCVEs) {
 					m["excluded_vulnerabilities"]++
@@ -215,4 +238,12 @@ func isSevereCVSS2(vulnerability ProteCodeVulnerability) bool {
 	threshold := 7.0
 	cvss3, _ := strconv.ParseFloat(vulnerability.Vuln.Cvss3Score, 64)
 	return cvss3 == 0 && vulnerability.Vuln.Cvss >= threshold
+}
+
+func WriteVulnResultToFile(m map[string]int, filename string, writeFunc func(f string, b []byte, p os.FileMode) error) error {
+	b, err := json.Marshal(m)
+	if err != nil {
+		panic(err)
+	}
+	return writeFunc(filename, b, 644)
 }

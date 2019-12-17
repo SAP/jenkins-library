@@ -23,9 +23,8 @@ type executeProtecodeScanOptions struct {
 	FetchURL                             string `json:"fetchUrl,omitempty"`
 	ProtecodeGroup                       string `json:"protecodeGroup,omitempty"`
 	ReuseExisting                        bool   `json:"reuseExisting,omitempty"`
-	User                                 string `json:"user,omitempty"`     //aus dem ENV holen
-	Password                             string `json:"password,omitempty"` //aus dem ENV holen
-	ProtecodeCredentialsID               string `json:"protecodeCredentialsId,omitempty"`
+	User                                 string `json:"user,omitempty"`
+	Password                             string `json:"password,omitempty"`
 }
 
 var myExecuteProtecodeScanOptions executeProtecodeScanOptions
@@ -77,7 +76,6 @@ func addExecuteProtecodeScanFlags(cmd *cobra.Command) {
 	cmd.Flags().BoolVar(&myExecuteProtecodeScanOptions.ReuseExisting, "reuseExisting", false, "Whether to reuse an existing product instead of creating a new one")
 	cmd.Flags().StringVar(&myExecuteProtecodeScanOptions.User, "user", os.Getenv("PIPER_user"), "user which is used for the protecode scan")
 	cmd.Flags().StringVar(&myExecuteProtecodeScanOptions.Password, "password", os.Getenv("PIPER_password"), "password for the user")
-	cmd.Flags().StringVar(&myExecuteProtecodeScanOptions.ProtecodeCredentialsID, "protecodeCredentialsId", os.Getenv("PIPER_protecodeCredentialsId"), "test")
 
 	cmd.MarkFlagRequired("protecodeGroup")
 }
@@ -195,13 +193,6 @@ func executeProtecodeScanMetadata() config.StepData {
 					},
 					{
 						Name:      "password",
-						Scope:     []string{},
-						Type:      "string",
-						Mandatory: false,
-						Aliases:   []config.Alias{},
-					},
-					{
-						Name:      "protecodeCredentialsId",
 						Scope:     []string{},
 						Type:      "string",
 						Mandatory: false,
