@@ -4,8 +4,8 @@
 
 ## Prerequisites
 
-* Cloud Foundry organization, space and deployment user are available
-* Credentials for deployment have been configured in Jenkins with a dedicated Id
+* Cloud Foundry API endpoint, organization, space, user and service instance are available
+* Credentials have been configured in Jenkins with a dedicated Id
 
 ## ${docGenParameters}
 
@@ -19,14 +19,14 @@ The following example creates a service key named "myServiceKey" for the service
 
 ```groovy
 cloudFoundryCreateServiceKey(
-            script: this,
-            cloudFoundry: [
-                apiEndpoint: 'https://test.server.com',
-                credentialsId: 'cfCredentialsId',
-                org: 'cfOrg',
-                space: 'cfSpace',
-                serviceInstance: 'myServiceInstance',
-                serviceKey: 'myServiceKey',
-                serviceKeyConfig: '{ \"key\" : \"value\" }'
-            ])
+  script: this,
+  cloudFoundry: [
+      apiEndpoint: 'https://test.server.com',
+      credentialsId: 'cfCredentialsId',
+      org: 'cfOrg',
+      space: 'cfSpace',
+      serviceInstance: 'myServiceInstance',
+      serviceKey: 'myServiceKey',
+      serviceKeyConfig: '{ \"key\" : \"value\" }'
+  ])
 ```
