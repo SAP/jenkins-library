@@ -247,11 +247,24 @@ void executeOnPod(Map config, utils, Closure body, Script script) {
                     }
                     echo "ContainerConfig: ${containerParams}"
                     container(containerParams) {
+                        Exception e
                         try {
                             utils.unstashAll(stashContent)
+                            echo "invalidate stash workspace-${config.uniqueId}"
+                            stash name: "workspace-${config.uniqueId}", excludes: '**/*', allowEmpty: true
                             body()
+                        } catch(Exception e1) {
+                            e = e1
                         } finally {
-                            stashWorkspace(config, 'container', true, true)
+                            try {
+                                stashWorkspace(config, 'container', true, true)
+                            } catch(Exception e2) {
+                                if(e) {
+                                    e.addSuppressed(e2)
+                                    throw e
+                                }
+                                throw e2
+                            }
                         }
                     }
                 } else {
@@ -314,8 +327,8 @@ chown -R ${runAsUser}:${fsGroup} ."""
         return stashName
     } catch (AbortException | IOException e) {
         echo "${e.getMessage()}"
+        throw e
     }
-    return null
 }
 
 private Map getSecurityContext(Map config) {
@@ -325,6 +338,8 @@ private Map getSecurityContext(Map config) {
 private void unstashWorkspace(config, prefix) {
     try {
         unstash "${prefix}-${config.uniqueId}"
+        echo "invalidate stash ${prefix}-${config.uniqueId}"
+        stash name: "${prefix}-${config.uniqueId}", excludes: '**/*', allowEmpty: true
     } catch (AbortException | IOException e) {
         echo "${e.getMessage()}"
     }
