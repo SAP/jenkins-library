@@ -87,10 +87,9 @@ func addKubernetesDeployFlags(cmd *cobra.Command) {
 	cmd.Flags().StringSliceVar(&myKubernetesDeployOptions.IngressHosts, "ingressHosts", []string{}, "List of ingress hosts to be exposed via helm deployment.")
 	cmd.Flags().StringVar(&myKubernetesDeployOptions.KubeConfig, "kubeConfig", os.Getenv("PIPER_kubeConfig"), "Defines the path to the \"kubeconfig\" file.")
 	cmd.Flags().StringVar(&myKubernetesDeployOptions.KubeContext, "kubeContext", os.Getenv("PIPER_kubeContext"), "Defines the context to use from the \"kubeconfig\" file.")
-	cmd.Flags().StringVar(&myKubernetesDeployOptions.Namespace, "namespace", os.Getenv("PIPER_namespace"), "Defines the target Kubernetes namespace for the deployment.")
+	cmd.Flags().StringVar(&myKubernetesDeployOptions.Namespace, "namespace", "default", "Defines the target Kubernetes namespace for the deployment.")
 	cmd.Flags().StringVar(&myKubernetesDeployOptions.TillerNamespace, "tillerNamespace", os.Getenv("PIPER_tillerNamespace"), "Defines optional tiller namespace for deployments using helm.")
 
-	cmd.MarkFlagRequired("apiServer")
 	cmd.MarkFlagRequired("chartPath")
 	cmd.MarkFlagRequired("deploymentName")
 	cmd.MarkFlagRequired("deployTool")
@@ -114,7 +113,7 @@ func kubernetesDeployMetadata() config.StepData {
 						Name:      "apiServer",
 						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
-						Mandatory: true,
+						Mandatory: false,
 						Aliases:   []config.Alias{{Name: "k8sAPIServer"}},
 					},
 					{
