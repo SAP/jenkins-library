@@ -1,0 +1,128 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "Step Metadata",
+    "type": "object",
+    "required": ["metadata", "spec"],
+    "additionalProperties": false,
+    "properties": {
+        "metadata": {
+            "$ref": "#definitions/com.sap.piper.metadata"
+        },
+        "spec": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+                "inputs": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                        "secrets": {
+                            "$ref": "#definitions/com.sap.piper.metadata.spec.inputs.secretList"
+                        },
+                        "resources": {
+                            "$ref": "#definitions/com.sap.piper.metadata.spec.inputs.resourceList"
+                        },
+                        "params": {
+                            "$ref": "#definitions/com.sap.piper.metadata.spec.inputs.paramList"
+                        }
+                    }
+                },
+                "containers": {
+                    "$ref": "#definitions/com.sap.piper.metadata.spec.containerList"
+                },
+                "sidecars": {
+                    "$ref": "#definitions/com.sap.piper.metadata.spec.containerList"
+                }
+            }
+        }
+    },
+    "definitions": {
+        "com.sap.piper.metadata": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+                "name": { "type": "string" },
+                "description": { "type": "string" },
+                "longDescription": { "type": "string" }
+            },
+            "required": ["name", "description", "longDescription"]
+        },
+        "com.sap.piper.metadata.spec.inputs.secretList": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                    "name": { "type": "string" },
+                    "description": { "type": "string" },
+                    "type": {
+                        "type": "string",
+                        "enum": ["jenkins"]
+                    }
+                }
+            }
+        },
+        "com.sap.piper.metadata.spec.inputs.resourceList": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                    "name": { "type": "string" },
+                    "description": { "type": "string" },
+                    "type": {
+                        "type": "string",
+                        "enum": ["stash"]
+                    }
+                }
+            }
+        },
+        "com.sap.piper.metadata.spec.inputs.paramList": {
+            "type": "array",
+            "items": {
+                "$ref": "#definitions/com.sap.piper.metadata.spec.inputs.params"
+            }
+        },
+        "com.sap.piper.metadata.spec.inputs.params": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+                "name": { "type": "string" },
+                "type": { "type": "string" },
+                "description": { "type": "string" },
+                "mandatory": { "type": "boolean" },
+                "default": {},
+                "scope": {
+                    "$ref": "#definitions/com.sap.piper.metadata.spec.inputs.params.scopeList"
+                },
+                "aliases": {
+                    "$ref": "#definitions/com.sap.piper.metadata.spec.inputs.params.aliasList"
+                }
+            },
+            "required": ["name", "type", "scope"]
+        },
+        "com.sap.piper.metadata.spec.inputs.params.scopeList": {
+            "type": "array",
+            "items": {
+                "type": "string",
+                "enum": ["GENERAL", "PARAMETERS", "STAGES", "STEPS"]
+            }
+        },
+        "com.sap.piper.metadata.spec.inputs.params.aliasList": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                    "name": { "type": "string" }
+                }
+            }
+        },
+        "com.sap.piper.metadata.spec.containerList": {
+            "type": "array",
+            "items": {
+                "$ref": "https://raw.githubusercontent.com/kubernetes/kubernetes/master/api/openapi-spec/swagger.json#/definitions/io.k8s.api.core.v1.Container"
+            }
+        }
+    }
+}

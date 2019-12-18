@@ -198,7 +198,7 @@ func setDefaultParameters(stepData *config.StepData) (bool, error) {
 				}
 				param.Default = boolVal
 			case "[]string":
-				param.Default = fmt.Sprintf("[]string{\"%v\"}", strings.Join(param.Default.([]string), "\", \""))
+				param.Default = fmt.Sprintf("[]string{\"%v\"}", strings.Join(getStringSliceFromInterface(param.Default), "\", \""))
 			default:
 				return false, fmt.Errorf("Meta data type not set or not known: '%v'", param.Type)
 			}
@@ -308,4 +308,19 @@ func flagType(paramType string) string {
 		os.Exit(1)
 	}
 	return theFlagType
+}
+
+func getStringSliceFromInterface(iSlice interface{}) []string {
+	s := []string{}
+
+	t, ok := iSlice.([]interface{})
+	if ok {
+		for _, v := range t {
+			s = append(s, fmt.Sprintf("%v", v))
+		}
+	} else {
+		s = append(s, fmt.Sprintf("%v", iSlice))
+	}
+
+	return s
 }
