@@ -47,7 +47,6 @@ spec:
           - name: k8sAPIServer
         type: string
         description: Defines the Url of the API Server of the Kubernetes cluster.
-        mandatory: true
         scope:
           - GENERAL
           - PARAMETERS
