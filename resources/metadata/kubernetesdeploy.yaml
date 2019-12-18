@@ -37,7 +37,7 @@ spec:
         aliases:
           - name: helmDeploymentParameters
         type: '[]string'
-        description: Defines additional parameters for `helm install` or `kubectl apply` command.
+        description: Defines additional parameters for \"helm install\" or \"kubectl apply\" command.
         scope:
           - PARAMETERS
           - STAGES
@@ -97,7 +97,7 @@ spec:
           - STEPS
       - name: createDockerRegistrySecret
         type: bool
-        description: Toggle to turn on Regsecret creation with a `deployTool:kubectl` deployment.
+        description: Toggle to turn on Regsecret creation with a \"deployTool:kubectl\" deployment.
         scope:
           - PARAMETERS
           - STAGES
@@ -163,7 +163,7 @@ spec:
           - STEPS
       - name: kubeConfig
         type: string
-        description: Defines the path to the `kubeconfig` file.
+        description: Defines the path to the \"kubeconfig\" file.
         scope:
           - GENERAL
           - PARAMETERS
@@ -171,7 +171,7 @@ spec:
           - STEPS
       - name: kubeContext
         type: string
-        description: Defines the context to use from the `kubeconfig` file.
+        description: Defines the context to use from the \"kubeconfig\" file.
         mandatory: false
         scope:
           - PARAMETERS
@@ -187,6 +187,7 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
+        default: default
       - name: tillerNamespace
         aliases:
           - name: helmTillerNamespace

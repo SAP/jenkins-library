@@ -21,9 +21,6 @@ func kubernetesDeploy(myKubernetesDeployOptions kubernetesDeployOptions) error {
 }
 
 func runKubernetesDeploy(myKubernetesDeployOptions kubernetesDeployOptions, command envExecRunner) {
-	if len(myKubernetesDeployOptions.Namespace) == 0 {
-		myKubernetesDeployOptions.Namespace = "default"
-	}
 	if myKubernetesDeployOptions.DeployTool == "helm" {
 		runHelmDeploy(myKubernetesDeployOptions, command)
 	} else {
