@@ -2,7 +2,6 @@ package protecode
 
 import (
 	"bytes"
-	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -18,47 +17,68 @@ import (
 
 const DELIMITER = "-DeLiMiTeR-"
 
-type ProteCodeProductData struct {
-	Products []ProteCodeProduct `json:"products"`
+type ProductData struct {
+	Products []Product `json:"products"`
 }
 
-type ProteCodeProduct struct {
-	ProductId string `json:"product_id"`
+type Product struct {
+	ProductId int `json:"product_id"`
 }
 
-type ProteCodeResultData struct {
-	Result ProteCodeResult `json:"results"`
+type ResultData struct {
+	Result Result `json:"results"`
 }
 
-type ProteCodeResult struct {
-	ProductId  string               `json:"product_id"`
-	ReportUrl  string               `json:"report_url`
-	Status     string               `json:"status"`
-	Components []ProteCodeComponent `json:"components,omitempty"`
+type Result struct {
+	ProductId  int         `json:"product_id"`
+	ReportUrl  string      `json:"report_url`
+	Status     string      `json:"status"`
+	Components []Component `json:"components,omitempty"`
 }
 
-type ProteCodeComponent struct {
-	Vulns []ProteCodeVulnerability `json:"vulns,omitempty"`
+type Component struct {
+	Vulns []Vulnerability `json:"vulns,omitempty"`
 }
 
-type ProteCodeVulnerability struct {
-	Exact  bool          `json:"exact"`
-	Vuln   ProteCodeVuln `json:"vuln"`
-	Triage string        `json:"triage"`
+type Vulnerability struct {
+	Exact  bool     `json:"exact"`
+	Vuln   Vuln     `json:"vuln"`
+	Triage []Triage `json:"triage,omitempty"`
 }
 
-type ProteCodeVuln struct {
+type Vuln struct {
 	Cve        string  `json:"cve"`
 	Cvss       float64 `json:"cvss"`
 	Cvss3Score string  `json:"cvss3_score"`
 }
 
-func CreateUrl(pURL string, path string, pValue string, fParam string) *url.URL {
+type Triage struct {
+	Id          int    `json:"id"`
+	VulnId      string `json:"vuln_id"`
+	Component   string `json:"component"`
+	Vendor      string `json:"vendor"`
+	Codetype    string `json:"codetype"`
+	Version     string `json:"version"`
+	Modified    string `json:"modified"`
+	Scope       string `json:"scope"`
+	Description string `json:"description"`
+	User        User   `json:"user"`
+}
+
+type User struct {
+	Id        int    `json:"id"`
+	Email     string `json:"email"`
+	Girstname string `json:"firstname"`
+	Lastname  string `json:"lastname"`
+	Username  string `json:"username"`
+}
+
+func CreateUrl(pURL string, path string, pValue string, fParam string) (string, error) {
 
 	protecodeUrl, err := url.Parse(pURL)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("Malformed URL")
-		os.Exit(1)
+		return "", err
 	}
 
 	if len(path) > 0 {
@@ -79,107 +99,93 @@ func CreateUrl(pURL string, path string, pValue string, fParam string) *url.URL 
 		protecodeUrl.RawQuery = params.Encode() // Escape Query Parameters
 	}
 
-	return protecodeUrl
+	return protecodeUrl.String(), nil
 }
 
-func GetBase64UserPassword() string {
-	sEnc := base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("%v:%v", os.Getenv("PIPER_user"), os.Getenv("PIPER_password"))))
-
-	return sEnc
-}
-
-func CreateRequestHeader(verbose bool, auth string, customHeaders map[string][]string) map[string][]string {
-	headers := map[string][]string{
-		"authentication":         []string{fmt.Sprintf("Basic %v", auth)},
-		"quiet":                  []string{fmt.Sprintf("%v", !verbose)},
-		"ignoreSslErrors":        []string{"true"},
-		"consoleLogResponseBody": []string{fmt.Sprintf("%v", verbose)},
-	}
-	for k, p := range customHeaders {
-		headers[k] = p
-	}
-
-	return headers
-}
-
-func GetProteCodeResultData(r io.ReadCloser) *ProteCodeResultData {
+func GetResultData(r io.ReadCloser) (*ResultData, error) {
 	defer r.Close()
 
-	response := new(ProteCodeResultData)
+	response := new(ResultData)
 
 	buf := new(bytes.Buffer)
 	buf.ReadFrom(r)
 	newStr := buf.String()
-	err := json.Unmarshal([]byte(newStr), response)
 
-	if err != nil {
-		log.Entry().WithError(err).Fatalf("error during decode response: %v", r)
-		os.Exit(1)
+	if len(newStr) > 0 {
+		err := json.Unmarshal([]byte(newStr), response)
+
+		if err != nil {
+			log.Entry().WithError(err).Fatalf("error during decode response: %v", r)
+			return response, err
+		}
 	}
 
-	return response
+	return response, nil
 }
 
-func GetProteCodeProductData(r io.ReadCloser) *ProteCodeProductData {
+func GetResult(r io.ReadCloser) (*Result, error) {
 	defer r.Close()
 
-	response := new(ProteCodeProductData)
+	response := new(Result)
 
 	buf := new(bytes.Buffer)
 	buf.ReadFrom(r)
 	newStr := buf.String()
-	err := json.Unmarshal([]byte(newStr), response)
 
-	if err != nil {
-		log.Entry().WithError(err).Fatalf("error during decode response: %v", r)
-		os.Exit(1)
+	if len(newStr) > 0 {
+		err := json.Unmarshal([]byte(newStr), response)
+
+		if err != nil {
+			log.Entry().WithError(err).Fatalf("error during decode response: %v", r)
+			return response, err
+		}
 	}
 
-	return response
+	return response, nil
 }
 
-func CmdExecGetProtecodeResult(cmdName string, cmdString string) ProteCodeResult {
+func GetProductData(r io.ReadCloser) (*ProductData, error) {
+	defer r.Close()
 
-	var response ProteCodeResult = ProteCodeResult{}
-	c := command.Command{}
-	c.Dir(".")
+	response := new(ProductData)
 
 	buf := new(bytes.Buffer)
-	c.Stdout(buf)
+	buf.ReadFrom(r)
+	newStr := buf.String()
+	if len(newStr) > 0 {
+		err := json.Unmarshal([]byte(newStr), response)
 
-	script := fmt.Sprintf("%v %v", cmdName, cmdString)
-
-	err := c.RunShell("/bin/bash", script)
-	if err != nil {
-		log.Entry().WithError(err).Fatalf("Failed to exec cmd %v: %v ", cmdName, cmdString)
+		if err != nil {
+			log.Entry().WithError(err).Fatalf("error during decode response: %v", r)
+			return response, err
+		}
 	}
 
-	parts := strings.Split(buf.String(), DELIMITER)
-
-	if len(parts) > 1 && parts[1] != "status=200" || len(parts) <= 1 {
-		log.Entry().WithError(err).Fatalf("Failed to exec cmd %v: %v ", cmdName, cmdString)
-		os.Exit(1)
-	}
-
-	if err := json.Unmarshal([]byte(parts[0]), response); err != nil {
-		log.Entry().WithError(err)
-	}
-
-	return response
+	return response, nil
 }
 
-func SendApiRequest(methode string, url string, headers map[string][]string, client piperHttp.Client) *io.ReadCloser {
-
-	r, err := client.SendRequest(methode, url, nil, headers, nil)
+func UploadScanFile(url, filePath string, headers map[string][]string, client piperHttp.Client) (*io.ReadCloser, error) {
+	r, err := client.UploadFile(url, filePath, "", headers, nil)
 	if err != nil {
-		log.Entry().WithError(err).Fatalf("error during %v: %v reuqest", methode, url)
-		os.Exit(1)
+		log.Entry().WithError(err).Fatalf("error during %v: %v reuqest", method, url)
+		return nil, err
 	}
 
-	return &r.Body
+	return &r.Body, nil
 }
 
-func ParseResultToInflux(result ProteCodeResult, protecodeExcludeCVEs string) map[string]int {
+func SendApiRequest(method string, url string, headers map[string][]string, client piperHttp.Client) (*io.ReadCloser, error) {
+
+	r, err := client.SendRequest(method, url, nil, headers, nil)
+	if err != nil {
+		log.Entry().WithError(err).Fatalf("error during %v: %v reuqest", method, url)
+		return nil, err
+	}
+
+	return &r.Body, nil
+}
+
+func ParseResultForInflux(result Result, protecodeExcludeCVEs string) map[string]int {
 	var m map[string]int = make(map[string]int)
 	m["count"] = 0
 	m["cvss2GreaterOrEqualSeven"] = 0
@@ -220,30 +226,30 @@ func ParseResultToInflux(result ProteCodeResult, protecodeExcludeCVEs string) ma
 	return m
 }
 
-func isExcluded(vulnerability ProteCodeVulnerability, protecodeExcludeCVEs string) bool {
+func isExcluded(vulnerability Vulnerability, protecodeExcludeCVEs string) bool {
 	return strings.Contains(protecodeExcludeCVEs, vulnerability.Vuln.Cve)
 }
 
-func isTriaged(vulnerability ProteCodeVulnerability) bool {
+func isTriaged(vulnerability Vulnerability) bool {
 	return len(vulnerability.Triage) > 0
 }
 
-func isSevereCVSS3(vulnerability ProteCodeVulnerability) bool {
+func isSevereCVSS3(vulnerability Vulnerability) bool {
 	threshold := 7.0
 	cvss3, _ := strconv.ParseFloat(vulnerability.Vuln.Cvss3Score, 64)
 	return cvss3 >= threshold
 }
 
-func isSevereCVSS2(vulnerability ProteCodeVulnerability) bool {
+func isSevereCVSS2(vulnerability Vulnerability) bool {
 	threshold := 7.0
 	cvss3, _ := strconv.ParseFloat(vulnerability.Vuln.Cvss3Score, 64)
 	return cvss3 == 0 && vulnerability.Vuln.Cvss >= threshold
 }
 
-func WriteVulnResultToFile(m map[string]int, filename string, writeFunc func(f string, b []byte, p os.FileMode) error) error {
+func WriteResultAsJSONToFile(m map[string]int, filename string, writeFunc func(f string, b []byte, p os.FileMode) error) error {
 	b, err := json.Marshal(m)
 	if err != nil {
-		panic(err)
+		return err
 	}
 	return writeFunc(filename, b, 644)
 }

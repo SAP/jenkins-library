@@ -6,6 +6,7 @@ import (
 	"bytes"
 	"encoding/base64"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -20,9 +21,9 @@ func TestLoadExistingProductSuccess(t *testing.T) {
 
 	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 
-		response := protecode.ProteCodeProductData{
-			Products: []protecode.ProteCodeProduct{
-				{ProductId: "test"}},
+		response := protecode.ProductData{
+			Products: []protecode.Product{
+				{ProductId: 1}},
 		}
 
 		var b bytes.Buffer
@@ -39,10 +40,10 @@ func TestLoadExistingProductSuccess(t *testing.T) {
 		filePath           string
 		protecodeGroup     string
 		reuseExisting      bool
-		want               string
+		want               int
 	}{
-		{server.URL, "filePath", "group", true, "test"},
-		{server.URL, "filePath", "group32", false, ""},
+		{server.URL, "filePath", "group", true, 1},
+		{server.URL, "filePath", "group32", false, 0},
 	}
 	for _, c := range cases {
 
@@ -53,7 +54,7 @@ func TestLoadExistingProductSuccess(t *testing.T) {
 			ReuseExisting:      c.reuseExisting,
 		}
 
-		got := loadExistingProduct(config, client)
+		got, _ := loadExistingProduct(config, client)
 		assert.Equal(t, c.want, got)
 	}
 }
@@ -61,9 +62,9 @@ func TestLoadExistingProductByFilenameSuccess(t *testing.T) {
 
 	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 
-		response := protecode.ProteCodeProductData{
-			Products: []protecode.ProteCodeProduct{
-				{ProductId: "test"}},
+		response := protecode.ProductData{
+			Products: []protecode.Product{
+				{ProductId: 1}},
 		}
 
 		var b bytes.Buffer
@@ -79,12 +80,12 @@ func TestLoadExistingProductByFilenameSuccess(t *testing.T) {
 		protecodeServerURL string
 		filePath           string
 		protecodeGroup     string
-		want               *protecode.ProteCodeProductData
+		want               *protecode.ProductData
 	}{
-		{server.URL, "filePath", "group", &protecode.ProteCodeProductData{
-			Products: []protecode.ProteCodeProduct{{ProductId: "test"}}}},
-		{server.URL, "filePäth!", "group32", &protecode.ProteCodeProductData{
-			Products: []protecode.ProteCodeProduct{{ProductId: "test"}}}},
+		{server.URL, "filePath", "group", &protecode.ProductData{
+			Products: []protecode.Product{{ProductId: 1}}}},
+		{server.URL, "filePäth!", "group32", &protecode.ProductData{
+			Products: []protecode.Product{{ProductId: 1}}}},
 	}
 	for _, c := range cases {
 
@@ -94,7 +95,7 @@ func TestLoadExistingProductByFilenameSuccess(t *testing.T) {
 			ProtecodeGroup:     c.protecodeGroup,
 		}
 
-		got := loadExistingProductByFilename(config, client)
+		got, _ := loadExistingProductByFilename(config, client)
 		assert.Equal(t, c.want, got)
 	}
 }
@@ -107,14 +108,14 @@ func TestPullResultSuccess(t *testing.T) {
 
 		requestURI = req.RequestURI
 
-		var response protecode.ProteCodeResultData = protecode.ProteCodeResultData{}
+		var response protecode.ResultData = protecode.ResultData{}
 
-		if strings.Contains(requestURI, "productID1") {
-			response = protecode.ProteCodeResultData{
-				Result: protecode.ProteCodeResult{ProductId: "productID1", ReportUrl: requestURI}}
+		if strings.Contains(requestURI, "111") {
+			response = protecode.ResultData{
+				Result: protecode.Result{ProductId: 111, ReportUrl: requestURI}}
 		} else {
-			response = protecode.ProteCodeResultData{
-				Result: protecode.ProteCodeResult{ProductId: "productID2", ReportUrl: requestURI}}
+			response = protecode.ResultData{
+				Result: protecode.Result{ProductId: 222, ReportUrl: requestURI}}
 		}
 
 		var b bytes.Buffer
@@ -128,11 +129,11 @@ func TestPullResultSuccess(t *testing.T) {
 
 	cases := []struct {
 		protecodeServerURL string
-		productID          string
-		want               protecode.ProteCodeResult
+		productID          int
+		want               protecode.Result
 	}{
-		{server.URL, "productID1", protecode.ProteCodeResult{ProductId: "productID1", ReportUrl: "/api/product/productID1/"}},
-		{server.URL, "productID2", protecode.ProteCodeResult{ProductId: "productID2", ReportUrl: "/api/product/productID2/"}},
+		{server.URL, 111, protecode.Result{ProductId: 111, ReportUrl: "/api/product/111/"}},
+		{server.URL, 222, protecode.Result{ProductId: 222, ReportUrl: "/api/product/222/"}},
 	}
 	for _, c := range cases {
 
@@ -140,9 +141,9 @@ func TestPullResultSuccess(t *testing.T) {
 			ProtecodeServerURL: c.protecodeServerURL,
 		}
 
-		got := pullResult(config, c.productID, client)
+		got, _ := pullResult(config, c.productID, client)
 		assert.Equal(t, c.want, got)
-		assert.Equal(t, "/api/product/"+c.productID+"/", requestURI)
+		assert.Equal(t, fmt.Sprintf("/api/product/%v/", c.productID), requestURI)
 	}
 }
 
@@ -170,12 +171,12 @@ func TestLoadReportSuccess(t *testing.T) {
 
 	cases := []struct {
 		protecodeServerURL string
-		productID          string
+		productID          int
 		reportFileName     string
 		want               string
 	}{
-		{server.URL, "productID1", "fileName", "/api/product/productID1/pdf-report"},
-		{server.URL, "productID2", "fileName", "/api/product/productID2/pdf-report"},
+		{server.URL, 1, "fileName", "/api/product/1/pdf-report"},
+		{server.URL, 2, "fileName", "/api/product/2/pdf-report"},
 	}
 	for _, c := range cases {
 
@@ -218,11 +219,11 @@ func TestDeleteScanSuccess(t *testing.T) {
 	cases := []struct {
 		cleanupMode        string
 		protecodeServerURL string
-		productID          string
+		productID          int
 		want               string
 	}{
-		{"binary", server.URL, "productID1", ""},
-		{"complete", server.URL, "productID2", "/api/product/productID2/"},
+		{"binary", server.URL, 1, ""},
+		{"complete", server.URL, 2, "/api/product/2/"},
 	}
 	for _, c := range cases {
 
@@ -235,7 +236,7 @@ func TestDeleteScanSuccess(t *testing.T) {
 		deleteScan(config, c.productID, client)
 		assert.Equal(t, requestURI, c.want)
 		if c.cleanupMode == "complete" {
-			assert.Contains(t, requestURI, c.productID)
+			assert.Contains(t, requestURI, fmt.Sprintf("%v", c.productID))
 		}
 	}
 }
@@ -321,34 +322,41 @@ func TestCmdStringDeclareFetchUrlSuccess(t *testing.T) {
 
 func TestPollForResultSuccess(t *testing.T) {
 
+	count := 1
 	requestURI := ""
-	var response protecode.ProteCodeResultData = protecode.ProteCodeResultData{}
+	var response protecode.ResultData = protecode.ResultData{}
 
 	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 
 		requestURI = req.RequestURI
 
-		response = protecode.ProteCodeResultData{Result: protecode.ProteCodeResult{ProductId: "productID1", ReportUrl: requestURI, Status: "D", Components: []protecode.ProteCodeComponent{
-			{Vulns: []protecode.ProteCodeVulnerability{
-				{Triage: "triage"}},
+		response = protecode.ResultData{Result: protecode.Result{ProductId: 1, ReportUrl: requestURI, Status: "D", Components: []protecode.Component{
+			{Vulns: []protecode.Vulnerability{
+				{Triage: []protecode.Triage{{Id: 1}}}},
 			}},
 		}}
 
 		var b bytes.Buffer
 		json.NewEncoder(&b).Encode(&response)
-		rw.Write([]byte(b.Bytes()))
+
+		if count == 0 {
+			rw.Write([]byte(b.Bytes()))
+		} else {
+			count--
+			rw.Write([]byte(""))
+		}
 	}))
 	// Close the server when test finishes
 	defer server.Close()
 
 	cases := []struct {
 		protecodeServerURL string
-		productID          string
-		want               protecode.ProteCodeResult
+		productID          int
+		want               protecode.Result
 	}{
-		{server.URL, "productID1", protecode.ProteCodeResult{ProductId: "productID1", ReportUrl: "/api/product/productID1/", Status: "D", Components: []protecode.ProteCodeComponent{
-			{Vulns: []protecode.ProteCodeVulnerability{
-				{Triage: "triage"}},
+		{server.URL, 1, protecode.Result{ProductId: 1, ReportUrl: "/api/product/1/", Status: "D", Components: []protecode.Component{
+			{Vulns: []protecode.Vulnerability{
+				{Triage: []protecode.Triage{{Id: 1}}}},
 			}},
 		}},
 	}
@@ -359,8 +367,8 @@ func TestPollForResultSuccess(t *testing.T) {
 			ProtecodeServerURL: c.protecodeServerURL,
 		}
 
-		got := pollForResult(config, c.productID, client, 30)
+		got, _ := pollForResult(config, c.productID, client, 30)
 		assert.Equal(t, c.want, got)
-		assert.Equal(t, "/api/product/"+c.productID+"/", requestURI)
+		assert.Equal(t, fmt.Sprintf("/api/product/%v/", c.productID), requestURI)
 	}
 }

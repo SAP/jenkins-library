@@ -157,9 +157,21 @@ spec:
     - name: user
       type: string
       description: user which is used for the protecode scan
+      mandatory: true
+      scope:
+        - GENERAL
+        - PARAMETERS
+        - STAGES
+        - STEPS
     - name: password
       type: string
-      description: password for the user
+      description: password which is used for the user
+      mandatory: true
+      scope:
+        - GENERAL
+        - PARAMETERS
+        - STAGES
+        - STEPS
     secrets:
     - name: protecodeCredentialsId
       type: jenkins

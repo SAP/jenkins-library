@@ -3,36 +3,38 @@ package protecode
 import (
 	"testing"
 
-	"fmt"
-	"os"
 	"bytes"
+	"fmt"
 	"io/ioutil"
+	"os"
+	"path/filepath"
+	"strings"
 
 	"github.com/stretchr/testify/assert"
 )
 
-func TestParseProteCodeResultSuccess(t *testing.T) {
+func TestParseResultSuccess(t *testing.T) {
 
-	var result ProteCodeResult = ProteCodeResult{
-		ProductId: "ProductId",
+	var result Result = Result{
+		ProductId: 4712,
 		ReportUrl: "ReportUrl",
 		Status:    "B",
-		Components: []ProteCodeComponent{
-			{Vulns: []ProteCodeVulnerability{
-				{Exact: true, Triage: "", Vuln: ProteCodeVuln{Cve: "Cve1", Cvss: 7.2, Cvss3Score: "0.0"}},
-				{Exact: true, Triage: "triage2", Vuln: ProteCodeVuln{Cve: "Cve2", Cvss: 2.2, Cvss3Score: "2.3"}},
-				{Exact: true, Triage: "", Vuln: ProteCodeVuln{Cve: "Cve2b", Cvss: 0.0, Cvss3Score: "0.0"}},
+		Components: []Component{
+			{Vulns: []Vulnerability{
+				{Exact: true, Triage: []Triage{}, Vuln: Vuln{Cve: "Cve1", Cvss: 7.2, Cvss3Score: "0.0"}},
+				{Exact: true, Triage: []Triage{{Id: 1}}, Vuln: Vuln{Cve: "Cve2", Cvss: 2.2, Cvss3Score: "2.3"}},
+				{Exact: true, Triage: []Triage{}, Vuln: Vuln{Cve: "Cve2b", Cvss: 0.0, Cvss3Score: "0.0"}},
 			},
 			},
-			{Vulns: []ProteCodeVulnerability{
-				{Exact: true, Triage: "", Vuln: ProteCodeVuln{Cve: "Cve3", Cvss: 3.2, Cvss3Score: "7.3"}},
-				{Exact: true, Triage: "", Vuln: ProteCodeVuln{Cve: "Cve4", Cvss: 8.0, Cvss3Score: "8.0"}},
-				{Exact: false, Triage: "", Vuln: ProteCodeVuln{Cve: "Cve4b", Cvss: 8.0, Cvss3Score: "8.0"}},
+			{Vulns: []Vulnerability{
+				{Exact: true, Triage: []Triage{}, Vuln: Vuln{Cve: "Cve3", Cvss: 3.2, Cvss3Score: "7.3"}},
+				{Exact: true, Triage: []Triage{}, Vuln: Vuln{Cve: "Cve4", Cvss: 8.0, Cvss3Score: "8.0"}},
+				{Exact: false, Triage: []Triage{}, Vuln: Vuln{Cve: "Cve4b", Cvss: 8.0, Cvss3Score: "8.0"}},
 			},
 			},
 		},
 	}
-	m := ParseResultToInflux(result, "Excluded CVES: Cve4,")
+	m := ParseResultForInflux(result, "Excluded CVES: Cve4,")
 	t.Run("Parse Protecode Results", func(t *testing.T) {
 		assert.Equal(t, 1, m["historical_vulnerabilities"])
 		assert.Equal(t, 1, m["triaged_vulnerabilities"])
@@ -43,23 +45,7 @@ func TestParseProteCodeResultSuccess(t *testing.T) {
 	})
 }
 
-//func TestCmdExecGetProtecodeResultSuccess(t *testing.T) {
-//
-//	cases := []struct {
-//		cmdName   string
-//		cmdString string
-//		want      ProteCodeResult
-//	}{
-//		{"echo", "test", ProteCodeResult{ProductId: "productID2"}},
-//		{"echo", "Dummy-DeLiMiTeR-status=200", ProteCodeResult{ProductId: "productID1"}},
-//	}
-//	for _, c := range cases {
-//
-//		got := CmdExecGetProtecodeResult(c.cmdName, c.cmdString)
-//		assert.Equal(t, c.want, got)
-//	}
-//}
-
+/*
 func TestCreateRequestHeader(t *testing.T) {
 
 	cases := []struct {
@@ -72,11 +58,11 @@ func TestCreateRequestHeader(t *testing.T) {
 			map[string][]string{
 				"test": []string{"dummy1"}},
 			map[string][]string{
-				"test":                   []string{"dummy1"},
-				"authentication":         []string{"Basic auth1"},
-				"quiet":                  []string{"false"},
-				"ignoreSslErrors":        []string{"true"},
-				"consoleLogResponseBody": []string{"true"},
+				"test": []string{"dummy1"},
+				//"authentication":         []string{"Basic auth1"},
+				//"quiet":                  []string{"false"},
+				//"ignoreSslErrors":        []string{"true"},
+				//"consoleLogResponseBody": []string{"true"},
 			}},
 	}
 
@@ -86,37 +72,37 @@ func TestCreateRequestHeader(t *testing.T) {
 		assert.Equal(t, c.want, got)
 	}
 }
-
-func TestGetProteCodeResultData(t *testing.T) {
+*/
+func TestGetResultData(t *testing.T) {
 
 	cases := []struct {
 		give string
-		want ProteCodeResultData
+		want ResultData
 	}{
-		{`{"results": {"product_id": "ID1"}}`, ProteCodeResultData{Result: ProteCodeResult{ProductId: "ID1"}}},
+		{`{"results": {"product_id": 1}}`, ResultData{Result: Result{ProductId: 1}}},
 	}
 
 	for _, c := range cases {
 
 		r := ioutil.NopCloser(bytes.NewReader([]byte(c.give)))
-		got := GetProteCodeResultData(r)
+		got, _ := GetResultData(r)
 		assert.Equal(t, c.want, *got)
 	}
 }
 
-func TestGetProteCodeProductData(t *testing.T) {
+func TestGetProductData(t *testing.T) {
 
 	cases := []struct {
 		give string
-		want ProteCodeProductData
+		want ProductData
 	}{
-		{`{"products": [{"product_id": "ID1"}]}`, ProteCodeProductData{Products: []ProteCodeProduct{{ProductId: "ID1"}}}},
+		{`{"products": [{"product_id": 1}]}`, ProductData{Products: []Product{{ProductId: 1}}}},
 	}
 
 	for _, c := range cases {
 
 		r := ioutil.NopCloser(bytes.NewReader([]byte(c.give)))
-		got := GetProteCodeProductData(r)
+		got, _ := GetProductData(r)
 		assert.Equal(t, c.want, *got)
 	}
 }
@@ -135,7 +121,7 @@ func fileWriterMock(fileName string, b []byte, perm os.FileMode) error {
 	}
 }
 
-func TestWriteVulnResultToFileSuccess(t *testing.T) {
+func TestWriteResultAsJSONToFileSuccess(t *testing.T) {
 
 	var m map[string]int = make(map[string]int)
 	m["count"] = 1
@@ -159,13 +145,76 @@ func TestWriteVulnResultToFileSuccess(t *testing.T) {
 
 	for _, c := range cases {
 
-		err := WriteVulnResultToFile(c.m, c.filename, fileWriterMock)
-		if(c.filename == "dummy.txt"){
+		err := WriteResultAsJSONToFile(c.m, c.filename, fileWriterMock)
+		if c.filename == "dummy.txt" {
 			assert.NotNil(t, err)
-		}else {
+		} else {
 			assert.Nil(t, err)
 		}
 		assert.Equal(t, c.want, string(fileWriterContent[:]))
 
 	}
+}
+
+func TestParseResultViolations(t *testing.T) {
+
+	violations := filepath.Join("testdata", "protecode_result_violations.json")
+	byteContent, err := ioutil.ReadFile(violations)
+	if err != nil {
+		t.Fatalf("failed reading %v", violations)
+	}
+
+	resultData, _ := GetResultData(ioutil.NopCloser(strings.NewReader(string(byteContent))))
+
+	m := ParseResultForInflux(resultData.Result, "CVE-2018-1, CVE-2017-1000382")
+	t.Run("Parse Protecode Results", func(t *testing.T) {
+		assert.Equal(t, 1125, m["historical_vulnerabilities"])
+		assert.Equal(t, 0, m["triaged_vulnerabilities"])
+		assert.Equal(t, 1, m["excluded_vulnerabilities"])
+		assert.Equal(t, 129, m["cvss3GreaterOrEqualSeven"])
+		assert.Equal(t, 13, m["cvss2GreaterOrEqualSeven"])
+		assert.Equal(t, 226, m["vulnerabilities"])
+	})
+}
+
+func TestParseResultNoViolations(t *testing.T) {
+
+	noViolations := filepath.Join("testdata", "protecode_result_no_violations.json")
+	byteContent, err := ioutil.ReadFile(noViolations)
+	if err != nil {
+		t.Fatalf("failed reading %v", noViolations)
+	}
+
+	resultData, _ := GetResultData(ioutil.NopCloser(strings.NewReader(string(byteContent))))
+
+	m := ParseResultForInflux(resultData.Result, "CVE-2018-1, CVE-2017-1000382")
+	t.Run("Parse Protecode Results", func(t *testing.T) {
+		assert.Equal(t, 27, m["historical_vulnerabilities"])
+		assert.Equal(t, 0, m["triaged_vulnerabilities"])
+		assert.Equal(t, 0, m["excluded_vulnerabilities"])
+		assert.Equal(t, 0, m["cvss3GreaterOrEqualSeven"])
+		assert.Equal(t, 0, m["cvss2GreaterOrEqualSeven"])
+		assert.Equal(t, 0, m["vulnerabilities"])
+	})
+}
+
+func TestParseResultTriaged(t *testing.T) {
+
+	triaged := filepath.Join("testdata", "protecode_result_triaging.json")
+	byteContent, err := ioutil.ReadFile(triaged)
+	if err != nil {
+		t.Fatalf("failed reading %v", triaged)
+	}
+
+	resultData, _ := GetResultData(ioutil.NopCloser(strings.NewReader(string(byteContent))))
+
+	m := ParseResultForInflux(resultData.Result, "")
+	t.Run("Parse Protecode Results", func(t *testing.T) {
+		assert.Equal(t, 1132, m["historical_vulnerabilities"])
+		assert.Equal(t, 187, m["triaged_vulnerabilities"])
+		assert.Equal(t, 0, m["excluded_vulnerabilities"])
+		assert.Equal(t, 15, m["cvss3GreaterOrEqualSeven"])
+		assert.Equal(t, 0, m["cvss2GreaterOrEqualSeven"])
+		assert.Equal(t, 36, m["vulnerabilities"])
+	})
 }
