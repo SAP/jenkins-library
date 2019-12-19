@@ -13,6 +13,8 @@ import groovy.transform.Field
 @Field String METADATA_FILE = 'metadata/xsDeploy.yaml'
 @Field String PIPER_DEFAULTS = 'default_pipeline_environment.yml'
 @Field String STEP_NAME = getClass().getName()
+@Field String METADATA_FOLDER = '.pipeline' // metadata file contains already the "metadata" folder level, hence we end up in a folder ".pipeline/metadata"
+@Field String ADDITIONAL_CONFIGS_FOLDER='.pipeline/additionalConfigs'
 
 
 enum DeployMode {
@@ -54,40 +56,29 @@ void call(Map parameters = [:]) {
         // hence we should not modify it here. So we create a new map based on the parameters map.
         parameters = [:] << parameters
 
-        // hard to predict how these two parameters looks like in its serialized form. Anyhow it is better
+        // hard to predict how these parameters looks like in its serialized form. Anyhow it is better
         // not to have these parameters forwarded somehow to the go layer.
         parameters.remove('juStabUtils')
         parameters.remove('piperGoUtils')
         parameters.remove('script')
 
-        //
-        // For now - since the xsDeploy step is not merged and covered by a release - we stash
-        // a locally built version of the piper-go binary in the pipeline script (Jenkinsfile) with
-        // stash name "piper-bin". That stash is used inside method "unstashPiperBin".
         piperGoUtils.unstashPiperBin()
 
         //
         // Printing the piper-go version. Should not be done here, but somewhere during materializing
-        // the piper binary.
+        // the piper binary. As long as we don't have it elsewhere we should keep it here.
         def piperGoVersion = sh(returnStdout: true, script: "./piper version")
         echo "PiperGoVersion: ${piperGoVersion}"
 
         //
-        // since there is no valid config provided (... null) telemetry is disabled.
+        // since there is no valid config provided (... null) telemetry is disabled (same for other go releated steps at the moment).
         utils.pushToSWA([
             step: STEP_NAME,
         ], null)
 
+        String configFiles = prepareConfigurations([PIPER_DEFAULTS].plus(script.commonPipelineEnvironment.getCustomDefaults()), ADDITIONAL_CONFIGS_FOLDER)
 
-        List configs = [PIPER_DEFAULTS]
-        configs.addAll(script.commonPipelineEnvironment.getCustomDefaults())
-        configs = configs.reverse()
-
-        for(def customDefault : configs) {
-            writeFile(file: ".pipeline/additionalConfigs/${customDefault}", text: libraryResource(customDefault))
-        }
-
-        writeFile(file: METADATA_FILE, text: libraryResource(METADATA_FILE))
+        writeFile(file: "${METADATA_FOLDER}/${METADATA_FILE}", text: libraryResource(METADATA_FILE))
 
         withEnv([
             "PIPER_parametersJSON=${groovy.json.JsonOutput.toJson(parameters)}",
@@ -97,9 +88,11 @@ void call(Map parameters = [:]) {
             // context config gives us e.g. the docker image name. --> How does this work for customer maintained images?
             // There is a name provided in the metadata file. But we do not provide a docker image for that.
             // The user has to build that for her/his own. How do we expect to configure this?
-            Map contextConfig = readJSON (text: sh(returnStdout: true, script: "./piper ${parameters.verbose ? '--verbose' :''} getConfig --stepMetadata '${METADATA_FILE}' --defaultConfig ${joinAndQuote(configs)} --contextConfig"))
 
-            Map projectConfig = readJSON (text: sh(returnStdout: true, script: "./piper ${parameters.verbose ? '--verbose' :''} getConfig --stepMetadata '${METADATA_FILE}' --defaultConfig ${joinAndQuote(configs)}"))
+            String projectConfigScript = "./piper ${parameters.verbose ? '--verbose' :''} getConfig --stepMetadata '${METADATA_FOLDER}/${METADATA_FILE}' --defaultConfig ${configFiles}"
+            String contextConfigScript = projectConfigScript + " --contextConfig"
+            Map projectConfig = readJSON (text: sh(returnStdout: true, script: projectConfigScript))
+            Map contextConfig = readJSON (text: sh(returnStdout: true, script: contextConfigScript))
 
             if(parameters.verbose) {
                 echo "[INFO] Context-Config: ${contextConfig}"
@@ -117,7 +110,7 @@ void call(Map parameters = [:]) {
                     space: projectConfig.space,   // required on groovy level for acquire the lock
                     docker: [
                         dockerImage: contextConfig.dockerImage,
-                        dockerPullImage: false    // dockerPullImage apparently not provided by context config.
+                        dockerPullImage: false
                     ]
                 ]
 
@@ -144,7 +137,7 @@ void call(Map parameters = [:]) {
 
                     dockerExecute([script: this].plus(config.docker)) {
                         xsDeployStdout = sh returnStdout: true, script: """#!/bin/bash
-                        ./piper ${parameters.verbose ? '--verbose' : ''} xsDeploy --user \${USERNAME} --password \${PASSWORD} ${operationId ? "--operationId " + operationId : "" }
+                        ./piper ${parameters.verbose ? '--verbose' : ''} xsDeploy --defaultConfig ${configFiles} --user \${USERNAME} --password \${PASSWORD} ${operationId ? "--operationId " + operationId : "" }
                         """
                     }
 
@@ -166,10 +159,37 @@ String getLockIdentifier(Map config) {
     "$STEP_NAME:${config.apiUrl}:${config.org}:${config.space}"
 }
 
-String joinAndQuote(List l) {
+/*
+ * The returned string can be used directly in the command line for retrieving the configuration via go
+ */
+String prepareConfigurations(List configs, String configCacheFolder) {
+
+    for(def customDefault : configs) {
+        writeFile(file: "${ADDITIONAL_CONFIGS_FOLDER}/${customDefault}", text: libraryResource(customDefault))
+    }
+    joinAndQuote(configs.reverse(), configCacheFolder)
+}
+
+/*
+ * prefix is supposed to be provided without trailing slash
+ */
+String joinAndQuote(List l, String prefix = '') {
     _l = []
+
+    if(prefix == null) {
+        prefix = ''
+    }
+    if(prefix.endsWith('/') || prefix.endsWith('\\'))
+        throw new IllegalArgumentException("Provide prefix (${prefix}) without trailing slash")
+
     for(def e : l) {
-        _l << '"' + e + '"'
+         def _e = ''
+         if(prefix.length() > 0) {
+             _e += prefix
+             _e += '/'
+         }
+         _e += e 
+        _l << '"' + _e + '"'
     }
     _l.join(' ')
 }

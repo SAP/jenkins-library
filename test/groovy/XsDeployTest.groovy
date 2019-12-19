@@ -150,7 +150,7 @@ class XsDeployTest extends BasePiperTest {
 
         assertThat(writeFileRule.files.keySet(), containsInAnyOrder(
             '.pipeline/additionalConfigs/default_pipeline_environment.yml',
-            'metadata/xsDeploy.yaml',
+            '.pipeline/metadata/xsDeploy.yaml',
             ))
 
         assertThat(dockerRule.dockerParams.dockerImage, equalTo('xs'))
@@ -164,11 +164,12 @@ class XsDeployTest extends BasePiperTest {
                     .hasProlog('./piper getConfig')
                     .hasArgument('--contextConfig'),
                 new CommandLineMatcher()
-                    .hasProlog('./piper getConfig --stepMetadata \'metadata/xsDeploy.yaml\''),
+                    .hasProlog('./piper getConfig --stepMetadata \'.pipeline/metadata/xsDeploy.yaml\''),
                 new CommandLineMatcher()
-                    .hasProlog('#!/bin/bash ./piper xsDeploy --user \\$\\{USERNAME\\} --password \\$\\{PASSWORD\\}'),
+                    .hasProlog('#!/bin/bash ./piper xsDeploy --defaultConfig ".pipeline/additionalConfigs/default_pipeline_environment.yml" --user \\$\\{USERNAME\\} --password \\$\\{PASSWORD\\}'),
                 not(new CommandLineMatcher()
-                    .hasProlog('#!/bin/bash ./piper xsDeploy --user \\$\\{USERNAME\\} --password \\$\\{PASSWORD\\}  --operationId'))
+                    .hasProlog('#!/bin/bash ./piper xsDeploy')
+                    .hasOption('operationId', '1234'))
             )
         )
 
@@ -189,7 +190,8 @@ class XsDeployTest extends BasePiperTest {
 
         assertThat(shellRule.shell,
             new CommandLineMatcher()
-                .hasProlog('#!/bin/bash ./piper xsDeploy --user \\$\\{USERNAME\\} --password \\$\\{PASSWORD\\} --operationId 1234')
+                .hasProlog('#!/bin/bash ./piper xsDeploy')
+                .hasOption('operationId', '1234')
         )
 
         assertThat(lockRule.getLockResources(), contains('xsDeploy:https://example.org/xs:myOrg:mySpace'))
@@ -258,7 +260,7 @@ class XsDeployTest extends BasePiperTest {
             '.pipeline/additionalConfigs/a.yml',
             '.pipeline/additionalConfigs/b.yml',
             '.pipeline/additionalConfigs/default_pipeline_environment.yml',
-            'metadata/xsDeploy.yaml',
+            '.pipeline/metadata/xsDeploy.yaml',
             ))
 
         assertThat(shellRule.shell,
@@ -266,11 +268,10 @@ class XsDeployTest extends BasePiperTest {
                 new CommandLineMatcher()
                     .hasProlog('./piper getConfig')
                     .hasArgument('--contextConfig')
-                    .hasArgument('--defaultConfig "b.yml" "a.yml" "default_pipeline_environment.yml"'),
+                    .hasArgument('--defaultConfig ".pipeline/additionalConfigs/b.yml" ".pipeline/additionalConfigs/a.yml" ".pipeline/additionalConfigs/default_pipeline_environment.yml"'),
                 new CommandLineMatcher()
-                    .hasProlog('./piper getConfig --stepMetadata \'metadata/xsDeploy.yaml\''),
+                    .hasProlog('./piper getConfig --stepMetadata \'.pipeline/metadata/xsDeploy.yaml\''),
             )
         )
     }
-
 }
