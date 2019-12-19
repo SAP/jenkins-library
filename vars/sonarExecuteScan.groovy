@@ -184,6 +184,8 @@ void call(Map parameters = [:]) {
                     workerForGithubAuth(config)
                 }
             }
+        } else {
+            if(env.BRANCH_NAME) configuration.options.add("sonar.branch.name=${env.BRANCH_NAME}")
         }
 
         dockerExecute(
