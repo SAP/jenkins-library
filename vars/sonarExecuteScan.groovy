@@ -119,7 +119,7 @@ void call(Map parameters = [:]) {
         if(configuration.options instanceof String)
             configuration.options = [].plus(configuration.options)
 
-        loadCertificates(config)
+        loadCertificates(configuration)
 
         def worker = { config ->
             try {
