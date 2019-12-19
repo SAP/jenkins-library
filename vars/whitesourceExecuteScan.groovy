@@ -476,9 +476,13 @@ private resolveProjectIdentifiers(script, descriptorUtils, config) {
 
 void analyseWhitesourceResults(Map config, WhitesourceRepository repository) {
     def pdfName = "whitesource-riskReport.pdf"
-    repository.fetchReportForProduct(pdfName)
-    archiveArtifacts artifacts: pdfName
-    echo "A summary of the Whitesource findings was stored as artifact under the name ${pdfName}"
+    try {
+        repository.fetchReportForProduct(pdfName)
+        archiveArtifacts artifacts: pdfName
+        echo "A summary of the Whitesource findings was stored as artifact under the name ${pdfName}"
+    } catch (e) {
+        echo "[${STEP_NAME}][WARNING] Failed to fetch and archive report ${pdfName}"
+    }
 
     if(config.whitesource.licensingVulnerabilities) {
         def violationCount = fetchViolationCount(config, repository)
