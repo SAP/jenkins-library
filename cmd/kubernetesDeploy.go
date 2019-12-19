@@ -15,6 +15,7 @@ import (
 func kubernetesDeploy(myKubernetesDeployOptions kubernetesDeployOptions) error {
 	c := command.Command{}
 	// reroute stderr output to logging framework, stdout will be used for command interactions
+	c.Stdout(log.Entry().Writer())
 	c.Stderr(log.Entry().Writer())
 	runKubernetesDeploy(myKubernetesDeployOptions, &c)
 	return nil
@@ -67,8 +68,10 @@ func runHelmDeploy(myKubernetesDeployOptions kubernetesDeployOptions, command en
 		"docker-registry",
 		"regsecret",
 		fmt.Sprintf("--docker-server=%v", containerRegistry),
-		fmt.Sprintf("--docker-username=%v", shell.WrapInQuotes(myKubernetesDeployOptions.ContainerRegistryUser)),
-		fmt.Sprintf("--docker-password=%v", shell.WrapInQuotes(myKubernetesDeployOptions.ContainerRegistryPassword)),
+		//fmt.Sprintf("--docker-username=%v", shell.WrapInQuotes(myKubernetesDeployOptions.ContainerRegistryUser)),
+		//fmt.Sprintf("--docker-password=%v", shell.WrapInQuotes(myKubernetesDeployOptions.ContainerRegistryPassword)),
+		fmt.Sprintf("--docker-username=%v", myKubernetesDeployOptions.ContainerRegistryUser),
+		fmt.Sprintf("--docker-password=%v", myKubernetesDeployOptions.ContainerRegistryPassword),
 		"--dry-run=true",
 		"--output=json",
 	}
@@ -124,6 +127,50 @@ func runHelmDeploy(myKubernetesDeployOptions kubernetesDeployOptions, command en
 }
 
 func runKubectlDeploy(myKubernetesDeployOptions kubernetesDeployOptions, command envExecRunner) {
+	_, containerRegistry, err := splitRegistryURL(myKubernetesDeployOptions.ContainerRegistryURL)
+	if err != nil {
+		log.Entry().WithError(err).Fatalf("Container registry url '%v' incorrect", myKubernetesDeployOptions.ContainerRegistryURL)
+	}
+	//imageUrl := fmt.Sprintf("%v/%v", myKubernetesDeployOptions.ContainerRegistryURL, myKubernetesDeployOptions.Image)
+
+	kubeParams := []string{
+		"--insecure-skip-tls-verify=true",
+		fmt.Sprintf("--namespace=%v", myKubernetesDeployOptions.Namespace),
+	}
+
+	if len(myKubernetesDeployOptions.KubeConfig) > 0 {
+		kubeEnv := []string{fmt.Sprintf("KUBECONFIG=%v", myKubernetesDeployOptions.KubeConfig)}
+		command.Env(kubeEnv)
+		if len(myKubernetesDeployOptions.KubeContext) > 0 {
+			kubeParams = append(kubeParams, fmt.Sprintf("--context=%v", myKubernetesDeployOptions.KubeContext))
+		}
+
+	} else {
+		kubeParams = append(kubeParams, fmt.Sprintf("--server=%v", myKubernetesDeployOptions.APIServer))
+		//ToDo: support Token authentication
+		kubeParams = append(kubeParams, fmt.Sprintf("--token=%v", ""))
+	}
+
+	if myKubernetesDeployOptions.CreateDockerRegistrySecret {
+		if len(myKubernetesDeployOptions.ContainerRegistryUser+myKubernetesDeployOptions.ContainerRegistryPassword) == 0 {
+			log.Entry().Fatal("Cannot create Container registry secret without proper registry username/password")
+		}
+		kubeSecretParams := append(
+			kubeParams,
+			"--insecure-skip-tls-verify=true",
+			"create",
+			"secret",
+			"docker-registry",
+			"regsecret",
+			fmt.Sprintf("--docker-server=%v", containerRegistry),
+			fmt.Sprintf("--docker-username=%v", shell.WrapInQuotes(myKubernetesDeployOptions.ContainerRegistryUser)),
+			fmt.Sprintf("--docker-password=%v", shell.WrapInQuotes(myKubernetesDeployOptions.ContainerRegistryPassword)),
+		)
+		log.Entry().Infof("Calling kubectl with parameters %v", kubeSecretParams)
+		if err := command.RunExecutable("kubectl", kubeSecretParams...); err != nil {
+			log.Entry().WithError(err).Fatal("Creating container registry secret failed")
+		}
+	}
 
 }
 

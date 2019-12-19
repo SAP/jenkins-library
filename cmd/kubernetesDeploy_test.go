@@ -28,7 +28,7 @@ func TestRunKubernetesDeploy(t *testing.T) {
 
 		e := execMockRunner{
 			stdoutReturn: map[string]string{
-				"kubectl --insecure-skip-tls-verify=true create secret docker-registry regsecret --docker-server=my.registry:55555 --docker-username='registryUser' --docker-password='********' --dry-run=true --output=json": dockerConfigJSON,
+				"kubectl --insecure-skip-tls-verify=true create secret docker-registry regsecret --docker-server=my.registry:55555 --docker-username=registryUser --docker-password=******** --dry-run=true --output=json": dockerConfigJSON,
 			},
 		}
 
@@ -38,7 +38,7 @@ func TestRunKubernetesDeploy(t *testing.T) {
 		assert.Equal(t, []string{"init", "--client-only"}, e.calls[0].params, "Wrong init parameters")
 
 		assert.Equal(t, "kubectl", e.calls[1].exec, "Wrong secret creation command")
-		assert.Equal(t, []string{"--insecure-skip-tls-verify=true", "create", "secret", "docker-registry", "regsecret", "--docker-server=my.registry:55555", "--docker-username='registryUser'", "--docker-password='********'", "--dry-run=true", "--output=json"}, e.calls[1].params, "Wrong secret creation parameters")
+		assert.Equal(t, []string{"--insecure-skip-tls-verify=true", "create", "secret", "docker-registry", "regsecret", "--docker-server=my.registry:55555", "--docker-username=registryUser", "--docker-password=********", "--dry-run=true", "--output=json"}, e.calls[1].params, "Wrong secret creation parameters")
 
 		assert.Equal(t, "helm", e.calls[2].exec, "Wrong upgrade command")
 		assert.Equal(t, []string{
