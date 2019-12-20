@@ -5,14 +5,14 @@ class ConfigurationHelper implements Serializable {
 
     def static SEPARATOR = '/'
 
-    static ConfigurationHelper newInstance(Script step, Map config = [:]) {
-        new ConfigurationHelper(step, config)
+    static ConfigurationHelper newInstance(Script step, Script script, Map config = [:]) {
+        new ConfigurationHelper(step, script, config)
     }
 
     ConfigurationHelper loadStepDefaults(Map compatibleParameters = [:]) {
         DefaultValueCache.prepare(step)
-        this.config = ConfigurationLoader.defaultGeneralConfiguration()
-        mixin(ConfigurationLoader.defaultGeneralConfiguration(), null, compatibleParameters)
+        this.config = ConfigurationLoader.defaultGeneralConfiguration(step)
+        mixin(ConfigurationLoader.defaultGeneralConfiguration(step), null, compatibleParameters)
         mixin(ConfigurationLoader.defaultStepConfiguration(null, name), null, compatibleParameters)
     }
 
@@ -22,9 +22,9 @@ class ConfigurationHelper implements Serializable {
     private Map validationResults = null
     private String dependingOn
 
-    private ConfigurationHelper(Script step, Map config){
+    private ConfigurationHelper(Script step, Script script, Map config){
         this.config = config ?: [:]
-        this.step = step
+        this.step = script
         this.name = step.STEP_NAME
         if(!this.name) throw new IllegalArgumentException('Step has no public name property!')
     }

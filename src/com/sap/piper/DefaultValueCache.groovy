@@ -17,12 +17,26 @@ class DefaultValueCache implements Serializable {
         }
     }
 
-    static getInstance(){
+    static getInstance(scriptBinding){
+        if (instance) {
+            return instance
+        }
+        if(scriptBinding?.hasVariable("defaultValueCacheInstance")) {
+            Map defaultValues = scriptBinding?.getProperty("defaultValueCacheInstance")
+            return createInstance(defaultValues, scriptBinding)
+        }
+    }
+
+    static createInstance(Map defaultValues, scriptBinding, List customDefaults = []){
+        instance = new DefaultValueCache(defaultValues, customDefaults)
+        if(!scriptBinding?.hasVariable("defaultValueCacheInstance")) {
+            scriptBinding?.setProperty("defaultValueCacheInstance", defaultValues)
+        }
         return instance
     }
 
-    static createInstance(Map defaultValues, List customDefaults = []){
-        instance = new DefaultValueCache(defaultValues, customDefaults)
+    static boolean hasInstance(){
+        return instance!=null
     }
 
     Map getDefaultValues(){
@@ -41,7 +55,7 @@ class DefaultValueCache implements Serializable {
 
     static void prepare(Script steps, Map parameters = [:]) {
         if(parameters == null) parameters = [:]
-        if(!DefaultValueCache.getInstance() || parameters.customDefaults) {
+        if(!DefaultValueCache.hasInstance() || parameters.customDefaults) {
             def defaultValues = [:]
             def configFileList = ['default_pipeline_environment.yml']
             def customDefaults = parameters.customDefaults
@@ -57,7 +71,14 @@ class DefaultValueCache implements Serializable {
                         MapUtils.pruneNulls(defaultValues),
                         MapUtils.pruneNulls(configuration))
             }
-            DefaultValueCache.createInstance(defaultValues, customDefaults)
+            DefaultValueCache.createInstance(defaultValues, steps.getBinding(), customDefaults)
         }
+    }
+
+    @Override
+    public String toString() {
+        return "DefaultValueCache{" +
+            "defaultValues=" + defaultValues +
+            '}'
     }
 }

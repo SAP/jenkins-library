@@ -27,7 +27,7 @@ class ConfigurationLoader implements Serializable {
     }
 
     static Map defaultGeneralConfiguration(script){
-        return DefaultValueCache.getInstance()?.getDefaultValues()?.general ?: [:]
+            return DefaultValueCache.getInstance(script?.getBinding())?.getDefaultValues()?.general ?: [:]
     }
 
     static Map postActionConfiguration(script, String actionName){
@@ -44,7 +44,7 @@ class ConfigurationLoader implements Serializable {
                 }
 
             case ConfigurationType.DEFAULT_CONFIGURATION:
-                return DefaultValueCache.getInstance()?.getDefaultValues()?.get(type)?.get(entryName) ?: [:]
+                return DefaultValueCache.getInstance(script?.getBinding())?.getDefaultValues()?.get(type)?.get(entryName) ?: [:]
             default:
                 throw new IllegalArgumentException("Unknown configuration type: ${configType}")
         }

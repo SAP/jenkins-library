@@ -31,9 +31,9 @@ import groovy.transform.Field
 @GenerateDocumentation
 void call(Map parameters = [:]) {
 
-    handlePipelineStepErrors (stepName: STEP_NAME, stepParameters: parameters) {
+    def script = checkScript(this, parameters)
+    handlePipelineStepErrors (stepName: STEP_NAME, stepParameters: parameters, script: script) {
 
-        def script = checkScript(this, parameters)
 
         prepareDefaultValues script: script, customDefaults: parameters.customDefaults
 
@@ -41,7 +41,7 @@ void call(Map parameters = [:]) {
 
         loadConfigurationFromFile(script, configFile)
 
-        Map config = ConfigurationHelper.newInstance(this)
+        Map config = ConfigurationHelper.newInstance(this, script)
             .loadStepDefaults()
             .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS)
             .use()
