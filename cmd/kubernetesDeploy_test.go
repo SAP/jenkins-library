@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"bytes"
 	"fmt"
 	"github.com/stretchr/testify/assert"
 	"testing"
@@ -32,7 +33,9 @@ func TestRunKubernetesDeploy(t *testing.T) {
 			},
 		}
 
-		runKubernetesDeploy(opts, &e)
+		var stdout bytes.Buffer
+
+		runKubernetesDeploy(opts, &e, &stdout)
 
 		assert.Equal(t, "helm", e.calls[0].exec, "Wrong init command")
 		assert.Equal(t, []string{"init", "--client-only"}, e.calls[0].params, "Wrong init parameters")

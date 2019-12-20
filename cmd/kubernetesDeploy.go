@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"strconv"
 	"strings"
 
@@ -15,21 +16,20 @@ import (
 func kubernetesDeploy(myKubernetesDeployOptions kubernetesDeployOptions) error {
 	c := command.Command{}
 	// reroute stderr output to logging framework, stdout will be used for command interactions
-	c.Stdout(log.Entry().Writer())
 	c.Stderr(log.Entry().Writer())
-	runKubernetesDeploy(myKubernetesDeployOptions, &c)
+	runKubernetesDeploy(myKubernetesDeployOptions, &c, log.Entry().Writer())
 	return nil
 }
 
-func runKubernetesDeploy(myKubernetesDeployOptions kubernetesDeployOptions, command envExecRunner) {
+func runKubernetesDeploy(myKubernetesDeployOptions kubernetesDeployOptions, command envExecRunner, stdout io.Writer) {
 	if myKubernetesDeployOptions.DeployTool == "helm" {
-		runHelmDeploy(myKubernetesDeployOptions, command)
+		runHelmDeploy(myKubernetesDeployOptions, command, stdout)
 	} else {
-		runKubectlDeploy(myKubernetesDeployOptions, command)
+		runKubectlDeploy(myKubernetesDeployOptions, command, stdout)
 	}
 }
 
-func runHelmDeploy(myKubernetesDeployOptions kubernetesDeployOptions, command envExecRunner) {
+func runHelmDeploy(myKubernetesDeployOptions kubernetesDeployOptions, command envExecRunner, stdout io.Writer) {
 	_, containerRegistry, err := splitRegistryURL(myKubernetesDeployOptions.ContainerRegistryURL)
 	if err != nil {
 		log.Entry().WithError(err).Fatalf("Container registry url '%v' incorrect", myKubernetesDeployOptions.ContainerRegistryURL)
@@ -53,6 +53,7 @@ func runHelmDeploy(myKubernetesDeployOptions kubernetesDeployOptions, command en
 	}
 	log.Entry().Debugf("Helm Env: %v", helmEnv)
 	command.Env(helmEnv)
+	command.Stdout(stdout)
 
 	initParams := []string{"init", "--client-only"}
 	if err := command.RunExecutable("helm", initParams...); err != nil {
@@ -68,17 +69,18 @@ func runHelmDeploy(myKubernetesDeployOptions kubernetesDeployOptions, command en
 		"docker-registry",
 		"regsecret",
 		fmt.Sprintf("--docker-server=%v", containerRegistry),
-		//fmt.Sprintf("--docker-username=%v", shell.WrapInQuotes(myKubernetesDeployOptions.ContainerRegistryUser)),
-		//fmt.Sprintf("--docker-password=%v", shell.WrapInQuotes(myKubernetesDeployOptions.ContainerRegistryPassword)),
 		fmt.Sprintf("--docker-username=%v", myKubernetesDeployOptions.ContainerRegistryUser),
 		fmt.Sprintf("--docker-password=%v", myKubernetesDeployOptions.ContainerRegistryPassword),
 		"--dry-run=true",
 		"--output=json",
 	}
-	log.Entry().Infof("Calling kubectl with parameters %v", kubeParams)
+	log.Entry().Infof("Calling kubectl create secret --dry-run=true ...")
+	log.Entry().Debugf("kubectl parameters %v", kubeParams)
 	if err := command.RunExecutable("kubectl", kubeParams...); err != nil {
 		log.Entry().WithError(err).Fatal("Retrieving Docker config via kubectl failed")
 	}
+	log.Entry().Debugf("Secret created: %v", string(dockerRegistrySecret.Bytes()))
+
 	var dockerRegistrySecretData struct {
 		Kind string `json:"kind"`
 		Data struct {
@@ -118,7 +120,9 @@ func runHelmDeploy(myKubernetesDeployOptions kubernetesDeployOptions, command en
 		upgradeParams = append(upgradeParams, myKubernetesDeployOptions.AdditionalParameters...)
 	}
 
-	log.Entry().Infof("Calling helm with parameters %v", upgradeParams)
+	command.Stdout(stdout)
+	log.Entry().Info("Calling helm upgrade ...")
+	log.Entry().Debugf("Helm parameters %v", upgradeParams)
 	command.RunExecutable("helm", upgradeParams...)
 	if err := command.RunExecutable("helm", upgradeParams...); err != nil {
 		log.Entry().WithError(err).Fatal("Helm upgrade call failed")
@@ -126,7 +130,7 @@ func runHelmDeploy(myKubernetesDeployOptions kubernetesDeployOptions, command en
 
 }
 
-func runKubectlDeploy(myKubernetesDeployOptions kubernetesDeployOptions, command envExecRunner) {
+func runKubectlDeploy(myKubernetesDeployOptions kubernetesDeployOptions, command envExecRunner, stdout io.Writer) {
 	_, containerRegistry, err := splitRegistryURL(myKubernetesDeployOptions.ContainerRegistryURL)
 	if err != nil {
 		log.Entry().WithError(err).Fatalf("Container registry url '%v' incorrect", myKubernetesDeployOptions.ContainerRegistryURL)
