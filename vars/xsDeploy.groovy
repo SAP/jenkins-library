@@ -102,8 +102,8 @@ void call(Map parameters = [:]) {
                 echo "[INFO] ProjectConfig: ${projectConfig}"
             }
 
-            def operationId
-            if(mode == DeployMode.BG_DEPLOY && action != Action.NONE) {
+            def operationId = parameters.operationId
+            if(! operationId && mode == DeployMode.BG_DEPLOY && action != Action.NONE) {
                 operationId = script.commonPipelineEnvironment.xsDeploymentId
                 if (! operationId) {
                     throw new IllegalArgumentException('No operationId provided. Was there a deployment before?')

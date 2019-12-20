@@ -220,6 +220,29 @@ class XsDeployTest extends BasePiperTest {
     }
 
     @Test
+    public void testBlueGreenDeployResumeOperationIdViaSignature() {
+
+        // this happens in case we would like to complete a deployment without having a (successful) deployments before.
+
+        shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, 'getConfig.* (?!--contextConfig)', '{"mode": "BG_DEPLOY", "action": "RESUME", "apiUrl": "https://example.org/xs", "org": "myOrg", "space": "mySpace"}')
+
+        assertThat(nullScript.commonPipelineEnvironment.xsDeploymentId, nullValue())
+
+        stepRule.step.xsDeploy(
+            script: nullScript,
+            piperGoUtils: goUtils,
+            failOnError: true,
+            operationId: '1357'
+        )
+
+        assertThat(shellRule.shell,
+            new CommandLineMatcher()
+                .hasProlog('#!/bin/bash ./piper xsDeploy')
+                .hasOption('operationId', '1357')
+        )
+    }
+
+    @Test
     public void testAdditionalCustomConfigLayers() {
 
         def resources = ['a.yml': '- x: y}', 'b.yml' : '- a: b}']
