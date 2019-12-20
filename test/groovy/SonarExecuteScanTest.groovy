@@ -1,6 +1,7 @@
 import static org.hamcrest.Matchers.containsString
 import static org.hamcrest.Matchers.hasItem
 import static org.hamcrest.Matchers.is
+import static org.hamcrest.Matchers.not
 import static org.hamcrest.Matchers.allOf
 
 import org.junit.Before
@@ -40,6 +41,9 @@ class SonarExecuteScanTest extends BasePiperTest {
 
     @Before
     void init() throws Exception {
+        binding.setVariable('env', [
+            'BRANCH_NAME': 'dev'
+        ])
         sonarInstance = null
         helper.registerAllowedMethod("withSonarQubeEnv", [String.class, Closure.class], { string, closure ->
             sonarInstance = string
@@ -68,7 +72,11 @@ class SonarExecuteScanTest extends BasePiperTest {
 
         // asserts
         assertThat('Sonar instance is not set to the default value', sonarInstance, is('SonarCloud'))
-        assertThat('Sonar project version is not set to the default value', jscr.shell, hasItem(containsString('sonar-scanner -Dsonar.projectVersion=1')))
+        assertThat('Sonar project version and branch name is not set to the default value', jscr.shell, hasItem(allOf(
+            containsString('sonar-scanner'),
+            containsString('-Dsonar.projectVersion=1'),
+            containsString('-Dsonar.branch.name=dev')
+        )))
         assertThat('Docker image is not set to the default value', jedr.dockerParams.dockerImage, is('node:8-stretch'))
         assertJobStatusSuccess()
     }
@@ -82,7 +90,8 @@ class SonarExecuteScanTest extends BasePiperTest {
         )
 
         // asserts
-        assertThat('Sonar project version is not set to the custom value', jscr.shell, hasItem(containsString('sonar-scanner -Dsonar.projectVersion=2')))
+        assertThat('Sonar project version is not set to the custom value', jscr.shell, hasItem(
+            containsString('-Dsonar.projectVersion=2')))
         assertJobStatusSuccess()
     }
 
@@ -95,7 +104,8 @@ class SonarExecuteScanTest extends BasePiperTest {
         )
 
         // asserts
-        assertThat('Sonar options are not set to the custom value', jscr.shell, hasItem(containsString('sonar-scanner -Dsonar.host.url=localhost')))
+        assertThat('Sonar options are not set to the custom value', jscr.shell, hasItem(
+            containsString('-Dsonar.host.url=localhost')))
         assertJobStatusSuccess()
     }
 
@@ -108,7 +118,8 @@ class SonarExecuteScanTest extends BasePiperTest {
         )
 
         // asserts
-        assertThat('Sonar options are not set to the custom value', jscr.shell, hasItem(containsString('sonar-scanner -Dsonar.host.url=localhost')))
+        assertThat('Sonar options are not set to the custom value', jscr.shell, hasItem(
+            containsString('-Dsonar.host.url=localhost')))
         assertJobStatusSuccess()
     }
 
@@ -147,7 +158,8 @@ class SonarExecuteScanTest extends BasePiperTest {
             containsString('-Dsonar.pullrequest.base=master'),
             containsString('-Dsonar.pullrequest.branch=feature/anything'),
             containsString('-Dsonar.pullrequest.provider=GitHub'),
-            containsString('-Dsonar.pullrequest.github.repository=testOrg/testRepo')
+            containsString('-Dsonar.pullrequest.github.repository=testOrg/testRepo'),
+            not(containsString('-Dsonar.branch.name=PR-42'))
         )))
         assertJobStatusSuccess()
     }
