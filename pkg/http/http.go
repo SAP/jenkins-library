@@ -39,7 +39,7 @@ type Sender interface {
 	SetOptions(options ClientOptions)
 }
 
-// UploadFile uploads a file's content as multipart-form POST request to the specified URL 
+// UploadFile uploads a file's content as multipart-form POST request to the specified URL
 func (c *Client) UploadFile(url, file, fieldName string, header http.Header, cookies []*http.Cookie) (*http.Response, error) {
 	httpClient := c.initialize()
 
@@ -91,7 +91,7 @@ func (c *Client) SendRequest(method, url string, body io.Reader, header http.Hea
 	if err != nil {
 		return &http.Response{}, errors.Wrapf(err, "error creating %v request to %v", method, url)
 	}
-	
+
 	response, err := httpClient.Do(request)
 	if err != nil {
 		return response, errors.Wrapf(err, "error opening %v", url)
@@ -109,7 +109,7 @@ func (c *Client) SetOptions(options ClientOptions) {
 	c.logger = log.Entry().WithField("package", "SAP/jenkins-library/pkg/http")
 }
 
-func (c *Client) initialize() (*http.Client) {
+func (c *Client) initialize() *http.Client {
 	c.applyDefaults()
 
 	var httpClient = &http.Client{
