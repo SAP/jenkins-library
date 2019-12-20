@@ -66,6 +66,7 @@ func (c *Client) UploadFile(url, file, fieldName string, header http.Header, coo
 	method := http.MethodPost
 	request, err := c.createRequest(method, url, bodyBuffer, header, nil)
 	if err != nil {
+		c.logger.Debugf("New %v request to %v", method, url)
 		return &http.Response{}, errors.Wrapf(err, "error creating %v request to %v", method, url)
 	}
 
@@ -89,6 +90,7 @@ func (c *Client) SendRequest(method, url string, body io.Reader, header http.Hea
 
 	request, err := c.createRequest(method, url, body, header, cookies)
 	if err != nil {
+		c.logger.Debugf("New %v request to %v", method, url)
 		return &http.Response{}, errors.Wrapf(err, "error creating %v request to %v", method, url)
 	}
 
