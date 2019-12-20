@@ -89,7 +89,7 @@ void call(Map parameters = [:]) {
             // There is a name provided in the metadata file. But we do not provide a docker image for that.
             // The user has to build that for her/his own. How do we expect to configure this?
 
-            String projectConfigScript = "./piper ${parameters.verbose ? '--verbose' :''} getConfig --stepMetadata '${METADATA_FOLDER}/${METADATA_FILE}' --defaultConfig ${configFiles}"
+            String projectConfigScript = "./piper getConfig --stepMetadata '${METADATA_FOLDER}/${METADATA_FILE}' --defaultConfig ${configFiles}"
             String contextConfigScript = projectConfigScript + " --contextConfig"
             Map projectConfig = readJSON (text: sh(returnStdout: true, script: projectConfigScript))
             Map contextConfig = readJSON (text: sh(returnStdout: true, script: contextConfigScript))
@@ -137,7 +137,7 @@ void call(Map parameters = [:]) {
 
                     dockerExecute([script: this].plus(config.docker)) {
                         xsDeployStdout = sh returnStdout: true, script: """#!/bin/bash
-                        ./piper ${parameters.verbose ? '--verbose' : ''} xsDeploy --defaultConfig ${configFiles} --user \${USERNAME} --password \${PASSWORD} ${operationId ? "--operationId " + operationId : "" }
+                        ./piper xsDeploy --defaultConfig ${configFiles} --user \${USERNAME} --password \${PASSWORD} ${operationId ? "--operationId " + operationId : "" }
                         """
                     }
 
