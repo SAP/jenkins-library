@@ -119,13 +119,17 @@ void call(Map parameters = [:]) {
         if(configuration.options instanceof String)
             configuration.options = [].plus(configuration.options)
 
+        loadCertificates(configuration)
+
         def worker = { config ->
             try {
                 withSonarQubeEnv(config.instance) {
 
                         loadSonarScanner(config)
 
-                        loadCertificates(config)
+                        if(fileExists('.certificates/cacerts')){
+                            sh 'mv .certificates/cacerts .sonar-scanner/jre/lib/security/cacerts'
+                        }
 
                         if(config.organization) config.options.add("sonar.organization=${config.organization}")
                         if(config.projectVersion) config.options.add("sonar.projectVersion=${config.projectVersion}")
@@ -224,7 +228,7 @@ private void loadCertificates(Map config) {
         '-import',
         '-noprompt',
         '-storepass changeit',
-        '-keystore .sonar-scanner/jre/lib/security/cacerts'
+        "-keystore ${certificateFolder}cacerts"
     ]
     if (config.customTlsCertificateLinks){
         if(config.verbose){
