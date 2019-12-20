@@ -2,6 +2,7 @@ package checkmarx
 
 import (
 	"bytes"
+	"errors"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -23,9 +24,13 @@ type senderMock struct {
 	responseBody   string
 	header         http.Header
 	logger         *logrus.Entry
+	errorExp       bool
 }
 
 func (sm *senderMock) SendRequest(method, url string, body io.Reader, header http.Header, cookies []*http.Cookie) (*http.Response, error) {
+	if sm.errorExp {
+		return &http.Response{}, errors.New("Provoked technical error")
+	}
 	sm.httpMethod = method
 	sm.urlCalled = url
 	sm.header = header
@@ -69,6 +74,15 @@ func TestSendRequest(t *testing.T) {
 		assert.Error(t, err, "Error expected but none occured")
 		assert.Equal(t, "https://cx.wdf.sap.corp/CxRestAPI/test", myTestClient.urlCalled, "Called url incorrect")
 	})
+
+	t.Run("test technical error", func(t *testing.T) {
+		myTestClient := senderMock{responseBody: `{"some": "test"}`, httpStatusCode: 400}
+		sys := System{serverURL: "https://cx.wdf.sap.corp", client: &myTestClient, logger: logger}
+		myTestClient.SetOptions(opts)
+		_, err := sendRequest(&sys, "error", "/test", nil, nil)
+
+		assert.Error(t, err, "Error expected but none occured")
+	})
 }
 
 func TestGetOAuthToken(t *testing.T) {
@@ -106,6 +120,17 @@ func TestGetOAuthToken(t *testing.T) {
 		assert.Equal(t, "https://cx.wdf.sap.corp/CxRestAPI/auth/identity/connect/token", myTestClient.urlCalled, "Called url incorrect")
 		assert.Equal(t, "Bearer abcd12345", myTestClient.token, "Token incorrect")
 	})
+
+	t.Run("test technical error", func(t *testing.T) {
+		myTestClient := senderMock{responseBody: `{}`, httpStatusCode: 400}
+		sys := System{serverURL: "https://cx.wdf.sap.corp", client: &myTestClient, logger: logger}
+		myTestClient.SetOptions(opts)
+		myTestClient.errorExp = true
+
+		_, err := sys.getOAuth2Token()
+
+		assert.Error(t, err, "Error expected but none occured")
+	})
 }
 
 func TestGetTeams(t *testing.T) {
@@ -129,6 +154,22 @@ func TestGetTeams(t *testing.T) {
 			assert.Equal(t, "Team2", team2.FullName, "Team name incorrect")
 			assert.Equal(t, "2", team2.ID, "Team id incorrect")
 		})
+
+		t.Run("test fail get teams by name", func(t *testing.T) {
+			team := sys.GetTeamByName(teams, "Team")
+			assert.Equal(t, "", team.FullName, "Team name incorrect")
+		})
+	})
+
+	t.Run("test technical error", func(t *testing.T) {
+		myTestClient := senderMock{responseBody: `[{"id":"1", "fullName":"Team1"}, {"id":"2", "fullName":"Team2"}, {"id":"3", "fullName":"Team3"}]`, httpStatusCode: 200}
+		sys := System{serverURL: "https://cx.wdf.sap.corp", client: &myTestClient, logger: logger}
+		myTestClient.SetOptions(opts)
+		myTestClient.errorExp = true
+
+		teams := sys.GetTeams()
+
+		assert.Equal(t, 0, len(teams), "Error expected but none occured")
 	})
 }
 
@@ -152,6 +193,22 @@ func TestGetProjects(t *testing.T) {
 			assert.Equal(t, "Project1", project1.Name, "Project name incorrect")
 			assert.Equal(t, "1", project1.TeamID, "Project teamId incorrect")
 		})
+
+		t.Run("test fail get projects by name", func(t *testing.T) {
+			project := sys.GetProjectByName(projects, "Project5")
+			assert.Equal(t, "", project.Name, "Project name incorrect")
+		})
+	})
+
+	t.Run("test technical error", func(t *testing.T) {
+		myTestClient := senderMock{httpStatusCode: 200}
+		sys := System{serverURL: "https://cx.wdf.sap.corp", client: &myTestClient, logger: logger}
+		myTestClient.SetOptions(opts)
+		myTestClient.errorExp = true
+
+		projects := sys.GetProjects()
+
+		assert.Equal(t, 0, len(projects), "Error expected but none occured")
 	})
 }
 
@@ -170,6 +227,17 @@ func TestCreateProject(t *testing.T) {
 		assert.Equal(t, "POST", myTestClient.httpMethod, "HTTP method incorrect")
 		assert.Equal(t, "application/json", myTestClient.header.Get("Content-Type"), "Called url incorrect")
 		assert.Equal(t, `{"isPublic":true,"name":"TestProjectCreate","owningTeam":"4711"}`, myTestClient.requestBody, "Request body incorrect")
+	})
+
+	t.Run("test technical error", func(t *testing.T) {
+		myTestClient := senderMock{httpStatusCode: 200}
+		sys := System{serverURL: "https://cx.wdf.sap.corp", client: &myTestClient, logger: logger}
+		myTestClient.SetOptions(opts)
+		myTestClient.errorExp = true
+
+		result := sys.CreateProject("Test", "13")
+
+		assert.Equal(t, false, result, "Error expected but none occured")
 	})
 }
 
