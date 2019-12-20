@@ -32,8 +32,14 @@ type ClientOptions struct {
 	Token    string
 }
 
-// Sender provides an interface to the piper http client for uid/pwd authenticated requests
+// Sender provides an interface to the piper http client for uid/pwd and token authenticated requests
 type Sender interface {
+	SendRequest(method, url string, body io.Reader, header http.Header, cookies []*http.Cookie) (*http.Response, error)
+	SetOptions(options ClientOptions)
+}
+
+// Uploader provides an interface to the piper http client for uid/pwd and token authenticated requests with upload capabilities
+type Uploader interface {
 	SendRequest(method, url string, body io.Reader, header http.Header, cookies []*http.Cookie) (*http.Response, error)
 	UploadFile(url, file, fieldName string, header http.Header, cookies []*http.Cookie) (*http.Response, error)
 	SetOptions(options ClientOptions)

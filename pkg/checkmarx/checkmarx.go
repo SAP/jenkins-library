@@ -94,7 +94,7 @@ type System struct {
 	serverURL string
 	username  string
 	password  string
-	client    piperHttp.Sender
+	client    piperHttp.Uploader
 	logger    *logrus.Entry
 }
 
