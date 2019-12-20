@@ -10,13 +10,15 @@ import (
 	"strconv"
 	"strings"
 
+	piperHttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/checkmarx"
 	"github.com/bmatcuk/doublestar"
 	"github.com/pkg/errors"
 )
 
 func checkmarxExecuteScan(myCheckmarxExecuteScanOptions checkmarxExecuteScanOptions) error {
-	sys, err := checkmarx.NewSystem(myCheckmarxExecuteScanOptions.CheckmarxServerURL, myCheckmarxExecuteScanOptions.Username, myCheckmarxExecuteScanOptions.Password)
+	client := &piperHttp.Client{}
+	sys, err := checkmarx.NewSystem(client, myCheckmarxExecuteScanOptions.CheckmarxServerURL, myCheckmarxExecuteScanOptions.Username, myCheckmarxExecuteScanOptions.Password)
 	if err != nil {
 		errors.Errorf("Failed to create Checkmarx client talking to URL %v with error %v", myCheckmarxExecuteScanOptions.CheckmarxServerURL, err)
 	}

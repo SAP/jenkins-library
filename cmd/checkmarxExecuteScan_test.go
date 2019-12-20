@@ -66,7 +66,7 @@ func TestZipFolder(t *testing.T) {
 		zipFolder(".", &zipFileMock, []string{"!checkmarxExecuteScan_test.go", "**/*.txt", "**/checkmarxExecuteScan.go"})
 
 		got := zipFileMock.Len()
-		want := 3204
+		want := 3231
 
 		if got != want {
 			t.Errorf("Zipping test failed expected %v but got %v", want, got)

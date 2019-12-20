@@ -3,6 +3,7 @@ package checkmarx
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -99,12 +100,12 @@ type System struct {
 }
 
 // NewSystem returns a new Checkmarx client for communicating with the backend
-func NewSystem(serverURL, username, password string) (*System, error) {
+func NewSystem(client piperHttp.Uploader, serverURL, username, password string) (*System, error) {
 	sys := &System{
 		serverURL: serverURL,
 		username:  username,
 		password:  password,
-		client:    &piperHttp.Client{},
+		client:    client,
 		logger:    log.Entry().WithField("package", "SAP/jenkins-library/pkg/checkmarx"),
 	}
 
@@ -122,7 +123,7 @@ func NewSystem(serverURL, username, password string) (*System, error) {
 }
 
 func sendRequest(sys *System, method, url string, body io.Reader, header http.Header) ([]byte, error) {
-	response, err := sys.client.SendRequest(method, sys.serverURL+"/CxRestAPI"+url, body, header, nil)
+	response, err := sys.client.SendRequest(method, fmt.Sprintf("%v/CxRestAPI%v", sys.serverURL, url), body, header, nil)
 	if err != nil {
 		sys.logger.Errorf("HTTP request failed with error: %s", err)
 		return nil, err
@@ -225,7 +226,7 @@ func (sys *System) UploadProjectSourceCode(projectID int, zipFile string) bool {
 	header := http.Header{}
 	header.Add("Accept-Encoding", "gzip,deflate")
 	header.Add("Accept", "text/plain")
-	resp, err := sys.client.UploadFile(sys.serverURL+"/CxRestAPI/projects/"+strconv.Itoa(projectID)+"/sourceCode/attachments", zipFile, "zippedSource", header, nil)
+	resp, err := sys.client.UploadFile(fmt.Sprintf("%v/CxRestAPI/projects/%v/sourceCode/attachments", sys.serverURL, projectID), zipFile, "zippedSource", header, nil)
 	if err != nil {
 		sys.logger.Errorf("Failed to uploaded zipped sources %s", err)
 		return false
@@ -266,7 +267,7 @@ func (sys *System) UpdateProjectExcludeSettings(projectID int, excludeFolders st
 
 	header := http.Header{}
 	header.Set("Content-Type", "application/json")
-	_, err = sendRequest(sys, http.MethodPut, "/projects/"+strconv.Itoa(projectID)+"/sourceCode/excludeSettings", bytes.NewBuffer(jsonValue), header)
+	_, err = sendRequest(sys, http.MethodPut, fmt.Sprintf("/projects/%v/sourceCode/excludeSettings", projectID), bytes.NewBuffer(jsonValue), header)
 	if err != nil {
 		sys.logger.Errorf("HTTP request failed with error: %s", err)
 		return false
@@ -346,7 +347,7 @@ func (sys *System) ScanProject(projectID int) (bool, Scan) {
 func (sys *System) GetScanStatus(scanID int) string {
 	var scanStatus ScanStatus
 
-	data, err := sendRequest(sys, http.MethodGet, "/sast/scans/"+strconv.Itoa(scanID), nil, nil)
+	data, err := sendRequest(sys, http.MethodGet, fmt.Sprintf("/sast/scans/%v", scanID), nil, nil)
 	if err != nil {
 		sys.logger.Errorf("Failed to get scan status for scanID %v: %s", scanID, err)
 		return ""
@@ -360,7 +361,7 @@ func (sys *System) GetScanStatus(scanID int) string {
 func (sys *System) GetResults(scanID int) ResultsStatistics {
 	var results ResultsStatistics
 
-	data, err := sendRequest(sys, http.MethodGet, "/sast/scans/"+strconv.Itoa(scanID)+"/resultsStatistics", nil, nil)
+	data, err := sendRequest(sys, http.MethodGet, fmt.Sprintf("/sast/scans/%v/resultsStatistics", scanID), nil, nil)
 	if err != nil {
 		sys.logger.Errorf("Failed to fetch scan results for scanID %v: %s", scanID, err)
 		return results
