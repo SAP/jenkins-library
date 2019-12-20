@@ -94,11 +94,6 @@ void call(Map parameters = [:]) {
             Map projectConfig = readJSON (text: sh(returnStdout: true, script: projectConfigScript))
             Map contextConfig = readJSON (text: sh(returnStdout: true, script: contextConfigScript))
 
-            if(parameters.verbose) {
-                echo "[INFO] Context-Config: ${contextConfig}"
-                echo "[INFO] Project-Config: ${projectConfig}"
-            }
-
             Action action = projectConfig.action
             DeployMode mode = projectConfig.mode
 
@@ -115,7 +110,7 @@ void call(Map parameters = [:]) {
                 ]
 
             if(parameters.verbose) {
-                echo "[INFO] Merged-Config: ${config}"
+                echo "[INFO] Config: ${config}"
             }
 
             def operationId
