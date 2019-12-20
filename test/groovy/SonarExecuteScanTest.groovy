@@ -69,7 +69,7 @@ class SonarExecuteScanTest extends BasePiperTest {
         // asserts
         assertThat('Sonar instance is not set to the default value', sonarInstance, is('SonarCloud'))
         assertThat('Sonar project version is not set to the default value', jscr.shell, hasItem(containsString('sonar-scanner -Dsonar.projectVersion=1')))
-        assertThat('Docker image is not set to the default value', jedr.dockerParams.dockerImage, is('node:8-stretch'))
+        assertThat('Docker image is not set to the default value', jedr.dockerParams.dockerImage, is('node:10-stretch'))
         assertJobStatusSuccess()
     }
 
