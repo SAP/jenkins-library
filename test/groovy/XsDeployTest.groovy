@@ -64,7 +64,7 @@ class XsDeployTest extends BasePiperTest {
     @Before
     public void init() {
         helper.registerAllowedMethod('withEnv', [List, Closure], {l, c -> env = l;  c()})
-        shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, '.*getConfig.*--contextConfig.*', '{"dockerImage": "xs", "credentialsId":"myCreds"}')
+        shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, '.*getConfig.*--contextConfig.*', '{"dockerImage": "xs", "dockerPullImage": false, "credentialsId":"myCreds"}')
         shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, 'getConfig.* (?!--contextConfig)', '{"mode": "BG_DEPLOY", "action": "NONE", "apiUrl": "https://example.org/xs", "org": "myOrg", "space": "mySpace"}')
         nullScript.commonPipelineEnvironment.xsDeploymentId = null
     }

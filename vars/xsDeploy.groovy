@@ -119,7 +119,7 @@ void call(Map parameters = [:]) {
                         passwordVariable: 'PASSWORD',
                         usernameVariable: 'USERNAME')]) {
 
-                    dockerExecute([script: this].plus([dockerImage: contextConfig.dockerImage, dockerPullImage: false])) {
+                    dockerExecute([script: this].plus([dockerImage: contextConfig.dockerImage, dockerPullImage: contextConfig.dockerPullImage])) {
                         xsDeployStdout = sh returnStdout: true, script: """#!/bin/bash
                         ./piper xsDeploy --defaultConfig ${configFiles} --user \${USERNAME} --password \${PASSWORD} ${operationId ? "--operationId " + operationId : "" }
                         """
