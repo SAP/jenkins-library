@@ -97,20 +97,9 @@ void call(Map parameters = [:]) {
             Action action = projectConfig.action
             DeployMode mode = projectConfig.mode
 
-            // That config map here is only used in the groovy layer. Nothing is handed over to go.
-            Map config = contextConfig <<
-                [
-                    apiUrl: projectConfig.apiUrl, // required on groovy level for acquire the lock
-                    org: projectConfig.org,       // required on groovy level for acquire the lock
-                    space: projectConfig.space,   // required on groovy level for acquire the lock
-                    docker: [
-                        dockerImage: contextConfig.dockerImage,
-                        dockerPullImage: false
-                    ]
-                ]
-
             if(parameters.verbose) {
-                echo "[INFO] Config: ${config}"
+                echo "[INFO] ContextConfig: ${contextConfig}"
+                echo "[INFO] ProjectConfig: ${projectConfig}"
             }
 
             def operationId
@@ -123,14 +112,14 @@ void call(Map parameters = [:]) {
 
             def xsDeployStdout
 
-            lock(getLockIdentifier(config)) {
+            lock(getLockIdentifier(projectConfig)) {
 
                 withCredentials([usernamePassword(
-                        credentialsId: config.credentialsId,
+                        credentialsId: contextConfig.credentialsId,
                         passwordVariable: 'PASSWORD',
                         usernameVariable: 'USERNAME')]) {
 
-                    dockerExecute([script: this].plus(config.docker)) {
+                    dockerExecute([script: this].plus([dockerImage: contextConfig.dockerImage, dockerPullImage: false])) {
                         xsDeployStdout = sh returnStdout: true, script: """#!/bin/bash
                         ./piper xsDeploy --defaultConfig ${configFiles} --user \${USERNAME} --password \${PASSWORD} ${operationId ? "--operationId " + operationId : "" }
                         """
