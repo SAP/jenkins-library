@@ -10,7 +10,6 @@ import (
 
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/log"
-	"github.com/SAP/jenkins-library/pkg/piperutils/shell"
 )
 
 func kubernetesDeploy(myKubernetesDeployOptions kubernetesDeployOptions) error {
@@ -167,8 +166,8 @@ func runKubectlDeploy(myKubernetesDeployOptions kubernetesDeployOptions, command
 			"docker-registry",
 			"regsecret",
 			fmt.Sprintf("--docker-server=%v", containerRegistry),
-			fmt.Sprintf("--docker-username=%v", shell.WrapInQuotes(myKubernetesDeployOptions.ContainerRegistryUser)),
-			fmt.Sprintf("--docker-password=%v", shell.WrapInQuotes(myKubernetesDeployOptions.ContainerRegistryPassword)),
+			fmt.Sprintf("--docker-username=%v", myKubernetesDeployOptions.ContainerRegistryUser),
+			fmt.Sprintf("--docker-password=%v", myKubernetesDeployOptions.ContainerRegistryPassword),
 		)
 		log.Entry().Infof("Calling kubectl with parameters %v", kubeSecretParams)
 		if err := command.RunExecutable("kubectl", kubeSecretParams...); err != nil {
