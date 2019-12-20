@@ -3,258 +3,152 @@ package cmd
 import (
 	"archive/zip"
 	"fmt"
-	"os"
 	"io"
-	"strconv"
+	"os"
 	"path/filepath"
+	"sort"
+	"strconv"
 	"strings"
 
 	"github.com/SAP/jenkins-library/pkg/checkmarx"
+	"github.com/bmatcuk/doublestar"
 	"github.com/pkg/errors"
 )
 
-func main() {
-	sourceDir := os.Getenv("source_dir")
-	cxServerURL := os.Getenv("cx_server_url")
-	cxUsername := os.Getenv("cx_username")
-	cxPassword := os.Getenv("cx_password")
-
-	cxProjectName := os.Getenv("cx_project_name")
-	cxTeamName := os.Getenv("cx_team_name")
-	cxPresetName := os.Getenv("cx_preset_name")
-	cxExcludeFolders := os.Getenv("cx_exclude_folders")
-	cxExcludeFiles := os.Getenv("cx_exclude_files")
-	cxEngineConfiguration := os.Getenv("cx_engine_configuration")
-
-	cxHighThreshold := os.Getenv("cx_high_threshold")
-	cxMediumThreshold := os.Getenv("cx_medium_threshold")
-	cxLowThreshold := os.Getenv("cx_low_threshold")
-
-	if len(sourceDir) == 0 {
-		fmt.Println("SOURCE_DIR is empty")
-		os.Exit(10)
-	} else {
-		fmt.Println("SOURCE_DIR : " + sourceDir)
-	}
-
-	if len(cxServerURL) == 0 {
-		fmt.Println("CX_SERVER_URL path is empty")
-		os.Exit(10)
-	} else {
-		fmt.Println("CX_SERVER_URL : " + cxServerURL)
-		cxServerURL = cxServerURL + "/cxrestapi/"
-	}
-
-	if len(cxUsername) == 0 {
-		fmt.Println("CX_USERNAME is empty")
-		os.Exit(10)
-	} else {
-		fmt.Println("CX_USERNAME : " + cxUsername)
-	}
-
-	if len(cxPassword) == 0 {
-		fmt.Println("CX_PASSWORD is empty")
-		os.Exit(10)
-	}
-
-	if len(cxProjectName) == 0 {
-		fmt.Println("CX_PROJECT_NAME is empty")
-		os.Exit(10)
-	} else {
-		fmt.Println("CX_PROJECT_NAME : " + cxProjectName)
-	}
-
-	if len(cxTeamName) == 0 {
-		fmt.Println("CX_TEAM_NAME is empty")
-		os.Exit(10)
-	} else {
-		fmt.Println("CX_TEAM_NAME : " + cxTeamName)
-	}
-
-	if len(cxPresetName) == 0 {
-		fmt.Println("CX_PRESET_NAME is empty")
-		os.Exit(10)
-	} else {
-		fmt.Println("CX_PRESET_NAME : " + cxPresetName)
-	}
-
-	if len(cxExcludeFolders) == 0 {
-		fmt.Println("CX_EXCLUDE_FOLDERS is empty")
-		cxExcludeFolders = ""
-	} else {
-		fmt.Println("CX_EXCLUDE_FOLDERS : " + cxExcludeFolders)
-	}
-
-	if len(cxExcludeFiles) == 0 {
-		fmt.Println("CX_EXCLUDE_FILES is empty")
-		cxExcludeFiles = ""
-	} else {
-		fmt.Println("CX_EXCLUDE_FILES : " + cxExcludeFiles)
-	}
-
-	if len(cxEngineConfiguration) == 0 {
-		fmt.Println("CX_ENGINE_CONFIGURATION is empty")
-		cxEngineConfiguration = "1"
-	} else {
-		fmt.Println("CX_ENGINE_CONFIGURATION : " + cxEngineConfiguration)
-	}
-
-	if len(cxHighThreshold) == 0 {
-		cxHighThreshold = "9999999999999999"
-		fmt.Println("\nCX_HIGH_THRESHOLD is empty")
-	} else {
-		fmt.Println("\nCX_HIGH_THRESHOLD : " + cxHighThreshold)
-	}
-
-	if len(cxMediumThreshold) == 0 {
-		cxMediumThreshold = "9999999999999999"
-		fmt.Println("CX_MEDIUM_THRESHOLD is empty")
-	} else {
-		fmt.Println("CX_MEDIUM_THRESHOLD : " + cxMediumThreshold)
-	}
-
-	if len(cxLowThreshold) == 0 {
-		cxLowThreshold = "9999999999999999"
-		fmt.Println("CX_LOW_THRESHOLD is empty")
-	} else {
-		fmt.Println("CX_LOW_THRESHOLD : " + cxLowThreshold)
-	}
-	fmt.Println("")
-
-	cmx, err := checkmarx.NewCheckmarx(cxServerURL, cxUsername, cxPassword)
+func checkmarxExecuteScan(myCheckmarxExecuteScanOptions checkmarxExecuteScanOptions) error {
+	sys, err := checkmarx.NewSystem(myCheckmarxExecuteScanOptions.CheckmarxServerURL, myCheckmarxExecuteScanOptions.Username, myCheckmarxExecuteScanOptions.Password)
 	if err != nil {
-		errors.Errorf("Failed to create Checkmarx client talking to URL %v with error %v", cxServerURL, err)
+		errors.Errorf("Failed to create Checkmarx client talking to URL %v with error %v", myCheckmarxExecuteScanOptions.CheckmarxServerURL, err)
 	}
 
-	teams := cmx.GetTeams()
-	if len(teams) > 0 {
-		team := cmx.GetTeamByName(teams, cxTeamName)
-		if team.FullName == cxTeamName {
-			projects := cmx.GetProjects()
-			project := cmx.GetProjectByName(projects, cxProjectName)
-			if project.Name == cxProjectName {
-				fmt.Println("Project exists...")
-			} else {
-				fmt.Println("Project does not exists...")
-				projectCreated := cmx.CreateProject(cxProjectName, team.ID)
-				if projectCreated {
-					projects := cmx.GetProjects()
-					project := cmx.GetProjectByName(projects, cxProjectName)
-					fmt.Println("New Project Created : " + project.Name)
-				} else {
-					fmt.Println("Cannot create Project : " + cxProjectName)
-					os.Exit(10)
-				}
-			}
-
-			zipFolder(sourceDir, sourceDir+".zip")
-			sourceCodeUploaded := cmx.UploadProjectSourceCode(project.ID, sourceDir+".zip")
-			if sourceCodeUploaded {
-				fmt.Println("Source code Uploaded for Project : " + cxProjectName)
-				err := os.Remove(sourceDir + ".zip")
-				if err != nil {
-					fmt.Printf("Error : %s\n", err)
-				}
-				excludeSettingsUpdated := cmx.UpdateProjectExcludeSettings(project.ID, cxExcludeFolders, cxExcludeFiles)
-				if excludeSettingsUpdated {
-					fmt.Println("Exclude settings Updated for Project : " + cxProjectName)
-				} else {
-					fmt.Println("Cannot update exclude settings for Project : " + cxProjectName)
-				}
-				presets := cmx.GetPresets()
-				preset := cmx.GetPresetByName(presets, cxPresetName)
-				if preset.Name == cxPresetName {
-					configurationUpdated := cmx.UpdateProjectConfiguration(project.ID, preset.ID, cxEngineConfiguration)
+	projects := sys.GetProjects()
+	project := sys.GetProjectByName(projects, myCheckmarxExecuteScanOptions.CheckmarxProject)
+	if project.Name == myCheckmarxExecuteScanOptions.CheckmarxProject {
+		fmt.Println("Project exists...")
+	} else {
+		teams := sys.GetTeams()
+		team := checkmarx.Team{}
+		if len(teams) > 1 {
+			team = sys.GetTeamByName(teams, myCheckmarxExecuteScanOptions.TeamName)
+		}
+		if len(team.ID) == 0 {
+			team = teams[0]
+		}
+		fmt.Println("Project does not exists...")
+		projectCreated := sys.CreateProject(myCheckmarxExecuteScanOptions.CheckmarxProject, team.ID)
+		if projectCreated {
+			if len(myCheckmarxExecuteScanOptions.Preset) > 0 {
+				presets := sys.GetPresets()
+				preset := sys.GetPresetByName(presets, myCheckmarxExecuteScanOptions.Preset)
+				if preset.Name == myCheckmarxExecuteScanOptions.Preset {
+					configurationUpdated := sys.UpdateProjectConfiguration(project.ID, preset.ID, myCheckmarxExecuteScanOptions.EngineConfiguration)
 					if configurationUpdated {
-						fmt.Println("Configuration Updated for Project : " + cxProjectName)
-						projectIsScanning, scan := cmx.ScanProject(project.ID)
-						if projectIsScanning {
-							fmt.Println("Scanning : " + cxProjectName)
-							status := "New"
-							pastStatus := status
-							fmt.Println("Scan phase : " + status)
-							for true {
-								status = cmx.GetScanStatus(scan.ID)
-								if status == "Finished" || status == "Canceled" {
-									break
-								}
-								if pastStatus != status {
-									fmt.Println("Scan phase : " + status)
-									pastStatus = status
-								}
-							}
-							if status == "Canceled" {
-								fmt.Println("Scan Canceled via Web Interface")
-								os.Exit(10)
-							} else {
-								fmt.Println("Scan Finished")
-								results := cmx.GetResults(scan.ID)
-								insecure := false
-								cxHighThreshold, _ := strconv.Atoi(cxHighThreshold)
-								if results.High > cxHighThreshold {
-									insecure = true
-								}
-								cxMediumThreshold, _ := strconv.Atoi(cxMediumThreshold)
-								if results.Medium > cxMediumThreshold {
-									insecure = true
-								}
-								cxLowThreshold, _ := strconv.Atoi(cxLowThreshold)
-								if results.Low > cxLowThreshold {
-									insecure = true
-								}
-								if insecure {
-									fmt.Println("Insecure Application !")
-									fmt.Println("")
-									fmt.Println("High : " + strconv.Itoa(results.High))
-									fmt.Println("Medium : " + strconv.Itoa(results.Medium))
-									fmt.Println("Low : " + strconv.Itoa(results.Low))
-									fmt.Println("")
-									fmt.Println("Step Finished")
-									os.Exit(10)
-								} else {
-									fmt.Println("Application Secured !")
-									fmt.Println("")
-									fmt.Println("High : " + strconv.Itoa(results.High))
-									fmt.Println("Medium : " + strconv.Itoa(results.Medium))
-									fmt.Println("Low : " + strconv.Itoa(results.Low))
-									fmt.Println("")
-									fmt.Println("Step Finished")
-								}
-							}
-						} else {
-							fmt.Println("Cannot scan Project : " + cxProjectName)
-							os.Exit(10)
-						}
+						fmt.Println("Configuration of project updated: " + project.Name)
 					} else {
-						fmt.Println("Cannot update Configuration for Project : " + cxProjectName)
+						fmt.Println("Updating project configuration failed: " + project.Name)
 						os.Exit(10)
 					}
 				} else {
-					fmt.Println("Preset does not exists : " + cxPresetName)
+					fmt.Println("Preset not found, project creation failed: " + project.Name)
 					os.Exit(10)
 				}
 			} else {
-				fmt.Println("Cannot upload source code for Project : " + cxProjectName)
+				fmt.Println("Preset not specified, project creation failed: " + project.Name)
 				os.Exit(10)
 			}
+			projects := sys.GetProjects()
+			project := sys.GetProjectByName(projects, myCheckmarxExecuteScanOptions.CheckmarxProject)
+			fmt.Println("New Project Created : " + project.Name)
 		} else {
-			fmt.Println("Team does not exists : " + cxTeamName)
+			fmt.Println("Cannot create Project : " + myCheckmarxExecuteScanOptions.CheckmarxProject)
 			os.Exit(10)
 		}
-	} else {
-		fmt.Println("No existing teams")
-		os.Exit(10)
 	}
-}
 
-func zipFolder(source string, target string) error {
-	zipfile, err := os.Create(target)
+	zipFileName := "workspace.zip"
+	patterns := strings.Split(myCheckmarxExecuteScanOptions.FilterPattern, ",")
+	sort.Strings(patterns)
+	zipFile, err := os.Create(zipFileName)
 	if err != nil {
 		return err
 	}
-	defer zipfile.Close()
+	defer zipFile.Close()
+	zipFolder("./", zipFile, patterns)
+	sourceCodeUploaded := sys.UploadProjectSourceCode(project.ID, zipFileName)
+	if sourceCodeUploaded {
+		fmt.Println("Source code Uploaded for Project : " + myCheckmarxExecuteScanOptions.CheckmarxProject)
+		err := os.Remove(zipFileName)
+		if err != nil {
+			fmt.Printf("Error : %s\n", err)
+		}
 
-	archive := zip.NewWriter(zipfile)
+		projectIsScanning, scan := sys.ScanProject(project.ID)
+		if projectIsScanning {
+			fmt.Println("Scanning : " + myCheckmarxExecuteScanOptions.CheckmarxProject)
+			status := "New"
+			pastStatus := status
+			fmt.Println("Scan phase : " + status)
+			for true {
+				status = sys.GetScanStatus(scan.ID)
+				if status == "Finished" || status == "Canceled" {
+					break
+				}
+				if pastStatus != status {
+					fmt.Println("Scan phase : " + status)
+					pastStatus = status
+				}
+			}
+			if status == "Canceled" {
+				fmt.Println("Scan Canceled via Web Interface")
+				os.Exit(10)
+			} else {
+				fmt.Println("Scan Finished")
+				results := sys.GetResults(scan.ID)
+				insecure := false
+				cxHighThreshold, _ := strconv.Atoi(myCheckmarxExecuteScanOptions.VulnerabilityThresholdHigh)
+				if results.High > cxHighThreshold {
+					insecure = true
+				}
+				cxMediumThreshold, _ := strconv.Atoi(myCheckmarxExecuteScanOptions.VulnerabilityThresholdMedium)
+				if results.Medium > cxMediumThreshold {
+					insecure = true
+				}
+				cxLowThreshold, _ := strconv.Atoi(myCheckmarxExecuteScanOptions.VulnerabilityThresholdMedium)
+				if results.Low > cxLowThreshold {
+					insecure = true
+				}
+				if insecure {
+					fmt.Println("Insecure Application !")
+					fmt.Println("")
+					fmt.Println("High : " + strconv.Itoa(results.High))
+					fmt.Println("Medium : " + strconv.Itoa(results.Medium))
+					fmt.Println("Low : " + strconv.Itoa(results.Low))
+					fmt.Println("")
+					fmt.Println("Step Finished")
+					os.Exit(10)
+				} else {
+					fmt.Println("Application Secured !")
+					fmt.Println("")
+					fmt.Println("High : " + strconv.Itoa(results.High))
+					fmt.Println("Medium : " + strconv.Itoa(results.Medium))
+					fmt.Println("Low : " + strconv.Itoa(results.Low))
+					fmt.Println("")
+					fmt.Println("Step Finished")
+				}
+			}
+		} else {
+			fmt.Println("Cannot scan Project : " + myCheckmarxExecuteScanOptions.CheckmarxProject)
+			os.Exit(10)
+		}
+	} else {
+		fmt.Println("Cannot upload source code for Project : " + myCheckmarxExecuteScanOptions.CheckmarxProject)
+		os.Exit(10)
+	}
+	return nil
+}
+
+func zipFolder(source string, zipFile io.Writer, patterns []string) error {
+	archive := zip.NewWriter(zipFile)
 	defer archive.Close()
 
 	info, err := os.Stat(source)
@@ -270,6 +164,10 @@ func zipFolder(source string, target string) error {
 	filepath.Walk(source, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
+		}
+
+		if filterFileGlob(patterns, path, info) {
+			return nil
 		}
 
 		header, err := zip.FileInfoHeader(info)
@@ -306,4 +204,26 @@ func zipFolder(source string, target string) error {
 	})
 
 	return err
+}
+
+func filterFileGlob(patterns []string, path string, info os.FileInfo) bool {
+	for index := 0; index < len(patterns); index++ {
+		pattern := patterns[index]
+		negative := false
+		if strings.Index(pattern, "!") == 0 {
+			pattern = strings.TrimLeft(pattern, "!")
+			negative = true
+		}
+		match, _ := doublestar.Match(pattern, path)
+		if !info.IsDir() {
+			if match && negative {
+				return true
+			} else if match && !negative {
+				return false
+			}
+		} else {
+			return false
+		}
+	}
+	return true
 }

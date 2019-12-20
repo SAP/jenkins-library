@@ -3,13 +3,15 @@ package checkmarx
 import (
 	"bytes"
 	"encoding/json"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"net/url"
 	"strconv"
+	"strings"
 
-	"github.com/SAP/jenkins-library/pkg/log"
 	piperHttp "github.com/SAP/jenkins-library/pkg/http"
+	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
@@ -87,114 +89,111 @@ type SourceSettingsLink struct {
 	URI  string `json:"uri"`
 }
 
-// Checkmarx is the client communicating with the Checkmarx backend
-type Checkmarx struct {
+// System is the client communicating with the Checkmarx backend
+type System struct {
 	serverURL string
-	client    piperHttp.Client
+	username  string
+	password  string
+	client    piperHttp.Sender
 	logger    *logrus.Entry
 }
 
-// NewCheckmarx returns a new Checkmarx client for communicating with the backend
-func NewCheckmarx(serverURL, username, password string ) (*Checkmarx, error) {
-	cmx := Checkmarx {
+// NewSystem returns a new Checkmarx client for communicating with the backend
+func NewSystem(serverURL, username, password string) (*System, error) {
+	sys := &System{
 		serverURL: serverURL,
-		logger: log.Entry().WithField("package", "SAP/jenkins-library/pkg/checkmarx"),
-		client: piperHttp.Client {},
+		username:  username,
+		password:  password,
+		client:    &piperHttp.Client{},
+		logger:    log.Entry().WithField("package", "SAP/jenkins-library/pkg/checkmarx"),
 	}
 
-	token, err := getOAuth2Token(serverURL, username, password)
+	token, err := sys.getOAuth2Token()
 	if err != nil {
-		return &cmx, errors.Wrap(err, "error fetching oAuth token")
+		return sys, errors.Wrap(err, "error fetching oAuth token")
 	}
 
-	options := piperHttp.ClientOptions {
+	options := piperHttp.ClientOptions{
 		Token: token,
 	}
-	
-	cmx.client.SetOptions(options)
-	
-	return &cmx, nil
+	sys.client.SetOptions(options)
+
+	return sys, nil
 }
 
-func getOAuth2Token(serverURL, username, password string) (string, error) {
-	resp, err := http.PostForm(serverURL+"auth/identity/connect/token",
-		url.Values{
-			"username":      {username},
-			"password":      {password},
-			"grant_type":    {"password"},
-			"scope":         {"sast_rest_api"},
-			"client_id":     {"resource_owner_client"},
-			"client_secret": {"014DF517-39D1-4453-B7B3-9930C563627C"},
-		})
+func sendRequest(sys *System, method, url string, body io.Reader, header http.Header) ([]byte, error) {
+	response, err := sys.client.SendRequest(method, sys.serverURL+"/CxRestAPI"+url, body, header, nil)
+	if err != nil {
+		sys.logger.Errorf("HTTP request failed with error: %s", err)
+		return nil, err
+	}
+
+	if response.StatusCode >= 200 && response.StatusCode < 400 {
+		data, _ := ioutil.ReadAll(response.Body)
+		defer response.Body.Close()
+		return data, nil
+	}
+
+	data, _ := ioutil.ReadAll(response.Body)
+	sys.logger.Debugf("Body %s", data)
+	response.Body.Close()
+	sys.logger.Errorf("HTTP request failed with error %s", response.Status)
+	return nil, errors.Errorf("Invalid HTTP status %v with with code %v received", response.Status, response.StatusCode)
+}
+
+func (sys *System) getOAuth2Token() (string, error) {
+	body := url.Values{
+		"username":      {sys.username},
+		"password":      {sys.password},
+		"grant_type":    {"password"},
+		"scope":         {"sast_rest_api"},
+		"client_id":     {"resource_owner_client"},
+		"client_secret": {"014DF517-39D1-4453-B7B3-9930C563627C"},
+	}
+	header := http.Header{}
+	header.Add("Content-type", "application/x-www-form-urlencoded")
+	data, err := sendRequest(sys, http.MethodPost, "/auth/identity/connect/token", strings.NewReader(body.Encode()), header)
 	if err != nil {
 		return "", err
 	}
 
-	if resp.StatusCode == http.StatusOK {
-		body, _ := ioutil.ReadAll(resp.Body)
-		defer resp.Body.Close()
-
-		var token AuthToken
-		json.Unmarshal(body, &token)
-		return token.TokenType + " " + token.AccessToken, nil
-	}
-	data, _ := ioutil.ReadAll(resp.Body)
-	resp.Body.Close()
-	return "", errors.Errorf("invalid response status %v (%v) received when fetching oAuth token: %v", resp.Status, resp.StatusCode, data)
+	var token AuthToken
+	json.Unmarshal(data, &token)
+	return token.TokenType + " " + token.AccessToken, nil
 }
 
 // GetTeams returns the teams the user is assigned to
-func (cmx *Checkmarx) GetTeams() []Team {
-	cmx.logger.Debug("Getting Teams...")
+func (sys *System) GetTeams() []Team {
+	sys.logger.Debug("Getting Teams...")
 	var teams []Team
 
-	resp, err := cmx.client.SendRequest(http.MethodGet, cmx.serverURL+"auth/teams", nil, nil, nil)
+	data, err := sendRequest(sys, http.MethodGet, "/auth/teams", nil, nil)
 	if err != nil {
-		cmx.logger.Errorf("HTTP request failed with error: %s", err)
+		sys.logger.Errorf("Fetching teams failed: %s", err)
 		return teams
 	}
 
-	if resp.StatusCode == http.StatusOK {
-		data, _ := ioutil.ReadAll(resp.Body)
-		json.Unmarshal(data, &teams)
-		return teams
-	}
-
-	data, _ := ioutil.ReadAll(resp.Body)
-
-	cmx.logger.Debugf("Body %s", data)
-	resp.Body.Close()
-	cmx.logger.Errorf("HTTP request failed with error %s", resp.Status)
+	json.Unmarshal(data, &teams)
 	return teams
 }
 
 // GetProjects returns the projects defined in the Checkmarx backend which the user has access to
-func (cmx *Checkmarx) GetProjects() []Project {
-	cmx.logger.Debug("Getting Projects...")
+func (sys *System) GetProjects() []Project {
+	sys.logger.Debug("Getting Projects...")
 	var projects []Project
 
-	resp, err := cmx.client.SendRequest(http.MethodGet, cmx.serverURL+"projects", nil, nil, nil)
+	data, err := sendRequest(sys, http.MethodGet, "/projects", nil, nil)
 	if err != nil {
-		cmx.logger.Errorf("HTTP request failed with error: %s", err)
+		sys.logger.Errorf("Fetching projects failed: %s", err)
 		return projects
 	}
 
-	if resp.StatusCode == http.StatusOK {
-		data, _ := ioutil.ReadAll(resp.Body)
-		json.Unmarshal(data, &projects)
-		return projects
-	}
-
-	data, _ := ioutil.ReadAll(resp.Body)
-
-	cmx.logger.Debugf("Body %s", data)
-	resp.Body.Close()
-	cmx.logger.Errorf("HTTP request failed with error %s", resp.Status)
+	json.Unmarshal(data, &projects)
 	return projects
 }
 
 // CreateProject creates a new project in the Checkmarx backend
-func (cmx *Checkmarx) CreateProject(projectName string, teamID string) bool {
+func (sys *System) CreateProject(projectName string, teamID string) bool {
 
 	jsonData := map[string]interface{}{
 		"name":       projectName,
@@ -204,48 +203,37 @@ func (cmx *Checkmarx) CreateProject(projectName string, teamID string) bool {
 
 	jsonValue, err := json.Marshal(jsonData)
 	if err != nil {
-		cmx.logger.Errorf("Error Marshal: %s", err)
+		sys.logger.Errorf("Error Marshal: %s", err)
 		return false
 	}
 
 	header := http.Header{}
 	header.Set("Content-Type", "application/json")
-	resp, err := cmx.client.SendRequest(http.MethodPost, cmx.serverURL+"projects", bytes.NewBuffer(jsonValue), header, nil)
+	_, err = sendRequest(sys, http.MethodPost, "/projects", bytes.NewBuffer(jsonValue), header)
 	if err != nil {
-		cmx.logger.Errorf("HTTP request failed with error: %s", err)
+		sys.logger.Errorf("Failed to create project: %s", err)
 		return false
 	}
 
-	if resp.StatusCode == http.StatusCreated {
-		return true
-	}
-
-	data, _ := ioutil.ReadAll(resp.Body)
-
-	cmx.logger.Debugf("Body %s", data)
-	resp.Body.Close()
-	cmx.logger.Errorf("The HTTP request failed with error %s", resp.Status)
-	return false
+	return true
 }
 
-
 // UploadProjectSourceCode zips and uploads the project sources for scanning
-func (cmx *Checkmarx) UploadProjectSourceCode(projectID int, zipFile string) bool {
+func (sys *System) UploadProjectSourceCode(projectID int, zipFile string) bool {
+	sys.logger.Debug("Starting to upload files...")
 
-	cmx.logger.Debug("Starting to upload files...")
-	
-	var header http.Header
+	header := http.Header{}
 	header.Add("Accept-Encoding", "gzip,deflate")
 	header.Add("Accept", "text/plain")
-	resp, err := cmx.client.UploadFile(cmx.serverURL+"projects/"+strconv.Itoa(projectID)+"/sourceCode/attachments", zipFile, "zippedSource", header, nil)
+	resp, err := sys.client.UploadFile(sys.serverURL+"/CxRestAPI/projects/"+strconv.Itoa(projectID)+"/sourceCode/attachments", zipFile, "zippedSource", header, nil)
 	if err != nil {
-		cmx.logger.Errorf("The HTTP request failed with error %s", err)
+		sys.logger.Errorf("Failed to uploaded zipped sources %s", err)
 		return false
 	}
 
 	data, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		cmx.logger.Errorf("Error reading the response data %s", err)
+		sys.logger.Errorf("Error reading the response data %s", err)
 		return false
 	}
 
@@ -257,14 +245,14 @@ func (cmx *Checkmarx) UploadProjectSourceCode(projectID int, zipFile string) boo
 		return true
 	}
 
-	cmx.logger.Debugf("Body %s", data)
+	sys.logger.Debugf("Body %s", data)
 	resp.Body.Close()
-	cmx.logger.Errorf("Error writting the request's body: ", resp.Status)
+	sys.logger.Errorf("Error writing the request's body: %s", resp.Status)
 	return false
 }
 
 // UpdateProjectExcludeSettings updates the exclude configuration of the project
-func (cmx *Checkmarx) UpdateProjectExcludeSettings(projectID int, excludeFolders string, excludeFiles string) bool {
+func (sys *System) UpdateProjectExcludeSettings(projectID int, excludeFolders string, excludeFiles string) bool {
 	jsonData := map[string]string{
 		"excludeFoldersPattern": excludeFolders,
 		"excludeFilesPattern":   excludeFiles,
@@ -272,57 +260,38 @@ func (cmx *Checkmarx) UpdateProjectExcludeSettings(projectID int, excludeFolders
 
 	jsonValue, err := json.Marshal(jsonData)
 	if err != nil {
-		cmx.logger.Errorf("Error Marshal: %s", err)
+		sys.logger.Errorf("Error Marshal: %s", err)
 		return false
 	}
 
 	header := http.Header{}
 	header.Set("Content-Type", "application/json")
-	resp, err := cmx.client.SendRequest(http.MethodPut, cmx.serverURL+"projects/"+strconv.Itoa(projectID)+"/sourceCode/excludeSettings", bytes.NewBuffer(jsonValue), header, nil)
+	_, err = sendRequest(sys, http.MethodPut, "/projects/"+strconv.Itoa(projectID)+"/sourceCode/excludeSettings", bytes.NewBuffer(jsonValue), header)
 	if err != nil {
-		cmx.logger.Errorf("HTTP request failed with error: %s", err)
+		sys.logger.Errorf("HTTP request failed with error: %s", err)
 		return false
 	}
 
-	if resp.StatusCode == http.StatusOK {
-		return true
-	}
-
-	data, _ := ioutil.ReadAll(resp.Body)
-
-	cmx.logger.Debugf("Body %s", data)
-	resp.Body.Close()
-	cmx.logger.Errorf("The HTTP request failed with error %s", resp.Status)
-	return false
+	return true
 }
 
 // GetPresets loads the preset values defined in the Checkmarx backend
-func (cmx *Checkmarx) GetPresets() []Preset {
-	cmx.logger.Debug("Getting Presets...")
+func (sys *System) GetPresets() []Preset {
+	sys.logger.Debug("Getting Presets...")
 	var presets []Preset
 
-	resp, err := cmx.client.SendRequest(http.MethodGet, cmx.serverURL+"sast/presets", nil, nil, nil)
+	data, err := sendRequest(sys, http.MethodGet, "/sast/presets", nil, nil)
 	if err != nil {
-		cmx.logger.Errorf("HTTP request failed with error: %s", err)
+		sys.logger.Errorf("Fetching presets failed: %s", err)
 		return presets
 	}
 
-	if resp.StatusCode == http.StatusOK {
-		data, _ := ioutil.ReadAll(resp.Body)
-		json.Unmarshal(data, &presets)
-		return presets
-	}
-
-	data, _ := ioutil.ReadAll(resp.Body)
-
-	cmx.logger.Debugf("Body %s", data)
-	resp.Body.Close()
-	cmx.logger.Errorf("The HTTP request failed with error %s", resp.Status)
+	json.Unmarshal(data, &presets)
 	return presets
 }
 
 // UpdateProjectConfiguration updates the configuration of the project addressed by projectID
-func (cmx *Checkmarx) UpdateProjectConfiguration(projectID int, presetID int, engineConfigurationID string) bool {
+func (sys *System) UpdateProjectConfiguration(projectID int, presetID int, engineConfigurationID string) bool {
 	engineConfigID, _ := strconv.Atoi(engineConfigurationID)
 	jsonData := map[string]interface{}{
 		"projectId":             projectID,
@@ -332,32 +301,23 @@ func (cmx *Checkmarx) UpdateProjectConfiguration(projectID int, presetID int, en
 
 	jsonValue, err := json.Marshal(jsonData)
 	if err != nil {
-		cmx.logger.Errorf("Error Marshal: %s", err)
+		sys.logger.Errorf("Error Marshal: %s", err)
 		return false
 	}
 
 	header := http.Header{}
 	header.Set("Content-Type", "application/json")
-	resp, err := cmx.client.SendRequest(http.MethodPost, cmx.serverURL+"sast/scanSettings", bytes.NewBuffer(jsonValue), nil, nil)
+	_, err = sendRequest(sys, http.MethodPost, "/sast/scanSettings", bytes.NewBuffer(jsonValue), nil)
 	if err != nil {
-		cmx.logger.Errorf("HTTP request failed with error: %s", err)
+		sys.logger.Errorf("HTTP request failed with error: %s", err)
 		return false
 	}
 
-	if resp.StatusCode == http.StatusOK {
-		return true
-	}
-
-	data, _ := ioutil.ReadAll(resp.Body)
-
-	cmx.logger.Debugf("Body %s", data)
-	resp.Body.Close()
-	cmx.logger.Errorf("The HTTP request failed with error %s", resp.Status)
-	return false
+	return true
 }
 
 // ScanProject triggers a scan on the project addressed by projectID
-func (cmx *Checkmarx) ScanProject(projectID int) (bool, Scan) {
+func (sys *System) ScanProject(projectID int) (bool, Scan) {
 	scan := Scan{}
 	jsonData := map[string]interface{}{
 		"projectId":     projectID,
@@ -372,74 +332,46 @@ func (cmx *Checkmarx) ScanProject(projectID int) (bool, Scan) {
 	header := http.Header{}
 	header.Set("cxOrigin", "GolangScript")
 	header.Set("Content-Type", "application/json")
-	resp, err := cmx.client.SendRequest(http.MethodPost, cmx.serverURL+"sast/scans", bytes.NewBuffer(jsonValue), header, nil)
+	data, err := sendRequest(sys, http.MethodPost, "/sast/scans", bytes.NewBuffer(jsonValue), header)
 	if err != nil {
-		cmx.logger.Errorf("HTTP request failed with error: %s", err)
+		sys.logger.Errorf("Failed to trigger scan of project %v: %s", projectID, err)
 		return false, scan
 	}
 
-	if resp.StatusCode == http.StatusCreated {
-		data, _ := ioutil.ReadAll(resp.Body)
-		json.Unmarshal(data, &scan)
-		return true, scan
-	}
-
-	cmx.logger.Debug(resp.Status)
-	return false, scan
+	json.Unmarshal(data, &scan)
+	return true, scan
 }
 
 // GetScanStatus returns the status of the scan addressed by scanID
-func (cmx *Checkmarx) GetScanStatus(scanID int) string {
+func (sys *System) GetScanStatus(scanID int) string {
 	var scanStatus ScanStatus
 
-	resp, err := cmx.client.SendRequest(http.MethodGet, cmx.serverURL+"sast/scans/"+strconv.Itoa(scanID), nil, nil, nil)
+	data, err := sendRequest(sys, http.MethodGet, "/sast/scans/"+strconv.Itoa(scanID), nil, nil)
 	if err != nil {
-		cmx.logger.Errorf("The HTTP request failed with error %s", err)
+		sys.logger.Errorf("Failed to get scan status for scanID %v: %s", scanID, err)
 		return ""
 	}
 
-	if resp.StatusCode == http.StatusOK {
-		data, _ := ioutil.ReadAll(resp.Body)
-		json.Unmarshal(data, &scanStatus)
-
-		return scanStatus.Status.Name
-	}
-
-	data, _ := ioutil.ReadAll(resp.Body)
-
-	cmx.logger.Debugf("Body %s", data)
-	resp.Body.Close()
-	cmx.logger.Errorf("The HTTP request failed with error %s", resp.Status)
-	return ""
+	json.Unmarshal(data, &scanStatus)
+	return scanStatus.Status.Name
 }
 
 // GetResults returns the results of the scan addressed by scanID
-func (cmx *Checkmarx) GetResults(scanID int) ResultsStatistics {
+func (sys *System) GetResults(scanID int) ResultsStatistics {
 	var results ResultsStatistics
 
-	resp, err := cmx.client.SendRequest(http.MethodGet, cmx.serverURL+"sast/scans/"+strconv.Itoa(scanID)+"/resultsStatistics", nil, nil, nil)
+	data, err := sendRequest(sys, http.MethodGet, "/sast/scans/"+strconv.Itoa(scanID)+"/resultsStatistics", nil, nil)
 	if err != nil {
-		cmx.logger.Errorf("The HTTP request failed with error %s", err)
+		sys.logger.Errorf("Failed to fetch scan results for scanID %v: %s", scanID, err)
 		return results
 	}
 
-	if resp.StatusCode == http.StatusOK {
-		data, _ := ioutil.ReadAll(resp.Body)
-		json.Unmarshal(data, &results)
-
-		return results
-	}
-
-	data, _ := ioutil.ReadAll(resp.Body)
-
-	cmx.logger.Debugf("Body %s", data)
-	resp.Body.Close()
-	cmx.logger.Errorf("The HTTP request failed with error %s", resp.Status)
+	json.Unmarshal(data, &results)
 	return results
 }
 
 // GetTeamByName filters a team by its name
-func (cmx *Checkmarx) GetTeamByName(teams []Team, teamName string) Team {
+func (sys *System) GetTeamByName(teams []Team, teamName string) Team {
 	for _, team := range teams {
 		if team.FullName == teamName {
 			return team
@@ -449,7 +381,7 @@ func (cmx *Checkmarx) GetTeamByName(teams []Team, teamName string) Team {
 }
 
 // GetProjectByName filters a project by its name
-func (cmx *Checkmarx) GetProjectByName(projects []Project, projectName string) Project {
+func (sys *System) GetProjectByName(projects []Project, projectName string) Project {
 	for _, project := range projects {
 		if project.Name == projectName {
 			return project
@@ -459,7 +391,7 @@ func (cmx *Checkmarx) GetProjectByName(projects []Project, projectName string) P
 }
 
 // GetPresetByName filters a preset by its name
-func (cmx *Checkmarx) GetPresetByName(presets []Preset, presetName string) Preset {
+func (sys *System) GetPresetByName(presets []Preset, presetName string) Preset {
 	for _, preset := range presets {
 		if preset.Name == presetName {
 			return preset
