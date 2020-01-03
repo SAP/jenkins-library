@@ -435,7 +435,7 @@ class CloudFoundryDeployTest extends BasePiperTest {
         shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX,/(cf login -u "test_cf")/,1)
 
         thrown.expect(hudson.AbortException)
-        thrown.expectMessage('[cloudFoundryDeploy] ERROR: The execution of the deploy command failed, see the log for details.')
+        thrown.expectMessage('[cloudFoundryDeploy] ERROR: The execution of the deploy command failed, see the trace output file for details.')
 
 
         stepRule.step.cloudFoundryDeploy([
@@ -784,6 +784,15 @@ class CloudFoundryDeployTest extends BasePiperTest {
 
         new File(tmpDir, 'cf.log') << 'Hello SAP'
 
+        def archiveCliTraceOutput = false
+        helper.registerAllowedMethod("archiveArtifacts", [Map.class], {
+            map ->
+                archiveCliTraceOutput = true
+                Assert.assertEquals('cf.log'.toString() , map.artifacts.toString())
+                Assert.assertEquals(true , map.allowEmptyArchive)
+        })
+
+
         readYamlRule.registerYaml('test.yml', "applications: [[name: 'manifestAppName']]")
         stepRule.step.cloudFoundryDeploy([
             script: nullScript,
@@ -798,10 +807,8 @@ class CloudFoundryDeployTest extends BasePiperTest {
             verbose: true
         ])
 
-        assertThat(loggingRule.log, allOf(
-            containsString('### START OF CF CLI TRACE OUTPUT ###'),
-            containsString('Hello SAP'),
-            containsString('### END OF CF CLI TRACE OUTPUT ###')))
+        assertThat(archiveCliTraceOutput, is(true));
+        assertThat(loggingRule.log, containsString('### ARCHIVE CLI TRACE OUTPUT FILE ###'))
     }
 
     @Test
