@@ -788,8 +788,8 @@ class CloudFoundryDeployTest extends BasePiperTest {
         helper.registerAllowedMethod("archiveArtifacts", [Map.class], {
             map ->
                 archiveCliTraceOutput = true
-                Assert.assertEquals('cf.log'.toString() , map.artifacts.toString())
-                Assert.assertEquals(true , map.allowEmptyArchive)
+                assertEquals('cf.log'.toString() , map.artifacts.toString())
+                assertEquals(true , map.allowEmptyArchive)
         })
 
 
