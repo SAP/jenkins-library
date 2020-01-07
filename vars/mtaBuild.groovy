@@ -166,15 +166,18 @@ void call(Map parameters = [:]) {
             $mtaCall
             """
 
-            echo "[INFO] MTAR File: '${mtarName}'."
+            if (configuration.postBuildAction) {
+               echo "[INFO] MTAR File: '${mtarName}'."
 
-            sh """#!/bin/bash
-            export PATH=./node_modules/.bin:\$PATH
-            ls -l ${mtarName}
-            tar xvf ${mtarName}
-            cat META-INF/mtad.yaml ; sed --version
-            """
-
+               sh """#!/bin/bash
+               export PATH=./node_modules/.bin:\$PATH
+               ls -l ${mtarName}
+               tar xzvf ${mtarName}
+               cat META-INF/mtad.yaml
+               sed --version
+               echo ${configuration.postBuildAction}
+               """
+            }
             script?.commonPipelineEnvironment?.setMtarFilePath("${mtarName}")
         }
     }
