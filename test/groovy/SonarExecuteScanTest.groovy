@@ -69,7 +69,7 @@ class SonarExecuteScanTest extends BasePiperTest {
         // asserts
         assertThat('Sonar instance is not set to the default value', sonarInstance, is('SonarCloud'))
         assertThat('Sonar project version is not set to the default value', jscr.shell, hasItem(containsString('sonar-scanner -Dsonar.projectVersion=1')))
-        assertThat('Docker image is not set to the default value', jedr.dockerParams.dockerImage, is('maven:3.5-jdk-8'))
+        assertThat('Docker image is not set to the default value', jedr.dockerParams.dockerImage, is('node:8-stretch'))
         assertJobStatusSuccess()
     }
 
@@ -247,7 +247,7 @@ class SonarExecuteScanTest extends BasePiperTest {
         // asserts
         assertThat(jscr.shell, allOf(
             hasItem(containsString('wget --directory-prefix .certificates/ --no-verbose http://url.to/my.cert')),
-            hasItem(containsString('keytool -import -noprompt -storepass changeit -keystore .sonar-scanner/jre/lib/security/cacerts -alias \'my.cert\' -file \'.certificates/my.cert\''))
+            hasItem(containsString('keytool -import -noprompt -storepass changeit -keystore .certificates/cacerts -alias \'my.cert\' -file \'.certificates/my.cert\''))
         ))
         assertJobStatusSuccess()
     }
