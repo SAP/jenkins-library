@@ -175,7 +175,7 @@ void call(Map parameters = [:]) {
                tar xzvf ${mtarName}
                cat META-INF/mtad.yaml
                sed --version
-               echo ${configuration.postBuildAction}
+               $configuration.postBuildAction
                """
             }
             script?.commonPipelineEnvironment?.setMtarFilePath("${mtarName}")
