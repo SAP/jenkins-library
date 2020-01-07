@@ -167,12 +167,12 @@ String joinAndQuote(List l, String prefix = '') {
         throw new IllegalArgumentException("Provide prefix (${prefix}) without trailing slash")
 
     for(def e : l) {
-         def _e = ''
-         if(prefix.length() > 0) {
-             _e += prefix
-             _e += '/'
-         }
-         _e += e 
+        def _e = ''
+        if(prefix.length() > 0) {
+            _e += prefix
+            _e += '/'
+        }
+        _e += e
         _l << '"' + _e + '"'
     }
     _l.join(' ')
