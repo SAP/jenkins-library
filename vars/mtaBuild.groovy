@@ -166,6 +166,13 @@ void call(Map parameters = [:]) {
             $mtaCall
             """
 
+            echo "[INFO] MTA file: '${mtarName}'."
+
+            sh """#!/bin/bash
+            export PATH=./node_modules/.bin:\$PATH
+            ls -l ${mtarName}
+            """
+
             script?.commonPipelineEnvironment?.setMtarFilePath("${mtarName}")
         }
     }
