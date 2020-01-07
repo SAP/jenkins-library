@@ -172,10 +172,11 @@ void call(Map parameters = [:]) {
                sh """#!/bin/bash
                export PATH=./node_modules/.bin:\$PATH
                ls -l ${mtarName}
+               tar --help
                tar xzvf ${mtarName}
                cat META-INF/mtad.yaml
                sed --version
-               $configuration.postBuildAction
+               echo ${configuration.postBuildAction}
                """
             }
             script?.commonPipelineEnvironment?.setMtarFilePath("${mtarName}")
