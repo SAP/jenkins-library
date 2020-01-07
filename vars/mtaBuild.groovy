@@ -1,4 +1,4 @@
-import static com.sap.piper.prerequisites.checkscript
+import static com.sap.piper.Prerequisites.checkScript
 
 import com.sap.piper.GenerateDocumentation
 import com.sap.piper.ConfigurationHelper
@@ -168,13 +168,12 @@ void call(Map parameters = [:]) {
 
             echo "[INFO] MTAR File: '${mtarName}'."
 
-            //sh """#!/bin/bash
-            //export PATH=./node_modules/.bin:\$PATH
-            //ls -l ${mtarName}
-            //tar xf ${mtarName}
-            //cat META-INF/mtad.yaml
-            //sed --version
-            //"""
+            sh """#!/bin/bash
+            export PATH=./node_modules/.bin:\$PATH
+            ls -l ${mtarName}
+            tar xvf ${mtarName}
+            cat META-INF/mtad.yaml ; sed --version
+            """
 
             script?.commonPipelineEnvironment?.setMtarFilePath("${mtarName}")
         }
