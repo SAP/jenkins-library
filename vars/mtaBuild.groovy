@@ -173,7 +173,7 @@ void call(Map parameters = [:]) {
                export PATH=./node_modules/.bin:\$PATH
                ls -l ${mtarName}
                tar --help
-               tar xzvf ${mtarName}
+               tar -xvf ${mtarName}
                cat META-INF/mtad.yaml
                sed --version
                echo ${configuration.postBuildAction}
