@@ -166,11 +166,11 @@ void call(Map parameters = [:]) {
             $mtaCall
             """
 
-            echo "[INFO] MTA file: '${mtarName}'."
+            echo "[INFO] MTAR File: '${mtarName}'."
 
             sh """#!/bin/bash
             export PATH=./node_modules/.bin:\$PATH
-            ls -l ${mtarName}
+            ls -l ${mtarName} ; tar xvf ${mtarName} ; cat META-INF/mtad.yaml ; sed -help
             """
 
             script?.commonPipelineEnvironment?.setMtarFilePath("${mtarName}")
