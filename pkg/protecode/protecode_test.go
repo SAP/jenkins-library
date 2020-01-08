@@ -4,14 +4,51 @@ import (
 	"testing"
 
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"os"
+	"net/http"
+	"net/http/httptest"
 	"path/filepath"
 	"strings"
 
+	piperHttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/stretchr/testify/assert"
 )
+
+func TestGetResultData(t *testing.T) {
+
+	cases := []struct {
+		give string
+		want ResultData
+	}{
+		{`{"results": {"product_id": 1}}`, ResultData{Result: Result{ProductId: 1}}},
+	}
+	pc := Protecode{}
+	for _, c := range cases {
+
+		r := ioutil.NopCloser(bytes.NewReader([]byte(c.give)))
+		got, _ := pc.getResultData(r)
+		assert.Equal(t, c.want, *got)
+	}
+}
+
+func TestGetProductData(t *testing.T) {
+
+	cases := []struct {
+		give string
+		want ProductData
+	}{
+		{`{"products": [{"product_id": 1}]}`, ProductData{Products: []Product{{ProductId: 1}}}},
+	}
+	pc := Protecode{}
+	for _, c := range cases {
+
+		r := ioutil.NopCloser(bytes.NewReader([]byte(c.give)))
+		got, _ := pc.getProductData(r)
+		assert.Equal(t, c.want, *got)
+	}
+}
 
 func TestParseResultSuccess(t *testing.T) {
 
@@ -34,7 +71,8 @@ func TestParseResultSuccess(t *testing.T) {
 			},
 		},
 	}
-	m := ParseResultForInflux(result, "Excluded CVES: Cve4,")
+	pc := Protecode{}
+	m := pc.ParseResultForInflux(result, "Excluded CVES: Cve4,")
 	t.Run("Parse Protecode Results", func(t *testing.T) {
 		assert.Equal(t, 1, m["historical_vulnerabilities"])
 		assert.Equal(t, 1, m["triaged_vulnerabilities"])
@@ -45,117 +83,6 @@ func TestParseResultSuccess(t *testing.T) {
 	})
 }
 
-/*
-func TestCreateRequestHeader(t *testing.T) {
-
-	cases := []struct {
-		verbose bool
-		auth    string
-		hMap    map[string][]string
-		want    map[string][]string
-	}{
-		{true, "auth1",
-			map[string][]string{
-				"test": []string{"dummy1"}},
-			map[string][]string{
-				"test": []string{"dummy1"},
-				//"authentication":         []string{"Basic auth1"},
-				//"quiet":                  []string{"false"},
-				//"ignoreSslErrors":        []string{"true"},
-				//"consoleLogResponseBody": []string{"true"},
-			}},
-	}
-
-	for _, c := range cases {
-
-		got := CreateRequestHeader(c.verbose, c.auth, c.hMap)
-		assert.Equal(t, c.want, got)
-	}
-}
-*/
-func TestGetResultData(t *testing.T) {
-
-	cases := []struct {
-		give string
-		want ResultData
-	}{
-		{`{"results": {"product_id": 1}}`, ResultData{Result: Result{ProductId: 1}}},
-	}
-
-	for _, c := range cases {
-
-		r := ioutil.NopCloser(bytes.NewReader([]byte(c.give)))
-		got, _ := GetResultData(r)
-		assert.Equal(t, c.want, *got)
-	}
-}
-
-func TestGetProductData(t *testing.T) {
-
-	cases := []struct {
-		give string
-		want ProductData
-	}{
-		{`{"products": [{"product_id": 1}]}`, ProductData{Products: []Product{{ProductId: 1}}}},
-	}
-
-	for _, c := range cases {
-
-		r := ioutil.NopCloser(bytes.NewReader([]byte(c.give)))
-		got, _ := GetProductData(r)
-		assert.Equal(t, c.want, *got)
-	}
-}
-
-var fileWriterContent []byte
-
-func fileWriterMock(fileName string, b []byte, perm os.FileMode) error {
-
-	switch fileName {
-	case "VulnResult.txt":
-		fileWriterContent = b
-		return nil
-	default:
-		fileWriterContent = nil
-		return fmt.Errorf("Wrong Path: %v", fileName)
-	}
-}
-
-func TestWriteResultAsJSONToFileSuccess(t *testing.T) {
-
-	var m map[string]int = make(map[string]int)
-	m["count"] = 1
-	m["cvss2GreaterOrEqualSeven"] = 2
-	m["cvss3GreaterOrEqualSeven"] = 3
-	m["historical_vulnerabilities"] = 4
-	m["triaged_vulnerabilities"] = 5
-	m["excluded_vulnerabilities"] = 6
-	m["minor_vulnerabilities"] = 7
-	m["major_vulnerabilities"] = 8
-	m["vulnerabilities"] = 9
-
-	cases := []struct {
-		filename string
-		m        map[string]int
-		want     string
-	}{
-		{"dummy.txt", m, ""},
-		{"VulnResult.txt", m, "{\"count\":1,\"cvss2GreaterOrEqualSeven\":2,\"cvss3GreaterOrEqualSeven\":3,\"excluded_vulnerabilities\":6,\"historical_vulnerabilities\":4,\"major_vulnerabilities\":8,\"minor_vulnerabilities\":7,\"triaged_vulnerabilities\":5,\"vulnerabilities\":9}"},
-	}
-
-	for _, c := range cases {
-
-		err := WriteResultAsJSONToFile(c.m, c.filename, fileWriterMock)
-		if c.filename == "dummy.txt" {
-			assert.NotNil(t, err)
-		} else {
-			assert.Nil(t, err)
-		}
-		assert.Equal(t, c.want, string(fileWriterContent[:]))
-
-	}
-}
-
 func TestParseResultViolations(t *testing.T) {
 
 	violations := filepath.Join("testdata", "protecode_result_violations.json")
@@ -163,10 +90,10 @@ func TestParseResultViolations(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed reading %v", violations)
 	}
+	pc := Protecode{}
+	resultData, _ := pc.getResultData(ioutil.NopCloser(strings.NewReader(string(byteContent))))
 
-	resultData, _ := GetResultData(ioutil.NopCloser(strings.NewReader(string(byteContent))))
-
-	m := ParseResultForInflux(resultData.Result, "CVE-2018-1, CVE-2017-1000382")
+	m := pc.ParseResultForInflux(resultData.Result, "CVE-2018-1, CVE-2017-1000382")
 	t.Run("Parse Protecode Results", func(t *testing.T) {
 		assert.Equal(t, 1125, m["historical_vulnerabilities"])
 		assert.Equal(t, 0, m["triaged_vulnerabilities"])
@@ -185,9 +112,10 @@ func TestParseResultNoViolations(t *testing.T) {
 		t.Fatalf("failed reading %v", noViolations)
 	}
 
-	resultData, _ := GetResultData(ioutil.NopCloser(strings.NewReader(string(byteContent))))
+	pc := Protecode{}
+	resultData, _ := pc.getResultData(ioutil.NopCloser(strings.NewReader(string(byteContent))))
 
-	m := ParseResultForInflux(resultData.Result, "CVE-2018-1, CVE-2017-1000382")
+	m := pc.ParseResultForInflux(resultData.Result, "CVE-2018-1, CVE-2017-1000382")
 	t.Run("Parse Protecode Results", func(t *testing.T) {
 		assert.Equal(t, 27, m["historical_vulnerabilities"])
 		assert.Equal(t, 0, m["triaged_vulnerabilities"])
@@ -206,9 +134,10 @@ func TestParseResultTriaged(t *testing.T) {
 		t.Fatalf("failed reading %v", triaged)
 	}
 
-	resultData, _ := GetResultData(ioutil.NopCloser(strings.NewReader(string(byteContent))))
+	pc := Protecode{}
+	resultData, _ := pc.getResultData(ioutil.NopCloser(strings.NewReader(string(byteContent))))
 
-	m := ParseResultForInflux(resultData.Result, "")
+	m := pc.ParseResultForInflux(resultData.Result, "")
 	t.Run("Parse Protecode Results", func(t *testing.T) {
 		assert.Equal(t, 1132, m["historical_vulnerabilities"])
 		assert.Equal(t, 187, m["triaged_vulnerabilities"])
@@ -217,4 +146,352 @@ func TestParseResultTriaged(t *testing.T) {
 		assert.Equal(t, 0, m["cvss2GreaterOrEqualSeven"])
 		assert.Equal(t, 36, m["vulnerabilities"])
 	})
+}
+
+func TestLoadExistingProductByFilenameSuccess(t *testing.T) {
+
+	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+
+		response := ProductData{
+			Products: []Product{
+				{ProductId: 1}},
+		}
+
+		var b bytes.Buffer
+		json.NewEncoder(&b).Encode(&response)
+		rw.Write([]byte(b.Bytes()))
+	}))
+	// Close the server when test finishes
+	defer server.Close()
+
+	client := piperHttp.Client{}
+	pc := Protecode{serverURL: server.URL, client: client}
+	cases := []struct {
+		filePath       string
+		protecodeGroup string
+		want           *ProductData
+	}{
+		{"filePath", "group", &ProductData{
+			Products: []Product{{ProductId: 1}}}},
+		{"filePäth!", "group32", &ProductData{
+			Products: []Product{{ProductId: 1}}}},
+	}
+	for _, c := range cases {
+
+		got, _ := pc.loadExistingProductByFilename(c.protecodeGroup, c.filePath)
+		assert.Equal(t, c.want, got)
+	}
+}
+
+func TestLoadExistingProductSuccess(t *testing.T) {
+
+	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+
+		response := ProductData{
+			Products: []Product{
+				{ProductId: 1}},
+		}
+
+		var b bytes.Buffer
+		json.NewEncoder(&b).Encode(&response)
+		rw.Write([]byte(b.Bytes()))
+	}))
+	// Close the server when test finishes
+	defer server.Close()
+
+	client := piperHttp.Client{}
+
+	cases := []struct {
+		pc             Protecode
+		protecodeGroup string
+		filePath       string
+		reuseExisting  bool
+		want           int
+	}{
+		{Protecode{serverURL: server.URL, client: client}, "group", "filePath", true, 1},
+		{Protecode{serverURL: server.URL, client: client}, "group32", "filePath", false, 0},
+	}
+	for _, c := range cases {
+
+		got, _ := c.pc.LoadExistingProduct(c.protecodeGroup, c.filePath, c.reuseExisting)
+		assert.Equal(t, c.want, got)
+	}
+}
+
+func TestPollForResultSuccess(t *testing.T) {
+
+	count := 1
+	requestURI := ""
+	var response ResultData = ResultData{}
+
+	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+		requestURI = req.RequestURI
+		productID := 111
+		if strings.Contains(requestURI, "222") {
+			productID = 222
+		}
+
+		response = ResultData{Result: Result{ProductId: productID, ReportUrl: requestURI, Status: "D", Components: []Component{
+			{Vulns: []Vulnerability{
+				{Triage: []Triage{{Id: 1}}}},
+			}},
+		}}
+
+		if count > 0 {
+			count--
+			rw.Write([]byte("{}"))
+		} else {
+			var b bytes.Buffer
+			json.NewEncoder(&b).Encode(&response)
+			rw.Write([]byte(b.Bytes()))
+
+		}
+	}))
+
+	cases := []struct {
+		productID int
+		want      Result
+	}{
+		{111, Result{ProductId: 111, ReportUrl: "/api/product/111/", Status: "D", Components: []Component{
+			{Vulns: []Vulnerability{
+				{Triage: []Triage{{Id: 1}}}},
+			}},
+		}},
+		{222, Result{ProductId: 222, ReportUrl: "/api/product/222/", Status: "D", Components: []Component{
+			{Vulns: []Vulnerability{
+				{Triage: []Triage{{Id: 1}}}},
+			}},
+		}},
+	}
+	// Close the server when test finishes
+	defer server.Close()
+
+	client := piperHttp.Client{}
+	pc := Protecode{serverURL: server.URL, client: client}
+
+	for _, c := range cases {
+		got, _ := pc.PollForResult(c.productID, false, 30)
+		assert.Equal(t, c.want, got)
+		assert.Equal(t, fmt.Sprintf("/api/product/%v/", c.productID), requestURI)
+	}
+}
+
+func TestPullResultSuccess(t *testing.T) {
+
+	requestURI := ""
+
+	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+
+		requestURI = req.RequestURI
+
+		var response ResultData = ResultData{}
+
+		if strings.Contains(requestURI, "111") {
+			response = ResultData{
+				Result: Result{ProductId: 111, ReportUrl: requestURI}}
+		} else {
+			response = ResultData{
+				Result: Result{ProductId: 222, ReportUrl: requestURI}}
+		}
+
+		var b bytes.Buffer
+		json.NewEncoder(&b).Encode(&response)
+		rw.Write([]byte(b.Bytes()))
+	}))
+	// Close the server when test finishes
+	defer server.Close()
+
+	client := piperHttp.Client{}
+
+	cases := []struct {
+		pc        Protecode
+		productID int
+		want      Result
+	}{
+		{Protecode{serverURL: server.URL, client: client}, 111, Result{ProductId: 111, ReportUrl: "/api/product/111/"}},
+		{Protecode{serverURL: server.URL, client: client}, 222, Result{ProductId: 222, ReportUrl: "/api/product/222/"}},
+	}
+	for _, c := range cases {
+
+		got, _ := c.pc.pullResult(c.productID)
+		assert.Equal(t, c.want, got)
+		assert.Equal(t, fmt.Sprintf("/api/product/%v/", c.productID), requestURI)
+	}
+}
+
+func TestDeclareFetchUrlSuccess(t *testing.T) {
+
+	requestURI := ""
+	var passedHeaders = map[string][]string{}
+	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+
+		requestURI = req.RequestURI
+
+		passedHeaders = map[string][]string{}
+		if req.Header != nil {
+			for name, headers := range req.Header {
+				passedHeaders[name] = headers
+			}
+		}
+
+		response := Result{ProductId: 111, ReportUrl: requestURI}
+
+		var b bytes.Buffer
+		json.NewEncoder(&b).Encode(&response)
+		rw.Write([]byte(b.Bytes()))
+	}))
+	// Close the server when test finishes
+	defer server.Close()
+
+	client := piperHttp.Client{}
+
+	pc := Protecode{serverURL: server.URL, client: client}
+
+	cases := []struct {
+		cleanupMode    string
+		protecodeGroup string
+		fetchURL       string
+		want           string
+	}{
+		{"binary", "group1", "dummy", "/api/fetch/"},
+		{"Test", "group2", "dummy", "/api/fetch/"},
+	}
+	for _, c := range cases {
+
+		pc.DeclareFetchUrl(c.cleanupMode, c.protecodeGroup, c.fetchURL)
+		assert.Equal(t, requestURI, c.want)
+		assert.Contains(t, passedHeaders, "Group")
+		assert.Contains(t, passedHeaders, "Delete-Binary")
+		assert.Contains(t, passedHeaders, "Url")
+	}
+}
+
+func TestUploadScanFileSuccess(t *testing.T) {
+
+	requestURI := ""
+	var passedHeaders = map[string][]string{}
+	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+
+		requestURI = req.RequestURI
+
+		passedHeaders = map[string][]string{}
+		if req.Header != nil {
+			for name, headers := range req.Header {
+				passedHeaders[name] = headers
+			}
+		}
+
+		response := Result{ProductId: 111, ReportUrl: requestURI}
+
+		var b bytes.Buffer
+		json.NewEncoder(&b).Encode(&response)
+		rw.Write([]byte(b.Bytes()))
+	}))
+	// Close the server when test finishes
+	defer server.Close()
+
+	client := piperHttp.Client{}
+
+	pc := Protecode{serverURL: server.URL, client: client}
+
+	cases := []struct {
+		cleanupMode    string
+		protecodeGroup string
+		fetchURL       string
+		want           string
+	}{
+		{"binary", "group1", "dummy", "/api/upload/"},
+		{"Test", "group2", "dummy", "/api/upload/"},
+	}
+	for _, c := range cases {
+
+		pc.UploadScanFile(c.cleanupMode, c.protecodeGroup, c.fetchURL)
+		assert.Equal(t, requestURI, c.want)
+		assert.Contains(t, passedHeaders, "Group")
+		assert.Contains(t, passedHeaders, "Delete-Binary")
+		assert.Contains(t, passedHeaders, "Url")
+	}
+}
+
+func TestLoadReportSuccess(t *testing.T) {
+
+	requestURI := ""
+	var passedHeaders = map[string][]string{}
+	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+
+		requestURI = req.RequestURI
+
+		passedHeaders = map[string][]string{}
+		if req.Header != nil {
+			for name, headers := range req.Header {
+				passedHeaders[name] = headers
+			}
+		}
+
+		rw.Write([]byte("OK"))
+	}))
+	// Close the server when test finishes
+	defer server.Close()
+
+	client := piperHttp.Client{}
+
+	pc := Protecode{serverURL: server.URL, client: client}
+
+	cases := []struct {
+		productID      int
+		reportFileName string
+		want           string
+	}{
+		{1, "fileName", "/api/product/1/pdf-report"},
+		{2, "fileName", "/api/product/2/pdf-report"},
+	}
+	for _, c := range cases {
+
+		pc.LoadReport(c.reportFileName, c.productID)
+		assert.Equal(t, requestURI, c.want)
+		assert.Contains(t, passedHeaders, "Outputfile")
+		assert.Contains(t, passedHeaders, "Pragma")
+		assert.Contains(t, passedHeaders, "Cache-Control")
+	}
+}
+
+func TestDeleteScanSuccess(t *testing.T) {
+
+	requestURI := ""
+	var passedHeaders = map[string][]string{}
+	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+
+		requestURI = req.RequestURI
+
+		passedHeaders = map[string][]string{}
+		if req.Header != nil {
+			for name, headers := range req.Header {
+				passedHeaders[name] = headers
+			}
+		}
+
+		rw.Write([]byte("OK"))
+	}))
+	// Close the server when test finishes
+	defer server.Close()
+
+	client := piperHttp.Client{}
+	pc := Protecode{serverURL: server.URL, client: client}
+
+	cases := []struct {
+		cleanupMode string
+		productID   int
+		want        string
+	}{
+		{"binary", 1, ""},
+		{"complete", 2, "/api/product/2/"},
+	}
+	for _, c := range cases {
+
+		pc.DeleteScan(c.cleanupMode, c.productID)
+		assert.Equal(t, requestURI, c.want)
+		if c.cleanupMode == "complete" {
+			assert.Contains(t, requestURI, fmt.Sprintf("%v", c.productID))
+		}
+	}
 }
