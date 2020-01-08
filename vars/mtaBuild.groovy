@@ -177,9 +177,9 @@ void call(Map parameters = [:]) {
                unzip $mtarName -d assemble
                export LF=\$(grep -n 'Name: conciletime-cli' assemble/META-INF/MANIFEST.MF | cut -d ':' -f 1)
                echo 'LF:'\$LF
-               export LF1=\$(($LF-1))
+               export LF1=\$((\$LF-1))
                echo 'LF1:'\$LF1
-               export LF2=\$(($LF+5))
+               export LF2=\$((\$LF+5))
                echo 'LF2:'\$LF2
                head -n \$LF1 assemble/META-INF/MANIFEST.MF >assemble/META-INF/MAN.MF
                tail -n +\$LF2 assemble/META-INF/MANIFEST.MF >>assemble/META-INF/MAN.MF
