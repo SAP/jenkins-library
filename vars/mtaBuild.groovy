@@ -186,15 +186,19 @@ void call(Map parameters = [:]) {
                cat assemble/META-INF/MAN.MF
                cp assemble/META-INF/MANIFEST.MF assemble/META-INF/MANIFEST.BAK
                cp assemble/META-INF/MAN.MF assemble/META-INF/MANIFEST.MF
-               """
-
-/**
                rm -rf assemble/conciletime-cli
                rm -f assemble/META-INF/MAN.MF
                rm -f assemble/META-INF/MANIFEST.BAK
+               echo 'sed.....'
                sed -e "s/cf_cli/removed/g" -i assemble/META-INF/mtad.yaml
                rm -f $mtarName
-               cd assemble ; zip -u -v -r ../$mtarName * ; cd ..
+               echo 'zipping.....'
+               cd assemble
+               zip -u -v -r ../$mtarName *
+               cd ..
+               """
+
+/**
 */
                echo ${configuration.postBuildAction}
             }
