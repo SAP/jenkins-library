@@ -174,18 +174,20 @@ void call(Map parameters = [:]) {
                echo $mtarName
                mkdir -p assemble
                unzip $mtarName -d assemble
+               export LF=\$(grep -n 'Name: conciletime-cli' assemble/META-INF/MANIFEST.MF | cut -d ':' -f 1)
+               echo 'LF:'\$LF
                """
 
 /**
-               export LF=\$(grep -n 'Name: conciletime-cli' assemble/META-INF/MANIFEST.MF | cut -d ':' -f 1) ; export LF1=\$(($LF-1)) ; export LF2=\$(($LF+5)) ; head -n \$LF1 assemble/META-INF/MANIFEST.MF >assemble/META-INF/MAN.MF ; tail -n +\$LF2 assemble/META-INF/MANIFEST.MF >>assemble/META-INF/MAN.MF ; cat assemble/META-INF/MAN.MF ; cp assemble/META-INF/MANIFEST.MF assemble/META-INF/MANIFEST.BAK ; cp assemble/META-INF/MAN.MF assemble/META-INF/MANIFEST.MF
+ ; export LF1=\$(($LF-1)) ; export LF2=\$(($LF+5)) ; head -n \$LF1 assemble/META-INF/MANIFEST.MF >assemble/META-INF/MAN.MF ; tail -n +\$LF2 assemble/META-INF/MANIFEST.MF >>assemble/META-INF/MAN.MF ; cat assemble/META-INF/MAN.MF ; cp assemble/META-INF/MANIFEST.MF assemble/META-INF/MANIFEST.BAK ; cp assemble/META-INF/MAN.MF assemble/META-INF/MANIFEST.MF
                rm -rf assemble/conciletime-cli
                rm -f assemble/META-INF/MAN.MF
                rm -f assemble/META-INF/MANIFEST.BAK
                sed -e "s/cf_cli/removed/g" -i assemble/META-INF/mtad.yaml
                rm -f $mtarName
                cd assemble ; zip -u -v -r ../$mtarName * ; cd ..
-               echo ${configuration.postBuildAction}
 */
+               echo ${configuration.postBuildAction}
             }
             script?.commonPipelineEnvironment?.setMtarFilePath("${mtarName}")
         }
