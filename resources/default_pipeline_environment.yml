@@ -51,6 +51,9 @@ general:
 
 #Steps Specific Configuration
 steps:
+  abapEnvironmentPullGitRepo:
+    dockerImage: 'ppiper/cf-cli'
+    dockerWorkspace: '/home/piper'
   artifactSetVersion:
     timestampTemplate: '%Y%m%d%H%M%S'
     tagPrefix: 'build_'
@@ -193,6 +196,9 @@ steps:
     dockerWorkspace: '/home/piper'
     stashContent:
       - 'deployDescriptor'
+  cloudFoundryCreateServiceKey:
+    dockerImage: 'ppiper/cf-cli'
+    dockerWorkspace: '/home/piper'
   detectExecuteScan:
     detect:
       projectVersion: '1'
@@ -337,7 +343,7 @@ steps:
     classic:
       dockerImage: 'ppiper/mta-archive-builder'
     cloudMbt:
-      dockerImage: 'devxci/mbtci:1.0.0'
+      dockerImage: 'devxci/mbtci:1.0.4'
   neoDeploy:
     dockerImage: 'ppiper/neo-cli'
     deployMode: 'mta'
@@ -516,7 +522,7 @@ steps:
     toJson: false
     toHtml: false
   sonarExecuteScan:
-    dockerImage: 'maven:3.5-jdk-8'
+    dockerImage: 'node:8-stretch'
     instance: 'SonarCloud'
     options: []
     pullRequestProvider: 'GitHub'

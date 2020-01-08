@@ -28,6 +28,7 @@ type execCall struct {
 type shellMockRunner struct {
 	dir            string
 	calls          []string
+	shell          []string
 	stdout         io.Writer
 	stderr         io.Writer
 	shouldFailWith error
@@ -63,7 +64,7 @@ func (m *shellMockRunner) RunShell(s string, c string) error {
 	if m.shouldFailWith != nil {
 		return m.shouldFailWith
 	}
-
+	m.shell = append(m.shell, s)
 	m.calls = append(m.calls, c)
 	return nil
 }

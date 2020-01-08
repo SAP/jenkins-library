@@ -3,88 +3,170 @@ import com.sap.piper.ConfigurationHelper
 import com.sap.piper.GenerateDocumentation
 import com.sap.piper.JenkinsUtils
 import com.sap.piper.Utils
+import com.sap.piper.BashUtils
 import groovy.json.JsonSlurper
 import hudson.AbortException
 import groovy.transform.Field
-import org.jenkinsci.plugins.workflow.steps.FlowInterruptedException
 import java.util.UUID
+import java.util.regex.*
 
 @Field def STEP_NAME = getClass().getName()
-@Field Set GENERAL_CONFIG_KEYS = [
+@Field Set STEP_CONFIG_KEYS = [
     /**
      * Specifies the host address of the SAP Cloud Platform ABAP Environment system
      */
     'host',
     /**
-     * Specifies the name of the Repository (Software Component) on the SAP Cloud Platform ABAP Environment system
-     */
-    'repositoryName'
-]
-@Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS.plus([
-    /**
      * Jenkins CredentialsId containing the communication user and password of the communciation scenario SAP_COM_0510
      */
-    'credentialsId'
-])
+    'credentialsId',
+    /**
+     * Specifies the name of the Repository (Software Component) on the SAP Cloud Platform ABAP Environment system
+     */
+    'repositoryName',
+    'cloudFoundry',
+        /**
+         * Cloud Foundry API endpoint.
+         * @parentConfigKey cloudFoundry
+         */
+        'apiEndpoint',
+        'credentialsId',
+        /**
+         * Cloud Foundry target organization.
+         * @parentConfigKey cloudFoundry
+         */
+        'org',
+        /**
+         * Cloud Foundry target space.
+         * @parentConfigKey cloudFoundry
+         */
+        'space',
+        /**
+         * Cloud Foundry service instance, for which the service key will be created.
+         * @parentConfigKey cloudFoundry
+         */
+        'serviceInstance',
+        /**
+         * Cloud Foundry service key, which will be created.
+         * @parentConfigKey cloudFoundry
+         */
+        'serviceKey',
+    /** @see dockerExecute */
+    'dockerImage',
+    /** @see dockerExecute */
+    'dockerWorkspace'
+]
+@Field Set GENERAL_CONFIG_KEYS = STEP_CONFIG_KEYS
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
+@Field Map CONFIG_KEY_COMPATIBILITY = [cloudFoundry: [apiEndpoint: 'cfApiEndpoint', credentialsId: 'cfCredentialsId', org: 'cfOrg', space: 'cfSpace', serviceInstance: 'cfServiceInstance', serviceKey: 'cfServiceKey']]
 /**
  * Pulls a Repository (Software Component) to a SAP Cloud Platform ABAP Environment system.
+ *
+ * This is either possible by providing the host and the credentialsId of the communication arrangement or by providing access to a service key for the communication arrangement SAP_COM_0510 on cloud foundry.
  *
  * !!! note "Git Repository and Software Component"
  *       In SAP Cloud Platform ABAP Environment Git repositories are wrapped in Software Components (which are managed in the App "Manage Software Components")
  *       Currently, those two names are used synonymous.
- * !!! note "User and Password"
- *        In the future, we want to support the user / password creation via the create-service-key funcion of cloud foundry.
- *        For this case, it is not possible to use the usual pattern with Jenkins Credentials.
  */
 @GenerateDocumentation
 void call(Map parameters = [:]) {
-
     handlePipelineStepErrors(stepName: STEP_NAME, stepParameters: parameters, failOnError: true) {
 
         def script = checkScript(this, parameters) ?: this
-
-        // In the future, we want to support the user / password creation via the create-service-key funcion of cloud foundry.
-        // For this case, it is not possible to use the usual pattern with Jenkins Credentials.
         Map configuration = ConfigurationHelper.newInstance(this)
-            .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS)
-            .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS)
-            .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName ?: env.STAGE_NAME, STEP_CONFIG_KEYS)
-            .mixin(parameters, PARAMETER_KEYS)
+            .loadStepDefaults()
+            .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS, CONFIG_KEY_COMPATIBILITY)
+            .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS, CONFIG_KEY_COMPATIBILITY)
+            .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName ?: env.STAGE_NAME, STEP_CONFIG_KEYS, CONFIG_KEY_COMPATIBILITY)
+            .mixin(parameters, PARAMETER_KEYS, CONFIG_KEY_COMPATIBILITY)
             .collectValidationFailures()
-            .withMandatoryProperty('host', 'Host not provided')
-            .withMandatoryProperty('repositoryName', 'Repository / Software Component not provided')
-            .withMandatoryProperty('credentialsId')
+            .withMandatoryProperty('repositoryName')
             .use()
 
-        String authToken
-        withCredentials([usernamePassword(credentialsId: configuration.credentialsId, usernameVariable: 'USER', passwordVariable: 'PASSWORD')]) {
-            String userColonPassword = "${USER}:${PASSWORD}"
-            authToken = userColonPassword.bytes.encodeBase64().toString()
-        }
-
-        String urlString = 'https://' + configuration.host + '/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY/Pull'
-        echo "[${STEP_NAME}] General Parameters: URL = \"${urlString}\", repositoryName = \"${configuration.repositoryName}\""
-        HeaderFiles headerFiles = new HeaderFiles()
-
-        try {
-            String urlPullEntity = triggerPull(configuration, urlString, authToken, headerFiles)
-            if (urlPullEntity != null) {
-                String finalStatus = pollPullStatus(urlPullEntity, authToken, headerFiles)
-                if (finalStatus != 'S') {
-                    error "[${STEP_NAME}] Pull Failed"
-                }
-            } else {
-                error "[${STEP_NAME}] Pull Failed"
+        String userColonPassword
+        String urlString
+        if (configuration.credentialsId != null && configuration.host != null) {
+            echo "[${STEP_NAME}] Info: Using configuration: credentialsId: $configuration.credentialsId and host: $configuration.host"
+            withCredentials([usernamePassword(credentialsId: configuration.credentialsId, usernameVariable: 'USER', passwordVariable: 'PASSWORD')]) {
+                userColonPassword = "${USER}:${PASSWORD}"
+                urlString = 'https://' + configuration.host + '/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY/Pull'
             }
-        } finally {
-            workspaceCleanup(headerFiles)
+        } else {
+            echo "[${STEP_NAME}] Info: Using Cloud Foundry service key $configuration.cloudFoundry.serviceKey for service instance $configuration.cloudFoundry.serviceInstance"
+            dockerExecute(script:script,dockerImage: configuration.dockerImage, dockerWorkspace: configuration.dockerWorkspace) {
+                String jsonString = getServiceKey(configuration)
+                Map responseJson = readJSON(text : jsonString)
+                userColonPassword = responseJson.abap.username + ":" + responseJson.abap.password
+                urlString = responseJson.url + '/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY/Pull'
+            }
+        }
+        if (userColonPassword != null && urlString != null) {
+            String authToken = userColonPassword.bytes.encodeBase64().toString()
+            executeAbapEnvironmentPullGitRepo(configuration, urlString, authToken)
+        } else {
+            error "[${STEP_NAME}] Error: Necessary parameters not available"
         }
     }
 }
 
-private String triggerPull(Map configuration, String url, String authToken, HeaderFiles headerFiles) {
+private String getServiceKey(Map configuration) {
 
+    String responseFile = "response-${UUID.randomUUID().toString()}.txt"
+    withCredentials([
+        usernamePassword(credentialsId: configuration.cloudFoundry.credentialsId, passwordVariable: 'CF_PASSWORD', usernameVariable: 'CF_USERNAME')
+    ]) {
+        bashScript =
+            """#!/bin/bash
+            set +x
+            set -e
+            export HOME=${configuration.dockerWorkspace}
+            cf login -u ${BashUtils.quoteAndEscape(CF_USERNAME)} -p ${BashUtils.quoteAndEscape(CF_PASSWORD)} -a ${configuration.cloudFoundry.apiEndpoint} -o ${BashUtils.quoteAndEscape(configuration.cloudFoundry.org)} -s ${BashUtils.quoteAndEscape(configuration.cloudFoundry.space)};
+            cf service-key ${BashUtils.quoteAndEscape(configuration.cloudFoundry.serviceInstance)} ${BashUtils.quoteAndEscape(configuration.cloudFoundry.serviceKey)} > \"${responseFile}\"
+            """
+        String responseString
+        try {
+            def status = sh returnStatus: true, script: bashScript
+            if (status != 0) {
+                echo "[${STEP_NAME}] Info: Could not get the service key $configuration.cloudFoundry.serviceKey for service instance $configuration.cloudFoundry.serviceInstance"
+            }
+            responseString = readFile(responseFile)
+        } finally {
+            sh "cf logout"
+            sh script : """#!/bin/bash
+                rm -f ${responseFile}
+                """
+        }
+        def p = Pattern.compile(/\{.*\}$/, Pattern.MULTILINE | Pattern.DOTALL)
+        def m = responseString =~ p
+        String jsonString
+        if (m.find()) {
+            return m[0]
+        } else {
+            echo "[${STEP_NAME}] Info: Could not parse the service key $configuration.cloudFoundry.serviceKey"
+            return null
+        }
+    }
+}
+
+private executeAbapEnvironmentPullGitRepo(Map configuration, String urlString, String authToken) {
+    echo "[${STEP_NAME}] General Parameters: URL = \"${urlString}\", repositoryName = \"${configuration.repositoryName}\""
+    HeaderFiles headerFiles = new HeaderFiles()
+    try {
+        String urlPullEntity = triggerPull(configuration, urlString, authToken, headerFiles)
+        if (urlPullEntity != null) {
+            String finalStatus = pollPullStatus(urlPullEntity, authToken, headerFiles)
+            if (finalStatus != 'S') {
+                error "[${STEP_NAME}] Pull Failed"
+            }
+        } else {
+            error "[${STEP_NAME}] Pull Failed"
+        }
+    } finally {
+        workspaceCleanup(headerFiles)
+    }
+}
+
+private String triggerPull(Map configuration, String url, String authToken, HeaderFiles headerFiles) {
     String entityUri = null
 
     def xCsrfTokenScript = """#!/bin/bash
@@ -127,11 +209,9 @@ private String triggerPull(Map configuration, String url, String authToken, Head
 
     echo "[${STEP_NAME}] Entity URI: ${entityUri}"
     return entityUri
-
 }
 
 private String pollPullStatus(String url, String authToken, HeaderFiles headerFiles) {
-
     String status = "R";
     while(status == "R") {
 

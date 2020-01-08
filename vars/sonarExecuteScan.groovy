@@ -15,7 +15,7 @@ import java.nio.charset.StandardCharsets
     /**
      * Pull-Request voting only:
      * The URL to the Github API. see [GitHub plugin docs](https://docs.sonarqube.org/display/PLUG/GitHub+Plugin#GitHubPlugin-Usage)
-     * deprecated: only supported in LTS / < 7.2
+     * deprecated: only supported below SonarQube v7.2
      */
     'githubApiUrl',
     /**
@@ -33,7 +33,7 @@ import java.nio.charset.StandardCharsets
     /**
      * Pull-Request voting only:
      * The Jenkins credentialId for a Github token. It is needed to report findings back to the pull-request.
-     * deprecated: only supported in LTS / < 7.2
+     * deprecated: only supported below SonarQube v7.2
      * @possibleValues Jenkins credential id
      */
     'githubTokenCredentialsId',
@@ -56,7 +56,7 @@ import java.nio.charset.StandardCharsets
     /**
      * Pull-Request voting only:
      * Disables the pull-request decoration with inline comments.
-     * deprecated: only supported in LTS / < 7.2
+     * deprecated: only supported below SonarQube v7.2
      * @possibleValues `true`, `false`
      */
     'disableInlineComments',
@@ -72,7 +72,7 @@ import java.nio.charset.StandardCharsets
     /**
      * Pull-Request voting only:
      * Activates the pull-request handling using the [GitHub Plugin](https://docs.sonarqube.org/display/PLUG/GitHub+Plugin) (deprecated).
-     * deprecated: only supported in LTS / < 7.2
+     * deprecated: only supported below SonarQube v7.2
      * @possibleValues `true`, `false`
      */
     'legacyPRHandling',
@@ -119,13 +119,17 @@ void call(Map parameters = [:]) {
         if(configuration.options instanceof String)
             configuration.options = [].plus(configuration.options)
 
+        loadCertificates(configuration)
+
         def worker = { config ->
             try {
                 withSonarQubeEnv(config.instance) {
 
                         loadSonarScanner(config)
 
-                        loadCertificates(config)
+                        if(fileExists('.certificates/cacerts')){
+                            sh 'mv .certificates/cacerts .sonar-scanner/jre/lib/security/cacerts'
+                        }
 
                         if(config.organization) config.options.add("sonar.organization=${config.organization}")
                         if(config.projectVersion) config.options.add("sonar.projectVersion=${config.projectVersion}")
@@ -222,7 +226,7 @@ private void loadCertificates(Map config) {
         '-import',
         '-noprompt',
         '-storepass changeit',
-        '-keystore .sonar-scanner/jre/lib/security/cacerts'
+        "-keystore ${certificateFolder}cacerts"
     ]
     if (config.customTlsCertificateLinks){
         if(config.verbose){
