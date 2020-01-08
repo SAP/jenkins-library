@@ -171,6 +171,10 @@ void call(Map parameters = [:]) {
 
                sh """#!/bin/bash
                export PATH=./node_modules/.bin:\$PATH
+               echo $mtarName
+               """
+
+/**
                mkdir -p assemble
                unzip $mtarName -d assemble
                export LF=\$(grep -n 'Name: conciletime-cli' assemble/META-INF/MANIFEST.MF | cut -d ':' -f 1) ; export LF1=\$(($LF-1)) ; export LF2=\$(($LF+5)) ; head -n \$LF1 assemble/META-INF/MANIFEST.MF >assemble/META-INF/MAN.MF ; tail -n +\$LF2 assemble/META-INF/MANIFEST.MF >>assemble/META-INF/MAN.MF ; cat assemble/META-INF/MAN.MF ; cp assemble/META-INF/MANIFEST.MF assemble/META-INF/MANIFEST.BAK ; cp assemble/META-INF/MAN.MF assemble/META-INF/MANIFEST.MF
@@ -181,7 +185,7 @@ void call(Map parameters = [:]) {
                rm -f $mtarName
                cd assemble ; zip -u -v -r ../$mtarName * ; cd ..
                echo ${configuration.postBuildAction}
-               """
+*/
             }
             script?.commonPipelineEnvironment?.setMtarFilePath("${mtarName}")
         }
