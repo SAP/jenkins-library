@@ -198,9 +198,7 @@ void call(Map parameters = [:]) {
                cd ..
                """
 
-/**
-*/
-               echo ${configuration.postBuildAction}
+               echo "[INFO] postBuildAction: '${configuration.postBuildAction}'"
             }
             script?.commonPipelineEnvironment?.setMtarFilePath("${mtarName}")
         }
