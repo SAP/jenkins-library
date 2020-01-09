@@ -169,7 +169,6 @@ void call(Map parameters = [:]) {
             def modName
 
             configuration.dockerBasedModules.eachWithIndex { v, i ->
-               getData(v, i, values.size())
                echo "[INFO] v: '${v}' i: '${i}'"
 	    }
 
@@ -199,7 +198,7 @@ void call(Map parameters = [:]) {
                rm -f assemble/META-INF/MAN.MF
                rm -f assemble/META-INF/MANIFEST.BAK
                echo 'sed.....'
-               echo 'sed -e "s/path: ${modName}/path: removed/g" -i assemble/META-INF/mtad.yaml'
+               sed -e "s/path: ${modName}/path: removed/g" -i assemble/META-INF/mtad.yaml
                rm -f $mtarName
                echo 'zipping.....'
                cd assemble
