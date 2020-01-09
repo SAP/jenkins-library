@@ -74,7 +74,7 @@ void call(Map arguments = [:]) {
         def script = checkScript(this, arguments)  ?: this
 
         // load default & individual configuration
-        Map config = ConfigurationHelper.newInstance(this)
+        Map config = ConfigurationHelper.newInstance(this, script)
                                         .loadStepDefaults()
                                         .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS)
                                         .mixinStageConfig(script.commonPipelineEnvironment, arguments.stageName ?: env.STAGE_NAME, STEP_CONFIG_KEYS)

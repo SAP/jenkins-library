@@ -96,7 +96,7 @@ void call(Map parameters = [:]) {
             Map projectConfig = readJSON (text: sh(returnStdout: true, script: projectConfigScript))
             Map contextConfig = readJSON (text: sh(returnStdout: true, script: contextConfigScript))
 
-            Map options = getOptions(parameters, projectConfig, contextConfig, script.commonPipelineEnvironment)
+            Map options = getOptions(script, parameters, projectConfig, contextConfig, script.commonPipelineEnvironment)
 
             Action action = options.action
             DeployMode mode = options.mode
@@ -194,10 +194,10 @@ String joinAndQuote(List l, String prefix = '') {
    3.) project config (nested inside docker node)
    4.) context config (if applicable (docker))
 */
-Map getOptions(Map parameters, Map projectConfig, Map contextConfig, def cpe) {
+Map getOptions(Script script, Map parameters, Map projectConfig, Map contextConfig, def cpe) {
 
     Set configKeys = ['docker', 'mode', 'action', 'dockerImage', 'dockerPullImage']
-    Map config = ConfigurationHelper.newInstance(this)
+    Map config = ConfigurationHelper.newInstance(this, script)
         .loadStepDefaults()
         .mixinGeneralConfig(cpe, configKeys)
         .mixinStepConfig(cpe, configKeys)

@@ -95,7 +95,7 @@ void call(Map parameters = [:]) {
         InfluxData.addField('step_data', 'gauge', false)
 
         // load default & individual configuration
-        Map config = ConfigurationHelper.newInstance(this)
+        Map config = ConfigurationHelper.newInstance(this, script)
             .loadStepDefaults()
             .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS)
             .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName?:env.STAGE_NAME, STEP_CONFIG_KEYS)

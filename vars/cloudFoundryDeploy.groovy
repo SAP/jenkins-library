@@ -176,7 +176,7 @@ void call(Map parameters = [:]) {
 
         final script = checkScript(this, parameters) ?: this
 
-        Map config = ConfigurationHelper.newInstance(this)
+        Map config = ConfigurationHelper.newInstance(this, script)
             .loadStepDefaults()
             .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS, CONFIG_KEY_COMPATIBILITY)
             .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS, CONFIG_KEY_COMPATIBILITY)
@@ -236,7 +236,7 @@ void call(Map parameters = [:]) {
 
 private void handleMTADeployment(Map config, script) {
     // set default mtar path
-    config = ConfigurationHelper.newInstance(this, config)
+    config = ConfigurationHelper.newInstance(this, script, config)
         .addIfEmpty('mtaPath', config.mtaPath ?: findMtar())
         .use()
 

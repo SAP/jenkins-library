@@ -45,7 +45,7 @@ void call(parameters = [:]) {
         def utils = parameters.utils ?: new Utils()
         def jenkinsUtils = parameters.jenkinsUtils ?: new JenkinsUtils()
 
-        ConfigurationHelper configHelper = ConfigurationHelper.newInstance(this)
+        ConfigurationHelper configHelper = ConfigurationHelper.newInstance(this, script)
             .loadStepDefaults()
             .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS)
             .mixin(parameters, PARAMETER_KEYS)

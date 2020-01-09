@@ -89,7 +89,7 @@ void call(parameters = [:]) {
 
         ChangeManagement cm = parameters?.cmUtils ?: new ChangeManagement(script, gitUtils)
 
-        ConfigurationHelper configHelper = ConfigurationHelper.newInstance(this)
+        ConfigurationHelper configHelper = ConfigurationHelper.newInstance(this, script)
             .loadStepDefaults()
             .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS)
             .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS)

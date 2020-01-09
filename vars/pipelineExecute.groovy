@@ -42,7 +42,7 @@ void call(Map parameters = [:]) {
 
         handlePipelineStepErrors (stepName: 'pipelineExecute', stepParameters: parameters, failOnError: true) {
 
-            ConfigurationHelper configHelper = ConfigurationHelper.newInstance(this)
+            ConfigurationHelper configHelper = ConfigurationHelper.newInstance(this, this)
                 .loadStepDefaults()
                 .mixin(parameters, PARAMETER_KEYS)
                 .withMandatoryProperty('repoUrl')

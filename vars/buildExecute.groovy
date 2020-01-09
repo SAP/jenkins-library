@@ -54,7 +54,7 @@ void call(Map parameters = [:]) {
         def utils = parameters.juStabUtils ?: new Utils()
         // handle deprecated parameters
         // load default & individual configuration
-        Map config = ConfigurationHelper.newInstance(this)
+        Map config = ConfigurationHelper.newInstance(this, script)
             .loadStepDefaults()
             .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS)
             .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS)
@@ -83,7 +83,7 @@ void call(Map parameters = [:]) {
                     echo "[${STEP_NAME}] No Docker daemon available, thus switching to Kaniko build"
                 }
 
-                ConfigurationHelper.newInstance(this, config)
+                ConfigurationHelper.newInstance(this, script, config)
                     .withMandatoryProperty('dockerImageName')
                     .withMandatoryProperty('dockerImageTag')
 

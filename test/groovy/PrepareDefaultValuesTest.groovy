@@ -13,6 +13,8 @@ import util.JenkinsStepRule
 
 import util.Rules
 
+import javax.naming.Binding
+
 public class PrepareDefaultValuesTest extends BasePiperTest {
 
     private JenkinsStepRule stepRule = new JenkinsStepRule(this)
@@ -52,7 +54,7 @@ public class PrepareDefaultValuesTest extends BasePiperTest {
     @Test
     public void testReInitializeOnCustomConfig() {
 
-        def instance = DefaultValueCache.createInstance([key:'value'])
+        def instance = DefaultValueCache.createInstance([key:'value'], nullScript.getBinding())
 
         // existing instance is dropped in case a custom config is provided.
         stepRule.step.prepareDefaultValues(script: nullScript, customDefaults: 'custom.yml')
@@ -70,7 +72,7 @@ public class PrepareDefaultValuesTest extends BasePiperTest {
     @Test
     public void testNoReInitializeWithoutCustomConfig() {
 
-        def instance = DefaultValueCache.createInstance([key:'value'])
+        def instance = DefaultValueCache.createInstance([key:'value'], nullScript.getBinding())
 
         stepRule.step.prepareDefaultValues(script: nullScript)
 

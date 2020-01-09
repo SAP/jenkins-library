@@ -41,7 +41,7 @@ void call(Map parameters = [:], body = null) {
         final script = checkScript(this, parameters) ?: this
 
         // load default & individual configuration
-        Map configuration = ConfigurationHelper.newInstance(this)
+        Map configuration = ConfigurationHelper.newInstance(this, script)
             .loadStepDefaults()
             .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS)
             .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS)

@@ -122,7 +122,7 @@ void call(parameters = [:]) {
         def utils = parameters.utils ?: new Utils()
 
         // load default & individual configuration
-        ConfigurationHelper configHelper = ConfigurationHelper.newInstance(this)
+        ConfigurationHelper configHelper = ConfigurationHelper.newInstance(this, script)
             .loadStepDefaults()
             .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS)
             .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS)
@@ -223,7 +223,7 @@ private deploy(script, Map configuration, NeoCommandHelper neoCommandHelper, doc
         sh "mkdir -p ${logFolder}"
         withEnv(["neo_logging_location=${pwd()}/${logFolder}"]) {
             if (deployMode.isWarDeployment()) {
-                ConfigurationHelper.newInstance(this, configuration).withPropertyInValues('warAction', WarAction.stringValues())
+                ConfigurationHelper.newInstance(this, script, configuration).withPropertyInValues('warAction', WarAction.stringValues())
                 WarAction warAction = WarAction.fromString(configuration.warAction)
 
                 if (warAction == WarAction.ROLLING_UPDATE) {

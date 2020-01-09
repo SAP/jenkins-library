@@ -72,14 +72,14 @@ class ConfigurationHelperTest {
 
     @Test
     void testConfigurationLoaderWithDefaults() {
-        Map config = ConfigurationHelper.newInstance(mockScript, [property1: '27']).use()
+        Map config = ConfigurationHelper.newInstance(mockScript, mockScript, [property1: '27']).use()
         // asserts
         Assert.assertThat(config, hasEntry('property1', '27'))
     }
 
     @Test
     void testConfigurationLoaderWithCustomSettings() {
-        Map config = ConfigurationHelper.newInstance(mockScript, [property1: '27'])
+        Map config = ConfigurationHelper.newInstance(mockScript, mockScript, [property1: '27'])
             .mixin([property1: '41'])
             .use()
         // asserts
@@ -89,7 +89,7 @@ class ConfigurationHelperTest {
     @Test
     void testConfigurationLoaderWithFilteredCustomSettings() {
         Set filter = ['property2']
-        Map config = ConfigurationHelper.newInstance(mockScript, [property1: '27'])
+        Map config = ConfigurationHelper.newInstance(mockScript, mockScript, [property1: '27'])
             .mixin([property1: '41', property2: '28', property3: '29'], filter)
             .use()
         // asserts
@@ -101,7 +101,7 @@ class ConfigurationHelperTest {
     @Test
     void testConfigurationHelperLoadingStepDefaults() {
         Set filter = ['property2']
-        Map config = ConfigurationHelper.newInstance(mockScript, [property1: '27'])
+        Map config = ConfigurationHelper.newInstance(mockScript, mockScript, [property1: '27'])
             .loadStepDefaults()
             .mixinGeneralConfig([configuration:[general: ['general': 'test', 'oldGeneral': 'test2']]], null, [general2: 'oldGeneral'])
             .mixinStageConfig([configuration:[stages:[testStage:['stage': 'test', 'oldStage': 'test2']]]], 'testStage', null, [stage2: 'oldStage'])
@@ -122,7 +122,7 @@ class ConfigurationHelperTest {
 
     @Test
     void testConfigurationHelperAddIfEmpty() {
-        Map config = ConfigurationHelper.newInstance(mockScript, [:])
+        Map config = ConfigurationHelper.newInstance(mockScript, mockScript, [:])
             .mixin([property1: '41', property2: '28', property3: '29', property4: ''])
             .addIfEmpty('property3', '30')
             .addIfEmpty('property4', '40')
@@ -137,7 +137,7 @@ class ConfigurationHelperTest {
 
     @Test
     void testConfigurationHelperAddIfNull() {
-        Map config = ConfigurationHelper.newInstance(mockScript, [:])
+        Map config = ConfigurationHelper.newInstance(mockScript, mockScript, [:])
             .mixin([property1: '29', property2: '', property3: null])
             .addIfNull('property1', '30')
             .addIfNull('property2', '30')
@@ -153,7 +153,7 @@ class ConfigurationHelperTest {
 
     @Test
     void testConfigurationHelperDependingOn() {
-        Map config = ConfigurationHelper.newInstance(mockScript, [:])
+        Map config = ConfigurationHelper.newInstance(mockScript, mockScript, [:])
             .mixin([deep: [deeper: 'test'], scanType: 'maven', maven: [path: 'test2']])
             .dependingOn('scanType').mixin('deep/path')
             .use()
@@ -167,7 +167,7 @@ class ConfigurationHelperTest {
 
     @Test
     void testConfigurationHelperWithPropertyInValues() {
-        ConfigurationHelper.newInstance(mockScript, [:])
+        ConfigurationHelper.newInstance(mockScript, mockScript, [:])
             .mixin([test: 'allowed'])
             .withPropertyInValues('test', ['allowed', 'allowed2'] as Set)
             .use()
@@ -177,7 +177,7 @@ class ConfigurationHelperTest {
     void testConfigurationHelperWithPropertyInValuesException() {
         def errorCaught = false
         try {
-        ConfigurationHelper.newInstance(mockScript, [:])
+        ConfigurationHelper.newInstance(mockScript, mockScript, [:])
             .mixin([test: 'disallowed'])
             .withPropertyInValues('test', ['allowed', 'allowed2'] as Set)
             .use()
@@ -191,7 +191,7 @@ class ConfigurationHelperTest {
 
     @Test
     void testConfigurationLoaderWithBooleanValue() {
-        Map config = ConfigurationHelper.newInstance(mockScript, [property1: '27'])
+        Map config = ConfigurationHelper.newInstance(mockScript, mockScript, [property1: '27'])
             .mixin([property1: false])
             .mixin([property2: false])
             .use()
@@ -202,7 +202,7 @@ class ConfigurationHelperTest {
 
     @Test
     void testConfigurationLoaderWithMixinDependent() {
-        Map config = ConfigurationHelper.newInstance(mockScript, [
+        Map config = ConfigurationHelper.newInstance(mockScript, mockScript, [
                 type: 'maven',
                 maven: [dockerImage: 'mavenImage', dockerWorkspace: 'mavenWorkspace'],
                 npm: [dockerImage: 'npmImage', dockerWorkspace: 'npmWorkspace', executeDocker: true, executeDocker3: false],
@@ -232,7 +232,7 @@ class ConfigurationHelperTest {
 
     @Test
     void testHandleCompatibility() {
-        def configuration = ConfigurationHelper.newInstance(mockScript)
+        def configuration = ConfigurationHelper.newInstance(mockScript, mockScript)
             .mixin([old1: 'oldValue1', old2: 'oldValue2', test: 'testValue'], null, [newStructure: [new1: 'old1', new2: 'old2']])
             .use()
 
@@ -243,7 +243,7 @@ class ConfigurationHelperTest {
 
     @Test
     void testHandleCompatibilityFlat() {
-        def configuration = ConfigurationHelper.newInstance(mockScript)
+        def configuration = ConfigurationHelper.newInstance(mockScript, mockScript)
             .mixin([old1: 'oldValue1', old2: 'oldValue2', test: 'testValue'], null, [new1: 'old1', new2: 'old2'])
             .use()
 
@@ -254,7 +254,7 @@ class ConfigurationHelperTest {
 
     @Test
     void testHandleCompatibilityDeep() {
-        def configuration = ConfigurationHelper.newInstance(mockScript)
+        def configuration = ConfigurationHelper.newInstance(mockScript, mockScript)
             .mixin([old1: 'oldValue1', old2: 'oldValue2', test: 'testValue'], null, [deep:[deeper:[newStructure: [new1: 'old1', new2: 'old2']]]])
             .use()
 
@@ -265,7 +265,7 @@ class ConfigurationHelperTest {
 
     @Test
     void testHandleCompatibilityNewAvailable() {
-        def configuration = ConfigurationHelper.newInstance(mockScript, [old1: 'oldValue1', newStructure: [new1: 'newValue1'], test: 'testValue'])
+        def configuration = ConfigurationHelper.newInstance(mockScript, mockScript, [old1: 'oldValue1', newStructure: [new1: 'newValue1'], test: 'testValue'])
             .mixin([old1: 'oldValue1', newStructure: [new1: 'newValue1'], test: 'testValue'], null, [newStructure: [new1: 'old1', new2: 'old2']])
             .use()
 
@@ -275,7 +275,7 @@ class ConfigurationHelperTest {
 
     @Test
     void testHandleCompatibilityOldNotSet() {
-        def configuration = ConfigurationHelper.newInstance(mockScript, [old1: null, test: 'testValue'])
+        def configuration = ConfigurationHelper.newInstance(mockScript, mockScript, [old1: null, test: 'testValue'])
             .mixin([old1: null, test: 'testValue'], null, [newStructure: [new1: 'old1', new2: 'old2']])
             .use()
 
@@ -285,7 +285,7 @@ class ConfigurationHelperTest {
 
     @Test
     void testHandleCompatibilityNoneAvailable() {
-        def configuration = ConfigurationHelper.newInstance(mockScript, [old1: null, test: 'testValue'])
+        def configuration = ConfigurationHelper.newInstance(mockScript, mockScript, [old1: null, test: 'testValue'])
             .mixin([test: 'testValue'], null, [newStructure: [new1: 'old1', new2: 'old2']])
             .use()
 
@@ -295,7 +295,7 @@ class ConfigurationHelperTest {
 
     @Test
     void testHandleCompatibilityPremigratedValues() {
-        def configuration = ConfigurationHelper.newInstance(mockScript, [old1: null, test: 'testValue'])
+        def configuration = ConfigurationHelper.newInstance(mockScript, mockScript, [old1: null, test: 'testValue'])
             .mixin([someValueToMigrate: 'testValue2'], null, [someValueToMigrateSecondTime: 'someValueToMigrate', newStructure: [new1: 'old1', new2: 'someValueToMigrateSecondTime']])
             .use()
 
@@ -310,7 +310,7 @@ class ConfigurationHelperTest {
         thrown.expect(IllegalArgumentException)
         thrown.expectMessage('ERROR - NO VALUE AVAILABLE FOR myKey')
 
-        ConfigurationHelper.newInstance(mockScript).withMandatoryProperty('myKey')
+        ConfigurationHelper.newInstance(mockScript, mockScript).withMandatoryProperty('myKey')
     }
 
     @Test
@@ -319,22 +319,22 @@ class ConfigurationHelperTest {
         thrown.expect(IllegalArgumentException)
         thrown.expectMessage('My error message')
 
-        ConfigurationHelper.newInstance(mockScript).withMandatoryProperty('myKey', 'My error message')
+        ConfigurationHelper.newInstance(mockScript, mockScript).withMandatoryProperty('myKey', 'My error message')
     }
 
     @Test
     public void testWithMandoryParameterDefaultCustomFailureMessageProvidedSucceeds() {
-        ConfigurationHelper.newInstance(mockScript, [myKey: 'myValue']).withMandatoryProperty('myKey', 'My error message')
+        ConfigurationHelper.newInstance(mockScript, mockScript, [myKey: 'myValue']).withMandatoryProperty('myKey', 'My error message')
     }
 
     @Test
     public void testWithMandoryParameterDefaultCustomFailureMessageNotProvidedSucceeds() {
-        ConfigurationHelper.newInstance(mockScript, [myKey: 'myValue']).withMandatoryProperty('myKey')
+        ConfigurationHelper.newInstance(mockScript, mockScript, [myKey: 'myValue']).withMandatoryProperty('myKey')
     }
 
     @Test
     public void testWithMandoryWithFalseCondition() {
-        ConfigurationHelper.newInstance(mockScript, [verify: false])
+        ConfigurationHelper.newInstance(mockScript, mockScript, [verify: false])
             .withMandatoryProperty('missingKey', null, { c -> return c.get('verify') })
     }
 
@@ -343,20 +343,20 @@ class ConfigurationHelperTest {
         thrown.expect(IllegalArgumentException)
         thrown.expectMessage('ERROR - NO VALUE AVAILABLE FOR missingKey')
 
-        ConfigurationHelper.newInstance(mockScript, [verify: true])
+        ConfigurationHelper.newInstance(mockScript, mockScript, [verify: true])
             .withMandatoryProperty('missingKey', null, { c -> return c.get('verify') })
     }
 
     @Test
     public void testWithMandoryWithTrueConditionExistingValue() {
-        ConfigurationHelper.newInstance(mockScript, [existingKey: 'anyValue', verify: true])
+        ConfigurationHelper.newInstance(mockScript, mockScript, [existingKey: 'anyValue', verify: true])
             .withMandatoryProperty('existingKey', null, { c -> return c.get('verify') })
     }
 
     @Test
     public void testTelemetryConfigurationAvailable() {
         Set filter = ['test']
-        def configuration = ConfigurationHelper.newInstance(mockScript, [test: 'testValue'])
+        def configuration = ConfigurationHelper.newInstance(mockScript, mockScript, [test: 'testValue'])
             .mixin([collectTelemetryData: false], filter)
             .use()
 
@@ -378,7 +378,7 @@ class ConfigurationHelperTest {
         assert bGString instanceof GString
         assert cGString instanceof GString
 
-        def config = ConfigurationHelper.newInstance(mockScript, [a: aGString,
+        def config = ConfigurationHelper.newInstance(mockScript, mockScript, [a: aGString,
                                               nextLevel: [b: bGString]])
                      .mixin([c : cGString])
                      .use()
@@ -393,7 +393,7 @@ class ConfigurationHelperTest {
 
     @Test
     public void testWithMandatoryParameterCollectFailuresAllParamtersArePresentResultsInNoExceptionThrown() {
-        ConfigurationHelper.newInstance(mockScript, [myKey1: 'a', myKey2: 'b'])
+        ConfigurationHelper.newInstance(mockScript, mockScript, [myKey1: 'a', myKey2: 'b'])
                                    .collectValidationFailures()
                                    .withMandatoryProperty('myKey1')
                                    .withMandatoryProperty('myKey2')
@@ -402,7 +402,7 @@ class ConfigurationHelperTest {
 
     @Test
     public void testWithMandatoryParameterCollectFailuresMultipleMissingParametersDoNotResultInFailuresDuringWithMandatoryProperties() {
-        ConfigurationHelper.newInstance(mockScript, [:]).collectValidationFailures()
+        ConfigurationHelper.newInstance(mockScript, mockScript, [:]).collectValidationFailures()
                                     .withMandatoryProperty('myKey1')
                                     .withMandatoryProperty('myKey2')
     }
@@ -411,7 +411,7 @@ class ConfigurationHelperTest {
     public void testWithMandatoryParameterCollectFailuresMultipleMissingParametersResultsInFailureDuringUse() {
         thrown.expect(IllegalArgumentException)
         thrown.expectMessage('ERROR - NO VALUE AVAILABLE FOR: myKey2, myKey3')
-        ConfigurationHelper.newInstance(mockScript, [myKey1:'a']).collectValidationFailures()
+        ConfigurationHelper.newInstance(mockScript, mockScript, [myKey1:'a']).collectValidationFailures()
                                    .withMandatoryProperty('myKey1')
                                    .withMandatoryProperty('myKey2')
                                    .withMandatoryProperty('myKey3')
@@ -422,7 +422,7 @@ class ConfigurationHelperTest {
     public void testWithMandatoryParameterCollectFailuresOneMissingParametersResultsInFailureDuringUse() {
         thrown.expect(IllegalArgumentException)
         thrown.expectMessage('ERROR - NO VALUE AVAILABLE FOR myKey2')
-        ConfigurationHelper.newInstance(mockScript, [myKey1:'a']).collectValidationFailures()
+        ConfigurationHelper.newInstance(mockScript, mockScript, [myKey1:'a']).collectValidationFailures()
                                    .withMandatoryProperty('myKey1')
                                    .withMandatoryProperty('myKey2')
                                    .use()
@@ -433,7 +433,7 @@ class ConfigurationHelperTest {
         Map config = ['key1':'value1']
         Set possibleValues = ['value1', 'value2', 'value3']
 
-        ConfigurationHelper.newInstance(mockScript, config).collectValidationFailures()
+        ConfigurationHelper.newInstance(mockScript, mockScript, config).collectValidationFailures()
                                    .withPropertyInValues('key1', possibleValues)
                                    .use()
     }
@@ -444,7 +444,7 @@ class ConfigurationHelperTest {
         Map config = ['key1':"$value"]
         Set possibleValues = ['value1', 'value2', 'value3']
 
-        ConfigurationHelper.newInstance(mockScript, config).collectValidationFailures()
+        ConfigurationHelper.newInstance(mockScript, mockScript, config).collectValidationFailures()
                                    .withPropertyInValues('key1', possibleValues)
                                    .use()
     }
@@ -454,7 +454,7 @@ class ConfigurationHelperTest {
         Map config = ['key1':3]
         Set possibleValues = [1, 2, 3]
 
-        ConfigurationHelper.newInstance(mockScript, config).collectValidationFailures()
+        ConfigurationHelper.newInstance(mockScript, mockScript, config).collectValidationFailures()
                                    .withPropertyInValues('key1', possibleValues)
                                    .use()
     }

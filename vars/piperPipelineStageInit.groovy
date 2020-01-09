@@ -50,7 +50,7 @@ void call(Map parameters = [:]) {
 
         setupCommonPipelineEnvironment script: script, customDefaults: parameters.customDefaults
 
-        Map config = ConfigurationHelper.newInstance(this)
+        Map config = ConfigurationHelper.newInstance(this, script)
             .loadStepDefaults()
             .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS)
             .mixinStageConfig(script.commonPipelineEnvironment, stageName, STEP_CONFIG_KEYS)

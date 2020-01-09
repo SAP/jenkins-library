@@ -2,7 +2,7 @@ package com.sap.piper
 
 class StepAssertions {
     def static assertFileIsConfiguredAndExists(Script step, Map configuration, String configurationKey) {
-        ConfigurationHelper.newInstance(step, configuration).withMandatoryProperty(configurationKey)
+        ConfigurationHelper.newInstance(step, step, configuration).withMandatoryProperty(configurationKey)
         assertFileExists(step, configuration[configurationKey])
     }
 

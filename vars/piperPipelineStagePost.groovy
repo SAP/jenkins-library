@@ -29,7 +29,7 @@ void call(Map parameters = [:]) {
     def stageName = parameters.stageName?:env.STAGE_NAME
     // ease handling extension
     stageName = stageName.replace('Declarative: ', '')
-    Map config = ConfigurationHelper.newInstance(this)
+    Map config = ConfigurationHelper.newInstance(this, script)
         .loadStepDefaults()
         .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS)
         .mixinStageConfig(script.commonPipelineEnvironment, stageName, STEP_CONFIG_KEYS)

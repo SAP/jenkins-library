@@ -125,7 +125,7 @@ void call(parameters = [:]) {
 
         ChangeManagement cm = parameters.cmUtils ?: new ChangeManagement(script)
 
-        ConfigurationHelper configHelper = ConfigurationHelper.newInstance(this)
+        ConfigurationHelper configHelper = ConfigurationHelper.newInstance(this, script)
             .collectValidationFailures()
             .loadStepDefaults()
             .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS)
