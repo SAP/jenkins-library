@@ -170,6 +170,8 @@ void call(Map parameters = [:]) {
             $mtaCall
             """
 
+            echo "[INFO] Looping dockerBasedModules."
+
             def modName
 
             configuration.dockerBasedModules.each { m ->
@@ -177,6 +179,8 @@ void call(Map parameters = [:]) {
 	    }
 
             modName = "headless-chr"
+
+            echo "[INFO] Do postBuildAction."
 
             if (configuration.postBuildAction) {
                echo "[INFO] MTAR File: '${mtarName}'."
@@ -212,6 +216,7 @@ void call(Map parameters = [:]) {
 
                echo "[INFO] postBuildAction: '${postBuildAction}'"
             }
+            echo "[INFO] END postBuildAction."
             script?.commonPipelineEnvironment?.setMtarFilePath("${mtarName}")
         }
     }
