@@ -53,7 +53,9 @@ import static com.sap.piper.Utils.downloadSettingsFromUrl
 ]
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS.plus([
     /** Url to the npm registry that should be used for installing npm dependencies.*/
-    'defaultNpmRegistry'
+    'defaultNpmRegistry',
+    'dockerBasedModules',
+    'postBuildAction'
 ])
 
 /**
@@ -157,6 +159,8 @@ void call(Map parameters = [:]) {
                     error "[ERROR][${STEP_NAME}] MTA build tool '${configuration.mtaBuildTool}' not supported!"
             }
 
+            String postBuildAction = configuration.postBuildAction?.trim()
+
             echo "[INFO] Executing mta build call: '${mtaCall}'."
 
             //[Q]: Why extending the path? [A]: To be sure e.g. grunt can be found
@@ -174,7 +178,7 @@ void call(Map parameters = [:]) {
 
             modName = "headless-chr"
 
-            if (configuration.postBuildAction) {
+            if (postBuildAction) {
                echo "[INFO] MTAR File: '${mtarName}'."
 
                sh """#!/bin/bash
@@ -206,7 +210,7 @@ void call(Map parameters = [:]) {
                cd ..
                """
 
-               echo "[INFO] postBuildAction: '${configuration.postBuildAction}'"
+               echo "[INFO] postBuildAction: '${postBuildAction}'"
             }
             script?.commonPipelineEnvironment?.setMtarFilePath("${mtarName}")
         }
