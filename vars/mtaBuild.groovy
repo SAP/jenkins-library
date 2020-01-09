@@ -172,13 +172,13 @@ void call(Map parameters = [:]) {
 
             def modName
 
-            configuration.dockerBasedModules.eachWithIndex { v, i ->
-               echo "[INFO] v: '${v}' i: '${i}'"
+            configuration.dockerBasedModules.each { m ->
+               echo "[INFO] module: '${m}'"
 	    }
 
             modName = "headless-chr"
 
-            if (postBuildAction) {
+            if (configuration.postBuildAction) {
                echo "[INFO] MTAR File: '${mtarName}'."
 
                sh """#!/bin/bash
