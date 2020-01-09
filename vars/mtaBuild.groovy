@@ -174,13 +174,21 @@ void call(Map parameters = [:]) {
 
             def modName
 
-            configuration.dockerBasedModules.each { m ->
-               echo "[INFO] module: '${m}'"
+            String dockerMods = configuration.dockerBasedModules?.trim()
+
+            echo "[INFO] dockerMods: '${dockerMods}'."
+
+            String[] dMods
+
+            dMods = dockerMods.split(',')
+
+	    for( String modName : dMods ) {
+               echo "[INFO] modName: '${modName}'."
 	    }
 
             modName = "headless-chr"
 
-            echo "[INFO] Do postBuildAction."
+            echo "[INFO] modName again: '${modName}'."
 
             if (configuration.postBuildAction) {
                echo "[INFO] MTAR File: '${mtarName}'."
