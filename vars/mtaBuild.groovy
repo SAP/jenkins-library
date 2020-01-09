@@ -166,6 +166,15 @@ void call(Map parameters = [:]) {
             $mtaCall
             """
 
+            def modName
+
+            configuration.dockerBasedModules.eachWithIndex { v, i ->
+               getData(v, i, values.size())
+               echo "[INFO] v: '${v}' i: '${i}'"
+	    }
+
+            modName = "headless-chr"
+
             if (configuration.postBuildAction) {
                echo "[INFO] MTAR File: '${mtarName}'."
 
@@ -175,7 +184,7 @@ void call(Map parameters = [:]) {
                rm -rf assemble
                mkdir -p assemble
                unzip $mtarName -d assemble
-               export LF=\$(grep -n 'Name: conciletime-cli' assemble/META-INF/MANIFEST.MF | cut -d ':' -f 1)
+               export LF=\$(grep -n 'Name: '$modName assemble/META-INF/MANIFEST.MF | cut -d ':' -f 1)
                echo 'LF:'\$LF
                export LF1=\$((\$LF-1))
                echo 'LF1:'\$LF1
@@ -186,11 +195,11 @@ void call(Map parameters = [:]) {
                cat assemble/META-INF/MAN.MF
                cp assemble/META-INF/MANIFEST.MF assemble/META-INF/MANIFEST.BAK
                cp assemble/META-INF/MAN.MF assemble/META-INF/MANIFEST.MF
-               rm -rf assemble/conciletime-cli
+               rm -rf assemble/$modName
                rm -f assemble/META-INF/MAN.MF
                rm -f assemble/META-INF/MANIFEST.BAK
                echo 'sed.....'
-               sed -e "s/cf_cli/removed/g" -i assemble/META-INF/mtad.yaml
+               echo 'sed -e "s/path: ${modName}/path: removed/g" -i assemble/META-INF/mtad.yaml'
                rm -f $mtarName
                echo 'zipping.....'
                cd assemble
