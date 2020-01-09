@@ -346,8 +346,8 @@ steps:
     cloudMbt:
 #      dockerImage: 'devxci/mbtci:1.0.4'
       dockerImage: 'alunde/mbtci:latest'
-    dockerBasedModules: ""
-    postBuildAction: ""
+    dockerBasedModules: ''
+    postBuildAction: ''
   neoDeploy:
     dockerImage: 'ppiper/neo-cli'
     deployMode: 'mta'

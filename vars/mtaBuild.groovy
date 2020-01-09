@@ -176,7 +176,7 @@ void call(Map parameters = [:]) {
 
             String dockerMods = configuration.dockerBasedModules?.trim()
 
-            echo "[INFO] dockerMods: '${dockerMods}'."
+            echo "[INFO] dockerMods: $dockerMods."
 
             String[] dMods
 
