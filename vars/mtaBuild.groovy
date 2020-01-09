@@ -178,6 +178,8 @@ void call(Map parameters = [:]) {
 
             echo "[INFO] dockerMods: '${dockerMods}'."
 
+            echo "[INFO] postBuildAction: '${postBuildAction}'."
+
             String[] dMods
 
             dMods = dockerMods.split(',')
