@@ -182,8 +182,8 @@ void call(Map parameters = [:]) {
 
             dMods = dockerMods.split(',')
 
-	    for( String modName : dMods ) {
-               echo "[INFO] modName: '${modName}'."
+	    for( String thisModuleName : dMods ) {
+               echo "[INFO] thisModuleName: '${thisModuleName}'."
 	    }
 
             modName = "headless-chr"
