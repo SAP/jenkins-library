@@ -147,7 +147,7 @@ steps:
 			},
 		}
 
-		stepConfig, err := c.GetStepConfig(flags, paramJSON, myConfig, defaults, filters, parameterMetadata, "stage1", "step1")
+		stepConfig, err := c.GetStepConfig(flags, paramJSON, myConfig, defaults, filters, parameterMetadata, nil, "stage1", "step1")
 
 		assert.Equal(t, nil, err, "error occured but none expected")
 
@@ -191,7 +191,7 @@ steps:
 
 		c.openFile = customDefaultsOpenFileMock
 
-		stepConfig, err := c.GetStepConfig(nil, "", ioutil.NopCloser(strings.NewReader(testConfDefaults)), nil, StepFilters{General: []string{"p0"}}, nil, "stage1", "step1")
+		stepConfig, err := c.GetStepConfig(nil, "", ioutil.NopCloser(strings.NewReader(testConfDefaults)), nil, StepFilters{General: []string{"p0"}}, nil, nil, "stage1", "step1")
 
 		assert.NoError(t, err, "Error occured but no error expected")
 		assert.Equal(t, "p0_custom_default", stepConfig.Config["p0"])
@@ -204,7 +204,7 @@ steps:
 		stepParams := []StepParameters{StepParameters{Name: "p0", Scope: []string{"GENERAL"}, Type: "string", Default: "p0_step_default", Aliases: []Alias{{Name: "p0_alias"}}}}
 		testConf := "general:\n p1: p1_conf"
 
-		stepConfig, err := c.GetStepConfig(nil, "", ioutil.NopCloser(strings.NewReader(testConf)), nil, StepFilters{General: []string{"p0", "p1"}}, stepParams, "stage1", "step1")
+		stepConfig, err := c.GetStepConfig(nil, "", ioutil.NopCloser(strings.NewReader(testConf)), nil, StepFilters{General: []string{"p0", "p1"}}, stepParams, nil, "stage1", "step1")
 
 		assert.NoError(t, err, "Error occured but no error expected")
 		assert.Equal(t, "p0_step_default", stepConfig.Config["p0"])
@@ -214,7 +214,7 @@ steps:
 	t.Run("Failure case config", func(t *testing.T) {
 		var c Config
 		myConfig := ioutil.NopCloser(strings.NewReader("invalid config"))
-		_, err := c.GetStepConfig(nil, "", myConfig, nil, StepFilters{}, []StepParameters{}, "stage1", "step1")
+		_, err := c.GetStepConfig(nil, "", myConfig, nil, StepFilters{}, []StepParameters{}, nil, "stage1", "step1")
 		assert.EqualError(t, err, "failed to parse custom pipeline configuration: error unmarshalling \"invalid config\": error unmarshaling JSON: json: cannot unmarshal string into Go value of type config.Config", "default error expected")
 	})
 
@@ -222,7 +222,7 @@ steps:
 		var c Config
 		myConfig := ioutil.NopCloser(strings.NewReader(""))
 		myDefaults := []io.ReadCloser{ioutil.NopCloser(strings.NewReader("invalid defaults"))}
-		_, err := c.GetStepConfig(nil, "", myConfig, myDefaults, StepFilters{}, []StepParameters{}, "stage1", "step1")
+		_, err := c.GetStepConfig(nil, "", myConfig, myDefaults, StepFilters{}, []StepParameters{}, nil, "stage1", "step1")
 		assert.EqualError(t, err, "failed to parse pipeline default configuration: error unmarshalling \"invalid defaults\": error unmarshaling JSON: json: cannot unmarshal string into Go value of type config.Config", "default error expected")
 	})
 

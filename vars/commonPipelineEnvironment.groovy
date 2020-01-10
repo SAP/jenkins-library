@@ -143,4 +143,70 @@ class commonPipelineEnvironment implements Serializable {
         config = ConfigurationMerger.merge(configuration.get('stages')?.get(stageName) ?: [:], null, config)
         return config
     }
+
+    void writeToDisk() {
+
+        def files = [
+            [filename: '.pipeline/piperEnvironment/artifactVersion', content: artifactVersion],
+            [filename: '.pipeline/piperEnvironment/github/owner', content: githubOrg],
+            [filename: '.pipeline/piperEnvironment/github/repository', content: githubRepo],
+            [filename: '.pipeline/piperEnvironment/git/branch', content: gitBranch],
+            [filename: '.pipeline/piperEnvironment/git/commitId', content: gitCommitId],
+            [filename: '.pipeline/piperEnvironment/git/commitMessage', content: gitCommitMessage],
+        ]
+
+        files.each({f  ->
+            if (f.content && !fileExists(f.filename)) {
+                writeFile file: f.filename, text: f.content
+            }
+        })
+
+        valueMap.each({key, value ->
+            def fileName = ".pipeline/piperEnvironment/custom/${key}"
+            if (value && !fileExists(fileName)) {
+                //ToDo: check for value type and act accordingly?
+                writeFile file: fileName, text: value
+            }
+        })
+    }
+
+    void readFromDisk() {
+        def file = '.pipeline/piperEnvironment/artifactVersion'
+        if (fileExists(file)) {
+            artifactVersion = readFile(file)
+        }
+
+        file = '.pipeline/piperEnvironment/github/owner'
+        if (fileExists(file)) {
+            githubOrg = readFile(file)
+        }
+
+        file = '.pipeline/piperEnvironment/github/repository'
+        if (fileExists(file)) {
+            githubRepo = readFile(file)
+        }
+
+        file = '.pipeline/piperEnvironment/git/branch'
+        if (fileExists(file)) {
+            gitBranch = readFile(file)
+        }
+
+        file = '.pipeline/piperEnvironment/git/commitId'
+        if (fileExists(file)) {
+            gitCommitId = readFile(file)
+        }
+
+        file = '.pipeline/piperEnvironment/git/commitMessage'
+        if (fileExists(file)) {
+            gitCommitMessage = readFile(file)
+        }
+
+        def customValues = findFiles(glob: '.pipeline/piperEnvironment/custom/*')
+
+        customValues.each({f ->
+            def fileName = f.getName()
+            def param = fileName.split('/')[fileName.split('\\/').size()-1]
+            valueMap[param] = readFile(f.getPath())
+        })
+    }
 }

@@ -82,7 +82,7 @@ func getDeepAliasValue(configMap map[string]interface{}, key string) interface{}
 }
 
 // GetStepConfig provides merged step configuration using defaults, config, if available
-func (c *Config) GetStepConfig(flagValues map[string]interface{}, paramJSON string, configuration io.ReadCloser, defaults []io.ReadCloser, filters StepFilters, parameters []StepParameters, stageName, stepName string) (StepConfig, error) {
+func (c *Config) GetStepConfig(flagValues map[string]interface{}, paramJSON string, configuration io.ReadCloser, defaults []io.ReadCloser, filters StepFilters, parameters []StepParameters, envParameters map[string]interface{}, stageName, stepName string) (StepConfig, error) {
 	var stepConfig StepConfig
 	var d PipelineDefaults
 
@@ -125,6 +125,9 @@ func (c *Config) GetStepConfig(flagValues map[string]interface{}, paramJSON stri
 		stepConfig.mixIn(def.General, filters.General)
 		stepConfig.mixIn(def.Steps[stepName], filters.Steps)
 	}
+
+	// merge parameters provided by Piper environment
+	stepConfig.mixIn(envParameters, filters.All)
 
 	// read config & merge - general -> steps -> stages
 	stepConfig.mixIn(c.General, filters.General)

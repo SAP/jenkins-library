@@ -6,6 +6,8 @@ import (
 	"io"
 	"io/ioutil"
 
+	"github.com/SAP/jenkins-library/pkg/piperenvironment"
+
 	"github.com/ghodss/yaml"
 	"github.com/pkg/errors"
 )
@@ -40,15 +42,22 @@ type StepInputs struct {
 
 // StepParameters defines the parameters for a step
 type StepParameters struct {
-	Name            string      `json:"name"`
-	Description     string      `json:"description"`
-	LongDescription string      `json:"longDescription,omitempty"`
-	Scope           []string    `json:"scope"`
-	Type            string      `json:"type"`
-	Mandatory       bool        `json:"mandatory,omitempty"`
-	Default         interface{} `json:"default,omitempty"`
-	Aliases         []Alias     `json:"aliases,omitempty"`
-	Conditions      []Condition `json:"conditions,omitempty"`
+	Name            string              `json:"name"`
+	Description     string              `json:"description"`
+	LongDescription string              `json:"longDescription,omitempty"`
+	ResourceRef     []ResourceReference `json:"resourceRef,omitempty"`
+	Scope           []string            `json:"scope"`
+	Type            string              `json:"type"`
+	Mandatory       bool                `json:"mandatory,omitempty"`
+	Default         interface{}         `json:"default,omitempty"`
+	Aliases         []Alias             `json:"aliases,omitempty"`
+	Conditions      []Condition         `json:"conditions,omitempty"`
+}
+
+// ResourceReference defines the parameters of a resource reference
+type ResourceReference struct {
+	Name  string `json:"name"`
+	Param string `json:"param"`
 }
 
 // Alias defines a step input parameter alias
@@ -316,6 +325,23 @@ func (m *StepData) GetContextDefaults(stepName string) (io.ReadCloser, error) {
 
 	r := ioutil.NopCloser(bytes.NewReader(JSON))
 	return r, nil
+}
+
+// GetResourceParameters retrieves parameters from a named pipeline resource with a defined path
+func (m *StepData) GetResourceParameters(path, name string) map[string]interface{} {
+	resourceParams := map[string]interface{}{}
+
+	for _, param := range m.Spec.Inputs.Parameters {
+		for _, res := range param.ResourceRef {
+			if res.Name == name {
+				if val := piperenvironment.GetParameter(path, res.Param); len(val) > 0 {
+					resourceParams[param.Name] = piperenvironment.GetParameter(path, res.Param)
+				}
+			}
+		}
+	}
+
+	return resourceParams
 }
 
 func envVarsAsStringSlice(envVars []EnvVar) []string {
