@@ -144,7 +144,7 @@ class commonPipelineEnvironment implements Serializable {
         return config
     }
 
-    void writeToDisk() {
+    void writeToDisk(script) {
 
         def files = [
             [filename: '.pipeline/piperEnvironment/artifactVersion', content: artifactVersion],
@@ -156,16 +156,16 @@ class commonPipelineEnvironment implements Serializable {
         ]
 
         files.each({f  ->
-            if (f.content && !fileExists(f.filename)) {
-                writeFile file: f.filename, text: f.content
+            if (f.content && !script.fileExists(f.filename)) {
+                script.writeFile file: f.filename, text: f.content
             }
         })
 
         valueMap.each({key, value ->
             def fileName = ".pipeline/piperEnvironment/custom/${key}"
-            if (value && !fileExists(fileName)) {
+            if (value && !script.fileExists(fileName)) {
                 //ToDo: check for value type and act accordingly?
-                writeFile file: fileName, text: value
+                script.writeFile file: fileName, text: value
             }
         })
     }
