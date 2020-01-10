@@ -93,8 +93,6 @@ void call(Map parameters = [:]) {
 
             echo "[INFO] dockerExecute BEGIN."
 
-            configuration.properties.each { echo "[E]: '${it.key}' -> '${it.value}'" }
-
             String projectSettingsFile = configuration.projectSettingsFile?.trim()
             if (projectSettingsFile) {
                 if (projectSettingsFile.startsWith("http")) {
@@ -177,21 +175,13 @@ void call(Map parameters = [:]) {
 
             echo "[INFO] Looping dockerBasedModules."
 
-            def modName
+            def modNames = configuration.dockerBasedModules
 
-            String dockerMods = configuration.dockerBasedModules?.trim()
-
-            echo "[INFO] dockerMods: '${dockerMods}'."
-
-            echo "[INFO] postBuildAction: '${postBuildAction}'."
-
-            String[] dMods
-
-            dMods = dockerMods.split(',')
-
-	    for( String thisModuleName : dMods ) {
+	    for( thisModuleName : modNames ) {
                echo "[INFO] thisModuleName: '${thisModuleName}'."
 	    }
+
+            echo "[INFO] postBuildAction: '${postBuildAction}'."
 
             modName = "headless-chr"
 
