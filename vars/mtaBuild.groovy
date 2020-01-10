@@ -177,7 +177,7 @@ void call(Map parameters = [:]) {
 
             def modNames = configuration.dockerBasedModules
 
-	    for( thisModuleName : modNames ) {
+	    for( thisModuleName in modNames ) {
                echo "[INFO] thisModuleName: '${thisModuleName}'."
 	    }
 
