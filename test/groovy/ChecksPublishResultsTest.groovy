@@ -154,9 +154,7 @@ class ChecksPublishResultsTest extends BasePiperTest {
     @Test
     void testPublishWithChangedStepDefaultSettings() throws Exception {
         // pmd has been set to active: true in step configuration
-        stepRule.step.checksPublishResults(script: [commonPipelineEnvironment: [
-            configuration: [steps: [checksPublishResults: [pmd: [active: true]]]]
-        ]])
+        stepRule.step.checksPublishResults(script: nullScript, pmd: [active: true])
 
         assertTrue("AnalysisPublisher options not set", publisherStepOptions['AnalysisPublisher'] != null)
         assertTrue("PmdPublisher options not set", publisherStepOptions['PmdPublisher'] != null)

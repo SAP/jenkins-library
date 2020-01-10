@@ -34,7 +34,7 @@ class HandlePipelineStepErrorsTest extends BasePiperTest {
         def isExecuted
         stepRule.step.handlePipelineStepErrors([
             stepName: 'testStep',
-            stepParameters: ['something': 'anything']
+            stepParameters: ['script': nullScript]
         ]) {
             isExecuted = true
         }
@@ -69,7 +69,7 @@ class HandlePipelineStepErrorsTest extends BasePiperTest {
         try {
             stepRule.step.handlePipelineStepErrors([
                 stepName: 'testStep',
-                stepParameters: ['something': 'anything']
+                stepParameters: [script: nullScript]
             ]) {
                 throw new Exception('TestError')
             }
@@ -137,7 +137,7 @@ class HandlePipelineStepErrorsTest extends BasePiperTest {
         try {
             stepRule.step.handlePipelineStepErrors([
                 stepName: 'test',
-                stepParameters: [jenkinsUtilsStub: jenkinsUtils],
+                stepParameters: [script: nullScript, jenkinsUtilsStub: jenkinsUtils],
                 failOnError: false
             ]) {
                 throw new AbortException('TestError')
