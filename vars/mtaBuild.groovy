@@ -91,6 +91,10 @@ void call(Map parameters = [:]) {
             dockerWorkspace: configuration.dockerWorkspace
         ) {
 
+            echo "[INFO] dockerExecute BEGIN."
+
+            configuration.properties.each { echo "$it.key -> $it.value" }
+
             String projectSettingsFile = configuration.projectSettingsFile?.trim()
             if (projectSettingsFile) {
                 if (projectSettingsFile.startsWith("http")) {
@@ -134,7 +138,6 @@ void call(Map parameters = [:]) {
             def mtaCall
             def options = []
 
-            configuration.properties.each { echo "$it.key -> $it.value" }
 
             String mtarName = configuration.mtarName?.trim()
             if (!mtarName) {
@@ -228,7 +231,7 @@ void call(Map parameters = [:]) {
 
                echo "[INFO] postBuildAction: '${postBuildAction}'"
             }
-            echo "[INFO] END postBuildAction."
+            echo "[INFO] dockerExecute END."
             script?.commonPipelineEnvironment?.setMtarFilePath("${mtarName}")
         }
     }
