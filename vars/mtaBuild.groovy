@@ -177,17 +177,8 @@ void call(Map parameters = [:]) {
 
             def modNames = configuration.dockerBasedModules
 
-	    for( thisModuleName in modNames ) {
-               echo "[INFO] thisModuleName: '${thisModuleName}'."
-	    }
-
-            echo "[INFO] postBuildAction: '${postBuildAction}'."
-
-            modName = "headless-chr"
-
-            echo "[INFO] modName again: '${modName}'."
-
-            if (configuration.postBuildAction) {
+	    for( modName in modNames ) {
+               echo "[INFO] modName: '${modName}'."
                echo "[INFO] MTAR File: '${mtarName}'."
 
                sh """#!/bin/bash
@@ -218,9 +209,11 @@ void call(Map parameters = [:]) {
                zip -u -v -r ../$mtarName *
                cd ..
                """
-
-               echo "[INFO] postBuildAction: '${postBuildAction}'"
             }
+
+            if (configuration.postBuildAction) {
+               echo "[INFO] postBuildAction: '${postBuildAction}'."
+	    }
             echo "[INFO] dockerExecute END."
             script?.commonPipelineEnvironment?.setMtarFilePath("${mtarName}")
         }
