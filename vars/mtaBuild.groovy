@@ -24,6 +24,8 @@ import static com.sap.piper.Utils.downloadSettingsFromUrl
      * @possibleValues 'classic', 'cloudMbt'
      */
     'mtaBuildTool',
+    'dockerBasedModules',
+    'postBuildAction',
     /** @see dockerExecute */
     'dockerImage',
     /** @see dockerExecute */
@@ -53,9 +55,7 @@ import static com.sap.piper.Utils.downloadSettingsFromUrl
 ]
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS.plus([
     /** Url to the npm registry that should be used for installing npm dependencies.*/
-    'defaultNpmRegistry',
-    'dockerBasedModules',
-    'postBuildAction'
+    'defaultNpmRegistry'
 ])
 
 /**
