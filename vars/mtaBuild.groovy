@@ -134,6 +134,8 @@ void call(Map parameters = [:]) {
             def mtaCall
             def options = []
 
+            configuration.properties.each { echo "$it.key -> $it.value" }
+
             String mtarName = configuration.mtarName?.trim()
             if (!mtarName) {
                 def mtaId = getMtaId(mtaYamlName)
