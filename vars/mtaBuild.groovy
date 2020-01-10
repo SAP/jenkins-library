@@ -93,7 +93,7 @@ void call(Map parameters = [:]) {
 
             echo "[INFO] dockerExecute BEGIN."
 
-            configuration.properties.each { echo "$it.key -> $it.value" }
+            configuration.properties.each { echo "[E]: '${it.key}' -> '${it.value}'" }
 
             String projectSettingsFile = configuration.projectSettingsFile?.trim()
             if (projectSettingsFile) {
