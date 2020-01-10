@@ -48,7 +48,7 @@ class CommonPipelineEnvironmentTest extends BasePiperTest {
         nullScript.commonPipelineEnvironment.setValue('custom1', 'customVal1')
         nullScript.commonPipelineEnvironment.writeToDisk(nullScript)
 
-        assertThat(writeFileRule.files['.pipeline/piperEnvironment/artifactVersion'], is('1.0.0'))
-        assertThat(writeFileRule.files['.pipeline/piperEnvironment/custom/custom1'], is('customVal1'))
+        assertThat(writeFileRule.files['.pipeline/commonPipelineEnvironment/artifactVersion'], is('1.0.0'))
+        assertThat(writeFileRule.files['.pipeline/commonPipelineEnvironment/custom/custom1'], is('customVal1'))
     }
 }

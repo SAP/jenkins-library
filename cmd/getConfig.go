@@ -54,7 +54,7 @@ func generateConfig() error {
 		return errors.Wrap(err, "metadata: read failed")
 	}
 
-	resourceParams := metadata.GetResourceParameters(GeneralConfig.PiperEnvPath, "commonPipelineEnvironment")
+	resourceParams := metadata.GetResourceParameters(GeneralConfig.EnvRootPath, "commonPipelineEnvironment")
 
 	var customConfig io.ReadCloser
 	{

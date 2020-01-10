@@ -147,12 +147,12 @@ class commonPipelineEnvironment implements Serializable {
     void writeToDisk(script) {
 
         def files = [
-            [filename: '.pipeline/piperEnvironment/artifactVersion', content: artifactVersion],
-            [filename: '.pipeline/piperEnvironment/github/owner', content: githubOrg],
-            [filename: '.pipeline/piperEnvironment/github/repository', content: githubRepo],
-            [filename: '.pipeline/piperEnvironment/git/branch', content: gitBranch],
-            [filename: '.pipeline/piperEnvironment/git/commitId', content: gitCommitId],
-            [filename: '.pipeline/piperEnvironment/git/commitMessage', content: gitCommitMessage],
+            [filename: '.pipeline/commonPipelineEnvironment/artifactVersion', content: artifactVersion],
+            [filename: '.pipeline/commonPipelineEnvironment/github/owner', content: githubOrg],
+            [filename: '.pipeline/commonPipelineEnvironment/github/repository', content: githubRepo],
+            [filename: '.pipeline/commonPipelineEnvironment/git/branch', content: gitBranch],
+            [filename: '.pipeline/commonPipelineEnvironment/git/commitId', content: gitCommitId],
+            [filename: '.pipeline/commonPipelineEnvironment/git/commitMessage', content: gitCommitMessage],
         ]
 
         files.each({f  ->
@@ -162,7 +162,7 @@ class commonPipelineEnvironment implements Serializable {
         })
 
         valueMap.each({key, value ->
-            def fileName = ".pipeline/piperEnvironment/custom/${key}"
+            def fileName = ".pipeline/commonPipelineEnvironment/custom/${key}"
             if (value && !script.fileExists(fileName)) {
                 //ToDo: check for value type and act accordingly?
                 script.writeFile file: fileName, text: value
@@ -171,37 +171,37 @@ class commonPipelineEnvironment implements Serializable {
     }
 
     void readFromDisk() {
-        def file = '.pipeline/piperEnvironment/artifactVersion'
+        def file = '.pipeline/commonPipelineEnvironment/artifactVersion'
         if (fileExists(file)) {
             artifactVersion = readFile(file)
         }
 
-        file = '.pipeline/piperEnvironment/github/owner'
+        file = '.pipeline/commonPipelineEnvironment/github/owner'
         if (fileExists(file)) {
             githubOrg = readFile(file)
         }
 
-        file = '.pipeline/piperEnvironment/github/repository'
+        file = '.pipeline/commonPipelineEnvironment/github/repository'
         if (fileExists(file)) {
             githubRepo = readFile(file)
         }
 
-        file = '.pipeline/piperEnvironment/git/branch'
+        file = '.pipeline/commonPipelineEnvironment/git/branch'
         if (fileExists(file)) {
             gitBranch = readFile(file)
         }
 
-        file = '.pipeline/piperEnvironment/git/commitId'
+        file = '.pipeline/commonPipelineEnvironment/git/commitId'
         if (fileExists(file)) {
             gitCommitId = readFile(file)
         }
 
-        file = '.pipeline/piperEnvironment/git/commitMessage'
+        file = '.pipeline/commonPipelineEnvironment/git/commitMessage'
         if (fileExists(file)) {
             gitCommitMessage = readFile(file)
         }
 
-        def customValues = findFiles(glob: '.pipeline/piperEnvironment/custom/*')
+        def customValues = findFiles(glob: '.pipeline/commonPipelineEnvironment/custom/*')
 
         customValues.each({f ->
             def fileName = f.getName()

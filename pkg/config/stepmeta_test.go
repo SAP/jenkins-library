@@ -487,8 +487,14 @@ func TestGetResourceParameters(t *testing.T) {
 	// clean up tmp dir
 	defer os.RemoveAll(dir)
 
-	ioutil.WriteFile(filepath.Join(dir, "envparam1"), []byte("val1"), 0700)
-	ioutil.WriteFile(filepath.Join(dir, "envparam2"), []byte("val2"), 0700)
+	cpeDir := filepath.Join(dir, "commonPipelineEnvironment")
+	err = os.MkdirAll(cpeDir, 0700)
+	if err != nil {
+		t.Fatal("Failed to create sub directory")
+	}
+
+	ioutil.WriteFile(filepath.Join(cpeDir, "envparam1"), []byte("val1"), 0700)
+	ioutil.WriteFile(filepath.Join(cpeDir, "envparam2"), []byte("val2"), 0700)
 
 	for run, test := range tt {
 		t.Run(fmt.Sprintf("Run %v", run), func(t *testing.T) {

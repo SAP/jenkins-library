@@ -5,8 +5,9 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"path/filepath"
 
-	"github.com/SAP/jenkins-library/pkg/piperenvironment"
+	"github.com/SAP/jenkins-library/pkg/resourceenvironment"
 
 	"github.com/ghodss/yaml"
 	"github.com/pkg/errors"
@@ -334,8 +335,8 @@ func (m *StepData) GetResourceParameters(path, name string) map[string]interface
 	for _, param := range m.Spec.Inputs.Parameters {
 		for _, res := range param.ResourceRef {
 			if res.Name == name {
-				if val := piperenvironment.GetParameter(path, res.Param); len(val) > 0 {
-					resourceParams[param.Name] = piperenvironment.GetParameter(path, res.Param)
+				if val := resourceenvironment.GetParameter(filepath.Join(path, name), res.Param); len(val) > 0 {
+					resourceParams[param.Name] = val
 				}
 			}
 		}
