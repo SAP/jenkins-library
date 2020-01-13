@@ -78,26 +78,27 @@ type User struct {
 type Protecode struct {
 	serverURL string
 	client    piperHttp.Client
+	duration  time.Duration
 	logger    *logrus.Entry
 }
 
-// new protecode returns a new Protecode client for communicating with the backend
-func New(serverURL string, duration time.Duration, username, password string) *Protecode {
-	pc := Protecode{
-		serverURL: serverURL,
-		logger:    log.Entry().WithField("package", "SAP/jenkins-library/pkg/protecode"),
-		client:    piperHttp.Client{},
-	}
+type ProtecodeOptions struct {
+	ServerURL string
+	Duration  time.Duration
+	Logger    *logrus.Entry
+	Username string
+	Password string
+}
 
-	options := piperHttp.ClientOptions{
-		Timeout:  duration,
-		Username: username,
-		Password: password,
-	}
+func(pc *Protecode) SetOptions(options ProtecodeOptions) {
+	pc.serverURL = options.ServerURL
+	pc.client = piperHttp.Client{}
+	pc.duration = options.Duration
+	pc.logger = options.Logger
 
-	pc.client.SetOptions(options)
+	httpOptions := piperHttp.ClientOptions{options.Duration, options.Username, options.Password, ""}
 
-	return &pc
+	pc.client.SetOptions(httpOptions)
 }
 
 func (pc *Protecode) createUrl(path string, pValue string, fParam string) (string, error) {
@@ -287,6 +288,7 @@ func (pc *Protecode) DeleteScan(cleanupMode string, productId int) error {
 	case "binary":
 		return nil
 	case "complete":
+		log.Entry().Info("Protecode scan successful. Deleting scan from server.")
 		protecodeURL, err := pc.createUrl("/api/product/", fmt.Sprintf("%v/", productId), "")
 		if err != nil {
 			return err
@@ -343,11 +345,11 @@ func (pc *Protecode) UploadScanFile(cleanupMode, protecodeGroup, filePath string
 
 func (pc *Protecode) DeclareFetchUrl(cleanupMode, protecodeGroup, fetchURL string) (*Result, error) {
 	deleteBinary := (cleanupMode == "binary" || cleanupMode == "complete")
-	headers := map[string][]string{"Group": []string{protecodeGroup}, "Delete-Binary": []string{fmt.Sprintf("%v", deleteBinary)}, "Url": []string{fetchURL}}
+	headers := map[string][]string{"Group": []string{protecodeGroup}, "Delete-Binary": []string{fmt.Sprintf("%v", deleteBinary)}, "Url": []string{fetchURL}, "Content-Type": []string{"application/json"}}
 
 	r, err := pc.sendApiRequest(http.MethodPost, fmt.Sprintf("%v/api/fetch/", pc.serverURL), headers)
 	if err != nil {
-		log.Entry().WithError(err).Fatalf("error during POST: %v reuqest", fmt.Sprintf("%v/api/fetch/", pc.serverURL))
+		log.Entry().WithError(err).Fatalf("error during POST: %v request", fmt.Sprintf("%v/api/fetch/", pc.serverURL))
 		return new(Result), err
 	}
 	return pc.getResult(*r)
@@ -356,14 +358,14 @@ func (pc *Protecode) DeclareFetchUrl(cleanupMode, protecodeGroup, fetchURL strin
 // #####################################
 // Pull result
 
-func (pc *Protecode) PollForResult(productId int, verbose bool, duration time.Duration) (Result, error) {
+func (pc *Protecode) PollForResult(productId int, verbose bool) (Result, error) {
 
 	var response Result
 	var err error
 
 	ticker := time.NewTicker(10 * time.Second)
 	defer ticker.Stop()
-	ticks := duration / 10
+	ticks := pc.duration / 10
 
 	for i := ticks; i > 0; i-- {
 
@@ -475,7 +477,7 @@ func (pc *Protecode) getLoadExistiongProductRequestData(protecodeGroup, filePath
 
 	protecodeURL, err := pc.createUrl("/api/apps/", fmt.Sprintf("%v/", protecodeGroup), filePath)
 	headers := map[string][]string{
-		//change to mimetype
+		//TODO change to mimetype
 		"acceptType": []string{"APPLICATION_JSON"},
 	}
 

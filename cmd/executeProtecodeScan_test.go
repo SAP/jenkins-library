@@ -3,9 +3,14 @@ package cmd
 import (
 	"testing"
 
+	"bytes"
+	"encoding/json"
 	"fmt"
+	"net/http"
+	"net/http/httptest"
 	"os"
 
+	"github.com/SAP/jenkins-library/pkg/protecode"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -20,6 +25,44 @@ func fileWriterMock(fileName string, b []byte, perm os.FileMode) error {
 	default:
 		fileWriterContent = nil
 		return fmt.Errorf("Wrong Path: %v", fileName)
+	}
+}
+
+func TestUploadScanOrDeclareFetch(t *testing.T) {
+	requestURI := ""
+	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+		requestURI = req.RequestURI
+		response := protecode.Result{ProductId: 4711, ReportUrl: requestURI}
+
+		var b bytes.Buffer
+		json.NewEncoder(&b).Encode(&response)
+		rw.Write([]byte(b.Bytes()))
+	}))
+
+	// Close the server when test finishes
+	defer server.Close()
+
+	po := protecode.ProtecodeOptions{ServerURL: server.URL}
+	pc := protecode.Protecode{}
+	pc.SetOptions(po)
+
+	cases := []struct {
+		reuse    bool
+		clean    string
+		group    string
+		fetchUrl string
+		want     int
+	}{
+		{false, "test", "group1", "/api/fetch/", 4711},
+	}
+	
+	for _, c := range cases {
+		config := executeProtecodeScanOptions{ReuseExisting: c.reuse, CleanupMode: c.clean, ProtecodeGroup: c.group, FetchURL: c.fetchUrl}
+		
+		got, _ := uploadScanOrDeclareFetch(config, 0, pc)
+
+		assert.Equal(t, c.want, got)
+		assert.Equal(t, c.fetchUrl, requestURI)
 	}
 }
 

@@ -20,14 +20,13 @@ func executeProtecodeScan(myExecuteProtecodeScanOptions executeProtecodeScanOpti
 	// reroute command output to loging framework
 	c.Stdout(log.Entry().Writer())
 	c.Stderr(log.Entry().Writer())
-	runProtecodeScan(myExecuteProtecodeScanOptions, &c)
-	return nil
+	//create client for sending api request
+	client := createClient(myExecuteProtecodeScanOptions)
+
+	return runProtecodeScan(myExecuteProtecodeScanOptions, &c, client)
 }
 
-func runProtecodeScan(myExecuteProtecodeScanOptions executeProtecodeScanOptions, command execRunner) error {
-
-	//create client for sending api request
-	client, dur := createClient(myExecuteProtecodeScanOptions)
+func runProtecodeScan(myExecuteProtecodeScanOptions executeProtecodeScanOptions, command execRunner, client protecode.Protecode) error {
 
 	//load existing product by filename
 	productId, err := client.LoadExistingProduct(myExecuteProtecodeScanOptions.ProtecodeGroup, myExecuteProtecodeScanOptions.FilePath, myExecuteProtecodeScanOptions.ReuseExisting)
@@ -41,7 +40,7 @@ func runProtecodeScan(myExecuteProtecodeScanOptions executeProtecodeScanOptions,
 		return err
 	}
 	//pollForResult
-	result, err := client.PollForResult(productId, myExecuteProtecodeScanOptions.Verbose, dur)
+	result, err := client.PollForResult(productId, myExecuteProtecodeScanOptions.Verbose)
 	if err != nil {
 		return err
 	}
@@ -57,27 +56,31 @@ func runProtecodeScan(myExecuteProtecodeScanOptions executeProtecodeScanOptions,
 	if err != nil {
 		return err
 	}
-	//save to filesystem
-	writeReportToFile(*resp, myExecuteProtecodeScanOptions.ReportFileName)
+	//save report to filesystem
+	err = writeReportToFile(*resp, myExecuteProtecodeScanOptions.ReportFileName)
+	if err != nil {
+		return err
+	}
 
 	//count vulnerabilities
 	m := client.ParseResultForInflux(result, myExecuteProtecodeScanOptions.ProtecodeExcludeCVEs)
 
+	//write result to the filesysten
 	err = writeResultAsJSONToFile(m, "VulnResult.json", fileWriter)
 	if err != nil {
 		return err
 	}
 
 	//clean scan from server
-	if myExecuteProtecodeScanOptions.CleanupMode == "complete" {
-		fmt.Printf("Protecode scan successful. Deleting scan from server.")
-		client.DeleteScan(myExecuteProtecodeScanOptions.CleanupMode, productId)
+	err = client.DeleteScan(myExecuteProtecodeScanOptions.CleanupMode, productId)
+	if err != nil {
+		return err
 	}
 
 	return nil
 }
 
-func createClient(config executeProtecodeScanOptions) (*protecode.Protecode, time.Duration) {
+func createClient(config executeProtecodeScanOptions) protecode.Protecode {
 
 	var duration time.Duration = time.Duration(10 * 60)
 
@@ -85,25 +88,36 @@ func createClient(config executeProtecodeScanOptions) (*protecode.Protecode, tim
 		s, _ := strconv.ParseInt(config.ProtecodeTimeoutMinutes, 10, 64)
 		duration = time.Duration(s * 60)
 	}
-	client := protecode.New(config.ProtecodeServerURL, duration, config.User, config.Password)
 
-	return client, duration
+	pc := protecode.Protecode{}
+
+	protecodeOptions := protecode.ProtecodeOptions{
+		ServerURL: config.ProtecodeServerURL,
+		Logger:    log.Entry().WithField("package", "SAP/jenkins-library/pkg/protecode"),
+		Duration:  duration,
+		Username:  config.User,
+		Password:  config.Password,
+	}
+
+	pc.SetOptions(protecodeOptions)
+
+	return pc
 }
 
-func uploadScanOrDeclareFetch(config executeProtecodeScanOptions, productId int, client *protecode.Protecode) (int, error) {
+func uploadScanOrDeclareFetch(config executeProtecodeScanOptions, productId int, client protecode.Protecode) (int, error) {
 
 	// check if no existing is found or reuse existing is false
 	if productId == 0 || !config.ReuseExisting {
 		if len(config.FetchURL) > 0 {
 			fmt.Printf("triggering Protecode scan - url: %v, group: %v", config.FetchURL, config.ProtecodeGroup)
-			result, err := client.DeclareFetchUrl(config.CleanupMode, config.ProtecodeGroup, config.FilePath)
+			result, err := client.DeclareFetchUrl(config.CleanupMode, config.ProtecodeGroup, config.FetchURL)
 			if err != nil {
 				return 0, err
 			}
 			productId = result.ProductId
 		} else {
 			fmt.Printf("triggering Protecode scan - file: %v, group: %v", config.FilePath, config.ProtecodeGroup)
-			result, err := client.UploadScanFile(config.CleanupMode, config.ProtecodeGroup, config.FetchURL)
+			result, err := client.UploadScanFile(config.CleanupMode, config.ProtecodeGroup, config.FilePath)
 			if err != nil {
 				return 0, err
 			}
@@ -122,16 +136,14 @@ func writeResultAsJSONToFile(m map[string]int, filename string, writeFunc func(f
 	return writeFunc(filename, b, 644)
 }
 
-func writeReportToFile(resp io.ReadCloser, reportFileName string) {
+func writeReportToFile(resp io.ReadCloser, reportFileName string) error {
 	f, err := os.Create(reportFileName)
-	if err != nil {
-		panic(err)
+	if err == nil {
+		defer f.Close()
+		_, err = io.Copy(f, resp)
 	}
-	defer f.Close()
-	_, err = io.Copy(f, resp)
-	if err != nil {
-		panic(err)
-	}
+
+	return err
 }
 
 func fileWriter(filename string, b []byte, perm os.FileMode) error {
