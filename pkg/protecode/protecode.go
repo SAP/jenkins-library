@@ -207,7 +207,7 @@ func (pc *Protecode) sendApiRequest(method string, url string, headers map[strin
 
 	r, err := pc.client.SendRequest(method, url, nil, headers, nil)
 	if err != nil {
-		log.Entry().WithError(err).Fatalf("error during %v: %v reuqest", method, url)
+		log.Entry().WithError(err).Fatalf("error during %v: %v request", method, url)
 		return nil, err
 	}
 
@@ -334,7 +334,7 @@ func (pc *Protecode) UploadScanFile(cleanupMode, protecodeGroup, filePath string
 
 	r, err := pc.uploadFileRequest(fmt.Sprintf("%v/api/upload/", pc.serverURL), filePath, headers)
 	if err != nil {
-		log.Entry().WithError(err).Fatalf("error during  %v upload request", fmt.Sprintf("%v/api/fetch/", pc.serverURL))
+		log.Entry().WithError(err).Fatalf("error during %v upload request", fmt.Sprintf("%v/api/fetch/", pc.serverURL))
 		return new(Result), err
 	}
 	return pc.getResult(*r)

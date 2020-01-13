@@ -39,7 +39,7 @@ func runProtecodeScan(myProtecodeExecuteScanOptions protecodeExecuteScanOptions,
 	if err != nil {
 		return err
 	}
-	if(productId < 0) {
+	if(productId <= 0) {
 		return errors.New("Protecode scan failed, the product id is below zero")
 	}
 	//pollForResult

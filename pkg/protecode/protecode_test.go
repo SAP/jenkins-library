@@ -16,6 +16,23 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestGetResult(t *testing.T) {
+
+	cases := []struct {
+		give string
+		want Result
+	}{
+		{`{}`, Result{ProductId: -1}},
+		{`{"product_id": 1}`, Result{ProductId: 1}},
+	}
+	pc := Protecode{}
+	for _, c := range cases {
+
+		r := ioutil.NopCloser(bytes.NewReader([]byte(c.give)))
+		got, _ := pc.getResult(r)
+		assert.Equal(t, c.want, *got)
+	}
+}
 func TestGetResultData(t *testing.T) {
 
 	cases := []struct {
