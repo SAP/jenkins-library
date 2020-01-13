@@ -122,8 +122,12 @@ void call(Map parameters = [:]) {
             .withMandatoryProperty('protecodeCredentialsId')
             .use()
         */
+        echo "config filePath : ${config.filePath}"
+
         if (config.dockerImage && !config.filePath) {
+            echo "config dockerImage : ${config.dockerImage}"
             def dockerImageName = new DockerUtils(script).getNameFromImageUrl(config.dockerImage)
+            echo "dockerImageName : ${dockerImageName}"
             config.filePath = "${dockerImageName.replace('/', '_')}.tar"
         }
 
