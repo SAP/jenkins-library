@@ -39,6 +39,9 @@ func runProtecodeScan(myProtecodeExecuteScanOptions protecodeExecuteScanOptions,
 	if err != nil {
 		return err
 	}
+	if(productId < 0) {
+		return errors.New("Protecode scan failed, the product id is below zero")
+	}
 	//pollForResult
 	result, err := client.PollForResult(productId, myProtecodeExecuteScanOptions.Verbose)
 	if err != nil {
@@ -112,14 +115,15 @@ func uploadScanOrDeclareFetch(config protecodeExecuteScanOptions, productId int,
 			fmt.Printf("triggering Protecode scan - url: %v, group: %v", config.FetchURL, config.ProtecodeGroup)
 			result, err := client.DeclareFetchUrl(config.CleanupMode, config.ProtecodeGroup, config.FetchURL)
 			if err != nil {
-				return 0, err
+				return -1, err
 			}
 			productId = result.ProductId
+			
 		} else {
 			fmt.Printf("triggering Protecode scan - file: %v, group: %v", config.FilePath, config.ProtecodeGroup)
 			result, err := client.UploadScanFile(config.CleanupMode, config.ProtecodeGroup, config.FilePath)
 			if err != nil {
-				return 0, err
+				return -1, err
 			}
 			productId = result.ProductId
 		}
