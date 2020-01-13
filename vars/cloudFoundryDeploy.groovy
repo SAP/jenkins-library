@@ -419,8 +419,8 @@ private deploy(def cfApiStatement, def cfDeployStatement, def config, Closure po
             set -e
             export HOME=${config.dockerWorkspace}
             export CF_TRACE=${cfTraceFile}
-            export CF_STAGING_TIMEOUT=30
-            export CF_STARTUP_TIMEOUT=10
+            export CF_STAGING_TIMEOUT=60
+            export CF_STARTUP_TIMEOUT=20
             ${cfApiStatement ?: ''}
             cf login -u \"${username}\" -p '${password}' -a ${config.cloudFoundry.apiEndpoint} -o \"${config.cloudFoundry.org}\" -s \"${config.cloudFoundry.space}\" ${config.loginParameters}
             cf plugins
