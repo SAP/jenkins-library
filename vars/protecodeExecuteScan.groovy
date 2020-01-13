@@ -84,7 +84,7 @@ import static com.sap.piper.internal.Prerequisites.checkScript
 void call(Map parameters = [:]) {
     handlePipelineStepErrors (stepName: STEP_NAME, stepParameters: parameters,  failOnError: true) {
 
-        def script = checkSCript(this, parameters) ?: this
+        def script = checkScript(this, parameters) ?: this
 
         Map config
         def utils = parameters.juStabUtils ?: new Utils()
