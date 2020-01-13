@@ -9,6 +9,8 @@ import hudson.AbortException
 
 import org.jenkinsci.plugins.workflow.steps.FlowInterruptedException
 
+import static com.sap.piper.Prerequisites.checkScript
+
 @Field STEP_NAME = getClass().getName()
 
 @Field Set GENERAL_CONFIG_KEYS = []
@@ -49,9 +51,12 @@ import org.jenkinsci.plugins.workflow.steps.FlowInterruptedException
  */
 @GenerateDocumentation
 void call(Map parameters = [:], body) {
+
+    def script = checkScript(this, parameters.stepParameters) ?: this
+
     // load default & individual configuration
     def cpe = parameters.stepParameters?.script?.commonPipelineEnvironment ?: null
-    Map config = ConfigurationHelper.newInstance(this, parameters.stepParameters?.script)
+    Map config = ConfigurationHelper.newInstance(this, script)
         .loadStepDefaults()
         .mixinGeneralConfig(cpe, GENERAL_CONFIG_KEYS)
         .mixinStepConfig(cpe, STEP_CONFIG_KEYS)
