@@ -92,8 +92,6 @@ void call(Map parameters = [:]) {
 
         script.globalPipelineEnvironment.setInfluxStepData('protecode', false)
 
-        utils.pushToSWA(this, script)
-
         new PiperGoUtils(this, utils).unstashPiperBin()
         utils.unstash('pipelineConfigAndTests')
 
@@ -123,6 +121,12 @@ void call(Map parameters = [:]) {
             def dockerImageName = new DockerUtils(script).getNameFromImageUrl(config.dockerImage)
             config.filePath = "${dockerImageName.replace('/', '_')}.tar"
         }
+
+        utils.pushToSWA([
+            step: STEP_NAME,
+            stepParamKey1: 'scriptMissing',
+            stepParam1: parameters?.script == null
+        ], config)
 
 
         //FIX
