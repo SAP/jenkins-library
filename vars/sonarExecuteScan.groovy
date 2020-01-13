@@ -189,7 +189,7 @@ void call(Map parameters = [:]) {
                 }
             }
         } else {
-            if(env.BRANCH_NAME) configuration.options.add("sonar.branch.name=${env.BRANCH_NAME}")
+            if(env.BRANCH_NAME && env.BRANCH_NAME != 'master') configuration.options.add("sonar.branch.name=${env.BRANCH_NAME}")
         }
 
         dockerExecute(

@@ -42,7 +42,7 @@ class SonarExecuteScanTest extends BasePiperTest {
     @Before
     void init() throws Exception {
         binding.setVariable('env', [
-            'BRANCH_NAME': 'dev'
+            'BRANCH_NAME': 'master'
         ])
         sonarInstance = null
         helper.registerAllowedMethod("withSonarQubeEnv", [String.class, Closure.class], { string, closure ->
@@ -75,9 +75,27 @@ class SonarExecuteScanTest extends BasePiperTest {
         assertThat('Sonar project version and branch name is not set to the default value', jscr.shell, hasItem(allOf(
             containsString('sonar-scanner'),
             containsString('-Dsonar.projectVersion=1'),
-            containsString('-Dsonar.branch.name=dev')
+            not(containsString('-Dsonar.branch.name=master'))
         )))
         assertThat('Docker image is not set to the default value', jedr.dockerParams.dockerImage, is('node:8-stretch'))
+        assertJobStatusSuccess()
+    }
+
+    @Test
+    void testWithCustomBranch() throws Exception {
+        binding.setVariable('env', [
+            'BRANCH_NAME': 'dev'
+        ])
+        jsr.step.sonarExecuteScan(
+            script: nullScript,
+            juStabUtils: utils
+        )
+
+        // asserts
+        assertThat('Sonar project branch name is not set to the custom value', jscr.shell, hasItem(allOf(
+            containsString('sonar-scanner'),
+            containsString('-Dsonar.branch.name=dev')
+        )))
         assertJobStatusSuccess()
     }
 
