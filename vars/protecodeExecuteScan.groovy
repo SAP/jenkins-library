@@ -1,12 +1,12 @@
 import com.sap.piper.GenerateDocumentation
+import com.sap.piper.internal.ConfigurationHelper
 import com.sap.piper.internal.Deprecate
-import com.sap.piper.internal.JenkinsUtils
 import com.sap.piper.internal.DockerUtils
 import com.sap.piper.internal.integration.Protecode
-import com.sap.icd.jenkins.Utils
-import com.sap.piper.PiperGoUtils
-import com.sap.piper.internal.ConfigurationHelper
+import com.sap.piper.internal.JenkinsUtils
 import com.sap.piper.internal.Notify
+import com.sap.piper.PiperGoUtils
+import com.sap.piper.Utils
 
 import groovy.transform.Field
 
