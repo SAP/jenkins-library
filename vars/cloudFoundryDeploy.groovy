@@ -136,6 +136,7 @@ import groovy.transform.Field
       * @possibleValues true, false
       */
     'verbose',
+    'postDeployCommand'
 ]
 
 @Field Map CONFIG_KEY_COMPATIBILITY = [cloudFoundry: [apiEndpoint: 'cfApiEndpoint', appName:'cfAppName', credentialsId: 'cfCredentialsId', manifest: 'cfManifest', manifestVariablesFiles: 'cfManifestVariablesFiles', manifestVariables: 'cfManifestVariables',  org: 'cfOrg', space: 'cfSpace']]
@@ -412,6 +413,15 @@ private deploy(def cfApiStatement, def cfDeployStatement, def config, Closure po
         usernameVariable: 'username'
     )]) {
 
+        def postDeployCommand = config.postDeployCommand
+
+        if(postDeployCommand) {
+            echo "[INFO][${STEP_NAME}] Will Execute Post Deploy Command: '${postDeployCommand}'."
+        }
+        else {
+            echo "[INFO][${STEP_NAME}] No Post Deploy Command to Execute."
+        }
+
         def cfTraceFile = 'cf.log'
 
         def deployScript = """#!/bin/bash
@@ -425,6 +435,7 @@ private deploy(def cfApiStatement, def cfDeployStatement, def config, Closure po
             cf login -u \"${username}\" -p '${password}' -a ${config.cloudFoundry.apiEndpoint} -o \"${config.cloudFoundry.org}\" -s \"${config.cloudFoundry.space}\" ${config.loginParameters}
             cf plugins
             ${cfDeployStatement}
+            ${postDeployCommand}
             """
 
         if(config.verbose) {
