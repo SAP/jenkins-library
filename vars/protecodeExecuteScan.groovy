@@ -12,7 +12,8 @@ import groovy.transform.Field
 
 import static com.sap.piper.internal.Prerequisites.checkScript
 
-@Field String STEP_NAME = 'executeProtecodeScan'
+@Field String STEP_NAME = getClass().getName()
+@Field String METADATA_FILE = 'metadata/protecode.yaml'
 @Field Set GENERAL_CONFIG_KEYS = [
     /**
      * Whether to create a side bar link pointing to the report produced by Protecode or not
