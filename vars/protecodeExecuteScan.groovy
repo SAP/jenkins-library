@@ -159,7 +159,7 @@ void call(Map parameters = [:]) {
             json = script.readJSON text: fileContents
 
             if(json.results.summary?.verdict?.short == 'Vulns') {
-                echo "${count} ${json.results.summary?.verdict.detailed} of which ${jsonResult.cvss2GreaterOrEqualSeven} had a CVSS v2 score >= 7.0 and ${jsonResult.cvss3GreaterOrEqualSeven} had a CVSS v3 score >= 7.0.\n${jsonResult.excluded_vulnerabilities)} vulnerabilities were excluded via configuration (${config.protecodeExcludeCVEs}) and ${jsonResult.triaged_vulnerabilities} vulnerabilities were triaged via the webUI.\nIn addition ${jsonResult.historical_vulnerabilities} historical vulnerabilities were spotted."
+                echo "${count} ${json.results.summary?.verdict.detailed} of which ${jsonResult.cvss2GreaterOrEqualSeven} had a CVSS v2 score >= 7.0 and ${jsonResult.cvss3GreaterOrEqualSeven} had a CVSS v3 score >= 7.0.\n${jsonResult.excluded_vulnerabilities} vulnerabilities were excluded via configuration (${config.protecodeExcludeCVEs}) and ${jsonResult.triaged_vulnerabilities} vulnerabilities were triaged via the webUI.\nIn addition ${jsonResult.historical_vulnerabilities} historical vulnerabilities were spotted."
                 if(config.protecodeFailOnSevereVulnerabilities && (jsonResult.cvss2GreaterOrEqualSeven > 0 || jsonResult.cvss3GreaterOrEqualSeven > 0)) {
                     Notify.error(this, "Protecode detected Open Source Software Security vulnerabilities, the project is not compliant. For details see the archived report or the web ui: ${config.protecodeServerUrl}/products/${productId}/")
                 }
