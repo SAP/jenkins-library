@@ -98,6 +98,10 @@ void call(Map parameters = [:]) {
 
         writeFile(file: METADATA_FILE, text: libraryResource(METADATA_FILE))
 
+        withEnv([
+            "PIPER_parametersJSON=${groovy.json.JsonOutput.toJson(parameters)}",
+        ]) {
+
         // get context configuration
         config = readJSON (text: sh(returnStdout: true, script: "./piper getConfig --contextConfig --stepMetadata '${METADATA_FILE}'"))
 
@@ -110,14 +114,14 @@ void call(Map parameters = [:]) {
                 .use()
         }
 
-        config = new ConfigurationHelper(config)
+        /* config = new ConfigurationHelper(config)
             .mixin([
                 protecodeExcludeCVEs: config.protecodeExcludeCVEs instanceof List?config.protecodeExcludeCVEs:config.protecodeExcludeCVEs?.tokenize(',')
             ])
             .withMandatoryProperty('protecodeGroup')
             .withMandatoryProperty('protecodeCredentialsId')
             .use()
-
+        */
         if (config.dockerImage && !config.filePath) {
             def dockerImageName = new DockerUtils(script).getNameFromImageUrl(config.dockerImage)
             config.filePath = "${dockerImageName.replace('/', '_')}.tar"
@@ -133,45 +137,47 @@ void call(Map parameters = [:]) {
         //FIX
         //TODO github.com/GoogleContainerTools/container-diff/pkg/util sie Mail vom 10.12 Sven
         protecodeDockerWrapper(config, script) {
-            withCredentials([[$class: 'UsernamePasswordMultiBinding', credentialsId: config.protecodeCredentialsId, passwordVariable: 'password', usernameVariable: 'user']]) {
+            
+                withCredentials([[$class: 'UsernamePasswordMultiBinding', credentialsId: config.protecodeCredentialsId, passwordVariable: 'password', usernameVariable: 'user']]) {
 
-                 sh "./piper protecodeExecuteScan  --password ${password} --user ${user}"
+                    sh "./piper protecodeExecuteScan  --password ${password} --user ${user}"
 
-                archiveArtifacts artifacts: "${config.reportFileName}", allowEmptyArchive: false
-                if (config.addSideBarLink) {
-                    jenkinsUtils.removeJobSideBarLinks("artifact/${config.reportFileName}")
-                    jenkinsUtils.addJobSideBarLink("artifact/${config.reportFileName}", "Protecode Report", "images/24x24/graph.png")
-                    jenkinsUtils.addRunSideBarLink("artifact/${config.reportFileName}", "Protecode Report", "images/24x24/graph.png")
-                    jenkinsUtils.addRunSideBarLink("${config.protecodeServerUrl}/products/${productId}/", "Protecode WebUI", "images/24x24/graph.png")
+                    archiveArtifacts artifacts: "${config.reportFileName}", allowEmptyArchive: false
+                    if (config.addSideBarLink) {
+                        jenkinsUtils.removeJobSideBarLinks("artifact/${config.reportFileName}")
+                        jenkinsUtils.addJobSideBarLink("artifact/${config.reportFileName}", "Protecode Report", "images/24x24/graph.png")
+                        jenkinsUtils.addRunSideBarLink("artifact/${config.reportFileName}", "Protecode Report", "images/24x24/graph.png")
+                        jenkinsUtils.addRunSideBarLink("${config.protecodeServerUrl}/products/${productId}/", "Protecode WebUI", "images/24x24/graph.png")
+                    }
                 }
-            }
 
-            def jsonResult = readJSON file: "VulnResult.txt"
+                def jsonResult = readJSON file: "VulnResult.txt"
 
-            //check if result is ok else notify
-	       if(!jsonResult) {
-                Notify.error(this, "Protecode scan failed, please check the log and protecode backend for more details.")
-           }
-
-            script.globalPipelineEnvironment.setInfluxCustomDataMapProperty('protecode_data', 'historical_vulnerabilities', jsonResult.historical_vulnerabilities)
-            script.globalPipelineEnvironment.setInfluxCustomDataMapProperty('protecode_data', 'triaged_vulnerabilities', jsonResult.triaged_vulnerabilities)
-            script.globalPipelineEnvironment.setInfluxCustomDataMapProperty('protecode_data', 'excluded_vulnerabilities', jsonResult.excluded_vulnerabilities)
-            script.globalPipelineEnvironment.setInfluxCustomDataMapProperty('protecode_data', 'minor_vulnerabilities', jsonResult.minor_vulnerabilities)
-            script.globalPipelineEnvironment.setInfluxCustomDataMapProperty('protecode_data', 'major_vulnerabilities', jsonResult.major_vulnerabilities)
-            script.globalPipelineEnvironment.setInfluxCustomDataMapProperty('protecode_data', 'vulnerabilities', jsonResult.vulnerabilities)
-
-
-            String fileContents = new File("${config.reportFileName}").getText("UTF-8")
-            json = script.readJSON text: fileContents
-
-            if(json.results.summary?.verdict?.short == 'Vulns') {
-                echo "${count} ${json.results.summary?.verdict.detailed} of which ${jsonResult.cvss2GreaterOrEqualSeven} had a CVSS v2 score >= 7.0 and ${jsonResult.cvss3GreaterOrEqualSeven} had a CVSS v3 score >= 7.0.\n${jsonResult.excluded_vulnerabilities} vulnerabilities were excluded via configuration (${config.protecodeExcludeCVEs}) and ${jsonResult.triaged_vulnerabilities} vulnerabilities were triaged via the webUI.\nIn addition ${jsonResult.historical_vulnerabilities} historical vulnerabilities were spotted."
-                if(config.protecodeFailOnSevereVulnerabilities && (jsonResult.cvss2GreaterOrEqualSeven > 0 || jsonResult.cvss3GreaterOrEqualSeven > 0)) {
-                    Notify.error(this, "Protecode detected Open Source Software Security vulnerabilities, the project is not compliant. For details see the archived report or the web ui: ${config.protecodeServerUrl}/products/${productId}/")
+                //check if result is ok else notify
+                if(!jsonResult) {
+                        Notify.error(this, "Protecode scan failed, please check the log and protecode backend for more details.")
                 }
-            }
 
-            script.globalPipelineEnvironment.setInfluxStepData('protecode', true)
+                script.globalPipelineEnvironment.setInfluxCustomDataMapProperty('protecode_data', 'historical_vulnerabilities', jsonResult.historical_vulnerabilities)
+                script.globalPipelineEnvironment.setInfluxCustomDataMapProperty('protecode_data', 'triaged_vulnerabilities', jsonResult.triaged_vulnerabilities)
+                script.globalPipelineEnvironment.setInfluxCustomDataMapProperty('protecode_data', 'excluded_vulnerabilities', jsonResult.excluded_vulnerabilities)
+                script.globalPipelineEnvironment.setInfluxCustomDataMapProperty('protecode_data', 'minor_vulnerabilities', jsonResult.minor_vulnerabilities)
+                script.globalPipelineEnvironment.setInfluxCustomDataMapProperty('protecode_data', 'major_vulnerabilities', jsonResult.major_vulnerabilities)
+                script.globalPipelineEnvironment.setInfluxCustomDataMapProperty('protecode_data', 'vulnerabilities', jsonResult.vulnerabilities)
+
+
+                String fileContents = new File("${config.reportFileName}").getText("UTF-8")
+                json = script.readJSON text: fileContents
+
+                if(json.results.summary?.verdict?.short == 'Vulns') {
+                    echo "${count} ${json.results.summary?.verdict.detailed} of which ${jsonResult.cvss2GreaterOrEqualSeven} had a CVSS v2 score >= 7.0 and ${jsonResult.cvss3GreaterOrEqualSeven} had a CVSS v3 score >= 7.0.\n${jsonResult.excluded_vulnerabilities} vulnerabilities were excluded via configuration (${config.protecodeExcludeCVEs}) and ${jsonResult.triaged_vulnerabilities} vulnerabilities were triaged via the webUI.\nIn addition ${jsonResult.historical_vulnerabilities} historical vulnerabilities were spotted."
+                    if(config.protecodeFailOnSevereVulnerabilities && (jsonResult.cvss2GreaterOrEqualSeven > 0 || jsonResult.cvss3GreaterOrEqualSeven > 0)) {
+                        Notify.error(this, "Protecode detected Open Source Software Security vulnerabilities, the project is not compliant. For details see the archived report or the web ui: ${config.protecodeServerUrl}/products/${productId}/")
+                    }
+                }
+
+                script.globalPipelineEnvironment.setInfluxStepData('protecode', true)
+             }
         }
     }
 }
