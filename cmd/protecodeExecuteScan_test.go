@@ -55,10 +55,10 @@ func TestUploadScanOrDeclareFetch(t *testing.T) {
 	}{
 		{false, "test", "group1", "/api/fetch/", 4711},
 	}
-	
+
 	for _, c := range cases {
-		config := executeProtecodeScanOptions{ReuseExisting: c.reuse, CleanupMode: c.clean, ProtecodeGroup: c.group, FetchURL: c.fetchUrl}
-		
+		config := protecodeExecuteScanOptions{ReuseExisting: c.reuse, CleanupMode: c.clean, ProtecodeGroup: c.group, FetchURL: c.fetchUrl}
+
 		got, _ := uploadScanOrDeclareFetch(config, 0, pc)
 
 		assert.Equal(t, c.want, got)

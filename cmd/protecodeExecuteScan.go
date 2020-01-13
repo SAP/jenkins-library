@@ -15,32 +15,32 @@ import (
 	"github.com/SAP/jenkins-library/pkg/protecode"
 )
 
-func executeProtecodeScan(myExecuteProtecodeScanOptions executeProtecodeScanOptions) error {
+func protecodeExecuteScan(myProtecodeExecuteScanOptions protecodeExecuteScanOptions) error {
 	c := command.Command{}
 	// reroute command output to loging framework
 	c.Stdout(log.Entry().Writer())
 	c.Stderr(log.Entry().Writer())
 	//create client for sending api request
-	client := createClient(myExecuteProtecodeScanOptions)
+	client := createClient(myProtecodeExecuteScanOptions)
 
-	return runProtecodeScan(myExecuteProtecodeScanOptions, &c, client)
+	return runProtecodeScan(myProtecodeExecuteScanOptions, &c, client)
 }
 
-func runProtecodeScan(myExecuteProtecodeScanOptions executeProtecodeScanOptions, command execRunner, client protecode.Protecode) error {
+func runProtecodeScan(myProtecodeExecuteScanOptions protecodeExecuteScanOptions, command execRunner, client protecode.Protecode) error {
 
 	//load existing product by filename
-	productId, err := client.LoadExistingProduct(myExecuteProtecodeScanOptions.ProtecodeGroup, myExecuteProtecodeScanOptions.FilePath, myExecuteProtecodeScanOptions.ReuseExisting)
+	productId, err := client.LoadExistingProduct(myProtecodeExecuteScanOptions.ProtecodeGroup, myProtecodeExecuteScanOptions.FilePath, myProtecodeExecuteScanOptions.ReuseExisting)
 	if err != nil {
 		return err
 	}
 
 	// check if no existing is found or reuse existing is false
-	productId, err = uploadScanOrDeclareFetch(myExecuteProtecodeScanOptions, productId, client)
+	productId, err = uploadScanOrDeclareFetch(myProtecodeExecuteScanOptions, productId, client)
 	if err != nil {
 		return err
 	}
 	//pollForResult
-	result, err := client.PollForResult(productId, myExecuteProtecodeScanOptions.Verbose)
+	result, err := client.PollForResult(productId, myProtecodeExecuteScanOptions.Verbose)
 	if err != nil {
 		return err
 	}
@@ -52,18 +52,18 @@ func runProtecodeScan(myExecuteProtecodeScanOptions executeProtecodeScanOptions,
 	}
 
 	//loadReport
-	resp, err := client.LoadReport(myExecuteProtecodeScanOptions.ReportFileName, productId)
+	resp, err := client.LoadReport(myProtecodeExecuteScanOptions.ReportFileName, productId)
 	if err != nil {
 		return err
 	}
 	//save report to filesystem
-	err = writeReportToFile(*resp, myExecuteProtecodeScanOptions.ReportFileName)
+	err = writeReportToFile(*resp, myProtecodeExecuteScanOptions.ReportFileName)
 	if err != nil {
 		return err
 	}
 
 	//count vulnerabilities
-	m := client.ParseResultForInflux(result, myExecuteProtecodeScanOptions.ProtecodeExcludeCVEs)
+	m := client.ParseResultForInflux(result, myProtecodeExecuteScanOptions.ProtecodeExcludeCVEs)
 
 	//write result to the filesysten
 	err = writeResultAsJSONToFile(m, "VulnResult.json", fileWriter)
@@ -72,7 +72,7 @@ func runProtecodeScan(myExecuteProtecodeScanOptions executeProtecodeScanOptions,
 	}
 
 	//clean scan from server
-	err = client.DeleteScan(myExecuteProtecodeScanOptions.CleanupMode, productId)
+	err = client.DeleteScan(myProtecodeExecuteScanOptions.CleanupMode, productId)
 	if err != nil {
 		return err
 	}
@@ -80,7 +80,7 @@ func runProtecodeScan(myExecuteProtecodeScanOptions executeProtecodeScanOptions,
 	return nil
 }
 
-func createClient(config executeProtecodeScanOptions) protecode.Protecode {
+func createClient(config protecodeExecuteScanOptions) protecode.Protecode {
 
 	var duration time.Duration = time.Duration(10 * 60)
 
@@ -104,7 +104,7 @@ func createClient(config executeProtecodeScanOptions) protecode.Protecode {
 	return pc
 }
 
-func uploadScanOrDeclareFetch(config executeProtecodeScanOptions, productId int, client protecode.Protecode) (int, error) {
+func uploadScanOrDeclareFetch(config protecodeExecuteScanOptions, productId int, client protecode.Protecode) (int, error) {
 
 	// check if no existing is found or reuse existing is false
 	if productId == 0 || !config.ReuseExisting {
