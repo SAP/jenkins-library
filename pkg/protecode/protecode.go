@@ -445,7 +445,7 @@ func (pc *Protecode) getPullResultRequestData(productId int) (string, map[string
 // #####################################
 // Load existing product
 func (pc *Protecode) LoadExistingProduct(protecodeGroup, filePath string, reuseExisting bool) (int, error) {
-	var productId int = 0
+	var productId int = -1
 
 	if reuseExisting {
 

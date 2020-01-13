@@ -22,7 +22,7 @@ func TestGetResult(t *testing.T) {
 		give string
 		want Result
 	}{
-		{`{}`, Result{ProductId: -1}},
+		{`{}`, Result{ProductId: -0, ReportUrl:""}},
 		{`{"product_id": 1}`, Result{ProductId: 1}},
 	}
 	pc := Protecode{}
@@ -226,7 +226,7 @@ func TestLoadExistingProductSuccess(t *testing.T) {
 		want           int
 	}{
 		{Protecode{serverURL: server.URL, client: client}, "group", "filePath", true, 1},
-		{Protecode{serverURL: server.URL, client: client}, "group32", "filePath", false, 0},
+		{Protecode{serverURL: server.URL, client: client}, "group32", "filePath", false, -1},
 	}
 	for _, c := range cases {
 
