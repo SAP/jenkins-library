@@ -129,7 +129,7 @@ void call(Map parameters = [:]) {
         protecodeDockerWrapper(config, script) {
             withCredentials([[$class: 'UsernamePasswordMultiBinding', credentialsId: config.protecodeCredentialsId, passwordVariable: 'password', usernameVariable: 'user']]) {
 
-                 sh "./piper executeProtecodeScan  --password ${password} --user ${user}"
+                 sh "./piper protecodeExecuteScan  --password ${password} --user ${user}"
 
                 archiveArtifacts artifacts: "${config.reportFileName}", allowEmptyArchive: false
                 if (config.addSideBarLink) {
