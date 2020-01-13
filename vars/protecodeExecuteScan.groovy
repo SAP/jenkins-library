@@ -129,6 +129,8 @@ void call(Map parameters = [:]) {
             def dockerImageName = new DockerUtils(script).getNameFromImageUrl(config.dockerImage)
             echo "dockerImageName : ${dockerImageName}"
             config.filePath = "${dockerImageName.replace('/', '_')}.tar"
+
+            echo "config filePath replaces: ${config.filePath}"
         }
 
         utils.pushToSWA([
