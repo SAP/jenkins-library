@@ -17,6 +17,39 @@ type testStepOptions struct {
 	Param2 string `json:"param2,omitempty"`
 }
 
+
+type testStepCommonPipelineEnvironment struct {
+	artifactVersion string
+	git struct {
+		commitID string
+		branch string
+	}
+}
+
+func (p *testStepCommonPipelineEnvironment) persist(path, resourceName string) {
+	content := []struct{
+		category string
+		name string
+		value string
+	}{
+		{category: "", name: "artifactVersion", value: p.artifactVersion},
+		{category: "git", name: "commitId", value: p.git.commitID},
+		{category: "git", name: "branch", value: p.git.branch},
+	}
+
+	errCount := 0
+	for _, param := range content {
+		err := piperenv.SetResourceParameter(path, resourceName, filepath.Join(param.category, param.name), param.value)
+		if err != nil {
+			log.Entry().WithError(err).Error("Error persisting piper environment.")
+			errCount++
+		}
+	}
+	if errCount > 0 {
+		os.Exit(1)
+	}
+}
+
 type testStepInfluxTest struct {
 	m1 struct {
 		fields struct {
@@ -47,11 +80,13 @@ func (i *testStepInfluxTest) persist(path, resourceName string) {
 	}
 }
 
+
 var myTestStepOptions testStepOptions
 
 // TestStepCommand Test description
 func TestStepCommand() *cobra.Command {
 	metadata := testStepMetadata()
+	var commonPipelineEnvironment testStepCommonPipelineEnvironment
 	var influxTest testStepInfluxTest
 
 	var createTestStepCmd = &cobra.Command{
@@ -64,7 +99,9 @@ func TestStepCommand() *cobra.Command {
 			return PrepareConfig(cmd, &metadata, "testStep", &myTestStepOptions, config.OpenPiperFile)
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return testStep(myTestStepOptions, &influxTest)
+			defer commonPipelineEnvironment.persist(GeneralConfig.EnvRootPath, "commonPipelineEnvironment")
+			defer influxTest.persist(GeneralConfig.EnvRootPath, "influxTest")
+			return testStep(myTestStepOptions, &commonPipelineEnvironment, &influxTest)
 		},
 	}
 

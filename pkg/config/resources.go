@@ -7,28 +7,106 @@ import (
 	"text/template"
 )
 
+// PiperEnvironmentResource defines a piper environement resource which stores data across multiple pipeline steps
+type PiperEnvironmentResource struct {
+	Name       string
+	StepName   string
+	Parameters []PiperEnvironmentParameter
+	Categories []string
+}
+
 // PiperEnvironmentParameter defines a parameter within the Piper environment
 type PiperEnvironmentParameter struct {
-	Name string `json:"name"`
+	Category string
+	Name     string
+}
+
+const piperEnvStructTemplate = `type {{ .StepName }}{{ .Name | title}} struct {
+	{{ range $notused, $param := .Parameters }}
+	{{- if not $param.Category}}{{ $param.Name | golangName }} string{{ end }}
+	{{- end }}
+	{{- range $notused, $category := .Categories }}
+	{{ $category }} struct {
+		{{- range $notused, $param := $.Parameters }}
+		{{- if eq $category $param.Category }}
+		{{ $param.Name | golangName }} string
+		{{- end }}
+		{{- end }}
+	}
+	{{- end }}
+}
+
+func (p *{{ .StepName }}{{ .Name | title}}) persist(path, resourceName string) {
+	content := []struct{
+		category string
+		name string
+		value string
+	}{
+		{{- range $notused, $param := .Parameters }}
+		{{- if not $param.Category}}
+		{category: "", name: "{{ $param.Name }}", value: p.{{ $param.Name | golangName}}},
+		{{- else }}
+		{category: "{{ $param.Category }}", name: "{{ $param.Name }}", value: p.{{ $param.Category }}.{{ $param.Name | golangName}}},
+		{{- end }}
+		{{- end }}
+	}
+
+	errCount := 0
+	for _, param := range content {
+		err := piperenv.SetResourceParameter(path, resourceName, filepath.Join(param.category, param.name), param.value)
+		if err != nil {
+			log.Entry().WithError(err).Error("Error persisting piper environment.")
+			errCount++
+		}
+	}
+	if errCount > 0 {
+		os.Exit(1)
+	}
+}`
+
+// StructName returns the name of the influx resource struct
+func (p *PiperEnvironmentResource) StructName() string {
+	return fmt.Sprintf("%v%v", p.StepName, strings.Title(p.Name))
+}
+
+// StructString returns the golang coding for the struct definition of the InfluxResource
+func (p *PiperEnvironmentResource) StructString() (string, error) {
+	funcMap := template.FuncMap{
+		"title":      strings.Title,
+		"golangName": golangName,
+	}
+
+	tmpl, err := template.New("resources").Funcs(funcMap).Parse(piperEnvStructTemplate)
+	if err != nil {
+		return "", err
+	}
+
+	var generatedCode bytes.Buffer
+	err = tmpl.Execute(&generatedCode, &p)
+	if err != nil {
+		return "", err
+	}
+
+	return string(generatedCode.Bytes()), nil
 }
 
 // InfluxResource defines an Influx resouece that holds measurement information for a pipeline run
 type InfluxResource struct {
-	Name         string              `json:"name"`
-	StepName     string              `json:"stepName"`
-	Measurements []InfluxMeasurement `json:"parameters"`
+	Name         string
+	StepName     string
+	Measurements []InfluxMeasurement
 }
 
 // InfluxMeasurement defines a measurement for Influx reporting which is defined via a step resource
 type InfluxMeasurement struct {
-	Name   string         `json:"name"`
-	Fields []InfluxMetric `json:"fields"`
-	Tags   []InfluxMetric `json:"tags"`
+	Name   string
+	Fields []InfluxMetric
+	Tags   []InfluxMetric
 }
 
 // InfluxMetric defines a metric (column) in an influx measurement
 type InfluxMetric struct {
-	Name string `json:"name"`
+	Name string
 }
 
 // InfluxMetricContent defines the content of an Inflx metric
@@ -50,12 +128,12 @@ const influxStructTemplate = `type {{ .StepName }}{{ .Name | title}} struct {
 	{{ $measurement.Name }} struct {
 		fields struct {
 			{{- range $notused, $field := $measurement.Fields }}
-			{{ $field.Name }} string
+			{{ $field.Name | golangName }} string
 			{{- end }}
 		}
 		tags struct {
 			{{- range $notused, $tag := $measurement.Tags }}
-			{{ $tag.Name }} string
+			{{ $tag.Name | golangName }} string
 			{{- end }}
 		}
 	}
@@ -66,10 +144,10 @@ func (i *{{ .StepName }}{{ .Name | title}}) persist(path, resourceName string) {
 	measurementContent := []config.InfluxMetricContent{
 		{{- range $notused, $measurement := .Measurements }}
 		{{- range $notused, $field := $measurement.Fields }}
-		{ValType: config.InfluxField, Measurement: "{{ $measurement.Name }}" , Name: "{{ $field.Name }}", Value: &i.{{ $measurement.Name }}.fields.{{ $field.Name }}},
+		{ValType: config.InfluxField, Measurement: "{{ $measurement.Name }}" , Name: "{{ $field.Name }}", Value: &i.{{ $measurement.Name }}.fields.{{ $field.Name | golangName }}},
 		{{- end }}
 		{{- range $notused, $tag := $measurement.Tags }}
-		{ValType: config.InfluxTag, Measurement: "{{ $measurement.Name }}" , Name: "{{  $tag.Name }}", Value: &i.{{ $measurement.Name }}.tags.{{  $tag.Name }}},
+		{ValType: config.InfluxTag, Measurement: "{{ $measurement.Name }}" , Name: "{{  $tag.Name }}", Value: &i.{{ $measurement.Name }}.tags.{{  $tag.Name | golangName }}},
 		{{- end }}
 		{{- end }}
 	}
@@ -89,9 +167,9 @@ func (i *{{ .StepName }}{{ .Name | title}}) persist(path, resourceName string) {
 
 // StructString returns the golang coding for the struct definition of the InfluxResource
 func (i *InfluxResource) StructString() (string, error) {
-
 	funcMap := template.FuncMap{
-		"title": strings.Title,
+		"title":      strings.Title,
+		"golangName": golangName,
 	}
 
 	tmpl, err := template.New("resources").Funcs(funcMap).Parse(influxStructTemplate)
@@ -111,4 +189,14 @@ func (i *InfluxResource) StructString() (string, error) {
 // StructName returns the name of the influx resource struct
 func (i *InfluxResource) StructName() string {
 	return fmt.Sprintf("%v%v", i.StepName, strings.Title(i.Name))
+}
+
+func golangName(name string) string {
+	properName := strings.Replace(name, "Api", "API", -1)
+	properName = strings.Replace(properName, "api", "API", -1)
+	properName = strings.Replace(properName, "Url", "URL", -1)
+	properName = strings.Replace(properName, "Id", "ID", -1)
+	properName = strings.Replace(properName, "Json", "JSON", -1)
+	properName = strings.Replace(properName, "json", "JSON", -1)
+	return properName
 }

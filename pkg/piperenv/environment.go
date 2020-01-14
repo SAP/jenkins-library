@@ -4,6 +4,8 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+
+	"github.com/SAP/jenkins-library/pkg/log"
 )
 
 // This file contains functions used to read/write pipeline environment data from/to disk.
@@ -54,15 +56,21 @@ func GetParameter(path, name string) string {
 func writeToDisk(filename string, data []byte) error {
 
 	if _, err := os.Stat(filepath.Dir(filename)); os.IsNotExist(err) {
+		log.Entry().Debugf("Creating directory: %v", filepath.Dir(filename))
 		os.MkdirAll(filepath.Dir(filename), 0700)
 	}
 
 	//ToDo: make sure to not overwrite file but rather add another file? Create error if already existing?
-	return ioutil.WriteFile(filename, data, 0700)
+	if len(data) > 0 {
+		log.Entry().Debugf("Writing file to disk: %v", filename)
+		return ioutil.WriteFile(filename, data, 0700)
+	}
+	return nil
 }
 
 func readFromDisk(filename string) string {
 	//ToDo: if multiple files exist, read from latest file
+	log.Entry().Debugf("Reading file from disk: %v", filename)
 	v, err := ioutil.ReadFile(filename)
 	val := string(v)
 	if err != nil {

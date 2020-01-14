@@ -22,6 +22,12 @@ func configOpenFileMock(name string) (io.ReadCloser, error) {
 spec:
   outputs:
     resources:
+      - name: commonPipelineEnvironment
+        type: piperEnvironment
+        params:
+          - name: artifactVersion
+          - name: git/commitId
+          - name: git/branch
       - name: influxTest
         type: influx
         params:
@@ -201,34 +207,6 @@ func TestGetStepInfo(t *testing.T) {
 	assert.Equal(t, "addTestStepFlags", myStepInfo.FlagsFunc, "FlagsFunc incorrect")
 
 }
-
-/*
-func TestGetOutputResourcesString(t *testing.T) {
-	tt := []struct {
-		input config.StepData
-		expected string
-	}{
-		{
-			input: config.StepData{
-				Spec: config.StepSpec{
-					Outputs: config.StepOutputs{
-						Resources: []config.StepResources{
-							{
-								Name: "influxTest",
-								Type: "influx",
-								Parameters: {
-
-								},
-							},
-						},
-					},
-				},
-			},
-		}
-	}
-
-}
-*/
 
 func TestLongName(t *testing.T) {
 	tt := []struct {

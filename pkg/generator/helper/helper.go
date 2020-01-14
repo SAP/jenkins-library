@@ -48,14 +48,16 @@ type {{ .StepName }}Options struct {
 	{{ $value.Name | golangName }} {{ $value.Type }} ` + "`json:\"{{$value.Name}},omitempty\"`" + `{{end}}
 }
 
-{{ range $notused, $oRes := .OutputResources }}{{ index $oRes "def"}}{{ end }}
+{{ range $notused, $oRes := .OutputResources }}
+{{ index $oRes "def"}}
+{{ end }}
 
 var my{{ .StepName | title}}Options {{.StepName}}Options
 
 // {{.CobraCmdFuncName}} {{.Short}}
 func {{.CobraCmdFuncName}}() *cobra.Command {
 	metadata := {{ .StepName }}Metadata()
-	{{ range $notused, $oRes := .OutputResources -}}
+	{{- range $notused, $oRes := .OutputResources }}
 	var {{ index $oRes "name" }} {{ index $oRes "objectname" }}{{ end }}
 
 	var {{.CreateCmdVar}} = &cobra.Command{
@@ -68,6 +70,8 @@ func {{.CobraCmdFuncName}}() *cobra.Command {
 			return {{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}PrepareConfig(cmd, &metadata, "{{ .StepName }}", &my{{ .StepName | title}}Options, config.OpenPiperFile)
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
+			{{- range $notused, $oRes := .OutputResources }}
+			defer {{ index $oRes "name" }}.persist(GeneralConfig.EnvRootPath, "{{ index $oRes "name" }}"){{ end }}
 			return {{.StepName}}(my{{ .StepName | title }}Options{{ range $notused, $oRes := .OutputResources}}, &{{ index $oRes "name" }}{{ end }})
 		},
 	}
@@ -261,9 +265,35 @@ func getOutputResourceDetails(stepData *config.StepData) ([]map[string]string, e
 
 	for _, res := range stepData.Spec.Outputs.Resources {
 		currentResource := map[string]string{}
-		if res.Type == "influx" {
-			currentResource["name"] = res.Name
+		currentResource["name"] = res.Name
 
+		switch res.Type {
+		case "piperEnvironment":
+			var envResource config.PiperEnvironmentResource
+			envResource.Name = res.Name
+			envResource.StepName = stepData.Metadata.Name
+			for _, param := range res.Parameters {
+				paramSections := strings.Split(fmt.Sprintf("%v", param["name"]), "/")
+				category := ""
+				name := paramSections[0]
+				if len(paramSections) > 1 {
+					name = strings.Join(paramSections[1:], "_")
+					category = paramSections[0]
+					if !contains(envResource.Categories, category) {
+						envResource.Categories = append(envResource.Categories, category)
+					}
+				}
+				envParam := config.PiperEnvironmentParameter{Category: category, Name: name}
+				envResource.Parameters = append(envResource.Parameters, envParam)
+			}
+			def, err := envResource.StructString()
+			if err != nil {
+				return outputResources, err
+			}
+			currentResource["def"] = def
+			currentResource["objectname"] = envResource.StructName()
+			outputResources = append(outputResources, currentResource)
+		case "influx":
 			var influxResource config.InfluxResource
 			influxResource.Name = res.Name
 			influxResource.StepName = stepData.Metadata.Name
