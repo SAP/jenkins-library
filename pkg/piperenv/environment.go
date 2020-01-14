@@ -9,25 +9,7 @@ import (
 )
 
 // This file contains functions used to read/write pipeline environment data from/to disk.
-// The content of the file is the value. For the custom parameters this could for example also be a JSON representation of a more complex value.
-// The file representation looks as follows:
-
-// <pipeline env path>/
-
-// <pipeline env path>/artifactVersion
-
-// <pipeline env path>/git/
-// <pipeline env path>/git/branch
-// <pipeline env path>/git/commitId
-// <pipeline env path>/git/commitMessage
-// <pipeline env path>/git/repositoryUrl -> TODO: storing function(s) with ssh and https getters
-
-// <pipeline env path>/github/
-// <pipeline env path>/github/owner
-// <pipeline env path>/github/repository
-
-// <pipeline env path>/custom/
-// <pipeline env path>/custom/<parameter>
+// The content of a written file is the value. For the custom parameters this could for example also be a JSON representation of a more complex value.
 
 // SetResourceParameter sets a resource parameter in the environment stored in the file system
 func SetResourceParameter(path, resourceName, paramName, value string) error {

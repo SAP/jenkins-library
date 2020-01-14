@@ -39,6 +39,7 @@ In the Docker network, the containers can be referenced by the values provided i
 			return PrepareConfig(cmd, &metadata, "karmaExecuteTests", &myKarmaExecuteTestsOptions, config.OpenPiperFile)
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
+
 			return karmaExecuteTests(myKarmaExecuteTestsOptions)
 		},
 	}

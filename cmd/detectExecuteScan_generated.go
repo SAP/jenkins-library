@@ -36,6 +36,7 @@ func DetectExecuteScanCommand() *cobra.Command {
 			return PrepareConfig(cmd, &metadata, "detectExecuteScan", &myDetectExecuteScanOptions, config.OpenPiperFile)
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
+
 			return detectExecuteScan(myDetectExecuteScanOptions)
 		},
 	}

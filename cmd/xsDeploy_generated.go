@@ -41,6 +41,7 @@ func XsDeployCommand() *cobra.Command {
 			return PrepareConfig(cmd, &metadata, "xsDeploy", &myXsDeployOptions, config.OpenPiperFile)
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
+
 			return xsDeploy(myXsDeployOptions)
 		},
 	}

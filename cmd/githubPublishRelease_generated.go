@@ -51,6 +51,7 @@ The result looks like
 			return PrepareConfig(cmd, &metadata, "githubPublishRelease", &myGithubPublishReleaseOptions, config.OpenPiperFile)
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
+
 			return githubPublishRelease(myGithubPublishReleaseOptions)
 		},
 	}

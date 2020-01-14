@@ -275,7 +275,7 @@ func getOutputResourceDetails(stepData *config.StepData) ([]map[string]string, e
 
 		switch res.Type {
 		case "piperEnvironment":
-			var envResource config.PiperEnvironmentResource
+			var envResource PiperEnvironmentResource
 			envResource.Name = res.Name
 			envResource.StepName = stepData.Metadata.Name
 			for _, param := range res.Parameters {
@@ -289,7 +289,7 @@ func getOutputResourceDetails(stepData *config.StepData) ([]map[string]string, e
 						envResource.Categories = append(envResource.Categories, category)
 					}
 				}
-				envParam := config.PiperEnvironmentParameter{Category: category, Name: name}
+				envParam := PiperEnvironmentParameter{Category: category, Name: name}
 				envResource.Parameters = append(envResource.Parameters, envParam)
 			}
 			def, err := envResource.StructString()
@@ -300,15 +300,15 @@ func getOutputResourceDetails(stepData *config.StepData) ([]map[string]string, e
 			currentResource["objectname"] = envResource.StructName()
 			outputResources = append(outputResources, currentResource)
 		case "influx":
-			var influxResource config.InfluxResource
+			var influxResource InfluxResource
 			influxResource.Name = res.Name
 			influxResource.StepName = stepData.Metadata.Name
 			for _, measurement := range res.Parameters {
-				influxMeasurement := config.InfluxMeasurement{Name: fmt.Sprintf("%v", measurement["name"])}
+				influxMeasurement := InfluxMeasurement{Name: fmt.Sprintf("%v", measurement["name"])}
 				if fields, ok := measurement["fields"].([]interface{}); ok {
 					for _, field := range fields {
 						if fieldParams, ok := field.(map[string]interface{}); ok {
-							influxMeasurement.Fields = append(influxMeasurement.Fields, config.InfluxMetric{Name: fmt.Sprintf("%v", fieldParams["name"])})
+							influxMeasurement.Fields = append(influxMeasurement.Fields, InfluxMetric{Name: fmt.Sprintf("%v", fieldParams["name"])})
 						}
 					}
 				}
@@ -316,7 +316,7 @@ func getOutputResourceDetails(stepData *config.StepData) ([]map[string]string, e
 				if tags, ok := measurement["tags"].([]interface{}); ok {
 					for _, tag := range tags {
 						if tagParams, ok := tag.(map[string]interface{}); ok {
-							influxMeasurement.Tags = append(influxMeasurement.Tags, config.InfluxMetric{Name: fmt.Sprintf("%v", tagParams["name"])})
+							influxMeasurement.Tags = append(influxMeasurement.Tags, InfluxMetric{Name: fmt.Sprintf("%v", tagParams["name"])})
 						}
 					}
 				}
@@ -356,7 +356,7 @@ func stepTemplate(myStepInfo stepInfo) []byte {
 
 	funcMap := template.FuncMap{
 		"flagType":   flagType,
-		"golangName": golangName,
+		"golangName": golangNameTitle,
 		"title":      strings.Title,
 		"longName":   longName,
 	}
@@ -375,7 +375,7 @@ func stepTestTemplate(myStepInfo stepInfo) []byte {
 
 	funcMap := template.FuncMap{
 		"flagType":   flagType,
-		"golangName": golangName,
+		"golangName": golangNameTitle,
 		"title":      strings.Title,
 	}
 
@@ -418,7 +418,11 @@ func golangName(name string) string {
 	properName = strings.Replace(properName, "Id", "ID", -1)
 	properName = strings.Replace(properName, "Json", "JSON", -1)
 	properName = strings.Replace(properName, "json", "JSON", -1)
-	return strings.Title(properName)
+	return properName
+}
+
+func golangNameTitle(name string) string {
+	return strings.Title(golangName(name))
 }
 
 func flagType(paramType string) string {

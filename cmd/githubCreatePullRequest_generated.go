@@ -41,6 +41,7 @@ It can for example be used for GitOps scenarios or for scenarios where you want 
 			return PrepareConfig(cmd, &metadata, "githubCreatePullRequest", &myGithubCreatePullRequestOptions, config.OpenPiperFile)
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
+
 			return githubCreatePullRequest(myGithubCreatePullRequestOptions)
 		},
 	}

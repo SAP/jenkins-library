@@ -222,7 +222,7 @@ func TestLongName(t *testing.T) {
 	}
 }
 
-func TestGolangName(t *testing.T) {
+func TestGolangNameTitle(t *testing.T) {
 	tt := []struct {
 		input    string
 		expected string
@@ -236,7 +236,7 @@ func TestGolangName(t *testing.T) {
 	}
 
 	for k, v := range tt {
-		assert.Equal(t, v.expected, golangName(v.input), fmt.Sprintf("wrong golang name for run %v", k))
+		assert.Equal(t, v.expected, golangNameTitle(v.input), fmt.Sprintf("wrong golang name for run %v", k))
 	}
 }
 

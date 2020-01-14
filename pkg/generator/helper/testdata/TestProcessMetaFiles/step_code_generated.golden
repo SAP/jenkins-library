@@ -62,14 +62,19 @@ type testStepInfluxTest struct {
 }
 
 func (i *testStepInfluxTest) persist(path, resourceName string) {
-	measurementContent := []config.InfluxMetricContent{
-		{ValType: config.InfluxField, Measurement: "m1" , Name: "f1", Value: &i.m1.fields.f1},
-		{ValType: config.InfluxTag, Measurement: "m1" , Name: "t1", Value: &i.m1.tags.t1},
+	measurementContent := []struct{
+		measurement string
+		valType     string
+		name        string
+		value       string
+	}{
+		{valType: config.InfluxField, measurement: "m1" , name: "f1", value: i.m1.fields.f1},
+		{valType: config.InfluxTag, measurement: "m1" , name: "t1", value: i.m1.tags.t1},
 	}
 
 	errCount := 0
 	for _, metric := range measurementContent {
-		err := piperenv.SetResourceParameter(path, resourceName, filepath.Join(metric.Measurement, fmt.Sprintf("%vs", metric.ValType), metric.Name), *metric.Value)
+		err := piperenv.SetResourceParameter(path, resourceName, filepath.Join(metric.measurement, fmt.Sprintf("%vs", metric.valType), metric.name), metric.value)
 		if err != nil {
 			log.Entry().WithError(err).Error("Error persisting influx environment.")
 			errCount++
