@@ -7,7 +7,7 @@ import (
 	"io/ioutil"
 	"path/filepath"
 
-	"github.com/SAP/jenkins-library/pkg/resourceenvironment"
+	"github.com/SAP/jenkins-library/pkg/piperenv"
 
 	"github.com/ghodss/yaml"
 	"github.com/pkg/errors"
@@ -28,8 +28,8 @@ type StepMetadata struct {
 
 // StepSpec defines the spec details for a step, like step inputs, containers, sidecars, ...
 type StepSpec struct {
-	Inputs StepInputs `json:"inputs"`
-	//	Outputs string `json:"description,omitempty"`
+	Inputs     StepInputs  `json:"inputs,omitempty"`
+	Outputs    StepOutputs `json:"outputs,omitempty"`
 	Containers []Container `json:"containers,omitempty"`
 	Sidecars   []Container `json:"sidecars,omitempty"`
 }
@@ -69,10 +69,11 @@ type Alias struct {
 
 // StepResources defines the resources to be provided by the step context, e.g. Jenkins pipeline
 type StepResources struct {
-	Name        string      `json:"name"`
-	Description string      `json:"description,omitempty"`
-	Type        string      `json:"type,omitempty"`
-	Conditions  []Condition `json:"conditions,omitempty"`
+	Name        string                   `json:"name"`
+	Description string                   `json:"description,omitempty"`
+	Type        string                   `json:"type,omitempty"`
+	Parameters  []map[string]interface{} `json:"params,omitempty"`
+	Conditions  []Condition              `json:"conditions,omitempty"`
 }
 
 // StepSecrets defines the secrets to be provided by the step context, e.g. Jenkins pipeline
@@ -82,10 +83,10 @@ type StepSecrets struct {
 	Type        string `json:"type,omitempty"`
 }
 
-// StepOutputs defines the outputs of a step
-//type StepOutputs struct {
-//	Name          string `json:"name"`
-//}
+// StepOutputs defines the outputs of a step step, typically one or multiple resources
+type StepOutputs struct {
+	Resources []StepResources `json:"resources,omitempty"`
+}
 
 // Container defines an execution container
 type Container struct {
@@ -335,7 +336,7 @@ func (m *StepData) GetResourceParameters(path, name string) map[string]interface
 	for _, param := range m.Spec.Inputs.Parameters {
 		for _, res := range param.ResourceRef {
 			if res.Name == name {
-				if val := resourceenvironment.GetParameter(filepath.Join(path, name), res.Param); len(val) > 0 {
+				if val := piperenv.GetParameter(filepath.Join(path, name), res.Param); len(val) > 0 {
 					resourceParams[param.Name] = val
 				}
 			}

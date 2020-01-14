@@ -3,6 +3,7 @@ package cmd
 import (
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
+
 	"github.com/spf13/cobra"
 )
 
@@ -13,11 +14,11 @@ type karmaExecuteTestsOptions struct {
 }
 
 var myKarmaExecuteTestsOptions karmaExecuteTestsOptions
-var karmaExecuteTestsStepConfigJSON string
 
 // KarmaExecuteTestsCommand Executes the Karma test runner
 func KarmaExecuteTestsCommand() *cobra.Command {
 	metadata := karmaExecuteTestsMetadata()
+
 	var createKarmaExecuteTestsCmd = &cobra.Command{
 		Use:   "karmaExecuteTests",
 		Short: "Executes the Karma test runner",

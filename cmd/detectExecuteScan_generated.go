@@ -5,6 +5,7 @@ import (
 
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
+
 	"github.com/spf13/cobra"
 )
 
@@ -20,11 +21,11 @@ type detectExecuteScanOptions struct {
 }
 
 var myDetectExecuteScanOptions detectExecuteScanOptions
-var detectExecuteScanStepConfigJSON string
 
 // DetectExecuteScanCommand Executes Synopsis Detect scan
 func DetectExecuteScanCommand() *cobra.Command {
 	metadata := detectExecuteScanMetadata()
+
 	var createDetectExecuteScanCmd = &cobra.Command{
 		Use:   "detectExecuteScan",
 		Short: "Executes Synopsis Detect scan",

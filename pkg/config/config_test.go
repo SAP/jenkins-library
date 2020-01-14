@@ -10,7 +10,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/SAP/jenkins-library/pkg/resourceenvironment"
+	"github.com/SAP/jenkins-library/pkg/piperenv"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -165,7 +165,7 @@ steps:
 		// clean up tmp dir
 		defer os.RemoveAll(dir)
 
-		resourceenvironment.SetParameter(filepath.Join(dir, "commonPipelineEnvironment"), "test_pe1", "pe1_val")
+		piperenv.SetParameter(filepath.Join(dir, "commonPipelineEnvironment"), "test_pe1", "pe1_val")
 
 		stepConfig, err := c.GetStepConfig(flags, paramJSON, myConfig, defaults, filters, parameterMetadata, stepMeta.GetResourceParameters(dir, "commonPipelineEnvironment"), "stage1", "step1")
 

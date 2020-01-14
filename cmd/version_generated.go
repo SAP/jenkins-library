@@ -3,6 +3,7 @@ package cmd
 import (
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
+
 	"github.com/spf13/cobra"
 )
 
@@ -10,11 +11,11 @@ type versionOptions struct {
 }
 
 var myVersionOptions versionOptions
-var versionStepConfigJSON string
 
 // VersionCommand Returns the version of the piper binary
 func VersionCommand() *cobra.Command {
 	metadata := versionMetadata()
+
 	var createVersionCmd = &cobra.Command{
 		Use:   "version",
 		Short: "Returns the version of the piper binary",

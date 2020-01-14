@@ -5,6 +5,7 @@ import (
 
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
+
 	"github.com/spf13/cobra"
 )
 
@@ -26,11 +27,11 @@ type githubPublishReleaseOptions struct {
 }
 
 var myGithubPublishReleaseOptions githubPublishReleaseOptions
-var githubPublishReleaseStepConfigJSON string
 
 // GithubPublishReleaseCommand Publish a release in GitHub
 func GithubPublishReleaseCommand() *cobra.Command {
 	metadata := githubPublishReleaseMetadata()
+
 	var createGithubPublishReleaseCmd = &cobra.Command{
 		Use:   "githubPublishRelease",
 		Short: "Publish a release in GitHub",

@@ -1,4 +1,4 @@
-package resourceenvironment
+package piperenv
 
 import (
 	"io/ioutil"
@@ -26,6 +26,18 @@ import (
 
 // <pipeline env path>/custom/
 // <pipeline env path>/custom/<parameter>
+
+// SetResourceParameter sets a resource parameter in the environment stored in the file system
+func SetResourceParameter(path, resourceName, paramName, value string) error {
+	paramPath := filepath.Join(path, resourceName, paramName)
+	return writeToDisk(paramPath, []byte(value))
+}
+
+// GetResourceParameter reads a resource parameter from the environment stored in the file system
+func GetResourceParameter(path, resourceName, paramName string) string {
+	paramPath := filepath.Join(path, resourceName, paramName)
+	return readFromDisk(paramPath)
+}
 
 // SetParameter sets any parameter in the pipeline environment or another environment stored in the file system
 func SetParameter(path, name, value string) error {

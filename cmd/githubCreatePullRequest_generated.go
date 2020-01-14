@@ -5,6 +5,7 @@ import (
 
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
+
 	"github.com/spf13/cobra"
 )
 
@@ -23,11 +24,11 @@ type githubCreatePullRequestOptions struct {
 }
 
 var myGithubCreatePullRequestOptions githubCreatePullRequestOptions
-var githubCreatePullRequestStepConfigJSON string
 
 // GithubCreatePullRequestCommand Create a pull request on GitHub
 func GithubCreatePullRequestCommand() *cobra.Command {
 	metadata := githubCreatePullRequestMetadata()
+
 	var createGithubCreatePullRequestCmd = &cobra.Command{
 		Use:   "githubCreatePullRequest",
 		Short: "Create a pull request on GitHub",

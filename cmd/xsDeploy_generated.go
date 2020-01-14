@@ -5,6 +5,7 @@ import (
 
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
+
 	"github.com/spf13/cobra"
 )
 
@@ -25,11 +26,11 @@ type xsDeployOptions struct {
 }
 
 var myXsDeployOptions xsDeployOptions
-var xsDeployStepConfigJSON string
 
 // XsDeployCommand Performs xs deployment
 func XsDeployCommand() *cobra.Command {
 	metadata := xsDeployMetadata()
+
 	var createXsDeployCmd = &cobra.Command{
 		Use:   "xsDeploy",
 		Short: "Performs xs deployment",
