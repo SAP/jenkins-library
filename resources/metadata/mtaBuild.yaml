@@ -1,0 +1,101 @@
+metadata:
+  name: mtaBuild
+  description: Executes the SAP Multitarget Application Archive Builder to create an mtar archive of the application.
+  longDescription: Executes the SAP Multitarget Application Archive Builder to create an mtar archive of the application.
+spec:
+  inputs:
+    params:
+    - name: extension
+      type: string
+      description: The path to the extension descriptor file.
+      mandatory: false
+      scope:
+      - PARAMETERS
+      - STAGES
+      - STEPS
+      default: null
+    - name: mtaBuildTool
+      type: string
+      description: Tool to use when building the MTA
+      mandatory: false
+      scope:
+      - PARAMETERS
+      - STAGES
+      - STEPS
+      default: classic
+    - name: mtaJarLocation
+      type: string
+      description: The location of the SAP Multitarget Application Archive Builder jar file, including file name and extension. If it is not provided, the SAP Multitarget Application Archive Builder is expected on PATH.
+      mandatory: false
+      scope:
+      - PARAMETERS
+      - STAGES
+      - STEPS
+      default: /opt/sap/mta/lib/mta.jar
+    - name: mtarName
+      type: string
+      description: The name of the generated mtar file including its extension.
+      mandatory: false
+      scope:
+      - PARAMETERS
+      - STAGES
+      - STEPS
+      default: null
+    - name: defaultNpmRegistry
+      type: string
+      description: Url to the npm registry that should be used for installing npm dependencies.
+      mandatory: false
+      scope:
+      - STAGES
+      default: null
+    - name: globalSettingsFile
+      type: string
+      description: Path or url to the mvn settings file that should be used as global settings file.
+      mandatory: false
+      scope:
+      - PARAMETERS
+      - STAGES
+      - STEPS
+      default: null
+    - name: platform
+      type: string
+      description: 'mtaBuildTool cloudMbt only: The target platform to which the mtar
+        can be deployed.'
+      mandatory: false
+      scope:
+      - PARAMETERS
+      - STAGES
+      - STEPS
+      default: cf
+    - name: projectSettingsFile
+      type: string
+      description: Path or url to the mvn settings file that should be used as project settings file.
+      mandatory: false
+      scope:
+      - PARAMETERS
+      - STAGES
+      - STEPS
+      default: null
+    - name: applicationName
+      type: string
+      description: The name of the application which is being built. If the parameter has been provided and no `mta.yaml` exists, the `mta.yaml` will be automatically generated using this parameter and the information (`name` and `version`) from `package.json` before the actual build starts.
+      mandatory: false
+      scope:
+      - PARAMETERS
+      - STAGES
+      - STEPS
+      default: null
+    - name: buildTarget
+      type: string
+      description: The target platform to which the mtar can be deployed.
+      mandatory: false
+      scope:
+      - PARAMETERS
+      - STAGES
+      - STEPS
+      default: NEO
+#  outputs:
+#    params:
+#    - name: mtaFileName
+  containers:
+  - image: ppiper/mta-archive-builder

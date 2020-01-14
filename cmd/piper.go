@@ -48,6 +48,7 @@ func Execute() {
 	rootCmd.AddCommand(DetectExecuteScanCommand())
 	rootCmd.AddCommand(KarmaExecuteTestsCommand())
 	rootCmd.AddCommand(KubernetesDeployCommand())
+	rootCmd.AddCommand(MtaBuildCommand())
 	rootCmd.AddCommand(XsDeployCommand())
 	rootCmd.AddCommand(GithubPublishReleaseCommand())
 	rootCmd.AddCommand(GithubCreatePullRequestCommand())
