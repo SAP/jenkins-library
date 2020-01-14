@@ -230,7 +230,7 @@ class Helper {
 
         new GroovyClassLoader(classLoader, compilerConfig, true)
             .parseClass(new File(projectRoot, 'src/com/sap/piper/ConfigurationHelper.groovy'))
-            .newInstance(script, [:]).loadStepDefaults()
+            .newInstance(script, script, [:]).loadStepDefaults()
     }
 
     static Map getYamlResource(String resource) {
