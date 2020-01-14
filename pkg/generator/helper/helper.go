@@ -70,8 +70,14 @@ func {{.CobraCmdFuncName}}() *cobra.Command {
 			return {{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}PrepareConfig(cmd, &metadata, "{{ .StepName }}", &my{{ .StepName | title}}Options, config.OpenPiperFile)
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			{{- range $notused, $oRes := .OutputResources }}
-			defer {{ index $oRes "name" }}.persist(GeneralConfig.EnvRootPath, "{{ index $oRes "name" }}"){{ end }}
+			{{ if .OutputResources -}}
+			handler := func() {
+				{{- range $notused, $oRes := .OutputResources }}
+				{{ index $oRes "name" }}.persist(GeneralConfig.EnvRootPath, "{{ index $oRes "name" }}"){{ end }}
+			}
+			log.DeferExitHandler(handler)
+			defer handler()
+			{{- end }}
 			return {{.StepName}}(my{{ .StepName | title }}Options{{ range $notused, $oRes := .OutputResources}}, &{{ index $oRes "name" }}{{ end }})
 		},
 	}

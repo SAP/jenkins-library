@@ -99,8 +99,12 @@ func TestStepCommand() *cobra.Command {
 			return PrepareConfig(cmd, &metadata, "testStep", &myTestStepOptions, config.OpenPiperFile)
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			defer commonPipelineEnvironment.persist(GeneralConfig.EnvRootPath, "commonPipelineEnvironment")
-			defer influxTest.persist(GeneralConfig.EnvRootPath, "influxTest")
+			handler := func() {
+				commonPipelineEnvironment.persist(GeneralConfig.EnvRootPath, "commonPipelineEnvironment")
+				influxTest.persist(GeneralConfig.EnvRootPath, "influxTest")
+			}
+			log.DeferExitHandler(handler)
+			defer handler()
 			return testStep(myTestStepOptions, &commonPipelineEnvironment, &influxTest)
 		},
 	}
