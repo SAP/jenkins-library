@@ -40,7 +40,7 @@ func runProtecodeScan(myProtecodeExecuteScanOptions protecodeExecuteScanOptions,
 		return err
 	}
 	if(productId <= 0) {
-		return errors.New("Protecode scan failed, the product id is below zero")
+		return errors.New("Protecode scan failed, the product id is not valid (product id <= zero)")
 	}
 	//pollForResult
 	result, err := client.PollForResult(productId, myProtecodeExecuteScanOptions.Verbose)

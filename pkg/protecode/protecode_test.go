@@ -8,7 +8,9 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"mime/multipart"
 	"net/http/httptest"
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -22,7 +24,7 @@ func TestGetResult(t *testing.T) {
 		give string
 		want Result
 	}{
-		{`{}`, Result{ProductId: -0, ReportUrl:""}},
+		{`{}`, Result{ProductId: -0, ReportUrl: ""}},
 		{`{"product_id": 1}`, Result{ProductId: 1}},
 	}
 	pc := Protecode{}
@@ -181,8 +183,10 @@ func TestLoadExistingProductByFilenameSuccess(t *testing.T) {
 	// Close the server when test finishes
 	defer server.Close()
 
-	client := piperHttp.Client{}
-	pc := Protecode{serverURL: server.URL, client: client}
+	pc := Protecode{}
+	po := ProtecodeOptions{ServerURL: server.URL}
+	pc.SetOptions(po)
+
 	cases := []struct {
 		filePath       string
 		protecodeGroup string
@@ -217,6 +221,7 @@ func TestLoadExistingProductSuccess(t *testing.T) {
 	defer server.Close()
 
 	client := piperHttp.Client{}
+	client.SetOptions(piperHttp.ClientOptions{})
 
 	cases := []struct {
 		pc             Protecode
@@ -284,6 +289,7 @@ func TestPollForResultSuccess(t *testing.T) {
 	defer server.Close()
 
 	client := piperHttp.Client{}
+	client.SetOptions(piperHttp.ClientOptions{})
 	pc := Protecode{serverURL: server.URL, client: client, duration: 30}
 
 	for _, c := range cases {
@@ -319,6 +325,7 @@ func TestPullResultSuccess(t *testing.T) {
 	defer server.Close()
 
 	client := piperHttp.Client{}
+	client.SetOptions(piperHttp.ClientOptions{})
 
 	cases := []struct {
 		pc        Protecode
@@ -360,9 +367,9 @@ func TestDeclareFetchUrlSuccess(t *testing.T) {
 	// Close the server when test finishes
 	defer server.Close()
 
-	client := piperHttp.Client{}
-
-	pc := Protecode{serverURL: server.URL, client: client}
+	pc := Protecode{}
+	po := ProtecodeOptions{ServerURL: server.URL}
+	pc.SetOptions(po)
 
 	cases := []struct {
 		cleanupMode    string
@@ -383,10 +390,12 @@ func TestDeclareFetchUrlSuccess(t *testing.T) {
 	}
 }
 
-/*func TestUploadScanFileSuccess(t *testing.T) {
+func TestUploadScanFileSuccess(t *testing.T) {
 
 	requestURI := ""
 	var passedHeaders = map[string][]string{}
+	var multipartFile multipart.File
+	var passedFileContents []byte
 	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 
 		requestURI = req.RequestURI
@@ -400,6 +409,21 @@ func TestDeclareFetchUrlSuccess(t *testing.T) {
 
 		response := Result{ProductId: 111, ReportUrl: requestURI}
 
+
+		err := req.ParseMultipartForm(4096)
+		if err != nil {
+			t.FailNow()
+		}
+		multipartFile, _, err = req.FormFile("file")
+		if err != nil {
+			t.FailNow()
+		}
+		defer req.Body.Close()
+		passedFileContents, err = ioutil.ReadAll(multipartFile)
+		if err != nil {
+			t.FailNow()
+		}
+
 		var b bytes.Buffer
 		json.NewEncoder(&b).Encode(&response)
 		rw.Write([]byte(b.Bytes()))
@@ -407,9 +431,20 @@ func TestDeclareFetchUrlSuccess(t *testing.T) {
 	// Close the server when test finishes
 	defer server.Close()
 
-	client := piperHttp.Client{}
+	pc := Protecode{}
+	po := ProtecodeOptions{ServerURL: server.URL}
+	pc.SetOptions(po)
 
-	pc := Protecode{serverURL: server.URL, client: client}
+	testFile, err := ioutil.TempFile("", "testFileUpload")
+	if err != nil {
+		t.FailNow()
+	}
+	defer os.RemoveAll(testFile.Name()) // clean up
+
+	fileContents, err := ioutil.ReadFile(testFile.Name())
+	if err != nil {
+		t.FailNow()
+	}
 
 	cases := []struct {
 		cleanupMode    string
@@ -417,8 +452,8 @@ func TestDeclareFetchUrlSuccess(t *testing.T) {
 		fetchURL       string
 		want           string
 	}{
-		{"binary", "group1", "dummy", "/api/upload/"},
-		{"Test", "group2", "dummy", "/api/upload/"},
+		{"binary", "group1", testFile.Name(), "/api/upload/"},
+		{"Test", "group2", testFile.Name(), "/api/upload/"},
 	}
 	for _, c := range cases {
 
@@ -426,10 +461,10 @@ func TestDeclareFetchUrlSuccess(t *testing.T) {
 		assert.Equal(t, requestURI, c.want)
 		assert.Contains(t, passedHeaders, "Group")
 		assert.Contains(t, passedHeaders, "Delete-Binary")
-		assert.Contains(t, passedHeaders, "Url")
+		assert.Equal(t, fileContents, passedFileContents, "Uploaded file incorrect")
 	}
 }
-*/
+
 func TestLoadReportSuccess(t *testing.T) {
 
 	requestURI := ""
@@ -451,6 +486,7 @@ func TestLoadReportSuccess(t *testing.T) {
 	defer server.Close()
 
 	client := piperHttp.Client{}
+	client.SetOptions(piperHttp.ClientOptions{})
 
 	pc := Protecode{serverURL: server.URL, client: client}
 
@@ -492,8 +528,9 @@ func TestDeleteScanSuccess(t *testing.T) {
 	// Close the server when test finishes
 	defer server.Close()
 
-	client := piperHttp.Client{}
-	pc := Protecode{serverURL: server.URL, client: client}
+	pc := Protecode{}
+	po := ProtecodeOptions{ServerURL: server.URL}
+	pc.SetOptions(po)
 
 	cases := []struct {
 		cleanupMode string

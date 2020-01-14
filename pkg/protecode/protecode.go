@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -85,19 +84,23 @@ type Protecode struct {
 type ProtecodeOptions struct {
 	ServerURL string
 	Duration  time.Duration
+	Username  string
+	Password  string
 	Logger    *logrus.Entry
-	Username string
-	Password string
 }
 
-func(pc *Protecode) SetOptions(options ProtecodeOptions) {
+func (pc *Protecode) SetOptions(options ProtecodeOptions) {
 	pc.serverURL = options.ServerURL
 	pc.client = piperHttp.Client{}
 	pc.duration = options.Duration
-	pc.logger = options.Logger
 
-	httpOptions := piperHttp.ClientOptions{options.Duration, options.Username, options.Password, ""}
+	if options.Logger != nil {
+		pc.logger = options.Logger
+	} else {
+		pc.logger = log.Entry().WithField("package", "SAP/jenkins-library/pkg/protecode")
+	}
 
+	httpOptions := piperHttp.ClientOptions{options.Duration, options.Username, options.Password, "", options.Logger}
 	pc.client.SetOptions(httpOptions)
 }
 
@@ -105,7 +108,7 @@ func (pc *Protecode) createUrl(path string, pValue string, fParam string) (strin
 
 	protecodeUrl, err := url.Parse(pc.serverURL)
 	if err != nil {
-		log.Entry().WithError(err).Fatal("Malformed URL")
+		pc.logger.WithError(err).Fatal("Malformed URL")
 		return "", err
 	}
 
@@ -143,7 +146,7 @@ func (pc *Protecode) getResultData(r io.ReadCloser) (*ResultData, error) {
 		err := json.Unmarshal([]byte(newStr), response)
 
 		if err != nil {
-			log.Entry().WithError(err).Fatalf("error during decode response: %v", r)
+			pc.logger.WithError(err).Fatalf("error during decode response: %v", r)
 			return response, err
 		}
 	}
@@ -164,7 +167,7 @@ func (pc *Protecode) getResult(r io.ReadCloser) (*Result, error) {
 		err := json.Unmarshal([]byte(newStr), response)
 
 		if err != nil {
-			log.Entry().WithError(err).Fatalf("error during decode response: %v", r)
+			pc.logger.WithError(err).Fatalf("error during decode response: %v", r)
 			return response, err
 		}
 	}
@@ -184,7 +187,7 @@ func (pc *Protecode) getProductData(r io.ReadCloser) (*ProductData, error) {
 		err := json.Unmarshal([]byte(newStr), response)
 
 		if err != nil {
-			log.Entry().WithError(err).Fatalf("error during decode response: %v", r)
+			pc.logger.WithError(err).Fatalf("error during decode response: %v", r)
 			return response, err
 		}
 	}
@@ -193,21 +196,20 @@ func (pc *Protecode) getProductData(r io.ReadCloser) (*ProductData, error) {
 }
 
 func (pc *Protecode) uploadFileRequest(url, filePath string, headers map[string][]string) (*io.ReadCloser, error) {
-	//r, err := pc.client.UploadFile(url, filePath, "", headers, nil)
-	//if err != nil {
-	//	log.Entry().WithError(err).Fatalf("error during %v upload reuqest", url)
-	reader := ioutil.NopCloser(bytes.NewReader([]byte("{}")))
-	return &reader, nil
-	//}
+	r, err := pc.client.UploadFile(url, filePath, "file", headers, nil)
+	if err != nil {
+		pc.logger.WithError(err).Fatalf("error during %v upload reuqest", url)
+		return &r.Body, err
+	}
 
-	//return &r.Body, nil
+	return &r.Body, nil
 }
 
 func (pc *Protecode) sendApiRequest(method string, url string, headers map[string][]string) (*io.ReadCloser, error) {
 
 	r, err := pc.client.SendRequest(method, url, nil, headers, nil)
 	if err != nil {
-		log.Entry().WithError(err).Fatalf("error during %v: %v request", method, url)
+		pc.logger.WithError(err).Fatalf("error during %v: %v request", method, url)
 		return nil, err
 	}
 
@@ -288,7 +290,7 @@ func (pc *Protecode) DeleteScan(cleanupMode string, productId int) error {
 	case "binary":
 		return nil
 	case "complete":
-		log.Entry().Info("Protecode scan successful. Deleting scan from server.")
+		pc.logger.Info("Protecode scan successful. Deleting scan from server.")
 		protecodeURL, err := pc.createUrl("/api/product/", fmt.Sprintf("%v/", productId), "")
 		if err != nil {
 			return err
@@ -301,7 +303,7 @@ func (pc *Protecode) DeleteScan(cleanupMode string, productId int) error {
 		}
 		break
 	default:
-		log.Entry().Fatalf("Unknown cleanup mode %v", cleanupMode)
+		pc.logger.Fatalf("Unknown cleanup mode %v", cleanupMode)
 	}
 
 	return nil
@@ -334,7 +336,7 @@ func (pc *Protecode) UploadScanFile(cleanupMode, protecodeGroup, filePath string
 
 	r, err := pc.uploadFileRequest(fmt.Sprintf("%v/api/upload/", pc.serverURL), filePath, headers)
 	if err != nil {
-		log.Entry().WithError(err).Fatalf("error during %v upload request", fmt.Sprintf("%v/api/fetch/", pc.serverURL))
+		pc.logger.WithError(err).Fatalf("error during %v upload request", fmt.Sprintf("%v/api/fetch/", pc.serverURL))
 		return new(Result), err
 	}
 	return pc.getResult(*r)
@@ -349,7 +351,7 @@ func (pc *Protecode) DeclareFetchUrl(cleanupMode, protecodeGroup, fetchURL strin
 
 	r, err := pc.sendApiRequest(http.MethodPost, fmt.Sprintf("%v/api/fetch/", pc.serverURL), headers)
 	if err != nil {
-		log.Entry().WithError(err).Fatalf("error during POST: %v request", fmt.Sprintf("%v/api/fetch/", pc.serverURL))
+		pc.logger.WithError(err).Fatalf("error during POST: %v request", fmt.Sprintf("%v/api/fetch/", pc.serverURL))
 		return new(Result), err
 	}
 	return pc.getResult(*r)
@@ -404,7 +406,7 @@ func (pc *Protecode) PollForResult(productId int, verbose bool) (Result, error) 
 	if len(response.Components) == 0 && response.Status == "B" {
 		response, err = pc.pullResult(productId)
 		if err != nil || len(response.Components) == 0 || response.Status == "B" {
-			log.Entry().Fatal("No result for protecode scan")
+			pc.logger.Fatal("No result for protecode scan")
 			return response, err
 		}
 	}
