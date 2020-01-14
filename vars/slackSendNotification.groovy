@@ -76,7 +76,7 @@ void call(Map parameters = [:]) {
         Map options = [:]
         if(config.credentialsId)
             options.put('tokenCredentialId', config.credentialsId)
-        for(String entry : STEP_CONFIG_KEYS.minus('credentialsId'))
+        for(String entry : ['baseUrl','channel','color','message'])
             if(config.get(entry))
                 options.put(entry, config.get(entry))
         slackSend(options)
