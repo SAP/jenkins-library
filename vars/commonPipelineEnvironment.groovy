@@ -1,5 +1,6 @@
 import com.sap.piper.ConfigurationLoader
 import com.sap.piper.ConfigurationMerger
+import com.sap.piper.DefaultValueCache
 import com.sap.piper.analytics.InfluxData
 
 class commonPipelineEnvironment implements Serializable {
@@ -208,5 +209,9 @@ class commonPipelineEnvironment implements Serializable {
             def param = fileName.split('/')[fileName.split('\\/').size()-1]
             valueMap[param] = readFile(f.getPath())
         })
+    }
+
+    List getCustomDefaults() {
+        DefaultValueCache.getInstance().getCustomDefaults()
     }
 }

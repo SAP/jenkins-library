@@ -8,16 +8,21 @@ class DefaultValueCache implements Serializable {
 
     private Map defaultValues
 
-    private DefaultValueCache(Map defaultValues){
+    private List customDefaults = []
+
+    private DefaultValueCache(Map defaultValues, List customDefaults){
         this.defaultValues = defaultValues
+        if(customDefaults) {
+            this.customDefaults.addAll(customDefaults)
+        }
     }
 
     static getInstance(){
         return instance
     }
 
-    static createInstance(Map defaultValues){
-        instance = new DefaultValueCache(defaultValues)
+    static createInstance(Map defaultValues, List customDefaults = []){
+        instance = new DefaultValueCache(defaultValues, customDefaults)
     }
 
     Map getDefaultValues(){
@@ -26,6 +31,12 @@ class DefaultValueCache implements Serializable {
 
     static reset(){
         instance = null
+    }
+
+    List getCustomDefaults() {
+        def result = []
+        result.addAll(customDefaults)
+        return result
     }
 
     static void prepare(Script steps, Map parameters = [:]) {
@@ -46,7 +57,7 @@ class DefaultValueCache implements Serializable {
                         MapUtils.pruneNulls(defaultValues),
                         MapUtils.pruneNulls(configuration))
             }
-            DefaultValueCache.createInstance(defaultValues)
+            DefaultValueCache.createInstance(defaultValues, customDefaults)
         }
     }
 }
