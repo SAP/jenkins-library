@@ -1,5 +1,6 @@
 import com.sap.piper.ConfigurationLoader
 import com.sap.piper.ConfigurationMerger
+import com.sap.piper.DefaultValueCache
 import com.sap.piper.analytics.InfluxData
 
 class commonPipelineEnvironment implements Serializable {
@@ -143,4 +144,8 @@ class commonPipelineEnvironment implements Serializable {
         config = ConfigurationMerger.merge(configuration.get('stages')?.get(stageName) ?: [:], null, config)
         return config
     }
+    List getCustomDefaults() {
+        DefaultValueCache.getInstance().getCustomDefaults()
+    }
+
 }
