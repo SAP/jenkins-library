@@ -108,9 +108,9 @@ void call(Map parameters = [:]) {
                     parameters.dockerRegistryUrl= config.dockerRegistryProtocol+ "://" +script.commonPipelineEnvironment.getAppContainerProperty('dockerMetadata')?.repo//"?:script.commonPipelineEnvironment.getDockerMetadata().repo}"
         }
 
-        if (config.dockerImage && !config.filePath && !paramateters.filePath) {
+        if (config.dockerImage && !config.filePath && !parameters.filePath) {
             def dockerImageName = new DockerUtils(script).getNameFromImageUrl(config.dockerImage)
-            paramateters.filePath = dockerImageName.replace('/', '_')+".tar"
+            parameters.filePath = dockerImageName.replace('/', '_')+".tar"
         }
 
         withEnv([
