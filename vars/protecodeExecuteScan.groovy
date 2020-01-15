@@ -102,7 +102,7 @@ void call(Map parameters = [:]) {
 
         //TODO move to golang
         if (!parameters.dockerImage) {
-                    parameters.dockerImage= script.commonPipelineEnvironment.getAppContainerProperty('dockerMetadata')?.imageNameTag?:script.commonPipelineEnvironment.getDockerMetadata().imageNameTag,
+                    parameters.dockerImage= script.commonPipelineEnvironment.getAppContainerProperty('dockerMetadata')?.imageNameTag?:script.commonPipelineEnvironment.getDockerMetadata().imageNameTag
         }
         if (!parameters.dockerRegistryUrl) {
                     parameters.dockerRegistryUrl= "${config.dockerRegistryProtocol}://${script.commonPipelineEnvironment.getAppContainerDockerMetadata()?.repo?:script.commonPipelineEnvironment.getDockerMetadata().repo}"
