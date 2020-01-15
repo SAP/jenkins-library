@@ -91,12 +91,27 @@ void call(Map parameters = [:]) {
         def utils = parameters.juStabUtils ?: new Utils()
         def jenkinsUtils = parameters.jenkinsUtilsStub ?: new JenkinsUtils()
 
-        script.globalPipelineEnvironment.setInfluxStepData('protecode', false)
+        script.commonPipelineEnvironment.setInfluxStepData('protecode', false)
 
         new PiperGoUtils(this, utils).unstashPiperBin()
         utils.unstash('pipelineConfigAndTests')
 
         writeFile(file: METADATA_FILE, text: libraryResource(METADATA_FILE))
+        // get context configuration
+        config = readJSON (text: sh(returnStdout: true, script: "./piper getConfig --contextConfig --stepMetadata '${METADATA_FILE}'"))
+
+        //TODO move to golang
+        if (!parameters.dockerImage) {
+                    parameters.dockerImage= script.commonPipelineEnvironment.getAppContainerProperty('dockerMetadata')?.imageNameTag?:script.commonPipelineEnvironment.getDockerMetadata().imageNameTag,
+        }
+        if (!parameters.dockerRegistryUrl) {
+                    parameters.dockerRegistryUrl= "${config.dockerRegistryProtocol}://${script.commonPipelineEnvironment.getAppContainerDockerMetadata()?.repo?:script.commonPipelineEnvironment.getDockerMetadata().repo}"
+        }
+
+        if (config.dockerImage && !config.filePath && !paramateters.filePath) {
+            def dockerImageName = new DockerUtils(script).getNameFromImageUrl(config.dockerImage)
+            paramateters.filePath = dockerImageName.replace('/', '_')+".tar"
+        }
 
         withEnv([
             "PIPER_parametersJSON=${groovy.json.JsonOutput.toJson(parameters)}",
@@ -105,43 +120,12 @@ void call(Map parameters = [:]) {
         // get context configuration
         config = readJSON (text: sh(returnStdout: true, script: "./piper getConfig --contextConfig --stepMetadata '${METADATA_FILE}'"))
 
-        if (!config.dockerImage) {
-            config = new ConfigurationHelper(config)
-                .mixin([
-                    dockerImage: script.globalPipelineEnvironment.getAppContainerProperty('dockerMetadata')?.imageNameTag?:script.globalPipelineEnvironment.getDockerMetadata().imageNameTag,
-                    dockerRegistryUrl: "${config.dockerRegistryProtocol}://${script.globalPipelineEnvironment.getAppContainerDockerMetadata()?.repo?:script.globalPipelineEnvironment.getDockerMetadata().repo}"
-                ])
-                .use()
-        }
-
-        /* config = new ConfigurationHelper(config)
-            .mixin([
-                protecodeExcludeCVEs: config.protecodeExcludeCVEs instanceof List?config.protecodeExcludeCVEs:config.protecodeExcludeCVEs?.tokenize(',')
-            ])
-            .withMandatoryProperty('protecodeGroup')
-            .withMandatoryProperty('protecodeCredentialsId')
-            .use()
-        */
-        echo "config filePath : ${config.filePath}"
-
-        if (config.dockerImage && !config.filePath) {
-            echo "config dockerImage : ${config.dockerImage}"
-            def dockerImageName = new DockerUtils(script).getNameFromImageUrl(config.dockerImage)
-            echo "dockerImageName : ${dockerImageName}"
-            config.filePath = dockerImageName.replace('/', '_')+".tar"
-
-            echo "config filePath replaces: ${config.filePath}"
-        }
-
         utils.pushToSWA([
             step: STEP_NAME,
             stepParamKey1: 'scriptMissing',
             stepParam1: parameters?.script == null
         ], config)
 
-
-        //FIX
-        //TODO github.com/GoogleContainerTools/container-diff/pkg/util sie Mail vom 10.12 Sven
         protecodeDockerWrapper(config, script) {
             
                 withCredentials([[$class: 'UsernamePasswordMultiBinding', credentialsId: config.protecodeCredentialsId, passwordVariable: 'password', usernameVariable: 'user']]) {
@@ -164,12 +148,12 @@ void call(Map parameters = [:]) {
                         Notify.error(this, "Protecode scan failed, please check the log and protecode backend for more details.")
                 }
 
-                script.globalPipelineEnvironment.setInfluxCustomDataMapProperty('protecode_data', 'historical_vulnerabilities', jsonResult.historical_vulnerabilities)
-                script.globalPipelineEnvironment.setInfluxCustomDataMapProperty('protecode_data', 'triaged_vulnerabilities', jsonResult.triaged_vulnerabilities)
-                script.globalPipelineEnvironment.setInfluxCustomDataMapProperty('protecode_data', 'excluded_vulnerabilities', jsonResult.excluded_vulnerabilities)
-                script.globalPipelineEnvironment.setInfluxCustomDataMapProperty('protecode_data', 'minor_vulnerabilities', jsonResult.minor_vulnerabilities)
-                script.globalPipelineEnvironment.setInfluxCustomDataMapProperty('protecode_data', 'major_vulnerabilities', jsonResult.major_vulnerabilities)
-                script.globalPipelineEnvironment.setInfluxCustomDataMapProperty('protecode_data', 'vulnerabilities', jsonResult.vulnerabilities)
+                script.commonPipelineEnvironment.setInfluxCustomDataMapProperty('protecode_data', 'historical_vulnerabilities', jsonResult.historical_vulnerabilities)
+                script.commonPipelineEnvironment.setInfluxCustomDataMapProperty('protecode_data', 'triaged_vulnerabilities', jsonResult.triaged_vulnerabilities)
+                script.commonPipelineEnvironment.setInfluxCustomDataMapProperty('protecode_data', 'excluded_vulnerabilities', jsonResult.excluded_vulnerabilities)
+                script.commonPipelineEnvironment.setInfluxCustomDataMapProperty('protecode_data', 'minor_vulnerabilities', jsonResult.minor_vulnerabilities)
+                script.commonPipelineEnvironment.setInfluxCustomDataMapProperty('protecode_data', 'major_vulnerabilities', jsonResult.major_vulnerabilities)
+                script.commonPipelineEnvironment.setInfluxCustomDataMapProperty('protecode_data', 'vulnerabilities', jsonResult.vulnerabilities)
 
 
                 String fileContents = new File("${config.reportFileName}").getText("UTF-8")
@@ -182,7 +166,7 @@ void call(Map parameters = [:]) {
                     }
                 }
 
-                script.globalPipelineEnvironment.setInfluxStepData('protecode', true)
+                script.commonPipelineEnvironment.setInfluxStepData('protecode', true)
              }
         }
     }

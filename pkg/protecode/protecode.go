@@ -198,7 +198,7 @@ func (pc *Protecode) getProductData(r io.ReadCloser) (*ProductData, error) {
 func (pc *Protecode) uploadFileRequest(url, filePath string, headers map[string][]string) (*io.ReadCloser, error) {
 	r, err := pc.client.UploadFile(url, filePath, "file", headers, nil)
 	if err != nil {
-		pc.logger.WithError(err).Fatalf("error during %v upload reuqest", url)
+		pc.logger.WithError(err).Fatalf("error during %v upload request", url)
 		return &r.Body, err
 	}
 
