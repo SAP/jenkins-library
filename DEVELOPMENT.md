@@ -4,6 +4,7 @@
 
 1. [Getting started](#getting-started)
 1. [Build the project](#build-the-project_)
+1. [Generating step framework](#generating-step-framework)
 1. [Logging](#logging)
 1. [Error handling](#error-handling)
 
