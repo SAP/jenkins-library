@@ -1,6 +1,10 @@
 package log
 
 import (
+	"crypto/sha1"
+	"fmt"
+
+	"github.com/SAP/jenkins-library/pkg/piperenv"
 	"github.com/sirupsen/logrus"
 )
 
@@ -10,7 +14,7 @@ import (
 // 3. Notify/Deprecations
 
 // TelemetryBaseData ...
-type telemetryBaseData struct {
+type TelemetryBaseData struct {
 	Active     bool
 	ActionName string `json:"actionName,omitempty"`
 	EventType  string `json:"eventType,omitempty"`
@@ -39,8 +43,8 @@ type telemetryBaseData struct {
 	StageNameLabel         string `json:"custom_10,omitempty"`
 }
 
-// TelemetryStepData ...
-type TelemetryStepData struct {
+// TelemetryCustomData ...
+type TelemetryCustomData struct {
 	BuildTool      string `json:"e_11,omitempty"`
 	buildToolLabel string `json:"custom_11,omitempty"`
 	// ...
@@ -60,37 +64,65 @@ type TelemetryStepData struct {
 	Custom30Label string `json:"custom_30,omitempty"`
 }
 
-var data telemetryBaseData
+var data TelemetryBaseData
 
 // Initialize sets up the base telemetry data and is call in generated part of the steps
-func Initialize(telemetryActive bool) {
+func Initialize(telemetryActive bool, path, stepName string) {
 	if telemetryActive {
-		data = telemetryBaseData{Active: telemetryActive}
+		data = TelemetryBaseData{Active: telemetryActive}
 		return
 	}
 
-	data = telemetryBaseData{
+	gitOwner := piperenv.GetResourceParameter(path, "commonPipelineEnvironment", "github/owner")
+	gitRepo := piperenv.GetResourceParameter(path, "commonPipelineEnvironment", "github/repository")
+
+	if len(gitOwner)+len(gitRepo) == 0 {
+		// 1st fallback: try to get repositoryUrl from commonPipelineEnvironment
+		gitRepoURL := piperenv.GetResourceParameter(path, "commonPipelineEnvironment", "git/repositoryUrl")
+
+		// 2nd fallback: get repository url from git
+		if len(gitRepoURL) == 0 {
+
+		}
+
+		//ToDo: get owner and repo from url
+	}
+
+	gitPath := fmt.Sprintf("%v/%v", gitOwner, gitRepo)
+
+	data = TelemetryBaseData{
 		Active: telemetryActive,
 
-		GitOwner: 
-		GitOwnerLabel: "owner",
-		// ToDo ...
-
+		GitOwner:           gitOwner,
+		GitOwnerLabel:      "owner",
+		GitRepository:      gitRepo,
 		GitRepositoryLabel: "repository",
+		StepName:           stepName,
+		StepNameLabel:      "stepName",
+		GitPathSha1:        fmt.Sprintf("%x", sha1.Sum([]byte(gitPath))),
+		GitPathSha1Label:   "gitpathsha1",
+
+		// ToDo: add further params
 	}
+
+	//ToDo: register Logrus Hook
 }
 
 // SendTelemetry ...
-func SendTelemetry(stepData *TelemetryStepData) {
-
+func SendTelemetry(customData *TelemetryCustomData) {
+	// Add logic for sending data to SWA
 }
 
+// WARNING ...
 const WARNING = "WARNING"
+
+// ERROR ...
 const ERROR = "ERROR"
 
+// Notify ...
 func Notify(level, message string) {
-	data := TelemetryData{}
-	data.Send()
+	data := TelemetryCustomData{}
+	SendTelemetry(&data)
 
 	switch level {
 	case WARNING:
@@ -100,18 +132,15 @@ func Notify(level, message string) {
 	}
 }
 
-func test() {
-	//Errors
-	Entry().Error("error")
-	Entry().Fatal("error")
-}
-
-func (t *TelemetryData) Fire(entry *logrus.Entry) error {
-	//fields := entry.Data
+// Fire ...
+func (t *TelemetryBaseData) Fire(entry *logrus.Entry) error {
+	telemetryData := TelemetryCustomData{}
+	SendTelemetry(&telemetryData)
 	return nil
 }
 
-func (t *TelemetryData) Levels() []logrus.Level {
+// Levels ...
+func (t *TelemetryBaseData) Levels() []logrus.Level {
 	//not all levels, only Error, Fatal?
 	return logrus.AllLevels
 }
