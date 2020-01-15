@@ -1,5 +1,7 @@
 import static com.sap.piper.Prerequisites.checkScript
 
+import com.sap.piper.ConfigurationHelper
+
 import com.sap.piper.DefaultValueCache
 import com.sap.piper.JenkinsUtils
 import com.sap.piper.PiperGoUtils
@@ -94,6 +96,12 @@ void call(Map parameters = [:]) {
             Map projectConfig = readJSON (text: sh(returnStdout: true, script: projectConfigScript))
             Map contextConfig = readJSON (text: sh(returnStdout: true, script: contextConfigScript))
 
+            Map dockerOptions = getDockerOptions(script.commonPipelineEnvironment)
+            def dockerImage = dockerOptions.dockerImage
+            def dockerPullImage = dockerOptions.dockerPullImage
+            if(dockerImage == null || dockerImage.toString().trim().isEmpty()) dockerImage = contextConfig.dockerImage
+            if(dockerPullImage == null || dockerPullImage.toString().trim().isEmpty()) dockerPullImage = contextConfig.dockerPullImage
+
             Action action = projectConfig.action
             DeployMode mode = projectConfig.mode
 
@@ -119,7 +127,7 @@ void call(Map parameters = [:]) {
                         passwordVariable: 'PASSWORD',
                         usernameVariable: 'USERNAME')]) {
 
-                    dockerExecute([script: this].plus([dockerImage: contextConfig.dockerImage, dockerPullImage: contextConfig.dockerPullImage])) {
+                    dockerExecute([script: this].plus([dockerImage: dockerImage, dockerPullImage: dockerPullImage])) {
                         xsDeployStdout = sh returnStdout: true, script: """#!/bin/bash
                         ./piper xsDeploy --defaultConfig ${configFiles} --user \${USERNAME} --password \${PASSWORD} ${operationId ? "--operationId " + operationId : "" }
                         """
@@ -176,4 +184,20 @@ String joinAndQuote(List l, String prefix = '') {
         _l << '"' + _e + '"'
     }
     _l.join(' ')
+}
+
+//
+// ugly backward compatibility handling
+// retrieves docker options from project config or from landscape config layer(s)
+//
+Map getDockerOptions(def cpe) {
+    Set configKeys = ['docker']
+    Map config = ConfigurationHelper.newInstance(this)
+        .loadStepDefaults()
+        .mixinGeneralConfig(cpe, configKeys)
+        .mixinStepConfig(cpe, configKeys)
+        .mixinStageConfig(cpe, env.STAGE_NAME, configKeys)
+        .use()
+
+    [dockerImage: config?.docker.dockerImage, dockerPullImage: config?.docker.dockerPullImage]
 }
