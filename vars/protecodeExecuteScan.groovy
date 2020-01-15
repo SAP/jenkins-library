@@ -105,7 +105,7 @@ void call(Map parameters = [:]) {
                     parameters.dockerImage= script.commonPipelineEnvironment.getAppContainerProperty('dockerMetadata')?.imageNameTag//?:script.commonPipelineEnvironment.getDockerMetadata().imageNameTag
         }
         if (!parameters.dockerRegistryUrl) {
-                    parameters.dockerRegistryUrl= "${config.dockerRegistryProtocol}://${script.commonPipelineEnvironment.getAppContainerProperty(\"dockerMetadata\")?.repo}"//?:script.commonPipelineEnvironment.getDockerMetadata().repo}"
+                    parameters.dockerRegistryUrl= config.dockerRegistryProtocol+ "://" +script.commonPipelineEnvironment.getAppContainerProperty('dockerMetadata')?.repo//"?:script.commonPipelineEnvironment.getDockerMetadata().repo}"
         }
 
         if (config.dockerImage && !config.filePath && !paramateters.filePath) {
