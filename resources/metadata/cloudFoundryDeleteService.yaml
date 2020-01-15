@@ -1,0 +1,62 @@
+metadata:
+  name: cloudFoundryDeleteService
+  description: DeleteCloudFoundryService
+  longDescription: |
+    Delete CloudFoundryService
+spec:
+  inputs:
+    params:
+      - name: API
+        type: string
+        description: Login API
+        scope:
+        - PARAMETERS
+        - STAGES
+        - STEPS
+        mandatory: true
+        default:
+      - name: Username
+        type: string
+        description: User E-Mail
+        scope:
+        - PARAMETERS
+        - STAGES
+        - STEPS
+        mandatory: true
+        default:
+      - name: Password
+        type: string
+        description: User Password
+        scope:
+        - PARAMETERS
+        - STAGES
+        - STEPS
+        mandatory: true
+        default:
+      - name: Organisation
+        type: string
+        description: CF org
+        scope:
+        - PARAMETERS
+        - STAGES
+        - STEPS
+        mandatory: true
+        default:
+      - name: Space
+        type: string
+        description: CF Space
+        scope:
+        - PARAMETERS
+        - STAGES
+        - STEPS
+        mandatory: true
+        default:
+      - name: ServiceName
+        type: string
+        description: Parameter to delete CloudFoundry Service
+        scope:
+        - PARAMETERS
+        - STAGES
+        - STEPS
+        mandatory: true
+        default:
