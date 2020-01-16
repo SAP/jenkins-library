@@ -2,7 +2,9 @@ package cmd
 
 import (
 	"archive/zip"
+	"fmt"
 	"io"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"sort"
@@ -20,11 +22,14 @@ import (
 
 func checkmarxExecuteScan(myCheckmarxExecuteScanOptions checkmarxExecuteScanOptions) error {
 	client := &piperHttp.Client{}
-	sys, err := checkmarx.NewSystem(client, myCheckmarxExecuteScanOptions.CheckmarxServerURL, myCheckmarxExecuteScanOptions.Username, myCheckmarxExecuteScanOptions.Password)
+	sys, err := checkmarx.NewSystemInstance(client, myCheckmarxExecuteScanOptions.CheckmarxServerURL, myCheckmarxExecuteScanOptions.Username, myCheckmarxExecuteScanOptions.Password)
 	if err != nil {
 		log.Entry().WithError(err).Fatalf("Failed to create Checkmarx client talking to URL %v", myCheckmarxExecuteScanOptions.CheckmarxServerURL)
 	}
+	return runScan(myCheckmarxExecuteScanOptions, sys, "./")
+}
 
+func runScan(myCheckmarxExecuteScanOptions checkmarxExecuteScanOptions, sys checkmarx.System, workspace string) error {
 	projects := sys.GetProjects()
 	project := sys.GetProjectByName(projects, myCheckmarxExecuteScanOptions.CheckmarxProject)
 	if project.Name == myCheckmarxExecuteScanOptions.CheckmarxProject {
@@ -32,7 +37,7 @@ func checkmarxExecuteScan(myCheckmarxExecuteScanOptions checkmarxExecuteScanOpti
 	} else {
 		teams := sys.GetTeams()
 		team := checkmarx.Team{}
-		if len(teams) > 1 {
+		if len(teams) > 0 {
 			team = sys.GetTeamByName(teams, myCheckmarxExecuteScanOptions.TeamName)
 		}
 		if len(team.ID) == 0 {
@@ -44,7 +49,11 @@ func checkmarxExecuteScan(myCheckmarxExecuteScanOptions checkmarxExecuteScanOpti
 			if len(myCheckmarxExecuteScanOptions.Preset) > 0 {
 				presets := sys.GetPresets()
 				preset := sys.GetPresetByName(presets, myCheckmarxExecuteScanOptions.Preset)
-				if preset.Name == myCheckmarxExecuteScanOptions.Preset {
+				configuredPreset, err := strconv.Atoi(myCheckmarxExecuteScanOptions.Preset)
+				if err != nil {
+					log.Entry().Fatalf("Preset %v invalid, value must be of type int64 and represent the ID of the preset", configuredPreset)
+				}
+				if preset.ID == configuredPreset {
 					configurationUpdated := sys.UpdateProjectConfiguration(project.ID, preset.ID, myCheckmarxExecuteScanOptions.EngineConfiguration)
 					if configurationUpdated {
 						log.Entry().Debugf("Configuration of project %v updated", project.Name)
@@ -65,7 +74,7 @@ func checkmarxExecuteScan(myCheckmarxExecuteScanOptions checkmarxExecuteScanOpti
 		}
 	}
 
-	zipFileName := "workspace.zip"
+	zipFileName := filepath.Join(workspace, "workspace.zip")
 	patterns := strings.Split(myCheckmarxExecuteScanOptions.FilterPattern, ",")
 	sort.Strings(patterns)
 	zipFile, err := os.Create(zipFileName)
@@ -73,7 +82,7 @@ func checkmarxExecuteScan(myCheckmarxExecuteScanOptions checkmarxExecuteScanOpti
 		log.Entry().WithError(err).Fatal("Failed to create archive of project sources")
 	}
 	defer zipFile.Close()
-	zipFolder("./", zipFile, patterns)
+	zipFolder(workspace, zipFile, patterns)
 	sourceCodeUploaded := sys.UploadProjectSourceCode(project.ID, zipFileName)
 	if sourceCodeUploaded {
 		log.Entry().Debugf("Source code uploaded for project %v", myCheckmarxExecuteScanOptions.CheckmarxProject)
@@ -102,6 +111,15 @@ func checkmarxExecuteScan(myCheckmarxExecuteScanOptions checkmarxExecuteScanOpti
 				log.Entry().Fatalln("Scan canceled via web interface")
 			} else {
 				log.Entry().Debugln("Scan finished")
+
+				if myCheckmarxExecuteScanOptions.GeneratePdfReport {
+					ok, report := generateAndDownloadReport(sys, scan.ID, "PDF")
+					if ok {
+						timeStamp, _ := time.Now().Local().MarshalText()
+						ioutil.WriteFile(filepath.Join(workspace, fmt.Sprintf("CxSASTReport_%v.pdf", string(timeStamp))), report, 0700)
+					}
+				}
+
 				results := getDetailedResults(sys, scan.ID)
 				insecure := false
 
@@ -183,7 +201,7 @@ func checkmarxExecuteScan(myCheckmarxExecuteScanOptions checkmarxExecuteScanOpti
 						log.Entry().Errorf("Checkmarx scan result set to %v, some results are not meeting defined thresholds. For details see the archived report.", myCheckmarxExecuteScanOptions.VulnerabilityThresholdResult)
 					}
 				} else {
-					log.Entry().Errorln("Checkmarx scan finished")
+					log.Entry().Infoln("Checkmarx scan finished")
 				}
 			}
 		} else {
@@ -195,7 +213,7 @@ func checkmarxExecuteScan(myCheckmarxExecuteScanOptions checkmarxExecuteScanOpti
 	return nil
 }
 
-func generateAndDownloadReport(sys checkmarx.System, scanID int, reportType string) []byte {
+func generateAndDownloadReport(sys checkmarx.System, scanID int, reportType string) (bool, []byte) {
 	success, report := sys.RequestNewReport(scanID, reportType)
 	if success {
 		finalStatus := 1
@@ -210,13 +228,13 @@ func generateAndDownloadReport(sys checkmarx.System, scanID int, reportType stri
 			return sys.DownloadReport(report.ReportID)
 		}
 	}
-	return []byte{}
+	return false, []byte{}
 }
 
 func getDetailedResults(sys checkmarx.System, scanID int) map[string]interface{} {
 	resultMap := map[string]interface{}{}
-	data := generateAndDownloadReport(sys, scanID, "XML")
-	if len(data) > 0 {
+	ok, data := generateAndDownloadReport(sys, scanID, "XML")
+	if ok && len(data) > 0 {
 		var xmlResult checkmarx.DetailedResult
 		err := xml.Unmarshal(data, &xmlResult)
 		if err != nil {
@@ -238,6 +256,10 @@ func getDetailedResults(sys checkmarx.System, scanID int) map[string]interface{}
 		resultMap["Preset"] = xmlResult.Preset
 		resultMap["DeepLink"] = xmlResult.DeepLink
 		resultMap["ReportCreationTime"] = xmlResult.ReportCreationTime
+		resultMap["High"] = map[string]int{}
+		resultMap["Medium"] = map[string]int{}
+		resultMap["Low"] = map[string]int{}
+		resultMap["Info"] = map[string]int{}
 		for _, query := range xmlResult.Queries {
 			for _, result := range query.Results {
 				key := result.Severity
@@ -272,8 +294,7 @@ func getDetailedResults(sys checkmarx.System, scanID int) map[string]interface{}
 				submap[auditState]++
 
 				if result.FalsePositive != "True" {
-					falsePositiveCount := submap["NotFalsePositive"]
-					submap["NotFalsePositive"] += falsePositiveCount
+					submap["NotFalsePositive"]++
 				}
 			}
 		}

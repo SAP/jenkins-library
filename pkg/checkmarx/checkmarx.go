@@ -169,7 +169,7 @@ type System interface {
 	GetPresetByName(presets []Preset, presetName string) Preset
 	GetProjectByName(projects []Project, projectName string) Project
 	GetTeamByName(teams []Team, teamName string) Team
-	DownloadReport(reportID int) []byte
+	DownloadReport(reportID int) (bool, []byte)
 	GetReportStatus(reportID int) ReportStatusResponse
 	RequestNewReport(scanID int, reportType string) (bool, Report)
 	GetResults(scanID int) ResultsStatistics
@@ -184,8 +184,8 @@ type System interface {
 	GetTeams() []Team
 }
 
-// NewSystem returns a new Checkmarx client for communicating with the backend
-func NewSystem(client piperHttp.Uploader, serverURL, username, password string) (*SystemInstance, error) {
+// NewSystemInstance returns a new Checkmarx client for communicating with the backend
+func NewSystemInstance(client piperHttp.Uploader, serverURL, username, password string) (*SystemInstance, error) {
 	sys := &SystemInstance{
 		serverURL: serverURL,
 		username:  username,
@@ -497,15 +497,15 @@ func (sys *SystemInstance) GetReportStatus(reportID int) ReportStatusResponse {
 }
 
 // DownloadReport downloads the report addressed by reportID and returns the XML contents
-func (sys *SystemInstance) DownloadReport(reportID int) []byte {
+func (sys *SystemInstance) DownloadReport(reportID int) (bool, []byte) {
 	header := http.Header{}
 	header.Set("Accept", "application/json")
 	data, err := sendRequest(sys, http.MethodGet, fmt.Sprintf("/reports/sastScan/%v", reportID), nil, header)
 	if err != nil {
 		sys.logger.Errorf("Failed to download report with reportID %v: %s", reportID, err)
-		return []byte{}
+		return false, []byte{}
 	}
-	return data
+	return true, data
 }
 
 // GetTeamByName filters a team by its name

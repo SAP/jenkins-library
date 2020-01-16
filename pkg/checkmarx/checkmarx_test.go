@@ -90,7 +90,7 @@ func TestGetOAuthToken(t *testing.T) {
 	opts := piperHttp.ClientOptions{}
 	t.Run("test success", func(t *testing.T) {
 		myTestClient := senderMock{responseBody: `{"token_type":"Bearer","access_token":"abcd12345","expires_in":7045634}`, httpStatusCode: 200}
-		sys, _ := NewSystem(&myTestClient, "https://cx.wdf.sap.corp", "test", "user")
+		sys, _ := NewSystemInstance(&myTestClient, "https://cx.wdf.sap.corp", "test", "user")
 		myTestClient.SetOptions(opts)
 
 		token, err := sys.getOAuth2Token()
@@ -114,7 +114,7 @@ func TestGetOAuthToken(t *testing.T) {
 
 	t.Run("test new system", func(t *testing.T) {
 		myTestClient := senderMock{responseBody: `{"token_type":"Bearer","access_token":"abcd12345","expires_in":7045634}`, httpStatusCode: 200}
-		_, err := NewSystem(&myTestClient, "https://cx.wdf.sap.corp", "test", "user")
+		_, err := NewSystemInstance(&myTestClient, "https://cx.wdf.sap.corp", "test", "user")
 
 		assert.NoError(t, err, "Error occured but none expected")
 		assert.Equal(t, "https://cx.wdf.sap.corp/CxRestAPI/auth/identity/connect/token", myTestClient.urlCalled, "Called url incorrect")
@@ -442,8 +442,8 @@ func TestDownloadReport(t *testing.T) {
 		sys := SystemInstance{serverURL: "https://cx.wdf.sap.corp", client: &myTestClient, logger: logger}
 		myTestClient.SetOptions(opts)
 
-		result := sys.DownloadReport(6)
-
+		ok, result := sys.DownloadReport(6)
+		assert.Equal(t, true, ok, "DownloadReport returned unexpected error")
 		assert.Equal(t, "https://cx.wdf.sap.corp/CxRestAPI/reports/sastScan/6", myTestClient.urlCalled, "Called url incorrect")
 		assert.Equal(t, "GET", myTestClient.httpMethod, "HTTP method incorrect")
 		assert.Equal(t, []byte("abc"), result, "Result incorrect")
