@@ -96,14 +96,10 @@ void call(Map parameters = [:]) {
             Map projectConfig = readJSON (text: sh(returnStdout: true, script: projectConfigScript))
             Map contextConfig = readJSON (text: sh(returnStdout: true, script: contextConfigScript))
 
-            Map dockerOptions = getDockerOptions(script.commonPipelineEnvironment)
-            def dockerImage = dockerOptions.dockerImage
-            def dockerPullImage = dockerOptions.dockerPullImage
-            if(dockerImage == null || dockerImage.toString().trim().isEmpty()) dockerImage = contextConfig.dockerImage
-            if(dockerPullImage == null || dockerPullImage.toString().trim().isEmpty()) dockerPullImage = contextConfig.dockerPullImage
+            Map options = getOptions(parameters, projectConfig, contextConfig, script.commonPipelineEnvironment)
 
-            Action action = projectConfig.action
-            DeployMode mode = projectConfig.mode
+            Action action = options.action
+            DeployMode mode = options.mode
 
             if(parameters.verbose) {
                 echo "[INFO] ContextConfig: ${contextConfig}"
@@ -129,7 +125,7 @@ void call(Map parameters = [:]) {
                         passwordVariable: 'PASSWORD',
                         usernameVariable: 'USERNAME')]) {
 
-                    dockerExecute([script: this].plus([dockerImage: dockerImage, dockerPullImage: dockerPullImage])) {
+                    dockerExecute([script: this].plus([dockerImage: options.dockerImage, dockerPullImage: options.dockerPullImage])) {
                         xsDeployStdout = sh returnStdout: true, script: """#!/bin/bash
                         ./piper xsDeploy --defaultConfig ${configFiles} --user \${USERNAME} --password \${PASSWORD} ${mtaFilePath ? '--mtaPath ' + mtaFilePath : ''} ${operationId ? '--operationId ' + operationId : ''}
                         """
@@ -188,18 +184,31 @@ String joinAndQuote(List l, String prefix = '') {
     _l.join(' ')
 }
 
-//
-// ugly backward compatibility handling
-// retrieves docker options from project config or from landscape config layer(s)
-//
-Map getDockerOptions(def cpe) {
-    Set configKeys = ['docker']
+/*
+   ugly backward compatibility handling
+   retrieves docker options from project config or from landscape config layer(s)
+
+   precedence is
+   1.) parameters via signature
+   2.) project config (not nested)
+   3.) project config (nested inside docker node)
+   4.) context config (if applicable (docker))
+*/
+Map getOptions(Map parameters, Map projectConfig, Map contextConfig, def cpe) {
+
+    Set configKeys = ['docker', 'mode', 'action', 'dockerImage', 'dockerPullImage']
     Map config = ConfigurationHelper.newInstance(this)
         .loadStepDefaults()
         .mixinGeneralConfig(cpe, configKeys)
         .mixinStepConfig(cpe, configKeys)
         .mixinStageConfig(cpe, env.STAGE_NAME, configKeys)
+        .mixin(parameters, configKeys)
         .use()
 
-    [dockerImage: config?.docker.dockerImage, dockerPullImage: config?.docker.dockerPullImage]
+    def dockerImage = config.dockerImage ?: (projectConfig.dockerImage ?: (config.docker?.dockerImage ?: contextConfig.dockerImage))
+    def dockerPullImage =  config.dockerPullImage ?: (projectConfig.dockerPullImage ?: (config.docker?.dockerPullImage ?: contextConfig.dockerPullImage))
+    def mode = config.mode ?: projectConfig.mode
+    def action = config.action ?: projectConfig.action
+
+    [dockerImage: dockerImage, dockerPullImage: dockerPullImage, mode: mode, action: action]
 }
