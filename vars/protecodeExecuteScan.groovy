@@ -108,11 +108,6 @@ void call(Map parameters = [:]) {
                     parameters.dockerRegistryUrl= config.dockerRegistryProtocol+ "://" +script.commonPipelineEnvironment.getAppContainerProperty('dockerMetadata')?.repo//"?:script.commonPipelineEnvironment.getDockerMetadata().repo}"
         }
 
-        if (config.dockerImage && !config.filePath && !parameters.filePath) {
-            def dockerImageName = new DockerUtils(script).getNameFromImageUrl(config.dockerImage)
-            parameters.filePath = dockerImageName.replace('/', '_')+".tar"
-        }
-
         withEnv([
             "PIPER_parametersJSON=${groovy.json.JsonOutput.toJson(parameters)}",
         ]) {
@@ -126,7 +121,7 @@ void call(Map parameters = [:]) {
             stepParam1: parameters?.script == null
         ], config)
 
-        protecodeDockerWrapper(config, script) {
+        //protecodeDockerWrapper(config, script) {
             
                 withCredentials([[$class: 'UsernamePasswordMultiBinding', credentialsId: config.protecodeCredentialsId, passwordVariable: 'password', usernameVariable: 'user']]) {
 
@@ -168,11 +163,11 @@ void call(Map parameters = [:]) {
 
                 script.commonPipelineEnvironment.setInfluxStepData('protecode', true)
              }
-        }
+       // }
     }
 }
 
-private void protecodeDockerWrapper(config, script, Closure body) {
+/*private void protecodeDockerWrapper(config, script, Closure body) {
     DockerUtils dockerUtils = new DockerUtils(script)
     if (config.dockerImage && dockerUtils.onKubernetes()) {
         dockerExecuteOnKubernetes(
@@ -190,4 +185,4 @@ private void protecodeDockerWrapper(config, script, Closure body) {
     } else {
         body()
     }
-}
+}*/

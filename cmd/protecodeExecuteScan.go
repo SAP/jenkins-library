@@ -7,9 +7,12 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 	"strconv"
+	"strings"
 	"time"
 
+	pkgutil "github.com/GoogleContainerTools/container-diff/pkg/util"
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/protecode"
@@ -28,18 +31,20 @@ func protecodeExecuteScan(myProtecodeExecuteScanOptions protecodeExecuteScanOpti
 
 func runProtecodeScan(myProtecodeExecuteScanOptions protecodeExecuteScanOptions, command execRunner, client protecode.Protecode) error {
 
+	getDockerImage(myProtecodeExecuteScanOptions)
+
 	//load existing product by filename
 	productId, err := client.LoadExistingProduct(myProtecodeExecuteScanOptions.ProtecodeGroup, myProtecodeExecuteScanOptions.FilePath, myProtecodeExecuteScanOptions.ReuseExisting)
 	if err != nil {
 		return err
 	}
-
-	// check if no existing is found or reuse existing is false
-	productId, err = uploadScanOrDeclareFetch(myProtecodeExecuteScanOptions, productId, client)
+	time.
+		// check if no existing is found or reuse existing is false
+		productId, err = uploadScanOrDeclareFetch(myProtecodeExecuteScanOptions, productId, client)
 	if err != nil {
 		return err
 	}
-	if(productId <= 0) {
+	if productId <= 0 {
 		return errors.New("Protecode scan failed, the product id is not valid (product id <= zero)")
 	}
 	//pollForResult
@@ -83,6 +88,28 @@ func runProtecodeScan(myProtecodeExecuteScanOptions protecodeExecuteScanOptions,
 	return nil
 }
 
+func getDockerImage(config protecodeExecuteScanOptions) error {
+
+	cachePath := "./cache"
+	fileName = getFileNameFromDockerImage(config.dockerImage)
+	image, err := pkgutil.GetImage(fileName, config.IncludeLayers, cachePath)
+	if err != nil {
+		return err
+	}
+
+	if len(config.FilePath) <= 0 {
+		config.FilePath = filepath.Join(image.FSPath, fileName)
+	}
+
+	return nil
+}
+
+func getFileNameFromDockerImage(dockerImage string) string {
+
+	//TODO what should happen when no dockerImage is set???
+	return fmt.Sprintf("%v.tar", strings.ReplaceAll(dockerImage, "/", "_"))
+}
+
 func createClient(config protecodeExecuteScanOptions) protecode.Protecode {
 
 	var duration time.Duration = time.Duration(10 * 60)
@@ -118,7 +145,7 @@ func uploadScanOrDeclareFetch(config protecodeExecuteScanOptions, productId int,
 				return -1, err
 			}
 			productId = result.ProductId
-			
+
 		} else {
 			fmt.Printf("triggering Protecode scan - file: %v, group: %v", config.FilePath, config.ProtecodeGroup)
 			result, err := client.UploadScanFile(config.CleanupMode, config.ProtecodeGroup, config.FilePath)

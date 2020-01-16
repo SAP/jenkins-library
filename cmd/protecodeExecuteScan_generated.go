@@ -14,6 +14,7 @@ type protecodeExecuteScanOptions struct {
 	DockerRegistryURL                    string `json:"dockerRegistryUrl,omitempty"`
 	CleanupMode                          string `json:"cleanupMode,omitempty"`
 	FilePath                             string `json:"filePath,omitempty"`
+	IncludeLayers                        bool   `json:"includeLayers,omitempty"`
 	AddSideBarLink                       bool   `json:"addSideBarLink,omitempty"`
 	Verbose                              bool   `json:"verbose,omitempty"`
 	ProtecodeTimeoutMinutes              string `json:"protecodeTimeoutMinutes,omitempty"`
@@ -65,6 +66,7 @@ func addProtecodeExecuteScanFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVar(&myProtecodeExecuteScanOptions.DockerRegistryURL, "dockerRegistryUrl", os.Getenv("PIPER_dockerRegistryUrl"), "The reference to the docker registry to scan with Protecode")
 	cmd.Flags().StringVar(&myProtecodeExecuteScanOptions.CleanupMode, "cleanupMode", "binary", "Decides which parts are removed from the Protecode backend after the scan")
 	cmd.Flags().StringVar(&myProtecodeExecuteScanOptions.FilePath, "filePath", os.Getenv("PIPER_filePath"), "The path to the file from local workspace to scan with Protecode")
+	cmd.Flags().BoolVar(&myProtecodeExecuteScanOptions.IncludeLayers, "includeLayers", false, "Flag if the docker layers should be included")
 	cmd.Flags().BoolVar(&myProtecodeExecuteScanOptions.AddSideBarLink, "addSideBarLink", true, "Whether to create a side bar link pointing to the report produced by Protecode or not")
 	cmd.Flags().BoolVar(&myProtecodeExecuteScanOptions.Verbose, "verbose", false, "Whether to log verbose information or not")
 	cmd.Flags().StringVar(&myProtecodeExecuteScanOptions.ProtecodeTimeoutMinutes, "protecodeTimeoutMinutes", "60", "The timeout to wait for the scan to finish")
@@ -120,6 +122,13 @@ func protecodeExecuteScanMetadata() config.StepData {
 						Name:      "filePath",
 						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
+					},
+					{
+						Name:      "includeLayers",
+						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:      "bool",
 						Mandatory: false,
 						Aliases:   []config.Alias{},
 					},

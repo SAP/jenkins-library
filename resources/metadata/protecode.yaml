@@ -64,6 +64,16 @@ spec:
       - STAGES
       - STEPS
       default: null
+    - name: includeLayers
+      type: bool
+      description: Flag if the docker layers should be included
+      mandatory: false
+      scope:
+      - GENERAL
+      - PARAMETERS
+      - STAGES
+      - STEPS
+      default: false
     - name: addSideBarLink
       type: bool
       description: Whether to create a side bar link pointing to the report produced by Protecode or not
