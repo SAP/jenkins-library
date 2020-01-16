@@ -379,6 +379,9 @@ class CloudFoundryDeployTest extends BasePiperTest {
         assertThat(shellRule.shell, hasItem(containsString('cf login -u "test_cf" -p \'********\' -a https://api.cf.eu10.hana.ondemand.com -o "testOrg" -s "testSpace"')))
         assertThat(shellRule.shell, hasItem(containsString("cf blue-green-deploy testAppName -f 'test.yml'")))
         assertThat(shellRule.shell, hasItem(containsString("cf stop testAppName-old &> 1-cfStopOutput.txt")))
+
+        UUID.metaData = null
+
     }
 
     @Test
