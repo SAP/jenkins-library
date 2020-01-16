@@ -28,3 +28,8 @@ func SetVerbose(verbose bool) {
 func SetStepName(stepName string) {
 	logger = Entry().WithField("stepName", stepName)
 }
+
+// DeferExitHandler registers a logrus exit handler to allow cleanup activities.
+func DeferExitHandler(handler func()) {
+	logrus.DeferExitHandler(handler)
+}
