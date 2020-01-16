@@ -22,15 +22,15 @@ class DefaultValueCache implements Serializable {
             return instance
         }
         if(scriptBinding?.hasVariable("defaultValueCacheInstance")) {
-            Map defaultValues = scriptBinding?.getProperty("defaultValueCacheInstance")
-            return createInstance(scriptBinding, defaultValues)
+            instance = scriptBinding?.getProperty("defaultValueCacheInstance")
+            return instance
         }
     }
 
     static createInstance(Binding scriptBinding, Map defaultValues, List customDefaults = []){
         instance = new DefaultValueCache(defaultValues, customDefaults)
         if(!scriptBinding?.hasVariable("defaultValueCacheInstance")) {
-            scriptBinding?.setProperty("defaultValueCacheInstance", defaultValues)
+            scriptBinding?.setProperty("defaultValueCacheInstance", instance)
         }
         return instance
     }
