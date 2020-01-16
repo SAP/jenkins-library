@@ -54,6 +54,8 @@ func generateConfig() error {
 		return errors.Wrap(err, "metadata: read failed")
 	}
 
+	resourceParams := metadata.GetResourceParameters(GeneralConfig.EnvRootPath, "commonPipelineEnvironment")
+
 	var customConfig io.ReadCloser
 	{
 		exists, e := piperutils.FileExists(GeneralConfig.CustomConfig)
@@ -91,7 +93,7 @@ func generateConfig() error {
 		params = metadata.Spec.Inputs.Parameters
 	}
 
-	stepConfig, err = myConfig.GetStepConfig(flags, GeneralConfig.ParametersJSON, customConfig, defaultConfig, paramFilter, params, GeneralConfig.StageName, metadata.Metadata.Name)
+	stepConfig, err = myConfig.GetStepConfig(flags, GeneralConfig.ParametersJSON, customConfig, defaultConfig, paramFilter, params, resourceParams, GeneralConfig.StageName, metadata.Metadata.Name)
 	if err != nil {
 		return errors.Wrap(err, "getting step config failed")
 	}
