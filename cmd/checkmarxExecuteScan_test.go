@@ -3,10 +3,13 @@ package cmd
 import (
 	"bytes"
 	"fmt"
+	"io/ioutil"
 	"os"
+	"path/filepath"
 	"testing"
 	"time"
 
+	"github.com/SAP/jenkins-library/pkg/checkmarx"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -38,6 +41,59 @@ func (fi fileInfo) Sys() interface{} {
 	return fi.syss
 }
 
+type systemMock struct {
+	response interface{}
+}
+
+func (sys *systemMock) GetPresetByName(presets []checkmarx.Preset, presetName string) checkmarx.Preset {
+	return checkmarx.Preset{}
+}
+func (sys *systemMock) GetProjectByName(projects []checkmarx.Project, projectName string) checkmarx.Project {
+	return checkmarx.Project{}
+}
+func (sys *systemMock) GetTeamByName(teams []checkmarx.Team, teamName string) checkmarx.Team {
+	return checkmarx.Team{}
+}
+func (sys *systemMock) DownloadReport(reportID int) []byte {
+	return sys.response.([]byte)
+}
+func (sys *systemMock) GetReportStatus(reportID int) checkmarx.ReportStatusResponse {
+	return checkmarx.ReportStatusResponse{Status: checkmarx.ReportStatus{ID: 2, Value: "Created"}}
+}
+func (sys *systemMock) RequestNewReport(scanID int, reportType string) (bool, checkmarx.Report) {
+	return true, checkmarx.Report{ReportID: 17}
+}
+func (sys *systemMock) GetResults(scanID int) checkmarx.ResultsStatistics {
+	return checkmarx.ResultsStatistics{}
+}
+func (sys *systemMock) GetScanStatus(scanID int) string {
+	return "Finished"
+}
+func (sys *systemMock) ScanProject(projectID int) (bool, checkmarx.Scan) {
+	return true, checkmarx.Scan{}
+}
+func (sys *systemMock) UpdateProjectConfiguration(projectID int, presetID int, engineConfigurationID string) bool {
+	return true
+}
+func (sys *systemMock) UpdateProjectExcludeSettings(projectID int, excludeFolders string, excludeFiles string) bool {
+	return true
+}
+func (sys *systemMock) UploadProjectSourceCode(projectID int, zipFile string) bool {
+	return true
+}
+func (sys *systemMock) CreateProject(projectName string, teamID string) bool {
+	return true
+}
+func (sys *systemMock) GetPresets() []checkmarx.Preset {
+	return []checkmarx.Preset{}
+}
+func (sys *systemMock) GetProjects() []checkmarx.Project {
+	return []checkmarx.Project{}
+}
+func (sys *systemMock) GetTeams() []checkmarx.Team {
+	return []checkmarx.Team{}
+}
+
 func TestFilterFileGlob(t *testing.T) {
 	tt := []struct {
 		input    string
@@ -62,14 +118,58 @@ func TestFilterFileGlob(t *testing.T) {
 func TestZipFolder(t *testing.T) {
 
 	t.Run("zip files", func(t *testing.T) {
+		dir, err := ioutil.TempDir("", "")
+		if err != nil {
+			t.Fatal("Failed to create temporary directory")
+		}
+		// clean up tmp dir
+		defer os.RemoveAll(dir)
+
+		ioutil.WriteFile(filepath.Join(dir, "checkmarxExecuteScan.go"), []byte("cxnjckdsjhkjfz8izr"), 0700)
+		ioutil.WriteFile(filepath.Join(dir, "somepath", "checkmarxExecuteScan.txt"), []byte("0987654321"), 0700)
+		ioutil.WriteFile(filepath.Join(dir, "checkmarxExecuteScan_test.go"), []byte("123456789"), 0700)
+
 		var zipFileMock bytes.Buffer
-		zipFolder(".", &zipFileMock, []string{"!checkmarxExecuteScan_test.go", "**/*.txt", "**/checkmarxExecuteScan.go"})
+		zipFolder(dir, &zipFileMock, []string{"!checkmarxExecuteScan_test.go", "**/*.txt", "**/checkmarxExecuteScan.go"})
 
 		got := zipFileMock.Len()
-		want := 3231
+		want := 136
 
 		if got != want {
 			t.Errorf("Zipping test failed expected %v but got %v", want, got)
 		}
+	})
+}
+
+func TestGetDetailedResults(t *testing.T) {
+
+	t.Run("success case", func(t *testing.T) {
+		sys := &systemMock{response: []byte(`<?xml version="1.0" encoding="utf-8"?>
+		<CxXMLResults InitiatorName="admin" Owner="admin" ScanId="1000005" ProjectId="2" ProjectName="Project 1" TeamFullPathOnReportDate="CxServer" DeepLink="http://WIN2K12-TEMP/CxWebClient/ViewerMain.aspx?scanid=1000005&amp;projectid=2" ScanStart="Sunday, December 3, 2017 4:50:34 PM" Preset="Checkmarx Default" ScanTime="00h:03m:18s" LinesOfCodeScanned="6838" FilesScanned="34" ReportCreationTime="Sunday, December 3, 2017 6:13:45 PM" Team="CxServer" CheckmarxVersion="8.6.0" ScanComments="" ScanType="Incremental" SourceOrigin="LocalPath" Visibility="Public">
+		<Query id="430" categories="PCI DSS v3.2;PCI DSS (3.2) - 6.5.1 - Injection flaws - particularly SQL injection,OWASP Top 10 2013;A1-Injection,FISMA 2014;System And Information Integrity,NIST SP 800-53;SI-10 Information Input Validation (P1),OWASP Top 10 2017;A1-Injection" cweId="89" name="SQL_Injection" group="CSharp_High_Risk" Severity="High" Language="CSharp" LanguageHash="1363215419077432" LanguageChangeDate="2017-12-03T00:00:00.0000000" SeverityIndex="3" QueryPath="CSharp\Cx\CSharp High Risk\SQL Injection Version:0" QueryVersionCode="430">
+			<Result NodeId="10000050002" FileName="bookstore/Login.cs" Status="Recurrent" Line="179" Column="103" FalsePositive="False" Severity="High" AssignToUser="" state="0" Remark="" DeepLink="http://WIN2K12-TEMP/CxWebClient/ViewerMain.aspx?scanid=1000005&amp;projectid=2&amp;pathid=2" SeverityIndex="3">
+				<Path ResultId="1000005" PathId="2" SimilarityId="1765812516"/>
+			</Result>
+			<Result NodeId="10000050003" FileName="bookstore/Login.cs" Status="Recurrent" Line="180" Column="10" FalsePositive="False" Severity="High" AssignToUser="" state="1" Remark="" DeepLink="http://WIN2K12-TEMP/CxWebClient/ViewerMain.aspx?scanid=1000005&amp;projectid=2&amp;pathid=2" SeverityIndex="3">
+				<Path ResultId="1000005" PathId="2" SimilarityId="1765812516"/>
+			</Result>
+			<Result NodeId="10000050004" FileName="bookstore/Login.cs" Status="Recurrent" Line="181" Column="190" FalsePositive="True" Severity="Medium" AssignToUser="" state="2" Remark="" DeepLink="http://WIN2K12-TEMP/CxWebClient/ViewerMain.aspx?scanid=1000005&amp;projectid=2&amp;pathid=2" SeverityIndex="2">
+				<Path ResultId="1000005" PathId="2" SimilarityId="1765812516"/>
+			</Result>
+			<Result NodeId="10000050005" FileName="bookstore/Login.cs" Status="Recurrent" Line="181" Column="190" FalsePositive="True" Severity="Low" AssignToUser="" state="3" Remark="" DeepLink="http://WIN2K12-TEMP/CxWebClient/ViewerMain.aspx?scanid=1000005&amp;projectid=2&amp;pathid=2" SeverityIndex="2">
+				<Path ResultId="1000005" PathId="2" SimilarityId="1765812516"/>
+			</Result>
+			<Result NodeId="10000050006" FileName="bookstore/Login.cs" Status="Recurrent" Line="181" Column="190" FalsePositive="True" Severity="Low" AssignToUser="" state="4" Remark="" DeepLink="http://WIN2K12-TEMP/CxWebClient/ViewerMain.aspx?scanid=1000005&amp;projectid=2&amp;pathid=2" SeverityIndex="2">
+				<Path ResultId="1000005" PathId="2" SimilarityId="1765812516"/>
+			</Result>
+		</Query>
+		</CxXMLResults>`)}
+		result := getDetailedResults(sys, 2635)
+		assert.Equal(t, "2", result["ProjectId"], "Project ID incorrect")
+		assert.Equal(t, "Project 1", result["ProjectName"], "Project name incorrect")
+		assert.Equal(t, 2, result["High"].(map[string]int)["Issues"], "Number of High issues incorrect")
+		assert.Equal(t, 0, result["High"].(map[string]int)["NotFalsePositive"], "Number of High NotFalsePositive issues incorrect")
+		assert.Equal(t, 1, result["Medium"].(map[string]int)["Issues"], "Number of Medium issues incorrect")
+		assert.Equal(t, 0, result["Medium"].(map[string]int)["NotFalsePositive"], "Number of Medium NotFalsePositive issues incorrect")
 	})
 }

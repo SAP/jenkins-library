@@ -56,7 +56,7 @@ func TestSendRequest(t *testing.T) {
 	opts := piperHttp.ClientOptions{}
 	t.Run("test success", func(t *testing.T) {
 		myTestClient := senderMock{responseBody: `{"some": "test"}`, httpStatusCode: 200}
-		sys := System{serverURL: "https://cx.wdf.sap.corp", client: &myTestClient, logger: logger}
+		sys := SystemInstance{serverURL: "https://cx.wdf.sap.corp", client: &myTestClient, logger: logger}
 		myTestClient.SetOptions(opts)
 
 		_, err := sendRequest(&sys, "GET", "/test", nil, nil)
@@ -67,7 +67,7 @@ func TestSendRequest(t *testing.T) {
 
 	t.Run("test error", func(t *testing.T) {
 		myTestClient := senderMock{responseBody: `{"some": "test"}`, httpStatusCode: 400}
-		sys := System{serverURL: "https://cx.wdf.sap.corp", client: &myTestClient, logger: logger}
+		sys := SystemInstance{serverURL: "https://cx.wdf.sap.corp", client: &myTestClient, logger: logger}
 		myTestClient.SetOptions(opts)
 		_, err := sendRequest(&sys, "GET", "/test", nil, nil)
 
@@ -77,7 +77,7 @@ func TestSendRequest(t *testing.T) {
 
 	t.Run("test technical error", func(t *testing.T) {
 		myTestClient := senderMock{responseBody: `{"some": "test"}`, httpStatusCode: 400}
-		sys := System{serverURL: "https://cx.wdf.sap.corp", client: &myTestClient, logger: logger}
+		sys := SystemInstance{serverURL: "https://cx.wdf.sap.corp", client: &myTestClient, logger: logger}
 		myTestClient.SetOptions(opts)
 		_, err := sendRequest(&sys, "error", "/test", nil, nil)
 
@@ -103,7 +103,7 @@ func TestGetOAuthToken(t *testing.T) {
 
 	t.Run("test authentication failure", func(t *testing.T) {
 		myTestClient := senderMock{responseBody: `{}`, httpStatusCode: 400}
-		sys := System{serverURL: "https://cx.wdf.sap.corp", client: &myTestClient, logger: logger}
+		sys := SystemInstance{serverURL: "https://cx.wdf.sap.corp", client: &myTestClient, logger: logger}
 		myTestClient.SetOptions(opts)
 
 		_, err := sys.getOAuth2Token()
@@ -123,7 +123,7 @@ func TestGetOAuthToken(t *testing.T) {
 
 	t.Run("test technical error", func(t *testing.T) {
 		myTestClient := senderMock{responseBody: `{}`, httpStatusCode: 400}
-		sys := System{serverURL: "https://cx.wdf.sap.corp", client: &myTestClient, logger: logger}
+		sys := SystemInstance{serverURL: "https://cx.wdf.sap.corp", client: &myTestClient, logger: logger}
 		myTestClient.SetOptions(opts)
 		myTestClient.errorExp = true
 
@@ -138,7 +138,7 @@ func TestGetTeams(t *testing.T) {
 	opts := piperHttp.ClientOptions{}
 	t.Run("test success", func(t *testing.T) {
 		myTestClient := senderMock{responseBody: `[{"id":"1", "fullName":"Team1"}, {"id":"2", "fullName":"Team2"}, {"id":"3", "fullName":"Team3"}]`, httpStatusCode: 200}
-		sys := System{serverURL: "https://cx.wdf.sap.corp", client: &myTestClient, logger: logger}
+		sys := SystemInstance{serverURL: "https://cx.wdf.sap.corp", client: &myTestClient, logger: logger}
 		myTestClient.SetOptions(opts)
 
 		teams := sys.GetTeams()
@@ -163,7 +163,7 @@ func TestGetTeams(t *testing.T) {
 
 	t.Run("test technical error", func(t *testing.T) {
 		myTestClient := senderMock{responseBody: `[{"id":"1", "fullName":"Team1"}, {"id":"2", "fullName":"Team2"}, {"id":"3", "fullName":"Team3"}]`, httpStatusCode: 200}
-		sys := System{serverURL: "https://cx.wdf.sap.corp", client: &myTestClient, logger: logger}
+		sys := SystemInstance{serverURL: "https://cx.wdf.sap.corp", client: &myTestClient, logger: logger}
 		myTestClient.SetOptions(opts)
 		myTestClient.errorExp = true
 
@@ -178,7 +178,7 @@ func TestGetProjects(t *testing.T) {
 	opts := piperHttp.ClientOptions{}
 	t.Run("test success", func(t *testing.T) {
 		myTestClient := senderMock{responseBody: `[{"id":"1", "teamId":"1", "name":"Project1"}, {"id":"2", "teamId":"2", "name":"Project2"}]`, httpStatusCode: 200}
-		sys := System{serverURL: "https://cx.wdf.sap.corp", client: &myTestClient, logger: logger}
+		sys := SystemInstance{serverURL: "https://cx.wdf.sap.corp", client: &myTestClient, logger: logger}
 		myTestClient.SetOptions(opts)
 
 		projects := sys.GetProjects()
@@ -202,7 +202,7 @@ func TestGetProjects(t *testing.T) {
 
 	t.Run("test technical error", func(t *testing.T) {
 		myTestClient := senderMock{httpStatusCode: 200}
-		sys := System{serverURL: "https://cx.wdf.sap.corp", client: &myTestClient, logger: logger}
+		sys := SystemInstance{serverURL: "https://cx.wdf.sap.corp", client: &myTestClient, logger: logger}
 		myTestClient.SetOptions(opts)
 		myTestClient.errorExp = true
 
@@ -217,7 +217,7 @@ func TestCreateProject(t *testing.T) {
 	opts := piperHttp.ClientOptions{}
 	t.Run("test success", func(t *testing.T) {
 		myTestClient := senderMock{httpStatusCode: 200}
-		sys := System{serverURL: "https://cx.wdf.sap.corp", client: &myTestClient, logger: logger}
+		sys := SystemInstance{serverURL: "https://cx.wdf.sap.corp", client: &myTestClient, logger: logger}
 		myTestClient.SetOptions(opts)
 
 		result := sys.CreateProject("TestProjectCreate", "4711")
@@ -231,7 +231,7 @@ func TestCreateProject(t *testing.T) {
 
 	t.Run("test technical error", func(t *testing.T) {
 		myTestClient := senderMock{httpStatusCode: 200}
-		sys := System{serverURL: "https://cx.wdf.sap.corp", client: &myTestClient, logger: logger}
+		sys := SystemInstance{serverURL: "https://cx.wdf.sap.corp", client: &myTestClient, logger: logger}
 		myTestClient.SetOptions(opts)
 		myTestClient.errorExp = true
 
@@ -246,7 +246,7 @@ func TestUploadProjectSourceCode(t *testing.T) {
 	opts := piperHttp.ClientOptions{}
 	t.Run("test success", func(t *testing.T) {
 		myTestClient := senderMock{httpStatusCode: 204}
-		sys := System{serverURL: "https://cx.wdf.sap.corp", client: &myTestClient, logger: logger}
+		sys := SystemInstance{serverURL: "https://cx.wdf.sap.corp", client: &myTestClient, logger: logger}
 		myTestClient.SetOptions(opts)
 
 		result := sys.UploadProjectSourceCode(10415, "sources.zip")
@@ -265,7 +265,7 @@ func TestUpdateProjectExcludeSettings(t *testing.T) {
 	opts := piperHttp.ClientOptions{}
 	t.Run("test success", func(t *testing.T) {
 		myTestClient := senderMock{httpStatusCode: 204}
-		sys := System{serverURL: "https://cx.wdf.sap.corp", client: &myTestClient, logger: logger}
+		sys := SystemInstance{serverURL: "https://cx.wdf.sap.corp", client: &myTestClient, logger: logger}
 		myTestClient.SetOptions(opts)
 
 		result := sys.UpdateProjectExcludeSettings(10457, "some,test,a/b/c", "*.go")
@@ -284,7 +284,7 @@ func TestGetPresets(t *testing.T) {
 	opts := piperHttp.ClientOptions{}
 	t.Run("test success", func(t *testing.T) {
 		myTestClient := senderMock{responseBody: `[{"id":"1", "name":"Preset1", "ownerName":"Team1", "link":{"rel":"rel", "uri":"https://1234"}}, {"id":"2", "name":"Preset2", "ownerName":"Team1", "link":{"rel":"re2l", "uri":"https://12347"}}]`, httpStatusCode: 200}
-		sys := System{serverURL: "https://cx.wdf.sap.corp", client: &myTestClient, logger: logger}
+		sys := SystemInstance{serverURL: "https://cx.wdf.sap.corp", client: &myTestClient, logger: logger}
 		myTestClient.SetOptions(opts)
 
 		presets := sys.GetPresets()
@@ -312,7 +312,7 @@ func TestUpdateProjectConfiguration(t *testing.T) {
 	opts := piperHttp.ClientOptions{}
 	t.Run("test success", func(t *testing.T) {
 		myTestClient := senderMock{httpStatusCode: 204}
-		sys := System{serverURL: "https://cx.wdf.sap.corp", client: &myTestClient, logger: logger}
+		sys := SystemInstance{serverURL: "https://cx.wdf.sap.corp", client: &myTestClient, logger: logger}
 		myTestClient.SetOptions(opts)
 
 		result := sys.UpdateProjectConfiguration(12, 15, "1")
@@ -329,7 +329,7 @@ func TestScanProject(t *testing.T) {
 	opts := piperHttp.ClientOptions{}
 	t.Run("test success", func(t *testing.T) {
 		myTestClient := senderMock{responseBody: `{"id":1, "link":{"rel":"rel", "uri":"https://scan1234"}}`, httpStatusCode: 200}
-		sys := System{serverURL: "https://cx.wdf.sap.corp", client: &myTestClient, logger: logger}
+		sys := SystemInstance{serverURL: "https://cx.wdf.sap.corp", client: &myTestClient, logger: logger}
 		myTestClient.SetOptions(opts)
 
 		result, scan := sys.ScanProject(10745)
@@ -347,7 +347,7 @@ func TestGetScanStatus(t *testing.T) {
 	opts := piperHttp.ClientOptions{}
 	t.Run("test success", func(t *testing.T) {
 		myTestClient := senderMock{responseBody: `{"status":{"id":1,"name":"SUCCESS"}}`, httpStatusCode: 200}
-		sys := System{serverURL: "https://cx.wdf.sap.corp", client: &myTestClient, logger: logger}
+		sys := SystemInstance{serverURL: "https://cx.wdf.sap.corp", client: &myTestClient, logger: logger}
 		myTestClient.SetOptions(opts)
 
 		result := sys.GetScanStatus(10745)
@@ -363,7 +363,7 @@ func TestGetResults(t *testing.T) {
 	opts := piperHttp.ClientOptions{}
 	t.Run("test success", func(t *testing.T) {
 		myTestClient := senderMock{responseBody: `{"highSeverity":5, "mediumSeverity":4, "lowSeverity":20, "infoSeverity":10}`, httpStatusCode: 200}
-		sys := System{serverURL: "https://cx.wdf.sap.corp", client: &myTestClient, logger: logger}
+		sys := SystemInstance{serverURL: "https://cx.wdf.sap.corp", client: &myTestClient, logger: logger}
 		myTestClient.SetOptions(opts)
 
 		result := sys.GetResults(10745)
@@ -374,5 +374,78 @@ func TestGetResults(t *testing.T) {
 		assert.Equal(t, 4, result.Medium, "Medium findings incorrect")
 		assert.Equal(t, 20, result.Low, "Low findings incorrect")
 		assert.Equal(t, 10, result.Info, "Info findings incorrect")
+	})
+}
+
+func TestRequestNewReport(t *testing.T) {
+	logger := log.Entry().WithField("package", "SAP/jenkins-library/pkg/checkmarx_test")
+	opts := piperHttp.ClientOptions{}
+	t.Run("test success", func(t *testing.T) {
+		myTestClient := senderMock{responseBody: `{
+			"reportId": 6,
+			"links": {
+			  "report": {
+				"rel": "content",
+				"uri": "/reports/sastScan/6"
+			  },
+			  "status": {
+				"rel": "status",
+				"uri": "/reports/sastScan/6/status"
+			  }
+			}
+		  }`, httpStatusCode: 200}
+		sys := SystemInstance{serverURL: "https://cx.wdf.sap.corp", client: &myTestClient, logger: logger}
+		myTestClient.SetOptions(opts)
+
+		success, result := sys.RequestNewReport(10745, "XML")
+
+		assert.Equal(t, "https://cx.wdf.sap.corp/CxRestAPI/reports/sastScan", myTestClient.urlCalled, "Called url incorrect")
+		assert.Equal(t, `{"comment":"Scan report triggered by Piper","reportType":"XML","scanId":10745}`, myTestClient.requestBody, "Request body incorrect")
+		assert.Equal(t, "POST", myTestClient.httpMethod, "HTTP method incorrect")
+		assert.Equal(t, true, success, "Result status incorrect")
+		assert.Equal(t, 6, result.ReportID, "Report ID incorrect")
+	})
+}
+
+func TestGetReportStatus(t *testing.T) {
+	logger := log.Entry().WithField("package", "SAP/jenkins-library/pkg/checkmarx_test")
+	opts := piperHttp.ClientOptions{}
+	t.Run("test success", func(t *testing.T) {
+		myTestClient := senderMock{responseBody: `{
+			"link": {
+			  "rel": "content",
+			  "uri": "/reports/sastScan/51"
+			},
+			"contentType": "application/xml",
+			"status": {
+			  "id": 2,
+			  "value": "Created"
+			}
+		  }`, httpStatusCode: 200}
+		sys := SystemInstance{serverURL: "https://cx.wdf.sap.corp", client: &myTestClient, logger: logger}
+		myTestClient.SetOptions(opts)
+
+		result := sys.GetReportStatus(6)
+
+		assert.Equal(t, "https://cx.wdf.sap.corp/CxRestAPI/reports/sastScan/6/status", myTestClient.urlCalled, "Called url incorrect")
+		assert.Equal(t, "GET", myTestClient.httpMethod, "HTTP method incorrect")
+		assert.Equal(t, 2, result.Status.ID, "Status ID incorrect")
+		assert.Equal(t, "Created", result.Status.Value, "Status incorrect")
+	})
+}
+
+func TestDownloadReport(t *testing.T) {
+	logger := log.Entry().WithField("package", "SAP/jenkins-library/pkg/checkmarx_test")
+	opts := piperHttp.ClientOptions{}
+	t.Run("test success", func(t *testing.T) {
+		myTestClient := senderMock{responseBody: "abc", httpStatusCode: 200}
+		sys := SystemInstance{serverURL: "https://cx.wdf.sap.corp", client: &myTestClient, logger: logger}
+		myTestClient.SetOptions(opts)
+
+		result := sys.DownloadReport(6)
+
+		assert.Equal(t, "https://cx.wdf.sap.corp/CxRestAPI/reports/sastScan/6", myTestClient.urlCalled, "Called url incorrect")
+		assert.Equal(t, "GET", myTestClient.httpMethod, "HTTP method incorrect")
+		assert.Equal(t, []byte("abc"), result, "Result incorrect")
 	})
 }

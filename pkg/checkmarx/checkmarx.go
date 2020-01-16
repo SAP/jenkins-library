@@ -11,6 +11,8 @@ import (
 	"strconv"
 	"strings"
 
+	"encoding/xml"
+
 	piperHttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/pkg/errors"
@@ -38,6 +40,12 @@ type Scan struct {
 	Link Link `json:"link"`
 }
 
+// Report - Report Structure
+type Report struct {
+	ReportID int   `json:"reportId"`
+	Links    Links `json:"links"`
+}
+
 // ResultsStatistics - ResultsStatistics Structure
 type ResultsStatistics struct {
 	High   int `json:"highSeverity"`
@@ -61,6 +69,19 @@ type Status struct {
 	Name string `json:"name"`
 }
 
+// ReportStatusResponse - ReportStatusResponse Structure
+type ReportStatusResponse struct {
+	Location    string       `json:"location"`
+	ContentType string       `json:"contentType"`
+	Status      ReportStatus `json:"status"`
+}
+
+// ReportStatus - ReportStatus Structure
+type ReportStatus struct {
+	ID    int    `json:"id"`
+	Value string `json:"value"`
+}
+
 // Project - Project Structure
 type Project struct {
 	ID                 int                `json:"id"`
@@ -77,6 +98,12 @@ type Team struct {
 	FullName string `json:"fullName"`
 }
 
+// Links - Links Structure
+type Links struct {
+	Report Link `json:"report"`
+	Status Link `json:"status"`
+}
+
 // Link - Link Structure
 type Link struct {
 	Rel string `json:"rel"`
@@ -90,8 +117,46 @@ type SourceSettingsLink struct {
 	URI  string `json:"uri"`
 }
 
-// System is the client communicating with the Checkmarx backend
-type System struct {
+//DetailedResult - DetailedResult Structure
+type DetailedResult struct {
+	XMLName                  xml.Name `xml:"CxXMLResults"`
+	InitiatorName            string   `xml:"InitiatorName,attr"`
+	ScanID                   string   `xml:"ScanId,attr"`
+	Owner                    string   `xml:"Owner,attr"`
+	ProjectID                string   `xml:"ProjectId,attr"`
+	ProjectName              string   `xml:"ProjectName,attr"`
+	TeamFullPathOnReportDate string   `xml:"TeamFullPathOnReportDate,attr"`
+	DeepLink                 string   `xml:"DeepLink,attr"`
+	ScanStart                string   `xml:"ScanStart,attr"`
+	Preset                   string   `xml:"Preset,attr"`
+	ScanTime                 string   `xml:"ScanTime,attr"`
+	LinesOfCodeScanned       string   `xml:"LinesOfCodeScanned,attr"`
+	FilesScanned             string   `xml:"FilesScanned,attr"`
+	ReportCreationTime       string   `xml:"ReportCreationTime,attr"`
+	Team                     string   `xml:"Team,attr"`
+	CheckmarxVersion         string   `xml:"CheckmarxVersion,attr"`
+	ScanType                 string   `xml:"ScanType,attr"`
+	SourceOrigin             string   `xml:"SourceOrigin,attr"`
+	Visibility               string   `xml:"Visibility,attr"`
+	Queries                  []Query  `xml:"Query"`
+}
+
+// Query - Query Structure
+type Query struct {
+	XMLName xml.Name `xml:"Query"`
+	Results []Result `xml:"Result"`
+}
+
+// Result - Result Structure
+type Result struct {
+	XMLName       xml.Name `xml:"Result`
+	State         string   `xml:"state,attr"`
+	Severity      string   `xml:"Severity,attr"`
+	FalsePositive string   `xml:"FalsePositive,attr"`
+}
+
+// SystemInstance is the client communicating with the Checkmarx backend
+type SystemInstance struct {
 	serverURL string
 	username  string
 	password  string
@@ -99,9 +164,29 @@ type System struct {
 	logger    *logrus.Entry
 }
 
+// System is the interface abstraction of a specific SystemIns
+type System interface {
+	GetPresetByName(presets []Preset, presetName string) Preset
+	GetProjectByName(projects []Project, projectName string) Project
+	GetTeamByName(teams []Team, teamName string) Team
+	DownloadReport(reportID int) []byte
+	GetReportStatus(reportID int) ReportStatusResponse
+	RequestNewReport(scanID int, reportType string) (bool, Report)
+	GetResults(scanID int) ResultsStatistics
+	GetScanStatus(scanID int) string
+	ScanProject(projectID int) (bool, Scan)
+	UpdateProjectConfiguration(projectID int, presetID int, engineConfigurationID string) bool
+	UpdateProjectExcludeSettings(projectID int, excludeFolders string, excludeFiles string) bool
+	UploadProjectSourceCode(projectID int, zipFile string) bool
+	CreateProject(projectName string, teamID string) bool
+	GetPresets() []Preset
+	GetProjects() []Project
+	GetTeams() []Team
+}
+
 // NewSystem returns a new Checkmarx client for communicating with the backend
-func NewSystem(client piperHttp.Uploader, serverURL, username, password string) (*System, error) {
-	sys := &System{
+func NewSystem(client piperHttp.Uploader, serverURL, username, password string) (*SystemInstance, error) {
+	sys := &SystemInstance{
 		serverURL: serverURL,
 		username:  username,
 		password:  password,
@@ -122,7 +207,7 @@ func NewSystem(client piperHttp.Uploader, serverURL, username, password string) 
 	return sys, nil
 }
 
-func sendRequest(sys *System, method, url string, body io.Reader, header http.Header) ([]byte, error) {
+func sendRequest(sys *SystemInstance, method, url string, body io.Reader, header http.Header) ([]byte, error) {
 	response, err := sys.client.SendRequest(method, fmt.Sprintf("%v/CxRestAPI%v", sys.serverURL, url), body, header, nil)
 	if err != nil {
 		sys.logger.Errorf("HTTP request failed with error: %s", err)
@@ -142,7 +227,7 @@ func sendRequest(sys *System, method, url string, body io.Reader, header http.He
 	return nil, errors.Errorf("Invalid HTTP status %v with with code %v received", response.Status, response.StatusCode)
 }
 
-func (sys *System) getOAuth2Token() (string, error) {
+func (sys *SystemInstance) getOAuth2Token() (string, error) {
 	body := url.Values{
 		"username":      {sys.username},
 		"password":      {sys.password},
@@ -164,7 +249,7 @@ func (sys *System) getOAuth2Token() (string, error) {
 }
 
 // GetTeams returns the teams the user is assigned to
-func (sys *System) GetTeams() []Team {
+func (sys *SystemInstance) GetTeams() []Team {
 	sys.logger.Debug("Getting Teams...")
 	var teams []Team
 
@@ -179,7 +264,7 @@ func (sys *System) GetTeams() []Team {
 }
 
 // GetProjects returns the projects defined in the Checkmarx backend which the user has access to
-func (sys *System) GetProjects() []Project {
+func (sys *SystemInstance) GetProjects() []Project {
 	sys.logger.Debug("Getting Projects...")
 	var projects []Project
 
@@ -194,7 +279,7 @@ func (sys *System) GetProjects() []Project {
 }
 
 // CreateProject creates a new project in the Checkmarx backend
-func (sys *System) CreateProject(projectName string, teamID string) bool {
+func (sys *SystemInstance) CreateProject(projectName string, teamID string) bool {
 
 	jsonData := map[string]interface{}{
 		"name":       projectName,
@@ -220,7 +305,7 @@ func (sys *System) CreateProject(projectName string, teamID string) bool {
 }
 
 // UploadProjectSourceCode zips and uploads the project sources for scanning
-func (sys *System) UploadProjectSourceCode(projectID int, zipFile string) bool {
+func (sys *SystemInstance) UploadProjectSourceCode(projectID int, zipFile string) bool {
 	sys.logger.Debug("Starting to upload files...")
 
 	header := http.Header{}
@@ -253,7 +338,7 @@ func (sys *System) UploadProjectSourceCode(projectID int, zipFile string) bool {
 }
 
 // UpdateProjectExcludeSettings updates the exclude configuration of the project
-func (sys *System) UpdateProjectExcludeSettings(projectID int, excludeFolders string, excludeFiles string) bool {
+func (sys *SystemInstance) UpdateProjectExcludeSettings(projectID int, excludeFolders string, excludeFiles string) bool {
 	jsonData := map[string]string{
 		"excludeFoldersPattern": excludeFolders,
 		"excludeFilesPattern":   excludeFiles,
@@ -277,7 +362,7 @@ func (sys *System) UpdateProjectExcludeSettings(projectID int, excludeFolders st
 }
 
 // GetPresets loads the preset values defined in the Checkmarx backend
-func (sys *System) GetPresets() []Preset {
+func (sys *SystemInstance) GetPresets() []Preset {
 	sys.logger.Debug("Getting Presets...")
 	var presets []Preset
 
@@ -292,7 +377,7 @@ func (sys *System) GetPresets() []Preset {
 }
 
 // UpdateProjectConfiguration updates the configuration of the project addressed by projectID
-func (sys *System) UpdateProjectConfiguration(projectID int, presetID int, engineConfigurationID string) bool {
+func (sys *SystemInstance) UpdateProjectConfiguration(projectID int, presetID int, engineConfigurationID string) bool {
 	engineConfigID, _ := strconv.Atoi(engineConfigurationID)
 	jsonData := map[string]interface{}{
 		"projectId":             projectID,
@@ -302,7 +387,7 @@ func (sys *System) UpdateProjectConfiguration(projectID int, presetID int, engin
 
 	jsonValue, err := json.Marshal(jsonData)
 	if err != nil {
-		sys.logger.Errorf("Error Marshal: %s", err)
+		sys.logger.Errorf("Error marshal: %s", err)
 		return false
 	}
 
@@ -318,7 +403,7 @@ func (sys *System) UpdateProjectConfiguration(projectID int, presetID int, engin
 }
 
 // ScanProject triggers a scan on the project addressed by projectID
-func (sys *System) ScanProject(projectID int) (bool, Scan) {
+func (sys *SystemInstance) ScanProject(projectID int) (bool, Scan) {
 	scan := Scan{}
 	jsonData := map[string]interface{}{
 		"projectId":     projectID,
@@ -344,7 +429,7 @@ func (sys *System) ScanProject(projectID int) (bool, Scan) {
 }
 
 // GetScanStatus returns the status of the scan addressed by scanID
-func (sys *System) GetScanStatus(scanID int) string {
+func (sys *SystemInstance) GetScanStatus(scanID int) string {
 	var scanStatus ScanStatus
 
 	data, err := sendRequest(sys, http.MethodGet, fmt.Sprintf("/sast/scans/%v", scanID), nil, nil)
@@ -358,7 +443,7 @@ func (sys *System) GetScanStatus(scanID int) string {
 }
 
 // GetResults returns the results of the scan addressed by scanID
-func (sys *System) GetResults(scanID int) ResultsStatistics {
+func (sys *SystemInstance) GetResults(scanID int) ResultsStatistics {
 	var results ResultsStatistics
 
 	data, err := sendRequest(sys, http.MethodGet, fmt.Sprintf("/sast/scans/%v/resultsStatistics", scanID), nil, nil)
@@ -371,8 +456,60 @@ func (sys *System) GetResults(scanID int) ResultsStatistics {
 	return results
 }
 
+// RequestNewReport triggers the gereration of a  report for a specific scan addressed by scanID
+func (sys *SystemInstance) RequestNewReport(scanID int, reportType string) (bool, Report) {
+	report := Report{}
+	jsonData := map[string]interface{}{
+		"scanId":     scanID,
+		"reportType": reportType,
+		"comment":    "Scan report triggered by Piper",
+	}
+
+	jsonValue, _ := json.Marshal(jsonData)
+
+	header := http.Header{}
+	header.Set("cxOrigin", "GolangScript")
+	header.Set("Content-Type", "application/json")
+	data, err := sendRequest(sys, http.MethodPost, "/reports/sastScan", bytes.NewBuffer(jsonValue), header)
+	if err != nil {
+		sys.logger.Errorf("Failed to trigger report generation for scan %v: %s", scanID, err)
+		return false, report
+	}
+
+	json.Unmarshal(data, &report)
+	return true, report
+}
+
+// GetReportStatus returns the status of the report generation process
+func (sys *SystemInstance) GetReportStatus(reportID int) ReportStatusResponse {
+	var response ReportStatusResponse
+
+	header := http.Header{}
+	header.Set("Accept", "application/json")
+	data, err := sendRequest(sys, http.MethodGet, fmt.Sprintf("/reports/sastScan/%v/status", reportID), nil, header)
+	if err != nil {
+		sys.logger.Errorf("Failed to fetch report status for reportID %v: %s", reportID, err)
+		return response
+	}
+
+	json.Unmarshal(data, &response)
+	return response
+}
+
+// DownloadReport downloads the report addressed by reportID and returns the XML contents
+func (sys *SystemInstance) DownloadReport(reportID int) []byte {
+	header := http.Header{}
+	header.Set("Accept", "application/json")
+	data, err := sendRequest(sys, http.MethodGet, fmt.Sprintf("/reports/sastScan/%v", reportID), nil, header)
+	if err != nil {
+		sys.logger.Errorf("Failed to download report with reportID %v: %s", reportID, err)
+		return []byte{}
+	}
+	return data
+}
+
 // GetTeamByName filters a team by its name
-func (sys *System) GetTeamByName(teams []Team, teamName string) Team {
+func (sys *SystemInstance) GetTeamByName(teams []Team, teamName string) Team {
 	for _, team := range teams {
 		if team.FullName == teamName {
 			return team
@@ -382,7 +519,7 @@ func (sys *System) GetTeamByName(teams []Team, teamName string) Team {
 }
 
 // GetProjectByName filters a project by its name
-func (sys *System) GetProjectByName(projects []Project, projectName string) Project {
+func (sys *SystemInstance) GetProjectByName(projects []Project, projectName string) Project {
 	for _, project := range projects {
 		if project.Name == projectName {
 			return project
@@ -392,7 +529,7 @@ func (sys *System) GetProjectByName(projects []Project, projectName string) Proj
 }
 
 // GetPresetByName filters a preset by its name
-func (sys *System) GetPresetByName(presets []Preset, presetName string) Preset {
+func (sys *SystemInstance) GetPresetByName(presets []Preset, presetName string) Preset {
 	for _, preset := range presets {
 		if preset.Name == presetName {
 			return preset

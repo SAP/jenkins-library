@@ -30,6 +30,7 @@ type ClientOptions struct {
 	Username string
 	Password string
 	Token    string
+	Logger   *logrus.Entry
 }
 
 // Sender provides an interface to the piper http client for uid/pwd and token authenticated requests
@@ -70,7 +71,7 @@ func (c *Client) UploadFile(url, file, fieldName string, header http.Header, coo
 	err = bodyWriter.Close()
 
 	method := http.MethodPost
-	request, err := c.createRequest(method, url, bodyBuffer, header, nil)
+	request, err := c.createRequest(method, url, bodyBuffer, &header, cookies)
 	if err != nil {
 		c.logger.Debugf("New %v request to %v", method, url)
 		return &http.Response{}, errors.Wrapf(err, "error creating %v request to %v", method, url)
@@ -94,7 +95,7 @@ func (c *Client) UploadFile(url, file, fieldName string, header http.Header, coo
 func (c *Client) SendRequest(method, url string, body io.Reader, header http.Header, cookies []*http.Cookie) (*http.Response, error) {
 	httpClient := c.initialize()
 
-	request, err := c.createRequest(method, url, body, header, cookies)
+	request, err := c.createRequest(method, url, body, &header, cookies)
 	if err != nil {
 		c.logger.Debugf("New %v request to %v", method, url)
 		return &http.Response{}, errors.Wrapf(err, "error creating %v request to %v", method, url)
@@ -129,7 +130,7 @@ func (c *Client) initialize() *http.Client {
 	return httpClient
 }
 
-func (c *Client) createRequest(method, url string, body io.Reader, header http.Header, cookies []*http.Cookie) (*http.Request, error) {
+func (c *Client) createRequest(method, url string, body io.Reader, header *http.Header, cookies []*http.Cookie) (*http.Request, error) {
 	c.logger.Debugf("New %v request to %v", method, url)
 	request, err := http.NewRequest(method, url, body)
 	if err != nil {
@@ -137,7 +138,7 @@ func (c *Client) createRequest(method, url string, body io.Reader, header http.H
 	}
 
 	if header != nil {
-		for name, headers := range header {
+		for name, headers := range *header {
 			for _, h := range headers {
 				request.Header.Add(name, h)
 			}

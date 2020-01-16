@@ -2,31 +2,33 @@ package cmd
 
 import (
 	"archive/zip"
-	"fmt"
 	"io"
 	"os"
 	"path/filepath"
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 
-	piperHttp "github.com/SAP/jenkins-library/pkg/http"
+	"encoding/xml"
+
 	"github.com/SAP/jenkins-library/pkg/checkmarx"
+	piperHttp "github.com/SAP/jenkins-library/pkg/http"
+	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/bmatcuk/doublestar"
-	"github.com/pkg/errors"
 )
 
 func checkmarxExecuteScan(myCheckmarxExecuteScanOptions checkmarxExecuteScanOptions) error {
 	client := &piperHttp.Client{}
 	sys, err := checkmarx.NewSystem(client, myCheckmarxExecuteScanOptions.CheckmarxServerURL, myCheckmarxExecuteScanOptions.Username, myCheckmarxExecuteScanOptions.Password)
 	if err != nil {
-		errors.Errorf("Failed to create Checkmarx client talking to URL %v with error %v", myCheckmarxExecuteScanOptions.CheckmarxServerURL, err)
+		log.Entry().WithError(err).Fatalf("Failed to create Checkmarx client talking to URL %v", myCheckmarxExecuteScanOptions.CheckmarxServerURL)
 	}
 
 	projects := sys.GetProjects()
 	project := sys.GetProjectByName(projects, myCheckmarxExecuteScanOptions.CheckmarxProject)
 	if project.Name == myCheckmarxExecuteScanOptions.CheckmarxProject {
-		fmt.Println("Project exists...")
+		log.Entry().Debugf("Project %v exists...", myCheckmarxExecuteScanOptions.CheckmarxProject)
 	} else {
 		teams := sys.GetTeams()
 		team := checkmarx.Team{}
@@ -36,7 +38,7 @@ func checkmarxExecuteScan(myCheckmarxExecuteScanOptions checkmarxExecuteScanOpti
 		if len(team.ID) == 0 {
 			team = teams[0]
 		}
-		fmt.Println("Project does not exists...")
+		log.Entry().Debugf("Project %v does not exists...", myCheckmarxExecuteScanOptions.CheckmarxProject)
 		projectCreated := sys.CreateProject(myCheckmarxExecuteScanOptions.CheckmarxProject, team.ID)
 		if projectCreated {
 			if len(myCheckmarxExecuteScanOptions.Preset) > 0 {
@@ -45,25 +47,21 @@ func checkmarxExecuteScan(myCheckmarxExecuteScanOptions checkmarxExecuteScanOpti
 				if preset.Name == myCheckmarxExecuteScanOptions.Preset {
 					configurationUpdated := sys.UpdateProjectConfiguration(project.ID, preset.ID, myCheckmarxExecuteScanOptions.EngineConfiguration)
 					if configurationUpdated {
-						fmt.Println("Configuration of project updated: " + project.Name)
+						log.Entry().Debugf("Configuration of project %v updated", project.Name)
 					} else {
-						fmt.Println("Updating project configuration failed: " + project.Name)
-						os.Exit(10)
+						log.Entry().Fatalf("Updating configuration of project %v failed", project.Name)
 					}
 				} else {
-					fmt.Println("Preset not found, project creation failed: " + project.Name)
-					os.Exit(10)
+					log.Entry().Fatalf("Preset %v not found, creation of project %v failed", myCheckmarxExecuteScanOptions.Preset, project.Name)
 				}
 			} else {
-				fmt.Println("Preset not specified, project creation failed: " + project.Name)
-				os.Exit(10)
+				log.Entry().Fatalf("Preset not specified, creation of project %v failed", project.Name)
 			}
 			projects := sys.GetProjects()
 			project := sys.GetProjectByName(projects, myCheckmarxExecuteScanOptions.CheckmarxProject)
-			fmt.Println("New Project Created : " + project.Name)
+			log.Entry().Debugf("New Project %v created", project.Name)
 		} else {
-			fmt.Println("Cannot create Project : " + myCheckmarxExecuteScanOptions.CheckmarxProject)
-			os.Exit(10)
+			log.Entry().Fatalf("Cannot create project %v", myCheckmarxExecuteScanOptions.CheckmarxProject)
 		}
 	}
 
@@ -72,81 +70,215 @@ func checkmarxExecuteScan(myCheckmarxExecuteScanOptions checkmarxExecuteScanOpti
 	sort.Strings(patterns)
 	zipFile, err := os.Create(zipFileName)
 	if err != nil {
-		return err
+		log.Entry().WithError(err).Fatal("Failed to create archive of project sources")
 	}
 	defer zipFile.Close()
 	zipFolder("./", zipFile, patterns)
 	sourceCodeUploaded := sys.UploadProjectSourceCode(project.ID, zipFileName)
 	if sourceCodeUploaded {
-		fmt.Println("Source code Uploaded for Project : " + myCheckmarxExecuteScanOptions.CheckmarxProject)
+		log.Entry().Debugf("Source code uploaded for project %v", myCheckmarxExecuteScanOptions.CheckmarxProject)
 		err := os.Remove(zipFileName)
 		if err != nil {
-			fmt.Printf("Error : %s\n", err)
+			log.Entry().WithError(err).Warnf("Failed to delete zipped source code for project %v", myCheckmarxExecuteScanOptions.CheckmarxProject)
 		}
 
 		projectIsScanning, scan := sys.ScanProject(project.ID)
 		if projectIsScanning {
-			fmt.Println("Scanning : " + myCheckmarxExecuteScanOptions.CheckmarxProject)
+			log.Entry().Debugf("Scanning project %v ", myCheckmarxExecuteScanOptions.CheckmarxProject)
 			status := "New"
 			pastStatus := status
-			fmt.Println("Scan phase : " + status)
+			log.Entry().Debugf("Scan phase %v", status)
 			for true {
 				status = sys.GetScanStatus(scan.ID)
 				if status == "Finished" || status == "Canceled" {
 					break
 				}
 				if pastStatus != status {
-					fmt.Println("Scan phase : " + status)
+					log.Entry().Debugf("Scan phase %v ", status)
 					pastStatus = status
 				}
 			}
 			if status == "Canceled" {
-				fmt.Println("Scan Canceled via Web Interface")
-				os.Exit(10)
+				log.Entry().Fatalln("Scan canceled via web interface")
 			} else {
-				fmt.Println("Scan Finished")
-				results := sys.GetResults(scan.ID)
+				log.Entry().Debugln("Scan finished")
+				results := getDetailedResults(sys, scan.ID)
 				insecure := false
-				cxHighThreshold, _ := strconv.Atoi(myCheckmarxExecuteScanOptions.VulnerabilityThresholdHigh)
-				if results.High > cxHighThreshold {
-					insecure = true
+
+				if myCheckmarxExecuteScanOptions.VulnerabilityThresholdEnabled {
+					cxHighThreshold, _ := strconv.Atoi(myCheckmarxExecuteScanOptions.VulnerabilityThresholdHigh)
+					cxMediumThreshold, _ := strconv.Atoi(myCheckmarxExecuteScanOptions.VulnerabilityThresholdMedium)
+					cxLowThreshold, _ := strconv.Atoi(myCheckmarxExecuteScanOptions.VulnerabilityThresholdMedium)
+					highValue := results["High"].(map[string]int)["NotFalsePositive"]
+					mediumValue := results["Medium"].(map[string]int)["NotFalsePositive"]
+					lowValue := results["Low"].(map[string]int)["NotFalsePositive"]
+					var unit string
+					highViolation := ""
+					mediumViolation := ""
+					lowViolation := ""
+					if myCheckmarxExecuteScanOptions.VulnerabilityThresholdUnit == "percentage" {
+						unit = "%"
+						highAudited := results["High"].(map[string]int)["Issues"] - results["High"].(map[string]int)["NotFalsePositive"]
+						highOverall := results["High"].(map[string]int)["Issues"]
+						if highOverall == 0 {
+							highAudited = 1
+							highOverall = 1
+						}
+						mediumAudited := results["Medium"].(map[string]int)["Issues"] - results["Medium"].(map[string]int)["NotFalsePositive"]
+						mediumOverall := results["Medium"].(map[string]int)["Issues"]
+						if mediumOverall == 0 {
+							mediumAudited = 1
+							mediumOverall = 1
+						}
+						lowAudited := results["Low"].(map[string]int)["Issues"] - results["Low"].(map[string]int)["NotFalsePositive"]
+						lowOverall := results["Low"].(map[string]int)["Issues"]
+						if lowOverall == 0 {
+							lowAudited = 1
+							lowOverall = 1
+						}
+						highValue = highAudited / highOverall * 100
+						mediumValue = mediumAudited / mediumOverall * 100
+						lowValue = lowAudited / lowOverall * 100
+
+						if highValue < cxHighThreshold {
+							insecure = true
+							highViolation = "<--"
+						}
+						if mediumValue < cxMediumThreshold {
+							insecure = true
+							mediumViolation = "<--"
+						}
+						if lowValue < cxLowThreshold {
+							insecure = true
+							lowViolation = "<--"
+						}
+					}
+					if myCheckmarxExecuteScanOptions.VulnerabilityThresholdUnit == "absolute" {
+						unit = ""
+						if highValue > cxHighThreshold {
+							insecure = true
+							highViolation = "<--"
+						}
+						if mediumValue > cxMediumThreshold {
+							insecure = true
+							mediumViolation = "<--"
+						}
+						if lowValue > cxLowThreshold {
+							insecure = true
+							lowViolation = "<--"
+						}
+					}
+
+					log.Entry().Errorln("")
+					log.Entry().Errorf("High %v%v %v", highValue, unit, highViolation)
+					log.Entry().Errorf("Medium %v%v %v", mediumValue, unit, mediumViolation)
+					log.Entry().Errorf("Low %v%v %v", lowValue, unit, lowViolation)
+					log.Entry().Errorln("")
 				}
-				cxMediumThreshold, _ := strconv.Atoi(myCheckmarxExecuteScanOptions.VulnerabilityThresholdMedium)
-				if results.Medium > cxMediumThreshold {
-					insecure = true
-				}
-				cxLowThreshold, _ := strconv.Atoi(myCheckmarxExecuteScanOptions.VulnerabilityThresholdMedium)
-				if results.Low > cxLowThreshold {
-					insecure = true
-				}
+
 				if insecure {
-					fmt.Println("Insecure Application !")
-					fmt.Println("")
-					fmt.Println("High : " + strconv.Itoa(results.High))
-					fmt.Println("Medium : " + strconv.Itoa(results.Medium))
-					fmt.Println("Low : " + strconv.Itoa(results.Low))
-					fmt.Println("")
-					fmt.Println("Step Finished")
-					os.Exit(10)
+					if myCheckmarxExecuteScanOptions.VulnerabilityThresholdResult == "FAILURE" {
+						log.Entry().Fatalln("Checkmarx scan failed, the project is not compliant. For details see the archived report.")
+					} else {
+						log.Entry().Errorf("Checkmarx scan result set to %v, some results are not meeting defined thresholds. For details see the archived report.", myCheckmarxExecuteScanOptions.VulnerabilityThresholdResult)
+					}
 				} else {
-					fmt.Println("Application Secured !")
-					fmt.Println("")
-					fmt.Println("High : " + strconv.Itoa(results.High))
-					fmt.Println("Medium : " + strconv.Itoa(results.Medium))
-					fmt.Println("Low : " + strconv.Itoa(results.Low))
-					fmt.Println("")
-					fmt.Println("Step Finished")
+					log.Entry().Errorln("Checkmarx scan finished")
 				}
 			}
 		} else {
-			fmt.Println("Cannot scan Project : " + myCheckmarxExecuteScanOptions.CheckmarxProject)
-			os.Exit(10)
+			log.Entry().Fatalf("Cannot scan project %v", myCheckmarxExecuteScanOptions.CheckmarxProject)
 		}
 	} else {
-		fmt.Println("Cannot upload source code for Project : " + myCheckmarxExecuteScanOptions.CheckmarxProject)
-		os.Exit(10)
+		log.Entry().Fatalf("Cannot upload source code for project %v", myCheckmarxExecuteScanOptions.CheckmarxProject)
 	}
 	return nil
+}
+
+func generateAndDownloadReport(sys checkmarx.System, scanID int, reportType string) []byte {
+	success, report := sys.RequestNewReport(scanID, reportType)
+	if success {
+		finalStatus := 1
+		for {
+			finalStatus = sys.GetReportStatus(report.ReportID).Status.ID
+			if finalStatus != 1 {
+				break
+			}
+			time.Sleep(10 * time.Second)
+		}
+		if finalStatus == 2 {
+			return sys.DownloadReport(report.ReportID)
+		}
+	}
+	return []byte{}
+}
+
+func getDetailedResults(sys checkmarx.System, scanID int) map[string]interface{} {
+	resultMap := map[string]interface{}{}
+	data := generateAndDownloadReport(sys, scanID, "XML")
+	if len(data) > 0 {
+		var xmlResult checkmarx.DetailedResult
+		err := xml.Unmarshal(data, &xmlResult)
+		if err != nil {
+			log.Entry().Fatalf("Failed to unmarshal XML report for scan %v: %s", scanID, err)
+		}
+		resultMap["InitiatorName"] = xmlResult.InitiatorName
+		resultMap["Owner"] = xmlResult.Owner
+		resultMap["ScanId"] = xmlResult.ScanID
+		resultMap["ProjectId"] = xmlResult.ProjectID
+		resultMap["ProjectName"] = xmlResult.ProjectName
+		resultMap["Team"] = xmlResult.Team
+		resultMap["TeamFullPathOnReportDate"] = xmlResult.TeamFullPathOnReportDate
+		resultMap["ScanStart"] = xmlResult.ScanStart
+		resultMap["ScanTime"] = xmlResult.ScanTime
+		resultMap["LinesOfCodeScanned"] = xmlResult.LinesOfCodeScanned
+		resultMap["FilesScanned"] = xmlResult.FilesScanned
+		resultMap["CheckmarxVersion"] = xmlResult.CheckmarxVersion
+		resultMap["ScanType"] = xmlResult.ScanType
+		resultMap["Preset"] = xmlResult.Preset
+		resultMap["DeepLink"] = xmlResult.DeepLink
+		resultMap["ReportCreationTime"] = xmlResult.ReportCreationTime
+		for _, query := range xmlResult.Queries {
+			for _, result := range query.Results {
+				key := result.Severity
+				var submap map[string]int
+				if resultMap[key] == nil {
+					submap = map[string]int{}
+					resultMap[key] = submap
+				} else {
+					submap = resultMap[key].(map[string]int)
+				}
+				submap["Issues"]++
+
+				auditState := "ToVerify"
+				switch result.State {
+				case "1":
+					auditState = "NotExploitable"
+					break
+				case "2":
+					auditState = "Confirmed"
+					break
+				case "3":
+					auditState = "Urgent"
+					break
+				case "4":
+					auditState = "ProposedNotExploitable"
+					break
+				case "0":
+				default:
+					auditState = "ToVerify"
+					break
+				}
+				submap[auditState]++
+
+				if result.FalsePositive != "True" {
+					falsePositiveCount := submap["NotFalsePositive"]
+					submap["NotFalsePositive"] += falsePositiveCount
+				}
+			}
+		}
+	}
+	return resultMap
 }
 
 func zipFolder(source string, zipFile io.Writer, patterns []string) error {
