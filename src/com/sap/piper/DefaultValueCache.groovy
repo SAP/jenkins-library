@@ -17,17 +17,17 @@ class DefaultValueCache implements Serializable {
         }
     }
 
-    static getInstance(scriptBinding){
+    static getInstance(Binding scriptBinding){
         if (instance) {
             return instance
         }
         if(scriptBinding?.hasVariable("defaultValueCacheInstance")) {
             Map defaultValues = scriptBinding?.getProperty("defaultValueCacheInstance")
-            return createInstance(defaultValues, scriptBinding)
+            return createInstance(scriptBinding, defaultValues)
         }
     }
 
-    static createInstance(Map defaultValues, scriptBinding, List customDefaults = []){
+    static createInstance(Binding scriptBinding, Map defaultValues, List customDefaults = []){
         instance = new DefaultValueCache(defaultValues, customDefaults)
         if(!scriptBinding?.hasVariable("defaultValueCacheInstance")) {
             scriptBinding?.setProperty("defaultValueCacheInstance", defaultValues)
@@ -53,7 +53,7 @@ class DefaultValueCache implements Serializable {
         return result
     }
 
-    static void prepare(Script steps, Map parameters = [:]) {
+    static void prepare(Script workflowScript, Map parameters = [:]) {
         if(parameters == null) parameters = [:]
         if(!DefaultValueCache.hasInstance() || parameters.customDefaults) {
             def defaultValues = [:]
@@ -65,13 +65,13 @@ class DefaultValueCache implements Serializable {
             if(customDefaults in List)
                 configFileList += customDefaults
             for (def configFileName : configFileList){
-                if(configFileList.size() > 1) steps.echo "Loading configuration file '${configFileName}'"
-                def configuration = steps.readYaml text: steps.libraryResource(configFileName)
+                if(configFileList.size() > 1) workflowScript.echo "Loading configuration file '${configFileName}'"
+                def configuration = workflowScript.readYaml text: workflowScript.libraryResource(configFileName)
                 defaultValues = MapUtils.merge(
                         MapUtils.pruneNulls(defaultValues),
                         MapUtils.pruneNulls(configuration))
             }
-            DefaultValueCache.createInstance(defaultValues, steps.getBinding(), customDefaults)
+            DefaultValueCache.createInstance(workflowScript.getBinding(), defaultValues, customDefaults)
         }
     }
 

@@ -31,7 +31,7 @@ class ConfigurationLoaderTest {
         defaultConfiguration.steps = [executeGradle: [dockerImage: 'gradle:4.0.1-jdk8']]
         defaultConfiguration.stages = [staticCodeChecks: [pmdExcludes: '*.java']]
 
-        DefaultValueCache.createInstance(defaultConfiguration, mockScript.getBinding())
+        DefaultValueCache.createInstance(mockScript.getBinding(), defaultConfiguration)
     }
 
     @After
