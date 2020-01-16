@@ -46,6 +46,12 @@ public class AbapEnvironmentPullGitRepoTest extends BasePiperTest {
 
     @Before
     public void setup() {
+        UUID.metaClass.static.randomUUID = { -> 1}
+    }
+
+    @After
+    public void tearDown() {
+        UUID.metaClass = null
     }
 
     @Test
@@ -53,8 +59,6 @@ public class AbapEnvironmentPullGitRepoTest extends BasePiperTest {
         shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, /.*x-csrf-token: fetch.*/, null )
         shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, /.*POST.*/, /{"d" : { "__metadata" : { "uri" : "https:\/\/example.com\/URI" } , "status" : "R", "status_descr" : "RUNNING" }}/)
         shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, /.*https:\/\/example\.com.*/, /{"d" : { "__metadata" : { "uri" : "https:\/\/example.com\/URI" } , "status" : "S", "status_descr" : "SUCCESS" }}/)
-
-        UUID.metaClass.static.randomUUID = { -> 1}
 
         helper.registerAllowedMethod("readFile", [String.class], {
             /HTTP\/1.1 200 OK
@@ -74,9 +78,6 @@ public class AbapEnvironmentPullGitRepoTest extends BasePiperTest {
         assertThat(shellRule.shell[1], containsString(/#!\/bin\/bash curl -X POST "https:\/\/example.com\/sap\/opu\/odata\/sap\/MANAGE_GIT_REPOSITORY\/Pull" -H 'Authorization: Basic dXNlcjpwYXNzd29yZA==' -H 'Accept: application\/json' -H 'Content-Type: application\/json' -H 'x-csrf-token: TOKEN' --cookie headerFileAuth-1.txt -D headerFilePost-1.txt -d '{ "sc_name": "Z_DEMO_DM" }'/))
         assertThat(shellRule.shell[2], containsString(/#!\/bin\/bash curl -X GET "https:\/\/example.com\/URI" -H 'Authorization: Basic dXNlcjpwYXNzd29yZA==' -H 'Accept: application\/json' -D headerFilePoll-1.txt/))
         assertThat(shellRule.shell[3], containsString(/#!\/bin\/bash rm -f headerFileAuth-1.txt headerFilePost-1.txt headerFilePoll-1.txt/))
-
-        UUID.metaClass = null
-
     }
 
     @Test
@@ -85,8 +86,6 @@ public class AbapEnvironmentPullGitRepoTest extends BasePiperTest {
         shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, /.*x-csrf-token: fetch.*/, null )
         shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, /.*POST.*/, /{"d" : { "__metadata" : { "uri" : "https:\/\/example.com\/URI" } , "status" : "R", "status_descr" : "RUNNING" }}/)
         shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, /.*https:\/\/example.com.*/, /{"d" : { "__metadata" : { "uri" : "https:\/\/example.com\/URI" } , "status" : "S", "status_descr" : "SUCCESS" }}/)
-
-        UUID.metaClass.static.randomUUID = { -> 1}
 
         helper.registerAllowedMethod("readFile", [String.class], { input ->
             if (input.contains("response")) {
@@ -131,9 +130,6 @@ public class AbapEnvironmentPullGitRepoTest extends BasePiperTest {
         assertThat(shellRule.shell[4], containsString(/#!\/bin\/bash curl -X POST "https:\/\/example.com\/sap\/opu\/odata\/sap\/MANAGE_GIT_REPOSITORY\/Pull" -H 'Authorization: Basic dXNlcjpwYXNzd29yZA==' -H 'Accept: application\/json' -H 'Content-Type: application\/json' -H 'x-csrf-token: TOKEN' --cookie headerFileAuth-1.txt -D headerFilePost-1.txt -d '{ "sc_name": "Z_DEMO_DM" }'/))
         assertThat(shellRule.shell[5], containsString(/#!\/bin\/bash curl -X GET "https:\/\/example.com\/URI" -H 'Authorization: Basic dXNlcjpwYXNzd29yZA==' -H 'Accept: application\/json' -D headerFilePoll-1.txt/))
         assertThat(shellRule.shell[6], containsString(/#!\/bin\/bash rm -f headerFileAuth-1.txt headerFilePost-1.txt headerFilePoll-1.txt/))
-
-        UUID.metaClass = null
-
     }
 
     @Test
@@ -142,8 +138,6 @@ public class AbapEnvironmentPullGitRepoTest extends BasePiperTest {
         shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, /.*x-csrf-token: fetch.*/, null )
         shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, /.*POST.*/, /{"d" : { "__metadata" : { "uri" : "https:\/\/example.com\/URI" } , "status" : "R", "status_descr" : "RUNNING" }}/)
         shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, /.*https:\/\/example.com.*/, /{"d" : { "__metadata" : { "uri" : "https:\/\/example.com\/URI" } , "status" : "S", "status_descr" : "SUCCESS" }}/)
-
-        UUID.metaClass.static.randomUUID = { -> 1}
 
         helper.registerAllowedMethod("readFile", [String.class], { input ->
             if (input.contains("response")) {
@@ -187,9 +181,6 @@ public class AbapEnvironmentPullGitRepoTest extends BasePiperTest {
         assertThat(shellRule.shell[4], containsString(/#!\/bin\/bash curl -X POST "https:\/\/example.com\/sap\/opu\/odata\/sap\/MANAGE_GIT_REPOSITORY\/Pull" -H 'Authorization: Basic dXNlcjpwYXNzd29yZA==' -H 'Accept: application\/json' -H 'Content-Type: application\/json' -H 'x-csrf-token: TOKEN' --cookie headerFileAuth-1.txt -D headerFilePost-1.txt -d '{ "sc_name": "Z_DEMO_DM" }'/))
         assertThat(shellRule.shell[5], containsString(/#!\/bin\/bash curl -X GET "https:\/\/example.com\/URI" -H 'Authorization: Basic dXNlcjpwYXNzd29yZA==' -H 'Accept: application\/json' -D headerFilePoll-1.txt/))
         assertThat(shellRule.shell[6], containsString(/#!\/bin\/bash rm -f headerFileAuth-1.txt headerFilePost-1.txt headerFilePoll-1.txt/))
-
-        UUID.metaClass = null
-
     }
 
     @Test
