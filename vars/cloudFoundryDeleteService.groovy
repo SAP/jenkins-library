@@ -2,7 +2,6 @@ import com.sap.piper.GenerateDocumentation
 import com.sap.piper.BashUtils
 import com.sap.piper.JenkinsUtils
 import com.sap.piper.Utils
-import com.sap.piper.PiperGoUtils
 import com.sap.piper.ConfigurationHelper
 
 import groovy.transform.Field
@@ -66,12 +65,6 @@ void call(Map parameters = [:]) {
             .withMandatoryProperty('cloudFoundry/space')
             .withMandatoryProperty('cloudFoundry/serviceInstance')
             .use()
-
-        utils = new Utils()
-        utils.stash('piper-bin', 'piper')
-
-        piperGoUtils = new PiperGoUtils()
-        piperGoUtils.unstashPiperBin()
 
         executeCreateServicePush(script, config)
     }
