@@ -148,7 +148,7 @@ class CloudFoundryDeployTest extends BasePiperTest {
 
 
     @Test
-    void testCfNativeDockerDeploy() {
+    void testCfNativeWithAppName() {
         readYamlRule.registerYaml('test.yml', "applications: [[name: 'manifestAppName']]")
         helper.registerAllowedMethod('writeYaml', [Map], { Map parameters ->
             generatedFile = parameters.file
@@ -240,12 +240,12 @@ class CloudFoundryDeployTest extends BasePiperTest {
             juStabUtils: utils,
             jenkinsUtilsStub: new JenkinsUtilsMock(),
             deployTool: 'cf_native',
+            deployDockerImage: 'repo/image:tag',
             cloudFoundry: [
                 org: 'testOrg',
                 space: 'testSpace',
                 credentialsId: 'test_cfCredentialsId',
-                appName: 'testAppName',
-                deployDockerImage: 'repo/image:tag'
+                appName: 'testAppName'
             ]
         ])
 
@@ -268,13 +268,13 @@ class CloudFoundryDeployTest extends BasePiperTest {
             juStabUtils: utils,
             jenkinsUtilsStub: new JenkinsUtilsMock(),
             deployTool: 'cf_native',
+            deployDockerImage: 'repo/image:tag',
+            dockerCredentialsId: 'test_cfDockerCredentialsId',
             cloudFoundry: [
                 org: 'testOrg',
                 space: 'testSpace',
                 credentialsId: 'test_cfCredentialsId',
-                appName: 'testAppName',
-                deployDockerImage: 'repo/image:tag',
-                dockerCredentialsId: 'test_cfDockerCredentialsId'
+                appName: 'testAppName'
             ]
         ])
         assertThat(dockerExecuteRule.dockerParams.dockerEnvVars, hasEntry(equalTo('CF_DOCKER_PASSWORD'), equalTo("${'********'}")))
@@ -300,13 +300,13 @@ class CloudFoundryDeployTest extends BasePiperTest {
             juStabUtils: utils,
             jenkinsUtilsStub: new JenkinsUtilsMock(),
             deployTool: 'cf_native',
+            dockerCredentialsId: 'test_cfDockerCredentialsId',
             cloudFoundry: [
                 org: 'testOrg',
                 space: 'testSpace',
                 credentialsId: 'test_cfCredentialsId',
                 appName: 'testAppName',
-                manifest: 'manifest.yml',
-                dockerCredentialsId: 'test_cfDockerCredentialsId'
+                manifest: 'manifest.yml'
             ]
         ])
         assertThat(dockerExecuteRule.dockerParams.dockerEnvVars, hasEntry(equalTo('CF_DOCKER_PASSWORD'), equalTo("${'********'}")))
