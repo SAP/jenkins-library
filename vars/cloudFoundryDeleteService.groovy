@@ -80,7 +80,7 @@ private def executeCreateServicePush(script, Map config) {
             set -e
             export HOME=${config.dockerWorkspace}
 
-            ./piper cloudFoundryDeleteService --username ${BashUtils.quoteAndEscape(CF_USERNAME)} --password ${BashUtils.quoteAndEscape(CF_PASSWORD)} --api ${BashUtils.quoteAndEscape(config.cloudFoundry.apiEndpoint)} --space ${BashUtils.quoteAndEscape(config.cloudFoundry.space)} --org ${BashUtils.quoteAndEscape(config.cloudFoundry.org)} --ServiceName ${BashUtils.quoteAndEscape(config.cloudFoundry.serviceInstance)}
+            ./piper cloudFoundryDeleteService --Username ${BashUtils.quoteAndEscape(CF_USERNAME)} --Password ${BashUtils.quoteAndEscape(CF_PASSWORD)} --API ${BashUtils.quoteAndEscape(config.cloudFoundry.apiEndpoint)} --Space ${BashUtils.quoteAndEscape(config.cloudFoundry.space)} --Organisation ${BashUtils.quoteAndEscape(config.cloudFoundry.org)} --ServiceName ${BashUtils.quoteAndEscape(config.cloudFoundry.serviceInstance)}
             """
             if (returnCode!=0)  {
                 error "[${STEP_NAME}] ERROR: The execution of the delete-service plugin failed, see the logs above for more details."
