@@ -106,7 +106,7 @@ void call(Map parameters = [:]) {
                 echo "[INFO] ProjectConfig: ${projectConfig}"
             }
 
-            def mtaFilePath = script.commonPipelineEnvironment.mtarFilePath
+            def mtarFilePath = script.commonPipelineEnvironment.mtarFilePath
 
             def operationId = parameters.operationId
             if(! operationId && mode == DeployMode.BG_DEPLOY && action != Action.NONE) {
@@ -127,7 +127,7 @@ void call(Map parameters = [:]) {
 
                     dockerExecute([script: this].plus([dockerImage: options.dockerImage, dockerPullImage: options.dockerPullImage])) {
                         xsDeployStdout = sh returnStdout: true, script: """#!/bin/bash
-                        ./piper xsDeploy --defaultConfig ${configFiles} --user \${USERNAME} --password \${PASSWORD} ${mtaFilePath ? '--mtaPath ' + mtaFilePath : ''} ${operationId ? '--operationId ' + operationId : ''}
+                        ./piper xsDeploy --defaultConfig ${configFiles} --user \${USERNAME} --password \${PASSWORD} ${mtarFilePath ? '--mtaPath ' + mtarFilePath : ''} ${operationId ? '--operationId ' + operationId : ''}
                         """
                     }
 
