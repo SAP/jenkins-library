@@ -185,7 +185,9 @@ func TestRunScan(t *testing.T) {
 	// clean up tmp dir
 	defer os.RemoveAll(workspace)
 
-	err = runScan(options, sys, workspace)
+	influx := checkmarxExecuteScanInflux{}
+
+	err = runScan(options, sys, workspace, &influx)
 	assert.NoError(t, err, "Unexpected error detected")
 }
 
@@ -219,7 +221,9 @@ func TestRunScanHighViolationPercentage(t *testing.T) {
 		// clean up tmp dir
 		defer os.RemoveAll(workspace)
 
-		runScan(options, sys, workspace)
+		influx := checkmarxExecuteScanInflux{}
+
+		runScan(options, sys, workspace, &influx)
 		return
 	}
 	cmd := exec.Command(os.Args[0], "-test.run=TestRunScanHighViolationPercentage")
@@ -261,7 +265,9 @@ func TestRunScanHighViolationAbsolute(t *testing.T) {
 		// clean up tmp dir
 		defer os.RemoveAll(workspace)
 
-		runScan(options, sys, workspace)
+		influx := checkmarxExecuteScanInflux{}
+
+		runScan(options, sys, workspace, &influx)
 		return
 	}
 	cmd := exec.Command(os.Args[0], "-test.run=TestRunScanHighViolationAbsolute")
