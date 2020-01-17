@@ -44,7 +44,7 @@ class CloudFoundryDeployTest extends BasePiperTest {
     private JenkinsReadYamlRule readYamlRule = new JenkinsReadYamlRule(this)
     private JenkinsFileExistsRule fileExistsRule = new JenkinsFileExistsRule(this, [])
     private JenkinsCredentialsRule credentialsRule = new JenkinsCredentialsRule(this)
-        .withCredentials('test_cfCredentialsId', 'test_cf', '********')
+
 
     private writeInfluxMap = [:]
 
@@ -71,17 +71,14 @@ class CloudFoundryDeployTest extends BasePiperTest {
 
     @Before
     void init() {
-        rules =
-        helper.registerAllowedMethod('influxWriteData', [Map.class], {m ->
+        // removing additional credentials tests might have added; adding default credentials
+        credentialsRule.reset()
+            .withCredentials('test_cfCredentialsId', 'test_cf', '********')
+
+        rules = helper.registerAllowedMethod('influxWriteData', [Map.class], { m ->
             writeInfluxMap = m
         })
-    }
 
-    @After
-    void cleanUp() {
-        // cleaning up credentials in case a test has modified
-        credentialsRule = new JenkinsCredentialsRule(this)
-            .withCredentials('test_cfCredentialsId', 'test_cf', '********')
     }
 
     @Test

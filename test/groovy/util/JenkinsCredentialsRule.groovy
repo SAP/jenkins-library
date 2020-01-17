@@ -32,6 +32,11 @@ class JenkinsCredentialsRule implements TestRule {
         return this
     }
 
+    JenkinsCredentialsRule reset(){
+        credentials.clear()
+        return this
+    }
+
     @Override
     Statement apply(Statement base, Description description) {
         return statement(base)
