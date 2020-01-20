@@ -1,17 +1,22 @@
 package cmd
 
 import (
+	"fmt"
 	"os"
+	"path/filepath"
 
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/piperenv"
 	"github.com/spf13/cobra"
 )
 
 type protecodeExecuteScanOptions struct {
 	ProtecodeExcludeCVEs                 string `json:"protecodeExcludeCVEs,omitempty"`
 	ProtecodeFailOnSevereVulnerabilities bool   `json:"protecodeFailOnSevereVulnerabilities,omitempty"`
+	ScanImage                            string `json:"scanImage,omitempty"`
 	DockerRegistryURL                    string `json:"dockerRegistryUrl,omitempty"`
+	DockerRegistryProtocol               string `json:"dockerRegistryProtocol,omitempty"`
 	CleanupMode                          string `json:"cleanupMode,omitempty"`
 	FilePath                             string `json:"filePath,omitempty"`
 	IncludeLayers                        bool   `json:"includeLayers,omitempty"`
@@ -28,12 +33,101 @@ type protecodeExecuteScanOptions struct {
 	Password                             string `json:"password,omitempty"`
 }
 
+type protecodeExecuteScanCommonPipelineEnvironment struct {
+	container struct {
+		imageNameTag string
+		registryURL  string
+	}
+	appContainerProperties struct {
+		protecodeCount             string
+		cvss2GreaterOrEqualSeven   string
+		cvss3GreaterOrEqualSeven   string
+		excluded_vulnerabilities   string
+		triaged_vulnerabilities    string
+		historical_vulnerabilities string
+	}
+}
+
+func (p *protecodeExecuteScanCommonPipelineEnvironment) persist(path, resourceName string) {
+	content := []struct {
+		category string
+		name     string
+		value    string
+	}{
+		{category: "container", name: "imageNameTag", value: p.container.imageNameTag},
+		{category: "container", name: "registryUrl", value: p.container.registryURL},
+		{category: "appContainerProperties", name: "protecodeCount", value: p.appContainerProperties.protecodeCount},
+		{category: "appContainerProperties", name: "cvss2GreaterOrEqualSeven", value: p.appContainerProperties.cvss2GreaterOrEqualSeven},
+		{category: "appContainerProperties", name: "cvss3GreaterOrEqualSeven", value: p.appContainerProperties.cvss3GreaterOrEqualSeven},
+		{category: "appContainerProperties", name: "excluded_vulnerabilities", value: p.appContainerProperties.excluded_vulnerabilities},
+		{category: "appContainerProperties", name: "triaged_vulnerabilities", value: p.appContainerProperties.triaged_vulnerabilities},
+		{category: "appContainerProperties", name: "historical_vulnerabilities", value: p.appContainerProperties.historical_vulnerabilities},
+	}
+
+	errCount := 0
+	for _, param := range content {
+		err := piperenv.SetResourceParameter(path, resourceName, filepath.Join(param.category, param.name), param.value)
+		if err != nil {
+			log.Entry().WithError(err).Error("Error persisting piper environment.")
+			errCount++
+		}
+	}
+	if errCount > 0 {
+		os.Exit(1)
+	}
+}
+
+type protecodeExecuteScanInflux struct {
+	protecode_data struct {
+		fields struct {
+			historical_vulnerabilities string
+			triaged_vulnerabilities    string
+			excluded_vulnerabilities   string
+			major_vulnerabilities      string
+			minor_vulnerabilities      string
+			vulnerabilities            string
+		}
+		tags struct {
+		}
+	}
+}
+
+func (i *protecodeExecuteScanInflux) persist(path, resourceName string) {
+	measurementContent := []struct {
+		measurement string
+		valType     string
+		name        string
+		value       string
+	}{
+		{valType: config.InfluxField, measurement: "protecode_data", name: "historical_vulnerabilities", value: i.protecode_data.fields.historical_vulnerabilities},
+		{valType: config.InfluxField, measurement: "protecode_data", name: "triaged_vulnerabilities", value: i.protecode_data.fields.triaged_vulnerabilities},
+		{valType: config.InfluxField, measurement: "protecode_data", name: "excluded_vulnerabilities", value: i.protecode_data.fields.excluded_vulnerabilities},
+		{valType: config.InfluxField, measurement: "protecode_data", name: "major_vulnerabilities", value: i.protecode_data.fields.major_vulnerabilities},
+		{valType: config.InfluxField, measurement: "protecode_data", name: "minor_vulnerabilities", value: i.protecode_data.fields.minor_vulnerabilities},
+		{valType: config.InfluxField, measurement: "protecode_data", name: "vulnerabilities", value: i.protecode_data.fields.vulnerabilities},
+	}
+
+	errCount := 0
+	for _, metric := range measurementContent {
+		err := piperenv.SetResourceParameter(path, resourceName, filepath.Join(metric.measurement, fmt.Sprintf("%vs", metric.valType), metric.name), metric.value)
+		if err != nil {
+			log.Entry().WithError(err).Error("Error persisting influx environment.")
+			errCount++
+		}
+	}
+	if errCount > 0 {
+		os.Exit(1)
+	}
+}
+
 var myProtecodeExecuteScanOptions protecodeExecuteScanOptions
-var protecodeExecuteScanStepConfigJSON string
 
 // ProtecodeExecuteScanCommand Protecode is an Open Source Vulnerability Scanner that is capable of scanning binaries. It can be used to scan docker images but is supports many other programming languages especially those of the C family. You can find more details on its capabilities in the [OS3 - Open Source Software Security JAM](https://jam4.sapjam.com/groups/XgeUs0CXItfeWyuI4k7lM3/overview_page/aoAsA0k4TbezGFyOkhsXFs). For getting access to Protecode please visit the [guide](https://go.sap.corp/protecode).
 func ProtecodeExecuteScanCommand() *cobra.Command {
 	metadata := protecodeExecuteScanMetadata()
+	var commonPipelineEnvironment protecodeExecuteScanCommonPipelineEnvironment
+	var influx protecodeExecuteScanInflux
+
 	var createProtecodeExecuteScanCmd = &cobra.Command{
 		Use:   "protecodeExecuteScan",
 		Short: "Protecode is an Open Source Vulnerability Scanner that is capable of scanning binaries. It can be used to scan docker images but is supports many other programming languages especially those of the C family. You can find more details on its capabilities in the [OS3 - Open Source Software Security JAM](https://jam4.sapjam.com/groups/XgeUs0CXItfeWyuI4k7lM3/overview_page/aoAsA0k4TbezGFyOkhsXFs). For getting access to Protecode please visit the [guide](https://go.sap.corp/protecode).",
@@ -52,7 +146,13 @@ func ProtecodeExecuteScanCommand() *cobra.Command {
 			return PrepareConfig(cmd, &metadata, "protecodeExecuteScan", &myProtecodeExecuteScanOptions, config.OpenPiperFile)
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return protecodeExecuteScan(myProtecodeExecuteScanOptions)
+			handler := func() {
+				commonPipelineEnvironment.persist(GeneralConfig.EnvRootPath, "commonPipelineEnvironment")
+				influx.persist(GeneralConfig.EnvRootPath, "influx")
+			}
+			log.DeferExitHandler(handler)
+			defer handler()
+			return protecodeExecuteScan(myProtecodeExecuteScanOptions, &commonPipelineEnvironment, &influx)
 		},
 	}
 
@@ -63,7 +163,9 @@ func ProtecodeExecuteScanCommand() *cobra.Command {
 func addProtecodeExecuteScanFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVar(&myProtecodeExecuteScanOptions.ProtecodeExcludeCVEs, "protecodeExcludeCVEs", "[]", "DEPRECATED: Do use triaging within the Protecode UI instead")
 	cmd.Flags().BoolVar(&myProtecodeExecuteScanOptions.ProtecodeFailOnSevereVulnerabilities, "protecodeFailOnSevereVulnerabilities", true, "Whether to fail the job on severe vulnerabilties or not")
+	cmd.Flags().StringVar(&myProtecodeExecuteScanOptions.ScanImage, "scanImage", os.Getenv("PIPER_scanImage"), "The reference to the docker image to scan with Protecode")
 	cmd.Flags().StringVar(&myProtecodeExecuteScanOptions.DockerRegistryURL, "dockerRegistryUrl", os.Getenv("PIPER_dockerRegistryUrl"), "The reference to the docker registry to scan with Protecode")
+	cmd.Flags().StringVar(&myProtecodeExecuteScanOptions.DockerRegistryProtocol, "dockerRegistryProtocol", os.Getenv("PIPER_dockerRegistryProtocol"), "The docker registry protocoll")
 	cmd.Flags().StringVar(&myProtecodeExecuteScanOptions.CleanupMode, "cleanupMode", "binary", "Decides which parts are removed from the Protecode backend after the scan")
 	cmd.Flags().StringVar(&myProtecodeExecuteScanOptions.FilePath, "filePath", os.Getenv("PIPER_filePath"), "The path to the file from local workspace to scan with Protecode")
 	cmd.Flags().BoolVar(&myProtecodeExecuteScanOptions.IncludeLayers, "includeLayers", false, "Flag if the docker layers should be included")
@@ -91,123 +193,156 @@ func protecodeExecuteScanMetadata() config.StepData {
 			Inputs: config.StepInputs{
 				Parameters: []config.StepParameters{
 					{
-						Name:      "protecodeExcludeCVEs",
-						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
-						Type:      "string",
-						Mandatory: false,
-						Aliases:   []config.Alias{},
+						Name:        "protecodeExcludeCVEs",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
 					},
 					{
-						Name:      "protecodeFailOnSevereVulnerabilities",
-						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
-						Type:      "bool",
-						Mandatory: false,
-						Aliases:   []config.Alias{},
+						Name:        "protecodeFailOnSevereVulnerabilities",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
 					},
 					{
-						Name:      "dockerRegistryUrl",
-						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
-						Type:      "string",
-						Mandatory: false,
-						Aliases:   []config.Alias{},
+						Name:        "scanImage",
+						ResourceRef: []config.ResourceReference{{Name: "commonPipelineEnvironment", Param: "container/imageNameTag"}},
+						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{{Name: "dockerImage"}},
 					},
 					{
-						Name:      "cleanupMode",
-						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
-						Type:      "string",
-						Mandatory: false,
-						Aliases:   []config.Alias{},
+						Name:        "dockerRegistryUrl",
+						ResourceRef: []config.ResourceReference{{Name: "commonPipelineEnvironment", Param: "container/registryUrl"}},
+						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
 					},
 					{
-						Name:      "filePath",
-						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
-						Type:      "string",
-						Mandatory: false,
-						Aliases:   []config.Alias{},
+						Name:        "dockerRegistryProtocol",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
 					},
 					{
-						Name:      "includeLayers",
-						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
-						Type:      "bool",
-						Mandatory: false,
-						Aliases:   []config.Alias{},
+						Name:        "cleanupMode",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
 					},
 					{
-						Name:      "addSideBarLink",
-						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
-						Type:      "bool",
-						Mandatory: false,
-						Aliases:   []config.Alias{},
+						Name:        "filePath",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
 					},
 					{
-						Name:      "verbose",
-						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
-						Type:      "bool",
-						Mandatory: false,
-						Aliases:   []config.Alias{},
+						Name:        "includeLayers",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
 					},
 					{
-						Name:      "protecodeTimeoutMinutes",
-						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
-						Type:      "string",
-						Mandatory: false,
-						Aliases:   []config.Alias{},
+						Name:        "addSideBarLink",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
 					},
 					{
-						Name:      "protecodeServerUrl",
-						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
-						Type:      "string",
-						Mandatory: false,
-						Aliases:   []config.Alias{},
+						Name:        "verbose",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
 					},
 					{
-						Name:      "reportFileName",
-						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
-						Type:      "string",
-						Mandatory: false,
-						Aliases:   []config.Alias{},
+						Name:        "protecodeTimeoutMinutes",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
 					},
 					{
-						Name:      "useCallback",
-						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
-						Type:      "bool",
-						Mandatory: false,
-						Aliases:   []config.Alias{},
+						Name:        "protecodeServerUrl",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
 					},
 					{
-						Name:      "fetchUrl",
-						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
-						Type:      "string",
-						Mandatory: false,
-						Aliases:   []config.Alias{},
+						Name:        "reportFileName",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
 					},
 					{
-						Name:      "protecodeGroup",
-						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
-						Type:      "string",
-						Mandatory: true,
-						Aliases:   []config.Alias{},
+						Name:        "useCallback",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
 					},
 					{
-						Name:      "reuseExisting",
-						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
-						Type:      "bool",
-						Mandatory: false,
-						Aliases:   []config.Alias{},
+						Name:        "fetchUrl",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
 					},
 					{
-						Name:      "user",
-						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
-						Type:      "string",
-						Mandatory: true,
-						Aliases:   []config.Alias{},
+						Name:        "protecodeGroup",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   true,
+						Aliases:     []config.Alias{},
 					},
 					{
-						Name:      "password",
-						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
-						Type:      "string",
-						Mandatory: true,
-						Aliases:   []config.Alias{},
+						Name:        "reuseExisting",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+					},
+					{
+						Name:        "user",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   true,
+						Aliases:     []config.Alias{},
+					},
+					{
+						Name:        "password",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   true,
+						Aliases:     []config.Alias{},
 					},
 				},
 			},

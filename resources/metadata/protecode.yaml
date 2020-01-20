@@ -34,9 +34,37 @@ spec:
       - STAGES
       - STEPS
       default: true
+    - name: scanImage
+      aliases:
+      - name: dockerImage
+      type: string
+      description: The reference to the docker image to scan with Protecode
+      mandatory: false
+      resourceRef:
+        - name: commonPipelineEnvironment
+          param: container/imageNameTag
+      scope:
+      - GENERAL
+      - PARAMETERS
+      - STAGES
+      - STEPS
+      default: null
     - name: dockerRegistryUrl
       type: string
       description: The reference to the docker registry to scan with Protecode
+      mandatory: false
+      resourceRef:
+        - name: commonPipelineEnvironment
+          param: container/registryUrl
+      scope:
+      - GENERAL
+      - PARAMETERS
+      - STAGES
+      - STEPS
+      default: null
+    - name: dockerRegistryProtocol
+      type: string
+      description: The docker registry protocoll 
       mandatory: false
       scope:
       - GENERAL
@@ -187,5 +215,36 @@ spec:
       type: jenkins
     - name: dockerCredentialsId
       type: jenkins
+    resources:
+    - name: commonPipelineEnvironment
+      resourceSpec:
+      type: piperEnvironment
+      params:
+        - name: dockerMetadata/repo
+        - name: dockerMetadata/imageNameTag
+  outputs:
+    resources:
+      - name: commonPipelineEnvironment
+        type: piperEnvironment
+        params:
+          - name: container/imageNameTag
+          - name: container/registryUrl
+          - name: appContainerProperties/protecodeCount
+          - name: appContainerProperties/cvss2GreaterOrEqualSeven
+          - name: appContainerProperties/cvss3GreaterOrEqualSeven
+          - name: appContainerProperties/excluded_vulnerabilities
+          - name: appContainerProperties/triaged_vulnerabilities
+          - name: appContainerProperties/historical_vulnerabilities
+      - name: influx
+        type: influx
+        params:
+          - name: protecode_data
+            fields:
+              - name: historical_vulnerabilities
+              - name: triaged_vulnerabilities
+              - name: excluded_vulnerabilities
+              - name: major_vulnerabilities
+              - name: minor_vulnerabilities
+              - name: vulnerabilities
   containers:
   - image: null

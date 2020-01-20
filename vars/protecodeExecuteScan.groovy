@@ -91,22 +91,12 @@ void call(Map parameters = [:]) {
         def utils = parameters.juStabUtils ?: new Utils()
         def jenkinsUtils = parameters.jenkinsUtilsStub ?: new JenkinsUtils()
 
-        script.commonPipelineEnvironment.setInfluxStepData('protecode', false)
-
         new PiperGoUtils(this, utils).unstashPiperBin()
         utils.unstash('pipelineConfigAndTests')
 
         writeFile(file: METADATA_FILE, text: libraryResource(METADATA_FILE))
         // get context configuration
         config = readJSON (text: sh(returnStdout: true, script: "./piper getConfig --contextConfig --stepMetadata '${METADATA_FILE}'"))
-
-        //TODO move to golang
-        if (!parameters.dockerImage) {
-                    parameters.dockerImage= script.commonPipelineEnvironment.getAppContainerProperty('dockerMetadata')?.imageNameTag//?:script.commonPipelineEnvironment.getDockerMetadata().imageNameTag
-        }
-        if (!parameters.dockerRegistryUrl) {
-                    parameters.dockerRegistryUrl= config.dockerRegistryProtocol+ "://" +script.commonPipelineEnvironment.getAppContainerProperty('dockerMetadata')?.repo//"?:script.commonPipelineEnvironment.getDockerMetadata().repo}"
-        }
 
         withEnv([
             "PIPER_parametersJSON=${groovy.json.JsonOutput.toJson(parameters)}",
@@ -121,68 +111,33 @@ void call(Map parameters = [:]) {
             stepParam1: parameters?.script == null
         ], config)
 
-        //protecodeDockerWrapper(config, script) {
-            
-                withCredentials([[$class: 'UsernamePasswordMultiBinding', credentialsId: config.protecodeCredentialsId, passwordVariable: 'password', usernameVariable: 'user']]) {
+        withCredentials([[$class: 'UsernamePasswordMultiBinding', credentialsId: config.protecodeCredentialsId, passwordVariable: 'password', usernameVariable: 'user']]) {
 
-                    sh "./piper protecodeExecuteScan  --password ${password} --user ${user}"
+                sh "./piper protecodeExecuteScan  --password ${password} --user ${user}"
 
-                    archiveArtifacts artifacts: "${config.reportFileName}", allowEmptyArchive: false
-                    if (config.addSideBarLink) {
-                        jenkinsUtils.removeJobSideBarLinks("artifact/${config.reportFileName}")
-                        jenkinsUtils.addJobSideBarLink("artifact/${config.reportFileName}", "Protecode Report", "images/24x24/graph.png")
-                        jenkinsUtils.addRunSideBarLink("artifact/${config.reportFileName}", "Protecode Report", "images/24x24/graph.png")
-                        jenkinsUtils.addRunSideBarLink("${config.protecodeServerUrl}/products/${productId}/", "Protecode WebUI", "images/24x24/graph.png")
-                    }
+                archiveArtifacts artifacts: "${config.reportFileName}", allowEmptyArchive: false
+                if (config.addSideBarLink) {
+                    jenkinsUtils.removeJobSideBarLinks("artifact/${config.reportFileName}")
+                    jenkinsUtils.addJobSideBarLink("artifact/${config.reportFileName}", "Protecode Report", "images/24x24/graph.png")
+                    jenkinsUtils.addRunSideBarLink("artifact/${config.reportFileName}", "Protecode Report", "images/24x24/graph.png")
+                    jenkinsUtils.addRunSideBarLink("${config.protecodeServerUrl}/products/${productId}/", "Protecode WebUI", "images/24x24/graph.png")
                 }
+            }
 
-                def jsonResult = readJSON file: "VulnResult.txt"
+            String fileContents = new File("${config.reportFileName}").getText("UTF-8")
+            json = script.readJSON text: fileContents
+            //check if result is ok else notify
+            if(!json) {
+                    Notify.error(this, "Protecode scan failed, please check the log and protecode backend for more details.")
+            }
 
-                //check if result is ok else notify
-                if(!jsonResult) {
-                        Notify.error(this, "Protecode scan failed, please check the log and protecode backend for more details.")
+            if(json.results.summary?.verdict?.short == 'Vulns') {
+                echo "${script.commonPipelineEnvironment.getAppContainerProperty('protecodeCount')} ${json.results.summary?.verdict.detailed} of which ${script.commonPipelineEnvironment.getAppContainerProperty('cvss2GreaterOrEqualSeven')} had a CVSS v2 score >= 7.0 and ${script.commonPipelineEnvironment.getAppContainerProperty('cvss3GreaterOrEqualSeven')} had a CVSS v3 score >= 7.0.\n${script.commonPipelineEnvironment.getAppContainerProperty('excluded_vulnerabilities')} vulnerabilities were excluded via configuration (${config.protecodeExcludeCVEs}) and ${script.commonPipelineEnvironment.getAppContainerProperty('triaged_vulnerabilities')} vulnerabilities were triaged via the webUI.\nIn addition ${script.commonPipelineEnvironment.getAppContainerProperty('historical_vulnerabilities')} historical vulnerabilities were spotted."
+                if(config.protecodeFailOnSevereVulnerabilities && (script.commonPipelineEnvironment.getAppContainerProperty('cvss2GreaterOrEqualSeven') > 0 || script.commonPipelineEnvironment.getAppContainerProperty('cvss3GreaterOrEqualSeven') > 0)) {
+                    Notify.error(this, "Protecode detected Open Source Software Security vulnerabilities, the project is not compliant. For details see the archived report or the web ui: ${config.protecodeServerUrl}/products/${productId}/")
                 }
+            }
 
-                script.commonPipelineEnvironment.setInfluxCustomDataMapProperty('protecode_data', 'historical_vulnerabilities', jsonResult.historical_vulnerabilities)
-                script.commonPipelineEnvironment.setInfluxCustomDataMapProperty('protecode_data', 'triaged_vulnerabilities', jsonResult.triaged_vulnerabilities)
-                script.commonPipelineEnvironment.setInfluxCustomDataMapProperty('protecode_data', 'excluded_vulnerabilities', jsonResult.excluded_vulnerabilities)
-                script.commonPipelineEnvironment.setInfluxCustomDataMapProperty('protecode_data', 'minor_vulnerabilities', jsonResult.minor_vulnerabilities)
-                script.commonPipelineEnvironment.setInfluxCustomDataMapProperty('protecode_data', 'major_vulnerabilities', jsonResult.major_vulnerabilities)
-                script.commonPipelineEnvironment.setInfluxCustomDataMapProperty('protecode_data', 'vulnerabilities', jsonResult.vulnerabilities)
-
-
-                String fileContents = new File("${config.reportFileName}").getText("UTF-8")
-                json = script.readJSON text: fileContents
-
-                if(json.results.summary?.verdict?.short == 'Vulns') {
-                    echo "${count} ${json.results.summary?.verdict.detailed} of which ${jsonResult.cvss2GreaterOrEqualSeven} had a CVSS v2 score >= 7.0 and ${jsonResult.cvss3GreaterOrEqualSeven} had a CVSS v3 score >= 7.0.\n${jsonResult.excluded_vulnerabilities} vulnerabilities were excluded via configuration (${config.protecodeExcludeCVEs}) and ${jsonResult.triaged_vulnerabilities} vulnerabilities were triaged via the webUI.\nIn addition ${jsonResult.historical_vulnerabilities} historical vulnerabilities were spotted."
-                    if(config.protecodeFailOnSevereVulnerabilities && (jsonResult.cvss2GreaterOrEqualSeven > 0 || jsonResult.cvss3GreaterOrEqualSeven > 0)) {
-                        Notify.error(this, "Protecode detected Open Source Software Security vulnerabilities, the project is not compliant. For details see the archived report or the web ui: ${config.protecodeServerUrl}/products/${productId}/")
-                    }
-                }
-
-                script.commonPipelineEnvironment.setInfluxStepData('protecode', true)
-             }
-       // }
+        }
     }
 }
-
-/*private void protecodeDockerWrapper(config, script, Closure body) {
-    DockerUtils dockerUtils = new DockerUtils(script)
-    if (config.dockerImage && dockerUtils.onKubernetes()) {
-        dockerExecuteOnKubernetes(
-            script: script,
-            containerMap: ['docker.wdf.sap.corp:50000/piper/skopeo': 'skopeo']
-        ) {
-            container('skopeo') {
-                dockerUtils.saveImage(config.filePath, config.dockerImage, config.dockerRegistryUrl, config.dockerCredentialsId)
-                body()
-            }
-        }
-    } else if (config.dockerImage) {
-        dockerUtils.saveImage(config.filePath, config.dockerImage, config.dockerRegistryUrl, config.dockerCredentialsId)
-        body()
-    } else {
-        body()
-    }
-}*/

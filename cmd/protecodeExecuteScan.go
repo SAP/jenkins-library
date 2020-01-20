@@ -1,11 +1,9 @@
 package cmd
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -18,96 +16,153 @@ import (
 	"github.com/SAP/jenkins-library/pkg/protecode"
 )
 
-func protecodeExecuteScan(myProtecodeExecuteScanOptions protecodeExecuteScanOptions) error {
+func protecodeExecuteScan(config protecodeExecuteScanOptions, cpEnvironment *protecodeExecuteScanCommonPipelineEnvironment, influx *protecodeExecuteScanInflux) error {
 	c := command.Command{}
 	// reroute command output to loging framework
 	c.Stdout(log.Entry().Writer())
 	c.Stderr(log.Entry().Writer())
-	//create client for sending api request
-	client := createClient(myProtecodeExecuteScanOptions)
 
-	return runProtecodeScan(myProtecodeExecuteScanOptions, &c, client)
+	return runProtecodeScan(config, cpEnvironment, influx)
 }
 
-func runProtecodeScan(myProtecodeExecuteScanOptions protecodeExecuteScanOptions, command execRunner, client protecode.Protecode) error {
+func runProtecodeScan(config protecodeExecuteScanOptions, cpEnvironment *protecodeExecuteScanCommonPipelineEnvironment, influx *protecodeExecuteScanInflux) error {
 
-	getDockerImage(myProtecodeExecuteScanOptions)
+	//create client for sending api request
+	client := createClient(config)
 
-	//load existing product by filename
-	productId, err := client.LoadExistingProduct(myProtecodeExecuteScanOptions.ProtecodeGroup, myProtecodeExecuteScanOptions.FilePath, myProtecodeExecuteScanOptions.ReuseExisting)
-	if err != nil {
-		return err
-	}
-	time.
-		// check if no existing is found or reuse existing is false
-		productId, err = uploadScanOrDeclareFetch(myProtecodeExecuteScanOptions, productId, client)
-	if err != nil {
-		return err
-	}
-	if productId <= 0 {
-		return errors.New("Protecode scan failed, the product id is not valid (product id <= zero)")
-	}
-	//pollForResult
-	result, err := client.PollForResult(productId, myProtecodeExecuteScanOptions.Verbose)
-	if err != nil {
-		return err
-	}
-	//check if result is ok else notify
-	if len(result.Status) > 0 || result.Status == "F" {
-		log.Entry().Fatal("Protecode scan failed, please check the log and protecode backend for more details.")
-		//Notify.error(this, "Protecode scan failed, please check the log and protecode backend for more details.")
-		return errors.New("Protecode scan failed, please check the log and protecode backend for more details.")
-	}
+	getDockerImage(config, cpEnvironment)
 
-	//loadReport
-	resp, err := client.LoadReport(myProtecodeExecuteScanOptions.ReportFileName, productId)
-	if err != nil {
-		return err
-	}
-	//save report to filesystem
-	err = writeReportToFile(*resp, myProtecodeExecuteScanOptions.ReportFileName)
+	parsedResult, err := executeProtecodeScan(client, config, writeReportToFile)
 	if err != nil {
 		return err
 	}
 
-	//count vulnerabilities
-	m := client.ParseResultForInflux(result, myProtecodeExecuteScanOptions.ProtecodeExcludeCVEs)
+	setInfluxData(influx, parsedResult)
 
-	//write result to the filesysten
-	err = writeResultAsJSONToFile(m, "VulnResult.json", fileWriter)
-	if err != nil {
-		return err
-	}
-
-	//clean scan from server
-	err = client.DeleteScan(myProtecodeExecuteScanOptions.CleanupMode, productId)
-	if err != nil {
-		return err
-	}
+	setCommonPipelineEnvironmentData(cpEnvironment, parsedResult)
 
 	return nil
 }
 
-func getDockerImage(config protecodeExecuteScanOptions) error {
+func getDockerImage(config protecodeExecuteScanOptions, cpEnvironment *protecodeExecuteScanCommonPipelineEnvironment) error {
 
 	cachePath := "./cache"
-	fileName = getFileNameFromDockerImage(config.dockerImage)
-	image, err := pkgutil.GetImage(fileName, config.IncludeLayers, cachePath)
+	completeUrl, err := getUrlAndFileNameFromDockerImage(config, cpEnvironment)
+	if err != nil {
+		return err
+	}
+
+	image, err := pkgutil.GetImage(completeUrl, config.IncludeLayers, cachePath)
 	if err != nil {
 		return err
 	}
 
 	if len(config.FilePath) <= 0 {
+		fileName := fmt.Sprintf("%v.tar", strings.ReplaceAll(config.ScanImage, "/", "_"))
 		config.FilePath = filepath.Join(image.FSPath, fileName)
 	}
 
 	return nil
 }
 
-func getFileNameFromDockerImage(dockerImage string) string {
+func getUrlAndFileNameFromDockerImage(config protecodeExecuteScanOptions, cpEnvironment *protecodeExecuteScanCommonPipelineEnvironment) (string, error) {
 
-	//TODO what should happen when no dockerImage is set???
-	return fmt.Sprintf("%v.tar", strings.ReplaceAll(dockerImage, "/", "_"))
+	if len(config.ScanImage) <= 0 {
+		config.ScanImage = cpEnvironment.container.imageNameTag
+	}
+	if len(config.DockerRegistryURL) <= 0 {
+		config.DockerRegistryURL = fmt.Sprintf("%v://%v", config.DockerRegistryProtocol, cpEnvironment.container.registryURL)
+	}
+
+	completeUrl := config.ScanImage
+
+	if len(config.DockerRegistryURL) > 0 {
+
+		if strings.HasSuffix(config.DockerRegistryURL, "/") {
+			completeUrl = fmt.Sprintf("%v%v", config.DockerRegistryURL, config.ScanImage)
+		} else {
+			completeUrl = fmt.Sprintf("%v/%v", config.DockerRegistryURL, config.ScanImage)
+		}
+	}
+
+	if len(completeUrl) <= 0 {
+		return completeUrl, errors.New("Protecode scan failed, there is no scan image configured")
+	}
+
+	return completeUrl, nil
+}
+
+func executeProtecodeScan(client protecode.Protecode, config protecodeExecuteScanOptions, writeReportToFile func(resp io.ReadCloser, reportFileName string) error) (map[string]int, error) {
+
+	var parsedResult map[string]int = make(map[string]int)
+
+	//load existing product by filename
+	productId, err := client.LoadExistingProduct(config.ProtecodeGroup, config.FilePath, config.ReuseExisting)
+	if err != nil {
+		return parsedResult, err
+	}
+
+	// check if no existing is found or reuse existing is false
+	productId, err = uploadScanOrDeclareFetch(config, productId, client)
+	if err != nil {
+		return parsedResult, err
+	}
+	if productId <= 0 {
+		return parsedResult, errors.New("Protecode scan failed, the product id is not valid (product id <= zero)")
+	}
+	//pollForResult
+	result, err := client.PollForResult(productId, config.Verbose)
+	if err != nil {
+		return parsedResult, err
+	}
+	//check if result is ok else notify
+	if len(result.Status) > 0 && result.Status == "F" {
+		log.Entry().Fatal("Protecode scan failed, please check the log and protecode backend for more details.")
+		return parsedResult, errors.New("Protecode scan failed, please check the log and protecode backend for more details.")
+	}
+
+	//loadReport
+	resp, err := client.LoadReport(config.ReportFileName, productId)
+	if err != nil {
+		return parsedResult, err
+	}
+
+	//save report to filesystem
+	err = writeReportToFile(*resp, config.ReportFileName)
+	if err != nil {
+		return parsedResult, err
+	}
+
+	//clean scan from server
+	err = client.DeleteScan(config.CleanupMode, productId)
+	if err != nil {
+		return parsedResult, err
+	}
+
+	//count vulnerabilities
+	parsedResult = client.ParseResultForInflux(result, config.ProtecodeExcludeCVEs)
+
+	return parsedResult, nil
+}
+
+func setInfluxData(influx *protecodeExecuteScanInflux, result map[string]int) {
+
+	influx.protecode_data.fields.historical_vulnerabilities = fmt.Sprintf("%v", result["historical_vulnerabilities"])
+	influx.protecode_data.fields.historical_vulnerabilities = fmt.Sprintf("%v", result["triaged_vulnerabilities"])
+	influx.protecode_data.fields.historical_vulnerabilities = fmt.Sprintf("%v", result["excluded_vulnerabilities"])
+	influx.protecode_data.fields.historical_vulnerabilities = fmt.Sprintf("%v", result["minor_vulnerabilities"])
+	influx.protecode_data.fields.historical_vulnerabilities = fmt.Sprintf("%v", result["major_vulnerabilities"])
+	influx.protecode_data.fields.historical_vulnerabilities = fmt.Sprintf("%v", result["vulnerabilities"])
+}
+
+func setCommonPipelineEnvironmentData(cpEnvironment *protecodeExecuteScanCommonPipelineEnvironment, result map[string]int) {
+
+	cpEnvironment.appContainerProperties.protecodeCount = fmt.Sprintf("%v", result["count"])
+	cpEnvironment.appContainerProperties.cvss2GreaterOrEqualSeven = fmt.Sprintf("%v", result["cvss2GreaterOrEqualSeven"])
+	cpEnvironment.appContainerProperties.cvss3GreaterOrEqualSeven = fmt.Sprintf("%v", result["cvss3GreaterOrEqualSeven"])
+	cpEnvironment.appContainerProperties.excluded_vulnerabilities = fmt.Sprintf("%v", result["excluded_vulnerabilities"])
+	cpEnvironment.appContainerProperties.triaged_vulnerabilities = fmt.Sprintf("%v", result["triaged_vulnerabilities"])
+	cpEnvironment.appContainerProperties.historical_vulnerabilities = fmt.Sprintf("%v", result["historical_vulnerabilities"])
 }
 
 func createClient(config protecodeExecuteScanOptions) protecode.Protecode {
@@ -137,7 +192,7 @@ func createClient(config protecodeExecuteScanOptions) protecode.Protecode {
 func uploadScanOrDeclareFetch(config protecodeExecuteScanOptions, productId int, client protecode.Protecode) (int, error) {
 
 	// check if no existing is found or reuse existing is false
-	if productId == 0 || !config.ReuseExisting {
+	if productId <= 0 || !config.ReuseExisting {
 		if len(config.FetchURL) > 0 {
 			fmt.Printf("triggering Protecode scan - url: %v, group: %v", config.FetchURL, config.ProtecodeGroup)
 			result, err := client.DeclareFetchUrl(config.CleanupMode, config.ProtecodeGroup, config.FetchURL)
@@ -159,14 +214,6 @@ func uploadScanOrDeclareFetch(config protecodeExecuteScanOptions, productId int,
 	return productId, nil
 }
 
-func writeResultAsJSONToFile(m map[string]int, filename string, writeFunc func(f string, b []byte, p os.FileMode) error) error {
-	b, err := json.Marshal(m)
-	if err != nil {
-		return err
-	}
-	return writeFunc(filename, b, 644)
-}
-
 func writeReportToFile(resp io.ReadCloser, reportFileName string) error {
 	f, err := os.Create(reportFileName)
 	if err == nil {
@@ -175,8 +222,4 @@ func writeReportToFile(resp io.ReadCloser, reportFileName string) error {
 	}
 
 	return err
-}
-
-func fileWriter(filename string, b []byte, perm os.FileMode) error {
-	return ioutil.WriteFile(filename, b, perm)
 }

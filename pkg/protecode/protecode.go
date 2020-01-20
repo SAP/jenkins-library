@@ -367,7 +367,7 @@ func (pc *Protecode) PollForResult(productId int, verbose bool) (Result, error) 
 
 	ticker := time.NewTicker(10 * time.Second)
 	defer ticker.Stop()
-	ticks := pc.duration / 10
+	ticks := pc.duration / time.Second / 10
 
 	for i := ticks; i > 0; i-- {
 

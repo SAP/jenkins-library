@@ -5,28 +5,16 @@ import (
 
 	"bytes"
 	"encoding/json"
-	"fmt"
+	"io"
+	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
-	"os"
+	"path/filepath"
+	"time"
 
 	"github.com/SAP/jenkins-library/pkg/protecode"
 	"github.com/stretchr/testify/assert"
 )
-
-var fileWriterContent []byte
-
-func fileWriterMock(fileName string, b []byte, perm os.FileMode) error {
-
-	switch fileName {
-	case "VulnResult.txt":
-		fileWriterContent = b
-		return nil
-	default:
-		fileWriterContent = nil
-		return fmt.Errorf("Wrong Path: %v", fileName)
-	}
-}
 
 func TestUploadScanOrDeclareFetch(t *testing.T) {
 	requestURI := ""
@@ -66,37 +54,92 @@ func TestUploadScanOrDeclareFetch(t *testing.T) {
 	}
 }
 
-func TestWriteResultAsJSONToFileSuccess(t *testing.T) {
+func writeReportToFileMock(resp io.ReadCloser, reportFileName string) error {
+	return nil
+}
 
-	var m map[string]int = make(map[string]int)
-	m["count"] = 1
-	m["cvss2GreaterOrEqualSeven"] = 2
-	m["cvss3GreaterOrEqualSeven"] = 3
-	m["historical_vulnerabilities"] = 4
-	m["triaged_vulnerabilities"] = 5
-	m["excluded_vulnerabilities"] = 6
-	m["minor_vulnerabilities"] = 7
-	m["major_vulnerabilities"] = 8
-	m["vulnerabilities"] = 9
+func TestExecuteProtecodeScan(t *testing.T) {
+	requestURI := ""
+	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+		requestURI = req.RequestURI
+		var b bytes.Buffer
+
+		if requestURI == "/api/product/4711/" {
+			violations := filepath.Join("testdata/TestProtecode", "protecode_result_violations.json")
+			byteContent, err := ioutil.ReadFile(violations)
+			if err != nil {
+				t.Fatalf("failed reading %v", violations)
+			}
+			response := protecode.ResultData{}
+			err = json.Unmarshal(byteContent, &response)
+
+			json.NewEncoder(&b).Encode(response)
+
+		} else if requestURI == "/api/product/4711/pdf-report" {
+
+		} else {
+			response := protecode.Result{ProductId: 4711, ReportUrl: requestURI}
+			json.NewEncoder(&b).Encode(&response)
+		}
+
+		rw.Write([]byte(b.Bytes()))
+	}))
+
+	// Close the server when test finishes
+	defer server.Close()
+
+	po := protecode.ProtecodeOptions{ServerURL: server.URL, Duration: time.Minute * 3}
+	pc := protecode.Protecode{}
+	pc.SetOptions(po)
 
 	cases := []struct {
-		filename string
-		m        map[string]int
-		want     string
+		reuse    bool
+		clean    string
+		group    string
+		fetchUrl string
+		want     int
 	}{
-		{"dummy.txt", m, ""},
-		{"VulnResult.txt", m, "{\"count\":1,\"cvss2GreaterOrEqualSeven\":2,\"cvss3GreaterOrEqualSeven\":3,\"excluded_vulnerabilities\":6,\"historical_vulnerabilities\":4,\"major_vulnerabilities\":8,\"minor_vulnerabilities\":7,\"triaged_vulnerabilities\":5,\"vulnerabilities\":9}"},
+		{false, "binary", "group1", "/api/fetch/", 4711},
 	}
 
 	for _, c := range cases {
+		config := protecodeExecuteScanOptions{ReuseExisting: c.reuse, CleanupMode: c.clean, ProtecodeGroup: c.group, FetchURL: c.fetchUrl, ProtecodeTimeoutMinutes: "3", ProtecodeExcludeCVEs: "CVE-2018-1, CVE-2017-1000382", ReportFileName: "./cache/report-file.txt"}
 
-		err := writeResultAsJSONToFile(c.m, c.filename, fileWriterMock)
-		if c.filename == "dummy.txt" {
-			assert.NotNil(t, err)
-		} else {
-			assert.Nil(t, err)
-		}
-		assert.Equal(t, c.want, string(fileWriterContent[:]))
+		got, _ := executeProtecodeScan(pc, config, writeReportToFileMock)
 
+		assert.Equal(t, 1125, got["historical_vulnerabilities"])
+		assert.Equal(t, 0, got["triaged_vulnerabilities"])
+		assert.Equal(t, 1, got["excluded_vulnerabilities"])
+		assert.Equal(t, 129, got["cvss3GreaterOrEqualSeven"])
+		assert.Equal(t, 13, got["cvss2GreaterOrEqualSeven"])
+		assert.Equal(t, 226, got["vulnerabilities"])
 	}
+}
+
+func TestGetUrlAndFileNameFromDockerImage(t *testing.T) {
+
+	cases := []struct {
+		scanImage            string
+		containerScanImage   string
+		registryUrl          string
+		containerRegistryUrl string
+		protocol             string
+		want                 string
+	}{
+		{"scanImage", "", "registryUrl", "", "protocol", "registryUrl/scanImage"},
+		{"", "containerScanImage", "", "containerRegistryUrl", "protocol", "protocol://containerRegistryUrl/containerScanImage"},
+		{"", "containerScanImage", "registryUrl", "", "protocol", "registryUrl/containerScanImage"},
+	}
+
+	for _, c := range cases {
+		config := protecodeExecuteScanOptions{ScanImage: c.scanImage, DockerRegistryURL: c.registryUrl, DockerRegistryProtocol: c.protocol}
+		cpEnvironment := protecodeExecuteScanCommonPipelineEnvironment{}
+		cpEnvironment.container.imageNameTag = c.containerScanImage
+		cpEnvironment.container.registryURL = c.containerRegistryUrl
+
+		got, _ := getUrlAndFileNameFromDockerImage(config, &cpEnvironment)
+
+		assert.Equal(t, c.want, got)
+	}
+
 }
