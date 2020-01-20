@@ -1,3 +1,4 @@
+import com.cloudbees.groovy.cps.NonCPS
 import com.sap.piper.Utils
 import com.sap.piper.ConfigurationHelper
 import com.sap.piper.ConfigurationLoader
@@ -13,12 +14,12 @@ void call(Map parameters = [:], body) {
     final script = checkScript(this, parameters) ?: this
     def utils = parameters.juStabUtils ?: new Utils()
 
-    def stageName = parameters.stageName?:env.STAGE_NAME
+    def stageName = parameters.stageName ?: env.STAGE_NAME
 
     // load default & individual configuration
     Map config = ConfigurationHelper.newInstance(this)
         .loadStepDefaults()
-        .mixin(ConfigurationLoader.defaultStageConfiguration(this, stageName))
+        .mixin(ConfigurationLoader.defaultStageConfiguration(script, stageName))
         .mixinGeneralConfig(script.commonPipelineEnvironment)
         .mixinStageConfig(script.commonPipelineEnvironment, stageName)
         .mixin(parameters)
@@ -62,6 +63,7 @@ private void executeStage(script, originalStage, stageName, config, utils) {
         //Add general stage stashes to config.stashContent
         config.stashContent += script.commonPipelineEnvironment.configuration.stageStashes?.get(stageName)?.unstash ?: []
 
+        deleteDir()
         utils.unstashAll(config.stashContent)
 
         /* Defining the sources where to look for a project extension and a repository extension.
@@ -76,20 +78,19 @@ private void executeStage(script, originalStage, stageName, config, utils) {
 
         // First, check if a global extension exists via a dedicated repository
         if (globalExtensions) {
-            Script globalInterceptorScript = load(globalInterceptorFile)
             echo "[${STEP_NAME}] Found global interceptor '${globalInterceptorFile}' for ${stageName}."
             // If we call the global interceptor, we will pass on originalStage as parameter
             body = {
-                globalInterceptorScript(script: script, originalStage: body, stageName: stageName, config: config)
+                callInterceptor(script, globalInterceptorFile, originalStage, stageName, config)
             }
         }
 
         // Second, check if a project extension (within the same repository) exists
         if (projectExtensions) {
-            Script projectInterceptorScript = load(projectInterceptorFile)
             echo "[${STEP_NAME}] Running project interceptor '${projectInterceptorFile}' for ${stageName}."
             // If we call the project interceptor, we will pass on body as parameter which contains either originalStage or the repository interceptor
-            projectInterceptorScript(script: script, originalStage: body, stageName: stageName, config: config)
+            callInterceptor(script, projectInterceptorFile, body, stageName, config)
+
         } else {
             //TODO: assign projectInterceptorScript to body as done for globalInterceptorScript, currently test framework does not seem to support this case. Further investigations needed.
             body()
@@ -121,4 +122,43 @@ private void executeStage(script, originalStage, stageName, config, utils) {
             globalExtension: "${globalExtensions}"
         ], config)
     }
+}
+
+private void callInterceptor(Script script, String extensionFileName, Closure originalStage, String stageName, Map configuration) {
+    Script interceptor = load(extensionFileName)
+    if (isOldInterceptorInterfaceUsed(interceptor)) {
+        echo("[Warning] The interface to implement extensions has changed. " +
+            "The extension $extensionFileName has to implement a method named 'call' with exactly one parameter of type Map. " +
+            "This map will have the properties script, originalStage, stageName, config. " +
+            "For example: def call(Map parameters) { ... }")
+        interceptor.call(originalStage, stageName, configuration, configuration)
+    } else {
+        validateInterceptor(interceptor, extensionFileName)
+        interceptor.call([
+            script       : script,
+            originalStage: originalStage,
+            stageName    : stageName,
+            config       : configuration
+        ])
+    }
+}
+
+@NonCPS
+private boolean isInterceptorValid(Script interceptor) {
+    MetaMethod method = interceptor.metaClass.pickMethod("call", [Map.class] as Class[])
+    return method != null
+}
+
+private void validateInterceptor(Script interceptor, String extensionFileName) {
+    if (!isInterceptorValid(interceptor)) {
+        error("The extension $extensionFileName has to implement a method named 'call' with exactly one parameter of type Map. " +
+            "This map will have the properties script, originalStage, stageName, config. " +
+            "For example: def call(Map parameters) { ... }")
+    }
+}
+
+@NonCPS
+private boolean isOldInterceptorInterfaceUsed(Script interceptor) {
+    MetaMethod method = interceptor.metaClass.pickMethod("call", [Closure.class, String.class, Map.class, Map.class] as Class[])
+    return method != null
 }
