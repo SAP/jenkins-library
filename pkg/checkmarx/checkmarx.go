@@ -56,11 +56,12 @@ type ResultsStatistics struct {
 
 // ScanStatus - ScanStatus Structure
 type ScanStatus struct {
-	ID       int    `json:"id"`
-	Link     Link   `json:"link"`
-	Status   Status `json:"status"`
-	ScanType string `json:"scanType"`
-	Comment  string `json:"comment"`
+	ID            int    `json:"id"`
+	Link          Link   `json:"link"`
+	Status        Status `json:"status"`
+	ScanType      string `json:"scanType"`
+	Comment       string `json:"comment"`
+	IsIncremental bool   `json:"isIncremental"`
 }
 
 // Status - Status Structure
@@ -174,7 +175,8 @@ type System interface {
 	RequestNewReport(scanID int, reportType string) (bool, Report)
 	GetResults(scanID int) ResultsStatistics
 	GetScanStatus(scanID int) string
-	ScanProject(projectID int) (bool, Scan)
+	GetScans(projectID int) (bool, []ScanStatus)
+	ScanProject(projectID int, isIncremental, isPublic, forceScan bool) (bool, Scan)
 	UpdateProjectConfiguration(projectID int, presetID int, engineConfigurationID string) bool
 	UpdateProjectExcludeSettings(projectID int, excludeFolders string, excludeFiles string) bool
 	UploadProjectSourceCode(projectID int, zipFile string) bool
@@ -403,7 +405,7 @@ func (sys *SystemInstance) UpdateProjectConfiguration(projectID int, presetID in
 }
 
 // ScanProject triggers a scan on the project addressed by projectID
-func (sys *SystemInstance) ScanProject(projectID int) (bool, Scan) {
+func (sys *SystemInstance) ScanProject(projectID int, isIncremental, isPublic, forceScan bool) (bool, Scan) {
 	scan := Scan{}
 	jsonData := map[string]interface{}{
 		"projectId":     projectID,
@@ -426,6 +428,29 @@ func (sys *SystemInstance) ScanProject(projectID int) (bool, Scan) {
 
 	json.Unmarshal(data, &scan)
 	return true, scan
+}
+
+// GetScans returns all scan status on the project addressed by projectID
+func (sys *SystemInstance) GetScans(projectID int) (bool, []ScanStatus) {
+	scans := []ScanStatus{}
+	jsonData := map[string]interface{}{
+		"projectId": projectID,
+		"last":      20,
+	}
+
+	jsonValue, _ := json.Marshal(jsonData)
+
+	header := http.Header{}
+	header.Set("cxOrigin", "GolangScript")
+	header.Set("Content-Type", "application/json")
+	data, err := sendRequest(sys, http.MethodGet, "/sast/scans", bytes.NewBuffer(jsonValue), header)
+	if err != nil {
+		sys.logger.Errorf("Failed to fetch scans of project %v: %s", projectID, err)
+		return false, scans
+	}
+
+	json.Unmarshal(data, &scans)
+	return true, scans
 }
 
 // GetScanStatus returns the status of the scan addressed by scanID

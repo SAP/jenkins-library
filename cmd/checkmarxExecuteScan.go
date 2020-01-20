@@ -91,7 +91,16 @@ func runScan(config checkmarxExecuteScanOptions, sys checkmarx.System, workspace
 			log.Entry().WithError(err).Warnf("Failed to delete zipped source code for project %v", config.CheckmarxProject)
 		}
 
-		projectIsScanning, scan := sys.ScanProject(project.ID)
+		incremental := config.Incremental
+		fullScanCycle, err := strconv.Atoi(config.FullScanCycle)
+		if err != nil {
+			log.Entry().WithError(err).Fatalf("Invalid configuration value for fullScanCycle %v, must be a positive int", config.FullScanCycle)
+		}
+		if incremental && config.FullScansScheduled && fullScanCycle > 0 && (getNumCoherentIncrementalScans(sys, project.ID)+1)%fullScanCycle == 0 {
+			incremental = false
+		}
+
+		projectIsScanning, scan := sys.ScanProject(project.ID, incremental, false, false)
 		if projectIsScanning {
 			log.Entry().Debugf("Scanning project %v ", config.CheckmarxProject)
 			status := "New"
@@ -274,6 +283,20 @@ func generateAndDownloadReport(sys checkmarx.System, scanID int, reportType stri
 		}
 	}
 	return false, []byte{}
+}
+
+func getNumCoherentIncrementalScans(sys checkmarx.System, projectID int) int {
+	ok, scans := sys.GetScans(projectID)
+	count := 0
+	if ok {
+		for _, scan := range scans {
+			if !scan.IsIncremental {
+				break
+			}
+			count++
+		}
+	}
+	return count
 }
 
 func getDetailedResults(sys checkmarx.System, scanID int) map[string]interface{} {

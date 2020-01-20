@@ -43,7 +43,10 @@ func (fi fileInfo) Sys() interface{} {
 }
 
 type systemMock struct {
-	response interface{}
+	response      interface{}
+	isIncremental bool
+	isPublic      bool
+	forceScan     bool
 }
 
 func (sys *systemMock) GetPresetByName(presets []checkmarx.Preset, presetName string) checkmarx.Preset {
@@ -67,10 +70,16 @@ func (sys *systemMock) RequestNewReport(scanID int, reportType string) (bool, ch
 func (sys *systemMock) GetResults(scanID int) checkmarx.ResultsStatistics {
 	return checkmarx.ResultsStatistics{}
 }
+func (sys *systemMock) GetScans(projectID int) (bool, []checkmarx.ScanStatus) {
+	return true, []checkmarx.ScanStatus{checkmarx.ScanStatus{IsIncremental: true}, checkmarx.ScanStatus{IsIncremental: true}, checkmarx.ScanStatus{IsIncremental: true}, checkmarx.ScanStatus{IsIncremental: false}}
+}
 func (sys *systemMock) GetScanStatus(scanID int) string {
 	return "Finished"
 }
-func (sys *systemMock) ScanProject(projectID int) (bool, checkmarx.Scan) {
+func (sys *systemMock) ScanProject(projectID int, isIncrementalV, isPublicV, forceScanV bool) (bool, checkmarx.Scan) {
+	sys.isIncremental = isIncrementalV
+	sys.isPublic = isPublicV
+	sys.forceScan = forceScanV
 	return true, checkmarx.Scan{ID: 16}
 }
 func (sys *systemMock) UpdateProjectConfiguration(projectID int, presetID int, engineConfigurationID string) bool {
@@ -177,7 +186,7 @@ func TestGetDetailedResults(t *testing.T) {
 
 func TestRunScan(t *testing.T) {
 	sys := &systemMock{response: []byte(`<?xml version="1.0" encoding="utf-8"?><CxXMLResults />`)}
-	options := checkmarxExecuteScanOptions{VulnerabilityThresholdUnit: "absolute", FullScanCycle: "10", FullScansScheduled: true, Preset: "10048", CheckmarxGroupID: "16", VulnerabilityThresholdEnabled: true, GeneratePdfReport: true}
+	options := checkmarxExecuteScanOptions{VulnerabilityThresholdUnit: "absolute", FullScanCycle: "2", Incremental: true, FullScansScheduled: true, Preset: "10048", CheckmarxGroupID: "16", VulnerabilityThresholdEnabled: true, GeneratePdfReport: true}
 	workspace, err := ioutil.TempDir("", "workspace")
 	if err != nil {
 		t.Fatal("Failed to create temporary workspace directory")
@@ -189,6 +198,28 @@ func TestRunScan(t *testing.T) {
 
 	err = runScan(options, sys, workspace, &influx)
 	assert.NoError(t, err, "Unexpected error detected")
+	assert.Equal(t, false, sys.isIncremental, "isIncremental has wrong value")
+	assert.Equal(t, false, sys.isPublic, "isPublic has wrong value")
+	assert.Equal(t, false, sys.forceScan, "forceScan has wrong value")
+}
+
+func TestRunScanWOtherCycle(t *testing.T) {
+	sys := &systemMock{response: []byte(`<?xml version="1.0" encoding="utf-8"?><CxXMLResults />`)}
+	options := checkmarxExecuteScanOptions{VulnerabilityThresholdUnit: "percentage", FullScanCycle: "3", Incremental: true, FullScansScheduled: true, Preset: "10048", CheckmarxGroupID: "16", VulnerabilityThresholdEnabled: true, GeneratePdfReport: true}
+	workspace, err := ioutil.TempDir("", "workspace")
+	if err != nil {
+		t.Fatal("Failed to create temporary workspace directory")
+	}
+	// clean up tmp dir
+	defer os.RemoveAll(workspace)
+
+	influx := checkmarxExecuteScanInflux{}
+
+	err = runScan(options, sys, workspace, &influx)
+	assert.NoError(t, err, "Unexpected error detected")
+	assert.Equal(t, true, sys.isIncremental, "isIncremental has wrong value")
+	assert.Equal(t, false, sys.isPublic, "isPublic has wrong value")
+	assert.Equal(t, false, sys.forceScan, "forceScan has wrong value")
 }
 
 func TestRunScanHighViolationPercentage(t *testing.T) {

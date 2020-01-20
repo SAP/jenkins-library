@@ -332,13 +332,56 @@ func TestScanProject(t *testing.T) {
 		sys := SystemInstance{serverURL: "https://cx.wdf.sap.corp", client: &myTestClient, logger: logger}
 		myTestClient.SetOptions(opts)
 
-		result, scan := sys.ScanProject(10745)
+		result, scan := sys.ScanProject(10745, false, false, false)
 
 		assert.Equal(t, true, result, "ScanProject call not successful")
 		assert.Equal(t, "https://cx.wdf.sap.corp/CxRestAPI/sast/scans", myTestClient.urlCalled, "Called url incorrect")
 		assert.Equal(t, "POST", myTestClient.httpMethod, "HTTP method incorrect")
 		assert.Equal(t, 1, scan.ID, "Scan ID incorrect")
 		assert.Equal(t, "https://scan1234", scan.Link.URI, "Scan link URI incorrect")
+	})
+}
+
+func TestGetScans(t *testing.T) {
+	logger := log.Entry().WithField("package", "SAP/jenkins-library/pkg/checkmarx_test")
+	opts := piperHttp.ClientOptions{}
+	t.Run("test success", func(t *testing.T) {
+		myTestClient := senderMock{responseBody: `[
+			{
+			  "id": 1000000,
+			  "project": {
+				"id": 1,
+				"name": "Project 1 (CxTechDocs)"
+			  },
+			  "status": {
+				"id": 7,
+				"name": "Finished"
+			  },
+			  "isIncremental": false
+			},
+			{
+				"id": 1000001,
+				"project": {
+				  "id": 2,
+				  "name": "Project 2 (CxTechDocs)"
+				},
+				"status": {
+				  "id": 7,
+				  "name": "Finished"
+				},
+				"isIncremental": true
+			  }
+		  ]`, httpStatusCode: 200}
+		sys := SystemInstance{serverURL: "https://cx.wdf.sap.corp", client: &myTestClient, logger: logger}
+		myTestClient.SetOptions(opts)
+
+		result, scans := sys.GetScans(10745)
+
+		assert.Equal(t, true, result, "ScanProject call not successful")
+		assert.Equal(t, "https://cx.wdf.sap.corp/CxRestAPI/sast/scans", myTestClient.urlCalled, "Called url incorrect")
+		assert.Equal(t, "GET", myTestClient.httpMethod, "HTTP method incorrect")
+		assert.Equal(t, 2, len(scans), "Incorrect number of scans")
+		assert.Equal(t, true, scans[1].IsIncremental, "Scan link URI incorrect")
 	})
 }
 
