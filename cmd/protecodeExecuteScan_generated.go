@@ -16,7 +16,6 @@ type protecodeExecuteScanOptions struct {
 	ProtecodeFailOnSevereVulnerabilities bool   `json:"protecodeFailOnSevereVulnerabilities,omitempty"`
 	ScanImage                            string `json:"scanImage,omitempty"`
 	DockerRegistryURL                    string `json:"dockerRegistryUrl,omitempty"`
-	DockerRegistryProtocol               string `json:"dockerRegistryProtocol,omitempty"`
 	CleanupMode                          string `json:"cleanupMode,omitempty"`
 	FilePath                             string `json:"filePath,omitempty"`
 	IncludeLayers                        bool   `json:"includeLayers,omitempty"`
@@ -31,13 +30,11 @@ type protecodeExecuteScanOptions struct {
 	ReuseExisting                        bool   `json:"reuseExisting,omitempty"`
 	User                                 string `json:"user,omitempty"`
 	Password                             string `json:"password,omitempty"`
+	DockerUser                           string `json:"dockerUser,omitempty"`
+	DockerPassword                       string `json:"dockerPassword,omitempty"`
 }
 
 type protecodeExecuteScanCommonPipelineEnvironment struct {
-	container struct {
-		imageNameTag string
-		registryURL  string
-	}
 	appContainerProperties struct {
 		protecodeCount             string
 		cvss2GreaterOrEqualSeven   string
@@ -54,8 +51,6 @@ func (p *protecodeExecuteScanCommonPipelineEnvironment) persist(path, resourceNa
 		name     string
 		value    string
 	}{
-		{category: "container", name: "imageNameTag", value: p.container.imageNameTag},
-		{category: "container", name: "registryUrl", value: p.container.registryURL},
 		{category: "appContainerProperties", name: "protecodeCount", value: p.appContainerProperties.protecodeCount},
 		{category: "appContainerProperties", name: "cvss2GreaterOrEqualSeven", value: p.appContainerProperties.cvss2GreaterOrEqualSeven},
 		{category: "appContainerProperties", name: "cvss3GreaterOrEqualSeven", value: p.appContainerProperties.cvss3GreaterOrEqualSeven},
@@ -165,7 +160,6 @@ func addProtecodeExecuteScanFlags(cmd *cobra.Command) {
 	cmd.Flags().BoolVar(&myProtecodeExecuteScanOptions.ProtecodeFailOnSevereVulnerabilities, "protecodeFailOnSevereVulnerabilities", true, "Whether to fail the job on severe vulnerabilties or not")
 	cmd.Flags().StringVar(&myProtecodeExecuteScanOptions.ScanImage, "scanImage", os.Getenv("PIPER_scanImage"), "The reference to the docker image to scan with Protecode")
 	cmd.Flags().StringVar(&myProtecodeExecuteScanOptions.DockerRegistryURL, "dockerRegistryUrl", os.Getenv("PIPER_dockerRegistryUrl"), "The reference to the docker registry to scan with Protecode")
-	cmd.Flags().StringVar(&myProtecodeExecuteScanOptions.DockerRegistryProtocol, "dockerRegistryProtocol", os.Getenv("PIPER_dockerRegistryProtocol"), "The docker registry protocoll")
 	cmd.Flags().StringVar(&myProtecodeExecuteScanOptions.CleanupMode, "cleanupMode", "binary", "Decides which parts are removed from the Protecode backend after the scan")
 	cmd.Flags().StringVar(&myProtecodeExecuteScanOptions.FilePath, "filePath", os.Getenv("PIPER_filePath"), "The path to the file from local workspace to scan with Protecode")
 	cmd.Flags().BoolVar(&myProtecodeExecuteScanOptions.IncludeLayers, "includeLayers", false, "Flag if the docker layers should be included")
@@ -180,10 +174,14 @@ func addProtecodeExecuteScanFlags(cmd *cobra.Command) {
 	cmd.Flags().BoolVar(&myProtecodeExecuteScanOptions.ReuseExisting, "reuseExisting", false, "Whether to reuse an existing product instead of creating a new one")
 	cmd.Flags().StringVar(&myProtecodeExecuteScanOptions.User, "user", os.Getenv("PIPER_user"), "user which is used for the protecode scan")
 	cmd.Flags().StringVar(&myProtecodeExecuteScanOptions.Password, "password", os.Getenv("PIPER_password"), "password which is used for the user")
+	cmd.Flags().StringVar(&myProtecodeExecuteScanOptions.DockerUser, "dockerUser", os.Getenv("PIPER_dockerUser"), "user which is used for the docker image")
+	cmd.Flags().StringVar(&myProtecodeExecuteScanOptions.DockerPassword, "dockerPassword", os.Getenv("PIPER_dockerPassword"), "password which is used for the docker user")
 
 	cmd.MarkFlagRequired("protecodeGroup")
 	cmd.MarkFlagRequired("user")
 	cmd.MarkFlagRequired("password")
+	cmd.MarkFlagRequired("dockerUser")
+	cmd.MarkFlagRequired("dockerPassword")
 }
 
 // retrieve step metadata
@@ -219,14 +217,6 @@ func protecodeExecuteScanMetadata() config.StepData {
 					{
 						Name:        "dockerRegistryUrl",
 						ResourceRef: []config.ResourceReference{{Name: "commonPipelineEnvironment", Param: "container/registryUrl"}},
-						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-					},
-					{
-						Name:        "dockerRegistryProtocol",
-						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
@@ -338,6 +328,22 @@ func protecodeExecuteScanMetadata() config.StepData {
 					},
 					{
 						Name:        "password",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   true,
+						Aliases:     []config.Alias{},
+					},
+					{
+						Name:        "dockerUser",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   true,
+						Aliases:     []config.Alias{},
+					},
+					{
+						Name:        "dockerPassword",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",

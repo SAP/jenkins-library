@@ -14,6 +14,8 @@ import (
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/protecode"
+	dchClient "github.com/docker/docker-credential-helpers/client"
+	"github.com/docker/docker-credential-helpers/credentials"
 )
 
 func protecodeExecuteScan(config protecodeExecuteScanOptions, cpEnvironment *protecodeExecuteScanCommonPipelineEnvironment, influx *protecodeExecuteScanInflux) error {
@@ -30,8 +32,15 @@ func runProtecodeScan(config protecodeExecuteScanOptions, cpEnvironment *proteco
 	//create client for sending api request
 	client := createClient(config)
 
+	err := handleDockerCredentials(config)
+	if err != nil {
+		return err
+	}
 	getDockerImage(config, cpEnvironment)
-
+	err = cleanupDockerCredentials(config)
+	if err != nil {
+		return err
+	}
 	parsedResult, err := executeProtecodeScan(client, config, writeReportToFile)
 	if err != nil {
 		return err
@@ -40,6 +49,52 @@ func runProtecodeScan(config protecodeExecuteScanOptions, cpEnvironment *proteco
 	setInfluxData(influx, parsedResult)
 
 	setCommonPipelineEnvironmentData(cpEnvironment, parsedResult)
+
+	return nil
+}
+
+func handleDockerCredentials(config protecodeExecuteScanOptions) error {
+
+	if len(config.DockerUser) > 0 && len(config.DockerPassword) > 0 {
+
+		//create config file
+		f, err := os.Create("~/.docker/config.json")
+		if err == nil {
+			defer f.Close()
+			_, err = f.WriteString(`{\n"credsStore": "secretservice"\n}`)
+			if err != nil {
+				return err
+			}
+
+			p := dchClient.NewShellProgramFunc("docker-credential-secretservice")
+
+			c := &credentials.Credentials{
+				ServerURL: config.DockerRegistryURL,
+				Username:  config.DockerUser,
+				Secret:    config.DockerPassword,
+			}
+
+			//add credentials
+			if err := dchClient.Store(p, c); err != nil {
+				if err := dchClient.Erase(p, config.DockerRegistryURL); err != nil {
+					return err
+				}
+			}
+
+		}
+		return err
+	}
+
+	return nil
+}
+
+func cleanupDockerCredentials(config protecodeExecuteScanOptions) error {
+
+	p := dchClient.NewShellProgramFunc("docker-credential-secretservice")
+
+	if err := dchClient.Erase(p, config.DockerRegistryURL); err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -67,22 +122,12 @@ func getDockerImage(config protecodeExecuteScanOptions, cpEnvironment *protecode
 
 func getUrlAndFileNameFromDockerImage(config protecodeExecuteScanOptions, cpEnvironment *protecodeExecuteScanCommonPipelineEnvironment) (string, error) {
 
-	if len(config.ScanImage) <= 0 {
-		config.ScanImage = cpEnvironment.container.imageNameTag
-	}
-	if len(config.DockerRegistryURL) <= 0 {
-		config.DockerRegistryURL = fmt.Sprintf("%v://%v", config.DockerRegistryProtocol, cpEnvironment.container.registryURL)
-	}
-
 	completeUrl := config.ScanImage
 
-	if len(config.DockerRegistryURL) > 0 {
-
-		if strings.HasSuffix(config.DockerRegistryURL, "/") {
-			completeUrl = fmt.Sprintf("%v%v", config.DockerRegistryURL, config.ScanImage)
-		} else {
-			completeUrl = fmt.Sprintf("%v/%v", config.DockerRegistryURL, config.ScanImage)
-		}
+	if strings.HasSuffix(config.DockerRegistryURL, "/") {
+		completeUrl = fmt.Sprintf("remote://%v%v", config.DockerRegistryURL, config.ScanImage)
+	} else {
+		completeUrl = fmt.Sprintf("remote://%v/%v", config.DockerRegistryURL, config.ScanImage)
 	}
 
 	if len(completeUrl) <= 0 {

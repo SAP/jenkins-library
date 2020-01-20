@@ -119,23 +119,19 @@ func TestExecuteProtecodeScan(t *testing.T) {
 func TestGetUrlAndFileNameFromDockerImage(t *testing.T) {
 
 	cases := []struct {
-		scanImage            string
-		containerScanImage   string
-		registryUrl          string
-		containerRegistryUrl string
-		protocol             string
-		want                 string
+		scanImage   string
+		registryUrl string
+		protocol    string
+		want        string
 	}{
-		{"scanImage", "", "registryUrl", "", "protocol", "registryUrl/scanImage"},
-		{"", "containerScanImage", "", "containerRegistryUrl", "protocol", "protocol://containerRegistryUrl/containerScanImage"},
-		{"", "containerScanImage", "registryUrl", "", "protocol", "registryUrl/containerScanImage"},
+		{"scanImage", "registryUrl", "protocol", "remote://registryUrl/scanImage"},
+		{"containerScanImage", "containerRegistryUrl", "protocol", "remote://containerRegistryUrl/containerScanImage"},
+		{"containerScanImage", "registryUrl", "protocol", "remote://registryUrl/containerScanImage"},
 	}
 
 	for _, c := range cases {
-		config := protecodeExecuteScanOptions{ScanImage: c.scanImage, DockerRegistryURL: c.registryUrl, DockerRegistryProtocol: c.protocol}
+		config := protecodeExecuteScanOptions{ScanImage: c.scanImage, DockerRegistryURL: c.registryUrl}
 		cpEnvironment := protecodeExecuteScanCommonPipelineEnvironment{}
-		cpEnvironment.container.imageNameTag = c.containerScanImage
-		cpEnvironment.container.registryURL = c.containerRegistryUrl
 
 		got, _ := getUrlAndFileNameFromDockerImage(config, &cpEnvironment)
 

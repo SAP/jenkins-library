@@ -62,16 +62,6 @@ spec:
       - STAGES
       - STEPS
       default: null
-    - name: dockerRegistryProtocol
-      type: string
-      description: The docker registry protocoll 
-      mandatory: false
-      scope:
-      - GENERAL
-      - PARAMETERS
-      - STAGES
-      - STEPS
-      default: null
     - name: cleanupMode
       type: string
       description: Decides which parts are removed from the Protecode backend after the scan
@@ -210,6 +200,24 @@ spec:
         - PARAMETERS
         - STAGES
         - STEPS
+    - name: dockerUser
+      type: string
+      description: user which is used for the docker image
+      mandatory: true
+      scope:
+        - GENERAL
+        - PARAMETERS
+        - STAGES
+        - STEPS
+    - name: dockerPassword
+      type: string
+      description: password which is used for the docker user
+      mandatory: true
+      scope:
+        - GENERAL
+        - PARAMETERS
+        - STAGES
+        - STEPS
     secrets:
     - name: protecodeCredentialsId
       type: jenkins
@@ -227,8 +235,6 @@ spec:
       - name: commonPipelineEnvironment
         type: piperEnvironment
         params:
-          - name: container/imageNameTag
-          - name: container/registryUrl
           - name: appContainerProperties/protecodeCount
           - name: appContainerProperties/cvss2GreaterOrEqualSeven
           - name: appContainerProperties/cvss3GreaterOrEqualSeven

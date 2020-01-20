@@ -111,22 +111,24 @@ void call(Map parameters = [:]) {
             stepParam1: parameters?.script == null
         ], config)
 
-        withCredentials([[$class: 'UsernamePasswordMultiBinding', credentialsId: config.protecodeCredentialsId, passwordVariable: 'password', usernameVariable: 'user']]) {
+        withCredentials([[$class: 'UsernamePasswordMultiBinding', credentialsId: config.dockerCredentialsId, passwordVariable: 'dockerPassword', usernameVariable: 'dockerUser']]) {
+            withCredentials([[$class: 'UsernamePasswordMultiBinding', credentialsId: config.protecodeCredentialsId, passwordVariable: 'password', usernameVariable: 'user']]) {
 
-                sh "./piper protecodeExecuteScan  --password ${password} --user ${user}"
+                    sh "./piper protecodeExecuteScan  --password ${password} --user ${user}"
 
-                archiveArtifacts artifacts: "${config.reportFileName}", allowEmptyArchive: false
-                if (config.addSideBarLink) {
-                    jenkinsUtils.removeJobSideBarLinks("artifact/${config.reportFileName}")
-                    jenkinsUtils.addJobSideBarLink("artifact/${config.reportFileName}", "Protecode Report", "images/24x24/graph.png")
-                    jenkinsUtils.addRunSideBarLink("artifact/${config.reportFileName}", "Protecode Report", "images/24x24/graph.png")
-                    jenkinsUtils.addRunSideBarLink("${config.protecodeServerUrl}/products/${productId}/", "Protecode WebUI", "images/24x24/graph.png")
+                    archiveArtifacts artifacts: "${config.reportFileName}", allowEmptyArchive: false
+                    if (config.addSideBarLink) {
+                        jenkinsUtils.removeJobSideBarLinks("artifact/${config.reportFileName}")
+                        jenkinsUtils.addJobSideBarLink("artifact/${config.reportFileName}", "Protecode Report", "images/24x24/graph.png")
+                        jenkinsUtils.addRunSideBarLink("artifact/${config.reportFileName}", "Protecode Report", "images/24x24/graph.png")
+                        jenkinsUtils.addRunSideBarLink("${config.protecodeServerUrl}/products/${productId}/", "Protecode WebUI", "images/24x24/graph.png")
+                    }
                 }
             }
 
             String fileContents = new File("${config.reportFileName}").getText("UTF-8")
             json = script.readJSON text: fileContents
-            //check if result is ok else notify
+            
             if(!json) {
                     Notify.error(this, "Protecode scan failed, please check the log and protecode backend for more details.")
             }
