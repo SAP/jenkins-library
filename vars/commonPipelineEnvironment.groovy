@@ -1,5 +1,6 @@
 import com.sap.piper.ConfigurationLoader
 import com.sap.piper.ConfigurationMerger
+import com.sap.piper.DefaultValueCache
 import com.sap.piper.analytics.InfluxData
 
 class commonPipelineEnvironment implements Serializable {
@@ -142,5 +143,75 @@ class commonPipelineEnvironment implements Serializable {
         config = ConfigurationMerger.merge(configuration.get('steps')?.get(stepName) ?: [:], null, config)
         config = ConfigurationMerger.merge(configuration.get('stages')?.get(stageName) ?: [:], null, config)
         return config
+    }
+
+    void writeToDisk(script) {
+
+        def files = [
+            [filename: '.pipeline/commonPipelineEnvironment/artifactVersion', content: artifactVersion],
+            [filename: '.pipeline/commonPipelineEnvironment/github/owner', content: githubOrg],
+            [filename: '.pipeline/commonPipelineEnvironment/github/repository', content: githubRepo],
+            [filename: '.pipeline/commonPipelineEnvironment/git/branch', content: gitBranch],
+            [filename: '.pipeline/commonPipelineEnvironment/git/commitId', content: gitCommitId],
+            [filename: '.pipeline/commonPipelineEnvironment/git/commitMessage', content: gitCommitMessage],
+        ]
+
+        files.each({f  ->
+            if (f.content && !script.fileExists(f.filename)) {
+                script.writeFile file: f.filename, text: f.content
+            }
+        })
+
+        valueMap.each({key, value ->
+            def fileName = ".pipeline/commonPipelineEnvironment/custom/${key}"
+            if (value && !script.fileExists(fileName)) {
+                //ToDo: check for value type and act accordingly?
+                script.writeFile file: fileName, text: value
+            }
+        })
+    }
+
+    void readFromDisk() {
+        def file = '.pipeline/commonPipelineEnvironment/artifactVersion'
+        if (fileExists(file)) {
+            artifactVersion = readFile(file)
+        }
+
+        file = '.pipeline/commonPipelineEnvironment/github/owner'
+        if (fileExists(file)) {
+            githubOrg = readFile(file)
+        }
+
+        file = '.pipeline/commonPipelineEnvironment/github/repository'
+        if (fileExists(file)) {
+            githubRepo = readFile(file)
+        }
+
+        file = '.pipeline/commonPipelineEnvironment/git/branch'
+        if (fileExists(file)) {
+            gitBranch = readFile(file)
+        }
+
+        file = '.pipeline/commonPipelineEnvironment/git/commitId'
+        if (fileExists(file)) {
+            gitCommitId = readFile(file)
+        }
+
+        file = '.pipeline/commonPipelineEnvironment/git/commitMessage'
+        if (fileExists(file)) {
+            gitCommitMessage = readFile(file)
+        }
+
+        def customValues = findFiles(glob: '.pipeline/commonPipelineEnvironment/custom/*')
+
+        customValues.each({f ->
+            def fileName = f.getName()
+            def param = fileName.split('/')[fileName.split('\\/').size()-1]
+            valueMap[param] = readFile(f.getPath())
+        })
+    }
+
+    List getCustomDefaults() {
+        DefaultValueCache.getInstance().getCustomDefaults()
     }
 }
