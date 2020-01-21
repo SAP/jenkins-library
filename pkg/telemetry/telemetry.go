@@ -3,7 +3,11 @@ package telemetry
 import (
 	"crypto/sha1"
 	"fmt"
+	"time"
 
+	"net/http"
+
+	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/sirupsen/logrus"
 )
@@ -65,6 +69,7 @@ type TelemetryCustomData struct {
 }
 
 var data TelemetryBaseData
+var client piperhttp.Sender
 
 // InitializeTelemetry sets up the base telemetry data and is called in generated part of the steps
 func InitializeTelemetry(telemetryActive bool, getResourceParameter func(rootPath, resourceName, parameterName string) string, envRootPath, stepName string) {
@@ -73,6 +78,9 @@ func InitializeTelemetry(telemetryActive bool, getResourceParameter func(rootPat
 		data = TelemetryBaseData{Active: telemetryActive}
 		return
 	}
+
+	client := piperhttp.Client{}
+	client.SetOptions(piperhttp.ClientOptions{Timeout: time.Second * 5})
 
 	gitOwner := getResourceParameter(envRootPath, "commonPipelineEnvironment", "github/owner")
 	gitRepo := getResourceParameter(envRootPath, "commonPipelineEnvironment", "github/repository")
@@ -115,7 +123,10 @@ const SITE_ID = "827e8025-1e21-ae84-c3a3-3f62b70b0130"
 
 // SendTelemetry ...
 func SendTelemetry(customData *TelemetryCustomData) {
+	payload := ""
+
 	// Add logic for sending data to SWA
+	client.SendRequest(http.MethodGet, fmt.Sprintf("%v?%v", ENDPOINT, payload), nil, nil, nil)
 }
 
 // WARNING ...
