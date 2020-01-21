@@ -154,6 +154,7 @@ class commonPipelineEnvironment implements Serializable {
             [filename: '.pipeline/commonPipelineEnvironment/git/branch', content: gitBranch],
             [filename: '.pipeline/commonPipelineEnvironment/git/commitId', content: gitCommitId],
             [filename: '.pipeline/commonPipelineEnvironment/git/commitMessage', content: gitCommitMessage],
+            [filename: '.pipeline/commonPipelineEnvironment/operationId', content: xsDeploymentId],
         ]
 
         files.each({f  ->

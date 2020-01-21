@@ -110,14 +110,6 @@ void call(Map parameters = [:]) {
 
             def mtarFilePath = script.commonPipelineEnvironment.mtarFilePath
 
-            def operationId = parameters.operationId
-            if(! operationId && mode == DeployMode.BG_DEPLOY && action != Action.NONE) {
-                operationId = script.commonPipelineEnvironment.xsDeploymentId
-                if (! operationId) {
-                    throw new IllegalArgumentException('No operationId provided. Was there a deployment before?')
-                }
-            }
-
             def xsDeployStdout
 
             lock(getLockIdentifier(projectConfig)) {
@@ -129,7 +121,7 @@ void call(Map parameters = [:]) {
 
                     dockerExecute([script: this].plus([dockerImage: options.dockerImage, dockerPullImage: options.dockerPullImage])) {
                         xsDeployStdout = sh returnStdout: true, script: """#!/bin/bash
-                        ./piper xsDeploy --defaultConfig ${configFiles} --user \${USERNAME} --password \${PASSWORD} ${mtarFilePath ? '--mtaPath ' + mtarFilePath : ''} ${operationId ? '--operationId ' + operationId : ''}
+                        ./piper xsDeploy --defaultConfig ${configFiles} --user \${USERNAME} --password \${PASSWORD} ${mtarFilePath ? '--mtaPath ' + mtarFilePath : ''}
                         """
                     }
 
