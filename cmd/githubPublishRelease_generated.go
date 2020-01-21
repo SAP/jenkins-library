@@ -6,6 +6,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperenv"
+	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/spf13/cobra"
 )
 
@@ -52,7 +53,7 @@ The result looks like
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 
-			log.InitializeTelemetry(!GeneralConfig.NoTelemetry, piperenv.GetResourceParameter, GeneralConfig.EnvRootPath, "githubPublishRelease")
+			telemetry.Initialize(!GeneralConfig.NoTelemetry, piperenv.GetResourceParameter, GeneralConfig.EnvRootPath, "githubPublishRelease")
 			return githubPublishRelease(myGithubPublishReleaseOptions)
 		},
 	}

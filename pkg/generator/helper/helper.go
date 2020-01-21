@@ -40,6 +40,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperenv"
+	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/spf13/cobra"
 )
 
@@ -78,7 +79,7 @@ func {{.CobraCmdFuncName}}() *cobra.Command {
 			log.DeferExitHandler(handler)
 			defer handler()
 			{{- end }}
-			log.InitializeTelemetry(!GeneralConfig.NoTelemetry, piperenv.GetResourceParameter, GeneralConfig.EnvRootPath, "{{ .StepName }}")
+			telemetry.Initialize(!GeneralConfig.NoTelemetry, piperenv.GetResourceParameter, GeneralConfig.EnvRootPath, "{{ .StepName }}")
 			return {{.StepName}}(my{{ .StepName | title }}Options{{ range $notused, $oRes := .OutputResources}}, &{{ index $oRes "name" }}{{ end }})
 		},
 	}

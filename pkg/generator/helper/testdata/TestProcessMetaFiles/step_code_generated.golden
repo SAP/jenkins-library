@@ -8,6 +8,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperenv"
+	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/spf13/cobra"
 )
 
@@ -110,7 +111,7 @@ func TestStepCommand() *cobra.Command {
 			}
 			log.DeferExitHandler(handler)
 			defer handler()
-			log.InitializeTelemetry(!GeneralConfig.NoTelemetry, piperenv.GetResourceParameter, GeneralConfig.EnvRootPath, "testStep")
+			telemetry.Initialize(!GeneralConfig.NoTelemetry, piperenv.GetResourceParameter, GeneralConfig.EnvRootPath, "testStep")
 			return testStep(myTestStepOptions, &commonPipelineEnvironment, &influxTest)
 		},
 	}

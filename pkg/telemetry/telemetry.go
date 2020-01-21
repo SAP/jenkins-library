@@ -71,8 +71,8 @@ type TelemetryCustomData struct {
 var data TelemetryBaseData
 var client piperhttp.Sender
 
-// InitializeTelemetry sets up the base telemetry data and is called in generated part of the steps
-func InitializeTelemetry(telemetryActive bool, getResourceParameter func(rootPath, resourceName, parameterName string) string, envRootPath, stepName string) {
+// Initialize sets up the base telemetry data and is called in generated part of the steps
+func Initialize(telemetryActive bool, getResourceParameter func(rootPath, resourceName, parameterName string) string, envRootPath, stepName string) {
 	// check if telemetry is disabled
 	if telemetryActive {
 		data = TelemetryBaseData{Active: telemetryActive}

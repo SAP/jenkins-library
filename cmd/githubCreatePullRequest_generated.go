@@ -6,6 +6,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperenv"
+	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/spf13/cobra"
 )
 
@@ -42,7 +43,7 @@ It can for example be used for GitOps scenarios or for scenarios where you want 
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 
-			log.InitializeTelemetry(!GeneralConfig.NoTelemetry, piperenv.GetResourceParameter, GeneralConfig.EnvRootPath, "githubCreatePullRequest")
+			telemetry.Initialize(!GeneralConfig.NoTelemetry, piperenv.GetResourceParameter, GeneralConfig.EnvRootPath, "githubCreatePullRequest")
 			return githubCreatePullRequest(myGithubCreatePullRequestOptions)
 		},
 	}
