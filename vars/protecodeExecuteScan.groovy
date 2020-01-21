@@ -111,9 +111,12 @@ void call(Map parameters = [:]) {
                 stepParam1: parameters?.script == null
             ], config)
 
+
             if(config.protecodeCredentialsId != null && config.protecodeCredentialsId.length() != 0 ){
+            echo "scanWithCredentials"
                 scanWithCredentials(config)
             } else {
+            echo "callProtecodeScan"
                 callProtecodeScan(config)
             }
 
