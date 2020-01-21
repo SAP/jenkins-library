@@ -112,11 +112,11 @@ void call(Map parameters = [:]) {
             ], config)
 
 
-            if(config.protecodeCredentialsId != null && config.protecodeCredentialsId.length() > 0 ){
-            echo "scanWithCredentials"
+            if(config.protecodeCredentialsId?.trim()){
+                echo "scanWithCredentials"
                 scanWithCredentials(config)
             } else {
-            echo "callProtecodeScan"
+                echo "callProtecodeScan"
                 callProtecodeScan(config)
             }
 
