@@ -114,7 +114,7 @@ void call(Map parameters = [:]) {
         withCredentials([[$class: 'UsernamePasswordMultiBinding', credentialsId: config.dockerCredentialsId, passwordVariable: 'dockerPassword', usernameVariable: 'dockerUser']]) {
             withCredentials([[$class: 'UsernamePasswordMultiBinding', credentialsId: config.protecodeCredentialsId, passwordVariable: 'password', usernameVariable: 'user']]) {
 
-                    sh "./piper protecodeExecuteScan  --password ${password} --user ${user}"
+                    sh "./piper protecodeExecuteScan  --password ${password} --user ${user} --dockerUser ${dockerUser} --dockerPassword ${dockerPassword}"
 
                     archiveArtifacts artifacts: "${config.reportFileName}", allowEmptyArchive: false
                     if (config.addSideBarLink) {

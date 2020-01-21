@@ -56,7 +56,6 @@ func runProtecodeScan(config protecodeExecuteScanOptions, cpEnvironment *proteco
 func handleDockerCredentials(config protecodeExecuteScanOptions) error {
 
 	if len(config.DockerUser) > 0 && len(config.DockerPassword) > 0 {
-
 		//create config file
 		f, err := os.Create("~/.docker/config.json")
 		if err == nil {
@@ -79,10 +78,9 @@ func handleDockerCredentials(config protecodeExecuteScanOptions) error {
 				if err := dchClient.Erase(p, config.DockerRegistryURL); err != nil {
 					return err
 				}
+				return err
 			}
-
 		}
-		return err
 	}
 
 	return nil
@@ -140,13 +138,11 @@ func getUrlAndFileNameFromDockerImage(config protecodeExecuteScanOptions, cpEnvi
 func executeProtecodeScan(client protecode.Protecode, config protecodeExecuteScanOptions, writeReportToFile func(resp io.ReadCloser, reportFileName string) error) (map[string]int, error) {
 
 	var parsedResult map[string]int = make(map[string]int)
-
 	//load existing product by filename
 	productId, err := client.LoadExistingProduct(config.ProtecodeGroup, config.FilePath, config.ReuseExisting)
 	if err != nil {
 		return parsedResult, err
 	}
-
 	// check if no existing is found or reuse existing is false
 	productId, err = uploadScanOrDeclareFetch(config, productId, client)
 	if err != nil {
@@ -165,25 +161,21 @@ func executeProtecodeScan(client protecode.Protecode, config protecodeExecuteSca
 		log.Entry().Fatal("Protecode scan failed, please check the log and protecode backend for more details.")
 		return parsedResult, errors.New("Protecode scan failed, please check the log and protecode backend for more details.")
 	}
-
 	//loadReport
 	resp, err := client.LoadReport(config.ReportFileName, productId)
 	if err != nil {
 		return parsedResult, err
 	}
-
 	//save report to filesystem
 	err = writeReportToFile(*resp, config.ReportFileName)
 	if err != nil {
 		return parsedResult, err
 	}
-
 	//clean scan from server
 	err = client.DeleteScan(config.CleanupMode, productId)
 	if err != nil {
 		return parsedResult, err
 	}
-
 	//count vulnerabilities
 	parsedResult = client.ParseResultForInflux(result, config.ProtecodeExcludeCVEs)
 
