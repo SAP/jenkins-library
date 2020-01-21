@@ -47,7 +47,7 @@ func TestUploadScanOrDeclareFetch(t *testing.T) {
 	for _, c := range cases {
 		config := protecodeExecuteScanOptions{ReuseExisting: c.reuse, CleanupMode: c.clean, ProtecodeGroup: c.group, FetchURL: c.fetchUrl}
 
-		got, _ := uploadScanOrDeclareFetch(&config, 0, pc)
+		got, _ := uploadScanOrDeclareFetch(config, 0, pc)
 
 		assert.Equal(t, c.want, got)
 		assert.Equal(t, c.fetchUrl, requestURI)
@@ -132,9 +132,8 @@ func TestGetUrlAndFileNameFromDockerImage(t *testing.T) {
 
 	for _, c := range cases {
 		config := protecodeExecuteScanOptions{ScanImage: c.scanImage, DockerRegistryURL: c.registryUrl}
-		cpEnvironment := protecodeExecuteScanCommonPipelineEnvironment{}
 
-		got, _ := getUrlAndFileNameFromDockerImage(&config, &cpEnvironment)
+		got, _ := getUrlAndFileNameFromDockerImage(&config)
 
 		assert.Equal(t, c.want, got)
 	}

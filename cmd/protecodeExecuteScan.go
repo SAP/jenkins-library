@@ -101,7 +101,7 @@ func cleanupDockerCredentials(config *protecodeExecuteScanOptions) error {
 func getDockerImage(config *protecodeExecuteScanOptions, cpEnvironment *protecodeExecuteScanCommonPipelineEnvironment) error {
 
 	cachePath := "./cache"
-	completeUrl, err := getUrlAndFileNameFromDockerImage(config, cpEnvironment)
+	completeUrl, err := getUrlAndFileNameFromDockerImage(config)
 	if err != nil {
 		return err
 	}
@@ -122,7 +122,7 @@ func getDockerImage(config *protecodeExecuteScanOptions, cpEnvironment *protecod
 	return nil
 }
 
-func getUrlAndFileNameFromDockerImage(config *protecodeExecuteScanOptions, cpEnvironment *protecodeExecuteScanCommonPipelineEnvironment) (string, error) {
+func getUrlAndFileNameFromDockerImage(config *protecodeExecuteScanOptions) (string, error) {
 
 	completeUrl := config.ScanImage
 
@@ -148,7 +148,7 @@ func executeProtecodeScan(client protecode.Protecode, config *protecodeExecuteSc
 		return parsedResult, productId, err
 	}
 	// check if no existing is found or reuse existing is false
-	productId, err = uploadScanOrDeclareFetch(config, productId, client)
+	productId, err = uploadScanOrDeclareFetch(*config, productId, client)
 	if err != nil {
 		return parsedResult, productId, err
 	}
@@ -231,7 +231,7 @@ func createClient(config *protecodeExecuteScanOptions) protecode.Protecode {
 	return pc
 }
 
-func uploadScanOrDeclareFetch(config *protecodeExecuteScanOptions, productId int, client protecode.Protecode) (int, error) {
+func uploadScanOrDeclareFetch(config protecodeExecuteScanOptions, productId int, client protecode.Protecode) (int, error) {
 
 	// check if no existing is found or reuse existing is false
 	if productId <= 0 || !config.ReuseExisting {
