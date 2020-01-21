@@ -114,11 +114,11 @@ func (c *Client) SetOptions(options ClientOptions) {
 	c.username = options.Username
 	c.password = options.Password
 	c.token = options.Token
-	c.logger = log.Entry().WithField("package", "SAP/jenkins-library/pkg/http")
 }
 
 func (c *Client) initialize() *http.Client {
 	c.applyDefaults()
+	c.logger = log.Entry().WithField("package", "SAP/jenkins-library/pkg/http")
 
 	var httpClient = &http.Client{
 		Timeout: c.timeout,
