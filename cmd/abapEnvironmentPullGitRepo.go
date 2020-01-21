@@ -38,22 +38,17 @@ func abapEnvironmentPullGitRepo(config abapEnvironmentPullGitRepoOptions) error 
 
 func pollEntity(config abapEnvironmentPullGitRepoOptions, uri string, user string, password string, xCsrfToken string, cookieJar *cookiejar.Jar) (string, error) {
 
+	log.Entry().Info("Start polling the status...")
 	var status string = "R"
 
 	for {
-		client := &http.Client{
-			Jar: cookieJar,
-		}
-		req, _ := http.NewRequest("GET", uri, nil)
-		req.Header.Add("x-csrf-token", xCsrfToken)
-		req.Header.Add("Content-Type", "application/json")
-		req.Header.Add("Accept", "application/json")
-		req.SetBasicAuth(user, password)
-		resp, err := client.Do(req)
-		if err != nil {
-			return "", nil
-		}
+		var resp, err = getHttpResponse("GET", uri, nil, xCsrfToken, user, password, cookieJar)
 		defer resp.Body.Close()
+		if err != nil {
+			log.Entry().Error("Request to ABAP System not successful")
+			return "", err
+		}
+
 		if resp.StatusCode != 200 {
 			log.Entry().WithField("StatusCode", resp.Status).WithField("repositoryName", config.RepositoryName).Error("Could not pull the Repository / Software Component")
 			var err = errors.New("Request to ABAP System not successful")
@@ -61,7 +56,7 @@ func pollEntity(config abapEnvironmentPullGitRepoOptions, uri string, user strin
 		}
 
 		var body AbapResponse
-		bodyText, err := ioutil.ReadAll(resp.Body)
+		bodyText, _ := ioutil.ReadAll(resp.Body)
 		json.Unmarshal(bodyText, &body)
 		if body.D == (AbapEntity{}) {
 			log.Entry().WithField("StatusCode", resp.Status).WithField("repositoryName", config.RepositoryName).Error("Could not pull the Repository / Software Component")
@@ -88,17 +83,14 @@ func triggerPull(config abapEnvironmentPullGitRepoOptions, abapUrl string, user 
 	// Loging into the ABAP System - getting the x-csrf-token and cookies
 	log.Entry().WithField("ABAP Endpoint", abapUrl).Info("Calling the ABAP System...")
 	log.Entry().Info("Trying to authenticate on the ABAP system...")
-	client := &http.Client{
-		Jar: cookieJar,
-	}
-	req, _ := http.NewRequest("GET", abapUrl, nil)
-	req.Header.Add("x-csrf-token", "fetch")
-	req.SetBasicAuth(user, password)
-	resp, err := client.Do(req)
+
+	var resp, err = getHttpResponse("GET", abapUrl, nil, "fetch", user, password, cookieJar)
+	defer resp.Body.Close()
 	if err != nil {
+		log.Entry().Error("Request to ABAP System not successful")
 		return entityUri, xCsrfToken, cookieJar, err
 	}
-	defer resp.Body.Close()
+
 	if resp.StatusCode != 200 {
 		log.Entry().WithField("StatusCode", resp.Status).Error("Authentication failed")
 		var err = errors.New("Request to ABAP System not successful")
@@ -111,19 +103,13 @@ func triggerPull(config abapEnvironmentPullGitRepoOptions, abapUrl string, user 
 	// Trigger the Pull of a Repository
 	var jsonBody = []byte(`{"sc_name":"` + config.RepositoryName + `"}`)
 	log.Entry().WithField("repositoryName", config.RepositoryName).Info("Pulling Repository / Software Component")
-	client = &http.Client{
-		Jar: cookieJar,
-	}
-	req, _ = http.NewRequest("POST", abapUrl, bytes.NewBuffer(jsonBody))
-	req.Header.Add("x-csrf-token", xCsrfToken)
-	req.Header.Add("Content-Type", "application/json")
-	req.Header.Add("Accept", "application/json")
-	req.SetBasicAuth(user, password)
-	resp, err = client.Do(req)
+
+	resp, err = getHttpResponse("POST", abapUrl, jsonBody, xCsrfToken, user, password, cookieJar)
+	defer resp.Body.Close()
 	if err != nil {
+		log.Entry().Error("Request to ABAP System not successful")
 		return entityUri, xCsrfToken, cookieJar, err
 	}
-	defer resp.Body.Close()
 	if resp.StatusCode >= 300 {
 		log.Entry().WithField("StatusCode", resp.Status).WithField("repositoryName", config.RepositoryName).Error("Could not pull the Repository / Software Component")
 		var err = errors.New("Request to ABAP System not successful")
@@ -198,6 +184,22 @@ func readCfServiceKey(config abapEnvironmentPullGitRepoOptions, s shellRunner) (
 
 	json.Unmarshal([]byte(cfServiceKey), &serviceKey)
 	return serviceKey, error
+}
+
+func getHttpResponse(requestType string, url string, body []byte, xCsrfToken string, user string, password string, cookieJar *cookiejar.Jar) (*http.Response, error) {
+	client := &http.Client{
+		Jar: cookieJar,
+	}
+	req, _ := http.NewRequest(requestType, url, bytes.NewBuffer(body))
+	req.Header.Add("x-csrf-token", xCsrfToken)
+	req.Header.Add("Content-Type", "application/json")
+	req.Header.Add("Accept", "application/json")
+	req.SetBasicAuth(user, password)
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	return resp, nil
 }
 
 type AbapResponse struct {
