@@ -129,9 +129,9 @@ func getUrlAndFileNameFromDockerImage(config *protecodeExecuteScanOptions) (stri
 	completeUrl := config.ScanImage
 
 	if strings.HasSuffix(config.DockerRegistryURL, "/") {
-		completeUrl = fmt.Sprintf("remote://%v%v", config.DockerRegistryURL, config.ScanImage)
+		completeUrl = fmt.Sprintf("deamon://%v%v", config.DockerRegistryURL, config.ScanImage)
 	} else {
-		completeUrl = fmt.Sprintf("remote://%v/%v", config.DockerRegistryURL, config.ScanImage)
+		completeUrl = fmt.Sprintf("deamon://%v/%v", config.DockerRegistryURL, config.ScanImage)
 	}
 
 	if len(completeUrl) <= 0 {
