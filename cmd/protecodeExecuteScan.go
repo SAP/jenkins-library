@@ -34,16 +34,19 @@ func runProtecodeScan(config *protecodeExecuteScanOptions, cpEnvironment *protec
 
 	err := handleDockerCredentials(config)
 	if err != nil {
-		return err
+		log.Entry().Fatalf("Exception during the handling of the credentials %v", err)
 	}
 	getDockerImage(config, cpEnvironment)
+	if err != nil {
+		log.Entry().Fatalf("Exception during getting the image %v", err)
+	}
 	err = cleanupDockerCredentials(config)
 	if err != nil {
-		return err
+		log.Entry().Fatalf("Exception during the cleanup of the credentials %v", err)
 	}
 	parsedResult, productId, err := executeProtecodeScan(client, config, writeReportToFile)
 	if err != nil {
-		return err
+		log.Entry().Fatalf("Exception during the execute of the scan %v", err)
 	}
 
 	setInfluxData(influx, parsedResult)
@@ -62,7 +65,7 @@ func handleDockerCredentials(config *protecodeExecuteScanOptions) error {
 			defer f.Close()
 			_, err = f.WriteString(`{\n"credsStore": "secretservice"\n}`)
 			if err != nil {
-				return err
+				log.Entry().Fatalf("Exception during writing the credentials store configuration %v", err)
 			}
 
 			p := dchClient.NewShellProgramFunc("docker-credential-secretservice")
@@ -76,9 +79,9 @@ func handleDockerCredentials(config *protecodeExecuteScanOptions) error {
 			//add credentials
 			if err := dchClient.Store(p, c); err != nil {
 				if err := dchClient.Erase(p, config.DockerRegistryURL); err != nil {
-					return err
+					log.Entry().Fatalf("Exception during erase the credentials %v", err)
 				}
-				return err
+				log.Entry().Fatalf("Exception during store the credentials %v", err)
 			}
 		}
 	}
@@ -91,7 +94,7 @@ func cleanupDockerCredentials(config *protecodeExecuteScanOptions) error {
 		p := dchClient.NewShellProgramFunc("docker-credential-secretservice")
 
 		if err := dchClient.Erase(p, config.DockerRegistryURL); err != nil {
-			return err
+			log.Entry().Fatalf("Exception during erase the credentials %v", err)
 		}
 	}
 
@@ -103,22 +106,21 @@ func getDockerImage(config *protecodeExecuteScanOptions, cpEnvironment *protecod
 	cachePath := "./cache"
 	completeUrl, err := getUrlAndFileNameFromDockerImage(config)
 	if err != nil {
-		return err
+		log.Entry().Fatalf("Exception during get url creation for get the docker image %v", err)
 	}
 
 	image, err := pkgutil.GetImage(completeUrl, config.IncludeLayers, cachePath)
 	if err != nil {
-		return err
+		log.Entry().Fatalf("Exception during get image %v", err)
 	}
 
+	fileName := fmt.Sprintf("%v.tar", strings.ReplaceAll(config.ScanImage, "/", "_"))
 	if len(config.FilePath) <= 0 {
-		fileName := fmt.Sprintf("%v.tar", strings.ReplaceAll(config.ScanImage, "/", "_"))
-		config.FilePath = filepath.Join(image.FSPath, fileName)
+		(*config).FilePath = filepath.Join(image.FSPath, fileName)
 		if len(config.FilePath) <= 0 {
-			return errors.New(fmt.Sprintf("Protecode scan failed, there is no file path configured  : %v (filename:%v, PSPath: %v)", config.FilePath, fileName, image.FSPath))
+			log.Entry().Fatalf("Protecode scan failed, there is no file path configured  : %v (filename:%v, PSPath: %v)", config.FilePath, fileName, image.FSPath)
 		}
 	}
-
 	return nil
 }
 
