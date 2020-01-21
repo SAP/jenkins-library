@@ -1,4 +1,4 @@
-package log
+package telemetry
 
 import (
 	"crypto/sha1"
