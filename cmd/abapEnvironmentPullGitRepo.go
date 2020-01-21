@@ -64,7 +64,7 @@ func pollEntity(config abapEnvironmentPullGitRepoOptions, uri string, user strin
 			return "", err
 		}
 		status = body.D.Status
-		log.Entry().Info("Pull Status: " + body.D.Status_descr)
+		log.Entry().WithField("StatusCode", resp.Status).Info("Pull Status: " + body.D.Status_descr)
 		if body.D.Status != "R" {
 			break
 		}
