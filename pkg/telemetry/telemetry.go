@@ -17,8 +17,8 @@ import (
 // 2. Errors -> Hook
 // 3. Notify/Deprecations
 
-// TelemetryBaseData ...
-type TelemetryBaseData struct {
+// BaseData ...
+type BaseData struct {
 	Active     bool
 	ActionName string `json:"actionName,omitempty"`
 	EventType  string `json:"eventType,omitempty"`
@@ -47,8 +47,8 @@ type TelemetryBaseData struct {
 	StageNameLabel         string `json:"custom_10,omitempty"`
 }
 
-// TelemetryCustomData ...
-type TelemetryCustomData struct {
+// CustomData ...
+type CustomData struct {
 	BuildTool      string `json:"e_11,omitempty"`
 	buildToolLabel string `json:"custom_11,omitempty"`
 	// ...
@@ -68,14 +68,14 @@ type TelemetryCustomData struct {
 	Custom30Label string `json:"custom_30,omitempty"`
 }
 
-var data TelemetryBaseData
+var data BaseData
 var client piperhttp.Sender
 
 // Initialize sets up the base telemetry data and is called in generated part of the steps
 func Initialize(telemetryActive bool, getResourceParameter func(rootPath, resourceName, parameterName string) string, envRootPath, stepName string) {
 	// check if telemetry is disabled
 	if telemetryActive {
-		data = TelemetryBaseData{Active: telemetryActive}
+		data = BaseData{Active: telemetryActive}
 		return
 	}
 
@@ -99,7 +99,7 @@ func Initialize(telemetryActive bool, getResourceParameter func(rootPath, resour
 
 	gitPath := fmt.Sprintf("%v/%v", gitOwner, gitRepo)
 
-	data = TelemetryBaseData{
+	data = BaseData{
 		Active: telemetryActive,
 
 		GitOwner:           gitOwner,
@@ -118,15 +118,14 @@ func Initialize(telemetryActive bool, getResourceParameter func(rootPath, resour
 }
 
 // SWA endpoint
-const ENDPOINT = "https://webanalytics.cfapps.eu10.hana.ondemand.com/tracker/log"
-const SITE_ID = "827e8025-1e21-ae84-c3a3-3f62b70b0130"
+const endpoint = "https://webanalytics.cfapps.eu10.hana.ondemand.com/tracker/log"
+const siteID = "827e8025-1e21-ae84-c3a3-3f62b70b0130"
 
 // SendTelemetry ...
-func SendTelemetry(customData *TelemetryCustomData) {
+func SendTelemetry(customData *CustomData) {
 	payload := ""
-
 	// Add logic for sending data to SWA
-	client.SendRequest(http.MethodGet, fmt.Sprintf("%v?%v", ENDPOINT, payload), nil, nil, nil)
+	client.SendRequest(http.MethodGet, fmt.Sprintf("%v?%v", endpoint, payload), nil, nil, nil)
 }
 
 // WARNING ...
@@ -137,7 +136,7 @@ const ERROR = "ERROR"
 
 // Notify ...
 func Notify(level, message string) {
-	data := TelemetryCustomData{}
+	data := CustomData{}
 	SendTelemetry(&data)
 
 	notification := log.Entry().WithField("type", "notification")
@@ -151,14 +150,14 @@ func Notify(level, message string) {
 }
 
 // Fire ...
-func (t *TelemetryBaseData) Fire(entry *logrus.Entry) error {
-	telemetryData := TelemetryCustomData{}
+func (t *BaseData) Fire(entry *logrus.Entry) error {
+	telemetryData := CustomData{}
 	SendTelemetry(&telemetryData)
 	return nil
 }
 
 // Levels ...
-func (t *TelemetryBaseData) Levels() (levels []logrus.Level) {
+func (t *BaseData) Levels() (levels []logrus.Level) {
 	levels = append(levels, logrus.ErrorLevel)
 	levels = append(levels, logrus.FatalLevel)
 	//levels = append(levels, logrus.PanicLevel)
