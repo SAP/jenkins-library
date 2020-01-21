@@ -3,7 +3,7 @@ package cmd
 import (
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
-
+	"github.com/SAP/jenkins-library/pkg/piperenv"
 	"github.com/spf13/cobra"
 )
 
@@ -40,6 +40,7 @@ In the Docker network, the containers can be referenced by the values provided i
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 
+			log.InitializeTelemetry(!GeneralConfig.NoTelemetry, piperenv.GetResourceParameter, GeneralConfig.EnvRootPath, "karmaExecuteTests")
 			return karmaExecuteTests(myKarmaExecuteTestsOptions)
 		},
 	}

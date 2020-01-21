@@ -3,7 +3,7 @@ package cmd
 import (
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
-
+	"github.com/SAP/jenkins-library/pkg/piperenv"
 	"github.com/spf13/cobra"
 )
 
@@ -27,6 +27,7 @@ func VersionCommand() *cobra.Command {
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 
+			log.InitializeTelemetry(!GeneralConfig.NoTelemetry, piperenv.GetResourceParameter, GeneralConfig.EnvRootPath, "version")
 			return version(myVersionOptions)
 		},
 	}

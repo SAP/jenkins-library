@@ -39,7 +39,7 @@ import (
 	{{ if .ExportPrefix}}{{ .ExportPrefix }} "github.com/SAP/jenkins-library/cmd"{{ end -}}
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
-	{{ if .OutputResources }}"github.com/SAP/jenkins-library/pkg/piperenv"{{ end }}
+	"github.com/SAP/jenkins-library/pkg/piperenv"
 	"github.com/spf13/cobra"
 )
 
@@ -78,6 +78,7 @@ func {{.CobraCmdFuncName}}() *cobra.Command {
 			log.DeferExitHandler(handler)
 			defer handler()
 			{{- end }}
+			log.InitializeTelemetry(!GeneralConfig.NoTelemetry, piperenv.GetResourceParameter, GeneralConfig.EnvRootPath, "{{ .StepName }}")
 			return {{.StepName}}(my{{ .StepName | title }}Options{{ range $notused, $oRes := .OutputResources}}, &{{ index $oRes "name" }}{{ end }})
 		},
 	}

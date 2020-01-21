@@ -5,7 +5,7 @@ import (
 
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
-
+	"github.com/SAP/jenkins-library/pkg/piperenv"
 	"github.com/spf13/cobra"
 )
 
@@ -37,6 +37,7 @@ func DetectExecuteScanCommand() *cobra.Command {
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 
+			log.InitializeTelemetry(!GeneralConfig.NoTelemetry, piperenv.GetResourceParameter, GeneralConfig.EnvRootPath, "detectExecuteScan")
 			return detectExecuteScan(myDetectExecuteScanOptions)
 		},
 	}

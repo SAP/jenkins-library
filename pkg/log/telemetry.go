@@ -4,7 +4,6 @@ import (
 	"crypto/sha1"
 	"fmt"
 
-	"github.com/SAP/jenkins-library/pkg/piperenv"
 	"github.com/sirupsen/logrus"
 )
 
@@ -66,19 +65,19 @@ type TelemetryCustomData struct {
 
 var data TelemetryBaseData
 
-// Initialize sets up the base telemetry data and is call in generated part of the steps
-func Initialize(telemetryActive bool, path, stepName string) {
+// InitializeTelemetry sets up the base telemetry data and is called in generated part of the steps
+func InitializeTelemetry(telemetryActive bool, getResourceParameter func(rootPath, resourceName, parameterName string) string, envRootPath, stepName string) {
 	if telemetryActive {
 		data = TelemetryBaseData{Active: telemetryActive}
 		return
 	}
 
-	gitOwner := piperenv.GetResourceParameter(path, "commonPipelineEnvironment", "github/owner")
-	gitRepo := piperenv.GetResourceParameter(path, "commonPipelineEnvironment", "github/repository")
+	gitOwner := getResourceParameter(envRootPath, "commonPipelineEnvironment", "github/owner")
+	gitRepo := getResourceParameter(envRootPath, "commonPipelineEnvironment", "github/repository")
 
 	if len(gitOwner)+len(gitRepo) == 0 {
 		// 1st fallback: try to get repositoryUrl from commonPipelineEnvironment
-		gitRepoURL := piperenv.GetResourceParameter(path, "commonPipelineEnvironment", "git/repositoryUrl")
+		gitRepoURL := getResourceParameter(envRootPath, "commonPipelineEnvironment", "git/repositoryUrl")
 
 		// 2nd fallback: get repository url from git
 		if len(gitRepoURL) == 0 {

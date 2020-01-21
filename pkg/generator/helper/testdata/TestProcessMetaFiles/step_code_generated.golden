@@ -110,6 +110,7 @@ func TestStepCommand() *cobra.Command {
 			}
 			log.DeferExitHandler(handler)
 			defer handler()
+			log.InitializeTelemetry(!GeneralConfig.NoTelemetry, piperenv.GetResourceParameter, GeneralConfig.EnvRootPath, "testStep")
 			return testStep(myTestStepOptions, &commonPipelineEnvironment, &influxTest)
 		},
 	}
