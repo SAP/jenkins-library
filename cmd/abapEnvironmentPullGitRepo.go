@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/http/cookiejar"
 	"os/exec"
+	"time"
 
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/log"
@@ -16,32 +17,77 @@ import (
 
 func abapEnvironmentPullGitRepo(config abapEnvironmentPullGitRepoOptions) error {
 	c := command.Command{}
+
 	var abapUrl, user, password, error = getAbapCommunicationArrangementInfo(config, &c)
 	if error != nil {
 		return error
 	}
-	var uri, xCsrfToken, err = triggerPull(config, abapUrl, user, password)
+	var uri, xCsrfToken, cookieJar, err = triggerPull(config, abapUrl, user, password)
 	if err != nil {
 		return err
 	}
-	var _, _ = pollEntity(config, uri, user, password, xCsrfToken)
+	var status, _ = pollEntity(config, uri, user, password, xCsrfToken, cookieJar)
+
+	if status == "E" {
+		log.Entry().Error("Pull failed on the ABAP system")
+		return errors.New("Pull failed on the ABAP system")
+	}
 
 	return nil
 }
 
-func pollEntity(config abapEnvironmentPullGitRepoOptions, uri string, user string, password string, xCsrfToken string) (string, error) {
-	return "", nil
+func pollEntity(config abapEnvironmentPullGitRepoOptions, uri string, user string, password string, xCsrfToken string, cookieJar *cookiejar.Jar) (string, error) {
+
+	var status string = "R"
+
+	for {
+		client := &http.Client{
+			Jar: cookieJar,
+		}
+		req, _ := http.NewRequest("GET", uri, nil)
+		req.Header.Add("x-csrf-token", xCsrfToken)
+		req.Header.Add("Content-Type", "application/json")
+		req.Header.Add("Accept", "application/json")
+		req.SetBasicAuth(user, password)
+		resp, err := client.Do(req)
+		if err != nil {
+			return "", nil
+		}
+		defer resp.Body.Close()
+		if resp.StatusCode != 200 {
+			log.Entry().WithField("StatusCode", resp.Status).WithField("repositoryName", config.RepositoryName).Error("Could not pull the Repository / Software Component")
+			var err = errors.New("Request to ABAP System not successful")
+			return "", err
+		}
+
+		var body AbapResponse
+		bodyText, err := ioutil.ReadAll(resp.Body)
+		json.Unmarshal(bodyText, &body)
+		if body.D == (AbapEntity{}) {
+			log.Entry().WithField("StatusCode", resp.Status).WithField("repositoryName", config.RepositoryName).Error("Could not pull the Repository / Software Component")
+			var err = errors.New("Request to ABAP System not successful")
+			return "", err
+		}
+		status = body.D.Status
+		log.Entry().Info("Pull Status: " + body.D.Status_descr)
+		if body.D.Status != "R" {
+			break
+		}
+		time.Sleep(10 * time.Second)
+	}
+
+	return status, nil
 }
 
-func triggerPull(config abapEnvironmentPullGitRepoOptions, abapUrl string, user string, password string) (string, string, error) {
+func triggerPull(config abapEnvironmentPullGitRepoOptions, abapUrl string, user string, password string) (string, string, *cookiejar.Jar, error) {
 
 	var entityUri string
 	var xCsrfToken string
+	cookieJar, _ := cookiejar.New(nil)
 
 	// Loging into the ABAP System - getting the x-csrf-token and cookies
 	log.Entry().WithField("ABAP Endpoint", abapUrl).Info("Calling the ABAP System...")
 	log.Entry().Info("Trying to authenticate on the ABAP system...")
-	cookieJar, _ := cookiejar.New(nil)
 	client := &http.Client{
 		Jar: cookieJar,
 	}
@@ -50,13 +96,13 @@ func triggerPull(config abapEnvironmentPullGitRepoOptions, abapUrl string, user 
 	req.SetBasicAuth(user, password)
 	resp, err := client.Do(req)
 	if err != nil {
-		return entityUri, xCsrfToken, err
+		return entityUri, xCsrfToken, cookieJar, err
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != 200 {
 		log.Entry().WithField("StatusCode", resp.Status).Error("Authentication failed")
 		var err = errors.New("Request to ABAP System not successful")
-		return entityUri, xCsrfToken, err
+		return entityUri, xCsrfToken, cookieJar, err
 	} else {
 		log.Entry().WithField("StatusCode", resp.Status).Info("Authentication successfull")
 	}
@@ -75,13 +121,13 @@ func triggerPull(config abapEnvironmentPullGitRepoOptions, abapUrl string, user 
 	req.SetBasicAuth(user, password)
 	resp, err = client.Do(req)
 	if err != nil {
-		return entityUri, xCsrfToken, err
+		return entityUri, xCsrfToken, cookieJar, err
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode >= 300 {
 		log.Entry().WithField("StatusCode", resp.Status).WithField("repositoryName", config.RepositoryName).Error("Could not pull the Repository / Software Component")
 		var err = errors.New("Request to ABAP System not successful")
-		return entityUri, xCsrfToken, err
+		return entityUri, xCsrfToken, cookieJar, err
 	} else {
 		log.Entry().WithField("StatusCode", resp.Status).WithField("repositoryName", config.RepositoryName).Info("Triggered Pull of Repository / Software Component")
 	}
@@ -93,10 +139,10 @@ func triggerPull(config abapEnvironmentPullGitRepoOptions, abapUrl string, user 
 	if body.D == (AbapEntity{}) {
 		log.Entry().WithField("StatusCode", resp.Status).WithField("repositoryName", config.RepositoryName).Error("Could not pull the Repository / Software Component")
 		var err = errors.New("Request to ABAP System not successful")
-		return entityUri, xCsrfToken, err
+		return entityUri, xCsrfToken, cookieJar, err
 	}
 	entityUri = body.D.Metadata.Uri
-	return entityUri, xCsrfToken, nil
+	return entityUri, xCsrfToken, cookieJar, nil
 }
 
 func getAbapCommunicationArrangementInfo(config abapEnvironmentPullGitRepoOptions, s shellRunner) (string, string, string, error) {
