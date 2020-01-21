@@ -123,7 +123,7 @@ func xsDeployMetadata() config.StepData {
 					},
 					{
 						Name:        "operationId",
-						ResourceRef: []config.ResourceReference{},
+						ResourceRef: []config.ResourceReference{{Name: "commonPipelineEnvironment", Param: "operationId"}},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,

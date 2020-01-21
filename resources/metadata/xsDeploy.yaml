@@ -65,6 +65,9 @@ spec:
         - STAGES
         - STEPS
         mandatory: false
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: operationId
       - name: apiUrl
         type: string
         description: The api url (e.g. https://example.org:12345
