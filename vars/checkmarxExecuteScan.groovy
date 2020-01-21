@@ -39,7 +39,7 @@ void call(Map parameters = [:]) {
                 passwordVariable: 'password',
                 usernameVariable: 'username'
             )]) {
-                sh "./piper checkmarxExecuteScan  --username ${username} --password ${password}"
+                sh "./piper checkmarxExecuteScan  --username '${username}' --password '${password}'"
             }
         }
     }
