@@ -7,12 +7,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"net/http"
 	"mime/multipart"
+	"net/http"
 	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	piperHttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/stretchr/testify/assert"
@@ -290,7 +291,7 @@ func TestPollForResultSuccess(t *testing.T) {
 
 	client := piperHttp.Client{}
 	client.SetOptions(piperHttp.ClientOptions{})
-	pc := Protecode{serverURL: server.URL, client: client, duration: 30}
+	pc := Protecode{serverURL: server.URL, client: client, duration: (time.Second * 30)}
 
 	for _, c := range cases {
 		got, _ := pc.PollForResult(c.productID, false)
@@ -408,7 +409,6 @@ func TestUploadScanFileSuccess(t *testing.T) {
 		}
 
 		response := Result{ProductId: 111, ReportUrl: requestURI}
-
 
 		err := req.ParseMultipartForm(4096)
 		if err != nil {
