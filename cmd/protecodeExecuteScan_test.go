@@ -125,9 +125,9 @@ func TestGetUrlAndFileNameFromDockerImage(t *testing.T) {
 		protocol    string
 		want        string
 	}{
-		{"scanImage", "registryUrl", "protocol", "remote://registryUrl/scanImage"},
-		{"containerScanImage", "containerRegistryUrl", "protocol", "remote://containerRegistryUrl/containerScanImage"},
-		{"containerScanImage", "registryUrl", "protocol", "remote://registryUrl/containerScanImage"},
+		{"scanImage", "registryUrl", "protocol", "deamon://registryUrl/scanImage"},
+		{"containerScanImage", "containerRegistryUrl", "protocol", "deamon://containerRegistryUrl/containerScanImage"},
+		{"containerScanImage", "registryUrl", "protocol", "deamon://registryUrl/containerScanImage"},
 	}
 
 	for _, c := range cases {
