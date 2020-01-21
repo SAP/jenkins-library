@@ -112,11 +112,9 @@ void call(Map parameters = [:]) {
             ], config)
 
 
-            if(config.protecodeCredentialsId?.trim()){
-                echo "scanWithCredentials"
+            if(config.dockerCredentialsId){
                 scanWithCredentials(config)
             } else {
-                echo "callProtecodeScan"
                 callProtecodeScan(config)
             }
 
