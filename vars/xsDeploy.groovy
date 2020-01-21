@@ -108,8 +108,6 @@ void call(Map parameters = [:]) {
                 echo "[INFO] ProjectConfig: ${projectConfig}"
             }
 
-            def mtarFilePath = script.commonPipelineEnvironment.mtarFilePath
-
             def xsDeployStdout
 
             lock(getLockIdentifier(projectConfig)) {
@@ -121,7 +119,7 @@ void call(Map parameters = [:]) {
 
                     dockerExecute([script: this].plus([dockerImage: options.dockerImage, dockerPullImage: options.dockerPullImage])) {
                         xsDeployStdout = sh returnStdout: true, script: """#!/bin/bash
-                        ./piper xsDeploy --defaultConfig ${configFiles} --user \${USERNAME} --password \${PASSWORD} ${mtarFilePath ? '--mtaPath ' + mtarFilePath : ''}
+                        ./piper xsDeploy --defaultConfig ${configFiles} --user \${USERNAME} --password \${PASSWORD}
                         """
                     }
 
