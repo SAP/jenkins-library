@@ -55,6 +55,9 @@ func (sys *systemMock) GetPresetByName(presets []checkmarx.Preset, presetName st
 func (sys *systemMock) GetProjectByName(projects []checkmarx.Project, projectName string) checkmarx.Project {
 	return checkmarx.Project{ID: 1, Name: "Test", TeamID: "16", IsPublic: false}
 }
+func (sys *systemMock) GetProjectByID(projectID int) (bool, checkmarx.Project) {
+	return true, checkmarx.Project{ID: 19, Name: "Test_PR-19", TeamID: "16", IsPublic: false}
+}
 func (sys *systemMock) GetTeamByName(teams []checkmarx.Team, teamName string) checkmarx.Team {
 	return checkmarx.Team{ID: "16", FullName: "OpenSource/Cracks/12"}
 }
@@ -93,6 +96,9 @@ func (sys *systemMock) UploadProjectSourceCode(projectID int, zipFile string) bo
 }
 func (sys *systemMock) CreateProject(projectName string, teamID string) bool {
 	return true
+}
+func (sys *systemMock) CreateBranch(projectID int, branchName string) int {
+	return 18
 }
 func (sys *systemMock) GetPresets() []checkmarx.Preset {
 	return []checkmarx.Preset{checkmarx.Preset{ID: 10078, Name: "SAP Java Default", OwnerName: "16"}, checkmarx.Preset{ID: 10048, Name: "SAP JS Default", OwnerName: "16"}}

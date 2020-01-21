@@ -168,6 +168,7 @@ type SystemInstance struct {
 // System is the interface abstraction of a specific SystemIns
 type System interface {
 	GetPresetByName(presets []Preset, presetName string) Preset
+	GetProjectByID(projectID int) (bool, Project)
 	GetProjectByName(projects []Project, projectName string) Project
 	GetTeamByName(teams []Team, teamName string) Team
 	DownloadReport(reportID int) (bool, []byte)
@@ -181,6 +182,7 @@ type System interface {
 	UpdateProjectExcludeSettings(projectID int, excludeFolders string, excludeFiles string) bool
 	UploadProjectSourceCode(projectID int, zipFile string) bool
 	CreateProject(projectName string, teamID string) bool
+	CreateBranch(projectID int, branchName string) int
 	GetPresets() []Preset
 	GetProjects() []Project
 	GetTeams() []Team
@@ -280,6 +282,21 @@ func (sys *SystemInstance) GetProjects() []Project {
 	return projects
 }
 
+// GetProjectByID returns the project addressed by projectID from the Checkmarx backend which the user has access to
+func (sys *SystemInstance) GetProjectByID(projectID int) (bool, Project) {
+	sys.logger.Debugf("Getting Project with ID %v...", projectID)
+	var project Project
+
+	data, err := sendRequest(sys, http.MethodGet, fmt.Sprintf("/projects/%v", projectID), nil, nil)
+	if err != nil {
+		sys.logger.Errorf("Fetching projects failed: %s", err)
+		return false, project
+	}
+
+	json.Unmarshal(data, &project)
+	return true, project
+}
+
 // CreateProject creates a new project in the Checkmarx backend
 func (sys *SystemInstance) CreateProject(projectName string, teamID string) bool {
 
@@ -304,6 +321,32 @@ func (sys *SystemInstance) CreateProject(projectName string, teamID string) bool
 	}
 
 	return true
+}
+
+// CreateBranch creates a branch of an existing project in the Checkmarx backend
+func (sys *SystemInstance) CreateBranch(projectID int, branchName string) int {
+	jsonData := map[string]interface{}{
+		"name": branchName,
+	}
+
+	jsonValue, err := json.Marshal(jsonData)
+	if err != nil {
+		sys.logger.Errorf("Error Marshal: %s", err)
+		return 0
+	}
+
+	header := http.Header{}
+	header.Set("Content-Type", "application/json")
+	data, err := sendRequest(sys, http.MethodPost, fmt.Sprintf("/projects/%v/branch", projectID), bytes.NewBuffer(jsonValue), header)
+	if err != nil {
+		sys.logger.Errorf("Failed to create project: %s", err)
+		return 0
+	}
+
+	var scan Scan
+
+	json.Unmarshal(data, &scan)
+	return scan.ID
 }
 
 // UploadProjectSourceCode zips and uploads the project sources for scanning

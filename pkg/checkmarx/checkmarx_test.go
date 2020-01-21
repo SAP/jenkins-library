@@ -492,3 +492,35 @@ func TestDownloadReport(t *testing.T) {
 		assert.Equal(t, []byte("abc"), result, "Result incorrect")
 	})
 }
+
+func TestCreateBranch(t *testing.T) {
+	logger := log.Entry().WithField("package", "SAP/jenkins-library/pkg/checkmarx_test")
+	opts := piperHttp.ClientOptions{}
+	t.Run("test success", func(t *testing.T) {
+		myTestClient := senderMock{responseBody: `{"id": 13, "link": {}}`, httpStatusCode: 201}
+		sys := SystemInstance{serverURL: "https://cx.wdf.sap.corp", client: &myTestClient, logger: logger}
+		myTestClient.SetOptions(opts)
+
+		result := sys.CreateBranch(6, "PR-17")
+		assert.Equal(t, "https://cx.wdf.sap.corp/CxRestAPI/projects/6/branch", myTestClient.urlCalled, "Called url incorrect")
+		assert.Equal(t, "POST", myTestClient.httpMethod, "HTTP method incorrect")
+		assert.Equal(t, `{"name":"PR-17"}`, myTestClient.requestBody, "Request body incorrect")
+		assert.Equal(t, 13, result, "result incorrect")
+	})
+}
+
+func TestGetProjectByID(t *testing.T) {
+	logger := log.Entry().WithField("package", "SAP/jenkins-library/pkg/checkmarx_test")
+	opts := piperHttp.ClientOptions{}
+	t.Run("test success", func(t *testing.T) {
+		myTestClient := senderMock{responseBody: `{"id": 209, "teamID": "Test", "name":" Project1_PR-18"}`, httpStatusCode: 200}
+		sys := SystemInstance{serverURL: "https://cx.wdf.sap.corp", client: &myTestClient, logger: logger}
+		myTestClient.SetOptions(opts)
+
+		ok, result := sys.GetProjectByID(815)
+		assert.Equal(t, true, ok, "GetProjectByID returned unexpected error")
+		assert.Equal(t, "https://cx.wdf.sap.corp/CxRestAPI/projects/815", myTestClient.urlCalled, "Called url incorrect")
+		assert.Equal(t, "GET", myTestClient.httpMethod, "HTTP method incorrect")
+		assert.Equal(t, 209, result.ID, "Result incorrect")
+	})
+}

@@ -30,10 +30,25 @@ func checkmarxExecuteScan(config checkmarxExecuteScanOptions, influx *checkmarxE
 }
 
 func runScan(config checkmarxExecuteScanOptions, sys checkmarx.System, workspace string, influx *checkmarxExecuteScanInflux) error {
+	projectName := config.CheckmarxProject
 	projects := sys.GetProjects()
-	project := sys.GetProjectByName(projects, config.CheckmarxProject)
-	if project.Name == config.CheckmarxProject {
-		log.Entry().Debugf("Project %v exists...", config.CheckmarxProject)
+	var project checkmarx.Project
+	if len(config.PullRequestName) > 0 {
+		projectName = fmt.Sprintf("%v_%v", config.CheckmarxProject, config.PullRequestName)
+		project = sys.GetProjectByName(projects, projectName)
+		if project.ID == 0 {
+			project = sys.GetProjectByName(projects, config.CheckmarxProject)
+			if project.ID != 0 {
+				ok, branchProject := sys.GetProjectByID(sys.CreateBranch(project.ID, projectName))
+				if !ok {
+					log.Entry().Fatalf("Failed to create branch %v for project %v", projectName, config.CheckmarxProject)
+				}
+				project = branchProject
+			}
+		}
+	}
+	if project.Name == projectName {
+		log.Entry().Debugf("Project %v exists...", projectName)
 	} else {
 		teams := sys.GetTeams()
 		team := checkmarx.Team{}
@@ -43,8 +58,8 @@ func runScan(config checkmarxExecuteScanOptions, sys checkmarx.System, workspace
 		if len(team.ID) == 0 {
 			team = teams[0]
 		}
-		log.Entry().Debugf("Project %v does not exists...", config.CheckmarxProject)
-		projectCreated := sys.CreateProject(config.CheckmarxProject, team.ID)
+		log.Entry().Debugf("Project %v does not exists...", projectName)
+		projectCreated := sys.CreateProject(projectName, team.ID)
 		if projectCreated {
 			if len(config.Preset) > 0 {
 				presets := sys.GetPresets()
@@ -67,7 +82,7 @@ func runScan(config checkmarxExecuteScanOptions, sys checkmarx.System, workspace
 				log.Entry().Fatalf("Preset not specified, creation of project %v failed", project.Name)
 			}
 			projects := sys.GetProjects()
-			project := sys.GetProjectByName(projects, config.CheckmarxProject)
+			project := sys.GetProjectByName(projects, projectName)
 			log.Entry().Debugf("New Project %v created", project.Name)
 		} else {
 			log.Entry().Fatalf("Cannot create project %v", config.CheckmarxProject)
@@ -85,10 +100,10 @@ func runScan(config checkmarxExecuteScanOptions, sys checkmarx.System, workspace
 	zipFolder(workspace, zipFile, patterns)
 	sourceCodeUploaded := sys.UploadProjectSourceCode(project.ID, zipFileName)
 	if sourceCodeUploaded {
-		log.Entry().Debugf("Source code uploaded for project %v", config.CheckmarxProject)
+		log.Entry().Debugf("Source code uploaded for project %v", projectName)
 		err := os.Remove(zipFileName)
 		if err != nil {
-			log.Entry().WithError(err).Warnf("Failed to delete zipped source code for project %v", config.CheckmarxProject)
+			log.Entry().WithError(err).Warnf("Failed to delete zipped source code for project %v", projectName)
 		}
 
 		incremental := config.Incremental
@@ -102,7 +117,7 @@ func runScan(config checkmarxExecuteScanOptions, sys checkmarx.System, workspace
 
 		projectIsScanning, scan := sys.ScanProject(project.ID, incremental, false, false)
 		if projectIsScanning {
-			log.Entry().Debugf("Scanning project %v ", config.CheckmarxProject)
+			log.Entry().Debugf("Scanning project %v ", projectName)
 			status := "New"
 			pastStatus := status
 			log.Entry().Debugf("Scan phase %v", status)
@@ -259,10 +274,10 @@ func runScan(config checkmarxExecuteScanOptions, sys checkmarx.System, workspace
 				}
 			}
 		} else {
-			log.Entry().Fatalf("Cannot scan project %v", config.CheckmarxProject)
+			log.Entry().Fatalf("Cannot scan project %v", projectName)
 		}
 	} else {
-		log.Entry().Fatalf("Cannot upload source code for project %v", config.CheckmarxProject)
+		log.Entry().Fatalf("Cannot upload source code for project %v", projectName)
 	}
 	return nil
 }
