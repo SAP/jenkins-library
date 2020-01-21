@@ -47,7 +47,7 @@ func TestUploadScanOrDeclareFetch(t *testing.T) {
 	for _, c := range cases {
 		config := protecodeExecuteScanOptions{ReuseExisting: c.reuse, CleanupMode: c.clean, ProtecodeGroup: c.group, FetchURL: c.fetchUrl}
 
-		got, _ := uploadScanOrDeclareFetch(config, 0, pc)
+		got, _ := uploadScanOrDeclareFetch(&config, 0, pc)
 
 		assert.Equal(t, c.want, got)
 		assert.Equal(t, c.fetchUrl, requestURI)
@@ -105,7 +105,7 @@ func TestExecuteProtecodeScan(t *testing.T) {
 	for _, c := range cases {
 		config := protecodeExecuteScanOptions{ReuseExisting: c.reuse, CleanupMode: c.clean, ProtecodeGroup: c.group, FetchURL: c.fetchUrl, ProtecodeTimeoutMinutes: "3", ProtecodeExcludeCVEs: "CVE-2018-1, CVE-2017-1000382", ReportFileName: "./cache/report-file.txt"}
 
-		got, productId, _ := executeProtecodeScan(pc, config, writeReportToFileMock)
+		got, productId, _ := executeProtecodeScan(pc, &config, writeReportToFileMock)
 
 		assert.Equal(t, 4711, productId)
 		assert.Equal(t, 1125, got["historical_vulnerabilities"])
@@ -134,7 +134,7 @@ func TestGetUrlAndFileNameFromDockerImage(t *testing.T) {
 		config := protecodeExecuteScanOptions{ScanImage: c.scanImage, DockerRegistryURL: c.registryUrl}
 		cpEnvironment := protecodeExecuteScanCommonPipelineEnvironment{}
 
-		got, _ := getUrlAndFileNameFromDockerImage(config, &cpEnvironment)
+		got, _ := getUrlAndFileNameFromDockerImage(&config, &cpEnvironment)
 
 		assert.Equal(t, c.want, got)
 	}

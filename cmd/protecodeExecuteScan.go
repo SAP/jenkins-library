@@ -24,10 +24,10 @@ func protecodeExecuteScan(config protecodeExecuteScanOptions, cpEnvironment *pro
 	c.Stdout(log.Entry().Writer())
 	c.Stderr(log.Entry().Writer())
 
-	return runProtecodeScan(config, cpEnvironment, influx)
+	return runProtecodeScan(&config, cpEnvironment, influx)
 }
 
-func runProtecodeScan(config protecodeExecuteScanOptions, cpEnvironment *protecodeExecuteScanCommonPipelineEnvironment, influx *protecodeExecuteScanInflux) error {
+func runProtecodeScan(config *protecodeExecuteScanOptions, cpEnvironment *protecodeExecuteScanCommonPipelineEnvironment, influx *protecodeExecuteScanInflux) error {
 
 	//create client for sending api request
 	client := createClient(config)
@@ -53,7 +53,7 @@ func runProtecodeScan(config protecodeExecuteScanOptions, cpEnvironment *proteco
 	return nil
 }
 
-func handleDockerCredentials(config protecodeExecuteScanOptions) error {
+func handleDockerCredentials(config *protecodeExecuteScanOptions) error {
 
 	if len(config.DockerUser) > 0 && len(config.DockerPassword) > 0 {
 		//create config file
@@ -86,7 +86,7 @@ func handleDockerCredentials(config protecodeExecuteScanOptions) error {
 	return nil
 }
 
-func cleanupDockerCredentials(config protecodeExecuteScanOptions) error {
+func cleanupDockerCredentials(config *protecodeExecuteScanOptions) error {
 	if len(config.DockerUser) > 0 && len(config.DockerPassword) > 0 {
 		p := dchClient.NewShellProgramFunc("docker-credential-secretservice")
 
@@ -98,7 +98,7 @@ func cleanupDockerCredentials(config protecodeExecuteScanOptions) error {
 	return nil
 }
 
-func getDockerImage(config protecodeExecuteScanOptions, cpEnvironment *protecodeExecuteScanCommonPipelineEnvironment) error {
+func getDockerImage(config *protecodeExecuteScanOptions, cpEnvironment *protecodeExecuteScanCommonPipelineEnvironment) error {
 
 	cachePath := "./cache"
 	completeUrl, err := getUrlAndFileNameFromDockerImage(config, cpEnvironment)
@@ -119,7 +119,7 @@ func getDockerImage(config protecodeExecuteScanOptions, cpEnvironment *protecode
 	return nil
 }
 
-func getUrlAndFileNameFromDockerImage(config protecodeExecuteScanOptions, cpEnvironment *protecodeExecuteScanCommonPipelineEnvironment) (string, error) {
+func getUrlAndFileNameFromDockerImage(config *protecodeExecuteScanOptions, cpEnvironment *protecodeExecuteScanCommonPipelineEnvironment) (string, error) {
 
 	completeUrl := config.ScanImage
 
@@ -136,7 +136,7 @@ func getUrlAndFileNameFromDockerImage(config protecodeExecuteScanOptions, cpEnvi
 	return completeUrl, nil
 }
 
-func executeProtecodeScan(client protecode.Protecode, config protecodeExecuteScanOptions, writeReportToFile func(resp io.ReadCloser, reportFileName string) error) (map[string]int, int, error) {
+func executeProtecodeScan(client protecode.Protecode, config *protecodeExecuteScanOptions, writeReportToFile func(resp io.ReadCloser, reportFileName string) error) (map[string]int, int, error) {
 
 	var parsedResult map[string]int = make(map[string]int)
 	//load existing product by filename
@@ -204,7 +204,7 @@ func setCommonPipelineEnvironmentData(cpEnvironment *protecodeExecuteScanCommonP
 	cpEnvironment.appContainerProperties.historical_vulnerabilities = fmt.Sprintf("%v", result["historical_vulnerabilities"])
 }
 
-func createClient(config protecodeExecuteScanOptions) protecode.Protecode {
+func createClient(config *protecodeExecuteScanOptions) protecode.Protecode {
 
 	var duration time.Duration = time.Duration(10 * 60)
 
@@ -228,7 +228,7 @@ func createClient(config protecodeExecuteScanOptions) protecode.Protecode {
 	return pc
 }
 
-func uploadScanOrDeclareFetch(config protecodeExecuteScanOptions, productId int, client protecode.Protecode) (int, error) {
+func uploadScanOrDeclareFetch(config *protecodeExecuteScanOptions, productId int, client protecode.Protecode) (int, error) {
 
 	// check if no existing is found or reuse existing is false
 	if productId <= 0 || !config.ReuseExisting {
