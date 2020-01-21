@@ -99,7 +99,7 @@ func xsDeployMetadata() config.StepData {
 					},
 					{
 						Name:        "mtaPath",
-						ResourceRef: []config.ResourceReference{},
+						ResourceRef: []config.ResourceReference{{Name: "commonPipelineEnvironment", Param: "mtaPath"}},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   true,

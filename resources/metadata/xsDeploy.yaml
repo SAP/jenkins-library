@@ -38,6 +38,9 @@ spec:
         - STAGES
         - STEPS
         mandatory: true
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: mtaPath
       - name: action
         type: string
         description: Used for finalizing the blue-green deployment.
