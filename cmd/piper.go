@@ -49,7 +49,6 @@ func Execute() {
 	rootCmd.AddCommand(XsDeployCommand())
 	rootCmd.AddCommand(GithubPublishReleaseCommand())
 	rootCmd.AddCommand(GithubCreatePullRequestCommand())
-	rootCmd.AddCommand(AbapEnvironmentPullGitRepoCommand())
 
 	addRootFlags(rootCmd)
 	if err := rootCmd.Execute(); err != nil {
