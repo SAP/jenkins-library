@@ -4,6 +4,7 @@ import (
 	"crypto/sha1"
 	"fmt"
 
+	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/sirupsen/logrus"
 )
 
@@ -67,6 +68,7 @@ var data TelemetryBaseData
 
 // InitializeTelemetry sets up the base telemetry data and is called in generated part of the steps
 func InitializeTelemetry(telemetryActive bool, getResourceParameter func(rootPath, resourceName, parameterName string) string, envRootPath, stepName string) {
+	// check if telemetry is disabled
 	if telemetryActive {
 		data = TelemetryBaseData{Active: telemetryActive}
 		return
@@ -107,6 +109,10 @@ func InitializeTelemetry(telemetryActive bool, getResourceParameter func(rootPat
 	//ToDo: register Logrus Hook
 }
 
+// SWA endpoint
+const ENDPOINT = "https://webanalytics.cfapps.eu10.hana.ondemand.com/tracker/log"
+const SITE_ID = "827e8025-1e21-ae84-c3a3-3f62b70b0130"
+
 // SendTelemetry ...
 func SendTelemetry(customData *TelemetryCustomData) {
 	// Add logic for sending data to SWA
@@ -123,11 +129,13 @@ func Notify(level, message string) {
 	data := TelemetryCustomData{}
 	SendTelemetry(&data)
 
+	notification := log.Entry().WithField("type", "notification")
+
 	switch level {
 	case WARNING:
-		Entry().WithField("type", "notification").Warning("")
+		notification.Warning(message)
 	case ERROR:
-		Entry().WithField("type", "notification").Fatal("")
+		notification.Fatal(message)
 	}
 }
 
@@ -139,7 +147,9 @@ func (t *TelemetryBaseData) Fire(entry *logrus.Entry) error {
 }
 
 // Levels ...
-func (t *TelemetryBaseData) Levels() []logrus.Level {
-	//not all levels, only Error, Fatal?
-	return logrus.AllLevels
+func (t *TelemetryBaseData) Levels() (levels []logrus.Level) {
+	levels = append(levels, logrus.ErrorLevel)
+	levels = append(levels, logrus.FatalLevel)
+	//levels = append(levels, logrus.PanicLevel)
+	return
 }
