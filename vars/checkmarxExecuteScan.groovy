@@ -36,10 +36,10 @@ void call(Map parameters = [:]) {
             // execute step
             withCredentials([usernamePassword(
                 credentialsId: config.checkmarxCredentialsId,
-                passwordVariable: 'password',
-                usernameVariable: 'username'
+                passwordVariable: 'PIPER_password',
+                usernameVariable: 'PIPER_username'
             )]) {
-                sh "./piper checkmarxExecuteScan  --username '${username}' --password '${password}'"
+                sh "./piper checkmarxExecuteScan"
             }
         }
     }

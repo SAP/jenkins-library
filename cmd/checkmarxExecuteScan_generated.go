@@ -22,7 +22,6 @@ type checkmarxExecuteScanOptions struct {
 	Incremental                   bool   `json:"incremental,omitempty"`
 	Preset                        string `json:"preset,omitempty"`
 	CheckmarxProject              string `json:"checkmarxProject,omitempty"`
-	Verbose                       string `json:"verbose,omitempty"`
 	CheckmarxGroupID              string `json:"checkmarxGroupId,omitempty"`
 	PullRequestName               string `json:"pullRequestName,omitempty"`
 	FilterPattern                 string `json:"filterPattern,omitempty"`
@@ -209,7 +208,6 @@ func addCheckmarxExecuteScanFlags(cmd *cobra.Command) {
 	cmd.Flags().BoolVar(&myCheckmarxExecuteScanOptions.Incremental, "incremental", true, "Whether incremental scans are to be applied which optimizes the scan time but might reduce detection capabilities. Therefore full scans are still required from time to time and should be scheduled via `fullScansScheduled` and `fullScanCycle`")
 	cmd.Flags().StringVar(&myCheckmarxExecuteScanOptions.Preset, "preset", os.Getenv("PIPER_preset"), "The preset to use for scanning, if not set explicitly the step will attempt to look up the project's setting based on the availability of `checkmarxCredentialsId`")
 	cmd.Flags().StringVar(&myCheckmarxExecuteScanOptions.CheckmarxProject, "checkmarxProject", os.Getenv("PIPER_checkmarxProject"), "The name of the Checkmarx project to scan into")
-	cmd.Flags().StringVar(&myCheckmarxExecuteScanOptions.Verbose, "verbose", os.Getenv("PIPER_verbose"), "Enables or disables verbose logging of the step")
 	cmd.Flags().StringVar(&myCheckmarxExecuteScanOptions.CheckmarxGroupID, "checkmarxGroupId", os.Getenv("PIPER_checkmarxGroupId"), "The group ID related to your team which can be obtained via the Pipeline Syntax plugin as described in the `Details` section")
 	cmd.Flags().StringVar(&myCheckmarxExecuteScanOptions.PullRequestName, "pullRequestName", os.Getenv("PIPER_pullRequestName"), "Used to supply the name for the newly created PR project branch when being used in pull request scenarios")
 	cmd.Flags().StringVar(&myCheckmarxExecuteScanOptions.FilterPattern, "filterPattern", "!**/node_modules/**, !**/.xmake/**, !**/*_test.go, !**/vendor/**/*.go, **/*.html, **/*.xml, **/*.go, **/*.py, **/*.js, **/*.scala, **/*.ts", "The filter pattern used to zip the files relevant for scanning, patterns can be negated by setting an exclamation mark in front i.e. `!test/*.js` would avoid adding any javascript files located in the test directory")
@@ -314,14 +312,6 @@ func checkmarxExecuteScanMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   true,
-						Aliases:     []config.Alias{},
-					},
-					{
-						Name:        "verbose",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
 						Aliases:     []config.Alias{},
 					},
 					{

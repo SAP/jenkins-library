@@ -10,6 +10,7 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"time"
 
 	"encoding/xml"
 
@@ -36,6 +37,12 @@ type Preset struct {
 
 // Scan - Scan Structure
 type Scan struct {
+	ID   int  `json:"id"`
+	Link Link `json:"link"`
+}
+
+// ProjectCreateResult - ProjectCreateResult Structure
+type ProjectCreateResult struct {
 	ID   int  `json:"id"`
 	Link Link `json:"link"`
 }
@@ -168,9 +175,11 @@ type SystemInstance struct {
 // System is the interface abstraction of a specific SystemIns
 type System interface {
 	GetPresetByName(presets []Preset, presetName string) Preset
+	GetPresetByID(presets []Preset, presetID int) Preset
 	GetProjectByID(projectID int) (bool, Project)
 	GetProjectByName(projects []Project, projectName string) Project
 	GetTeamByName(teams []Team, teamName string) Team
+	GetTeamByID(teams []Team, teamID string) Team
 	DownloadReport(reportID int) (bool, []byte)
 	GetReportStatus(reportID int) ReportStatusResponse
 	RequestNewReport(scanID int, reportType string) (bool, Report)
@@ -181,30 +190,32 @@ type System interface {
 	UpdateProjectConfiguration(projectID int, presetID int, engineConfigurationID string) bool
 	UpdateProjectExcludeSettings(projectID int, excludeFolders string, excludeFiles string) bool
 	UploadProjectSourceCode(projectID int, zipFile string) bool
-	CreateProject(projectName string, teamID string) bool
+	CreateProject(projectName string, teamID string) (bool, ProjectCreateResult)
 	CreateBranch(projectID int, branchName string) int
 	GetPresets() []Preset
-	GetProjects() []Project
+	GetProjects(teamID string) []Project
 	GetTeams() []Team
 }
 
 // NewSystemInstance returns a new Checkmarx client for communicating with the backend
 func NewSystemInstance(client piperHttp.Uploader, serverURL, username, password string) (*SystemInstance, error) {
+	loggerInstance := log.Entry().WithField("package", "SAP/jenkins-library/pkg/checkmarx")
 	sys := &SystemInstance{
 		serverURL: serverURL,
 		username:  username,
 		password:  password,
 		client:    client,
-		logger:    log.Entry().WithField("package", "SAP/jenkins-library/pkg/checkmarx"),
+		logger:    loggerInstance,
 	}
 
 	token, err := sys.getOAuth2Token()
 	if err != nil {
-		return sys, errors.Wrap(err, "error fetching oAuth token")
+		return sys, errors.Wrap(err, "Error fetching oAuth token")
 	}
 
 	options := piperHttp.ClientOptions{
-		Token: token,
+		Token:   token,
+		Timeout: time.Second * 60,
 	}
 	sys.client.SetOptions(options)
 
@@ -212,23 +223,43 @@ func NewSystemInstance(client piperHttp.Uploader, serverURL, username, password 
 }
 
 func sendRequest(sys *SystemInstance, method, url string, body io.Reader, header http.Header) ([]byte, error) {
-	response, err := sys.client.SendRequest(method, fmt.Sprintf("%v/CxRestAPI%v", sys.serverURL, url), body, header, nil)
+	var requestBody io.Reader
+	var requestBodyCopy io.Reader
+	if body != nil {
+		closer := ioutil.NopCloser(body)
+		bodyBytes, _ := ioutil.ReadAll(closer)
+		requestBody = bytes.NewBuffer(bodyBytes)
+		requestBodyCopy = bytes.NewBuffer(bodyBytes)
+		defer closer.Close()
+	}
+	response, err := sys.client.SendRequest(method, fmt.Sprintf("%v/cxrestapi%v", sys.serverURL, url), requestBody, header, nil)
 	if err != nil {
+		sys.recordRequestDetailsInErrorCase(requestBodyCopy, response)
 		sys.logger.Errorf("HTTP request failed with error: %s", err)
 		return nil, err
 	}
 
 	if response.StatusCode >= 200 && response.StatusCode < 400 {
 		data, _ := ioutil.ReadAll(response.Body)
+		sys.logger.Debugf("Valid response body: %v", string(data))
 		defer response.Body.Close()
 		return data, nil
 	}
-
-	data, _ := ioutil.ReadAll(response.Body)
-	sys.logger.Debugf("Body %s", data)
-	response.Body.Close()
+	sys.recordRequestDetailsInErrorCase(requestBodyCopy, response)
 	sys.logger.Errorf("HTTP request failed with error %s", response.Status)
 	return nil, errors.Errorf("Invalid HTTP status %v with with code %v received", response.Status, response.StatusCode)
+}
+
+func (sys *SystemInstance) recordRequestDetailsInErrorCase(requestBody io.Reader, response *http.Response) {
+	if requestBody != nil {
+		data, _ := ioutil.ReadAll(ioutil.NopCloser(requestBody))
+		sys.logger.Errorf("Request body: %s", data)
+	}
+	if response != nil && response.Body != nil {
+		data, _ := ioutil.ReadAll(response.Body)
+		sys.logger.Errorf("Response body: %s", data)
+		response.Body.Close()
+	}
 }
 
 func (sys *SystemInstance) getOAuth2Token() (string, error) {
@@ -268,11 +299,28 @@ func (sys *SystemInstance) GetTeams() []Team {
 }
 
 // GetProjects returns the projects defined in the Checkmarx backend which the user has access to
-func (sys *SystemInstance) GetProjects() []Project {
+func (sys *SystemInstance) GetProjects(teamID string) []Project {
 	sys.logger.Debug("Getting Projects...")
 	var projects []Project
 
-	data, err := sendRequest(sys, http.MethodGet, "/projects", nil, nil)
+	var data []byte
+	var err error
+	if len(teamID) > 0 {
+		jsonData := map[string]interface{}{
+			"teamId": teamID,
+		}
+
+		jsonValue, err := json.Marshal(jsonData)
+		if err != nil {
+			sys.logger.Errorf("Error Marshal: %s", err)
+		}
+		body := bytes.NewBuffer(jsonValue)
+		header := http.Header{}
+		header.Set("Content-Type", "application/json")
+		data, err = sendRequest(sys, http.MethodGet, "/projects", body, header)
+	} else {
+		data, err = sendRequest(sys, http.MethodGet, "/projects", nil, nil)
+	}
 	if err != nil {
 		sys.logger.Errorf("Fetching projects failed: %s", err)
 		return projects
@@ -298,8 +346,8 @@ func (sys *SystemInstance) GetProjectByID(projectID int) (bool, Project) {
 }
 
 // CreateProject creates a new project in the Checkmarx backend
-func (sys *SystemInstance) CreateProject(projectName string, teamID string) bool {
-
+func (sys *SystemInstance) CreateProject(projectName string, teamID string) (bool, ProjectCreateResult) {
+	var result ProjectCreateResult
 	jsonData := map[string]interface{}{
 		"name":       projectName,
 		"owningTeam": teamID,
@@ -309,18 +357,20 @@ func (sys *SystemInstance) CreateProject(projectName string, teamID string) bool
 	jsonValue, err := json.Marshal(jsonData)
 	if err != nil {
 		sys.logger.Errorf("Error Marshal: %s", err)
-		return false
+		return false, result
 	}
 
 	header := http.Header{}
 	header.Set("Content-Type", "application/json")
-	_, err = sendRequest(sys, http.MethodPost, "/projects", bytes.NewBuffer(jsonValue), header)
+
+	data, err := sendRequest(sys, http.MethodPost, "/projects", bytes.NewBuffer(jsonValue), header)
 	if err != nil {
 		sys.logger.Errorf("Failed to create project: %s", err)
-		return false
+		return false, result
 	}
 
-	return true
+	json.Unmarshal(data, &result)
+	return true, result
 }
 
 // CreateBranch creates a branch of an existing project in the Checkmarx backend
@@ -356,7 +406,7 @@ func (sys *SystemInstance) UploadProjectSourceCode(projectID int, zipFile string
 	header := http.Header{}
 	header.Add("Accept-Encoding", "gzip,deflate")
 	header.Add("Accept", "text/plain")
-	resp, err := sys.client.UploadFile(fmt.Sprintf("%v/CxRestAPI/projects/%v/sourceCode/attachments", sys.serverURL, projectID), zipFile, "zippedSource", header, nil)
+	resp, err := sys.client.UploadFile(fmt.Sprintf("%v/cxrestapi/projects/%v/sourceCode/attachments", sys.serverURL, projectID), zipFile, "zippedSource", header, nil)
 	if err != nil {
 		sys.logger.Errorf("Failed to uploaded zipped sources %s", err)
 		return false
@@ -438,7 +488,7 @@ func (sys *SystemInstance) UpdateProjectConfiguration(projectID int, presetID in
 
 	header := http.Header{}
 	header.Set("Content-Type", "application/json")
-	_, err = sendRequest(sys, http.MethodPost, "/sast/scanSettings", bytes.NewBuffer(jsonValue), nil)
+	_, err = sendRequest(sys, http.MethodPost, "/sast/scanSettings", bytes.NewBuffer(jsonValue), header)
 	if err != nil {
 		sys.logger.Errorf("HTTP request failed with error: %s", err)
 		return false
@@ -586,10 +636,21 @@ func (sys *SystemInstance) GetTeamByName(teams []Team, teamName string) Team {
 	return Team{}
 }
 
+// GetTeamByID filters a team by its ID
+func (sys *SystemInstance) GetTeamByID(teams []Team, teamID string) Team {
+	for _, team := range teams {
+		if team.ID == teamID {
+			return team
+		}
+	}
+	return Team{}
+}
+
 // GetProjectByName filters a project by its name
 func (sys *SystemInstance) GetProjectByName(projects []Project, projectName string) Project {
 	for _, project := range projects {
 		if project.Name == projectName {
+			sys.logger.Debugf("Filtered project with name %v", project.Name)
 			return project
 		}
 	}
@@ -600,6 +661,16 @@ func (sys *SystemInstance) GetProjectByName(projects []Project, projectName stri
 func (sys *SystemInstance) GetPresetByName(presets []Preset, presetName string) Preset {
 	for _, preset := range presets {
 		if preset.Name == presetName {
+			return preset
+		}
+	}
+	return Preset{}
+}
+
+// GetPresetByID filters a preset by its name
+func (sys *SystemInstance) GetPresetByID(presets []Preset, presetID int) Preset {
+	for _, preset := range presets {
+		if preset.ID == presetID {
 			return preset
 		}
 	}
