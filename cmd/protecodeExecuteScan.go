@@ -115,7 +115,7 @@ func getDockerImage(config *protecodeExecuteScanOptions, cpEnvironment *protecod
 		fileName := fmt.Sprintf("%v.tar", strings.ReplaceAll(config.ScanImage, "/", "_"))
 		config.FilePath = filepath.Join(image.FSPath, fileName)
 		if len(config.FilePath) <= 0 {
-			errors.New("Protecode scan failed, there is no file path configured")
+			return errors.New("Protecode scan failed, there is no file path configured  : %v (filename:%v, PSPath: %v)", config.FilePath, fileName, image.FSPath)
 		}
 	}
 
@@ -244,6 +244,9 @@ func uploadScanOrDeclareFetch(config *protecodeExecuteScanOptions, productId int
 			productId = result.ProductId
 
 		} else {
+			if len(config.FilePath) <= 0 {
+				return errors.New("Protecode scan failed, there is no file path configured for upload : %v", config.FilePath)
+			}
 			fmt.Printf("triggering Protecode scan - file: %v, group: %v", config.FilePath, config.ProtecodeGroup)
 			result, err := client.UploadScanFile(config.CleanupMode, config.ProtecodeGroup, config.FilePath)
 			if err != nil {
