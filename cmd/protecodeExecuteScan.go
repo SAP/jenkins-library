@@ -114,6 +114,9 @@ func getDockerImage(config *protecodeExecuteScanOptions, cpEnvironment *protecod
 	if len(config.FilePath) <= 0 {
 		fileName := fmt.Sprintf("%v.tar", strings.ReplaceAll(config.ScanImage, "/", "_"))
 		config.FilePath = filepath.Join(image.FSPath, fileName)
+		if len(config.FilePath) <= 0 {
+			errors.New("Protecode scan failed, there is no file path configured")
+		}
 	}
 
 	return nil
