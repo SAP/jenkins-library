@@ -74,11 +74,4 @@ class DefaultValueCache implements Serializable {
             DefaultValueCache.createInstance(workflow.getBinding(), defaultValues, customDefaults)
         }
     }
-
-    @Override
-    public String toString() {
-        return "DefaultValueCache{" +
-            "defaultValues=" + defaultValues +
-            '}'
-    }
 }
