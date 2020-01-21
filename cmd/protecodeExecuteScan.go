@@ -245,7 +245,7 @@ func uploadScanOrDeclareFetch(config *protecodeExecuteScanOptions, productId int
 
 		} else {
 			if len(config.FilePath) <= 0 {
-				return errors.New("Protecode scan failed, there is no file path configured for upload : %v", config.FilePath)
+				return -1, errors.New("Protecode scan failed, there is no file path configured for upload : %v", config.FilePath)
 			}
 			fmt.Printf("triggering Protecode scan - file: %v, group: %v", config.FilePath, config.ProtecodeGroup)
 			result, err := client.UploadScanFile(config.CleanupMode, config.ProtecodeGroup, config.FilePath)
