@@ -121,6 +121,7 @@ func getDockerImage(config *protecodeExecuteScanOptions, cpEnvironment *protecod
 			log.Entry().Fatalf("Protecode scan failed, there is no file path configured  : %v (filename:%v, PSPath: %v)", config.FilePath, fileName, image.FSPath)
 		}
 	}
+	log.Entry().Fatalf("Protecode scan debug, file path configured  : %v (filename:%v, PSPath: %v)", config.FilePath, fileName, image.FSPath)
 	return nil
 }
 
