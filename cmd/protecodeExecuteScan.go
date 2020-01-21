@@ -87,11 +87,12 @@ func handleDockerCredentials(config protecodeExecuteScanOptions) error {
 }
 
 func cleanupDockerCredentials(config protecodeExecuteScanOptions) error {
+	if len(config.DockerUser) > 0 && len(config.DockerPassword) > 0 {
+		p := dchClient.NewShellProgramFunc("docker-credential-secretservice")
 
-	p := dchClient.NewShellProgramFunc("docker-credential-secretservice")
-
-	if err := dchClient.Erase(p, config.DockerRegistryURL); err != nil {
-		return err
+		if err := dchClient.Erase(p, config.DockerRegistryURL); err != nil {
+			return err
+		}
 	}
 
 	return nil
