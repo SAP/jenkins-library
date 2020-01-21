@@ -101,7 +101,7 @@ void call(Map parameters = [:]) {
         def utils = parameters.juStabUtils ?: new Utils()
         def script = checkScript(this, parameters) ?: this
         // load default & individual configuration
-        Map configuration = ConfigurationHelper.newInstance(this, script)
+        Map configuration = ConfigurationHelper.newInstance(script, this)
             .loadStepDefaults()
             .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS)
             .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS)

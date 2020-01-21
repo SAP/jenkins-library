@@ -64,7 +64,7 @@ void call(Map parameters = [:]) {
         def jenkinsUtils = parameters.jenkinsUtilsStub ?: new JenkinsUtils()
 
         // load default & individual configuration
-        Map config = ConfigurationHelper.newInstance(this, script)
+        Map config = ConfigurationHelper.newInstance(script, this)
             .loadStepDefaults()
             .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS)
             .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS)

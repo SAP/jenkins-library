@@ -56,7 +56,7 @@ void call(Map parameters = [:], body) {
 
     // load default & individual configuration
     def cpe = parameters.stepParameters?.script?.commonPipelineEnvironment ?: null
-    Map config = ConfigurationHelper.newInstance(this, script)
+    Map config = ConfigurationHelper.newInstance(script, this)
         .loadStepDefaults()
         .mixinGeneralConfig(cpe, GENERAL_CONFIG_KEYS)
         .mixinStepConfig(cpe, STEP_CONFIG_KEYS)

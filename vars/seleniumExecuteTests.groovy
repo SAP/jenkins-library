@@ -82,7 +82,7 @@ void call(Map parameters = [:], Closure body) {
         def utils = parameters?.juStabUtils ?: new Utils()
 
         // load default & individual configuration
-        Map config = ConfigurationHelper.newInstance(this, script)
+        Map config = ConfigurationHelper.newInstance(script, this)
             .loadStepDefaults()
             .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS)
             .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS)

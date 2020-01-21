@@ -136,7 +136,7 @@ void call(Map parameters = [:], Closure body = null) {
         if (script == null)
             script = this
         // load default & individual configuration
-        ConfigurationHelper configHelper = ConfigurationHelper.newInstance(this, script)
+        ConfigurationHelper configHelper = ConfigurationHelper.newInstance(script, this)
             .loadStepDefaults()
             .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS, CONFIG_KEY_COMPATIBILITY)
             .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS, CONFIG_KEY_COMPATIBILITY)
@@ -201,7 +201,7 @@ void call(Map parameters = [:], Closure body = null) {
 
             if(gitPushMode == GitPushMode.SSH) {
 
-                config = ConfigurationHelper.newInstance(this, script, config)
+                config = ConfigurationHelper.newInstance(script, this, config)
                     .addIfEmpty('gitSshUrl', isAppContainer(config)
                                 ?script.commonPipelineEnvironment.getAppContainerProperty('gitSshUrl')
                                 :script.commonPipelineEnvironment.getGitSshUrl())
@@ -214,7 +214,7 @@ void call(Map parameters = [:], Closure body = null) {
 
             } else if(gitPushMode == GitPushMode.HTTPS) {
 
-                config = ConfigurationHelper.newInstance(this, script, config)
+                config = ConfigurationHelper.newInstance(script, this, config)
                     .addIfEmpty('gitSshUrl', isAppContainer(config)
                                 ?script.commonPipelineEnvironment.getAppContainerProperty('gitHttpsUrl')
                                 :script.commonPipelineEnvironment.getGitHttpsUrl())

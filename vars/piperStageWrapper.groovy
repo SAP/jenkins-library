@@ -16,7 +16,7 @@ void call(Map parameters = [:], body) {
     def stageName = parameters.stageName?:env.STAGE_NAME
 
     // load default & individual configuration
-    Map config = ConfigurationHelper.newInstance(this, script)
+    Map config = ConfigurationHelper.newInstance(script, this)
         .loadStepDefaults()
         .mixin(ConfigurationLoader.defaultStageConfiguration(this, stageName))
         .mixinGeneralConfig(script.commonPipelineEnvironment)

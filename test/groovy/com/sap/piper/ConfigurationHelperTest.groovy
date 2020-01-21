@@ -3,7 +3,9 @@ package com.sap.piper
 import static org.hamcrest.Matchers.*
 import static org.junit.Assert.assertThat
 
+import org.junit.After
 import org.junit.Assert
+import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.ExpectedException
@@ -11,7 +13,28 @@ import org.yaml.snakeyaml.Yaml
 
 class ConfigurationHelperTest {
 
-    Script mockScript = new Script() {
+    Script mockWorkflow = new Script() {
+
+        def run() {
+            // it never runs
+            throw new UnsupportedOperationException()
+        }
+
+        def STEP_NAME = 'workflow'
+
+        def echo(message) {
+        }
+
+        def libraryResource(String r) {
+			'{steps:{mock: {step: mock, type: workflow}}}'
+        }
+
+        def readYaml(Map m) {
+           new Yaml().load(m.text)
+        }
+    }
+
+    Script mockStep = new Script() {
 
         def run() {
             // it never runs
@@ -24,7 +47,7 @@ class ConfigurationHelperTest {
         }
 
         def libraryResource(String r) {
-            'key: value' // just a stupid default
+			'{steps:{mock: {step: mock, type: step}}}'
         }
 
         def readYaml(Map m) {
@@ -35,6 +58,13 @@ class ConfigurationHelperTest {
     @Rule
     public ExpectedException thrown = ExpectedException.none()
 
+    @After
+    void tearDown() {
+    	DefaultValueCache.reset()
+    	mockStep.setBinding(null)
+		mockWorkflow.setBinding(null)
+    }
+	
     private static getConfiguration() {
         Map configuration = [dockerImage: 'maven:3.2-jdk-8-onbuild']
         return configuration
@@ -72,14 +102,14 @@ class ConfigurationHelperTest {
 
     @Test
     void testConfigurationLoaderWithDefaults() {
-        Map config = ConfigurationHelper.newInstance(mockScript, mockScript, [property1: '27']).use()
+        Map config = ConfigurationHelper.newInstance(mockWorkflow, mockStep, [property1: '27']).use()
         // asserts
         Assert.assertThat(config, hasEntry('property1', '27'))
     }
 
     @Test
     void testConfigurationLoaderWithCustomSettings() {
-        Map config = ConfigurationHelper.newInstance(mockScript, mockScript, [property1: '27'])
+        Map config = ConfigurationHelper.newInstance(mockWorkflow, mockStep, [property1: '27'])
             .mixin([property1: '41'])
             .use()
         // asserts
@@ -89,7 +119,7 @@ class ConfigurationHelperTest {
     @Test
     void testConfigurationLoaderWithFilteredCustomSettings() {
         Set filter = ['property2']
-        Map config = ConfigurationHelper.newInstance(mockScript, mockScript, [property1: '27'])
+        Map config = ConfigurationHelper.newInstance(mockWorkflow, mockStep, [property1: '27'])
             .mixin([property1: '41', property2: '28', property3: '29'], filter)
             .use()
         // asserts
@@ -101,7 +131,7 @@ class ConfigurationHelperTest {
     @Test
     void testConfigurationHelperLoadingStepDefaults() {
         Set filter = ['property2']
-        Map config = ConfigurationHelper.newInstance(mockScript, mockScript, [property1: '27'])
+        Map config = ConfigurationHelper.newInstance(mockWorkflow, mockStep, [property1: '27'])
             .loadStepDefaults()
             .mixinGeneralConfig([configuration:[general: ['general': 'test', 'oldGeneral': 'test2']]], null, [general2: 'oldGeneral'])
             .mixinStageConfig([configuration:[stages:[testStage:['stage': 'test', 'oldStage': 'test2']]]], 'testStage', null, [stage2: 'oldStage'])
@@ -121,8 +151,28 @@ class ConfigurationHelperTest {
     }
 
     @Test
+    void testConfigurationHelperCompatibleNewInstance() {
+        Map config = ConfigurationHelper.newInstance(mockStep)
+            .loadStepDefaults()
+            .use()
+        // asserts
+        Assert.assertThat(config, hasEntry('type', 'step'))
+        Assert.assertThat(config, not(hasEntry('type', 'workflow')))
+    }
+
+    @Test
+    void testConfigurationHelperNewInstance() {
+        Map config = ConfigurationHelper.newInstance(mockWorkflow,mockStep)
+            .loadStepDefaults()
+            .use()
+        // asserts
+        Assert.assertThat(config, hasEntry('type', 'workflow'))
+        Assert.assertThat(config, not(hasEntry('type', 'step')))
+    }
+
+    @Test
     void testConfigurationHelperAddIfEmpty() {
-        Map config = ConfigurationHelper.newInstance(mockScript, mockScript, [:])
+        Map config = ConfigurationHelper.newInstance(mockWorkflow, mockStep, [:])
             .mixin([property1: '41', property2: '28', property3: '29', property4: ''])
             .addIfEmpty('property3', '30')
             .addIfEmpty('property4', '40')
@@ -137,7 +187,7 @@ class ConfigurationHelperTest {
 
     @Test
     void testConfigurationHelperAddIfNull() {
-        Map config = ConfigurationHelper.newInstance(mockScript, mockScript, [:])
+        Map config = ConfigurationHelper.newInstance(mockWorkflow, mockStep, [:])
             .mixin([property1: '29', property2: '', property3: null])
             .addIfNull('property1', '30')
             .addIfNull('property2', '30')
@@ -153,7 +203,7 @@ class ConfigurationHelperTest {
 
     @Test
     void testConfigurationHelperDependingOn() {
-        Map config = ConfigurationHelper.newInstance(mockScript, mockScript, [:])
+        Map config = ConfigurationHelper.newInstance(mockWorkflow, mockStep, [:])
             .mixin([deep: [deeper: 'test'], scanType: 'maven', maven: [path: 'test2']])
             .dependingOn('scanType').mixin('deep/path')
             .use()
@@ -167,7 +217,7 @@ class ConfigurationHelperTest {
 
     @Test
     void testConfigurationHelperWithPropertyInValues() {
-        ConfigurationHelper.newInstance(mockScript, mockScript, [:])
+        ConfigurationHelper.newInstance(mockWorkflow, mockStep, [:])
             .mixin([test: 'allowed'])
             .withPropertyInValues('test', ['allowed', 'allowed2'] as Set)
             .use()
@@ -177,7 +227,7 @@ class ConfigurationHelperTest {
     void testConfigurationHelperWithPropertyInValuesException() {
         def errorCaught = false
         try {
-        ConfigurationHelper.newInstance(mockScript, mockScript, [:])
+        ConfigurationHelper.newInstance(mockWorkflow, mockStep, [:])
             .mixin([test: 'disallowed'])
             .withPropertyInValues('test', ['allowed', 'allowed2'] as Set)
             .use()
@@ -191,7 +241,7 @@ class ConfigurationHelperTest {
 
     @Test
     void testConfigurationLoaderWithBooleanValue() {
-        Map config = ConfigurationHelper.newInstance(mockScript, mockScript, [property1: '27'])
+        Map config = ConfigurationHelper.newInstance(mockWorkflow, mockStep, [property1: '27'])
             .mixin([property1: false])
             .mixin([property2: false])
             .use()
@@ -202,7 +252,7 @@ class ConfigurationHelperTest {
 
     @Test
     void testConfigurationLoaderWithMixinDependent() {
-        Map config = ConfigurationHelper.newInstance(mockScript, mockScript, [
+        Map config = ConfigurationHelper.newInstance(mockWorkflow, mockStep, [
                 type: 'maven',
                 maven: [dockerImage: 'mavenImage', dockerWorkspace: 'mavenWorkspace'],
                 npm: [dockerImage: 'npmImage', dockerWorkspace: 'npmWorkspace', executeDocker: true, executeDocker3: false],
@@ -232,7 +282,7 @@ class ConfigurationHelperTest {
 
     @Test
     void testHandleCompatibility() {
-        def configuration = ConfigurationHelper.newInstance(mockScript, mockScript)
+        def configuration = ConfigurationHelper.newInstance(mockWorkflow, mockWorkflow)
             .mixin([old1: 'oldValue1', old2: 'oldValue2', test: 'testValue'], null, [newStructure: [new1: 'old1', new2: 'old2']])
             .use()
 
@@ -243,7 +293,7 @@ class ConfigurationHelperTest {
 
     @Test
     void testHandleCompatibilityFlat() {
-        def configuration = ConfigurationHelper.newInstance(mockScript, mockScript)
+        def configuration = ConfigurationHelper.newInstance(mockWorkflow, mockWorkflow)
             .mixin([old1: 'oldValue1', old2: 'oldValue2', test: 'testValue'], null, [new1: 'old1', new2: 'old2'])
             .use()
 
@@ -254,7 +304,7 @@ class ConfigurationHelperTest {
 
     @Test
     void testHandleCompatibilityDeep() {
-        def configuration = ConfigurationHelper.newInstance(mockScript, mockScript)
+        def configuration = ConfigurationHelper.newInstance(mockWorkflow, mockWorkflow)
             .mixin([old1: 'oldValue1', old2: 'oldValue2', test: 'testValue'], null, [deep:[deeper:[newStructure: [new1: 'old1', new2: 'old2']]]])
             .use()
 
@@ -265,7 +315,7 @@ class ConfigurationHelperTest {
 
     @Test
     void testHandleCompatibilityNewAvailable() {
-        def configuration = ConfigurationHelper.newInstance(mockScript, mockScript, [old1: 'oldValue1', newStructure: [new1: 'newValue1'], test: 'testValue'])
+        def configuration = ConfigurationHelper.newInstance(mockWorkflow, mockStep, [old1: 'oldValue1', newStructure: [new1: 'newValue1'], test: 'testValue'])
             .mixin([old1: 'oldValue1', newStructure: [new1: 'newValue1'], test: 'testValue'], null, [newStructure: [new1: 'old1', new2: 'old2']])
             .use()
 
@@ -275,7 +325,7 @@ class ConfigurationHelperTest {
 
     @Test
     void testHandleCompatibilityOldNotSet() {
-        def configuration = ConfigurationHelper.newInstance(mockScript, mockScript, [old1: null, test: 'testValue'])
+        def configuration = ConfigurationHelper.newInstance(mockWorkflow, mockStep, [old1: null, test: 'testValue'])
             .mixin([old1: null, test: 'testValue'], null, [newStructure: [new1: 'old1', new2: 'old2']])
             .use()
 
@@ -285,7 +335,7 @@ class ConfigurationHelperTest {
 
     @Test
     void testHandleCompatibilityNoneAvailable() {
-        def configuration = ConfigurationHelper.newInstance(mockScript, mockScript, [old1: null, test: 'testValue'])
+        def configuration = ConfigurationHelper.newInstance(mockWorkflow, mockStep, [old1: null, test: 'testValue'])
             .mixin([test: 'testValue'], null, [newStructure: [new1: 'old1', new2: 'old2']])
             .use()
 
@@ -295,7 +345,7 @@ class ConfigurationHelperTest {
 
     @Test
     void testHandleCompatibilityPremigratedValues() {
-        def configuration = ConfigurationHelper.newInstance(mockScript, mockScript, [old1: null, test: 'testValue'])
+        def configuration = ConfigurationHelper.newInstance(mockWorkflow, mockStep, [old1: null, test: 'testValue'])
             .mixin([someValueToMigrate: 'testValue2'], null, [someValueToMigrateSecondTime: 'someValueToMigrate', newStructure: [new1: 'old1', new2: 'someValueToMigrateSecondTime']])
             .use()
 
@@ -310,7 +360,7 @@ class ConfigurationHelperTest {
         thrown.expect(IllegalArgumentException)
         thrown.expectMessage('ERROR - NO VALUE AVAILABLE FOR myKey')
 
-        ConfigurationHelper.newInstance(mockScript, mockScript).withMandatoryProperty('myKey')
+        ConfigurationHelper.newInstance(mockWorkflow, mockWorkflow).withMandatoryProperty('myKey')
     }
 
     @Test
@@ -319,22 +369,22 @@ class ConfigurationHelperTest {
         thrown.expect(IllegalArgumentException)
         thrown.expectMessage('My error message')
 
-        ConfigurationHelper.newInstance(mockScript, mockScript).withMandatoryProperty('myKey', 'My error message')
+        ConfigurationHelper.newInstance(mockWorkflow, mockWorkflow).withMandatoryProperty('myKey', 'My error message')
     }
 
     @Test
     public void testWithMandoryParameterDefaultCustomFailureMessageProvidedSucceeds() {
-        ConfigurationHelper.newInstance(mockScript, mockScript, [myKey: 'myValue']).withMandatoryProperty('myKey', 'My error message')
+        ConfigurationHelper.newInstance(mockWorkflow, mockStep, [myKey: 'myValue']).withMandatoryProperty('myKey', 'My error message')
     }
 
     @Test
     public void testWithMandoryParameterDefaultCustomFailureMessageNotProvidedSucceeds() {
-        ConfigurationHelper.newInstance(mockScript, mockScript, [myKey: 'myValue']).withMandatoryProperty('myKey')
+        ConfigurationHelper.newInstance(mockWorkflow, mockStep, [myKey: 'myValue']).withMandatoryProperty('myKey')
     }
 
     @Test
     public void testWithMandoryWithFalseCondition() {
-        ConfigurationHelper.newInstance(mockScript, mockScript, [verify: false])
+        ConfigurationHelper.newInstance(mockWorkflow, mockStep, [verify: false])
             .withMandatoryProperty('missingKey', null, { c -> return c.get('verify') })
     }
 
@@ -343,20 +393,20 @@ class ConfigurationHelperTest {
         thrown.expect(IllegalArgumentException)
         thrown.expectMessage('ERROR - NO VALUE AVAILABLE FOR missingKey')
 
-        ConfigurationHelper.newInstance(mockScript, mockScript, [verify: true])
+        ConfigurationHelper.newInstance(mockWorkflow, mockStep, [verify: true])
             .withMandatoryProperty('missingKey', null, { c -> return c.get('verify') })
     }
 
     @Test
     public void testWithMandoryWithTrueConditionExistingValue() {
-        ConfigurationHelper.newInstance(mockScript, mockScript, [existingKey: 'anyValue', verify: true])
+        ConfigurationHelper.newInstance(mockWorkflow, mockStep, [existingKey: 'anyValue', verify: true])
             .withMandatoryProperty('existingKey', null, { c -> return c.get('verify') })
     }
 
     @Test
     public void testTelemetryConfigurationAvailable() {
         Set filter = ['test']
-        def configuration = ConfigurationHelper.newInstance(mockScript, mockScript, [test: 'testValue'])
+        def configuration = ConfigurationHelper.newInstance(mockWorkflow, mockStep, [test: 'testValue'])
             .mixin([collectTelemetryData: false], filter)
             .use()
 
@@ -378,7 +428,7 @@ class ConfigurationHelperTest {
         assert bGString instanceof GString
         assert cGString instanceof GString
 
-        def config = ConfigurationHelper.newInstance(mockScript, mockScript, [a: aGString,
+        def config = ConfigurationHelper.newInstance(mockWorkflow, mockStep, [a: aGString,
                                               nextLevel: [b: bGString]])
                      .mixin([c : cGString])
                      .use()
@@ -393,7 +443,7 @@ class ConfigurationHelperTest {
 
     @Test
     public void testWithMandatoryParameterCollectFailuresAllParamtersArePresentResultsInNoExceptionThrown() {
-        ConfigurationHelper.newInstance(mockScript, mockScript, [myKey1: 'a', myKey2: 'b'])
+        ConfigurationHelper.newInstance(mockWorkflow, mockStep, [myKey1: 'a', myKey2: 'b'])
                                    .collectValidationFailures()
                                    .withMandatoryProperty('myKey1')
                                    .withMandatoryProperty('myKey2')
@@ -402,7 +452,7 @@ class ConfigurationHelperTest {
 
     @Test
     public void testWithMandatoryParameterCollectFailuresMultipleMissingParametersDoNotResultInFailuresDuringWithMandatoryProperties() {
-        ConfigurationHelper.newInstance(mockScript, mockScript, [:]).collectValidationFailures()
+        ConfigurationHelper.newInstance(mockWorkflow, mockStep, [:]).collectValidationFailures()
                                     .withMandatoryProperty('myKey1')
                                     .withMandatoryProperty('myKey2')
     }
@@ -411,7 +461,7 @@ class ConfigurationHelperTest {
     public void testWithMandatoryParameterCollectFailuresMultipleMissingParametersResultsInFailureDuringUse() {
         thrown.expect(IllegalArgumentException)
         thrown.expectMessage('ERROR - NO VALUE AVAILABLE FOR: myKey2, myKey3')
-        ConfigurationHelper.newInstance(mockScript, mockScript, [myKey1:'a']).collectValidationFailures()
+        ConfigurationHelper.newInstance(mockWorkflow, mockStep, [myKey1:'a']).collectValidationFailures()
                                    .withMandatoryProperty('myKey1')
                                    .withMandatoryProperty('myKey2')
                                    .withMandatoryProperty('myKey3')
@@ -422,7 +472,7 @@ class ConfigurationHelperTest {
     public void testWithMandatoryParameterCollectFailuresOneMissingParametersResultsInFailureDuringUse() {
         thrown.expect(IllegalArgumentException)
         thrown.expectMessage('ERROR - NO VALUE AVAILABLE FOR myKey2')
-        ConfigurationHelper.newInstance(mockScript, mockScript, [myKey1:'a']).collectValidationFailures()
+        ConfigurationHelper.newInstance(mockWorkflow, mockStep, [myKey1:'a']).collectValidationFailures()
                                    .withMandatoryProperty('myKey1')
                                    .withMandatoryProperty('myKey2')
                                    .use()
@@ -433,7 +483,7 @@ class ConfigurationHelperTest {
         Map config = ['key1':'value1']
         Set possibleValues = ['value1', 'value2', 'value3']
 
-        ConfigurationHelper.newInstance(mockScript, mockScript, config).collectValidationFailures()
+        ConfigurationHelper.newInstance(mockWorkflow, mockStep, config).collectValidationFailures()
                                    .withPropertyInValues('key1', possibleValues)
                                    .use()
     }
@@ -444,7 +494,7 @@ class ConfigurationHelperTest {
         Map config = ['key1':"$value"]
         Set possibleValues = ['value1', 'value2', 'value3']
 
-        ConfigurationHelper.newInstance(mockScript, mockScript, config).collectValidationFailures()
+        ConfigurationHelper.newInstance(mockWorkflow, mockStep, config).collectValidationFailures()
                                    .withPropertyInValues('key1', possibleValues)
                                    .use()
     }
@@ -454,7 +504,7 @@ class ConfigurationHelperTest {
         Map config = ['key1':3]
         Set possibleValues = [1, 2, 3]
 
-        ConfigurationHelper.newInstance(mockScript, mockScript, config).collectValidationFailures()
+        ConfigurationHelper.newInstance(mockWorkflow, mockStep, config).collectValidationFailures()
                                    .withPropertyInValues('key1', possibleValues)
                                    .use()
     }

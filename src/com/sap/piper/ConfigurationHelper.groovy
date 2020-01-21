@@ -5,26 +5,30 @@ class ConfigurationHelper implements Serializable {
 
     def static SEPARATOR = '/'
 
-    static ConfigurationHelper newInstance(Script step, Script script, Map config = [:]) {
-        new ConfigurationHelper(step, script, config)
+    static ConfigurationHelper newInstance(Script workflow, Script step, Map config = [:]) {
+        new ConfigurationHelper(workflow, step, config)
+    }
+
+    static ConfigurationHelper newInstance(Script step, Map config = [:]) {
+        new ConfigurationHelper(null, step, config)
     }
 
     ConfigurationHelper loadStepDefaults(Map compatibleParameters = [:]) {
-        DefaultValueCache.prepare(step)
-        this.config = ConfigurationLoader.defaultGeneralConfiguration(step)
-        mixin(ConfigurationLoader.defaultGeneralConfiguration(step), null, compatibleParameters)
+        DefaultValueCache.prepare(workflow)
+        this.config = ConfigurationLoader.defaultGeneralConfiguration(workflow)
+        mixin(ConfigurationLoader.defaultGeneralConfiguration(workflow), null, compatibleParameters)
         mixin(ConfigurationLoader.defaultStepConfiguration(null, name), null, compatibleParameters)
     }
 
     private Map config
-    private Script step
+    private Script workflow
     private String name
     private Map validationResults = null
     private String dependingOn
 
-    private ConfigurationHelper(Script step, Script script, Map config){
+    private ConfigurationHelper(Script workflow, Script step, Map config){
         this.config = config ?: [:]
-        this.step = script
+        this.workflow = workflow?:step
         this.name = step.STEP_NAME
         if(!this.name) throw new IllegalArgumentException('Step has no public name property!')
     }
@@ -78,7 +82,7 @@ class ConfigurationHelper implements Serializable {
                     if (value != null) {
                         newConfig[entry.getKey()] = value
                         def paramName = (paramStructure ? paramStructure + '.' : '') + entry.getKey()
-                        this.step.echo ("[INFO] The parameter '${entry.getValue()}' is COMPATIBLE to the parameter '${paramName}'")
+                        this.workflow.echo ("[INFO] The parameter '${entry.getValue()}' is COMPATIBLE to the parameter '${paramName}'")
                     }
                 }
             }
@@ -126,7 +130,7 @@ class ConfigurationHelper implements Serializable {
     Map use(){
         handleValidationFailures()
         MapUtils.traverse(config, { v -> (v instanceof GString) ? v.toString() : v })
-        if(config.verbose) step.echo "[${name}] Configuration: ${config}"
+        if(config.verbose) workflow.echo "[${name}] Configuration: ${config}"
         return MapUtils.deepCopy(config)
     }
 

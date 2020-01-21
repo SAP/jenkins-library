@@ -1,3 +1,5 @@
+import static com.sap.piper.Prerequisites.checkScript
+
 import com.sap.piper.GenerateDocumentation
 import com.sap.piper.ConfigurationHelper
 
@@ -41,8 +43,9 @@ void call(Map parameters = [:]) {
         Map config
 
         handlePipelineStepErrors (stepName: 'pipelineExecute', stepParameters: parameters, failOnError: true) {
+            def script = checkScript(this, parameters) ?: this
 
-            ConfigurationHelper configHelper = ConfigurationHelper.newInstance(this, this)
+            ConfigurationHelper configHelper = ConfigurationHelper.newInstance(script, this)
                 .loadStepDefaults()
                 .mixin(parameters, PARAMETER_KEYS)
                 .withMandatoryProperty('repoUrl')

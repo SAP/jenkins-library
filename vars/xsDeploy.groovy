@@ -1,13 +1,7 @@
 import static com.sap.piper.Prerequisites.checkScript
 
 import com.sap.piper.ConfigurationHelper
-
-import com.sap.piper.DefaultValueCache
-import com.sap.piper.JenkinsUtils
 import com.sap.piper.PiperGoUtils
-
-
-import com.sap.piper.GenerateDocumentation
 import com.sap.piper.Utils
 
 import groovy.transform.Field
@@ -197,7 +191,7 @@ String joinAndQuote(List l, String prefix = '') {
 Map getOptions(Script script, Map parameters, Map projectConfig, Map contextConfig, def cpe) {
 
     Set configKeys = ['docker', 'mode', 'action', 'dockerImage', 'dockerPullImage']
-    Map config = ConfigurationHelper.newInstance(this, script)
+    Map config = ConfigurationHelper.newInstance(script, this)
         .loadStepDefaults()
         .mixinGeneralConfig(cpe, configKeys)
         .mixinStepConfig(cpe, configKeys)

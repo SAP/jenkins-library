@@ -17,7 +17,7 @@ class DefaultValueCache implements Serializable {
         }
     }
 
-    static getInstance(Binding scriptBinding){
+    static DefaultValueCache getInstance(Binding scriptBinding){
         if (instance) {
             return instance
         }
@@ -53,7 +53,7 @@ class DefaultValueCache implements Serializable {
         return result
     }
 
-    static void prepare(Script workflowScript, Map parameters = [:]) {
+    static void prepare(Script workflow, Map parameters = [:]) {
         if(parameters == null) parameters = [:]
         if(!DefaultValueCache.hasInstance() || parameters.customDefaults) {
             def defaultValues = [:]
@@ -65,13 +65,13 @@ class DefaultValueCache implements Serializable {
             if(customDefaults in List)
                 configFileList += customDefaults
             for (def configFileName : configFileList){
-                if(configFileList.size() > 1) workflowScript.echo "Loading configuration file '${configFileName}'"
-                def configuration = workflowScript.readYaml text: workflowScript.libraryResource(configFileName)
+                if(configFileList.size() > 1) workflow.echo "Loading configuration file '${configFileName}'"
+                def configuration = workflow.readYaml text: workflow.libraryResource(configFileName)
                 defaultValues = MapUtils.merge(
                         MapUtils.pruneNulls(defaultValues),
                         MapUtils.pruneNulls(configuration))
             }
-            DefaultValueCache.createInstance(workflowScript.getBinding(), defaultValues, customDefaults)
+            DefaultValueCache.createInstance(workflow.getBinding(), defaultValues, customDefaults)
         }
     }
 
