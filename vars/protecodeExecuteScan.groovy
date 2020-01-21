@@ -117,6 +117,14 @@ void call(Map parameters = [:]) {
                 callProtecodeScan(config)
             }
 
+            archiveArtifacts artifacts: "${config.reportFileName}", allowEmptyArchive: false
+            if (config.addSideBarLink) {
+                jenkinsUtils.removeJobSideBarLinks("artifact/${config.reportFileName}")
+                jenkinsUtils.addJobSideBarLink("artifact/${config.reportFileName}", "Protecode Report", "images/24x24/graph.png")
+                jenkinsUtils.addRunSideBarLink("artifact/${config.reportFileName}", "Protecode Report", "images/24x24/graph.png")
+                jenkinsUtils.addRunSideBarLink("${config.protecodeServerUrl}/products/${script.commonPipelineEnvironment.getAppContainerProperty('protecodeProductId')}/", "Protecode WebUI", "images/24x24/graph.png")
+            }
+
             String fileContents = new File("${config.reportFileName}").getText("UTF-8")
             json = script.readJSON text: fileContents
             
@@ -138,21 +146,16 @@ void call(Map parameters = [:]) {
 private void callProtecodeScan(config) {
     withCredentials([[$class: 'UsernamePasswordMultiBinding', credentialsId: config.protecodeCredentialsId, passwordVariable: 'password', usernameVariable: 'user']]) {
 
-        sh "./piper protecodeExecuteScan  --password ${password} --user ${user} --dockerUser ${dockerUser} --dockerPassword ${dockerPassword}"
-
-        archiveArtifacts artifacts: "${config.reportFileName}", allowEmptyArchive: false
-        if (config.addSideBarLink) {
-            jenkinsUtils.removeJobSideBarLinks("artifact/${config.reportFileName}")
-            jenkinsUtils.addJobSideBarLink("artifact/${config.reportFileName}", "Protecode Report", "images/24x24/graph.png")
-            jenkinsUtils.addRunSideBarLink("artifact/${config.reportFileName}", "Protecode Report", "images/24x24/graph.png")
-            jenkinsUtils.addRunSideBarLink("${config.protecodeServerUrl}/products/${script.commonPipelineEnvironment.getAppContainerProperty('protecodeProductId')}/", "Protecode WebUI", "images/24x24/graph.png")
-        }
+        sh "./piper protecodeExecuteScan  --password ${password} --user ${user}"
     }
 }
 
 
 private void scanWithCredentials(config) {
      withCredentials([[$class: 'UsernamePasswordMultiBinding', credentialsId: config.dockerCredentialsId, passwordVariable: 'dockerPassword', usernameVariable: 'dockerUser']]) {
-            callProtecodeScan(config)
+        withCredentials([[$class: 'UsernamePasswordMultiBinding', credentialsId: config.protecodeCredentialsId, passwordVariable: 'password', usernameVariable: 'user']]) {
+
+            sh "./piper protecodeExecuteScan  --password ${password} --user ${user} --dockerUser ${dockerUser} --dockerPassword ${dockerPassword}"
+        }
      }
 }
