@@ -105,8 +105,9 @@ func TestExecuteProtecodeScan(t *testing.T) {
 	for _, c := range cases {
 		config := protecodeExecuteScanOptions{ReuseExisting: c.reuse, CleanupMode: c.clean, ProtecodeGroup: c.group, FetchURL: c.fetchUrl, ProtecodeTimeoutMinutes: "3", ProtecodeExcludeCVEs: "CVE-2018-1, CVE-2017-1000382", ReportFileName: "./cache/report-file.txt"}
 
-		got, _ := executeProtecodeScan(pc, config, writeReportToFileMock)
+		got, productId, _ := executeProtecodeScan(pc, config, writeReportToFileMock)
 
+		assert.Equal(t, 4711, productId)
 		assert.Equal(t, 1125, got["historical_vulnerabilities"])
 		assert.Equal(t, 0, got["triaged_vulnerabilities"])
 		assert.Equal(t, 1, got["excluded_vulnerabilities"])

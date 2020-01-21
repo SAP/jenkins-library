@@ -203,7 +203,7 @@ spec:
     - name: dockerUser
       type: string
       description: user which is used for the docker image
-      mandatory: true
+      mandatory: false
       scope:
         - GENERAL
         - PARAMETERS
@@ -212,7 +212,7 @@ spec:
     - name: dockerPassword
       type: string
       description: password which is used for the docker user
-      mandatory: true
+      mandatory: false
       scope:
         - GENERAL
         - PARAMETERS
@@ -235,6 +235,7 @@ spec:
       - name: commonPipelineEnvironment
         type: piperEnvironment
         params:
+          - name: appContainerProperties/protecodeProductId
           - name: appContainerProperties/protecodeCount
           - name: appContainerProperties/cvss2GreaterOrEqualSeven
           - name: appContainerProperties/cvss3GreaterOrEqualSeven

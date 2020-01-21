@@ -41,14 +41,14 @@ func runProtecodeScan(config protecodeExecuteScanOptions, cpEnvironment *proteco
 	if err != nil {
 		return err
 	}
-	parsedResult, err := executeProtecodeScan(client, config, writeReportToFile)
+	parsedResult, productId, err := executeProtecodeScan(client, config, writeReportToFile)
 	if err != nil {
 		return err
 	}
 
 	setInfluxData(influx, parsedResult)
 
-	setCommonPipelineEnvironmentData(cpEnvironment, parsedResult)
+	setCommonPipelineEnvironmentData(cpEnvironment, parsedResult, productId)
 
 	return nil
 }
@@ -135,51 +135,51 @@ func getUrlAndFileNameFromDockerImage(config protecodeExecuteScanOptions, cpEnvi
 	return completeUrl, nil
 }
 
-func executeProtecodeScan(client protecode.Protecode, config protecodeExecuteScanOptions, writeReportToFile func(resp io.ReadCloser, reportFileName string) error) (map[string]int, error) {
+func executeProtecodeScan(client protecode.Protecode, config protecodeExecuteScanOptions, writeReportToFile func(resp io.ReadCloser, reportFileName string) error) (map[string]int, int, error) {
 
 	var parsedResult map[string]int = make(map[string]int)
 	//load existing product by filename
 	productId, err := client.LoadExistingProduct(config.ProtecodeGroup, config.FilePath, config.ReuseExisting)
 	if err != nil {
-		return parsedResult, err
+		return parsedResult, productId, err
 	}
 	// check if no existing is found or reuse existing is false
 	productId, err = uploadScanOrDeclareFetch(config, productId, client)
 	if err != nil {
-		return parsedResult, err
+		return parsedResult, productId, err
 	}
 	if productId <= 0 {
-		return parsedResult, errors.New("Protecode scan failed, the product id is not valid (product id <= zero)")
+		return parsedResult, productId, errors.New("Protecode scan failed, the product id is not valid (product id <= zero)")
 	}
 	//pollForResult
 	result, err := client.PollForResult(productId, config.Verbose)
 	if err != nil {
-		return parsedResult, err
+		return parsedResult, productId, err
 	}
 	//check if result is ok else notify
 	if len(result.Status) > 0 && result.Status == "F" {
 		log.Entry().Fatal("Protecode scan failed, please check the log and protecode backend for more details.")
-		return parsedResult, errors.New("Protecode scan failed, please check the log and protecode backend for more details.")
+		return parsedResult, productId, errors.New("Protecode scan failed, please check the log and protecode backend for more details.")
 	}
 	//loadReport
 	resp, err := client.LoadReport(config.ReportFileName, productId)
 	if err != nil {
-		return parsedResult, err
+		return parsedResult, productId, err
 	}
 	//save report to filesystem
 	err = writeReportToFile(*resp, config.ReportFileName)
 	if err != nil {
-		return parsedResult, err
+		return parsedResult, productId, err
 	}
 	//clean scan from server
 	err = client.DeleteScan(config.CleanupMode, productId)
 	if err != nil {
-		return parsedResult, err
+		return parsedResult, productId, err
 	}
 	//count vulnerabilities
 	parsedResult = client.ParseResultForInflux(result, config.ProtecodeExcludeCVEs)
 
-	return parsedResult, nil
+	return parsedResult, productId, nil
 }
 
 func setInfluxData(influx *protecodeExecuteScanInflux, result map[string]int) {
@@ -192,8 +192,9 @@ func setInfluxData(influx *protecodeExecuteScanInflux, result map[string]int) {
 	influx.protecode_data.fields.historical_vulnerabilities = fmt.Sprintf("%v", result["vulnerabilities"])
 }
 
-func setCommonPipelineEnvironmentData(cpEnvironment *protecodeExecuteScanCommonPipelineEnvironment, result map[string]int) {
+func setCommonPipelineEnvironmentData(cpEnvironment *protecodeExecuteScanCommonPipelineEnvironment, result map[string]int, productId int) {
 
+	cpEnvironment.appContainerProperties.protecodeProductID = fmt.Sprintf("%v", productId)
 	cpEnvironment.appContainerProperties.protecodeCount = fmt.Sprintf("%v", result["count"])
 	cpEnvironment.appContainerProperties.cvss2GreaterOrEqualSeven = fmt.Sprintf("%v", result["cvss2GreaterOrEqualSeven"])
 	cpEnvironment.appContainerProperties.cvss3GreaterOrEqualSeven = fmt.Sprintf("%v", result["cvss3GreaterOrEqualSeven"])

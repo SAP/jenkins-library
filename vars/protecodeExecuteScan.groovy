@@ -102,28 +102,19 @@ void call(Map parameters = [:]) {
             "PIPER_parametersJSON=${groovy.json.JsonOutput.toJson(parameters)}",
         ]) {
 
-        // get context configuration
-        config = readJSON (text: sh(returnStdout: true, script: "./piper getConfig --contextConfig --stepMetadata '${METADATA_FILE}'"))
+            // get context configuration
+            config = readJSON (text: sh(returnStdout: true, script: "./piper getConfig --contextConfig --stepMetadata '${METADATA_FILE}'"))
 
-        utils.pushToSWA([
-            step: STEP_NAME,
-            stepParamKey1: 'scriptMissing',
-            stepParam1: parameters?.script == null
-        ], config)
+            utils.pushToSWA([
+                step: STEP_NAME,
+                stepParamKey1: 'scriptMissing',
+                stepParam1: parameters?.script == null
+            ], config)
 
-        withCredentials([[$class: 'UsernamePasswordMultiBinding', credentialsId: config.dockerCredentialsId, passwordVariable: 'dockerPassword', usernameVariable: 'dockerUser']]) {
-            withCredentials([[$class: 'UsernamePasswordMultiBinding', credentialsId: config.protecodeCredentialsId, passwordVariable: 'password', usernameVariable: 'user']]) {
-
-                    sh "./piper protecodeExecuteScan  --password ${password} --user ${user} --dockerUser ${dockerUser} --dockerPassword ${dockerPassword}"
-
-                    archiveArtifacts artifacts: "${config.reportFileName}", allowEmptyArchive: false
-                    if (config.addSideBarLink) {
-                        jenkinsUtils.removeJobSideBarLinks("artifact/${config.reportFileName}")
-                        jenkinsUtils.addJobSideBarLink("artifact/${config.reportFileName}", "Protecode Report", "images/24x24/graph.png")
-                        jenkinsUtils.addRunSideBarLink("artifact/${config.reportFileName}", "Protecode Report", "images/24x24/graph.png")
-                        jenkinsUtils.addRunSideBarLink("${config.protecodeServerUrl}/products/${productId}/", "Protecode WebUI", "images/24x24/graph.png")
-                    }
-                }
+            if(config.protecodeCredentialsId != null && config.protecodeCredentialsId.length() != 0 ){
+                scanWithCredentials(config)
+            } else {
+                callProtecodeScan(config)
             }
 
             String fileContents = new File("${config.reportFileName}").getText("UTF-8")
@@ -136,10 +127,32 @@ void call(Map parameters = [:]) {
             if(json.results.summary?.verdict?.short == 'Vulns') {
                 echo "${script.commonPipelineEnvironment.getAppContainerProperty('protecodeCount')} ${json.results.summary?.verdict.detailed} of which ${script.commonPipelineEnvironment.getAppContainerProperty('cvss2GreaterOrEqualSeven')} had a CVSS v2 score >= 7.0 and ${script.commonPipelineEnvironment.getAppContainerProperty('cvss3GreaterOrEqualSeven')} had a CVSS v3 score >= 7.0.\n${script.commonPipelineEnvironment.getAppContainerProperty('excluded_vulnerabilities')} vulnerabilities were excluded via configuration (${config.protecodeExcludeCVEs}) and ${script.commonPipelineEnvironment.getAppContainerProperty('triaged_vulnerabilities')} vulnerabilities were triaged via the webUI.\nIn addition ${script.commonPipelineEnvironment.getAppContainerProperty('historical_vulnerabilities')} historical vulnerabilities were spotted."
                 if(config.protecodeFailOnSevereVulnerabilities && (script.commonPipelineEnvironment.getAppContainerProperty('cvss2GreaterOrEqualSeven') > 0 || script.commonPipelineEnvironment.getAppContainerProperty('cvss3GreaterOrEqualSeven') > 0)) {
-                    Notify.error(this, "Protecode detected Open Source Software Security vulnerabilities, the project is not compliant. For details see the archived report or the web ui: ${config.protecodeServerUrl}/products/${productId}/")
+                    Notify.error(this, "Protecode detected Open Source Software Security vulnerabilities, the project is not compliant. For details see the archived report or the web ui: ${config.protecodeServerUrl}/products/${script.commonPipelineEnvironment.getAppContainerProperty('protecodeProductId')}/")
                 }
             }
 
         }
     }
+}
+
+private void callProtecodeScan(config) {
+    withCredentials([[$class: 'UsernamePasswordMultiBinding', credentialsId: config.protecodeCredentialsId, passwordVariable: 'password', usernameVariable: 'user']]) {
+
+        sh "./piper protecodeExecuteScan  --password ${password} --user ${user} --dockerUser ${dockerUser} --dockerPassword ${dockerPassword}"
+
+        archiveArtifacts artifacts: "${config.reportFileName}", allowEmptyArchive: false
+        if (config.addSideBarLink) {
+            jenkinsUtils.removeJobSideBarLinks("artifact/${config.reportFileName}")
+            jenkinsUtils.addJobSideBarLink("artifact/${config.reportFileName}", "Protecode Report", "images/24x24/graph.png")
+            jenkinsUtils.addRunSideBarLink("artifact/${config.reportFileName}", "Protecode Report", "images/24x24/graph.png")
+            jenkinsUtils.addRunSideBarLink("${config.protecodeServerUrl}/products/${script.commonPipelineEnvironment.getAppContainerProperty('protecodeProductId')}/", "Protecode WebUI", "images/24x24/graph.png")
+        }
+    }
+}
+
+
+private void scanWithCredentials(config) {
+     withCredentials([[$class: 'UsernamePasswordMultiBinding', credentialsId: config.dockerCredentialsId, passwordVariable: 'dockerPassword', usernameVariable: 'dockerUser']]) {
+            callProtecodeScan(config)
+     }
 }

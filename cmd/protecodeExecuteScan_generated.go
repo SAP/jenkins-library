@@ -36,6 +36,7 @@ type protecodeExecuteScanOptions struct {
 
 type protecodeExecuteScanCommonPipelineEnvironment struct {
 	appContainerProperties struct {
+		protecodeProductID         string
 		protecodeCount             string
 		cvss2GreaterOrEqualSeven   string
 		cvss3GreaterOrEqualSeven   string
@@ -51,6 +52,7 @@ func (p *protecodeExecuteScanCommonPipelineEnvironment) persist(path, resourceNa
 		name     string
 		value    string
 	}{
+		{category: "appContainerProperties", name: "protecodeProductId", value: p.appContainerProperties.protecodeProductID},
 		{category: "appContainerProperties", name: "protecodeCount", value: p.appContainerProperties.protecodeCount},
 		{category: "appContainerProperties", name: "cvss2GreaterOrEqualSeven", value: p.appContainerProperties.cvss2GreaterOrEqualSeven},
 		{category: "appContainerProperties", name: "cvss3GreaterOrEqualSeven", value: p.appContainerProperties.cvss3GreaterOrEqualSeven},
@@ -180,8 +182,6 @@ func addProtecodeExecuteScanFlags(cmd *cobra.Command) {
 	cmd.MarkFlagRequired("protecodeGroup")
 	cmd.MarkFlagRequired("user")
 	cmd.MarkFlagRequired("password")
-	cmd.MarkFlagRequired("dockerUser")
-	cmd.MarkFlagRequired("dockerPassword")
 }
 
 // retrieve step metadata
@@ -339,7 +339,7 @@ func protecodeExecuteScanMetadata() config.StepData {
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
-						Mandatory:   true,
+						Mandatory:   false,
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -347,7 +347,7 @@ func protecodeExecuteScanMetadata() config.StepData {
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
-						Mandatory:   true,
+						Mandatory:   false,
 						Aliases:     []config.Alias{},
 					},
 				},
