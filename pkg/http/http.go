@@ -41,12 +41,18 @@ type Sender interface {
 // Uploader provides an interface to the piper http client for uid/pwd and token authenticated requests with upload capabilities
 type Uploader interface {
 	SendRequest(method, url string, body io.Reader, header http.Header, cookies []*http.Cookie) (*http.Response, error)
+	UploadRequest(method, url, file, fieldName string, header http.Header, cookies []*http.Cookie) (*http.Response, error)
 	UploadFile(url, file, fieldName string, header http.Header, cookies []*http.Cookie) (*http.Response, error)
 	SetOptions(options ClientOptions)
 }
 
 // UploadFile uploads a file's content as multipart-form POST request to the specified URL
 func (c *Client) UploadFile(url, file, fieldName string, header http.Header, cookies []*http.Cookie) (*http.Response, error) {
+	return c.UploadRequest(http.MethodPost, url, file, fieldName, header, cookies)
+}
+
+// UploadRequest uploads a file's content as multipart-form with given http method request to the specified URL
+func (c *Client) UploadRequest(method, url, file, fieldName string, header http.Header, cookies []*http.Cookie) (*http.Response, error) {
 	httpClient := c.initialize()
 
 	bodyBuffer := &bytes.Buffer{}
@@ -69,7 +75,6 @@ func (c *Client) UploadFile(url, file, fieldName string, header http.Header, coo
 	}
 	err = bodyWriter.Close()
 
-	method := http.MethodPost
 	request, err := c.createRequest(method, url, bodyBuffer, &header, cookies)
 	if err != nil {
 		c.logger.Debugf("New %v request to %v", method, url)
