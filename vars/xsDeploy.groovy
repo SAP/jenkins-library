@@ -1,5 +1,7 @@
 import static com.sap.piper.Prerequisites.checkScript
 
+import com.sap.piper.ConfigurationHelper
+
 import com.sap.piper.DefaultValueCache
 import com.sap.piper.JenkinsUtils
 import com.sap.piper.PiperGoUtils
@@ -94,13 +96,17 @@ void call(Map parameters = [:]) {
             Map projectConfig = readJSON (text: sh(returnStdout: true, script: projectConfigScript))
             Map contextConfig = readJSON (text: sh(returnStdout: true, script: contextConfigScript))
 
-            Action action = projectConfig.action
-            DeployMode mode = projectConfig.mode
+            Map options = getOptions(parameters, projectConfig, contextConfig, script.commonPipelineEnvironment)
+
+            Action action = options.action
+            DeployMode mode = options.mode
 
             if(parameters.verbose) {
                 echo "[INFO] ContextConfig: ${contextConfig}"
                 echo "[INFO] ProjectConfig: ${projectConfig}"
             }
+
+            def mtarFilePath = script.commonPipelineEnvironment.mtarFilePath
 
             def operationId = parameters.operationId
             if(! operationId && mode == DeployMode.BG_DEPLOY && action != Action.NONE) {
@@ -119,9 +125,9 @@ void call(Map parameters = [:]) {
                         passwordVariable: 'PASSWORD',
                         usernameVariable: 'USERNAME')]) {
 
-                    dockerExecute([script: this].plus([dockerImage: contextConfig.dockerImage, dockerPullImage: contextConfig.dockerPullImage])) {
+                    dockerExecute([script: this].plus([dockerImage: options.dockerImage, dockerPullImage: options.dockerPullImage])) {
                         xsDeployStdout = sh returnStdout: true, script: """#!/bin/bash
-                        ./piper xsDeploy --defaultConfig ${configFiles} --user \${USERNAME} --password \${PASSWORD} ${operationId ? "--operationId " + operationId : "" }
+                        ./piper xsDeploy --defaultConfig ${configFiles} --user \${USERNAME} --password \${PASSWORD} ${mtarFilePath ? '--mtaPath ' + mtarFilePath : ''} ${operationId ? '--operationId ' + operationId : ''}
                         """
                     }
 
@@ -176,4 +182,33 @@ String joinAndQuote(List l, String prefix = '') {
         _l << '"' + _e + '"'
     }
     _l.join(' ')
+}
+
+/*
+   ugly backward compatibility handling
+   retrieves docker options from project config or from landscape config layer(s)
+
+   precedence is
+   1.) parameters via signature
+   2.) project config (not nested)
+   3.) project config (nested inside docker node)
+   4.) context config (if applicable (docker))
+*/
+Map getOptions(Map parameters, Map projectConfig, Map contextConfig, def cpe) {
+
+    Set configKeys = ['docker', 'mode', 'action', 'dockerImage', 'dockerPullImage']
+    Map config = ConfigurationHelper.newInstance(this)
+        .loadStepDefaults()
+        .mixinGeneralConfig(cpe, configKeys)
+        .mixinStepConfig(cpe, configKeys)
+        .mixinStageConfig(cpe, env.STAGE_NAME, configKeys)
+        .mixin(parameters, configKeys)
+        .use()
+
+    def dockerImage = config.dockerImage ?: (projectConfig.dockerImage ?: (config.docker?.dockerImage ?: contextConfig.dockerImage))
+    def dockerPullImage =  config.dockerPullImage ?: (projectConfig.dockerPullImage ?: (config.docker?.dockerPullImage ?: contextConfig.dockerPullImage))
+    def mode = config.mode ?: projectConfig.mode
+    def action = config.action ?: projectConfig.action
+
+    [dockerImage: dockerImage, dockerPullImage: dockerPullImage, mode: mode, action: action]
 }
