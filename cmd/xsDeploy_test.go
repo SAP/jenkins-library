@@ -33,6 +33,8 @@ func TestDeploy(t *testing.T) {
 	var copiedFiles []string
 	var removedFiles []string
 
+	cpeOut := xsDeployCommonPipelineEnvironment{}
+
 	fExists := func(path string) (bool, error) {
 		return path == "dummy.mtar" || path == ".xs_session", nil
 	}
@@ -70,7 +72,7 @@ func TestDeploy(t *testing.T) {
 			wg.Done()
 		}()
 
-		e := runXsDeploy(myXsDeployOptions, &s, fExists, fCopy, fRemove, wStdout)
+		e := runXsDeploy(myXsDeployOptions, &cpeOut, &s, fExists, fCopy, fRemove, wStdout)
 
 		wStdout.Close()
 		wg.Wait()
@@ -121,7 +123,7 @@ func TestDeploy(t *testing.T) {
 		// this file is not denoted in the file exists mock
 		myXsDeployOptions.MtaPath = "doesNotExist"
 
-		e := runXsDeploy(myXsDeployOptions, &s, fExists, fCopy, fRemove, ioutil.Discard)
+		e := runXsDeploy(myXsDeployOptions, &cpeOut, &s, fExists, fCopy, fRemove, ioutil.Discard)
 		checkErr(t, e, "Deployable 'doesNotExist' does not exist")
 	})
 
@@ -138,7 +140,7 @@ func TestDeploy(t *testing.T) {
 			myXsDeployOptions.Action = "NONE"
 		}()
 
-		e := runXsDeploy(myXsDeployOptions, &s, fExists, fCopy, fRemove, ioutil.Discard)
+		e := runXsDeploy(myXsDeployOptions, &cpeOut, &s, fExists, fCopy, fRemove, ioutil.Discard)
 		checkErr(t, e, "Cannot perform action 'RETRY' in mode 'DEPLOY'. Only action 'NONE' is allowed.")
 	})
 
@@ -153,7 +155,7 @@ func TestDeploy(t *testing.T) {
 
 		s.shouldFailWith = errors.New("Error from underlying process")
 
-		e := runXsDeploy(myXsDeployOptions, &s, fExists, fCopy, fRemove, ioutil.Discard)
+		e := runXsDeploy(myXsDeployOptions, &cpeOut, &s, fExists, fCopy, fRemove, ioutil.Discard)
 		checkErr(t, e, "Error from underlying process")
 	})
 
@@ -175,9 +177,10 @@ func TestDeploy(t *testing.T) {
 
 		myXsDeployOptions.Mode = "BG_DEPLOY"
 
-		e := runXsDeploy(myXsDeployOptions, &s, fExists, fCopy, fRemove, ioutil.Discard)
+		e := runXsDeploy(myXsDeployOptions, &cpeOut, &s, fExists, fCopy, fRemove, ioutil.Discard)
 		checkErr(t, e, "")
 
+		assert.Equal(t, "1234", cpeOut.operationID)
 		assert.Contains(t, s.calls[0], "xs login")
 		assert.Contains(t, s.calls[1], "xs bg-deploy dummy.mtar --dummy-deploy-opts")
 		assert.Len(t, s.calls, 2) // There are two entries --> no logout in this case.
@@ -201,7 +204,7 @@ func TestDeploy(t *testing.T) {
 
 		myXsDeployOptions.Mode = "BG_DEPLOY"
 
-		e := runXsDeploy(myXsDeployOptions, &s, fExists, fCopy, fRemove, ioutil.Discard)
+		e := runXsDeploy(myXsDeployOptions, &cpeOut, &s, fExists, fCopy, fRemove, ioutil.Discard)
 		checkErr(t, e, "No operationID found")
 	})
 
@@ -226,7 +229,7 @@ func TestDeploy(t *testing.T) {
 		myXsDeployOptions.Action = "ABORT"
 		myXsDeployOptions.OperationID = "12345"
 
-		e := runXsDeploy(myXsDeployOptions, &s, fExists, fCopy, fRemove, ioutil.Discard)
+		e := runXsDeploy(myXsDeployOptions, &cpeOut, &s, fExists, fCopy, fRemove, ioutil.Discard)
 		checkErr(t, e, "")
 
 		assert.Contains(t, s.calls[0], "xs bg-deploy -i 12345 -a abort")
@@ -253,7 +256,7 @@ func TestDeploy(t *testing.T) {
 		myXsDeployOptions.Mode = "BG_DEPLOY"
 		myXsDeployOptions.Action = "ABORT"
 
-		e := runXsDeploy(myXsDeployOptions, &s, fExists, fCopy, fRemove, ioutil.Discard)
+		e := runXsDeploy(myXsDeployOptions, &cpeOut, &s, fExists, fCopy, fRemove, ioutil.Discard)
 		checkErr(t, e, "OperationID was not provided")
 	})
 }

@@ -107,12 +107,12 @@ const completeScript = `#!/bin/bash
 xs {{.Mode.GetDeployCommand}} -i {{.OperationID}} -a {{.Action.GetAction}}
 `
 
-func xsDeploy(XsDeployOptions xsDeployOptions) error {
+func xsDeploy(XsDeployOptions xsDeployOptions, piperEnvironment *xsDeployCommonPipelineEnvironment) error {
 	c := command.Command{}
-	return runXsDeploy(XsDeployOptions, &c, piperutils.FileExists, piperutils.Copy, os.Remove, os.Stdout)
+	return runXsDeploy(XsDeployOptions, piperEnvironment, &c, piperutils.FileExists, piperutils.Copy, os.Remove, os.Stdout)
 }
 
-func runXsDeploy(XsDeployOptions xsDeployOptions, s shellRunner,
+func runXsDeploy(XsDeployOptions xsDeployOptions, piperEnvironment *xsDeployCommonPipelineEnvironment, s shellRunner,
 	fExists func(string) (bool, error),
 	fCopy func(string, string) (int64, error),
 	fRemove func(string) error,
@@ -259,7 +259,8 @@ func runXsDeploy(XsDeployOptions xsDeployOptions, s shellRunner,
 
 	if err == nil && (mode == BGDeploy && action == None) {
 		XsDeployOptions.OperationID = retrieveOperationID(o, XsDeployOptions.OperationIDLogPattern)
-		if len(XsDeployOptions.OperationID) == 0 {
+		piperEnvironment.operationID = XsDeployOptions.OperationID
+		if len(piperEnvironment.operationID) == 0 && err == nil {
 			err = errors.New("No operationID found")
 		}
 	}

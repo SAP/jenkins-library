@@ -2,10 +2,11 @@ package cmd
 
 import (
 	"os"
+	"path/filepath"
 
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
-
+	"github.com/SAP/jenkins-library/pkg/piperenv"
 	"github.com/spf13/cobra"
 )
 
@@ -25,11 +26,38 @@ type xsDeployOptions struct {
 	XsSessionFile         string `json:"xsSessionFile,omitempty"`
 }
 
+type xsDeployCommonPipelineEnvironment struct {
+	operationID string
+}
+
+func (p *xsDeployCommonPipelineEnvironment) persist(path, resourceName string) {
+	content := []struct {
+		category string
+		name     string
+		value    string
+	}{
+		{category: "", name: "operationId", value: p.operationID},
+	}
+
+	errCount := 0
+	for _, param := range content {
+		err := piperenv.SetResourceParameter(path, resourceName, filepath.Join(param.category, param.name), param.value)
+		if err != nil {
+			log.Entry().WithError(err).Error("Error persisting piper environment.")
+			errCount++
+		}
+	}
+	if errCount > 0 {
+		os.Exit(1)
+	}
+}
+
 var myXsDeployOptions xsDeployOptions
 
 // XsDeployCommand Performs xs deployment
 func XsDeployCommand() *cobra.Command {
 	metadata := xsDeployMetadata()
+	var commonPipelineEnvironment xsDeployCommonPipelineEnvironment
 
 	var createXsDeployCmd = &cobra.Command{
 		Use:   "xsDeploy",
@@ -41,8 +69,12 @@ func XsDeployCommand() *cobra.Command {
 			return PrepareConfig(cmd, &metadata, "xsDeploy", &myXsDeployOptions, config.OpenPiperFile)
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-
-			return xsDeploy(myXsDeployOptions)
+			handler := func() {
+				commonPipelineEnvironment.persist(GeneralConfig.EnvRootPath, "commonPipelineEnvironment")
+			}
+			log.DeferExitHandler(handler)
+			defer handler()
+			return xsDeploy(myXsDeployOptions, &commonPipelineEnvironment)
 		},
 	}
 
