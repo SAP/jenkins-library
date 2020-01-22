@@ -16,6 +16,16 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestTarImageFolder(t *testing.T) {
+
+	tmpDir, _ := ioutil.TempDir("", "protecode")
+	tarFile, err := ioutil.TempFile(tmpDir, "protecodeTest.tar")
+	assert.NoError(t, err, "Failed to create archive of docker image")
+	defer tarFile.Close()
+	err = tarImageFolder("testdata/TestProtecode", tarFile)
+	assert.NoError(t, err, "Failed to fill tar archive of docker image")
+}
+
 func TestUploadScanOrDeclareFetch(t *testing.T) {
 	requestURI := ""
 	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
@@ -47,7 +57,7 @@ func TestUploadScanOrDeclareFetch(t *testing.T) {
 	for _, c := range cases {
 		config := protecodeExecuteScanOptions{ReuseExisting: c.reuse, CleanupMode: c.clean, ProtecodeGroup: c.group, FetchURL: c.fetchUrl}
 
-		got, _ := uploadScanOrDeclareFetch(config, 0, pc)
+		got, _ := uploadScanOrDeclareFetch(config, 0, pc, "dummy")
 
 		assert.Equal(t, c.want, got)
 		assert.Equal(t, c.fetchUrl, requestURI)
@@ -105,7 +115,7 @@ func TestExecuteProtecodeScan(t *testing.T) {
 	for _, c := range cases {
 		config := protecodeExecuteScanOptions{ReuseExisting: c.reuse, CleanupMode: c.clean, ProtecodeGroup: c.group, FetchURL: c.fetchUrl, ProtecodeTimeoutMinutes: "3", ProtecodeExcludeCVEs: "CVE-2018-1, CVE-2017-1000382", ReportFileName: "./cache/report-file.txt"}
 
-		got, productId, _ := executeProtecodeScan(pc, &config, writeReportToFileMock)
+		got, productId, _ := executeProtecodeScan(pc, &config, "dummy", writeReportToFileMock)
 
 		assert.Equal(t, 4711, productId)
 		assert.Equal(t, 1125, got["historical_vulnerabilities"])

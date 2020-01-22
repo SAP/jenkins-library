@@ -221,7 +221,7 @@ func TestLoadExistingProductSuccess(t *testing.T) {
 	// Close the server when test finishes
 	defer server.Close()
 
-	client := piperHttp.Client{}
+	client := &piperHttp.Client{}
 	client.SetOptions(piperHttp.ClientOptions{})
 
 	cases := []struct {
@@ -289,7 +289,7 @@ func TestPollForResultSuccess(t *testing.T) {
 	// Close the server when test finishes
 	defer server.Close()
 
-	client := piperHttp.Client{}
+	client := &piperHttp.Client{}
 	client.SetOptions(piperHttp.ClientOptions{})
 	pc := Protecode{serverURL: server.URL, client: client, duration: (time.Second * 30)}
 
@@ -325,7 +325,7 @@ func TestPullResultSuccess(t *testing.T) {
 	// Close the server when test finishes
 	defer server.Close()
 
-	client := piperHttp.Client{}
+	client := &piperHttp.Client{}
 	client.SetOptions(piperHttp.ClientOptions{})
 
 	cases := []struct {
@@ -449,15 +449,15 @@ func TestUploadScanFileSuccess(t *testing.T) {
 	cases := []struct {
 		cleanupMode    string
 		protecodeGroup string
-		fetchURL       string
+		fileName       string
 		want           string
 	}{
-		{"binary", "group1", testFile.Name(), "/api/upload/"},
-		{"Test", "group2", testFile.Name(), "/api/upload/"},
+		{"binary", "group1", testFile.Name(), "/api/upload/dummy"},
+		{"Test", "group2", testFile.Name(), "/api/upload/dummy"},
 	}
 	for _, c := range cases {
 
-		pc.UploadScanFile(c.cleanupMode, c.protecodeGroup, c.fetchURL)
+		pc.UploadScanFile(c.cleanupMode, c.protecodeGroup, c.fileName, "dummy")
 		assert.Equal(t, requestURI, c.want)
 		assert.Contains(t, passedHeaders, "Group")
 		assert.Contains(t, passedHeaders, "Delete-Binary")
@@ -485,7 +485,7 @@ func TestLoadReportSuccess(t *testing.T) {
 	// Close the server when test finishes
 	defer server.Close()
 
-	client := piperHttp.Client{}
+	client := &piperHttp.Client{}
 	client.SetOptions(piperHttp.ClientOptions{})
 
 	pc := Protecode{serverURL: server.URL, client: client}

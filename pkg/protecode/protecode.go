@@ -76,7 +76,7 @@ type User struct {
 
 type Protecode struct {
 	serverURL string
-	client    piperHttp.Client
+	client    *piperHttp.Client
 	duration  time.Duration
 	logger    *logrus.Entry
 }
@@ -91,8 +91,8 @@ type ProtecodeOptions struct {
 
 func (pc *Protecode) SetOptions(options ProtecodeOptions) {
 	pc.serverURL = options.ServerURL
-	pc.client = piperHttp.Client{}
-	pc.duration = options.Duration
+	pc.client = &piperHttp.Client{}
+	pc.duration = (time.Minute * options.Duration)
 
 	if options.Logger != nil {
 		pc.logger = options.Logger
@@ -100,7 +100,7 @@ func (pc *Protecode) SetOptions(options ProtecodeOptions) {
 		pc.logger = log.Entry().WithField("package", "SAP/jenkins-library/pkg/protecode")
 	}
 
-	httpOptions := piperHttp.ClientOptions{options.Duration, options.Username, options.Password, "", options.Logger}
+	httpOptions := piperHttp.ClientOptions{(time.Minute * options.Duration), options.Username, options.Password, "", options.Logger}
 	pc.client.SetOptions(httpOptions)
 }
 
@@ -196,6 +196,7 @@ func (pc *Protecode) getProductData(r io.ReadCloser) (*ProductData, error) {
 }
 
 func (pc *Protecode) uploadFileRequest(url, filePath string, headers map[string][]string) (*io.ReadCloser, error) {
+	pc.logger.Debugf("Upload %v %v %v", url, filePath, headers)
 	r, err := pc.client.UploadFile(url, filePath, "file", headers, nil)
 	if err != nil {
 		pc.logger.WithError(err).Fatalf("error during %v upload request", url)
@@ -330,11 +331,11 @@ func (pc *Protecode) LoadReport(reportFileName string, productId int) (*io.ReadC
 // #####################################
 // UploadScanFile
 
-func (pc *Protecode) UploadScanFile(cleanupMode, protecodeGroup, filePath string) (*Result, error) {
+func (pc *Protecode) UploadScanFile(cleanupMode, protecodeGroup, filePath string, fileName string) (*Result, error) {
 	deleteBinary := (cleanupMode == "binary" || cleanupMode == "complete")
 	headers := map[string][]string{"Group": []string{protecodeGroup}, "Delete-Binary": []string{fmt.Sprintf("%v", deleteBinary)}}
 
-	r, err := pc.uploadFileRequest(fmt.Sprintf("%v/api/upload/", pc.serverURL), filePath, headers)
+	r, err := pc.uploadFileRequest(fmt.Sprintf("%v/api/upload/%v", pc.serverURL, fileName), filePath, headers)
 	if err != nil {
 		pc.logger.WithError(err).Fatalf("error during %v upload request", fmt.Sprintf("%v/api/fetch/", pc.serverURL))
 		return new(Result), err
