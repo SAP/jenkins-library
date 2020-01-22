@@ -149,20 +149,20 @@ func TestGetTeams(t *testing.T) {
 		assert.Equal(t, "Team2", teams[1].FullName, "Team name 2 incorrect")
 		assert.Equal(t, "Team3", teams[2].FullName, "Team name 3 incorrect")
 
-		t.Run("test get teams by name", func(t *testing.T) {
-			team2 := sys.GetTeamByName(teams, "Team2")
+		t.Run("test filter teams by name", func(t *testing.T) {
+			team2 := sys.FilterTeamByName(teams, "Team2")
 			assert.Equal(t, "Team2", team2.FullName, "Team name incorrect")
 			assert.Equal(t, "2", team2.ID, "Team id incorrect")
 		})
 
-		t.Run("test get teams by ID", func(t *testing.T) {
-			team1 := sys.GetTeamByID(teams, "1")
+		t.Run("test Filter teams by ID", func(t *testing.T) {
+			team1 := sys.FilterTeamByID(teams, "1")
 			assert.Equal(t, "Team1", team1.FullName, "Team name incorrect")
 			assert.Equal(t, "1", team1.ID, "Team id incorrect")
 		})
 
-		t.Run("test fail get teams by name", func(t *testing.T) {
-			team := sys.GetTeamByName(teams, "Team")
+		t.Run("test fail Filter teams by name", func(t *testing.T) {
+			team := sys.FilterTeamByName(teams, "Team")
 			assert.Equal(t, "", team.FullName, "Team name incorrect")
 		})
 	})
@@ -194,14 +194,14 @@ func TestGetProjects(t *testing.T) {
 		assert.Equal(t, "Project1", projects[0].Name, "Project name 1 incorrect")
 		assert.Equal(t, "Project2", projects[1].Name, "Project name 2 incorrect")
 
-		t.Run("test get projects by name", func(t *testing.T) {
-			project1 := sys.GetProjectByName(projects, "Project1")
+		t.Run("test Filter projects by name", func(t *testing.T) {
+			project1 := sys.FilterProjectByName(projects, "Project1")
 			assert.Equal(t, "Project1", project1.Name, "Project name incorrect")
 			assert.Equal(t, "1", project1.TeamID, "Project teamId incorrect")
 		})
 
-		t.Run("test fail get projects by name", func(t *testing.T) {
-			project := sys.GetProjectByName(projects, "Project5")
+		t.Run("test fail Filter projects by name", func(t *testing.T) {
+			project := sys.FilterProjectByName(projects, "Project5")
 			assert.Equal(t, "", project.Name, "Project name incorrect")
 		})
 	})
@@ -302,22 +302,22 @@ func TestGetPresets(t *testing.T) {
 		assert.Equal(t, "https://1234", presets[0].Link.URI, "Preset name incorrect")
 		assert.Equal(t, "Preset2", presets[1].Name, "Preset name incorrect")
 
-		t.Run("test get preset by name", func(t *testing.T) {
-			preset2 := sys.GetPresetByName(presets, "Preset2")
+		t.Run("test Filter preset by name", func(t *testing.T) {
+			preset2 := sys.FilterPresetByName(presets, "Preset2")
 			assert.Equal(t, "Preset2", preset2.Name, "Preset name incorrect")
 			assert.Equal(t, "Team1", preset2.OwnerName, "Preset ownerName incorrect")
 		})
-		t.Run("test fail get preset by name", func(t *testing.T) {
-			preset := sys.GetPresetByName(presets, "Preset5")
+		t.Run("test fail Filter preset by name", func(t *testing.T) {
+			preset := sys.FilterPresetByName(presets, "Preset5")
 			assert.Equal(t, "", preset.Name, "Preset name incorrect")
 		})
-		t.Run("test get preset by ID", func(t *testing.T) {
-			preset2 := sys.GetPresetByID(presets, 2)
+		t.Run("test Filter preset by ID", func(t *testing.T) {
+			preset2 := sys.FilterPresetByID(presets, 2)
 			assert.Equal(t, "Preset2", preset2.Name, "Preset ID incorrect")
 			assert.Equal(t, "Team1", preset2.OwnerName, "Preset ownerName incorrect")
 		})
-		t.Run("test fail get preset by ID", func(t *testing.T) {
-			preset := sys.GetPresetByID(presets, 15)
+		t.Run("test fail Filter preset by ID", func(t *testing.T) {
+			preset := sys.FilterPresetByID(presets, 15)
 			assert.Equal(t, "", preset.Name, "Preset ID incorrect")
 		})
 	})
@@ -394,7 +394,7 @@ func TestGetScans(t *testing.T) {
 		result, scans := sys.GetScans(10745)
 
 		assert.Equal(t, true, result, "ScanProject call not successful")
-		assert.Equal(t, "https://cx.wdf.sap.corp/cxrestapi/sast/scans", myTestClient.urlCalled, "Called url incorrect")
+		assert.Equal(t, "https://cx.wdf.sap.corp/cxrestapi/sast/scans?last=20&projectId=10745", myTestClient.urlCalled, "Called url incorrect")
 		assert.Equal(t, "GET", myTestClient.httpMethod, "HTTP method incorrect")
 		assert.Equal(t, 2, len(scans), "Incorrect number of scans")
 		assert.Equal(t, true, scans[1].IsIncremental, "Scan link URI incorrect")
@@ -529,7 +529,7 @@ func TestGetProjectByID(t *testing.T) {
 	logger := log.Entry().WithField("package", "SAP/jenkins-library/pkg/checkmarx_test")
 	opts := piperHttp.ClientOptions{}
 	t.Run("test success", func(t *testing.T) {
-		myTestClient := senderMock{responseBody: `{"id": 209, "teamID": "Test", "name":" Project1_PR-18"}`, httpStatusCode: 200}
+		myTestClient := senderMock{responseBody: `{"id": 209, "teamID": "Test", "name":"Project1_PR-18"}`, httpStatusCode: 200}
 		sys := SystemInstance{serverURL: "https://cx.wdf.sap.corp", client: &myTestClient, logger: logger}
 		myTestClient.SetOptions(opts)
 
@@ -538,5 +538,21 @@ func TestGetProjectByID(t *testing.T) {
 		assert.Equal(t, "https://cx.wdf.sap.corp/cxrestapi/projects/815", myTestClient.urlCalled, "Called url incorrect")
 		assert.Equal(t, "GET", myTestClient.httpMethod, "HTTP method incorrect")
 		assert.Equal(t, 209, result.ID, "Result incorrect")
+	})
+}
+
+func TestGetProjectByName(t *testing.T) {
+	logger := log.Entry().WithField("package", "SAP/jenkins-library/pkg/checkmarx_test")
+	opts := piperHttp.ClientOptions{}
+	t.Run("test success", func(t *testing.T) {
+		myTestClient := senderMock{responseBody: `[{"id": 209, "teamID": "Test", "name":"Project1_PR-18"}]`, httpStatusCode: 200}
+		sys := SystemInstance{serverURL: "https://cx.wdf.sap.corp", client: &myTestClient, logger: logger}
+		myTestClient.SetOptions(opts)
+
+		ok, result := sys.GetProjectByName("Project1_PR-18", "Test")
+		assert.Equal(t, true, ok, "GetProjectByName returned unexpected error")
+		assert.Equal(t, "https://cx.wdf.sap.corp/cxrestapi/projects?projectName=Project1_PR-18&teamId=Test", myTestClient.urlCalled, "Called url incorrect")
+		assert.Equal(t, "GET", myTestClient.httpMethod, "HTTP method incorrect")
+		assert.Equal(t, "Project1_PR-18", result.Name, "Result incorrect")
 	})
 }

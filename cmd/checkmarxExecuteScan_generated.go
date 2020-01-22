@@ -223,7 +223,6 @@ func addCheckmarxExecuteScanFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVar(&myCheckmarxExecuteScanOptions.Password, "password", os.Getenv("PIPER_password"), "The password to authenticate")
 
 	cmd.MarkFlagRequired("checkmarxProject")
-	cmd.MarkFlagRequired("checkmarxGroupId")
 	cmd.MarkFlagRequired("username")
 	cmd.MarkFlagRequired("password")
 }
@@ -319,7 +318,7 @@ func checkmarxExecuteScanMetadata() config.StepData {
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
-						Mandatory:   true,
+						Mandatory:   false,
 						Aliases:     []config.Alias{},
 					},
 					{

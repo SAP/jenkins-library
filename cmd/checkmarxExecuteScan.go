@@ -31,29 +31,28 @@ func checkmarxExecuteScan(config checkmarxExecuteScanOptions, influx *checkmarxE
 }
 
 func runScan(config checkmarxExecuteScanOptions, sys checkmarx.System, workspace string, influx *checkmarxExecuteScanInflux) error {
-	projectName := config.CheckmarxProject
-
 	teams := sys.GetTeams()
 	team := checkmarx.Team{}
 	if len(teams) > 0 {
 		if len(config.TeamName) > 0 {
-			team = sys.GetTeamByName(teams, config.TeamName)
+			team = sys.FilterTeamByName(teams, config.TeamName)
 		} else {
-			team = sys.GetTeamByID(teams, config.CheckmarxGroupID)
+			team = sys.FilterTeamByID(teams, config.CheckmarxGroupID)
 		}
 	}
 	if len(team.ID) == 0 {
 		log.Entry().Fatalf("Failed to identify team by teamName %v as well as by checkmarxGroupId %v", config.TeamName, config.CheckmarxGroupID)
 	}
 
-	projects := sys.GetProjects(team.ID)
+	ok := false
+	projectName := config.CheckmarxProject
 	var project checkmarx.Project
 	if len(config.PullRequestName) > 0 {
 		projectName = fmt.Sprintf("%v_%v", config.CheckmarxProject, config.PullRequestName)
-		project = sys.GetProjectByName(projects, projectName)
-		if project.Name != projectName {
-			project = sys.GetProjectByName(projects, config.CheckmarxProject)
-			if project.ID != 0 {
+		ok, project = sys.GetProjectByName(projectName, team.ID)
+		if ok && project.Name != projectName {
+			ok, project = sys.GetProjectByName(config.CheckmarxProject, team.ID)
+			if ok {
 				ok, branchProject := sys.GetProjectByID(sys.CreateBranch(project.ID, projectName))
 				if !ok {
 					log.Entry().Fatalf("Failed to create branch %v for project %v", projectName, config.CheckmarxProject)
@@ -62,10 +61,13 @@ func runScan(config checkmarxExecuteScanOptions, sys checkmarx.System, workspace
 			}
 		}
 	} else {
-		project = sys.GetProjectByName(projects, projectName)
+		ok, project = sys.GetProjectByName(projectName, team.ID)
+		if ok {
+			log.Entry().Debugf("Loaded project with name %v", project.Name)
+		}
 	}
 
-	if project.Name == projectName {
+	if ok && project.Name == projectName {
 		log.Entry().Debugf("Project %v exists...", projectName)
 	} else {
 		log.Entry().Debugf("Project %v does not exist, starting to create it...", projectName)
@@ -78,10 +80,10 @@ func runScan(config checkmarxExecuteScanOptions, sys checkmarx.System, workspace
 				var configuredPresetID int
 				var configuredPresetName string
 				if err != nil {
-					preset = sys.GetPresetByName(presets, config.Preset)
+					preset = sys.FilterPresetByName(presets, config.Preset)
 					configuredPresetName = config.Preset
 				} else {
-					preset = sys.GetPresetByID(presets, presetID)
+					preset = sys.FilterPresetByID(presets, presetID)
 					configuredPresetID = presetID
 				}
 
@@ -98,11 +100,13 @@ func runScan(config checkmarxExecuteScanOptions, sys checkmarx.System, workspace
 			} else {
 				log.Entry().Fatalf("Preset not specified, creation of project %v failed", project.Name)
 			}
-			projects := sys.GetProjects(team.ID)
-			project := sys.GetProjectByName(projects, projectName)
+			ok, project = sys.GetProjectByName(projectName, team.ID)
+			if !ok {
+				log.Entry().Fatalf("Failed to load newly created project %v", projectName)
+			}
 			log.Entry().Debugf("New Project %v created", project.Name)
 		} else {
-			log.Entry().Fatalf("Cannot create project %v", config.CheckmarxProject)
+			log.Entry().Fatalf("Cannot create project %v", projectName)
 		}
 	}
 
@@ -148,6 +152,7 @@ func runScan(config checkmarxExecuteScanOptions, sys checkmarx.System, workspace
 					log.Entry().Debugf("Scan phase %v ", status)
 					pastStatus = status
 				}
+				log.Entry().Debug("Polling status sleeping...")
 				time.Sleep(10 * time.Second)
 			}
 			if status == "Canceled" {
@@ -258,38 +263,38 @@ func runScan(config checkmarxExecuteScanOptions, sys checkmarx.System, workspace
 
 						if highValue < cxHighThreshold {
 							insecure = true
-							highViolation = "<--"
+							highViolation = fmt.Sprintf("<-- %v %v deviation", cxHighThreshold-highValue, unit)
 						}
 						if mediumValue < cxMediumThreshold {
 							insecure = true
-							mediumViolation = "<--"
+							mediumViolation = fmt.Sprintf("<-- %v %v deviation", cxMediumThreshold-mediumValue, unit)
 						}
 						if lowValue < cxLowThreshold {
 							insecure = true
-							lowViolation = "<--"
+							lowViolation = fmt.Sprintf("<-- %v %v deviation", cxLowThreshold-lowValue, unit)
 						}
 					}
 					if config.VulnerabilityThresholdUnit == "absolute" {
-						unit = ""
+						unit = "findings"
 						if highValue > cxHighThreshold {
 							insecure = true
-							highViolation = "<--"
+							highViolation = fmt.Sprintf("<-- %v %v deviation", highValue-cxHighThreshold, unit)
 						}
 						if mediumValue > cxMediumThreshold {
 							insecure = true
-							mediumViolation = "<--"
+							mediumViolation = fmt.Sprintf("<-- %v %v deviation", mediumValue-cxMediumThreshold, unit)
 						}
 						if lowValue > cxLowThreshold {
 							insecure = true
-							lowViolation = "<--"
+							lowViolation = fmt.Sprintf("<-- %v %v deviation", lowValue-cxLowThreshold, unit)
 						}
 					}
 
-					log.Entry().Errorln("")
-					log.Entry().Errorf("High %v%v %v", highValue, unit, highViolation)
-					log.Entry().Errorf("Medium %v%v %v", mediumValue, unit, mediumViolation)
-					log.Entry().Errorf("Low %v%v %v", lowValue, unit, lowViolation)
-					log.Entry().Errorln("")
+					log.Entry().Infoln("")
+					log.Entry().Infof("High %v%v %v", highValue, unit, highViolation)
+					log.Entry().Infof("Medium %v%v %v", mediumValue, unit, mediumViolation)
+					log.Entry().Infof("Low %v%v %v", lowValue, unit, lowViolation)
+					log.Entry().Infoln("")
 				}
 
 				if insecure {

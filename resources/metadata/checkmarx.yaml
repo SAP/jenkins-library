@@ -110,7 +110,7 @@ spec:
     - name: checkmarxGroupId
       type: string
       description: The group ID related to your team which can be obtained via the Pipeline Syntax plugin as described in the `Details` section
-      mandatory: true
+      mandatory: false
       scope:
       - PARAMETERS
       - STAGES

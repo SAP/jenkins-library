@@ -49,22 +49,25 @@ type systemMock struct {
 	forceScan     bool
 }
 
-func (sys *systemMock) GetPresetByName(presets []checkmarx.Preset, presetName string) checkmarx.Preset {
+func (sys *systemMock) FilterPresetByName(presets []checkmarx.Preset, presetName string) checkmarx.Preset {
 	return checkmarx.Preset{ID: 10050, Name: "SAP_JS_Default", OwnerName: "16"}
 }
-func (sys *systemMock) GetPresetByID(presets []checkmarx.Preset, presetID int) checkmarx.Preset {
+func (sys *systemMock) FilterPresetByID(presets []checkmarx.Preset, presetID int) checkmarx.Preset {
 	return checkmarx.Preset{ID: 10048, Name: "SAP_Default", OwnerName: "16"}
 }
-func (sys *systemMock) GetProjectByName(projects []checkmarx.Project, projectName string) checkmarx.Project {
+func (sys *systemMock) FilterProjectByName(projects []checkmarx.Project, projectName string) checkmarx.Project {
 	return checkmarx.Project{ID: 1, Name: "Test", TeamID: "16", IsPublic: false}
 }
 func (sys *systemMock) GetProjectByID(projectID int) (bool, checkmarx.Project) {
 	return true, checkmarx.Project{ID: 19, Name: "Test_PR-19", TeamID: "16", IsPublic: false}
 }
-func (sys *systemMock) GetTeamByName(teams []checkmarx.Team, teamName string) checkmarx.Team {
+func (sys *systemMock) GetProjectByName(projectName, teamID string) (bool, checkmarx.Project) {
+	return true, checkmarx.Project{ID: 19, Name: projectName, TeamID: teamID, IsPublic: false}
+}
+func (sys *systemMock) FilterTeamByName(teams []checkmarx.Team, teamName string) checkmarx.Team {
 	return checkmarx.Team{ID: "16", FullName: "OpenSource/Cracks/16"}
 }
-func (sys *systemMock) GetTeamByID(teams []checkmarx.Team, teamID string) checkmarx.Team {
+func (sys *systemMock) FilterTeamByID(teams []checkmarx.Team, teamID string) checkmarx.Team {
 	return checkmarx.Team{ID: "15", FullName: "OpenSource/Cracks/15"}
 }
 func (sys *systemMock) DownloadReport(reportID int) (bool, []byte) {
@@ -123,22 +126,25 @@ type systemMockForExistingProject struct {
 	forceScan     bool
 }
 
-func (sys *systemMockForExistingProject) GetPresetByName(presets []checkmarx.Preset, presetName string) checkmarx.Preset {
+func (sys *systemMockForExistingProject) FilterPresetByName(presets []checkmarx.Preset, presetName string) checkmarx.Preset {
 	return checkmarx.Preset{ID: 10050, Name: "SAP_JS_Default", OwnerName: "16"}
 }
-func (sys *systemMockForExistingProject) GetPresetByID(presets []checkmarx.Preset, presetID int) checkmarx.Preset {
+func (sys *systemMockForExistingProject) FilterPresetByID(presets []checkmarx.Preset, presetID int) checkmarx.Preset {
 	return checkmarx.Preset{ID: 10048, Name: "SAP_Default", OwnerName: "16"}
 }
-func (sys *systemMockForExistingProject) GetProjectByName(projects []checkmarx.Project, projectName string) checkmarx.Project {
+func (sys *systemMockForExistingProject) FilterProjectByName(projects []checkmarx.Project, projectName string) checkmarx.Project {
 	return checkmarx.Project{ID: 1, Name: "TestExisting", TeamID: "16", IsPublic: false}
 }
 func (sys *systemMockForExistingProject) GetProjectByID(projectID int) (bool, checkmarx.Project) {
 	return false, checkmarx.Project{}
 }
-func (sys *systemMockForExistingProject) GetTeamByName(teams []checkmarx.Team, teamName string) checkmarx.Team {
+func (sys *systemMockForExistingProject) GetProjectByName(projectName, teamID string) (bool, checkmarx.Project) {
+	return true, checkmarx.Project{ID: 19, Name: projectName, TeamID: teamID, IsPublic: false}
+}
+func (sys *systemMockForExistingProject) FilterTeamByName(teams []checkmarx.Team, teamName string) checkmarx.Team {
 	return checkmarx.Team{ID: "16", FullName: "OpenSource/Cracks/16"}
 }
-func (sys *systemMockForExistingProject) GetTeamByID(teams []checkmarx.Team, teamID string) checkmarx.Team {
+func (sys *systemMockForExistingProject) FilterTeamByID(teams []checkmarx.Team, teamID string) checkmarx.Team {
 	return checkmarx.Team{ID: "15", FullName: "OpenSource/Cracks/15"}
 }
 func (sys *systemMockForExistingProject) DownloadReport(reportID int) (bool, []byte) {
