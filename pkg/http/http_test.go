@@ -104,7 +104,7 @@ func TestApplyDefaults(t *testing.T) {
 	}
 }
 
-func TestUploadFile(t *testing.T) {
+func TestUploadRequest(t *testing.T) {
 	var passedHeaders = map[string][]string{}
 	passedCookies := []*http.Cookie{}
 	var passedUsername string
@@ -228,4 +228,10 @@ func TestUploadFile(t *testing.T) {
 			}
 		})
 	}
+}
+func TestUploadRequestWrongMEthod(t *testing.T) {
+
+	client := Client{logger: log.Entry().WithField("package", "SAP/jenkins-library/pkg/http")}
+	_, err := client.UploadRequest("GET", "dummy", "testFile", "Field1", nil, nil)
+	assert.Error(t, err, "No error occured but was expected")
 }

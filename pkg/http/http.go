@@ -53,6 +53,11 @@ func (c *Client) UploadFile(url, file, fieldName string, header http.Header, coo
 
 // UploadRequest uploads a file's content as multipart-form with given http method request to the specified URL
 func (c *Client) UploadRequest(method, url, file, fieldName string, header http.Header, cookies []*http.Cookie) (*http.Response, error) {
+
+	if method != http.MethodPost && method != http.MethodPut {
+		return nil, errors.New(fmt.Sprintf("Http method %v is not allowed. Possible values are %v or %v", method, http.MethodPost, http.MethodPut))
+	}
+
 	httpClient := c.initialize()
 
 	bodyBuffer := &bytes.Buffer{}
