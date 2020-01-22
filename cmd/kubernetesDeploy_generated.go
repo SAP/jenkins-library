@@ -21,7 +21,6 @@ type kubernetesDeployOptions struct {
 	CreateDockerRegistrySecret bool     `json:"createDockerRegistrySecret,omitempty"`
 	DeploymentName             string   `json:"deploymentName,omitempty"`
 	DeployTool                 string   `json:"deployTool,omitempty"`
-	EnvVars                    []string `json:"envVars,omitempty"`
 	HelmDeployWaitSeconds      int      `json:"helmDeployWaitSeconds,omitempty"`
 	Image                      string   `json:"image,omitempty"`
 	IngressHosts               []string `json:"ingressHosts,omitempty"`
@@ -86,7 +85,6 @@ func addKubernetesDeployFlags(cmd *cobra.Command) {
 	cmd.Flags().BoolVar(&myKubernetesDeployOptions.CreateDockerRegistrySecret, "createDockerRegistrySecret", false, "Toggle to turn on Regsecret creation with a \"deployTool:kubectl\" deployment.")
 	cmd.Flags().StringVar(&myKubernetesDeployOptions.DeploymentName, "deploymentName", os.Getenv("PIPER_deploymentName"), "Defines the name of the deployment.")
 	cmd.Flags().StringVar(&myKubernetesDeployOptions.DeployTool, "deployTool", "kubectl", "Defines the tool which should be used for deployment.")
-	cmd.Flags().StringSliceVar(&myKubernetesDeployOptions.EnvVars, "envVars", []string{"map[HELM_HOME:/home/piper/.helm KUBECONFIG:/home/piper/.kube/config]"}, "Environment variables which should be passed to HELM deployment.")
 	cmd.Flags().IntVar(&myKubernetesDeployOptions.HelmDeployWaitSeconds, "helmDeployWaitSeconds", 300, "Number of seconds before helm deploy returns.")
 	cmd.Flags().StringVar(&myKubernetesDeployOptions.Image, "image", os.Getenv("PIPER_image"), "Full name of the image to be deployed.")
 	cmd.Flags().StringSliceVar(&myKubernetesDeployOptions.IngressHosts, "ingressHosts", []string{}, "List of ingress hosts to be exposed via helm deployment.")
@@ -195,14 +193,6 @@ func kubernetesDeployMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{},
-					},
-					{
-						Name:        "envVars",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "[]string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "helmEnvVars"}},
 					},
 					{
 						Name:        "helmDeployWaitSeconds",

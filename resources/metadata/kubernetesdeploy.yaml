@@ -131,18 +131,6 @@ spec:
           - STAGES
           - STEPS
         default: kubectl
-      - name: envVars
-        aliases:
-          - name: helmEnvVars
-        type: '[]string'
-        description: Environment variables which should be passed to HELM deployment.
-        scope:
-          - PARAMETERS
-          - STAGES
-          - STEPS
-        default:
-          KUBECONFIG: /home/piper/.kube/config
-          HELM_HOME: /home/piper/.helm
       - name: helmDeployWaitSeconds
         type: int
         description: Number of seconds before helm deploy returns.
