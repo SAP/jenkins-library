@@ -1,7 +1,6 @@
 package telemetry
 
 import (
-	"crypto/sha1"
 	"fmt"
 	"time"
 
@@ -9,8 +8,6 @@ import (
 	"net/url"
 
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
-	"github.com/SAP/jenkins-library/pkg/log"
-	"github.com/sirupsen/logrus"
 	"gopkg.in/src-d/go-git.v4"
 )
 
@@ -19,22 +16,13 @@ import (
 // 2. Errors -> Hook
 // 3. Notify/Deprecations
 
+// site ID
+const siteID = "827e8025-1e21-ae84-c3a3-3f62b70b0130"
+
+// LibraryRepository that is passed into with -ldflags
+var LibraryRepository string
+
 var disabled bool
-var baseData BaseData
-var baseMetaData BaseMetaData = BaseMetaData{
-	GitOwnerLabel:          "owner",
-	GitRepositoryLabel:     "repository",
-	StepNameLabel:          "stepName",
-	PipelineURLSha1Label:   "",
-	BuildURLSha1Label:      "",
-	GitPathSha1Label:       "gitpathsha1",
-	GitOwnerSha1Label:      "",
-	GitRepositorySha1Label: "",
-	JobNameLabel:           "jobName",
-	StageNameLabel:         "stageName",
-	BuildToolLabel:         "buildTool",
-	ScanTypeLabel:          "scanType",
-}
 var client piperhttp.Sender
 
 // Initialize sets up the base telemetry data and is called in generated part of the steps
@@ -50,13 +38,17 @@ func Initialize(telemetryActive bool, getResourceParameter func(rootPath, resour
 	client := piperhttp.Client{}
 	client.SetOptions(piperhttp.ClientOptions{Timeout: time.Second * 5})
 
-	gitOwner, gitRepository, gitPath := getGitData(envRootPath, getResourceParameter)
+	//gitOwner, gitRepository, gitPath := getGitData(envRootPath, getResourceParameter)
 
 	baseData = BaseData{
-		GitOwner:      gitOwner,
-		GitRepository: gitRepository,
-		StepName:      stepName,
-		GitPathSha1:   fmt.Sprintf("%x", sha1.Sum([]byte(gitPath))),
+		URL:        LibraryRepository,
+		ActionName: "Piper Library OS",
+		EventType:  "library-os",
+		SiteID:     siteID,
+		//GitOwner:      gitOwner,
+		//GitRepository: gitRepository,
+		StepName: stepName,
+		//GitPathSha1:   fmt.Sprintf("%x", sha1.Sum([]byte(gitPath))),
 
 		// ToDo: add further params
 	}
@@ -99,12 +91,13 @@ const baseURL = "https://webanalytics.cfapps.eu10.hana.ondemand.com"
 // SWA endpoint
 const endpoint = "/tracker/log"
 
-// site ID
-const siteID = "827e8025-1e21-ae84-c3a3-3f62b70b0130"
-
 // SendTelemetry ...
 func SendTelemetry(customData *CustomData) {
-	data := Data{BaseData: baseData, CustomData: *customData}
+	data := Data{
+		BaseData:     baseData,
+		BaseMetaData: baseMetaData,
+		CustomData:   *customData,
+	}
 
 	if disabled {
 		return
@@ -115,40 +108,4 @@ func SendTelemetry(customData *CustomData) {
 	request.RawQuery = data.toPayloadString()
 	// Add logic for sending data to SWA
 	client.SendRequest(http.MethodGet, request.String(), nil, nil, nil)
-}
-
-// WARNING ...
-const WARNING = "WARNING"
-
-// ERROR ...
-const ERROR = "ERROR"
-
-// Notify ...
-func Notify(level, message string) {
-	data := CustomData{}
-	SendTelemetry(&data)
-
-	notification := log.Entry().WithField("type", "notification")
-
-	switch level {
-	case WARNING:
-		notification.Warning(message)
-	case ERROR:
-		notification.Fatal(message)
-	}
-}
-
-// Fire ...
-func (t *BaseData) Fire(entry *logrus.Entry) error {
-	telemetryData := CustomData{}
-	SendTelemetry(&telemetryData)
-	return nil
-}
-
-// Levels ...
-func (t *BaseData) Levels() (levels []logrus.Level) {
-	levels = append(levels, logrus.ErrorLevel)
-	levels = append(levels, logrus.FatalLevel)
-	//levels = append(levels, logrus.PanicLevel)
-	return
 }
