@@ -11,7 +11,7 @@ func TestDataToMap(t *testing.T) {
 
 	result := testData.toMap()
 
-	assert.Contains(t, result, "actionName")
+	assert.Contains(t, result, "action_name")
 	assert.Contains(t, result, "idsite")
 	//assert.Equal(t, 15, len(result))
 }
@@ -22,7 +22,7 @@ func TestDataToPayload(t *testing.T) {
 
 		result := testData.toPayloadString()
 
-		assert.Contains(t, result, "actionName=testAction")
+		assert.Contains(t, result, "action_name=testAction")
 		assert.NotContains(t, result, "idsite=")
 	})
 
@@ -32,7 +32,7 @@ func TestDataToPayload(t *testing.T) {
 		result := testData.toPayloadString()
 
 		assert.Contains(t, result, "&")
-		assert.Contains(t, result, "actionName=testAction")
+		assert.Contains(t, result, "action_name=testAction")
 		assert.Contains(t, result, "idsite=gl8rkd6j211bw3j1fwb8rb4h0000gn")
 	})
 
