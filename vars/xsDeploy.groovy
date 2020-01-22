@@ -125,13 +125,6 @@ void call(Map parameters = [:]) {
             }
 
             script.commonPipelineEnvironment.readFromDisk(script)
-
-            if(mode == DeployMode.BG_DEPLOY && action == Action.NONE) {
-                if (!script.commonPipelineEnvironment.xsDeploymentId) {
-                    error "No Operation id returned from xs deploy step. This is required for mode '${mode}' and action '${action}'."
-                }
-                echo "[INFO] OperationId for subsequent resume or abort: '${script.commonPipelineEnvironment.xsDeploymentId}'."
-            }
         }
     }
 }
