@@ -25,7 +25,7 @@ type BaseData struct {
 
 var baseData BaseData
 
-// BaseMetaData
+// BaseMetaData ...
 type BaseMetaData struct {
 	//GitOwnerLabel          string `json:"custom_1"`
 	//GitRepositoryLabel     string `json:"custom_2"`
