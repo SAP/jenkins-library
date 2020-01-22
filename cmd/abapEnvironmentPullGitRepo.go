@@ -16,18 +16,22 @@ import (
 
 func abapEnvironmentPullGitRepo(config abapEnvironmentPullGitRepoOptions) error {
 	r := &ExecRunner{}
+	cookieJar, _ := cookiejar.New(nil)
+	client := &http.Client{
+		Jar: cookieJar,
+	}
 
 	var abapUrl, user, password, error = getAbapCommunicationArrangementInfo(config, r)
 	if error != nil {
 		log.Entry().WithError(error).Fatal("Parameters for the ABAP Connection not available")
 		return error
 	}
-	var uri, xCsrfToken, cookieJar, err = triggerPull(config, abapUrl, user, password)
+	var uri, xCsrfToken, err = triggerPull(config, abapUrl, user, password, client)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("Pull failed on the ABAP System")
 		return err
 	}
-	var status, er = pollEntity(config, uri, user, password, xCsrfToken, cookieJar)
+	var status, er = pollEntity(config, uri, user, password, xCsrfToken, client, 10*time.Second)
 	if status == "E" || err != nil {
 		log.Entry().WithError(er).Fatal("Pull failed on the ABAP System")
 		return err
@@ -36,13 +40,13 @@ func abapEnvironmentPullGitRepo(config abapEnvironmentPullGitRepoOptions) error 
 	return nil
 }
 
-func pollEntity(config abapEnvironmentPullGitRepoOptions, uri string, user string, password string, xCsrfToken string, cookieJar *cookiejar.Jar) (string, error) {
+func pollEntity(config abapEnvironmentPullGitRepoOptions, uri string, user string, password string, xCsrfToken string, client HttpClient, pollIntervall time.Duration) (string, error) {
 
 	log.Entry().Info("Start polling the status...")
 	var status string = "R"
 
 	for {
-		var resp, err = getHttpResponse("GET", uri, nil, xCsrfToken, user, password, cookieJar)
+		var resp, err = getHttpResponse("GET", uri, nil, xCsrfToken, user, password, client)
 		defer resp.Body.Close()
 		if err != nil {
 			log.Entry().WithField("StatusCode", resp.Status).WithField("repositoryName", config.RepositoryName).Error("Could not pull the Repository / Software Component")
@@ -62,27 +66,26 @@ func pollEntity(config abapEnvironmentPullGitRepoOptions, uri string, user strin
 		if body.D.Status != "R" {
 			break
 		}
-		time.Sleep(10 * time.Second)
+		time.Sleep(pollIntervall)
 	}
 
 	return status, nil
 }
 
-func triggerPull(config abapEnvironmentPullGitRepoOptions, abapUrl string, user string, password string) (string, string, *cookiejar.Jar, error) {
+func triggerPull(config abapEnvironmentPullGitRepoOptions, abapUrl string, user string, password string, client HttpClient) (string, string, error) {
 
 	var entityUri string
 	var xCsrfToken string
-	cookieJar, _ := cookiejar.New(nil)
 
 	// Loging into the ABAP System - getting the x-csrf-token and cookies
 	log.Entry().WithField("ABAP Endpoint", abapUrl).Info("Calling the ABAP System...")
 	log.Entry().Info("Trying to authenticate on the ABAP system...")
 
-	var resp, err = getHttpResponse("GET", abapUrl, nil, "fetch", user, password, cookieJar)
+	var resp, err = getHttpResponse("GET", abapUrl, nil, "fetch", user, password, client)
 	defer resp.Body.Close()
 	if err != nil {
 		log.Entry().WithField("StatusCode", resp.Status).Error("Authentication failed")
-		return entityUri, xCsrfToken, cookieJar, err
+		return entityUri, xCsrfToken, err
 	}
 	log.Entry().WithField("StatusCode", resp.Status).Info("Authentication successfull")
 	xCsrfToken = resp.Header.Get("X-Csrf-Token")
@@ -91,11 +94,11 @@ func triggerPull(config abapEnvironmentPullGitRepoOptions, abapUrl string, user 
 	var jsonBody = []byte(`{"sc_name":"` + config.RepositoryName + `"}`)
 	log.Entry().WithField("repositoryName", config.RepositoryName).Info("Pulling Repository / Software Component")
 
-	resp, err = getHttpResponse("POST", abapUrl, jsonBody, xCsrfToken, user, password, cookieJar)
+	resp, err = getHttpResponse("POST", abapUrl, jsonBody, xCsrfToken, user, password, client)
 	defer resp.Body.Close()
 	if err != nil {
 		log.Entry().WithField("StatusCode", resp.Status).WithField("repositoryName", config.RepositoryName).Error("Could not pull the Repository / Software Component")
-		return entityUri, xCsrfToken, cookieJar, err
+		return entityUri, xCsrfToken, err
 	}
 	log.Entry().WithField("StatusCode", resp.Status).WithField("repositoryName", config.RepositoryName).Info("Triggered Pull of Repository / Software Component")
 
@@ -106,10 +109,10 @@ func triggerPull(config abapEnvironmentPullGitRepoOptions, abapUrl string, user 
 	if body.D == (AbapEntity{}) {
 		log.Entry().WithField("StatusCode", resp.Status).WithField("repositoryName", config.RepositoryName).Error("Could not pull the Repository / Software Component")
 		var err = errors.New("Request to ABAP System not successful")
-		return entityUri, xCsrfToken, cookieJar, err
+		return entityUri, xCsrfToken, err
 	}
 	entityUri = body.D.Metadata.Uri
-	return entityUri, xCsrfToken, cookieJar, nil
+	return entityUri, xCsrfToken, nil
 }
 
 func getAbapCommunicationArrangementInfo(config abapEnvironmentPullGitRepoOptions, r Runner) (string, string, string, error) {
@@ -171,10 +174,8 @@ func readCfServiceKey(config abapEnvironmentPullGitRepoOptions, r Runner) (Servi
 	return serviceKey, error
 }
 
-func getHttpResponse(requestType string, url string, body []byte, xCsrfToken string, user string, password string, cookieJar *cookiejar.Jar) (*http.Response, error) {
-	client := &http.Client{
-		Jar: cookieJar,
-	}
+func getHttpResponse(requestType string, url string, body []byte, xCsrfToken string, user string, password string, client HttpClient) (*http.Response, error) {
+
 	req, _ := http.NewRequest(requestType, url, bytes.NewBuffer(body))
 	req.Header.Add("x-csrf-token", xCsrfToken)
 	req.Header.Add("Content-Type", "application/json")
@@ -193,15 +194,19 @@ func getHttpResponse(requestType string, url string, body []byte, xCsrfToken str
 	return resp, err
 }
 
+func (runner *ExecRunner) run(script string) ([]byte, error) {
+	return exec.Command("sh", "-c", script).Output()
+}
+
+type HttpClient interface {
+	Do(req *http.Request) (*http.Response, error)
+}
+
 type Runner interface {
 	run(script string) ([]byte, error)
 }
 
 type ExecRunner struct {
-}
-
-func (runner *ExecRunner) run(script string) ([]byte, error) {
-	return exec.Command("sh", "-c", script).Output()
 }
 
 type AbapResponse struct {
