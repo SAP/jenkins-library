@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"net/http"
+	"net/url"
 
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
@@ -92,8 +93,11 @@ func getGitData(envRootPath string, getResourceParameter func(rootPath, resource
 	return
 }
 
+// SWA baseURL
+const baseURL = "https://webanalytics.cfapps.eu10.hana.ondemand.com"
+
 // SWA endpoint
-const endpoint = "https://webanalytics.cfapps.eu10.hana.ondemand.com/tracker/log"
+const endpoint = "/tracker/log"
 
 // site ID
 const siteID = "827e8025-1e21-ae84-c3a3-3f62b70b0130"
@@ -106,9 +110,11 @@ func SendTelemetry(customData *CustomData) {
 		return
 	}
 
-	payload := data.toPayloadString()
+	request, _ := url.Parse(baseURL)
+	request.Path = endpoint
+	request.RawQuery = data.toPayloadString()
 	// Add logic for sending data to SWA
-	client.SendRequest(http.MethodGet, fmt.Sprintf("%v?%v", endpoint, payload), nil, nil, nil)
+	client.SendRequest(http.MethodGet, request.String(), nil, nil, nil)
 }
 
 // WARNING ...
