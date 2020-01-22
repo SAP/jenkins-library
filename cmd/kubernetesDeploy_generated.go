@@ -16,6 +16,7 @@ type kubernetesDeployOptions struct {
 	ContainerRegistryPassword  string   `json:"containerRegistryPassword,omitempty"`
 	ContainerRegistryURL       string   `json:"containerRegistryUrl,omitempty"`
 	ContainerRegistryUser      string   `json:"containerRegistryUser,omitempty"`
+	ContainerRegistrySecret    string   `json:"containerRegistrySecret,omitempty"`
 	CreateDockerRegistrySecret bool     `json:"createDockerRegistrySecret,omitempty"`
 	DeploymentName             string   `json:"deploymentName,omitempty"`
 	DeployTool                 string   `json:"deployTool,omitempty"`
@@ -25,6 +26,7 @@ type kubernetesDeployOptions struct {
 	IngressHosts               []string `json:"ingressHosts,omitempty"`
 	KubeConfig                 string   `json:"kubeConfig,omitempty"`
 	KubeContext                string   `json:"kubeContext,omitempty"`
+	KubeToken                  string   `json:"kubeToken,omitempty"`
 	Namespace                  string   `json:"namespace,omitempty"`
 	TillerNamespace            string   `json:"tillerNamespace,omitempty"`
 }
@@ -75,10 +77,11 @@ func addKubernetesDeployFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVar(&myKubernetesDeployOptions.APIServer, "apiServer", os.Getenv("PIPER_apiServer"), "Defines the Url of the API Server of the Kubernetes cluster.")
 	cmd.Flags().StringVar(&myKubernetesDeployOptions.AppTemplate, "appTemplate", os.Getenv("PIPER_appTemplate"), "Defines the filename for the kubernetes app template (e.g. k8s_apptemplate.yaml)")
 	cmd.Flags().StringVar(&myKubernetesDeployOptions.ChartPath, "chartPath", os.Getenv("PIPER_chartPath"), "Defines the chart path for deployments using helm.")
-	cmd.Flags().StringVar(&myKubernetesDeployOptions.ContainerRegistryPassword, "containerRegistryPassword", os.Getenv("PIPER_containerRegistryPassword"), "")
+	cmd.Flags().StringVar(&myKubernetesDeployOptions.ContainerRegistryPassword, "containerRegistryPassword", os.Getenv("PIPER_containerRegistryPassword"), "Password for container registry access - typically provided by the CI/CD environment.")
 	cmd.Flags().StringVar(&myKubernetesDeployOptions.ContainerRegistryURL, "containerRegistryUrl", os.Getenv("PIPER_containerRegistryUrl"), "http(s) url of the Container registry.")
-	cmd.Flags().StringVar(&myKubernetesDeployOptions.ContainerRegistryUser, "containerRegistryUser", os.Getenv("PIPER_containerRegistryUser"), "")
-	cmd.Flags().BoolVar(&myKubernetesDeployOptions.CreateDockerRegistrySecret, "createDockerRegistrySecret", true, "Toggle to turn on Regsecret creation with a \"deployTool:kubectl\" deployment.")
+	cmd.Flags().StringVar(&myKubernetesDeployOptions.ContainerRegistryUser, "containerRegistryUser", os.Getenv("PIPER_containerRegistryUser"), "Username for container registry access - typically provided by the CI/CD environment.")
+	cmd.Flags().StringVar(&myKubernetesDeployOptions.ContainerRegistrySecret, "containerRegistrySecret", "regsecret", "Name of the container registry secret used for pulling containers from the registry.")
+	cmd.Flags().BoolVar(&myKubernetesDeployOptions.CreateDockerRegistrySecret, "createDockerRegistrySecret", false, "Toggle to turn on Regsecret creation with a \"deployTool:kubectl\" deployment.")
 	cmd.Flags().StringVar(&myKubernetesDeployOptions.DeploymentName, "deploymentName", os.Getenv("PIPER_deploymentName"), "Defines the name of the deployment.")
 	cmd.Flags().StringVar(&myKubernetesDeployOptions.DeployTool, "deployTool", "kubectl", "Defines the tool which should be used for deployment.")
 	cmd.Flags().StringSliceVar(&myKubernetesDeployOptions.EnvVars, "envVars", []string{"map[HELM_HOME:/home/piper/.helm KUBECONFIG:/home/piper/.kube/config]"}, "Environment variables which should be passed to HELM deployment.")
@@ -87,6 +90,7 @@ func addKubernetesDeployFlags(cmd *cobra.Command) {
 	cmd.Flags().StringSliceVar(&myKubernetesDeployOptions.IngressHosts, "ingressHosts", []string{}, "List of ingress hosts to be exposed via helm deployment.")
 	cmd.Flags().StringVar(&myKubernetesDeployOptions.KubeConfig, "kubeConfig", os.Getenv("PIPER_kubeConfig"), "Defines the path to the \"kubeconfig\" file.")
 	cmd.Flags().StringVar(&myKubernetesDeployOptions.KubeContext, "kubeContext", os.Getenv("PIPER_kubeContext"), "Defines the context to use from the \"kubeconfig\" file.")
+	cmd.Flags().StringVar(&myKubernetesDeployOptions.KubeToken, "kubeToken", os.Getenv("PIPER_kubeToken"), "Contains the id_token used by kubectl for authentication. Consider using kubeConfig parameter instead.")
 	cmd.Flags().StringVar(&myKubernetesDeployOptions.Namespace, "namespace", "default", "Defines the target Kubernetes namespace for the deployment.")
 	cmd.Flags().StringVar(&myKubernetesDeployOptions.TillerNamespace, "tillerNamespace", os.Getenv("PIPER_tillerNamespace"), "Defines optional tiller namespace for deployments using helm.")
 
@@ -152,6 +156,13 @@ func kubernetesDeployMetadata() config.StepData {
 						Aliases:   []config.Alias{},
 					},
 					{
+						Name:      "containerRegistrySecret",
+						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
+					},
+					{
 						Name:      "createDockerRegistrySecret",
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:      "bool",
@@ -210,6 +221,13 @@ func kubernetesDeployMetadata() config.StepData {
 					{
 						Name:      "kubeContext",
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
+					},
+					{
+						Name:      "kubeToken",
+						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: false,
 						Aliases:   []config.Alias{},

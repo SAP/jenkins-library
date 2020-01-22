@@ -3,8 +3,12 @@ package cmd
 import (
 	"bytes"
 	"fmt"
-	"github.com/stretchr/testify/assert"
+	"io/ioutil"
+	"os"
+	"path/filepath"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestRunKubernetesDeploy(t *testing.T) {
@@ -62,6 +66,166 @@ func TestRunKubernetesDeploy(t *testing.T) {
 			"--testParam",
 			"testValue",
 		}, e.calls[2].params, "Wrong upgrade parameters")
+	})
+
+	t.Run("test kubectl - create secret/kubeconfig", func(t *testing.T) {
+		dir, err := ioutil.TempDir("", "")
+		defer os.RemoveAll(dir) // clean up
+		assert.NoError(t, err, "Error when creating temp dir")
+
+		opts := kubernetesDeployOptions{
+			AppTemplate:                filepath.Join(dir, "test.yaml"),
+			ContainerRegistryURL:       "https://my.registry:55555",
+			ContainerRegistryUser:      "registryUser",
+			ContainerRegistryPassword:  "********",
+			ContainerRegistrySecret:    "regSecret",
+			CreateDockerRegistrySecret: true,
+			DeployTool:                 "kubectl",
+			Image:                      "path/to/Image:latest",
+			AdditionalParameters:       []string{"--testParam", "testValue"},
+			KubeConfig:                 "This is my kubeconfig",
+			KubeContext:                "testCluster",
+			Namespace:                  "deploymentNamespace",
+		}
+
+		kubeYaml := `kind: Deployment
+metadata:
+spec:
+  spec:
+    image: <image-name>`
+
+		ioutil.WriteFile(opts.AppTemplate, []byte(kubeYaml), 0755)
+
+		e := execMockRunner{
+			shouldFailOnCommand: map[string]error{
+				"kubectl --insecure-skip-tls-verify=true --namespace=deploymentNamespace --context=testCluster get secret regSecret": fmt.Errorf("secret not found"),
+			},
+		}
+		var stdout bytes.Buffer
+		runKubernetesDeploy(opts, &e, &stdout)
+
+		assert.Equal(t, e.env[0], []string{"KUBECONFIG=This is my kubeconfig"})
+
+		assert.Equal(t, "kubectl", e.calls[0].exec, "Wrong secret lookup command")
+		assert.Equal(t, []string{
+			"--insecure-skip-tls-verify=true",
+			fmt.Sprintf("--namespace=%v", opts.Namespace),
+			fmt.Sprintf("--context=%v", opts.KubeContext),
+			"get",
+			"secret",
+			opts.ContainerRegistrySecret,
+		}, e.calls[0].params, "kubectl parameters incorrect")
+
+		assert.Equal(t, "kubectl", e.calls[1].exec, "Wrong secret create command")
+		assert.Equal(t, []string{
+			"--insecure-skip-tls-verify=true",
+			fmt.Sprintf("--namespace=%v", opts.Namespace),
+			fmt.Sprintf("--context=%v", opts.KubeContext),
+			"create",
+			"secret",
+			"docker-registry",
+			opts.ContainerRegistrySecret,
+			"--docker-server=my.registry:55555",
+			fmt.Sprintf("--docker-username=%v", opts.ContainerRegistryUser),
+			fmt.Sprintf("--docker-password=%v", opts.ContainerRegistryPassword),
+		}, e.calls[1].params, "kubectl parameters incorrect")
+
+		assert.Equal(t, "kubectl", e.calls[2].exec, "Wrong apply command")
+		assert.Equal(t, []string{
+			"--insecure-skip-tls-verify=true",
+			fmt.Sprintf("--namespace=%v", opts.Namespace),
+			fmt.Sprintf("--context=%v", opts.KubeContext),
+			"apply",
+			"--filename",
+			opts.AppTemplate,
+			"--testParam",
+			"testValue",
+		}, e.calls[2].params, "kubectl parameters incorrect")
+
+		appTemplate, err := ioutil.ReadFile(opts.AppTemplate)
+		assert.Contains(t, string(appTemplate), "my.registry:55555/path/to/Image:latest")
+	})
+
+	t.Run("test kubectl - lookup secret/kubeconfig", func(t *testing.T) {
+		dir, err := ioutil.TempDir("", "")
+		defer os.RemoveAll(dir) // clean up
+		assert.NoError(t, err, "Error when creating temp dir")
+
+		opts := kubernetesDeployOptions{
+			AppTemplate:                filepath.Join(dir, "test.yaml"),
+			ContainerRegistryURL:       "https://my.registry:55555",
+			ContainerRegistryUser:      "registryUser",
+			ContainerRegistryPassword:  "********",
+			ContainerRegistrySecret:    "regSecret",
+			CreateDockerRegistrySecret: true,
+			DeployTool:                 "kubectl",
+			Image:                      "path/to/Image:latest",
+			KubeConfig:                 "This is my kubeconfig",
+			Namespace:                  "deploymentNamespace",
+		}
+
+		ioutil.WriteFile(opts.AppTemplate, []byte("testYaml"), 0755)
+
+		e := execMockRunner{}
+
+		var stdout bytes.Buffer
+		runKubernetesDeploy(opts, &e, &stdout)
+
+		assert.Equal(t, "kubectl", e.calls[0].exec, "Wrong secret lookup command")
+		assert.Equal(t, []string{
+			"--insecure-skip-tls-verify=true",
+			fmt.Sprintf("--namespace=%v", opts.Namespace),
+			"get",
+			"secret",
+			opts.ContainerRegistrySecret,
+		}, e.calls[0].params, "kubectl parameters incorrect")
+
+		assert.Equal(t, "kubectl", e.calls[1].exec, "Wrong apply command")
+		assert.Equal(t, []string{
+			"--insecure-skip-tls-verify=true",
+			fmt.Sprintf("--namespace=%v", opts.Namespace),
+			"apply",
+			"--filename",
+			opts.AppTemplate,
+		}, e.calls[1].params, "kubectl parameters incorrect")
+	})
+
+	t.Run("test kubectl - token only", func(t *testing.T) {
+		dir, err := ioutil.TempDir("", "")
+		defer os.RemoveAll(dir) // clean up
+		assert.NoError(t, err, "Error when creating temp dir")
+
+		opts := kubernetesDeployOptions{
+			APIServer:                 "https://my.api.server",
+			AppTemplate:               filepath.Join(dir, "test.yaml"),
+			ContainerRegistryURL:      "https://my.registry:55555",
+			ContainerRegistryUser:     "registryUser",
+			ContainerRegistryPassword: "********",
+			ContainerRegistrySecret:   "regSecret",
+			DeployTool:                "kubectl",
+			Image:                     "path/to/Image:latest",
+			KubeToken:                 "testToken",
+			Namespace:                 "deploymentNamespace",
+		}
+
+		ioutil.WriteFile(opts.AppTemplate, []byte("testYaml"), 0755)
+
+		e := execMockRunner{
+			shouldFailOnCommand: map[string]error{},
+		}
+		var stdout bytes.Buffer
+		runKubernetesDeploy(opts, &e, &stdout)
+
+		assert.Equal(t, "kubectl", e.calls[0].exec, "Wrong apply command")
+		assert.Equal(t, []string{
+			"--insecure-skip-tls-verify=true",
+			fmt.Sprintf("--namespace=%v", opts.Namespace),
+			fmt.Sprintf("--server=%v", opts.APIServer),
+			fmt.Sprintf("--token=%v", opts.KubeToken),
+			"apply",
+			"--filename",
+			opts.AppTemplate,
+		}, e.calls[0].params, "kubectl parameters incorrect")
 	})
 }
 

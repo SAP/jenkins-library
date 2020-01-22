@@ -23,9 +23,9 @@ metadata:
 spec:
   inputs:
     secrets:
-      - name: kubeCredentialsId
+      - name: kubeConfigFileCredentialsId
         type: jenkins
-      - name: k8sTokenCredentialsId
+      - name: kubeTokenCredentialsId
         type: jenkins
       - name: dockerCredentialsId
         type: jenkins
@@ -73,6 +73,7 @@ spec:
           - STAGES
           - STEPS
       - name: containerRegistryPassword
+        description: Password for container registry access - typically provided by the CI/CD environment.
         type: string
         scope:
           - PARAMETERS
@@ -89,11 +90,20 @@ spec:
           - STAGES
           - STEPS
       - name: containerRegistryUser
+        description: Username for container registry access - typically provided by the CI/CD environment.
         type: string
         scope:
           - PARAMETERS
           - STAGES
           - STEPS
+      - name: containerRegistrySecret
+        description: Name of the container registry secret used for pulling containers from the registry.
+        type: string
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: regsecret
       - name: createDockerRegistrySecret
         type: bool
         description: Toggle to turn on Regsecret creation with a \"deployTool:kubectl\" deployment.
@@ -101,7 +111,7 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
-        default: true
+        default: false
       - name: deploymentName
         aliases:
           - name: helmDeploymentName
@@ -173,6 +183,14 @@ spec:
         description: Defines the context to use from the \"kubeconfig\" file.
         mandatory: false
         scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: kubeToken
+        type: string
+        description: Contains the id_token used by kubectl for authentication. Consider using kubeConfig parameter instead.
+        scope:
+          - GENERAL
           - PARAMETERS
           - STAGES
           - STEPS

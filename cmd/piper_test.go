@@ -13,13 +13,14 @@ import (
 )
 
 type execMockRunner struct {
-	dir            []string
-	env            [][]string
-	calls          []execCall
-	stdout         io.Writer
-	stderr         io.Writer
-	stdoutReturn   map[string]string
-	shouldFailWith error
+	dir                 []string
+	env                 [][]string
+	calls               []execCall
+	stdout              io.Writer
+	stderr              io.Writer
+	stdoutReturn        map[string]string
+	shouldFailWith      error
+	shouldFailOnCommand map[string]error
 }
 
 type execCall struct {
@@ -49,13 +50,18 @@ func (m *execMockRunner) RunExecutable(e string, p ...string) error {
 	if m.shouldFailWith != nil {
 		return m.shouldFailWith
 	}
+
 	exec := execCall{exec: e, params: p}
+	m.calls = append(m.calls, exec)
+
+	if c := strings.Join(append([]string{e}, p...), " "); m.shouldFailOnCommand != nil && m.shouldFailOnCommand[c] != nil {
+		return m.shouldFailOnCommand[c]
+	}
 
 	if c := strings.Join(append([]string{e}, p...), " "); m.stdoutReturn != nil && len(m.stdoutReturn[c]) > 0 {
 		m.stdout.Write([]byte(m.stdoutReturn[c]))
 	}
 
-	m.calls = append(m.calls, exec)
 	return nil
 }
 
