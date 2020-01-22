@@ -229,7 +229,7 @@ func TestUploadRequest(t *testing.T) {
 		})
 	}
 }
-func TestUploadRequestWrongMEthod(t *testing.T) {
+func TestUploadRequestWrongMethod(t *testing.T) {
 
 	client := Client{logger: log.Entry().WithField("package", "SAP/jenkins-library/pkg/http")}
 	_, err := client.UploadRequest("GET", "dummy", "testFile", "Field1", nil, nil)
