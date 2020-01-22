@@ -10,27 +10,27 @@ import (
 	"os/exec"
 	"time"
 
-	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/pkg/errors"
 )
 
 func abapEnvironmentPullGitRepo(config abapEnvironmentPullGitRepoOptions) error {
-	c := command.Command{}
+	r := &ExecRunner{}
 
-	var abapUrl, user, password, error = getAbapCommunicationArrangementInfo(config, &c)
+	var abapUrl, user, password, error = getAbapCommunicationArrangementInfo(config, r)
 	if error != nil {
+		log.Entry().WithError(error).Fatal("Parameters for the ABAP Connection not available")
 		return error
 	}
 	var uri, xCsrfToken, cookieJar, err = triggerPull(config, abapUrl, user, password)
 	if err != nil {
+		log.Entry().WithError(err).Fatal("Pull failed on the ABAP System")
 		return err
 	}
-	var status, _ = pollEntity(config, uri, user, password, xCsrfToken, cookieJar)
-
-	if status == "E" {
-		log.Entry().Error("Pull failed on the ABAP system")
-		return errors.New("Pull failed on the ABAP system")
+	var status, er = pollEntity(config, uri, user, password, xCsrfToken, cookieJar)
+	if status == "E" || err != nil {
+		log.Entry().WithError(er).Fatal("Pull failed on the ABAP System")
+		return err
 	}
 
 	return nil
@@ -112,12 +112,17 @@ func triggerPull(config abapEnvironmentPullGitRepoOptions, abapUrl string, user 
 	return entityUri, xCsrfToken, cookieJar, nil
 }
 
-func getAbapCommunicationArrangementInfo(config abapEnvironmentPullGitRepoOptions, s shellRunner) (string, string, string, error) {
+func getAbapCommunicationArrangementInfo(config abapEnvironmentPullGitRepoOptions, r Runner) (string, string, string, error) {
 
 	var abapUrl string
 	var user string
 	var password string
 	var error error
+
+	if (config.CfAPIEndpoint == "" || config.CfOrg == "" || config.CfSpace == "" || config.CfServiceInstance == "" || config.CfServiceKey == "") && config.Host == "" {
+		var err = errors.New("Parameters missing. Please provide EITHER the Host of the ABAP server OR the Cloud Foundry ApiEndpoint, Organization, Space, Service Instance and a corresponding Service Key for the Communication Scenario SAP_COM_0510")
+		return abapUrl, user, password, err
+	}
 
 	if config.Host != "" {
 		// Host, User and Password are directly provided
@@ -126,9 +131,10 @@ func getAbapCommunicationArrangementInfo(config abapEnvironmentPullGitRepoOption
 		password = config.Password
 	} else {
 		// Url, User and Password should be read from a cf service key
-		var serviceKey, error = readCfServiceKey(config, s)
+		var serviceKey, error = readCfServiceKey(config, r)
 		if error != nil {
 			log.Entry().Error(error)
+			return abapUrl, user, password, error
 		}
 		abapUrl = serviceKey.Url + "/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY/Pull"
 		user = serviceKey.Abap.Username
@@ -137,19 +143,15 @@ func getAbapCommunicationArrangementInfo(config abapEnvironmentPullGitRepoOption
 	return abapUrl, user, password, error
 }
 
-func readCfServiceKey(config abapEnvironmentPullGitRepoOptions, s shellRunner) (ServiceKey, error) {
+func readCfServiceKey(config abapEnvironmentPullGitRepoOptions, r Runner) (ServiceKey, error) {
 
 	var serviceKey ServiceKey
-
-	if config.CfAPIEndpoint == "" || config.CfOrg == "" || config.CfSpace == "" || config.CfServiceInstance == "" || config.CfServiceKey == "" {
-		var err = errors.New("Cloud Foundry parameters are not provided. Please provide the ApiEndpoint, the Organization, the Space, the Service Instance, a corresponding Service Key, a User and the corresponding Password")
-		return serviceKey, err
-	}
 
 	// Logging into the Cloud Foundry via CF CLI
 	log.Entry().WithField("cfApiEndpoint", config.CfAPIEndpoint).WithField("cfSpace", config.CfSpace).WithField("cfOrg", config.CfOrg).WithField("User", config.User).Info("Cloud Foundry parameters: ")
 	var cfLoginScript = "cf login -a " + config.CfAPIEndpoint + " -u " + config.User + " -p " + config.Password + " -o " + config.CfOrg + " -s " + config.CfSpace
-	cflogin, error := exec.Command("sh", "-c", cfLoginScript).Output()
+	cflogin, error := r.run(cfLoginScript)
+	// cflogin, error := exec.Command("sh", "-c", cfLoginScript).Output()
 	fmt.Printf("%s\n\n", cflogin)
 	if error != nil {
 		log.Entry().Error("Login at cloud foundry failed.")
@@ -157,11 +159,11 @@ func readCfServiceKey(config abapEnvironmentPullGitRepoOptions, s shellRunner) (
 	}
 
 	// Reading the Service Key via CF CLI
-	log.Entry().WithField("cfServiceInstance", config.CfServiceInstance).WithField("cfServiceKey", config.CfServiceKey).Info("Reading service key for service instance:")
+	log.Entry().WithField("cfServiceInstance", config.CfServiceInstance).WithField("cfServiceKey", config.CfServiceKey).Info("Reading service key of service instance...")
 	var cfReadServiceKeyScript = "cf service-key " + config.CfServiceInstance + " " + config.CfServiceKey + " | awk '{if(NR>1)print}'"
-	cfServiceKey, error := exec.Command("sh", "-c", cfReadServiceKeyScript).Output()
+	cfServiceKey, error := r.run(cfReadServiceKeyScript)
 	if error != nil {
-		log.Entry().Error("Reading the service instance failed.")
+		log.Entry().Error("Reading the service key failed.")
 		return serviceKey, error
 	}
 
@@ -189,6 +191,17 @@ func getHttpResponse(requestType string, url string, body []byte, xCsrfToken str
 	}
 
 	return resp, err
+}
+
+type Runner interface {
+	run(script string) ([]byte, error)
+}
+
+type ExecRunner struct {
+}
+
+func (runner *ExecRunner) run(script string) ([]byte, error) {
+	return exec.Command("sh", "-c", script).Output()
 }
 
 type AbapResponse struct {
