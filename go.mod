@@ -3,7 +3,6 @@ module github.com/SAP/jenkins-library
 go 1.13
 
 require (
-	github.com/fatih/structs v1.1.0
 	github.com/ghodss/yaml v1.0.0
 	github.com/google/go-cmp v0.3.1
 	github.com/google/go-github/v28 v28.1.1

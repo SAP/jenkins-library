@@ -2,6 +2,7 @@ package telemetry
 
 import (
 	"crypto/sha1"
+	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
@@ -10,7 +11,6 @@ import (
 
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
-	"github.com/fatih/structs"
 	"github.com/sirupsen/logrus"
 )
 
@@ -22,52 +22,52 @@ import (
 // BaseData ...
 type BaseData struct {
 	Active     bool
-	ActionName string `structs:"actionName"`
-	EventType  string `structs:"eventType"`
-	SiteID     string `structs:"idsite"`
-	URL        string `structs:"url"`
+	ActionName string `json:"actionName"`
+	EventType  string `json:"eventType"`
+	SiteID     string `json:"idsite"`
+	URL        string `json:"url"`
 
-	GitOwner               string `structs:"e_a"`
-	GitOwnerLabel          string `structs:"custom1"`
-	GitRepository          string `structs:"e_2"`
-	GitRepositoryLabel     string `structs:"custom2"`
-	StepName               string `structs:"e_3"`
-	StepNameLabel          string `structs:"custom_3"`
-	PipelineURLSha1        string `structs:"e_4"` // defaults to env.JOB_URl
-	PipelineURLSha1Label   string `structs:"custom_4"`
-	BuildURLSha1           string `structs:"e_5"` // defaults to env.BUILD_URL
-	BuildURLSha1Label      string `structs:"custom_5"`
-	GitPathSha1            string `structs:"e_6"`
-	GitPathSha1Label       string `structs:"custom_6"`
-	GitOwnerSha1           string `structs:"e_7"`
-	GitOwnerSha1Label      string `structs:"custom_7"`
-	GitRepositorySha1      string `structs:"e_8"`
-	GitRepositorySha1Label string `structs:"custom_8"`
-	JobName                string `structs:"e_9"`
-	JobNameLabel           string `structs:"custom_9"`
-	StageName              string `structs:"e_10"`
-	StageNameLabel         string `structs:"custom_10"`
+	GitOwner               string `json:"e_a"`
+	GitOwnerLabel          string `json:"custom1"`
+	GitRepository          string `json:"e_2"`
+	GitRepositoryLabel     string `json:"custom2"`
+	StepName               string `json:"e_3"`
+	StepNameLabel          string `json:"custom_3"`
+	PipelineURLSha1        string `json:"e_4"` // defaults to env.JOB_URl
+	PipelineURLSha1Label   string `json:"custom_4"`
+	BuildURLSha1           string `json:"e_5"` // defaults to env.BUILD_URL
+	BuildURLSha1Label      string `json:"custom_5"`
+	GitPathSha1            string `json:"e_6"`
+	GitPathSha1Label       string `json:"custom_6"`
+	GitOwnerSha1           string `json:"e_7"`
+	GitOwnerSha1Label      string `json:"custom_7"`
+	GitRepositorySha1      string `json:"e_8"`
+	GitRepositorySha1Label string `json:"custom_8"`
+	JobName                string `json:"e_9"`
+	JobNameLabel           string `json:"custom_9"`
+	StageName              string `json:"e_10"`
+	StageNameLabel         string `json:"custom_10"`
 }
 
 // CustomData ...
 type CustomData struct {
-	BuildTool      string `structs:"e_11"`
-	buildToolLabel string `structs:"custom_11"`
+	BuildTool      string `json:"e_11"`
+	buildToolLabel string `json:"custom_11"`
 	// ...
-	ScanType      string `structs:"e_24"`
-	scanTypeLabel string `structs:"custom_24"`
-	Custom25      string `structs:"e_25"`
-	custom25Label string `structs:"custom_25"`
-	Custom26      string `structs:"e_26"`
-	custom26Label string `structs:"custom_26"`
-	Custom27      string `structs:"e_27"`
-	custom27Label string `structs:"custom_27"`
-	Custom28      string `structs:"e_28"`
-	custom28Label string `structs:"custom_28"`
-	Custom29      string `structs:"e_29"`
-	custom29Label string `structs:"custom_29"`
-	Custom30      string `structs:"e_30"`
-	Custom30Label string `structs:"custom_30"`
+	ScanType      string `json:"e_24"`
+	scanTypeLabel string `json:"custom_24"`
+	Custom25      string `json:"e_25"`
+	custom25Label string `json:"custom_25"`
+	Custom26      string `json:"e_26"`
+	custom26Label string `json:"custom_26"`
+	Custom27      string `json:"e_27"`
+	custom27Label string `json:"custom_27"`
+	Custom28      string `json:"e_28"`
+	custom28Label string `json:"custom_28"`
+	Custom29      string `json:"e_29"`
+	custom29Label string `json:"custom_29"`
+	Custom30      string `json:"e_30"`
+	Custom30Label string `json:"custom_30"`
 }
 
 type Data struct {
@@ -75,17 +75,25 @@ type Data struct {
 	CustomData
 }
 
-func (d *Data) toPayloadString() (payload string) {
-	dataMap := structs.Map(d)
-	dataList := make([]string, 0)
+func (d *Data) toMap() (result map[string]string) {
+	jsonObj, _ := json.Marshal(d)
+	json.Unmarshal(jsonObj, &result)
+	return
+}
 
-	for key, value := range dataMap {
-		dataList = append(dataList, fmt.Sprintf("%v&%v", key, value))
+func (d *Data) toPayloadString() string {
+	dataList := []string{}
+
+	for key, value := range d.toMap() {
+		if key == "Active" {
+			continue
+		}
+		if len(value) > 0 {
+			dataList = append(dataList, fmt.Sprintf("%v=%v", key, value))
+		}
 	}
 
-	payload = strings.Join(dataList, "&")
-
-	return
+	return strings.Join(dataList, "&")
 }
 
 var baseData BaseData
