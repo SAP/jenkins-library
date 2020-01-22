@@ -104,7 +104,7 @@ func TestApplyDefaults(t *testing.T) {
 	}
 }
 
-func TestUploadFile(t *testing.T) {
+func TestUploadRequest(t *testing.T) {
 	var passedHeaders = map[string][]string{}
 	passedCookies := []*http.Cookie{}
 	var passedUsername string
@@ -160,6 +160,7 @@ func TestUploadFile(t *testing.T) {
 		cookies       []*http.Cookie
 		expected      string
 	}{
+		{clientOptions: ClientOptions{}, method: "PUT", expected: "OK"},
 		{clientOptions: ClientOptions{}, method: "POST", expected: "OK"},
 		{clientOptions: ClientOptions{}, method: "POST", header: map[string][]string{"Testheader": []string{"Test1", "Test2"}}, expected: "OK"},
 		{clientOptions: ClientOptions{}, cookies: []*http.Cookie{{Name: "TestCookie1", Value: "TestValue1"}, {Name: "TestCookie2", Value: "TestValue2"}}, method: "POST", expected: "OK"},
@@ -168,7 +169,7 @@ func TestUploadFile(t *testing.T) {
 
 	client := Client{logger: log.Entry().WithField("package", "SAP/jenkins-library/pkg/http")}
 	for key, test := range tt {
-		t.Run(fmt.Sprintf("Row %v", key+1), func(t *testing.T) {
+		t.Run(fmt.Sprintf("UploadFile Row %v", key+1), func(t *testing.T) {
 			client.SetOptions(test.clientOptions)
 			response, err := client.UploadFile(server.URL, testFile.Name(), "Field1", test.header, test.cookies)
 			assert.NoError(t, err, "Error occurred but none expected")
@@ -197,5 +198,40 @@ func TestUploadFile(t *testing.T) {
 				assert.Equal(t, client.password, passedPassword)
 			}
 		})
+		t.Run(fmt.Sprintf("UploadRequest Row %v", key+1), func(t *testing.T) {
+			client.SetOptions(test.clientOptions)
+			response, err := client.UploadRequest(test.method, server.URL, testFile.Name(), "Field1", test.header, test.cookies)
+			assert.NoError(t, err, "Error occurred but none expected")
+			content, err := ioutil.ReadAll(response.Body)
+			assert.NoError(t, err, "Error occurred but none expected")
+			assert.Equal(t, test.expected, string(content), "Returned content incorrect")
+			response.Body.Close()
+
+			assert.Equal(t, testFile.Name(), multipartHeader.Filename, "Uploaded file incorrect")
+			assert.Equal(t, fileContents, passedFileContents, "Uploaded file incorrect")
+
+			for k, h := range test.header {
+				assert.Containsf(t, passedHeaders, k, "Header %v not contained", k)
+				assert.Equalf(t, h, passedHeaders[k], "Header %v contains different value")
+			}
+
+			if len(test.cookies) > 0 {
+				assert.Equal(t, test.cookies, passedCookies, "Passed cookies not correct")
+			}
+
+			if len(client.username) > 0 {
+				assert.Equal(t, client.username, passedUsername)
+			}
+
+			if len(client.password) > 0 {
+				assert.Equal(t, client.password, passedPassword)
+			}
+		})
 	}
+}
+func TestUploadRequestWrongMethod(t *testing.T) {
+
+	client := Client{logger: log.Entry().WithField("package", "SAP/jenkins-library/pkg/http")}
+	_, err := client.UploadRequest("GET", "dummy", "testFile", "Field1", nil, nil)
+	assert.Error(t, err, "No error occured but was expected")
 }
