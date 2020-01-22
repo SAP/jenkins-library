@@ -64,8 +64,13 @@ class XsDeployTest extends BasePiperTest {
     @Before
     public void init() {
         helper.registerAllowedMethod('withEnv', [List, Closure], {l, c -> env = l;  c()})
+
         shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, '.*getConfig.*--contextConfig.*', '{"dockerImage": "xs", "dockerPullImage": false, "credentialsId":"myCreds"}')
+
+        // what we set on the shell rule and on the null script is the same. We read it on the groovy level, and also via go getConfig, hence we need it twice.
+        nullScript.commonPipelineEnvironment.configuration = [steps: [xsDeploy: [mode: 'BG_DEPLOY', action: 'NONE', apiUrl: 'https://example.org/xs', org: 'myOrg', space: 'mySpace']]]
         shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, 'getConfig.* (?!--contextConfig)', '{"mode": "BG_DEPLOY", "action": "NONE", "apiUrl": "https://example.org/xs", "org": "myOrg", "space": "mySpace"}')
+
         nullScript.commonPipelineEnvironment.xsDeploymentId = null
     }
 
@@ -90,11 +95,39 @@ class XsDeployTest extends BasePiperTest {
         thrown.expectMessage('No enum constant')
 
         shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, 'getConfig.* (?!--contextConfig)', '{"mode": "DOES_NOT_EXIST", "action": "NONE", "apiUrl": "https://example.org/xs", "org": "myOrg", "space": "mySpace"}')
+        nullScript.commonPipelineEnvironment.configuration = [steps: [xsDeploy: [mode: 'DOES_NOT_EXIST', action: 'NONE', apiUrl: 'https://example.org/xs', org: 'myOrg', space: 'mySpace']]]
 
         stepRule.step.xsDeploy(
             script: nullScript,
             piperGoUtils: goUtils,
         )
+    }
+
+    @Test
+    public void testDeployableViaCPE() {
+
+        shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, '.*xsDeploy .*', ' ')
+
+        nullScript.commonPipelineEnvironment.mtarFilePath = "my.mtar"
+
+        stepRule.step.xsDeploy(
+            script: nullScript,
+            apiUrl: 'https://example.org/xs',
+            org: 'myOrg',
+            space: 'mySpace',
+            credentialsId: 'myCreds',
+            deployOpts: '-t 60',
+            mtaPath: 'myApp.mta',
+            mode: 'DEPLOY',
+            action: 'NONE',
+            piperGoUtils: goUtils
+        )
+
+        assertThat(shellRule.shell,
+                new CommandLineMatcher()
+                    .hasProlog('#!/bin/bash ./piper xsDeploy')
+                    // explicitly provided, it is not contained in project config.
+                    .hasOption('mtaPath', 'my.mtar'))
     }
 
     @Test
@@ -181,6 +214,7 @@ class XsDeployTest extends BasePiperTest {
 
         nullScript.commonPipelineEnvironment.xsDeploymentId = '1234'
 
+        nullScript.commonPipelineEnvironment.configuration = [steps: [xsDeploy: [mode: 'BG_DEPLOY', action: 'RESUME', apiUrl: 'https://example.org/xs', org: 'myOrg', space: 'mySpace']]]
         shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, 'getConfig.* (?!--contextConfig)', '{"mode": "BG_DEPLOY", "action": "RESUME", "apiUrl": "https://example.org/xs", "org": "myOrg", "space": "mySpace"}')
 
         stepRule.step.xsDeploy(
@@ -208,6 +242,7 @@ class XsDeployTest extends BasePiperTest {
                 containsString('No operationId provided'),
                 containsString('Was there a deployment before?')))
 
+        nullScript.commonPipelineEnvironment.configuration = [steps: [xsDeploy: [mode: 'BG_DEPLOY', action: 'RESUME', apiUrl: 'https://example.org/xs', org: 'myOrg', space: 'mySpace']]]
         shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, 'getConfig.* (?!--contextConfig)', '{"mode": "BG_DEPLOY", "action": "RESUME", "apiUrl": "https://example.org/xs", "org": "myOrg", "space": "mySpace"}')
 
         assertThat(nullScript.commonPipelineEnvironment.xsDeploymentId, nullValue())
@@ -224,6 +259,7 @@ class XsDeployTest extends BasePiperTest {
 
         // this happens in case we would like to complete a deployment without having a (successful) deployments before.
 
+        nullScript.commonPipelineEnvironment.configuration = [steps: [xsDeploy: [mode: 'BG_DEPLOY', action: 'RESUME', apiUrl: 'https://example.org/xs', org: 'myOrg', space: 'mySpace']]]
         shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, 'getConfig.* (?!--contextConfig)', '{"mode": "BG_DEPLOY", "action": "RESUME", "apiUrl": "https://example.org/xs", "org": "myOrg", "space": "mySpace"}')
 
         assertThat(nullScript.commonPipelineEnvironment.xsDeploymentId, nullValue())
@@ -240,6 +276,73 @@ class XsDeployTest extends BasePiperTest {
                 .hasProlog('#!/bin/bash ./piper xsDeploy')
                 .hasOption('operationId', '1357')
         )
+    }
+
+    @Test
+    public void testDockerParamsViaProjectConfig() {
+
+
+        nullScript.commonPipelineEnvironment.configuration = [steps:
+            [xsDeploy:
+                [
+                    dockerImage: 'xs1'
+                ]
+            ]
+        ]
+
+        stepRule.step.xsDeploy(
+            script: nullScript,
+            piperGoUtils: goUtils
+        )
+
+        // 'xs' provided on the context config is superseded by the value set in the project
+        assertThat(dockerRule.dockerParams.dockerImage, equalTo('xs1'))
+    }
+
+    @Test
+    public void testDockerParamsViaProjectConfigNested() {
+
+
+        nullScript.commonPipelineEnvironment.configuration = [steps:
+            [xsDeploy:
+                [
+                    docker: [
+                        dockerImage: 'xs1'
+                    ]
+                ]
+            ]
+        ]
+
+        stepRule.step.xsDeploy(
+            script: nullScript,
+            piperGoUtils: goUtils
+        )
+
+        // 'xs' provided on the context config is superseded by the value set in the project
+        assertThat(dockerRule.dockerParams.dockerImage, equalTo('xs1'))
+    }
+
+    @Test
+    public void testDockerParamsViaSignature() {
+
+
+        nullScript.commonPipelineEnvironment.configuration = [steps:
+            [xsDeploy:
+                [
+                    dockerImage: 'xs1'
+                ]
+            ]
+        ]
+
+        stepRule.step.xsDeploy(
+            script: nullScript,
+            piperGoUtils: goUtils,
+            dockerImage: 'xs2',
+        )
+
+        // 'xs' provided on the context config and 'xs1' provided by project config
+        // is superseded by the value set in the project
+        assertThat(dockerRule.dockerParams.dockerImage, equalTo('xs2'))
     }
 
     @Test
@@ -276,8 +379,6 @@ class XsDeployTest extends BasePiperTest {
             script: nullScript,
             piperGoUtils: goUtils
         )
-
-        assertThat(nullScript.commonPipelineEnvironment.xsDeploymentId, is('1234'))
 
         assertThat(writeFileRule.files.keySet(), containsInAnyOrder(
             '.pipeline/additionalConfigs/a.yml',
