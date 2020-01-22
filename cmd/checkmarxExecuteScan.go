@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -140,7 +141,7 @@ func runScan(config checkmarxExecuteScanOptions, sys checkmarx.System, workspace
 			log.Entry().Debugf("Scan phase %v", status)
 			for true {
 				status = sys.GetScanStatus(scan.ID)
-				if status == "Finished" || status == "Canceled" || status == "Failed" {
+				if status != "Scanning" && (status == "Finished" || status == "Canceled" || status == "Failed") {
 					break
 				}
 				if pastStatus != status {
@@ -158,11 +159,18 @@ func runScan(config checkmarxExecuteScanOptions, sys checkmarx.System, workspace
 				log.Entry().Debugln("Scan finished")
 
 				if config.GeneratePdfReport {
+					regExpFileName := regexp.MustCompile(`[^\w\d]`)
+					timeStamp, _ := time.Now().Local().MarshalText()
+					reportFileName := filepath.Join(workspace, fmt.Sprintf("CxSASTReport_%v.pdf", regExpFileName.ReplaceAllString(string(timeStamp), "_")))
 					ok, report := generateAndDownloadReport(sys, scan.ID, "PDF")
 					if ok {
-						timeStamp, _ := time.Now().Local().MarshalText()
-						ioutil.WriteFile(filepath.Join(workspace, fmt.Sprintf("CxSASTReport_%v.pdf", string(timeStamp))), report, 0700)
+						log.Entry().Debugf("Saving report to file %v...", reportFileName)
+						ioutil.WriteFile(reportFileName, report, 0700)
+					} else {
+						log.Entry().Debugf("Failed to fetch report %v from backend...", reportFileName)
 					}
+				} else {
+					log.Entry().Debug("Report generation is disabled via configuration")
 				}
 
 				results := getDetailedResults(sys, scan.ID)
