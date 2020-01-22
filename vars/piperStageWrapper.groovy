@@ -99,7 +99,11 @@ private void executeStage(script, originalStage, stageName, config, utils) {
     } finally {
         //Perform stashing of selected files in workspace
         utils.stashList(script, script.commonPipelineEnvironment.configuration.stageStashes?.get(stageName)?.stashes ?: [])
-        deleteDir()
+        //NOTE: We do not delete the directory in case Jenkins runs on Kubernetes.
+        // deleteDir() is not required in pods, but would be nice to have the same behaviour and leave a clean fileSystem.
+        if (!isInsidePod(script)) {
+            deleteDir()
+        }
 
         def duration = System.currentTimeMillis() - startTime
         utils.pushToSWA([
@@ -161,4 +165,8 @@ private void validateInterceptor(Script interceptor, String extensionFileName) {
 private boolean isOldInterceptorInterfaceUsed(Script interceptor) {
     MetaMethod method = interceptor.metaClass.pickMethod("call", [Closure.class, String.class, Map.class, Map.class] as Class[])
     return method != null
+}
+
+private boolean isInsidePod(Script script) {
+    return script.env.POD_NAME
 }
