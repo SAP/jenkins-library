@@ -108,8 +108,6 @@ void call(Map parameters = [:]) {
                 echo "[INFO] ProjectConfig: ${projectConfig}"
             }
 
-            def xsDeployStdout
-
             lock(getLockIdentifier(projectConfig)) {
 
                 withCredentials([usernamePassword(
@@ -118,7 +116,7 @@ void call(Map parameters = [:]) {
                         usernameVariable: 'USERNAME')]) {
 
                     dockerExecute([script: this].plus([dockerImage: options.dockerImage, dockerPullImage: options.dockerPullImage])) {
-                        xsDeployStdout = sh returnStdout: true, script: """#!/bin/bash
+                        sh returnStdout: true, script: """#!/bin/bash
                         ./piper xsDeploy --defaultConfig ${configFiles} --user \${USERNAME} --password \${PASSWORD}
                         """
                     }
@@ -126,8 +124,9 @@ void call(Map parameters = [:]) {
                 }
             }
 
+            script.commonPipelineEnvironment.readFromDisk(script)
+
             if(mode == DeployMode.BG_DEPLOY && action == Action.NONE) {
-                script.commonPipelineEnvironment.xsDeploymentId = readJSON(text: xsDeployStdout).operationId
                 if (!script.commonPipelineEnvironment.xsDeploymentId) {
                     error "No Operation id returned from xs deploy step. This is required for mode '${mode}' and action '${action}'."
                 }
