@@ -45,13 +45,7 @@ func pollEntity(config abapEnvironmentPullGitRepoOptions, uri string, user strin
 		var resp, err = getHttpResponse("GET", uri, nil, xCsrfToken, user, password, cookieJar)
 		defer resp.Body.Close()
 		if err != nil {
-			log.Entry().Error("Request to ABAP System not successful")
-			return "", err
-		}
-
-		if resp.StatusCode != 200 {
 			log.Entry().WithField("StatusCode", resp.Status).WithField("repositoryName", config.RepositoryName).Error("Could not pull the Repository / Software Component")
-			var err = errors.New("Request to ABAP System not successful")
 			return "", err
 		}
 
@@ -87,17 +81,10 @@ func triggerPull(config abapEnvironmentPullGitRepoOptions, abapUrl string, user 
 	var resp, err = getHttpResponse("GET", abapUrl, nil, "fetch", user, password, cookieJar)
 	defer resp.Body.Close()
 	if err != nil {
-		log.Entry().Error("Request to ABAP System not successful")
-		return entityUri, xCsrfToken, cookieJar, err
-	}
-
-	if resp.StatusCode != 200 {
 		log.Entry().WithField("StatusCode", resp.Status).Error("Authentication failed")
-		var err = errors.New("Request to ABAP System not successful")
 		return entityUri, xCsrfToken, cookieJar, err
-	} else {
-		log.Entry().WithField("StatusCode", resp.Status).Info("Authentication successfull")
 	}
+	log.Entry().WithField("StatusCode", resp.Status).Info("Authentication successfull")
 	xCsrfToken = resp.Header.Get("X-Csrf-Token")
 
 	// Trigger the Pull of a Repository
@@ -107,16 +94,10 @@ func triggerPull(config abapEnvironmentPullGitRepoOptions, abapUrl string, user 
 	resp, err = getHttpResponse("POST", abapUrl, jsonBody, xCsrfToken, user, password, cookieJar)
 	defer resp.Body.Close()
 	if err != nil {
-		log.Entry().Error("Request to ABAP System not successful")
-		return entityUri, xCsrfToken, cookieJar, err
-	}
-	if resp.StatusCode >= 300 {
 		log.Entry().WithField("StatusCode", resp.Status).WithField("repositoryName", config.RepositoryName).Error("Could not pull the Repository / Software Component")
-		var err = errors.New("Request to ABAP System not successful")
 		return entityUri, xCsrfToken, cookieJar, err
-	} else {
-		log.Entry().WithField("StatusCode", resp.Status).WithField("repositoryName", config.RepositoryName).Info("Triggered Pull of Repository / Software Component")
 	}
+	log.Entry().WithField("StatusCode", resp.Status).WithField("repositoryName", config.RepositoryName).Info("Triggered Pull of Repository / Software Component")
 
 	// Parse Response
 	var body AbapResponse
@@ -171,6 +152,7 @@ func readCfServiceKey(config abapEnvironmentPullGitRepoOptions, s shellRunner) (
 	cflogin, error := exec.Command("sh", "-c", cfLoginScript).Output()
 	fmt.Printf("%s\n\n", cflogin)
 	if error != nil {
+		log.Entry().Error("Login at cloud foundry failed.")
 		return serviceKey, error
 	}
 
@@ -179,6 +161,7 @@ func readCfServiceKey(config abapEnvironmentPullGitRepoOptions, s shellRunner) (
 	var cfReadServiceKeyScript = "cf service-key " + config.CfServiceInstance + " " + config.CfServiceKey + " | awk '{if(NR>1)print}'"
 	cfServiceKey, error := exec.Command("sh", "-c", cfReadServiceKeyScript).Output()
 	if error != nil {
+		log.Entry().Error("Reading the service instance failed.")
 		return serviceKey, error
 	}
 
@@ -199,7 +182,13 @@ func getHttpResponse(requestType string, url string, body []byte, xCsrfToken str
 	if err != nil {
 		return nil, err
 	}
-	return resp, nil
+
+	if resp.StatusCode >= 300 {
+		log.Entry().WithField("StatusCode", resp.Status).Error("Request to ABAP System failed")
+		err = errors.New("Request to ABAP System failed")
+	}
+
+	return resp, err
 }
 
 type AbapResponse struct {
