@@ -1,17 +1,10 @@
 metadata:
   name: abapEnvironmentPullGitRepo
-  description: Pulls a git repository to a Cloud Platform ABAP Environment system
+  description: Pulls a git repository to a SAP Cloud Platform ABAP Environment system
   longDescription: |
-    Pulls a git repository to a Cloud Platform ABAP Environment system
+    Pulls a git repository (Software Component) to a SAP Cloud Platform ABAP Environment system.
 spec:
   inputs:
-    secrets:
-      - name: credentialsId
-        description: CredentialsId SAP_COM_0510 ABAP Instance
-        type: jenkins
-      - name: cfCredentialsId
-        description: Cloud Foundry CredentialsId
-        type: jenkins
     params:
       - name: user
         type: string
