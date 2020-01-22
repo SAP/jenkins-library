@@ -51,6 +51,9 @@ general:
 
 #Steps Specific Configuration
 steps:
+  abapEnvironmentPullGitRepo:
+    dockerImage: 'ppiper/cf-cli'
+    dockerWorkspace: '/home/piper'
   artifactSetVersion:
     timestampTemplate: '%Y%m%d%H%M%S'
     tagPrefix: 'build_'
@@ -519,7 +522,7 @@ steps:
     toJson: false
     toHtml: false
   sonarExecuteScan:
-    dockerImage: 'maven:3.5-jdk-8'
+    dockerImage: 'node:8-stretch'
     instance: 'SonarCloud'
     options: []
     pullRequestProvider: 'GitHub'

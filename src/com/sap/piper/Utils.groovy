@@ -44,11 +44,11 @@ def stashList(script, List stashes) {
             lock(lockName) {
                 unstash stash.name
                 echo "Stash content: ${name} (include: ${include}, exclude: ${exclude})"
-                steps.stash name: name, includes: include, exclude: exclude, allowEmpty: true
+                steps.stash name: name, includes: include, excludes: exclude, allowEmpty: true
             }
         } else {
             echo "Stash content: ${name} (include: ${include}, exclude: ${exclude})"
-            steps.stash name: name, includes: include, exclude: exclude, allowEmpty: true
+            steps.stash name: name, includes: include, excludes: exclude, allowEmpty: true
         }
     }
 }

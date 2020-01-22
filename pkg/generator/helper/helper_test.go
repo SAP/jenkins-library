@@ -20,6 +20,22 @@ func configOpenFileMock(name string) (io.ReadCloser, error) {
   longDescription: |
     Long Test description
 spec:
+  outputs:
+    resources:
+      - name: commonPipelineEnvironment
+        type: piperEnvironment
+        params:
+          - name: artifactVersion
+          - name: git/commitId
+          - name: git/branch
+      - name: influxTest
+        type: influx
+        params:
+          - name: m1
+            fields:
+              - name: f1
+            tags:
+              - name: t1
   inputs:
     params:
       - name: param0
@@ -75,6 +91,7 @@ func TestProcessMetaFiles(t *testing.T) {
 			t.Fatalf("failed reading %v", goldenFilePath)
 		}
 		assert.Equal(t, expected, files["cmd/testStep_generated.go"])
+		t.Log(string(files["cmd/testStep_generated.go"]))
 	})
 
 	t.Run("test code", func(t *testing.T) {
@@ -180,7 +197,9 @@ func TestGetStepInfo(t *testing.T) {
 		},
 	}
 
-	myStepInfo := getStepInfo(&stepData, true, "")
+	myStepInfo, err := getStepInfo(&stepData, true, "")
+
+	assert.NoError(t, err)
 
 	assert.Equal(t, "testStep", myStepInfo.StepName, "StepName incorrect")
 	assert.Equal(t, "TestStepCommand", myStepInfo.CobraCmdFuncName, "CobraCmdFuncName incorrect")
@@ -207,7 +226,7 @@ func TestLongName(t *testing.T) {
 	}
 }
 
-func TestGolangName(t *testing.T) {
+func TestGolangNameTitle(t *testing.T) {
 	tt := []struct {
 		input    string
 		expected string
@@ -221,7 +240,7 @@ func TestGolangName(t *testing.T) {
 	}
 
 	for k, v := range tt {
-		assert.Equal(t, v.expected, golangName(v.input), fmt.Sprintf("wrong golang name for run %v", k))
+		assert.Equal(t, v.expected, golangNameTitle(v.input), fmt.Sprintf("wrong golang name for run %v", k))
 	}
 }
 

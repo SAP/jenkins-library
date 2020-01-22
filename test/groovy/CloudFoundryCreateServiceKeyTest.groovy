@@ -75,6 +75,25 @@ public class CloudFoundryCreateServiceKeyTest extends BasePiperTest {
     }
 
     @Test
+    public void successFlatCloudFoundryParameters() {
+        shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, /.*cf create-service-key.*/, 0 )
+
+        stepRule.step.cloudFoundryCreateServiceKey(
+            script: nullScript,
+            cfApiEndpoint: 'api.example.com',
+            cfCredentialsId: 'test_credentialsId',
+            cfOrg: 'testOrg',
+            cfSpace: 'testSpace',
+            cfServiceInstance : 'myInstance',
+            cfServiceKey : 'myServiceKey',
+            cfServiceKeyConfig : '{ "key" : "value" }'
+        )
+        assertThat(dockerExecuteRule.dockerParams, hasEntry('dockerImage', 'ppiper/cf-cli'))
+        assertThat(dockerExecuteRule.dockerParams, hasEntry('dockerWorkspace', '/home/piper'))
+        assertThat(shellRule.shell, hasItem(containsString("#!/bin/bash set +x set -e export HOME=/home/piper cf login -u 'user' -p 'password' -a api.example.com -o 'testOrg' -s 'testSpace'; cf create-service-key 'myInstance' 'myServiceKey' -c '{ \"key\" : \"value\" }'")))
+    }
+
+    @Test
     public void noServiceKeyConfig() {
         shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, /.*cf create-service-key.*/, 0 )
 

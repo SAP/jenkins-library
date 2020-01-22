@@ -40,13 +40,13 @@ class JenkinsFileExistsRule implements TestRule {
             void evaluate() throws Throwable {
 
                 testInstance.helper.registerAllowedMethod('fileExists', [String.class], {s ->
-                    queriedFiles.add(s)
-                    return s in existingFiles
+                    queriedFiles.add(s.toString())
+                    return s.toString() in existingFiles
                 })
 
                 testInstance.helper.registerAllowedMethod('fileExists', [Map.class], {m ->
-                    queriedFiles.add(m.file)
-                    return m.file in existingFiles}
+                    queriedFiles.add(m.file.toString())
+                    return m.file.toString() in existingFiles}
                 )
 
                 base.evaluate()
