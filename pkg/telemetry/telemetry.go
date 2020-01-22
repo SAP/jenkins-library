@@ -2,9 +2,7 @@ package telemetry
 
 import (
 	"crypto/sha1"
-	"encoding/json"
 	"fmt"
-	"strings"
 	"time"
 
 	"net/http"
@@ -12,6 +10,7 @@ import (
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/sirupsen/logrus"
+	"gopkg.in/src-d/go-git.v4"
 )
 
 // SWA Reporting
@@ -19,81 +18,22 @@ import (
 // 2. Errors -> Hook
 // 3. Notify/Deprecations
 
-// BaseData ...
-type BaseData struct {
-	ActionName string `json:"actionName"`
-	EventType  string `json:"eventType"`
-	SiteID     string `json:"idsite"`
-	URL        string `json:"url"`
-
-	GitOwner               string `json:"e_a"`
-	GitOwnerLabel          string `json:"custom1"`
-	GitRepository          string `json:"e_2"`
-	GitRepositoryLabel     string `json:"custom2"`
-	StepName               string `json:"e_3"`
-	StepNameLabel          string `json:"custom_3"`
-	PipelineURLSha1        string `json:"e_4"` // defaults to env.JOB_URl
-	PipelineURLSha1Label   string `json:"custom_4"`
-	BuildURLSha1           string `json:"e_5"` // defaults to env.BUILD_URL
-	BuildURLSha1Label      string `json:"custom_5"`
-	GitPathSha1            string `json:"e_6"`
-	GitPathSha1Label       string `json:"custom_6"`
-	GitOwnerSha1           string `json:"e_7"`
-	GitOwnerSha1Label      string `json:"custom_7"`
-	GitRepositorySha1      string `json:"e_8"`
-	GitRepositorySha1Label string `json:"custom_8"`
-	JobName                string `json:"e_9"`
-	JobNameLabel           string `json:"custom_9"`
-	StageName              string `json:"e_10"`
-	StageNameLabel         string `json:"custom_10"`
-}
-
-// CustomData ...
-type CustomData struct {
-	BuildTool      string `json:"e_11"`
-	buildToolLabel string `json:"custom_11"`
-	// ...
-	ScanType      string `json:"e_24"`
-	scanTypeLabel string `json:"custom_24"`
-	Custom25      string `json:"e_25"`
-	custom25Label string `json:"custom_25"`
-	Custom26      string `json:"e_26"`
-	custom26Label string `json:"custom_26"`
-	Custom27      string `json:"e_27"`
-	custom27Label string `json:"custom_27"`
-	Custom28      string `json:"e_28"`
-	custom28Label string `json:"custom_28"`
-	Custom29      string `json:"e_29"`
-	custom29Label string `json:"custom_29"`
-	Custom30      string `json:"e_30"`
-	Custom30Label string `json:"custom_30"`
-}
-
-type Data struct {
-	BaseData
-	CustomData
-}
-
-func (d *Data) toMap() (result map[string]string) {
-	jsonObj, _ := json.Marshal(d)
-	json.Unmarshal(jsonObj, &result)
-	return
-}
-
-func (d *Data) toPayloadString() string {
-	dataList := []string{}
-
-	for key, value := range d.toMap() {
-		if len(value) > 0 {
-			dataList = append(dataList, fmt.Sprintf("%v=%v", key, value))
-		}
-	}
-
-	return strings.Join(dataList, "&")
-}
-
 var disabled bool
 var baseData BaseData
+var baseMetaData BaseMetaData = BaseMetaData{
+	GitOwnerLabel:          "owner",
+	GitRepositoryLabel:     "repository",
+	StepNameLabel:          "stepName",
+	PipelineURLSha1Label:   "",
+	BuildURLSha1Label:      "",
+	GitPathSha1Label:       "gitpathsha1",
+	GitOwnerSha1Label:      "",
+	GitRepositorySha1Label: "",
+	JobNameLabel:           "jobName",
+	StageNameLabel:         "stageName",
+	BuildToolLabel:         "buildTool",
+	ScanTypeLabel:          "scanType",
+}
 var client piperhttp.Sender
 
 // Initialize sets up the base telemetry data and is called in generated part of the steps
@@ -109,6 +49,22 @@ func Initialize(telemetryActive bool, getResourceParameter func(rootPath, resour
 	client := piperhttp.Client{}
 	client.SetOptions(piperhttp.ClientOptions{Timeout: time.Second * 5})
 
+	gitOwner, gitRepository, gitPath := getGitData(envRootPath, getResourceParameter)
+
+	baseData = BaseData{
+		GitOwner:      gitOwner,
+		GitRepository: gitRepository,
+		StepName:      stepName,
+		GitPathSha1:   fmt.Sprintf("%x", sha1.Sum([]byte(gitPath))),
+
+		// ToDo: add further params
+	}
+
+	//ToDo: register Logrus Hook
+}
+
+func getGitData(envRootPath string, getResourceParameter func(rootPath, resourceName, parameterName string) string) (owner, repository, path string) {
+
 	gitOwner := getResourceParameter(envRootPath, "commonPipelineEnvironment", "github/owner")
 	gitRepo := getResourceParameter(envRootPath, "commonPipelineEnvironment", "github/repository")
 
@@ -118,28 +74,22 @@ func Initialize(telemetryActive bool, getResourceParameter func(rootPath, resour
 
 		// 2nd fallback: get repository url from git
 		if len(gitRepoURL) == 0 {
+			repo, _ := git.Open(nil, nil)
+
+			remote, _ := repo.Remote(git.DefaultRemoteName)
+
+			urlList := remote.Config().URLs
+
+			for url := range urlList {
+				fmt.Print(url)
+			}
 
 		}
 
 		//ToDo: get owner and repo from url
 	}
-
-	gitPath := fmt.Sprintf("%v/%v", gitOwner, gitRepo)
-
-	baseData = BaseData{
-		GitOwner:           gitOwner,
-		GitOwnerLabel:      "owner",
-		GitRepository:      gitRepo,
-		GitRepositoryLabel: "repository",
-		StepName:           stepName,
-		StepNameLabel:      "stepName",
-		GitPathSha1:        fmt.Sprintf("%x", sha1.Sum([]byte(gitPath))),
-		GitPathSha1Label:   "gitpathsha1",
-
-		// ToDo: add further params
-	}
-
-	//ToDo: register Logrus Hook
+	path = fmt.Sprintf("%v/%v", owner, repository)
+	return
 }
 
 // SWA endpoint
