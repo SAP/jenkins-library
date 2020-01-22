@@ -7,8 +7,8 @@ import (
 
 // BaseData ...
 type BaseData struct {
-	ActionName        string `json:"actionName"`
-	EventType         string `json:"eventType"`
+	ActionName        string `json:"action_name"`
+	EventType         string `json:"event_type"`
 	SiteID            string `json:"idsite"`
 	URL               string `json:"url"`
 	GitOwner          string `json:"e_a"` // first custom field name is indeed e_a, not e_1
