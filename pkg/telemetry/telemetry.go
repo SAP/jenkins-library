@@ -21,7 +21,6 @@ import (
 
 // BaseData ...
 type BaseData struct {
-	Active     bool
 	ActionName string `json:"actionName"`
 	EventType  string `json:"eventType"`
 	SiteID     string `json:"idsite"`
@@ -85,9 +84,6 @@ func (d *Data) toPayloadString() string {
 	dataList := []string{}
 
 	for key, value := range d.toMap() {
-		if key == "Active" {
-			continue
-		}
 		if len(value) > 0 {
 			dataList = append(dataList, fmt.Sprintf("%v=%v", key, value))
 		}
@@ -96,14 +92,17 @@ func (d *Data) toPayloadString() string {
 	return strings.Join(dataList, "&")
 }
 
+var disabled bool
 var baseData BaseData
 var client piperhttp.Sender
 
 // Initialize sets up the base telemetry data and is called in generated part of the steps
 func Initialize(telemetryActive bool, getResourceParameter func(rootPath, resourceName, parameterName string) string, envRootPath, stepName string) {
+	//TODO: change parameter semantic to avoid double negation
+	disabled = !telemetryActive
+
 	// check if telemetry is disabled
-	if telemetryActive {
-		baseData = BaseData{Active: telemetryActive}
+	if disabled {
 		return
 	}
 
@@ -128,8 +127,6 @@ func Initialize(telemetryActive bool, getResourceParameter func(rootPath, resour
 	gitPath := fmt.Sprintf("%v/%v", gitOwner, gitRepo)
 
 	baseData = BaseData{
-		Active: telemetryActive,
-
 		GitOwner:           gitOwner,
 		GitOwnerLabel:      "owner",
 		GitRepository:      gitRepo,
@@ -155,7 +152,7 @@ const siteID = "827e8025-1e21-ae84-c3a3-3f62b70b0130"
 func SendTelemetry(customData *CustomData) {
 	data := Data{BaseData: baseData, CustomData: *customData}
 
-	if data.Active != true {
+	if disabled {
 		return
 	}
 

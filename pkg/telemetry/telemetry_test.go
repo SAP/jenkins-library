@@ -13,7 +13,6 @@ func TestDataToMap(t *testing.T) {
 
 	assert.Contains(t, result, "actionName")
 	assert.Contains(t, result, "idsite")
-	assert.Contains(t, result, "Active")
 }
 
 func TestDataToPayload(t *testing.T) {
@@ -22,7 +21,6 @@ func TestDataToPayload(t *testing.T) {
 
 		result := testData.toPayloadString()
 
-		//assert.Equal(t, "actionName=testAction", payload, "Single value")
 		assert.Contains(t, result, "actionName=testAction")
 		assert.NotContains(t, result, "idsite=")
 	})
