@@ -31,29 +31,16 @@ func checkmarxExecuteScan(config checkmarxExecuteScanOptions, influx *checkmarxE
 }
 
 func runScan(config checkmarxExecuteScanOptions, sys checkmarx.System, workspace string, influx *checkmarxExecuteScanInflux) error {
-	teams := sys.GetTeams()
-	team := checkmarx.Team{}
-	if len(teams) > 0 {
-		if len(config.TeamName) > 0 {
-			team = sys.FilterTeamByName(teams, config.TeamName)
-		} else {
-			team = sys.FilterTeamByID(teams, config.CheckmarxGroupID)
-		}
-	}
-	if len(team.ID) == 0 {
-		log.Entry().Fatalf("Failed to identify team by teamName %v as well as by checkmarxGroupId %v", config.TeamName, config.CheckmarxGroupID)
-	}
-
-	ok := false
+	team := loadTeam(sys, config.TeamName, config.CheckmarxGroupID)
 	projectName := config.CheckmarxProject
 	var project checkmarx.Project
 	if len(config.PullRequestName) > 0 {
 		projectName = fmt.Sprintf("%v_%v", config.CheckmarxProject, config.PullRequestName)
-		ok, project = sys.GetProjectByName(projectName, team.ID)
-		if ok && project.Name != projectName {
-			ok, project = sys.GetProjectByName(config.CheckmarxProject, team.ID)
-			if ok {
-				ok, branchProject := sys.GetProjectByID(sys.CreateBranch(project.ID, projectName))
+		projects := sys.GetProjectsByNameAndTeam(projectName, team.ID)
+		if len(projects) == 0 {
+			projects = sys.GetProjectsByNameAndTeam(config.CheckmarxProject, team.ID)
+			if len(projects) > 0 {
+				ok, branchProject := sys.GetProjectByID(sys.CreateBranch(projects[0].ID, projectName))
 				if !ok {
 					log.Entry().Fatalf("Failed to create branch %v for project %v", projectName, config.CheckmarxProject)
 				}
@@ -61,53 +48,18 @@ func runScan(config checkmarxExecuteScanOptions, sys checkmarx.System, workspace
 			}
 		}
 	} else {
-		ok, project = sys.GetProjectByName(projectName, team.ID)
-		if ok {
+		projects := sys.GetProjectsByNameAndTeam(projectName, team.ID)
+		if len(projects) > 0 {
+			project = projects[0]
 			log.Entry().Debugf("Loaded project with name %v", project.Name)
 		}
 	}
 
-	if ok && project.Name == projectName {
+	if project.Name == projectName {
 		log.Entry().Debugf("Project %v exists...", projectName)
 	} else {
 		log.Entry().Debugf("Project %v does not exist, starting to create it...", projectName)
-		ok, projectCreateResult := sys.CreateProject(projectName, team.ID)
-		if ok {
-			if len(config.Preset) > 0 {
-				presets := sys.GetPresets()
-				var preset checkmarx.Preset
-				presetID, err := strconv.Atoi(config.Preset)
-				var configuredPresetID int
-				var configuredPresetName string
-				if err != nil {
-					preset = sys.FilterPresetByName(presets, config.Preset)
-					configuredPresetName = config.Preset
-				} else {
-					preset = sys.FilterPresetByID(presets, presetID)
-					configuredPresetID = presetID
-				}
-
-				if configuredPresetID > 0 && preset.ID == configuredPresetID || len(configuredPresetName) > 0 && preset.Name == configuredPresetName {
-					configurationUpdated := sys.UpdateProjectConfiguration(projectCreateResult.ID, preset.ID, config.EngineConfiguration)
-					if configurationUpdated {
-						log.Entry().Debugf("Configuration of project %v updated", project.Name)
-					} else {
-						log.Entry().Fatalf("Updating configuration of project %v failed", project.Name)
-					}
-				} else {
-					log.Entry().Fatalf("Preset %v not found, creation of project %v failed", config.Preset, project.Name)
-				}
-			} else {
-				log.Entry().Fatalf("Preset not specified, creation of project %v failed", project.Name)
-			}
-			ok, project = sys.GetProjectByName(projectName, team.ID)
-			if !ok {
-				log.Entry().Fatalf("Failed to load newly created project %v", projectName)
-			}
-			log.Entry().Debugf("New Project %v created", project.Name)
-		} else {
-			log.Entry().Fatalf("Cannot create project %v", projectName)
-		}
+		project = createAndConfigureNewProject(sys, projectName, team.ID, config.Preset, config.EngineConfiguration)
 	}
 
 	zipFileName := filepath.Join(workspace, "workspace.zip")
@@ -314,6 +266,63 @@ func runScan(config checkmarxExecuteScanOptions, sys checkmarx.System, workspace
 		log.Entry().Fatalf("Cannot upload source code for project %v", projectName)
 	}
 	return nil
+}
+
+func loadTeam(sys checkmarx.System, teamName, teamID string) checkmarx.Team {
+	teams := sys.GetTeams()
+	team := checkmarx.Team{}
+	if len(teams) > 0 {
+		if len(teamName) > 0 {
+			team = sys.FilterTeamByName(teams, teamName)
+		} else {
+			team = sys.FilterTeamByID(teams, teamID)
+		}
+	}
+	if len(team.ID) == 0 {
+		log.Entry().Fatalf("Failed to identify team by teamName %v as well as by checkmarxGroupId %v", teamName, teamID)
+	}
+	return team
+}
+
+func createAndConfigureNewProject(sys checkmarx.System, projectName, teamID, presetValue, engineConfiguration string) checkmarx.Project {
+	ok, projectCreateResult := sys.CreateProject(projectName, teamID)
+	if ok {
+		if len(presetValue) > 0 {
+			presets := sys.GetPresets()
+			var preset checkmarx.Preset
+			presetID, err := strconv.Atoi(presetValue)
+			var configuredPresetID int
+			var configuredPresetName string
+			if err != nil {
+				preset = sys.FilterPresetByName(presets, presetValue)
+				configuredPresetName = presetValue
+			} else {
+				preset = sys.FilterPresetByID(presets, presetID)
+				configuredPresetID = presetID
+			}
+
+			if configuredPresetID > 0 && preset.ID == configuredPresetID || len(configuredPresetName) > 0 && preset.Name == configuredPresetName {
+				configurationUpdated := sys.UpdateProjectConfiguration(projectCreateResult.ID, preset.ID, engineConfiguration)
+				if configurationUpdated {
+					log.Entry().Debugf("Configuration of project %v updated", projectName)
+				} else {
+					log.Entry().Fatalf("Updating configuration of project %v failed", projectName)
+				}
+			} else {
+				log.Entry().Fatalf("Preset %v not found, creation of project %v failed", presetValue, projectName)
+			}
+		} else {
+			log.Entry().Fatalf("Preset not specified, creation of project %v failed", projectName)
+		}
+		projects := sys.GetProjectsByNameAndTeam(projectName, teamID)
+		if len(projects) > 0 {
+			log.Entry().Debugf("New Project %v created", projectName)
+			return projects[0]
+		}
+		log.Entry().Fatalf("Failed to load newly created project %v", projectName)
+	}
+	log.Entry().Fatalf("Cannot create project %v", projectName)
+	return checkmarx.Project{}
 }
 
 func generateAndDownloadReport(sys checkmarx.System, scanID int, reportType string) (bool, []byte) {

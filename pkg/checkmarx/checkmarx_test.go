@@ -187,7 +187,7 @@ func TestGetProjects(t *testing.T) {
 		sys := SystemInstance{serverURL: "https://cx.wdf.sap.corp", client: &myTestClient, logger: logger}
 		myTestClient.SetOptions(opts)
 
-		projects := sys.GetProjects("")
+		projects := sys.GetProjects()
 
 		assert.Equal(t, "https://cx.wdf.sap.corp/cxrestapi/projects", myTestClient.urlCalled, "Called url incorrect")
 		assert.Equal(t, 2, len(projects), "Number of Projects incorrect")
@@ -212,7 +212,7 @@ func TestGetProjects(t *testing.T) {
 		myTestClient.SetOptions(opts)
 		myTestClient.errorExp = true
 
-		projects := sys.GetProjects("")
+		projects := sys.GetProjects()
 
 		assert.Equal(t, 0, len(projects), "Error expected but none occured")
 	})
@@ -549,10 +549,10 @@ func TestGetProjectByName(t *testing.T) {
 		sys := SystemInstance{serverURL: "https://cx.wdf.sap.corp", client: &myTestClient, logger: logger}
 		myTestClient.SetOptions(opts)
 
-		ok, result := sys.GetProjectByName("Project1_PR-18", "Test")
-		assert.Equal(t, true, ok, "GetProjectByName returned unexpected error")
+		result := sys.GetProjectsByNameAndTeam("Project1_PR-18", "Test")
+		assert.Equal(t, 1, len(result), "GetProjectByName returned unexpected error")
 		assert.Equal(t, "https://cx.wdf.sap.corp/cxrestapi/projects?projectName=Project1_PR-18&teamId=Test", myTestClient.urlCalled, "Called url incorrect")
 		assert.Equal(t, "GET", myTestClient.httpMethod, "HTTP method incorrect")
-		assert.Equal(t, "Project1_PR-18", result.Name, "Result incorrect")
+		assert.Equal(t, "Project1_PR-18", result[0].Name, "Result incorrect")
 	})
 }

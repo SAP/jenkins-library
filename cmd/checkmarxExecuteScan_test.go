@@ -61,8 +61,8 @@ func (sys *systemMock) FilterProjectByName(projects []checkmarx.Project, project
 func (sys *systemMock) GetProjectByID(projectID int) (bool, checkmarx.Project) {
 	return true, checkmarx.Project{ID: 19, Name: "Test_PR-19", TeamID: "16", IsPublic: false}
 }
-func (sys *systemMock) GetProjectByName(projectName, teamID string) (bool, checkmarx.Project) {
-	return true, checkmarx.Project{ID: 19, Name: projectName, TeamID: teamID, IsPublic: false}
+func (sys *systemMock) GetProjectsByNameAndTeam(projectName, teamID string) []checkmarx.Project {
+	return []checkmarx.Project{checkmarx.Project{ID: 19, Name: projectName, TeamID: teamID, IsPublic: false}}
 }
 func (sys *systemMock) FilterTeamByName(teams []checkmarx.Team, teamName string) checkmarx.Team {
 	return checkmarx.Team{ID: "16", FullName: "OpenSource/Cracks/16"}
@@ -112,8 +112,8 @@ func (sys *systemMock) CreateBranch(projectID int, branchName string) int {
 func (sys *systemMock) GetPresets() []checkmarx.Preset {
 	return []checkmarx.Preset{checkmarx.Preset{ID: 10078, Name: "SAP Java Default", OwnerName: "16"}, checkmarx.Preset{ID: 10048, Name: "SAP JS Default", OwnerName: "16"}}
 }
-func (sys *systemMock) GetProjects(teamID string) []checkmarx.Project {
-	return []checkmarx.Project{checkmarx.Project{ID: 15, Name: "OtherTest", TeamID: teamID}, checkmarx.Project{ID: 1, Name: "Test", TeamID: teamID}}
+func (sys *systemMock) GetProjects() []checkmarx.Project {
+	return []checkmarx.Project{checkmarx.Project{ID: 15, Name: "OtherTest", TeamID: "16"}, checkmarx.Project{ID: 1, Name: "Test", TeamID: "16"}}
 }
 func (sys *systemMock) GetTeams() []checkmarx.Team {
 	return []checkmarx.Team{checkmarx.Team{ID: "16", FullName: "OpenSource/Cracks/16"}, checkmarx.Team{ID: "15", FullName: "OpenSource/Cracks/15"}}
@@ -138,8 +138,8 @@ func (sys *systemMockForExistingProject) FilterProjectByName(projects []checkmar
 func (sys *systemMockForExistingProject) GetProjectByID(projectID int) (bool, checkmarx.Project) {
 	return false, checkmarx.Project{}
 }
-func (sys *systemMockForExistingProject) GetProjectByName(projectName, teamID string) (bool, checkmarx.Project) {
-	return true, checkmarx.Project{ID: 19, Name: projectName, TeamID: teamID, IsPublic: false}
+func (sys *systemMockForExistingProject) GetProjectsByNameAndTeam(projectName, teamID string) []checkmarx.Project {
+	return []checkmarx.Project{checkmarx.Project{ID: 19, Name: projectName, TeamID: teamID, IsPublic: false}}
 }
 func (sys *systemMockForExistingProject) FilterTeamByName(teams []checkmarx.Team, teamName string) checkmarx.Team {
 	return checkmarx.Team{ID: "16", FullName: "OpenSource/Cracks/16"}
@@ -189,8 +189,8 @@ func (sys *systemMockForExistingProject) CreateBranch(projectID int, branchName 
 func (sys *systemMockForExistingProject) GetPresets() []checkmarx.Preset {
 	return []checkmarx.Preset{checkmarx.Preset{ID: 10078, Name: "SAP Java Default", OwnerName: "16"}, checkmarx.Preset{ID: 10048, Name: "SAP JS Default", OwnerName: "16"}}
 }
-func (sys *systemMockForExistingProject) GetProjects(teamID string) []checkmarx.Project {
-	return []checkmarx.Project{checkmarx.Project{ID: 1, Name: "TestExisting", TeamID: teamID}}
+func (sys *systemMockForExistingProject) GetProjects() []checkmarx.Project {
+	return []checkmarx.Project{checkmarx.Project{ID: 1, Name: "TestExisting", TeamID: "16"}}
 }
 func (sys *systemMockForExistingProject) GetTeams() []checkmarx.Team {
 	return []checkmarx.Team{checkmarx.Team{ID: "16", FullName: "OpenSource/Cracks/16"}, checkmarx.Team{ID: "15", FullName: "OpenSource/Cracks/15"}}
