@@ -6,6 +6,7 @@ import org.hamcrest.Matchers
 import static org.hamcrest.Matchers.containsString
 import static org.hamcrest.Matchers.equalTo
 import org.junit.Before
+import org.junit.After
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.ExpectedException
@@ -46,6 +47,12 @@ public class AbapEnvironmentPullGitRepoTest extends BasePiperTest {
 
     @Before
     public void setup() {
+        UUID.metaClass.static.randomUUID = { -> 1}
+    }
+
+    @After
+    public void tearDown() {
+        UUID.metaClass = null
     }
 
     @Test
