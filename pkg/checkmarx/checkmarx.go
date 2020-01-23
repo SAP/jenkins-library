@@ -245,7 +245,6 @@ func sendRequestInternal(sys *SystemInstance, method, url string, body io.Reader
 	}
 
 	var validResponseCodeList []int
-	index := 0
 	values := strings.Split(validStatusCodeRange, ",")
 	for _, value := range values {
 		parts := strings.Split(value, ":")
@@ -253,13 +252,11 @@ func sendRequestInternal(sys *SystemInstance, method, url string, body io.Reader
 			lower, _ := strconv.Atoi(parts[0])
 			upper, _ := strconv.Atoi(parts[1])
 			for i := lower; i <= upper; i++ {
-				validResponseCodeList[index] = i
-				index++
+				validResponseCodeList = append(validResponseCodeList, i)
 			}
 		} else {
 			validCode, _ := strconv.Atoi(value)
-			validResponseCodeList[index] = validCode
-			index++
+			validResponseCodeList = append(validResponseCodeList, validCode)
 		}
 	}
 
