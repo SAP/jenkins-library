@@ -74,6 +74,9 @@ func getDockerImage(config *protecodeExecuteScanOptions, cpEnvironment *protecod
 	if err != nil {
 		log.Entry().WithError(err).Fatal("Failed to create archive of docker image")
 	}
+	if err := os.Chmod(tarFileName, 0644); err != nil {
+		log.Entry().WithError(err)
+	}
 	defer tarFile.Close()
 	err = tarImageFolder(cacheImagePath, tarFile)
 	if err != nil {
@@ -86,6 +89,9 @@ func getDockerImage(config *protecodeExecuteScanOptions, cpEnvironment *protecod
 			log.Entry().Fatalf("Protecode scan failed, there is no file path configured  : %v (filename:%v, PSPath: %v)", config.FilePath, fileName, image.FSPath)
 		}
 	}
+
+	os.RemoveAll(cacheImagePath)
+
 	return fileName, nil
 }
 
@@ -112,7 +118,7 @@ func tarImageFolder(source string, tarFile io.Writer) error {
 	archive := tar.NewWriter(tarFile)
 	defer archive.Close()
 
-	filepath.Walk(source, func(path string, info os.FileInfo, err error) error {
+	err := filepath.Walk(source, func(path string, info os.FileInfo, err error) error {
 
 		if info.IsDir() {
 			return nil
@@ -123,8 +129,6 @@ func tarImageFolder(source string, tarFile io.Writer) error {
 		}
 		return nil
 	})
-
-	err := archive.Close()
 
 	return err
 }
