@@ -249,15 +249,16 @@ func sendRequestInternal(sys *SystemInstance, method, url string, body io.Reader
 	values := strings.Split(validStatusCodeRange, ",")
 	for _, value := range values {
 		parts := strings.Split(value, ":")
-		if len(parts > 1) {
-			lower, err := strconv.Atoi(parts[0])
-			upper, err := strconv.Atoi(parts[1])
+		if len(parts) > 1 {
+			lower, _ := strconv.Atoi(parts[0])
+			upper, _ := strconv.Atoi(parts[1])
 			for i := lower; i <= upper; i++ {
 				validResponseCodeList[index] = i
 				index++
 			}
 		} else {
-			validResponseCodeList[index] = value
+			validCode, _ := strconv.Atoi(value)
+			validResponseCodeList[index] = validCode
 			index++
 		}
 	}
