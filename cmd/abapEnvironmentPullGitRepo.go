@@ -4,14 +4,13 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/pkg/errors"
 	"io/ioutil"
 	"net/http"
 	"net/http/cookiejar"
 	"os/exec"
 	"time"
-
-	"github.com/SAP/jenkins-library/pkg/log"
-	"github.com/pkg/errors"
 )
 
 func abapEnvironmentPullGitRepo(config abapEnvironmentPullGitRepoOptions) error {
@@ -124,17 +123,16 @@ func getAbapCommunicationArrangementInfo(config abapEnvironmentPullGitRepoOption
 	var connectionDetails connectionDetailsHTTP
 	var error error
 
-	if (config.CfAPIEndpoint == "" || config.CfOrg == "" || config.CfSpace == "" || config.CfServiceInstance == "" || config.CfServiceKey == "") && config.Host == "" {
-		var err = errors.New("Parameters missing. Please provide EITHER the Host of the ABAP server OR the Cloud Foundry ApiEndpoint, Organization, Space, Service Instance and a corresponding Service Key for the Communication Scenario SAP_COM_0510")
-		return connectionDetails, err
-	}
-
 	if config.Host != "" {
 		// Host, User and Password are directly provided
 		connectionDetails.URL = "https://" + config.Host + "/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY/Pull"
 		connectionDetails.User = config.User
 		connectionDetails.Password = config.Password
 	} else {
+		if config.CfAPIEndpoint == "" || config.CfOrg == "" || config.CfSpace == "" || config.CfServiceInstance == "" || config.CfServiceKey == "" {
+			var err = errors.New("Parameters missing. Please provide EITHER the Host of the ABAP server OR the Cloud Foundry ApiEndpoint, Organization, Space, Service Instance and a corresponding Service Key for the Communication Scenario SAP_COM_0510")
+			return connectionDetails, err
+		}
 		// Url, User and Password should be read from a cf service key
 		var abapServiceKey, error = readCfServiceKey(config, r)
 		if error != nil {
@@ -242,9 +240,9 @@ type deferred struct {
 }
 
 type abapConenction struct {
-	CommunicationArrangementId string `json:"communication_arrangement_id"`
-	CommunicationScenarioId    string `json:"communication_scenario_id"`
-	CommunicationSystemId      string `json:"communication_system_id"`
+	CommunicationArrangementID string `json:"communication_arrangement_id"`
+	CommunicationScenarioID    string `json:"communication_scenario_id"`
+	CommunicationSystemID      string `json:"communication_system_id"`
 	Password                   string
 	Username                   string
 }
