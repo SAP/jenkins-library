@@ -28,11 +28,9 @@ type checkmarxExecuteScanOptions struct {
 	VulnerabilityThresholdLow     string `json:"vulnerabilityThresholdLow,omitempty"`
 	SourceEncoding                string `json:"sourceEncoding,omitempty"`
 	VulnerabilityThresholdMedium  string `json:"vulnerabilityThresholdMedium,omitempty"`
-	ValidTypeScriptPresets        string `json:"validTypeScriptPresets,omitempty"`
 	CheckmarxServerURL            string `json:"checkmarxServerUrl,omitempty"`
 	VulnerabilityThresholdHigh    string `json:"vulnerabilityThresholdHigh,omitempty"`
 	TeamName                      string `json:"teamName,omitempty"`
-	EngineConfiguration           string `json:"engineConfiguration,omitempty"`
 	Username                      string `json:"username,omitempty"`
 	Password                      string `json:"password,omitempty"`
 }
@@ -214,11 +212,9 @@ func addCheckmarxExecuteScanFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVar(&myCheckmarxExecuteScanOptions.VulnerabilityThresholdLow, "vulnerabilityThresholdLow", "10", "The specific threshold for low severity findings")
 	cmd.Flags().StringVar(&myCheckmarxExecuteScanOptions.SourceEncoding, "sourceEncoding", os.Getenv("PIPER_sourceEncoding"), "The source encoding to be used, if not set explicitly the project's default will be used")
 	cmd.Flags().StringVar(&myCheckmarxExecuteScanOptions.VulnerabilityThresholdMedium, "vulnerabilityThresholdMedium", "100", "The specific threshold for medium severity findings")
-	cmd.Flags().StringVar(&myCheckmarxExecuteScanOptions.ValidTypeScriptPresets, "validTypeScriptPresets", "map[100131:SAP_Default_Typescript 100154:SAP_Default_TypeScript_JavaScript]", "")
 	cmd.Flags().StringVar(&myCheckmarxExecuteScanOptions.CheckmarxServerURL, "checkmarxServerUrl", "https://cx.wdf.sap.corp:443", "The URL pointing to the root of the Checkmarx server to be used")
 	cmd.Flags().StringVar(&myCheckmarxExecuteScanOptions.VulnerabilityThresholdHigh, "vulnerabilityThresholdHigh", "100", "The specific threshold for high severity findings")
-	cmd.Flags().StringVar(&myCheckmarxExecuteScanOptions.TeamName, "teamName", os.Getenv("PIPER_teamName"), "The name of the team to assign newly created projects to")
-	cmd.Flags().StringVar(&myCheckmarxExecuteScanOptions.EngineConfiguration, "engineConfiguration", "1", "The checkmarx engine version to be used")
+	cmd.Flags().StringVar(&myCheckmarxExecuteScanOptions.TeamName, "teamName", os.Getenv("PIPER_teamName"), "The full name of the team to assign newly created projects to which is preferred to checkmarxGroupId")
 	cmd.Flags().StringVar(&myCheckmarxExecuteScanOptions.Username, "username", os.Getenv("PIPER_username"), "The username to authenticate")
 	cmd.Flags().StringVar(&myCheckmarxExecuteScanOptions.Password, "password", os.Getenv("PIPER_password"), "The password to authenticate")
 
@@ -362,14 +358,6 @@ func checkmarxExecuteScanMetadata() config.StepData {
 						Aliases:     []config.Alias{},
 					},
 					{
-						Name:        "validTypeScriptPresets",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-					},
-					{
 						Name:        "checkmarxServerUrl",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
@@ -389,14 +377,6 @@ func checkmarxExecuteScanMetadata() config.StepData {
 						Name:        "teamName",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-					},
-					{
-						Name:        "engineConfiguration",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},

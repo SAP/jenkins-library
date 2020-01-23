@@ -31,240 +31,19 @@ func checkmarxExecuteScan(config checkmarxExecuteScanOptions, influx *checkmarxE
 }
 
 func runScan(config checkmarxExecuteScanOptions, sys checkmarx.System, workspace string, influx *checkmarxExecuteScanInflux) error {
+
 	team := loadTeam(sys, config.TeamName, config.CheckmarxGroupID)
 	projectName := config.CheckmarxProject
-	var project checkmarx.Project
-	if len(config.PullRequestName) > 0 {
-		projectName = fmt.Sprintf("%v_%v", config.CheckmarxProject, config.PullRequestName)
-		projects := sys.GetProjectsByNameAndTeam(projectName, team.ID)
-		if len(projects) == 0 {
-			projects = sys.GetProjectsByNameAndTeam(config.CheckmarxProject, team.ID)
-			if len(projects) > 0 {
-				ok, branchProject := sys.GetProjectByID(sys.CreateBranch(projects[0].ID, projectName))
-				if !ok {
-					log.Entry().Fatalf("Failed to create branch %v for project %v", projectName, config.CheckmarxProject)
-				}
-				project = branchProject
-			}
-		}
-	} else {
-		projects := sys.GetProjectsByNameAndTeam(projectName, team.ID)
-		if len(projects) > 0 {
-			project = projects[0]
-			log.Entry().Debugf("Loaded project with name %v", project.Name)
-		}
-	}
 
+	project := loadExistingProject(sys, config.CheckmarxProject, config.PullRequestName, team.ID)
 	if project.Name == projectName {
 		log.Entry().Debugf("Project %v exists...", projectName)
 	} else {
 		log.Entry().Debugf("Project %v does not exist, starting to create it...", projectName)
-		project = createAndConfigureNewProject(sys, projectName, team.ID, config.Preset, config.EngineConfiguration)
+		project = createAndConfigureNewProject(sys, projectName, team.ID, config.Preset, config.SourceEncoding)
 	}
 
-	zipFileName := filepath.Join(workspace, "workspace.zip")
-	patterns := strings.Split(config.FilterPattern, ",")
-	sort.Strings(patterns)
-	zipFile, err := os.Create(zipFileName)
-	if err != nil {
-		log.Entry().WithError(err).Fatal("Failed to create archive of project sources")
-	}
-	defer zipFile.Close()
-	zipFolder(workspace, zipFile, patterns)
-	sourceCodeUploaded := sys.UploadProjectSourceCode(project.ID, zipFileName)
-	if sourceCodeUploaded {
-		log.Entry().Debugf("Source code uploaded for project %v", projectName)
-		zipFile.Close()
-		err := os.Remove(zipFileName)
-		if err != nil {
-			log.Entry().WithError(err).Warnf("Failed to delete zipped source code for project %v", projectName)
-		}
-
-		incremental := config.Incremental
-		fullScanCycle, err := strconv.Atoi(config.FullScanCycle)
-		if err != nil {
-			log.Entry().WithError(err).Fatalf("Invalid configuration value for fullScanCycle %v, must be a positive int", config.FullScanCycle)
-		}
-		if incremental && config.FullScansScheduled && fullScanCycle > 0 && (getNumCoherentIncrementalScans(sys, project.ID)+1)%fullScanCycle == 0 {
-			incremental = false
-		}
-
-		projectIsScanning, scan := sys.ScanProject(project.ID, incremental, false, false)
-		if projectIsScanning {
-			log.Entry().Debugf("Scanning project %v ", projectName)
-			status := "New"
-			pastStatus := status
-			log.Entry().Debugf("Scan phase %v", status)
-			for true {
-				status = sys.GetScanStatus(scan.ID)
-				if status != "Scanning" && (status == "Finished" || status == "Canceled" || status == "Failed") {
-					break
-				}
-				if pastStatus != status {
-					log.Entry().Debugf("Scan phase %v ", status)
-					pastStatus = status
-				}
-				log.Entry().Debug("Polling status sleeping...")
-				time.Sleep(10 * time.Second)
-			}
-			if status == "Canceled" {
-				log.Entry().Fatalln("Scan canceled via web interface")
-			}
-			if status == "Failed" {
-				log.Entry().Fatalln("Scan failed, please check the Checkmarx UI for details")
-			} else {
-				log.Entry().Debugln("Scan finished")
-
-				if config.GeneratePdfReport {
-					regExpFileName := regexp.MustCompile(`[^\w\d]`)
-					timeStamp, _ := time.Now().Local().MarshalText()
-					reportFileName := filepath.Join(workspace, fmt.Sprintf("CxSASTReport_%v.pdf", regExpFileName.ReplaceAllString(string(timeStamp), "_")))
-					ok, report := generateAndDownloadReport(sys, scan.ID, "PDF")
-					if ok {
-						log.Entry().Debugf("Saving report to file %v...", reportFileName)
-						ioutil.WriteFile(reportFileName, report, 0700)
-					} else {
-						log.Entry().Debugf("Failed to fetch report %v from backend...", reportFileName)
-					}
-				} else {
-					log.Entry().Debug("Report generation is disabled via configuration")
-				}
-
-				results := getDetailedResults(sys, scan.ID)
-				insecure := false
-
-				influx.checkmarx_data.fields.high_issues = strconv.Itoa(results["High"].(map[string]int)["Issues"])
-				influx.checkmarx_data.fields.high_not_false_postive = strconv.Itoa(results["High"].(map[string]int)["NotFalsePositive"])
-				influx.checkmarx_data.fields.high_not_exploitable = strconv.Itoa(results["High"].(map[string]int)["NotExploitable"])
-				influx.checkmarx_data.fields.high_confirmed = strconv.Itoa(results["High"].(map[string]int)["Confirmed"])
-				influx.checkmarx_data.fields.high_urgent = strconv.Itoa(results["High"].(map[string]int)["Urgent"])
-				influx.checkmarx_data.fields.high_proposed_not_exploitable = strconv.Itoa(results["High"].(map[string]int)["ProposedNotExploitable"])
-				influx.checkmarx_data.fields.high_to_verify = strconv.Itoa(results["High"].(map[string]int)["ToVerify"])
-				influx.checkmarx_data.fields.medium_issues = strconv.Itoa(results["Medium"].(map[string]int)["Issues"])
-				influx.checkmarx_data.fields.medium_not_false_postive = strconv.Itoa(results["Medium"].(map[string]int)["NotFalsePositive"])
-				influx.checkmarx_data.fields.medium_not_exploitable = strconv.Itoa(results["Medium"].(map[string]int)["NotExploitable"])
-				influx.checkmarx_data.fields.medium_confirmed = strconv.Itoa(results["Medium"].(map[string]int)["Confirmed"])
-				influx.checkmarx_data.fields.medium_urgent = strconv.Itoa(results["Medium"].(map[string]int)["Urgent"])
-				influx.checkmarx_data.fields.medium_proposed_not_exploitable = strconv.Itoa(results["Medium"].(map[string]int)["ProposedNotExploitable"])
-				influx.checkmarx_data.fields.medium_to_verify = strconv.Itoa(results["Medium"].(map[string]int)["ToVerify"])
-				influx.checkmarx_data.fields.low_issues = strconv.Itoa(results["Low"].(map[string]int)["Issues"])
-				influx.checkmarx_data.fields.low_not_false_postive = strconv.Itoa(results["Low"].(map[string]int)["NotFalsePositive"])
-				influx.checkmarx_data.fields.low_not_exploitable = strconv.Itoa(results["Low"].(map[string]int)["NotExploitable"])
-				influx.checkmarx_data.fields.low_confirmed = strconv.Itoa(results["Low"].(map[string]int)["Confirmed"])
-				influx.checkmarx_data.fields.low_urgent = strconv.Itoa(results["Low"].(map[string]int)["Urgent"])
-				influx.checkmarx_data.fields.low_proposed_not_exploitable = strconv.Itoa(results["Low"].(map[string]int)["ProposedNotExploitable"])
-				influx.checkmarx_data.fields.low_to_verify = strconv.Itoa(results["Low"].(map[string]int)["ToVerify"])
-				influx.checkmarx_data.fields.information_issues = strconv.Itoa(results["Information"].(map[string]int)["Issues"])
-				influx.checkmarx_data.fields.information_not_false_postive = strconv.Itoa(results["Information"].(map[string]int)["NotFalsePositive"])
-				influx.checkmarx_data.fields.information_not_exploitable = strconv.Itoa(results["Information"].(map[string]int)["NotExploitable"])
-				influx.checkmarx_data.fields.information_confirmed = strconv.Itoa(results["Information"].(map[string]int)["Confirmed"])
-				influx.checkmarx_data.fields.information_urgent = strconv.Itoa(results["Information"].(map[string]int)["Urgent"])
-				influx.checkmarx_data.fields.information_proposed_not_exploitable = strconv.Itoa(results["Information"].(map[string]int)["ProposedNotExploitable"])
-				influx.checkmarx_data.fields.information_to_verify = strconv.Itoa(results["Information"].(map[string]int)["ToVerify"])
-				influx.checkmarx_data.fields.initiator_name = results["InitiatorName"].(string)
-				influx.checkmarx_data.fields.owner = results["Owner"].(string)
-				influx.checkmarx_data.fields.scan_id = results["ScanId"].(string)
-				influx.checkmarx_data.fields.project_id = results["ProjectId"].(string)
-				influx.checkmarx_data.fields.project_name = results["ProjectName"].(string)
-				influx.checkmarx_data.fields.team = results["Team"].(string)
-				influx.checkmarx_data.fields.team_full_path_on_report_date = results["TeamFullPathOnReportDate"].(string)
-				influx.checkmarx_data.fields.scan_start = results["ScanStart"].(string)
-				influx.checkmarx_data.fields.scan_time = results["ScanTime"].(string)
-				influx.checkmarx_data.fields.lines_of_code_scanned = results["LinesOfCodeScanned"].(string)
-				influx.checkmarx_data.fields.files_scanned = results["FilesScanned"].(string)
-				influx.checkmarx_data.fields.checkmarx_version = results["CheckmarxVersion"].(string)
-				influx.checkmarx_data.fields.scan_type = results["ScanType"].(string)
-				influx.checkmarx_data.fields.preset = results["Preset"].(string)
-				influx.checkmarx_data.fields.deep_link = results["DeepLink"].(string)
-				influx.checkmarx_data.fields.report_creation_time = results["ReportCreationTime"].(string)
-
-				if config.VulnerabilityThresholdEnabled {
-					cxHighThreshold, _ := strconv.Atoi(config.VulnerabilityThresholdHigh)
-					cxMediumThreshold, _ := strconv.Atoi(config.VulnerabilityThresholdMedium)
-					cxLowThreshold, _ := strconv.Atoi(config.VulnerabilityThresholdMedium)
-					highValue := results["High"].(map[string]int)["NotFalsePositive"]
-					mediumValue := results["Medium"].(map[string]int)["NotFalsePositive"]
-					lowValue := results["Low"].(map[string]int)["NotFalsePositive"]
-					var unit string
-					highViolation := ""
-					mediumViolation := ""
-					lowViolation := ""
-					if config.VulnerabilityThresholdUnit == "percentage" {
-						unit = "%"
-						highAudited := results["High"].(map[string]int)["Issues"] - results["High"].(map[string]int)["NotFalsePositive"]
-						highOverall := results["High"].(map[string]int)["Issues"]
-						if highOverall == 0 {
-							highAudited = 1
-							highOverall = 1
-						}
-						mediumAudited := results["Medium"].(map[string]int)["Issues"] - results["Medium"].(map[string]int)["NotFalsePositive"]
-						mediumOverall := results["Medium"].(map[string]int)["Issues"]
-						if mediumOverall == 0 {
-							mediumAudited = 1
-							mediumOverall = 1
-						}
-						lowAudited := results["Low"].(map[string]int)["Issues"] - results["Low"].(map[string]int)["NotFalsePositive"]
-						lowOverall := results["Low"].(map[string]int)["Issues"]
-						if lowOverall == 0 {
-							lowAudited = 1
-							lowOverall = 1
-						}
-						highValue = highAudited / highOverall * 100
-						mediumValue = mediumAudited / mediumOverall * 100
-						lowValue = lowAudited / lowOverall * 100
-
-						if highValue < cxHighThreshold {
-							insecure = true
-							highViolation = fmt.Sprintf("<-- %v %v deviation", cxHighThreshold-highValue, unit)
-						}
-						if mediumValue < cxMediumThreshold {
-							insecure = true
-							mediumViolation = fmt.Sprintf("<-- %v %v deviation", cxMediumThreshold-mediumValue, unit)
-						}
-						if lowValue < cxLowThreshold {
-							insecure = true
-							lowViolation = fmt.Sprintf("<-- %v %v deviation", cxLowThreshold-lowValue, unit)
-						}
-					}
-					if config.VulnerabilityThresholdUnit == "absolute" {
-						unit = "findings"
-						if highValue > cxHighThreshold {
-							insecure = true
-							highViolation = fmt.Sprintf("<-- %v %v deviation", highValue-cxHighThreshold, unit)
-						}
-						if mediumValue > cxMediumThreshold {
-							insecure = true
-							mediumViolation = fmt.Sprintf("<-- %v %v deviation", mediumValue-cxMediumThreshold, unit)
-						}
-						if lowValue > cxLowThreshold {
-							insecure = true
-							lowViolation = fmt.Sprintf("<-- %v %v deviation", lowValue-cxLowThreshold, unit)
-						}
-					}
-
-					log.Entry().Infoln("")
-					log.Entry().Infof("High %v%v %v", highValue, unit, highViolation)
-					log.Entry().Infof("Medium %v%v %v", mediumValue, unit, mediumViolation)
-					log.Entry().Infof("Low %v%v %v", lowValue, unit, lowViolation)
-					log.Entry().Infoln("")
-				}
-
-				if insecure {
-					if config.VulnerabilityThresholdResult == "FAILURE" {
-						log.Entry().Fatalln("Checkmarx scan failed, the project is not compliant. For details see the archived report.")
-					} else {
-						log.Entry().Errorf("Checkmarx scan result set to %v, some results are not meeting defined thresholds. For details see the archived report.", config.VulnerabilityThresholdResult)
-					}
-				} else {
-					log.Entry().Infoln("Checkmarx scan finished")
-				}
-			}
-		} else {
-			log.Entry().Fatalf("Cannot scan project %v", projectName)
-		}
-	} else {
-		log.Entry().Fatalf("Cannot upload source code for project %v", projectName)
-	}
+	uploadAndScan(config, sys, project, workspace, influx)
 	return nil
 }
 
@@ -282,6 +61,263 @@ func loadTeam(sys checkmarx.System, teamName, teamID string) checkmarx.Team {
 		log.Entry().Fatalf("Failed to identify team by teamName %v as well as by checkmarxGroupId %v", teamName, teamID)
 	}
 	return team
+}
+
+func loadExistingProject(sys checkmarx.System, initialProjectName, pullRequestName, teamID string) checkmarx.Project {
+	var project checkmarx.Project
+	projectName := initialProjectName
+	if len(pullRequestName) > 0 {
+		projectName = fmt.Sprintf("%v_%v", initialProjectName, pullRequestName)
+		projects := sys.GetProjectsByNameAndTeam(projectName, teamID)
+		if len(projects) == 0 {
+			projects = sys.GetProjectsByNameAndTeam(initialProjectName, teamID)
+			if len(projects) > 0 {
+				ok, branchProject := sys.GetProjectByID(sys.CreateBranch(projects[0].ID, projectName))
+				if !ok {
+					log.Entry().Fatalf("Failed to create branch %v for project %v", projectName, initialProjectName)
+				}
+				project = branchProject
+			}
+		}
+	} else {
+		projects := sys.GetProjectsByNameAndTeam(projectName, teamID)
+		if len(projects) > 0 {
+			project = projects[0]
+			log.Entry().Debugf("Loaded project with name %v", project.Name)
+		}
+	}
+	return project
+}
+
+func zipWorkspaceFiles(workspace, filterPattern string) *os.File {
+	zipFileName := filepath.Join(workspace, "workspace.zip")
+	patterns := strings.Split(filterPattern, ",")
+	sort.Strings(patterns)
+	zipFile, err := os.Create(zipFileName)
+	if err != nil {
+		log.Entry().WithError(err).Fatal("Failed to create archive of project sources")
+	}
+	defer zipFile.Close()
+	zipFolder(workspace, zipFile, patterns)
+	return zipFile
+}
+
+func uploadAndScan(config checkmarxExecuteScanOptions, sys checkmarx.System, project checkmarx.Project, workspace string, influx *checkmarxExecuteScanInflux) {
+	zipFile := zipWorkspaceFiles(workspace, config.FilterPattern)
+	sourceCodeUploaded := sys.UploadProjectSourceCode(project.ID, zipFile.Name())
+	if sourceCodeUploaded {
+		log.Entry().Debugf("Source code uploaded for project %v", project.Name)
+		zipFile.Close()
+		err := os.Remove(zipFile.Name())
+		if err != nil {
+			log.Entry().WithError(err).Warnf("Failed to delete zipped source code for project %v", project.Name)
+		}
+
+		incremental := config.Incremental
+		fullScanCycle, err := strconv.Atoi(config.FullScanCycle)
+		if err != nil {
+			log.Entry().WithError(err).Fatalf("Invalid configuration value for fullScanCycle %v, must be a positive int", config.FullScanCycle)
+		}
+		if incremental && config.FullScansScheduled && fullScanCycle > 0 && (getNumCoherentIncrementalScans(sys, project.ID)+1)%fullScanCycle == 0 {
+			incremental = false
+		}
+
+		triggerScan(config, sys, project, workspace, incremental, influx)
+	} else {
+		log.Entry().Fatalf("Cannot upload source code for project %v", project.Name)
+	}
+}
+
+func triggerScan(config checkmarxExecuteScanOptions, sys checkmarx.System, project checkmarx.Project, workspace string, incremental bool, influx *checkmarxExecuteScanInflux) {
+	projectIsScanning, scan := sys.ScanProject(project.ID, incremental, false, !config.AvoidDuplicateProjectScans)
+	if projectIsScanning {
+		log.Entry().Debugf("Scanning project %v ", project.Name)
+		pollScanStatus(sys, scan)
+
+		log.Entry().Debugln("Scan finished")
+		if config.GeneratePdfReport {
+			downloadAndSaveReport(sys, workspace, scan)
+		} else {
+			log.Entry().Debug("Report generation is disabled via configuration")
+		}
+
+		results := getDetailedResults(sys, scan.ID)
+		reportToInflux(results, influx)
+
+		insecure := false
+		if config.VulnerabilityThresholdEnabled {
+			insecure = enforceThresholds(config, results)
+		}
+
+		if insecure {
+			if config.VulnerabilityThresholdResult == "FAILURE" {
+				log.Entry().Fatalln("Checkmarx scan failed, the project is not compliant. For details see the archived report.")
+			}
+			log.Entry().Errorf("Checkmarx scan result set to %v, some results are not meeting defined thresholds. For details see the archived report.", config.VulnerabilityThresholdResult)
+		} else {
+			log.Entry().Infoln("Checkmarx scan finished")
+		}
+	} else {
+		log.Entry().Fatalf("Cannot scan project %v", project.Name)
+	}
+}
+
+func pollScanStatus(sys checkmarx.System, scan checkmarx.Scan) {
+	status := "New"
+	pastStatus := status
+	log.Entry().Debugf("Scan phase %v", status)
+	for true {
+		status = sys.GetScanStatus(scan.ID)
+		if status != "Scanning" && (status == "Finished" || status == "Canceled" || status == "Failed") {
+			break
+		}
+		if pastStatus != status {
+			log.Entry().Debugf("Scan phase %v ", status)
+			pastStatus = status
+		}
+		log.Entry().Debug("Polling status sleeping...")
+		time.Sleep(10 * time.Second)
+	}
+	if status == "Canceled" {
+		log.Entry().Fatalln("Scan canceled via web interface")
+	}
+	if status == "Failed" {
+		log.Entry().Fatalln("Scan failed, please check the Checkmarx UI for details")
+	}
+}
+
+func reportToInflux(results map[string]interface{}, influx *checkmarxExecuteScanInflux) {
+	influx.checkmarx_data.fields.high_issues = strconv.Itoa(results["High"].(map[string]int)["Issues"])
+	influx.checkmarx_data.fields.high_not_false_postive = strconv.Itoa(results["High"].(map[string]int)["NotFalsePositive"])
+	influx.checkmarx_data.fields.high_not_exploitable = strconv.Itoa(results["High"].(map[string]int)["NotExploitable"])
+	influx.checkmarx_data.fields.high_confirmed = strconv.Itoa(results["High"].(map[string]int)["Confirmed"])
+	influx.checkmarx_data.fields.high_urgent = strconv.Itoa(results["High"].(map[string]int)["Urgent"])
+	influx.checkmarx_data.fields.high_proposed_not_exploitable = strconv.Itoa(results["High"].(map[string]int)["ProposedNotExploitable"])
+	influx.checkmarx_data.fields.high_to_verify = strconv.Itoa(results["High"].(map[string]int)["ToVerify"])
+	influx.checkmarx_data.fields.medium_issues = strconv.Itoa(results["Medium"].(map[string]int)["Issues"])
+	influx.checkmarx_data.fields.medium_not_false_postive = strconv.Itoa(results["Medium"].(map[string]int)["NotFalsePositive"])
+	influx.checkmarx_data.fields.medium_not_exploitable = strconv.Itoa(results["Medium"].(map[string]int)["NotExploitable"])
+	influx.checkmarx_data.fields.medium_confirmed = strconv.Itoa(results["Medium"].(map[string]int)["Confirmed"])
+	influx.checkmarx_data.fields.medium_urgent = strconv.Itoa(results["Medium"].(map[string]int)["Urgent"])
+	influx.checkmarx_data.fields.medium_proposed_not_exploitable = strconv.Itoa(results["Medium"].(map[string]int)["ProposedNotExploitable"])
+	influx.checkmarx_data.fields.medium_to_verify = strconv.Itoa(results["Medium"].(map[string]int)["ToVerify"])
+	influx.checkmarx_data.fields.low_issues = strconv.Itoa(results["Low"].(map[string]int)["Issues"])
+	influx.checkmarx_data.fields.low_not_false_postive = strconv.Itoa(results["Low"].(map[string]int)["NotFalsePositive"])
+	influx.checkmarx_data.fields.low_not_exploitable = strconv.Itoa(results["Low"].(map[string]int)["NotExploitable"])
+	influx.checkmarx_data.fields.low_confirmed = strconv.Itoa(results["Low"].(map[string]int)["Confirmed"])
+	influx.checkmarx_data.fields.low_urgent = strconv.Itoa(results["Low"].(map[string]int)["Urgent"])
+	influx.checkmarx_data.fields.low_proposed_not_exploitable = strconv.Itoa(results["Low"].(map[string]int)["ProposedNotExploitable"])
+	influx.checkmarx_data.fields.low_to_verify = strconv.Itoa(results["Low"].(map[string]int)["ToVerify"])
+	influx.checkmarx_data.fields.information_issues = strconv.Itoa(results["Information"].(map[string]int)["Issues"])
+	influx.checkmarx_data.fields.information_not_false_postive = strconv.Itoa(results["Information"].(map[string]int)["NotFalsePositive"])
+	influx.checkmarx_data.fields.information_not_exploitable = strconv.Itoa(results["Information"].(map[string]int)["NotExploitable"])
+	influx.checkmarx_data.fields.information_confirmed = strconv.Itoa(results["Information"].(map[string]int)["Confirmed"])
+	influx.checkmarx_data.fields.information_urgent = strconv.Itoa(results["Information"].(map[string]int)["Urgent"])
+	influx.checkmarx_data.fields.information_proposed_not_exploitable = strconv.Itoa(results["Information"].(map[string]int)["ProposedNotExploitable"])
+	influx.checkmarx_data.fields.information_to_verify = strconv.Itoa(results["Information"].(map[string]int)["ToVerify"])
+	influx.checkmarx_data.fields.initiator_name = results["InitiatorName"].(string)
+	influx.checkmarx_data.fields.owner = results["Owner"].(string)
+	influx.checkmarx_data.fields.scan_id = results["ScanId"].(string)
+	influx.checkmarx_data.fields.project_id = results["ProjectId"].(string)
+	influx.checkmarx_data.fields.project_name = results["ProjectName"].(string)
+	influx.checkmarx_data.fields.team = results["Team"].(string)
+	influx.checkmarx_data.fields.team_full_path_on_report_date = results["TeamFullPathOnReportDate"].(string)
+	influx.checkmarx_data.fields.scan_start = results["ScanStart"].(string)
+	influx.checkmarx_data.fields.scan_time = results["ScanTime"].(string)
+	influx.checkmarx_data.fields.lines_of_code_scanned = results["LinesOfCodeScanned"].(string)
+	influx.checkmarx_data.fields.files_scanned = results["FilesScanned"].(string)
+	influx.checkmarx_data.fields.checkmarx_version = results["CheckmarxVersion"].(string)
+	influx.checkmarx_data.fields.scan_type = results["ScanType"].(string)
+	influx.checkmarx_data.fields.preset = results["Preset"].(string)
+	influx.checkmarx_data.fields.deep_link = results["DeepLink"].(string)
+	influx.checkmarx_data.fields.report_creation_time = results["ReportCreationTime"].(string)
+}
+
+func downloadAndSaveReport(sys checkmarx.System, workspace string, scan checkmarx.Scan) {
+	regExpFileName := regexp.MustCompile(`[^\w\d]`)
+	timeStamp, _ := time.Now().Local().MarshalText()
+	reportFileName := filepath.Join(workspace, fmt.Sprintf("CxSASTReport_%v.pdf", regExpFileName.ReplaceAllString(string(timeStamp), "_")))
+	ok, report := generateAndDownloadReport(sys, scan.ID, "PDF")
+	if ok {
+		log.Entry().Debugf("Saving report to file %v...", reportFileName)
+		ioutil.WriteFile(reportFileName, report, 0700)
+	} else {
+		log.Entry().Debugf("Failed to fetch report %v from backend...", reportFileName)
+	}
+}
+
+func enforceThresholds(config checkmarxExecuteScanOptions, results map[string]interface{}) bool {
+	insecure := false
+	cxHighThreshold, _ := strconv.Atoi(config.VulnerabilityThresholdHigh)
+	cxMediumThreshold, _ := strconv.Atoi(config.VulnerabilityThresholdMedium)
+	cxLowThreshold, _ := strconv.Atoi(config.VulnerabilityThresholdMedium)
+	highValue := results["High"].(map[string]int)["NotFalsePositive"]
+	mediumValue := results["Medium"].(map[string]int)["NotFalsePositive"]
+	lowValue := results["Low"].(map[string]int)["NotFalsePositive"]
+	var unit string
+	highViolation := ""
+	mediumViolation := ""
+	lowViolation := ""
+	if config.VulnerabilityThresholdUnit == "percentage" {
+		unit = "%"
+		highAudited := results["High"].(map[string]int)["Issues"] - results["High"].(map[string]int)["NotFalsePositive"]
+		highOverall := results["High"].(map[string]int)["Issues"]
+		if highOverall == 0 {
+			highAudited = 1
+			highOverall = 1
+		}
+		mediumAudited := results["Medium"].(map[string]int)["Issues"] - results["Medium"].(map[string]int)["NotFalsePositive"]
+		mediumOverall := results["Medium"].(map[string]int)["Issues"]
+		if mediumOverall == 0 {
+			mediumAudited = 1
+			mediumOverall = 1
+		}
+		lowAudited := results["Low"].(map[string]int)["Issues"] - results["Low"].(map[string]int)["NotFalsePositive"]
+		lowOverall := results["Low"].(map[string]int)["Issues"]
+		if lowOverall == 0 {
+			lowAudited = 1
+			lowOverall = 1
+		}
+		highValue = highAudited / highOverall * 100
+		mediumValue = mediumAudited / mediumOverall * 100
+		lowValue = lowAudited / lowOverall * 100
+
+		if highValue < cxHighThreshold {
+			insecure = true
+			highViolation = fmt.Sprintf("<-- %v %v deviation", cxHighThreshold-highValue, unit)
+		}
+		if mediumValue < cxMediumThreshold {
+			insecure = true
+			mediumViolation = fmt.Sprintf("<-- %v %v deviation", cxMediumThreshold-mediumValue, unit)
+		}
+		if lowValue < cxLowThreshold {
+			insecure = true
+			lowViolation = fmt.Sprintf("<-- %v %v deviation", cxLowThreshold-lowValue, unit)
+		}
+	}
+	if config.VulnerabilityThresholdUnit == "absolute" {
+		unit = "findings"
+		if highValue > cxHighThreshold {
+			insecure = true
+			highViolation = fmt.Sprintf("<-- %v %v deviation", highValue-cxHighThreshold, unit)
+		}
+		if mediumValue > cxMediumThreshold {
+			insecure = true
+			mediumViolation = fmt.Sprintf("<-- %v %v deviation", mediumValue-cxMediumThreshold, unit)
+		}
+		if lowValue > cxLowThreshold {
+			insecure = true
+			lowViolation = fmt.Sprintf("<-- %v %v deviation", lowValue-cxLowThreshold, unit)
+		}
+	}
+
+	log.Entry().Infoln("")
+	log.Entry().Infof("High %v%v %v", highValue, unit, highViolation)
+	log.Entry().Infof("Medium %v%v %v", mediumValue, unit, mediumViolation)
+	log.Entry().Infof("Low %v%v %v", lowValue, unit, lowViolation)
+	log.Entry().Infoln("")
+
+	return insecure
 }
 
 func createAndConfigureNewProject(sys checkmarx.System, projectName, teamID, presetValue, engineConfiguration string) checkmarx.Project {
