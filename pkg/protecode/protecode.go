@@ -7,7 +7,6 @@ import (
 	"io"
 	"net/http"
 	"net/url"
-	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -238,7 +237,7 @@ func (pc *Protecode) sendApiRequest(method string, url string, headers map[strin
 	return &r.Body, err
 }
 
-func (pc *Protecode) ResolveSymLink(method string, url string) (*io.ReadCloser, error) {
+/*func (pc *Protecode) ResolveSymLink(method string, name string) (*io.ReadCloser, error) {
 
 	link, err := os.Readlink(url)
 	if err != nil {
@@ -247,7 +246,7 @@ func (pc *Protecode) ResolveSymLink(method string, url string) (*io.ReadCloser, 
 	r, err := pc.sendApiRequest("GET", link, nil)
 
 	return r, err
-}
+}*/
 
 // #####################################
 // ParseResultForInflux
