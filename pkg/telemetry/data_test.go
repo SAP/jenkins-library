@@ -1,6 +1,7 @@
 package telemetry
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -12,8 +13,26 @@ func TestDataToMap(t *testing.T) {
 	result := testData.toMap()
 
 	assert.Contains(t, result, "action_name")
+	assert.Contains(t, result, "event_type")
 	assert.Contains(t, result, "idsite")
-	//assert.Equal(t, 15, len(result))
+	assert.Contains(t, result, "url")
+
+	assert.Contains(t, result, "e_3")
+	assert.Contains(t, result, "e_4")
+	assert.Contains(t, result, "e_5")
+	assert.Contains(t, result, "e_10")
+
+	assert.Contains(t, result, "custom_3")
+	assert.Contains(t, result, "custom_4")
+	assert.Contains(t, result, "custom_5")
+	assert.Contains(t, result, "custom_10")
+	// test custom 11 - 15
+	for _, idx := range []int{1, 2, 3, 4, 5} {
+		assert.Contains(t, result, fmt.Sprintf("custom_1%d", idx))
+		assert.Contains(t, result, fmt.Sprintf("e_1%d", idx))
+	}
+
+	assert.Equal(t, 22, len(result))
 }
 
 func TestDataToPayload(t *testing.T) {
