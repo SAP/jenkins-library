@@ -258,6 +258,7 @@ void call(Map parameters = [:], body) {
  * @param dockerEnvVars Map with environment variables
  */
 
+@NonCPS
 private getDockerOptions(Map dockerEnvVars, Map dockerVolumeBind, def dockerOptions) {
     def specialEnvironments = [
         'http_proxy',
