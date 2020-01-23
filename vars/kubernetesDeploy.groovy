@@ -26,6 +26,7 @@ void call(Map parameters = [:]) {
         ]) {
             // get context configuration
             Map config = readJSON (text: sh(returnStdout: true, script: "./piper getConfig --contextConfig --stepMetadata '${METADATA_FILE}'"))
+            echo "Config: ${config}"
 
             dockerExecute(
                 script: script,
