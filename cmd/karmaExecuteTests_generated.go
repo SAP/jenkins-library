@@ -3,6 +3,7 @@ package cmd
 import (
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
+
 	"github.com/spf13/cobra"
 )
 
@@ -13,11 +14,11 @@ type karmaExecuteTestsOptions struct {
 }
 
 var myKarmaExecuteTestsOptions karmaExecuteTestsOptions
-var karmaExecuteTestsStepConfigJSON string
 
 // KarmaExecuteTestsCommand Executes the Karma test runner
 func KarmaExecuteTestsCommand() *cobra.Command {
 	metadata := karmaExecuteTestsMetadata()
+
 	var createKarmaExecuteTestsCmd = &cobra.Command{
 		Use:   "karmaExecuteTests",
 		Short: "Executes the Karma test runner",
@@ -38,6 +39,7 @@ In the Docker network, the containers can be referenced by the values provided i
 			return PrepareConfig(cmd, &metadata, "karmaExecuteTests", &myKarmaExecuteTestsOptions, config.OpenPiperFile)
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
+
 			return karmaExecuteTests(myKarmaExecuteTestsOptions)
 		},
 	}
@@ -63,25 +65,28 @@ func karmaExecuteTestsMetadata() config.StepData {
 			Inputs: config.StepInputs{
 				Parameters: []config.StepParameters{
 					{
-						Name:      "installCommand",
-						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
-						Type:      "string",
-						Mandatory: true,
-						Aliases:   []config.Alias{},
+						Name:        "installCommand",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   true,
+						Aliases:     []config.Alias{},
 					},
 					{
-						Name:      "modulePath",
-						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:      "string",
-						Mandatory: true,
-						Aliases:   []config.Alias{},
+						Name:        "modulePath",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   true,
+						Aliases:     []config.Alias{},
 					},
 					{
-						Name:      "runCommand",
-						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
-						Type:      "string",
-						Mandatory: true,
-						Aliases:   []config.Alias{},
+						Name:        "runCommand",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   true,
+						Aliases:     []config.Alias{},
 					},
 				},
 			},

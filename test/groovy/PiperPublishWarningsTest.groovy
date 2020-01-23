@@ -7,6 +7,7 @@ import static org.hamcrest.Matchers.hasItem
 import static org.hamcrest.Matchers.hasEntry
 import static org.hamcrest.Matchers.hasKey
 
+import org.junit.After
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -59,6 +60,14 @@ class PiperPublishWarningsTest extends BasePiperTest {
         }
         JenkinsUtils.metaClass.static.getFullBuildLog = { def currentBuild -> return ""}
         JenkinsUtils.metaClass.static.isPluginActive = { id -> return true}
+    }
+
+
+    @After
+    public void tearDown() {
+        JenkinsUtils.metaClass.addWarningsNGParser = null
+        JenkinsUtils.metaClass.static.getFullBuildLog = null
+        JenkinsUtils.metaClass.static.isPluginActive = null
     }
 
     @Test
