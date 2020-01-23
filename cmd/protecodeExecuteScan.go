@@ -31,7 +31,7 @@ func runProtecodeScan(config *protecodeExecuteScanOptions, cpEnvironment *protec
 	//create client for sending api request
 	client := createClient(config)
 
-	fileName, err := getDockerImage(config, cpEnvironment)
+	fileName, err := getDockerImage(config, cpEnvironment, client)
 	if err != nil {
 		log.Entry().Fatalf("Exception during getting the image %v", err)
 	}
@@ -53,9 +53,10 @@ func runProtecodeScan(config *protecodeExecuteScanOptions, cpEnvironment *protec
 	return nil
 }
 
-func getDockerImage(config *protecodeExecuteScanOptions, cpEnvironment *protecodeExecuteScanCommonPipelineEnvironment) (string, error) {
+func getDockerImage(config *protecodeExecuteScanOptions, cpEnvironment *protecodeExecuteScanCommonPipelineEnvironment, client protecode.Protecode) (string, error) {
 
 	cacheImagePath := "./cache/protecodeImage"
+	os.Mkdir(cacheImagePath, 600)
 	completeURL, err := getUrlAndFileNameFromDockerImage(config)
 	if err != nil {
 		log.Entry().Fatalf("Exception during get url creation for get the docker image %v", err)
@@ -78,7 +79,7 @@ func getDockerImage(config *protecodeExecuteScanOptions, cpEnvironment *protecod
 		log.Entry().WithError(err)
 	}
 	defer tarFile.Close()
-	err = tarImageFolder(cacheImagePath, tarFile)
+	err = tarImageFolder(cacheImagePath, tarFile, client)
 	if err != nil {
 		log.Entry().WithError(err).Fatalf("Failed to create tar archive of docker image")
 	}
@@ -114,7 +115,7 @@ func getUrlAndFileNameFromDockerImage(config *protecodeExecuteScanOptions) (stri
 	return completeUrl, nil
 }
 
-func tarImageFolder(source string, tarFile io.Writer) error {
+func tarImageFolder(source string, tarFile io.Writer, client protecode.Protecode) error {
 	archive := tar.NewWriter(tarFile)
 	defer archive.Close()
 
@@ -124,7 +125,7 @@ func tarImageFolder(source string, tarFile io.Writer) error {
 			return nil
 		}
 
-		if err := writeToTar(path, source, archive, info); err != nil {
+		if err := writeToTar(path, source, archive, info, client); err != nil {
 			return err
 		}
 		return nil
@@ -136,13 +137,7 @@ func tarImageFolder(source string, tarFile io.Writer) error {
 func writeToTar(fileDir string,
 	sourceBase string,
 	archive *tar.Writer,
-	info os.FileInfo) error {
-
-	file, err := os.Open(fileDir)
-	if err != nil {
-		return err
-	}
-	defer file.Close()
+	info os.FileInfo, client protecode.Protecode) error {
 
 	// relative paths are used to preserve the directory paths in each file path
 	relativePath, err := filepath.Rel(sourceBase, fileDir)
@@ -156,10 +151,28 @@ func writeToTar(fileDir string,
 	if err != nil {
 		return err
 	}
-	_, err = io.Copy(archive, file)
-	if err != nil {
-		return err
+
+	// True if the file is a symlink.
+	if info.Mode()&os.ModeSymlink != 0 {
+		readCloser, err := client.ResolveSymLink("GET", info.Name())
+		if err != nil {
+			return err
+		}
+		_, err = io.Copy(archive, *readCloser)
+
+	} else {
+
+		file, err := os.Open(fileDir)
+		if err != nil {
+			return err
+		}
+		defer file.Close()
+		_, err = io.Copy(archive, file)
+		if err != nil {
+			return err
+		}
 	}
+
 	return nil
 }
 

@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -237,6 +238,17 @@ func (pc *Protecode) sendApiRequest(method string, url string, headers map[strin
 	return &r.Body, err
 }
 
+func (pc *Protecode) ResolveSymLink(method string, url string) (*io.ReadCloser, error) {
+
+	link, err := os.Readlink(url)
+	if err != nil {
+		pc.logger.WithError(err).Fatalf("error during %v resolve symlink", url)
+	}
+	r, err := pc.sendApiRequest("GET", link, nil)
+
+	return r, err
+}
+
 // #####################################
 // ParseResultForInflux
 
@@ -399,7 +411,7 @@ func (pc *Protecode) PollForResult(productId int, verbose bool) Result {
 		select {
 		case t := <-ticker.C:
 			if verbose {
-				pc.logger.Infof("Tick : %v Processing status for productId %v",t , productId)
+				pc.logger.Infof("Tick : %v Processing status for productId %v", t, productId)
 			}
 			response, err = pc.pullResult(productId)
 			if err != nil {

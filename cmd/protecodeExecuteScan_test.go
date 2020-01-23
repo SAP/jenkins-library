@@ -23,7 +23,8 @@ func TestTarImageFolder(t *testing.T) {
 	tarFile, err := ioutil.TempFile(tmpDir, "protecodeTest.tar")
 	assert.NoError(t, err, "Failed to create archive of docker image")
 	defer tarFile.Close()
-	err = tarImageFolder("testdata/TestProtecode", tarFile)
+	pc := protecode.Protecode{}
+	err = tarImageFolder("testdata/TestProtecode", tarFile, pc)
 	assert.NoError(t, err, "Failed to fill tar archive of docker image")
 }
 
