@@ -135,15 +135,6 @@ spec:
       - STEPS
       default: '!**/node_modules/**, !**/.xmake/**, !**/*_test.go, !**/vendor/**/*.go,
         **/*.html, **/*.xml, **/*.go, **/*.py, **/*.js, **/*.scala, **/*.ts'
-    - name: vulnerabilityThresholdLow
-      type: string
-      description: The specific threshold for low severity findings
-      mandatory: false
-      scope:
-      - PARAMETERS
-      - STAGES
-      - STEPS
-      default: 10
     - name: sourceEncoding
       type: string
       description: The source encoding to be used, if not set explicitly the project's default will be used
@@ -152,9 +143,18 @@ spec:
       - PARAMETERS
       - STAGES
       - STEPS
-      default: null
+      default: '1'
+    - name: vulnerabilityThresholdLow
+      type: int
+      description: The specific threshold for low severity findings
+      mandatory: false
+      scope:
+      - PARAMETERS
+      - STAGES
+      - STEPS
+      default: 10
     - name: vulnerabilityThresholdMedium
-      type: string
+      type: int
       description: The specific threshold for medium severity findings
       mandatory: false
       scope:
@@ -173,7 +173,7 @@ spec:
       - STEPS
       default: https://cx.wdf.sap.corp:443
     - name: vulnerabilityThresholdHigh
-      type: string
+      type: int
       description: The specific threshold for high severity findings
       mandatory: false
       scope:

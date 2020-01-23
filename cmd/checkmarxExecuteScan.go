@@ -248,9 +248,9 @@ func downloadAndSaveReport(sys checkmarx.System, workspace string, scan checkmar
 
 func enforceThresholds(config checkmarxExecuteScanOptions, results map[string]interface{}) bool {
 	insecure := false
-	cxHighThreshold, _ := strconv.Atoi(config.VulnerabilityThresholdHigh)
-	cxMediumThreshold, _ := strconv.Atoi(config.VulnerabilityThresholdMedium)
-	cxLowThreshold, _ := strconv.Atoi(config.VulnerabilityThresholdMedium)
+	cxHighThreshold := config.VulnerabilityThresholdHigh
+	cxMediumThreshold := config.VulnerabilityThresholdMedium
+	cxLowThreshold := config.VulnerabilityThresholdLow
 	highValue := results["High"].(map[string]int)["NotFalsePositive"]
 	mediumValue := results["Medium"].(map[string]int)["NotFalsePositive"]
 	lowValue := results["Low"].(map[string]int)["NotFalsePositive"]
@@ -272,15 +272,15 @@ func enforceThresholds(config checkmarxExecuteScanOptions, results map[string]in
 			mediumAudited = 1
 			mediumOverall = 1
 		}
-		lowAudited := results["Low"].(map[string]int)["Issues"] - results["Low"].(map[string]int)["NotFalsePositive"]
+		lowAudited := results["Low"].(map[string]int)["Confirmed"] + results["Low"].(map[string]int)["NotExploitable"]
 		lowOverall := results["Low"].(map[string]int)["Issues"]
 		if lowOverall == 0 {
 			lowAudited = 1
 			lowOverall = 1
 		}
-		highValue = highAudited / highOverall * 100
-		mediumValue = mediumAudited / mediumOverall * 100
-		lowValue = lowAudited / lowOverall * 100
+		highValue = int(float32(highAudited) / float32(highOverall) * 100.0)
+		mediumValue = int(float32(mediumAudited) / float32(mediumOverall) * 100.0)
+		lowValue = int(float32(lowAudited) / float32(lowOverall) * 100.0)
 
 		if highValue < cxHighThreshold {
 			insecure = true
@@ -324,20 +324,8 @@ func createAndConfigureNewProject(sys checkmarx.System, projectName, teamID, pre
 	ok, projectCreateResult := sys.CreateProject(projectName, teamID)
 	if ok {
 		if len(presetValue) > 0 {
-			presets := sys.GetPresets()
-			var preset checkmarx.Preset
-			presetID, err := strconv.Atoi(presetValue)
-			var configuredPresetID int
-			var configuredPresetName string
-			if err != nil {
-				preset = sys.FilterPresetByName(presets, presetValue)
-				configuredPresetName = presetValue
-			} else {
-				preset = sys.FilterPresetByID(presets, presetID)
-				configuredPresetID = presetID
-			}
-
-			if configuredPresetID > 0 && preset.ID == configuredPresetID || len(configuredPresetName) > 0 && preset.Name == configuredPresetName {
+			ok, preset := loadPreset(sys, presetValue)
+			if ok {
 				configurationUpdated := sys.UpdateProjectConfiguration(projectCreateResult.ID, preset.ID, engineConfiguration)
 				if configurationUpdated {
 					log.Entry().Debugf("Configuration of project %v updated", projectName)
@@ -359,6 +347,27 @@ func createAndConfigureNewProject(sys checkmarx.System, projectName, teamID, pre
 	}
 	log.Entry().Fatalf("Cannot create project %v", projectName)
 	return checkmarx.Project{}
+}
+
+func loadPreset(sys checkmarx.System, presetValue string) (bool, checkmarx.Preset) {
+	presets := sys.GetPresets()
+	var preset checkmarx.Preset
+	presetID, err := strconv.Atoi(presetValue)
+	var configuredPresetID int
+	var configuredPresetName string
+	if err != nil {
+		preset = sys.FilterPresetByName(presets, presetValue)
+		configuredPresetName = presetValue
+	} else {
+		preset = sys.FilterPresetByID(presets, presetID)
+		configuredPresetID = presetID
+	}
+
+	if configuredPresetID > 0 && preset.ID == configuredPresetID || len(configuredPresetName) > 0 && preset.Name == configuredPresetName {
+		log.Entry().Debugf("Loaded preset %v", preset.Name)
+		return true, preset
+	}
+	return false, checkmarx.Preset{}
 }
 
 func generateAndDownloadReport(sys checkmarx.System, scanID int, reportType string) (bool, []byte) {

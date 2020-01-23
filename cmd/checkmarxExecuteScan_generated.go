@@ -25,11 +25,11 @@ type checkmarxExecuteScanOptions struct {
 	CheckmarxGroupID              string `json:"checkmarxGroupId,omitempty"`
 	PullRequestName               string `json:"pullRequestName,omitempty"`
 	FilterPattern                 string `json:"filterPattern,omitempty"`
-	VulnerabilityThresholdLow     string `json:"vulnerabilityThresholdLow,omitempty"`
 	SourceEncoding                string `json:"sourceEncoding,omitempty"`
-	VulnerabilityThresholdMedium  string `json:"vulnerabilityThresholdMedium,omitempty"`
+	VulnerabilityThresholdLow     int    `json:"vulnerabilityThresholdLow,omitempty"`
+	VulnerabilityThresholdMedium  int    `json:"vulnerabilityThresholdMedium,omitempty"`
 	CheckmarxServerURL            string `json:"checkmarxServerUrl,omitempty"`
-	VulnerabilityThresholdHigh    string `json:"vulnerabilityThresholdHigh,omitempty"`
+	VulnerabilityThresholdHigh    int    `json:"vulnerabilityThresholdHigh,omitempty"`
 	TeamName                      string `json:"teamName,omitempty"`
 	Username                      string `json:"username,omitempty"`
 	Password                      string `json:"password,omitempty"`
@@ -209,11 +209,11 @@ func addCheckmarxExecuteScanFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVar(&myCheckmarxExecuteScanOptions.CheckmarxGroupID, "checkmarxGroupId", os.Getenv("PIPER_checkmarxGroupId"), "The group ID related to your team which can be obtained via the Pipeline Syntax plugin as described in the `Details` section")
 	cmd.Flags().StringVar(&myCheckmarxExecuteScanOptions.PullRequestName, "pullRequestName", os.Getenv("PIPER_pullRequestName"), "Used to supply the name for the newly created PR project branch when being used in pull request scenarios")
 	cmd.Flags().StringVar(&myCheckmarxExecuteScanOptions.FilterPattern, "filterPattern", "!**/node_modules/**, !**/.xmake/**, !**/*_test.go, !**/vendor/**/*.go, **/*.html, **/*.xml, **/*.go, **/*.py, **/*.js, **/*.scala, **/*.ts", "The filter pattern used to zip the files relevant for scanning, patterns can be negated by setting an exclamation mark in front i.e. `!test/*.js` would avoid adding any javascript files located in the test directory")
-	cmd.Flags().StringVar(&myCheckmarxExecuteScanOptions.VulnerabilityThresholdLow, "vulnerabilityThresholdLow", "10", "The specific threshold for low severity findings")
-	cmd.Flags().StringVar(&myCheckmarxExecuteScanOptions.SourceEncoding, "sourceEncoding", os.Getenv("PIPER_sourceEncoding"), "The source encoding to be used, if not set explicitly the project's default will be used")
-	cmd.Flags().StringVar(&myCheckmarxExecuteScanOptions.VulnerabilityThresholdMedium, "vulnerabilityThresholdMedium", "100", "The specific threshold for medium severity findings")
+	cmd.Flags().StringVar(&myCheckmarxExecuteScanOptions.SourceEncoding, "sourceEncoding", "1", "The source encoding to be used, if not set explicitly the project's default will be used")
+	cmd.Flags().IntVar(&myCheckmarxExecuteScanOptions.VulnerabilityThresholdLow, "vulnerabilityThresholdLow", 10, "The specific threshold for low severity findings")
+	cmd.Flags().IntVar(&myCheckmarxExecuteScanOptions.VulnerabilityThresholdMedium, "vulnerabilityThresholdMedium", 100, "The specific threshold for medium severity findings")
 	cmd.Flags().StringVar(&myCheckmarxExecuteScanOptions.CheckmarxServerURL, "checkmarxServerUrl", "https://cx.wdf.sap.corp:443", "The URL pointing to the root of the Checkmarx server to be used")
-	cmd.Flags().StringVar(&myCheckmarxExecuteScanOptions.VulnerabilityThresholdHigh, "vulnerabilityThresholdHigh", "100", "The specific threshold for high severity findings")
+	cmd.Flags().IntVar(&myCheckmarxExecuteScanOptions.VulnerabilityThresholdHigh, "vulnerabilityThresholdHigh", 100, "The specific threshold for high severity findings")
 	cmd.Flags().StringVar(&myCheckmarxExecuteScanOptions.TeamName, "teamName", os.Getenv("PIPER_teamName"), "The full name of the team to assign newly created projects to which is preferred to checkmarxGroupId")
 	cmd.Flags().StringVar(&myCheckmarxExecuteScanOptions.Username, "username", os.Getenv("PIPER_username"), "The username to authenticate")
 	cmd.Flags().StringVar(&myCheckmarxExecuteScanOptions.Password, "password", os.Getenv("PIPER_password"), "The password to authenticate")
@@ -334,14 +334,6 @@ func checkmarxExecuteScanMetadata() config.StepData {
 						Aliases:     []config.Alias{},
 					},
 					{
-						Name:        "vulnerabilityThresholdLow",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-					},
-					{
 						Name:        "sourceEncoding",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
@@ -350,10 +342,18 @@ func checkmarxExecuteScanMetadata() config.StepData {
 						Aliases:     []config.Alias{},
 					},
 					{
+						Name:        "vulnerabilityThresholdLow",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "int",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+					},
+					{
 						Name:        "vulnerabilityThresholdMedium",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
+						Type:        "int",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 					},
@@ -369,7 +369,7 @@ func checkmarxExecuteScanMetadata() config.StepData {
 						Name:        "vulnerabilityThresholdHigh",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
+						Type:        "int",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 					},

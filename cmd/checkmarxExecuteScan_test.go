@@ -43,10 +43,12 @@ func (fi fileInfo) Sys() interface{} {
 }
 
 type systemMock struct {
-	response      interface{}
-	isIncremental bool
-	isPublic      bool
-	forceScan     bool
+	response         interface{}
+	isIncremental    bool
+	isPublic         bool
+	forceScan        bool
+	createProject    bool
+	projectLoadCount int
 }
 
 func (sys *systemMock) FilterPresetByName(presets []checkmarx.Preset, presetName string) checkmarx.Preset {
@@ -62,7 +64,11 @@ func (sys *systemMock) GetProjectByID(projectID int) (bool, checkmarx.Project) {
 	return true, checkmarx.Project{ID: 19, Name: "Test_PR-19", TeamID: "16", IsPublic: false}
 }
 func (sys *systemMock) GetProjectsByNameAndTeam(projectName, teamID string) []checkmarx.Project {
-	return []checkmarx.Project{checkmarx.Project{ID: 19, Name: projectName, TeamID: teamID, IsPublic: false}}
+	sys.projectLoadCount++
+	if !sys.createProject || sys.projectLoadCount%2 == 0 {
+		return []checkmarx.Project{checkmarx.Project{ID: 19, Name: projectName, TeamID: teamID, IsPublic: false}}
+	}
+	return []checkmarx.Project{}
 }
 func (sys *systemMock) FilterTeamByName(teams []checkmarx.Team, teamName string) checkmarx.Team {
 	return checkmarx.Team{ID: "16", FullName: "OpenSource/Cracks/16"}
@@ -116,6 +122,7 @@ func (sys *systemMock) GetProjects() []checkmarx.Project {
 	return []checkmarx.Project{checkmarx.Project{ID: 15, Name: "OtherTest", TeamID: "16"}, checkmarx.Project{ID: 1, Name: "Test", TeamID: "16"}}
 }
 func (sys *systemMock) GetTeams() []checkmarx.Team {
+	sys.projectLoadCount = 0
 	return []checkmarx.Team{checkmarx.Team{ID: "16", FullName: "OpenSource/Cracks/16"}, checkmarx.Team{ID: "15", FullName: "OpenSource/Cracks/15"}}
 }
 
@@ -292,11 +299,11 @@ func TestRunScan(t *testing.T) {
 	assert.NoError(t, err, "Unexpected error detected")
 	assert.Equal(t, false, sys.isIncremental, "isIncremental has wrong value")
 	assert.Equal(t, false, sys.isPublic, "isPublic has wrong value")
-	assert.Equal(t, false, sys.forceScan, "forceScan has wrong value")
+	assert.Equal(t, true, sys.forceScan, "forceScan has wrong value")
 }
 
 func TestRunScanWOtherCycle(t *testing.T) {
-	sys := &systemMock{response: []byte(`<?xml version="1.0" encoding="utf-8"?><CxXMLResults />`)}
+	sys := &systemMock{response: []byte(`<?xml version="1.0" encoding="utf-8"?><CxXMLResults />`), createProject: true}
 	options := checkmarxExecuteScanOptions{VulnerabilityThresholdUnit: "percentage", FullScanCycle: "3", Incremental: true, FullScansScheduled: true, Preset: "SAP_JS_Default", CheckmarxGroupID: "16", VulnerabilityThresholdEnabled: true, GeneratePdfReport: true}
 	workspace, err := ioutil.TempDir("", "workspace")
 	if err != nil {
@@ -311,12 +318,12 @@ func TestRunScanWOtherCycle(t *testing.T) {
 	assert.NoError(t, err, "Unexpected error detected")
 	assert.Equal(t, true, sys.isIncremental, "isIncremental has wrong value")
 	assert.Equal(t, false, sys.isPublic, "isPublic has wrong value")
-	assert.Equal(t, false, sys.forceScan, "forceScan has wrong value")
+	assert.Equal(t, true, sys.forceScan, "forceScan has wrong value")
 }
 
 func TestRunScanForPullRequest(t *testing.T) {
 	sys := &systemMock{response: []byte(`<?xml version="1.0" encoding="utf-8"?><CxXMLResults />`)}
-	options := checkmarxExecuteScanOptions{PullRequestName: "Test_PR-19", VulnerabilityThresholdUnit: "percentage", FullScanCycle: "3", Incremental: true, FullScansScheduled: true, Preset: "SAP_JS_Default", CheckmarxGroupID: "16", VulnerabilityThresholdEnabled: true, GeneratePdfReport: true}
+	options := checkmarxExecuteScanOptions{PullRequestName: "Test_PR-19", CheckmarxProject: "Test_PR-19", VulnerabilityThresholdUnit: "percentage", FullScanCycle: "3", Incremental: true, FullScansScheduled: true, Preset: "SAP_JS_Default", CheckmarxGroupID: "16", VulnerabilityThresholdEnabled: true, GeneratePdfReport: true, AvoidDuplicateProjectScans: false}
 	workspace, err := ioutil.TempDir("", "workspace")
 	if err != nil {
 		t.Fatal("Failed to create temporary workspace directory")
@@ -330,12 +337,12 @@ func TestRunScanForPullRequest(t *testing.T) {
 	assert.NoError(t, err, "Unexpected error detected")
 	assert.Equal(t, true, sys.isIncremental, "isIncremental has wrong value")
 	assert.Equal(t, false, sys.isPublic, "isPublic has wrong value")
-	assert.Equal(t, false, sys.forceScan, "forceScan has wrong value")
+	assert.Equal(t, true, sys.forceScan, "forceScan has wrong value")
 }
 
 func TestRunScanForPullRequestProjectNew(t *testing.T) {
-	sys := &systemMock{response: []byte(`<?xml version="1.0" encoding="utf-8"?><CxXMLResults />`)}
-	options := checkmarxExecuteScanOptions{PullRequestName: "OtherTest_PR-17", VulnerabilityThresholdUnit: "percentage", FullScanCycle: "3", Incremental: true, FullScansScheduled: true, Preset: "SAP_JS_Default", TeamName: "OpenSource/Cracks/15", VulnerabilityThresholdEnabled: true, GeneratePdfReport: true}
+	sys := &systemMock{response: []byte(`<?xml version="1.0" encoding="utf-8"?><CxXMLResults />`), createProject: true}
+	options := checkmarxExecuteScanOptions{PullRequestName: "PR-17", CheckmarxProject: "Test_PR-19", VulnerabilityThresholdUnit: "percentage", FullScanCycle: "3", Incremental: true, FullScansScheduled: true, Preset: "10048", TeamName: "OpenSource/Cracks/15", VulnerabilityThresholdEnabled: true, GeneratePdfReport: true}
 	workspace, err := ioutil.TempDir("", "workspace")
 	if err != nil {
 		t.Fatal("Failed to create temporary workspace directory")
@@ -349,7 +356,7 @@ func TestRunScanForPullRequestProjectNew(t *testing.T) {
 	assert.NoError(t, err, "Unexpected error detected")
 	assert.Equal(t, true, sys.isIncremental, "isIncremental has wrong value")
 	assert.Equal(t, false, sys.isPublic, "isPublic has wrong value")
-	assert.Equal(t, false, sys.forceScan, "forceScan has wrong value")
+	assert.Equal(t, true, sys.forceScan, "forceScan has wrong value")
 }
 
 func TestRunScanHighViolationPercentage(t *testing.T) {
@@ -374,7 +381,7 @@ func TestRunScanHighViolationPercentage(t *testing.T) {
 			</Result>
 		</Query>
 		</CxXMLResults>`)}
-		options := checkmarxExecuteScanOptions{VulnerabilityThresholdUnit: "percentage", VulnerabilityThresholdResult: "FAILURE", VulnerabilityThresholdHigh: "100", FullScanCycle: "10", FullScansScheduled: true, Preset: "10048", CheckmarxGroupID: "16", VulnerabilityThresholdEnabled: true, GeneratePdfReport: true}
+		options := checkmarxExecuteScanOptions{VulnerabilityThresholdUnit: "percentage", VulnerabilityThresholdResult: "FAILURE", VulnerabilityThresholdHigh: 100, FullScanCycle: "10", FullScansScheduled: true, Preset: "10048", CheckmarxGroupID: "16", VulnerabilityThresholdEnabled: true, GeneratePdfReport: true}
 		workspace, err := ioutil.TempDir("", "workspace")
 		if err != nil {
 			t.Fatal("Failed to create temporary workspace directory")
@@ -418,7 +425,7 @@ func TestRunScanHighViolationAbsolute(t *testing.T) {
 			</Result>
 		</Query>
 		</CxXMLResults>`)}
-		options := checkmarxExecuteScanOptions{VulnerabilityThresholdUnit: "absolute", VulnerabilityThresholdResult: "FAILURE", VulnerabilityThresholdLow: "1", FullScanCycle: "10", FullScansScheduled: true, Preset: "10048", CheckmarxGroupID: "16", VulnerabilityThresholdEnabled: true, GeneratePdfReport: true}
+		options := checkmarxExecuteScanOptions{VulnerabilityThresholdUnit: "absolute", VulnerabilityThresholdResult: "FAILURE", VulnerabilityThresholdLow: 1, FullScanCycle: "10", FullScansScheduled: true, Preset: "10048", CheckmarxGroupID: "16", VulnerabilityThresholdEnabled: true, GeneratePdfReport: true}
 		workspace, err := ioutil.TempDir("", "workspace")
 		if err != nil {
 			t.Fatal("Failed to create temporary workspace directory")
@@ -438,4 +445,98 @@ func TestRunScanHighViolationAbsolute(t *testing.T) {
 		return
 	}
 	t.Fatalf("process ran with err %v, want exit status 1", err)
+}
+
+func TestEnforceThresholds(t *testing.T) {
+	results := map[string]interface{}{}
+	results["High"] = map[string]int{}
+	results["Medium"] = map[string]int{}
+	results["Low"] = map[string]int{}
+
+	results["High"].(map[string]int)["NotFalsePositive"] = 10
+	results["Medium"].(map[string]int)["NotFalsePositive"] = 10
+	results["Low"].(map[string]int)["NotFalsePositive"] = 10
+	results["Low"].(map[string]int)["NotExploitable"] = 0
+	results["Low"].(map[string]int)["Confirmed"] = 0
+
+	results["High"].(map[string]int)["Issues"] = 10
+	results["Medium"].(map[string]int)["Issues"] = 10
+	results["Low"].(map[string]int)["Issues"] = 10
+
+	t.Run("percentage high violation", func(t *testing.T) {
+		options := checkmarxExecuteScanOptions{VulnerabilityThresholdUnit: "percentage", VulnerabilityThresholdHigh: 100, VulnerabilityThresholdEnabled: true}
+		insecure := enforceThresholds(options, results)
+
+		assert.Equal(t, true, insecure, "Expected results to be insecure but where not")
+	})
+
+	t.Run("absolute high violation", func(t *testing.T) {
+		options := checkmarxExecuteScanOptions{VulnerabilityThresholdUnit: "absolute", VulnerabilityThresholdHigh: 5, VulnerabilityThresholdEnabled: true}
+		insecure := enforceThresholds(options, results)
+
+		assert.Equal(t, true, insecure, "Expected results to be insecure but where not")
+	})
+
+	t.Run("percentage medium violation", func(t *testing.T) {
+		options := checkmarxExecuteScanOptions{VulnerabilityThresholdUnit: "percentage", VulnerabilityThresholdMedium: 100, VulnerabilityThresholdEnabled: true}
+		insecure := enforceThresholds(options, results)
+
+		assert.Equal(t, true, insecure, "Expected results to be insecure but where not")
+	})
+
+	t.Run("absolute medium violation", func(t *testing.T) {
+		options := checkmarxExecuteScanOptions{VulnerabilityThresholdUnit: "absolute", VulnerabilityThresholdMedium: 5, VulnerabilityThresholdEnabled: true}
+		insecure := enforceThresholds(options, results)
+
+		assert.Equal(t, true, insecure, "Expected results to be insecure but where not")
+	})
+
+	t.Run("percentage low violation", func(t *testing.T) {
+		options := checkmarxExecuteScanOptions{VulnerabilityThresholdUnit: "percentage", VulnerabilityThresholdLow: 100, VulnerabilityThresholdEnabled: true}
+		insecure := enforceThresholds(options, results)
+
+		assert.Equal(t, true, insecure, "Expected results to be insecure but where not")
+	})
+
+	t.Run("absolute low violation", func(t *testing.T) {
+		options := checkmarxExecuteScanOptions{VulnerabilityThresholdUnit: "absolute", VulnerabilityThresholdLow: 5, VulnerabilityThresholdEnabled: true}
+		insecure := enforceThresholds(options, results)
+
+		assert.Equal(t, true, insecure, "Expected results to be insecure but where not")
+	})
+
+	t.Run("percentage no violation", func(t *testing.T) {
+		options := checkmarxExecuteScanOptions{VulnerabilityThresholdUnit: "percentage", VulnerabilityThresholdLow: 0, VulnerabilityThresholdEnabled: true}
+		insecure := enforceThresholds(options, results)
+
+		assert.Equal(t, false, insecure, "Expected results to be insecure but where not")
+	})
+
+	t.Run("absolute no violation", func(t *testing.T) {
+		options := checkmarxExecuteScanOptions{VulnerabilityThresholdUnit: "absolute", VulnerabilityThresholdLow: 15, VulnerabilityThresholdMedium: 15, VulnerabilityThresholdHigh: 15, VulnerabilityThresholdEnabled: true}
+		insecure := enforceThresholds(options, results)
+
+		assert.Equal(t, false, insecure, "Expected results to be insecure but where not")
+	})
+}
+
+func TestLoadPreset(t *testing.T) {
+	sys := &systemMock{}
+	t.Run("resolve via code", func(t *testing.T) {
+		ok, preset := loadPreset(sys, "10048")
+		assert.Equal(t, true, ok, "Expected success but failed")
+		assert.Equal(t, 10048, preset.ID, "Expected result but got none")
+	})
+
+	t.Run("resolve via name", func(t *testing.T) {
+		ok, preset := loadPreset(sys, "SAP_JS_Default")
+		assert.Equal(t, true, ok, "Expected success but failed")
+		assert.Equal(t, "SAP_JS_Default", preset.Name, "Expected result but got none")
+	})
+
+	t.Run("error case", func(t *testing.T) {
+		ok, preset := loadPreset(sys, "")
+		assert.Equal(t, false, ok, "Expected error but succeeded")
+		assert.Equal(t, 0, preset.ID, "Expected result but got none")
+	})
 }

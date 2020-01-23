@@ -220,6 +220,9 @@ func setDefaultParameters(stepData *config.StepData) (bool, error) {
 			case "bool":
 				// ToDo: Check if default should be read from env
 				param.Default = "false"
+			case "int":
+				// ToDo: Check if default should be read from env
+				param.Default = "0"
 			case "[]string":
 				// ToDo: Check if default should be read from env
 				param.Default = "[]string{}"
@@ -236,6 +239,8 @@ func setDefaultParameters(stepData *config.StepData) (bool, error) {
 					boolVal = "true"
 				}
 				param.Default = boolVal
+			case "int":
+				param.Default = fmt.Sprintf("%v", param.Default)
 			case "[]string":
 				param.Default = fmt.Sprintf("[]string{\"%v\"}", strings.Join(getStringSliceFromInterface(param.Default), "\", \""))
 			default:
@@ -432,6 +437,8 @@ func flagType(paramType string) string {
 		theFlagType = "BoolVar"
 	case "string":
 		theFlagType = "StringVar"
+	case "int":
+		theFlagType = "IntVar"
 	case "[]string":
 		theFlagType = "StringSliceVar"
 	default:
