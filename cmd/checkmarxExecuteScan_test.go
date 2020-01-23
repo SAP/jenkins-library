@@ -234,9 +234,9 @@ func TestZipFolder(t *testing.T) {
 		// clean up tmp dir
 		defer os.RemoveAll(dir)
 
-		ioutil.WriteFile(filepath.Join(dir, "checkmarxExecuteScan.go"), []byte("cxnjckdsjhkjfz8izr"), 0700)
-		ioutil.WriteFile(filepath.Join(dir, "somepath", "checkmarxExecuteScan.txt"), []byte("0987654321"), 0700)
-		ioutil.WriteFile(filepath.Join(dir, "checkmarxExecuteScan_test.go"), []byte("123456789"), 0700)
+		ioutil.WriteFile(filepath.Join(dir, "checkmarxExecuteScan.go"), []byte{byte(1), byte(2), byte(3)}, 0700)
+		ioutil.WriteFile(filepath.Join(dir, "somepath", "checkmarxExecuteScan.txt"), []byte{byte(1), byte(2), byte(3)}, 0700)
+		ioutil.WriteFile(filepath.Join(dir, "checkmarxExecuteScan_test.go"), []byte{byte(1), byte(2), byte(3)}, 0700)
 
 		var zipFileMock bytes.Buffer
 		zipFolder(dir, &zipFileMock, []string{"!checkmarxExecuteScan_test.go", "**/*.txt", "**/checkmarxExecuteScan.go"})
