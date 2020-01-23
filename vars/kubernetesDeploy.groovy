@@ -33,7 +33,8 @@ void call(Map parameters = [:]) {
                 dockerImage: config.dockerImage,
                 dockerEnvVars: config.dockerEnvVars,
                 dockerOptions: config.dockerOptions,
-                dockerWorkspace: config.dockerWorkspace
+                dockerWorkspace: config.dockerWorkspace,
+                dockerVolumeBind: config.dockerVolumeBind
             ) {
                 def creds = []
                 if (config.kubeConfigFileCredentialsId) creds.add(file(credentialsId: config.kubeConfigFileCredentialsId, variable: 'PIPER_kubeConfig'))
