@@ -89,6 +89,7 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
+        mandatory: true
       - name: containerRegistryUser
         description: Username for container registry access - typically provided by the CI/CD environment.
         type: string

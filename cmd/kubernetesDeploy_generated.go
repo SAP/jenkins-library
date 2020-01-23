@@ -95,6 +95,7 @@ func addKubernetesDeployFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVar(&myKubernetesDeployOptions.TillerNamespace, "tillerNamespace", os.Getenv("PIPER_tillerNamespace"), "Defines optional tiller namespace for deployments using helm.")
 
 	cmd.MarkFlagRequired("chartPath")
+	cmd.MarkFlagRequired("containerRegistryUrl")
 	cmd.MarkFlagRequired("deploymentName")
 	cmd.MarkFlagRequired("deployTool")
 	cmd.MarkFlagRequired("image")
@@ -151,7 +152,7 @@ func kubernetesDeployMetadata() config.StepData {
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
-						Mandatory:   false,
+						Mandatory:   true,
 						Aliases:     []config.Alias{{Name: "dockerRegistryUrl"}},
 					},
 					{
