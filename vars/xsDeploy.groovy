@@ -29,17 +29,6 @@ enum DeployMode {
     }
 }
 
-enum Action {
-    RESUME,
-    ABORT,
-    RETRY,
-    NONE
-
-    String toString() {
-        name().toLowerCase(Locale.ENGLISH)
-    }
-}
-
 void call(Map parameters = [:]) {
 
     handlePipelineStepErrors (stepName: STEP_NAME, stepParameters: parameters) {
@@ -100,7 +89,6 @@ void call(Map parameters = [:]) {
 
             Map options = getOptions(parameters, projectConfig, contextConfig, script.commonPipelineEnvironment)
 
-            Action action = options.action
             DeployMode mode = options.mode
 
             if(parameters.verbose) {
@@ -180,7 +168,7 @@ String joinAndQuote(List l, String prefix = '') {
 */
 Map getOptions(Map parameters, Map projectConfig, Map contextConfig, def cpe) {
 
-    Set configKeys = ['docker', 'mode', 'action', 'dockerImage', 'dockerPullImage']
+    Set configKeys = ['docker', 'mode', 'dockerImage', 'dockerPullImage']
     Map config = ConfigurationHelper.newInstance(this)
         .loadStepDefaults()
         .mixinGeneralConfig(cpe, configKeys)
@@ -192,7 +180,6 @@ Map getOptions(Map parameters, Map projectConfig, Map contextConfig, def cpe) {
     def dockerImage = config.dockerImage ?: (projectConfig.dockerImage ?: (config.docker?.dockerImage ?: contextConfig.dockerImage))
     def dockerPullImage =  config.dockerPullImage ?: (projectConfig.dockerPullImage ?: (config.docker?.dockerPullImage ?: contextConfig.dockerPullImage))
     def mode = config.mode ?: projectConfig.mode
-    def action = config.action ?: projectConfig.action
 
-    [dockerImage: dockerImage, dockerPullImage: dockerPullImage, mode: mode, action: action]
+    [dockerImage: dockerImage, dockerPullImage: dockerPullImage, mode: mode]
 }
