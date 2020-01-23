@@ -18,17 +18,6 @@ import groovy.transform.Field
 @Field String METADATA_FOLDER = '.pipeline' // metadata file contains already the "metadata" folder level, hence we end up in a folder ".pipeline/metadata"
 @Field String ADDITIONAL_CONFIGS_FOLDER='.pipeline/additionalConfigs'
 
-
-enum DeployMode {
-    DEPLOY,
-    BG_DEPLOY,
-    NONE
-
-    String toString() {
-        name().toLowerCase(Locale.ENGLISH).replaceAll('_', '-')
-    }
-}
-
 void call(Map parameters = [:]) {
 
     handlePipelineStepErrors (stepName: STEP_NAME, stepParameters: parameters) {
@@ -88,8 +77,6 @@ void call(Map parameters = [:]) {
             Map contextConfig = readJSON (text: sh(returnStdout: true, script: contextConfigScript))
 
             Map options = getOptions(parameters, projectConfig, contextConfig, script.commonPipelineEnvironment)
-
-            DeployMode mode = options.mode
 
             if(parameters.verbose) {
                 echo "[INFO] ContextConfig: ${contextConfig}"
@@ -168,7 +155,7 @@ String joinAndQuote(List l, String prefix = '') {
 */
 Map getOptions(Map parameters, Map projectConfig, Map contextConfig, def cpe) {
 
-    Set configKeys = ['docker', 'mode', 'dockerImage', 'dockerPullImage']
+    Set configKeys = ['docker', 'dockerImage', 'dockerPullImage']
     Map config = ConfigurationHelper.newInstance(this)
         .loadStepDefaults()
         .mixinGeneralConfig(cpe, configKeys)
@@ -179,7 +166,6 @@ Map getOptions(Map parameters, Map projectConfig, Map contextConfig, def cpe) {
 
     def dockerImage = config.dockerImage ?: (projectConfig.dockerImage ?: (config.docker?.dockerImage ?: contextConfig.dockerImage))
     def dockerPullImage =  config.dockerPullImage ?: (projectConfig.dockerPullImage ?: (config.docker?.dockerPullImage ?: contextConfig.dockerPullImage))
-    def mode = config.mode ?: projectConfig.mode
 
-    [dockerImage: dockerImage, dockerPullImage: dockerPullImage, mode: mode]
+    [dockerImage: dockerImage, dockerPullImage: dockerPullImage]
 }
