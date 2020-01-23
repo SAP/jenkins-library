@@ -30,9 +30,14 @@ func TestTriggerPull(t *testing.T) {
 			Password:          "testPassword",
 		}
 
-		uri, token, _ := triggerPull(config, "https://api.endpoint.com/Entity/", "MY_USER", "MY_PASSWORD", client)
-		assert.Equal(t, uriExpected, uri)
-		assert.Equal(t, tokenExpected, token)
+		con := connectionDetailsHTTP{
+			User:     "MY_USER",
+			Password: "MY_PW",
+			URL:      "https://api.endpoint.com/Entity/",
+		}
+		entityConnection, _ := triggerPull(config, con, client)
+		assert.Equal(t, uriExpected, entityConnection.URL)
+		assert.Equal(t, tokenExpected, entityConnection.XCsrfToken)
 	})
 
 }
@@ -58,7 +63,13 @@ func TestPollEntity(t *testing.T) {
 			Password:          "testPassword",
 		}
 
-		status, _ := pollEntity(config, "https://api.endpoint.com/Entity/123", "MY_USER", "MY_PASSWORD", "myToken", client, 0)
+		con := connectionDetailsHTTP{
+			User:       "MY_USER",
+			Password:   "MY_PW",
+			URL:        "https://api.endpoint.com/Entity/",
+			XCsrfToken: "MY_TOKEN",
+		}
+		status, _ := pollEntity(config, con, client, 0)
 		assert.Equal(t, "S", status)
 	})
 
@@ -81,7 +92,13 @@ func TestPollEntity(t *testing.T) {
 			Password:          "testPassword",
 		}
 
-		status, _ := pollEntity(config, "https://api.endpoint.com/Entity/123", "MY_USER", "MY_PASSWORD", "myToken", client, 0)
+		con := connectionDetailsHTTP{
+			User:       "MY_USER",
+			Password:   "MY_PW",
+			URL:        "https://api.endpoint.com/Entity/",
+			XCsrfToken: "MY_TOKEN",
+		}
+		status, _ := pollEntity(config, con, client, 0)
 		assert.Equal(t, "E", status)
 	})
 
@@ -116,7 +133,7 @@ func TestGetAbapCommunicationArrangementInfo(t *testing.T) {
 
 	t.Run("Test cf cli command: success case", func(t *testing.T) {
 
-		r := &MockExecRunner{}
+		r := &mockExecRunner{}
 		config := abapEnvironmentPullGitRepoOptions{
 			CfAPIEndpoint:     "https://api.endpoint.com",
 			CfOrg:             "testOrg",
@@ -135,7 +152,7 @@ func TestGetAbapCommunicationArrangementInfo(t *testing.T) {
 
 	t.Run("Test cf cli command: params missing", func(t *testing.T) {
 
-		r := &MockExecRunner{}
+		r := &mockExecRunner{}
 		config := abapEnvironmentPullGitRepoOptions{
 			CfAPIEndpoint:     "https://api.endpoint.com",
 			CfOrg:             "testOrg",
@@ -145,29 +162,29 @@ func TestGetAbapCommunicationArrangementInfo(t *testing.T) {
 			Password:          "testPassword",
 		}
 
-		var _, _, _, err = getAbapCommunicationArrangementInfo(config, r)
+		var _, err = getAbapCommunicationArrangementInfo(config, r)
 		assert.Equal(t, "Parameters missing. Please provide EITHER the Host of the ABAP server OR the Cloud Foundry ApiEndpoint, Organization, Space, Service Instance and a corresponding Service Key for the Communication Scenario SAP_COM_0510", err.Error(), "Expected error message")
 	})
 
 	t.Run("Test cf cli command: params missing", func(t *testing.T) {
 
-		r := &MockExecRunner{}
+		r := &mockExecRunner{}
 		config := abapEnvironmentPullGitRepoOptions{
 			User:     "testUser",
 			Password: "testPassword",
 		}
 
-		var _, _, _, err = getAbapCommunicationArrangementInfo(config, r)
+		var _, err = getAbapCommunicationArrangementInfo(config, r)
 		assert.Equal(t, "Parameters missing. Please provide EITHER the Host of the ABAP server OR the Cloud Foundry ApiEndpoint, Organization, Space, Service Instance and a corresponding Service Key for the Communication Scenario SAP_COM_0510", err.Error(), "Expected error message")
 	})
 
 }
 
-type MockExecRunner struct {
+type mockExecRunner struct {
 	logs []string
 }
 
-func (runner *MockExecRunner) run(script string) ([]byte, error) {
+func (runner *mockExecRunner) run(script string) ([]byte, error) {
 
 	myString := script
 	runner.logs = append(runner.logs, myString)
