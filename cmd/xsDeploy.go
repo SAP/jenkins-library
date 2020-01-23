@@ -259,6 +259,9 @@ func runXsDeploy(XsDeployOptions xsDeployOptions, s shellRunner,
 
 	if err == nil && (mode == BGDeploy && action == None) {
 		XsDeployOptions.OperationID = retrieveOperationID(o, XsDeployOptions.OperationIDLogPattern)
+		if len(XsDeployOptions.OperationID) == 0 {
+			err = errors.New("No operationID found")
+		}
 	}
 
 	if err != nil {

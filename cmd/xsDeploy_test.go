@@ -159,10 +159,12 @@ func TestDeploy(t *testing.T) {
 
 	t.Run("BG deploy succeeds", func(t *testing.T) {
 
+		s.RegisterStdout("Use \"xs bg-deploy -i 1234 -a resume\" to resume the process.\n")
 		defer func() {
 			copiedFiles = nil
 			removedFiles = nil
 			s.calls = nil
+			s.RegisterStdout("")
 		}()
 
 		oldMode := myXsDeployOptions.Mode
@@ -179,6 +181,28 @@ func TestDeploy(t *testing.T) {
 		assert.Contains(t, s.calls[0], "xs login")
 		assert.Contains(t, s.calls[1], "xs bg-deploy dummy.mtar --dummy-deploy-opts")
 		assert.Len(t, s.calls, 2) // There are two entries --> no logout in this case.
+	})
+
+	t.Run("BG deploy fails, missing operationID", func(t *testing.T) {
+
+		s.RegisterStdout("There is no operationID ...\n")
+		defer func() {
+			copiedFiles = nil
+			removedFiles = nil
+			s.calls = nil
+			s.RegisterStdout("")
+		}()
+
+		oldMode := myXsDeployOptions.Mode
+
+		defer func() {
+			myXsDeployOptions.Mode = oldMode
+		}()
+
+		myXsDeployOptions.Mode = "BG_DEPLOY"
+
+		e := runXsDeploy(myXsDeployOptions, &s, fExists, fCopy, fRemove, ioutil.Discard)
+		checkErr(t, e, "No operationID found")
 	})
 
 	t.Run("BG deploy abort succeeds", func(t *testing.T) {
