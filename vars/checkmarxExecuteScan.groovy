@@ -42,5 +42,9 @@ void call(Map parameters = [:]) {
                 sh "./piper checkmarxExecuteScan"
             }
         }
+        archiveArtifacts artifacts: "**/CxSASTResults_*.xml", allowEmptyArchive: true
+
+        if (config.generatePdfReport)
+            archiveArtifacts artifacts: "**/CxSASTReport_*.pdf", allowEmptyArchive: false
     }
 }

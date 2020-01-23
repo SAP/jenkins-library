@@ -136,12 +136,12 @@ func triggerScan(config checkmarxExecuteScanOptions, sys checkmarx.System, proje
 
 		log.Entry().Debugln("Scan finished")
 		if config.GeneratePdfReport {
-			downloadAndSaveReport(sys, workspace, scan)
+			downloadAndSaveReport(sys, createReportBaseName(workspace, "CxSASTReport_%v.pdf"), scan)
 		} else {
 			log.Entry().Debug("Report generation is disabled via configuration")
 		}
 
-		results := getDetailedResults(sys, scan.ID)
+		results := getDetailedResults(sys, createReportBaseName(workspace, "CxSASTResults_%v.xml"), scan.ID)
 		reportToInflux(results, influx)
 
 		insecure := false
@@ -160,6 +160,12 @@ func triggerScan(config checkmarxExecuteScanOptions, sys checkmarx.System, proje
 	} else {
 		log.Entry().Fatalf("Cannot scan project %v", project.Name)
 	}
+}
+
+func createReportBaseName(workspace, reportFileNameTemplate string) string {
+	regExpFileName := regexp.MustCompile(`[^\w\d]`)
+	timeStamp, _ := time.Now().Local().MarshalText()
+	return filepath.Join(workspace, fmt.Sprintf(reportFileNameTemplate, regExpFileName.ReplaceAllString(string(timeStamp), "_")))
 }
 
 func pollScanStatus(sys checkmarx.System, scan checkmarx.Scan) {
@@ -233,10 +239,7 @@ func reportToInflux(results map[string]interface{}, influx *checkmarxExecuteScan
 	influx.checkmarx_data.fields.report_creation_time = results["ReportCreationTime"].(string)
 }
 
-func downloadAndSaveReport(sys checkmarx.System, workspace string, scan checkmarx.Scan) {
-	regExpFileName := regexp.MustCompile(`[^\w\d]`)
-	timeStamp, _ := time.Now().Local().MarshalText()
-	reportFileName := filepath.Join(workspace, fmt.Sprintf("CxSASTReport_%v.pdf", regExpFileName.ReplaceAllString(string(timeStamp), "_")))
+func downloadAndSaveReport(sys checkmarx.System, reportFileName string, scan checkmarx.Scan) {
 	ok, report := generateAndDownloadReport(sys, scan.ID, "PDF")
 	if ok {
 		log.Entry().Debugf("Saving report to file %v...", reportFileName)
@@ -402,10 +405,11 @@ func getNumCoherentIncrementalScans(sys checkmarx.System, projectID int) int {
 	return count
 }
 
-func getDetailedResults(sys checkmarx.System, scanID int) map[string]interface{} {
+func getDetailedResults(sys checkmarx.System, reportFileName string, scanID int) map[string]interface{} {
 	resultMap := map[string]interface{}{}
 	ok, data := generateAndDownloadReport(sys, scanID, "XML")
 	if ok && len(data) > 0 {
+		ioutil.WriteFile(reportFileName, data, 0700)
 		var xmlResult checkmarx.DetailedResult
 		err := xml.Unmarshal(data, &xmlResult)
 		if err != nil {

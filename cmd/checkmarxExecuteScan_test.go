@@ -273,7 +273,13 @@ func TestGetDetailedResults(t *testing.T) {
 			</Result>
 		</Query>
 		</CxXMLResults>`)}
-		result := getDetailedResults(sys, 2635)
+		dir, err := ioutil.TempDir("", "")
+		if err != nil {
+			t.Fatal("Failed to create temporary directory")
+		}
+		// clean up tmp dir
+		defer os.RemoveAll(dir)
+		result := getDetailedResults(sys, filepath.Join(dir, "abc.xml"), 2635)
 		assert.Equal(t, "2", result["ProjectId"], "Project ID incorrect")
 		assert.Equal(t, "Project 1", result["ProjectName"], "Project name incorrect")
 		assert.Equal(t, 2, result["High"].(map[string]int)["Issues"], "Number of High issues incorrect")
