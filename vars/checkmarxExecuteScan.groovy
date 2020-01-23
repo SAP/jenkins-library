@@ -39,7 +39,7 @@ void call(Map parameters = [:]) {
                 passwordVariable: 'PIPER_password',
                 usernameVariable: 'PIPER_username'
             )]) {
-                sh "./piper checkmarxExecuteScan"
+                sh "./piper checkmarxExecuteScan --verbose ${config.verbose}"
             }
         }
         archiveArtifacts artifacts: "**/CxSASTResults_*.xml", allowEmptyArchive: true

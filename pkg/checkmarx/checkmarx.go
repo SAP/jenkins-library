@@ -16,6 +16,7 @@ import (
 
 	piperHttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
@@ -260,7 +261,7 @@ func sendRequestInternal(sys *SystemInstance, method, url string, body io.Reader
 		}
 	}
 
-	if contains(validResponseCodeList, response.StatusCode) {
+	if piperutils.ContainsInt(validResponseCodeList, response.StatusCode) {
 		data, _ := ioutil.ReadAll(response.Body)
 		sys.logger.Debugf("Valid response body: %v", string(data))
 		defer response.Body.Close()
@@ -269,15 +270,6 @@ func sendRequestInternal(sys *SystemInstance, method, url string, body io.Reader
 	sys.recordRequestDetailsInErrorCase(requestBodyCopy, response)
 	sys.logger.Errorf("HTTP request failed with error %s", response.Status)
 	return nil, errors.Errorf("Invalid HTTP status %v with with code %v received", response.Status, response.StatusCode)
-}
-
-func contains(s []int, e int) bool {
-	for _, a := range s {
-		if a == e {
-			return true
-		}
-	}
-	return false
 }
 
 func (sys *SystemInstance) recordRequestDetailsInErrorCase(requestBody io.Reader, response *http.Response) {
