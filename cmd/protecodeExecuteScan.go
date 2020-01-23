@@ -154,6 +154,7 @@ func writeToTar(fileDir string,
 
 	// True if the file is a symlink.
 	if info.Mode()&os.ModeSymlink != 0 {
+		log.Entry().Infof("Resolve Symlink %v, FileInfo: %v", info.Name(), info)
 		readCloser, err := client.ResolveSymLink("GET", info.Name())
 		if err != nil {
 			return err
