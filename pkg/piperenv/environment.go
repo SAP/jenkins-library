@@ -4,6 +4,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/SAP/jenkins-library/pkg/log"
 )
@@ -58,5 +59,5 @@ func readFromDisk(filename string) string {
 	if err != nil {
 		val = ""
 	}
-	return val
+	return strings.TrimSpace(val)
 }

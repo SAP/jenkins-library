@@ -123,3 +123,20 @@ static String downloadSettingsFromUrl(script, String url, String targetFile = 's
     script.writeFile(file: targetFile, text: settings.getContent())
     return targetFile
 }
+
+/*
+ * Uses the Maven Help plugin to evaluate the given expression into the resolved values
+ * that maven sees at / generates at runtime. This way, the exact Maven coordinates and
+ * variables can be used.
+ */
+static String evaluateFromMavenPom(Script script, String pomFileName, String pomPathExpression) {
+
+    String resolvedExpression = script.mavenExecute(
+        script: script,
+        pomPath: pomFileName,
+        goals: 'org.apache.maven.plugins:maven-help-plugin:3.1.0:evaluate',
+        defines: "-Dexpression=$pomPathExpression -DforceStdout -q",
+        returnStdout: true
+    )
+    return resolvedExpression
+}
