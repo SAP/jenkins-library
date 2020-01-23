@@ -76,12 +76,12 @@ void call(Map parameters = [:]) {
             Map projectConfig = readJSON (text: sh(returnStdout: true, script: projectConfigScript))
             Map contextConfig = readJSON (text: sh(returnStdout: true, script: contextConfigScript))
 
-            Map options = getOptions(parameters, projectConfig, contextConfig, script.commonPipelineEnvironment)
-
             if(parameters.verbose) {
                 echo "[INFO] ContextConfig: ${contextConfig}"
                 echo "[INFO] ProjectConfig: ${projectConfig}"
             }
+
+            Map dockerOptions = getDockerOptions(parameters, projectConfig, contextConfig, script.commonPipelineEnvironment)
 
             lock(getLockIdentifier(projectConfig)) {
 
@@ -90,7 +90,7 @@ void call(Map parameters = [:]) {
                         passwordVariable: 'PASSWORD',
                         usernameVariable: 'USERNAME')]) {
 
-                    dockerExecute([script: this].plus([dockerImage: options.dockerImage, dockerPullImage: options.dockerPullImage])) {
+                    dockerExecute([script: this].plus([dockerImage: dockerOptions.dockerImage, dockerPullImage: dockerOptions.dockerPullImage])) {
                         sh returnStdout: true, script: """#!/bin/bash
                         ./piper xsDeploy --defaultConfig ${configFiles} --user \${USERNAME} --password \${PASSWORD}
                         """
@@ -153,7 +153,7 @@ String joinAndQuote(List l, String prefix = '') {
    3.) project config (nested inside docker node)
    4.) context config (if applicable (docker))
 */
-Map getOptions(Map parameters, Map projectConfig, Map contextConfig, def cpe) {
+Map getDockerOptions(Map parameters, Map projectConfig, Map contextConfig, def cpe) {
 
     Set configKeys = ['docker', 'dockerImage', 'dockerPullImage']
     Map config = ConfigurationHelper.newInstance(this)
