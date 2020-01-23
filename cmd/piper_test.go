@@ -32,6 +32,7 @@ type shellMockRunner struct {
 	stdout         io.Writer
 	stderr         io.Writer
 	shouldFailWith error
+	stdoutResponse string
 }
 
 func (m *execMockRunner) Dir(d string) {
@@ -64,9 +65,18 @@ func (m *shellMockRunner) RunShell(s string, c string) error {
 	if m.shouldFailWith != nil {
 		return m.shouldFailWith
 	}
+
+	if len(m.stdoutResponse) > 0 {
+		m.stdout.Write([]byte(m.stdoutResponse))
+	}
+
 	m.shell = append(m.shell, s)
 	m.calls = append(m.calls, c)
 	return nil
+}
+
+func (m *shellMockRunner) RegisterStdout(expected string) {
+	m.stdoutResponse = expected
 }
 
 func (m *shellMockRunner) Stdout(out io.Writer) {
