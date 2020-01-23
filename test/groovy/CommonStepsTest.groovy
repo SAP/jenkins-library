@@ -229,6 +229,7 @@ public class CommonStepsTest extends BasePiperTest{
 
         def whitelist = [
             'durationMeasure',
+            'mavenExecute'
             ]
 
         for(def step in getSteps()) {
