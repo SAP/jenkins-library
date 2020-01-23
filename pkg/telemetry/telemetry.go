@@ -2,6 +2,7 @@ package telemetry
 
 import (
 	"fmt"
+	"os"
 	"time"
 
 	"net/http"
@@ -47,7 +48,9 @@ func Initialize(telemetryActive bool, getResourceParameter func(rootPath, resour
 		SiteID:     siteID,
 		//GitOwner:      gitOwner,
 		//GitRepository: gitRepository,
-		StepName: stepName,
+		StepName:        stepName,
+		PipelineURLSha1: os.Getenv("JOB_URL"),
+		BuildURLSha1:    os.Getenv("BUILD_URL"),
 		//GitPathSha1:   fmt.Sprintf("%x", sha1.Sum([]byte(gitPath))),
 
 		// ToDo: add further params
