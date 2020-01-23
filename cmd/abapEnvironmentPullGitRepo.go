@@ -48,7 +48,7 @@ func pollEntity(config abapEnvironmentPullGitRepoOptions, connectionDetails conn
 	var status string = "R"
 
 	for {
-		var resp, err = getHttpResponse("GET", connectionDetails, nil, client)
+		var resp, err = getHTTPResponse("GET", connectionDetails, nil, client)
 		defer resp.Body.Close()
 		if err != nil {
 			log.Entry().WithField("StatusCode", resp.Status).WithField("repositoryName", config.RepositoryName).Error("Could not pull the Repository / Software Component")
@@ -84,7 +84,7 @@ func triggerPull(config abapEnvironmentPullGitRepoOptions, pullConnectionDetails
 	log.Entry().WithField("ABAP Endpoint", pullConnectionDetails.URL).Info("Calling the ABAP System...")
 	log.Entry().Info("Trying to authenticate on the ABAP system...")
 
-	var resp, err = getHttpResponse("HEAD", pullConnectionDetails, nil, client)
+	var resp, err = getHTTPResponse("HEAD", pullConnectionDetails, nil, client)
 	defer resp.Body.Close()
 	if err != nil {
 		log.Entry().WithField("StatusCode", resp.Status).Error("Authentication failed")
@@ -98,7 +98,7 @@ func triggerPull(config abapEnvironmentPullGitRepoOptions, pullConnectionDetails
 	var jsonBody = []byte(`{"sc_name":"` + config.RepositoryName + `"}`)
 	log.Entry().WithField("repositoryName", config.RepositoryName).Info("Pulling Repository / Software Component")
 
-	resp, err = getHttpResponse("POST", pullConnectionDetails, jsonBody, client)
+	resp, err = getHTTPResponse("POST", pullConnectionDetails, jsonBody, client)
 	defer resp.Body.Close()
 	if err != nil {
 		log.Entry().WithField("StatusCode", resp.Status).WithField("repositoryName", config.RepositoryName).Error("Could not pull the Repository / Software Component")
@@ -115,7 +115,7 @@ func triggerPull(config abapEnvironmentPullGitRepoOptions, pullConnectionDetails
 		var err = errors.New("Request to ABAP System not successful")
 		return uriConnectionDetails, err
 	}
-	uriConnectionDetails.URL = body.D.Metadata.Uri
+	uriConnectionDetails.URL = body.D.Metadata.URI
 	return uriConnectionDetails, nil
 }
 
@@ -141,7 +141,7 @@ func getAbapCommunicationArrangementInfo(config abapEnvironmentPullGitRepoOption
 			log.Entry().Error(error)
 			return connectionDetails, error
 		}
-		connectionDetails.URL = abapServiceKey.Url + "/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY/Pull"
+		connectionDetails.URL = abapServiceKey.URL + "/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY/Pull"
 		connectionDetails.User = abapServiceKey.Abap.Username
 		connectionDetails.Password = abapServiceKey.Abap.Password
 	}
@@ -176,7 +176,7 @@ func readCfServiceKey(config abapEnvironmentPullGitRepoOptions, r runner) (servi
 	return abapServiceKey, error
 }
 
-func getHttpResponse(requestType string, connectionDetails connectionDetailsHTTP, body []byte, client httpClient) (*http.Response, error) {
+func getHTTPResponse(requestType string, connectionDetails connectionDetailsHTTP, body []byte, client httpClient) (*http.Response, error) {
 
 	req, _ := http.NewRequest(requestType, connectionDetails.URL, bytes.NewBuffer(body))
 	req.Header.Add("x-csrf-token", connectionDetails.XCsrfToken)
@@ -216,42 +216,42 @@ type abapResponse struct {
 }
 
 type abapEntity struct {
-	Metadata         abapMetadata `json:"__metadata"`
-	Uuid             string
-	ScName           string `json:"sc_name"`
-	Namespace        string
-	Status           string
-	StatusDescr      string   `json:"status_descr"`
-	To_Execution_log deferred `json:"__deferred"`
-	To_Transport_log deferred
+	Metadata       abapMetadata `json:"__metadata"`
+	UUID           string
+	ScName         string `json:"sc_name"`
+	Namespace      string
+	Status         string
+	StatusDescr    string   `json:"status_descr"`
+	ToExecutionLog deferred `json:"to_Execution_log"`
+	ToTransportLog deferred `json:"to_Transport_log"`
 }
 
 type abapMetadata struct {
-	Uri string
+	URI string
 }
 
 type serviceKey struct {
 	Abap     abapConenction
 	Binding  abapBinding
 	Systemid string
-	Url      string
+	URL      string
 }
 
 type deferred struct {
-	Uri string
+	URI string
 }
 
 type abapConenction struct {
-	Communication_arrangement_id string
-	Communication_scenario_id    string
-	Communication_system_id      string
-	Password                     string
-	Username                     string
+	CommunicationArrangementId string `json:"communication_arrangement_id"`
+	CommunicationScenarioId    string `json:"communication_scenario_id"`
+	CommunicationSystemId      string `json:"communication_system_id"`
+	Password                   string
+	Username                   string
 }
 
 type abapBinding struct {
 	Env     string
-	Id      string
+	ID      string
 	Type    string
 	Tersion string
 }
