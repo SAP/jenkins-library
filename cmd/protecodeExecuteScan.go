@@ -15,8 +15,6 @@ import (
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/protecode"
-	dchClient "github.com/docker/docker-credential-helpers/client"
-	"github.com/docker/docker-credential-helpers/credentials"
 )
 
 func protecodeExecuteScan(config protecodeExecuteScanOptions, cpEnvironment *protecodeExecuteScanCommonPipelineEnvironment, influx *protecodeExecuteScanInflux) error {
@@ -33,17 +31,9 @@ func runProtecodeScan(config *protecodeExecuteScanOptions, cpEnvironment *protec
 	//create client for sending api request
 	client := createClient(config)
 
-	err := handleDockerCredentials(config)
-	if err != nil {
-		log.Entry().Fatalf("Exception during the handling of the credentials %v", err)
-	}
 	fileName, err := getDockerImage(config, cpEnvironment)
 	if err != nil {
 		log.Entry().Fatalf("Exception during getting the image %v", err)
-	}
-	err = cleanupDockerCredentials(config)
-	if err != nil {
-		log.Entry().Fatalf("Exception during the cleanup of the credentials %v", err)
 	}
 	parsedResult, productId, err := executeProtecodeScan(client, config, fileName, writeReportToFile)
 	if err != nil {
@@ -58,51 +48,6 @@ func runProtecodeScan(config *protecodeExecuteScanOptions, cpEnvironment *protec
 	err = os.Remove(config.FilePath)
 	if err != nil {
 		log.Entry().WithError(err).Warnf("Failed to delete tar source code")
-	}
-
-	return nil
-}
-
-func handleDockerCredentials(config *protecodeExecuteScanOptions) error {
-
-	if len(config.DockerUser) > 0 && len(config.DockerPassword) > 0 {
-		//create config file
-		f, err := os.Create("~/.docker/config.json")
-		if err == nil {
-			defer f.Close()
-			_, err = f.WriteString(`{\n"credsStore": "secretservice"\n}`)
-			if err != nil {
-				log.Entry().Fatalf("Exception during writing the credentials store configuration %v", err)
-			}
-
-			p := dchClient.NewShellProgramFunc("docker-credential-secretservice")
-
-			c := &credentials.Credentials{
-				ServerURL: config.DockerRegistryURL,
-				Username:  config.DockerUser,
-				Secret:    config.DockerPassword,
-			}
-
-			//add credentials
-			if err := dchClient.Store(p, c); err != nil {
-				if err := dchClient.Erase(p, config.DockerRegistryURL); err != nil {
-					log.Entry().Fatalf("Exception during erase the credentials %v", err)
-				}
-				log.Entry().Fatalf("Exception during store the credentials %v", err)
-			}
-		}
-	}
-
-	return nil
-}
-
-func cleanupDockerCredentials(config *protecodeExecuteScanOptions) error {
-	if len(config.DockerUser) > 0 && len(config.DockerPassword) > 0 {
-		p := dchClient.NewShellProgramFunc("docker-credential-secretservice")
-
-		if err := dchClient.Erase(p, config.DockerRegistryURL); err != nil {
-			log.Entry().Fatalf("Exception during erase the credentials %v", err)
-		}
 	}
 
 	return nil
@@ -218,12 +163,10 @@ func executeProtecodeScan(client protecode.Protecode, config *protecodeExecuteSc
 
 	var parsedResult map[string]int = make(map[string]int)
 	//load existing product by filename
-	productId, err := client.LoadExistingProduct(config.ProtecodeGroup, config.FilePath, config.ReuseExisting)
-	if err != nil {
-		return parsedResult, productId, err
-	}
+	productId := client.LoadExistingProduct(config.ProtecodeGroup, config.FilePath, config.ReuseExisting)
+
 	// check if no existing is found or reuse existing is false
-	productId, err = uploadScanOrDeclareFetch(*config, productId, client, fileName)
+	productId, err := uploadScanOrDeclareFetch(*config, productId, client, fileName)
 	if err != nil {
 		return parsedResult, productId, err
 	}
@@ -231,31 +174,24 @@ func executeProtecodeScan(client protecode.Protecode, config *protecodeExecuteSc
 		return parsedResult, productId, errors.New(fmt.Sprintf("Protecode scan failed, the product id is not valid (product id %v <= zero)", productId))
 	}
 	//pollForResult
-	result, err := client.PollForResult(productId, config.Verbose)
-	if err != nil {
-		return parsedResult, productId, err
-	}
+	result := client.PollForResult(productId, config.Verbose)
+
 	//check if result is ok else notify
 	if len(result.Status) > 0 && result.Status == "F" {
 		log.Entry().Fatal("Protecode scan failed, please check the log and protecode backend for more details.")
 		return parsedResult, productId, errors.New("Protecode scan failed, please check the log and protecode backend for more details.")
 	}
 	//loadReport
-	resp, err := client.LoadReport(config.ReportFileName, productId)
-	if err != nil {
-		log.Entry().Fatal("Protecode scan failed, please check the log and protecode backend for more details.")
-		return parsedResult, productId, err
-	}
+	resp := client.LoadReport(config.ReportFileName, productId)
+
 	//save report to filesystem
 	err = writeReportToFile(*resp, config.ReportFileName)
 	if err != nil {
 		return parsedResult, productId, err
 	}
 	//clean scan from server
-	err = client.DeleteScan(config.CleanupMode, productId)
-	if err != nil {
-		return parsedResult, productId, err
-	}
+	client.DeleteScan(config.CleanupMode, productId)
+
 	//count vulnerabilities
 	parsedResult = client.ParseResultForInflux(result, config.ProtecodeExcludeCVEs)
 
@@ -315,10 +251,7 @@ func uploadScanOrDeclareFetch(config protecodeExecuteScanOptions, productId int,
 	if productId <= 0 || !config.ReuseExisting {
 		if len(config.FetchURL) > 0 {
 			fmt.Printf("triggering Protecode scan - url: %v, group: %v", config.FetchURL, config.ProtecodeGroup)
-			resultData, err := client.DeclareFetchUrl(config.CleanupMode, config.ProtecodeGroup, config.FetchURL)
-			if err != nil {
-				return -1, err
-			}
+			resultData := client.DeclareFetchUrl(config.CleanupMode, config.ProtecodeGroup, config.FetchURL)
 			log.Entry().Infof("Protecode scan declare fetch url result: %v", resultData)
 			productId = resultData.ProductId
 
@@ -327,10 +260,7 @@ func uploadScanOrDeclareFetch(config protecodeExecuteScanOptions, productId int,
 				return -1, errors.New(fmt.Sprintf("Protecode scan failed, there is no file path configured for upload : %v", config.FilePath))
 			}
 			fmt.Printf("triggering Protecode scan - file: %v, group: %v", config.FilePath, config.ProtecodeGroup)
-			resultData, err := client.UploadScanFile(config.CleanupMode, config.ProtecodeGroup, config.FilePath, filaName)
-			if err != nil {
-				return -1, err
-			}
+			resultData := client.UploadScanFile(config.CleanupMode, config.ProtecodeGroup, config.FilePath, filaName)
 			log.Entry().Infof("Protecode scan upload result: %v", resultData)
 			productId = resultData.Result.ProductId
 		}

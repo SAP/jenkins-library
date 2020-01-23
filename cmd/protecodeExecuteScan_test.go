@@ -9,6 +9,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"path/filepath"
 	"time"
 
@@ -30,11 +31,20 @@ func TestUploadScanOrDeclareFetch(t *testing.T) {
 	requestURI := ""
 	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 		requestURI = req.RequestURI
-		response := protecode.Result{ProductId: 4711, ReportUrl: requestURI}
 
-		var b bytes.Buffer
-		json.NewEncoder(&b).Encode(&response)
-		rw.Write([]byte(b.Bytes()))
+		if requestURI == "/api/fetch/" {
+			response := protecode.Result{ProductId: 4711, ReportUrl: requestURI}
+
+			var b bytes.Buffer
+			json.NewEncoder(&b).Encode(&response)
+			rw.Write([]byte(b.Bytes()))
+		} else {
+			response := protecode.ResultData{Result: protecode.Result{ProductId: 4711, ReportUrl: requestURI}}
+
+			var b bytes.Buffer
+			json.NewEncoder(&b).Encode(&response)
+			rw.Write([]byte(b.Bytes()))
+		}
 	}))
 
 	// Close the server when test finishes
@@ -43,24 +53,30 @@ func TestUploadScanOrDeclareFetch(t *testing.T) {
 	po := protecode.ProtecodeOptions{ServerURL: server.URL}
 	pc := protecode.Protecode{}
 	pc.SetOptions(po)
+	testFile, err := ioutil.TempFile("", "testFileUpload")
+	if err != nil {
+		t.FailNow()
+	}
+	defer os.RemoveAll(testFile.Name()) // clean up
 
 	cases := []struct {
 		reuse    bool
 		clean    string
 		group    string
 		fetchUrl string
+		filePath string
 		want     int
 	}{
-		{false, "test", "group1", "/api/fetch/", 4711},
+		{false, "test", "group1", "/api/fetch/", "", 4711},
+		{false, "test", "group1", "", testFile.Name(), 4711},
 	}
 
 	for _, c := range cases {
-		config := protecodeExecuteScanOptions{ReuseExisting: c.reuse, CleanupMode: c.clean, ProtecodeGroup: c.group, FetchURL: c.fetchUrl}
+		config := protecodeExecuteScanOptions{ReuseExisting: c.reuse, CleanupMode: c.clean, ProtecodeGroup: c.group, FetchURL: c.fetchUrl, FilePath: testFile.Name()}
 
-		got, _ := uploadScanOrDeclareFetch(config, 0, pc, "dummy")
+		got, _ := uploadScanOrDeclareFetch(config, 0, pc, testFile.Name())
 
 		assert.Equal(t, c.want, got)
-		assert.Equal(t, c.fetchUrl, requestURI)
 	}
 }
 

@@ -16,6 +16,7 @@ import (
 	"time"
 
 	piperHttp "github.com/SAP/jenkins-library/pkg/http"
+	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -33,7 +34,7 @@ func TestGetResult(t *testing.T) {
 	for _, c := range cases {
 
 		r := ioutil.NopCloser(bytes.NewReader([]byte(c.give)))
-		got, _ := pc.getResult(r)
+		got := pc.getResult(r)
 		assert.Equal(t, c.want, *got)
 	}
 }
@@ -50,7 +51,7 @@ func TestGetResultData(t *testing.T) {
 	for _, c := range cases {
 
 		r := ioutil.NopCloser(bytes.NewReader([]byte(c.give)))
-		got, _ := pc.getResultData(r)
+		got := pc.getResultData(r)
 		assert.Equal(t, c.want, *got)
 	}
 }
@@ -67,7 +68,7 @@ func TestGetProductData(t *testing.T) {
 	for _, c := range cases {
 
 		r := ioutil.NopCloser(bytes.NewReader([]byte(c.give)))
-		got, _ := pc.getProductData(r)
+		got := pc.getProductData(r)
 		assert.Equal(t, c.want, *got)
 	}
 }
@@ -113,7 +114,7 @@ func TestParseResultViolations(t *testing.T) {
 		t.Fatalf("failed reading %v", violations)
 	}
 	pc := Protecode{}
-	resultData, _ := pc.getResultData(ioutil.NopCloser(strings.NewReader(string(byteContent))))
+	resultData := pc.getResultData(ioutil.NopCloser(strings.NewReader(string(byteContent))))
 
 	m := pc.ParseResultForInflux(resultData.Result, "CVE-2018-1, CVE-2017-1000382")
 	t.Run("Parse Protecode Results", func(t *testing.T) {
@@ -135,7 +136,7 @@ func TestParseResultNoViolations(t *testing.T) {
 	}
 
 	pc := Protecode{}
-	resultData, _ := pc.getResultData(ioutil.NopCloser(strings.NewReader(string(byteContent))))
+	resultData := pc.getResultData(ioutil.NopCloser(strings.NewReader(string(byteContent))))
 
 	m := pc.ParseResultForInflux(resultData.Result, "CVE-2018-1, CVE-2017-1000382")
 	t.Run("Parse Protecode Results", func(t *testing.T) {
@@ -157,7 +158,7 @@ func TestParseResultTriaged(t *testing.T) {
 	}
 
 	pc := Protecode{}
-	resultData, _ := pc.getResultData(ioutil.NopCloser(strings.NewReader(string(byteContent))))
+	resultData := pc.getResultData(ioutil.NopCloser(strings.NewReader(string(byteContent))))
 
 	m := pc.ParseResultForInflux(resultData.Result, "")
 	t.Run("Parse Protecode Results", func(t *testing.T) {
@@ -202,7 +203,7 @@ func TestLoadExistingProductByFilenameSuccess(t *testing.T) {
 	}
 	for _, c := range cases {
 
-		got, _ := pc.loadExistingProductByFilename(c.protecodeGroup, c.filePath)
+		got := pc.loadExistingProductByFilename(c.protecodeGroup, c.filePath)
 		assert.Equal(t, c.want, got)
 	}
 }
@@ -233,12 +234,12 @@ func TestLoadExistingProductSuccess(t *testing.T) {
 		reuseExisting  bool
 		want           int
 	}{
-		{Protecode{serverURL: server.URL, client: client}, "group", "filePath", true, 1},
+		{Protecode{serverURL: server.URL, client: client, logger: log.Entry().WithField("package", "SAP/jenkins-library/pkg/protecode")}, "group", "filePath", true, 1},
 		{Protecode{serverURL: server.URL, client: client}, "group32", "filePath", false, -1},
 	}
 	for _, c := range cases {
 
-		got, _ := c.pc.LoadExistingProduct(c.protecodeGroup, c.filePath, c.reuseExisting)
+		got := c.pc.LoadExistingProduct(c.protecodeGroup, c.filePath, c.reuseExisting)
 		assert.Equal(t, c.want, got)
 	}
 }
@@ -293,10 +294,10 @@ func TestPollForResultSuccess(t *testing.T) {
 
 	client := &piperHttp.Client{}
 	client.SetOptions(piperHttp.ClientOptions{})
-	pc := Protecode{serverURL: server.URL, client: client, duration: (time.Second * 30)}
+	pc := Protecode{serverURL: server.URL, client: client, duration: (time.Second * 30), logger: log.Entry().WithField("package", "SAP/jenkins-library/pkg/protecode")}
 
 	for _, c := range cases {
-		got, _ := pc.PollForResult(c.productID, false)
+		got := pc.PollForResult(c.productID, false)
 		assert.Equal(t, c.want, got)
 		assert.Equal(t, fmt.Sprintf("/api/product/%v/", c.productID), requestURI)
 	}

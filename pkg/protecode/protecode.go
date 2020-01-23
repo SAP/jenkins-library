@@ -108,12 +108,11 @@ func (pc *Protecode) SetOptions(options ProtecodeOptions) {
 	pc.client.SetOptions(httpOptions)
 }
 
-func (pc *Protecode) createUrl(path string, pValue string, fParam string) (string, error) {
+func (pc *Protecode) createUrl(path string, pValue string, fParam string) string {
 
 	protecodeUrl, err := url.Parse(pc.serverURL)
 	if err != nil {
 		pc.logger.WithError(err).Fatal("Malformed URL")
-		return "", err
 	}
 
 	if len(path) > 0 {
@@ -134,10 +133,10 @@ func (pc *Protecode) createUrl(path string, pValue string, fParam string) (strin
 		protecodeUrl.RawQuery = params.Encode() // Escape Query Parameters
 	}
 
-	return protecodeUrl.String(), nil
+	return protecodeUrl.String()
 }
 
-func (pc *Protecode) getResultData(r io.ReadCloser) (*ResultData, error) {
+func (pc *Protecode) getResultData(r io.ReadCloser) *ResultData {
 	defer r.Close()
 	response := new(ResultData)
 
@@ -152,7 +151,6 @@ func (pc *Protecode) getResultData(r io.ReadCloser) (*ResultData, error) {
 			err = json.Unmarshal([]byte(newStr), response)
 			if err != nil {
 				pc.logger.WithError(err).Fatalf("error during unqote response: %v", newStr)
-				return response, err
 			}
 		} else {
 			err = json.Unmarshal([]byte(unquoted), response)
@@ -160,14 +158,13 @@ func (pc *Protecode) getResultData(r io.ReadCloser) (*ResultData, error) {
 
 		if err != nil {
 			pc.logger.WithError(err).Fatalf("error during decode response: %v", newStr)
-			return response, err
 		}
 	}
 
-	return response, nil
+	return response
 }
 
-func (pc *Protecode) getResult(r io.ReadCloser) (*Result, error) {
+func (pc *Protecode) getResult(r io.ReadCloser) *Result {
 	defer r.Close()
 	response := new(Result)
 
@@ -182,7 +179,6 @@ func (pc *Protecode) getResult(r io.ReadCloser) (*Result, error) {
 			err = json.Unmarshal([]byte(newStr), response)
 			if err != nil {
 				pc.logger.WithError(err).Fatalf("error during unqote response: %v", newStr)
-				return response, err
 			}
 		} else {
 			err = json.Unmarshal([]byte(unquoted), response)
@@ -190,14 +186,13 @@ func (pc *Protecode) getResult(r io.ReadCloser) (*Result, error) {
 
 		if err != nil {
 			pc.logger.WithError(err).Fatalf("error during decode response: %v", newStr)
-			return response, err
 		}
 	}
 
-	return response, nil
+	return response
 }
 
-func (pc *Protecode) getProductData(r io.ReadCloser) (*ProductData, error) {
+func (pc *Protecode) getProductData(r io.ReadCloser) *ProductData {
 	defer r.Close()
 
 	response := new(ProductData)
@@ -213,7 +208,6 @@ func (pc *Protecode) getProductData(r io.ReadCloser) (*ProductData, error) {
 			err = json.Unmarshal([]byte(newStr), response)
 			if err != nil {
 				pc.logger.WithError(err).Fatalf("error during unqote response: %v", newStr)
-				return response, err
 			}
 		} else {
 			err = json.Unmarshal([]byte(unquoted), response)
@@ -221,32 +215,26 @@ func (pc *Protecode) getProductData(r io.ReadCloser) (*ProductData, error) {
 
 		if err != nil {
 			pc.logger.WithError(err).Fatalf("error during decode response: %v", newStr)
-			return response, err
 		}
 	}
-	return response, nil
+	return response
 }
 
-func (pc *Protecode) uploadFileRequest(url, filePath string, headers map[string][]string) (*io.ReadCloser, error) {
+func (pc *Protecode) uploadFileRequest(url, filePath string, headers map[string][]string) *io.ReadCloser {
 	pc.logger.Debugf("Upload %v %v %v", url, filePath, headers)
 	r, err := pc.client.UploadRequest(http.MethodPut, url, filePath, "file", headers, nil)
 	if err != nil {
 		pc.logger.WithError(err).Fatalf("error during %v upload request", url)
-		return &r.Body, err
 	}
 
-	return &r.Body, nil
+	return &r.Body
 }
 
 func (pc *Protecode) sendApiRequest(method string, url string, headers map[string][]string) (*io.ReadCloser, error) {
 
 	r, err := pc.client.SendRequest(method, url, nil, headers, nil)
-	if err != nil {
-		pc.logger.WithError(err).Fatalf("error during %v: %v request", method, url)
-		return nil, err
-	}
 
-	return &r.Body, nil
+	return &r.Body, err
 }
 
 // #####################################
@@ -316,76 +304,67 @@ func (pc *Protecode) isSevereCVSS2(vulnerability Vulnerability) bool {
 // #####################################
 // DeleteScan
 
-func (pc *Protecode) DeleteScan(cleanupMode string, productId int) error {
+func (pc *Protecode) DeleteScan(cleanupMode string, productId int) {
 
 	switch cleanupMode {
 	case "none":
 	case "binary":
-		return nil
+		return
 	case "complete":
 		pc.logger.Info("Protecode scan successful. Deleting scan from server.")
-		protecodeURL, err := pc.createUrl("/api/product/", fmt.Sprintf("%v/", productId), "")
-		if err != nil {
-			return err
-		}
+		protecodeURL := pc.createUrl("/api/product/", fmt.Sprintf("%v/", productId), "")
 		headers := map[string][]string{}
 
-		_, err = pc.sendApiRequest("DELETE", protecodeURL, headers)
-		if err != nil {
-			return err
-		}
+		pc.sendApiRequest("DELETE", protecodeURL, headers)
 		break
 	default:
 		pc.logger.Fatalf("Unknown cleanup mode %v", cleanupMode)
 	}
 
-	return nil
 }
 
 // #####################################
 // LoadReport
 
-func (pc *Protecode) LoadReport(reportFileName string, productId int) (*io.ReadCloser, error) {
+func (pc *Protecode) LoadReport(reportFileName string, productId int) *io.ReadCloser {
 
-	protecodeURL, err := pc.createUrl("/api/product/", fmt.Sprintf("%v/pdf-report", productId), "")
-	if err != nil {
-		return nil, err
-	}
+	protecodeURL := pc.createUrl("/api/product/", fmt.Sprintf("%v/pdf-report", productId), "")
 	headers := map[string][]string{
 		"Cache-Control": []string{"no-cache, no-store, must-revalidate"},
 		"Pragma":        []string{"no-cache"},
 		"Outputfile":    []string{reportFileName},
 	}
 
-	return pc.sendApiRequest(http.MethodGet, protecodeURL, headers)
+	readCloser, err := pc.sendApiRequest(http.MethodGet, protecodeURL, headers)
+	if err != nil {
+		pc.logger.WithError(err).Fatalf("Load Report failed %v", protecodeURL)
+	}
+
+	return readCloser
 }
 
 // #####################################
 // UploadScanFile
 
-func (pc *Protecode) UploadScanFile(cleanupMode, protecodeGroup, filePath string, fileName string) (*ResultData, error) {
+func (pc *Protecode) UploadScanFile(cleanupMode, protecodeGroup, filePath string, fileName string) *ResultData {
 	deleteBinary := (cleanupMode == "binary" || cleanupMode == "complete")
 	headers := map[string][]string{"Group": []string{protecodeGroup}, "Delete-Binary": []string{fmt.Sprintf("%v", deleteBinary)}}
 
-	r, err := pc.uploadFileRequest(fmt.Sprintf("%v/api/upload/%v", pc.serverURL, fileName), filePath, headers)
-	if err != nil {
-		pc.logger.WithError(err).Fatalf("error during %v upload request", fmt.Sprintf("%v/api/fetch/", pc.serverURL))
-		return new(ResultData), err
-	}
+	r := pc.uploadFileRequest(fmt.Sprintf("%v/api/upload/%v", pc.serverURL, fileName), filePath, headers)
 	return pc.getResultData(*r)
 }
 
 // #####################################
 // declareFetchUrl
 
-func (pc *Protecode) DeclareFetchUrl(cleanupMode, protecodeGroup, fetchURL string) (*Result, error) {
+func (pc *Protecode) DeclareFetchUrl(cleanupMode, protecodeGroup, fetchURL string) *Result {
 	deleteBinary := (cleanupMode == "binary" || cleanupMode == "complete")
 	headers := map[string][]string{"Group": []string{protecodeGroup}, "Delete-Binary": []string{fmt.Sprintf("%v", deleteBinary)}, "Url": []string{fetchURL}, "Content-Type": []string{"application/json"}}
 
-	r, err := pc.sendApiRequest(http.MethodPost, fmt.Sprintf("%v/api/fetch/", pc.serverURL), headers)
+	protecodeURL := fmt.Sprintf("%v/api/fetch/", pc.serverURL)
+	r, err := pc.sendApiRequest(http.MethodPost, protecodeURL, headers)
 	if err != nil {
-		pc.logger.WithError(err).Fatalf("error during POST: %v request", fmt.Sprintf("%v/api/fetch/", pc.serverURL))
-		return new(Result), err
+		pc.logger.WithError(err).Fatalf("Protecode scan exception during declare fetch url: %v", protecodeURL)
 	}
 	return pc.getResult(*r)
 }
@@ -393,7 +372,7 @@ func (pc *Protecode) DeclareFetchUrl(cleanupMode, protecodeGroup, fetchURL strin
 // #####################################
 // Pull result
 
-func (pc *Protecode) PollForResult(productId int, verbose bool) (Result, error) {
+func (pc *Protecode) PollForResult(productId int, verbose bool) Result {
 
 	var response Result
 	var err error
@@ -401,6 +380,7 @@ func (pc *Protecode) PollForResult(productId int, verbose bool) (Result, error) 
 	ticker := time.NewTicker(10 * time.Second)
 	defer ticker.Stop()
 	ticks := pc.duration / time.Second / 10
+	pc.logger.Infof("Poll for result %v times", ticks)
 
 	for i := ticks; i > 0; i-- {
 
@@ -408,7 +388,7 @@ func (pc *Protecode) PollForResult(productId int, verbose bool) (Result, error) 
 		if err != nil {
 			ticker.Stop()
 			i = 0
-			return response, err
+			return response
 		}
 		if len(response.Components) > 0 && response.Status != "B" {
 			ticker.Stop()
@@ -418,15 +398,14 @@ func (pc *Protecode) PollForResult(productId int, verbose bool) (Result, error) 
 
 		select {
 		case t := <-ticker.C:
-			fmt.Printf("Ticker %v", t)
 			if verbose {
-				fmt.Printf("Processing status for productId %v", productId)
+				pc.logger.Infof("Tick : %v Processing status for productId %v",t , productId)
 			}
 			response, err = pc.pullResult(productId)
 			if err != nil {
 				ticker.Stop()
 				i = 0
-				return response, err
+				return response
 			}
 			if len(response.Components) > 0 && response.Status != "B" {
 				ticker.Stop()
@@ -440,21 +419,17 @@ func (pc *Protecode) PollForResult(productId int, verbose bool) (Result, error) 
 		response, err = pc.pullResult(productId)
 		if err != nil || len(response.Components) == 0 || response.Status == "B" {
 			pc.logger.Fatal("No result for protecode scan")
-			return response, err
 		}
 	}
 
-	return response, nil
+	return response
 }
 
 // #####################################
 // Pull result
 
 func (pc *Protecode) pullResult(productId int) (Result, error) {
-	protecodeURL, headers, err := pc.getPullResultRequestData(productId)
-	if err != nil {
-		return *new(Result), err
-	}
+	protecodeURL, headers := pc.getPullResultRequestData(productId)
 
 	return pc.pullResultData(protecodeURL, headers)
 
@@ -462,68 +437,63 @@ func (pc *Protecode) pullResult(productId int) (Result, error) {
 
 func (pc *Protecode) pullResultData(protecodeURL string, headers map[string][]string) (Result, error) {
 	r, err := pc.sendApiRequest(http.MethodGet, protecodeURL, headers)
+	if err != nil {
+		return *new(Result), err
+	}
+	response := pc.getResultData(*r)
 
-	response, err := pc.getResultData(*r)
-
-	return response.Result, err
+	return response.Result, nil
 }
 
-func (pc *Protecode) getPullResultRequestData(productId int) (string, map[string][]string, error) {
-	protecodeURL, err := pc.createUrl("/api/product/", fmt.Sprintf("%v/", productId), "")
+func (pc *Protecode) getPullResultRequestData(productId int) (string, map[string][]string) {
+	protecodeURL := pc.createUrl("/api/product/", fmt.Sprintf("%v/", productId), "")
 	headers := map[string][]string{
 		"acceptType": []string{"APPLICATION_JSON"},
 	}
 
-	return protecodeURL, headers, err
+	return protecodeURL, headers
 }
 
 // #####################################
 // Load existing product
-func (pc *Protecode) LoadExistingProduct(protecodeGroup, filePath string, reuseExisting bool) (int, error) {
+func (pc *Protecode) LoadExistingProduct(protecodeGroup, filePath string, reuseExisting bool) int {
 	var productId int = -1
 
 	if reuseExisting {
 
-		response, err := pc.loadExistingProductByFilename(protecodeGroup, filePath)
-		if err != nil {
-			return 0, err
-		}
+		response := pc.loadExistingProductByFilename(protecodeGroup, filePath)
 		// by definition we will take the first one and trigger rescan
 		productId = response.Products[0].ProductId
 
-		fmt.Printf("re-use existing Protecode scan - file: %v, group: %v, productId: %v", filePath, protecodeGroup, productId)
+		pc.logger.Infof("re-use existing Protecode scan - file: %v, group: %v, productId: %v", filePath, protecodeGroup, productId)
 	}
 
-	return productId, nil
+	return productId
 }
 
-func (pc *Protecode) loadExistingProductByFilename(protecodeGroup, filePath string) (*ProductData, error) {
+func (pc *Protecode) loadExistingProductByFilename(protecodeGroup, filePath string) *ProductData {
 
-	protecodeURL, headers, err := pc.getLoadExistiongProductRequestData(protecodeGroup, filePath)
-
-	if err != nil {
-		return new(ProductData), err
-	}
+	protecodeURL, headers := pc.getLoadExistiongProductRequestData(protecodeGroup, filePath)
 
 	return pc.loadExisting(protecodeURL, headers)
 }
 
-func (pc *Protecode) getLoadExistiongProductRequestData(protecodeGroup, filePath string) (string, map[string][]string, error) {
+func (pc *Protecode) getLoadExistiongProductRequestData(protecodeGroup, filePath string) (string, map[string][]string) {
 
-	protecodeURL, err := pc.createUrl("/api/apps/", fmt.Sprintf("%v/", protecodeGroup), filePath)
+	protecodeURL := pc.createUrl("/api/apps/", fmt.Sprintf("%v/", protecodeGroup), filePath)
 	headers := map[string][]string{
 		//TODO change to mimetype
 		"acceptType": []string{"APPLICATION_JSON"},
 	}
 
-	return protecodeURL, headers, err
+	return protecodeURL, headers
 }
 
-func (pc *Protecode) loadExisting(protecodeURL string, headers map[string][]string) (*ProductData, error) {
+func (pc *Protecode) loadExisting(protecodeURL string, headers map[string][]string) *ProductData {
 
 	r, err := pc.sendApiRequest(http.MethodGet, protecodeURL, headers)
 	if err != nil {
-		return new(ProductData), err
+		pc.logger.WithError(err).Fatalf("Protecode load existing product failed: %v", protecodeURL)
 	}
 
 	return pc.getProductData(*r)
