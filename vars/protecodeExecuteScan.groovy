@@ -95,8 +95,6 @@ void call(Map parameters = [:]) {
         utils.unstash('pipelineConfigAndTests')
 
         writeFile(file: METADATA_FILE, text: libraryResource(METADATA_FILE))
-        // get context configuration
-        config = readJSON (text: sh(returnStdout: true, script: "./piper getConfig --contextConfig --stepMetadata '${METADATA_FILE}'"))
 
         withEnv([
             "PIPER_parametersJSON=${groovy.json.JsonOutput.toJson(parameters)}",
@@ -104,6 +102,8 @@ void call(Map parameters = [:]) {
 
             // get context configuration
             config = readJSON (text: sh(returnStdout: true, script: "./piper getConfig --contextConfig --stepMetadata '${METADATA_FILE}'"))
+
+            echo "ReportFileName: ${config.reportFileName}"
 
             utils.pushToSWA([
                 step: STEP_NAME,
