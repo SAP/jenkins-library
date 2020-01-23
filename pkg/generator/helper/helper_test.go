@@ -152,8 +152,8 @@ func TestSetDefaultParameters(t *testing.T) {
 				Spec: config.StepSpec{
 					Inputs: config.StepInputs{
 						Parameters: []config.StepParameters{
-							{Name: "param0", Scope: []string{"GENERAL"}, Type: "int", Default: 10},
-							{Name: "param1", Scope: []string{"GENERAL"}, Type: "int"},
+							{Name: "param0", Scope: []string{"GENERAL"}, Type: "float", Default: 10},
+							{Name: "param1", Scope: []string{"GENERAL"}, Type: "float"},
 						},
 					},
 				},
@@ -162,7 +162,7 @@ func TestSetDefaultParameters(t *testing.T) {
 				Spec: config.StepSpec{
 					Inputs: config.StepInputs{
 						Parameters: []config.StepParameters{
-							{Name: "param1", Scope: []string{"GENERAL"}, Type: "int"},
+							{Name: "param1", Scope: []string{"GENERAL"}, Type: "float"},
 						},
 					},
 				},
