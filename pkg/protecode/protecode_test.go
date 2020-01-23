@@ -25,8 +25,9 @@ func TestGetResult(t *testing.T) {
 		give string
 		want Result
 	}{
-		{`{}`, Result{ProductId: -0, ReportUrl: ""}},
+		{`"{}"`, Result{ProductId: 0}},
 		{`{"product_id": 1}`, Result{ProductId: 1}},
+		{`"{\"product_id\": 4711}"`, Result{ProductId: 4711}},
 	}
 	pc := Protecode{}
 	for _, c := range cases {
@@ -42,7 +43,8 @@ func TestGetResultData(t *testing.T) {
 		give string
 		want ResultData
 	}{
-		{`{"results": {"product_id": 1}}`, ResultData{Result: Result{ProductId: 1}}},
+		{"{\"results\": {\"product_id\": 1}}", ResultData{Result: Result{ProductId: 1}}},
+		{`{"results": {"status": "B", "id": 209396, "product_id": 209396, "report_url": "https://protecode.c.eu-de-2.cloud.sap/products/209396/"}}`, ResultData{Result: Result{ProductId: 209396, Status: "B", ReportUrl: "https://protecode.c.eu-de-2.cloud.sap/products/209396/"}}},
 	}
 	pc := Protecode{}
 	for _, c := range cases {

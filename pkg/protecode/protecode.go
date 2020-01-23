@@ -32,7 +32,7 @@ type ResultData struct {
 
 type Result struct {
 	ProductId  int         `json:"product_id"`
-	ReportUrl  string      `json:"report_url`
+	ReportUrl  string      `json:"report_url"`
 	Status     string      `json:"status"`
 	Components []Component `json:"components,omitempty"`
 }
@@ -89,6 +89,10 @@ type ProtecodeOptions struct {
 	Logger    *logrus.Entry
 }
 
+type Wrapper struct {
+	Data string
+}
+
 func (pc *Protecode) SetOptions(options ProtecodeOptions) {
 	pc.serverURL = options.ServerURL
 	pc.client = &piperHttp.Client{}
@@ -135,7 +139,6 @@ func (pc *Protecode) createUrl(path string, pValue string, fParam string) (strin
 
 func (pc *Protecode) getResultData(r io.ReadCloser) (*ResultData, error) {
 	defer r.Close()
-
 	response := new(ResultData)
 
 	buf := new(bytes.Buffer)
@@ -143,10 +146,20 @@ func (pc *Protecode) getResultData(r io.ReadCloser) (*ResultData, error) {
 	newStr := buf.String()
 
 	if len(newStr) > 0 {
-		err := json.Unmarshal([]byte(newStr), response)
+
+		unquoted, err := strconv.Unquote(newStr)
+		if err != nil {
+			err = json.Unmarshal([]byte(newStr), response)
+			if err != nil {
+				pc.logger.WithError(err).Fatalf("error during unqote response: %v", newStr)
+				return response, err
+			}
+		} else {
+			err = json.Unmarshal([]byte(unquoted), response)
+		}
 
 		if err != nil {
-			pc.logger.WithError(err).Fatalf("error during decode response: %v", r)
+			pc.logger.WithError(err).Fatalf("error during decode response: %v", newStr)
 			return response, err
 		}
 	}
@@ -156,7 +169,6 @@ func (pc *Protecode) getResultData(r io.ReadCloser) (*ResultData, error) {
 
 func (pc *Protecode) getResult(r io.ReadCloser) (*Result, error) {
 	defer r.Close()
-
 	response := new(Result)
 
 	buf := new(bytes.Buffer)
@@ -164,10 +176,20 @@ func (pc *Protecode) getResult(r io.ReadCloser) (*Result, error) {
 	newStr := buf.String()
 
 	if len(newStr) > 0 {
-		err := json.Unmarshal([]byte(newStr), response)
+
+		unquoted, err := strconv.Unquote(newStr)
+		if err != nil {
+			err = json.Unmarshal([]byte(newStr), response)
+			if err != nil {
+				pc.logger.WithError(err).Fatalf("error during unqote response: %v", newStr)
+				return response, err
+			}
+		} else {
+			err = json.Unmarshal([]byte(unquoted), response)
+		}
 
 		if err != nil {
-			pc.logger.WithError(err).Fatalf("error during decode response: %v", r)
+			pc.logger.WithError(err).Fatalf("error during decode response: %v", newStr)
 			return response, err
 		}
 	}
@@ -183,15 +205,25 @@ func (pc *Protecode) getProductData(r io.ReadCloser) (*ProductData, error) {
 	buf := new(bytes.Buffer)
 	buf.ReadFrom(r)
 	newStr := buf.String()
+
 	if len(newStr) > 0 {
-		err := json.Unmarshal([]byte(newStr), response)
+
+		unquoted, err := strconv.Unquote(newStr)
+		if err != nil {
+			err = json.Unmarshal([]byte(newStr), response)
+			if err != nil {
+				pc.logger.WithError(err).Fatalf("error during unqote response: %v", newStr)
+				return response, err
+			}
+		} else {
+			err = json.Unmarshal([]byte(unquoted), response)
+		}
 
 		if err != nil {
-			pc.logger.WithError(err).Fatalf("error during decode response: %v", r)
+			pc.logger.WithError(err).Fatalf("error during decode response: %v", newStr)
 			return response, err
 		}
 	}
-
 	return response, nil
 }
 
@@ -331,16 +363,16 @@ func (pc *Protecode) LoadReport(reportFileName string, productId int) (*io.ReadC
 // #####################################
 // UploadScanFile
 
-func (pc *Protecode) UploadScanFile(cleanupMode, protecodeGroup, filePath string, fileName string) (*Result, error) {
+func (pc *Protecode) UploadScanFile(cleanupMode, protecodeGroup, filePath string, fileName string) (*ResultData, error) {
 	deleteBinary := (cleanupMode == "binary" || cleanupMode == "complete")
 	headers := map[string][]string{"Group": []string{protecodeGroup}, "Delete-Binary": []string{fmt.Sprintf("%v", deleteBinary)}}
 
 	r, err := pc.uploadFileRequest(fmt.Sprintf("%v/api/upload/%v", pc.serverURL, fileName), filePath, headers)
 	if err != nil {
 		pc.logger.WithError(err).Fatalf("error during %v upload request", fmt.Sprintf("%v/api/fetch/", pc.serverURL))
-		return new(Result), err
+		return new(ResultData), err
 	}
-	return pc.getResult(*r)
+	return pc.getResultData(*r)
 }
 
 // #####################################

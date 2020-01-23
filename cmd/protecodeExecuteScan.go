@@ -228,7 +228,7 @@ func executeProtecodeScan(client protecode.Protecode, config *protecodeExecuteSc
 		return parsedResult, productId, err
 	}
 	if productId <= 0 {
-		return parsedResult, productId, errors.New("Protecode scan failed, the product id is not valid (product id <= zero)")
+		return parsedResult, productId, errors.New(fmt.Sprintf("Protecode scan failed, the product id is not valid (product id %v <= zero)", productId))
 	}
 	//pollForResult
 	result, err := client.PollForResult(productId, config.Verbose)
@@ -243,6 +243,7 @@ func executeProtecodeScan(client protecode.Protecode, config *protecodeExecuteSc
 	//loadReport
 	resp, err := client.LoadReport(config.ReportFileName, productId)
 	if err != nil {
+		log.Entry().Fatal("Protecode scan failed, please check the log and protecode backend for more details.")
 		return parsedResult, productId, err
 	}
 	//save report to filesystem
@@ -258,17 +259,19 @@ func executeProtecodeScan(client protecode.Protecode, config *protecodeExecuteSc
 	//count vulnerabilities
 	parsedResult = client.ParseResultForInflux(result, config.ProtecodeExcludeCVEs)
 
+	log.Entry().Infof("Protecode scan result: %v", parsedResult)
+
 	return parsedResult, productId, nil
 }
 
 func setInfluxData(influx *protecodeExecuteScanInflux, result map[string]int) {
 
 	influx.protecode_data.fields.historical_vulnerabilities = fmt.Sprintf("%v", result["historical_vulnerabilities"])
-	influx.protecode_data.fields.historical_vulnerabilities = fmt.Sprintf("%v", result["triaged_vulnerabilities"])
-	influx.protecode_data.fields.historical_vulnerabilities = fmt.Sprintf("%v", result["excluded_vulnerabilities"])
-	influx.protecode_data.fields.historical_vulnerabilities = fmt.Sprintf("%v", result["minor_vulnerabilities"])
-	influx.protecode_data.fields.historical_vulnerabilities = fmt.Sprintf("%v", result["major_vulnerabilities"])
-	influx.protecode_data.fields.historical_vulnerabilities = fmt.Sprintf("%v", result["vulnerabilities"])
+	influx.protecode_data.fields.triaged_vulnerabilities = fmt.Sprintf("%v", result["triaged_vulnerabilities"])
+	influx.protecode_data.fields.excluded_vulnerabilities = fmt.Sprintf("%v", result["excluded_vulnerabilities"])
+	influx.protecode_data.fields.minor_vulnerabilities = fmt.Sprintf("%v", result["minor_vulnerabilities"])
+	influx.protecode_data.fields.major_vulnerabilities = fmt.Sprintf("%v", result["major_vulnerabilities"])
+	influx.protecode_data.fields.vulnerabilities = fmt.Sprintf("%v", result["vulnerabilities"])
 }
 
 func setCommonPipelineEnvironmentData(cpEnvironment *protecodeExecuteScanCommonPipelineEnvironment, result map[string]int, productId int) {
@@ -312,22 +315,24 @@ func uploadScanOrDeclareFetch(config protecodeExecuteScanOptions, productId int,
 	if productId <= 0 || !config.ReuseExisting {
 		if len(config.FetchURL) > 0 {
 			fmt.Printf("triggering Protecode scan - url: %v, group: %v", config.FetchURL, config.ProtecodeGroup)
-			result, err := client.DeclareFetchUrl(config.CleanupMode, config.ProtecodeGroup, config.FetchURL)
+			resultData, err := client.DeclareFetchUrl(config.CleanupMode, config.ProtecodeGroup, config.FetchURL)
 			if err != nil {
 				return -1, err
 			}
-			productId = result.ProductId
+			log.Entry().Infof("Protecode scan declare fetch url result: %v", resultData)
+			productId = resultData.ProductId
 
 		} else {
 			if len(config.FilePath) <= 0 {
 				return -1, errors.New(fmt.Sprintf("Protecode scan failed, there is no file path configured for upload : %v", config.FilePath))
 			}
 			fmt.Printf("triggering Protecode scan - file: %v, group: %v", config.FilePath, config.ProtecodeGroup)
-			result, err := client.UploadScanFile(config.CleanupMode, config.ProtecodeGroup, config.FilePath, filaName)
+			resultData, err := client.UploadScanFile(config.CleanupMode, config.ProtecodeGroup, config.FilePath, filaName)
 			if err != nil {
 				return -1, err
 			}
-			productId = result.ProductId
+			log.Entry().Infof("Protecode scan upload result: %v", resultData)
+			productId = resultData.Result.ProductId
 		}
 	}
 
