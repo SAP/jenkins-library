@@ -1,5 +1,7 @@
 package com.sap.piper.versioning
 
+import com.sap.piper.Utils
+
 class MavenArtifactVersioning extends ArtifactVersioning {
     protected MavenArtifactVersioning (script, configuration) {
         super(script, configuration)
@@ -7,8 +9,9 @@ class MavenArtifactVersioning extends ArtifactVersioning {
 
     @Override
     def getVersion() {
-        def mavenPom = script.readMavenPom (file: configuration.filePath)
-        return mavenPom.getVersion().replaceAll(/-SNAPSHOT$/, "")
+        String pomFile = configuration.filePath
+        String version = Utils.evaluateFromMavenPom(script, pomFile, 'project.version')
+        return version.replaceAll(/-SNAPSHOT$/, "")
     }
 
     @Override
