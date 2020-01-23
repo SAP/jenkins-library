@@ -80,7 +80,7 @@ func TestSendRequest(t *testing.T) {
 
 func TestSetOptions(t *testing.T) {
 	c := Client{}
-	opts := ClientOptions{Timeout: 10, Username: "TestUser", Password: "TestPassword", Token: "TestToken"}
+	opts := ClientOptions{Timeout: 10, Username: "TestUser", Password: "TestPassword", Token: "TestToken", Logger: log.Entry().WithField("package", "github.com/SAP/jenkins-library/pkg/http")}
 	c.SetOptions(opts)
 
 	assert.Equal(t, opts.Timeout, c.timeout)
@@ -94,8 +94,8 @@ func TestApplyDefaults(t *testing.T) {
 		client   Client
 		expected Client
 	}{
-		{client: Client{}, expected: Client{timeout: time.Second * 10}},
-		{client: Client{timeout: 10}, expected: Client{timeout: 10}},
+		{client: Client{}, expected: Client{timeout: time.Second * 10, logger: log.Entry().WithField("package", "SAP/jenkins-library/pkg/http")}},
+		{client: Client{timeout: 10}, expected: Client{timeout: 10, logger: log.Entry().WithField("package", "SAP/jenkins-library/pkg/http")}},
 	}
 
 	for k, v := range tt {
