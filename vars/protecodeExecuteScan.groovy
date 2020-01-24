@@ -117,7 +117,7 @@ void call(Map parameters = [:]) {
             } else {
                 callProtecodeScan(config)
             }
-            String protecodeData = new File("ProtecodeData.json").getText("UTF-8")
+            String protecodeData = new File("./ProtecodeData.json").getText("UTF-8")
             protecodeDataJson = script.readJSON text: protecodeData
 
             echo "protecodeDataJson: ${protecodeDataJson}"
