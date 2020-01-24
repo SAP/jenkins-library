@@ -117,7 +117,7 @@ void call(Map parameters = [:]) {
             } else {
                 callProtecodeScan(config)
             }
-            def protecodeData = readJSON (file: 'ProtecodeData.json')
+            def protecodeDataJson = readJSON (file: 'ProtecodeData.json')
 
             echo "protecodeDataJson: ${protecodeDataJson}"
 
@@ -129,8 +129,7 @@ void call(Map parameters = [:]) {
                 jenkinsUtils.addRunSideBarLink("${protecodeDataJson.protecodeServerUrl}/products/${protecodeDataJson.protecodeProductId}/", "Protecode WebUI", "images/24x24/graph.png")
             }
 
-            String fileContents = new File("${config.reportFileName}").getText("UTF-8")
-            json = script.readJSON text: fileContents
+            def json = readJSON (file: "${config.reportFileName}")
             
             if(!json) {
                     Notify.error(this, "Protecode scan failed, please check the log and protecode backend for more details.")
