@@ -14,43 +14,42 @@ import (
 	"github.com/SAP/jenkins-library/pkg/log"
 )
 
-func kubernetesDeploy(myKubernetesDeployOptions kubernetesDeployOptions) error {
+func kubernetesDeploy(config kubernetesDeployOptions) error {
 	c := command.Command{}
 	// reroute stderr output to logging framework, stdout will be used for command interactions
 	c.Stderr(log.Entry().Writer())
-	runKubernetesDeploy(myKubernetesDeployOptions, &c, log.Entry().Writer())
+	runKubernetesDeploy(config, &c, log.Entry().Writer())
 	return nil
 }
 
-func runKubernetesDeploy(myKubernetesDeployOptions kubernetesDeployOptions, command envExecRunner, stdout io.Writer) {
-	if myKubernetesDeployOptions.DeployTool == "helm" {
-		runHelmDeploy(myKubernetesDeployOptions, command, stdout)
+func runKubernetesDeploy(config kubernetesDeployOptions, command envExecRunner, stdout io.Writer) {
+	if config.DeployTool == "helm" {
+		runHelmDeploy(config, command, stdout)
 	} else {
-		runKubectlDeploy(myKubernetesDeployOptions, command)
+		runKubectlDeploy(config, command)
 	}
 }
 
-func runHelmDeploy(myKubernetesDeployOptions kubernetesDeployOptions, command envExecRunner, stdout io.Writer) {
-	_, containerRegistry, err := splitRegistryURL(myKubernetesDeployOptions.ContainerRegistryURL)
+func runHelmDeploy(config kubernetesDeployOptions, command envExecRunner, stdout io.Writer) {
+	_, containerRegistry, err := splitRegistryURL(config.ContainerRegistryURL)
 	if err != nil {
-		log.Entry().WithError(err).Fatalf("Container registry url '%v' incorrect", myKubernetesDeployOptions.ContainerRegistryURL)
+		log.Entry().WithError(err).Fatalf("Container registry url '%v' incorrect", config.ContainerRegistryURL)
 	}
-	containerImageName, containerImageTag, err := splitFullImageName(myKubernetesDeployOptions.Image)
+	containerImageName, containerImageTag, err := splitFullImageName(config.Image)
 	if err != nil {
-		log.Entry().WithError(err).Fatalf("Container image '%v' incorrect", myKubernetesDeployOptions.Image)
+		log.Entry().WithError(err).Fatalf("Container image '%v' incorrect", config.Image)
 	}
 	helmLogFields := map[string]interface{}{}
-	helmLogFields["Chart Path"] = myKubernetesDeployOptions.ChartPath
-	helmLogFields["Namespace"] = myKubernetesDeployOptions.Namespace
-	helmLogFields["Deployment Name"] = myKubernetesDeployOptions.DeploymentName
-	helmLogFields["Context"] = myKubernetesDeployOptions.KubeContext
-	helmLogFields["Kubeconfig"] = myKubernetesDeployOptions.KubeConfig
+	helmLogFields["Chart Path"] = config.ChartPath
+	helmLogFields["Namespace"] = config.Namespace
+	helmLogFields["Deployment Name"] = config.DeploymentName
+	helmLogFields["Context"] = config.KubeContext
+	helmLogFields["Kubeconfig"] = config.KubeConfig
 	log.Entry().WithFields(helmLogFields).Debug("Calling Helm")
 
-	helmEnv := []string{fmt.Sprintf("KUBECONFIG=%v", myKubernetesDeployOptions.KubeConfig)}
-	log.Entry().Debugf("TILLER_NAMESPACE=%v", myKubernetesDeployOptions.TillerNamespace)
-	if len(myKubernetesDeployOptions.TillerNamespace) > 0 {
-		helmEnv = append(helmEnv, fmt.Sprintf("TILLER_NAMESPACE=%v", myKubernetesDeployOptions.TillerNamespace))
+	helmEnv := []string{fmt.Sprintf("KUBECONFIG=%v", config.KubeConfig)}
+	if len(config.TillerNamespace) > 0 {
+		helmEnv = append(helmEnv, fmt.Sprintf("TILLER_NAMESPACE=%v", config.TillerNamespace))
 	}
 	log.Entry().Debugf("Helm Env: %v", helmEnv)
 	command.Env(helmEnv)
@@ -70,8 +69,8 @@ func runHelmDeploy(myKubernetesDeployOptions kubernetesDeployOptions, command en
 		"docker-registry",
 		"regsecret",
 		fmt.Sprintf("--docker-server=%v", containerRegistry),
-		fmt.Sprintf("--docker-username=%v", myKubernetesDeployOptions.ContainerRegistryUser),
-		fmt.Sprintf("--docker-password=%v", myKubernetesDeployOptions.ContainerRegistryPassword),
+		fmt.Sprintf("--docker-username=%v", config.ContainerRegistryUser),
+		fmt.Sprintf("--docker-password=%v", config.ContainerRegistryPassword),
 		"--dry-run=true",
 		"--output=json",
 	}
@@ -94,31 +93,31 @@ func runHelmDeploy(myKubernetesDeployOptions kubernetesDeployOptions, command en
 	}
 
 	ingressHosts := ""
-	for i, h := range myKubernetesDeployOptions.IngressHosts {
+	for i, h := range config.IngressHosts {
 		ingressHosts += fmt.Sprintf(",ingress.hosts[%v]=%v", i, h)
 	}
 
 	upgradeParams := []string{
 		"upgrade",
-		myKubernetesDeployOptions.DeploymentName,
-		myKubernetesDeployOptions.ChartPath,
+		config.DeploymentName,
+		config.ChartPath,
 		"--install",
 		"--force",
 		"--namespace",
-		myKubernetesDeployOptions.Namespace,
+		config.Namespace,
 		"--wait",
 		"--timeout",
-		strconv.Itoa(myKubernetesDeployOptions.HelmDeployWaitSeconds),
+		strconv.Itoa(config.HelmDeployWaitSeconds),
 		"--set",
 		fmt.Sprintf("image.repository=%v/%v,image.tag=%v,secret.dockerconfigjson=%v%v", containerRegistry, containerImageName, containerImageTag, dockerRegistrySecretData.Data.DockerConfJSON, ingressHosts),
 	}
 
-	if len(myKubernetesDeployOptions.KubeContext) > 0 {
-		upgradeParams = append(upgradeParams, "--kube-context", myKubernetesDeployOptions.KubeContext)
+	if len(config.KubeContext) > 0 {
+		upgradeParams = append(upgradeParams, "--kube-context", config.KubeContext)
 	}
 
-	if len(myKubernetesDeployOptions.AdditionalParameters) > 0 {
-		upgradeParams = append(upgradeParams, myKubernetesDeployOptions.AdditionalParameters...)
+	if len(config.AdditionalParameters) > 0 {
+		upgradeParams = append(upgradeParams, config.AdditionalParameters...)
 	}
 
 	command.Stdout(stdout)
@@ -131,50 +130,50 @@ func runHelmDeploy(myKubernetesDeployOptions kubernetesDeployOptions, command en
 
 }
 
-func runKubectlDeploy(myKubernetesDeployOptions kubernetesDeployOptions, command envExecRunner) {
-	_, containerRegistry, err := splitRegistryURL(myKubernetesDeployOptions.ContainerRegistryURL)
+func runKubectlDeploy(config kubernetesDeployOptions, command envExecRunner) {
+	_, containerRegistry, err := splitRegistryURL(config.ContainerRegistryURL)
 	if err != nil {
-		log.Entry().WithError(err).Fatalf("Container registry url '%v' incorrect", myKubernetesDeployOptions.ContainerRegistryURL)
+		log.Entry().WithError(err).Fatalf("Container registry url '%v' incorrect", config.ContainerRegistryURL)
 	}
 
 	kubeParams := []string{
 		"--insecure-skip-tls-verify=true",
-		fmt.Sprintf("--namespace=%v", myKubernetesDeployOptions.Namespace),
+		fmt.Sprintf("--namespace=%v", config.Namespace),
 	}
 
-	if len(myKubernetesDeployOptions.KubeConfig) > 0 {
+	if len(config.KubeConfig) > 0 {
 		log.Entry().Info("Using KUBECONFIG environment for authentication.")
-		kubeEnv := []string{fmt.Sprintf("KUBECONFIG=%v", myKubernetesDeployOptions.KubeConfig)}
+		kubeEnv := []string{fmt.Sprintf("KUBECONFIG=%v", config.KubeConfig)}
 		command.Env(kubeEnv)
-		if len(myKubernetesDeployOptions.KubeContext) > 0 {
-			kubeParams = append(kubeParams, fmt.Sprintf("--context=%v", myKubernetesDeployOptions.KubeContext))
+		if len(config.KubeContext) > 0 {
+			kubeParams = append(kubeParams, fmt.Sprintf("--context=%v", config.KubeContext))
 		}
 
 	} else {
 		log.Entry().Info("Using --token parameter for authentication.")
-		kubeParams = append(kubeParams, fmt.Sprintf("--server=%v", myKubernetesDeployOptions.APIServer))
-		kubeParams = append(kubeParams, fmt.Sprintf("--token=%v", myKubernetesDeployOptions.KubeToken))
+		kubeParams = append(kubeParams, fmt.Sprintf("--server=%v", config.APIServer))
+		kubeParams = append(kubeParams, fmt.Sprintf("--token=%v", config.KubeToken))
 	}
 
-	if myKubernetesDeployOptions.CreateDockerRegistrySecret {
-		if len(myKubernetesDeployOptions.ContainerRegistryUser)+len(myKubernetesDeployOptions.ContainerRegistryPassword) == 0 {
+	if config.CreateDockerRegistrySecret {
+		if len(config.ContainerRegistryUser)+len(config.ContainerRegistryPassword) == 0 {
 			log.Entry().Fatal("Cannot create Container registry secret without proper registry username/password")
 		}
 		// first check if secret already exists
-		kubeCheckParams := append(kubeParams, "get", "secret", myKubernetesDeployOptions.ContainerRegistrySecret)
+		kubeCheckParams := append(kubeParams, "get", "secret", config.ContainerRegistrySecret)
 		if err := command.RunExecutable("kubectl", kubeCheckParams...); err != nil {
-			log.Entry().Infof("Registry secret '%v' does not exist, let's create it ...", myKubernetesDeployOptions.ContainerRegistrySecret)
+			log.Entry().Infof("Registry secret '%v' does not exist, let's create it ...", config.ContainerRegistrySecret)
 			kubeSecretParams := append(
 				kubeParams,
 				"create",
 				"secret",
 				"docker-registry",
-				myKubernetesDeployOptions.ContainerRegistrySecret,
+				config.ContainerRegistrySecret,
 				fmt.Sprintf("--docker-server=%v", containerRegistry),
-				fmt.Sprintf("--docker-username=%v", myKubernetesDeployOptions.ContainerRegistryUser),
-				fmt.Sprintf("--docker-password=%v", myKubernetesDeployOptions.ContainerRegistryPassword),
+				fmt.Sprintf("--docker-username=%v", config.ContainerRegistryUser),
+				fmt.Sprintf("--docker-password=%v", config.ContainerRegistryPassword),
 			)
-			log.Entry().Infof("Creating container registry secret '%v'", myKubernetesDeployOptions.ContainerRegistrySecret)
+			log.Entry().Infof("Creating container registry secret '%v'", config.ContainerRegistrySecret)
 			log.Entry().Debugf("Running kubectl with following parameters: %v", kubeSecretParams)
 			if err := command.RunExecutable("kubectl", kubeSecretParams...); err != nil {
 				log.Entry().WithError(err).Fatal("Creating container registry secret failed")
@@ -182,23 +181,23 @@ func runKubectlDeploy(myKubernetesDeployOptions kubernetesDeployOptions, command
 		}
 	}
 
-	appTemplate, err := ioutil.ReadFile(myKubernetesDeployOptions.AppTemplate)
+	appTemplate, err := ioutil.ReadFile(config.AppTemplate)
 	if err != nil {
-		log.Entry().WithError(err).Fatalf("Error when reading appTemplate '%v'", myKubernetesDeployOptions.AppTemplate)
+		log.Entry().WithError(err).Fatalf("Error when reading appTemplate '%v'", config.AppTemplate)
 	}
 
 	// Update image name in deployment yaml, expects placeholder like 'image: <image-name>'
 	re := regexp.MustCompile(`image:[ ]*<image-name>`)
-	appTemplate = []byte(re.ReplaceAllString(string(appTemplate), fmt.Sprintf("image: %v/%v", containerRegistry, myKubernetesDeployOptions.Image)))
+	appTemplate = []byte(re.ReplaceAllString(string(appTemplate), fmt.Sprintf("image: %v/%v", containerRegistry, config.Image)))
 
-	err = ioutil.WriteFile(myKubernetesDeployOptions.AppTemplate, appTemplate, 0700)
+	err = ioutil.WriteFile(config.AppTemplate, appTemplate, 0700)
 	if err != nil {
-		log.Entry().WithError(err).Fatalf("Error when updating appTemplate '%v'", myKubernetesDeployOptions.AppTemplate)
+		log.Entry().WithError(err).Fatalf("Error when updating appTemplate '%v'", config.AppTemplate)
 	}
 
-	kubeApplyParams := append(kubeParams, "apply", "--filename", myKubernetesDeployOptions.AppTemplate)
-	if len(myKubernetesDeployOptions.AdditionalParameters) > 0 {
-		kubeApplyParams = append(kubeApplyParams, myKubernetesDeployOptions.AdditionalParameters...)
+	kubeApplyParams := append(kubeParams, "apply", "--filename", config.AppTemplate)
+	if len(config.AdditionalParameters) > 0 {
+		kubeApplyParams = append(kubeApplyParams, config.AdditionalParameters...)
 	}
 
 	if err := command.RunExecutable("kubectl", kubeApplyParams...); err != nil {

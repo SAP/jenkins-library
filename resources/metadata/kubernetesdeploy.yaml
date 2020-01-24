@@ -204,15 +204,15 @@ spec:
           - STAGES
           - STEPS
   containers:
-  - image: docker.wdf.sap.corp:50000/piper/k8s
-    workingDir: /home/piper
+  - image: dtzar/helm-kubectl:2.16.1
+    workingDir: /config
     conditions:
     - conditionRef: strings-equal
       params:
       - name: deployTool
         value: helm
-  - image: docker.wdf.sap.corp:50000/piper/k8s
-    workingDir: /home/piper
+  - image: bitnami/kubectl:latest
+    workingDir: /
     conditions:
     - conditionRef: strings-equal
       params:
