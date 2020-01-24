@@ -41,6 +41,7 @@ void call(Map parameters = [:]) {
                 // execute step
                 withCredentials(creds) {
                     sh "ls -la"
+                    sh "pwd"
                     sh "./piper kubernetesDeploy"
                 }
             }
