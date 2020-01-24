@@ -121,7 +121,7 @@ void call(Map parameters = [:]) {
 
             echo "Prodecode ReportFileName: ${protecodeDataJson.reportFileName}"
 
-            archiveArtifacts artifacts: "./${protecodeDataJson.reportFileName}", allowEmptyArchive: false
+            archiveArtifacts artifacts: "${protecodeDataJson.reportFileName}", allowEmptyArchive: false
             
             jenkinsUtils.removeJobSideBarLinks("artifact/${protecodeDataJson.reportFileName}")
             jenkinsUtils.addJobSideBarLink("artifact/${protecodeDataJson.reportFileName}", "Protecode Report", "images/24x24/graph.png")
