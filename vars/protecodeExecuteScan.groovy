@@ -121,12 +121,12 @@ void call(Map parameters = [:]) {
 
             echo "Prodecode ReportFileName: ${protecodeDataJson.reportFileName}"
 
-            archiveArtifacts artifacts: "${protecodeDataJson.reportFileName}", allowEmptyArchive: false
+            archiveArtifacts artifacts: "./${protecodeDataJson.reportFileName}", allowEmptyArchive: false
             
             jenkinsUtils.removeJobSideBarLinks("artifact/${protecodeDataJson.reportFileName}")
             jenkinsUtils.addJobSideBarLink("artifact/${protecodeDataJson.reportFileName}", "Protecode Report", "images/24x24/graph.png")
             jenkinsUtils.addRunSideBarLink("artifact/${protecodeDataJson.reportFileName}", "Protecode Report", "images/24x24/graph.png")
-            jenkinsUtils.addRunSideBarLink("${protecodeDataJson.protecodeServerUrl}/products/${protecodeDataJson.protecodeProductId}/", "Protecode WebUI", "images/24x24/graph.png")
+            jenkinsUtils.addRunSideBarLink("${protecodeDataJson.protecodeServerUrl}/products/${protecodeDataJson.productID}/", "Protecode WebUI", "images/24x24/graph.png")
         
 
             def json = readJSON (file: "Vulns.json")
@@ -138,7 +138,7 @@ void call(Map parameters = [:]) {
             if(json.results.summary?.verdict?.short == 'Vulns') {
                 echo "${protecodeDataJson.count} ${json.results.summary?.verdict.detailed} of which ${protecodeDataJson.cvss2GreaterOrEqualSeven} had a CVSS v2 score >= 7.0 and ${protecodeDataJson.cvss3GreaterOrEqualSeven} had a CVSS v3 score >= 7.0.\n${protecodeDataJson.excludedVulnerabilities} vulnerabilities were excluded via configuration (${config.protecodeExcludeCVEs}) and ${protecodeDataJson.triagedVulnerabilities} vulnerabilities were triaged via the webUI.\nIn addition ${protecodeDataJsonhistoricalVulnerabilities} historical vulnerabilities were spotted."
                 if(config.protecodeFailOnSevereVulnerabilities && (protecodeDataJson.cvss2GreaterOrEqualSeven > 0 || protecodeDataJsoncvss3GreaterOrEqualSeven > 0)) {
-                    Notify.error(this, "Protecode detected Open Source Software Security vulnerabilities, the project is not compliant. For details see the archived report or the web ui: ${protecodeDataJson.protecodeServerUrl}/products/${protecodeDataJson.protecodeProductId}/")
+                    Notify.error(this, "Protecode detected Open Source Software Security vulnerabilities, the project is not compliant. For details see the archived report or the web ui: ${protecodeDataJson.protecodeServerUrl}/products/${protecodeDataJson.productID}/")
                 }
             }
 
