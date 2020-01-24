@@ -5,54 +5,37 @@ import (
 	"net/url"
 )
 
-// BaseData ...
+// BaseData object definition containing the base data and it's mapping information
 type BaseData struct {
-	ActionName string `json:"action_name"`
-	EventType  string `json:"event_type"`
-	SiteID     string `json:"idsite"`
-	URL        string `json:"url"`
-	//GitOwner          string `json:"e_a"` // first custom field name is indeed e_a, not e_1
-	//GitRepository     string `json:"e_2"`
+	ActionName      string `json:"action_name"`
+	EventType       string `json:"event_type"`
+	SiteID          string `json:"idsite"`
+	URL             string `json:"url"`
 	StepName        string `json:"e_3"`
-	PipelineURLSha1 string `json:"e_4"` // defaults to env.JOB_URl
-	BuildURLSha1    string `json:"e_5"` // defaults to env.BUILD_URL
-	//GitPathSha1       string `json:"e_6"`
-	//GitOwnerSha1      string `json:"e_7"`
-	//GitRepositorySha1 string `json:"e_8"`
-	//JobName           string `json:"e_9"`
-	StageName string `json:"e_10"`
+	PipelineURLHash string `json:"e_4"` // defaults to sha1 of env.JOB_URl
+	BuildURLHash    string `json:"e_5"` // defaults to sha1 of env.BUILD_URL
+	StageName       string `json:"e_10"`
 }
 
 var baseData BaseData
 
-// BaseMetaData ...
+// BaseMetaData object definition containing the labels for the base data and it's mapping information
 type BaseMetaData struct {
-	//GitOwnerLabel          string `json:"custom_1"`
-	//GitRepositoryLabel     string `json:"custom_2"`
 	StepNameLabel        string `json:"custom_3"`
-	PipelineURLSha1Label string `json:"custom_4"`
-	BuildURLSha1Label    string `json:"custom_5"`
-	//GitPathSha1Label       string `json:"custom_6"`
-	//GitOwnerSha1Label      string `json:"custom_7"`
-	//GitRepositorySha1Label string `json:"custom_8"`
-	//JobNameLabel           string `json:"custom_9"`
-	StageNameLabel string `json:"custom_10"`
+	PipelineURLHashLabel string `json:"custom_4"`
+	BuildURLHashLabel    string `json:"custom_5"`
+	StageNameLabel       string `json:"custom_10"`
 }
 
+// baseMetaData object containing the labels for the base data
 var baseMetaData BaseMetaData = BaseMetaData{
-	//GitOwnerLabel:          "owner",
-	//GitRepositoryLabel:     "repository",
 	StepNameLabel:        "stepName",
-	PipelineURLSha1Label: "",
-	BuildURLSha1Label:    "",
-	//GitPathSha1Label:       "gitpathsha1",
-	//GitOwnerSha1Label:      "",
-	//GitRepositorySha1Label: "",
-	//JobNameLabel:           "jobName",
-	StageNameLabel: "stageName",
+	PipelineURLHashLabel: "pipelineUrlHash",
+	BuildURLHashLabel:    "buildUrlHash",
+	StageNameLabel:       "stageName",
 }
 
-// CustomData ...
+// CustomData object definition containing the data that can be set by a step and it's mapping information
 type CustomData struct {
 	// values custom_11 - custom_25 & e_11 - e_25 reserved for library reporting
 	Custom1Label string `json:"custom_26,omitempty"`
@@ -67,19 +50,21 @@ type CustomData struct {
 	Custom5      string `json:"e_30,omitempty"`
 }
 
-// Data ...
+// Data object definition containing all telemetry data
 type Data struct {
 	BaseData
 	BaseMetaData
 	CustomData
 }
 
+// toMap transfers the data object into a map using JSON tags
 func (d *Data) toMap() (result map[string]string) {
 	jsonObj, _ := json.Marshal(d)
 	json.Unmarshal(jsonObj, &result)
 	return
 }
 
+// toPayloadString transfers the data object into a 'key=value&..' string
 func (d *Data) toPayloadString() string {
 	parameters := url.Values{}
 
@@ -88,7 +73,6 @@ func (d *Data) toPayloadString() string {
 			parameters.Add(key, value)
 		}
 	}
-	//TODO: Remove labels for empty fields?
 
 	return parameters.Encode()
 }
