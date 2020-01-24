@@ -294,7 +294,7 @@ func TestPollForResultSuccess(t *testing.T) {
 
 	client := &piperHttp.Client{}
 	client.SetOptions(piperHttp.ClientOptions{})
-	pc := Protecode{serverURL: server.URL, client: client, duration: (time.Second * 30), logger: log.Entry().WithField("package", "SAP/jenkins-library/pkg/protecode")}
+	pc := Protecode{serverURL: server.URL, client: client, duration: (time.Minute * 1), logger: log.Entry().WithField("package", "SAP/jenkins-library/pkg/protecode")}
 
 	for _, c := range cases {
 		got := pc.PollForResult(c.productID, false)

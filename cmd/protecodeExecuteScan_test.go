@@ -17,17 +17,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestTarImageFolder(t *testing.T) {
-
-	tmpDir, _ := ioutil.TempDir("", "protecode")
-	tarFile, err := ioutil.TempFile(tmpDir, "protecodeTest.tar")
-	assert.NoError(t, err, "Failed to create archive of docker image")
-	defer tarFile.Close()
-	pc := protecode.Protecode{}
-	err = tarImageFolder("testdata/TestProtecode", tarFile, pc)
-	assert.NoError(t, err, "Failed to fill tar archive of docker image")
-}
-
 func TestUploadScanOrDeclareFetch(t *testing.T) {
 	requestURI := ""
 	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
@@ -64,7 +53,7 @@ func TestUploadScanOrDeclareFetch(t *testing.T) {
 		reuse    bool
 		clean    string
 		group    string
-		fetchUrl string
+		fetchURL string
 		filePath string
 		want     int
 	}{
@@ -73,7 +62,7 @@ func TestUploadScanOrDeclareFetch(t *testing.T) {
 	}
 
 	for _, c := range cases {
-		config := protecodeExecuteScanOptions{ReuseExisting: c.reuse, CleanupMode: c.clean, ProtecodeGroup: c.group, FetchURL: c.fetchUrl, FilePath: testFile.Name()}
+		config := protecodeExecuteScanOptions{ReuseExisting: c.reuse, CleanupMode: c.clean, ProtecodeGroup: c.group, FetchURL: c.fetchURL, FilePath: testFile.Name()}
 
 		got, _ := uploadScanOrDeclareFetch(config, 0, pc, testFile.Name())
 
@@ -123,18 +112,18 @@ func TestExecuteProtecodeScan(t *testing.T) {
 		reuse    bool
 		clean    string
 		group    string
-		fetchUrl string
+		fetchURL string
 		want     int
 	}{
 		{false, "binary", "group1", "/api/fetch/", 4711},
 	}
 
 	for _, c := range cases {
-		config := protecodeExecuteScanOptions{ReuseExisting: c.reuse, CleanupMode: c.clean, ProtecodeGroup: c.group, FetchURL: c.fetchUrl, ProtecodeTimeoutMinutes: "3", ProtecodeExcludeCVEs: "CVE-2018-1, CVE-2017-1000382", ReportFileName: "./cache/report-file.txt"}
+		config := protecodeExecuteScanOptions{ReuseExisting: c.reuse, CleanupMode: c.clean, ProtecodeGroup: c.group, FetchURL: c.fetchURL, ProtecodeTimeoutMinutes: "3", ProtecodeExcludeCVEs: "CVE-2018-1, CVE-2017-1000382", ReportFileName: "./cache/report-file.txt"}
 
-		got, productId, _ := executeProtecodeScan(pc, &config, "dummy", writeReportToFileMock)
+		got, productID, _ := executeProtecodeScan(pc, &config, "dummy", writeReportToFileMock)
 
-		assert.Equal(t, 4711, productId)
+		assert.Equal(t, 4711, productID)
 		assert.Equal(t, 1125, got["historical_vulnerabilities"])
 		assert.Equal(t, 0, got["triaged_vulnerabilities"])
 		assert.Equal(t, 1, got["excluded_vulnerabilities"])
@@ -148,18 +137,18 @@ func TestGetUrlAndFileNameFromDockerImage(t *testing.T) {
 
 	cases := []struct {
 		scanImage   string
-		registryUrl string
+		registryURL string
 		protocol    string
 		want        string
 	}{
 		{"scanImage", "", "", "scanImage"},
-		{"scanImage", "registryUrl", "protocol", "remote://registryUrl/scanImage"},
+		{"scanImage", "registryURL", "protocol", "remote://registryURL/scanImage"},
 		{"containerScanImage", "containerRegistryUrl", "protocol", "remote://containerRegistryUrl/containerScanImage"},
-		{"containerScanImage", "registryUrl", "protocol", "remote://registryUrl/containerScanImage"},
+		{"containerScanImage", "registryURL", "protocol", "remote://registryURL/containerScanImage"},
 	}
 
 	for _, c := range cases {
-		config := protecodeExecuteScanOptions{ScanImage: c.scanImage, DockerRegistryURL: c.registryUrl}
+		config := protecodeExecuteScanOptions{ScanImage: c.scanImage, DockerRegistryURL: c.registryURL}
 
 		got, _ := getUrlAndFileNameFromDockerImage(&config)
 

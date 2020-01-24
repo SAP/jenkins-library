@@ -34,55 +34,15 @@ type protecodeExecuteScanOptions struct {
 	DockerPassword                       string `json:"dockerPassword,omitempty"`
 }
 
-type protecodeExecuteScanCommonPipelineEnvironment struct {
-	appContainerProperties struct {
-		protecodeProductID         string
-		protecodeCount             string
-		cvss2GreaterOrEqualSeven   string
-		cvss3GreaterOrEqualSeven   string
-		excluded_vulnerabilities   string
-		triaged_vulnerabilities    string
-		historical_vulnerabilities string
-	}
-}
-
-func (p *protecodeExecuteScanCommonPipelineEnvironment) persist(path, resourceName string) {
-	content := []struct {
-		category string
-		name     string
-		value    string
-	}{
-		{category: "appContainerProperties", name: "protecodeProductId", value: p.appContainerProperties.protecodeProductID},
-		{category: "appContainerProperties", name: "protecodeCount", value: p.appContainerProperties.protecodeCount},
-		{category: "appContainerProperties", name: "cvss2GreaterOrEqualSeven", value: p.appContainerProperties.cvss2GreaterOrEqualSeven},
-		{category: "appContainerProperties", name: "cvss3GreaterOrEqualSeven", value: p.appContainerProperties.cvss3GreaterOrEqualSeven},
-		{category: "appContainerProperties", name: "excluded_vulnerabilities", value: p.appContainerProperties.excluded_vulnerabilities},
-		{category: "appContainerProperties", name: "triaged_vulnerabilities", value: p.appContainerProperties.triaged_vulnerabilities},
-		{category: "appContainerProperties", name: "historical_vulnerabilities", value: p.appContainerProperties.historical_vulnerabilities},
-	}
-
-	errCount := 0
-	for _, param := range content {
-		err := piperenv.SetResourceParameter(path, resourceName, filepath.Join(param.category, param.name), param.value)
-		if err != nil {
-			log.Entry().WithError(err).Error("Error persisting piper environment.")
-			errCount++
-		}
-	}
-	if errCount > 0 {
-		os.Exit(1)
-	}
-}
-
 type protecodeExecuteScanInflux struct {
-	protecode_data struct {
+	protecodeData struct {
 		fields struct {
-			historical_vulnerabilities string
-			triaged_vulnerabilities    string
-			excluded_vulnerabilities   string
-			major_vulnerabilities      string
-			minor_vulnerabilities      string
-			vulnerabilities            string
+			historicalVulnerabilities string
+			triagedVulnerabilities    string
+			excludedVulnerabilities   string
+			majorVulnerabilities      string
+			minorVulnerabilities      string
+			vulnerabilities           string
 		}
 		tags struct {
 		}
@@ -96,12 +56,12 @@ func (i *protecodeExecuteScanInflux) persist(path, resourceName string) {
 		name        string
 		value       string
 	}{
-		{valType: config.InfluxField, measurement: "protecode_data", name: "historical_vulnerabilities", value: i.protecode_data.fields.historical_vulnerabilities},
-		{valType: config.InfluxField, measurement: "protecode_data", name: "triaged_vulnerabilities", value: i.protecode_data.fields.triaged_vulnerabilities},
-		{valType: config.InfluxField, measurement: "protecode_data", name: "excluded_vulnerabilities", value: i.protecode_data.fields.excluded_vulnerabilities},
-		{valType: config.InfluxField, measurement: "protecode_data", name: "major_vulnerabilities", value: i.protecode_data.fields.major_vulnerabilities},
-		{valType: config.InfluxField, measurement: "protecode_data", name: "minor_vulnerabilities", value: i.protecode_data.fields.minor_vulnerabilities},
-		{valType: config.InfluxField, measurement: "protecode_data", name: "vulnerabilities", value: i.protecode_data.fields.vulnerabilities},
+		{valType: config.InfluxField, measurement: "protecodeData", name: "historicalVulnerabilities", value: i.protecodeData.fields.historicalVulnerabilities},
+		{valType: config.InfluxField, measurement: "protecodeData", name: "triagedVulnerabilities", value: i.protecodeData.fields.triagedVulnerabilities},
+		{valType: config.InfluxField, measurement: "protecodeData", name: "excludedVulnerabilities", value: i.protecodeData.fields.excludedVulnerabilities},
+		{valType: config.InfluxField, measurement: "protecodeData", name: "majorVulnerabilities", value: i.protecodeData.fields.majorVulnerabilities},
+		{valType: config.InfluxField, measurement: "protecodeData", name: "minorVulnerabilities", value: i.protecodeData.fields.minorVulnerabilities},
+		{valType: config.InfluxField, measurement: "protecodeData", name: "vulnerabilities", value: i.protecodeData.fields.vulnerabilities},
 	}
 
 	errCount := 0
@@ -122,7 +82,6 @@ var myProtecodeExecuteScanOptions protecodeExecuteScanOptions
 // ProtecodeExecuteScanCommand Protecode is an Open Source Vulnerability Scanner that is capable of scanning binaries. It can be used to scan docker images but is supports many other programming languages especially those of the C family. You can find more details on its capabilities in the [OS3 - Open Source Software Security JAM](https://jam4.sapjam.com/groups/XgeUs0CXItfeWyuI4k7lM3/overview_page/aoAsA0k4TbezGFyOkhsXFs). For getting access to Protecode please visit the [guide](https://go.sap.corp/protecode).
 func ProtecodeExecuteScanCommand() *cobra.Command {
 	metadata := protecodeExecuteScanMetadata()
-	var commonPipelineEnvironment protecodeExecuteScanCommonPipelineEnvironment
 	var influx protecodeExecuteScanInflux
 
 	var createProtecodeExecuteScanCmd = &cobra.Command{
@@ -144,12 +103,11 @@ func ProtecodeExecuteScanCommand() *cobra.Command {
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			handler := func() {
-				commonPipelineEnvironment.persist(GeneralConfig.EnvRootPath, "commonPipelineEnvironment")
 				influx.persist(GeneralConfig.EnvRootPath, "influx")
 			}
 			log.DeferExitHandler(handler)
 			defer handler()
-			return protecodeExecuteScan(myProtecodeExecuteScanOptions, &commonPipelineEnvironment, &influx)
+			return protecodeExecuteScan(myProtecodeExecuteScanOptions, &influx)
 		},
 	}
 

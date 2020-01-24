@@ -117,13 +117,17 @@ void call(Map parameters = [:]) {
             } else {
                 callProtecodeScan(config)
             }
+            String protecodeData = new File("ProtecodeData.json").getText("UTF-8")
+            protecodeDataJson = script.readJSON text: protecodeData
 
-            archiveArtifacts artifacts: "${config.reportFileName}", allowEmptyArchive: false
+            echo "protecodeDataJson: ${protecodeDataJson}"
+
+            archiveArtifacts artifacts: "${protecodeDataJson.reportFileName}", allowEmptyArchive: false
             if (config.addSideBarLink) {
-                jenkinsUtils.removeJobSideBarLinks("artifact/${config.reportFileName}")
-                jenkinsUtils.addJobSideBarLink("artifact/${config.reportFileName}", "Protecode Report", "images/24x24/graph.png")
-                jenkinsUtils.addRunSideBarLink("artifact/${config.reportFileName}", "Protecode Report", "images/24x24/graph.png")
-                jenkinsUtils.addRunSideBarLink("${config.protecodeServerUrl}/products/${script.commonPipelineEnvironment.getAppContainerProperty('protecodeProductId')}/", "Protecode WebUI", "images/24x24/graph.png")
+                jenkinsUtils.removeJobSideBarLinks("artifact/${protecodeDataJson.reportFileName}")
+                jenkinsUtils.addJobSideBarLink("artifact/${protecodeDataJson.reportFileName}", "Protecode Report", "images/24x24/graph.png")
+                jenkinsUtils.addRunSideBarLink("artifact/${protecodeDataJson.reportFileName}", "Protecode Report", "images/24x24/graph.png")
+                jenkinsUtils.addRunSideBarLink("${protecodeDataJson.protecodeServerUrl}/products/${protecodeDataJson.protecodeProductId)}/", "Protecode WebUI", "images/24x24/graph.png")
             }
 
             String fileContents = new File("${config.reportFileName}").getText("UTF-8")
@@ -134,9 +138,9 @@ void call(Map parameters = [:]) {
             }
 
             if(json.results.summary?.verdict?.short == 'Vulns') {
-                echo "${script.commonPipelineEnvironment.getAppContainerProperty('protecodeCount')} ${json.results.summary?.verdict.detailed} of which ${script.commonPipelineEnvironment.getAppContainerProperty('cvss2GreaterOrEqualSeven')} had a CVSS v2 score >= 7.0 and ${script.commonPipelineEnvironment.getAppContainerProperty('cvss3GreaterOrEqualSeven')} had a CVSS v3 score >= 7.0.\n${script.commonPipelineEnvironment.getAppContainerProperty('excluded_vulnerabilities')} vulnerabilities were excluded via configuration (${config.protecodeExcludeCVEs}) and ${script.commonPipelineEnvironment.getAppContainerProperty('triaged_vulnerabilities')} vulnerabilities were triaged via the webUI.\nIn addition ${script.commonPipelineEnvironment.getAppContainerProperty('historical_vulnerabilities')} historical vulnerabilities were spotted."
-                if(config.protecodeFailOnSevereVulnerabilities && (script.commonPipelineEnvironment.getAppContainerProperty('cvss2GreaterOrEqualSeven') > 0 || script.commonPipelineEnvironment.getAppContainerProperty('cvss3GreaterOrEqualSeven') > 0)) {
-                    Notify.error(this, "Protecode detected Open Source Software Security vulnerabilities, the project is not compliant. For details see the archived report or the web ui: ${config.protecodeServerUrl}/products/${script.commonPipelineEnvironment.getAppContainerProperty('protecodeProductId')}/")
+                echo "${protecodeDataJson.count} ${json.results.summary?.verdict.detailed} of which ${protecodeDataJson.cvss2GreaterOrEqualSeven)} had a CVSS v2 score >= 7.0 and ${protecodeDataJson.cvss3GreaterOrEqualSeven)} had a CVSS v3 score >= 7.0.\n${protecodeDataJson.excludedVulnerabilities)} vulnerabilities were excluded via configuration (${config.protecodeExcludeCVEs}) and ${protecodeDataJson.triagedVulnerabilities)} vulnerabilities were triaged via the webUI.\nIn addition ${protecodeDataJsonhistoricalVulnerabilities)} historical vulnerabilities were spotted."
+                if(config.protecodeFailOnSevereVulnerabilities && (protecodeDataJson.cvss2GreaterOrEqualSeven) > 0 ||protecodeDataJsoncvss3GreaterOrEqualSeven) > 0)) {
+                    Notify.error(this, "Protecode detected Open Source Software Security vulnerabilities, the project is not compliant. For details see the archived report or the web ui: ${protecodeDataJson.protecodeServerUrl}/products/${protecodeDataJson.protecodeProductId)}/")
                 }
             }
 

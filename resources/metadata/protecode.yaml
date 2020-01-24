@@ -232,26 +232,16 @@ spec:
         - name: dockerMetadata/imageNameTag
   outputs:
     resources:
-      - name: commonPipelineEnvironment
-        type: piperEnvironment
-        params:
-          - name: appContainerProperties/protecodeProductId
-          - name: appContainerProperties/protecodeCount
-          - name: appContainerProperties/cvss2GreaterOrEqualSeven
-          - name: appContainerProperties/cvss3GreaterOrEqualSeven
-          - name: appContainerProperties/excluded_vulnerabilities
-          - name: appContainerProperties/triaged_vulnerabilities
-          - name: appContainerProperties/historical_vulnerabilities
       - name: influx
         type: influx
         params:
-          - name: protecode_data
+          - name: protecodeData
             fields:
-              - name: historical_vulnerabilities
-              - name: triaged_vulnerabilities
-              - name: excluded_vulnerabilities
-              - name: major_vulnerabilities
-              - name: minor_vulnerabilities
+              - name: historicalVulnerabilities
+              - name: triagedVulnerabilities
+              - name: excludedVulnerabilities
+              - name: majorVulnerabilities
+              - name: minorVulnerabilities
               - name: vulnerabilities
   containers:
   - image: null
