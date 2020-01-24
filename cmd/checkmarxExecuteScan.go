@@ -13,13 +13,20 @@ import (
 	"strings"
 	"time"
 
+	"encoding/json"
 	"encoding/xml"
 
 	"github.com/SAP/jenkins-library/pkg/checkmarx"
 	piperHttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/piperenv"
 	"github.com/bmatcuk/doublestar"
 )
+
+type path struct {
+	Target    string `json:"target"`
+	Mandatory bool   `json:"mandatory"`
+}
 
 func checkmarxExecuteScan(config checkmarxExecuteScanOptions, influx *checkmarxExecuteScanInflux) error {
 	client := &piperHttp.Client{}
@@ -135,13 +142,24 @@ func triggerScan(config checkmarxExecuteScanOptions, sys checkmarx.System, proje
 		pollScanStatus(sys, scan)
 
 		log.Entry().Debugln("Scan finished")
+
+		var reports []path
 		if config.GeneratePdfReport {
-			downloadAndSaveReport(sys, createReportBaseName(workspace, "CxSASTReport_%v.pdf"), scan)
+			pdfReportName := createReportName(workspace, "CxSASTReport_%v.pdf")
+			ok := downloadAndSaveReport(sys, pdfReportName, scan)
+			if ok {
+				reports = append(reports, path{Target: pdfReportName, Mandatory: true})
+			}
 		} else {
 			log.Entry().Debug("Report generation is disabled via configuration")
 		}
 
-		results := getDetailedResults(sys, createReportBaseName(workspace, "CxSASTResults_%v.xml"), scan.ID)
+		xmlReportName := createReportName(workspace, "CxSASTResults_%v.xml")
+		results := getDetailedResults(sys, xmlReportName, scan.ID)
+		reports = append(reports, path{Target: xmlReportName})
+		links := []path{path{Target: results["DeepLink"].(string)}}
+		persistReportsAndLinks(workspace, reports, links)
+
 		reportToInflux(results, influx)
 
 		insecure := false
@@ -162,7 +180,22 @@ func triggerScan(config checkmarxExecuteScanOptions, sys checkmarx.System, proje
 	}
 }
 
-func createReportBaseName(workspace, reportFileNameTemplate string) string {
+func persistReportsAndLinks(workspace string, reports, links []path) {
+	reportList, err := json.Marshal(&reports)
+	if err != nil {
+		log.Entry().Fatalln("Failed to marshall reports.json data for archiving")
+	}
+	piperenv.SetParameter(workspace, "reports.json", string(reportList))
+
+	linkList, err := json.Marshal(&links)
+	if err != nil {
+		log.Entry().Fatalln("Failed to marshall links.json data for archiving")
+	} else {
+		piperenv.SetParameter(workspace, "links.json", string(linkList))
+	}
+}
+
+func createReportName(workspace, reportFileNameTemplate string) string {
 	regExpFileName := regexp.MustCompile(`[^\w\d]`)
 	timeStamp, _ := time.Now().Local().MarshalText()
 	return filepath.Join(workspace, fmt.Sprintf(reportFileNameTemplate, regExpFileName.ReplaceAllString(string(timeStamp), "_")))
@@ -239,14 +272,15 @@ func reportToInflux(results map[string]interface{}, influx *checkmarxExecuteScan
 	influx.checkmarx_data.fields.report_creation_time = results["ReportCreationTime"].(string)
 }
 
-func downloadAndSaveReport(sys checkmarx.System, reportFileName string, scan checkmarx.Scan) {
+func downloadAndSaveReport(sys checkmarx.System, reportFileName string, scan checkmarx.Scan) bool {
 	ok, report := generateAndDownloadReport(sys, scan.ID, "PDF")
 	if ok {
 		log.Entry().Debugf("Saving report to file %v...", reportFileName)
 		ioutil.WriteFile(reportFileName, report, 0700)
-	} else {
-		log.Entry().Debugf("Failed to fetch report %v from backend...", reportFileName)
+		return true
 	}
+	log.Entry().Debugf("Failed to fetch report %v from backend...", reportFileName)
+	return false
 }
 
 func enforceThresholds(config checkmarxExecuteScanOptions, results map[string]interface{}) bool {
