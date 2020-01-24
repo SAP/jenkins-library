@@ -133,7 +133,7 @@ func TestExecuteProtecodeScan(t *testing.T) {
 	}
 }
 
-func TestGetUrlAndFileNameFromDockerImage(t *testing.T) {
+func TestGetURLAndFileNameFromDockerImage(t *testing.T) {
 
 	cases := []struct {
 		scanImage   string
@@ -150,7 +150,7 @@ func TestGetUrlAndFileNameFromDockerImage(t *testing.T) {
 	for _, c := range cases {
 		config := protecodeExecuteScanOptions{ScanImage: c.scanImage, DockerRegistryURL: c.registryURL}
 
-		got, _ := getUrlAndFileNameFromDockerImage(&config)
+		got, _ := getURLAndFileNameFromDockerImage(&config)
 
 		assert.Equal(t, c.want, got)
 	}
