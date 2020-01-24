@@ -41,10 +41,11 @@ void call(Map parameters = [:]) {
             )]) {
                 sh "./piper checkmarxExecuteScan --verbose ${config.verbose}"
             }
-        }
-        archiveArtifacts artifacts: "**/CxSASTResults_*.xml", allowEmptyArchive: true
 
-        if (config.generatePdfReport)
-            archiveArtifacts artifacts: "**/CxSASTReport_*.pdf", allowEmptyArchive: false
+            if (config.generatePdfReport)
+                archiveArtifacts artifacts: "**/CxSASTReport_*.pdf", allowEmptyArchive: false
+
+            archiveArtifacts artifacts: "**/CxSASTResults_*.xml", allowEmptyArchive: true
+        }
     }
 }
