@@ -1,5 +1,6 @@
 import com.sap.piper.PiperGoUtils
 import com.sap.piper.Utils
+import com.sap.piper.JenkinsUtils
 import groovy.transform.Field
 
 import static com.sap.piper.Prerequisites.checkScript
@@ -17,6 +18,8 @@ void call(Map parameters = [:]) {
         Map config
         def utils = parameters.juStabUtils ?: new Utils()
         parameters.juStabUtils = null
+        def jenkinsUtils = parameters.jenkinsUtilsStub ?: new JenkinsUtils()
+        parameters.jenkinsUtilsStub = null
 
         // telemetry reporting
         utils.pushToSWA([step: STEP_NAME], config)
@@ -42,8 +45,17 @@ void call(Map parameters = [:]) {
                 sh "./piper checkmarxExecuteScan --verbose ${config.verbose}"
             }
 
-            archiveArtifacts artifacts: "**/CxSASTReport_*.pdf", allowEmptyArchive: true
-            archiveArtifacts artifacts: "**/CxSASTResults_*.xml", allowEmptyArchive: true
+            def reports = readJSON (file: 'reports.json')
+            for (report in reports) {
+                archiveArtifacts artifacts: report['target'], allowEmptyArchive: !report['mandatory']
+            }
+
+            if (fileExists(file: 'links.json')) {
+                def links = readJSON(file: 'links.json')
+                for (link in links) {
+                    jenkinsUtils.addRunSideBarLink(link['target'], link['name'], "images/24x24/graph.png")
+                }
+            }
         }
     }
 }
