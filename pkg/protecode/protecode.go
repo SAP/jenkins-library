@@ -383,9 +383,9 @@ func (pc *Protecode) DeclareFetchUrl(cleanupMode, protecodeGroup, fetchURL strin
 // #####################################
 // Pull result
 
-func (pc *Protecode) PollForResult(productId int, verbose bool) Result {
+func (pc *Protecode) PollForResult(productId int, verbose bool) ResultData {
 
-	var response Result
+	var response ResultData
 	var err error
 
 	ticker := time.NewTicker(10 * time.Second)
@@ -401,7 +401,7 @@ func (pc *Protecode) PollForResult(productId int, verbose bool) Result {
 			i = 0
 			return response
 		}
-		if len(response.Components) > 0 && response.Status != "B" {
+		if len(response.Result.Components) > 0 && response.Result.Status != "B" {
 			ticker.Stop()
 			i = 0
 			break
@@ -418,7 +418,7 @@ func (pc *Protecode) PollForResult(productId int, verbose bool) Result {
 				i = 0
 				return response
 			}
-			if len(response.Components) > 0 && response.Status != "B" {
+			if len(response.Result.Components) > 0 && response.Result.Status != "B" {
 				ticker.Stop()
 				i = 0
 				break
@@ -426,9 +426,9 @@ func (pc *Protecode) PollForResult(productId int, verbose bool) Result {
 		}
 	}
 
-	if len(response.Components) == 0 && response.Status == "B" {
+	if len(response.Result.Components) == 0 || response.Result.Status == "B" {
 		response, err = pc.pullResult(productId)
-		if err != nil || len(response.Components) == 0 || response.Status == "B" {
+		if err != nil || len(response.Result.Components) == 0 || response.Result.Status == "B" {
 			pc.logger.Fatal("No result for protecode scan")
 		}
 	}
@@ -439,21 +439,21 @@ func (pc *Protecode) PollForResult(productId int, verbose bool) Result {
 // #####################################
 // Pull result
 
-func (pc *Protecode) pullResult(productId int) (Result, error) {
+func (pc *Protecode) pullResult(productId int) (ResultData, error) {
 	protecodeURL, headers := pc.getPullResultRequestData(productId)
 
 	return pc.pullResultData(protecodeURL, headers)
 
 }
 
-func (pc *Protecode) pullResultData(protecodeURL string, headers map[string][]string) (Result, error) {
+func (pc *Protecode) pullResultData(protecodeURL string, headers map[string][]string) (ResultData, error) {
 	r, err := pc.sendApiRequest(http.MethodGet, protecodeURL, headers)
 	if err != nil {
-		return *new(Result), err
+		return *new(ResultData), err
 	}
 	response := pc.getResultData(*r)
 
-	return response.Result, nil
+	return *response, nil
 }
 
 func (pc *Protecode) getPullResultRequestData(productId int) (string, map[string][]string) {

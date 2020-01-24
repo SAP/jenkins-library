@@ -276,18 +276,18 @@ func TestPollForResultSuccess(t *testing.T) {
 
 	cases := []struct {
 		productID int
-		want      Result
+		want      ResultData
 	}{
-		{111, Result{ProductId: 111, ReportUrl: "/api/product/111/", Status: "D", Components: []Component{
+		{111, ResultData{Result: Result{ProductId: 111, ReportUrl: "/api/product/111/", Status: "D", Components: []Component{
 			{Vulns: []Vulnerability{
 				{Triage: []Triage{{Id: 1}}}},
 			}},
-		}},
-		{222, Result{ProductId: 222, ReportUrl: "/api/product/222/", Status: "D", Components: []Component{
+		}}},
+		{222, ResultData{Result: Result{ProductId: 222, ReportUrl: "/api/product/222/", Status: "D", Components: []Component{
 			{Vulns: []Vulnerability{
 				{Triage: []Triage{{Id: 1}}}},
 			}},
-		}},
+		}}},
 	}
 	// Close the server when test finishes
 	defer server.Close()
@@ -334,10 +334,10 @@ func TestPullResultSuccess(t *testing.T) {
 	cases := []struct {
 		pc        Protecode
 		productID int
-		want      Result
+		want      ResultData
 	}{
-		{Protecode{serverURL: server.URL, client: client}, 111, Result{ProductId: 111, ReportUrl: "/api/product/111/"}},
-		{Protecode{serverURL: server.URL, client: client}, 222, Result{ProductId: 222, ReportUrl: "/api/product/222/"}},
+		{Protecode{serverURL: server.URL, client: client}, 111, ResultData{Result: Result{ProductId: 111, ReportUrl: "/api/product/111/"}}},
+		{Protecode{serverURL: server.URL, client: client}, 222, ResultData{Result: Result{ProductId: 222, ReportUrl: "/api/product/222/"}}},
 	}
 	for _, c := range cases {
 

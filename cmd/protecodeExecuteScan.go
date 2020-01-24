@@ -151,8 +151,11 @@ func executeProtecodeScan(client protecode.Protecode, config *protecodeExecuteSc
 	//pollForResult
 	result := client.PollForResult(productID, config.Verbose)
 
+	jsonData, _ := json.Marshal(result)
+	ioutil.WriteFile("Vulns.json", jsonData, 0644)
+
 	//check if result is ok else notify
-	if len(result.Status) > 0 && result.Status == "F" {
+	if len(result.Result.Status) > 0 && result.Result.Status == "F" {
 		log.Entry().Fatal("Protecode scan failed, please check the log and protecode backend for more details.")
 		return parsedResult, productID, errors.New("Protecode scan failed, please check the log and protecode backend for more details")
 	}
@@ -168,7 +171,7 @@ func executeProtecodeScan(client protecode.Protecode, config *protecodeExecuteSc
 	client.DeleteScan(config.CleanupMode, productID)
 
 	//count vulnerabilities
-	parsedResult = client.ParseResultForInflux(result, config.ProtecodeExcludeCVEs)
+	parsedResult = client.ParseResultForInflux(result.Result, config.ProtecodeExcludeCVEs)
 
 	log.Entry().Infof("Protecode scan result: %v", parsedResult)
 
@@ -198,9 +201,7 @@ func writeDataToJSONFile(config *protecodeExecuteScanOptions, result map[string]
 	protecodeData.TriagedVulnerabilities = fmt.Sprintf("%v", result["triaged_vulnerabilities"])
 	protecodeData.HistoricalVulnerabilities = fmt.Sprintf("%v", result["historical_vulnerabilities"])
 
-	log.Entry().Infof("Protecode scan data: %v", protecodeData)
 	jsonData, _ := json.Marshal(protecodeData)
-	log.Entry().Infof("Protecode scan data: %v", jsonData)
 
 	ioutil.WriteFile("ProtecodeData.json", jsonData, 0644)
 }
