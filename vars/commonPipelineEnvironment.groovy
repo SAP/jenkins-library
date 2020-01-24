@@ -171,43 +171,53 @@ class commonPipelineEnvironment implements Serializable {
         })
     }
 
-    void readFromDisk() {
+    void readFromDisk(script) {
         def file = '.pipeline/commonPipelineEnvironment/artifactVersion'
-        if (fileExists(file)) {
-            artifactVersion = readFile(file)
+        if (script.fileExists(file)) {
+            artifactVersion = script.readFile(file)
         }
 
         file = '.pipeline/commonPipelineEnvironment/github/owner'
-        if (fileExists(file)) {
-            githubOrg = readFile(file)
+        if (script.fileExists(file)) {
+            githubOrg = script.readFile(file)
         }
 
         file = '.pipeline/commonPipelineEnvironment/github/repository'
-        if (fileExists(file)) {
-            githubRepo = readFile(file)
+        if (script.fileExists(file)) {
+            githubRepo = script.readFile(file)
         }
 
         file = '.pipeline/commonPipelineEnvironment/git/branch'
-        if (fileExists(file)) {
-            gitBranch = readFile(file)
+        if (script.fileExists(file)) {
+            gitBranch = script.readFile(file)
         }
 
         file = '.pipeline/commonPipelineEnvironment/git/commitId'
-        if (fileExists(file)) {
-            gitCommitId = readFile(file)
+        if (script.fileExists(file)) {
+            gitCommitId = script.readFile(file)
         }
 
         file = '.pipeline/commonPipelineEnvironment/git/commitMessage'
-        if (fileExists(file)) {
-            gitCommitMessage = readFile(file)
+        if (script.fileExists(file)) {
+            gitCommitMessage = script.readFile(file)
         }
 
-        def customValues = findFiles(glob: '.pipeline/commonPipelineEnvironment/custom/*')
+        file = '.pipeline/commonPipelineEnvironment/operationId'
+        if (script.fileExists(file)) {
+            xsDeploymentId = script.readFile(file)
+        }
+
+        file = '.pipeline/commonPipelineEnvironment/mtaPath'
+        if (script.fileExists(file)) {
+            mtarFilePath = script.readFile(file)
+        }
+
+        def customValues = script.findFiles(glob: '.pipeline/commonPipelineEnvironment/custom/*')
 
         customValues.each({f ->
             def fileName = f.getName()
             def param = fileName.split('/')[fileName.split('\\/').size()-1]
-            valueMap[param] = readFile(f.getPath())
+            valueMap[param] = script.readFile(f.getPath())
         })
     }
 
