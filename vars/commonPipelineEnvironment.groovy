@@ -1,121 +1,37 @@
-import com.sap.piper.CommonPipelineEnvironment
 import com.sap.piper.ConfigurationLoader
 import com.sap.piper.ConfigurationMerger
+import com.sap.piper.DefaultValueCache
 import com.sap.piper.analytics.InfluxData
 
 class commonPipelineEnvironment implements Serializable {
 
-    //
-    // Instances of this step does not keep any state. Everything is redirected to
-    // the singleton CommonPipelineEnvironment. Since all instances of this step
-    // share the same state through the singleton CommonPipelineEnvironment all
-    // instances can be used in the same way.
-    //
-    // [Q] Why not simplify this using reflection, e.g. methodMissing/invokeMethod and
-    //     similar? Wouln't this be simpler e.g. wrt. adding new properties? With the
-    //     approach here we have to add the new property here and in the singleton class.
-    //     And in general this look like boiler plate code ...
-    // [A] Does not work with Jenkins since a security manager prohibits this.
-    //
+    //stores version of the artifact which is build during pipeline run
+    def artifactVersion
 
-    void setArtifactVersion(String artifactVersion) {
-        CommonPipelineEnvironment.getInstance().artifactVersion = artifactVersion
-    }
-    String getArtifactVersion() {
-        CommonPipelineEnvironment.getInstance().artifactVersion
-    }
+    //Stores the current buildResult
+    String buildResult = 'SUCCESS'
 
-    void setBuildResult(String buildResult) {
-        CommonPipelineEnvironment.getInstance().buildResult = buildResult
-    }
-    String getBuildResult() {
-        CommonPipelineEnvironment.getInstance().buildResult
-    }
+    //stores the gitCommitId as well as additional git information for the build during pipeline run
+    String gitCommitId
+    String gitCommitMessage
+    String gitSshUrl
+    String gitHttpsUrl
+    String gitBranch
 
-    void setGitCommitId(String gitCommitId) {
-        CommonPipelineEnvironment.getInstance().gitCommitId = gitCommitId
-    }
-    String getGitCommitId() {
-        CommonPipelineEnvironment.getInstance().gitCommitId
-    }
+    String xsDeploymentId
 
-    void setGitCommitMessage(String gitCommitMessage) {
-        CommonPipelineEnvironment.getInstance().gitCommitMessage = gitCommitMessage
-    }
-    String getGitCommitMessage() {
-        CommonPipelineEnvironment.getInstance().gitCommitMessage
-    }
+    //GiutHub specific information
+    String githubOrg
+    String githubRepo
 
-    void setGitSshUrl(String gitSshUrl) {
-        CommonPipelineEnvironment.getInstance().gitSshUrl = gitSshUrl
-    }
-    String getGitSshUrl() {
-        CommonPipelineEnvironment.getInstance().gitSshUrl
-    }
+    //stores properties for a pipeline which build an artifact and then bundles it into a container
+    private Map appContainerProperties = [:]
 
-    void setGitHttpsUrl(String gitHttpsUrl) {
-        CommonPipelineEnvironment.getInstance().gitHttpsUrl = gitHttpsUrl
-    }
-    String getGitHttpsUrl() {
-        CommonPipelineEnvironment.getInstance().gitHttpsUrl
-    }
+    Map configuration = [:]
+    Map defaultConfiguration = [:]
 
-    void setGitBranch(String gitBranch) {
-        CommonPipelineEnvironment.getInstance().gitBranch = gitBranch
-    }
-    String getGitBranch() {
-        CommonPipelineEnvironment.getInstance().gitBranch
-    }
-
-    void setXsDeploymentId(String xsDeploymentId) {
-        CommonPipelineEnvironment.getInstance().xsDeploymentId = xsDeploymentId
-    }
-    String getXsDeploymentId() {
-        CommonPipelineEnvironment.getInstance().xsDeploymentId
-    }
-
-    void setGithubOrg(String githubOrg) {
-        CommonPipelineEnvironment.getInstance().githubOrg = githubOrg
-    }
-    String getGithubOrg() {
-        CommonPipelineEnvironment.getInstance().githubOrg
-    }
-
-
-    void setGithubRepo(String githubRepo) {
-        CommonPipelineEnvironment.getInstance().githubRepo = githubRepo
-    }
-    String getGithubRepo() {
-        CommonPipelineEnvironment.getInstance().githubRepo
-    }
-
-    Map getConfiguration() {
-        CommonPipelineEnvironment.getInstance().configuration
-    }
-    void setConfiguration(Map configuration) {
-        CommonPipelineEnvironment.getInstance().configuration = configuration
-    }
-
-    Map getDefaultConfiguration() {
-        CommonPipelineEnvironment.getInstance().defaultConfiguration
-    }
-    void setDefaultConfiguration(Map defaultConfiguration) {
-        CommonPipelineEnvironment.getInstance().defaultConfiguration = defaultConfiguration
-    }
-
-    String getMtarFilePath() {
-        CommonPipelineEnvironment.getInstance().mtarFilePath
-    }
-    void setMtarFilePath(String mtarFilePath) {
-        CommonPipelineEnvironment.getInstance().mtarFilePath = mtarFilePath
-    }
-
-    Map getValueMap() {
-        CommonPipelineEnvironment.getInstance().valueMap
-    }
-    void setValueMap(Map valueMap) {
-        CommonPipelineEnvironment.getInstance().valueMap = valueMap
-    }
+    String mtarFilePath
+    private Map valueMap = [:]
 
     void setValue(String property, value) {
         valueMap[property] = value
@@ -125,91 +41,177 @@ class commonPipelineEnvironment implements Serializable {
         return valueMap.get(property)
     }
 
-    String getChangeDocumentId() {
-        CommonPipelineEnvironment.getInstance().changeDocumentId
-    }
-    void setChangeDocumentId(String changeDocumentId) {
-        CommonPipelineEnvironment.getInstance().changeDocumentId = changeDocumentId
-    }
+    String changeDocumentId
 
     def reset() {
-        CommonPipelineEnvironment.getInstance().reset()
-    }
+        appContainerProperties = [:]
+        artifactVersion = null
 
-    Map getAppContainerProperties() {
-        CommonPipelineEnvironment.getInstance().appContainerProperties
-    }
-    void setAppContainerProperties(Map appContainerProperties) {
-        CommonPipelineEnvironment.getInstance().appContainerProperties = appContainerProperties
+        configuration = [:]
+
+        gitCommitId = null
+        gitCommitMessage = null
+        gitSshUrl = null
+        gitHttpsUrl = null
+        gitBranch = null
+
+        githubOrg = null
+        githubRepo = null
+
+        mtarFilePath = null
+        valueMap = [:]
+
+        changeDocumentId = null
+
+        InfluxData.reset()
     }
 
     def setAppContainerProperty(property, value) {
-        getAppContainerProperties()[property] = value
+        appContainerProperties[property] = value
     }
 
     def getAppContainerProperty(property) {
-        return getAppContainerProperties()[property]
+        return appContainerProperties[property]
     }
 
     // goes into measurement jenkins_custom_data
     def setInfluxCustomDataEntry(key, value) {
-        CommonPipelineEnvironment.getInstance().setInfluxCustomDataEntry(key, value)
+        InfluxData.addField('jenkins_custom_data', key, value)
     }
     // goes into measurement jenkins_custom_data
     @Deprecated // not used in library
     def getInfluxCustomData() {
-        CommonPipelineEnvironment.getInstance().getInfluxCustomData()
+        return InfluxData.getInstance().getFields().jenkins_custom_data
     }
 
     // goes into measurement jenkins_custom_data
     def setInfluxCustomDataTagsEntry(key, value) {
-        CommonPipelineEnvironment.getInstance().setInfluxCustomDataTagsEntry(key, value)
+        InfluxData.addTag('jenkins_custom_data', key, value)
     }
     // goes into measurement jenkins_custom_data
     @Deprecated // not used in library
     def getInfluxCustomDataTags() {
-        CommonPipelineEnvironment.getInstance().getInfluxCustomDataTags()
+        return InfluxData.getInstance().getTags().jenkins_custom_data
     }
 
     void setInfluxCustomDataMapEntry(measurement, field, value) {
-        CommonPipelineEnvironment.getInstance().setInfluxCustomDataMapEntry(measurement, field, value)
+        InfluxData.addField(measurement, field, value)
     }
     @Deprecated // not used in library
     def getInfluxCustomDataMap() {
-        CommonPipelineEnvironment.getInstance().getInfluxCustomDataMap()
+        return InfluxData.getInstance().getFields()
     }
 
     def setInfluxCustomDataMapTagsEntry(measurement, tag, value) {
-        CommonPipelineEnvironment.getInstance().setInfluxCustomDataMapTagsEntry(measurement, tag, value)
+        InfluxData.addTag(measurement, tag, value)
     }
     @Deprecated // not used in library
     def getInfluxCustomDataMapTags() {
-        CommonPipelineEnvironment.getInstance().getInfluxCustomDataMapTags()
+        return InfluxData.getInstance().getTags()
     }
 
     @Deprecated // not used in library
     def setInfluxStepData(key, value) {
-        CommonPipelineEnvironment.getInstance().setInfluxStepData(key, value)
+        InfluxData.addField('step_data', key, value)
     }
     @Deprecated // not used in library
     def getInfluxStepData(key) {
-        CommonPipelineEnvironment.getInstance().getInfluxStepData(key)
+        return InfluxData.getInstance().getFields()['step_data'][key]
     }
 
     @Deprecated // not used in library
     def setInfluxPipelineData(key, value) {
-        CommonPipelineEnvironment.getInstance().setInfluxPipelineData(key, value)
+        InfluxData.addField('pipeline_data', key, value)
     }
     @Deprecated // not used in library
     def setPipelineMeasurement(key, value){
-        CommonPipelineEnvironment.getInstance().setPipelineMeasurement(key, value)
+        setInfluxPipelineData(key, value)
     }
     @Deprecated // not used in library
     def getPipelineMeasurement(key) {
-        CommonPipelineEnvironment.getInstance().getPipelineMeasurement(key)
+        return InfluxData.getInstance().getFields()['pipeline_data'][key]
     }
 
     Map getStepConfiguration(stepName, stageName = env.STAGE_NAME, includeDefaults = true) {
-        CommonPipelineEnvironment.getInstance().getStepConfiguration(stepName, stageName, includeDefaults)
+        Map defaults = [:]
+        if (includeDefaults) {
+            defaults = ConfigurationLoader.defaultGeneralConfiguration()
+            defaults = ConfigurationMerger.merge(ConfigurationLoader.defaultStepConfiguration(null, stepName), null, defaults)
+            defaults = ConfigurationMerger.merge(ConfigurationLoader.defaultStageConfiguration(null, stageName), null, defaults)
+        }
+        Map config = ConfigurationMerger.merge(configuration.get('general') ?: [:], null, defaults)
+        config = ConfigurationMerger.merge(configuration.get('steps')?.get(stepName) ?: [:], null, config)
+        config = ConfigurationMerger.merge(configuration.get('stages')?.get(stageName) ?: [:], null, config)
+        return config
+    }
+
+    void writeToDisk(script) {
+
+        def files = [
+            [filename: '.pipeline/commonPipelineEnvironment/artifactVersion', content: artifactVersion],
+            [filename: '.pipeline/commonPipelineEnvironment/github/owner', content: githubOrg],
+            [filename: '.pipeline/commonPipelineEnvironment/github/repository', content: githubRepo],
+            [filename: '.pipeline/commonPipelineEnvironment/git/branch', content: gitBranch],
+            [filename: '.pipeline/commonPipelineEnvironment/git/commitId', content: gitCommitId],
+            [filename: '.pipeline/commonPipelineEnvironment/git/commitMessage', content: gitCommitMessage],
+        ]
+
+        files.each({f  ->
+            if (f.content && !script.fileExists(f.filename)) {
+                script.writeFile file: f.filename, text: f.content
+            }
+        })
+
+        valueMap.each({key, value ->
+            def fileName = ".pipeline/commonPipelineEnvironment/custom/${key}"
+            if (value && !script.fileExists(fileName)) {
+                //ToDo: check for value type and act accordingly?
+                script.writeFile file: fileName, text: value
+            }
+        })
+    }
+
+    void readFromDisk() {
+        def file = '.pipeline/commonPipelineEnvironment/artifactVersion'
+        if (fileExists(file)) {
+            artifactVersion = readFile(file)
+        }
+
+        file = '.pipeline/commonPipelineEnvironment/github/owner'
+        if (fileExists(file)) {
+            githubOrg = readFile(file)
+        }
+
+        file = '.pipeline/commonPipelineEnvironment/github/repository'
+        if (fileExists(file)) {
+            githubRepo = readFile(file)
+        }
+
+        file = '.pipeline/commonPipelineEnvironment/git/branch'
+        if (fileExists(file)) {
+            gitBranch = readFile(file)
+        }
+
+        file = '.pipeline/commonPipelineEnvironment/git/commitId'
+        if (fileExists(file)) {
+            gitCommitId = readFile(file)
+        }
+
+        file = '.pipeline/commonPipelineEnvironment/git/commitMessage'
+        if (fileExists(file)) {
+            gitCommitMessage = readFile(file)
+        }
+
+        def customValues = findFiles(glob: '.pipeline/commonPipelineEnvironment/custom/*')
+
+        customValues.each({f ->
+            def fileName = f.getName()
+            def param = fileName.split('/')[fileName.split('\\/').size()-1]
+            valueMap[param] = readFile(f.getPath())
+        })
+    }
+
+    List getCustomDefaults() {
+        DefaultValueCache.getInstance().getCustomDefaults()
     }
 }

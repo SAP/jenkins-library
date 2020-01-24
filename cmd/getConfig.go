@@ -54,11 +54,21 @@ func generateConfig() error {
 		return errors.Wrap(err, "metadata: read failed")
 	}
 
+	resourceParams := metadata.GetResourceParameters(GeneralConfig.EnvRootPath, "commonPipelineEnvironment")
+
 	var customConfig io.ReadCloser
-	if piperutils.FileExists(GeneralConfig.CustomConfig) {
-		customConfig, err = configOptions.openFile(GeneralConfig.CustomConfig)
-		if err != nil {
-			return errors.Wrap(err, "config: open failed")
+	{
+		exists, e := piperutils.FileExists(GeneralConfig.CustomConfig)
+
+		if e != nil {
+			return e
+		}
+
+		if exists {
+			customConfig, err = configOptions.openFile(GeneralConfig.CustomConfig)
+			if err != nil {
+				return errors.Wrap(err, "config: open failed")
+			}
 		}
 	}
 
@@ -83,9 +93,14 @@ func generateConfig() error {
 		params = metadata.Spec.Inputs.Parameters
 	}
 
-	stepConfig, err = myConfig.GetStepConfig(flags, GeneralConfig.ParametersJSON, customConfig, defaultConfig, paramFilter, params, GeneralConfig.StageName, metadata.Metadata.Name)
+	stepConfig, err = myConfig.GetStepConfig(flags, GeneralConfig.ParametersJSON, customConfig, defaultConfig, paramFilter, params, resourceParams, GeneralConfig.StageName, metadata.Metadata.Name)
 	if err != nil {
 		return errors.Wrap(err, "getting step config failed")
+	}
+
+	// apply context conditions if context configuration is requested
+	if configOptions.contextConfig {
+		applyContextConditions(metadata, &stepConfig)
 	}
 
 	myConfigJSON, _ := config.GetJSON(stepConfig.Config)
@@ -118,4 +133,34 @@ func defaultsAndFilters(metadata *config.StepData, stepName string) ([]io.ReadCl
 	}
 	//ToDo: retrieve default values from metadata
 	return nil, metadata.GetParameterFilters(), nil
+}
+
+func applyContextConditions(metadata config.StepData, stepConfig *config.StepConfig) {
+	//consider conditions for context configuration
+
+	//containers
+	applyContainerConditions(metadata.Spec.Containers, stepConfig)
+
+	//sidecars
+	applyContainerConditions(metadata.Spec.Sidecars, stepConfig)
+
+	//ToDo: remove all unnecessary sub maps?
+	// e.g. extract delete() from applyContainerConditions - loop over all stepConfig.Config[param.Value] and remove ...
+}
+
+func applyContainerConditions(containers []config.Container, stepConfig *config.StepConfig) {
+	for _, container := range containers {
+		if len(container.Conditions) > 0 {
+			for _, param := range container.Conditions[0].Params {
+				if container.Conditions[0].ConditionRef == "strings-equal" && stepConfig.Config[param.Name] == param.Value {
+					var containerConf map[string]interface{}
+					containerConf = stepConfig.Config[param.Value].(map[string]interface{})
+					for key, value := range containerConf {
+						stepConfig.Config[key] = value
+					}
+					delete(stepConfig.Config, param.Value)
+				}
+			}
+		}
+	}
 }

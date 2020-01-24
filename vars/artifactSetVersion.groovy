@@ -39,7 +39,6 @@ enum GitPushMode {NONE, HTTPS, SSH}
       * @possibleValues `true`, `false`
       */
     'verbose',
-    ,
     /**
      * Specifies the source to be used for the main version which is used for generating the automatic version.
      * * This can either be the version of the base image - as retrieved from the `FROM` statement within the Dockerfile, e.g. `FROM jenkins:2.46.2`
@@ -93,7 +92,7 @@ enum GitPushMode {NONE, HTTPS, SSH}
     /** Defines the template for the automatic version which will be created. */
     'versioningTemplate',
     /** Controls which protocol is used for performing push operation to remote repo.
-      * Required credentials needs to be configured ('gitSshKeyCredentialsId'/'TBD').
+      * Required credentials needs to be configured ('gitSshKeyCredentialsId'/'gitHttpsCredentialsId').
       * Push is only performed in case 'commitVersion' is set to 'true'.
       * @possibleValues 'SSH', 'HTTPS', 'NONE'
       */
