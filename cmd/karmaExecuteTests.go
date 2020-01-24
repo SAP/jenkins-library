@@ -5,6 +5,7 @@ import (
 
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/telemetry"
 )
 
 func karmaExecuteTests(myKarmaExecuteTestsOptions karmaExecuteTestsOptions) error {
@@ -13,6 +14,9 @@ func karmaExecuteTests(myKarmaExecuteTestsOptions karmaExecuteTestsOptions) erro
 	// also log stdout as Karma reports into it
 	c.Stdout(log.Entry().Writer())
 	c.Stderr(log.Entry().Writer())
+
+	telemetry.SendTelemetry(&telemetry.CustomData{})
+
 	runKarma(myKarmaExecuteTestsOptions, &c)
 	return nil
 }
