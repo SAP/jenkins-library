@@ -1,6 +1,7 @@
 package telemetry
 
 import (
+	"crypto/sha1"
 	"fmt"
 	"os"
 	"time"
@@ -9,13 +10,7 @@ import (
 	"net/url"
 
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
-	"gopkg.in/src-d/go-git.v4"
 )
-
-// SWA Reporting
-// 1. Step usage, details, ... -> SWA implementierung
-// 2. Errors -> Hook
-// 3. Notify/Deprecations
 
 // site ID
 const siteID = "827e8025-1e21-ae84-c3a3-3f62b70b0130"
@@ -27,65 +22,59 @@ var disabled bool
 var client piperhttp.Sender
 
 // Initialize sets up the base telemetry data and is called in generated part of the steps
-func Initialize(telemetryActive bool, getResourceParameter func(rootPath, resourceName, parameterName string) string, envRootPath, stepName string) {
+func Initialize(telemetryActive bool, _ func(rootPath, resourceName, parameterName string) string, _, stepName string) {
 	//TODO: change parameter semantic to avoid double negation
 	disabled = !telemetryActive
 
-	// check if telemetry is disabled
+	// skip if telemetry is dieabled
 	if disabled {
 		return
 	}
 
-	client := piperhttp.Client{}
-	client.SetOptions(piperhttp.ClientOptions{Timeout: time.Second * 5})
-
-	//gitOwner, gitRepository, gitPath := getGitData(envRootPath, getResourceParameter)
-
-	baseData = BaseData{
-		URL:        LibraryRepository,
-		ActionName: "Piper Library OS",
-		EventType:  "library-os",
-		SiteID:     siteID,
-		//GitOwner:      gitOwner,
-		//GitRepository: gitRepository,
-		StepName:        stepName,
-		PipelineURLSha1: os.Getenv("JOB_URL"),
-		BuildURLSha1:    os.Getenv("BUILD_URL"),
-		//GitPathSha1:   fmt.Sprintf("%x", sha1.Sum([]byte(gitPath))),
-
-		// ToDo: add further params
+	if client == nil {
+		client = &piperhttp.Client{}
 	}
 
+	client.SetOptions(piperhttp.ClientOptions{Timeout: time.Second * 5})
+
+	baseData = BaseData{
+		URL:             LibraryRepository,
+		ActionName:      "Piper Library OS",
+		EventType:       "library-os",
+		StepName:        stepName,
+		SiteID:          siteID,
+		PipelineURLHash: getPipelineURLHash(), // http://server:port/jenkins/job/foo/
+		BuildURLHash:    getBuildURLHash(),    // http://server:port/jenkins/job/foo/15/
+		//GitOwnerHash:
+		//GitOwner:      gitOwner,
+		//GitRepositoryHash:
+		//GitRepository: gitRepository,
+
+		// JOB_URL - JOB_BASE_NAME = count repositories
+		// JOB_URL - JOB_BASE_NAME - "/job/.*/job/" = count orgs
+
+		//JOB_NAME
+		//Projektname des Builds, z.B. "foo" oder "foo/bar". (Um in einem Bourne Shell-Script den Pfadanteil abzuschneiden, probieren Sie: ${JOB_NAME##*/})
+		//JOB_BASE_NAME
+		//Short Name of the project of this build stripping off folder paths, such as "foo" for "bar/foo".
+
+		// JENKINS_URL // http://server:port/jenkins/
+		//GitPathSha1:   fmt.Sprintf("%x", sha1.Sum([]byte(gitPath))),
+		// ToDo: add further params
+	}
 	//ToDo: register Logrus Hook
 }
 
-func getGitData(envRootPath string, getResourceParameter func(rootPath, resourceName, parameterName string) string) (owner, repository, path string) {
+func getPipelineURLHash() string {
+	return toSha1(os.Getenv("JOB_URL"))
+}
 
-	gitOwner := getResourceParameter(envRootPath, "commonPipelineEnvironment", "github/owner")
-	gitRepo := getResourceParameter(envRootPath, "commonPipelineEnvironment", "github/repository")
+func getBuildURLHash() string {
+	return toSha1(os.Getenv("BUILD_URL"))
+}
 
-	if len(gitOwner)+len(gitRepo) == 0 {
-		// 1st fallback: try to get repositoryUrl from commonPipelineEnvironment
-		gitRepoURL := getResourceParameter(envRootPath, "commonPipelineEnvironment", "git/repositoryUrl")
-
-		// 2nd fallback: get repository url from git
-		if len(gitRepoURL) == 0 {
-			repo, _ := git.Open(nil, nil)
-
-			remote, _ := repo.Remote(git.DefaultRemoteName)
-
-			urlList := remote.Config().URLs
-
-			for url := range urlList {
-				fmt.Print(url)
-			}
-
-		}
-
-		//ToDo: get owner and repo from url
-	}
-	path = fmt.Sprintf("%v/%v", owner, repository)
-	return
+func toSha1(input string) string {
+	return fmt.Sprintf("%x", sha1.Sum([]byte(input)))
 }
 
 // SWA baseURL
@@ -102,6 +91,7 @@ func SendTelemetry(customData *CustomData) {
 		CustomData:   *customData,
 	}
 
+	// skip if telemetry is dieabled
 	if disabled {
 		return
 	}
@@ -109,6 +99,5 @@ func SendTelemetry(customData *CustomData) {
 	request, _ := url.Parse(baseURL)
 	request.Path = endpoint
 	request.RawQuery = data.toPayloadString()
-	// Add logic for sending data to SWA
 	client.SendRequest(http.MethodGet, request.String(), nil, nil, nil)
 }
