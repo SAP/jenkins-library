@@ -119,15 +119,15 @@ void call(Map parameters = [:]) {
             }
             def protecodeDataJson = readJSON (file: 'ProtecodeData.json')
 
-            echo "protecodeDataJson: ${protecodeDataJson}"
+            echo "Prodecode ReportFileName: ${protecodeDataJson.reportFileName}"
 
             archiveArtifacts artifacts: "${protecodeDataJson.reportFileName}", allowEmptyArchive: false
-            if (config.addSideBarLink) {
-                jenkinsUtils.removeJobSideBarLinks("artifact/${protecodeDataJson.reportFileName}")
-                jenkinsUtils.addJobSideBarLink("artifact/${protecodeDataJson.reportFileName}", "Protecode Report", "images/24x24/graph.png")
-                jenkinsUtils.addRunSideBarLink("artifact/${protecodeDataJson.reportFileName}", "Protecode Report", "images/24x24/graph.png")
-                jenkinsUtils.addRunSideBarLink("${protecodeDataJson.protecodeServerUrl}/products/${protecodeDataJson.protecodeProductId}/", "Protecode WebUI", "images/24x24/graph.png")
-            }
+            
+            jenkinsUtils.removeJobSideBarLinks("artifact/${protecodeDataJson.reportFileName}")
+            jenkinsUtils.addJobSideBarLink("artifact/${protecodeDataJson.reportFileName}", "Protecode Report", "images/24x24/graph.png")
+            jenkinsUtils.addRunSideBarLink("artifact/${protecodeDataJson.reportFileName}", "Protecode Report", "images/24x24/graph.png")
+            jenkinsUtils.addRunSideBarLink("${protecodeDataJson.protecodeServerUrl}/products/${protecodeDataJson.protecodeProductId}/", "Protecode WebUI", "images/24x24/graph.png")
+        
 
             def json = readJSON (file: "Vulns.json")
             
