@@ -54,18 +54,17 @@ var baseMetaData BaseMetaData = BaseMetaData{
 
 // CustomData ...
 type CustomData struct {
-	Custom1Label string `json:"custom_11"`
-	Custom2Label string `json:"custom_12"`
-	Custom3Label string `json:"custom_13"`
-	Custom4Label string `json:"custom_14"`
-	Custom5Label string `json:"custom_15"`
-	Custom1      string `json:"e_11"`
-	Custom2      string `json:"e_12"`
-	Custom3      string `json:"e_13"`
-	Custom4      string `json:"e_14"`
-	Custom5      string `json:"e_15"`
-	//Custom30      string `json:"e_30"`
-	//Custom30Label string `json:"custom_30"`
+	// values custom_11 - custom_25 & e_11 - e_25 reserved for library reporting
+	Custom1Label string `json:"custom_26,omitempty"`
+	Custom2Label string `json:"custom_27,omitempty"`
+	Custom3Label string `json:"custom_28,omitempty"`
+	Custom4Label string `json:"custom_29,omitempty"`
+	Custom5Label string `json:"custom_30,omitempty"`
+	Custom1      string `json:"e_26,omitempty"`
+	Custom2      string `json:"e_27,omitempty"`
+	Custom3      string `json:"e_28,omitempty"`
+	Custom4      string `json:"e_29,omitempty"`
+	Custom5      string `json:"e_30,omitempty"`
 }
 
 // Data ...
