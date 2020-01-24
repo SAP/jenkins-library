@@ -45,22 +45,6 @@ func Initialize(telemetryActive bool, _ func(rootPath, resourceName, parameterNa
 		SiteID:          siteID,
 		PipelineURLHash: getPipelineURLHash(), // http://server:port/jenkins/job/foo/
 		BuildURLHash:    getBuildURLHash(),    // http://server:port/jenkins/job/foo/15/
-		//GitOwnerHash:
-		//GitOwner:      gitOwner,
-		//GitRepositoryHash:
-		//GitRepository: gitRepository,
-
-		// JOB_URL - JOB_BASE_NAME = count repositories
-		// JOB_URL - JOB_BASE_NAME - "/job/.*/job/" = count orgs
-
-		//JOB_NAME
-		//Projektname des Builds, z.B. "foo" oder "foo/bar". (Um in einem Bourne Shell-Script den Pfadanteil abzuschneiden, probieren Sie: ${JOB_NAME##*/})
-		//JOB_BASE_NAME
-		//Short Name of the project of this build stripping off folder paths, such as "foo" for "bar/foo".
-
-		// JENKINS_URL // http://server:port/jenkins/
-		//GitPathSha1:   fmt.Sprintf("%x", sha1.Sum([]byte(gitPath))),
-		// ToDo: add further params
 	}
 	//ToDo: register Logrus Hook
 }
