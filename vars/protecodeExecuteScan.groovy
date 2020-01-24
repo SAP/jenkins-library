@@ -129,7 +129,7 @@ void call(Map parameters = [:]) {
                 jenkinsUtils.addRunSideBarLink("${protecodeDataJson.protecodeServerUrl}/products/${protecodeDataJson.protecodeProductId}/", "Protecode WebUI", "images/24x24/graph.png")
             }
 
-            def json = readJSON (file: "${config.reportFileName}")
+            def json = readJSON (file: "${protecodeDataJson.reportFileName}")
             
             if(!json) {
                     Notify.error(this, "Protecode scan failed, please check the log and protecode backend for more details.")
