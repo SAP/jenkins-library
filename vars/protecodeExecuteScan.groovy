@@ -119,17 +119,16 @@ void call(Map parameters = [:]) {
 
             archiveArtifacts artifacts: report['target'], allowEmptyArchive: !report['mandatory']
             
-            if (config.addSideBarLink) {
-                jenkinsUtils.removeJobSideBarLinks("artifact/${report['target']}")
-                jenkinsUtils.addJobSideBarLink("artifact/${report['target']}", "Protecode Report", "images/24x24/graph.png")
-                jenkinsUtils.addRunSideBarLink("artifact/${report['target']}", "Protecode Report", "images/24x24/graph.png")
-                jenkinsUtils.addRunSideBarLink("${report['protecodeServerUrl']}/products/${report['productID']}/", "Protecode WebUI", "images/24x24/graph.png")
-            }
+            //move to link report
+            jenkinsUtils.removeJobSideBarLinks("artifact/${report['target']}")
+            jenkinsUtils.addJobSideBarLink("artifact/${report['target']}", "Protecode Report", "images/24x24/graph.png")
+            jenkinsUtils.addRunSideBarLink("artifact/${report['target']}", "Protecode Report", "images/24x24/graph.png")
+            jenkinsUtils.addRunSideBarLink("${report['protecodeServerUrl']}/products/${report['productID']}/", "Protecode WebUI", "images/24x24/graph.png")
 
 
             if(json.results.summary?.verdict?.short == 'Vulns') {
-                echo "${report['count']} ${json.results.summary?.verdict.detailed} of which ${report['cvss2GreaterOrEqualSeven']} had a CVSS v2 score >= 7.0 and ${report['cvss3GreaterOrEqualSeven']} had a CVSS v3 score >= 7.0.\n${report['excludedVulnerabilities']} vulnerabilities were excluded via configuration (${config.protecodeExcludeCVEs}) and ${report['triagedVulnerabilities']} vulnerabilities were triaged via the webUI.\nIn addition ${protecodeDataJsonhistoricalVulnerabilities} historical vulnerabilities were spotted."
-                if(config.protecodeFailOnSevereVulnerabilities && (report['cvss2GreaterOrEqualSeven'] > 0 || protecodeDataJsoncvss3GreaterOrEqualSeven > 0)) {
+                echo "${report['count']} ${json.results.summary?.verdict.detailed} of which ${report['cvss2GreaterOrEqualSeven']} had a CVSS v2 score >= 7.0 and ${report['cvss3GreaterOrEqualSeven']} had a CVSS v3 score >= 7.0.\n${report['excludedVulnerabilities']} vulnerabilities were excluded via configuration (${config.protecodeExcludeCVEs}) and ${report['triagedVulnerabilities']} vulnerabilities were triaged via the webUI.\nIn addition ${report['historicalVulnerabilities']} historical vulnerabilities were spotted."
+                if(config.protecodeFailOnSevereVulnerabilities && (report['cvss2GreaterOrEqualSeven'] > 0 || report['cvss3GreaterOrEqualSeven'] > 0)) {
                     Notify.error(this, "Protecode detected Open Source Software Security vulnerabilities, the project is not compliant. For details see the archived report or the web ui: ${report['protecodeServerUrl']}/products/${report['productID']}/")
                 }
             }
@@ -141,14 +140,12 @@ private void callProtecodeScan(config) {
 
     if (config.dockerCredentialsId) {
         echo "with docker credentials"
-        // write proper config.json with credentials
         withCredentials([file(credentialsId: config.dockerCredentialsId, variable: 'DOCKER_CONFIG')]) {
             withCredentials([[$class: 'UsernamePasswordMultiBinding', credentialsId: config.protecodeCredentialsId, passwordVariable: 'PIPER_password', usernameVariable: 'PIPER_user']]) {
                 sh "./piper protecodeExecuteScan --verbose ${config.verbose}"
             }
         }
     } else {
-        echo "without docker credentials"
         withCredentials([[$class: 'UsernamePasswordMultiBinding', credentialsId: config.protecodeCredentialsId, passwordVariable: 'PIPER_password', usernameVariable: 'PIPER_user']]) {
             sh "./piper protecodeExecuteScan --verbose ${config.verbose}"
         }

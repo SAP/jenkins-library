@@ -17,6 +17,46 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestCreateClient(t *testing.T) {
+	cases := []struct {
+		timeout string
+	}{
+		{""},
+		{"1"},
+	}
+
+	for _, c := range cases {
+		config := protecodeExecuteScanOptions{ProtecodeTimeoutMinutes: c.timeout, Verbose: true}
+
+		client := createClient(&config)
+		assert.NotNil(t, client, "client should not be empty")
+	}
+}
+
+var fileContent string
+
+func writeToFileMock(f string, d []byte, p os.FileMode) error {
+	fileContent = string(d)
+	return nil
+}
+
+func TestWriteReportDataToJSONFile(t *testing.T) {
+
+	expected := "{\"target\":\"REPORTFILENAME\",\"mandatory\":true,\"productID\":\"4711\",\"protecodeServerUrl\":\"DUMMYURL\",\"count\":\"0\",\"cvss2GreaterOrEqualSeven\":\"4\",\"cvss3GreaterOrEqualSeven\":\"3\",\"excludedVulnerabilities\":\"2\",\"triagedVulnerabilities\":\"0\",\"historicalVulnerabilities\":\"1\"}"
+
+	var parsedResult map[string]int = make(map[string]int)
+	parsedResult["historical_vulnerabilities"] = 1
+	parsedResult["excluded_vulnerabilities"] = 2
+	parsedResult["cvss3GreaterOrEqualSeven"] = 3
+	parsedResult["cvss2GreaterOrEqualSeven"] = 4
+	parsedResult["vulnerabilities"] = 5
+
+	config := protecodeExecuteScanOptions{ProtecodeServerURL: "DUMMYURL", ReportFileName: "REPORTFILENAME", Verbose: true}
+
+	writeReportDataToJSONFile(&config, parsedResult, 4711, writeToFileMock)
+	assert.Equal(t, fileContent, expected, "content should be not empty")
+}
+
 func TestUploadScanOrDeclareFetch(t *testing.T) {
 	requestURI := ""
 	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
@@ -62,7 +102,7 @@ func TestUploadScanOrDeclareFetch(t *testing.T) {
 	}
 
 	for _, c := range cases {
-		config := protecodeExecuteScanOptions{ReuseExisting: c.reuse, CleanupMode: c.clean, ProtecodeGroup: c.group, FetchURL: c.fetchURL, FilePath: testFile.Name()}
+		config := protecodeExecuteScanOptions{ReuseExisting: c.reuse, CleanupMode: c.clean, ProtecodeGroup: c.group, FetchURL: c.fetchURL, FilePath: c.filePath, Verbose: true}
 
 		got := uploadScanOrDeclareFetch(config, 0, pc, testFile.Name())
 
@@ -119,7 +159,7 @@ func TestExecuteProtecodeScan(t *testing.T) {
 	}
 
 	for _, c := range cases {
-		config := protecodeExecuteScanOptions{ReuseExisting: c.reuse, CleanupMode: c.clean, ProtecodeGroup: c.group, FetchURL: c.fetchURL, ProtecodeTimeoutMinutes: "3", ProtecodeExcludeCVEs: "CVE-2018-1, CVE-2017-1000382", ReportFileName: "./cache/report-file.txt"}
+		config := protecodeExecuteScanOptions{ReuseExisting: c.reuse, CleanupMode: c.clean, ProtecodeGroup: c.group, FetchURL: c.fetchURL, ProtecodeTimeoutMinutes: "3", ProtecodeExcludeCVEs: "CVE-2018-1, CVE-2017-1000382", ReportFileName: "./cache/report-file.txt", Verbose: true}
 
 		got, productID := executeProtecodeScan(pc, &config, "dummy", writeReportToFileMock)
 
@@ -148,7 +188,7 @@ func TestGetURLAndFileNameFromDockerImage(t *testing.T) {
 	}
 
 	for _, c := range cases {
-		config := protecodeExecuteScanOptions{ScanImage: c.scanImage, DockerRegistryURL: c.registryURL}
+		config := protecodeExecuteScanOptions{ScanImage: c.scanImage, DockerRegistryURL: c.registryURL, Verbose: true}
 
 		got, _ := getURLAndFileNameFromDockerImage(&config)
 

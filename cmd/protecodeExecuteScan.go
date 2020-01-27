@@ -67,7 +67,7 @@ func runProtecodeScan(config *protecodeExecuteScanOptions, influx *protecodeExec
 	if config.Verbose {
 		log.Entry().Info("Protecode scan debug, write report to filesystem")
 	}
-	writeReportDataToJSONFile(config, parsedResult, productID)
+	writeReportDataToJSONFile(config, parsedResult, productID, ioutil.WriteFile)
 
 	err := os.Remove(config.FilePath)
 	if err != nil {
@@ -221,7 +221,7 @@ func setInfluxData(influx *protecodeExecuteScanInflux, result map[string]int) {
 	influx.protecodeData.fields.vulnerabilities = fmt.Sprintf("%v", result["vulnerabilities"])
 }
 
-func writeReportDataToJSONFile(config *protecodeExecuteScanOptions, result map[string]int, productID int) {
+func writeReportDataToJSONFile(config *protecodeExecuteScanOptions, result map[string]int, productID int, writeToFile func(f string, d []byte, p os.FileMode) error) {
 
 	protecodeData := protecodeData{}
 	protecodeData.ProtecodeServerURL = config.ProtecodeServerURL
@@ -237,7 +237,7 @@ func writeReportDataToJSONFile(config *protecodeExecuteScanOptions, result map[s
 
 	jsonData, _ := json.Marshal(protecodeData)
 
-	ioutil.WriteFile("report.json", jsonData, 0644)
+	writeToFile("report.json", jsonData, 0644)
 }
 
 func createClient(config *protecodeExecuteScanOptions) protecode.Protecode {
@@ -281,7 +281,7 @@ func uploadScanOrDeclareFetch(config protecodeExecuteScanOptions, productID int,
 
 		} else {
 			if config.Verbose {
-				log.Entry().Info("Protecode scan debug, upload tar file")
+				log.Entry().Infof("Protecode scan debug, upload file path: %v", config.FilePath)
 			}
 			if len(config.FilePath) <= 0 {
 				log.Entry().Fatalf("Protecode scan failed, there is no file path configured for upload : %v", config.FilePath)
