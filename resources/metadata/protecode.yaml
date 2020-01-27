@@ -200,24 +200,6 @@ spec:
         - PARAMETERS
         - STAGES
         - STEPS
-    - name: dockerUser
-      type: string
-      description: user which is used for the docker image
-      mandatory: false
-      scope:
-        - GENERAL
-        - PARAMETERS
-        - STAGES
-        - STEPS
-    - name: dockerPassword
-      type: string
-      description: password which is used for the docker user
-      mandatory: false
-      scope:
-        - GENERAL
-        - PARAMETERS
-        - STAGES
-        - STEPS
     secrets:
     - name: protecodeCredentialsId
       type: jenkins

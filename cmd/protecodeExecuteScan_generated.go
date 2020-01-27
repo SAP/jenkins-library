@@ -30,8 +30,6 @@ type protecodeExecuteScanOptions struct {
 	ReuseExisting                        bool   `json:"reuseExisting,omitempty"`
 	User                                 string `json:"user,omitempty"`
 	Password                             string `json:"password,omitempty"`
-	DockerUser                           string `json:"dockerUser,omitempty"`
-	DockerPassword                       string `json:"dockerPassword,omitempty"`
 }
 
 type protecodeExecuteScanInflux struct {
@@ -134,8 +132,6 @@ func addProtecodeExecuteScanFlags(cmd *cobra.Command) {
 	cmd.Flags().BoolVar(&myProtecodeExecuteScanOptions.ReuseExisting, "reuseExisting", false, "Whether to reuse an existing product instead of creating a new one")
 	cmd.Flags().StringVar(&myProtecodeExecuteScanOptions.User, "user", os.Getenv("PIPER_user"), "user which is used for the protecode scan")
 	cmd.Flags().StringVar(&myProtecodeExecuteScanOptions.Password, "password", os.Getenv("PIPER_password"), "password which is used for the user")
-	cmd.Flags().StringVar(&myProtecodeExecuteScanOptions.DockerUser, "dockerUser", os.Getenv("PIPER_dockerUser"), "user which is used for the docker image")
-	cmd.Flags().StringVar(&myProtecodeExecuteScanOptions.DockerPassword, "dockerPassword", os.Getenv("PIPER_dockerPassword"), "password which is used for the docker user")
 
 	cmd.MarkFlagRequired("protecodeGroup")
 	cmd.MarkFlagRequired("user")
@@ -290,22 +286,6 @@ func protecodeExecuteScanMetadata() config.StepData {
 						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   true,
-						Aliases:     []config.Alias{},
-					},
-					{
-						Name:        "dockerUser",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-					},
-					{
-						Name:        "dockerPassword",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
 						Aliases:     []config.Alias{},
 					},
 				},
