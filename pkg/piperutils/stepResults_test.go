@@ -19,7 +19,7 @@ func TestPersistReportAndLinks(t *testing.T) {
 	defer os.RemoveAll(workspace)
 
 	reports := []Path{Path{Target: "testFile1.json", Mandatory: true}, Path{Target: "testFile2.json"}}
-	links := []Path{Path{Target: "https://1234568.com/test"}}
+	links := []Path{Path{Target: "https://1234568.com/test", Name: "Weblink"}}
 	PersistReportsAndLinks(workspace, reports, links)
 
 	reportsJSONPath := filepath.Join(workspace, "reports.json")
@@ -53,4 +53,5 @@ func TestPersistReportAndLinks(t *testing.T) {
 	assert.Equal(t, "testFile2.json", reportsLoaded[1].Target, "target value on report 1 has wrong value")
 	assert.Equal(t, false, linksLoaded[0].Mandatory, "mandatory flag on link 1 has wrong value")
 	assert.Equal(t, "https://1234568.com/test", linksLoaded[0].Target, "target value on link 1 has wrong value")
+	assert.Equal(t, "Weblink", linksLoaded[0].Name, "name value on link 1 has wrong value")
 }

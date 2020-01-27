@@ -9,6 +9,7 @@ import (
 
 // Path - struct to serialize paths and some metadata back to the invoker
 type Path struct {
+	Name      string `json:"name"`
 	Target    string `json:"target"`
 	Mandatory bool   `json:"mandatory"`
 }
