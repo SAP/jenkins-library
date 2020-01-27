@@ -209,16 +209,6 @@ spec:
       - STAGES
       - STEPS
       default: percentage
-    - name: verbose
-      type: bool
-      description: Whether the step shall provide verbose logging output
-      mandatory: false
-      scope:
-      - GENERAL
-      - PARAMETERS
-      - STAGES
-      - STEPS
-      default: false
   outputs:
     resources:
       - name: influx

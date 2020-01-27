@@ -119,6 +119,10 @@ func PrepareConfig(cmd *cobra.Command, metadata *config.StepData, stepName strin
 		}
 	}
 
+	if !GeneralConfig.Verbose {
+		log.SetVerbose(stepConfig.Config["verbose"].(bool))
+	}
+
 	confJSON, _ := json.Marshal(stepConfig.Config)
 	json.Unmarshal(confJSON, &options)
 

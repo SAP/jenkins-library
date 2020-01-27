@@ -162,7 +162,7 @@ func (m *StepData) ReadPipelineStepData(metadata io.ReadCloser) error {
 
 // GetParameterFilters retrieves all scope dependent parameter filters
 func (m *StepData) GetParameterFilters() StepFilters {
-	var filters StepFilters
+	filters := StepFilters{All: []string{"verbose"}, General: []string{"verbose"}, Steps: []string{"verbose"}, Stages: []string{"verbose"}, Parameters: []string{"verbose"}}
 	for _, param := range m.Spec.Inputs.Parameters {
 		parameterKeys := []string{param.Name}
 		for _, condition := range param.Conditions {
