@@ -163,8 +163,7 @@ private void scanWithCredentials(config) {
     }
     sh " mv ${uuid}-config.json /protecode/.docker/config.json "
 
-        withCredentials([[$class: 'UsernamePasswordMultiBinding', credentialsId: config.protecodeCredentialsId, passwordVariable: 'password', usernameVariable: 'user']]) {
-            sh "./piper protecodeExecuteScan  --password ${password} --user ${user}"
-        }
-     }
+    withCredentials([[$class: 'UsernamePasswordMultiBinding', credentialsId: config.protecodeCredentialsId, passwordVariable: 'password', usernameVariable: 'user']]) {
+        sh "./piper protecodeExecuteScan  --password ${password} --user ${user}"
+    }
 }
