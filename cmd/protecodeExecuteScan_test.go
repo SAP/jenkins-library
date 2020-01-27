@@ -64,7 +64,7 @@ func TestUploadScanOrDeclareFetch(t *testing.T) {
 	for _, c := range cases {
 		config := protecodeExecuteScanOptions{ReuseExisting: c.reuse, CleanupMode: c.clean, ProtecodeGroup: c.group, FetchURL: c.fetchURL, FilePath: testFile.Name()}
 
-		got, _ := uploadScanOrDeclareFetch(config, 0, pc, testFile.Name())
+		got := uploadScanOrDeclareFetch(config, 0, pc, testFile.Name())
 
 		assert.Equal(t, c.want, got)
 	}
@@ -121,7 +121,7 @@ func TestExecuteProtecodeScan(t *testing.T) {
 	for _, c := range cases {
 		config := protecodeExecuteScanOptions{ReuseExisting: c.reuse, CleanupMode: c.clean, ProtecodeGroup: c.group, FetchURL: c.fetchURL, ProtecodeTimeoutMinutes: "3", ProtecodeExcludeCVEs: "CVE-2018-1, CVE-2017-1000382", ReportFileName: "./cache/report-file.txt"}
 
-		got, productID, _ := executeProtecodeScan(pc, &config, "dummy", writeReportToFileMock)
+		got, productID := executeProtecodeScan(pc, &config, "dummy", writeReportToFileMock)
 
 		assert.Equal(t, 4711, productID)
 		assert.Equal(t, 1125, got["historical_vulnerabilities"])

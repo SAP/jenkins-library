@@ -44,67 +44,68 @@ func protecodeExecuteScan(config protecodeExecuteScanOptions, influx *protecodeE
 func runProtecodeScan(config *protecodeExecuteScanOptions, influx *protecodeExecuteScanInflux) error {
 
 	//create client for sending api request
+	if config.Verbose {
+		log.Entry().Info("Protecode scan debug, create protecode client")
+	}
 	client := createClient(config)
 
-	fileName, err := getDockerImage(config, client)
-	if err != nil {
-		log.Entry().Fatalf("Exception during getting the image %v", err)
+	if config.Verbose {
+		log.Entry().Info("Protecode scan debug, get docker image")
 	}
-	parsedResult, productID, err := executeProtecodeScan(client, config, fileName, writeReportToFile)
-	if err != nil {
-		log.Entry().Fatalf("Exception during the execute of the scan %v", err)
-	}
+	fileName := getDockerImage(config, client)
 
+	if config.Verbose {
+		log.Entry().Info("Protecode scan debug, execute protecode scan")
+	}
+	parsedResult, productID := executeProtecodeScan(client, config, fileName, writeReportToFile)
+
+	if config.Verbose {
+		log.Entry().Info("Protecode scan debug, write influx data")
+	}
 	setInfluxData(influx, parsedResult)
 
+	if config.Verbose {
+		log.Entry().Info("Protecode scan debug, write report to filesystem")
+	}
 	writeReportDataToJSONFile(config, parsedResult, productID)
 
-	log.Entry().Debugf("Cleanup tar archive")
-	err = os.Remove(config.FilePath)
+	err := os.Remove(config.FilePath)
 	if err != nil {
-		log.Entry().WithError(err).Warnf("Failed to delete tar source code")
+		log.Entry().WithError(err).Warnf("Protecode scan warning, failed to delete tar source code")
 	}
 
 	return nil
 }
 
-func getDockerImage(config *protecodeExecuteScanOptions, client protecode.Protecode) (string, error) {
+func getDockerImage(config *protecodeExecuteScanOptions, client protecode.Protecode) string {
+	fileName := config.ScanImage
 
-	cacheImagePath := "./cache/protecodeImage"
+	cachePath := "./cache"
+	cacheProtecodeImagePath := "/protecodeImage"
+	cacheImagePath := filepath.Join(cachePath, cacheProtecodeImagePath)
 	os.Mkdir(cacheImagePath, 600)
+
+	tarFileName := filepath.Join(cacheImagePath, fileName)
+
 	completeURL, err := getURLAndFileNameFromDockerImage(config)
 	if err != nil {
-		log.Entry().Fatalf("Exception during get url creation for get the docker image %v", err)
+		log.Entry().Fatalf("Protecode scan failed, exception during get url creation for get the docker image %v", err)
 	}
 
 	image, err := pkgutil.GetImage(completeURL, config.IncludeLayers, cacheImagePath)
 	if err != nil {
-		log.Entry().Fatalf("Exception during get docker image %v", err)
-	}
-	fileName := fmt.Sprintf("%v.tar", strings.ReplaceAll(config.ScanImage, "/", "_"))
-
-	//tar folder
-	cacheTarPath := "./cache"
-	tarFileName := filepath.Join(cacheTarPath, fileName)
-	tarFile, err := os.Create(tarFileName)
-	if err != nil {
-		log.Entry().WithError(err).Fatal("Failed to create tar of docker image")
-	}
-	if err := os.Chmod(tarFileName, 0644); err != nil {
-		log.Entry().WithError(err)
-	}
-	defer tarFile.Close()
-
-	reference, err := name.ParseReference(image.Digest.String(), name.WeakValidation)
-	if err != nil {
-		log.Entry().WithError(err).Fatal("Failed to parse reference of docker image")
-	}
-	err = tarball.Write(reference, image.Image, tarFile)
-	if err != nil {
-		log.Entry().WithError(err).Fatal("Failed to create tar archive of docker image via tarball")
+		log.Entry().Fatalf("Protecode scan failed, exception during get docker image %v", err)
 	}
 
-	os.RemoveAll(cacheImagePath)
+	if !strings.Contains(config.ScanImage, ".tar") {
+		fileName = fmt.Sprintf("%v.tar", strings.ReplaceAll(config.ScanImage, "/", "_"))
+		tarFileName = filepath.Join(cachePath, fileName)
+
+		if config.Verbose {
+			log.Entry().Info("Protecode scan debug, tar the image")
+		}
+		tarImageData(tarFileName, image, cacheImagePath)
+	}
 
 	if len(config.FilePath) <= 0 {
 		(*config).FilePath = fmt.Sprintf("./%v", filepath.Join("./", tarFileName))
@@ -113,7 +114,29 @@ func getDockerImage(config *protecodeExecuteScanOptions, client protecode.Protec
 		}
 	}
 
-	return fileName, nil
+	return fileName
+}
+
+func tarImageData(tarFileName string, image pkgutil.Image, cacheImagePath string) {
+	tarFile, err := os.Create(tarFileName)
+	if err != nil {
+		log.Entry().WithError(err).Fatal("Protecode scan failed, error during create tar for the docker image")
+	}
+	if err := os.Chmod(tarFileName, 0644); err != nil {
+		log.Entry().WithError(err).Fatal("Protecode scan failed, error during create tar for the docker image")
+	}
+	defer tarFile.Close()
+
+	reference, err := name.ParseReference(image.Digest.String(), name.WeakValidation)
+	if err != nil {
+		log.Entry().WithError(err).Fatal("Protecode scan failed, not possible to parse reference of docker image")
+	}
+	err = tarball.Write(reference, image.Image, tarFile)
+	if err != nil {
+		log.Entry().WithError(err).Fatal("Protecode scan failed, error during create tar archive of docker image via tarball")
+	}
+
+	os.RemoveAll(cacheImagePath)
 }
 
 func getURLAndFileNameFromDockerImage(config *protecodeExecuteScanOptions) (string, error) {
@@ -135,21 +158,24 @@ func getURLAndFileNameFromDockerImage(config *protecodeExecuteScanOptions) (stri
 	return completeURL, nil
 }
 
-func executeProtecodeScan(client protecode.Protecode, config *protecodeExecuteScanOptions, fileName string, writeReportToFile func(resp io.ReadCloser, reportFileName string) error) (map[string]int, int, error) {
+func executeProtecodeScan(client protecode.Protecode, config *protecodeExecuteScanOptions, fileName string, writeReportToFile func(resp io.ReadCloser, reportFileName string) error) (map[string]int, int) {
 
 	var parsedResult map[string]int = make(map[string]int)
 	//load existing product by filename
+	if config.Verbose {
+		log.Entry().Info("Protecode scan debug, load existing product")
+	}
 	productID := client.LoadExistingProduct(config.ProtecodeGroup, config.FilePath, config.ReuseExisting)
 
 	// check if no existing is found or reuse existing is false
-	productID, err := uploadScanOrDeclareFetch(*config, productID, client, fileName)
-	if err != nil {
-		return parsedResult, productID, err
-	}
+	productID = uploadScanOrDeclareFetch(*config, productID, client, fileName)
 	if productID <= 0 {
-		return parsedResult, productID, errors.New(fmt.Sprintf("Protecode scan failed, the product id is not valid (product id %v <= zero)", productID))
+		log.Entry().Fatalf("Protecode scan failed, the product id is not valid (product id %v <= zero)", productID)
 	}
 	//pollForResult
+	if config.Verbose {
+		log.Entry().Info("Protecode scan debug, poll for scan result")
+	}
 	result := client.PollForResult(productID, config.Verbose)
 
 	jsonData, _ := json.Marshal(result)
@@ -158,25 +184,31 @@ func executeProtecodeScan(client protecode.Protecode, config *protecodeExecuteSc
 	//check if result is ok else notify
 	if len(result.Result.Status) > 0 && result.Result.Status == "F" {
 		log.Entry().Fatal("Protecode scan failed, please check the log and protecode backend for more details.")
-		return parsedResult, productID, errors.New("Protecode scan failed, please check the log and protecode backend for more details")
 	}
 	//loadReport
+	if config.Verbose {
+		log.Entry().Info("Protecode scan debug, load report")
+	}
 	resp := client.LoadReport(config.ReportFileName, productID)
 
 	//save report to filesystem
-	err = writeReportToFile(*resp, config.ReportFileName)
+	err := writeReportToFile(*resp, config.ReportFileName)
 	if err != nil {
-		return parsedResult, productID, err
+		return parsedResult, productID
 	}
 	//clean scan from server
+	if config.Verbose {
+		log.Entry().Info("Protecode scan debug, delete scan")
+	}
 	client.DeleteScan(config.CleanupMode, productID)
 
 	//count vulnerabilities
+	if config.Verbose {
+		log.Entry().Info("Protecode scan debug, parse result")
+	}
 	parsedResult = client.ParseResultForInflux(result.Result, config.ProtecodeExcludeCVEs)
 
-	log.Entry().Infof("Protecode scan result: %v", parsedResult)
-
-	return parsedResult, productID, nil
+	return parsedResult, productID
 }
 
 func setInfluxData(influx *protecodeExecuteScanInflux, result map[string]int) {
@@ -236,28 +268,30 @@ func createClient(config *protecodeExecuteScanOptions) protecode.Protecode {
 	return pc
 }
 
-func uploadScanOrDeclareFetch(config protecodeExecuteScanOptions, productID int, client protecode.Protecode, filaName string) (int, error) {
+func uploadScanOrDeclareFetch(config protecodeExecuteScanOptions, productID int, client protecode.Protecode, filaName string) int {
 
 	// check if no existing is found or reuse existing is false
 	if productID <= 0 || !config.ReuseExisting {
 		if len(config.FetchURL) > 0 {
-			fmt.Printf("triggering Protecode scan - url: %v, group: %v", config.FetchURL, config.ProtecodeGroup)
+			if config.Verbose {
+				log.Entry().Info("Protecode scan debug, declare fetch url")
+			}
 			resultData := client.DeclareFetchUrl(config.CleanupMode, config.ProtecodeGroup, config.FetchURL)
-			log.Entry().Infof("Protecode scan declare fetch url result: %v", resultData)
 			productID = resultData.ProductId
 
 		} else {
-			if len(config.FilePath) <= 0 {
-				return -1, errors.New(fmt.Sprintf("Protecode scan failed, there is no file path configured for upload : %v", config.FilePath))
+			if config.Verbose {
+				log.Entry().Info("Protecode scan debug, upload tar file")
 			}
-			fmt.Printf("triggering Protecode scan - file: %v, group: %v", config.FilePath, config.ProtecodeGroup)
+			if len(config.FilePath) <= 0 {
+				log.Entry().Fatalf("Protecode scan failed, there is no file path configured for upload : %v", config.FilePath)
+			}
 			resultData := client.UploadScanFile(config.CleanupMode, config.ProtecodeGroup, config.FilePath, filaName)
-			log.Entry().Infof("Protecode scan upload result: %v", resultData)
 			productID = resultData.Result.ProductId
 		}
 	}
 
-	return productID, nil
+	return productID
 }
 
 func writeReportToFile(resp io.ReadCloser, reportFileName string) error {

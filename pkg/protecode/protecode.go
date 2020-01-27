@@ -150,14 +150,14 @@ func (pc *Protecode) getResultData(r io.ReadCloser) *ResultData {
 		if err != nil {
 			err = json.Unmarshal([]byte(newStr), response)
 			if err != nil {
-				pc.logger.WithError(err).Fatalf("error during unqote response: %v", newStr)
+				pc.logger.WithError(err).Fatalf("Protecode scan failed, error during unqote response: %v", newStr)
 			}
 		} else {
 			err = json.Unmarshal([]byte(unquoted), response)
 		}
 
 		if err != nil {
-			pc.logger.WithError(err).Fatalf("error during decode response: %v", newStr)
+			pc.logger.WithError(err).Fatalf("Protecode scan failed, error during decode response: %v", newStr)
 		}
 	}
 
@@ -178,14 +178,14 @@ func (pc *Protecode) getResult(r io.ReadCloser) *Result {
 		if err != nil {
 			err = json.Unmarshal([]byte(newStr), response)
 			if err != nil {
-				pc.logger.WithError(err).Fatalf("error during unqote response: %v", newStr)
+				pc.logger.WithError(err).Fatalf("Protecode scan failed, error during unqote response: %v", newStr)
 			}
 		} else {
 			err = json.Unmarshal([]byte(unquoted), response)
 		}
 
 		if err != nil {
-			pc.logger.WithError(err).Fatalf("error during decode response: %v", newStr)
+			pc.logger.WithError(err).Fatalf("Protecode scan failed, error during decode response: %v", newStr)
 		}
 	}
 
@@ -207,24 +207,23 @@ func (pc *Protecode) getProductData(r io.ReadCloser) *ProductData {
 		if err != nil {
 			err = json.Unmarshal([]byte(newStr), response)
 			if err != nil {
-				pc.logger.WithError(err).Fatalf("error during unqote response: %v", newStr)
+				pc.logger.WithError(err).Fatalf("Protecode scan failed, error during unqote response: %v", newStr)
 			}
 		} else {
 			err = json.Unmarshal([]byte(unquoted), response)
 		}
 
 		if err != nil {
-			pc.logger.WithError(err).Fatalf("error during decode response: %v", newStr)
+			pc.logger.WithError(err).Fatalf("Protecode scan failed, error during decode response: %v", newStr)
 		}
 	}
 	return response
 }
 
 func (pc *Protecode) uploadFileRequest(url, filePath string, headers map[string][]string) *io.ReadCloser {
-	pc.logger.Debugf("Upload %v %v %v", url, filePath, headers)
 	r, err := pc.client.UploadRequest(http.MethodPut, url, filePath, "file", headers, nil)
 	if err != nil {
-		pc.logger.WithError(err).Fatalf("error during %v upload request", url)
+		pc.logger.WithError(err).Fatalf("Protecode scan failed, error during %v upload request", url)
 	}
 
 	return &r.Body
@@ -236,17 +235,6 @@ func (pc *Protecode) sendApiRequest(method string, url string, headers map[strin
 
 	return &r.Body, err
 }
-
-/*func (pc *Protecode) ResolveSymLink(method string, name string) (*io.ReadCloser, error) {
-
-	link, err := os.Readlink(url)
-	if err != nil {
-		pc.logger.WithError(err).Fatalf("error during %v resolve symlink", url)
-	}
-	r, err := pc.sendApiRequest("GET", link, nil)
-
-	return r, err
-}*/
 
 // #####################################
 // ParseResultForInflux
@@ -329,7 +317,7 @@ func (pc *Protecode) DeleteScan(cleanupMode string, productId int) {
 		pc.sendApiRequest("DELETE", protecodeURL, headers)
 		break
 	default:
-		pc.logger.Fatalf("Unknown cleanup mode %v", cleanupMode)
+		pc.logger.Fatalf("Protecode scan failed, unknown cleanup mode %v", cleanupMode)
 	}
 
 }
@@ -348,7 +336,7 @@ func (pc *Protecode) LoadReport(reportFileName string, productId int) *io.ReadCl
 
 	readCloser, err := pc.sendApiRequest(http.MethodGet, protecodeURL, headers)
 	if err != nil {
-		pc.logger.WithError(err).Fatalf("Load Report failed %v", protecodeURL)
+		pc.logger.WithError(err).Fatalf("Protecode scan failed, not possible to load report %v", protecodeURL)
 	}
 
 	return readCloser
@@ -375,7 +363,7 @@ func (pc *Protecode) DeclareFetchUrl(cleanupMode, protecodeGroup, fetchURL strin
 	protecodeURL := fmt.Sprintf("%v/api/fetch/", pc.serverURL)
 	r, err := pc.sendApiRequest(http.MethodPost, protecodeURL, headers)
 	if err != nil {
-		pc.logger.WithError(err).Fatalf("Protecode scan exception during declare fetch url: %v", protecodeURL)
+		pc.logger.WithError(err).Fatalf("Protecode scan failed, exception during declare fetch url: %v", protecodeURL)
 	}
 	return pc.getResult(*r)
 }
@@ -429,7 +417,7 @@ func (pc *Protecode) PollForResult(productId int, verbose bool) ResultData {
 	if len(response.Result.Components) == 0 || response.Result.Status == "B" {
 		response, err = pc.pullResult(productId)
 		if err != nil || len(response.Result.Components) == 0 || response.Result.Status == "B" {
-			pc.logger.Fatal("No result for protecode scan")
+			pc.logger.Fatal("Protecode scan failed, no result after polling")
 		}
 	}
 
@@ -504,7 +492,7 @@ func (pc *Protecode) loadExisting(protecodeURL string, headers map[string][]stri
 
 	r, err := pc.sendApiRequest(http.MethodGet, protecodeURL, headers)
 	if err != nil {
-		pc.logger.WithError(err).Fatalf("Protecode load existing product failed: %v", protecodeURL)
+		pc.logger.WithError(err).Fatalf("Protecode scan failed, during load existing product: %v", protecodeURL)
 	}
 
 	return pc.getProductData(*r)

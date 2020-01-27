@@ -146,7 +146,7 @@ void addRunSideBarLink(String relativeUrl, String displayName, String relativeIc
             run.getActions().add(action)
         }
     } catch (e) {
-        echo e.printStackTrace()
+        e.printStackTrace()
     }
 }
 
