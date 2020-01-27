@@ -77,7 +77,7 @@ func TestSendTelemetry(t *testing.T) {
 		// assert
 		assert.Equal(t, "GET", mock.httpMethod)
 		assert.Contains(t, mock.urlsCalled, baseURL)
-		assert.Contains(t, mock.urlsCalled, "custom_26=label")
+		assert.Contains(t, mock.urlsCalled, "custom26=label")
 		assert.Contains(t, mock.urlsCalled, "e_26=test")
 		assert.Contains(t, mock.urlsCalled, "action_name=testAction")
 	})

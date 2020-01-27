@@ -21,10 +21,10 @@ var baseData BaseData
 
 // BaseMetaData object definition containing the labels for the base data and it's mapping information
 type BaseMetaData struct {
-	StepNameLabel        string `json:"custom_3"`
-	PipelineURLHashLabel string `json:"custom_4"`
-	BuildURLHashLabel    string `json:"custom_5"`
-	StageNameLabel       string `json:"custom_10"`
+	StepNameLabel        string `json:"custom3"`
+	PipelineURLHashLabel string `json:"custom4"`
+	BuildURLHashLabel    string `json:"custom5"`
+	StageNameLabel       string `json:"custom10"`
 }
 
 // baseMetaData object containing the labels for the base data
@@ -38,11 +38,11 @@ var baseMetaData BaseMetaData = BaseMetaData{
 // CustomData object definition containing the data that can be set by a step and it's mapping information
 type CustomData struct {
 	// values custom_11 - custom_25 & e_11 - e_25 reserved for library reporting
-	Custom1Label string `json:"custom_26,omitempty"`
-	Custom2Label string `json:"custom_27,omitempty"`
-	Custom3Label string `json:"custom_28,omitempty"`
-	Custom4Label string `json:"custom_29,omitempty"`
-	Custom5Label string `json:"custom_30,omitempty"`
+	Custom1Label string `json:"custom26,omitempty"`
+	Custom2Label string `json:"custom27,omitempty"`
+	Custom3Label string `json:"custom28,omitempty"`
+	Custom4Label string `json:"custom29,omitempty"`
+	Custom5Label string `json:"custom30,omitempty"`
 	Custom1      string `json:"e_26,omitempty"`
 	Custom2      string `json:"e_27,omitempty"`
 	Custom3      string `json:"e_28,omitempty"`

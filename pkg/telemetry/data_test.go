@@ -22,13 +22,13 @@ func TestDataToMap(t *testing.T) {
 	assert.Contains(t, result, "e_5")
 	assert.Contains(t, result, "e_10")
 
-	assert.Contains(t, result, "custom_3")
-	assert.Contains(t, result, "custom_4")
-	assert.Contains(t, result, "custom_5")
-	assert.Contains(t, result, "custom_10")
+	assert.Contains(t, result, "custom3")
+	assert.Contains(t, result, "custom4")
+	assert.Contains(t, result, "custom5")
+	assert.Contains(t, result, "custom10")
 
 	assert.Contains(t, result, "e_27")
-	assert.Contains(t, result, "custom_27")
+	assert.Contains(t, result, "custom27")
 
 	assert.Equal(t, 14, len(result))
 }
