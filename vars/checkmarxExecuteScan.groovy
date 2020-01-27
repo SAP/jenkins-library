@@ -39,7 +39,7 @@ void call(Map parameters = [:]) {
                 passwordVariable: 'PIPER_password',
                 usernameVariable: 'PIPER_username'
             )]) {
-                sh "./piper checkmarxExecuteScan"
+                sh "./piper checkmarxExecuteScan --verbose ${parameters.verbose}"
             }
 
             def reports = readJSON (file: 'reports.json')
