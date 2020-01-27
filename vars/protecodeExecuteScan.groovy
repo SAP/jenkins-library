@@ -107,11 +107,7 @@ void call(Map parameters = [:]) {
                 stepParam1: parameters?.script == null
             ], config)
 
-            if(config.dockerCredentialsId){
-                scanWithCredentials(config)
-            } else {
-                callProtecodeScan(config)
-            }
+            callProtecodeScan(config)
 
             def json = readJSON (file: "Vulns.json")
             
@@ -142,28 +138,19 @@ void call(Map parameters = [:]) {
 }
 
 private void callProtecodeScan(config) {
-    withCredentials([[$class: 'UsernamePasswordMultiBinding', credentialsId: config.protecodeCredentialsId, passwordVariable: 'password', usernameVariable: 'user']]) {
 
-        sh "./piper protecodeExecuteScan  --password ${password} --user ${user}"
-    }
-}
-
-
-private void scanWithCredentials(config) {
-
-    def uuid = UUID.randomUUID().toString()
-    if (config.dockerConfigJsonCredentialsId) {
+    if (config.dockerCredentialsId) {
+        echo "with docker credentials"
         // write proper config.json with credentials
-        withCredentials([file(credentialsId: config.dockerCredentialsId, variable: 'dockerConfigJson')]) {
-            writeFile file: "${uuid}-config.json", text: readFile(dockerConfigJson)
+        withCredentials([file(credentialsId: config.dockerCredentialsId, variable: 'DOCKER_CONFIG')]) {
+            withCredentials([[$class: 'UsernamePasswordMultiBinding', credentialsId: config.protecodeCredentialsId, passwordVariable: 'PIPER_password', usernameVariable: 'PIPER_user']]) {
+                sh "./piper protecodeExecuteScan --verbose ${config.verbose}"
+            }
         }
     } else {
-        // empty config.json to allow anonymous authentication
-        writeFile file: "${uuid}-config.json", text: '{"auths":{}}'
-    }
-    sh " mv ${uuid}-config.json /protecode/.docker/config.json "
-
-    withCredentials([[$class: 'UsernamePasswordMultiBinding', credentialsId: config.protecodeCredentialsId, passwordVariable: 'password', usernameVariable: 'user']]) {
-        sh "./piper protecodeExecuteScan  --password ${password} --user ${user}"
+        echo "without docker credentials"
+        withCredentials([[$class: 'UsernamePasswordMultiBinding', credentialsId: config.protecodeCredentialsId, passwordVariable: 'PIPER_password', usernameVariable: 'PIPER_user']]) {
+            sh "./piper protecodeExecuteScan --verbose ${config.verbose}"
+        }
     }
 }
