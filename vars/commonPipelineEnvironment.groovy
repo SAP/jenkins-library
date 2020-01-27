@@ -28,7 +28,7 @@ class commonPipelineEnvironment implements Serializable {
     private Map appContainerProperties = [:]
 
     Map configuration = [:]
-    Map container = [:]
+    Map containerProperties = [:]
     Map defaultConfiguration = [:]
 
 
