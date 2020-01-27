@@ -123,15 +123,11 @@ void call(Map parameters = [:]) {
 
             archiveArtifacts artifacts: report['target'], allowEmptyArchive: !report['mandatory']
             
-             echo "removeJobSideBarLinks"
+             echo "Target Link: ${report['target']}"
             jenkinsUtils.removeJobSideBarLinks("artifact/${report['target']}")
-             echo "addJobSideBarLink"
             jenkinsUtils.addJobSideBarLink("artifact/${report['target']}", "Protecode Report", "images/24x24/graph.png")
-             echo "addRunSideBarLink report"
             jenkinsUtils.addRunSideBarLink("artifact/${report['target']}", "Protecode Report", "images/24x24/graph.png")
-             echo "addRunSideBarLink ui"
             jenkinsUtils.addRunSideBarLink("${report['protecodeServerUrl']}/products/${report['productID']}/", "Protecode WebUI", "images/24x24/graph.png")
-             echo "check summary"
 
             if(json.results.summary?.verdict?.short == 'Vulns') {
                 echo "${report.count} ${json.results.summary?.verdict.detailed} of which ${report.cvss2GreaterOrEqualSeven} had a CVSS v2 score >= 7.0 and ${report.cvss3GreaterOrEqualSeven} had a CVSS v3 score >= 7.0.\n${report.excludedVulnerabilities} vulnerabilities were excluded via configuration (${config.protecodeExcludeCVEs}) and ${report.triagedVulnerabilities} vulnerabilities were triaged via the webUI.\nIn addition ${protecodeDataJsonhistoricalVulnerabilities} historical vulnerabilities were spotted."
