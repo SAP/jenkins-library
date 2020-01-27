@@ -522,7 +522,7 @@ steps:
     toJson: false
     toHtml: false
   sonarExecuteScan:
-    dockerImage: 'maven:3.5-jdk-8'
+    dockerImage: 'node:8-stretch'
     instance: 'SonarCloud'
     options: []
     pullRequestProvider: 'GitHub'

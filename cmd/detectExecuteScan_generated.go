@@ -5,6 +5,7 @@ import (
 
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
+
 	"github.com/spf13/cobra"
 )
 
@@ -20,11 +21,11 @@ type detectExecuteScanOptions struct {
 }
 
 var myDetectExecuteScanOptions detectExecuteScanOptions
-var detectExecuteScanStepConfigJSON string
 
 // DetectExecuteScanCommand Executes Synopsis Detect scan
 func DetectExecuteScanCommand() *cobra.Command {
 	metadata := detectExecuteScanMetadata()
+
 	var createDetectExecuteScanCmd = &cobra.Command{
 		Use:   "detectExecuteScan",
 		Short: "Executes Synopsis Detect scan",
@@ -35,6 +36,7 @@ func DetectExecuteScanCommand() *cobra.Command {
 			return PrepareConfig(cmd, &metadata, "detectExecuteScan", &myDetectExecuteScanOptions, config.OpenPiperFile)
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
+
 			return detectExecuteScan(myDetectExecuteScanOptions)
 		},
 	}
@@ -65,60 +67,68 @@ func detectExecuteScanMetadata() config.StepData {
 			Inputs: config.StepInputs{
 				Parameters: []config.StepParameters{
 					{
-						Name:      "apiToken",
-						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:      "string",
-						Mandatory: true,
-						Aliases:   []config.Alias{{Name: "detect/apiToken"}},
+						Name:        "apiToken",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   true,
+						Aliases:     []config.Alias{{Name: "detect/apiToken"}},
 					},
 					{
-						Name:      "codeLocation",
-						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:      "string",
-						Mandatory: false,
-						Aliases:   []config.Alias{},
+						Name:        "codeLocation",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
 					},
 					{
-						Name:      "projectName",
-						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:      "string",
-						Mandatory: true,
-						Aliases:   []config.Alias{{Name: "detect/projectName"}},
+						Name:        "projectName",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   true,
+						Aliases:     []config.Alias{{Name: "detect/projectName"}},
 					},
 					{
-						Name:      "projectVersion",
-						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:      "string",
-						Mandatory: true,
-						Aliases:   []config.Alias{{Name: "detect/projectVersion"}},
+						Name:        "projectVersion",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   true,
+						Aliases:     []config.Alias{{Name: "detect/projectVersion"}},
 					},
 					{
-						Name:      "scanners",
-						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:      "[]string",
-						Mandatory: false,
-						Aliases:   []config.Alias{{Name: "detect/scanners"}},
+						Name:        "scanners",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "[]string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{{Name: "detect/scanners"}},
 					},
 					{
-						Name:      "scanPaths",
-						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:      "[]string",
-						Mandatory: false,
-						Aliases:   []config.Alias{{Name: "detect/scanPaths"}},
+						Name:        "scanPaths",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "[]string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{{Name: "detect/scanPaths"}},
 					},
 					{
-						Name:      "scanProperties",
-						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:      "[]string",
-						Mandatory: false,
-						Aliases:   []config.Alias{{Name: "detect/scanProperties"}},
+						Name:        "scanProperties",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "[]string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{{Name: "detect/scanProperties"}},
 					},
 					{
-						Name:      "serverUrl",
-						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:      "string",
-						Mandatory: false,
-						Aliases:   []config.Alias{{Name: "detect/serverUrl"}},
+						Name:        "serverUrl",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{{Name: "detect/serverUrl"}},
 					},
 				},
 			},

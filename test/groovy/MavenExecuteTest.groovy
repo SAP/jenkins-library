@@ -11,7 +11,6 @@ import util.Rules
 
 import static org.hamcrest.Matchers.allOf
 import static org.hamcrest.Matchers.containsString
-import static org.hamcrest.Matchers.containsString
 import static org.hamcrest.Matchers.not
 import static org.junit.Assert.assertEquals
 import static org.junit.Assert.assertThat
@@ -100,5 +99,12 @@ class MavenExecuteTest extends BasePiperTest {
         stepRule.step.mavenExecute(script: nullScript, goals: 'clean install', flags: ('''-B\\
                                                                                     |--show-version''' as CharSequence).stripMargin())
         assertThat(shellRule.shell[0], not(containsString('--batch-mode')))
+    }
+
+    @Test
+    void testMavenExecuteReturnsStdout() {
+        shellRule.setReturnValue('mvn --batch-mode -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn clean install', "[INFO] BUILD SUCCESS")
+        String commandOutput = stepRule.step.mavenExecute(script: nullScript, goals: 'clean install', returnStdout: true)
+        assertEquals(commandOutput, '[INFO] BUILD SUCCESS')
     }
 }
