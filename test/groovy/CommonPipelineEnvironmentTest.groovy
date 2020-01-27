@@ -43,12 +43,21 @@ class CommonPipelineEnvironmentTest extends BasePiperTest {
     }
 
     @Test
+    void testContainereMap() {
+        nullScript.commonPipelineEnvironment.setContainerProperty('image', 'myImage')
+        assertThat(nullScript.commonPipelineEnvironment.getContainerProperty('image'), is('myImage'))
+    }
+
+    @Test
     void testWritetoDisk() {
         nullScript.commonPipelineEnvironment.artifactVersion = '1.0.0'
+        nullScript.commonPipelineEnvironment.setContainerProperty('image', 'myImage')
         nullScript.commonPipelineEnvironment.setValue('custom1', 'customVal1')
         nullScript.commonPipelineEnvironment.writeToDisk(nullScript)
 
+
         assertThat(writeFileRule.files['.pipeline/commonPipelineEnvironment/artifactVersion'], is('1.0.0'))
+        assertThat(writeFileRule.files['.pipeline/commonPipelineEnvironment/container/image'], is('myImage'))
         assertThat(writeFileRule.files['.pipeline/commonPipelineEnvironment/custom/custom1'], is('customVal1'))
     }
 }
