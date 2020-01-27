@@ -50,7 +50,7 @@ class commonPipelineEnvironment implements Serializable {
         artifactVersion = null
 
         configuration = [:]
-        container = [:]
+        containerProperties = [:]
 
         gitCommitId = null
         gitCommitMessage = null
@@ -78,11 +78,11 @@ class commonPipelineEnvironment implements Serializable {
     }
 
     def setContainerProperty(property, value) {
-        container[property] = value
+        containerProperties[property] = value
     }
 
     def getContainerProperty(property) {
-        return container[property]
+        return containerProperties[property]
     }
 
     // goes into measurement jenkins_custom_data
@@ -173,7 +173,7 @@ class commonPipelineEnvironment implements Serializable {
             }
         })
 
-        container.each({key, value ->
+        containerProperties.each({key, value ->
             def fileName = ".pipeline/commonPipelineEnvironment/container/${key}"
             if (value && !script.fileExists(fileName)) {
                 //ToDo: check for value type and act accordingly?
