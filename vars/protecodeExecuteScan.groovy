@@ -123,7 +123,7 @@ void call(Map parameters = [:]) {
 
             archiveArtifacts artifacts: report['target'], allowEmptyArchive: !report['mandatory']
             
-            if config.addSideBarLink {
+            if (config.addSideBarLink) {
                 jenkinsUtils.removeJobSideBarLinks("artifact/${report['target']}")
                 jenkinsUtils.addJobSideBarLink("artifact/${report['target']}", "Protecode Report", "images/24x24/graph.png")
                 jenkinsUtils.addRunSideBarLink("artifact/${report['target']}", "Protecode Report", "images/24x24/graph.png")
@@ -163,9 +163,8 @@ private void scanWithCredentials(config) {
     }
     sh " mv ${uuid}-config.json /protecode/.docker/config.json "
 
-    withCredentials([[$class: 'UsernamePasswordMultiBinding', credentialsId: config.dockerCredentialsId, passwordVariable: 'dockerPassword', usernameVariable: 'dockerUser']]) {
         withCredentials([[$class: 'UsernamePasswordMultiBinding', credentialsId: config.protecodeCredentialsId, passwordVariable: 'password', usernameVariable: 'user']]) {
-            sh "./piper protecodeExecuteScan  --password ${password} --user ${user} --dockerUser ${dockerUser} --dockerPassword ${dockerPassword}"
+            sh "./piper protecodeExecuteScan  --password ${password} --user ${user}"
         }
      }
 }
