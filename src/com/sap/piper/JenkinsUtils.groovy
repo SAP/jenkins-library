@@ -60,6 +60,7 @@ def nodeAvailable() {
     return true
 }
 
+
 @NonCPS
 def getCurrentBuildInstance() {
     return currentBuild
@@ -137,6 +138,7 @@ def getLibrariesInfo() {
 void addRunSideBarLink(String relativeUrl, String displayName, String relativeIconPath) {
     try {
         def linkActionClass = this.class.classLoader.loadClass("hudson.plugins.sidebar_link.LinkAction")
+            echo "Run level sidebar link to ${relativeUrl} with name '${displayName}' and icon '${relativeIconPath}'"
         if (relativeUrl != null && displayName != null) {
             def run = getRawBuild()
             def iconPath = (null != relativeIconPath) ? "${Functions.getResourcePath()}/${relativeIconPath}" : null
