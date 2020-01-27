@@ -148,4 +148,55 @@ class JenkinsUtilsTest extends BasePiperTest {
         assertThat(libs[0], is([name: 'lib1', version: '1', trusted: true]))
         assertThat(libs[1], is([name: 'lib2', version: '2', trusted: false]))
     }
+
+    @Test
+    void testAddJobSideBarLink() {
+        def actions = new ArrayList()
+
+        helper.registerAllowedMethod("getActions", [], {
+            return actions
+        })
+
+        currentBuildMock.number = 15
+
+        jenkinsUtils.addJobSideBarLink("abcd/1234", "Some report link", "images/24x24/report.png")
+
+        assertEquals(1, actions.size())
+        assertEquals(LinkAction.class, actions.get(0).getClass())
+        assertEquals("15/abcd/1234", actions.get(0).getUrlName())
+        assertEquals("Some report link", actions.get(0).getDisplayName())
+        assertEquals("/images/24x24/report.png", actions.get(0).getIconFileName())
+    }
+
+    @Test
+    void testRemoveJobSideBarLinks() {
+        def actions = new ArrayList()
+        actions.add(new LinkAction("abcd/1234", "Some report link", "images/24x24/report.png"))
+
+        helper.registerAllowedMethod("getActions", [], {
+            return actions
+        })
+
+        jenkinsUtils.removeJobSideBarLinks("abcd/1234")
+
+        assertEquals(0, actions.size())
+    }
+
+    @Test
+    void testAddRunSideBarLink() {
+        def actions = new ArrayList()
+
+        helper.registerAllowedMethod("getActions", [], {
+            return actions
+        })
+
+        jenkinsUtils.addRunSideBarLink("abcd/1234", "Some report link", "images/24x24/report.png")
+
+        assertEquals(1, actions.size())
+        assertEquals(LinkAction.class, actions.get(0).getClass())
+        assertEquals("abcd/1234", actions.get(0).getUrlName())
+        assertEquals("Some report link", actions.get(0).getDisplayName())
+        assertEquals("/images/24x24/report.png", actions.get(0).getIconFileName())
+    }
+
 }
