@@ -181,21 +181,29 @@ func createReportName(workspace, reportFileNameTemplate string) string {
 }
 
 func pollScanStatus(sys checkmarx.System, scan checkmarx.Scan) {
-	status := fmt.Sprintf("New")
-	detail := checkmarx.ScanStatusDetail{}
+	status := "Scan phase: New"
 	pastStatus := status
-	log.Entry().Infof("Scan phase %v", status)
+	log.Entry().Info(status)
 	for true {
-		status, detail = sys.GetScanStatusAndDetail(scan.ID)
-		if status != "Scanning" && (status == "Finished" || status == "Canceled" || status == "Failed") {
+		stepDetail := "..."
+		stageDetail := "..."
+		status, detail := sys.GetScanStatusAndDetail(scan.ID)
+		if status == "Finished" || status == "Canceled" || status == "Failed" {
 			break
 		}
-		status = fmt.Sprintf("Scan phase: %v (%v / %v)", status, detail.Stage, detail.Step)
+		if len(detail.Stage) > 0 {
+			stageDetail = detail.Stage
+		}
+		if len(detail.Step) > 0 {
+			stepDetail = detail.Step
+		}
+
+		status = fmt.Sprintf("Scan phase: %v (%v / %v)", status, stageDetail, stepDetail)
 		if pastStatus != status {
 			log.Entry().Info(status)
 			pastStatus = status
 		}
-		log.Entry().Debug("Polling status sleeping...")
+		log.Entry().Debug("Polling for status: sleeping...")
 		time.Sleep(10 * time.Second)
 	}
 	if status == "Canceled" {
