@@ -74,8 +74,15 @@ type ScanStatus struct {
 
 // Status - Status Structure
 type Status struct {
-	ID   int    `json:"id"`
-	Name string `json:"name"`
+	ID      int              `json:"id"`
+	Name    string           `json:"name"`
+	Details ScanStatusDetail `json:"details"`
+}
+
+// ScanStatusDetail - ScanStatusDetail Structure
+type ScanStatusDetail struct {
+	Stage string `json:"stage"`
+	Step  string `json:"step"`
 }
 
 // ReportStatusResponse - ReportStatusResponse Structure
@@ -184,7 +191,7 @@ type System interface {
 	GetReportStatus(reportID int) ReportStatusResponse
 	RequestNewReport(scanID int, reportType string) (bool, Report)
 	GetResults(scanID int) ResultsStatistics
-	GetScanStatus(scanID int) string
+	GetScanStatusAndDetail(scanID int) (string, ScanStatusDetail)
 	GetScans(projectID int) (bool, []ScanStatus)
 	ScanProject(projectID int, isIncremental, isPublic, forceScan bool) (bool, Scan)
 	UpdateProjectConfiguration(projectID int, presetID int, engineConfigurationID string) bool
@@ -564,18 +571,18 @@ func (sys *SystemInstance) GetScans(projectID int) (bool, []ScanStatus) {
 	return true, scans
 }
 
-// GetScanStatus returns the status of the scan addressed by scanID
-func (sys *SystemInstance) GetScanStatus(scanID int) string {
+// GetScanStatusAndDetail returns the status of the scan addressed by scanID
+func (sys *SystemInstance) GetScanStatusAndDetail(scanID int) (string, ScanStatusDetail) {
 	var scanStatus ScanStatus
 
 	data, err := sendRequest(sys, http.MethodGet, fmt.Sprintf("/sast/scans/%v", scanID), nil, nil)
 	if err != nil {
 		sys.logger.Errorf("Failed to get scan status for scanID %v: %s", scanID, err)
-		return ""
+		return "Failure", ScanStatusDetail{}
 	}
 
 	json.Unmarshal(data, &scanStatus)
-	return scanStatus.Status.Name
+	return scanStatus.Status.Name, scanStatus.Status.Details
 }
 
 // GetResults returns the results of the scan addressed by scanID
