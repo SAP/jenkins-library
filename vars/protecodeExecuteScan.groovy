@@ -123,7 +123,7 @@ void call(Map parameters = [:]) {
 
             archiveArtifacts artifacts: report['target'], allowEmptyArchive: !report['mandatory']
             
-            if addSideBarLink {
+            if config.addSideBarLink {
                 jenkinsUtils.removeJobSideBarLinks("artifact/${report['target']}")
                 jenkinsUtils.addJobSideBarLink("artifact/${report['target']}", "Protecode Report", "images/24x24/graph.png")
                 jenkinsUtils.addRunSideBarLink("artifact/${report['target']}", "Protecode Report", "images/24x24/graph.png")
