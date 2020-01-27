@@ -181,7 +181,7 @@ func createReportName(workspace, reportFileNameTemplate string) string {
 }
 
 func pollScanStatus(sys checkmarx.System, scan checkmarx.Scan) {
-	status := "New"
+	status := fmt.Sprintf("Scan phase: New")
 	detail := checkmarx.ScanStatusDetail{}
 	pastStatus := status
 	log.Entry().Infof("Scan phase %v", status)
@@ -190,8 +190,9 @@ func pollScanStatus(sys checkmarx.System, scan checkmarx.Scan) {
 		if status != "Scanning" && (status == "Finished" || status == "Canceled" || status == "Failed") {
 			break
 		}
+		status = fmt.Sprintf("Scan phase: %v (%v / %v)", status, detail.Stage, detail.Step)
 		if pastStatus != status {
-			log.Entry().Infof("Scan phase %v (%v / %v)", status, detail.Stage, detail.Step)
+			log.Entry().Info(status)
 			pastStatus = status
 		}
 		log.Entry().Debug("Polling status sleeping...")

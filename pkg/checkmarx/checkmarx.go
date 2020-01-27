@@ -578,7 +578,7 @@ func (sys *SystemInstance) GetScanStatusAndDetail(scanID int) (string, ScanStatu
 	data, err := sendRequest(sys, http.MethodGet, fmt.Sprintf("/sast/scans/%v", scanID), nil, nil)
 	if err != nil {
 		sys.logger.Errorf("Failed to get scan status for scanID %v: %s", scanID, err)
-		return "Failure", ScanStatusDetail{}
+		return "Failed", ScanStatusDetail{}
 	}
 
 	json.Unmarshal(data, &scanStatus)
