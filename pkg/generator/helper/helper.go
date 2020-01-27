@@ -214,12 +214,14 @@ func setDefaultParameters(stepData *config.StepData) (bool, error) {
 
 		if param.Default == nil {
 			switch param.Type {
-			case "string":
-				param.Default = fmt.Sprintf("os.Getenv(\"PIPER_%v\")", param.Name)
-				osImportRequired = true
 			case "bool":
 				// ToDo: Check if default should be read from env
 				param.Default = "false"
+			case "int":
+				param.Default = "0"
+			case "string":
+				param.Default = fmt.Sprintf("os.Getenv(\"PIPER_%v\")", param.Name)
+				osImportRequired = true
 			case "[]string":
 				// ToDo: Check if default should be read from env
 				param.Default = "[]string{}"
@@ -228,14 +230,16 @@ func setDefaultParameters(stepData *config.StepData) (bool, error) {
 			}
 		} else {
 			switch param.Type {
-			case "string":
-				param.Default = fmt.Sprintf("\"%v\"", param.Default)
 			case "bool":
 				boolVal := "false"
 				if param.Default.(bool) == true {
 					boolVal = "true"
 				}
 				param.Default = boolVal
+			case "int":
+				param.Default = fmt.Sprintf("%v", param.Default)
+			case "string":
+				param.Default = fmt.Sprintf("\"%v\"", param.Default)
 			case "[]string":
 				param.Default = fmt.Sprintf("[]string{\"%v\"}", strings.Join(getStringSliceFromInterface(param.Default), "\", \""))
 			default:
@@ -430,6 +434,8 @@ func flagType(paramType string) string {
 	switch paramType {
 	case "bool":
 		theFlagType = "BoolVar"
+	case "int":
+		theFlagType = "IntVar"
 	case "string":
 		theFlagType = "StringVar"
 	case "[]string":
