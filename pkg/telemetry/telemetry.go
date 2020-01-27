@@ -10,13 +10,20 @@ import (
 	"net/url"
 
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
+	"github.com/SAP/jenkins-library/pkg/log"
 )
 
-// site ID
-const siteID = "827e8025-1e21-ae84-c3a3-3f62b70b0130"
+// eventType
+const eventType = "library-os-ng"
+
+// actionName
+const actionName = "Piper Library OS"
 
 // LibraryRepository that is passed into with -ldflags
 var LibraryRepository string
+
+// SiteID
+var SiteID string
 
 var disabled bool
 var client piperhttp.Sender
@@ -37,16 +44,25 @@ func Initialize(telemetryActive bool, _ func(rootPath, resourceName, parameterNa
 
 	client.SetOptions(piperhttp.ClientOptions{Timeout: time.Second * 5})
 
+	if len(LibraryRepository) == 0 {
+		LibraryRepository = "https://github.com/n/a"
+	}
+
+	if len(SiteID) == 0 {
+		SiteID = "827e8025-1e21-ae84-c3a3-3f62b70b0130"
+	}
+
 	baseData = BaseData{
 		URL:             LibraryRepository,
-		ActionName:      "Piper Library OS",
-		EventType:       "library-os",
+		ActionName:      actionName,
+		EventType:       eventType,
 		StepName:        stepName,
-		SiteID:          siteID,
+		SiteID:          SiteID,
 		PipelineURLHash: getPipelineURLHash(), // http://server:port/jenkins/job/foo/
 		BuildURLHash:    getBuildURLHash(),    // http://server:port/jenkins/job/foo/15/
 	}
 	//ToDo: register Logrus Hook
+
 }
 
 func getPipelineURLHash() string {
@@ -83,5 +99,6 @@ func SendTelemetry(customData *CustomData) {
 	request, _ := url.Parse(baseURL)
 	request.Path = endpoint
 	request.RawQuery = data.toPayloadString()
+	log.Entry().WithField("request", request.String()).Debug("Sending telemetry data")
 	client.SendRequest(http.MethodGet, request.String(), nil, nil, nil)
 }
