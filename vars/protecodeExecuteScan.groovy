@@ -1,16 +1,14 @@
 import com.sap.piper.GenerateDocumentation
-import com.sap.piper.internal.ConfigurationHelper
 import com.sap.piper.internal.Deprecate
-import com.sap.piper.internal.DockerUtils
-import com.sap.piper.internal.integration.Protecode
-import com.sap.piper.internal.JenkinsUtils
+import com.sap.piper.DockerUtils
+import com.sap.piper.JenkinsUtils
 import com.sap.piper.internal.Notify
 import com.sap.piper.PiperGoUtils
 import com.sap.piper.Utils
 
 import groovy.transform.Field
 
-import static com.sap.piper.internal.Prerequisites.checkScript
+import static com.sap.piper.Prerequisites.checkScript
 
 @Field String STEP_NAME = getClass().getName()
 @Field String METADATA_FILE = 'metadata/protecode.yaml'
@@ -103,31 +101,17 @@ void call(Map parameters = [:]) {
             // get context configuration
             config = readJSON (text: sh(returnStdout: true, script: "./piper getConfig --contextConfig --stepMetadata '${METADATA_FILE}'"))
 
-            echo "ReportFileName: ${config.reportFileName}"
-
             utils.pushToSWA([
                 step: STEP_NAME,
                 stepParamKey1: 'scriptMissing',
                 stepParam1: parameters?.script == null
             ], config)
 
-
             if(config.dockerCredentialsId){
                 scanWithCredentials(config)
             } else {
                 callProtecodeScan(config)
             }
-            def protecodeDataJson = readJSON (file: 'ProtecodeData.json')
-
-            echo "Prodecode ReportFileName: ${protecodeDataJson.reportFileName}"
-
-            archiveArtifacts artifacts: "${protecodeDataJson.reportFileName}", allowEmptyArchive: false
-            
-            jenkinsUtils.removeJobSideBarLinks("artifact/${protecodeDataJson.reportFileName}")
-            jenkinsUtils.addJobSideBarLink("artifact/${protecodeDataJson.reportFileName}", "Protecode Report", "images/24x24/graph.png")
-            jenkinsUtils.addRunSideBarLink("artifact/${protecodeDataJson.reportFileName}", "Protecode Report", "images/24x24/graph.png")
-            jenkinsUtils.addRunSideBarLink("${protecodeDataJson.protecodeServerUrl}/products/${protecodeDataJson.productID}/", "Protecode WebUI", "images/24x24/graph.png")
-        
 
             def json = readJSON (file: "Vulns.json")
             
@@ -135,13 +119,21 @@ void call(Map parameters = [:]) {
                     Notify.error(this, "Protecode scan failed, please check the log and protecode backend for more details.")
             }
 
+            def protecodeDataJson = readJSON (file: 'ProtecodeData.json')
+
+            archiveArtifacts artifacts: "${protecodeDataJson.reportFileName}", allowEmptyArchive: false
+            
+            jenkinsUtils.removeJobSideBarLinks("artifact/${protecodeDataJson.reportFileName}")
+            jenkinsUtils.addJobSideBarLink("artifact/${protecodeDataJson.reportFileName}", "Protecode Report", "images/24x24/graph.png")
+            jenkinsUtils.addRunSideBarLink("artifact/${protecodeDataJson.reportFileName}", "Protecode Report", "images/24x24/graph.png")
+            jenkinsUtils.addRunSideBarLink("${protecodeDataJson.protecodeServerUrl}/products/${protecodeDataJson.productID}/", "Protecode WebUI", "images/24x24/graph.png")
+
             if(json.results.summary?.verdict?.short == 'Vulns') {
                 echo "${protecodeDataJson.count} ${json.results.summary?.verdict.detailed} of which ${protecodeDataJson.cvss2GreaterOrEqualSeven} had a CVSS v2 score >= 7.0 and ${protecodeDataJson.cvss3GreaterOrEqualSeven} had a CVSS v3 score >= 7.0.\n${protecodeDataJson.excludedVulnerabilities} vulnerabilities were excluded via configuration (${config.protecodeExcludeCVEs}) and ${protecodeDataJson.triagedVulnerabilities} vulnerabilities were triaged via the webUI.\nIn addition ${protecodeDataJsonhistoricalVulnerabilities} historical vulnerabilities were spotted."
                 if(config.protecodeFailOnSevereVulnerabilities && (protecodeDataJson.cvss2GreaterOrEqualSeven > 0 || protecodeDataJsoncvss3GreaterOrEqualSeven > 0)) {
                     Notify.error(this, "Protecode detected Open Source Software Security vulnerabilities, the project is not compliant. For details see the archived report or the web ui: ${protecodeDataJson.protecodeServerUrl}/products/${protecodeDataJson.productID}/")
                 }
             }
-
         }
     }
 }
