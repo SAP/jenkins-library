@@ -61,6 +61,6 @@ class CheckmarxExecuteScanTest extends BasePiperTest {
         // asserts
         assertThat(writeFileRule.files['metadata/checkmarx.yaml'], containsString('name: checkmarxExecuteScan'))
         assertThat(withEnvArgs[0], allOf(startsWith('PIPER_parametersJSON'), containsString('"testParam":"This is test content"')))
-        assertThat(shellCallRule.shell[1], is('./piper checkmarxExecuteScan --verbose false'))
+        assertThat(shellCallRule.shell[1], is('./piper checkmarxExecuteScan'))
     }
 }
