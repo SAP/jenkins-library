@@ -164,18 +164,16 @@ func CheckmarxExecuteScanCommand() *cobra.Command {
 	var createCheckmarxExecuteScanCmd = &cobra.Command{
 		Use:   "checkmarxExecuteScan",
 		Short: "Checkmarx is the recommended tool for security scans of JavaScript, iOS, Swift and Ruby code.",
-		Long: `Checkmarx is the recommended tool for security scans of JavaScript, iOS, Swift and Ruby code.
-You find further information in the [Checkmarx Jam group](https://jam4.sapjam.com/groups/about_page/1mlscAGHT38VQ4vxGfhE6u).
+		Long: `Checkmarx is a Static Application Security Testing (SAST) tool to analyze i.e. Java- or TypeScript, Swift, Golang, Ruby code,
+and many other programming languages for security flaws based on a set of provided rules/queries that can be customized and extended.
 
-In addition some background information is collected on [following Wiki page](https://wiki.wdf.sap.corp/wiki/x/FOKsbg).
-
-This step by default enforces that the SAP Q-Gate requirements for Checkmarx are met and therefore ensures that:
+This step by default enforces a specific audit baseline for findings and therefore ensures that:
 * No 'To Verify' High and Medium issues exist in your project
 * Total number of High and Medium 'Confirmed' or 'Urgent' issues is zero
 * 10% of all Low issues are 'Confirmed' or 'Not Exploitable'
 
-For further information please also check [the review guidelines](https://jam4.sapjam.com/wiki/show/rxXj7mOf4mx84p3FSa5Q56)
-and [the report generation details](https://jam4.sapjam.com/wiki/show/40zId8lTvuVnKL4m5Y1Qua?_lightbox=true).`,
+You can adapt above thresholds specifically using the provided configuration parameters and i.e. check for ` + "`" + `absolute` + "`" + `
+thresholds instead of ` + "`" + `percentage` + "`" + ` whereas we strongly recommend you to stay with the defaults provided.`,
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			log.SetStepName("checkmarxExecuteScan")
 			log.SetVerbose(GeneralConfig.Verbose)
@@ -206,10 +204,10 @@ func addCheckmarxExecuteScanFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVar(&myCheckmarxExecuteScanOptions.Preset, "preset", os.Getenv("PIPER_preset"), "The preset to use for scanning, if not set explicitly the step will attempt to look up the project's setting based on the availability of `checkmarxCredentialsId`")
 	cmd.Flags().StringVar(&myCheckmarxExecuteScanOptions.ProjectName, "projectName", os.Getenv("PIPER_projectName"), "The name of the Checkmarx project to scan into")
 	cmd.Flags().StringVar(&myCheckmarxExecuteScanOptions.PullRequestName, "pullRequestName", os.Getenv("PIPER_pullRequestName"), "Used to supply the name for the newly created PR project branch when being used in pull request scenarios")
-	cmd.Flags().StringVar(&myCheckmarxExecuteScanOptions.ServerURL, "serverUrl", "https://cx.wdf.sap.corp:443", "The URL pointing to the root of the Checkmarx server to be used")
+	cmd.Flags().StringVar(&myCheckmarxExecuteScanOptions.ServerURL, "serverUrl", os.Getenv("PIPER_serverUrl"), "The URL pointing to the root of the Checkmarx server to be used")
 	cmd.Flags().StringVar(&myCheckmarxExecuteScanOptions.SourceEncoding, "sourceEncoding", "1", "The source encoding to be used, if not set explicitly the project's default will be used")
 	cmd.Flags().StringVar(&myCheckmarxExecuteScanOptions.TeamID, "teamId", os.Getenv("PIPER_teamId"), "The group ID related to your team which can be obtained via the Pipeline Syntax plugin as described in the `Details` section")
-	cmd.Flags().StringVar(&myCheckmarxExecuteScanOptions.TeamName, "teamName", os.Getenv("PIPER_teamName"), "The full name of the team to assign newly created projects to which is preferred to checkmarxGroupId")
+	cmd.Flags().StringVar(&myCheckmarxExecuteScanOptions.TeamName, "teamName", os.Getenv("PIPER_teamName"), "The full name of the team to assign newly created projects to which is preferred to teamId")
 	cmd.Flags().StringVar(&myCheckmarxExecuteScanOptions.Username, "username", os.Getenv("PIPER_username"), "The username to authenticate")
 	cmd.Flags().BoolVar(&myCheckmarxExecuteScanOptions.VulnerabilityThresholdEnabled, "vulnerabilityThresholdEnabled", true, "Whether the thresholds are enabled or not. If enabled the build will be set to `vulnerabilityThresholdResult` in case a specific threshold value is exceeded")
 	cmd.Flags().IntVar(&myCheckmarxExecuteScanOptions.VulnerabilityThresholdHigh, "vulnerabilityThresholdHigh", 100, "The specific threshold for high severity findings")
@@ -220,6 +218,7 @@ func addCheckmarxExecuteScanFlags(cmd *cobra.Command) {
 
 	cmd.MarkFlagRequired("password")
 	cmd.MarkFlagRequired("projectName")
+	cmd.MarkFlagRequired("serverUrl")
 	cmd.MarkFlagRequired("username")
 }
 
@@ -314,7 +313,7 @@ func checkmarxExecuteScanMetadata() config.StepData {
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
-						Mandatory:   false,
+						Mandatory:   true,
 						Aliases:     []config.Alias{{Name: "checkmarxServerUrl"}},
 					},
 					{

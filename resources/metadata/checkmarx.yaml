@@ -110,13 +110,12 @@ spec:
         - name: checkmarxServerUrl
       type: string
       description: The URL pointing to the root of the Checkmarx server to be used
-      mandatory: false
+      mandatory: true
       scope:
       - GENERAL
       - PARAMETERS
       - STAGES
       - STEPS
-      default: https://cx.wdf.sap.corp:443
     - name: sourceEncoding
       type: string
       description: The source encoding to be used, if not set explicitly the project's default will be used
@@ -138,7 +137,7 @@ spec:
       - STEPS
     - name: teamName
       type: string
-      description: The full name of the team to assign newly created projects to which is preferred to checkmarxGroupId
+      description: The full name of the team to assign newly created projects to which is preferred to teamId
       mandatory: false
       scope:
       - PARAMETERS
