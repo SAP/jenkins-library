@@ -119,19 +119,24 @@ void call(Map parameters = [:]) {
                     Notify.error(this, "Protecode scan failed, please check the log and protecode backend for more details.")
             }
 
-            def protecodeDataJson = readJSON (file: 'ProtecodeData.json')
+            def report = readJSON (file: 'report.json')
 
-            archiveArtifacts artifacts: "${protecodeDataJson.reportFileName}", allowEmptyArchive: false
+            archiveArtifacts artifacts: report['target'], allowEmptyArchive: !report['mandatory']
             
-            jenkinsUtils.removeJobSideBarLinks("artifact/${protecodeDataJson.reportFileName}")
-            jenkinsUtils.addJobSideBarLink("artifact/${protecodeDataJson.reportFileName}", "Protecode Report", "images/24x24/graph.png")
-            jenkinsUtils.addRunSideBarLink("artifact/${protecodeDataJson.reportFileName}", "Protecode Report", "images/24x24/graph.png")
-            jenkinsUtils.addRunSideBarLink("${protecodeDataJson.protecodeServerUrl}/products/${protecodeDataJson.productID}/", "Protecode WebUI", "images/24x24/graph.png")
+             echo "removeJobSideBarLinks"
+            jenkinsUtils.removeJobSideBarLinks("artifact/${report.target}")
+             echo "addJobSideBarLink"
+            jenkinsUtils.addJobSideBarLink("artifact/${report.target}", "Protecode Report", "images/24x24/graph.png")
+             echo "addRunSideBarLink report"
+            jenkinsUtils.addRunSideBarLink("artifact/${report.target}", "Protecode Report", "images/24x24/graph.png")
+             echo "addRunSideBarLink ui"
+            jenkinsUtils.addRunSideBarLink("${report.protecodeServerUrl}/products/${report.productID}/", "Protecode WebUI", "images/24x24/graph.png")
+             echo "check summary"
 
             if(json.results.summary?.verdict?.short == 'Vulns') {
-                echo "${protecodeDataJson.count} ${json.results.summary?.verdict.detailed} of which ${protecodeDataJson.cvss2GreaterOrEqualSeven} had a CVSS v2 score >= 7.0 and ${protecodeDataJson.cvss3GreaterOrEqualSeven} had a CVSS v3 score >= 7.0.\n${protecodeDataJson.excludedVulnerabilities} vulnerabilities were excluded via configuration (${config.protecodeExcludeCVEs}) and ${protecodeDataJson.triagedVulnerabilities} vulnerabilities were triaged via the webUI.\nIn addition ${protecodeDataJsonhistoricalVulnerabilities} historical vulnerabilities were spotted."
-                if(config.protecodeFailOnSevereVulnerabilities && (protecodeDataJson.cvss2GreaterOrEqualSeven > 0 || protecodeDataJsoncvss3GreaterOrEqualSeven > 0)) {
-                    Notify.error(this, "Protecode detected Open Source Software Security vulnerabilities, the project is not compliant. For details see the archived report or the web ui: ${protecodeDataJson.protecodeServerUrl}/products/${protecodeDataJson.productID}/")
+                echo "${report.count} ${json.results.summary?.verdict.detailed} of which ${report.cvss2GreaterOrEqualSeven} had a CVSS v2 score >= 7.0 and ${report.cvss3GreaterOrEqualSeven} had a CVSS v3 score >= 7.0.\n${report.excludedVulnerabilities} vulnerabilities were excluded via configuration (${config.protecodeExcludeCVEs}) and ${report.triagedVulnerabilities} vulnerabilities were triaged via the webUI.\nIn addition ${protecodeDataJsonhistoricalVulnerabilities} historical vulnerabilities were spotted."
+                if(config.protecodeFailOnSevereVulnerabilities && (report.cvss2GreaterOrEqualSeven > 0 || protecodeDataJsoncvss3GreaterOrEqualSeven > 0)) {
+                    Notify.error(this, "Protecode detected Open Source Software Security vulnerabilities, the project is not compliant. For details see the archived report or the web ui: ${report.protecodeServerUrl}/products/${report.productID}/")
                 }
             }
         }

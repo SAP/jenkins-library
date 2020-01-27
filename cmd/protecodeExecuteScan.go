@@ -20,7 +20,8 @@ import (
 )
 
 type protecodeData struct {
-	ReportFileName            string `json:"reportFileName,omitempty"`
+	Target                    string `json:"target,omitempty"`
+	Mandatory                 bool   `json:"mandatory,omitempty"`
 	ProductID                 string `json:"productID,omitempty"`
 	ProtecodeServerURL        string `json:"protecodeServerUrl,omitempty"`
 	Count                     string `json:"count,omitempty"`
@@ -56,7 +57,7 @@ func runProtecodeScan(config *protecodeExecuteScanOptions, influx *protecodeExec
 
 	setInfluxData(influx, parsedResult)
 
-	writeDataToJSONFile(config, parsedResult, productID)
+	writeReportDataToJSONFile(config, parsedResult, productID)
 
 	log.Entry().Debugf("Cleanup tar archive")
 	err = os.Remove(config.FilePath)
@@ -188,11 +189,12 @@ func setInfluxData(influx *protecodeExecuteScanInflux, result map[string]int) {
 	influx.protecodeData.fields.vulnerabilities = fmt.Sprintf("%v", result["vulnerabilities"])
 }
 
-func writeDataToJSONFile(config *protecodeExecuteScanOptions, result map[string]int, productID int) {
+func writeReportDataToJSONFile(config *protecodeExecuteScanOptions, result map[string]int, productID int) {
 
 	protecodeData := protecodeData{}
 	protecodeData.ProtecodeServerURL = config.ProtecodeServerURL
-	protecodeData.ReportFileName = config.ReportFileName
+	protecodeData.Target = config.ReportFileName
+	protecodeData.Mandatory = true
 	protecodeData.ProductID = fmt.Sprintf("%v", productID)
 	protecodeData.Count = fmt.Sprintf("%v", result["count"])
 	protecodeData.Cvss2GreaterOrEqualSeven = fmt.Sprintf("%v", result["cvss2GreaterOrEqualSeven"])
@@ -203,7 +205,7 @@ func writeDataToJSONFile(config *protecodeExecuteScanOptions, result map[string]
 
 	jsonData, _ := json.Marshal(protecodeData)
 
-	ioutil.WriteFile("ProtecodeData.json", jsonData, 0644)
+	ioutil.WriteFile("report.json", jsonData, 0644)
 }
 
 func createClient(config *protecodeExecuteScanOptions) protecode.Protecode {
