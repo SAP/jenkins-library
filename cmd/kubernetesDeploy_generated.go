@@ -205,7 +205,7 @@ func kubernetesDeployMetadata() config.StepData {
 					},
 					{
 						Name:        "image",
-						ResourceRef: []config.ResourceReference{},
+						ResourceRef: []config.ResourceReference{{Name: "commonPipelineEnvironment", Param: "container/image"}},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   true,
