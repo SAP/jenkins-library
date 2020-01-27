@@ -33,6 +33,7 @@ type checkmarxExecuteScanOptions struct {
 	VulnerabilityThresholdMedium  int    `json:"vulnerabilityThresholdMedium,omitempty"`
 	VulnerabilityThresholdResult  string `json:"vulnerabilityThresholdResult,omitempty"`
 	VulnerabilityThresholdUnit    string `json:"vulnerabilityThresholdUnit,omitempty"`
+	Verbose                       bool   `json:"verbose,omitempty"`
 }
 
 type checkmarxExecuteScanInflux struct {
@@ -215,6 +216,7 @@ func addCheckmarxExecuteScanFlags(cmd *cobra.Command) {
 	cmd.Flags().IntVar(&myCheckmarxExecuteScanOptions.VulnerabilityThresholdMedium, "vulnerabilityThresholdMedium", 100, "The specific threshold for medium severity findings")
 	cmd.Flags().StringVar(&myCheckmarxExecuteScanOptions.VulnerabilityThresholdResult, "vulnerabilityThresholdResult", "FAILURE", "The result of the build in case thresholds are enabled and exceeded")
 	cmd.Flags().StringVar(&myCheckmarxExecuteScanOptions.VulnerabilityThresholdUnit, "vulnerabilityThresholdUnit", "percentage", "The unit for the threshold to apply.")
+	cmd.Flags().BoolVar(&myCheckmarxExecuteScanOptions.Verbose, "verbose", false, "Whether the step shall provide verbose logging output")
 
 	cmd.MarkFlagRequired("password")
 	cmd.MarkFlagRequired("projectName")
@@ -359,7 +361,7 @@ func checkmarxExecuteScanMetadata() config.StepData {
 					{
 						Name:        "vulnerabilityThresholdHigh",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "int",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
@@ -393,6 +395,14 @@ func checkmarxExecuteScanMetadata() config.StepData {
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+					},
+					{
+						Name:        "verbose",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:        "bool",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 					},

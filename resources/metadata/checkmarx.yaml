@@ -14,6 +14,10 @@ metadata:
     thresholds instead of `percentage` whereas we strongly recommend you to stay with the defaults provided.
 spec:
   inputs:
+    secrets:
+    - name: checkmarxCredentialsId
+      description: The technical user/password credential used to communicate with the Checkmarx backend
+      type: jenkins
     params:
     - name: avoidDuplicateProjectScans
       type: bool
@@ -165,7 +169,6 @@ spec:
       description: The specific threshold for high severity findings
       mandatory: false
       scope:
-      - GENERAL
       - PARAMETERS
       - STAGES
       - STEPS
@@ -206,9 +209,16 @@ spec:
       - STAGES
       - STEPS
       default: percentage
-    secrets:
-    - name: checkmarxCredentialsId
-      type: jenkins
+    - name: verbose
+      type: bool
+      description: Whether the step shall provide verbose logging output
+      mandatory: false
+      scope:
+      - GENERAL
+      - PARAMETERS
+      - STAGES
+      - STEPS
+      default: false
   outputs:
     resources:
       - name: influx
