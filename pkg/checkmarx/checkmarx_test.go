@@ -407,19 +407,21 @@ func TestGetScans(t *testing.T) {
 	})
 }
 
-func TestGetScanStatus(t *testing.T) {
+func TestGetScanStatusAndDetail(t *testing.T) {
 	logger := log.Entry().WithField("package", "SAP/jenkins-library/pkg/checkmarx_test")
 	opts := piperHttp.ClientOptions{}
 	t.Run("test success", func(t *testing.T) {
-		myTestClient := senderMock{responseBody: `{"status":{"id":1,"name":"SUCCESS"}}`, httpStatusCode: 200}
+		myTestClient := senderMock{responseBody: `{"status":{"id":1,"name":"SUCCESS", "details":{"stage": "1 of 15", "step": "One"}}}`, httpStatusCode: 200}
 		sys := SystemInstance{serverURL: "https://cx.wdf.sap.corp", client: &myTestClient, logger: logger}
 		myTestClient.SetOptions(opts)
 
-		result := sys.GetScanStatus(10745)
+		result, detail := sys.GetScanStatusAndDetail(10745)
 
 		assert.Equal(t, "https://cx.wdf.sap.corp/cxrestapi/sast/scans/10745", myTestClient.urlCalled, "Called url incorrect")
 		assert.Equal(t, "GET", myTestClient.httpMethod, "HTTP method incorrect")
 		assert.Equal(t, "SUCCESS", result, "Request body incorrect")
+		assert.Equal(t, "One", detail.Step, "Detail step incorrect")
+		assert.Equal(t, "1 of 15", detail.Stage, "Detail stage incorrect")
 	})
 }
 
