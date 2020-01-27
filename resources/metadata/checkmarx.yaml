@@ -17,33 +17,6 @@ metadata:
 spec:
   inputs:
     params:
-    - name: fullScanCycle
-      type: string
-      description: Indicates how often a full scan should happen between the incremental scans when activated
-      mandatory: false
-      scope:
-      - PARAMETERS
-      - STAGES
-      - STEPS
-      default: 5
-    - name: vulnerabilityThresholdResult
-      type: string
-      description: The result of the build in case thresholds are enabled and exceeded
-      mandatory: false
-      scope:
-      - PARAMETERS
-      - STAGES
-      - STEPS
-      default: FAILURE
-    - name: vulnerabilityThresholdUnit
-      type: string
-      description: The unit for the threshold to apply.
-      mandatory: false
-      scope:
-      - PARAMETERS
-      - STAGES
-      - STEPS
-      default: percentage
     - name: avoidDuplicateProjectScans
       type: bool
       description: Whether duplicate scans of the same project state shall be avoided or not
@@ -53,27 +26,37 @@ spec:
       - STAGES
       - STEPS
       default: false
-    - name: generatePdfReport
-      type: bool
-      description: Whether to generate a PDF report of the analysis results or not
+    - name: filterPattern
+      type: string
+      description: The filter pattern used to zip the files relevant for scanning, patterns can be negated by setting an exclamation mark in front i.e. `!test/*.js` would avoid adding any javascript files located in the test directory
       mandatory: false
       scope:
       - PARAMETERS
       - STAGES
       - STEPS
-      default: true
-    - name: vulnerabilityThresholdEnabled
-      type: bool
-      description: Whether the thresholds are enabled or not. If enabled the build will be set to `vulnerabilityThresholdResult` in case a specific threshold value is exceeded
+      default: '!**/node_modules/**, !**/.xmake/**, !**/*_test.go, !**/vendor/**/*.go,
+        **/*.html, **/*.xml, **/*.go, **/*.py, **/*.js, **/*.scala, **/*.ts'
+    - name: fullScanCycle
+      type: string
+      description: Indicates how often a full scan should happen between the incremental scans when activated
       mandatory: false
       scope:
       - PARAMETERS
       - STAGES
       - STEPS
-      default: true
+      default: 5
     - name: fullScansScheduled
       type: bool
       description: Whether full scans are to be scheduled or not. Should be used in relation with `incremental` and `fullScanCycle`
+      mandatory: false
+      scope:
+      - PARAMETERS
+      - STAGES
+      - STEPS
+      default: true
+    - name: generatePdfReport
+      type: bool
+      description: Whether to generate a PDF report of the analysis results or not
       mandatory: false
       scope:
       - PARAMETERS
@@ -89,6 +72,14 @@ spec:
       - STAGES
       - STEPS
       default: true
+    - name: password
+      type: string
+      description: The password to authenticate
+      mandatory: true
+      scope:
+      - PARAMETERS
+      - STAGES
+      - STEPS
     - name: preset
       type: string
       description: The preset to use for scanning, if not set explicitly the step will attempt to look up the project's setting based on the availability of `checkmarxCredentialsId`
@@ -98,7 +89,9 @@ spec:
       - STAGES
       - STEPS
       default: null
-    - name: checkmarxProject
+    - name: projectName
+      aliases:
+        - name: checkmarxProject
       type: string
       description: The name of the Checkmarx project to scan into
       mandatory: true
@@ -106,16 +99,6 @@ spec:
       - PARAMETERS
       - STAGES
       - STEPS
-      default: null
-    - name: checkmarxGroupId
-      type: string
-      description: The group ID related to your team which can be obtained via the Pipeline Syntax plugin as described in the `Details` section
-      mandatory: false
-      scope:
-      - PARAMETERS
-      - STAGES
-      - STEPS
-      default: null
     - name: pullRequestName
       type: string
       description: Used to supply the name for the newly created PR project branch when being used in pull request scenarios
@@ -124,17 +107,18 @@ spec:
       - PARAMETERS
       - STAGES
       - STEPS
-      default: null
-    - name: filterPattern
+    - name: serverUrl
+      aliases:
+        - name: checkmarxServerUrl
       type: string
-      description: The filter pattern used to zip the files relevant for scanning, patterns can be negated by setting an exclamation mark in front i.e. `!test/*.js` would avoid adding any javascript files located in the test directory
+      description: The URL pointing to the root of the Checkmarx server to be used
       mandatory: false
       scope:
+      - GENERAL
       - PARAMETERS
       - STAGES
       - STEPS
-      default: '!**/node_modules/**, !**/.xmake/**, !**/*_test.go, !**/vendor/**/*.go,
-        **/*.html, **/*.xml, **/*.go, **/*.py, **/*.js, **/*.scala, **/*.ts'
+      default: https://cx.wdf.sap.corp:443
     - name: sourceEncoding
       type: string
       description: The source encoding to be used, if not set explicitly the project's default will be used
@@ -144,6 +128,51 @@ spec:
       - STAGES
       - STEPS
       default: '1'
+    - name: teamId
+      aliases:
+        - name: checkmarxGroupId
+      type: string
+      description: The group ID related to your team which can be obtained via the Pipeline Syntax plugin as described in the `Details` section
+      mandatory: false
+      scope:
+      - PARAMETERS
+      - STAGES
+      - STEPS
+    - name: teamName
+      type: string
+      description: The full name of the team to assign newly created projects to which is preferred to checkmarxGroupId
+      mandatory: false
+      scope:
+      - PARAMETERS
+      - STAGES
+      - STEPS
+    - name: username
+      type: string
+      description: The username to authenticate
+      mandatory: true
+      scope:
+      - PARAMETERS
+      - STAGES
+      - STEPS
+    - name: vulnerabilityThresholdEnabled
+      type: bool
+      description: Whether the thresholds are enabled or not. If enabled the build will be set to `vulnerabilityThresholdResult` in case a specific threshold value is exceeded
+      mandatory: false
+      scope:
+      - PARAMETERS
+      - STAGES
+      - STEPS
+      default: true
+    - name: vulnerabilityThresholdHigh
+      type: int
+      description: The specific threshold for high severity findings
+      mandatory: false
+      scope:
+      - GENERAL
+      - PARAMETERS
+      - STAGES
+      - STEPS
+      default: 100
     - name: vulnerabilityThresholdLow
       type: int
       description: The specific threshold for low severity findings
@@ -162,51 +191,24 @@ spec:
       - STAGES
       - STEPS
       default: 100
-    - name: checkmarxServerUrl
+    - name: vulnerabilityThresholdResult
       type: string
-      description: The URL pointing to the root of the Checkmarx server to be used
-      mandatory: false
-      scope:
-      - GENERAL
-      - PARAMETERS
-      - STAGES
-      - STEPS
-      default: https://cx.wdf.sap.corp:443
-    - name: vulnerabilityThresholdHigh
-      type: int
-      description: The specific threshold for high severity findings
-      mandatory: false
-      scope:
-      - GENERAL
-      - PARAMETERS
-      - STAGES
-      - STEPS
-      default: 100
-    - name: teamName
-      type: string
-      description: The full name of the team to assign newly created projects to which is preferred to checkmarxGroupId
+      description: The result of the build in case thresholds are enabled and exceeded
       mandatory: false
       scope:
       - PARAMETERS
       - STAGES
       - STEPS
-      default: null
-    - name: username
+      default: FAILURE
+    - name: vulnerabilityThresholdUnit
       type: string
-      description: The username to authenticate
-      mandatory: true
+      description: The unit for the threshold to apply.
+      mandatory: false
       scope:
       - PARAMETERS
       - STAGES
       - STEPS
-    - name: password
-      type: string
-      description: The password to authenticate
-      mandatory: true
-      scope:
-      - PARAMETERS
-      - STAGES
-      - STEPS
+      default: percentage
     secrets:
     - name: checkmarxCredentialsId
       type: jenkins

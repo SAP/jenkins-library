@@ -21,9 +21,6 @@ void call(Map parameters = [:]) {
         def jenkinsUtils = parameters.jenkinsUtilsStub ?: new JenkinsUtils()
         parameters.jenkinsUtilsStub = null
 
-        // telemetry reporting
-        utils.pushToSWA([step: STEP_NAME], config)
-
         new PiperGoUtils(this, utils).unstashPiperBin()
         utils.unstash('pipelineConfigAndTests')
         script.commonPipelineEnvironment.writeToDisk(script)

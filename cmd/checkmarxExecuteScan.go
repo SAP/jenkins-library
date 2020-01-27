@@ -13,36 +13,31 @@ import (
 	"strings"
 	"time"
 
-	"encoding/json"
 	"encoding/xml"
 
 	"github.com/SAP/jenkins-library/pkg/checkmarx"
 	piperHttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
-	"github.com/SAP/jenkins-library/pkg/piperenv"
+	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/bmatcuk/doublestar"
 )
 
-type path struct {
-	Target    string `json:"target"`
-	Mandatory bool   `json:"mandatory"`
-}
-
 func checkmarxExecuteScan(config checkmarxExecuteScanOptions, influx *checkmarxExecuteScanInflux) error {
 	client := &piperHttp.Client{}
-	sys, err := checkmarx.NewSystemInstance(client, config.CheckmarxServerURL, config.Username, config.Password)
+	sys, err := checkmarx.NewSystemInstance(client, config.ServerURL, config.Username, config.Password)
 	if err != nil {
-		log.Entry().WithError(err).Fatalf("Failed to create Checkmarx client talking to URL %v", config.CheckmarxServerURL)
+		log.Entry().WithError(err).Fatalf("Failed to create Checkmarx client talking to URL %v", config.ServerURL)
 	}
-	return runScan(config, sys, "./", influx)
+	runScan(config, sys, "./", influx)
+	return nil
 }
 
-func runScan(config checkmarxExecuteScanOptions, sys checkmarx.System, workspace string, influx *checkmarxExecuteScanInflux) error {
+func runScan(config checkmarxExecuteScanOptions, sys checkmarx.System, workspace string, influx *checkmarxExecuteScanInflux) {
 
-	team := loadTeam(sys, config.TeamName, config.CheckmarxGroupID)
-	projectName := config.CheckmarxProject
+	team := loadTeam(sys, config.TeamName, config.TeamID)
+	projectName := config.ProjectName
 
-	project := loadExistingProject(sys, config.CheckmarxProject, config.PullRequestName, team.ID)
+	project := loadExistingProject(sys, config.ProjectName, config.PullRequestName, team.ID)
 	if project.Name == projectName {
 		log.Entry().Debugf("Project %v exists...", projectName)
 	} else {
@@ -51,7 +46,6 @@ func runScan(config checkmarxExecuteScanOptions, sys checkmarx.System, workspace
 	}
 
 	uploadAndScan(config, sys, project, workspace, influx)
-	return nil
 }
 
 func loadTeam(sys checkmarx.System, teamName, teamID string) checkmarx.Team {
@@ -143,12 +137,12 @@ func triggerScan(config checkmarxExecuteScanOptions, sys checkmarx.System, proje
 
 		log.Entry().Debugln("Scan finished")
 
-		var reports []path
+		var reports []piperutils.Path
 		if config.GeneratePdfReport {
 			pdfReportName := createReportName(workspace, "CxSASTReport_%v.pdf")
 			ok := downloadAndSaveReport(sys, pdfReportName, scan)
 			if ok {
-				reports = append(reports, path{Target: pdfReportName, Mandatory: true})
+				reports = append(reports, piperutils.Path{Target: pdfReportName, Mandatory: true})
 			}
 		} else {
 			log.Entry().Debug("Report generation is disabled via configuration")
@@ -156,9 +150,9 @@ func triggerScan(config checkmarxExecuteScanOptions, sys checkmarx.System, proje
 
 		xmlReportName := createReportName(workspace, "CxSASTResults_%v.xml")
 		results := getDetailedResults(sys, xmlReportName, scan.ID)
-		reports = append(reports, path{Target: xmlReportName})
-		links := []path{path{Target: results["DeepLink"].(string)}}
-		persistReportsAndLinks(workspace, reports, links)
+		reports = append(reports, piperutils.Path{Target: xmlReportName})
+		links := []piperutils.Path{piperutils.Path{Target: results["DeepLink"].(string)}}
+		piperutils.PersistReportsAndLinks(workspace, reports, links)
 
 		reportToInflux(results, influx)
 
@@ -177,21 +171,6 @@ func triggerScan(config checkmarxExecuteScanOptions, sys checkmarx.System, proje
 		}
 	} else {
 		log.Entry().Fatalf("Cannot scan project %v", project.Name)
-	}
-}
-
-func persistReportsAndLinks(workspace string, reports, links []path) {
-	reportList, err := json.Marshal(&reports)
-	if err != nil {
-		log.Entry().Fatalln("Failed to marshall reports.json data for archiving")
-	}
-	piperenv.SetParameter(workspace, "reports.json", string(reportList))
-
-	linkList, err := json.Marshal(&links)
-	if err != nil {
-		log.Entry().Fatalln("Failed to marshall links.json data for archiving")
-	} else {
-		piperenv.SetParameter(workspace, "links.json", string(linkList))
 	}
 }
 

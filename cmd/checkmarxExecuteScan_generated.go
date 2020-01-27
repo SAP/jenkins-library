@@ -12,27 +12,27 @@ import (
 )
 
 type checkmarxExecuteScanOptions struct {
-	FullScanCycle                 string `json:"fullScanCycle,omitempty"`
-	VulnerabilityThresholdResult  string `json:"vulnerabilityThresholdResult,omitempty"`
-	VulnerabilityThresholdUnit    string `json:"vulnerabilityThresholdUnit,omitempty"`
 	AvoidDuplicateProjectScans    bool   `json:"avoidDuplicateProjectScans,omitempty"`
-	GeneratePdfReport             bool   `json:"generatePdfReport,omitempty"`
-	VulnerabilityThresholdEnabled bool   `json:"vulnerabilityThresholdEnabled,omitempty"`
-	FullScansScheduled            bool   `json:"fullScansScheduled,omitempty"`
-	Incremental                   bool   `json:"incremental,omitempty"`
-	Preset                        string `json:"preset,omitempty"`
-	CheckmarxProject              string `json:"checkmarxProject,omitempty"`
-	CheckmarxGroupID              string `json:"checkmarxGroupId,omitempty"`
-	PullRequestName               string `json:"pullRequestName,omitempty"`
 	FilterPattern                 string `json:"filterPattern,omitempty"`
+	FullScanCycle                 string `json:"fullScanCycle,omitempty"`
+	FullScansScheduled            bool   `json:"fullScansScheduled,omitempty"`
+	GeneratePdfReport             bool   `json:"generatePdfReport,omitempty"`
+	Incremental                   bool   `json:"incremental,omitempty"`
+	Password                      string `json:"password,omitempty"`
+	Preset                        string `json:"preset,omitempty"`
+	ProjectName                   string `json:"projectName,omitempty"`
+	PullRequestName               string `json:"pullRequestName,omitempty"`
+	ServerURL                     string `json:"serverUrl,omitempty"`
 	SourceEncoding                string `json:"sourceEncoding,omitempty"`
-	VulnerabilityThresholdLow     int    `json:"vulnerabilityThresholdLow,omitempty"`
-	VulnerabilityThresholdMedium  int    `json:"vulnerabilityThresholdMedium,omitempty"`
-	CheckmarxServerURL            string `json:"checkmarxServerUrl,omitempty"`
-	VulnerabilityThresholdHigh    int    `json:"vulnerabilityThresholdHigh,omitempty"`
+	TeamID                        string `json:"teamId,omitempty"`
 	TeamName                      string `json:"teamName,omitempty"`
 	Username                      string `json:"username,omitempty"`
-	Password                      string `json:"password,omitempty"`
+	VulnerabilityThresholdEnabled bool   `json:"vulnerabilityThresholdEnabled,omitempty"`
+	VulnerabilityThresholdHigh    int    `json:"vulnerabilityThresholdHigh,omitempty"`
+	VulnerabilityThresholdLow     int    `json:"vulnerabilityThresholdLow,omitempty"`
+	VulnerabilityThresholdMedium  int    `json:"vulnerabilityThresholdMedium,omitempty"`
+	VulnerabilityThresholdResult  string `json:"vulnerabilityThresholdResult,omitempty"`
+	VulnerabilityThresholdUnit    string `json:"vulnerabilityThresholdUnit,omitempty"`
 }
 
 type checkmarxExecuteScanInflux struct {
@@ -196,31 +196,31 @@ and [the report generation details](https://jam4.sapjam.com/wiki/show/40zId8lTvu
 }
 
 func addCheckmarxExecuteScanFlags(cmd *cobra.Command) {
-	cmd.Flags().StringVar(&myCheckmarxExecuteScanOptions.FullScanCycle, "fullScanCycle", "5", "Indicates how often a full scan should happen between the incremental scans when activated")
-	cmd.Flags().StringVar(&myCheckmarxExecuteScanOptions.VulnerabilityThresholdResult, "vulnerabilityThresholdResult", "FAILURE", "The result of the build in case thresholds are enabled and exceeded")
-	cmd.Flags().StringVar(&myCheckmarxExecuteScanOptions.VulnerabilityThresholdUnit, "vulnerabilityThresholdUnit", "percentage", "The unit for the threshold to apply.")
 	cmd.Flags().BoolVar(&myCheckmarxExecuteScanOptions.AvoidDuplicateProjectScans, "avoidDuplicateProjectScans", false, "Whether duplicate scans of the same project state shall be avoided or not")
-	cmd.Flags().BoolVar(&myCheckmarxExecuteScanOptions.GeneratePdfReport, "generatePdfReport", true, "Whether to generate a PDF report of the analysis results or not")
-	cmd.Flags().BoolVar(&myCheckmarxExecuteScanOptions.VulnerabilityThresholdEnabled, "vulnerabilityThresholdEnabled", true, "Whether the thresholds are enabled or not. If enabled the build will be set to `vulnerabilityThresholdResult` in case a specific threshold value is exceeded")
-	cmd.Flags().BoolVar(&myCheckmarxExecuteScanOptions.FullScansScheduled, "fullScansScheduled", true, "Whether full scans are to be scheduled or not. Should be used in relation with `incremental` and `fullScanCycle`")
-	cmd.Flags().BoolVar(&myCheckmarxExecuteScanOptions.Incremental, "incremental", true, "Whether incremental scans are to be applied which optimizes the scan time but might reduce detection capabilities. Therefore full scans are still required from time to time and should be scheduled via `fullScansScheduled` and `fullScanCycle`")
-	cmd.Flags().StringVar(&myCheckmarxExecuteScanOptions.Preset, "preset", os.Getenv("PIPER_preset"), "The preset to use for scanning, if not set explicitly the step will attempt to look up the project's setting based on the availability of `checkmarxCredentialsId`")
-	cmd.Flags().StringVar(&myCheckmarxExecuteScanOptions.CheckmarxProject, "checkmarxProject", os.Getenv("PIPER_checkmarxProject"), "The name of the Checkmarx project to scan into")
-	cmd.Flags().StringVar(&myCheckmarxExecuteScanOptions.CheckmarxGroupID, "checkmarxGroupId", os.Getenv("PIPER_checkmarxGroupId"), "The group ID related to your team which can be obtained via the Pipeline Syntax plugin as described in the `Details` section")
-	cmd.Flags().StringVar(&myCheckmarxExecuteScanOptions.PullRequestName, "pullRequestName", os.Getenv("PIPER_pullRequestName"), "Used to supply the name for the newly created PR project branch when being used in pull request scenarios")
 	cmd.Flags().StringVar(&myCheckmarxExecuteScanOptions.FilterPattern, "filterPattern", "!**/node_modules/**, !**/.xmake/**, !**/*_test.go, !**/vendor/**/*.go, **/*.html, **/*.xml, **/*.go, **/*.py, **/*.js, **/*.scala, **/*.ts", "The filter pattern used to zip the files relevant for scanning, patterns can be negated by setting an exclamation mark in front i.e. `!test/*.js` would avoid adding any javascript files located in the test directory")
+	cmd.Flags().StringVar(&myCheckmarxExecuteScanOptions.FullScanCycle, "fullScanCycle", "5", "Indicates how often a full scan should happen between the incremental scans when activated")
+	cmd.Flags().BoolVar(&myCheckmarxExecuteScanOptions.FullScansScheduled, "fullScansScheduled", true, "Whether full scans are to be scheduled or not. Should be used in relation with `incremental` and `fullScanCycle`")
+	cmd.Flags().BoolVar(&myCheckmarxExecuteScanOptions.GeneratePdfReport, "generatePdfReport", true, "Whether to generate a PDF report of the analysis results or not")
+	cmd.Flags().BoolVar(&myCheckmarxExecuteScanOptions.Incremental, "incremental", true, "Whether incremental scans are to be applied which optimizes the scan time but might reduce detection capabilities. Therefore full scans are still required from time to time and should be scheduled via `fullScansScheduled` and `fullScanCycle`")
+	cmd.Flags().StringVar(&myCheckmarxExecuteScanOptions.Password, "password", os.Getenv("PIPER_password"), "The password to authenticate")
+	cmd.Flags().StringVar(&myCheckmarxExecuteScanOptions.Preset, "preset", os.Getenv("PIPER_preset"), "The preset to use for scanning, if not set explicitly the step will attempt to look up the project's setting based on the availability of `checkmarxCredentialsId`")
+	cmd.Flags().StringVar(&myCheckmarxExecuteScanOptions.ProjectName, "projectName", os.Getenv("PIPER_projectName"), "The name of the Checkmarx project to scan into")
+	cmd.Flags().StringVar(&myCheckmarxExecuteScanOptions.PullRequestName, "pullRequestName", os.Getenv("PIPER_pullRequestName"), "Used to supply the name for the newly created PR project branch when being used in pull request scenarios")
+	cmd.Flags().StringVar(&myCheckmarxExecuteScanOptions.ServerURL, "serverUrl", "https://cx.wdf.sap.corp:443", "The URL pointing to the root of the Checkmarx server to be used")
 	cmd.Flags().StringVar(&myCheckmarxExecuteScanOptions.SourceEncoding, "sourceEncoding", "1", "The source encoding to be used, if not set explicitly the project's default will be used")
-	cmd.Flags().IntVar(&myCheckmarxExecuteScanOptions.VulnerabilityThresholdLow, "vulnerabilityThresholdLow", 10, "The specific threshold for low severity findings")
-	cmd.Flags().IntVar(&myCheckmarxExecuteScanOptions.VulnerabilityThresholdMedium, "vulnerabilityThresholdMedium", 100, "The specific threshold for medium severity findings")
-	cmd.Flags().StringVar(&myCheckmarxExecuteScanOptions.CheckmarxServerURL, "checkmarxServerUrl", "https://cx.wdf.sap.corp:443", "The URL pointing to the root of the Checkmarx server to be used")
-	cmd.Flags().IntVar(&myCheckmarxExecuteScanOptions.VulnerabilityThresholdHigh, "vulnerabilityThresholdHigh", 100, "The specific threshold for high severity findings")
+	cmd.Flags().StringVar(&myCheckmarxExecuteScanOptions.TeamID, "teamId", os.Getenv("PIPER_teamId"), "The group ID related to your team which can be obtained via the Pipeline Syntax plugin as described in the `Details` section")
 	cmd.Flags().StringVar(&myCheckmarxExecuteScanOptions.TeamName, "teamName", os.Getenv("PIPER_teamName"), "The full name of the team to assign newly created projects to which is preferred to checkmarxGroupId")
 	cmd.Flags().StringVar(&myCheckmarxExecuteScanOptions.Username, "username", os.Getenv("PIPER_username"), "The username to authenticate")
-	cmd.Flags().StringVar(&myCheckmarxExecuteScanOptions.Password, "password", os.Getenv("PIPER_password"), "The password to authenticate")
+	cmd.Flags().BoolVar(&myCheckmarxExecuteScanOptions.VulnerabilityThresholdEnabled, "vulnerabilityThresholdEnabled", true, "Whether the thresholds are enabled or not. If enabled the build will be set to `vulnerabilityThresholdResult` in case a specific threshold value is exceeded")
+	cmd.Flags().IntVar(&myCheckmarxExecuteScanOptions.VulnerabilityThresholdHigh, "vulnerabilityThresholdHigh", 100, "The specific threshold for high severity findings")
+	cmd.Flags().IntVar(&myCheckmarxExecuteScanOptions.VulnerabilityThresholdLow, "vulnerabilityThresholdLow", 10, "The specific threshold for low severity findings")
+	cmd.Flags().IntVar(&myCheckmarxExecuteScanOptions.VulnerabilityThresholdMedium, "vulnerabilityThresholdMedium", 100, "The specific threshold for medium severity findings")
+	cmd.Flags().StringVar(&myCheckmarxExecuteScanOptions.VulnerabilityThresholdResult, "vulnerabilityThresholdResult", "FAILURE", "The result of the build in case thresholds are enabled and exceeded")
+	cmd.Flags().StringVar(&myCheckmarxExecuteScanOptions.VulnerabilityThresholdUnit, "vulnerabilityThresholdUnit", "percentage", "The unit for the threshold to apply.")
 
-	cmd.MarkFlagRequired("checkmarxProject")
-	cmd.MarkFlagRequired("username")
 	cmd.MarkFlagRequired("password")
+	cmd.MarkFlagRequired("projectName")
+	cmd.MarkFlagRequired("username")
 }
 
 // retrieve step metadata
@@ -230,6 +230,22 @@ func checkmarxExecuteScanMetadata() config.StepData {
 			Inputs: config.StepInputs{
 				Parameters: []config.StepParameters{
 					{
+						Name:        "avoidDuplicateProjectScans",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+					},
+					{
+						Name:        "filterPattern",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+					},
+					{
 						Name:        "fullScanCycle",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
@@ -238,23 +254,7 @@ func checkmarxExecuteScanMetadata() config.StepData {
 						Aliases:     []config.Alias{},
 					},
 					{
-						Name:        "vulnerabilityThresholdResult",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-					},
-					{
-						Name:        "vulnerabilityThresholdUnit",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-					},
-					{
-						Name:        "avoidDuplicateProjectScans",
+						Name:        "fullScansScheduled",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "bool",
@@ -270,27 +270,19 @@ func checkmarxExecuteScanMetadata() config.StepData {
 						Aliases:     []config.Alias{},
 					},
 					{
-						Name:        "vulnerabilityThresholdEnabled",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "bool",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-					},
-					{
-						Name:        "fullScansScheduled",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "bool",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-					},
-					{
 						Name:        "incremental",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "bool",
 						Mandatory:   false,
+						Aliases:     []config.Alias{},
+					},
+					{
+						Name:        "password",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   true,
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -302,20 +294,12 @@ func checkmarxExecuteScanMetadata() config.StepData {
 						Aliases:     []config.Alias{},
 					},
 					{
-						Name:        "checkmarxProject",
+						Name:        "projectName",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   true,
-						Aliases:     []config.Alias{},
-					},
-					{
-						Name:        "checkmarxGroupId",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
+						Aliases:     []config.Alias{{Name: "checkmarxProject"}},
 					},
 					{
 						Name:        "pullRequestName",
@@ -326,7 +310,15 @@ func checkmarxExecuteScanMetadata() config.StepData {
 						Aliases:     []config.Alias{},
 					},
 					{
-						Name:        "filterPattern",
+						Name:        "serverUrl",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{{Name: "checkmarxServerUrl"}},
+					},
+					{
+						Name:        "sourceEncoding",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
@@ -334,10 +326,42 @@ func checkmarxExecuteScanMetadata() config.StepData {
 						Aliases:     []config.Alias{},
 					},
 					{
-						Name:        "sourceEncoding",
+						Name:        "teamId",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{{Name: "checkmarxGroupId"}},
+					},
+					{
+						Name:        "teamName",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+					},
+					{
+						Name:        "username",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   true,
+						Aliases:     []config.Alias{},
+					},
+					{
+						Name:        "vulnerabilityThresholdEnabled",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+					},
+					{
+						Name:        "vulnerabilityThresholdHigh",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:        "int",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 					},
@@ -358,23 +382,7 @@ func checkmarxExecuteScanMetadata() config.StepData {
 						Aliases:     []config.Alias{},
 					},
 					{
-						Name:        "checkmarxServerUrl",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-					},
-					{
-						Name:        "vulnerabilityThresholdHigh",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
-						Type:        "int",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-					},
-					{
-						Name:        "teamName",
+						Name:        "vulnerabilityThresholdResult",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
@@ -382,19 +390,11 @@ func checkmarxExecuteScanMetadata() config.StepData {
 						Aliases:     []config.Alias{},
 					},
 					{
-						Name:        "username",
+						Name:        "vulnerabilityThresholdUnit",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
-						Mandatory:   true,
-						Aliases:     []config.Alias{},
-					},
-					{
-						Name:        "password",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   true,
+						Mandatory:   false,
 						Aliases:     []config.Alias{},
 					},
 				},

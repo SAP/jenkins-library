@@ -158,7 +158,7 @@ type Query struct {
 
 // Result - Result Structure
 type Result struct {
-	XMLName       xml.Name `xml:"Result`
+	XMLName       xml.Name `xml:"Result"`
 	State         string   `xml:"state,attr"`
 	Severity      string   `xml:"Severity,attr"`
 	FalsePositive string   `xml:"FalsePositive,attr"`
@@ -434,12 +434,12 @@ func (sys *SystemInstance) UploadProjectSourceCode(projectID int, zipFile string
 	}
 
 	data, err := ioutil.ReadAll(resp.Body)
+	defer resp.Body.Close()
 	if err != nil {
 		sys.logger.Errorf("Error reading the response data %s", err)
 		return false
 	}
 
-	resp.Body.Close()
 	responseData := make(map[string]string)
 	json.Unmarshal(data, &responseData)
 
@@ -448,7 +448,6 @@ func (sys *SystemInstance) UploadProjectSourceCode(projectID int, zipFile string
 	}
 
 	sys.logger.Debugf("Body %s", data)
-	resp.Body.Close()
 	sys.logger.Errorf("Error writing the request's body: %s", resp.Status)
 	return false
 }

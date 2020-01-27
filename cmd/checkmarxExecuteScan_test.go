@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"bytes"
-	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -12,7 +11,6 @@ import (
 	"time"
 
 	"github.com/SAP/jenkins-library/pkg/checkmarx"
-	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -293,7 +291,7 @@ func TestGetDetailedResults(t *testing.T) {
 
 func TestRunScan(t *testing.T) {
 	sys := &systemMockForExistingProject{response: []byte(`<?xml version="1.0" encoding="utf-8"?><CxXMLResults />`)}
-	options := checkmarxExecuteScanOptions{CheckmarxProject: "TestExisting", VulnerabilityThresholdUnit: "absolute", FullScanCycle: "2", Incremental: true, FullScansScheduled: true, Preset: "10048", CheckmarxGroupID: "16", VulnerabilityThresholdEnabled: true, GeneratePdfReport: true}
+	options := checkmarxExecuteScanOptions{ProjectName: "TestExisting", VulnerabilityThresholdUnit: "absolute", FullScanCycle: "2", Incremental: true, FullScansScheduled: true, Preset: "10048", TeamID: "16", VulnerabilityThresholdEnabled: true, GeneratePdfReport: true}
 	workspace, err := ioutil.TempDir("", "workspace1")
 	if err != nil {
 		t.Fatal("Failed to create temporary workspace directory")
@@ -303,8 +301,7 @@ func TestRunScan(t *testing.T) {
 
 	influx := checkmarxExecuteScanInflux{}
 
-	err = runScan(options, sys, workspace, &influx)
-	assert.NoError(t, err, "Unexpected error detected")
+	runScan(options, sys, workspace, &influx)
 	assert.Equal(t, false, sys.isIncremental, "isIncremental has wrong value")
 	assert.Equal(t, false, sys.isPublic, "isPublic has wrong value")
 	assert.Equal(t, true, sys.forceScan, "forceScan has wrong value")
@@ -312,7 +309,7 @@ func TestRunScan(t *testing.T) {
 
 func TestRunScanWOtherCycle(t *testing.T) {
 	sys := &systemMock{response: []byte(`<?xml version="1.0" encoding="utf-8"?><CxXMLResults />`), createProject: true}
-	options := checkmarxExecuteScanOptions{VulnerabilityThresholdUnit: "percentage", FullScanCycle: "3", Incremental: true, FullScansScheduled: true, Preset: "SAP_JS_Default", CheckmarxGroupID: "16", VulnerabilityThresholdEnabled: true, GeneratePdfReport: true}
+	options := checkmarxExecuteScanOptions{VulnerabilityThresholdUnit: "percentage", FullScanCycle: "3", Incremental: true, FullScansScheduled: true, Preset: "SAP_JS_Default", TeamID: "16", VulnerabilityThresholdEnabled: true, GeneratePdfReport: true}
 	workspace, err := ioutil.TempDir("", "workspace2")
 	if err != nil {
 		t.Fatal("Failed to create temporary workspace directory")
@@ -322,8 +319,7 @@ func TestRunScanWOtherCycle(t *testing.T) {
 
 	influx := checkmarxExecuteScanInflux{}
 
-	err = runScan(options, sys, workspace, &influx)
-	assert.NoError(t, err, "Unexpected error detected")
+	runScan(options, sys, workspace, &influx)
 	assert.Equal(t, true, sys.isIncremental, "isIncremental has wrong value")
 	assert.Equal(t, false, sys.isPublic, "isPublic has wrong value")
 	assert.Equal(t, true, sys.forceScan, "forceScan has wrong value")
@@ -331,7 +327,7 @@ func TestRunScanWOtherCycle(t *testing.T) {
 
 func TestRunScanForPullRequest(t *testing.T) {
 	sys := &systemMock{response: []byte(`<?xml version="1.0" encoding="utf-8"?><CxXMLResults />`)}
-	options := checkmarxExecuteScanOptions{PullRequestName: "Test_PR-19", CheckmarxProject: "Test_PR-19", VulnerabilityThresholdUnit: "percentage", FullScanCycle: "3", Incremental: true, FullScansScheduled: true, Preset: "SAP_JS_Default", CheckmarxGroupID: "16", VulnerabilityThresholdEnabled: true, GeneratePdfReport: true, AvoidDuplicateProjectScans: false}
+	options := checkmarxExecuteScanOptions{PullRequestName: "Test_PR-19", ProjectName: "Test_PR-19", VulnerabilityThresholdUnit: "percentage", FullScanCycle: "3", Incremental: true, FullScansScheduled: true, Preset: "SAP_JS_Default", TeamID: "16", VulnerabilityThresholdEnabled: true, GeneratePdfReport: true, AvoidDuplicateProjectScans: false}
 	workspace, err := ioutil.TempDir("", "workspace3")
 	if err != nil {
 		t.Fatal("Failed to create temporary workspace directory")
@@ -341,8 +337,7 @@ func TestRunScanForPullRequest(t *testing.T) {
 
 	influx := checkmarxExecuteScanInflux{}
 
-	err = runScan(options, sys, workspace, &influx)
-	assert.NoError(t, err, "Unexpected error detected")
+	runScan(options, sys, workspace, &influx)
 	assert.Equal(t, true, sys.isIncremental, "isIncremental has wrong value")
 	assert.Equal(t, false, sys.isPublic, "isPublic has wrong value")
 	assert.Equal(t, true, sys.forceScan, "forceScan has wrong value")
@@ -350,7 +345,7 @@ func TestRunScanForPullRequest(t *testing.T) {
 
 func TestRunScanForPullRequestProjectNew(t *testing.T) {
 	sys := &systemMock{response: []byte(`<?xml version="1.0" encoding="utf-8"?><CxXMLResults />`), createProject: true}
-	options := checkmarxExecuteScanOptions{PullRequestName: "PR-17", CheckmarxProject: "Test_PR-19", VulnerabilityThresholdUnit: "percentage", FullScanCycle: "3", Incremental: true, FullScansScheduled: true, Preset: "10048", TeamName: "OpenSource/Cracks/15", VulnerabilityThresholdEnabled: true, GeneratePdfReport: true}
+	options := checkmarxExecuteScanOptions{PullRequestName: "PR-17", ProjectName: "Test_PR-19", VulnerabilityThresholdUnit: "percentage", FullScanCycle: "3", Incremental: true, FullScansScheduled: true, Preset: "10048", TeamName: "OpenSource/Cracks/15", VulnerabilityThresholdEnabled: true, GeneratePdfReport: true}
 	workspace, err := ioutil.TempDir("", "workspace4")
 	if err != nil {
 		t.Fatal("Failed to create temporary workspace directory")
@@ -360,8 +355,7 @@ func TestRunScanForPullRequestProjectNew(t *testing.T) {
 
 	influx := checkmarxExecuteScanInflux{}
 
-	err = runScan(options, sys, workspace, &influx)
-	assert.NoError(t, err, "Unexpected error detected")
+	runScan(options, sys, workspace, &influx)
 	assert.Equal(t, true, sys.isIncremental, "isIncremental has wrong value")
 	assert.Equal(t, false, sys.isPublic, "isPublic has wrong value")
 	assert.Equal(t, true, sys.forceScan, "forceScan has wrong value")
@@ -389,7 +383,7 @@ func TestRunScanHighViolationPercentage(t *testing.T) {
 			</Result>
 		</Query>
 		</CxXMLResults>`)}
-		options := checkmarxExecuteScanOptions{VulnerabilityThresholdUnit: "percentage", VulnerabilityThresholdResult: "FAILURE", VulnerabilityThresholdHigh: 100, FullScanCycle: "10", FullScansScheduled: true, Preset: "10048", CheckmarxGroupID: "16", VulnerabilityThresholdEnabled: true, GeneratePdfReport: true}
+		options := checkmarxExecuteScanOptions{VulnerabilityThresholdUnit: "percentage", VulnerabilityThresholdResult: "FAILURE", VulnerabilityThresholdHigh: 100, FullScanCycle: "10", FullScansScheduled: true, Preset: "10048", TeamID: "16", VulnerabilityThresholdEnabled: true, GeneratePdfReport: true}
 		workspace, err := ioutil.TempDir("", "workspace5")
 		if err != nil {
 			t.Fatal("Failed to create temporary workspace directory")
@@ -433,7 +427,7 @@ func TestRunScanHighViolationAbsolute(t *testing.T) {
 			</Result>
 		</Query>
 		</CxXMLResults>`)}
-		options := checkmarxExecuteScanOptions{VulnerabilityThresholdUnit: "absolute", VulnerabilityThresholdResult: "FAILURE", VulnerabilityThresholdLow: 1, FullScanCycle: "10", FullScansScheduled: true, Preset: "10048", CheckmarxGroupID: "16", VulnerabilityThresholdEnabled: true, GeneratePdfReport: true}
+		options := checkmarxExecuteScanOptions{VulnerabilityThresholdUnit: "absolute", VulnerabilityThresholdResult: "FAILURE", VulnerabilityThresholdLow: 1, FullScanCycle: "10", FullScansScheduled: true, Preset: "10048", TeamID: "16", VulnerabilityThresholdEnabled: true, GeneratePdfReport: true}
 		workspace, err := ioutil.TempDir("", "workspace6")
 		if err != nil {
 			t.Fatal("Failed to create temporary workspace directory")
@@ -547,49 +541,4 @@ func TestLoadPreset(t *testing.T) {
 		assert.Equal(t, false, ok, "Expected error but succeeded")
 		assert.Equal(t, 0, preset.ID, "Expected result but got none")
 	})
-}
-
-func TestPersistReportAndLinks(t *testing.T) {
-	workspace, err := ioutil.TempDir("", "workspace5")
-	if err != nil {
-		t.Fatal("Failed to create temporary workspace directory")
-	}
-	// clean up tmp dir
-	defer os.RemoveAll(workspace)
-
-	reports := []path{path{Target: "testFile1.json", Mandatory: true}, path{Target: "testFile2.json"}}
-	links := []path{path{Target: "https://1234568.com/test"}}
-	persistReportsAndLinks(workspace, reports, links)
-
-	reportsJSONPath := filepath.Join(workspace, "reports.json")
-	reportsFileExists, err := piperutils.FileExists(reportsJSONPath)
-	assert.NoError(t, err, "No error expected but got one")
-	assert.Equal(t, true, reportsFileExists, "reports.json missing")
-
-	linksJSONPath := filepath.Join(workspace, "links.json")
-	linksFileExists, err := piperutils.FileExists(linksJSONPath)
-	assert.NoError(t, err, "No error expected but got one")
-	assert.Equal(t, true, linksFileExists, "links.json missing")
-
-	var reportsLoaded []path
-	var linksLoaded []path
-	reportsFileData, err := ioutil.ReadFile(reportsJSONPath)
-	reportsDataString := string(reportsFileData)
-	println(reportsDataString)
-	assert.NoError(t, err, "No error expected but got one")
-	linksFileData, err := ioutil.ReadFile(linksJSONPath)
-	linksDataString := string(linksFileData)
-	println(linksDataString)
-	assert.NoError(t, err, "No error expected but got one")
-	json.Unmarshal(reportsFileData, &reportsLoaded)
-	json.Unmarshal(linksFileData, &linksLoaded)
-
-	assert.Equal(t, 2, len(reportsLoaded), "wrong number of reports")
-	assert.Equal(t, 1, len(linksLoaded), "wrong number of links")
-	assert.Equal(t, true, reportsLoaded[0].Mandatory, "mandatory flag on report 1 has wrong value")
-	assert.Equal(t, "testFile1.json", reportsLoaded[0].Target, "target value on report 1 has wrong value")
-	assert.Equal(t, false, reportsLoaded[1].Mandatory, "mandatory flag on report 2 has wrong value")
-	assert.Equal(t, "testFile2.json", reportsLoaded[1].Target, "target value on report 1 has wrong value")
-	assert.Equal(t, false, linksLoaded[0].Mandatory, "mandatory flag on link 1 has wrong value")
-	assert.Equal(t, "https://1234568.com/test", linksLoaded[0].Target, "target value on link 1 has wrong value")
 }
