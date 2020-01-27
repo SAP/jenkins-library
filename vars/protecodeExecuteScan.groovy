@@ -123,16 +123,18 @@ void call(Map parameters = [:]) {
 
             archiveArtifacts artifacts: report['target'], allowEmptyArchive: !report['mandatory']
             
-             echo "Target Link: ${report['target']}"
-            jenkinsUtils.removeJobSideBarLinks("artifact/${report['target']}")
-            jenkinsUtils.addJobSideBarLink("artifact/${report['target']}", "Protecode Report", "images/24x24/graph.png")
-            jenkinsUtils.addRunSideBarLink("artifact/${report['target']}", "Protecode Report", "images/24x24/graph.png")
-            jenkinsUtils.addRunSideBarLink("${report['protecodeServerUrl']}/products/${report['productID']}/", "Protecode WebUI", "images/24x24/graph.png")
+            if addSideBarLink {
+                jenkinsUtils.removeJobSideBarLinks("artifact/${report['target']}")
+                jenkinsUtils.addJobSideBarLink("artifact/${report['target']}", "Protecode Report", "images/24x24/graph.png")
+                jenkinsUtils.addRunSideBarLink("artifact/${report['target']}", "Protecode Report", "images/24x24/graph.png")
+                jenkinsUtils.addRunSideBarLink("${report['protecodeServerUrl']}/products/${report['productID']}/", "Protecode WebUI", "images/24x24/graph.png")
+            }
+
 
             if(json.results.summary?.verdict?.short == 'Vulns') {
-                echo "${report.count} ${json.results.summary?.verdict.detailed} of which ${report.cvss2GreaterOrEqualSeven} had a CVSS v2 score >= 7.0 and ${report.cvss3GreaterOrEqualSeven} had a CVSS v3 score >= 7.0.\n${report.excludedVulnerabilities} vulnerabilities were excluded via configuration (${config.protecodeExcludeCVEs}) and ${report.triagedVulnerabilities} vulnerabilities were triaged via the webUI.\nIn addition ${protecodeDataJsonhistoricalVulnerabilities} historical vulnerabilities were spotted."
-                if(config.protecodeFailOnSevereVulnerabilities && (report.cvss2GreaterOrEqualSeven > 0 || protecodeDataJsoncvss3GreaterOrEqualSeven > 0)) {
-                    Notify.error(this, "Protecode detected Open Source Software Security vulnerabilities, the project is not compliant. For details see the archived report or the web ui: ${report.protecodeServerUrl}/products/${report.productID}/")
+                echo "${report['count']} ${json.results.summary?.verdict.detailed} of which ${report['cvss2GreaterOrEqualSeven']} had a CVSS v2 score >= 7.0 and ${report['cvss3GreaterOrEqualSeven']} had a CVSS v3 score >= 7.0.\n${report['excludedVulnerabilities']} vulnerabilities were excluded via configuration (${config.protecodeExcludeCVEs}) and ${report['triagedVulnerabilities']} vulnerabilities were triaged via the webUI.\nIn addition ${protecodeDataJsonhistoricalVulnerabilities} historical vulnerabilities were spotted."
+                if(config.protecodeFailOnSevereVulnerabilities && (report['cvss2GreaterOrEqualSeven'] > 0 || protecodeDataJsoncvss3GreaterOrEqualSeven > 0)) {
+                    Notify.error(this, "Protecode detected Open Source Software Security vulnerabilities, the project is not compliant. For details see the archived report or the web ui: ${report['protecodeServerUrl']}/products/${report['productID']}/")
                 }
             }
         }
@@ -148,9 +150,21 @@ private void callProtecodeScan(config) {
 
 
 private void scanWithCredentials(config) {
-     withCredentials([[$class: 'UsernamePasswordMultiBinding', credentialsId: config.dockerCredentialsId, passwordVariable: 'dockerPassword', usernameVariable: 'dockerUser']]) {
-        withCredentials([[$class: 'UsernamePasswordMultiBinding', credentialsId: config.protecodeCredentialsId, passwordVariable: 'password', usernameVariable: 'user']]) {
 
+    def uuid = UUID.randomUUID().toString()
+    if (config.dockerConfigJsonCredentialsId) {
+        // write proper config.json with credentials
+        withCredentials([file(credentialsId: config.dockerCredentialsId, variable: 'dockerConfigJson')]) {
+            writeFile file: "${uuid}-config.json", text: readFile(dockerConfigJson)
+        }
+    } else {
+        // empty config.json to allow anonymous authentication
+        writeFile file: "${uuid}-config.json", text: '{"auths":{}}'
+    }
+    sh " mv ${uuid}-config.json /protecode/.docker/config.json "
+
+    withCredentials([[$class: 'UsernamePasswordMultiBinding', credentialsId: config.dockerCredentialsId, passwordVariable: 'dockerPassword', usernameVariable: 'dockerUser']]) {
+        withCredentials([[$class: 'UsernamePasswordMultiBinding', credentialsId: config.protecodeCredentialsId, passwordVariable: 'password', usernameVariable: 'user']]) {
             sh "./piper protecodeExecuteScan  --password ${password} --user ${user} --dockerUser ${dockerUser} --dockerPassword ${dockerPassword}"
         }
      }
