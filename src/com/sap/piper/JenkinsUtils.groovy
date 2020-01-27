@@ -66,6 +66,11 @@ def getCurrentBuildInstance() {
 }
 
 @NonCPS
+def getParentJob() {
+    return getRawBuild().getParent()
+}
+
+@NonCPS
 def getRawBuild() {
     return getCurrentBuildInstance().rawBuild
 }
