@@ -54,6 +54,7 @@ The result looks like
 		RunE: func(cmd *cobra.Command, args []string) error {
 
 			telemetry.Initialize(!GeneralConfig.NoTelemetry, piperenv.GetResourceParameter, GeneralConfig.EnvRootPath, "githubPublishRelease")
+			telemetry.SendTelemetry(&telemetry.CustomData{})
 			return githubPublishRelease(myGithubPublishReleaseOptions)
 		},
 	}

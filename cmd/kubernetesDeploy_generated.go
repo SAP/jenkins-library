@@ -5,7 +5,8 @@ import (
 
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
-
+	"github.com/SAP/jenkins-library/pkg/piperenv"
+	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/spf13/cobra"
 )
 
@@ -65,6 +66,8 @@ helm upgrade <deploymentName> <chartPath> --install --force --namespace <namespa
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 
+			telemetry.Initialize(!GeneralConfig.NoTelemetry, piperenv.GetResourceParameter, GeneralConfig.EnvRootPath, "kubernetesDeploy")
+			telemetry.SendTelemetry(&telemetry.CustomData{})
 			return kubernetesDeploy(myKubernetesDeployOptions)
 		},
 	}

@@ -29,6 +29,7 @@ func VersionCommand() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 
 			telemetry.Initialize(!GeneralConfig.NoTelemetry, piperenv.GetResourceParameter, GeneralConfig.EnvRootPath, "version")
+			telemetry.SendTelemetry(&telemetry.CustomData{})
 			return version(myVersionOptions)
 		},
 	}

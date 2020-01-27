@@ -80,6 +80,7 @@ func {{.CobraCmdFuncName}}() *cobra.Command {
 			defer handler()
 			{{- end }}
 			telemetry.Initialize(!GeneralConfig.NoTelemetry, piperenv.GetResourceParameter, GeneralConfig.EnvRootPath, "{{ .StepName }}")
+			telemetry.SendTelemetry(&telemetry.CustomData{})
 			return {{.StepName}}(my{{ .StepName | title }}Options{{ range $notused, $oRes := .OutputResources}}, &{{ index $oRes "name" }}{{ end }})
 		},
 	}
