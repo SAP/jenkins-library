@@ -22,3 +22,4 @@ consumer-test/**/workspace
 *.code-workspace
 /piper
 /piper.exe
+.factorypath

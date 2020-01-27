@@ -36,31 +36,38 @@ import static com.sap.piper.Utils.downloadSettingsFromUrl
      * Configures maven to log successful downloads. This is set to `false` by default to reduce the noise in build logs.
      * @possibleValues `true`, `false`
      */
-    'logSuccessfulMavenTransfers'
+    'logSuccessfulMavenTransfers',
+    /**
+     * Returns the standard output of the maven command for further processing. By default stdout will be printed to the console but not returned by mavenExecute.
+     * @possibleValues `true`, `false`
+     */
+    'returnStdout'
 ])
 
 /**
  * Executes a maven command inside a Docker container.
  */
 @GenerateDocumentation
-void call(Map parameters = [:]) {
+def call(Map parameters = [:]) {
+
+    final script = checkScript(this, parameters) ?: this
+    String commandOutput = ''
+
+    // load default & individual configuration
+    Map configuration = ConfigurationHelper.newInstance(this)
+        .loadStepDefaults()
+        .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS)
+        .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS)
+        .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName ?: env.STAGE_NAME, STEP_CONFIG_KEYS)
+        .mixin(parameters, PARAMETER_KEYS)
+        .use()
+
     handlePipelineStepErrors(stepName: STEP_NAME, stepParameters: parameters) {
 
-        final script = checkScript(this, parameters) ?: this
-
-        // load default & individual configuration
-        Map configuration = ConfigurationHelper.newInstance(this)
-            .loadStepDefaults()
-            .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS)
-            .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS)
-            .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName?:env.STAGE_NAME, STEP_CONFIG_KEYS)
-            .mixin(parameters, PARAMETER_KEYS)
-            .use()
-
         new Utils().pushToSWA([
-            step: STEP_NAME,
+            step         : STEP_NAME,
             stepParamKey1: 'scriptMissing',
-            stepParam1: parameters?.script == null
+            stepParam1   : parameters?.script == null
         ], configuration)
 
         String command = "mvn"
@@ -74,7 +81,7 @@ void call(Map parameters = [:]) {
         }
 
         String m2Path = configuration.m2Path
-        if(m2Path?.trim()) {
+        if (m2Path?.trim()) {
             command += " -Dmaven.repo.local='${m2Path}'"
         }
 
@@ -87,7 +94,7 @@ void call(Map parameters = [:]) {
         }
 
         String pomPath = configuration.pomPath
-        if(pomPath?.trim()){
+        if (pomPath?.trim()) {
             command += " --file '${pomPath}'"
         }
 
@@ -114,11 +121,19 @@ void call(Map parameters = [:]) {
             command += " ${mavenGoals}"
         }
         def defines = configuration.defines
-        if (defines?.trim()){
+        if (defines?.trim()) {
             command += " ${defines}"
         }
+
         dockerExecute(script: script, dockerImage: configuration.dockerImage, dockerOptions: configuration.dockerOptions) {
-            sh command
+            if (configuration.returnStdout) {
+                commandOutput = sh(returnStdout: true, script: command)
+            } else {
+                sh command
+            }
         }
+    }
+    if (configuration.returnStdout) {
+        return commandOutput
     }
 }

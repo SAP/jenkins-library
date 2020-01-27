@@ -74,6 +74,7 @@ class ArtifactSetVersionTest extends BasePiperTest {
     @Before
     void init() throws Throwable {
         dockerParameters = [:]
+        String version = '1.2.3'
 
         nullScript.commonPipelineEnvironment.setArtifactVersion(null)
         nullScript.commonPipelineEnvironment.setGitSshUrl('git@test.url')
@@ -83,6 +84,8 @@ class ArtifactSetVersionTest extends BasePiperTest {
             return closure()
         })
 
+        shellRule.setReturnValue("mvn --file 'pom.xml' --batch-mode -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn org.apache.maven.plugins:maven-help-plugin:3.1.0:evaluate -Dexpression=project.version -DforceStdout -q", version)
+        shellRule.setReturnValue("mvn --file 'snapshot/pom.xml' --batch-mode -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn org.apache.maven.plugins:maven-help-plugin:3.1.0:evaluate -Dexpression=project.version", version)
         shellRule.setReturnValue("date --utc +'%Y%m%d%H%M%S'", '20180101010203')
         shellRule.setReturnValue('git diff --quiet HEAD', 0)
 
@@ -219,7 +222,7 @@ class ArtifactSetVersionTest extends BasePiperTest {
                                         ))
     }
 
-    
+
     @Test
     void testVersioningPushViaHTTPSEncodingDoesNotRevealSecrets() {
 
