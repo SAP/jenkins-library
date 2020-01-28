@@ -2,10 +2,12 @@ package cmd
 
 import (
 	"bytes"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"testing"
 
+	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -16,8 +18,8 @@ func TestTriggerPull(t *testing.T) {
 		uriExpected := "example.com"
 		tokenExpected := "myToken"
 
-		client := &ClientMock{
-			Body:  `{"D" : { "__metadata" : { "uri" : "` + uriExpected + `" } } }`,
+		client := &clientMock{
+			Body:  `{"d" : { "__metadata" : { "uri" : "` + uriExpected + `" } } }`,
 			Token: tokenExpected,
 		}
 		config := abapEnvironmentPullGitRepoOptions{
@@ -46,10 +48,10 @@ func TestPollEntity(t *testing.T) {
 
 	t.Run("Test poll entity: success case", func(t *testing.T) {
 
-		client := &ClientMock{
+		client := &clientMock{
 			BodyList: []string{
-				`{"D" : { "status" : "S" } }`,
-				`{"D" : { "status" : "R" } }`,
+				`{"d" : { "status" : "S" } }`,
+				`{"d" : { "status" : "R" } }`,
 			},
 			Token: "myToken",
 		}
@@ -75,10 +77,10 @@ func TestPollEntity(t *testing.T) {
 
 	t.Run("Test poll entity: error case", func(t *testing.T) {
 
-		client := &ClientMock{
+		client := &clientMock{
 			BodyList: []string{
-				`{"D" : { "status" : "E" } }`,
-				`{"D" : { "status" : "R" } }`,
+				`{"d" : { "status" : "E" } }`,
+				`{"d" : { "status" : "R" } }`,
 			},
 			Token: "myToken",
 		}
@@ -102,31 +104,6 @@ func TestPollEntity(t *testing.T) {
 		assert.Equal(t, "E", status)
 	})
 
-}
-
-type ClientMock struct {
-	Token    string
-	Body     string
-	BodyList []string
-}
-
-func (c *ClientMock) Do(req *http.Request) (*http.Response, error) {
-
-	var body []byte
-	if c.Body != "" {
-		body = []byte(c.Body)
-	} else {
-		bodyString := c.BodyList[len(c.BodyList)-1]
-		c.BodyList = c.BodyList[:len(c.BodyList)-1]
-		body = []byte(bodyString)
-	}
-	header := http.Header{}
-	header.Set("X-Csrf-Token", c.Token)
-	return &http.Response{
-		StatusCode: 200,
-		Header:     header,
-		Body:       ioutil.NopCloser(bytes.NewReader(body)),
-	}, nil
 }
 
 func TestGetAbapCommunicationArrangementInfo(t *testing.T) {
@@ -182,4 +159,31 @@ func TestGetAbapCommunicationArrangementInfo(t *testing.T) {
 		assert.Equal(t, "Parameters missing. Please provide EITHER the Host of the ABAP server OR the Cloud Foundry ApiEndpoint, Organization, Space, Service Instance and a corresponding Service Key for the Communication Scenario SAP_COM_0510", err.Error(), "Expected error message")
 	})
 
+}
+
+type clientMock struct {
+	Token    string
+	Body     string
+	BodyList []string
+}
+
+func (c *clientMock) SetOptions(opts piperhttp.ClientOptions) {}
+
+func (c *clientMock) SendRequest(method, url string, bdy io.Reader, hdr http.Header, cookies []*http.Cookie) (*http.Response, error) {
+
+	var body []byte
+	if c.Body != "" {
+		body = []byte(c.Body)
+	} else {
+		bodyString := c.BodyList[len(c.BodyList)-1]
+		c.BodyList = c.BodyList[:len(c.BodyList)-1]
+		body = []byte(bodyString)
+	}
+	header := http.Header{}
+	header.Set("X-Csrf-Token", c.Token)
+	return &http.Response{
+		StatusCode: 200,
+		Header:     header,
+		Body:       ioutil.NopCloser(bytes.NewReader(body)),
+	}, nil
 }

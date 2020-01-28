@@ -9,30 +9,35 @@ import (
 	"time"
 
 	"github.com/SAP/jenkins-library/pkg/command"
+	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/pkg/errors"
 )
 
 func abapEnvironmentPullGitRepo(config abapEnvironmentPullGitRepoOptions) error {
 	c := command.Command{}
-	cookieJar, _ := cookiejar.New(nil)
-	client := &http.Client{
-		Jar: cookieJar,
-	}
-
 	var connectionDetails, error = getAbapCommunicationArrangementInfo(config, &c)
 	if error != nil {
 		log.Entry().WithError(error).Fatal("Parameters for the ABAP Connection not available")
 		return error
 	}
 
-	var uriConnectionDetails, err = triggerPull(config, connectionDetails, client)
+	client := piperhttp.Client{}
+	cookieJar, _ := cookiejar.New(nil)
+	clientOptions := piperhttp.ClientOptions{
+		CookieJar: cookieJar,
+		Username:  connectionDetails.User,
+		Password:  connectionDetails.Password,
+	}
+	client.SetOptions(clientOptions)
+
+	var uriConnectionDetails, err = triggerPull(config, connectionDetails, &client)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("Pull failed on the ABAP System")
 		return err
 	}
 
-	var status, er = pollEntity(config, uriConnectionDetails, client, 10*time.Second)
+	var status, er = pollEntity(config, uriConnectionDetails, &client, 10*time.Second)
 	if status == "E" || err != nil {
 		log.Entry().WithError(er).Fatal("Pull failed on the ABAP System")
 		return err
@@ -41,7 +46,7 @@ func abapEnvironmentPullGitRepo(config abapEnvironmentPullGitRepoOptions) error 
 	return nil
 }
 
-func pollEntity(config abapEnvironmentPullGitRepoOptions, connectionDetails connectionDetailsHTTP, client httpClient, pollIntervall time.Duration) (string, error) {
+func pollEntity(config abapEnvironmentPullGitRepoOptions, connectionDetails connectionDetailsHTTP, client piperhttp.Sender, pollIntervall time.Duration) (string, error) {
 
 	log.Entry().Info("Start polling the status...")
 	var status string = "R"
@@ -75,7 +80,7 @@ func pollEntity(config abapEnvironmentPullGitRepoOptions, connectionDetails conn
 	return status, nil
 }
 
-func triggerPull(config abapEnvironmentPullGitRepoOptions, pullConnectionDetails connectionDetailsHTTP, client httpClient) (connectionDetailsHTTP, error) {
+func triggerPull(config abapEnvironmentPullGitRepoOptions, pullConnectionDetails connectionDetailsHTTP, client piperhttp.Sender) (connectionDetailsHTTP, error) {
 
 	uriConnectionDetails := pullConnectionDetails
 	uriConnectionDetails.URL = ""
@@ -86,6 +91,7 @@ func triggerPull(config abapEnvironmentPullGitRepoOptions, pullConnectionDetails
 	log.Entry().Info("Trying to authenticate on the ABAP system...")
 
 	var resp, err = getHTTPResponse("HEAD", pullConnectionDetails, nil, client)
+	// var resp, err = client.SendRequest("HEAD")
 	defer resp.Body.Close()
 	if err != nil {
 		log.Entry().WithField("StatusCode", resp.Status).Error("Authentication failed")
@@ -161,7 +167,6 @@ func readCfServiceKey(config abapEnvironmentPullGitRepoOptions, c shellRunner) (
 	log.Entry().WithField("cfApiEndpoint", config.CfAPIEndpoint).WithField("cfSpace", config.CfSpace).WithField("cfOrg", config.CfOrg).WithField("User", config.User).Info("Cloud Foundry parameters: ")
 	var cfLoginScript = "cf login -a " + config.CfAPIEndpoint + " -u " + config.User + " -p " + config.Password + " -o " + config.CfOrg + " -s " + config.CfSpace
 	error := c.RunShell("/bin/bash", cfLoginScript)
-	// cflogin, error := exec.Command("sh", "-c", cfLoginScript).Output()
 	if error != nil {
 		log.Entry().Error("Login at cloud foundry failed.")
 		return abapServiceKey, error
@@ -183,28 +188,15 @@ func readCfServiceKey(config abapEnvironmentPullGitRepoOptions, c shellRunner) (
 	return abapServiceKey, error
 }
 
-func getHTTPResponse(requestType string, connectionDetails connectionDetailsHTTP, body []byte, client httpClient) (*http.Response, error) {
+func getHTTPResponse(requestType string, connectionDetails connectionDetailsHTTP, body []byte, client piperhttp.Sender) (*http.Response, error) {
 
-	req, _ := http.NewRequest(requestType, connectionDetails.URL, bytes.NewBuffer(body))
-	req.Header.Add("x-csrf-token", connectionDetails.XCsrfToken)
-	req.Header.Add("Content-Type", "application/json")
-	req.Header.Add("Accept", "application/json")
-	req.SetBasicAuth(connectionDetails.User, connectionDetails.Password)
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, err
-	}
+	header := make(map[string][]string)
+	header["Content-Type"] = []string{"application/json"}
+	header["Accept"] = []string{"application/json"}
+	header["x-csrf-token"] = []string{connectionDetails.XCsrfToken}
 
-	if resp.StatusCode >= 300 {
-		log.Entry().WithField("StatusCode", resp.Status).Error("Request to ABAP System failed")
-		err = errors.New("Request to ABAP System failed")
-	}
-
-	return resp, err
-}
-
-type httpClient interface {
-	Do(req *http.Request) (*http.Response, error)
+	req, err := client.SendRequest(requestType, connectionDetails.URL, bytes.NewBuffer(body), header, nil)
+	return req, err
 }
 
 type abapEntity struct {
