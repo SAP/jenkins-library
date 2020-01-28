@@ -1,7 +1,7 @@
 package com.sap.piper
 
 import com.cloudbees.groovy.cps.NonCPS
-
+import hudson.Functions
 import hudson.tasks.junit.TestResultAction
 
 import jenkins.model.Jenkins
@@ -126,6 +126,22 @@ def getLibrariesInfo() {
     }
 
     return libraries
+}
+
+@NonCPS
+void addRunSideBarLink(String relativeUrl, String displayName, String relativeIconPath) {
+    try {
+        def linkActionClass = this.class.classLoader.loadClass("hudson.plugins.sidebar_link.LinkAction")
+        if (relativeUrl != null && displayName != null) {
+            def run = getRawBuild()
+            def iconPath = (null != relativeIconPath) ? "${Functions.getResourcePath()}/${relativeIconPath}" : null
+            def action = linkActionClass.newInstance(relativeUrl, displayName, iconPath)
+            echo "Added run level sidebar link to '${action.getUrlName()}' with name '${action.getDisplayName()}' and icon '${action.getIconFileName()}'"
+            run.getActions().add(action)
+        }
+    } catch (e) {
+        e.printStackTrace()
+    }
 }
 
 def getInstance() {
