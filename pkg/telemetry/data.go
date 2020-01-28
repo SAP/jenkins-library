@@ -7,11 +7,12 @@ import (
 
 // BaseData object definition containing the base data and it's mapping information
 type BaseData struct {
+	// SWA receives the fields custom1 - custom30 and e_a, e_2 - e_30 for custom values.
 	ActionName      string `json:"action_name"`
 	EventType       string `json:"event_type"`
 	SiteID          string `json:"idsite"`
 	URL             string `json:"url"`
-	StepName        string `json:"e_3"`
+	StepName        string `json:"e_3"` // set by step generator
 	StageName       string `json:"e_10"`
 	PipelineURLHash string `json:"e_4"` // defaults to sha1 of env.JOB_URl
 	BuildURLHash    string `json:"e_5"` // defaults to sha1 of env.BUILD_URL
@@ -21,6 +22,7 @@ var baseData BaseData
 
 // BaseMetaData object definition containing the labels for the base data and it's mapping information
 type BaseMetaData struct {
+	// SWA receives the fields custom1 - custom30 and e_a, e_2 - e_30 for custom values.
 	StepNameLabel        string `json:"custom3"`
 	StageNameLabel       string `json:"custom10"`
 	PipelineURLHashLabel string `json:"custom4"`
@@ -37,7 +39,9 @@ var baseMetaData BaseMetaData = BaseMetaData{
 
 // CustomData object definition containing the data that can be set by a step and it's mapping information
 type CustomData struct {
-	// values custom_11 - custom_25 & e_11 - e_25 reserved for library reporting
+	// SWA receives the fields custom1 - custom30 and e_a, e_2 - e_30 for custom values.
+	// Piper uses the values custom11 - custom25 & e_11 - e_25 for library related reporting
+	// and custom26 - custom30 & e_26 - e_30 for step  related reporting.
 	Custom1Label string `json:"custom26,omitempty"`
 	Custom2Label string `json:"custom27,omitempty"`
 	Custom3Label string `json:"custom28,omitempty"`
