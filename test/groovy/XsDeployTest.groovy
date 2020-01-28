@@ -10,6 +10,7 @@ import static org.junit.Assert.assertThat
 
 import org.hamcrest.Matchers
 import org.hamcrest.core.IsNull
+import org.junit.After
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -40,6 +41,8 @@ class XsDeployTest extends BasePiperTest {
     private JenkinsLockRule lockRule = new JenkinsLockRule(this)
     private JenkinsDockerExecuteRule dockerRule = new JenkinsDockerExecuteRule(this)
     private JenkinsWriteFileRule writeFileRule = new JenkinsWriteFileRule(this)
+
+    def oldWriteToDisk, oldReadFromDisk
 
     List env
 
@@ -72,6 +75,20 @@ class XsDeployTest extends BasePiperTest {
         shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, 'getConfig.* (?!--contextConfig)', '{"mode": "BG_DEPLOY", "action": "NONE", "apiUrl": "https://example.org/xs", "org": "myOrg", "space": "mySpace"}')
 
         nullScript.commonPipelineEnvironment.xsDeploymentId = null
+
+        oldWriteToDisk = nullScript.commonPipelineEnvironment.metaClass.writeToDisk
+        nullScript.commonPipelineEnvironment.metaClass.writeToDisk = { s -> }
+
+        oldReadFromDisk = nullScript.commonPipelineEnvironment.metaClass.readFromDisk
+        nullScript.commonPipelineEnvironment.metaClass.readFromDisk = { s -> }
+    }
+
+    @After
+    public void tearDown() {
+        if(nullScript.commonPipelineEnvironment.metaClass?.writeToDisk != null)
+            nullScript.commonPipelineEnvironment.metaClass.writeToDisk = oldWriteToDisk
+        if(nullScript.commonPipelineEnvironment.metaClass?.readFromDisk != null)
+            nullScript.commonPipelineEnvironment.metaClass.readFromDisk = oldReadFromDisk
     }
 
     @Test
@@ -86,48 +103,6 @@ class XsDeployTest extends BasePiperTest {
             script: nullScript,
             piperGoUtils: goUtils,
         )
-    }
-
-    @Test
-    public void testInvalidDeploymentModeProvided() {
-
-        thrown.expect(IllegalArgumentException)
-        thrown.expectMessage('No enum constant')
-
-        shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, 'getConfig.* (?!--contextConfig)', '{"mode": "DOES_NOT_EXIST", "action": "NONE", "apiUrl": "https://example.org/xs", "org": "myOrg", "space": "mySpace"}')
-        nullScript.commonPipelineEnvironment.configuration = [steps: [xsDeploy: [mode: 'DOES_NOT_EXIST', action: 'NONE', apiUrl: 'https://example.org/xs', org: 'myOrg', space: 'mySpace']]]
-
-        stepRule.step.xsDeploy(
-            script: nullScript,
-            piperGoUtils: goUtils,
-        )
-    }
-
-    @Test
-    public void testDeployableViaCPE() {
-
-        shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, '.*xsDeploy .*', ' ')
-
-        nullScript.commonPipelineEnvironment.mtarFilePath = "my.mtar"
-
-        stepRule.step.xsDeploy(
-            script: nullScript,
-            apiUrl: 'https://example.org/xs',
-            org: 'myOrg',
-            space: 'mySpace',
-            credentialsId: 'myCreds',
-            deployOpts: '-t 60',
-            mtaPath: 'myApp.mta',
-            mode: 'DEPLOY',
-            action: 'NONE',
-            piperGoUtils: goUtils
-        )
-
-        assertThat(shellRule.shell,
-                new CommandLineMatcher()
-                    .hasProlog('#!/bin/bash ./piper xsDeploy')
-                    // explicitly provided, it is not contained in project config.
-                    .hasOption('mtaPath', 'my.mtar'))
     }
 
     @Test
@@ -161,23 +136,28 @@ class XsDeployTest extends BasePiperTest {
         // in the groovy layer for standard deploy
         //
 
-        boolean unstashCalled
+        boolean unstashCalled, writeToDiskCalled
 
         assertThat(nullScript.commonPipelineEnvironment.xsDeploymentId, nullValue())
-
-        shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, '.*xsDeploy .*', '{"operationId": "1234"}')
 
         goUtils = new PiperGoUtils(null) {
             void unstashPiperBin() {
                 unstashCalled = true
             }
         }
+
+        nullScript.commonPipelineEnvironment.metaClass.writeToDisk = { s -> writeToDiskCalled = true}
+
+        nullScript.commonPipelineEnvironment.metaClass.readFromDisk = { s ->
+            s.commonPipelineEnvironment.xsDeploymentId = "1234"}
+
         stepRule.step.xsDeploy(
             script: nullScript,
             piperGoUtils: goUtils
         )
 
         assertThat(unstashCalled, equalTo(true))
+        assertThat(writeToDiskCalled, equalTo(true))
 
         assertThat(nullScript.commonPipelineEnvironment.xsDeploymentId, is('1234'))
 
@@ -225,7 +205,6 @@ class XsDeployTest extends BasePiperTest {
         assertThat(shellRule.shell,
             new CommandLineMatcher()
                 .hasProlog('#!/bin/bash ./piper xsDeploy')
-                .hasOption('operationId', '1234')
         )
 
         assertThat(lockRule.getLockResources(), contains('xsDeploy:https://example.org/xs:myOrg:mySpace'))
@@ -236,14 +215,12 @@ class XsDeployTest extends BasePiperTest {
 
         // this happens in case we would like to complete a deployment without having a (successful) deployments before.
 
-        thrown.expect(IllegalArgumentException)
-        thrown.expectMessage(
-            allOf(
-                containsString('No operationId provided'),
-                containsString('Was there a deployment before?')))
+        thrown.expect(AbortException)
+        thrown.expectMessage("script returned exit code 1")
 
         nullScript.commonPipelineEnvironment.configuration = [steps: [xsDeploy: [mode: 'BG_DEPLOY', action: 'RESUME', apiUrl: 'https://example.org/xs', org: 'myOrg', space: 'mySpace']]]
         shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, 'getConfig.* (?!--contextConfig)', '{"mode": "BG_DEPLOY", "action": "RESUME", "apiUrl": "https://example.org/xs", "org": "myOrg", "space": "mySpace"}')
+        shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, '.*\\./piper xsDeploy.*', {throw new AbortException('script returned exit code 1')})
 
         assertThat(nullScript.commonPipelineEnvironment.xsDeploymentId, nullValue())
 
@@ -257,8 +234,6 @@ class XsDeployTest extends BasePiperTest {
     @Test
     public void testBlueGreenDeployResumeOperationIdViaSignature() {
 
-        // this happens in case we would like to complete a deployment without having a (successful) deployments before.
-
         nullScript.commonPipelineEnvironment.configuration = [steps: [xsDeploy: [mode: 'BG_DEPLOY', action: 'RESUME', apiUrl: 'https://example.org/xs', org: 'myOrg', space: 'mySpace']]]
         shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, 'getConfig.* (?!--contextConfig)', '{"mode": "BG_DEPLOY", "action": "RESUME", "apiUrl": "https://example.org/xs", "org": "myOrg", "space": "mySpace"}')
 
@@ -267,14 +242,14 @@ class XsDeployTest extends BasePiperTest {
         stepRule.step.xsDeploy(
             script: nullScript,
             piperGoUtils: goUtils,
-            failOnError: true,
             operationId: '1357'
         )
 
+        assertThat(env.size(), is(equalTo(1)))
+        assertThat(env[0].toString(), equalTo('PIPER_parametersJSON={"operationId":"1357"}'))
         assertThat(shellRule.shell,
             new CommandLineMatcher()
                 .hasProlog('#!/bin/bash ./piper xsDeploy')
-                .hasOption('operationId', '1357')
         )
     }
 
@@ -369,7 +344,8 @@ class XsDeployTest extends BasePiperTest {
 
         shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, '.*xsDeploy .*', '{"operationId": "1234"}')
 
-        nullScript.commonPipelineEnvironment = ['reset': {}, 'getCustomDefaults': {['a.yml', 'b.yml']}]
+        nullScript.commonPipelineEnvironment = ['reset': {}, 'getCustomDefaults': {['a.yml', 'b.yml']},
+            writeToDisk: {}, readFromDisk: {}]
 
         goUtils = new PiperGoUtils(null) {
             void unstashPiperBin() {
