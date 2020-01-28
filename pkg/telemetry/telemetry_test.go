@@ -32,7 +32,7 @@ func TestInitialise(t *testing.T) {
 		// init
 		client = nil
 		// test
-		Initialize(false, "testStep")
+		Initialize(true, "testStep")
 		// assert
 		assert.Equal(t, nil, client)
 		assert.Equal(t, BaseData{}, baseData)
@@ -42,7 +42,7 @@ func TestInitialise(t *testing.T) {
 		// init
 		client = nil
 		// test
-		Initialize(true, "testStep")
+		Initialize(false, "testStep")
 		// assert
 		assert.NotEqual(t, nil, client)
 		assert.Equal(t, "testStep", baseData.StepName)
@@ -94,7 +94,7 @@ func TestEnvVars(t *testing.T) {
 		// init
 		client = nil
 		// test
-		Initialize(true, "testStep")
+		Initialize(false, "testStep")
 		// assert
 		assert.Equal(t, "someHash", baseData.PipelineURLHash)
 		assert.Equal(t, "someHash", baseData.BuildURLHash)
@@ -103,7 +103,7 @@ func TestEnvVars(t *testing.T) {
 		// init
 		client = nil
 		// test
-		Initialize(true, "testStep")
+		Initialize(false, "testStep")
 		// assert
 		assert.Equal(t, "n/a", baseData.PipelineURLHash)
 		assert.Equal(t, "n/a", baseData.BuildURLHash)

@@ -52,7 +52,7 @@ The result looks like
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 
-			telemetry.Initialize(!GeneralConfig.NoTelemetry, "githubPublishRelease")
+			telemetry.Initialize(GeneralConfig.NoTelemetry, "githubPublishRelease")
 			telemetry.SendTelemetry(&telemetry.CustomData{})
 			return githubPublishRelease(myGithubPublishReleaseOptions)
 		},

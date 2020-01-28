@@ -78,7 +78,7 @@ func {{.CobraCmdFuncName}}() *cobra.Command {
 			log.DeferExitHandler(handler)
 			defer handler()
 			{{- end }}
-			telemetry.Initialize(!GeneralConfig.NoTelemetry, "{{ .StepName }}")
+			telemetry.Initialize(GeneralConfig.NoTelemetry, "{{ .StepName }}")
 			telemetry.SendTelemetry(&telemetry.CustomData{})
 			return {{.StepName}}(my{{ .StepName | title }}Options{{ range $notused, $oRes := .OutputResources}}, &{{ index $oRes "name" }}{{ end }})
 		},

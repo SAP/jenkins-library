@@ -29,9 +29,8 @@ var disabled bool
 var client piperhttp.Sender
 
 // Initialize sets up the base telemetry data and is called in generated part of the steps
-func Initialize(telemetryActive bool, stepName string) {
-	//TODO: change parameter semantic to avoid double negation
-	disabled = !telemetryActive
+func Initialize(telemetryDisabled bool, stepName string) {
+	disabled = telemetryDisabled
 
 	// skip if telemetry is dieabled
 	if disabled {

@@ -40,7 +40,7 @@ In the Docker network, the containers can be referenced by the values provided i
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 
-			telemetry.Initialize(!GeneralConfig.NoTelemetry, "karmaExecuteTests")
+			telemetry.Initialize(GeneralConfig.NoTelemetry, "karmaExecuteTests")
 			telemetry.SendTelemetry(&telemetry.CustomData{})
 			return karmaExecuteTests(myKarmaExecuteTestsOptions)
 		},
