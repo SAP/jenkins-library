@@ -12,9 +12,9 @@ type BaseData struct {
 	SiteID          string `json:"idsite"`
 	URL             string `json:"url"`
 	StepName        string `json:"e_3"`
+	StageName       string `json:"e_10"`
 	PipelineURLHash string `json:"e_4"` // defaults to sha1 of env.JOB_URl
 	BuildURLHash    string `json:"e_5"` // defaults to sha1 of env.BUILD_URL
-	StageName       string `json:"e_10"`
 }
 
 var baseData BaseData
@@ -22,17 +22,17 @@ var baseData BaseData
 // BaseMetaData object definition containing the labels for the base data and it's mapping information
 type BaseMetaData struct {
 	StepNameLabel        string `json:"custom3"`
+	StageNameLabel       string `json:"custom10"`
 	PipelineURLHashLabel string `json:"custom4"`
 	BuildURLHashLabel    string `json:"custom5"`
-	StageNameLabel       string `json:"custom10"`
 }
 
 // baseMetaData object containing the labels for the base data
 var baseMetaData BaseMetaData = BaseMetaData{
 	StepNameLabel:        "stepName",
+	StageNameLabel:       "stageName",
 	PipelineURLHashLabel: "pipelineUrlHash",
 	BuildURLHashLabel:    "buildUrlHash",
-	StageNameLabel:       "stageName",
 }
 
 // CustomData object definition containing the data that can be set by a step and it's mapping information

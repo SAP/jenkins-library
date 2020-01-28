@@ -5,6 +5,7 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
+	"os"
 	"testing"
 
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
@@ -84,21 +85,18 @@ func TestSendTelemetry(t *testing.T) {
 }
 func TestEnvVars(t *testing.T) {
 	t.Run("", func(t *testing.T) {
-		/*
-
-			os.Getenv = func Getenv(key string) string {
-				return "someValue"
-			}
-
-		*/
 		// init
+		os.Setenv("JOB_URL", "someValue")
+		os.Setenv("BUILD_URL", "someValue")
 		client = nil
 		// test
 		Initialize(false, "testStep")
 		// assert
-		//TODO: fix
-		//assert.Equal(t, "someHash", baseData.PipelineURLHash)
-		//assert.Equal(t, "someHash", baseData.BuildURLHash)
+		assert.Equal(t, "c1353b55ce4db511684b8a3b7b5c4b3d99ee9dec", baseData.PipelineURLHash)
+		assert.Equal(t, "c1353b55ce4db511684b8a3b7b5c4b3d99ee9dec", baseData.BuildURLHash)
+		// cleanup
+		os.Unsetenv("JOB_URL")
+		os.Unsetenv("BUILD_URL")
 	})
 	t.Run("without values", func(t *testing.T) {
 		// init
