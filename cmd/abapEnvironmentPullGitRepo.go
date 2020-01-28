@@ -54,17 +54,19 @@ func pollEntity(config abapEnvironmentPullGitRepoOptions, connectionDetails conn
 			return "", err
 		}
 
-		var body abapResponse
+		var body abapEntity
 		bodyText, _ := ioutil.ReadAll(resp.Body)
-		json.Unmarshal(bodyText, &body)
-		if body.D == (abapEntity{}) {
+		var abapResp map[string]*json.RawMessage
+		json.Unmarshal(bodyText, &abapResp)
+		json.Unmarshal(*abapResp["d"], &body)
+		if body == (abapEntity{}) {
 			log.Entry().WithField("StatusCode", resp.Status).WithField("repositoryName", config.RepositoryName).Error("Could not pull the Repository / Software Component")
 			var err = errors.New("Request to ABAP System not successful")
 			return "", err
 		}
-		status = body.D.Status
-		log.Entry().WithField("StatusCode", resp.Status).Info("Pull Status: " + body.D.StatusDescr)
-		if body.D.Status != "R" {
+		status = body.Status
+		log.Entry().WithField("StatusCode", resp.Status).Info("Pull Status: " + body.StatusDescr)
+		if body.Status != "R" {
 			break
 		}
 		time.Sleep(pollIntervall)
@@ -106,15 +108,17 @@ func triggerPull(config abapEnvironmentPullGitRepoOptions, pullConnectionDetails
 	log.Entry().WithField("StatusCode", resp.Status).WithField("repositoryName", config.RepositoryName).Info("Triggered Pull of Repository / Software Component")
 
 	// Parse Response
-	var body abapResponse
+	var body abapEntity
+	var abapResp map[string]*json.RawMessage
 	bodyText, err := ioutil.ReadAll(resp.Body)
-	json.Unmarshal(bodyText, &body)
-	if body.D == (abapEntity{}) {
+	json.Unmarshal(bodyText, &abapResp)
+	json.Unmarshal(*abapResp["d"], &body)
+	if body == (abapEntity{}) {
 		log.Entry().WithField("StatusCode", resp.Status).WithField("repositoryName", config.RepositoryName).Error("Could not pull the Repository / Software Component")
 		var err = errors.New("Request to ABAP System not successful")
 		return uriConnectionDetails, err
 	}
-	uriConnectionDetails.URL = body.D.Metadata.URI
+	uriConnectionDetails.URL = body.Metadata.URI
 	return uriConnectionDetails, nil
 }
 
@@ -201,10 +205,6 @@ func getHTTPResponse(requestType string, connectionDetails connectionDetailsHTTP
 
 type httpClient interface {
 	Do(req *http.Request) (*http.Response, error)
-}
-
-type abapResponse struct {
-	D abapEntity
 }
 
 type abapEntity struct {
