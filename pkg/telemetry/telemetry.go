@@ -86,8 +86,8 @@ const baseURL = "https://webanalytics.cfapps.eu10.hana.ondemand.com"
 // SWA endpoint
 const endpoint = "/tracker/log"
 
-// SendTelemetry ...
-func SendTelemetry(customData *CustomData) {
+// Send ...
+func Send(customData *CustomData) {
 	data := Data{
 		BaseData:     baseData,
 		BaseMetaData: baseMetaData,

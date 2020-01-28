@@ -67,7 +67,7 @@ helm upgrade <deploymentName> <chartPath> --install --force --namespace <namespa
 		RunE: func(cmd *cobra.Command, args []string) error {
 
 			telemetry.Initialize(GeneralConfig.NoTelemetry, "kubernetesDeploy")
-			telemetry.SendTelemetry(&telemetry.CustomData{})
+			telemetry.Send(&telemetry.CustomData{})
 			return kubernetesDeploy(myKubernetesDeployOptions)
 		},
 	}

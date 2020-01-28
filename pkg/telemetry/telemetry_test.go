@@ -49,14 +49,14 @@ func TestInitialise(t *testing.T) {
 		assert.Equal(t, "testStep", baseData.StepName)
 	})
 }
-func TestSendTelemetry(t *testing.T) {
+func TestSend(t *testing.T) {
 	t.Run("with disabled telemetry", func(t *testing.T) {
 		// init
 		mock = clientMock{}
 		client = &mock
 		disabled = true
 		// test
-		SendTelemetry(&CustomData{})
+		Send(&CustomData{})
 		// assert
 		assert.Equal(t, 0, len(mock.httpMethod))
 		assert.Equal(t, 0, len(mock.urlsCalled))
@@ -71,7 +71,7 @@ func TestSendTelemetry(t *testing.T) {
 			ActionName: "testAction",
 		}
 		// test
-		SendTelemetry(&CustomData{
+		Send(&CustomData{
 			Custom1:      "test",
 			Custom1Label: "label",
 		})
@@ -84,6 +84,16 @@ func TestSendTelemetry(t *testing.T) {
 	})
 }
 func TestEnvVars(t *testing.T) {
+	t.Run("without values", func(t *testing.T) {
+		// init
+		client = nil
+		// test
+		Initialize(false, "testStep")
+		// assert
+		assert.Equal(t, "n/a", baseData.PipelineURLHash)
+		assert.Equal(t, "n/a", baseData.BuildURLHash)
+	})
+
 	t.Run("", func(t *testing.T) {
 		// init
 		os.Setenv("JOB_URL", "someValue")
@@ -97,14 +107,5 @@ func TestEnvVars(t *testing.T) {
 		// cleanup
 		os.Unsetenv("JOB_URL")
 		os.Unsetenv("BUILD_URL")
-	})
-	t.Run("without values", func(t *testing.T) {
-		// init
-		client = nil
-		// test
-		Initialize(false, "testStep")
-		// assert
-		assert.Equal(t, "n/a", baseData.PipelineURLHash)
-		assert.Equal(t, "n/a", baseData.BuildURLHash)
 	})
 }

@@ -187,7 +187,7 @@ thresholds instead of ` + "`" + `percentage` + "`" + ` whereas we strongly recom
 			log.DeferExitHandler(handler)
 			defer handler()
 			telemetry.Initialize(GeneralConfig.NoTelemetry, "checkmarxExecuteScan")
-			telemetry.SendTelemetry(&telemetry.CustomData{})
+			telemetry.Send(&telemetry.CustomData{})
 			return checkmarxExecuteScan(myCheckmarxExecuteScanOptions, &influx)
 		},
 	}

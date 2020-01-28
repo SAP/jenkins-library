@@ -29,7 +29,7 @@ func VersionCommand() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 
 			telemetry.Initialize(GeneralConfig.NoTelemetry, "version")
-			telemetry.SendTelemetry(&telemetry.CustomData{})
+			telemetry.Send(&telemetry.CustomData{})
 			return version(myVersionOptions)
 		},
 	}

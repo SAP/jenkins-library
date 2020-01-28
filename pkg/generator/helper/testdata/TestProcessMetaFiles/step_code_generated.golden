@@ -112,7 +112,7 @@ func TestStepCommand() *cobra.Command {
 			log.DeferExitHandler(handler)
 			defer handler()
 			telemetry.Initialize(GeneralConfig.NoTelemetry, "testStep")
-			telemetry.SendTelemetry(&telemetry.CustomData{})
+			telemetry.Send(&telemetry.CustomData{})
 			return testStep(myTestStepOptions, &commonPipelineEnvironment, &influxTest)
 		},
 	}

@@ -44,7 +44,7 @@ It can for example be used for GitOps scenarios or for scenarios where you want 
 		RunE: func(cmd *cobra.Command, args []string) error {
 
 			telemetry.Initialize(GeneralConfig.NoTelemetry, "githubCreatePullRequest")
-			telemetry.SendTelemetry(&telemetry.CustomData{})
+			telemetry.Send(&telemetry.CustomData{})
 			return githubCreatePullRequest(myGithubCreatePullRequestOptions)
 		},
 	}
