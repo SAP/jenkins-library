@@ -12,11 +12,8 @@ type execRunner interface {
 }
 
 type envExecRunner interface {
-	RunExecutable(e string, p ...string) error
-	Dir(d string)
+	execRunner
 	Env(e []string)
-	Stdout(out io.Writer)
-	Stderr(err io.Writer)
 }
 
 type shellRunner interface {
