@@ -8,14 +8,8 @@ import (
 func TestCloudFoundryDeleteService2(t *testing.T) {
 	s := shellMockRunner{}
 	t.Run("CF Login: success case", func(t *testing.T) {
-		config := cloudFoundryDeleteServiceOptions{
-			API:          "https://api.endpoint.com",
-			Organisation: "testOrg",
-			Space:        "testSpace",
-			Username:     "testUser",
-			Password:     "testPassword",
-		}
-		error := cloudFoundryLogin(config.API, config.Organisation, config.Space, config.Username, config.Password, &s)
+		config := [...]string{"https://api.endpoint.com", "testOrg", "testSpace", "testUser", "testPassword"}
+		error := cloudFoundryLogin(config, &s)
 		if error == nil {
 			assert.Equal(t, "cf login -a https://api.endpoint.com -o testOrg -s testSpace -u testUser -p testPassword", s.calls[0])
 		}

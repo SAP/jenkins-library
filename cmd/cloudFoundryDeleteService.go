@@ -19,23 +19,20 @@ func cloudFoundryDeleteService(CloudFoundryDeleteServiceOptions cloudFoundryDele
 		c.Stdout(log.Entry().Writer())
 		c.Stderr(log.Entry().Writer())
 
-		cloudFoundryLogin(CloudFoundryDeleteServiceOptions.API, CloudFoundryDeleteServiceOptions.Organisation, CloudFoundryDeleteServiceOptions.Space, CloudFoundryDeleteServiceOptions.Username, CloudFoundryDeleteServiceOptions.Password, &c)
+		cfloginconfig := [...]string{CloudFoundryDeleteServiceOptions.API, CloudFoundryDeleteServiceOptions.Organisation, CloudFoundryDeleteServiceOptions.Space, CloudFoundryDeleteServiceOptions.Username, CloudFoundryDeleteServiceOptions.Password}
+
+		cloudFoundryLogin(cfloginconfig, &c)
 		cloudFoundryDeleteServiceFunction(CloudFoundryDeleteServiceOptions.ServiceName, &c)
 		cloudFoundryLogout(&c)
 
-		//Old way of implementation with runnerExec
-		//r := &runnerExec{}
-		//cloudFoundryLogin(CloudFoundryDeleteServiceOptions.API, CloudFoundryDeleteServiceOptions.Organisation, CloudFoundryDeleteServiceOptions.Space, CloudFoundryDeleteServiceOptions.Username, CloudFoundryDeleteServiceOptions.Password, r)
-		//cloudFoundryDeleteServiceFunction(CloudFoundryDeleteServiceOptions.ServiceName, r)
-		//cloudFoundryLogout(r)
 		return nil
 	}
 }
 
-func cloudFoundryLogin(api string, org string, space string, username string, password string, c shellRunner) error {
-	var cfLoginScript = "cf login -a " + api + " -o " + org + " -s " + space + " -u " + username + " -p " + password
+func cloudFoundryLogin(loginconfig [5]string, c shellRunner) error {
+	var cfLoginScript = "cf login -a " + loginconfig[0] + " -o " + loginconfig[1] + " -s " + loginconfig[2] + " -u " + loginconfig[3] + " -p " + loginconfig[4]
 
-	log.Entry().WithField("cfAPI:", api).WithField("cfOrg", org).WithField("space", space).Info("Logging into Cloud Foundry..")
+	log.Entry().WithField("cfAPI:", loginconfig[0]).WithField("cfOrg", loginconfig[1]).WithField("space", loginconfig[2]).Info("Logging into Cloud Foundry..")
 
 	err := c.RunShell("/bin/bash", cfLoginScript)
 	if err != nil {
