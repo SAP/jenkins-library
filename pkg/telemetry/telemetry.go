@@ -101,6 +101,6 @@ func SendTelemetry(customData *CustomData) {
 	request, _ := url.Parse(baseURL)
 	request.Path = endpoint
 	request.RawQuery = data.toPayloadString()
-	log.Entry().WithField("request", request.String()).Debug("Sending telemetry data")
+	log.Entry().WithField("request", request.String()).Info("Sending telemetry data")
 	client.SendRequest(http.MethodGet, request.String(), nil, nil, nil)
 }
