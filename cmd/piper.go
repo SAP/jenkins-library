@@ -129,7 +129,7 @@ func PrepareConfig(cmd *cobra.Command, metadata *config.StepData, stepName strin
 
 	if fmt.Sprintf("%v", stepConfig.Config["collectTelemetryData"]) == "false" {
 		GeneralConfig.NoTelemetry = true
-  }
+	}
 
 	if !GeneralConfig.Verbose {
 		if stepConfig.Config["verbose"] != nil && stepConfig.Config["verbose"].(bool) {
