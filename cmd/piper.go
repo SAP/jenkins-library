@@ -50,6 +50,7 @@ func Execute() {
 	rootCmd.AddCommand(GithubPublishReleaseCommand())
 	rootCmd.AddCommand(GithubCreatePullRequestCommand())
 	rootCmd.AddCommand(ProtecodeExecuteScanCommand())
+	rootCmd.AddCommand(CheckmarxExecuteScanCommand())
 
 	addRootFlags(rootCmd)
 	if err := rootCmd.Execute(); err != nil {

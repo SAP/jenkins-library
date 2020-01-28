@@ -1,7 +1,7 @@
 package com.sap.piper
 
 import com.cloudbees.groovy.cps.NonCPS
-
+import hudson.Functions
 import hudson.tasks.junit.TestResultAction
 
 import jenkins.model.Jenkins

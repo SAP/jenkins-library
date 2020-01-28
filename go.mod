@@ -3,6 +3,7 @@ module github.com/SAP/jenkins-library
 go 1.13
 
 require (
+	github.com/bmatcuk/doublestar v1.2.2
 	github.com/GoogleContainerTools/container-diff v0.15.0
 	github.com/Microsoft/hcsshim v0.8.7 // indirect
 	github.com/docker/docker v1.4.2-0.20200114201811-16a3519d870b // indirect
