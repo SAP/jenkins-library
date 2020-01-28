@@ -23,14 +23,14 @@ type abapEnvironmentPullGitRepoOptions struct {
 
 var myAbapEnvironmentPullGitRepoOptions abapEnvironmentPullGitRepoOptions
 
-// AbapEnvironmentPullGitRepoCommand Pulls a git repository to a Cloud Platform ABAP Environment system
+// AbapEnvironmentPullGitRepoCommand Pulls a git repository to a SAP Cloud Platform ABAP Environment system
 func AbapEnvironmentPullGitRepoCommand() *cobra.Command {
 	metadata := abapEnvironmentPullGitRepoMetadata()
 
 	var createAbapEnvironmentPullGitRepoCmd = &cobra.Command{
 		Use:   "abapEnvironmentPullGitRepo",
-		Short: "Pulls a git repository to a Cloud Platform ABAP Environment system",
-		Long:  `Pulls a git repository to a Cloud Platform ABAP Environment system`,
+		Short: "Pulls a git repository to a SAP Cloud Platform ABAP Environment system",
+		Long:  `Pulls a git repository (Software Component) to a SAP Cloud Platform ABAP Environment system.`,
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			log.SetStepName("abapEnvironmentPullGitRepo")
 			log.SetVerbose(GeneralConfig.Verbose)
@@ -47,8 +47,8 @@ func AbapEnvironmentPullGitRepoCommand() *cobra.Command {
 }
 
 func addAbapEnvironmentPullGitRepoFlags(cmd *cobra.Command) {
-	cmd.Flags().StringVar(&myAbapEnvironmentPullGitRepoOptions.User, "user", os.Getenv("PIPER_user"), "User")
-	cmd.Flags().StringVar(&myAbapEnvironmentPullGitRepoOptions.Password, "password", os.Getenv("PIPER_password"), "Password")
+	cmd.Flags().StringVar(&myAbapEnvironmentPullGitRepoOptions.User, "user", os.Getenv("PIPER_user"), "User for either the Cloud Foundry API or the Communication Arrangement for SAP_COM_0510")
+	cmd.Flags().StringVar(&myAbapEnvironmentPullGitRepoOptions.Password, "password", os.Getenv("PIPER_password"), "Password for either the Cloud Foundry API or the Communication Arrangement for SAP_COM_0510")
 	cmd.Flags().StringVar(&myAbapEnvironmentPullGitRepoOptions.RepositoryName, "repositoryName", os.Getenv("PIPER_repositoryName"), "Specifies the name of the Repository (Software Component) on the SAP Cloud Platform ABAP Environment system")
 	cmd.Flags().StringVar(&myAbapEnvironmentPullGitRepoOptions.Host, "host", os.Getenv("PIPER_host"), "Specifies the host address of the SAP Cloud Platform ABAP Environment system")
 	cmd.Flags().StringVar(&myAbapEnvironmentPullGitRepoOptions.CfAPIEndpoint, "cfApiEndpoint", os.Getenv("PIPER_cfApiEndpoint"), "Cloud Foundry API Enpoint")
