@@ -3,24 +3,24 @@ package cmd
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
-	"github.com/SAP/jenkins-library/pkg/log"
-	"github.com/pkg/errors"
 	"io/ioutil"
 	"net/http"
 	"net/http/cookiejar"
-	"os/exec"
 	"time"
+
+	"github.com/SAP/jenkins-library/pkg/command"
+	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/pkg/errors"
 )
 
 func abapEnvironmentPullGitRepo(config abapEnvironmentPullGitRepoOptions) error {
-	r := &runnerExec{}
+	c := command.Command{}
 	cookieJar, _ := cookiejar.New(nil)
 	client := &http.Client{
 		Jar: cookieJar,
 	}
 
-	var connectionDetails, error = getAbapCommunicationArrangementInfo(config, r)
+	var connectionDetails, error = getAbapCommunicationArrangementInfo(config, &c)
 	if error != nil {
 		log.Entry().WithError(error).Fatal("Parameters for the ABAP Connection not available")
 		return error
@@ -118,7 +118,7 @@ func triggerPull(config abapEnvironmentPullGitRepoOptions, pullConnectionDetails
 	return uriConnectionDetails, nil
 }
 
-func getAbapCommunicationArrangementInfo(config abapEnvironmentPullGitRepoOptions, r runner) (connectionDetailsHTTP, error) {
+func getAbapCommunicationArrangementInfo(config abapEnvironmentPullGitRepoOptions, c shellRunner) (connectionDetailsHTTP, error) {
 
 	var connectionDetails connectionDetailsHTTP
 	var error error
@@ -134,7 +134,7 @@ func getAbapCommunicationArrangementInfo(config abapEnvironmentPullGitRepoOption
 			return connectionDetails, err
 		}
 		// Url, User and Password should be read from a cf service key
-		var abapServiceKey, error = readCfServiceKey(config, r)
+		var abapServiceKey, error = readCfServiceKey(config, c)
 		if error != nil {
 			log.Entry().Error(error)
 			return connectionDetails, error
@@ -146,31 +146,36 @@ func getAbapCommunicationArrangementInfo(config abapEnvironmentPullGitRepoOption
 	return connectionDetails, error
 }
 
-func readCfServiceKey(config abapEnvironmentPullGitRepoOptions, r runner) (serviceKey, error) {
+func readCfServiceKey(config abapEnvironmentPullGitRepoOptions, c shellRunner) (serviceKey, error) {
 
 	var abapServiceKey serviceKey
+
+	c.Stderr(log.Entry().Writer())
+	c.Stdout(log.Entry().Writer())
 
 	// Logging into the Cloud Foundry via CF CLI
 	log.Entry().WithField("cfApiEndpoint", config.CfAPIEndpoint).WithField("cfSpace", config.CfSpace).WithField("cfOrg", config.CfOrg).WithField("User", config.User).Info("Cloud Foundry parameters: ")
 	var cfLoginScript = "cf login -a " + config.CfAPIEndpoint + " -u " + config.User + " -p " + config.Password + " -o " + config.CfOrg + " -s " + config.CfSpace
-	cflogin, error := r.run(cfLoginScript)
+	error := c.RunShell("/bin/bash", cfLoginScript)
 	// cflogin, error := exec.Command("sh", "-c", cfLoginScript).Output()
-	fmt.Printf("%s\n\n", cflogin)
 	if error != nil {
 		log.Entry().Error("Login at cloud foundry failed.")
 		return abapServiceKey, error
 	}
 
+	var serviceKeyBytes bytes.Buffer
+	c.Stdout(&serviceKeyBytes)
+
 	// Reading the Service Key via CF CLI
 	log.Entry().WithField("cfServiceInstance", config.CfServiceInstance).WithField("cfServiceKey", config.CfServiceKey).Info("Reading service key of service instance...")
 	var cfReadServiceKeyScript = "cf service-key " + config.CfServiceInstance + " " + config.CfServiceKey + " | awk '{if(NR>1)print}'"
-	cfServiceKey, error := r.run(cfReadServiceKeyScript)
+	error = c.RunShell("/bin/bash", cfReadServiceKeyScript)
 	if error != nil {
 		log.Entry().Error("Reading the service key failed.")
 		return abapServiceKey, error
 	}
 
-	json.Unmarshal([]byte(cfServiceKey), &abapServiceKey)
+	json.Unmarshal(serviceKeyBytes.Bytes(), &abapServiceKey)
 	return abapServiceKey, error
 }
 
@@ -194,19 +199,8 @@ func getHTTPResponse(requestType string, connectionDetails connectionDetailsHTTP
 	return resp, err
 }
 
-func (runner *runnerExec) run(script string) ([]byte, error) {
-	return exec.Command("sh", "-c", script).Output()
-}
-
 type httpClient interface {
 	Do(req *http.Request) (*http.Response, error)
-}
-
-type runner interface {
-	run(script string) ([]byte, error)
-}
-
-type runnerExec struct {
 }
 
 type abapResponse struct {
