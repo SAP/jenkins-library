@@ -46,10 +46,12 @@ func Execute() {
 	rootCmd.AddCommand(VersionCommand())
 	rootCmd.AddCommand(DetectExecuteScanCommand())
 	rootCmd.AddCommand(KarmaExecuteTestsCommand())
+	rootCmd.AddCommand(KubernetesDeployCommand())
 	rootCmd.AddCommand(XsDeployCommand())
 	rootCmd.AddCommand(GithubPublishReleaseCommand())
 	rootCmd.AddCommand(GithubCreatePullRequestCommand())
 	rootCmd.AddCommand(AbapEnvironmentPullGitRepoCommand())
+	rootCmd.AddCommand(CheckmarxExecuteScanCommand())
 
 	addRootFlags(rootCmd)
 	if err := rootCmd.Execute(); err != nil {
@@ -115,6 +117,12 @@ func PrepareConfig(cmd *cobra.Command, metadata *config.StepData, stepName strin
 		stepConfig, err = myConfig.GetStepConfig(flagValues, GeneralConfig.ParametersJSON, customConfig, defaultConfig, filters, metadata.Spec.Inputs.Parameters, resourceParams, GeneralConfig.StageName, stepName)
 		if err != nil {
 			return errors.Wrap(err, "retrieving step configuration failed")
+		}
+	}
+
+	if !GeneralConfig.Verbose {
+		if stepConfig.Config["verbose"] != nil && stepConfig.Config["verbose"].(bool) {
+			log.SetVerbose(stepConfig.Config["verbose"].(bool))
 		}
 	}
 

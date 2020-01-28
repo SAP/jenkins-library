@@ -145,20 +145,20 @@ class commonPipelineEnvironment implements Serializable {
         return config
     }
 
+    def files = [
+        [filename: '.pipeline/commonPipelineEnvironment/artifactVersion', property: 'artifactVersion'],
+        [filename: '.pipeline/commonPipelineEnvironment/github/owner', property: 'githubOrg'],
+        [filename: '.pipeline/commonPipelineEnvironment/github/repository', property: 'githubRepo'],
+        [filename: '.pipeline/commonPipelineEnvironment/git/branch', property: 'gitBranch'],
+        [filename: '.pipeline/commonPipelineEnvironment/git/commitId', property: 'gitCommitId'],
+        [filename: '.pipeline/commonPipelineEnvironment/git/commitMessage', property: 'gitCommitMessage'],
+    ]
+
     void writeToDisk(script) {
 
-        def files = [
-            [filename: '.pipeline/commonPipelineEnvironment/artifactVersion', content: artifactVersion],
-            [filename: '.pipeline/commonPipelineEnvironment/github/owner', content: githubOrg],
-            [filename: '.pipeline/commonPipelineEnvironment/github/repository', content: githubRepo],
-            [filename: '.pipeline/commonPipelineEnvironment/git/branch', content: gitBranch],
-            [filename: '.pipeline/commonPipelineEnvironment/git/commitId', content: gitCommitId],
-            [filename: '.pipeline/commonPipelineEnvironment/git/commitMessage', content: gitCommitMessage],
-        ]
-
         files.each({f  ->
-            if (f.content && !script.fileExists(f.filename)) {
-                script.writeFile file: f.filename, text: f.content
+            if (this[f.property] && !script.fileExists(f.filename)) {
+                script.writeFile file: f.filename, text: this[f.property]
             }
         })
 
@@ -171,43 +171,20 @@ class commonPipelineEnvironment implements Serializable {
         })
     }
 
-    void readFromDisk() {
-        def file = '.pipeline/commonPipelineEnvironment/artifactVersion'
-        if (fileExists(file)) {
-            artifactVersion = readFile(file)
-        }
+    void readFromDisk(script) {
 
-        file = '.pipeline/commonPipelineEnvironment/github/owner'
-        if (fileExists(file)) {
-            githubOrg = readFile(file)
-        }
+        files.each({f  ->
+            if (script.fileExists(f.filename)) {
+                this[f.property] = script.readFile(f.filename)
+            }
+        })
 
-        file = '.pipeline/commonPipelineEnvironment/github/repository'
-        if (fileExists(file)) {
-            githubRepo = readFile(file)
-        }
-
-        file = '.pipeline/commonPipelineEnvironment/git/branch'
-        if (fileExists(file)) {
-            gitBranch = readFile(file)
-        }
-
-        file = '.pipeline/commonPipelineEnvironment/git/commitId'
-        if (fileExists(file)) {
-            gitCommitId = readFile(file)
-        }
-
-        file = '.pipeline/commonPipelineEnvironment/git/commitMessage'
-        if (fileExists(file)) {
-            gitCommitMessage = readFile(file)
-        }
-
-        def customValues = findFiles(glob: '.pipeline/commonPipelineEnvironment/custom/*')
+        def customValues = script.findFiles(glob: '.pipeline/commonPipelineEnvironment/custom/*')
 
         customValues.each({f ->
             def fileName = f.getName()
             def param = fileName.split('/')[fileName.split('\\/').size()-1]
-            valueMap[param] = readFile(f.getPath())
+            valueMap[param] = script.readFile(f.getPath())
         })
     }
 

@@ -162,7 +162,7 @@ func (m *StepData) ReadPipelineStepData(metadata io.ReadCloser) error {
 
 // GetParameterFilters retrieves all scope dependent parameter filters
 func (m *StepData) GetParameterFilters() StepFilters {
-	var filters StepFilters
+	filters := StepFilters{All: []string{"verbose"}, General: []string{"verbose"}, Steps: []string{"verbose"}, Stages: []string{"verbose"}, Parameters: []string{"verbose"}}
 	for _, param := range m.Spec.Inputs.Parameters {
 		parameterKeys := []string{param.Name}
 		for _, condition := range param.Conditions {
@@ -208,6 +208,7 @@ func (m *StepData) GetContextParameterFilters() StepFilters {
 			for _, condition := range container.Conditions {
 				for _, dependentParam := range condition.Params {
 					parameterKeys = append(parameterKeys, dependentParam.Value)
+					parameterKeys = append(parameterKeys, dependentParam.Name)
 				}
 			}
 		}
@@ -216,6 +217,7 @@ func (m *StepData) GetContextParameterFilters() StepFilters {
 	if len(m.Spec.Sidecars) > 0 {
 		//ToDo: support fallback for "dockerName" configuration property -> via aliasing?
 		containerFilters = append(containerFilters, []string{"containerName", "containerPortMappings", "dockerName", "sidecarEnvVars", "sidecarImage", "sidecarName", "sidecarOptions", "sidecarPullImage", "sidecarReadyCommand", "sidecarVolumeBind", "sidecarWorkspace"}...)
+		//ToDo: add condition param.Value and param.Name to filter as for Containers
 	}
 	if len(containerFilters) > 0 {
 		filters.All = append(filters.All, containerFilters...)

@@ -19,6 +19,7 @@ class MavenArtifactVersioningTest extends BasePiperTest{
     def commonPipelineEnvironment
 
     MavenArtifactVersioning av
+    String version = '1.2.3'
 
     JenkinsShellCallRule shellRule = new JenkinsShellCallRule(this)
 
@@ -38,14 +39,17 @@ class MavenArtifactVersioningTest extends BasePiperTest{
                 dockerParameters = parameters
                 closure()
             })
+
+        shellRule.setReturnValue("mvn --file 'pom.xml' --batch-mode -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn org.apache.maven.plugins:maven-help-plugin:3.1.0:evaluate -Dexpression=project.version -DforceStdout -q", version)
+        shellRule.setReturnValue("mvn --file 'snapshot/pom.xml' --batch-mode -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn org.apache.maven.plugins:maven-help-plugin:3.1.0:evaluate -Dexpression=project.version -DforceStdout -q", version)
     }
 
     @Test
     void testVersioning() {
         av = new MavenArtifactVersioning(nullScript, [filePath: 'pom.xml'])
-        assertEquals('1.2.3', av.getVersion())
+        assertEquals(version, av.getVersion())
         av.setVersion('1.2.3-20180101')
-        assertEquals('mvn --file \'pom.xml\' --batch-mode -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn versions:set -DnewVersion=1.2.3-20180101 -DgenerateBackupPoms=false', shellRule.shell[0])
+        assertEquals('mvn --file \'pom.xml\' --batch-mode -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn versions:set -DnewVersion=1.2.3-20180101 -DgenerateBackupPoms=false', shellRule.shell[1])
     }
 
     @Test
@@ -53,6 +57,6 @@ class MavenArtifactVersioningTest extends BasePiperTest{
         av = new MavenArtifactVersioning(nullScript, [filePath: 'snapshot/pom.xml'])
         assertEquals('1.2.3', av.getVersion())
         av.setVersion('1.2.3-20180101')
-        assertEquals('mvn --file \'snapshot/pom.xml\' --batch-mode -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn versions:set -DnewVersion=1.2.3-20180101 -DgenerateBackupPoms=false', shellRule.shell[0])
+        assertEquals('mvn --file \'snapshot/pom.xml\' --batch-mode -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn versions:set -DnewVersion=1.2.3-20180101 -DgenerateBackupPoms=false', shellRule.shell[1])
     }
 }

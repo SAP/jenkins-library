@@ -115,7 +115,9 @@ public class CommonStepsTest extends BasePiperTest{
         'handlePipelineStepErrors', // special step (infrastructure)
         'piperStageWrapper', //intended to be called from within stages
         'buildSetResult',
+        'checkmarxExecuteScan', //implementing new golang pattern without fields
         'githubPublishRelease', //implementing new golang pattern without fields
+        'kubernetesDeploy', //implementing new golang pattern without fields
         'xsDeploy', //implementing new golang pattern without fields
     ]
 
@@ -229,6 +231,7 @@ public class CommonStepsTest extends BasePiperTest{
 
         def whitelist = [
             'durationMeasure',
+            'mavenExecute'
             ]
 
         for(def step in getSteps()) {
