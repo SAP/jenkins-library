@@ -82,3 +82,30 @@ func TestSendTelemetry(t *testing.T) {
 		assert.Contains(t, mock.urlsCalled, "action_name=testAction")
 	})
 }
+func TestEnvVars(t *testing.T) {
+	t.Run("", func(t *testing.T) {
+		/*
+
+			os.Getenv = func Getenv(key string) string {
+				return "someValue"
+			}
+
+		*/
+		// init
+		client = nil
+		// test
+		Initialize(true, nil, "", "testStep")
+		// assert
+		assert.Equal(t, "someHash", baseData.PipelineURLHash)
+		assert.Equal(t, "someHash", baseData.BuildURLHash)
+	})
+	t.Run("without values", func(t *testing.T) {
+		// init
+		client = nil
+		// test
+		Initialize(true, nil, "", "testStep")
+		// assert
+		assert.Equal(t, "n/a", baseData.PipelineURLHash)
+		assert.Equal(t, "n/a", baseData.BuildURLHash)
+	})
+}

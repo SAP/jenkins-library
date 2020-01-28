@@ -22,7 +22,7 @@ const actionName = "Piper Library OS"
 // LibraryRepository that is passed into with -ldflags
 var LibraryRepository string
 
-// SiteID
+// SiteID ...
 var SiteID string
 
 var disabled bool
@@ -66,14 +66,17 @@ func Initialize(telemetryActive bool, _ func(rootPath, resourceName, parameterNa
 }
 
 func getPipelineURLHash() string {
-	return toSha1(os.Getenv("JOB_URL"))
+	return toSha1OrNA(os.Getenv("JOB_URL"))
 }
 
 func getBuildURLHash() string {
-	return toSha1(os.Getenv("BUILD_URL"))
+	return toSha1OrNA(os.Getenv("BUILD_URL"))
 }
 
-func toSha1(input string) string {
+func toSha1OrNA(input string) string {
+	if len(input) == 0 {
+		return "n/a"
+	}
 	return fmt.Sprintf("%x", sha1.Sum([]byte(input)))
 }
 
