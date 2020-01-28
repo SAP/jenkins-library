@@ -51,6 +51,7 @@ func Execute() {
 	rootCmd.AddCommand(XsDeployCommand())
 	rootCmd.AddCommand(GithubPublishReleaseCommand())
 	rootCmd.AddCommand(GithubCreatePullRequestCommand())
+	rootCmd.AddCommand(CheckmarxExecuteScanCommand())
 
 	addRootFlags(rootCmd)
 	if err := rootCmd.Execute(); err != nil {
@@ -128,6 +129,12 @@ func PrepareConfig(cmd *cobra.Command, metadata *config.StepData, stepName strin
 
 	if fmt.Sprintf("%v", stepConfig.Config["collectTelemetryData"]) == "false" {
 		GeneralConfig.NoTelemetry = true
+  }
+
+	if !GeneralConfig.Verbose {
+		if stepConfig.Config["verbose"] != nil && stepConfig.Config["verbose"].(bool) {
+			log.SetVerbose(stepConfig.Config["verbose"].(bool))
+		}
 	}
 
 	confJSON, _ := json.Marshal(stepConfig.Config)
