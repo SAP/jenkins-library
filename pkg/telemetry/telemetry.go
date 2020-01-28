@@ -34,6 +34,7 @@ func Initialize(telemetryDisabled bool, stepName string) {
 
 	// skip if telemetry is dieabled
 	if disabled {
+		log.Entry().Info("Telemetry reporting deactivated")
 		return
 	}
 
