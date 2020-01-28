@@ -19,7 +19,6 @@ type execMockRunner struct {
 	stdout              io.Writer
 	stderr              io.Writer
 	stdoutReturn        map[string]string
-	shouldFailWith      error
 	shouldFailOnCommand map[string]error
 }
 
@@ -36,7 +35,6 @@ type shellMockRunner struct {
 	stdout         io.Writer
 	stderr         io.Writer
 	stdoutReturn   map[string]string
-	shouldFailWith error
 	shouldFailOnCommand map[string]error
 }
 
@@ -49,9 +47,6 @@ func (m *execMockRunner) Env(e []string) {
 }
 
 func (m *execMockRunner) RunExecutable(e string, p ...string) error {
-	if m.shouldFailWith != nil {
-		return m.shouldFailWith
-	}
 
 	exec := execCall{exec: e, params: p}
 	m.calls = append(m.calls, exec)
@@ -85,9 +80,6 @@ func (m *shellMockRunner) Env(e []string) {
 
 func (m *shellMockRunner) RunShell(s string, c string) error {
 
-	if m.shouldFailWith != nil {
-		return m.shouldFailWith
-	}
 	m.shell = append(m.shell, s)
 	m.calls = append(m.calls, c)
 
