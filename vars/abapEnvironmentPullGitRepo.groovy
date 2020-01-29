@@ -41,11 +41,12 @@ void call(Map parameters = [:]) {
                 credentials = config.cloudFoundry.credentialsId
             }
             // execute step
-            // dockerExecute(
-            //     script: script,
-            //     dockerImage: config.dockerImage,
+            dockerExecute(
+                script: script,
+                dockerImage: "ppiper/cf-cli",
+                // dockerImage: config.dockerImage,
             //     dockerWorkspace: config.dockerWorkspace,
-            // ) {
+            ) {
                 withCredentials([usernamePassword(
                     credentialsId: credentials,
                     passwordVariable: 'PIPER_password',
@@ -53,7 +54,7 @@ void call(Map parameters = [:]) {
                 )]) {
                     sh "./piper abapEnvironmentPullGitRepo"
                 }
-            // }
+            }
         }
     }
 }
