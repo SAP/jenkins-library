@@ -51,9 +51,6 @@ general:
 
 #Steps Specific Configuration
 steps:
-  abapEnvironmentPullGitRepo:
-    dockerImage: 'ppiper/cf-cli'
-    dockerWorkspace: '/home/piper'
   artifactSetVersion:
     timestampTemplate: '%Y%m%d%H%M%S'
     tagPrefix: 'build_'

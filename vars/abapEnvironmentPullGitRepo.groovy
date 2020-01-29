@@ -19,8 +19,8 @@ void call(Map parameters = [:]) {
         // telemetry reporting
         utils.pushToSWA([step: STEP_NAME], config)
 
-        // new PiperGoUtils(this, utils).unstashPiperBin()
-        // utils.unstash('pipelineConfigAndTests')
+        new PiperGoUtils(this, utils).unstashPiperBin()
+        utils.unstash('pipelineConfigAndTests')
         script.commonPipelineEnvironment.writeToDisk(script)
 
         writeFile(file: METADATA_FILE, text: libraryResource(METADATA_FILE))
@@ -31,24 +31,14 @@ void call(Map parameters = [:]) {
             // get context configuration
             config = readJSON (text: sh(returnStdout: true, script: "./piper getConfig --contextConfig --stepMetadata '${METADATA_FILE}'"))
 
-            // get credentials
-            String credentials
-            if (config.credentialsId != null) {
-                credentials = config.credentialsId
-            } else if (config.cfCredentialsId != null) {
-                credentials = config.cfCredentialsId
-            } else if (config.cloudFoundry.credentialsId != null) {
-                credentials = config.cloudFoundry.credentialsId
-            }
             // execute step
             dockerExecute(
                 script: script,
                 dockerImage: "ppiper/cf-cli",
-                // dockerImage: config.dockerImage,
-            //     dockerWorkspace: config.dockerWorkspace,
+                dockerWorkspace: '/home/piper'
             ) {
                 withCredentials([usernamePassword(
-                    credentialsId: credentials,
+                    credentialsId: config.credentialsId,
                     passwordVariable: 'PIPER_password',
                     usernameVariable: 'PIPER_username'
                 )]) {
