@@ -20,6 +20,11 @@ jobs:
       uses: actions-contrib/go@v0.1.0
       with:
         args: fmt
+
+    - name: cleanup dependencies
+      uses: actions-contrib/go@v0.1.0
+      with:
+        args: mod tidy
         
     - name: dummy change
       run: echo tests >> Dockerfile
