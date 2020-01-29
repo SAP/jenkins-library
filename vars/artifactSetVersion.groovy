@@ -9,6 +9,8 @@ import com.sap.piper.versioning.ArtifactVersioning
 import groovy.transform.Field
 import groovy.text.GStringTemplateEngine
 
+enum GitPushMode {NONE, HTTPS, SSH}
+
 @Field String STEP_NAME = getClass().getName()
 @Field Map CONFIG_KEY_COMPATIBILITY = [gitSshKeyCredentialsId: 'gitCredentialsId']
 
@@ -32,6 +34,12 @@ import groovy.text.GStringTemplateEngine
      */
     'commitVersion',
     /**
+      * Prints some more information for troubleshooting. May reveal security relevant information. Usage is recommanded for troubleshooting only. Productive usage
+      * is not recommended.
+      * @possibleValues `true`, `false`
+      */
+    'verbose',
+    /**
      * Specifies the source to be used for the main version which is used for generating the automatic version.
      * * This can either be the version of the base image - as retrieved from the `FROM` statement within the Dockerfile, e.g. `FROM jenkins:2.46.2`
      * * Alternatively the name of an environment variable defined in the Docker image can be used which contains the version number, e.g. `ENV MY_VERSION 1.2.3`
@@ -47,6 +55,8 @@ import groovy.text.GStringTemplateEngine
      * Defines the ssh git credentials to be used for writing the tag.
      */
     'gitSshKeyCredentialsId',
+    /** */
+    'gitHttpsCredentialsId',
     /**
      * Allows to overwrite the global git setting 'user.email' available on your Jenkins server.
      */
@@ -56,9 +66,19 @@ import groovy.text.GStringTemplateEngine
      */
     'gitUserName',
     /**
-     * Defines the git ssh url to the source code repository.
+     * Defines the git ssh url to the source code repository. Used in conjunction with 'GitPushMode.SSH'.
+     * @mandatory for `gitPushMode` `SSH`
      */
     'gitSshUrl',
+    /**
+     * Defines the git https url to the source code repository. Used in conjunction with 'GitPushMode.HTTPS'.
+     * @mandatory for `gitPushMode` `HTTPS`
+     */
+    'gitHttpsUrl',
+    /**
+     * Disables the ssl verification for git push. Intended to be used only for troubleshooting. Productive usage is not recommanded.
+     */
+    'gitDisableSslVerification',
     /**
      * Defines the prefix which is used for the git tag which is written during the versioning run.
      */
@@ -70,7 +90,13 @@ import groovy.text.GStringTemplateEngine
     /** Defines the template for the timestamp which will be part of the created version. */
     'timestampTemplate',
     /** Defines the template for the automatic version which will be created. */
-    'versioningTemplate'
+    'versioningTemplate',
+    /** Controls which protocol is used for performing push operation to remote repo.
+      * Required credentials needs to be configured ('gitSshKeyCredentialsId'/'gitHttpsCredentialsId').
+      * Push is only performed in case 'commitVersion' is set to 'true'.
+      * @possibleValues 'SSH', 'HTTPS', 'NONE'
+      */
+    'gitPushMode'
 ]
 
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS.plus(
@@ -123,6 +149,8 @@ void call(Map parameters = [:], Closure body = null) {
 
         Map config = configHelper.use()
 
+        GitPushMode gitPushMode = config.gitPushMode
+
         config = configHelper.addIfEmpty('timestamp', getTimestamp(config.timestampTemplate))
                              .use()
 
@@ -154,12 +182,6 @@ void call(Map parameters = [:], Closure body = null) {
         }
 
         if (config.commitVersion) {
-            config = ConfigurationHelper.newInstance(this, config)
-                .addIfEmpty('gitSshUrl', isAppContainer(config)
-                            ?script.commonPipelineEnvironment.getAppContainerProperty('gitSshUrl')
-                            :script.commonPipelineEnvironment.getGitSshUrl())
-                .withMandatoryProperty('gitSshUrl')
-                .use()
 
             def gitConfig = []
 
@@ -177,8 +199,93 @@ void call(Map parameters = [:], Closure body = null) {
                 error "[${STEP_NAME}]git commit and tag failed: ${e}"
             }
 
-            sshagent([config.gitSshKeyCredentialsId]) {
-                sh "git push ${config.gitSshUrl} ${config.tagPrefix}${newVersion}"
+            if(gitPushMode == GitPushMode.SSH) {
+
+                config = ConfigurationHelper.newInstance(this, config)
+                    .addIfEmpty('gitSshUrl', isAppContainer(config)
+                                ?script.commonPipelineEnvironment.getAppContainerProperty('gitSshUrl')
+                                :script.commonPipelineEnvironment.getGitSshUrl())
+                    .withMandatoryProperty('gitSshUrl')
+                    .use()
+
+                sshagent([config.gitSshKeyCredentialsId]) {
+                    sh "git push ${config.gitSshUrl} ${config.tagPrefix}${newVersion}"
+                }
+
+            } else if(gitPushMode == GitPushMode.HTTPS) {
+
+                config = ConfigurationHelper.newInstance(this, config)
+                    .addIfEmpty('gitSshUrl', isAppContainer(config)
+                                ?script.commonPipelineEnvironment.getAppContainerProperty('gitHttpsUrl')
+                                :script.commonPipelineEnvironment.getGitHttpsUrl())
+                    .withMandatoryProperty('gitHttpsUrl')
+                    .use()
+
+                withCredentials([usernamePassword(
+                    credentialsId: config.gitHttpsCredentialsId,
+                    passwordVariable: 'PASSWORD',
+                    usernameVariable: 'USERNAME')]) {
+
+                    // Problem: when username/password is encoded and in case the encoded version differs from
+                    // the non-encoded version  (e.g. '@'  gets replaced by '%40') the encoded version
+                    // it is not replaced by stars in the log by surrounding withCredentials.
+                    // In order to avoid having the secrets in the log we take the following actions in case
+                    // the encoded version(s) differs from the non-encoded versions
+                    //
+                    // 1.) we switch off '-x' in the hashbang
+                    // 2.) we tell git push to be silent
+                    // 3.) we send stderr to /dev/null
+                    //
+                    // Disadvantage: In this case we don't see any output for troubleshooting.
+
+                    def USERNAME_ENCODED = URLEncoder.encode(USERNAME, 'UTF-8'),
+                        PASSWORD_ENCODED = URLEncoder.encode(PASSWORD, 'UTF-8')
+
+                    boolean encodedVersionsDiffers = USERNAME_ENCODED != USERNAME || PASSWORD_ENCODED != PASSWORD
+
+                    def prefix = 'https://'
+                    def gitUrlWithCredentials = config.gitHttpsUrl.replaceAll("^${prefix}", "${prefix}${USERNAME_ENCODED}:${PASSWORD_ENCODED}@")
+
+                    def hashbangFlags = '-xe'
+                    def gitPushFlags = []
+                    def streamhandling = ''
+                    def gitDebug = ''
+                    gitConfig = []
+
+                    if(config.gitHttpProxy) {
+                        gitConfig.add("-c http.proxy=\"${config.gitHttpProxy}\"")
+                    }
+
+                    if(config.gitDisableSslVerification) {
+                        echo 'git ssl verification is switched off. This setting is not recommanded in productive environments.'
+                        gitConfig.add('-c http.sslVerify=false')
+                    }
+
+                    if(encodedVersionsDiffers) {
+                        if(config.verbose) { // known issue: in case somebody provides the stringish 'false' we get the boolean value 'true' here.
+                            echo 'Verbose flag set, but encoded username/password differs from unencoded version. Cannot provide verbose output in this case. ' +
+                                    'In order to enable verbose output switch to a username/password which is not altered by url encoding.'
+                        }
+                        hashbangFlags = '-e'
+                        streamhandling ='&>/dev/null'
+                        gitPushFlags.add('--quiet')
+                        echo 'Performing git push in quiet mode.'
+                    } else {
+                        if(config.verbose) { // known issue: in case somebody provides the stringish 'false' we get the boolean value 'true' here.
+                            echo 'Verbose mode enabled. This is not recommanded for productive usage. This might reveal security sensitive information.'
+                            gitDebug ='git config --list; env |grep proxy; GIT_CURL_VERBOSE=1 GIT_TRACE=1 '
+                            gitPushFlags.add('--verbose')
+                        }
+                    }
+
+                    gitConfig = gitConfig.join(' ')
+                    gitPushFlags = gitPushFlags.join(' ')
+
+                    sh script:   """|#!/bin/bash ${hashbangFlags}
+                                    |${gitDebug}git ${gitConfig} push ${gitPushFlags} ${gitUrlWithCredentials} ${config.tagPrefix}${newVersion} ${streamhandling}""".stripMargin()
+                }
+            } else {
+                echo "Git push mode: ${gitPushMode.toString()}. Git push to remote has been skipped."
             }
         }
 

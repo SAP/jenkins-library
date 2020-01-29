@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"fmt"
 	"io"
 	"io/ioutil"
 	"strings"
@@ -41,7 +42,7 @@ func TestConfigCommand(t *testing.T) {
 	})
 
 	t.Run("Required flags", func(t *testing.T) {
-		exp := []string{"stepMetadata", "stepName"}
+		exp := []string{"stepMetadata"}
 		assert.Equal(t, exp, gotReq, "required flags incorrect")
 	})
 
@@ -73,7 +74,7 @@ func TestDefaultsAndFilters(t *testing.T) {
 	t.Run("Context config", func(t *testing.T) {
 		configOptions.contextConfig = true
 		defer func() { configOptions.contextConfig = false }()
-		defaults, filters, err := defaultsAndFilters(&metadata)
+		defaults, filters, err := defaultsAndFilters(&metadata, "stepName")
 
 		assert.Equal(t, 1, len(defaults), "getting defaults failed")
 		assert.Equal(t, 0, len(filters.All), "wrong number of filter values")
@@ -81,10 +82,98 @@ func TestDefaultsAndFilters(t *testing.T) {
 	})
 
 	t.Run("Step config", func(t *testing.T) {
-		defaults, filters, err := defaultsAndFilters(&metadata)
+		defaults, filters, err := defaultsAndFilters(&metadata, "stepName")
 		assert.Equal(t, 0, len(defaults), "getting defaults failed")
-		assert.Equal(t, 1, len(filters.All), "wrong number of filter values")
+		assert.Equal(t, 2, len(filters.All), "wrong number of filter values")
 		assert.NoError(t, err, "error occured but none expected")
 	})
+}
 
+func TestApplyContextConditions(t *testing.T) {
+
+	tt := []struct {
+		metadata config.StepData
+		conf     config.StepConfig
+		expected map[string]interface{}
+	}{
+		{
+			metadata: config.StepData{Spec: config.StepSpec{Containers: []config.Container{}}},
+			conf:     config.StepConfig{Config: map[string]interface{}{}},
+			expected: map[string]interface{}{},
+		},
+		{
+			metadata: config.StepData{Spec: config.StepSpec{Containers: []config.Container{
+				{
+					Image: "myTestImage:latest",
+					Conditions: []config.Condition{
+						{
+							ConditionRef: "strings-equal",
+							Params: []config.Param{
+								{Name: "param1", Value: "val2"},
+							},
+						},
+					},
+				},
+			}}},
+			conf: config.StepConfig{Config: map[string]interface{}{
+				"param1": "val1",
+				"val1":   map[string]interface{}{"dockerImage": "myTestImage:latest"},
+			}},
+			expected: map[string]interface{}{
+				"param1": "val1",
+				"val1":   map[string]interface{}{"dockerImage": "myTestImage:latest"},
+			},
+		},
+		{
+			metadata: config.StepData{Spec: config.StepSpec{Containers: []config.Container{
+				{
+					Image: "myTestImage:latest",
+					Conditions: []config.Condition{
+						{
+							ConditionRef: "strings-equal",
+							Params: []config.Param{
+								{Name: "param1", Value: "val1"},
+							},
+						},
+					},
+				},
+			}}},
+			conf: config.StepConfig{Config: map[string]interface{}{
+				"param1": "val1",
+				"val1":   map[string]interface{}{"dockerImage": "myTestImage:latest"},
+			}},
+			expected: map[string]interface{}{
+				"param1":      "val1",
+				"dockerImage": "myTestImage:latest",
+			},
+		},
+		{
+			metadata: config.StepData{Spec: config.StepSpec{Sidecars: []config.Container{
+				{
+					Image: "myTestImage:latest",
+					Conditions: []config.Condition{
+						{
+							ConditionRef: "strings-equal",
+							Params: []config.Param{
+								{Name: "param1", Value: "val1"},
+							},
+						},
+					},
+				},
+			}}},
+			conf: config.StepConfig{Config: map[string]interface{}{
+				"param1": "val1",
+				"val1":   map[string]interface{}{"dockerImage": "myTestImage:latest"},
+			}},
+			expected: map[string]interface{}{
+				"param1":      "val1",
+				"dockerImage": "myTestImage:latest",
+			},
+		},
+	}
+
+	for run, test := range tt {
+		applyContextConditions(test.metadata, &test.conf)
+		assert.Equalf(t, test.expected, test.conf.Config, fmt.Sprintf("Run %v failed", run))
+	}
 }

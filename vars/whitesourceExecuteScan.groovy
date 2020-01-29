@@ -117,6 +117,10 @@ import static com.sap.piper.Prerequisites.checkScript
      * Docker workspace to be used for scanning.
      */
     'dockerWorkspace',
+    /** @see dockerExecute*/
+    'dockerEnvVars',
+    /** @see dockerExecute */
+    'dockerOptions',
     /**
      * Whether license compliance is considered and reported as part of the assessment.
      * @possibleValues `true`, `false`
@@ -246,6 +250,8 @@ void call(Map parameters = [:]) {
             .dependingOn('scanType').mixin('buildDescriptorFile')
             .dependingOn('scanType').mixin('dockerImage')
             .dependingOn('scanType').mixin('dockerWorkspace')
+            .dependingOn('scanType').mixin('dockerOptions')
+            .dependingOn('scanType').mixin('dockerEnvVars')
             .dependingOn('scanType').mixin('stashContent')
             .dependingOn('scanType').mixin('whitesource/configFilePath')
             .dependingOn('scanType').mixin('whitesource/installCommand')
@@ -369,7 +375,14 @@ private def triggerWhitesourceScanWithUserKey(script, config, utils, descriptorU
                     script.commonPipelineEnvironment.getValue('whitesourceProjectNames').add(projectName)
 
                 WhitesourceConfigurationHelper.extendUAConfigurationFile(script, utils, config, path)
-                dockerExecute(script: script, dockerImage: config.dockerImage, dockerWorkspace: config.dockerWorkspace, stashContent: config.stashContent) {
+                dockerExecute(
+                    script: script,
+                    dockerImage: config.dockerImage,
+                    dockerEnvVars: config.dockerEnvVars,
+                    dockerOptions: config.dockerOptions,
+                    dockerWorkspace: config.dockerWorkspace,
+                    stashContent: config.stashContent
+                ) {
                     if (config.whitesource.agentDownloadUrl) {
                         def agentDownloadUrl = new GStringTemplateEngine().createTemplate(config.whitesource.agentDownloadUrl).make([config: config]).toString()
                         //if agentDownloadUrl empty, rely on dockerImage to contain unifiedAgent correctly set up and available
@@ -455,7 +468,7 @@ private resolveProjectIdentifiers(script, descriptorUtils, config) {
             config.whitesource.projectName = "${gav.group?:''}${gav.group?'.':''}${gav.artifact}"
 
         def versionFragments = gav.version?.tokenize('.')
-        def version = versionFragments.size() > 0 ? versionFragments.head() : null
+        def version = versionFragments?.size() > 0 ? versionFragments?.head() : null
         if(version && !config.whitesource.productVersion)
             config.whitesource.productVersion = version
     }
@@ -463,9 +476,13 @@ private resolveProjectIdentifiers(script, descriptorUtils, config) {
 
 void analyseWhitesourceResults(Map config, WhitesourceRepository repository) {
     def pdfName = "whitesource-riskReport.pdf"
-    repository.fetchReportForProduct(pdfName)
-    archiveArtifacts artifacts: pdfName
-    echo "A summary of the Whitesource findings was stored as artifact under the name ${pdfName}"
+    try {
+        repository.fetchReportForProduct(pdfName)
+        archiveArtifacts artifacts: pdfName
+        echo "A summary of the Whitesource findings was stored as artifact under the name ${pdfName}"
+    } catch (e) {
+        echo "[${STEP_NAME}][WARNING] Failed to fetch and archive report ${pdfName}"
+    }
 
     if(config.whitesource.licensingVulnerabilities) {
         def violationCount = fetchViolationCount(config, repository)

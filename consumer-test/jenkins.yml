@@ -39,3 +39,8 @@ credentials:
               username: ${CX_INFRA_IT_CF_USERNAME}
               password: ${CX_INFRA_IT_CF_PASSWORD}
               description: "SAP CP CF Trial account for test deployment"
+          - string:
+              scope: GLOBAL
+              id: "tmsUpload"
+              secret: ${CX_INFRA_IT_TMS_UPLOAD}
+              description: "Service key for tms upload"

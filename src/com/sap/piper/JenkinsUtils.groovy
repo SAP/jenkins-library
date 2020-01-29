@@ -1,12 +1,13 @@
 package com.sap.piper
 
 import com.cloudbees.groovy.cps.NonCPS
-
+import hudson.Functions
 import hudson.tasks.junit.TestResultAction
 
 import jenkins.model.Jenkins
 
 import org.apache.commons.io.IOUtils
+import org.jenkinsci.plugins.workflow.libs.LibrariesAction
 import org.jenkinsci.plugins.workflow.steps.MissingContextVariableException
 
 @API
@@ -107,4 +108,42 @@ String getIssueCommentTriggerAction() {
 
 def getJobStartedByUserId() {
     return getRawBuild().getCause(hudson.model.Cause.UserIdCause.class)?.getUserId()
+}
+
+@NonCPS
+def getLibrariesInfo() {
+    def libraries = []
+    def build = getRawBuild()
+    def libs = build.getAction(LibrariesAction.class).getLibraries()
+
+    for (def i = 0; i < libs.size(); i++) {
+        Map lib = [:]
+
+        lib['name'] = libs[i].name
+        lib['version'] = libs[i].version
+        lib['trusted'] = libs[i].trusted
+        libraries.add(lib)
+    }
+
+    return libraries
+}
+
+@NonCPS
+void addRunSideBarLink(String relativeUrl, String displayName, String relativeIconPath) {
+    try {
+        def linkActionClass = this.class.classLoader.loadClass("hudson.plugins.sidebar_link.LinkAction")
+        if (relativeUrl != null && displayName != null) {
+            def run = getRawBuild()
+            def iconPath = (null != relativeIconPath) ? "${Functions.getResourcePath()}/${relativeIconPath}" : null
+            def action = linkActionClass.newInstance(relativeUrl, displayName, iconPath)
+            echo "Added run level sidebar link to '${action.getUrlName()}' with name '${action.getDisplayName()}' and icon '${action.getIconFileName()}'"
+            run.getActions().add(action)
+        }
+    } catch (e) {
+        e.printStackTrace()
+    }
+}
+
+def getInstance() {
+    Jenkins.get()
 }
