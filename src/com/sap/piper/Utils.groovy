@@ -62,30 +62,22 @@ def stashWithMessage(name, msg, include = '**/*.*', exclude = '', useDefaultExcl
 }
 
 def stashStageFiles(Script script, String stageName) {
-    try {
-        List stashes = script.commonPipelineEnvironment.configuration.stageStashes?.get(stageName)?.stashes ?: []
+    List stashes = script.commonPipelineEnvironment.configuration.stageStashes?.get(stageName)?.stashes ?: []
 
-        stashList(script, stashes)
+    stashList(script, stashes)
 
-        //NOTE: We do not delete the directory in case Jenkins runs on Kubernetes.
-        // deleteDir() is not required in pods, but would be nice to have the same behaviour and leave a clean fileSystem.
-        if (!isInsidePod(script)) {
-            script.deleteDir()
-        }
-    } catch (e) {
-        echo "Failed to stash files for stage $stageName (${e.getMessage()})"
+    //NOTE: We do not delete the directory in case Jenkins runs on Kubernetes.
+    // deleteDir() is not required in pods, but would be nice to have the same behaviour and leave a clean fileSystem.
+    if (!isInsidePod(script)) {
+        script.deleteDir()
     }
 }
 
 def unstashStageFiles(Script script, String stageName, List stashContent = []) {
-    try {
-        stashContent += script.commonPipelineEnvironment.configuration.stageStashes?.get(stageName)?.unstash ?: []
+    stashContent += script.commonPipelineEnvironment.configuration.stageStashes?.get(stageName)?.unstash ?: []
 
-        script.deleteDir()
-        unstashAll(stashContent)
-    } catch (e) {
-        echo "Failed to unstash files for stage $stageName (${e.getMessage()})"
-    }
+    script.deleteDir()
+    unstashAll(stashContent)
 
     return stashContent
 }
