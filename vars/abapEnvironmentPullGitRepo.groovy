@@ -1,6 +1,7 @@
 import static com.sap.piper.Prerequisites.checkScript
 import com.sap.piper.PiperGoUtils
 import com.sap.piper.JenkinsUtils
+import com.sap.piper.ConfigurationHelper
 import com.sap.piper.Utils
 import hudson.AbortException
 import groovy.transform.Field
@@ -12,6 +13,17 @@ void call(Map parameters = [:]) {
 
         def script = checkScript(this, parameters) ?: this
 
+        Set configKeys = ['dockerImage', 'dockerWorkspace']
+        Map jenkinsConfig = ConfigurationHelper.newInstance(this)
+            .loadStepDefaults()
+            .mixinGeneralConfig(script.commonPipelineEnvironment, configKeys)
+            .mixinStepConfig(script.commonPipelineEnvironment, configKeys)
+            .mixinStageConfig(script.commonPipelineEnvironment, env.STAGE_NAME, configKeys)
+            .mixin(parameters, configKeys)
+            .use()
+
+        def dockerImage = config.dockerImage ?: (projectConfig.dockerImage ?: (config.docker?.dockerImage ?: contextConfig.dockerImage))
+
         Map config
         def utils = parameters.juStabUtils ?: new Utils()
         parameters.juStabUtils = null
@@ -19,8 +31,8 @@ void call(Map parameters = [:]) {
         // telemetry reporting
         utils.pushToSWA([step: STEP_NAME], config)
 
-        new PiperGoUtils(this, utils).unstashPiperBin()
-        utils.unstash('pipelineConfigAndTests')
+        // new PiperGoUtils(this, utils).unstashPiperBin()
+        // utils.unstash('pipelineConfigAndTests')
         script.commonPipelineEnvironment.writeToDisk(script)
 
         writeFile(file: METADATA_FILE, text: libraryResource(METADATA_FILE))
@@ -34,8 +46,8 @@ void call(Map parameters = [:]) {
             // execute step
             dockerExecute(
                 script: script,
-                dockerImage: "ppiper/cf-cli",
-                dockerWorkspace: '/home/piper'
+                dockerImage: jenkinsConfig.dockerImage,
+                dockerWorkspace: jenkinsConfig.dockerWorkspace
             ) {
                 withCredentials([usernamePassword(
                     credentialsId: config.credentialsId,
