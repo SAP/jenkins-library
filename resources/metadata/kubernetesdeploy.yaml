@@ -146,6 +146,9 @@ spec:
           - name: deployImage
         type: string
         description: Full name of the image to be deployed.
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: container/image
         mandatory: true
         scope:
           - PARAMETERS
