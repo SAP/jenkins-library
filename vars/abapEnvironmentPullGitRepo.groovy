@@ -42,7 +42,7 @@ void call(Map parameters = [:]) {
             }
             // execute step
             withCredentials([usernamePassword(
-                credentialsId: ccredentials,
+                credentialsId: credentials,
                 passwordVariable: 'PIPER_password',
                 usernameVariable: 'PIPER_username'
             )]) {
