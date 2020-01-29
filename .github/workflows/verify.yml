@@ -1,0 +1,28 @@
+name: CI
+
+on: [push]
+
+jobs:
+  verify:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: checkout
+      uses: actions/checkout@v2
+
+    - name: generate
+      uses: actions-contrib/go@v0.1.0
+      with:
+        args: run pkg/generator/step-metadata.go
+
+    - name: format
+      uses: actions-contrib/go@v0.1.0
+      with:
+        args: fmt
+        
+    - name: dummy change
+      run: echo tests >> Dockerfile
+
+    - name: verify
+      run: git diff --name-only --exit-code
