@@ -131,9 +131,12 @@ InfluxDB data map tags: ${config.customDataMapTags}
 
 private void writeToInflux(config, script){
     if (config.influxServer) {
+
+        def influxPluginVersion = new com.sap.piper.JenkinsUtils().getPluginVersion('influxdb')
+        def influxClassName = (!influxPluginVersion || influxPluginVersion.startsWith('1.')) ? 'InfluxDbPublisher': 'InfluxDbGlobalConfig'
         try {
             step([
-                $class: 'InfluxDbPublisher',
+                $class: influxClassName,
                 selectedTarget: config.influxServer,
                 customPrefix: config.influxPrefix,
                 customData: config.customData.size()>0 ? config.customData : null,

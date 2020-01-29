@@ -144,6 +144,22 @@ void addRunSideBarLink(String relativeUrl, String displayName, String relativeIc
     }
 }
 
+@NonCPS
+def getPlugin(name){
+    for (plugin in getActiveJenkinsInstance().pluginManager.plugins) {
+        if (name == plugin.getShortName()) {
+            return plugin
+        }
+    }
+    return null
+}
+
+@NonCPS
+String getPluginVersion(name) {
+    return getPlugin(name)?.getVersion()
+
+}
+
 def getInstance() {
     Jenkins.get()
 }
