@@ -10,7 +10,7 @@ import (
 )
 
 type abapEnvironmentPullGitRepoOptions struct {
-	User              string `json:"user,omitempty"`
+	Username          string `json:"username,omitempty"`
 	Password          string `json:"password,omitempty"`
 	RepositoryName    string `json:"repositoryName,omitempty"`
 	Host              string `json:"host,omitempty"`
@@ -30,7 +30,10 @@ func AbapEnvironmentPullGitRepoCommand() *cobra.Command {
 	var createAbapEnvironmentPullGitRepoCmd = &cobra.Command{
 		Use:   "abapEnvironmentPullGitRepo",
 		Short: "Pulls a git repository to a SAP Cloud Platform ABAP Environment system",
-		Long:  `Pulls a git repository (Software Component) to a SAP Cloud Platform ABAP Environment system.`,
+		Long: `Pulls a git repository (Software Component) to a SAP Cloud Platform ABAP Environment system.
+Please provide either of the following options:
+  * The host and credentials the Cloud Platform ABAP Environment system itself. The credentials must be configured for the Communication Scenario SAP_COM_0510.
+  * The Cloud Foundry parameters (API endpoint, organization, space), credentials, the service instance for the ABAP service and the service key for the Communication Scenario SAP_COM_0510.`,
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			log.SetStepName("abapEnvironmentPullGitRepo")
 			log.SetVerbose(GeneralConfig.Verbose)
@@ -47,7 +50,7 @@ func AbapEnvironmentPullGitRepoCommand() *cobra.Command {
 }
 
 func addAbapEnvironmentPullGitRepoFlags(cmd *cobra.Command) {
-	cmd.Flags().StringVar(&myAbapEnvironmentPullGitRepoOptions.User, "user", os.Getenv("PIPER_user"), "User for either the Cloud Foundry API or the Communication Arrangement for SAP_COM_0510")
+	cmd.Flags().StringVar(&myAbapEnvironmentPullGitRepoOptions.Username, "username", os.Getenv("PIPER_username"), "User for either the Cloud Foundry API or the Communication Arrangement for SAP_COM_0510")
 	cmd.Flags().StringVar(&myAbapEnvironmentPullGitRepoOptions.Password, "password", os.Getenv("PIPER_password"), "Password for either the Cloud Foundry API or the Communication Arrangement for SAP_COM_0510")
 	cmd.Flags().StringVar(&myAbapEnvironmentPullGitRepoOptions.RepositoryName, "repositoryName", os.Getenv("PIPER_repositoryName"), "Specifies the name of the Repository (Software Component) on the SAP Cloud Platform ABAP Environment system")
 	cmd.Flags().StringVar(&myAbapEnvironmentPullGitRepoOptions.Host, "host", os.Getenv("PIPER_host"), "Specifies the host address of the SAP Cloud Platform ABAP Environment system")
@@ -57,7 +60,7 @@ func addAbapEnvironmentPullGitRepoFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVar(&myAbapEnvironmentPullGitRepoOptions.CfServiceInstance, "cfServiceInstance", os.Getenv("PIPER_cfServiceInstance"), "Cloud Foundry Service Instance")
 	cmd.Flags().StringVar(&myAbapEnvironmentPullGitRepoOptions.CfServiceKey, "cfServiceKey", os.Getenv("PIPER_cfServiceKey"), "Cloud Foundry Service Key")
 
-	cmd.MarkFlagRequired("user")
+	cmd.MarkFlagRequired("username")
 	cmd.MarkFlagRequired("password")
 	cmd.MarkFlagRequired("repositoryName")
 }
@@ -69,7 +72,7 @@ func abapEnvironmentPullGitRepoMetadata() config.StepData {
 			Inputs: config.StepInputs{
 				Parameters: []config.StepParameters{
 					{
-						Name:        "user",
+						Name:        "username",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
@@ -106,7 +109,7 @@ func abapEnvironmentPullGitRepoMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{},
+						Aliases:     []config.Alias{{Name: "cloudFoundry/apiEndpoint"}},
 					},
 					{
 						Name:        "cfOrg",
@@ -114,7 +117,7 @@ func abapEnvironmentPullGitRepoMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{},
+						Aliases:     []config.Alias{{Name: "cloudFoundry/org"}},
 					},
 					{
 						Name:        "cfSpace",
@@ -122,7 +125,7 @@ func abapEnvironmentPullGitRepoMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{},
+						Aliases:     []config.Alias{{Name: "cloudFoundry/space"}},
 					},
 					{
 						Name:        "cfServiceInstance",
@@ -130,7 +133,7 @@ func abapEnvironmentPullGitRepoMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{},
+						Aliases:     []config.Alias{{Name: "cloudFoundry/serviceInstance"}},
 					},
 					{
 						Name:        "cfServiceKey",
@@ -138,7 +141,7 @@ func abapEnvironmentPullGitRepoMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{},
+						Aliases:     []config.Alias{{Name: "cloudFoundry/serviceKey"}},
 					},
 				},
 			},

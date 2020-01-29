@@ -12,11 +12,14 @@ spec:
       - name: credentialsId
         description: Jenkins credentials ID containing user and password to authenticate to the Cloud Platform ABAP Environment system
         type: jenkins
-        aliases:
-          - name: cfCredentialsId
-          - name: cloudFoundry/credentialsId
+      - name: cfCredentialsId
+        description: Jenkins credentials ID containing user and password to authenticate to Cloud Foundry
+        type: jenkins
+      - name: cloudFoundry/credentialsId
+        description: Jenkins credentials ID containing user and password to authenticate to Cloud Foundry
+        type: jenkins
     params:
-      - name: user
+      - name: username
         type: string
         description: User for either the Cloud Foundry API or the Communication Arrangement for SAP_COM_0510
         scope:

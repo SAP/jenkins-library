@@ -10,7 +10,6 @@ import groovy.transform.Field
 void call(Map parameters = [:]) {
     handlePipelineStepErrors(stepName: STEP_NAME, stepParameters: parameters, failOnError: true) {
 
-
         def script = checkScript(this, parameters) ?: this
 
         Map config
@@ -32,9 +31,18 @@ void call(Map parameters = [:]) {
             // get context configuration
             config = readJSON (text: sh(returnStdout: true, script: "./piper getConfig --contextConfig --stepMetadata '${METADATA_FILE}'"))
 
+            // get credentials
+            String credentials
+            if (config.credentialsId != null) {
+                credentials = config.credentialsId
+            } else if (config.cfCredentialsId != null) {
+                credentials = config.cfCredentialsId
+            } else if (config.cloudFoundry.credentialsId != null) {
+                credentials = config.cloudFoundry.credentialsId
+            }
             // execute step
             withCredentials([usernamePassword(
-                credentialsId: config.credentialsId,
+                credentialsId: ccredentials,
                 passwordVariable: 'PIPER_password',
                 usernameVariable: 'PIPER_username'
             )]) {

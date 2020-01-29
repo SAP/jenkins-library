@@ -129,7 +129,7 @@ func getAbapCommunicationArrangementInfo(config abapEnvironmentPullGitRepoOption
 	if config.Host != "" {
 		// Host, User and Password are directly provided
 		connectionDetails.URL = "https://" + config.Host + "/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY/Pull"
-		connectionDetails.User = config.User
+		connectionDetails.User = config.Username
 		connectionDetails.Password = config.Password
 	} else {
 		if config.CfAPIEndpoint == "" || config.CfOrg == "" || config.CfSpace == "" || config.CfServiceInstance == "" || config.CfServiceKey == "" {
@@ -156,8 +156,8 @@ func readCfServiceKey(config abapEnvironmentPullGitRepoOptions, c execRunner) (s
 	c.Stdout(log.Entry().Writer())
 
 	// Logging into the Cloud Foundry via CF CLI
-	log.Entry().WithField("cfApiEndpoint", config.CfAPIEndpoint).WithField("cfSpace", config.CfSpace).WithField("cfOrg", config.CfOrg).WithField("User", config.User).Info("Cloud Foundry parameters: ")
-	cfLoginSlice := []string{"login", "-a", config.CfAPIEndpoint, "-u", config.User, "-p", config.Password, "-o", config.CfOrg, "-s", config.CfSpace}
+	log.Entry().WithField("cfApiEndpoint", config.CfAPIEndpoint).WithField("cfSpace", config.CfSpace).WithField("cfOrg", config.CfOrg).WithField("User", config.Username).Info("Cloud Foundry parameters: ")
+	cfLoginSlice := []string{"login", "-a", config.CfAPIEndpoint, "-u", config.Username, "-p", config.Password, "-o", config.CfOrg, "-s", config.CfSpace}
 	error := c.RunExecutable("cf", cfLoginSlice...)
 	if error != nil {
 		log.Entry().Error("Login at cloud foundry failed.")
@@ -169,8 +169,11 @@ func readCfServiceKey(config abapEnvironmentPullGitRepoOptions, c execRunner) (s
 	c.Stdout(&serviceKeyBytes)
 	cfReadServiceKeySlice := []string{"service-key", config.CfServiceInstance, config.CfServiceKey}
 	error = c.RunExecutable("cf", cfReadServiceKeySlice...)
-	var lines []string = strings.Split(serviceKeyBytes.String(), "\n")
-	serviceKeyJSON := strings.Join(lines[2:], "")
+	var serviceKeyJSON string
+	if len(serviceKeyBytes.String()) > 0 {
+		var lines []string = strings.Split(serviceKeyBytes.String(), "\n")
+		serviceKeyJSON = strings.Join(lines[2:], "")
+	}
 	if error != nil {
 		return abapServiceKey, error
 	}

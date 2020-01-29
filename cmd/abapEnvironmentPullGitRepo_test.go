@@ -28,7 +28,7 @@ func TestTriggerPull(t *testing.T) {
 			CfSpace:           "testSpace",
 			CfServiceInstance: "testInstance",
 			CfServiceKey:      "testServiceKey",
-			User:              "testUser",
+			Username:          "testUser",
 			Password:          "testPassword",
 		}
 
@@ -61,7 +61,7 @@ func TestPollEntity(t *testing.T) {
 			CfSpace:           "testSpace",
 			CfServiceInstance: "testInstance",
 			CfServiceKey:      "testServiceKey",
-			User:              "testUser",
+			Username:          "testUser",
 			Password:          "testPassword",
 		}
 
@@ -90,7 +90,7 @@ func TestPollEntity(t *testing.T) {
 			CfSpace:           "testSpace",
 			CfServiceInstance: "testInstance",
 			CfServiceKey:      "testServiceKey",
-			User:              "testUser",
+			Username:          "testUser",
 			Password:          "testPassword",
 		}
 
@@ -116,7 +116,7 @@ func TestGetAbapCommunicationArrangementInfo(t *testing.T) {
 			CfSpace:           "testSpace",
 			CfServiceInstance: "testInstance",
 			CfServiceKey:      "testServiceKey",
-			User:              "testUser",
+			Username:          "testUser",
 			Password:          "testPassword",
 		}
 
@@ -134,7 +134,7 @@ func TestGetAbapCommunicationArrangementInfo(t *testing.T) {
 			CfOrg:             "testOrg",
 			CfSpace:           "testSpace",
 			CfServiceInstance: "testInstance",
-			User:              "testUser",
+			Username:          "testUser",
 			Password:          "testPassword",
 		}
 
@@ -147,7 +147,7 @@ func TestGetAbapCommunicationArrangementInfo(t *testing.T) {
 	t.Run("Test cf cli command: params missing", func(t *testing.T) {
 
 		config := abapEnvironmentPullGitRepoOptions{
-			User:     "testUser",
+			Username: "testUser",
 			Password: "testPassword",
 		}
 
