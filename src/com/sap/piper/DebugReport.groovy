@@ -106,7 +106,7 @@ class DebugReport {
                 plugins.add("${it.getShortName()} | ${it.getVersion()} | ${it.getDisplayName()}")
             }
         } catch (Throwable t) {
-            // Ignore
+            script.echo "Failed to retrieve Jenkins plugins for debug report  (${t.getMessage()})"
         }
 
         Map binding = getProperties()

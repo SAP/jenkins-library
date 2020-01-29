@@ -5,12 +5,14 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.RuleChain
 import util.BasePiperTest
+import util.JenkinsLoggingRule
 import util.Rules
 
 class DebugReportTest extends BasePiperTest {
 
     @Rule
     public RuleChain ruleChain = Rules.getCommonRules(this)
+        .around(new JenkinsLoggingRule(this))
 
     @Test
     void testInitFromEnvironment() {
