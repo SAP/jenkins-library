@@ -202,4 +202,7 @@ func (c *Client) applyDefaults() {
 	if c.timeout == 0 {
 		c.timeout = time.Second * 10
 	}
+	if c.logger == nil {
+		c.logger = log.Entry().WithField("package", "SAP/jenkins-library/pkg/http")
+	}
 }
