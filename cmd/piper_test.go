@@ -3,6 +3,7 @@ package cmd
 import (
 	"io"
 	"io/ioutil"
+	"regexp"
 	"strings"
 	"testing"
 
@@ -51,12 +52,58 @@ func (m *execMockRunner) RunExecutable(e string, p ...string) error {
 	exec := execCall{exec: e, params: p}
 	m.calls = append(m.calls, exec)
 
-	if c := strings.Join(append([]string{e}, p...), " "); m.shouldFailOnCommand != nil && m.shouldFailOnCommand[c] != nil {
-		return m.shouldFailOnCommand[c]
+	c := strings.Join(append([]string{e}, p...), " ")
+
+	if m.stdoutReturn != nil {
+		for k, v := range m.stdoutReturn {
+
+			found := k == c
+
+			if !found {
+
+				r, e := regexp.Compile(k)
+				if e != nil {
+					return e
+					// we don't distinguish here between an error returned
+					// since it was configured or returning this error here
+					// indicating an invalid regex. Anyway: when running the
+					// test we will see it ...
+				}
+
+				if r.MatchString(c) {
+					found = true
+				}
+			}
+
+			if found {
+				m.stdout.Write([]byte(v))
+			}
+		}
 	}
 
-	if c := strings.Join(append([]string{e}, p...), " "); m.stdoutReturn != nil && len(m.stdoutReturn[c]) > 0 {
-		m.stdout.Write([]byte(m.stdoutReturn[c]))
+	if m.shouldFailOnCommand != nil {
+		for k, v := range m.shouldFailOnCommand {
+
+			found := k == c
+
+			if !found {
+				r, e := regexp.Compile(k)
+				if e != nil {
+					return e
+					// we don't distinguish here between an error returned
+					// since it was configured or returning this error here
+					// indicating an invalid regex. Anyway: when running the
+					// test we will see it ...
+				}
+				if r.MatchString(c) {
+					found = true
+				}
+			}
+
+			if found {
+				return v
+			}
+		}
 	}
 
 	return nil
@@ -83,12 +130,55 @@ func (m *shellMockRunner) RunShell(s string, c string) error {
 	m.shell = append(m.shell, s)
 	m.calls = append(m.calls, c)
 
-	if m.shouldFailOnCommand != nil && m.shouldFailOnCommand[c] != nil {
-		return m.shouldFailOnCommand[c]
+	if m.stdoutReturn != nil {
+		for k, v := range m.stdoutReturn {
+
+			found := k == c
+			if !found {
+				r, e := regexp.Compile(k)
+				if e != nil {
+					return e
+					// we don't distinguish here between an error returned
+					// since it was configured or returning this error here
+					// indicating an invalid regex. Anyway: when running the
+					// test we will see it ...
+				}
+				if r.MatchString(c) {
+					found = true
+
+				}
+			}
+
+			if found {
+				m.stdout.Write([]byte(m.stdoutReturn[v]))
+			}
+		}
 	}
 
-	if m.stdoutReturn != nil && len(m.stdoutReturn[c]) > 0 {
-		m.stdout.Write([]byte(m.stdoutReturn[c]))
+	if m.shouldFailOnCommand != nil {
+		for k, v := range m.shouldFailOnCommand {
+
+			found := k == c
+
+			if !found {
+				r, e := regexp.Compile(k)
+				if e != nil {
+					return e
+					// we don't distinguish here between an error returned
+					// since it was configured or returning this error here
+					// indicating an invalid regex. Anyway: when running the
+					// test we will see it ...
+				}
+				if r.MatchString(c) {
+					found = true
+
+				}
+			}
+
+			if found {
+				return v
+			}
+		}
 	}
 
 	return nil
