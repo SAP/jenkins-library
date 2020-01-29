@@ -267,7 +267,7 @@ func createClient(config *protecodeExecuteScanOptions) protecode.Protecode {
 
 	pc := protecode.Protecode{}
 
-	protecodeOptions := protecode.ProtecodeOptions{
+	protecodeOptions := protecode.Options{
 		ServerURL: config.ProtecodeServerURL,
 		Logger:    log.Entry().WithField("package", "SAP/jenkins-library/pkg/protecode"),
 		Duration:  duration,
@@ -288,7 +288,7 @@ func uploadScanOrDeclareFetch(config protecodeExecuteScanOptions, productID int,
 			if config.Verbose {
 				log.Entry().Info("Protecode scan debug, declare fetch url")
 			}
-			resultData := client.DeclareFetchUrl(config.CleanupMode, config.ProtecodeGroup, config.FetchURL)
+			resultData := client.DeclareFetchURL(config.CleanupMode, config.ProtecodeGroup, config.FetchURL)
 			productID = resultData.ProductID
 
 		} else {

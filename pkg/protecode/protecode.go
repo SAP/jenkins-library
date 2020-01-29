@@ -89,8 +89,8 @@ type Protecode struct {
 	logger    *logrus.Entry
 }
 
-//ProtecodeOptions struct which can be used to configure the Protecode struct above
-type ProtecodeOptions struct {
+//Options struct which can be used to configure the Protecode struct
+type Options struct {
 	ServerURL string
 	Duration  time.Duration
 	Username  string
@@ -99,7 +99,7 @@ type ProtecodeOptions struct {
 }
 
 //SetOptions setter function to set the internal properties of the protecode
-func (pc *Protecode) SetOptions(options ProtecodeOptions) {
+func (pc *Protecode) SetOptions(options Options) {
 	pc.serverURL = options.ServerURL
 	pc.client = &piperHttp.Client{}
 	pc.duration = (time.Minute * options.Duration)
@@ -116,17 +116,17 @@ func (pc *Protecode) SetOptions(options ProtecodeOptions) {
 
 func (pc *Protecode) createURL(path string, pValue string, fParam string) string {
 
-	protecodeUrl, err := url.Parse(pc.serverURL)
+	protecodeURL, err := url.Parse(pc.serverURL)
 	if err != nil {
 		pc.logger.WithError(err).Fatal("Malformed URL")
 	}
 
 	if len(path) > 0 {
-		protecodeUrl.Path += fmt.Sprintf("%v", path)
+		protecodeURL.Path += fmt.Sprintf("%v", path)
 	}
 
 	if len(pValue) > 0 {
-		protecodeUrl.Path += fmt.Sprintf("%v", pValue)
+		protecodeURL.Path += fmt.Sprintf("%v", pValue)
 	}
 
 	// Prepare Query Parameters
@@ -136,10 +136,10 @@ func (pc *Protecode) createURL(path string, pValue string, fParam string) string
 		params.Add("q", fmt.Sprintf("file:%v", encodedFParam))
 
 		// Add Query Parameters to the URL
-		protecodeUrl.RawQuery = params.Encode() // Escape Query Parameters
+		protecodeURL.RawQuery = params.Encode() // Escape Query Parameters
 	}
 
-	return protecodeUrl.String()
+	return protecodeURL.String()
 }
 
 func (pc *Protecode) getResultData(r io.ReadCloser) *ResultData {
@@ -226,7 +226,7 @@ func (pc *Protecode) getProductData(r io.ReadCloser) *ProductData {
 	return response
 }
 
-func (pc *Protecode) sendApiRequest(method string, url string, headers map[string][]string) (*io.ReadCloser, error) {
+func (pc *Protecode) sendAPIRequest(method string, url string, headers map[string][]string) (*io.ReadCloser, error) {
 
 	r, err := pc.client.SendRequest(method, url, nil, headers, nil)
 
@@ -307,7 +307,7 @@ func (pc *Protecode) DeleteScan(cleanupMode string, productID int) {
 		protecodeURL := pc.createURL("/api/product/", fmt.Sprintf("%v/", productID), "")
 		headers := map[string][]string{}
 
-		pc.sendApiRequest("DELETE", protecodeURL, headers)
+		pc.sendAPIRequest("DELETE", protecodeURL, headers)
 		break
 	default:
 		pc.logger.Fatalf("Protecode scan failed, unknown cleanup mode %v", cleanupMode)
@@ -325,7 +325,7 @@ func (pc *Protecode) LoadReport(reportFileName string, productID int) *io.ReadCl
 		"Outputfile":    []string{reportFileName},
 	}
 
-	readCloser, err := pc.sendApiRequest(http.MethodGet, protecodeURL, headers)
+	readCloser, err := pc.sendAPIRequest(http.MethodGet, protecodeURL, headers)
 	if err != nil {
 		pc.logger.WithError(err).Fatalf("Protecode scan failed, not possible to load report %v", protecodeURL)
 	}
@@ -347,13 +347,13 @@ func (pc *Protecode) UploadScanFile(cleanupMode, protecodeGroup, filePath string
 	return pc.getResultData(r.Body)
 }
 
-// DeclareFetchUrl configures the fetch url for the protecode scan
-func (pc *Protecode) DeclareFetchUrl(cleanupMode, protecodeGroup, fetchURL string) *Result {
+// DeclareFetchURL configures the fetch url for the protecode scan
+func (pc *Protecode) DeclareFetchURL(cleanupMode, protecodeGroup, fetchURL string) *Result {
 	deleteBinary := (cleanupMode == "binary" || cleanupMode == "complete")
 	headers := map[string][]string{"Group": []string{protecodeGroup}, "Delete-Binary": []string{fmt.Sprintf("%v", deleteBinary)}, "Url": []string{fetchURL}, "Content-Type": []string{"application/json"}}
 
 	protecodeURL := fmt.Sprintf("%v/api/fetch/", pc.serverURL)
-	r, err := pc.sendApiRequest(http.MethodPost, protecodeURL, headers)
+	r, err := pc.sendAPIRequest(http.MethodPost, protecodeURL, headers)
 	if err != nil {
 		pc.logger.WithError(err).Fatalf("Protecode scan failed, exception during declare fetch url: %v", protecodeURL)
 	}
@@ -417,7 +417,7 @@ func (pc *Protecode) PollForResult(productID int, verbose bool) ResultData {
 func (pc *Protecode) pullResult(productID int) (ResultData, error) {
 	protecodeURL, headers := pc.getPullResultRequestData(productID)
 
-	r, err := pc.sendApiRequest(http.MethodGet, protecodeURL, headers)
+	r, err := pc.sendAPIRequest(http.MethodGet, protecodeURL, headers)
 	if err != nil {
 		return *new(ResultData), err
 	}
@@ -458,7 +458,7 @@ func (pc *Protecode) LoadExistingProduct(protecodeGroup, filePath string, reuseE
 
 func (pc *Protecode) loadExisting(protecodeURL string, headers map[string][]string) *ProductData {
 
-	r, err := pc.sendApiRequest(http.MethodGet, protecodeURL, headers)
+	r, err := pc.sendAPIRequest(http.MethodGet, protecodeURL, headers)
 	if err != nil {
 		pc.logger.WithError(err).Fatalf("Protecode scan failed, during load existing product: %v", protecodeURL)
 	}

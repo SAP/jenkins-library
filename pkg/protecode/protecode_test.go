@@ -171,43 +171,6 @@ func TestParseResultTriaged(t *testing.T) {
 	})
 }
 
-/*func TestLoadExistingProductByFilenameSuccess(t *testing.T) {
-
-	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
-
-		response := ProductData{
-			Products: []Product{
-				{ProductID: 1}},
-		}
-
-		var b bytes.Buffer
-		json.NewEncoder(&b).Encode(&response)
-		rw.Write([]byte(b.Bytes()))
-	}))
-	// Close the server when test finishes
-	defer server.Close()
-
-	pc := Protecode{}
-	po := ProtecodeOptions{ServerURL: server.URL}
-	pc.SetOptions(po)
-
-	cases := []struct {
-		filePath       string
-		protecodeGroup string
-		want           *ProductData
-	}{
-		{"filePath", "group", &ProductData{
-			Products: []Product{{ProductID: 1}}}},
-		{"filePäth!", "group32", &ProductData{
-			Products: []Product{{ProductID: 1}}}},
-	}
-	for _, c := range cases {
-
-		got := pc.loadExistingProductByFilename(c.protecodeGroup, c.filePath)
-		assert.Equal(t, c.want, got)
-	}
-}*/
-
 func TestLoadExistingProductSuccess(t *testing.T) {
 
 	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
@@ -347,7 +310,7 @@ func TestPullResultSuccess(t *testing.T) {
 	}
 }
 
-func TestDeclareFetchUrlSuccess(t *testing.T) {
+func TestDeclareFetchURLSuccess(t *testing.T) {
 
 	requestURI := ""
 	var passedHeaders = map[string][]string{}
@@ -372,7 +335,7 @@ func TestDeclareFetchUrlSuccess(t *testing.T) {
 	defer server.Close()
 
 	pc := Protecode{}
-	po := ProtecodeOptions{ServerURL: server.URL}
+	po := Options{ServerURL: server.URL}
 	pc.SetOptions(po)
 
 	cases := []struct {
@@ -386,7 +349,7 @@ func TestDeclareFetchUrlSuccess(t *testing.T) {
 	}
 	for _, c := range cases {
 
-		pc.DeclareFetchUrl(c.cleanupMode, c.protecodeGroup, c.fetchURL)
+		pc.DeclareFetchURL(c.cleanupMode, c.protecodeGroup, c.fetchURL)
 		assert.Equal(t, requestURI, c.want)
 		assert.Contains(t, passedHeaders, "Group")
 		assert.Contains(t, passedHeaders, "Delete-Binary")
@@ -435,7 +398,7 @@ func TestUploadScanFileSuccess(t *testing.T) {
 	defer server.Close()
 
 	pc := Protecode{}
-	po := ProtecodeOptions{ServerURL: server.URL}
+	po := Options{ServerURL: server.URL}
 	pc.SetOptions(po)
 
 	testFile, err := ioutil.TempFile("", "testFileUpload")
@@ -532,7 +495,7 @@ func TestDeleteScanSuccess(t *testing.T) {
 	defer server.Close()
 
 	pc := Protecode{}
-	po := ProtecodeOptions{ServerURL: server.URL}
+	po := Options{ServerURL: server.URL}
 	pc.SetOptions(po)
 
 	cases := []struct {

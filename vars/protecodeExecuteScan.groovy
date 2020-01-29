@@ -110,7 +110,6 @@ void call(Map parameters = [:]) {
             callProtecodeScan(config)
 
             def json = readJSON (file: "Vulns.json")
-            
             if(!json) {
                     Notify.error(this, "Protecode scan failed, please check the log and protecode backend for more details.")
             }
@@ -118,7 +117,6 @@ void call(Map parameters = [:]) {
             def report = readJSON (file: 'report.json')
 
             archiveArtifacts artifacts: report['target'], allowEmptyArchive: !report['mandatory']
-            
             jenkinsUtils.removeJobSideBarLinks("artifact/${report['target']}")
             jenkinsUtils.addJobSideBarLink("artifact/${report['target']}", "Protecode Report", "images/24x24/graph.png")
             jenkinsUtils.addRunSideBarLink("artifact/${report['target']}", "Protecode Report", "images/24x24/graph.png")

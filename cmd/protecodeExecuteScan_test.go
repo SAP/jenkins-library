@@ -72,7 +72,7 @@ func TestRunProtecodeScan(t *testing.T) {
 		t.FailNow()
 	}
 
-	po := protecode.ProtecodeOptions{ServerURL: server.URL}
+	po := protecode.Options{ServerURL: server.URL}
 	pc := protecode.Protecode{}
 	pc.SetOptions(po)
 
@@ -150,7 +150,7 @@ func TestUploadScanOrDeclareFetch(t *testing.T) {
 	// Close the server when test finishes
 	defer server.Close()
 
-	po := protecode.ProtecodeOptions{ServerURL: server.URL}
+	po := protecode.Options{ServerURL: server.URL}
 	pc := protecode.Protecode{}
 	pc.SetOptions(po)
 	testFile, err := ioutil.TempFile("", "testFileUpload")
@@ -214,7 +214,7 @@ func TestExecuteProtecodeScan(t *testing.T) {
 	// Close the server when test finishes
 	defer server.Close()
 
-	po := protecode.ProtecodeOptions{ServerURL: server.URL, Duration: time.Minute * 3}
+	po := protecode.Options{ServerURL: server.URL, Duration: time.Minute * 3}
 	pc := protecode.Protecode{}
 	pc.SetOptions(po)
 
