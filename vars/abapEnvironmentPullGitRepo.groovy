@@ -19,8 +19,8 @@ void call(Map parameters = [:]) {
         // telemetry reporting
         utils.pushToSWA([step: STEP_NAME], config)
 
-        new PiperGoUtils(this, utils).unstashPiperBin()
-        utils.unstash('pipelineConfigAndTests')
+        // new PiperGoUtils(this, utils).unstashPiperBin()
+        // utils.unstash('pipelineConfigAndTests')
         script.commonPipelineEnvironment.writeToDisk(script)
 
         writeFile(file: METADATA_FILE, text: libraryResource(METADATA_FILE))
@@ -41,13 +41,19 @@ void call(Map parameters = [:]) {
                 credentials = config.cloudFoundry.credentialsId
             }
             // execute step
-            withCredentials([usernamePassword(
-                credentialsId: credentials,
-                passwordVariable: 'PIPER_password',
-                usernameVariable: 'PIPER_username'
-            )]) {
-                sh "./piper abapEnvironmentPullGitRepo"
-            }
+            // dockerExecute(
+            //     script: script,
+            //     dockerImage: config.dockerImage,
+            //     dockerWorkspace: config.dockerWorkspace,
+            // ) {
+                withCredentials([usernamePassword(
+                    credentialsId: credentials,
+                    passwordVariable: 'PIPER_password',
+                    usernameVariable: 'PIPER_username'
+                )]) {
+                    sh "./piper abapEnvironmentPullGitRepo"
+                }
+            // }
         }
     }
 }
