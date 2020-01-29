@@ -16,20 +16,22 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-const DELIMITER = "-DeLiMiTeR-"
-
+// ProductData holds the product information of the protecode product
 type ProductData struct {
 	Products []Product `json:"products"`
 }
 
+// Product holds the id of the protecode product
 type Product struct {
 	ProductID int `json:"product_id"`
 }
 
+//ResultData holds the information about the protecode result
 type ResultData struct {
 	Result Result `json:"results"`
 }
 
+//Result holds the detail information about the protecode result
 type Result struct {
 	ProductID  int         `json:"product_id"`
 	ReportURL  string      `json:"report_url"`
@@ -37,22 +39,26 @@ type Result struct {
 	Components []Component `json:"components,omitempty"`
 }
 
+//Component the protecode component information
 type Component struct {
 	Vulns []Vulnerability `json:"vulns,omitempty"`
 }
 
+//Vulnerability the protecode vulnerability information
 type Vulnerability struct {
 	Exact  bool     `json:"exact"`
 	Vuln   Vuln     `json:"vuln"`
 	Triage []Triage `json:"triage,omitempty"`
 }
 
+//Vuln holds the inforamtion about the vulnerability
 type Vuln struct {
 	Cve        string  `json:"cve"`
 	Cvss       float64 `json:"cvss"`
 	Cvss3Score string  `json:"cvss3_score"`
 }
 
+//Triage holds the triaging information
 type Triage struct {
 	ID          int    `json:"id"`
 	VulnID      string `json:"vuln_id"`
@@ -66,6 +72,7 @@ type Triage struct {
 	User        User   `json:"user"`
 }
 
+//User holds the user information
 type User struct {
 	ID        int    `json:"id"`
 	Email     string `json:"email"`
@@ -74,6 +81,7 @@ type User struct {
 	Username  string `json:"username"`
 }
 
+//Protecode ist the protecode client which is used by the step
 type Protecode struct {
 	serverURL string
 	client    piperHttp.Uploader
@@ -81,6 +89,7 @@ type Protecode struct {
 	logger    *logrus.Entry
 }
 
+//ProtecodeOptions struct which can be used to configure the Protecode struct above
 type ProtecodeOptions struct {
 	ServerURL string
 	Duration  time.Duration
@@ -89,6 +98,7 @@ type ProtecodeOptions struct {
 	Logger    *logrus.Entry
 }
 
+//SetOptions setter function to set the internal properties of the protecode
 func (pc *Protecode) SetOptions(options ProtecodeOptions) {
 	pc.serverURL = options.ServerURL
 	pc.client = &piperHttp.Client{}
@@ -232,9 +242,7 @@ func (pc *Protecode) sendApiRequest(method string, url string, headers map[strin
 	return &r.Body, err
 }
 
-// #####################################
-// ParseResultForInflux
-
+// ParseResultForInflux parses the result from the scan into the internal format
 func (pc *Protecode) ParseResultForInflux(result Result, protecodeExcludeCVEs string) map[string]int {
 	var m map[string]int = make(map[string]int)
 	m["count"] = 0
@@ -296,10 +304,8 @@ func (pc *Protecode) isSevereCVSS2(vulnerability Vulnerability) bool {
 	return cvss3 == 0 && vulnerability.Vuln.Cvss >= threshold
 }
 
-// #####################################
-// DeleteScan
-
-func (pc *Protecode) DeleteScan(cleanupMode string, productId int) {
+// DeleteScan deletes if configured the scan on the protecode server
+func (pc *Protecode) DeleteScan(cleanupMode string, productID int) {
 
 	switch cleanupMode {
 	case "none":
@@ -307,7 +313,7 @@ func (pc *Protecode) DeleteScan(cleanupMode string, productId int) {
 		return
 	case "complete":
 		pc.logger.Info("Protecode scan successful. Deleting scan from server.")
-		protecodeURL := pc.createURL("/api/product/", fmt.Sprintf("%v/", productId), "")
+		protecodeURL := pc.createURL("/api/product/", fmt.Sprintf("%v/", productID), "")
 		headers := map[string][]string{}
 
 		pc.sendApiRequest("DELETE", protecodeURL, headers)
@@ -318,12 +324,10 @@ func (pc *Protecode) DeleteScan(cleanupMode string, productId int) {
 
 }
 
-// #####################################
-// LoadReport
+// LoadReport loads the report of the protecode scan
+func (pc *Protecode) LoadReport(reportFileName string, productID int) *io.ReadCloser {
 
-func (pc *Protecode) LoadReport(reportFileName string, productId int) *io.ReadCloser {
-
-	protecodeURL := pc.createURL("/api/product/", fmt.Sprintf("%v/pdf-report", productId), "")
+	protecodeURL := pc.createURL("/api/product/", fmt.Sprintf("%v/pdf-report", productID), "")
 	headers := map[string][]string{
 		"Cache-Control": []string{"no-cache, no-store, must-revalidate"},
 		"Pragma":        []string{"no-cache"},
@@ -338,9 +342,7 @@ func (pc *Protecode) LoadReport(reportFileName string, productId int) *io.ReadCl
 	return readCloser
 }
 
-// #####################################
-// UploadScanFile
-
+// UploadScanFile upload the scan file to the protecode server
 func (pc *Protecode) UploadScanFile(cleanupMode, protecodeGroup, filePath string, fileName string) *ResultData {
 	deleteBinary := (cleanupMode == "binary" || cleanupMode == "complete")
 	headers := map[string][]string{"Group": []string{protecodeGroup}, "Delete-Binary": []string{fmt.Sprintf("%v", deleteBinary)}}
@@ -349,9 +351,7 @@ func (pc *Protecode) UploadScanFile(cleanupMode, protecodeGroup, filePath string
 	return pc.getResultData(*r)
 }
 
-// #####################################
-// declareFetchUrl
-
+// DeclareFetchUrl configures the fetch url for the protecode scan
 func (pc *Protecode) DeclareFetchUrl(cleanupMode, protecodeGroup, fetchURL string) *Result {
 	deleteBinary := (cleanupMode == "binary" || cleanupMode == "complete")
 	headers := map[string][]string{"Group": []string{protecodeGroup}, "Delete-Binary": []string{fmt.Sprintf("%v", deleteBinary)}, "Url": []string{fetchURL}, "Content-Type": []string{"application/json"}}
@@ -364,10 +364,8 @@ func (pc *Protecode) DeclareFetchUrl(cleanupMode, protecodeGroup, fetchURL strin
 	return pc.getResult(*r)
 }
 
-// #####################################
-// Pull result
-
-func (pc *Protecode) PollForResult(productId int, verbose bool) ResultData {
+//PollForResult polls the protecode scan for the result scan
+func (pc *Protecode) PollForResult(productID int, verbose bool) ResultData {
 
 	var response ResultData
 	var err error
@@ -379,7 +377,7 @@ func (pc *Protecode) PollForResult(productId int, verbose bool) ResultData {
 
 	for i := ticks; i > 0; i-- {
 
-		response, err = pc.pullResult(productId)
+		response, err = pc.pullResult(productID)
 		if err != nil {
 			ticker.Stop()
 			i = 0
@@ -394,9 +392,9 @@ func (pc *Protecode) PollForResult(productId int, verbose bool) ResultData {
 		select {
 		case t := <-ticker.C:
 			if verbose {
-				pc.logger.Infof("Tick : %v Processing status for productId %v", t, productId)
+				pc.logger.Infof("Tick : %v Processing status for productID %v", t, productID)
 			}
-			response, err = pc.pullResult(productId)
+			response, err = pc.pullResult(productID)
 			if err != nil {
 				ticker.Stop()
 				i = 0
@@ -411,7 +409,7 @@ func (pc *Protecode) PollForResult(productId int, verbose bool) ResultData {
 	}
 
 	if len(response.Result.Components) == 0 || response.Result.Status == "B" {
-		response, err = pc.pullResult(productId)
+		response, err = pc.pullResult(productID)
 		if err != nil || len(response.Result.Components) == 0 || response.Result.Status == "B" {
 			pc.logger.Fatal("Protecode scan failed, no result after polling")
 		}
@@ -420,11 +418,8 @@ func (pc *Protecode) PollForResult(productId int, verbose bool) ResultData {
 	return response
 }
 
-// #####################################
-// Pull result
-
-func (pc *Protecode) pullResult(productId int) (ResultData, error) {
-	protecodeURL, headers := pc.getPullResultRequestData(productId)
+func (pc *Protecode) pullResult(productID int) (ResultData, error) {
+	protecodeURL, headers := pc.getPullResultRequestData(productID)
 
 	return pc.pullResultData(protecodeURL, headers)
 
@@ -440,17 +435,16 @@ func (pc *Protecode) pullResultData(protecodeURL string, headers map[string][]st
 	return *response, nil
 }
 
-func (pc *Protecode) getPullResultRequestData(productId int) (string, map[string][]string) {
-	protecodeURL := pc.createURL("/api/product/", fmt.Sprintf("%v/", productId), "")
+func (pc *Protecode) getPullResultRequestData(productID int) (string, map[string][]string) {
+	protecodeURL := pc.createURL("/api/product/", fmt.Sprintf("%v/", productID), "")
 	headers := map[string][]string{
-		"acceptType": []string{"APPLICATION_JSON"},
+		"acceptType": []string{"application/json"},
 	}
 
 	return protecodeURL, headers
 }
 
-// #####################################
-// Load existing product
+// LoadExistingProduct loads the existing product from protecode service
 func (pc *Protecode) LoadExistingProduct(protecodeGroup, filePath string, reuseExisting bool) int {
 	var productID int = -1
 
@@ -460,7 +454,7 @@ func (pc *Protecode) LoadExistingProduct(protecodeGroup, filePath string, reuseE
 		// by definition we will take the first one and trigger rescan
 		productID = response.Products[0].ProductID
 
-		pc.logger.Infof("re-use existing Protecode scan - file: %v, group: %v, productId: %v", filePath, protecodeGroup, productID)
+		pc.logger.Infof("re-use existing Protecode scan - file: %v, group: %v, productID: %v", filePath, protecodeGroup, productID)
 	}
 
 	return productID
@@ -477,8 +471,7 @@ func (pc *Protecode) getLoadExistiongProductRequestData(protecodeGroup, filePath
 
 	protecodeURL := pc.createURL("/api/apps/", fmt.Sprintf("%v/", protecodeGroup), filePath)
 	headers := map[string][]string{
-		//TODO change to mimetype
-		"acceptType": []string{"APPLICATION_JSON"},
+		"acceptType": []string{"application/json"},
 	}
 
 	return protecodeURL, headers
