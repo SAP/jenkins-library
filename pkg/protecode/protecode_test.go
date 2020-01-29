@@ -171,7 +171,7 @@ func TestParseResultTriaged(t *testing.T) {
 	})
 }
 
-func TestLoadExistingProductByFilenameSuccess(t *testing.T) {
+/*func TestLoadExistingProductByFilenameSuccess(t *testing.T) {
 
 	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 
@@ -206,7 +206,7 @@ func TestLoadExistingProductByFilenameSuccess(t *testing.T) {
 		got := pc.loadExistingProductByFilename(c.protecodeGroup, c.filePath)
 		assert.Equal(t, c.want, got)
 	}
-}
+}*/
 
 func TestLoadExistingProductSuccess(t *testing.T) {
 

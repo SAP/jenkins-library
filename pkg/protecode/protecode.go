@@ -226,15 +226,6 @@ func (pc *Protecode) getProductData(r io.ReadCloser) *ProductData {
 	return response
 }
 
-func (pc *Protecode) uploadFileRequest(url, filePath string, headers map[string][]string) *io.ReadCloser {
-	r, err := pc.client.UploadRequest(http.MethodPut, url, filePath, "file", headers, nil)
-	if err != nil {
-		pc.logger.WithError(err).Fatalf("Protecode scan failed, error during %v upload request", url)
-	}
-
-	return &r.Body
-}
-
 func (pc *Protecode) sendApiRequest(method string, url string, headers map[string][]string) (*io.ReadCloser, error) {
 
 	r, err := pc.client.SendRequest(method, url, nil, headers, nil)
@@ -347,8 +338,13 @@ func (pc *Protecode) UploadScanFile(cleanupMode, protecodeGroup, filePath string
 	deleteBinary := (cleanupMode == "binary" || cleanupMode == "complete")
 	headers := map[string][]string{"Group": []string{protecodeGroup}, "Delete-Binary": []string{fmt.Sprintf("%v", deleteBinary)}}
 
-	r := pc.uploadFileRequest(fmt.Sprintf("%v/api/upload/%v", pc.serverURL, fileName), filePath, headers)
-	return pc.getResultData(*r)
+	url := fmt.Sprintf("%v/api/upload/%v", pc.serverURL, fileName)
+	r, err := pc.client.UploadRequest(http.MethodPut, url, filePath, "file", headers, nil)
+	if err != nil {
+		pc.logger.WithError(err).Fatalf("Protecode scan failed, error during %v upload request", url)
+	}
+
+	return pc.getResultData(r.Body)
 }
 
 // DeclareFetchUrl configures the fetch url for the protecode scan
@@ -421,11 +417,6 @@ func (pc *Protecode) PollForResult(productID int, verbose bool) ResultData {
 func (pc *Protecode) pullResult(productID int) (ResultData, error) {
 	protecodeURL, headers := pc.getPullResultRequestData(productID)
 
-	return pc.pullResultData(protecodeURL, headers)
-
-}
-
-func (pc *Protecode) pullResultData(protecodeURL string, headers map[string][]string) (ResultData, error) {
 	r, err := pc.sendApiRequest(http.MethodGet, protecodeURL, headers)
 	if err != nil {
 		return *new(ResultData), err
@@ -450,7 +441,12 @@ func (pc *Protecode) LoadExistingProduct(protecodeGroup, filePath string, reuseE
 
 	if reuseExisting {
 
-		response := pc.loadExistingProductByFilename(protecodeGroup, filePath)
+		protecodeURL := pc.createURL("/api/apps/", fmt.Sprintf("%v/", protecodeGroup), filePath)
+		headers := map[string][]string{
+			"acceptType": []string{"application/json"},
+		}
+
+		response := pc.loadExisting(protecodeURL, headers)
 		// by definition we will take the first one and trigger rescan
 		productID = response.Products[0].ProductID
 
@@ -458,23 +454,6 @@ func (pc *Protecode) LoadExistingProduct(protecodeGroup, filePath string, reuseE
 	}
 
 	return productID
-}
-
-func (pc *Protecode) loadExistingProductByFilename(protecodeGroup, filePath string) *ProductData {
-
-	protecodeURL, headers := pc.getLoadExistiongProductRequestData(protecodeGroup, filePath)
-
-	return pc.loadExisting(protecodeURL, headers)
-}
-
-func (pc *Protecode) getLoadExistiongProductRequestData(protecodeGroup, filePath string) (string, map[string][]string) {
-
-	protecodeURL := pc.createURL("/api/apps/", fmt.Sprintf("%v/", protecodeGroup), filePath)
-	headers := map[string][]string{
-		"acceptType": []string{"application/json"},
-	}
-
-	return protecodeURL, headers
 }
 
 func (pc *Protecode) loadExisting(protecodeURL string, headers map[string][]string) *ProductData {
