@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -20,16 +19,18 @@ import (
 )
 
 type protecodeData struct {
-	Target                    string `json:"target,omitempty"`
-	Mandatory                 bool   `json:"mandatory,omitempty"`
-	ProductID                 string `json:"productID,omitempty"`
-	ProtecodeServerURL        string `json:"protecodeServerUrl,omitempty"`
-	Count                     string `json:"count,omitempty"`
-	Cvss2GreaterOrEqualSeven  string `json:"cvss2GreaterOrEqualSeven,omitempty"`
-	Cvss3GreaterOrEqualSeven  string `json:"cvss3GreaterOrEqualSeven,omitempty"`
-	ExcludedVulnerabilities   string `json:"excludedVulnerabilities,omitempty"`
-	TriagedVulnerabilities    string `json:"triagedVulnerabilities,omitempty"`
-	HistoricalVulnerabilities string `json:"historicalVulnerabilities,omitempty"`
+	Target                               string `json:"target,omitempty"`
+	Mandatory                            bool   `json:"mandatory,omitempty"`
+	ProductID                            string `json:"productID,omitempty"`
+	ProtecodeServerURL                   string `json:"protecodeServerUrl,omitempty"`
+	ProtecodeFailOnSevereVulnerabilities bool   `json:"protecodeFailOnSevereVulnerabilities,omitempty"`
+	ProtecodeExcludeCVEs                 string `json:"protecodeExcludeCVEs,omitempty"`
+	Count                                string `json:"count,omitempty"`
+	Cvss2GreaterOrEqualSeven             string `json:"cvss2GreaterOrEqualSeven,omitempty"`
+	Cvss3GreaterOrEqualSeven             string `json:"cvss3GreaterOrEqualSeven,omitempty"`
+	ExcludedVulnerabilities              string `json:"excludedVulnerabilities,omitempty"`
+	TriagedVulnerabilities               string `json:"triagedVulnerabilities,omitempty"`
+	HistoricalVulnerabilities            string `json:"historicalVulnerabilities,omitempty"`
 }
 
 func protecodeExecuteScan(config protecodeExecuteScanOptions, influx *protecodeExecuteScanInflux) error {
@@ -50,9 +51,15 @@ func runProtecodeScan(config *protecodeExecuteScanOptions, influx *protecodeExec
 	client := createClient(config)
 
 	if config.Verbose {
-		log.Entry().Info("Protecode scan debug, get docker image")
+		log.Entry().Infof("Protecode scan debug, get docker image: %v, %v, %v, %v", config.ScanImage, config.DockerRegistryURL, config.FilePath, config.IncludeLayers)
 	}
-	fileName := getDockerImage(config, client)
+	fileName, filePath := getDockerImage(config.ScanImage, config.DockerRegistryURL, config.FilePath, config.IncludeLayers)
+	if len(config.FilePath) <= 0 {
+		(*config).FilePath = filePath
+		if config.Verbose {
+			log.Entry().Infof("Protecode scan debug, filepath: %v", config.FilePath)
+		}
+	}
 
 	if config.Verbose {
 		log.Entry().Info("Protecode scan debug, execute protecode scan")
@@ -77,44 +84,47 @@ func runProtecodeScan(config *protecodeExecuteScanOptions, influx *protecodeExec
 	return nil
 }
 
-func getDockerImage(config *protecodeExecuteScanOptions, client protecode.Protecode) string {
-	fileName := config.ScanImage
+var getImage = func(scanImage string, registryURL string, includeLayers bool, cacheImagePath string) pkgutil.Image {
+
+	completeURL := getURLAndFileNameFromDockerImage(scanImage, registryURL)
+	image, err := pkgutil.GetImage(completeURL, includeLayers, cacheImagePath)
+	if err != nil {
+		log.Entry().Fatalf("Protecode scan failed, exception during get docker image %v", err)
+	}
+
+	return image
+}
+
+func getDockerImage(scanImage string, registryURL string, path string, includeLayers bool) (string, string) {
+	fileName := scanImage
 
 	cachePath := "./cache"
 	cacheProtecodeImagePath := "/protecodeImage"
 	cacheImagePath := filepath.Join(cachePath, cacheProtecodeImagePath)
 	os.Mkdir(cacheImagePath, 600)
 
+	image := getImage(scanImage, registryURL, includeLayers, cacheImagePath)
+
 	tarFileName := filepath.Join(cacheImagePath, fileName)
 
-	completeURL, err := getURLAndFileNameFromDockerImage(config)
-	if err != nil {
-		log.Entry().Fatalf("Protecode scan failed, exception during get url creation for get the docker image %v", err)
-	}
+	if !strings.Contains(scanImage, ".tar") {
 
-	image, err := pkgutil.GetImage(completeURL, config.IncludeLayers, cacheImagePath)
-	if err != nil {
-		log.Entry().Fatalf("Protecode scan failed, exception during get docker image %v", err)
-	}
-
-	if !strings.Contains(config.ScanImage, ".tar") {
-		fileName = fmt.Sprintf("%v.tar", strings.ReplaceAll(config.ScanImage, "/", "_"))
+		fileName = fmt.Sprintf("%v.tar", strings.ReplaceAll(scanImage, "/", "_"))
 		tarFileName = filepath.Join(cachePath, fileName)
 
-		if config.Verbose {
-			log.Entry().Info("Protecode scan debug, tar the image")
-		}
 		tarImageData(tarFileName, image, cacheImagePath)
 	}
 
-	if len(config.FilePath) <= 0 {
-		(*config).FilePath = fmt.Sprintf("./%v", filepath.Join("./", tarFileName))
-		if len(config.FilePath) <= 0 {
-			log.Entry().Fatalf("Protecode scan failed, there is no file path configured  : %v (filename:%v, PSPath: %v)", config.FilePath, fileName, image.FSPath)
+	var resultFilePath string
+
+	if len(path) <= 0 {
+		resultFilePath = fmt.Sprintf("./%v", filepath.Join("./", tarFileName))
+		if len(resultFilePath) <= 0 {
+			log.Entry().Fatalf("Protecode scan failed, there is no file path configured  : %v (filename:%v, PSPath: %v)", path, fileName, image.FSPath)
 		}
 	}
 
-	return fileName
+	return fileName, resultFilePath
 }
 
 func tarImageData(tarFileName string, image pkgutil.Image, cacheImagePath string) {
@@ -139,23 +149,23 @@ func tarImageData(tarFileName string, image pkgutil.Image, cacheImagePath string
 	os.RemoveAll(cacheImagePath)
 }
 
-func getURLAndFileNameFromDockerImage(config *protecodeExecuteScanOptions) (string, error) {
+func getURLAndFileNameFromDockerImage(scanImage string, registryURL string) string {
 
-	completeURL := config.ScanImage
+	completeURL := scanImage
 
-	if len(config.DockerRegistryURL) > 0 {
-		if strings.HasSuffix(config.DockerRegistryURL, "/") {
-			completeURL = fmt.Sprintf("remote://%v%v", config.DockerRegistryURL, config.ScanImage)
+	if len(registryURL) > 0 {
+		if strings.HasSuffix(registryURL, "/") {
+			completeURL = fmt.Sprintf("remote://%v%v", registryURL, scanImage)
 		} else {
-			completeURL = fmt.Sprintf("remote://%v/%v", config.DockerRegistryURL, config.ScanImage)
+			completeURL = fmt.Sprintf("remote://%v/%v", registryURL, scanImage)
 		}
 	}
 
 	if len(completeURL) <= 0 {
-		return completeURL, errors.New("Protecode scan failed, there is no scan image configured")
+		log.Entry().Fatal("Protecode scan failed, there is no scan image configured")
 	}
 
-	return completeURL, nil
+	return completeURL
 }
 
 func executeProtecodeScan(client protecode.Protecode, config *protecodeExecuteScanOptions, fileName string, writeReportToFile func(resp io.ReadCloser, reportFileName string) error) (map[string]int, int) {
@@ -225,6 +235,8 @@ func writeReportDataToJSONFile(config *protecodeExecuteScanOptions, result map[s
 
 	protecodeData := protecodeData{}
 	protecodeData.ProtecodeServerURL = config.ProtecodeServerURL
+	protecodeData.ProtecodeFailOnSevereVulnerabilities = config.ProtecodeFailOnSevereVulnerabilities
+	protecodeData.ProtecodeExcludeCVEs = config.ProtecodeExcludeCVEs
 	protecodeData.Target = config.ReportFileName
 	protecodeData.Mandatory = true
 	protecodeData.ProductID = fmt.Sprintf("%v", productID)
@@ -294,7 +306,7 @@ func uploadScanOrDeclareFetch(config protecodeExecuteScanOptions, productID int,
 	return productID
 }
 
-func writeReportToFile(resp io.ReadCloser, reportFileName string) error {
+var writeReportToFile = func(resp io.ReadCloser, reportFileName string) error {
 	f, err := os.Create(reportFileName)
 	if err == nil {
 		defer f.Close()

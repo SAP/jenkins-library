@@ -13,9 +13,79 @@ import (
 	"path/filepath"
 	"time"
 
+	pkgutil "github.com/GoogleContainerTools/container-diff/pkg/util"
 	"github.com/SAP/jenkins-library/pkg/protecode"
 	"github.com/stretchr/testify/assert"
 )
+
+type mockGetDocker struct {
+}
+
+func (p mockGetDocker) GetDockerImage(scanImage string, registryURL string, includeLayers bool, cacheImagePath string) pkgutil.Image {
+
+	return pkgutil.Image{}
+}
+
+func (p mockGetDocker) writeReportToFile(resp io.ReadCloser, reportFileName string) error {
+
+	return nil
+}
+
+func TestRunProtecodeScan(t *testing.T) {
+
+	requestURI := ""
+	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+		requestURI = req.RequestURI
+		var b bytes.Buffer
+
+		if requestURI == "/api/product/4711/" {
+			violations := filepath.Join("testdata/TestProtecode", "protecode_result_violations.json")
+			byteContent, err := ioutil.ReadFile(violations)
+			if err != nil {
+				t.Fatalf("failed reading %v", violations)
+			}
+			response := protecode.ResultData{}
+			err = json.Unmarshal(byteContent, &response)
+
+			json.NewEncoder(&b).Encode(response)
+
+		} else if requestURI == "/api/product/4711/pdf-report" {
+
+		} else {
+			response := protecode.Result{ProductId: 4711, ReportUrl: requestURI}
+			json.NewEncoder(&b).Encode(&response)
+		}
+
+		rw.Write([]byte(b.Bytes()))
+	}))
+
+	// Close the server when test finishes
+	defer server.Close()
+	dir, err := ioutil.TempDir("", "t")
+	if err != nil {
+		t.Fatal("Failed to create temporary directory")
+	}
+	// clean up tmp dir
+	defer os.RemoveAll(dir)
+	testFile, err := ioutil.TempFile(dir, "t.tar")
+	if err != nil {
+		t.FailNow()
+	}
+
+	po := protecode.ProtecodeOptions{ServerURL: server.URL}
+	pc := protecode.Protecode{}
+	pc.SetOptions(po)
+
+	mockGetDocker := mockGetDocker{}
+	getImage = mockGetDocker.GetDockerImage
+	writeReportToFile = mockGetDocker.writeReportToFile
+
+	config := protecodeExecuteScanOptions{ProtecodeServerURL: server.URL, ScanImage: "t.tar", FilePath: testFile.Name(), ProtecodeTimeoutMinutes: "1", ReuseExisting: false, CleanupMode: "none", ProtecodeGroup: "13", FetchURL: "/api/fetch/", ProtecodeExcludeCVEs: "CVE-2018-1, CVE-2017-1000382", ReportFileName: "./cache/report-file.txt", Verbose: true}
+	influx := protecodeExecuteScanInflux{}
+
+	err = runProtecodeScan(&config, &influx)
+	assert.Nil(t, err, "client should not be empty")
+}
 
 func TestCreateClient(t *testing.T) {
 	cases := []struct {
@@ -178,19 +248,17 @@ func TestGetURLAndFileNameFromDockerImage(t *testing.T) {
 	cases := []struct {
 		scanImage   string
 		registryURL string
-		protocol    string
 		want        string
 	}{
-		{"scanImage", "", "", "scanImage"},
-		{"scanImage", "registryURL", "protocol", "remote://registryURL/scanImage"},
-		{"containerScanImage", "containerRegistryUrl", "protocol", "remote://containerRegistryUrl/containerScanImage"},
-		{"containerScanImage", "registryURL", "protocol", "remote://registryURL/containerScanImage"},
+		{"scanImage", "", "scanImage"},
+		{"scanImage", "registryURL", "remote://registryURL/scanImage"},
+		{"containerScanImage", "containerRegistryUrl", "remote://containerRegistryUrl/containerScanImage"},
+		{"containerScanImage", "registryURL", "remote://registryURL/containerScanImage"},
 	}
 
 	for _, c := range cases {
-		config := protecodeExecuteScanOptions{ScanImage: c.scanImage, DockerRegistryURL: c.registryURL, Verbose: true}
 
-		got, _ := getURLAndFileNameFromDockerImage(&config)
+		got := getURLAndFileNameFromDockerImage(c.scanImage, c.registryURL)
 
 		assert.Equal(t, c.want, got)
 	}

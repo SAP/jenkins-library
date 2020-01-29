@@ -76,7 +76,7 @@ type User struct {
 
 type Protecode struct {
 	serverURL string
-	client    *piperHttp.Client
+	client    piperHttp.Uploader
 	duration  time.Duration
 	logger    *logrus.Entry
 }
@@ -87,10 +87,6 @@ type ProtecodeOptions struct {
 	Username  string
 	Password  string
 	Logger    *logrus.Entry
-}
-
-type Wrapper struct {
-	Data string
 }
 
 func (pc *Protecode) SetOptions(options ProtecodeOptions) {
