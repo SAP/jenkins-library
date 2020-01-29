@@ -120,13 +120,11 @@ func TestGetAbapCommunicationArrangementInfo(t *testing.T) {
 			Password:          "testPassword",
 		}
 
-		s := shellMockRunner{}
+		execRunner := execMockRunner{}
 
-		getAbapCommunicationArrangementInfo(config, &s)
-		assert.Equal(t, "/bin/bash", s.shell[0], "Bash shell expected")
-		assert.Equal(t, "cf login -a https://api.endpoint.com -u testUser -p testPassword -o testOrg -s testSpace", s.calls[0])
-		assert.Equal(t, "cf service-key testInstance testServiceKey | awk '{if(NR>1)print}'", s.calls[1])
-
+		getAbapCommunicationArrangementInfo(config, &execRunner)
+		assert.Equal(t, "cf", execRunner.calls[0].exec, "Wrong command")
+		assert.Equal(t, []string{"login", "-a", "https://api.endpoint.com", "-u", "testUser", "-p", "testPassword", "-o", "testOrg", "-s", "testSpace"}, execRunner.calls[0].params, "Wrong parameters")
 	})
 
 	t.Run("Test cf cli command: params missing", func(t *testing.T) {
@@ -140,9 +138,9 @@ func TestGetAbapCommunicationArrangementInfo(t *testing.T) {
 			Password:          "testPassword",
 		}
 
-		s := shellMockRunner{}
+		execRunner := execMockRunner{}
 
-		var _, err = getAbapCommunicationArrangementInfo(config, &s)
+		var _, err = getAbapCommunicationArrangementInfo(config, &execRunner)
 		assert.Equal(t, "Parameters missing. Please provide EITHER the Host of the ABAP server OR the Cloud Foundry ApiEndpoint, Organization, Space, Service Instance and a corresponding Service Key for the Communication Scenario SAP_COM_0510", err.Error(), "Expected error message")
 	})
 
@@ -153,9 +151,9 @@ func TestGetAbapCommunicationArrangementInfo(t *testing.T) {
 			Password: "testPassword",
 		}
 
-		s := shellMockRunner{}
+		execRunner := execMockRunner{}
 
-		var _, err = getAbapCommunicationArrangementInfo(config, &s)
+		var _, err = getAbapCommunicationArrangementInfo(config, &execRunner)
 		assert.Equal(t, "Parameters missing. Please provide EITHER the Host of the ABAP server OR the Cloud Foundry ApiEndpoint, Organization, Space, Service Instance and a corresponding Service Key for the Communication Scenario SAP_COM_0510", err.Error(), "Expected error message")
 	})
 

@@ -3,8 +3,18 @@ metadata:
   description: Pulls a git repository to a SAP Cloud Platform ABAP Environment system
   longDescription: |
     Pulls a git repository (Software Component) to a SAP Cloud Platform ABAP Environment system.
+    Please provide either of the following options:
+      * The host and credentials the Cloud Platform ABAP Environment system itself. The credentials must be configured for the Communication Scenario SAP_COM_0510.
+      * The Cloud Foundry parameters (API endpoint, organization, space), credentials, the service instance for the ABAP service and the service key for the Communication Scenario SAP_COM_0510.
 spec:
   inputs:
+    secrets:
+      - name: credentialsId
+        description: Jenkins credentials ID containing user and password to authenticate to the Cloud Platform ABAP Environment system
+        type: jenkins
+        aliases:
+          - name: cfCredentialsId
+          - name: cloudFoundry/credentialsId
     params:
       - name: user
         type: string
@@ -44,6 +54,8 @@ spec:
         - PARAMETERS
         - STAGES
         - STEPS
+        aliases:
+          - name: cloudFoundry/apiEndpoint
       - name: cfOrg
         type: string
         description: Cloud Foundry target organization
@@ -51,6 +63,8 @@ spec:
         - PARAMETERS
         - STAGES
         - STEPS
+        aliases:
+          - name: cloudFoundry/org
       - name: cfSpace
         type: string
         description: Cloud Foundry target space
@@ -58,6 +72,8 @@ spec:
         - PARAMETERS
         - STAGES
         - STEPS
+        aliases:
+          - name: cloudFoundry/space
       - name: cfServiceInstance
         type: string
         description: Cloud Foundry Service Instance
@@ -65,6 +81,8 @@ spec:
         - PARAMETERS
         - STAGES
         - STEPS
+        aliases:
+          - name: cloudFoundry/serviceInstance
       - name: cfServiceKey
         type: string
         description: Cloud Foundry Service Key
@@ -72,6 +90,8 @@ spec:
         - PARAMETERS
         - STAGES
         - STEPS
+        aliases:
+          - name: cloudFoundry/serviceKey
   containers:
     - name: cf
       image: ppiper/cf-cli
