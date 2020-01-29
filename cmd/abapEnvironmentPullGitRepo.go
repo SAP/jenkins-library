@@ -171,14 +171,14 @@ func readCfServiceKey(config abapEnvironmentPullGitRepoOptions, c execRunner) (s
 	cfReadServiceKeySlice := []string{"service-key", config.CfServiceInstance, config.CfServiceKey}
 	error = c.RunExecutable("cf", cfReadServiceKeySlice...)
 	var lines []string = strings.Split(serviceKeyBytes.String(), "\n")
-	serviceKeyJsonAsString := strings.Join(lines[2:], "")
+	serviceKeyJSON := strings.Join(lines[2:], "")
 	if error != nil {
 		return abapServiceKey, error
 	}
 	log.Entry().WithField("cfServiceInstance", config.CfServiceInstance).WithField("cfServiceKey", config.CfServiceKey).Info("Read service key for service instance")
-	json.Unmarshal([]byte(serviceKeyJsonAsString), &abapServiceKey)
+	json.Unmarshal([]byte(serviceKeyJSON), &abapServiceKey)
 	if abapServiceKey == (serviceKey{}) {
-		return abapServiceKey, errors.New("Parsing the service key failed.")
+		return abapServiceKey, errors.New("Parsing the service key failed")
 	}
 	return abapServiceKey, error
 }
