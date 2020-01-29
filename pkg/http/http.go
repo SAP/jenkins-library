@@ -30,6 +30,7 @@ type ClientOptions struct {
 	Username string
 	Password string
 	Token    string
+	Logger   *logrus.Entry
 }
 
 // Sender provides an interface to the piper http client for uid/pwd and token authenticated requests
@@ -124,11 +125,12 @@ func (c *Client) SetOptions(options ClientOptions) {
 	c.username = options.Username
 	c.password = options.Password
 	c.token = options.Token
-	c.logger = log.Entry().WithField("package", "SAP/jenkins-library/pkg/http")
+	c.logger = options.Logger
 }
 
 func (c *Client) initialize() *http.Client {
 	c.applyDefaults()
+	c.logger = log.Entry().WithField("package", "SAP/jenkins-library/pkg/http")
 
 	var httpClient = &http.Client{
 		Timeout: c.timeout,
@@ -195,5 +197,8 @@ func (c *Client) handleResponse(response *http.Response) (*http.Response, error)
 func (c *Client) applyDefaults() {
 	if c.timeout == 0 {
 		c.timeout = time.Second * 10
+	}
+	if c.logger == nil {
+		c.logger = log.Entry().WithField("package", "SAP/jenkins-library/pkg/http")
 	}
 }
