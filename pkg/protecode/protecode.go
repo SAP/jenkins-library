@@ -102,7 +102,7 @@ type Options struct {
 func (pc *Protecode) SetOptions(options Options) {
 	pc.serverURL = options.ServerURL
 	pc.client = &piperHttp.Client{}
-	pc.duration = (time.Minute * options.Duration)
+	pc.duration = options.Duration
 
 	if options.Logger != nil {
 		pc.logger = options.Logger
@@ -110,7 +110,7 @@ func (pc *Protecode) SetOptions(options Options) {
 		pc.logger = log.Entry().WithField("package", "SAP/jenkins-library/pkg/protecode")
 	}
 
-	httpOptions := piperHttp.ClientOptions{(time.Minute * options.Duration), options.Username, options.Password, "", options.Logger}
+	httpOptions := piperHttp.ClientOptions{options.Duration, options.Username, options.Password, "", options.Logger}
 	pc.client.SetOptions(httpOptions)
 }
 
@@ -361,14 +361,20 @@ func (pc *Protecode) DeclareFetchURL(cleanupMode, protecodeGroup, fetchURL strin
 }
 
 //PollForResult polls the protecode scan for the result scan
-func (pc *Protecode) PollForResult(productID int, verbose bool) ResultData {
+func (pc *Protecode) PollForResult(productID int, timeOutInMinutes string, verbose bool) ResultData {
 
 	var response ResultData
 	var err error
 
 	ticker := time.NewTicker(10 * time.Second)
 	defer ticker.Stop()
-	ticks := pc.duration / time.Second / 10
+
+	var ticks int64 = 6
+	if len(timeOutInMinutes) > 0 {
+		parsedTimeOutInMinutes, _ := strconv.ParseInt(timeOutInMinutes, 10, 64)
+		ticks = parsedTimeOutInMinutes * 6
+	}
+
 	pc.logger.Infof("Poll for result %v times", ticks)
 
 	for i := ticks; i > 0; i-- {
@@ -436,12 +442,12 @@ func (pc *Protecode) getPullResultRequestData(productID int) (string, map[string
 }
 
 // LoadExistingProduct loads the existing product from protecode service
-func (pc *Protecode) LoadExistingProduct(protecodeGroup, filePath string, reuseExisting bool) int {
+func (pc *Protecode) LoadExistingProduct(protecodeGroup string, reuseExisting bool) int {
 	var productID int = -1
 
 	if reuseExisting {
 
-		protecodeURL := pc.createURL("/api/apps/", fmt.Sprintf("%v/", protecodeGroup), filePath)
+		protecodeURL := pc.createURL("/api/apps/", fmt.Sprintf("%v/", protecodeGroup), "")
 		headers := map[string][]string{
 			"acceptType": []string{"application/json"},
 		}
@@ -450,7 +456,7 @@ func (pc *Protecode) LoadExistingProduct(protecodeGroup, filePath string, reuseE
 		// by definition we will take the first one and trigger rescan
 		productID = response.Products[0].ProductID
 
-		pc.logger.Infof("re-use existing Protecode scan - file: %v, group: %v, productID: %v", filePath, protecodeGroup, productID)
+		pc.logger.Infof("re-use existing Protecode scan - group: %v, productID: %v", protecodeGroup, productID)
 	}
 
 	return productID

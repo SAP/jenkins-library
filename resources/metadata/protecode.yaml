@@ -227,4 +227,3 @@ spec:
               - name: vulnerabilities
   containers:
   - image: null
-  

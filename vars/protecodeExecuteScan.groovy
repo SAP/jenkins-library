@@ -1,5 +1,4 @@
 import com.sap.piper.GenerateDocumentation
-import com.sap.piper.internal.Deprecate
 import com.sap.piper.DockerUtils
 import com.sap.piper.JenkinsUtils
 import com.sap.piper.internal.Notify

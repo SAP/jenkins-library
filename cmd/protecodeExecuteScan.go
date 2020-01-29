@@ -107,7 +107,7 @@ func getDockerImage(scanImage string, registryURL string, path string, includeLa
 
 	tarFileName := filepath.Join(cacheImagePath, fileName)
 
-	if !strings.Contains(scanImage, ".tar") {
+	if !pkgutil.IsTar(scanImage) {
 
 		fileName = fmt.Sprintf("%v.tar", strings.ReplaceAll(scanImage, "/", "_"))
 		tarFileName = filepath.Join(cachePath, fileName)
@@ -175,7 +175,7 @@ func executeProtecodeScan(client protecode.Protecode, config *protecodeExecuteSc
 	if config.Verbose {
 		log.Entry().Info("Protecode scan debug, load existing product")
 	}
-	productID := client.LoadExistingProduct(config.ProtecodeGroup, config.FilePath, config.ReuseExisting)
+	productID := client.LoadExistingProduct(config.ProtecodeGroup, config.ReuseExisting)
 
 	// check if no existing is found or reuse existing is false
 	productID = uploadScanOrDeclareFetch(*config, productID, client, fileName)
@@ -186,7 +186,7 @@ func executeProtecodeScan(client protecode.Protecode, config *protecodeExecuteSc
 	if config.Verbose {
 		log.Entry().Info("Protecode scan debug, poll for scan result")
 	}
-	result := client.PollForResult(productID, config.Verbose)
+	result := client.PollForResult(productID, config.ProtecodeTimeoutMinutes, config.Verbose)
 
 	jsonData, _ := json.Marshal(result)
 	ioutil.WriteFile("Vulns.json", jsonData, 0644)

@@ -193,16 +193,15 @@ func TestLoadExistingProductSuccess(t *testing.T) {
 	cases := []struct {
 		pc             Protecode
 		protecodeGroup string
-		filePath       string
 		reuseExisting  bool
 		want           int
 	}{
-		{Protecode{serverURL: server.URL, client: client, logger: log.Entry().WithField("package", "SAP/jenkins-library/pkg/protecode")}, "group", "filePath", true, 1},
-		{Protecode{serverURL: server.URL, client: client}, "group32", "filePath", false, -1},
+		{Protecode{serverURL: server.URL, client: client, logger: log.Entry().WithField("package", "SAP/jenkins-library/pkg/protecode")}, "group", true, 1},
+		{Protecode{serverURL: server.URL, client: client}, "group32", false, -1},
 	}
 	for _, c := range cases {
 
-		got := c.pc.LoadExistingProduct(c.protecodeGroup, c.filePath, c.reuseExisting)
+		got := c.pc.LoadExistingProduct(c.protecodeGroup, c.reuseExisting)
 		assert.Equal(t, c.want, got)
 	}
 }
@@ -260,7 +259,7 @@ func TestPollForResultSuccess(t *testing.T) {
 	pc := Protecode{serverURL: server.URL, client: client, duration: (time.Minute * 1), logger: log.Entry().WithField("package", "SAP/jenkins-library/pkg/protecode")}
 
 	for _, c := range cases {
-		got := pc.PollForResult(c.productID, false)
+		got := pc.PollForResult(c.productID, "1", false)
 		assert.Equal(t, c.want, got)
 		assert.Equal(t, fmt.Sprintf("/api/product/%v/", c.productID), requestURI)
 	}
