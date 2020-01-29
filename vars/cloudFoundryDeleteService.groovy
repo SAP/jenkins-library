@@ -8,7 +8,7 @@ import groovy.transform.Field
 
 import static com.sap.piper.Prerequisites.checkScript
 
-@Field String STEP_NAME = 'cloudFoundryCreateService'
+@Field String STEP_NAME = 'cloudFoundryDeleteService'
 
 @Field Set STEP_CONFIG_KEYS = [
     'cloudFoundry',
@@ -66,11 +66,11 @@ void call(Map parameters = [:]) {
             .withMandatoryProperty('cloudFoundry/serviceInstance')
             .use()
 
-        executeCreateServicePush(script, config)
+        deleteService(script, config)
     }
 }
 
-private def executeCreateServicePush(script, Map config) {
+private def deleteService(script, Map config) {
     dockerExecute(script:script,dockerImage: config.dockerImage, dockerWorkspace: config.dockerWorkspace) {
         withCredentials([
             usernamePassword(credentialsId: config.cloudFoundry.credentialsId, passwordVariable: 'CF_PASSWORD', usernameVariable: 'CF_USERNAME')
