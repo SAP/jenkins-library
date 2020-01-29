@@ -25,8 +25,5 @@ jobs:
     - name: cleanup dependencies
       run: go mod tidy
 
-    - name: dummy change
-      run: echo tests >> Dockerfile
-
     - name: verify
       run: git diff --name-only --exit-code
