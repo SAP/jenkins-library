@@ -37,7 +37,7 @@ func abapEnvironmentPullGitRepo(config abapEnvironmentPullGitRepoOptions) error 
 	}
 
 	var status, er = pollEntity(config, uriConnectionDetails, &client, 10*time.Second)
-	if status == "E" || err != nil {
+	if status == "E" || er != nil {
 		log.Entry().WithError(er).Fatal("Pull failed on the ABAP System")
 	}
 
@@ -139,8 +139,7 @@ func getAbapCommunicationArrangementInfo(config abapEnvironmentPullGitRepoOption
 		// Url, User and Password should be read from a cf service key
 		var abapServiceKey, error = readCfServiceKey(config, c)
 		if error != nil {
-			log.Entry().Error(error)
-			return connectionDetails, error
+			return connectionDetails, errors.Wrap(error, "Read service key failed")
 		}
 		connectionDetails.URL = abapServiceKey.URL + "/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY/Pull"
 		connectionDetails.User = abapServiceKey.Abap.Username
