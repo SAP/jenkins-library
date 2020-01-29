@@ -8,23 +8,22 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      
+    - uses: actions/setup-go@v1
+      with:
+        go-version: '1.13.x'
+
     - name: checkout
       uses: actions/checkout@v2
 
     - name: generate
-      uses: actions-contrib/go@v0.1.0
-      with:
-        args: run pkg/generator/step-metadata.go
+      run: go run pkg/generator/step-metadata.go
 
     - name: format
-      uses: actions-contrib/go@v0.1.0
-      with:
-        args: fmt
+      run: go fmt
 
     - name: cleanup dependencies
-      uses: actions-contrib/go@v0.1.0
-      with:
-        args: mod tidy
+      run: go mod tidy
         
     - name: dummy change
       run: echo tests >> Dockerfile
