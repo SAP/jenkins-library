@@ -28,7 +28,9 @@ class commonPipelineEnvironment implements Serializable {
     private Map appContainerProperties = [:]
 
     Map configuration = [:]
+    Map containerProperties = [:]
     Map defaultConfiguration = [:]
+
 
     String mtarFilePath
     private Map valueMap = [:]
@@ -48,6 +50,7 @@ class commonPipelineEnvironment implements Serializable {
         artifactVersion = null
 
         configuration = [:]
+        containerProperties = [:]
 
         gitCommitId = null
         gitCommitMessage = null
@@ -72,6 +75,14 @@ class commonPipelineEnvironment implements Serializable {
 
     def getAppContainerProperty(property) {
         return appContainerProperties[property]
+    }
+
+    def setContainerProperty(property, value) {
+        containerProperties[property] = value
+    }
+
+    def getContainerProperty(property) {
+        return containerProperties[property]
     }
 
     // goes into measurement jenkins_custom_data
@@ -159,6 +170,14 @@ class commonPipelineEnvironment implements Serializable {
         files.each({f  ->
             if (this[f.property] && !script.fileExists(f.filename)) {
                 script.writeFile file: f.filename, text: this[f.property]
+            }
+        })
+
+        containerProperties.each({key, value ->
+            def fileName = ".pipeline/commonPipelineEnvironment/container/${key}"
+            if (value && !script.fileExists(fileName)) {
+                //ToDo: check for value type and act accordingly?
+                script.writeFile file: fileName, text: value
             }
         })
 
