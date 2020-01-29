@@ -33,7 +33,6 @@ const stepGoTemplate = `package cmd
 
 import (
 	{{ if .OSImport }}"os"{{ end }}
-	{{ if .OutputResources }}"fmt"{{ end }}
 	{{ if .OutputResources }}"path/filepath"{{ end }}
 
 	{{ if .ExportPrefix}}{{ .ExportPrefix }} "github.com/SAP/jenkins-library/cmd"{{ end -}}

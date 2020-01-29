@@ -153,7 +153,7 @@ func (i *{{ .StepName }}{{ .Name | title}}) persist(path, resourceName string) {
 
 	errCount := 0
 	for _, metric := range measurementContent {
-		err := piperenv.SetResourceParameter(path, resourceName, filepath.Join(metric.measurement, fmt.Sprintf("%vs", metric.valType), metric.name), metric.value)
+		err := piperenv.SetResourceParameter(path, resourceName, filepath.Join(metric.measurement, metric.valType + "s", metric.name), metric.value)
 		if err != nil {
 			log.Entry().WithError(err).Error("Error persisting influx environment.")
 			errCount++
