@@ -20,7 +20,7 @@ jobs:
       run: go run pkg/generator/step-metadata.go
 
     - name: format
-      run: go fmt
+      run: go fmt ./...
 
     - name: cleanup dependencies
       run: go mod tidy
