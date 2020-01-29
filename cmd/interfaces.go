@@ -7,13 +7,6 @@ import (
 type execRunner interface {
 	RunExecutable(e string, p ...string) error
 	Dir(d string)
-	Stdout(out io.Writer)
-	Stderr(err io.Writer)
-}
-
-type envExecRunner interface {
-	RunExecutable(e string, p ...string) error
-	Dir(d string)
 	Env(e []string)
 	Stdout(out io.Writer)
 	Stderr(err io.Writer)

@@ -22,7 +22,7 @@ func kubernetesDeploy(config kubernetesDeployOptions) error {
 	return nil
 }
 
-func runKubernetesDeploy(config kubernetesDeployOptions, command envExecRunner, stdout io.Writer) {
+func runKubernetesDeploy(config kubernetesDeployOptions, command execRunner, stdout io.Writer) {
 	if config.DeployTool == "helm" {
 		runHelmDeploy(config, command, stdout)
 	} else {
@@ -30,7 +30,7 @@ func runKubernetesDeploy(config kubernetesDeployOptions, command envExecRunner, 
 	}
 }
 
-func runHelmDeploy(config kubernetesDeployOptions, command envExecRunner, stdout io.Writer) {
+func runHelmDeploy(config kubernetesDeployOptions, command execRunner, stdout io.Writer) {
 	_, containerRegistry, err := splitRegistryURL(config.ContainerRegistryURL)
 	if err != nil {
 		log.Entry().WithError(err).Fatalf("Container registry url '%v' incorrect", config.ContainerRegistryURL)
@@ -130,7 +130,7 @@ func runHelmDeploy(config kubernetesDeployOptions, command envExecRunner, stdout
 
 }
 
-func runKubectlDeploy(config kubernetesDeployOptions, command envExecRunner) {
+func runKubectlDeploy(config kubernetesDeployOptions, command execRunner) {
 	_, containerRegistry, err := splitRegistryURL(config.ContainerRegistryURL)
 	if err != nil {
 		log.Entry().WithError(err).Fatalf("Container registry url '%v' incorrect", config.ContainerRegistryURL)
