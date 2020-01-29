@@ -6,25 +6,58 @@ import (
 )
 
 func TestCloudFoundryDeleteService2(t *testing.T) {
-	s := shellMockRunner{}
+	execRunner := execMockRunner{}
+	/*
+		t.Run("Shell: success case", func(t *testing.T) {
+			assert.Equal(t, ".", execRunner.dir, "Wrong execution directory used")
+			//assert.Equal(t, "/bin/bash", execRunner..shell[0], "Bash shell expected")
+		})*/
 	t.Run("CF Login: success case", func(t *testing.T) {
-		config := [...]string{"https://api.endpoint.com", "testOrg", "testSpace", "testUser", "testPassword"}
-		error := cloudFoundryLogin(config, &s)
+		config := cloudFoundryDeleteServiceOptions{
+			API:          "https://api.endpoint.com",
+			Organisation: "testOrg",
+			Space:        "testSpace",
+			Username:     "testUser",
+			Password:     "testPassword",
+		}
+		error := cloudFoundryLogin(config, &execRunner)
 		if error == nil {
-			assert.Equal(t, "cf login -a https://api.endpoint.com -o testOrg -s testSpace -u testUser -p testPassword", s.calls[0])
+			assert.Equal(t, "cf", execRunner.calls[0].exec)
+			assert.Equal(t, "login", execRunner.calls[0].params[0])
+			assert.Equal(t, "-a", execRunner.calls[0].params[1])
+			assert.Equal(t, "https://api.endpoint.com", execRunner.calls[0].params[2])
+			assert.Equal(t, "-o", execRunner.calls[0].params[3])
+			assert.Equal(t, "testOrg", execRunner.calls[0].params[4])
+			assert.Equal(t, "-s", execRunner.calls[0].params[5])
+			assert.Equal(t, "testSpace", execRunner.calls[0].params[6])
+			assert.Equal(t, "-u", execRunner.calls[0].params[7])
+			assert.Equal(t, "testUser", execRunner.calls[0].params[8])
+			assert.Equal(t, "-p", execRunner.calls[0].params[9])
+			assert.Equal(t, "testPassword", execRunner.calls[0].params[10])
 		}
 	})
 	t.Run("CF Delete Service: Success case", func(t *testing.T) {
 		ServiceName := "testInstance"
-		error := cloudFoundryDeleteServiceFunction(ServiceName, &s)
+		error := cloudFoundryDeleteServiceFunction(ServiceName, &execRunner)
 		if error == nil {
-			assert.Equal(t, "cf delete-service testInstance -f", s.calls[1])
+			assert.Equal(t, "cf", execRunner.calls[1].exec)
+			assert.Equal(t, "delete-service", execRunner.calls[1].params[0])
+			assert.Equal(t, "testInstance", execRunner.calls[1].params[1])
+			assert.Equal(t, "-f", execRunner.calls[1].params[2])
 		}
 	})
 	t.Run("CF Logout: Success case", func(t *testing.T) {
-		error := cloudFoundryLogout(&s)
+		error := cloudFoundryLogout(&execRunner)
 		if error == nil {
-			assert.Equal(t, "cf logout", s.calls[2])
+			assert.Equal(t, "cf", execRunner.calls[2].exec)
+			assert.Equal(t, "logout", execRunner.calls[2].params[0])
 		}
 	})
+	/*
+		t.Run("CF Logout: Success case", func(t *testing.T) {
+			error := cloudFoundryLogout(&execRunner)
+			if error == nil {
+				assert.Equal(t, "cf logout", execRunner.calls[2])
+			}
+		})*/
 }

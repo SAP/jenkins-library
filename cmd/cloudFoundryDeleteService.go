@@ -19,9 +19,7 @@ func cloudFoundryDeleteService(CloudFoundryDeleteServiceOptions cloudFoundryDele
 		c.Stdout(log.Entry().Writer())
 		c.Stderr(log.Entry().Writer())
 
-		cfloginconfig := [...]string{CloudFoundryDeleteServiceOptions.API, CloudFoundryDeleteServiceOptions.Organisation, CloudFoundryDeleteServiceOptions.Space, CloudFoundryDeleteServiceOptions.Username, CloudFoundryDeleteServiceOptions.Password}
-
-		cloudFoundryLogin(cfloginconfig, &c)
+		cloudFoundryLogin(CloudFoundryDeleteServiceOptions, &c)
 		cloudFoundryDeleteServiceFunction(CloudFoundryDeleteServiceOptions.ServiceName, &c)
 		cloudFoundryLogout(&c)
 
@@ -29,12 +27,12 @@ func cloudFoundryDeleteService(CloudFoundryDeleteServiceOptions cloudFoundryDele
 	}
 }
 
-func cloudFoundryLogin(loginconfig [5]string, c shellRunner) error {
-	var cfLoginScript = "cf login -a " + loginconfig[0] + " -o " + loginconfig[1] + " -s " + loginconfig[2] + " -u " + loginconfig[3] + " -p " + loginconfig[4]
+func cloudFoundryLogin(CloudFoundryDeleteServiceOptions cloudFoundryDeleteServiceOptions, c execRunner) error {
+	var cfLoginScript = []string{"login", "-a", CloudFoundryDeleteServiceOptions.API, "-o", CloudFoundryDeleteServiceOptions.Organisation, "-s", CloudFoundryDeleteServiceOptions.Space, "-u", CloudFoundryDeleteServiceOptions.Username, "-p", CloudFoundryDeleteServiceOptions.Password}
 
-	log.Entry().WithField("cfAPI:", loginconfig[0]).WithField("cfOrg", loginconfig[1]).WithField("space", loginconfig[2]).Info("Logging into Cloud Foundry..")
+	log.Entry().WithField("cfAPI:", CloudFoundryDeleteServiceOptions.API).WithField("cfOrg", CloudFoundryDeleteServiceOptions.Organisation).WithField("space", CloudFoundryDeleteServiceOptions.Space).Info("Logging into Cloud Foundry..")
 
-	err := c.RunShell("/bin/bash", cfLoginScript)
+	err := c.RunExecutable("cf", cfLoginScript...)
 	if err != nil {
 		log.Entry().
 			WithError(err).
@@ -44,12 +42,12 @@ func cloudFoundryLogin(loginconfig [5]string, c shellRunner) error {
 	return err
 }
 
-func cloudFoundryDeleteServiceFunction(service string, c shellRunner) error {
-	var cfdeleteServiceScript = "cf delete-service " + service + " -f"
+func cloudFoundryDeleteServiceFunction(service string, c execRunner) error {
+	var cfdeleteServiceScript = []string{"delete-service", service, "-f"}
 
 	log.Entry().WithField("cfService", service).Info("Deleting the requested Service")
 
-	err := c.RunShell("/bin/bash", cfdeleteServiceScript)
+	err := c.RunExecutable("cf", cfdeleteServiceScript...)
 	if err != nil {
 		log.Entry().
 			WithError(err).
@@ -59,12 +57,12 @@ func cloudFoundryDeleteServiceFunction(service string, c shellRunner) error {
 	return err
 }
 
-func cloudFoundryLogout(c shellRunner) error {
-	var cfLogoutScript = "cf logout"
+func cloudFoundryLogout(c execRunner) error {
+	var cfLogoutScript = "logout"
 
 	log.Entry().Info("Logging out of Cloud Foundry")
 
-	err := c.RunShell("/bin/bash", cfLogoutScript)
+	err := c.RunExecutable("cf", cfLogoutScript)
 	if err != nil {
 		log.Entry().
 			WithError(err).
