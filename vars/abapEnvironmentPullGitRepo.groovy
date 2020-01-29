@@ -22,8 +22,6 @@ void call(Map parameters = [:]) {
             .mixin(parameters, configKeys)
             .use()
 
-        def dockerImage = config.dockerImage ?: (projectConfig.dockerImage ?: (config.docker?.dockerImage ?: contextConfig.dockerImage))
-
         Map config
         def utils = parameters.juStabUtils ?: new Utils()
         parameters.juStabUtils = null
