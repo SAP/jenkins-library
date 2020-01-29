@@ -52,7 +52,7 @@ func TestRunProtecodeScan(t *testing.T) {
 		} else if requestURI == "/api/product/4711/pdf-report" {
 
 		} else {
-			response := protecode.Result{ProductId: 4711, ReportUrl: requestURI}
+			response := protecode.Result{ProductID: 4711, ReportURL: requestURI}
 			json.NewEncoder(&b).Encode(&response)
 		}
 
@@ -133,13 +133,13 @@ func TestUploadScanOrDeclareFetch(t *testing.T) {
 		requestURI = req.RequestURI
 
 		if requestURI == "/api/fetch/" {
-			response := protecode.Result{ProductId: 4711, ReportUrl: requestURI}
+			response := protecode.Result{ProductID: 4711, ReportURL: requestURI}
 
 			var b bytes.Buffer
 			json.NewEncoder(&b).Encode(&response)
 			rw.Write([]byte(b.Bytes()))
 		} else {
-			response := protecode.ResultData{Result: protecode.Result{ProductId: 4711, ReportUrl: requestURI}}
+			response := protecode.ResultData{Result: protecode.Result{ProductID: 4711, ReportURL: requestURI}}
 
 			var b bytes.Buffer
 			json.NewEncoder(&b).Encode(&response)
@@ -204,7 +204,7 @@ func TestExecuteProtecodeScan(t *testing.T) {
 		} else if requestURI == "/api/product/4711/pdf-report" {
 
 		} else {
-			response := protecode.Result{ProductId: 4711, ReportUrl: requestURI}
+			response := protecode.Result{ProductID: 4711, ReportURL: requestURI}
 			json.NewEncoder(&b).Encode(&response)
 		}
 

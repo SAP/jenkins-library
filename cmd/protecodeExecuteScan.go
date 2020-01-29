@@ -289,7 +289,7 @@ func uploadScanOrDeclareFetch(config protecodeExecuteScanOptions, productID int,
 				log.Entry().Info("Protecode scan debug, declare fetch url")
 			}
 			resultData := client.DeclareFetchUrl(config.CleanupMode, config.ProtecodeGroup, config.FetchURL)
-			productID = resultData.ProductId
+			productID = resultData.ProductID
 
 		} else {
 			if config.Verbose {
@@ -299,7 +299,7 @@ func uploadScanOrDeclareFetch(config protecodeExecuteScanOptions, productID int,
 				log.Entry().Fatalf("Protecode scan failed, there is no file path configured for upload : %v", config.FilePath)
 			}
 			resultData := client.UploadScanFile(config.CleanupMode, config.ProtecodeGroup, config.FilePath, filaName)
-			productID = resultData.Result.ProductId
+			productID = resultData.Result.ProductID
 		}
 	}
 

@@ -23,7 +23,7 @@ type ProductData struct {
 }
 
 type Product struct {
-	ProductId int `json:"product_id"`
+	ProductID int `json:"product_id"`
 }
 
 type ResultData struct {
@@ -31,8 +31,8 @@ type ResultData struct {
 }
 
 type Result struct {
-	ProductId  int         `json:"product_id"`
-	ReportUrl  string      `json:"report_url"`
+	ProductID  int         `json:"product_id"`
+	ReportURL  string      `json:"report_url"`
 	Status     string      `json:"status"`
 	Components []Component `json:"components,omitempty"`
 }
@@ -54,8 +54,8 @@ type Vuln struct {
 }
 
 type Triage struct {
-	Id          int    `json:"id"`
-	VulnId      string `json:"vuln_id"`
+	ID          int    `json:"id"`
+	VulnID      string `json:"vuln_id"`
 	Component   string `json:"component"`
 	Vendor      string `json:"vendor"`
 	Codetype    string `json:"codetype"`
@@ -67,7 +67,7 @@ type Triage struct {
 }
 
 type User struct {
-	Id        int    `json:"id"`
+	ID        int    `json:"id"`
 	Email     string `json:"email"`
 	Girstname string `json:"firstname"`
 	Lastname  string `json:"lastname"`
@@ -104,7 +104,7 @@ func (pc *Protecode) SetOptions(options ProtecodeOptions) {
 	pc.client.SetOptions(httpOptions)
 }
 
-func (pc *Protecode) createUrl(path string, pValue string, fParam string) string {
+func (pc *Protecode) createURL(path string, pValue string, fParam string) string {
 
 	protecodeUrl, err := url.Parse(pc.serverURL)
 	if err != nil {
@@ -307,7 +307,7 @@ func (pc *Protecode) DeleteScan(cleanupMode string, productId int) {
 		return
 	case "complete":
 		pc.logger.Info("Protecode scan successful. Deleting scan from server.")
-		protecodeURL := pc.createUrl("/api/product/", fmt.Sprintf("%v/", productId), "")
+		protecodeURL := pc.createURL("/api/product/", fmt.Sprintf("%v/", productId), "")
 		headers := map[string][]string{}
 
 		pc.sendApiRequest("DELETE", protecodeURL, headers)
@@ -323,7 +323,7 @@ func (pc *Protecode) DeleteScan(cleanupMode string, productId int) {
 
 func (pc *Protecode) LoadReport(reportFileName string, productId int) *io.ReadCloser {
 
-	protecodeURL := pc.createUrl("/api/product/", fmt.Sprintf("%v/pdf-report", productId), "")
+	protecodeURL := pc.createURL("/api/product/", fmt.Sprintf("%v/pdf-report", productId), "")
 	headers := map[string][]string{
 		"Cache-Control": []string{"no-cache, no-store, must-revalidate"},
 		"Pragma":        []string{"no-cache"},
@@ -441,7 +441,7 @@ func (pc *Protecode) pullResultData(protecodeURL string, headers map[string][]st
 }
 
 func (pc *Protecode) getPullResultRequestData(productId int) (string, map[string][]string) {
-	protecodeURL := pc.createUrl("/api/product/", fmt.Sprintf("%v/", productId), "")
+	protecodeURL := pc.createURL("/api/product/", fmt.Sprintf("%v/", productId), "")
 	headers := map[string][]string{
 		"acceptType": []string{"APPLICATION_JSON"},
 	}
@@ -452,18 +452,18 @@ func (pc *Protecode) getPullResultRequestData(productId int) (string, map[string
 // #####################################
 // Load existing product
 func (pc *Protecode) LoadExistingProduct(protecodeGroup, filePath string, reuseExisting bool) int {
-	var productId int = -1
+	var productID int = -1
 
 	if reuseExisting {
 
 		response := pc.loadExistingProductByFilename(protecodeGroup, filePath)
 		// by definition we will take the first one and trigger rescan
-		productId = response.Products[0].ProductId
+		productID = response.Products[0].ProductID
 
-		pc.logger.Infof("re-use existing Protecode scan - file: %v, group: %v, productId: %v", filePath, protecodeGroup, productId)
+		pc.logger.Infof("re-use existing Protecode scan - file: %v, group: %v, productId: %v", filePath, protecodeGroup, productID)
 	}
 
-	return productId
+	return productID
 }
 
 func (pc *Protecode) loadExistingProductByFilename(protecodeGroup, filePath string) *ProductData {
@@ -475,7 +475,7 @@ func (pc *Protecode) loadExistingProductByFilename(protecodeGroup, filePath stri
 
 func (pc *Protecode) getLoadExistiongProductRequestData(protecodeGroup, filePath string) (string, map[string][]string) {
 
-	protecodeURL := pc.createUrl("/api/apps/", fmt.Sprintf("%v/", protecodeGroup), filePath)
+	protecodeURL := pc.createURL("/api/apps/", fmt.Sprintf("%v/", protecodeGroup), filePath)
 	headers := map[string][]string{
 		//TODO change to mimetype
 		"acceptType": []string{"APPLICATION_JSON"},

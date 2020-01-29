@@ -26,9 +26,9 @@ func TestGetResult(t *testing.T) {
 		give string
 		want Result
 	}{
-		{`"{}"`, Result{ProductId: 0}},
-		{`{"product_id": 1}`, Result{ProductId: 1}},
-		{`"{\"product_id\": 4711}"`, Result{ProductId: 4711}},
+		{`"{}"`, Result{ProductID: 0}},
+		{`{"product_id": 1}`, Result{ProductID: 1}},
+		{`"{\"product_id\": 4711}"`, Result{ProductID: 4711}},
 	}
 	pc := Protecode{}
 	for _, c := range cases {
@@ -44,8 +44,8 @@ func TestGetResultData(t *testing.T) {
 		give string
 		want ResultData
 	}{
-		{"{\"results\": {\"product_id\": 1}}", ResultData{Result: Result{ProductId: 1}}},
-		{`{"results": {"status": "B", "id": 209396, "product_id": 209396, "report_url": "https://protecode.c.eu-de-2.cloud.sap/products/209396/"}}`, ResultData{Result: Result{ProductId: 209396, Status: "B", ReportUrl: "https://protecode.c.eu-de-2.cloud.sap/products/209396/"}}},
+		{"{\"results\": {\"product_id\": 1}}", ResultData{Result: Result{ProductID: 1}}},
+		{`{"results": {"status": "B", "id": 209396, "product_id": 209396, "report_url": "https://protecode.c.eu-de-2.cloud.sap/products/209396/"}}`, ResultData{Result: Result{ProductID: 209396, Status: "B", ReportURL: "https://protecode.c.eu-de-2.cloud.sap/products/209396/"}}},
 	}
 	pc := Protecode{}
 	for _, c := range cases {
@@ -62,7 +62,7 @@ func TestGetProductData(t *testing.T) {
 		give string
 		want ProductData
 	}{
-		{`{"products": [{"product_id": 1}]}`, ProductData{Products: []Product{{ProductId: 1}}}},
+		{`{"products": [{"product_id": 1}]}`, ProductData{Products: []Product{{ProductID: 1}}}},
 	}
 	pc := Protecode{}
 	for _, c := range cases {
@@ -76,13 +76,13 @@ func TestGetProductData(t *testing.T) {
 func TestParseResultSuccess(t *testing.T) {
 
 	var result Result = Result{
-		ProductId: 4712,
-		ReportUrl: "ReportUrl",
+		ProductID: 4712,
+		ReportURL: "ReportUrl",
 		Status:    "B",
 		Components: []Component{
 			{Vulns: []Vulnerability{
 				{Exact: true, Triage: []Triage{}, Vuln: Vuln{Cve: "Cve1", Cvss: 7.2, Cvss3Score: "0.0"}},
-				{Exact: true, Triage: []Triage{{Id: 1}}, Vuln: Vuln{Cve: "Cve2", Cvss: 2.2, Cvss3Score: "2.3"}},
+				{Exact: true, Triage: []Triage{{ID: 1}}, Vuln: Vuln{Cve: "Cve2", Cvss: 2.2, Cvss3Score: "2.3"}},
 				{Exact: true, Triage: []Triage{}, Vuln: Vuln{Cve: "Cve2b", Cvss: 0.0, Cvss3Score: "0.0"}},
 			},
 			},
@@ -177,7 +177,7 @@ func TestLoadExistingProductByFilenameSuccess(t *testing.T) {
 
 		response := ProductData{
 			Products: []Product{
-				{ProductId: 1}},
+				{ProductID: 1}},
 		}
 
 		var b bytes.Buffer
@@ -197,9 +197,9 @@ func TestLoadExistingProductByFilenameSuccess(t *testing.T) {
 		want           *ProductData
 	}{
 		{"filePath", "group", &ProductData{
-			Products: []Product{{ProductId: 1}}}},
+			Products: []Product{{ProductID: 1}}}},
 		{"filePäth!", "group32", &ProductData{
-			Products: []Product{{ProductId: 1}}}},
+			Products: []Product{{ProductID: 1}}}},
 	}
 	for _, c := range cases {
 
@@ -214,7 +214,7 @@ func TestLoadExistingProductSuccess(t *testing.T) {
 
 		response := ProductData{
 			Products: []Product{
-				{ProductId: 1}},
+				{ProductID: 1}},
 		}
 
 		var b bytes.Buffer
@@ -257,9 +257,9 @@ func TestPollForResultSuccess(t *testing.T) {
 			productID = 222
 		}
 
-		response = ResultData{Result: Result{ProductId: productID, ReportUrl: requestURI, Status: "D", Components: []Component{
+		response = ResultData{Result: Result{ProductID: productID, ReportURL: requestURI, Status: "D", Components: []Component{
 			{Vulns: []Vulnerability{
-				{Triage: []Triage{{Id: 1}}}},
+				{Triage: []Triage{{ID: 1}}}},
 			}},
 		}}
 
@@ -278,14 +278,14 @@ func TestPollForResultSuccess(t *testing.T) {
 		productID int
 		want      ResultData
 	}{
-		{111, ResultData{Result: Result{ProductId: 111, ReportUrl: "/api/product/111/", Status: "D", Components: []Component{
+		{111, ResultData{Result: Result{ProductID: 111, ReportURL: "/api/product/111/", Status: "D", Components: []Component{
 			{Vulns: []Vulnerability{
-				{Triage: []Triage{{Id: 1}}}},
+				{Triage: []Triage{{ID: 1}}}},
 			}},
 		}}},
-		{222, ResultData{Result: Result{ProductId: 222, ReportUrl: "/api/product/222/", Status: "D", Components: []Component{
+		{222, ResultData{Result: Result{ProductID: 222, ReportURL: "/api/product/222/", Status: "D", Components: []Component{
 			{Vulns: []Vulnerability{
-				{Triage: []Triage{{Id: 1}}}},
+				{Triage: []Triage{{ID: 1}}}},
 			}},
 		}}},
 	}
@@ -315,10 +315,10 @@ func TestPullResultSuccess(t *testing.T) {
 
 		if strings.Contains(requestURI, "111") {
 			response = ResultData{
-				Result: Result{ProductId: 111, ReportUrl: requestURI}}
+				Result: Result{ProductID: 111, ReportURL: requestURI}}
 		} else {
 			response = ResultData{
-				Result: Result{ProductId: 222, ReportUrl: requestURI}}
+				Result: Result{ProductID: 222, ReportURL: requestURI}}
 		}
 
 		var b bytes.Buffer
@@ -336,8 +336,8 @@ func TestPullResultSuccess(t *testing.T) {
 		productID int
 		want      ResultData
 	}{
-		{Protecode{serverURL: server.URL, client: client}, 111, ResultData{Result: Result{ProductId: 111, ReportUrl: "/api/product/111/"}}},
-		{Protecode{serverURL: server.URL, client: client}, 222, ResultData{Result: Result{ProductId: 222, ReportUrl: "/api/product/222/"}}},
+		{Protecode{serverURL: server.URL, client: client}, 111, ResultData{Result: Result{ProductID: 111, ReportURL: "/api/product/111/"}}},
+		{Protecode{serverURL: server.URL, client: client}, 222, ResultData{Result: Result{ProductID: 222, ReportURL: "/api/product/222/"}}},
 	}
 	for _, c := range cases {
 
@@ -362,7 +362,7 @@ func TestDeclareFetchUrlSuccess(t *testing.T) {
 			}
 		}
 
-		response := Result{ProductId: 111, ReportUrl: requestURI}
+		response := Result{ProductID: 111, ReportURL: requestURI}
 
 		var b bytes.Buffer
 		json.NewEncoder(&b).Encode(&response)
@@ -411,7 +411,7 @@ func TestUploadScanFileSuccess(t *testing.T) {
 			}
 		}
 
-		response := Result{ProductId: 111, ReportUrl: requestURI}
+		response := Result{ProductID: 111, ReportURL: requestURI}
 
 		err := req.ParseMultipartForm(4096)
 		if err != nil {
