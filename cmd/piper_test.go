@@ -28,13 +28,13 @@ type execCall struct {
 }
 
 type shellMockRunner struct {
-	dir            string
-	env            [][]string
-	calls          []string
-	shell          []string
-	stdout         io.Writer
-	stderr         io.Writer
-	stdoutReturn   map[string]string
+	dir                 string
+	env                 [][]string
+	calls               []string
+	shell               []string
+	stdout              io.Writer
+	stderr              io.Writer
+	stdoutReturn        map[string]string
 	shouldFailOnCommand map[string]error
 }
 
