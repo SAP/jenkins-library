@@ -1,0 +1,29 @@
+metadata:
+  name: mtaBuild
+  description: Performs an mta build
+  longDescription: |
+    Performs an mta build
+spec:
+  inputs:
+    params:
+      - name: buildTarget
+        type: string
+        description: Lorem ipsum
+        scope:
+        - PARAMETERS
+        - STAGES
+        - STEPS
+        mandatory: false
+        default:
+  outputs:
+    resources:
+      - name: commonPipelineEnvironment
+        type: piperEnvironment
+        params:
+          - name: mtarFilePath
+            fields:
+              - name: mtarFilePath
+  containers:
+    - name: mta
+      image: ppiper/xs-cli
+      imagePullPolicy: Never
