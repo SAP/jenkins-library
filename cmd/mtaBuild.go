@@ -5,11 +5,31 @@ import (
 	"fmt"
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"io"
+	"io/ioutil"
 	"os"
 	"strings"
 	"sync"
+	"text/template"
 )
+
+const templateMtaYml = `_schema-version: "2.0.0"
+ID: "{{.ID}}"
+version: {{.Version}}
+
+parameters:
+  hcp-deployer-version: "1.0.0"
+
+modules:
+  - name: {{.Name}}
+    type: html5
+    path: .
+    parameters:
+       version: {{.Version}}-${timestamp}
+    build-parameters:
+      builder: grunt
+      build-result: dist`
 
 func mtaBuild(config mtaBuildOptions, commonPipelineEnvironment *mtaBuildCommonPipelineEnvironment) error {
 	log.Entry().Info("Launching mta build")
@@ -52,7 +72,35 @@ func runMtaBuild(config mtaBuildOptions, commonPipelineEnvironment *mtaBuildComm
 	buildTarget := "buildTarget"
 	extensions := "ext"
 	platform := "platform"
+	applicationName := ""
+	//applicationName := "myApp"
 	//
+
+	mtaYamlFile := "mta.yml"
+	mtaYamlFileExists, err := piperutils.FileExists(mtaYamlFile)
+
+	if err != nil {
+		return err
+	}
+
+	if !mtaYamlFileExists {
+
+		if len(applicationName) == 0 {
+			return fmt.Errorf("'%[1]s' not found in project sources and 'applicationName' not provided as parameter - cannot generate '%[1]s' file", mtaYamlFile)
+		}
+
+		mtaConfig, err := generateMta("myID", applicationName, "myVersion")
+		if err != nil {
+			return err
+		}
+
+		// todo prepare for mocking
+		ioutil.WriteFile(mtaYamlFile, []byte(mtaConfig), 0644)
+		log.Entry().Infof("\"%s\" created.", mtaYamlFile)
+
+	} else {
+		log.Entry().Infof("\"%s\" file found in project sources", mtaYamlFile)
+	}
 
 	var mtaJar = "mta.jar"
 	var mtaCall = `Echo "Hello MTA"`
@@ -81,8 +129,8 @@ func runMtaBuild(config mtaBuildOptions, commonPipelineEnvironment *mtaBuildComm
 	echo "[DEBUG] PATH: ${PATH}"
 	%s`, mtaCall)
 
-	if e := s.RunShell("/bin/bash", script); e != nil {
-		return e
+	if err := s.RunShell("/bin/bash", script); err != nil {
+		return err
 	}
 
 	pwOut.Close()
@@ -93,4 +141,34 @@ func runMtaBuild(config mtaBuildOptions, commonPipelineEnvironment *mtaBuildComm
 	mtarFilePath := "dummy.mtar"
 	commonPipelineEnvironment.mtarFilePath = mtarFilePath
 	return nil
+}
+
+func generateMta(id, name, version string) (string, error) {
+
+	if len(id) == 0 {
+		return "", fmt.Errorf("Generating mta file: ID not provided")
+	}
+	if len(name) == 0 {
+		return "", fmt.Errorf("Generating mta file: Name not provided")
+	}
+	if len(version) == 0 {
+		return "", fmt.Errorf("Generating mta file: Version not provided")
+	}
+
+	tmpl, e := template.New("mta.yaml").Parse(templateMtaYml)
+	if e != nil {
+		return "", e
+	}
+
+	type properties struct {
+		ID      string
+		Name    string
+		Version string
+	}
+
+	props := properties{ID: id, Name: name, Version: version}
+
+	var script bytes.Buffer
+	tmpl.Execute(&script, props)
+	return script.String(), nil
 }
