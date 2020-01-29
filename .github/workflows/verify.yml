@@ -8,7 +8,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      
+
     - uses: actions/setup-go@v1
       with:
         go-version: '1.13.x'
@@ -24,7 +24,7 @@ jobs:
 
     - name: cleanup dependencies
       run: go mod tidy
-        
+
     - name: dummy change
       run: echo tests >> Dockerfile
 
