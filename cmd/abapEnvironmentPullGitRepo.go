@@ -46,40 +46,6 @@ func abapEnvironmentPullGitRepo(config abapEnvironmentPullGitRepoOptions) error 
 	return nil
 }
 
-func pollEntity(config abapEnvironmentPullGitRepoOptions, connectionDetails connectionDetailsHTTP, client piperhttp.Sender, pollIntervall time.Duration) (string, error) {
-
-	log.Entry().Info("Start polling the status...")
-	var status string = "R"
-
-	for {
-		var resp, err = getHTTPResponse("GET", connectionDetails, nil, client)
-		defer resp.Body.Close()
-		if err != nil {
-			log.Entry().WithField("StatusCode", resp.Status).WithField("repositoryName", config.RepositoryName).Error("Could not pull the Repository / Software Component")
-			return "", err
-		}
-
-		var body abapEntity
-		bodyText, _ := ioutil.ReadAll(resp.Body)
-		var abapResp map[string]*json.RawMessage
-		json.Unmarshal(bodyText, &abapResp)
-		json.Unmarshal(*abapResp["d"], &body)
-		if body == (abapEntity{}) {
-			log.Entry().WithField("StatusCode", resp.Status).WithField("repositoryName", config.RepositoryName).Error("Could not pull the Repository / Software Component")
-			var err = errors.New("Request to ABAP System not successful")
-			return "", err
-		}
-		status = body.Status
-		log.Entry().WithField("StatusCode", resp.Status).Info("Pull Status: " + body.StatusDescr)
-		if body.Status != "R" {
-			break
-		}
-		time.Sleep(pollIntervall)
-	}
-
-	return status, nil
-}
-
 func triggerPull(config abapEnvironmentPullGitRepoOptions, pullConnectionDetails connectionDetailsHTTP, client piperhttp.Sender) (connectionDetailsHTTP, error) {
 
 	uriConnectionDetails := pullConnectionDetails
@@ -87,24 +53,18 @@ func triggerPull(config abapEnvironmentPullGitRepoOptions, pullConnectionDetails
 	pullConnectionDetails.XCsrfToken = "fetch"
 
 	// Loging into the ABAP System - getting the x-csrf-token and cookies
-	log.Entry().WithField("ABAP Endpoint", pullConnectionDetails.URL).Info("Calling the ABAP System...")
-	log.Entry().Info("Trying to authenticate on the ABAP system...")
-
 	var resp, err = getHTTPResponse("HEAD", pullConnectionDetails, nil, client)
-	// var resp, err = client.SendRequest("HEAD")
 	defer resp.Body.Close()
 	if err != nil {
-		log.Entry().WithField("StatusCode", resp.Status).Error("Authentication failed")
+		log.Entry().WithField("StatusCode", resp.Status).WithField("ABAP Endpoint", pullConnectionDetails.URL).Error("Authentication on the ABAP system failed")
 		return uriConnectionDetails, err
 	}
-	log.Entry().WithField("StatusCode", resp.Status).Info("Authentication successfull")
+	log.Entry().WithField("StatusCode", resp.Status).WithField("ABAP Endpoint", pullConnectionDetails.URL).Info("Authentication on the ABAP system successfull")
 	uriConnectionDetails.XCsrfToken = resp.Header.Get("X-Csrf-Token")
 	pullConnectionDetails.XCsrfToken = uriConnectionDetails.XCsrfToken
 
 	// Trigger the Pull of a Repository
 	var jsonBody = []byte(`{"sc_name":"` + config.RepositoryName + `"}`)
-	log.Entry().WithField("repositoryName", config.RepositoryName).Info("Pulling Repository / Software Component")
-
 	resp, err = getHTTPResponse("POST", pullConnectionDetails, jsonBody, client)
 	defer resp.Body.Close()
 	if err != nil {
@@ -126,6 +86,41 @@ func triggerPull(config abapEnvironmentPullGitRepoOptions, pullConnectionDetails
 	}
 	uriConnectionDetails.URL = body.Metadata.URI
 	return uriConnectionDetails, nil
+}
+
+func pollEntity(config abapEnvironmentPullGitRepoOptions, connectionDetails connectionDetailsHTTP, client piperhttp.Sender, pollIntervall time.Duration) (string, error) {
+
+	log.Entry().Info("Start polling the status...")
+	var status string = "R"
+
+	for {
+		var resp, err = getHTTPResponse("GET", connectionDetails, nil, client)
+		defer resp.Body.Close()
+		if err != nil {
+			log.Entry().WithField("StatusCode", resp.Status).WithField("repositoryName", config.RepositoryName).Error("Could not pull the Repository / Software Component")
+			return "", err
+		}
+
+		// Parse response
+		var body abapEntity
+		bodyText, _ := ioutil.ReadAll(resp.Body)
+		var abapResp map[string]*json.RawMessage
+		json.Unmarshal(bodyText, &abapResp)
+		json.Unmarshal(*abapResp["d"], &body)
+		if body == (abapEntity{}) {
+			log.Entry().WithField("StatusCode", resp.Status).WithField("repositoryName", config.RepositoryName).Error("Could not pull the Repository / Software Component")
+			var err = errors.New("Request to ABAP System not successful")
+			return "", err
+		}
+		status = body.Status
+		log.Entry().WithField("StatusCode", resp.Status).Info("Pull Status: " + body.StatusDescr)
+		if body.Status != "R" {
+			break
+		}
+		time.Sleep(pollIntervall)
+	}
+
+	return status, nil
 }
 
 func getAbapCommunicationArrangementInfo(config abapEnvironmentPullGitRepoOptions, c shellRunner) (connectionDetailsHTTP, error) {
@@ -201,48 +196,48 @@ func getHTTPResponse(requestType string, connectionDetails connectionDetailsHTTP
 
 type abapEntity struct {
 	Metadata       abapMetadata `json:"__metadata"`
-	UUID           string
-	ScName         string `json:"sc_name"`
-	Namespace      string
-	Status         string
-	StatusDescr    string   `json:"status_descr"`
-	ToExecutionLog deferred `json:"to_Execution_log"`
-	ToTransportLog deferred `json:"to_Transport_log"`
+	UUID           string       `json:"uuid"`
+	ScName         string       `json:"sc_name"`
+	Namespace      string       `json:"namepsace"`
+	Status         string       `json:"status"`
+	StatusDescr    string       `json:"status_descr"`
+	ToExecutionLog deferred     `json:"to_Execution_log"`
+	ToTransportLog deferred     `json:"to_Transport_log"`
 }
 
 type abapMetadata struct {
-	URI string
+	URI string `json:"uri"`
 }
 
 type serviceKey struct {
-	Abap     abapConenction
-	Binding  abapBinding
-	Systemid string
-	URL      string
+	Abap     abapConenction `json:"abap"`
+	Binding  abapBinding    `json:"binding"`
+	Systemid string         `json:"systemid"`
+	URL      string         `json:"url"`
 }
 
 type deferred struct {
-	URI string
+	URI string `json:"uri"`
 }
 
 type abapConenction struct {
 	CommunicationArrangementID string `json:"communication_arrangement_id"`
 	CommunicationScenarioID    string `json:"communication_scenario_id"`
 	CommunicationSystemID      string `json:"communication_system_id"`
-	Password                   string
-	Username                   string
+	Password                   string `json:"password"`
+	Username                   string `json:"username"`
 }
 
 type abapBinding struct {
-	Env     string
-	ID      string
-	Type    string
-	Tersion string
+	Env     string `json:"env"`
+	ID      string `json:"id"`
+	Type    string `json:"type"`
+	Version string `json:"version"`
 }
 
 type connectionDetailsHTTP struct {
-	User       string
-	Password   string
-	URL        string
-	XCsrfToken string
+	User       string `json:"user"`
+	Password   string `json:"password"`
+	URL        string `json:"url"`
+	XCsrfToken string `json:"xcsrftoken"`
 }
