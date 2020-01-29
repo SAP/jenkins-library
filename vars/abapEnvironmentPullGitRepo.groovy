@@ -8,6 +8,7 @@ import groovy.transform.Field
 
 @Field def STEP_NAME = getClass().getName()
 @Field String METADATA_FILE = 'metadata/abapEnvironmentPullGitRepo.yaml'
+
 void call(Map parameters = [:]) {
     handlePipelineStepErrors(stepName: STEP_NAME, stepParameters: parameters, failOnError: true) {
 
