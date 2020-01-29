@@ -39,6 +39,7 @@ import (
 	{{ if .ExportPrefix}}{{ .ExportPrefix }} "github.com/SAP/jenkins-library/cmd"{{ end -}}
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/telemetry"
 	{{ if .OutputResources }}"github.com/SAP/jenkins-library/pkg/piperenv"{{ end }}
 	"github.com/spf13/cobra"
 )
@@ -78,6 +79,8 @@ func {{.CobraCmdFuncName}}() *cobra.Command {
 			log.DeferExitHandler(handler)
 			defer handler()
 			{{- end }}
+			telemetry.Initialize(GeneralConfig.NoTelemetry, "{{ .StepName }}")
+			telemetry.Send(&telemetry.CustomData{})
 			return {{.StepName}}(my{{ .StepName | title }}Options{{ range $notused, $oRes := .OutputResources}}, &{{ index $oRes "name" }}{{ end }})
 		},
 	}

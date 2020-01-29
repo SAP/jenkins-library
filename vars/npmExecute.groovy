@@ -8,7 +8,7 @@ import groovy.transform.Field
 @Field Set GENERAL_CONFIG_KEYS = []
 @Field Set STEP_CONFIG_KEYS = [
     /**
-     * Name of the docker image that should be used, in which node should be installed and configured. Default value is 'node:8-stretch'.
+     * Name of the docker image that should be used, in which node should be installed and configured.
      */
     'dockerImage',
     /** @see dockerExecute*/
