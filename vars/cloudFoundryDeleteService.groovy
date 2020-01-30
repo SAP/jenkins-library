@@ -117,9 +117,6 @@ void call(Map parameters = [:]) {
 
         def script = checkScript(this, parameters) ?: this
 
-
-        def jenkinsUtils = parameters.jenkinsUtilsStub ?: new JenkinsUtils()
-
         Set configKeys = ['dockerImage', 'dockerWorkspace']
         Map jenkinsConfig = ConfigurationHelper.newInstance(this)
             .loadStepDefaults()
@@ -136,8 +133,8 @@ void call(Map parameters = [:]) {
         // telemetry reporting
         utils.pushToSWA([step: STEP_NAME], config)
 
-        new PiperGoUtils(this, utils).unstashPiperBin()
-        utils.unstash('pipelineConfigAndTests')
+        //new PiperGoUtils(this, utils).unstashPiperBin()
+        //utils.unstash('pipelineConfigAndTests')
         script.commonPipelineEnvironment.writeToDisk(script)
 
         writeFile(file: METADATA_FILE, text: libraryResource(METADATA_FILE))
@@ -168,7 +165,7 @@ void call(Map parameters = [:]) {
                     export HOME=${config.dockerWorkspace}
                     """
                     */
-                    sh "./piper cloudFoundryDeleteService --Username ${BashUtils.quoteAndEscape(CF_USERNAME)} --Password ${BashUtils.quoteAndEscape(CF_PASSWORD)} --API ${BashUtils.quoteAndEscape(config.cloudFoundry.apiEndpoint)} --Space ${BashUtils.quoteAndEscape(config.cloudFoundry.space)} --Organisation ${BashUtils.quoteAndEscape(config.cloudFoundry.org)} --ServiceName ${BashUtils.quoteAndEscape(config.cloudFoundry.serviceInstance)}"
+                    sh "./piper cloudFoundryDeleteService"
                     if (returnCode!=0)  {
                         error "[${STEP_NAME}] ERROR: The execution of the delete-service plugin failed, see the logs above for more details."
                     }
