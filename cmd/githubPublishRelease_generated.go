@@ -1,7 +1,10 @@
 package cmd
 
 import (
+	"fmt"
 	"os"
+
+	"time"
 
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
@@ -32,6 +35,7 @@ var myGithubPublishReleaseOptions githubPublishReleaseOptions
 // GithubPublishReleaseCommand Publish a release in GitHub
 func GithubPublishReleaseCommand() *cobra.Command {
 	metadata := githubPublishReleaseMetadata()
+	var startTime time.Time
 
 	var createGithubPublishReleaseCmd = &cobra.Command{
 		Use:   "githubPublishRelease",
@@ -47,15 +51,23 @@ The result looks like
 
 ![Example release](../images/githubRelease.png)`,
 		PreRunE: func(cmd *cobra.Command, args []string) error {
+			startTime = time.Now()
 			log.SetStepName("githubPublishRelease")
 			log.SetVerbose(GeneralConfig.Verbose)
 			return PrepareConfig(cmd, &metadata, "githubPublishRelease", &myGithubPublishReleaseOptions, config.OpenPiperFile)
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-
+			errorCode := "1"
+			handler := func() {
+				telemetry.Send(&telemetry.CustomData{Duration: fmt.Sprintf("%v", time.Since(startTime)), ErrorCode: errorCode})
+			}
+			log.DeferExitHandler(handler)
+			defer handler()
 			telemetry.Initialize(GeneralConfig.NoTelemetry, "githubPublishRelease")
 			telemetry.Send(&telemetry.CustomData{})
-			return githubPublishRelease(myGithubPublishReleaseOptions)
+			err := githubPublishRelease(myGithubPublishReleaseOptions)
+			errorCode = "0"
+			return err
 		},
 	}
 

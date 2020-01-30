@@ -4,6 +4,7 @@ import (
 	"os"
 	"fmt"
 	"path/filepath"
+	"time"
 
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
@@ -92,6 +93,7 @@ var myTestStepOptions testStepOptions
 // TestStepCommand Test description
 func TestStepCommand() *cobra.Command {
 	metadata := testStepMetadata()
+	var startTime time.Time
 	var commonPipelineEnvironment testStepCommonPipelineEnvironment
 	var influxTest testStepInfluxTest
 
@@ -100,20 +102,25 @@ func TestStepCommand() *cobra.Command {
 		Short: "Test description",
 		Long: `Long Test description`,
 		PreRunE: func(cmd *cobra.Command, args []string) error {
+			startTime = time.Now()
 			log.SetStepName("testStep")
 			log.SetVerbose(GeneralConfig.Verbose)
 			return PrepareConfig(cmd, &metadata, "testStep", &myTestStepOptions, config.OpenPiperFile)
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
+			errorCode := "1"
 			handler := func() {
 				commonPipelineEnvironment.persist(GeneralConfig.EnvRootPath, "commonPipelineEnvironment")
 				influxTest.persist(GeneralConfig.EnvRootPath, "influxTest")
+				telemetry.Send(&telemetry.CustomData{Duration: fmt.Sprintf("%v", time.Since(startTime)), ErrorCode: errorCode})
 			}
 			log.DeferExitHandler(handler)
 			defer handler()
 			telemetry.Initialize(GeneralConfig.NoTelemetry, "testStep")
 			telemetry.Send(&telemetry.CustomData{})
-			return testStep(myTestStepOptions, &commonPipelineEnvironment, &influxTest)
+			err := testStep(myTestStepOptions, &commonPipelineEnvironment, &influxTest)
+			errorCode = "0"
+			return err
 		},
 	}
 

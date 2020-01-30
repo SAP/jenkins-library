@@ -33,8 +33,9 @@ const stepGoTemplate = `package cmd
 
 import (
 	{{ if .OSImport }}"os"{{ end }}
-	{{ if .OutputResources }}"fmt"{{ end }}
+	"fmt"
 	{{ if .OutputResources }}"path/filepath"{{ end }}
+	"time"
 
 	{{ if .ExportPrefix}}{{ .ExportPrefix }} "github.com/SAP/jenkins-library/cmd"{{ end -}}
 	"github.com/SAP/jenkins-library/pkg/config"
@@ -58,6 +59,7 @@ var my{{ .StepName | title}}Options {{.StepName}}Options
 // {{.CobraCmdFuncName}} {{.Short}}
 func {{.CobraCmdFuncName}}() *cobra.Command {
 	metadata := {{ .StepName }}Metadata()
+	var startTime time.Time
 	{{- range $notused, $oRes := .OutputResources }}
 	var {{ index $oRes "name" }} {{ index $oRes "objectname" }}{{ end }}
 
@@ -66,22 +68,25 @@ func {{.CobraCmdFuncName}}() *cobra.Command {
 		Short: "{{.Short}}",
 		Long: {{ $tick := "` + "`" + `" }}{{ $tick }}{{.Long | longName }}{{ $tick }},
 		PreRunE: func(cmd *cobra.Command, args []string) error {
+			startTime = time.Now()
 			log.SetStepName("{{ .StepName }}")
 			log.SetVerbose({{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.Verbose)
 			return {{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}PrepareConfig(cmd, &metadata, "{{ .StepName }}", &my{{ .StepName | title}}Options, config.OpenPiperFile)
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			{{ if .OutputResources -}}
+			errorCode := "1"
 			handler := func() {
 				{{- range $notused, $oRes := .OutputResources }}
 				{{ index $oRes "name" }}.persist(GeneralConfig.EnvRootPath, "{{ index $oRes "name" }}"){{ end }}
+				telemetry.Send(&telemetry.CustomData{Duration: fmt.Sprintf("%v", time.Since(startTime)), ErrorCode: errorCode})
 			}
 			log.DeferExitHandler(handler)
 			defer handler()
-			{{- end }}
 			telemetry.Initialize(GeneralConfig.NoTelemetry, "{{ .StepName }}")
 			telemetry.Send(&telemetry.CustomData{})
-			return {{.StepName}}(my{{ .StepName | title }}Options{{ range $notused, $oRes := .OutputResources}}, &{{ index $oRes "name" }}{{ end }})
+			err := {{.StepName}}(my{{ .StepName | title }}Options{{ range $notused, $oRes := .OutputResources}}, &{{ index $oRes "name" }}{{ end }})
+			errorCode = "0"
+			return err
 		},
 	}
 
