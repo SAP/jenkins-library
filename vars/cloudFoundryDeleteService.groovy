@@ -97,7 +97,29 @@ private def deleteService(script, Map config) {
 void call(Map parameters = [:]) {
     handlePipelineStepErrors(stepName: STEP_NAME, stepParameters: parameters, failOnError: true) {
 
+        /*
+        // load default & individual configuration
+        Map config = ConfigurationHelper.newInstance(this)
+            .loadStepDefaults()
+            .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS, CONFIG_KEY_COMPATIBILITY)
+            .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS, CONFIG_KEY_COMPATIBILITY)
+            .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName?:env.STAGE_NAME, STEP_CONFIG_KEYS, CONFIG_KEY_COMPATIBILITY)
+            .mixin(parameters, PARAMETER_KEYS, CONFIG_KEY_COMPATIBILITY)
+            .withMandatoryProperty('cloudFoundry/apiEndpoint')
+            .withMandatoryProperty('cloudFoundry/credentialsId')
+            .withMandatoryProperty('cloudFoundry/org')
+            .withMandatoryProperty('cloudFoundry/space')
+            .withMandatoryProperty('cloudFoundry/serviceInstance')
+            .use()
+        */
+
+
         def script = checkScript(this, parameters) ?: this
+
+        def utils = parameters.juStabUtils ?: new Utils()
+        parameters.juStabUtils = null
+
+        def jenkinsUtils = parameters.jenkinsUtilsStub ?: new JenkinsUtils()
 
         Set configKeys = ['dockerImage', 'dockerWorkspace']
         Map jenkinsConfig = ConfigurationHelper.newInstance(this)
@@ -108,9 +130,6 @@ void call(Map parameters = [:]) {
             .mixin(parameters, configKeys)
             .use()
 
-        Map config
-        def utils = parameters.juStabUtils ?: new Utils()
-        parameters.juStabUtils = null
 
         // telemetry reporting
         utils.pushToSWA([step: STEP_NAME], config)
@@ -141,11 +160,12 @@ void call(Map parameters = [:]) {
                     passwordVariable: 'PIPER_password',
                     usernameVariable: 'PIPER_username'
                 )]) {
+                    /*
                     def returnCode = sh returnStatus: true, script: """#!/bin/bash
                     set +x
                     set -e
                     export HOME=${config.dockerWorkspace}
-
+                    */
                     ./piper cloudFoundryDeleteService --Username ${BashUtils.quoteAndEscape(CF_USERNAME)} --Password ${BashUtils.quoteAndEscape(CF_PASSWORD)} --API ${BashUtils.quoteAndEscape(config.cloudFoundry.apiEndpoint)} --Space ${BashUtils.quoteAndEscape(config.cloudFoundry.space)} --Organisation ${BashUtils.quoteAndEscape(config.cloudFoundry.org)} --ServiceName ${BashUtils.quoteAndEscape(config.cloudFoundry.serviceInstance)}
                     """
                     if (returnCode!=0)  {
