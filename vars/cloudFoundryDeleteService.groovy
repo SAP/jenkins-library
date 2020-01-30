@@ -115,9 +115,9 @@ void call(Map parameters = [:]) {
         // telemetry reporting
         utils.pushToSWA([step: STEP_NAME], config)
 
-        new PiperGoUtils(this, utils).unstashPiperBin()
-        utils.unstash('pipelineConfigAndTests')
-        script.commonPipelineEnvironment.writeToDisk(script)
+        //new PiperGoUtils(this, utils).unstashPiperBin()
+        //utils.unstash('pipelineConfigAndTests')
+        //script.commonPipelineEnvironment.writeToDisk(script)
 
         writeFile(file: METADATA_FILE, text: libraryResource(METADATA_FILE))
 
