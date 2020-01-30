@@ -11,7 +11,6 @@ import static com.sap.piper.Prerequisites.checkScript
 
 @Field def STEP_NAME = getClass().getName()
 @Field String METADATA_FILE = 'metadata/cloudFoundryDeleteService.yaml'
-
 @Field Set STEP_CONFIG_KEYS = [
     'cloudFoundry',
         /**
@@ -166,9 +165,6 @@ void call(Map parameters = [:]) {
                     """
                     */
                     sh "./piper cloudFoundryDeleteService"
-                    if (returnCode!=0)  {
-                        error "[${STEP_NAME}] ERROR: The execution of the delete-service plugin failed, see the logs above for more details."
-                    }
                 }
             }
         }
