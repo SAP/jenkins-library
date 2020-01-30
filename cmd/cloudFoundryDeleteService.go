@@ -3,34 +3,27 @@ package cmd
 import (
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/log"
-	"github.com/pkg/errors"
 )
 
 func cloudFoundryDeleteService(CloudFoundryDeleteServiceOptions cloudFoundryDeleteServiceOptions) error {
 
-	if CloudFoundryDeleteServiceOptions.API == "" || CloudFoundryDeleteServiceOptions.Organisation == "" || CloudFoundryDeleteServiceOptions.Space == "" || CloudFoundryDeleteServiceOptions.Username == "" || CloudFoundryDeleteServiceOptions.Password == "" {
-		return errors.New("Parameters missing. Please provide EITHER the Cloud Foundry ApiEndpoint, Organization, Space, Username or Password!")
-	} else if CloudFoundryDeleteServiceOptions.ServiceName == "" {
-		return errors.New("Parameter missing. Please provide the Name of the Service Instance you want to delete!")
-	} else {
-		c := command.Command{}
+	c := command.Command{}
 
-		// reroute command output to logging framework
-		c.Stdout(log.Entry().Writer())
-		c.Stderr(log.Entry().Writer())
+	// reroute command output to logging framework
+	c.Stdout(log.Entry().Writer())
+	c.Stderr(log.Entry().Writer())
 
-		cloudFoundryLogin(CloudFoundryDeleteServiceOptions, &c)
-		cloudFoundryDeleteServiceFunction(CloudFoundryDeleteServiceOptions.ServiceName, &c)
-		cloudFoundryLogout(&c)
+	cloudFoundryLogin(CloudFoundryDeleteServiceOptions, &c)
+	cloudFoundryDeleteServiceFunction(CloudFoundryDeleteServiceOptions.CfServiceInstance, &c)
+	cloudFoundryLogout(&c)
 
-		return nil
-	}
+	return nil
 }
 
 func cloudFoundryLogin(CloudFoundryDeleteServiceOptions cloudFoundryDeleteServiceOptions, c execRunner) error {
-	var cfLoginScript = []string{"login", "-a", CloudFoundryDeleteServiceOptions.API, "-o", CloudFoundryDeleteServiceOptions.Organisation, "-s", CloudFoundryDeleteServiceOptions.Space, "-u", CloudFoundryDeleteServiceOptions.Username, "-p", CloudFoundryDeleteServiceOptions.Password}
+	var cfLoginScript = []string{"login", "-a", CloudFoundryDeleteServiceOptions.CfAPIEndpoint, "-o", CloudFoundryDeleteServiceOptions.CfOrg, "-s", CloudFoundryDeleteServiceOptions.CfSpace, "-u", CloudFoundryDeleteServiceOptions.Username, "-p", CloudFoundryDeleteServiceOptions.Password}
 
-	log.Entry().WithField("cfAPI:", CloudFoundryDeleteServiceOptions.API).WithField("cfOrg", CloudFoundryDeleteServiceOptions.Organisation).WithField("space", CloudFoundryDeleteServiceOptions.Space).WithField("password", CloudFoundryDeleteServiceOptions.Password).Info("Logging into Cloud Foundry..")
+	log.Entry().WithField("cfAPI:", CloudFoundryDeleteServiceOptions.CfAPIEndpoint).WithField("cfOrg", CloudFoundryDeleteServiceOptions.CfOrg).WithField("space", CloudFoundryDeleteServiceOptions.CfSpace).WithField("password", CloudFoundryDeleteServiceOptions.Password).Info("Logging into Cloud Foundry..")
 
 	err := c.RunExecutable("cf", cfLoginScript...)
 	if err != nil {

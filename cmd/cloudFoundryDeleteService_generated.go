@@ -10,12 +10,12 @@ import (
 )
 
 type cloudFoundryDeleteServiceOptions struct {
-	API          string `json:"API,omitempty"`
-	Username     string `json:"Username,omitempty"`
-	Password     string `json:"Password,omitempty"`
-	Organisation string `json:"Organisation,omitempty"`
-	Space        string `json:"Space,omitempty"`
-	ServiceName  string `json:"ServiceName,omitempty"`
+	CfAPIEndpoint     string `json:"cfApiEndpoint,omitempty"`
+	Username          string `json:"username,omitempty"`
+	Password          string `json:"password,omitempty"`
+	CfOrg             string `json:"cfOrg,omitempty"`
+	CfSpace           string `json:"cfSpace,omitempty"`
+	CfServiceInstance string `json:"cfServiceInstance,omitempty"`
 }
 
 var myCloudFoundryDeleteServiceOptions cloudFoundryDeleteServiceOptions
@@ -44,19 +44,19 @@ func CloudFoundryDeleteServiceCommand() *cobra.Command {
 }
 
 func addCloudFoundryDeleteServiceFlags(cmd *cobra.Command) {
-	cmd.Flags().StringVar(&myCloudFoundryDeleteServiceOptions.API, "API", os.Getenv("PIPER_API"), "Login API")
-	cmd.Flags().StringVar(&myCloudFoundryDeleteServiceOptions.Username, "Username", os.Getenv("PIPER_Username"), "User E-Mail")
-	cmd.Flags().StringVar(&myCloudFoundryDeleteServiceOptions.Password, "Password", os.Getenv("PIPER_Password"), "User Password")
-	cmd.Flags().StringVar(&myCloudFoundryDeleteServiceOptions.Organisation, "Organisation", os.Getenv("PIPER_Organisation"), "CF org")
-	cmd.Flags().StringVar(&myCloudFoundryDeleteServiceOptions.Space, "Space", os.Getenv("PIPER_Space"), "CF Space")
-	cmd.Flags().StringVar(&myCloudFoundryDeleteServiceOptions.ServiceName, "ServiceName", os.Getenv("PIPER_ServiceName"), "Parameter to delete CloudFoundry Service")
+	cmd.Flags().StringVar(&myCloudFoundryDeleteServiceOptions.CfAPIEndpoint, "cfApiEndpoint", os.Getenv("PIPER_cfApiEndpoint"), "Login API")
+	cmd.Flags().StringVar(&myCloudFoundryDeleteServiceOptions.Username, "username", os.Getenv("PIPER_username"), "User E-Mail")
+	cmd.Flags().StringVar(&myCloudFoundryDeleteServiceOptions.Password, "password", os.Getenv("PIPER_password"), "User Password")
+	cmd.Flags().StringVar(&myCloudFoundryDeleteServiceOptions.CfOrg, "cfOrg", os.Getenv("PIPER_cfOrg"), "CF org")
+	cmd.Flags().StringVar(&myCloudFoundryDeleteServiceOptions.CfSpace, "cfSpace", os.Getenv("PIPER_cfSpace"), "CF Space")
+	cmd.Flags().StringVar(&myCloudFoundryDeleteServiceOptions.CfServiceInstance, "cfServiceInstance", os.Getenv("PIPER_cfServiceInstance"), "Parameter to delete CloudFoundry Service")
 
-	cmd.MarkFlagRequired("API")
-	cmd.MarkFlagRequired("Username")
-	cmd.MarkFlagRequired("Password")
-	cmd.MarkFlagRequired("Organisation")
-	cmd.MarkFlagRequired("Space")
-	cmd.MarkFlagRequired("ServiceName")
+	cmd.MarkFlagRequired("cfApiEndpoint")
+	cmd.MarkFlagRequired("username")
+	cmd.MarkFlagRequired("password")
+	cmd.MarkFlagRequired("cfOrg")
+	cmd.MarkFlagRequired("cfSpace")
+	cmd.MarkFlagRequired("cfServiceInstance")
 }
 
 // retrieve step metadata
@@ -66,7 +66,7 @@ func cloudFoundryDeleteServiceMetadata() config.StepData {
 			Inputs: config.StepInputs{
 				Parameters: []config.StepParameters{
 					{
-						Name:        "API",
+						Name:        "cfApiEndpoint",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
@@ -74,44 +74,44 @@ func cloudFoundryDeleteServiceMetadata() config.StepData {
 						Aliases:     []config.Alias{{Name: "cloudFoundry/apiEndpoint"}},
 					},
 					{
-						Name:        "Username",
+						Name:        "username",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   true,
-						Aliases:     []config.Alias{{Name: "cloudFoundry/Username"}},
+						Aliases:     []config.Alias{},
 					},
 					{
-						Name:        "Password",
+						Name:        "password",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   true,
-						Aliases:     []config.Alias{{Name: "cloudFoundry/Password"}},
+						Aliases:     []config.Alias{},
 					},
 					{
-						Name:        "Organisation",
+						Name:        "cfOrg",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   true,
-						Aliases:     []config.Alias{{Name: "cloudFoundry/Organisation"}},
+						Aliases:     []config.Alias{{Name: "cloudFoundry/org"}},
 					},
 					{
-						Name:        "Space",
+						Name:        "cfSpace",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   true,
-						Aliases:     []config.Alias{{Name: "cloudFoundry/Space"}},
+						Aliases:     []config.Alias{{Name: "cloudFoundry/space"}},
 					},
 					{
-						Name:        "ServiceName",
+						Name:        "cfServiceInstance",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   true,
-						Aliases:     []config.Alias{{Name: "cloudFoundry/ServiceName"}},
+						Aliases:     []config.Alias{{Name: "cloudFoundry/serviceInstance"}},
 					},
 				},
 			},
