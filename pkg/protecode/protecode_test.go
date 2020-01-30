@@ -20,59 +20,28 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestGetResult(t *testing.T) {
+func TestMapResponse(t *testing.T) {
 
 	cases := []struct {
-		give string
-		want Result
+		give  string
+		input interface{}
+		want  interface{}
 	}{
-		{`"{}"`, Result{ProductID: 0}},
-		{`{"product_id": 1}`, Result{ProductID: 1}},
-		{`"{\"product_id\": 4711}"`, Result{ProductID: 4711}},
+		{`"{}"`, new(Result), &Result{ProductID: 0}},
+		{`{"product_id": 1}`, new(Result), &Result{ProductID: 1}},
+		{`"{\"product_id\": 4711}"`, new(Result), &Result{ProductID: 4711}},
+		{"{\"results\": {\"product_id\": 1}}", new(ResultData), &ResultData{Result: Result{ProductID: 1}}},
+		{`{"results": {"status": "B", "id": 209396, "product_id": 209396, "report_url": "https://protecode.c.eu-de-2.cloud.sap/products/209396/"}}`, new(ResultData), &ResultData{Result: Result{ProductID: 209396, Status: "B", ReportURL: "https://protecode.c.eu-de-2.cloud.sap/products/209396/"}}},
+		{`{"products": [{"product_id": 1}]}`, new(ProductData), &ProductData{Products: []Product{{ProductID: 1}}}},
 	}
 	pc := Protecode{}
 	for _, c := range cases {
 
 		r := ioutil.NopCloser(bytes.NewReader([]byte(c.give)))
-		got := pc.getResult(r)
-		assert.Equal(t, c.want, *got)
+		pc.mapResponse(r, c.input)
+		assert.Equal(t, c.want, c.input)
 	}
 }
-func TestGetResultData(t *testing.T) {
-
-	cases := []struct {
-		give string
-		want ResultData
-	}{
-		{"{\"results\": {\"product_id\": 1}}", ResultData{Result: Result{ProductID: 1}}},
-		{`{"results": {"status": "B", "id": 209396, "product_id": 209396, "report_url": "https://protecode.c.eu-de-2.cloud.sap/products/209396/"}}`, ResultData{Result: Result{ProductID: 209396, Status: "B", ReportURL: "https://protecode.c.eu-de-2.cloud.sap/products/209396/"}}},
-	}
-	pc := Protecode{}
-	for _, c := range cases {
-
-		r := ioutil.NopCloser(bytes.NewReader([]byte(c.give)))
-		got := pc.getResultData(r)
-		assert.Equal(t, c.want, *got)
-	}
-}
-
-func TestGetProductData(t *testing.T) {
-
-	cases := []struct {
-		give string
-		want ProductData
-	}{
-		{`{"products": [{"product_id": 1}]}`, ProductData{Products: []Product{{ProductID: 1}}}},
-	}
-	pc := Protecode{}
-	for _, c := range cases {
-
-		r := ioutil.NopCloser(bytes.NewReader([]byte(c.give)))
-		got := pc.getProductData(r)
-		assert.Equal(t, c.want, *got)
-	}
-}
-
 func TestParseResultSuccess(t *testing.T) {
 
 	var result Result = Result{
@@ -114,7 +83,9 @@ func TestParseResultViolations(t *testing.T) {
 		t.Fatalf("failed reading %v", violations)
 	}
 	pc := Protecode{}
-	resultData := pc.getResultData(ioutil.NopCloser(strings.NewReader(string(byteContent))))
+
+	resultData := new(ResultData)
+	pc.mapResponse(ioutil.NopCloser(strings.NewReader(string(byteContent))), resultData)
 
 	m := pc.ParseResultForInflux(resultData.Result, "CVE-2018-1, CVE-2017-1000382")
 	t.Run("Parse Protecode Results", func(t *testing.T) {
@@ -136,7 +107,8 @@ func TestParseResultNoViolations(t *testing.T) {
 	}
 
 	pc := Protecode{}
-	resultData := pc.getResultData(ioutil.NopCloser(strings.NewReader(string(byteContent))))
+	resultData := new(ResultData)
+	pc.mapResponse(ioutil.NopCloser(strings.NewReader(string(byteContent))), resultData)
 
 	m := pc.ParseResultForInflux(resultData.Result, "CVE-2018-1, CVE-2017-1000382")
 	t.Run("Parse Protecode Results", func(t *testing.T) {
@@ -158,7 +130,8 @@ func TestParseResultTriaged(t *testing.T) {
 	}
 
 	pc := Protecode{}
-	resultData := pc.getResultData(ioutil.NopCloser(strings.NewReader(string(byteContent))))
+	resultData := new(ResultData)
+	pc.mapResponse(ioutil.NopCloser(strings.NewReader(string(byteContent))), resultData)
 
 	m := pc.ParseResultForInflux(resultData.Result, "")
 	t.Run("Parse Protecode Results", func(t *testing.T) {

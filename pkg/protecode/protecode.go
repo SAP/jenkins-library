@@ -142,9 +142,8 @@ func (pc *Protecode) createURL(path string, pValue string, fParam string) string
 	return protecodeURL.String()
 }
 
-func (pc *Protecode) getResultData(r io.ReadCloser) *ResultData {
+func (pc *Protecode) mapResponse(r io.ReadCloser, response interface{}) {
 	defer r.Close()
-	response := new(ResultData)
 
 	buf := new(bytes.Buffer)
 	buf.ReadFrom(r)
@@ -166,64 +165,6 @@ func (pc *Protecode) getResultData(r io.ReadCloser) *ResultData {
 			pc.logger.WithError(err).Fatalf("Protecode scan failed, error during decode response: %v", newStr)
 		}
 	}
-
-	return response
-}
-
-func (pc *Protecode) getResult(r io.ReadCloser) *Result {
-	defer r.Close()
-	response := new(Result)
-
-	buf := new(bytes.Buffer)
-	buf.ReadFrom(r)
-	newStr := buf.String()
-
-	if len(newStr) > 0 {
-
-		unquoted, err := strconv.Unquote(newStr)
-		if err != nil {
-			err = json.Unmarshal([]byte(newStr), response)
-			if err != nil {
-				pc.logger.WithError(err).Fatalf("Protecode scan failed, error during unqote response: %v", newStr)
-			}
-		} else {
-			err = json.Unmarshal([]byte(unquoted), response)
-		}
-
-		if err != nil {
-			pc.logger.WithError(err).Fatalf("Protecode scan failed, error during decode response: %v", newStr)
-		}
-	}
-
-	return response
-}
-
-func (pc *Protecode) getProductData(r io.ReadCloser) *ProductData {
-	defer r.Close()
-
-	response := new(ProductData)
-
-	buf := new(bytes.Buffer)
-	buf.ReadFrom(r)
-	newStr := buf.String()
-
-	if len(newStr) > 0 {
-
-		unquoted, err := strconv.Unquote(newStr)
-		if err != nil {
-			err = json.Unmarshal([]byte(newStr), response)
-			if err != nil {
-				pc.logger.WithError(err).Fatalf("Protecode scan failed, error during unqote response: %v", newStr)
-			}
-		} else {
-			err = json.Unmarshal([]byte(unquoted), response)
-		}
-
-		if err != nil {
-			pc.logger.WithError(err).Fatalf("Protecode scan failed, error during decode response: %v", newStr)
-		}
-	}
-	return response
 }
 
 func (pc *Protecode) sendAPIRequest(method string, url string, headers map[string][]string) (*io.ReadCloser, error) {
@@ -250,36 +191,30 @@ func (pc *Protecode) ParseResultForInflux(result Result, protecodeExcludeCVEs st
 		for _, vulnerability := range components.Vulns {
 
 			exact := isExact(vulnerability)
-			historical := !exact
-			excluded := exact && isExcluded(vulnerability, protecodeExcludeCVEs)
-			triaged := exact && isTriaged(vulnerability)
-			countVulnerability := exact && !isExcluded(vulnerability, protecodeExcludeCVEs) && !isTriaged(vulnerability)
-			CVSS3 := countVulnerability && isSevereCVSS3(vulnerability)
-			CVSS2 := countVulnerability && isSevereCVSS2(vulnerability)
-			minor := countVulnerability && !CVSS3 && !CVSS2
+			countVulnerability := isExact(vulnerability) && !isExcluded(vulnerability, protecodeExcludeCVEs) && !isTriaged(vulnerability)
 
-			if excluded {
+			if exact && isExcluded(vulnerability, protecodeExcludeCVEs) {
 				m["excluded_vulnerabilities"]++
 			}
-			if triaged {
+			if exact && isTriaged(vulnerability) {
 				m["triaged_vulnerabilities"]++
 			}
 			if countVulnerability {
 				m["count"]++
 				m["vulnerabilities"]++
 			}
-			if CVSS3 {
+			if countVulnerability && isSevereCVSS3(vulnerability) {
 				m["cvss3GreaterOrEqualSeven"]++
 				m["major_vulnerabilities"]++
 			}
-			if CVSS2 {
+			if countVulnerability && isSevereCVSS2(vulnerability) {
 				m["cvss2GreaterOrEqualSeven"]++
 				m["major_vulnerabilities"]++
 			}
-			if minor {
+			if countVulnerability && !isSevereCVSS3(vulnerability) && !isSevereCVSS2(vulnerability) {
 				m["minor_vulnerabilities"]++
 			}
-			if historical {
+			if !exact {
 				m["historical_vulnerabilities"]++
 			}
 		}
@@ -363,7 +298,10 @@ func (pc *Protecode) UploadScanFile(cleanupMode, protecodeGroup, filePath string
 		pc.logger.Info("Protecode scan upload successful")
 	}
 
-	return pc.getResultData(r.Body)
+	result := new(ResultData)
+	pc.mapResponse(r.Body, result)
+
+	return result
 }
 
 // DeclareFetchURL configures the fetch url for the protecode scan
@@ -376,7 +314,11 @@ func (pc *Protecode) DeclareFetchURL(cleanupMode, protecodeGroup, fetchURL strin
 	if err != nil {
 		pc.logger.WithError(err).Fatalf("Protecode scan failed, exception during declare fetch url: %v", protecodeURL)
 	}
-	return pc.getResult(*r)
+
+	result := new(Result)
+	pc.mapResponse(*r, result)
+
+	return result
 }
 
 //PollForResult polls the protecode scan for the result scan
@@ -439,9 +381,11 @@ func (pc *Protecode) pullResult(productID int) (ResultData, error) {
 	if err != nil {
 		return *new(ResultData), err
 	}
-	response := pc.getResultData(*r)
+	result := new(ResultData)
+	pc.mapResponse(*r, result)
 
-	return *response, nil
+	return *result, nil
+
 }
 
 // LoadExistingProduct loads the existing product from protecode service
@@ -472,5 +416,8 @@ func (pc *Protecode) loadExisting(protecodeURL string, headers map[string][]stri
 		pc.logger.WithError(err).Fatalf("Protecode scan failed, during load existing product: %v", protecodeURL)
 	}
 
-	return pc.getProductData(*r)
+	result := new(ProductData)
+	pc.mapResponse(*r, result)
+
+	return result
 }
