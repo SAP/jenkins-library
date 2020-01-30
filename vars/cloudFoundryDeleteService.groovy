@@ -116,9 +116,6 @@ void call(Map parameters = [:]) {
 
         def script = checkScript(this, parameters) ?: this
 
-        Map config
-        def utils = parameters.juStabUtils ?: new Utils()
-        parameters.juStabUtils = null
 
         def jenkinsUtils = parameters.jenkinsUtilsStub ?: new JenkinsUtils()
 
@@ -131,13 +128,16 @@ void call(Map parameters = [:]) {
             .mixin(parameters, configKeys)
             .use()
 
+        Map config
+        def utils = parameters.juStabUtils ?: new Utils()
+        parameters.juStabUtils = null
 
         // telemetry reporting
         utils.pushToSWA([step: STEP_NAME], config)
 
-        //new PiperGoUtils(this, utils).unstashPiperBin()
-        //utils.unstash('pipelineConfigAndTests')
-        //script.commonPipelineEnvironment.writeToDisk(script)
+        new PiperGoUtils(this, utils).unstashPiperBin()
+        utils.unstash('pipelineConfigAndTests')
+        script.commonPipelineEnvironment.writeToDisk(script)
 
         writeFile(file: METADATA_FILE, text: libraryResource(METADATA_FILE))
 
