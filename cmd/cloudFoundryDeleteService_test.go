@@ -46,6 +46,13 @@ func TestCloudFoundryDeleteService2(t *testing.T) {
 			assert.Equal(t, "-f", execRunner.calls[1].params[2])
 		}
 	})
+	t.Run("CF Delete Service: Success case", func(t *testing.T) {
+		ServiceName := "testInstance"
+		error := cloudFoundryDeleteServiceFunction(ServiceName, &execRunner)
+		if error == nil {
+
+		}
+	})
 	t.Run("CF Logout: Success case", func(t *testing.T) {
 		error := cloudFoundryLogout(&execRunner)
 		if error == nil {
@@ -53,11 +60,4 @@ func TestCloudFoundryDeleteService2(t *testing.T) {
 			assert.Equal(t, "logout", execRunner.calls[2].params[0])
 		}
 	})
-	/*
-		t.Run("CF Logout: Success case", func(t *testing.T) {
-			error := cloudFoundryLogout(&execRunner)
-			if error == nil {
-				assert.Equal(t, "cf logout", execRunner.calls[2])
-			}
-		})*/
 }

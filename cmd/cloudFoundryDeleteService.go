@@ -30,7 +30,7 @@ func cloudFoundryDeleteService(CloudFoundryDeleteServiceOptions cloudFoundryDele
 func cloudFoundryLogin(CloudFoundryDeleteServiceOptions cloudFoundryDeleteServiceOptions, c execRunner) error {
 	var cfLoginScript = []string{"login", "-a", CloudFoundryDeleteServiceOptions.API, "-o", CloudFoundryDeleteServiceOptions.Organisation, "-s", CloudFoundryDeleteServiceOptions.Space, "-u", CloudFoundryDeleteServiceOptions.Username, "-p", CloudFoundryDeleteServiceOptions.Password}
 
-	log.Entry().WithField("cfAPI:", CloudFoundryDeleteServiceOptions.API).WithField("cfOrg", CloudFoundryDeleteServiceOptions.Organisation).WithField("space", CloudFoundryDeleteServiceOptions.Space).Info("Logging into Cloud Foundry..")
+	log.Entry().WithField("cfAPI:", CloudFoundryDeleteServiceOptions.API).WithField("cfOrg", CloudFoundryDeleteServiceOptions.Organisation).WithField("space", CloudFoundryDeleteServiceOptions.Space).WithField("password", CloudFoundryDeleteServiceOptions.Password).Info("Logging into Cloud Foundry..")
 
 	err := c.RunExecutable("cf", cfLoginScript...)
 	if err != nil {
