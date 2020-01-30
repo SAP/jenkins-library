@@ -32,15 +32,26 @@ type stepInfo struct {
 const stepGoTemplate = `package cmd
 
 import (
-	{{ if .OSImport }}"os"{{ end }}
-	{{ if .OutputResources }}"fmt"{{ end }}
-	{{ if .OutputResources }}"path/filepath"{{ end }}
+	{{ if .OSImport }}"os"
 
-	{{ if .ExportPrefix}}{{ .ExportPrefix }} "github.com/SAP/jenkins-library/cmd"{{ end -}}
+	{{ end -}}
+	
+	{{ if .OutputResources }}"fmt"
+
+	{{ end -}}
+
+	{{ if .OutputResources }}"path/filepath"
+
+	{{ end -}}
+
+	{{ if .ExportPrefix}}{{ .ExportPrefix }} "github.com/SAP/jenkins-library/cmd"
+	{{ end -}}
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
+	{{ if .OutputResources }}"github.com/SAP/jenkins-library/pkg/piperenv"
+	{{ end -}}
 	"github.com/SAP/jenkins-library/pkg/telemetry"
-	{{ if .OutputResources }}"github.com/SAP/jenkins-library/pkg/piperenv"{{ end }}
+
 	"github.com/spf13/cobra"
 )
 

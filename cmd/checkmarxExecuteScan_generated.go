@@ -1,14 +1,17 @@
 package cmd
 
 import (
-	"fmt"
 	"os"
+
+	"fmt"
+
 	"path/filepath"
 
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperenv"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+
 	"github.com/spf13/cobra"
 )
 
