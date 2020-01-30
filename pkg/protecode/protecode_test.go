@@ -259,7 +259,7 @@ func TestPollForResultSuccess(t *testing.T) {
 	pc := Protecode{serverURL: server.URL, client: client, duration: (time.Minute * 1), logger: log.Entry().WithField("package", "SAP/jenkins-library/pkg/protecode")}
 
 	for _, c := range cases {
-		got := pc.PollForResult(c.productID, "1", false)
+		got := pc.PollForResult(c.productID, "1", true)
 		assert.Equal(t, c.want, got)
 		assert.Equal(t, fmt.Sprintf("/api/product/%v/", c.productID), requestURI)
 	}

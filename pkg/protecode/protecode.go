@@ -248,25 +248,38 @@ func (pc *Protecode) ParseResultForInflux(result Result, protecodeExcludeCVEs st
 
 	for _, components := range result.Components {
 		for _, vulnerability := range components.Vulns {
-			if vulnerability.Exact {
-				if pc.isExcluded(vulnerability, protecodeExcludeCVEs) {
-					m["excluded_vulnerabilities"]++
-				} else if pc.isTriaged(vulnerability) {
-					m["triaged_vulnerabilities"]++
-				} else {
-					m["count"]++
-					if pc.isSevereCVSS3(vulnerability) {
-						m["cvss3GreaterOrEqualSeven"]++
-						m["major_vulnerabilities"]++
-					} else if pc.isSevereCVSS2(vulnerability) {
-						m["cvss2GreaterOrEqualSeven"]++
-						m["major_vulnerabilities"]++
-					} else {
-						m["minor_vulnerabilities"]++
-					}
-					m["vulnerabilities"]++
-				}
-			} else {
+
+			exact := isExact(vulnerability)
+			historical := !exact
+			excluded := exact && isExcluded(vulnerability, protecodeExcludeCVEs)
+			triaged := exact && isTriaged(vulnerability)
+			countVulnerability := exact && !isExcluded(vulnerability, protecodeExcludeCVEs) && !isTriaged(vulnerability)
+			CVSS3 := countVulnerability && isSevereCVSS3(vulnerability)
+			CVSS2 := countVulnerability && isSevereCVSS2(vulnerability)
+			minor := countVulnerability && !CVSS3 && !CVSS2
+
+			if excluded {
+				m["excluded_vulnerabilities"]++
+			}
+			if triaged {
+				m["triaged_vulnerabilities"]++
+			}
+			if countVulnerability {
+				m["count"]++
+				m["vulnerabilities"]++
+			}
+			if CVSS3 {
+				m["cvss3GreaterOrEqualSeven"]++
+				m["major_vulnerabilities"]++
+			}
+			if CVSS2 {
+				m["cvss2GreaterOrEqualSeven"]++
+				m["major_vulnerabilities"]++
+			}
+			if minor {
+				m["minor_vulnerabilities"]++
+			}
+			if historical {
 				m["historical_vulnerabilities"]++
 			}
 		}
@@ -275,21 +288,25 @@ func (pc *Protecode) ParseResultForInflux(result Result, protecodeExcludeCVEs st
 	return m
 }
 
-func (pc *Protecode) isExcluded(vulnerability Vulnerability, protecodeExcludeCVEs string) bool {
+func isExact(vulnerability Vulnerability) bool {
+	return vulnerability.Exact
+}
+
+func isExcluded(vulnerability Vulnerability, protecodeExcludeCVEs string) bool {
 	return strings.Contains(protecodeExcludeCVEs, vulnerability.Vuln.Cve)
 }
 
-func (pc *Protecode) isTriaged(vulnerability Vulnerability) bool {
+func isTriaged(vulnerability Vulnerability) bool {
 	return len(vulnerability.Triage) > 0
 }
 
-func (pc *Protecode) isSevereCVSS3(vulnerability Vulnerability) bool {
+func isSevereCVSS3(vulnerability Vulnerability) bool {
 	threshold := 7.0
 	cvss3, _ := strconv.ParseFloat(vulnerability.Vuln.Cvss3Score, 64)
 	return cvss3 >= threshold
 }
 
-func (pc *Protecode) isSevereCVSS2(vulnerability Vulnerability) bool {
+func isSevereCVSS2(vulnerability Vulnerability) bool {
 	threshold := 7.0
 	cvss3, _ := strconv.ParseFloat(vulnerability.Vuln.Cvss3Score, 64)
 	return cvss3 == 0 && vulnerability.Vuln.Cvss >= threshold
@@ -342,6 +359,8 @@ func (pc *Protecode) UploadScanFile(cleanupMode, protecodeGroup, filePath string
 	r, err := pc.client.UploadRequest(http.MethodPut, url, filePath, "file", headers, nil)
 	if err != nil {
 		pc.logger.WithError(err).Fatalf("Protecode scan failed, error during %v upload request", url)
+	} else {
+		pc.logger.Info("Protecode scan upload successful")
 	}
 
 	return pc.getResultData(r.Body)
@@ -396,17 +415,6 @@ func (pc *Protecode) PollForResult(productID int, timeOutInMinutes string, verbo
 			if verbose {
 				pc.logger.Infof("Tick : %v Processing status for productID %v", t, productID)
 			}
-			response, err = pc.pullResult(productID)
-			if err != nil {
-				ticker.Stop()
-				i = 0
-				return response
-			}
-			if len(response.Result.Components) > 0 && response.Result.Status != "B" {
-				ticker.Stop()
-				i = 0
-				break
-			}
 		}
 	}
 
@@ -421,7 +429,11 @@ func (pc *Protecode) PollForResult(productID int, timeOutInMinutes string, verbo
 }
 
 func (pc *Protecode) pullResult(productID int) (ResultData, error) {
-	protecodeURL, headers := pc.getPullResultRequestData(productID)
+
+	protecodeURL := pc.createURL("/api/product/", fmt.Sprintf("%v/", productID), "")
+	headers := map[string][]string{
+		"acceptType": []string{"application/json"},
+	}
 
 	r, err := pc.sendAPIRequest(http.MethodGet, protecodeURL, headers)
 	if err != nil {
@@ -430,15 +442,6 @@ func (pc *Protecode) pullResult(productID int) (ResultData, error) {
 	response := pc.getResultData(*r)
 
 	return *response, nil
-}
-
-func (pc *Protecode) getPullResultRequestData(productID int) (string, map[string][]string) {
-	protecodeURL := pc.createURL("/api/product/", fmt.Sprintf("%v/", productID), "")
-	headers := map[string][]string{
-		"acceptType": []string{"application/json"},
-	}
-
-	return protecodeURL, headers
 }
 
 // LoadExistingProduct loads the existing product from protecode service
