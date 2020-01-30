@@ -22,43 +22,43 @@ void call(parameters) {
                 }
             }
             stage('Build') {
-                when {branch parameters.script.commonPipelineEnvironment.getStepConfiguration('', '').productiveBranch}
+                when {expression { env.BRANCH_NAME ==~ parameters.script.commonPipelineEnvironment.getStepConfiguration('', '').productiveBranch }}
                 steps {
                     piperPipelineStageBuild script: parameters.script
                 }
             }
             stage('Additional Unit Tests') {
-                when {allOf {branch parameters.script.commonPipelineEnvironment.getStepConfiguration('', '').productiveBranch; expression {return parameters.script.commonPipelineEnvironment.configuration.runStage?.get(env.STAGE_NAME)}}}
+                when {allOf {expression { env.BRANCH_NAME ==~ parameters.script.commonPipelineEnvironment.getStepConfiguration('', '').productiveBranch }; expression {return parameters.script.commonPipelineEnvironment.configuration.runStage?.get(env.STAGE_NAME)}}}
                 steps {
                     piperPipelineStageAdditionalUnitTests script: parameters.script
                 }
             }
             stage('Integration') {
-                when {allOf {branch parameters.script.commonPipelineEnvironment.getStepConfiguration('', '').productiveBranch; expression {return parameters.script.commonPipelineEnvironment.configuration.runStage?.get(env.STAGE_NAME)}}}
+                when {allOf {expression { env.BRANCH_NAME ==~ parameters.script.commonPipelineEnvironment.getStepConfiguration('', '').productiveBranch }; expression {return parameters.script.commonPipelineEnvironment.configuration.runStage?.get(env.STAGE_NAME)}}}
                 steps {
                     piperPipelineStageIntegration script: parameters.script
                 }
             }
             stage('Acceptance') {
-                when {allOf {branch parameters.script.commonPipelineEnvironment.getStepConfiguration('', '').productiveBranch; expression {return parameters.script.commonPipelineEnvironment.configuration.runStage?.get(env.STAGE_NAME)}}}
+                when {allOf {expression { env.BRANCH_NAME ==~ parameters.script.commonPipelineEnvironment.getStepConfiguration('', '').productiveBranch }; expression {return parameters.script.commonPipelineEnvironment.configuration.runStage?.get(env.STAGE_NAME)}}}
                 steps {
                     piperPipelineStageAcceptance script: parameters.script
                 }
             }
             stage('Security') {
-                when {allOf {branch parameters.script.commonPipelineEnvironment.getStepConfiguration('', '').productiveBranch; expression {return parameters.script.commonPipelineEnvironment.configuration.runStage?.get(env.STAGE_NAME)}}}
+                when {allOf {expression { env.BRANCH_NAME ==~ parameters.script.commonPipelineEnvironment.getStepConfiguration('', '').productiveBranch }; expression {return parameters.script.commonPipelineEnvironment.configuration.runStage?.get(env.STAGE_NAME)}}}
                 steps {
                     piperPipelineStageSecurity script: parameters.script
                 }
             }
             stage('Performance') {
-                when {allOf {branch parameters.script.commonPipelineEnvironment.getStepConfiguration('', '').productiveBranch; expression {return parameters.script.commonPipelineEnvironment.configuration.runStage?.get(env.STAGE_NAME)}}}
+                when {allOf {expression { env.BRANCH_NAME ==~ parameters.script.commonPipelineEnvironment.getStepConfiguration('', '').productiveBranch }; expression {return parameters.script.commonPipelineEnvironment.configuration.runStage?.get(env.STAGE_NAME)}}}
                 steps {
                     piperPipelineStagePerformance script: parameters.script
                 }
             }
             stage('Compliance') {
-                when {allOf {branch parameters.script.commonPipelineEnvironment.getStepConfiguration('', '').productiveBranch; expression {return parameters.script.commonPipelineEnvironment.configuration.runStage?.get(env.STAGE_NAME)}}}
+                when {allOf {expression { env.BRANCH_NAME ==~ parameters.script.commonPipelineEnvironment.getStepConfiguration('', '').productiveBranch }; expression {return parameters.script.commonPipelineEnvironment.configuration.runStage?.get(env.STAGE_NAME)}}}
                 steps {
                     piperPipelineStageCompliance script: parameters.script
                 }
@@ -71,13 +71,13 @@ void call(parameters) {
                 }
             }
             stage('Promote') {
-                when { branch parameters.script.commonPipelineEnvironment.getStepConfiguration('', '').productiveBranch}
+                when { expression { env.BRANCH_NAME ==~ parameters.script.commonPipelineEnvironment.getStepConfiguration('', '').productiveBranch }}
                 steps {
                     piperPipelineStagePromote script: parameters.script
                 }
             }
             stage('Release') {
-                when {allOf {branch parameters.script.commonPipelineEnvironment.getStepConfiguration('', '').productiveBranch; expression {return parameters.script.commonPipelineEnvironment.configuration.runStage?.get(env.STAGE_NAME)}}}
+                when {allOf {expression { env.BRANCH_NAME ==~ parameters.script.commonPipelineEnvironment.getStepConfiguration('', '').productiveBranch }; expression {return parameters.script.commonPipelineEnvironment.configuration.runStage?.get(env.STAGE_NAME)}}}
                 steps {
                     piperPipelineStageRelease script: parameters.script
                 }
