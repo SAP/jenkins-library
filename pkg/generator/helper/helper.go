@@ -74,18 +74,19 @@ func {{.CobraCmdFuncName}}() *cobra.Command {
 			return {{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}PrepareConfig(cmd, &metadata, "{{ .StepName }}", &my{{ .StepName | title}}Options, config.OpenPiperFile)
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			errorCode := "1"
+			telemetryData := telemetry.CustomData{}
+			telemetryData.ErrorCode = "1"
 			handler := func() {
 				{{- range $notused, $oRes := .OutputResources }}
 				{{ index $oRes "name" }}.persist(GeneralConfig.EnvRootPath, "{{ index $oRes "name" }}"){{ end }}
-				telemetry.Send(&telemetry.CustomData{Duration: fmt.Sprintf("%v", time.Since(startTime)), ErrorCode: errorCode})
+				telemetry.Send(&telemetryData)
 			}
 			log.DeferExitHandler(handler)
 			defer handler()
 			telemetry.Initialize(GeneralConfig.NoTelemetry, "{{ .StepName }}")
-			telemetry.Send(&telemetry.CustomData{})
+			// ToDo: pass telemetryData to step
 			err := {{.StepName}}(my{{ .StepName | title }}Options{{ range $notused, $oRes := .OutputResources}}, &{{ index $oRes "name" }}{{ end }})
-			errorCode = "0"
+			telemetryData.ErrorCode = "0"
 			return err
 		},
 	}

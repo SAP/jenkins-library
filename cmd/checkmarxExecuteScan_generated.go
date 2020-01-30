@@ -184,17 +184,18 @@ thresholds instead of ` + "`" + `percentage` + "`" + ` whereas we strongly recom
 			return PrepareConfig(cmd, &metadata, "checkmarxExecuteScan", &myCheckmarxExecuteScanOptions, config.OpenPiperFile)
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			errorCode := "1"
+			telemetryData := telemetry.CustomData{}
+			telemetryData.ErrorCode = "1"
 			handler := func() {
 				influx.persist(GeneralConfig.EnvRootPath, "influx")
-				telemetry.Send(&telemetry.CustomData{Duration: fmt.Sprintf("%v", time.Since(startTime)), ErrorCode: errorCode})
+				telemetry.Send(&telemetryData)
 			}
 			log.DeferExitHandler(handler)
 			defer handler()
 			telemetry.Initialize(GeneralConfig.NoTelemetry, "checkmarxExecuteScan")
-			telemetry.Send(&telemetry.CustomData{})
+			// ToDo: pass telemetryData to step
 			err := checkmarxExecuteScan(myCheckmarxExecuteScanOptions, &influx)
-			errorCode = "0"
+			telemetryData.ErrorCode = "0"
 			return err
 		},
 	}

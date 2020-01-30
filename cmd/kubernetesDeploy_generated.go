@@ -70,16 +70,17 @@ helm upgrade <deploymentName> <chartPath> --install --force --namespace <namespa
 			return PrepareConfig(cmd, &metadata, "kubernetesDeploy", &myKubernetesDeployOptions, config.OpenPiperFile)
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			errorCode := "1"
+			telemetryData := telemetry.CustomData{}
+			telemetryData.ErrorCode = "1"
 			handler := func() {
-				telemetry.Send(&telemetry.CustomData{Duration: fmt.Sprintf("%v", time.Since(startTime)), ErrorCode: errorCode})
+				telemetry.Send(&telemetryData)
 			}
 			log.DeferExitHandler(handler)
 			defer handler()
 			telemetry.Initialize(GeneralConfig.NoTelemetry, "kubernetesDeploy")
-			telemetry.Send(&telemetry.CustomData{})
+			// ToDo: pass telemetryData to step
 			err := kubernetesDeploy(myKubernetesDeployOptions)
-			errorCode = "0"
+			telemetryData.ErrorCode = "0"
 			return err
 		},
 	}
