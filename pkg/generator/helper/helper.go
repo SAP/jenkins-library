@@ -35,7 +35,7 @@ import (
 	{{ if .OSImport }}"os"
 
 	{{ end -}}
-	
+
 	{{ if .OutputResources }}"fmt"
 
 	{{ end -}}
