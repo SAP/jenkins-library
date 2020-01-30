@@ -7,7 +7,6 @@ require (
 	github.com/Microsoft/hcsshim v0.8.7 // indirect
 	github.com/bmatcuk/doublestar v1.2.2
 	github.com/docker/docker v1.4.2-0.20200114201811-16a3519d870b // indirect
-	github.com/docker/docker-credential-helpers v0.6.3
 	github.com/ghodss/yaml v1.0.0
 	github.com/google/go-cmp v0.3.1
 	github.com/google/go-containerregistry v0.0.0-20200115214256-379933c9c22b

@@ -118,7 +118,7 @@ func getDockerImage(scanImage string, registryURL string, path string, includeLa
 	var resultFilePath string
 
 	if len(path) <= 0 {
-		resultFilePath = fmt.Sprintf("./%v", filepath.Join("./", tarFileName))
+		resultFilePath = filepath.Join(cachePath, fileName)
 		if len(resultFilePath) <= 0 {
 			log.Entry().Fatalf("Protecode scan failed, there is no file path configured  : %v (filename:%v, PSPath: %v)", path, fileName, image.FSPath)
 		}

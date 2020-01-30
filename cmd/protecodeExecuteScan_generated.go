@@ -8,6 +8,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperenv"
+	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/spf13/cobra"
 )
 
@@ -105,6 +106,8 @@ func ProtecodeExecuteScanCommand() *cobra.Command {
 			}
 			log.DeferExitHandler(handler)
 			defer handler()
+			telemetry.Initialize(GeneralConfig.NoTelemetry, "protecodeExecuteScan")
+			telemetry.Send(&telemetry.CustomData{})
 			return protecodeExecuteScan(myProtecodeExecuteScanOptions, &influx)
 		},
 	}
