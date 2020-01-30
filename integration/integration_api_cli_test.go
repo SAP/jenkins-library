@@ -22,7 +22,6 @@ func TestDummy(t *testing.T) {
 	assert.NoError(t, err, "Getting current working directory failed.")
 	dir = filepath.Dir(dir)
 
-
 	req := testcontainers.ContainerRequest{
 		Image:      "node:latest",
 		Cmd:        []string{"tail", "-f"},
@@ -47,4 +46,3 @@ func TestDummy(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, 0, code)
 }
-
