@@ -5,6 +5,7 @@ import (
 
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/telemetry"
 
 	"github.com/spf13/cobra"
 )
@@ -37,6 +38,8 @@ func DetectExecuteScanCommand() *cobra.Command {
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 
+			telemetry.Initialize(GeneralConfig.NoTelemetry, "detectExecuteScan")
+			telemetry.Send(&telemetry.CustomData{})
 			return detectExecuteScan(myDetectExecuteScanOptions)
 		},
 	}

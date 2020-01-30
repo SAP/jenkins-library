@@ -19,6 +19,7 @@ type GeneralConfigOptions struct {
 	DefaultConfig  []string //ordered list of Piper default configurations. Can be filePath or ENV containing JSON in format 'ENV:MY_ENV_VAR'
 	ParametersJSON string
 	EnvRootPath    string
+	NoTelemetry    bool
 	StageName      string
 	StepConfigJSON string
 	StepMetadata   string //metadata to be considered, can be filePath or ENV containing JSON in format 'ENV:MY_ENV_VAR'
@@ -46,9 +47,11 @@ func Execute() {
 	rootCmd.AddCommand(VersionCommand())
 	rootCmd.AddCommand(DetectExecuteScanCommand())
 	rootCmd.AddCommand(KarmaExecuteTestsCommand())
+	rootCmd.AddCommand(KubernetesDeployCommand())
 	rootCmd.AddCommand(XsDeployCommand())
 	rootCmd.AddCommand(GithubPublishReleaseCommand())
 	rootCmd.AddCommand(GithubCreatePullRequestCommand())
+	rootCmd.AddCommand(CheckmarxExecuteScanCommand())
 
 	addRootFlags(rootCmd)
 	if err := rootCmd.Execute(); err != nil {
@@ -65,6 +68,7 @@ func addRootFlags(rootCmd *cobra.Command) {
 	rootCmd.PersistentFlags().StringVar(&GeneralConfig.EnvRootPath, "envRootPath", ".pipeline", "Root path to Piper pipeline shared environments")
 	rootCmd.PersistentFlags().StringVar(&GeneralConfig.StageName, "stageName", os.Getenv("STAGE_NAME"), "Name of the stage for which configuration should be included")
 	rootCmd.PersistentFlags().StringVar(&GeneralConfig.StepConfigJSON, "stepConfigJSON", os.Getenv("PIPER_stepConfigJSON"), "Step configuration in JSON format")
+	rootCmd.PersistentFlags().BoolVar(&GeneralConfig.NoTelemetry, "noTelemetry", false, "Disables telemetry reporting")
 	rootCmd.PersistentFlags().BoolVarP(&GeneralConfig.Verbose, "verbose", "v", false, "verbose output")
 
 }
@@ -73,6 +77,12 @@ func addRootFlags(rootCmd *cobra.Command) {
 func PrepareConfig(cmd *cobra.Command, metadata *config.StepData, stepName string, options interface{}, openFile func(s string) (io.ReadCloser, error)) error {
 
 	filters := metadata.GetParameterFilters()
+
+	// add telemetry parameter "collectTelemetryData" to ALL, GENERAL and PARAMETER filters
+	filters.All = append(filters.All, "collectTelemetryData")
+	filters.General = append(filters.General, "collectTelemetryData")
+	filters.Parameters = append(filters.Parameters, "collectTelemetryData")
+
 	resourceParams := metadata.GetResourceParameters(GeneralConfig.EnvRootPath, "commonPipelineEnvironment")
 
 	flagValues := config.AvailableFlagValues(cmd, &filters)
@@ -114,6 +124,16 @@ func PrepareConfig(cmd *cobra.Command, metadata *config.StepData, stepName strin
 		stepConfig, err = myConfig.GetStepConfig(flagValues, GeneralConfig.ParametersJSON, customConfig, defaultConfig, filters, metadata.Spec.Inputs.Parameters, resourceParams, GeneralConfig.StageName, stepName)
 		if err != nil {
 			return errors.Wrap(err, "retrieving step configuration failed")
+		}
+	}
+
+	if fmt.Sprintf("%v", stepConfig.Config["collectTelemetryData"]) == "false" {
+		GeneralConfig.NoTelemetry = true
+	}
+
+	if !GeneralConfig.Verbose {
+		if stepConfig.Config["verbose"] != nil && stepConfig.Config["verbose"].(bool) {
+			log.SetVerbose(stepConfig.Config["verbose"].(bool))
 		}
 	}
 

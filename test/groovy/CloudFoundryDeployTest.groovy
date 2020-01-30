@@ -75,10 +75,15 @@ class CloudFoundryDeployTest extends BasePiperTest {
         credentialsRule.reset()
             .withCredentials('test_cfCredentialsId', 'test_cf', '********')
 
-        rules = helper.registerAllowedMethod('influxWriteData', [Map.class], { m ->
+        UUID.metaClass.static.randomUUID = { -> 1 }
+        helper.registerAllowedMethod('influxWriteData', [Map.class], { m ->
             writeInfluxMap = m
         })
+    }
 
+    @After
+    void tearDown() {
+        UUID.metaClass = null
     }
 
     @Test
@@ -447,9 +452,6 @@ class CloudFoundryDeployTest extends BasePiperTest {
     @Test
     void testCfNativeBlueGreenKeepOldInstanceShouldThrowErrorOnStopError(){
 
-        // the name of the file which will be written contains a dynamically generated UUID
-        // we force randomUUID() to return 1 that we can use this file in the test
-        UUID.metaClass.static.randomUUID = { -> 1}
         new File(tmpDir, '1-cfStopOutput.txt').write('any error message')
 
         shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, '^cf stop testAppName-old &> .*$', 1)
