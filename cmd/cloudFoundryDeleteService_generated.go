@@ -71,7 +71,7 @@ func cloudFoundryDeleteServiceMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   true,
-						Aliases:     []config.Alias{},
+						Aliases:     []config.Alias{{Name: "cloudFoundry/apiEndpoint"}},
 					},
 					{
 						Name:        "Username",
@@ -79,7 +79,7 @@ func cloudFoundryDeleteServiceMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   true,
-						Aliases:     []config.Alias{},
+						Aliases:     []config.Alias{{Name: "cloudFoundry/Username"}},
 					},
 					{
 						Name:        "Password",
@@ -87,7 +87,7 @@ func cloudFoundryDeleteServiceMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   true,
-						Aliases:     []config.Alias{},
+						Aliases:     []config.Alias{{Name: "cloudFoundry/Password"}},
 					},
 					{
 						Name:        "Organisation",
@@ -95,7 +95,7 @@ func cloudFoundryDeleteServiceMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   true,
-						Aliases:     []config.Alias{},
+						Aliases:     []config.Alias{{Name: "cloudFoundry/Organisation"}},
 					},
 					{
 						Name:        "Space",
@@ -103,7 +103,7 @@ func cloudFoundryDeleteServiceMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   true,
-						Aliases:     []config.Alias{},
+						Aliases:     []config.Alias{{Name: "cloudFoundry/Space"}},
 					},
 					{
 						Name:        "ServiceName",
@@ -111,7 +111,7 @@ func cloudFoundryDeleteServiceMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   true,
-						Aliases:     []config.Alias{},
+						Aliases:     []config.Alias{{Name: "cloudFoundry/ServiceName"}},
 					},
 				},
 			},
