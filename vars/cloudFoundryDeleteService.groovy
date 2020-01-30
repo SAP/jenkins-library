@@ -1,5 +1,6 @@
 import com.sap.piper.GenerateDocumentation
 import com.sap.piper.BashUtils
+import com.sap.piper.PiperGoUtils
 import com.sap.piper.JenkinsUtils
 import com.sap.piper.Utils
 import com.sap.piper.ConfigurationHelper
