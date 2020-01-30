@@ -66,4 +66,17 @@ class PiperPipelineStagePostTest extends BasePiperTest {
 
         assertThat(stepsCalled, hasItems('influxWriteData','mailSendNotification','slackSendNotification','piperPublishWarnings'))
     }
+
+    @Test
+    void testPostWithProductiveBranchPattern() {
+        binding.variables.env.BRANCH_NAME = 'anyOtherbranch'
+        nullScript.commonPipelineEnvironment.configuration = [
+            general: [productiveBranch: '.*branch'],
+            runStep: ['Post Actions': [slackSendNotification: true]]
+        ]
+
+        jsr.step.piperPipelineStagePost(script: nullScript, juStabUtils: utils)
+
+        assertThat(stepsCalled, hasItems('slackSendNotification'))
+    }
 }

@@ -273,4 +273,40 @@ class PiperPipelineTest extends BasePiperTest {
             'piperPipelineStagePost'
         ))
     }
+
+    @Test
+    void testMasterPipelineWithProductiveBranchPattern() {
+        binding.variables.env.BRANCH_NAME = 'anyOtherbranch'
+        nullScript.commonPipelineEnvironment.configuration = [
+            general: [productiveBranch: '.*branch'],
+            runStage: [
+                Build: true,
+                'Additional Unit Tests': true,
+                Integration: true,
+                Acceptance: true,
+                Security: true,
+                Performance: true,
+                Compliance: true,
+                Promote: true,
+                Release: true
+            ]
+        ]
+
+        jsr.step.piperPipeline(script: nullScript)
+
+        assertThat(stepsCalled, hasItems(
+            'piperPipelineStageInit',
+            'piperPipelineStageBuild',
+            'piperPipelineStageAdditionalUnitTests',
+            'piperPipelineStageIntegration',
+            'piperPipelineStageAcceptance',
+            'piperPipelineStageSecurity',
+            'piperPipelineStagePerformance',
+            'piperPipelineStageCompliance',
+            'piperPipelineStageConfirm',
+            'piperPipelineStagePromote',
+            'piperPipelineStageRelease',
+            'piperPipelineStagePost'
+        ))
+    }
 }

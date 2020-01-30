@@ -194,4 +194,17 @@ class PiperPipelineStageInitTest extends BasePiperTest {
             'pipelineStashFilesBeforeBuild'
         ))
     }
+
+    @Test
+    void testInitWithProductiveBranchPattern() {
+        binding.variables.env.BRANCH_NAME = 'anyOtherbranch'
+        nullScript.commonPipelineEnvironment.configuration = [
+            general: [productiveBranch: '.*branch'],
+            runStep: [Init: [slackSendNotification: true]]
+        ]
+
+        jsr.step.piperPipelineStageInit(script: nullScript, juStabUtils: utils, buildTool: 'maven')
+
+        assertThat(stepsCalled, hasItems('artifactSetVersion'))
+    }
 }
