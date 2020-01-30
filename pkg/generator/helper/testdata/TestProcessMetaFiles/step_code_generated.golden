@@ -113,6 +113,7 @@ func TestStepCommand() *cobra.Command {
 			handler := func() {
 				commonPipelineEnvironment.persist(GeneralConfig.EnvRootPath, "commonPipelineEnvironment")
 				influxTest.persist(GeneralConfig.EnvRootPath, "influxTest")
+				telemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime))
 				telemetry.Send(&telemetryData)
 			}
 			log.DeferExitHandler(handler)

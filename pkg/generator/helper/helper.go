@@ -79,6 +79,7 @@ func {{.CobraCmdFuncName}}() *cobra.Command {
 			handler := func() {
 				{{- range $notused, $oRes := .OutputResources }}
 				{{ index $oRes "name" }}.persist(GeneralConfig.EnvRootPath, "{{ index $oRes "name" }}"){{ end }}
+				telemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime))
 				telemetry.Send(&telemetryData)
 			}
 			log.DeferExitHandler(handler)

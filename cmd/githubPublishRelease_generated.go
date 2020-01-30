@@ -60,6 +60,7 @@ The result looks like
 			telemetryData := telemetry.CustomData{}
 			telemetryData.ErrorCode = "1"
 			handler := func() {
+				telemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime))
 				telemetry.Send(&telemetryData)
 			}
 			log.DeferExitHandler(handler)
