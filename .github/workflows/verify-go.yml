@@ -3,7 +3,7 @@ name: Go
 on: [push]
 
 jobs:
-  'format and generate':
+  generate-format:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/setup-go@v1
