@@ -28,8 +28,6 @@ spec:
         - STAGES
         - STEPS
         mandatory: true
-        aliases:
-          - name: cloudFoundry/Username
       - name: Password
         type: string
         description: User Password
@@ -38,8 +36,6 @@ spec:
         - STAGES
         - STEPS
         mandatory: true
-        aliases:
-          - name: cloudFoundry/Password
       - name: Organisation
         type: string
         description: CF org
@@ -49,7 +45,7 @@ spec:
         - STEPS
         mandatory: true
         aliases:
-          - name: cloudFoundry/Organisation
+          - name: cloudFoundry/org
       - name: Space
         type: string
         description: CF Space
@@ -59,7 +55,7 @@ spec:
         - STEPS
         mandatory: true
         aliases:
-          - name: cloudFoundry/Space
+          - name: cloudFoundry/space
       - name: ServiceName
         type: string
         description: Parameter to delete CloudFoundry Service
@@ -69,7 +65,7 @@ spec:
         - STEPS
         mandatory: true
         aliases:
-          - name: cloudFoundry/ServiceName
+          - name: cloudFoundry/serviceInstance
   containers:
     - name: cf
       image: ppiper/cf-cli
