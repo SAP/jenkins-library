@@ -4,7 +4,11 @@ metadata:
   longDescription: |
     Delete CloudFoundryService
 spec:
-  inputs:
+  inputs:    
+    secrets:
+      - name: credentialsId
+        description: Jenkins credentials ID containing user and password to authenticate to the Cloud Platform ABAP Environment system or the Cloud Foundry API
+        type: jenkins
     params:
       - name: API
         type: string
@@ -60,3 +64,7 @@ spec:
         - STEPS
         mandatory: true
         default:
+  containers:
+    - name: cf
+      image: ppiper/cf-cli
+      imagePullPolicy: Never
