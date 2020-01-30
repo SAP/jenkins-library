@@ -43,7 +43,7 @@ func DetectExecuteScanCommand() *cobra.Command {
 			telemetryData := telemetry.CustomData{}
 			telemetryData.ErrorCode = "1"
 			handler := func() {
-				telemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime))
+				telemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Microseconds())
 				telemetry.Send(&telemetryData)
 			}
 			log.DeferExitHandler(handler)

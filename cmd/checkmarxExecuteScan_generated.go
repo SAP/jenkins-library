@@ -188,7 +188,7 @@ thresholds instead of ` + "`" + `percentage` + "`" + ` whereas we strongly recom
 			telemetryData.ErrorCode = "1"
 			handler := func() {
 				influx.persist(GeneralConfig.EnvRootPath, "influx")
-				telemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime))
+				telemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Microseconds())
 				telemetry.Send(&telemetryData)
 			}
 			log.DeferExitHandler(handler)
