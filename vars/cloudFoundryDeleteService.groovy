@@ -91,8 +91,8 @@ private def deleteService(script, Map config) {
 
 //Daniels Ansatz
 
-@Field def STEP_NAME = getClass().getName()
-@Field String METADATA_FILE = 'metadata/cloudFoundryDeleteService.yaml'
+//@Field def STEP_NAME = getClass().getName()
+//@Field String METADATA_FILE = 'metadata/cloudFoundryDeleteService.yaml'
 
 void call(Map parameters = [:]) {
     handlePipelineStepErrors(stepName: STEP_NAME, stepParameters: parameters, failOnError: true) {
