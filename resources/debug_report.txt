@@ -8,8 +8,8 @@ The log was generated at: `$utcTimestamp UTC`
 
 <% print failedBuild ? "## Unsuccessful Build" : "" %>
 
-<% print failedBuild ? "#### Failed Stage" : "" %>
-<% print failedBuild.get("stage") ? "`${failedBuild.get("stage")}`" : "" %>
+<% print failedBuild ? "#### Failed Step" : "" %>
+<% print failedBuild.get("step") ? "`${failedBuild.get("step")}`" : "" %>
 
 <% print failedBuild.get("reason") ? "#### Error Message" : "" %>
 <% print failedBuild.get("reason") ? "```\n${failedBuild.get("reason")}\n```" : "" %>
@@ -17,6 +17,7 @@ The log was generated at: `$utcTimestamp UTC`
 <% print failedBuild.get("stack_trace") ? "```" : "" %>
 <% print failedBuild.get("stack_trace").collect({each -> "${each}"}).join("\n") %>
 <% print failedBuild.get("stack_trace") ? "```" : "" %>
+<% print failedBuild.get("fatal") ? "#### Failure was fatal." : "" %>
 
 ## Pipeline Environment
 

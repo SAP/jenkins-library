@@ -79,18 +79,16 @@ class DebugReport {
      *
      * @param stepName      The name of the crashed step or stage
      * @param err           The Throwable that was thrown
-     * @param isResilientAndNotMandatory
-     *                      Whether the step configuration indicated that this as
-     *                      "resilient" step which is not included in the list of mandatory steps.
+     * @param failedOnError Whether the failure was deemed fatal at the time of calling this method.
      */
-    void storeStepFailure(String stepName, Throwable err, boolean isResilientAndNotMandatory) {
-        failedBuild.put('stage', stepName)
+    void storeStepFailure(String stepName, Throwable err, boolean failedOnError) {
+        failedBuild.put('step', stepName)
         failedBuild.put('reason', err)
         failedBuild.put('stack_trace', err.getStackTrace())
-        if (isResilientAndNotMandatory) {
-            failedBuild.put('isResilient', 'true')
+        if (failedOnError) {
+            failedBuild.put('fatal', 'true')
         } else {
-            failedBuild.remove('isResilient')
+            failedBuild.remove('fatal')
         }
     }
 

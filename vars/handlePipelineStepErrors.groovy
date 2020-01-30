@@ -79,10 +79,10 @@ void call(Map parameters = [:], body) {
             message += formatErrorMessage(config, ex)
         writeErrorToInfluxData(config, ex)
 
-        boolean isMandatory = config.stepName in config.mandatorySteps
-        DebugReport.instance.storeStepFailure(config.stepName, ex, config.isResilient && !isMandatory)
+        boolean failOnError = config.failOnError || config.stepName in config.mandatorySteps
+        DebugReport.instance.storeStepFailure(config.stepName, ex, failOnError)
 
-        if (config.failOnError || isMandatory) {
+        if (failOnError) {
             throw ex
         }
 
@@ -107,13 +107,12 @@ void call(Map parameters = [:], body) {
         cpe?.setValue('unstableSteps', unstableSteps)
 
     } catch (Throwable error) {
-
-        boolean isMandatory = config.stepName in config.mandatorySteps
-        DebugReport.instance.storeStepFailure(config.stepName, error, config.isResilient && !isMandatory)
-
         if (config.echoDetails)
             message += formatErrorMessage(config, error)
         writeErrorToInfluxData(config, error)
+
+        DebugReport.instance.storeStepFailure(config.stepName, error, true)
+
         throw error
     } finally {
         if (config.echoDetails)
