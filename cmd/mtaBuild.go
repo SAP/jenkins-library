@@ -6,6 +6,9 @@ import (
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
+	"net/http"
+	piperhttp "github.com/SAP/jenkins-library/pkg/http"
+	"path/filepath"
 	"io/ioutil"
 	"os"
 	"strings"
@@ -48,7 +51,34 @@ func runMtaBuild(config mtaBuildOptions, commonPipelineEnvironment *mtaBuildComm
 	platform := "platform"
 	//	applicationName := ""
 	applicationName := "myApp"
+	defaultNpmRegistry := "npmReg"
+
+	projectSettingsFileSrc := "http://example.org"
+	projectSettingsFileDest := "project-settings.xml" // needs to be $HOME/.m2/settings.xml finally
+	globalSettingsFileSrc := "http://example.org"
+	globalSettingsFileDest := "global-settings.txt" // needs to be $M2_HOME/conf/settings.xml finally
 	//
+
+	// project settings file
+	if len(projectSettingsFileSrc) > 0 {
+		projectSettingsFileParent := filepath.Dir("/home/me/.m2/settings.xml")
+		fmt.Printf("ProjectSettingsfileParent: \"%s\"\n", projectSettingsFileParent)
+		if strings.HasPrefix(projectSettingsFileSrc, "http:") || strings.HasPrefix(projectSettingsFileSrc, "https:") {
+			materialize(projectSettingsFileSrc, projectSettingsFileDest)
+		} else {
+			piperutils.Copy(projectSettingsFileSrc, projectSettingsFileDest)
+		}
+	}
+
+	// global settings file
+	if len(globalSettingsFileSrc) > 0 {
+		materialize(globalSettingsFileSrc, globalSettingsFileDest)
+	}
+
+	if len(defaultNpmRegistry) > 0 {
+		// REVISIT: would be possible to do this below in the same shell call like the mtar build itself
+		s.RunShell("/bin/bash", fmt.Sprintf("npm config set registry %s", defaultNpmRegistry))
+	}
 
 	mtaYamlFile := "mta.yaml"
 	mtaYamlFileExists, err := piperutils.FileExists(mtaYamlFile)
@@ -101,6 +131,8 @@ func runMtaBuild(config mtaBuildOptions, commonPipelineEnvironment *mtaBuildComm
 
 	log.Entry().Infof("Executing mta build call: \"%s\"", mtaCall)
 
+	// REVISIT: when we have the possibility to provide environment variables from outside we can
+	// do the export this way.
 	script := fmt.Sprintf(`#!/bin/bash
 	export PATH=./node_modules/.bin:$PATH
 	echo "[DEBUG] PATH: ${PATH}"
@@ -143,4 +175,28 @@ func generateMta(id, name, version string) (string, error) {
 	var script bytes.Buffer
 	tmpl.Execute(&script, props)
 	return script.String(), nil
+}
+
+func materialize(url, file string) error {
+	client := &piperhttp.Client{}
+	//CHECK:
+	// - how does this work with a proxy inbetween?
+	// - how does this work with http 302 (relocated) --> curl -L
+	response, e := client.SendRequest(http.MethodGet, url, nil, nil, nil)
+    if e != nil {
+		return e
+	}
+
+	if response.StatusCode != 200 {
+		fmt.Errorf("Got %d reponse from download attemtp for \"%S\"", response.StatusCode, url)
+	}
+
+	body, e := ioutil.ReadAll(response.Body)
+	if e != nil {
+		return e
+	}
+
+	ioutil.WriteFile(file, body, 0644)
+
+	return nil
 }
