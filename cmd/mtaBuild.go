@@ -51,7 +51,7 @@ func runMtaBuild(config mtaBuildOptions, commonPipelineEnvironment *mtaBuildComm
 	//applicationName := "myApp"
 	//
 
-	mtaYamlFile := "mta.yml"
+	mtaYamlFile := "mta.yaml"
 	mtaYamlFileExists, err := piperutils.FileExists(mtaYamlFile)
 
 	if err != nil {
