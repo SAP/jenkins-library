@@ -1,12 +1,13 @@
 package cmd
 
 import (
+	"fmt"
 	"os"
+	"time"
 
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
-
 	"github.com/spf13/cobra"
 )
 
@@ -26,21 +27,32 @@ var myDetectExecuteScanOptions detectExecuteScanOptions
 // DetectExecuteScanCommand Executes Synopsis Detect scan
 func DetectExecuteScanCommand() *cobra.Command {
 	metadata := detectExecuteScanMetadata()
+	var startTime time.Time
 
 	var createDetectExecuteScanCmd = &cobra.Command{
 		Use:   "detectExecuteScan",
 		Short: "Executes Synopsis Detect scan",
 		Long:  `This step executes [Synopsis Detect](https://synopsys.atlassian.net/wiki/spaces/INTDOCS/pages/62423113/Synopsys+Detect) scans.`,
 		PreRunE: func(cmd *cobra.Command, args []string) error {
+			startTime = time.Now()
 			log.SetStepName("detectExecuteScan")
 			log.SetVerbose(GeneralConfig.Verbose)
 			return PrepareConfig(cmd, &metadata, "detectExecuteScan", &myDetectExecuteScanOptions, config.OpenPiperFile)
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-
+			telemetryData := telemetry.CustomData{}
+			telemetryData.ErrorCode = "1"
+			handler := func() {
+				telemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
+				telemetry.Send(&telemetryData)
+			}
+			log.DeferExitHandler(handler)
+			defer handler()
 			telemetry.Initialize(GeneralConfig.NoTelemetry, "detectExecuteScan")
-			telemetry.Send(&telemetry.CustomData{})
-			return detectExecuteScan(myDetectExecuteScanOptions)
+			// ToDo: pass telemetryData to step
+			err := detectExecuteScan(myDetectExecuteScanOptions)
+			telemetryData.ErrorCode = "0"
+			return err
 		},
 	}
 
