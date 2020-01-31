@@ -1,7 +1,5 @@
 import com.sap.piper.GenerateDocumentation
-import com.sap.piper.DockerUtils
 import com.sap.piper.JenkinsUtils
-import com.sap.piper.internal.Notify
 import com.sap.piper.PiperGoUtils
 import com.sap.piper.Utils
 
@@ -100,18 +98,9 @@ void call(Map parameters = [:]) {
             // get context configuration
             config = readJSON (text: sh(returnStdout: true, script: "./piper getConfig --contextConfig --stepMetadata '${METADATA_FILE}'"))
 
-            utils.pushToSWA([
-                step: STEP_NAME,
-                stepParamKey1: 'scriptMissing',
-                stepParam1: parameters?.script == null
-            ], config)
-
             callProtecodeScan(config)
 
             def json = readJSON (file: "Vulns.json")
-            if(!json) {
-                    Notify.error(this, "Protecode scan failed, please check the log and protecode backend for more details.")
-            }
 
             def report = readJSON (file: 'report.json')
 
@@ -124,9 +113,6 @@ void call(Map parameters = [:]) {
 
             if(json.results.summary?.verdict?.short == 'Vulns') {
                 echo "${report['count']} ${json.results.summary?.verdict.detailed} of which ${report['cvss2GreaterOrEqualSeven']} had a CVSS v2 score >= 7.0 and ${report['cvss3GreaterOrEqualSeven']} had a CVSS v3 score >= 7.0.\n${report['excludedVulnerabilities']} vulnerabilities were excluded via configuration (${report['protecodeExcludeCVEs']}) and ${report['triagedVulnerabilities']} vulnerabilities were triaged via the webUI.\nIn addition ${report['historicalVulnerabilities']} historical vulnerabilities were spotted."
-                if(report['protecodeFailOnSevereVulnerabilities'] && (report['cvss2GreaterOrEqualSeven'] > 0 || report['cvss3GreaterOrEqualSeven'] > 0)) {
-                    Notify.error(this, "Protecode detected Open Source Software Security vulnerabilities, the project is not compliant. For details see the archived report or the web ui: ${report['protecodeServerUrl']}/products/${report['productID']}/")
-                }
             }
         }
     }
