@@ -40,15 +40,14 @@ func runMtaBuild(config mtaBuildOptions, commonPipelineEnvironment *mtaBuildComm
 	s.Stdout(os.Stderr) // keep stdout clear.
 	s.Stderr(os.Stderr)
 
-
 	//
 	//mtaBuildTool := "classic"
 	mtaBuildTool := "cloudMbt"
 	buildTarget := "buildTarget"
 	extensions := "ext"
 	platform := "platform"
-	applicationName := ""
-	//applicationName := "myApp"
+	//	applicationName := ""
+	applicationName := "myApp"
 	//
 
 	mtaYamlFile := "mta.yaml"
