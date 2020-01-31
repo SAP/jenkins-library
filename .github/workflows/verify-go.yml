@@ -11,7 +11,7 @@ jobs:
         go-version: '1.13.x'
     - name: checkout
       uses: actions/checkout@v2
-    - name: format
+    - name: unit-test
       run: go test ./... --cover
   format:
     runs-on: ubuntu-latest
