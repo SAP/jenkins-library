@@ -6,11 +6,9 @@ import (
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
-	"io"
 	"io/ioutil"
 	"os"
 	"strings"
-	"sync"
 	"text/template"
 )
 
@@ -39,32 +37,9 @@ func mtaBuild(config mtaBuildOptions, commonPipelineEnvironment *mtaBuildCommonP
 func runMtaBuild(config mtaBuildOptions, commonPipelineEnvironment *mtaBuildCommonPipelineEnvironment,
 	s shellRunner) error {
 
-	prOut, pwOut := io.Pipe()
-	prErr, pwErr := io.Pipe()
+	s.Stdout(os.Stderr) // keep stdout clear.
+	s.Stderr(os.Stderr)
 
-	s.Stdout(pwOut)
-	s.Stderr(pwErr)
-
-	var e, o string
-
-	var wg sync.WaitGroup
-	wg.Add(2)
-
-	go func() {
-		buf := new(bytes.Buffer)
-		r := io.TeeReader(prOut, os.Stderr)
-		io.Copy(buf, r)
-		o = buf.String()
-		wg.Done()
-	}()
-
-	go func() {
-		buf := new(bytes.Buffer)
-		r := io.TeeReader(prErr, os.Stderr)
-		io.Copy(buf, r)
-		e = buf.String()
-		wg.Done()
-	}()
 
 	//
 	//mtaBuildTool := "classic"
@@ -132,11 +107,6 @@ func runMtaBuild(config mtaBuildOptions, commonPipelineEnvironment *mtaBuildComm
 	if err := s.RunShell("/bin/bash", script); err != nil {
 		return err
 	}
-
-	pwOut.Close()
-	pwErr.Close()
-
-	wg.Wait()
 
 	mtarFilePath := "dummy.mtar"
 	commonPipelineEnvironment.mtarFilePath = mtarFilePath
