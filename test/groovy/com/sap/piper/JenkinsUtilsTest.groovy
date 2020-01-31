@@ -1,5 +1,7 @@
 package com.sap.piper
 
+import hudson.plugins.sidebar_link.LinkAction
+
 import org.jenkinsci.plugins.workflow.steps.MissingContextVariableException
 import org.junit.Before
 import org.junit.Rule
@@ -172,9 +174,7 @@ class JenkinsUtilsTest extends BasePiperTest {
     @Test
     void testRemoveJobSideBarLinks() {
         def actions = new ArrayList()
-        def linkActionClass = this.class.classLoader.loadClass("hudson.plugins.sidebar_link.LinkAction")
-        def action = linkActionClass.newInstance("abcd/1234", "Some report link", "images/24x24/report.png")
-        actions.add(action)
+        actions.add(new LinkAction("abcd/1234", "Some report link", "images/24x24/report.png"))
 
         helper.registerAllowedMethod("getActions", [], {
             return actions
