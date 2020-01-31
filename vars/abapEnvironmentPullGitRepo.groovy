@@ -14,21 +14,9 @@ void call(Map parameters = [:]) {
 
         def script = checkScript(this, parameters) ?: this
 
-        Set configKeys = ['dockerImage', 'dockerWorkspace']
-        Map jenkinsConfig = ConfigurationHelper.newInstance(this)
-            .loadStepDefaults()
-            .mixinGeneralConfig(script.commonPipelineEnvironment, configKeys)
-            .mixinStepConfig(script.commonPipelineEnvironment, configKeys)
-            .mixinStageConfig(script.commonPipelineEnvironment, env.STAGE_NAME, configKeys)
-            .mixin(parameters, configKeys)
-            .use()
-
         Map config
         def utils = parameters.juStabUtils ?: new Utils()
         parameters.juStabUtils = null
-
-        // telemetry reporting
-        utils.pushToSWA([step: STEP_NAME], config)
 
         new PiperGoUtils(this, utils).unstashPiperBin()
         utils.unstash('pipelineConfigAndTests')
@@ -45,8 +33,8 @@ void call(Map parameters = [:]) {
             // execute step
             dockerExecute(
                 script: script,
-                dockerImage: jenkinsConfig.dockerImage,
-                dockerWorkspace: jenkinsConfig.dockerWorkspace
+                dockerImage: config.dockerImage,
+                dockerWorkspace: config.dockerWorkspace
             ) {
                 withCredentials([usernamePassword(
                     credentialsId: config.credentialsId,
