@@ -109,7 +109,10 @@ private void executeStage(script, originalStage, stageName, config, utils) {
             callInterceptor(script, projectInterceptorFile, modifiedOriginalBody, stageName, config)
 
         } else {
-            //TODO: assign projectInterceptorScript to body as done for globalInterceptorScript, currently test framework does not seem to support this case. Further investigations needed.
+            // NOTE: It may appear more elegant to re-assign 'body' more than once and then call 'body()' after the
+            // if-block. This could lead to infinite loops however, as any change to the local variable 'body' will
+            // become visible in all of the closures at the time they run. I.e. 'body' inside any of the closures will
+            // reflect the last assignment and not its value at the time of constructing the closure!
             body()
         }
 
