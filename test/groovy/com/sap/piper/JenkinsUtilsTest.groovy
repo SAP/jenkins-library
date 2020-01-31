@@ -171,7 +171,9 @@ class JenkinsUtilsTest extends BasePiperTest {
     @Test
     void testRemoveJobSideBarLinks() {
         def actions = new ArrayList()
-        actions.add(new LinkAction("abcd/1234", "Some report link", "images/24x24/report.png"))
+        def linkActionClass = this.class.classLoader.loadClass("hudson.plugins.sidebar_link.LinkAction")
+        def action = linkActionClass.newInstance("abcd/1234", "Some report link", "images/24x24/report.png")
+        actions.add(action)
 
         helper.registerAllowedMethod("getActions", [], {
             return actions
