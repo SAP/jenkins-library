@@ -71,7 +71,7 @@ helm upgrade <deploymentName> <chartPath> --install --force --namespace <namespa
 			telemetryData := telemetry.CustomData{}
 			telemetryData.ErrorCode = "1"
 			handler := func() {
-				telemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Microseconds())
+				telemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
 				telemetry.Send(&telemetryData)
 			}
 			log.DeferExitHandler(handler)
