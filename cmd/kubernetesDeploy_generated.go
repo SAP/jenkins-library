@@ -1,13 +1,12 @@
 package cmd
 
 import (
-	"fmt"
 	"os"
-	"time"
 
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+
 	"github.com/spf13/cobra"
 )
 
@@ -38,7 +37,6 @@ var myKubernetesDeployOptions kubernetesDeployOptions
 // KubernetesDeployCommand Deployment to Kubernetes test or production namespace within the specified Kubernetes cluster.
 func KubernetesDeployCommand() *cobra.Command {
 	metadata := kubernetesDeployMetadata()
-	var startTime time.Time
 
 	var createKubernetesDeployCmd = &cobra.Command{
 		Use:   "kubernetesDeploy",
@@ -62,25 +60,15 @@ helm upgrade <deploymentName> <chartPath> --install --force --namespace <namespa
 * ` + "`" + `yourImageName` + "`" + `, ` + "`" + `yourImageTag` + "`" + ` will be retrieved from ` + "`" + `image` + "`" + `
 * ` + "`" + `dockerSecret` + "`" + ` will be calculated with a call to ` + "`" + `kubectl create secret docker-registry regsecret --docker-server=<yourRegistry> --docker-username=<containerRegistryUser> --docker-password=<containerRegistryPassword> --dry-run=true --output=json'` + "`" + ``,
 		PreRunE: func(cmd *cobra.Command, args []string) error {
-			startTime = time.Now()
 			log.SetStepName("kubernetesDeploy")
 			log.SetVerbose(GeneralConfig.Verbose)
 			return PrepareConfig(cmd, &metadata, "kubernetesDeploy", &myKubernetesDeployOptions, config.OpenPiperFile)
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			telemetryData := telemetry.CustomData{}
-			telemetryData.ErrorCode = "1"
-			handler := func() {
-				telemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Microseconds())
-				telemetry.Send(&telemetryData)
-			}
-			log.DeferExitHandler(handler)
-			defer handler()
+
 			telemetry.Initialize(GeneralConfig.NoTelemetry, "kubernetesDeploy")
-			// ToDo: pass telemetryData to step
-			err := kubernetesDeploy(myKubernetesDeployOptions)
-			telemetryData.ErrorCode = "0"
-			return err
+			telemetry.Send(&telemetry.CustomData{})
+			return kubernetesDeploy(myKubernetesDeployOptions)
 		},
 	}
 
