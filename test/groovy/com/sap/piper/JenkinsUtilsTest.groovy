@@ -13,6 +13,7 @@ import util.Rules
 
 import static org.hamcrest.Matchers.*
 import static org.junit.Assert.assertThat
+import static org.junit.Assert.assertEquals
 
 class JenkinsUtilsTest extends BasePiperTest {
     private JenkinsLoggingRule loggingRule = new JenkinsLoggingRule(this)
