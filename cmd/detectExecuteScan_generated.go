@@ -49,7 +49,6 @@ func DetectExecuteScanCommand() *cobra.Command {
 			log.DeferExitHandler(handler)
 			defer handler()
 			telemetry.Initialize(GeneralConfig.NoTelemetry, "detectExecuteScan")
-			// ToDo: pass telemetryData to step
 			detectExecuteScan(myDetectExecuteScanOptions, &telemetryData)
 			telemetryData.ErrorCode = "0"
 		},

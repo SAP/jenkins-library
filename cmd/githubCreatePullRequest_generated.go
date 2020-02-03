@@ -54,7 +54,6 @@ It can for example be used for GitOps scenarios or for scenarios where you want 
 			log.DeferExitHandler(handler)
 			defer handler()
 			telemetry.Initialize(GeneralConfig.NoTelemetry, "githubCreatePullRequest")
-			// ToDo: pass telemetryData to step
 			githubCreatePullRequest(myGithubCreatePullRequestOptions, &telemetryData)
 			telemetryData.ErrorCode = "0"
 		},

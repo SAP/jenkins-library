@@ -64,7 +64,6 @@ The result looks like
 			log.DeferExitHandler(handler)
 			defer handler()
 			telemetry.Initialize(GeneralConfig.NoTelemetry, "githubPublishRelease")
-			// ToDo: pass telemetryData to step
 			githubPublishRelease(myGithubPublishReleaseOptions, &telemetryData)
 			telemetryData.ErrorCode = "0"
 		},

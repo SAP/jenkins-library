@@ -40,7 +40,6 @@ func VersionCommand() *cobra.Command {
 			log.DeferExitHandler(handler)
 			defer handler()
 			telemetry.Initialize(GeneralConfig.NoTelemetry, "version")
-			// ToDo: pass telemetryData to step
 			version(myVersionOptions, &telemetryData)
 			telemetryData.ErrorCode = "0"
 		},

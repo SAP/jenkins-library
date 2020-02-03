@@ -54,7 +54,6 @@ func XsDeployCommand() *cobra.Command {
 			log.DeferExitHandler(handler)
 			defer handler()
 			telemetry.Initialize(GeneralConfig.NoTelemetry, "xsDeploy")
-			// ToDo: pass telemetryData to step
 			xsDeploy(myXsDeployOptions, &telemetryData)
 			telemetryData.ErrorCode = "0"
 		},

@@ -77,7 +77,6 @@ helm upgrade <deploymentName> <chartPath> --install --force --namespace <namespa
 			log.DeferExitHandler(handler)
 			defer handler()
 			telemetry.Initialize(GeneralConfig.NoTelemetry, "kubernetesDeploy")
-			// ToDo: pass telemetryData to step
 			kubernetesDeploy(myKubernetesDeployOptions, &telemetryData)
 			telemetryData.ErrorCode = "0"
 		},
