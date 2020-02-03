@@ -9,13 +9,12 @@ import (
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 )
 
-func detectExecuteScan(myDetectExecuteScanOptions detectExecuteScanOptions, telemetryData *telemetry.CustomData) error {
+func detectExecuteScan(myDetectExecuteScanOptions detectExecuteScanOptions, telemetryData *telemetry.CustomData) {
 	c := command.Command{}
 	// reroute command output to logging framework
 	c.Stdout(log.Entry().Writer())
 	c.Stderr(log.Entry().Writer())
 	runDetect(myDetectExecuteScanOptions, &c)
-	return nil
 }
 
 func runDetect(myDetectExecuteScanOptions detectExecuteScanOptions, command shellRunner) {
