@@ -175,7 +175,7 @@ func (pc *Protecode) sendAPIRequest(method string, url string, headers map[strin
 }
 
 // ParseResultForInflux parses the result from the scan into the internal format
-func (pc *Protecode) ParseResultForInflux(result Result, protecodeExcludeCVEs string) (map[string]int, []Vuln) {
+func (pc *Protecode) ParseResultForInflux(result Result, excludeCVEs string) (map[string]int, []Vuln) {
 
 	var vulns []Vuln
 
@@ -194,9 +194,9 @@ func (pc *Protecode) ParseResultForInflux(result Result, protecodeExcludeCVEs st
 		for _, vulnerability := range components.Vulns {
 
 			exact := isExact(vulnerability)
-			countVulnerability := isExact(vulnerability) && !isExcluded(vulnerability, protecodeExcludeCVEs) && !isTriaged(vulnerability)
+			countVulnerability := isExact(vulnerability) && !isExcluded(vulnerability, excludeCVEs) && !isTriaged(vulnerability)
 
-			if exact && isExcluded(vulnerability, protecodeExcludeCVEs) {
+			if exact && isExcluded(vulnerability, excludeCVEs) {
 				m["excluded_vulnerabilities"]++
 			}
 			if exact && isTriaged(vulnerability) {
@@ -233,8 +233,8 @@ func isExact(vulnerability Vulnerability) bool {
 	return vulnerability.Exact
 }
 
-func isExcluded(vulnerability Vulnerability, protecodeExcludeCVEs string) bool {
-	return strings.Contains(protecodeExcludeCVEs, vulnerability.Vuln.Cve)
+func isExcluded(vulnerability Vulnerability, excludeCVEs string) bool {
+	return strings.Contains(excludeCVEs, vulnerability.Vuln.Cve)
 }
 
 func isTriaged(vulnerability Vulnerability) bool {
@@ -292,9 +292,9 @@ func (pc *Protecode) LoadReport(reportFileName string, productID int) *io.ReadCl
 }
 
 // UploadScanFile upload the scan file to the protecode server
-func (pc *Protecode) UploadScanFile(cleanupMode, protecodeGroup, filePath string, fileName string) *ResultData {
+func (pc *Protecode) UploadScanFile(cleanupMode, group, filePath string, fileName string) *ResultData {
 	deleteBinary := (cleanupMode == "binary" || cleanupMode == "complete")
-	headers := map[string][]string{"Group": []string{protecodeGroup}, "Delete-Binary": []string{fmt.Sprintf("%v", deleteBinary)}}
+	headers := map[string][]string{"Group": []string{group}, "Delete-Binary": []string{fmt.Sprintf("%v", deleteBinary)}}
 
 	url := fmt.Sprintf("%v/api/upload/%v", pc.serverURL, fileName)
 	r, err := pc.client.UploadRequest(http.MethodPut, url, filePath, "file", headers, nil)
@@ -311,9 +311,9 @@ func (pc *Protecode) UploadScanFile(cleanupMode, protecodeGroup, filePath string
 }
 
 // DeclareFetchURL configures the fetch url for the protecode scan
-func (pc *Protecode) DeclareFetchURL(cleanupMode, protecodeGroup, fetchURL string) *Result {
+func (pc *Protecode) DeclareFetchURL(cleanupMode, group, fetchURL string) *Result {
 	deleteBinary := (cleanupMode == "binary" || cleanupMode == "complete")
-	headers := map[string][]string{"Group": []string{protecodeGroup}, "Delete-Binary": []string{fmt.Sprintf("%v", deleteBinary)}, "Url": []string{fetchURL}, "Content-Type": []string{"application/json"}}
+	headers := map[string][]string{"Group": []string{group}, "Delete-Binary": []string{fmt.Sprintf("%v", deleteBinary)}, "Url": []string{fetchURL}, "Content-Type": []string{"application/json"}}
 
 	protecodeURL := fmt.Sprintf("%v/api/fetch/", pc.serverURL)
 	r, err := pc.sendAPIRequest(http.MethodPost, protecodeURL, headers)
@@ -393,12 +393,12 @@ func (pc *Protecode) pullResult(productID int) (ResultData, error) {
 }
 
 // LoadExistingProduct loads the existing product from protecode service
-func (pc *Protecode) LoadExistingProduct(protecodeGroup string, reuseExisting bool) int {
+func (pc *Protecode) LoadExistingProduct(group string, reuseExisting bool) int {
 	var productID int = -1
 
 	if reuseExisting {
 
-		protecodeURL := pc.createURL("/api/apps/", fmt.Sprintf("%v/", protecodeGroup), "")
+		protecodeURL := pc.createURL("/api/apps/", fmt.Sprintf("%v/", group), "")
 		headers := map[string][]string{
 			"acceptType": []string{"application/json"},
 		}
@@ -407,7 +407,7 @@ func (pc *Protecode) LoadExistingProduct(protecodeGroup string, reuseExisting bo
 		// by definition we will take the first one and trigger rescan
 		productID = response.Products[0].ProductID
 
-		pc.logger.Infof("Re-use existing Protecode scan - group: %v, productID: %v", protecodeGroup, productID)
+		pc.logger.Infof("Re-use existing Protecode scan - group: %v, productID: %v", group, productID)
 	}
 
 	return productID

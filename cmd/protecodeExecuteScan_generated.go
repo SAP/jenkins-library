@@ -13,24 +13,24 @@ import (
 )
 
 type protecodeExecuteScanOptions struct {
-	ProtecodeExcludeCVEs                 string `json:"protecodeExcludeCVEs,omitempty"`
-	ProtecodeFailOnSevereVulnerabilities bool   `json:"protecodeFailOnSevereVulnerabilities,omitempty"`
-	ScanImage                            string `json:"scanImage,omitempty"`
-	DockerRegistryURL                    string `json:"dockerRegistryUrl,omitempty"`
-	CleanupMode                          string `json:"cleanupMode,omitempty"`
-	FilePath                             string `json:"filePath,omitempty"`
-	IncludeLayers                        bool   `json:"includeLayers,omitempty"`
-	AddSideBarLink                       bool   `json:"addSideBarLink,omitempty"`
-	ProtecodeTimeoutMinutes              string `json:"protecodeTimeoutMinutes,omitempty"`
-	ProtecodeServerURL                   string `json:"protecodeServerUrl,omitempty"`
-	ReportFileName                       string `json:"reportFileName,omitempty"`
-	UseCallback                          bool   `json:"useCallback,omitempty"`
-	FetchURL                             string `json:"fetchUrl,omitempty"`
-	ProtecodeGroup                       string `json:"protecodeGroup,omitempty"`
-	ReuseExisting                        bool   `json:"reuseExisting,omitempty"`
-	User                                 string `json:"user,omitempty"`
-	Password                             string `json:"password,omitempty"`
-	ArtifactVersion                      string `json:"artifactVersion,omitempty"`
+	ExcludeCVEs                 string `json:"excludeCVEs,omitempty"`
+	FailOnSevereVulnerabilities bool   `json:"failOnSevereVulnerabilities,omitempty"`
+	ScanImage                   string `json:"scanImage,omitempty"`
+	DockerRegistryURL           string `json:"dockerRegistryUrl,omitempty"`
+	CleanupMode                 string `json:"cleanupMode,omitempty"`
+	FilePath                    string `json:"filePath,omitempty"`
+	IncludeLayers               bool   `json:"includeLayers,omitempty"`
+	AddSideBarLink              bool   `json:"addSideBarLink,omitempty"`
+	TimeoutMinutes              string `json:"timeoutMinutes,omitempty"`
+	ServerURL                   string `json:"serverUrl,omitempty"`
+	ReportFileName              string `json:"reportFileName,omitempty"`
+	UseCallback                 bool   `json:"useCallback,omitempty"`
+	FetchURL                    string `json:"fetchUrl,omitempty"`
+	Group                       string `json:"group,omitempty"`
+	ReuseExisting               bool   `json:"reuseExisting,omitempty"`
+	User                        string `json:"user,omitempty"`
+	Password                    string `json:"password,omitempty"`
+	ArtifactVersion             string `json:"artifactVersion,omitempty"`
 }
 
 type protecodeExecuteScanInflux struct {
@@ -117,26 +117,26 @@ func ProtecodeExecuteScanCommand() *cobra.Command {
 }
 
 func addProtecodeExecuteScanFlags(cmd *cobra.Command) {
-	cmd.Flags().StringVar(&myProtecodeExecuteScanOptions.ProtecodeExcludeCVEs, "protecodeExcludeCVEs", "[]", "DEPRECATED: Do use triaging within the Protecode UI instead")
-	cmd.Flags().BoolVar(&myProtecodeExecuteScanOptions.ProtecodeFailOnSevereVulnerabilities, "protecodeFailOnSevereVulnerabilities", true, "Whether to fail the job on severe vulnerabilties or not")
+	cmd.Flags().StringVar(&myProtecodeExecuteScanOptions.ExcludeCVEs, "excludeCVEs", "[]", "DEPRECATED: Do use triaging within the Protecode UI instead")
+	cmd.Flags().BoolVar(&myProtecodeExecuteScanOptions.FailOnSevereVulnerabilities, "failOnSevereVulnerabilities", true, "Whether to fail the job on severe vulnerabilties or not")
 	cmd.Flags().StringVar(&myProtecodeExecuteScanOptions.ScanImage, "scanImage", os.Getenv("PIPER_scanImage"), "The reference to the docker image to scan with Protecode")
 	cmd.Flags().StringVar(&myProtecodeExecuteScanOptions.DockerRegistryURL, "dockerRegistryUrl", os.Getenv("PIPER_dockerRegistryUrl"), "The reference to the docker registry to scan with Protecode")
 	cmd.Flags().StringVar(&myProtecodeExecuteScanOptions.CleanupMode, "cleanupMode", "binary", "Decides which parts are removed from the Protecode backend after the scan")
 	cmd.Flags().StringVar(&myProtecodeExecuteScanOptions.FilePath, "filePath", os.Getenv("PIPER_filePath"), "The path to the file from local workspace to scan with Protecode")
 	cmd.Flags().BoolVar(&myProtecodeExecuteScanOptions.IncludeLayers, "includeLayers", false, "Flag if the docker layers should be included")
 	cmd.Flags().BoolVar(&myProtecodeExecuteScanOptions.AddSideBarLink, "addSideBarLink", true, "Whether to create a side bar link pointing to the report produced by Protecode or not")
-	cmd.Flags().StringVar(&myProtecodeExecuteScanOptions.ProtecodeTimeoutMinutes, "protecodeTimeoutMinutes", "60", "The timeout to wait for the scan to finish")
-	cmd.Flags().StringVar(&myProtecodeExecuteScanOptions.ProtecodeServerURL, "protecodeServerUrl", os.Getenv("PIPER_protecodeServerUrl"), "The URL to the Protecode backend")
+	cmd.Flags().StringVar(&myProtecodeExecuteScanOptions.TimeoutMinutes, "timeoutMinutes", "60", "The timeout to wait for the scan to finish")
+	cmd.Flags().StringVar(&myProtecodeExecuteScanOptions.ServerURL, "serverUrl", os.Getenv("PIPER_serverUrl"), "The URL to the Protecode backend")
 	cmd.Flags().StringVar(&myProtecodeExecuteScanOptions.ReportFileName, "reportFileName", "protecode_report.pdf", "The file name of the report to be created")
 	cmd.Flags().BoolVar(&myProtecodeExecuteScanOptions.UseCallback, "useCallback", false, "Whether to the Protecode backend's callback or poll for results")
 	cmd.Flags().StringVar(&myProtecodeExecuteScanOptions.FetchURL, "fetchUrl", os.Getenv("PIPER_fetchUrl"), "The URL to fetch the file to scan with Protecode which must be accessible via public HTTP GET request")
-	cmd.Flags().StringVar(&myProtecodeExecuteScanOptions.ProtecodeGroup, "protecodeGroup", os.Getenv("PIPER_protecodeGroup"), "The Protecode group ID of your team")
+	cmd.Flags().StringVar(&myProtecodeExecuteScanOptions.Group, "group", os.Getenv("PIPER_group"), "The Protecode group ID of your team")
 	cmd.Flags().BoolVar(&myProtecodeExecuteScanOptions.ReuseExisting, "reuseExisting", false, "Whether to reuse an existing product instead of creating a new one")
 	cmd.Flags().StringVar(&myProtecodeExecuteScanOptions.User, "user", os.Getenv("PIPER_user"), "User which is used for the protecode scan")
 	cmd.Flags().StringVar(&myProtecodeExecuteScanOptions.Password, "password", os.Getenv("PIPER_password"), "Password which is used for the user")
 	cmd.Flags().StringVar(&myProtecodeExecuteScanOptions.ArtifactVersion, "artifactVersion", os.Getenv("PIPER_artifactVersion"), "The version of the artifact to allow identification in protecode backend")
 
-	cmd.MarkFlagRequired("protecodeGroup")
+	cmd.MarkFlagRequired("group")
 	cmd.MarkFlagRequired("user")
 	cmd.MarkFlagRequired("password")
 }
@@ -148,20 +148,20 @@ func protecodeExecuteScanMetadata() config.StepData {
 			Inputs: config.StepInputs{
 				Parameters: []config.StepParameters{
 					{
-						Name:        "protecodeExcludeCVEs",
+						Name:        "excludeCVEs",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{},
+						Aliases:     []config.Alias{{Name: "protecodeExcludeCVEs"}},
 					},
 					{
-						Name:        "protecodeFailOnSevereVulnerabilities",
+						Name:        "failOnSevereVulnerabilities",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "bool",
 						Mandatory:   false,
-						Aliases:     []config.Alias{},
+						Aliases:     []config.Alias{{Name: "protecodeFailOnSevereVulnerabilities"}},
 					},
 					{
 						Name:        "scanImage",
@@ -212,20 +212,20 @@ func protecodeExecuteScanMetadata() config.StepData {
 						Aliases:     []config.Alias{},
 					},
 					{
-						Name:        "protecodeTimeoutMinutes",
+						Name:        "timeoutMinutes",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{},
+						Aliases:     []config.Alias{{Name: "protecodeTimeoutMinutes"}},
 					},
 					{
-						Name:        "protecodeServerUrl",
+						Name:        "serverUrl",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{},
+						Aliases:     []config.Alias{{Name: "protecodeServerUrl"}},
 					},
 					{
 						Name:        "reportFileName",
@@ -252,12 +252,12 @@ func protecodeExecuteScanMetadata() config.StepData {
 						Aliases:     []config.Alias{},
 					},
 					{
-						Name:        "protecodeGroup",
+						Name:        "group",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   true,
-						Aliases:     []config.Alias{},
+						Aliases:     []config.Alias{{Name: "protecodeGroup"}},
 					},
 					{
 						Name:        "reuseExisting",

@@ -14,7 +14,9 @@ metadata:
 spec:
   inputs:
     params:
-    - name: protecodeExcludeCVEs
+    - name: excludeCVEs
+      aliases:
+      - name: protecodeExcludeCVEs
       type: string
       description: 'DEPRECATED: Do use triaging within the Protecode UI instead'
       scope:
@@ -22,7 +24,9 @@ spec:
       - STAGES
       - STEPS
       default: []
-    - name: protecodeFailOnSevereVulnerabilities
+    - name: failOnSevereVulnerabilities
+      aliases:
+      - name: protecodeFailOnSevereVulnerabilities
       type: bool
       description: Whether to fail the job on severe vulnerabilties or not
       scope:
@@ -76,7 +80,6 @@ spec:
       - PARAMETERS
       - STAGES
       - STEPS
-      default: false
     - name: addSideBarLink
       type: bool
       description: Whether to create a side bar link pointing to the report produced by Protecode or not
@@ -85,7 +88,9 @@ spec:
       - STAGES
       - STEPS
       default: true
-    - name: protecodeTimeoutMinutes
+    - name: timeoutMinutes
+      aliases:
+      - name: protecodeTimeoutMinutes
       type: string
       description: The timeout to wait for the scan to finish
       scope:
@@ -93,7 +98,9 @@ spec:
       - STAGES
       - STEPS
       default: 60
-    - name: protecodeServerUrl
+    - name: serverUrl
+      aliases:
+      - name: protecodeServerUrl
       type: string
       description: The URL to the Protecode backend
       scope:
@@ -124,7 +131,9 @@ spec:
       - PARAMETERS
       - STAGES
       - STEPS
-    - name: protecodeGroup
+    - name: group
+      aliases:
+      - name: protecodeGroup
       type: string
       description: The Protecode group ID of your team
       mandatory: true

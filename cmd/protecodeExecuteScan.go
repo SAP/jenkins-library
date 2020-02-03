@@ -20,18 +20,18 @@ import (
 )
 
 type protecodeData struct {
-	Target                               string `json:"target,omitempty"`
-	Mandatory                            bool   `json:"mandatory,omitempty"`
-	ProductID                            string `json:"productID,omitempty"`
-	ProtecodeServerURL                   string `json:"protecodeServerUrl,omitempty"`
-	ProtecodeFailOnSevereVulnerabilities bool   `json:"protecodeFailOnSevereVulnerabilities,omitempty"`
-	ProtecodeExcludeCVEs                 string `json:"protecodeExcludeCVEs,omitempty"`
-	Count                                string `json:"count,omitempty"`
-	Cvss2GreaterOrEqualSeven             string `json:"cvss2GreaterOrEqualSeven,omitempty"`
-	Cvss3GreaterOrEqualSeven             string `json:"cvss3GreaterOrEqualSeven,omitempty"`
-	ExcludedVulnerabilities              string `json:"excludedVulnerabilities,omitempty"`
-	TriagedVulnerabilities               string `json:"triagedVulnerabilities,omitempty"`
-	HistoricalVulnerabilities            string `json:"historicalVulnerabilities,omitempty"`
+	Target                      string `json:"target,omitempty"`
+	Mandatory                   bool   `json:"mandatory,omitempty"`
+	ProductID                   string `json:"productID,omitempty"`
+	ServerURL                   string `json:"protecodeServerUrl,omitempty"`
+	FailOnSevereVulnerabilities bool   `json:"protecodeFailOnSevereVulnerabilities,omitempty"`
+	ExcludeCVEs                 string `json:"protecodeExcludeCVEs,omitempty"`
+	Count                       string `json:"count,omitempty"`
+	Cvss2GreaterOrEqualSeven    string `json:"cvss2GreaterOrEqualSeven,omitempty"`
+	Cvss3GreaterOrEqualSeven    string `json:"cvss3GreaterOrEqualSeven,omitempty"`
+	ExcludedVulnerabilities     string `json:"excludedVulnerabilities,omitempty"`
+	TriagedVulnerabilities      string `json:"triagedVulnerabilities,omitempty"`
+	HistoricalVulnerabilities   string `json:"historicalVulnerabilities,omitempty"`
 }
 
 var cachePath = "./cache"
@@ -184,8 +184,8 @@ func executeProtecodeScan(client protecode.Protecode, config *protecodeExecuteSc
 
 	var parsedResult map[string]int = make(map[string]int)
 	//load existing product by filename
-	log.Entry().Debugf("Load existing product Group:%v Reuse:%v", config.ProtecodeGroup, config.ReuseExisting)
-	productID := client.LoadExistingProduct(config.ProtecodeGroup, config.ReuseExisting)
+	log.Entry().Debugf("Load existing product Group:%v Reuse:%v", config.Group, config.ReuseExisting)
+	productID := client.LoadExistingProduct(config.Group, config.ReuseExisting)
 
 	// check if no existing is found or reuse existing is false
 	productID = uploadScanOrDeclareFetch(*config, productID, client, fileName)
@@ -194,14 +194,14 @@ func executeProtecodeScan(client protecode.Protecode, config *protecodeExecuteSc
 	}
 	//pollForResult
 	log.Entry().Debugf("Poll for scan result %v", productID)
-	result := client.PollForResult(productID, config.ProtecodeTimeoutMinutes)
+	result := client.PollForResult(productID, config.TimeoutMinutes)
 
 	jsonData, _ := json.Marshal(result)
 	ioutil.WriteFile("protecodescan_vulns.json", jsonData, 0644)
 
 	//check if result is ok else notify
 	if len(result.Result.Status) > 0 && result.Result.Status == "F" {
-		log.Entry().Fatalf("Please check the log and protecode backend for more details. URL: %v/products/%v", config.ProtecodeServerURL, productID)
+		log.Entry().Fatalf("Please check the log and protecode backend for more details. URL: %v/products/%v", config.ServerURL, productID)
 	}
 	//loadReport
 	log.Entry().Debugf("Load report %v for %v", config.ReportFileName, productID)
@@ -218,7 +218,7 @@ func executeProtecodeScan(client protecode.Protecode, config *protecodeExecuteSc
 
 	//count vulnerabilities
 	log.Entry().Debug("Parse scan reult")
-	parsedResult, _ = client.ParseResultForInflux(result.Result, config.ProtecodeExcludeCVEs)
+	parsedResult, _ = client.ParseResultForInflux(result.Result, config.ExcludeCVEs)
 
 	return parsedResult, productID
 }
@@ -236,9 +236,9 @@ func setInfluxData(influx *protecodeExecuteScanInflux, result map[string]int) {
 func writeReportDataToJSONFile(config *protecodeExecuteScanOptions, result map[string]int, productID int, writeToFile func(f string, d []byte, p os.FileMode) error) {
 
 	protecodeData := protecodeData{}
-	protecodeData.ProtecodeServerURL = config.ProtecodeServerURL
-	protecodeData.ProtecodeFailOnSevereVulnerabilities = config.ProtecodeFailOnSevereVulnerabilities
-	protecodeData.ProtecodeExcludeCVEs = config.ProtecodeExcludeCVEs
+	protecodeData.ServerURL = config.ServerURL
+	protecodeData.FailOnSevereVulnerabilities = config.FailOnSevereVulnerabilities
+	protecodeData.ExcludeCVEs = config.ExcludeCVEs
 	protecodeData.Target = config.ReportFileName
 	protecodeData.Mandatory = true
 	protecodeData.ProductID = fmt.Sprintf("%v", productID)
@@ -252,7 +252,7 @@ func writeReportDataToJSONFile(config *protecodeExecuteScanOptions, result map[s
 	jsonData, _ := json.Marshal(protecodeData)
 
 	log.Entry().Infof("Protecode scan info, %v %v of which %v had a CVSS v2 score >= 7.0 and %v had a CVSS v3 score >= 7.0.\n %v vulnerabilities were excluded via configuration (%v) and %v vulnerabilities were triaged via the webUI.\nIn addition %v historical vulnerabilities were spotted.",
-		protecodeData.Count, "json.results.summary.verdict.detailed", protecodeData.Cvss2GreaterOrEqualSeven, protecodeData.Cvss3GreaterOrEqualSeven, protecodeData.ExcludedVulnerabilities, protecodeData.ProtecodeExcludeCVEs, protecodeData.TriagedVulnerabilities, protecodeData.HistoricalVulnerabilities)
+		protecodeData.Count, "json.results.summary.verdict.detailed", protecodeData.Cvss2GreaterOrEqualSeven, protecodeData.Cvss3GreaterOrEqualSeven, protecodeData.ExcludedVulnerabilities, protecodeData.ExcludeCVEs, protecodeData.TriagedVulnerabilities, protecodeData.HistoricalVulnerabilities)
 
 	writeToFile("protecodeExecuteScan.json", jsonData, 0644)
 }
@@ -261,10 +261,10 @@ func createClient(config *protecodeExecuteScanOptions) protecode.Protecode {
 
 	var duration time.Duration = time.Duration(time.Minute * 1)
 
-	if len(config.ProtecodeTimeoutMinutes) > 0 {
-		dur, err := time.ParseDuration(fmt.Sprintf("%vm", config.ProtecodeTimeoutMinutes))
+	if len(config.TimeoutMinutes) > 0 {
+		dur, err := time.ParseDuration(fmt.Sprintf("%vm", config.TimeoutMinutes))
 		if err != nil {
-			log.Entry().Warnf("Failed to parse timeout %v, switched back to default timeout %v minutes", config.ProtecodeTimeoutMinutes, duration)
+			log.Entry().Warnf("Failed to parse timeout %v, switched back to default timeout %v minutes", config.TimeoutMinutes, duration)
 		} else {
 			duration = dur
 		}
@@ -273,7 +273,7 @@ func createClient(config *protecodeExecuteScanOptions) protecode.Protecode {
 	pc := protecode.Protecode{}
 
 	protecodeOptions := protecode.Options{
-		ServerURL: config.ProtecodeServerURL,
+		ServerURL: config.ServerURL,
 		Logger:    log.Entry().WithField("package", "SAP/jenkins-library/pkg/protecode"),
 		Duration:  duration,
 		Username:  config.User,
@@ -291,7 +291,7 @@ func uploadScanOrDeclareFetch(config protecodeExecuteScanOptions, productID int,
 	if !hasExisting(productID, config.ReuseExisting) {
 		if len(config.FetchURL) > 0 {
 			log.Entry().Debugf("Declare fetch url %v", config.FetchURL)
-			resultData := client.DeclareFetchURL(config.CleanupMode, config.ProtecodeGroup, config.FetchURL)
+			resultData := client.DeclareFetchURL(config.CleanupMode, config.Group, config.FetchURL)
 			productID = resultData.ProductID
 
 		} else {
@@ -299,7 +299,7 @@ func uploadScanOrDeclareFetch(config protecodeExecuteScanOptions, productID int,
 			if len(config.FilePath) <= 0 {
 				log.Entry().Fatalf("There is no file path configured for upload : %v", config.FilePath)
 			}
-			resultData := client.UploadScanFile(config.CleanupMode, config.ProtecodeGroup, config.FilePath, filaName)
+			resultData := client.UploadScanFile(config.CleanupMode, config.Group, config.FilePath, filaName)
 			productID = resultData.Result.ProductID
 		}
 	}
