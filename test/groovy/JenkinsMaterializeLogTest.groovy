@@ -1,24 +1,17 @@
-import org.junit.Before
+import hudson.FilePath
+import org.junit.Assert
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.ExpectedException
 import org.junit.rules.RuleChain
 
-import com.sap.piper.GitUtils
-
-import hudson.AbortException
 import util.BasePiperTest
-import util.JenkinsDockerExecuteRule
-import util.JenkinsEnvironmentRule
 import util.JenkinsLoggingRule
-import util.JenkinsReadMavenPomRule
 import util.JenkinsReadYamlRule
-import util.JenkinsShellCallRule
 import util.JenkinsStepRule
 import util.JenkinsWriteFileRule
 import util.Rules
 import com.sap.piper.JenkinsUtils
-import jenkins.model.Jenkins
 
 class JenkinsMaterializeLogTest extends BasePiperTest {
 
@@ -51,4 +44,14 @@ class JenkinsMaterializeLogTest extends BasePiperTest {
 		binding.setVariable('env', [NODE_NAME: 'anynode', WORKSPACE: '.'])
 		stepRule.step.jenkinsMaterializeLog(map, body)
 	}
+
+    @Test
+    void getFilePath_returnsValidFilePathObject() {
+        final fileName = "mylog.txt"
+        def expected = new FilePath(null, fileName)
+        def script = loadScript("vars/jenkinsMaterializeLog.groovy")
+        binding.setVariable('env', [NODE_NAME: 'anynode', WORKSPACE: '.'])
+        def filePath = script.invokeMethod("getFilePath", fileName, new JenkinsUtilsMock())
+        Assert.assertEquals(expected, filePath)
+    }
 }
