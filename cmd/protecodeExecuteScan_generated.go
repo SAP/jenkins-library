@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
@@ -81,6 +82,7 @@ var myProtecodeExecuteScanOptions protecodeExecuteScanOptions
 // ProtecodeExecuteScanCommand Protecode is an Open Source Vulnerability Scanner that is capable of scanning binaries. It can be used to scan docker images but is supports many other programming languages especially those of the C family. You can find more details on its capabilities in the [OS3 - Open Source Software Security JAM](https://jam4.sapjam.com/groups/XgeUs0CXItfeWyuI4k7lM3/overview_page/aoAsA0k4TbezGFyOkhsXFs). For getting access to Protecode please visit the [guide](https://go.sap.corp/protecode).
 func ProtecodeExecuteScanCommand() *cobra.Command {
 	metadata := protecodeExecuteScanMetadata()
+	var startTime time.Time
 	var influx protecodeExecuteScanInflux
 
 	var createProtecodeExecuteScanCmd = &cobra.Command{
@@ -96,19 +98,26 @@ func ProtecodeExecuteScanCommand() *cobra.Command {
 !!! hint "Auditing findings (Triaging)"
     Triaging is now supported by the Protecode backend and also Piper does consider this information during the analysis of the scan results though product versions are not supported by Protecode. Therefore please make sure that the ` + "`" + `fileName` + "`" + ` you are providing does either contain a stable version or that it does not contain one at all. By ensuring that you are able to triage CVEs globally on the upload file's name without affecting any other artifacts scanned in the same Protecode group and as such triaged vulnerabilities will be considered during the next scan and will not fail the build anymore.`,
 		PreRunE: func(cmd *cobra.Command, args []string) error {
+			startTime = time.Now()
 			log.SetStepName("protecodeExecuteScan")
 			log.SetVerbose(GeneralConfig.Verbose)
 			return PrepareConfig(cmd, &metadata, "protecodeExecuteScan", &myProtecodeExecuteScanOptions, config.OpenPiperFile)
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
+			telemetryData := telemetry.CustomData{}
+			telemetryData.ErrorCode = "1"
 			handler := func() {
 				influx.persist(GeneralConfig.EnvRootPath, "influx")
+				telemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
+				telemetry.Send(&telemetryData)
 			}
 			log.DeferExitHandler(handler)
 			defer handler()
 			telemetry.Initialize(GeneralConfig.NoTelemetry, "protecodeExecuteScan")
-			telemetry.Send(&telemetry.CustomData{})
-			return protecodeExecuteScan(myProtecodeExecuteScanOptions, &influx)
+			// ToDo: pass telemetryData to step
+			err := protecodeExecuteScan(myProtecodeExecuteScanOptions, &influx)
+			telemetryData.ErrorCode = "0"
+			return err
 		},
 	}
 
