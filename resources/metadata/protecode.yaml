@@ -17,9 +17,7 @@ spec:
     - name: protecodeExcludeCVEs
       type: string
       description: 'DEPRECATED: Do use triaging within the Protecode UI instead'
-      mandatory: false
       scope:
-      - GENERAL
       - PARAMETERS
       - STAGES
       - STEPS
@@ -27,9 +25,7 @@ spec:
     - name: protecodeFailOnSevereVulnerabilities
       type: bool
       description: Whether to fail the job on severe vulnerabilties or not
-      mandatory: false
       scope:
-      - GENERAL
       - PARAMETERS
       - STAGES
       - STEPS
@@ -39,7 +35,6 @@ spec:
       - name: dockerImage
       type: string
       description: The reference to the docker image to scan with Protecode
-      mandatory: false
       resourceRef:
         - name: commonPipelineEnvironment
           param: container/imageNameTag
@@ -48,11 +43,9 @@ spec:
       - PARAMETERS
       - STAGES
       - STEPS
-      default: null
     - name: dockerRegistryUrl
       type: string
       description: The reference to the docker registry to scan with Protecode
-      mandatory: false
       resourceRef:
         - name: commonPipelineEnvironment
           param: container/registryUrl
@@ -61,13 +54,10 @@ spec:
       - PARAMETERS
       - STAGES
       - STEPS
-      default: null
     - name: cleanupMode
       type: string
       description: Decides which parts are removed from the Protecode backend after the scan
-      mandatory: false
       scope:
-      - GENERAL
       - PARAMETERS
       - STAGES
       - STEPS
@@ -75,19 +65,14 @@ spec:
     - name: filePath
       type: string
       description: The path to the file from local workspace to scan with Protecode
-      mandatory: false
       scope:
-      - GENERAL
       - PARAMETERS
       - STAGES
       - STEPS
-      default: null
     - name: includeLayers
       type: bool
       description: Flag if the docker layers should be included
-      mandatory: false
       scope:
-      - GENERAL
       - PARAMETERS
       - STAGES
       - STEPS
@@ -95,29 +80,15 @@ spec:
     - name: addSideBarLink
       type: bool
       description: Whether to create a side bar link pointing to the report produced by Protecode or not
-      mandatory: false
       scope:
-      - GENERAL
       - PARAMETERS
       - STAGES
       - STEPS
       default: true
-    - name: verbose
-      type: bool
-      description: Whether to log verbose information or not
-      mandatory: false
-      scope:
-      - GENERAL
-      - PARAMETERS
-      - STAGES
-      - STEPS
-      default: false
     - name: protecodeTimeoutMinutes
       type: string
       description: The timeout to wait for the scan to finish
-      mandatory: false
       scope:
-      - GENERAL
       - PARAMETERS
       - STAGES
       - STEPS
@@ -125,7 +96,6 @@ spec:
     - name: protecodeServerUrl
       type: string
       description: The URL to the Protecode backend
-      mandatory: false
       scope:
       - GENERAL
       - PARAMETERS
@@ -135,9 +105,7 @@ spec:
     - name: reportFileName
       type: string
       description: The file name of the report to be created
-      mandatory: false
       scope:
-      - GENERAL
       - PARAMETERS
       - STAGES
       - STEPS
@@ -145,9 +113,7 @@ spec:
     - name: useCallback
       type: bool
       description: Whether to the Protecode backend's callback or poll for results
-      mandatory: false
       scope:
-      - GENERAL
       - PARAMETERS
       - STAGES
       - STEPS
@@ -155,48 +121,49 @@ spec:
     - name: fetchUrl
       type: string
       description: The URL to fetch the file to scan with Protecode which must be accessible via public HTTP GET request
-      mandatory: false
       scope:
-      - GENERAL
       - PARAMETERS
       - STAGES
       - STEPS
-      default: null
     - name: protecodeGroup
       type: string
       description: The Protecode group ID of your team
       mandatory: true
       scope:
-      - GENERAL
       - PARAMETERS
       - STAGES
       - STEPS
-      default: null
     - name: reuseExisting
       type: bool
       description: Whether to reuse an existing product instead of creating a new one
-      mandatory: false
       scope:
-      - GENERAL
       - PARAMETERS
       - STAGES
       - STEPS
       default: false
     - name: user
       type: string
-      description: user which is used for the protecode scan
+      description: User which is used for the protecode scan
       mandatory: true
       scope:
-        - GENERAL
         - PARAMETERS
         - STAGES
         - STEPS
     - name: password
       type: string
-      description: password which is used for the user
+      description: Password which is used for the user
       mandatory: true
       scope:
-        - GENERAL
+        - PARAMETERS
+        - STAGES
+        - STEPS
+    - name: artifactVersion
+      type: string
+      description: The version of the artifact to allow identification in protecode backend
+      resourceRef:
+        - name: commonPipelineEnvironment
+          param: artifactVersion
+      scope:
         - PARAMETERS
         - STAGES
         - STEPS
@@ -210,6 +177,7 @@ spec:
       resourceSpec:
       type: piperEnvironment
       params:
+        - name: artifactVersion
         - name: dockerMetadata/repo
         - name: dockerMetadata/imageNameTag
   outputs:
@@ -225,5 +193,3 @@ spec:
               - name: majorVulnerabilities
               - name: minorVulnerabilities
               - name: vulnerabilities
-  containers:
-  - image: null

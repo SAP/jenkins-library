@@ -64,7 +64,7 @@ func TestParseResultSuccess(t *testing.T) {
 		},
 	}
 	pc := Protecode{}
-	m := pc.ParseResultForInflux(result, "Excluded CVES: Cve4,")
+	m, vulns := pc.ParseResultForInflux(result, "Excluded CVES: Cve4,")
 	t.Run("Parse Protecode Results", func(t *testing.T) {
 		assert.Equal(t, 1, m["historical_vulnerabilities"])
 		assert.Equal(t, 1, m["triaged_vulnerabilities"])
@@ -72,6 +72,8 @@ func TestParseResultSuccess(t *testing.T) {
 		assert.Equal(t, 1, m["minor_vulnerabilities"])
 		assert.Equal(t, 2, m["major_vulnerabilities"])
 		assert.Equal(t, 3, m["vulnerabilities"])
+
+		assert.Equal(t, 3, len(vulns))
 	})
 }
 
@@ -87,7 +89,7 @@ func TestParseResultViolations(t *testing.T) {
 	resultData := new(ResultData)
 	pc.mapResponse(ioutil.NopCloser(strings.NewReader(string(byteContent))), resultData)
 
-	m := pc.ParseResultForInflux(resultData.Result, "CVE-2018-1, CVE-2017-1000382")
+	m, vulns := pc.ParseResultForInflux(resultData.Result, "CVE-2018-1, CVE-2017-1000382")
 	t.Run("Parse Protecode Results", func(t *testing.T) {
 		assert.Equal(t, 1125, m["historical_vulnerabilities"])
 		assert.Equal(t, 0, m["triaged_vulnerabilities"])
@@ -95,6 +97,8 @@ func TestParseResultViolations(t *testing.T) {
 		assert.Equal(t, 129, m["cvss3GreaterOrEqualSeven"])
 		assert.Equal(t, 13, m["cvss2GreaterOrEqualSeven"])
 		assert.Equal(t, 226, m["vulnerabilities"])
+
+		assert.Equal(t, 226, len(vulns))
 	})
 }
 
@@ -110,7 +114,7 @@ func TestParseResultNoViolations(t *testing.T) {
 	resultData := new(ResultData)
 	pc.mapResponse(ioutil.NopCloser(strings.NewReader(string(byteContent))), resultData)
 
-	m := pc.ParseResultForInflux(resultData.Result, "CVE-2018-1, CVE-2017-1000382")
+	m, vulns := pc.ParseResultForInflux(resultData.Result, "CVE-2018-1, CVE-2017-1000382")
 	t.Run("Parse Protecode Results", func(t *testing.T) {
 		assert.Equal(t, 27, m["historical_vulnerabilities"])
 		assert.Equal(t, 0, m["triaged_vulnerabilities"])
@@ -118,6 +122,8 @@ func TestParseResultNoViolations(t *testing.T) {
 		assert.Equal(t, 0, m["cvss3GreaterOrEqualSeven"])
 		assert.Equal(t, 0, m["cvss2GreaterOrEqualSeven"])
 		assert.Equal(t, 0, m["vulnerabilities"])
+
+		assert.Equal(t, 0, len(vulns))
 	})
 }
 
@@ -133,7 +139,7 @@ func TestParseResultTriaged(t *testing.T) {
 	resultData := new(ResultData)
 	pc.mapResponse(ioutil.NopCloser(strings.NewReader(string(byteContent))), resultData)
 
-	m := pc.ParseResultForInflux(resultData.Result, "")
+	m, vulns := pc.ParseResultForInflux(resultData.Result, "")
 	t.Run("Parse Protecode Results", func(t *testing.T) {
 		assert.Equal(t, 1132, m["historical_vulnerabilities"])
 		assert.Equal(t, 187, m["triaged_vulnerabilities"])
@@ -141,6 +147,8 @@ func TestParseResultTriaged(t *testing.T) {
 		assert.Equal(t, 15, m["cvss3GreaterOrEqualSeven"])
 		assert.Equal(t, 0, m["cvss2GreaterOrEqualSeven"])
 		assert.Equal(t, 36, m["vulnerabilities"])
+
+		assert.Equal(t, 36, len(vulns))
 	})
 }
 
@@ -232,7 +240,7 @@ func TestPollForResultSuccess(t *testing.T) {
 	pc := Protecode{serverURL: server.URL, client: client, duration: (time.Minute * 1), logger: log.Entry().WithField("package", "SAP/jenkins-library/pkg/protecode")}
 
 	for _, c := range cases {
-		got := pc.PollForResult(c.productID, "1", true)
+		got := pc.PollForResult(c.productID, "1")
 		assert.Equal(t, c.want, got)
 		assert.Equal(t, fmt.Sprintf("/api/product/%v/", c.productID), requestURI)
 	}

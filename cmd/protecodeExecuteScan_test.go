@@ -21,7 +21,7 @@ import (
 type mockGetDocker struct {
 }
 
-func (p mockGetDocker) GetDockerImage(scanImage string, registryURL string, includeLayers bool, cacheImagePath string) pkgutil.Image {
+func (p mockGetDocker) GetDockerImage(scanImage string, registryURL string, path string, includeLayers bool) pkgutil.Image {
 
 	return pkgutil.Image{}
 }
@@ -80,13 +80,34 @@ func TestRunProtecodeScan(t *testing.T) {
 	getImage = mockGetDocker.GetDockerImage
 	writeReportToFile = mockGetDocker.writeReportToFile
 
-	config := protecodeExecuteScanOptions{ProtecodeServerURL: server.URL, ScanImage: "t.tar", FilePath: testFile.Name(), ProtecodeTimeoutMinutes: "1", ReuseExisting: false, CleanupMode: "none", ProtecodeGroup: "13", FetchURL: "/api/fetch/", ProtecodeExcludeCVEs: "CVE-2018-1, CVE-2017-1000382", ReportFileName: "./cache/report-file.txt", Verbose: true}
+	config := protecodeExecuteScanOptions{ProtecodeServerURL: server.URL, ScanImage: "t.tar", FilePath: testFile.Name(), ProtecodeTimeoutMinutes: "1", ReuseExisting: false, CleanupMode: "none", ProtecodeGroup: "13", FetchURL: "/api/fetch/", ProtecodeExcludeCVEs: "CVE-2018-1, CVE-2017-1000382", ReportFileName: "./cache/report-file.txt"}
 	influx := protecodeExecuteScanInflux{}
 
 	err = runProtecodeScan(&config, &influx)
 	assert.Nil(t, err, "client should not be empty")
 }
 
+func TestHandleArtifactVersion(t *testing.T) {
+	cases := []struct {
+		version string
+		want    string
+	}{
+
+		{"1.0.0-20200131085038+eeb7c1033339bfd404d21ec5e7dc05c80e9e985e", "1"},
+		{"2.20.20-20200131085038+eeb7c1033339bfd404d21ec5e7dc05c80e9e985e", "2"},
+		{"3.20.20-20200131085038+eeb7c1033339bfd404d21ec5e7dc05c80e9e985e", "3"},
+		{"4.20.20-20200131085038", "4"},
+		{"5.20.20-20200131085038+", "5"},
+		{"6.00", "6.00"},
+		{"7.20.20", "7.20.20"},
+	}
+
+	for _, c := range cases {
+
+		got := handleArtifactVersion(c.version)
+		assert.Equal(t, c.want, got)
+	}
+}
 func TestCreateClient(t *testing.T) {
 	cases := []struct {
 		timeout string
@@ -96,7 +117,7 @@ func TestCreateClient(t *testing.T) {
 	}
 
 	for _, c := range cases {
-		config := protecodeExecuteScanOptions{ProtecodeTimeoutMinutes: c.timeout, Verbose: true}
+		config := protecodeExecuteScanOptions{ProtecodeTimeoutMinutes: c.timeout}
 
 		client := createClient(&config)
 		assert.NotNil(t, client, "client should not be empty")
@@ -121,7 +142,7 @@ func TestWriteReportDataToJSONFile(t *testing.T) {
 	parsedResult["cvss2GreaterOrEqualSeven"] = 4
 	parsedResult["vulnerabilities"] = 5
 
-	config := protecodeExecuteScanOptions{ProtecodeServerURL: "DUMMYURL", ReportFileName: "REPORTFILENAME", Verbose: true}
+	config := protecodeExecuteScanOptions{ProtecodeServerURL: "DUMMYURL", ReportFileName: "REPORTFILENAME"}
 
 	writeReportDataToJSONFile(&config, parsedResult, 4711, writeToFileMock)
 	assert.Equal(t, fileContent, expected, "content should be not empty")
@@ -172,7 +193,7 @@ func TestUploadScanOrDeclareFetch(t *testing.T) {
 	}
 
 	for _, c := range cases {
-		config := protecodeExecuteScanOptions{ReuseExisting: c.reuse, CleanupMode: c.clean, ProtecodeGroup: c.group, FetchURL: c.fetchURL, FilePath: c.filePath, Verbose: true}
+		config := protecodeExecuteScanOptions{ReuseExisting: c.reuse, CleanupMode: c.clean, ProtecodeGroup: c.group, FetchURL: c.fetchURL, FilePath: c.filePath}
 
 		got := uploadScanOrDeclareFetch(config, 0, pc, testFile.Name())
 
@@ -229,7 +250,7 @@ func TestExecuteProtecodeScan(t *testing.T) {
 	}
 
 	for _, c := range cases {
-		config := protecodeExecuteScanOptions{ReuseExisting: c.reuse, CleanupMode: c.clean, ProtecodeGroup: c.group, FetchURL: c.fetchURL, ProtecodeTimeoutMinutes: "3", ProtecodeExcludeCVEs: "CVE-2018-1, CVE-2017-1000382", ReportFileName: "./cache/report-file.txt", Verbose: true}
+		config := protecodeExecuteScanOptions{ReuseExisting: c.reuse, CleanupMode: c.clean, ProtecodeGroup: c.group, FetchURL: c.fetchURL, ProtecodeTimeoutMinutes: "3", ProtecodeExcludeCVEs: "CVE-2018-1, CVE-2017-1000382", ReportFileName: "./cache/report-file.txt"}
 
 		got, productID := executeProtecodeScan(pc, &config, "dummy", writeReportToFileMock)
 
@@ -248,17 +269,19 @@ func TestGetURLAndFileNameFromDockerImage(t *testing.T) {
 	cases := []struct {
 		scanImage   string
 		registryURL string
+		filePath    string
 		want        string
 	}{
-		{"scanImage", "", "scanImage"},
-		{"scanImage", "registryURL", "remote://registryURL/scanImage"},
-		{"containerScanImage", "containerRegistryUrl", "remote://containerRegistryUrl/containerScanImage"},
-		{"containerScanImage", "registryURL", "remote://registryURL/containerScanImage"},
+		{"scanImage", "", "", "scanImage"},
+		{"scanImage", "", "filePath", "daemon://filePath"},
+		{"scanImage", "registryURL", "", "remote://registryURL/scanImage"},
+		{"containerScanImage", "containerRegistryUrl", "", "remote://containerRegistryUrl/containerScanImage"},
+		{"containerScanImage", "registryURL", "", "remote://registryURL/containerScanImage"},
 	}
 
 	for _, c := range cases {
 
-		got := getURLAndFileNameFromDockerImage(c.scanImage, c.registryURL)
+		got := getURLAndFileNameFromDockerImage(c.scanImage, c.registryURL, c.filePath)
 
 		assert.Equal(t, c.want, got)
 	}

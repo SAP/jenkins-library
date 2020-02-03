@@ -175,7 +175,10 @@ func (pc *Protecode) sendAPIRequest(method string, url string, headers map[strin
 }
 
 // ParseResultForInflux parses the result from the scan into the internal format
-func (pc *Protecode) ParseResultForInflux(result Result, protecodeExcludeCVEs string) map[string]int {
+func (pc *Protecode) ParseResultForInflux(result Result, protecodeExcludeCVEs string) (map[string]int, []Vuln) {
+
+	var vulns []Vuln
+
 	var m map[string]int = make(map[string]int)
 	m["count"] = 0
 	m["cvss2GreaterOrEqualSeven"] = 0
@@ -202,6 +205,9 @@ func (pc *Protecode) ParseResultForInflux(result Result, protecodeExcludeCVEs st
 			if countVulnerability {
 				m["count"]++
 				m["vulnerabilities"]++
+
+				//collect all vulns here
+				vulns = append(vulns, vulnerability.Vuln)
 			}
 			if countVulnerability && isSevereCVSS3(vulnerability) {
 				m["cvss3GreaterOrEqualSeven"]++
@@ -220,7 +226,7 @@ func (pc *Protecode) ParseResultForInflux(result Result, protecodeExcludeCVEs st
 		}
 	}
 
-	return m
+	return m, vulns
 }
 
 func isExact(vulnerability Vulnerability) bool {
@@ -322,7 +328,7 @@ func (pc *Protecode) DeclareFetchURL(cleanupMode, protecodeGroup, fetchURL strin
 }
 
 //PollForResult polls the protecode scan for the result scan
-func (pc *Protecode) PollForResult(productID int, timeOutInMinutes string, verbose bool) ResultData {
+func (pc *Protecode) PollForResult(productID int, timeOutInMinutes string) ResultData {
 
 	var response ResultData
 	var err error
@@ -354,9 +360,7 @@ func (pc *Protecode) PollForResult(productID int, timeOutInMinutes string, verbo
 
 		select {
 		case t := <-ticker.C:
-			if verbose {
-				pc.logger.Infof("Tick : %v Processing status for productID %v", t, productID)
-			}
+			pc.logger.Debugf("Tick : %v Processing status for productID %v", t, productID)
 		}
 	}
 
