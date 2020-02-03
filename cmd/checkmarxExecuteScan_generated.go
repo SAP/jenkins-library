@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
@@ -160,6 +161,7 @@ var myCheckmarxExecuteScanOptions checkmarxExecuteScanOptions
 // CheckmarxExecuteScanCommand Checkmarx is the recommended tool for security scans of JavaScript, iOS, Swift and Ruby code.
 func CheckmarxExecuteScanCommand() *cobra.Command {
 	metadata := checkmarxExecuteScanMetadata()
+	var startTime time.Time
 	var influx checkmarxExecuteScanInflux
 
 	var createCheckmarxExecuteScanCmd = &cobra.Command{
@@ -176,19 +178,26 @@ This step by default enforces a specific audit baseline for findings and therefo
 You can adapt above thresholds specifically using the provided configuration parameters and i.e. check for ` + "`" + `absolute` + "`" + `
 thresholds instead of ` + "`" + `percentage` + "`" + ` whereas we strongly recommend you to stay with the defaults provided.`,
 		PreRunE: func(cmd *cobra.Command, args []string) error {
+			startTime = time.Now()
 			log.SetStepName("checkmarxExecuteScan")
 			log.SetVerbose(GeneralConfig.Verbose)
 			return PrepareConfig(cmd, &metadata, "checkmarxExecuteScan", &myCheckmarxExecuteScanOptions, config.OpenPiperFile)
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
+			telemetryData := telemetry.CustomData{}
+			telemetryData.ErrorCode = "1"
 			handler := func() {
 				influx.persist(GeneralConfig.EnvRootPath, "influx")
+				telemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
+				telemetry.Send(&telemetryData)
 			}
 			log.DeferExitHandler(handler)
 			defer handler()
 			telemetry.Initialize(GeneralConfig.NoTelemetry, "checkmarxExecuteScan")
-			telemetry.Send(&telemetry.CustomData{})
-			return checkmarxExecuteScan(myCheckmarxExecuteScanOptions, &influx)
+			// ToDo: pass telemetryData to step
+			err := checkmarxExecuteScan(myCheckmarxExecuteScanOptions, &influx)
+			telemetryData.ErrorCode = "0"
+			return err
 		},
 	}
 

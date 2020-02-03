@@ -27,6 +27,8 @@ type BaseMetaData struct {
 	StageNameLabel       string `json:"custom10"`
 	PipelineURLHashLabel string `json:"custom4"`
 	BuildURLHashLabel    string `json:"custom5"`
+	DurationLabel        string `json:"custom11,omitempty"`
+	ExitCodeLabel        string `json:"custom12,omitempty"`
 }
 
 // baseMetaData object containing the labels for the base data
@@ -35,6 +37,8 @@ var baseMetaData BaseMetaData = BaseMetaData{
 	StageNameLabel:       "stageName",
 	PipelineURLHashLabel: "pipelineUrlHash",
 	BuildURLHashLabel:    "buildUrlHash",
+	DurationLabel:        "duration",
+	ExitCodeLabel:        "exitCode",
 }
 
 // CustomData object definition containing the data that can be set by a step and it's mapping information
@@ -42,6 +46,8 @@ type CustomData struct {
 	// SWA receives the fields custom1 - custom30 and e_a, e_2 - e_30 for custom values.
 	// Piper uses the values custom11 - custom25 & e_11 - e_25 for library related reporting
 	// and custom26 - custom30 & e_26 - e_30 for step  related reporting.
+	Duration     string `json:"e_11,omitempty"`
+	ErrorCode    string `json:"e_12,omitempty"`
 	Custom1Label string `json:"custom26,omitempty"`
 	Custom2Label string `json:"custom27,omitempty"`
 	Custom3Label string `json:"custom28,omitempty"`
