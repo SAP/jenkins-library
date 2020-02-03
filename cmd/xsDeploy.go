@@ -108,9 +108,9 @@ const completeScript = `#!/bin/bash
 xs {{.Mode.GetDeployCommand}} -i {{.OperationID}} -a {{.Action.GetAction}}
 `
 
-func xsDeploy(XsDeployOptions xsDeployOptions, telemetryData *telemetry.CustomData) {
+func xsDeploy(config xsDeployOptions, telemetryData *telemetry.CustomData) {
 	c := command.Command{}
-	err := runXsDeploy(XsDeployOptions, &c, piperutils.FileExists, piperutils.Copy, os.Remove, os.Stdout)
+	err := runXsDeploy(config, &c, piperutils.FileExists, piperutils.Copy, os.Remove, os.Stdout)
 	if err != nil {
 		log.Entry().
 			WithError(err).

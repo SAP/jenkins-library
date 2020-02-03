@@ -12,7 +12,7 @@ var GitCommit string
 // GitTag ...
 var GitTag string
 
-func version(myVersionOptions versionOptions, telemetryData *telemetry.CustomData) {
+func version(config versionOptions, telemetryData *telemetry.CustomData) {
 
 	gitCommit, gitTag := "<n/a>", "<n/a>"
 

@@ -16,11 +16,10 @@ type karmaExecuteTestsOptions struct {
 	RunCommand     string `json:"runCommand,omitempty"`
 }
 
-var myKarmaExecuteTestsOptions karmaExecuteTestsOptions
-
 // KarmaExecuteTestsCommand Executes the Karma test runner
 func KarmaExecuteTestsCommand() *cobra.Command {
 	metadata := karmaExecuteTestsMetadata()
+	var stepConfig karmaExecuteTestsOptions
 	var startTime time.Time
 
 	var createKarmaExecuteTestsCmd = &cobra.Command{
@@ -41,7 +40,7 @@ In the Docker network, the containers can be referenced by the values provided i
 			startTime = time.Now()
 			log.SetStepName("karmaExecuteTests")
 			log.SetVerbose(GeneralConfig.Verbose)
-			return PrepareConfig(cmd, &metadata, "karmaExecuteTests", &myKarmaExecuteTestsOptions, config.OpenPiperFile)
+			return PrepareConfig(cmd, &metadata, "karmaExecuteTests", &stepConfig, config.OpenPiperFile)
 		},
 		Run: func(cmd *cobra.Command, args []string) {
 			telemetryData := telemetry.CustomData{}
@@ -53,19 +52,19 @@ In the Docker network, the containers can be referenced by the values provided i
 			log.DeferExitHandler(handler)
 			defer handler()
 			telemetry.Initialize(GeneralConfig.NoTelemetry, "karmaExecuteTests")
-			karmaExecuteTests(myKarmaExecuteTestsOptions, &telemetryData)
+			karmaExecuteTests(stepConfig, &telemetryData)
 			telemetryData.ErrorCode = "0"
 		},
 	}
 
-	addKarmaExecuteTestsFlags(createKarmaExecuteTestsCmd)
+	addKarmaExecuteTestsFlags(createKarmaExecuteTestsCmd, &stepConfig)
 	return createKarmaExecuteTestsCmd
 }
 
-func addKarmaExecuteTestsFlags(cmd *cobra.Command) {
-	cmd.Flags().StringVar(&myKarmaExecuteTestsOptions.InstallCommand, "installCommand", "npm install --quiet", "The command that is executed to install the test tool.")
-	cmd.Flags().StringVar(&myKarmaExecuteTestsOptions.ModulePath, "modulePath", ".", "Define the path of the module to execute tests on.")
-	cmd.Flags().StringVar(&myKarmaExecuteTestsOptions.RunCommand, "runCommand", "npm run karma", "The command that is executed to start the tests.")
+func addKarmaExecuteTestsFlags(cmd *cobra.Command, stepConfig *karmaExecuteTestsOptions) {
+	cmd.Flags().StringVar(&stepConfig.InstallCommand, "installCommand", "npm install --quiet", "The command that is executed to install the test tool.")
+	cmd.Flags().StringVar(&stepConfig.ModulePath, "modulePath", ".", "Define the path of the module to execute tests on.")
+	cmd.Flags().StringVar(&stepConfig.RunCommand, "runCommand", "npm run karma", "The command that is executed to start the tests.")
 
 	cmd.MarkFlagRequired("installCommand")
 	cmd.MarkFlagRequired("modulePath")
