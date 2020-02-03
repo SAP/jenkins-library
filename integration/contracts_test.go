@@ -14,6 +14,8 @@ func TestCommandContract(t *testing.T) {
 	assert.Equal(t, "", "")
 }
 
+// Test provided by consumer: SAP InnerSource project
+// Changes to the test require peer review by core-team members involved in the project.
 func TestGenerator(t *testing.T) {
 	dir, err := ioutil.TempDir("", "")
 	defer os.RemoveAll(dir) // clean up
