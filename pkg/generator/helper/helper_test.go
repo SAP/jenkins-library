@@ -102,6 +102,19 @@ func TestProcessMetaFiles(t *testing.T) {
 		}
 		assert.Equal(t, expected, files["cmd/testStep_generated_test.go"])
 	})
+
+	t.Run("custom step code", func(t *testing.T) {
+		stepHelperData = StepHelperData{configOpenFileMock, writeFileMock, "piperOsCmd"}
+		ProcessMetaFiles([]string{"test.yaml"}, stepHelperData, docuHelperData)
+
+		goldenFilePath := filepath.Join("testdata", t.Name()+"_generated.golden")
+		expected, err := ioutil.ReadFile(goldenFilePath)
+		if err != nil {
+			t.Fatalf("failed reading %v", goldenFilePath)
+		}
+		assert.Equal(t, expected, files["cmd/testStep_generated.go"])
+		t.Log(string(files["cmd/testStep_generated.go"]))
+	})
 }
 
 func TestSetDefaultParameters(t *testing.T) {

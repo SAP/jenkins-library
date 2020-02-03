@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"time"
 
+	piperOsCmd "github.com/SAP/jenkins-library/cmd"
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperenv"
@@ -104,21 +105,21 @@ func TestStepCommand() *cobra.Command {
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			startTime = time.Now()
 			log.SetStepName("testStep")
-			log.SetVerbose(GeneralConfig.Verbose)
-			return PrepareConfig(cmd, &metadata, "testStep", &myTestStepOptions, config.OpenPiperFile)
+			log.SetVerbose(piperOsCmd.GeneralConfig.Verbose)
+			return piperOsCmd.PrepareConfig(cmd, &metadata, "testStep", &myTestStepOptions, config.OpenPiperFile)
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			telemetryData := telemetry.CustomData{}
 			telemetryData.ErrorCode = "1"
 			handler := func() {
-				commonPipelineEnvironment.persist(GeneralConfig.EnvRootPath, "commonPipelineEnvironment")
-				influxTest.persist(GeneralConfig.EnvRootPath, "influxTest")
+				commonPipelineEnvironment.persist(piperOsCmd.GeneralConfig.EnvRootPath, "commonPipelineEnvironment")
+				influxTest.persist(piperOsCmd.GeneralConfig.EnvRootPath, "influxTest")
 				telemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
 				telemetry.Send(&telemetryData)
 			}
 			log.DeferExitHandler(handler)
 			defer handler()
-			telemetry.Initialize(GeneralConfig.NoTelemetry, "testStep")
+			telemetry.Initialize(piperOsCmd.GeneralConfig.NoTelemetry, "testStep")
 			// ToDo: pass telemetryData to step
 			err := testStep(myTestStepOptions, &commonPipelineEnvironment, &influxTest)
 			telemetryData.ErrorCode = "0"
