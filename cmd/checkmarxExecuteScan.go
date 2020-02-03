@@ -152,7 +152,7 @@ func triggerScan(config checkmarxExecuteScanOptions, sys checkmarx.System, proje
 		results := getDetailedResults(sys, xmlReportName, scan.ID)
 		reports = append(reports, piperutils.Path{Target: xmlReportName})
 		links := []piperutils.Path{piperutils.Path{Target: results["DeepLink"].(string), Name: "Checkmarx Web UI"}}
-		piperutils.PersistReportsAndLinks(workspace, reports, links)
+		piperutils.PersistReportsAndLinks("checkmarxExecuteScan", workspace, reports, links)
 
 		reportToInflux(results, influx)
 
