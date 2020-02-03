@@ -3,6 +3,16 @@ name: Go
 on: [push]
 
 jobs:
+  unit:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/setup-go@v1
+      with:
+        go-version: '1.13.x'
+    - name: checkout
+      uses: actions/checkout@v2
+    - name: unit-test
+      run: go test ./... --cover
   format:
     runs-on: ubuntu-latest
     steps:
