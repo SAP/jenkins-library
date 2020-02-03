@@ -37,8 +37,11 @@ func abapEnvironmentPullGitRepo(config abapEnvironmentPullGitRepoOptions) error 
 	}
 
 	var status, er = pollEntity(config, uriConnectionDetails, &client, 10*time.Second)
-	if status == "E" || er != nil {
+	if er != nil {
 		log.Entry().WithError(er).Fatal("Pull failed on the ABAP System")
+	}
+	if status == "E" {
+		log.Entry().Fatal("Pull failed on the ABAP System")
 	}
 
 	return nil
