@@ -33,9 +33,9 @@ class CheckmarxExecuteScanTest extends BasePiperTest {
     @Before
     void init() {
         helper.registerAllowedMethod("readJSON", [Map], { m ->
-            if(m.file == 'reports.json')
+            if(m.file == 'checkmarxExecuteScan_reports.json')
                 return [[target: "1234.pdf", mandatory: true]]
-            if(m.file == 'links.json')
+            if(m.file == 'checkmarxExecuteScan_links.json')
                 return []
             if(m.text != null)
                 return new JsonSlurper().parseText(m.text)

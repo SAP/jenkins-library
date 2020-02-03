@@ -144,6 +144,20 @@ void addRunSideBarLink(String relativeUrl, String displayName, String relativeIc
     }
 }
 
+void handleStepResults(String stepName) {
+    def reports = readJSON (file: "${stepName}_reports.json")
+    for (report in reports) {
+        archiveArtifacts artifacts: report['target'], allowEmptyArchive: !report['mandatory']
+    }
+
+    if (fileExists(file: 'links.json')) {
+        def links = readJSON(file: "${stepName}_links.json")
+        for (link in links) {
+            addRunSideBarLink(link['target'], link['name'], "images/24x24/graph.png")
+        }
+    }
+}
+
 def getInstance() {
     Jenkins.get()
 }
