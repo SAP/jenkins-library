@@ -1,7 +1,9 @@
 import groovy.json.JsonSlurper
+import hudson.AbortException
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
+import org.junit.rules.ExpectedException
 import org.junit.rules.RuleChain
 import util.*
 
@@ -9,6 +11,7 @@ import static org.hamcrest.Matchers.*
 import static org.junit.Assert.assertThat
 
 class CheckmarxExecuteScanTest extends BasePiperTest {
+    private ExpectedException exception = ExpectedException.none()
 
     private JenkinsCredentialsRule credentialsRule = new JenkinsCredentialsRule(this)
     private JenkinsReadJsonRule readJsonRule = new JenkinsReadJsonRule(this)
@@ -22,6 +25,7 @@ class CheckmarxExecuteScanTest extends BasePiperTest {
     @Rule
     public RuleChain rules = Rules
         .getCommonRules(this)
+        .around(exception)
         .around(new JenkinsReadYamlRule(this))
         .around(credentialsRule)
         .around(readJsonRule)
@@ -32,10 +36,13 @@ class CheckmarxExecuteScanTest extends BasePiperTest {
 
     @Before
     void init() {
+        helper.registerAllowedMethod('fileExists', [Map], {
+            return true
+        })
         helper.registerAllowedMethod("readJSON", [Map], { m ->
-            if(m.file == 'reports.json')
+            if(m.file == 'checkmarxExecuteScan_reports.json')
                 return [[target: "1234.pdf", mandatory: true]]
-            if(m.file == 'links.json')
+            if(m.file == 'checkmarxExecuteScan_links.json')
                 return []
             if(m.text != null)
                 return new JsonSlurper().parseText(m.text)
@@ -62,5 +69,22 @@ class CheckmarxExecuteScanTest extends BasePiperTest {
         assertThat(writeFileRule.files['metadata/checkmarx.yaml'], containsString('name: checkmarxExecuteScan'))
         assertThat(withEnvArgs[0], allOf(startsWith('PIPER_parametersJSON'), containsString('"testParam":"This is test content"')))
         assertThat(shellCallRule.shell[1], is('./piper checkmarxExecuteScan'))
+    }
+
+    @Test
+    void testCheckmarxExecuteScanNoReports() {
+        helper.registerAllowedMethod('fileExists', [Map], {
+            return false
+        })
+
+        exception.expect(AbortException)
+        exception.expectMessage("Expected to find checkmarxExecuteScan_reports.json in workspace but it is not there")
+
+        stepRule.step.checkmarxExecuteScan(
+            juStabUtils: utils,
+            jenkinsUtilsStub: jenkinsUtils,
+            testParam: "This is test content",
+            script: nullScript
+        )
     }
 }
