@@ -39,9 +39,16 @@ class JenkinsUtilsTest extends BasePiperTest {
 
     String userId
 
+    Map results
+
 
     @Before
     void init() throws Exception {
+        results = [:]
+        results.runlinkCalled = false
+        results.joblinkCalled = false
+        results.removejoblinkCalled = false
+
         jenkinsUtils = new JenkinsUtils() {
             def getCurrentBuildInstance() {
                 return currentBuildMock
@@ -49,6 +56,24 @@ class JenkinsUtilsTest extends BasePiperTest {
 
             def getActiveJenkinsInstance() {
                 return jenkinsInstanceMock
+            }
+
+            void addRunSideBarLink(String relativeUrl, String displayName, String relativeIconPath) {
+                results.runlinkCalled = true
+                assertThat(relativeUrl, is('https://server.com/1234.pdf'))
+                assertThat(displayName, is('Test link'))
+                assertThat(relativeIconPath, is('images/24x24/graph.png'))
+            }
+
+            void addJobSideBarLink(String relativeUrl, String displayName, String relativeIconPath) {
+                results.joblinkCalled = true
+                assertThat(relativeUrl, is('https://server.com/1234.pdf'))
+                assertThat(displayName, is('Test link'))
+                assertThat(relativeIconPath, is('images/24x24/graph.png'))
+            }
+            void removeJobSideBarLinks(String relativeUrl) {
+                results.removejoblinkCalled = true
+                assertThat(relativeUrl, is('https://server.com/1234.pdf'))
             }
         }
         LibraryLoadingTestExecutionListener.prepareObjectInterceptors(jenkinsUtils)
@@ -99,6 +124,24 @@ class JenkinsUtilsTest extends BasePiperTest {
         LibraryLoadingTestExecutionListener.prepareObjectInterceptors(currentBuildMock)
     }
     @Test
+    void testHandleStepResultsJobLink() {
+        helper.registerAllowedMethod("fileExists", [Map], { m ->
+            return true
+        })
+        helper.registerAllowedMethod("readJSON", [Map], { m ->
+            if(m.file == 'someStep_reports.json')
+                return []
+            if(m.file == 'someStep_links.json')
+                return [[target: "https://server.com/1234.pdf", name: "Test link", mandatory: true, scope: 'job']]
+        })
+
+        jenkinsUtils.handleStepResults("someStep", true, true)
+
+        assertThat(results.removejoblinkCalled, is(true))
+        assertThat(results.runlinkCalled, is(true))
+        assertThat(results.joblinkCalled, is(true))
+    }
+    @Test
     void testHandleStepResults() {
         helper.registerAllowedMethod("fileExists", [Map], { m ->
             return true
@@ -111,9 +154,13 @@ class JenkinsUtilsTest extends BasePiperTest {
         })
 
         jenkinsUtils.handleStepResults("someStep", true, true)
+
+        assertThat(results.removejoblinkCalled, is(false))
+        assertThat(results.runlinkCalled, is(true))
+        assertThat(results.joblinkCalled, is(false))
     }
     @Test
-    void testHandleStepResultsErrorReports() {
+    void testHandleStepResultsEmptyReports() {
         helper.registerAllowedMethod("fileExists", [Map], { m ->
             return true
         })
@@ -127,7 +174,7 @@ class JenkinsUtilsTest extends BasePiperTest {
         jenkinsUtils.handleStepResults("someStep", true, true)
     }
     @Test
-    void testHandleStepResultsErrorLinks() {
+    void testHandleStepResultsEmptyLinks() {
         helper.registerAllowedMethod("fileExists", [Map], { m ->
             return true
         })

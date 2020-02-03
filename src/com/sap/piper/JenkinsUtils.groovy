@@ -163,6 +163,10 @@ void handleStepResults(String stepName, boolean failOnMissingReports, boolean fa
     } else if (linksFileExists) {
         def links = readJSON(file: linksFileName)
         for (link in links) {
+            if(link['scope'] == 'job') {
+                removeJobSideBarLinks(link['target'])
+                addJobSideBarLink(link['target'], link['name'], "images/24x24/graph.png")
+            }
             addRunSideBarLink(link['target'], link['name'], "images/24x24/graph.png")
         }
     }
