@@ -1,4 +1,6 @@
 import com.sap.piper.ConfigurationHelper
+import com.sap.piper.GenerateStageDocumentation
+import com.sap.piper.JenkinsUtils
 import com.sap.piper.Utils
 import groovy.transform.Field
 
@@ -7,14 +9,35 @@ import static com.sap.piper.Prerequisites.checkScript
 @Field String STEP_NAME = getClass().getName()
 
 @Field Set GENERAL_CONFIG_KEYS = [
+    /**
+     * Defines the build tool used.
+     * @possibleValues `docker`, `kaniko`, `maven`, `mta, ``npm`
+     */
     'buildTool',
+    /**
+     * Defines the main branch for your pipeline. **Typically this is the `master` branch, which does not need to be set explicitly.** Only change this in exceptional cases
+     */
     'productiveBranch',
+    /**
+     * Defines the library resource containing the stash settings to be performed before and after each stage. **Caution: changing the default will break the standard behavior of the pipeline - thus only relevant when including `Init` stage into custom pipelines!**
+     */
     'stashSettings',
+    /**
+     * Whether verbose output should be produced.
+     * @possibleValues `true`, `false`
+     */
     'verbose'
 ]
-@Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS
+@Field STAGE_STEP_KEYS = []
+@Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS.plus(STAGE_STEP_KEYS)
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
 
+/**
+ * This stage initializes the pipeline run and prepares further execution.
+ *
+ * It will check out your repository and perform some steps to initialize your pipeline run.
+ */
+@GenerateStageDocumentation(defaultStageName = 'Init')
 void call(Map parameters = [:]) {
 
     def script = checkScript(this, parameters) ?: this
@@ -40,7 +63,7 @@ void call(Map parameters = [:]) {
         //perform stashing based on libray resource piper-stash-settings.yml if not configured otherwise
         initStashConfiguration(script, config)
 
-        setScmInfoOnCommonPipelineEnvironment(script, scmInfo)
+        setGitUrlsOnCommonPipelineEnvironment(script, scmInfo.GIT_URL)
         script.commonPipelineEnvironment.setGitCommitId(scmInfo.GIT_COMMIT)
 
         if (config.verbose) {
@@ -53,6 +76,26 @@ void call(Map parameters = [:]) {
         checkBuildTool(config)
 
         piperInitRunStageConfiguration script: script, stageConfigResource: config.stageConfigResource
+
+        // CHANGE_ID is set only for pull requests
+        if (env.CHANGE_ID) {
+            List prActions = []
+
+            //get trigger action from comment like /piper action
+            def jenkinsUtils = new JenkinsUtils()
+            def commentTriggerAction = jenkinsUtils.getIssueCommentTriggerAction()
+
+            if (commentTriggerAction != null) prActions.add(commentTriggerAction)
+
+            try {
+                prActions.addAll(pullRequest.getLabels().asList())
+            } catch (ex) {
+                echo "[${STEP_NAME}] GitHub labels could not be retrieved from Pull Request, please make sure that credentials are maintained on multi-branch job."
+            }
+
+
+            setPullRequestStageStepActivation(script, config, prActions)
+        }
 
         if (env.BRANCH_NAME == config.productiveBranch) {
             if (parameters.script.commonPipelineEnvironment.configuration.runStep?.get('Init')?.slackSendNotification) {
@@ -78,36 +121,69 @@ private void checkBuildTool(config) {
             break
     }
     if (buildDescriptorPattern && !findFiles(glob: buildDescriptorPattern)) {
-        error "[${STEP_NAME}] buildTool configuration '${config.buildTool}' does not fit to your project, please set buildTool as genereal setting in your .pipeline/config.yml correctly, see also https://github.wdf.sap.corp/pages/ContinuousDelivery/piper-doc/configuration/"
+        error "[${STEP_NAME}] buildTool configuration '${config.buildTool}' does not fit to your project, please set buildTool as genereal setting in your .pipeline/config.yml correctly, see also https://sap.github.io/jenkins-library/configuration/"
     }
 }
 
 private void initStashConfiguration (script, config) {
     Map stashConfiguration = readYaml(text: libraryResource(config.stashSettings))
-    echo "Stash config: stashConfiguration"
+    if (config.verbose) echo "Stash config: ${stashConfiguration}"
     script.commonPipelineEnvironment.configuration.stageStashes = stashConfiguration
 }
 
-private void setScmInfoOnCommonPipelineEnvironment(script, scmInfo) {
+private void setGitUrlsOnCommonPipelineEnvironment(script, String gitUrl) {
 
-    def gitUrl = scmInfo.GIT_URL
+    def urlMatcher = gitUrl =~ /^((http|https|git|ssh):\/\/)?((.*)@)?([^:\/]+)(:([\d]*))?(\/?(.*))$/
 
-    if (gitUrl.startsWith('http')) {
-        def httpPattern = /(https?):\/\/([^:\/]+)(?:[:\d\/]*)(.*)/
-        def gitMatcher = gitUrl =~ httpPattern
-        if (!gitMatcher.hasGroup() && gitMatcher.groupCount() != 3) return
-        script.commonPipelineEnvironment.setGitSshUrl("git@${gitMatcher[0][2]}:${gitMatcher[0][3]}")
+    def protocol = urlMatcher[0][2]
+    def auth = urlMatcher[0][4]
+    def host = urlMatcher[0][5]
+    def port = urlMatcher[0][7]
+    def path = urlMatcher[0][9]
+
+    if (protocol in ['http', 'https']) {
+        script.commonPipelineEnvironment.setGitSshUrl("git@${host}:${path}")
         script.commonPipelineEnvironment.setGitHttpsUrl(gitUrl)
-    } else if (gitUrl.startsWith('ssh')) {
-        //(.*)@([^:\/]*)(?:[:\d\/]*)(.*)
-        def httpPattern = /(.*)@([^:\/]*)(?:[:\d\/]*)(.*)/
-        def gitMatcher = gitUrl =~ httpPattern
-        if (!gitMatcher.hasGroup() && gitMatcher.groupCount() != 3) return
+    } else if (protocol in [ null, 'ssh', 'git']) {
         script.commonPipelineEnvironment.setGitSshUrl(gitUrl)
-        script.commonPipelineEnvironment.setGitHttpsUrl("https://${gitMatcher[0][2]}/${gitMatcher[0][3]}")
+        script.commonPipelineEnvironment.setGitHttpsUrl("https://${host}/${path}")
     }
-    else if (gitUrl.indexOf('@') > 0) {
-        script.commonPipelineEnvironment.setGitSshUrl(gitUrl)
-        script.commonPipelineEnvironment.setGitHttpsUrl("https://${(gitUrl.split('@')[1]).replace(':', '/')}")
+
+    List gitPathParts = path.replaceAll('.git', '').split('/')
+    def gitFolder = 'N/A'
+    def gitRepo = 'N/A'
+    switch (gitPathParts.size()) {
+        case 1:
+            gitRepo = gitPathParts[0]
+            break
+        case 2:
+            gitFolder = gitPathParts[0]
+            gitRepo = gitPathParts[1]
+            break
+        case { it > 3 }:
+            gitRepo = gitPathParts[gitPathParts.size()-1]
+            gitPathParts.remove(gitPathParts.size()-1)
+            gitFolder = gitPathParts.join('/')
+            break
+    }
+    script.commonPipelineEnvironment.setGithubOrg(gitFolder)
+    script.commonPipelineEnvironment.setGithubRepo(gitRepo)
+}
+
+private void setPullRequestStageStepActivation(script, config, List actions) {
+
+    if (script.commonPipelineEnvironment.configuration.runStep == null)
+        script.commonPipelineEnvironment.configuration.runStep = [:]
+    if (script.commonPipelineEnvironment.configuration.runStep[config.pullRequestStageName] == null)
+        script.commonPipelineEnvironment.configuration.runStep[config.pullRequestStageName] = [:]
+
+    actions.each {action ->
+        if (action.startsWith(config.labelPrefix))
+            action = action.minus(config.labelPrefix)
+
+        def stepName = config.stepMappings[action]
+        if (stepName) {
+            script.commonPipelineEnvironment.configuration.runStep."${config.pullRequestStageName}"."${stepName}" = true
+        }
     }
 }

@@ -1,0 +1,19 @@
+---
+unique-prefix: uniquePrefix # A unique prefix. E.g. your D/I/C-User
+xsuaa-instance-name: uniquePrefix-catalog-service-odatav2-xsuaa
+hana-instance-name: uniquePrefix-catalog-service-odatav2-hana
+integer-variable: 1
+boolean-variable: Yes
+float-variable: 0.25
+json-variable: >
+  [
+    {"name":"token-destination",
+     "url":"https://www.google.com",
+     "forwardAuthToken": true}
+  ]
+object-variable:
+  hello: "world"
+  this:  "is an object with"
+  one: 1
+  float: 25.0
+  bool: Yes

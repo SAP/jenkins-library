@@ -5,7 +5,7 @@ import com.sap.piper.ConfigurationHelper
 import com.sap.piper.GitUtils
 import com.sap.piper.Utils
 import com.sap.piper.analytics.InfluxData
-import groovy.text.SimpleTemplateEngine
+import groovy.text.GStringTemplateEngine
 import groovy.transform.Field
 
 @Field String STEP_NAME = getClass().getName()
@@ -16,6 +16,10 @@ import groovy.transform.Field
     /** @see dockerExecute */
     'dockerImage',
     /** @see dockerExecute */
+    'dockerEnvVars',
+    /** @see dockerExecute */
+    'dockerOptions',
+    /** @see dockerExecute */
     'dockerWorkspace',
     /** @see dockerExecute */
     'stashContent',
@@ -25,7 +29,7 @@ import groovy.transform.Field
     'failOnError',
     /**
      * Defines the format of the test result output. `junit` would be the standard for automated build environments but you could use also the option `tap`.
-     * @possibleValues `tap`
+     * @possibleValues `junit`, `tap`
      */
     'outputFormat',
     /**
@@ -82,7 +86,7 @@ void call(Map parameters = [:]) {
         //resolve commonPipelineEnvironment references in envVars
         config.envVarList = []
         config.envVars.each {e ->
-            def envValue = SimpleTemplateEngine.newInstance().createTemplate(e.getValue()).make(commonPipelineEnvironment: script.commonPipelineEnvironment).toString()
+            def envValue = GStringTemplateEngine.newInstance().createTemplate(e.getValue()).make(commonPipelineEnvironment: script.commonPipelineEnvironment).toString()
             config.envVarList.add("${e.getKey()}=${envValue}")
         }
 
@@ -97,9 +101,16 @@ void call(Map parameters = [:]) {
             } finally {
                 sh "cat 'TEST-${config.testPackage}.tap'"
                 if (config.outputFormat == 'junit') {
-                    dockerExecute(script: script, dockerImage: config.dockerImage, dockerWorkspace: config.dockerWorkspace, stashContent: config.stashContent) {
-                        sh "npm install tap-xunit -g"
-                        sh "cat 'TEST-${config.testPackage}.tap' | tap-xunit --package='${config.testPackage}' > TEST-${config.testPackage}.xml"
+                    dockerExecute(
+                        script: script,
+                        dockerImage: config.dockerImage,
+                        dockerEnvVars: config.dockerEnvVars,
+                        dockerOptions: config.dockerOptions,
+                        dockerWorkspace: config.dockerWorkspace,
+                        stashContent: config.stashContent
+                    ) {
+                        sh "NPM_CONFIG_PREFIX=~/.npm-global npm install tap-xunit -g"
+                        sh "cat 'TEST-${config.testPackage}.tap' | PATH=\$PATH:~/.npm-global/bin tap-xunit --package='${config.testPackage}' > TEST-${config.testPackage}.xml"
                     }
                 }
             }

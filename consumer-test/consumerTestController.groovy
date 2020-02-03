@@ -68,10 +68,6 @@ if (!RUNNING_LOCALLY) {
     }
 }
 
-if (!System.getenv('CX_INFRA_IT_CF_USERNAME') || !System.getenv('CX_INFRA_IT_CF_PASSWORD')) {
-    exitPrematurely('Environment variables CX_INFRA_IT_CF_USERNAME and CX_INFRA_IT_CF_PASSWORD need to be set.')
-}
-
 if (options.s) {
     def file = new File(options.s)
     if (!file.exists()) {
@@ -140,7 +136,7 @@ if (failedThreads.size() == 0) {
         failedThread.printOutput()
     }
     status = "failure"
-    statusMessage "The following consumer test(s) failed: ${failedThreads}"
+    statusMessage = "The following consumer test(s) failed: ${failedThreads}"
 }
 
 if (!RUNNING_LOCALLY) {

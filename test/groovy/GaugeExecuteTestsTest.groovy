@@ -68,6 +68,32 @@ class GaugeExecuteTestsTest extends BasePiperTest {
     }
 
     @Test
+    void testDockerFromCustomStepConfiguration() {
+
+        def expectedImage = 'image:test'
+        def expectedEnvVars = ['HUB':'', 'HUB_URL':'', 'env1': 'value1', 'env2': 'value2']
+        def expectedOptions = '--opt1=val1 --opt2=val2 --opt3'
+        def expectedWorkspace = '/path/to/workspace'
+        
+        nullScript.commonPipelineEnvironment.configuration = [steps:[gaugeExecuteTests:[
+            dockerImage: expectedImage, 
+            dockerOptions: expectedOptions,
+            dockerEnvVars: expectedEnvVars,
+            dockerWorkspace: expectedWorkspace
+            ]]]
+
+        stepRule.step.gaugeExecuteTests(
+            script: nullScript,
+            juStabUtils: utils
+        )
+        
+        assert expectedImage == seleniumParams.dockerImage
+        assert expectedOptions == seleniumParams.dockerOptions
+        assert expectedEnvVars.equals(seleniumParams.dockerEnvVars)
+        assert expectedWorkspace == seleniumParams.dockerWorkspace
+    }
+
+    @Test
     void testExecuteGaugeNode() throws Exception {
         stepRule.step.gaugeExecuteTests(
             script: nullScript,
@@ -80,7 +106,7 @@ class GaugeExecuteTestsTest extends BasePiperTest {
             'gauge install js',
             'gauge run testSpec'
         ])))
-        assertThat(seleniumParams.dockerImage, is('node:8-stretch'))
+        assertThat(seleniumParams.dockerImage, is('node:lts-stretch'))
         assertThat(seleniumParams.dockerEnvVars, hasEntry('TARGET_SERVER_URL', 'http://custom.url'))
         assertThat(seleniumParams.dockerName, is('npm'))
         assertThat(seleniumParams.dockerWorkspace, is('/home/node'))

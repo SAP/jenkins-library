@@ -48,7 +48,7 @@ class SeleniumExecuteTestsTest extends BasePiperTest {
         assertThat(bodyExecuted, is(true))
         assertThat(dockerExecuteRule.dockerParams.containerPortMappings, is(['selenium/standalone-chrome': [[containerPort: 4444, hostPort: 4444]]]))
         assertThat(dockerExecuteRule.dockerParams.dockerEnvVars, is(null))
-        assertThat(dockerExecuteRule.dockerParams.dockerImage, is('node:8-stretch'))
+        assertThat(dockerExecuteRule.dockerParams.dockerImage, is('node:lts-stretch'))
         assertThat(dockerExecuteRule.dockerParams.dockerName, is('npm'))
         assertThat(dockerExecuteRule.dockerParams.dockerWorkspace, is('/home/node'))
         assertThat(dockerExecuteRule.dockerParams.sidecarEnvVars, is(null))
@@ -57,6 +57,33 @@ class SeleniumExecuteTestsTest extends BasePiperTest {
         assertThat(dockerExecuteRule.dockerParams.sidecarVolumeBind, is(['/dev/shm': '/dev/shm']))
     }
 
+    @Test
+    void testDockerFromCustomStepConfiguration() {
+
+        def expectedImage = 'image:test'
+        def expectedEnvVars = ['env1': 'value1', 'env2': 'value2']
+        def expectedOptions = '--opt1=val1 --opt2=val2 --opt3'
+        def expectedWorkspace = '/path/to/workspace'
+        
+        nullScript.commonPipelineEnvironment.configuration = [steps:[seleniumExecuteTests:[
+            dockerImage: expectedImage, 
+            dockerOptions: expectedOptions,
+            dockerEnvVars: expectedEnvVars,
+            dockerWorkspace: expectedWorkspace
+            ]]]
+
+        stepRule.step.seleniumExecuteTests(
+            script: nullScript,
+            juStabUtils: utils
+        ) {
+        }
+
+        assert expectedImage == dockerExecuteRule.dockerParams.dockerImage
+        assert expectedOptions == dockerExecuteRule.dockerParams.dockerOptions
+        assert expectedEnvVars.equals(dockerExecuteRule.dockerParams.dockerEnvVars)
+        assert expectedWorkspace == dockerExecuteRule.dockerParams.dockerWorkspace
+    }
+    
     @Test
     void testExecuteSeleniumCustomBuildTool() {
         stepRule.step.seleniumExecuteTests(

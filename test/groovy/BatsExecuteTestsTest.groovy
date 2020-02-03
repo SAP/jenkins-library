@@ -61,15 +61,41 @@ class BatsExecuteTestsTest extends BasePiperTest {
         assertThat(shellRule.shell, hasItem('bats-core/bin/bats --recursive --tap src/test > \'TEST-testPackage.tap\''))
         assertThat(shellRule.shell, hasItem('cat \'TEST-testPackage.tap\''))
 
-        assertThat(dockerExecuteRule.dockerParams.dockerImage, is('node:8-stretch'))
+        assertThat(dockerExecuteRule.dockerParams.dockerImage, is('node:lts-stretch'))
         assertThat(dockerExecuteRule.dockerParams.dockerWorkspace, is('/home/node'))
 
-        assertThat(shellRule.shell, hasItem('npm install tap-xunit -g'))
-        assertThat(shellRule.shell, hasItem('cat \'TEST-testPackage.tap\' | tap-xunit --package=\'testPackage\' > TEST-testPackage.xml'))
+        assertThat(shellRule.shell, hasItem('NPM_CONFIG_PREFIX=~/.npm-global npm install tap-xunit -g'))
+        assertThat(shellRule.shell, hasItem('cat \'TEST-testPackage.tap\' | PATH=\$PATH:~/.npm-global/bin tap-xunit --package=\'testPackage\' > TEST-testPackage.xml'))
 
         assertJobStatusSuccess()
     }
 
+    @Test
+    void testDockerFromCustomStepConfiguration() {
+
+        def expectedImage = 'image:test'
+        def expectedEnvVars = ['env1': 'value1', 'env2': 'value2']
+        def expectedOptions = '--opt1=val1 --opt2=val2 --opt3'
+        def expectedWorkspace = '/path/to/workspace'
+        
+        nullScript.commonPipelineEnvironment.configuration = [steps:[batsExecuteTests:[
+            dockerImage: expectedImage, 
+            dockerOptions: expectedOptions,
+            dockerEnvVars: expectedEnvVars,
+            dockerWorkspace: expectedWorkspace
+            ]]]
+
+        stepRule.step.batsExecuteTests(
+            script: nullScript,
+            juStabUtils: utils
+        )
+        
+        assert expectedImage == dockerExecuteRule.dockerParams.dockerImage
+        assert expectedOptions == dockerExecuteRule.dockerParams.dockerOptions
+        assert expectedEnvVars.equals(dockerExecuteRule.dockerParams.dockerEnvVars)
+        assert expectedWorkspace == dockerExecuteRule.dockerParams.dockerWorkspace
+    }
+    
     @Test
     void testTap() {
         stepRule.step.batsExecuteTests(

@@ -1,9 +1,14 @@
 package com.sap.piper
 
 import com.cloudbees.groovy.cps.NonCPS
-import jenkins.model.Jenkins
-import org.jenkinsci.plugins.workflow.steps.MissingContextVariableException
+import hudson.Functions
 import hudson.tasks.junit.TestResultAction
+
+import jenkins.model.Jenkins
+
+import org.apache.commons.io.IOUtils
+import org.jenkinsci.plugins.workflow.libs.LibrariesAction
+import org.jenkinsci.plugins.workflow.steps.MissingContextVariableException
 
 @API
 @NonCPS
@@ -17,6 +22,32 @@ static boolean hasTestFailures(build){
     //getAction: http://www.hudson-ci.org/javadoc/hudson/tasks/junit/TestResultAction.html
     def action = build?.getRawBuild()?.getAction(TestResultAction.class)
     return action && action.getFailCount() != 0
+}
+
+boolean addWarningsNGParser(String id, String name, String regex, String script, String example = ''){
+    def classLoader = this.getClass().getClassLoader()
+    // usage of class loader to avoid plugin dependency for other use cases of JenkinsUtils class
+    def parserConfig = classLoader.loadClass('io.jenkins.plugins.analysis.warnings.groovy.ParserConfiguration', true)?.getInstance()
+
+    if(parserConfig.contains(id)){
+        return false
+    }else{
+        parserConfig.setParsers(
+            parserConfig.getParsers().plus(
+                classLoader.loadClass('io.jenkins.plugins.analysis.warnings.groovy.GroovyParser', true)?.newInstance(id, name, regex, script, example)
+            )
+        )
+        return true
+    }
+}
+
+@NonCPS
+static String getFullBuildLog(currentBuild) {
+    Reader reader = currentBuild.getRawBuild().getLogReader()
+    String logContent = IOUtils.toString(reader);
+    reader.close();
+    reader = null
+    return logContent
 }
 
 def nodeAvailable() {
@@ -56,4 +87,91 @@ def isJobStartedByCause(Class cause) {
         echo "Found build cause ${detectedCause}"
     }
     return startedByGivenCause
+}
+
+@NonCPS
+String getIssueCommentTriggerAction() {
+    try {
+        def triggerCause = getRawBuild().getCause(org.jenkinsci.plugins.pipeline.github.trigger.IssueCommentCause)
+        if (triggerCause) {
+            //triggerPattern e.g. like '.* /piper ([a-z]*) .*'
+            def matcher = triggerCause.comment =~ triggerCause.triggerPattern
+            if (matcher) {
+                return matcher[0][1]
+            }
+        }
+        return null
+    } catch (err) {
+        return null
+    }
+}
+
+def getJobStartedByUserId() {
+    return getRawBuild().getCause(hudson.model.Cause.UserIdCause.class)?.getUserId()
+}
+
+@NonCPS
+def getLibrariesInfo() {
+    def libraries = []
+    def build = getRawBuild()
+    def libs = build.getAction(LibrariesAction.class).getLibraries()
+
+    for (def i = 0; i < libs.size(); i++) {
+        Map lib = [:]
+
+        lib['name'] = libs[i].name
+        lib['version'] = libs[i].version
+        lib['trusted'] = libs[i].trusted
+        libraries.add(lib)
+    }
+
+    return libraries
+}
+
+@NonCPS
+void addRunSideBarLink(String relativeUrl, String displayName, String relativeIconPath) {
+    try {
+        def linkActionClass = this.class.classLoader.loadClass("hudson.plugins.sidebar_link.LinkAction")
+        if (relativeUrl != null && displayName != null) {
+            def run = getRawBuild()
+            def iconPath = (null != relativeIconPath) ? "${Functions.getResourcePath()}/${relativeIconPath}" : null
+            def action = linkActionClass.newInstance(relativeUrl, displayName, iconPath)
+            echo "Added run level sidebar link to '${action.getUrlName()}' with name '${action.getDisplayName()}' and icon '${action.getIconFileName()}'"
+            run.getActions().add(action)
+        }
+    } catch (e) {
+        e.printStackTrace()
+    }
+}
+
+void handleStepResults(String stepName, boolean failOnMissingReports, boolean failOnMissingLinks) {
+    def reportsFileName = "${stepName}_reports.json"
+    def reportsFileExists = fileExists(file: reportsFileName)
+    if (failOnMissingReports && !reportsFileExists) {
+        error "Expected to find ${reportsFileName} in workspace but it is not there"
+    } else if (reportsFileExists) {
+        def reports = readJSON(file: reportsFileName)
+        for (report in reports) {
+            archiveArtifacts artifacts: report['target'], allowEmptyArchive: !report['mandatory']
+        }
+    }
+
+    def linksFileName = "${stepName}_links.json"
+    def linksFileExists = fileExists(file: linksFileName)
+    if (failOnMissingLinks && !linksFileExists) {
+        error "Expected to find ${linksFileName} in workspace but it is not there"
+    } else if (linksFileExists) {
+        def links = readJSON(file: linksFileName)
+        for (link in links) {
+            if(link['scope'] == 'job') {
+                removeJobSideBarLinks(link['target'])
+                addJobSideBarLink(link['target'], link['name'], "images/24x24/graph.png")
+            }
+            addRunSideBarLink(link['target'], link['name'], "images/24x24/graph.png")
+        }
+    }
+}
+
+def getInstance() {
+    Jenkins.get()
 }

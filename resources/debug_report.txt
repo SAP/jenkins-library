@@ -1,0 +1,102 @@
+# SAP Cloud SDK `<% print shareConfidentialInformation ? "Confidential" : "Redacted" %>` Debug Log
+
+The debug log is generated with each build and should be included in every support request, don't worry in case you don't understand all of its contents.
+
+The log was generated at: `$utcTimestamp UTC`
+
+#### Please be sure that this file doesn't contain any information that you are not allowed to share.
+
+<% print failedBuild ? "## Unsuccessful Build" : "" %>
+
+<% print failedBuild ? "#### Failed Step" : "" %>
+<% print failedBuild.get("step") ? "`${failedBuild.get("step")}`" : "" %>
+
+<% print failedBuild.get("reason") ? "#### Error Message" : "" %>
+<% print failedBuild.get("reason") ? "```\n${failedBuild.get("reason")}\n```" : "" %>
+<% print failedBuild.get("stack_trace") ? "#### Stacktrace" : "" %>
+<% print failedBuild.get("stack_trace") ? "```" : "" %>
+<% print failedBuild.get("stack_trace").collect({each -> "${each}"}).join("\n") %>
+<% print failedBuild.get("stack_trace") ? "```" : "" %>
+<% print failedBuild.get("fatal") ? "#### Failure was fatal." : "" %>
+
+## Pipeline Environment
+
+#### Environment
+`${environment.get("environment")}`
+
+#### Environment Variables
+Environment Variable | Value
+---------------------|------
+<% print environment.get("build_details").collect({each -> "${each}"}).join("\n") %>
+
+#### Docker Image
+`${environment.get("docker_image")}`
+
+## Build Tools Environment
+
+#### Build Tool
+`${buildTool}`
+
+<% print modulesMap && shareConfidentialInformation ? "#### MTA Modules" : "" %>
+
+<% print modulesMap && shareConfidentialInformation ? "Type | Path" : "" %>
+<% print modulesMap && shareConfidentialInformation ? "-----|-----" : "" %>
+<% print modulesMap && shareConfidentialInformation ? modulesMap.collect({each -> "${each.key} | ${each.value}"}).join("\n") : "" %>
+
+<% print npmModules && shareConfidentialInformation ? "#### NPM Modules" : "" %>
+
+<% print npmModules && shareConfidentialInformation ? "Path | Scripts" : "" %>
+<% print npmModules && shareConfidentialInformation ? "-----|--------" : "" %>
+<% print npmModules && shareConfidentialInformation ? npmModules.collect({each -> "${each.basePath} | ${each.npmScripts}"}).join("\n") : "" %>
+
+
+## Plugins
+
+<% print plugins ? "" : "No plugins were used for this build." %>
+
+<details><summary>Full list of plugins</summary>
+<p>
+
+<% print plugins ? "Shortname | Version | Displayname" : "" %>
+<% print plugins ? "----------|---------|------------" : "" %>
+<% print plugins.collect({each -> "${each}"}).join("\n") %>
+
+</p>
+</details>
+
+<% print shareConfidentialInformation ? "## Git Repository" : "" %>
+
+<% print shareConfidentialInformation ? gitRepo ? "" : "Git isn't used for version control" : "" %>
+
+<% print gitRepo && shareConfidentialInformation ? "Repository | Branch" : "" %>
+<% print gitRepo && shareConfidentialInformation ? "-----------|-------" : "" %>
+<% print gitRepo && shareConfidentialInformation ? "${gitRepo.get("URI")} | ${gitRepo.get("branch")}" : "" %>
+
+## Local Extensions
+
+<% print localExtensions ? "" : "No local extensions were used" %>
+
+<% print localExtensions ? "Local Extension | relationToOriginalStage" : "" %>
+<% print localExtensions ? "----------------|-------" : "" %>
+<% print localExtensions.collect({each -> "${each.key} | ${each.value}"}).join("\n") %>
+
+## Global Extension Repository
+
+<% print shareConfidentialInformation ? globalExtensionRepository ? "${globalExtensionRepository}" : "No global extension repository was loaded." : "" %>
+<% print globalExtensions ? "The repository included the following extensions:" : "No extension of the global extension repository was used." %>
+
+<% print globalExtensions ? "Global Extension | relationToOriginalStage" : "" %>
+<% print globalExtensions ? "-----------------|-------" : "" %>
+<% print globalExtensions.collect({each -> "${each.key} | ${each.value}"}).join("\n") %>
+
+Configuration file for global extensions: <% print globalExtensionConfigurationFilePath ?: "Global extensions don't have a configuration file" %>
+
+Shared project configuration: <% print shareConfidentialInformation ? sharedConfigFilePath ?: "No shared configuration" : sharedConfigFilePath != null %>
+
+<% print shareConfidentialInformation ? "## Shared Libraries" : "" %>
+
+<% print shareConfidentialInformation ? additionalSharedLibraries ? "" : "No additional shared libraries where loaded." : "" %>
+
+<% print additionalSharedLibraries && shareConfidentialInformation ? "name | branch | loadedByExtension" : "" %>
+<% print additionalSharedLibraries && shareConfidentialInformation ? "-----|--------|-------" : "" %>
+<% print shareConfidentialInformation ? additionalSharedLibraries.collect({each -> "${each}"}).join("\n") : "" %>

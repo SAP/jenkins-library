@@ -1,0 +1,4 @@
+steps:
+  githubPublishRelease:
+    owner: SAP
+    repository: jenkins-library

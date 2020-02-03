@@ -121,8 +121,6 @@ void call(parameters = [:]) {
 
         def utils = parameters.utils ?: new Utils()
 
-        prepareDefaultValues script: script
-
         // load default & individual configuration
         ConfigurationHelper configHelper = ConfigurationHelper.newInstance(this)
             .loadStepDefaults()
@@ -210,14 +208,14 @@ void call(parameters = [:]) {
                 )
 
                 lock("$STEP_NAME :${neoCommandHelper.resourceLock()}") {
-                    deploy(script, utils, configuration, neoCommandHelper, configuration.dockerImage, deployMode)
+                    deploy(script, configuration, neoCommandHelper, configuration.dockerImage, deployMode)
                 }
             }
         }
     }
 }
 
-private deploy(script, utils, Map configuration, NeoCommandHelper neoCommandHelper, dockerImage, DeployMode deployMode) {
+private deploy(script, Map configuration, NeoCommandHelper neoCommandHelper, dockerImage, DeployMode deployMode) {
 
     String logFolder = 'logs/neo'
 

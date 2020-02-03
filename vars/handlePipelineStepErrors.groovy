@@ -2,9 +2,9 @@ import com.cloudbees.groovy.cps.NonCPS
 
 import com.sap.piper.GenerateDocumentation
 import com.sap.piper.ConfigurationHelper
+import com.sap.piper.DebugReport
 import com.sap.piper.analytics.InfluxData
-
-import groovy.text.SimpleTemplateEngine
+import groovy.text.GStringTemplateEngine
 import groovy.transform.Field
 import hudson.AbortException
 
@@ -78,22 +78,28 @@ void call(Map parameters = [:], body) {
         if (config.echoDetails)
             message += formatErrorMessage(config, ex)
         writeErrorToInfluxData(config, ex)
-        if (config.failOnError || config.stepName in config.mandatorySteps) {
+
+        boolean failOnError = config.failOnError || config.stepName in config.mandatorySteps
+        DebugReport.instance.storeStepFailure(config.stepName, ex, failOnError)
+
+        if (failOnError) {
             throw ex
         }
 
-        if (config.stepParameters?.script) {
-            config.stepParameters?.script.currentBuild.result = 'UNSTABLE'
-        } else {
-            currentBuild.result = 'UNSTABLE'
+        def failureMessage = "[${STEP_NAME}] Error in step ${config.stepName} - Build result set to 'UNSTABLE'"
+        try {
+            //use new unstable feature if available: see https://jenkins.io/blog/2019/07/05/jenkins-pipeline-stage-result-visualization-improvements/
+            unstable(failureMessage)
+        } catch (java.lang.NoSuchMethodError nmEx) {
+            if (config.stepParameters?.script) {
+                config.stepParameters?.script.currentBuild.result = 'UNSTABLE'
+            } else {
+                currentBuild.result = 'UNSTABLE'
+            }
+            echo failureMessage
         }
-
-        echo "[${STEP_NAME}] Error in step ${config.stepName} - Build result set to 'UNSTABLE'"
 
         List unstableSteps = cpe?.getValue('unstableSteps') ?: []
-        if(!unstableSteps) {
-            unstableSteps = []
-        }
 
         // add information about unstable steps to pipeline environment
         // this helps to bring this information to users in a consolidated manner inside a pipeline
@@ -104,6 +110,9 @@ void call(Map parameters = [:], body) {
         if (config.echoDetails)
             message += formatErrorMessage(config, error)
         writeErrorToInfluxData(config, error)
+
+        DebugReport.instance.storeStepFailure(config.stepName, error, true)
+
         throw error
     } finally {
         if (config.echoDetails)
@@ -119,9 +128,9 @@ private String formatErrorMessage(Map config, error){
         libraryDocumentationUrl: config.libraryDocumentationUrl,
         libraryRepositoryUrl: config.libraryRepositoryUrl,
         stepName: config.stepName,
-        stepParameters: config.stepParameters?.toString()
+        stepParameters: (config.stepParameters?.verbose == true) ? config.stepParameters?.toString() : '*** to show step parameters, set verbose:true in general pipeline configuration\n*** WARNING: this may reveal sensitive information. ***'
     ]
-    return SimpleTemplateEngine
+    return GStringTemplateEngine
         .newInstance()
         .createTemplate(libraryResource('com.sap.piper/templates/error.log'))
         .make(binding)

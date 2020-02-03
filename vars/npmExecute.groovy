@@ -8,9 +8,15 @@ import groovy.transform.Field
 @Field Set GENERAL_CONFIG_KEYS = []
 @Field Set STEP_CONFIG_KEYS = [
     /**
-     * Name of the docker image that should be used, in which node should be installed and configured. Default value is 'node:8-stretch'.
+     * Name of the docker image that should be used, in which node should be installed and configured.
      */
     'dockerImage',
+    /** @see dockerExecute*/
+    'dockerEnvVars',
+    /** @see dockerExecute */
+    'dockerOptions',
+    /** @see dockerExecute*/
+    'dockerWorkspace',
     /**
      * URL of default NPM registry
      */
@@ -53,7 +59,12 @@ void call(Map parameters = [:], body = null) {
             if (!fileExists('package.json')) {
                 error "[${STEP_NAME}] package.json is not found."
             }
-            dockerExecute(script: script, dockerImage: configuration.dockerImage, dockerOptions: configuration.dockerOptions) {
+            dockerExecute(script: script,
+                dockerImage: configuration.dockerImage,
+                dockerEnvVars: configuration.dockerEnvVars,
+                dockerOptions: configuration.dockerOptions,
+                dockerWorkspace: configuration.dockerWorkspace
+            ) {
                 if (configuration.defaultNpmRegistry) {
                     sh "npm config set registry ${configuration.defaultNpmRegistry}"
                 }
