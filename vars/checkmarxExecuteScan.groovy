@@ -42,7 +42,7 @@ void call(Map parameters = [:]) {
                 sh "./piper checkmarxExecuteScan"
             }
 
-            jenkinsUtils.handleStepResults(STEP_NAME)
+            jenkinsUtils.handleStepResults(STEP_NAME, true, false)
         }
     }
 }

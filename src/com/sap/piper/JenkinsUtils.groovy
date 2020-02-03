@@ -144,14 +144,24 @@ void addRunSideBarLink(String relativeUrl, String displayName, String relativeIc
     }
 }
 
-void handleStepResults(String stepName) {
-    def reports = readJSON (file: "${stepName}_reports.json")
-    for (report in reports) {
-        archiveArtifacts artifacts: report['target'], allowEmptyArchive: !report['mandatory']
+void handleStepResults(String stepName, boolean failOnMissingReports, boolean failOnMissingLinks) {
+    def reportsFileName = "${stepName}_reports.json"
+    def reportsFileExists = fileExists(file: reportsFileName)
+    if (failOnMissingReports && !reportsFileExists) {
+        error "Expected to find ${reportsFileName} in workspace but it is not there"
+    } else if (reportsFileExists) {
+        def reports = readJSON(file: reportsFileName)
+        for (report in reports) {
+            archiveArtifacts artifacts: report['target'], allowEmptyArchive: !report['mandatory']
+        }
     }
 
-    if (fileExists(file: 'links.json')) {
-        def links = readJSON(file: "${stepName}_links.json")
+    def linksFileName = "${stepName}_links.json"
+    def linksFileExists = fileExists(file: linksFileName)
+    if (failOnMissingLinks && !linksFileExists) {
+        error "Expected to find ${linksFileName} in workspace but it is not there"
+    } else if (linksFileExists) {
+        def links = readJSON(file: linksFileName)
         for (link in links) {
             addRunSideBarLink(link['target'], link['name'], "images/24x24/graph.png")
         }
