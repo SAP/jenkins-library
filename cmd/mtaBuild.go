@@ -110,7 +110,6 @@ func runMtaBuild(config mtaBuildOptions, commonPipelineEnvironment *mtaBuildComm
 	var mtaCall = `Echo "Hello MTA"`
 	var options = []string{}
 
-
 	switch mtaBuildTool {
 	case "classic":
 		options = append(options, fmt.Sprintf("--build-target=%s", buildTarget))
@@ -183,7 +182,7 @@ func materialize(url, file string) error {
 	// - how does this work with a proxy inbetween?
 	// - how does this work with http 302 (relocated) --> curl -L
 	response, e := client.SendRequest(http.MethodGet, url, nil, nil, nil)
-    if e != nil {
+	if e != nil {
 		return e
 	}
 
