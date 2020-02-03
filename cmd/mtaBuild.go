@@ -187,7 +187,7 @@ func materialize(url, file string) error {
 	}
 
 	if response.StatusCode != 200 {
-		fmt.Errorf("Got %d reponse from download attemtp for \"%S\"", response.StatusCode, url)
+		fmt.Errorf("Got %d reponse from download attemtp for \"%s\"", response.StatusCode, url)
 	}
 
 	body, e := ioutil.ReadAll(response.Body)
