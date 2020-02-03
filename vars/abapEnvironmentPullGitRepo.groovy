@@ -18,8 +18,8 @@ void call(Map parameters = [:]) {
         def utils = parameters.juStabUtils ?: new Utils()
         parameters.juStabUtils = null
 
-        // new PiperGoUtils(this, utils).unstashPiperBin()
-        // utils.unstash('pipelineConfigAndTests')
+        new PiperGoUtils(this, utils).unstashPiperBin()
+        utils.unstash('pipelineConfigAndTests')
         script.commonPipelineEnvironment.writeToDisk(script)
 
         writeFile(file: METADATA_FILE, text: libraryResource(METADATA_FILE))
