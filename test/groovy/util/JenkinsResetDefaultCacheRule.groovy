@@ -27,7 +27,23 @@ class JenkinsResetDefaultCacheRule implements TestRule {
             @Override
             void evaluate() throws Throwable {
                 DefaultValueCache.reset()
+
+                MetaMethod oldReadDefaults = DefaultValueCache.metaClass.
+                    getStaticMetaMethod("readDefaults", Script)
+                MetaMethod oldPersistDefaults = DefaultValueCache.metaClass.
+                    getStaticMetaMethod("persistDefaults", [Script, Map, List])
+
+                DefaultValueCache.metaClass.static.readDefaults = { Script s ->
+                    return null
+                }
+                DefaultValueCache.metaClass.static.persistDefaults = { Script s, Map dv, List cd ->
+                    return null
+                }
+
                 base.evaluate()
+
+                DefaultValueCache.metaClass.static.readDefaults = oldReadDefaults
+                DefaultValueCache.metaClass.static.persistDefaults = oldPersistDefaults
             }
         }
     }
