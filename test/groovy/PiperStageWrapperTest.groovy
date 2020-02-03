@@ -1,3 +1,5 @@
+import com.sap.piper.DebugReport
+
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -143,5 +145,6 @@ class PiperStageWrapperTest extends BasePiperTest {
         assertThat(loggingRule.log, containsString('Stage Name: test_old_extension'))
         assertThat(loggingRule.log, containsString('Config: ['))
         assertThat(loggingRule.log, containsString('testBranch'))
+        assertThat(DebugReport.instance.localExtensions.test_old_extension, is('Extends'))
     }
 }
