@@ -13,6 +13,7 @@ type Path struct {
 	Name      string `json:"name"`
 	Target    string `json:"target"`
 	Mandatory bool   `json:"mandatory"`
+	Scope     string `json:"scope"`
 }
 
 // PersistReportsAndLinks stores the report paths and links in JSON format in the workspace for processing outside
