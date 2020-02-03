@@ -1,9 +1,12 @@
 package cmd
 
 import (
+	"fmt"
+	"time"
+
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
-
+	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/spf13/cobra"
 )
 
@@ -18,6 +21,7 @@ var myKarmaExecuteTestsOptions karmaExecuteTestsOptions
 // KarmaExecuteTestsCommand Executes the Karma test runner
 func KarmaExecuteTestsCommand() *cobra.Command {
 	metadata := karmaExecuteTestsMetadata()
+	var startTime time.Time
 
 	var createKarmaExecuteTestsCmd = &cobra.Command{
 		Use:   "karmaExecuteTests",
@@ -27,20 +31,32 @@ func KarmaExecuteTestsCommand() *cobra.Command {
 The step is using the ` + "`" + `seleniumExecuteTest` + "`" + ` step to spin up two containers in a Docker network:
 
 * a Selenium/Chrome container (` + "`" + `selenium/standalone-chrome` + "`" + `)
-* a NodeJS container (` + "`" + `node:8-stretch` + "`" + `)
+* a NodeJS container (` + "`" + `node:lts-stretch` + "`" + `)
 
 In the Docker network, the containers can be referenced by the values provided in ` + "`" + `dockerName` + "`" + ` and ` + "`" + `sidecarName` + "`" + `, the default values are ` + "`" + `karma` + "`" + ` and ` + "`" + `selenium` + "`" + `. These values must be used in the ` + "`" + `hostname` + "`" + ` properties of the test configuration ([Karma](https://karma-runner.github.io/1.0/config/configuration-file.html) and [WebDriver](https://github.com/karma-runner/karma-webdriver-launcher#usage)).
 
 !!! note
     In a Kubernetes environment, the containers both need to be referenced with ` + "`" + `localhost` + "`" + `.`,
 		PreRunE: func(cmd *cobra.Command, args []string) error {
+			startTime = time.Now()
 			log.SetStepName("karmaExecuteTests")
 			log.SetVerbose(GeneralConfig.Verbose)
 			return PrepareConfig(cmd, &metadata, "karmaExecuteTests", &myKarmaExecuteTestsOptions, config.OpenPiperFile)
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-
-			return karmaExecuteTests(myKarmaExecuteTestsOptions)
+			telemetryData := telemetry.CustomData{}
+			telemetryData.ErrorCode = "1"
+			handler := func() {
+				telemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
+				telemetry.Send(&telemetryData)
+			}
+			log.DeferExitHandler(handler)
+			defer handler()
+			telemetry.Initialize(GeneralConfig.NoTelemetry, "karmaExecuteTests")
+			// ToDo: pass telemetryData to step
+			err := karmaExecuteTests(myKarmaExecuteTestsOptions)
+			telemetryData.ErrorCode = "0"
+			return err
 		},
 	}
 

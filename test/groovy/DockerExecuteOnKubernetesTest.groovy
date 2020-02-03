@@ -17,6 +17,8 @@ import util.JenkinsStepRule
 import util.PluginMock
 import util.Rules
 
+import hudson.AbortException
+
 import static org.hamcrest.Matchers.*
 import static org.junit.Assert.assertThat
 import static org.junit.Assert.assertTrue
@@ -29,6 +31,7 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
     private JenkinsShellCallRule shellRule = new JenkinsShellCallRule(this)
     private JenkinsLoggingRule loggingRule = new JenkinsLoggingRule(this)
     private JenkinsStepRule stepRule = new JenkinsStepRule(this)
+    private ExpectedException thrown = new ExpectedException()
 
     @Rule
     public RuleChain ruleChain = Rules
@@ -39,6 +42,7 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
         .around(shellRule)
         .around(loggingRule)
         .around(stepRule)
+        .around(thrown)
     int whichDockerReturnValue = 0
     def bodyExecuted
     def dockerImage
@@ -462,6 +466,23 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
             hasItem('config/jnlp:latest'),
             hasItem('maven:3.5-jdk-8-alpine'),
         ))
+    }
+
+    @Test
+    void testDockerExecuteOnKubernetesExecutionFails() {
+
+        thrown.expect(AbortException)
+        thrown.expectMessage('Execution failed.')
+
+        nullScript.commonPipelineEnvironment.configuration = [
+            general: [jenkinsKubernetes: [jnlpAgent: 'config/jnlp:latest']]
+        ]
+        //binding.variables.env.JENKINS_JNLP_IMAGE = 'config/jnlp:latest'
+        stepRule.step.dockerExecuteOnKubernetes(
+            script: nullScript,
+            juStabUtils: utils,
+            dockerImage: 'maven:3.5-jdk-8-alpine',
+        ) { throw new AbortException('Execution failed.') }
     }
 
     @Test

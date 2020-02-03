@@ -1,11 +1,13 @@
 package cmd
 
 import (
+	"fmt"
 	"os"
+	"time"
 
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
-
+	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/spf13/cobra"
 )
 
@@ -30,19 +32,32 @@ var myXsDeployOptions xsDeployOptions
 // XsDeployCommand Performs xs deployment
 func XsDeployCommand() *cobra.Command {
 	metadata := xsDeployMetadata()
+	var startTime time.Time
 
 	var createXsDeployCmd = &cobra.Command{
 		Use:   "xsDeploy",
 		Short: "Performs xs deployment",
 		Long:  `Performs xs deployment`,
 		PreRunE: func(cmd *cobra.Command, args []string) error {
+			startTime = time.Now()
 			log.SetStepName("xsDeploy")
 			log.SetVerbose(GeneralConfig.Verbose)
 			return PrepareConfig(cmd, &metadata, "xsDeploy", &myXsDeployOptions, config.OpenPiperFile)
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-
-			return xsDeploy(myXsDeployOptions)
+			telemetryData := telemetry.CustomData{}
+			telemetryData.ErrorCode = "1"
+			handler := func() {
+				telemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
+				telemetry.Send(&telemetryData)
+			}
+			log.DeferExitHandler(handler)
+			defer handler()
+			telemetry.Initialize(GeneralConfig.NoTelemetry, "xsDeploy")
+			// ToDo: pass telemetryData to step
+			err := xsDeploy(myXsDeployOptions)
+			telemetryData.ErrorCode = "0"
+			return err
 		},
 	}
 
