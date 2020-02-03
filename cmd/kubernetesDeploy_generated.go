@@ -67,7 +67,7 @@ helm upgrade <deploymentName> <chartPath> --install --force --namespace <namespa
 			log.SetVerbose(GeneralConfig.Verbose)
 			return PrepareConfig(cmd, &metadata, "kubernetesDeploy", &myKubernetesDeployOptions, config.OpenPiperFile)
 		},
-		RunE: func(cmd *cobra.Command, args []string) error {
+		Run: func(cmd *cobra.Command, args []string) {
 			telemetryData := telemetry.CustomData{}
 			telemetryData.ErrorCode = "1"
 			handler := func() {
@@ -78,9 +78,8 @@ helm upgrade <deploymentName> <chartPath> --install --force --namespace <namespa
 			defer handler()
 			telemetry.Initialize(GeneralConfig.NoTelemetry, "kubernetesDeploy")
 			// ToDo: pass telemetryData to step
-			err := kubernetesDeploy(myKubernetesDeployOptions)
+			kubernetesDeploy(myKubernetesDeployOptions, &telemetryData)
 			telemetryData.ErrorCode = "0"
-			return err
 		},
 	}
 

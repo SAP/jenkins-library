@@ -30,7 +30,7 @@ func VersionCommand() *cobra.Command {
 			log.SetVerbose(GeneralConfig.Verbose)
 			return PrepareConfig(cmd, &metadata, "version", &myVersionOptions, config.OpenPiperFile)
 		},
-		RunE: func(cmd *cobra.Command, args []string) error {
+		Run: func(cmd *cobra.Command, args []string) {
 			telemetryData := telemetry.CustomData{}
 			telemetryData.ErrorCode = "1"
 			handler := func() {
@@ -41,9 +41,8 @@ func VersionCommand() *cobra.Command {
 			defer handler()
 			telemetry.Initialize(GeneralConfig.NoTelemetry, "version")
 			// ToDo: pass telemetryData to step
-			err := version(myVersionOptions)
+			version(myVersionOptions, &telemetryData)
 			telemetryData.ErrorCode = "0"
-			return err
 		},
 	}
 

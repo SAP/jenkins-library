@@ -44,7 +44,7 @@ It can for example be used for GitOps scenarios or for scenarios where you want 
 			log.SetVerbose(GeneralConfig.Verbose)
 			return PrepareConfig(cmd, &metadata, "githubCreatePullRequest", &myGithubCreatePullRequestOptions, config.OpenPiperFile)
 		},
-		RunE: func(cmd *cobra.Command, args []string) error {
+		Run: func(cmd *cobra.Command, args []string) {
 			telemetryData := telemetry.CustomData{}
 			telemetryData.ErrorCode = "1"
 			handler := func() {
@@ -55,9 +55,8 @@ It can for example be used for GitOps scenarios or for scenarios where you want 
 			defer handler()
 			telemetry.Initialize(GeneralConfig.NoTelemetry, "githubCreatePullRequest")
 			// ToDo: pass telemetryData to step
-			err := githubCreatePullRequest(myGithubCreatePullRequestOptions)
+			githubCreatePullRequest(myGithubCreatePullRequestOptions, &telemetryData)
 			telemetryData.ErrorCode = "0"
-			return err
 		},
 	}
 

@@ -54,7 +54,7 @@ The result looks like
 			log.SetVerbose(GeneralConfig.Verbose)
 			return PrepareConfig(cmd, &metadata, "githubPublishRelease", &myGithubPublishReleaseOptions, config.OpenPiperFile)
 		},
-		RunE: func(cmd *cobra.Command, args []string) error {
+		Run: func(cmd *cobra.Command, args []string) {
 			telemetryData := telemetry.CustomData{}
 			telemetryData.ErrorCode = "1"
 			handler := func() {
@@ -65,9 +65,8 @@ The result looks like
 			defer handler()
 			telemetry.Initialize(GeneralConfig.NoTelemetry, "githubPublishRelease")
 			// ToDo: pass telemetryData to step
-			err := githubPublishRelease(myGithubPublishReleaseOptions)
+			githubPublishRelease(myGithubPublishReleaseOptions, &telemetryData)
 			telemetryData.ErrorCode = "0"
-			return err
 		},
 	}
 

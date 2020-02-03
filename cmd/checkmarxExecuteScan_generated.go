@@ -183,7 +183,7 @@ thresholds instead of ` + "`" + `percentage` + "`" + ` whereas we strongly recom
 			log.SetVerbose(GeneralConfig.Verbose)
 			return PrepareConfig(cmd, &metadata, "checkmarxExecuteScan", &myCheckmarxExecuteScanOptions, config.OpenPiperFile)
 		},
-		RunE: func(cmd *cobra.Command, args []string) error {
+		Run: func(cmd *cobra.Command, args []string) {
 			telemetryData := telemetry.CustomData{}
 			telemetryData.ErrorCode = "1"
 			handler := func() {
@@ -195,9 +195,8 @@ thresholds instead of ` + "`" + `percentage` + "`" + ` whereas we strongly recom
 			defer handler()
 			telemetry.Initialize(GeneralConfig.NoTelemetry, "checkmarxExecuteScan")
 			// ToDo: pass telemetryData to step
-			err := checkmarxExecuteScan(myCheckmarxExecuteScanOptions, &influx)
+			checkmarxExecuteScan(myCheckmarxExecuteScanOptions, &telemetryData, &influx)
 			telemetryData.ErrorCode = "0"
-			return err
 		},
 	}
 

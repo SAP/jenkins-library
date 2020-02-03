@@ -43,7 +43,7 @@ In the Docker network, the containers can be referenced by the values provided i
 			log.SetVerbose(GeneralConfig.Verbose)
 			return PrepareConfig(cmd, &metadata, "karmaExecuteTests", &myKarmaExecuteTestsOptions, config.OpenPiperFile)
 		},
-		RunE: func(cmd *cobra.Command, args []string) error {
+		Run: func(cmd *cobra.Command, args []string) {
 			telemetryData := telemetry.CustomData{}
 			telemetryData.ErrorCode = "1"
 			handler := func() {
@@ -54,9 +54,8 @@ In the Docker network, the containers can be referenced by the values provided i
 			defer handler()
 			telemetry.Initialize(GeneralConfig.NoTelemetry, "karmaExecuteTests")
 			// ToDo: pass telemetryData to step
-			err := karmaExecuteTests(myKarmaExecuteTestsOptions)
+			karmaExecuteTests(myKarmaExecuteTestsOptions, &telemetryData)
 			telemetryData.ErrorCode = "0"
-			return err
 		},
 	}
 

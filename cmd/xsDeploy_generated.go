@@ -44,7 +44,7 @@ func XsDeployCommand() *cobra.Command {
 			log.SetVerbose(GeneralConfig.Verbose)
 			return PrepareConfig(cmd, &metadata, "xsDeploy", &myXsDeployOptions, config.OpenPiperFile)
 		},
-		RunE: func(cmd *cobra.Command, args []string) error {
+		Run: func(cmd *cobra.Command, args []string) {
 			telemetryData := telemetry.CustomData{}
 			telemetryData.ErrorCode = "1"
 			handler := func() {
@@ -55,9 +55,8 @@ func XsDeployCommand() *cobra.Command {
 			defer handler()
 			telemetry.Initialize(GeneralConfig.NoTelemetry, "xsDeploy")
 			// ToDo: pass telemetryData to step
-			err := xsDeploy(myXsDeployOptions)
+			xsDeploy(myXsDeployOptions, &telemetryData)
 			telemetryData.ErrorCode = "0"
-			return err
 		},
 	}
 

@@ -39,7 +39,7 @@ func DetectExecuteScanCommand() *cobra.Command {
 			log.SetVerbose(GeneralConfig.Verbose)
 			return PrepareConfig(cmd, &metadata, "detectExecuteScan", &myDetectExecuteScanOptions, config.OpenPiperFile)
 		},
-		RunE: func(cmd *cobra.Command, args []string) error {
+		Run: func(cmd *cobra.Command, args []string) {
 			telemetryData := telemetry.CustomData{}
 			telemetryData.ErrorCode = "1"
 			handler := func() {
@@ -50,9 +50,8 @@ func DetectExecuteScanCommand() *cobra.Command {
 			defer handler()
 			telemetry.Initialize(GeneralConfig.NoTelemetry, "detectExecuteScan")
 			// ToDo: pass telemetryData to step
-			err := detectExecuteScan(myDetectExecuteScanOptions)
+			detectExecuteScan(myDetectExecuteScanOptions, &telemetryData)
 			telemetryData.ErrorCode = "0"
-			return err
 		},
 	}
 

@@ -108,7 +108,7 @@ func TestStepCommand() *cobra.Command {
 			log.SetVerbose(piperOsCmd.GeneralConfig.Verbose)
 			return piperOsCmd.PrepareConfig(cmd, &metadata, "testStep", &myTestStepOptions, config.OpenPiperFile)
 		},
-		RunE: func(cmd *cobra.Command, args []string) error {
+		Run: func(cmd *cobra.Command, args []string) {
 			telemetryData := telemetry.CustomData{}
 			telemetryData.ErrorCode = "1"
 			handler := func() {
@@ -121,9 +121,8 @@ func TestStepCommand() *cobra.Command {
 			defer handler()
 			telemetry.Initialize(piperOsCmd.GeneralConfig.NoTelemetry, "testStep")
 			// ToDo: pass telemetryData to step
-			err := testStep(myTestStepOptions, &commonPipelineEnvironment, &influxTest)
+			testStep(myTestStepOptions, &telemetryData, &commonPipelineEnvironment, &influxTest)
 			telemetryData.ErrorCode = "0"
-			return err
 		},
 	}
 

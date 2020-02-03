@@ -6,9 +6,10 @@ import (
 
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/telemetry"
 )
 
-func detectExecuteScan(myDetectExecuteScanOptions detectExecuteScanOptions) error {
+func detectExecuteScan(myDetectExecuteScanOptions detectExecuteScanOptions, telemetryData *telemetry.CustomData) error {
 	c := command.Command{}
 	// reroute command output to logging framework
 	c.Stdout(log.Entry().Writer())
