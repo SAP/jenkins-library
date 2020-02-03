@@ -126,7 +126,7 @@ func addProtecodeExecuteScanFlags(cmd *cobra.Command) {
 	cmd.Flags().BoolVar(&myProtecodeExecuteScanOptions.IncludeLayers, "includeLayers", false, "Flag if the docker layers should be included")
 	cmd.Flags().BoolVar(&myProtecodeExecuteScanOptions.AddSideBarLink, "addSideBarLink", true, "Whether to create a side bar link pointing to the report produced by Protecode or not")
 	cmd.Flags().StringVar(&myProtecodeExecuteScanOptions.ProtecodeTimeoutMinutes, "protecodeTimeoutMinutes", "60", "The timeout to wait for the scan to finish")
-	cmd.Flags().StringVar(&myProtecodeExecuteScanOptions.ProtecodeServerURL, "protecodeServerUrl", "https://protecode.c.eu-de-2.cloud.sap", "The URL to the Protecode backend")
+	cmd.Flags().StringVar(&myProtecodeExecuteScanOptions.ProtecodeServerURL, "protecodeServerUrl", os.Getenv("PIPER_protecodeServerUrl"), "The URL to the Protecode backend")
 	cmd.Flags().StringVar(&myProtecodeExecuteScanOptions.ReportFileName, "reportFileName", "protecode_report.pdf", "The file name of the report to be created")
 	cmd.Flags().BoolVar(&myProtecodeExecuteScanOptions.UseCallback, "useCallback", false, "Whether to the Protecode backend's callback or poll for results")
 	cmd.Flags().StringVar(&myProtecodeExecuteScanOptions.FetchURL, "fetchUrl", os.Getenv("PIPER_fetchUrl"), "The URL to fetch the file to scan with Protecode which must be accessible via public HTTP GET request")

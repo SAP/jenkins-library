@@ -50,10 +50,10 @@ func protecodeExecuteScan(config protecodeExecuteScanOptions, influx *protecodeE
 func runProtecodeScan(config *protecodeExecuteScanOptions, influx *protecodeExecuteScanInflux) error {
 
 	//create client for sending api request
-	log.Entry().Debug("Protecode scan debug, create protecode client")
+	log.Entry().Debug("Create protecode client")
 	client := createClient(config)
 
-	log.Entry().Debugf("Protecode scan debug, get docker image: %v, %v, %v, %v", config.ScanImage, config.DockerRegistryURL, config.FilePath, config.IncludeLayers)
+	log.Entry().Debugf("Get docker image: %v, %v, %v, %v", config.ScanImage, config.DockerRegistryURL, config.FilePath, config.IncludeLayers)
 	image := getDockerImage(config.ScanImage, config.DockerRegistryURL, config.FilePath, config.IncludeLayers)
 
 	artifactVersion := handleArtifactVersion(config.ArtifactVersion)
@@ -61,16 +61,16 @@ func runProtecodeScan(config *protecodeExecuteScanOptions, influx *protecodeExec
 
 	if len(config.FilePath) <= 0 {
 		(*config).FilePath = filePath
-		log.Entry().Debugf("Protecode scan debug, filepath: %v", config.FilePath)
+		log.Entry().Debugf("Filepath for upload image: %v", config.FilePath)
 	}
 
-	log.Entry().Debug("Protecode scan debug, execute protecode scan")
+	log.Entry().Debug("Execute protecode scan")
 	parsedResult, productID := executeProtecodeScan(client, config, fileName, writeReportToFile)
 
-	log.Entry().Debug("Protecode scan debug, write influx data")
+	log.Entry().Debug("Write influx data")
 	setInfluxData(influx, parsedResult)
 
-	log.Entry().Debug("Protecode scan debug, write report to filesystem")
+	log.Entry().Debug("Write report to filesystem")
 	writeReportDataToJSONFile(config, parsedResult, productID, ioutil.WriteFile)
 
 	defer os.Remove(config.FilePath)
@@ -78,7 +78,7 @@ func runProtecodeScan(config *protecodeExecuteScanOptions, influx *protecodeExec
 	deletePath := filepath.Join(cachePath, cacheProtecodePath)
 	err := os.RemoveAll(deletePath)
 	if err != nil {
-		log.Entry().Warnf("Protecode scan debug, exception during cleanup folder %v", err)
+		log.Entry().Warnf("Error during cleanup folder %v", err)
 	}
 
 	return nil
@@ -105,7 +105,7 @@ var getImage = func(scanImage string, registryURL string, filePath string, inclu
 	completeURL := getURLAndFileNameFromDockerImage(scanImage, registryURL, filePath)
 	image, err := pkgutil.GetImage(completeURL, includeLayers, cacheImagePath)
 	if err != nil {
-		log.Entry().Fatalf("Protecode scan failed, exception during get docker image: %v", err)
+		log.Entry().Fatalf("Error during get docker image: %v", err)
 	}
 
 	return image
@@ -129,7 +129,7 @@ func createImageTar(image pkgutil.Image, fileName string, path string, artifactV
 	if len(path) <= 0 {
 		resultFilePath = filepath.Join(cachePath, fileName)
 		if len(resultFilePath) <= 0 {
-			log.Entry().Fatalf("Protecode scan failed, there is no file path configured  : %v (filename:%v, PSPath: %v)", path, fileName, image.FSPath)
+			log.Entry().Fatalf("There is no file path configured: %v (filename:%v, PSPath: %v)", path, fileName, image.FSPath)
 		}
 	}
 
@@ -139,20 +139,20 @@ func createImageTar(image pkgutil.Image, fileName string, path string, artifactV
 func tarImageData(tarFileName string, image pkgutil.Image) {
 	tarFile, err := os.Create(tarFileName)
 	if err != nil {
-		log.Entry().WithError(err).Fatal("Protecode scan failed, error during create tar for the docker image")
+		log.Entry().WithError(err).Fatal("Error during create tar for the docker image")
 	}
 	if err := os.Chmod(tarFileName, 0644); err != nil {
-		log.Entry().WithError(err).Fatal("Protecode scan failed, error during create tar for the docker image")
+		log.Entry().WithError(err).Fatal("Error during create tar for the docker image")
 	}
 	defer tarFile.Close()
 
 	reference, err := name.ParseReference(image.Digest.String(), name.WeakValidation)
 	if err != nil {
-		log.Entry().WithError(err).Fatal("Protecode scan failed, not possible to parse reference of docker image")
+		log.Entry().WithError(err).Fatal("It is not possible to parse reference of docker image")
 	}
 	err = tarball.Write(reference, image.Image, tarFile)
 	if err != nil {
-		log.Entry().WithError(err).Fatal("Protecode scan failed, error during create tar archive of docker image via tarball")
+		log.Entry().WithError(err).Fatal("Error during create tar archive of docker image via tarball")
 	}
 }
 
@@ -174,7 +174,7 @@ func getURLAndFileNameFromDockerImage(scanImage string, registryURL string, file
 	}
 
 	if len(completeURL) <= 0 {
-		log.Entry().Fatal("Protecode scan failed, there is no scan image configured")
+		log.Entry().Fatal("There is no scan image configured")
 	}
 
 	return completeURL
@@ -184,16 +184,16 @@ func executeProtecodeScan(client protecode.Protecode, config *protecodeExecuteSc
 
 	var parsedResult map[string]int = make(map[string]int)
 	//load existing product by filename
-	log.Entry().Debug("Protecode scan debug, load existing product")
+	log.Entry().Debugf("Load existing product Group:%v Reuse:%v", config.ProtecodeGroup, config.ReuseExisting)
 	productID := client.LoadExistingProduct(config.ProtecodeGroup, config.ReuseExisting)
 
 	// check if no existing is found or reuse existing is false
 	productID = uploadScanOrDeclareFetch(*config, productID, client, fileName)
 	if productID <= 0 {
-		log.Entry().Fatalf("Protecode scan failed, the product id is not valid (product id %v <= zero)", productID)
+		log.Entry().Fatalf("The product id is not valid (product id %v <= zero)", productID)
 	}
 	//pollForResult
-	log.Entry().Debug("Protecode scan debug, poll for scan result")
+	log.Entry().Debugf("Poll for scan result %v", productID)
 	result := client.PollForResult(productID, config.ProtecodeTimeoutMinutes)
 
 	jsonData, _ := json.Marshal(result)
@@ -201,10 +201,10 @@ func executeProtecodeScan(client protecode.Protecode, config *protecodeExecuteSc
 
 	//check if result is ok else notify
 	if len(result.Result.Status) > 0 && result.Result.Status == "F" {
-		log.Entry().Fatal("Protecode scan failed, please check the log and protecode backend for more details.")
+		log.Entry().Fatalf("Please check the log and protecode backend for more details. URL: %v/products/%v", config.ProtecodeServerURL, productID)
 	}
 	//loadReport
-	log.Entry().Debug("Protecode scan debug, load report")
+	log.Entry().Debugf("Load report %v for %v", config.ReportFileName, productID)
 	resp := client.LoadReport(config.ReportFileName, productID)
 
 	//save report to filesystem
@@ -213,11 +213,11 @@ func executeProtecodeScan(client protecode.Protecode, config *protecodeExecuteSc
 		return parsedResult, productID
 	}
 	//clean scan from server
-	log.Entry().Debug("Protecode scan debug, delete scan")
+	log.Entry().Debugf("Delete scan %v for %v", config.CleanupMode, productID)
 	client.DeleteScan(config.CleanupMode, productID)
 
 	//count vulnerabilities
-	log.Entry().Debug("Protecode scan debug, parse result")
+	log.Entry().Debug("Parse scan reult")
 	parsedResult, _ = client.ParseResultForInflux(result.Result, config.ProtecodeExcludeCVEs)
 
 	return parsedResult, productID
@@ -254,7 +254,7 @@ func writeReportDataToJSONFile(config *protecodeExecuteScanOptions, result map[s
 	log.Entry().Infof("Protecode scan info, %v %v of which %v had a CVSS v2 score >= 7.0 and %v had a CVSS v3 score >= 7.0.\n %v vulnerabilities were excluded via configuration (%v) and %v vulnerabilities were triaged via the webUI.\nIn addition %v historical vulnerabilities were spotted.",
 		protecodeData.Count, "json.results.summary.verdict.detailed", protecodeData.Cvss2GreaterOrEqualSeven, protecodeData.Cvss3GreaterOrEqualSeven, protecodeData.ExcludedVulnerabilities, protecodeData.ProtecodeExcludeCVEs, protecodeData.TriagedVulnerabilities, protecodeData.HistoricalVulnerabilities)
 
-	writeToFile("protecodescan_report.json", jsonData, 0644)
+	writeToFile("protecodeExecuteScan.json", jsonData, 0644)
 }
 
 func createClient(config *protecodeExecuteScanOptions) protecode.Protecode {
@@ -264,7 +264,7 @@ func createClient(config *protecodeExecuteScanOptions) protecode.Protecode {
 	if len(config.ProtecodeTimeoutMinutes) > 0 {
 		dur, err := time.ParseDuration(fmt.Sprintf("%vm", config.ProtecodeTimeoutMinutes))
 		if err != nil {
-			log.Entry().Warnf("Protecode scan failed, failed to parse timeout %v, switched back to default timeout %v minutes", config.ProtecodeTimeoutMinutes, duration)
+			log.Entry().Warnf("Failed to parse timeout %v, switched back to default timeout %v minutes", config.ProtecodeTimeoutMinutes, duration)
 		} else {
 			duration = dur
 		}
@@ -288,16 +288,16 @@ func createClient(config *protecodeExecuteScanOptions) protecode.Protecode {
 func uploadScanOrDeclareFetch(config protecodeExecuteScanOptions, productID int, client protecode.Protecode, filaName string) int {
 
 	//check if the LoadExistingProduct) before returns an valid product id, than scip this
-	if productID <= 0 || !config.ReuseExisting {
+	if !hasExisting(productID, config.ReuseExisting) {
 		if len(config.FetchURL) > 0 {
-			log.Entry().Debug("Protecode scan debug, declare fetch url")
+			log.Entry().Debugf("Declare fetch url %v", config.FetchURL)
 			resultData := client.DeclareFetchURL(config.CleanupMode, config.ProtecodeGroup, config.FetchURL)
 			productID = resultData.ProductID
 
 		} else {
-			log.Entry().Debugf("Protecode scan debug, upload file path: %v", config.FilePath)
+			log.Entry().Debugf("Upload file path: %v", config.FilePath)
 			if len(config.FilePath) <= 0 {
-				log.Entry().Fatalf("Protecode scan failed, there is no file path configured for upload : %v", config.FilePath)
+				log.Entry().Fatalf("There is no file path configured for upload : %v", config.FilePath)
 			}
 			resultData := client.UploadScanFile(config.CleanupMode, config.ProtecodeGroup, config.FilePath, filaName)
 			productID = resultData.Result.ProductID
@@ -305,6 +305,13 @@ func uploadScanOrDeclareFetch(config protecodeExecuteScanOptions, productID int,
 	}
 
 	return productID
+}
+
+func hasExisting(productID int, reuseExisting bool) bool {
+	if (productID > 0) || reuseExisting {
+		return true
+	}
+	return false
 }
 
 var writeReportToFile = func(resp io.ReadCloser, reportFileName string) error {

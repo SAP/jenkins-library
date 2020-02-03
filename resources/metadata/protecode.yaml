@@ -101,7 +101,6 @@ spec:
       - PARAMETERS
       - STAGES
       - STEPS
-      default: https://protecode.c.eu-de-2.cloud.sap
     - name: reportFileName
       type: string
       description: The file name of the report to be created
@@ -172,14 +171,6 @@ spec:
       type: jenkins
     - name: dockerCredentialsId
       type: jenkins
-    resources:
-    - name: commonPipelineEnvironment
-      resourceSpec:
-      type: piperEnvironment
-      params:
-        - name: artifactVersion
-        - name: dockerMetadata/repo
-        - name: dockerMetadata/imageNameTag
   outputs:
     resources:
       - name: influx

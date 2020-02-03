@@ -155,14 +155,14 @@ func (pc *Protecode) mapResponse(r io.ReadCloser, response interface{}) {
 		if err != nil {
 			err = json.Unmarshal([]byte(newStr), response)
 			if err != nil {
-				pc.logger.WithError(err).Fatalf("Protecode scan failed, error during unqote response: %v", newStr)
+				pc.logger.WithError(err).Fatalf("Error during unqote response: %v", newStr)
 			}
 		} else {
 			err = json.Unmarshal([]byte(unquoted), response)
 		}
 
 		if err != nil {
-			pc.logger.WithError(err).Fatalf("Protecode scan failed, error during decode response: %v", newStr)
+			pc.logger.WithError(err).Fatalf("Error during decode response: %v", newStr)
 		}
 	}
 }
@@ -261,14 +261,14 @@ func (pc *Protecode) DeleteScan(cleanupMode string, productID int) {
 	case "binary":
 		return
 	case "complete":
-		pc.logger.Info("Protecode scan successful. Deleting scan from server.")
+		pc.logger.Info("Deleting scan from server.")
 		protecodeURL := pc.createURL("/api/product/", fmt.Sprintf("%v/", productID), "")
 		headers := map[string][]string{}
 
 		pc.sendAPIRequest("DELETE", protecodeURL, headers)
 		break
 	default:
-		pc.logger.Fatalf("Protecode scan failed, unknown cleanup mode %v", cleanupMode)
+		pc.logger.Fatalf("Unknown cleanup mode %v", cleanupMode)
 	}
 
 }
@@ -285,7 +285,7 @@ func (pc *Protecode) LoadReport(reportFileName string, productID int) *io.ReadCl
 
 	readCloser, err := pc.sendAPIRequest(http.MethodGet, protecodeURL, headers)
 	if err != nil {
-		pc.logger.WithError(err).Fatalf("Protecode scan failed, not possible to load report %v", protecodeURL)
+		pc.logger.WithError(err).Fatalf("It is not possible to load report %v", protecodeURL)
 	}
 
 	return readCloser
@@ -299,9 +299,9 @@ func (pc *Protecode) UploadScanFile(cleanupMode, protecodeGroup, filePath string
 	url := fmt.Sprintf("%v/api/upload/%v", pc.serverURL, fileName)
 	r, err := pc.client.UploadRequest(http.MethodPut, url, filePath, "file", headers, nil)
 	if err != nil {
-		pc.logger.WithError(err).Fatalf("Protecode scan failed, error during %v upload request", url)
+		pc.logger.WithError(err).Fatalf("Error during %v upload request", url)
 	} else {
-		pc.logger.Info("Protecode scan upload successful")
+		pc.logger.Info("Upload successful")
 	}
 
 	result := new(ResultData)
@@ -318,7 +318,7 @@ func (pc *Protecode) DeclareFetchURL(cleanupMode, protecodeGroup, fetchURL strin
 	protecodeURL := fmt.Sprintf("%v/api/fetch/", pc.serverURL)
 	r, err := pc.sendAPIRequest(http.MethodPost, protecodeURL, headers)
 	if err != nil {
-		pc.logger.WithError(err).Fatalf("Protecode scan failed, exception during declare fetch url: %v", protecodeURL)
+		pc.logger.WithError(err).Fatalf("Error during declare fetch url: %v", protecodeURL)
 	}
 
 	result := new(Result)
@@ -367,7 +367,7 @@ func (pc *Protecode) PollForResult(productID int, timeOutInMinutes string) Resul
 	if len(response.Result.Components) == 0 || response.Result.Status == "B" {
 		response, err = pc.pullResult(productID)
 		if err != nil || len(response.Result.Components) == 0 || response.Result.Status == "B" {
-			pc.logger.Fatal("Protecode scan failed, no result after polling")
+			pc.logger.Fatal("No result after polling")
 		}
 	}
 
@@ -407,7 +407,7 @@ func (pc *Protecode) LoadExistingProduct(protecodeGroup string, reuseExisting bo
 		// by definition we will take the first one and trigger rescan
 		productID = response.Products[0].ProductID
 
-		pc.logger.Infof("re-use existing Protecode scan - group: %v, productID: %v", protecodeGroup, productID)
+		pc.logger.Infof("Re-use existing Protecode scan - group: %v, productID: %v", protecodeGroup, productID)
 	}
 
 	return productID
@@ -417,7 +417,7 @@ func (pc *Protecode) loadExisting(protecodeURL string, headers map[string][]stri
 
 	r, err := pc.sendAPIRequest(http.MethodGet, protecodeURL, headers)
 	if err != nil {
-		pc.logger.WithError(err).Fatalf("Protecode scan failed, during load existing product: %v", protecodeURL)
+		pc.logger.WithError(err).Fatalf("Error during load existing product: %v", protecodeURL)
 	}
 
 	result := new(ProductData)
