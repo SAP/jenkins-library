@@ -2,6 +2,7 @@ import com.cloudbees.groovy.cps.NonCPS
 import com.sap.piper.Utils
 import com.sap.piper.ConfigurationHelper
 import com.sap.piper.ConfigurationLoader
+import com.sap.piper.DebugReport
 import com.sap.piper.k8s.ContainerMap
 import groovy.transform.Field
 
@@ -30,6 +31,7 @@ void call(Map parameters = [:], body) {
     stageLocking(config) {
         def containerMap = ContainerMap.instance.getMap().get(stageName) ?: [:]
         if (Boolean.valueOf(env.ON_K8S) && containerMap.size() > 0) {
+            DebugReport.instance.environment.put("environment", "Kubernetes")
             withEnv(["POD_NAME=${stageName}"]) {
                 dockerExecuteOnKubernetes(script: script, containerMap: containerMap) {
                     executeStage(script, body, stageName, config, utils)
@@ -77,8 +79,14 @@ private void executeStage(script, originalStage, stageName, config, utils) {
         if (globalExtensions) {
             echo "[${STEP_NAME}] Found global interceptor '${globalInterceptorFile}' for ${stageName}."
             // If we call the global interceptor, we will pass on originalStage as parameter
+            DebugReport.instance.globalExtensions.put(stageName, "Overwrites")
+            Closure modifiedOriginalStage = {
+                DebugReport.instance.globalExtensions.put(stageName, "Extends")
+                originalStage()
+            }
+
             body = {
-                callInterceptor(script, globalInterceptorFile, originalStage, stageName, config)
+                callInterceptor(script, globalInterceptorFile, modifiedOriginalStage, stageName, config)
             }
         }
 
@@ -86,10 +94,25 @@ private void executeStage(script, originalStage, stageName, config, utils) {
         if (projectExtensions) {
             echo "[${STEP_NAME}] Running project interceptor '${projectInterceptorFile}' for ${stageName}."
             // If we call the project interceptor, we will pass on body as parameter which contains either originalStage or the repository interceptor
-            callInterceptor(script, projectInterceptorFile, body, stageName, config)
+            if (projectExtensions && globalExtensions) {
+                DebugReport.instance.globalExtensions.put(stageName, "Unknown (Overwritten by local extension)")
+            }
+            DebugReport.instance.localExtensions.put(stageName, "Overwrites")
+            Closure modifiedOriginalBody = {
+                DebugReport.instance.localExtensions.put(stageName, "Extends")
+                if (projectExtensions && globalExtensions) {
+                    DebugReport.instance.globalExtensions.put(stageName, "Overwrites")
+                }
+                body.call()
+            }
+
+            callInterceptor(script, projectInterceptorFile, modifiedOriginalBody, stageName, config)
 
         } else {
-            //TODO: assign projectInterceptorScript to body as done for globalInterceptorScript, currently test framework does not seem to support this case. Further investigations needed.
+            // NOTE: It may appear more elegant to re-assign 'body' more than once and then call 'body()' after the
+            // if-block. This could lead to infinite loops however, as any change to the local variable 'body' will
+            // become visible in all of the closures at the time they run. I.e. 'body' inside any of the closures will
+            // reflect the last assignment and not its value at the time of constructing the closure!
             body()
         }
 
