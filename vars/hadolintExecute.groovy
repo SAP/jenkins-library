@@ -109,7 +109,7 @@ void call(Map parameters = [:]) {
             )
             
             def resultFileSize = 0
-            File file = new File(configuration.reportFile)
+            File file = new File("./${configuration.reportFile}")
             if (file.exists()) {
                 echo "File exists"
                 resultFileSize = file.length()
