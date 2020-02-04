@@ -10,12 +10,13 @@ import (
 	"time"
 
 	"github.com/SAP/jenkins-library/pkg/command"
+	"github.com/SAP/jenkins-library/pkg/telemetry"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/pkg/errors"
 )
 
-func abapEnvironmentPullGitRepo(config abapEnvironmentPullGitRepoOptions) error {
+func abapEnvironmentPullGitRepo(config abapEnvironmentPullGitRepoOptions, telemetryData *telemetry.CustomData) error {
 	c := command.Command{}
 	var connectionDetails, error = getAbapCommunicationArrangementInfo(config, &c)
 	if error != nil {
