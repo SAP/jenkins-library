@@ -107,28 +107,25 @@ func runMtaBuild(config mtaBuildOptions, commonPipelineEnvironment *mtaBuildComm
 	}
 
 	var mtaJar = "mta.jar"
-	var mtaCall = `Echo "Hello MTA"`
-	var options = []string{}
+	var call []string
 
 	switch mtaBuildTool {
 	case "classic":
-		options = append(options, fmt.Sprintf("--build-target=%s", buildTarget))
+		call = append(call, "java", "-jar", mtaJar, fmt.Sprintf("--build-target=%s", buildTarget))
 		if len(extensions) != 0 {
-			options = append(options, fmt.Sprintf("--extension=%s", extensions))
+			call = append(call, fmt.Sprintf("--extension=%s", extensions))
 		}
-		mtaCall = fmt.Sprintf("java -jar %s %s build", mtaJar, strings.Join(options, " "))
 	case "cloudMbt":
-		options = append(options, fmt.Sprintf("--platform %s", platform))
+		call = append(call, "mbt", "build", "--platform", platform)
 		if len(extensions) != 0 {
-			options = append(options, fmt.Sprintf("--extensions=%s", extensions))
+			call = append(call, fmt.Sprintf("--extensions=%s", extensions))
 		}
-		options = append(options, "--target ./")
-		mtaCall = fmt.Sprintf("mbt build %s", strings.Join(options, " "))
+		call = append(call, "--target", "./")
 	default:
 		return fmt.Errorf("Unknown mta build tool: \"${%s}\"", mtaBuildTool)
 	}
 
-	log.Entry().Infof("Executing mta build call: \"%s\"", mtaCall)
+	log.Entry().Infof("Executing mta build call: \"%s\"", strings.Join(call, " "))
 
 	path := "./node_modules/.bin"
 	oldPath := getEnvironmentVariable("PATH")
