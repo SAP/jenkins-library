@@ -4,7 +4,7 @@ metadata:
   longDescription: |
     Delete CloudFoundryService
 spec:
-  inputs:    
+  inputs:
     secrets:
       - name: credentialsId
         description: Jenkins credentials ID containing user and password to authenticate to the Cloud Foundry API
