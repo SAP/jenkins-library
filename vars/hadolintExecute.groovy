@@ -108,8 +108,14 @@ void call(Map parameters = [:]) {
                 blameDisabled: true
             )
 
-            if (result != 0) {
-                error "HaDoLint scan on file ${configuration.dockerFile} detected issues, please check the log and report for details."   
+            def resultFileSize = 0
+            File file = new File(configuration.reportFile)
+            if (file.exists()) {
+                resultFileSize = file.length()
+            }
+            
+            if (result != 0 && resultFileSize == 0) {
+                error "HaDoLint scan on file ${configuration.dockerFile} failed due to technical issues, please check the log."   
             }
         }
     }
