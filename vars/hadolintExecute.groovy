@@ -98,7 +98,11 @@ void call(Map parameters = [:]) {
 
             archiveArtifacts configuration.reportFile
             recordIssues(
-                tools: [checkStyle(name: configuration.reportName, pattern: configuration.reportFile)],
+                tools: [checkStyle(
+                    name: configuration.reportName, 
+                    pattern: configuration.reportFile,
+                    id: "hadolint-"+reportName
+                )],
                 qualityGates: configuration.qualityGates,
                 enabledForFailure: true,
                 blameDisabled: true
