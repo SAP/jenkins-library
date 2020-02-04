@@ -132,7 +132,7 @@ func runMtaBuild(config mtaBuildOptions, commonPipelineEnvironment *mtaBuildComm
 	if len(oldPath) > 0 {
 		path = path + ":" + strings.TrimPrefix(oldPath, "PATH=")
 	}
-	e.Env(append(os.Environ(), "PATH=" + path))
+	e.Env(append(os.Environ(), "PATH="+path))
 
 	if err := e.RunExecutable(call[0], strings.Join(call[1:], " ")); err != nil {
 		return err
@@ -148,7 +148,7 @@ func getEnvironmentVariable(name string) string {
 	// in case we have the same name twice we have to take the latest one.
 	// hence we reverse the slice in order to get the latest entry first.
 	for _, e := range reverse(os.Environ()) {
-		if strings.HasPrefix(e, name + "=") {
+		if strings.HasPrefix(e, name+"=") {
 			return e
 		}
 	}
@@ -159,10 +159,10 @@ func reverse(s []string) []string {
 
 	// REVISIT: fits better into some string utils
 
-    if len(s) == 0 {
-        return s
-    }
-    return append(reverse(s[1:]), s[0])
+	if len(s) == 0 {
+		return s
+	}
+	return append(reverse(s[1:]), s[0])
 }
 
 func generateMta(id, name, version string) (string, error) {
