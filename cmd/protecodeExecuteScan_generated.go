@@ -25,7 +25,6 @@ type protecodeExecuteScanOptions struct {
 	TimeoutMinutes              string `json:"timeoutMinutes,omitempty"`
 	ServerURL                   string `json:"serverUrl,omitempty"`
 	ReportFileName              string `json:"reportFileName,omitempty"`
-	UseCallback                 bool   `json:"useCallback,omitempty"`
 	FetchURL                    string `json:"fetchUrl,omitempty"`
 	Group                       string `json:"group,omitempty"`
 	ReuseExisting               bool   `json:"reuseExisting,omitempty"`
@@ -137,7 +136,6 @@ func addProtecodeExecuteScanFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVar(&myProtecodeExecuteScanOptions.TimeoutMinutes, "timeoutMinutes", "60", "The timeout to wait for the scan to finish")
 	cmd.Flags().StringVar(&myProtecodeExecuteScanOptions.ServerURL, "serverUrl", os.Getenv("PIPER_serverUrl"), "The URL to the Protecode backend")
 	cmd.Flags().StringVar(&myProtecodeExecuteScanOptions.ReportFileName, "reportFileName", "protecode_report.pdf", "The file name of the report to be created")
-	cmd.Flags().BoolVar(&myProtecodeExecuteScanOptions.UseCallback, "useCallback", false, "Whether to the Protecode backend's callback or poll for results")
 	cmd.Flags().StringVar(&myProtecodeExecuteScanOptions.FetchURL, "fetchUrl", os.Getenv("PIPER_fetchUrl"), "The URL to fetch the file to scan with Protecode which must be accessible via public HTTP GET request")
 	cmd.Flags().StringVar(&myProtecodeExecuteScanOptions.Group, "group", os.Getenv("PIPER_group"), "The Protecode group ID of your team")
 	cmd.Flags().BoolVar(&myProtecodeExecuteScanOptions.ReuseExisting, "reuseExisting", false, "Whether to reuse an existing product instead of creating a new one")
@@ -145,6 +143,7 @@ func addProtecodeExecuteScanFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVar(&myProtecodeExecuteScanOptions.Password, "password", os.Getenv("PIPER_password"), "Password which is used for the user")
 	cmd.Flags().StringVar(&myProtecodeExecuteScanOptions.ArtifactVersion, "artifactVersion", os.Getenv("PIPER_artifactVersion"), "The version of the artifact to allow identification in protecode backend")
 
+	cmd.MarkFlagRequired("serverUrl")
 	cmd.MarkFlagRequired("group")
 	cmd.MarkFlagRequired("user")
 	cmd.MarkFlagRequired("password")
@@ -233,7 +232,7 @@ func protecodeExecuteScanMetadata() config.StepData {
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
-						Mandatory:   false,
+						Mandatory:   true,
 						Aliases:     []config.Alias{{Name: "protecodeServerUrl"}},
 					},
 					{
@@ -241,14 +240,6 @@ func protecodeExecuteScanMetadata() config.StepData {
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-					},
-					{
-						Name:        "useCallback",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "bool",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 					},

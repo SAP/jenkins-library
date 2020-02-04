@@ -103,6 +103,7 @@ spec:
       - name: protecodeServerUrl
       type: string
       description: The URL to the Protecode backend
+      mandatory: true
       scope:
       - GENERAL
       - PARAMETERS
@@ -116,14 +117,6 @@ spec:
       - STAGES
       - STEPS
       default: protecode_report.pdf
-    - name: useCallback
-      type: bool
-      description: Whether to the Protecode backend's callback or poll for results
-      scope:
-      - PARAMETERS
-      - STAGES
-      - STEPS
-      default: false
     - name: fetchUrl
       type: string
       description: The URL to fetch the file to scan with Protecode which must be accessible via public HTTP GET request
@@ -148,7 +141,6 @@ spec:
       - PARAMETERS
       - STAGES
       - STEPS
-      default: false
     - name: user
       type: string
       description: User which is used for the protecode scan

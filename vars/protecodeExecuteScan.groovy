@@ -35,7 +35,7 @@ void call(Map parameters = [:]) {
 
             def creds = []
             if (config.protecodeCredentialsId) creds.add(usernamePassword(credentialsId: config.protecodeCredentialsId, passwordVariable: 'PIPER_password', usernameVariable: 'PIPER_user'))
-            if (config.dockerCredentialsId) creds.add(usernamePassword(credentialsId: config.dockerCredentialsId, passwordVariable: 'PIPER_containerRegistryPassword', usernameVariable: 'PIPER_containerRegistryUser'))
+            if (config.dockerCredentialsId) creds.add(file(credentialsId: config.dockerCredentialsId, variable: 'DOCKER_CONFIG'))
 
             // execute step
             withCredentials(creds) {

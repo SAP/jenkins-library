@@ -23,9 +23,9 @@ type protecodeData struct {
 	Target                      string `json:"target,omitempty"`
 	Mandatory                   bool   `json:"mandatory,omitempty"`
 	ProductID                   string `json:"productID,omitempty"`
-	ServerURL                   string `json:"protecodeServerUrl,omitempty"`
-	FailOnSevereVulnerabilities bool   `json:"protecodeFailOnSevereVulnerabilities,omitempty"`
-	ExcludeCVEs                 string `json:"protecodeExcludeCVEs,omitempty"`
+	ServerURL                   string `json:"serverUrl,omitempty"`
+	FailOnSevereVulnerabilities bool   `json:"failOnSevereVulnerabilities,omitempty"`
+	ExcludeCVEs                 string `json:"excludeCVEs,omitempty"`
 	Count                       string `json:"count,omitempty"`
 	Cvss2GreaterOrEqualSeven    string `json:"cvss2GreaterOrEqualSeven,omitempty"`
 	Cvss3GreaterOrEqualSeven    string `json:"cvss3GreaterOrEqualSeven,omitempty"`
