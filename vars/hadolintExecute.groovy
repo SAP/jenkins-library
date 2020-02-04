@@ -36,6 +36,10 @@ import groovy.transform.Field
      * Name of the result file used locally within the step.
      */
     'reportFile'
+    /**
+     * Name of the checkstyle report being generated our of the results.
+     */
+    'reportName'
 ])
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
 /**
