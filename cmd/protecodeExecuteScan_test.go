@@ -79,6 +79,7 @@ func TestRunProtecodeScan(t *testing.T) {
 	mockGetDocker := mockGetDocker{}
 	getImage = mockGetDocker.GetDockerImage
 	writeReportToFile = mockGetDocker.writeReportToFile
+	reportPath = dir
 
 	config := protecodeExecuteScanOptions{ServerURL: server.URL, ScanImage: "t.tar", FilePath: testFile.Name(), TimeoutMinutes: "1", ReuseExisting: false, CleanupMode: "none", Group: "13", FetchURL: "/api/fetch/", ExcludeCVEs: "CVE-2018-1, CVE-2017-1000382", ReportFileName: "./cache/report-file.txt"}
 	influx := protecodeExecuteScanInflux{}
@@ -250,6 +251,14 @@ func TestExecuteProtecodeScan(t *testing.T) {
 	}
 
 	for _, c := range cases {
+
+		dir, err := ioutil.TempDir("", "t")
+		if err != nil {
+			t.Fatal("Failed to create temporary directory")
+		}
+		// clean up tmp dir
+		defer os.RemoveAll(dir)
+		reportPath = dir
 		config := protecodeExecuteScanOptions{ReuseExisting: c.reuse, CleanupMode: c.clean, Group: c.group, FetchURL: c.fetchURL, TimeoutMinutes: "3", ExcludeCVEs: "CVE-2018-1, CVE-2017-1000382", ReportFileName: "./cache/report-file.txt"}
 
 		got := executeProtecodeScan(pc, &config, "dummy", writeReportToFileMock)

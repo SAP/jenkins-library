@@ -35,6 +35,7 @@ type protecodeData struct {
 	Vulnerabilities             []protecode.Vuln `json:"Vulnerabilities,omitempty"`
 }
 
+var reportPath = "./"
 var cachePath = "./cache"
 var cacheProtecodeImagePath = "/protecode/Image"
 var cacheProtecodePath = "/protecode"
@@ -195,7 +196,8 @@ func executeProtecodeScan(client protecode.Protecode, config *protecodeExecuteSc
 	result := client.PollForResult(productID, config.TimeoutMinutes)
 
 	jsonData, _ := json.Marshal(result)
-	ioutil.WriteFile("protecodescan_vulns.json", jsonData, 0644)
+	filePath := filepath.Join(reportPath, "protecodescan_vulns.json")
+	ioutil.WriteFile(filePath, jsonData, 0644)
 
 	//check if result is ok else notify
 	if len(result.Result.Status) > 0 && result.Result.Status == "F" {
@@ -255,7 +257,9 @@ func writeReportDataToJSONFile(config *protecodeExecuteScanOptions, result map[s
 
 	log.Entry().Infof("Protecode scan info, %v of which %v had a CVSS v2 score >= 7.0 and %v had a CVSS v3 score >= 7.0.\n %v vulnerabilities were excluded via configuration (%v) and %v vulnerabilities were triaged via the webUI.\nIn addition %v historical vulnerabilities were spotted. \n\n Vulnerabilities: %v",
 		protecodeData.Count, protecodeData.Cvss2GreaterOrEqualSeven, protecodeData.Cvss3GreaterOrEqualSeven, protecodeData.ExcludedVulnerabilities, protecodeData.ExcludeCVEs, protecodeData.TriagedVulnerabilities, protecodeData.HistoricalVulnerabilities, protecodeData.Vulnerabilities)
-	writeToFile("protecodeExecuteScan.json", jsonData, 0644)
+
+	filePath := filepath.Join(reportPath, "protecodeExecuteScan.json")
+	writeToFile(filePath, jsonData, 0644)
 }
 
 func createClient(config *protecodeExecuteScanOptions) protecode.Protecode {
@@ -316,7 +320,8 @@ func hasExisting(productID int, reuseExisting bool) bool {
 }
 
 var writeReportToFile = func(resp io.ReadCloser, reportFileName string) error {
-	f, err := os.Create(reportFileName)
+	filePath := filepath.Join(reportPath, reportFileName)
+	f, err := os.Create(filePath)
 	if err == nil {
 		defer f.Close()
 		_, err = io.Copy(f, resp)
