@@ -23,7 +23,7 @@ jobs:
         chmod +x ./code-climate
         ./code-climate before-build
     - name: unit-test
-      run: go test ./... -coverprofile cover.out 
+      run: go test ./... -coverprofile cover.out
     - name: report-coverage
       env:
         CC_TEST_REPORTER_ID: ${{ secrets.CODE_CLIMATE_REPORTER_ID }}
