@@ -20,18 +20,19 @@ import (
 )
 
 type protecodeData struct {
-	Target                      string `json:"target,omitempty"`
-	Mandatory                   bool   `json:"mandatory,omitempty"`
-	ProductID                   string `json:"productID,omitempty"`
-	ServerURL                   string `json:"serverUrl,omitempty"`
-	FailOnSevereVulnerabilities bool   `json:"failOnSevereVulnerabilities,omitempty"`
-	ExcludeCVEs                 string `json:"excludeCVEs,omitempty"`
-	Count                       string `json:"count,omitempty"`
-	Cvss2GreaterOrEqualSeven    string `json:"cvss2GreaterOrEqualSeven,omitempty"`
-	Cvss3GreaterOrEqualSeven    string `json:"cvss3GreaterOrEqualSeven,omitempty"`
-	ExcludedVulnerabilities     string `json:"excludedVulnerabilities,omitempty"`
-	TriagedVulnerabilities      string `json:"triagedVulnerabilities,omitempty"`
-	HistoricalVulnerabilities   string `json:"historicalVulnerabilities,omitempty"`
+	Target                      string           `json:"target,omitempty"`
+	Mandatory                   bool             `json:"mandatory,omitempty"`
+	ProductID                   string           `json:"productID,omitempty"`
+	ServerURL                   string           `json:"serverUrl,omitempty"`
+	FailOnSevereVulnerabilities bool             `json:"failOnSevereVulnerabilities,omitempty"`
+	ExcludeCVEs                 string           `json:"excludeCVEs,omitempty"`
+	Count                       string           `json:"count,omitempty"`
+	Cvss2GreaterOrEqualSeven    string           `json:"cvss2GreaterOrEqualSeven,omitempty"`
+	Cvss3GreaterOrEqualSeven    string           `json:"cvss3GreaterOrEqualSeven,omitempty"`
+	ExcludedVulnerabilities     string           `json:"excludedVulnerabilities,omitempty"`
+	TriagedVulnerabilities      string           `json:"triagedVulnerabilities,omitempty"`
+	HistoricalVulnerabilities   string           `json:"historicalVulnerabilities,omitempty"`
+	Vulnerabilities             []protecode.Vuln `json:"Vulnerabilities,omitempty"`
 }
 
 var cachePath = "./cache"
@@ -65,13 +66,10 @@ func runProtecodeScan(config *protecodeExecuteScanOptions, influx *protecodeExec
 	}
 
 	log.Entry().Debug("Execute protecode scan")
-	parsedResult, productID := executeProtecodeScan(client, config, fileName, writeReportToFile)
+	parsedResult := executeProtecodeScan(client, config, fileName, writeReportToFile)
 
 	log.Entry().Debug("Write influx data")
 	setInfluxData(influx, parsedResult)
-
-	log.Entry().Debug("Write report to filesystem")
-	writeReportDataToJSONFile(config, parsedResult, productID, ioutil.WriteFile)
 
 	defer os.Remove(config.FilePath)
 
@@ -180,7 +178,7 @@ func getURLAndFileNameFromDockerImage(scanImage string, registryURL string, file
 	return completeURL
 }
 
-func executeProtecodeScan(client protecode.Protecode, config *protecodeExecuteScanOptions, fileName string, writeReportToFile func(resp io.ReadCloser, reportFileName string) error) (map[string]int, int) {
+func executeProtecodeScan(client protecode.Protecode, config *protecodeExecuteScanOptions, fileName string, writeReportToFile func(resp io.ReadCloser, reportFileName string) error) map[string]int {
 
 	var parsedResult map[string]int = make(map[string]int)
 	//load existing product by filename
@@ -210,7 +208,7 @@ func executeProtecodeScan(client protecode.Protecode, config *protecodeExecuteSc
 	//save report to filesystem
 	err := writeReportToFile(*resp, config.ReportFileName)
 	if err != nil {
-		return parsedResult, productID
+		return parsedResult
 	}
 	//clean scan from server
 	log.Entry().Debugf("Delete scan %v for %v", config.CleanupMode, productID)
@@ -218,9 +216,12 @@ func executeProtecodeScan(client protecode.Protecode, config *protecodeExecuteSc
 
 	//count vulnerabilities
 	log.Entry().Debug("Parse scan reult")
-	parsedResult, _ = client.ParseResultForInflux(result.Result, config.ExcludeCVEs)
+	parsedResult, vulns := client.ParseResultForInflux(result.Result, config.ExcludeCVEs)
 
-	return parsedResult, productID
+	log.Entry().Debug("Write report to filesystem")
+	writeReportDataToJSONFile(config, parsedResult, productID, vulns, ioutil.WriteFile)
+
+	return parsedResult
 }
 
 func setInfluxData(influx *protecodeExecuteScanInflux, result map[string]int) {
@@ -233,7 +234,7 @@ func setInfluxData(influx *protecodeExecuteScanInflux, result map[string]int) {
 	influx.protecodeData.fields.vulnerabilities = fmt.Sprintf("%v", result["vulnerabilities"])
 }
 
-func writeReportDataToJSONFile(config *protecodeExecuteScanOptions, result map[string]int, productID int, writeToFile func(f string, d []byte, p os.FileMode) error) {
+func writeReportDataToJSONFile(config *protecodeExecuteScanOptions, result map[string]int, productID int, vulns []protecode.Vuln, writeToFile func(f string, d []byte, p os.FileMode) error) {
 
 	protecodeData := protecodeData{}
 	protecodeData.ServerURL = config.ServerURL
@@ -248,12 +249,12 @@ func writeReportDataToJSONFile(config *protecodeExecuteScanOptions, result map[s
 	protecodeData.ExcludedVulnerabilities = fmt.Sprintf("%v", result["excluded_vulnerabilities"])
 	protecodeData.TriagedVulnerabilities = fmt.Sprintf("%v", result["triaged_vulnerabilities"])
 	protecodeData.HistoricalVulnerabilities = fmt.Sprintf("%v", result["historical_vulnerabilities"])
+	protecodeData.Vulnerabilities = vulns
 
 	jsonData, _ := json.Marshal(protecodeData)
 
-	log.Entry().Infof("Protecode scan info, %v %v of which %v had a CVSS v2 score >= 7.0 and %v had a CVSS v3 score >= 7.0.\n %v vulnerabilities were excluded via configuration (%v) and %v vulnerabilities were triaged via the webUI.\nIn addition %v historical vulnerabilities were spotted.",
-		protecodeData.Count, "json.results.summary.verdict.detailed", protecodeData.Cvss2GreaterOrEqualSeven, protecodeData.Cvss3GreaterOrEqualSeven, protecodeData.ExcludedVulnerabilities, protecodeData.ExcludeCVEs, protecodeData.TriagedVulnerabilities, protecodeData.HistoricalVulnerabilities)
-
+	log.Entry().Infof("Protecode scan info, %v of which %v had a CVSS v2 score >= 7.0 and %v had a CVSS v3 score >= 7.0.\n %v vulnerabilities were excluded via configuration (%v) and %v vulnerabilities were triaged via the webUI.\nIn addition %v historical vulnerabilities were spotted. \n\n Vulnerabilities: %v",
+		protecodeData.Count, protecodeData.Cvss2GreaterOrEqualSeven, protecodeData.Cvss3GreaterOrEqualSeven, protecodeData.ExcludedVulnerabilities, protecodeData.ExcludeCVEs, protecodeData.TriagedVulnerabilities, protecodeData.HistoricalVulnerabilities, protecodeData.Vulnerabilities)
 	writeToFile("protecodeExecuteScan.json", jsonData, 0644)
 }
 

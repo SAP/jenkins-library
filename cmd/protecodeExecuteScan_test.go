@@ -133,7 +133,7 @@ func writeToFileMock(f string, d []byte, p os.FileMode) error {
 
 func TestWriteReportDataToJSONFile(t *testing.T) {
 
-	expected := "{\"target\":\"REPORTFILENAME\",\"mandatory\":true,\"productID\":\"4711\",\"serverUrl\":\"DUMMYURL\",\"count\":\"0\",\"cvss2GreaterOrEqualSeven\":\"4\",\"cvss3GreaterOrEqualSeven\":\"3\",\"excludedVulnerabilities\":\"2\",\"triagedVulnerabilities\":\"0\",\"historicalVulnerabilities\":\"1\"}"
+	expected := "{\"target\":\"REPORTFILENAME\",\"mandatory\":true,\"productID\":\"4711\",\"serverUrl\":\"DUMMYURL\",\"count\":\"0\",\"cvss2GreaterOrEqualSeven\":\"4\",\"cvss3GreaterOrEqualSeven\":\"3\",\"excludedVulnerabilities\":\"2\",\"triagedVulnerabilities\":\"0\",\"historicalVulnerabilities\":\"1\",\"Vulnerabilities\":[{\"cve\":\"Vulnerability\",\"cvss\":2.5,\"cvss3_score\":\"5.5\"}]}"
 
 	var parsedResult map[string]int = make(map[string]int)
 	parsedResult["historical_vulnerabilities"] = 1
@@ -144,7 +144,7 @@ func TestWriteReportDataToJSONFile(t *testing.T) {
 
 	config := protecodeExecuteScanOptions{ServerURL: "DUMMYURL", ReportFileName: "REPORTFILENAME"}
 
-	writeReportDataToJSONFile(&config, parsedResult, 4711, writeToFileMock)
+	writeReportDataToJSONFile(&config, parsedResult, 4711, []protecode.Vuln{{"Vulnerability", 2.5, "5.5"}}, writeToFileMock)
 	assert.Equal(t, fileContent, expected, "content should be not empty")
 }
 
@@ -252,9 +252,8 @@ func TestExecuteProtecodeScan(t *testing.T) {
 	for _, c := range cases {
 		config := protecodeExecuteScanOptions{ReuseExisting: c.reuse, CleanupMode: c.clean, Group: c.group, FetchURL: c.fetchURL, TimeoutMinutes: "3", ExcludeCVEs: "CVE-2018-1, CVE-2017-1000382", ReportFileName: "./cache/report-file.txt"}
 
-		got, productID := executeProtecodeScan(pc, &config, "dummy", writeReportToFileMock)
+		got := executeProtecodeScan(pc, &config, "dummy", writeReportToFileMock)
 
-		assert.Equal(t, 4711, productID)
 		assert.Equal(t, 1125, got["historical_vulnerabilities"])
 		assert.Equal(t, 0, got["triaged_vulnerabilities"])
 		assert.Equal(t, 1, got["excluded_vulnerabilities"])

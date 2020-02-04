@@ -18,24 +18,24 @@ import (
 
 // ProductData holds the product information of the protecode product
 type ProductData struct {
-	Products []Product `json:"products"`
+	Products []Product `json:"products,omitempty"`
 }
 
 // Product holds the id of the protecode product
 type Product struct {
-	ProductID int `json:"product_id"`
+	ProductID int `json:"product_id,omitempty"`
 }
 
 //ResultData holds the information about the protecode result
 type ResultData struct {
-	Result Result `json:"results"`
+	Result Result `json:"results,omitempty"`
 }
 
 //Result holds the detail information about the protecode result
 type Result struct {
-	ProductID  int         `json:"product_id"`
-	ReportURL  string      `json:"report_url"`
-	Status     string      `json:"status"`
+	ProductID  int         `json:"product_id,omitempty"`
+	ReportURL  string      `json:"report_url,omitempty"`
+	Status     string      `json:"status,omitempty"`
 	Components []Component `json:"components,omitempty"`
 }
 
@@ -46,39 +46,39 @@ type Component struct {
 
 //Vulnerability the protecode vulnerability information
 type Vulnerability struct {
-	Exact  bool     `json:"exact"`
-	Vuln   Vuln     `json:"vuln"`
+	Exact  bool     `json:"exact,omitempty"`
+	Vuln   Vuln     `json:"vuln,omitempty"`
 	Triage []Triage `json:"triage,omitempty"`
 }
 
 //Vuln holds the inforamtion about the vulnerability
 type Vuln struct {
-	Cve        string  `json:"cve"`
-	Cvss       float64 `json:"cvss"`
-	Cvss3Score string  `json:"cvss3_score"`
+	Cve        string  `json:"cve,omitempty"`
+	Cvss       float64 `json:"cvss,omitempty"`
+	Cvss3Score string  `json:"cvss3_score,omitempty"`
 }
 
 //Triage holds the triaging information
 type Triage struct {
-	ID          int    `json:"id"`
-	VulnID      string `json:"vuln_id"`
-	Component   string `json:"component"`
-	Vendor      string `json:"vendor"`
-	Codetype    string `json:"codetype"`
-	Version     string `json:"version"`
-	Modified    string `json:"modified"`
-	Scope       string `json:"scope"`
-	Description string `json:"description"`
-	User        User   `json:"user"`
+	ID          int    `json:"id,omitempty"`
+	VulnID      string `json:"vuln_id,omitempty"`
+	Component   string `json:"component,omitempty"`
+	Vendor      string `json:"vendor,omitempty"`
+	Codetype    string `json:"codetype,omitempty"`
+	Version     string `json:"version,omitempty"`
+	Modified    string `json:"modified,omitempty"`
+	Scope       string `json:"scope,omitempty"`
+	Description string `json:"description,omitempty"`
+	User        User   `json:"user,omitempty"`
 }
 
 //User holds the user information
 type User struct {
-	ID        int    `json:"id"`
-	Email     string `json:"email"`
-	Girstname string `json:"firstname"`
-	Lastname  string `json:"lastname"`
-	Username  string `json:"username"`
+	ID        int    `json:"id,omitempty"`
+	Email     string `json:"email,omitempty"`
+	Girstname string `json:"firstname,omitempty"`
+	Lastname  string `json:"lastname,omitempty"`
+	Username  string `json:"username,omitempty"`
 }
 
 //Protecode ist the protecode client which is used by the step
