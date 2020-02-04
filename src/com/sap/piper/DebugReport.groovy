@@ -39,8 +39,8 @@ class DebugReport {
             String serverConfigContents = getServerConfigContents(
                 '/var/cx-server/server.cfg',
                 '/workspace/var/cx-server/server.cfg')
-            String docker_image = EnvironmentUtils.getDockerFile(serverConfigContents)
-            environment.put('docker_image', docker_image)
+            String dockerImage = EnvironmentUtils.getDockerFile(serverConfigContents)
+            environment.put('docker_image', dockerImage)
         }
     }
 
