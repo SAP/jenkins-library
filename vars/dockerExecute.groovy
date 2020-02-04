@@ -13,12 +13,7 @@ import groovy.transform.Field
 @Field def STEP_NAME = getClass().getName()
 @Field def PLUGIN_ID_DOCKER_WORKFLOW = 'docker-workflow'
 
-@Field Set GENERAL_CONFIG_KEYS = [
-    /**
-     *
-     */
-    'jenkinsKubernetes'
-]
+@Field Set GENERAL_CONFIG_KEYS = []
 @Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS.plus([
     /**
      * Kubernetes only:
