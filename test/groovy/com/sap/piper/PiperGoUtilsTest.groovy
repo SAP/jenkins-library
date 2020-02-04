@@ -1,5 +1,6 @@
 package com.sap.piper
 
+import com.sun.org.apache.xerces.internal.dom.AbortException
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -114,8 +115,7 @@ class PiperGoUtilsTest extends BasePiperTest {
         def piperGoUtils = new PiperGoUtils(nullScript, utils)
         piperGoUtils.metaClass.getLibrariesInfo = {-> return [[name: 'piper-lib-os', version: 'notAvailable']]}
 
-        shellCallRule.setReturnValue('curl --insecure --silent --location --write-out \'%{http_code}\' --output ./piper \'https://github.com/SAP/jenkins-library/releases/download/notAvailable/piper\'', '404')
-        shellCallRule.setReturnValue('curl --insecure --silent --location --write-out \'%{http_code}\' --output ./piper \'https://github.com/SAP/jenkins-library/releases/latest/download/piper_master\'', '500')
+        helper.registerAllowedMethod('sh', [Map.class], {m -> throw new AbortException('download failed')})
 
         helper.registerAllowedMethod("unstash", [String.class], { stashFileName ->
             return []
