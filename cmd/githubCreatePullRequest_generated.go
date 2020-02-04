@@ -25,11 +25,10 @@ type githubCreatePullRequestOptions struct {
 	Labels     []string `json:"labels,omitempty"`
 }
 
-var myGithubCreatePullRequestOptions githubCreatePullRequestOptions
-
 // GithubCreatePullRequestCommand Create a pull request on GitHub
 func GithubCreatePullRequestCommand() *cobra.Command {
 	metadata := githubCreatePullRequestMetadata()
+	var stepConfig githubCreatePullRequestOptions
 	var startTime time.Time
 
 	var createGithubCreatePullRequestCmd = &cobra.Command{
@@ -42,9 +41,9 @@ It can for example be used for GitOps scenarios or for scenarios where you want 
 			startTime = time.Now()
 			log.SetStepName("githubCreatePullRequest")
 			log.SetVerbose(GeneralConfig.Verbose)
-			return PrepareConfig(cmd, &metadata, "githubCreatePullRequest", &myGithubCreatePullRequestOptions, config.OpenPiperFile)
+			return PrepareConfig(cmd, &metadata, "githubCreatePullRequest", &stepConfig, config.OpenPiperFile)
 		},
-		RunE: func(cmd *cobra.Command, args []string) error {
+		Run: func(cmd *cobra.Command, args []string) {
 			telemetryData := telemetry.CustomData{}
 			telemetryData.ErrorCode = "1"
 			handler := func() {
@@ -54,29 +53,27 @@ It can for example be used for GitOps scenarios or for scenarios where you want 
 			log.DeferExitHandler(handler)
 			defer handler()
 			telemetry.Initialize(GeneralConfig.NoTelemetry, "githubCreatePullRequest")
-			// ToDo: pass telemetryData to step
-			err := githubCreatePullRequest(myGithubCreatePullRequestOptions)
+			githubCreatePullRequest(stepConfig, &telemetryData)
 			telemetryData.ErrorCode = "0"
-			return err
 		},
 	}
 
-	addGithubCreatePullRequestFlags(createGithubCreatePullRequestCmd)
+	addGithubCreatePullRequestFlags(createGithubCreatePullRequestCmd, &stepConfig)
 	return createGithubCreatePullRequestCmd
 }
 
-func addGithubCreatePullRequestFlags(cmd *cobra.Command) {
-	cmd.Flags().StringSliceVar(&myGithubCreatePullRequestOptions.Assignees, "assignees", []string{}, "Login names of users to which the PR should be assigned to.")
-	cmd.Flags().StringVar(&myGithubCreatePullRequestOptions.Base, "base", os.Getenv("PIPER_base"), "The name of the branch you want the changes pulled into.")
-	cmd.Flags().StringVar(&myGithubCreatePullRequestOptions.Body, "body", os.Getenv("PIPER_body"), "The description text of the pull request in markdown format.")
-	cmd.Flags().StringVar(&myGithubCreatePullRequestOptions.APIURL, "apiUrl", "https://api.github.com", "Set the GitHub API url.")
-	cmd.Flags().StringVar(&myGithubCreatePullRequestOptions.Head, "head", os.Getenv("PIPER_head"), "The name of the branch where your changes are implemented.")
-	cmd.Flags().StringVar(&myGithubCreatePullRequestOptions.Owner, "owner", os.Getenv("PIPER_owner"), "Set the GitHub organization.")
-	cmd.Flags().StringVar(&myGithubCreatePullRequestOptions.Repository, "repository", os.Getenv("PIPER_repository"), "Set the GitHub repository.")
-	cmd.Flags().StringVar(&myGithubCreatePullRequestOptions.ServerURL, "serverUrl", "https://github.com", "GitHub server url for end-user access.")
-	cmd.Flags().StringVar(&myGithubCreatePullRequestOptions.Title, "title", os.Getenv("PIPER_title"), "Title of the pull request.")
-	cmd.Flags().StringVar(&myGithubCreatePullRequestOptions.Token, "token", os.Getenv("PIPER_token"), "GitHub personal access token as per https://help.github.com/en/github/authenticating-to-github/creating-a-personal-access-token-for-the-command-line")
-	cmd.Flags().StringSliceVar(&myGithubCreatePullRequestOptions.Labels, "labels", []string{}, "Labels to be added to the pull request.")
+func addGithubCreatePullRequestFlags(cmd *cobra.Command, stepConfig *githubCreatePullRequestOptions) {
+	cmd.Flags().StringSliceVar(&stepConfig.Assignees, "assignees", []string{}, "Login names of users to which the PR should be assigned to.")
+	cmd.Flags().StringVar(&stepConfig.Base, "base", os.Getenv("PIPER_base"), "The name of the branch you want the changes pulled into.")
+	cmd.Flags().StringVar(&stepConfig.Body, "body", os.Getenv("PIPER_body"), "The description text of the pull request in markdown format.")
+	cmd.Flags().StringVar(&stepConfig.APIURL, "apiUrl", "https://api.github.com", "Set the GitHub API url.")
+	cmd.Flags().StringVar(&stepConfig.Head, "head", os.Getenv("PIPER_head"), "The name of the branch where your changes are implemented.")
+	cmd.Flags().StringVar(&stepConfig.Owner, "owner", os.Getenv("PIPER_owner"), "Set the GitHub organization.")
+	cmd.Flags().StringVar(&stepConfig.Repository, "repository", os.Getenv("PIPER_repository"), "Set the GitHub repository.")
+	cmd.Flags().StringVar(&stepConfig.ServerURL, "serverUrl", "https://github.com", "GitHub server url for end-user access.")
+	cmd.Flags().StringVar(&stepConfig.Title, "title", os.Getenv("PIPER_title"), "Title of the pull request.")
+	cmd.Flags().StringVar(&stepConfig.Token, "token", os.Getenv("PIPER_token"), "GitHub personal access token as per https://help.github.com/en/github/authenticating-to-github/creating-a-personal-access-token-for-the-command-line")
+	cmd.Flags().StringSliceVar(&stepConfig.Labels, "labels", []string{}, "Labels to be added to the pull request.")
 
 	cmd.MarkFlagRequired("base")
 	cmd.MarkFlagRequired("body")

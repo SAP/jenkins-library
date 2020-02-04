@@ -65,7 +65,7 @@ you need to do the following in addition:
 
 * [Install Groovy](https://groovy-lang.org/install.html)
 * [Install Maven](https://maven.apache.org/install.html)
-* Get a local Jenkins installed: Use for example [cx-server](toDo: add link)
+* Get a local Jenkins installed: Use for example [cx-server](https://github.com/SAP/devops-docker-cx-server)
 
 ### Jenkins pipelines
 
@@ -86,7 +86,7 @@ Use Docker:
 
 You can extract the binary using Docker means to your local filesystem:
 
-```
+```sh
 docker create --name piper piper:latest
 docker cp piper:/piper .
 docker rm piper
@@ -107,9 +107,47 @@ Examples are:
 * spec - containers
 * spec - sidecars
 
+There are certain extensions:
+
+* **aliases** allow alternative parameter names also supporting deeper configuration structures. [Example](https://github.com/SAP/jenkins-library/blob/master/resources/metadata/kubernetesdeploy.yaml)
+* **resources** allow to read for example from a shared `commonPipelineEnvironment` which contains information which has been provided by a previous step in the pipeline via an output. [Example](https://github.com/SAP/jenkins-library/blob/master/resources/metadata/githubrelease.yaml)
+* **secrets** allow to specify references to Jenkins credentials which can be used in the `groovy` library. [Example](https://github.com/SAP/jenkins-library/blob/master/resources/metadata/kubernetesdeploy.yaml)
+* **outputs** allow to write to dedicated outputs like
+
+  * Influx metrics. [Example](https://github.com/SAP/jenkins-library/blob/master/resources/metadata/checkmarx.yaml)
+  * Sharing data via `commonPipelineEnvironment` which can be used by another step as input
+
+* **conditions** allow for example to specify in which case a certain container is used (depending on a configuration parameter). [Example](https://github.com/SAP/jenkins-library/blob/master/resources/metadata/kubernetesdeploy.yaml)
+
 ## Logging
 
-to be added
+Logging is done through [sirupsen/logrus](https://github.com/sirupsen/logrus) framework.
+It can conveniently be accessed through:
+
+```golang
+import (
+    "github.com/SAP/jenkins-library/pkg/log"
+)
+
+func myStep ...
+    ...
+    log.Entry().Info("This is my info.")
+    ...
+}
+```
+
+If a fatal error occurs your code should act similar to:
+
+```golang
+    ...
+    if err != nil {
+        log.Entry().
+            WithError(err).
+            Fatal("failed to execute step ...")
+    }
+```
+
+Calling `Fatal` results in an `os.Exit(0)` and before exiting some cleanup actions (e.g. writing output data, writing telemetry data if not deactivated by the user, ...) are performed.
 
 ## Error handling
 
