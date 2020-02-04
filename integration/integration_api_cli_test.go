@@ -23,7 +23,7 @@ func TestDummy(t *testing.T) {
 	dir = filepath.Dir(dir)
 
 	req := testcontainers.ContainerRequest{
-		Image:      "node:latest",
+		Image:      "node:lts-stretch",
 		Cmd:        []string{"tail", "-f"},
 		BindMounts: map[string]string{dir: "/data"},
 		//ToDo: we may set up a tmp directory and mount it in addition, e.g. for runtime artifacts ...
