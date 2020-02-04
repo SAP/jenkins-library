@@ -6,20 +6,9 @@ import (
 	"os"
 )
 
-// DirectoryExists ...
-func DirectoryExists(filename string) (bool, error) {
-	shouldBeDir := true
-	return exists(filename, shouldBeDir)
-}
-
 // FileExists ...
 func FileExists(filename string) (bool, error) {
-	shouldBeDir := false
-	return exists(filename, shouldBeDir)
-}
-
-func exists(path string, shouldBeDir bool) (bool, error) {
-	info, err := os.Stat(path)
+	info, err := os.Stat(filename)
 
 	if os.IsNotExist(err) {
 		return false, nil
@@ -28,8 +17,7 @@ func exists(path string, shouldBeDir bool) (bool, error) {
 		return false, err
 	}
 
-	return !info.IsDir() == shouldBeDir, nil
-
+	return !info.IsDir(), nil
 }
 
 // Copy ...
