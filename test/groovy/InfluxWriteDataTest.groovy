@@ -65,6 +65,8 @@ class InfluxWriteDataTest extends BasePiperTest {
         })
         helper.registerAllowedMethod('writeFile', [Map.class],{m -> fileMap[m.file] = m.text})
         helper.registerAllowedMethod('step', [Map.class],{m -> stepMap = m})
+
+        helper.registerAllowedMethod('influxDbPublisher', [Map.class],{m -> stepMap = m})
     }
 
 
@@ -196,7 +198,7 @@ class InfluxWriteDataTest extends BasePiperTest {
         assertThat(stepMap.selectedTarget, is('testInflux'))
         assertThat(stepMap.customPrefix, isEmptyOrNullString())
 
-        assertThat(stepMap['$class'], is('InfluxDbGlobalConfig'))
+        assertThat(stepMap['$class'], isEmptyOrNullString())
     }
 
 }
