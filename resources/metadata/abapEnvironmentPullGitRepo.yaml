@@ -1,0 +1,96 @@
+metadata:
+  name: abapEnvironmentPullGitRepo
+  description: Pulls a git repository to a SAP Cloud Platform ABAP Environment system
+  longDescription: |
+    Pulls a git repository (Software Component) to a SAP Cloud Platform ABAP Environment system.
+    Please provide either of the following options:
+      * The host and credentials the Cloud Platform ABAP Environment system itself. The credentials must be configured for the Communication Scenario SAP_COM_0510.
+      * The Cloud Foundry parameters (API endpoint, organization, space), credentials, the service instance for the ABAP service and the service key for the Communication Scenario SAP_COM_0510.
+      * Only provide one of those options with the respective credentials. If all values are provided, the direct communication (via host) has priority.
+spec:
+  inputs:
+    secrets:
+      - name: credentialsId
+        description: Jenkins credentials ID containing user and password to authenticate to the Cloud Platform ABAP Environment system or the Cloud Foundry API
+        type: jenkins
+    params:
+      - name: username
+        type: string
+        description: User for either the Cloud Foundry API or the Communication Arrangement for SAP_COM_0510
+        scope:
+        - PARAMETERS
+        - STAGES
+        - STEPS
+        mandatory: true
+      - name: password
+        type: string
+        description: Password for either the Cloud Foundry API or the Communication Arrangement for SAP_COM_0510
+        scope:
+        - PARAMETERS
+        - STAGES
+        - STEPS
+        mandatory: true
+      - name: repositoryName
+        type: string
+        description: Specifies the name of the Repository (Software Component) on the SAP Cloud Platform ABAP Environment system
+        scope:
+        - PARAMETERS
+        - STAGES
+        - STEPS
+        mandatory: true
+      - name: host
+        type: string
+        description: Specifies the host address of the SAP Cloud Platform ABAP Environment system
+        scope:
+        - PARAMETERS
+        - STAGES
+        - STEPS
+      - name: cfApiEndpoint
+        type: string
+        description: Cloud Foundry API Enpoint
+        scope:
+        - PARAMETERS
+        - STAGES
+        - STEPS
+        aliases:
+          - name: cloudFoundry/apiEndpoint
+      - name: cfOrg
+        type: string
+        description: Cloud Foundry target organization
+        scope:
+        - PARAMETERS
+        - STAGES
+        - STEPS
+        aliases:
+          - name: cloudFoundry/org
+      - name: cfSpace
+        type: string
+        description: Cloud Foundry target space
+        scope:
+        - PARAMETERS
+        - STAGES
+        - STEPS
+        aliases:
+          - name: cloudFoundry/space
+      - name: cfServiceInstance
+        type: string
+        description: Cloud Foundry Service Instance
+        scope:
+        - PARAMETERS
+        - STAGES
+        - STEPS
+        aliases:
+          - name: cloudFoundry/serviceInstance
+      - name: cfServiceKey
+        type: string
+        description: Cloud Foundry Service Key
+        scope:
+        - PARAMETERS
+        - STAGES
+        - STEPS
+        aliases:
+          - name: cloudFoundry/serviceKey
+  containers:
+    - name: cf
+      image: ppiper/cf-cli
+      imagePullPolicy: Never

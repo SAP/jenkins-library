@@ -19,10 +19,10 @@ In the first example, the host and the credentialsId of the Communication Arrang
 
 ```groovy
 abapEnvironmentPullGitRepo (
-  host : '1234-abcd-5678-efgh-ijk.abap.eu10.hana.ondemand.com',
-  repositoryName : '/DMO/GIT_REPOSITORY',
-  credentialsId : 'myCredentialsId',
-  script : this
+  script: this,
+  repositoryName: '/DMO/GIT_REPOSITORY',
+  credentialsId: 'abapCredentialsId',
+  host: '1234-abcd-5678-efgh-ijk.abap.eu10.hana.ondemand.com'
 )
 ```
 
@@ -31,10 +31,10 @@ In the second example, the host and credentialsId will be read from the provided
 ```groovy
 abapEnvironmentPullGitRepo (
   script: this,
-  repositoryName : '/DMO/GIT_REPOSITORY',
+  repositoryName: '/DMO/GIT_REPOSITORY',
+  credentialsId: 'cfCredentialsId',
   cloudFoundry: [
       apiEndpoint: 'https://test.server.com',
-      credentialsId: 'cfCredentialsId',
       org: 'cfOrg',
       space: 'cfSpace',
       serviceInstance: 'cfServiceInstance',
