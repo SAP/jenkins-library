@@ -48,21 +48,11 @@ void call(Map parameters = [:]) {
                 dockerImage: jenkinsConfig.dockerImage,
                 dockerWorkspace: jenkinsConfig.dockerWorkspace
             ) {
-                /*withCredentials([
-                    usernamePassword(credentialsId: config.cloudFoundry.credentialsId, passwordVariable: 'CF_PASSWORD', usernameVariable: 'CF_USERNAME')
-                ]) {*/
                 withCredentials([usernamePassword(
                     credentialsId: config.credentialsId,
                     passwordVariable: 'PIPER_password',
                     usernameVariable: 'PIPER_username'
                 )]) {
-                    /*
-                    def returnCode = sh returnStatus: true, script: """#!/bin/bash
-                    set +x
-                    set -e
-                    export HOME=${config.dockerWorkspace}
-                    """
-                    */
                     sh "./piper cloudFoundryDeleteService"
                 }
             }

@@ -44,12 +44,12 @@ func CloudFoundryDeleteServiceCommand() *cobra.Command {
 }
 
 func addCloudFoundryDeleteServiceFlags(cmd *cobra.Command) {
-	cmd.Flags().StringVar(&myCloudFoundryDeleteServiceOptions.CfAPIEndpoint, "cfApiEndpoint", os.Getenv("PIPER_cfApiEndpoint"), "Login API")
-	cmd.Flags().StringVar(&myCloudFoundryDeleteServiceOptions.Username, "username", os.Getenv("PIPER_username"), "User E-Mail")
-	cmd.Flags().StringVar(&myCloudFoundryDeleteServiceOptions.Password, "password", os.Getenv("PIPER_password"), "User Password")
+	cmd.Flags().StringVar(&myCloudFoundryDeleteServiceOptions.CfAPIEndpoint, "cfApiEndpoint", os.Getenv("PIPER_cfApiEndpoint"), "Cloud Foundry API endpoint")
+	cmd.Flags().StringVar(&myCloudFoundryDeleteServiceOptions.Username, "username", os.Getenv("PIPER_username"), "User or E-Mail for CF")
+	cmd.Flags().StringVar(&myCloudFoundryDeleteServiceOptions.Password, "password", os.Getenv("PIPER_password"), "User Password for CF User")
 	cmd.Flags().StringVar(&myCloudFoundryDeleteServiceOptions.CfOrg, "cfOrg", os.Getenv("PIPER_cfOrg"), "CF org")
 	cmd.Flags().StringVar(&myCloudFoundryDeleteServiceOptions.CfSpace, "cfSpace", os.Getenv("PIPER_cfSpace"), "CF Space")
-	cmd.Flags().StringVar(&myCloudFoundryDeleteServiceOptions.CfServiceInstance, "cfServiceInstance", os.Getenv("PIPER_cfServiceInstance"), "Parameter to delete CloudFoundry Service")
+	cmd.Flags().StringVar(&myCloudFoundryDeleteServiceOptions.CfServiceInstance, "cfServiceInstance", os.Getenv("PIPER_cfServiceInstance"), "Parameter of ServiceInstance Name to delete CloudFoundry Service")
 
 	cmd.MarkFlagRequired("cfApiEndpoint")
 	cmd.MarkFlagRequired("username")
