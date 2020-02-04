@@ -107,7 +107,7 @@ void call(Map parameters = [:]) {
                 enabledForFailure: true,
                 blameDisabled: true
             )
-            
+
             if (result != 0) {
                 error "HaDoLint failed to scan file ${configuration.dockerFile}, please check the log for details."   
             }
