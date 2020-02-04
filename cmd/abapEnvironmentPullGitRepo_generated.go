@@ -23,11 +23,10 @@ type abapEnvironmentPullGitRepoOptions struct {
 	CfServiceKey      string `json:"cfServiceKey,omitempty"`
 }
 
-var myAbapEnvironmentPullGitRepoOptions abapEnvironmentPullGitRepoOptions
-
 // AbapEnvironmentPullGitRepoCommand Pulls a git repository to a SAP Cloud Platform ABAP Environment system
 func AbapEnvironmentPullGitRepoCommand() *cobra.Command {
 	metadata := abapEnvironmentPullGitRepoMetadata()
+	var stepConfig abapEnvironmentPullGitRepoOptions
 	var startTime time.Time
 
 	var createAbapEnvironmentPullGitRepoCmd = &cobra.Command{
@@ -42,9 +41,9 @@ Please provide either of the following options:
 			startTime = time.Now()
 			log.SetStepName("abapEnvironmentPullGitRepo")
 			log.SetVerbose(GeneralConfig.Verbose)
-			return PrepareConfig(cmd, &metadata, "abapEnvironmentPullGitRepo", &myAbapEnvironmentPullGitRepoOptions, config.OpenPiperFile)
+			return PrepareConfig(cmd, &metadata, "abapEnvironmentPullGitRepo", &stepConfig, config.OpenPiperFile)
 		},
-		RunE: func(cmd *cobra.Command, args []string) error {
+		Run: func(cmd *cobra.Command, args []string) {
 			telemetryData := telemetry.CustomData{}
 			telemetryData.ErrorCode = "1"
 			handler := func() {
@@ -54,27 +53,25 @@ Please provide either of the following options:
 			log.DeferExitHandler(handler)
 			defer handler()
 			telemetry.Initialize(GeneralConfig.NoTelemetry, "abapEnvironmentPullGitRepo")
-			// ToDo: pass telemetryData to step
-			err := abapEnvironmentPullGitRepo(myAbapEnvironmentPullGitRepoOptions)
+			abapEnvironmentPullGitRepo(stepConfig, &telemetryData)
 			telemetryData.ErrorCode = "0"
-			return err
 		},
 	}
 
-	addAbapEnvironmentPullGitRepoFlags(createAbapEnvironmentPullGitRepoCmd)
+	addAbapEnvironmentPullGitRepoFlags(createAbapEnvironmentPullGitRepoCmd, &stepConfig)
 	return createAbapEnvironmentPullGitRepoCmd
 }
 
-func addAbapEnvironmentPullGitRepoFlags(cmd *cobra.Command) {
-	cmd.Flags().StringVar(&myAbapEnvironmentPullGitRepoOptions.Username, "username", os.Getenv("PIPER_username"), "User for either the Cloud Foundry API or the Communication Arrangement for SAP_COM_0510")
-	cmd.Flags().StringVar(&myAbapEnvironmentPullGitRepoOptions.Password, "password", os.Getenv("PIPER_password"), "Password for either the Cloud Foundry API or the Communication Arrangement for SAP_COM_0510")
-	cmd.Flags().StringVar(&myAbapEnvironmentPullGitRepoOptions.RepositoryName, "repositoryName", os.Getenv("PIPER_repositoryName"), "Specifies the name of the Repository (Software Component) on the SAP Cloud Platform ABAP Environment system")
-	cmd.Flags().StringVar(&myAbapEnvironmentPullGitRepoOptions.Host, "host", os.Getenv("PIPER_host"), "Specifies the host address of the SAP Cloud Platform ABAP Environment system")
-	cmd.Flags().StringVar(&myAbapEnvironmentPullGitRepoOptions.CfAPIEndpoint, "cfApiEndpoint", os.Getenv("PIPER_cfApiEndpoint"), "Cloud Foundry API Enpoint")
-	cmd.Flags().StringVar(&myAbapEnvironmentPullGitRepoOptions.CfOrg, "cfOrg", os.Getenv("PIPER_cfOrg"), "Cloud Foundry target organization")
-	cmd.Flags().StringVar(&myAbapEnvironmentPullGitRepoOptions.CfSpace, "cfSpace", os.Getenv("PIPER_cfSpace"), "Cloud Foundry target space")
-	cmd.Flags().StringVar(&myAbapEnvironmentPullGitRepoOptions.CfServiceInstance, "cfServiceInstance", os.Getenv("PIPER_cfServiceInstance"), "Cloud Foundry Service Instance")
-	cmd.Flags().StringVar(&myAbapEnvironmentPullGitRepoOptions.CfServiceKey, "cfServiceKey", os.Getenv("PIPER_cfServiceKey"), "Cloud Foundry Service Key")
+func addAbapEnvironmentPullGitRepoFlags(cmd *cobra.Command, stepConfig *abapEnvironmentPullGitRepoOptions) {
+	cmd.Flags().StringVar(&stepConfig.Username, "username", os.Getenv("PIPER_username"), "User for either the Cloud Foundry API or the Communication Arrangement for SAP_COM_0510")
+	cmd.Flags().StringVar(&stepConfig.Password, "password", os.Getenv("PIPER_password"), "Password for either the Cloud Foundry API or the Communication Arrangement for SAP_COM_0510")
+	cmd.Flags().StringVar(&stepConfig.RepositoryName, "repositoryName", os.Getenv("PIPER_repositoryName"), "Specifies the name of the Repository (Software Component) on the SAP Cloud Platform ABAP Environment system")
+	cmd.Flags().StringVar(&stepConfig.Host, "host", os.Getenv("PIPER_host"), "Specifies the host address of the SAP Cloud Platform ABAP Environment system")
+	cmd.Flags().StringVar(&stepConfig.CfAPIEndpoint, "cfApiEndpoint", os.Getenv("PIPER_cfApiEndpoint"), "Cloud Foundry API Enpoint")
+	cmd.Flags().StringVar(&stepConfig.CfOrg, "cfOrg", os.Getenv("PIPER_cfOrg"), "Cloud Foundry target organization")
+	cmd.Flags().StringVar(&stepConfig.CfSpace, "cfSpace", os.Getenv("PIPER_cfSpace"), "Cloud Foundry target space")
+	cmd.Flags().StringVar(&stepConfig.CfServiceInstance, "cfServiceInstance", os.Getenv("PIPER_cfServiceInstance"), "Cloud Foundry Service Instance")
+	cmd.Flags().StringVar(&stepConfig.CfServiceKey, "cfServiceKey", os.Getenv("PIPER_cfServiceKey"), "Cloud Foundry Service Key")
 
 	cmd.MarkFlagRequired("username")
 	cmd.MarkFlagRequired("password")
