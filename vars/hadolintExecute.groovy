@@ -113,9 +113,9 @@ void call(Map parameters = [:]) {
             if (file.exists()) {
                 resultFileSize = file.length()
             }
-            
+
             if (result != 0 && resultFileSize == 0) {
-                error "HaDoLint scan on file ${configuration.dockerFile} failed due to technical issues, please check the log."   
+                error "HaDoLint scan on file ${configuration.dockerFile} failed due to technical issues, please check the log."
             }
         }
     }
