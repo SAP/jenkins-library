@@ -108,6 +108,7 @@ Examples are:
 * spec - sidecars
 
 There are certain extensions:
+
 * **aliases** allow alternative parameter names also supporting deeper configuration structures. [Example](https://github.com/SAP/jenkins-library/blob/master/resources/metadata/kubernetesdeploy.yaml)
 * **resources** allow to read for example from a shared `commonPipelineEnvironment` which contains information which has been provided by a previous step in the pipeline via an output. [Example](https://github.com/SAP/jenkins-library/blob/master/resources/metadata/githubrelease.yaml)
 * **secrets** allow to specify references to Jenkins credentials which can be used in the `groovy` library. [Example](https://github.com/SAP/jenkins-library/blob/master/resources/metadata/kubernetesdeploy.yaml)
@@ -115,7 +116,7 @@ There are certain extensions:
 
   * Influx metrics. [Example](https://github.com/SAP/jenkins-library/blob/master/resources/metadata/checkmarx.yaml)
   * Sharing data via `commonPipelineEnvironment` which can be used by another step as input
-  
+
 * **conditions** allow for example to specify in which case a certain container is used (depending on a configuration parameter). [Example](https://github.com/SAP/jenkins-library/blob/master/resources/metadata/kubernetesdeploy.yaml)
 
 ## Logging
