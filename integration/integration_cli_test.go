@@ -25,16 +25,16 @@ func TestKarmaIntegration(t *testing.T) {
 	networkName := "sidecar-" + uuid.New().String()
 
 	reqNode := testcontainers.ContainerRequest{
-		Image:      "node:latest",
-		Cmd:        []string{"tail", "-f"},
-		BindMounts: map[string]string{dir: "/data"},
-		Networks: []string{networkName},
+		Image:          "node:latest",
+		Cmd:            []string{"tail", "-f"},
+		BindMounts:     map[string]string{dir: "/data"},
+		Networks:       []string{networkName},
 		NetworkAliases: map[string][]string{networkName: []string{"node"}},
 	}
 
 	reqSel := testcontainers.ContainerRequest{
-		Image:      "selenium/standalone-chrome",
-		Networks: []string{networkName},
+		Image:          "selenium/standalone-chrome",
+		Networks:       []string{networkName},
 		NetworkAliases: map[string][]string{networkName: []string{"selenium"}},
 	}
 

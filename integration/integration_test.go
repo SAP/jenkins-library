@@ -25,5 +25,5 @@ func getPiperExecutable() string {
 	if p := os.Getenv("PIPER_INTEGRATION_EXECUTABLE"); len(p) > 0 {
 		return p
 	}
-	return "./piper"
+	return "piper"
 }

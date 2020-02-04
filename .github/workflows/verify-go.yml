@@ -67,4 +67,5 @@ jobs:
       run: CGO_ENABLED=0 go build -o piper && chmod +x piper
     - name: test
       run: |
+        export PATH=$PATH:$(pwd)
         go test -tags=integration ./integration/...
