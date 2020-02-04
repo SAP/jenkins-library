@@ -1,12 +1,13 @@
 package cmd
 
 import (
+	"fmt"
 	"os"
+	"time"
 
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
-
 	"github.com/spf13/cobra"
 )
 
@@ -29,6 +30,7 @@ var myGithubCreatePullRequestOptions githubCreatePullRequestOptions
 // GithubCreatePullRequestCommand Create a pull request on GitHub
 func GithubCreatePullRequestCommand() *cobra.Command {
 	metadata := githubCreatePullRequestMetadata()
+	var startTime time.Time
 
 	var createGithubCreatePullRequestCmd = &cobra.Command{
 		Use:   "githubCreatePullRequest",
@@ -37,15 +39,25 @@ func GithubCreatePullRequestCommand() *cobra.Command {
 
 It can for example be used for GitOps scenarios or for scenarios where you want to have a manual confirmation step which is delegated to a GitHub pull request.`,
 		PreRunE: func(cmd *cobra.Command, args []string) error {
+			startTime = time.Now()
 			log.SetStepName("githubCreatePullRequest")
 			log.SetVerbose(GeneralConfig.Verbose)
 			return PrepareConfig(cmd, &metadata, "githubCreatePullRequest", &myGithubCreatePullRequestOptions, config.OpenPiperFile)
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-
+			telemetryData := telemetry.CustomData{}
+			telemetryData.ErrorCode = "1"
+			handler := func() {
+				telemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
+				telemetry.Send(&telemetryData)
+			}
+			log.DeferExitHandler(handler)
+			defer handler()
 			telemetry.Initialize(GeneralConfig.NoTelemetry, "githubCreatePullRequest")
-			telemetry.Send(&telemetry.CustomData{})
-			return githubCreatePullRequest(myGithubCreatePullRequestOptions)
+			// ToDo: pass telemetryData to step
+			err := githubCreatePullRequest(myGithubCreatePullRequestOptions)
+			telemetryData.ErrorCode = "0"
+			return err
 		},
 	}
 

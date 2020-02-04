@@ -16,6 +16,9 @@ import hudson.AbortException
 @Field def PLUGIN_ID_KUBERNETES = 'kubernetes'
 
 @Field Set GENERAL_CONFIG_KEYS = [
+    /**
+     * Define settings used by the Jenkins Kuberenetes plugin.
+     */
     'jenkinsKubernetes',
     /**
      * Print more detailed information into the log.

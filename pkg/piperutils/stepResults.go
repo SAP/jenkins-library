@@ -2,6 +2,7 @@ package piperutils
 
 import (
 	"encoding/json"
+	"fmt"
 
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperenv"
@@ -12,10 +13,11 @@ type Path struct {
 	Name      string `json:"name"`
 	Target    string `json:"target"`
 	Mandatory bool   `json:"mandatory"`
+	Scope     string `json:"scope"`
 }
 
 // PersistReportsAndLinks stores the report paths and links in JSON format in the workspace for processing outside
-func PersistReportsAndLinks(workspace string, reports, links []Path) {
+func PersistReportsAndLinks(stepName, workspace string, reports, links []Path) {
 	hasMandatoryReport := false
 	for _, report := range reports {
 		if report.Mandatory {
@@ -30,12 +32,12 @@ func PersistReportsAndLinks(workspace string, reports, links []Path) {
 		}
 		log.Entry().Errorln("Failed to marshall reports.json data for archiving")
 	}
-	piperenv.SetParameter(workspace, "reports.json", string(reportList))
+	piperenv.SetParameter(workspace, fmt.Sprintf("%v_reports.json", stepName), string(reportList))
 
 	linkList, err := json.Marshal(&links)
 	if err != nil {
 		log.Entry().Errorln("Failed to marshall links.json data for archiving")
 	} else {
-		piperenv.SetParameter(workspace, "links.json", string(linkList))
+		piperenv.SetParameter(workspace, fmt.Sprintf("%v_links.json", stepName), string(linkList))
 	}
 }
