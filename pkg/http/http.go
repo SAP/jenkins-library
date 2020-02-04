@@ -17,20 +17,22 @@ import (
 
 // Client defines an http client object
 type Client struct {
-	timeout  time.Duration
-	username string
-	password string
-	token    string
-	logger   *logrus.Entry
+	timeout   time.Duration
+	username  string
+	password  string
+	token     string
+	logger    *logrus.Entry
+	cookieJar http.CookieJar
 }
 
 // ClientOptions defines the options to be set on the client
 type ClientOptions struct {
-	Timeout  time.Duration
-	Username string
-	Password string
-	Token    string
-	Logger   *logrus.Entry
+	Timeout   time.Duration
+	Username  string
+	Password  string
+	Token     string
+	Logger    *logrus.Entry
+	CookieJar http.CookieJar
 }
 
 // Sender provides an interface to the piper http client for uid/pwd and token authenticated requests
@@ -126,6 +128,7 @@ func (c *Client) SetOptions(options ClientOptions) {
 	c.password = options.Password
 	c.token = options.Token
 	c.logger = options.Logger
+	c.cookieJar = options.CookieJar
 }
 
 func (c *Client) initialize() *http.Client {
@@ -134,8 +137,8 @@ func (c *Client) initialize() *http.Client {
 
 	var httpClient = &http.Client{
 		Timeout: c.timeout,
+		Jar:     c.cookieJar,
 	}
-
 	c.logger.Debugf("Timeout set to %v", c.timeout)
 
 	return httpClient
