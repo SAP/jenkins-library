@@ -111,7 +111,39 @@ class PiperGoUtilsTest extends BasePiperTest {
     }
 
     @Test
-    void testDownloadFailed() {
+    void testDownloadFailedWithErrorCode() {
+        def piperGoUtils = new PiperGoUtils(nullScript, utils)
+        piperGoUtils.metaClass.getLibrariesInfo = {-> return [[name: 'piper-lib-os', version: 'notAvailable']]}
+
+        shellCallRule.setReturnValue('curl --insecure --silent --location --write-out \'%{http_code}\' --output ./piper \'https://github.com/SAP/jenkins-library/releases/download/notAvailable/piper\'', '404')
+        shellCallRule.setReturnValue('curl --insecure --silent --location --write-out \'%{http_code}\' --output ./piper \'https://github.com/SAP/jenkins-library/releases/latest/download/piper_master\'', '500')
+
+        helper.registerAllowedMethod("unstash", [String.class], { stashFileName ->
+            return []
+        })
+
+        exception.expectMessage(containsString('Download of Piper go binary failed'))
+        piperGoUtils.unstashPiperBin()
+    }
+
+    @Test
+    void testDownloadFailedWithHTTPCode() {
+        def piperGoUtils = new PiperGoUtils(nullScript, utils)
+        piperGoUtils.metaClass.getLibrariesInfo = {-> return [[name: 'piper-lib-os', version: 'notAvailable']]}
+
+        shellCallRule.setReturnValue('curl --insecure --silent --location --write-out \'%{http_code}\' --output ./piper \'https://github.com/SAP/jenkins-library/releases/download/notAvailable/piper\'', '404')
+        shellCallRule.setReturnValue('curl --insecure --silent --location --write-out \'%{http_code}\' --output ./piper \'https://github.com/SAP/jenkins-library/releases/latest/download/piper_master\'', '500')
+
+        helper.registerAllowedMethod("unstash", [String.class], { stashFileName ->
+            return []
+        })
+
+        exception.expectMessage(containsString('Download of Piper go binary failed'))
+        piperGoUtils.unstashPiperBin()
+    }
+
+    @Test
+    void testDownloadFailedWithError() {
         def piperGoUtils = new PiperGoUtils(nullScript, utils)
         piperGoUtils.metaClass.getLibrariesInfo = {-> return [[name: 'piper-lib-os', version: 'notAvailable']]}
 
