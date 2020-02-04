@@ -49,6 +49,7 @@ func TestPiperGithubPublishRelease(t *testing.T) {
 		repository,
 		"--token",
 		token,
+		"--noTelemetry",
 	}
 
 	err = cmd.RunExecutable(getPiperExecutable(), piperOptions...)

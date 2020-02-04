@@ -40,6 +40,7 @@ func TestDummy(t *testing.T) {
 		"-- <piperFlag1>",
 		"<piperFlag1Value>",
 		"...",
+		"--noTelemetry",
 	}
 
 	code, err := testContainer.Exec(ctx, append([]string{"/data/piper"}, piperOptions...))
