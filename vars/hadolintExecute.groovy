@@ -107,12 +107,12 @@ void call(Map parameters = [:]) {
                 enabledForFailure: true,
                 blameDisabled: true
             )
-            
+
             def resultFileSize = 0
             if (fileExists(configuration.reportFile)) {
                 resultFileSize = readFile(configuration.reportFile).length()
             }
-            
+
             if (result != 0 && resultFileSize == 0) {
                 error "HaDoLint scan on file ${configuration.dockerFile} failed due to technical issues, please check the log."
             }
