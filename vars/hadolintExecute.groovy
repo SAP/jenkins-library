@@ -94,7 +94,7 @@ void call(Map parameters = [:]) {
             stashContent: existingStashes
         ) {
             // HaDoLint status code is ignore, results will be handled by recordIssues / archiveArtifacts
-            def ignore = sh returnStatus: true, script: "hadolint ${configuration.dockerFile} ${options.join(' ')}"
+            def result = sh returnStatus: true, script: "hadolint ${configuration.dockerFile} ${options.join(' ')}"
 
             archiveArtifacts configuration.reportFile
             recordIssues(
@@ -107,6 +107,10 @@ void call(Map parameters = [:]) {
                 enabledForFailure: true,
                 blameDisabled: true
             )
+            
+            if (result != 0) {
+                error "HaDoLint failed to scan file ${configuration.dockerFile}, please check the log for details."   
+            }
         }
     }
 }
