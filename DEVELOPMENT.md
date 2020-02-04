@@ -113,8 +113,9 @@ There are certain extensions:
 * **secrets** allow to specify references to Jenkins credentials which can be used in the `groovy` library. [Example](https://github.com/SAP/jenkins-library/blob/master/resources/metadata/kubernetesdeploy.yaml)
 * **outputs** allow to write to dedicated outputs like
 
-  - Influx metrics. [Example](https://github.com/SAP/jenkins-library/blob/master/resources/metadata/checkmarx.yaml)
-  - Sharing data via `commonPipelineEnvironment` which can be used by another step as input
+  * Influx metrics. [Example](https://github.com/SAP/jenkins-library/blob/master/resources/metadata/checkmarx.yaml)
+  * Sharing data via `commonPipelineEnvironment` which can be used by another step as input
+  
 * **conditions** allow for example to specify in which case a certain container is used (depending on a configuration parameter). [Example](https://github.com/SAP/jenkins-library/blob/master/resources/metadata/kubernetesdeploy.yaml)
 
 ## Logging
