@@ -666,7 +666,17 @@ Map stages = Helper.resolveDocuRelevantStages(gse, stepsDir)
 boolean exceptionCaught = false
 
 def stepDescriptors = [:]
+
+MetaMethod oldPersistDefaults = DefaultValueCache.metaClass.
+    getStaticMetaMethod("persistDefaults", [Script, Map, List])
+DefaultValueCache.metaClass.static.persistDefaults = { Script s, Map dv, List cd ->
+    return null
+}
+
 DefaultValueCache.prepare(Helper.getDummyScript('noop'), [customDefaults: customDefaults])
+
+DefaultValueCache.metaClass.static.persistDefaults = oldPersistDefaults
+
 for (step in steps) {
     try {
         stepDescriptors."${step}" = handleStep(step, gse)
