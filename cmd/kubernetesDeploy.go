@@ -12,14 +12,14 @@ import (
 
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/telemetry"
 )
 
-func kubernetesDeploy(config kubernetesDeployOptions) error {
+func kubernetesDeploy(config kubernetesDeployOptions, telemetryData *telemetry.CustomData) {
 	c := command.Command{}
 	// reroute stderr output to logging framework, stdout will be used for command interactions
 	c.Stderr(log.Entry().Writer())
 	runKubernetesDeploy(config, &c, log.Entry().Writer())
-	return nil
 }
 
 func runKubernetesDeploy(config kubernetesDeployOptions, command envExecRunner, stdout io.Writer) {
