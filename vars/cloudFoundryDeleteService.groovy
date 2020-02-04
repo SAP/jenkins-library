@@ -36,8 +36,8 @@ void call(Map parameters = [:]) {
             // execute step
             dockerExecute(
                 script: script,
-                dockerImage: jenkinsConfig.dockerImage,
-                dockerWorkspace: jenkinsConfig.dockerWorkspace
+                dockerImage: config.dockerImage,
+                dockerWorkspace: config.dockerWorkspace
             ) {
                 withCredentials([usernamePassword(
                     credentialsId: config.credentialsId,
