@@ -28,11 +28,10 @@ type githubPublishReleaseOptions struct {
 	Version               string   `json:"version,omitempty"`
 }
 
-var myGithubPublishReleaseOptions githubPublishReleaseOptions
-
 // GithubPublishReleaseCommand Publish a release in GitHub
 func GithubPublishReleaseCommand() *cobra.Command {
 	metadata := githubPublishReleaseMetadata()
+	var stepConfig githubPublishReleaseOptions
 	var startTime time.Time
 
 	var createGithubPublishReleaseCmd = &cobra.Command{
@@ -52,9 +51,9 @@ The result looks like
 			startTime = time.Now()
 			log.SetStepName("githubPublishRelease")
 			log.SetVerbose(GeneralConfig.Verbose)
-			return PrepareConfig(cmd, &metadata, "githubPublishRelease", &myGithubPublishReleaseOptions, config.OpenPiperFile)
+			return PrepareConfig(cmd, &metadata, "githubPublishRelease", &stepConfig, config.OpenPiperFile)
 		},
-		RunE: func(cmd *cobra.Command, args []string) error {
+		Run: func(cmd *cobra.Command, args []string) {
 			telemetryData := telemetry.CustomData{}
 			telemetryData.ErrorCode = "1"
 			handler := func() {
@@ -64,32 +63,30 @@ The result looks like
 			log.DeferExitHandler(handler)
 			defer handler()
 			telemetry.Initialize(GeneralConfig.NoTelemetry, "githubPublishRelease")
-			// ToDo: pass telemetryData to step
-			err := githubPublishRelease(myGithubPublishReleaseOptions)
+			githubPublishRelease(stepConfig, &telemetryData)
 			telemetryData.ErrorCode = "0"
-			return err
 		},
 	}
 
-	addGithubPublishReleaseFlags(createGithubPublishReleaseCmd)
+	addGithubPublishReleaseFlags(createGithubPublishReleaseCmd, &stepConfig)
 	return createGithubPublishReleaseCmd
 }
 
-func addGithubPublishReleaseFlags(cmd *cobra.Command) {
-	cmd.Flags().BoolVar(&myGithubPublishReleaseOptions.AddClosedIssues, "addClosedIssues", false, "If set to `true`, closed issues and merged pull-requests since the last release will added below the `releaseBodyHeader`")
-	cmd.Flags().BoolVar(&myGithubPublishReleaseOptions.AddDeltaToLastRelease, "addDeltaToLastRelease", false, "If set to `true`, a link will be added to the relese information that brings up all commits since the last release.")
-	cmd.Flags().StringVar(&myGithubPublishReleaseOptions.APIURL, "apiUrl", "https://api.github.com", "Set the GitHub API url.")
-	cmd.Flags().StringVar(&myGithubPublishReleaseOptions.AssetPath, "assetPath", os.Getenv("PIPER_assetPath"), "Path to a release asset which should be uploaded to the list of release assets.")
-	cmd.Flags().StringVar(&myGithubPublishReleaseOptions.Commitish, "commitish", "master", "Target git commitish for the release")
-	cmd.Flags().StringSliceVar(&myGithubPublishReleaseOptions.ExcludeLabels, "excludeLabels", []string{}, "Allows to exclude issues with dedicated list of labels.")
-	cmd.Flags().StringSliceVar(&myGithubPublishReleaseOptions.Labels, "labels", []string{}, "Labels to include in issue search.")
-	cmd.Flags().StringVar(&myGithubPublishReleaseOptions.Owner, "owner", os.Getenv("PIPER_owner"), "Set the GitHub organization.")
-	cmd.Flags().StringVar(&myGithubPublishReleaseOptions.ReleaseBodyHeader, "releaseBodyHeader", os.Getenv("PIPER_releaseBodyHeader"), "Content which will appear for the release.")
-	cmd.Flags().StringVar(&myGithubPublishReleaseOptions.Repository, "repository", os.Getenv("PIPER_repository"), "Set the GitHub repository.")
-	cmd.Flags().StringVar(&myGithubPublishReleaseOptions.ServerURL, "serverUrl", "https://github.com", "GitHub server url for end-user access.")
-	cmd.Flags().StringVar(&myGithubPublishReleaseOptions.Token, "token", os.Getenv("PIPER_token"), "GitHub personal access token as per https://help.github.com/en/github/authenticating-to-github/creating-a-personal-access-token-for-the-command-line")
-	cmd.Flags().StringVar(&myGithubPublishReleaseOptions.UploadURL, "uploadUrl", "https://uploads.github.com", "Set the GitHub API url.")
-	cmd.Flags().StringVar(&myGithubPublishReleaseOptions.Version, "version", os.Getenv("PIPER_version"), "Define the version number which will be written as tag as well as release name.")
+func addGithubPublishReleaseFlags(cmd *cobra.Command, stepConfig *githubPublishReleaseOptions) {
+	cmd.Flags().BoolVar(&stepConfig.AddClosedIssues, "addClosedIssues", false, "If set to `true`, closed issues and merged pull-requests since the last release will added below the `releaseBodyHeader`")
+	cmd.Flags().BoolVar(&stepConfig.AddDeltaToLastRelease, "addDeltaToLastRelease", false, "If set to `true`, a link will be added to the relese information that brings up all commits since the last release.")
+	cmd.Flags().StringVar(&stepConfig.APIURL, "apiUrl", "https://api.github.com", "Set the GitHub API url.")
+	cmd.Flags().StringVar(&stepConfig.AssetPath, "assetPath", os.Getenv("PIPER_assetPath"), "Path to a release asset which should be uploaded to the list of release assets.")
+	cmd.Flags().StringVar(&stepConfig.Commitish, "commitish", "master", "Target git commitish for the release")
+	cmd.Flags().StringSliceVar(&stepConfig.ExcludeLabels, "excludeLabels", []string{}, "Allows to exclude issues with dedicated list of labels.")
+	cmd.Flags().StringSliceVar(&stepConfig.Labels, "labels", []string{}, "Labels to include in issue search.")
+	cmd.Flags().StringVar(&stepConfig.Owner, "owner", os.Getenv("PIPER_owner"), "Set the GitHub organization.")
+	cmd.Flags().StringVar(&stepConfig.ReleaseBodyHeader, "releaseBodyHeader", os.Getenv("PIPER_releaseBodyHeader"), "Content which will appear for the release.")
+	cmd.Flags().StringVar(&stepConfig.Repository, "repository", os.Getenv("PIPER_repository"), "Set the GitHub repository.")
+	cmd.Flags().StringVar(&stepConfig.ServerURL, "serverUrl", "https://github.com", "GitHub server url for end-user access.")
+	cmd.Flags().StringVar(&stepConfig.Token, "token", os.Getenv("PIPER_token"), "GitHub personal access token as per https://help.github.com/en/github/authenticating-to-github/creating-a-personal-access-token-for-the-command-line")
+	cmd.Flags().StringVar(&stepConfig.UploadURL, "uploadUrl", "https://uploads.github.com", "Set the GitHub API url.")
+	cmd.Flags().StringVar(&stepConfig.Version, "version", os.Getenv("PIPER_version"), "Define the version number which will be written as tag as well as release name.")
 
 	cmd.MarkFlagRequired("apiUrl")
 	cmd.MarkFlagRequired("owner")
