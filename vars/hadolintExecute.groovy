@@ -101,7 +101,7 @@ void call(Map parameters = [:]) {
                 tools: [checkStyle(
                     name: configuration.reportName, 
                     pattern: configuration.reportFile,
-                    id: "hadolint-"+reportName
+                    id: "hadolint-"+configuration.reportName
                 )],
                 qualityGates: configuration.qualityGates,
                 enabledForFailure: true,
