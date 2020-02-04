@@ -27,11 +27,10 @@ type xsDeployOptions struct {
 	XsSessionFile         string `json:"xsSessionFile,omitempty"`
 }
 
-var myXsDeployOptions xsDeployOptions
-
 // XsDeployCommand Performs xs deployment
 func XsDeployCommand() *cobra.Command {
 	metadata := xsDeployMetadata()
+	var stepConfig xsDeployOptions
 	var startTime time.Time
 
 	var createXsDeployCmd = &cobra.Command{
@@ -42,9 +41,9 @@ func XsDeployCommand() *cobra.Command {
 			startTime = time.Now()
 			log.SetStepName("xsDeploy")
 			log.SetVerbose(GeneralConfig.Verbose)
-			return PrepareConfig(cmd, &metadata, "xsDeploy", &myXsDeployOptions, config.OpenPiperFile)
+			return PrepareConfig(cmd, &metadata, "xsDeploy", &stepConfig, config.OpenPiperFile)
 		},
-		RunE: func(cmd *cobra.Command, args []string) error {
+		Run: func(cmd *cobra.Command, args []string) {
 			telemetryData := telemetry.CustomData{}
 			telemetryData.ErrorCode = "1"
 			handler := func() {
@@ -54,31 +53,29 @@ func XsDeployCommand() *cobra.Command {
 			log.DeferExitHandler(handler)
 			defer handler()
 			telemetry.Initialize(GeneralConfig.NoTelemetry, "xsDeploy")
-			// ToDo: pass telemetryData to step
-			err := xsDeploy(myXsDeployOptions)
+			xsDeploy(stepConfig, &telemetryData)
 			telemetryData.ErrorCode = "0"
-			return err
 		},
 	}
 
-	addXsDeployFlags(createXsDeployCmd)
+	addXsDeployFlags(createXsDeployCmd, &stepConfig)
 	return createXsDeployCmd
 }
 
-func addXsDeployFlags(cmd *cobra.Command) {
-	cmd.Flags().StringVar(&myXsDeployOptions.DeployOpts, "deployOpts", os.Getenv("PIPER_deployOpts"), "Additional options appended to the deploy command. Only needed for sophisticated cases. When provided it is the duty of the provider to ensure proper quoting / escaping.")
-	cmd.Flags().StringVar(&myXsDeployOptions.OperationIDLogPattern, "operationIdLogPattern", "^.*xs bg-deploy -i (.*) -a.*$", "Regex pattern for retrieving the ID of the operation from the xs log.")
-	cmd.Flags().StringVar(&myXsDeployOptions.MtaPath, "mtaPath", os.Getenv("PIPER_mtaPath"), "Path to deployable")
-	cmd.Flags().StringVar(&myXsDeployOptions.Action, "action", "NONE", "Used for finalizing the blue-green deployment.")
-	cmd.Flags().StringVar(&myXsDeployOptions.Mode, "mode", "DEPLOY", "Controls if there is a standard deployment or a blue green deployment. Values: 'DEPLOY', 'BG_DEPLOY'")
-	cmd.Flags().StringVar(&myXsDeployOptions.OperationID, "operationId", os.Getenv("PIPER_operationId"), "The operation ID. Used in case of bg-deploy in order to resume or abort a previously started deployment.")
-	cmd.Flags().StringVar(&myXsDeployOptions.APIURL, "apiUrl", os.Getenv("PIPER_apiUrl"), "The api url (e.g. https://example.org:12345")
-	cmd.Flags().StringVar(&myXsDeployOptions.User, "user", os.Getenv("PIPER_user"), "User")
-	cmd.Flags().StringVar(&myXsDeployOptions.Password, "password", os.Getenv("PIPER_password"), "Password")
-	cmd.Flags().StringVar(&myXsDeployOptions.Org, "org", os.Getenv("PIPER_org"), "The org")
-	cmd.Flags().StringVar(&myXsDeployOptions.Space, "space", os.Getenv("PIPER_space"), "The space")
-	cmd.Flags().StringVar(&myXsDeployOptions.LoginOpts, "loginOpts", os.Getenv("PIPER_loginOpts"), "Additional options appended to the login command. Only needed for sophisticated cases. When provided it is the duty of the provider to ensure proper quoting / escaping.")
-	cmd.Flags().StringVar(&myXsDeployOptions.XsSessionFile, "xsSessionFile", os.Getenv("PIPER_xsSessionFile"), "The file keeping the xs session.")
+func addXsDeployFlags(cmd *cobra.Command, stepConfig *xsDeployOptions) {
+	cmd.Flags().StringVar(&stepConfig.DeployOpts, "deployOpts", os.Getenv("PIPER_deployOpts"), "Additional options appended to the deploy command. Only needed for sophisticated cases. When provided it is the duty of the provider to ensure proper quoting / escaping.")
+	cmd.Flags().StringVar(&stepConfig.OperationIDLogPattern, "operationIdLogPattern", "^.*xs bg-deploy -i (.*) -a.*$", "Regex pattern for retrieving the ID of the operation from the xs log.")
+	cmd.Flags().StringVar(&stepConfig.MtaPath, "mtaPath", os.Getenv("PIPER_mtaPath"), "Path to deployable")
+	cmd.Flags().StringVar(&stepConfig.Action, "action", "NONE", "Used for finalizing the blue-green deployment.")
+	cmd.Flags().StringVar(&stepConfig.Mode, "mode", "DEPLOY", "Controls if there is a standard deployment or a blue green deployment. Values: 'DEPLOY', 'BG_DEPLOY'")
+	cmd.Flags().StringVar(&stepConfig.OperationID, "operationId", os.Getenv("PIPER_operationId"), "The operation ID. Used in case of bg-deploy in order to resume or abort a previously started deployment.")
+	cmd.Flags().StringVar(&stepConfig.APIURL, "apiUrl", os.Getenv("PIPER_apiUrl"), "The api url (e.g. https://example.org:12345")
+	cmd.Flags().StringVar(&stepConfig.User, "user", os.Getenv("PIPER_user"), "User")
+	cmd.Flags().StringVar(&stepConfig.Password, "password", os.Getenv("PIPER_password"), "Password")
+	cmd.Flags().StringVar(&stepConfig.Org, "org", os.Getenv("PIPER_org"), "The org")
+	cmd.Flags().StringVar(&stepConfig.Space, "space", os.Getenv("PIPER_space"), "The space")
+	cmd.Flags().StringVar(&stepConfig.LoginOpts, "loginOpts", os.Getenv("PIPER_loginOpts"), "Additional options appended to the login command. Only needed for sophisticated cases. When provided it is the duty of the provider to ensure proper quoting / escaping.")
+	cmd.Flags().StringVar(&stepConfig.XsSessionFile, "xsSessionFile", os.Getenv("PIPER_xsSessionFile"), "The file keeping the xs session.")
 
 	cmd.MarkFlagRequired("mtaPath")
 	cmd.MarkFlagRequired("mode")

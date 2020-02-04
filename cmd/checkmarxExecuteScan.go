@@ -19,10 +19,11 @@ import (
 	piperHttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
+	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/bmatcuk/doublestar"
 )
 
-func checkmarxExecuteScan(config checkmarxExecuteScanOptions, influx *checkmarxExecuteScanInflux) error {
+func checkmarxExecuteScan(config checkmarxExecuteScanOptions, telemetryData *telemetry.CustomData, influx *checkmarxExecuteScanInflux) error {
 	client := &piperHttp.Client{}
 	sys, err := checkmarx.NewSystemInstance(client, config.ServerURL, config.Username, config.Password)
 	if err != nil {
