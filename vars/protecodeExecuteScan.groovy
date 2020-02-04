@@ -40,7 +40,8 @@ void call(Map parameters = [:]) {
             // execute step
             withCredentials(creds) {
 
-                def configDirPath = Paths.get(FILE_PATH).getParent().getFileName();
+                File file = new File(FILE_PATH);
+                def configDirPath = file.getAbsoluteFile().getParent();
                 withEnv([
                     "DOCKER_CONFIG=${configDirPath}",
                 ]) {
