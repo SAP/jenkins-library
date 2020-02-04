@@ -7,12 +7,12 @@ spec:
   inputs:    
     secrets:
       - name: cfcredentialsId
-        description: Jenkins credentials ID containing user and password to authenticate to the Cloud Platform ABAP Environment system or the Cloud Foundry API
+        description: Jenkins credentials ID containing user and password to authenticate to the Cloud Foundry API
         type: jenkins
     params:
       - name: cfApiEndpoint
         type: string
-        description: Login API
+        description: Cloud Foundry API endpoint
         scope:
         - PARAMETERS
         - STAGES
@@ -22,7 +22,7 @@ spec:
           - name: cloudFoundry/apiEndpoint
       - name: username
         type: string
-        description: User E-Mail
+        description: User or E-Mail for CF
         scope:
         - PARAMETERS
         - STAGES
@@ -30,7 +30,7 @@ spec:
         mandatory: true
       - name: password
         type: string
-        description: User Password
+        description: User Password for CF User
         scope:
         - PARAMETERS
         - STAGES
@@ -58,7 +58,7 @@ spec:
           - name: cloudFoundry/space
       - name: cfServiceInstance
         type: string
-        description: Parameter to delete CloudFoundry Service
+        description: Parameter of ServiceInstance Name to delete CloudFoundry Service
         scope:
         - PARAMETERS
         - STAGES
