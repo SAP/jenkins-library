@@ -15,17 +15,6 @@ import static com.sap.piper.Prerequisites.checkScript
 void call(Map parameters = [:]) {
     handlePipelineStepErrors(stepName: STEP_NAME, stepParameters: parameters, failOnError: true) {
 
-        def script = checkScript(this, parameters) ?: this
-
-        Set configKeys = ['dockerImage', 'dockerWorkspace']
-        Map jenkinsConfig = ConfigurationHelper.newInstance(this)
-            .loadStepDefaults()
-            .mixinGeneralConfig(script.commonPipelineEnvironment, configKeys)
-            .mixinStepConfig(script.commonPipelineEnvironment, configKeys)
-            .mixinStageConfig(script.commonPipelineEnvironment, env.STAGE_NAME, configKeys)
-            .mixin(parameters, configKeys)
-            .use()
-
         Map config
         def utils = parameters.juStabUtils ?: new Utils()
         parameters.juStabUtils = null
