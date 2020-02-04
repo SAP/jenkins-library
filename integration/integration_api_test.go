@@ -16,7 +16,7 @@ import (
 )
 
 func TestPiperGithubPublishRelease(t *testing.T) {
-	token := os.Getenv("PIPER_INTEGRATION_GITHUB_TOKEN")
+	token := os.Getenv("GITHUB_TOKEN")
 	if len(token) == 0 {
 		t.Skip("Skipping testing due to missing integration configuration")
 	}
