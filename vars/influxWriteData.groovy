@@ -136,7 +136,7 @@ private void writeToInflux(config, JenkinsUtils jenkinsUtils, script){
     if (config.influxServer) {
 
         def influxPluginVersion = jenkinsUtils.getPluginVersion('influxdb')
-        def influxClassName = (!influxPluginVersion || influxPluginVersion.startsWith('1.')) ? 'InfluxDbPublisher': 'InfluxDbStep'
+        def influxClassName = (!influxPluginVersion || influxPluginVersion.startsWith('1.')) ? 'InfluxDbPublisher': 'InfluxDbStepExecution'
         try {
             step([
                 $class: influxClassName,
