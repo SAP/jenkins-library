@@ -99,7 +99,7 @@ void call(Map parameters = [:]) {
             archiveArtifacts configuration.reportFile
             recordIssues(
                 tools: [checkStyle(
-                    name: configuration.reportName, 
+                    name: configuration.reportName,
                     pattern: configuration.reportFile,
                     id: configuration.reportName
                 )],
